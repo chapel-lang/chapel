@@ -250,37 +250,34 @@ def get_compiler_command(flag, lang):
 
     if lang_upper == 'C++':
         lang_upper = 'CXX'
+    elif lang_upper == 'C':
+        lang_upper = 'CC'
 
     if flag_upper == 'HOST' or flag_upper == 'TARGET':
         pass
     else:
         error('unknown flag {0}'.format(flag))
 
-    if lang_upper == 'C' or lang_upper == 'CXX':
+    if lang_upper == 'CC' or lang_upper == 'CXX':
         pass
     else:
         error('unknown lang {0}'.format(lang))
 
-    varname = 'CHPL_' + flag_upper + '_COMPILER_COMMAND_' + lang_upper
+    # construct CHPL_HOST_CC / CHPL_TARGET_CXX etc
+    varname = 'CHPL_' + flag_upper + '_' + lang_upper
 
     command = overrides.get(varname, '');
     if command:
         return command
 
-    # If CHPL_TARGET_COMPILER_COMMAND_C etc was not set, look at CC/CXX
-    if lang_upper == 'C':
-        cc_val = overrides.get('CC', '')
-        if cc_val:
-            return cc_val
-
-    if lang_upper == 'CXX':
-        cxx_val = overrides.get('CXX', '')
-        if cxx_val:
-            return cxx_val
+    # If CHPL_HOST_CC etc was not set, look at CC/CXX
+    cc_cxx_val = overrides.get(lang_upper, '')
+    if cc_cxx_val:
+        return cc_cxx_val
 
     compiler_val = get(flag=flag)
 
-    if lang_upper == 'C':
+    if lang_upper == 'CC':
         command = get_compiler_name_c(compiler_val)
     elif lang_upper == 'CXX':
         command = get_compiler_name_cxx(compiler_val)

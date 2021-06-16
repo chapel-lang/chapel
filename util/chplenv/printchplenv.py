@@ -63,14 +63,14 @@ DEFAULT = set(['default'])
 CHPL_ENVS = [
     ChapelEnv('CHPL_HOST_PLATFORM', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_COMPILER', COMPILER | LAUNCHER),
-    ChapelEnv('  CHPL_HOST_COMPILER_COMMAND_C', COMPILER | LAUNCHER),
-    ChapelEnv('  CHPL_HOST_COMPILER_COMMAND_CXX',COMPILER | LAUNCHER),
+    ChapelEnv('  CHPL_HOST_CC', COMPILER | LAUNCHER),
+    ChapelEnv('  CHPL_HOST_CXX',COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_ARCH', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_CPU', INTERNAL),
     ChapelEnv('CHPL_TARGET_PLATFORM', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_COMPILER', RUNTIME | DEFAULT),
-    ChapelEnv('  CHPL_TARGET_COMPILER_COMMAND_C', RUNTIME),
-    ChapelEnv('  CHPL_TARGET_COMPILER_COMMAND_CXX', RUNTIME),
+    ChapelEnv('  CHPL_TARGET_CC', RUNTIME),
+    ChapelEnv('  CHPL_TARGET_CXX', RUNTIME),
     ChapelEnv('  CHPL_TARGET_COMPILER_PRGENV', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'arch'),
@@ -137,8 +137,8 @@ def compute_all_values():
     host_compiler_c = chpl_compiler.get_compiler_command('host', 'c')
     host_compiler_cpp = chpl_compiler.get_compiler_command('host', 'c++')
     ENV_VALS['CHPL_HOST_COMPILER'] = host_compiler
-    ENV_VALS['  CHPL_HOST_COMPILER_COMMAND_C'] = host_compiler_c
-    ENV_VALS['  CHPL_HOST_COMPILER_COMMAND_CXX'] = host_compiler_cpp
+    ENV_VALS['  CHPL_HOST_CC'] = host_compiler_c
+    ENV_VALS['  CHPL_HOST_CXX'] = host_compiler_cpp
 
     ENV_VALS['CHPL_HOST_ARCH'] = chpl_arch.get('host')
     ENV_VALS['CHPL_HOST_CPU'] = chpl_cpu.get('host').cpu
@@ -149,8 +149,8 @@ def compute_all_values():
     target_compiler_cpp = chpl_compiler.get_compiler_command('target', 'c++')
     target_compiler_prgenv = chpl_compiler.get_prgenv_compiler()
     ENV_VALS['CHPL_TARGET_COMPILER'] = target_compiler
-    ENV_VALS['  CHPL_TARGET_COMPILER_COMMAND_C'] = target_compiler_c
-    ENV_VALS['  CHPL_TARGET_COMPILER_COMMAND_CXX'] = target_compiler_cpp
+    ENV_VALS['  CHPL_TARGET_CC'] = target_compiler_c
+    ENV_VALS['  CHPL_TARGET_CXX'] = target_compiler_cpp
     ENV_VALS['  CHPL_TARGET_COMPILER_PRGENV'] = target_compiler_prgenv
 
     ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target')

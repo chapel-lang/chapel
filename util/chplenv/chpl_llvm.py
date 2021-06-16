@@ -145,7 +145,7 @@ def find_system_llvm_config():
 @memoize
 def get_llvm_config():
     llvm_val = get()
-    llvm_config = overrides.get('CHPL_LLVM_CONFIG')
+    llvm_config = overrides.get('CHPL_LLVM_CONFIG', 'none')
 
     if llvm_config and llvm_val == 'bundled':
         error("cannot set CHPL_LLVM_CONFIG along with CHPL_LLVM=bundled")
