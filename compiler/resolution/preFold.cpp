@@ -2364,7 +2364,7 @@ static Expr* preFoldNamed(CallExpr* call) {
     }
   } else if (isMethodCall(call)) {
     // Handle a reference to an interface associated type, if applicable.
-    if (ConstrainedType* recv = toConstrainedType(call->get(2)->typeInfo())) {
+    if (ConstrainedType* recv = toConstrainedType(call->get(2)->getValType())) {
       retval = resolveCallToAssociatedType(call, recv);
     }
   }

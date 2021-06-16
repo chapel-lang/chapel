@@ -107,6 +107,61 @@ static void computeClassHierarchy() {
   }
 }
 
+// Here we record method names on interface types, that is, T1, ... and
+// AT1, ..., given 'interface IFC(T1, ...) { type AT1; ... }'
+// so that we know when we can insert an implicit 'this' actual arg.
+static std::map<Symbol*, std::set<const char*> > interfaceMethodNames;
+
+// 'interfaceMethodNames' records a 'proc IFC.someMethod...' as a method on T1.
+// 'thisTypeToIfcFormal' maps the type of 'this' in the former to T1.
+static SymbolMap thisTypeToIfcFormal;
+
+static bool isInterfaceMethodName(const char* name, Type* thisType) {
+  if (ConstrainedType* ct = toConstrainedType(thisType)) {
+    Symbol* thisTS = ct->symbol;
+    INT_ASSERT(ct->ctUse != CT_CGFUN_ASSOC_TYPE);
+    if (ct->ctUse == CT_CGFUN_FORMAL)
+      thisTS = thisTypeToIfcFormal.get(thisTS);
+
+    auto it = interfaceMethodNames.find(thisTS);
+    if (it != interfaceMethodNames.end())
+      return it->second.count(name);
+  }
+
+  return false;
+}
+
+static void recordIfcMethod(FnSymbol* fn, Symbol* thisType) {
+  interfaceMethodNames[thisType].insert(fn->name);
+}
+
+static void recordIfcThis(InterfaceSymbol* isym, FnSymbol* fn,
+                          TypeSymbol* thisType) {
+  INT_ASSERT(isConstrainedTypeSymbol(thisType, CT_CGFUN_FORMAL));
+  Symbol* ifcFormal = toDefExpr(isym->ifcFormals.head)->sym;
+  INT_ASSERT(isConstrainedTypeSymbol(ifcFormal, CT_IFC_FORMAL));
+  thisTypeToIfcFormal.put(thisType, ifcFormal);
+  recordIfcMethod(fn, ifcFormal);
+}
+
+static void recordMethodsOnInterfaceFormalsAndATs() {
+  forv_Vec(InterfaceSymbol, isym, gInterfaceSymbols)
+    for_alist(stmt, isym->ifcBody->body)
+      if (DefExpr* def = toDefExpr(stmt))
+       if (FnSymbol* fn = toFnSymbol(def->sym))
+        if (Symbol* _this = fn->_this)
+         if (ConstrainedType* ct = toConstrainedType(_this->type)) {
+           if (ct->ctUse == CT_IFC_FORMAL)
+             INT_ASSERT(ct->symbol->defPoint->list == &(isym->ifcFormals));
+           else if (ct->ctUse == CT_IFC_ASSOC_TYPE)
+             INT_ASSERT(ct->symbol->defPoint->parentExpr == isym->ifcBody);
+           else
+             continue; // otherwise proceed to the next stmt in isym->ifcBody
+
+           recordIfcMethod(fn, ct->symbol);
+         }
+}
+
 static void handleReceiverFormals() {
   //
   // resolve type of this for methods
@@ -121,13 +176,22 @@ static void handleReceiverFormals() {
       if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(stmt)) {
         SET_LINENO(fn->_this);
 
-        if (TypeSymbol* ts = toTypeSymbol(lookup(sym->unresolved, sym))) {
+        Symbol* rsym = lookup(sym->unresolved, sym);
+        if (TypeSymbol* ts = toTypeSymbol(rsym)) {
           sym->replace(new SymExpr(ts));
 
           fn->_this->type = ts->type;
           fn->_this->type->methods.add(fn);
 
           AggregateType::setCreationStyle(ts, fn);
+
+        } else if (InterfaceSymbol* isym = toInterfaceSymbol(rsym)) {
+          // It is easy to desugar an interface-as-this-type right here.
+          TypeSymbol* ctSym = desugarInterfaceAsType(fn,
+                                toArgSymbol(fn->_this), sym, isym);
+          sym->replace(new SymExpr(ctSym));
+          fn->_this->type = ctSym->type;
+          recordIfcThis(isym, fn, ctSym);
         }
 
       } else if (SymExpr* sym = toSymExpr(stmt)) {
@@ -141,6 +205,8 @@ static void handleReceiverFormals() {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
   }
+
+  recordMethodsOnInterfaceFormalsAndATs();
 }
 
 static void markGenerics() {
@@ -955,7 +1021,8 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
           if (isAstrOpName(name))
             break;
 
-          if (isAggr == true || isMethodName(name, type) == true) {
+          if (isAggr == true || isMethodName(name, type) == true ||
+              (sym == nullptr && isInterfaceMethodName(name, type))) {
             if (isFunctionNameWithExplicitScope(expr) == false) {
               insertFieldAccess(method, usymExpr, sym, expr);
             }
@@ -2989,6 +3056,8 @@ void scopeResolve() {
   destroyModuleUsesCaches();
 
   warnedForDotInsideWith.clear();
+  interfaceMethodNames.clear();
+  thisTypeToIfcFormal.clear();
 
   renameDefaultTypesToReflectWidths();
 

@@ -161,21 +161,29 @@ bool ResolutionCandidate::isApplicableCG(CallInfo& info,
                                          VisibilityInfo* visInfo) {
   int indx = 0;
   for_alist(iconExpr, fn->interfaceInfo->interfaceConstraints) {
-    ConstraintSat csat = constraintIsSatisfiedAtCallSite(info.call,
+    ConstraintSat csat = constraintIsSatisfiedAtCallSite(info.call, nullptr,
                              toIfcConstraint(iconExpr), substitutions);
     if (csat.istm != nullptr) {
       // satisfied with an implements statement
       witnessIstms.push_back(csat.istm);
-      cgAddRepsToSubstitutions(fn, substitutions, csat.istm, indx++);
+      if (fn->hasFlag(FLAG_CG_REPRESENTATIVE)) {
+        isInterimInstantiation = true;
+        // todo: do we need cgAddInterimRepsToSubstitutions() ?
+      } else {
+        cgAddRepsToSubstitutions(fn, substitutions, csat.istm, indx);
+      }
 
     } else if (csat.icon != nullptr) {
       // satisfied with a constraint of the enclosing GC function
       isInterimInstantiation = true;
+      cgAddInterimRepsToSubstitutions(fn, substitutions,
+        toIfcConstraint(iconExpr), indx, csat.icon, csat.indx);
 
     } else {
       // not satisfied, making this CG fn not applicable
       return false;
     }
+    indx++;
   }
 
   cgConvertAggregateTypes(fn, info.call, substitutions);

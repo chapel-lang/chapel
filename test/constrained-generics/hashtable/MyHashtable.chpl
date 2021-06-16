@@ -1,4 +1,13 @@
 /*
+2021-06: this started as rev. 309ebb8173 of:
+  modules/internal/ChapelHashtable.chpl
+
+Contents WIP:
+ interface Hashable
+ early checking for record 'chpl__hashtable' using interface 'chpl_Hashtable'
+*/
+
+/*
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
@@ -27,7 +36,7 @@
 // chpl__hashtable is the record implementing a hashtable
 // chpl__defaultHash is the default hash function for most types
 pragma "unsafe"
-module ChapelHashtable {
+module MyHashtable {
 
   use ChapelBase, DSIUtil;
 
@@ -315,13 +324,118 @@ module ChapelHashtable {
       // Free the buffer
       _freeData(table, tableSize);
     }
+  }  // record chpl__hashtable
+
+
+/////////////////////////////////////////////////////////////////////////////
+// interface definitions and implements statements
+
+//
+// Hashable: user-facing requirements on the hashtable key type.
+//
+interface Hashable(Key) {
+  //  proc hash(arg: Key): uint;
+  proc chpl__defaultHashWrapper(arg: Key): int;
+  operator ==(lhs: Key, rhs: Key): bool;
+}
+
+//
+// StdOps: various common operations we expect.
+//
+// Todo: include == and resolve the ambiguity with Hashable.==
+// possibly by requiring Hashable to implement StdOps.
+//
+interface StdOps(Val) {
+  proc chpl__initCopy(arg: Val, definedConst: bool): Val;
+  operator =(ref lhs: Val, rhs: Val);
+  proc toString(arg: Val): string; // so we can write it out
+}
+
+// These use built-in implementations and proc toString below.
+string implements Hashable;
+string implements StdOps;
+int implements Hashable;
+int implements StdOps;
+
+// The default implementation for toString().
+proc toString(arg): string return arg: string;
+
+//
+// chpl_Hashtable: intended to replace the uses of the type chpl__hashtable.
+//
+// It contains both public functionality and implementation details.
+//
+interface chpl_Hashtable(HT) {
+  type keyType;
+  type valType;
+  keyType implements Hashable;
+  keyType implements StdOps;
+  valType implements StdOps;
+  // can't have == in StdOps because then == on keys would be ambiguous
+  operator ==(lhs: valType, rhs: valType): bool;
+  // todo: change these to the ones from a Memory module
+  proc _moveInit(ref lhs: keyType, in rhs: keyType);
+  proc _moveToReturn(const ref arg: keyType): keyType;
+  proc _moveInit(ref lhs: valType, in rhs: valType);
+  proc _moveToReturn(const ref arg: valType): valType;
+
+  // fields of chpl__hashtable
+  // todo: implement "returns const when const 'this'"
+  proc HT.tableNumFullSlots ref: int;
+  proc HT.tableNumDeletedSlots ref: int;
+  proc HT.tableSizeNum ref: int;
+  proc HT.tableSize ref: int;
+  proc HT.table ref: tableType;
+  proc HT.rehashHelpers: owned chpl__rehashHelpers?;
+  proc HT.postponeResize: bool;
+
+  // replaces '_ddata(chpl_TableEntry(keyType, valType))'
+  // todo: move into its own interface?
+  type tableType;
+  proc chpl__initCopy(arg: tableType, definedConst: bool): tableType;
+  operator =(ref lhs: tableType, rhs: tableType);
+  proc tableType.this(idx: int) ref: tableEntryType;  
+
+  // replaces 'chpl_TableEntry(keyType, valType)'
+  // todo: move into its own interface
+  type tableEntryType;
+  proc tableEntryType.status ref: chpl__hash_status;
+  proc tableEntryType.key ref: keyType;
+  proc tableEntryType.val ref: valType;
+
+  // These cannot be IC functions as they contain TG code.
+  // So, use chpl__hashtable's implementation.
+  proc HT.allocateTable(size:int): tableType;
+  proc _freeData(data: tableType, size:int);
+  proc _deinitSlot(ref aSlot: tableEntryType);
+}
+
+// This is a traditional-generic implements statement.
+// It is instantiated on demand and checked "late", i.e., upon instantiation.
+chpl__hashtable implements chpl_Hashtable;
+
+proc chpl__hashtable.tableType type
+  return _ddata(tableEntryType);
+
+proc chpl__hashtable.tableEntryType type
+  return chpl_TableEntry(keyType, valType);
+
+// This is a concrete implements statement.
+// It is checked immediately. It is here for testing.
+implements chpl_Hashtable(chpl__hashtable(string, int));
+
+
+/////////////////////////////////////////////////////////////////////////////
+// methods on 'record chpl__hashtable' converted to methods
+ // on 'interface chpl_Hashtable'
 
     // #### iteration helpers ####
 
-    inline proc isSlotFull(slot: int): bool {
+    inline proc chpl_Hashtable.isSlotFull(slot: int): bool {
       return table[slot].status == chpl__hash_status.full;
     }
 
+/* TODO: remove the iterator code because it is no longer needed?
     iter allSlots() {
       for slot in _allSlots(tableSize) {
         yield slot;
@@ -351,6 +465,14 @@ module ChapelHashtable {
         yield i;
       }
     }
+*/
+    // replacements for the iterators _allSlots, allSlots
+    //
+    // If we call these _allSlots and allSlots, we will get errors because
+    // the compiler will think that they are implemented with those iterators.
+    // todo: rename back to _allSlots, allSlots
+    proc chpl_Hashtable._ifcAllSlots(size: int): range return 0..#size;
+    proc chpl_Hashtable.ifcAllSlots(): range return _ifcAllSlots(this.tableSize);
 
 
     // #### add & remove helpers ####
@@ -365,9 +487,19 @@ module ChapelHashtable {
     // empty slot that may be re-used for faster addition to the domain
     //
     // This function never returns deleted slots.
-    proc _findSlot(key: keyType) : (bool, int) {
+    proc chpl_Hashtable._findSlot(key: this.keyType) : (bool, int) {
       var firstOpen = -1;
-      for slotNum in _lookForSlots(key) {
+      // inlining the iterator for: for slotNum in _lookForSlots(key)
+      const baseSlot = chpl__defaultHashWrapper(key):uint;
+      const numSlots = tableSize;
+      if numSlots > 0 then {
+        for probe in 0..numSlots/2 {
+          var uprobe = probe:uint;
+          var n = numSlots:uint;
+          const slotNum = ((baseSlot + uprobe**2)%n):int;
+      // end inlined iterator _lookForSlots(key)
+      // original loop body:
+      {
         const slotStatus = table[slotNum].status;
         // if we encounter a slot that's empty, our element could not
         // be found past this point.
@@ -382,9 +514,15 @@ module ChapelHashtable {
           if firstOpen == -1 then firstOpen = slotNum;
         }
       }
+      // done original loop body
+      // close curlies for the inlined iterator:
+        } // for probe
+      } // if numSlots
+
       return (false, -1);
     }
 
+/* TODO: remove the iterator code because it is no longer needed?
     pragma "order independent yielding loops"
     iter _lookForSlots(key: keyType, numSlots = tableSize) {
       const baseSlot = chpl__defaultHashWrapper(key):uint;
@@ -395,6 +533,7 @@ module ChapelHashtable {
         yield ((baseSlot + uprobe**2)%n):int;
       }
     }
+*/
 
     // add pattern:
     //  findAvailableSlot
@@ -404,7 +543,7 @@ module ChapelHashtable {
     // or a slot that was already present with that key.
     // It can rehash the table.
     // returns (foundFullSlot, slotNum)
-    proc findAvailableSlot(key: keyType): (bool, int) {
+    proc chpl_Hashtable.findAvailableSlot(key: this.keyType): (bool, int) {
       var slotNum = -1;
       var foundSlot = false;
 
@@ -440,9 +579,9 @@ module ChapelHashtable {
       }
     }
 
-    proc fillSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
-                  in key: keyType,
-                  in val: valType) {
+    proc chpl_Hashtable.fillSlot(ref tableEntry: this.tableEntryType,
+                  in key: this.keyType,
+                  in val: this.valType) {
       if tableEntry.status == chpl__hash_status.full {
         _deinitSlot(tableEntry);
       } else {
@@ -457,9 +596,9 @@ module ChapelHashtable {
       _moveInit(tableEntry.key, key);
       _moveInit(tableEntry.val, val);
     }
-    proc fillSlot(slotNum: int,
-                  in key: keyType,
-                  in val: valType) {
+    proc chpl_Hashtable.fillSlot(slotNum: int,
+                  in key: this.keyType,
+                  in val: this.valType) {
       ref tableEntry = table[slotNum];
       fillSlot(tableEntry, key, val);
     }
@@ -472,7 +611,7 @@ module ChapelHashtable {
 
     // Finds a slot containing a key
     // returns (foundFullSlot, slotNum)
-    proc findFullSlot(key: keyType): (bool, int) {
+    proc chpl_Hashtable.findFullSlot(key: this.keyType): (bool, int) {
       var slotNum = -1;
       var foundSlot = false;
 
@@ -484,8 +623,8 @@ module ChapelHashtable {
     // Clears a slot that is full
     // (Should not be called on empty/deleted slots)
     // Returns the key and value that were removed in the out arguments
-    proc clearSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
-                   out key: keyType, out val: valType) {
+    proc chpl_Hashtable.clearSlot(ref tableEntry: this.tableEntryType,
+                   out key: this.keyType, out val: this.valType) {
       // move the table entry into the key/val variables to be returned
       key = _moveToReturn(tableEntry.key);
       val = _moveToReturn(tableEntry.val);
@@ -497,13 +636,13 @@ module ChapelHashtable {
       tableNumFullSlots -= 1;
       tableNumDeletedSlots += 1;
     }
-    proc clearSlot(slotNum: int, out key: keyType, out val: valType) {
+    proc chpl_Hashtable.clearSlot(slotNum: int, out key: this.keyType, out val: this.valType) {
       // move the table entry into the key/val variables to be returned
       ref tableEntry = table[slotNum];
       clearSlot(tableEntry, key, val);
     }
 
-    proc maybeShrinkAfterRemove() {
+    proc chpl_Hashtable.maybeShrinkAfterRemove() {
       if (tableNumFullSlots*8 < tableSize && tableSizeNum > 0) {
         resize(grow=false);
       }
@@ -511,7 +650,7 @@ module ChapelHashtable {
 
     // #### rehash / resize helpers ####
 
-    proc _findPrimeSizeIndex(numKeys:int) {
+    proc chpl_Hashtable._findPrimeSizeIndex(numKeys:int) {
       //Find the first suitable prime
       var threshold = (numKeys + 1) * 2;
       var prime = 0;
@@ -531,14 +670,14 @@ module ChapelHashtable {
       return primeLoc;
     }
 
-    proc allocateData(size: int, type tableEltType) {
+    proc chpl__hashtable.allocateData(size: int, type tableEltType) {
       if size == 0 {
         return nil;
       } else {
         return _allocateData(size, tableEltType);
       }
     }
-    proc allocateTable(size:int) {
+    proc chpl__hashtable.allocateTable(size:int): _ddata(chpl_TableEntry(keyType, valType)) {
       if size == 0 {
         return nil;
       } else {
@@ -549,7 +688,7 @@ module ChapelHashtable {
     // newSize is the new table size
     // newSizeNum is an index into chpl__primes == newSize
     // assumes the array is already locked
-    proc rehash(newSizeNum:int, newSize:int) {
+    proc chpl_Hashtable.rehash(newSizeNum:int, newSize:int) {
       // save the old table
       var oldSize = tableSize;
       var oldTable = table;
@@ -628,7 +767,7 @@ module ChapelHashtable {
       }
     }
 
-    proc requestCapacity(numKeys:int) {
+    proc chpl_Hashtable.requestCapacity(numKeys:int) {
       if tableNumFullSlots < numKeys {
 
         var primeLoc = _findPrimeSizeIndex(numKeys);
@@ -638,7 +777,7 @@ module ChapelHashtable {
       }
     }
 
-    proc resize(grow:bool) {
+    proc chpl_Hashtable.resize(grow:bool) {
       if postponeResize then return;
 
       var newSizeNum = tableSizeNum;
@@ -656,5 +795,4 @@ module ChapelHashtable {
 
       rehash(newSizeNum, newSize);
     }
-  }
 }
