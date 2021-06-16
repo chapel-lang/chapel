@@ -39,6 +39,31 @@ def get_prgenv_compiler():
 
     return 'none'
 
+# Figures out the compiler family (e.g. gnu) from the CC/CXX enviro vars
+@memoize
+def get_compiler_from_cc_cxx():
+    cc_val = overrides.get('CC', '')
+    cxx_val = overrides.get('CXX', '')
+    if cc_val and cxx_val:
+        cc_val_command = get_compiler_from_command(cc_val)
+        cxx_val_command = get_compiler_from_command(cxx_val)
+        if (cc_val_command != cxx_val_command):
+            error("Conflicting compiler families for CC and CXX settings\n"
+                  "  {0} -> {1}\n"
+                  "  {2} -> {3}".format(cc_val, cc_val_command,
+                                        cxx_val, cxx_val_command))
+    elif cc_val and not cxx_val:
+        sys.stderr.write('Warning: CC is set but not CXX -- please set both\n')
+    elif cxx_val and not cc_val:
+        sys.stderr.write('Warning: CXX is set but not CC -- please set both\n')
+
+    compiler_val = ''
+    if cc_val:
+        compiler_val = get_compiler_from_command(cc_val)
+    if cxx_val:
+        compiler_val = get_compiler_from_command(cxx_val)
+    return compiler_val
+
 @memoize
 def get(flag='host'):
 
@@ -50,6 +75,10 @@ def get(flag='host'):
 
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
+
+    # If compiler_val was not set, look at CC/CXX
+    if not compiler_val:
+        compiler_val = get_compiler_from_cc_cxx()
 
     if compiler_val:
         validate(compiler_val)
@@ -113,6 +142,30 @@ def get_path_component(flag='host'):
 
     return get(flag)
 
+# given a compiler command, (e.g. gcc or /path/to/clang++),
+# figure out the compiler family (e.g. gnu or clang)
+def get_compiler_from_command(command):
+    # get the basename after splitting on whitespace
+    # e.g. to handle a command like
+    #    /path/to/gcc --some-option
+    name = os.path.basename(command.split()[0])
+    if name == 'gcc' or name == 'g++':
+        return 'gnu'
+    elif name == 'clang' or name == 'clang++':
+        return 'clang'
+    elif name == 'xlc' or name == 'xlC':
+        return 'ibm'
+    elif name == 'icc' or name == 'icpc':
+        return 'intel'
+    elif name == 'pgcc' or name == 'pgc++':
+        return 'pgc++'
+
+    # if it was not one of the above cases we don't know how to
+    # go from the command name to the compiler family.
+    # E.g. cc/CC/mpicc could be many compilers.
+    #
+    # We could consider trying to run it to figure it out.
+    return 'unknown'
 
 def get_compiler_name_c(compiler):
     if compiler_is_prgenv(compiler):
@@ -179,6 +232,17 @@ def get_compiler_command(flag, lang):
     command = overrides.get(varname, '');
     if command:
         return command
+
+    # If CHPL_TARGET_COMPILER_COMMAND_C etc was not set, look at CC/CXX
+    if lang_upper == 'C':
+        cc_val = overrides.get('CC', '')
+        if cc_val:
+            return cc_val
+
+    if lang_upper == 'CXX':
+        cxx_val = overrides.get('CXX', '')
+        if cxx_val:
+            return cxx_val
 
     compiler_val = get(flag=flag)
 
