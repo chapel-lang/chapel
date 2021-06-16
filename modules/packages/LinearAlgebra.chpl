@@ -188,7 +188,6 @@ module LinearAlgebra {
 
 import BLAS;
 use LAPACK only lapack_memory_order, isLAPACKType;
-use Math;
 
 /* Determines if using native Chapel implementations */
 private param usingBLAS = BLAS.header != '';
@@ -239,16 +238,16 @@ class ExpmPadeHelper {
   var A6 : matType;
   var A8 : matType;
   var A10 : matType;
-  var Exactd4 : real;
-  var Exactd6 : real;
-  var Exactd8 : real;
-  var Exactd10 : real;
-  var Approxd4 : real;
-  var Approxd6 : real;
-  var Approxd8 : real;
-  var Approxd10 : real;
-  var Ident : matType;
-  var UseExactOneNorm : bool;
+  var exactD4 : real;
+  var exactD6 : real;
+  var exactD8 : real;
+  var exactD10 : real;
+  var approxD4 : real;
+  var approxD6 : real;
+  var approxD8 : real;
+  var approxD10 : real;
+  var ident : matType;
+  var useExactOneNorm : bool;
   // Boolean arrays to know if A, Exactd, Approxd
   // have been computed.
   var isAComputed : ["A2", "A4", "A6", "A8", "A10"] bool;
@@ -256,18 +255,17 @@ class ExpmPadeHelper {
   var isApproxdComputed : ["A4", "A6", "A8", "A10"] bool;
 
   /*
-    Args:
-    A: Expects an N*N square matrix
-    UseExactOneNorm: boolean value specifying if the onenorm has to be exact.
+    :arg A: Expects an N*N square matrix.
+    :type A: 2D Array
 
-    TODO: Need to write a method to find approximate norm.
-    Currently only supports for UseExactOneNorm = true.
+    :arg useExactOneNorm: boolean value specifying if the onenorm has to be exact.
+    :type useExactOneNorm: bool
   */
-  proc init(A, UseExactOneNorm: bool) {
+  proc init(A, useExactOneNorm: bool) {
     this.matType = A.type;
     this.A = A;
-    this.Ident = eye(A.indices);
-    this.UseExactOneNorm = UseExactOneNorm;
+    this.ident = eye(A.indices);
+    this.useExactOneNorm = useExactOneNorm;
   }
 
   proc comp_A2(){
@@ -310,132 +308,132 @@ class ExpmPadeHelper {
     return this.A10;
   }
 
-  proc comp_Exactd4(){
+  proc comp_exactD4(){
     if !isExactdComputed["A4"] then {
-      this.Exactd4 = norm(comp_A4(), normType.norm1)**(1/4.0);
+      this.exactD4 = norm(comp_A4(), normType.norm1)**(1/4.0);
       isExactdComputed["A4"] = true;
     }
-    return this.Exactd4;
+    return this.exactD4;
   }
 
-  proc comp_Exactd6(){
+  proc comp_exactD6(){
     if !isExactdComputed["A6"] then {
-      this.Exactd6 = norm(comp_A6(), normType.norm1)**(1/6.0);
+      this.exactD6 = norm(comp_A6(), normType.norm1)**(1/6.0);
       isExactdComputed["A6"] = true;
     }
-    return this.Exactd6;
+    return this.exactD6;
   }
 
-  proc comp_Exactd8(){
+  proc comp_exactD8(){
     if !isExactdComputed["A8"] then {
-      this.Exactd8 = norm(comp_A8(), normType.norm1)**(1/8.0);
+      this.exactD8 = norm(comp_A8(), normType.norm1)**(1/8.0);
       isExactdComputed["A8"] = true;
     }
-    return this.Exactd8;
+    return this.exactD8;
   }
 
-  proc comp_Exactd10(){
+  proc comp_exactD10(){
     if !isExactdComputed["A10"] then {
-      this.Exactd10 = norm(comp_A10(), normType.norm1)**(1/10.0);
+      this.exactD10 = norm(comp_A10(), normType.norm1)**(1/10.0);
       isExactdComputed["A10"] = true;
     }
-    return this.Exactd10;
+    return this.exactD10;
   }
 
-  proc comp_Loosed4(){
-    if this.UseExactOneNorm then{
-      return comp_Exactd4();
+  proc comp_looseD4(){
+    if this.useExactOneNorm then{
+      return comp_exactD4();
     }
     else {
       if !isApproxdComputed["A4"] then {
         //TODO: Need to write a function to compute the
         // estimated norm (change the below function)
         // Right now, just returns the exact norm
-        this.Approxd4 = norm(comp_A4(), normType.norm1)**(1/4.0);
+        this.approxD4 = norm(comp_A4(), normType.norm1)**(1/4.0);
         isApproxdComputed["A4"] = true;
       }
-      return this.Approxd4;
+      return this.approxD4;
     }
   }
 
-  proc comp_Loosed6(){
-    if this.UseExactOneNorm then{
-      return comp_Exactd6();
+  proc comp_looseD6(){
+    if this.useExactOneNorm then{
+      return comp_exactD6();
     }
     else {
       if !isApproxdComputed["A6"] then {
         //TODO: Need to write a function to compute the
         // estimated norm (change the below function)
         // Right now, just returns the exact norm
-        this.Approxd6 = norm(comp_A6(), normType.norm1)**(1/6.0);
+        this.approxD6 = norm(comp_A6(), normType.norm1)**(1/6.0);
         isApproxdComputed["A6"] = true;
       }
-      return this.Approxd6;
+      return this.approxD6;
     }
   }
 
-  proc comp_Loosed8(){
-    if this.UseExactOneNorm then{
-      return comp_Exactd8();
+  proc comp_looseD8(){
+    if this.useExactOneNorm then{
+      return comp_exactD8();
     }
     else {
       if !isApproxdComputed["A8"] then {
         //TODO: Need to write a function to compute the
         // estimated norm (change the below function)
         // Right now, just returns the exact norm
-        this.Approxd8 = norm(comp_A8(), normType.norm1)**(1/8.0);
+        this.approxD8 = norm(comp_A8(), normType.norm1)**(1/8.0);
         isApproxdComputed["A8"] = true;
       }
-      return this.Approxd8;
+      return this.approxD8;
     }
   }
 
-  proc comp_Loosed10(){
-    if this.UseExactOneNorm then{
-      return comp_Exactd10();
+  proc comp_looseD10(){
+    if this.useExactOneNorm then{
+      return comp_exactD10();
     }
     else {
       if !isApproxdComputed["A10"] then {
         //TODO: Need to write a function to compute the
         // estimated norm (change the below function)
         // Right now, just returns the exact norm
-        this.Approxd10 = norm(comp_A10(), normType.norm1)**(1/10.0);
+        this.approxD10 = norm(comp_A10(), normType.norm1)**(1/10.0);
         isApproxdComputed["A10"] = true;
       }
-      return this.Approxd10;
+      return this.approxD10;
     }
   }
 
   proc pade3(){
     const b = [120.0, 60.0, 12.0, 1.0];
-    var temp = b[3]*comp_A2() + b[1]*this.Ident;
+    var temp = b[3]*comp_A2() + b[1]*this.ident;
     var U = dot(this.A, temp);
-    var V = b[2]*comp_A2() + b[0]*this.Ident;
+    var V = b[2]*comp_A2() + b[0]*this.ident;
     return (U,V);
   }
 
   proc pade5(){
     const b = [30240.0, 15120.0, 3360.0, 420.0, 30.0, 1.0];
-    var temp = b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.Ident;
+    var temp = b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
     var U = dot(this.A, temp);
-    var V = b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.Ident;
+    var V = b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
     return (U,V);
   }
 
   proc pade7(){
     const b = [17297280.0, 8648640.0, 1995840.0, 277200.0, 25200.0, 1512.0, 56.0, 1.0];
-    var temp = b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.Ident;
+    var temp = b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
     var U = dot(this.A, temp);
-    var V = b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.Ident;
+    var V = b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
     return (U,V);
   }
 
   proc pade9(){
     const b = [17643225600.0, 8821612800.0, 2075673600.0, 302702400.0, 30270240.0,
                 2162160.0, 110880.0, 3960.0, 90.0, 1.0];
-    var temp = b[9]*comp_A8() + b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.Ident;
+    var temp = b[9]*comp_A8() + b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
     var U = dot(this.A, temp);
-    var V = b[8]*comp_A8() + b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.Ident;
+    var V = b[8]*comp_A8() + b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
     return (U,V);
   }
 
@@ -452,11 +450,11 @@ class ExpmPadeHelper {
 
     var temp2 = b[13]*B6 + b[11]*B4 + b[9]*B2;
     var U2 = dot(B6, temp2);
-    var temp = U2 + b[7]*B6 + b[5]*B4 + b[3]*B2 + b[1]*this.Ident;
+    var temp = U2 + b[7]*B6 + b[5]*B4 + b[3]*B2 + b[1]*this.ident;
     var U = dot(B, temp);
     var temp3 = b[12]*B6 + b[10]*B4 + b[8]*B2;
     var V2 = dot(B6, temp3);
-    var V = V2 + b[6]*B6 + b[4]*B4 + b[2]*B2 + b[0]*this.Ident;
+    var V = V2 + b[6]*B6 + b[4]*B4 + b[2]*B2 + b[0]*this.ident;
     return (U,V);
   }
 
@@ -467,15 +465,15 @@ class ExpmPadeHelper {
     writeln("A8 = ", comp_A8());
     writeln("A10 = ", comp_A10());
 
-    writeln("exact_d4 = ", comp_Exactd4());
-    writeln("exact_d6 = ", comp_Exactd6());
-    writeln("exact_d8 = ", comp_Exactd8());
-    writeln("exact_d10 = ", comp_Exactd10());
+    writeln("exact_d4 = ", comp_exactD4());
+    writeln("exact_d6 = ", comp_exactD6());
+    writeln("exact_d8 = ", comp_exactD8());
+    writeln("exact_d10 = ", comp_exactD10());
 
-    writeln("loose_d4 = ", comp_Loosed4());
-    writeln("loose_d6 = ", comp_Loosed6());
-    writeln("loose_d8 = ", comp_Loosed8());
-    writeln("loose_d10 = ", comp_Loosed10());
+    writeln("loose_d4 = ", comp_looseD4());
+    writeln("loose_d6 = ", comp_looseD6());
+    writeln("loose_d8 = ", comp_looseD8());
+    writeln("loose_d10 = ", comp_looseD10());
   }
 }
 
@@ -2325,13 +2323,11 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   Matrix exponential using Pade approximation. This method returns N*N matrix which
   is Matrix exponential of `A`
 
-  Args:
-  A: Expects an N*N square matrix
-  UseExactOneNorm: boolean value specifying if the onenorm has to be exact.
-  Defaults to true.
+  :arg A: Expects an N*N square matrix.
+  :type A: 2D Array
 
-  TODO: Need to write a method to find approximate norm.
-  Currently only supports for UseExactOneNorm = true.
+  :arg useExactOneNorm: boolean value specifying if the onenorm has to be exact. Defaults to true.
+  :type useExactOneNorm: bool
 
 .. note::
 
@@ -2341,31 +2337,34 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   31 (3). pp. 970-989. ISSN 1095-7162
 
   :throws LinearAlgebraError: If Input Matrix is not Square Matrix.
+
+  :returns: Matrix exponential of the given matrix.
+  :rtype: `A`
 */
-proc expm(A: [], param UseExactOneNorm=true) throws {
+proc expm(A: [], param useExactOneNorm=true) throws {
 
   if A.rank != 2 || A.domain.dim(0) != A.domain.dim(1) then {
     throw new LinearAlgebraError('Square Matrix Expected');
   }
 
-  var h = new ExpmPadeHelper(A, UseExactOneNorm);
+  var h = new ExpmPadeHelper(A, useExactOneNorm);
 
   // Try Pade order 3
-  var eta_1 = max(abs(h.comp_Loosed4()), abs(h.comp_Loosed6()));
+  var eta_1 = max(abs(h.comp_looseD4()), abs(h.comp_looseD6()));
   if eta_1 < 1.495585217958292e-002 then {
     var (U,V) = h.pade3();
     return solvePQ(U, V);
   }
 
   // Try Pade order 5
-  var eta_2 = max(abs(h.comp_Exactd4()), abs(h.comp_Loosed6()));
+  var eta_2 = max(abs(h.comp_exactD4()), abs(h.comp_looseD6()));
   if eta_2 < 2.539398330063230e-001 then {
     var (U,V) = h.pade5();
     return solvePQ(U, V);
   }
 
   // Try Pade order 7 and 9
-  var eta_3 = max(abs(h.comp_Exactd6()), abs(h.comp_Loosed8()));
+  var eta_3 = max(abs(h.comp_exactD6()), abs(h.comp_looseD8()));
   if eta_3 < 9.504178996162932e-001 then {
     var (U,V) = h.pade7();
     return solvePQ(U, V);
@@ -2377,7 +2376,7 @@ proc expm(A: [], param UseExactOneNorm=true) throws {
   }
 
   // Use Pade order 13.
-  var eta_4 = max(abs(h.comp_Loosed8()), abs(h.comp_Loosed10()));
+  var eta_4 = max(abs(h.comp_looseD8()), abs(h.comp_looseD10()));
   var eta_5 = min(eta_3, eta_4);
   var theta_13 = 4.25;
 
@@ -2427,7 +2426,13 @@ private proc solvePQ(U: [?D], V: [D]){
 }
 
 /*
-This method returns both sine and cosine of the matrix A.
+  This method returns both sine and cosine of the matrix A.
+
+  :arg A: Expects an N*N square matrix.
+  :type A: `A`
+
+  :returns: Matrix a tuple of sin and cosine of the given matrix.
+  :rtype: (`A`, `A`)
 */
 proc sincos(A: []) throws {
   if A.eltType == real {
@@ -2447,6 +2452,12 @@ proc sincos(A: []) throws {
 
 /*
 This method returns the sine of the matrix A.
+
+  :arg A: Expects an N*N square matrix.
+  :type A: `A`
+
+  :returns: Matrix returns the sine of the given matrix.
+  :rtype: `A`
 */
 proc sinm(A: []) throws {
   if A.eltType == real {
@@ -2461,6 +2472,12 @@ proc sinm(A: []) throws {
 
 /*
 This method returns the cosine of the matrix A.
+
+  :arg A: Expects an N*N square matrix.
+  :type A: `A`
+
+  :returns: Matrix returns the cosine of the given matrix.
+  :rtype: `A`
 */
 proc cosm(A: []) throws {
   if A.eltType == real {
