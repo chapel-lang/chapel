@@ -61,6 +61,9 @@ def llvm_versions_string():
 # returns (version_number, config_error_message)
 @memoize
 def check_llvm_config(llvm_config):
+    if llvm_config == 'none':
+        return (0, "no llvm-config detected")
+
     got_version = 0
     version_ok = False
     llvm_header = ''
@@ -147,19 +150,15 @@ def get_llvm_config():
     llvm_val = get()
     llvm_config = overrides.get('CHPL_LLVM_CONFIG', 'none')
 
-    if llvm_config and llvm_val == 'bundled':
+    if llvm_config != 'none' and llvm_val == 'bundled':
         error("cannot set CHPL_LLVM_CONFIG along with CHPL_LLVM=bundled")
 
-    if not llvm_config:
+    if llvm_config == 'none':
         if llvm_val == 'bundled':
             llvm_subdir = get_bundled_llvm_dir()
             llvm_config = os.path.join(llvm_subdir, 'bin', 'llvm-config')
         elif llvm_val == 'system':
             llvm_config = find_system_llvm_config()
-            if not llvm_config:
-                error("CHPL_LLVM=system but could not find an installed LLVM"
-                       " with one of the supported versions: {0}".format(
-                       llvm_versions_string()))
 
     return llvm_config
 
@@ -167,7 +166,13 @@ def get_llvm_config():
 def validate_llvm_config():
     llvm_val = get()
     llvm_config = get_llvm_config()
-    if llvm_val == 'system' and llvm_config:
+    if llvm_val == 'system':
+        if llvm_config == 'none':
+            error("CHPL_LLVM=system but could not find an installed LLVM"
+                  " with one of the supported versions: {0}".format(
+                  llvm_versions_string()))
+
+    if llvm_val == 'system' or llvm_val == 'bundled':
         version, config_error = check_llvm_config(llvm_config)
         if config_error:
             error("Problem with llvm-config at {0} -- {1}"
