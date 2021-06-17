@@ -75,20 +75,20 @@ class Class final : public AggregateDecl {
 
   static owned<Class> build(Builder* builder, Location loc,
                             Decl::Visibility vis, UniqueString name,
-                            owned<Identifier> parentClass,
+                            owned<Expression> parentClass,
                             ASTList contents);
 
   /**
-    Return the Identifier indicating the parent class or nullptr
+    Return the Expression indicating the parent class or nullptr
     if there was none.
    */
-  const Identifier* parentClass() {
+  const Expression* parentClass() {
     if (parentClassChildNum_ < 0)
       return nullptr;
 
     auto ret = child(parentClassChildNum_);
-    assert(ret->isIdentifier());
-    return (const Identifier*)ret;
+    assert(ret->isExpression());
+    return (const Expression*)ret;
   }
 };
 
