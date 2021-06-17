@@ -535,6 +535,12 @@ module DefaultRectangular {
       }
     }
 
+    proc dsiMember(ind: idxType) {
+      if (rank != 1) then
+        compilerError("Can't call dsiMember(ind: idxType) on a 1D array");
+      return dsiMember((ind,));
+    }
+
     proc dsiMember(ind: rank*idxType) {
       for param i in 0..rank-1 do
         if !ranges(i).contains(ind(i)) then
@@ -1171,8 +1177,12 @@ module DefaultRectangular {
       for i in dom.these(tag=iterKind.follower, followThis,
                          tasksPerLocale,
                          ignoreRunning,
-                         minIndicesPerTask) do
+                         minIndicesPerTask) {
+        if boundsChecking then
+          if !dsiBoundsCheck(i) then
+            halt("zippered iterations have non-equal lengths");
         yield dsiAccess(i);
+      }
     }
 
     proc computeFactoredOffs() {
@@ -1339,7 +1349,6 @@ module DefaultRectangular {
       var dataInd = getDataIndex(ind);
       return theData(dataInd);
     }
-
 
     inline proc dsiBoundsCheck(i) {
       return dom.dsiMember(i);
