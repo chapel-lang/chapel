@@ -25,6 +25,11 @@ deprecateRound.chpl:69: warning: bigint.div_q_2exp using Round is deprecated, us
 deprecateRound.chpl:70: warning: bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead
 deprecateRound.chpl:73: warning: bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead
 deprecateRound.chpl:74: warning: bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead
+deprecateRound.chpl:79: warning: bigint.div_q using Round is deprecated, use bigint.divQ with round instead
+deprecateRound.chpl:80: warning: bigint.div_r using Round is deprecated, use bigint.divR with round instead
+deprecateRound.chpl:84: warning: bigint.div_qr using Round is deprecated, use bigint.divQR with round instead
+deprecateRound.chpl:88: warning: bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead
+deprecateRound.chpl:89: warning: bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead
 -3 -3
 -4 5
 -3 -3
@@ -41,4 +46,8 @@ deprecateRound.chpl:74: warning: bigint.div_r_2exp using Round is deprecated, us
 
 -3 -3
 -4 5
+-3 -3
+
+-3 -3
+3 3
 -3 -3
