@@ -1,0 +1,1 @@
+zipArrMismatch.chpl:4: error: halt reached - zippered iterations have non-equal lengths
