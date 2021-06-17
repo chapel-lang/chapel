@@ -219,7 +219,9 @@ ASTList ParserContext::consumeList(ParserExprList* lst) {
   ASTList ret;
   if (lst != nullptr) {
     for (Expression* e : *lst) {
-      ret.push_back(toOwned(e));
+      if (e != nullptr) {
+        ret.push_back(toOwned(e));
+      }
     }
     delete lst;
   }
@@ -928,7 +930,7 @@ uint64_t ParserContext::decStr2uint64(YYLTYPE location,
   if (numitems != 1) {                                          \
     erroneous = true;
     noteError(location, "error converting decimal literal");
-  }                                                   
+  }
 
   char* checkStr = (char*)malloc(len+1);
   snprintf(checkStr, len+1, "%" SCNu64, val);
@@ -1001,7 +1003,7 @@ double ParserContext::str2double(YYLTYPE location,
                                  bool& erroneous) {
   char* endptr = nullptr;
   double num = strtod(str, &endptr);
-  if (std::isnan(num) || std::isinf(num)) { 
+  if (std::isnan(num) || std::isinf(num)) {
     // don't worry about checking magnitude of these
   } else {
     double mag = fabs(num);
@@ -1125,4 +1127,58 @@ buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locUseClause,
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
 
   return finishStmt(cs);
+}
+
+CommentsAndStmt
+ParserContext::buildAggregateTypeDecl(YYLTYPE location,
+                                      TypeDeclParts parts,
+                                      YYLTYPE inheritLoc,
+                                      ParserExprList* optInherit,
+                                      ParserExprList* contents) {
+
+  CommentsAndStmt cs = {parts.comments, nullptr};
+  auto contentsList = consumeList(contents);
+
+  owned<Identifier> inheritIdentifier;
+  if (optInherit != nullptr) {
+    if (optInherit->size() > 0) {
+      if (parts.tag == asttags::Record) {
+        noteError(inheritLoc, "records cannot inherit");
+      } else if (parts.tag == asttags::Union) {
+        noteError(inheritLoc, "unions cannot inherit");
+      } else {
+        if (optInherit->size() > 1)
+          noteError(inheritLoc, "only single inheritance is supported");
+        ASTNode* ast = (*optInherit)[0];
+        if (ast->isIdentifier()) {
+          inheritIdentifier = toOwned(ast->toIdentifier());
+          (*optInherit)[0] = nullptr;
+        } else {
+          noteError(inheritLoc, "non-Identifier expression cannot be inherited");
+        }
+      }
+    }
+    consumeList(optInherit); // just to delete it
+  }
+
+  Expression* decl = nullptr;
+  if (parts.tag == asttags::Class) {
+    decl = Class::build(builder, convertLocation(location),
+                        parts.visibility, parts.name,
+                        std::move(inheritIdentifier),
+                        std::move(contentsList)).release();
+  } else if (parts.tag == asttags::Record) {
+    decl = Record::build(builder, convertLocation(location),
+                         parts.visibility, parts.name,
+                         std::move(contentsList)).release();
+  } else if (parts.tag == asttags::Union) {
+    decl = Union::build(builder, convertLocation(location),
+                        parts.visibility, parts.name,
+                        std::move(contentsList)).release();
+  } else {
+    assert(false && "case not handled");
+  }
+
+  cs.stmt = decl;
+  return cs;
 }

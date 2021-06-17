@@ -357,4 +357,9 @@ struct ParserContext {
                      UseClause::LimitationClauseKind limitationClauseKind,
                      ParserExprList* limitationExprs);
 
+  CommentsAndStmt buildAggregateTypeDecl(YYLTYPE location,
+                                         TypeDeclParts parts,
+                                         YYLTYPE inheritLoc,
+                                         ParserExprList* optInherit,
+                                         ParserExprList* contents);
 };

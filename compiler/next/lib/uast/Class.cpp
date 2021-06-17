@@ -27,7 +27,7 @@ namespace uast {
 
 owned<Class> Class::build(Builder* builder, Location loc,
                           Decl::Visibility vis, UniqueString name,
-                          owned<Identifier> parentClass,
+                          owned<Expression> parentClass,
                           ASTList contents) {
   ASTList lst;
   int parentClassChildNum = -1;
