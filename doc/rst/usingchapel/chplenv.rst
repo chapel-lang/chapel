@@ -224,6 +224,12 @@ CHPL_*_COMPILER
        same
      * ``gnu`` otherwise.
 
+   In cases where the LLVM code generation strategy is the default,
+   setting ``CHPL_TARGET_COMPILER`` to something other than ``llvm`` will
+   request that the C backend be used with that compiler. For example, to
+   select the C backend with the PrgEnv-gnu compiler, set
+   ``CHPL_TARGET_COMPILER=cray-prgenv-gnu``.
+
    It is sometimes important to be able to provide a particular command
    to run for C or C++ compilation. In that event, you can set ``CC`` to
    the command to run for C compilation and ``CXX`` to the command to run
