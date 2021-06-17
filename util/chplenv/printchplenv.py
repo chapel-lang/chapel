@@ -18,8 +18,6 @@ Options:
   --compiler    Select variables describing the configuration of the compiler
   --runtime     Select variables describing the configuration of the runtime
   --launcher    Select variables describing the configuration of the launcher
-  --settings    Select variables describing compilation settings
-                 this flag is incompatible with [format]: --path
   --internal    Select additional variables used during builds
                  this flag is incompatible with [format]: --path
 
@@ -59,21 +57,21 @@ COMPILER = set(['compiler'])
 LAUNCHER = set(['launcher'])
 RUNTIME = set(['runtime'])
 INTERNAL = set(['internal'])
-SETTINGS = set(['settings'])
+NOPATH = set(['nopath'])     # for variables to be skipped for --path
 DEFAULT = set(['default'])
 
 # Global ordered list that stores names, content-categories, and shortnames
 CHPL_ENVS = [
     ChapelEnv('CHPL_HOST_PLATFORM', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_COMPILER', COMPILER | LAUNCHER),
-    ChapelEnv('  CHPL_HOST_CC', SETTINGS),
-    ChapelEnv('  CHPL_HOST_CXX', SETTINGS),
+    ChapelEnv('  CHPL_HOST_CC', COMPILER | NOPATH),
+    ChapelEnv('  CHPL_HOST_CXX', COMPILER | NOPATH),
     ChapelEnv('CHPL_HOST_ARCH', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_CPU', INTERNAL),
     ChapelEnv('CHPL_TARGET_PLATFORM', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_COMPILER', RUNTIME | DEFAULT),
-    ChapelEnv('  CHPL_TARGET_CC', SETTINGS),
-    ChapelEnv('  CHPL_TARGET_CXX', SETTINGS),
+    ChapelEnv('  CHPL_TARGET_CC', RUNTIME | NOPATH),
+    ChapelEnv('  CHPL_TARGET_CXX', RUNTIME | NOPATH),
     ChapelEnv('  CHPL_TARGET_COMPILER_PRGENV', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'arch'),
@@ -100,7 +98,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_RE2', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
-    ChapelEnv('  CHPL_LLVM_CONFIG', SETTINGS),
+    ChapelEnv('  CHPL_LLVM_CONFIG', COMPILER | NOPATH),
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
     ChapelEnv('  CHPL_LLVM_CLANG_CXX', INTERNAL),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
@@ -276,6 +274,9 @@ def user_set(env):
         return ' +'
     return ''
 
+"""Filter out variables that are marked with NOPATH"""
+def filter_path(chpl_env):
+    return not 'nopath' in chpl_env.content
 
 """Filter variables that are not user set"""
 def filter_overrides(chpl_env):
@@ -346,6 +347,10 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
 
     envs = filter(filter_content, CHPL_ENVS)
 
+    # --path -- skip variables marked NOPATH
+    if print_format == 'path':
+        envs = filter(filter_path, envs)
+
     # --overrides
     if 'overrides' in print_filters:
         envs = filter(filter_overrides, envs)
@@ -408,7 +413,6 @@ def parse_args():
     parser.add_option('--runtime', action='append_const', dest='content', const='runtime')
     parser.add_option('--launcher', action='append_const', dest='content', const='launcher')
     parser.add_option('--internal', action='append_const', dest='content', const='internal')
-    parser.add_option('--settings', action='append_const', dest='content', const='settings')
 
     #[filter]
     parser.set_defaults(tidy=True)
@@ -437,7 +441,7 @@ def main():
 
     # Handle --all flag
     if options.all:
-        options.content.extend(['runtime', 'launcher', 'compiler', 'settings', 'default'])
+        options.content.extend(['runtime', 'launcher', 'compiler', 'default'])
 
     # Handle --tidy / --no-tidy flags
     if options.tidy:
@@ -454,12 +458,6 @@ def main():
     # Prevent --internal --path, because it's useless
     if options.format == 'path' and 'internal' in contents:
         stdout.write('--path and --internal are incompatible flags\n')
-        exit(1)
-    if options.format == 'path' and options.all:
-        stdout.write('--path and --all are incompatible flags\n')
-        exit(1)
-    if options.format == 'path' and 'settings' in contents:
-        stdout.write('--path and --settings are incompatible flags\n')
         exit(1)
 
     # Populate ENV_VALS
