@@ -22,8 +22,6 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/AggregateDecl.h"
-#include "chpl/uast/Comment.h"
-#include "chpl/uast/Identifier.h"
 
 namespace chpl {
 namespace uast {
