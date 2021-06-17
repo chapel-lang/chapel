@@ -55,7 +55,6 @@ case $COMP_TYPE in
         export CHPL_TARGET_PLATFORM=$platform
         log_info "Set CHPL_TARGET_PLATFORM to: ${CHPL_TARGET_PLATFORM}"
 
-        fi
         ;;
     HOST-TARGET)
         if [ $COMPILER == "llvm" ] ; then
