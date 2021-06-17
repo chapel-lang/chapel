@@ -65,7 +65,7 @@ follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
     ('--force' is needed to ensure git adds all files in the subdirectory)
 8.  update the util/chplenv/chpl_llvm.py preferred_versions function
     to record that the new version is available.
-9. update $CHPL_HOME/doc/rst/usingchapel/chplenv.rst for the new LLVM version
+9.  update $CHPL_HOME/doc/rst/usingchapel/prereqs.rst for the new LLVM version
 10. commit
 11. update the new sources by re-applying any needed patches (see above)
     and commit

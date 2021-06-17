@@ -635,10 +635,11 @@ CHPL_AUX_FILESYS
 
 CHPL_LLVM
 ~~~~~~~~~
-   Optionally, the ``CHPL_LLVM`` environment variable can be used to
-   enable support for the LLVM back-end to the Chapel compiler (see
-   :ref:`readme-llvm`) or to support extern blocks in Chapel code via
-   the Clang compiler (see :ref:`readme-extern`).  Current options are:
+
+   The ``CHPL_LLVM`` environment variable enables support for the LLVM
+   back-end to the Chapel compiler (see :ref:`readme-llvm`) and to
+   support for extern blocks in Chapel code via the Clang compiler (see
+   :ref:`readme-extern`). Current options are:
 
        ============== ======================================================
        Value          Description
@@ -650,28 +651,14 @@ CHPL_LLVM
        none           do not support llvm/clang-related features
        ============== ======================================================
 
-   .. (comment) -minimal can be used but is only interesting for developers
-       llvm-minimal   as above, but only build and link LLVM ADTs
-       system-minimal as above, but only link LLVM ADTs
+   If unset, ``CHPL_LLVM`` defaults to ``bundled`` if you've already
+   installed llvm in third-party or ``system`` if a compatible
+   system-wide installation of LLVM is detected. If neither of those are
+   the case you will need to either add a system-wide installation of
+   LLVM or set ``CHPL_LLVM`` to ``bundled`` or ``none``.
 
-   If unset, ``CHPL_LLVM`` defaults to ``bundled`` if you've already installed
-   llvm in third-party and ``none`` otherwise.
-
-   Chapel currently supports LLVM 11.0.
-
-   .. note::
-
-       We have had success with this procedure to install LLVM 11.0
-       dependencies on Ubuntu.
-
-       First, follow the instructions at ``https://apt.llvm.org`` that
-       explain how to place the appropriate lines into
-       ``/etc/apt/sources.list.d/llvm-toolchain.list`` and retrieve
-       the archive signature, then do the following.
-
-        .. code-block:: sh
-
-            apt-get install llvm-11-dev llvm-11 llvm-11-tools clang-11 libclang-11-dev libedit-dev
+   See :ref:`readme-prereqs` for more information about currently
+   supported LLVM versions.
 
 .. _readme-chplenv.CHPL_UNWIND:
 

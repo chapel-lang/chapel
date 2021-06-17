@@ -35,7 +35,7 @@ about your environment for using Chapel:
 
   * Building LLVM requires cmake version 3.13.4 or later.
 
-  * If you wish to use chpldoc or Chapel's test system, Python 3.5 or
+  * If you wish to use chpldoc or Chapel's test system, Python 3.6 or
     newer is required and the ``python3`` and ``pip3`` commands must be
     available. The ``venv`` Python package must be available (note that
     it is often included by default in a Python 3 installation).
@@ -46,6 +46,12 @@ about your environment for using Chapel:
     ``git`` is required.
 
     * The ``mason system`` subcommands additionally require ``pkg-config``.
+
+  * The LLVM backend is now the default and it is easiest to use it with
+    a system-wide installation of LLVM. Only LLVM 11 is currently
+    supported. If a system-wide installation of LLVM 11 is not available,
+    you can use the bundled LLVM or disable LLVM support (see
+    :ref:`readme-chplenv.CHPL_LLVM`).
 
 .. _readme-prereqs-installation:
 
@@ -60,7 +66,7 @@ We have used the following commands to install the above prerequisites:
 
   * Debian, Ubuntu::
 
-      sudo apt-get install gcc g++ m4 perl python3 python3-pip python3-venv python3-dev bash make mawk git pkg-config
+      sudo apt-get install gcc g++ m4 perl python3 python3-pip python3-venv python3-dev bash make mawk git pkg-config llvm-11-dev llvm-11 llvm-11-tools clang-11 libclang-11-dev libedit-dev
 
   * FreeBSD::
 
