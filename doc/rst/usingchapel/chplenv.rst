@@ -7,9 +7,9 @@ To get started with Chapel, there are three environment settings that are
 strongly recommended for effective use of the release, and a number of
 other optional settings that are useful for cross-compiling or overriding
 the default settings.  To check the values of the Chapel environment
-variables that are set or can be inferred, run the script::
+variables that are set or can be inferred, run the command::
 
-  $CHPL_HOME/util/printchplenv
+  $CHPL_HOME/util/printchplenv --all
 
 The ``setchplenv.*`` source scripts in the ``$CHPL_HOME/util/quickstart/`` and
 ``$CHPL_HOME/util/`` directories contain commands that set the following
@@ -195,8 +195,45 @@ CHPL_*_COMPILER
         pgi                 The PGI compiler suite -- pgcc and pgc++
         =================== ===================================================
 
-   The default for ``CHPL_*_COMPILER`` is llvm, except on linux32 where
-   it is gnu.
+   The default for ``CHPL_HOST_COMPILER`` depends on the value of the
+   corresponding ``CHPL_HOST_PLATFORM`` environment variable:
+
+        +-------------+------------------------------------------------------+
+        | Platform    | Compiler                                             |
+        +=============+======================================================+
+        | cray-xc     | gnu                                                  |
+        |             |                                                      |
+        | hpe-cray-ex |                                                      |
+        +-------------+------------------------------------------------------+
+        | darwin      | clang if available, otherwise gnu                    |
+        |             |                                                      |
+        | freebsd     |                                                      |
+        +-------------+------------------------------------------------------+
+        | pwr6        | ibm                                                  |
+        +-------------+------------------------------------------------------+
+        | other       | gnu                                                  |
+        +-------------+------------------------------------------------------+
+
+   The default for ``CHPL_TARGET_COMPILER`` is:
+
+     * ``llvm`` if the compiler is configured with LLVM support (see
+       :ref:`readme-chplenv.CHPL_LLVM`) and the platform is not linux32
+     * ``cray-prgenv-$PE_ENV`` on ``cray-xc`` and ``hpe-cray-ex``
+       platforms (where ``PE_ENV`` is set by ``PrgEnv-*`` modules)
+     * ``CHPL_HOST_COMPILER`` if the host and target platforms are the
+       same
+     * ``gnu`` otherwise.
+
+   It is sometimes important to be able to provide a particular command
+   to run for C or C++ compilation. In that event, you can set ``CC`` to
+   the command to run for C compilation and ``CXX`` to the command to run
+   for C++ compilation. If the Chapel configuration support cannot detect
+   the compiler family from your setting of ``CC`` / ``CXX`` you will
+   have to explicitly set ``CHPL_*_COMPILER`` as well.  Note that setting
+   ``CC`` and ``CXX`` will impact both the host and target compiler. If
+   you would need different host and target compilers, you can instead
+   set ``CHPL_HOST_CC``, ``CHPL_HOST_CXX``, ``CHPL_TARGET_CC``, and
+   ``CHPL_TARGET_CXX``.
 
 .. _readme-chplenv.CHPL_TARGET_CPU:
 
@@ -659,6 +696,12 @@ CHPL_LLVM
 
    See :ref:`readme-prereqs` for more information about currently
    supported LLVM versions.
+
+   In some cases, it is useful to be able to select a particular LLVM
+   installation for use with ``CHPL_LLVM=system``. In that event, in
+   addition to setting ``CHPL_LLVM=system``, you can set
+   ``CHPL_LLVM_CONFIG`` to the llvm-config command from the LLVM
+   installation you wish to use.
 
 .. _readme-chplenv.CHPL_UNWIND:
 
