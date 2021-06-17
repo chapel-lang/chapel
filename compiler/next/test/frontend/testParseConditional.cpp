@@ -70,12 +70,10 @@ static void test0(Parser* parser) {
   assert(cond->condition()->isIdentifier());
   assert(!cond->condition()->toIdentifier()->name().compare("foo"));
   assert(cond->thenBlockStyle() == BlockStyle::IMPLICIT);
-  assert(cond->numThenStmts() == 3);
+  assert(cond->numThenStmts() == 2);
   assert(cond->thenStmt(0)->isComment());
   assert(cond->thenStmt(0)->toComment()->str() == "/* c4 */");
   assert(cond->thenStmt(1)->isFnCall());
-  assert(cond->thenStmt(2)->isComment());
-  assert(cond->thenStmt(2)->toComment()->str() == "/* c5 */");
   assert(cond->hasElseBlock());
   assert(cond->elseBlockStyle() == BlockStyle::IMPLICIT);
   assert(cond->numElseStmts() == 2);
@@ -138,36 +136,28 @@ static void test1(Parser* parser) {
   assert(cond->condition());
   assert(cond->condition()->isFnCall());
   assert(cond->thenBlockStyle() == BlockStyle::EXPLICIT);
-  assert(cond->numThenStmts() == 5);
+  assert(cond->numThenStmts() == 3);
   assert(cond->thenStmt(0)->isComment());
-  assert(cond->thenStmt(0)->toComment()->str() == "/* c3 */");
-  assert(cond->thenStmt(1)->isComment());
-  assert(cond->thenStmt(1)->toComment()->str() == "/* c4 */");
-  assert(cond->thenStmt(2)->isFnCall());
-  assert(cond->thenStmt(3)->isComment());
-  assert(cond->thenStmt(3)->toComment()->str() == "/* c5 */");
-  assert(cond->thenStmt(4)->isComment());
-  assert(cond->thenStmt(4)->toComment()->str() == "/* c6 */");
+  assert(cond->thenStmt(0)->toComment()->str() == "/* c4 */");
+  assert(cond->thenStmt(1)->isFnCall());
+  assert(cond->thenStmt(2)->isComment());
+  assert(cond->thenStmt(2)->toComment()->str() == "/* c5 */");
   assert(cond->hasElseBlock());
   assert(cond->elseBlockStyle() == BlockStyle::EXPLICIT);
-  assert(cond->numElseStmts() == 4);
+  assert(cond->numElseStmts() == 3);
   assert(cond->elseStmt(0)->isComment());
-  assert(cond->elseStmt(0)->toComment()->str() == "/* c7 */");
-  assert(cond->elseStmt(1)->isComment());
-  assert(cond->elseStmt(1)->toComment()->str() == "/* c8 */");
-  assert(cond->elseStmt(2)->isFnCall());
-  assert(cond->elseStmt(3)->isComment());
-  assert(cond->elseStmt(3)->toComment()->str() == "/* c9 */");
+  assert(cond->elseStmt(0)->toComment()->str() == "/* c8 */");
+  assert(cond->elseStmt(1)->isFnCall());
+  assert(cond->elseStmt(2)->isComment());
+  assert(cond->elseStmt(2)->toComment()->str() == "/* c9 */");
   assert(!cond->isExpressionLevel());
 
   // Make sure the then iterator works as expected.
   {
-    std::array<ASTTag, 5> thenStmtList = {
-      asttags::Comment,
+    std::array<ASTTag, 3> thenStmtList = {
       asttags::Comment,
       asttags::FnCall,
       asttags::Comment,
-      asttags::Comment
     };
     auto i = 0;
     for (const auto stmt : cond->thenStmts()) {
@@ -178,14 +168,13 @@ static void test1(Parser* parser) {
 
   // Make sure the else iterator works as expected.
   {
-    std::array<ASTTag, 4> elseStmtList = {
-      asttags::Comment,
+    std::array<ASTTag, 3> elseStmtList = {
       asttags::Comment,
       asttags::FnCall,
-      asttags::Comment
+      asttags::Comment,
     };
     auto i = 0;
-    for (const auto stmt : cond->thenStmts()) {
+    for (const auto stmt : cond->elseStmts()) {
       assert(stmt->tag() == elseStmtList[i]);
       assert(stmt->tag() == cond->elseStmt(i++)->tag());
     }
@@ -215,12 +204,11 @@ static void test2(Parser* parser) {
   assert(cond->condition());
   assert(cond->condition()->isIdentifier());
   assert(cond->thenBlockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
-  assert(cond->numThenStmts() == 5);
+  assert(cond->numThenStmts() == 4);
   assert(cond->thenStmt(0)->isComment());
   assert(cond->thenStmt(1)->isFnCall());
   assert(cond->thenStmt(2)->isFnCall());
   assert(cond->thenStmt(3)->isComment());
-  assert(cond->thenStmt(4)->isComment());
   assert(cond->hasElseBlock());
   assert(cond->elseBlockStyle() == BlockStyle::IMPLICIT);
   assert(cond->numElseStmts() == 2);

@@ -1,2 +1,1 @@
-# Remove me when multi-locale libraries support LLVM.
-CHPL_TARGET_COMPILER == llvm
+CHPL_LIB_PIC != pic

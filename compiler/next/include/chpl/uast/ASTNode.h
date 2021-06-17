@@ -178,7 +178,7 @@ class ASTNode {
   /// \cond DO_NOT_DOCUMENT
   #define AST_TO(NAME) \
     const NAME * to##NAME() const { \
-      return this->is##NAME() ? (NAME *)this : nullptr; \
+      return this->is##NAME() ? (const NAME *)this : nullptr; \
     } \
     NAME * to##NAME() { \
       return this->is##NAME() ? (NAME *)this : nullptr; \

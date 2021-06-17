@@ -278,12 +278,14 @@ static void test4() {
   const Function* A = nullptr;
   const Function* B = nullptr;
   const Block* block = nullptr;
+  const Identifier* AA = nullptr;
+  const Identifier* BB = nullptr;
 
   std::string moduleContents;
 
   moduleContents = "/* this is a test */\n"
-                   "proc a() { }\n"
-                   "proc b() { }\n";
+                   "proc a() { aa; }\n"
+                   "proc b() { bb; }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -297,17 +299,24 @@ static void test4() {
   assert(comment);
   assert(A);
   assert(B);
+  AA = A->stmt(0)->toIdentifier();
+  BB = B->stmt(0)->toIdentifier();
+  assert(AA);
+  assert(BB);
+
   const Module* oldModule = module;
   const Comment* oldComment = comment;
   const Function* oldA = A;
   const Function* oldB = B;
+  const Identifier* oldAA = AA;
+  const Identifier* oldBB = BB;
 
   printf("test4 adding Blocks\n");
   moduleContents = "/* this is a test */\n"
                    "{ var x; }\n"
-                   "proc a() { }\n"
+                   "proc a() { aa; }\n"
                    "{ var y; }\n"
-                   "proc b() { }\n";
+                   "proc b() { bb; }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -325,6 +334,11 @@ static void test4() {
   assert(comment);
   assert(A);
   assert(B);
+  AA = A->stmt(0)->toIdentifier();
+  BB = B->stmt(0)->toIdentifier();
+  assert(AA);
+  assert(BB);
+
 
   // should not match because the contents changed
   assert(module != oldModule);
@@ -332,6 +346,8 @@ static void test4() {
 
   assert(comment == oldComment);
   // these should match though
+  assert(AA == oldAA);
+  assert(BB == oldBB);
   assert(A == oldA);
   assert(B == oldB);
   const Block* oldBlock = block;
@@ -339,9 +355,9 @@ static void test4() {
   printf("test4 changing Identifier in Blocks\n");
   moduleContents = "/* this is a test */\n"
                    "{ var xx; }\n"
-                   "proc a() { }\n"
+                   "proc a() { aa; }\n"
                    "{ var yy; }\n"
-                   "proc b() { }\n";
+                   "proc b() { bb; }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -358,6 +374,10 @@ static void test4() {
   assert(comment);
   assert(A);
   assert(B);
+  AA = A->stmt(0)->toIdentifier();
+  BB = B->stmt(0)->toIdentifier();
+  assert(AA);
+  assert(BB);
 
   // should not match because the contents changed
   assert(module != oldModule);
@@ -365,13 +385,15 @@ static void test4() {
 
   assert(comment == oldComment);
   assert(block != oldBlock); // should not match because contents changed
+  assert(AA == oldAA);
+  assert(BB == oldBB);
   assert(A == oldA);
   assert(B == oldB);
 
   printf("test4 removing the Blocks\n");
   moduleContents = "/* this is a test */\n"
-                   "proc a() { }\n"
-                   "proc b() { }\n";
+                   "proc a() { aa; }\n"
+                   "proc b() { bb; }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -387,6 +409,11 @@ static void test4() {
   assert(comment);
   assert(A);
   assert(B);
+  AA = A->stmt(0)->toIdentifier();
+  BB = B->stmt(0)->toIdentifier();
+  assert(AA);
+  assert(BB);
+
 
   // should not match because the contents changed
   assert(module != oldModule);
@@ -394,13 +421,15 @@ static void test4() {
 
   assert(comment == oldComment);
   // these should match though.
+  assert(AA == oldAA);
+  assert(BB == oldBB);
   assert(A == oldA);
   assert(B == oldB);
 
   printf("test4 replacing first Decl\n");
   moduleContents = "/* this is a test */\n"
-                   "proc aa() { }\n"
-                   "proc b() { }\n";
+                   "proc aprime() { z; }\n"
+                   "proc b() { bb; }\n";
   ctx->advanceToNextRevision(true);
   setFileText(ctx, modulePath, moduleContents);
   module = parseOneModule(ctx, modulePath);
@@ -416,6 +445,10 @@ static void test4() {
   assert(comment);
   assert(A);
   assert(B);
+  AA = A->stmt(0)->toIdentifier();
+  BB = B->stmt(0)->toIdentifier();
+  assert(AA);
+  assert(BB);
 
   // should not match because the contents changed
   assert(module != oldModule);
@@ -424,6 +457,7 @@ static void test4() {
   assert(comment == oldComment);
 
   assert(A != oldA); // name changed
+  assert(BB == oldBB);
   assert(B == oldB);
 }
 
@@ -461,13 +495,11 @@ static void test5() {
     assert(B);
 
     // Now check their locations
-    Location commentLoc = locate(ctx, comment);
+    // Not checking comment locations here
     Location aLoc = locate(ctx, A);
     Location bLoc = locate(ctx, B);
-    assert(commentLoc.path() == modulePath);
     assert(aLoc.path() == modulePath);
     assert(bLoc.path() == modulePath);
-    assert(commentLoc.line() == 1);
     assert(aLoc.line() == 2);
     assert(bLoc.line() == 3);
 
@@ -475,15 +507,49 @@ static void test5() {
   }
 }
 
-int main() {
-  test4();
+static void checkPathAllChildren(Context* context,
+                                 const ASTNode* ast,
+                                 UniqueString expectPath) {
+  UniqueString gotPath = context->filePathForID(ast->id());
+  assert(gotPath == expectPath);
 
+  for (const ASTNode* child : ast->children()) {
+    checkPathAllChildren(context, child, expectPath);
+  }
+}
+
+static void test6() {
+  printf("test6\n");
+  Context context;
+  Context* ctx = &context;
+
+  auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
+  std::string moduleContents;
+
+  moduleContents = "module MyModule {\n"
+                   "  a;\n"
+                   "  module Inner {\n"
+                   "    b;\n"
+                   "    proc innerProc() { }\n"
+                   "  }\n"
+                   "  proc myModuleProc() { }\n"
+                   "  c;\n"
+                   "}\n";
+
+  setFileText(ctx, modulePath, moduleContents);
+  const Module* mod = parseOneModule(ctx, modulePath);
+
+  checkPathAllChildren(ctx, mod, modulePath);
+}
+
+int main() {
   test0();
   test1();
   test2();
   test3();
   test4();
   test5();
+  test6();
 
   return 0;
 }

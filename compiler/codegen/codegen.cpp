@@ -27,6 +27,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "fixupExports.h"
 #include "insertLineNumbers.h"
 #include "library.h"
 #include "llvmDebug.h"
@@ -623,8 +624,8 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
 
   forv_Vec(FnSymbol, fn, fSymbols) {
     const char* fn_name = fn->cname;
-    int fileno = getFilenameLookupPosition(fn->astloc.filename);
-    int lineno = fn->astloc.lineno;
+    int fileno = getFilenameLookupPosition(fn->astloc.filename());
+    int lineno = fn->astloc.lineno();
 
     GenRet gen;
 
@@ -2217,7 +2218,7 @@ static const char* getClangBuiltinWrappedName(const char* name)
 static void setupDefaultFilenames() {
   if (executableFilename[0] == '\0') {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
-    const char* mainModFilename = mainMod->astloc.filename;
+    const char* mainModFilename = mainMod->astloc.filename();
     const char* filename = stripdirectories(mainModFilename);
 
     // "Executable" name should be given a "lib" prefix in library compilation,
@@ -2390,17 +2391,21 @@ static void codegenPartOne() {
 
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
-  if( fLlvmCodegen ) {
+
+  // Initialize the global gGenInfo for C code generation.
+  gGenInfo = new GenInfo();
+
+  if (fMultiLocaleInterop) {
+    codegenMultiLocaleInteropWrappers();
+  }
+
+  if (fLlvmCodegen) {
 #ifndef HAVE_LLVM
     USR_FATAL("This compiler was built without LLVM support");
 #else
-    // Initialize the global gGenInfo for for LLVM code generation
-    // by starting out with data from running clang on C dependencies.
+    INT_ASSERT(gGenInfo != NULL);
     runClang(NULL);
 #endif
-  } else {
-    // Initialize the global gGenInfo for C code generation
-    gGenInfo = new GenInfo();
   }
 
   SET_LINENO(rootModule);
@@ -2455,7 +2460,7 @@ static void codegenPartTwo() {
           // and no compile flags, since I can't figure out how to get that either.
           const char *current_dir = "./";
           const char *empty_string = "";
-          debug_info->create_compile_unit(currentModule->astloc.filename, current_dir, false, empty_string);
+          debug_info->create_compile_unit(currentModule->astloc.filename(), current_dir, false, empty_string);
           break;
         }
       }
@@ -2493,8 +2498,7 @@ static void codegenPartTwo() {
         }
       }
     }
-
-    codegen_makefile(&mainfile, NULL, false, userFileName);
+    codegen_makefile(&mainfile, NULL, NULL, false, userFileName);
   }
 
   if (fLibraryCompile && fLibraryMakefile) {

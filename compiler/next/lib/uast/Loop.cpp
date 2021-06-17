@@ -35,6 +35,9 @@ bool Loop::loopContentsMatchInner(const Loop* other) const {
   if (lhs->blockStyle_ != rhs->blockStyle_)
     return false;
 
+  if (!lhs->expressionContentsMatchInner(rhs))
+    return false;
+
   return true;
 }
 

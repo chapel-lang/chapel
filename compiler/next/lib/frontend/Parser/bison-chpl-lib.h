@@ -53,10 +53,10 @@
 extern int yychpl_debug;
 #endif
 /* "%code requires" blocks.  */
-#line 52 "chpl.ypp"
+#line 72 "chpl.ypp"
 
   #include "parser-dependencies.h"
-#line 57 "chpl.ypp"
+#line 77 "chpl.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_0_
   #define _BISON_CHAPEL_DEFINES_0_
@@ -72,7 +72,7 @@ extern int yychpl_debug;
   }
 
   #endif
-#line 83 "chpl.ypp"
+#line 103 "chpl.ypp"
 
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
@@ -207,7 +207,7 @@ extern int yychpl_debug;
   // were produced following a 'do' or not. E.g...
   // do { ... } vs { ... }
   struct BlockOrDo {
-    ParserExprList* exprList;
+    CommentsAndStmt cs;
     bool usesDo;
   };
 
@@ -298,7 +298,7 @@ extern int yychpl_debug;
   #define YYLTYPE YYCHPL_LTYPE
 
   #endif
-#line 324 "chpl.ypp"
+#line 344 "chpl.ypp"
 
   // forward declare ParserContext
   struct ParserContext;
@@ -528,14 +528,14 @@ yychpl_pstate *yychpl_pstate_new (void);
 void yychpl_pstate_delete (yychpl_pstate *ps);
 
 /* "%code provides" blocks.  */
-#line 332 "chpl.ypp"
+#line 352 "chpl.ypp"
 
   extern int yychpl_debug;
 
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-#line 340 "chpl.ypp"
+#line 360 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser

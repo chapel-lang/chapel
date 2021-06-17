@@ -450,7 +450,7 @@ void convertDeclToChpl(ModuleSymbol* module,
     return;
 
   // use currentAstLoc if astloc was empty
-  if (astloc.lineno == 0)
+  if (astloc.lineno() == 0)
     astloc = currentAstLoc;
   // Use the astloc from lookup if possible
   astlocMarker markAstLoc(astloc);

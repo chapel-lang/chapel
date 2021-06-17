@@ -35,8 +35,21 @@ using namespace chpl::querydetail;
 static void defaultReportErrorPrintDetail(const ErrorMessage& err,
                                           const char* prefix,
                                           const char* kind) {
-  printf("%s%s:%i: %s: %s\n",
-         prefix, err.path().c_str(), err.line(), kind, err.message().c_str());
+  const char* path = err.path().c_str();
+  int lineno = err.line();
+  bool validPath = (path != nullptr && path[0] != '\0');
+
+  if (validPath && lineno > 0) {
+    printf("%s%s:%i: %s: %s\n",
+           prefix, path, lineno, kind, err.message().c_str());
+  } else if (validPath) {
+    printf("%s%s: %s: %s\n",
+           prefix, path, kind, err.message().c_str());
+  } else {
+    printf("%s%s: %s\n",
+           prefix, kind, err.message().c_str());
+  }
+
   for (const auto& detail : err.details()) {
     defaultReportErrorPrintDetail(detail, "  ", "note");
   }
@@ -115,43 +128,55 @@ void Context::markUniqueCString(const char* s) {
   }
 }
 
-
-UniqueString Context::moduleNameForID(ID id) {
-  // If the symbol path is empty, this ID doesn't have a module.
-  if (id.symbolPath().isEmpty()) {
-    UniqueString empty;
-    return empty;
-  }
-
-  // Otherwise, the module name is everything up to the first '.'
-  size_t len = 0;
-  const char* s = id.symbolPath().c_str();
-  while (true) {
-    if (s[len] == '\0' || s[len] == '.') break;
-    len++;
-  }
-
-  return UniqueString::build(this, s, len);
-}
-
-UniqueString Context::filePathForID(ID id) {
-  UniqueString modName = this->moduleNameForID(id);
-  return this->filePathForModuleName(modName);
-}
-
 static
-const UniqueString& filePathForModuleNameQuery(Context* context,
-                                               UniqueString modName) {
-  QUERY_BEGIN(filePathForModuleNameQuery, context, modName);
+const UniqueString& filePathForModuleIdSymbolPathQuery(Context* context,
+                                                       UniqueString modIdSymP) {
+  QUERY_BEGIN(filePathForModuleIdSymbolPathQuery, context, modIdSymP);
 
-  assert(false && "This query should always use a saved result");
-  auto result = UniqueString::build(context, "<unknown file path>");
+  // return the empty string if it wasn't already set
+  // in setFilePathForModulePath.
+  UniqueString result;
 
   return QUERY_END(result);
 }
 
-UniqueString Context::filePathForModuleName(UniqueString modName) {
-  return filePathForModuleNameQuery(this, modName);
+static UniqueString removeLastSymbolPathComponent(Context* context,
+                                                  UniqueString str) {
+
+  // If the symbol path is empty, return an empty string
+  if (str.isEmpty()) {
+    UniqueString empty;
+    return empty;
+  }
+
+  // Otherwise, remove the last path component
+  const char* s = str.c_str();
+  int len = strlen(s);
+  int lastDot = 0;
+  for (int i = len-1; i >= 0; i--) {
+    if (s[i] == '.') {
+      lastDot = i;
+      break;
+    }
+  }
+
+  return UniqueString::build(context, s, lastDot);
+}
+
+UniqueString Context::filePathForID(ID id) {
+  UniqueString symbolPath = id.symbolPath();
+
+  while (!symbolPath.isEmpty()) {
+    const UniqueString& p =
+      filePathForModuleIdSymbolPathQuery(this, symbolPath);
+    if (!p.isEmpty())
+      return p;
+
+    // remove the last path component, e.g. M.N -> M
+    symbolPath = removeLastSymbolPathComponent(this, symbolPath);
+  }
+
+  return UniqueString::build(this, "<unknown file path>");
 }
 
 void Context::advanceToNextRevision(bool prepareToGC) {
@@ -221,17 +246,18 @@ void Context::collectGarbage() {
   }
 }
 
-void Context::setFilePathForModuleName(UniqueString modName, UniqueString path) {
-  auto tupleOfArgs = std::make_tuple(modName);
+void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
+  UniqueString moduleIdSymbolPath = moduleID.symbolPath();
+  auto tupleOfArgs = std::make_tuple(moduleIdSymbolPath);
 
-  updateResultForQuery(filePathForModuleNameQuery,
+  updateResultForQuery(filePathForModuleIdSymbolPathQuery,
                        tupleOfArgs, path,
-                       "filePathForModuleNameQuery",
+                       "filePathForModuleIdSymbolPathQuery",
                        false);
 
   if (enableDebugTracing) {
     printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
-           modName.c_str(), path.c_str());
+           moduleIdSymbolPath.c_str(), path.c_str());
   }
 }
 

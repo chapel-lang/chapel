@@ -57,5 +57,15 @@ int ID::compare(const ID& other) const {
   return this->postOrderId() - other.postOrderId();
 }
 
+std::string ID::toString() const {
+  std::string ret = this->symbolPath().c_str();
+
+  if (!ret.empty()) {
+    ret += "@";
+    ret += std::to_string(this->postOrderId());
+  }
+
+  return ret;
+}
 
 } // end namespace chpl

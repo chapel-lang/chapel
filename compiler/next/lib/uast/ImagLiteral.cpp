@@ -26,8 +26,8 @@ namespace uast {
 
 
 owned<ImagLiteral> ImagLiteral::build(Builder* builder, Location loc,
-                                      double value, int base) {
-  ImagLiteral* ret = new ImagLiteral(value, base);
+                                      double value, UniqueString text) {
+  ImagLiteral* ret = new ImagLiteral(value, text);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

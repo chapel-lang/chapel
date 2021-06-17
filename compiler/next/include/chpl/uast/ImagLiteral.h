@@ -32,8 +32,8 @@ namespace uast {
  */
 class ImagLiteral final : public NumericLiteral<double> {
  private:
-  ImagLiteral(double value, int base)
-    : NumericLiteral(asttags::ImagLiteral, value, base)
+  ImagLiteral(double value, UniqueString text)
+    : NumericLiteral(asttags::ImagLiteral, value, text)
   { }
 
   // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
@@ -43,7 +43,7 @@ class ImagLiteral final : public NumericLiteral<double> {
   ~ImagLiteral() override = default;
 
   static owned<ImagLiteral> build(Builder* builder, Location loc,
-                                  double value, int base);
+                                  double value, UniqueString text);
 };
 
 

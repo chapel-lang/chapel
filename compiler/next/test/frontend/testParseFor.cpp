@@ -40,8 +40,8 @@ using namespace frontend;
 static void test0(Parser* parser) {
   auto parseResult = parser->parseString("test0.chpl",
       "/* comment 1 */\n"
-      "for foo do\n"
-      "  /* comment 2 */\n"
+      "for /*comment 2*/ foo /*comment 3*/ do\n"
+      "  /* comment 4 */\n"
       "  var a;\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
@@ -66,8 +66,8 @@ static void test0(Parser* parser) {
 static void test1(Parser* parser) {
   auto parseResult = parser->parseString("test1.chpl",
       "/* comment 1 */\n"
-      "for foo in bar do\n"
-      "  /* comment 2 */\n"
+      "for foo in /* comment 2 */ bar do\n"
+      "  /* comment 3 */\n"
       "  var a;\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
@@ -93,8 +93,8 @@ static void test1(Parser* parser) {
 static void test2(Parser* parser) {
   auto parseResult = parser->parseString("test2.chpl",
       "/* comment 1 */\n"
-      "for param foo in bar do\n"
-      "  /* comment 2 */\n"
+      "for /* comment 2 */ param foo in bar do\n"
+      "  /* comment 3 */\n"
       "  var a;\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
@@ -120,10 +120,10 @@ static void test2(Parser* parser) {
 static void test3(Parser* parser) {
   auto parseResult = parser->parseString("test3.chpl",
       "/* comment 1 */\n"
-      "for foo in bar {\n"
-      "  /* comment 2 */\n"
-      "  var a;\n"
+      "for foo in bar /* comment 2 */ {\n"
       "  /* comment 3 */\n"
+      "  var a;\n"
+      "  /* comment 4 */\n"
       "}\n");
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
@@ -170,14 +170,13 @@ static void test4(Parser* parser) {
   assert(forLoop->index()->isVariable());
   assert(forLoop->iterand() != nullptr);
   assert(forLoop->iterand()->isIdentifier());
-  assert(forLoop->numStmts() == 4);
   assert(forLoop->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
   assert(!forLoop->isExpressionLevel());
   assert(!forLoop->isParam());
+  assert(forLoop->numStmts() == 3);
   assert(forLoop->stmt(0)->isComment());
-  assert(forLoop->stmt(1)->isComment());
-  assert(forLoop->stmt(2)->isVariable());
-  assert(forLoop->stmt(1)->isComment());
+  assert(forLoop->stmt(1)->isVariable());
+  assert(forLoop->stmt(2)->isComment());
 }
 
 int main() {

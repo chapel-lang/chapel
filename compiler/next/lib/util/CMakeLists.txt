@@ -26,4 +26,5 @@ target_sources(libchplcomp-obj
                my_strerror_r.h
                my_strerror_r.c
 
+               string-escapes.cpp
               )

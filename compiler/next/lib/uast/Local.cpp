@@ -32,17 +32,10 @@ bool Local::contentsMatchInner(const ASTNode* other) const {
   if (lhs->condChildNum_ != rhs->condChildNum_)
     return false;
 
-  if (lhs->blockStyle_ != rhs->blockStyle_)
-    return false;
-
-  if (!lhs->expressionContentsMatchInner(rhs))
+  if (!lhs->simpleBlockLikeContentsMatchInner(rhs))
     return false;
 
   return true;
-}
-
-void Local::markUniqueStringsInner(Context* context) const {
-  expressionMarkUniqueStringsInner(context);
 }
 
 owned<Local> Local::build(Builder* builder,
@@ -53,11 +46,16 @@ owned<Local> Local::build(Builder* builder,
   ASTList lst;
   int8_t condChildNum = -1;
 
+  const int bodyChildNum = lst.size();
+  const int numBodyStmts = stmts.size();
+
   for (auto& stmt : stmts) {
     lst.push_back(std::move(stmt));
   }
 
-  Local* ret = new Local(std::move(lst), condChildNum, blockStyle);
+  Local* ret = new Local(std::move(lst), condChildNum, blockStyle,
+                         bodyChildNum,
+                         numBodyStmts);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
@@ -77,11 +75,16 @@ owned<Local> Local::build(Builder* builder,
     lst.push_back(std::move(condition));
   }
 
+  const int bodyChildNum = lst.size();
+  const int numBodyStmts = stmts.size();
+
   for (auto& stmt : stmts) {
     lst.push_back(std::move(stmt));
   }
 
-  Local* ret = new Local(std::move(lst), condChildNum, blockStyle);
+  Local* ret = new Local(std::move(lst), condChildNum, blockStyle,
+                         bodyChildNum,
+                         numBodyStmts);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

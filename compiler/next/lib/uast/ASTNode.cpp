@@ -119,48 +119,64 @@ void ASTNode::markAST(Context* context, const ASTNode* keep) {
   markASTList(context, keep->children_);
 }
 
-static void dumpHelper(const ASTNode* ast, int depth) {
+static std::string getIdStr(const ASTNode* ast) {
+  std::string idStr;
+  if (ast == nullptr || ast->id().isEmpty()) {
+    idStr = "<no id>";
+  } else {
+    idStr = ast->id().toString();
+  }
+
+  return idStr;
+}
+
+static void dumpMaxIdLen(const ASTNode* ast, int& maxIdLen) {
+  std::string idStr = getIdStr(ast);
+  if ((int) idStr.length() > maxIdLen)
+    maxIdLen = idStr.length();
+
+  if (ast != nullptr) {
+    for (const ASTNode* child : ast->children()) {
+      dumpMaxIdLen(child, maxIdLen);
+    }
+  }
+}
+
+static void dumpHelper(const ASTNode* ast, int maxIdLen, int depth) {
+  std::string idStr = getIdStr(ast);
+
+  printf("%-*s ", maxIdLen, idStr.c_str());
+
   for (int i = 0; i < depth; i++) {
     printf("  ");
   }
+
   if (ast == nullptr) {
     printf("nullptr\n");
     return;
   }
-  ID emptyId;
-  if (ast->id() != emptyId) {
-    if (const NamedDecl* named = ast->toNamedDecl()) {
-      printf("%s %s %p %s\n",
-             asttags::tagToString(ast->tag()),
-             ast->id().symbolPath().c_str(),
-             ast,
-             named->name().c_str());
-    } else if (const Identifier* ident = ast->toIdentifier()) {
-      printf("%s %s@%i %p %s\n",
-             asttags::tagToString(ast->tag()),
-             ast->id().symbolPath().c_str(),
-             ast->id().postOrderId(),
-             ast,
-             ident->name().c_str());
-    } else {
-      printf("%s %s@%i %p\n",
-             asttags::tagToString(ast->tag()),
-             ast->id().symbolPath().c_str(),
-             ast->id().postOrderId(),
-             ast);
-    }
-  } else {
-    printf("%s <no id> %p\n",
-           asttags::tagToString(ast->tag()),
-           ast);
+
+  printf("%s ", asttags::tagToString(ast->tag()));
+  if (const NamedDecl* named = ast->toNamedDecl()) {
+    printf("%s ", named->name().c_str());
+  } else if (const Identifier* ident = ast->toIdentifier()) {
+    printf("%s ", ident->name().c_str());
   }
+
+  //printf("(containing %i) ", ast->id().numContainedChildren());
+  //printf("%p", ast);
+
+  printf("\n");
+
   for (const ASTNode* child : ast->children()) {
-    dumpHelper(child, depth+1);
+    dumpHelper(child, maxIdLen, depth+1);
   }
 }
 
 void ASTNode::dump(const ASTNode* ast, int leadingSpaces) {
-  dumpHelper(ast, leadingSpaces);
+  int maxIdLen = 0;
+  dumpMaxIdLen(ast, maxIdLen);
+  dumpHelper(ast, maxIdLen, leadingSpaces);
 }
 
 

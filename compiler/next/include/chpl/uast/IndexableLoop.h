@@ -69,8 +69,8 @@ class IndexableLoop : public Loop {
   virtual ~IndexableLoop() override = 0; // this is an abstract base class
 
   /**
-    Returns the index declaration of this indexable loop, or nullptr if it
-    does not exist.
+    Returns the index declaration of this indexable loop, or nullptr if
+    there is none.
   */
   const Decl* index() const {
     if (indexChildNum_ < 0) return nullptr;
@@ -90,8 +90,8 @@ class IndexableLoop : public Loop {
   }
 
   /**
-    Returns the with clause of this indexable loop, or nullptr if it does
-    not exist.
+    Returns the with clause of this indexable loop, or nullptr if there
+    is none.
   */
   const WithClause* withClause() const {
     if (withClauseChildNum_ < 0) return nullptr;
