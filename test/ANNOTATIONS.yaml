@@ -2081,6 +2081,8 @@ compilerAndTestingStats: &compiler-perf-base
     - Change range.size to return int; add range.sizeAs (#17628)
   06/01/21:
     - Add explicit string casts for common/easy cases (#17855)
+  06/16/21:
+    - Translate uAST to old AST (#17919)
 
 allTotalTime:
   <<: *compiler-perf-base
