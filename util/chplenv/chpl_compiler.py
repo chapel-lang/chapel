@@ -87,9 +87,9 @@ def get_compiler_from_cc_cxx():
               "CC={0} CXX={1}".format(cc_val, cxx_val));
     else:
         if warn and cc_val:
-            error('Warning: CC is set but not CXX -- please set both\n')
+            error('CC is set but not CXX -- please set both\n')
         if warn and cxx_val:
-            error('Warning: CXX is set but not CC -- please set both\n')
+            error('CXX is set but not CC -- please set both\n')
 
     return compiler_val
 
