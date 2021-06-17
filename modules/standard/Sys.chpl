@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,7 @@
    This module is for low-level programming. It provides Chapel versions of
    many POSIX/Linux C library or system calls. For documentation on these
    system calls and constants, please see your system's manual pages.
-   
+
    Each of the functions in this file provides the same functionality
    as the corresponding function without the ``sys_`` prefix, except that
    the ``sys_`` versions all return an error code (of type :type:`~SysBasic.err_t`)
@@ -32,11 +32,11 @@
    argument.
 
    For example, you can find more about the ``mmap`` call with:
-   
+
    .. code-block:: sh
 
      man mmap
-     
+
    The call available here, :proc:`sys_mmap`, always returns an error
    code (or 0 for no error). The pointer value normally returned by ``mmap``
    will be returned through the final ``ret_out`` argument.
@@ -48,7 +48,7 @@ module Sys {
   private use SysCTypes;
   private use CPtr;
 
- 
+
   // CONSTANTS
 
   // note that if a constant is not defined in the C environment,
@@ -233,11 +233,23 @@ module Sys {
   extern const INET_ADDRSTRLEN:c_int;
   extern const INET6_ADDRSTRLEN:c_int;
 
+  // standard ipv4 addresses
+  extern const INADDR_ANY:sys_in_addr_t;
+  extern const INADDR_BROADCAST:sys_in_addr_t;
+  extern const INADDR_LOOPBACK:sys_in_addr_t;
+
+  // standard ipv6 addresses
+  extern const in6addr_any:sys_in6_addr_t;
+  extern const in6addr_loopback:sys_in6_addr_t;
+
   // UDP socket options
   //extern const UDP_CORK:c_int;
 
 
   /* SOCKET STRUCTURE TYPES */
+
+  extern type sys_in_addr_t;
+  extern type sys_in6_addr_t;
 
   extern type sys_sockaddr_storage_t;
   extern record sys_sockaddr_t {
@@ -247,7 +259,15 @@ module Sys {
       this.complete();
       sys_init_sys_sockaddr_t(this);
     }
-  }
+    proc fill(host: c_string, port: uint(16), family: int):c_int {
+      return sys_fill_sys_sockaddr_t(this, host, port, family);
+    }
+    proc fill(host: sys_in_addr_t, port: uint(16)):c_int {
+      return sys_fill_sys_sockaddr_in_t(this, host, port);
+    }
+    proc fill(host: sys_in6_addr_t, port: uint(16)):c_int {
+      return sys_fill_sys_sockaddr_in6_t(this, host, port);
+    }
     proc retrieve(host: c_ptr(c_char), ref port: uint(16)):c_int {
       return sys_extract_sys_sockaddr_t(this, host, port) : c_int;
     }
@@ -275,13 +295,16 @@ module Sys {
 
   extern proc sys_init_sys_sockaddr_t(ref addr:sys_sockaddr_t);
   extern proc sys_getsockaddr_family(ref addr: sys_sockaddr_t):c_int;
+  extern proc sys_fill_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: uint(16), family: int):c_int;
+  extern proc sys_fill_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:uint(16)):c_int;
+  extern proc sys_fill_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:uint(16)):c_int;
   extern proc sys_extract_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_ptr(c_char), ref port: uint(16)) : c_int;
   extern proc sys_strerror(error:err_t, ref string_out:c_string):err_t;
 
   extern proc sys_readlink(path:c_string, ref string_out:c_string):err_t;
 
   /*Check whether or not the environment variable ``name`` is defined.
-    If ``name`` is defined then return 1 and update ``string_out`` 
+    If ``name`` is defined then return 1 and update ``string_out``
     to store the value of the environment variable
     otherwise the function returns 0.
 
@@ -290,7 +313,7 @@ module Sys {
 
     :arg string_out: store the value of ``name`` environment variable if defined
     :type string_out: `c_string`
-    
+
     :returns: 1 if ``name`` is defined and 0 if not
     :rtype: `c_int`
    */
@@ -302,7 +325,7 @@ module Sys {
   extern proc sys_munmap(addr:c_void_ptr, length:size_t):err_t;
 
   // readv, writev, preadv, pwritev -- can't (yet) pass array.
-  
+
   extern proc sys_fcntl(fd:fd_t, cmd:c_int, ref ret_out:c_int):err_t;
   extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, ref ret_out:c_int):err_t;
   extern proc sys_fcntl_ptr(fd:fd_t, cmd:c_int, arg:c_void_ptr, ref ret_out:c_int):err_t;
@@ -350,4 +373,3 @@ module Sys {
 
   // recv, recvfrom, recvmsg, send, sendto, sendmsg are in io
 }
-

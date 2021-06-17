@@ -31,6 +31,7 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #ifndef __CYGWIN__
 #include <netinet/tcp.h>
 #endif
@@ -94,7 +95,8 @@ typedef int fd_t;
 
 
 typedef struct sockaddr_storage sys_sockaddr_storage_t;
-
+typedef in_addr_t sys_in_addr_t;
+typedef struct in6_addr sys_in6_addr_t;
 
 typedef struct sys_sockaddr_s {
   sys_sockaddr_storage_t addr;
@@ -135,6 +137,9 @@ typedef struct addrinfo* sys_addrinfo_ptr_t;
 
 void sys_init_sys_sockaddr_t(sys_sockaddr_t* addr);
 int sys_getsockaddr_family(sys_sockaddr_t *addr);
+int sys_fill_sys_sockaddr_t(sys_sockaddr_t *addr, const char *host, u_int16_t port, int family);
+int sys_fill_sys_sockaddr_in_t(sys_sockaddr_t *addr, sys_in_addr_t host, u_int16_t port);
+int sys_fill_sys_sockaddr_in6_t(sys_sockaddr_t *addr, sys_in6_addr_t host, u_int16_t port);
 int sys_extract_sys_sockaddr_t(sys_sockaddr_t *addr, char *host, u_int16_t *port);
 
 size_t sys_page_size(void);
