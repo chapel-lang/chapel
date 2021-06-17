@@ -58,6 +58,11 @@ module Sys {
   // C code generation.
   // mferguson -- TODO -- is that still true? Even for LLVM?
 
+  // fcntl command flags
+  extern const F_GETFL:c_int;
+  extern const F_SETFL:c_int;
+  extern const F_GETFD:c_int;
+  extern const F_SETFD:c_int;
 
   // basic file flags
   extern const O_RDONLY:c_int;
@@ -148,10 +153,26 @@ module Sys {
   extern const SHUT_RDWR:c_int;
 
   // socket option 'levels'
+  extern const SOL_SOCKET:c_int;
   extern const IPPROTO_IP:c_int;
   extern const IPPROTO_IPV6:c_int;
   extern const IPPROTO_TCP:c_int;
   extern const IPPROTO_UDP:c_int;
+
+  // socket options
+  extern const SO_ACCEPTCONN:c_int;
+  extern const SO_BROADCAST:c_int;
+  extern const SO_DEBUG:c_int;
+  extern const SO_ERROR:c_int;
+  extern const SO_KEEPALIVE:c_int;
+  extern const SO_LINGER:c_int;
+  extern const SO_OOBINLINE:c_int;
+  extern const SO_RCVBUF:c_int;
+  extern const SO_RCVTIMEO:c_int;
+  extern const SO_REUSEADDR:c_int;
+  extern const SO_SNDBUF:c_int;
+  extern const SO_SNDTIMEO:c_int;
+  extern const SO_SECINFO:c_int;
 
   // IP socket options
   extern const IP_ADD_MEMBERSHIP:c_int;
