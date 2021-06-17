@@ -134,6 +134,8 @@ typedef struct addrinfo* sys_addrinfo_ptr_t;
 #define DONE_SLOW_SYSCALL { }
 
 void sys_init_sys_sockaddr_t(sys_sockaddr_t* addr);
+int sys_getsockaddr_family(sys_sockaddr_t *addr);
+int sys_extract_sys_sockaddr_t(sys_sockaddr_t *addr, char *host, u_int16_t *port);
 
 size_t sys_page_size(void);
 

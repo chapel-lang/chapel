@@ -103,6 +103,29 @@ void sys_init_sys_sockaddr_t(sys_sockaddr_t* addr)
   addr->len = sizeof(sys_sockaddr_storage_t);
 }
 
+int sys_getsockaddr_family(sys_sockaddr_t* addr){
+  return addr->addr.ss_family;
+}
+
+int sys_extract_sys_sockaddr_t(sys_sockaddr_t* addr, char* host, u_int16_t *port){
+  int family = sys_getsockaddr_family(addr);
+  err_t err_out = 0;
+  if(family == AF_INET){
+    struct sockaddr_in *addr_inet = (struct sockaddr_in *)&addr->addr;
+    *port = ntohs(addr_inet->sin_port);
+    if (inet_ntop(AF_INET, &addr_inet->sin_addr, host, INET_ADDRSTRLEN) == NULL)
+      err_out = errno;
+  }
+  else if(family == AF_INET6){
+    struct sockaddr_in6 *addr_inet6 = (struct sockaddr_in6 *)&addr->addr;
+    *port = ntohs(addr_inet6->sin6_port);
+    if (inet_ntop(AF_INET6, &addr_inet6->sin6_addr, host, INET6_ADDRSTRLEN) == NULL)
+      err_out = errno;
+  }
+
+  return err_out;
+}
+
 // -------------------  system call wrappers -----------------------------
 
 size_t sys_page_size(void)

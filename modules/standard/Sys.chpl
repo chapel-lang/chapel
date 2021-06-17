@@ -229,6 +229,10 @@ module Sys {
   extern const TCP_SYNCNT:c_int;
   extern const TCP_WINDOW_CLAMP:c_int;
 
+  // socket address sizes
+  extern const INET_ADDRSTRLEN:c_int;
+  extern const INET6_ADDRSTRLEN:c_int;
+
   // UDP socket options
   //extern const UDP_CORK:c_int;
 
@@ -244,6 +248,12 @@ module Sys {
       sys_init_sys_sockaddr_t(this);
     }
   }
+    proc retrieve(host: c_ptr(c_char), ref port: uint(16)):c_int {
+      return sys_extract_sys_sockaddr_t(this, host, port) : c_int;
+    }
+  }
+
+  proc sys_sockaddr_t.family:c_int { return sys_getsockaddr_family(this); }
 
   extern record sys_addrinfo_t {
     var ai_flags: c_int;
@@ -264,6 +274,8 @@ module Sys {
   proc sys_addrinfo_ptr_t.next:sys_addrinfo_ptr_t { return sys_getaddrinfo_next(this); }
 
   extern proc sys_init_sys_sockaddr_t(ref addr:sys_sockaddr_t);
+  extern proc sys_getsockaddr_family(ref addr: sys_sockaddr_t):c_int;
+  extern proc sys_extract_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_ptr(c_char), ref port: uint(16)) : c_int;
   extern proc sys_strerror(error:err_t, ref string_out:c_string):err_t;
 
   extern proc sys_readlink(path:c_string, ref string_out:c_string):err_t;
