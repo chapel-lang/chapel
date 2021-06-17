@@ -97,7 +97,7 @@
 // Should be available in sys_xsi_strerror_r.c
 extern int sys_xsi_strerror_r(int errnum, char* buf, size_t buflen);
 
-void sys_init_sys_sockaddr(sys_sockaddr_t* addr)
+void sys_init_sys_sockaddr_t(sys_sockaddr_t* addr)
 {
   memset(addr, 0, sizeof(sys_sockaddr_t));
   addr->len = sizeof(sys_sockaddr_storage_t);

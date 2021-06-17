@@ -133,7 +133,7 @@ typedef struct addrinfo* sys_addrinfo_ptr_t;
 #define STARTING_SLOW_SYSCALL { }
 #define DONE_SLOW_SYSCALL { }
 
-void sys_init_sys_sockaddr(sys_sockaddr_t* addr);
+void sys_init_sys_sockaddr_t(sys_sockaddr_t* addr);
 
 size_t sys_page_size(void);
 
