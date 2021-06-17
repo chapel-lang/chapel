@@ -18,6 +18,7 @@
 target_sources(libchplcomp-obj
                PRIVATE
 
+               AggregateDecl.cpp
                ASTList.cpp
                ASTNode.cpp
                ASTTag.cpp
@@ -29,6 +30,7 @@ target_sources(libchplcomp-obj
                Builder.cpp
                BytesLiteral.cpp
                Call.cpp
+               Class.cpp
                Cobegin.cpp
                Coforall.cpp
                Comment.cpp
@@ -44,6 +46,7 @@ target_sources(libchplcomp-obj
                EnumElement.cpp
                ErroneousExpression.cpp
                Expression.cpp
+               Field.cpp
                FnCall.cpp
                For.cpp
                Forall.cpp
@@ -66,6 +69,7 @@ target_sources(libchplcomp-obj
                On.cpp
                OpCall.cpp
                RealLiteral.cpp
+               Record.cpp
                Return.cpp
                Serial.cpp
                SimpleBlockLike.cpp
@@ -77,6 +81,7 @@ target_sources(libchplcomp-obj
                UintLiteral.cpp
                Use.cpp
                UseClause.cpp
+               Union.cpp
                Variable.cpp
                VarLikeDecl.cpp
                Visitor.cpp
