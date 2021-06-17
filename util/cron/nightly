@@ -525,7 +525,7 @@ mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-o
 # if we are using python2, we cannot build the test-venv and/or chpldoc
 if ($python2 == 0) {
   $pythonVersion = `python3 --version`;
-  @pythonVersionArr = split '\.', $pythonVersion;
+  @pythonVersionArr = split('\.', $pythonVersion);
   print "Checking '$pythonVersion' is greater than 3.5\n";
 
   # chpldoc can't be built with Python 3.5  TODO: remove this when the Ubuntu
