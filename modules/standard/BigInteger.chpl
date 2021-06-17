@@ -4027,7 +4027,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
   proc bigint.div_q(const ref n: bigint,
                     const ref d: bigint,
-                    param     rounding: Round) {
+                    param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
       this.divQ(n, d, round.up);
@@ -4078,7 +4078,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
   proc bigint.div_q(const ref n: bigint,
                               d: integral,
-                    param     rounding: Round) {
+                    param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
       this.divQ(n, d, round.up);
@@ -4100,7 +4100,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
   proc bigint.div_r(const ref n: bigint,
                     const ref d: bigint,
-                    param     rounding: Round) {
+                    param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
       this.divR(n, d, round.up);
@@ -4151,7 +4151,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
   proc bigint.div_r(const ref n: bigint,
                               d: integral,
-                    param     rounding: Round) {
+                    param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
       this.divR(n, d, round.up);
@@ -4173,7 +4173,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   proc bigint.div_qr(ref       r:        bigint,
                      const ref n:        bigint,
                      const ref d:        bigint,
-                     param     rounding: Round) {
+                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
       this.divQR(r, n, d, round.up);
@@ -4239,7 +4239,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   proc bigint.div_qr(ref       r: bigint,
                      const ref n: bigint,
                                d: integral,
-                     param     rounding: Round) {
+                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
       this.divQR(r, n, d, round.up);
@@ -4261,7 +4261,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   "bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead"
   proc bigint.div_q_2exp(const ref n: bigint,
                                    b: integral,
-                         param     rounding: Round) {
+                         param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
       this.divQ2Exp(n, b, round.up);
@@ -4311,7 +4311,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   "bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead"
   proc bigint.div_r_2exp(const ref n: bigint,
                                    b: integral,
-                         param     rounding: Round) {
+                         param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
       this.divR2Exp(n, b, round.up);
