@@ -69,6 +69,14 @@ struct ParserContext {
   Variable::Kind varDeclKind;
   YYLTYPE declStartLocation;
 
+  // this type and stack helps the parser know if a function
+  // declaration is a method.
+  struct AggregateScope {
+    asttags::ASTTag tag;
+    UniqueString name;
+  };
+  std::vector<AggregateScope> scopeStack;
+
   // note when EOF is reached
   bool atEOF;
 
@@ -95,6 +103,10 @@ struct ParserContext {
   Variable::Kind noteVarDeclKind(Variable::Kind varDeclKind);
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
+
+  void enterScope(asttags::ASTTag tag, UniqueString name);
+  AggregateScope currentScope();
+  void exitScope(asttags::ASTTag tag, UniqueString name);
 
   // Given a location, create a new one pointing to the end of it.
   YYLTYPE makeLocationAtLast(YYLTYPE location) {
@@ -361,5 +373,7 @@ struct ParserContext {
                                          TypeDeclParts parts,
                                          YYLTYPE inheritLoc,
                                          ParserExprList* optInherit,
-                                         ParserExprList* contents);
+                                         YYLTYPE openingBrace,
+                                         ParserExprList* contents,
+                                         YYLTYPE closingBrace);
 };

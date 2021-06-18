@@ -111,6 +111,24 @@ void ParserContext::resetDeclState() {
   this->declStartLocation = emptyLoc;
 }
 
+void ParserContext::enterScope(asttags::ASTTag tag, UniqueString name) {
+  AggregateScope entry = {tag, name};
+  scopeStack.push_back(entry);
+}
+ParserContext::AggregateScope ParserContext::currentScope() {
+  if (scopeStack.size() == 0) {
+    AggregateScope entry = {asttags::Module, UniqueString()};
+    return entry;
+  }
+  return scopeStack.back();
+}
+void ParserContext::exitScope(asttags::ASTTag tag, UniqueString name) {
+  assert(scopeStack.size() > 0);
+  assert(scopeStack.back().tag == tag);
+  assert(scopeStack.back().name == name);
+  scopeStack.pop_back();
+}
+
 void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
   if (this->comments == nullptr) {
     this->comments = new std::vector<ParserComment>();
@@ -379,6 +397,7 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       isInline,
                       isOverride,
                       Function::PROC,
+                      Formal::DEFAULT_INTENT,
                       nullptr,
                       PODUniqueString::build(),
                       Function::DEFAULT_RETURN_INTENT,
@@ -392,6 +411,23 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                                                  FunctionParts& fp) {
   CommentsAndStmt cs = {fp.comments, nullptr};
   if (fp.errorExpr == nullptr) {
+    // Create a receiver for primary methods
+    auto scope = currentScope();
+    if (scope.tag == asttags::Class ||
+        scope.tag == asttags::Record ||
+        scope.tag == asttags::Union) {
+      if (fp.receiver == nullptr) {
+        auto loc = convertLocation(location); 
+        auto ths = UniqueString::build(context(), "this");
+        UniqueString cls = scope.name;
+        fp.receiver = Formal::build(builder, loc,
+                                    ths,
+                                    fp.thisIntent,
+                                    Identifier::build(builder, loc, cls),
+                                    nullptr).release();
+      }
+    }
+
     auto f = Function::build(builder, this->convertLocation(location),
                              fp.name, this->visibility,
                              fp.linkage, toOwned(fp.linkageNameExpr),
@@ -1134,9 +1170,15 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
                                       TypeDeclParts parts,
                                       YYLTYPE inheritLoc,
                                       ParserExprList* optInherit,
-                                      ParserExprList* contents) {
+                                      YYLTYPE openingBrace,
+                                      ParserExprList* contents,
+                                      YYLTYPE closingBrace) {
 
   CommentsAndStmt cs = {parts.comments, nullptr};
+  // adjust the contents list to have the right comments
+  discardCommentsFromList(contents, openingBrace);
+  appendList(contents, gatherComments(closingBrace));
+
   auto contentsList = consumeList(contents);
 
   owned<Identifier> inheritIdentifier;

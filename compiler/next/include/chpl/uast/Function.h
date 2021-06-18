@@ -78,7 +78,7 @@ class Function final : public NamedDecl {
 
   // children store
   //   linkageNameExpr
-  //   formals (FormalDecls) (starting with 'this' formal for methods)
+  //   formals (starting with 'this' formal for methods)
   //   return type
   //   where
   //   lifetime
@@ -217,9 +217,7 @@ class Function final : public NamedDecl {
   }
 
   /**
-   Return the number of formals
-   (which is the number of formal Decls and the number of formal Syms
-    since each Decl contains one Sym)
+   Return the number of Formals
    */
   int numFormals() const {
     return numFormals_; 

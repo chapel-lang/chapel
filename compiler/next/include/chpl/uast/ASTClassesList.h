@@ -139,7 +139,6 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       AST_NODE(Module)                     // old AST: ModuleSymbol
 
       AST_BEGIN_SUBCLASSES(VarLikeDecl)
-        AST_LEAF(Field)
         AST_LEAF(Formal)                   // old AST: ArgSymbol
         AST_LEAF(TaskVar)                  // old AST: ShadowVarSymbol
         AST_LEAF(Variable)                 // old AST: VarSymbol

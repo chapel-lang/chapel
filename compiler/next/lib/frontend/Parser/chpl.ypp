@@ -104,12 +104,6 @@
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
 
-  enum AggregateTag {
-    AggregateTag_CLASS,
-    AggregateTag_RECORD,
-    AggregateTag_UNION,
-  };
-
   enum ThrowsTag {
     ThrowsTag_DEFAULT,
     ThrowsTag_THROWS,
@@ -204,6 +198,7 @@
     bool isInline;
     bool isOverride;
     Function::Kind kind;
+    Formal::Intent thisIntent;
     Formal* receiver;
     PODUniqueString name;
     Function::ReturnIntent returnIntent;
@@ -1886,13 +1881,15 @@ when_stmt:
 class_decl_stmt:
   class_start opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
-      $$ = context->buildAggregateTypeDecl(@$, $1, @2, $2, $4);
+      $$ = context->buildAggregateTypeDecl(@$, $1, @2, $2, @3, $4, @5);
+      context->exitScope($1.tag, $1.name);
     }
 | class_start opt_inherit TLCBR error TRCBR
     {
       auto contents =
         context->makeList(ErroneousExpression::build(BUILDER, LOC(@4)));
-      $$ = context->buildAggregateTypeDecl(@$, $1, @2, $2, contents);
+      $$ = context->buildAggregateTypeDecl(@$, $1, @2, $2, @3, contents, @5);
+      context->exitScope($1.tag, $1.name);
     }
   /* see also extern_export_decl_stmt */
 ;
@@ -1900,10 +1897,14 @@ class_decl_stmt:
 class_start:
   class_tag ident_def
     {
-      TypeDeclParts parts = {context->gatherComments(@1),
+      // take into account location of public/private, if any
+      auto loc = context->declStartLoc(@1);
+      context->enterScope($1, $2);
+
+      TypeDeclParts parts = {context->gatherComments(loc),
                              context->visibility,
                              $2,
-                             asttags::Class};
+                             $1};
       $$ = parts;
 
       context->clearComments();
@@ -1943,6 +1944,7 @@ enum_decl_stmt:
                               context->consumeList(list));
       CommentsAndStmt cs = {parts.comments, decl.release()};
       $$ = cs;
+      context->exitScope(asttags::Enum, parts.name);
       context->resetDeclState();
       context->clearComments();
     }
@@ -1952,6 +1954,7 @@ enum_decl_stmt:
       auto err = ErroneousExpression::build(BUILDER, LOC(@2));
       CommentsAndStmt cs = {parts.comments, err.release()};
       $$ = cs;
+      context->exitScope(asttags::Enum, parts.name);
       context->resetDeclState();
       context->clearComments();
     }
@@ -1962,6 +1965,7 @@ enum_header_lcbr:
     {
       // take into account location of public/private, if any
       auto loc = context->declStartLoc(@1);
+      context->enterScope(asttags::Enum, $2);
 
       TypeDeclParts parts = {context->gatherComments(loc),
                              context->visibility,
@@ -2040,7 +2044,10 @@ fn_decl_stmt:
   fn_decl_stmt_inner
   opt_ret_tag opt_ret_type
   opt_throws_error opt_lifetime_where
-    { context->clearComments(); }
+    {
+      context->clearComments();
+      context->enterScope(asttags::Function, $1.name);
+    }
   opt_function_body_stmt
     {
       FunctionParts fp = $1;
@@ -2054,6 +2061,7 @@ fn_decl_stmt:
       fp.where = wl.where;
 
       context->clearComments();
+      context->exitScope(asttags::Function, $1.name);
 
       $$ = fp;
     }
@@ -2063,7 +2071,7 @@ fn_decl_stmt_inner:
   fn_decl_stmt_start opt_this_intent_tag fn_ident opt_formal_ls
     {
       FunctionParts fp = $1;
-      // TODO -- do something with $2
+      fp.thisIntent = $2;
       fp.name = $3;
       fp.formals = $4;
       $$ = fp;
@@ -2071,7 +2079,7 @@ fn_decl_stmt_inner:
 | fn_decl_stmt_start opt_this_intent_tag assignop_ident opt_formal_ls
     {
       FunctionParts fp = $1;
-      // TODO -- do something with $2
+      fp.thisIntent = $2;
       fp.name = $3;
       fp.formals = $4;
       $$ = fp;
@@ -2079,6 +2087,7 @@ fn_decl_stmt_inner:
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
     {
       FunctionParts fp = $1;
+      fp.thisIntent = $2;
       fp.receiver = Formal::build(BUILDER, LOC(@3),
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
@@ -2089,6 +2098,7 @@ fn_decl_stmt_inner:
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
     {
       FunctionParts fp = $1;
+      fp.thisIntent = $2;
       fp.receiver = Formal::build(BUILDER, LOC(@3),
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();

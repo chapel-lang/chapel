@@ -46,7 +46,6 @@ target_sources(libchplcomp-obj
                EnumElement.cpp
                ErroneousExpression.cpp
                Expression.cpp
-               Field.cpp
                FnCall.cpp
                For.cpp
                Forall.cpp

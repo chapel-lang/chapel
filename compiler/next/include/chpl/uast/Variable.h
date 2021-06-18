@@ -40,9 +40,13 @@ namespace uast {
       const c = 2;
       const ref d = c;
       param e = "hi";
+
+      class C {
+        var f: int;
+      }
   \endrst
 
-  each of these is a VariableDecl that refers to a Variable Sym.
+  each of a,b,c,d,e,f are a Variables.
  */
 class Variable final : public VarLikeDecl {
  public:

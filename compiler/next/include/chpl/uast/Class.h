@@ -80,7 +80,7 @@ class Class final : public AggregateDecl {
     Return the Expression indicating the parent class or nullptr
     if there was none.
    */
-  const Expression* parentClass() {
+  const Expression* parentClass() const {
     if (parentClassChildNum_ < 0)
       return nullptr;
 

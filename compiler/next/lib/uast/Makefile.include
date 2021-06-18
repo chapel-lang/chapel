@@ -50,7 +50,6 @@ NEXT_UAST_SRCS =                                 \
   ErroneousExpression.cpp \
   Expression.cpp \
   FnCall.cpp \
-  Field.cpp \
   For.cpp \
   Forall.cpp \
   Foreach.cpp \
