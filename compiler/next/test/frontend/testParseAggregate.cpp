@@ -113,6 +113,7 @@ static void test2(Parser* parser) {
   auto var = cls->declOrComment(0)->toVariable();
   assert(var);
   assert(var->name() == "x");
+  assert(var->isField());
 }
 
 static void test3(Parser* parser) {
@@ -163,6 +164,7 @@ static void test6(Parser* parser) {
   auto var = rec->declOrComment(0)->toVariable();
   assert(var);
   assert(var->name() == "x");
+  assert(var->isField());
   auto mtd = rec->declOrComment(1)->toFunction();
   assert(mtd);
   assert(mtd->name() == "method");
@@ -182,6 +184,7 @@ static void test7(Parser* parser) {
   auto var = uni->declOrComment(0)->toVariable();
   assert(var);
   assert(var->name() == "x");
+  assert(var->isField());
   auto mtd = uni->declOrComment(1)->toFunction();
   assert(mtd);
   assert(mtd->name() == "method");
@@ -225,6 +228,7 @@ static void test8(Parser* parser) {
   auto var = cls->declOrComment(1)->toVariable();
   assert(var);
   assert(var->name() == "x");
+  assert(var->isField());
   auto mtd = cls->declOrComment(3)->toFunction();
   assert(mtd);
   assert(mtd->name() == "foo");
@@ -305,7 +309,6 @@ static void test9(Parser* parser) {
   checkThisFormal(tp, "R", Formal::TYPE);
   assert(tp->numFormals() == 2);
 }
-
 
 
 int main() {

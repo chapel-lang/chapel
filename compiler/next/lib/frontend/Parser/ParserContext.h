@@ -106,6 +106,7 @@ struct ParserContext {
 
   void enterScope(asttags::ASTTag tag, UniqueString name);
   AggregateScope currentScope();
+  bool currentScopeIsAggregate();
   void exitScope(asttags::ASTTag tag, UniqueString name);
 
   // Given a location, create a new one pointing to the end of it.

@@ -1728,6 +1728,7 @@ ifvar:
     auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
                                    Decl::DEFAULT_VISIBILITY,
                                    Variable::VAR,
+                                   context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
     $$ = varDecl.release();
@@ -1737,6 +1738,7 @@ ifvar:
     auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
                                    Decl::DEFAULT_VISIBILITY,
                                    Variable::CONST,
+                                   context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
     $$ = varDecl.release();
@@ -2441,6 +2443,7 @@ var_decl_stmt_inner:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->currentScopeIsAggregate(),
                                      toOwned($2), toOwned($3));
       // gather the comments like a statement does
       $$ = STMT(@1, varDecl.release());
@@ -2464,6 +2467,7 @@ tuple_var_decl_component:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->currentScopeIsAggregate(),
                                      nullptr, nullptr);
       $$ = varDecl.release();
     }
@@ -2473,6 +2477,7 @@ tuple_var_decl_component:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->currentScopeIsAggregate(),
                                      nullptr, nullptr);
       $$ = varDecl.release();
     }

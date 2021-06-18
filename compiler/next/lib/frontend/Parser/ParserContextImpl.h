@@ -122,6 +122,12 @@ ParserContext::AggregateScope ParserContext::currentScope() {
   }
   return scopeStack.back();
 }
+bool ParserContext::currentScopeIsAggregate() {
+  auto scope = currentScope();
+  return (scope.tag == asttags::Class ||
+          scope.tag == asttags::Record ||
+          scope.tag == asttags::Union);
+}
 void ParserContext::exitScope(asttags::ASTTag tag, UniqueString name) {
   assert(scopeStack.size() > 0);
   assert(scopeStack.back().tag == tag);
@@ -414,9 +420,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
     // Detect primary methods and create a receiver for them
     bool primaryMethod = false;
     auto scope = currentScope();
-    if (scope.tag == asttags::Class ||
-        scope.tag == asttags::Record ||
-        scope.tag == asttags::Union) {
+    if (currentScopeIsAggregate()) {
       if (fp.receiver == nullptr) {
         auto loc = convertLocation(location); 
         auto ths = UniqueString::build(context(), "this");
@@ -461,6 +465,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            ident->name(),
                            Decl::DEFAULT_VISIBILITY,
                            Variable::INDEX,
+                           /*isField*/ false,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
   } else {
