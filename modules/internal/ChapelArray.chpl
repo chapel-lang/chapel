@@ -2627,8 +2627,13 @@ module ChapelArray {
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
 
-    /* return the array's indices as its domain */
+    /* return the array's indices as its domain
+
+       .. warning::
+
+          '.indices' has been deprecated for arrays — please use '.domain' instead */
     pragma "return not owned"
+    deprecated "'.indices' on arrays is deprecated - please use '.domain' instead (see issue #17883 for details)"
     proc indices
       return _dom;
 

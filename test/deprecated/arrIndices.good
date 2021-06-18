@@ -1,0 +1,2 @@
+arrIndices.chpl:3: warning: '.indices' on arrays is deprecated - please use '.domain' instead (see issue #17883 for details)
+{1..3, 1..4}
