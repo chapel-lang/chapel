@@ -1443,6 +1443,24 @@ extern_export_decl_stmt:
       CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
       $$ = cs;
     }
+
+| extern_export_decl_stmt_start TUNION ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      CommentsAndLinkage cl = $1;
+      //auto comments = context->gatherComments(@7);
+      // TODO: store comments into the generated list
+      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
+      $$ = cs;
+    }
+| extern_export_decl_stmt_start STRINGLITERAL TUNION ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      CommentsAndLinkage cl = $1;
+      //auto comments = context->gatherComments(@8);
+      // TODO: store comments into the generated list
+      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
+      $$ = cs;
+    }
+
 | extern_export_decl_stmt_start opt_expr fn_decl_stmt
     {
       CommentsAndLinkage cl = $1;
@@ -1463,6 +1481,7 @@ extern_export_decl_stmt:
 
       $$ = context->buildFunctionDecl(@$, fp);
     }
+
 | extern_export_decl_stmt_start opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       CommentsAndLinkage cl = $1;
