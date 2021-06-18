@@ -174,8 +174,6 @@ struct Converter {
     return nullptr;
   }
 
-  /// Control FLow ///
-
   GotoStmt* convertBreak(const uast::Break* node) {
     INT_FATAL("TODO");
     return nullptr;
@@ -662,6 +660,24 @@ struct Converter {
     INT_FATAL("TODO");
     return nullptr;
   }
+
+  /// AggregateDecls
+
+  Expr* convertClass(const uast::Class* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  Expr* convertRecord(const uast::Record* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  Expr* convertUnion(const uast::Union* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
 };
 
 /// Generic conversion calling the above functions ///
