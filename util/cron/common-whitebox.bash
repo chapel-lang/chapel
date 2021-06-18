@@ -6,7 +6,7 @@
 #
 # Variable   Values
 # ------------------------------------------------------
-# COMPILER    cray, intel, pgi, gnu, llvm
+# COMPILER    cray, intel, pgi, gnu
 # COMP_TYPE   TARGET, HOST-TARGET, HOST-TARGET-no-PrgEnv
 #
 # Optionally, the platform can be set with:
@@ -42,29 +42,16 @@ log_info "Short platform: ${short_platform}"
 # Setup vars that will help load the correct compiler module.
 case $COMP_TYPE in
     TARGET)
-        if [ $COMPILER == "llvm" ] ; then
-            module_name=PrgEnv-gnu
-            export CHPL_NIGHTLY_TEST_CONFIG_NAME="${short_platform}-wb.${COMPILER}"
-        else
-            module_name=PrgEnv-${COMPILER}
-            export CHPL_NIGHTLY_TEST_CONFIG_NAME="${short_platform}-wb.prgenv-${COMPILER}"
-        fi
-
+        module_name=PrgEnv-${COMPILER}
         chpl_host_value=""
 
         export CHPL_TARGET_PLATFORM=$platform
         log_info "Set CHPL_TARGET_PLATFORM to: ${CHPL_TARGET_PLATFORM}"
 
+        export CHPL_NIGHTLY_TEST_CONFIG_NAME="${short_platform}-wb.prgenv-${COMPILER}"
         ;;
     HOST-TARGET)
-        if [ $COMPILER == "llvm" ] ; then
-            module_name=PrgEnv-gnu
-            export CHPL_NIGHTLY_TEST_CONFIG_NAME="${short_platform}-wb.host.${COMPILER}"
-        else
-            module_name=PrgEnv-${COMPILER}
-            export CHPL_NIGHTLY_TEST_CONFIG_NAME="${short_platform}-wb.host.prgenv-${COMPILER}"
-        fi
-
+        module_name=PrgEnv-${COMPILER}
         chpl_host_value=cray-prgenv-${COMPILER}
 
         export CHPL_HOST_PLATFORM=$platform
@@ -72,6 +59,7 @@ case $COMP_TYPE in
         log_info "Set CHPL_HOST_PLATFORM to: ${CHPL_HOST_PLATFORM}"
         log_info "Set CHPL_TARGET_PLATFORM to: ${CHPL_TARGET_PLATFORM}"
 
+        export CHPL_NIGHTLY_TEST_CONFIG_NAME="${short_platform}-wb.host.prgenv-${COMPILER}"
         ;;
     HOST-TARGET-no-PrgEnv)
         the_cc=${COMPILER}
@@ -101,16 +89,6 @@ source $CHPL_INTERNAL_REPO/build/compiler_versions.bash
 # Then load the selected compiler
 load_target_compiler ${COMPILER}
 
-if [ -z "${OFFICIAL_SYSTEM_LLVM}" ] ; then
-  if [ -f /data/cf/chapel/setup_system_llvm.bash ] ; then
-    source /data/cf/chapel/setup_system_llvm.bash
-  elif [ -f /cray/css/users/chapelu/setup_system_llvm.bash ] ; then
-    source /cray/css/users/chapelu/setup_system_llvm.bash
-  fi
-fi
-
-source $CWD/common-llvm-comp-path.bash
-
 # Do minor fixups
 case $COMPILER in
     cray|intel|gnu)
@@ -125,8 +103,6 @@ case $COMPILER in
         # infinite loop during `make check` while trying to test t_scan.c. Just
         # force disable gmp until there's more time to investigate this.
         export CHPL_GMP=none
-        ;;
-    llvm)
         ;;
     *)
         log_error "Unknown COMPILER value: ${COMPILER}. Exiting."
@@ -151,6 +127,11 @@ fi
 # Disable launchers, comm.
 export CHPL_LAUNCHER=none
 export CHPL_COMM=none
+
+# Disable llvm for now, since we're explicitly trying to test different C
+# backends
+export CHPL_LLVM=none
+
 
 # Set some vars that nightly cares about.
 export CHPL_NIGHTLY_LOGDIR=${CHPL_NIGHTLY_LOGDIR:-/data/sea/chapel/Nightly}
