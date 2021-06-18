@@ -44,7 +44,7 @@ static void test0() {
   std::string contents = "/* this is a test */";
   setFileText(ctx, path, contents);
  
-  std::string gotContents = fileText(ctx, path);
+  std::string gotContents = fileText(ctx, path).text;
   assert(gotContents == contents);
 }
 

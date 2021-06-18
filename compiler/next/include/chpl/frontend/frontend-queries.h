@@ -33,8 +33,19 @@
 namespace chpl {
 
 namespace frontend {
-  const std::string& fileText(Context* context, UniqueString path);
-  void setFileText(Context* context, UniqueString path, std::string result);
+  struct FileContents {
+    std::string text;
+    ErrorMessage error;
+    FileContents()
+      : text(), error() { }
+    FileContents(std::string text)
+      : text(std::move(text)), error() { }
+    FileContents(std::string text, ErrorMessage error)
+      : text(std::move(text)), error(std::move(error)) { }
+  };
+  const FileContents& fileText(Context* context, UniqueString path);
+  void setFileText(Context* context, UniqueString path, FileContents result);
+  void setFileText(Context* context, UniqueString path, std::string text);
 
   const uast::Builder::Result& parseFile(Context* context, UniqueString path);
 

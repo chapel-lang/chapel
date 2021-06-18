@@ -39,6 +39,21 @@
 
 namespace chpl {
 
+template<> struct update<frontend::FileContents> {
+  bool operator()(frontend::FileContents& keep,
+                  frontend::FileContents& addin) const {
+    bool match = keep.text == addin.text &&
+                 keep.error == addin.error;
+    if (match) {
+      return false; // no update required
+    } else {
+      keep.text.swap(addin.text);
+      keep.error.swap(addin.error);
+      return true; // updated
+    }
+  }
+};
+
 template<> struct update<frontend::ResolutionResult> {
   bool operator()(frontend::ResolutionResult& keep,
                   frontend::ResolutionResult& addin) const {
@@ -94,47 +109,57 @@ namespace frontend {
 
 using namespace uast;
 
-const std::string& fileText(Context* context, UniqueString path) {
+const FileContents& fileText(Context* context, UniqueString path) {
   QUERY_BEGIN_INPUT(fileText, context, path);
 
+  std::string text;
   ErrorMessage error;
-  std::string result;
-  bool ok = readfile(path.c_str(), result, error);
+  bool ok = readfile(path.c_str(), text, error);
   if (!ok) {
-    QUERY_ERROR(std::move(error));
+    QUERY_ERROR(error);
   }
-
+  auto result = FileContents(std::move(text), std::move(error));
   return QUERY_END(result);
 }
 
-void setFileText(Context* context, UniqueString path, std::string result) {
+void setFileText(Context* context, UniqueString path, FileContents result) {
   context->querySetterUpdateResult(fileText,
                                    std::make_tuple(path),
                                    std::move(result),
                                    "fileText",
                                    true);
 }
+void setFileText(Context* context, UniqueString path, std::string text) {
+  setFileText(context, path, FileContents(std::move(text)));
+}
 
 const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
   QUERY_BEGIN(parseFile, context, path);
 
   // Run the fileText query to get the file contents
-  const std::string& text = fileText(context, path);
-
+  const FileContents& contents = fileText(context, path);
+  const std::string& text = contents.text;
+  const ErrorMessage& error = contents.error;
   uast::Builder::Result result;
   result.filePath = path;
 
-  auto parser = Parser::build(context);
-  const char* pathc = path.c_str();
-  const char* textc = text.c_str();
-  uast::Builder::Result tmpResult = parser->parseString(pathc, textc);
-  result.topLevelExpressions.swap(tmpResult.topLevelExpressions);
-  result.locations.swap(tmpResult.locations);
-  for (ErrorMessage& e : tmpResult.errors) {
-    QUERY_ERROR(std::move(e));
+  if (error.isEmpty()) {
+    // if there was no error reading the file, proceed to parse
+    auto parser = Parser::build(context);
+    const char* pathc = path.c_str();
+    const char* textc = text.c_str();
+    uast::Builder::Result tmpResult = parser->parseString(pathc, textc);
+    result.topLevelExpressions.swap(tmpResult.topLevelExpressions);
+    result.locations.swap(tmpResult.locations);
+    for (ErrorMessage& e : tmpResult.errors) {
+      QUERY_ERROR(std::move(e));
+    }
+    Builder::Result::updateFilePaths(context, result);
+  } else {
+    // Error should have already been reported in the fileText query
+    // just record an error here as well so follow-ons are clear
+    result.errors.push_back(error);
   }
-
-  Builder::Result::updateFilePaths(context, result);
 
   return QUERY_END(result);
 }
