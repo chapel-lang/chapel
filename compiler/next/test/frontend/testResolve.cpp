@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/frontend/frontend-queries.h"
+#include "chpl/frontend/resolution-queries.h"
 
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Identifier.h"

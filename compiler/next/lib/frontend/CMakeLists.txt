@@ -20,7 +20,8 @@ add_subdirectory(Parser)
 target_sources(libchplcomp-obj
                PRIVATE
 
-               frontend-queries.cpp
                Parser.cpp
+               frontend-queries.cpp
+               resolution-queries.cpp
 
               )

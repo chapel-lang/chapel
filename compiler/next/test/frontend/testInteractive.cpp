@@ -18,6 +18,7 @@
  */
 
 #include "chpl/frontend/frontend-queries.h"
+#include "chpl/frontend/resolution-queries.h"
 
 #include "chpl/uast/Module.h"
 

@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_FRONTEND_FRONTENDQUERIES_H
-#define CHPL_FRONTEND_FRONTENDQUERIES_H
+#ifndef CHPL_FRONTEND_FRONTEND_QUERIES_H
+#define CHPL_FRONTEND_FRONTEND_QUERIES_H
 
 #include "chpl/queries/Context.h"
 #include "chpl/queries/ID.h"
@@ -31,8 +31,9 @@
 #include <vector>
 
 namespace chpl {
-
 namespace frontend {
+
+
   struct FileContents {
     std::string text;
     ErrorMessage error;
@@ -61,58 +62,7 @@ namespace frontend {
   using ModuleVec = std::vector<const uast::Module*>;
   const ModuleVec& parse(Context* context, UniqueString path);
 
-  struct ResolutionResult {
-    // the expr that is resolved
-    const uast::Expression* exp;
-    // in simple cases, this is set
-    const uast::NamedDecl* decl;
-    // TODO:
-    //  return-intent overloading
-    //  generic instantiation
-    //  establish concrete intents
-    //  establish copy-init vs move
-    ResolutionResult() : exp(nullptr), decl(nullptr) { }
-  };
 
-  // postorder ID (int) -> ResolutionResult
-  using ResolutionResultByPostorderID = std::vector<ResolutionResult>;
-
-  // Resolves the top-level declarations in a module
-  const ResolutionResultByPostorderID&
-  resolveModule(Context* context, const uast::Module* mod);
-
-  struct ResolvedModule {
-    const uast::Module* module;
-    const ResolutionResultByPostorderID* resolution;
-    ResolvedModule(const uast::Module* module,
-                   const ResolutionResultByPostorderID* resolution)
-      : module(module), resolution(resolution) {
-    }
-    static bool update(ResolvedModule& keep, ResolvedModule& addin);
-  };
-  using ResolvedModuleVec = std::vector<ResolvedModule>;
-
-  const ResolvedModuleVec& resolveFile(Context* context, UniqueString path);
-
-  struct DefinedTopLevelNames {
-    // the module
-    const uast::Module* module;
-    // these are in program order
-    std::vector<UniqueString> topLevelNames;
-    DefinedTopLevelNames(const uast::Module* module,
-                         std::vector<UniqueString> topLevelNames)
-      : module(module), topLevelNames(std::move(topLevelNames)) {
-    }
-  };
-  using DefinedTopLevelNamesVec = std::vector<DefinedTopLevelNames>;
-
-  const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
-                                                      UniqueString path);
-
-  //const uast::BaseAST* ast(Context* context, ID id);
-};
-
+} // end namespace frontend
 } // end namespace chpl
-
-
 #endif
