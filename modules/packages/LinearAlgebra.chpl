@@ -2329,17 +2329,17 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   :arg useExactOneNorm: boolean value specifying if the onenorm has to be exact. Defaults to true.
   :type useExactOneNorm: bool
 
-.. note::
-
-  [1] Awad H. Al-Mohy and Nicholas J. Higham (2009)
-  "A New Scaling and Squaring Algorithm for the Matrix Exponential."
-  SIAM Journal on Matrix Analysis and Applications.
-  31 (3). pp. 970-989. ISSN 1095-7162
-
   :throws LinearAlgebraError: If Input Matrix is not Square Matrix.
 
   :returns: Matrix exponential of the given matrix.
   :rtype: `A`
+
+  .. note::
+
+    [1] Awad H. Al-Mohy and Nicholas J. Higham (2009)
+    "A New Scaling and Squaring Algorithm for the Matrix Exponential."
+    SIAM Journal on Matrix Analysis and Applications.
+    31 (3). pp. 970-989. ISSN 1095-7162
 */
 proc expm(A: [], param useExactOneNorm=true) throws {
 
