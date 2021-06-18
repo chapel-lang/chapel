@@ -89,16 +89,6 @@ source $CHPL_INTERNAL_REPO/build/compiler_versions.bash
 # Then load the selected compiler
 load_target_compiler ${COMPILER}
 
-if [ -z "${OFFICIAL_SYSTEM_LLVM}" ] ; then
-  if [ -f /data/cf/chapel/setup_system_llvm.bash ] ; then
-    source /data/cf/chapel/setup_system_llvm.bash
-  elif [ -f /cray/css/users/chapelu/setup_system_llvm.bash ] ; then
-    source /cray/css/users/chapelu/setup_system_llvm.bash
-  fi
-fi
-
-source $CWD/common-llvm-comp-path.bash
-
 # Do minor fixups
 case $COMPILER in
     cray|intel|gnu)
