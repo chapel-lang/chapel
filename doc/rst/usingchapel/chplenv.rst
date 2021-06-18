@@ -217,7 +217,7 @@ CHPL_*_COMPILER
    The default for ``CHPL_TARGET_COMPILER`` is:
 
      * ``llvm`` if the compiler is configured with LLVM support (see
-       :ref:`readme-chplenv.CHPL_LLVM`) and the platform is not linux32
+       :ref:`readme-chplenv.CHPL_LLVM`)
      * ``cray-prgenv-$PE_ENV`` on ``cray-xc`` and ``hpe-cray-ex``
        platforms (where ``PE_ENV`` is set by ``PrgEnv-*`` modules)
      * ``CHPL_HOST_COMPILER`` if the host and target platforms are the
@@ -694,11 +694,16 @@ CHPL_LLVM
        none           do not support llvm/clang-related features
        ============== ======================================================
 
-   If unset, ``CHPL_LLVM`` defaults to ``bundled`` if you've already
-   installed llvm in third-party or ``system`` if a compatible
-   system-wide installation of LLVM is detected. If neither of those are
-   the case you will need to either add a system-wide installation of
-   LLVM or set ``CHPL_LLVM`` to ``bundled`` or ``none``.
+   If unset, ``CHPL_LLVM`` defaults to:
+
+     * ``none`` on linux32 where Chapel LLVM support is not yet implemented
+     * ``bundled`` if you've already built the bundled llvm in
+       `third-party/llvm`
+     *  ``system`` if a compatible system-wide installation of LLVM is detected
+
+   If none of the above cases pply then you will need to either add a
+   system-wide installation of LLVM or set ``CHPL_LLVM`` to ``bundled``
+   or ``none``.
 
    See :ref:`readme-prereqs` for more information about currently
    supported LLVM versions.
