@@ -20,7 +20,7 @@
 #ifndef CHPL_FRONTEND_RESOLUTION_QUERIES_H
 #define CHPL_FRONTEND_RESOLUTION_QUERIES_H
 
-#include "chpl/frontend/frontend-queries.h"
+#include "chpl/frontend/parsing-queries.h"
 
 namespace chpl {
 namespace frontend {

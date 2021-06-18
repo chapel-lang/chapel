@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/frontend/frontend-queries.h"
+#include "chpl/frontend/parsing-queries.h"
 
 #include "chpl/frontend/Parser.h"
 #include "chpl/queries/ErrorMessage.h"

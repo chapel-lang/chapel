@@ -21,7 +21,7 @@ target_sources(libchplcomp-obj
                PRIVATE
 
                Parser.cpp
-               frontend-queries.cpp
+               parsing-queries.cpp
                resolution-queries.cpp
 
               )

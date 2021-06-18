@@ -22,7 +22,7 @@ ALL_SRCS += next/lib/frontend/*.cpp
 
 NEXT_FRONTEND_SRCS =                                \
            Parser.cpp                               \
-           frontend-queries.cpp                     \
+           parsing-queries.cpp                      \
            resolution-queries.cpp                   \
 
 SRCS = $(NEXT_FRONTEND_SRCS)
