@@ -502,7 +502,7 @@ module DefaultRectangular {
       var block: rank*range(idxType=intIdxType, stridable=stridable);
       if boundsChecking then
         for param i in 0..rank-1 do
-          if followThis(i).high >= ranges(i).size then
+          if followThis(i).high >= ranges(i).sizeAs(uint) then
             HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration (dimension " + i:string + ")");
       if stridable {
         type strType = chpl__signedType(intIdxType);
