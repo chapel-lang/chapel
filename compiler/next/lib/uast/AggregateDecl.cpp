@@ -26,7 +26,7 @@ namespace uast {
 
 
 bool AggregateDecl::validAggregateChildren(ASTListIteratorPair<Expression> it) {
-  for (const auto& elt: it) {
+  for (auto elt: it) {
     if (elt->isComment() || elt->isErroneousExpression()) {
       // OK
     } else if (elt->isDecl()) {
