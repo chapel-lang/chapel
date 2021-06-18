@@ -127,6 +127,8 @@ static void test3(Parser* parser) {
   auto mtd = cls->declOrComment(0)->toFunction();
   assert(mtd);
   assert(mtd->name() == "method");
+  assert(mtd->thisFormal());
+  assert(mtd->isPrimaryMethod());
   checkThisFormal(mtd, "C", Formal::DEFAULT_INTENT);
 }
 
@@ -164,6 +166,8 @@ static void test6(Parser* parser) {
   auto mtd = rec->declOrComment(1)->toFunction();
   assert(mtd);
   assert(mtd->name() == "method");
+  assert(mtd->thisFormal());
+  assert(mtd->isPrimaryMethod());
   checkThisFormal(mtd, "R", Formal::DEFAULT_INTENT);
 }
 
@@ -181,6 +185,8 @@ static void test7(Parser* parser) {
   auto mtd = uni->declOrComment(1)->toFunction();
   assert(mtd);
   assert(mtd->name() == "method");
+  assert(mtd->thisFormal());
+  assert(mtd->isPrimaryMethod());
   checkThisFormal(mtd, "U", Formal::DEFAULT_INTENT);
 }
 
@@ -222,6 +228,8 @@ static void test8(Parser* parser) {
   auto mtd = cls->declOrComment(3)->toFunction();
   assert(mtd);
   assert(mtd->name() == "foo");
+  assert(mtd->thisFormal());
+  assert(mtd->isPrimaryMethod());
   checkThisFormal(mtd, "C", Formal::DEFAULT_INTENT);
 }
 
@@ -257,31 +265,43 @@ static void test9(Parser* parser) {
 
   assert(df->name() == "df");
   assert(df->returnIntent() == Function::DEFAULT_RETURN_INTENT);
+  assert(df->thisFormal());
+  assert(df->isPrimaryMethod());
   checkThisFormal(df, "R", Formal::DEFAULT_INTENT);
   assert(df->numFormals() == 2);
 
   assert(cnst->name() == "cnst");
   assert(cnst->returnIntent() == Function::CONST);
+  assert(cnst->thisFormal());
+  assert(cnst->isPrimaryMethod());
   checkThisFormal(cnst, "R", Formal::CONST);
   assert(cnst->numFormals() == 2);
 
   assert(cnstrf->name() == "cnstrf");
   assert(cnstrf->returnIntent() == Function::CONST_REF);
+  assert(cnstrf->thisFormal());
+  assert(cnstrf->isPrimaryMethod());
   checkThisFormal(cnstrf, "R", Formal::CONST_REF);
   assert(cnstrf->numFormals() == 2);
 
   assert(rf->name() == "rf");
   assert(rf->returnIntent() == Function::REF);
+  assert(rf->thisFormal());
+  assert(rf->isPrimaryMethod());
   checkThisFormal(rf, "R", Formal::REF);
   assert(rf->numFormals() == 2);
 
   assert(prm->name() == "prm");
   assert(prm->returnIntent() == Function::PARAM);
+  assert(prm->thisFormal());
+  assert(prm->isPrimaryMethod());
   checkThisFormal(prm, "R", Formal::PARAM);
   assert(prm->numFormals() == 2);
 
   assert(tp->name() == "tp");
   assert(tp->returnIntent() == Function::TYPE);
+  assert(tp->thisFormal());
+  assert(tp->isPrimaryMethod());
   checkThisFormal(tp, "R", Formal::TYPE);
   assert(tp->numFormals() == 2);
 }

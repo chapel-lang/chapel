@@ -35,6 +35,7 @@ bool Function::contentsMatchInner(const ASTNode* other) const {
          lhs->inline_ == rhs->inline_ &&
          lhs->override_ == rhs->override_ &&
          lhs->throws_ == rhs->throws_ &&
+         lhs->primaryMethod_ == rhs->primaryMethod_ &&
          lhs->linkageNameExprChildNum_ == rhs->linkageNameExprChildNum_ &&
          lhs->formalsChildNum_ == rhs->formalsChildNum_ &&
          lhs->thisFormalChildNum_ == rhs->thisFormalChildNum_ &&
@@ -60,6 +61,7 @@ owned<Function> Function::build(Builder* builder, Location loc,
                                 owned<Formal> receiver,
                                 Function::ReturnIntent returnIntent,
                                 bool throws,
+                                bool primaryMethod,
                                 ASTList formals,
                                 owned<Expression> returnType,
                                 owned<Expression> where,
@@ -124,7 +126,7 @@ owned<Function> Function::build(Builder* builder, Location loc,
 
   Function* ret = new Function(std::move(lst), name, vis,
                                linkage, inline_, override_,
-                               kind, returnIntent, throws,
+                               kind, returnIntent, throws, primaryMethod,
                                linkageNameExprChildNum,
                                formalsChildNum,
                                thisFormalChildNum,

@@ -75,6 +75,7 @@ class Function final : public NamedDecl {
   Kind kind_;
   ReturnIntent returnIntent_;
   bool throws_;
+  bool primaryMethod_;
 
   // children store
   //   linkageNameExpr
@@ -102,6 +103,7 @@ class Function final : public NamedDecl {
            Kind kind,
            ReturnIntent returnIntent,
            bool throws,
+           bool primaryMethod,
            int linkageNameExprChildNum,
            int formalsChildNum,
            int thisFormalChildNum,
@@ -119,6 +121,7 @@ class Function final : public NamedDecl {
       kind_(kind),
       returnIntent_(returnIntent),
       throws_(throws),
+      primaryMethod_(primaryMethod),
       linkageNameExprChildNum_(linkageNameExprChildNum),
       formalsChildNum_(formalsChildNum),
       thisFormalChildNum_(thisFormalChildNum),
@@ -170,6 +173,7 @@ class Function final : public NamedDecl {
                                owned<Formal> receiver,
                                Function::ReturnIntent returnIntent,
                                bool throws,
+                               bool primaryMethod,
                                ASTList formals,
                                owned<Expression> returnType,
                                owned<Expression> where,
@@ -182,6 +186,7 @@ class Function final : public NamedDecl {
   bool isInline() const { return this->inline_; }
   bool isOverride() const { return this->override_; }
   bool throws() const { return this->throws_; }
+  bool isPrimaryMethod() const { return primaryMethod_; }
 
   /**
    Return the linkage name expression, e.g. "f_c_name"

@@ -411,7 +411,8 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                                                  FunctionParts& fp) {
   CommentsAndStmt cs = {fp.comments, nullptr};
   if (fp.errorExpr == nullptr) {
-    // Create a receiver for primary methods
+    // Detect primary methods and create a receiver for them
+    bool primaryMethod = false;
     auto scope = currentScope();
     if (scope.tag == asttags::Class ||
         scope.tag == asttags::Record ||
@@ -425,6 +426,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                                     fp.thisIntent,
                                     Identifier::build(builder, loc, cls),
                                     nullptr).release();
+        primaryMethod = true;
       }
     }
 
@@ -437,6 +439,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                              toOwned(fp.receiver),
                              fp.returnIntent,
                              fp.throws,
+                             primaryMethod,
                              this->consumeList(fp.formals),
                              toOwned(fp.returnType),
                              toOwned(fp.where),
