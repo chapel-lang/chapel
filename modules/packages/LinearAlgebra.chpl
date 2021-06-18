@@ -256,7 +256,7 @@ class ExpmPadeHelper {
 
   /*
     :arg A: Expects an N*N square matrix.
-    :type A: 2D Array
+    :type A: `A`
 
     :arg useExactOneNorm: boolean value specifying if the onenorm has to be exact.
     :type useExactOneNorm: bool
@@ -2324,7 +2324,7 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   is Matrix exponential of `A`
 
   :arg A: Expects an N*N square matrix.
-  :type A: 2D Array
+  :type A: `A`
 
   :arg useExactOneNorm: boolean value specifying if the onenorm has to be exact. Defaults to true.
   :type useExactOneNorm: bool
