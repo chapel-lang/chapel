@@ -128,7 +128,7 @@ struct ResolvingScope {
     const ResolvingScope* cur = this;
     while (cur != nullptr) {
       auto search = cur->declsDefinedHere.find(name);
-      if (search != parentScope->declsDefinedHere.end()) {
+      if (search != cur->declsDefinedHere.end()) {
         // found an existing entry in the map, so use that
         return search->second;
       }

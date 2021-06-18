@@ -24,6 +24,7 @@ NEXT_FRONTEND_SRCS =                                \
            Parser.cpp                               \
            parsing-queries.cpp                      \
            resolution-queries.cpp                   \
+           resolution-types.cpp                     \
 
 SRCS = $(NEXT_FRONTEND_SRCS)
 

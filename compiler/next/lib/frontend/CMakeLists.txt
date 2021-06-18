@@ -23,5 +23,6 @@ target_sources(libchplcomp-obj
                Parser.cpp
                parsing-queries.cpp
                resolution-queries.cpp
+               resolution-types.cpp
 
               )
