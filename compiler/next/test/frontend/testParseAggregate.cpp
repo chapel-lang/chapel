@@ -49,17 +49,16 @@ static Builder::Result parseAggregate(Parser* parser,
   assert(parseResult.topLevelExpressions[0]->isModule());
   auto module = parseResult.topLevelExpressions[0]->toModule();
 
-  // find the only non-comment statement
-  const ASTNode* nonComment = nullptr;
+  // find the first AggregateDecl statement
+  const AggregateDecl* decl = nullptr;
   for (auto stmt : module->stmts()) {
-    if (!stmt->isComment()) {
-      assert(nonComment == nullptr);
-      nonComment = stmt;
+    if (stmt->isAggregateDecl()) {
+      decl = stmt->toAggregateDecl();
+      break;
     }
   }
-  assert(nonComment);
-  assert(nonComment->isAggregateDecl());
-  agg = nonComment->toAggregateDecl();
+  assert(decl);
+  agg = decl;
   return parseResult;
 }
 
@@ -247,7 +246,14 @@ static void test9(Parser* parser) {
                             "  proc ref rf(arg) ref { }\n"
                             "  proc param prm(arg) param { }\n"
                             "  proc type tp(arg) type { }\n"
-                            "}\n");
+                            "}\n"
+                            "proc R.df2(arg) { }\n"
+                            "proc const R.cnst2(arg) const { }\n"
+                            "proc const ref R.cnstrf2(arg) const ref { }\n"
+                            "proc ref R.rf2(arg) ref { }\n"
+                            "proc param R.prm2(arg) param { }\n"
+                            "proc type R.tp2(arg) type { }\n"
+                            );
 
   auto rec = agg->toRecord();
   assert(rec);
@@ -260,54 +266,117 @@ static void test9(Parser* parser) {
   assert(rec->declOrComment(4)->isFunction());
   assert(rec->declOrComment(5)->isFunction());
 
-  auto df = rec->declOrComment(0)->toFunction();
-  auto cnst = rec->declOrComment(1)->toFunction();
-  auto cnstrf = rec->declOrComment(2)->toFunction();
-  auto rf = rec->declOrComment(3)->toFunction();
-  auto prm = rec->declOrComment(4)->toFunction();
-  auto tp = rec->declOrComment(5)->toFunction();
+  {
+    auto df = rec->declOrComment(0)->toFunction();
+    auto cnst = rec->declOrComment(1)->toFunction();
+    auto cnstrf = rec->declOrComment(2)->toFunction();
+    auto rf = rec->declOrComment(3)->toFunction();
+    auto prm = rec->declOrComment(4)->toFunction();
+    auto tp = rec->declOrComment(5)->toFunction();
 
-  assert(df->name() == "df");
-  assert(df->returnIntent() == Function::DEFAULT_RETURN_INTENT);
-  assert(df->thisFormal());
-  assert(df->isPrimaryMethod());
-  checkThisFormal(df, "R", Formal::DEFAULT_INTENT);
-  assert(df->numFormals() == 2);
+    assert(df->name() == "df");
+    assert(df->returnIntent() == Function::DEFAULT_RETURN_INTENT);
+    assert(df->thisFormal());
+    assert(df->isPrimaryMethod());
+    checkThisFormal(df, "R", Formal::DEFAULT_INTENT);
+    assert(df->numFormals() == 2);
 
-  assert(cnst->name() == "cnst");
-  assert(cnst->returnIntent() == Function::CONST);
-  assert(cnst->thisFormal());
-  assert(cnst->isPrimaryMethod());
-  checkThisFormal(cnst, "R", Formal::CONST);
-  assert(cnst->numFormals() == 2);
+    assert(cnst->name() == "cnst");
+    assert(cnst->returnIntent() == Function::CONST);
+    assert(cnst->thisFormal());
+    assert(cnst->isPrimaryMethod());
+    checkThisFormal(cnst, "R", Formal::CONST);
+    assert(cnst->numFormals() == 2);
 
-  assert(cnstrf->name() == "cnstrf");
-  assert(cnstrf->returnIntent() == Function::CONST_REF);
-  assert(cnstrf->thisFormal());
-  assert(cnstrf->isPrimaryMethod());
-  checkThisFormal(cnstrf, "R", Formal::CONST_REF);
-  assert(cnstrf->numFormals() == 2);
+    assert(cnstrf->name() == "cnstrf");
+    assert(cnstrf->returnIntent() == Function::CONST_REF);
+    assert(cnstrf->thisFormal());
+    assert(cnstrf->isPrimaryMethod());
+    checkThisFormal(cnstrf, "R", Formal::CONST_REF);
+    assert(cnstrf->numFormals() == 2);
 
-  assert(rf->name() == "rf");
-  assert(rf->returnIntent() == Function::REF);
-  assert(rf->thisFormal());
-  assert(rf->isPrimaryMethod());
-  checkThisFormal(rf, "R", Formal::REF);
-  assert(rf->numFormals() == 2);
+    assert(rf->name() == "rf");
+    assert(rf->returnIntent() == Function::REF);
+    assert(rf->thisFormal());
+    assert(rf->isPrimaryMethod());
+    checkThisFormal(rf, "R", Formal::REF);
+    assert(rf->numFormals() == 2);
 
-  assert(prm->name() == "prm");
-  assert(prm->returnIntent() == Function::PARAM);
-  assert(prm->thisFormal());
-  assert(prm->isPrimaryMethod());
-  checkThisFormal(prm, "R", Formal::PARAM);
-  assert(prm->numFormals() == 2);
+    assert(prm->name() == "prm");
+    assert(prm->returnIntent() == Function::PARAM);
+    assert(prm->thisFormal());
+    assert(prm->isPrimaryMethod());
+    checkThisFormal(prm, "R", Formal::PARAM);
+    assert(prm->numFormals() == 2);
 
-  assert(tp->name() == "tp");
-  assert(tp->returnIntent() == Function::TYPE);
-  assert(tp->thisFormal());
-  assert(tp->isPrimaryMethod());
-  checkThisFormal(tp, "R", Formal::TYPE);
-  assert(tp->numFormals() == 2);
+    assert(tp->name() == "tp");
+    assert(tp->returnIntent() == Function::TYPE);
+    assert(tp->thisFormal());
+    assert(tp->isPrimaryMethod());
+    checkThisFormal(tp, "R", Formal::TYPE);
+    assert(tp->numFormals() == 2);
+  }
+
+  auto module = res.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 7);
+  assert(module->stmt(0)->isRecord());
+  assert(module->stmt(1)->isFunction());
+  assert(module->stmt(2)->isFunction());
+  assert(module->stmt(3)->isFunction());
+  assert(module->stmt(4)->isFunction());
+  assert(module->stmt(5)->isFunction());
+  assert(module->stmt(6)->isFunction());
+
+  {
+    auto df2 = module->stmt(1)->toFunction();
+    auto cnst2 = module->stmt(2)->toFunction();
+    auto cnstrf2 = module->stmt(3)->toFunction();
+    auto rf2 = module->stmt(4)->toFunction();
+    auto prm2 = module->stmt(5)->toFunction();
+    auto tp2 = module->stmt(6)->toFunction();
+
+    assert(df2->name() == "df2");
+    assert(df2->returnIntent() == Function::DEFAULT_RETURN_INTENT);
+    assert(df2->thisFormal());
+    assert(df2->isPrimaryMethod() == false);
+    checkThisFormal(df2, "R", Formal::DEFAULT_INTENT);
+    assert(df2->numFormals() == 2);
+
+    assert(cnst2->name() == "cnst2");
+    assert(cnst2->returnIntent() == Function::CONST);
+    assert(cnst2->thisFormal());
+    assert(cnst2->isPrimaryMethod() == false);
+    checkThisFormal(cnst2, "R", Formal::CONST);
+    assert(cnst2->numFormals() == 2);
+
+    assert(cnstrf2->name() == "cnstrf2");
+    assert(cnstrf2->returnIntent() == Function::CONST_REF);
+    assert(cnstrf2->thisFormal());
+    assert(cnstrf2->isPrimaryMethod() == false);
+    checkThisFormal(cnstrf2, "R", Formal::CONST_REF);
+    assert(cnstrf2->numFormals() == 2);
+
+    assert(rf2->name() == "rf2");
+    assert(rf2->returnIntent() == Function::REF);
+    assert(rf2->thisFormal());
+    assert(rf2->isPrimaryMethod() == false);
+    checkThisFormal(rf2, "R", Formal::REF);
+    assert(rf2->numFormals() == 2);
+
+    assert(prm2->name() == "prm2");
+    assert(prm2->returnIntent() == Function::PARAM);
+    assert(prm2->thisFormal());
+    assert(prm2->isPrimaryMethod() == false);
+    checkThisFormal(prm2, "R", Formal::PARAM);
+    assert(prm2->numFormals() == 2);
+
+    assert(tp2->name() == "tp2");
+    assert(tp2->returnIntent() == Function::TYPE);
+    assert(tp2->thisFormal());
+    assert(tp2->isPrimaryMethod() == false);
+    checkThisFormal(tp2, "R", Formal::TYPE);
+    assert(tp2->numFormals() == 2);
+  }
 }
 
 
