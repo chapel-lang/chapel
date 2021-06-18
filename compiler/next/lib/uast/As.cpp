@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/UseClause.h"
+#include "chpl/uast/As.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,37 +25,22 @@ namespace chpl {
 namespace uast {
 
 
-owned<UseClause> UseClause::build(Builder* builder, Location loc,
-                                  owned<Expression> name,
-                                  LimitationClauseKind limitationClauseKind,
-                                  ASTList limitationClause) {
+owned<As> As::build(Builder* builder, Location loc,
+                    owned<Expression> name,
+                    owned<Identifier> rename) {
   assert(name.get() != nullptr);
+  assert(rename.get() != nullptr);
 
   ASTList lst;
-  int8_t limitationClauseChildNum = -1;
-  int numLimitations = 0;
 
   lst.push_back(std::move(name));
+  lst.push_back(std::move(rename));
 
-  if (limitationClause.size()) {
-    limitationClauseChildNum = lst.size();
-    numLimitations = limitationClause.size();
-    for (auto& ast : limitationClause) {
-      lst.push_back(std::move(ast));
-    }
-  }
-
-  UseClause* ret = new UseClause(std::move(lst), limitationClauseKind,
-                                 limitationClauseChildNum,
-                                 numLimitations);
+  As* ret = new As(std::move(lst));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
 
-owned<UseClause> UseClause::build(Builder* builder, Location loc,
-                                  owned<Expression> name) {
-  return build(builder, loc, std::move(name), UseClause::NONE, ASTList());
-}
 
 } // namespace uast
 } // namespace chpl

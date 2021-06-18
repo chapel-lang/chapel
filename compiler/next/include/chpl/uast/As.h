@@ -22,13 +22,14 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Expression.h"
+#include "chpl/uast/Identifier.h"
 
 namespace chpl {
 namespace uast {
 
 
 /**
-  This class represents an as expression. Such expressions are used within
+  This class represents an 'as' expression. As expressions are used within
   use clauses to rename a symbol in the current scope. For example:
 
   \rst
@@ -40,7 +41,7 @@ namespace uast {
  */
 class As final : public Expression {
  private:
-  As(ASTList children) {
+  As(ASTList children)
     : Expression(asttags::As, std::move(children)) {
     const Expression* name = this->name();
     assert(name->isIdentifier() || name->isDot()); 
@@ -48,7 +49,7 @@ class As final : public Expression {
 
   // No need to mark 'nameChildNum_' or 'renameChildNum_', they are const.
   bool contentsMatchInner(const ASTNode* other) const override {
-    return expressionContentsMatchInner(other);
+    return expressionContentsMatchInner(other->toExpression());
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -56,8 +57,8 @@ class As final : public Expression {
   }
 
   // These always exist and their position will never change.
-  static const nameChildNum_ = 0;
-  static const renameChildNum_ = 1;
+  static const int8_t nameChildNum_ = 0;
+  static const int8_t renameChildNum_ = 1;
 
  public:
   ~As() override = default;

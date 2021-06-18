@@ -63,7 +63,7 @@ class Loop: public Expression {
    */
   ASTListIteratorPair<Expression> stmts() const {
     auto begin = children_.begin() + loopBodyChildNum_;
-    auto end = children_.end();
+    auto end = begin + numLoopBodyStmts_;
     return ASTListIteratorPair<Expression>(begin, end);
   }
 

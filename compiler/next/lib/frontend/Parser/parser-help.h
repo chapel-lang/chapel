@@ -33,6 +33,8 @@ void yychpl_error(YYLTYPE*       loc,
 
 #define STR(s) PODUniqueString::build(context->context(), s)
 #define LOC(loc) context->convertLocation(loc)
+#define LOC2(STARTLOC, ENDLOC) \
+  context->convertLocation(context->makeSpannedLocation(STARTLOC, ENDLOC))
 
 // ERROR creates an error and returns an error sentinel Expression
 #define ERROR(LOC,MSG) context->raiseError(LOC, MSG)

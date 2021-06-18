@@ -33,44 +33,45 @@ namespace uast {
 
   \rst
   .. code-block:: chapel
-    // This contains two use clauses, 'Foo as X' and 'Baz as Y only A'.
-    use Foo as X, Baz as Y only A;
+    // This contains two use clauses, 'Foo as X' and 'Baz as Y'.
+    use Foo as X, Baz as Y;
 
   \endrst
  */
 class UseClause final : public Expression {
  public:
-  enum QualifierListKind {
+  enum LimitationClauseKind {
     EXCEPT,
     ONLY,
     NONE
   };
 
  private:
-  // TODO: Have this inherit from NamedDecl? Need to figure out what happens
-  // when the used name is e.g. 'Foo.Bar'. Need to think about how this
-  // will affect e.g. the resolver.
-  UseClause(ASTList children, Decl::Visibility visibility,
-            QualifierListKind qualifierListKind,
-            int8_t qualifierListBodyChildNum,
-            int numQualifiers)
+  UseClause(ASTList children,  LimitationClauseKind limitationClauseKind,
+            int8_t limitationClauseChildNum,
+            int numLimitations)
     : Expression(asttags::UseClause, std::move(children)),
-      visibility_(visibility),
-      qualifierListKind_(qualifierListKind),
-      qualifierListChildNum_(qualifierListChildNum),
-      numQualifiers_(numQualifiers) {
-    if (qualifierListKind_ == ONLY) {
-      assert(numQualifiers >= 1);
+      limitationClauseKind_(limitationClauseKind),
+      limitationClauseChildNum_(limitationClauseChildNum),
+      numLimitations_(numLimitations) {
+
+    if (limitationClauseKind_ != NONE) {
+      assert(numLimitations_ >= 0);
+      assert(limitationClauseChildNum_ > nameChildNum_);
+      if (limitationClauseKind_ == ONLY) {
+        assert(numLimitations_ >= 1);
+      }
+    } else {
+      assert(numLimitations == 0);
     }
   }
 
-  // No need to check 'nameExprChildNum_'.
+  // No need to check 'nameChildNum_'.
   bool contentsMatchInner(const ASTNode* other) const override {
     const UseClause* rhs = other->toUseClause();
-    return this->visibility_ == rhs->visibility_ &&
-      this->qualifierListKind_ == rhs->qualifierListKind_ &&
-      this->qualifierListChildNum_ == rhs->qualifierListChildNum_ &&
-      this->numQualifiers == rhs->numQualifiers_ &&
+    return this->limitationClauseKind_ == rhs->limitationClauseKind_ &&
+      this->limitationClauseChildNum_ == rhs->limitationClauseChildNum_ &&
+      this->numLimitations_ == rhs->numLimitations_ &&
       this->expressionContentsMatchInner(rhs);
   }
 
@@ -79,12 +80,11 @@ class UseClause final : public Expression {
   }
 
   // This always exists and its position never changes.
-  static const int8_t nameExprChildNum_ = 0;
+  static const int8_t nameChildNum_ = 0;
 
-  Decl::Visibility visibility_;
-  QualifierListKind qualifierListKind_;
-  int8_t qualiferListChildNum_;
-  int numQualifiers_;
+  LimitationClauseKind limitationClauseKind_;
+  int8_t limitationClauseChildNum_;
+  int numLimitations_;
 
  public:
   ~UseClause() override = default;
@@ -93,56 +93,61 @@ class UseClause final : public Expression {
     Create and return a use clause.
   */
   static owned<UseClause> build(Builder* builder, Location loc,
-                                Decl::Visibility visibility,
-                                owned<Expr> nameExpr);
+                                owned<Expression> name);
 
   /**
     Create and return a use clause.
   */
   static owned<UseClause> build(Builder* builder, Location loc,
-                                Decl::Visibility visibility,
-                                owned<Expr> nameExpr,
-                                QualifierListKind qualifierListKind,
-                                ASTList qualifierList);
+                                owned<Expression> name,
+                                LimitationClauseKind limitationClauseKind,
+                                ASTList limitationClause);
 
   /**
-    Return the visibility of this use clause.
+    Get the name expression of this use clause. It may be a dot expression,
+    an as expression, or an identifier.
   */
-  Decl::Visibility visibility() const {
-    return visibility_;
+  const Expression* name() const {
+    auto ret = child(nameChildNum_);
+    assert(ret->isExpression());
+    return (const Expression*)ret;
   }
 
   /**
-    Return the qualifier list kind of this use clause.
+    Return the kind of limitation clause contained by this use clause.
   */
-  QualifierListKind qualifierListKind() const {
-    return qualifierListKind_;
+  LimitationClauseKind limitationClauseKind() const {
+    return limitationClauseKind_;
   }
 
   /**
-    Return a way to iterate over the qualifier list of this use clause.
+    Return a way to iterate over the limitations of this use clause.
   */
-  ASTListIteratorPair<Expression> qualifiers() const {
-    auto begin = numQualifiers() ? children_.begin() + qualifierListChildNum_
-                                 : children_.end();
-    auto end = begin + numQualifiers_ - 1;
+  ASTListIteratorPair<Expression> limitations() const {
+    auto begin = numLimitations()
+        ? children_.begin() + limitationClauseChildNum_
+        : children_.end();
+    auto end = begin + numLimitations_;
     return ASTListIteratorPair<Expression>(begin, end);
   }
 
   /**
-    Return the length of the qualifier list contained in this use clause.
+    Return the number of limitations contained in this use clause.
   */
-  int numQualifiers() const {
-    return this->numQualifiers_;
+  int numLimitations() const {
+    return this->numLimitations_;
   }
 
   /**
-    Return the i'th qualifier in the qualifier list of this use clause.
+    Return the i'th limitation of this use clause. If the limitation clause
+    kind is 'EXCEPT', then the limitations will all be identifiers. If the
+    limitation clause kind is 'ONLY', then the limitations may be
+    identifers or as expressions containing identifiers.
   */
-  const Expression* qualifier(int i) const {
-    if (qualifierListChildNum_ < 0) return nullptr;
-    assert(i >= 0 && i < numQualifiers_);
-    const ASTNode* ast = this->child(qualifierListChildNum_+i);
+  const Expression* limitation(int i) const {
+    if (limitationClauseChildNum_ < 0) return nullptr;
+    assert(i >= 0 && i < numLimitations_);
+    const ASTNode* ast = this->child(limitationClauseChildNum_+i);
     assert(ast->isExpression());
     return (const Expression*)ast;
   }  

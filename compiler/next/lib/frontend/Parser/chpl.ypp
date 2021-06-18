@@ -545,7 +545,7 @@
 %type <expr> import_expr
 %type <commentsAndStmt> use_stmt import_stmt require_stmt
 %type <exprList> import_ls
-%type <renameList> renames_ls use_renames_ls opt_only_ls except_ls
+%type <exprList> except_ls renames_ls use_renames_ls opt_only_ls
 
 // These are exprList so that they can include preceeding comments
 %type <commentsAndStmt> implements_stmt interface_stmt
@@ -1016,124 +1016,140 @@ stmt_ls:
 
 renames_ls:
   expr
-    {
-      $$ = new RenameList();
-      PotentialRename cur($1);;
-      $$->push_back(cur);
-    }
+  {
+    $$ = context->makeList($1);
+  }
 | expr TAS expr
-    {
-      $$ = new RenameList();
-      PotentialRename cur($1, $3);
-      $$->push_back(cur);
-    }
+  {
+    auto as = context->buildAsExpr(@1, @3, toOwned($1), toOwned($3));
+    $$ = context->makeList(as);
+  }
 | renames_ls TCOMMA expr
-    {
-      PotentialRename cur($3);
-      $1->push_back(cur);
-    }
+  {
+    $$ = context->appendList($1, $3);
+  }
 | renames_ls TCOMMA expr TAS expr
-    {
-      PotentialRename cur($3, $5);
-      $1->push_back(cur);
-    }
+  {
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
+    $$ = context->appendList($1, as);
+  }
 ;
 
 /* Separated so that use statements can rename their module to "_", but nothing
    else can */
 use_renames_ls:
   expr
-    {
-      $$ = new RenameList();
-      PotentialRename cur($1);
-      $$->push_back(cur);
-    }
+  {
+    auto node = UseClause::build(BUILDER, LOC(@$), toOwned($1));
+    $$ = context->makeList(std::move(node));
+  }
 | expr TAS expr
-    {
-      $$ = new RenameList();
-      PotentialRename cur($1, $3);
-      $$->push_back(cur);
-    }
+  {
+    auto as = context->buildAsExpr(@1, @3, toOwned($1), toOwned($3));
+    auto node = UseClause::build(BUILDER, LOC(@$), toOwned(as));
+    $$ = context->makeList(std::move(node));
+  }
 | expr TAS TUNDERSCORE
-    {
-      $$ = new RenameList();
-      PotentialRename cur($1, context->buildIdent(@3, $3));
-      $$->push_back(cur);
-    }
+  {
+    auto ident = toOwned(context->buildIdent(@3, $3));
+    auto as = context->buildAsExpr(@1, @3, toOwned($1), std::move(ident));
+    auto node = UseClause::build(BUILDER, LOC(@$), toOwned(as));
+    $$ = context->makeList(std::move(node));
+  }
 | use_renames_ls TCOMMA expr
-    {
-      PotentialRename cur($3);
-      $1->push_back(cur);
-     }
+  {
+    auto node = UseClause::build(BUILDER, LOC2(@2, @3), toOwned($3));
+    $$ = context->appendList($1, std::move(node));
+  }
 | use_renames_ls TCOMMA expr TAS expr
-     {
-       PotentialRename cur($3, $5);
-       $1->push_back(cur);
-     }
+  {
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
+    auto node = UseClause::build(BUILDER, LOC2(@2, @5), toOwned(as));
+    $$ = context->appendList($1, std::move(node));
+  }
 | use_renames_ls TCOMMA expr TAS TUNDERSCORE
-     {
-       PotentialRename cur($3, context->buildIdent(@5, $5));
-       $1->push_back(cur);
-     }
+  {
+    auto ident = context->buildIdent(@5, $5);
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned(ident));
+    auto node = UseClause::build(BUILDER, LOC2(@2, @5), toOwned(as));
+    $$ = context->appendList($1, std::move(node));
+  }
 ;
 
 
 opt_only_ls:
-  /* nothing */
-    {
-      $$ = new RenameList();
-      PotentialRename cur(context->buildEmptyIdent(@$));
-      $$->push_back(cur);
-    }
-| renames_ls
+  /* nothing */   { $$ = nullptr; }
+| renames_ls      { $$ = $1; }
 ;
 
 except_ls:
   TSTAR
-    {
-      $$ = new RenameList();
-      PotentialRename cur(context->buildEmptyIdent(@1));
-      $$->push_back(cur);
-     }
+  {
+    auto ident = context->buildIdent(@1, $1);
+    $$ = context->makeList(ident);
+  }
 | renames_ls
+  {
+    $$ = $1;
+  }
 ;
 
 use_stmt:
   access_control TUSE use_renames_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Use::build(BUILDER, LOC(@$), $1, context->consumeList($3));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
 | access_control TUSE expr TEXCEPT except_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto locUseClause = context->makeSpannedLocation(@3, @5);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned($3),
+                                     UseClause::EXCEPT,
+                                     $5);
+  }
 | access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
+    auto locUseClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
+                                     UseClause::EXCEPT,
+                                     $7);
+  }
 | access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto ident = toOwned(context->buildIdent(@5, $5));
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
+    auto locUseClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
+                                     UseClause::EXCEPT,
+                                     $7);
+  }
 | access_control TUSE expr TONLY opt_only_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto locUseClause = context->makeSpannedLocation(@3, @5);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned($3),
+                                     UseClause::ONLY,
+                                     $5);
+  }
 | access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
+    auto locUseClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
+                                     UseClause::ONLY,
+                                     $7);
+  }
 | access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto ident = toOwned(context->buildIdent(@5, $5));
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
+    auto locUseClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
+                                     UseClause::ONLY,
+                                     $7);
+  }
 ;
 
 import_stmt:

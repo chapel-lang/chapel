@@ -21,6 +21,7 @@ target_sources(libchplcomp-obj
                ASTList.cpp
                ASTNode.cpp
                ASTTag.cpp
+               As.cpp
                Begin.cpp
                Block.cpp
                BracketLoop.cpp
@@ -74,6 +75,8 @@ target_sources(libchplcomp-obj
                TupleDecl.cpp
                TypeDecl.cpp
                UintLiteral.cpp
+               Use.cpp
+               UseClause.cpp
                Variable.cpp
                VarLikeDecl.cpp
                Visitor.cpp

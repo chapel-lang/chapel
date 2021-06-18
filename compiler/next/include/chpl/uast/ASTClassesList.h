@@ -67,7 +67,9 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   //AST_NODE(Import)                     // old AST: ImportStmt
   AST_NODE(New)
   //AST_NODE(Require)                    //
-  //AST_NODE(Use)                        // old AST: UseStmt
+  AST_NODE(As)                         //
+  AST_NODE(Use)                        // old AST: UseStmt
+  AST_NODE(UseClause)                  //
   AST_NODE(WithClause)
 
   AST_NODE(Break)                    // old AST: GotoStmt

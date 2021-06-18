@@ -24,6 +24,7 @@ NEXT_UAST_SRCS =                                 \
   ASTList.cpp \
   ASTNode.cpp \
   ASTTag.cpp \
+  As.cpp \
   Begin.cpp \
   Block.cpp \
   BracketLoop.cpp \
@@ -77,6 +78,8 @@ NEXT_UAST_SRCS =                                 \
   TupleDecl.cpp \
   TypeDecl.cpp \
   UintLiteral.cpp \
+  Use.cpp \
+  UseClause.cpp \
   Variable.cpp \
   VarLikeDecl.cpp \
   Visitor.cpp \

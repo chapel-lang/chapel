@@ -21,6 +21,8 @@
 #define CHPL_UAST_USE_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/Decl.h"
+#include "chpl/uast/Expression.h"
 #include "chpl/uast/UseClause.h"
 
 namespace chpl {
@@ -38,23 +40,29 @@ namespace uast {
 
   \endrst
 
-  This creates a use statement that has two use clauses, 'use Foo' and
-  'use Bar as A'.
+  This creates a use statement that has two use clauses, 'Foo' and
+  'Bar as A'.
 */
 class Use final : public Expression {
  private:
-  Use(ASTList children)
-    : Expression(asttags::Use, std::move(children)) {
+  Use(ASTList children, Decl::Visibility visibility)
+    : Expression(asttags::Use, std::move(children)),
+      visibility_(visibility) {
+    assert(numChildren() >= 1);
     assert(isExpressionASTList(children_));
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
-    return expressionContentsMatchInner(other->toExpression());
+    const Use* rhs = other->toUse();
+    return this->visibility_ == rhs->visibility_ &&
+      this->expressionContentsMatchInner(rhs);
   }
 
   void markUniqueStringsInner(Context* context) const override {
     expressionMarkUniqueStringsInner(context);
   }
+
+  Decl::Visibility visibility_;
 
  public:
 
@@ -62,7 +70,15 @@ class Use final : public Expression {
     Create and return a use statement.
   */
   static owned<Use> build(Builder* builder, Location loc,
+                          Decl::Visibility visibility,
                           ASTList useClauses);
+
+  /**
+    Return the visibility of the use clauses in this use statement.
+  */
+  Decl::Visibility visibility() const {
+    return visibility_;
+  }
 
   /**
     Return a way to iterate over the uses clauses.
@@ -84,7 +100,7 @@ class Use final : public Expression {
   */
   const UseClause* useClause(int i) const {
     auto ret = this->child(i);
-    assert(ast->isUseClause());
+    assert(ret->isUseClause());
     return (const UseClause*)ret;
   }
 
