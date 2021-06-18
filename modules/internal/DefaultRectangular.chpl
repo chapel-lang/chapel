@@ -2331,10 +2331,10 @@ module DefaultRectangular {
       writeln("Whose chunks are: ", rngs);
     }
 
-    var state: [rngs.indices] resType;
+    var state: [rngs.domain] resType;
 
     // Take first pass over data doing per-chunk scans
-    coforall tid in rngs.indices {
+    coforall tid in rngs.domain {
       const current: resType;
       const myop = op.clone();
       for i in rngs[tid] {
@@ -2354,7 +2354,7 @@ module DefaultRectangular {
     // Scan state vector itself
     const metaop = op.clone();
     var next: resType = metaop.identity;
-    for i in rngs.indices {
+    for i in rngs.domain {
       state[i] <=> next;
       metaop.accumulateOntoState(next, state[i]);
     }
@@ -2370,7 +2370,7 @@ module DefaultRectangular {
   // tasks.  This is broken out into a helper function in order to be
   // made use of by distributed array scans.
   proc DefaultRectangularArr.chpl__postScan(op, res, numTasks, rngs, state) {
-    coforall tid in rngs.indices {
+    coforall tid in rngs.domain {
       const myadjust = state[tid];
       for i in rngs[tid] {
         op.accumulateOntoState(res[i], myadjust);
