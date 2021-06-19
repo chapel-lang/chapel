@@ -258,6 +258,13 @@ struct Converter {
     return nullptr;
   }
 
+  /// Non-Literal Initializer Expressions (e.g. Array, Range) ///
+
+  Expr* convertRange(const uast::Range* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
   /// Literals ///
 
   /// NumericLiterals ///

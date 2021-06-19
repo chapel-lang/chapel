@@ -2905,17 +2905,38 @@ expr:
 | expr TCOLON expr
     { $$ = TODOEXPR(@$); }
 | expr TDOTDOT expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::CLOSED, toOwned($1),
+                      toOwned($3)).release();
+  }
 | expr TDOTDOTOPENHIGH expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_HIGH, toOwned($1),
+                      toOwned($3)).release();
+  }
 | expr TDOTDOT
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::CLOSED, toOwned($1),
+                      /*upperBound*/ nullptr).release();
+  }
 | TDOTDOT expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::CLOSED,
+                      /*lowerBound*/ nullptr,
+                      toOwned($2)).release();
+  }
 | TDOTDOTOPENHIGH expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_HIGH,
+                      /*lowerBound*/ nullptr,
+                      toOwned($2)).release();
+  }
 | TDOTDOT
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::CLOSED,
+                      /*lowerBound*/ nullptr,
+                      /*upperBound*/ nullptr).release();
+  }
 
 /* The following cases would extend the current '..<' open range
    interval constructor to also support '<..' and '<..<'.  This
@@ -2923,11 +2944,20 @@ expr:
    in case we change our minds in a future release.
 
 | expr TDOTDOTOPENLOW expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_LOW, toOwned($1),
+                      toOwned($3)).release();
+  }
 | expr TDOTDOTOPENBOTH expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_BOTH, toOwned($1),
+                      toOwned($3)).release();
+  }
 | expr TDOTDOTOPENLOW
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_LOW, toOwned($1),
+                      nullptr).release();
+  }
 */
 
 ;

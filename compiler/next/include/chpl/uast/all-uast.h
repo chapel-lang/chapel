@@ -57,6 +57,7 @@
 #include "chpl/uast/New.h"
 #include "chpl/uast/On.h"
 #include "chpl/uast/OpCall.h"
+#include "chpl/uast/Range.h"
 #include "chpl/uast/RealLiteral.h"
 #include "chpl/uast/Return.h"
 #include "chpl/uast/Serial.h"

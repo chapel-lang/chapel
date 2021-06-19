@@ -68,6 +68,7 @@ NEXT_UAST_SRCS =                                 \
   NumericLiteral.cpp \
   On.cpp \
   OpCall.cpp \
+  Range.cpp \
   RealLiteral.cpp \
   Return.cpp \
   Serial.cpp \

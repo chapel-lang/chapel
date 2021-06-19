@@ -65,6 +65,7 @@ target_sources(libchplcomp-obj
                NumericLiteral.cpp
                On.cpp
                OpCall.cpp
+               Range.cpp
                RealLiteral.cpp
                Return.cpp
                Serial.cpp
