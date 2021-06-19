@@ -228,6 +228,54 @@ static void test3(Parser* parser) {
   }
 }
 
+static void test4(Parser* parser) {
+  auto parseResult = parser->parseString("test4.chpl",
+      "/*c1*/\n"
+      "use Foo only;\n"
+      "/*c7*/\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isUse());
+  assert(mod->stmt(2)->isComment());
+  const Use* use = mod->stmt(1)->toUse();
+  assert(use->visibility() == Decl::DEFAULT_VISIBILITY);
+  assert(use->numUseClauses() == 1);
+  const UseClause* useClause = use->useClause(0);
+  assert(useClause->name()->isIdentifier());
+  assert(useClause->name()->toIdentifier()->name() == "Foo");
+  assert(useClause->numLimitations() == 0);
+  assert(useClause->limitationClauseKind() == UseClause::ONLY);
+}
+
+static void test5(Parser* parser) {
+  auto parseResult = parser->parseString("test5.chpl",
+      "/*c1*/\n"
+      "use Foo except *;\n"
+      "/*c7*/\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isUse());
+  assert(mod->stmt(2)->isComment());
+  const Use* use = mod->stmt(1)->toUse();
+  assert(use->visibility() == Decl::DEFAULT_VISIBILITY);
+  assert(use->numUseClauses() == 1);
+  const UseClause* useClause = use->useClause(0);
+  assert(useClause->name()->isIdentifier());
+  assert(useClause->name()->toIdentifier()->name() == "Foo");
+  assert(useClause->limitationClauseKind() == UseClause::EXCEPT);
+  assert(useClause->numLimitations() == 1);
+  assert(useClause->limitation(0)->isIdentifier());
+  assert(useClause->limitation(0)->toIdentifier()->name() == "*");
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -239,6 +287,8 @@ int main() {
   test1(p);
   test2(p);
   test3(p);
+  test4(p);
+  test5(p);
 
   return 0;
 }

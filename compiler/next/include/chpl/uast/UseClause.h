@@ -55,14 +55,10 @@ class UseClause final : public Expression {
       limitationClauseChildNum_(limitationClauseChildNum),
       numLimitations_(numLimitations) {
 
-    if (limitationClauseKind_ != NONE) {
-      assert(numLimitations_ >= 0);
-      assert(limitationClauseChildNum_ > nameChildNum_);
-      if (limitationClauseKind_ == ONLY) {
-        assert(numLimitations_ >= 1);
-      }
-    } else {
-      assert(numLimitations == 0);
+    switch (limitationClauseKind_) {
+      case EXCEPT: assert(numLimitations >= 1); break;
+      case NONE: assert(numLimitations_ == 0); break;
+      case ONLY: assert(numLimitations_ >= 0); break;
     }
   }
 
