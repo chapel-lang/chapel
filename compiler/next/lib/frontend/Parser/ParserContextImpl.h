@@ -98,6 +98,10 @@ Variable::Kind ParserContext::noteVarDeclKind(Variable::Kind varDeclKind) {
   this->varDeclKind = varDeclKind;
   return this->varDeclKind;
 }
+bool ParserContext::noteIsVarDeclConfig(bool isConfig) {
+  this->isVarDeclConfig = isConfig;
+  return this->isVarDeclConfig;
+}
 YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
   if (this->declStartLocation.first_line == 0)
     return curLoc;
@@ -107,6 +111,7 @@ YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
 void ParserContext::resetDeclState() {
   this->varDeclKind = Variable::VAR;
   this->visibility = Decl::DEFAULT_VISIBILITY;
+  this->isVarDeclConfig = false;
   YYLTYPE emptyLoc = {0};
   this->declStartLocation = emptyLoc;
 }
@@ -420,6 +425,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            ident->name(),
                            Decl::DEFAULT_VISIBILITY,
                            Variable::INDEX,
+                           /*isConfig*/ false,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
   } else {
@@ -1126,4 +1132,46 @@ buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locUseClause,
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
 
   return finishStmt(cs);
+}
+
+// Given a list of vars, build either a single var or a multi-decl.
+CommentsAndStmt ParserContext::buildVarOrMultiDecl(YYLTYPE locEverything,
+                                                   ParserExprList* vars) {
+  int numDecls = 0;
+  Decl* lastDecl = nullptr;
+
+  for (auto elt : *vars) {
+    if (Decl* d = elt->toDecl()) {
+      lastDecl = d;
+      numDecls++;
+    }
+  }
+
+  assert(numDecls > 0);
+  assert(lastDecl);
+
+  auto comments = gatherCommentsFromList(vars, locEverything);
+  CommentsAndStmt cs = { .comments=comments, .stmt=nullptr };
+
+  if (numDecls == 1) {
+    cs.stmt = lastDecl;
+
+    // Delete any remaining comments and then the expr list.
+    for (auto elt : *vars) {
+      if (elt->isComment()) delete elt;
+    }
+    delete vars;
+
+  } else {
+    auto multi = MultiDecl::build(builder, convertLocation(locEverything),
+                                  visibility,
+                                  consumeList(vars));
+    cs.stmt = multi.release();
+  }
+
+  assert(cs.stmt);
+
+  resetDeclState();
+
+  return cs;
 }

@@ -28,8 +28,9 @@ namespace uast {
 bool Variable::contentsMatchInner(const ASTNode* other) const {
   const Variable* lhs = this;
   const Variable* rhs = (const Variable*) other;
-  return lhs->varLikeDeclContentsMatchInner(rhs) &&
-         lhs->kind_ == rhs->kind_;
+  return lhs->kind_ == rhs->kind_ &&
+         lhs->isConfig_ == rhs->isConfig_ &&
+         lhs->varLikeDeclContentsMatchInner(rhs);
 }
 
 void Variable::markUniqueStringsInner(Context* context) const {
@@ -40,6 +41,7 @@ owned<Variable>
 Variable::build(Builder* builder, Location loc,
                 UniqueString name, Decl::Visibility vis,
                 Variable::Kind kind,
+                bool isConfig,
                 owned<Expression> typeExpression,
                 owned<Expression> initExpression) {
   ASTList lst;
@@ -54,7 +56,7 @@ Variable::build(Builder* builder, Location loc,
     lst.push_back(std::move(initExpression));
   }
 
-  Variable* ret = new Variable(std::move(lst), vis, name, kind,
+  Variable* ret = new Variable(std::move(lst), vis, name, kind, isConfig,
                                typeExpressionChildNum, initExpressionChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);

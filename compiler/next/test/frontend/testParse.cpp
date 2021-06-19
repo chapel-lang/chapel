@@ -530,6 +530,9 @@ static void testVarDecl1(Parser* parser) {
   auto varDecl = module->stmt(0)->toVariable();
   assert(varDecl);
 
+  assert(varDecl->name() == "a");
+  assert(!varDecl->isConfig());
+
   auto typeExpr = varDecl->typeExpression();
   assert(typeExpr);
   assert(typeExpr->isIdentifier());
@@ -549,6 +552,9 @@ static void testVarDecl2(Parser* parser) {
 
   auto varDecl = module->stmt(0)->toVariable();
   assert(varDecl);
+
+  assert(varDecl->name() == "a");
+  assert(!varDecl->isConfig());
 
   assert(varDecl->typeExpression() == nullptr);
 
@@ -719,6 +725,31 @@ static void testVarDecl3f(Parser* parser) {
   assert(0 == initExpr->toIdentifier()->name().compare("b"));
 }
 
+static void testVarDecl3g(Parser* parser) {
+  auto parseResult = parser->parseString("testVarDecl3g.chpl",
+      "config var a : int = b /* comment */;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+
+  auto varDecl = module->stmt(0)->toVariable();
+  assert(varDecl);
+
+  assert(varDecl->isConfig());
+  assert(varDecl->name() == "a");
+
+  auto typeExpr = varDecl->typeExpression();
+  assert(typeExpr);
+  assert(typeExpr->isIdentifier());
+  assert(0 == typeExpr->toIdentifier()->name().compare("int"));
+
+  auto initExpr = varDecl->initExpression();
+  assert(initExpr);
+  assert(initExpr->isIdentifier());
+  assert(0 == initExpr->toIdentifier()->name().compare("b"));
+}
 static void testDot1(Parser* parser) {
   auto parseResult = parser->parseString("testDot1.chpl",
                                          "a.b;\n");
@@ -910,6 +941,7 @@ int main() {
   testVarDecl3d(p);
   testVarDecl3e(p);
   testVarDecl3f(p);
+  testVarDecl3g(p);
 
   testDot1(p);
   testDot2(p);

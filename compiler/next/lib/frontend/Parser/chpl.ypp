@@ -1731,6 +1731,7 @@ ifvar:
     auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
                                    Decl::DEFAULT_VISIBILITY,
                                    Variable::VAR,
+                                   /*isConfig*/ false,
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
     $$ = varDecl.release();
@@ -1740,6 +1741,7 @@ ifvar:
     auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
                                    Decl::DEFAULT_VISIBILITY,
                                    Variable::CONST,
+                                   /*isConfig*/ false,
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
     $$ = varDecl.release();
@@ -2361,49 +2363,18 @@ var_decl_type:
 ;
 
 var_decl_stmt:
-  TCONFIG var_decl_type var_decl_stmt_inner_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->resetDeclState();
-    }
+  TCONFIG
+  {
+    // Use a mid-rule action to thread along 'isVarDeclConfig'.
+    context->noteIsVarDeclConfig(true);
+  }
+  var_decl_type var_decl_stmt_inner_ls TSEMI {
+    $$ = context->buildVarOrMultiDecl(@$, $4);
+  }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
-    {
-      ParserExprList* lst = $2;
-      int nDecls = 0;
-      Decl* lastDecl = nullptr;
-      for (auto elt : *lst) {
-        if (Decl* d = elt->toDecl()) {
-          lastDecl = d;
-          nDecls++;
-        }
-      }
-      assert(nDecls > 0);
-      assert(lastDecl);
-      if (nDecls == 1) {
-        // gather any comments from before the 'var'
-        // intentionally ignores comments after 'var'
-        CommentsAndStmt cs = {context->gatherCommentsFromList(lst, @1),
-                              lastDecl};
-        $$ = cs;
-        // delete any comments left in lst
-        for (auto elt : *lst) {
-          if (elt->isComment()) {
-            delete elt;
-          }
-        }
-        // delete the list
-        delete lst;
-      } else {
-        // gather any comments from before the 'var'
-        CommentsAndStmt cs = {context->gatherCommentsFromList(lst, @1),
-                              nullptr};
-        auto multi = MultiDecl::build(BUILDER, LOC(@$), context->visibility,
-                                      context->consumeList(lst));
-        cs.stmt = multi.release();
-        $$ = cs;
-      }
-      context->resetDeclState();
-    }
+  {
+    $$ = context->buildVarOrMultiDecl(@$, $2);
+  }
 ;
 
 var_decl_stmt_inner_ls:
@@ -2423,6 +2394,7 @@ var_decl_stmt_inner:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->isVarDeclConfig,
                                      toOwned($2), toOwned($3));
       // gather the comments like a statement does
       $$ = STMT(@1, varDecl.release());
@@ -2446,6 +2418,7 @@ tuple_var_decl_component:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->isVarDeclConfig,
                                      nullptr, nullptr);
       $$ = varDecl.release();
     }
@@ -2455,6 +2428,7 @@ tuple_var_decl_component:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->isVarDeclConfig,
                                      nullptr, nullptr);
       $$ = varDecl.release();
     }

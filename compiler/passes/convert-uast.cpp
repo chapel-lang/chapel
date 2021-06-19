@@ -641,6 +641,10 @@ struct Converter {
         break;
     }
 
+    if (node->isConfig()) {
+      varSym->addFlag(FLAG_CONFIG);
+    }
+
     Expr* typeExpr = convertExprOrNull(node->typeExpression());
     Expr* initExpr = convertExprOrNull(node->initExpression());
 
