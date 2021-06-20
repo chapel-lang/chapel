@@ -109,6 +109,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/AtomicObjects.chpl \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
+	packages/ConcurrentMap.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/EpochManager.chpl \
