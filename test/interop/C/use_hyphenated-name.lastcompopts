@@ -1,1 +1,0 @@
--Llib/ -lhyphenated-name `$CHPL_HOME/util/config/compileline --libraries` -lhyphenated-name
