@@ -329,9 +329,28 @@ struct Converter {
     return nullptr;
   }
 
+  // TODO: Create a common converter for all IndexableLoop if possible?
   BlockStmt* convertCoforall(const uast::Coforall* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    INT_ASSERT(!node->isExpressionLevel());
+
+    // These are the arguments that 'buildCoforallLoopStmt' requires.
+    Expr* indices = nullptr;
+    Expr* iterator = toExpr(convertAST(node->iterand()));
+    CallExpr* byref_vars = nullptr;
+    BlockStmt* body = createBlockWithStmts(node->stmts());
+    bool zippered = node->iterand()->isZip();
+
+    if (node->index()) {
+      indices = revertLoopIndexDecl(node->index());
+    }
+
+    if (node->withClause()) {
+      byref_vars = toCallExpr(convertAST(node->withClause()));
+      INT_ASSERT(byref_vars);
+    }
+
+    return buildCoforallLoopStmt(indices, iterator, byref_vars, body,
+                                 zippered);
   }
 
   BlockStmt* convertFor(const uast::For* node) {
