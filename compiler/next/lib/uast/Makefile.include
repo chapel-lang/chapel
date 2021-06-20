@@ -25,6 +25,7 @@ NEXT_UAST_SRCS =                                 \
   ASTNode.cpp \
   ASTTag.cpp \
   As.cpp \
+  Array.cpp \
   Begin.cpp \
   Block.cpp \
   BracketLoop.cpp \
@@ -41,6 +42,7 @@ NEXT_UAST_SRCS =                                 \
   Decl.cpp \
   Defer.cpp \
   Delete.cpp \
+  Domain.cpp \
   Dot.cpp \
   DoWhile.cpp \
   Enum.cpp \

@@ -3073,18 +3073,30 @@ literal_expr:
 | IMAGLITERAL    { $$ = context->buildNumericLiteral(@$, $1, IMAGLITERAL); }
 | CSTRINGLITERAL      { $$ = $1; }
 | TNONE               { $$ = context->buildIdent(@$, $1); }
-| TLCBR expr_ls TRCBR          { $$ = TODOEXPR(@$); }
-| TLCBR expr_ls TCOMMA TRCBR   { $$ = TODOEXPR(@$); }
-| TLSBR expr_ls TRSBR          { $$ = TODOEXPR(@$); }
-| TLSBR expr_ls TCOMMA TRSBR   { $$ = TODOEXPR(@$); }
+| TLCBR expr_ls TRCBR
+  {
+    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+  }
+| TLCBR expr_ls TCOMMA TRCBR
+  {
+    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+  }
+| TLSBR expr_ls TRSBR
+  {
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+  }
+| TLSBR expr_ls TCOMMA TRSBR
+  {
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+  }
 | TLSBR assoc_expr_ls TRSBR
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = TODOEXPR(@$);
+  }
 | TLSBR assoc_expr_ls TCOMMA TRSBR
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = TODOEXPR(@$);
+  }
 
 ;
 

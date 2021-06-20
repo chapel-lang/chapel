@@ -97,10 +97,11 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
   AST_END_SUBCLASSES(Loop)
 
-  //AST_NODE(ArrayExpr) // TODO: figure out good names for these
-  //AST_NODE(DomainExpr)
+  AST_NODE(Array)                      //
+  //AST_NODE(AssociativeArray)           //
+  AST_NODE(Domain)                     //
   AST_NODE(Range)                      //
-  //AST_NODE(TupleExpr)
+  //AST_NODE(TupleExpr)                  //
 
   AST_BEGIN_SUBCLASSES(Literal)        // old AST: Immediate
 

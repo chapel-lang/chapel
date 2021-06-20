@@ -22,6 +22,7 @@ target_sources(libchplcomp-obj
                ASTNode.cpp
                ASTTag.cpp
                As.cpp
+               Array.cpp
                Begin.cpp
                Block.cpp
                BracketLoop.cpp
@@ -38,6 +39,7 @@ target_sources(libchplcomp-obj
                Decl.cpp
                Defer.cpp
                Delete.cpp
+               Domain.cpp
                Dot.cpp
                DoWhile.cpp
                Enum.cpp

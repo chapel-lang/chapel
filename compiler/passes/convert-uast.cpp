@@ -155,18 +155,95 @@ struct Converter {
     return nullptr;
   }
 
+  std::pair<Expr*, Expr*> revertAs(const uast::As* node) {
+    Expr* one = toExpr(convertAST(node->name()));
+    Expr* two = toExpr(convertAST(node->rename()));
+    return std::pair<Expr*, Expr*>(one, two);
+  }
+
   Expr* convertAs(const uast::As* node) {
-    INT_FATAL("TODO");
+    INT_FATAL("Should not be called directly!");
     return nullptr;
   }
 
-  UseStmt* convertUse(const uast::Use* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  PotentialRename* revertRename(const uast::Expression* node) {
+    PotentialRename* ret = new PotentialRename();
+
+    if (auto as = node->toAs()) {
+      ret->tag = PotentialRename::DOUBLE;
+      ret->renamed = new std::pair<Expr*, Expr*>(revertAs(as));
+    } else {
+      ret->tag = PotentialRename::SINGLE;
+      ret->elem = toExpr(convertAST(node));
+    }
+
+    return ret;
+  }
+
+  BlockStmt* revertUsePossibleLimitations(const uast::Use* node) {
+    INT_ASSERT(node->numUseClauses() == 1);
+
+    auto useClause = node->useClause(0);
+
+    if (useClause->limitationClauseKind() == uast::UseClause::NONE) {
+      INT_ASSERT(useClause->numLimitations() == 0);
+      return revertUseNoLimitations(node);
+    }
+
+    // These are the arguments required by 'buildUseStmt' with limitations.
+    Expr* mod = nullptr;
+    Expr* rename = nullptr;
+    auto names = new std::vector<PotentialRename*>();
+    bool except = false;
+    bool privateUse = node->visibility() != uast::Decl::PUBLIC;
+
+    if (useClause->limitationClauseKind() == uast::UseClause::EXCEPT) {
+      except = true;
+    }
+
+    if (auto as = useClause->name()->toAs()) {
+      auto exprs = revertAs(as);
+      mod = exprs.first;
+      rename = exprs.second;
+    } else {
+      mod = toExpr(convertAST(useClause->name()));
+      rename = new UnresolvedSymExpr("");
+    }
+
+    // Build the limitations list.
+    for (auto limitation : useClause->limitations()) {
+      names->push_back(revertRename(limitation));
+    }
+
+    return buildUseStmt(mod, rename, names, except, privateUse);
+  }
+
+  BlockStmt* revertUseNoLimitations(const uast::Use* node) {
+    auto args = new std::vector<PotentialRename*>();
+    bool privateUse = node->visibility() != uast::Decl::PUBLIC;
+
+    for (auto useClause : node->useClauses()) {
+      INT_ASSERT(useClause->limitationClauseKind() == uast::UseClause::NONE);
+      INT_ASSERT(useClause->numLimitations() == 0);
+      PotentialRename* pr = revertRename(useClause->name());
+      args->push_back(pr);
+    }
+
+    return buildUseStmt(args, privateUse);
+  }
+
+  BlockStmt* convertUse(const uast::Use* node) {
+    INT_ASSERT(node->numUseClauses() > 0);
+
+    if (node->numUseClauses() == 1) {
+      return revertUsePossibleLimitations(node);
+    } else {
+      return revertUseNoLimitations(node);
+    }
   }
 
   Expr* convertUseClause(const uast::UseClause* node) {
-    INT_FATAL("TODO");
+    INT_FATAL("Should not be called directly!");
     return nullptr;
   }
 
@@ -236,7 +313,7 @@ struct Converter {
 
   // In the uAST, loop index variables are represented as Decl, but in the
   // old AST they are represented as expressions.
-  static Expr* revertLoopIndexDecl(const uast::Decl* index) {
+  Expr* revertLoopIndexDecl(const uast::Decl* index) {
     if (index == nullptr) return nullptr;
 
     if (const uast::Variable* var = index->toVariable()) {
@@ -267,7 +344,7 @@ struct Converter {
       INT_FATAL("TODO");
       return nullptr;
     } else {
-      assert(node->iterand());
+      INT_ASSERT(node->iterand());
 
       // These are the arguments that 'ForallStmt::build' requires.
       Expr* indices = nullptr;
@@ -283,7 +360,7 @@ struct Converter {
 
       if (node->withClause()) {
         intents = toCallExpr(convertAST(node->withClause()));
-        assert(intents);
+        INT_ASSERT(intents);
       }
 
       return ForallStmt::build(indices, iterator, intents, body, zippered,
@@ -298,9 +375,30 @@ struct Converter {
 
   /// Non-Literal Initializer Expressions (e.g. Array, Range) ///
 
+  CallExpr* convertArray(const uast::Array* node) {
+    CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
+
+    for (auto expr : node->exprs()) {
+      actualList->insertAtTail(toExpr(convertAST(expr)));
+    }
+
+    return new CallExpr("chpl__buildArrayExpr", actualList);
+  }
+
+  CallExpr* convertDomain(const uast::Domain* node) {
+    CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
+
+    for (auto expr : node->exprs()) {
+      actualList->insertAtTail(toExpr(convertAST(expr)));
+    }
+
+    return new CallExpr("chpl__buildDomainExpr", actualList,
+                        new SymExpr(gTrue));
+  }
+
   CallExpr* convertRange(const uast::Range* node) {
 
-    // These are the pieces that 'buildBoundedRange' requires.
+    // These are the arguments 'buildBoundedRange' requires.
     Expr* low = nullptr;
     Expr* high = nullptr;
     bool openlow = false;
@@ -403,8 +501,18 @@ struct Converter {
   /// Calls ///
 
   Expr* convertDot(const uast::Dot* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+
+    // These are the arguments that 'buildDotExpr' requires.
+    BaseAST* base = toExpr(convertAST(node->calledExpression()));
+    const char* member = node->field().c_str();
+
+    if (!strcmp(member, "type")) {
+      return new CallExpr(PRIM_TYPEOF, base);
+    } else if (!strcmp(member, "domain")) {
+      return buildDotExpr(base, "_dom");
+    } else {
+      return buildDotExpr(base, member);
+    }
   }
 
   Expr* convertFnCall(const uast::FnCall* node) {
@@ -428,9 +536,27 @@ struct Converter {
     return ret;
   }
 
-  Expr* convertOpCall(const uast::OpCall* node) {
+  CallExpr* revertDmappedOp(const uast::OpCall* node) {
+    INT_ASSERT(node->numActuals() == 2);
+
+    CallExpr* ret = new CallExpr("chpl__distributed");
+
+    // Call takes actuals in reverse order.
+    for (int i = node->numActuals()-1; i >= 0; i--) {
+      Expr* actual = convertAST(node->actual(i));
+      INT_ASSERT(actual);
+      ret->insertAtTail(actual);
+    }
+
+    ret->insertAtTail(new SymExpr(gTrue));
+
+    return ret;
+  }
+
+  CallExpr* revertRegularBinaryOrUnaryOp(const uast::OpCall* node) {
     CallExpr* ret = new CallExpr(node->op().c_str());
     int nActuals = node->numActuals();
+
     for (int i = 0; i < nActuals; i++) {
       Expr* actual = convertAST(node->actual(i));
       INT_ASSERT(actual);
@@ -438,6 +564,16 @@ struct Converter {
     }
 
     return ret;
+  }
+
+  Expr* convertOpCall(const uast::OpCall* node) {
+    const char* opStr = node->op().c_str();
+
+    if (!strcmp(opStr, "dmapped")) {
+      return revertDmappedOp(node);
+    } else {
+      return revertRegularBinaryOrUnaryOp(node);
+    }
   }
 
   Expr* convertPrimCall(const uast::PrimCall* node) {

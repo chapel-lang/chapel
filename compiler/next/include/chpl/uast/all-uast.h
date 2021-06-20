@@ -19,6 +19,7 @@
 
 #include "chpl/uast/ASTNode.h"
 #include "chpl/uast/As.h"
+#include "chpl/uast/Array.h"
 #include "chpl/uast/Begin.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/BracketLoop.h"
@@ -34,8 +35,9 @@
 #include "chpl/uast/Continue.h"
 #include "chpl/uast/Defer.h"
 #include "chpl/uast/Delete.h"
-#include "chpl/uast/DoWhile.h"
+#include "chpl/uast/Domain.h"
 #include "chpl/uast/Dot.h"
+#include "chpl/uast/DoWhile.h"
 #include "chpl/uast/Enum.h"
 #include "chpl/uast/EnumElement.h"
 #include "chpl/uast/ErroneousExpression.h"
