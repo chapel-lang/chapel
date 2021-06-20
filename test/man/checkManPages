@@ -139,6 +139,7 @@ def check_man_page(bin_name, additional_args=None):
 
         # Check if the manpage flags of this section have '\' , otherwise throws error
         for mflag in manflags:
+            # mflag[0] used for flags like "--baseline" and mflag[4] for comma separated flags like "-M, --module-dir"
             if mflag[0] == "\\" or mflag[4] == "\\":
                 continue
             else:
