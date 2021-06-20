@@ -1666,7 +1666,6 @@ static void codegen_header(std::set<const char*> & cnames,
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block) {
-      // legalizeSymbolName(ts);
       types.push_back(ts);
     }
   }
@@ -1678,7 +1677,6 @@ static void codegen_header(std::set<const char*> & cnames,
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (var->defPoint->parentExpr != rootModule->block &&
         toModuleSymbol(var->defPoint->parentSymbol)) {
-      // legalizeSymbolName(var);
       if ( var->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU ){
         globals.push_back(var);
       }
@@ -1690,7 +1688,6 @@ static void codegen_header(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    // legalizeSymbolName(fn);
     if (fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU){
       functions.push_back(fn);
     }
