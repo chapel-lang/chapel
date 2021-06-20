@@ -26,6 +26,7 @@
 #include "convert-uast.h"
 
 #include "DoWhileStmt.h"
+#include "ForallStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
 #include "docsDriver.h"
@@ -233,6 +234,19 @@ struct Converter {
 
   /// IndexableLoops ///
 
+  // In the uAST, loop index variables are represented as Decl, but in the
+  // old AST they are represented as expressions.
+  static Expr* revertLoopIndexDecl(const uast::Decl* index) {
+    if (index == nullptr) return nullptr;
+
+    if (const uast::Variable* var = index->toVariable()) {
+      return new UnresolvedSymExpr(var->name().c_str());
+    } else {
+      INT_FATAL("TODO");
+      return nullptr;
+    }
+  }
+
   BlockStmt* convertBracketLoop(const uast::BracketLoop* node) {
     INT_FATAL("TODO");
     return nullptr;
@@ -249,8 +263,32 @@ struct Converter {
   }
 
   BlockStmt* convertForall(const uast::Forall* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    if (node->isExpressionLevel()) {
+      INT_FATAL("TODO");
+      return nullptr;
+    } else {
+      assert(node->iterand());
+
+      // These are the arguments that 'ForallStmt::build' requires.
+      Expr* indices = nullptr;
+      Expr* iterator = toExpr(convertAST(node->iterand()));
+      CallExpr* intents = nullptr;
+      BlockStmt* body = createBlockWithStmts(node->stmts());
+      bool zippered = node->iterand()->isZip();
+      bool serialOK = false;
+
+      if (node->index()) {
+        indices = revertLoopIndexDecl(node->index());
+      }
+
+      if (node->withClause()) {
+        intents = toCallExpr(convertAST(node->withClause()));
+        assert(intents);
+      }
+
+      return ForallStmt::build(indices, iterator, intents, body, zippered,
+                               serialOK);
+    }
   }
 
   BlockStmt* convertForeach(const uast::Foreach* node) {
@@ -260,9 +298,38 @@ struct Converter {
 
   /// Non-Literal Initializer Expressions (e.g. Array, Range) ///
 
-  Expr* convertRange(const uast::Range* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  CallExpr* convertRange(const uast::Range* node) {
+
+    // These are the pieces that 'buildBoundedRange' requires.
+    Expr* low = nullptr;
+    Expr* high = nullptr;
+    bool openlow = false;
+    bool openhigh = false;
+
+    if (node->lowerBound()) {
+      low = toExpr(convertAST(node->lowerBound()));
+    }
+
+    if (node->upperBound()) {
+      high = toExpr(convertAST(node->upperBound()));
+    }
+
+    switch (node->intervalKind()) {
+      case uast::Range::OPEN_BOTH: openlow = true; openhigh = true; break;
+      case uast::Range::OPEN_HIGH: openhigh = true; break;
+      case uast::Range::OPEN_LOW: openlow = true; break;
+      case uast::Range::CLOSED: break;
+    }
+
+    if (low && high) {
+      return buildBoundedRange(low, high, openlow, openhigh);
+    } else if (low) {
+      return buildLowBoundedRange(low, openlow);
+    } else if (high) {
+      return buildHighBoundedRange(high, openhigh);
+    } else {
+      return buildUnboundedRange();
+    }
   }
 
   /// Literals ///
