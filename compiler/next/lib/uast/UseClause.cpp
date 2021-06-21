@@ -26,19 +26,17 @@ namespace uast {
 
 
 owned<UseClause> UseClause::build(Builder* builder, Location loc,
-                                  owned<Expression> name,
+                                  owned<Expression> symbol,
                                   LimitationClauseKind limitationClauseKind,
                                   ASTList limitationClause) {
-  assert(name.get() != nullptr);
+  assert(symbol.get() != nullptr);
 
   ASTList lst;
-  int8_t limitationClauseChildNum = -1;
   int numLimitations = 0;
 
-  lst.push_back(std::move(name));
+  lst.push_back(std::move(symbol));
 
   if (limitationClause.size()) {
-    limitationClauseChildNum = lst.size();
     numLimitations = limitationClause.size();
     for (auto& ast : limitationClause) {
       lst.push_back(std::move(ast));
@@ -46,15 +44,14 @@ owned<UseClause> UseClause::build(Builder* builder, Location loc,
   }
 
   UseClause* ret = new UseClause(std::move(lst), limitationClauseKind,
-                                 limitationClauseChildNum,
                                  numLimitations);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
 
 owned<UseClause> UseClause::build(Builder* builder, Location loc,
-                                  owned<Expression> name) {
-  return build(builder, loc, std::move(name), UseClause::NONE, ASTList());
+                                  owned<Expression> symbol) {
+  return build(builder, loc, std::move(symbol), UseClause::NONE, ASTList());
 }
 
 } // namespace uast

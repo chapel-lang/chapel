@@ -44,7 +44,7 @@ Prerequisites
 `$CHPL_HOME/third-party/chpl-venv/README.md`_ including details on each
 package.
 
-.. _$CHPL_HOME/third-party/chpl-venv/README.md: https://github.com/chapel-lang/chapel/blob/master/third-party/chpl-venv/README.md
+.. _$CHPL_HOME/third-party/chpl-venv/README.md: https://github.com/chapel-lang/chapel/blob/main/third-party/chpl-venv/README.md
 
 .. _Documenting Chapel code:
 

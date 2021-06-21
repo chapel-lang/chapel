@@ -6,7 +6,7 @@ Checking Overload Sets
 
 The Chapel compiler provides an initial implementation of the
 Overload Sets feature. It is discussed in `CHIP 20
-<https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/chips/20.rst>`_
+<https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/chips/20.rst>`_
 as a solution to "hijacking" problems where program behavior can change
 unexpectedly as libraries it uses change.
 

@@ -43,11 +43,11 @@ class As final : public Expression {
  private:
   As(ASTList children)
     : Expression(asttags::As, std::move(children)) {
-    const Expression* name = this->name();
-    assert(name->isIdentifier() || name->isDot()); 
+    const Expression* symbol = this->symbol();
+    assert(symbol->isIdentifier() || symbol->isDot());
   }
 
-  // No need to mark 'nameChildNum_' or 'renameChildNum_', they are const.
+  // No need to match 'symbolChildNum_' or 'renameChildNum_', they are const.
   bool contentsMatchInner(const ASTNode* other) const override {
     return expressionContentsMatchInner(other->toExpression());
   }
@@ -57,7 +57,7 @@ class As final : public Expression {
   }
 
   // These always exist and their position will never change.
-  static const int8_t nameChildNum_ = 0;
+  static const int8_t symbolChildNum_ = 0;
   static const int8_t renameChildNum_ = 1;
 
  public:
@@ -67,14 +67,14 @@ class As final : public Expression {
     Create and return an as expression.
   */
   static owned<As> build(Builder* builder, Location loc,
-                         owned<Expression> name,
+                         owned<Expression> symbol,
                          owned<Identifier> rename);
 
   /**
     Return the original name specified by this as expression.
   */
-  const Expression* name() const {
-    auto ret = child(nameChildNum_);
+  const Expression* symbol() const {
+    auto ret = child(symbolChildNum_);
     assert(ret->isExpression());
     return (const Expression*)ret;
   }
@@ -87,6 +87,7 @@ class As final : public Expression {
     assert(ret->isIdentifier());
     return (const Identifier*)ret;
   }
+
 };
 
 

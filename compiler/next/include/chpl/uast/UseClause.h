@@ -40,6 +40,19 @@ namespace uast {
  */
 class UseClause final : public Expression {
  public:
+
+  /**
+    These values represent the kind of limitation clause possessed by a
+    use clause. If the limitation clause is opened by the keyword 'except',
+    then the value of 'LimitationClauseKind' will be 'EXCEPT'. The same
+    goes for 'ONLY'. If there is no limitation clause then the kind will
+    be 'NONE'.
+
+    If the limitation clause kind is 'NONE', then the use clause should have
+    no limitations. If the kind is 'EXCEPT', then the use clause should have
+    at least one limitation. If the kind is 'ONLY', then the use clause may
+    have zero or more limitations.
+  */
   enum LimitationClauseKind {
     EXCEPT,
     ONLY,
@@ -48,11 +61,9 @@ class UseClause final : public Expression {
 
  private:
   UseClause(ASTList children,  LimitationClauseKind limitationClauseKind,
-            int8_t limitationClauseChildNum,
             int numLimitations)
     : Expression(asttags::UseClause, std::move(children)),
       limitationClauseKind_(limitationClauseKind),
-      limitationClauseChildNum_(limitationClauseChildNum),
       numLimitations_(numLimitations) {
 
     switch (limitationClauseKind_) {
@@ -62,11 +73,10 @@ class UseClause final : public Expression {
     }
   }
 
-  // No need to check 'nameChildNum_'.
+  // No need to check 'symbolChildNum_' or 'limitationClauseChildNum_'.
   bool contentsMatchInner(const ASTNode* other) const override {
     const UseClause* rhs = other->toUseClause();
     return this->limitationClauseKind_ == rhs->limitationClauseKind_ &&
-      this->limitationClauseChildNum_ == rhs->limitationClauseChildNum_ &&
       this->numLimitations_ == rhs->numLimitations_ &&
       this->expressionContentsMatchInner(rhs);
   }
@@ -75,11 +85,11 @@ class UseClause final : public Expression {
     expressionMarkUniqueStringsInner(context);
   }
 
-  // This always exists and its position never changes.
-  static const int8_t nameChildNum_ = 0;
+  // These always exist and their position never changes.
+  static const int8_t symbolChildNum_ = 0;
+  static const int8_t limitationClauseChildNum_ = 1;
 
   LimitationClauseKind limitationClauseKind_;
-  int8_t limitationClauseChildNum_;
   int numLimitations_;
 
  public:
@@ -89,13 +99,13 @@ class UseClause final : public Expression {
     Create and return a use clause.
   */
   static owned<UseClause> build(Builder* builder, Location loc,
-                                owned<Expression> name);
+                                owned<Expression> symbol);
 
   /**
     Create and return a use clause.
   */
   static owned<UseClause> build(Builder* builder, Location loc,
-                                owned<Expression> name,
+                                owned<Expression> symbol,
                                 LimitationClauseKind limitationClauseKind,
                                 ASTList limitationClause);
 
@@ -103,8 +113,8 @@ class UseClause final : public Expression {
     Get the name expression of this use clause. It may be a dot expression,
     an as expression, or an identifier.
   */
-  const Expression* name() const {
-    auto ret = child(nameChildNum_);
+  const Expression* symbol() const {
+    auto ret = child(symbolChildNum_);
     assert(ret->isExpression());
     return (const Expression*)ret;
   }
@@ -120,7 +130,7 @@ class UseClause final : public Expression {
     Return a way to iterate over the limitations of this use clause.
   */
   ASTListIteratorPair<Expression> limitations() const {
-    auto begin = numLimitations()
+    auto begin = (numLimitations() > 0)
         ? children_.begin() + limitationClauseChildNum_
         : children_.end();
     auto end = begin + numLimitations_;
@@ -141,7 +151,6 @@ class UseClause final : public Expression {
     identifers or as expressions containing identifiers.
   */
   const Expression* limitation(int i) const {
-    if (limitationClauseChildNum_ < 0) return nullptr;
     assert(i >= 0 && i < numLimitations_);
     const ASTNode* ast = this->child(limitationClauseChildNum_+i);
     assert(ast->isExpression());
