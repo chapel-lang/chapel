@@ -22,7 +22,7 @@ config param warnDimIterMethod = false;
 
 config param useDimIter = true;
 config param useDimIterRow = useDimIter; // supported for CSC domains
-config param useDimIterCol = false; // not currently supported on master
+config param useDimIterCol = false; // not currently supported on main
 
 config param useDimIterDistributed = false; //SparseBlockDom.dimIter not supported on any rank
 config param useDimIterRowDistributed = useDimIterDistributed;

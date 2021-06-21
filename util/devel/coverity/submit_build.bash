@@ -34,7 +34,7 @@ fi
 
 # Grab the current revision and set description.
 version=$(git rev-parse --short HEAD)
-description="Git master build."
+description="Git main build."
 
 # Build chapel with cov-build.
 $COV_BUILD_PREFIX/cov-build --dir cov-int make

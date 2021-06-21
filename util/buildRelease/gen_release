@@ -71,7 +71,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
         $git_url = "https://github.com/chapel-lang/chapel";
     }
 
-    $git_branch = "master";
+    $git_branch = "main";
     if (exists($ENV{'CHPL_GEN_RELEASE_BRANCH'})) {
         $git_branch = $ENV{'CHPL_GEN_RELEASE_BRANCH'};
     }
