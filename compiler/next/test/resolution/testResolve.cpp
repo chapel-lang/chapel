@@ -49,17 +49,16 @@ static void test1() {
 
     auto& vec = resolveFile(context, path);
     assert(vec.size() == 1);
-    const Module* module = vec[0].module;
-    const auto* byId = vec[0].resolution; 
+    const Module* module = vec[0]->decl->toModule();
+    const auto& byId = vec[0]->resolutionById;
     const Variable* varDecl = module->child(0)->toVariable();
     const Identifier* identifier = module->child(1)->toIdentifier();
     assert(varDecl);
     assert(identifier);
     assert(0 == varDecl->name().compare("x"));
     assert(0 == identifier->name().compare("x"));
-    assert(byId);
-    const ResolutionResult& rr = (*byId)[identifier->id().postOrderId()];
-    assert(rr.exp != nullptr);
+    const ResolutionResult& rr = byId[identifier->id().postOrderId()];
+    assert(rr.expr != nullptr);
     assert(rr.decl != nullptr);
     assert(rr.decl == varDecl);
     context->collectGarbage();
@@ -81,7 +80,7 @@ static void test2() {
    
     auto& vec = resolveFile(context, path);
     assert(vec.size() == 1);
-    const Module* module = vec[0].module;
+    const Module* module = vec[0]->decl->toModule();
     ASTNode::dump(module, 2);
     context->collectGarbage();
   }
@@ -95,7 +94,7 @@ static void test2() {
 
     auto& vec = resolveFile(context, path);
     assert(vec.size() == 1);
-    const Module* module = vec[0].module;
+    const Module* module = vec[0]->decl->toModule();
     ASTNode::dump(module, 2);
     const Variable* varDecl = module->child(0)->toVariable();
     assert(varDecl);
@@ -113,18 +112,17 @@ static void test2() {
 
     auto& vec = resolveFile(context, path);
     assert(vec.size() == 1);
-    const Module* module = vec[0].module;
+    const Module* module = vec[0]->decl->toModule();
     ASTNode::dump(module, 2);
-    const auto* byId = vec[0].resolution; 
+    const auto& byId = vec[0]->resolutionById;
     const Variable* varDecl = module->child(0)->toVariable();
     const Identifier* identifier = module->child(1)->toIdentifier();
     assert(varDecl);
     assert(identifier);
     assert(0 == varDecl->name().compare("x"));
     assert(0 == identifier->name().compare("x"));
-    assert(byId);
-    const ResolutionResult& rr = (*byId)[identifier->id().postOrderId()];
-    assert(rr.exp != nullptr);
+    const ResolutionResult& rr = byId[identifier->id().postOrderId()];
+    assert(rr.expr != nullptr);
     assert(rr.decl != nullptr);
     assert(rr.decl == varDecl);
     context->collectGarbage();

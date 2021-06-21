@@ -17,37 +17,37 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_ASTTYPES_H
-#define CHPL_UAST_ASTTYPES_H
+#include "chpl/types/TypeTag.h"
 
 namespace chpl {
-namespace uast {
+namespace types {
+namespace typetags {
 
 
-// forward declare the various AST types
-// using macros and ASTClassesList.h
-/// \cond DO_NOT_DOCUMENT
-#define AST_DECL(NAME) class NAME;
-#define AST_NODE(NAME) AST_DECL(NAME)
-#define AST_LEAF(NAME) AST_DECL(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) AST_DECL(NAME)
-#define AST_END_SUBCLASSES(NAME)
-/// \endcond
-// Apply the above macros to ASTClassesList.h
-#include "chpl/uast/ASTClassesList.h"
+static const char* tagToStringTable[NUM_TYPE_TAGS] = {
+// define tag to string conversion
+#define NAMESTR(NAME) \
+  #NAME,
+#define TYPE_NODE(NAME) NAMESTR(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME) NAMESTR(START_##NAME)
+#define TYPE_END_SUBCLASSES(NAME) NAMESTR(END_##NAME)
+// Apply the above macros to TypeClassesList.h
+#include "chpl/types/TypeClassesList.h"
 // clear the macros
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
-#undef AST_DECL
+#undef TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef NAMESTR
+};
 
-// forward declare other classes
-class ASTNode;
-class Builder;
+const char* tagToString(TypeTag tag) {
+  if (0 <= tag && tag < NUM_TYPE_TAGS)
+    return tagToStringTable[tag];
+  else
+    return "<unknown-tag>";
+}
 
 
-} // end namespace uast
+} // end namespace typetags
+} // end namespace types
 } // end namespace chpl
-
-#endif

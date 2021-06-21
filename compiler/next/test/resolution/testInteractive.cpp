@@ -71,19 +71,19 @@ int main(int argc, char** argv) {
         }
       }*/
 
-      const ResolvedModuleVec& rmods = resolveFile(ctx, filepath);
+      const ResolvedSymbolVec& rmods = resolveFile(ctx, filepath);
       for (const auto& elt : rmods) {
-        const Module* module = elt.module;
+        const Module* module = elt->decl->toModule();
 
         printf("Module %s:\n", module->name().c_str());
         ASTNode::dump(module);
         printf("\n");
 
-        const ResolutionResultByPostorderID& resolution = *elt.resolution;
+        const ResolutionResultByPostorderID& resolution = elt->resolutionById;
         for (const auto& rr : resolution) {
-          if (rr.exp != nullptr && rr.decl != nullptr) {
+          if (rr.expr != nullptr && rr.decl != nullptr) {
             printf("Resolved:\n");
-            ASTNode::dump(rr.exp, 2);
+            ASTNode::dump(rr.expr, 2);
             printf("to:\n");
             ASTNode::dump(rr.decl, 2);
             printf("\n");
