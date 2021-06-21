@@ -46,7 +46,7 @@ namespace uast {
       }
   \endrst
 
-  each of a,b,c,d,e,f are a Variables.
+  each of a-f are Variables.
  */
 class Variable final : public VarLikeDecl {
  public:

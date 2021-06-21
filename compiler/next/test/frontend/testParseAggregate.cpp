@@ -379,6 +379,73 @@ static void test9(Parser* parser) {
   }
 }
 
+static void test10(Parser* parser) {
+  auto parseResult = parser->parseString("test10.chpl",
+                                         "/*1*/ class C1 {\n"
+                                         "  /*1a*/ var a;\n"
+                                         "  /*1aa*/ var aa;\n"
+                                         "}\n"
+                                         "/*2*/ class C2 { }\n"
+                                         "/*3*/ record R3 {\n"
+                                         "  /*3b*/ var b;\n"
+                                         "  /*3bb*/ var bb;\n"
+                                         "}\n"
+                                         "/*4*/ record R4 { }\n"
+                                         "/*5*/ union U5 {\n"
+                                         "  /*5c*/ var c;\n"
+                                         "  /*5cc*/ var cc;\n"
+                                         "}\n"
+                                         "/*6*/ union U6 { }\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
+
+  assert(mod->numStmts() == 12);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isClass());
+  assert(mod->stmt(2)->isComment());
+  assert(mod->stmt(3)->isClass());
+  assert(mod->stmt(4)->isComment());
+  assert(mod->stmt(5)->isRecord());
+  assert(mod->stmt(6)->isComment());
+  assert(mod->stmt(7)->isRecord());
+  assert(mod->stmt(8)->isComment());
+  assert(mod->stmt(9)->isUnion());
+  assert(mod->stmt(10)->isComment());
+  assert(mod->stmt(11)->isUnion());
+
+
+  auto c1 = mod->stmt(1)->toClass();
+  assert(c1->numDeclOrComments() == 4);
+  assert(c1->declOrComment(0)->isComment());
+  assert(c1->declOrComment(1)->isVariable());
+  assert(c1->declOrComment(2)->isComment());
+  assert(c1->declOrComment(3)->isVariable());
+
+  auto c2 = mod->stmt(3)->toClass();
+  assert(c2->numDeclOrComments() == 0);
+
+  auto r3 = mod->stmt(5)->toRecord();
+  assert(r3->numDeclOrComments() == 4);
+  assert(r3->declOrComment(0)->isComment());
+  assert(r3->declOrComment(1)->isVariable());
+  assert(r3->declOrComment(2)->isComment());
+  assert(r3->declOrComment(3)->isVariable());
+
+  auto r4 = mod->stmt(7)->toRecord();
+  assert(r4->numDeclOrComments() == 0);
+
+  auto u5 = mod->stmt(9)->toUnion();
+  assert(u5->numDeclOrComments() == 4);
+  assert(u5->declOrComment(0)->isComment());
+  assert(u5->declOrComment(1)->isVariable());
+  assert(u5->declOrComment(2)->isComment());
+  assert(u5->declOrComment(3)->isVariable());
+
+  auto u6 = mod->stmt(11)->toUnion();
+  assert(u6->numDeclOrComments() == 0);
+}
 
 int main() {
   Context context;
@@ -397,6 +464,7 @@ int main() {
   test7(p);
   test8(p);
   test9(p);
+  test10(p);
 
   return 0;
 }

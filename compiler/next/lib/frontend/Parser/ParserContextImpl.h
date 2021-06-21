@@ -112,12 +112,12 @@ void ParserContext::resetDeclState() {
 }
 
 void ParserContext::enterScope(asttags::ASTTag tag, UniqueString name) {
-  AggregateScope entry = {tag, name};
+  ParserScope entry = {tag, name};
   scopeStack.push_back(entry);
 }
-ParserContext::AggregateScope ParserContext::currentScope() {
+ParserContext::ParserScope ParserContext::currentScope() {
   if (scopeStack.size() == 0) {
-    AggregateScope entry = {asttags::Module, UniqueString()};
+    ParserScope entry = {asttags::Module, UniqueString()};
     return entry;
   }
   return scopeStack.back();

@@ -71,11 +71,11 @@ struct ParserContext {
 
   // this type and stack helps the parser know if a function
   // declaration is a method.
-  struct AggregateScope {
+  struct ParserScope {
     asttags::ASTTag tag;
     UniqueString name;
   };
-  std::vector<AggregateScope> scopeStack;
+  std::vector<ParserScope> scopeStack;
 
   // note when EOF is reached
   bool atEOF;
@@ -105,7 +105,7 @@ struct ParserContext {
   void resetDeclState();
 
   void enterScope(asttags::ASTTag tag, UniqueString name);
-  AggregateScope currentScope();
+  ParserScope currentScope();
   bool currentScopeIsAggregate();
   void exitScope(asttags::ASTTag tag, UniqueString name);
 

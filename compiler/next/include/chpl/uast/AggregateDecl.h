@@ -37,6 +37,7 @@ namespace uast {
     * Function
     * TupleDecl
     * MultiDecl
+    * TypeDecl
     * Comment
 
  */
