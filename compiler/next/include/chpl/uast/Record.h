@@ -40,12 +40,12 @@ namespace uast {
 
   \endrst
 
-  The record itself (myRecord) is represented by a Record AST node. The Record
-  AST node contains Field and Function children.
+  The record itself (myRecord) is represented by a Record AST node.
  */
 class Record final : public AggregateDecl {
  private:
-  Record(ASTList children, Visibility vis, UniqueString name, int numChildren)
+  Record(ASTList children, Decl::Visibility vis,
+         UniqueString name, int numChildren)
     : AggregateDecl(asttags::Record, std::move(children), vis, name,
                     (numChildren>0)?0:-1, numChildren) {
   }

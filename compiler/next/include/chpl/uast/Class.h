@@ -40,14 +40,13 @@ namespace uast {
 
   \endrst
 
-  The class itself (MyClass) is represented by a Class AST node. The Class
-  AST node contains Field and Function children.
+  The class itself (MyClass) is represented by a Class AST node.
  */
 class Class final : public AggregateDecl {
  private:
   int parentClassChildNum_;
 
-  Class(ASTList children, Visibility vis, UniqueString name,
+  Class(ASTList children, Decl::Visibility vis, UniqueString name,
         int elementsChildNum,
         int numElements,
         int parentClassChildNum)

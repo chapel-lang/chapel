@@ -31,6 +31,7 @@ namespace uast {
 
   \rst
   .. code-block:: chapel
+
     var i = 0;
     while true {
       if i >= 16 then break;

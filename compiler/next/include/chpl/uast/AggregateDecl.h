@@ -49,7 +49,8 @@ class AggregateDecl : public TypeDecl {
   static bool validAggregateChildren(ASTListIteratorPair<Expression> it);
 
  public:
-  AggregateDecl(ASTTag tag, ASTList children, Visibility vis, UniqueString name,
+  AggregateDecl(ASTTag tag, ASTList children,
+                Decl::Visibility vis, UniqueString name,
                 int elementsChildNum,
                 int numElements)
     : TypeDecl(tag, std::move(children), vis, name),

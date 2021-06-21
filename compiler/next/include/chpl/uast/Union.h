@@ -44,7 +44,8 @@ namespace uast {
  */
 class Union final : public AggregateDecl {
  private:
-  Union(ASTList children, Visibility vis, UniqueString name, int numChildren)
+  Union(ASTList children, Decl::Visibility vis,
+        UniqueString name, int numChildren)
     : AggregateDecl(asttags::Union, std::move(children), vis, name,
                     (numChildren>0)?0:-1, numChildren) {
   }
