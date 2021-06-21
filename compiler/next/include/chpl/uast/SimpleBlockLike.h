@@ -76,7 +76,7 @@ class SimpleBlockLike : public Expression {
    */
   ASTListIteratorPair<Expression> stmts() const {
     auto begin = children_.begin() + bodyChildNum_;
-    auto end = begin + numBodyStmts_ - 1;
+    auto end = begin + numBodyStmts_;
     return ASTListIteratorPair<Expression>(begin, end);
   }
 

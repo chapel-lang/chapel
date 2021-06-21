@@ -154,6 +154,21 @@ struct Converter {
     return nullptr;
   }
 
+  Expr* convertAs(const uast::As* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  UseStmt* convertUse(const uast::Use* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  Expr* convertUseClause(const uast::UseClause* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
   Expr* convertWithClause(const uast::WithClause* node) {
     INT_FATAL("TODO");
     return nullptr;

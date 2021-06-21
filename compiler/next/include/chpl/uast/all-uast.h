@@ -18,6 +18,7 @@
  */
 
 #include "chpl/uast/ASTNode.h"
+#include "chpl/uast/As.h"
 #include "chpl/uast/Begin.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/BracketLoop.h"
@@ -63,6 +64,8 @@
 #include "chpl/uast/TaskVar.h"
 #include "chpl/uast/TupleDecl.h"
 #include "chpl/uast/UintLiteral.h"
+#include "chpl/uast/Use.h"
+#include "chpl/uast/UseClause.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/While.h"
 #include "chpl/uast/Yield.h"

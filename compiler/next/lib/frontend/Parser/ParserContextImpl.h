@@ -1083,3 +1083,46 @@ Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
   free(noUnderscores);
   return ret;
 }
+
+Expression* ParserContext::buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
+                                       owned<Expression> name,
+                                       owned<Expression> rename) {
+  if (!rename->isIdentifier()) {
+    const char* msg = "Rename in as expression must be identifier";
+    return raiseError(locRename, msg);
+  }
+
+  auto renameAsIdent = toOwned(rename.release()->toIdentifier());
+
+  YYLTYPE locEverything = makeSpannedLocation(locName, locRename);
+
+  auto node = As::build(builder, convertLocation(locEverything),
+                        std::move(name),
+                        std::move(renameAsIdent));
+
+  return node.release();
+}
+
+CommentsAndStmt ParserContext::
+buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locUseClause,
+                   Decl::Visibility visibility,
+                   owned<Expression> name,
+                   UseClause::LimitationClauseKind limitationClauseKind,
+                   ParserExprList* limitationExprs) {
+  auto comments = gatherComments(locEverything);
+
+  auto useClause = UseClause::build(builder, convertLocation(locUseClause),
+                                    std::move(name),
+                                    limitationClauseKind,
+                                    consumeList(limitationExprs));
+
+  auto uses = consumeList(makeList(useClause.release()));
+
+  auto node = Use::build(builder, convertLocation(locEverything),
+                         visibility,
+                         std::move(uses));
+
+  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+
+  return finishStmt(cs);
+}

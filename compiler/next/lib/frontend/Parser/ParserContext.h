@@ -106,6 +106,16 @@ struct ParserContext {
     };
   }
 
+  // Given two locations, create a new location that spans between them.
+  YYLTYPE makeSpannedLocation(YYLTYPE startLoc, YYLTYPE endLoc) {
+    return {
+      .first_line     = startLoc.first_line,
+      .first_column   = startLoc.first_column,
+      .last_line      = endLoc.last_line,
+      .last_column    = endLoc.last_column
+    };
+  }
+
   void noteError(ParserError error) {
     errors.push_back(std::move(error));
   }
@@ -204,6 +214,7 @@ struct ParserContext {
 
   Identifier* buildEmptyIdent(YYLTYPE location);
   Identifier* buildIdent(YYLTYPE location, PODUniqueString name);
+
   OpCall* buildBinOp(YYLTYPE location,
                      Expression* lhs, PODUniqueString op, Expression* rhs);
   OpCall* buildUnaryOp(YYLTYPE location,
@@ -333,5 +344,17 @@ struct ParserContext {
   Expression* buildNumericLiteral(YYLTYPE location,
                                   PODUniqueString str,
                                   int type);
+
+  // Returns Expression because it may build an ErroneousExpression.
+  Expression* buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
+                          owned<Expression> name,
+                          owned<Expression> rename);
+
+  CommentsAndStmt
+  buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locUseClause,
+                     Decl::Visibility visibility,
+                     owned<Expression> name,
+                     UseClause::LimitationClauseKind limitationClauseKind,
+                     ParserExprList* limitationExprs);
 
 };
