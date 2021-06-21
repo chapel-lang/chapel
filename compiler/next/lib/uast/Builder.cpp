@@ -261,18 +261,71 @@ Builder::Result::Result()
 {
 }
 
+// Recomputes this->locations by gathering Location for all uAST
+// nodes contained from the provided maps and appending these
+// to the provided locations vector.
+static
+void recomputeLocations(
+    const ASTNode* ast,
+    std::vector<std::pair<const ASTNode*, Location>>& locations,
+    const std::unordered_map<const ASTNode*, Location>& mapA,
+    const std::unordered_map<const ASTNode*, Location>& mapB) {
+
+  for (const ASTNode* child : ast->children()) {
+    recomputeLocations(child, locations, mapA, mapB);
+  }
+
+  Location loc;
+  auto searchA = mapA.find(ast);
+  if (searchA != mapA.end()) {
+    // found a location in mapA so use it
+    loc = searchA->second;
+  } else {
+    // check in mapB
+    auto searchB = mapB.find(ast);
+    if (searchB != mapB.end()) {
+      // found a location in mapB so use it
+      loc = searchB->second;
+    } else {
+      assert(false && "Could not find location");
+    }
+  }
+
+  locations.push_back(std::make_pair(ast, loc));
+}
+
 bool Builder::Result::update(Result& keep, Result& addin) {
   bool changed = false;
 
   // update the filePath
   changed |= defaultUpdate(keep.filePath, addin.filePath);
 
-  // update the errors and locations
+  // update the errors
   changed |= defaultUpdate(keep.errors, addin.errors);
-  changed |= defaultUpdate(keep.locations, addin.locations);
+
+  // create maps for the keep and addin locations
+  std::unordered_map<const ASTNode*, Location> keepLocs;
+  std::unordered_map<const ASTNode*, Location> addinLocs;
+
+  for (auto keepLoc : keep.locations) {
+    keepLocs.insert(keepLoc);
+  }
+  for (auto addinLoc : addin.locations) {
+    addinLocs.insert(addinLoc);
+  }
 
   // update the ASTs
   changed |= updateASTList(keep.topLevelExpressions, addin.topLevelExpressions);
+
+  std::vector<std::pair<const ASTNode*, Location>> locationsVec;
+
+  // recompute locationsVec by traversing the AST and using the maps
+  for (const auto& ast : keep.topLevelExpressions) {
+    recomputeLocations(ast.get(), locationsVec, keepLocs, addinLocs);
+  }
+
+  // now update the locations in keep.
+  changed |= defaultUpdate(keep.locations, locationsVec);
 
   return changed;
 }

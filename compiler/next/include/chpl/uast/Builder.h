@@ -51,7 +51,11 @@ class Builder final {
   UniqueString inferredModuleName_;
   ASTList topLevelExpressions_;
   std::vector<ErrorMessage> errors_;
+
+  // note: locations_map might have keys pointing to deleted uAST
+  // nodes in the event one is created temporarily during parsing.
   std::unordered_map<const ASTNode*, Location> locations_map_;
+
   std::vector<std::pair<const ASTNode*, Location>> locations_;
 
   Builder(Context* context,
@@ -93,13 +97,12 @@ class Builder final {
     This struct records the result of building some AST.
    */
   struct Result final {
+    using locationsMapT = std::unordered_map<const ASTNode*, Location>;
+
     UniqueString filePath;
     ASTList topLevelExpressions;
     std::vector<ErrorMessage> errors;
-    // This one really needs to go from ASTNode* to Location
-    // because comments don't have AST Ids, so being able to
-    // map from the pointer to the Location is important to be
-    // able to retrieve the location of a parsed comment.
+    // Goes from ASTNode* to Location because Comments don't have AST IDs
     std::vector<std::pair<const ASTNode*, Location>> locations;
 
     Result();
@@ -158,7 +161,6 @@ template<> struct update<chpl::uast::Builder::Result> {
 template<> struct mark<chpl::uast::Builder::Result> {
   void operator()(Context* context,
                   const chpl::uast::Builder::Result& keep) const {
-    printf("IN BUILDER RESULT MARK\n");
     chpl::uast::Builder::Result::mark(context, keep);
   }
 };
