@@ -33,6 +33,7 @@ namespace uast {
 
   \rst
   .. code-block:: chapel
+
     // This contains two use clauses, 'Foo as X' and 'Baz as Y'.
     use Foo as X, Baz as Y;
 

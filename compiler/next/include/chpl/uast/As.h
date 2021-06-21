@@ -34,6 +34,7 @@ namespace uast {
 
   \rst
   .. code-block:: chapel
+
     // Here an as clause is used to rename 'Foo' to 'X'.
     use Foo as X;
 
