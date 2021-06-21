@@ -48,6 +48,18 @@ class AggregateDecl : public TypeDecl {
 
   static bool validAggregateChildren(ASTListIteratorPair<Expression> it);
 
+ protected:
+  bool aggregateDeclContentsMatchInner(const AggregateDecl* other) const {
+    const AggregateDecl* lhs = this;
+    const AggregateDecl* rhs = other;
+    return lhs->typeDeclContentsMatchInner(rhs) &&
+           lhs->elementsChildNum_ == rhs->elementsChildNum_ &&
+           lhs->numElements_ == rhs->numElements_;
+  }
+  void aggregateDeclMarkUniqueStringsInner(Context* context) const {
+    typeDeclMarkUniqueStringsInner(context);
+  }
+
  public:
   AggregateDecl(ASTTag tag, ASTList children,
                 Decl::Visibility vis, UniqueString name,
@@ -60,17 +72,6 @@ class AggregateDecl : public TypeDecl {
     assert(validAggregateChildren(declOrComments()));
   }
   ~AggregateDecl() = 0; // this is an abstract base class
-
-  bool aggregateDeclContentsMatchInner(const AggregateDecl* other) const {
-    const AggregateDecl* lhs = this;
-    const AggregateDecl* rhs = other;
-    return lhs->typeDeclContentsMatchInner(rhs) &&
-           lhs->elementsChildNum_ == rhs->elementsChildNum_ &&
-           lhs->numElements_ == rhs->numElements_;
-  }
-  void aggregateDeclMarkUniqueStringsInner(Context* context) const {
-    typeDeclMarkUniqueStringsInner(context);
-  }
 
   /**
     Return a way to iterate over the contained Decls and Comments.
