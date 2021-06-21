@@ -2903,7 +2903,9 @@ expr:
 | TLP TDOTDOTDOT expr TRP
     { $$ = TODOEXPR(@$); }
 | expr TCOLON expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildBinOp(@$, $1, $2, $3);
+  }
 | expr TDOTDOT expr
   {
     $$ = Range::build(BUILDER, LOC(@$), Range::CLOSED, toOwned($1),
@@ -3056,8 +3058,8 @@ parenthesized_expr:
 ;
 
 bool_literal:
-  TFALSE { $$ = TODOEXPR(@$); }
-| TTRUE  { $$ = TODOEXPR(@$); }
+  TFALSE { $$ = BoolLiteral::build(BUILDER, LOC(@$), false).release(); }
+| TTRUE  { $$ = BoolLiteral::build(BUILDER, LOC(@$), true).release(); }
 ;
 
 str_bytes_literal:

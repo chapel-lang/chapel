@@ -108,8 +108,9 @@ struct Converter {
   }
 
   BlockStmt* convertOn(const uast::On* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    Expr* expr = toExpr(convertAST(node->destination()));
+    Expr* stmt = toExpr(createBlockWithStmts(node->stmts()));
+    return buildOnStmt(expr, stmt);
   }
 
   BlockStmt* convertSerial(const uast::Serial* node) {
@@ -450,6 +451,10 @@ struct Converter {
   }
 
   /// Literals ///
+
+  Expr* convertBoolLiteral(const uast::BoolLiteral* node) {
+    return node->value() ? new SymExpr(gTrue) : new SymExpr(gFalse);
+  }
 
   /// NumericLiterals ///
 

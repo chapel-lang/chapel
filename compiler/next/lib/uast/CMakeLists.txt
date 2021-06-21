@@ -25,6 +25,7 @@ target_sources(libchplcomp-obj
                Array.cpp
                Begin.cpp
                Block.cpp
+               BoolLiteral.cpp
                BracketLoop.cpp
                Break.cpp
                Builder.cpp

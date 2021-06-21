@@ -105,6 +105,8 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
   AST_BEGIN_SUBCLASSES(Literal)        // old AST: Immediate
 
+    AST_LEAF(BoolLiteral)
+
     //AST_BEGIN_SUBCLASSES(NumericLiteral)  notional - currently a template
       AST_LEAF(ImagLiteral)
       AST_LEAF(IntLiteral)

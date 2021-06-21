@@ -22,6 +22,7 @@
 #include "chpl/uast/Array.h"
 #include "chpl/uast/Begin.h"
 #include "chpl/uast/Block.h"
+#include "chpl/uast/BoolLiteral.h"
 #include "chpl/uast/BracketLoop.h"
 #include "chpl/uast/Break.h"
 #include "chpl/uast/Builder.h"
