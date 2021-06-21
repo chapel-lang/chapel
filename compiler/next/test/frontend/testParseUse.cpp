@@ -59,10 +59,10 @@ static void test0(Parser* parser) {
   assert(use->visibility() == Decl::DEFAULT_VISIBILITY);
   assert(use->numUseClauses() == 1);
   const UseClause* useClause = use->useClause(0);
-  assert(useClause->name()->isAs());
-  const As* as = useClause->name()->toAs();
-  assert(as->name()->isIdentifier());
-  assert(as->name()->toIdentifier()->name() == "Foo");
+  assert(useClause->symbol()->isAs());
+  const As* as = useClause->symbol()->toAs();
+  assert(as->symbol()->isIdentifier());
+  assert(as->symbol()->toIdentifier()->name() == "Foo");
   assert(as->rename()->isIdentifier());
   assert(as->rename()->toIdentifier()->name() == "X");
   assert(useClause->limitationClauseKind() == UseClause::NONE);
@@ -88,10 +88,10 @@ static void test1(Parser* parser) {
   // Inspect the first use clause.
   {
     const UseClause* useClause = use->useClause(0);
-    assert(useClause->name()->isAs());
-    const As* as = useClause->name()->toAs();
-    assert(as->name()->isIdentifier());
-    assert(as->name()->toIdentifier()->name() == "A");
+    assert(useClause->symbol()->isAs());
+    const As* as = useClause->symbol()->toAs();
+    assert(as->symbol()->isIdentifier());
+    assert(as->symbol()->toIdentifier()->name() == "A");
     assert(as->rename()->isIdentifier());
     assert(as->rename()->toIdentifier()->name() == "X");
     assert(useClause->limitationClauseKind() == UseClause::NONE);
@@ -100,10 +100,10 @@ static void test1(Parser* parser) {
   // Inspect the second use clause.
   {
     const UseClause* useClause = use->useClause(1);
-    assert(useClause->name()->isAs());
-    const As* as = useClause->name()->toAs();
-    assert(as->name()->isDot());
-    const Dot* dot = as->name()->toDot();
+    assert(useClause->symbol()->isAs());
+    const As* as = useClause->symbol()->toAs();
+    assert(as->symbol()->isDot());
+    const Dot* dot = as->symbol()->toDot();
     assert(dot->numActuals() == 0);
     assert(dot->calledExpression()->isIdentifier());
     assert(dot->calledExpression()->toIdentifier()->name() == "B");
@@ -116,10 +116,10 @@ static void test1(Parser* parser) {
   // Inspect the third use clause.
   {
     const UseClause* useClause = use->useClause(2);
-    assert(useClause->name()->isAs());
-    const As* as = useClause->name()->toAs();
-    assert(as->name()->isIdentifier());
-    assert(as->name()->toIdentifier()->name() == "C");
+    assert(useClause->symbol()->isAs());
+    const As* as = useClause->symbol()->toAs();
+    assert(as->symbol()->isIdentifier());
+    assert(as->symbol()->toIdentifier()->name() == "C");
     assert(as->rename()->isIdentifier());
     assert(as->rename()->toIdentifier()->name() == "Z");
     assert(useClause->limitationClauseKind() == UseClause::NONE);
@@ -155,10 +155,10 @@ static void test2(Parser* parser) {
   assert(use->visibility() == Decl::PRIVATE);
   assert(use->numUseClauses() == 1);
   const UseClause* useClause = use->useClause(0);
-  assert(useClause->name()->isAs());
-  const As* as = useClause->name()->toAs();
-  assert(as->name()->isIdentifier());
-  assert(as->name()->toIdentifier()->name() == "A");
+  assert(useClause->symbol()->isAs());
+  const As* as = useClause->symbol()->toAs();
+  assert(as->symbol()->isIdentifier());
+  assert(as->symbol()->toIdentifier()->name() == "A");
   assert(as->rename()->isIdentifier());
   assert(as->rename()->toIdentifier()->name() == "X");
   assert(useClause->limitationClauseKind() == UseClause::EXCEPT);
@@ -196,8 +196,8 @@ static void test3(Parser* parser) {
   const Use* use = mod->stmt(1)->toUse();
   assert(use->numUseClauses() == 1);
   const UseClause* useClause = use->useClause(0);
-  assert(useClause->name()->isDot());
-  const Dot* dot = useClause->name()->toDot();
+  assert(useClause->symbol()->isDot());
+  const Dot* dot = useClause->symbol()->toDot();
   assert(dot->calledExpression()->isIdentifier());
   assert(dot->calledExpression()->toIdentifier()->name() == "A");
   assert(dot->field() == "SM1");
@@ -207,8 +207,8 @@ static void test3(Parser* parser) {
   {
     assert(useClause->limitation(0)->isAs());
     const As* as = useClause->limitation(0)->toAs();
-    assert(as->name()->isIdentifier());
-    assert(as->name()->toIdentifier()->name() == "Foo");
+    assert(as->symbol()->isIdentifier());
+    assert(as->symbol()->toIdentifier()->name() == "Foo");
     assert(as->rename()->isIdentifier());
     assert(as->rename()->toIdentifier()->name() == "X");
   }
@@ -221,8 +221,8 @@ static void test3(Parser* parser) {
   {
     assert(useClause->limitation(2)->isAs());
     const As* as = useClause->limitation(2)->toAs();
-    assert(as->name()->isIdentifier());
-    assert(as->name()->toIdentifier()->name() == "Baz");
+    assert(as->symbol()->isIdentifier());
+    assert(as->symbol()->toIdentifier()->name() == "Baz");
     assert(as->rename()->isIdentifier());
     assert(as->rename()->toIdentifier()->name() == "Y");
   }
@@ -245,8 +245,8 @@ static void test4(Parser* parser) {
   assert(use->visibility() == Decl::DEFAULT_VISIBILITY);
   assert(use->numUseClauses() == 1);
   const UseClause* useClause = use->useClause(0);
-  assert(useClause->name()->isIdentifier());
-  assert(useClause->name()->toIdentifier()->name() == "Foo");
+  assert(useClause->symbol()->isIdentifier());
+  assert(useClause->symbol()->toIdentifier()->name() == "Foo");
   assert(useClause->numLimitations() == 0);
   assert(useClause->limitationClauseKind() == UseClause::ONLY);
 }
@@ -268,8 +268,8 @@ static void test5(Parser* parser) {
   assert(use->visibility() == Decl::DEFAULT_VISIBILITY);
   assert(use->numUseClauses() == 1);
   const UseClause* useClause = use->useClause(0);
-  assert(useClause->name()->isIdentifier());
-  assert(useClause->name()->toIdentifier()->name() == "Foo");
+  assert(useClause->symbol()->isIdentifier());
+  assert(useClause->symbol()->toIdentifier()->name() == "Foo");
   assert(useClause->limitationClauseKind() == UseClause::EXCEPT);
   assert(useClause->numLimitations() == 1);
   assert(useClause->limitation(0)->isIdentifier());

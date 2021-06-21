@@ -1093,7 +1093,6 @@ Expression* ParserContext::buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
   }
 
   auto renameAsIdent = toOwned(rename.release()->toIdentifier());
-  assert(renameAsIdent.get());
 
   YYLTYPE locEverything = makeSpannedLocation(locName, locRename);
 

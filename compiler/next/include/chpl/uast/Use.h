@@ -49,7 +49,10 @@ class Use final : public Expression {
     : Expression(asttags::Use, std::move(children)),
       visibility_(visibility) {
     assert(numChildren() >= 1);
-    assert(isExpressionASTList(children_));
+
+    for (auto useClause : useClauses()) {
+      assert(useClause->isUseClause());
+    }
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
