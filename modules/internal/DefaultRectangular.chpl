@@ -21,6 +21,8 @@
 // DefaultRectangular.chpl
 //
 module DefaultRectangular {
+  import HaltWrappers;
+
   config const dataParTasksPerLocale = 0;
   config const dataParIgnoreRunningTasks = false;
   config const dataParMinGranularity: int = 1;
@@ -498,6 +500,10 @@ module DefaultRectangular {
 
       param stridable = this.stridable || anyStridable(followThis);
       var block: rank*range(idxType=intIdxType, stridable=stridable);
+      if boundsChecking then
+        for param i in 0..rank-1 do
+          if followThis(i).high >= ranges(i).sizeAs(uint) then
+            HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration (dimension " + i:string + ")");
       if stridable {
         type strType = chpl__signedType(intIdxType);
         for param i in 0..rank-1 {

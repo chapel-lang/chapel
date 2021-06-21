@@ -22,7 +22,7 @@ the commit in accordance with the DCO.
 The rest of this document describes some tips and tricks for signing
 commits proactively or retroactively.
 
-.. _CONTRIBUTING.md: https://github.com/chapel-lang/chapel/blob/master/.github/CONTRIBUTING.md
+.. _CONTRIBUTING.md: https://github.com/chapel-lang/chapel/blob/main/.github/CONTRIBUTING.md
 
 
 Ways to Sign Commits

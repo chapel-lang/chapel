@@ -524,10 +524,13 @@ mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-o
 
 # if we are using python2, we cannot build the test-venv and/or chpldoc
 if ($python2 == 0) {
+  $pythonVersion = `python3 --version`;
+  @pythonVersionArr = split('\.', $pythonVersion);
+  print "Checking '$pythonVersion' is greater than 3.5\n";
 
-  # linux32 currently cannot build chpldoc.  TODO: remove this when the linux32
-  # box is using a later version of Python than 3.5
-  if (!($ENV{'CHPL_NIGHTLY_TEST_CONFIG_NAME'} eq "linux32")) {
+  # chpldoc can't be built with Python 3.5  TODO: remove this when the Ubuntu
+  # boxes are using a later version of Python than 3.5
+  if ($pythonVersionArr[1] > 5) {
     # Build chpldoc. Do not fail the build if it does not succeed. Do not send
     # mail either.
     print "Making $make_vars_opt chpldoc\n";

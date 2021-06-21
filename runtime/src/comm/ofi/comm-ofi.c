@@ -1957,8 +1957,17 @@ void init_ofiEp(void) {
   // seems to work properly during execution, we haven't found a way to
   // avoid getting -FI_EBUSY when we try to close it.
   //
+  // We don't use poll and wait sets on macOS because the underlying
+  // libfabric support needs epoll, which is from Linux rather than
+  // POSIX and thus not present on macOS.  Unfortunately, libfabric has
+  // not (yet?) worked around the lack of epoll because macOS is rather
+  // a secondary platform.  One can find comments in the libfabric issue
+  // https://github.com/ofiwg/libfabric/issues/5453 that provide some
+  // background, though that issue is for an unrelated problem.
+  //
   if (!providerInUse(provType_efa)
-      && !providerInUse(provType_gni)) {
+      && !providerInUse(provType_gni)
+      && strcmp(CHPL_TARGET_PLATFORM, "darwin") != 0) {
     int ret;
     struct fi_poll_attr pollSetAttr = (struct fi_poll_attr)
                                       { .flags = 0, };
@@ -2386,7 +2395,7 @@ void findMoreMemoryRegions(void) {
         && ((pnLen > 0 && strcmp(path, progName) == 0)
             || strcmp(path, "[heap]") == 0
             || strcmp(path, "[stack]") == 0)) {
-      DBG_PRINTF(DBG_MR, "record mem map region: %p %#" PRIx64 " \"%s\"",
+      DBG_PRINTF(DBG_MR, "record mem map region: %p %#zx \"%s\"",
                  addr, size, path);
       memTab[memTabCount].addr = addr;
       memTab[memTabCount].size = size;
