@@ -100,9 +100,11 @@ const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
     const char* textc = text.c_str();
     uast::Builder::Result tmpResult = parser->parseString(pathc, textc);
     result.topLevelExpressions.swap(tmpResult.topLevelExpressions);
+    result.errors.swap(tmpResult.errors);
     result.locations.swap(tmpResult.locations);
-    for (ErrorMessage& e : tmpResult.errors) {
-      QUERY_ERROR(std::move(e));
+    // raise any errors encountered
+    for (const ErrorMessage& e : result.errors) {
+      QUERY_ERROR(e);
     }
     Builder::Result::updateFilePaths(context, result);
   } else {

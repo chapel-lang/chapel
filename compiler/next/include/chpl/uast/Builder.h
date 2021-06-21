@@ -56,6 +56,8 @@ class Builder final {
   // nodes in the event one is created temporarily during parsing.
   std::unordered_map<const ASTNode*, Location> locations_map_;
 
+  // the locations vector is computing during assignIDs
+  // and only contains locations for valid uAST nodes.
   std::vector<std::pair<const ASTNode*, Location>> locations_;
 
   Builder(Context* context,
@@ -97,8 +99,6 @@ class Builder final {
     This struct records the result of building some AST.
    */
   struct Result final {
-    using locationsMapT = std::unordered_map<const ASTNode*, Location>;
-
     UniqueString filePath;
     ASTList topLevelExpressions;
     std::vector<ErrorMessage> errors;
