@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/frontend/Parser.h"
+#include "chpl/parsing/Parser.h"
 #include "chpl/uast/Begin.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Comment.h"
@@ -38,7 +38,7 @@
 
 using namespace chpl;
 using namespace uast;
-using namespace frontend;
+using namespace parsing;
 
 static void test0(Parser* parser) {
   auto parseResult = parser->parseString("test0.chpl",
