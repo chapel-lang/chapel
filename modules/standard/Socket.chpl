@@ -1,3 +1,22 @@
+/*
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 module Socket {
   use Sys;
   use SysError;
@@ -5,6 +24,12 @@ module Socket {
   use Time;
   use SysCTypes;
   private extern proc sizeof(e): size_t;
+
+  extern { #include "qthread/qt_syscalls.h" }
+  extern { #include "qthread/io.h" }
+
+  extern "qt_begin_blocking_action" proc beginBlocking();
+  extern "qt_end_blocking_action" proc endBlocking();
 
   enum IPFamily {
     IPv4 = 2,
@@ -42,7 +67,7 @@ module Socket {
   proc listen(in address:string,port:uint(16),reuseaddr=true) throws {
     var family = AF_INET;
     var socketFD: int(32);
-    var err = sys_socket(family,SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK,0,socketFD);
+    var err = sys_socket(family,SOCK_STREAM|SOCK_CLOEXEC,0,socketFD);
     if(err != 0){
       throw SystemError.fromSyserr(err,"Failed to create Socket");
     }
@@ -102,28 +127,49 @@ module Socket {
   }
 
   proc accept(socketFD:int(32)) throws {
-    var rset, allset: fd_set;
-    var timeo:timeval = new timeval(10,0);
+    // var rset, allset: fd_set;
+    // var timeo:timeval = new timeval(10,0);
 
-    sys_fd_zero(allset);
-    sys_fd_set(socketFD,allset);
-    rset = allset;
-    var nready:int(32);
+    // sys_fd_zero(allset);
+    // sys_fd_set(socketFD,allset);
+    // rset = allset;
+    // var nready:int(32);
 
-    writeln("going to select now, selecting on ", sys_fd_isset(socketFD,rset));
+    // writeln("going to select now, selecting on ", sys_fd_isset(socketFD,rset));
 
-    var err = sys_select(socketFD+1,c_ptrTo(rset),nil,nil,c_ptrTo(timeo),nready);
-    if(err == 0){
-      writeln("timed out");
-    }
+    // var err = sys_select(socketFD+1,c_ptrTo(rset),nil,nil,c_ptrTo(timeo),nready);
+    // if(err == 0){
+    //   writeln("timed out");
+    // }
 
-    writeln("select complete ",nready);
-    if(sys_fd_isset(socketFD,rset)){
-      sleep(1);
-      var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
-      var fdOut:int(32);
-      sys_accept(socketFD,client_addr,fdOut);
-      writeln(fdOut);
-    }
+    // writeln("select complete ",nready);
+    // if(sys_fd_isset(socketFD,rset)){
+    //   sleep(1);
+    //   var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
+    //   var fdOut:int(32);
+    //   sys_accept(socketFD,client_addr,fdOut);
+    //   writeln(fdOut);
+    // }
+    writeln("blocking socket now");
+    var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
+    var fdOut:int(32);
+    beginBlocking();
+    sys_accept(socketFD,client_addr,fdOut);
+    endBlocking();
+
+    writeln("file descriptor client is ", fdOut);
+
+    var familySize = if client_addr.family == AF_INET then INET_ADDRSTRLEN else INET6_ADDRSTRLEN;
+    var buffer = c_calloc(c_char,familySize);
+    var getport:uint(16);
+    sys_extract_sys_sockaddr_t(client_addr,buffer,getport);
+    var getAddr = createStringWithOwnedBuffer(buffer,familySize,familySize);
+    writeln("client socket family ", client_addr.family);
+    writeln("client addr on address ", getAddr);
+    writeln("client addr on port ", getport);
+
+    sys_close(fdOut);
+    writeln("client closed");
+    sleep(1);
   }
 }
