@@ -67,19 +67,11 @@
 module AllLocalesBarriers {
   use BlockDist, Barriers;
 
+  private const BarrierSpace = LocaleSpace dmapped Block(LocaleSpace);
+  private var globalBarrier = [b in BarrierSpace] new unmanaged aBarrier(1, reusable=true, procAtomics=true, hackIntoCommBarrier=true);
+
   pragma "no doc"
   class AllLocalesBarrier: BarrierBaseType {
-
-    const BarrierSpace = LocaleSpace dmapped Block(LocaleSpace);
-    var globalBarrier: [BarrierSpace] unmanaged aBarrier(reusable=true, procAtomics=true, hackIntoCommBarrier=true);
-
-    proc init(numTasksPerLocale: int) {
-      globalBarrier = [b in BarrierSpace] new unmanaged aBarrier(numTasksPerLocale, reusable=true, procAtomics=true, hackIntoCommBarrier=true);
-    }
-
-    proc deinit() {
-      [b in globalBarrier] delete b;
-    }
 
     override proc barrier() {
       globalBarrier.localAccess[here.id].barrier();
@@ -89,6 +81,5 @@ module AllLocalesBarriers {
       [b in globalBarrier] b.reset(numTasksPerLocale);
     }
   }
-
-  const allLocalesBarrier: AllLocalesBarrier = new AllLocalesBarrier(1);
+  const allLocalesBarrier: AllLocalesBarrier = new AllLocalesBarrier();
 }
