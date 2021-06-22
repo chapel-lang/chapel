@@ -21,10 +21,9 @@
 #ifndef _CONVERT_UAST_H_
 #define _CONVERT_UAST_H_
 
-#include "baseAST.h"
 #include "alist.h"
-
-#include "chpl/frontend/frontend-queries.h"
+#include "baseAST.h"
+#include "chpl/queries/Context.h"
 #include "chpl/uast/Module.h"
 
 ModuleSymbol* convertToplevelModule(chpl::Context* context,

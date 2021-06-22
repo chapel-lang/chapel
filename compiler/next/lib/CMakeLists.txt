@@ -32,9 +32,10 @@ target_include_directories(libchplcomp-obj PUBLIC
 # but these are not to be public
 target_include_directories(libchplcomp-obj PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_subdirectory(uast)
-add_subdirectory(frontend)
+add_subdirectory(parsing)
 add_subdirectory(queries)
+add_subdirectory(resolution)
+add_subdirectory(uast)
 add_subdirectory(util)
 
 add_library(libchplcomp $<TARGET_OBJECTS:libchplcomp-obj>)

@@ -57,12 +57,12 @@ In particular, for our project, I would expect we end up with this structure:
   runtime/ (could also be called chpl-rt/ in the future)
   compiler/  (could also be called chpl/ in the future)
      include/chpl
-       AST/ (new AST headers forming library API will go here)
+       uast/ (new AST headers forming library API will go here)
        (nothing from the old compiler since it does not present a library interface)
        
      lib/
-       AST/ (new AST source code)
-       oAST/ (current AST source code and headers)
+       uast/ (new AST source code)
+       oast/ (current AST source code and headers)
        resolution/ (resolution code as well as resolution.h)
        ...
   
@@ -75,4 +75,16 @@ In particular, for our project, I would expect we end up with this structure:
 ```
 
 Please note that when we `#include` a header we will do so assuming that
-compiler/include is in the `-I` path and also `lib` is as well.
+`chpl/include` is in the `-I` path and also the current `lib` subdir.
+
+
+### a note about namespaces
+
+It is a style matter to decide when to introduce a new namespace.
+Here is some guidance about when to do so:
+ * when creating a bunch of similar types that we'd like to be able to
+   easily distinguish (e.g. uast vs old ast)
+ * when creating a bunch of free functions that we'd like to be able to
+   bundle since they are related
+
+In particular, all topic directories need to have a namespace.

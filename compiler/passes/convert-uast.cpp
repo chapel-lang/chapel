@@ -30,7 +30,6 @@
 #include "build.h"
 #include "docsDriver.h"
 
-#include "chpl/frontend/frontend-queries.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
 
