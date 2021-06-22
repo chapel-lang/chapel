@@ -42,7 +42,7 @@ module Socket {
   proc listen(in address:string,port:uint(16),reuseaddr=true) throws {
     var family = AF_INET;
     var socketFD: int(32);
-    var err = sys_socket(family,SOCK_STREAM|SOCK_CLOEXEC,0,socketFD);
+    var err = sys_socket(family,SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK,0,socketFD);
     if(err != 0){
       throw SystemError.fromSyserr(err,"Failed to create Socket");
     }
@@ -101,4 +101,29 @@ module Socket {
     writeln("Socket Closed");
   }
 
+  proc accept(socketFD:int(32)) throws {
+    var rset, allset: fd_set;
+    var timeo:timeval = new timeval(10,0);
+
+    sys_fd_zero(allset);
+    sys_fd_set(socketFD,allset);
+    rset = allset;
+    var nready:int(32);
+
+    writeln("going to select now, selecting on ", sys_fd_isset(socketFD,rset));
+
+    var err = sys_select(socketFD+1,c_ptrTo(rset),nil,nil,c_ptrTo(timeo),nready);
+    if(err == 0){
+      writeln("timed out");
+    }
+
+    writeln("select complete ",nready);
+    if(sys_fd_isset(socketFD,rset)){
+      sleep(1);
+      var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
+      var fdOut:int(32);
+      sys_accept(socketFD,client_addr,fdOut);
+      writeln(fdOut);
+    }
+  }
 }
