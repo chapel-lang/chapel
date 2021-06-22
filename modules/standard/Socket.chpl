@@ -6,6 +6,39 @@ module Socket {
   use SysCTypes;
   private extern proc sizeof(e): size_t;
 
+  enum IPFamily {
+    IPv4 = 2,
+    IPv6 = 10
+  }
+
+  const IPv4Localhost = INADDR_LOOPBACK;
+  const IPv6Localhost = in6addr_loopback;
+
+  record InetAddr {
+    var port;
+    var address:string;
+    var _addressStorage:sys_sockaddr_t;
+
+    proc init(inout address:string = "localhost", port:uint(16), family:IPFamily = IPFamily.IPv4) {
+      this.port = port;
+      this.address = address;
+      _addressStorage = new sys_sockaddr_t();
+      if(address == "localhost"){
+        address = if family == AF_INET then "127.0.0.1" else "::1";
+      }
+
+      _addressStorage.fill(address, port, family);
+    }
+
+    proc init(address, port: uint(16)) where address.type == sys_in_addr_t || sys_in6_addr_t {
+      this.port = port;
+      this.address = address;
+      _addressStorage = new sys_sockaddr_t();
+
+      _addressStorage.fill(address,port);
+    }
+  }
+
   proc listen(in address:string,port:uint(16),reuseaddr=true) throws {
     var family = AF_INET;
     var socketFD: int(32);
