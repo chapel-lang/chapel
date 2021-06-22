@@ -84,7 +84,6 @@ target_sources(libchplcomp-obj
                Union.cpp
                Variable.cpp
                VarLikeDecl.cpp
-               Visitor.cpp
                While.cpp
                WithClause.cpp
                Yield.cpp

@@ -196,6 +196,147 @@ class ASTNode {
   #undef AST_BEGIN_SUBCLASSES
   #undef AST_END_SUBCLASSES
   #undef AST_TO
+
+  /**
+     The dispatch function supports calling a method according to the tag
+     (aka runtime type) of a uast node. It does not itself visit
+     children of the uast node (but of course the called visit function
+     is free to do so).
+
+     It is a template and the Visitor argument should provide functions
+     like
+
+        MyReturnType MyVisitor::visit(const uast::Expression* ast);
+        MyReturnType MyVisitor::visit(const uast::Variable* ast);
+
+     and these will be invoked according to C++ overload resolution
+     (where in particular an exact match will be preferred).
+
+     It is generally necessary to specify the ReturnType when calling it, e.g.
+
+       ast->dispatch<MyReturnType>(myVisitor);
+
+     The return type currently needs to be default constructable.
+   */
+  template <typename ReturnType, typename Visitor>
+  ReturnType dispatch(Visitor& v) const {
+
+    switch (this->tag()) {
+      #define CONVERT(NAME) \
+        case chpl::uast::asttags::NAME: \
+        { \
+          return v.visit((const chpl::uast::NAME*) this); \
+        }
+
+      #define IGNORE(NAME) \
+        case chpl::uast::asttags::NAME: \
+        { \
+          assert(false && "this code should never be run"); \
+        }
+
+      #define AST_NODE(NAME) CONVERT(NAME)
+      #define AST_LEAF(NAME) CONVERT(NAME)
+      #define AST_BEGIN_SUBCLASSES(NAME) IGNORE(START_##NAME)
+      #define AST_END_SUBCLASSES(NAME) IGNORE(END_##NAME)
+
+      #include "chpl/uast/ASTClassesList.h"
+
+      IGNORE(NUM_AST_TAGS)
+
+      #undef AST_NODE
+      #undef AST_LEAF
+      #undef AST_BEGIN_SUBCLASSES
+      #undef AST_END_SUBCLASSES
+      #undef CONVERT
+      #undef IGNORE
+    }
+
+    ReturnType dummy;
+    assert(false && "this code should never be run");
+    return dummy;
+  }
+
+  /**
+     The traverse function supports calling a method according to the tag
+     (aka runtime type) of a uast node and calling that method also
+     on the children of the uast node.
+
+     It is a template and the Visitor argument should provide functions
+     like
+
+        bool MyTraverser::enter(const uast::Expression* ast);
+        bool MyTraverser::exit(const uast::Expression* ast);
+        bool MyTraverser::enter(const uast::Variable* ast);
+        bool MyTraverser::exit(const uast::Variable* ast);
+
+     and these will be invoked according to C++ overload resolution
+     (where in particular an exact match will be preferred).
+
+     First the enter method is called. If that returns true, the
+     children are visited, and then the exit method is called for that node.
+
+     Unlike `dispatch`, this function doesn't support returning a value.
+
+     The traverse function can be called like this:
+
+       traverse(myTraverser, ast);
+   */
+
+  template <typename Visitor>
+  void traverse(Visitor& v) const {
+
+    switch (this->tag()) {
+      #define CASE_LEAF(NAME) \
+        case asttags::NAME: \
+        { \
+          const NAME* casted = (const NAME*) this; \
+          bool goInToIt = v.enter(casted); \
+          if (goInToIt) v.exit(casted); \
+          break; \
+        }
+
+      #define CASE_NODE(NAME) \
+        case asttags::NAME: \
+        { \
+          const NAME* casted = (const NAME*) this; \
+          bool goInToIt = v.enter(casted); \
+          if (goInToIt) { \
+            for (const ASTNode* child : this->children()) { \
+              child->traverse(v); \
+            } \
+            v.exit(casted); \
+          } \
+          break; \
+        }
+
+      #define CASE_OTHER(NAME) \
+        case asttags::NAME: \
+        { \
+          assert(false && "this code should never be run"); \
+          break; \
+        }
+
+      #define AST_NODE(NAME) CASE_NODE(NAME)
+      #define AST_LEAF(NAME) CASE_LEAF(NAME)
+      #define AST_BEGIN_SUBCLASSES(NAME) CASE_OTHER(START_##NAME)
+      #define AST_END_SUBCLASSES(NAME) CASE_OTHER(END_##NAME)
+
+      // Apply the above macros to ASTClassesList.h
+      // to fill in the cases
+      #include "chpl/uast/ASTClassesList.h"
+      // and also for NUM_AST_TAGS
+      CASE_OTHER(NUM_AST_TAGS)
+
+      // clear the macros
+      #undef AST_NODE
+      #undef AST_LEAF
+      #undef AST_BEGIN_SUBCLASSES
+      #undef AST_END_SUBCLASSES
+      #undef CASE_LEAF
+      #undef CASE_NODE
+      #undef CASE_OTHER
+    }
+  }
 };
 
 

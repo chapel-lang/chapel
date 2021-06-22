@@ -25,7 +25,6 @@
 #include "chpl/uast/ASTNode.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
-#include "chpl/uast/Visitor.h"
 
 #include "../util/filesystem.h"
 
