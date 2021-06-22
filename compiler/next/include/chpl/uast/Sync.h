@@ -38,9 +38,9 @@ namespace uast {
       proc syncExample() {
         sync {
           begin task1();
-	  begin task2();
+          begin task2();
         }
-	writeln("Task 1 and 2 complete");
+        writeln("Task 1 and 2 complete");
       }
       syncExample();
 
