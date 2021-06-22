@@ -74,6 +74,7 @@ target_sources(libchplcomp-obj
                SimpleBlockLike.cpp
                StringLikeLiteral.cpp
                StringLiteral.cpp
+	       Sync.cpp
                TaskVar.cpp
                TupleDecl.cpp
                TypeDecl.cpp
