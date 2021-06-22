@@ -17,22 +17,22 @@
  * limitations under the License.
  */
 
+#include "chpl/uast/Builder.h"
 #include "chpl/uast/Sync.h"
 
-#include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
 
 owned<Sync> Sync::build(Builder* builder, Location loc,
-                          BlockStyle blockStyle,
-                          ASTList stmts) {
+                        BlockStyle blockStyle,
+                        ASTList stmts) {
   const int bodyChildNum = 0;
   const int numBodyStmts = stmts.size();
 
   Sync* ret = new Sync(std::move(stmts), blockStyle, bodyChildNum,
-                         numBodyStmts);
+                       numBodyStmts);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

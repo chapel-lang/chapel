@@ -29,7 +29,7 @@ namespace uast {
 
 
 /**
-  This class represents a sync block. For example:
+  This class represents a sync statement. For example:
 
   \rst
   .. code-block:: chapel
@@ -53,7 +53,7 @@ namespace uast {
 class Sync final : public SimpleBlockLike {
  private:
   Sync(ASTList stmts, BlockStyle blockStyle, int bodyChildNum,
-        int numBodyStmts)
+       int numBodyStmts)
     : SimpleBlockLike(asttags::Sync, std::move(stmts), blockStyle,
                       bodyChildNum,
                       numBodyStmts) {
@@ -76,8 +76,8 @@ class Sync final : public SimpleBlockLike {
    Create and return a Sync containing the passed stmts.
    */
   static owned<Sync> build(Builder* builder, Location loc,
-                            BlockStyle blockStyle,
-                            ASTList stmts);
+                           BlockStyle blockStyle,
+                           ASTList stmts);
 };
 
 
