@@ -71,9 +71,9 @@ instantiations of generic types.
 Operator Methods and Classes
 ----------------------------
 
-When an operator method is defined on a class, there are some known issues that
-impact its use in an inheritance situation.  For this reason it is recommended
-that class arguments to operator methods are declared as ``borrowed``, e.g.
+Operators that are defined on classes that are inherited from can run into known
+issues. To avoid these issues, define the class arguments to operator methods
+with ``borrowed``, e.g.:
 
 .. code-block:: chapel
 
