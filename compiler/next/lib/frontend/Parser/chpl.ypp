@@ -104,12 +104,6 @@
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
 
-  enum AggregateTag {
-    AggregateTag_CLASS,
-    AggregateTag_RECORD,
-    AggregateTag_UNION,
-  };
-
   enum ThrowsTag {
     ThrowsTag_DEFAULT,
     ThrowsTag_THROWS,
@@ -204,6 +198,7 @@
     bool isInline;
     bool isOverride;
     Function::Kind kind;
+    Formal::Intent thisIntent;
     Formal* receiver;
     PODUniqueString name;
     Function::ReturnIntent returnIntent;
@@ -224,10 +219,11 @@
   };
 
   // a struct to store the values in enum_header_lcbr
-  struct EnumParts {
+  struct TypeDeclParts {
     std::vector<ParserComment>* comments;
     Decl::Visibility visibility;
     PODUniqueString name;
+    asttags::ASTTag tag;
   };
 
   // This is produced by do_stmt. It records whether the do_stmt statements
@@ -276,7 +272,7 @@
 
     // integer/enum values
 
-    AggregateTag aggregateTag;
+    asttags::ASTTag astTag;
     Formal::Intent intentTag;
     Function::Kind functionKind;
     Function::ReturnIntent returnTag;
@@ -299,7 +295,7 @@
     BlockOrDo blockOrDo;
     CommentsAndLinkage commentsAndLinkage;
     CommentsAndStmt commentsAndStmt;
-    EnumParts enumParts;
+    TypeDeclParts typeDeclParts;
     FunctionParts functionParts;
     MaybeNamedActual maybeNamedActual;
     MaybeNamedActualList* maybeNamedActualList;
@@ -515,7 +511,7 @@
 %type <intentTag> required_intent_tag opt_intent_tag opt_this_intent_tag
 
 %type <returnTag>  opt_ret_tag
-%type <aggregateTag> class_tag
+%type <astTag> class_tag
 
 %type <uniqueStr> ident_use ident_def ident_fn_def
 %type <uniqueStr> internal_type_ident_def reserved_type_ident_use
@@ -560,7 +556,8 @@
 %type <commentsAndStmt> select_stmt
 %type <commentsAndStmt> assignment_stmt
 
-%type <commentsAndStmt> class_level_stmt class_start
+%type <typeDeclParts> class_start
+%type <commentsAndStmt> class_level_stmt
 %type <commentsAndStmt> inner_class_level_stmt
 %type <commentsAndStmt> forwarding_decl_stmt forwarding_decl_start
 %type <commentsAndStmt> extern_export_decl_stmt
@@ -595,7 +592,7 @@
 %type <expr> array_type
 %type <expr> opt_type opt_ret_type ret_array_type
 %type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
-%type <enumParts> enum_header_lcbr
+%type <typeDeclParts> enum_header_lcbr
 %type <exprList> enum_ls
 
 %type <expr> zippered_iterator
@@ -1731,6 +1728,7 @@ ifvar:
     auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
                                    Decl::DEFAULT_VISIBILITY,
                                    Variable::VAR,
+                                   context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
     $$ = varDecl.release();
@@ -1740,6 +1738,7 @@ ifvar:
     auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
                                    Decl::DEFAULT_VISIBILITY,
                                    Variable::CONST,
+                                   context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
     $$ = varDecl.release();
@@ -1884,16 +1883,15 @@ when_stmt:
 class_decl_stmt:
   class_start opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
-      CommentsAndStmt cs = $1;
-      cs.stmt = TODOEXPR(@$);
-      context->appendComments(&cs, context->gatherComments(@5));
-      $$ = cs;
+      $$ = context->buildAggregateTypeDecl(@$, $1, @2, $2, @3, $4, @5);
+      context->exitScope($1.tag, $1.name);
     }
 | class_start opt_inherit TLCBR error TRCBR
     {
-      CommentsAndStmt cs = $1;
-      cs.stmt = TODOEXPR(@$);
-      $$ = cs;
+      auto contents =
+        context->makeList(ErroneousExpression::build(BUILDER, LOC(@4)));
+      $$ = context->buildAggregateTypeDecl(@$, $1, @2, $2, @3, contents, @5);
+      context->exitScope($1.tag, $1.name);
     }
   /* see also extern_export_decl_stmt */
 ;
@@ -1901,14 +1899,24 @@ class_decl_stmt:
 class_start:
   class_tag ident_def
     {
-      $$ = TODOSTMT(@$);
+      // take into account location of public/private, if any
+      auto loc = context->declStartLoc(@1);
+      context->enterScope($1, $2);
+
+      TypeDeclParts parts = {context->gatherComments(loc),
+                             context->visibility,
+                             $2,
+                             $1};
+      $$ = parts;
+
+      context->clearComments();
     }
 ;
 
 class_tag:
-  TCLASS   { $$ = AggregateTag_CLASS; }
-| TRECORD  { $$ = AggregateTag_RECORD; }
-| TUNION   { $$ = AggregateTag_UNION; }
+  TCLASS   { $$ = asttags::Class; }
+| TRECORD  { $$ = asttags::Record; }
+| TUNION   { $$ = asttags::Union; }
 ;
 
 opt_inherit:
@@ -1928,7 +1936,7 @@ class_level_stmt_ls:
 enum_decl_stmt:
   enum_header_lcbr enum_ls TRCBR
     {
-      EnumParts parts = $1;
+      TypeDeclParts parts = $1;
       ParserExprList* list = $2;
       // get any comments after the last element but before the closing brace
       context->appendList(list, context->gatherComments(@3));
@@ -1938,15 +1946,17 @@ enum_decl_stmt:
                               context->consumeList(list));
       CommentsAndStmt cs = {parts.comments, decl.release()};
       $$ = cs;
+      context->exitScope(asttags::Enum, parts.name);
       context->resetDeclState();
       context->clearComments();
     }
 | enum_header_lcbr error TRCBR
     {
-      EnumParts parts = $1;
+      TypeDeclParts parts = $1;
       auto err = ErroneousExpression::build(BUILDER, LOC(@2));
       CommentsAndStmt cs = {parts.comments, err.release()};
       $$ = cs;
+      context->exitScope(asttags::Enum, parts.name);
       context->resetDeclState();
       context->clearComments();
     }
@@ -1957,8 +1967,12 @@ enum_header_lcbr:
     {
       // take into account location of public/private, if any
       auto loc = context->declStartLoc(@1);
+      context->enterScope(asttags::Enum, $2);
 
-      EnumParts parts = {context->gatherComments(loc), context->visibility, $2};
+      TypeDeclParts parts = {context->gatherComments(loc),
+                             context->visibility,
+                             $2,
+                             asttags::Enum};
       $$ = parts;
 
       context->clearComments();
@@ -2032,7 +2046,10 @@ fn_decl_stmt:
   fn_decl_stmt_inner
   opt_ret_tag opt_ret_type
   opt_throws_error opt_lifetime_where
-    { context->clearComments(); }
+    {
+      context->clearComments();
+      context->enterScope(asttags::Function, $1.name);
+    }
   opt_function_body_stmt
     {
       FunctionParts fp = $1;
@@ -2046,6 +2063,7 @@ fn_decl_stmt:
       fp.where = wl.where;
 
       context->clearComments();
+      context->exitScope(asttags::Function, $1.name);
 
       $$ = fp;
     }
@@ -2055,7 +2073,7 @@ fn_decl_stmt_inner:
   fn_decl_stmt_start opt_this_intent_tag fn_ident opt_formal_ls
     {
       FunctionParts fp = $1;
-      // TODO -- do something with $2
+      fp.thisIntent = $2;
       fp.name = $3;
       fp.formals = $4;
       $$ = fp;
@@ -2063,7 +2081,7 @@ fn_decl_stmt_inner:
 | fn_decl_stmt_start opt_this_intent_tag assignop_ident opt_formal_ls
     {
       FunctionParts fp = $1;
-      // TODO -- do something with $2
+      fp.thisIntent = $2;
       fp.name = $3;
       fp.formals = $4;
       $$ = fp;
@@ -2071,6 +2089,7 @@ fn_decl_stmt_inner:
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
     {
       FunctionParts fp = $1;
+      fp.thisIntent = $2;
       fp.receiver = Formal::build(BUILDER, LOC(@3),
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
@@ -2081,6 +2100,7 @@ fn_decl_stmt_inner:
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
     {
       FunctionParts fp = $1;
+      fp.thisIntent = $2;
       fp.receiver = Formal::build(BUILDER, LOC(@3),
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
@@ -2423,6 +2443,7 @@ var_decl_stmt_inner:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->currentScopeIsAggregate(),
                                      toOwned($2), toOwned($3));
       // gather the comments like a statement does
       $$ = STMT(@1, varDecl.release());
@@ -2446,6 +2467,7 @@ tuple_var_decl_component:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->currentScopeIsAggregate(),
                                      nullptr, nullptr);
       $$ = varDecl.release();
     }
@@ -2455,6 +2477,7 @@ tuple_var_decl_component:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->currentScopeIsAggregate(),
                                      nullptr, nullptr);
       $$ = varDecl.release();
     }
@@ -2697,26 +2720,26 @@ sub_type_level_expr:
     { $$ = TODOEXPR(@$); }
 
 | TOWNED
-    { $$ = TODOEXPR(@$); }
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TOWNED expr
     { $$ = TODOEXPR(@$); }
 | TUNMANAGED
-    { $$ = TODOEXPR(@$); }
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TUNMANAGED expr
     { $$ = TODOEXPR(@$); }
 | TSHARED
-    { $$ = TODOEXPR(@$); }
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TSHARED expr
     { $$ = TODOEXPR(@$); }
 | TBORROWED
-    { $$ = TODOEXPR(@$); }
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TBORROWED expr
     { $$ = TODOEXPR(@$); }
 
 | TCLASS
-    { $$ = TODOEXPR(@$); }
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TRECORD
-    { $$ = TODOEXPR(@$); }
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 ;
 
 for_expr:

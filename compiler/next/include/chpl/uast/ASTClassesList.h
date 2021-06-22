@@ -139,7 +139,6 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       AST_NODE(Module)                     // old AST: ModuleSymbol
 
       AST_BEGIN_SUBCLASSES(VarLikeDecl)
-        //AST_LEAF(Field)
         AST_LEAF(Formal)                   // old AST: ArgSymbol
         AST_LEAF(TaskVar)                  // old AST: ShadowVarSymbol
         AST_LEAF(Variable)                 // old AST: VarSymbol
@@ -149,9 +148,9 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
         AST_NODE(Enum)                     // old AST: EnumType
 
         AST_BEGIN_SUBCLASSES(AggregateDecl)// old AST: AggregateType
-          //AST_NODE(Class)                  //
-          //AST_NODE(Record)                 //
-          //AST_NODE(Union)                  //
+          AST_NODE(Class)                  //
+          AST_NODE(Record)                 //
+          AST_NODE(Union)                  //
         AST_END_SUBCLASSES(AggregateDecl)
 
       AST_END_SUBCLASSES(TypeDecl)
