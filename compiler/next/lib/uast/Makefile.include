@@ -73,6 +73,7 @@ NEXT_UAST_SRCS =                                 \
   SimpleBlockLike.cpp \
   StringLikeLiteral.cpp \
   StringLiteral.cpp \
+  Sync.cpp \
   TaskVar.cpp \
   TupleDecl.cpp \
   TypeDecl.cpp \

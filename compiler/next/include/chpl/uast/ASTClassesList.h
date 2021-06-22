@@ -77,7 +77,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Label)                    //
   AST_NODE(Return)                   //
   //AST_NODE(Select)                   //
-  //AST_NODE(Sync)                     //
+  AST_NODE(Sync)                     //
   //AST_NODE(TryCatch)                 // old AST: TryStmt/CatchStmt
   AST_NODE(Yield)                    //
 
