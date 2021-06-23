@@ -35,6 +35,7 @@
 comp_unit_test(testFrontendQueries)
 comp_unit_test(testInteractive)
 comp_unit_test(testParse)
+comp_unit_test(testParseAggregate)
 comp_unit_test(testParseBegin)
 comp_unit_test(testParseBracketLoop)
 comp_unit_test(testParseCobegin)

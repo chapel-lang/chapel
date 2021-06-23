@@ -77,12 +77,6 @@ extern int yychpl_debug;
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
 
-  enum AggregateTag {
-    AggregateTag_CLASS,
-    AggregateTag_RECORD,
-    AggregateTag_UNION,
-  };
-
   enum ThrowsTag {
     ThrowsTag_DEFAULT,
     ThrowsTag_THROWS,
@@ -177,6 +171,7 @@ extern int yychpl_debug;
     bool isInline;
     bool isOverride;
     Function::Kind kind;
+    Formal::Intent thisIntent;
     Formal* receiver;
     PODUniqueString name;
     Function::ReturnIntent returnIntent;
@@ -197,10 +192,11 @@ extern int yychpl_debug;
   };
 
   // a struct to store the values in enum_header_lcbr
-  struct EnumParts {
+  struct TypeDeclParts {
     std::vector<ParserComment>* comments;
     Decl::Visibility visibility;
     PODUniqueString name;
+    asttags::ASTTag tag;
   };
 
   // This is produced by do_stmt. It records whether the do_stmt statements
@@ -249,7 +245,7 @@ extern int yychpl_debug;
 
     // integer/enum values
 
-    AggregateTag aggregateTag;
+    asttags::ASTTag astTag;
     Formal::Intent intentTag;
     Function::Kind functionKind;
     Function::ReturnIntent returnTag;
@@ -272,7 +268,7 @@ extern int yychpl_debug;
     BlockOrDo blockOrDo;
     CommentsAndLinkage commentsAndLinkage;
     CommentsAndStmt commentsAndStmt;
-    EnumParts enumParts;
+    TypeDeclParts typeDeclParts;
     FunctionParts functionParts;
     MaybeNamedActual maybeNamedActual;
     MaybeNamedActualList* maybeNamedActualList;
@@ -298,12 +294,12 @@ extern int yychpl_debug;
   #define YYLTYPE YYCHPL_LTYPE
 
   #endif
-#line 344 "chpl.ypp"
+#line 340 "chpl.ypp"
 
   // forward declare ParserContext
   struct ParserContext;
 
-#line 307 "bison-chpl-lib.h"
+#line 303 "bison-chpl-lib.h"
 
 /* Token kinds.  */
 #ifndef YYCHPL_TOKENTYPE
@@ -528,20 +524,20 @@ yychpl_pstate *yychpl_pstate_new (void);
 void yychpl_pstate_delete (yychpl_pstate *ps);
 
 /* "%code provides" blocks.  */
-#line 352 "chpl.ypp"
+#line 348 "chpl.ypp"
 
   extern int yychpl_debug;
 
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-#line 360 "chpl.ypp"
+#line 356 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser
   // headers.
   #include "ParserContext.h"
 
-#line 546 "bison-chpl-lib.h"
+#line 542 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */

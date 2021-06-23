@@ -22,7 +22,7 @@ for k in (1..) {
   den *= k1;
 
   if a >= num {
-    t.div_qr(u, 3*num + a, den);
+    t.divQR(u, 3*num + a, den);
     u += num;
     if den > u {
       ns = 10*ns + t:int;

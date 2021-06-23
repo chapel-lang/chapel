@@ -21,6 +21,7 @@ NEXT_UAST_OBJDIR = $(COMPILER_BUILD)/next/lib/uast
 ALL_SRCS += next/lib/uast/*.cpp
 
 NEXT_UAST_SRCS =                                 \
+  AggregateDecl.cpp \
   ASTList.cpp \
   ASTNode.cpp \
   ASTTag.cpp \
@@ -34,6 +35,7 @@ NEXT_UAST_SRCS =                                 \
   Builder.cpp \
   BytesLiteral.cpp \
   Call.cpp \
+  Class.cpp \
   Cobegin.cpp \
   Coforall.cpp \
   Comment.cpp \
@@ -73,6 +75,7 @@ NEXT_UAST_SRCS =                                 \
   OpCall.cpp \
   Range.cpp \
   RealLiteral.cpp \
+  Record.cpp \
   Return.cpp \
   Serial.cpp \
   SimpleBlockLike.cpp \
@@ -84,6 +87,7 @@ NEXT_UAST_SRCS =                                 \
   UintLiteral.cpp \
   Use.cpp \
   UseClause.cpp \
+  Union.cpp \
   Variable.cpp \
   VarLikeDecl.cpp \
   Visitor.cpp \

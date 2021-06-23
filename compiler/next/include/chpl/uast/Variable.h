@@ -40,9 +40,13 @@ namespace uast {
       const c = 2;
       const ref d = c;
       param e = "hi";
+
+      class C {
+        var f: int;
+      }
   \endrst
 
-  each of these is a VariableDecl that refers to a Variable Sym.
+  each of a-f are Variables.
  */
 class Variable final : public VarLikeDecl {
  public:
@@ -61,19 +65,23 @@ class Variable final : public VarLikeDecl {
   Variable(ASTList children, Decl::Visibility vis, UniqueString name,
            Variable::Kind kind,
            bool isConfig,
+           bool isField,
            int8_t typeExpressionChildNum,
            int8_t initExpressionChildNum)
       : VarLikeDecl(asttags::Variable, std::move(children), vis, name,
                     typeExpressionChildNum,
                     initExpressionChildNum),
         kind_(kind),
-        isConfig_(isConfig) {}
+        isConfig_(isConfig),
+        isField_(isField) {
+  }
 
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
 
   Kind kind_;
   bool isConfig_;
+  bool isField_;
 
  public:
   ~Variable() override = default;
@@ -82,6 +90,7 @@ class Variable final : public VarLikeDecl {
                                UniqueString name, Decl::Visibility vis,
                                Variable::Kind kind,
                                bool isConfig,
+                               bool isField,
                                owned<Expression> typeExpression,
                                owned<Expression> initExpression);
 
@@ -94,6 +103,11 @@ class Variable final : public VarLikeDecl {
     Returns true if this variable is a config variable.
   */
   bool isConfig() const { return this->isConfig_; }
+
+  /**
+    Returns true if this Variable reperesents a field.
+  */
+  bool isField() const { return this->isField_; }
 
 };
 

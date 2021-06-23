@@ -116,6 +116,30 @@ void ParserContext::resetDeclState() {
   this->declStartLocation = emptyLoc;
 }
 
+void ParserContext::enterScope(asttags::ASTTag tag, UniqueString name) {
+  ParserScope entry = {tag, name};
+  scopeStack.push_back(entry);
+}
+ParserContext::ParserScope ParserContext::currentScope() {
+  if (scopeStack.size() == 0) {
+    ParserScope entry = {asttags::Module, UniqueString()};
+    return entry;
+  }
+  return scopeStack.back();
+}
+bool ParserContext::currentScopeIsAggregate() {
+  auto scope = currentScope();
+  return (scope.tag == asttags::Class ||
+          scope.tag == asttags::Record ||
+          scope.tag == asttags::Union);
+}
+void ParserContext::exitScope(asttags::ASTTag tag, UniqueString name) {
+  assert(scopeStack.size() > 0);
+  assert(scopeStack.back().tag == tag);
+  assert(scopeStack.back().name == name);
+  scopeStack.pop_back();
+}
+
 void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
   if (this->comments == nullptr) {
     this->comments = new std::vector<ParserComment>();
@@ -224,7 +248,9 @@ ASTList ParserContext::consumeList(ParserExprList* lst) {
   ASTList ret;
   if (lst != nullptr) {
     for (Expression* e : *lst) {
-      ret.push_back(toOwned(e));
+      if (e != nullptr) {
+        ret.push_back(toOwned(e));
+      }
     }
     delete lst;
   }
@@ -382,6 +408,7 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                       isInline,
                       isOverride,
                       Function::PROC,
+                      Formal::DEFAULT_INTENT,
                       nullptr,
                       PODUniqueString::build(),
                       Function::DEFAULT_RETURN_INTENT,
@@ -395,6 +422,23 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                                                  FunctionParts& fp) {
   CommentsAndStmt cs = {fp.comments, nullptr};
   if (fp.errorExpr == nullptr) {
+    // Detect primary methods and create a receiver for them
+    bool primaryMethod = false;
+    auto scope = currentScope();
+    if (currentScopeIsAggregate()) {
+      if (fp.receiver == nullptr) {
+        auto loc = convertLocation(location); 
+        auto ths = UniqueString::build(context(), "this");
+        UniqueString cls = scope.name;
+        fp.receiver = Formal::build(builder, loc,
+                                    ths,
+                                    fp.thisIntent,
+                                    Identifier::build(builder, loc, cls),
+                                    nullptr).release();
+        primaryMethod = true;
+      }
+    }
+
     auto f = Function::build(builder, this->convertLocation(location),
                              fp.name, this->visibility,
                              fp.linkage, toOwned(fp.linkageNameExpr),
@@ -404,6 +448,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                              toOwned(fp.receiver),
                              fp.returnIntent,
                              fp.throws,
+                             primaryMethod,
                              this->consumeList(fp.formals),
                              toOwned(fp.returnType),
                              toOwned(fp.where),
@@ -426,6 +471,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                            Decl::DEFAULT_VISIBILITY,
                            Variable::INDEX,
                            /*isConfig*/ false,
+                           /*isField*/ false,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
   } else {
@@ -934,7 +980,7 @@ uint64_t ParserContext::decStr2uint64(YYLTYPE location,
   if (numitems != 1) {                                          \
     erroneous = true;
     noteError(location, "error converting decimal literal");
-  }                                                   
+  }
 
   char* checkStr = (char*)malloc(len+1);
   snprintf(checkStr, len+1, "%" SCNu64, val);
@@ -1007,7 +1053,7 @@ double ParserContext::str2double(YYLTYPE location,
                                  bool& erroneous) {
   char* endptr = nullptr;
   double num = strtod(str, &endptr);
-  if (std::isnan(num) || std::isinf(num)) { 
+  if (std::isnan(num) || std::isinf(num)) {
     // don't worry about checking magnitude of these
   } else {
     double mag = fabs(num);
@@ -1172,5 +1218,65 @@ CommentsAndStmt ParserContext::buildVarOrMultiDecl(YYLTYPE locEverything,
 
   resetDeclState();
 
+  return cs;
+}
+
+CommentsAndStmt
+ParserContext::buildAggregateTypeDecl(YYLTYPE location,
+                                      TypeDeclParts parts,
+                                      YYLTYPE inheritLoc,
+                                      ParserExprList* optInherit,
+                                      YYLTYPE openingBrace,
+                                      ParserExprList* contents,
+                                      YYLTYPE closingBrace) {
+
+  CommentsAndStmt cs = {parts.comments, nullptr};
+  // adjust the contents list to have the right comments
+  discardCommentsFromList(contents, openingBrace);
+  appendList(contents, gatherComments(closingBrace));
+
+  auto contentsList = consumeList(contents);
+
+  owned<Identifier> inheritIdentifier;
+  if (optInherit != nullptr) {
+    if (optInherit->size() > 0) {
+      if (parts.tag == asttags::Record) {
+        noteError(inheritLoc, "records cannot inherit");
+      } else if (parts.tag == asttags::Union) {
+        noteError(inheritLoc, "unions cannot inherit");
+      } else {
+        if (optInherit->size() > 1)
+          noteError(inheritLoc, "only single inheritance is supported");
+        ASTNode* ast = (*optInherit)[0];
+        if (ast->isIdentifier()) {
+          inheritIdentifier = toOwned(ast->toIdentifier());
+          (*optInherit)[0] = nullptr;
+        } else {
+          noteError(inheritLoc, "non-Identifier expression cannot be inherited");
+        }
+      }
+    }
+    consumeList(optInherit); // just to delete it
+  }
+
+  Expression* decl = nullptr;
+  if (parts.tag == asttags::Class) {
+    decl = Class::build(builder, convertLocation(location),
+                        parts.visibility, parts.name,
+                        std::move(inheritIdentifier),
+                        std::move(contentsList)).release();
+  } else if (parts.tag == asttags::Record) {
+    decl = Record::build(builder, convertLocation(location),
+                         parts.visibility, parts.name,
+                         std::move(contentsList)).release();
+  } else if (parts.tag == asttags::Union) {
+    decl = Union::build(builder, convertLocation(location),
+                        parts.visibility, parts.name,
+                        std::move(contentsList)).release();
+  } else {
+    assert(false && "case not handled");
+  }
+
+  cs.stmt = decl;
   return cs;
 }

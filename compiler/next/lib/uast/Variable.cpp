@@ -30,6 +30,7 @@ bool Variable::contentsMatchInner(const ASTNode* other) const {
   const Variable* rhs = (const Variable*) other;
   return lhs->kind_ == rhs->kind_ &&
          lhs->isConfig_ == rhs->isConfig_ &&
+         lhs->isField_ == rhs->isField_ &&
          lhs->varLikeDeclContentsMatchInner(rhs);
 }
 
@@ -38,10 +39,11 @@ void Variable::markUniqueStringsInner(Context* context) const {
 }
 
 owned<Variable>
-Variable::build(Builder* builder, Location loc,
-                UniqueString name, Decl::Visibility vis,
+Variable::build(Builder* builder, Location loc, UniqueString name,
+                Decl::Visibility vis,
                 Variable::Kind kind,
                 bool isConfig,
+                bool isField,
                 owned<Expression> typeExpression,
                 owned<Expression> initExpression) {
   ASTList lst;
@@ -57,7 +59,9 @@ Variable::build(Builder* builder, Location loc,
   }
 
   Variable* ret = new Variable(std::move(lst), vis, name, kind, isConfig,
-                               typeExpressionChildNum, initExpressionChildNum);
+                               isField,
+                               typeExpressionChildNum,
+                               initExpressionChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

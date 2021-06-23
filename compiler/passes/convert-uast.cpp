@@ -157,7 +157,7 @@ struct Converter {
   }
 
   std::pair<Expr*, Expr*> revertAs(const uast::As* node) {
-    Expr* one = toExpr(convertAST(node->name()));
+    Expr* one = toExpr(convertAST(node->symbol()));
     Expr* two = toExpr(convertAST(node->rename()));
     return std::pair<Expr*, Expr*>(one, two);
   }
@@ -202,12 +202,12 @@ struct Converter {
       except = true;
     }
 
-    if (auto as = useClause->name()->toAs()) {
+    if (auto as = useClause->symbol()->toAs()) {
       auto exprs = revertAs(as);
       mod = exprs.first;
       rename = exprs.second;
     } else {
-      mod = toExpr(convertAST(useClause->name()));
+      mod = toExpr(convertAST(useClause->symbol()));
       rename = new UnresolvedSymExpr("");
     }
 
@@ -226,7 +226,7 @@ struct Converter {
     for (auto useClause : node->useClauses()) {
       INT_ASSERT(useClause->limitationClauseKind() == uast::UseClause::NONE);
       INT_ASSERT(useClause->numLimitations() == 0);
-      PotentialRename* pr = revertRename(useClause->name());
+      PotentialRename* pr = revertRename(useClause->symbol());
       args->push_back(pr);
     }
 
@@ -252,8 +252,6 @@ struct Converter {
     INT_FATAL("TODO");
     return nullptr;
   }
-
-  /// Control FLow ///
 
   GotoStmt* convertBreak(const uast::Break* node) {
     INT_FATAL("TODO");
@@ -900,6 +898,24 @@ struct Converter {
     INT_FATAL("TODO");
     return nullptr;
   }
+
+  /// AggregateDecls
+
+  Expr* convertClass(const uast::Class* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  Expr* convertRecord(const uast::Record* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  Expr* convertUnion(const uast::Union* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
 };
 
 /// Generic conversion calling the above functions ///

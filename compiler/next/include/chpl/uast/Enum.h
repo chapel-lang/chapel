@@ -43,10 +43,8 @@ namespace uast {
   (for a, b, c in the example).
  */
 class Enum final : public TypeDecl {
- friend class EnumDecl;
-
  private:
-  Enum(ASTList children, Visibility vis, UniqueString name)
+  Enum(ASTList children, Decl::Visibility vis, UniqueString name)
     : TypeDecl(asttags::Enum, std::move(children), vis, name) {
 
     assert(isEnumElementAndCommentList(children_));
