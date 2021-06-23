@@ -35,15 +35,24 @@ port: Integer - port number
 ```
 
 The `TCPConn` instance will have methods on it to call
-- `read` ,
-- `write` ,
-- `close`,
-- `closeWrite`,
-- `closeRead`,
-- `setKeepAlive`,
+- `reader`
+  will return a reader channel for associated socket
+  ```python3
+  proc TCPConn.writer() : channel
+  ```
+- `writer`
+  will return a writer channel for associated socket
+  ```python3
+  proc TCPConn.writer() : channel
+  ```
+- `close`
+  calling close on `TCPConn` will close the socket connection and associated `FILE` too.
+  ```python3
+  proc TCPConn.close()
+  ```
+- `setSocketOpt`,
+  `setSocketOpt` will provide method to set arguments like `SO_KEEPALIVE`, `SO_BROADCAST`, etc. options on the socket instance. More options related to the method can be found at [man page](https://linux.die.net/man/3/setsockopt)
 - `addr` ,
-- `setReadBuffer`
-- and `setWriteBuffer`
 
 ## Creating a Listener
 
