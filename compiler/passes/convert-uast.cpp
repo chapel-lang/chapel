@@ -368,10 +368,10 @@ struct Converter {
     return ret;
   }
 
-  Expr* visit(const uast::PrimCall* node) {
+  /*Expr* visit(const uast::PrimCall* node) {
     INT_FATAL("TODO");
     return nullptr;
-  }
+  }*/
 
   Expr* visit(const uast::Zip* node) {
     INT_FATAL("TODO");
