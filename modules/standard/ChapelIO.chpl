@@ -835,17 +835,15 @@ module ChapelIO {
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.channel.write` */
   proc write(const args ...?n):bool{
-    try! 
-    {
-    return stdout.write((...args));
+    try! {
+      return stdout.write((...args));
     }
   }
   
   /* Equivalent to ``try! stdout.writeln``. See :proc:`IO.channel.writeln` */
   proc writeln(const args ...?n):bool {
-    try! 
-    {
-    return stdout.writeln((...args));
+    try! {
+      return stdout.writeln((...args));
     }
   }
 
