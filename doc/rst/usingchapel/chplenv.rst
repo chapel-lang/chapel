@@ -201,12 +201,12 @@ CHPL_*_COMPILER
         +-------------+------------------------------------------------------+
         | Platform    | Compiler                                             |
         +=============+======================================================+
-        | cray-xc     | gnu                                                  |
-        |             |                                                      |
+        | cray-xc     |                                                      |
+        |             | gnu                                                  |
         | hpe-cray-ex |                                                      |
         +-------------+------------------------------------------------------+
-        | darwin      | clang if available, otherwise gnu                    |
-        |             |                                                      |
+        | darwin      |                                                      |
+        |             | clang if available, otherwise gnu                    |
         | freebsd     |                                                      |
         +-------------+------------------------------------------------------+
         | pwr6        | ibm                                                  |
@@ -680,7 +680,7 @@ CHPL_LLVM
 ~~~~~~~~~
 
    The ``CHPL_LLVM`` environment variable enables support for the LLVM
-   back-end to the Chapel compiler (see :ref:`readme-llvm`) and to
+   back-end to the Chapel compiler (see :ref:`readme-llvm`) and
    support for extern blocks in Chapel code via the Clang compiler (see
    :ref:`readme-extern`). Current options are:
 
@@ -701,7 +701,7 @@ CHPL_LLVM
        `third-party/llvm`
      *  ``system`` if a compatible system-wide installation of LLVM is detected
 
-   If none of the above cases pply then you will need to either add a
+   If none of the above cases apply then you will need to either add a
    system-wide installation of LLVM or set ``CHPL_LLVM`` to ``bundled``
    or ``none``.
 
