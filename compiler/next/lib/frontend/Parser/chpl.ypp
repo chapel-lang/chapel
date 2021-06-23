@@ -857,7 +857,19 @@ stmt:
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
-| TSYNC stmt                { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TSYNC stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
+                               false, @1, $2);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Sync::build(BUILDER, LOC(@$), blockStyle,
+                            std::move(stmts));
+    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(ret);
+  }
 | TYIELD expr TSEMI
   {
     auto comments = context->gatherComments(@1);

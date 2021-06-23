@@ -210,6 +210,11 @@ struct Converter {
     return nullptr;
   }
 
+  BlockStmt* convertSync(const uast::Sync* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
   CallExpr* convertYield(const uast::Yield* node) {
     INT_FATAL("TODO");
     return nullptr;

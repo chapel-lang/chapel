@@ -63,6 +63,7 @@
 #include "chpl/uast/Return.h"
 #include "chpl/uast/Serial.h"
 #include "chpl/uast/StringLiteral.h"
+#include "chpl/uast/Sync.h"
 #include "chpl/uast/TaskVar.h"
 #include "chpl/uast/TupleDecl.h"
 #include "chpl/uast/UintLiteral.h"
