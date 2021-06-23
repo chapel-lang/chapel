@@ -51,7 +51,7 @@ $(LIBCOMPILER_BUILD_DIR):
 	    -DBUILD_SHARED_LIBS=OFF
 
 libchplcomp-parser: $(LIBCOMPILER_BUILD_DIR) FORCE
-	cd $(LIBCOMPILER_BUILD_DIR)/lib/frontend/Parser && cmake --build . --target parser
+	cd $(LIBCOMPILER_BUILD_DIR)/lib/parsing && cmake --build . --target parser
 
 libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making the compiler library..."
