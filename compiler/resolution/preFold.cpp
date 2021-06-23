@@ -352,7 +352,14 @@ static void setRecordAssignableFlags(AggregateType* at) {
           ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
       } else {
         // formals are lhs, rhs
-        ArgSymbol* rhs = assign->getFormal(2);
+        int rhsNum = 2;
+        if (assign->hasFlag(FLAG_OPERATOR) && assign->hasFlag(FLAG_METHOD)) {
+          // Sometimes operators are defined as operator methods, in which case
+          // there are an extra two arguments and we need to adjust where we
+          // look for the rhs
+          rhsNum += 2;
+        }
+        ArgSymbol* rhs = assign->getFormal(rhsNum);
         IntentTag intent = concreteIntentForArg(rhs);
         if (intent == INTENT_IN ||
             intent == INTENT_CONST_IN ||
