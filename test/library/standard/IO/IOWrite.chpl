@@ -1,8 +1,8 @@
 use IO;
 
 proc PrintIOWrite(const input){
- write(input);
- writeln(input);
+ assert(write(input));
+ assert(writeln(input));
 
 }
 PrintIOWrite(12);
