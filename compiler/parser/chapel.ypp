@@ -950,6 +950,7 @@ extern_export_decl_stmt:
                                              FLAG_EXTERN,
                                              @2.comment));
     }
+
 | TEXTERN STRINGLITERAL TRECORD
     {
       @3.comment = context->latestComment;
@@ -966,6 +967,40 @@ extern_export_decl_stmt:
                                              FLAG_EXTERN,
                                              @3.comment));
     }
+
+| TEXTERN TUNION
+    {
+      @2.comment = context->latestComment;
+      context->latestComment = NULL;
+    }
+  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      $$ = buildChapelStmt(buildClassDefExpr($4,
+                                             NULL,
+                                             AGGREGATE_UNION,
+                                             $5,
+                                             $7,
+                                             FLAG_EXTERN,
+                                             @2.comment));
+    }
+
+| TEXTERN STRINGLITERAL TUNION
+    {
+      @3.comment = context->latestComment;
+      context->latestComment = NULL;
+    }
+  ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+
+      $$ = buildChapelStmt(buildClassDefExpr($5,
+                                             $2,
+                                             AGGREGATE_UNION,
+                                             $6,
+                                             $8,
+                                             FLAG_EXTERN,
+                                             @3.comment));
+    }
+
 | TEXPORT TRECORD
     {
       @2.comment = context->latestComment;

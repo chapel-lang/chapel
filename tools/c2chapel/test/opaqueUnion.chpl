@@ -6,7 +6,7 @@ require "opaqueUnion.h";
 // Note: Generated with fake std headers
 
 use CPtr;
-extern record foobar {
+extern union foobar {
   var a : c_int;
   var b : c_int;
   var c : c_int;
@@ -15,5 +15,5 @@ extern record foobar {
 // ==== c2chapel typedefs ====
 
 // Opaque union?
-extern record myOpaque {};
+extern union myOpaque {};
 
