@@ -64,11 +64,13 @@ reuseaddr: Boolean - optional parameter, default value = true
 
 The `TCPListener` instance will have methods on it to call
 - `accept`,
+  `accept` method will return a `TCPConn` instance and associated `addr` of any new incoming connection. The communication can then proceed through the `TCPConn` instance returned
 - `close`,
+  calling close on `TCPListener` will close the socket server and it won't accept anymore new connections. 
 - `addr` and
+  addr will return an `ipAddr` instance providing details about the address and port at which socket is listening.
 - `setSocketOpt` to set various socket options.
-
-`accept` method will return a `TCPConn` instance and associated `addr` of the connection.
+  `setSocketOpt` will provide method to set arguments like `SO_KEEPALIVE`, `SO_BROADCAST`, etc. options on the socket instance. More options related to the method can be found at [man page](https://linux.die.net/man/3/setsockopt)
 
 The additional support with `TCPConn` and `TCPListener` will be to enable or disable two of the prominent optimization algorithm for TCP Protocol that are:
 
