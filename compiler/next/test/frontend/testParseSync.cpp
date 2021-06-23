@@ -70,7 +70,7 @@ static void test0(Parser* parser) {
   {
     std::array<ASTTag, 2> stmtList = {
       asttags::Comment,
-      asttags::FnCall
+      asttags::Begin
     };
     auto i = 0;
     for (const auto stmt : sync->stmts()) {
