@@ -23,6 +23,7 @@
 #include "astlocs.h"
 #include "baseAST.h"
 #include "chpl.h"
+#include "codegen.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
@@ -131,6 +132,7 @@ const char* cleanFilename(const BaseAST* ast) {
 
 
 static void cleanup_for_exit() {
+  closeCodegenFiles();
   deleteTmpDir();
   stopCatchingSignals();
 }
