@@ -114,7 +114,7 @@ First differing element at index 7:
 
 ================================================================================
 Error Caught in Unequal Ranges Type 1
-AssertionError: assert failed - '..6 align 0' != '..7 align 0'
+AssertionError: assert failed - '..6' != '..7'
 ================================================================================
 Error Caught in Unequal Ranges Type 2
 AssertionError: assert failed - '1..6' != '2..7'

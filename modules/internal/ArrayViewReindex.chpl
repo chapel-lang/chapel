@@ -735,7 +735,7 @@ module ArrayViewReindex {
     var ranges : downdom.dsiDims().type;
     var actualLow, actualHigh: downdom.rank*downdom.idxType;
     for param d in 0..dims.size-1 {
-      if (dims(d).size == 0) {
+      if (dims(d).sizeAs(int) == 0) {
         actualLow(d) = downdom.dsiDim(d).low;
         actualHigh(d) = downdom.dsiDim(d).high;
       } else {
@@ -767,7 +767,7 @@ module ArrayViewReindex {
     var ranges : downdom.rank * range(downdom.idxType, stridable=downdom.stridable || dims(0).stridable);
     var actualLow, actualHigh: downdom.rank*downdom.idxType;
     for param d in 0..dims.size-1 {
-      if (dims(d).size == 0) {
+      if (dims(d).sizeAs(int) == 0) {
         actualLow(d) = downdom.dsiDim(d).low;
         actualHigh(d) = downdom.dsiDim(d).high;
       } else {

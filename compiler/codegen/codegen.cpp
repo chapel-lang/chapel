@@ -21,13 +21,13 @@
 #include "codegen.h"
 
 #include "astutil.h"
-#include "chplmath.h"
 #include "clangBuiltinsWrappedSet.h"
 #include "clangUtil.h"
 #include "config.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "fixupExports.h"
 #include "insertLineNumbers.h"
 #include "library.h"
 #include "llvmDebug.h"
@@ -60,6 +60,7 @@
 #include <algorithm>
 #include <cctype>
 
+#include <cmath>
 #include <cstring>
 #include <cstdio>
 #include <vector>
@@ -98,74 +99,56 @@ const char* idCommentTemp(BaseAST* ast) {
 }
 
 
-static const char*
-subChar(Symbol* sym, const char* ch, const char* x) {
-  char* tmp = (char*)malloc(ch-sym->cname+1);
-  strncpy(tmp, sym->cname, ch-sym->cname);
-  tmp[ch-sym->cname] = '\0';
-  sym->cname = astr(tmp, x, ch+1);
-  free(tmp);
-  return sym->cname;
-}
+const char* legalizeName(const char* name) {
+  std::string ret = "";
 
-static void legalizeName(Symbol* sym) {
-  if (!sym->isRenameable())
-    return;
-  for (const char* ch = sym->cname; *ch != '\0'; ch++) {
+  for (const char* ch = name; *ch != '\0'; ch++) {
     switch (*ch) {
-    case '>': ch = subChar(sym, ch, "_GREATER_"); break;
-    case '<': ch = subChar(sym, ch, "_LESS_"); break;
-    case '=':
-      {
-
-        /* To help generated code readability, we'd like to convert =
-           into "ASSIGN" and == into "EQUALS".  Unfortunately, because
-           of the character-at-a-time approach taken here combined
-           with the fact that subChar() returns a completely new
-           string on every call, the way I implemented this is a bit
-           ugly (in part because I didn't want to spend the time to
-           reimplement this whole function -BLC */
-
-        static const char* equalsStr = "_EQUALS_";
-        static int equalsLen = strlen(equalsStr);
-
-        if (*(ch+1) == '=') {
-          // If we're in the == case, replace the first = with EQUALS
-          ch = subChar(sym, ch, equalsStr);
+      case '=':
+        if (*(ch+1) == '=') { // matched ==
+          ret += "_EQUALS_";
+          ch++;
         } else {
-          if ((ch-equalsLen >= sym->cname) &&
-              strncmp(ch-equalsLen, equalsStr, equalsLen) == 0) {
-            // Otherwise, if the thing preceding this '=' is the
-            // string _EQUALS_, we must have been the second '=' and
-            // we should just replace ourselves with an underscore to
-            // make things legal.
-            ch = subChar(sym, ch, "_");
-          } else {
-            // Otherwise, this must have simply been a standalone '='
-            ch = subChar(sym, ch, "_ASSIGN_");
-          }
+          ret += "_ASSIGN_";
         }
         break;
-    }
-    case '*': ch = subChar(sym, ch, "_ASTERISK_"); break;
-    case '/': ch = subChar(sym, ch, "_SLASH_"); break;
-    case '%': ch = subChar(sym, ch, "_PERCENT_"); break;
-    case '+': ch = subChar(sym, ch, "_PLUS_"); break;
-    case '-': ch = subChar(sym, ch, "_HYPHEN_"); break;
-    case '^': ch = subChar(sym, ch, "_CARET_"); break;
-    case '&': ch = subChar(sym, ch, "_AMPERSAND_"); break;
-    case '|': ch = subChar(sym, ch, "_BAR_"); break;
-    case '!': ch = subChar(sym, ch, "_EXCLAMATION_"); break;
-    case '#': ch = subChar(sym, ch, "_POUND_"); break;
-    case '?': ch = subChar(sym, ch, "_QUESTION_"); break;
-    case '$': ch = subChar(sym, ch, "_DOLLAR_"); break;
-    case '~': ch = subChar(sym, ch, "_TILDE_"); break;
-    case ':': ch = subChar(sym, ch, "_COLON_"); break;
-    case '.': ch = subChar(sym, ch, "_DOT_"); break;
-    case ' ': ch = subChar(sym, ch, "_SPACE_"); break;
-    default: break;
+
+      case '>': ret += "_GREATER_";     break;
+      case '<': ret += "_LESS_";        break;
+      case '*': ret += "_ASTERISK_";    break;
+      case '/': ret += "_SLASH_";       break;
+      case '%': ret += "_PERCENT_";     break;
+      case '+': ret += "_PLUS_";        break;
+      case '-': ret += "_HYPHEN_";      break;
+      case '^': ret += "_CARET_";       break;
+      case '&': ret += "_AMPERSAND_";   break;
+      case '|': ret += "_BAR_";         break;
+      case '!': ret += "_EXCLAMATION_"; break;
+      case '#': ret += "_POUND_";       break;
+      case '?': ret += "_QUESTION_";    break;
+      case '$': ret += "_DOLLAR_";      break;
+      case '~': ret += "_TILDE_";       break;
+      case ':': ret += "_COLON_";       break;
+      case '.': ret += "_DOT_";         break;
+      case ' ': ret +=  "_SPACE_";      break;
+      default:
+      {
+        char c = *ch;
+        ret += c;
+        break;
+      }
     }
   }
+
+  return astr(ret.c_str());
+}
+
+static void legalizeSymbolName(Symbol* sym) {
+  if (!sym->isRenameable())
+    return;
+
+  const char* newName = legalizeName(sym->cname);
+  sym->cname = newName;
 
   // Add chpl_ to operator names.
   if ((sym->cname[0] == '_' &&
@@ -180,7 +163,6 @@ static void legalizeName(Symbol* sym) {
     int numDims = (toFnSymbol(sym)->numFormals() - 1) / 2;
     sym->cname = astr("polly_array_index_",istr(numDims));
   }
-
 }
 
 static void
@@ -642,8 +624,8 @@ genFinfo(std::vector<FnSymbol*> & fSymbols, bool isHeader) {
 
   forv_Vec(FnSymbol, fn, fSymbols) {
     const char* fn_name = fn->cname;
-    int fileno = getFilenameLookupPosition(fn->astloc.filename);
-    int lineno = fn->astloc.lineno;
+    int fileno = getFilenameLookupPosition(fn->astloc.filename());
+    int lineno = fn->astloc.lineno();
 
     GenRet gen;
 
@@ -1479,7 +1461,7 @@ static void uniquify_names(std::set<const char*> & cnames,
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block) {
-      legalizeName(ts);
+      legalizeSymbolName(ts);
       types.push_back(ts);
     }
   }
@@ -1491,7 +1473,7 @@ static void uniquify_names(std::set<const char*> & cnames,
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (var->defPoint->parentExpr != rootModule->block &&
         toModuleSymbol(var->defPoint->parentSymbol)) {
-      legalizeName(var);
+      legalizeSymbolName(var);
       globals.push_back(var);
     }
   }
@@ -1500,7 +1482,7 @@ static void uniquify_names(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    legalizeName(fn);
+    legalizeSymbolName(fn);
     functions.push_back(fn);
   }
   std::sort(functions.begin(), functions.end(), compareSymbol);
@@ -1554,7 +1536,7 @@ static void uniquify_names(std::set<const char*> & cnames,
     if (EnumType* enumType = toEnumType(ts->type)) {
       for_enums(constant, enumType) {
         Symbol* sym = constant->sym;
-        legalizeName(sym);
+        legalizeSymbolName(sym);
         sym->cname = astr(enumType->symbol->cname, "_", sym->cname);
         uniquifyName(sym, &cnames);
       }
@@ -1571,7 +1553,7 @@ static void uniquify_names(std::set<const char*> & cnames,
       if (AggregateType* ct = toAggregateType(ts->type)) {
         std::set<const char*> fieldNameSet;
         for_fields(field, ct) {
-          legalizeName(field);
+          legalizeSymbolName(field);
           uniquifyName(field, &fieldNameSet);
         }
         uniquifyNameCounts.clear();
@@ -1605,7 +1587,7 @@ static void uniquify_names(std::set<const char*> & cnames,
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     std::set<const char*> formalNameSet;
     for_formals(formal, fn) {
-      legalizeName(formal);
+      legalizeSymbolName(formal);
       uniquifyName(formal, &formalNameSet, &cnames);
     }
     uniquifyNameCounts.clear();
@@ -1626,7 +1608,7 @@ static void uniquify_names(std::set<const char*> & cnames,
     std::vector<DefExpr*> defs;
     collectDefExprs(fn->body, defs);
     for_vector(DefExpr, def, defs) {
-      legalizeName(def->sym);
+      legalizeSymbolName(def->sym);
       // give temps cnames
       if (def->sym->hasFlag(FLAG_TEMP)) {
         if (localTempNames) {
@@ -1656,7 +1638,7 @@ static void codegen_header(std::set<const char*> & cnames,
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block) {
-      legalizeName(ts);
+      legalizeSymbolName(ts);
       types.push_back(ts);
     }
   }
@@ -1668,7 +1650,7 @@ static void codegen_header(std::set<const char*> & cnames,
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (var->defPoint->parentExpr != rootModule->block &&
         toModuleSymbol(var->defPoint->parentSymbol)) {
-      legalizeName(var);
+      legalizeSymbolName(var);
       if ( var->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU ){
         globals.push_back(var);
       }
@@ -1680,7 +1662,7 @@ static void codegen_header(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    legalizeName(fn);
+    legalizeSymbolName(fn);
     if (fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU){
       functions.push_back(fn);
     }
@@ -2002,7 +1984,10 @@ codegen_config() {
         } else {
           fprintf(outfile, "\", \"%s\"", var->getModule()->name);
         }
-        fprintf(outfile,", /* private = */ %d);\n", var->hasFlag(FLAG_PRIVATE));
+        fprintf(outfile,", /* private = */ %d", var->hasFlag(FLAG_PRIVATE));
+        fprintf(outfile,", /* deprecated = */ %d",
+                var->hasFlag(FLAG_DEPRECATED));
+        fprintf(outfile,", \"%s\");\n", var->getDeprecationMsg());
 
       }
     }
@@ -2043,7 +2028,7 @@ codegen_config() {
 
     forv_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
-        std::vector<llvm::Value *> args (4);
+        std::vector<llvm::Value *> args (6);
         args[0] = info->irBuilder->CreateLoad(
             new_CStringSymbol(var->name)->codegen().val);
 
@@ -2070,6 +2055,9 @@ codegen_config() {
         }
 
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
+
+        args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
+        args[5] = info->irBuilder->CreateLoad(new_CStringSymbol(var->getDeprecationMsg())->codegen().val);
 
         info->irBuilder->CreateCall(installConfigFunc, args);
       }
@@ -2230,7 +2218,7 @@ static const char* getClangBuiltinWrappedName(const char* name)
 static void setupDefaultFilenames() {
   if (executableFilename[0] == '\0') {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
-    const char* mainModFilename = mainMod->astloc.filename;
+    const char* mainModFilename = mainMod->astloc.filename();
     const char* filename = stripdirectories(mainModFilename);
 
     // "Executable" name should be given a "lib" prefix in library compilation,
@@ -2364,7 +2352,8 @@ static void codegenPartOne() {
   if( fLLVMWideOpt ) {
     // --llvm-wide-opt is picky about other settings.
     // Check them here.
-    if (!fLlvmCodegen ) USR_FATAL("--llvm-wide-opt requires --llvm");
+    if (!fLlvmCodegen )
+      USR_FATAL("--llvm-wide-opt requires CHPL_TARGET_COMPILER=llvm");
   }
 
   // Prepare primitives for codegen
@@ -2402,17 +2391,21 @@ static void codegenPartOne() {
 
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
-  if( fLlvmCodegen ) {
+
+  // Initialize the global gGenInfo for C code generation.
+  gGenInfo = new GenInfo();
+
+  if (fMultiLocaleInterop) {
+    codegenMultiLocaleInteropWrappers();
+  }
+
+  if (fLlvmCodegen) {
 #ifndef HAVE_LLVM
     USR_FATAL("This compiler was built without LLVM support");
 #else
-    // Initialize the global gGenInfo for for LLVM code generation
-    // by starting out with data from running clang on C dependencies.
+    INT_ASSERT(gGenInfo != NULL);
     runClang(NULL);
 #endif
-  } else {
-    // Initialize the global gGenInfo for C code generation
-    gGenInfo = new GenInfo();
   }
 
   SET_LINENO(rootModule);
@@ -2425,6 +2418,29 @@ static void codegenPartTwo() {
   GenInfo* info     = gGenInfo;
 
   INT_ASSERT(info);
+
+  // Populate functionCNameAstrToSymbol map
+  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_NO_CODEGEN)) {
+      // ignore it
+    } else {
+      const char* cname = astr(fn->cname);
+      bool skip = false;
+      if (fLlvmCodegen) {
+#ifdef HAVE_LLVM
+        // Check for a decl from clang; in that case don't add it
+        // to the map. (This avoids problems with 'printf' having
+        // multiple versions with different numbers of arguments).
+        if (getFunctionDeclClang(cname) != nullptr) {
+          skip = true;
+        }
+#endif
+      }
+      if (skip == false) {
+        info->functionCNameAstrToSymbol.insert(std::make_pair(cname, fn));
+      }
+    }
+  }
 
   if( fLlvmCodegen ) {
 #ifdef HAVE_LLVM
@@ -2444,7 +2460,7 @@ static void codegenPartTwo() {
           // and no compile flags, since I can't figure out how to get that either.
           const char *current_dir = "./";
           const char *empty_string = "";
-          debug_info->create_compile_unit(currentModule->astloc.filename, current_dir, false, empty_string);
+          debug_info->create_compile_unit(currentModule->astloc.filename(), current_dir, false, empty_string);
           break;
         }
       }
@@ -2482,8 +2498,7 @@ static void codegenPartTwo() {
         }
       }
     }
-
-    codegen_makefile(&mainfile, NULL, false, userFileName);
+    codegen_makefile(&mainfile, NULL, NULL, false, userFileName);
   }
 
   if (fLibraryCompile && fLibraryMakefile) {
@@ -2624,7 +2639,8 @@ void makeBinary(void) {
 
 GenInfo::GenInfo()
          :   cfile(NULL), cLocalDecls(), cStatements(),
-             lineno(-1), filename(NULL)
+             lineno(-1), filename(NULL),
+             functionCNameAstrToSymbol()
 #ifdef HAVE_LLVM
              ,
              lvt(NULL), module(NULL), irBuilder(NULL), mdBuilder(NULL),
@@ -2666,14 +2682,14 @@ std::string real_to_string(double num)
 {
   char buf[32];
 
-  if (chpl_isfinite(num)) {
-    if (chpl_signbit(num)) snprintf(buf, sizeof(buf), "-%a" , -num);
+  if (std::isfinite(num)) {
+    if (std::signbit(num)) snprintf(buf, sizeof(buf), "-%a" , -num);
     else                   snprintf(buf, sizeof(buf), "%a" , num);
-  } else if (chpl_isinf(num)) {
-    if (chpl_signbit(num)) strncpy(buf, "-INFINITY", sizeof(buf));
+  } else if (std::isinf(num)) {
+    if (std::signbit(num)) strncpy(buf, "-INFINITY", sizeof(buf));
     else                   strncpy(buf, "INFINITY", sizeof(buf));
   } else {
-    if (chpl_signbit(num)) strncpy(buf, "-NAN", sizeof(buf));
+    if (std::signbit(num)) strncpy(buf, "-NAN", sizeof(buf));
     else                   strncpy(buf, "NAN", sizeof(buf));
   }
   std::string ret(buf);

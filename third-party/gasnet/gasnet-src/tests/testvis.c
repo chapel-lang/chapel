@@ -18,7 +18,14 @@ uintptr_t segsz = (16*1024*1024);
 static gex_Client_t      myclient;
 static gex_EP_t    myep;
 static gex_TM_t myteam;
+static gex_TM_t team0;
+static gex_Rank_t ranks, jobrank;
 static gex_Segment_t     mysegment;
+
+#ifndef RENUMBER_TEAM
+// can be defined to non-zero to use a renumbered team for communication (bug 4145)
+#define RENUMBER_TEAM 0
+#endif
 
 #include <test.h>
 
@@ -1065,11 +1072,11 @@ test_pcheader_t *rand_pcheader(size_t *packetsz) {
     memset(pcheader, (uint8_t)sz, sz);
   } else {
     pcheader->packetsz = sz;
-    pcheader->srcjobrank = mynode;
+    pcheader->srcjobrank = jobrank;
     uint8_t *payload = (uint8_t*)(pcheader+1);
     size_t payloadsz = sz-sizeof(test_pcheader_t);
     for (size_t i=0; i < payloadsz; i++) {
-      payload[i] = PC_VALUE(mynode, i);
+      payload[i] = PC_VALUE(jobrank, i);
     }
   }
   return pcheader;
@@ -1110,8 +1117,7 @@ gex_AM_Entry_t pcverify_reph_entry =
     0, (void *)&pcarrival_cnt, "testvis_pcverify_reph" };
 void pcverify_reph(gex_Token_t token, void *buf, size_t nbytes) {
   gasnett_atomic_increment(&pcarrival_cnt,0);
-  gex_Rank_t nranks = gex_TM_QuerySize(myteam);
-  gex_Rank_t mysender = (mynode + nranks - 1) % nranks;
+  gex_Rank_t mysender = (jobrank + ranks - 1) % ranks;
 
   // check all token properties are legit
   gex_Token_Info_t info;
@@ -1846,7 +1852,7 @@ int main(int argc, char **argv) {
   int i;
 
   assert_always(VEC_SZ == sizeof(VEC_T));
-  GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "testvis", &argc, &argv, 0));
+  GASNET_Safe(gex_Client_Init(&myclient, &myep, &team0, "testvis", &argc, &argv, 0));
   test_init_early("testvis",0, "[options] (iters) (seed)\n"
             " -v/-i/-s/-x/-n  run vector/indexed/strided/transpositional/non-blocking tests (defaults to all)\n"
             " -d        disable correctness verification checks\n"
@@ -1903,13 +1909,23 @@ int main(int argc, char **argv) {
   if (i < argc) { iters = atoi(argv[i]); i++; }
   if (i < argc) { seedoffset = atoi(argv[i]); i++; }
   if (i < argc) test_usage_early();
-  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
+  GASNET_Safe(gex_Segment_Attach(&mysegment, team0, TEST_SEGSZ_REQUEST));
+
+  jobrank = gex_TM_QueryRank(team0);
+  ranks = gex_TM_QuerySize(team0);
+
+  #if RENUMBER_TEAM
+    // use a non-primordial team that rotates all the rank numbers by RENUMBER_TEAM
+    gex_TM_Split(&myteam, team0, 0, (jobrank+RENUMBER_TEAM)%ranks, 0, 0, GEX_FLAG_TM_NO_SCRATCH);
+  #else
+    myteam = team0;
+  #endif
 
   areasz = TEST_SEGSZ/NUM_AREAS/VEC_SZ; /* in elem */
   mynode = gex_TM_QueryRank(myteam);
-  myseg = TEST_SEG(mynode);
-  partner = (mynode + 1) % gex_TM_QuerySize(myteam);
-  partnerseg = TEST_SEG(partner);
+  myseg = TEST_SEG(jobrank);
+  partner = (mynode + 1) % ranks;
+  partnerseg = TEST_SEG((partner+ranks-(RENUMBER_TEAM%ranks))%ranks);
   heapseg = (VEC_T *)test_malloc(TEST_SEGSZ);
 
   assert_always(gex_EP_RegisterHandlers(myep, &pcverify_reph_entry, 1) == GASNET_OK);
@@ -1937,6 +1953,10 @@ int main(int argc, char **argv) {
 
   doit(iters, runtests);
   test_free(heapseg);
+  #if RENUMBER_TEAM
+    gex_Memvec_t junk;
+    gex_TM_Destroy(myteam, &junk, GEX_FLAG_GLOBALLY_QUIESCED);
+  #endif
   MSG("done.");
 
   gasnet_exit(0);

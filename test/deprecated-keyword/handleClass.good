@@ -1,0 +1,11 @@
+handleClass.chpl:18: In function 'main':
+handleClass.chpl:19: warning: Class C is deprecated, please use D
+handleClass.chpl:20: warning: Class C is deprecated, please use D
+handleClass.chpl:20: warning: Class C is deprecated, please use D
+handleClass.chpl:21: warning: Class C is deprecated, please use D
+handleClass.chpl:22: warning: Class C is deprecated, please use D
+handleClass.chpl:23: warning: Class C is deprecated, please use D
+handleClass.chpl:24: warning: Class C is deprecated, please use D
+{x = 1}
+2
+In C.foo()

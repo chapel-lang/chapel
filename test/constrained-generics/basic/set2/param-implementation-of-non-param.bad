@@ -1,6 +1,0 @@
-param-implementation-of-non-param.chpl:11: In 'implements MyArray' statement:
-param-implementation-of-non-param.chpl:11: error: when checking this implements statement
-$CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: note: this implementation of the required function rank
-$CHPL_HOME/modules/internal/ChapelArray.chpl:nnnn: note: has return intent 'param'
-param-implementation-of-non-param.chpl:8: note: which does not match the required intent 'value'
-param-implementation-of-non-param.chpl:8: note: the required function rank in the interface MyArray is declared here

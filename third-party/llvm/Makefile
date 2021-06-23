@@ -195,7 +195,7 @@ llvm: $(LLVM_CONFIGURED_HEADER_FILE) $(LLVM_HEADER_FILE) $(LLVM_SUPPORT_FILE) $(
 
 llvm-minimal: $(LLVM_CONFIGURED_HEADER_FILE) $(LLVM_HEADER_FILE) $(LLVM_SUPPORT_FILE) $(LLVM_CONFIG_FILE)
 
-clang-included: llvm
+llvm-clang: llvm
 
 bundled: llvm
 
@@ -204,6 +204,15 @@ system: $(LLVM_CLANG_CONFIG_FILE)
 system-minimal:
 
 none:
+
+unset:
+	@echo "Error: Please set the environment variable CHPL_LLVM to a supported value."
+	@echo "Supported values are:"
+	@echo "  1) 'none' to build without LLVM support"
+	@echo "  2) 'bundled' to build with the LLVM packaged in the third-party directory"
+	@echo "  3) 'system' to use a pre-installed system-wide LLVM"
+	@echo "See: https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-llvm"
+	@exit 1
 
 FORCE:
 

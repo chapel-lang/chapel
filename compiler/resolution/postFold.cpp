@@ -180,7 +180,12 @@ static Expr* postFoldNormal(CallExpr* call) {
   }
 
   if (call->isNamedAstr(astrSassign) == true) {
-    if (SymExpr* lhs = toSymExpr(call->get(1))) {
+    int lhsNum = 1;
+    if (fn->hasFlag(FLAG_METHOD)) {
+      // Handle operator methods
+      lhsNum += 2;
+    }
+    if (SymExpr* lhs = toSymExpr(call->get(lhsNum))) {
       if (lhs->symbol()->hasFlag(FLAG_MAYBE_PARAM) == true ||
           lhs->symbol()->isParameter()             == true) {
         if (paramMap.get(lhs->symbol())) {
@@ -580,7 +585,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
     const char* str = NULL;
 
     if (get_string(arg, &str)) {
-      processStringInRequireStmt(str, false, call->astloc.filename);
+      processStringInRequireStmt(str, false, call->astloc.filename());
 
     } else {
       USR_FATAL(call, "'require' statements require string arguments");
@@ -830,7 +835,7 @@ bool requiresImplicitDestroy(CallExpr* call) {
 
   if (FnSymbol* fn = call->resolvedFunction()) {
 
-    if (isRecord(fn->retType)                                 == true  &&
+    if ((isRecord(fn->retType) || isConstrainedType(fn->retType))      &&
         fn->hasFlag(FLAG_NO_IMPLICIT_COPY)                    == false &&
         fn->isIterator()                                      == false &&
         fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE) == false &&

@@ -63,12 +63,16 @@ DEFAULT = set(['default'])
 CHPL_ENVS = [
     ChapelEnv('CHPL_HOST_PLATFORM', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_COMPILER', COMPILER | LAUNCHER),
+    ChapelEnv('  CHPL_HOST_COMPILER_COMMAND_C', INTERNAL),
+    ChapelEnv('  CHPL_HOST_COMPILER_COMMAND_CXX', INTERNAL),
     ChapelEnv('CHPL_HOST_ARCH', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_CPU', INTERNAL),
     ChapelEnv('CHPL_TARGET_PLATFORM', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_COMPILER', RUNTIME | DEFAULT),
+    ChapelEnv('  CHPL_TARGET_COMPILER_COMMAND_C', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_COMPILER_COMMAND_CXX', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_COMPILER_PRGENV', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT),
-    ChapelEnv('CHPL_ORIG_TARGET_COMPILER', INTERNAL),
     ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'arch'),
     ChapelEnv('CHPL_RUNTIME_CPU', INTERNAL),
     ChapelEnv('CHPL_TARGET_CPU_FLAG', INTERNAL),
@@ -91,7 +95,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
     ChapelEnv('CHPL_GMP', INTERNAL | DEFAULT, 'gmp'),
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT),
-    ChapelEnv('CHPL_REGEXP', RUNTIME | DEFAULT),
+    ChapelEnv('CHPL_RE2', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
@@ -102,6 +106,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_COMPILER_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_HOST_BIN_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_TARGET_BIN_SUBDIR', INTERNAL),
+    ChapelEnv('CHPL_SYS_MODULES_SUBDIR', INTERNAL),
     ChapelEnv('  CHPL_LLVM_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_GASNET_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_GMP_UNIQ_CFG_PATH', INTERNAL),
@@ -122,28 +127,29 @@ ENV_VALS = {}
 def compute_all_values():
     global ENV_VALS
 
-    # If we're doing an LLVM build, set CHPL_TARGET_COMPILER to clang-included
-    # and set CHPL_ORIG_TARGET_COMPILER to whatever we would have used
-    # otherwise.
-    # This happens early because it modifies the environment and other
-    # defaults might depend on this setting.
-    llvm_codegen = ("CHPL_LLVM_CODEGEN" in os.environ and
-                    os.environ["CHPL_LLVM_CODEGEN"] != "0")
-    if llvm_codegen:
-        new_target_compiler = chpl_compiler.get('target')
-        if new_target_compiler != 'clang-included':
-            # This error indicates something about chplenv (probably
-            # chpl_compiler.py) is not working correctly with LLVM mode.
-            raise ValueError('LLVM mode but target compiler is set incorrectly')
-
     ENV_VALS['CHPL_HOME'] = chpl_home_utils.get_chpl_home()
-    ENV_VALS["CHPL_ORIG_TARGET_COMPILER"] = chpl_compiler.get('target', llvm_mode='orig')
     ENV_VALS['CHPL_HOST_PLATFORM'] = chpl_platform.get('host')
-    ENV_VALS['CHPL_HOST_COMPILER'] = chpl_compiler.get('host')
+
+    host_compiler = chpl_compiler.get('host')
+    host_compiler_c = chpl_compiler.get_command_c('host')
+    host_compiler_cpp = chpl_compiler.get_command_cxx('host')
+    ENV_VALS['CHPL_HOST_COMPILER'] = host_compiler
+    ENV_VALS['  CHPL_HOST_COMPILER_COMMAND_C'] = host_compiler_c
+    ENV_VALS['  CHPL_HOST_COMPILER_COMMAND_CXX'] = host_compiler_cpp
+
     ENV_VALS['CHPL_HOST_ARCH'] = chpl_arch.get('host')
     ENV_VALS['CHPL_HOST_CPU'] = chpl_cpu.get('host').cpu
     ENV_VALS['CHPL_TARGET_PLATFORM'] = chpl_platform.get('target')
-    ENV_VALS['CHPL_TARGET_COMPILER'] = chpl_compiler.get('target')
+
+    target_compiler = chpl_compiler.get('target')
+    target_compiler_c = chpl_compiler.get_command_c('target')
+    target_compiler_cpp = chpl_compiler.get_command_cxx('target')
+    target_compiler_prgenv = chpl_compiler.get_prgenv_compiler()
+    ENV_VALS['CHPL_TARGET_COMPILER'] = target_compiler
+    ENV_VALS['  CHPL_TARGET_COMPILER_COMMAND_C'] = target_compiler_c
+    ENV_VALS['  CHPL_TARGET_COMPILER_COMMAND_CXX'] = target_compiler_cpp
+    ENV_VALS['  CHPL_TARGET_COMPILER_PRGENV'] = target_compiler_prgenv
+
     ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target')
     ENV_VALS['CHPL_TARGET_CPU'] = chpl_cpu.get('target').cpu
 
@@ -168,7 +174,7 @@ def compute_all_values():
     ENV_VALS['  CHPL_NETWORK_ATOMICS'] = chpl_atomics.get('network')
     ENV_VALS['CHPL_GMP'] = chpl_gmp.get()
     ENV_VALS['CHPL_HWLOC'] = chpl_hwloc.get()
-    ENV_VALS['CHPL_REGEXP'] = chpl_regexp.get()
+    ENV_VALS['CHPL_RE2'] = chpl_re2.get()
     ENV_VALS['CHPL_LLVM'] = chpl_llvm.get()
     aux_filesys = chpl_aux_filesys.get()
     ENV_VALS['CHPL_AUX_FILESYS'] = '_'.join(sorted(aux_filesys.split(' ')))
@@ -176,6 +182,10 @@ def compute_all_values():
     ENV_VALS['CHPL_SANITIZE'] = chpl_sanitizers.get()
     ENV_VALS['CHPL_SANITIZE_EXE'] = chpl_sanitizers.get('exe')
 
+    # error checking that would be hard to do in the .get functions
+    # due to circular dependencies
+    chpl_arch.validate('host')
+    chpl_arch.validate('target')
 
 """Compute '--internal' env var values and populate global dict, ENV_VALS"""
 def compute_internal_values():
@@ -194,6 +204,12 @@ def compute_internal_values():
     ENV_VALS['CHPL_COMPILER_SUBDIR'] = printchplenv(set(['compiler']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_HOST_BIN_SUBDIR'] = chpl_bin_subdir.get('host')
     ENV_VALS['CHPL_TARGET_BIN_SUBDIR'] = chpl_bin_subdir.get('target')
+
+    sys_modules_subdir = (chpl_platform.get('target') + "-" +
+                          chpl_arch.get('target') + "-" +
+                          chpl_compiler.get_path_component('target'));
+    ENV_VALS['CHPL_SYS_MODULES_SUBDIR'] = sys_modules_subdir
+
     ENV_VALS['  CHPL_LLVM_UNIQ_CFG_PATH'] = chpl_llvm.get_uniq_cfg_path()
 
     compile_args_3p = []
@@ -222,9 +238,9 @@ def compute_internal_values():
     if chpl_tasks.get() == 'qthreads':
         link_args_3p.extend(chpl_qthreads.get_link_args())
 
-    ENV_VALS['  CHPL_RE2_UNIQ_CFG_PATH'] = chpl_regexp.get_uniq_cfg_path()
-    if chpl_regexp.get() == 're2':
-        link_args_3p.extend(chpl_regexp.get_link_args())
+    ENV_VALS['  CHPL_RE2_UNIQ_CFG_PATH'] = chpl_re2.get_uniq_cfg_path()
+    if chpl_re2.get() != 'none':
+        link_args_3p.extend(chpl_re2.get_link_args())
 
     # Remove duplicates, keeping last occurrence and preserving order
     # e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ..."

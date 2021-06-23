@@ -818,7 +818,7 @@ extern gex_Event_t gasnete_putv(gasnete_synctype_t synctype,
 
   if (GASNETI_NBRHD_LOCAL(tm,rank)) { /* purely local */
     GASNETI_TRACE_EVENT(C, PUTV_NBRHD);
-    gasnete_vector_memcpy(rank, 1,
+    gasnete_vector_memcpy(gex_TM_TranslateRankToJobrank(tm,rank), 1,
                            dstcount,dstlist,srccount,srclist,
                            flags);
     return GEX_EVENT_INVALID;
@@ -851,7 +851,7 @@ extern gex_Event_t gasnete_getv(gasnete_synctype_t synctype,
 
   if (GASNETI_NBRHD_LOCAL(tm,rank)) { /* purely local */
     GASNETI_TRACE_EVENT(C, GETV_NBRHD);
-    gasnete_vector_memcpy(rank, 0,
+    gasnete_vector_memcpy(gex_TM_TranslateRankToJobrank(tm,rank), 0,
                            dstcount,dstlist,srccount,srclist,
                            flags);
     return GEX_EVENT_INVALID;

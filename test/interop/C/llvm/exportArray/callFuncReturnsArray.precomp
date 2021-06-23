@@ -1,3 +1,0 @@
-#!/bin/bash
-echo Compiling returnExternArray.chpl
-$3 --llvm --library --static returnExternArray.chpl

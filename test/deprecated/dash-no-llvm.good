@@ -1,0 +1,2 @@
+warning: --no-llvm is deprecated -- please use e.g. --target-compiler=gnu
+hello

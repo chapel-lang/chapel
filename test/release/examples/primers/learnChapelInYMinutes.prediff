@@ -126,7 +126,7 @@ good_serial = [ "learnChapelInYMinutes.chpl:24: warning: This file-scope code is
                 'true',
                 'false',
                 '\tIn our \'*\' overload!',
-                '(1, a)',
+                '2',
                 '2',
                 '1, 3, 5, 7, 9, 2, 4, 6, 8, 10, ',
                 '(1, -5)',

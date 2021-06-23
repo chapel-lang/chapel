@@ -108,12 +108,18 @@ static int getCoresPerLocale(int nomultithread) {
   char partition_arg[128];
   char* argv[7];
   char* numCoresString = getenv("CHPL_LAUNCHER_CORES_PER_LOCALE");
+  char* cpusPerTaskString = getenv("SLURM_CPUS_PER_TASK");
 
   if (numCoresString) {
     numCores = atoi(numCoresString);
     if (numCores > 0)
       return numCores;
     chpl_warning("CHPL_LAUNCHER_CORES_PER_LOCALE must be > 0.", 0, 0);
+  }
+
+  if (cpusPerTaskString) {
+    numCores = atoi(cpusPerTaskString);
+    return numCores;
   }
 
   argv[0] = (char *)  "sinfo";          // use sinfo to get num cpus

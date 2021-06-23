@@ -48,9 +48,11 @@ SHORT_HANDLER_NOBITS_DECL(gasnete_coll_scratch_update_reqh, 2);
 #endif
 
 MEDIUM_HANDLER_NOBITS_DECL(gasnete_subteam_op_reqh,4);
+MEDIUM_HANDLER_NOBITS_DECL(gasnete_rexchgv_reqh,4);
 
 #define GASNETE_REFCOLL_HANDLERS()                           \
   GASNETE_COLL_P2P_HANDLERS() GASNETE_COLL_SCRATCH_HANDLERS() \
-  gasneti_handler_tableentry_no_bits(gasnete_subteam_op_reqh,4,REQUEST,MEDIUM,0),
+  gasneti_handler_tableentry_no_bits(gasnete_subteam_op_reqh,4,REQUEST,MEDIUM,0), \
+  gasneti_handler_tableentry_no_bits(gasnete_rexchgv_reqh,4,REQUEST,MEDIUM,0),
 
 #endif

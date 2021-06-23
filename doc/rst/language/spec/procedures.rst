@@ -111,8 +111,8 @@ Procedures are defined with the following syntax:
 .. code-block:: syntax
 
    procedure-declaration-statement:
-     privacy-specifier[OPT] procedure-kind[OPT] 'proc' function-name argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT]
-       function-body
+     privacy-specifier[OPT] procedure-kind[OPT] 'proc' identifier argument-list[OPT] return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
+     privacy-specifier[OPT] procedure-kind[OPT] 'operator' operator-name argument-list return-intent[OPT] return-type[OPT] where-clause[OPT] function-body
 
    procedure-kind:
      'inline'
@@ -120,13 +120,10 @@ Procedures are defined with the following syntax:
      'extern'
      'override'
 
-   function-name:
-     identifier
-     operator-name
-
    operator-name: one of
-     + - * / % ** ! == != <= >= < > << >> & | ^ ~
-     = += -= *= /= %= **= &= |= ^= <<= >>= <=> <~>
+     'align' 'by'
+     + - * / % ** : ! == != <= >= < > << >> & | ^ ~
+     = += -= *= /= %= **= &= |= ^= <<= >>= <=> <~> #
 
    argument-list:
      ( formals[OPT] )
@@ -444,41 +441,56 @@ The In Intent
 ^^^^^^^^^^^^^
 
 When ``in`` is specified as the intent, the formal argument represents a
-variable that is copy-initialized with the value of the actual argument.
-For example, for integer arguments, the formal argument will store a
-copy of the actual argument. An implicit conversion occurs from the
-actual argument to the type of the formal. The formal can be modified
-within the function, but such changes are local to the function and not
-reflected back to the call site.
+variable that is initialized from the value of the actual argument.
+This initialization will be copy-initialization or move-initialization
+according to :ref:`Copy_and_Move_Initialization`.
+
+For example, for integer arguments, the formal argument will store a copy
+of the actual argument.
+
+An implicit conversion for a function call occurs from the actual
+argument to the type of the formal.
+
+The formal can be modified within the function, but such changes are
+local to the function and not reflected back to the call site.
 
 .. _The_Out_Intent:
 
 The Out Intent
 ^^^^^^^^^^^^^^
 
-When ``out`` is specified as the intent, the actual argument is ignored
-when the call is made, but when the function returns, the actual argument
-is assigned to the value of the formal argument.  An implicit conversion
-occurs from the type of the formal to the type of the actual. The actual
-argument must be a valid lvalue. Within the function body, the formal
-argument is initialized to its default value if one is supplied, or to
-its type’s default value otherwise. The formal argument can be modified
-within the function.
+The ``out`` intent on a formal argument supports return-like behavior.
+As such, the type of an ``out`` formal is not considered when determining
+candidate functions or choosing the best candidate (see
+:ref:`Function_Resolution`).
 
-The assignment implementing the ``out`` intent is a candidate for
-:ref:`Split_Initialization`. As a result, an actual argument might be
-initialized by a call passing the actual by ``out`` intent.
+When a function with the ``out`` intent returns, the actual argument is
+set to the formal argument using assignment or possibly initialized
+from the formal argument according to :ref:`Split_Initialization`.
+
+Within the function body, an ``out`` formal argument is initialized
+according :ref:`Split_Initialization`. It will start with its default
+value if one is supplied and can use the default value for the declared
+type if no initialization point is found. The formal argument can be
+modified within the function.
 
 .. _The_Inout_Intent:
 
 The Inout Intent
 ^^^^^^^^^^^^^^^^
 
-When ``inout`` is specified as the intent, the actual argument is copied
-into the formal argument as with the ``in`` intent and then copied back
-out as with the ``out`` intent. The actual argument must be a valid
-lvalue. The formal argument can be modified within the function. The
-type of the actual argument must be the same as the type of the formal.
+When ``inout`` is specified as the intent, the actual argument is
+copy-initialized into the formal argument, the called function body is
+run, and then the actual argument is set to the formal argument with
+assignment. As a result the behavior of the ``inout`` intent is a
+combination of the ``in`` and ``out`` intents.
+
+``inout`` intent formals behave the same as ``in`` formals for the
+purposes of determining candidate functions and choosing the best
+candidate (see :ref:`Function_Resolution`).
+
+The actual argument must be a valid lvalue. The formal argument can be
+modified within the function.
 
 .. _The_Ref_Intent:
 
@@ -530,8 +542,8 @@ intents:
 ================================ ====== ========= ========= =========== ============ =============
 \                                ``in`` ``out``   ``inout`` ``ref``     ``const in`` ``const ref``
 ================================ ====== ========= ========= =========== ============ =============
-copied in on function call?      yes    no        yes       no          yes          no
-copied out on function return?   no     yes       yes       no          no           no
+initializes formal from actual?  yes    no        yes       no          yes          no
+sets actual from formal?         no     yes       yes       no          no           no
 refers to actual argument?       no     no        no        yes         no           yes
 formal can be read?              yes    yes       yes       yes         yes          yes
 formal can be modified?          yes    yes       yes       yes         no           no
@@ -1158,18 +1170,20 @@ called overloaded functions. Function calls to overloaded functions are
 resolved according to the function resolution algorithm
 in :ref:`Function_Resolution`.
 
-Operator overloading is achieved by defining a function with a name
-specified by that operator. The operators that may be overloaded are
-listed in the following table:
+To define an overloaded operator, use the ``operator`` keyword to define a
+function with the same name as the operator.  The operators that may be
+overloaded are listed in the following table:
 
+======== ===============================
 arity    operators
 ======== ===============================
-unary    ``&`` ``+`` ``-`` ``!`` ``~``
-binary   ``+`` ``-`` ``*`` ``/`` ``%`` ``**``
+unary    ``+`` ``-`` ``!`` ``~``
+binary   ``+`` ``-`` ``*`` ``/`` ``%`` ``**`` ``:``
 binary   ``==`` ``<=`` ``>=`` ``<`` ``>``
-binary   ``<<`` ``>>`` ``&`` ``|`` ``^`` ``by``
+binary   ``<<`` ``>>`` ``&`` ``|`` ``^`` ``#`` ``align`` ``by``
 binary   ``=`` ``+=`` ``-=`` ``*=`` ``/=`` ``%=`` ``**=``
 binary   ``&=`` ``|=`` ``^=`` ``<<=`` ``>>=`` ``<=>`` ``<~>``
+======== ===============================
 
 The arity and precedence of the operator must be maintained when it is
 overloaded. Operator resolution follows the same algorithm as function
@@ -1304,9 +1318,12 @@ Legal Argument Mapping
 ^^^^^^^^^^^^^^^^^^^^^^
 
 An actual argument :math:`A` of type :math:`T_A` can be legally mapped to
-a formal argument of :math:`F_X` according to the following rules.
+a formal argument :math:`F_X` according to the following rules.
 
-First, if :math:`F_X` is a generic argument:
+First, if :math:`A` is a ``type`` but :math:`F_X` does not use the
+``type`` intent, then it is not a legal argument mapping.
+
+Then, if :math:`F_X` is a generic argument:
 
  * if :math:`F_X` uses ``param`` intent, then :math:`A` must also be a
    ``param``
@@ -1321,21 +1338,27 @@ formal argument :math:`F_X` if it is concrete or the instantiated type if
 :math:`F_X` is generic - must be compatible with the type :math:`T_A`
 according to the concrete intent of :math:`F_X`:
 
- * if :math:`F_X` uses ``ref`` or ``out`` intent, then :math:`T_A`
+ * if :math:`F_X` uses ``ref`` intent, then :math:`T_A`
    must be the same type as :math:`T_X`
  * if :math:`F_X` uses ``const ref`` intent, then :math:`T_A` and
    :math:`T_X` must be the same type or a subtype of :math:`T_X`
  * if :math:`F_X` uses ``in`` or ``inout`` intent, then :math:`T_A`
    must be the same type, a subtype of, or implicitly convertible to
    :math:`T_X`.
+ * if :math:`F_X` uses  the ``out`` intent, it is always a legal
+   argument mapping regardless of the type of the actual and formal.
+   In the event that setting :math:`T_A` from :math:`F_X` is not
+   possible then a compilation error will be emitted if this function
+   is chosen as the best candidate.
+ * if :math:`F_X` uses the ``type`` intent, then :math:`T_A`
+   must be the same type or a subtype of :math:`T_X`.
 
 Finally, if the above compatibility cannot be established, the mapping is
-checked for promotion.  Then, the mapping is checked for promotion. If
-:math:`T_A` is scalar promotable to :math:`T_X` (see :ref:`Promotion`),
-then the above rules are checked with the element type, index type, or
-yielded type.  For example, if :math:`T_A` is an array of ``int`` and
-:math:`T_X` is ``int``, then promotion occurs and the above rules will be
-checked with :math:`T_A` == ``int``.
+checked for promotion. If :math:`T_A` is scalar promotable to :math:`T_X`
+(see :ref:`Promotion`), then the above rules are checked with the element
+type, index type, or yielded type.  For example, if :math:`T_A` is an
+array of ``int`` and :math:`T_X` is ``int``, then promotion occurs and
+the above rules will be checked with :math:`T_A` == ``int``.
 
 .. _Determining_More_Specific_Functions:
 
@@ -1412,6 +1435,9 @@ mapping for :math:`Y`.
 
 The level of preference for one of these argument mappings is determined
 by the first of the following steps that applies:
+
+-  If :math:`F_X` or :math:`F_Y` uses the ``out`` intent, then neither
+   argument mapping is preferred.
 
 -  If :math:`T_X` and :math:`T_Y` are the same type, :math:`F_X` is
    an instantiated parameter, and :math:`F_Y` is not an instantiated

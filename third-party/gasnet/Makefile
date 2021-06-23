@@ -10,14 +10,6 @@ ifneq ($(CHPL_MAKE_COMM_SEGMENT),none)
 CHPL_GASNET_CFG_OPTIONS += --enable-segment-$(CHPL_MAKE_COMM_SEGMENT)
 endif
 
-ifneq (, $(filter $(CHPL_MAKE_COMM_SUBSTRATE),psm ofi))
-ifeq (, $(call isTrue, $(CHPL_GASNET_ALLOW_BAD_SUBSTRATE)))
-$(error The $(CHPL_MAKE_COMM_SUBSTRATE) substrate is not currently supported \
-by GASNet-EX. Please contact the Chapel team if this configuration is \
-important to you)
-endif
-endif
-
 ifneq ($(CHPL_MAKE_COMM_SUBSTRATE),none)
 CHPL_GASNET_CFG_OPTIONS += --disable-auto-conduit-detect
 CHPL_GASNET_CFG_OPTIONS += --enable-$(CHPL_MAKE_COMM_SUBSTRATE)
@@ -64,11 +56,11 @@ endif
 
 # The cross-configure scripts used on Crays ignore our CC and always use CC=cc
 # (the PrgEnv wrappers.) Use PrgEnv-gnu to produce something that is ABI and
-# compiler option compatible with clang-included.
+# compiler option compatible with llvm-clang.
 ifeq ($(CRAY_CROSS_CONFIGURE), y)
-ifeq ($(CHPL_MAKE_COMPILER), clang-included)
-ifneq (, $(filter cray-prgenv-%,$(CHPL_MAKE_ORIG_TARGET_COMPILER)))
-ORIG_PRGENV = $(subst cray-prgenv-,,$(CHPL_MAKE_ORIG_TARGET_COMPILER))
+ifeq ($(CHPL_MAKE_COMPILER), llvm)
+ifneq (, $(filter cray-prgenv-%,$(CHPL_MAKE_TARGET_COMPILER_PRGENV)))
+ORIG_PRGENV = $(subst cray-prgenv-,,$(CHPL_MAKE_TARGET_COMPILER_PRGENV))
 ifneq ($(ORIG_PRGENV), gnu)
 ENSURE_GASNET_COMPATIBLE_COMPILER=. $$MODULESHOME/init/sh; module unload PrgEnv-$(ORIG_PRGENV); module load PrgEnv-gnu;
 endif

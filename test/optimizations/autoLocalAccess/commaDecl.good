@@ -15,6 +15,6 @@ Start analyzing forall (commaDecl.chpl:9)
 |
 End analyzing forall (commaDecl.chpl:9)
 
-Static check successful. Using localAccess (commaDecl.chpl:10)
-Static check successful. Using localAccess (commaDecl.chpl:10)
+Static check successful. Using localAccess [static only ALA clone]  (commaDecl.chpl:10)
+Static check successful. Using localAccess [static only ALA clone]  (commaDecl.chpl:10)
 10 10 10 10 10 10 10 10 10 10

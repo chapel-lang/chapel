@@ -7,11 +7,11 @@ proc main() {
    begin doSomeWork();
    // while original task exits
    writeln("Original task falling out of main");
-   s$ = true;
+   s$.writeEF(true);
 }
 
 proc doSomeWork() {
-   s$;
+   s$.readFE();
    for i in 1..numIters {
      write("");
      stdout.flush();

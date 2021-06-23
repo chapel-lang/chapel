@@ -14,9 +14,9 @@ record RR {
     }
     begin {
       doModify(this, 666);
-      done$ = true;
+      done$.writeEF(true);
     }
-    done$;
+    done$.readFE();
   }
   // method with args
   proc modify(ee: int, ff: int) {
@@ -26,9 +26,9 @@ record RR {
     }
     begin {
       doModify(this, ff);
-      done$ = true;
+      done$.writeEF(true);
     }
-    done$;
+    done$.readFE();
   }
 } // record RR
 
@@ -45,9 +45,9 @@ record QQ {
     }
     begin {
       doModify(this, dd);
-      done$ = true;
+      done$.writeEF(true);
     }
-    done$;
+    done$.readFE();
   }
   // method with no args
   proc modify() {
@@ -57,9 +57,9 @@ record QQ {
     }
     begin {
       doModify(this, 181818);
-      done$ = true;
+      done$.writeEF(true);
     }
-    done$;
+    done$.readFE();
   }
 } // record QQ
 

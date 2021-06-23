@@ -37,6 +37,11 @@ CHPL2RSTOPTS_HELLO = --output=rst --prefix=$(CHPL_DOC_HELLO_BUILD_DIR) --link=$(
 SPEC_BUILD_DIR = ../build/doc/language/spec
 SPEC_RST_DIR = $(SOURCEDIR)/language/spec
 
+COMPILER_INTERNALS_DOXYGEN = ../build/doc/doxygen
+COMPILER_INTERNALS_SRC_DOXYGEN = $(SOURCEDIR)/../templates/compiler-internals-doxygen
+COMPILER_INTERNALS_SRC_NO_DOXYGEN = $(SOURCEDIR)/../templates/compiler-internals-no-doxygen
+COMPILER_INTERNALS = $(SOURCEDIR)/compiler-internals
+
 help: help-sphinx help-source
 
 help-source:
@@ -62,7 +67,7 @@ man-chapel: FORCE
 	$(MAKE) man
 
 
-source: collect-syntax module-docs primers examples symlinks
+source: collect-syntax module-docs primers examples symlinks compiler-internals
 
 
 collect-syntax:
@@ -114,6 +119,14 @@ symlinks:
 	@if [ ! -e $(SOURCEDIR)/users-guide/taskpar/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/taskpar/examples; fi
 	@if [ ! -e $(SOURCEDIR)/users-guide/datapar/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/datapar/examples; fi
 	@if [ ! -e $(SOURCEDIR)/users-guide/locality/examples ]; then ln -s $$CHPL_HOME/test/release/examples $(SOURCEDIR)/users-guide/locality/examples; fi
+
+compiler-internals: FORCE
+	@echo "Updating compiler-internals"
+	@if [ -d $(COMPILER_INTERNALS_DOXYGEN) ]; then \
+	  $(COPY_IF_DIFFERENT) "$(COMPILER_INTERNALS_SRC_DOXYGEN)" "$(COMPILER_INTERNALS)" ; \
+	else \
+	  $(COPY_IF_DIFFERENT) "$(COMPILER_INTERNALS_SRC_NO_DOXYGEN)" "$(COMPILER_INTERNALS)" ; \
+	fi
 
 checkdocs: FORCE
 	$(MAKE) check

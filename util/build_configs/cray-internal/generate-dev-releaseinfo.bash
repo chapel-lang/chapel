@@ -68,7 +68,7 @@ Chapel $major.$minor
 
     Interested users are encouraged to ask questions and join
     discussions in a variety of forums (Stack Overflow, Gitter,
-    mailing lists, etc.) listed at https://chapel-lang.org/users.html.
+    Discourse, etc.) listed at https://chapel-lang.org/community.html.
     Questions about Chapel can be directed to the Chapel team.  To file
     bugs or feature requests against Chapel, refer to
     \$CHPL_HOME/doc/html/usingchapel/bugs.html or

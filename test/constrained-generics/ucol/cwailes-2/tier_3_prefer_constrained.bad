@@ -1,0 +1,3 @@
+tier_3_prefer_constrained.chpl:28: error: ambiguous call 'minFn(3, 4)'
+tier_3_prefer_constrained.chpl:11: note: candidates are: minFn(x: T, y: T)
+tier_3_prefer_constrained.chpl:19: note:                 minFn(x, y: x.type)

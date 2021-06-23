@@ -424,8 +424,8 @@ proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
 
 /*
 
-Sort the elements in an array. It is up to the implementation to choose
-the sorting algorithm.
+Sort the elements in a 1D rectangular array.  The choice of sorting
+algorithm used is made by the implementation.
 
 .. note::
   This function currently either uses a parallel radix sort or a serial
@@ -832,20 +832,20 @@ module TimSort {
   private proc _TimSort(Data: [?Dom], lo:int, hi:int, blockSize=16, comparator:?rec=defaultComparator) {
     import Sort.InsertionSort;
 
-    /*Parallely apply insertionSort on each block of size `blockSize`
+    /*Parallelly apply insertionSort on each block of size `blockSize`
      using forall loop*/
 
     const stride = if Dom.stridable then abs(Dom.stride) else 1;
     const size = (hi - lo) / stride + 1;
     const chunks = (size + blockSize - 1) / blockSize;
-    
+
     forall i in 0..#chunks {
       InsertionSort.insertionSort(Data, comparator = comparator, lo + (i * blockSize) * stride, min(hi, lo + ((i + 1) * blockSize * stride) - stride));
     }
 
     /* apply merge operations on each block
     *as the merges at a level are independent of each other
-    *they can be applied parallely 
+    *they can be applied in parallel
     */
 
     var numSize = blockSize;
@@ -866,8 +866,8 @@ module TimSort {
 
   /*
    This TimSort._Merge() differs from MergeSort._Merge() in the following way:
-   MergeSort._Merge() alternates the storage of segments in the original memory and the copied memory. 
-   TimSort._Merge() creates a copy of the segments to be merged and 
+   MergeSort._Merge() alternates the storage of segments in the original memory and the copied memory.
+   TimSort._Merge() creates a copy of the segments to be merged and
    stores the results back into the original memory.
   */
   private proc _Merge(Dst: [?Dom] ?eltType, lo:int, mid:int, hi:int, comparator:?rec=defaultComparator) {
@@ -1233,52 +1233,65 @@ module QuickSort {
     import Sort.InsertionSort;
 
     // grab obvious indices
-    const lo = start,
-          hi = end,
-          mid = lo + (hi-lo+1)/2;
-    var piv = mid;
+    var lo = start,
+        hi = end;
 
-    if hi - lo < 0 { // minlen {
-      // base case -- use insertion sort
-      InsertionSort.insertionSortMoveElts(Data, comparator=comparator, lo, hi);
-      return;
-    } else if hi <= lo {
-      // nothing to sort
-      return;
-    }
+    // keep iterating over subproblems
+    while lo < hi {
+        var mid = lo + (hi - lo + 1) / 2;
+        var piv = mid;
 
-    // find pivot using median-of-3 method for small arrays
-    // and a "ninther" for bigger arrays. Places the pivot in
-    // Data[lo].
-    if hi - lo < 100 {
-      piv = order3(Data, lo, mid, hi, comparator);
-    } else {
-      // assumes array size > 9 at the very least
+        if hi - lo < 0 { // minlen {
+          // base case -- use insertion sort
+          InsertionSort.insertionSortMoveElts(Data, comparator=comparator, lo, hi);
+          return;
+        } else if hi <= lo {
+          // nothing to sort
+          return;
+        }
 
-      // median of each group of 3
-      const medLo  = order3(Data, lo,    lo+1, lo+2,  comparator);
-      const medMid = order3(Data, mid-1, mid,  mid+1, comparator);
-      const medHi  = order3(Data, hi-2,  hi-1, hi,    comparator);
-      // median of the medians
-      piv = order3(Data, medLo, medMid, medHi, comparator);
-    }
+        // find pivot using median-of-3 method for small arrays
+        // and a "ninther" for bigger arrays. Places the pivot in
+        // Data[lo].
+        if hi - lo < 100 {
+          piv = order3(Data, lo, mid, hi, comparator);
+        } else {
+          // assumes array size > 9 at the very least
 
-    var (eqStart, eqEnd) = partition(Data, lo, piv, hi, comparator);
+          // median of each group of 3
+          const medLo  = order3(Data, lo,    lo+1, lo+2,  comparator);
+          const medMid = order3(Data, mid-1, mid,  mid+1, comparator);
+          const medHi  = order3(Data, hi-2,  hi-1, hi,    comparator);
+          // median of the medians
+          piv = order3(Data, medLo, medMid, medHi, comparator);
+        }
 
-    if hi-lo < 300 {
-      // stay sequential
-      quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
-      quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
-    } else {
-      // do the subproblems in parallel
-      forall i in 1..2 {
-        if i == 1 then
-          quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
-        else
-          quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
+        var (eqStart, eqEnd) = partition(Data, lo, piv, hi, comparator);
+
+        // stay sequential
+        if hi-lo < 300 || here.runningTasks() > here.numPUs(logical=true)  {
+          // handle smaller subproblem recursively and iterate for larger one
+          if eqStart - lo > hi - eqEnd {
+            // recur for smaller right half
+            quickSortImpl(Data, minlen, comparator, eqEnd + 1, hi);
+            // change value of hi to the end of left half
+            hi = eqStart - 1;
+          } else {
+            // recur for smaller left half
+            quickSortImpl(Data, minlen, comparator, lo,        eqStart - 1);
+            // change value of lo to the start of right half
+            lo = eqEnd  + 1;
+          }
+        } else {
+          // do the subproblems in parallel
+          cobegin {
+            quickSortImpl(Data, minlen, comparator, lo, eqStart-1);
+            quickSortImpl(Data, minlen, comparator, eqEnd+1, hi);
+          }
+          break;
+        }
       }
     }
-  }
 }
 
 pragma "no doc"
@@ -1335,14 +1348,17 @@ module ShellSort {
     // Analysis of Shellsort and Related Algorithms 1996
     // and see Marcin Ciura - Best Increments for the Average Case of Shellsort
     // for the choice of these increments.
-    var n = 1 + end - start;
     var js,hs:idxType;
     var v,tmp:Data.eltType;
-    const incs = (701, 301, 132, 57, 23, 10, 4, 1):(8*idxType);
-    for h in incs {
-      // skip past cases in which the 'incs' value is too big for idxType
-      if h < 0 || h:uint > max(idxType):uint then
+    const incs = (701, 301, 132, 57, 23, 10, 4, 1);
+    for hh in incs {
+      // skip past cases in which the 'incs' value was too big for
+      // idxType, or in which h+start will overflow idxType.
+      // start may be negative, so the first test isn't redundant.
+      if hh > max(idxType) || hh >= max(idxType):uint - start:uint then
         continue;
+
+      const h = hh:idxType;
       hs = h + start;
       for is in hs..end {
         v = Data[is];

@@ -1,0 +1,5 @@
+#!/bin/bash
+
+sed -E "s/0x[0-9a-f]*/prediffed/" <$2 >$2.predifftmp
+grep prediffed $2.predifftmp | uniq -c >$2
+rm $2.predifftmp

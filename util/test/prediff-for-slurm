@@ -11,7 +11,7 @@ msgs = (
 """,
 """srun: error: .+: task [0-9]+: (Killed|Terminated)
 """,
-"""srun: (Force Terminated|Terminating) job step [0-9.]+
+"""srun: .*(Force Terminated|Terminating) (job step |StepId=)[0-9.]+
 """,
 """srun: Job step aborted: Waiting up to [0-9]+ seconds for job step .*
 """,
@@ -19,7 +19,7 @@ msgs = (
 """,
 """slurmstepd: error: .+ \[[0-9]+] .*
 """,
-"""srun: error: spank: /opt/cray/pe/atp/libAtpSLaunch.so: Plugin file not found
+"""srun: error: spank: /opt/cray/.*: Plugin file not found
 """,
 """cp: cannot create regular file .*/[.]module/PrgEnv-.*: File exists
 """,

@@ -89,6 +89,10 @@ CONDUIT_EXTRADEPS = $(ssh_deps) $(mpi_deps) $(pmi_deps)
 # forced targets in this file, and should probably use LIBINCLUDES/LIBDEFINES
 CONDUIT_SPECIAL_OBJS = $(mpi_special_objs)
 
+# memory kinds supported by this conduit (space separated)
+# to be included in libgasnet if support was enabled at configure time
+CONDUIT_KINDS =
+
 # the default job spawn command to be used for "make run-tests"
 # The following substitutions are performed:
 #   %P = program executable name

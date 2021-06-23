@@ -34,7 +34,7 @@ record R {
     return this;
   }
 }
-proc =(ref lhs:R, rhs:R) {
+operator R.=(ref lhs:R, rhs:R) {
   if printInitDeinit then writeln("lhs", lhs.toString(), " = rhs", rhs.toString());
   lhs.x = rhs.x;
   lhs.ptr = new shared C(rhs.ptr.xx);
@@ -155,9 +155,9 @@ proc test3c() {
     writeln(y.toString());
     assert(y.locale == here);
     assert(y.ptr.xx.locale == here);
-    s = 1;
+    s.writeEF(1);
   }
-  s;
+  s.readFE();
 }
 sync { test3c(); }
 

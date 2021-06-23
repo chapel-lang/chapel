@@ -1,0 +1,7 @@
+feature request: prefer a CG overload over an UG one
+
+In this example, the tie between
+  proc minFn(x:?T, y:T):T where implements LessThan(T)
+and
+  proc minFn(x:?T, y:T):T
+should be resolved in favor of the former.

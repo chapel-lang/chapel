@@ -1,0 +1,27 @@
+T1
+default init
+deinit
+T2
+default init
+deinit
+T3
+default init
+deinit
+T4
+default init
+deinit
+T5
+default init
+deinit
+T6
+if
+default init
+deinit
+default init
+else
+default init
+deinit
+deinit
+T7
+default init
+deinit

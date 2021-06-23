@@ -11,7 +11,4 @@ defaultValues.uintDefault()
 c = 9
 defaultValues.intDefault(c)
 defaultValues.intDefault()
-d = b"not the default"
-defaultValues.cstringDefault(d)
-defaultValues.cstringDefault()
 defaultValues.chpl_cleanup()

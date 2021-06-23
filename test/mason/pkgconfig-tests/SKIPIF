@@ -26,7 +26,7 @@ else
     has_ssl="False"
 fi
 
-if [ "$CHPL_COMM" = 'none' ] && [ "$CHPL_REGEXP" = 're2' ] ; then
+if [ "$CHPL_COMM" = 'none' ] && [ "$CHPL_RE2" != 'none' ] ; then
     correct_config="True"
 else
     correct_config="False"
@@ -37,5 +37,3 @@ if [ "$has_zlib" = 'True' ] && [ "$has_ssl" = 'True' ] && [ "$correct_config" = 
 else
     echo "True"
 fi
-
-

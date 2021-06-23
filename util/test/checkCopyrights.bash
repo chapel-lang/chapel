@@ -51,6 +51,10 @@ files_wo_copy=$(find $source_dirs -type f \( \
     grep -v compiler/include/bison-chapel.h        | \
     grep -v compiler/include/flex-chapel.h         | \
     grep -v compiler/parser/bison-chapel.cpp       | \
+    grep -v compiler/next/lib/frontend/Parser/bison-chpl-lib.h | \
+    grep -v compiler/next/lib/frontend/Parser/bison-chpl-lib.cpp | \
+    grep -v compiler/next/lib/frontend/Parser/flex-chpl-lib.h | \
+    grep -v compiler/next/lib/frontend/Parser/flex-chpl-lib.cpp | \
     grep -v 'modules/standard/gen/.*/SysCTypes.chpl' | \
     xargs grep -i -L "${copyright_pattern}")
 

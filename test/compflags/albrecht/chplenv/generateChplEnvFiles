@@ -7,7 +7,7 @@
 generateGood() {
     # Generate Good file from printchplenv variables
 
-    printchplenv=$(../../../../util/printchplenv --simple --no-tidy --anonymize | grep -v CHPL_ORIG_TARGET_COMPILER | grep -v SUBDIR)
+    printchplenv=$(../../../../util/printchplenv --simple --no-tidy --anonymize | grep -v CHPL_TARGET_HAS_PRGENV | grep -v SUBDIR)
 
     good=""
     for var in ${printchplenv}; do
@@ -27,9 +27,6 @@ generateCompopts() {
     printchplenv=$(../../../../util/printchplenv --simple --anonymize --no-tidy)
 
     compopts="--home=${CHPL_HOME}"
-
-    # llvm codegen changes some of the environment variables
-    compopts="$compopts --no-llvm"
 
     for var in ${printchplenv}; do
 
@@ -87,7 +84,7 @@ generateCompopts() {
             "CHPL_HWLOC")
                 compopts="$compopts --$flag=$value"
                 ;;
-            "CHPL_REGEXP")
+            "CHPL_RE2")
                 compopts="$compopts --$flag=$value"
                 ;;
             "CHPL_AUX_FILESYS")

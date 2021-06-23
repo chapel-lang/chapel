@@ -295,7 +295,7 @@ use.
 // When testing changes to the cache for correctness, it is a good practice
 // to run tests with these two settings enabled.
 //
-// VERIFY will cause cache structure validiation to be run after each
+// VERIFY will cause cache structure validation to be run after each
 // operation.
 //
 // EXTRA_YIELDS will call chpl_task_yield after comm layer calls
@@ -3675,7 +3675,7 @@ void chpl_cache_invalidate(c_nodeid_t node, void* raddr, size_t size,
   TRACE_PRINT(("%d: task %d in chpl_cache_invalidate %s:%d %d bytes at %d:%p\n",
                chpl_nodeID, (int)chpl_task_getId(),
                chpl_lookupFilename(fn), ln,
-               (int)size, node, raddr, addr));
+               (int)size, node, raddr));
 
   cache_invalidate(cache, task_local, node, (raddr_t)raddr, size);
 }
@@ -3715,7 +3715,7 @@ void chpl_cache_comm_put(void* addr, c_nodeid_t node, void* raddr,
                "from %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
-  chpl_comm_diags_verbose_rdma("put", node, size, ln, fn, commID);
+  chpl_comm_diags_verbose_rdma("cache-put", node, size, ln, fn, commID);
 
 #ifdef DUMP
   chpl_cache_print();
@@ -3761,7 +3761,7 @@ void chpl_cache_comm_get(void *addr, c_nodeid_t node, void* raddr,
                "%d:%p to %p\n",
                chpl_nodeID, (int)chpl_task_getId(), chpl_lookupFilename(fn), ln,
                (int)size, node, raddr, addr));
-  chpl_comm_diags_verbose_rdma("get", node, size, ln, fn, commID);
+  chpl_comm_diags_verbose_rdma("cache-get", node, size, ln, fn, commID);
 
 #ifdef DUMP
   chpl_cache_print();

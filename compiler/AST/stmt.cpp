@@ -158,6 +158,10 @@ void VisibilityStmt::validateRenamed() {
                        it->second);
       }
 
+      if (sym->hasFlag(FLAG_DEPRECATED)) {
+        sym->generateDeprecationWarning(this);
+      }
+
     } else {
       INT_ASSERT(false);
     }

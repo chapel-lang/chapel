@@ -73,7 +73,7 @@ correctness test on the entire chapel test suite::
 
     # Used to select which git repo and branch to clone
     export CHPL_NIGHTLY_GIT_URL="https://github.com/chapel-lang/chapel.git"
-    export CHPL_NIGHTLY_GIT_BRANCH="master"
+    export CHPL_NIGHTLY_GIT_BRANCH="main"
 
 
     #

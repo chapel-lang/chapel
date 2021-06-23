@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.23.0
+        export CHPL_HOME=~/chapel-1.24.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -105,6 +105,7 @@ CHPL_HOST_PLATFORM
         sunos        SunOS platforms
         cray-cs      Cray CS\ |trade|
         cray-xc      Cray XC\ |trade|
+        hpe-cray-ex  HPE Cray EX\ |trade|
         ===========  ==================================
 
    Platform-specific documentation is available for most of these platforms in
@@ -182,7 +183,6 @@ CHPL_*_COMPILER
         =================== ===================================================
         allinea             The Allinea ARM compiler suite -- clang and clang++
         clang               The Clang compiler suite -- clang and clang++
-        clang-included      The Clang compiler in third-party/llvm
         cray-prgenv-allinea The Cray PrgEnv compiler using the Allinea backend
         cray-prgenv-cray    The Cray PrgEnv compiler using the Cray CCE backend
         cray-prgenv-gnu     The Cray PrgEnv compiler using the GNU backend
@@ -191,31 +191,12 @@ CHPL_*_COMPILER
         gnu                 The GNU compiler suite -- gcc and g++
         ibm                 The IBM compiler suite -- xlc and xlC
         intel               The Intel compiler suite -- icc and icpc
+        llvm                LLVM code generation
         pgi                 The PGI compiler suite -- pgcc and pgc++
         =================== ===================================================
 
-   The default for ``CHPL_*_COMPILER`` depends on the value of the corresponding
-   ``CHPL_*_PLATFORM`` environment variable:
-
-        ============  ==================================================
-        Platform      Compiler
-        ============  ==================================================
-        cray-x*       - gnu (for ``CHPL_HOST_COMPILER``)
-                      - cray-prgenv-$PE_ENV (for ``CHPL_TARGET_COMPILER``,
-                        where PE_ENV is set by PrgEnv-* modules)
-        darwin        clang if available, otherwise gnu
-        pwr6          ibm
-        other         gnu
-        ============  ==================================================
-
-   If ``CHPL_HOST_PLATFORM == CHPL_TARGET_PLATFORM`` and is not ``cray-x*``,
-   ``CHPL_TARGET_COMPILER`` will default to the same value as ``CHPL_HOST_COMPILER``.
-
-   .. note::
-     Note that builds with :ref:`readme-llvm` (i.e. when ``CHPL_LLVM=bundled``)
-     will build the runtime twice: once with the compiler as described above and
-     once with clang-included. We do this in order to avoid issues in linking
-     objects built by different compilers.
+   The default for ``CHPL_*_COMPILER`` is llvm, except on linux32 where
+   it is gnu.
 
 .. _readme-chplenv.CHPL_TARGET_CPU:
 
@@ -390,7 +371,7 @@ CHPL_COMM
         ======= ============================================
         none    only supports single-locale execution
         gasnet  use the GASNet-based communication layer
-        ofi     use the (preliminary) libfabric-based communication layer
+        ofi     use the libfabric-based communication layer
         ugni    Cray-specific native communication layer
         ======= ============================================
 
@@ -454,7 +435,7 @@ CHPL_ATOMICS
         ===========  =====================================================
 
    If ``CHPL_ATOMICS`` is not set, it defaults to ``cstdlib`` when the target
-   compiler is ``gnu``, ``clang``, ``allinea``, ``clang-included``, or
+   compiler is ``gnu``, ``clang``, ``allinea``, ``llvm``, or
    ``cray``.  It defaults to ``intrinsics`` when the target compiler is
    ``intel``.  It defaults to ``locks`` when the target compiler is ``pgi``.
 
@@ -603,18 +584,18 @@ CHPL_HWLOC
        all versions. For best results, we recommend using the bundled libfabric
        if possible.
 
-.. _readme-chplenv.CHPL_REGEXP:
+.. _readme-chplenv.CHPL_RE2:
 
-CHPL_REGEXP
+CHPL_RE2
 ~~~~~~~~~~~
-   Optionally, the ``CHPL_REGEXP`` environment variable can be used to enable
-   regular expression operations as defined in :chpl:mod:`Regexp`.  Current
+   Optionally, the ``CHPL_RE2`` environment variable can be used to enable
+   regular expression operations as defined in :chpl:mod:`Regex`.  Current
    options are:
 
        ======= ==============================================
        Value   Description
        ======= ==============================================
-       re2     use the re2 distribution in third-party
+       bundled use the re2 distribution in third-party
        none    do not support regular expression operations
        ======= ==============================================
 
@@ -625,13 +606,13 @@ CHPL_REGEXP
        ======= ===============================
        Value   Description
        ======= ===============================
-       re2     if the build was successful
+       bundled if the build was successful
        none    otherwise
        ======= ===============================
 
    .. note::
      Note that the Chapel ``util/quickstart/setchplenv.*`` source scripts set
-     ``CHPL_REGEXP`` to ``'none`` while the ``util/setchplenv.*`` versions
+     ``CHPL_RE2`` to ``'none`` while the ``util/setchplenv.*`` versions
      leave it unset, resulting in the behavior described just above.
 
 .. _readme-chplenv.CHPL_AUX_FILESYS:

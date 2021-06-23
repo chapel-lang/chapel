@@ -1,3 +1,4 @@
+error-method-on-nilable-shared.chpl:1: In module 'mymodule':
 error-method-on-nilable-shared.chpl:14: warning: borrowed MyClass?
 error-method-on-nilable-shared.chpl:5: In function 'test':
 error-method-on-nilable-shared.chpl:11: error: unresolved call 'shared MyClass?.mymethod()'

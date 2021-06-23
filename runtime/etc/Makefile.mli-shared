@@ -40,6 +40,11 @@ buildClient: $(TMPBINNAME)
 # need to pass on the $(GEN_CFLAGS) variable, because we're building a shared
 # object and $(GEN_CFLAGS) contains the -fPIC flag.
 #
+# TODO (dlongnecke): Do we need to run this under LLVM?
+# TODO (dlongnecke):
+#   Is there a way to assert that we are building the launcher and the client
+#   with the host compiler?
+#
 $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 	$(MAKE) -f $(CHPL_MAKE_HOME)/runtime/etc/Makefile.launcher all \
 		CHPL_MAKE_HOME=$(CHPL_MAKE_HOME) \
@@ -58,7 +63,7 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		$(CHPLSRC) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
 		$(CHPL_RT_INC_DIR) \
-		$(CHPL_MLI_INCS)
+		$(CHPL_MLI_INC_DIRS)
 # Invoke the linker to produce a shared library.
 	$(LD) $(CHPL_MAKE_BASE_LFLAGS) \
 	        $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
@@ -69,13 +74,16 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		-L$(CHPL_LN_LIB_DIR) \
 		-lm -lchpllaunch \
 		$(LAUNCH_LIBS) \
-		$(CHPL_ZMQ_LIB_SEARCH_PATH) \
-		-lzmq
+		-lzmq \
+		$(CHPL_MLI_LIB_DIRS)
+
+
 # Last minute munging in case of output file name collisions.
 ifneq ($(TMPBINNAME),$(BINNAME))
 	cp $(TMPBINNAME) $(BINNAME)
 	rm $(TMPBINNAME)
 endif
+
 #
 # On Darwin, we need to adjust the "install_name" of the final shared library
 # file so that it points to $(BINNAME) and not $(TMPBINNAME). If we don't,

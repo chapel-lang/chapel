@@ -81,10 +81,7 @@ int main(int argc, char **argv)
     uint8_t  *addr = A;
     uintptr_t size = SCRATCH_SIZE / 2;
 
-    assert_always(size >= gex_TM_Split(&my_row_tm, myteam, my_row, my_col, 0, 0,
-                                       GEX_FLAG_TM_SCRATCH_SIZE_MIN));
-    assert_always(size >= gex_TM_Split(&my_col_tm, myteam, my_col, my_row, 0, 0,
-                                       GEX_FLAG_TM_SCRATCH_SIZE_MIN));
+    assert_always(size >= 4096);  // some non-trivial (non-zero) size
 
     teamA_scratch.addr = addr;
     teamA_scratch.size = size;

@@ -1,13 +1,13 @@
 class C {
 	var data:int;
 	proc display() {
-		writeln("C:"+data);
+		writeln("C:" + data:string);
 	}
 }
 
 class D : C {
-	proc display() {
-		writeln("D:"+data);
+	override proc display() {
+		writeln("D:" + data:string);
 	}
 }
 
@@ -15,7 +15,7 @@ interface LessThan(T) {
   proc LT(x:T, y:T):bool;
 }
 
-implements LessThan(D);
+implements LessThan(borrowed D);
 
 proc LT(x:C, y:C) : bool {
   x.display();
@@ -34,5 +34,5 @@ proc minFn(x:?T, y:T):T where implements LessThan(T) {
 
 var c1 = new D(1);
 var c2 = new D(2);
-writeln(minFn(c1,c2));
+writeln(minFn(c1.borrow(),c2.borrow()));
 

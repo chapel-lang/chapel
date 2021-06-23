@@ -411,8 +411,13 @@ static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
       if (hideErrFn == false) {
         std::string nameAndArgs = errFn->nameAndArgsToString(", ", true,
                                                              printedUnderline);
+        if (errFn->hasFlag(FLAG_IMPLEMENTS_WRAPPER)) {
+          print_error("  %s:%d: resolving 'implements %s' statement",
+                      cleanFilename(bestPoint),
+                      bestPoint->linenum(),
+                      interfaceNameForWrapperFn(errFn));
 
-        if (nameAndArgs.empty()) {
+        } else if (nameAndArgs.empty()) {
           print_error("  %s:%d: %s called",
                       cleanFilename(bestPoint),
                       bestPoint->linenum(),
@@ -480,6 +485,30 @@ static void printCallstackForLastError() {
   }
 }
 
+//
+// Given a function whose name starts with chpl_, it may be of interest
+// to a non-developer if it is module init function. As a heuristic, if the
+// module name matches the name of its file, we consider it not "interesting".
+//
+static bool interestingModuleInit(FnSymbol* fn) {
+  if (! fn->hasFlag(FLAG_MODULE_INIT))
+    return false;
+
+  const char* basename = fn->fname();
+  if (basename == nullptr)
+    return false;
+
+  if (const char* slash = (const char*) strrchr(basename, '/'))
+    basename = slash+1;
+
+  if (! startsWith(fn->name, "chpl__init_"))
+    return false; // unexpected, so let's stay away from it
+
+  const char* modulename = astr(fn->name + 11, ".chpl");
+
+  return strcmp(modulename, basename) != 0;
+}
+
 static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
 
   if (Expr* expr = toExpr(ast)) {
@@ -517,14 +546,12 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
         // the error function and line number, nothing is printed.
         if (!err_fn->hasFlag(FLAG_COMPILER_GENERATED) &&
             err_fn->linenum()) {
-          bool suppress = false;
-
-          // Suppress internal function names
-          if (!developer && strncmp(err_fn->name, "chpl_", 5) == 0) {
-            suppress = true;
-          }
-
-          if (suppress == false) {
+          // In non-developer mode, do not print functions named chpl_....
+          // DO print "In module MMM" unless it is obvious.
+          if (developer                              ||
+              strncmp(err_fn->name, "chpl_", 5) != 0 ||
+              interestingModuleInit(err_fn)           )
+          {
             print_error("%s:%d: In %s:\n",
                         cleanFilename(err_fn), err_fn->linenum(),
                         fnKindAndName(err_fn));
@@ -541,22 +568,22 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
   const char* filename;
   int linenum;
 
-  if ( ast && ast->linenum() ) {
+  if (ast && ast->linenum()) {
     have_ast_line = true;
     filename = cleanFilename(ast);
     linenum = ast->linenum();
-  } else if ( astloc.filename != NULL) {
+  } else if (astloc.filename() != nullptr) {
     have_ast_line = true;
-    filename = cleanFilename(astloc.filename);
-    linenum = astloc.lineno;
+    filename = cleanFilename(astloc.filename());
+    linenum = astloc.lineno();
   } else {
     have_ast_line = false;
-    if ( !err_print && currentAstLoc.filename && currentAstLoc.lineno > 0 ) {
+    if (!err_print && currentAstLoc.filename() && currentAstLoc.lineno() > 0) {
       // Use our best guess for the line number for user errors,
       // but don't do that for err_print (USR_PRINT) notes that don't
       // come with line numbers.
-      filename = cleanFilename(currentAstLoc.filename);
-      linenum = currentAstLoc.lineno;
+      filename = cleanFilename(currentAstLoc.filename());
+      linenum = currentAstLoc.lineno();
     } else {
       filename = NULL;
       linenum = -1;
@@ -568,8 +595,7 @@ static bool printErrorHeader(BaseAST* ast, astlocT astloc) {
   if (filename) {
     if (err_fatal && err_user) {
       // save the error location for printsSameLocationAsLastError
-      last_error_loc.filename = filename;
-      last_error_loc.lineno = linenum;
+      last_error_loc = astlocT(linenum, filename);
     }
     print_error("%s:%d: ", filename, linenum);
   }
@@ -859,19 +885,17 @@ void clearFatalErrors() {
 }
 
 bool printsSameLocationAsLastError(const BaseAST* ast) {
-  astlocT loc(0, NULL);
+  astlocT loc(0, nullptr);
 
   if ( ast && ast->linenum() ) {
-    loc.filename = cleanFilename(ast);
-    loc.lineno = ast->linenum();
+    loc = astlocT(ast->linenum(), cleanFilename(ast));
   }
 
   return loc == last_error_loc;
 }
 
 void clearLastErrorLocation() {
-  last_error_loc.filename = NULL;
-  last_error_loc.lineno = 0;
+  last_error_loc = astlocT(0, nullptr);
 }
 
 static void handleInterrupt(int sig) {

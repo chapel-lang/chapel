@@ -3,7 +3,7 @@ var s$ : sync int;
 
 iter mydriver() {
   for i in 1..3 {
-    s$ = i;
+    s$.writeEF(i);
     yield i;
   }
 }
@@ -13,7 +13,7 @@ iter myIter(param tag) {
   yield 666;
   coforall i in mydriver() {
     yield i * 1111;
-    s$;
+    s$.readFE();
   }
 }
 

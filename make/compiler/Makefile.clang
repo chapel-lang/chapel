@@ -24,18 +24,19 @@
 # Tools
 #
 
-ifeq ($(CHPL_MAKE_COMPILER), clang-included)
-# handle using the included clang compiler
-ifndef CLANG_SYSROOT_ARGS
-  export CLANG_SYSROOT_ARGS=$(shell cat $(LLVM_CLANG_ARGUMENTS_FILE))
-endif
-CXX = $(CLANG_CXX) $(CLANG_SYSROOT_ARGS)
-CC = $(CLANG_CC) $(CLANG_SYSROOT_ARGS)
-else
-CXX = clang++
-CC = clang
-endif
+CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX) # normally clang++
+CC = $(CHPL_MAKE_COMPILER_COMMAND_C)    # normally clang
 
+ifeq ($(CHPL_MAKE_COMPILER), llvm)
+  ifeq ($(CHPL_MAKE_LLVM), bundled)
+    # handle using the included clang compiler
+    ifndef CLANG_SYSROOT_ARGS
+      export CLANG_SYSROOT_ARGS=$(shell cat $(LLVM_CLANG_ARGUMENTS_FILE))
+    endif
+    CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX) $(CLANG_SYSROOT_ARGS)
+    CC = $(CHPL_MAKE_COMPILER_COMMAND_C) $(CLANG_SYSROOT_ARGS)
+  endif
+endif
 
 
 RANLIB = ranlib
@@ -74,11 +75,13 @@ DEF_CXX_VER := $(shell echo __cplusplus | $(CXX) -E -x c++ - | sed -e '/^\#/d' -
 C_STD := $(shell test $(DEF_C_VER) -lt 199901 && echo -std=gnu99)
 CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
 CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+CXX14_STD := $(shell test $(DEF_CXX_VER) -lt 201402 && echo -std=gnu++14)
 
 #
 # Flags for compiler, runtime, and generated code
 #
-COMP_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
+COMP_CFLAGS = $(C_STD) $(CPPFLAGS) $(FLAGS)
+COMP_CXXFLAGS = $(CXX14_STD) $(CPPFLAGS) $(CXXFLAGS)
 COMP_CXXFLAGS_NONCHPL = -Wno-error
 RUNTIME_CFLAGS = $(C_STD) $(CPPFLAGS) $(CFLAGS)
 RUNTIME_CXXFLAGS = $(CXX_STD) $(CPPFLAGS) $(CXXFLAGS)
@@ -151,6 +154,7 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
+COMP_CFLAGS += $(WARN_CFLAGS)
 COMP_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)

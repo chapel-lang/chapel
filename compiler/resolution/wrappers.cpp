@@ -682,7 +682,27 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     temp->addFlag(FLAG_MAYBE_REF);
 
   if (formalIntent != INTENT_INOUT && formalIntent != INTENT_OUT) {
-    temp->addFlag(FLAG_MAYBE_PARAM);
+    // If this is a default argument function being defined for a
+    // class, we don't want to make the method a 'param' method
+    // because they don't dynamically dispatch, and we need that to
+    // happen to have intuitive default argument behavior.
+    // as an example, see:
+    //   test/functions/default-arguments/default-argument-class-override.chpl
+    //
+    // Why do we also check for the FLAG_PROMOTION_WRAPPER?  Because
+    // when we didn't, tests like release/examples/primers/associative.chpl
+    // and reductions/bradc/manual/promote.chpl failed their '--verify'
+    // test runs for reasons that seemed puzzling and related to the
+    // intracacies of the _toFollower() code path; and it seemed unlikely
+    // that they would care about default arguments and inheritance.
+    //
+    bool classDefaultArgCase = (fn->_this &&
+                                isClassLikeOrManaged(fn->_this->type) &&
+                                !fn->hasFlag(FLAG_PROMOTION_WRAPPER));
+
+    if (!classDefaultArgCase) {
+      temp->addFlag(FLAG_MAYBE_PARAM);
+    }
     temp->addFlag(FLAG_EXPR_TEMP); // ? is this needed?
   }
 
@@ -1391,11 +1411,15 @@ static void addArgCoercion(FnSymbol*  fn,
   if (isSyncType(ats->getValType()) == true) {
     checkAgain = true;
     castCall   = new CallExpr("readFE", gMethodToken, prevActual);
+    USR_WARN(actual, "implicitly reading from a sync is deprecated; "
+                     "apply a 'read\?\?()' method to the actual");
 
   } else if (isSingleType(ats->getValType()) == true) {
     checkAgain = true;
 
     castCall   = new CallExpr("readFF", gMethodToken, prevActual);
+    USR_WARN(actual, "implicitly reading from a single is deprecated; "
+                     "apply a 'read\?\?()' method to the actual");
 
   } else if (isManagedPtrType(ats->getValType()) == true &&
              !isManagedPtrType(formal->getValType())) {
@@ -1717,6 +1741,7 @@ static void handleInIntent(FnSymbol* fn, CallExpr* call,
       if (inout) {
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         tmp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
+        tmp->addFlag(FLAG_FORMAL_TEMP_OUT_CALLSITE);
       }
 
       // Does this need to be here?
@@ -1862,6 +1887,7 @@ static void handleOutIntents(FnSymbol* fn, CallExpr* call,
         tmp->addFlag(FLAG_SUPPRESS_LVALUE_ERRORS);
         tmp->addFlag(FLAG_INSERT_AUTO_DESTROY);
         tmp->addFlag(FLAG_EXPR_TEMP);
+        tmp->addFlag(FLAG_FORMAL_TEMP_OUT_CALLSITE);
 
         // Transform  f(x) where x is passed with out intent into
         //   DefExpr tmp
@@ -1921,6 +1947,8 @@ namespace {
     // The TypeSymbol representing the type that is promoted (e.g. array)
     // or NULL if that argument isn't promoted.
     std::vector<TypeSymbol*> promotedType;
+
+    int formalToActualOpMod;
 
     std::vector<uint8_t> defaulted;
 
@@ -1994,23 +2022,90 @@ static void       fixUnresolvedSymExprsForPromotionWrapper(FnSymbol* wrapper,
                                                            FnSymbol* fn);
 
 static Symbol* leadingArg(PromotionInfo& promotion, CallExpr* call) {
-  int i = 0;
-  for_actuals(actual, call)
+  int i = promotion.formalToActualOpMod;
+  // Operators might have a different number of formals than provided actuals.
+  // In this case, the promotedType array access needs to be adjusted to account
+  // for the offset.
+  for_actuals(actual, call) {
+    if (i < 0) {
+      i++;
+      continue;
+    }
     if (promotion.promotedType[i++] != NULL)
       return symbolForActual(actual);
+  }
 
   INT_ASSERT(false); // did not find any promoted things
   return NULL;
 }
 
+// getMoveToIRtemp(): returns the PRIM_MOVE of 'call' into a temp,
+// which we expect to hold the iterator record (IR).
+// Returns NULL if we do not know how to handle this pattern.
+//
+// Handles a corner case of a "nested call", for example "A.foo()"
+// where A.foo is a promoted call to a paren-less function foo. Ex.
+//   test/functions/promotion/issue-12736-ok.chpl
+//
+// If so, 'irTemp' in addSetIteratorShape() is the IR (iterator record)
+// for the outer call and we do not yet have the IR for the inner call.
+// So we cannot "set shape" on this inner IR. This is most likely OK
+// because the inner IR feeds directly into the outer call. The outer call
+// should also be promoted and inherit the shape from the inner call.
+//
+// We will go ahead and set the shape for 'irTemp' right away from the shape
+// of the inner call. We will also remember 'irTemp' to avoid setting its
+// shape the second time, which would not work, in isDuplicateSetIteratorShape.
+//
+static CallExpr* getMoveToIRtemp(CallExpr* call, bool &isNestedCall) {
+  CallExpr* move = toCallExpr(call->parentExpr);
+
+  if (move == nullptr)
+    // If call's result is not used, do not set the shape.
+    // This happens, for example, during resolveSerializeDeserialize().
+    return nullptr;
+
+  if (move->isPrimitive(PRIM_MOVE))
+    return move; // this is the normal case
+
+  CallExpr* parent2 = toCallExpr(move->parentExpr);
+  if (call != move->baseExpr ||
+      parent2 == nullptr     ||
+      ! parent2->isPrimitive(PRIM_MOVE))
+    return nullptr; // dunno how to handle this case
+
+  // Otherwise, this is a nested call, see the comments above.
+  isNestedCall = true;
+  return parent2;
+}
+
+// Returns true if we should not be setting this IR's shape.
+// See the comment on getMoveToIRtemp().
+static bool isDuplicateSetIteratorShape(Symbol* irTemp, bool isNestedCall) {
+  static std::set<Symbol*> outIRtemps;
+  auto it = outIRtemps.find(irTemp);
+
+  if (it != outIRtemps.end()) {
+    outIRtemps.erase(it);
+    return true; // otherwise we would be setting its shape twice, see above
+  }
+
+  if (isNestedCall)
+    outIRtemps.insert(irTemp);  // remember it for the future
+
+  return false; // this is the normal case
+}
+
 // insert PRIM_ITERATOR_RECORD_SET_SHAPE(iterRecord,shapeSource)
 static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
-  CallExpr* move = toCallExpr(call->parentExpr);
-  // If call's result is not used, do not insert.
-  // This happens, for example, during resolveSerializeDeserialize().
-  if (move == NULL) return;
-  INT_ASSERT(move->isPrimitive(PRIM_MOVE));
+  bool isNestedCall = false;
+  CallExpr* move = getMoveToIRtemp(call, isNestedCall); // sets isNestedCall
+  if (move == nullptr)
+    return;
+
   Symbol* irTemp = toSymExpr(move->get(1))->symbol();
+  if (isDuplicateSetIteratorShape(irTemp, isNestedCall))
+    return;
 
   // The first promoted argument argument determines the shape.
   Symbol* shapeSource = leadingArg(promotion, call);
@@ -2113,11 +2208,27 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
 {
   int numActuals = actualFormals.size();
 
+  // Operators may mismatch the number of formals and the number of actuals.
+  // Store any difference for later.
+  if (numActuals != fn->numFormals() && fn->hasFlag(FLAG_OPERATOR)) {
+    formalToActualOpMod = fn->numFormals() - numActuals;
+  } else {
+    formalToActualOpMod = 0;
+  }
+
   for (int j = 0; j < numActuals; j++) {
     Symbol* actual     = info.actuals.v[j];
     ArgSymbol* formal  = actualFormals[j];
     Type*   actualType = actual->type;
     bool    promotes   = false;
+
+    if (formal == NULL) {
+      // Operators may mismatch the number of formals and the number of actuals
+      // If there is an actual that is not represented by a formal, skip it, it
+      // will be handled later.
+      INT_ASSERT(fn->hasFlag(FLAG_OPERATOR));
+      continue;
+    }
 
     if (isRecordWrappedType(actualType) == true) {
       makeRefType(actualType);
@@ -2141,7 +2252,11 @@ PromotionInfo::PromotionInfo(FnSymbol* fn,
       promotedType = ts;
     } else {
       bool actualProvidedForFormal = false;
-      for_vector(ArgSymbol, arg, actualFormals) {
+      // Can't use for_vector here as it will not iterate if the vector starts
+      // with a NULL entry
+      for (long unsigned int k = 0; k < actualFormals.size(); k++) {
+        ArgSymbol* arg = actualFormals[k];
+
         if (arg == formal) {
           actualProvidedForFormal = true;
           break;
@@ -2465,6 +2580,10 @@ static void initPromotionWrapper(PromotionInfo& promotion,
   retval->addFlag(FLAG_PROMOTION_WRAPPER);
   retval->addFlag(FLAG_FN_RETURNS_ITERATOR);
 
+  if (fn->hasFlag(FLAG_OPERATOR)) {
+    retval->addFlag(FLAG_OPERATOR);
+  }
+
   int i = 0;
   for_formals(formal, fn) {
 
@@ -2617,8 +2736,17 @@ static bool haveLeaderAndFollowers(PromotionInfo& promotion, CallExpr* call) {
   FnSymbol* leader = NULL;  // non-null for promoted args after the first
   VarSymbol* followme = NULL;
   int i = 0;
+  if (promotion.formalToActualOpMod < 0) {
+    // Operators might have more actuals than there are formals.  In this case,
+    // we need to skip the extra actuals (the "this" actual and method token)
+    i = promotion.formalToActualOpMod;
+  }
 
   for_actuals(actualExpr, call) {
+    if (i < 0) {
+      i++;
+      continue;
+    }
     if (promotion.promotedType[i++] != NULL) {
       Symbol* actual = symbolForActual(actualExpr);
 

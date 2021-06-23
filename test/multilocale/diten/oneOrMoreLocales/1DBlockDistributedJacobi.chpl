@@ -106,7 +106,7 @@ proc main {
   localAs(0).element(0) = 1.0;
 
   do {
-    delta = 0.0;
+    delta.writeEF(0.0);
     coforall loc in localAs(0).getLocales() {
       on Locales(loc) {
         var localDelta: real;
@@ -123,12 +123,12 @@ proc main {
           }
           localDelta = max(localDelta, abs(B.element(i) - A.element(i)));
         }
-        var deltaTmp = delta;
-        delta = max(deltaTmp, localDelta);
+        var deltaTmp = delta.readFE();
+        delta.writeEF(max(deltaTmp, localDelta));
       }
     }
     localAs <=> localBs;
-  } while (delta > epsilon);
+  } while (delta.readFE() > epsilon);
 
   write(localAs(0));
 

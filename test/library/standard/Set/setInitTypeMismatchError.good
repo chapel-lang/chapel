@@ -1,0 +1,6 @@
+setInitTypeMismatchError.chpl:6: In function 'test1':
+setInitTypeMismatchError.chpl:9: error: invalid copy-initialization
+setInitTypeMismatchError.chpl:9: error: cannot initialize set(shared C2,false) from set(shared C1,false) due to element type mismatch
+setInitTypeMismatchError.chpl:13: In function 'test2':
+setInitTypeMismatchError.chpl:16: error: invalid copy-initialization
+setInitTypeMismatchError.chpl:16: error: cannot initialize set(real(64),false) from set(int(64),false) due to element type mismatch

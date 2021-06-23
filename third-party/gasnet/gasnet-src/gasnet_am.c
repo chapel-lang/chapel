@@ -78,7 +78,8 @@ static void gasneti_am_validate(
 #endif
 
 // Register handlers in the range [lowlimit,highlimit)
-extern int gasneti_amregister( gex_AM_Entry_t *output,
+// Thread-safety is the caller's responsibility
+extern int gasneti_amregister( gasneti_EP_t i_ep,
                                gex_AM_Entry_t *input, int numentries,
                                int lowlimit, int highlimit,
                                int dontcare, int *numregistered) {
@@ -86,6 +87,8 @@ extern int gasneti_amregister( gex_AM_Entry_t *output,
   *numregistered = 0;
 
   gasneti_am_validate(input, numentries);
+
+  gex_AM_Entry_t *output = i_ep->_amtbl;
 
   for (i = 0; i < numentries; i++) {
     int newindex;
@@ -136,8 +139,13 @@ extern int gasneti_amregister( gex_AM_Entry_t *output,
 }
 
 // Register client handlers
+// This function backs gex_EP_RegisterHandlers() and gasnet_attach()
+// and provides per-EP serialization of such calls.
+// Internal calls occuring within gex_Client_Init() and gex_Client_Create()
+// do not participate in this serialization, since they operated exclusively
+// on an EP prior to returning it to the client.
 extern int gasneti_amregister_client(
-                        gex_AM_Entry_t *output,
+                        gasneti_EP_t i_ep,
                         gex_AM_Entry_t *input,
                         size_t numentries)
 {
@@ -147,21 +155,27 @@ extern int gasneti_amregister_client(
   if_pf (input == NULL)
       GASNETI_RETURN_ERRR(BAD_ARG,"Invalid AM handler table");
 
+  gasneti_mutex_lock(&i_ep->_amtbl_lock);
+
   /*  first pass - assign all fixed-index handlers */
   int numreg1 = 0;
-  if (gasneti_amregister(output, input, numentries,
+  if (gasneti_amregister(i_ep, input, numentries,
                          GASNETI_CLIENT_HANDLER_BASE, GASNETC_MAX_NUMHANDLERS,
                          0, &numreg1) != GASNET_OK) {
+      gasneti_mutex_unlock(&i_ep->_amtbl_lock);
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering fixed-index client handlers");
   }
 
   /*  second pass - fill in dontcare-index handlers */
   int numreg2 = 0;
-  if (gasneti_amregister(output, input, numentries,
+  if (gasneti_amregister(i_ep, input, numentries,
                          GASNETI_CLIENT_HANDLER_BASE, GASNETC_MAX_NUMHANDLERS,
                          1, &numreg2) != GASNET_OK) {
+      gasneti_mutex_unlock(&i_ep->_amtbl_lock);
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering variable-index client handlers");
   }
+
+  gasneti_mutex_unlock(&i_ep->_amtbl_lock);
 
   gasneti_assert_uint(numreg1 + numreg2 ,==, numentries);
 
@@ -171,7 +185,7 @@ extern int gasneti_amregister_client(
 // Wrapper to provide continued support for GASNet-1 legacy handler tables,
 // such as through gasnet_attach().  Only supports the clients's index range.
 // TODO-EX: should be absorbed into an eventual conduit-indep gasnet_attach()
-extern int gasneti_amregister_legacy( gex_AM_Entry_t *output,
+extern int gasneti_amregister_legacy( gasneti_EP_t i_ep,
                                       gasnet_handlerentry_t *table, int numentries) {
 
   if_pf (numentries == 0) return GASNET_OK;
@@ -192,7 +206,7 @@ extern int gasneti_amregister_legacy( gex_AM_Entry_t *output,
   }
 
   /* register */
-  if (gasneti_amregister_client(output, extable, numentries) != GASNET_OK) {
+  if (gasneti_amregister_client(i_ep, extable, numentries) != GASNET_OK) {
       gasneti_free(extable);
       GASNETI_RETURN_ERRR(RESOURCE,"Error registering client handlers");
   }
@@ -206,8 +220,9 @@ extern int gasneti_amregister_legacy( gex_AM_Entry_t *output,
   return GASNET_OK;
 }
 
-// Initialize a caller-allocated handler table
-extern int gasneti_amtbl_init(gex_AM_Entry_t *output) {
+// Initialize handler table in a given EP
+extern int gasneti_amtbl_init(gasneti_EP_t i_ep) {
+  gex_AM_Entry_t *output = i_ep->_amtbl;
   static const char *fnname = "gasneti_defaultAMHandler";
   for (int i = 0; i < GASNETC_MAX_NUMHANDLERS; i++) {
     output[i].gex_index = 0; // marks an unused entry
@@ -217,6 +232,7 @@ extern int gasneti_amtbl_init(gex_AM_Entry_t *output) {
     output[i].gex_cdata = NULL;
     output[i].gex_name  = fnname;
   }
+  gasneti_mutex_init(&i_ep->_amtbl_lock);
   return GASNET_OK;
 }
 
@@ -377,7 +393,8 @@ size_t gex_AM_Max##reqrep##cat(                                            \
   const char *fname = "gex_AM_Max" #reqrep #cat;                           \
   gasneti_TM_t real_tm = gasneti_import_tm(tm);                            \
   /* TODO-EX: remove allowance for real_tm == NULL */                      \
-  if (real_tm && (rank != GEX_RANK_INVALID) && (rank >= real_tm->_size)) { \
+  gex_Rank_t tm_size = gasneti_i_tm_size(real_tm);                         \
+  if (real_tm && (rank != GEX_RANK_INVALID) && (rank >= tm_size)) {        \
     gasneti_fatalerror("Call to %s() with invalid rank=%i",                \
                        fname, (int)rank);                                  \
   }                                                                        \
@@ -474,9 +491,26 @@ void gasneti_init_srcdesc(GASNETI_THREAD_FARG_ALONE)
   mythread->sd_is_init = 1;
 }
 #endif // GASNETI_NEED_INIT_SRCDESC
+
+#if GASNET_DEBUG
+void gasneti_checknpam(int for_reply GASNETI_THREAD_FARG) {
+  gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
+  if (mythread->sd_is_init) {
+    // Never valid to communicate between Prepare/Commit of Reply
+    if (mythread->reply_sd._magic._u == GASNETI_AM_SRCDESC_MAGIC) {
+      gasneti_fatalerror("Invalid GASNet call (communication injection or poll) between gex_AM_PrepareReply() and the corresponding Commit on this thread");
+    }
+    // It *is* valid to send a Reply which may dynamically run
+    // *within* the execution of gex_AM_{Prepare,Commit}Request()
+    if (!for_reply && mythread->request_sd._magic._u == GASNETI_AM_SRCDESC_MAGIC) {
+      gasneti_fatalerror("Invalid GASNet call (communication injection or poll) between gex_AM_PrepareRequest() and the corresponding Commit on this thread");
+    }
+  }
+}
+#endif
 #endif // _GEX_AM_SRCDESC_T
 
-#ifndef GASNETC_HAVE_NP_REQ_MEDIUM
+#if !defined(GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM) || GASNET_CONDUIT_SMP
 extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestMedium(
                        gex_TM_t           tm,
                        gex_Rank_t         rank,
@@ -488,37 +522,42 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestMedium(
                        GASNETI_THREAD_FARG,
                        unsigned int       nargs)
 {
+    GASNETI_TRACE_PREP_REQUESTMEDIUM(tm,rank,client_buf,least_payload,most_payload,flags,nargs);
+
+    gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
+
+    // Ensure at least one poll upon Request injection (exactly one if possible)
+#if GASNETC_REQUESTV_POLLS // Conduit's Request{Medium,Long}V will AMPoll in Commit
+    if (GASNETI_NBRHD_JOBRANK_IS_LOCAL(jobrank)) GASNETC_IMMEDIATE_MAYBE_POLL(flags);
+#else
+    GASNETC_IMMEDIATE_MAYBE_POLL(flags);
+#endif
+
     gasneti_AM_SrcDesc_t sd = gasneti_init_request_srcdesc(GASNETI_THREAD_PASS_ALONE);
     GASNETI_COMMON_PREP_REQ(sd,tm,rank,client_buf,least_payload,most_payload,NULL,lc_opt,flags,nargs,Medium);
 
     flags &= ~(GEX_FLAG_AM_PREPARE_LEAST_CLIENT | GEX_FLAG_AM_PREPARE_LEAST_ALLOC);
 
-    gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
-
     if (GASNETI_NBRHD_JOBRANK_IS_LOCAL(jobrank)) {
-        GASNETC_IMMEDIATE_MAYBE_POLL(flags); // Ensure at least one poll upon Request injection
         sd = gasnetc_nbrhd_PrepareRequest(sd, gasneti_Medium, jobrank,
                                                client_buf, least_payload, most_payload,
                                                NULL, lc_opt, flags, nargs);
     } else {
-        // Ensure at least one poll upon Request injection (exactly one if possible)
-        #if GASNETC_REQUESTV_POLLS
-            // Conduit's Request{Medium,Long}V will AMPoll in Commit
-        #else
-            GASNETC_IMMEDIATE_MAYBE_POLL(flags);
-        #endif
-        size_t limit = gex_AM_MaxRequestMedium(tm, rank, lc_opt, flags, nargs);
+        // In reference implementation, GEX_FLAG_AM_PREPARE_LEAST_ALLOC is also the MAX we allocate
+        gex_Flags_t limit_flags = client_buf ? flags : (flags | GEX_FLAG_AM_PREPARE_LEAST_ALLOC);
+        size_t limit = gex_AM_MaxRequestMedium(tm, rank, lc_opt, limit_flags, nargs);
         size_t size = MIN(most_payload, limit);
         sd->_tofree = gasneti_prepare_request_common(sd, tm, rank, client_buf, size, lc_opt, flags, nargs);
         gasneti_init_sd_poison(sd);
     }
 
     GASNETI_TRACE_PREP_RETURN(REQUEST_MEDIUM, sd);
+    GASNETI_CHECK_SD(client_buf, least_payload, most_payload, sd);
     return gasneti_export_srcdesc(sd);
 }
-#endif // GASNETC_HAVE_NP_REQ_MEDIUM
+#endif // GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM
 
-#ifndef GASNETC_HAVE_NP_REP_MEDIUM
+#if !defined(GASNET_NATIVE_NP_ALLOC_REP_MEDIUM) || GASNET_CONDUIT_SMP
 extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyMedium(
                        gex_Token_t        token,
                        const void        *client_buf,
@@ -528,6 +567,8 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyMedium(
                        gex_Flags_t        flags,
                        unsigned int       nargs)
 {
+    GASNETI_TRACE_PREP_REPLYMEDIUM(token,client_buf,least_payload,most_payload,flags,nargs);
+
     gasneti_AM_SrcDesc_t sd;
     flags &= ~(GEX_FLAG_AM_PREPARE_LEAST_CLIENT | GEX_FLAG_AM_PREPARE_LEAST_ALLOC);
 
@@ -540,18 +581,21 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyMedium(
         sd = gasneti_init_reply_srcdesc(GASNETI_THREAD_PASS_ALONE);
         GASNETI_COMMON_PREP_REP(sd,token,client_buf,least_payload,most_payload,NULL,lc_opt,flags,nargs,Medium);
 
-        size_t limit = gex_Token_MaxReplyMedium(token, lc_opt, flags, nargs);
+        // In reference implementation, GEX_FLAG_AM_PREPARE_LEAST_ALLOC is also the MAX we allocate
+        gex_Flags_t limit_flags = client_buf ? flags : (flags | GEX_FLAG_AM_PREPARE_LEAST_ALLOC);
+        size_t limit = gex_Token_MaxReplyMedium(token, lc_opt, limit_flags, nargs);
         size_t size = MIN(most_payload, limit);
         sd->_tofree = gasneti_prepare_reply_common(sd, token, client_buf, size, lc_opt, flags, nargs);
         gasneti_init_sd_poison(sd);
     }
 
     GASNETI_TRACE_PREP_RETURN(REPLY_MEDIUM, sd);
+    GASNETI_CHECK_SD(client_buf, least_payload, most_payload, sd);
     return gasneti_export_srcdesc(sd);
 }
-#endif // GASNETC_HAVE_NP_REP_MEDIUM
+#endif // GASNET_NATIVE_NP_ALLOC_REP_MEDIUM
 
-#ifndef GASNETC_HAVE_NP_REQ_LONG
+#ifndef GASNET_NATIVE_NP_ALLOC_REQ_LONG
 extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestLong(
                        gex_TM_t           tm,
                        gex_Rank_t         rank,
@@ -564,26 +608,29 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestLong(
                        GASNETI_THREAD_FARG,
                        unsigned int       nargs)
 {
+    GASNETI_TRACE_PREP_REQUESTLONG(tm,rank,client_buf,least_payload,most_payload,dest_addr,flags,nargs);
+
+    gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
+    // Ensure at least one poll upon Request injection (exactly one if possible)
+#if GASNETC_REQUESTV_POLLS // Conduit's Request{Medium,Long}V will AMPoll in Commit
+    if (GASNETI_NBRHD_JOBRANK_IS_LOCAL(jobrank)) GASNETC_IMMEDIATE_MAYBE_POLL(flags);
+#else
+    GASNETC_IMMEDIATE_MAYBE_POLL(flags);
+#endif
+
     gasneti_AM_SrcDesc_t sd = gasneti_init_request_srcdesc(GASNETI_THREAD_PASS_ALONE);
     GASNETI_COMMON_PREP_REQ(sd,tm,rank,client_buf,least_payload,most_payload,dest_addr,lc_opt,flags,nargs,Long);
 
     flags &= ~(GEX_FLAG_AM_PREPARE_LEAST_CLIENT | GEX_FLAG_AM_PREPARE_LEAST_ALLOC);
 
-    gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
-
     if (GASNETI_NBRHD_JOBRANK_IS_LOCAL(jobrank)) {
-        GASNETC_IMMEDIATE_MAYBE_POLL(flags); // Ensure at least one poll upon Request injection
         sd = gasnetc_nbrhd_PrepareRequest(sd, gasneti_Long, jobrank,
                                                client_buf, least_payload, most_payload,
                                                dest_addr, lc_opt, flags, nargs);
     } else {
-        // Ensure at least one poll upon Request injection (exactly one if possible)
-        #if GASNETC_REQUESTV_POLLS
-            // Conduit's Request{Medium,Long}V will AMPoll in Commit
-        #else
-            GASNETC_IMMEDIATE_MAYBE_POLL(flags);
-        #endif
-        size_t limit = gex_AM_MaxRequestLong(tm, rank, lc_opt, flags, nargs);
+        // In reference implementation, GEX_FLAG_AM_PREPARE_LEAST_ALLOC is also the MAX we allocate
+        gex_Flags_t limit_flags = client_buf ? flags : (flags | GEX_FLAG_AM_PREPARE_LEAST_ALLOC);
+        size_t limit = gex_AM_MaxRequestLong(tm, rank, lc_opt, limit_flags, nargs);
         size_t size = MIN(most_payload, limit);
         sd->_tofree = gasneti_prepare_request_common(sd, tm, rank, client_buf, size, lc_opt, flags, nargs);
         sd->_dest_addr = dest_addr;
@@ -591,11 +638,12 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareRequestLong(
     }
 
     GASNETI_TRACE_PREP_RETURN(REQUEST_LONG, sd);
+    GASNETI_CHECK_SD(client_buf, least_payload, most_payload, sd);
     return gasneti_export_srcdesc(sd);
 }
-#endif // GASNETC_HAVE_NP_REQ_LONG
+#endif // GASNET_NATIVE_NP_ALLOC_REQ_LONG
 
-#ifndef GASNETC_HAVE_NP_REP_LONG
+#ifndef GASNET_NATIVE_NP_ALLOC_REP_LONG
 extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyLong(
                        gex_Token_t        token,
                        const void        *client_buf,
@@ -606,6 +654,8 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyLong(
                        gex_Flags_t        flags,
                        unsigned int       nargs)
 {
+    GASNETI_TRACE_PREP_REPLYLONG(token,client_buf,least_payload,most_payload,dest_addr,flags,nargs);
+
     gasneti_AM_SrcDesc_t sd;
     flags &= ~(GEX_FLAG_AM_PREPARE_LEAST_CLIENT | GEX_FLAG_AM_PREPARE_LEAST_ALLOC);
 
@@ -618,7 +668,9 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyLong(
         sd = gasneti_init_reply_srcdesc(GASNETI_THREAD_PASS_ALONE);
         GASNETI_COMMON_PREP_REP(sd,token,client_buf,least_payload,most_payload,dest_addr,lc_opt,flags,nargs,Long);
 
-        size_t limit = gex_Token_MaxReplyLong(token, lc_opt, flags, nargs);
+        // In reference implementation, GEX_FLAG_AM_PREPARE_LEAST_ALLOC is also the MAX we allocate
+        gex_Flags_t limit_flags = client_buf ? flags : (flags | GEX_FLAG_AM_PREPARE_LEAST_ALLOC);
+        size_t limit = gex_Token_MaxReplyLong(token, lc_opt, limit_flags, nargs);
         size_t size = MIN(most_payload, limit);
         sd->_tofree = gasneti_prepare_reply_common(sd, token, client_buf, size, lc_opt, flags, nargs);
         sd->_dest_addr = dest_addr;
@@ -626,11 +678,12 @@ extern gex_AM_SrcDesc_t gasnetc_AM_PrepareReplyLong(
     }
 
     GASNETI_TRACE_PREP_RETURN(REPLY_LONG, sd);
+    GASNETI_CHECK_SD(client_buf, least_payload, most_payload, sd);
     return gasneti_export_srcdesc(sd);
 }
-#endif // GASNETC_HAVE_NP_REP_LONG
+#endif // GASNET_NATIVE_NP_ALLOC_REP_LONG
 
-#ifndef GASNETC_HAVE_NP_REQ_MEDIUM
+#if !defined(GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM) || GASNET_CONDUIT_SMP
 void gasnetc_AM_CommitRequestMediumM(
                        gex_AM_Index_t          handler,
                        size_t                  nbytes
@@ -640,7 +693,9 @@ void gasnetc_AM_CommitRequestMediumM(
                      #endif
                        gex_AM_SrcDesc_t        sd_arg, ...)
 {
-    gasneti_AM_SrcDesc_t sd = gasneti_import_srcdesc(sd_arg);
+    // Conduit authors are cautioned against use of gasneti_consume_srcdesc() in native
+    // NPAM implementations.  See the comment preceding its definition in gasnet_am.h.
+    gasneti_AM_SrcDesc_t sd = gasneti_consume_srcdesc(sd_arg);
 
     GASNETI_COMMON_COMMIT_REQ(sd,handler,nbytes,NULL,nargs_arg,Medium);
 
@@ -661,18 +716,15 @@ void gasnetc_AM_CommitRequestMediumM(
         int rc = gasneti_AMRequestMediumV(tm, rank, handler, src_addr, nbytes, lc_opt, flags, nargs, argptr);
         gasneti_assert(!rc); // IMMEDIATE is only permissible reason to return non-zero
 
-        if (sd->_tofree) { // Branch to avoid free(NULL) library call overhead for NPAM/cb
-          gasneti_free(sd->_tofree);
-          sd->_tofree = NULL;
+        if (sd->_tofree) {
+          gasneti_free_npam_buffer(sd);
         }
     }
     va_end(argptr);
-
-    gasneti_reset_srcdesc(sd);
 }
-#endif // GASNETC_HAVE_NP_REQ_MEDIUM
+#endif // GASNET_NATIVE_NP_ALLOC_REQ_MEDIUM
 
-#ifndef GASNETC_HAVE_NP_REP_MEDIUM
+#if !defined(GASNET_NATIVE_NP_ALLOC_REP_MEDIUM) || GASNET_CONDUIT_SMP
 void gasnetc_AM_CommitReplyMediumM(
                        gex_AM_Index_t          handler,
                        size_t                  nbytes,
@@ -681,7 +733,9 @@ void gasnetc_AM_CommitReplyMediumM(
                      #endif
                        gex_AM_SrcDesc_t        sd_arg, ...)
 {
-    gasneti_AM_SrcDesc_t sd = gasneti_import_srcdesc(sd_arg);
+    // Conduit authors are cautioned against use of gasneti_consume_srcdesc() in native
+    // NPAM implementations.  See the comment preceding its definition in gasnet_am.h.
+    gasneti_AM_SrcDesc_t sd = gasneti_consume_srcdesc(sd_arg);
 
     GASNETI_COMMON_COMMIT_REP(sd,handler,nbytes,NULL,nargs_arg,Medium);
 
@@ -701,18 +755,15 @@ void gasnetc_AM_CommitReplyMediumM(
         int rc = gasneti_AMReplyMediumV(token, handler, src_addr, nbytes, lc_opt, flags, nargs, argptr);
         gasneti_assert(!rc); // IMMEDIATE is only permissible reason to return non-zero
 
-        if (sd->_tofree) { // Branch to avoid free(NULL) library call overhead for NPAM/cb
-          gasneti_free(sd->_tofree);
-          sd->_tofree = NULL;
+        if (sd->_tofree) {
+          gasneti_free_npam_buffer(sd);
         }
     }
     va_end(argptr);
-
-    gasneti_reset_srcdesc(sd);
 }
-#endif // GASNETC_HAVE_NP_REP_MEDIUM
+#endif // GASNET_NATIVE_NP_ALLOC_REP_MEDIUM
 
-#ifndef GASNETC_HAVE_NP_REQ_LONG
+#ifndef GASNET_NATIVE_NP_ALLOC_REQ_LONG
 void gasnetc_AM_CommitRequestLongM(
                        gex_AM_Index_t          handler,
                        size_t                  nbytes,
@@ -723,7 +774,9 @@ void gasnetc_AM_CommitRequestLongM(
                      #endif
                        gex_AM_SrcDesc_t        sd_arg, ...)
 {
-    gasneti_AM_SrcDesc_t sd = gasneti_import_srcdesc(sd_arg);
+    // Conduit authors are cautioned against use of gasneti_consume_srcdesc() in native
+    // NPAM implementations.  See the comment preceding its definition in gasnet_am.h.
+    gasneti_AM_SrcDesc_t sd = gasneti_consume_srcdesc(sd_arg);
 
     GASNETI_COMMON_COMMIT_REQ(sd,handler,nbytes,dest_addr,nargs_arg,Long);
 
@@ -744,18 +797,15 @@ void gasnetc_AM_CommitRequestLongM(
         int rc = gasneti_AMRequestLongV(tm, rank, handler, src_addr, nbytes, dest_addr, lc_opt, flags, nargs, argptr);
         gasneti_assert(!rc); // IMMEDIATE is only permissible reason to return non-zero
 
-        if (sd->_tofree) { // Branch to avoid free(NULL) library call overhead for NPAM/cb
-          gasneti_free(sd->_tofree);
-          sd->_tofree = NULL;
+        if (sd->_tofree) {
+          gasneti_free_npam_buffer(sd);
         }
     }
     va_end(argptr);
-
-    gasneti_reset_srcdesc(sd);
 }
-#endif // GASNETC_HAVE_NP_REQ_LONG
+#endif // GASNET_NATIVE_NP_ALLOC_REQ_LONG
 
-#ifndef GASNETC_HAVE_NP_REP_LONG
+#ifndef GASNET_NATIVE_NP_ALLOC_REP_LONG
 void gasnetc_AM_CommitReplyLongM(
                        gex_AM_Index_t          handler,
                        size_t                  nbytes,
@@ -765,7 +815,9 @@ void gasnetc_AM_CommitReplyLongM(
                      #endif
                        gex_AM_SrcDesc_t        sd_arg, ...)
 {
-    gasneti_AM_SrcDesc_t sd = gasneti_import_srcdesc(sd_arg);
+    // Conduit authors are cautioned against use of gasneti_consume_srcdesc() in native
+    // NPAM implementations.  See the comment preceding its definition in gasnet_am.h.
+    gasneti_AM_SrcDesc_t sd = gasneti_consume_srcdesc(sd_arg);
 
     GASNETI_COMMON_COMMIT_REP(sd,handler,nbytes,dest_addr,nargs_arg,Long);
 
@@ -785,21 +837,18 @@ void gasnetc_AM_CommitReplyLongM(
         int rc = gasneti_AMReplyLongV(token, handler, src_addr, nbytes, dest_addr, lc_opt, flags, nargs, argptr);
         gasneti_assert(!rc); // IMMEDIATE is only permissible reason to return non-zero
 
-        if (sd->_tofree) { // Branch to avoid free(NULL) library call overhead for NPAM/cb
-          gasneti_free(sd->_tofree);
-          sd->_tofree = NULL;
+        if (sd->_tofree) {
+          gasneti_free_npam_buffer(sd);
         }
     }
     va_end(argptr);
-
-    gasneti_reset_srcdesc(sd);
 }
-#endif // GASNETC_HAVE_NP_REP_LONG
+#endif // GASNET_NATIVE_NP_ALLOC_REP_LONG
 
 /* ------------------------------------------------------------------------------------ */
 
 // gasneti_free_aligned() is a macro, preventing direct registration as a cleanupfn
-void gasneti_loopback_cleanup_threaddata(void *buf) {
+void gasneti_medium_buffer_cleanup_threaddata(void *buf) {
   gasneti_free_aligned(buf);
 }
 

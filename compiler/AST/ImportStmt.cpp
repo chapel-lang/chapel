@@ -203,6 +203,10 @@ void ImportStmt::scopeResolve(ResolveScope* scope) {
 
         validateList();
 
+        if (modSym->hasFlag(FLAG_DEPRECATED)) {
+          modSym->generateDeprecationWarning(this);
+        }
+
       } else {
         if (symAndName.second[0] != '\0') {
           if (isCallExpr(src) == false) {
@@ -380,6 +384,10 @@ void ImportStmt::validateUnqualified() {
             USR_FATAL_CONT(this,
                            "Bad identifier, '%s' is private",
                            name);
+          }
+
+          if (sym->hasFlag(FLAG_DEPRECATED)) {
+            sym->generateDeprecationWarning(this);
           }
         }
       }

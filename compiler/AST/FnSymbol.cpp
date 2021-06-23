@@ -133,7 +133,7 @@ void FnSymbol::verify() {
     for_alist(ic, ifcInfo->interfaceConstraints)
       INT_ASSERT(isIfcConstraint(ic));
 
-    // ifcInfo->repsForIfcSymbols is created during resolution
+    // ifcInfo->ifcReps is created during resolution
     // and disappears together with its parent function at the end of
     // resolution, so we never see it here.
 
@@ -238,6 +238,7 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
    * method.
    */
   newFn->copyFlags(this);
+  newFn->deprecationMsg = this->deprecationMsg;
 
   if (this->throwsError() == true) {
     newFn->throwsErrorInit();
@@ -495,6 +496,10 @@ void FnSymbol::finalizeCopy() {
     if (pci->varargOldFormal) {
       substituteVarargTupleRefs(this, pci);
     }
+
+    // For CG fns calling to other CG fns.
+    if (InterfaceInfo* ifcInfo = partialCopySource->interfaceInfo)
+      handleCallsToOtherCGfuns(partialCopySource, ifcInfo, *map, this);
 
     // Clean up book keeping information.
     clearPartialCopyData(this);
@@ -869,12 +874,14 @@ bool FnSymbol::hasGenericFormals(SymbolMap* map) const {
     } else if (formal->intent == INTENT_PARAM) {
       isGeneric = true;
 
-    } else if (toConstrainedType(formal->type)) {
+    } else if (isConstrainedType(formal->type)) {
       // A CG function is known to be generic, so we should not be
-      // querying hasGenericFormals(). The only other functions
-      // with CT formals are those in 'interface' declarations.
+      // querying hasGenericFormals().
       INT_ASSERT(! isConstrainedGeneric());
-      INT_ASSERT(isInterfaceSymbol(defPoint->parentSymbol));
+      // It can be:
+      // - a required fn in an 'interface' declaration
+      // - a generic implementation instantiated with a standin type
+      // - an interim instantiation of a CG function
 
     } else if (formal->type->symbol->hasFlag(FLAG_GENERIC) == true) {
       bool formalInstantiated = false;

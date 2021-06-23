@@ -28,5 +28,12 @@ if [ $? -eq 0 ]; then
   fi
 fi
 
-#otherwise, no clang in path. do nothing.
+TARGET_PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py --target`
+if [[ $TARGET_PLATFORM == "darwin" ]]; then
+    os_ver=`sw_vers -productVersion`
+    if [[ "$os_ver" == 10.14.* ]]; then
+        echo "-mlinker-version=450"
+    fi
+fi
 
+#otherwise, no clang in path. do nothing.

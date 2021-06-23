@@ -7,12 +7,12 @@ proc main {
   proc update() {
     ARR = [777, 888];
     DOM = {777..888};
-    sy$ = 1;
+    sy$.writeEF(1);
   }
 
   forall 1..3 with (const in ARR, const in DOM) {
     update();
-    sy$;
+    sy$.readFE();
     writeln(ARR, " ", DOM);
   }
 

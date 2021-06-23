@@ -18,11 +18,13 @@
  * limitations under the License.
  */
 
+#include <stdint.h>
+
 #include "chplrt.h"
 #include "chpl-comm-launch.h"
 #include "chpl-env.h"
 
-void chpl_comm_preLaunch() {
+void chpl_comm_preLaunch(int32_t numLocales) {
   const char* chpl_rt_masterip = chpl_env_rt_get("MASTERIP", NULL);
   if (chpl_rt_masterip != NULL) {
     chpl_env_set("GASNET_MASTERIP", chpl_rt_masterip, 1);

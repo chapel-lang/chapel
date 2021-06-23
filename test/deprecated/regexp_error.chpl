@@ -1,4 +1,4 @@
-use Regexp;
+use Regex;
 
 {
   var re : regexp(string);
@@ -7,7 +7,7 @@ use Regexp;
   try! {
     re = compile("*");
     writeln("Should not reach here");
-  } catch (e: BadRegexpError) {
+  } catch (e: BadRegexError) {
     writeln("222222222222222222222");
     writeln(re.ok);
     writeln("333333333333333333333");

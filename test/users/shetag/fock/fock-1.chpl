@@ -25,23 +25,23 @@ proc buildjk() {
   cobegin {
     for loc in 1..numLocs do
       begin {	      	
-          var bI = task!;
+          var bI = task.readFE()!;
           while (bI.ilo != 0) {
             const copyofbI = bI;
             cobegin with (ref bI) {
               buildjk_atom4(copyofbI);
-              bI = task!;
+              bI = task.readFE()!;
             }
           }
-          task = bI;
-          const numDone = numLocsDone + 1;
-          numLocsDone = numDone;
+          task.writeEF(bI);
+          const numDone = numLocsDone.readFE() + 1;
+          numLocsDone.writeEF(numDone);
           if numDone == numLocs then
             delete bI;
       }
     
     for bI in gen() do // sjd: changed forall to for
-      task = bI;
+      task.writeEF(bI);
   }
   
   while (numLocsDone.readXX() < numLocs) {
@@ -124,14 +124,14 @@ proc buildjk_atom4(bI) {
     }
   }
 
-  var tmp = oneAtATime;
+  var tmp = oneAtATime.readFE();
   jmat2(ijD) += jij;
   jmat2(klD) += jkl;
   kmat2(ikD) += kik;
   kmat2(ilD) += kil;
   kmat2(jkD) += kjk;
   kmat2(jlD) += kjl;
-  oneAtATime = tmp;
+  oneAtATime.writeEF(tmp);
 
   delete bI;
 }

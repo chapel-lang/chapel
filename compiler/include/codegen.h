@@ -99,6 +99,8 @@ struct GenInfo {
   int lineno;
   const char* filename;
 
+  std::map<const char*, FnSymbol*> functionCNameAstrToSymbol;
+
 #ifdef HAVE_LLVM
   // stores parsed C stuff for extern blocks
   LayeredValueTable *lvt;
@@ -114,6 +116,8 @@ struct GenInfo {
   const clang::CodeGen::CGFunctionInfo* currentFunctionABI;
 
   llvm::LLVMContext llvmContext;
+
+  // tbaa information
   llvm::MDNode* tbaaRootNode;
   llvm::MDNode* tbaaUnionsNode;
 
@@ -155,6 +159,8 @@ void setupClang(GenInfo* info, std::string rtmain);
 #endif
 
 bool isBuiltinExternCFunction(const char* cname);
+
+const char* legalizeName(const char* name);
 
 std::string numToString(int64_t num);
 std::string int64_to_string(int64_t i);

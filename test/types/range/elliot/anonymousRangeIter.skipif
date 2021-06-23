@@ -10,3 +10,6 @@ COMPOPTS <= --no-inline
 
 # --no-denormalize creates slightly differnet temporary names
 COMPOPTS <= --no-denormalize
+
+# this test looks at the generated C
+CHPL_TARGET_COMPILER == llvm

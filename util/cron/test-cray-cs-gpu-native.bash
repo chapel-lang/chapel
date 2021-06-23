@@ -8,7 +8,6 @@ source $CWD/common-slurm-gasnet-cray-cs.bash
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="cray-cs-gpu-native"
 
 export CHPL_COMM=none
-export CHPL_LAUNCHER=slurm-srun
 
 module load cudatoolkit
 export CHPL_LLVM=bundled

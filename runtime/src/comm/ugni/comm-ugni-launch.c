@@ -24,6 +24,7 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdint.h>
 
 #include "chplrt.h"
 #include "chpl-comm-launch.h"
@@ -93,7 +94,7 @@ void maybe_set_jemalloc_lg_chunk(void) {
 }
 
 
-void chpl_comm_preLaunch(void) {
+void chpl_comm_preLaunch(int32_t numLocales) {
   chpl_env_set("HUGETLB_VERBOSE", "0", 1);
   if (chpl_env_rt_get("MAX_HEAP_SIZE", NULL) == NULL) {
     chpl_env_set("HUGETLB_NO_RESERVE", "yes", 0);

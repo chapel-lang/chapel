@@ -128,6 +128,14 @@ void init_test_mpi(int *argc, char ***argv) {
       dump_args(*argc, *argv);
     #endif
 
+    #if GASNET_CONDUIT_UDP && !DISABLE_UDP_MPI_RANKS
+    { // optional: tell udp-conduit to use the MPI process numbering
+      int mpirank;
+      MPI_SAFE(MPI_Comm_rank(MPI_COMM_WORLD, &mpirank));
+      AMUDP_SPMDSetProc(mpirank);
+    }
+    #endif
+
     MPI_SAFE(MPI_Barrier(MPI_COMM_WORLD));
 }
 

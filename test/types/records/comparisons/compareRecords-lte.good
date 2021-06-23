@@ -1,0 +1,1 @@
+compareRecords.chpl:29: error: ordered comparisons not supported by default on records with array fields

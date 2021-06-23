@@ -95,7 +95,7 @@ if [ "$COMM" != "none" ]; then
 fi
 
 if [ "${CHPL_SMOKE_SKIP_MAKE_MASON}" == "true" ] ; then
-  export CHPL_REGEXP=none
+  export CHPL_RE2=none
 fi
 
 echo ""
@@ -138,8 +138,7 @@ if [ "${CHPL_SMOKE_SKIP_DOC}" != "true" ] ; then
 fi
 
 if [ "${CHPL_SMOKE_SKIP_MAKE_MASON}" != "true" ] ; then
-    # Build Mason 
+    # Build Mason
     make -j${num_procs} $chpl_make_args && \
-        make $chpl_make_args mason || exit 2 
+        make $chpl_make_args mason || exit 2
 fi
-

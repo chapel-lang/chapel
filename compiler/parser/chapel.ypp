@@ -316,7 +316,7 @@
 %token TALIGN TAS TATOMIC
 %token TBEGIN TBREAK TBOOL TBORROWED TBY TBYTES
 %token TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX TCONFIG TCONST TCONTINUE
-%token TDEFER TDELETE TDMAPPED TDO TDOMAIN
+%token TDEFER TDELETE TDEPRECATED TDMAPPED TDO TDOMAIN
 %token TELSE TENUM TEXCEPT TEXPORT TEXTERN
 %token TFALSE TFOR TFORALL TFOREACH TFORWARDING
 %token TIF TIMAG TIMPORT TIN TINCLUDE
@@ -417,6 +417,11 @@
 %type <pblockstmt> toplevel_stmt
 %type <vpch>       pragma_ls
 
+%type <pblockstmt> deprecated_decl_stmt
+%type <pblockstmt> deprecated_decl_base
+%type <pdefexpr> deprecated_enum_item
+%type <pblockstmt> deprecated_class_level_stmt
+
 %type <pmodsymbol> module_decl_start
 %type <pblockstmt> module_decl_stmt
 %type <pblockstmt> include_module_stmt
@@ -499,6 +504,7 @@
 %type <pcallexpr> forall_intent_clause forall_intent_ls
 
 %type <pfnsymbol> fn_decl_stmt_inner formal_ls opt_formal_ls req_formal_ls
+%type <pfnsymbol> formal_ls_inner
 %type <pexpr> fn_decl_receiver_expr
 %type <procIterOp> proc_iter_or_op
 %type <pfnsymbol> linkage_spec
@@ -532,13 +538,12 @@ pragma_ls:
 
 // %type <pblockstmt> stmt
 stmt:
-  module_decl_stmt
+  deprecated_decl_stmt
 | include_module_stmt
 | block_stmt
 | use_stmt
 | import_stmt
 | require_stmt
-| class_level_stmt
 | assignment_stmt
 | extern_block_stmt
 | if_stmt
@@ -566,6 +571,19 @@ stmt:
 | TSYNC stmt                           { $$ = buildSyncStmt($2); }
 | TYIELD expr TSEMI                    { $$ = buildPrimitiveStmt(PRIM_YIELD, $2); }
 | error TSEMI                          { $$ = buildErrorStandin(); }
+;
+
+deprecated_decl_stmt:
+  deprecated_decl_base
+| TDEPRECATED STRINGLITERAL deprecated_decl_base
+{ $$ = buildDeprecated($3, $2); }
+| TDEPRECATED deprecated_decl_base
+{ $$ = buildDeprecated($2); }
+;
+
+deprecated_decl_base:
+  module_decl_stmt
+| class_level_stmt
 ;
 
 module_decl_start:
@@ -874,6 +892,14 @@ return_stmt:
 | TRETURN opt_try_expr TSEMI  { $$ = buildPrimitiveStmt(PRIM_RETURN, $2); }
 ;
 
+deprecated_class_level_stmt:
+  class_level_stmt
+| TDEPRECATED STRINGLITERAL class_level_stmt
+{ $$ = buildDeprecated($3, $2); }
+| TDEPRECATED class_level_stmt
+{ $$ = buildDeprecated($2); }
+;
+
 class_level_stmt:
   TSEMI                 { $$ = buildChapelStmt(new BlockStmt()); }
 | private_decl
@@ -1008,6 +1034,7 @@ extern_block_stmt:
 loop_stmt:
   TDO stmt TWHILE expr TSEMI                    { $$ = DoWhileStmt::build($4, $2); }
 | TWHILE expr do_stmt                           { $$ = WhileDoStmt::build($2, $3); }
+| TWHILE ifvar do_stmt                          { $$ = WhileDoStmt::build($2, $3); }
 | TCOFORALL expr TIN expr opt_task_intent_ls do_stmt              { $$ = buildCoforallLoopStmt($2, $4, $5, $6);       }
 | TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt { $$ = buildCoforallLoopStmt($2, $4, $5, $6, true); }
 | TCOFORALL expr opt_task_intent_ls do_stmt                       { $$ = buildCoforallLoopStmt(NULL, $2, $3, $4);     }
@@ -1293,9 +1320,9 @@ opt_inherit:
 class_level_stmt_ls:
   /* nothing */
     { $$ = new BlockStmt(); }
-| class_level_stmt_ls class_level_stmt
+| class_level_stmt_ls deprecated_class_level_stmt
     { $1->insertAtTail($2); }
-| class_level_stmt_ls pragma_ls class_level_stmt
+| class_level_stmt_ls pragma_ls deprecated_class_level_stmt
     { $1->insertAtTail(buildPragmaStmt($2, $3)); }
 ;
 
@@ -1332,7 +1359,7 @@ enum_header:
 ;
 
 enum_ls:
-  enum_item
+  deprecated_enum_item
     {
       $$ = new std::vector<DefExpr*>();
       $$->push_back($1);
@@ -1344,10 +1371,18 @@ enum_ls:
     {
       $$ = $1;
     }
-| enum_ls TCOMMA enum_item
+| enum_ls TCOMMA deprecated_enum_item
     {
       $1->push_back($3);
     }
+;
+
+deprecated_enum_item:
+  enum_item
+| TDEPRECATED STRINGLITERAL enum_item
+{ $$ = buildDeprecated($3, $2); }
+| TDEPRECATED enum_item
+{ $$ = buildDeprecated($2); }
 ;
 
 enum_item:
@@ -1537,10 +1572,14 @@ req_formal_ls:
   TLP formal_ls TRP  { $$ = $2; }
 ;
 
+formal_ls_inner:
+  formal                         { $$ = buildFunctionFormal(NULL, $1); }
+| formal_ls_inner TCOMMA formal  { $$ = buildFunctionFormal($1, $3); }
+;
+
 formal_ls:
                            { $$ = buildFunctionFormal(NULL, NULL); }
-| formal                   { $$ = buildFunctionFormal(NULL, $1); }
-| formal_ls TCOMMA formal  { $$ = buildFunctionFormal($1, $3); }
+| formal_ls_inner          { $$ = $1; }
 ;
 
 formal:
@@ -1966,7 +2005,7 @@ sub_type_level_expr:
     { $$ = new CallExpr("chpl__buildDomainRuntimeType", new UnresolvedSymExpr("defaultDist"), $3); }
 | TSUBDOMAIN TLP opt_actual_ls TRP
     { $$ = new CallExpr("chpl__buildSubDomainType", $3); }
-| TSPARSE TSUBDOMAIN TLP opt_actual_ls TRP
+| TSPARSE TSUBDOMAIN TLP actual_expr TRP
     { $$ = new CallExpr("chpl__buildSparseDomainRuntimeType", buildDotExpr($4->copy(), "defaultSparseDist"), $4); }
 | TATOMIC expr
     { $$ = new CallExpr("chpl__atomicType", $2); }

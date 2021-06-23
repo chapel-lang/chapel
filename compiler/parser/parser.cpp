@@ -20,20 +20,25 @@
 
 #include "parser.h"
 
+#include "ImportStmt.h"
 #include "bison-chapel.h"
 #include "build.h"
 #include "config.h"
+#include "convert-uast.h"
 #include "countTokens.h"
 #include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
 #include "flex-chapel.h"
-#include "ImportStmt.h"
 #include "insertLineNumbers.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "wellknown.h"
+
+#include "view.h" // TODO -- remove
+
+#include "chpl/frontend/frontend-queries.h"
 
 #include <cstdlib>
 
@@ -72,6 +77,12 @@ static ModuleSymbol* parseFile(const char* fileName,
                                ModTag      modTag,
                                bool        namedOnCommandLine,
                                bool        include);
+
+static void uASTParseFile(const char* fileName,
+                          ModTag      modTag,
+                          bool        namedOnCommandLine,
+                          bool        include);
+
 
 static const char*   stdModNameToPath(const char* modName,
                                       bool*       isStandard);
@@ -195,11 +206,7 @@ void setupModulePaths() {
                            "/",
                            modulesRoot,
                            "/standard/gen/",
-                           CHPL_TARGET_PLATFORM,
-                           "-",
-                           CHPL_TARGET_ARCH,
-                           "-",
-                           CHPL_TARGET_COMPILER);
+                           CHPL_SYS_MODULES_SUBDIR);
   sStdModPath.add(stdGenModulesPath);
 
   sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
@@ -328,8 +335,36 @@ static void parseCommandLineFiles() {
   }
 
   while ((inputFileName = nthFilename(fileNum++))) {
-    if (isChplSource(inputFileName)) {
-      parseFile(inputFileName, MOD_USER, true, false);
+    if (isChplSource(inputFileName))
+    {
+      /*
+      The selection of 16 here was chosen to provide enough space for
+      generating files like .tmp.obj (whose length is 8) from the
+      input filename; we doubled the value to ensure some breathing
+      room, and under an assumption that most files won't be this long
+      anyway.
+      */
+      const size_t reductionMaxLength = 16;
+      /*
+      Ensure that all the files parsed don't exceed
+      (NAME_MAX - reductionMaxLength) e.g. 239 bytes on
+      unix and linux system.
+      */
+      const size_t maxFileName = NAME_MAX - reductionMaxLength;
+      const char* baseName = stripdirectories(inputFileName);
+      if (strlen(baseName) > maxFileName)
+      {
+        // error message to print placeholders for fileName and maxLength
+        const char *errorMessage = "%s, filename is longer than maximum allowed length of %d\n";
+        // throwr error will concatenated messages
+        USR_FATAL(errorMessage, baseName, maxFileName);
+      }
+
+      if (fCompilerLibraryParser == false) {
+        parseFile(inputFileName, MOD_USER, true, false);
+      } else {
+        uASTParseFile(inputFileName, MOD_USER, true, false);
+      }
     }
   }
 
@@ -726,6 +761,34 @@ static ModuleSymbol* parseFile(const char* path,
   }
 
   return retval;
+}
+
+
+static void uASTParseFile(const char* fileName,
+                          ModTag      modTag,
+                          bool        namedOnCommandLine,
+                          bool        include) {
+
+  if (gContext == nullptr)
+    INT_FATAL("compiler library context not initialized");
+
+  // Check for the expected configuration only, for now
+  INT_ASSERT(modTag == MOD_USER);
+  INT_ASSERT(namedOnCommandLine);
+  INT_ASSERT(!include);
+
+  auto path = chpl::UniqueString::build(gContext, fileName);
+  auto & modules = chpl::frontend::parse(gContext, path);
+  for (auto mod : modules) {
+    INT_ASSERT(mod != nullptr);
+    chpl::uast::ASTNode::dump(mod);
+
+    ModuleSymbol* got = convertToplevelModule(gContext, mod);
+
+    got->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
+
+    nprint_view(got);
+  }
 }
 
 static bool containsOnlyModules(BlockStmt* block, const char* path) {

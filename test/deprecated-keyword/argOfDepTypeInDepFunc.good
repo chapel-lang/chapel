@@ -1,0 +1,4 @@
+argOfDepTypeInDepFunc.chpl:11: In function 'main':
+argOfDepTypeInDepFunc.chpl:12: warning: Don't use Foo
+argOfDepTypeInDepFunc.chpl:13: warning: Don't use bar either
+(x = 3)

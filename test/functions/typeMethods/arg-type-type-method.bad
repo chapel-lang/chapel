@@ -1,0 +1,2 @@
+arg-type-type-method.chpl:12: In function 'test2':
+arg-type-type-method.chpl:12: error: '.' undeclared (first use this function)

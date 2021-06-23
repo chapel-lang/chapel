@@ -37,7 +37,7 @@ record r {
   }
 }
 
-proc =(ref lhs: r, const ref rhs: r) {
+operator r.=(ref lhs: r, const ref rhs: r) {
   lhs.ptr = rhs.ptr;
   debugln('assignment: ', lhs);
 }

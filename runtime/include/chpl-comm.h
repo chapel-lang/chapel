@@ -55,7 +55,7 @@ static inline c_nodeid_t get_chpl_nodeID(void) {
 
 extern int32_t chpl_numNodes; // number of nodes
 
-size_t chpl_comm_getenvMaxHeapSize(void);
+ssize_t chpl_comm_getenvMaxHeapSize(void);
 
 
 //
@@ -237,6 +237,11 @@ void chpl_comm_rollcall(void);
 //   This returns the page size for the comm layer registered heap,
 //   either the size of a system page or some hugepage size.
 //
+// chpl_comm_regMemHeapTouch():
+//   For configurations that use a static/fixed heap, this attempts to
+//   touch the heap in an interleaved and parallel manner to improve
+//   NUMA affinity and speed up faulting in the memory.
+//
 // chpl_comm_regMemAllocThreshold():
 //   Allocations smaller than this should be done normally, by the
 //   memory layer.  Those at least this size may be done through this
@@ -278,6 +283,8 @@ static inline
 size_t chpl_comm_regMemHeapPageSize(void) {
   return CHPL_COMM_IMPL_REG_MEM_HEAP_PAGE_SIZE();
 }
+
+void chpl_comm_regMemHeapTouch(void* start, size_t size);
 
 #ifndef CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD
   #define CHPL_COMM_IMPL_REG_MEM_ALLOC_THRESHOLD() SIZE_MAX

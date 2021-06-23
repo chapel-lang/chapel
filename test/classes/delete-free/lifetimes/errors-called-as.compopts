@@ -1,0 +1,4 @@
+--devel    --verify
+--no-devel --verify
+--devel    --no-verify
+--no-devel --no-verify

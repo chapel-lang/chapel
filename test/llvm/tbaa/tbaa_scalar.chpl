@@ -30,7 +30,7 @@ proc f() {
 }
 
 var got = f();
-writeln(f(), ", ", ivar, ", ", rvar);
+writeln(got, ", ", ivar, ", ", rvar);
 delete got;
 
 // Look for the tree of TBAA type descriptors that we will need to

@@ -1,7 +1,7 @@
 ============================
 README file for GASNet tools
 ============================
-GASNet tools specification version: 1.16
+GASNet tools specification version: 1.17
 Authors: Dan Bonachea <dobonachea@lbl.gov>
          Paul H. Hargrove <PHHargrove@lbl.gov>
 
@@ -1120,6 +1120,83 @@ uint64_t gasnett_release_version(void);
   Also see GASNETT_RELEASE_VERSION_* below.
 
 -------------------
+Trace/Stats support
+-------------------
+
+This section documents interfaces used to control the implementation-defined (non-normative)
+tracing and statistical collection features of the GASNet library implementation.
+These features are conditionally available based on configure-time settings, and are currently
+only active for a "appropriately configured" conduit-mode GASNet library, meaning one configured 
+with the --enable-trace/--enable-stats arguments (or the --enable-debug argument that implies these).
+
+The interfaces specified in this section are ONLY functional in translation units meeting ALL
+of the following conditions:
+
+1. Must `#include <gasnetex.h>` before `#include <gasnet_tools.h>`
+2. The included headers must reference an appropriately configured GASNet library.
+3. Must eventually link an appropriately configured conduit-mode GASNet library.
+
+In all other cases, the macros described in this section may compile away to
+nothing, or appropriate constant values indicating lack-of-support.
+
+See "GASNet tracing & statistical collection" in the GASNet README for more details on
+the command-line user interface to generate and control trace and stats output.
+In a nutshell, each process can generate an output stream of trace and stats
+output (which is usually sent to a file). The trace stream outputs event
+records as they occur, and the stats stream is used to output statistics that
+are aggregated in memory before output (usually at process exit). Both streams
+are optionally filtered by category via user-controllable masks.  Note that
+depending on library build settings, all stats output may additionally be
+echoed into the trace log (if any).
+
+const char *GASNETT_TRACE_GETMASK()
+const char *GASNETT_STATS_GETMASK()
+GASNETT_TRACE_SETMASK(const char *newmask)
+GASNETT_STATS_SETMASK(const char *newmask)
+
+  Get and set the trace and stats masks for the current process at runtime. 
+  The mask is represented as a character string of categories, as defined in the GASNet README.
+  The environment variables described there are used to initialize the mask of
+  active categories at job start, and these calls modify the mask programmatically.
+  Note that envvars GASNET_{TRACE,STATS}FILE (and optionally GASNET_{TRACE,STATS}NODES)
+  must still be set appropriately to enable output, otherwise the mask has no effect.
+
+bool GASNETT_TRACE_ENABLED
+
+  Expands to a non-zero value iff tracing for the `H` category is currently enabled and
+  active (i.e. not filtered by the trace-mask) on the calling process.
+  In general this is NOT a compile-time constant value.
+
+GASNETT_TRACE_PRINTF(const char *format, ...)
+GASNETT_TRACE_PRINTF_FORCE(const char *format, ...)
+  
+  Print a message into the trace log using the 'H' or 'U' categories, respectively, 
+  when such tracing is enabled and active. The 'U' category is not subject to trace-mask 
+  filtering, thus the _FORCE variant should be used sparingly for low-frequency messages.
+  Argument syntax follows C99 printf conventions (format string followed by arguments).
+
+GASNETT_STATS_PRINTF(const char *format, ...)
+GASNETT_STATS_PRINTF_FORCE(const char *format, ...)
+  
+  Print a message into the stats log using the 'H' or 'U' categories, respectively, 
+  when the stats log is enabled and active. The 'U' category is not subject to stats-mask 
+  filtering, thus the _FORCE variant should be used sparingly for low-frequency messages.
+  Argument syntax follows C99 printf conventions (format string followed by arguments).
+
+GASNETT_STATS_DUMP(bool reset)
+
+  This call directs the statistical collection system on this process to
+  immediately dump a report of all active statistical counters to the stats
+  output stream (appending to any earlier stats output).
+  If the `reset` argument is non-zero, then statistical counters
+  are additionally reset to their initial values after they are output.
+  This output-then-reset is performed with "best effort" atomicity on a 
+  counter-by-counter basis, but atomicity is not strongly guaranteed, especially 
+  across separate counters or in the presence of concurrent activity
+  by other threads.
+  If the stats output stream is inactive on this process, this call has no effect.
+
+-------------------
 Miscellaneous tools
 -------------------
 
@@ -1251,6 +1328,32 @@ int gasnett_maximize_rlimit(int res, const char *lim_desc);
    setting GASNET_MAXIMIZE_RLIMIT_CPU=0 will suppress maximizing the limit on cpu
    time, but will not (by itself) cause a zero (failure) return value.
   
+-------------------------
+Macro argument evaluation
+-------------------------
+
+When implementing function-like macros that (perhaps conditionally) ignore one
+or more of their arguments, it is usually desirable to ensure every argument is
+evaluated exactly once (for side-effects).  Unfortunately, the simple idiom
+`((void)(arg1),whatever(arg2))` will yield warnings from some compilers.
+
+The following combine exactly-once evaluation and compile-specific warning
+suppression (when needed):
+
+  GASNETT_UNUSED_ARGS1(a1)
+  GASNETT_UNUSED_ARGS2(a1,a2)
+  GASNETT_UNUSED_ARGS3(a1,a2,a3)
+  GASNETT_UNUSED_ARGS4(a1,a2,a3,a4)
+  GASNETT_UNUSED_ARGS5(a1,a2,a3,a4,a5)
+  GASNETT_UNUSED_ARGS6(a1,a2,a3,a4,a5,a6)
+  GASNETT_UNUSED_ARGS7(a1,a2,a3,a4,a5,a6,a7)
+  GASNETT_UNUSED_ARGS8(a1,a2,a3,a4,a5,a6,a7,a8)
+
+Contrived example:
+  #define OPTION_1_OF_3(x,y,z)  (GASNETT_UNUSED_ARGS2(y,z),(x))
+  #define OPTION_2_OF_3(x,y,z)  (GASNETT_UNUSED_ARGS2(x,z),(y))
+  #define OPTION_3_OF_3(x,y,z)  (GASNETT_UNUSED_ARGS2(x,y),(z))
+
 ---------------
 Feature control
 ---------------

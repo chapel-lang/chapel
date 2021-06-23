@@ -35,6 +35,8 @@
 */
 module Initialization {
 
+  // Mark as "unsafe" to silence lifetime errors.
+  pragma "unsafe"
   private inline proc _move(ref dst: ?t, const ref src: t) {
     __primitive("=", dst, src);
   }

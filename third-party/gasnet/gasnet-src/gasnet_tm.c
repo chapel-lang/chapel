@@ -48,20 +48,22 @@ gex_Rank_t gasneti_tm_rev_rank(gasneti_TM_t tm, gex_Rank_t jobrank) {
 }
 
 static size_t
-get_scratch_size(gasneti_TM_t i_parent, gex_Rank_t new_tm_size, gex_Flags_t flags)
+get_scratch_size(gex_Rank_t new_tm_size, gex_Flags_t flags)
 {
-  if (!new_tm_size) return 0;
+  // Specially defined cases
+  if (0 == new_tm_size) return 0;
+  if (1 == new_tm_size) return GASNETE_COLL_SCRATCH_SIZE_MIN;
 
-  static size_t minimum, recommended;
+  static size_t recommended;
   static int is_init = 0;
   if_pf (!is_init) {
      static gasneti_mutex_t lock = GASNETI_MUTEX_INITIALIZER;
      gasneti_mutex_lock(&lock);
      if (!is_init) {
-       minimum = gasneti_getenv_int_withdefault("GASNET_COLL_MIN_SCRATCH_SIZE",
-                                                GASNETE_COLL_MIN_SCRATCH_SIZE_DEFAULT,1);
        recommended = gasneti_getenv_int_withdefault("GASNET_COLL_SCRATCH_SIZE",
                                                     GASNETE_COLL_SCRATCH_SIZE_DEFAULT,1);
+       // Silently raise to implementation-defined minimum
+       recommended = MAX(recommended, GASNETE_COLL_SCRATCH_SIZE_MIN);
        gasneti_sync_writes();
        is_init = 1;
      }
@@ -70,29 +72,28 @@ get_scratch_size(gasneti_TM_t i_parent, gex_Rank_t new_tm_size, gex_Flags_t flag
      gasneti_sync_reads();
   }
 
-  // The current true minimum is one byte for every member in the new team.
-  // TODO-EX: is this really the value we want to advertise?
-  if (flags & GEX_FLAG_TM_SCRATCH_SIZE_MIN) {
-    return MAX(minimum, GASNETI_ALIGNUP(new_tm_size, GASNETI_CACHE_LINE_BYTES));
-  }
-
-  if (flags & GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED) {
-    return MAX(minimum, recommended);
-  }
-
-  gasneti_fatalerror("Invalid team scratch size query");
-  return 0;
+  return recommended;
 }
 
 size_t gasneti_TM_Split(gex_TM_t *new_tm_p, gex_TM_t e_parent, int color, int key,
                         void *addr, size_t len, gex_Flags_t flags
                         GASNETI_THREAD_FARG)
 {
-  gasneti_TM_t i_parent = gasneti_import_tm(e_parent);
+  gasneti_TM_t i_parent = gasneti_import_tm_nonpair(e_parent);
   gasneti_EP_t ep = i_parent->_ep;
 
-  GASNETI_TRACE_PRINTF(W,("TM_Split: parent="GASNETI_TMSELFFMT" color=%d key=%d flags=%d",
+  GASNETI_TRACE_PRINTF(O,("gex_TM_Split: parent="GASNETI_TMSELFFMT" color=%d key=%d flags=%d",
                           GASNETI_TMSELFSTR(e_parent), color, key, flags));
+
+  static int did_warn = 0;
+  if ((flags & GEX_FLAG_TM_SCRATCH_SIZE_MIN) && !did_warn) {
+    if (! i_parent->_rank) {
+      gasneti_console_message("WARNING",
+                              "gex_TM_Split() called using GEX_FLAG_TM_SCRATCH_SIZE_MIN, "
+                              "deprecated since specification 0.11.");
+    }
+    did_warn = 1; // Some process did, even if it was not us.
+  }
 
 #if GASNET_DEBUG
   if ((flags & GEX_FLAG_TM_SCRATCH_SIZE_MIN) &&
@@ -102,26 +103,39 @@ size_t gasneti_TM_Split(gex_TM_t *new_tm_p, gex_TM_t e_parent, int color, int ke
                        "GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED both set in flags argument");
   }
 #endif
+
   if (flags & (GEX_FLAG_TM_SCRATCH_SIZE_MIN | GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED)) {
-    // The MINIMUM scratch requirement scales as size of new team, not the parent.
-    // However, performing a collective to size the teams seems unnecessary.
-    // So, we are passing the size of the parent.
-    size_t result =  new_tm_p ? get_scratch_size(i_parent, i_parent->_size, flags) : 0;
-    GASNETI_TRACE_PRINTF(W,("TM_Split: scratch size query result=%"PRIuSZ, result));
+    // Don't know true size w/o comms, but singleton parent can only produce singleton children
+    size_t result =  new_tm_p ? get_scratch_size(i_parent->_size, flags) : 0;
+    GASNETI_TRACE_PRINTF(O,("gex_TM_Split: scratch size query result=%"PRIuSZ, result));
     return result;
+  }
+
+  // Split's scratch address is GEX_FLAG_TM_LOCAL_SCRATCH by default,
+  // but GEX_FLAG_TM_NO_SCRATCH is also accepted.
+  // TODO: support GEX_FLAG_TM_SYMMETRIC_SCRATCH too
+  if (flags & GEX_FLAG_TM_GLOBAL_SCRATCH) {
+    gasneti_fatalerror("Invalid call to gex_TM_Split with GEX_FLAG_TM_GLOBAL_SCRATCH");
+  } else if (flags & GEX_FLAG_TM_SYMMETRIC_SCRATCH) {
+    gasneti_fatalerror("Invalid call to gex_TM_Split with GEX_FLAG_TM_SYMMETRIC_SCRATCH");
+  } else if (! (flags & GEX_FLAG_TM_NO_SCRATCH)) {
+    flags |= GEX_FLAG_TM_LOCAL_SCRATCH;
   }
 
   if (!new_tm_p) {
     color = -1; // tell gasnete_coll_team_split() not to create a team for this caller
   } else {
     gasneti_assert_int(color ,>=, 0);
-#if !GASNET_SEGMENT_EVERYTHING
-    gasneti_assert(ep->_segment);
-    gasneti_assert_ptr(addr     ,>=, ep->_segment->_addr);
-    gasneti_assert_ptr((uint8_t*)addr+len ,<=, ep->_segment->_ub);
-#endif
-    gasneti_assert_uint(len ,>=, get_scratch_size(i_parent, i_parent->_size,
-                                                  flags | GEX_FLAG_TM_SCRATCH_SIZE_MIN));
+    if (! (flags & GEX_FLAG_TM_NO_SCRATCH)) {
+    #if !GASNET_SEGMENT_EVERYTHING
+      gasneti_assert(ep->_segment);
+      gasneti_assert_ptr(addr     ,>=, ep->_segment->_addr);
+      gasneti_assert_ptr((uint8_t*)addr+len ,<=, ep->_segment->_ub);
+    #endif
+      if (!len) {
+        gasneti_fatalerror("Invalid call to gex_TM_Split with scratch_size = 0");
+      }
+    }
   }
 
   gasnete_coll_team_t team =
@@ -130,13 +144,12 @@ size_t gasneti_TM_Split(gex_TM_t *new_tm_p, gex_TM_t e_parent, int color, int ke
 
   if (team == NULL) {
     gasneti_assert(!new_tm_p);
-    GASNETI_TRACE_PRINTF(W,("TM_Split: parent="GASNETI_TMSELFFMT" [No team created]",
+    GASNETI_TRACE_PRINTF(O,("gex_TM_Split: parent="GASNETI_TMSELFFMT" [No team created]",
                             GASNETI_TMSELFSTR(e_parent)));
     return 0;
   }
 
-  // TODO-EX: use of a conduit-specific hook is needed here
-  gasneti_TM_t i_tm = gasneti_alloc_tm(ep, team->myrank, team->total_ranks, flags, 0);
+  gasneti_TM_t i_tm = gasneti_alloc_tm(ep, team->myrank, team->total_ranks, flags);
   i_tm->_coll_team = team;
   gex_TM_t e_tm = gasneti_export_tm(i_tm);
   team->e_tm = e_tm;
@@ -145,9 +158,9 @@ size_t gasneti_TM_Split(gex_TM_t *new_tm_p, gex_TM_t e_parent, int color, int ke
   i_tm->_rank_map = team->rel2act_map;
   i_tm->_index_map = NULL; // TODO-EX: provide this for teams w/ non-primordial EPs
 
-  GASNETI_TRACE_PRINTF(W,("TM_Split: parent="GASNETI_TMSELFFMT" result="GASNETI_TMSELFFMT,
+  GASNETI_TRACE_PRINTF(O,("gex_TM_Split: parent="GASNETI_TMSELFFMT" result="GASNETI_TMSELFFMT,
                           GASNETI_TMSELFSTR(e_parent), GASNETI_TMSELFSTR(e_tm)));
-  GASNETI_STAT_EVENT(W, TEAM_NEW_SPLIT);
+  GASNETI_STAT_EVENT(O, TEAM_NEW_SPLIT);
 
   return 1; // return is documented as undefined
 }
@@ -158,7 +171,6 @@ size_t gasneti_TM_Split(gex_TM_t *new_tm_p, gex_TM_t e_parent, int color, int ke
 //     - (num_new_tms > 1)
 //     - non-zero gex_ep_index
 //     - caller's EP not in members[]
-//   + GEX_FLAG_TM_NO_SCRATCH (fails "down stream" due to bug 4090)
 //   + GEX_FLAG_SCRATCH_SEG_OFFSET
 size_t gasneti_TM_Create(
             gex_TM_t *new_tms,
@@ -172,7 +184,7 @@ size_t gasneti_TM_Create(
             GASNETI_THREAD_FARG)
 {
   size_t result = 0;
-  gasneti_TM_t i_parent = gasneti_import_tm(e_parent);
+  gasneti_TM_t i_parent = gasneti_import_tm_nonpair(e_parent);
 
   // NOTE: we can simplify things by observing that ranks in TM0 are always jobranks
   flags |=  gasneti_is_tm0(i_parent) ? GEX_FLAG_RANK_IS_JOBRANK : 0;
@@ -180,35 +192,49 @@ size_t gasneti_TM_Create(
   gasneti_EP_t ep = i_parent->_ep;
   int is_jobrank = (flags & GEX_FLAG_RANK_IS_JOBRANK);
 
-  GASNETI_TRACE_PRINTF(W,("TM_Create: parent="GASNETI_TMSELFFMT" num_new_tms=%"PRIuSZ" nmembers=%"PRIuSZ" scratch_size=%"PRIuSZ" flags=%d",
+  GASNETI_TRACE_PRINTF(O,("gex_TM_Create: parent="GASNETI_TMSELFFMT" num_new_tms=%"PRIuSZ" nmembers=%"PRIuSZ" scratch_size=%"PRIuSZ" flags=%d",
                           GASNETI_TMSELFSTR(e_parent), num_new_tms, nmembers, scratch_size, flags));
 
-  // For now 0 or 1 are the only valid numbers of outputs.
-  gasneti_assert(!nmembers || num_new_tms == 1);
+  static int did_warn = 0;
+  if ((flags & GEX_FLAG_TM_SCRATCH_SIZE_MIN) && !did_warn) {
+    if (! i_parent->_rank) {
+      gasneti_console_message("WARNING",
+                              "gex_TM_Create() called using GEX_FLAG_TM_SCRATCH_SIZE_MIN, "
+                              "deprecated since specification 0.11.");
+    }
+    did_warn = 1; // Some process did, even if it was not us.
+  }
 
 #if GASNET_DEBUG
   if ((flags & GEX_FLAG_TM_SCRATCH_SIZE_MIN) &&
       (flags & GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED)) {
-    gasneti_fatalerror("Call to gex_TM_Split() with mutually-exclusive "
+    gasneti_fatalerror("Call to gex_TM_Create() with mutually-exclusive "
                        "GEX_FLAG_TM_SCRATCH_SIZE_MIN and "
                        "GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED both set in flags argument");
   }
 #endif
+
+  // For now 0 or 1 are the only valid numbers of outputs.
+  gasneti_assert(!nmembers || num_new_tms == 1);
+
   if (flags & (GEX_FLAG_TM_SCRATCH_SIZE_MIN | GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED)) {
-    size_t result = nmembers ? get_scratch_size(i_parent, nmembers, flags) : 0;
-    GASNETI_TRACE_PRINTF(W,("TM_Create: scratch size query result=%"PRIuSZ, result));
+    size_t result = nmembers ? get_scratch_size(nmembers, flags) : 0;
+    GASNETI_TRACE_PRINTF(O,("gex_TM_Create: scratch size query result=%"PRIuSZ, result));
     return result;
   }
 
   if (num_new_tms && nmembers) {
-    GASNETI_TRACE_PRINTF(D,("TM_Create: members[ %s ]", gasneti_format_eploc(members, nmembers)));
+    if (!scratch_size && !(flags & GEX_FLAG_TM_NO_SCRATCH)) {
+      gasneti_fatalerror("Invalid call to gex_TM_Create with scratch_size = 0");
+    }
+    GASNETI_TRACE_PRINTF(D,("gex_TM_Create: members[ %s ]", gasneti_format_eploc(members, nmembers)));
   }
 
   // TODO-EX: remove when subteam collectives no longer require a parent-scope entry barrier
   gasnete_coll_consensus_barrier(i_parent->_coll_team GASNETI_THREAD_PASS);
 
   if (! nmembers) {
-    GASNETI_TRACE_PRINTF(W,("TM_Create: parent="GASNETI_TMSELFFMT" [No team created]",
+    GASNETI_TRACE_PRINTF(O,("gex_TM_Create: parent="GASNETI_TMSELFFMT" [No team created]",
                             GASNETI_TMSELFSTR(e_parent)));
     goto done;
   }
@@ -245,8 +271,7 @@ size_t gasneti_TM_Create(
                         scratch_size, scratch_addrs, flags
                         GASNETI_THREAD_PASS);
 
-  // TODO-EX: use of a conduit-specific hook is needed here
-  gasneti_TM_t i_tm = gasneti_alloc_tm(ep, my_new_rank, nmembers, flags, 0);
+  gasneti_TM_t i_tm = gasneti_alloc_tm(ep, my_new_rank, nmembers, flags);
   i_tm->_coll_team = team;
   gex_TM_t e_tm = gasneti_export_tm(i_tm);
   team->e_tm = e_tm;
@@ -256,9 +281,9 @@ size_t gasneti_TM_Create(
   i_tm->_index_map = NULL; // TODO-EX: provide this for teams w/ non-primordial EPs
 
   // TODO-EX: outut only correct for num_new_tms==1
-  GASNETI_TRACE_PRINTF(W,("TM_Create: parent="GASNETI_TMSELFFMT" rank=%d size=%d result="GASNETI_TMSELFFMT,
+  GASNETI_TRACE_PRINTF(O,("gex_TM_Create: parent="GASNETI_TMSELFFMT" rank=%d size=%d result="GASNETI_TMSELFFMT,
                           GASNETI_TMSELFSTR(e_parent), my_new_rank, (int)nmembers, GASNETI_TMSELFSTR(e_tm)));
-  GASNETI_STAT_EVENT(W, TEAM_NEW_CREATE);
+  GASNETI_STAT_EVENT(O, TEAM_NEW_CREATE);
 
   result = 1; // return is documented as undefined
 
@@ -272,13 +297,13 @@ int gasneti_TM_Destroy(
             gex_Flags_t   flags
             GASNETI_THREAD_FARG)
 {
-  gasneti_TM_t i_tm = gasneti_import_tm(e_tm);
+  gasneti_TM_t i_tm = gasneti_import_tm_nonpair(e_tm);
   gasnete_coll_team_t team = i_tm->_coll_team;
 
-  GASNETI_TRACE_PRINTF(W,("TM_Destroy: team="GASNETI_TMSELFFMT" flags=%d",
+  GASNETI_TRACE_PRINTF(O,("gex_TM_Destroy: team="GASNETI_TMSELFFMT" flags=%d",
                           GASNETI_TMSELFSTR(e_tm), flags));
   if (1) { // TODO: w/ multi-EP exactly one tm per proc should log this event
-    GASNETI_STAT_EVENT(W, TEAM_DESTROY);
+    GASNETI_STAT_EVENT(O, TEAM_DESTROY);
   }
 
   if (gasneti_is_tm0(i_tm)) {
@@ -293,13 +318,28 @@ int gasneti_TM_Destroy(
 }
 
 /* ------------------------------------------------------------------------------------ */
+// Simple blocking Exchange utility function
+extern void gasneti_blockingExchange(gex_TM_t tm, void *src, size_t len, void *dst)
+{
+  // TODO-EX: use gex_Coll_Exchange() once available
+  const int coll_flags = GASNET_COLL_LOCAL | GASNET_COLL_IN_MYSYNC | GASNET_COLL_OUT_MYSYNC;
+  gasnet_coll_gather_all(gasneti_import_tm_nonpair(tm)->_coll_team, dst, src, len, coll_flags);
+}
+
+/* ------------------------------------------------------------------------------------ */
 /* TM trace formatting - legal even without STATS/TRACE */
 
 // Format a gex_TM_t as a GUID
 extern const char *gasneti_formattm(gex_TM_t e_tm) {
-  if ((uintptr_t)e_tm == 1)     return "N/A";  // GASNet-1 collectives team
-  if (e_tm == NULL)             return "JOB";  // JobRank, as with token
-  gasnete_coll_team_t team = gasneti_import_tm(e_tm)->_coll_team;
-  if (team == NULL)             return "TM0";  // Team0 before end of Client_Init
-  return gasneti_dynsprintf("TM%x", (unsigned int)team->team_id);
+  if (e_tm == NULL)             return "JOB";  // JobRank, as with token and legacy collectives
+  if (gasneti_e_tm_is_pair(e_tm)) {
+    gasneti_TM_Pair_t pair = gasneti_import_tm_pair(e_tm);
+    gex_EP_Index_t loc_idx = gasneti_tm_pair_loc_idx(pair);
+    gex_EP_Index_t rem_idx = gasneti_tm_pair_rem_idx(pair);
+    return gasneti_dynsprintf("TM_PAIR(%x,%x)", loc_idx, rem_idx);
+  } else {
+    gasnete_coll_team_t team = gasneti_import_tm(e_tm)->_coll_team;
+    if (team == NULL)             return "TM0";  // Team0 before end of Client_Init
+    return gasneti_dynsprintf("TM%x", (unsigned int)team->team_id);
+  }
 }

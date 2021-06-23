@@ -401,6 +401,7 @@ enum ConstrainedTypeUse {
 class ConstrainedType final : public Type {
 public:
   ConstrainedTypeUse ctUse;
+
   ConstrainedType(ConstrainedTypeUse use);
   void verify()                                          override;
   void accept(AstVisitor* visitor)                       override;
@@ -410,7 +411,8 @@ public:
   void codegenDef()                                      override;
   const char* useString() const;
 
-  static TypeSymbol* build(const char* name, ConstrainedTypeUse use);
+  static TypeSymbol*      buildSym(const char* name, ConstrainedTypeUse use);
+  static ConstrainedType* buildType(const char* name, ConstrainedTypeUse use);
 
   void printDocs(std::ostream *file, unsigned int tabs);
 };

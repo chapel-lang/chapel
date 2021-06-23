@@ -284,11 +284,11 @@ coforall (lr,lc) in LocaleGridDom {
       // sync here...
       //
       while (takeTurns$.readXX() != here.id) { }
-      const prevDelta = delta$;
+      const prevDelta = delta$.readFE();
       if (locDelta > prevDelta) then
-        delta$ = locDelta;
+        delta$.writeEF(locDelta);
       else
-        delta$ = prevDelta;
+        delta$.writeEF(prevDelta);
       takeTurns$.writeXF((here.id + 1)%numLocales);
 
       // Now delta$ holds the global max delta

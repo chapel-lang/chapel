@@ -122,7 +122,7 @@ proc bs() {
 					writeln("Error on ",i,". Computed=",prices(i),
 							", Ref=",data(i).DGrefval,
 							", Delta=",priceDelta);
-					numError += 1;
+					numError.writeEF(numError.readFE() + 1);
 				}
 			}
 		}

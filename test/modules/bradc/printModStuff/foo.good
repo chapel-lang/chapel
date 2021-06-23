@@ -25,6 +25,7 @@ end of module search dirs
   $CHPL_HOME/modules/standard/ChapelEnv.chpl
   $CHPL_HOME/modules/standard/CPtr.chpl
   $CHPL_HOME/modules/standard/HaltWrappers.chpl
+  $CHPL_HOME/modules/standard/Reflection.chpl
   $CHPL_HOME/modules/standard/ChapelIO.chpl
   $CHPL_HOME/modules/standard/Builtins.chpl
   $CHPL_HOME/modules/standard/Types.chpl
@@ -32,7 +33,6 @@ end of module search dirs
   $CHPL_HOME/modules/standard/VectorizingIterator.chpl
   $CHPL_HOME/modules/standard/CommDiagnostics.chpl
   $CHPL_HOME/modules/standard/SysBasic.chpl
-  $CHPL_HOME/modules/standard/Reflection.chpl
   $CHPL_HOME/modules/dists/DSIUtil.chpl
   $CHPL_HOME/modules/standard/IO.chpl
   $CHPL_HOME/modules/standard/SysError.chpl
@@ -40,7 +40,7 @@ end of module search dirs
   $CHPL_HOME/modules/packages/Sort.chpl
   $CHPL_HOME/modules/packages/Search.chpl
   $CHPL_HOME/modules/standard/Sys.chpl
-  $CHPL_HOME/modules/standard/Regexp.chpl
+  $CHPL_HOME/modules/standard/Regex.chpl
   $CHPL_HOME/modules/standard/List.chpl
   $CHPL_HOME/modules/standard/Random.chpl
   $CHPL_HOME/modules/dists/BlockDist.chpl
@@ -49,6 +49,9 @@ end of module search dirs
   $CHPL_HOME/modules/layouts/LayoutCS.chpl
   $CHPL_HOME/modules/dists/SparseBlockDist.chpl
   $CHPL_HOME/modules/dists/ReplicatedDist.chpl
+  $CHPL_HOME/modules/standard/Memory.chpl
+  $CHPL_HOME/modules/standard/Memory/Diagnostics.chpl
+  $CHPL_HOME/modules/standard/Memory/Initialization.chpl
 In bar
 In baz
 In bak
