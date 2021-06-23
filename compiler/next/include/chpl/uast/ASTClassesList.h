@@ -120,7 +120,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(Dot)                      //
     AST_NODE(FnCall)
     AST_NODE(OpCall)
-    AST_NODE(PrimCall)                 // old AST: CallExpr/PrimitiveOp
+    //AST_NODE(PrimCall)                 // old AST: CallExpr/PrimitiveOp
     //AST_NODE(Try)                      //
     AST_NODE(Zip)
   AST_END_SUBCLASSES(Call)

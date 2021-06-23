@@ -26,24 +26,17 @@
 namespace chpl {
 namespace resolution {
 
-
   struct ResolutionResult {
     // the expr that is resolved
-    const uast::Expression* expr = nullptr;
-    // For simple cases, which named decl does it refer to?
-    const uast::NamedDecl* decl = nullptr;
-    // What is its type?
-    const frontend::Type* type = nullptr;
-    // For a function call, it might refer to several Functions
-    // and we might not know which return intent to choose yet.
-    std::vector<const uast::Function*> returnIntentDecls;
+    const uast::Expression* exp;
+    // in simple cases, this is set
+    const uast::NamedDecl* decl;
     // TODO:
-    //  establishing types
     //  return-intent overloading
     //  generic instantiation
     //  establish concrete intents
     //  establish copy-init vs move
-    ResolutionResult() { }
+    ResolutionResult() : exp(nullptr), decl(nullptr) { }
   };
 
   // postorder ID (int) -> ResolutionResult

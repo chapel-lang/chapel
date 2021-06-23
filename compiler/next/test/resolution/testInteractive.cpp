@@ -31,7 +31,6 @@
 using namespace chpl;
 using namespace parsing;
 using namespace resolution;
-using namespace types;
 using namespace uast;
 
 int main(int argc, char** argv) {

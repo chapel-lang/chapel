@@ -26,6 +26,8 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 
+#include "../util/filesystem.h"
+
 #include <cstdio>
 #include <set>
 #include <string>
@@ -39,10 +41,8 @@ namespace chpl {
 template<> struct update<resolution::ResolutionResult> {
   bool operator()(resolution::ResolutionResult& keep,
                   resolution::ResolutionResult& addin) const {
-    bool match = keep.expr == addin.expr &&
-                 keep.decl == addin.decl &&
-                 keep.type == addin.type &&
-                 keep.otherFns == addin.otherFns;
+    bool match = keep.exp == addin.exp &&
+                 keep.decl == addin.decl;
     if (match) {
       return false; // no update required
     } else {
@@ -53,33 +53,11 @@ template<> struct update<resolution::ResolutionResult> {
   }
 };
 
-template<> struct update<resolution::ResolvedSymbol> {
-  bool operator()(resolution::ResolvedSymbol& keep,
-                  resolution::ResolvedSymbol& addin) const {
-    bool match = keep.decl == addin.decl &&
-                 keep.typeSubs == addin.typeSubs &&
-                 keep.paramSubs == addin.paramSubs &&
-                 keep.instantiationPoint == addin.instantiationPoint &&
-                 keep.resolutionById.size() == addin.resolutionById.size();
-
-    if (match) {
-      // check also the resolutionById - we know sizes match here.
-      size_t n = keep.resolutionById.size();
-      for (size_t i = 0; i < n; i++) {
-        resolution::ResolutionResult& keepR = keep.resolutionById[i];
-        resolution::ResolutionResult& addinR = addin.resolutionById[i];
-        if (keepR.expr == addinR.expr &&
-            keepR.decl == addinR.decl &&
-            keepR.type == addinR.type &&
-            keepR.otherFns == addinR.otherFns) {
-          // OK, it matches
-        } else {
-          match = false;
-          break;
-        }
-      }
-    }
-
+template<> struct update<resolution::ResolvedModule> {
+  bool operator()(resolution::ResolvedModule& keep,
+                  resolution::ResolvedModule& addin) const {
+    bool match = keep.module == addin.module &&
+                 keep.resolution == addin.resolution;
     if (match) {
       return false; // no update required
     } else {
@@ -90,7 +68,6 @@ template<> struct update<resolution::ResolvedSymbol> {
   }
 };
 
-/*
 template<> struct update<resolution::DefinedTopLevelNames> {
   bool operator()(resolution::DefinedTopLevelNames& keep,
                   resolution::DefinedTopLevelNames& addin) const {
@@ -104,20 +81,24 @@ template<> struct update<resolution::DefinedTopLevelNames> {
     }
   }
 };
+/*template<> struct mark<resolution::DefinedTopLevelNames> {
+  void operator()(Context* context,
+                  const resolution::DefinedTopLevelNames& keep) const {
+    printf("MARKING DEFINED TOPLEVELS\n");
+    defaultMarkVec(context, keep.topLevelNames);
+  }
+};*/
 
 namespace resolution {
 
 using namespace uast;
-using namespace types;
 
-
-/*
-static std::vector<UniqueString> getTopLevelNames(const Module* module) {
+static std::vector<UniqueString> getTopLevelNames(const uast::Module* module) {
   std::vector<UniqueString> result;
   int nStmts = module->numStmts();
   for (int i = 0; i < nStmts; i++) {
-    const Expression* expr = module->stmt(i);
-    if (const NamedDecl* decl = expr->toNamedDecl()) {
+    const uast::Expression* expr = module->stmt(i);
+    if (const uast::NamedDecl* decl = expr->toNamedDecl()) {
       result.push_back(decl->name());
     }
   }
@@ -131,14 +112,18 @@ const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
   DefinedTopLevelNamesVec result;
 
   // Get the result of parsing modules
-  const ModuleVec& p = parse(context, path);
-  for (const Module* module : p) {
+  const parsing::ModuleVec& p = parsing::parse(context, path);
+  for (const uast::Module* module : p) {
     result.push_back(DefinedTopLevelNames(module, getTopLevelNames(module)));
   }
 
   return QUERY_END(result);
 }
 
+
+/*const ast::ASTNode* ast(Context* context, ID id) {
+  return nullptr;
+}*/
 
 using DeclsByName = std::unordered_map<UniqueString, const NamedDecl*>;
 
@@ -154,7 +139,7 @@ struct ResolvingScope {
     const ResolvingScope* cur = this;
     while (cur != nullptr) {
       auto search = cur->declsDefinedHere.find(name);
-      if (search != cur->declsDefinedHere.end()) {
+      if (search != parentScope->declsDefinedHere.end()) {
         // found an existing entry in the map, so use that
         return search->second;
       }
@@ -261,9 +246,10 @@ const ResolvedModuleVec& resolveFile(Context* context, UniqueString path) {
 
   // parse the file and handle each module
   const parsing::ModuleVec& p = parsing::parse(context, path);
-  for (const Module* mod : p) {
-    const ResolvedSymbol& resolution = resolveModule(context, mod);
-    result.push_back(&resolution);
+  for (const uast::Module* module : p) {
+    const ResolutionResultByPostorderID& resolution =
+      resolveModule(context, module);
+    result.push_back(ResolvedModule(module, &resolution));
   }
 
   return QUERY_END(result);

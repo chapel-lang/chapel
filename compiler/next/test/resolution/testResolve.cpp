@@ -33,7 +33,6 @@
 using namespace chpl;
 using namespace parsing;
 using namespace resolution;
-using namespace types;
 using namespace uast;
 
 static void test1() {
