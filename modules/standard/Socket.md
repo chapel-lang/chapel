@@ -64,20 +64,39 @@ reuseaddr: Boolean - optional parameter, default value = true
 
 The `TCPListener` instance will have methods on it to call
 - `accept`,
-  `accept` method will return a `TCPConn` instance and associated `addr` of any new incoming connection. The communication can then proceed through the `TCPConn` instance returned
+  `accept` method will return a `TCPConn` instance of any new incoming connection otherwise will yield if no new connection is available at the instant. The communication can then proceed through the `TCPConn` instance returned
+  ```python3
+  proc TCPListener.accept() : TCPListener
+  ```
 - `close`,
-  calling close on `TCPListener` will close the socket server and it won't accept anymore new connections. 
+  calling close on `TCPListener` will close the socket server and it won't accept anymore new connections.
+  ```python3
+  proc TCPListener.close()
+  ```
 - `addr` and
   addr will return an `ipAddr` instance providing details about the address and port at which socket is listening.
+  ```python3
+  proc TCPListener.addr() : ipAddr
+  ```
 - `setSocketOpt` to set various socket options.
   `setSocketOpt` will provide method to set arguments like `SO_KEEPALIVE`, `SO_BROADCAST`, etc. options on the socket instance. More options related to the method can be found at [man page](https://linux.die.net/man/3/setsockopt)
 
 The additional support with `TCPConn` and `TCPListener` will be to enable or disable two of the prominent optimization algorithm for TCP Protocol that are:
 
 - `nagle`
+  This method will set/unset TCP_NODELAY for provided socket.
+  ```python3
+  proc nagle(socket:TCPConn, tcpNodeDelay:bool = 1)
+  proc nagle(socket:TCPListener, tcpNodeDelay:bool = 1);
+  proc nagle(socket:UDPSocket, tcpNodeDelay:bool = 1);
+  ```
 - `quickack`
-
-The support will be in form of separate utility function attached with socket module that can set/unset the optimization based on `boolean` argument
+  This method will set/unset TCP_QUICKACK for provided socket.
+  ```python3
+  proc quickack(socket:TCPConn, tcpQuickack:bool = 1)
+  proc qucikack(socket:TCPListener, tcpQuickack:bool = 1);
+  proc quickack(socket:UDPSocket, tcpQuickack:bool = 1);
+  ```
 
 ## UDP Support
 
