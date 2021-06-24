@@ -182,10 +182,11 @@ static void test4() {
 
   Visitor4 v;
   ast->traverse(v);
-  assert(v.actionsLog.size()==3);
+  assert(v.actionsLog.size()==4);
   assert(v.actionsLog[0] == "in enter(Module) Module test@4");
   assert(v.actionsLog[1] == "in enter(ASTNode) Block test@3");
-  assert(v.actionsLog[2] == "in exit(Module) Module test@4");
+  assert(v.actionsLog[2] == "in exit(ASTNode) Block test@3");
+  assert(v.actionsLog[3] == "in exit(Module) Module test@4");
 }
 
 struct Visitor5 {
@@ -223,14 +224,17 @@ static void test5() {
 
   Visitor5 v;
   ast->traverse(v);
-  assert(v.actionsLog.size()==7);
+  assert(v.actionsLog.size()==10);
   assert(v.actionsLog[0] == "in enter(Module) Module test@4");
   assert(v.actionsLog[1] == "in enter(ASTNode) Block test@3");
   assert(v.actionsLog[2] == "in enter(Identifier) Identifier test@0");
-  assert(v.actionsLog[3] == "in enter(Identifier) Identifier test@1");
-  assert(v.actionsLog[4] == "in enter(Identifier) Identifier test@2");
-  assert(v.actionsLog[5] == "in exit(ASTNode) Block test@3");
-  assert(v.actionsLog[6] == "in exit(Module) Module test@4");
+  assert(v.actionsLog[3] == "in exit(Identifier) Identifier test@0");
+  assert(v.actionsLog[4] == "in enter(Identifier) Identifier test@1");
+  assert(v.actionsLog[5] == "in exit(Identifier) Identifier test@1");
+  assert(v.actionsLog[6] == "in enter(Identifier) Identifier test@2");
+  assert(v.actionsLog[7] == "in exit(Identifier) Identifier test@2");
+  assert(v.actionsLog[8] == "in exit(ASTNode) Block test@3");
+  assert(v.actionsLog[9] == "in exit(Module) Module test@4");
 }
 
 int main(int argc, char** argv) {

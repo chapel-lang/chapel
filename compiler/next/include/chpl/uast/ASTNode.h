@@ -265,15 +265,19 @@ class ASTNode {
      like
 
         bool MyTraverser::enter(const uast::Expression* ast);
-        bool MyTraverser::exit(const uast::Expression* ast);
+        void MyTraverser::exit(const uast::Expression* ast);
         bool MyTraverser::enter(const uast::Variable* ast);
-        bool MyTraverser::exit(const uast::Variable* ast);
+        void MyTraverser::exit(const uast::Variable* ast);
 
      and these will be invoked according to C++ overload resolution
      (where in particular an exact match will be preferred).
 
-     First the enter method is called. If that returns true, the
-     children are visited, and then the exit method is called for that node.
+     The enter method returns whether or not the children should
+     be visited. In particular, when visiting a node:
+
+       * First, the enter method is called.
+       * If enter returns true, the children are visited.
+       * Then the exit method is called (whether or not enter returned true).
 
      Unlike `dispatch`, this function doesn't support returning a value.
 
@@ -290,8 +294,8 @@ class ASTNode {
         case asttags::NAME: \
         { \
           const NAME* casted = (const NAME*) this; \
-          bool goInToIt = v.enter(casted); \
-          if (goInToIt) v.exit(casted); \
+          v.enter(casted); \
+          v.exit(casted); \
           break; \
         }
 
@@ -304,8 +308,8 @@ class ASTNode {
             for (const ASTNode* child : this->children()) { \
               child->traverse(v); \
             } \
-            v.exit(casted); \
           } \
+          v.exit(casted); \
           break; \
         }
 
