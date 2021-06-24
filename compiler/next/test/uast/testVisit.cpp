@@ -99,15 +99,6 @@ static void test1() {
     assert(actionsLog.size()==1);
     assert(actionsLog[0] == "in visit(ASTNode) Module test@4");
   }
-
-  {
-    actionsLog.clear();
-    Visitor1 v;
-    double got = ast->dispatch<double>(v);
-    assert(got == 10.0);
-    assert(actionsLog.size()==1);
-    assert(actionsLog[0] == "in visit(ASTNode) Module test@4");
-  }
 }
 
 struct Visitor2 {
