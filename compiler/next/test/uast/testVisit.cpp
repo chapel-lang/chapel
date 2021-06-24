@@ -91,7 +91,6 @@ static void test1() {
   const uast::Module* mod = nullptr;
 
   auto result = makeAST(&context, mod);
-  const ASTNode* ast = mod;
 
   Visitor1 v;
   double got = mod->dispatch<double>(v);
