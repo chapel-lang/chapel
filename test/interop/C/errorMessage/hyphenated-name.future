@@ -1,2 +1,5 @@
 bug: hyphenated .chpl files can't be compiled into libraries
 #9594
+
+This future should be converted into a 'test.c' test when #9594
+is resolved.
