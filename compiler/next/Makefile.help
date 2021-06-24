@@ -74,7 +74,8 @@ libchplcomp-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
 test-libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making and running the tests..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
-	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) tests && ctest . ; \
+	  JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
+	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) tests && ctest $$JOBSFLAG . ; \
 	else \
 	  cd $(LIBCOMPILER_BUILD_DIR) && cmake --build .  --target tests && ctest . ; \
 	fi
