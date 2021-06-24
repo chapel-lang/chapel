@@ -172,7 +172,8 @@ def validate_llvm_config():
                   " with one of the supported versions: {0}".format(
                   llvm_versions_string()))
 
-    if llvm_val == 'system' or llvm_val == 'bundled':
+    if (llvm_val == 'system' or
+        (llvm_val == 'bundled' and os.path.exists(llvm_config))):
         version, config_error = check_llvm_config(llvm_config)
         if config_error:
             error("Problem with llvm-config at {0} -- {1}"
