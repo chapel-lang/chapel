@@ -96,6 +96,15 @@ endef
 # set all of the CHPL_MAKE_... configuration-based variables!
 $(eval $(CHPL_MAKE_SETTINGS))
 
+# check a few variables to give a make invocation with an
+# invalid configuration a better error.
+ifndef CHPL_MAKE_HOST_PLATFORM
+  $(error error running util/printchplenv -- please see error above)
+endif
+ifndef CHPL_MAKE_THIRD_PARTY_LINK_ARGS
+  $(error error running util/printchplenv -- please see error above)
+endif
+
 # Try this to debug issues with CHPL_MAKE_* variables
 # $(info $(CHPL_MAKE_CHPLENV_CACHE))
 
