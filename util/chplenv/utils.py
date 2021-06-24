@@ -6,7 +6,8 @@ import sys
 
 def error(msg, exception=Exception):
     """Exception raising wrapper that differentiates developer-mode output"""
-    if os.environ.get('CHPL_DEVELOPER'):
+    developer = os.environ.get('CHPL_DEVELOPER')
+    if developer and developer != "0":
         raise exception(msg)
     else:
         sys.stderr.write('\nError: ')

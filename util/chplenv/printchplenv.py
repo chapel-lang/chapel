@@ -57,20 +57,21 @@ COMPILER = set(['compiler'])
 LAUNCHER = set(['launcher'])
 RUNTIME = set(['runtime'])
 INTERNAL = set(['internal'])
+NOPATH = set(['nopath'])     # for variables to be skipped for --path
 DEFAULT = set(['default'])
 
 # Global ordered list that stores names, content-categories, and shortnames
 CHPL_ENVS = [
     ChapelEnv('CHPL_HOST_PLATFORM', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_COMPILER', COMPILER | LAUNCHER),
-    ChapelEnv('  CHPL_HOST_COMPILER_COMMAND_C', INTERNAL),
-    ChapelEnv('  CHPL_HOST_COMPILER_COMMAND_CXX', INTERNAL),
+    ChapelEnv('  CHPL_HOST_CC', COMPILER | NOPATH),
+    ChapelEnv('  CHPL_HOST_CXX', COMPILER | NOPATH),
     ChapelEnv('CHPL_HOST_ARCH', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_CPU', INTERNAL),
     ChapelEnv('CHPL_TARGET_PLATFORM', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_COMPILER', RUNTIME | DEFAULT),
-    ChapelEnv('  CHPL_TARGET_COMPILER_COMMAND_C', INTERNAL),
-    ChapelEnv('  CHPL_TARGET_COMPILER_COMMAND_CXX', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_CC', RUNTIME | NOPATH),
+    ChapelEnv('  CHPL_TARGET_CXX', RUNTIME | NOPATH),
     ChapelEnv('  CHPL_TARGET_COMPILER_PRGENV', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'arch'),
@@ -97,6 +98,9 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_RE2', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
+    ChapelEnv('  CHPL_LLVM_CONFIG', COMPILER | NOPATH),
+    ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
+    ChapelEnv('  CHPL_LLVM_CLANG_CXX', INTERNAL),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
     ChapelEnv('CHPL_SANITIZE', COMPILER | LAUNCHER),
@@ -131,23 +135,23 @@ def compute_all_values():
     ENV_VALS['CHPL_HOST_PLATFORM'] = chpl_platform.get('host')
 
     host_compiler = chpl_compiler.get('host')
-    host_compiler_c = chpl_compiler.get_command_c('host')
-    host_compiler_cpp = chpl_compiler.get_command_cxx('host')
+    host_compiler_c = chpl_compiler.get_compiler_command('host', 'c')
+    host_compiler_cpp = chpl_compiler.get_compiler_command('host', 'c++')
     ENV_VALS['CHPL_HOST_COMPILER'] = host_compiler
-    ENV_VALS['  CHPL_HOST_COMPILER_COMMAND_C'] = host_compiler_c
-    ENV_VALS['  CHPL_HOST_COMPILER_COMMAND_CXX'] = host_compiler_cpp
+    ENV_VALS['  CHPL_HOST_CC'] = host_compiler_c
+    ENV_VALS['  CHPL_HOST_CXX'] = host_compiler_cpp
 
     ENV_VALS['CHPL_HOST_ARCH'] = chpl_arch.get('host')
     ENV_VALS['CHPL_HOST_CPU'] = chpl_cpu.get('host').cpu
     ENV_VALS['CHPL_TARGET_PLATFORM'] = chpl_platform.get('target')
 
     target_compiler = chpl_compiler.get('target')
-    target_compiler_c = chpl_compiler.get_command_c('target')
-    target_compiler_cpp = chpl_compiler.get_command_cxx('target')
+    target_compiler_c = chpl_compiler.get_compiler_command('target', 'c')
+    target_compiler_cpp = chpl_compiler.get_compiler_command('target', 'c++')
     target_compiler_prgenv = chpl_compiler.get_prgenv_compiler()
     ENV_VALS['CHPL_TARGET_COMPILER'] = target_compiler
-    ENV_VALS['  CHPL_TARGET_COMPILER_COMMAND_C'] = target_compiler_c
-    ENV_VALS['  CHPL_TARGET_COMPILER_COMMAND_CXX'] = target_compiler_cpp
+    ENV_VALS['  CHPL_TARGET_CC'] = target_compiler_c
+    ENV_VALS['  CHPL_TARGET_CXX'] = target_compiler_cpp
     ENV_VALS['  CHPL_TARGET_COMPILER_PRGENV'] = target_compiler_prgenv
 
     ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target')
@@ -176,6 +180,9 @@ def compute_all_values():
     ENV_VALS['CHPL_HWLOC'] = chpl_hwloc.get()
     ENV_VALS['CHPL_RE2'] = chpl_re2.get()
     ENV_VALS['CHPL_LLVM'] = chpl_llvm.get()
+    ENV_VALS['  CHPL_LLVM_CONFIG'] = chpl_llvm.get_llvm_config()
+    ENV_VALS['  CHPL_LLVM_CLANG_C'] = chpl_llvm.get_llvm_clang('c')
+    ENV_VALS['  CHPL_LLVM_CLANG_CXX'] = chpl_llvm.get_llvm_clang('c++')
     aux_filesys = chpl_aux_filesys.get()
     ENV_VALS['CHPL_AUX_FILESYS'] = '_'.join(sorted(aux_filesys.split(' ')))
     ENV_VALS['CHPL_LIB_PIC'] = chpl_lib_pic.get()
@@ -186,6 +193,7 @@ def compute_all_values():
     # due to circular dependencies
     chpl_arch.validate('host')
     chpl_arch.validate('target')
+    chpl_llvm.validate_llvm_config()
 
 """Compute '--internal' env var values and populate global dict, ENV_VALS"""
 def compute_internal_values():
@@ -266,6 +274,9 @@ def user_set(env):
         return ' +'
     return ''
 
+"""Filter out variables that are marked with NOPATH"""
+def filter_path(chpl_env):
+    return not 'nopath' in chpl_env.content
 
 """Filter variables that are not user set"""
 def filter_overrides(chpl_env):
@@ -275,6 +286,7 @@ def filter_overrides(chpl_env):
 """Filter variables irrelevant to configuration for --tidy flag"""
 def filter_tidy(chpl_env):
     comm = ENV_VALS['CHPL_COMM']
+    llvm = ENV_VALS['CHPL_LLVM']
     if chpl_env.name == '  CHPL_COMM_SUBSTRATE':
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_GASNET_SEGMENT':
@@ -283,6 +295,8 @@ def filter_tidy(chpl_env):
         return comm == 'ofi'
     elif chpl_env.name == '  CHPL_NETWORK_ATOMICS':
         return comm != 'none'
+    elif chpl_env.name == '  CHPL_LLVM_CONFIG':
+        return llvm != 'none'
     return True
 
 
@@ -332,6 +346,10 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
     filter_content = partial(_filter_content, contents=contents)
 
     envs = filter(filter_content, CHPL_ENVS)
+
+    # --path -- skip variables marked NOPATH
+    if print_format == 'path':
+        envs = filter(filter_path, envs)
 
     # --overrides
     if 'overrides' in print_filters:

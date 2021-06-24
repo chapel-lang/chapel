@@ -48,10 +48,6 @@
 // should we just remove it? Or rename ASTNode to Expression?
 AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
-  AST_LEAF(Comment)                    //
-  AST_LEAF(ErroneousExpression)        //
-  AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
-
   AST_BEGIN_SUBCLASSES(SimpleBlockLike)
     AST_NODE(Begin)
     AST_NODE(Block)                    // old AST: BlockStmt
@@ -61,24 +57,28 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(Serial)                   //
   AST_END_SUBCLASSES(SimpleBlockLike)
 
+  AST_NODE(As)                         //
+  AST_NODE(Break)                    // old AST: GotoStmt
+  AST_NODE(Cobegin)                  //
+  AST_NODE(Conditional)              // old AST: IfExpr/CondStmt
+  AST_LEAF(Comment)                    //
+  AST_NODE(Continue)                 // old AST: GotoStmt
   AST_NODE(Delete)                     //
+  AST_LEAF(ErroneousExpression)        //
+  AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
+  AST_NODE(Label)                    //
   //AST_NODE(ExternBlock)                // old AST: ExternBlockStmt
   //AST_NODE(Implements)                 // old AST: ImplementsStmt
   //AST_NODE(Import)                     // old AST: ImportStmt
   AST_NODE(New)
   //AST_NODE(Require)                    //
-  //AST_NODE(Use)                        // old AST: UseStmt
-  AST_NODE(WithClause)
-
-  AST_NODE(Break)                    // old AST: GotoStmt
-  AST_NODE(Cobegin)                  //
-  AST_NODE(Conditional)              // old AST: IfExpr/CondStmt
-  AST_NODE(Continue)                 // old AST: GotoStmt
-  AST_NODE(Label)                    //
   AST_NODE(Return)                   //
   //AST_NODE(Select)                   //
-  //AST_NODE(Sync)                     //
+  AST_NODE(Sync)                     //
   //AST_NODE(TryCatch)                 // old AST: TryStmt/CatchStmt
+  AST_NODE(Use)                        // old AST: UseStmt
+  AST_NODE(UseClause)                  //
+  AST_NODE(WithClause)
   AST_NODE(Yield)                    //
 
   AST_BEGIN_SUBCLASSES(Loop)         // old AST: LoopExpr / LoopStmt
@@ -139,7 +139,6 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       AST_NODE(Module)                     // old AST: ModuleSymbol
 
       AST_BEGIN_SUBCLASSES(VarLikeDecl)
-        //AST_LEAF(Field)
         AST_LEAF(Formal)                   // old AST: ArgSymbol
         AST_LEAF(TaskVar)                  // old AST: ShadowVarSymbol
         AST_LEAF(Variable)                 // old AST: VarSymbol
@@ -149,9 +148,9 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
         AST_NODE(Enum)                     // old AST: EnumType
 
         AST_BEGIN_SUBCLASSES(AggregateDecl)// old AST: AggregateType
-          //AST_NODE(Class)                  //
-          //AST_NODE(Record)                 //
-          //AST_NODE(Union)                  //
+          AST_NODE(Class)                  //
+          AST_NODE(Record)                 //
+          AST_NODE(Union)                  //
         AST_END_SUBCLASSES(AggregateDecl)
 
       AST_END_SUBCLASSES(TypeDecl)

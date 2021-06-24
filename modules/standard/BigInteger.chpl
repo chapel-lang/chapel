@@ -4024,324 +4024,333 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   }
 
   deprecated
-  "bigint.div_q using Round is deprecated, use bigint.div_q with round instead"
+  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
   proc bigint.div_q(const ref n: bigint,
                     const ref d: bigint,
-                    param     rounding: Round) {
+                    param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.div_q(n, d, round.up);
+      this.divQ(n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_q(n, d, round.zero);
+      this.divQ(n, d, round.zero);
     } else {
-      this.div_q(n, d, round.down);
+      this.divQ(n, d, round.down);
     }
   }
 
   // 5.6 Division Functions
-  proc bigint.div_q(const ref n: bigint,
-                    const ref d: bigint,
-                    param rounding = round.zero) {
+  proc bigint.divQ(const ref numer: bigint,
+                   const ref denom: bigint,
+                   param rounding = round.zero) {
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
-        when round.down do mpz_fdiv_q(this.mpz, n.mpz,  d.mpz);
-        when round.zero do mpz_tdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_q(this.mpz, numer.mpz,  denom.mpz);
+        when round.down do mpz_fdiv_q(this.mpz, numer.mpz,  denom.mpz);
+        when round.zero do mpz_tdiv_q(this.mpz, numer.mpz,  denom.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
+              numer.localeId == chpl_nodeID &&
+              denom.localeId == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
-        when round.down do mpz_fdiv_q(this.mpz, n.mpz,  d.mpz);
-        when round.zero do mpz_tdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_q(this.mpz, numer.mpz,  denom.mpz);
+        when round.down do mpz_fdiv_q(this.mpz, numer.mpz,  denom.mpz);
+        when round.zero do mpz_tdiv_q(this.mpz, numer.mpz,  denom.mpz);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
-        const d_ = d;
+        const numer_ = numer;
+        const denom_ = denom;
 
         select rounding {
-          when round.up   do mpz_cdiv_q(this.mpz, n_.mpz, d_.mpz);
-          when round.down do mpz_fdiv_q(this.mpz, n_.mpz, d_.mpz);
-          when round.zero do mpz_tdiv_q(this.mpz, n_.mpz, d_.mpz);
+          when round.up   do mpz_cdiv_q(this.mpz, numer_.mpz, denom_.mpz);
+          when round.down do mpz_fdiv_q(this.mpz, numer_.mpz, denom_.mpz);
+          when round.zero do mpz_tdiv_q(this.mpz, numer_.mpz, denom_.mpz);
           }
       }
     }
   }
 
   deprecated
-  "bigint.div_q using Round is deprecated, use bigint.div_q with round instead"
+  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
   proc bigint.div_q(const ref n: bigint,
                               d: integral,
-                    param     rounding: Round) {
+                    param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.div_q(n, d, round.up);
+      this.divQ(n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_q(n, d, round.zero);
+      this.divQ(n, d, round.zero);
     } else {
-      this.div_q(n, d, round.down);
+      this.divQ(n, d, round.down);
     }
   }
 
-  proc bigint.div_q(const ref n: bigint,
-                              d: integral,
-                    param     rounding = round.zero) {
+  proc bigint.divQ(const ref numer: bigint,
+                             denom: integral,
+                   param     rounding = round.zero) {
 
-    this.div_q(n, new bigint(d), rounding);
+    this.divQ(numer, new bigint(denom), rounding);
   }
 
   deprecated
-  "bigint.div_r using Round is deprecated, use bigint.div_r with round instead"
+  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
   proc bigint.div_r(const ref n: bigint,
                     const ref d: bigint,
-                    param     rounding: Round) {
+                    param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.div_r(n, d, round.up);
+      this.divR(n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_r(n, d, round.zero);
+      this.divR(n, d, round.zero);
     } else {
-      this.div_r(n, d, round.down);
+      this.divR(n, d, round.down);
     }
 
   }
 
-  proc bigint.div_r(const ref n: bigint,
-                    const ref d: bigint,
-                    param     rounding = round.zero) {
+  proc bigint.divR(const ref numer: bigint,
+                   const ref denom: bigint,
+                   param     rounding = round.zero) {
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
-        when round.down do mpz_fdiv_r(this.mpz, n.mpz,  d.mpz);
-        when round.zero do mpz_tdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_r(this.mpz, numer.mpz,  denom.mpz);
+        when round.down do mpz_fdiv_r(this.mpz, numer.mpz,  denom.mpz);
+        when round.zero do mpz_tdiv_r(this.mpz, numer.mpz,  denom.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
+              numer.localeId == chpl_nodeID &&
+              denom.localeId == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
-        when round.down do mpz_fdiv_r(this.mpz, n.mpz,  d.mpz);
-        when round.zero do mpz_tdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_r(this.mpz, numer.mpz,  denom.mpz);
+        when round.down do mpz_fdiv_r(this.mpz, numer.mpz,  denom.mpz);
+        when round.zero do mpz_tdiv_r(this.mpz, numer.mpz,  denom.mpz);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
-        const d_ = d;
+        const numer_ = numer;
+        const denom_ = denom;
 
         select rounding {
-          when round.up   do mpz_cdiv_r(this.mpz, n_.mpz, d_.mpz);
-          when round.down do mpz_fdiv_r(this.mpz, n_.mpz, d_.mpz);
-          when round.zero do mpz_tdiv_r(this.mpz, n_.mpz, d_.mpz);
+          when round.up   do mpz_cdiv_r(this.mpz, numer_.mpz, denom_.mpz);
+          when round.down do mpz_fdiv_r(this.mpz, numer_.mpz, denom_.mpz);
+          when round.zero do mpz_tdiv_r(this.mpz, numer_.mpz, denom_.mpz);
         }
       }
     }
   }
 
   deprecated
-  "bigint.div_r using Round is deprecated, use bigint.div_r with round instead"
+  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
   proc bigint.div_r(const ref n: bigint,
                               d: integral,
-                    param     rounding: Round) {
+                    param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.div_r(n, d, round.up);
+      this.divR(n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_r(n, d, round.zero);
+      this.divR(n, d, round.zero);
     } else {
-      this.div_r(n, d, round.down);
+      this.divR(n, d, round.down);
     }
   }
 
-  proc bigint.div_r(const ref n: bigint,
-                              d: integral,
-                    param     rounding = round.zero) {
-    this.div_r(n, new bigint(d), rounding);
+  proc bigint.divR(const ref numer: bigint,
+                             denom: integral,
+                   param     rounding = round.zero) {
+    this.divR(numer, new bigint(denom), rounding);
   }
 
   deprecated
-  "bigint.div_qr using Round is deprecated, use bigint.div_qr with round instead"
+  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
   proc bigint.div_qr(ref       r:        bigint,
                      const ref n:        bigint,
                      const ref d:        bigint,
-                     param     rounding: Round) {
+                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.div_qr(r, n, d, round.up);
+      this.divQR(r, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_qr(r, n, d, round.zero);
+      this.divQR(r, n, d, round.zero);
     } else {
-      this.div_qr(r, n, d, round.down);
+      this.divQR(r, n, d, round.down);
     }
   }
 
-  // this gets quotient, r gets remainder
-  proc bigint.div_qr(ref       r:        bigint,
-                     const ref n:        bigint,
-                     const ref d:        bigint,
-                     param     rounding = round.zero) {
+  // this gets quotient, remain gets remainder
+  proc bigint.divQR(ref       remain: bigint,
+                    const ref numer: bigint,
+                    const ref denom: bigint,
+                    param     rounding = round.zero) {
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when round.down do mpz_fdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when round.zero do mpz_tdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+        when round.up do mpz_cdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                     denom.mpz);
+        when round.down do mpz_fdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                       denom.mpz);
+        when round.zero do mpz_tdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                       denom.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              r.localeId    == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
+              remain.localeId == chpl_nodeID &&
+              numer.localeId == chpl_nodeID &&
+              denom.localeId == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when round.down do mpz_fdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when round.zero do mpz_tdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+        when round.up do mpz_cdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                     denom.mpz);
+        when round.down do mpz_fdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                       denom.mpz);
+        when round.zero do mpz_tdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                       denom.mpz);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        var   r_ = r;
-        const n_ = n;
-        const d_ = d;
+        var   remain_ = remain;
+        const numer_ = numer;
+        const denom_ = denom;
 
         select rounding {
-          when round.up   do mpz_cdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
-          when round.down do mpz_fdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
-          when round.zero do mpz_tdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+          when round.up do mpz_cdiv_qr(this.mpz, remain_.mpz, numer_.mpz,
+                                       denom_.mpz);
+          when round.down do mpz_fdiv_qr(this.mpz, remain_.mpz, numer_.mpz,
+                                         denom_.mpz);
+          when round.zero do mpz_tdiv_qr(this.mpz, remain_.mpz, numer_.mpz,
+                                         denom_.mpz);
         }
 
-        r = r_;
+        remain = remain_;
       }
     }
   }
 
   deprecated
-  "bigint.div_qr using Round is deprecated, use bigint.div_qr with round instead"
+  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
   proc bigint.div_qr(ref       r: bigint,
                      const ref n: bigint,
                                d: integral,
-                     param     rounding: Round) {
+                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.div_qr(r, n, d, round.up);
+      this.divQR(r, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_qr(r, n, d, round.zero);
+      this.divQR(r, n, d, round.zero);
     } else {
-      this.div_qr(r, n, d, round.down);
+      this.divQR(r, n, d, round.down);
     }
   }
 
-  proc bigint.div_qr(ref       r: bigint,
-                     const ref n: bigint,
-                               d: integral,
-                     param     rounding = round.zero) {
-    this.div_qr(r, n, new bigint(d), rounding);
+  proc bigint.divQR(ref       remain: bigint,
+                    const ref numer: bigint,
+                              denom: integral,
+                    param     rounding = round.zero) {
+    this.divQR(remain, numer, new bigint(denom), rounding);
   }
 
   deprecated
-  "bigint.div_q_2exp using Round is deprecated, use bigint.div_q_2xp with round instead"
+  "bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead"
   proc bigint.div_q_2exp(const ref n: bigint,
                                    b: integral,
-                         param     rounding: Round) {
+                         param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.div_q_2exp(n, b, round.up);
+      this.divQ2Exp(n, b, round.up);
     } else if (rounding == ZERO) {
-      this.div_q_2exp(n, b, round.zero);
+      this.divQ2Exp(n, b, round.zero);
     } else {
-      this.div_q_2exp(n, b, round.down);
+      this.divQ2Exp(n, b, round.down);
     }
   }
 
-  proc bigint.div_q_2exp(const ref n: bigint,
-                                   b: integral,
-                         param     rounding = round.zero) {
-    const b_ = b.safeCast(mp_bitcnt_t);
+  proc bigint.divQ2Exp(const ref numer: bigint,
+                                 exp: integral,
+                       param     rounding = round.zero) {
+    const exp_ = exp.safeCast(mp_bitcnt_t);
 
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_q_2exp(this.mpz, n.mpz, b_);
-        when round.down do mpz_fdiv_q_2exp(this.mpz, n.mpz, b_);
-        when round.zero do mpz_tdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_q_2exp(this.mpz, numer.mpz, exp_);
+        when round.down do mpz_fdiv_q_2exp(this.mpz, numer.mpz, exp_);
+        when round.zero do mpz_tdiv_q_2exp(this.mpz, numer.mpz, exp_);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID {
+              numer.localeId == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_q_2exp(this.mpz, n.mpz, b_);
-        when round.down do mpz_fdiv_q_2exp(this.mpz, n.mpz, b_);
-        when round.zero do mpz_tdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_q_2exp(this.mpz, numer.mpz, exp_);
+        when round.down do mpz_fdiv_q_2exp(this.mpz, numer.mpz, exp_);
+        when round.zero do mpz_tdiv_q_2exp(this.mpz, numer.mpz, exp_);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
+        const numer_ = numer;
 
         select rounding {
-          when round.up   do mpz_cdiv_q_2exp(this.mpz, n_.mpz, b_);
-          when round.down do mpz_fdiv_q_2exp(this.mpz, n_.mpz, b_);
-          when round.zero do mpz_tdiv_q_2exp(this.mpz, n_.mpz, b_);
+          when round.up   do mpz_cdiv_q_2exp(this.mpz, numer_.mpz, exp_);
+          when round.down do mpz_fdiv_q_2exp(this.mpz, numer_.mpz, exp_);
+          when round.zero do mpz_tdiv_q_2exp(this.mpz, numer_.mpz, exp_);
         }
       }
     }
   }
 
   deprecated
-  "bigint.div_r_2exp using Round is deprecated, use bigint.div_r_2xp with round instead"
+  "bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead"
   proc bigint.div_r_2exp(const ref n: bigint,
                                    b: integral,
-                         param     rounding: Round) {
+                         param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.div_r_2exp(n, b, round.up);
+      this.divR2Exp(n, b, round.up);
     } else if (rounding == ZERO) {
-      this.div_r_2exp(n, b, round.zero);
+      this.divR2Exp(n, b, round.zero);
     } else {
-      this.div_r_2exp(n, b, round.down);
+      this.divR2Exp(n, b, round.down);
     }
   }
 
-  proc bigint.div_r_2exp(const ref n: bigint,
-                                   b: integral,
-                         param     rounding = round.zero) {
-    const b_ = b.safeCast(mp_bitcnt_t);
+  proc bigint.divR2Exp(const ref numer: bigint,
+                                 exp: integral,
+                       param     rounding = round.zero) {
+    const exp_ = exp.safeCast(mp_bitcnt_t);
 
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_r_2exp(this.mpz, n.mpz, b_);
-        when round.down do mpz_fdiv_r_2exp(this.mpz, n.mpz, b_);
-        when round.zero do mpz_tdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_r_2exp(this.mpz, numer.mpz, exp_);
+        when round.down do mpz_fdiv_r_2exp(this.mpz, numer.mpz, exp_);
+        when round.zero do mpz_tdiv_r_2exp(this.mpz, numer.mpz, exp_);
       }
 
-    } else if this.localeId == chpl_nodeID && n.localeId == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && numer.localeId == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_r_2exp(this.mpz, n.mpz, b_);
-        when round.down do mpz_fdiv_r_2exp(this.mpz, n.mpz, b_);
-        when round.zero do mpz_tdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_r_2exp(this.mpz, numer.mpz, exp_);
+        when round.down do mpz_fdiv_r_2exp(this.mpz, numer.mpz, exp_);
+        when round.zero do mpz_tdiv_r_2exp(this.mpz, numer.mpz, exp_);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
+        const numer_ = numer;
 
         select rounding {
-          when round.up   do mpz_cdiv_r_2exp(this.mpz, n_.mpz, b_);
-          when round.down do mpz_fdiv_r_2exp(this.mpz, n_.mpz, b_);
-          when round.zero do mpz_tdiv_r_2exp(this.mpz, n_.mpz, b_);
+          when round.up   do mpz_cdiv_r_2exp(this.mpz, numer_.mpz, exp_);
+          when round.down do mpz_fdiv_r_2exp(this.mpz, numer_.mpz, exp_);
+          when round.zero do mpz_tdiv_r_2exp(this.mpz, numer_.mpz, exp_);
         }
       }
     }

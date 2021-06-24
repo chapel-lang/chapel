@@ -21,6 +21,8 @@
 // DefaultRectangular.chpl
 //
 module DefaultRectangular {
+  import HaltWrappers;
+
   config const dataParTasksPerLocale = 0;
   config const dataParIgnoreRunningTasks = false;
   config const dataParMinGranularity: int = 1;
@@ -487,6 +489,11 @@ module DefaultRectangular {
                offset=createTuple(rank, intIdxType, 0:intIdxType))
       where tag == iterKind.follower {
 
+      if followThis.size != this.rank then
+        compilerError("rank mismatch in zippered iteration (can't zip a " +
+                      followThis.size:string + "D expression with a " +
+                      this.rank:string + "D domain)");
+        
       proc anyStridable(rangeTuple, param i: int = 0) param
         return if i == rangeTuple.size-1 then rangeTuple(i).stridable
                else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
@@ -498,6 +505,10 @@ module DefaultRectangular {
 
       param stridable = this.stridable || anyStridable(followThis);
       var block: rank*range(idxType=intIdxType, stridable=stridable);
+      if boundsChecking then
+        for param i in 0..rank-1 do
+          if followThis(i).high >= ranges(i).sizeAs(uint) then
+            HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration (dimension " + i:string + ")");
       if stridable {
         type strType = chpl__signedType(intIdxType);
         for param i in 0..rank-1 {
@@ -1163,6 +1174,11 @@ module DefaultRectangular {
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity)
       ref where tag == iterKind.follower {
+      if followThis.size != this.rank then
+        compilerError("rank mismatch in zippered iteration (can't zip a " +
+                      followThis.size:string + "D expression with a " +
+                      this.rank:string + "D array)");
+
       if debugDefaultDist {
         chpl_debug_writeln("*** In defRectArr simple-dd follower iterator: ",
                            followThis);

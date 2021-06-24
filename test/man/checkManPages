@@ -146,6 +146,20 @@ def check_man_page(bin_name, additional_args=None):
         helpflags = helpsections[section]
         manflags = mansections[section]
 
+        # Check if the manpage flags of this section have '\' , otherwise throws error
+        for mflag in manflags:
+            # mflag[0] used for flags like "--baseline" and mflag[4] for comma separated flags like "-M, --module-dir"
+            if mflag[0] == "\\" or mflag[4] == "\\":
+                continue
+            else:
+                numerrors+=1
+                _error('man section "{0}" has some misformatted flags:\
+                        {1}'.format(section, mflag))
+
+        # Removing '\' from manpage flags of this section to match with compiler's flags      
+        for i in range(len(manflags)):
+            manflags[i] = manflags[i].replace("\\", "")   
+
         if helpflags != manflags:
             helpdiff = list(set(helpflags) - set(manflags))
             mandiff = list(set(manflags) - set(helpflags))
@@ -178,7 +192,7 @@ def _get_man_page(bin_name):
 
 def _get_flags(s):
     """Get the flags in a string."""
-    s = s.replace("\\", "")
+
     rs = ''
     # Handle empty lines
     if not s.strip():
@@ -190,18 +204,22 @@ def _get_flags(s):
     # Look for all comma separated flags
     ls = ls.strip().split(',')
     for f in ls:
-        sf = f.strip();
+        sf = f.strip()
         try:
             if sf[0] == '-':
                 # Add flag to the return string
+                rs += sf.split()[0]+','
+            elif sf[0] == '\\':
                 rs += sf.split()[0]+','
             else:
                 break
         except IndexError:
             continue
+    if rs[2] == ",":
+        rs = rs[0:3] + " " + rs[3:len(rs)]
     if rs:
         # Remove any trailing text
-        return rs.strip().split()[0]
+        return rs.strip()
     else:
         return rs
 
@@ -228,3 +246,4 @@ def _error(*args):
 
 if __name__ == '__main__':
     main()
+

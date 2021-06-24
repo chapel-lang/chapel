@@ -154,14 +154,14 @@ Committing staged changes:
     # similar to: svn commit [-m <message>]
 
 There are two different strategies available to bringing changes from Chapel
-master into your development branch:
+main into your development branch:
 
-Rebase (replay your changes on top of the master branch):
+Rebase (replay your changes on top of the main branch):
 
 .. code-block:: bash
 
     git fetch upstream
-    git rebase upstream/master
+    git rebase upstream/main
 
     # If branch has already been pushed, you will need to force push to update:
     git push -f -u origin <branch_name>
@@ -173,22 +173,22 @@ rebase --continue`` to finish the rebase process.
 
 If there are other development branches working off of your development branch
 (something not common in Chapel development), then you should not use this
-strategy. Instead, merge the Chapel master branch into your branch as shown
+strategy. Instead, merge the Chapel main branch into your branch as shown
 below, which does not require a force push to rewrite git history.
 
 
-Merge (merge master into your branch):
+Merge (merge main into your branch):
 
 .. code-block:: bash
 
     git fetch upstream
-    git merge upstream/master
+    git merge upstream/main
 
     # or:
-    git pull upstream master
+    git pull upstream main
 
     # with feature branch checked out:
-    git merge [--no-ff] upstream/master
+    git merge [--no-ff] upstream/main
 
 If there are conflicts, you will be asked to resolve them. Once the affected
 files have been fixed, stage them with ``git add``, and then call ``git
@@ -197,7 +197,7 @@ commit`` to finish the merge process.
 If you want to understand the changes that occurred upstream, see
 `Read commit messages for changes from the main Chapel project`_ below.
 
-Using ``git merge upstream/master`` or ``git pull upstream master`` is not
+Using ``git merge upstream/main`` or ``git pull upstream main`` is not
 recommended when working in development branches that have no other references
 to them (which is typical in Chapel development), because
 it pollutes the git history with non-meaningful merge commits. These show up in
@@ -205,7 +205,7 @@ the git history as:
 
 .. code-block:: bash
 
-    Merge branch 'master' of github.com:chapel-lang/chapel into dev-branch
+    Merge branch 'main' of github.com:chapel-lang/chapel into dev-branch
 
 
 .. _How to modify git history:
@@ -228,20 +228,20 @@ Un-do the last commit (leaving changed files in your working directory):
 
     git reset --soft HEAD~1
 
-Reapplying changes from the current branch onto an updated version of master:
+Reapplying changes from the current branch onto an updated version of main:
 
 .. code-block:: bash
 
-    git rebase master
+    git rebase main
 
 Reapplying changes from the current branch onto an updated version of
-upstream/master, without updating your local master (note: you will need to
-perform a pull next time you checkout your local master):
+upstream/main, without updating your local main (note: you will need to
+perform a pull next time you checkout your local main):
 
 .. code-block:: bash
 
     git fetch upstream
-    git rebase upstream/master
+    git rebase upstream/main
 
 Pushing such changes to your repository (again, **this may cause problems** if
 other repositories have pulled the changes -- however this is uncommon in the
@@ -256,7 +256,7 @@ Chapel development workflow):
 Read commit messages for changes from the main Chapel project
 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-To view only the commits that happened on master (in other words, the old svn
+To view only the commits that happened on main (in other words, the old svn
 commits and the merge commits for pull requests):
 
 .. code-block:: bash
@@ -328,7 +328,7 @@ How to open a PR:
 
 .. _Submit a pull request: https://help.github.com/articles/using-pull-requests
 .. _synced with the main repo: https://help.github.com/articles/syncing-a-fork
-.. _Developer Certificate of Origin: https://github.com/chapel-lang/chapel/blob/master/.github/CONTRIBUTING.md
+.. _Developer Certificate of Origin: https://github.com/chapel-lang/chapel/blob/main/.github/CONTRIBUTING.md
 
 .. _How to merge a PR:
 
@@ -382,7 +382,7 @@ feature branch with new changes from the main Chapel project)
 
     # or:
     git fetch origin
-    git merge origin/master
+    git merge origin/main
 
     # similar to: svn update
 
@@ -402,27 +402,27 @@ ignored files):
     git ls-files --others
 
 
-If you've gotten your master branch mucked up but haven't pushed the branch
+If you've gotten your main branch mucked up but haven't pushed the branch
 with errors to your remote fork, you can fix it with the following series of
 commands:
 
 .. code-block:: bash
 
-    # This will save your old master state to a different branch name, removing
-    # the name "master" from the list of branches you can access on your fork
-    git branch -m <name for old, messed up master>
+    # This will save your old main state to a different branch name, removing
+    # the name "main" from the list of branches you can access on your fork
+    git branch -m <name for old, messed up main>
 
     # You will get a message indicating you are in a "detached HEAD state".  This
     # is expected (and desired).  Now the repository you are in is in line with
-    # your fork's master branch.
-    git checkout origin/master
+    # your fork's main branch.
+    git checkout origin/main
 
     # This will save the state of the repository right now to a new branch, named
-    # master.
-    git checkout -b master
+    # main.
+    git checkout -b main
 
-At this point, a `git push origin master` should work as expected.  Remember, do
-not try this with a master branch that has been corrupted on your remote fork.
+At this point, a `git push origin main` should work as expected.  Remember, do
+not try this with a main branch that has been corrupted on your remote fork.
 
 An alternate method, if you know or can easily find out the last commit that
 should be kept:

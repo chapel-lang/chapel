@@ -24,8 +24,8 @@
 # tools.
 #
 
-CC = $(CHPL_MAKE_COMPILER_COMMAND_C)     # normally cc
-CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX)  # normally CC
+CC = $(CHPL_MAKE_CC)     # normally cc
+CXX = $(CHPL_MAKE_CXX)   # normally CC
 
 RANLIB = ranlib
 

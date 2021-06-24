@@ -40,9 +40,13 @@ namespace uast {
       const c = 2;
       const ref d = c;
       param e = "hi";
+
+      class C {
+        var f: int;
+      }
   \endrst
 
-  each of these is a VariableDecl that refers to a Variable Sym.
+  each of a-f are Variables.
  */
 class Variable final : public VarLikeDecl {
  public:
@@ -59,14 +63,18 @@ class Variable final : public VarLikeDecl {
 
  private:
   Kind kind_;
+  bool isField_;
 
   Variable(ASTList children, Decl::Visibility vis, UniqueString name,
            Variable::Kind kind,
+           bool isField,
            int8_t typeExpressionChildNum, int8_t initExpressionChildNum)
       : VarLikeDecl(asttags::Variable, std::move(children), vis, name,
                     typeExpressionChildNum,
                     initExpressionChildNum),
-        kind_(kind) {}
+        kind_(kind),
+        isField_(isField) {
+  }
 
   bool contentsMatchInner(const ASTNode* other) const override;
   void markUniqueStringsInner(Context* context) const override;
@@ -77,6 +85,7 @@ class Variable final : public VarLikeDecl {
   static owned<Variable> build(Builder* builder, Location loc,
                                UniqueString name, Decl::Visibility vis,
                                Variable::Kind kind,
+                               bool isField,
                                owned<Expression> typeExpression,
                                owned<Expression> initExpression);
 
@@ -85,6 +94,10 @@ class Variable final : public VarLikeDecl {
    */
   Kind kind() const { return this->kind_; }
 
+  /**
+   Returns true if this Variable reperesents a field.
+   */
+  bool isField() const { return this->isField_; }
 };
 
 

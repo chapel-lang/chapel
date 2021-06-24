@@ -2414,6 +2414,13 @@ static void codegenPartOne() {
   uniquify_names(cnames, types, functions, globals);
 }
 
+static fileinfo hdrfile    = { NULL, NULL, NULL };
+static fileinfo mainfile   = { NULL, NULL, NULL };
+static fileinfo defnfile   = { NULL, NULL, NULL };
+static fileinfo strconfig  = { NULL, NULL, NULL };
+static fileinfo modulefile = { NULL, NULL, NULL };
+
+
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
 
@@ -2434,11 +2441,6 @@ static void codegenPartTwo() {
   }
 
   SET_LINENO(rootModule);
-
-  fileinfo hdrfile    = { NULL, NULL, NULL };
-  fileinfo mainfile   = { NULL, NULL, NULL };
-  fileinfo defnfile   = { NULL, NULL, NULL };
-  fileinfo strconfig  = { NULL, NULL, NULL };
 
   GenInfo* info     = gGenInfo;
 
@@ -2512,7 +2514,6 @@ static void codegenPartTwo() {
         const char* filename = NULL;
         filename = generateFileName(fileNameHashMap, filename, currentModule->name);
         if(currentModule->modTag == MOD_USER) {
-          fileinfo modulefile;
           openCFile(&modulefile, filename, "c");
           int modulePathLen = strlen(astr(modulefile.pathname));
           char path[FILENAME_MAX];
@@ -2569,7 +2570,6 @@ static void codegenPartTwo() {
       const char* filename = NULL;
       filename = generateFileName(fileNameHashMap, filename,currentModule->name);
 
-      fileinfo modulefile;
       openCFile(&modulefile, filename, "c");
       info->cfile = modulefile.fptr;
       if(fIncrementalCompilation && (currentModule->modTag == MOD_USER))
@@ -2819,4 +2819,13 @@ void nprint_view(GenRet& gen) {
   }
   printf("isUnsigned %i\n", (int) gen.isUnsigned);
   printf("}\n");
+}
+
+void closeCodegenFiles() {
+  // close the C files without trying to beautify
+  closeCFile(&hdrfile, false);
+  closeCFile(&mainfile, false);
+  closeCFile(&defnfile, false);
+  closeCFile(&strconfig, false);
+  closeCFile(&modulefile, false);
 }

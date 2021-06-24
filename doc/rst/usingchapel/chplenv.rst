@@ -7,9 +7,9 @@ To get started with Chapel, there are three environment settings that are
 strongly recommended for effective use of the release, and a number of
 other optional settings that are useful for cross-compiling or overriding
 the default settings.  To check the values of the Chapel environment
-variables that are set or can be inferred, run the script::
+variables that are set or can be inferred, run the command::
 
-  $CHPL_HOME/util/printchplenv
+  $CHPL_HOME/util/printchplenv --all
 
 The ``setchplenv.*`` source scripts in the ``$CHPL_HOME/util/quickstart/`` and
 ``$CHPL_HOME/util/`` directories contain commands that set the following
@@ -195,8 +195,51 @@ CHPL_*_COMPILER
         pgi                 The PGI compiler suite -- pgcc and pgc++
         =================== ===================================================
 
-   The default for ``CHPL_*_COMPILER`` is llvm, except on linux32 where
-   it is gnu.
+   The default for ``CHPL_HOST_COMPILER`` depends on the value of the
+   corresponding ``CHPL_HOST_PLATFORM`` environment variable:
+
+        +----------------+----------------------------------------------+
+        | Host Platform  | Compiler                                     |
+        +================+==============================================+
+        | hpe-cray-ex    |                                              |
+        |                | gnu                                          |
+        | cray-xc        |                                              |
+        +----------------+----------------------------------------------+
+        | darwin         |                                              |
+        |                | clang if available, otherwise gnu            |
+        | freebsd        |                                              |
+        +----------------+----------------------------------------------+
+        | pwr6           | ibm                                          |
+        +----------------+----------------------------------------------+
+        | other          | gnu                                          |
+        +----------------+----------------------------------------------+
+
+   The default for ``CHPL_TARGET_COMPILER`` is:
+
+     * ``llvm`` if the compiler is configured with LLVM support (see
+       :ref:`readme-chplenv.CHPL_LLVM`)
+     * ``cray-prgenv-$PE_ENV`` on ``cray-xc`` and ``hpe-cray-ex``
+       platforms (where ``PE_ENV`` is set by ``PrgEnv-*`` modules)
+     * ``CHPL_HOST_COMPILER`` if the host and target platforms are the
+       same
+     * ``gnu`` otherwise.
+
+   In cases where the LLVM code generation strategy is the default,
+   setting ``CHPL_TARGET_COMPILER`` to something other than ``llvm`` will
+   request that the C backend be used with that compiler. For example, to
+   select the C backend with the PrgEnv-gnu compiler, set
+   ``CHPL_TARGET_COMPILER=cray-prgenv-gnu``.
+
+   It is sometimes important to be able to provide a particular command
+   to run for C or C++ compilation. In that event, you can set ``CC`` to
+   the command to run for C compilation and ``CXX`` to the command to run
+   for C++ compilation. If the Chapel configuration support cannot detect
+   the compiler family from your setting of ``CC`` / ``CXX`` you will
+   have to explicitly set ``CHPL_*_COMPILER`` as well.  Note that setting
+   ``CC`` and ``CXX`` will impact both the host and target compiler. If
+   you would need different host and target compilers, you can instead
+   set ``CHPL_HOST_CC``, ``CHPL_HOST_CXX``, ``CHPL_TARGET_CC``, and
+   ``CHPL_TARGET_CXX``.
 
 .. _readme-chplenv.CHPL_TARGET_CPU:
 
@@ -635,10 +678,11 @@ CHPL_AUX_FILESYS
 
 CHPL_LLVM
 ~~~~~~~~~
-   Optionally, the ``CHPL_LLVM`` environment variable can be used to
-   enable support for the LLVM back-end to the Chapel compiler (see
-   :ref:`readme-llvm`) or to support extern blocks in Chapel code via
-   the Clang compiler (see :ref:`readme-extern`).  Current options are:
+
+   The ``CHPL_LLVM`` environment variable enables support for the LLVM
+   back-end to the Chapel compiler (see :ref:`readme-llvm`) and
+   support for extern blocks in Chapel code via the Clang compiler (see
+   :ref:`readme-extern`). Current options are:
 
        ============== ======================================================
        Value          Description
@@ -650,28 +694,25 @@ CHPL_LLVM
        none           do not support llvm/clang-related features
        ============== ======================================================
 
-   .. (comment) -minimal can be used but is only interesting for developers
-       llvm-minimal   as above, but only build and link LLVM ADTs
-       system-minimal as above, but only link LLVM ADTs
+   If unset, ``CHPL_LLVM`` defaults to:
 
-   If unset, ``CHPL_LLVM`` defaults to ``bundled`` if you've already installed
-   llvm in third-party and ``none`` otherwise.
+     * ``none`` on linux32 where Chapel LLVM support is not yet implemented
+     * ``bundled`` if you've already built the bundled llvm in
+       `third-party/llvm`
+     *  ``system`` if a compatible system-wide installation of LLVM is detected
 
-   Chapel currently supports LLVM 11.0.
+   If none of the above cases apply then you will need to either add a
+   system-wide installation of LLVM or set ``CHPL_LLVM`` to ``bundled``
+   or ``none``.
 
-   .. note::
+   See :ref:`readme-prereqs` for more information about currently
+   supported LLVM versions.
 
-       We have had success with this procedure to install LLVM 11.0
-       dependencies on Ubuntu.
-
-       First, follow the instructions at ``https://apt.llvm.org`` that
-       explain how to place the appropriate lines into
-       ``/etc/apt/sources.list.d/llvm-toolchain.list`` and retrieve
-       the archive signature, then do the following.
-
-        .. code-block:: sh
-
-            apt-get install llvm-11-dev llvm-11 llvm-11-tools clang-11 libclang-11-dev libedit-dev
+   In some cases, it is useful to be able to select a particular LLVM
+   installation for use with ``CHPL_LLVM=system``. In that event, in
+   addition to setting ``CHPL_LLVM=system``, you can set
+   ``CHPL_LLVM_CONFIG`` to the llvm-config command from the LLVM
+   installation you wish to use.
 
 .. _readme-chplenv.CHPL_UNWIND:
 

@@ -22,3 +22,9 @@ sync remote test split phase
 (get = 2, execute_on = 2)
 (get = 2, execute_on = 2)
 (get = 2, execute_on = 2)
+allLocalesBarrier test basic
+(execute_on_nb = 4)
+(<no communication>)
+(<no communication>)
+(<no communication>)
+(<no communication>)

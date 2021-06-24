@@ -154,12 +154,25 @@ struct Converter {
     return nullptr;
   }
 
-  Expr* convertWithClause(const uast::WithClause* node) {
+  Expr* convertAs(const uast::As* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  /// Control FLow ///
+  UseStmt* convertUse(const uast::Use* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  Expr* convertUseClause(const uast::UseClause* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  Expr* convertWithClause(const uast::WithClause* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
 
   GotoStmt* convertBreak(const uast::Break* node) {
     INT_FATAL("TODO");
@@ -193,6 +206,11 @@ struct Converter {
   }
 
   CallExpr* convertReturn(const uast::Return* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  BlockStmt* convertSync(const uast::Sync* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
@@ -647,6 +665,24 @@ struct Converter {
     INT_FATAL("TODO");
     return nullptr;
   }
+
+  /// AggregateDecls
+
+  Expr* convertClass(const uast::Class* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  Expr* convertRecord(const uast::Record* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  Expr* convertUnion(const uast::Union* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
 };
 
 /// Generic conversion calling the above functions ///

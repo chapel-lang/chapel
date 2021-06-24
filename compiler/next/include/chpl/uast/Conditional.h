@@ -135,7 +135,7 @@ class Conditional final : public Expression {
   */
   ASTListIteratorPair<Expression> thenStmts() const {
     auto begin = children_.begin() + thenBodyChildNum_;
-    auto end = begin + numThenBodyStmts_ - 1;
+    auto end = begin + numThenBodyStmts_;
     return ASTListIteratorPair<Expression>(begin, end);
   }
 
@@ -176,7 +176,7 @@ class Conditional final : public Expression {
   ASTListIteratorPair<Expression> elseStmts() const {
     auto begin = hasElseBlock() ? children_.begin() + elseBodyChildNum_
                                 : children_.end();
-    auto end = begin + numElseBodyStmts_ - 1;
+    auto end = begin + numElseBodyStmts_;
     return ASTListIteratorPair<Expression>(begin, end);
   }
 

@@ -89,7 +89,7 @@ if (pagePath == "") {
 function dropSetup() {
   var currentRelease = "1.24"; // what does the public have?
   var stagedRelease = "1.25";  // is there a release staged but not yet public?
-  var nextRelease = "1.25";    // what's the next release? (on docs/master)
+  var nextRelease = "1.25";    // what's the next release? (on docs/main)
   var button = document.getElementById("versionButton");
   // Uses unicode down-pointing triangle
   var arrow = " &#9660;";
@@ -122,10 +122,10 @@ function dropSetup() {
   }
 
   if (!chplTitle.includes(nextRelease)) {
-    // Add links to master version of docs
+    // Add links to main version of docs
     var link = document.createElement("a");
     link.innerHTML = "version " + nextRelease + "<br>(pre-release)";
-    link.href = "https://chapel-lang.org/docs/master/" + pagePath + ".html";
+    link.href = "https://chapel-lang.org/docs/main/" + pagePath + ".html";
     dropDiv.append(link);
   }
 }

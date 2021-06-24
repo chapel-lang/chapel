@@ -3,7 +3,7 @@
 /* $CHPL_HOME/doc/rst/language/spec/interoperability.rst  */
 /**********************************************************/
 
-extern record _someUnion {
+extern union _someUnion {
     var x: real(32);
     var y: real(64);
 }

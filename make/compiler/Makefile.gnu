@@ -23,8 +23,8 @@
 #
 # Tools
 #
-CXX = $(CHPL_MAKE_COMPILER_COMMAND_CXX) # normally g++
-CC = $(CHPL_MAKE_COMPILER_COMMAND_C)    # normally gcc
+CXX = $(CHPL_MAKE_CXX) # normally g++
+CC = $(CHPL_MAKE_CC)    # normally gcc
 
 RANLIB = ranlib
 

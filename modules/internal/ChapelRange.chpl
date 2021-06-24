@@ -2455,7 +2455,8 @@ operator :(r: range(?), type t: range(?)) {
       compilerError("iteration over a range with no first index");
 
     if followThis.size != 1 then
-      compilerError("iteration over a range with multi-dimensional iterator");
+      compilerError("rank mismatch in zippered iteration (can't zip a " +
+                    followThis.size:string + "D expression with a range, which is 1D)");
 
     if debugChapelRange then
       chpl_debug_writeln("In range follower code: Following ", followThis);
@@ -2482,14 +2483,17 @@ operator :(r: range(?), type t: range(?)) {
        myFollowThis.hasLast()
     {
       const flwlen = myFollowThis.sizeAs(myFollowThis.intIdxType);
-      if boundsChecking && this.hasLast() {
-        // this check is for typechecking only
-        if isBoundedRange(this) {
-          if this.sizeAs(intIdxType) < flwlen then
-            HaltWrappers.boundsCheckHalt("zippered iteration over a range with too few indices");
-        } else
-          assert(false, "hasFirst && hasLast do not imply isBoundedRange");
+      if boundsChecking {
+        if this.hasLast() {
+          // this check is for typechecking only
+          if !isBoundedRange(this) then
+            assert(false, "hasFirst && hasLast do not imply isBoundedRange");
+        }
+        if flwlen != 0 then
+          if isBoundedRange(this) && myFollowThis.last >= this.sizeAs(uint) then
+            HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration");
       }
+
       if this.stridable || myFollowThis.stridable {
         var r: range(idxType, stridable=true);
 

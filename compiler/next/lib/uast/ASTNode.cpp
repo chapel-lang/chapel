@@ -19,6 +19,7 @@
 
 #include "chpl/uast/ASTNode.h"
 
+#include "chpl/uast/Comment.h"
 #include "chpl/uast/NamedDecl.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
@@ -161,6 +162,8 @@ static void dumpHelper(const ASTNode* ast, int maxIdLen, int depth) {
     printf("%s ", named->name().c_str());
   } else if (const Identifier* ident = ast->toIdentifier()) {
     printf("%s ", ident->name().c_str());
+  } else if (const Comment* comment = ast->toComment()) {
+    printf("%s ", comment->c_str());
   }
 
   //printf("(containing %i) ", ast->id().numContainedChildren());

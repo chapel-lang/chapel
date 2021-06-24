@@ -104,12 +104,6 @@
   #ifndef _BISON_CHAPEL_DEFINES_1_
   #define _BISON_CHAPEL_DEFINES_1_
 
-  enum AggregateTag {
-    AggregateTag_CLASS,
-    AggregateTag_RECORD,
-    AggregateTag_UNION,
-  };
-
   enum ThrowsTag {
     ThrowsTag_DEFAULT,
     ThrowsTag_THROWS,
@@ -204,6 +198,7 @@
     bool isInline;
     bool isOverride;
     Function::Kind kind;
+    Formal::Intent thisIntent;
     Formal* receiver;
     PODUniqueString name;
     Function::ReturnIntent returnIntent;
@@ -224,10 +219,11 @@
   };
 
   // a struct to store the values in enum_header_lcbr
-  struct EnumParts {
+  struct TypeDeclParts {
     std::vector<ParserComment>* comments;
     Decl::Visibility visibility;
     PODUniqueString name;
+    asttags::ASTTag tag;
   };
 
   // This is produced by do_stmt. It records whether the do_stmt statements
@@ -276,7 +272,7 @@
 
     // integer/enum values
 
-    AggregateTag aggregateTag;
+    asttags::ASTTag astTag;
     Formal::Intent intentTag;
     Function::Kind functionKind;
     Function::ReturnIntent returnTag;
@@ -299,7 +295,7 @@
     BlockOrDo blockOrDo;
     CommentsAndLinkage commentsAndLinkage;
     CommentsAndStmt commentsAndStmt;
-    EnumParts enumParts;
+    TypeDeclParts typeDeclParts;
     FunctionParts functionParts;
     MaybeNamedActual maybeNamedActual;
     MaybeNamedActualList* maybeNamedActualList;
@@ -515,7 +511,7 @@
 %type <intentTag> required_intent_tag opt_intent_tag opt_this_intent_tag
 
 %type <returnTag>  opt_ret_tag
-%type <aggregateTag> class_tag
+%type <astTag> class_tag
 
 %type <uniqueStr> ident_use ident_def ident_fn_def
 %type <uniqueStr> internal_type_ident_def reserved_type_ident_use
@@ -545,7 +541,7 @@
 %type <expr> import_expr
 %type <commentsAndStmt> use_stmt import_stmt require_stmt
 %type <exprList> import_ls
-%type <renameList> renames_ls use_renames_ls opt_only_ls except_ls
+%type <exprList> except_ls renames_ls use_renames_ls opt_only_ls
 
 // These are exprList so that they can include preceeding comments
 %type <commentsAndStmt> implements_stmt interface_stmt
@@ -560,7 +556,8 @@
 %type <commentsAndStmt> select_stmt
 %type <commentsAndStmt> assignment_stmt
 
-%type <commentsAndStmt> class_level_stmt class_start
+%type <typeDeclParts> class_start
+%type <commentsAndStmt> class_level_stmt
 %type <commentsAndStmt> inner_class_level_stmt
 %type <commentsAndStmt> forwarding_decl_stmt forwarding_decl_start
 %type <commentsAndStmt> extern_export_decl_stmt
@@ -595,7 +592,7 @@
 %type <expr> array_type
 %type <expr> opt_type opt_ret_type ret_array_type
 %type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
-%type <enumParts> enum_header_lcbr
+%type <typeDeclParts> enum_header_lcbr
 %type <exprList> enum_ls
 
 %type <expr> zippered_iterator
@@ -860,7 +857,19 @@ stmt:
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(cs);
   }
-| TSYNC stmt                { $$ = context->finishStmt(TODOSTMT(@$)); }
+| TSYNC stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
+                               false, @1, $2);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Sync::build(BUILDER, LOC(@$), blockStyle,
+                            std::move(stmts));
+    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(ret);
+  }
 | TYIELD expr TSEMI
   {
     auto comments = context->gatherComments(@1);
@@ -1016,124 +1025,140 @@ stmt_ls:
 
 renames_ls:
   expr
-    {
-      $$ = new RenameList();
-      PotentialRename cur($1);;
-      $$->push_back(cur);
-    }
+  {
+    $$ = context->makeList($1);
+  }
 | expr TAS expr
-    {
-      $$ = new RenameList();
-      PotentialRename cur($1, $3);
-      $$->push_back(cur);
-    }
+  {
+    auto as = context->buildAsExpr(@1, @3, toOwned($1), toOwned($3));
+    $$ = context->makeList(as);
+  }
 | renames_ls TCOMMA expr
-    {
-      PotentialRename cur($3);
-      $1->push_back(cur);
-    }
+  {
+    $$ = context->appendList($1, $3);
+  }
 | renames_ls TCOMMA expr TAS expr
-    {
-      PotentialRename cur($3, $5);
-      $1->push_back(cur);
-    }
+  {
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
+    $$ = context->appendList($1, as);
+  }
 ;
 
 /* Separated so that use statements can rename their module to "_", but nothing
    else can */
 use_renames_ls:
   expr
-    {
-      $$ = new RenameList();
-      PotentialRename cur($1);
-      $$->push_back(cur);
-    }
+  {
+    auto node = UseClause::build(BUILDER, LOC(@$), toOwned($1));
+    $$ = context->makeList(std::move(node));
+  }
 | expr TAS expr
-    {
-      $$ = new RenameList();
-      PotentialRename cur($1, $3);
-      $$->push_back(cur);
-    }
+  {
+    auto as = context->buildAsExpr(@1, @3, toOwned($1), toOwned($3));
+    auto node = UseClause::build(BUILDER, LOC(@$), toOwned(as));
+    $$ = context->makeList(std::move(node));
+  }
 | expr TAS TUNDERSCORE
-    {
-      $$ = new RenameList();
-      PotentialRename cur($1, context->buildIdent(@3, $3));
-      $$->push_back(cur);
-    }
+  {
+    auto ident = toOwned(context->buildIdent(@3, $3));
+    auto as = context->buildAsExpr(@1, @3, toOwned($1), std::move(ident));
+    auto node = UseClause::build(BUILDER, LOC(@$), toOwned(as));
+    $$ = context->makeList(std::move(node));
+  }
 | use_renames_ls TCOMMA expr
-    {
-      PotentialRename cur($3);
-      $1->push_back(cur);
-     }
+  {
+    auto node = UseClause::build(BUILDER, LOC2(@2, @3), toOwned($3));
+    $$ = context->appendList($1, std::move(node));
+  }
 | use_renames_ls TCOMMA expr TAS expr
-     {
-       PotentialRename cur($3, $5);
-       $1->push_back(cur);
-     }
+  {
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
+    auto node = UseClause::build(BUILDER, LOC2(@2, @5), toOwned(as));
+    $$ = context->appendList($1, std::move(node));
+  }
 | use_renames_ls TCOMMA expr TAS TUNDERSCORE
-     {
-       PotentialRename cur($3, context->buildIdent(@5, $5));
-       $1->push_back(cur);
-     }
+  {
+    auto ident = context->buildIdent(@5, $5);
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned(ident));
+    auto node = UseClause::build(BUILDER, LOC2(@2, @5), toOwned(as));
+    $$ = context->appendList($1, std::move(node));
+  }
 ;
 
 
 opt_only_ls:
-  /* nothing */
-    {
-      $$ = new RenameList();
-      PotentialRename cur(context->buildEmptyIdent(@$));
-      $$->push_back(cur);
-    }
-| renames_ls
+  /* nothing */   { $$ = nullptr; }
+| renames_ls      { $$ = $1; }
 ;
 
 except_ls:
   TSTAR
-    {
-      $$ = new RenameList();
-      PotentialRename cur(context->buildEmptyIdent(@1));
-      $$->push_back(cur);
-     }
+  {
+    auto ident = context->buildIdent(@1, $1);
+    $$ = context->makeList(ident);
+  }
 | renames_ls
+  {
+    $$ = $1;
+  }
 ;
 
 use_stmt:
   access_control TUSE use_renames_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Use::build(BUILDER, LOC(@$), $1, context->consumeList($3));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
 | access_control TUSE expr TEXCEPT except_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto locUseClause = context->makeSpannedLocation(@3, @5);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned($3),
+                                     UseClause::EXCEPT,
+                                     $5);
+  }
 | access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
+    auto locUseClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
+                                     UseClause::EXCEPT,
+                                     $7);
+  }
 | access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto ident = toOwned(context->buildIdent(@5, $5));
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
+    auto locUseClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
+                                     UseClause::EXCEPT,
+                                     $7);
+  }
 | access_control TUSE expr TONLY opt_only_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto locUseClause = context->makeSpannedLocation(@3, @5);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned($3),
+                                     UseClause::ONLY,
+                                     $5);
+  }
 | access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
+    auto locUseClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
+                                     UseClause::ONLY,
+                                     $7);
+  }
 | access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto ident = toOwned(context->buildIdent(@5, $5));
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
+    auto locUseClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
+                                     UseClause::ONLY,
+                                     $7);
+  }
 ;
 
 import_stmt:
@@ -1418,6 +1443,24 @@ extern_export_decl_stmt:
       CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
       $$ = cs;
     }
+
+| extern_export_decl_stmt_start TUNION ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      CommentsAndLinkage cl = $1;
+      //auto comments = context->gatherComments(@7);
+      // TODO: store comments into the generated list
+      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
+      $$ = cs;
+    }
+| extern_export_decl_stmt_start STRINGLITERAL TUNION ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      CommentsAndLinkage cl = $1;
+      //auto comments = context->gatherComments(@8);
+      // TODO: store comments into the generated list
+      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
+      $$ = cs;
+    }
+
 | extern_export_decl_stmt_start opt_expr fn_decl_stmt
     {
       CommentsAndLinkage cl = $1;
@@ -1438,6 +1481,7 @@ extern_export_decl_stmt:
 
       $$ = context->buildFunctionDecl(@$, fp);
     }
+
 | extern_export_decl_stmt_start opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
     {
       CommentsAndLinkage cl = $1;
@@ -1715,6 +1759,7 @@ ifvar:
     auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
                                    Decl::DEFAULT_VISIBILITY,
                                    Variable::VAR,
+                                   context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
     $$ = varDecl.release();
@@ -1724,6 +1769,7 @@ ifvar:
     auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
                                    Decl::DEFAULT_VISIBILITY,
                                    Variable::CONST,
+                                   context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
     $$ = varDecl.release();
@@ -1868,16 +1914,15 @@ when_stmt:
 class_decl_stmt:
   class_start opt_inherit TLCBR class_level_stmt_ls TRCBR
     {
-      CommentsAndStmt cs = $1;
-      cs.stmt = TODOEXPR(@$);
-      context->appendComments(&cs, context->gatherComments(@5));
-      $$ = cs;
+      $$ = context->buildAggregateTypeDecl(@$, $1, @2, $2, @3, $4, @5);
+      context->exitScope($1.tag, $1.name);
     }
 | class_start opt_inherit TLCBR error TRCBR
     {
-      CommentsAndStmt cs = $1;
-      cs.stmt = TODOEXPR(@$);
-      $$ = cs;
+      auto contents =
+        context->makeList(ErroneousExpression::build(BUILDER, LOC(@4)));
+      $$ = context->buildAggregateTypeDecl(@$, $1, @2, $2, @3, contents, @5);
+      context->exitScope($1.tag, $1.name);
     }
   /* see also extern_export_decl_stmt */
 ;
@@ -1885,14 +1930,24 @@ class_decl_stmt:
 class_start:
   class_tag ident_def
     {
-      $$ = TODOSTMT(@$);
+      // take into account location of public/private, if any
+      auto loc = context->declStartLoc(@1);
+      context->enterScope($1, $2);
+
+      TypeDeclParts parts = {context->gatherComments(loc),
+                             context->visibility,
+                             $2,
+                             $1};
+      $$ = parts;
+
+      context->clearComments();
     }
 ;
 
 class_tag:
-  TCLASS   { $$ = AggregateTag_CLASS; }
-| TRECORD  { $$ = AggregateTag_RECORD; }
-| TUNION   { $$ = AggregateTag_UNION; }
+  TCLASS   { $$ = asttags::Class; }
+| TRECORD  { $$ = asttags::Record; }
+| TUNION   { $$ = asttags::Union; }
 ;
 
 opt_inherit:
@@ -1912,7 +1967,7 @@ class_level_stmt_ls:
 enum_decl_stmt:
   enum_header_lcbr enum_ls TRCBR
     {
-      EnumParts parts = $1;
+      TypeDeclParts parts = $1;
       ParserExprList* list = $2;
       // get any comments after the last element but before the closing brace
       context->appendList(list, context->gatherComments(@3));
@@ -1922,15 +1977,17 @@ enum_decl_stmt:
                               context->consumeList(list));
       CommentsAndStmt cs = {parts.comments, decl.release()};
       $$ = cs;
+      context->exitScope(asttags::Enum, parts.name);
       context->resetDeclState();
       context->clearComments();
     }
 | enum_header_lcbr error TRCBR
     {
-      EnumParts parts = $1;
+      TypeDeclParts parts = $1;
       auto err = ErroneousExpression::build(BUILDER, LOC(@2));
       CommentsAndStmt cs = {parts.comments, err.release()};
       $$ = cs;
+      context->exitScope(asttags::Enum, parts.name);
       context->resetDeclState();
       context->clearComments();
     }
@@ -1941,8 +1998,12 @@ enum_header_lcbr:
     {
       // take into account location of public/private, if any
       auto loc = context->declStartLoc(@1);
+      context->enterScope(asttags::Enum, $2);
 
-      EnumParts parts = {context->gatherComments(loc), context->visibility, $2};
+      TypeDeclParts parts = {context->gatherComments(loc),
+                             context->visibility,
+                             $2,
+                             asttags::Enum};
       $$ = parts;
 
       context->clearComments();
@@ -2016,7 +2077,10 @@ fn_decl_stmt:
   fn_decl_stmt_inner
   opt_ret_tag opt_ret_type
   opt_throws_error opt_lifetime_where
-    { context->clearComments(); }
+    {
+      context->clearComments();
+      context->enterScope(asttags::Function, $1.name);
+    }
   opt_function_body_stmt
     {
       FunctionParts fp = $1;
@@ -2030,6 +2094,7 @@ fn_decl_stmt:
       fp.where = wl.where;
 
       context->clearComments();
+      context->exitScope(asttags::Function, $1.name);
 
       $$ = fp;
     }
@@ -2039,7 +2104,7 @@ fn_decl_stmt_inner:
   fn_decl_stmt_start opt_this_intent_tag fn_ident opt_formal_ls
     {
       FunctionParts fp = $1;
-      // TODO -- do something with $2
+      fp.thisIntent = $2;
       fp.name = $3;
       fp.formals = $4;
       $$ = fp;
@@ -2047,7 +2112,7 @@ fn_decl_stmt_inner:
 | fn_decl_stmt_start opt_this_intent_tag assignop_ident opt_formal_ls
     {
       FunctionParts fp = $1;
-      // TODO -- do something with $2
+      fp.thisIntent = $2;
       fp.name = $3;
       fp.formals = $4;
       $$ = fp;
@@ -2055,6 +2120,7 @@ fn_decl_stmt_inner:
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
     {
       FunctionParts fp = $1;
+      fp.thisIntent = $2;
       fp.receiver = Formal::build(BUILDER, LOC(@3),
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
@@ -2065,6 +2131,7 @@ fn_decl_stmt_inner:
 | fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
     {
       FunctionParts fp = $1;
+      fp.thisIntent = $2;
       fp.receiver = Formal::build(BUILDER, LOC(@3),
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
@@ -2407,6 +2474,7 @@ var_decl_stmt_inner:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->currentScopeIsAggregate(),
                                      toOwned($2), toOwned($3));
       // gather the comments like a statement does
       $$ = STMT(@1, varDecl.release());
@@ -2430,6 +2498,7 @@ tuple_var_decl_component:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->currentScopeIsAggregate(),
                                      nullptr, nullptr);
       $$ = varDecl.release();
     }
@@ -2439,6 +2508,7 @@ tuple_var_decl_component:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->currentScopeIsAggregate(),
                                      nullptr, nullptr);
       $$ = varDecl.release();
     }
@@ -2681,26 +2751,26 @@ sub_type_level_expr:
     { $$ = TODOEXPR(@$); }
 
 | TOWNED
-    { $$ = TODOEXPR(@$); }
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TOWNED expr
     { $$ = TODOEXPR(@$); }
 | TUNMANAGED
-    { $$ = TODOEXPR(@$); }
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TUNMANAGED expr
     { $$ = TODOEXPR(@$); }
 | TSHARED
-    { $$ = TODOEXPR(@$); }
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TSHARED expr
     { $$ = TODOEXPR(@$); }
 | TBORROWED
-    { $$ = TODOEXPR(@$); }
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TBORROWED expr
     { $$ = TODOEXPR(@$); }
 
 | TCLASS
-    { $$ = TODOEXPR(@$); }
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 | TRECORD
-    { $$ = TODOEXPR(@$); }
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
 ;
 
 for_expr:
