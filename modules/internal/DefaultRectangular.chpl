@@ -490,9 +490,9 @@ module DefaultRectangular {
       where tag == iterKind.follower {
 
       if followThis.size != this.rank then
-        compilerError("rank mismatch in zippered iteration (leader is " +
-                      followThis.size:string + "D, but array is " +
-                      this.rank:string + "D)");
+        compilerError("rank mismatch in zippered iteration (can't zip a " +
+                      followThis.size:string + "D expression with a " +
+                      this.rank:string + "D domain)");
         
       proc anyStridable(rangeTuple, param i: int = 0) param
         return if i == rangeTuple.size-1 then rangeTuple(i).stridable
@@ -1174,6 +1174,11 @@ module DefaultRectangular {
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity)
       ref where tag == iterKind.follower {
+      if followThis.size != this.rank then
+        compilerError("rank mismatch in zippered iteration (can't zip a " +
+                      followThis.size:string + "D expression with a " +
+                      this.rank:string + "D array)");
+
       if debugDefaultDist {
         chpl_debug_writeln("*** In defRectArr simple-dd follower iterator: ",
                            followThis);

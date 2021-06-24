@@ -1,3 +1,3 @@
 zipRankMismatch.chpl:6: In function 'zipem':
-zipRankMismatch.chpl:7: error: rank mismatch in zippered iteration (leader is 2D, but ranges are 1D)
+zipRankMismatch.chpl:7: error: rank mismatch in zippered iteration (can't zip a 2D expression with a range, which is 1D)
   zipRankMismatch.chpl:17: called as zipem(X: [domain(2,int(64),false)] real(64), Y: range(int(64),bounded,false))

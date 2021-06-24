@@ -2455,8 +2455,8 @@ operator :(r: range(?), type t: range(?)) {
       compilerError("iteration over a range with no first index");
 
     if followThis.size != 1 then
-      compilerError("rank mismatch in zippered iteration (leader is " +
-                    followThis.size:string + "D, but ranges are 1D)");
+      compilerError("rank mismatch in zippered iteration (can't zip a " +
+                    followThis.size:string + "D expression with a range, which is 1D)");
 
     if debugChapelRange then
       chpl_debug_writeln("In range follower code: Following ", followThis);
