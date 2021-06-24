@@ -80,8 +80,11 @@ Please note that when we `#include` a header we will do so assuming that
 
 ### a note about namespaces
 
-It is a style matter to decide when to introduce a new namespace.
-Here is some guidance about when to do so:
+Unless there is a good reason not to, the Chapel compiler library code
+should be in the chpl namespace.
+
+Other than that, it is a style matter to decide when to introduce a new
+namespace. Here is some guidance about when to do so:
  * when creating a bunch of similar types that we'd like to be able to
    easily distinguish (e.g. uast vs old ast)
  * when creating a bunch of free functions that we'd like to be able to
