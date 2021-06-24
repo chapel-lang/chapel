@@ -101,9 +101,6 @@ $(eval $(CHPL_MAKE_SETTINGS))
 ifndef CHPL_MAKE_HOST_PLATFORM
   $(error error running util/printchplenv -- please see error above)
 endif
-ifndef CHPL_MAKE_THIRD_PARTY_LINK_ARGS
-  $(error error running util/printchplenv -- please see error above)
-endif
 
 # Try this to debug issues with CHPL_MAKE_* variables
 # $(info $(CHPL_MAKE_CHPLENV_CACHE))
