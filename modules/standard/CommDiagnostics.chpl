@@ -254,9 +254,33 @@ module CommDiagnostics
      */
     var execute_on_nb: uint(64);
 
+    /*
+
+      GETs that were handled by the cache. GETs counted here did not require
+      the cache to communicate in order to return the result.
+
+      .. note:
+
+        A GET that requires the cache to wait (but not create any other
+        communication) is counted here. As a result, a GET that needed to wait
+        for a prefetch to complete is considered a hit.
+
+     */
     var cache_get_hits: uint(64);
+
+    /*
+      GETs that were not handled by the cache - that is, GETs where the
+      cache needed to communicate with another locale.
+     */
     var cache_get_misses: uint(64);
+
+    /*
+      PUTs that were stored in cache pages that already existed.
+     */
     var cache_put_hits: uint(64);
+    /*
+      PUTs that required the cache to create a new page to store them.
+     */
     var cache_put_misses: uint(64);
 
     proc writeThis(c) throws {

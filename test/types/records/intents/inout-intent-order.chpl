@@ -193,7 +193,7 @@ record R {
     return this;
   }
 }
-proc =(ref lhs:R, rhs:R) {
+operator R.=(ref lhs:R, rhs:R) {
   writeln("lhs", lhs.toString(), " = rhs", rhs.toString());
   lhs.x = rhs.x;
   lhs.ptr = new shared C(rhs.ptr.xx);

@@ -304,8 +304,33 @@ module ChapelLocale {
   */
   inline proc locale.callStackSize { return this._value.callStackSize; }
 
+  /*
+    :returns: the number of tasks that have begun executing, but have not yet finished
+    :rtype: `int`
+
+    Note that this number can exceed the number of non-idle threads
+    because there are cases in which a thread is working on more than
+    one task. As one example, in fifo tasking, when a parent task
+    creates child tasks to execute the iterations of a coforall
+    construct, the thread the parent is running on may temporarily
+    suspend executing the parent task in order to help with the child
+    tasks, until the construct completes. When this occurs the count
+    of running tasks can include both the parent task and a child,
+    although strictly speaking only the child is executing
+    instructions.
+
+    As another example, any tasking implementation in which threads
+    can switch from running one task to running another, such as
+    qthreads, can have more tasks running than threads on which to run
+    them.
+  */
+  pragma "fn synchronization free"
+  proc locale.runningTasks() {
+    return this.runningTaskCnt();
+  }
+
   pragma "no doc"
-  proc =(ref l1: locale, const ref l2: locale) {
+  operator locale.=(ref l1: locale, const ref l2: locale) {
     l1._instance = l2._instance;
   }
 
@@ -533,7 +558,7 @@ module ChapelLocale {
   // Returns a reference to a singleton array (stored in AbstractLocaleModel)
   // storing this locale.
   //
-  // This singleton array is useful for some array/domain implementaitons
+  // This singleton array is useful for some array/domain implementations
   // (such as DefaultRectangular) to help the targetLocales call return
   // by 'const ref' without requiring the array/domain implementation
   // to store another array.
@@ -690,6 +715,13 @@ module ChapelLocale {
   pragma "no doc"
   class localesSignal {
     var s: atomic bool;
+
+    // Override default initializer; this could go away when the
+    // compiler's default initializer creates a version that takes a
+    // bool rather than an 'atomic bool' (which generates a
+    // '--warn-unstable' warning otherwise)
+    proc init() {
+    }
   }
   pragma "no doc"
   record localesBarrier {
@@ -886,12 +918,6 @@ module ChapelLocale {
     return queuedTasks;
   }
 
-  pragma "fn synchronization free"
-  pragma "no doc"
-  proc locale.runningTasks() {
-    return this.runningTaskCnt();
-  }
-  
   pragma "no doc"
   proc locale.blockedTasks() {
     var blockedTasks: int;

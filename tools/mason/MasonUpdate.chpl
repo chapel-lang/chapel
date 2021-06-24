@@ -192,7 +192,7 @@ proc updateRegistry(skipUpdate: bool) {
 }
 
 proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
-  use Regexp;
+  use Regex;
 
   if brick == nil {
     stderr.writeln("Error: Unable to parse manifest file");
@@ -229,7 +229,7 @@ proc parseChplVersion(brick: borrowed Toml?): (VersionInfo, VersionInfo) {
 }
 
 proc checkChplVersion(chplVersion, low, high) throws {
-  use Regexp;
+  use Regex;
   var lo, hi : VersionInfo;
   const formatMessage = "\n\n" +
     "chplVersion format must be '<version>..<version>' or '<version>'\n" +

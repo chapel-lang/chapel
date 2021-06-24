@@ -4,7 +4,7 @@ record R {
     this.x = rhs;
   }
 }
-proc =(ref lhs:R, const ref rhs:int) {
+operator =(ref lhs:R, const ref rhs:int) {
   lhs.x = rhs;
 }
 

@@ -48,6 +48,8 @@
 #include "version.h"
 #include "visibleFunctions.h"
 
+#include "chpl/queries/Context.h"
+
 #include <inttypes.h>
 #include <string>
 #include <sstream>
@@ -78,7 +80,7 @@ const char* CHPL_RUNTIME_CPU = NULL;
 const char* CHPL_TARGET_BACKEND_CPU = NULL;
 const char* CHPL_TARGET_CPU_FLAG = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
-const char* CHPL_ORIG_TARGET_COMPILER = NULL;
+const char* CHPL_TARGET_COMPILER_PRGENV = NULL;
 const char* CHPL_LOCALE_MODEL = NULL;
 const char* CHPL_COMM = NULL;
 const char* CHPL_COMM_SUBSTRATE = NULL;
@@ -93,7 +95,7 @@ const char* CHPL_ATOMICS = NULL;
 const char* CHPL_NETWORK_ATOMICS = NULL;
 const char* CHPL_GMP = NULL;
 const char* CHPL_HWLOC = NULL;
-const char* CHPL_REGEXP = NULL;
+const char* CHPL_RE2 = NULL;
 const char* CHPL_LLVM = NULL;
 const char* CHPL_AUX_FILESYS = NULL;
 const char* CHPL_UNWIND = NULL;
@@ -101,6 +103,7 @@ const char* CHPL_LIB_PIC = NULL;
 
 const char* CHPL_RUNTIME_SUBDIR = NULL;
 const char* CHPL_LAUNCHER_SUBDIR = NULL;
+const char* CHPL_SYS_MODULES_SUBDIR = NULL;
 const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
@@ -210,7 +213,7 @@ bool fNoSplitInit = false;
 bool fNoEarlyDeinit = false;
 bool fNoCopyElision = false;
 bool fCompileTimeNilChecking = true;
-bool fInferImplementsStmts = true;
+bool fInferImplementsStmts = false;
 bool fOverrideChecking = true;
 bool fieeefloat = false;
 int ffloatOpt = 0; // 0 -> backend default; -1 -> strict; 1 -> opt
@@ -287,6 +290,10 @@ bool fPrintAdditionalErrors;
 
 static
 bool fPrintChplSettings = false;
+
+bool fCompilerLibraryParser = false;
+
+chpl::Context* gContext = nullptr;
 
 /* Note -- LLVM provides a way to get the path to the executable...
 // This function isn't referenced outside its translation unit, but it
@@ -703,10 +710,18 @@ static void verifySaveLibDir(const ArgumentDescription* desc, const char* unused
 
 static void setLlvmCodegen(const ArgumentDescription* desc, const char* unused)
 {
-  if (fYesLlvmCodegen)
+  if (fYesLlvmCodegen) {
     fNoLlvmCodegen = false;
-  else
+    USR_WARN("--llvm is deprecated -- please use --target-compiler=llvm");
+    envMap["CHPL_TARGET_COMPILER"] = "llvm";
+    // set the environment variable for follow-on processes including
+    // any printchplenv invocation
+    int rc = setenv("CHPL_TARGET_COMPILER", "llvm", 1);
+    if( rc ) USR_FATAL("Could not setenv CHPL_TARGET_COMPILER");
+  } else {
     fNoLlvmCodegen = true;
+    USR_WARN("--no-llvm is deprecated -- please use e.g. --target-compiler=gnu");
+  }
 }
 
 static void setVectorize(const ArgumentDescription* desc, const char* unused)
@@ -1032,7 +1047,7 @@ static ArgumentDescription arg_desc[] = {
  {"locale-model", ' ', "<locale-model>", "Specify locale model to use", "S", NULL, "_CHPL_LOCALE_MODEL", setEnv},
  {"make", ' ', "<make utility>", "Make utility for generated code", "S", NULL, "_CHPL_MAKE", setEnv},
  {"mem", ' ', "<mem-impl>", "Specify the memory manager", "S", NULL, "_CHPL_MEM", setEnv},
- {"regexp", ' ', "<regexp>", "Specify whether to use regexp support", "S", NULL, "_CHPL_REGEXP", setEnv},
+ {"re2", ' ', "<re2-version>", "Specify RE2 library", "S", NULL, "_CHPL_RE2", setEnv},
  {"target-arch", ' ', "<architecture>", "Target architecture / machine type", "S", NULL, "_CHPL_TARGET_ARCH", setEnv},
  {"target-compiler", ' ', "<compiler>", "Compiler for generated code", "S", NULL, "_CHPL_TARGET_COMPILER", setEnv},
  {"target-cpu", ' ', "<cpu>", "Target cpu model for specialization", "S", NULL, "_CHPL_TARGET_CPU", setEnv},
@@ -1148,6 +1163,8 @@ static ArgumentDescription arg_desc[] = {
  {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
 
+ {"compiler-library-parser", ' ', NULL, "Enable [disable] using compiler library parser", "N", &fCompilerLibraryParser, "CHPL_COMPILER_LIBRARY_PARSER", NULL},
+
  DRIVER_ARG_PRINT_CHPL_HOME,
  DRIVER_ARG_LAST
 };
@@ -1244,32 +1261,15 @@ static void printStuff(const char* argv0) {
 }
 
 static void setupLLVMCodeGen() {
-  if (fYesLlvmCodegen) {
+  // Use LLVM code generation if CHPL_TARGET_COMPILER=llvm.
+  fLlvmCodegen = (0 == strcmp(CHPL_TARGET_COMPILER, "llvm"));
+
+  // These are deprecated and shouldn't be set, but try to
+  // use them.
+  if (fYesLlvmCodegen)
     fLlvmCodegen = true;
-  } else if (fNoLlvmCodegen) {
+  else if (fNoLlvmCodegen)
     fLlvmCodegen = false;
-  } else {
-    const char* chpl_llvm = getenv("CHPL_LLVM");
-    if (chpl_llvm != NULL && 0 == strcmp(chpl_llvm, "none")) {
-      fLlvmCodegen = false;
-    } else {
-#ifdef HAVE_LLVM
-      const char* chpl_llvm_by_default = getenv("CHPL_LLVM_BY_DEFAULT");
-      if (chpl_llvm_by_default != NULL &&
-          0 != strcmp(chpl_llvm_by_default, "0")) {
-        // LLVM-by-default was requested
-        fLlvmCodegen = true;
-      } else {
-        // LLVM-by-default not requested
-        // (in the future, this will change to `true`)
-        fLlvmCodegen = false;
-      }
-#else
-      // Not built with LLVM
-      fLlvmCodegen = false;
-#endif
-    }
-  }
 }
 
 bool useDefaultEnv(std::string key) {
@@ -1351,7 +1351,7 @@ static void setChapelEnvs() {
   CHPL_TARGET_BACKEND_CPU = envMap["CHPL_TARGET_BACKEND_CPU"];
   CHPL_TARGET_CPU_FLAG = envMap["CHPL_TARGET_CPU_FLAG"];
   CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
-  CHPL_ORIG_TARGET_COMPILER = envMap["CHPL_ORIG_TARGET_COMPILER"];
+  CHPL_TARGET_COMPILER_PRGENV = envMap["CHPL_TARGET_COMPILER_PRGENV"];
   CHPL_LOCALE_MODEL    = envMap["CHPL_LOCALE_MODEL"];
   CHPL_COMM            = envMap["CHPL_COMM"];
   CHPL_COMM_SUBSTRATE  = envMap["CHPL_COMM_SUBSTRATE"];
@@ -1366,7 +1366,7 @@ static void setChapelEnvs() {
   CHPL_NETWORK_ATOMICS = envMap["CHPL_NETWORK_ATOMICS"];
   CHPL_GMP             = envMap["CHPL_GMP"];
   CHPL_HWLOC           = envMap["CHPL_HWLOC"];
-  CHPL_REGEXP          = envMap["CHPL_REGEXP"];
+  CHPL_RE2             = envMap["CHPL_RE2"];
   CHPL_LLVM            = envMap["CHPL_LLVM"];
   CHPL_AUX_FILESYS     = envMap["CHPL_AUX_FILESYS"];
   CHPL_UNWIND          = envMap["CHPL_UNWIND"];
@@ -1374,15 +1374,14 @@ static void setChapelEnvs() {
 
   CHPL_RUNTIME_SUBDIR  = envMap["CHPL_RUNTIME_SUBDIR"];
   CHPL_LAUNCHER_SUBDIR = envMap["CHPL_LAUNCHER_SUBDIR"];
+  CHPL_SYS_MODULES_SUBDIR = envMap["CHPL_SYS_MODULES_SUBDIR"];
   CHPL_LLVM_UNIQ_CFG_PATH = envMap["CHPL_LLVM_UNIQ_CFG_PATH"];
 
   // Make sure there are no NULLs in envMap
   // a NULL in envMap might mean that one of the variables
   // the compiler expected printchplenv to produce was not produced.
-  for (std::map<std::string, const char*>::iterator env=envMap.begin();
-       env!=envMap.end(); ++env) {
-    INT_ASSERT(env->second != NULL);
-  }
+  for (auto& env : envMap)
+    INT_ASSERT(env.second != NULL);
 }
 
 static void setupChplGlobals(const char* argv0) {
@@ -1397,17 +1396,13 @@ static void setupChplGlobals(const char* argv0) {
     envMap["CHPL_HOME"] = CHPL_HOME;
   }
 
-  // tell printchplenv that we're doing an LLVM build
-  setupLLVMCodeGen();
-  if (fLlvmCodegen) {
-    envMap["CHPL_LLVM_CODEGEN"] = "llvm";
-  }
-
   // Populate envMap from printchplenv, never overwriting existing elements
   populateEnvMap();
 
   // Set global CHPL_vars with updated envMap values
   setChapelEnvs();
+
+  setupLLVMCodeGen();
 }
 
 static void postTaskTracking() {
@@ -1422,16 +1417,8 @@ static void postStaticLink() {
   if (!strcmp(CHPL_TARGET_PLATFORM, "darwin")) {
     if (fLinkStyle == LS_STATIC) {
       USR_WARN("Static compilation is not supported on OS X, ignoring flag.");
+      // To handle linker errors and relocations in the client library.
       fLinkStyle = fMultiLocaleInterop ? LS_DYNAMIC : LS_DEFAULT;
-    }
-
-    //
-    // The default link style translates to static (at least for now), so we
-    // need to account for that when building a multi-locale library or else
-    // we'll get the same errors we do for static linking on `darwin`.
-    //
-    if (fMultiLocaleInterop && fLinkStyle == LS_DEFAULT) {
-      fLinkStyle = LS_DYNAMIC;
     }
   }
 }
@@ -1444,7 +1431,7 @@ static void postLocal() {
 
 static void postVectorize() {
   // Make sure fYesVectorize and fNoVectorize are respected
-  // but if neither is set, compute the default (based on --llvm or not)
+  // but if neither is set, compute the default (based on LLVM backend or not)
   if (fForceVectorize)
     fYesVectorize = true;
 
@@ -1467,10 +1454,6 @@ static void setMultiLocaleInterop() {
   // We must be compiling a multi-locale library to be eligible for MLI.
   if (!fLibraryCompile || !strcmp(CHPL_COMM, "none")) {
     return;
-  }
-
-  if (fLlvmCodegen) {
-    USR_FATAL("Multi-locale libraries do not support --llvm");
   }
 
   if (fLibraryFortran) {
@@ -1496,11 +1479,11 @@ static void checkLLVMCodeGen() {
   // LLVM does not currently work on 32-bit x86
   bool unsupportedLlvmConfiguration = (0 == strcmp(CHPL_TARGET_ARCH, "i686"));
   if (fLlvmCodegen && unsupportedLlvmConfiguration)
-    USR_FATAL("--llvm not yet supported for this architecture");
+    USR_FATAL("CHPL_TARGET_COMPLIER=llvm not yet supported for this architecture");
 
   if (0 == strcmp(CHPL_LLVM, "none")) {
-    if (fYesLlvmCodegen)
-      USR_FATAL("--llvm not supported when CHPL_LLVM=none");
+    if (fLlvmCodegen)
+      USR_FATAL("CHPL_TARGET_COMPILER=llvm not supported when CHPL_LLVM=none");
   }
 #else
   // compiler wasn't built with LLVM, so if LLVM is enabled, error
@@ -1539,17 +1522,49 @@ static void checkUnsupportedConfigs(void) {
 }
 
 static void checkMLDebugAndLibmode(void) {
-
   if (!fMultiLocaleLibraryDebug) { return; }
 
+  // This flag implies compilation of a library.
   fLibraryCompile = true;
 
   if (!strcmp(CHPL_COMM, "none")) {
     fMultiLocaleLibraryDebug = false;
     USR_WARN("Compiling a single locale library because CHPL_COMM is none.");
+  } else {
+    fMultiLocaleInterop = true;
   }
 
   return;
+}
+
+static void checkLibraryPythonAndLibmode(void) {
+  if (!fLibraryPython) return;
+
+  // This flag implies compilation of a library.
+  fLibraryCompile = true;
+
+  if (strcmp(CHPL_LIB_PIC, "pic")) {
+    USR_FATAL("Python libraries require position independent code, "
+              "recompile Chapel with CHPL_LIB_PIC=pic");
+  }
+
+  if (fLinkStyle == LS_STATIC) {
+    const char* libKindMsg = fMultiLocaleInterop
+        ? "Multi-locale Python libraries"
+        : "Python libraries";
+    USR_WARN("%s cannot be compiled with -static, ignoring flag",
+             libKindMsg);
+    fLinkStyle = LS_DEFAULT;
+  }
+
+  INT_ASSERT(fLinkStyle == LS_DEFAULT || fLinkStyle == LS_DYNAMIC);
+
+  // For single-locale libraries LS_DEFAULT may work, but for multi-locale
+  // libraries we need to force dynamic linking in order to prevent
+  // relocations in the client library.
+  if (fMultiLocaleInterop) {
+    fLinkStyle = LS_DYNAMIC;
+  }
 }
 
 static void checkNotLibraryAndMinimalModules(void) {
@@ -1578,6 +1593,8 @@ static void postprocess_args() {
 
   checkMLDebugAndLibmode();
 
+  checkLibraryPythonAndLibmode();
+
   checkNotLibraryAndMinimalModules();
 
   setPrintCppLineno();
@@ -1595,6 +1612,10 @@ int main(int argc, char* argv[]) {
   PhaseTracker tracker;
 
   startCatchingSignals();
+
+  // create the compiler context
+  chpl::Context ctx;
+  gContext = &ctx;
 
   {
     astlocMarker markAstLoc(0, "<internal>");

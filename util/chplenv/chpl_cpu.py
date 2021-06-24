@@ -278,7 +278,7 @@ class argument_map(object):
             return 'none'
         elif compiler in ['intel', 'cray-prgenv-intel']:
             return cls.intel.get(cpu, '')
-        elif compiler in ['clang', 'clang-included', 'allinea']:
+        elif compiler in ['clang', 'llvm', 'allinea']:
             # Clang doesn't know how to do architecture detection for aarch64.
             if cpu == 'native':
                 if get_native_machine() == 'aarch64':
@@ -559,7 +559,7 @@ def default_cpu(flag):
       # could be more aggressive in setting a precise architecture using
       # the double checking code above, but it seems like a waste of time
       # to not use the work the backend compilers have already done
-      if compiler_val in ['clang', 'clang-included']:
+      if compiler_val in ['clang', 'llvm']:
           if get_native_machine() == 'aarch64':
               cpu = 'unknown'
           else:

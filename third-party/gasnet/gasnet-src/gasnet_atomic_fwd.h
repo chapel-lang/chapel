@@ -115,12 +115,6 @@
     #define GASNETI_ATOMIC32_IMPL GASNETI_ATOMIC_IMPL_NATIVE
     #define GASNETI_ATOMIC64_IMPL GASNETI_ATOMIC_IMPL_NATIVE
   #endif
-#elif PLATFORM_ARCH_IA64 /* Itanium */
-  #if PLATFORM_COMPILER_INTEL || PLATFORM_COMPILER_GNU
-    // Native via icc intrinsics or gcc inline asm
-    #define GASNETI_ATOMIC32_IMPL GASNETI_ATOMIC_IMPL_NATIVE
-    #define GASNETI_ATOMIC64_IMPL GASNETI_ATOMIC_IMPL_NATIVE
-  #endif
 #elif PLATFORM_ARCH_SPARC
   #if defined(__sparcv9) || defined(__sparcv9cpu) || \
       defined(__sparc_v9__) || defined(GASNETI_CONFIG_ARCH_ULTRASPARC) /* SPARC v9 ISA */

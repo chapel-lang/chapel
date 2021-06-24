@@ -2309,7 +2309,7 @@ redirectee
 reenable
 refcnt
 refness
-regexps
+regexes
 reindexee
 reldiff
 replicand
@@ -2744,6 +2744,7 @@ FILEID: e5dbc400-1d83-11e6-a3a6-10ddb1d4c3d5
 formalname
 gparent
 hashset
+ifvar
 instype
 outervar
 urse
@@ -2752,6 +2753,7 @@ wout
 yret
 
 FILEID: 0fdc1a0c-1d84-11e6-a3a6-10ddb1d4c3d5
+ifvar
 itexpr
 pblock
 ppne
@@ -3182,6 +3184,7 @@ bufit
 
 FILEID: f8d11ee0-1f2f-11e6-a3a6-10ddb1d4c3d5
 ffff
+fullmatch
 splitted
 
 FILEID: e9347814-1f30-11e6-a3a6-10ddb1d4c3d5
@@ -3244,6 +3247,7 @@ FILEID: 8d9c0040-2407-11e6-a3a6-10ddb1d4c3d5
 localt
 
 FILEID: 0ebaef5a-2409-11e6-a3a6-10ddb1d4c3d5
+ctxv
 kout
 subslots
 
@@ -3720,6 +3724,7 @@ parenthesesless
 FILEID: b4520e6e-5076-11e6-b83e-bc5ff4765d0d
 adaptative
 afee
+argsort
 binarytrees
 chapcs
 chplgmp
@@ -3904,6 +3909,7 @@ disubprogram
 dtype
 inalloca
 isinstance
+mynum
 ndarray
 nfor
 optos
@@ -4425,6 +4431,7 @@ newsec
 newsecond
 pytz
 resultp
+strftok
 uspms
 usps
 utcoff
@@ -4521,6 +4528,7 @@ vandermonde
 vlcplx
 vrcplx
 xdom
+xref
 ydom
 
 FILEID: 0e29860c-1a83-11e7-980e-10ddb1d4c3d5
@@ -4588,6 +4596,7 @@ inddef
 svdef
 tcall
 tpvs
+tupler
 wmikanik
 xtra
 
@@ -4608,6 +4617,8 @@ subnext
 todelete
 
 FILEID: a4c82866-83ce-11e7-ad1f-10ddb1d4c3d5
+csat
+indx
 multipledestructor
 
 FILEID: 733029d2-8aba-11e7-b3f1-10ddb1d4c3d5
@@ -4747,6 +4758,7 @@ cqes
 cswap
 ctok
 ctxs
+dlvr
 dsrd
 dupinfo
 enocq
@@ -4768,6 +4780,7 @@ ofiwg
 olen
 opnd
 pkey
+pmem
 pmichkret
 pmichksuccess
 procid
@@ -4782,6 +4795,7 @@ rmaunord
 rmawrite
 rxed
 schpl
+sdesirable
 spages
 sread
 statsnodes
@@ -4944,6 +4958,7 @@ maxiters
 FILEID: f765ca54-d1a9-11e8-954d-10ddb1d4c3d5
 bdynamic
 casttype
+dndebug
 ffast
 fsin
 fsyntax
@@ -4954,8 +4969,10 @@ ipra
 isysroot
 lessless
 maino
+mfile
 mpicxx
 ploc
+ptxas
 qunused
 srcm
 tlii
@@ -5095,6 +5112,7 @@ whereami
 
 FILEID: c0ac0568-bd81-11e9-8464-10ddb1d4c3d5
 ilroy
+listsort
 ninther
 sortit
 
@@ -5351,6 +5369,47 @@ lcudart
 FILEID: fe77e30e-2e9f-11eb-adc5-acbc32c4f96b
 developercertificate
 
+FILEID: 5000dfe8-62e2-11eb-a43d-6f93f4244f4b
+ifor
+istmt
+
+FILEID: 7356b18e-62e2-11eb-a43d-6f93f4244f4b
+logln
+
+FILEID: 94331c44-62e2-11eb-a43d-6f93f4244f4b
+arglist
+atype
+csat
+idstring
+impls
+indx
+simplements
+symstring
+
+FILEID: b89daf54-62e2-11eb-a43d-6f93f4244f4b
+lmod
+
+FILEID: c05642c4-62e2-11eb-a43d-6f93f4244f4b
+cgreen
+creset
+
+FILEID: 69d46c90-62e3-11eb-a43d-6f93f4244f4b
+strval
+
+FILEID: 87c9eef0-62e3-11eb-a43d-6f93f4244f4b
+elemsper
+
+FILEID: a8be55e8-7b38-11eb-91c9-15da80cfac4b
+ginstantiation
+indx
+
+FILEID: 5853ce2a-7b39-11eb-91c9-15da80cfac4b
+xnext
+xprev
+
+FILEID: 622c50fc-7b39-11eb-91c9-15da80cfac4b
+maxlargc
+
 NATURAL:
 aarch
 abcd
@@ -5359,6 +5418,7 @@ ablock
 accumgen
 achtung
 acknowledgements
+acons
 acosh
 acqs
 actuals
@@ -5371,6 +5431,7 @@ addrs
 adjoint
 afaik
 afterwards
+aggregatable
 aggregator
 aggregators
 akash
@@ -5443,6 +5504,7 @@ arounds
 arpa
 arrayness
 arrayview
+asan
 asciiz
 ascontiguousarray
 asenjo
@@ -5575,6 +5637,7 @@ bswap
 bucketize
 bucketized
 bucketizer
+bucketizing
 buettner
 bufcnt
 buffersize
@@ -5631,6 +5694,8 @@ celsius
 certinfo
 cfgfile
 cflags
+cgfun
+cgprint
 chad
 chameneos
 chameneosredux
@@ -5654,6 +5719,7 @@ chikara
 chiki
 childnum
 childstate
+chiuw
 chksum
 chmod
 cholesky
@@ -5747,6 +5813,7 @@ copyleft
 copyout
 copypostfields
 cory
+covariant
 coverity
 cppflags
 cppreference
@@ -5831,6 +5898,7 @@ dedent
 deepak
 defexpr
 defn
+defpoint
 defs
 degli
 deinit
@@ -5848,6 +5916,7 @@ delaney
 delhi
 delims
 demangle
+demunge
 denests
 dennis
 denny
@@ -5885,6 +5954,7 @@ destructure
 destructured
 destructures
 destructuring
+desugar
 detupled
 detupling
 devanagari
@@ -6149,6 +6219,8 @@ fannkuch
 fannkuchredux
 fasta
 fastaredux
+fatbin
+fatbinary
 faux
 fbody
 fcntl
@@ -6285,8 +6357,13 @@ gettimeofday
 gettimer
 getvalid
 gflop
+gfns
+gfun
+gfuns
+ggpu
 ghangas
 gilbert
+ginstantiation
 github
 gitignore
 gitter
@@ -6424,8 +6501,10 @@ iface
 ifdefs
 ified
 ifneq
+ifun
 ignorecase
 igroup
+iifc
 illinois
 imap
 imaps
@@ -6533,11 +6612,13 @@ isopen
 isoweekday
 isowned
 isprint
+isprivate
 isset
 isshared
 isslice
 issubtype
 issuercert
+istm
 istr
 isuid
 isunmanaged
@@ -6548,6 +6629,7 @@ iswlower
 iswprint
 iswspace
 iswupper
+isym
 iten
 iterables
 iterand
@@ -7211,6 +7293,7 @@ paolo
 parallelization
 parallelize
 parallelized
+parallelly
 parameterizable
 parameterization
 parameterized
@@ -7566,6 +7649,7 @@ schneier
 schubert
 schur
 sclean
+scolon
 sconfig
 scontrol
 scopeless
@@ -7682,6 +7766,7 @@ siterator
 sizeinbase
 skipdirs
 skipif
+skippable
 skylake
 sles
 slicee
@@ -7744,6 +7829,7 @@ stackoverflow
 stacksize
 stacktrace
 stallman
+standins
 stanford
 starkey
 startbit
@@ -7818,6 +7904,7 @@ subsequence
 substrings
 substrs
 subtable
+subtask
 subtest
 subtime
 subtree
@@ -8008,6 +8095,7 @@ ulong
 ulonglong
 umask
 umontreal
+unaggregatable
 unalias
 unaliasing
 unanchored
@@ -8237,4 +8325,3 @@ zypper
 øbenhavns
 ławski
 śniak
-

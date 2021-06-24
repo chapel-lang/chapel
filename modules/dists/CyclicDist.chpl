@@ -216,7 +216,7 @@ class Cyclic: BaseDist {
     var startIdxTemp: rank*idxType;
     for param i in 0..rank-1 {
       const startIdxI = if isTuple(startIdx) then startIdx(i) else startIdx;
-      startIdxTemp(i) = chpl__mod(startIdxI, targetLocDom.dim(i).size);
+      startIdxTemp(i) = chpl__mod(startIdxI, targetLocDom.dim(i).sizeAs(int));
     }
     this.startIdx = startIdxTemp;
 
@@ -403,7 +403,7 @@ proc Cyclic.writeThis(x) throws {
 }
 
 proc Cyclic.targetLocsIdx(i: idxType) {
-  const numLocs:idxType = targetLocDom.size:idxType;
+  const numLocs:idxType = targetLocDom.sizeAs(idxType);
   // this is wrong if i is less than startIdx
   //return ((i - startIdx(0)) % numLocs):int;
   // this works even if i is less than startIdx
@@ -413,7 +413,7 @@ proc Cyclic.targetLocsIdx(i: idxType) {
 proc Cyclic.targetLocsIdx(ind: rank*idxType) {
   var x: rank*int;
   for param i in 0..rank-1 {
-    var dimLen = targetLocDom.dim(i).size;
+    var dimLen = targetLocDom.dim(i).sizeAs(int);
     //x(i) = ((ind(i) - startIdx(i)) % dimLen):int;
     x(i) = chpl__diffMod(ind(i), startIdx(i), dimLen):int;
   }
@@ -447,7 +447,7 @@ proc chpl__computeCyclic(type idxType, locid, targetLocBox, startIdx) {
       const lo = chpl__tuplify(startIdx)(i): idxType;
       const myloc = chpl__tuplify(locid)(i): idxType;
       // NOTE: Not checking for overflow here when casting to strType
-      const numlocs = targetLocBox(i).size: strType;
+      const numlocs = targetLocBox(i).sizeAs(strType);
       inds(i) = chpl__computeCyclicDim(idxType, lo, myloc, numlocs);
     }
     return inds;
@@ -608,7 +608,11 @@ proc CyclicDom.dsiSerialWrite(x) {
   }
 }
 
-proc CyclicDom.dsiNumIndices return whole.size;
+proc CyclicDom.doiToString() {
+  return whole:string;
+}
+
+proc CyclicDom.dsiNumIndices return whole.sizeAs(uint);
 
 iter CyclicDom.these() {
   for i in whole do
@@ -746,7 +750,7 @@ class CyclicArr: BaseRectangularArr {
 
   var locArr: [dom.dist.targetLocDom] unmanaged LocCyclicArr(eltType, rank, idxType);
   var myLocArr: unmanaged LocCyclicArr(eltType=eltType, rank=rank, idxType=idxType)?;
-  const SENTINEL = max(rank*idxType);
+  const SENTINEL = max(rank*int);
 }
 
 pragma "no copy return"
@@ -872,7 +876,7 @@ inline proc _remoteAccessData.getDataIndex(
     halt("RADOpt not supported for strided cyclic arrays.");
   } else {
     for param i in 0..rank-1 do {
-      sum += (((ind(i) - off(i)) * blk(i))-startIdx(i))/dimLen(i);
+      sum += (((ind(i) - off(i)):int * blk(i))-startIdx(i):int)/dimLen(i);
     }
   }
   return sum;
@@ -1106,7 +1110,7 @@ class LocCyclicRADCache /* : LocRADCache */ {
   param rank: int;
   type idxType;
   var startIdx: rank*idxType;
-  var targetLocDomDimLength: rank*idxType;
+  var targetLocDomDimLength: rank*int;
 
   proc init(param rank: int, type idxType, startIdx, targetLocDom) {
     this.rank = rank;
@@ -1116,7 +1120,7 @@ class LocCyclicRADCache /* : LocRADCache */ {
 
     for param i in 0..rank-1 do
       // NOTE: Not bothering to check to see if length can fit into idxType
-      targetLocDomDimLength(i) = targetLocDom.dim(i).size:idxType;
+      targetLocDomDimLength(i) = targetLocDom.dim(i).sizeAs(int);
   }
 }
 
@@ -1146,7 +1150,7 @@ where canDoAnyToCyclic(this, destDom, Src, srcDom) {
     on Dest.dom.dist.targetLocs(i) {
       const regionDest = Dest.dom.locDoms(i).myBlock[destDom];
       const regionSrc = Src.dom.locDoms(i).myBlock[srcDom];
-      if regionDest.size > 0 {
+      if regionDest.sizeAs(int) > 0 {
         const ini = bulkCommConvertCoordinate(regionDest.first, destDom, srcDom);
         const end = bulkCommConvertCoordinate(regionDest.last, destDom, srcDom);
         const sb  = chpl__tuplify(regionSrc.stride);
@@ -1157,8 +1161,8 @@ where canDoAnyToCyclic(this, destDom, Src, srcDom) {
         //were different, we need to calculate the correct stride in r1
         for param t in 0..rank-1 {
           r1[t] = (ini[t]:el..end[t]:el by sb[t]);
-          if r1[t].size != r2[t].size then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].size-1));
+          if r1[t].sizeAs(int) != r2[t].sizeAs(int) then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].sizeAs(int)-1));
         }
 
         if debugCyclicDistBulkTransfer then
@@ -1185,7 +1189,7 @@ where useBulkTransferDist {
   coforall j in Src.dom.dist.targetLocDom {
     on Src.dom.dist.targetLocs(j) {
       const inters = Src.dom.locDoms(j).myBlock[srcDom];
-      if inters.size > 0 {
+      if inters.sizeAs(int) > 0 {
         const ini = bulkCommConvertCoordinate(inters.first, srcDom, destDom);
         const end = bulkCommConvertCoordinate(inters.last, srcDom, destDom);
         const sa  = chpl__tuplify(destDom.stride);
@@ -1199,8 +1203,8 @@ where useBulkTransferDist {
         //were different, we need to calculate the correct stride in r1
         for param t in 0..rank-1 {
           r1[t] = (ini[t]:el..end[t]:el by sa[t]);
-          if r1[t].size != r2[t].size then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].size-1));
+          if r1[t].sizeAs(int) != r2[t].sizeAs(int) then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].sizeAs(int)-1));
         }
 
         if debugCyclicDistBulkTransfer then
@@ -1228,7 +1232,7 @@ where useBulkTransferDist {
   coforall j in Dest.dom.dist.targetLocDom {
     on Dest.dom.dist.targetLocs(j) {
       const inters = Dest.dom.locDoms(j).myBlock[destDom];
-      if inters.size > 0 {
+      if inters.sizeAs(int) > 0 {
         const ini = bulkCommConvertCoordinate(inters.first, destDom, srcDom);
         const end = bulkCommConvertCoordinate(inters.last, destDom, srcDom);
         const sb  = chpl__tuplify(srcDom.stride);
@@ -1239,8 +1243,8 @@ where useBulkTransferDist {
         //were different, we need to calculate the correct stride in r1
         for param t in 0..rank-1 {
           r1[t] = (ini[t]:el..end[t]:el by sb[t]);
-          if r1[t].size != r2[t].size then
-            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].size-1));
+          if r1[t].sizeAs(int) != r2[t].sizeAs(int) then
+            r1[t] = (ini[t]:el..end[t]:el by (end[t] - ini[t]):el/(r2[t].sizeAs(int)-1));
         }
 
         if debugCyclicDistBulkTransfer then

@@ -346,8 +346,8 @@ The value of a range literal is as follows:
 Default Values
 ~~~~~~~~~~~~~~
 
-The default value for a range type depends on the type’s ``boundedType``
-parameter as follows:
+The default value for a range with an integral ``idxType`` depends on
+the type’s ``boundedType`` parameter as follows:
 
 -  ``1..0`` (an empty range) if ``boundedType`` is ``bounded``
 
@@ -362,7 +362,7 @@ parameter as follows:
    *Rationale*.
 
    We use 0 and 1 to represent an empty range because these values are
-   available for any ``idxType``.
+   available for any integer ``idxType``.
 
    We have not found the natural choice of the default value for
    ``boundedLow`` and ``boundedHigh`` ranges. The values indicated above
@@ -370,6 +370,14 @@ parameter as follows:
    value for a ``boundedLow`` range with the default value for a
    ``boundedHigh`` range (or visa versa) produces an empty range,
    matching the default value for a ``bounded`` range
+
+Default values of ranges with boolean ``idxType`` are similar, but
+substituting ``false`` and ``true`` for 0 and 1 above.  Ranges with
+``enum`` ``idxType`` use the 0th and 1st values in the enumeration in
+place of 0 and 1 above.  If the enum only has a single value, the
+default value uses the 0th value as the low bound and has an undefined
+high bound; the ``.size`` query should be used with such ranges to
+determine whether or not the high bound is valid.
 
 .. _Ranges_Common_Operations:
 

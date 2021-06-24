@@ -51,18 +51,23 @@ Expr* buildNamedActual(const char* name, Expr* expr);
 
 Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index = NULL);
 
-Expr* buildIntLiteral(const char* pch, const char* file = NULL, int line = -1);
-Expr* buildRealLiteral(const char* pch);
-Expr* buildImagLiteral(const char* pch);
-Expr* buildStringLiteral(const char* pch);
-Expr* buildBytesLiteral(const char* pch);
-Expr* buildCStringLiteral(const char* pch);
+SymExpr* buildIntLiteral(const char* pch, const char* file = NULL, int line = -1);
+SymExpr* buildRealLiteral(const char* pch);
+SymExpr* buildImagLiteral(const char* pch);
+SymExpr* buildStringLiteral(const char* pch);
+SymExpr* buildBytesLiteral(const char* pch);
+SymExpr* buildCStringLiteral(const char* pch);
 
 Expr* buildDotExpr(BaseAST* base, const char* member);
 Expr* buildDotExpr(const char* base, const char* member);
 
 BlockStmt* buildChapelStmt(Expr* expr = NULL);
 BlockStmt* buildErrorStandin();
+
+DefExpr* buildDeprecated(DefExpr* def);
+DefExpr* buildDeprecated(DefExpr* def, const char* msg);
+BlockStmt* buildDeprecated(BlockStmt* block);
+BlockStmt* buildDeprecated(BlockStmt* block, const char* msg);
 
 BlockStmt* buildUseStmt(std::vector<PotentialRename*>* args, bool privateUse);
 BlockStmt* buildUseStmt(Expr* mod, const char* rename,

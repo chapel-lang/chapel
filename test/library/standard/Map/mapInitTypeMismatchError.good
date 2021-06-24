@@ -1,0 +1,15 @@
+mapInitTypeMismatchError.chpl:6: In function 'test1':
+mapInitTypeMismatchError.chpl:9: error: invalid copy-initialization
+mapInitTypeMismatchError.chpl:9: error: cannot initialize map(shared C2,int(64),false) from map(shared C1,int(64),false) due to key type mismatch
+mapInitTypeMismatchError.chpl:13: In function 'test2':
+mapInitTypeMismatchError.chpl:16: error: invalid copy-initialization
+mapInitTypeMismatchError.chpl:16: error: cannot initialize map(int(64),shared C2,false) from map(int(64),shared C1,false) due to value type mismatch
+mapInitTypeMismatchError.chpl:20: In function 'test3':
+mapInitTypeMismatchError.chpl:23: error: invalid copy-initialization
+mapInitTypeMismatchError.chpl:23: error: cannot initialize map(real(64),real(64),false) from map(int(64),int(64),false) due to key type mismatch
+mapInitTypeMismatchError.chpl:27: In function 'test4':
+mapInitTypeMismatchError.chpl:30: error: invalid copy-initialization
+mapInitTypeMismatchError.chpl:30: error: cannot initialize map(shared C1,int(64),false) from map(shared C2,int(64),false) due to key type mismatch
+mapInitTypeMismatchError.chpl:34: In function 'test5':
+mapInitTypeMismatchError.chpl:37: error: invalid copy-initialization
+mapInitTypeMismatchError.chpl:37: error: cannot initialize map(shared C2,int(64),false) from map(int(64),shared C2,false) due to key type mismatch

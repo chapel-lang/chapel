@@ -1,4 +1,12 @@
--smode=0 -suseBulkPtrTransfer=true
--smode=1 -suseBulkPtrTransfer=true
--smode=2 -suseBulkPtrTransfer=true
--smode=3 -suseBulkPtrTransfer=true
+# test and make sure that arrays of unmanageds and records are transferred in
+# bulk with same amount of comm
+
+-smode=0 -suseBulkPtrTransfer=true --fast --no-cache-remote
+-smode=3 -suseBulkPtrTransfer=true --fast --no-cache-remote
+
+# the following two is about running this test with arrays of shareds and
+# owneds. As this is a commcount test, and their comm counts differ, I don't
+# want to test them right now and cause potential test maintanance headaches.
+#
+# -smode=1 -suseBulkPtrTransfer=true  --fast --no-cache-remote
+# -smode=2 -suseBulkPtrTransfer=true  --fast --no-cache-remote

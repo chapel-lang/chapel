@@ -482,9 +482,17 @@ void ConstrainedType::accept(AstVisitor* visitor) {
   visitor->visitConstrainedType(this);
 }
 
-TypeSymbol* ConstrainedType::build(const char* name, ConstrainedTypeUse use) {
+TypeSymbol* ConstrainedType::buildSym(const char* name,
+                                      ConstrainedTypeUse use) {
   Type* ct = new ConstrainedType(use);
   return new TypeSymbol(name, ct);
+}
+
+ConstrainedType* ConstrainedType::buildType(const char* name,
+                                         ConstrainedTypeUse use) {
+  ConstrainedType* ct = new ConstrainedType(use);
+  new TypeSymbol(name, ct); // attaches to 'ct'
+  return ct;
 }
 
 bool isConstrainedType(Type* t, ConstrainedTypeUse use) {

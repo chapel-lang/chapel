@@ -8,7 +8,7 @@
 */
 use IO;
 
-use Regexp;
+use Regex;
 
 proc main(args: [] string) {
   var variants = [

@@ -1,6 +1,6 @@
 ./rangeAPItest.chpl:3: In function 'testRangeAPI':
-./rangeAPItest.chpl:43: warning: invoking 'offset' on an unstrided range has no effect.
-  byteRangeTest.chpl:3: called as testRangeAPI(lbl: string, r: range(byteIndex,bounded,false), idx: byteIndex, subr: range(byteIndex,bounded,false))
+./rangeAPItest.chpl:46: warning: invoking 'offset' on an unstrided range has no effect.
+  byteRangeTest.chpl:3: called as testRangeAPI(lbl: string, r: range(byteIndex,bounded,false), idx: byteIndex, subr: range(byteIndex,bounded,false), offset: int(64), count: int(64))
 byte index range
 ------------
 1..10
@@ -23,6 +23,7 @@ alignedLow       = 1
 alignedHigh      = 10
 isEmpty()        = false
 size             = 10
+sizeAs(uint)     = 10
 hasFirst()       = true
 hasLast()        = true
 isNat.Algned()   = true
@@ -51,6 +52,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = 1..10
 Copying...        = 1..10
 
 strided byte index range
@@ -75,6 +77,7 @@ alignedLow       = 1
 alignedHigh      = 19
 isEmpty()        = false
 size             = 10
+sizeAs(uint)     = 10
 hasFirst()       = true
 hasLast()        = true
 isNat.Algned()   = true
@@ -103,6 +106,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 5..13 by 2
 r[subr] == subr[r]= true
+r:string          = 1..20 by 2
 Copying...        = 1..20 by 2
 
 low bounded byte index range
@@ -120,11 +124,11 @@ stride           = 1
 alignment        = 1
 aligned          = true
 first            = 1
-last             = 0
+last             = undefined
 low              = 1
-high             = 0
+high             = undefined
 alignedLow       = 1
-alignedHigh      = 0
+alignedHigh      = undefined
 isEmpty()        = false
 hasFirst()       = true
 hasLast()        = false
@@ -151,6 +155,7 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = 1..
 Copying...        = 1..
 
 high bounded byte index range
@@ -167,11 +172,11 @@ hasHighBound()   = true
 stride           = 1
 alignment        = 0
 aligned          = false
-first            = 1
+first            = undefined
 last             = 10
-low              = 1
+low              = undefined
 high             = 10
-alignedLow       = 1
+alignedLow       = undefined
 alignedHigh      = 10
 isEmpty()        = false
 hasFirst()       = false
@@ -195,5 +200,6 @@ r == subr         = false
 r != subr         = true
 r[subr]           = 3..6
 r[subr] == subr[r]= true
+r:string          = ..10
 Copying...        = ..10
 

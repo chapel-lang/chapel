@@ -1,4 +1,4 @@
-use Regexp;
+use Regex;
 use Histogram;
 use Time;
 use Random;

@@ -1,4 +1,4 @@
-FROM chapel/chapel:master
+FROM chapel/chapel:main
 
 ENV CHPL_COMM gasnet
 

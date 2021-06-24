@@ -253,7 +253,6 @@ module Spawn {
       }
     }
 
-
     pragma "no doc"
     proc _throw_on_launch_error() throws {
       if !running {

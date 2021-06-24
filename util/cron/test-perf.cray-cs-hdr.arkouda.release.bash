@@ -18,9 +18,6 @@ source $CWD/common-cray-cs.bash
 export CHPL_LAUNCHER_PARTITION=rome64Share
 export CHPL_TARGET_CPU=none
 
-# python2 required for chapel 1.23, will not be required with 1.24+
-module load python/2.7.6
-
 module list
 
 export GASNET_PHYSMEM_MAX="9/10"

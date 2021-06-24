@@ -1,18 +1,18 @@
 use GMP, SysCTypes;
 
-inline proc +=(ref x: mpz_t, ref y: mpz_t) {
+inline operator mpz_t.+=(ref x: mpz_t, ref y: mpz_t) {
   mpz_add(x, x, y);
 }
 
-inline proc *=(ref x: mpz_t, y: c_ulong) {
+inline operator *=(ref x: mpz_t, y: c_ulong) {
   mpz_mul_ui(x, x, y);
 }
 
-inline proc >(ref x: mpz_t, ref y: mpz_t) {
+inline operator mpz_t.>(ref x: mpz_t, ref y: mpz_t) {
   return (mpz_cmp(x, y) > 0);
 }
 
-inline proc >=(ref x: mpz_t, ref y: mpz_t) {
+inline operator mpz_t.>=(ref x: mpz_t, ref y: mpz_t) {
   return (mpz_cmp(x,y) >= 0);
 }
 
@@ -23,7 +23,7 @@ inline proc >=(ref x: mpz_t, ref y: mpz_t) {
 // However, if I make it ref here, I get a complaint if I send in the
 // result of another operation like the *() below.
 //
-inline proc =(ref lhs: mpz_t, rhs: mpz_t) {
+inline operator mpz_t.=(ref lhs: mpz_t, rhs: mpz_t) {
   mpz_set(lhs, rhs);
 }
 
@@ -32,7 +32,7 @@ inline proc =(ref lhs: mpz_t, rhs: mpz_t) {
 // results in extra copies and a leak.
 //
 //
-inline proc *(ref x: mpz_t, y: c_ulong) {
+inline operator *(ref x: mpz_t, y: c_ulong) {
   var res: mpz_t;
   mpz_init(res);
   mpz_mul_ui(res, x, y);
@@ -43,7 +43,7 @@ inline proc *(ref x: mpz_t, y: c_ulong) {
 // TODO: Why doesn't this work?
 //
 /*
-inline proc -(ref x: mpz_t, ref y: mpz_t) {
+inline operator mpz_t.-(ref x: mpz_t, ref y: mpz_t) {
   var res: mpz_t;
   mpz_init(res);
   mpz_sub(res, x, y);

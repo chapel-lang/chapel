@@ -1,1 +1,1 @@
--Llib/ -lreturnExternArray `$CHPL_HOME/util/config/compileline --libraries`
+-Llib/ -lreturnExternArray `$CHPL_HOME/util/config/compileline --libraries` -lreturnExternArray

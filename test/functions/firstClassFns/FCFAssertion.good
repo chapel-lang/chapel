@@ -1,0 +1,1 @@
+FCFAssertion.chpl:3: warning: This file-scope code is outside of any explicit module declarations (e.g., module M1), so an implicit module named 'FCFAssertion' is being introduced to contain the file's contents.

@@ -22,7 +22,7 @@
 private use List;
 use MasonUtils;
 use MasonExternal;
-use Regexp;
+use Regex;
 
 config const debugSpecParser=false;
 

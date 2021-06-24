@@ -1,0 +1,3 @@
+symbolInUseClause2.chpl:7: In function 'main':
+symbolInUseClause2.chpl:8: warning: x is deprecated
+false

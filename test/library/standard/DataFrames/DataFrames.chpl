@@ -1030,75 +1030,75 @@ module DataFrames {
   /*
    * ARITHMETIC AND INEQUALITY OPERATORS
    */
-  proc +(lhs: borrowed Series, rhs: borrowed Series) {
+  operator Series.+(lhs: borrowed Series, rhs: borrowed Series) {
     return lhs.add(rhs);
   }
 
-  proc +(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.+(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.add_scalar(n);
   }
 
-  proc +(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.+(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.add_scalar(n);
   }
 
-  proc -(lhs: borrowed Series, rhs: borrowed Series) {
+  operator Series.-(lhs: borrowed Series, rhs: borrowed Series) {
     return lhs.subtr(rhs);
   }
 
-  proc -(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.-(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.subtr_scalar(n);
   }
 
-  proc *(lhs: borrowed Series, rhs: borrowed Series) {
+  operator Series.*(lhs: borrowed Series, rhs: borrowed Series) {
     return lhs.mult(rhs);
   }
 
-  proc *(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.*(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.mult_scalar(n);
   }
 
-  proc *(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.*(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.mult_scalar(n);
   }
 
-  proc <(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.<(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.lt_scalar(n);
   }
 
-  proc <(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.<(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.gt_scalar(n);
   }
 
-  proc >(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.>(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.gt_scalar(n);
   }
 
-  proc >(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.>(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.lt_scalar(n);
   }
 
-  proc ==(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.==(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.eq_scalar(n);
   }
 
-  proc ==(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.==(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.eq_scalar(n);
   }
 
-  proc <=(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.<=(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.lteq_scalar(n);
   }
 
-  proc <=(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.<=(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.gteq_scalar(n);
   }
 
-  proc >=(lhs: borrowed Series, n: ?N) where isNumericType(N) {
+  operator Series.>=(lhs: borrowed Series, n: ?N) where isNumericType(N) {
     return lhs.gteq_scalar(n);
   }
 
-  proc >=(n: ?N, rhs: borrowed Series) where isNumericType(N) {
+  operator Series.>=(n: ?N, rhs: borrowed Series) where isNumericType(N) {
     return rhs.lteq_scalar(n);
   }
 }

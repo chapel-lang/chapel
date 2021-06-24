@@ -1,2 +1,0 @@
-# Need to migrate the macro-functions to static inline before works with llvm
---no-llvm

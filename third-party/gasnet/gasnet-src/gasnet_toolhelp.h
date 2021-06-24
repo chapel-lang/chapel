@@ -357,7 +357,7 @@ const char *gasnett_signame_fromval(int _sigval);
 extern void gasneti_registerExitHandler(void (*_exitfn)(int));
 
 GASNETI_COLD
-extern int gasneti_raise(int sig); // portability wrapper around POSIX raise(3)
+extern int gasneti_raise(int _sig); // portability wrapper around POSIX raise(3)
 
 extern int gasneti_blocksig(int _sig);
 extern int gasneti_unblocksig(int _sig);

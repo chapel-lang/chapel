@@ -805,48 +805,53 @@ For example, when casting from `uint(8)` to `uint(64)`,
 no checks at all will be done.
 */
 inline proc integral.safeCast(type T: integral) : T {
-  if castChecking && isUintType(T) {
-    if isIntType(this.type) {
-      // int(?) -> uint(?)
-      if this < 0 then // runtime check
-        HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
-            " less than 0 to "+T:string);
-    }
-
-    if max(this.type):uint > max(T):uint {
-      // [u]int(?) -> uint(?)
-      if (this:uint > max(T):uint) then // runtime check
-        HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
-            " with a value greater than the maximum of "+ T:string+" to "+T:string);
-    }
-  }
-
-  if castChecking && isIntType(T) {
-    if max(this.type):uint > max(T):uint {
-      // this isUintType check lets us avoid a runtime check for this < 0
-      if isUintType(this.type) {
-        // uint(?) -> int(?)
-        if this:uint > max(T):uint then // runtime check
-          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
-              " with a value greater than the maximum of "+ T:string+" to "+T:string);
-      } else {
-        // int(?) -> int(?)
-        // max(T) <= max(int), so cast to int is safe
-        if this:int > max(T):int then // runtime check
-          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
-              " with a value greater than the maximum of "+ T:string+" to "+T:string);
-      }
-    }
-    if isIntType(this.type) {
-      if min(this.type):int < min(T):int {
-        // int(?) -> int(?)
-        if this:int < min(T):int then // runtime check
-          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
-              " with a value less than the minimum of "+ T:string+" to "+T:string);
-      }
-    }
-  }
+  if castChecking then
+    checkValue();
   return this:T;
+
+  proc checkValue() {
+    if isUintType(T) {
+      if isIntType(this.type) {
+        // int(?) -> uint(?)
+        if this < 0 then // runtime check
+          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+                                         " less than 0 to "+T:string);
+      }
+
+      if max(this.type):uint > max(T):uint {
+        // [u]int(?) -> uint(?)
+        if (this:uint > max(T):uint) then // runtime check
+          HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+                                         " with a value greater than the maximum of "+ T:string+" to "+T:string);
+      }
+    }
+
+    if isIntType(T) {
+      if max(this.type):uint > max(T):uint {
+        // this isUintType check lets us avoid a runtime check for this < 0
+        if isUintType(this.type) {
+          // uint(?) -> int(?)
+          if this:uint > max(T):uint then // runtime check
+            HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+                                           " with a value greater than the maximum of "+ T:string+" to "+T:string);
+        } else {
+          // int(?) -> int(?)
+          // max(T) <= max(int), so cast to int is safe
+          if this:int > max(T):int then // runtime check
+            HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+                                           " with a value greater than the maximum of "+ T:string+" to "+T:string);
+        }
+      }
+      if isIntType(this.type) {
+        if min(this.type):int < min(T):int {
+          // int(?) -> int(?)
+          if this:int < min(T):int then // runtime check
+            HaltWrappers.safeCastCheckHalt("casting "+this.type:string+
+                                           " with a value less than the minimum of "+ T:string+" to "+T:string);
+        }
+      }
+    }
+  }
 }
 
 pragma "no doc" // documented with the other safeCast above
@@ -936,22 +941,22 @@ proc isProperSubtype(type sub, type super) param {
 
 /* :returns: isProperSubtype(a,b) */
 pragma "docs only"
-proc <(type a, type b) param {
+operator <(type a, type b) param {
   return isProperSubtype(a,b);
 }
 /* :returns: isSubtype(a,b) */
 pragma "docs only"
-proc <=(type a, type b) param {
+operator <=(type a, type b) param {
   return isSubtype(a,b);
 }
 /* :returns: isProperSubtype(b,a) */
 pragma "docs only"
-proc >(type a, type b) param {
+operator >(type a, type b) param {
   return isProperSubtype(b,a);
 }
 /* :returns: isSubtype(b,a) */
 pragma "docs only"
-proc >=(type a, type b) param {
+operator >=(type a, type b) param {
   return isSubtype(b,a);
 }
 

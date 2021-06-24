@@ -35,8 +35,8 @@
 
 // flags to be added to the aggregation markers
 symbolFlag ( FLAG_AGG_MARKER, npr, "aggregation marker", ncm)
-symbolFlag ( FLAG_AGG_IN_STATIC_ONLY_CLONE, npr, "static only aggregation marker", " this aggreagation is happening in a static only forall clone")
-symbolFlag ( FLAG_AGG_IN_STATIC_AND_DYNAMIC_CLONE, npr, "static and dynamic aggregation marker", " this aggreagation is happening in a static and dynamic forall clone")
+symbolFlag ( FLAG_AGG_IN_STATIC_ONLY_CLONE, npr, "static only aggregation marker", " this aggregation is happening in a static only forall clone")
+symbolFlag ( FLAG_AGG_IN_STATIC_AND_DYNAMIC_CLONE, npr, "static and dynamic aggregation marker", " this aggregation is happening in a static and dynamic forall clone")
 symbolFlag ( FLAG_AGG_GENERATOR, ypr, "aggregator generator", " this function generates and returns an aggregator")
 
 // Indicates an array implementation class can alias other array implementations
@@ -73,6 +73,8 @@ symbolFlag( FLAG_BEGIN_BLOCK , npr, "begin block" , ncm )
 symbolFlag( FLAG_BROADCAST_FN, npr, "serialized broadcast function", ncm)
 symbolFlag( FLAG_BUILD_TUPLE , ypr, "build tuple" , "used to mark the build_tuple functions")
 symbolFlag( FLAG_BUILD_TUPLE_TYPE , ypr, "build tuple type" , "used to mark the build_tuple type functions")
+
+symbolFlag( FLAG_C_FLEXIBLE_ARRAY_FIELD, npr, "c flexible array member" , "marks fields generated for C flexible array members")
 
 symbolFlag( FLAG_CHAPEL_STRING_LITERAL, npr, "chapel string literal id" , "mark Chapel strings created from literals")
 symbolFlag( FLAG_CHAPEL_BYTES_LITERAL, npr, "chapel bytes literal id" , "mark Chapel bytes created from literals")
@@ -124,6 +126,7 @@ symbolFlag( FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr, "default intent is ref 
 
 symbolFlag( FLAG_COPY_INIT, npr, "copy initializer", ncm )
 symbolFlag( FLAG_DESTRUCTOR , npr, "destructor" , "applied to functions that are destructors" )
+symbolFlag( FLAG_DEPRECATED , npr, "deprecated" , "applied to symbols that are deprecated" )
 symbolFlag( FLAG_DISTRIBUTION , ypr, "distribution" , ncm )
 symbolFlag( FLAG_DOCS_ONLY, ypr, "docs only", "this symbol is for documentation purposes only - ignore this symbol when compiling" )
 symbolFlag( FLAG_DOMAIN , ypr, "domain" , ncm )
@@ -144,6 +147,7 @@ symbolFlag( FLAG_EXPORT_INIT, ypr, "export init", "indicate that the module's in
 symbolFlag( FLAG_EXPORT_WRAPPER, ypr, "export wrapper", ncm )
 symbolFlag( FLAG_EXPR_TEMP , npr, "expr temp" , "temporary that stores the result of an expression" )
 symbolFlag( FLAG_EXTERN , npr, "extern" , "extern variables, types, and functions" )
+symbolFlag( FLAG_EXTERN_UNION , npr, "extern union" , "extern union" )
 symbolFlag( FLAG_EXTERN_FN_WITH_ARRAY_ARG, "npr", "extern fn with array arg", "extern functions with array arguments" )
 symbolFlag( FLAG_FAST_ON , npr, "fast on" , "with FLAG_ON/FLAG_ON_BLOCK, \"on block\" , use fast spawning option (if available)" )
 symbolFlag( FLAG_FAST_ON_SAFE_EXTERN, ypr, "fast-on safe extern function", "extern function is safe for fast-on optimization")
@@ -153,6 +157,7 @@ symbolFlag( FLAG_FN_RETARG, npr, "fn returns via _retArg", ncm )
 symbolFlag( FLAG_FOLLOWER_INDEX, npr, "follower index", "a variable representing a follower loop index" )
 symbolFlag( FLAG_FORMAL_TEMP, npr, "formal temp", "a formal temp requiring write-back for an out or inout argument" )
 symbolFlag( FLAG_FORMAL_TEMP_OUT, npr, "formal temp out", "a formal temp to back an out argument" )
+symbolFlag( FLAG_FORMAL_TEMP_OUT_CALLSITE, npr, "formal temp out callsite", "a formal temp to handle out/inout writeback at the callsite" )
 symbolFlag( FLAG_FORWARDING_FN , npr, "forwarding function" , ncm )
 symbolFlag( FLAG_FUNCTION_CLASS , npr, "function class" , "first-class function class representation" )
 symbolFlag( FLAG_FUNCTION_TERMINATES_PROGRAM, ypr, "function terminates program", "function that causes the program to exit" )
@@ -428,24 +433,32 @@ symbolFlag( FLAG_RUNTIME_TYPE_VALUE , npr, "runtime type value" , "associated ru
 symbolFlag( FLAG_SAFE, ypr, "safe", "safe (activate lifetime checking)")
 symbolFlag( FLAG_SCOPE, npr, "scope", "scoped (lifetime checking like a local variable)")
 symbolFlag( FLAG_SHOULD_NOT_PASS_BY_REF, npr, "should not pass by ref", "this symbol should be passed by value (not by reference) for performance, not for correctness")
-symbolFlag( FLAG_SINGLE , ypr, "single" , ncm )
-// Based on how this is used, I suggest renaming it to return_value_has_initializer
-// or something similar <hilde>.
-symbolFlag( FLAG_STAR_TUPLE , ypr, "star tuple" , "mark tuple types as star tuple types" )
-symbolFlag( FLAG_STAR_TUPLE_ACCESSOR , ypr, "star tuple accessor" , "this function for star tuple types" )
+
 symbolFlag( FLAG_SUPER_CLASS , npr, "super class" , ncm )
 symbolFlag( FLAG_SUPER_TEMP, npr, "temporary of super field", ncm)
 symbolFlag( FLAG_SUPPRESS_LVALUE_ERRORS , ypr, "suppress lvalue error" , "do not report an lvalue error if it occurs in a function with this flag" )
+
+// represents an interface formal, assoc. type, or required function
+// within a constrained generic function
+symbolFlag( FLAG_CG_REPRESENTATIVE, npr, "cg representative", ncm )
+// this instantiation does not need to be resolved
+symbolFlag( FLAG_CG_INTERIM_INST, npr, "cg interim instantiation", ncm)
+
+symbolFlag( FLAG_SINGLE , ypr, "single" , ncm )
 symbolFlag( FLAG_SYNC , ypr, "sync" , ncm )
+
 symbolFlag( FLAG_SYNTACTIC_DISTRIBUTION , ypr, "syntactic distribution" , ncm )
 symbolFlag( FLAG_TASK_FN_FROM_ITERATOR_FN , npr, "task fn from iterator fn" , ncm )
 symbolFlag( FLAG_TASK_SPAWN_IMPL_FN , ypr, "task spawn impl fn" , ncm )
 symbolFlag( FLAG_TASK_COMPLETE_IMPL_FN , ypr, "task complete impl fn" , ncm )
 symbolFlag( FLAG_TASK_JOIN_IMPL_FN , ypr, "task join impl fn" , ncm )
 symbolFlag( FLAG_TEMP , npr, "temp" , "compiler-inserted temporary" )
+
 symbolFlag( FLAG_TUPLE , ypr, "tuple" , ncm )
 symbolFlag( FLAG_TUPLE_CAST_FN , ypr, "tuple cast fn" , ncm )
 symbolFlag( FLAG_TUPLE_WITH_REF , npr, "tuple contains ref" , ncm )
+symbolFlag( FLAG_STAR_TUPLE , ypr, "star tuple" , "mark tuple types as star tuple types" )
+symbolFlag( FLAG_STAR_TUPLE_ACCESSOR , ypr, "star tuple accessor" , "this function for star tuple types" )
 
 symbolFlag( FLAG_TYPE_ASSIGN_FROM_CONST, npr, "type has = from const", "type supports assignment from a const rhs" )
 symbolFlag( FLAG_TYPE_ASSIGN_FROM_REF, npr, "type has = from ref", "type supports assignment from a potentially non-const rhs" )

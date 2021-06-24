@@ -140,7 +140,7 @@ static void resolveFormals(FnSymbol* fn) {
     //
     // If the formal has void type, and its parent symbol is compiler-
     // generated, and the parent symbol is astrInit, then it is an aggregate
-    // field intialization, such as new c(); and the field cannot be void.
+    // field initialization, such as new c(); and the field cannot be void.
     if (formal->type == dtVoid && !formal->hasFlag(FLAG_TYPE_VARIABLE)) {
       Symbol* ps = formal->defPoint->parentSymbol;
       if (ps) {
@@ -509,7 +509,7 @@ static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn);
 static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall);
 
 void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
-  if (fn->isResolved() == false) {
+  if (! fn->isResolved() && ! fn->hasFlag(FLAG_CG_INTERIM_INST)) {
     if (fn->id == breakOnResolveID) {
       printf("breaking on resolve fn %s[%d] (%d args)\n",
              fn->name, fn->id, fn->numFormals());
@@ -607,6 +607,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
   if (fn->name == astrSassign) {
     int i = 1;
     if (fn->getFormal(i)->typeInfo() == dtMethodToken) i++;
+    if (fn->getFormal(i)->hasFlag(FLAG_ARG_THIS)) i++;
     toType = fn->getFormal(i)->getValType(); i++;
     fromType = fn->getFormal(i)->getValType();
   } else if (fn->name == astrInitEquals) {
@@ -616,6 +617,7 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
   } else if (fn->name == astr_cast) {
     int i = 1;
     if (fn->getFormal(i)->typeInfo() == dtMethodToken) i++;
+    if (fn->getFormal(i)->hasFlag(FLAG_ARG_THIS)) i++;
     toType = fn->getFormal(i)->getValType(); i++;
     fromType = fn->getFormal(i)->getValType();
   } else {
@@ -1235,7 +1237,11 @@ bool SplitInitVisitor::enterCallExpr(CallExpr* call) {
       // Change the '=' calls found into PRIM_INIT_VAR_SPLIT_INIT
       for_vector(CallExpr, assign, initAssigns) {
         SET_LINENO(assign);
-        Expr* rhs = assign->get(2)->remove();
+        int rhsNum = 2;
+        if (assign->get(1)->typeInfo() == dtMethodToken) {
+          rhsNum += 2;
+        }
+        Expr* rhs = assign->get(rhsNum)->remove();
         CallExpr* init = NULL;
         if (type)
           init = new CallExpr(PRIM_INIT_VAR_SPLIT_INIT, sym, rhs, type);
@@ -2140,7 +2146,8 @@ bool shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
     return false;
 
   // TODO: remove this filtering on records/unions
-  if (isRecord(formal->getValType()) || isUnion(formal->getValType())) {
+  if (isRecord(formal->getValType()) || isUnion(formal->getValType()) ||
+      isConstrainedType(formal->getValType())) {
     if (formal->intent == INTENT_IN ||
         formal->intent == INTENT_CONST_IN ||
         formal->originalIntent == INTENT_IN ||
@@ -2157,7 +2164,7 @@ bool shouldAddInFormalTempAtCallSite(ArgSymbol* formal, FnSymbol* fn) {
 // passing an argument of type 't'.
 //
 static bool backendRequiresCopyForIn(Type* t) {
-  return argMustUseCPtr(t);
+  return argMustUseCPtr(t) || isConstrainedType(t);
 }
 
 
@@ -2709,12 +2716,17 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
       insertBefore->insertBefore(new DefExpr(tmp));
 
       CallExpr* readCall = NULL;
-      if (isSyncType(fromValType))
+      if (isSyncType(fromValType)) {
         readCall = new CallExpr("readFE", gMethodToken, from);
-      else if (isSingleType(fromValType))
+        USR_WARN(to, "implicitly reading from a sync is deprecated; "
+                     "apply a 'read\?\?()' method to the actual");
+      } else if (isSingleType(fromValType)) {
         readCall = new CallExpr("readFF", gMethodToken, from);
-      else
+        USR_WARN(to, "implicitly reading from a single is deprecated; "
+                     "apply a 'read\?\?()' method to the actual");
+      } else {
         INT_FATAL("not handled");
+      }
 
       newCalls.push_back(readCall);
       CallExpr* setTmp = new CallExpr(PRIM_ASSIGN, tmp, readCall);
@@ -2734,7 +2746,7 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
     } else {
       // for types where it's not yet possible to write init=,
       // use PRIM_ASSIGN and PRIM_CAST.
-      // This should only be occuring for types that are
+      // This should only be occurring for types that are
       // either extern or for non-record types when the coercion is legal.
 
       // (TODO: use tertiary initializers to remove the exception for

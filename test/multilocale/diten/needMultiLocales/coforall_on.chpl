@@ -9,22 +9,22 @@ proc main() {
     on Locales(i) {
       select i {
         when 0 {
-          r.a;
+          r.a.readFF();
           r.s = "Hello from locale " + here.id:string;
         }
         when 1 {
-          r.b;
+          r.b.readFF();
           writeln(here.id);
-          r.c = true;
+          r.c.writeEF(true);
         }
         when 2 {
           writeln(here.id);
-          r.b = true;
+          r.b.writeEF(true);
         }
         when 3 {
-          r.c;
+          r.c.readFF();
           writeln(here.id);
-          r.a = true;
+          r.a.writeEF(true);
         }
         otherwise {
         }

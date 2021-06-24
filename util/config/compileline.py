@@ -50,7 +50,7 @@ def parseArguments():
                       help="specify that the rest of the arguments are for a "
                            "compilation working with the LLVM backend. This "
                            "argument causes this script to set "
-                           "CHPL_TARGET_COMPILER=clang-included")
+                           "CHPL_TARGET_COMPILER=llvm")
     parser.add_option("--compile", "--compile-cc", const="compilecc",
                       dest="actions", action='append_const',
                       help="print a C compiler invocation that can use "
@@ -102,6 +102,12 @@ def parseArguments():
                       dest="actions", action='append_const',
                       help="print out libraries required to link "
                            "multi-locale libraries")
+    parser.add_option("--host-c-compiler", const="host-c-compiler",
+                      dest="actions", action='append_const',
+                      help="print out the host C compiler")
+    parser.add_option("--host-cxx-compiler", const="host-cxx-compiler",
+                      dest="actions", action='append_const',
+                      help="print out the host C++ compiler")
 
     (options, args) = parser.parse_args()
 
@@ -174,11 +180,8 @@ def main():
         elif a == "make":
             sys.stdout.write("{0}\n".format(orig_make))
         elif a == "llvm":
-            os.environ["CHPL_LLVM_CODEGEN"] = "llvm"
-            orig_target_compiler = chpl_compiler.get('target', llvm_mode='orig')
-            target_compiler = chpl_compiler.get('target', llvm_mode='llvm')
-            os.environ["CHPL_ORIG_TARGET_COMPILER"] = orig_target_compiler
-            os.environ["CHPL_TARGET_COMPILER"] = target_compiler
+            os.environ["CHPL_TARGET_COMPILER_PRGENV"] = chpl_compiler.get_prgenv_compiler()
+            os.environ["CHPL_TARGET_COMPILER"] = "llvm"
 
             llvm = ""
             if "CHPL_LLVM" in os.environ:
@@ -229,6 +232,14 @@ def main():
           mysystem(make_helper, "printlauncherlibdir")
         elif a == "multilocale-lib-deps":
           mysystem(make_helper, "printmultilocalelibdeps")
+        elif a == "host-c-compiler":
+          compiler_family = chpl_compiler.get("host")
+          compiler = chpl_compiler.get_compiler_name_c(compiler_family)
+          sys.stdout.write("{}\n".format(compiler))
+        elif a == "host-cxx-compiler":
+          compiler_family = chpl_compiler.get("host")
+          compiler = chpl_compiler.get_compiler_name_cxx(compiler_family)
+          sys.stdout.write("{}\n".format(compiler))
 
 if __name__ == '__main__':
     main()

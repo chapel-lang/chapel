@@ -171,10 +171,17 @@ module BigInteger {
   use SysError;
   use SysBasic;
 
+  deprecated "The enum Round is deprecated, please use the enum round instead"
   enum Round {
     DOWN = -1,
     ZERO =  0,
     UP   =  1
+  }
+
+  enum round {
+    down = -1,
+    zero = 0,
+    up = 1
   }
 
   pragma "ignore noinit"
@@ -521,7 +528,7 @@ module BigInteger {
   // Locale-aware assignment
   //
 
-  proc =(ref lhs: bigint, const ref rhs: bigint) {
+  operator bigint.=(ref lhs: bigint, const ref rhs: bigint) {
     inline proc helper() {
       if rhs.localeId == chpl_nodeID {
         mpz_set(lhs.mpz, rhs.mpz);
@@ -546,7 +553,7 @@ module BigInteger {
     }
   }
 
-  proc =(ref lhs: bigint, rhs: int) {
+  operator bigint.=(ref lhs: bigint, rhs: int) {
     const rhs_ = rhs.safeCast(c_long);
 
     if _local {
@@ -564,7 +571,7 @@ module BigInteger {
     }
   }
 
-  proc =(ref lhs: bigint, rhs: uint) {
+  operator bigint.=(ref lhs: bigint, rhs: uint) {
     const rhs_ = rhs.safeCast(c_ulong);
 
     if _local {
@@ -609,11 +616,11 @@ module BigInteger {
   //
   // Unary operators
   //
-  proc +(const ref a: bigint) {
+  operator bigint.+(const ref a: bigint) {
     return new bigint(a);
   }
 
-  proc -(const ref a: bigint) {
+  operator bigint.-(const ref a: bigint) {
     var c = new bigint(a);
 
     mpz_neg(c.mpz, c.mpz);
@@ -621,7 +628,7 @@ module BigInteger {
     return c;
   }
 
-  proc ~(const ref a: bigint) {
+  operator bigint.~(const ref a: bigint) {
     var c = new bigint(a);
 
     mpz_com(c.mpz, c.mpz);
@@ -634,7 +641,7 @@ module BigInteger {
   //
 
   // Addition
-  proc +(const ref a: bigint, const ref b: bigint) {
+  operator bigint.+(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
     if _local {
@@ -653,7 +660,7 @@ module BigInteger {
     return c;
   }
 
-  proc +(const ref a: bigint, b: int) {
+  operator bigint.+(const ref a: bigint, b: int) {
     var c = new bigint();
 
     if b >= 0 {
@@ -690,7 +697,7 @@ module BigInteger {
     return c;
   }
 
-  proc +(a: int, const ref b: bigint) {
+  operator bigint.+(a: int, const ref b: bigint) {
     var c = new bigint();
 
     if a >= 0 {
@@ -727,7 +734,7 @@ module BigInteger {
     return c;
   }
 
-  proc +(const ref a: bigint, b: uint) {
+  operator bigint.+(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -746,7 +753,7 @@ module BigInteger {
     return c;
   }
 
-  proc +(a: uint, const ref b: bigint) {
+  operator bigint.+(a: uint, const ref b: bigint) {
     const a_ = a.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -768,7 +775,7 @@ module BigInteger {
 
 
   // Subtraction
-  proc -(const ref a: bigint, const ref b: bigint) {
+  operator bigint.-(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
     if _local {
@@ -787,7 +794,7 @@ module BigInteger {
     return c;
   }
 
-  proc -(const ref a: bigint, b: int) {
+  operator bigint.-(const ref a: bigint, b: int) {
     var c = new bigint();
 
     if b >= 0 {
@@ -824,7 +831,7 @@ module BigInteger {
     return c;
   }
 
-  proc -(a: int, const ref b: bigint) {
+  operator bigint.-(a: int, const ref b: bigint) {
     var c = new bigint();
 
     if a >= 0 {
@@ -861,7 +868,7 @@ module BigInteger {
     return c;
   }
 
-  proc -(const ref a: bigint, b: uint) {
+  operator bigint.-(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -880,7 +887,7 @@ module BigInteger {
     return c;
   }
 
-  proc -(a: uint, const ref b: bigint) {
+  operator bigint.-(a: uint, const ref b: bigint) {
     const a_ = a.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -901,7 +908,7 @@ module BigInteger {
 
 
   // Multiplication
-  proc *(const ref a: bigint, const ref b: bigint) {
+  operator bigint.*(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
     if _local {
@@ -920,7 +927,7 @@ module BigInteger {
     return c;
   }
 
-  proc *(const ref a: bigint, b: int) {
+  operator bigint.*(const ref a: bigint, b: int) {
     const b_ = b.safeCast(c_long);
     var   c  = new bigint();
 
@@ -939,7 +946,7 @@ module BigInteger {
     return c;
   }
 
-  proc *(a: int, const ref b: bigint) {
+  operator bigint.*(a: int, const ref b: bigint) {
     const a_ = a.safeCast(c_long);
     var   c  = new bigint();
 
@@ -958,7 +965,7 @@ module BigInteger {
     return c;
   }
 
-  proc *(const ref a: bigint, b: uint) {
+  operator bigint.*(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -977,7 +984,7 @@ module BigInteger {
     return c;
   }
 
-  proc *(a: uint, const ref b: bigint) {
+  operator bigint.*(a: uint, const ref b: bigint) {
     const a_ = a.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -999,7 +1006,7 @@ module BigInteger {
 
 
   // Division
-  proc /(const ref a: bigint, const ref b: bigint) {
+  operator bigint./(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
     if _local {
@@ -1018,12 +1025,12 @@ module BigInteger {
     return c;
   }
 
-  proc /(const ref a: bigint, b: integral) {
+  operator bigint./(const ref a: bigint, b: integral) {
     return a / new bigint(b);
   }
 
   // Exponentiation
-  proc **(const ref base: bigint, const ref exp: bigint) {
+  operator bigint.**(const ref base: bigint, const ref exp: bigint) {
     var c = new bigint();
 
     if _local {
@@ -1042,7 +1049,7 @@ module BigInteger {
     return c;
   }
 
-  proc **(const ref base: bigint, exp: int) {
+  operator bigint.**(const ref base: bigint, exp: int) {
     var c = new bigint();
 
     if (exp >= 0) {
@@ -1079,7 +1086,7 @@ module BigInteger {
     return c;
   }
 
-  proc **(const ref base: bigint, exp: uint) {
+  operator bigint.**(const ref base: bigint, exp: uint) {
     const exp_ = exp.safeCast(c_ulong);
     var   c    = new bigint();
 
@@ -1101,7 +1108,7 @@ module BigInteger {
 
 
   // Mod
-  proc %(const ref a: bigint, const ref b: bigint) {
+  operator bigint.%(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
     if _local {
@@ -1119,7 +1126,7 @@ module BigInteger {
     return c;
   }
 
-  proc %(const ref a: bigint, b: int) {
+  operator bigint.%(const ref a: bigint, b: int) {
     var b_ = 0 : c_ulong;
     var c  = new bigint();
 
@@ -1143,7 +1150,7 @@ module BigInteger {
     return c;
   }
 
-  proc %(const ref a: bigint, b: uint) {
+  operator bigint.%(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
     var   c  = new bigint();
 
@@ -1165,7 +1172,7 @@ module BigInteger {
 
 
   // Bit-shift left
-  proc <<(const ref a: bigint, b: int) {
+  operator bigint.<<(const ref a: bigint, b: int) {
     var c = new bigint();
 
     if b >= 0 {
@@ -1202,7 +1209,7 @@ module BigInteger {
     return c;
   }
 
-  proc <<(const ref a: bigint, b: uint) {
+  operator bigint.<<(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   c  = new bigint();
 
@@ -1224,7 +1231,7 @@ module BigInteger {
 
 
   // Bit-shift right
-  proc >>(const ref a: bigint, b: int) {
+  operator bigint.>>(const ref a: bigint, b: int) {
     var c = new bigint();
 
     if b >= 0 {
@@ -1262,7 +1269,7 @@ module BigInteger {
     return c;
   }
 
-  proc >>(const ref a: bigint, b: uint) {
+  operator bigint.>>(const ref a: bigint, b: uint) {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   c  = new bigint();
 
@@ -1284,7 +1291,7 @@ module BigInteger {
 
 
   // Bitwise and
-  proc &(const ref a: bigint, const ref b: bigint) {
+  operator bigint.&(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
     if _local {
@@ -1306,7 +1313,7 @@ module BigInteger {
 
 
   // Bitwise ior
-  proc |(const ref a: bigint, const ref b: bigint) {
+  operator bigint.|(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
     if _local {
@@ -1328,7 +1335,7 @@ module BigInteger {
 
 
   // Bitwise xor
-  proc ^(const ref a: bigint, const ref b: bigint) {
+  operator bigint.^(const ref a: bigint, const ref b: bigint) {
     var c = new bigint();
 
     if _local {
@@ -1450,138 +1457,138 @@ module BigInteger {
 
 
   // Equality
-  proc ==(const ref a: bigint, const ref b: bigint) {
-    return cmp(a, b) == 0;
+  operator bigint.==(const ref a: bigint, const ref b: bigint) {
+    return BigInteger.cmp(a, b) == 0;
   }
 
-  proc ==(const ref a: bigint, b: int) {
-    return cmp(a, b) == 0;
+  operator bigint.==(const ref a: bigint, b: int) {
+    return BigInteger.cmp(a, b) == 0;
   }
 
-  proc ==(a: int, const ref b: bigint) {
-    return cmp(a, b) == 0;
+  operator bigint.==(a: int, const ref b: bigint) {
+    return BigInteger.cmp(a, b) == 0;
   }
 
-  proc ==(const ref a: bigint, b: uint) {
-    return cmp(a, b) == 0;
+  operator bigint.==(const ref a: bigint, b: uint) {
+    return BigInteger.cmp(a, b) == 0;
   }
 
-  proc ==(a: uint, const ref b: bigint) {
-    return cmp(a, b) == 0;
+  operator bigint.==(a: uint, const ref b: bigint) {
+    return BigInteger.cmp(a, b) == 0;
   }
 
 
 
   // Inequality
-  proc !=(const ref a: bigint, const ref b: bigint) {
-    return cmp(a, b) != 0;
+  operator bigint.!=(const ref a: bigint, const ref b: bigint) {
+    return BigInteger.cmp(a, b) != 0;
   }
 
-  proc !=(const ref a: bigint, b: int) {
-    return cmp(a, b) != 0;
+  operator bigint.!=(const ref a: bigint, b: int) {
+    return BigInteger.cmp(a, b) != 0;
   }
 
-  proc !=(a: int, const ref b: bigint) {
-    return cmp(a, b) != 0;
+  operator bigint.!=(a: int, const ref b: bigint) {
+    return BigInteger.cmp(a, b) != 0;
   }
 
-  proc !=(const ref a: bigint, b: uint) {
-    return cmp(a, b) != 0;
+  operator bigint.!=(const ref a: bigint, b: uint) {
+    return BigInteger.cmp(a, b) != 0;
   }
 
-  proc !=(a: uint, const ref b: bigint) {
-    return cmp(a, b) != 0;
+  operator bigint.!=(a: uint, const ref b: bigint) {
+    return BigInteger.cmp(a, b) != 0;
   }
 
 
 
   // Greater than
-  proc >(const ref a: bigint, const ref b: bigint) {
-    return cmp(a, b) > 0;
+  operator bigint.>(const ref a: bigint, const ref b: bigint) {
+    return BigInteger.cmp(a, b) > 0;
   }
 
-  proc >(const ref a: bigint, b: int) {
-    return cmp(a, b) > 0;
+  operator bigint.>(const ref a: bigint, b: int) {
+    return BigInteger.cmp(a, b) > 0;
   }
 
-  proc >(a: int, const ref b: bigint) {
-    return cmp(a, b) > 0;
+  operator bigint.>(a: int, const ref b: bigint) {
+    return BigInteger.cmp(a, b) > 0;
   }
 
-  proc >(const ref a: bigint, b: uint) {
-    return cmp(a, b) > 0;
+  operator bigint.>(const ref a: bigint, b: uint) {
+    return BigInteger.cmp(a, b) > 0;
   }
 
-  proc >(a: uint, const ref b: bigint) {
-    return cmp(a, b) > 0;
+  operator bigint.>(a: uint, const ref b: bigint) {
+    return BigInteger.cmp(a, b) > 0;
   }
 
 
 
   // Less than
-  proc <(const ref a: bigint, const ref b: bigint) {
-    return cmp(a, b) < 0;
+  operator bigint.<(const ref a: bigint, const ref b: bigint) {
+    return BigInteger.cmp(a, b) < 0;
   }
 
-  proc <(const ref a: bigint, b: int) {
-    return cmp(a, b) < 0;
+  operator bigint.<(const ref a: bigint, b: int) {
+    return BigInteger.cmp(a, b) < 0;
   }
 
-  proc <(a: int, const ref b: bigint) {
-    return cmp(a, b) < 0;
+  operator bigint.<(a: int, const ref b: bigint) {
+    return BigInteger.cmp(a, b) < 0;
   }
 
-  proc <(const ref a: bigint, b: uint) {
-    return cmp(a, b) < 0;
+  operator bigint.<(const ref a: bigint, b: uint) {
+    return BigInteger.cmp(a, b) < 0;
   }
 
-  proc <(a: uint, const ref b: bigint) {
-    return cmp(a, b) < 0;
+  operator bigint.<(a: uint, const ref b: bigint) {
+    return BigInteger.cmp(a, b) < 0;
   }
 
 
   // Greater than or equal
-  proc >=(const ref a: bigint, const ref b: bigint) {
-    return cmp(a, b) >= 0;
+  operator bigint.>=(const ref a: bigint, const ref b: bigint) {
+    return BigInteger.cmp(a, b) >= 0;
   }
 
-  proc >=(const ref a: bigint, b: int) {
-    return cmp(a, b) >= 0;
+  operator bigint.>=(const ref a: bigint, b: int) {
+    return BigInteger.cmp(a, b) >= 0;
   }
 
-  proc >=(a: int, const ref b: bigint) {
-    return cmp(a, b) >= 0;
+  operator bigint.>=(a: int, const ref b: bigint) {
+    return BigInteger.cmp(a, b) >= 0;
   }
 
-  proc >=(const ref a: bigint, b: uint) {
-    return cmp(a, b) >= 0;
+  operator bigint.>=(const ref a: bigint, b: uint) {
+    return BigInteger.cmp(a, b) >= 0;
   }
 
-  proc >=(a: uint, const ref b: bigint) {
-    return cmp(a, b) >= 0;
+  operator bigint.>=(a: uint, const ref b: bigint) {
+    return BigInteger.cmp(a, b) >= 0;
   }
 
 
 
   // Less than or equal
-  proc <=(const ref a: bigint, const ref b: bigint) {
-    return cmp(a, b) <= 0;
+  operator bigint.<=(const ref a: bigint, const ref b: bigint) {
+    return BigInteger.cmp(a, b) <= 0;
   }
 
-  proc <=(const ref a: bigint, b: int) {
-    return cmp(a, b) <= 0;
+  operator bigint.<=(const ref a: bigint, b: int) {
+    return BigInteger.cmp(a, b) <= 0;
   }
 
-  proc <=(a: int, const ref b: bigint) {
-    return cmp(a, b) <= 0;
+  operator bigint.<=(a: int, const ref b: bigint) {
+    return BigInteger.cmp(a, b) <= 0;
   }
 
-  proc <=(const ref a: bigint, b: uint) {
-    return cmp(a, b) <= 0;
+  operator bigint.<=(const ref a: bigint, b: uint) {
+    return BigInteger.cmp(a, b) <= 0;
   }
 
-  proc <=(a: uint, const ref b: bigint) {
-    return cmp(a, b) <= 0;
+  operator bigint.<=(a: uint, const ref b: bigint) {
+    return BigInteger.cmp(a, b) <= 0;
   }
 
 
@@ -1592,7 +1599,7 @@ module BigInteger {
   //
 
   // +=
-  proc +=(ref a: bigint, const ref b: bigint) {
+  operator bigint.+=(ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_add(a.mpz, a.mpz, b.mpz);
 
@@ -1610,7 +1617,7 @@ module BigInteger {
     }
   }
 
-  proc +=(ref a: bigint, b: int) {
+  operator bigint.+=(ref a: bigint, b: int) {
     if (b >= 0) {
       const b_ = b.safeCast(c_ulong);
 
@@ -1647,7 +1654,7 @@ module BigInteger {
     }
   }
 
-  proc +=(ref a: bigint, b: uint) {
+  operator bigint.+=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local {
@@ -1668,7 +1675,7 @@ module BigInteger {
 
 
   // -=
-  proc -=(ref a: bigint, const ref b: bigint) {
+  operator bigint.-=(ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_sub(a.mpz, a.mpz, b.mpz);
 
@@ -1686,7 +1693,7 @@ module BigInteger {
     }
   }
 
-  proc -=(ref a: bigint, b: int) {
+  operator bigint.-=(ref a: bigint, b: int) {
     if (b >= 0) {
       const b_ = b.safeCast(c_ulong);
 
@@ -1723,7 +1730,7 @@ module BigInteger {
     }
   }
 
-  proc -=(ref a: bigint, b: uint) {
+  operator bigint.-=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local {
@@ -1744,7 +1751,7 @@ module BigInteger {
 
 
   // *=
-  proc *=(ref a: bigint, const ref b: bigint) {
+  operator bigint.*=(ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_mul(a.mpz, a.mpz, b.mpz);
 
@@ -1762,7 +1769,7 @@ module BigInteger {
     }
   }
 
-  proc *=(ref a: bigint, b: int) {
+  operator bigint.*=(ref a: bigint, b: int) {
     const b_ = b.safeCast(c_long);
 
     if _local {
@@ -1780,7 +1787,7 @@ module BigInteger {
     }
   }
 
-  proc *=(ref a: bigint, b: uint) {
+  operator bigint.*=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(c_ulong);
 
     if _local {
@@ -1801,7 +1808,7 @@ module BigInteger {
 
 
   // /=
-  proc /=(ref a: bigint, const ref b: bigint) {
+  operator bigint./=(ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_tdiv_q(a.mpz, a.mpz, b.mpz);
 
@@ -1819,14 +1826,14 @@ module BigInteger {
     }
   }
 
-  proc /=(ref a: bigint, b: integral) {
+  operator bigint./=(ref a: bigint, b: integral) {
     a /= new bigint(b);
   }
 
 
 
   // **=
-  proc **=(ref base: bigint, const ref exp: bigint) {
+  operator bigint.**=(ref base: bigint, const ref exp: bigint) {
     if _local {
       mpz_powm(base.mpz, base.mpz,  exp.mpz,  base.mpz);
 
@@ -1841,7 +1848,7 @@ module BigInteger {
     }
   }
 
-  proc **=(ref base: bigint, exp: int) {
+  operator bigint.**=(ref base: bigint, exp: int) {
     if (exp >= 0) {
       const exp_ = exp.safeCast(c_ulong);
 
@@ -1874,7 +1881,7 @@ module BigInteger {
     }
   }
 
-  proc **=(ref base: bigint, exp: uint) {
+  operator bigint.**=(ref base: bigint, exp: uint) {
     const exp_ = exp.safeCast(c_ulong);
 
     if _local {
@@ -1895,7 +1902,7 @@ module BigInteger {
 
 
   // %=
-  proc %=(ref a: bigint, const ref b: bigint) {
+  operator bigint.%=(ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_mod(a.mpz, a.mpz, b.mpz);
 
@@ -1913,7 +1920,7 @@ module BigInteger {
     }
   }
 
-  proc %=(ref a: bigint, b: int) {
+  operator bigint.%=(ref a: bigint, b: int) {
     var b_ = 0 : uint;
 
     if b >= 0 then
@@ -1924,7 +1931,7 @@ module BigInteger {
       a %= b_;
   }
 
-  proc %=(ref a: bigint, b: uint) {
+  operator bigint.%=(ref a: bigint, b: uint) {
     var b_ = b.safeCast(c_ulong);
 
     if _local {
@@ -1942,7 +1949,7 @@ module BigInteger {
     }
   }
 
-  proc &=(ref a: bigint, const ref b: bigint) {
+  operator bigint.&=(ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_and(a.mpz, a.mpz, b.mpz);
 
@@ -1960,7 +1967,7 @@ module BigInteger {
     }
   }
 
-  proc |=(ref a: bigint, const ref b: bigint) {
+  operator bigint.|=(ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_ior(a.mpz, a.mpz, b.mpz);
 
@@ -1978,7 +1985,7 @@ module BigInteger {
     }
   }
 
-  proc ^=(ref a: bigint, const ref b: bigint) {
+  operator bigint.^=(ref a: bigint, const ref b: bigint) {
     if _local {
       mpz_xor(a.mpz, a.mpz, b.mpz);
 
@@ -1998,7 +2005,7 @@ module BigInteger {
 
 
   // <<=
-  proc <<=(ref a: bigint, b: int) {
+  operator bigint.<<=(ref a: bigint, b: int) {
     if b >= 0 {
       const b_ = b.safeCast(mp_bitcnt_t);
 
@@ -2035,7 +2042,7 @@ module BigInteger {
     }
   }
 
-  proc <<=(ref a: bigint, b: uint) {
+  operator bigint.<<=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
@@ -2056,7 +2063,7 @@ module BigInteger {
 
 
   // >>=
-  proc >>=(ref a: bigint, b: int) {
+  operator bigint.>>=(ref a: bigint, b: int) {
     if b >= 0 {
       const b_ = b.safeCast(mp_bitcnt_t);
 
@@ -2093,7 +2100,7 @@ module BigInteger {
     }
   }
 
-  proc >>=(ref a: bigint, b: uint) {
+  operator bigint.>>=(ref a: bigint, b: uint) {
     const b_ = b.safeCast(mp_bitcnt_t);
 
     if _local {
@@ -2113,7 +2120,7 @@ module BigInteger {
 
 
   // Swap
-  proc <=>(ref a: bigint, ref b: bigint) {
+  operator bigint.<=>(ref a: bigint, ref b: bigint) {
     if _local {
       var t = a;
 
@@ -4016,202 +4023,334 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  // 5.6 Division Functions
+  deprecated
+  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
   proc bigint.div_q(const ref n: bigint,
                     const ref d: bigint,
                     param     rounding = Round.ZERO) {
+    use Round;
+    if (rounding == UP) {
+      this.divQ(n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.divQ(n, d, round.zero);
+    } else {
+      this.divQ(n, d, round.down);
+    }
+  }
+
+  // 5.6 Division Functions
+  proc bigint.divQ(const ref numer: bigint,
+                   const ref denom: bigint,
+                   param rounding = round.zero) {
     if _local {
       select rounding {
-        when Round.UP   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
-        when Round.DOWN do mpz_fdiv_q(this.mpz, n.mpz,  d.mpz);
-        when Round.ZERO do mpz_tdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_q(this.mpz, numer.mpz,  denom.mpz);
+        when round.down do mpz_fdiv_q(this.mpz, numer.mpz,  denom.mpz);
+        when round.zero do mpz_tdiv_q(this.mpz, numer.mpz,  denom.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
+              numer.localeId == chpl_nodeID &&
+              denom.localeId == chpl_nodeID {
       select rounding {
-        when Round.UP   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
-        when Round.DOWN do mpz_fdiv_q(this.mpz, n.mpz,  d.mpz);
-        when Round.ZERO do mpz_tdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_q(this.mpz, numer.mpz,  denom.mpz);
+        when round.down do mpz_fdiv_q(this.mpz, numer.mpz,  denom.mpz);
+        when round.zero do mpz_tdiv_q(this.mpz, numer.mpz,  denom.mpz);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
-        const d_ = d;
+        const numer_ = numer;
+        const denom_ = denom;
 
         select rounding {
-          when Round.UP   do mpz_cdiv_q(this.mpz, n_.mpz, d_.mpz);
-          when Round.DOWN do mpz_fdiv_q(this.mpz, n_.mpz, d_.mpz);
-          when Round.ZERO do mpz_tdiv_q(this.mpz, n_.mpz, d_.mpz);
+          when round.up   do mpz_cdiv_q(this.mpz, numer_.mpz, denom_.mpz);
+          when round.down do mpz_fdiv_q(this.mpz, numer_.mpz, denom_.mpz);
+          when round.zero do mpz_tdiv_q(this.mpz, numer_.mpz, denom_.mpz);
           }
       }
     }
   }
 
+  deprecated
+  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
   proc bigint.div_q(const ref n: bigint,
                               d: integral,
                     param     rounding = Round.ZERO) {
-
-    this.div_q(n, new bigint(d), rounding);
+    use Round;
+    if (rounding == UP) {
+      this.divQ(n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.divQ(n, d, round.zero);
+    } else {
+      this.divQ(n, d, round.down);
+    }
   }
 
+  proc bigint.divQ(const ref numer: bigint,
+                             denom: integral,
+                   param     rounding = round.zero) {
+
+    this.divQ(numer, new bigint(denom), rounding);
+  }
+
+  deprecated
+  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
   proc bigint.div_r(const ref n: bigint,
                     const ref d: bigint,
                     param     rounding = Round.ZERO) {
+    use Round;
+    if (rounding == UP) {
+      this.divR(n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.divR(n, d, round.zero);
+    } else {
+      this.divR(n, d, round.down);
+    }
+
+  }
+
+  proc bigint.divR(const ref numer: bigint,
+                   const ref denom: bigint,
+                   param     rounding = round.zero) {
     if _local {
       select rounding {
-        when Round.UP   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
-        when Round.DOWN do mpz_fdiv_r(this.mpz, n.mpz,  d.mpz);
-        when Round.ZERO do mpz_tdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_r(this.mpz, numer.mpz,  denom.mpz);
+        when round.down do mpz_fdiv_r(this.mpz, numer.mpz,  denom.mpz);
+        when round.zero do mpz_tdiv_r(this.mpz, numer.mpz,  denom.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
+              numer.localeId == chpl_nodeID &&
+              denom.localeId == chpl_nodeID {
       select rounding {
-        when Round.UP   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
-        when Round.DOWN do mpz_fdiv_r(this.mpz, n.mpz,  d.mpz);
-        when Round.ZERO do mpz_tdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_r(this.mpz, numer.mpz,  denom.mpz);
+        when round.down do mpz_fdiv_r(this.mpz, numer.mpz,  denom.mpz);
+        when round.zero do mpz_tdiv_r(this.mpz, numer.mpz,  denom.mpz);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
-        const d_ = d;
+        const numer_ = numer;
+        const denom_ = denom;
 
         select rounding {
-          when Round.UP   do mpz_cdiv_r(this.mpz, n_.mpz, d_.mpz);
-          when Round.DOWN do mpz_fdiv_r(this.mpz, n_.mpz, d_.mpz);
-          when Round.ZERO do mpz_tdiv_r(this.mpz, n_.mpz, d_.mpz);
+          when round.up   do mpz_cdiv_r(this.mpz, numer_.mpz, denom_.mpz);
+          when round.down do mpz_fdiv_r(this.mpz, numer_.mpz, denom_.mpz);
+          when round.zero do mpz_tdiv_r(this.mpz, numer_.mpz, denom_.mpz);
         }
       }
     }
   }
 
+  deprecated
+  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
   proc bigint.div_r(const ref n: bigint,
                               d: integral,
                     param     rounding = Round.ZERO) {
-    this.div_r(n, new bigint(d), rounding);
+    use Round;
+    if (rounding == UP) {
+      this.divR(n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.divR(n, d, round.zero);
+    } else {
+      this.divR(n, d, round.down);
+    }
   }
 
-  // this gets quotient, r gets remainder
+  proc bigint.divR(const ref numer: bigint,
+                             denom: integral,
+                   param     rounding = round.zero) {
+    this.divR(numer, new bigint(denom), rounding);
+  }
+
+  deprecated
+  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
   proc bigint.div_qr(ref       r:        bigint,
                      const ref n:        bigint,
                      const ref d:        bigint,
                      param     rounding = Round.ZERO) {
+    use Round;
+    if (rounding == UP) {
+      this.divQR(r, n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.divQR(r, n, d, round.zero);
+    } else {
+      this.divQR(r, n, d, round.down);
+    }
+  }
+
+  // this gets quotient, remain gets remainder
+  proc bigint.divQR(ref       remain: bigint,
+                    const ref numer: bigint,
+                    const ref denom: bigint,
+                    param     rounding = round.zero) {
     if _local {
       select rounding {
-        when Round.UP   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when Round.DOWN do mpz_fdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when Round.ZERO do mpz_tdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+        when round.up do mpz_cdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                     denom.mpz);
+        when round.down do mpz_fdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                       denom.mpz);
+        when round.zero do mpz_tdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                       denom.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              r.localeId    == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
+              remain.localeId == chpl_nodeID &&
+              numer.localeId == chpl_nodeID &&
+              denom.localeId == chpl_nodeID {
       select rounding {
-        when Round.UP   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when Round.DOWN do mpz_fdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when Round.ZERO do mpz_tdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
+        when round.up do mpz_cdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                     denom.mpz);
+        when round.down do mpz_fdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                       denom.mpz);
+        when round.zero do mpz_tdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                       denom.mpz);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        var   r_ = r;
-        const n_ = n;
-        const d_ = d;
+        var   remain_ = remain;
+        const numer_ = numer;
+        const denom_ = denom;
 
         select rounding {
-          when Round.UP   do mpz_cdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
-          when Round.DOWN do mpz_fdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
-          when Round.ZERO do mpz_tdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
+          when round.up do mpz_cdiv_qr(this.mpz, remain_.mpz, numer_.mpz,
+                                       denom_.mpz);
+          when round.down do mpz_fdiv_qr(this.mpz, remain_.mpz, numer_.mpz,
+                                         denom_.mpz);
+          when round.zero do mpz_tdiv_qr(this.mpz, remain_.mpz, numer_.mpz,
+                                         denom_.mpz);
         }
 
-        r = r_;
+        remain = remain_;
       }
     }
   }
 
+  deprecated
+  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
   proc bigint.div_qr(ref       r: bigint,
                      const ref n: bigint,
                                d: integral,
                      param     rounding = Round.ZERO) {
-    this.div_qr(r, n, new bigint(d), rounding);
+    use Round;
+    if (rounding == UP) {
+      this.divQR(r, n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.divQR(r, n, d, round.zero);
+    } else {
+      this.divQR(r, n, d, round.down);
+    }
   }
 
+  proc bigint.divQR(ref       remain: bigint,
+                    const ref numer: bigint,
+                              denom: integral,
+                    param     rounding = round.zero) {
+    this.divQR(remain, numer, new bigint(denom), rounding);
+  }
+
+  deprecated
+  "bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead"
   proc bigint.div_q_2exp(const ref n: bigint,
                                    b: integral,
                          param     rounding = Round.ZERO) {
-    const b_ = b.safeCast(mp_bitcnt_t);
+    use Round;
+    if (rounding == UP) {
+      this.divQ2Exp(n, b, round.up);
+    } else if (rounding == ZERO) {
+      this.divQ2Exp(n, b, round.zero);
+    } else {
+      this.divQ2Exp(n, b, round.down);
+    }
+  }
+
+  proc bigint.divQ2Exp(const ref numer: bigint,
+                                 exp: integral,
+                       param     rounding = round.zero) {
+    const exp_ = exp.safeCast(mp_bitcnt_t);
 
     if _local {
       select rounding {
-        when Round.UP   do mpz_cdiv_q_2exp(this.mpz, n.mpz, b_);
-        when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n.mpz, b_);
-        when Round.ZERO do mpz_tdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_q_2exp(this.mpz, numer.mpz, exp_);
+        when round.down do mpz_fdiv_q_2exp(this.mpz, numer.mpz, exp_);
+        when round.zero do mpz_tdiv_q_2exp(this.mpz, numer.mpz, exp_);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID {
+              numer.localeId == chpl_nodeID {
       select rounding {
-        when Round.UP   do mpz_cdiv_q_2exp(this.mpz, n.mpz, b_);
-        when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n.mpz, b_);
-        when Round.ZERO do mpz_tdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_q_2exp(this.mpz, numer.mpz, exp_);
+        when round.down do mpz_fdiv_q_2exp(this.mpz, numer.mpz, exp_);
+        when round.zero do mpz_tdiv_q_2exp(this.mpz, numer.mpz, exp_);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
+        const numer_ = numer;
 
         select rounding {
-          when Round.UP   do mpz_cdiv_q_2exp(this.mpz, n_.mpz, b_);
-          when Round.DOWN do mpz_fdiv_q_2exp(this.mpz, n_.mpz, b_);
-          when Round.ZERO do mpz_tdiv_q_2exp(this.mpz, n_.mpz, b_);
+          when round.up   do mpz_cdiv_q_2exp(this.mpz, numer_.mpz, exp_);
+          when round.down do mpz_fdiv_q_2exp(this.mpz, numer_.mpz, exp_);
+          when round.zero do mpz_tdiv_q_2exp(this.mpz, numer_.mpz, exp_);
         }
       }
     }
   }
 
+  deprecated
+  "bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead"
   proc bigint.div_r_2exp(const ref n: bigint,
                                    b: integral,
                          param     rounding = Round.ZERO) {
-    const b_ = b.safeCast(mp_bitcnt_t);
+    use Round;
+    if (rounding == UP) {
+      this.divR2Exp(n, b, round.up);
+    } else if (rounding == ZERO) {
+      this.divR2Exp(n, b, round.zero);
+    } else {
+      this.divR2Exp(n, b, round.down);
+    }
+  }
+
+  proc bigint.divR2Exp(const ref numer: bigint,
+                                 exp: integral,
+                       param     rounding = round.zero) {
+    const exp_ = exp.safeCast(mp_bitcnt_t);
 
     if _local {
       select rounding {
-        when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n.mpz, b_);
-        when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n.mpz, b_);
-        when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_r_2exp(this.mpz, numer.mpz, exp_);
+        when round.down do mpz_fdiv_r_2exp(this.mpz, numer.mpz, exp_);
+        when round.zero do mpz_tdiv_r_2exp(this.mpz, numer.mpz, exp_);
       }
 
-    } else if this.localeId == chpl_nodeID && n.localeId == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && numer.localeId == chpl_nodeID {
       select rounding {
-        when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n.mpz, b_);
-        when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n.mpz, b_);
-        when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_r_2exp(this.mpz, numer.mpz, exp_);
+        when round.down do mpz_fdiv_r_2exp(this.mpz, numer.mpz, exp_);
+        when round.zero do mpz_tdiv_r_2exp(this.mpz, numer.mpz, exp_);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
+        const numer_ = numer;
 
         select rounding {
-          when Round.UP   do mpz_cdiv_r_2exp(this.mpz, n_.mpz, b_);
-          when Round.DOWN do mpz_fdiv_r_2exp(this.mpz, n_.mpz, b_);
-          when Round.ZERO do mpz_tdiv_r_2exp(this.mpz, n_.mpz, b_);
+          when round.up   do mpz_cdiv_r_2exp(this.mpz, numer_.mpz, exp_);
+          when round.down do mpz_fdiv_r_2exp(this.mpz, numer_.mpz, exp_);
+          when round.zero do mpz_tdiv_r_2exp(this.mpz, numer_.mpz, exp_);
         }
       }
     }

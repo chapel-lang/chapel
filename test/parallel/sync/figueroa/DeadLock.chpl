@@ -7,12 +7,12 @@ proc foo(u, v) {
 
   begin {
     writeln("2: initial value is ", s.readFE());
-    done = true;
+    done.writeEF(true);
     writeln("2: value is now ", s.readFE());
-    done = true;
+    done.writeEF(true);
   }
-  if done then writeln("1: writing ", v);
-  if done then s = v;
+  if done.readFE() then writeln("1: writing ", v);
+  if done.readFE() then s.writeEF(v);
 }
 
 foo(1, 5);

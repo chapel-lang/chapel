@@ -263,7 +263,7 @@ Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index) {
   }
 }
 
-Expr* buildIntLiteral(const char* pch, const char* file, int line) {
+SymExpr* buildIntLiteral(const char* pch, const char* file, int line) {
   uint64_t ull;
   int len = strlen(pch);
   char* noUnderscores = (char*)malloc(len+1);
@@ -298,12 +298,12 @@ Expr* buildIntLiteral(const char* pch, const char* file, int line) {
 }
 
 
-Expr* buildRealLiteral(const char* pch) {
+SymExpr* buildRealLiteral(const char* pch) {
   return new SymExpr(new_RealSymbol(pch));
 }
 
 
-Expr* buildImagLiteral(const char* pch) {
+SymExpr* buildImagLiteral(const char* pch) {
   char* str = strdup(pch);
   str[strlen(pch)-1] = '\0';
   SymExpr* se = new SymExpr(new_ImagSymbol(str));
@@ -312,15 +312,15 @@ Expr* buildImagLiteral(const char* pch) {
 }
 
 
-Expr* buildStringLiteral(const char* pch) {
+SymExpr* buildStringLiteral(const char* pch) {
   return new SymExpr(new_StringSymbol(pch));
 }
 
-Expr* buildBytesLiteral(const char* pch) {
+SymExpr* buildBytesLiteral(const char* pch) {
   return new SymExpr(new_BytesSymbol(pch));
 }
 
-Expr* buildCStringLiteral(const char* pch) {
+SymExpr* buildCStringLiteral(const char* pch) {
   return new SymExpr(new_CStringSymbol(pch));
 }
 
@@ -371,6 +371,43 @@ BlockStmt* buildChapelStmt(Expr* expr) {
 
 BlockStmt* buildErrorStandin() {
   return new BlockStmt(new CallExpr(PRIM_ERROR), BLOCK_SCOPELESS);
+}
+
+DefExpr* buildDeprecated(DefExpr* def) {
+  const char* msg = "";
+  return buildDeprecated(def, msg);
+}
+
+DefExpr* buildDeprecated(DefExpr* def, const char* msg) {
+  Symbol* sym = def->sym;
+  sym->addFlag(FLAG_DEPRECATED);
+  sym->deprecationMsg = msg;
+
+  if (sym->hasFlag(FLAG_CONFIG)) {
+    // Trigger a warning now if the deprecated config has been set via the
+    // compilation line
+    if (isUsedCmdLineConfig(sym->name)) {
+      USR_WARN("%s", sym->getDeprecationMsg());
+      USR_PRINT("'%s' was set via a compiler flag", sym->name);
+    }
+  }
+  return def;
+}
+
+BlockStmt* buildDeprecated(BlockStmt* block) {
+  const char* msg = "";
+  return buildDeprecated(block, msg);
+}
+
+BlockStmt* buildDeprecated(BlockStmt* block, const char* msg) {
+  if (DefExpr* def = toDefExpr(block->body.head)) {
+    buildDeprecated(def, msg);
+  } else if (ForwardingStmt* forward = toForwardingStmt(block->body.head)) {
+    USR_FATAL_CONT(forward, "Can't deprecate a forwarding statement");
+  } else {
+    INT_FATAL("Unexpected deprecation case");
+  }
+  return block;
 }
 
 static void addModuleToSearchList(VisibilityStmt* newStmt, BaseAST* module) {
@@ -874,7 +911,7 @@ BlockStmt* buildIncludeModule(const char* name,
 
   // docs comment is ignored (the one in the module declaration is used)
 
-  if (fWarnUnstable) {
+  if (fWarnUnstable && mod->modTag == MOD_USER) {
     USR_WARN(loc, "module include statements are not yet stable and may change");
   }
 
@@ -1035,6 +1072,9 @@ buildForallLoopExpr(Expr* indices, Expr* iteratorExpr, Expr* expr, Expr* cond, b
 //
 Expr* buildForallLoopExprFromArrayType(CallExpr* buildArrTypeCall,
                                            bool recursiveCall) {
+  if (buildArrTypeCall->isPrimitive(PRIM_ERROR))  // ex. 'type T = [];'
+    return buildArrTypeCall;
+
   // Is this a call to chpl__buildArrayRuntimeType?
   UnresolvedSymExpr* ursym = toUnresolvedSymExpr(buildArrTypeCall->baseExpr);
   if (ursym && strcmp(ursym->unresolved, "chpl__buildArrayRuntimeType") == 0) {
@@ -1170,7 +1210,7 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
   if (bounded) {
     if (!onBlock) { block->insertAtHead(new CallExpr("chpl_resetTaskSpawn", numTasks)); }
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
-    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr(".", iterator,  new_CStringSymbol("size"))));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr("chpl_coforallSize", iterator)));
     block->insertAtHead(new DefExpr(numTasks));
     block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks, numTasks));
@@ -2510,36 +2550,27 @@ BlockStmt* handleConfigTypes(BlockStmt* blk) {
   return blk;
 }
 
-static VarSymbol* one = NULL;
-
-static SymExpr* buildOneExpr() {
-  if (one == NULL) {
-    one = new_IntSymbol(1);
-  }
-  return new SymExpr(one);
-}
-
 CallExpr* buildBoundedRange(Expr* low, Expr* high,
                             bool openlow, bool openhigh) {
   if (openlow) {
-    low = new CallExpr("+", low, buildOneExpr());
+    low = new CallExpr("chpl__nudgeLowBound", low);
   }
   if (openhigh) {
-    high = new CallExpr("-", high, buildOneExpr());
+    high = new CallExpr("chpl__nudgeHighBound", high);
   }
   return new CallExpr("chpl_build_bounded_range",low, high);
 }
 
 CallExpr* buildLowBoundedRange(Expr* low, bool open) {
   if (open) {
-    low = new CallExpr("+", low, buildOneExpr());
+    low = new CallExpr("chpl__nudgeLowBound", low);
   }
   return new CallExpr("chpl_build_low_bounded_range", low);
 }
 
 CallExpr* buildHighBoundedRange(Expr* high, bool open) {
   if (open) {
-    high = new CallExpr("-", high, buildOneExpr());
+    high = new CallExpr("chpl__nudgeHighBound", high);
   }
   return new CallExpr("chpl_build_high_bounded_range", high);
 }

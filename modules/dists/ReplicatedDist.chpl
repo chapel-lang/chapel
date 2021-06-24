@@ -166,7 +166,7 @@ proc Replicated.dsiPrivatize(privatizeData)
   const privDom = otherTargetLocales.domain;
   const privTargetLocales: [privDom] locale = otherTargetLocales;
  
-  const nonNilWrapper: [0..#privTargetLocales.size] locale =
+  const nonNilWrapper: [0..#privTargetLocales.sizeAs(int)] locale =
     for loc in otherTargetLocales do loc; 
 
   return new unmanaged Replicated(nonNilWrapper, "used during privatization");
@@ -192,7 +192,7 @@ class ReplicatedDom : BaseRectangularDom {
   // NOTE: if they ever change after the initializer - Reprivatize them
   var localDoms: [dist.targetLocDom] unmanaged LocReplicatedDom(rank, idxType, stridable)?;
 
-  proc numReplicands return localDoms.size;
+  proc numReplicands return localDoms.sizeAs(int);
 
   //
   // helper function to get the local domain safely
@@ -280,7 +280,7 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
 
 proc Replicated.dsiClone(): _to_unmanaged(this.type) {
   if traceReplicatedDist then writeln("Replicated.dsiClone");
-  var nonNilWrapper: [0..#targetLocales.size] locale =
+  var nonNilWrapper: [0..#targetLocales.sizeAs(int)] locale =
     for loc in targetLocales do loc;
   return new unmanaged Replicated(nonNilWrapper);
 }
@@ -367,6 +367,10 @@ proc ReplicatedDom.dsiSerialWrite(f): void {
   redirectee()._value.dsiSerialWrite(f);
 }
 
+proc ReplicatedDom.doiToString() {
+  return redirectee()._value.doiToString();
+}
+
 proc ReplicatedDom.dsiDims(): rank * range(idxType,
                                            BoundedRangeType.bounded,
                                            stridable)
@@ -397,7 +401,7 @@ proc ReplicatedDom.dsiAlignment
 
 // here replication is visible
 proc ReplicatedDom.dsiNumIndices
-  return redirectee().size;
+  return redirectee().sizeAs(uint);
 
 proc ReplicatedDom.dsiMember(indexx)
   return redirectee().contains(indexx);

@@ -50,9 +50,6 @@ MAKEFLAGS = --no-print-directory
 export CHPL_MAKE_HOME=$(shell pwd)
 export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
 
-NEEDS_LLVM_RUNTIME=$(CHPL_MAKE_PYTHON) ${CHPL_MAKE_HOME}/util/chplenv/chpl_llvm.py \
-                    --needs-llvm-runtime
-
 default: all
 
 all: comprt
@@ -73,6 +70,10 @@ notcompiler: FORCE
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
+libchplcomp: FORCE
+	@echo "Making the compiler library..."
+	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp
+
 compiler: FORCE
 	@echo "Making the compiler..."
 	@cd third-party && $(MAKE) llvm
@@ -84,19 +85,11 @@ parser: FORCE
 
 modules: FORCE
 	@echo "Making the modules..."
-	@cd modules && CHPL_LLVM_CODEGEN=0 $(MAKE)
-	@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
-	echo "Making the modules for LLVM..."; \
-	cd modules && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
-	fi
+	@cd modules && $(MAKE)
 
 runtime: FORCE
 	@echo "Making the runtime..."
-	@cd runtime && CHPL_LLVM_CODEGEN=0 $(MAKE)
-	@if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
-	echo "Making the runtime for LLVM..."; \
-	cd runtime && CHPL_LLVM_CODEGEN=1 $(MAKE) ; \
-	fi
+	@cd runtime && $(MAKE)
 
 third-party: FORCE
 	@echo "Making the third-party libraries..."
@@ -105,19 +98,13 @@ third-party: FORCE
 third-party-try-opt: third-party-try-re2 third-party-try-gmp
 
 third-party-try-re2: FORCE
-	-@if [ -z "$$CHPL_REGEXP" ]; then \
-	cd third-party && CHPL_LLVM_CODEGEN=0 $(MAKE) try-re2; \
-	if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
-	CHPL_LLVM_CODEGEN=1 $(MAKE) try-re2; \
-	fi \
+	-@if [ "$$CHPL_RE2" != none ]; then \
+	cd third-party && $(MAKE) try-re2; \
 	fi
 
 third-party-try-gmp: FORCE
 	-@if [ -z "$$CHPL_GMP" ]; then \
-	cd third-party && CHPL_LLVM_CODEGEN=0 $(MAKE) try-gmp; \
-	if [ ! -z `${NEEDS_LLVM_RUNTIME}` ]; then \
-	CHPL_LLVM_CODEGEN=1 $(MAKE) try-gmp; \
-	fi \
+	cd third-party && $(MAKE) try-gmp; \
 	fi
 
 third-party-test-venv: FORCE
@@ -165,6 +152,14 @@ c2chapel: third-party-c2chapel-venv FORCE
 	cd tools/c2chapel && $(MAKE)
 	cd tools/c2chapel && $(MAKE) install
 
+compile-util-python: FORCE
+	@if $(CHPL_MAKE_PYTHON) -m compileall -h > /dev/null 2>&1 ; then \
+	  echo "Compiling Python scripts in util/" ; \
+	  $(CHPL_MAKE_PYTHON) -m compileall util/config -q ; \
+	  $(CHPL_MAKE_PYTHON) -m compileall util/chplenv -q ; \
+	else \
+	  echo "Not compiling Python scripts - missing compileall" ; \
+	fi
 
 third-party-fltk: FORCE
 	cd third-party/fltk && $(MAKE)

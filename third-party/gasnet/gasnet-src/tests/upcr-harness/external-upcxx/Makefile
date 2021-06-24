@@ -5,13 +5,18 @@ UPCXX_EXTRAS_GIT_COMMIT ?= develop
 UPCXX_BLDDIR     ?= $(HARNESS_WORKDIR)/upcxx
 UPCXX_INSTDIR    ?= $(HARNESS_WORKDIR)/upcxx-inst
 UPCXX_TMPDIR     ?= $(HARNESS_WORKDIR)/upcxx-tmp
-UPCXX_CONDUIT    ?= $(NETWORK) # Default to same conduit as the enclosing harness run
+UPCXX_CONDUIT    ?= $(NETWORK)# Default to same conduit as the enclosing harness run
 UPCXX_EXTRA_FLAGS ?=# extra flags to add to both compilers for lib and tests, may be set by pushbuild/end-user
 UPCXX_EXTRA_TEST_FLAGS ?=# extra flags to add to tests (but not lib), may be set by pushbuild/end-user
 UPCXX_TEST_FLAGS  ?=# per-test flags reserved for use by harness.conf
 UPCXX_CONFIGURE_EXTRA ?=# extra flags to add to UPC++ configure command line
 UPCXX_MAKE_J     ?= -j4 # concurrency of GNU Make steps
 UPCXX_FC         ?= $(shell which gfortran)
+
+# ensure all child invocations see the same conduit defined by UPCXX_CONDUIT,
+# even if the enclosing environment contains conflicting values
+export UPCXX_NETWORK := $(UPCXX_CONDUIT)
+export UPCXX_GASNET_CONDUIT := $(UPCXX_CONDUIT)
 
 # Options for providing GASNET:
 # 1. set UPCXX_GASNET to an existing build path to use.
@@ -285,6 +290,13 @@ wrap_test: upcxx-install
 	@set -x ; $(DO_ENV) && \
 	$(UPCXX_INSTDIR)/bin/upcxx -o $(TEST_EXE) $(TEST_PATH) $(UPCXX_EXTRA_TEST_FLAGS) $(UPCXX_TEST_FLAGS)
 
+# Build a single test using the dev-tests target in the UPC++ Makefile (only valid for in-repo tests)
+make_test: upcxx-install
+	@set -x ; $(DO_ENV) && \
+	$(MAKE) -C $(UPCXX_BLDDIR) $(UPCXX_MAKE_J) dev-tests-$(GASNET_CODEMODE) NETWORKS=$(UPCXX_CONDUIT) \
+	           TESTS=^test-$(TEST_EXE) EXTRAFLAGS="$(UPCXX_EXTRA_TEST_FLAGS) $(UPCXX_TEST_FLAGS)"
+	@mv $(UPCXX_BLDDIR)/test-$(TEST_EXE)-$(GASNET_CODEMODE)-$(UPCXX_CONDUIT) $(TEST_EXE)
+
 IGNORE_TESTS_PAT=neg-.+|getenv|promise_multiple_results|promise_reused|quiescence_failure|issue105
 check-testsuite:
 	$(MAKE) -C $(UPCXX_BLDDIR) $(UPCXX_MAKE_J) dev-tests-$(GASNET_CODEMODE) UPCXX_DRY_RUN=1 NETWORKS=$(UPCXX_CONDUIT) > check-testsuite.log
@@ -317,6 +329,8 @@ VPATH = \
 	  $(MAKE) inst_test TEST_PATH=$< TEST_EXE=$@ ; \
 	elif test "$$UPCXX_TESTMODE" = "wrap" ; then set -x ; \
 	  $(MAKE) wrap_test TEST_PATH=$< TEST_EXE=$@ ; \
+	elif test "$$UPCXX_TESTMODE" = "make" ; then set -x ; \
+	  $(MAKE) make_test TEST_EXE=$@ ; \
 	else \
 	  echo "Unrecognized UPCXX_TESTMODE=$$UPCXX_TESTMODE" ; exit 100; \
 	fi 
@@ -327,7 +341,6 @@ guppie-%-seq guppie-%-par :: $(UPCXX_BLDDIR)/extras/examples/gups/upcxx upcxx-in
 	              *-par) export UPCXX_THREADMODE=par ;; esac; \
 	 set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< \
 	             UPCXX_INSTALL=$(UPCXX_INSTDIR) \
-	             UPCXX_NETWORK=$(UPCXX_CONDUIT) \
 	             clean guppie-$*
 	mv $</guppie-$* $@
 
@@ -337,7 +350,6 @@ DA-%-seq DA-%-par :: $(UPCXX_BLDDIR)/extras/extensions/dist_array upcxx-install 
 	              *-par) export UPCXX_THREADMODE=par ;; esac; \
 	 set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< \
 	             UPCXX_INSTALL=$(UPCXX_INSTDIR) \
-	             UPCXX_NETWORK=$(UPCXX_CONDUIT) \
 	             clean bin/DA-$*
 	-ln -sf $</examples . # for examples/input file
 	mv $</bin/DA-$* $@
@@ -348,7 +360,6 @@ jac3d% :: $(UPCXX_BLDDIR)/extras/examples/jac3d upcxx-install force
 	              *-par) export UPCXX_THREADMODE=par ;; esac; \
 	 set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< \
 	             UPCXX_INSTALL=$(UPCXX_INSTDIR) \
-	             UPCXX_NETWORK=$(UPCXX_CONDUIT) \
 	             clean jac3d
 	mv $</jac3d $@
 
@@ -358,7 +369,6 @@ canno%-seq canno%-par :: $(UPCXX_BLDDIR)/extras/examples/cannon upcxx-install fo
 	              *-par) export UPCXX_THREADMODE=par ;; esac; \
 	 set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $< \
 	             UPCXX_INSTALL=$(UPCXX_INSTDIR) \
-	             UPCXX_NETWORK=$(UPCXX_CONDUIT) \
 	             clean canno$*
 	mv $</canno$* $@
 
@@ -371,7 +381,6 @@ extend-add_%-seq extend-add_%-par :: $(UPCXX_BLDDIR)/extras/examples/extend-add 
 	 SCALAPACK_LIBS=$${SCALAPACK_LIBS:--L$$SCALAPACK_HOME/lib -lscalapack -Wl,--rpath=$$SCALAPACK_HOME/lib} ; \
 	 UPCXX_EXTENDADD_EXTRA=$${UPCXX_EXTENDADD_EXTRA:--Wno-unknown-pragmas} ; \
 	 env $(MAKE_TEST_ENV) $(MAKE) -C $< UPCXX_INSTALL=$(UPCXX_INSTDIR) \
-	               UPCXX_NETWORK=$(UPCXX_CONDUIT) \
                        SCALAPACK_LIBS="$$SCALAPACK_LIBS" \
                        OPTIMIZATION="$(OPT) $$UPCXX_EXTENDADD_EXTRA" \
                        clean extend-add_$*
@@ -382,8 +391,6 @@ upc-%-seq upc-%-par :: $(UPCXX_BLDDIR)/test/interop upcxx-install force
 	@case "$@" in *-seq) export UPCXX_THREADMODE=seq ;; \
 	              *-par) export UPCXX_THREADMODE=par ;; esac; \
 	 set -x ; env CFLAGS= $(MAKE_TEST_ENV) $(MAKE) -C $< OPTLVL= UPCC='$(UPCC)' \
-	             UPCXX_GASNET_CONDUIT=$(UPCXX_CONDUIT) \
-	             UPCXX_NETWORK=$(UPCXX_CONDUIT) \
 	             UPCXX=$(UPCXX_INSTDIR)/bin/upcxx \
 	             clean $*
 	mv $</$* $@
@@ -394,7 +401,6 @@ cuda_vecadd% :: $(UPCXX_BLDDIR)/example/cuda_vecadd/Makefile upcxx-install force
 	              *-par) export UPCXX_THREADMODE=par ;; esac; \
 	 set -x ; env $(MAKE_TEST_ENV) $(MAKE) -C $(<D) \
 	             UPCXX_INSTALL=$(UPCXX_INSTDIR) \
-	             UPCXX_NETWORK=$(UPCXX_CONDUIT) \
 	             clean cuda_vecadd
 	mv $(<D)/cuda_vecadd $@
 
@@ -416,7 +422,7 @@ cmake-%: upcxx-install
 	rm -f cmake/UPCXXConfig*
 	cd cmake && ( set -x ; \
 	export UPCXX_THREADMODE=$* UPCXX_CODEMODE=$(UPCXX_CODEMODE) UPCXX_VERBOSE=1 \
-	       UPCXX_INSTALL=$(UPCXX_INSTDIR) UPCXX_NETWORK=$(UPCXX_CONDUIT); \
+	       UPCXX_INSTALL=$(UPCXX_INSTDIR) ; \
 	export $(MAKE_TEST_ENV) ; \
 	$(CMAKE) --version ; \
 	$(CMAKE) -DCMAKE_PREFIX_PATH=$(UPCXX_INSTDIR) $(CMAKE_ARGS) . )
@@ -443,7 +449,7 @@ sympack-%: upcxx-install force
 	case "$*" in seq) export SYMPACK_THREADS=-DENABLE_THREADS=OFF ;; \
 	             par) export SYMPACK_THREADS=-DENABLE_THREADS=ON ;; esac; \
 	export UPCXX_THREADMODE=$* UPCXX_CODEMODE=$(UPCXX_CODEMODE) UPCXX_VERBOSE=1 \
-	       UPCXX_INSTALL=$(UPCXX_INSTDIR) UPCXX_NETWORK=$(UPCXX_CONDUIT); \
+	       UPCXX_INSTALL=$(UPCXX_INSTDIR) ; \
 	export $(MAKE_TEST_ENV) FC="$(UPCXX_FC)" ; \
 	$(CMAKE) --version ; \
 	$(CMAKE) -DCMAKE_PREFIX_PATH=$(UPCXX_INSTDIR) $(CMAKE_ARGS) $(CMAKE_FC_ARGS) \

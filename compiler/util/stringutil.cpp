@@ -33,80 +33,126 @@
 #include <climits>
 #include <functional>
 #include <sstream>
+#include <unordered_map>
 
 #include <inttypes.h>
 
-static ChainHashMap<const char*, StringHashFns, const char*> chapelStringsTable;
-
-static const char*
-canonicalize_string(const char *s) {
-  const char* ss = chapelStringsTable.get(s);
-  if (!ss) {
-    chapelStringsTable.put(s, s);
-    return s;
+struct MyStrEqual {
+  bool operator()(const char* lhs, const char* rhs) const {
+    return strcmp(lhs, rhs) == 0;
   }
-  return ss;
+};
+
+struct MyStrHash : StringHashFns {
+  std::size_t operator()(const char* k) const {
+    return hash(k);
+  }
+};
+
+std::unordered_map<const char*, const char*, MyStrHash, MyStrEqual> chapelStringsTable;
+
+static const char* canonicalize_allocated_string(char *s) {
+  // add s to the table if it is not present
+  // if s is already in the present, get the value from the table
+  auto pair = chapelStringsTable.insert( {s, s} );
+  const char* ret = pair.first->second; // return the value now in the table
+
+  if (ret != s) {
+    // free the argument if we found an existing string in the table
+    free(s);
+  }
+
+  return ret;
 }
 
 const char*
 astr(const char* s1, const char* s2, const char* s3, const char* s4,
      const char* s5, const char* s6, const char* s7, const char* s8,
      const char* s9) {
-  int len;
-  len = strlen(s1);
+  int len, len1, len2, len3, len4, len5, len6, len7, len8, len9;
+  len = len1 = len2 = len3 = len4 = len5 = len6 = len7 = len8 = len9 = 0;
+
+  if (s1)
+    len1 = strlen(s1);
   if (s2)
-    len += strlen(s2);
+    len2 = strlen(s2);
   if (s3)
-    len += strlen(s3);
+    len3 = strlen(s3);
   if (s4)
-    len += strlen(s4);
+    len4 = strlen(s4);
   if (s5)
-    len += strlen(s5);
+    len5 = strlen(s5);
   if (s6)
-    len += strlen(s6);
+    len6 = strlen(s6);
   if (s7)
-    len += strlen(s7);
+    len7 = strlen(s7);
   if (s8)
-    len += strlen(s8);
+    len8 = strlen(s8);
   if (s9)
-    len += strlen(s9);
+    len9 = strlen(s9);
+
+  len = len1 + len2 + len3 + len4 + len5 + len6 + len7 + len8 + len9;
+
+  // allocate the total memory
   char* s = (char*)malloc(len+1);
-  strcpy(s, s1);
-  if (s2)
-    strcat(s, s2);
-  if (s3)
-    strcat(s, s3);
-  if (s4)
-    strcat(s, s4);
-  if (s5)
-    strcat(s, s5);
-  if (s6)
-    strcat(s, s6);
-  if (s7)
-    strcat(s, s7);
-  if (s8)
-    strcat(s, s8);
-  if (s9)
-    strcat(s, s9);
-  const char* t = canonicalize_string(s);
-  if (s != t)
-    free(s);
-  return t;
+
+  len = 0;
+
+  // copy each non-empty string
+  if (len1 > 0) {
+    memcpy(&s[len], s1, len1);
+    len += len1;
+  }
+  if (len2 > 0) {
+    memcpy(&s[len], s2, len2);
+    len += len2;
+  }
+  if (len3 > 0) {
+    memcpy(&s[len], s3, len3);
+    len += len3;
+  }
+  if (len4 > 0) {
+    memcpy(&s[len], s4, len4);
+    len += len4;
+  }
+  if (len5 > 0) {
+    memcpy(&s[len], s5, len5);
+    len += len5;
+  }
+  if (len6 > 0) {
+    memcpy(&s[len], s6, len6);
+    len += len6;
+  }
+  if (len7 > 0) {
+    memcpy(&s[len], s7, len7);
+    len += len7;
+  }
+  if (len8 > 0) {
+    memcpy(&s[len], s8, len8);
+    len += len8;
+  }
+  if (len9 > 0) {
+    memcpy(&s[len], s9, len9);
+    len += len9;
+  }
+
+  // add the null terminator
+  s[len] = '\0';
+
+  return canonicalize_allocated_string(s);
 }
 
 const char* astr(const char* s1)
 {
-  const char* ss = chapelStringsTable.get(s1);
-  if (ss)
+  auto search = chapelStringsTable.find(s1);
+  if (search != chapelStringsTable.end()) {
     // return an existing entry
-    return ss;
+    return search->second;
+  }
 
   // add a new entry - always a fresh malloc
-  int len;
-  len = strlen(s1);
-  char* s = (char*)malloc(len+1);
-  strcpy(s, s1);
-  chapelStringsTable.put(s,s);
+  char* s = strdup(s1);
+  chapelStringsTable.insert(search, {s, s});
   return s;
 }
 
@@ -126,24 +172,19 @@ istr(int i) {
 //
 // returns a canonicalized substring that contains the first part of
 // 's' up to 'e'
-// note: e must be in s
+// note: e must be a pointer that points within in s
 //
 const char* asubstr(const char* s, const char* e) {
   char* ss = (char*)malloc(e-s+1);
   strncpy(ss, s, e-s);
   ss[e-s] = '\0';
-  const char* t = canonicalize_string(ss);
-  if (ss != t)
-    free(ss);
-  return t;
+  return canonicalize_allocated_string(ss);
 }
 
 
 void deleteStrings() {
-  Vec<const char*> keys;
-  chapelStringsTable.get_keys(keys);
-  forv_Vec(const char, key, keys) {
-    free(const_cast<char*>(key));
+  for (auto pair: chapelStringsTable) {
+    free(const_cast<char*>(pair.second));
   }
 }
 

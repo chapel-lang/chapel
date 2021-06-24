@@ -9,21 +9,19 @@ export CHPL_COMM=none
 export CHPL_LAUNCHER=none
 
 if command -v module > /dev/null 2>&1 ; then
-  HUGEPAGES=$(module list 2>&1 | \grep "craype-hugepage" | sed -e"s:[0-9]*)::g")
+  HUGEPAGES=$(module list 2>&1 | grep craype-hugepage | sed -e"s:[0-9]*)::g")
   if [ ! -z ${HUGEPAGES} ]; then
       echo "Unloading hugepages..."
       module unload "${HUGEPAGES}"
   fi
 fi
 
-$chplBinDir/chpl mason.chpl -o $chplBinDir/mason
-EXIT_STATUS=$?
-
-if [ ${EXIT_STATUS} != 0 ] ; then
-  echo
-  echo "Error building mason. Check that you have built a runtime configuration that supports:
+if ! $chplBinDir/chpl mason.chpl -o $chplBinDir/mason; then
+  cat<<EOF
+  Error building mason. Check that you have built a runtime configuration that supports:
   CHPL_COMM=none
   CHPL_LAUNCHER=none
-  CHPL_REGEXP=re2"
-  exit 1;
+  CHPL_RE2=bundled
+EOF
+  exit 1
 fi

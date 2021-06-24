@@ -139,9 +139,9 @@ module ChapelEnv {
   param CHPL_JEMALLOC:string;
   CHPL_JEMALLOC = __primitive("get compiler variable", "CHPL_JEMALLOC");
 
-  /* See :ref:`readme-chplenv.CHPL_REGEXP` for more information. */
-  param CHPL_REGEXP:string;
-  CHPL_REGEXP = __primitive("get compiler variable", "CHPL_REGEXP");
+  /* See :ref:`readme-chplenv.CHPL_RE2` for more information. */
+  param CHPL_RE2:string;
+  CHPL_RE2 = __primitive("get compiler variable", "CHPL_RE2");
 
   /* See :ref:`readme-chplenv.CHPL_LLVM` for more information. */
   param CHPL_LLVM:string;

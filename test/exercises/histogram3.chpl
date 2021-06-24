@@ -62,9 +62,9 @@ proc computeHistogram(X: [] real, Y: [] int) {
     var myY: [1..numBuckets] int;
     for x in X(low..high) do
       myY(1 + (x / (1.0 / numBuckets)): int) += 1;
-    lock$ = true;
+    lock$.writeEF(true);
     Y += myY;
-    lock$;
+    lock$.readFE();
   }
 }
 

@@ -21,7 +21,7 @@
 // TODO-EX: REMOVE THE GASNETE_PUTGET_ALWAYS* DEFINES ENTIRELY
 #if GASNET_CONDUIT_SMP
   #if GASNET_PSHM // smp w/pshm: the PSHM support handles smp loopback
-    #define gasnete_islocal(e_tm,rank) (gasneti_check_tm_rank(e_tm,rank),0)
+    #define gasnete_islocal(e_tm,rank) (gasneti_check_e_tm_rank(e_tm,rank),0)
   #else           // smp nopshm: single-process loopback handled in header
     #define gasnete_islocal(e_tm,rank) (gasneti_assert(gasneti_e_tm_rank_to_jobrank(e_tm,rank) == 0),1)
   #endif
@@ -369,7 +369,8 @@ typedef union {
   #define GASNETI_CHECK_PUT_LCOPT(lc_opt, isnbi) do { } while (0)
 #endif
 
-// GASNETI_NBRHD_* convenience macros (same semantics w/ and w/o PSHM)
+// GASNETI_NBRHD_* convenience macros
+// These have the same semantics both w/ and w/o PSHM, and correctly handle TM-pair and multi-EP.
 //    LOCAL(e_tm,rank)                   -> non-zero iff the indicated rank is in caller's neighborhood
 //    LOCAL_ADDR(e_tm,rank,addr)         -> address in caller's address space if the indicated rank is
 //                                        in caller's neighborhood, and undefined otherwise.
@@ -377,12 +378,13 @@ typedef union {
 //    LOCAL_ADDR_OR_NULL(e_tm,rank,addr) -> address in caller's address space if the indicated rank is
 //                                        in caller's neighborhood, and NULL otherwise.
 //                                        input addr must be non-NULL
-// Equivalents for callers using jobrank:
+// Equivalents for callers using jobrank
+// Due to use of only the jobrank, these are not multi-EP aware and therefore cannot be used
+// alone to determine if a address is cross-mapped.
 //    JOBRANK_IS_LOCAL(jobrank)
-//    JOBRANK_LOCAL_ADDR(jobrank,addr)
-//    JOBRANK_LOCAL_ADDR_OR_NULL(jobrank,addr)
+//    JOBRANK_LOCAL_ADDR(jobrank,addr) [DEPRECATED]
 // TODO-EX:
-//   + LOCAL_ADDR might be made smarter?
+//   + GASNETI_NBRHD_JOBRANK_LOCAL_ADDR needs a replacement
 //
 #if GASNET_PSHM
   #define _GASNETI_NBRHD_LOCAL(e_tm,rank) gasneti_pshm_in_supernode(e_tm,rank)
@@ -417,13 +419,13 @@ void *gasneti_nbrhd_local_addr_or_null(gex_TM_t _e_tm, gex_Rank_t _rank, void *_
 GASNETI_PUREP(gasneti_nbrhd_local_addr_or_null)
 
 #define GASNETI_NBRHD_LOCAL(e_tm,rank) \
-        (gasneti_assert((rank) < gex_TM_QuerySize(e_tm)), \
+        (gasneti_check_e_tm_rank((e_tm),(rank)), \
          _GASNETI_NBRHD_LOCAL(e_tm,rank))
 #define GASNETI_NBRHD_LOCAL_ADDR(e_tm,rank,addr)\
-        (gasneti_assert((rank) < gex_TM_QuerySize(e_tm)), gasneti_assert(addr), \
+        (gasneti_check_e_tm_rank((e_tm),(rank)), gasneti_assert(addr), \
          _GASNETI_NBRHD_LOCAL_ADDR(e_tm,rank,addr))
 #define GASNETI_NBRHD_LOCAL_ADDR_OR_NULL(e_tm,rank,addr) \
-        (gasneti_assert((rank) < gex_TM_QuerySize(e_tm)), gasneti_assert(addr), \
+        (gasneti_check_e_tm_rank((e_tm),(rank)), gasneti_assert(addr), \
          gasneti_nbrhd_local_addr_or_null(e_tm,rank,addr))
 
 #define GASNETI_NBRHD_JOBRANK_IS_LOCAL(jobrank)\
@@ -432,9 +434,6 @@ GASNETI_PUREP(gasneti_nbrhd_local_addr_or_null)
 #define GASNETI_NBRHD_JOBRANK_LOCAL_ADDR(jobrank,addr)\
         (gasneti_assert((jobrank) < gasneti_nodes), gasneti_assert(addr), \
          _GASNETI_NBRHD_JOBRANK_LOCAL_ADDR(jobrank,addr))
-#define GASNETI_NBRHD_JOBRANK_LOCAL_ADDR_OR_NULL(jobrank,addr) \
-        (gasneti_assert((jobrank) < gasneti_nodes), gasneti_assert(addr), \
-         gasneti_nbrhd_jobrank_local_addr_or_null(jobrank,addr))
 
 /* ------------------------------------------------------------------------------------ */
 

@@ -1,0 +1,2 @@
+tier_2_independent_check_single_model.chpl:19: In function 'minFn':
+tier_2_independent_check_single_model.chpl:20: error: cannot initialize return value of type 'T' from a 'T'

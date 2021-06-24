@@ -450,7 +450,7 @@ module SharedObject {
      no other :record:`shared` referring to it. On return,
      ``lhs`` will refer to the same object as ``rhs``.
    */
-  proc =(ref lhs:_shared, rhs: _shared)
+  operator =(ref lhs:_shared, rhs: _shared)
     where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
   {
     // retain-release
@@ -470,14 +470,14 @@ module SharedObject {
      On return, ``lhs`` will refer to the object previously
      managed by ``rhs``, and ``rhs`` will refer to `nil`.
    */
-  proc =(ref lhs:_shared, in rhs:owned)
+  operator =(ref lhs:_shared, in rhs:owned)
     where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
   {
     lhs.retain(rhs.release());
   }
 
   pragma "no doc"
-  proc =(pragma "leaves arg nil" ref lhs:shared, rhs:_nilType)
+  operator =(pragma "leaves arg nil" ref lhs:shared, rhs:_nilType)
     where ! isNonNilableClass(lhs)
   {
     lhs.clear();
@@ -486,7 +486,7 @@ module SharedObject {
   /*
      Swap two :record:`shared` objects.
    */
-  proc <=>(ref lhs: _shared, ref rhs: _shared) {
+  operator <=>(ref lhs: _shared, ref rhs: _shared) {
     lhs.chpl_pn <=> rhs.chpl_pn;
     lhs.chpl_p <=> rhs.chpl_p;
   }

@@ -6,5 +6,5 @@
 source $(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)/common.bash
 source ${CHPL_HOME}/util/quickstart/setchplenv.bash
 
-# Skip $CHPL_HOME/test/regexp/elliot/I-fail-without-re2
-export CHPL_TEST_REGEXP=none
+# Skip $CHPL_HOME/test/regex/elliot/I-fail-without-re2
+export CHPL_TEST_REGEX=none

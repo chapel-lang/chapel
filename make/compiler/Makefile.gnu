@@ -23,11 +23,10 @@
 #
 # Tools
 #
-CXX = $(CROSS_COMPILER_PREFIX)g++
-CC = $(CROSS_COMPILER_PREFIX)gcc
+CXX = $(CHPL_MAKE_CXX) # normally g++
+CC = $(CHPL_MAKE_CC)    # normally gcc
 
 RANLIB = ranlib
-
 
 #
 # General Flags
@@ -61,9 +60,10 @@ OPT_CFLAGS += $(SANITIZER_OPT_CFLAGS)
 #   LDFLAGS  - ld (linker) flags
 #
 # We set
-#  COMP_CXXFLAGS,                    (compiling C++ code in compiler/)
+#  COMP_CFLAGS, COMP_CXXFLAGS,       (compiling C/C++ code in compiler/)
 #  RUNTIME_CFLAGS, RUNTIME_CXXFLAGS  (compiling C/C++ code in runtime/)
 # in a way that respects the above user-provide-able variables.
+COMP_CFLAGS = $(CPPFLAGS) $(CFLAGS)
 COMP_CXXFLAGS = $(CPPFLAGS) $(CXXFLAGS)
 # Appended after COMP_CXXFLAGS when compiling parser/lexer
 COMP_CXXFLAGS_NONCHPL = -Wno-error
@@ -144,13 +144,15 @@ CXX_STD := $(shell test $(DEF_C_VER) -ge 201112 -a $(DEF_CXX_VER) -lt 201103 && 
 # we don't know how to do that with yet.
 # If a compiler uses C++11 or newer by default, CXX11_STD will be blank.
 CXX11_STD := $(shell test $(DEF_CXX_VER) -lt 201103 && echo -std=gnu++11)
+CXX14_STD := $(shell test $(DEF_CXX_VER) -lt 201402 && echo -std=gnu++14)
 
 ifeq ($(GNU_GPP_MAJOR_VERSION),4)
   CXX_STD   := -std=gnu++11
   CXX11_STD := -std=gnu++11
 endif
 
-COMP_CXXFLAGS += $(CXX_STD)
+COMP_CFLAGS += $(C_STD)
+COMP_CXXFLAGS += $(CXX14_STD)
 RUNTIME_CFLAGS += $(C_STD)
 RUNTIME_CXXFLAGS += $(CXX_STD)
 GEN_CFLAGS += $(C_STD)
@@ -168,7 +170,9 @@ WARN_GEN_CFLAGS = $(WARN_CFLAGS)
 SQUASH_WARN_GEN_CFLAGS = -Wno-unused -Wno-uninitialized
 
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 5; echo "$$?"),0)
-WARN_CXXFLAGS += -Wsuggest-override
+# We'd like to know about missing overrides but don't let it
+# abort the build since there might be some in LLVM headers.
+WARN_CXXFLAGS += -Wsuggest-override -Wno-error=suggest-override
 endif
 
 #
@@ -194,11 +198,25 @@ SQUASH_WARN_GEN_CFLAGS += -Wno-tautological-compare
 endif
 
 #
-# Avoid false positive warnings about string overflows
+# Avoid false positive warnings about string overflows and memcpys
+# using strings.  Over time, we've seen this error with a variety of
+# gcc compiler versions (7, 9, 10) in a variety of settings, seemingly
+# related to our conversions from int64 to uint64, where gcc is
+# nervous that we're using a negative or too-large value.  We have
+# pretty tight bounds checking for these cases when checks are on, and
+# haven't caught real issues as a result of these flags that I'm aware
+# of, so let's squash the warnings to avoid false positives.
 #
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 7; echo "$$?"),0)
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -gt 7; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow -Wno-array-bounds
+endif
+
+#
+# Disable ipa-clone for gcc 7.  This optimization seemed to cause
+# a multi-locale lulesh regression that was fixed in gcc 8
+#
+ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -eq 7; echo "$$?"),0)
 OPT_CFLAGS += -fno-ipa-cp-clone
-SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
 endif
 
 #
@@ -233,16 +251,6 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 9; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-error=init-list-lifetime
 endif
 
-#
-# Avoid false positives for memcmp size. This flag we are adding here is
-# available at least all the way back to gcc 7.3. However, we started seeing
-# errors when we switched to gcc 9.3. Moreover, we don't see it in version 10.
-# So, only throw this flag for major version 9
-#
-ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 9; echo "$$?"),0)
-SQUASH_WARN_GEN_CFLAGS += -Wno-stringop-overflow
-endif
-
 
 #
 # 2016/03/28: Help to protect the Chapel compiler from a partially
@@ -257,6 +265,7 @@ endif
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -eq 5; echo "$$?"),0)
 
 ifeq ($(OPTIMIZE),1)
+COMP_CFLAGS += -fno-tree-vrp
 COMP_CXXFLAGS += -fno-tree-vrp
 endif
 
@@ -282,6 +291,7 @@ endif
 # compiler warnings settings
 #
 ifeq ($(WARNINGS), 1)
+COMP_CFLAGS += $(WARN_CFLAGS)
 COMP_CXXFLAGS += $(WARN_CXXFLAGS)
 RUNTIME_CFLAGS += $(WARN_CFLAGS) -Wno-char-subscripts
 RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)

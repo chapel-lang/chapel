@@ -16,10 +16,10 @@ proc three() {
 
 serial (2==9) {
   cobegin {
-    begin { s3; three();}
-    begin { s2; two(); s3 = 1; }
-    begin { s1; one(); s2 = 1; }
-    begin { writeln("zero"); s1 = 1; }
+    begin { s3.readFE(); three();}
+    begin { s2.readFE(); two(); s3.writeEF(1); }
+    begin { s1.readFE(); one(); s2.writeEF(1); }
+    begin { writeln("zero"); s1.writeEF(1); }
   }
 }
 

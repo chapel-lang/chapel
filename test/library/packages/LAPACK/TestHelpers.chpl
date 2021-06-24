@@ -190,7 +190,8 @@ module TestHelpers {
   }
   
   // Not using type queries to work around issue #13721
-  proc *( A: borrowed LAPACK_Matrix, B: borrowed LAPACK_Matrix ): owned LAPACK_Matrix(A.data_type) {
+  operator LAPACK_Matrix.*(A: borrowed LAPACK_Matrix,
+                           B: borrowed LAPACK_Matrix): owned LAPACK_Matrix(A.data_type) {
     if A.data_type != B.data_type then
       compilerError("data_type mismatch in *");
 
@@ -211,7 +212,8 @@ module TestHelpers {
     return retmatrix;
   }
   
-  proc ==( A: borrowed LAPACK_Matrix, B: borrowed LAPACK_Matrix ): bool {
+  operator LAPACK_Matrix.==(A: borrowed LAPACK_Matrix,
+                            B: borrowed LAPACK_Matrix ): bool {
     if A.data_type != B.data_type then
       compilerError("data_type mismatch in ==");
 

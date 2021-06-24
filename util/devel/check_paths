@@ -75,13 +75,13 @@ def check_token(t):
              t.startswith("tools/") or
              t.startswith("third-party/") or
              t.startswith("CHPL_HOME/") or
-             t.startswith("//github.com/chapel-lang/chapel/blob/master/")):
+             t.startswith("//github.com/chapel-lang/chapel/blob/main/")):
         return True
 
     # Strip off these two prefixes to get a path relative to $CHPL_HOME
     if t.startswith("CHPL_HOME/"):
         t = t[10:]
-    elif t.startswith("//github.com/chapel-lang/chapel/blob/master/"):
+    elif t.startswith("//github.com/chapel-lang/chapel/blob/main/"):
         t = t[44:]
 
     # People like to say: "For details, see the README...".

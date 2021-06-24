@@ -1,0 +1,4 @@
+-scase=1 # compareRecords-lt.good
+-scase=2 # compareRecords-lte.good
+-scase=3 # compareRecords-gt.good
+-scase=4 # compareRecords-gte.good

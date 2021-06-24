@@ -6,6 +6,7 @@ Start analyzing forall for automatic aggregation [no ALA clone]  (dynamicallyAli
 |  Potential destination aggregation (dynamicallyAlignedFollowers.chpl:13)
 End analyzing forall for automatic aggregation [no ALA clone]  (dynamicallyAlignedFollowers.chpl:11)
 
+Aggregation attempt reverted. Could not prove that exactly one side of the assignment is local.(dynamicallyAlignedFollowers.chpl:13)
 1 1 1 1 1 1 1 1 1 1 1
 5 5 5 5 5 5 5 5 5 5 5
 

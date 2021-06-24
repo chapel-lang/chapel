@@ -1,6 +1,8 @@
 use assocArrayAPItest;
 use IO;
 
+config const testSlice = false;
+
 proc main() {
 
   // Ask that arrays are output with [1,2] style
@@ -29,5 +31,16 @@ proc main() {
   D += "nine";
   D += "ten";
 
-  testAssocArrayAPI(A);
+  if !testSlice {
+    testAssocArrayAPI(A);
+  } else {
+    const DGood = D;
+    D += "eleven";
+    D += "twelve";
+    D += "thirteen";
+    D += "gogol";
+    D += "infinity";
+
+    testAssocArrayAPI(A[DGood]);
+  }
 }

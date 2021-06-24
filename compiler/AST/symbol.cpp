@@ -98,6 +98,7 @@ Symbol::Symbol(AstTag astTag, const char* init_name, Type* init_type) :
   flags(),
   fieldQualifiers(NULL),
   defPoint(NULL),
+  deprecationMsg(""),
   symExprsHead(NULL),
   symExprsTail(NULL)
 {
@@ -483,6 +484,36 @@ Expr* Symbol::getInitialization() const {
   return NULL;
 }
 
+const char* Symbol::getDeprecationMsg() const {
+  if (deprecationMsg[0] == '\0') {
+    const char* msg = astr(name, " is deprecated");
+    return msg;
+  } else {
+    return deprecationMsg.c_str();
+  }
+}
+
+void Symbol::generateDeprecationWarning(Expr* context) {
+  Symbol* contextParent = context->parentSymbol;
+  bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
+  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+
+  // Traverse until we find a deprecated parent symbol, a compiler generated
+  // parent symbol, or until we reach the highest outer scope
+  while (contextParent != NULL && contextParent->defPoint != NULL &&
+         contextParent->defPoint->parentSymbol != NULL &&
+         parentDeprecated != true && compilerGenerated != true) {
+    contextParent = contextParent->defPoint->parentSymbol;
+    parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
+    compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+  }
+
+  // Only generate the warning if the location with the reference is not
+  // created by the compiler or also deprecated.
+  if (!compilerGenerated && !parentDeprecated) {
+    USR_WARN(context, "%s", getDeprecationMsg());
+  }
+}
 
 bool Symbol::isImmediate() const {
   return false;
@@ -2098,7 +2129,7 @@ bool isAstrOpName(const char* name) {
       strcmp(name, "|=") == 0 || strcmp(name, "^=") == 0 ||
       strcmp(name, ">>=") == 0 || strcmp(name, "<<=") == 0 ||
       strcmp(name, "#") == 0 || strcmp(name, "by") == 0 ||
-      strcmp(name, "align") == 0) {
+      strcmp(name, "align") == 0 || name == astrScolon) {
     return true;
   } else {
     return false;
@@ -2331,4 +2362,22 @@ const char* toString(Symbol* sym, bool withType) {
     return toString(arg, withType);
 
   return sym->name;
+}
+
+struct SymbolPairComparator {
+  bool operator()(SymbolMapKeyValue lhs, SymbolMapKeyValue rhs) {
+    // use the same logic as other set/map ordering
+    std::less<Symbol*> lessSym;
+
+    return lessSym(lhs.key, rhs.key);
+  }
+};
+
+SymbolMapVector sortedSymbolMapElts(const SymbolMap& map) {
+  SymbolMapVector elts;
+  form_Map(SymbolMapElem, e, map) {
+    elts.push_back(SymbolMapKeyValue(e->key, e->value));
+  }
+  std::sort(elts.begin(), elts.end(), SymbolPairComparator());
+  return elts;
 }

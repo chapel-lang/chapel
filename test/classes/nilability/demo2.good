@@ -1,3 +1,4 @@
+demo2.chpl:1: In module 'demo':
 demo2.chpl:11: error: cannot default-initialize a: borrowed C
 note: non-nilable class type 'borrowed C' does not support default initialization
 note: Consider using the type borrowed C? instead

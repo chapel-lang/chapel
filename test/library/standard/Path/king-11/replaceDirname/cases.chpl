@@ -1,0 +1,20 @@
+import Path.{replaceDirname};
+
+writeln(replaceDirname("foo.c","chapel"));
+writeln(replaceDirname("/foo.c","chapel"));
+writeln(replaceDirname("foo/baz","chapel"));
+writeln(replaceDirname("foo/baz","chapel/"));
+writeln(replaceDirname("foo/baz ending.","chapel"));
+writeln(replaceDirname("baz ending.","chapel"));
+writeln(replaceDirname("../foo","chapel"));
+writeln(replaceDirname(".foo","chapel"));
+writeln(replaceDirname("bar/../foo","chapel/../"));
+writeln(replaceDirname("/.././bar/../foo","chapel"));
+writeln(replaceDirname("", ""));
+writeln(replaceDirname("/", ""));
+writeln(replaceDirname("foo/", ""));
+writeln(replaceDirname("foo/bar", ""));
+writeln(replaceDirname("", "/"));
+writeln(replaceDirname("", "foo"));
+writeln(replaceDirname("/bar.txt", "baz"));
+writeln(replaceDirname("/foo//./../bar.txt", "baz"));

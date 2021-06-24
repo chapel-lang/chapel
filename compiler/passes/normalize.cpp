@@ -2021,6 +2021,38 @@ static void normalizeCallToConstructor(CallExpr* call) {
   }
 }
 
+static IfExpr* getParentIfExpr(CallExpr* call) {
+  if (BlockStmt* parentBlock = toBlockStmt(call->parentExpr)) {
+    if (parentBlock->length() == 1) {
+      if (IfExpr* parentIf = toIfExpr(parentBlock->parentExpr)) {
+        if (parentIf->getThenStmt() == parentBlock ||
+            parentIf->getElseStmt() == parentBlock) {
+          return parentIf;
+        }
+      }
+    }
+  }
+
+  return NULL;
+}
+
+static bool callNeedsAnOwner(CallExpr* call) {
+  INT_ASSERT(call->isPrimitive(PRIM_NEW));
+
+  if (isArgSymbol(call->parentSymbol)) return false;
+
+  if (IfExpr* parentIf = getParentIfExpr(call)) {
+    if (parentIf == parentIf->getStmtExpr()) {
+      return true;
+    }
+  }
+  else if (call == call->getStmtExpr()) {
+    return true;
+  }
+
+  return false;
+}
+
 static void fixPrimNew(CallExpr* primNewToFix) {
   SET_LINENO(primNewToFix);
 
@@ -2060,6 +2092,13 @@ static void fixPrimNew(CallExpr* primNewToFix) {
   if (exprModToken != NULL) {
     newNew->insertAtHead(exprMod);
     newNew->insertAtHead(exprModToken);
+  }
+
+  if (callNeedsAnOwner(newNew)) {
+    CallExpr *noop = new CallExpr(PRIM_NOOP);
+    newNew->insertBefore(noop);
+    insertCallTempsWithStmt(newNew, noop);
+    noop->remove();
   }
 }
 
@@ -2294,7 +2333,8 @@ static void transformIfVar(CallExpr* primIfVar) {
 
   VarSymbol* borrow = newTemp("ifvar_borrow");
   cond->insertBefore(new DefExpr(borrow));
-  cond->insertBefore("'move'(%S,chpl_checkBorrowIfVar(%E))", borrow, rhsExpr);
+  cond->insertBefore("'move'(%S,chpl_checkBorrowIfVar(%E,%S))",
+                     borrow, rhsExpr, gFalse);
 
   primIfVar->replace(new SymExpr(borrow));
 

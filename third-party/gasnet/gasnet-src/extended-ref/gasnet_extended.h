@@ -22,13 +22,6 @@
   Initialization
   ==============
 */
-/* passes back a pointer to a handler table containing the handlers of
-    the extended API, which the core should register on its behalf
-    (the table is terminated with an entry where fnptr == NULL)
-   all handlers will have an index in range 100-199 // <== TODO-EX: update range here
-   may be called before gasnete_init()
-*/
-extern gex_AM_Entry_t const *gasnete_get_handlertable(void);
 
 /* Initialize the Extended API:
    must be called by the core API at the end of gasnet_attach() before calls to extended API
@@ -65,6 +58,7 @@ gex_Event_t _gex_RMA_GetNB(
                         gex_Rank_t _rank, void *_src,
                         size_t _nbytes, gex_Flags_t _flags
                         GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_INJECT();
   GASNETI_CHECKZEROSZ_GET(NB,_tm,_dest,_rank,_src,_nbytes);
   gasneti_boundscheck(_tm, _rank, _src, _nbytes);
   if (gasnete_islocal(_tm,_rank)) {
@@ -87,6 +81,7 @@ gex_Event_t _gex_RMA_PutNB(
                         /*const*/ void *_src,  // TODO-EX: un-comment const
                         size_t _nbytes, gex_Event_t *_lc_opt,
                         gex_Flags_t _flags GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_INJECT();
   GASNETI_CHECK_PUT_LCOPT(_lc_opt, 0);
   GASNETI_CHECKZEROSZ_PUT(NB,_tm,_rank,_dest,_src,_nbytes);
   gasneti_boundscheck(_tm, _rank, _dest, _nbytes);
@@ -123,6 +118,7 @@ extern int gasnete_test_all (gex_Event_t *_pevent, size_t _numevents GASNETI_THR
 
 GASNETI_INLINE(_gex_Event_Test) GASNETI_WARN_UNUSED_RESULT
 int  _gex_Event_Test(gex_Event_t _event GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_INJECT();
   int _result = GASNET_OK;
   if_pt (_event != GEX_EVENT_INVALID)
     _result = gasnete_test(_event GASNETI_THREAD_PASS);
@@ -134,6 +130,7 @@ int  _gex_Event_Test(gex_Event_t _event GASNETI_THREAD_FARG) {
 
 GASNETI_INLINE(_gex_Event_TestSome)
 int _gex_Event_TestSome(gex_Event_t *_pevent, size_t _numevents, gex_Flags_t _flags GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_INJECT();
   int _result = gasnete_test_some(_pevent,_numevents GASNETI_THREAD_PASS);
   GASNETI_TRACE_TRYSYNC(TEST_SYNCNB_SOME,_result);
   return _result;
@@ -143,6 +140,7 @@ int _gex_Event_TestSome(gex_Event_t *_pevent, size_t _numevents, gex_Flags_t _fl
 
 GASNETI_INLINE(_gex_Event_TestAll)
 int _gex_Event_TestAll(gex_Event_t *_pevent, size_t _numevents, gex_Flags_t _flags GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_INJECT();
   int _result = gasnete_test_all(_pevent,_numevents GASNETI_THREAD_PASS);
   GASNETI_TRACE_TRYSYNC(TEST_SYNCNB_ALL,_result);
   return _result;
@@ -163,6 +161,7 @@ int _gex_Event_TestAll(gex_Event_t *_pevent, size_t _numevents, gex_Flags_t _fla
 
 GASNETI_INLINE(_gex_Event_Wait)
 void _gex_Event_Wait(gex_Event_t _event GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_INJECT();
   GASNETI_TRACE_WAITSYNC_BEGIN();
   gasnete_wait(_event GASNETI_THREAD_PASS);
   GASNETI_TRACE_WAITSYNC_END(WAIT_SYNCNB);
@@ -180,6 +179,7 @@ void _gex_Event_Wait(gex_Event_t _event GASNETI_THREAD_FARG) {
 
 GASNETI_INLINE(_gex_Event_WaitSome)
 void _gex_Event_WaitSome(gex_Event_t *_pevent, size_t _numevents, gex_Flags_t _flags GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_INJECT();
   GASNETI_TRACE_WAITSYNC_BEGIN();
   gasnete_wait_some(_pevent, _numevents GASNETI_THREAD_PASS);
   GASNETI_TRACE_WAITSYNC_END(WAIT_SYNCNB_SOME);
@@ -190,6 +190,7 @@ void _gex_Event_WaitSome(gex_Event_t *_pevent, size_t _numevents, gex_Flags_t _f
 #ifndef gasnete_wait_all // TODO-EX: a non-inline function could allow some optimizations
   GASNETI_INLINE(gasnete_wait_all)
   void gasnete_wait_all(gex_Event_t *_pevent, size_t _numevents GASNETI_THREAD_FARG) {
+    GASNETI_CHECK_INJECT();
     gasneti_AMPoll(); /* Ensure at least one poll - TODO: remove? */
     gasneti_pollwhile(gasnete_test_all(_pevent, _numevents GASNETI_THREAD_PASS) == GASNET_ERR_NOT_READY);
   }
@@ -197,6 +198,7 @@ void _gex_Event_WaitSome(gex_Event_t *_pevent, size_t _numevents, gex_Flags_t _f
 
 GASNETI_INLINE(_gex_Event_WaitAll)
 void _gex_Event_WaitAll(gex_Event_t *_pevent, size_t _numevents, gex_Flags_t _flags GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_INJECT();
   GASNETI_TRACE_WAITSYNC_BEGIN();
   gasnete_wait_all(_pevent, _numevents GASNETI_THREAD_PASS);
   GASNETI_TRACE_WAITSYNC_END(WAIT_SYNCNB_ALL);
@@ -230,6 +232,7 @@ int _gex_RMA_GetNBI  (gex_TM_t _tm, void *_dest,
                         gex_Rank_t _rank, void *_src,
                         size_t _nbytes, gex_Flags_t _flags
                         GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_INJECT();
   GASNETI_CHECKZEROSZ_GET(NBI,_tm,_dest,_rank,_src,_nbytes);
   gasneti_boundscheck(_tm, _rank, _src, _nbytes);
   if (gasnete_islocal(_tm,_rank)) {
@@ -251,6 +254,7 @@ int _gex_RMA_PutNBI  (gex_TM_t _tm,
                         /*const*/ void *_src,  // TODO-EX: un-comment const
                         size_t _nbytes, gex_Event_t *_lc_opt,
                         gex_Flags_t _flags GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_INJECT();
   GASNETI_CHECK_PUT_LCOPT(_lc_opt, 1);
   GASNETI_CHECKZEROSZ_PUT(NBI,_tm,_rank,_dest,_src,_nbytes);
   gasneti_boundscheck(_tm, _rank, _dest, _nbytes);
@@ -306,6 +310,7 @@ typedef unsigned int gex_EC_t;
 
 GASNETI_INLINE(_gex_NBI_Test) GASNETI_WARN_UNUSED_RESULT
 int _gex_NBI_Test(gex_EC_t _mask, gex_Flags_t _flags GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_INJECT();
   int _retval = gasnete_test_syncnbi_mask(_mask, _flags GASNETI_THREAD_PASS);
   GASNETI_TRACE_TRYSYNC(TEST_SYNCNBI,_retval);
   return _retval;
@@ -319,6 +324,7 @@ int _gex_NBI_Test(gex_EC_t _mask, gex_Flags_t _flags GASNETI_THREAD_FARG) {
 #endif
 
 #define gex_NBI_Wait(mask, flags) do {                                                  \
+  GASNETI_CHECK_INJECT();                                                                        \
   GASNETI_TRACE_WAITSYNC_BEGIN();                                                                \
   gasneti_AMPoll(); /* ensure at least one poll */                                               \
   gasnete_wait_syncnbi_mask(mask, flags GASNETI_THREAD_GET);                                     \
@@ -405,6 +411,7 @@ int _gex_RMA_GetBlocking  (gex_TM_t _tm, void *_dest,
                     gex_Rank_t _rank, void *_src,
                     size_t _nbytes, gex_Flags_t _flags
                     GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_INJECT();
   GASNETI_CHECKZEROSZ_NAMED(GASNETI_TRACE_GET_NAMED(GET_LOCAL,LOCAL,_tm,_dest,_rank,_src,_nbytes),_nbytes);
   gasneti_boundscheck(_tm, _rank, _src, _nbytes);
   if (gasnete_islocal(_tm,_rank)) {
@@ -426,6 +433,7 @@ int _gex_RMA_PutBlocking  (gex_TM_t _tm,
                     /*const*/ void *_src,  // TODO-EX: un-comment const
                     size_t _nbytes, gex_Flags_t _flags
                     GASNETI_THREAD_FARG) {
+  GASNETI_CHECK_INJECT();
   GASNETI_CHECKZEROSZ_NAMED(GASNETI_TRACE_PUT_NAMED(PUT_LOCAL,LOCAL,_tm,_rank,_dest,_src,_nbytes),_nbytes);
   gasneti_boundscheck(_tm, _rank, _dest, _nbytes);
   if (gasnete_islocal(_tm,_rank)) {
@@ -476,6 +484,7 @@ int _gex_RMA_PutVal(  gex_TM_t _tm,
                         size_t _nbytes, gex_Flags_t _flags
                         GASNETI_THREAD_FARG)
 {
+  GASNETI_CHECK_INJECT();
   gasneti_assume(_nbytes > 0);
   gasneti_assert_uint(_nbytes ,<=, sizeof(gex_RMA_Value_t));
   gasneti_assume(_nbytes <= sizeof(gex_RMA_Value_t));
@@ -510,6 +519,7 @@ gex_Event_t _gex_RMA_PutNBVal (
                         size_t _nbytes, gex_Flags_t _flags
                         GASNETI_THREAD_FARG)
 {
+  GASNETI_CHECK_INJECT();
   gasneti_assume(_nbytes > 0);
   gasneti_assert_uint(_nbytes ,<=, sizeof(gex_RMA_Value_t));
   gasneti_assume(_nbytes <= sizeof(gex_RMA_Value_t));
@@ -565,6 +575,7 @@ int _gex_RMA_PutNBIVal(
                         size_t _nbytes, gex_Flags_t _flags
                         GASNETI_THREAD_FARG)
 {
+  GASNETI_CHECK_INJECT();
   gasneti_assume(_nbytes > 0);
   gasneti_assert_uint(_nbytes ,<=, sizeof(gex_RMA_Value_t));
   gasneti_assume(_nbytes <= sizeof(gex_RMA_Value_t));
@@ -607,6 +618,7 @@ gex_RMA_Value_t _gex_RMA_GetBlockingVal (
                 size_t _nbytes, gex_Flags_t _flags
                 GASNETI_THREAD_FARG)
 {
+  GASNETI_CHECK_INJECT();
   gasneti_boundscheck(_tm, _rank, _src, _nbytes);
   if (gasnete_islocal(_tm,_rank)) {
     GASNETI_TRACE_GET_LOCAL(VAL,_tm,NULL,_rank,_src,_nbytes);
@@ -652,6 +664,7 @@ extern int gasnet_barrier_result(int *_id);
 GASNETI_INLINE(_gex_Coll_BarrierBlocking)
 void _gex_Coll_BarrierBlocking(gex_TM_t _tm, gex_Flags_t _flags GASNETI_THREAD_FARG)
 {
+  GASNETI_CHECK_INJECT();
   GASNETI_TRACE_BARRIER1(_tm,_flags);
   gasnete_tm_barrier(_tm, _flags GASNETI_THREAD_PASS);
 }
@@ -665,6 +678,7 @@ void _gex_Coll_BarrierBlocking(gex_TM_t _tm, gex_Flags_t _flags GASNETI_THREAD_F
 GASNETI_INLINE(_gex_Coll_BarrierNB) GASNETI_WARN_UNUSED_RESULT
 gex_Event_t _gex_Coll_BarrierNB(gex_TM_t _tm, gex_Flags_t _flags GASNETI_THREAD_FARG)
 {
+  GASNETI_CHECK_INJECT();
   GASNETI_TRACE_BARRIER2(_tm,_flags);
   return gasnete_tm_barrier_nb(_tm, _flags GASNETI_THREAD_PASS);
 }
@@ -704,15 +718,15 @@ extern size_t gasneti_TM_Create(
 
 // extern gex_Rank_t gex_TM_TranslateRankToJobrank(gex_TM_t tm, gex_Rank_t rank);
 #define gex_TM_TranslateRankToJobrank(tm,rank) \
-        gasneti_e_tm_rank_to_jobrank(tm,rank)
+        (GASNETI_CHECK_INJECT(), gasneti_e_tm_rank_to_jobrank(tm,rank))
 
 // extern gex_Rank_t gex_TM_TranslateJobrankToRank(gex_TM_t tm, gex_Rank_t jobrank);
 #define gex_TM_TranslateJobrankToRank(tm,jobrank) \
-        gasneti_e_tm_jobrank_to_rank(tm,jobrank)
+        (GASNETI_CHECK_INJECT(), gasneti_e_tm_jobrank_to_rank(tm,jobrank))
 
 // extern gex_EP_Location_t gex_TM_TranslateRankToEP(gex_TM_t tm, gex_Rank_t rank, gex_Flags_t flags);
 #define gex_TM_TranslateRankToEP(tm,rank,flags) \
-        gasneti_e_tm_rank_to_location(tm,rank,flags)
+        (GASNETI_CHECK_INJECT(), gasneti_e_tm_rank_to_location(tm,rank,flags))
 
 /* ------------------------------------------------------------------------------------ */
 

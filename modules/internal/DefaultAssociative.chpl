@@ -32,6 +32,8 @@ module DefaultAssociative {
   config param debugDefaultAssoc = false;
   config param debugAssocDataPar = false;
 
+  config param defaultAssociativeSupportsAutoLocalAccess = true;
+
   // helps to move around array elements when rehashing the domain
   class DefaultAssociativeDomRehashHelper : chpl__rehashHelpers {
     var dom: unmanaged DefaultAssociativeDom;
@@ -438,6 +440,9 @@ module DefaultAssociative {
       }
     }
 
+    override proc dsiSupportsAutoLocalAccess() param {
+      return defaultAssociativeSupportsAutoLocalAccess;
+    }
   }
 
   class DefaultAssociativeArr: AbsBaseArr {
@@ -542,6 +547,10 @@ module DefaultAssociative {
       }
     }
 
+    proc dsiAccess(idx: 1*idxType) ref {
+      return dsiAccess(idx(0));
+    }
+
     // value version for POD types
     proc dsiAccess(idx : idxType)
     where shouldReturnRvalueByValue(eltType) {
@@ -554,6 +563,12 @@ module DefaultAssociative {
         return data(0);
       }
     }
+
+    proc dsiAccess(idx : 1*idxType) ref
+    where shouldReturnRvalueByValue(eltType) {
+      return dsiAccess(idx(0));
+    }
+
     // const ref version for strings, records with copy ctor
     proc dsiAccess(idx : idxType) const ref
     where shouldReturnRvalueByConstRef(eltType) {
@@ -565,6 +580,11 @@ module DefaultAssociative {
         halt("array index out of bounds: ", idx);
         return data(0);
       }
+    }
+
+    proc dsiAccess(idx : 1*idxType) const ref
+    where shouldReturnRvalueByConstRef(eltType) {
+      return dsiAccess(idx(0));
     }
 
     inline proc dsiLocalAccess(i) ref
@@ -634,7 +654,7 @@ module DefaultAssociative {
       }
     }
 
-    proc dsiSerialReadWrite(f /*: channel*/) throws {
+    proc dsiSerialReadWrite(f /*: channel*/, in printBraces=true, inout first = true) throws {
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -646,9 +666,9 @@ module DefaultAssociative {
         return;
       }
 
-      if isjson || ischpl then f <~> new ioLiteral("[");
+      printBraces &&= (isjson || ischpl);
 
-      var first = true;
+      if printBraces then f <~> new ioLiteral("[");
 
       for (key, val) in zip(this.dom, this) {
         if first then first = false;
@@ -663,7 +683,7 @@ module DefaultAssociative {
         f <~> val;
       }
 
-      if isjson || ischpl then f <~> new ioLiteral("]");
+      if printBraces then f <~> new ioLiteral("]");
     }
 
     proc readChapelStyleAssocArray(f) throws {
@@ -836,5 +856,37 @@ module DefaultAssociative {
       }
       this.eltsNeedDeinit = false;
     }
+  }
+
+  proc chpl_serialReadWriteAssociativeHelper(f, arr, dom) throws {
+    var binary = f.binary();
+    var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+    var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
+    var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+    var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
+
+    if !f.writing && ischpl {
+      halt("This form of I/O on a default array slice is not yet supported");
+      return;
+    }
+
+    if isjson || ischpl then f <~> new ioLiteral("[");
+
+    var first = true;
+
+    for key in dom {
+      if first then first = false;
+      else if isspace then f <~> new ioLiteral(" ");
+      else if isjson || ischpl then f <~> new ioLiteral(", ");
+
+      if f.writing && ischpl {
+        f <~> key;
+        f <~> new ioLiteral(" => ");
+      }
+
+      f <~> arr.dsiAccess(key);
+    }
+
+    if isjson || ischpl then f <~> new ioLiteral("]");
   }
 }

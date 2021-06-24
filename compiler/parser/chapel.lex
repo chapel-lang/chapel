@@ -139,6 +139,7 @@ const            return processToken(yyscanner, TCONST);
 continue         return processToken(yyscanner, TCONTINUE);
 defer            return processToken(yyscanner, TDEFER);
 delete           return processToken(yyscanner, TDELETE);
+deprecated       return processToken(yyscanner, TDEPRECATED);
 dmapped          return processToken(yyscanner, TDMAPPED);
 do               return processToken(yyscanner, TDO);
 domain           return processToken(yyscanner, TDOMAIN);

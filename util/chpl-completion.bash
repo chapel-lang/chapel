@@ -43,6 +43,7 @@ _chpl ()
 --comm \
 --comm-substrate \
 --compile-time-nil-checking \
+--compiler-library-parser \
 --copy-elision \
 --copy-propagation \
 --copyright \
@@ -151,6 +152,7 @@ _chpl ()
 --no-checks \
 --no-codegen \
 --no-compile-time-nil-checking \
+--no-compiler-library-parser \
 --no-copy-elision \
 --no-copy-propagation \
 --no-count-tokens \
@@ -280,7 +282,7 @@ _chpl ()
 --print-unused-functions \
 --print-unused-internal-functions \
 --privatization \
---regexp \
+--re2 \
 --region-vectorizer \
 --remote-serialization \
 --remote-value-forwarding \
@@ -483,7 +485,7 @@ _chpl ()
 --print-search-dirs \
 --print-unused-functions \
 --privatization \
---regexp \
+--re2 \
 --remote-serialization \
 --remote-value-forwarding \
 --remove-copy-calls \

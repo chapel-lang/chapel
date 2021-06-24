@@ -1,0 +1,15 @@
+IFC1.cgFun
+  reqFun.MyRec1.AT1.AT2.AT3.AT4
+    cgFormal  = (xx = 112) : MyRec1(int(64),real(64),115)
+    atFormal1 = -116 : int(64)
+    atFormal2 = (xx = 112) : MyRec1(int(64),real(64),115)
+    atFormal3 = 117 : uint(64)
+    atFormal4 = 1.18 : real(64)
+IFC2.cgFun
+  reqFun.MyRec1.MyRec2
+    cgFormal1  = (xx = 112) : MyRec1(int(64),real(64),115)
+    cgFormal2  = (xx = 121) : MyRec2(uint(64),int(64),string,real(64))
+IFC2.cgFun
+  reqFun.MyRec2.MyRec1
+    cgFormal2  = (xx = 121) : MyRec2(uint(64),int(64),string,real(64))
+    cgFormal1  = (xx = 112) : MyRec1(int(64),real(64),115)

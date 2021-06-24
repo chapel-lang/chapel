@@ -1,4 +1,4 @@
-proc *(A:[?D1],B:[?D2]) {
+operator *(A:[?D1],B:[?D2]) {
   var x = A(D1.low)*B(D2.low);
   var C:[D1.dim(0),D2.dim(1)] x.type;
 

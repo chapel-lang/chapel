@@ -26,6 +26,7 @@ PASSES_SRCS =                                              \
         checkParsed.cpp                                    \
         checkResolved.cpp                                  \
         cleanup.cpp                                        \
+        convert-uast.cpp                                   \
         createTaskFunctions.cpp                            \
         denormalize.cpp                                    \
         docs.cpp                                           \

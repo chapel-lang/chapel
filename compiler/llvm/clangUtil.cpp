@@ -84,6 +84,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "mli.h"
 #include "mysystem.h"
 #include "passes.h"
 #include "stmt.h"
@@ -268,8 +269,7 @@ void addMinMax(const char* prefix, int nbits, bool isSigned)
 
   astlocT prevloc = currentAstLoc;
 
-  currentAstLoc.lineno = 0;
-  currentAstLoc.filename = astr("<internal>");
+  currentAstLoc = astlocT(0, astr("<internal>"));
 
   const char* min_name = astr(prefix, "_MIN");
   const char* max_name = astr(prefix, "_MAX");
@@ -1234,10 +1234,7 @@ class CCodeGenConsumer final : public ASTConsumer {
       } else if (VarDecl *vd = dyn_cast<VarDecl>(d)) {
         info->lvt->addGlobalCDecl(vd);
       } else if (RecordDecl *rd = dyn_cast<RecordDecl>(d)) {
-        if( rd->getName().size() > 0 ) {
-          // Handle forward declaration for structs
-          info->lvt->addGlobalCDecl(rd);
-        }
+        info->lvt->addGlobalCDecl(rd);
       } else if (UsingDecl* ud = dyn_cast<UsingDecl>(d)) {
         for (auto shadow : ud->shadows()) {
           NamedDecl* nd = shadow->getTargetDecl();
@@ -2164,9 +2161,12 @@ void runClang(const char* just_parse_filename) {
 
   clangCCArgs.push_back("-pthread");
 
-  // library directories/files and ldflags are handled during linking later.
-
-  clangCCArgs.push_back("-DCHPL_GEN_CODE");
+  // Library directories/files and ldflags are handled during linking later.
+  // Skip this in multi-locale libraries because the C blob that is built
+  // already defines this.
+  if (!fMultiLocaleInterop) {
+    clangCCArgs.push_back("-DCHPL_GEN_CODE");
+  }
 
   // tell clang to use CUDA support
   if (localeUsesGPU()) {
@@ -2184,10 +2184,39 @@ void runClang(const char* just_parse_filename) {
   clangOtherArgs.push_back("sys_basic.h");
 
   if (!just_parse_filename) {
+
+    if (localeUsesGPU()) {
+      //create a header file to include header files from the command line
+      std::string genHeaderFilename;
+      genHeaderFilename = genIntermediateFilename("command-line-includes.h");
+      FILE* fp =  openfile(genHeaderFilename.c_str(), "w");
+
+      const char* ifdefStrBegin = "#ifdef __cplusplus\n"
+                                  "extern \"C\" {\n"
+                                  "#endif";
+
+      fprintf(fp, "%s\n", ifdefStrBegin);
+
+      int filenum = 0;
+      while (const char* inputFilename = nthFilename(filenum++)) {
+        if (isCHeader(inputFilename)) {
+          fprintf(fp, "%s%s%s\n", "#include \"", inputFilename,"\"");
+        }
+      }
+
+      const char* ifdefStrEnd = "#ifdef __cplusplus\n"
+                                "}\n"
+                                "#endif";
+      fprintf(fp, "%s", ifdefStrEnd);
+      closefile(fp);
+      clangOtherArgs.push_back("-include");
+      clangOtherArgs.push_back(genHeaderFilename.c_str());
+    }
+
     // Running clang to compile all runtime and extern blocks
 
     // Include header files from the command line.
-    {
+    else {
       int filenum = 0;
       while (const char* inputFilename = nthFilename(filenum++)) {
         if (isCHeader(inputFilename)) {
@@ -2205,6 +2234,20 @@ void runClang(const char* just_parse_filename) {
     if( fAllowExternC && gAllExternCode.filename ) {
       clangOtherArgs.push_back("-include");
       clangOtherArgs.push_back(gAllExternCode.filename);
+    }
+
+    // Include a few extra things if generating a multi-locale library.
+    if (fMultiLocaleInterop) {
+
+      // Include the contents of the server bundle...
+      clangOtherArgs.push_back("-include");
+      INT_ASSERT(gMultiLocaleLibServerFile != NULL);
+      clangOtherArgs.push_back(gMultiLocaleLibServerFile);
+
+      // As well as the path to extra code for the client and server.
+      std::string incPath = std::string("-I") + std::string(CHPL_HOME);
+      incPath += "/runtime/etc/src/";
+      clangOtherArgs.push_back(incPath);
     }
   } else {
     // Just running clang to parse the extern blocks for this module.
@@ -2227,12 +2270,19 @@ void runClang(const char* just_parse_filename) {
     printf("\n");
   }
 
+  bool parseOnly = (just_parse_filename != NULL);
+
   // Initialize gGenInfo
   // Toggle LLVM code generation in our clang run;
   // turn it off if we just wanted to parse some C.
-  gGenInfo = new GenInfo();
-
-  bool parseOnly = (just_parse_filename != NULL);
+  if (parseOnly) {
+    // TODO (dlongnecke): Always initialize outside of this function?
+    gGenInfo = new GenInfo();
+  } else {
+    // Note that if we are calling 'runClang(NULL)' then the final gGenInfo
+    // Should have already been initialized for us.
+    INT_ASSERT(gGenInfo != NULL);
+  }
 
   gGenInfo->lvt = new LayeredValueTable();
 
@@ -2507,6 +2557,29 @@ GenRet codegenCValue(const ValueDecl *vd)
   return ret;
 }
 
+static std::map<const clang::Decl*, const char*> savedAnonDeclNames;
+
+static
+const char* makeNameForAnonDecl(const clang::Decl* decl)
+{
+  // This has to return the same value when applied to the same union
+  SourceManager& srcm = gGenInfo->clangInfo->Ctx->getSourceManager();
+  clang::SourceLocation loc = decl->getLocation();
+  std::string filename = srcm.getFilename(loc).str();
+  unsigned offset = srcm.getFileOffset(loc);
+  std::string str = "chpl_anon_struct_" + filename + std::to_string(offset);
+
+  const char* ret = astr(legalizeName(str.c_str()));
+  savedAnonDeclNames[decl] = ret;
+  return ret;
+}
+const char* getGeneratedAnonTypeName(const clang::RecordType* structType) {
+  const clang::Decl* decl = structType->getDecl();
+  const char* ret = savedAnonDeclNames[decl];
+  INT_ASSERT(ret);
+  return ret;
+}
+
 LayeredValueTable::LayeredValueTable(){
   layers.push_front(map_type());
 }
@@ -2556,20 +2629,33 @@ void LayeredValueTable::addGlobalType(StringRef name, llvm::Type *type, bool isU
 }
 
 void LayeredValueTable::addGlobalCDecl(NamedDecl* cdecl) {
-  if (cdecl->getIdentifier() == nullptr) {
-    // Certain C++ things such as constructors can have
-    // special compound names. In this case getName() will
-    // fail.
-    return;
+  llvm::StringRef name = "";
+
+  // Certain C++ things such as constructors can have
+  // special compound names. In this case getName() will
+  // fail.
+  if (cdecl->getIdentifier() != nullptr) {
+    name = cdecl->getName();
   }
 
-  addGlobalCDecl(cdecl->getName(), cdecl);
+  if (name.empty()) {
+    const char* name_astr = makeNameForAnonDecl(cdecl);
+    name = name_astr;
+  }
+
+  addGlobalCDecl(name, cdecl);
 
   // Also file structs under 'struct struct_name'
-  if(isa<RecordDecl>(cdecl)) {
-    std::string sname = "struct ";
-    sname += cdecl->getName();
-    addGlobalCDecl(sname, cdecl);
+  if(RecordDecl* rd = dyn_cast<RecordDecl>(cdecl)) {
+    if(rd->isUnion()) {
+      std::string sname = "union ";
+      sname += name;
+      addGlobalCDecl(sname, cdecl);
+    } else if (rd->isStruct()) {
+      std::string sname = "struct ";
+      sname += name;
+      addGlobalCDecl(sname, cdecl);
+    }
   }
 }
 
@@ -2816,9 +2902,11 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName,
       t = t->getPointeeType().getTypePtr();
     }
     const RecordType* rt = t->getAsStructureType();
+    if (rt == nullptr)
+      rt = t->getAsUnionType();
+
     INT_ASSERT(rt);
     d = rt->getDecl();
-    // getAsUnionType also available, but we don't support extern unions
   }
   INT_ASSERT(isa<RecordDecl>(d));
   RecordDecl* rec = cast<RecordDecl>(d);
@@ -3082,6 +3170,28 @@ static unsigned helpGetAlignment(::Type* type) {
   return maxAlign;
 }
 
+bool isCTypeUnion(const char* name) {
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+  TypeDecl* d = nullptr;
+
+  info->lvt->getCDecl(name, &d, nullptr);
+
+  if (d == nullptr)
+    return false;
+
+  if (isa<TypedefDecl>(d)) {
+    TypedefDecl* td = cast<TypedefDecl>(d);
+    const clang::Type* t = td->getUnderlyingType().getTypePtr();
+    return t->isUnionType();
+  }
+  if (isa<RecordDecl>(d)) {
+    RecordDecl* rec = cast<RecordDecl>(d);
+    return rec->isUnion();
+  }
+  return false;
+}
+
 #if HAVE_LLVM_VER >= 100
 llvm::MaybeAlign getPointerAlign(int addrSpace) {
   GenInfo* info = gGenInfo;
@@ -3293,7 +3403,9 @@ void setupForGlobalToWide(void) {
   }
   ginfo->irBuilder->CreateRet(ret);
 
-  llvm::verifyFunction(*fn, &errs());
+  if (developer || fVerify) {
+    llvm::verifyFunction(*fn, &errs());
+  }
 
   info->hasPreservingFn = true;
   info->preservingFn = fn;
@@ -3766,6 +3878,16 @@ void makeBinaryLLVM(void) {
     clangLDArgs = runtimeArgs;
   }
 
+  // Grab extra dependencies for multilocale libraries if needed.
+  if (fMultiLocaleInterop) {
+    std::string cmd = std::string(CHPL_HOME);
+    cmd += "/util/config/compileline --multilocale-lib-deps";
+    std::string libs = runCommand(cmd);
+    // Erase trailing newline.
+    libs.erase(libs.size() - 1);
+    clangLDArgs.push_back(libs);
+  }
+
   // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
   expandInstallationPaths(clangLDArgs);
 
@@ -3835,9 +3957,13 @@ void makeBinaryLLVM(void) {
     if (s == "-isysroot")
       sawSysroot = true;
   }
-  // add arguments that we captured at compile time
-  options += " ";
-  options += get_clang_sysroot_args();
+
+  // only use clang sysroot args if we haven't overridden the linker
+  if (clangCXX == useLinkCXX) {
+    // add arguments that we captured at compile time
+    options += " ";
+    options += get_clang_sysroot_args();
+  }
 
   if(debugCCode) {
     options += " -g";
@@ -3869,11 +3995,18 @@ void makeBinaryLLVM(void) {
   mainfile.filename = "chpl__module.o";
   mainfile.pathname = moduleFilename.c_str();
   const char* tmpbinname = NULL;
+  const char* tmpservername = NULL;
 
-  codegen_makefile(&mainfile, &tmpbinname, true);
-  INT_ASSERT(tmpbinname);
+  if (fMultiLocaleInterop) {
+    codegen_makefile(&mainfile, &tmpbinname, &tmpservername, true);
+    INT_ASSERT(tmpservername);
+    INT_ASSERT(tmpbinname);
+  } else {
+    codegen_makefile(&mainfile, &tmpbinname, NULL, true);
+    INT_ASSERT(tmpbinname);
+  }
 
-  if (fLibraryCompile) {
+  if (fLibraryCompile && !fMultiLocaleInterop) {
     switch (fLinkStyle) {
     // The default library link style for Chapel is _static_.
     case LS_DEFAULT:
@@ -3889,8 +4022,10 @@ void makeBinaryLLVM(void) {
       break;
     }
   } else {
+    const char* outbin = fMultiLocaleInterop ? tmpservername : tmpbinname;
+
     // Runs the LLVM link command for executables.
-    runLLVMLinking(useLinkCXX, options, moduleFilename, maino, tmpbinname,
+    runLLVMLinking(useLinkCXX, options, moduleFilename, maino, outbin,
                    dotOFiles, clangLDArgs, sawSysroot);
   }
 
@@ -4045,10 +4180,14 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
   std::string command = useLinkCXX + " " + options + " " +
                         moduleFilename + " " + maino;
 
-  // For dynamic linking, leave it alone.  For static, append -static .
+  // For dynamic linking, leave it alone.  For static, append -static.
   // See $CHPL_HOME/make/compiler/Makefile.clang (and keep this in sync
   // with it).
-  if (fLinkStyle == LS_STATIC) {
+  // Note that in multi-locale interop we are building a server executable
+  // that cannot be built with `-static`, because because it depends on
+  // dynamic libraries. So even if the client library is being built as
+  // static, the server cannot be.
+  if (fLinkStyle == LS_STATIC && !fMultiLocaleInterop) {
     command += " -static";
   }
 
@@ -4130,6 +4269,15 @@ static std::string getLibraryOutputPath() {
 static void moveGeneratedLibraryFile(const char* tmpbinname) {
   std::string outputPath = getLibraryOutputPath();
   moveResultFromTmp(outputPath.c_str(), tmpbinname);
+}
+
+void print_clang(clang::Type* t) {
+  if (t == NULL)
+    fprintf(stderr, "NULL");
+  else
+    t->dump();
+
+  fprintf(stderr, "\n");
 }
 
 void print_clang(clang::Decl* d) {

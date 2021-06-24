@@ -352,7 +352,14 @@ static void setRecordAssignableFlags(AggregateType* at) {
           ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
       } else {
         // formals are lhs, rhs
-        ArgSymbol* rhs = assign->getFormal(2);
+        int rhsNum = 2;
+        if (assign->hasFlag(FLAG_OPERATOR) && assign->hasFlag(FLAG_METHOD)) {
+          // Sometimes operators are defined as operator methods, in which case
+          // there are an extra two arguments and we need to adjust where we
+          // look for the rhs
+          rhsNum += 2;
+        }
+        ArgSymbol* rhs = assign->getFormal(rhsNum);
         IntentTag intent = concreteIntentForArg(rhs);
         if (intent == INTENT_IN ||
             intent == INTENT_CONST_IN ||
@@ -1237,6 +1244,21 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     break;
   }
+
+  case PRIM_IS_EXTERN_UNION_TYPE: {
+    AggregateType* classType = toAggregateType(call->get(1)->typeInfo());
+
+    if (isUnion(classType) && classType->symbol->hasFlag(FLAG_EXTERN)) {
+      retval = new SymExpr(gTrue);
+    } else {
+      retval = new SymExpr(gFalse);
+    }
+
+    call->replace(retval);
+
+    break;
+  }
+
 
   case PRIM_LOGICAL_FOLDER: {
     SymExpr*   sym1 = toSymExpr(call->get(1));

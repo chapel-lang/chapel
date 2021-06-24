@@ -1,0 +1,2 @@
+testGetValueOwned.chpl:9: In function 'test':
+testGetValueOwned.chpl:15: error: getValue cannot be called when a orderedMap value type is an owned class, use getBorrowed instead

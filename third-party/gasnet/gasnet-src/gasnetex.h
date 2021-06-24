@@ -250,7 +250,33 @@ GASNETI_BEGIN_NOWARN
 
 #ifndef GASNET_MAXEPS
   //  an integer representing the max supported number of endpoints per process
-  #define GASNET_MAXEPS (1 << 12)
+  //  should be kept _STRINGIFY()-friendly (e.g. `4095` not `((1<<12)-1)`)
+
+  // Defaults and sanity checks
+  #define GASNETI_MAXEPS_LIMIT 4096 // Maximum due to 12-bit field in TM-pair
+  #ifndef GASNETC_MAXEPS_MAX
+    #define GASNETC_MAXEPS_MAX GASNETI_MAXEPS_LIMIT
+  #elif (GASNETC_MAXEPS_MAX > GASNETI_MAXEPS_LIMIT)
+    #error GASNETC_MAXEPS_MAX exceeds GASNETI_MAXEPS_LIMIT
+  #endif
+  #if (GASNETC_MAXEPS_DFLT > GASNETI_MAXEPS_LIMIT)
+    #error GASNETC_MAXEPS_DFLT exceeds GASNETI_MAXEPS_LIMIT
+  #endif
+
+  #if !defined(GASNETC_MAXEPS_DFLT)
+    // Conduit lacks multi-ep support
+    #define GASNET_MAXEPS 1
+  #elif !defined(GASNETI_MAXEPS_CONFIGURE)
+    // No configure-time value provided - use conduit-specific default
+    #define GASNET_MAXEPS GASNETC_MAXEPS_DFLT
+  #else
+    // Take MIN of user's --with-maxeps setting and the maximum
+    #if (GASNETI_MAXEPS_CONFIGURE <= GASNETC_MAXEPS_MAX)
+      #define GASNET_MAXEPS GASNETI_MAXEPS_CONFIGURE
+    #else
+      #define GASNET_MAXEPS GASNETC_MAXEPS_MAX
+    #endif
+  #endif
 #endif
 
 #if !defined(GASNET_ALIGNED_SEGMENTS) || \
@@ -319,13 +345,20 @@ typedef struct gasneti_team_member_s *gex_TM_t;
 
 struct gasneti_client_s;
 typedef struct gasneti_client_s *gex_Client_t;
+#define GEX_CLIENT_INVALID ((gex_Client_t)(uintptr_t)0)
 
 struct gasneti_endpoint_s;
 typedef struct gasneti_endpoint_s *gex_EP_t;
+#define GEX_EP_INVALID ((gex_EP_t)(uintptr_t)0)
 
 struct gasneti_segment_s;
 typedef struct gasneti_segment_s *gex_Segment_t;
 #define GEX_SEGMENT_INVALID ((gex_Segment_t)(uintptr_t)0)
+
+struct gasneti_memkind_s;
+typedef struct gasneti_memkind_s *gex_MK_t;
+#define GEX_MK_INVALID ((gex_MK_t)(uintptr_t)0)
+#define GEX_MK_HOST ((gex_MK_t)(uintptr_t)1)
 
 typedef void (*gex_AM_Fn_t)();
 
@@ -352,15 +385,17 @@ typedef struct {
     const void *       _cdata;         \
     gex_Flags_t        _flags;
 
-// Needed to break client/tm0 cycle
+// Needed to break client/tm0 and client/ep_tbl cycles
 struct gasneti_team_member_internal_s;
+struct gasneti_endpoint_internal_s;
 
 #ifndef _GEX_CLIENT_T
   #define GASNETI_CLIENT_COMMON        \
     GASNETI_OBJECT_HEADER              \
     struct gasneti_team_member_internal_s *_tm0; \
     const char *       _name;          \
-    gasneti_weakatomic32_t _next_ep_index;
+    gasneti_weakatomic32_t _next_ep_index;  \
+    struct gasneti_endpoint_internal_s *_ep_tbl[GASNET_MAXEPS];
   typedef struct { GASNETI_CLIENT_COMMON } *gasneti_Client_t;
   #if GASNET_DEBUG
     extern gasneti_Client_t gasneti_import_client(gex_Client_t _client);
@@ -381,7 +416,10 @@ struct gasneti_team_member_internal_s;
     gasneti_Client_t   _client;        \
     void *             _addr;          \
     void *             _ub;            \
-    uintptr_t          _size;
+    uintptr_t          _size;          \
+    gex_MK_t           _kind;          \
+    void *             _opaque_mk_use; \
+    unsigned int       _opaque_container_use;
   typedef struct { GASNETI_SEGMENT_COMMON } *gasneti_Segment_t;
   #if GASNET_DEBUG
     extern gasneti_Segment_t gasneti_import_segment(gex_Segment_t _segment);
@@ -403,9 +441,14 @@ struct gasneti_team_member_internal_s;
     GASNETI_OBJECT_HEADER              \
     gasneti_Client_t   _client;        \
     gasneti_Segment_t  _segment;       \
+    gex_EP_Capabilities_t _caps, _orig_caps; \
     gex_Rank_t         _index;         \
-    gex_AM_Entry_t     _amtbl[GASNETC_MAX_NUMHANDLERS];
-  typedef struct { GASNETI_EP_COMMON } *gasneti_EP_t;
+    gex_AM_Entry_t     _amtbl[GASNETC_MAX_NUMHANDLERS]; \
+    gasneti_mutex_t    _amtbl_lock;
+  #ifdef __cplusplus  // ensure this struct is anonymous to prevent C++ linkage issues
+    #define gasneti_endpoint_internal_s
+  #endif
+  typedef struct gasneti_endpoint_internal_s { GASNETI_EP_COMMON } *gasneti_EP_t;
   #if GASNET_DEBUG
     extern gasneti_EP_t gasneti_import_ep(gex_EP_t _ep);
     extern gex_EP_t gasneti_export_ep(gasneti_EP_t _real_ep);
@@ -436,18 +479,20 @@ struct gasneti_team_member_internal_s;
   typedef struct gasneti_team_member_internal_s { GASNETI_TM_COMMON } *gasneti_TM_t;
   #if GASNET_DEBUG
     extern gasneti_TM_t gasneti_import_tm(gex_TM_t _tm);
+    extern gasneti_TM_t gasneti_import_tm_nonpair(gex_TM_t _tm);
     extern gex_TM_t gasneti_export_tm(gasneti_TM_t _real_tm);
   #else
     #define gasneti_import_tm(x) ((gasneti_TM_t)(x))
+    #define gasneti_import_tm_nonpair(x) ((gasneti_TM_t)(x))
     #define gasneti_export_tm(x) ((gex_TM_t)(x))
   #endif
-  #define gex_TM_SetCData(tm,val)              ((void)(gasneti_import_tm(tm)->_cdata = (val)))
-  #define gex_TM_QueryCData(tm)                ((void*)gasneti_import_tm(tm)->_cdata)
-  #define gex_TM_QueryClient(tm)               gasneti_export_client(gasneti_import_tm(tm)->_ep->_client)
-  #define gex_TM_QueryEP(tm)                   gasneti_export_ep(gasneti_import_tm(tm)->_ep)
-  #define gex_TM_QueryFlags(tm)                ((gex_Flags_t)gasneti_import_tm(tm)->_flags)
-  #define gex_TM_QueryRank(tm)                 ((gex_Rank_t)gasneti_import_tm(tm)->_rank)
-  #define gex_TM_QuerySize(tm)                 ((gex_Rank_t)gasneti_import_tm(tm)->_size)
+  #define gex_TM_SetCData(tm,val)              ((void)(gasneti_import_tm_nonpair(tm)->_cdata = (val)))
+  #define gex_TM_QueryCData(tm)                ((void*)gasneti_import_tm_nonpair(tm)->_cdata)
+  #define gex_TM_QueryClient(tm)               gasneti_export_client(gasneti_import_tm_nonpair(tm)->_ep->_client)
+  #define gex_TM_QueryEP(tm)                   gasneti_export_ep(gasneti_import_tm_nonpair(tm)->_ep)
+  #define gex_TM_QueryFlags(tm)                ((gex_Flags_t)gasneti_import_tm_nonpair(tm)->_flags)
+  #define gex_TM_QueryRank(tm)                 ((gex_Rank_t)gasneti_import_tm_nonpair(tm)->_rank)
+  #define gex_TM_QuerySize(tm)                 ((gex_Rank_t)gasneti_import_tm_nonpair(tm)->_size)
 #endif
 
 // TODO-EX: remove these legacy checks
@@ -473,6 +518,45 @@ struct gasneti_team_member_internal_s;
 #error "out-of-date #define of _GASNET_HANDLERENTRY_T"
 #endif
 
+// TM-pair encoding macros
+// Packed bits as [rem:loc:reserved:tag] = [12:12:7:1]
+// Note: the 7 reserved bits will eventually be needed for client index
+// Note: this fits in 32 bits, but LP64 could have wider (or better aligned?) fields
+// Alternatively, gex_TM_t might be uint64_t to provide wide fields even on ILP32
+#define GASNETI_TM_PAIR_TAG_WIDTH 1
+#define GASNETI_TM_PAIR_RSV_WIDTH 7
+#define GASNETI_TM_PAIR_IDX_WIDTH 12
+#define GASNETI_TM_PAIR_IDX_MASK ((1<<GASNETI_TM_PAIR_IDX_WIDTH)-1)
+#define GASNETI_TM_PAIR_LOC_IDX_SHIFT (GASNETI_TM_PAIR_TAG_WIDTH + \
+                                       GASNETI_TM_PAIR_RSV_WIDTH)
+#define GASNETI_TM_PAIR_REM_IDX_SHIFT (GASNETI_TM_PAIR_TAG_WIDTH + \
+                                       GASNETI_TM_PAIR_RSV_WIDTH + \
+                                       GASNETI_TM_PAIR_IDX_WIDTH)
+
+// TM-pair type is integral, distinct from pointer types used for non-pair case
+// This is NOT a object type, but must masquerade as TM including pointer swizzling
+typedef uintptr_t gasneti_TM_Pair_t;
+#if GASNET_DEBUG
+  extern gasneti_TM_Pair_t gasneti_import_tm_pair(gex_TM_t _tm_pair);
+  extern gex_TM_t gasneti_export_tm_pair(gasneti_TM_Pair_t _real_tm_pair);
+#else
+  #define gasneti_import_tm_pair(x) ((gasneti_TM_Pair_t)(x))
+  #define gasneti_export_tm_pair(x) ((gex_TM_t)(x))
+#endif
+
+// Encode a TM-pair
+GASNETI_INLINE(gex_TM_Pair)
+gex_TM_t gex_TM_Pair(gex_EP_t _loc_ep, gex_EP_Index_t _rem_idx)
+{
+  gex_EP_Index_t _loc_idx = gex_EP_QueryIndex(_loc_ep);
+  gasneti_static_assert(GASNET_MAXEPS <= (1 << GASNETI_TM_PAIR_IDX_WIDTH));
+  gasneti_assert_uint(_loc_idx ,<, GASNET_MAXEPS);
+  gasneti_assert_uint(_rem_idx ,<, GASNET_MAXEPS);
+  gasneti_TM_Pair_t _i_pair = 1 // TAG bit
+                            | (_loc_idx << GASNETI_TM_PAIR_LOC_IDX_SHIFT)
+                            | (_rem_idx << GASNETI_TM_PAIR_REM_IDX_SHIFT);
+  return gasneti_export_tm_pair(_i_pair);
+}
 
 /*  struct type used to return info from gex_Token_Info() */
 typedef struct {
@@ -549,6 +633,44 @@ extern void gex_System_QueryMyPosition(
             gex_Rank_t *_nbrhd_set_rank_p,
             gex_Rank_t *_host_set_size_p,
             gex_Rank_t *_host_set_rank_p);
+
+extern int gex_EP_Create(
+            gex_EP_t               *_ep_p,
+            gex_Client_t           _client,
+            gex_EP_Capabilities_t  _capabilities,
+            gex_Flags_t            _flags);
+
+extern void gex_EP_BindSegment(
+            gex_EP_t       _ep,
+            gex_Segment_t  _segment,
+            gex_Flags_t    _flags);
+
+#if GASNETC_HAVE_EP_PUBLISHBOUNDSEGMENT
+  #define gex_EP_PublishBoundSegment gasnetc_EP_PublishBoundSegment
+#else
+  #define gex_EP_PublishBoundSegment gasneti_EP_PublishBoundSegment
+#endif
+extern int gex_EP_PublishBoundSegment(
+            gex_TM_t       _tm,
+            gex_EP_t       *_eps,
+            size_t         _num_eps,
+            gex_Flags_t    _flags);
+
+// DEPRECATED. Superseded by gex_EP_QueryBoundSegmentNB
+extern int gex_Segment_QueryBound(
+            gex_TM_t       _tm,
+            gex_Rank_t     _rank,
+            void           **_owneraddr_p,
+            void           **_localaddr_p,
+            uintptr_t      *_size_p);
+
+extern gex_Event_t gex_EP_QueryBoundSegmentNB(
+            gex_TM_t       _tm,
+            gex_Rank_t     _rank,
+            void           **_owneraddr_p,
+            void           **_localaddr_p,
+            uintptr_t      *_size_p,
+            gex_Flags_t    _flags) GASNETI_WARN_UNUSED_RESULT;
 
 /* ------------------------------------------------------------------------------------ */
 /* extended types */
@@ -683,13 +805,13 @@ typedef struct gasneti_srcdesc_s *gex_AM_SrcDesc_t;
     void *               _void_p; // PSHM and conduit-independent pointer
     gex_Event_t *        _lc_opt;
     gex_Flags_t          _flags;
-    int                  _nargs;
-    int                  _is_nbrhd;
+    int8_t               _nargs;
+    int8_t               _is_nbrhd;
   #if GASNET_PSHM
     struct {
       gex_Rank_t           _pshmrank; // should be gasneti_pshm_rank_t
       gex_Rank_t           _jobrank;
-      int                  _loopback;
+      int8_t               _loopback;
     }                    _pshm;
   #endif
   #ifdef GASNETI_AM_SRCDESC_EXTRA
@@ -717,6 +839,39 @@ typedef struct gasneti_srcdesc_s *gex_AM_SrcDesc_t;
 #endif
 
 #define GASNETI_FLAG_INIT_LEGACY           (1U << 31)
+
+/* ------------------------------------------------------------------------------------ */
+// GASNETC_MAX_{ARGS,MEDIUM,LONG}_NBRHD
+// These are compile-time constants used by the "neighborhood" AM support,
+// which includes "loopback" (same-process) and "AMPSHM" (shared-memory).
+// As described below, these defaults are not suitable for all conduits.
+// Any/all conduit-specific overrides belong in gasnet_core_fwd.h.
+
+#ifndef GASNETC_MAX_ARGS_NBRHD
+  // Assumes gex_AM_MaxArgs() is a compile time constant.
+  // If not, the conduit must define GASNETC_MAX_ARGS_NBRHD to a compile-time
+  // constant in its gasnet_core_fwd.h.
+  // The value may be a conservative upper-bound if the real value cannot be
+  // known until run time (at the cost of wasted memory).
+  #define GASNETC_MAX_ARGS_NBRHD   (gex_AM_MaxArgs())
+#endif
+#ifndef GASNETC_MAX_MEDIUM_NBRHD
+  // Assumes gex_AM_LUB{Request,Reply}Medium() expand to compile-time constants
+  // AND that the LUB is the *greatest* upper-bound.  If either property is not
+  // true for a given conduit, then it must define GASNETC_MAX_MEDIUM_NBRHD to
+  // an appropriate compile-time constant bound in its gasnet_core_fwd.h.
+  // The value may be a conservative upper-bound if the real value cannot be
+  // known until run time (at the cost of wasted memory).
+  #define GASNETC_MAX_MEDIUM_NBRHD MAX(gex_AM_LUBRequestMedium(),gex_AM_LUBReplyMedium())
+#endif
+#ifndef GASNETC_MAX_LONG_NBRHD
+  // Same assumptions and usage as GASNETC_MAX_MEDIUM_NBRHD, above, but for Long.
+  #define GASNETC_MAX_LONG_NBRHD MAX(gex_AM_LUBRequestLong(),gex_AM_LUBReplyLong())
+#endif
+
+// NPAM GASNet-allocated buffer can use per-thread buffers up to a limit
+// This provides conduits and PSHM with an intuitive name
+#define GASNETC_REF_NPAM_MAX_ALLOC GASNETC_MAX_MEDIUM_NBRHD
 
 /* ------------------------------------------------------------------------------------ */
 
@@ -836,6 +991,7 @@ extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC32_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG);
+extern int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_CUDA_UVA_CONFIG);
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES));
 extern int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN));
@@ -870,6 +1026,7 @@ static int *gasneti_linkconfig_idiotcheck(void) {
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC32_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG)
+        + GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_CUDA_UVA_CONFIG)
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES))
         + GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN))

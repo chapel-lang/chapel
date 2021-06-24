@@ -36,7 +36,7 @@ For example:
     Foo module long description.
 
 
-3. Add a deprecation test to ``test/deprecation/`` to:
+3. Add a deprecation test to ``test/deprecated/`` to:
 
   - confirm the deprecation warning works as intended
   - remind us to to remove the deprecated feature in the following release

@@ -456,6 +456,20 @@ all:
     - Improve the speed of tracking arrays declared over a domain (#16740)
   02/01/21:
     - Enable the cache for remote data by default (#17044)
+  03/18/21:
+    - text: Improve NUMA affinity and startup times for configs that use a fixed heap (#17405)
+      config: 16-node-xc, 16-node-cs, 16-node-cs-hdr
+    - text: Set the number of launcher cores per locale for Cray CS perf testing (#17407)
+      config: 16-node-cs
+  03/30/21:
+    - text: OS upgrade
+      config: 16-node-cs-hdr
+  04/01/21:
+    - text: Upgrade to GASNet-EX 2021.3.0 (#17505)
+      config: 16-node-cs, 16-node-cs-hdr
+  05/14/21:
+    - Use LLVM by default if LLVM is available either as system or bundled (#17079)
+
 # End all
 
 AllCompTime: &timecomp-base
@@ -503,6 +517,8 @@ AllCompTime: &timecomp-base
   02/25/21:
     - Restore timing for makeBinary (#17253)
     - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
+  05/14/21:
+    - Resolve some issues with finding primary and secondary operator methods (#17684)
 
 allocate:
   06/11/20:
@@ -606,6 +622,8 @@ binarytrees-submitted:
 blackscholes:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+  01/06/21:
+    - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
 
 blackscholes_promote:
   10/21/16:
@@ -727,6 +745,10 @@ distCreate-arrays-deinit.cc-perf: &distCreate-base
     - Make locale-related comm improvements (#15288)
   06/02/20:
     - Address performance issues with stencil and block-cyclic array init (#15741)
+  03/23/21:
+    - A few communication micro-optimizations to improve Block array creation (#17354)
+  04/07/21:
+    - Revert a recent change in block array creation that caused performance regression (#17531)
 
 distCreate-arrays-init.cc-perf:
   <<: *distCreate-base
@@ -865,6 +887,8 @@ fastaredux:
     - Optimize enum->int casts for concrete types (#10308)
   01/29/20:
     - Propagate user thrown errors out of IO routines (#14739)
+  01/06/21:
+    - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
 
 fft:
   05/15/19:
@@ -1378,6 +1402,18 @@ memleaksfull:
     - Support fixed sized arrays of tuples containing non-nilable classes (#16802)
   02/21/21:
     - CG enable return types and calling required functions (#17197)
+  02/25/21:
+    - Deprecate regexp ok and error() methods (#17245)
+  03/02/21:
+    - File tests locking in fixes to issue #14226 (#17291)
+  03/03/21:
+    - Fix some issues with new tests locking in bug fixes (#17320)
+  03/24/21:
+    - Add module OrderedMap (#16271)
+  03/26/21:
+    - Two fixes in OrderedMap (#17463)
+  03/27/21:
+    - CG Adjust in-intent handling to fix a memleak (#17480)
 # End memleaksfull
 
 meteor:
@@ -1777,6 +1813,11 @@ SSCA2_main:
   06/12/13:
     - Initial support for hierarchical locales (21480)
 
+SSCA2_main.ml-perf:
+  11/03/20:
+    - text: Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+      config: 16-node-cs
+
 STREAM_study_fragmented:
   09/06/13:
     - chpl_localeID_t's ignore_subloc field minimized to 1 bit
@@ -1932,6 +1973,8 @@ time_iterate:
 time-write:
   03/05/15:
     - no strings with externs update
+  01/06/21:
+    - Remove lots of inlines in IO.chpl for non-trivial procedures (#16887)
 
 timeMapMinusEqual:
   07/10/20:
@@ -2034,6 +2077,10 @@ compilerAndTestingStats: &compiler-perf-base
   02/25/21:
     - Restore timing for makeBinary (#17253)
     - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
+  05/22/21:
+    - Change range.size to return int; add range.sizeAs (#17628)
+  06/01/21:
+    - Add explicit string casts for common/easy cases (#17855)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2088,6 +2135,17 @@ arkouda: &arkouda-base
     - Increase the problem size for string benchmarks (mhmerrill/arkouda#676)
   02/19/21:
     - Skip long string partitioning in string argsort (mhmerrill/arkouda#681)
+  03/23/21:
+    - A few communication micro-optimizations to improve Block array creation (#17354)
+  03/25/21:
+    - fix groupby benchmark bug (mhmerrill/arkouda#712)
+  04/07/21:
+    - Increase the aggregation buffer sizes for non-ugni configurations (mhmerrill/arkouda#732)
+    - Revert a recent change in block array creation that caused performance regression (#17531)
+  05/19/21:
+    - Upgrade Arkouda release testing from 1.23.0 to 1.24.1 (#17773)
+  06/02/21:
+    - Make the array values in groupby and aggregate benchmarks consistent (mhmerrill/arkouda#832)
 
 arkouda-string:
   <<: *arkouda-base

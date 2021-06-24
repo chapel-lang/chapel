@@ -25,6 +25,11 @@
 #elif !defined(GASNETI_PSHM_POSIX) && !defined(GASNETI_PSHM_SYSV) && !defined(GASNETI_PSHM_FILE) && defined(GASNETI_PSHM_XPMEM)
   #undef GASNETI_PSHM_XPMEM
   #define GASNETI_PSHM_XPMEM 1
+  // Hooks:
+  extern size_t gasneti_pshm_private_data_size(void);
+  #define GASNETI_PSHM_PRIVATE_DATA_SIZE  gasneti_pshm_private_data_size
+  extern void gasneti_pshm_private_data_init(uintptr_t);
+  #define GASNETI_PSHM_PRIVATE_DATA_INIT  gasneti_pshm_private_data_init
 #else
   #error PSHM configuration must be exactly one of (GASNETI_PSHM_POSIX, GASNETI_PSHM_SYSV, GASNETI_PSHM_FILE, GASNETI_PSHM_XPMEM)
 #endif

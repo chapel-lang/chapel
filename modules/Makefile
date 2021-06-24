@@ -33,7 +33,7 @@ endif
 CHPL_MAKE_HOST_TARGET = --target
 include $(CHPL_MAKE_HOME)/make/Makefile.base
 
-SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_PLATFORM)-$(CHPL_MAKE_ARCH)-$(CHPL_MAKE_COMPILER)
+SYS_MODULES_DIR=standard/gen/$(CHPL_MAKE_SYS_MODULES_SUBDIR)
 SYS_CTYPES_MODULE_DOC=standard/SysCTypes.chpl
 SYS_CTYPES_MODULE=$(SYS_MODULES_DIR)/SysCTypes.chpl
 
@@ -68,7 +68,6 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 	cd $(@D) && $(CHPL_MAKE_PYTHON) $(MAKE_SYS_BASIC_TYPES) --doc $(@F)
 
 MODULES_TO_DOCUMENT = \
-	standard/Assert.chpl \
 	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
@@ -93,7 +92,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Path.chpl \
 	standard/Random.chpl \
 	standard/Reflection.chpl \
-	standard/Regexp.chpl \
+	standard/Regex.chpl \
 	standard/Set.chpl \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
@@ -126,6 +125,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
 	packages/Norm.chpl \
+	packages/OrderedMap.chpl \
 	packages/OrderedSet.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \

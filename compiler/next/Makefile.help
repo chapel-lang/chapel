@@ -1,0 +1,89 @@
+# Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+# Copyright 2004-2019 Cray Inc.
+# Other additional copyright holders may be indicated within.
+#
+# The entirety of this work is licensed under the Apache License,
+# Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License.
+#
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../..
+endif
+
+COMPILER_ROOT = ..
+COMPILER_SUBDIR = next
+
+# disable -MMD etc because cmake already specifies it
+NO_DEPEND = 1
+
+#
+# standard header
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.head
+
+# get LIB_CMAKE_ARG, LIBCOMPILER_BUILD_DIR
+include Makefile.include
+
+CMAKE ?= cmake
+
+$(LIBCOMPILER_BUILD_DIR):
+	@echo "Configuring the compiler library..."
+	@mkdir -p $(LIBCOMPILER_BUILD_DIR)
+	cd $(LIBCOMPILER_BUILD_DIR) && \
+	  $(CMAKE) $(CHPL_MAKE_HOME)/compiler/next \
+	    $(LIB_CMAKE_ARG) \
+	    -DCMAKE_C_COMPILER='$(CC)' \
+	    -DCMAKE_C_FLAGS='$(WARN_CFLAGS)' \
+	    -DCMAKE_CXX_COMPILER='$(CXX)' \
+	    -DCMAKE_CXX_FLAGS='$(COMP_CXXFLAGS)' \
+	    -DCMAKE_EXE_LINKER_FLAGS='$(LDFLAGS)' \
+	    -DCMAKE_MODULE_LINKER_FLAGS='$(LDFLAGS)' \
+	    -DBUILD_SHARED_LIBS=OFF
+
+libchplcomp-parser: $(LIBCOMPILER_BUILD_DIR) FORCE
+	cd $(LIBCOMPILER_BUILD_DIR)/lib/frontend/Parser && cmake --build . --target parser
+
+libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
+	@echo "Making the compiler library..."
+	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
+	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) libchplcomp ; \
+	else \
+	  cd $(LIBCOMPILER_BUILD_DIR) && cmake --build .  --target libchplcomp ; \
+	fi
+
+COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --copy
+
+libchplcomp-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
+	@echo "Making the compiler library docs..."
+	cd $(LIBCOMPILER_BUILD_DIR) && cmake --build .  --target api-docs
+# copy the generated doxygen output to the build directory
+	@if [ -d $(LIBCOMPILER_BUILD_DIR)/doc/doxygen ]; then \
+	  $(COPY_IF_DIFFERENT) $(LIBCOMPILER_BUILD_DIR)/doc/doxygen $(CHPL_MAKE_HOME)/build/doc/doxygen ; \
+	fi
+
+test-libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
+	@echo "Making and running the tests..."
+	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
+	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) tests && ctest . ; \
+	else \
+	  cd $(LIBCOMPILER_BUILD_DIR) && cmake --build .  --target tests && ctest . ; \
+	fi
+
+FORCE:
+
+#
+# standard footer
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.foot
+
+.NOTPARALLEL:

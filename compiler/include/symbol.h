@@ -137,6 +137,13 @@ enum ShadowVarPrefix {
   SVP_VAR,
 };
 
+// Ensures consistent iteration order over std::map<const char*,...>
+struct CharStarComparator {
+  bool operator()(const char* lhs, const char* rhs) const {
+    return strcmp(lhs, rhs) < 0;
+  }
+};
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -226,6 +233,11 @@ public:
   // for initializing this symbol.
   // It can return NULL if it's unable to make sense of the AST pattern.
   Expr*              getInitialization()                       const;
+
+  std::string deprecationMsg;
+
+  const char* getDeprecationMsg() const;
+  void generateDeprecationWarning(Expr* context);
 
 protected:
                      Symbol(AstTag      astTag,
@@ -584,7 +596,8 @@ public:
   void  replaceChild(BaseAST* oldAst, BaseAST* newAst)   override;
   void  printDocs(std::ostream* file, unsigned int tabs);
 
-  int   numFormals() const { return ifcFormals.length; }
+  int   numFormals()   const { return ifcFormals.length; }
+  int   numAssocCons() const { return associatedConstraints.size(); }
 
   // the DefExprs for each interface formal
   AList      ifcFormals;
@@ -594,7 +607,7 @@ public:
 
   // maps name to the ConstrainedType for an associated type
   // their DefExprs are in ifcBody
-  std::map<const char*, ConstrainedType*> associatedTypes;
+  std::map<const char*, ConstrainedType*, CharStarComparator> associatedTypes;
 
   // constraints to be checked for each implementation
   std::vector<IfcConstraint*> associatedConstraints;
@@ -889,5 +902,12 @@ void completePrintLlvmIrStage(llvmStageNum_t numStage);
 const char* toString(ArgSymbol* arg, bool withTypeAndIntent);
 const char* toString(VarSymbol* var, bool withType);
 const char* toString(Symbol* sym, bool withTypeAndIntent);
+
+struct SymbolMapKeyValue {
+  Symbol *key, *value;
+  SymbolMapKeyValue(Symbol* k, Symbol* v): key(k), value(v) { }
+};
+typedef std::vector<SymbolMapKeyValue> SymbolMapVector;
+SymbolMapVector sortedSymbolMapElts(const SymbolMap& map);
 
 #endif

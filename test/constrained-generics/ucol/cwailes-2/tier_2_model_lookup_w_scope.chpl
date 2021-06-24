@@ -1,8 +1,14 @@
-interface I(T) {
-  proc f(x:T):T;
+module Main {
+
+module ILib {
+  interface I(T) {
+    proc f(x:T):T;
+  }
 }
 
 module A {
+  use super.ILib;
+
   proc f(x:int):int { return x; }
 
   // Model 1
@@ -14,6 +20,9 @@ module A {
 }
 
 module B {
+  use super.ILib;
+  import super.A;
+
   proc f(x:int):int { return x + 1; }
   
   // Model 2
@@ -27,3 +36,5 @@ module B {
 
 // Prints 42
 writeln(B.h(41));
+
+}

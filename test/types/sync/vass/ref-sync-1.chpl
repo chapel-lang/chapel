@@ -8,7 +8,7 @@ writeln("SVAR isFull: ", SVAR.isFull);
 proc MYPROC(ref FORMAL) {
   compilerWarning(FORMAL.type:string, 0);
   writeln("started MYPROC");
-  FORMAL;
+  FORMAL.readFE();
   writeln("read the FORMAL");
-  FORMAL = 444;
+  FORMAL.writeEF(444);
 }

@@ -48,6 +48,7 @@ D == intDom = false
 D(intDom) == intDom(D) = true
 D != intDom = true
 D(intDom) != intDom(D) = false
+D:string = {1..5, 0..4}
 Copying...
 {1..5, 0..4}
 Clearing...
@@ -109,6 +110,7 @@ D == intDom = false
 D(intDom) == intDom(D) = true
 D != intDom = true
 D(intDom) != intDom(D) = false
+D:string = {1..5 by 2, 0..4 by 2 align 1}
 Copying...
 {1..5 by 2, 0..4 by 2 align 1}
 Clearing...

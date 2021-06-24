@@ -1,0 +1,3207 @@
+/*
+ * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+//
+// Chapel Parser Conventions
+//
+// opt_       -- optional
+//      _expr -- expression
+//      _ls   -- list
+//      _stmt -- statement
+//      _type -- type
+//
+// The rules are listed in depth-first order from stmt and expr
+//
+
+// A note about parser actions:
+//
+//  $1 $2 etc refer to the result of the components of the nonterminal
+//        (and midrule actions count for these numbers)
+//  $$ is the result of this nonterminal
+//  @1 @2 etc refer to the locations
+//  @$ is the location of the entire construct
+
+// A note about memory management within the parser:
+//
+//  Several grammar rules produce an allocated type (e.g. Expression*
+//  pointing to some sort of allocated expression). When one of these
+//  rules produces a result, that result needs to be either
+//  freed or wired up into another structure to be freed later.
+
+// A note about clearing comments for statements:
+//
+//  After gathering top level comments that precede the statement, you'll
+//  want to clear expression-level comments preceding the start of the body.
+//  Here are some examples:
+//
+//    Clear no comments (c1 and c2 are preserved):
+//      defer /* c1 */ /* c2 */ writeln('a');
+//    Clear everything before the '{' (c1 and c2 are discarded):
+//      defer /* c1 */ /* c2 */ { writeln('a'); }
+//    Clear everything before the '{' (c1 is discarded):
+//      for 0..15 /* c1 */ {}
+//    Clear everything before the 'do' (c1 is discarded):
+//      'while true /* c1 */ do /* c2 */ writeln('a');
+//
+// After gathering top level comments, if the statement body is a block,
+// clear every comment to the left of the '{'. Otherwise, if the body is
+// a non-block statement, preserve comments immediately preceding the
+// statement, but clear any expression-level comments before that point.
+
+// "%code requires" puts the code in the .h and in the .cpp files
+// "%code" (without "requires") puts the code in the .cpp file
+// Note that the generated flex scanner includes the generated bison .h
+// file, so something in "%code requires" is available in the scanner, too.
+%code requires {
+  #include "parser-dependencies.h"
+}
+
+// It would be better if Flex could generate these for itself
+%code requires {
+  #ifndef _BISON_CHAPEL_DEFINES_0_
+  #define _BISON_CHAPEL_DEFINES_0_
+
+  #define YYLEX_NEWLINE                  -1
+  #define YYLEX_SINGLE_LINE_COMMENT      -2
+  #define YYLEX_BLOCK_COMMENT            -3
+
+  typedef void* yyscan_t;
+
+  namespace chpl {
+    int processNewline(yyscan_t scanner);
+  }
+
+  #endif
+}
+
+//
+// Definition of YYSTYPE - the "semantic value" type returned by parser
+// productions. Individual productions have a type specified with %type
+// but that's really just an element in the union defined below.
+//
+// We used to use %union but stopped doing that when defining the push
+// parser.
+//
+
+%code requires {
+  #ifndef _BISON_CHAPEL_DEFINES_1_
+  #define _BISON_CHAPEL_DEFINES_1_
+
+  enum ThrowsTag {
+    ThrowsTag_DEFAULT,
+    ThrowsTag_THROWS,
+  };
+
+  enum LinkageTag { // TODO: what about combinations of these?
+    LinkageTag_DEFAULT,
+    LinkageTag_INLINE,
+    LinkageTag_OVERRIDE,
+    LinkageTag_EXTERN,
+    LinkageTag_EXPORT,
+  };
+
+  using ParserExprList = std::vector<Expression*>;
+  using UniqueStrList = std::vector<PODUniqueString>;
+
+  struct PotentialRename {
+    enum {SINGLE, DOUBLE} tag;
+
+    Expression* elem;
+    std::pair<Expression*, Expression*> renamed;
+
+    PotentialRename(Expression* elem) {
+      this->tag = SINGLE;
+      this->elem = elem;
+      this->renamed = std::make_pair((Expression*)nullptr, (Expression*)nullptr);
+    }
+    PotentialRename(owned<Expression> elem) : PotentialRename(elem.release()) { }
+    PotentialRename(Expression* from, Expression* to)
+    {
+      this->tag = DOUBLE;
+      this->elem = nullptr;
+      this->renamed = std::make_pair(from, to);
+    }
+    PotentialRename(owned<Expression> from, owned<Expression> to)
+    : PotentialRename(from.release(), to.release()) { }
+    PotentialRename(Expression* from, owned<Expression> to)
+    : PotentialRename(from, to.release()) { }
+
+  };
+
+  using RenameList = std::vector<PotentialRename>;
+
+  // these structures do not use constructors to avoid
+  // errors about being in the union below. Additionally
+  // they only have pointer or numeric fields.
+
+  struct WhereAndLifetime {
+    Expression* where;
+    ParserExprList* lifetime;
+  };
+  static inline
+  WhereAndLifetime makeWhereAndLifetime(Expression* w, ParserExprList* lt) {
+    WhereAndLifetime ret = {w, lt};
+    return ret;
+  }
+
+  // This is used to propagate any comments that hug the top of a statement
+  // upwards through parser rules.
+  struct CommentsAndStmt {
+    std::vector<ParserComment>* comments;
+    Expression* stmt;
+  };
+  static inline
+  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
+                                      Expression* stmt) {
+    CommentsAndStmt ret = {comments, stmt};
+    return ret;
+  }
+  static inline
+  CommentsAndStmt makeCommentsAndStmt(std::vector<ParserComment>* comments,
+                                      owned<Expression> stmt) {
+    return makeCommentsAndStmt(comments, stmt.release());
+  }
+
+  // for extern_export_decl_stmt_start
+  struct CommentsAndLinkage {
+    std::vector<ParserComment>* comments;
+    LinkageTag linkage;
+  };
+
+  // A struct for storing a partially constructed function prototype
+  // during parsing for linkage_spec/fn_decl_stmt/etc
+  // It is just saving some components of a function to be used
+  // when building the FunctionDecl.
+  struct FunctionParts {
+    std::vector<ParserComment>* comments;
+    ErroneousExpression* errorExpr; // only used for parser error
+    Decl::Visibility visibility;
+    Function::Linkage linkage;
+    Expression* linkageNameExpr;
+    bool isInline;
+    bool isOverride;
+    Function::Kind kind;
+    Formal::Intent thisIntent;
+    Formal* receiver;
+    PODUniqueString name;
+    Function::ReturnIntent returnIntent;
+    bool throws;
+    ParserExprList* formals;
+    Expression* returnType;
+    Expression* where;
+    ParserExprList* lifetime;
+    ParserExprList* body;
+  };
+
+  // a struct to store the values in module_decl_start
+  struct ModuleParts {
+    std::vector<ParserComment>* comments;
+    Decl::Visibility visibility;
+    Module::Kind kind;
+    PODUniqueString name;
+  };
+
+  // a struct to store the values in enum_header_lcbr
+  struct TypeDeclParts {
+    std::vector<ParserComment>* comments;
+    Decl::Visibility visibility;
+    PODUniqueString name;
+    asttags::ASTTag tag;
+  };
+
+  // This is produced by do_stmt. It records whether the do_stmt statements
+  // were produced following a 'do' or not. E.g...
+  // do { ... } vs { ... }
+  struct BlockOrDo {
+    CommentsAndStmt cs;
+    bool usesDo;
+  };
+
+  struct SizedStr {
+    const char* allocatedData; // *not* a uniqued string!
+    long size;
+  };
+
+  struct MaybeNamedActual {
+    Expression* expr;
+    PODUniqueString name;
+  };
+  static inline
+  MaybeNamedActual makeMaybeNamedActual(Expression* expr,
+                                        PODUniqueString name) {
+    MaybeNamedActual ret = {expr, name};
+    return ret;
+  }
+  static inline
+  MaybeNamedActual makeMaybeNamedActual(Expression* expr) {
+    PODUniqueString emptyName = PODUniqueString::build();
+    MaybeNamedActual ret = {expr, emptyName};
+    return ret;
+  }
+
+  using MaybeNamedActualList = std::vector<MaybeNamedActual>;
+
+  // These currently all need to be POD types (i.e. pointers and ints)
+  // rather than say std::vector to keep bison working with the current
+  // strategy. In the future we could probably switch to a more
+  // C++ mode of using bison.
+  union YYCHPL_STYPE {
+    // The lexer only uses these
+    PODUniqueString uniqueStr;
+    SizedStr sizedStr;
+    Expression* expr;
+
+    // The remaining types are used only in parser productions
+
+    // integer/enum values
+
+    asttags::ASTTag astTag;
+    Formal::Intent intentTag;
+    Function::Kind functionKind;
+    Function::ReturnIntent returnTag;
+    LinkageTag linkageTag;
+    Module::Kind moduleKind;
+    New::Management newManagement;
+    TaskVar::Intent taskIntent;
+    Decl::Visibility visibilityTag;
+    ThrowsTag throwsTag;
+    Variable::Kind variableKind;
+
+    // simple pointer values
+    Block* block;
+    Call* call;
+    Function* function;
+    Module* module;
+    WithClause* withClause;
+
+    // values that are temporary groupings
+    BlockOrDo blockOrDo;
+    CommentsAndLinkage commentsAndLinkage;
+    CommentsAndStmt commentsAndStmt;
+    TypeDeclParts typeDeclParts;
+    FunctionParts functionParts;
+    MaybeNamedActual maybeNamedActual;
+    MaybeNamedActualList* maybeNamedActualList;
+    ModuleParts moduleParts;
+    ParserExprList* exprList;
+    RenameList* renameList;
+    UniqueStrList* uniqueStrList;
+    WhereAndLifetime lifetimeAndWhere;
+
+    // TODO
+    //Type*                     ptype;
+    //EnumType*                 penumtype;
+    //std::vector<DefExpr*>*    pvecOfDefs;
+    //ImportStmt*               pimportstmt;
+    //FlagSet*                  flagSet;
+    //ShadowVarSymbol*          pShadowVar;
+    //ShadowVarPrefix           pShadowVarPref;
+    //std::vector<PotentialRename*>* ponlylist;
+    //std::set<Flag>*           pflagset;
+  };
+
+  #define YYSTYPE YYCHPL_STYPE
+  #define YYLTYPE YYCHPL_LTYPE
+
+  #endif
+}
+
+// YYLTYPE is the type that represents a source code location.
+// It is possible to define YYLTYPE (and this grammar used to in
+// order to handle chpldoc comments). This parser uses instead the
+// strategy of saving doc-comments in ParserContext.
+// The default YYLTYPE includes:
+//   first_line
+//   first_column
+//   last_line
+//   last_column
+
+//
+// Definition of the additional parameter to yypush_parse
+//
+
+%code requires {
+  // forward declare ParserContext
+  struct ParserContext;
+}
+
+//
+// Provide declaration for debugging and yyerror
+//
+%code provides {
+  extern int yychpl_debug;
+
+  void yychpl_error(YYLTYPE*       loc,
+                    ParserContext* context,
+                    const char*    errorMessage);
+}
+
+%code provides {
+  // include ParserContext.h here because it depends
+  // upon YYLTYPE and other types defined by the generated parser
+  // headers.
+  #include "ParserContext.h"
+}
+
+%code {
+  // include the definition of methods for ParserContext
+  #include "ParserContextImpl.h"
+  // include other helper functions for the parser
+  #include "parser-help.h"
+
+}
+
+// Bison 3.7 is not strictly required long-term but requiring it here
+// should minimize the size of the diffs as we update the generated parser.
+// Requiring 3.7 does not seem onerous since the generated parser is
+// checked in.
+%require "3.7"
+
+// The names for the output files
+%defines "bison-chpl-lib.h"
+%output  "bison-chpl-lib.cpp"
+
+%debug
+%verbose
+
+// These would print out expected token names, but that might just
+// add unnecessary complexity for someone new to the language ...
+//%define parse.lac full
+//%define parse.error verbose
+
+%locations
+%define api.pure full
+%define api.push-pull push
+
+%define api.prefix {yychpl_}
+
+%lex-param { ParserContext* context }
+%parse-param { ParserContext* context }
+
+%start program
+
+//
+// identifiers and literals
+//
+%token <uniqueStr> TIDENT
+%token <uniqueStr> TQUERIEDIDENT
+%token <uniqueStr> INTLITERAL
+%token <uniqueStr> REALLITERAL
+%token <uniqueStr> IMAGLITERAL
+%token <expr> STRINGLITERAL
+%token <expr> BYTESLITERAL
+%token <expr> CSTRINGLITERAL
+%token <sizedStr> EXTERNCODE
+
+//
+// keywords (alphabetical)
+//
+%token <uniqueStr> TALIGN TAS TATOMIC
+%token <uniqueStr> TBEGIN TBREAK TBOOL TBORROWED TBY TBYTES
+%token <uniqueStr> TCATCH TCLASS TCOBEGIN TCOFORALL TCOMPLEX
+%token <uniqueStr> TCONFIG TCONST TCONTINUE
+%token <uniqueStr> TDEFER TDELETE TDEPRECATED TDMAPPED TDO TDOMAIN
+%token <uniqueStr> TELSE TENUM TEXCEPT TEXPORT TEXTERN
+%token <uniqueStr> TFALSE TFOR TFORALL TFOREACH TFORWARDING
+%token <uniqueStr> TIF TIMAG TIMPORT TIN TINCLUDE
+%token <uniqueStr> TINDEX TINLINE TINOUT TINT TITER TINITEQUALS
+%token <uniqueStr> TIMPLEMENTS TINTERFACE
+%token <uniqueStr> TLABEL TLAMBDA TLET TLIFETIME TLOCAL TLOCALE
+%token <uniqueStr> TMINUSMINUS TMODULE
+%token <uniqueStr> TNEW TNIL TNOINIT TNONE TNOTHING
+%token <uniqueStr> TON TONLY TOPERATOR TOTHERWISE TOUT TOVERRIDE TOWNED
+%token <uniqueStr> TPARAM TPLUSPLUS TPRAGMA TPRIMITIVE TPRIVATE
+%token <uniqueStr> TPROC TPROTOTYPE TPUBLIC
+%token <uniqueStr> TREAL TRECORD TREDUCE TREF TREQUIRE TRETURN
+%token <uniqueStr> TSCAN TSELECT TSERIAL TSHARED TSINGLE TSPARSE
+%token <uniqueStr> TSTRING TSUBDOMAIN TSYNC
+%token <uniqueStr> TTHEN TTHIS TTHROW TTHROWS TTRUE TTRY TTRYBANG TTYPE
+%token <uniqueStr> TUINT TUNDERSCORE TUNION TUNMANAGED TUSE
+%token <uniqueStr> TVAR TVOID
+%token <uniqueStr> TWHEN TWHERE TWHILE TWITH
+%token <uniqueStr> TYIELD
+%token <uniqueStr> TZIP
+
+//
+// operators and punctuation (alphabetical)
+//
+%token <uniqueStr> TALIAS TAND
+%token <uniqueStr> TASSIGN
+%token <uniqueStr> TASSIGNBAND TASSIGNBOR TASSIGNBXOR
+%token <uniqueStr> TASSIGNDIVIDE TASSIGNEXP
+%token <uniqueStr> TASSIGNLAND TASSIGNLOR TASSIGNMINUS TASSIGNMOD
+%token <uniqueStr> TASSIGNMULTIPLY TASSIGNPLUS TASSIGNREDUCE
+%token <uniqueStr> TASSIGNSL TASSIGNSR
+%token <uniqueStr> TBANG TBAND TBNOT TBOR TBXOR
+%token <uniqueStr> TCOLON TCOMMA
+%token <uniqueStr> TDIVIDE TDOT TDOTDOT TDOTDOTDOT
+%token <uniqueStr> TEQUAL TEXP TGREATER
+%token <uniqueStr> TGREATEREQUAL
+%token <uniqueStr> THASH
+%token <uniqueStr> TIO
+%token <uniqueStr> TLESS
+%token <uniqueStr> TLESSEQUAL
+%token <uniqueStr> TMINUS TMOD
+%token <uniqueStr> TNOTEQUAL
+%token <uniqueStr> TOR
+%token <uniqueStr> TPLUS
+%token <uniqueStr> TQUESTION
+%token <uniqueStr> TSEMI TSHIFTLEFT TSHIFTRIGHT TSTAR TSWAP
+
+//
+// braces
+//
+%token TLCBR TRCBR TLP TRP TLSBR TRSBR
+
+//
+// keywords, operators, and punctuation that requires precedence
+//
+%left TNOELSE
+%left TELSE
+%left TCOMMA
+%left TFOR TFORALL TFOREACH TIF TATOMIC TSYNC TSINGLE
+// %left TOWNED TUNMANAGED TSHARED
+%left TIN
+%left TALIGN TBY THASH
+%left TOR
+%left TAND
+%left TEQUAL TNOTEQUAL
+%left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
+%left TDOTDOT TDOTDOTOPENHIGH
+// These are not currently supported, though we've discussed adding them
+//%left TDOTDOTOPENLOW TDOTDOTOPENBOTH
+%left TPLUS TMINUS
+%left TBOR
+%left TBXOR
+%left TBAND
+%left TSHIFTLEFT TSHIFTRIGHT
+%right TUPLUS TUMINUS
+%left TSTAR TDIVIDE TMOD
+%right TBNOT TLNOT
+%left TREDUCE TSCAN TDMAPPED
+%right TEXP
+%left TCOLON
+%right TBORROWED TOWNED TUNMANAGED TSHARED
+%left TQUESTION TBANG
+%right TNEW
+%left TDOT TLP TRSBR TLCBR
+%nonassoc TPRAGMA
+
+
+%type <throwsTag> opt_throws_error
+%type <moduleKind> opt_prototype
+%type <visibilityTag> access_control
+%type <intentTag> required_intent_tag opt_intent_tag opt_this_intent_tag
+
+%type <returnTag>  opt_ret_tag
+%type <astTag> class_tag
+
+%type <uniqueStr> ident_use ident_def ident_fn_def
+%type <uniqueStr> internal_type_ident_def reserved_type_ident_use
+%type <uniqueStr> fn_ident assignop_ident opt_label_ident
+%type <uniqueStr> implements_type_ident implements_type_error_ident
+
+%type <uniqueStrList>       pragma_ls
+
+%type <commentsAndStmt> deprecated_decl_stmt
+%type <commentsAndStmt> deprecated_decl_base
+%type <commentsAndStmt> deprecated_enum_item
+%type <commentsAndStmt> deprecated_class_level_stmt
+
+// statement lists
+%type <exprList> program
+%type <exprList> toplevel_stmt_ls
+%type <exprList> stmt_ls
+
+// individual statements
+%type <commentsAndStmt> toplevel_stmt
+%type <moduleParts> module_decl_start
+%type <commentsAndStmt> module_decl_stmt
+%type <commentsAndStmt> include_module_stmt
+%type <exprList> block_stmt_body
+%type <commentsAndStmt> block_stmt
+
+%type <expr> import_expr
+%type <commentsAndStmt> use_stmt import_stmt require_stmt
+%type <exprList> import_ls
+%type <exprList> except_ls renames_ls use_renames_ls opt_only_ls
+
+// These are exprList so that they can include preceeding comments
+%type <commentsAndStmt> implements_stmt interface_stmt
+%type <exprList>  ifc_formal_ls
+%type <expr>   ifc_formal
+
+%type <exprList> class_level_stmt_ls
+
+%type <commentsAndStmt> stmt
+%type <blockOrDo> do_stmt
+%type <commentsAndStmt> if_stmt loop_stmt
+%type <commentsAndStmt> select_stmt
+%type <commentsAndStmt> assignment_stmt
+
+%type <typeDeclParts> class_start
+%type <commentsAndStmt> class_level_stmt
+%type <commentsAndStmt> inner_class_level_stmt
+%type <commentsAndStmt> forwarding_decl_stmt forwarding_decl_start
+%type <commentsAndStmt> extern_export_decl_stmt
+%type <commentsAndLinkage> extern_export_decl_stmt_start
+%type <commentsAndStmt> extern_block_stmt
+%type <commentsAndStmt> return_stmt
+%type <commentsAndStmt> try_stmt
+%type <commentsAndStmt> throw_stmt
+%type <exprList> catch_expr_ls
+%type <expr> catch_expr
+%type <expr> catch_expr_inner
+
+%type <variableKind> var_decl_type
+
+%type <commentsAndStmt> type_alias_decl_stmt type_alias_decl_stmt_start
+%type <expr> type_alias_decl_stmt_inner
+%type <functionParts> fn_decl_stmt
+%type <commentsAndStmt> fn_decl_stmt_complete
+%type <commentsAndStmt> class_decl_stmt
+%type <commentsAndStmt> enum_decl_stmt
+
+%type <commentsAndStmt> var_decl_stmt
+%type <exprList> var_decl_stmt_inner_ls tuple_var_decl_stmt_inner_ls
+%type <commentsAndStmt> var_decl_stmt_inner
+
+
+%type <exprList> function_body_stmt opt_function_body_stmt
+
+%type <expr> when_stmt
+%type <exprList> when_stmt_ls
+
+%type <expr> array_type
+%type <expr> opt_type opt_ret_type ret_array_type
+%type <expr> opt_formal_type formal_array_type opt_formal_array_elt_type lambda_decl_expr
+%type <typeDeclParts> enum_header_lcbr
+%type <exprList> enum_ls
+
+%type <expr> zippered_iterator
+%type <expr> call_base_expr call_expr dot_expr
+%type <expr> lhs_expr
+%type <expr> unary_op_expr binary_op_expr
+%type <expr> parenthesized_expr expr
+%type <maybeNamedActual> actual_expr
+%type <expr> bool_literal str_bytes_literal literal_expr
+%type <expr> stmt_level_expr sub_type_level_expr type_level_expr scalar_type
+%type <exprList> lifetime_components_expr
+%type <expr> lifetime_expr lifetime_ident
+%type <lifetimeAndWhere> opt_lifetime_where
+%type <expr> ident_expr for_expr cond_expr nil_expr io_expr new_expr
+%type <expr> let_expr ifvar
+%type <expr> reduce_expr scan_expr reduce_scan_op_expr opt_init_expr
+%type <expr> opt_init_type var_arg_expr
+%type <expr> opt_try_expr opt_expr
+%type <expr> tuple_component tuple_var_decl_component
+%type <expr> formal
+%type <commentsAndStmt> enum_item
+%type <expr> query_expr ifc_constraint
+
+%type <newManagement> new_maybe_decorated
+%type <exprList> opt_inherit simple_expr_ls expr_ls assoc_expr_ls tuple_expr_ls
+%type <maybeNamedActualList> opt_actual_ls actual_ls
+%type <exprList> task_intent_ls
+%type <exprList> forall_intent_ls
+%type <withClause> opt_task_intent_ls task_intent_clause forall_intent_clause
+
+%type <functionParts> fn_decl_stmt_start fn_decl_stmt_inner
+%type <exprList> opt_formal_ls req_formal_ls formal_ls formal_ls_inner
+%type <expr> fn_decl_receiver_expr
+%type <functionKind> proc_iter_or_op
+%type <functionParts> linkage_spec
+%type <linkageTag> extern_or_export
+%type <expr> intent_expr
+%type <taskIntent> task_var_prefix
+
+%%
+
+program:
+  toplevel_stmt_ls                    { context->topLevelStatements = $1; }
+;
+
+// 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
+toplevel_stmt_ls:
+                                      { $$ = context->makeList(); }
+| toplevel_stmt_ls toplevel_stmt      { context->appendList($1, $2); }
+;
+
+// Switch between plain statements and those preceded by pragmas
+toplevel_stmt:
+   stmt
+|  pragma_ls stmt                     { $$ = TODOSTMT(@$); }
+;
+
+// Sequence of pragmas
+pragma_ls:
+  TPRAGMA STRINGLITERAL
+    {
+      Expression* lit = $2;
+      if (lit->isStringLiteral()) {
+        StringLiteral* strLit = lit->toStringLiteral();
+        $$ = new UniqueStrList();
+        PODUniqueString u = STR(strLit->str().c_str());
+        delete strLit;
+        $$->push_back(u);
+      } else {
+        // in this case we expect that there was an error
+        // reading the string literal so it is ErroneousExpression
+        // and an error message has already been recorded.
+        // Use "" as the string to indicate an error in the pragma.
+        PODUniqueString u = STR("");
+        $$->push_back(u);
+      }
+    }
+| pragma_ls TPRAGMA STRINGLITERAL
+    {
+      Expression* lit = $3;
+      if (lit->isStringLiteral()) {
+        StringLiteral* strLit = lit->toStringLiteral();
+        PODUniqueString u = STR(strLit->str().c_str());
+        delete strLit;
+        $1->push_back(u);
+      } else {
+        // in this case we expect that there was an error
+        // reading the string literal so it is ErroneousExpression
+        // and an error message has already been recorded.
+        // Use "" as the string to indicate an error in the pragma.
+        PODUniqueString u = STR("");
+        $$->push_back(u);
+      }
+    }
+;
+
+stmt:
+  deprecated_decl_stmt      { $$ = context->finishStmt($1); }
+| include_module_stmt       { $$ = context->finishStmt($1); }
+| block_stmt                { $$ = context->finishStmt($1); }
+| use_stmt                  { $$ = context->finishStmt($1); }
+| import_stmt               { $$ = context->finishStmt($1); }
+| require_stmt              { $$ = context->finishStmt($1); }
+| assignment_stmt           { $$ = context->finishStmt($1); }
+| extern_block_stmt         { $$ = context->finishStmt($1); }
+| if_stmt                   { $$ = $1; } // Don't clear stored comments.
+| implements_stmt           { $$ = context->finishStmt($1); }
+| interface_stmt            { $$ = context->finishStmt($1); }
+| loop_stmt                 { $$ = $1; } // Don't clear stored comments.
+| select_stmt               { $$ = context->finishStmt($1); }
+| TDEFER stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
+                               false, @1, $2);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Defer::build(BUILDER, LOC(@$), blockStyle,
+                             std::move(stmts));
+    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(ret);
+  }
+| try_stmt                  { $$ = context->finishStmt($1); }
+| throw_stmt                { $$ = context->finishStmt($1); }
+| return_stmt               { $$ = context->finishStmt($1); }
+| stmt_level_expr TSEMI     { $$ = context->finishStmt(STMT(@$,$1)); }
+| TATOMIC stmt              { $$ = TODOSTMT(@$); }
+| TBEGIN opt_task_intent_ls stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    YYLTYPE locBodyAnchor = context->makeLocationAtLast(@2);
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
+                               false, locBodyAnchor, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Begin::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
+                             std::move(stmts));
+    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(ret);
+  }
+| TBREAK opt_label_ident TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto ident = !$2.isEmpty() ? Identifier::build(BUILDER, LOC(@2), $2)
+                               : nullptr;
+    auto node = Break::build(BUILDER, LOC(@$), std::move(ident));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| TCOBEGIN opt_task_intent_ls block_stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    YYLTYPE locBodyAnchor = context->makeLocationAtLast(@2);
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
+                               false, locBodyAnchor, $3);
+    assert(blockStyle == BlockStyle::EXPLICIT);
+    auto taskBodies = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Cobegin::build(BUILDER, LOC(@$), toOwned($2), 
+                               std::move(taskBodies));
+    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(ret);
+  }
+| TCONTINUE opt_label_ident TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto ident = !$2.isEmpty() ? Identifier::build(BUILDER, LOC(@2), $2)
+                               : nullptr;
+    auto node = Continue::build(BUILDER, LOC(@$), std::move(ident));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| TDELETE simple_expr_ls TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto exprs = context->consumeList($2);
+    auto node = Delete::build(BUILDER, LOC(@$), std::move(exprs));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| TLABEL ident_def stmt
+  {
+    if ($3.stmt->isFor() || $3.stmt->isWhile() || $3.stmt->isDoWhile()) {
+      auto exprLst = context->makeList($3);
+      auto comments = context->gatherCommentsFromList(exprLst, @1);
+      auto astLst = context->consumeList(exprLst);
+      Loop* loop = nullptr;
+      for (auto& ast : astLst) {
+        if (ast->isLoop()) {
+          loop = ast.release()->toLoop();
+          break;
+        }
+      }
+      assert(loop);
+      auto node = Label::build(BUILDER, LOC(@$), $2, toOwned(loop));
+      $$ = { .comments=comments, .stmt=node.release() };
+    } else {
+      const char* msg = "can only label for-, while-do- "
+                        "and do-while-statements";
+      auto err = context->raiseError(@$, msg);
+      $$ = context->finishStmt(err);
+    }
+  }
+| TLOCAL expr do_stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @3, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Local::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
+                             std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| TLOCAL do_stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @2, $2);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Local::build(BUILDER, LOC(@$), blockStyle, std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| TON expr do_stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @3, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = On::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
+                          std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| TSERIAL expr do_stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @3, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Serial::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
+                              std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| TSERIAL do_stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @2, $2);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Serial::build(BUILDER, LOC(@$), blockStyle, std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| TSYNC stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
+                               false, @1, $2);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = Sync::build(BUILDER, LOC(@$), blockStyle,
+                            std::move(stmts));
+    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(ret);
+  }
+| TYIELD expr TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Yield::build(BUILDER, LOC(@$), toOwned($2));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| error TSEMI
+  {
+    $$ = STMT(@$, ErroneousExpression::build(BUILDER, LOC(@1)));
+  }
+;
+
+deprecated_decl_stmt:
+  deprecated_decl_base
+| TDEPRECATED STRINGLITERAL deprecated_decl_base
+{ $$ = TODOSTMT(@$); }
+| TDEPRECATED deprecated_decl_base
+{ $$ = TODOSTMT(@$); }
+;
+
+deprecated_decl_base:
+  module_decl_stmt
+| class_level_stmt
+;
+
+module_decl_start:
+  access_control opt_prototype TMODULE ident_def
+    {
+      // take into account location of public/private, if any
+      auto loc = context->declStartLoc(@3);
+
+      ModuleParts parts = {context->gatherComments(loc), $1, $2, $4};
+      $$ = parts;
+      context->resetDeclState();
+      context->clearComments();
+    }
+;
+
+module_decl_stmt:
+   module_decl_start TLCBR TRCBR
+    {
+      context->clearCommentsBefore(@2);
+
+      ModuleParts parts = $1;
+      ParserExprList* body = context->makeList();
+      context->appendList(body, context->gatherComments(@3));
+      auto mod = Module::build(BUILDER, LOC(@1),
+                               parts.name, parts.visibility, parts.kind,
+                               context->consumeList(body));
+      CommentsAndStmt cs = {parts.comments, mod.release()};
+      $$ = cs;
+    }
+| module_decl_start TLCBR stmt_ls TRCBR
+    {
+      context->clearCommentsBefore(@2);
+
+      ModuleParts parts = $1;
+      ParserExprList* body = $3;
+      context->appendList(body, context->gatherComments(@4));
+      auto mod = Module::build(BUILDER, LOC(@1),
+                               parts.name, parts.visibility, parts.kind,
+                               context->consumeList(body));
+      CommentsAndStmt cs = {parts.comments, mod.release()};
+      $$ = cs;
+    }
+| module_decl_start TLCBR error TRCBR
+    {
+      ModuleParts parts = $1;
+      ParserExprList* body =
+              context->makeList(ErroneousExpression::build(BUILDER, LOC(@3)));
+      auto mod = Module::build(BUILDER, LOC(@1),
+                               parts.name, parts.visibility, parts.kind,
+                               context->consumeList(body));
+      CommentsAndStmt cs = {parts.comments, mod.release()};
+      $$ = cs;
+    }
+;
+
+access_control:
+           { $$ = context->noteVisibility(Decl::DEFAULT_VISIBILITY); }
+| TPUBLIC  { context->noteDeclStartLoc(@1);
+             $$ = context->noteVisibility(Decl::PUBLIC); }
+| TPRIVATE { context->noteDeclStartLoc(@1);
+             $$ = context->noteVisibility(Decl::PRIVATE); }
+;
+
+opt_prototype:
+             { $$ = Module::DEFAULT_MODULE_KIND; }
+| TPROTOTYPE { context->noteDeclStartLoc(@1);
+               $$ = Module::PROTOTYPE;  }
+;
+
+include_module_stmt:
+ TINCLUDE access_control opt_prototype TMODULE ident_def TSEMI
+   {
+     $$ = TODOSTMT(@$);
+     context->visibility = Decl::DEFAULT_VISIBILITY;
+   }
+;
+
+/* Grouping of statements into blocks.
+
+   Note:  There cannot be a blank production appearing immediately after TLCBR
+   as this results in a shift/reduce conflict with the statement level
+   expression expr TDOT expr (see domain literals).  This production (and the
+   the other productions on which it depends) were purposefully redefined
+   without blank productions to allow the full version of dot_expr to appear at
+   the statement level.
+*/
+block_stmt_body:
+  TLCBR TRCBR
+  {
+    $$ = context->blockToParserExprList(@1, @2, nullptr);
+  }
+| TLCBR stmt_ls TRCBR
+  {
+    $$ = context->blockToParserExprList(@1, @3, $2);
+  }
+| TLCBR error TRCBR
+  {
+    context->clearComments();
+    // create a list of stmts that just has an ErroneousExpr
+    auto errorExpr = ErroneousExpression::build(BUILDER, LOC(@2));
+    ParserExprList* lst = context->makeList(errorExpr.release());
+    $$ = lst;
+  }
+;
+
+block_stmt:
+  block_stmt_body
+  {
+    // comments from before the opening bracket will have been
+    // gathered into stmt_ls when that was parsed, so pull out any
+    // comments that occur before the opening bracket.
+    // (This would be simpler to handle with midrule actions but those
+    //  lead to parser conflicts).
+    CommentsAndStmt cs = {0};
+    cs.comments = context->gatherCommentsFromList($1, @1);
+
+    // Create the BlockStmt
+    auto blockstmt = Block::build(BUILDER, LOC(@$), context->consumeList($1));
+    cs.stmt = blockstmt.release();
+    $$ = cs;
+  }
+;
+
+// Sequence of toplevel_stmts
+stmt_ls:
+  toplevel_stmt                        { $$ = context->makeList($1); }
+| stmt_ls toplevel_stmt                { context->appendList($1, $2); }
+;
+
+renames_ls:
+  expr
+  {
+    $$ = context->makeList($1);
+  }
+| expr TAS expr
+  {
+    auto as = context->buildAsExpr(@1, @3, toOwned($1), toOwned($3));
+    $$ = context->makeList(as);
+  }
+| renames_ls TCOMMA expr
+  {
+    $$ = context->appendList($1, $3);
+  }
+| renames_ls TCOMMA expr TAS expr
+  {
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
+    $$ = context->appendList($1, as);
+  }
+;
+
+/* Separated so that use statements can rename their module to "_", but nothing
+   else can */
+use_renames_ls:
+  expr
+  {
+    auto node = UseClause::build(BUILDER, LOC(@$), toOwned($1));
+    $$ = context->makeList(std::move(node));
+  }
+| expr TAS expr
+  {
+    auto as = context->buildAsExpr(@1, @3, toOwned($1), toOwned($3));
+    auto node = UseClause::build(BUILDER, LOC(@$), toOwned(as));
+    $$ = context->makeList(std::move(node));
+  }
+| expr TAS TUNDERSCORE
+  {
+    auto ident = toOwned(context->buildIdent(@3, $3));
+    auto as = context->buildAsExpr(@1, @3, toOwned($1), std::move(ident));
+    auto node = UseClause::build(BUILDER, LOC(@$), toOwned(as));
+    $$ = context->makeList(std::move(node));
+  }
+| use_renames_ls TCOMMA expr
+  {
+    auto node = UseClause::build(BUILDER, LOC2(@2, @3), toOwned($3));
+    $$ = context->appendList($1, std::move(node));
+  }
+| use_renames_ls TCOMMA expr TAS expr
+  {
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
+    auto node = UseClause::build(BUILDER, LOC2(@2, @5), toOwned(as));
+    $$ = context->appendList($1, std::move(node));
+  }
+| use_renames_ls TCOMMA expr TAS TUNDERSCORE
+  {
+    auto ident = context->buildIdent(@5, $5);
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned(ident));
+    auto node = UseClause::build(BUILDER, LOC2(@2, @5), toOwned(as));
+    $$ = context->appendList($1, std::move(node));
+  }
+;
+
+
+opt_only_ls:
+  /* nothing */   { $$ = nullptr; }
+| renames_ls      { $$ = $1; }
+;
+
+except_ls:
+  TSTAR
+  {
+    auto ident = context->buildIdent(@1, $1);
+    $$ = context->makeList(ident);
+  }
+| renames_ls
+  {
+    $$ = $1;
+  }
+;
+
+use_stmt:
+  access_control TUSE use_renames_ls TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Use::build(BUILDER, LOC(@$), $1, context->consumeList($3));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| access_control TUSE expr TEXCEPT except_ls TSEMI
+  {
+    auto locUseClause = context->makeSpannedLocation(@3, @5);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned($3),
+                                     UseClause::EXCEPT,
+                                     $5);
+  }
+| access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
+  {
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
+    auto locUseClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
+                                     UseClause::EXCEPT,
+                                     $7);
+  }
+| access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
+  {
+    auto ident = toOwned(context->buildIdent(@5, $5));
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
+    auto locUseClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
+                                     UseClause::EXCEPT,
+                                     $7);
+  }
+| access_control TUSE expr TONLY opt_only_ls TSEMI
+  {
+    auto locUseClause = context->makeSpannedLocation(@3, @5);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned($3),
+                                     UseClause::ONLY,
+                                     $5);
+  }
+| access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
+  {
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
+    auto locUseClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
+                                     UseClause::ONLY,
+                                     $7);
+  }
+| access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
+  {
+    auto ident = toOwned(context->buildIdent(@5, $5));
+    auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
+    auto locUseClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
+                                     UseClause::ONLY,
+                                     $7);
+  }
+;
+
+import_stmt:
+  access_control TIMPORT import_ls TSEMI
+    {
+      $$ = TODOSTMT(@$);
+      context->visibility = Decl::DEFAULT_VISIBILITY;
+    }
+;
+
+import_expr:
+  expr
+    { $$ = TODOEXPR(@$); }
+| expr TAS ident_use
+    { $$ = TODOEXPR(@$); }
+| expr TDOT TLCBR renames_ls TRCBR
+    { $$ = TODOEXPR(@$); }
+;
+
+import_ls:
+  import_expr
+    { $$ = context->makeList($1); }
+| import_ls TCOMMA import_expr
+    { context->appendList($1, $3); }
+;
+
+require_stmt:
+  TREQUIRE expr_ls TSEMI
+    {
+      $$ = TODOSTMT(@$);
+    }
+;
+
+assignment_stmt:
+  lhs_expr assignop_ident opt_try_expr TSEMI
+    {
+      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
+    }
+| lhs_expr TSWAP           opt_try_expr TSEMI
+    {
+      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
+    }
+| lhs_expr TASSIGNREDUCE   opt_try_expr TSEMI
+    {
+      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
+    }
+| lhs_expr TASSIGNLAND     opt_try_expr TSEMI
+    {
+      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
+    }
+| lhs_expr TASSIGNLOR      opt_try_expr TSEMI
+    {
+      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, $3));
+    }
+| lhs_expr TASSIGN         TNOINIT TSEMI
+    {
+      $$ = STMT(@$, context->buildBinOp(@$, $1, $2, context->buildIdent(@3, $3)));
+    }
+;
+
+// Here are some nonterminals for identifiers
+
+opt_label_ident:
+         { $$ = STR(""); }
+| TIDENT { $$ = $1; }
+;
+
+ident_fn_def:
+  TIDENT                   { $$ = $1; }
+| TNONE                    { $$ = $1; ERROR(@$, "redefining reserved word 'none'"); }
+| TTHIS                    { $$ = $1; }
+| TFALSE                   { $$ = $1; ERROR(@$, "redefining reserved word 'false'"); }
+| TTRUE                    { $$ = $1; ERROR(@$, "redefining reserved word 'true'"); }
+| internal_type_ident_def  { $$ = $1; ERROR(@$, "redefining reserved word"); }
+
+ident_def:
+  TIDENT                   { $$ = $1; }
+| TNONE                    { $$ = $1; ERROR(@$, "redefining reserved word 'none'"); }
+| TTHIS                    { $$ = $1; ERROR(@$, "redefining reserved word 'this'"); }
+| TFALSE                   { $$ = $1; ERROR(@$, "redefining reserved word 'false'"); }
+| TTRUE                    { $$ = $1; ERROR(@$, "redefining reserved word 'true'"); }
+| internal_type_ident_def  { $$ = $1; ERROR(@$, "redefining reserved word"); }
+;
+
+/* Represents a use of an identifier. This is not used as often as you
+   might think for various reasons:
+     * things that allow scalar types more naturally use ident_expr,
+       which returns an Expr* rather than a const char*
+     * very special identifier-like things, like domain, borrowed, etc,
+       need separate parsing rules anyway. These are handled by
+       reserved_type_ident_use.
+ */
+ident_use:
+  TIDENT                   { $$ = $1; }
+| TTHIS                    { $$ = $1; }
+;
+
+internal_type_ident_def:
+ /* These reserved words should generate an error if an attempt
+    is made to redefine them. The name returned from this nonterminal
+    will be used in the error message.
+
+    Uses of these types are parsed differently.
+    See scalar_type and reserved_type_ident_use.
+  */
+  TBOOL
+| TINT
+| TUINT
+| TREAL
+| TIMAG
+| TCOMPLEX
+| TBYTES
+| TSTRING
+| TSYNC
+| TSINGLE
+| TOWNED
+| TSHARED
+| TBORROWED
+| TUNMANAGED
+| TDOMAIN
+| TINDEX
+| TLOCALE
+| TNOTHING
+| TVOID
+;
+
+scalar_type:
+  TBOOL    { $$ = context->buildIdent(@$, $1); }
+| TENUM    { $$ = context->buildIdent(@$, $1); }
+| TINT     { $$ = context->buildIdent(@$, $1); }
+| TUINT    { $$ = context->buildIdent(@$, $1); }
+| TREAL    { $$ = context->buildIdent(@$, $1); }
+| TIMAG    { $$ = context->buildIdent(@$, $1); }
+| TCOMPLEX { $$ = context->buildIdent(@$, $1); }
+| TBYTES   { $$ = context->buildIdent(@$, $1); }
+| TSTRING  { $$ = context->buildIdent(@$, $1); }
+| TLOCALE  { $$ = context->buildIdent(@$, $1); }
+| TNOTHING { $$ = context->buildIdent(@$, $1); }
+| TVOID    { $$ = context->buildIdent(@$, $1); }
+;
+
+reserved_type_ident_use:
+  /* These reserved words can also be used as types but in fewer
+     places in the parser. Additionally their type versions have
+     different names. */
+  TSYNC
+| TSINGLE
+| TDOMAIN
+| TINDEX
+;
+
+do_stmt:
+  TDO stmt      { $$ = { $2, true }; }
+| block_stmt    { $$ = { $1, false }; }
+;
+
+return_stmt:
+  TRETURN TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Return::build(BUILDER, LOC(@$), /*value*/ nullptr);
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| TRETURN opt_try_expr TSEMI
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Return::build(BUILDER, LOC(@$), toOwned($2));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+;
+
+deprecated_class_level_stmt:
+  class_level_stmt
+| TDEPRECATED STRINGLITERAL class_level_stmt
+{ $$ = TODOSTMT(@$); }
+| TDEPRECATED class_level_stmt
+{ $$ = TODOSTMT(@$); }
+;
+
+class_level_stmt:
+  TSEMI
+    {
+      $$ = STMT(@$, nullptr);
+    }
+| inner_class_level_stmt
+    {
+      // visibility should be default when inner_class_level_stmt is parsed
+      $$ = context->finishStmt($1);
+      context->visibility = Decl::DEFAULT_VISIBILITY;
+    }
+| TPUBLIC {context->noteDeclStartLoc(@1);
+           context->noteVisibility(Decl::PUBLIC);} inner_class_level_stmt
+    {
+      $$ = context->finishStmt($3);
+      context->visibility = Decl::DEFAULT_VISIBILITY;
+    }
+| TPRIVATE {context->noteDeclStartLoc(@1);
+            context->noteVisibility(Decl::PRIVATE);} inner_class_level_stmt
+    {
+      $$ = context->finishStmt($3);
+      context->visibility = Decl::DEFAULT_VISIBILITY;
+    }
+;
+
+inner_class_level_stmt:
+  fn_decl_stmt_complete
+| var_decl_stmt
+| enum_decl_stmt
+| type_alias_decl_stmt
+| class_decl_stmt
+| forwarding_decl_stmt
+| extern_export_decl_stmt
+;
+
+forwarding_decl_stmt:
+  forwarding_decl_start expr TSEMI
+    {
+      CommentsAndStmt cs = $1;
+      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
+      // TODO: save expr
+      $$ = cs;
+    }
+| forwarding_decl_start expr TEXCEPT except_ls TSEMI
+    {
+      CommentsAndStmt cs = $1;
+      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
+      // TODO: save expr and except_ls
+      $$ = cs;
+    }
+| forwarding_decl_start expr TONLY opt_only_ls TSEMI
+    {
+      CommentsAndStmt cs = $1;
+      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
+      // TODO: save expr and opt_only_ls
+      $$ = cs;
+    }
+| forwarding_decl_start var_decl_stmt
+    {
+      CommentsAndStmt cs = $1;
+      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
+      // TODO: save var_decl_stmt
+      $$ = cs;
+    }
+;
+
+forwarding_decl_start:
+  TFORWARDING
+    {
+      $$ = TODOSTMT(@$);
+    }
+;
+
+extern_or_export:
+  TEXTERN { $$ = LinkageTag_EXTERN; }
+| TEXPORT { $$ = LinkageTag_EXPORT; }
+;
+
+extern_export_decl_stmt_start:
+  extern_or_export
+    {
+      CommentsAndLinkage cl = {context->gatherComments(@1), $1};
+      $$ = cl;
+    }
+;
+
+extern_export_decl_stmt:
+  extern_export_decl_stmt_start TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      CommentsAndLinkage cl = $1;
+      //auto comments = context->gatherComments(@7);
+      // TODO: store comments into the generated list
+      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
+      $$ = cs;
+    }
+| extern_export_decl_stmt_start STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      CommentsAndLinkage cl = $1;
+      //auto comments = context->gatherComments(@8);
+      // TODO: store comments into the generated list
+      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
+      $$ = cs;
+    }
+
+| extern_export_decl_stmt_start TUNION ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      CommentsAndLinkage cl = $1;
+      //auto comments = context->gatherComments(@7);
+      // TODO: store comments into the generated list
+      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
+      $$ = cs;
+    }
+| extern_export_decl_stmt_start STRINGLITERAL TUNION ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      CommentsAndLinkage cl = $1;
+      //auto comments = context->gatherComments(@8);
+      // TODO: store comments into the generated list
+      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
+      $$ = cs;
+    }
+
+| extern_export_decl_stmt_start opt_expr fn_decl_stmt
+    {
+      CommentsAndLinkage cl = $1;
+      Expression* optExpr = $2;
+      FunctionParts fp = $3;
+      LinkageTag tag = cl.linkage;
+      if (tag == LinkageTag_EXTERN)
+        fp.linkage = Function::EXTERN;
+      else if (tag == LinkageTag_EXPORT)
+        fp.linkage = Function::EXPORT;
+      else
+        assert(false && "extern_export returned invalid linkage");
+
+      if (fp.comments)
+        delete fp.comments;
+      fp.comments = cl.comments;
+      fp.linkageNameExpr = optExpr;
+
+      $$ = context->buildFunctionDecl(@$, fp);
+    }
+
+| extern_export_decl_stmt_start opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
+    {
+      CommentsAndLinkage cl = $1;
+      context->clearComments();
+      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
+      $$ = cs;
+    }
+;
+
+extern_block_stmt:
+  TEXTERN EXTERNCODE
+    {
+      $$ = TODOSTMT(@$);
+    }
+;
+
+loop_stmt:
+  TDO stmt TWHILE expr TSEMI
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
+                               false, @1, $2);
+    // If the body is not a block, snag any comments before the 'while'.
+    if (blockStyle == BlockStyle::IMPLICIT) {
+      exprLst = context->appendList(exprLst, context->gatherComments(@3));
+    }
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = DoWhile::build(BUILDER, LOC(@$), blockStyle,
+                               std::move(stmts),
+                               toOwned($4));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| TWHILE expr do_stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @3, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = While::build(BUILDER, LOC(@1), toOwned($2),
+                             blockStyle,
+                             std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| TWHILE ifvar do_stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @3, $3);
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = While::build(BUILDER, LOC(@1), toOwned($2),
+                             blockStyle,
+                             std::move(stmts));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| TCOFORALL expr TIN expr opt_task_intent_ls do_stmt
+  {
+    $$ = context->buildCoforallLoopStmt(@1, @2, @6, $2, $4, $5, $6);
+  }
+| TCOFORALL expr TIN zippered_iterator opt_task_intent_ls do_stmt
+  {
+    $$ = context->buildCoforallLoopStmt(@1, @2, @6, $2, $4, $5, $6);
+  }
+| TCOFORALL expr opt_task_intent_ls do_stmt
+  {
+    $$ = context->buildCoforallLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
+  }
+| TFOR expr TIN expr do_stmt
+  {
+    $$ = context->buildForLoopStmt(@1, @2, @5, $2, $4, $5);
+  }
+| TFOR expr TIN zippered_iterator do_stmt
+  {
+    $$ = context->buildForLoopStmt(@1, @2, @5, $2, $4, $5);
+  }
+| TFOR expr do_stmt
+  {
+    $$ = context->buildForLoopStmt(@1, @1, @3, nullptr, $2, $3);
+  }
+| TFOR zippered_iterator do_stmt
+  {
+    $$ = context->buildForLoopStmt(@1, @1, @3, nullptr, $2, $3);
+  }
+| TFOR TPARAM ident_def TIN expr do_stmt
+  {
+    std::vector<ParserComment>* comments;
+    ParserExprList* exprLst;
+    BlockStyle blockStyle;
+    context->prepareStmtPieces(comments, exprLst, blockStyle, @1, @6, $6);
+    Expression* ident = context->buildIdent(@3, $3);
+    auto index = context->buildLoopIndexDecl(@3, toOwned(ident));
+    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto node = For::build(BUILDER, LOC(@1), std::move(index),
+                           toOwned($5),
+                           blockStyle,
+                           std::move(stmts),
+                           /*isExpressionLevel*/ false,
+                           /*isParam*/ true);
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
+| TFORALL expr TIN expr                                   do_stmt
+  {
+    $$ = context->buildForallLoopStmt(@1, @2, @5, $2, $4, nullptr, $5);
+  }
+| TFORALL expr TIN expr              forall_intent_clause do_stmt
+  {
+    $$ = context->buildForallLoopStmt(@1, @2, @6, $2, $4, $5, $6);
+  }
+| TFORALL expr TIN zippered_iterator                      do_stmt
+  {
+    $$ = context->buildForallLoopStmt(@1, @2, @5, $2, $4, nullptr, $5);
+  }
+| TFORALL expr TIN zippered_iterator forall_intent_clause do_stmt
+  {
+    $$ = context->buildForallLoopStmt(@1, @2, @6, $2, $4, $5, $6);
+  }
+| TFORALL          expr                                   do_stmt
+  {
+    $$ = context->buildForallLoopStmt(@1, @1, @3, nullptr, $2, nullptr, $3);
+  }
+| TFORALL          expr              forall_intent_clause do_stmt
+  {
+    $$ = context->buildForallLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
+  }
+| TFORALL          zippered_iterator                      do_stmt
+  {
+    $$ = context->buildForallLoopStmt(@1, @1, @3, nullptr, $2, nullptr, $3);
+  }
+| TFORALL          zippered_iterator forall_intent_clause do_stmt
+  {
+    $$ = context->buildForallLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
+  }
+| TFOREACH expr TIN expr                                   do_stmt
+  {
+    $$ = context->buildForeachLoopStmt(@1, @2, @5, $2, $4, nullptr, $5);
+  }
+| TFOREACH expr TIN expr              forall_intent_clause do_stmt
+  {
+    $$ = context->buildForeachLoopStmt(@1, @2, @6, $2, $4, $5, $6);
+  }
+| TFOREACH expr TIN zippered_iterator                      do_stmt
+  {
+    $$ = context->buildForeachLoopStmt(@1, @2, @5, $2, $4, nullptr, $5);
+  }
+| TFOREACH expr TIN zippered_iterator forall_intent_clause do_stmt
+  {
+    $$ = context->buildForeachLoopStmt(@1, @2, @6, $2, $4, $5, $6);
+  }
+| TFOREACH          expr                                   do_stmt
+  {
+    $$ = context->buildForeachLoopStmt(@1, @1, @3, nullptr, $2, nullptr, $3);
+  }
+| TFOREACH          expr              forall_intent_clause do_stmt
+  {
+    $$ = context->buildForeachLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
+  }
+| TFOREACH          zippered_iterator                      do_stmt
+  {
+    $$ = context->buildForeachLoopStmt(@1, @1, @3, nullptr, $2, nullptr, $3);
+  }
+| TFOREACH          zippered_iterator forall_intent_clause do_stmt
+  {
+    $$ = context->buildForeachLoopStmt(@1, @1, @4, nullptr, $2, $3, $4);
+  }
+| TLSBR expr_ls TIN expr TRSBR stmt
+  {
+    $$ = context->buildBracketLoopStmt(@1, @2, @5, $2, $4, nullptr, $6);
+  }
+| TLSBR expr_ls TIN expr forall_intent_clause TRSBR stmt
+  {
+    $$ = context->buildBracketLoopStmt(@1, @2, @6, $2, $4, $5, $7);
+  }
+| TLSBR expr_ls TIN zippered_iterator TRSBR stmt
+  {
+    $$ = context->buildBracketLoopStmt(@1, @2, @5, $2, $4, nullptr, $6);
+  }
+| TLSBR expr_ls TIN zippered_iterator forall_intent_clause TRSBR stmt
+  {
+    $$ = context->buildBracketLoopStmt(@1, @2, @6, $2, $4, $5, $7);
+  }
+| TLSBR expr_ls TRSBR stmt
+  {
+    $$ = context->buildBracketLoopStmt(@1, @2, @3, $2, nullptr, $4);
+  }
+| TLSBR expr_ls forall_intent_clause TRSBR stmt
+  {
+    $$ = context->buildBracketLoopStmt(@1, @2, @4, $2, $3, $5);
+  }
+| TLSBR zippered_iterator TRSBR stmt
+  {
+    auto iterExprs = context->makeList($2);
+    $$ = context->buildBracketLoopStmt(@1, @2, @3, iterExprs, nullptr, $4);
+  }
+| TLSBR zippered_iterator forall_intent_clause TRSBR stmt
+  {
+    auto iterExprs = context->makeList($2);
+    $$ = context->buildBracketLoopStmt(@1, @2, @4, iterExprs, $3, $5);
+  }
+;
+
+zippered_iterator:
+  TZIP TLP expr_ls TRP
+  {
+    auto exprs = context->consumeList($3);
+    auto node = Zip::build(BUILDER, LOC(@$), std::move(exprs));
+    $$ = node.release();
+  }
+;
+
+if_stmt:
+  TIF expr TTHEN stmt %prec TNOELSE
+  {
+    $$ = context->buildConditionalStmt(true, @1, @3, $2, $4);
+  }
+| TIF expr block_stmt %prec TNOELSE
+  {
+    $$ = context->buildConditionalStmt(false, @1, @3, $2, $3);
+  }
+| TIF expr TTHEN stmt TELSE stmt
+  {
+    $$ = context->buildConditionalStmt(true, @1, @3, @5, $2, $4, $6);
+  }
+| TIF expr block_stmt TELSE stmt
+  {
+    $$ = context->buildConditionalStmt(false, @1, @3, @4, $2, $3, $5);
+  }
+| TIF ifvar TTHEN stmt %prec TNOELSE
+  {
+    $$ = context->buildConditionalStmt(true, @1, @3, $2, $4);
+  }
+| TIF ifvar block_stmt %prec TNOELSE
+  {
+    $$ = context->buildConditionalStmt(false, @1, @3, $2, $3);
+  }
+| TIF ifvar TTHEN stmt TELSE stmt
+  {
+    $$ = context->buildConditionalStmt(true, @1, @3, @5, $2, $4, $6);
+  }
+| TIF ifvar block_stmt TELSE stmt
+  {
+    $$ = context->buildConditionalStmt(false, @1, @3, @4, $2, $3, $5);
+  }
+| TIF expr assignop_ident expr TTHEN stmt %prec TNOELSE
+  {
+    auto op = context->buildBinOp(@3, $2, $3, $4);
+    $$ = context->buildConditionalStmt(true, @1, @5, op, $6);
+  }
+| TIF expr assignop_ident expr block_stmt %prec TNOELSE
+  {
+    auto op = context->buildBinOp(@3, $2, $3, $4);
+    $$ = context->buildConditionalStmt(false, @1, @5, op, $5);
+  }
+| TIF expr assignop_ident expr TTHEN stmt TELSE stmt
+  {
+    auto op = context->buildBinOp(@3, $2, $3, $4);
+    $$ = context->buildConditionalStmt(true, @1, @5, @7, op, $6, $8);
+  }
+| TIF expr assignop_ident expr block_stmt TELSE stmt
+  {
+    auto op = context->buildBinOp(@3, $2, $3, $4);
+    $$ = context->buildConditionalStmt(false, @1, @5, @6, op, $5, $7);
+  }
+;
+
+ifvar:
+  TVAR   ident_def TASSIGN expr
+  {
+    auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
+                                   Decl::DEFAULT_VISIBILITY,
+                                   Variable::VAR,
+                                   context->currentScopeIsAggregate(),
+                                   /*typeExpression*/ nullptr,
+                                   toOwned($4));
+    $$ = varDecl.release();
+  }
+| TCONST ident_def TASSIGN expr
+  {
+    auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
+                                   Decl::DEFAULT_VISIBILITY,
+                                   Variable::CONST,
+                                   context->currentScopeIsAggregate(),
+                                   /*typeExpression*/ nullptr,
+                                   toOwned($4));
+    $$ = varDecl.release();
+  }
+;
+
+interface_stmt:
+  TINTERFACE ident_def TLP ifc_formal_ls TRP block_stmt
+    { $$ = TODOSTMT(@$); }
+| TINTERFACE ident_def                       block_stmt
+    { $$ = TODOSTMT(@$); }
+;
+
+ifc_formal_ls:
+  ifc_formal                      { $$ = context->makeList($1); }
+| ifc_formal_ls TCOMMA ifc_formal { context->appendList($1, $3); }
+;
+
+ifc_formal:
+  // implicitly 'type' intent, could specify explicitly - see #16966
+  ident_def  { $$ = TODOEXPR(@$); }
+;
+
+// which types are allowed in 'T implements IFC'
+implements_type_ident:
+  TIDENT
+| TBOOL
+| TINT
+| TUINT
+| TREAL
+| TIMAG
+| TCOMPLEX
+| TBYTES
+| TSTRING
+| TLOCALE
+| TNOTHING
+| TVOID
+| implements_type_error_ident
+  {
+    std::string s = "type ";
+    s += "'"; s += $1.c_str(); s += "'";
+    s += " not allowed to implement an interface";
+    context->noteError(@$, s);
+    $$ = $1;
+  }
+;
+
+// these are not allowed as types in 'T implements IFC'
+implements_type_error_ident:
+  TNONE
+| TTHIS
+| TFALSE
+| TTRUE
+/* it would be nice to include these, alas they cause shift/reduce conflicts:
+| TSYNC
+| TSINGLE
+| TOWNED
+| TSHARED
+| TBORROWED
+| TUNMANAGED
+*/
+| TDOMAIN
+| TINDEX
+;
+
+implements_stmt:
+  TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
+    { $$ = TODOSTMT(@$); }
+| implements_type_ident TIMPLEMENTS ident_def TSEMI
+    { $$ = TODOSTMT(@$); }
+| implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP TSEMI
+    { $$ = TODOSTMT(@$); }
+;
+
+ifc_constraint:
+  TIMPLEMENTS ident_def TLP actual_ls TRP
+    { $$ = TODOEXPR(@$); }
+| implements_type_ident TIMPLEMENTS ident_def
+    { $$ = TODOEXPR(@$); }
+| implements_type_ident TIMPLEMENTS ident_def TLP actual_ls TRP
+    { $$ = TODOEXPR(@$); }
+;
+
+try_stmt:
+  TTRY     expr            TSEMI
+    { $$ = TODOSTMT(@$); }
+| TTRYBANG expr            TSEMI
+    { $$ = TODOSTMT(@$); }
+| TTRY     assignment_stmt
+    { $$ = TODOSTMT(@$); }
+| TTRYBANG assignment_stmt
+    { $$ = TODOSTMT(@$); }
+| TTRY     block_stmt      catch_expr_ls
+    { $$ = TODOSTMT(@$); }
+| TTRYBANG block_stmt      catch_expr_ls
+    { $$ = TODOSTMT(@$); }
+;
+
+catch_expr_ls:
+                           { $$ = context->makeList(); }
+| catch_expr_ls catch_expr { context->appendList($1, $2); }
+;
+
+catch_expr:
+  TCATCH                          block_stmt { $$ = TODOEXPR(@$); }
+| TCATCH     catch_expr_inner     block_stmt { $$ = TODOEXPR(@$); }
+| TCATCH TLP catch_expr_inner TRP block_stmt { $$ = TODOEXPR(@$); }
+;
+
+catch_expr_inner:
+  ident_def             { $$ = TODOEXPR(@$); }
+| ident_def TCOLON expr { $$ = TODOEXPR(@$); }
+;
+
+throw_stmt:
+  TTHROW expr TSEMI
+    { $$ = TODOSTMT(@$); }
+
+select_stmt:
+  TSELECT expr TLCBR when_stmt_ls TRCBR
+    { $$ = TODOSTMT(@$); }
+| TSELECT expr TLCBR error TRCBR
+    { $$ = TODOSTMT(@$); }
+;
+
+when_stmt_ls:
+                          { $$ = context->makeList(); }
+| when_stmt_ls when_stmt  { context->appendList($1, $2); }
+;
+
+when_stmt:
+  TWHEN expr_ls do_stmt
+    { $$ = TODOEXPR(@$); }
+| TOTHERWISE stmt
+    { $$ = TODOEXPR(@$); }
+| TOTHERWISE TDO stmt
+    { $$ = TODOEXPR(@$); }
+;
+
+/** DECLARATION STATEMENTS ***************************************************/
+
+class_decl_stmt:
+  class_start opt_inherit TLCBR class_level_stmt_ls TRCBR
+    {
+      $$ = context->buildAggregateTypeDecl(@$, $1, @2, $2, @3, $4, @5);
+      context->exitScope($1.tag, $1.name);
+    }
+| class_start opt_inherit TLCBR error TRCBR
+    {
+      auto contents =
+        context->makeList(ErroneousExpression::build(BUILDER, LOC(@4)));
+      $$ = context->buildAggregateTypeDecl(@$, $1, @2, $2, @3, contents, @5);
+      context->exitScope($1.tag, $1.name);
+    }
+  /* see also extern_export_decl_stmt */
+;
+
+class_start:
+  class_tag ident_def
+    {
+      // take into account location of public/private, if any
+      auto loc = context->declStartLoc(@1);
+      context->enterScope($1, $2);
+
+      TypeDeclParts parts = {context->gatherComments(loc),
+                             context->visibility,
+                             $2,
+                             $1};
+      $$ = parts;
+
+      context->clearComments();
+    }
+;
+
+class_tag:
+  TCLASS   { $$ = asttags::Class; }
+| TRECORD  { $$ = asttags::Record; }
+| TUNION   { $$ = asttags::Union; }
+;
+
+opt_inherit:
+                  { $$ = nullptr; }
+| TCOLON expr_ls  { $$ = $2; }
+;
+
+class_level_stmt_ls:
+  /* nothing */
+    { $$ = context->makeList(); }
+| class_level_stmt_ls deprecated_class_level_stmt
+    { context->appendList($1, $2); }
+| class_level_stmt_ls pragma_ls deprecated_class_level_stmt
+    { context->appendList($1, TODOEXPR(@$)); }
+;
+
+enum_decl_stmt:
+  enum_header_lcbr enum_ls TRCBR
+    {
+      TypeDeclParts parts = $1;
+      ParserExprList* list = $2;
+      // get any comments after the last element but before the closing brace
+      context->appendList(list, context->gatherComments(@3));
+
+      auto decl = Enum::build(BUILDER, LOC(@$),
+                              parts.name, parts.visibility,
+                              context->consumeList(list));
+      CommentsAndStmt cs = {parts.comments, decl.release()};
+      $$ = cs;
+      context->exitScope(asttags::Enum, parts.name);
+      context->resetDeclState();
+      context->clearComments();
+    }
+| enum_header_lcbr error TRCBR
+    {
+      TypeDeclParts parts = $1;
+      auto err = ErroneousExpression::build(BUILDER, LOC(@2));
+      CommentsAndStmt cs = {parts.comments, err.release()};
+      $$ = cs;
+      context->exitScope(asttags::Enum, parts.name);
+      context->resetDeclState();
+      context->clearComments();
+    }
+;
+
+enum_header_lcbr:
+  TENUM ident_def TLCBR
+    {
+      // take into account location of public/private, if any
+      auto loc = context->declStartLoc(@1);
+      context->enterScope(asttags::Enum, $2);
+
+      TypeDeclParts parts = {context->gatherComments(loc),
+                             context->visibility,
+                             $2,
+                             asttags::Enum};
+      $$ = parts;
+
+      context->clearComments();
+    }
+;
+
+enum_ls:
+  deprecated_enum_item
+    {
+      $$ = context->makeList($1);
+    }
+| enum_ls TCOMMA
+    {
+      $$ = $1;
+      context->clearCommentsBefore(@2);
+    }
+| enum_ls TCOMMA {context->clearCommentsBefore(@2);} deprecated_enum_item
+    {
+      context->appendList($1, $4);
+    }
+;
+
+deprecated_enum_item:
+  enum_item
+| TDEPRECATED STRINGLITERAL enum_item
+{ $$ = TODOSTMT(@$); }
+| TDEPRECATED enum_item
+{ $$ = TODOSTMT(@$); }
+;
+
+enum_item:
+  ident_def
+    {
+      auto decl = EnumElement::build(BUILDER, LOC(@$), $1);
+      $$ = STMT(@$, decl.release());
+    }
+| ident_def TASSIGN expr
+    {
+      auto decl = EnumElement::build(BUILDER, LOC(@$), $1, toOwned($3));
+      $$ = STMT(@$, decl.release());
+      context->clearCommentsBefore(@3);
+    }
+;
+
+lambda_decl_expr:
+  TLAMBDA req_formal_ls opt_ret_tag opt_type opt_lifetime_where function_body_stmt
+    {
+      $$ = TODOEXPR(@$);
+    }
+;
+
+linkage_spec_empty:
+;
+
+linkage_spec:
+  linkage_spec_empty { $$ = context->makeFunctionParts(false, false); }
+| TINLINE            { context->noteDeclStartLoc(@1);
+                       $$ = context->makeFunctionParts(true, false); }
+| TOVERRIDE          { context->noteDeclStartLoc(@1);
+                       $$ = context->makeFunctionParts(false, true); }
+;
+
+fn_decl_stmt_complete:
+  fn_decl_stmt
+    {
+      $$ = context->buildFunctionDecl(@$, $1);
+    }
+;
+
+fn_decl_stmt:
+  fn_decl_stmt_inner
+  opt_ret_tag opt_ret_type
+  opt_throws_error opt_lifetime_where
+    {
+      context->clearComments();
+      context->enterScope(asttags::Function, $1.name);
+    }
+  opt_function_body_stmt
+    {
+      FunctionParts fp = $1;
+      fp.returnIntent = $2;
+      fp.returnType = $3;
+      fp.throws = ($4 == ThrowsTag_THROWS) ? true : false;
+      WhereAndLifetime wl = $5;
+      fp.body = $7;
+
+      fp.lifetime = wl.lifetime;
+      fp.where = wl.where;
+
+      context->clearComments();
+      context->exitScope(asttags::Function, $1.name);
+
+      $$ = fp;
+    }
+;
+
+fn_decl_stmt_inner:
+  fn_decl_stmt_start opt_this_intent_tag fn_ident opt_formal_ls
+    {
+      FunctionParts fp = $1;
+      fp.thisIntent = $2;
+      fp.name = $3;
+      fp.formals = $4;
+      $$ = fp;
+    }
+| fn_decl_stmt_start opt_this_intent_tag assignop_ident opt_formal_ls
+    {
+      FunctionParts fp = $1;
+      fp.thisIntent = $2;
+      fp.name = $3;
+      fp.formals = $4;
+      $$ = fp;
+    }
+| fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT fn_ident opt_formal_ls
+    {
+      FunctionParts fp = $1;
+      fp.thisIntent = $2;
+      fp.receiver = Formal::build(BUILDER, LOC(@3),
+                                  STR("this"), $2, toOwned($3),
+                                  nullptr).release();
+      fp.name = $5;
+      fp.formals = $6;
+      $$ = fp;
+    }
+| fn_decl_stmt_start opt_this_intent_tag fn_decl_receiver_expr TDOT assignop_ident opt_formal_ls
+    {
+      FunctionParts fp = $1;
+      fp.thisIntent = $2;
+      fp.receiver = Formal::build(BUILDER, LOC(@3),
+                                  STR("this"), $2, toOwned($3),
+                                  nullptr).release();
+      fp.name = $5;
+      fp.formals = $6;
+      $$ = fp;
+    }
+| fn_decl_stmt_start opt_this_intent_tag error opt_formal_ls
+    {
+      FunctionParts fp = $1;
+      fp.errorExpr = ErroneousExpression::build(BUILDER, LOC(@$)).release();
+      $$ = fp;
+    }
+;
+
+fn_decl_stmt_start:
+  linkage_spec proc_iter_or_op
+    {
+      FunctionParts fp = $1;
+      auto loc = context->declStartLoc(@2);
+      fp.comments = context->gatherComments(loc);
+      fp.kind = $2;
+      $$ = fp;
+    }
+;
+
+fn_decl_receiver_expr:
+  ident_expr
+| TLP expr TRP        { $$ = $2; }
+;
+
+fn_ident:
+  ident_fn_def
+| TBAND
+| TBOR
+| TBXOR
+| TBNOT
+| TEQUAL
+| TNOTEQUAL
+| TLESSEQUAL
+| TGREATEREQUAL
+| TLESS
+| TGREATER
+| TPLUS
+| TMINUS
+| TSTAR
+| TDIVIDE
+| TSHIFTLEFT
+| TSHIFTRIGHT
+| TMOD
+| TEXP
+| TBANG
+| TBY
+| THASH
+| TALIGN
+| TSWAP
+| TIO
+| TINITEQUALS
+| TCOLON
+| ident_def TBANG
+  {
+    std::string s = $1.c_str();
+    s += "!";
+    $$ = STR(s.c_str());
+  }
+;
+
+assignop_ident:
+  TASSIGN
+| TASSIGNPLUS
+| TASSIGNMINUS
+| TASSIGNMULTIPLY
+| TASSIGNDIVIDE
+| TASSIGNMOD
+| TASSIGNEXP
+| TASSIGNBAND
+| TASSIGNBOR
+| TASSIGNBXOR
+| TASSIGNSR
+| TASSIGNSL
+;
+
+opt_formal_ls:
+                     { $$ = nullptr; /* TODO: mark as no-parens */ }
+| TLP formal_ls TRP  { $$ = $2; }
+;
+
+req_formal_ls:
+  TLP formal_ls TRP  { $$ = $2; }
+;
+
+formal_ls_inner:
+  formal                         { $$ = context->makeList($1); }
+| formal_ls_inner TCOMMA formal  { $$ = context->appendList($1, $3); }
+;
+
+formal_ls:
+                           { $$ = context->makeList(); }
+| formal_ls_inner          { $$ = $1; }
+;
+
+formal:
+  opt_intent_tag ident_def opt_formal_type opt_init_expr
+    { $$ = Formal::build(BUILDER, LOC(@$), $2, $1,
+                         toOwned($3), toOwned($4)).release(); }
+| pragma_ls opt_intent_tag ident_def opt_formal_type opt_init_expr
+    { $$ = TODOEXPR(@$); }
+| opt_intent_tag ident_def opt_formal_type var_arg_expr
+    { $$ = TODOEXPR(@$); }
+| pragma_ls opt_intent_tag ident_def opt_formal_type var_arg_expr
+    { $$ = TODOEXPR(@$); }
+| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
+    { $$ = TODOEXPR(@$); }
+| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr
+    {
+      $$ = ERROR(@$, "variable-length argument may not be grouped in a tuple");
+    }
+;
+
+opt_intent_tag:
+                      { $$ = Formal::DEFAULT_INTENT; }
+| required_intent_tag { $$ = $1; }
+;
+
+required_intent_tag:
+  TIN         { $$ = Formal::IN; }
+| TINOUT      { $$ = Formal::INOUT; }
+| TOUT        { $$ = Formal::OUT; }
+| TCONST TIN  { $$ = Formal::CONST_IN; }
+| TCONST TREF { $$ = Formal::CONST_REF; }
+| TCONST      { $$ = Formal::CONST; }
+| TPARAM      { $$ = Formal::PARAM; }
+| TREF        { $$ = Formal::REF; }
+| TTYPE       { $$ = Formal::TYPE; }
+;
+
+opt_this_intent_tag:
+                { $$ = Formal::DEFAULT_INTENT; }
+| TPARAM        { $$ = Formal::PARAM; }
+| TREF          { $$ = Formal::REF; }
+| TCONST TREF   { $$ = Formal::CONST_REF; }
+| TCONST        { $$ = Formal::CONST; }
+| TTYPE         { $$ = Formal::TYPE; }
+;
+
+proc_iter_or_op:
+  TPROC     { $$ = Function::PROC; }
+| TITER     { $$ = Function::ITER; }
+| TOPERATOR { $$ = Function::OPERATOR; }
+;
+
+opt_ret_tag:
+              { $$ = Function::DEFAULT_RETURN_INTENT; }
+| TCONST      { $$ = Function::CONST; }
+| TCONST TREF { $$ = Function::CONST_REF; }
+| TREF        { $$ = Function::REF; }
+| TPARAM      { $$ = Function::PARAM; }
+| TTYPE       { $$ = Function::TYPE; }
+;
+
+opt_throws_error:
+          { $$ = ThrowsTag_DEFAULT; }
+| TTHROWS { $$ = ThrowsTag_THROWS; }
+
+opt_function_body_stmt:
+  TSEMI               { context->clearComments(); $$ = nullptr; }
+| function_body_stmt  { $$ = $1; }
+;
+
+function_body_stmt:
+  block_stmt_body   { $$ = $1; }
+| return_stmt       { context->clearComments(); $$ = context->makeList($1); }
+;
+
+query_expr:
+  TQUERIEDIDENT       { $$ = TODOEXPR(@$); }
+;
+
+var_arg_expr:
+  TDOTDOTDOT             { $$ = TODOEXPR(@$); }
+| TDOTDOTDOT expr        { $$ = $2; }
+| TDOTDOTDOT query_expr  { $$ = TODOEXPR(@$); }
+;
+
+opt_lifetime_where:
+  { $$ = makeWhereAndLifetime(nullptr, nullptr); }
+| TWHERE expr
+  { $$ = makeWhereAndLifetime($2, nullptr); }
+| TLIFETIME lifetime_components_expr
+  { $$ = makeWhereAndLifetime(nullptr, $2); }
+| TWHERE expr TLIFETIME lifetime_components_expr
+  { $$ = makeWhereAndLifetime($2, $4); }
+| TLIFETIME lifetime_components_expr TWHERE expr
+  { $$ = makeWhereAndLifetime($4, $2); }
+;
+
+lifetime_components_expr:
+  lifetime_expr
+  { $$ = context->makeList($1); }
+| lifetime_components_expr TCOMMA lifetime_expr
+  { $$ = context->appendList($1, $3); }
+;
+
+lifetime_expr:
+  lifetime_ident TASSIGN      lifetime_ident
+    { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| lifetime_ident TLESS        lifetime_ident
+    { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| lifetime_ident TLESSEQUAL   lifetime_ident
+    { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| lifetime_ident TEQUAL       lifetime_ident
+    { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| lifetime_ident TGREATER     lifetime_ident
+    { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| lifetime_ident TGREATEREQUAL lifetime_ident
+    { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| TRETURN lifetime_ident
+    { $$ = TODOEXPR(@$); }
+;
+
+lifetime_ident:
+  TIDENT { $$ = context->buildIdent(@1, $1); }
+| TTHIS  { $$ = context->buildIdent(@1, $1); }
+;
+
+type_alias_decl_stmt:
+  type_alias_decl_stmt_start type_alias_decl_stmt_inner TSEMI
+    {
+      $$ = context->finishStmt($1); // TODO
+    }
+;
+
+type_alias_decl_stmt_start:
+  TTYPE
+    {
+      $$ = TODOSTMT(@$);
+    }
+| TCONFIG TTYPE
+    {
+      $$ = TODOSTMT(@$);
+    }
+
+| TEXTERN TTYPE
+    {
+      $$ = TODOSTMT(@$);
+    }
+;
+
+
+type_alias_decl_stmt_inner:
+  ident_def opt_init_type
+    {
+      // set name to $1
+      $$ = TODOEXPR(@$);
+    }
+| ident_def opt_init_type TCOMMA type_alias_decl_stmt_inner
+    {
+      // set name to $1
+      // add new var to multivar
+      $$ = TODOEXPR(@$);
+    }
+;
+
+opt_init_type:
+    { $$ = nullptr; }
+| TASSIGN type_level_expr
+    { $$ = $2; }
+| TASSIGN array_type
+    { $$ = TODOEXPR(@$); } // Cannot be a type_level_expr as expr inherits from type_level_expr.
+;
+
+var_decl_type:
+  TPARAM      { $$ = context->noteVarDeclKind(Variable::PARAM); }
+| TCONST TREF { $$ = context->noteVarDeclKind(Variable::CONST_REF); }
+| TREF        { $$ = context->noteVarDeclKind(Variable::REF); }
+| TCONST      { $$ = context->noteVarDeclKind(Variable::CONST); }
+| TVAR        { $$ = context->noteVarDeclKind(Variable::VAR); }
+;
+
+var_decl_stmt:
+  TCONFIG var_decl_type var_decl_stmt_inner_ls TSEMI
+    {
+      $$ = TODOSTMT(@$);
+      context->resetDeclState();
+    }
+| var_decl_type var_decl_stmt_inner_ls TSEMI
+    {
+      ParserExprList* lst = $2;
+      int nDecls = 0;
+      Decl* lastDecl = nullptr;
+      for (auto elt : *lst) {
+        if (Decl* d = elt->toDecl()) {
+          lastDecl = d;
+          nDecls++;
+        }
+      }
+      assert(nDecls > 0);
+      assert(lastDecl);
+      if (nDecls == 1) {
+        // gather any comments from before the 'var'
+        // intentionally ignores comments after 'var'
+        CommentsAndStmt cs = {context->gatherCommentsFromList(lst, @1),
+                              lastDecl};
+        $$ = cs;
+        // delete any comments left in lst
+        for (auto elt : *lst) {
+          if (elt->isComment()) {
+            delete elt;
+          }
+        }
+        // delete the list
+        delete lst;
+      } else {
+        // gather any comments from before the 'var'
+        CommentsAndStmt cs = {context->gatherCommentsFromList(lst, @1),
+                              nullptr};
+        auto multi = MultiDecl::build(BUILDER, LOC(@$), context->visibility,
+                                      context->consumeList(lst));
+        cs.stmt = multi.release();
+        $$ = cs;
+      }
+      context->resetDeclState();
+    }
+;
+
+var_decl_stmt_inner_ls:
+  var_decl_stmt_inner
+    {
+      $$ = context->makeList($1);
+    }
+| var_decl_stmt_inner_ls TCOMMA var_decl_stmt_inner
+    {
+      $$ = context->appendList($1, $3);
+    }
+;
+
+var_decl_stmt_inner:
+  ident_def opt_type opt_init_expr
+    {
+      auto varDecl = Variable::build(BUILDER, LOC(@$),
+                                     $1, context->visibility,
+                                     context->varDeclKind,
+                                     context->currentScopeIsAggregate(),
+                                     toOwned($2), toOwned($3));
+      // gather the comments like a statement does
+      $$ = STMT(@1, varDecl.release());
+      context->clearComments();
+    }
+| TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
+    {
+      auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
+                                        context->visibility,
+                                        context->varDeclKind,
+                                        context->consumeList($2),
+                                        toOwned($4), toOwned($5));
+      $$ = STMT(@1, tupleDecl.release());
+      context->clearComments();
+    }
+;
+
+tuple_var_decl_component:
+  TUNDERSCORE
+    {
+      auto varDecl = Variable::build(BUILDER, LOC(@$),
+                                     $1, context->visibility,
+                                     context->varDeclKind,
+                                     context->currentScopeIsAggregate(),
+                                     nullptr, nullptr);
+      $$ = varDecl.release();
+    }
+
+| ident_def
+    {
+      auto varDecl = Variable::build(BUILDER, LOC(@$),
+                                     $1, context->visibility,
+                                     context->varDeclKind,
+                                     context->currentScopeIsAggregate(),
+                                     nullptr, nullptr);
+      $$ = varDecl.release();
+    }
+
+| TLP tuple_var_decl_stmt_inner_ls TRP
+    {
+      auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
+                                        context->visibility,
+                                        context->varDeclKind,
+                                        context->consumeList($2),
+                                        nullptr, nullptr);
+      $$ = tupleDecl.release();
+    }
+;
+
+tuple_var_decl_stmt_inner_ls:
+  tuple_var_decl_component
+    { $$ = context->makeList($1); }
+| tuple_var_decl_stmt_inner_ls TCOMMA
+    { $$ = $1; }
+| tuple_var_decl_stmt_inner_ls TCOMMA tuple_var_decl_component
+    { $$ = context->appendList($1, $3); }
+;
+
+/** TYPES ********************************************************************/
+
+opt_init_expr:
+                        { $$ = nullptr; }
+| TASSIGN TNOINIT       { $$ = TODOEXPR(@$); }
+| TASSIGN opt_try_expr  { $$ = $2; }
+;
+
+
+ret_array_type:
+  TLSBR TRSBR type_level_expr
+    {
+      $$ = TODOEXPR(@$);
+    }
+| TLSBR TRSBR
+    {
+      $$ = TODOEXPR(@$);
+    }
+| TLSBR expr_ls TRSBR type_level_expr
+    {
+      $$ = TODOEXPR(@$);
+    }
+| TLSBR expr_ls TRSBR
+    {
+      $$ = TODOEXPR(@$);
+    }
+| TLSBR TRSBR ret_array_type
+    {
+      $$ = TODOEXPR(@$);
+    }
+| TLSBR expr_ls TRSBR ret_array_type
+    {
+      $$ = TODOEXPR(@$);
+    }
+| TLSBR error TRSBR
+    {
+      $$ = TODOEXPR(@$);
+    }
+;
+
+opt_ret_type:
+                                 { $$ = nullptr; }
+| TCOLON type_level_expr         { $$ = $2; }
+| TCOLON ret_array_type          { $$ = $2; }
+| TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
+| error                          { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
+;
+
+
+opt_type:
+                                 { $$ = nullptr; }
+| TCOLON type_level_expr         { $$ = $2; }
+| TCOLON array_type              { $$ = $2; }
+| TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
+| error                          { $$ = ErroneousExpression::build(BUILDER, LOC(@1)).release(); }
+;
+
+/* NOTE: Some things about the following rule concern me (blc), but I
+   don't have the time to fix them now, so am noting them for the
+   future when someone runs into them:
+
+   (1) there are 3 cases rather than the 4 I would expect based on symmetry
+       ('in' vs. not x 'type_level_expr' vs. 'array_type')
+
+   (2) it seems strange to me that the thing being iterated over is an
+       'expr_ls' in the first two cases, but an 'expr' in the third
+
+   (3) it also seems strange that the stuff preceding TIN would be an
+       'expr_ls' rather than something simpler, like a nested
+       parenthesization of identifiers; perhaps this is to support the
+       establishment of an explicit type declaration, though I thought we
+       didn't support that yet
+*/
+array_type:
+  TLSBR expr_ls TRSBR type_level_expr
+    {
+      $$ = TODOEXPR(@$);
+    }
+| TLSBR expr_ls TRSBR array_type
+    {
+      $$ = TODOEXPR(@$);
+    }
+| TLSBR expr_ls TIN expr TRSBR type_level_expr
+    {
+      $$ = TODOEXPR(@$);
+    }
+| TLSBR error TRSBR
+    {
+      $$ = ErroneousExpression::build(BUILDER, LOC(@2)).release();
+    }
+;
+
+opt_formal_array_elt_type:
+                        { $$ = nullptr; }
+| type_level_expr       { $$ = $1; }
+| query_expr            { $$ = $1; }
+;
+
+formal_array_type:
+  TLSBR TRSBR opt_formal_array_elt_type
+    { $$ = TODOEXPR(@$); }
+| TLSBR expr_ls TRSBR opt_formal_array_elt_type
+    { $$ = TODOEXPR(@$); }
+
+// Johnk: Unclear to me what the type should be when [<range>][] <type> is encountered.
+//        At present buildArrayRuntimeType is undefined when gNil is passed and
+//        the second argument is a formal_array_type.
+| TLSBR TRSBR formal_array_type
+    { $$ = TODOEXPR(@$); }
+| TLSBR expr_ls TRSBR formal_array_type
+    { $$ = TODOEXPR(@$); }
+| TLSBR expr_ls TIN expr TRSBR opt_formal_array_elt_type
+    { $$ = TODOEXPR(@$); }
+;
+
+opt_formal_type:
+                                 { $$ = nullptr; }
+| TCOLON type_level_expr         { $$ = $2; }
+| TCOLON query_expr              { $$ = $2; }
+| TCOLON reserved_type_ident_use { $$ = context->buildIdent(@2, $2); }
+| TCOLON formal_array_type       { $$ = $2; }
+;
+
+/** EXPRESSIONS **************************************************************/
+
+expr_ls:
+  expr                       { $$ = context->makeList($1); }
+| query_expr                 { $$ = context->makeList($1); }
+| expr_ls TCOMMA expr        { $$ = context->appendList($1, $3); }
+| expr_ls TCOMMA query_expr  { $$ = context->appendList($1, $3); }
+;
+
+simple_expr_ls:
+  expr                             { $$ = context->makeList($1); }
+| simple_expr_ls TCOMMA expr       { $$ = context->appendList($1, $3); }
+;
+
+tuple_component:
+  TUNDERSCORE   { $$ = context->buildIdent(@1, $1); }
+| opt_try_expr  { $$ = $1; }
+| query_expr    { $$ = $1; }
+;
+
+tuple_expr_ls:
+  tuple_component TCOMMA tuple_component { $$ = TODOLIST(@$); }
+| tuple_expr_ls TCOMMA tuple_component   { $$ = TODOLIST(@$); }
+;
+
+opt_actual_ls:
+             { $$ = new MaybeNamedActualList(); }
+| actual_ls  { $$ = $1; }
+;
+
+actual_ls:
+  actual_expr
+    { MaybeNamedActualList* lst = new MaybeNamedActualList();
+      lst->push_back($1);
+      $$ = lst;
+    }
+| actual_ls TCOMMA actual_expr
+    {
+      MaybeNamedActualList* lst = $1;
+      lst->push_back($3);
+      $$ = lst;
+    }
+;
+
+actual_expr:
+  ident_use TASSIGN query_expr   { $$ = makeMaybeNamedActual($3, $1); }
+| ident_use TASSIGN opt_try_expr { $$ = makeMaybeNamedActual($3, $1); }
+| query_expr                     { $$ = makeMaybeNamedActual($1); }
+| opt_try_expr                   { $$ = makeMaybeNamedActual($1); }
+;
+
+ident_expr:
+  ident_use      { $$ = context->buildIdent(@1, $1); }
+| scalar_type    { $$ = $1; }
+;
+
+/* Expressions which represent types.  type_level_exprs can appear within formal
+ * function parameter specifications as well as part of variable declarations.
+
+   NOTE: Array type expressions do not appear in this production as array type
+   specifications are different for formal array parameters and variable arrays.
+   As such, array type expressions are individually defined for formal array
+   parameters and variables. */
+type_level_expr:
+  sub_type_level_expr %prec TNOELSE
+    { $$ = $1; }
+| sub_type_level_expr TQUESTION %prec TQUESTION
+    { $$ = TODOEXPR(@$); }
+| TQUESTION
+    { $$ = TODOEXPR(@$); }
+;
+
+// TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?' would not work.
+sub_type_level_expr:
+  nil_expr
+| lhs_expr                  // var b: a.type || (?,?) || foo()
+| cond_expr                 // type b = if b then uint else int
+| unary_op_expr             // We allow binary exprs as types...why not unary?
+| binary_op_expr            // tuples, expr dmapped expr, overloaded binary ops
+| TSINGLE expr
+    { $$ = TODOEXPR(@$); }
+| TINDEX TLP opt_actual_ls TRP
+    { $$ = TODOEXPR(@$); }
+| TDOMAIN TLP opt_actual_ls TRP
+    { $$ = TODOEXPR(@$); }
+| TSUBDOMAIN TLP opt_actual_ls TRP
+    { $$ = TODOEXPR(@$); }
+| TSPARSE TSUBDOMAIN TLP actual_expr TRP
+    { $$ = TODOEXPR(@$); }
+| TATOMIC expr
+    { $$ = TODOEXPR(@$); }
+| TSYNC expr
+    { $$ = TODOEXPR(@$); }
+
+| TOWNED
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
+| TOWNED expr
+    { $$ = TODOEXPR(@$); }
+| TUNMANAGED
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
+| TUNMANAGED expr
+    { $$ = TODOEXPR(@$); }
+| TSHARED
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
+| TSHARED expr
+    { $$ = TODOEXPR(@$); }
+| TBORROWED
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
+| TBORROWED expr
+    { $$ = TODOEXPR(@$); }
+
+| TCLASS
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
+| TRECORD
+    { $$ = Identifier::build(BUILDER, LOC(@1), $1).release(); }
+;
+
+for_expr:
+  TFOR expr TIN expr TDO expr %prec TFOR
+    { $$ = TODOEXPR(@$); }
+| TFOR expr TIN zippered_iterator TDO expr %prec TFOR
+    { $$ = TODOEXPR(@$); }
+| TFOR expr TDO expr %prec TFOR
+    { $$ = TODOEXPR(@$); }
+| TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
+    { $$ = TODOEXPR(@$); }
+| TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
+    { $$ = TODOEXPR(@$); }
+| TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
+    { $$ = TODOEXPR(@$); }
+| TFORALL expr TIN expr TDO expr %prec TFOR
+    { $$ = TODOEXPR(@$); }
+| TFORALL expr TIN zippered_iterator TDO expr %prec TFOR
+    { $$ = TODOEXPR(@$); }
+| TFORALL expr TDO expr %prec TFOR
+    { $$ = TODOEXPR(@$); }
+| TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
+    { $$ = TODOEXPR(@$); }
+| TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
+    { $$ = TODOEXPR(@$); }
+| TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
+    { $$ = TODOEXPR(@$); }
+| TLSBR expr_ls TRSBR expr %prec TFOR
+    { $$ = TODOEXPR(@$); }
+| TLSBR expr_ls TIN expr TRSBR expr %prec TFOR
+    { $$ = TODOEXPR(@$); }
+| TLSBR expr_ls TIN zippered_iterator TRSBR expr %prec TFOR
+    { $$ = TODOEXPR(@$); }
+| TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
+    { $$ = TODOEXPR(@$); }
+| TLSBR expr_ls TIN zippered_iterator TRSBR TIF expr TTHEN expr %prec TNOELSE
+    { $$ = TODOEXPR(@$); }
+;
+
+cond_expr:
+  TIF expr TTHEN expr TELSE expr
+    { $$ = TODOEXPR(@$); }
+/* MPF: it would be nice to match TIF expr TTHEN expr but
+   the attempt below leads to reduce-reduce conflicts:
+      TIF expr TTHEN expr %prec TNOELSE
+   with for_expr.
+ */
+;
+
+nil_expr:
+  TNIL      { $$ = context->buildIdent(@1, $1); }
+;
+
+/* Expressions permitted at the statement level as <stmt_level_expr> TSEMI.
+   Keeping stmt_level_expr from appearing in any other expression productions
+   was done intentionally to allow for easier promotion/demotion of expressions
+   to the statement level. */
+stmt_level_expr:
+  nil_expr
+| ident_expr
+| dot_expr
+| call_expr
+| lambda_decl_expr
+| new_expr
+| let_expr
+| io_expr TIO expr
+    { $$ = TODOEXPR(@$); }
+;
+
+opt_task_intent_ls:
+                                { $$ = nullptr; }
+| task_intent_clause            { $$ = $1; }
+;
+
+task_intent_clause:
+  TWITH TLP task_intent_ls TRP
+  {
+    auto exprs = context->consumeList($3);
+    auto node = WithClause::build(BUILDER, LOC(@$), std::move(exprs));
+    $$ = node.release();
+  }
+;
+
+task_intent_ls:
+  intent_expr                         { $$ = context->makeList($1); }
+| task_intent_ls TCOMMA intent_expr   { $$ = context->appendList($1, $3); }
+;
+
+forall_intent_clause:
+  TWITH TLP forall_intent_ls TRP
+  {
+    auto exprs = context->consumeList($3);
+    auto node = WithClause::build(BUILDER, LOC(@$), std::move(exprs));
+    $$ = node.release();
+  }
+;
+
+forall_intent_ls:
+  intent_expr                          { $$ = context->makeList($1); }
+| forall_intent_ls TCOMMA intent_expr  { $$ = context->appendList($1, $3); }
+;
+
+intent_expr:
+  task_var_prefix ident_expr opt_type opt_init_expr
+  {
+    if (auto ident = $2->toIdentifier()) {
+      auto name = ident->name();
+      auto node = TaskVar::build(BUILDER, LOC(@$), name, $1,
+                                        toOwned($3),
+                                        toOwned($4));
+      $$ = node.release();
+    } else {
+      const char* msg = "Expected identifier for task variable name";
+      $$ = context->raiseError(@$, msg);
+    }
+  }
+| reduce_scan_op_expr TREDUCE ident_expr
+    {
+      $$ = TODOEXPR(@$);
+    }
+| expr                TREDUCE ident_expr
+    {
+      $$ = TODOEXPR(@$);
+    }
+;
+
+task_var_prefix:
+  TCONST       { $$ = TaskVar::CONST;     }
+| TIN          { $$ = TaskVar::IN;        }
+| TCONST TIN   { $$ = TaskVar::CONST_IN;  }
+| TREF         { $$ = TaskVar::REF;       }
+| TCONST TREF  { $$ = TaskVar::CONST_REF; }
+| TVAR         { $$ = TaskVar::VAR;       }
+;
+
+io_expr:
+  lhs_expr
+| io_expr TIO expr
+    { $$ = TODOEXPR(@$); }
+;
+
+new_maybe_decorated:
+  TNEW         %prec TNOELSE
+    { $$ = New::DEFAULT_MANAGEMENT; }
+| TNEW TOWNED
+    { $$ = New::OWNED; }
+| TNEW TSHARED
+    { $$ = New::SHARED; }
+| TNEW TUNMANAGED
+    { $$ = New::UNMANAGED; }
+| TNEW TBORROWED
+    { $$ = New::BORROWED; }
+;
+
+new_expr:
+  /* Handles the typical new cases, e.g. new C(); new owned C() */
+  new_maybe_decorated expr %prec TNEW
+  {
+    if (FnCall* fnCall = $2->toFnCall()) {
+      $$ = context->wrapCalledExpressionInNew(@$, $1, fnCall);
+    } else {
+
+      // It's an error for one reason or another. TODO: Specialize these
+      // errors later (e.g. 'new a.field' would require parens around
+      // the expression 'a.field'; 'new foo' would require an argument
+      // list for 'foo'; and something like 'new __primitive()' just
+      // doesn't make any sense...
+      $$ = context->raiseError(@$, "Invalid form for new expression");
+    }
+  }
+  /* TODO: handles e.g. new (typefn())(initargs) */
+  /* TODO TODO: Flag these with asserts in the old compiler parser and
+                see if we can remove them. */
+| TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
+  {
+    $$ = TODOEXPR(@$);
+  }
+| TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP %prec TNOELSE
+  {
+    $$ = TODOEXPR(@$);
+  }
+| TNEW TOWNED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
+  {
+    $$ = TODOEXPR(@$);
+  }
+| TNEW TSHARED TLP expr TRP TLP opt_actual_ls TRP TQUESTION
+  {
+    $$ = TODOEXPR(@$);
+  }
+;
+
+let_expr:
+  TLET var_decl_stmt_inner_ls TIN expr
+    { $$ = TODOEXPR(@$); }
+;
+
+/* exprs represent valid values and types. Any expression with a valid
+   type also has a valid value as types can appear on the rhs during
+   type-aliasing.  Hence, type_level_expr must be a subset of expr. */
+expr:
+  literal_expr
+| type_level_expr
+| for_expr
+| reduce_expr
+| scan_expr
+| lambda_decl_expr
+| new_expr
+| let_expr
+| ifc_constraint
+| TLP TDOTDOTDOT expr TRP
+    { $$ = TODOEXPR(@$); }
+| expr TCOLON expr
+    { $$ = TODOEXPR(@$); }
+| expr TDOTDOT expr
+    { $$ = TODOEXPR(@$); }
+| expr TDOTDOTOPENHIGH expr
+    { $$ = TODOEXPR(@$); }
+| expr TDOTDOT
+    { $$ = TODOEXPR(@$); }
+| TDOTDOT expr
+    { $$ = TODOEXPR(@$); }
+| TDOTDOTOPENHIGH expr
+    { $$ = TODOEXPR(@$); }
+| TDOTDOT
+    { $$ = TODOEXPR(@$); }
+
+/* The following cases would extend the current '..<' open range
+   interval constructor to also support '<..' and '<..<'.  This
+   concept didn't win enough support to merge as present, but are here
+   in case we change our minds in a future release.
+
+| expr TDOTDOTOPENLOW expr
+    { $$ = TODOEXPR(@$); }
+| expr TDOTDOTOPENBOTH expr
+    { $$ = TODOEXPR(@$); }
+| expr TDOTDOTOPENLOW
+    { $$ = TODOEXPR(@$); }
+*/
+
+;
+
+opt_expr:
+                  { $$ = nullptr; }
+| expr            { $$ = $1; }
+;
+
+opt_try_expr:
+  TTRY expr       { $$ = TODOEXPR(@$); }
+| TTRYBANG expr   { $$ = TODOEXPR(@$); }
+| expr            { $$ = $1; }
+;
+
+lhs_expr:
+  ident_expr
+| call_expr
+| dot_expr
+| parenthesized_expr
+;
+
+/* Representations of values which can be invoked as functions.
+ *
+ * NOTE:  In order to allow expr to be invoked as a function
+ *        opt_actual_ls, and every production it relies on, would need to be
+ *        reworked to not permit the empty production. */
+call_base_expr:
+  lhs_expr
+| expr TBANG                    { $$ = TODOEXPR(@$); }
+| sub_type_level_expr TQUESTION { $$ = TODOEXPR(@$); }
+| lambda_decl_expr
+| str_bytes_literal
+;
+
+call_expr:
+  call_base_expr TLP opt_actual_ls TRP
+    {
+      ASTList actuals;
+      std::vector<UniqueString> actualNames;
+      context->consumeNamedActuals($3, actuals, actualNames);
+      auto fnCall = FnCall::build(BUILDER, LOC(@$),
+                                  toOwned($1),
+                                  std::move(actuals),
+                                  std::move(actualNames),
+                                  /* square */ false);
+      $$ = fnCall.release();
+    }
+| call_base_expr TLSBR opt_actual_ls TRSBR
+    {
+      ASTList actuals;
+      std::vector<UniqueString> actualNames;
+      context->consumeNamedActuals($3, actuals, actualNames);
+      auto fnCall = FnCall::build(BUILDER, LOC(@$),
+                                  toOwned($1),
+                                  std::move(actuals),
+                                  std::move(actualNames),
+                                  /* square */ true);
+      $$ = fnCall.release();
+    }
+| TPRIMITIVE TLP opt_actual_ls TRP            { $$ = TODOEXPR(@$); }
+;
+
+dot_expr:
+  expr TDOT ident_use
+    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+| expr TDOT TTYPE
+    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+| expr TDOT TDOMAIN
+    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+| expr TDOT TLOCALE
+    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+| expr TDOT TBYTES TLP TRP
+    {
+      $$ = FnCall::build(BUILDER, LOC(@$),
+                         Dot::build(BUILDER, LOC(@$), toOwned($1), $3),
+                         false).release();
+    }
+| expr TDOT TBYTES TLSBR TRSBR
+    {
+      $$ = FnCall::build(BUILDER, LOC(@$),
+                         Dot::build(BUILDER, LOC(@$), toOwned($1), $3),
+                         true).release();
+    }
+;
+
+/* ( <expr> ) -- A parenthesized expression.  The parens are stripped.
+ * ( <expr> , ) -- A one-tuple.  (Trailing comma is disallowed for longer tuples.)
+ * ( <tuple_expr_ls> ) -- Two-tuples and up.  A tuple_expr_ls contains at least 2 elements.
+ */
+parenthesized_expr:
+  TLP tuple_component TRP           { $$ = $2; }
+| TLP tuple_component TCOMMA TRP    { $$ = TODOEXPR(@$); }
+| TLP tuple_expr_ls TRP             { $$ = TODOEXPR(@$); }
+| TLP tuple_expr_ls TCOMMA TRP      { $$ = TODOEXPR(@$); }
+;
+
+bool_literal:
+  TFALSE { $$ = TODOEXPR(@$); }
+| TTRUE  { $$ = TODOEXPR(@$); }
+;
+
+str_bytes_literal:
+  STRINGLITERAL   { $$ = $1; }
+| BYTESLITERAL    { $$ = $1; }
+;
+
+literal_expr:
+  bool_literal
+| str_bytes_literal
+| INTLITERAL     { $$ = context->buildNumericLiteral(@$, $1, INTLITERAL); }
+| REALLITERAL    { $$ = context->buildNumericLiteral(@$, $1, REALLITERAL); }
+| IMAGLITERAL    { $$ = context->buildNumericLiteral(@$, $1, IMAGLITERAL); }
+| CSTRINGLITERAL      { $$ = $1; }
+| TNONE               { $$ = context->buildIdent(@$, $1); }
+| TLCBR expr_ls TRCBR          { $$ = TODOEXPR(@$); }
+| TLCBR expr_ls TCOMMA TRCBR   { $$ = TODOEXPR(@$); }
+| TLSBR expr_ls TRSBR          { $$ = TODOEXPR(@$); }
+| TLSBR expr_ls TCOMMA TRSBR   { $$ = TODOEXPR(@$); }
+| TLSBR assoc_expr_ls TRSBR
+    {
+      $$ = TODOEXPR(@$);
+    }
+| TLSBR assoc_expr_ls TCOMMA TRSBR
+    {
+      $$ = TODOEXPR(@$);
+    }
+
+;
+
+assoc_expr_ls:
+  expr TALIAS expr                      { $$ = TODOLIST(@$); }
+| assoc_expr_ls TCOMMA expr TALIAS expr { $1->push_back(TODOEXPR(@$)); }
+;
+
+binary_op_expr:
+  expr TPLUS expr          { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TMINUS expr         { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TSTAR expr          { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TDIVIDE expr        { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TSHIFTLEFT expr     { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TSHIFTRIGHT expr    { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TMOD expr           { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TEQUAL expr         { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TNOTEQUAL expr      { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TLESSEQUAL expr     { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TGREATEREQUAL expr  { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TLESS expr          { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TGREATER expr       { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TBAND expr          { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TBOR expr           { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TBXOR expr          { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TAND expr           { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TOR  expr           { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TEXP expr           { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TBY expr            { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TALIGN expr         { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr THASH expr          { $$ = context->buildBinOp(@$, $1, $2, $3); }
+| expr TDMAPPED expr       { $$ = context->buildBinOp(@$, $1, $2, $3); }
+;
+
+unary_op_expr:
+  TPLUS expr %prec TUPLUS        { $$ = context->buildUnaryOp(@$, $1, $2); }
+| TMINUS expr %prec TUMINUS      { $$ = context->buildUnaryOp(@$, $1, $2); }
+| TMINUSMINUS expr %prec TUMINUS { $$ = TODOEXPR(@$); /* warn */ }
+| TPLUSPLUS expr %prec TUPLUS    { $$ = TODOEXPR(@$); /* warn */ }
+| TBANG expr %prec TLNOT         { $$ = context->buildUnaryOp(@$, $1, $2); }
+| expr TBANG                     { $$ = context->buildUnaryOp(@$,
+                                                              STR("postfix!"),
+                                                              $1); }
+| TBNOT expr                     { $$ = context->buildUnaryOp(@$, $1, $2); }
+;
+
+reduce_expr:
+  expr TREDUCE expr                              { $$ = TODOEXPR(@$); }
+| expr TREDUCE zippered_iterator                 { $$ = TODOEXPR(@$); }
+| reduce_scan_op_expr TREDUCE expr               { $$ = TODOEXPR(@$); }
+| reduce_scan_op_expr TREDUCE zippered_iterator  { $$ = TODOEXPR(@$); }
+;
+
+scan_expr:
+  expr TSCAN expr                              { $$ = TODOEXPR(@$); }
+| expr TSCAN zippered_iterator                 { $$ = TODOEXPR(@$); }
+| reduce_scan_op_expr TSCAN expr               { $$ = TODOEXPR(@$); }
+| reduce_scan_op_expr TSCAN zippered_iterator  { $$ = TODOEXPR(@$); }
+;
+
+
+reduce_scan_op_expr:
+  TPLUS  { $$ = TODOEXPR(@$); }
+| TSTAR  { $$ = TODOEXPR(@$); }
+| TAND   { $$ = TODOEXPR(@$); }
+| TOR    { $$ = TODOEXPR(@$); }
+| TBAND  { $$ = TODOEXPR(@$); }
+| TBOR   { $$ = TODOEXPR(@$); }
+| TBXOR  { $$ = TODOEXPR(@$); }
+;

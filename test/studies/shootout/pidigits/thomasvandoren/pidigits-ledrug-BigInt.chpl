@@ -74,7 +74,7 @@ iter genDigits(numDigits) {
   proc extractDigit(nth: uint) {
     tmp1.mul(numer, nth);
     tmp2.add(tmp1, accum);
-    tmp1.div_q(tmp2, denom);
+    tmp1.divQ(tmp2, denom);
 
     return tmp1 : uint;
   }

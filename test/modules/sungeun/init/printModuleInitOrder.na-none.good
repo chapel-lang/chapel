@@ -22,7 +22,7 @@ Initializing Modules:
            ChapelLocks
            IO
             FormattedIO
-             Regexp
+             Regex
           MSBRadixSort
            RadixSortHelp
            ShellSort
@@ -49,6 +49,7 @@ Initializing Modules:
      CopyAggregation
       AggregationPrimitives
     Builtins
+    Types
     AlignedTSupport
    printModuleInitOrder
     moduleInitTest

@@ -67,11 +67,14 @@ bool       isTupleContainingAnyReferences(Type* t);
 void       ensureEnumTypeResolved(EnumType* etype);
 
 void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
+FnSymbol*  tryResolveFunction(FnSymbol* fn);
 
 bool       canInstantiate(Type* actualType, Type* formalType);
 
 Type*      getConcreteParentForGenericFormal(Type* actualType,
                                              Type* formalType);
+Type*      getMoreInstantiatedParentForGenericFormal(Type* actualType,
+                                                     Type* formalType);
 
 bool       isInstantiation(Type* sub, Type* super);
 
@@ -171,19 +174,29 @@ Expr* lowerPrimReduce(CallExpr* call);
 
 void buildFastFollowerChecksIfNeeded(CallExpr* checkCall);
 
-// interface constraints
+// constrained generics
 void resolveInterfaceSymbol(InterfaceSymbol* isym);
 void resolveImplementsStmt(ImplementsStmt* istm);
 void resolveConstrainedGenericFun(FnSymbol* fn);
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG);
 Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv);
-ImplementsStmt* constraintIsSatisfiedAtCallSite(CallExpr* call,
+class ConstraintSat { public: ImplementsStmt* istm; IfcConstraint* icon;
+  ConstraintSat(ImplementsStmt* s, IfcConstraint* c): istm(s), icon(c) { } };
+ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr* call,
                                                 IfcConstraint* constraint,
                                                 SymbolMap& substitutions);
-void copyIfcRepsToSubstitutions(FnSymbol* fn, int indx,
-                                ImplementsStmt* istm,
-                                SymbolMap& substitutions);
-void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions);
+void cgAddRepsToSubstitutions(FnSymbol* fn, SymbolMap& substitutions,
+                              ImplementsStmt* istm, int indx);
+void cgConvertAggregateTypes(FnSymbol* fn, Expr* anchor,
+                             SymbolMap& substitutions);
+void recordCGInterimInstantiations(CallExpr* call, ResolutionCandidate* best1,
+                       ResolutionCandidate* best2, ResolutionCandidate* best3);
+void adjustForCGinstantiation(FnSymbol* fn, SymbolMap& substitutions,
+                              bool isInterimInstantiation);
+bool cgActualCanMatch(FnSymbol* fn, Type* formalT, ConstrainedType* actualCT);
+bool cgFormalCanMatch(FnSymbol* fn, Type* formalT);
+void startInterfaceChecking();
+void finishInterfaceChecking();
 
 FnSymbol* instantiateWithoutCall(FnSymbol* fn, SymbolMap& subs);
 FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
@@ -191,7 +204,6 @@ FnSymbol* instantiateSignature(FnSymbol* fn, SymbolMap& subs,
 void      instantiateBody(FnSymbol* fn);
 
 // generics support
-TypeSymbol* getNewSubType(FnSymbol* fn, Symbol* key, TypeSymbol* actualTS);
 void checkInfiniteWhereInstantiation(FnSymbol* fn);
 void popInstantiationLimit(FnSymbol* fn);
 void renameInstantiatedTypeString(TypeSymbol* sym, VarSymbol* var);

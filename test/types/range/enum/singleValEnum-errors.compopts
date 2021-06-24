@@ -1,0 +1,5 @@
+-serrorCase=1  # singleValEnum-errors-xlate.good
+-serrorCase=2 --bounds-checks  # singleValEnum-errors-interior.good
+-serrorCase=3  # singleValEnum-errors-exterior.good
+-serrorCase=4  # singleValEnum-errors-expand.good
+-serrorCase=5  # singleValEnum-errors-offset.good

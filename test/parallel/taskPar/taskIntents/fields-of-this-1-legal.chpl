@@ -57,13 +57,13 @@ proc QQ.bgn() {
   begin {
     data[2] = 234;
     writeln(number, pointer.fieldd);
-    s$ = 1;
+    s$.writeEF(1);
   }
 }
 
 var rec3 = new QQ(3);
 rec3.bgn();
-s$;
+s$.readFE();
 writeln(rec3);
 writeln();
 

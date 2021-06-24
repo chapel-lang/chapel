@@ -1,2 +1,2 @@
-# Tests in this directory assume LLVM/Clang support
+# Tests in this directory use extern blocks
 CHPL_LLVM == none

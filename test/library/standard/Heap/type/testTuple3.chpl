@@ -3,10 +3,10 @@ use Heap;
 class C { var x: int = 0; }
 proc C.deinit() { writeln("deinit: " + x:string); }
 
-proc <(left: C, right: C) {
+operator C.<(left: C, right: C) {
   return left.x < right.x;
 }
-proc >(left: C, right: C) {
+operator C.>(left: C, right: C) {
   return left.x > right.x;
 }
 

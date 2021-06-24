@@ -2,11 +2,14 @@
 
 # Developers: To test changes with nightly against a clean repo, use this command:
 #
-# cd /tmp && \
+# export OLD_CHPL_HOME=$CHPL_HOME && \
+#   cd /tmp && \
 #   git clone $CHPL_HOME/.git test-chapel-nightly-debug && \
 #   cd test-chapel-nightly-debug && \
 #   source util/setchplenv.bash && \
-#   ./util/cron/nightly -debug -hellos
+#   CHPL_NIGHTLY_CRON_LOGDIR=/tmp/test-chapel-nightly-debug/cronlog \
+#   CHPL_NIGHTLY_DEBUG_EMAIL=<your email> \
+#     $OLD_CHPL_HOME/util/cron/nightly -debug -hellos
 
 use File::Basename;
 use File::Path qw(mkpath);
@@ -53,7 +56,6 @@ $nolocal = 0;
 $verify = 0;
 $retaintree = 0;
 $dist = "";
-$llvm = 0;
 $memleaks = 0;
 $memleakslog = "";
 $multilocale = 0;
@@ -151,8 +153,6 @@ while (@ARGV) {
         $svnrevopt = "-r " . shift @ARGV;
     } elsif ($flag eq "-cron-recipient") {
         $cronrecipient = shift @ARGV;
-    } elsif ($flag eq "-llvm") {
-        $llvm = 1;
     } elsif ($flag eq "-junit-xml") {
         $junit_xml = 1;
     } elsif ($flag eq "-asserts") {
@@ -211,7 +211,6 @@ if ($printusage == 1) {
     print "\t-hello                         : run the release/examples/hello.chpl test only\n";
     print "\t-hellos                        : run the release/examples/hello*.chpl tests only\n";
     print "\t-junit-xml                     : create jUnit XML style report (default is \"on\" in Jenkins environment)\n";
-    print "\t-llvm                          : run tests using --llvm\n";
     print "\t-mason                         : build mason before running tests\n";
     print "\t-memleaks <log>                : run tests with --memLeaks\n";
     print "\t-memleakslog <log>             : run tests with --memLeaksLog\n";
@@ -242,8 +241,7 @@ if ($printusage == 1) {
 
 print "\n";
 system("printenv");
-$modulecmd = "/sw/modules/bin/linux/modulecmd"; # heuristic
-if (-x $modulecmd) { system("$modulecmd bash list"); }
+system("module list");
 print "\n";
 
 # When JENKINS_URL is set in environment, assume running in jenkins job and
@@ -526,10 +524,18 @@ mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt third-party-try-o
 
 # if we are using python2, we cannot build the test-venv and/or chpldoc
 if ($python2 == 0) {
-  # Build chpldoc. Do not fail the build if it does not succeed. Do not send
-  # mail either.
-  print "Making $make_vars_opt chpldoc\n";
-  mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", 0, 0);
+  $pythonVersion = `python3 --version`;
+  @pythonVersionArr = split('\.', $pythonVersion);
+  print "Checking '$pythonVersion' is greater than 3.5\n";
+
+  # chpldoc can't be built with Python 3.5  TODO: remove this when the Ubuntu
+  # boxes are using a later version of Python than 3.5
+  if ($pythonVersionArr[1] > 5) {
+    # Build chpldoc. Do not fail the build if it does not succeed. Do not send
+    # mail either.
+    print "Making $make_vars_opt chpldoc\n";
+    mysystem("cd $chplhomedir && $make -j$num_procs $make_vars_opt chpldoc", "make chapel chpldoc", 0, 0);
+  }
 
   # Build test virtualenv. Fail if the build does not succeed as virtualenv is
   # needed for start_test. Send mail on failure
@@ -696,9 +702,6 @@ if ($nolocal == 1) {
 }
 if ($verify == 1) {
     $testflags = "$testflags -compopts --verify";
-}
-if ($llvm == 1) {
-    $testflags = "$testflags -compopts --llvm";
 }
 if ($launchcmd) {
     $testflags = "-launchcmd \"$launchcmd\" $testflags";

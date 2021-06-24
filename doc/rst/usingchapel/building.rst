@@ -73,7 +73,7 @@ Platform Support
 ----------------
 
 Currently supported platforms include 32- and 64-bit Linux, Mac OS X,
-Cygwin (Windows), SunOS, a variety of current Cray platforms, and a
+Cygwin (Windows), SunOS, a variety of current HPE and Cray platforms, and a
 few systems by other vendors.  Most UNIX-based environments ought to
 support Chapel (subject to the assumptions in :ref:`readme-prereqs`), but may
 not be supported "out-of-the-box" by our current Makefile structure.
@@ -102,6 +102,8 @@ Makefiles support the following targets:
   | (nothing) | Build the appropriate output files e.g. objects,     |
   | default   | libraries, executables                               |
   | all       |                                                      |
+  +-----------+------------------------------------------------------+
+  | check     | verify basic functionality of chapel build           |
   +-----------+------------------------------------------------------+
   | clean     | Remove the intermediate files for this configuration |
   +-----------+------------------------------------------------------+

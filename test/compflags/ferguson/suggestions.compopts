@@ -5,3 +5,4 @@
 --CHPL_REGEXP=re2   # suggestions.5.good
 -                   # suggestions.6.good
 --                  # suggestions.7.good
+--CHPL_REGEXP=none  # suggestions.8.good

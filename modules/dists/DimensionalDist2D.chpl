@@ -260,8 +260,8 @@ class DimensionalDist2D : BaseDist {
   // implementation note: 'rank' is not a real param; it's just that having
   // 'proc rank param return targetLocales.rank' did not work
   param rank: int = targetLocales.rank;
-  proc numLocs1: locCntT  return targetIds.dim(0).size: locCntT;
-  proc numLocs2: locCntT  return targetIds.dim(1).size: locCntT;
+  proc numLocs1: locCntT  return targetIds.dim(0).sizeAs(locCntT);
+  proc numLocs2: locCntT  return targetIds.dim(1).sizeAs(locCntT);
 
   // parallelization knobs
   var dataParTasksPerLocale: int      = getDataParTasksPerLocale();
@@ -614,9 +614,9 @@ proc _CurrentLocaleToLocIDs(targetLocales): (targetLocales.rank*locIdT, bool)
     if loc == here {
       // if we get multiple matches, we do not specify which is returned
       // could add a pre-test if it were cheap: if !gotresult$.readXX()
-      gotresult$;
+      gotresult$.readFE();
       result = lls;
-      gotresult$ = true;
+      gotresult$.writeEF(true);
     }
   // instead of crashing right away, return a flag
   //if !gotresult$.readXX() then halt("DimensionalDist2D: the current locale ", here, " is not among the target locales ", targetLocales);
@@ -757,7 +757,7 @@ proc DimensionalDom.dsiDim(param d)       return whole.dim(d);
 proc DimensionalDom.dsiLow                return whole.low;
 proc DimensionalDom.dsiHigh               return whole.high;
 proc DimensionalDom.dsiStride             return whole.stride;
-proc DimensionalDom.dsiNumIndices         return whole.size;
+proc DimensionalDom.dsiNumIndices         return whole.sizeAs(uint);
 proc DimensionalDom.dsiMember(indexx)     return whole.contains(indexx);
 proc DimensionalDom.dsiIndexOrder(indexx) return whole.indexOrder(indexx);
 
@@ -1077,8 +1077,8 @@ proc DimensionalArr.dsiLocalSlice((sliceDim1, sliceDim2)) {
   // todo: cache (l1, l2) in privatized copies when possible
   // (i.e. if privatization is supported and there is no oversubscription)
   // Assuming dsiLocalSlice is guaranteed to be local to 'here'.
-  const l1 = dist.di1.dsiIndexToLocale1d(sliceDim1.low),
-        l2 = dist.di2.dsiIndexToLocale1d(sliceDim2.low),
+  const l1 = dist.di1.dsiIndexToLocale1d(if sliceDim1.hasLowBound() then sliceDim1.low else chpl__intToIdx(sliceDim1.idxType, 1)),
+        l2 = dist.di2.dsiIndexToLocale1d(if sliceDim2.hasLowBound() then sliceDim2.low else chpl__intToIdx(sliceDim2.idxType, 1)),
         locAdesc = this.localAdescs[l1, l2],
         r1 = if dom.dom1.dsiStorageUsesUserIndices()
              then dom.whole.dim(0)(sliceDim1)
@@ -1185,10 +1185,10 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
 
       // when we know which dimension should be the parallel one
       proc compute1dNTPD(param parDim): (int,int) {
-        const myNumIndices = myDims(0).size * myDims(1).size;
+        const myNumIndices = myDims(0).sizeAs(int) * myDims(1).sizeAs(int);
         const cnc:int =
           _computeNumChunks(maxTasks, ignoreRunning, minSize, myNumIndices);
-        return ( min(cnc, myDims(parDim).size:int), parDim );
+        return ( min(cnc, myDims(parDim).sizeAs(int)), parDim );
       }
 
       const (numTasks, parDim) =
@@ -1279,7 +1279,7 @@ iter DimensionalDom.these(param tag: iterKind) where tag == iterKind.leader {
               //   if myPiece.size == 0 then do not yield anything
 // TODO: can it be enabled for test_strided_slice1.chpl with 1d block-cyclic?
 //              assert(myPiece.size > 0);
-              if myPiece.size > 0 then
+              if myPiece.sizeAs(uint) > 0 then
                 yield myPiece;
             }
           }

@@ -54,6 +54,7 @@ IntentTag constIntentForType(Type* t) {
              isSingleType(t)        ||
              isRecordWrappedType(t) ||  // domain, array, or distribution
              isManagedPtrType(t) ||
+             isConstrainedType(t) ||
              isAtomicType(t) ||
              isUnion(t) ||
              isRecord(t)) { // may eventually want to decide based on size
@@ -148,6 +149,7 @@ IntentTag blankIntentForType(Type* t) {
              isRecord(t)                             ||
              // Note: isRecord(t) includes range (FLAG_RANGE)
              isUnion(t)                              ||
+             isConstrainedType(t)                    ||
              t == dtTaskID                           ||
              t == dtFile                             ||
              t == dtNil                              ||
@@ -224,7 +226,7 @@ static IntentTag blankIntentForThisArg(Type* t) {
   // the intent for this is INTENT_REF_MAYBE_CONST
   //
   // This applies to both arguments of type _ref(t) and t
-  if (isRecord(valType) || isUnion(valType) ||
+  if (isRecord(valType) || isUnion(valType) || isConstrainedType(valType) ||
       valType->symbol->hasFlag(FLAG_DEFAULT_INTENT_IS_REF_MAYBE_CONST))
     return INTENT_REF_MAYBE_CONST;
 
@@ -241,7 +243,7 @@ static IntentTag blankIntentForThisArg(Type* t) {
 static
 IntentTag blankIntentForExternFnArg(Type* type) {
   if (fLlvmCodegen && type->getValType()->symbol->hasFlag(FLAG_C_ARRAY))
-    // Pass c_array by ref by default for --llvm
+    // Pass c_array by ref by default for LLVM backend
     // (for C, an argument like int arg[2] is actually just int* arg).
     // This needs to be here because otherwise the following rule overrides it.
     return INTENT_REF_MAYBE_CONST;
