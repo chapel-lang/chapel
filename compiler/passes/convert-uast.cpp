@@ -958,7 +958,6 @@ Expr* Converter::convertAST(const uast::ASTNode* node) {
 
 ModuleSymbol* convertToplevelModule(chpl::Context* context,
                                     const chpl::uast::Module* mod) {
-  printf("Converting module named %s\n", mod->name().c_str());
   astlocMarker markAstLoc(mod->id());
   Converter c(context);
   DefExpr* def = c.convertModule(mod);

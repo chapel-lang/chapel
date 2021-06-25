@@ -36,9 +36,14 @@
 #include "symbol.h"
 #include "wellknown.h"
 
-#include "view.h" // TODO -- remove
-
 #include "chpl/frontend/frontend-queries.h"
+
+// Turn this on to dump AST/uAST when using --compiler-library-parser.
+#define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
+
+#if DUMP_WHEN_CONVERTING_UAST_TO_AST
+#include "view.h"
+#endif
 
 #include <cstdlib>
 
@@ -781,13 +786,19 @@ static void uASTParseFile(const char* fileName,
   auto & modules = chpl::frontend::parse(gContext, path);
   for (auto mod : modules) {
     INT_ASSERT(mod != nullptr);
+
+#if DUMP_WHEN_CONVERTING_UAST_TO_AST
     chpl::uast::ASTNode::dump(mod);
+    printf("Converting module named %s\n", mod->name().c_str());
+#endif
 
     ModuleSymbol* got = convertToplevelModule(gContext, mod);
 
     got->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
 
+#if DUMP_WHEN_CONVERTING_UAST_TO_AST
     nprint_view(got);
+#endif
   }
 }
 
