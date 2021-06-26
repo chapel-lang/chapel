@@ -125,24 +125,20 @@ int sys_fill_sys_sockaddr_t(sys_sockaddr_t* addr, const char* host, u_int16_t po
   return 0;
 }
 
-int sys_fill_sys_sockaddr_in_t(sys_sockaddr_t* addr, sys_in_addr_t host, u_int16_t port)
+void sys_fill_sys_sockaddr_in_t(sys_sockaddr_t* addr, sys_in_addr_t host, u_int16_t port)
 {
   struct sockaddr_in *addr_inet = (struct sockaddr_in *)&addr->addr;
   addr_inet->sin_family = AF_INET;
   addr_inet->sin_port = htons(port);
   addr_inet->sin_addr.s_addr = host;
-
-  return 1;
 }
 
-int sys_fill_sys_sockaddr_in6_t(sys_sockaddr_t* addr, sys_in6_addr_t host, u_int16_t port)
+void sys_fill_sys_sockaddr_in6_t(sys_sockaddr_t* addr, sys_in6_addr_t host, u_int16_t port)
 {
   struct sockaddr_in6 *addr_inet6 = (struct sockaddr_in6 *)&addr->addr;
   addr_inet6->sin6_family = AF_INET6;
   addr_inet6->sin6_port = htons(port);
   addr_inet6->sin6_addr = host;
-
-  return 1;
 }
 
 int sys_extract_sys_sockaddr_t(sys_sockaddr_t* addr, char* host, u_int16_t *port){

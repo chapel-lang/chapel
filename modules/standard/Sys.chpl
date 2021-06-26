@@ -255,24 +255,97 @@ module Sys {
   extern record sys_sockaddr_t {
     var addr:sys_sockaddr_storage_t;
     var len:socklen_t;
+
     proc init() {
       this.complete();
       sys_init_sys_sockaddr_t(this);
     }
-    proc fill(host: c_string, port: uint(16), family: int):c_int {
-      return sys_fill_sys_sockaddr_t(this, host, port, family);
+
+    /*
+    Initialize sys_sockaddr_t with provided `family`, `host` and
+    `port`. `host` should be provided in standard notation as per
+    family. Note : `host` isn't resolved using DNS Lookup.
+
+    :arg host: hostname address in ipv4 or ipv6 string notation
+    :type host: `string`
+
+    :arg port: port number
+    :type port: `uint(16)`
+
+    :arg family: domain of socket
+    :type family: `c_int`
+
+    :throws IllegalArgumentError: Upon failure to provide a compatible
+                                  `host` and `family`.
+    */
+    proc initialize(host: c_string, port: uint(16), family: int) throws {
+      var err_out = sys_fill_sys_sockaddr_t(this, host, port, family);
+      if err_out != 1 {
+        throw new IllegalArgumentError("Incompatible Address and Family");
+      }
     }
-    proc fill(host: sys_in_addr_t, port: uint(16)):c_int {
-      return sys_fill_sys_sockaddr_in_t(this, host, port);
+
+    /*
+    Initialize sys_sockaddr_t with provided `host` and
+    `port`. `host` should be one of the standard ipv6
+    addresses. family for socket address is assumed to be
+    `AF_INET` based on `host` address being ipv6.
+
+    :arg host: standard hostname address ipv6
+    :type host: `sys_in_addr_t`
+
+    :arg port: port number
+    :type port: `uint(16)`
+    */
+    proc initialize(host: sys_in_addr_t, port: uint(16)) {
+      sys_fill_sys_sockaddr_in_t(this, host, port);
     }
-    proc fill(host: sys_in6_addr_t, port: uint(16)):c_int {
-      return sys_fill_sys_sockaddr_in6_t(this, host, port);
+
+    /*
+    Initialize sys_sockaddr_t with provided `host` and
+    `port`. `host` should be one of the standard ipv6
+    addresses. family for socket address is assumed to be
+    `AF_INET6` based on `host` address being ipv6.
+
+    :arg host: standard hostname address ipv6
+    :type host: `sys_in6_addr_t`
+
+    :arg port: port number
+    :type port: `uint(16)`
+    */
+    proc initialize(host: sys_in6_addr_t, port: uint(16)) {
+      sys_fill_sys_sockaddr_in6_t(this, host, port);
     }
-    proc retrieve(host: c_ptr(c_char), ref port: uint(16)):c_int {
-      return sys_extract_sys_sockaddr_t(this, host, port) : c_int;
+
+    /*
+    Returns the `host` address and `port` stored in record.
+    If the `host` doesn't have enough space then address is
+    truncated as per available space. Sufficient space can be
+    :data:`INET_ADDRSTRLEN` or :data:`INET6_ADDRSTRLEN`.
+
+    :arg host: hostname address in IPv4 or IPv6 string notation
+    :type host: `c_ptr(c_char)`
+
+    :arg port: port number
+    :type port: `uint(16)`
+
+    :throws Error: If record was uninitialized and has no information
+                   about host` or `port`.
+    */
+    proc addr(host: c_ptr(c_char), ref port: uint(16)) throws {
+      var err = sys_extract_sys_sockaddr_t(this, host, port);
+      if err != 1 {
+        throw new Error("sys_sockaddr_t was not initialized");
+      }
     }
   }
 
+  /*
+    Returns socket family.
+
+    :returns: a socket family
+    :rtype: `c_int`
+  */
   proc sys_sockaddr_t.family:c_int { return sys_getsockaddr_family(this); }
 
   extern record sys_addrinfo_t {
