@@ -452,6 +452,7 @@ qioerr qio_file_open_access_usr(qio_file_t** file_out, const char* pathname,
                                void* fs_info);
 
 qioerr qio_get_fs_type(qio_file_t* fl, int* out);
+qioerr qio_get_fd(qio_file_t* fl, int* out);
 qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out);
 qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char*** locale_names_out, int64_t* num_locs_out);
 
