@@ -4439,4 +4439,3 @@ qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Unable to get locale for specified region of file");
   }
 }
-
