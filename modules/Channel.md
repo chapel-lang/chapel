@@ -67,9 +67,9 @@ Some related questions -
 	* `chan` in Golang
 	* `crossbeam` in Rust
 
-* What should be the syntax of `select` statements in Chapel? Should we use
-Chapel's `select` statement for that? Some semantic differences between
-`select` in Chapel and Channels.
+* What should be the syntax of Channel `select` statements in Chapel ?
+Should we use Chapel's `select` statement for that? Some semantic differences
+between `select` in Chapel and Channels.
 
 	* Chapel's select is a conditional statement which is used to evaluate
 	cases against one statement specified after `select` keyword whereas
