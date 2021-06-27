@@ -14,7 +14,9 @@ LinearAlgebra.expm_10pow7:
 LinearAlgebra.expm_10pow8:
 LinearAlgebra.expm_gradient:
 LinearAlgebra.expm_edge:
+LinearAlgebra.expm_sparse:
+LinearAlgebra.expm_dense:
 LinearAlgebra.expm_complex:
 LinearAlgebra.sinm:
 LinearAlgebra.cosm:
-LinearAlgebra.sincos: 
+LinearAlgebra.sincos:

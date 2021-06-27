@@ -1,11 +1,9 @@
 use Time;
 use Math;
 use LinearAlgebra;
+use Random;
 
-config var m=4,
-             iters=10,
-             /* Omit timing output */
-             correctness=false;
+config var m=4,iters=10,correctness=false;
 
 config type eltType = real;
 
@@ -33,7 +31,7 @@ proc test_expm() {
     var b = [0.01, 0.1, 0.5, 1.0, 10.0];
     const pade = [3, 5, 7, 9, 13];
 
-    for i in 0..4 do {
+    for i in b.domain do {
       var X: [Space] eltType;
       setDiag(X, 0, 1);
       var Y = X * b[i];
@@ -42,12 +40,13 @@ proc test_expm() {
 
       for 1..iters {
         t.start();
-        M = expm(X);
+        M = expm(Y);
         t.stop();
       }
 
       if !correctness then
-        writeln('LinearAlgebra.expm_pade' + (pade[i]: string) + ': ' + ((t.elapsed()/iters): string));
+        writeln('LinearAlgebra.expm_pade' + (pade[i]: string)
+                              + ': ' + ((t.elapsed()/iters): string));
       else
         writeln(M);
 
@@ -64,9 +63,10 @@ proc test_expm() {
     // [0.0 -1.0 0.0]
     // [0.0  0.0 1.0]
 
-    var b = [1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0, 1000000.0, 10000000.0, 100000000.0];
+    var b = [1.0, 10.0, 100.0, 1000.0, 10000.0, 100000.0,
+                                  1000000.0, 10000000.0, 100000000.0];
 
-    for i in 0..8 do {
+    for i in b.domain do {
       var X: [Space] eltType;
       setDiag(X, 0, 1);
       X(1,1) = -1.0;
@@ -81,7 +81,8 @@ proc test_expm() {
       }
 
       if !correctness then
-        writeln('LinearAlgebra.expm_10pow' + (i: string) + ": " + ((t.elapsed()/iters): string));
+        writeln('LinearAlgebra.expm_10pow' + (i: string)
+                              + ": " + ((t.elapsed()/iters): string));
       else
         writeln(M);
 
@@ -149,6 +150,65 @@ proc test_expm() {
   }
 
   {
+    // Sparse Input Matrix
+    // 10% Filled.
+
+    var r = new owned PCGRandomStream(int);
+
+    var X: [Space] eltType;
+
+    for i in 0..<m {
+      X(r.getNext(0,m-1), i) = 1.0;
+    }
+
+    var M: [X.domain] eltType;
+
+    for 1..iters {
+      t.start();
+      M = expm(X);
+      t.stop();
+    }
+
+    if !correctness then
+      writeln('LinearAlgebra.expm_sparse: ' + ((t.elapsed()/iters): string));
+    else
+      writeln("");
+    writeln("");
+
+    t.clear();
+  }
+
+  {
+    // Dense Input Matrix
+    // 90% Filled.
+
+    var r = new owned PCGRandomStream(int);
+
+    var X: [Space] eltType;
+    X = X + 1.0;
+
+    for i in 0..<m {
+      X(r.getNext(0,m-1), i) = 0.0;
+    }
+
+    var M: [X.domain] eltType;
+
+    for 1..iters {
+      t.start();
+      M = expm(X);
+      t.stop();
+    }
+
+    if !correctness then
+      writeln('LinearAlgebra.expm_dense: ' + ((t.elapsed()/iters): string));
+    else
+      writeln("");
+    writeln("");
+
+    t.clear();
+  }
+
+  {
     // Testing eltType=Complex: Input Matrix of Format
     // [ 1.0 + 1i 1.0       0.0     ]
     // [-1.0      1.0 + 1i  1.0     ]
@@ -178,7 +238,6 @@ proc test_expm() {
 }
 
 proc test_sinm() {
-  {
     // Testing eltType=Complex: Input Matrix of Format
     // [ 1.0 + 1i 1.0       0.0     ]
     // [-1.0      1.0 + 1i  1.0     ]
@@ -207,11 +266,9 @@ proc test_sinm() {
     writeln("");
 
     t.clear();
-  }
 }
 
 proc test_cosm() {
-  {
     // Testing eltType=Complex: Input Matrix of Format
     // [ 1.0 + 1i 1.0       0.0     ]
     // [-1.0      1.0 + 1i  1.0     ]
@@ -240,11 +297,9 @@ proc test_cosm() {
     writeln("");
 
     t.clear();
-  }
 }
 
 proc test_sincos() {
-  {
     // Testing eltType=Complex: Input Matrix of Format
     // [ 1.0 + 1i 1.0       0.0     ]
     // [-1.0      1.0 + 1i  1.0     ]
@@ -258,36 +313,43 @@ proc test_sincos() {
     setDiag(X, 1, 1.0);
     setDiag(X, -1, -1.0);
 
-    var Z_sin: [X.domain] complex;
-    var Z_cos: [X.domain] complex;
+    // var Z_sin: [X.domain] complex;
+    // var Z_cos: [X.domain] complex;
+    // var M;
 
     for 1..iters {
       t.start();
-      (Z_sin, Z_cos) = sincos(X);
+      sincos(X);
       t.stop();
     }
 
     if !correctness then
       writeln('LinearAlgebra.sincos: ' + ((t.elapsed()/iters): string));
     else
-      writeln(Z_sin, Z_cos);
+      writeln("");
     writeln("");
 
     t.clear();
-  }
 }
 
 proc main() {
 
   // Small Matrices
-  //m = 4;
+  m = 4;
+  test_expm();
+  test_sinm();
+  test_cosm();
+  test_sincos();
+
+  // Medium Matrices
+  m = 20;
   test_expm();
   test_sinm();
   test_cosm();
   test_sincos();
 
   // // Large Matrices
-  // m = 20;
+  // m = 100;
   // test_expm();
   // test_sinm();
   // test_cosm();
