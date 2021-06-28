@@ -30,7 +30,6 @@
 #include "build.h"
 #include "docsDriver.h"
 
-#include "chpl/frontend/frontend-queries.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
 
@@ -55,16 +54,16 @@ struct Converter {
     return ret;
   }
 
-  Expr* convertComment(const uast::Comment* node) {
+  Expr* visit(const uast::Comment* node) {
     // old ast does not represent comments
     return nullptr;
   }
 
-  Expr* convertErroneousExpression(const uast::ErroneousExpression* node) {
+  Expr* visit(const uast::ErroneousExpression* node) {
     return new CallExpr(PRIM_ERROR);
   }
 
-  UnresolvedSymExpr* convertIdentifier(const uast::Identifier* node) {
+  UnresolvedSymExpr* visit(const uast::Identifier* node) {
     return new UnresolvedSymExpr(node->name().c_str());
   }
 
@@ -82,21 +81,21 @@ struct Converter {
     return block;
   }
 
-  BlockStmt* convertBegin(const uast::Begin* node) {
+  BlockStmt* visit(const uast::Begin* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  BlockStmt* convertBlock(const uast::Block* node) {
+  BlockStmt* visit(const uast::Block* node) {
     return createBlockWithStmts(node->stmts());
   }
 
-  BlockStmt* convertDefer(const uast::Defer* node) {
+  BlockStmt* visit(const uast::Defer* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  BlockStmt* convertLocal(const uast::Local* node) {
+  BlockStmt* visit(const uast::Local* node) {
     BlockStmt* body = createBlockWithStmts(node->stmts()); 
     Expr* condition = convertExprOrNull(node->condition());
     if (condition) {
@@ -106,12 +105,12 @@ struct Converter {
     }
   }
 
-  BlockStmt* convertOn(const uast::On* node) {
+  BlockStmt* visit(const uast::On* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  BlockStmt* convertSerial(const uast::Serial* node) {
+  BlockStmt* visit(const uast::Serial* node) {
     BlockStmt* body = createBlockWithStmts(node->stmts()); 
     Expr* condition = convertExprOrNull(node->condition());
 
@@ -124,12 +123,12 @@ struct Converter {
 
   /// Expressions ///
 
-  CallExpr* convertDelete(const uast::Delete* node) {
+  CallExpr* visit(const uast::Delete* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  CallExpr* convertNew(const uast::New* node) {
+  CallExpr* visit(const uast::New* node) {
     switch (node->management()) {
       case uast::New::DEFAULT_MANAGEMENT:
         return new CallExpr(PRIM_NEW);
@@ -154,37 +153,37 @@ struct Converter {
     return nullptr;
   }
 
-  Expr* convertAs(const uast::As* node) {
+  Expr* visit(const uast::As* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  UseStmt* convertUse(const uast::Use* node) {
+  UseStmt* visit(const uast::Use* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  Expr* convertUseClause(const uast::UseClause* node) {
+  Expr* visit(const uast::UseClause* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  Expr* convertWithClause(const uast::WithClause* node) {
+  Expr* visit(const uast::WithClause* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  GotoStmt* convertBreak(const uast::Break* node) {
+  GotoStmt* visit(const uast::Break* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  BlockStmt* convertCobegin(const uast::Cobegin* node) {
+  BlockStmt* visit(const uast::Cobegin* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  Expr* convertConditional(const uast::Conditional* node) {
+  Expr* visit(const uast::Conditional* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     BlockStmt* thenBlock = createBlockWithStmts(node->thenStmts());
     BlockStmt* elseBlock = nullptr;
@@ -195,40 +194,40 @@ struct Converter {
     return buildIfStmt(condExpr, thenBlock, elseBlock);
   }
 
-  GotoStmt* convertContinue(const uast::Continue* node) {
+  GotoStmt* visit(const uast::Continue* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  DefExpr* convertLabel(const uast::Label* node) {
+  DefExpr* visit(const uast::Label* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  CallExpr* convertReturn(const uast::Return* node) {
+  CallExpr* visit(const uast::Return* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  BlockStmt* convertSync(const uast::Sync* node) {
+  BlockStmt* visit(const uast::Sync* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  CallExpr* convertYield(const uast::Yield* node) {
+  CallExpr* visit(const uast::Yield* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
   /// Loops ///
 
-  BlockStmt* convertDoWhile(const uast::DoWhile* node) {
+  BlockStmt* visit(const uast::DoWhile* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     BlockStmt* body = createBlockWithStmts(node->stmts());
     return DoWhileStmt::build(condExpr, body);
   }
 
-  BlockStmt* convertWhile(const uast::While* node) {
+  BlockStmt* visit(const uast::While* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     BlockStmt* body = createBlockWithStmts(node->stmts());
     return WhileDoStmt::build(condExpr, body);
@@ -236,27 +235,27 @@ struct Converter {
 
   /// IndexableLoops ///
 
-  BlockStmt* convertBracketLoop(const uast::BracketLoop* node) {
+  BlockStmt* visit(const uast::BracketLoop* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  BlockStmt* convertCoforall(const uast::Coforall* node) {
+  BlockStmt* visit(const uast::Coforall* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  BlockStmt* convertFor(const uast::For* node) {
+  BlockStmt* visit(const uast::For* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  BlockStmt* convertForall(const uast::Forall* node) {
+  BlockStmt* visit(const uast::Forall* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  BlockStmt* convertForeach(const uast::Foreach* node) {
+  BlockStmt* visit(const uast::Foreach* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
@@ -265,7 +264,7 @@ struct Converter {
 
   /// NumericLiterals ///
 
-  Expr* convertImagLiteral(const uast::ImagLiteral* node) {
+  Expr* visit(const uast::ImagLiteral* node) {
     SymExpr* se = buildImagLiteral(node->text().c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate && v->immediate->const_kind == NUM_KIND_IMAG);
@@ -273,7 +272,7 @@ struct Converter {
     return se;
   }
 
-  Expr* convertIntLiteral(const uast::IntLiteral* node) {
+  Expr* visit(const uast::IntLiteral* node) {
     SymExpr* se = buildIntLiteral(node->text().c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate && v->immediate->const_kind == NUM_KIND_INT);
@@ -281,7 +280,7 @@ struct Converter {
     return se;
   }
 
-  Expr* convertRealLiteral(const uast::RealLiteral* node) {
+  Expr* visit(const uast::RealLiteral* node) {
     SymExpr* se = buildRealLiteral(node->text().c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate && v->immediate->const_kind == NUM_KIND_REAL);
@@ -289,7 +288,7 @@ struct Converter {
     return se;
   }
 
-  Expr* convertUintLiteral(const uast::UintLiteral* node) {
+  Expr* visit(const uast::UintLiteral* node) {
     SymExpr* se = buildIntLiteral(node->text().c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate && v->immediate->const_kind == NUM_KIND_UINT);
@@ -298,7 +297,7 @@ struct Converter {
   }
 
   /// StringLikeLiterals ///
-  Expr* convertBytesLiteral(const uast::BytesLiteral* node) {
+  Expr* visit(const uast::BytesLiteral* node) {
     std::string quoted = quoteStringForC(node->str());
     SymExpr* se = buildBytesLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
@@ -308,7 +307,7 @@ struct Converter {
     return se;
   }
 
-  Expr* convertCStringLiteral(const uast::CStringLiteral* node) {
+  Expr* visit(const uast::CStringLiteral* node) {
     std::string quoted = quoteStringForC(node->str());
     SymExpr* se = buildCStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
@@ -319,7 +318,7 @@ struct Converter {
 
   }
 
-  Expr* convertStringLiteral(const uast::StringLiteral* node) {
+  Expr* visit(const uast::StringLiteral* node) {
     std::string quoted = quoteStringForC(node->str());
     SymExpr* se = buildStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
@@ -331,12 +330,12 @@ struct Converter {
 
   /// Calls ///
 
-  Expr* convertDot(const uast::Dot* node) {
+  Expr* visit(const uast::Dot* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  Expr* convertFnCall(const uast::FnCall* node) {
+  Expr* visit(const uast::FnCall* node) {
     const uast::Expression* calledExpression = node->calledExpression();
     INT_ASSERT(calledExpression);
     Expr* calledExpr = convertAST(calledExpression);
@@ -357,7 +356,7 @@ struct Converter {
     return ret;
   }
 
-  Expr* convertOpCall(const uast::OpCall* node) {
+  Expr* visit(const uast::OpCall* node) {
     CallExpr* ret = new CallExpr(node->op().c_str());
     int nActuals = node->numActuals();
     for (int i = 0; i < nActuals; i++) {
@@ -369,24 +368,24 @@ struct Converter {
     return ret;
   }
 
-  Expr* convertPrimCall(const uast::PrimCall* node) {
+  /*Expr* visit(const uast::PrimCall* node) {
     INT_FATAL("TODO");
     return nullptr;
-  }
+  }*/
 
-  Expr* convertZip(const uast::Zip* node) {
+  Expr* visit(const uast::Zip* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
   /// Decls ///
 
-  Expr* convertMultiDecl(const uast::MultiDecl* node) {
+  Expr* visit(const uast::MultiDecl* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  Expr* convertTupleDecl(const uast::TupleDecl* node) {
+  Expr* visit(const uast::TupleDecl* node) {
     BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
 
     bool saveInTupleDecl = inTupleDecl;
@@ -417,7 +416,7 @@ struct Converter {
 
   /// NamedDecls ///
 
-  Expr* convertEnumElement(const uast::EnumElement* node) {
+  Expr* visit(const uast::EnumElement* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
@@ -457,7 +456,7 @@ struct Converter {
             name == "<<=");
   }
 
-  Expr* convertFunction(const uast::Function* node) {
+  Expr* visit(const uast::Function* node) {
     FnSymbol* fn = new FnSymbol("_");
     if (node->isInline()) {
       fn->addFlag(FLAG_INLINE);
@@ -470,7 +469,7 @@ struct Converter {
     // Add the formals
     if (node->numFormals() > 0) {
       for (auto formal : node->formals()) {
-        DefExpr* def = convertFormal(formal);
+        DefExpr* def = visit(formal);
         INT_ASSERT(def);
         buildFunctionFormal(fn, def); // adds it to the list
       }
@@ -536,7 +535,7 @@ struct Converter {
     return decl;
   }
 
-  DefExpr* convertModule(const uast::Module* node) {
+  DefExpr* visit(const uast::Module* node) {
     chpl::UniqueString ustr = node->name();
     const char* name = ustr.c_str();
     const char* path = context->filePathForID(node->id()).c_str();
@@ -587,7 +586,7 @@ struct Converter {
     return INTENT_BLANK;
   }
 
-  DefExpr* convertFormal(const uast::Formal* node) {
+  DefExpr* visit(const uast::Formal* node) {
     IntentTag intentTag = convertFormalIntent(node->intent());
 
     Expr* typeExpr = convertExprOrNull(node->typeExpression());
@@ -599,7 +598,7 @@ struct Converter {
                            typeExpr, initExpr, varargsVariable);
   }
 
-  Expr* convertTaskVar(const uast::TaskVar* node) {
+  Expr* visit(const uast::TaskVar* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
@@ -611,7 +610,7 @@ struct Converter {
       return name;
   }
 
-  Expr* convertVariable(const uast::Variable* node) {
+  Expr* visit(const uast::Variable* node) {
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
 
     auto varSym = new VarSymbol(tupleVariableName(node->name().c_str()));
@@ -661,64 +660,33 @@ struct Converter {
 
   /// TypeDecls
 
-  Expr* convertEnum(const uast::Enum* node) {
+  Expr* visit(const uast::Enum* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
   /// AggregateDecls
 
-  Expr* convertClass(const uast::Class* node) {
+  Expr* visit(const uast::Class* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  Expr* convertRecord(const uast::Record* node) {
+  Expr* visit(const uast::Record* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  Expr* convertUnion(const uast::Union* node) {
+  Expr* visit(const uast::Union* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
-
 };
 
 /// Generic conversion calling the above functions ///
 Expr* Converter::convertAST(const uast::ASTNode* node) {
-  switch (node->tag()) {
-    #define CONVERT(NAME) \
-      case chpl::uast::asttags::NAME: \
-      { \
-        astlocMarker markAstLoc(node->id()); \
-        return convert##NAME((const chpl::uast::NAME*) node); \
-      }
-
-    #define IGNORE(NAME) \
-      case chpl::uast::asttags::NAME: \
-        INT_FATAL("case not handled"); \
-        return nullptr;
-
-    #define AST_NODE(NAME) CONVERT(NAME)
-    #define AST_LEAF(NAME) CONVERT(NAME)
-    #define AST_BEGIN_SUBCLASSES(NAME) IGNORE(START_##NAME)
-    #define AST_END_SUBCLASSES(NAME) IGNORE(END_##NAME)
-
-    #include "chpl/uast/ASTClassesList.h"
-
-    IGNORE(NUM_AST_TAGS)
-
-    #undef AST_NODE
-    #undef AST_LEAF
-    #undef AST_BEGIN_SUBCLASSES
-    #undef AST_END_SUBCLASSES
-    #undef CONVERT
-    #undef IGNORE
-  }
-
-  INT_FATAL("case not handled in convertAST");
-  return nullptr;
+  astlocMarker markAstLoc(node->id());
+  return node->dispatch<Expr*>(*this);
 }
 
 } // end anonymous namespace
@@ -728,7 +696,7 @@ ModuleSymbol* convertToplevelModule(chpl::Context* context,
   printf("Converting module named %s\n", mod->name().c_str());
   astlocMarker markAstLoc(mod->id());
   Converter c(context);
-  DefExpr* def = c.convertModule(mod);
+  DefExpr* def = c.visit(mod);
   ModuleSymbol* ret = toModuleSymbol(def->sym);
   ModuleSymbol::addTopLevelModule(ret);
   return ret;

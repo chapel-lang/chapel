@@ -60,6 +60,7 @@ class ErrorMessage final {
 
   void addDetail(ErrorMessage err);
 
+  bool isEmpty() const { return message_.empty() && details_.empty(); }
   Location location() const { return location_; }
 
   UniqueString path() const { return location_.path(); }
