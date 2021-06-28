@@ -1436,7 +1436,7 @@ void TypeSymbol::codegenMetadata() {
 
   bool treatAsUnion = isUnion(type) || this->hasFlag(FLAG_EXTERN_UNION);
 
-  if (treatAsUnion && !isUnion(type))
+  if (treatAsUnion && !isUnion(type) && isRecord(type))
     USR_FATAL(type->symbol,
               "C union type '%s' should be declared as "
               "'extern union' and not as 'extern record'", type->symbol->cname);
