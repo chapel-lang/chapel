@@ -150,15 +150,16 @@ def get_llvm_config():
     llvm_val = get()
     llvm_config = overrides.get('CHPL_LLVM_CONFIG', 'none')
 
-    if llvm_config != 'none' and llvm_val == 'bundled':
-        error("cannot set CHPL_LLVM_CONFIG along with CHPL_LLVM=bundled")
+    if llvm_val == 'bundled':
+        llvm_subdir = get_bundled_llvm_dir()
+        bundled_config = os.path.join(llvm_subdir, 'bin', 'llvm-config')
+        if llvm_config != 'none' and llvm_config != bundled_config:
+            sys.stderr.write("Warning: CHPL_LLVM_CONFIG is ignored for "
+                             "CHPL_LLVM=bundled\n");
+        llvm_config = bundled_config
 
-    if llvm_config == 'none':
-        if llvm_val == 'bundled':
-            llvm_subdir = get_bundled_llvm_dir()
-            llvm_config = os.path.join(llvm_subdir, 'bin', 'llvm-config')
-        elif llvm_val == 'system':
-            llvm_config = find_system_llvm_config()
+    elif llvm_config == 'none' and llvm_val == 'system':
+        llvm_config = find_system_llvm_config()
 
     return llvm_config
 
