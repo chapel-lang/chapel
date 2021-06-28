@@ -191,7 +191,7 @@ static  void test2() {
   assert(block->id().postOrderId() == 3);
   assert(block->id().numContainedChildren() == 3);
   assert(0 == block->id().symbolPath().compare("test"));
-  assert(module->id().postOrderId() == 4);
+  assert(module->id().postOrderId() == -1);
   assert(module->id().numContainedChildren() == 4);
 
   // now check containment on the ids
@@ -363,13 +363,13 @@ static void test4() {
   assert(modM->stmt(1)->isIdentifier());
 
   // now check the IDs
-  assert(modI->id().postOrderId() == 3);
+  assert(modI->id().postOrderId() == -1);
   assert(modI->id().numContainedChildren() == 3);
   assert(0 == modI->id().symbolPath().compare("M.I"));
   assert(modM->stmt(1)->id().postOrderId() == 0);
   assert(modM->stmt(1)->id().numContainedChildren() == 0);
   assert(0 == modM->stmt(1)->id().symbolPath().compare("M"));
-  assert(modM->id().postOrderId() == 1);
+  assert(modM->id().postOrderId() == -1);
   assert(modM->id().numContainedChildren() == 1);
   assert(0 == modM->id().symbolPath().compare("M"));
 

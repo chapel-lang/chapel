@@ -36,7 +36,8 @@ bool ID::contains(const ID& other) const {
     int otherId = other.postOrderId();
     int thisFirstContained = thisId - thisNContained;
 
-    return thisFirstContained <= otherId && otherId <= thisId;
+    return thisId == -1 ||
+           (thisFirstContained <= otherId && otherId <= thisId);
   } else {
     // No need to consider the IDs in the event that thisPath
     // is a prefix of otherPath. In that event, they are different
@@ -60,7 +61,7 @@ int ID::compare(const ID& other) const {
 std::string ID::toString() const {
   std::string ret = this->symbolPath().c_str();
 
-  if (!ret.empty()) {
+  if (!ret.empty() && this->postOrderId() >= 0) {
     ret += "@";
     ret += std::to_string(this->postOrderId());
   }

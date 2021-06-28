@@ -96,7 +96,7 @@ static void test1() {
   double got = mod->dispatch<double>(v);
   assert(got == 10.0);
   assert(v.actionsLog.size()==1);
-  assert(v.actionsLog[0] == "in visit(ASTNode) Module test@4");
+  assert(v.actionsLog[0] == "in visit(ASTNode) Module test");
 }
 
 struct Visitor2 {
@@ -123,7 +123,7 @@ static void test2() {
   double got = ast->dispatch<double>(v);
   assert(got == 10.0);
   assert(v.actionsLog.size()==1);
-  assert(v.actionsLog[0] == "in visit(NamedDecl) Module test@4");
+  assert(v.actionsLog[0] == "in visit(NamedDecl) Module test");
 }
 
 struct Visitor3 {
@@ -150,7 +150,7 @@ static void test3() {
   double got = ast->dispatch<double>(v);
   assert(got == 10.0);
   assert(v.actionsLog.size()==1);
-  assert(v.actionsLog[0] == "in visit(Module) Module test@4");
+  assert(v.actionsLog[0] == "in visit(Module) Module test");
 }
 
 struct Visitor4 {
@@ -182,10 +182,10 @@ static void test4() {
   Visitor4 v;
   ast->traverse(v);
   assert(v.actionsLog.size()==4);
-  assert(v.actionsLog[0] == "in enter(Module) Module test@4");
+  assert(v.actionsLog[0] == "in enter(Module) Module test");
   assert(v.actionsLog[1] == "in enter(ASTNode) Block test@3");
   assert(v.actionsLog[2] == "in exit(ASTNode) Block test@3");
-  assert(v.actionsLog[3] == "in exit(Module) Module test@4");
+  assert(v.actionsLog[3] == "in exit(Module) Module test");
 }
 
 struct Visitor5 {
@@ -224,7 +224,7 @@ static void test5() {
   Visitor5 v;
   ast->traverse(v);
   assert(v.actionsLog.size()==10);
-  assert(v.actionsLog[0] == "in enter(Module) Module test@4");
+  assert(v.actionsLog[0] == "in enter(Module) Module test");
   assert(v.actionsLog[1] == "in enter(ASTNode) Block test@3");
   assert(v.actionsLog[2] == "in enter(Identifier) Identifier test@0");
   assert(v.actionsLog[3] == "in exit(Identifier) Identifier test@0");
@@ -233,7 +233,7 @@ static void test5() {
   assert(v.actionsLog[6] == "in enter(Identifier) Identifier test@2");
   assert(v.actionsLog[7] == "in exit(Identifier) Identifier test@2");
   assert(v.actionsLog[8] == "in exit(ASTNode) Block test@3");
-  assert(v.actionsLog[9] == "in exit(Module) Module test@4");
+  assert(v.actionsLog[9] == "in exit(Module) Module test");
 }
 
 int main(int argc, char** argv) {

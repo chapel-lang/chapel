@@ -162,7 +162,7 @@ void Builder::assignIDs(UniqueString inferredModule) {
 
   For example:
 
-  M@1       module M {
+  M@-1      module M {
   M.Inner@3   module Inner {
   M.Inner@0     a;
   M.Inner@1     b;
@@ -237,7 +237,7 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     }
 
     int numContainedIds = freshId;
-    ast->setID(ID(newSymbolPath, numContainedIds, numContainedIds));
+    ast->setID(ID(newSymbolPath, -1, numContainedIds));
 
     // Note: when creating a new symbol (e.g. fn), we're not incrementing i.
     // The new symbol ID has the updated path (e.g. function name)
