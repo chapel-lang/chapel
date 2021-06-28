@@ -76,7 +76,7 @@ void setFileText(Context* context, UniqueString path, FileContents result) {
                                    std::make_tuple(path),
                                    std::move(result),
                                    "fileText",
-                                   true);
+                                   /* isInputQuery */ true);
 }
 void setFileText(Context* context, UniqueString path, std::string text) {
   setFileText(context, path, FileContents(std::move(text)));
