@@ -4,15 +4,15 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 
-export CHPL_TEST_PERF_CONFIG_NAME='16-node-cs'
+export CHPL_TEST_PERF_CONFIG_NAME='16-node-cs-hdr'
 
 source $CWD/common-perf.bash
-export CHPL_TEST_PERF_DIR=/cray/css/users/chapelu/NightlyPerformance/cray-cs/16-node-cs
+export CHPL_TEST_PERF_DIR=/cray/css/users/chapelu/NightlyPerformance/cray-cs/16-node-cs-hdr
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs.gasnet-mpi"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.cray-cs-hdr.gasnet-mpi"
 
 source $CWD/common-cray-cs.bash y
-source $CWD/common-perf-cray-cs.bash
+source $CWD/common-perf-cray-cs-hdr.bash
 
 module load openmpi/gcc
 
