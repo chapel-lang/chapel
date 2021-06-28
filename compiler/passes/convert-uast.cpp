@@ -40,8 +40,11 @@ namespace {
 struct Converter {
   chpl::Context* context = nullptr;
   bool inTupleDecl = false;
+  UniqueString thisStr;
 
-  Converter(chpl::Context* context) : context(context) { }
+  Converter(chpl::Context* context) : context(context) {
+    thisStr = UniqueString::build(context, "this");
+  }
 
   Expr* convertAST(const uast::ASTNode* node);
 
@@ -96,7 +99,7 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::Local* node) {
-    BlockStmt* body = createBlockWithStmts(node->stmts()); 
+    BlockStmt* body = createBlockWithStmts(node->stmts());
     Expr* condition = convertExprOrNull(node->condition());
     if (condition) {
       return buildLocalStmt(condition, body);
@@ -111,7 +114,7 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::Serial* node) {
-    BlockStmt* body = createBlockWithStmts(node->stmts()); 
+    BlockStmt* body = createBlockWithStmts(node->stmts());
     Expr* condition = convertExprOrNull(node->condition());
 
     if (condition) {
@@ -129,23 +132,26 @@ struct Converter {
   }
 
   CallExpr* visit(const uast::New* node) {
+    Expr* newedType = convertAST(node->typeExpression());
+    CallExpr* typeCall = new CallExpr(newedType);
+
     switch (node->management()) {
       case uast::New::DEFAULT_MANAGEMENT:
-        return new CallExpr(PRIM_NEW);
+        return new CallExpr(PRIM_NEW, typeCall);
       case uast::New::OWNED:
-        return new CallExpr(PRIM_NEW,
+        return new CallExpr(PRIM_NEW, typeCall,
                             new NamedExpr(astr_chpl_manager,
                                           new SymExpr(dtOwned->symbol)));
       case uast::New::SHARED:
-        return new CallExpr(PRIM_NEW,
+        return new CallExpr(PRIM_NEW, typeCall,
                             new NamedExpr(astr_chpl_manager,
                                           new SymExpr(dtShared->symbol)));
       case uast::New::UNMANAGED:
-        return new CallExpr(PRIM_NEW,
+        return new CallExpr(PRIM_NEW, typeCall,
                             new NamedExpr(astr_chpl_manager,
                                           new SymExpr(dtUnmanaged->symbol)));
       case uast::New::BORROWED:
-        return new CallExpr(PRIM_NEW,
+        return new CallExpr(PRIM_NEW, typeCall,
                             new NamedExpr(astr_chpl_manager,
                                           new SymExpr(dtBorrowed->symbol)));
     }
@@ -341,7 +347,21 @@ struct Converter {
     Expr* calledExpr = convertAST(calledExpression);
     INT_ASSERT(calledExpr);
 
-    CallExpr* ret = new CallExpr(calledExpr);
+    CallExpr* ret = nullptr;
+    CallExpr* addArgsTo = nullptr;
+    if (calledExpression->isNew()) {
+      // we have (call PRIM_NEW (call C) mgmt)
+      // and need to add the arguments to the (call C)
+      CallExpr* primNew = toCallExpr(calledExpr);
+      INT_ASSERT(primNew->isPrimitive(PRIM_NEW));
+      CallExpr* typeCall = toCallExpr(primNew->get(1));
+      INT_ASSERT(typeCall);
+      ret = primNew;
+      addArgsTo = typeCall;
+    } else {
+      ret = new CallExpr(calledExpr);
+      addArgsTo = ret;
+    }
 
     int nActuals = node->numActuals();
     for (int i = 0; i < nActuals; i++) {
@@ -350,7 +370,7 @@ struct Converter {
       if (node->isNamedActual(i)) {
         actual = buildNamedActual(node->actualName(i).c_str(), actual);
       }
-      ret->insertAtTail(actual);
+      addArgsTo->insertAtTail(actual);
     }
 
     return ret;
@@ -466,22 +486,26 @@ struct Converter {
     }
     // TODO: add FLAG_NO_PARENS for parenless functions
 
+    IntentTag thisTag = INTENT_BLANK;
+    Expr* receiverType = nullptr;
+
     // Add the formals
     if (node->numFormals() > 0) {
       for (auto formal : node->formals()) {
         DefExpr* def = visit(formal);
         INT_ASSERT(def);
-        buildFunctionFormal(fn, def); // adds it to the list
+        if (formal->name() != thisStr) {
+          buildFunctionFormal(fn, def); // adds it to the list
+        } else if (!node->isPrimaryMethod()) {
+          thisTag = convertFormalIntent(formal->intent());
+          receiverType = convertExprOrNull(formal->typeExpression());
+        }
       }
     }
 
-    IntentTag thisTag = INTENT_BLANK;
-    Expr* receiver = nullptr;
-    // TODO adjust the above two variables once we have methods
-
     UniqueString name = node->name();
 
-    fn = buildFunctionSymbol(fn, name.c_str(), thisTag, receiver);
+    fn = buildFunctionSymbol(fn, name.c_str(), thisTag, receiverType);
 
     if (isAssignOp(name)) {
       fn->addFlag(FLAG_ASSIGNOP);
@@ -668,18 +692,36 @@ struct Converter {
   /// AggregateDecls
 
   Expr* visit(const uast::Class* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    const char* name = node->name().c_str();
+    const char* cname = name;
+    Expr* inherit = convertExprOrNull(node->parentClass());
+    BlockStmt* decls = createBlockWithStmts(node->declOrComments());
+    Flag externFlag = FLAG_UNKNOWN;
+
+    return buildClassDefExpr(name, cname, AGGREGATE_CLASS, inherit, decls,
+                             externFlag, /* docs */ nullptr);
   }
 
   Expr* visit(const uast::Record* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    const char* name = node->name().c_str();
+    const char* cname = name; // TODO: cname could be set for extern record
+    Expr* inherit = nullptr;
+    BlockStmt* decls = createBlockWithStmts(node->declOrComments());
+    Flag externFlag = FLAG_UNKNOWN; // TODO: add extern record support
+
+    return buildClassDefExpr(name, cname, AGGREGATE_RECORD, inherit, decls,
+                             externFlag, /* docs */ nullptr);
   }
 
   Expr* visit(const uast::Union* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    const char* name = node->name().c_str();
+    const char* cname = name; // TODO: cname could be set for extern union
+    Expr* inherit = nullptr;
+    BlockStmt* decls = createBlockWithStmts(node->declOrComments());
+    Flag externFlag = FLAG_UNKNOWN; // TODO: add extern union support
+
+    return buildClassDefExpr(name, cname, AGGREGATE_UNION, inherit, decls,
+                             externFlag, /* docs */ nullptr);
   }
 };
 
