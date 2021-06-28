@@ -35,7 +35,8 @@ namespace uast {
     var foo = new bar(a = 1, 2);
   \endrst
 
-  Creates a call expression where the base expression is 'new bar'.
+  The initialization expression of foo is an FnCall where the base expression
+  is a New node (representing 'new bar').
 */
 class New : public Expression {
  public:
