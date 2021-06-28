@@ -70,7 +70,7 @@ myArg2:
 
 .. code-block:: c++
 
-    #include "chpl/Queries/QueryImpl.h"
+    #include "chpl/queries/query-impl.h"
 
     const MyResultType& myQueryFunction(Context* context,
                                         MyArgType MyArg1,
