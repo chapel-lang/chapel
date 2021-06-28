@@ -924,6 +924,11 @@ module DateTime {
     return this.now();
   }
 
+  /* Return a 'int' value representing the number of seconds from epoch */
+  proc type datetime.gettimestamp() {
+    return getTimeOfDay()[0];
+  }
+
   /* Return a `datetime` value representing the current time and date */
   proc type datetime.now(in tz: shared TZInfo? = nil) {
     if tz.borrow() == nil {

@@ -6,6 +6,6 @@ use MasonBuild;
 proc main() {
   const package = '_noDeps';
   here.chdir(package);
-  const args = ["mason", "build"];
+  const args = ["mason", "build", "--no-checksum"];
   masonBuild(args);
 }

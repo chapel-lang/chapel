@@ -1,0 +1,12 @@
+Created new library project: newTest
+
+[brick]
+name = "newTest"
+CheckSum = "11ab7ee7f00c0425e9d5f12c8cf1f71a32b58837d85c38db2246707f43c2035c"
+version = "0.1.0"
+chplVersion = "1.24.0"
+license = "None"
+
+[dependencies]
+
+

@@ -51,6 +51,7 @@ proc masonUpdate(args: [?d] string) {
   var tf = "Mason.toml";
   var lf = "Mason.lock";
   var skipUpdate = MASON_OFFLINE;
+  var checksum = true;
 
   var listArgs: list(string);
   for arg in args {
@@ -70,20 +71,47 @@ proc masonUpdate(args: [?d] string) {
       when '--update' {
         skipUpdate = false;
       }
+      when '--no-checksum' {
+        checksum = false;
+      }
     }
   }
-  return updateLock(skipUpdate, tf, lf);
+  return updateLock(skipUpdate, checksum, tf, lf);
+}
+
+/*
+Given a project Directory, this method removes the
+checksum field from the project's toml and regenerates
+a toml without the checksum field.
+*/
+proc removeHash(projectHome: string, tf: string){
+  var hash = "";
+  var tomlPath = projectHome + "/" + tf;
+  if isFile(tomlPath) {
+    const toParse = open(tomlPath, iomode.r);
+    const tomlFile = owned.create(parseToml(toParse));
+    if tomlFile.pathExists("brick.CheckSum") {
+      hash = tomlFile["brick"]!["CheckSum"]!.s;
+      tomlFile["brick"]!.A.remove("CheckSum");
+      generateToml(tomlFile, tomlPath);
+    }
+  }
+  return hash;
 }
 
 /* Finds a Mason.toml file and updates the Mason.lock
    generating one if it doesnt exist */
-proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
+proc updateLock(skipUpdate: bool, checksum: bool, tf="Mason.toml", lf="Mason.lock") {
 
   try! {
     const cwd = here.cwd();
     const projectHome = getProjectHome(cwd, tf);
     const tomlPath = projectHome + "/" + tf;
     const lockPath = projectHome + "/" + lf;
+    var previousHash = "";
+    if checksum then {
+      previousHash = removeHash(projectHome, tf);
+    }
     const openFile = openreader(tomlPath);
     const TomlFile = parseToml(openFile);
     var updated = false;
@@ -119,7 +147,12 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
     openFile.close();
     delete TomlFile;
     delete lockFile;
-
+    if checksum then {
+      var newHash = updateTomlWithChecksum(projectHome);
+      if previousHash != "" && previousHash != newHash {
+        writeln("Project had some updates, computing the new Hash");
+      }
+    }
   }
   catch e: MasonError {
     stderr.writeln(e.message());
@@ -516,4 +549,3 @@ private proc getDependencies(tomlTbl: unmanaged Toml) {
   }
   return deps;
 }
-

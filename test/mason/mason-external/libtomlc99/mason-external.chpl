@@ -24,7 +24,7 @@ proc main() {
   masonExternal(args);
 
   // build library that uses libtomlc99
-  var buildArgs = ["mason", "build", "--force"];
+  var buildArgs = ["mason", "build", "--force", "--no-checksum"];
   masonBuild(buildArgs);
 
 }

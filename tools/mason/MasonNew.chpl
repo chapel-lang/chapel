@@ -28,7 +28,6 @@ use MasonUtils;
 use MasonUpdate;
 use MasonHelp;
 use MasonEnv;
-
 /*
   Creates a new library project at a given directory
   mason new <projectName/directoryName>
@@ -41,6 +40,7 @@ proc masonNew(args: [] string) throws {
   var version = '';
   var chplVersion = '';
   var license = 'None';
+  var checksum = true;
   try! {
     if args.size < 3 {
       var metadata = beginInteractiveSession('','','','');
@@ -70,7 +70,10 @@ proc masonNew(args: [] string) throws {
             show = true;
           }
           when '--name' {
-              packageName = args[countArgs];
+            packageName = args[countArgs];
+          }
+          when '--no-checksum' {
+            checksum = false;
           }
           otherwise {
             if arg.startsWith('--name=') {
@@ -91,7 +94,7 @@ proc masonNew(args: [] string) throws {
       if isDir(dirName) {
         throw new owned MasonError("A directory named '" + dirName + "' already exists");
       }
-      InitProject(dirName, packageName, vcs, show, version, chplVersion, license);
+      InitProject(dirName, packageName, vcs, show, version, chplVersion, license, checksum);
     }
   }
   catch e: MasonError {
@@ -104,7 +107,7 @@ proc masonNew(args: [] string) throws {
   Starts an interactive session to create a
   new library project.
 */
-proc beginInteractiveSession(defaultPackageName: string, defVer: string, 
+proc beginInteractiveSession(defaultPackageName: string, defVer: string,
             defChplVer: string, license: string) throws {
   writeln("""This is an interactive session to walk you through creating a library
 project using Mason. The following queries covers the common items required to
@@ -144,10 +147,10 @@ considered if no input is given.""");
         }
         if !isIllegalName {
           if isDir('./' + packageName) then
-            throw new owned MasonError("Bad package name. A package with the name '" 
+            throw new owned MasonError("Bad package name. A package with the name '"
                               + packageName + "' already exists.");
           if validatePackageName(packageName) then
-            gotCorrectPackageName = true; 
+            gotCorrectPackageName = true;
         }
       }
       if !gotCorrectPackageVersion {
@@ -269,7 +272,7 @@ proc validatePackageName(dirName) throws {
   directories such as .git, src, example, test
 */
 proc InitProject(dirName, packageName, vcs, show,
-                  version: string, chplVersion: string, license: string) throws {
+                  version: string, chplVersion: string, license: string, checksum: bool) throws {
   if vcs {
     gitInit(dirName, show);
     addGitIgnore(dirName);
@@ -283,7 +286,10 @@ proc InitProject(dirName, packageName, vcs, show,
     makeSrcDir(dirName);
     makeModule(dirName, fileName=packageName);
     makeTestDir(dirName);
-    makeExampleDir(dirName);  
+    makeExampleDir(dirName);
+    if checksum then {
+      updateTomlWithChecksum(path=dirName);
+    }
     writeln("Created new library project: " + dirName);
   }
   else {
@@ -307,6 +313,7 @@ proc addGitIgnore(dirName: string) {
   GIwriter.close();
 }
 
+
 proc getBaseTomlString(packageName: string, version: string, chapelVersion: string, license: string) {
   const baseToml = """[brick]
 name = "%s"
@@ -321,7 +328,7 @@ license = "%s"
 }
 
 /* Creates the Mason.toml file */
-proc makeBasicToml(dirName: string, path: string, version: string, 
+proc makeBasicToml(dirName: string, path: string, version: string,
             chplVersion: string, license: string) {
   var defaultVersion: string = "0.1.0";
   var defaultChplVersion: string = getChapelVersionStr();
