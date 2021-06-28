@@ -122,6 +122,13 @@ class Builder final {
    */
   Builder::Result result();
 
+  /**
+    Certain uAST nodes, - Function, Module, Class, Record, Union, Enum -
+    all create a new ID scope. This function returns `true` for AST tags
+    with this property.
+   */
+  static bool astTagIndicatesNewIdScope(asttags::ASTTag tag);
+
   // build methods are actually type methods on the individual AST
   // elements. This prevents the Builder API from growing unreasonably large.
 

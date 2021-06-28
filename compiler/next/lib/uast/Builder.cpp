@@ -88,6 +88,13 @@ Builder::Result Builder::result() {
   return ret;
 }
 
+bool Builder::astTagIndicatesNewIdScope(asttags::ASTTag tag) {
+  return asttags::isNamedDecl(tag) &&
+        (asttags::isFunction(tag) ||
+         asttags::isModule(tag) ||
+         asttags::isTypeDecl(tag));
+}
+
 // Returns the name of the implicit module, or "" if there is none
 // If the implicit module is needed, moves the statements in to it.
 UniqueString Builder::createImplicitModuleIfNeeded() {
@@ -183,8 +190,7 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
 
   int firstChildID = i;
 
-  bool newScope = ast->isNamedDecl() &&
-                  (ast->isFunction() || ast->isModule() || ast->isTypeDecl());
+  bool newScope = Builder::astTagIndicatesNewIdScope(ast->tag());
 
   if (newScope) {
     // for scoping constructs, adjust the symbolPath and
