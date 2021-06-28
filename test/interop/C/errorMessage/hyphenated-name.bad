@@ -1,0 +1,2 @@
+error: Cannot export module initializer with name 'chpl__init_hyphenated-name'
+note: Consider changing the name of module 'hyphenated-name' to be a valid C identifier
