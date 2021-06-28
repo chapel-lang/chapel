@@ -2413,4 +2413,18 @@ module ChapelBase {
   inline proc chpl_field_gt(a, b) where !isArrayType(a.type) {
     return a > b;
   }
+
+  // c_fn_ptr stuff
+  pragma "no doc"
+  inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
+    __primitive("=", a, b);
+  }
+  pragma "no doc"
+  proc c_fn_ptr.this() {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
+  pragma "no doc"
+  proc c_fn_ptr.this(args...) {
+    compilerError("Can't call a C function pointer within Chapel");
+  }
 }
