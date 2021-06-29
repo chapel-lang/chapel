@@ -120,8 +120,8 @@ static struct fid_wait* ofi_amhWaitSet; // wait set for AM handler
 // spread the progress load across all the threads when we're doing
 // manual progress.
 //
-static struct fid_ep* ofi_rxEp;         // AM req receive endpoint
-static struct fid_cq* ofi_rxCQ;         // AM req receive endpoint CQ
+static struct fid_ep* ofi_rxEp;         // receive endpoint
+static struct fid_cq* ofi_rxCQ;         // receive endpoint CQ
 
 static struct fid_av* ofi_av;           // address vector
 static fi_addr_t* ofi_rxAddrs;          // table of remote endpoint addresses
