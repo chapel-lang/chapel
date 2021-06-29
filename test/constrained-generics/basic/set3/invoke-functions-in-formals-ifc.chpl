@@ -12,6 +12,7 @@ interface i2(t2) {
     where Q2 implements i1
   {
     write("i2.p2 "); write(xx); write(" "); write(yy); writeln();
+    // p1() is defined in the interface of the IC formal 'yy'
     p1(yy);
   }
 }

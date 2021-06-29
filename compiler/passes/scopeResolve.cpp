@@ -186,7 +186,8 @@ static void handleReceiverFormals() {
           AggregateType::setCreationStyle(ts, fn);
 
         } else if (InterfaceSymbol* isym = toInterfaceSymbol(rsym)) {
-          // It is easy to desugar an interface-as-this-type right here.
+          // Convert fn(this: IFC, ...) to
+          //   fn(this: ?t_IFC, ...) where t_IFC implements IFC
           TypeSymbol* ctSym = desugarInterfaceAsType(fn,
                                 toArgSymbol(fn->_this), sym, isym);
           sym->replace(new SymExpr(ctSym));

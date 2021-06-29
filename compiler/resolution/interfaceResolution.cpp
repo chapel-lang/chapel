@@ -219,31 +219,50 @@ void recordCGInterimInstantiations(CallExpr* call, ResolutionCandidate* best1,
 }
 
 //
-// handleCallsToOtherCGfuns() invokes resolveNormalCall() on a call
-// that has been resolved already. So any out-intent formals of the target,
-// if any, have been handled already. Re-resolving 'call' will add
-// another formal temp for each out intent, with a call to '=' from the
-// new formal temp to the old formal temp. Convert such a call to PRIM_MOVE.
+// Re-resolving the call adds a second temp for each out/inout-intent formal
+// in the callee, on top of the first temp created upon when we resolved
+// this call for the first time. Things will look like:
 //
-// Ex. call f(myOutActual) is represented as:
-//  def _formal_tmp_out_myOutFormal
-//  call f(_formal_tmp_out_myOutFormal)
-//  // then one of:
-//  move(myOutActual, chpl__initCopy(_formal_tmp_out_myOutFormal))
-//  call =(myOutActual, _formal_tmp_out_myOutFormal)
-// Re-resolving adds, right after call f():
-//  call =(newly-added _formal_tmp_out_myOutFormal,
-//         already-existing _formal_tmp_out_myOutFormal)
-// which we convert to a MOVE.
+//   move firstTemp, chpl__initCopy(userActual)  // if the formal is inout
+//   move secondTemp, chpl__initCopy(firstTemp)  // ditto
+//   the call being re-resolved(...., secondTemp, ...)
+//   call = (firstTemp, secondTemp)
+//   move(userActual, call chpl__initCopy(firstTemp)) // if split-initializing
+//   call = (userActual, firstTemp)                   // otherwise
 //
-static void adjustForOutIntents(Expr* nextStmt, CallExpr* call) {
-   for(Expr* curr = call->getStmtExpr(); curr != nextStmt; curr = curr->next)
-    if (CallExpr* call = toCallExpr(curr))
-      if (UnresolvedSymExpr* utarget = toUnresolvedSymExpr(call->baseExpr))
-        if (utarget->unresolved == astrSassign) {
-          utarget->remove();
-          call->primitive = primitives[PRIM_MOVE];
-        }
+// Leaving things this way leads to extra deinits, so we can get uses
+// of already-deinitialized objects. To avoid this, restore things
+// to what they were before re-resolving. Namely, replace secondTemp
+// with firstTemp in the call being re-resolved and remove the statements
+// that mention secondTemp.
+//
+// TODO: avoid re-resolving, so we do not need to go through this.
+//
+static void adjustOutIntents(CallExpr* reresolvedCall) {
+  for_formals_actuals(formal, actual, reresolvedCall) {
+    if (! (formal->intent & INTENT_FLAG_OUT)) continue;
+    SymExpr* actSE = toSymExpr(actual);
+    Symbol* temp = actSE->symbol();
+    INT_ASSERT(temp->hasFlag(FLAG_TEMP));
+    for_SymbolSymExprs(se, temp) {
+      if (se == actSE)
+        continue;
+      CallExpr* parent = toCallExpr(se->parentExpr);
+      if (parent->isPrimitive(PRIM_MOVE)) {
+        // move(temp, chpl__initCopy(userAct))
+        INT_ASSERT(formal->intent == INTENT_INOUT);
+        parent->remove();
+        continue;
+      }
+      // call("=", original temp, this temp)
+      UnresolvedSymExpr* BE = toUnresolvedSymExpr(parent->baseExpr);
+      INT_ASSERT(BE->unresolved == astrSassign);
+      actSE->replace(parent->get(1)->remove());
+      parent->remove();
+    }
+    temp->defPoint->remove();
+    INT_ASSERT(temp->firstSymExpr() == nullptr); // no more references to it
+  }
 }
 
 void handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
@@ -271,9 +290,8 @@ void handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
         // and resolve it "from scratch".
 
         cgCalleeSE->replace(new SymExpr(origCGfun));
-        Expr* nextStmt = call->getStmtExpr()->next;
         resolveNormalCall(call);
-        adjustForOutIntents(nextStmt, call);
+        adjustOutIntents(call);
         
       } else {
         // cgCallee was created for 'origFn'. It gets referenced in 'newFn'
@@ -378,7 +396,8 @@ void resolveInterfaceSymbol(InterfaceSymbol* isym) {
 
   for_alist(stmt, isym->ifcBody->body)
    if (FnSymbol* fn = toFnSymbol(toDefExpr(stmt)->sym))
-     if (! fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER))
+     if (! fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER) &&
+         ! fn->hasFlag(FLAG_CG_REPRESENTATIVE))
        resolveISymRequiredFun(isym, fn);
 
   for_alist(stmt, isym->ifcBody->body)
@@ -1507,6 +1526,36 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   return target != NULL;
 }
 
+static void buildWitnessMapHelper(std::vector<InterfaceReps*>& ifcReps,
+                                  std::vector<ImplementsStmt*>& conWits,
+                                  SymbolMap& witMap, int depth) {
+  // The recursion should finish due to isym's ifcReps.
+  // If it finishes due to istm's conWits, accept that as well for now.
+  int aconNum = std::min(ifcReps.size(), conWits.size());
+  if (aconNum > 0) {
+    depth++; INT_ASSERT(depth <= repsMaxDepth);
+  }
+
+  for (int aconIdx = 0; aconIdx < aconNum; aconIdx++) {
+    form_Map(SymbolMapElem, elem, ifcReps[aconIdx]->symReps)
+      witMap.put(elem->value,
+                 conWits[aconIdx]->witnesses.symWits.get(elem->key));
+
+    buildWitnessMapHelper(ifcReps[aconIdx]->conReps,
+                          conWits[aconIdx]->witnesses.conWits,
+                          witMap, depth);
+  }
+}
+
+static void buildWitnessMap(InterfaceSymbol* isym, ImplementsStmt* istm,
+                            SymbolMap&     witMap) {
+  // Start with istm's own witnesses.
+  witMap.copy(istm->witnesses.symWits);
+
+  // Descend into associated constraints.
+  buildWitnessMapHelper(isym->ifcReps, istm->witnesses.conWits, witMap, 0);
+}
+
 static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
                                SymbolMap&    fml2act,
                                BlockStmt*     holder,  Expr*       addlSite,
@@ -1524,10 +1573,12 @@ static bool resolveRequiredFns(InterfaceSymbol* isym,  ImplementsStmt* istm,
   }
 
   if (rfSuccess) {
+    SymbolMap witMap;
+    buildWitnessMap(isym, istm, witMap);
     for(FnSymbol* iDflt: instantiatedDefaults)
       // Update references to now-instantiated required functions
       // within default implementations.
-      update_symbols(iDflt, &(istm->witnesses.symWits));
+      update_symbols(iDflt, &witMap);
   }
 
   return rfSuccess;

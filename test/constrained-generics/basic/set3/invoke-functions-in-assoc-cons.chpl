@@ -17,15 +17,15 @@ interface i3(t3) {
   }
 }
 
+proc icFun(aa: ?Q, bb: aa.a3) where Q implements i3 {
+  write("icFun "); write(aa); write(" "); write(bb); writeln();
+  p3(bb);
+}
+
 int implements i1;
 proc p1(arg1: int) { writeln("p1.int ", arg1); }
 
 real implements i3;
 proc real.a3 type return int;
-
-proc icFun(aa: ?Q, bb: aa.a3) where Q implements i3 {
-  write("icFun "); write(aa); write(" "); write(bb); writeln();
-  p3(bb);
-}
 
 icFun(23.32, 45);
