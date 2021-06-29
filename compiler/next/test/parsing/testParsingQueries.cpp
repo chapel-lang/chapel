@@ -495,8 +495,8 @@ static void test5() {
 
     // Now check their locations
     // Not checking comment locations here
-    Location aLoc = locate(ctx, A);
-    Location bLoc = locate(ctx, B);
+    Location aLoc = locateAST(ctx, A);
+    Location bLoc = locateAST(ctx, B);
     assert(aLoc.path() == modulePath);
     assert(bLoc.path() == modulePath);
     assert(aLoc.line() == 2);

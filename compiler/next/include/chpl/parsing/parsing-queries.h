@@ -91,7 +91,7 @@ namespace parsing {
    This function just runs locateID on ast->id(). Similarly to locateID,
    it cannot be used to get a Location for a Comment.
    */
-  const Location& locate(Context* context, const uast::ASTNode* ast);
+  const Location& locateAST(Context* context, const uast::ASTNode* ast);
 
   using ModuleVec = std::vector<const uast::Module*>;
   /**

@@ -151,7 +151,7 @@ const Location& locateID(Context* context, ID id) {
 }
 
 // this is just a convenient wrapper around locating with the id
-const Location& locate(Context* context, const ASTNode* ast) {
+const Location& locateAST(Context* context, const ASTNode* ast) {
   return locateID(context, ast->id());
 }
 
