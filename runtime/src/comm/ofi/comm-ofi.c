@@ -279,6 +279,7 @@ static void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
 static void do_remote_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                   enum fi_op, enum fi_datatype);
 static void amEnsureProgress(struct perTxCtxInfo_t*);
+static void amCheckRxTxCmpls(chpl_bool*, chpl_bool*, struct perTxCtxInfo_t*);
 static void checkTxCmplsCQ(struct perTxCtxInfo_t*);
 static void checkTxCmplsCntr(struct perTxCtxInfo_t*);
 static size_t readCQ(struct fid_cq*, void*, size_t);
@@ -336,6 +337,14 @@ static void ofiErrReport(const char*, int, const char*);
     do {                                                                \
       retVal = (expr);                                                  \
       if (retVal != FI_SUCCESS && retVal != want2) {                    \
+        OFI_ERR(#expr, retVal, fi_strerror(-retVal));                   \
+      }                                                                 \
+    } while (0)
+
+#define OFI_CHK_3(expr, retVal, want2, want3)                           \
+    do {                                                                \
+      retVal = (expr);                                                  \
+      if (retVal != FI_SUCCESS && retVal != want2 && retVal != want3) { \
         OFI_ERR(#expr, retVal, fi_strerror(-retVal));                   \
       }                                                                 \
     } while (0)
@@ -4129,45 +4138,17 @@ void amHandler(void* argNil) {
   // Process AM requests and watch transmit responses arrive.
   //
   while (!atomic_load_bool(&amHandlersExit)) {
-    if (ofi_amhPollSet != NULL) {
-      void* contexts[pollSetSize];
-      int ret;
-      OFI_CHK_COUNT(fi_poll(ofi_amhPollSet, contexts, pollSetSize), ret);
-
-      if (ret == 0) {
-        ret = fi_wait(ofi_amhWaitSet, 100 /*ms*/);
-        if (ret != FI_SUCCESS
-            && ret != -FI_EINTR
-            && ret != -FI_ETIMEDOUT) {
-          OFI_ERR("fi_wait(ofi_amhWaitSet)", ret, fi_strerror(ret));
-        }
-        OFI_CHK_COUNT(fi_poll(ofi_amhPollSet, contexts, pollSetSize), ret);
-      }
-
-      //
-      // Process the CQs/counters that had events.  We really only have
-      // to take any explicit actions for inbound AM messages and our
-      // transmit endpoint.  For RMA we just need to ensure progress,
-      // and the poll call itself did that.
-      //
-      for (int i = 0; i < ret; i++) {
-        if (contexts[i] == &ofi_rxCQ) {
-          processRxAmReq(tcip);
-        } else if (contexts[i] == &tcip->checkTxCmplsFn) {
-          (*tcip->checkTxCmplsFn)(tcip);
-        } else {
-          INTERNAL_ERROR_V("unexpected context %p from fi_poll()",
-                           contexts[i]);
-        }
-      }
-    } else {
-      //
-      // The provider can't do poll sets.
-      //
+    chpl_bool hadRxEvent, hadTxEvent;
+    amCheckRxTxCmpls(&hadRxEvent, &hadTxEvent, tcip);
+    if (hadRxEvent) {
       processRxAmReq(tcip);
-      (*tcip->checkTxCmplsFn)(tcip);
-
-      sched_yield();
+    } else if (!hadTxEvent) {
+      //
+      // No activity; avoid CPU monopolization.
+      //
+      int ret;
+      OFI_CHK_3(fi_wait(ofi_amhWaitSet, 100 /*ms*/), ret,
+                -FI_EINTR, -FI_ETIMEDOUT);
     }
 
     if (amDoLivenessChecks) {
@@ -6227,17 +6208,25 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd_v, void* local_mr,
 }
 
 
+static
 void amEnsureProgress(struct perTxCtxInfo_t* tcip) {
   (*tcip->checkTxCmplsFn)(tcip);
 
   //
-  // We only have responsibility for inbound AMs and RMA if we're doing
+  // We only have responsibility for inbound operations if we're doing
   // manual progress.
   //
   if (ofi_info->domain_attr->data_progress != FI_PROGRESS_MANUAL) {
     return;
   }
 
+  (void) amCheckRxTxCmpls(NULL, NULL, tcip);
+}
+
+
+static
+void amCheckRxTxCmpls(chpl_bool* pHadRxEvent, chpl_bool* pHadTxEvent,
+                      struct perTxCtxInfo_t* tcip) {
   if (ofi_amhPollSet != NULL) {
     void* contexts[pollSetSize];
     int ret;
@@ -6245,16 +6234,22 @@ void amEnsureProgress(struct perTxCtxInfo_t* tcip) {
 
     //
     // Process the CQs/counters that had events.  We really only have
-    // to take any explicit actions for our transmit endpoint.  If we
-    // have inbound AM messages we want to handle those in the main
-    // poll loop.  And for RMA we just need to ensure progress, which
-    // the poll call itself will have done.
+    // to consume completions for our transmit endpoint.  If we have
+    // inbound AM messages we'll let the caller know and those can be
+    // dealt with in the main poll loop.  For inbound RMA, ensuring
+    // progress is all that's needed, and the poll call itself will
+    // have done that.
     //
     for (int i = 0; i < ret; i++) {
       if (contexts[i] == &ofi_rxCQ) {
-        // no action
+        if (pHadRxEvent != NULL) {
+          *pHadRxEvent = true;
+        }
       } else if (contexts[i] == &tcip->checkTxCmplsFn) {
         (*tcip->checkTxCmplsFn)(tcip);
+        if (pHadTxEvent != NULL) {
+          *pHadTxEvent = true;
+        }
       } else {
         INTERNAL_ERROR_V("unexpected context %p from fi_poll()",
                          contexts[i]);
@@ -6262,9 +6257,19 @@ void amEnsureProgress(struct perTxCtxInfo_t* tcip) {
     }
   } else {
     //
-    // The provider can't do poll sets.
+    // The provider can't do poll sets.  Consume transmit completions,
+    // and just assume that there may be some inbound operations which
+    // the main loop will handle.  Also, avoid CPU monopolization even
+    // if we had events, because we can't actually tell.
     //
+    sched_yield();
+    if (pHadRxEvent != NULL) {
+      *pHadRxEvent = true;
+    }
     (*tcip->checkTxCmplsFn)(tcip);
+    if (pHadTxEvent != NULL) {
+      *pHadTxEvent = true;
+    }
   }
 }
 
