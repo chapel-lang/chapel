@@ -99,6 +99,18 @@ namespace parsing {
    */
   const ModuleVec& parse(Context* context, UniqueString path);
 
+  using IdToAstMap = std::unordered_map<ID, const uast::ASTNode*>;
+
+  /**
+   This query returns a map from ID to uAST nodes for the uAST parsed from a
+   particular file.
+  */
+  const IdToAstMap& fileIdToAstMap(Context* context, UniqueString path);
+
+  /**
+   Returns the uast node with the given ID.
+   */
+  const uast::ASTNode* idToAST(Context* context, ID id);
 
 } // end namespace parsing
 } // end namespace chpl

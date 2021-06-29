@@ -171,6 +171,45 @@ const ModuleVec& parse(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
+const IdToAstMap& fileIdToAstMap(Context* context, UniqueString path) {
+  QUERY_BEGIN(fileIdToAstMap, context, path);
+
+  // Get the result of parsing
+  const uast::Builder::Result& p = parseFile(context, path);
+  // Create a map of ID to uAST node
+  IdToAstMap result(p.locations.size());
+
+  for (auto& pair : p.locations) {
+    const ASTNode* ast = pair.first;
+    if (ast != nullptr && !ast->id().isEmpty()) {
+      result.insert({ast->id(), ast});
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+static const ASTNode* const& astForIDQuery(Context* context, ID id) {
+  QUERY_BEGIN(astForIDQuery, context, id);
+
+  // Ask the context for the filename from the ID
+  UniqueString path = context->filePathForID(id);
+
+  // Get the map of ID to uAST
+  const ASTNode* result = nullptr;
+  const IdToAstMap& map = fileIdToAstMap(context, path);
+  auto search = map.find(id);
+  if (search != map.end()) {
+    result = search->second;
+  }
+
+  return QUERY_END(result);
+}
+
+const ASTNode* idToAST(Context* context, ID id) {
+  return astForIDQuery(context, id);
+}
+
 
 } // end namespace parsing
 } // end namespace chpl

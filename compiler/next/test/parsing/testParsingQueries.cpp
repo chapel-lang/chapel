@@ -541,6 +541,42 @@ static void test6() {
   checkPathAllChildren(ctx, mod, modulePath);
 }
 
+static void checkIdsAllChildren(Context* context,
+                                const ASTNode* ast) {
+  if (!ast->id().isEmpty()) {
+    const ASTNode* got = idToAST(context, ast->id());
+    assert(got == ast);
+  }
+
+  for (const ASTNode* child : ast->children()) {
+    checkIdsAllChildren(context, child);
+  }
+}
+
+static void test7() {
+  printf("test7\n");
+  Context context;
+  Context* ctx = &context;
+
+  auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
+  std::string moduleContents;
+
+  moduleContents = "module MyModule {\n"
+                   "  a;\n"
+                   "  module Inner {\n"
+                   "    b;\n"
+                   "    proc innerProc() { }\n"
+                   "  }\n"
+                   "  proc myModuleProc() { }\n"
+                   "  c;\n"
+                   "}\n";
+
+  setFileText(ctx, modulePath, moduleContents);
+  const Module* mod = parseOneModule(ctx, modulePath);
+
+  checkIdsAllChildren(ctx, mod);
+}
+
 int main() {
   test0();
   test1();
@@ -549,6 +585,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 
   return 0;
 }
