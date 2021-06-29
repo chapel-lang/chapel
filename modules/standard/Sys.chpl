@@ -47,6 +47,7 @@ module Sys {
   use SysBasic;
   private use SysCTypes;
   private use CPtr;
+  private use SysError;
 
 
   // CONSTANTS
@@ -232,6 +233,8 @@ module Sys {
   // socket address sizes
   extern const INET_ADDRSTRLEN:c_int;
   extern const INET6_ADDRSTRLEN:c_int;
+  extern const NI_MAXHOST:c_int;
+  extern const NI_MAXSERV:c_int;
 
   // standard ipv4 addresses
   extern const INADDR_ANY:sys_in_addr_t;
@@ -321,25 +324,47 @@ module Sys {
     }
 
     /*
-    Returns the `host` address and `port` stored in record.
-    If the `host` doesn't have enough space then address is
-    truncated as per available space. Sufficient space can be
-    :data:`INET_ADDRSTRLEN` or :data:`INET6_ADDRSTRLEN`.
+    Returns the `host` address stored in record.
 
-    :arg host: hostname address in IPv4 or IPv6 string notation
-    :type host: `c_ptr(c_char)`
-
-    :arg port: port number
-    :type port: `uint(16)`
+    :return: Returns numeric host string.
+    :rtype: `string`
 
     :throws Error: If record was uninitialized and has no information
-                   about host` or `port`.
+                   about `host` or `port`.
     */
-    proc addr(host: c_ptr(c_char), ref port: uint(16)) throws {
-      var err = sys_extract_sys_sockaddr_t(this, host, port);
-      if err != 1 {
-        throw new Error("sys_sockaddr_t was not initialized");
+    pragma "no doc"
+    proc numericHost() throws {
+
+      var buffer = c_calloc(c_char, NI_MAXHOST);
+      var length:c_int;
+
+      var err_out = sys_host_sys_sockaddr_t(this, buffer, NI_MAXHOST, length);
+      if err_out != 0 {
+        throw SystemError.fromSyserr(err_out);
       }
+
+      return createStringWithOwnedBuffer(buffer, length, NI_MAXHOST);
+    }
+
+    /*
+    Returns the `port` stored in record.
+
+    :return: Returns numeric port.
+    :rtype: `c_uint`
+
+    :throws Error: If record was uninitialized and has no information
+                   about `host` or `port`.
+    */
+    pragma "no doc"
+    proc port() throws {
+      var port:c_uint;
+
+      var err_out = sys_port_sys_sockaddr_t(this, port);
+      if err_out != 0 {
+        throw SystemError.fromSyserr(err_out);
+      }
+
+      return port;
     }
   }
 
@@ -374,6 +399,8 @@ module Sys {
   extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: c_uint, family: c_int):c_int;
   extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:c_uint):c_int;
   extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint):c_int;
+  extern proc sys_host_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
+  extern proc sys_port_sys_sockaddr_t(ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
   extern proc sys_strerror(error:err_t, ref string_out:c_string):err_t;
 
   extern proc sys_readlink(path:c_string, ref string_out:c_string):err_t;

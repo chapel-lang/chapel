@@ -141,21 +141,22 @@ void sys_set_sys_sockaddr_in6_t(sys_sockaddr_t* addr, sys_in6_addr_t host, u_int
   addr_inet6->sin6_addr = host;
 }
 
-int sys_extract_sys_sockaddr_t(sys_sockaddr_t* addr, char* host, u_int16_t *port){
-  int family = sys_getsockaddr_family(addr);
+int sys_host_sys_sockaddr_t(sys_sockaddr_t* addr, char* host, socklen_t hostlen, int* length){
   err_t err_out = 0;
-  if(family == AF_INET){
-    struct sockaddr_in *addr_inet = (struct sockaddr_in *)&addr->addr;
-    *port = ntohs(addr_inet->sin_port);
-    if (inet_ntop(AF_INET, &addr_inet->sin_addr, host, INET_ADDRSTRLEN) == NULL)
-      err_out = errno;
-  }
-  else if(family == AF_INET6){
-    struct sockaddr_in6 *addr_inet6 = (struct sockaddr_in6 *)&addr->addr;
-    *port = ntohs(addr_inet6->sin6_port);
-    if (inet_ntop(AF_INET6, &addr_inet6->sin6_addr, host, INET6_ADDRSTRLEN) == NULL)
-      err_out = errno;
-  }
+
+  err_out = getnameinfo((struct sockaddr *)&addr->addr, addr->len, host, hostlen, NULL, 0, NI_NUMERICHOST);
+
+  *length = strlen(host);
+  return err_out;
+}
+
+int sys_port_sys_sockaddr_t(sys_sockaddr_t* addr, uint16_t* numericport){
+  err_t err_out = 0;
+
+  char port[NI_MAXSERV];
+  err_out = getnameinfo((struct sockaddr *)&addr->addr, addr->len, NULL, 0, port, sizeof(port), NI_NUMERICSERV);
+
+  *numericport = atoi(port);
 
   return err_out;
 }

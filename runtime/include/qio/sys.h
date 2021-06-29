@@ -140,6 +140,8 @@ int sys_getsockaddr_family(sys_sockaddr_t *addr);
 int sys_set_sys_sockaddr_t(sys_sockaddr_t *addr, const char *host, u_int16_t port, int family);
 void sys_set_sys_sockaddr_in_t(sys_sockaddr_t *addr, sys_in_addr_t host, u_int16_t port);
 void sys_set_sys_sockaddr_in6_t(sys_sockaddr_t *addr, sys_in6_addr_t host, u_int16_t port);
+int sys_host_sys_sockaddr_t(sys_sockaddr_t* addr, char* host, socklen_t hostlen, int* length);
+int sys_port_sys_sockaddr_t(sys_sockaddr_t* addr, uint16_t* numericport);
 
 size_t sys_page_size(void);
 
