@@ -270,7 +270,7 @@ module Sys {
     :type host: `string`
 
     :arg port: port number
-    :type port: `uint(16)`
+    :type port: `c_uint`
 
     :arg family: domain of socket
     :type family: `c_int`
@@ -278,8 +278,9 @@ module Sys {
     :throws IllegalArgumentError: Upon failure to provide a compatible
                                   `host` and `family`.
     */
-    proc initialize(host: c_string, port: uint(16), family: int) throws {
-      var err_out = sys_fill_sys_sockaddr_t(this, host, port, family);
+    pragma "no doc"
+    proc set(host: c_string, port: c_uint, family: c_int) throws {
+      var err_out = sys_set_sys_sockaddr_t(this, host, port, family);
       if err_out != 1 {
         throw new IllegalArgumentError("Incompatible Address and Family");
       }
@@ -287,18 +288,19 @@ module Sys {
 
     /*
     Initialize sys_sockaddr_t with provided `host` and
-    `port`. `host` should be one of the standard ipv6
+    `port`. `host` should be one of the standard ipv4
     addresses. family for socket address is assumed to be
-    `AF_INET` based on `host` address being ipv6.
+    `AF_INET` based on `host` address being ipv4.
 
     :arg host: standard hostname address ipv6
     :type host: `sys_in_addr_t`
 
     :arg port: port number
-    :type port: `uint(16)`
+    :type port: `c_uint`
     */
-    proc initialize(host: sys_in_addr_t, port: uint(16)) {
-      sys_fill_sys_sockaddr_in_t(this, host, port);
+    pragma "no doc"
+    proc set(host: sys_in_addr_t, port: c_uint) {
+      sys_set_sys_sockaddr_in_t(this, host, port);
     }
 
     /*
@@ -311,10 +313,11 @@ module Sys {
     :type host: `sys_in6_addr_t`
 
     :arg port: port number
-    :type port: `uint(16)`
+    :type port: `c_uint`
     */
-    proc initialize(host: sys_in6_addr_t, port: uint(16)) {
-      sys_fill_sys_sockaddr_in6_t(this, host, port);
+    pragma "no doc"
+    proc set(host: sys_in6_addr_t, port: c_uint) {
+      sys_set_sys_sockaddr_in6_t(this, host, port);
     }
 
     /*
@@ -368,10 +371,9 @@ module Sys {
 
   extern proc sys_init_sys_sockaddr_t(ref addr:sys_sockaddr_t);
   extern proc sys_getsockaddr_family(ref addr: sys_sockaddr_t):c_int;
-  extern proc sys_fill_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: uint(16), family: int):c_int;
-  extern proc sys_fill_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:uint(16)):c_int;
-  extern proc sys_fill_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:uint(16)):c_int;
-  extern proc sys_extract_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_ptr(c_char), ref port: uint(16)) : c_int;
+  extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: c_uint, family: c_int):c_int;
+  extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:c_uint):c_int;
+  extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint):c_int;
   extern proc sys_strerror(error:err_t, ref string_out:c_string):err_t;
 
   extern proc sys_readlink(path:c_string, ref string_out:c_string):err_t;
