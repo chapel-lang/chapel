@@ -130,7 +130,7 @@ void sys_set_sys_sockaddr_in_t(sys_sockaddr_t* addr, sys_in_addr_t host, u_int16
   struct sockaddr_in *addr_inet = (struct sockaddr_in *)&addr->addr;
   addr_inet->sin_family = AF_INET;
   addr_inet->sin_port = htons(port);
-  addr_inet->sin_addr.s_addr = host;
+  addr_inet->sin_addr.s_addr = htonl(host);
 }
 
 void sys_set_sys_sockaddr_in6_t(sys_sockaddr_t* addr, sys_in6_addr_t host, u_int16_t port)
