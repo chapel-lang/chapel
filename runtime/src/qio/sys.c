@@ -92,6 +92,10 @@
 
 #endif
 
+#ifdef QTHREAD_VERSION
+#include <qthread/io.h>
+#include <qthread/qt_syscalls.h>
+#endif
 
 
 // Should be available in sys_xsi_strerror_r.c
@@ -1430,7 +1434,12 @@ err_t sys_accept(fd_t sockfd, sys_sockaddr_t* addr_out, fd_t* fd_out)
 
   STARTING_SLOW_SYSCALL;
 
+#ifdef QTHREAD_VERSION
+  got = qt_accept(sockfd, (struct sockaddr*) & addr_out->addr, &addr_len);
+#else
   got = accept(sockfd, (struct sockaddr*) & addr_out->addr, &addr_len);
+#endif
+
   if( got != -1 ) {
     if( addr_len > (socklen_t) sizeof(sys_sockaddr_storage_t) ) {
       fprintf(stderr, "Warning: address truncated in sys_accept\n");
@@ -1474,7 +1483,12 @@ err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr)
 
   STARTING_SLOW_SYSCALL;
 
+#ifdef QTHREAD_VERSION
+  got = qt_connect(sockfd, (const struct sockaddr*) & addr->addr, addr->len);
+#else
   got = connect(sockfd, (const struct sockaddr*) & addr->addr, addr->len);
+#endif
+
   if( got != -1 ) {
     err_out = 0;
   } else {
@@ -1868,6 +1882,13 @@ err_t sys_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
 
   int got_nset;
   err_t err_out = 0;
+
+#ifdef QTHREAD_VERSION
+  got_nset = qt_select(nfds, readfds, writefds, exceptfds, timeout);
+  if (got_nset == -1) err_out = errno; // save error
+  *nset = got_nset;
+  return err_out;
+#else
   struct timeval deadline;
   struct timeval now;
   struct timeval real_timeout;
@@ -1906,6 +1927,7 @@ err_t sys_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
 
   *nset = got_nset;
   return err_out;
+#endif
 }
 
 err_t sys_unlink(const char* path)
