@@ -40,8 +40,6 @@ proc test_expm() {
       setDiag(X, 0, 1);
       var Y = X * b[i];
 
-      var M: [X.domain] eltType;
-
       var curIter = 0;
       t.start();
       do {
@@ -80,8 +78,6 @@ proc test_expm() {
       X(1,1) = -1.0;
       X(0,1) = b[i];
 
-      var M: [X.domain] eltType;
-
       var curIter = 0;
       t.start();
       do {
@@ -115,8 +111,6 @@ proc test_expm() {
     setDiag(X, 1, 1.0);
     setDiag(X, -1, -1.0);
 
-    var M: [X.domain] eltType;
-
     var curIter = 0;
     t.start();
     do {
@@ -148,8 +142,6 @@ proc test_expm() {
     setDiag(X, 1, 1.0);
     setDiag(X, -1, -1.0);
 
-    var M: [X.domain] eltType;
-
     var curIter = 0;
     t.start();
     do {
@@ -180,8 +172,6 @@ proc test_expm() {
     for i in 0..<m {
       X(r.getNext(0,m-1), i) = 1.0;
     }
-
-    var M: [X.domain] eltType;
 
     var curIter = 0;
     t.start();
@@ -215,8 +205,6 @@ proc test_expm() {
       X(r.getNext(0,m-1), i) = 0.0;
     }
 
-    var M: [X.domain] eltType;
-
     var curIter = 0;
     t.start();
     do {
@@ -246,8 +234,6 @@ proc test_expm() {
     setDiag(X, 0, 1.0 + 1i);
     setDiag(X, 1, 1.0);
     setDiag(X, -1, -1.0);
-
-    var M: [X.domain] complex;
 
     var curIter = 0;
     t.start();
@@ -283,8 +269,6 @@ proc test_sinm() {
     setDiag(X, 1, 1.0);
     setDiag(X, -1, -1.0);
 
-    var M: [X.domain] complex;
-
     var curIter = 0;
     t.start();
     do {
@@ -317,8 +301,6 @@ proc test_cosm() {
     setDiag(X, 0, 1.0 + 1i);
     setDiag(X, 1, 1.0);
     setDiag(X, -1, -1.0);
-
-    var M: [X.domain] complex;
 
     var curIter = 0;
     t.start();
@@ -353,10 +335,6 @@ proc test_sincos() {
     setDiag(X, 1, 1.0);
     setDiag(X, -1, -1.0);
 
-    // var Z_sin: [X.domain] complex;
-    // var Z_cos: [X.domain] complex;
-    // var M;
-
     var curIter = 0;
     t.start();
     do {
@@ -379,20 +357,20 @@ proc test_sincos() {
 proc main() {
 
   // Very Small Matrices
-  m = 4;
+  // m = 4;
   test_expm();
   test_sinm();
   test_cosm();
   test_sincos();
 
   // Small Matrices
-  m = 20;
-  test_expm();
-  test_sinm();
-  test_cosm();
-  test_sincos();
+  // m = 20;
+  // test_expm();
+  // test_sinm();
+  // test_cosm();
+  // test_sincos();
 
-  // // Medium Matrices
+  // Medium Matrices
   // m = 100;
   // test_expm();
   // test_sinm();
