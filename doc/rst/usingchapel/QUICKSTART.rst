@@ -90,14 +90,16 @@ you will need to rebuild Chapel from source in a different configuration.
 *  Open up a new shell to avoid inheriting the previous environment
    settings.
 
-*  Make sure you have a compatible system LLVM installed in a standard
-   location or set the environment variable ``CHPL_LLVM`` to ``bundled``
-   or ``none`` as described in
-   :ref:`chplenv.rst <readme-chplenv.CHPL_LLVM>`. This is required because
-   LLVM is the default compiler backend, so if desired, you must explicitly
-   opt-out of using it by setting ``CHPL_LLVM=none``. The
-   ``CHPL_LLVM=bundled`` build takes a long time, so to avoid surprises
-   you need to explicitly opt-in to using it.
+*  The quickstart configuration described above sets ``CHPL_LLVM=none``
+   but this is not the preferred configuration of Chapel. As of 1.25,
+   LLVM is the default compiler backend and it needs to be available
+   for full functionality. So make sure you have a compatible system LLVM
+   installed in a standard location or set the environment variable
+   ``CHPL_LLVM`` to ``bundled`` or ``none`` as described in
+   :ref:`chplenv.rst <readme-chplenv.CHPL_LLVM>`.  If desired, you must
+   explicitly opt-out of using it by setting
+   ``CHPL_LLVM=none``. The ``CHPL_LLVM=bundled`` build takes a long
+   time, so to avoid surprises you need to explicitly opt-in to using it.
 
 *  Repeat steps 2-5 above, but in Step 2, source ``util/setchplenv.bash``
    instead of ``util/quickstart/setchplenv.bash``.
