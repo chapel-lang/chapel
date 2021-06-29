@@ -289,6 +289,7 @@ void handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
 /*********** resolveInterfaceSymbol ***********/
 
 static void resolveIStmActuals(FnSymbol* wrapFn, ImplementsStmt* istm);
+static void createRepsForAssocIfcs(InterfaceSymbol* isym, AList& CTdefs);
 
 // An associated type. Nothing to do.
 static void resolveISymAssocType(InterfaceSymbol* isym, TypeSymbol* at) {
@@ -365,12 +366,20 @@ void resolveInterfaceSymbol(InterfaceSymbol* isym) {
      if (fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER))
        resolveISymAssocConstraint(isym, fn);
      else
-       resolveISymRequiredFun(isym, fn);
+       ; // later: resolveISymRequiredFun(isym, fn);
    else if (TypeSymbol* at = toTypeSymbol(toDefExpr(stmt)->sym))
     resolveISymAssocType(isym, at);
    else
     INT_FATAL(stmt, "should have ruled this out earlier");
   }
+
+  AList CTdefs;
+  createRepsForAssocIfcs(isym, CTdefs);
+
+  for_alist(stmt, isym->ifcBody->body)
+   if (FnSymbol* fn = toFnSymbol(toDefExpr(stmt)->sym))
+     if (! fn->hasFlag(FLAG_IMPLEMENTS_WRAPPER))
+       resolveISymRequiredFun(isym, fn);
 
   for_alist(stmt, isym->ifcBody->body)
    if (FnSymbol* fn = toFnSymbol(toDefExpr(stmt)->sym))
@@ -568,9 +577,8 @@ static void undoRefTypesForRefFormals(FnSymbol* fn) {
         formal->type = ct;
 }
 
-static FnSymbol* makeRepForRequiredFn(FnSymbol* cgFun, SymbolMap &fml2act,
+static FnSymbol* makeRepForRequiredFn(Expr* anchor, SymbolMap &fml2act,
                                       FnSymbol* required) {
-  Expr* anchor = cgFun->body->body.head;
   for_formals(formal, required)
     instantiateOneAggregateType(fml2act, anchor, formal->type, true);
   instantiateOneAggregateType(fml2act, anchor, required->retType, true);
@@ -598,7 +606,7 @@ static int repsMaxDepth = 3;
 
 // For each required function of each interface, make an instantiation of
 // its signature visible to the function body.
-static void createRepsForConstraint(FnSymbol*     fn, InterfaceInfo* ifcInfo,
+static void createRepsForConstraint(Expr*     anchor, AList&          CTdefs,
                                  IfcConstraint* icon, InterfaceReps& repData,
                                  int           depth) {
   depth++; INT_ASSERT(depth <= repsMaxDepth);
@@ -618,7 +626,7 @@ static void createRepsForConstraint(FnSymbol*     fn, InterfaceInfo* ifcInfo,
     ConstrainedType* required = elem.second;
     TypeSymbol*  instantiated = ConstrainedType::buildSym(elem.first,
                                                   CT_CGFUN_ASSOC_TYPE);
-    ifcInfo->constrainedTypes.insertAtTail(new DefExpr(instantiated));
+    CTdefs.insertAtTail(new DefExpr(instantiated));
     instantiated->addFlag(FLAG_CG_REPRESENTATIVE);
     repData.symReps.put(required->symbol, instantiated);
     fml2act.put(required->symbol, instantiated);
@@ -626,9 +634,9 @@ static void createRepsForConstraint(FnSymbol*     fn, InterfaceInfo* ifcInfo,
 
   for (auto elem: sortedSymbolMapElts(isym->requiredFns)) {
     FnSymbol* required = toFnSymbol(elem.key);
-    FnSymbol* instantiated = makeRepForRequiredFn(fn, fml2act, required);
+    FnSymbol* instantiated = makeRepForRequiredFn(anchor, fml2act, required);
     // We may also want to make 'instantiated' visible in fn->where.
-    fn->body->insertAtHead(new DefExpr(instantiated));
+    anchor->insertBefore(new DefExpr(instantiated));
     repData.symReps.put(required, instantiated);
   }
 
@@ -644,7 +652,7 @@ static void createRepsForConstraint(FnSymbol*     fn, InterfaceInfo* ifcInfo,
     IfcConstraint* aconOrig = isym->associatedConstraints[aconIdx];
     IfcConstraint* aconInst = aconOrig->copy(&fml2act);
 
-    createRepsForConstraint(fn, ifcInfo, aconInst, *aconReps, depth);
+    createRepsForConstraint(anchor, CTdefs, aconInst, *aconReps, depth);
   }
 }
 
@@ -653,7 +661,7 @@ static void createRepsForConstraint(FnSymbol*     fn, InterfaceInfo* ifcInfo,
 // Ex. worker() should be visible within fun():
 //
 //   interface IFC(T) { proc worker(arg:T); }
-//   proc fun(x) where implements IFC(x.type) { worker(x); }
+//   proc fun(x: ?Q) where Q implements IFC { worker(x); }
 //
 // For that, creates a "representative" FnSymbol for each required function,
 // such as fun(), for use temporarily while 'fn' is being resolved.
@@ -667,7 +675,25 @@ static void createRepsForIfcSymbols(FnSymbol* fn, InterfaceInfo* ifcInfo) {
     IfcConstraint* icon = toIfcConstraint(iconExpr);
     InterfaceReps& repData = ifcInfo->ifcReps[consIdx++];
     
-    createRepsForConstraint(fn, ifcInfo, icon, repData, 0);
+    createRepsForConstraint(fn->body->body.head, ifcInfo->constrainedTypes,
+                            icon, repData, 0);
+  }
+}
+
+//
+// Implements visibility of the required functions due to associated
+// constraints. This is relied upon while resolving the default
+// implementations of an interface's required functions.
+//
+static void createRepsForAssocIfcs(InterfaceSymbol* isym, AList& CTdefs) {
+  INT_ASSERT(isym->ifcReps.empty()); // first time resolving 'isym'
+  isym->ifcReps.resize(isym->numAssocCons());
+
+  for (int consIdx = 0; consIdx < isym->numAssocCons(); consIdx++) {
+    InterfaceReps* aconRep = new InterfaceReps();
+    isym->ifcReps[consIdx] = aconRep;
+    createRepsForConstraint(isym->ifcBody->body.head, CTdefs,
+           isym->associatedConstraints[consIdx], *aconRep, 0);
   }
 }
 
@@ -682,7 +708,7 @@ static void removeRepsForIfcSymbols(FnSymbol* fn, InterfaceReps& repData,
     }
   }
 
-  for(InterfaceReps* nestedData: repData.conReps)
+  for (InterfaceReps* nestedData: repData.conReps)
     removeRepsForIfcSymbols(fn, *nestedData, depth);
 }
 
@@ -1409,7 +1435,8 @@ static bool resolveOneRequiredFn(InterfaceSymbol* isym,  ImplementsStmt*  istm,
   FnSymbol* target = tryResolveCall(call);
 
   // do not allow representatives to help satisfy a constraint
-  if (target == NULL || target->hasFlag(FLAG_CG_REPRESENTATIVE)) {
+  if ((target == NULL || target->hasFlag(FLAG_CG_REPRESENTATIVE)) &&
+      addlSite != nullptr) {
     // the call did not resolve at this location
     cleanupHolder(holder);
     // try resolving it at 'addlSite'
@@ -2100,8 +2127,8 @@ void cgAddRepsToSubstitutions(FnSymbol* fn, SymbolMap& substitutions,
                 fn->interfaceInfo->ifcReps[indx], 0);
 }
 
-void addInterimRepsHelper(SymbolMap& substitutions, int depth,
-                          InterfaceReps* tgtData, InterfaceReps* callData) {
+static void addInterimRepsHelper(SymbolMap& substitutions, int depth,
+                     InterfaceReps* tgtData, InterfaceReps* callData) {
   depth++; INT_ASSERT(depth <= repsMaxDepth);
   // The sets of keys in tgtData->symReps and callData->symReps should be
   // identical, as each should be defined by the same underlying interface.

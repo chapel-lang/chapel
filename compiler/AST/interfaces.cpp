@@ -138,6 +138,11 @@ InterfaceSymbol::InterfaceSymbol(const char* name, BlockStmt* body) :
   gInterfaceSymbols.add(this);
 }
 
+InterfaceSymbol::~InterfaceSymbol() {
+  for (InterfaceReps* repData: ifcReps)
+    delete repData;
+}
+
 void InterfaceSymbol::verify() {
   Symbol::verify();
   INT_ASSERT(astTag == E_InterfaceSymbol);

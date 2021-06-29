@@ -373,7 +373,8 @@ interface chpl_Hashtable(HT) {
   valType implements StdOps;
   // can't have == in StdOps because then == on keys would be ambiguous
   operator ==(lhs: valType, rhs: valType): bool;
-  // todo: change these to the ones from a Memory module
+  // todo: change these to the ones from a standard Memory module
+  // and move them to StdOps
   proc _moveInit(ref lhs: keyType, in rhs: keyType);
   proc _moveToReturn(const ref arg: keyType): keyType;
   proc _moveInit(ref lhs: valType, in rhs: valType);
