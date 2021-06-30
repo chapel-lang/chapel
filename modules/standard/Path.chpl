@@ -899,34 +899,34 @@ proc splitExt(path:string): (string, string) {
    :arg path: Path to be split.
    :type name: `string`
 */
- proc splitPath(path: string): (string, string) {
-   var rLoc, lLoc, prev: byteIndex = path.rfind(pathSep);
-   if (prev != -1) {
-     do {
-       prev = lLoc;
-       lLoc = path.rfind(pathSep, 0:byteIndex..prev-1);
-     } while (lLoc + 1 == prev && lLoc > 0);
+proc splitPath(path: string): (string, string) {
+ var rLoc, lLoc, prev: byteIndex = path.rfind(pathSep);
+ if (prev != -1) {
+   do {
+     prev = lLoc;
+     lLoc = path.rfind(pathSep, 0:byteIndex..prev-1);
+   } while (lLoc + 1 == prev && lLoc > 0);
 
-     if (prev == 0) {
-       // This happens when the only instance of pathSep in the string is
-       // the first character
-       return (path[prev..rLoc], path[rLoc+1..]);
-     } else if (lLoc == 0 && prev == 1) {
-       // This happens when there is a line of pathSep instances at the
-       // start of the string
-       return (path[..rLoc], path[rLoc+1..]);
-     } else if (prev != rLoc) {
-       // If prev wasn't the first character, then we want to skip all those
-       // duplicate pathSeps
-       return (path[..prev-1], path[rLoc+1..]);
-     } else {
-       // The last instance of pathSep in the string was on its own, so just
-       // snip it out.
-       return (path[..rLoc-1], path[rLoc+1..]);
-     }
+   if (prev == 0) {
+     // This happens when the only instance of pathSep in the string is
+     // the first character
+     return (path[prev..rLoc], path[rLoc+1..]);
+   } else if (lLoc == 0 && prev == 1) {
+     // This happens when there is a line of pathSep instances at the
+     // start of the string
+     return (path[..rLoc], path[rLoc+1..]);
+   } else if (prev != rLoc) {
+     // If prev wasn't the first character, then we want to skip all those
+     // duplicate pathSeps
+     return (path[..prev-1], path[rLoc+1..]);
    } else {
-     return ("", path);
+     // The last instance of pathSep in the string was on its own, so just
+     // snip it out.
+     return (path[..rLoc-1], path[rLoc+1..]);
    }
+ } else {
+   return ("", path);
  }
+}
 } // end module Path
 
