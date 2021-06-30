@@ -41,14 +41,11 @@
    :proc:`commonPath`
    :proc:`normPath`
    :proc:`realPath`
-   :proc:`file.realPath`
    :proc:`relPath`
-   :proc:`file.relPath`
 
    Path Manipulations
    ------------------
    :proc:`absPath`
-   :proc:`file.absPath`
    :proc:`expandVars`
    :proc:`joinPath`
    :proc:`replaceBasename`
@@ -61,7 +58,6 @@
    ---------------
    :proc:`basename`
    :proc:`dirname`
-   :proc:`file.getParentName`
    :proc:`isAbsPath`
 
    Constant and Function Definitions
@@ -167,6 +163,7 @@ proc absPath(f: file): string throws {
   return try absPath(f.path);
 }
 
+pragma "no doc"
 deprecated "'file.absPath()' is deprecated. Please use 'absPath(file)' instead."
 proc file.absPath(): string throws {
   // If we don't use the namespace we get a funky compiler type error.
