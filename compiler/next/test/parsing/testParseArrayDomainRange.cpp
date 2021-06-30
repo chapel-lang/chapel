@@ -17,9 +17,11 @@
  * limitations under the License.
  */
 
+#include "chpl/uast/Array.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Defer.h"
+#include "chpl/uast/Domain.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/IntLiteral.h"
@@ -87,6 +89,74 @@ static void testRange(Parser* parser, const char* testName,
   }
 }
 
+// TODO: Check for trailing comma?
+void testArrayDomain(Parser* parser, const char* testName,
+                     bool isArray,
+                     int numElements,
+                     bool hasTrailingComma) {
+  // These initializers must have at least one element.
+  assert(numElements > 0);
+
+  std::string test = isArray ? "var a = " : "var d = ";
+  test += isArray ? "[" : "{";
+
+  for (int i = 0; i < numElements-1; i++) {
+    test += std::to_string(i);
+    test += ", ";
+  }
+
+  test += std::to_string(numElements-1);
+  if (hasTrailingComma) {
+    test += ",";
+  }
+
+  test += isArray ? "]" : "}";
+  test += ";\n";
+
+  auto parseResult = parser->parseString(testName, test.c_str());
+
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isVariable());
+  const Variable* var = mod->stmt(0)->toVariable();
+  assert(!var->typeExpression());
+  assert(var->initExpression());
+
+  // If we used a common parent we could flatten this.
+  if (const Array* a = var->initExpression()->toArray()) {
+    assert(isArray);
+    assert(a->numExprs() == numElements);
+    for (int i = 0; i < a->numExprs(); i++) {
+      assert(a->expr(i)->isIntLiteral());
+      assert(a->expr(i)->toIntLiteral()->value() == i);
+    }
+  } else if (const Domain* d = var->initExpression()->toDomain()) {
+    assert(!isArray);
+    assert(d->numExprs() == numElements);
+    for (int i = 0; i < d->numExprs(); i++) {
+      assert(d->expr(i)->isIntLiteral());
+      assert(d->expr(i)->toIntLiteral()->value() == i);
+    }
+  } else {
+    assert(false && "Should not reach here");
+  }
+
+  auto exprs = isArray ? var->initExpression()->toArray()->exprs()
+                       : var->initExpression()->toDomain()->exprs();
+
+  // Check the array/domain iterator.
+  int i = 0;
+  for (auto expr : exprs) {
+    assert(expr->isIntLiteral());
+    assert(expr->toIntLiteral()->value() == i);
+    i++;
+  }
+  assert(i == numElements);
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -94,12 +164,22 @@ int main() {
   auto parser = Parser::build(ctx);
   Parser* p = parser.get();
 
-  testRange(p, "test0.chpl", "..", true, true);
-  testRange(p, "test1.chpl", "..", true, false);
-  testRange(p, "test2.chpl", "..", false, false);
-  testRange(p, "test3.chpl", "..", false, true);
-  testRange(p, "test4.chpl", "..<", true, true);
-  testRange(p, "test5.chpl", "..<", false, true);
-  
+  testRange(p, "testRange0.chpl", "..", true, true);
+  testRange(p, "testRange1.chpl", "..", true, false);
+  testRange(p, "testRange2.chpl", "..", false, false);
+  testRange(p, "testRange3.chpl", "..", false, true);
+  testRange(p, "testRange4.chpl", "..<", true, true);
+  testRange(p, "testRange5.chpl", "..<", false, true);
+ 
+  testArrayDomain(p, "testArray0.chpl", true, 1, false);
+  testArrayDomain(p, "testArray1.chpl", true, 1, true);
+  testArrayDomain(p, "testArray2.chpl", true, 8, false);
+  testArrayDomain(p, "testArray3.chpl", true, 8, true);
+
+  testArrayDomain(p, "testDomain0.chpl", false, 1, false);
+  testArrayDomain(p, "testDomain1.chpl", false, 1, true);
+  testArrayDomain(p, "testDomain2.chpl", false, 8, false);
+  testArrayDomain(p, "testDomain3.chpl", false, 8, true);
+
   return 0;
 }
