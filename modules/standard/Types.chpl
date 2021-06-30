@@ -209,32 +209,37 @@ proc chpl__maxIntTypeSameSign(type t) type {
 // due to lack of consensus for the name.
 //
 
-pragma "no doc"
+/* Returns `true` if the argument is a `bool` value. */
 proc isBoolValue(e)      param  return isBoolType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `int` value. */
 proc isIntValue(e)       param  return isIntType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `uint` value. */
 proc isUintValue(e)      param  return isUintType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `real` value. */
 proc isRealValue(e)      param  return isRealType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `imag` value. */
 proc isImagValue(e)      param  return isImagType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `complex` value. */
 proc isComplexValue(e)   param  return isComplexType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `string` value. */
 proc isStringValue(e)    param  return isStringType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `bytes` value. */
 proc isBytesValue(e)     param  return isBytesType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a value of one the following types: 
+`int`, `uint`. */
 proc isIntegralValue(e)  param  return isIntegralType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a value of one the following types: 
+`real`, `imag`. */
 proc isFloatValue(e)     param  return isFloatType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a value of one the following types: 
+`int`, `uint`, `real`, `imag`, `complex`. */
 proc isNumericValue(e)   param  return isNumericType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a value of primitive type. */
 proc isPrimitiveValue(e) param  return isPrimitiveType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `enum` value. */
 proc isEnumValue(e)      param  return isEnumType(e.type);
+pragma "no doc"
+proc isNothingValue(e)   param return isNothingType(e.type);
 //Defined elsewhere:
 // isTupleValue
 // isHomogeneousTupleValue

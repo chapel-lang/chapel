@@ -1,8 +1,13 @@
 use Types;
 
+config const version = 1;
+
  proc printIsNothing(type t){
    var Var: t;
-   writeln(t:string, " ", isNothing(t), " ", isNothing(Var));
+   if version == 1 then
+     writeln(t:string, " ", isNothing(t), " ", isNothing(Var));
+   else
+     writeln(t:string, " ", isNothingType(t), " ", isNothingValue(Var));
  }
  type nothingType = nothing;
  type intType = int;
@@ -20,4 +25,4 @@ use Types;
  printIsNothing(bytesType); 
  printIsNothing(isReal); 
  printIsNothing(isRecord); 
- printIsNothing(isComplex);  
+ printIsNothing(isComplex);

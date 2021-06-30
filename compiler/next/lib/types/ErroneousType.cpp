@@ -17,37 +17,16 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_ASTTYPES_H
-#define CHPL_UAST_ASTTYPES_H
+#include "chpl/types/ErroneousType.h"
 
 namespace chpl {
-namespace uast {
+namespace types {
 
 
-// forward declare the various AST types
-// using macros and ASTClassesList.h
-/// \cond DO_NOT_DOCUMENT
-#define AST_DECL(NAME) class NAME;
-#define AST_NODE(NAME) AST_DECL(NAME)
-#define AST_LEAF(NAME) AST_DECL(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) AST_DECL(NAME)
-#define AST_END_SUBCLASSES(NAME)
-/// \endcond
-// Apply the above macros to ASTClassesList.h
-#include "chpl/uast/ASTClassesList.h"
-// clear the macros
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
-#undef AST_DECL
-
-// forward declare other classes
-class ASTNode;
-class Builder;
+owned<ErroneousType> ErroneousType::build() {
+  return toOwned(new ErroneousType());
+}
 
 
-} // end namespace uast
+} // end namespace types
 } // end namespace chpl
-
-#endif
