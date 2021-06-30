@@ -154,7 +154,7 @@ proc absPath(path: string): string throws {
     reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
     locale may change the current working directory at any time.
 
-  :return: A normalized, absolutized version of the path for the argument file.
+  :return: A normalized, absolutized version of the path for the file argument.
   :rtype: `string`
 
   :throws SystemError: Upon failure to get the current working directory.
@@ -612,12 +612,11 @@ proc realPath(path: string): string throws {
   return ret; 
 }
 
-/* Determines the canonical path referenced by a given :type:`~IO.file` record
-   performing this operation.  This resolves and removes any :data:`curDir` and
-   :data:`parentDir` uses present, as well as any symbolic links.  Returns the
-   result.
+/* Determines the canonical path referenced by a given :type:`~IO.file` record.
+   This resolves and removes any :data:`curDir` and :data:`parentDir` uses
+   present, as well as any symbolic links. Returns the result.
 
-   :arg f: A file whose path to resolve.
+   :arg f: A file whose path should be resolved..
    :type f: :type:`~IO.file`
    
    :return: A canonical path to the file referenced by the given :type:`~IO.file`
@@ -741,8 +740,7 @@ proc relPath(path: string, start:string=curDir): string throws {
   :throws SystemError: Upon failure to get the current working directory.
 */
 proc relPath(f: file, start:string=curDir): string throws {
-  // Have to prefix module name to avoid muddying name resolution.
-  return Path.relPath(f.path, start);
+  return relPath(f.path, start);
 }
 
 pragma "no doc"
