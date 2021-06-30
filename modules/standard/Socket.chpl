@@ -114,11 +114,13 @@ module Socket {
 
   record tcpListener {
     var socketFd:int(32);
-    var host:ipAddr;
+    var address:ipAddr;
 
-    proc init(socketFd:int(32), host:ipAddr) {
+    pragma "no doc"
+    proc init(socketFd:int(32), address:ipAddr) {
+      this.complete();
       this.socketFd = socketFd;
-      this.host = host;
+      this.address = address;
     }
   }
 
@@ -138,22 +140,10 @@ module Socket {
       writeln("timed out");
     }
 
-    // writeln("select complete ",nready);
     if(sys_fd_isset(socketFd,rset)){
-      sleep(1);
       sys_accept(socketFd,client_addr,fdOut);
     }
 
-    // writeln("file descriptor client is ", fdOut);
-    var addr = new ipAddr(client_addr);
-    // writeln("client socket family ", client_addr.family);
-    writeln("Accepted new connection from ", addr.host, ":", addr.port);
-    // writeln("client addr on port ", getport);
-
-
-    // var flags:int(32);
-    // sys_fcntl(fdOut,F_GETFL,flags);
-    // writeln("Socket Flags are ",flags, " non blocking is set ",flags&O_NONBLOCK);
     var sockFile:tcpConn = openfd(fdOut);
     return sockFile;
   }
@@ -163,15 +153,15 @@ module Socket {
   }
 
   proc tcpListener.addr {
-    return host;
+    return address;
   }
 
   proc tcpListener.family {
-    return ipAddr.family;
+    return address.family;
   }
 
-  proc listen(ref host:ipAddr, reuseaddr=true, backlog=5) throws {
-    var family = host.family;
+  proc listen(ref address:ipAddr, reuseaddr=true, backlog=5) throws {
+    var family = address.family;
     var socketFd: int(32);
     var err = sys_socket(family,SOCK_STREAM|SOCK_CLOEXEC,0,socketFd);
     if(err != 0){
@@ -185,7 +175,7 @@ module Socket {
       sys_setsockopt(socketFd,SOL_SOCKET,SO_REUSEADDR,voidPtrEnable,sizeof(enable):int(32));
     }
 
-    err = sys_bind(socketFd, host._addressStorage);
+    err = sys_bind(socketFd, address._addressStorage);
     if(err != 0){
       throw SystemError.fromSyserr(err,"Failed to bind Socket");
     }
@@ -195,7 +185,8 @@ module Socket {
       throw SystemError.fromSyserr(err,"Failed to listen on socket");
     }
 
-    const tcpObject = new tcpListener(socketFd, host);
+    const tcpObject = new tcpListener(socketFd, address);
     return tcpObject;
   }
+
 }
