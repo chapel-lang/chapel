@@ -140,13 +140,6 @@ proc absPath(path: string): string throws {
   return normPath(path);
 }
 
-pragma "no doc"
-pragma "last resort"
-proc absPath(name: string): string throws {
-  compilerWarning("Path.absPath: Argument 'name' is deprecated - use 'path' instead");
-  return absPath(path=name);
-}
-
 /*
   Creates a normalized absolutized version of the path of a 
   :type:`~IO.file`. On most platforms, when given a non-absolute path this
@@ -195,13 +188,6 @@ proc file.absPath(): string throws {
 */
 proc basename(path: string): string {
    return splitPath(path)[1];
-}
-
-pragma "no doc"
-pragma "last resort"
-proc basename(name: string): string {
-  compilerWarning("Path.basename: Argument 'name' is deprecated - use 'path' instead");
-  return basename(path=name);
 }
 
 /* Determines and returns the longest common path prefix of
@@ -370,14 +356,6 @@ proc dirname(path: string): string {
   return splitPath(path)[0];
 }
 
-pragma "no doc"
-pragma "last resort"
-proc dirname(name: string): string {
-  compilerWarning("Path.dirname: Argument 'name' is deprecated - use 'path' instead");
-  return dirname(path=name);
-}
-
-
 /* Expands any environment variables in the path of the form ``$<name>`` or
    ``${<name>}`` into their values.  If ``<name>`` does not exist, they are left
    in place. Returns the path which includes these expansions.
@@ -496,13 +474,6 @@ proc isAbsPath(path: string): bool {
   }
 }
 
-pragma "no doc"
-pragma "last resort"
-proc isAbsPath(name: string): bool {
-  compilerWarning("Path.isAbsPath: Argument 'name' is deprecated - use 'path' instead");
-  return isAbsPath(path=name);
-}
-
 /* Build up path components as described in joinPath(). */
 private proc joinPathComponent(comp: string, ref result: string) {
   if comp.startsWith('/') || result == "" then
@@ -565,13 +536,6 @@ private proc normalizeLeadingSlashCount(path: string): int {
   return result;
 }
 
-pragma "no doc"
-pragma "last resort"
-private proc normalizeLeadingSlashCount(name: string): int {
-  compilerWarning("Path.normalizeLeadingSlashCount: Argument 'name' is deprecated - use 'path' instead");
-  return normalizeLeadingSlashCount(path=name);
-}
-
 /*
   Normalize a path by eliminating redundant separators and up-level references.
   The paths ``foo//bar``, ``foo/bar/``, ``foo/./bar``, and ``foo/baz/../bar``
@@ -627,13 +591,6 @@ proc normPath(path: string): string {
   return result;
 }
 
-pragma "no doc"
-pragma "last resort"
-proc normPath(name: string): string {
-  compilerWarning("Path.normPath: Argument 'name' is deprecated - use 'path' instead");
-  return normPath(path=name);
-}
-
 /* Given a path ``path``, attempts to determine the canonical path referenced.
    This resolves and removes any :data:`curDir` and :data:`parentDir` uses
    present, as well as any symbolic links.  Returns the result.
@@ -656,13 +613,6 @@ proc realPath(path: string): string throws {
   // res was qio_malloc'd by chpl_fs_realpath, so free it here
   chpl_free_c_string(res);
   return ret; 
-}
-
-pragma "no doc"
-pragma "last resort"
-proc realPath(name: string): string throws {
-  compilerWarning("Path.realPath: Argument 'name' is deprecated - use 'path' instead");
-  return realPath(path=name);
 }
 
 /* Determines the canonical path referenced by a given :type:`~IO.file` record
@@ -766,13 +716,6 @@ proc relPath(path: string, start:string=curDir): string throws {
     return curDir;
 
   return joinPath(outComps.toArray());
-}
-
-pragma "no doc"
-pragma "last resort"
-proc relPath(name: string, start:string=curDir): string throws {
-  compilerWarning("Path.relPath: Argument 'name' is deprecated - use 'path' instead");
-  return relPath(path=name,start);
 }
 
 /*
@@ -988,11 +931,5 @@ proc splitExt(path:string): (string, string) {
      return ("", path);
    }
  }
+} // end module Path
 
-pragma "no doc"
-pragma "last resort"
- proc splitPath(name: string): (string, string) {
-  compilerWarning("Path.splitPath: Argument 'name' is deprecated - use 'path' instead");
-  return splitPath(path=name);
- }
-}
