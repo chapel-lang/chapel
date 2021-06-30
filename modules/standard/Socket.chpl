@@ -36,8 +36,6 @@ module Socket {
 
   record ipAddr {
     var _addressStorage:sys_sockaddr_t;
-    var port:uint(16);
-    var host:string;
   }
 
   proc ipAddr.init(inout host:string = "localhost", port:uint(16) = 8000, family:IPFamily = IPFamily.IPv4) {
@@ -48,46 +46,44 @@ module Socket {
     _addressStorage = new sys_sockaddr_t();
 
     try! {
-      _addressStorage.initialize(host.c_str(), port, family:int);
+      _addressStorage.set(host.c_str(), port, family:c_int);
     }
   }
 
   proc ipAddr.init(host:sys_in_addr_t, port: uint(16) = 8000) {
-    this.host = "";
-    this.port = port;
     _addressStorage = new sys_sockaddr_t();
 
     try! {
-      _addressStorage.initialize(host,port);
+      _addressStorage.set(host,port);
     }
   }
 
   proc ipAddr.init(host:sys_in6_addr_t, port: uint(16) = 8000) {
-    this.host = "";
-    this.port = port;
     _addressStorage = new sys_sockaddr_t();
 
     try! {
-      _addressStorage.initialize(host,port);
+      _addressStorage.set(host,port);
     }
   }
 
+  pragma "no doc"
   proc ipAddr.init(ref address:sys_sockaddr_t) {
-    var familySize = if address.family == IPFamily.IPv4 then INET_ADDRSTRLEN else INET6_ADDRSTRLEN;
-    var buffer = c_calloc(c_char,familySize);
-
-    var getport:uint(16);
-    try! address.addr(buffer, getport);
-    this.host = createStringWithOwnedBuffer(buffer,familySize,familySize);
-    this.port = getport;
     this._addressStorage = new sys_sockaddr_t();
     try! {
-      _addressStorage.initialize(this.host,this.port,client_addr.family);
+      _addressStorage.set(address.numericHost().c_str(), address.port(), address.family);
     }
   }
 
   proc ipAddr.family {
     return _addressStorage.family;
+  }
+
+  proc ipAddr.host throws {
+    return _addressStorage.numericHost();
+  }
+
+  proc ipAddr.port throws {
+    return _addressStorage.port();
   }
 
   private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:c_int):syserr;
