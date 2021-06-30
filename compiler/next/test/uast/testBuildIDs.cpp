@@ -171,7 +171,7 @@ static  void test2() {
   assert(r.topLevelExpressions[0]->isModule());
   auto module = r.topLevelExpressions[0]->toModule();
   assert(0 == module->name().compare("test"));
-  assert(r.locations.size() == 5); // +1 module
+  assert(r.astToLocation.size() == 5); // +1 module
   assert(module->stmt(0)->isBlock());
   const Block* block = module->stmt(0)->toBlock();
   assert(block);
@@ -270,7 +270,7 @@ static void test3() {
   assert(r.topLevelExpressions.size() == 1);
   assert(r.topLevelExpressions[0]->isModule());
   auto module = r.topLevelExpressions[0]->toModule();
-  assert(r.locations.size() == 7); // +1 module
+  assert(r.astToLocation.size() == 7); // +1 module
   assert(module->stmt(0)->isBlock());
   const Block* outer = module->stmt(0)->toBlock();
   assert(outer);
@@ -356,7 +356,7 @@ static void test4() {
   assert(r.topLevelExpressions.size() == 1);
   assert(r.topLevelExpressions[0]->isModule());
   auto modM = r.topLevelExpressions[0]->toModule();
-  assert(r.locations.size() == 6);
+  assert(r.astToLocation.size() == 6);
   assert(modM->stmt(0)->isModule());
   auto modI = modM->stmt(0)->toModule();
   assert(modI->numStmts() == 3);

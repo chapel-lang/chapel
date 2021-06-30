@@ -98,9 +98,7 @@ const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
     const char* pathc = path.c_str();
     const char* textc = text.c_str();
     uast::Builder::Result tmpResult = parser->parseString(pathc, textc);
-    result.topLevelExpressions.swap(tmpResult.topLevelExpressions);
-    result.errors.swap(tmpResult.errors);
-    result.locations.swap(tmpResult.locations);
+    result.swap(tmpResult);
     // raise any errors encountered
     for (const ErrorMessage& e : result.errors) {
       QUERY_ERROR(e);
@@ -115,36 +113,33 @@ const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-const LocationsMap& fileLocations(Context* context, UniqueString path) {
-  QUERY_BEGIN(fileLocations, context, path);
-
-  // Get the result of parsing
-  const uast::Builder::Result& p = parseFile(context, path);
-  // Create a map of ast to Location
-  LocationsMap result(p.locations.size());
-  for (auto& pair : p.locations) {
-    const ASTNode* ast = pair.first;
-    Location loc = pair.second;
-    if (ast != nullptr && !ast->id().isEmpty()) {
-      result.insert({ast->id(), loc});
-    }
-  }
-
-  return QUERY_END(result);
-}
-
 const Location& locateID(Context* context, ID id) {
   QUERY_BEGIN(locateID, context, id);
 
   // Ask the context for the filename from the ID
   UniqueString path = context->filePathForID(id);
 
-  // Get the map of ID to Location
+  // Get the result of parsing
+  const uast::Builder::Result& p = parseFile(context, path);
+
   Location result(path);
-  const LocationsMap& map = fileLocations(context, path);
-  auto search = map.find(id);
-  if (search != map.end()) {
-    result = search->second;
+
+  const uast::ASTNode* ast = nullptr;
+
+  // Look in idToAST
+  {
+    auto search = p.idToAST.find(id);
+    if (search != p.idToAST.end()) {
+      ast = search->second;
+    }
+  }
+
+  if (ast != nullptr) {
+    // Look in astToLocation
+    auto search = p.astToLocation.find(ast);
+    if (search != p.astToLocation.end()) {
+      result = search->second;
+    }
   }
 
   return QUERY_END(result);
@@ -171,35 +166,20 @@ const ModuleVec& parse(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-const IdToAstMap& fileIdToAstMap(Context* context, UniqueString path) {
-  QUERY_BEGIN(fileIdToAstMap, context, path);
-
-  // Get the result of parsing
-  const uast::Builder::Result& p = parseFile(context, path);
-  // Create a map of ID to uAST node
-  IdToAstMap result(p.locations.size());
-
-  for (auto& pair : p.locations) {
-    const ASTNode* ast = pair.first;
-    if (ast != nullptr && !ast->id().isEmpty()) {
-      result.insert({ast->id(), ast});
-    }
-  }
-
-  return QUERY_END(result);
-}
-
 static const ASTNode* const& astForIDQuery(Context* context, ID id) {
   QUERY_BEGIN(astForIDQuery, context, id);
 
   // Ask the context for the filename from the ID
   UniqueString path = context->filePathForID(id);
 
-  // Get the map of ID to uAST
-  const ASTNode* result = nullptr;
-  const IdToAstMap& map = fileIdToAstMap(context, path);
-  auto search = map.find(id);
-  if (search != map.end()) {
+  // Get the result of parsing
+  const uast::Builder::Result& p = parseFile(context, path);
+
+  const uast::ASTNode* result = nullptr;
+
+  // Look in idToAST
+  auto search = p.idToAST.find(id);
+  if (search != p.idToAST.end()) {
     result = search->second;
   }
 

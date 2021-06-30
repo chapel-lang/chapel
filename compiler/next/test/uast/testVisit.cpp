@@ -56,7 +56,7 @@ static Builder::Result makeAST(Context* ctx, const uast::Module*& modOut) {
   assert(r.topLevelExpressions[0]->isModule());
   auto module = r.topLevelExpressions[0]->toModule();
   assert(0 == module->name().compare("test"));
-  assert(r.locations.size() == 5); // +1 module
+  assert(r.astToLocation.size() == 5); // +1 module
   assert(module->stmt(0)->isBlock());
   const Block* block = module->stmt(0)->toBlock();
   assert(block);

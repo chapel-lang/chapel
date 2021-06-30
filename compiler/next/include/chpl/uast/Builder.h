@@ -48,29 +48,27 @@ class Builder final {
 
   Context* context_;
   UniqueString filepath_;
-  UniqueString inferredModuleName_;
   ASTList topLevelExpressions_;
   std::vector<ErrorMessage> errors_;
 
-  // note: locations_map might have keys pointing to deleted uAST
+  // note: notedLocations_ might have keys pointing to deleted uAST
   // nodes in the event one is created temporarily during parsing.
-  std::unordered_map<const ASTNode*, Location> locations_map_;
+  std::unordered_map<const ASTNode*, Location> notedLocations_;
 
-  // the locations vector is computing during assignIDs
-  // and only contains locations for valid uAST nodes.
-  std::vector<std::pair<const ASTNode*, Location>> locations_;
+  // the astToLocation_ map is computed during assignIDs and it only
+  // contains locations for valid uAST nodes.
+  std::unordered_map<const ASTNode*, Location> astToLocation_;
 
-  Builder(Context* context,
-          UniqueString filepath,
-          UniqueString inferredModuleName)
-  : context_(context),
-    filepath_(filepath),
-    inferredModuleName_(inferredModuleName),
-    topLevelExpressions_(), errors_(), locations_map_(), locations_() {
+  // the idToAST_ map is computed also during assignIDs
+  std::unordered_map<ID, const ASTNode*> idToAST_;
+
+  Builder(Context* context, UniqueString filepath)
+    : context_(context), filepath_(filepath)
+  {
   }
 
-  UniqueString createImplicitModuleIfNeeded();
-  void assignIDs(UniqueString inferredModule);
+  void createImplicitModuleIfNeeded();
+  void assignIDs();
   void doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
                    pathVecT& pathVec, declaredHereT& duplicates);
 
@@ -102,13 +100,19 @@ class Builder final {
     UniqueString filePath;
     ASTList topLevelExpressions;
     std::vector<ErrorMessage> errors;
+
+    // Given an ID, what is the ASTNode?
+    std::unordered_map<ID, const ASTNode*> idToAST;
+
     // Goes from ASTNode* to Location because Comments don't have AST IDs
-    std::vector<std::pair<const ASTNode*, Location>> locations;
+    std::unordered_map<const ASTNode*, Location> astToLocation;
 
     Result();
     Result(Result&&) = default; // move-constructable
     Result(const Result&) = delete; // not copy-constructable
     Result& operator=(const Result&) = delete; // not assignable
+
+    void swap(Result& other);
 
     static bool update(Result& keep, Result& addin);
     static void mark(Context* context, const Result& keep);

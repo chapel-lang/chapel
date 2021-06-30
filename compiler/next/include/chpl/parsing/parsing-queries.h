@@ -69,16 +69,10 @@ namespace parsing {
    */
   const uast::Builder::Result& parseFile(Context* context, UniqueString path);
 
-  using LocationsMap = std::unordered_map<ID, Location>;
-  /**
-   This query returns a map from ID to Location for the uAST parsed from a
-   particular file.
-   */
-  const LocationsMap& fileLocations(Context* context, UniqueString path);
 
   // These functions can't return the Location for a Comment
   // because Comments don't have IDs. If Locations for Comments are needed,
-  // instead use the locations field from the result of parseFile.
+  // instead use the astToLocation field from the result of parseFile.
 
   /**
    This query returns the Location where a particular ID appeared.
@@ -98,14 +92,6 @@ namespace parsing {
    This query returns a vector of parsed modules given a file path.
    */
   const ModuleVec& parse(Context* context, UniqueString path);
-
-  using IdToAstMap = std::unordered_map<ID, const uast::ASTNode*>;
-
-  /**
-   This query returns a map from ID to uAST nodes for the uAST parsed from a
-   particular file.
-  */
-  const IdToAstMap& fileIdToAstMap(Context* context, UniqueString path);
 
   /**
    Returns the uast node with the given ID.

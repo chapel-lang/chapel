@@ -48,11 +48,8 @@ static std::string filenameToModulename(const char* filename) {
 }
 
 owned<Builder> Builder::build(Context* context, const char* filepath) {
-  // compute the basename of filename to get the inferred module name
-  std::string modname = filenameToModulename(filepath);
-  auto uniqueModname = UniqueString::build(context, modname);
   auto uniqueFilename = UniqueString::build(context, filepath);
-  auto b = new Builder(context, uniqueFilename, uniqueModname);
+  auto b = new Builder(context, uniqueFilename);
   return toOwned(b);
 }
 
@@ -65,12 +62,12 @@ void Builder::addError(ErrorMessage e) {
 }
 
 void Builder::noteLocation(ASTNode* ast, Location loc) {
-  locations_map_[ast] = loc;
+  notedLocations_[ast] = loc;
 }
 
 Builder::Result Builder::result() {
-  UniqueString inferredName = this->createImplicitModuleIfNeeded();
-  this->assignIDs(inferredName);
+  this->createImplicitModuleIfNeeded();
+  this->assignIDs();
 
   // Performance: We could consider copying all of these AST
   // nodes to a newly allocated buffer big enough to hold them
@@ -79,11 +76,11 @@ Builder::Result Builder::result() {
   // (i.e. good cache behavior).
 
   Builder::Result ret;
-  ret.filePath = filepath_;
+  ret.filePath.swap(filepath_);
   ret.topLevelExpressions.swap(topLevelExpressions_);
   ret.errors.swap(errors_);
-  ret.locations.swap(locations_);
-  locations_map_.clear();
+  ret.idToAST.swap(idToAST_);
+  ret.astToLocation.swap(astToLocation_);
 
   return ret;
 }
@@ -95,9 +92,8 @@ bool Builder::astTagIndicatesNewIdScope(asttags::ASTTag tag) {
          asttags::isTypeDecl(tag));
 }
 
-// Returns the name of the implicit module, or "" if there is none
 // If the implicit module is needed, moves the statements in to it.
-UniqueString Builder::createImplicitModuleIfNeeded() {
+void Builder::createImplicitModuleIfNeeded() {
   bool containsOnlyModules = true;
   bool containsAnyModules = false;
   for (auto const& ownedExpression: topLevelExpressions_) {
@@ -110,24 +106,25 @@ UniqueString Builder::createImplicitModuleIfNeeded() {
     }
   }
   if (containsAnyModules && containsOnlyModules) {
-    UniqueString empty;
-    return empty;
+    // no inferred module is needed.
+    return;
   } else {
+    // compute the basename of filename to get the inferred module name
+    std::string modname = filenameToModulename(filepath_.c_str());
+    auto inferredModuleName = UniqueString::build(context_, modname);
     // create a new module containing all of the statements
     ASTList stmts;
     stmts.swap(topLevelExpressions_);
     auto implicitModule = Module::build(this, Location(filepath_),
-                                        inferredModuleName_,
+                                        inferredModuleName,
                                         Decl::DEFAULT_VISIBILITY,
                                         Module::IMPLICIT,
                                         std::move(stmts));
     topLevelExpressions_.push_back(std::move(implicitModule));
-    // return the name of the module
-    return inferredModuleName_;
   }
 }
 
-void Builder::assignIDs(UniqueString inferredModule) {
+void Builder::assignIDs() {
   pathVecT pathVec;
   declaredHereT duplicates;
   int i = 0;
@@ -180,11 +177,17 @@ void Builder::assignIDs(UniqueString inferredModule) {
 void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
                           pathVecT& pathVec, declaredHereT& duplicates) {
 
+  // update locations_ for the visited ast
+  auto search = notedLocations_.find(ast);
+  if (search != notedLocations_.end()) {
+    assert(!search->second.isEmpty());
+    astToLocation_[search->first] = search->second;
+  } else {
+    assert(false && "Location for all ast should be set by noteLocation");
+  }
+
   if (ast->isComment()) {
-    // store the location for the ast id
-    Location loc = locations_map_[ast];
-    assert(!loc.isEmpty());
-    locations_.push_back(std::make_pair(ast, loc));
+    // comments don't have IDs
     return;
   }
 
@@ -263,48 +266,55 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     ast->setID(ID(symbolPath, myID, numContainedIDs));
   }
 
-  // store the location for the ast id
-  Location loc = locations_map_[ast];
-  assert(!loc.isEmpty());
-  locations_.push_back(std::make_pair(ast, loc));
+  // update idToAST_ for the visited AST node
+  idToAST_[ast->id()] = ast;
 }
 
 Builder::Result::Result()
-  : filePath(), topLevelExpressions(), errors(), locations()
 {
 }
 
-// Recomputes this->locations by gathering Location for all uAST
-// nodes contained from the provided maps and appending these
-// to the provided locations vector.
+// Recomputes idToAst / astToLocation maps by visiting all uAST nodes
+// and combining information from the provided maps.
 static
-void recomputeLocations(
+void recomputeIdAndLocMaps(
     const ASTNode* ast,
-    std::vector<std::pair<const ASTNode*, Location>>& locations,
-    const std::unordered_map<const ASTNode*, Location>& mapA,
-    const std::unordered_map<const ASTNode*, Location>& mapB) {
+    std::unordered_map<ID, const ASTNode*>& dstIdToAst,
+    std::unordered_map<const ASTNode*, Location>& dstAstToLoc,
+    const std::unordered_map<const ASTNode*, Location>& astToLocA,
+    const std::unordered_map<const ASTNode*, Location>& astToLocB) {
 
   for (const ASTNode* child : ast->children()) {
-    recomputeLocations(child, locations, mapA, mapB);
+    recomputeIdAndLocMaps(child, dstIdToAst,
+                          dstAstToLoc, astToLocA, astToLocB);
   }
 
-  Location loc;
-  auto searchA = mapA.find(ast);
-  if (searchA != mapA.end()) {
+  if (!ast->id().isEmpty()) {
+    dstIdToAst[ast->id()] = ast;
+  }
+
+  auto searchA = astToLocA.find(ast);
+  if (searchA != astToLocA.end()) {
     // found a location in mapA so use it
-    loc = searchA->second;
+    dstAstToLoc[ast] = searchA->second;
   } else {
     // check in mapB
-    auto searchB = mapB.find(ast);
-    if (searchB != mapB.end()) {
+    auto searchB = astToLocB.find(ast);
+    if (searchB != astToLocB.end()) {
       // found a location in mapB so use it
-      loc = searchB->second;
+      dstAstToLoc[ast] = searchB->second;
     } else {
       assert(false && "Could not find location");
     }
   }
+}
 
-  locations.push_back(std::make_pair(ast, loc));
+void Builder::Result::swap(Result& other) {
+  filePath.swap(other.filePath);
+  topLevelExpressions.swap(other.topLevelExpressions);
+  errors.swap(other.errors);
+  idToAST.swap(other.idToAST);
+  astToLocation.swap(other.astToLocation);
 }
 
 bool Builder::Result::update(Result& keep, Result& addin) {
@@ -316,29 +326,21 @@ bool Builder::Result::update(Result& keep, Result& addin) {
   // update the errors
   changed |= defaultUpdate(keep.errors, addin.errors);
 
-  // create maps for the keep and addin locations
-  std::unordered_map<const ASTNode*, Location> keepLocs;
-  std::unordered_map<const ASTNode*, Location> addinLocs;
-
-  for (auto keepLoc : keep.locations) {
-    keepLocs.insert(keepLoc);
-  }
-  for (auto addinLoc : addin.locations) {
-    addinLocs.insert(addinLoc);
-  }
-
   // update the ASTs
   changed |= updateASTList(keep.topLevelExpressions, addin.topLevelExpressions);
 
-  std::vector<std::pair<const ASTNode*, Location>> locationsVec;
+  std::unordered_map<ID, const ASTNode*> newIdToAST;
+  std::unordered_map<const ASTNode*, Location> newAstToLoc;
 
   // recompute locationsVec by traversing the AST and using the maps
   for (const auto& ast : keep.topLevelExpressions) {
-    recomputeLocations(ast.get(), locationsVec, keepLocs, addinLocs);
+    recomputeIdAndLocMaps(ast.get(), newIdToAST, newAstToLoc,
+                          keep.astToLocation, addin.astToLocation);
   }
 
-  // now update the locations in keep.
-  changed |= defaultUpdate(keep.locations, locationsVec);
+  // now update the ID and Locations maps in keep
+  changed |= defaultUpdate(keep.idToAST, newIdToAST);
+  changed |= defaultUpdate(keep.astToLocation, newAstToLoc);
 
   return changed;
 }
@@ -348,8 +350,10 @@ void Builder::Result::mark(Context* context, const Result& keep) {
   // mark the UniqueString file path
   keep.filePath.mark(context);
 
-  // mark UniqueStrings in the locations
-  for (const auto& pair : keep.locations) {
+  // UniqueStrings in the AST IDs will be marked in markASTList below
+
+  // mark UniqueStrings in the Locations
+  for (const auto& pair : keep.astToLocation) {
     pair.second.markUniqueStrings(context);
   }
 
