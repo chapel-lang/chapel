@@ -148,13 +148,13 @@ proc absPath(name: string): string throws {
 }
 
 /*
-  Creates a normalized absolutized version of the path in this
+  Creates a normalized absolutized version of the path of a 
   :type:`~IO.file`. On most platforms, when given a non-absolute path this
   function is equivalent to the following code:
   
   .. code-block:: Chapel
   
-      normPath(joinPath(here.cwd(), file.path))
+      normPath(joinPath(here.cwd(), f.path))
       
   See :proc:`normPath()`, :proc:`joinPath()`, :proc:`~FileSystem.locale.cwd()`,
   :proc:`~IO.file.path` for details.
@@ -165,14 +165,19 @@ proc absPath(name: string): string throws {
     reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
     locale may change the current working directory at any time.
 
-  :return: A normalized, absolutized version of the path for this file.
+  :return: A normalized, absolutized version of the path for the argument file.
   :rtype: `string`
 
   :throws SystemError: Upon failure to get the current working directory.
 */
+proc absPath(f: file): string throws {
+  return try absPath(f.path);
+}
+
+deprecated "'file.absPath()' is deprecated. Please use 'absPath(file)' instead."
 proc file.absPath(): string throws {
   // If we don't use the namespace we get a funky compiler type error.
-  return try Path.absPath(this.path);
+  return try Path.absPath(this);
 }
 
 /* Returns the file name portion of the path provided.  For instance:
@@ -452,18 +457,8 @@ proc dirname(name: string): string {
    return res;
  }
 
-/*
-  Returns the parent directory of the :type:`~IO.file` record.  For instance:
-
-  .. code-block:: Chapel
-
-     var myFile = open("/foo/bar/baz.txt", iomode.r);
-     writeln(myFile.getParentName()); // Prints "/foo/bar"
-
-  :return: The parent directory of the file.
-  :rtype: `string`
-  :throws SystemError: If one occurs.
-*/
+pragma "no doc"
+deprecated "'file.getParentName()' is deprecated. Please use 'dirname(realPath(file))' instead."
 proc file.getParentName(): string throws {
   try check();
 
@@ -670,41 +665,36 @@ proc realPath(name: string): string throws {
   return realPath(path=name);
 }
 
-/* Determines the canonical path referenced by the :type:`~IO.file` record
+/* Determines the canonical path referenced by a given :type:`~IO.file` record
    performing this operation.  This resolves and removes any :data:`curDir` and
    :data:`parentDir` uses present, as well as any symbolic links.  Returns the
    result.
 
-   :return: A canonical path to the file referenced by this :type:`~IO.file`
+   :arg f: A file whose path to resolve.
+   :type f: :type:`~IO.file`
+   
+   :return: A canonical path to the file referenced by the given :type:`~IO.file`
             record.  If the :type:`~IO.file` record is not valid, an error will
             occur.
    :rtype: `string`
    :throws SystemError: If one occurs.
 */
-proc file.realPath(): string throws {
+proc realPath(f: file): string throws {
   extern proc chpl_fs_realpath_file(path: qio_file_ptr_t, ref shortened: c_string): syserr;
 
-  if (is_c_nil(_file_internal)) then
+  if (is_c_nil(f._file_internal)) then
     try ioerror(EBADF:syserr, "in file.realPath");
 
   var res: c_string;
-  var err = chpl_fs_realpath_file(_file_internal, res);
+  var err = chpl_fs_realpath_file(f._file_internal, res);
   if err then try ioerror(err, "in file.realPath");
   return createStringWithOwnedBuffer(res);
 }
 
 pragma "no doc"
-proc file.realPath(out error: syserr): string {
-  compilerWarning("This version of realPath() is deprecated; " +
-                  "please switch to a throwing version");
-  try {
-    return realPath();
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-  return "";
+deprecated "'file.realPath()' is deprecated. Please use 'realPath(file)' instead."
+proc file.realPath(): string throws {
+  return try Path.realPath(this);
 }
 
 /* Compute the common prefix length between two lists of path components. */
@@ -786,10 +776,10 @@ proc relPath(name: string, start:string=curDir): string throws {
 }
 
 /*
-  Returns a relative filepath to the path in this :type:`~IO.file` either from
-  the current directory or an optional `start` directory. The filesystem is not
-  accessed to verify the existence of the named path or the specified starting
-  location.
+  Returns a relative filepath to the path in a given :type:`~IO.file` either
+  from the current directory or an optional `start` directory. The filesystem is
+  not accessed to verify the existence of the named path or the specified
+  starting location.
 
   .. warning::
 
@@ -797,20 +787,28 @@ proc relPath(name: string, start:string=curDir): string throws {
     reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
     locale may change the current working directory at any time.
 
+  :arg f: The file
+  :type f: :type:`~IO.file`
+
   :arg start: The location from which access to the path in this
     :type:`~IO.file` is desired. If no value is provided, defaults to
     :const:`curDir`.
   :type start: `string`
 
-  :return: The relative filepath to the path in this :type:`~IO.file`.
+  :return: The relative filepath to the path in the given :type:`~IO.file`.
   :rtype: `string`
 
   :throws SystemError: Upon failure to get the current working directory.
 */
-proc file.relPath(start:string=curDir): string throws {
-  import Path;
+proc relPath(f: file, start:string=curDir): string throws {
   // Have to prefix module name to avoid muddying name resolution.
-  return Path.relPath(this.path, start);
+  return Path.relPath(f.path, start);
+}
+
+pragma "no doc"
+deprecated "'file.relPath()' is deprecated. Please use 'relPath(file)' instead."
+proc file.relPath(start:string=curDir): string throws {
+  return Path.relPath(this, start);
 }
 
 /*
