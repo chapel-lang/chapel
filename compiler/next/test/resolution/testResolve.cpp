@@ -35,6 +35,7 @@ using namespace parsing;
 using namespace resolution;
 using namespace uast;
 
+/*
 static void test1() {
   printf("test1\n");
   Context ctx;
@@ -128,11 +129,11 @@ static void test2() {
     context->collectGarbage();
   }
 }
-
+*/
 
 int main() {
-  test1();
-  test2();
+  //test1();
+  //test2();
 
   return 0;
 }

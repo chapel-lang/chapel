@@ -33,6 +33,34 @@ using namespace parsing;
 using namespace resolution;
 using namespace uast;
 
+static void printAllScopes(Context* context, const ASTNode* ast) {
+  if (Builder::astTagIndicatesNewIdScope(ast->tag())) {
+    const Scope* scope = scopeForScopingSymbol(context, ast->id());
+    if (scope != nullptr) {
+      assert(scope->id == ast->id());
+      printf("%s -- parent scope id %s -- scope ptr %p\n",
+             scope->id.toString().c_str(),
+             scope->parentScopeId.toString().c_str(),
+             scope);
+      for (const auto& pair : scope->declared) {
+        printf("  declaration %s %s\n",
+               pair.first.c_str(),
+               pair.second.toString().c_str());
+      }
+      for (const auto& elt : scope->usesAndImports) {
+        printf("  use/import %s\n",
+               elt.toString().c_str());
+      }
+    } else {
+      printf("%s -- no scope\n", ast->id().toString().c_str());
+    }
+  }
+
+  for (const ASTNode* child : ast->children()) {
+    printAllScopes(context, child);
+  }
+}
+
 int main(int argc, char** argv) {
 
   if (argc == 1) {
@@ -50,9 +78,11 @@ int main(int argc, char** argv) {
       auto filepath = UniqueString::build(ctx, argv[i]);
 
       const ModuleVec& mods = parse(ctx, filepath);
-      for (const auto module : mods) {
-        ASTNode::dump(module);
+      for (const auto mod : mods) {
+        ASTNode::dump(mod);
         printf("\n");
+
+        printAllScopes(ctx, mod);
       }
 
       /*
@@ -71,6 +101,7 @@ int main(int argc, char** argv) {
         }
       }*/
 
+      /*
       const ResolvedSymbolVec& rmods = resolveFile(ctx, filepath);
       for (const auto& elt : rmods) {
         const Module* module = elt->decl->toModule();
@@ -89,7 +120,7 @@ int main(int argc, char** argv) {
             printf("\n");
           }
         }
-      }
+      }*/
     }
     if (gc) {
       ctx->collectGarbage();

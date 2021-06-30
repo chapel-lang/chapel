@@ -26,12 +26,46 @@
 namespace chpl {
 namespace resolution {
 
+  /**
+   Returns the AST node of the parent Scoping Symbol given an ID.
+   For example, inside of a Function, this will return the Function.
+   Inside of a Module, it will return the Module.
 
+   If given the ID for a top-level Module, returns nullptr.
+   */
+  //const uast::ASTNode* parentScopingSymbol(Context* context, ID id);
+
+
+  /**
+    Returns the ID of the parent uAST for a Scoping Symbol -- that is,
+    something for which Builder::astTagIndicatesNewIdScope returns true,
+    such as Modules, Functions, and Classes.
+
+    This is different from parentScopingSymbol because it might return,
+    say, the ID of an inner Block.
+   */
+  //ID parentExprForScopingSymbol(Context* context, ID id);
+
+  /**
+    Returns the Scope for a Scoping Symbol -- that is,
+    something for which Builder::astTagIndicatesNewIdScope returns true,
+    such as Modules, Functions, and Classes.
+   */
+  const Scope* scopeForScopingSymbol(Context* context, ID id);
+
+  /**
+    Returns the parent Scope for an expression. The parent Scope contains
+    NamedDecls defined there as well as use/import statements.
+   */
+  //const Scope& parentScope(Context* context, const uast::ASTNode* ast);
+
+  /*
   // Resolves the top-level declarations in a module
   const ResolvedSymbol&
   resolveModule(Context* context, const uast::Module* mod);
 
   const ResolvedSymbolVec& resolveFile(Context* context, UniqueString path);
+   */
 
   /*
   const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,

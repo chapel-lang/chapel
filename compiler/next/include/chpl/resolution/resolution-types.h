@@ -22,11 +22,93 @@
 
 #include "chpl/types/Type.h"
 #include "chpl/uast/ASTNode.h"
+#include "chpl/util/memory.h"
+
+#include <unordered_map>
 
 namespace chpl {
 namespace resolution {
 
+// DeclMap key - string name  value - ID of a NamedDecl
+// Using an ID here prevents needing to recompute the Scope
+// if (say) something in the body of a Function changed
+using DeclMap = std::unordered_map<UniqueString, ID>;
 
+// UsesAndImportsVec stores Use/Import statements
+using UsesAndImportsVec = std::vector<ID>;
+
+/**
+  A scope roughly corresponds to a `{ }` block. Anywhere a new symbol could be
+  defined / is defined is a scope.
+
+  Generic instantiations will generate new scopes (in order to handle point of
+  instantiation).
+
+ */
+// TODO: adjust Conditional to contain Blocks so we can associate
+// scopes 1:1 with these blocks.
+struct Scope {
+  // TODO: what to do for generic instantiation scopes?
+  // these are tied to AST
+
+  ID parentScopeId; // the Scope for this AST
+  ID id;
+  DeclMap declared;
+  UsesAndImportsVec usesAndImports;
+
+  Scope() { }
+
+  bool operator==(const Scope& other) const {
+    return parentScopeId == other.parentScopeId &&
+           id == other.id &&
+           declared == other.declared &&
+           usesAndImports == other.usesAndImports;
+  }
+  bool operator!=(const Scope& other) const {
+    return !(*this == other);
+  }
+};
+
+struct ContainedScopesAndScopedSymbols {
+  std::unordered_map<ID, Scope> idToScope;
+  std::unordered_map<ID, ID> scopeSymbolsToScopeIds;
+};
+
+using IdToScope = std::unordered_map<ID, Scope*>;
+
+/**
+  An untyped function signature. This is really just the part of a function
+  including the formals.
+ */
+struct UntypedFnSignature {
+  UniqueString name;
+  bool isMethod; // in that case, formals[0] is the receiver
+  std::vector<const uast::Formal*> formals;
+};
+
+struct CallInfoActual {
+  const types::Type* type;
+  UniqueString byName;
+};
+
+struct CallInfo {
+  bool isMethod; // in that case, actuals[0] is the receiver
+  std::vector<CallInfoActual> actuals;
+};
+
+struct TypedFnSignatureFormal {
+  const uast::Formal* formal;
+  const types::Type* type;
+  // TODO: param value
+};
+
+struct TypedFnSignature {
+  UniqueString name;
+  bool isMethod; // in that case, formals[0] is the receiver
+  std::vector<TypedFnSignatureFormal> formals;
+};
+
+/*
 struct ResolutionResult {
   // the expr that is resolved
   const uast::Expression* expr = nullptr;
@@ -34,6 +116,14 @@ struct ResolutionResult {
   const uast::NamedDecl* decl = nullptr;
   // What is its type?
   const types::Type* type = nullptr;
+  ResolutionResult() { }
+  ResolutionResult(const uast::Expression* expr,
+                   const uast::NamedDecl* decl,
+                   const types::Type* type)
+    : expr(expr), decl(decl), type(type) { }
+};
+
+struct MultiResolutionResult : ResolutionResult {
   // For a function call, it might refer to several Functions
   // and we might not know which return intent to choose yet.
   std::vector<const uast::Function*> otherFns;
@@ -43,7 +133,7 @@ struct ResolutionResult {
   //  generic instantiation
   //  establish concrete intents
   //  establish copy-init vs move
-  ResolutionResult() { }
+  MultiResolutionResult() { }
 };
 
 // postorder ID (int) -> ResolutionResult *within* a Function etc
@@ -70,7 +160,7 @@ struct ResolvedSymbol {
 };
 
 using ResolvedSymbolVec = std::vector<const ResolvedSymbol*>;
-
+*/
 /*
 struct DefinedTopLevelNames {
   // the module
