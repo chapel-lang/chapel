@@ -2490,6 +2490,266 @@ proc cosm(A: []) throws {
   }
 }
 
+// Gets sums along specified axes. Method for Rectangular matrix.
+proc sum(A: [?D], param axis=0) where !isCSDom(D) {
+  if axis == 0 then
+    // axis=0 sums along column
+    return forall j in D.dim(1-axis) do (+ reduce abs(A[D.dim(axis), j..j]));
+  else if axis == 1 then
+    // axis=1 sums along row
+    return forall i in D.dim(1-axis) do (+ reduce abs(A[i..i, D.dim(axis)]));
+}
+
+// Gets sums along specified axes. Method for CSR matrix.
+proc sum(A: [?ADom], param axis=0) where isCSDom(ADom) {
+  var (n,t) = ADom.shape;
+  var sps: sparse subdomain(ADom.parentDom);
+  sps += ADom;
+  if axis == 0 {
+    // axis=0 sums along column
+    var b: [0..<t] A.eltType;
+    forall (i,j) in sps {
+      b[j] += A[i,j];
+    }
+    return b;
+  }
+  else if axis == 1 {
+    // axis=1 sums along rows
+    var b: [0..<n] A.eltType;
+    forall (i,j) in sps {
+      b[i] += A[i,j];
+    }
+    return b;
+  }
+}
+
+// Gets max along specified axes. Method for CSR matrix.
+proc max(A: [?ADom], param axis=0) where isCSDom(ADom) {
+  var (n,t) = ADom.shape;
+  var sps: sparse subdomain(ADom.parentDom);
+  sps += ADom;
+  if axis == 0 {
+    // axis=0 sums along column
+    var b: [0..<t] A.eltType;
+    forall (i,j) in sps {
+      b[j] = max(b[j], A[i,j]);
+    }
+    return b;
+  }
+  else if axis == 1 {
+    // axis=1 sums along rows
+    var b: [0..<n] A.eltType;
+    forall (i,j) in sps {
+      b[i] = max(b[i], A[i,j]);
+    }
+    return b;
+  }
+}
+
+proc ones(Dom: domain(2), type eltType=real) {
+  const (m,n) = Dom.shape;
+  var A: [Dom] eltType;
+
+  if eltType == real then {
+    A += 1.0;
+  }
+  else if eltType == complex then {
+    A += 1.0 + 0i;
+  }
+  else if eltType == int then {
+    A += 1;
+  }
+  else {
+    throw new LinearAlgebraError("onenormest(): Invalid eltType");
+  }
+
+  return A;
+}
+
+proc onenormest(A: [?D], param t=2,param itmax=5) throws {
+  if (D.dims(0) != D.dims(1)) {
+    throw new LinearAlgebraError("onenormest(): Square Matrix Expected");
+  }
+
+  var n = D.dim(0);
+  var est;
+  if (t >= n) {
+    est = norm(A);
+  }
+  else {
+    est = _onenormest(A);
+  }
+
+  return est;
+}
+
+proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
+  if (itmax < 2) {
+    throw new LinearAlgebraError("_onenormest(): At least two iterations are required");
+  }
+  if (t < 1) {
+    throw new LinearAlgebraError("_onenormest(): At least one column is required");
+  }
+
+  var n = D.dim(0);
+
+  if (t <= n) {
+    throw new LinearAlgebraError("_onenormest(): t can't be larger than the order of the matrix");
+  }
+
+  var wD = {0..<n, 0..<t};
+  var X = ones(wD);
+
+  if t > 1 {
+    for i in 1..<t {
+      X = column_resample(X, i);
+    }
+    for i in 0..<t {
+      while (column_needs_resampling(i, X)) {
+        X = column_resample(i, X);
+      }
+    }
+  }
+
+  X /= n;
+  //var usedInd = [0];
+  var oldEstimate = 0;
+  var S = zeros(wD);
+  var oldS = zeros(wD);
+  var k = 1;
+  //var ind = [];
+  //var bestColSofar: [0..<n] X.eltType;
+  var Y: [X.dom] X.eltType;
+  var ind_best = 0;
+
+  while true {
+    Y = dot(A, X);
+    // sum along axis zero taken on (n,t) dimension
+    // sparse matrix for a large n and a very small t
+    // this operation can be attributed to O(n) complexity.
+    var mags = sum(Y);
+    var (est, bestJ) = maxloc reduce zip(mags, mags.domain);
+    if est > oldEstimate || k == 2 {
+      if k>=2 {
+        ind_best = bestJ;
+      }
+      //var bestColSofar = Y[.., bestJ];
+    }
+    if k >= 2 && est <= oldEstimate {
+      est = oldEstimate;
+      break;
+    }
+    oldEstimate = est;
+    var oldS = S;
+    if k > itmax {
+      break;
+    }
+    S = sign_round_up(Y);
+
+    if is_X_Y_col_vectors_same(S, oldS) {
+      break;
+    }
+
+    if t>1 {
+      for i in 0..<t {
+        while column_needs_resampling(S, i, oldS){
+          column_resample(S,i);
+        }
+      }
+    }
+
+    var Z = dot(A.T, S);
+    var h = max(abs(Z), axis=1);
+
+    var maxHVal = max reduce(h);
+    if k>=2 && maxHVal == h[ind_best] {
+      break;
+    }
+
+  }
+  return oldEstimate;
+}
+
+proc argsort(A: [], param desc=false) {
+  use Sort;
+
+  record Cmp {
+
+  }
+
+  proc Cmp.compare(a, b) {
+    return a[0] - b[0];
+  }
+
+  var cmp: Cmp;
+  var B: [A.domain] int;
+  var n = B.size;
+  for i in 0..<n {
+    B[i] = i;
+  }
+
+  const AB = [ab in zip(A, B)] ab;
+  var i = 0;
+  for ab in AB.sorted(comparator=cmp) {
+    B[i] = ab[1];
+    i += 1;
+  }
+  return B;
+}
+
+proc is_X_Y_col_vectors_same(X: [?xD], Y: [?yD]){
+  var n = xD.dims(0);
+  for i in xD.dim(1) {
+    var b = X[.., i];
+    var fg = false;
+    for j in yD.dim(1) {
+      if dot(Y[.., j], b) == n {
+        fg = true;
+        break;
+      }
+    }
+    if !fg {
+      return false;
+    }
+  }
+  return true;
+}
+
+proc sign_round_up(A: [?D]){
+  forall (i,j) in D {
+    if b[i,j] == 0.0 then {
+      b[i,j] += 1.0;
+    }
+    b[i,j] /= abs(b[i,j]);
+  }
+}
+
+proc column_needs_resampling(A: [?D], param col, param Y=none) {
+  var n = D.dims(0);
+  var b = A[.., col];
+  for i in 0..<col {
+    if dot(A[.., i], b) == n {
+      return true;
+    }
+  }
+  if Y != none {
+    var yCol = Y.domain.dim(1);
+    for i in 0..<yCol {
+      if dot(A[.., i], b) == n {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+proc column_resample(A: [?D], param col) {
+  fillRandom(A[.., col]);
+  A[.., col] = round(A[.., col])*2 - 1;
+  return A;
+}
+
+
 //
 // Type helpers
 //
