@@ -38,4 +38,7 @@ bool isPromotionRequired(FnSymbol* fn,
                          CallInfo& info,
                          std::vector<ArgSymbol*>& actualIdxToFormal);
 
+FnSymbol* findExistingDefaultedActualFn(FnSymbol* fn, ArgSymbol* formal);
+FnSymbol* getOrCreateDefaultedActualFn(FnSymbol* fn, ArgSymbol* formal);
+
 #endif

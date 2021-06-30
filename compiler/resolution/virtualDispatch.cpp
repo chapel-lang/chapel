@@ -56,6 +56,7 @@ static child type could end up calling something in the parent.
 #include "resolveFunction.h"
 #include "stmt.h"
 #include "symbol.h"
+#include "wrappers.h"
 
 #include <set>
 #include <vector>
@@ -245,10 +246,24 @@ static void addToVirtualMaps(FnSymbol*      pfn,
   resolveOverride(pfn, fn);
 }
 
+// skips the first 2 formals (for method token and `this`)
+static int getNumUserFormals(FnSymbol* fn) {
+  int fnN = fn->numFormals();
+  if (fnN < 2)
+    INT_FATAL("expected method token and this");
+  return fnN-2;
+}
+
+// formal index starts from 1 but skips the first 2 formals
+// (for method token and `this`)
+static ArgSymbol* getUserFormal(FnSymbol* fn, int idx) {
+  return fn->getFormal(idx+2);
+}
+
 static void collectMethods(FnSymbol*               pfn,
-                           AggregateType*          pct,
+                           AggregateType*          ct,
                            std::vector<FnSymbol*>& methods) {
-  AggregateType* fromType = pct;
+  AggregateType* fromType = ct;
 
   while (fromType != NULL) {
     forv_Vec(FnSymbol, cfn, fromType->methods) {
@@ -271,26 +286,25 @@ static void collectMethods(FnSymbol*               pfn,
         }
         if (possibleSignatureMatch(pfn, cfn) == true) {
           methods.push_back(cfn);
+
+          // check to see if we are using defaulted actual fns
+          // for any of the formals in pfn. If so, make sure the
+          // corresponding ones exist for the child.
+          int nUserFormals = getNumUserFormals(pfn);
+          for (int i = 1; i <= nUserFormals; i++) {
+            ArgSymbol* pformal = getUserFormal(pfn, i);
+            ArgSymbol* cformal = getUserFormal(cfn, i);
+            FnSymbol* pDefFn = findExistingDefaultedActualFn(pfn, pformal);
+            if (pDefFn) {
+              getOrCreateDefaultedActualFn(cfn, cformal);
+            }
+          }
         }
       }
     }
 
     fromType = fromType->instantiatedFrom;
   }
-}
-
-// skips the first 2 formals (for method token and `this`)
-static int getNumUserFormals(FnSymbol* fn) {
-  int fnN = fn->numFormals();
-  if (fnN < 2)
-    INT_FATAL("expected method token and this");
-  return fnN-2;
-}
-
-// formal index starts from 1 but skips the first 2 formals
-// (for method token and `this`)
-static ArgSymbol* getUserFormal(FnSymbol* fn, int idx) {
-  return fn->getFormal(idx+2);
 }
 
 static bool possibleSignatureMatch(FnSymbol* fn, FnSymbol* gn) {
