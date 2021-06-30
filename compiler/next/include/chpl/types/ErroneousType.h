@@ -17,34 +17,39 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_ASTTYPES_H
-#define CHPL_UAST_ASTTYPES_H
+#ifndef CHPL_TYPES_ERRONEOUSTYPE_H
+#define CHPL_TYPES_ERRONEOUSTYPE_H
+
+#include "chpl/types/Type.h"
 
 namespace chpl {
-namespace uast {
+namespace types {
 
 
-// forward declare the various AST types
-// using macros and ASTClassesList.h
-/// \cond DO_NOT_DOCUMENT
-#define AST_DECL(NAME) class NAME;
-#define AST_NODE(NAME) AST_DECL(NAME)
-#define AST_LEAF(NAME) AST_DECL(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) AST_DECL(NAME)
-#define AST_END_SUBCLASSES(NAME)
-/// \endcond
-// Apply the above macros to ASTClassesList.h
-#include "chpl/uast/ASTClassesList.h"
-// clear the macros
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
-#undef AST_DECL
+/**
+  This class represents an erroneous type - that is, a type used as an error
+  sentinel type. Errors with this type should be ignored.
+ */
+class ErroneousType : public Type {
+ private:
+  ErroneousType() : Type(typetags::ErroneousType) { }
 
-// forward declare other classes
-class ASTNode;
-class Builder;
+  bool contentsMatchInner(const Type* other) const override {
+    return true;
+  }
+
+  void markUniqueStringsInner(Context* context) const override {
+  }
+
+  bool isGeneric() override {
+    return false;
+  }
+
+ public:
+  ~ErroneousType() = default;
+
+  static owned<ErroneousType> build();
+};
 
 
 } // end namespace uast

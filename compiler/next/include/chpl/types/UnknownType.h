@@ -17,34 +17,39 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_ASTTYPES_H
-#define CHPL_UAST_ASTTYPES_H
+#ifndef CHPL_TYPES_UNKNOWNTYPE_H
+#define CHPL_TYPES_UNKNOWNTYPE_H
+
+#include "chpl/types/Type.h"
 
 namespace chpl {
-namespace uast {
+namespace types {
 
 
-// forward declare the various AST types
-// using macros and ASTClassesList.h
-/// \cond DO_NOT_DOCUMENT
-#define AST_DECL(NAME) class NAME;
-#define AST_NODE(NAME) AST_DECL(NAME)
-#define AST_LEAF(NAME) AST_DECL(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) AST_DECL(NAME)
-#define AST_END_SUBCLASSES(NAME)
-/// \endcond
-// Apply the above macros to ASTClassesList.h
-#include "chpl/uast/ASTClassesList.h"
-// clear the macros
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
-#undef AST_DECL
+/**
+  This class represents an unknown type which can be used to represent a case
+  where the type is not established because it is generic.
+ */
+class UnknownType : public Type {
+ private:
+  UnknownType() : Type(typetags::UnknownType) { }
 
-// forward declare other classes
-class ASTNode;
-class Builder;
+  bool contentsMatchInner(const Type* other) const override {
+    return true;
+  }
+
+  void markUniqueStringsInner(Context* context) const override {
+  }
+
+  bool isGeneric() override {
+    return true;
+  }
+
+ public:
+  ~UnknownType() = default;
+
+  static owned<UnknownType> build();
+};
 
 
 } // end namespace uast

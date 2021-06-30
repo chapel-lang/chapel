@@ -17,34 +17,33 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_ASTTYPES_H
-#define CHPL_UAST_ASTTYPES_H
+#ifndef CHPL_TYPES_TYPECLASSES_H
+#define CHPL_TYPES_TYPECLASSES_H
 
 namespace chpl {
-namespace uast {
+namespace types {
 
 
-// forward declare the various AST types
-// using macros and ASTClassesList.h
+// forward declare the various Type subclasses
+// using macros and TypeClassesList.h
 /// \cond DO_NOT_DOCUMENT
-#define AST_DECL(NAME) class NAME;
-#define AST_NODE(NAME) AST_DECL(NAME)
-#define AST_LEAF(NAME) AST_DECL(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) AST_DECL(NAME)
-#define AST_END_SUBCLASSES(NAME)
+#define TYPE_DECL(NAME) class NAME;
+#define TYPE_NODE(NAME) TYPE_DECL(NAME)
+#define TYPE_LEAF(NAME) TYPE_DECL(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_DECL(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
 /// \endcond
-// Apply the above macros to ASTClassesList.h
-#include "chpl/uast/ASTClassesList.h"
+// Apply the above macros to TypeClassesList.h
+#include "chpl/types/TypeClassesList.h"
 // clear the macros
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
-#undef AST_DECL
+#undef TYPE_NODE
+#undef TYPE_LEAF
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef TYPE_DECL
 
 // forward declare other classes
-class ASTNode;
-class Builder;
+class TypeNode;
 
 
 } // end namespace uast

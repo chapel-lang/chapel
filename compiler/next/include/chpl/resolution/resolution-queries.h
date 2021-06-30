@@ -26,53 +26,17 @@
 namespace chpl {
 namespace resolution {
 
-  struct ResolutionResult {
-    // the expr that is resolved
-    const uast::Expression* exp;
-    // in simple cases, this is set
-    const uast::NamedDecl* decl;
-    // TODO:
-    //  return-intent overloading
-    //  generic instantiation
-    //  establish concrete intents
-    //  establish copy-init vs move
-    ResolutionResult() : exp(nullptr), decl(nullptr) { }
-  };
-
-  // postorder ID (int) -> ResolutionResult
-  using ResolutionResultByPostorderID = std::vector<ResolutionResult>;
 
   // Resolves the top-level declarations in a module
-  const ResolutionResultByPostorderID&
+  const ResolvedSymbol&
   resolveModule(Context* context, const uast::Module* mod);
 
-  struct ResolvedModule {
-    const uast::Module* module;
-    const ResolutionResultByPostorderID* resolution;
-    ResolvedModule(const uast::Module* module,
-                   const ResolutionResultByPostorderID* resolution)
-      : module(module), resolution(resolution) {
-    }
-    static bool update(ResolvedModule& keep, ResolvedModule& addin);
-  };
-  using ResolvedModuleVec = std::vector<ResolvedModule>;
+  const ResolvedSymbolVec& resolveFile(Context* context, UniqueString path);
 
-  const ResolvedModuleVec& resolveFile(Context* context, UniqueString path);
-
-  struct DefinedTopLevelNames {
-    // the module
-    const uast::Module* module;
-    // these are in program order
-    std::vector<UniqueString> topLevelNames;
-    DefinedTopLevelNames(const uast::Module* module,
-                         std::vector<UniqueString> topLevelNames)
-      : module(module), topLevelNames(std::move(topLevelNames)) {
-    }
-  };
-  using DefinedTopLevelNamesVec = std::vector<DefinedTopLevelNames>;
-
+  /*
   const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
                                                       UniqueString path);
+   */
 
 
 } // end namespace resolution

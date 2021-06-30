@@ -23,56 +23,5 @@ namespace chpl {
 namespace resolution {
 
 
-using namespace uast;
-
-UniqueString Type::name(Context* context) {
-  switch (tag()) {
-    case FROM_DECL:
-      assert(typeDecl());
-      return typeDecl()->name();
-    case INT8:
-      return UniqueString::build(context, "int(8)");
-    case INT16:
-      return UniqueString::build(context, "int(16)");
-    case INT32:
-      return UniqueString::build(context, "int(32)");
-    case INT64:
-      return UniqueString::build(context, "int(64)");
-    case UINT8:
-      return UniqueString::build(context, "uint(8)");
-    case UINT16:
-      return UniqueString::build(context, "uint(16)");
-    case UINT32:
-      return UniqueString::build(context, "uint(32)");
-    case UINT64:
-      return UniqueString::build(context, "uint(64)");
-    case BOOL:
-      return UniqueString::build(context, "bool");
-    case BOOL8:
-      return UniqueString::build(context, "bool(8)");
-    case BOOL16:
-      return UniqueString::build(context, "bool(16)");
-    case BOOL32:
-      return UniqueString::build(context, "bool(32)");
-    case BOOL64:
-      return UniqueString::build(context, "bool(64)");
-    case REAL32:
-      return UniqueString::build(context, "real(32)");
-    case REAL64:
-      return UniqueString::build(context, "real(64)");
-    case IMAG32:
-      return UniqueString::build(context, "imag(32)");
-    case IMAG64:
-      return UniqueString::build(context, "imag(64)");
-    case COMPLEX64:
-      return UniqueString::build(context, "complex(64)");
-    case COMPLEX128:
-      return UniqueString::build(context, "complex(128)");
-  }
-  assert(false && "case not handled");
-  return UniqueString::build(context, "<unknown>");
-}
-
-
 } // end namespace resolution
 } // end namespace chpl

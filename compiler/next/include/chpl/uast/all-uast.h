@@ -58,6 +58,7 @@
 #include "chpl/uast/New.h"
 #include "chpl/uast/On.h"
 #include "chpl/uast/OpCall.h"
+//#include "chpl/uast/PrimCall.h"
 #include "chpl/uast/RealLiteral.h"
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Return.h"
