@@ -43,11 +43,11 @@ Family is determined based on type of standard address used `sys_in_addr_t` for 
 
 ## Connecting to remote sockets
 
-`connect` function will create `TCPConn` instance which will take in the following parameters
+`connect` function will create `tcpConn` instance which will take in the following parameters
 
 **Method:**
 ```python
-proc connect(addr:ipAddr) : TCPConn
+proc connect(addr:ipAddr) : tcpConn
 ```
 
 **Parameters:**
@@ -60,7 +60,7 @@ A higher level construct for socket will take in `host` as `string` which can pe
 
 **Method:**
 ```python
-proc connect(host:string, port:int, family:int) : TCPConn
+proc connect(host:string, port:int, family:int) : tcpConn
 ```
 
 **Parameters:**
@@ -72,30 +72,30 @@ family: Integer - AF_INET or AF_INET6 or AF_UNSPEC
 
 The purpose of family is important for address resolution and converting addr string to standard notation as well as validation. How the family can affect address resolution depends on [getaddrinfo](https://www.ibm.com/docs/en/zos/2.1.0?topic=functions-getaddrinfo-get-address-information#getaddrinfo) function.
 
-The `TCPConn` instance is basically a chapel `file` instance with added methods aligned to its nature as a socket. All the usual `file` methods are available on it:
+The `tcpConn` instance is basically a chapel `file` instance with added methods aligned to its nature as a socket. All the usual `file` methods are available on it:
 - `reader`
   will return a reader channel for associated socket
   ```python
-  proc TCPConn.writer() : channel
+  proc tcpConn.writer() : channel
   ```
 - `writer`
   will return a writer channel for associated socket
   ```python
-  proc TCPConn.writer() : channel
+  proc tcpConn.writer() : channel
   ```
-- `close` calling this on `TCPConn` will close the socket connection and associated `file` too.
+- `close` calling this on `tcpConn` will close the socket connection and associated `file` too.
   ```python
-  proc TCPConn.close()
+  proc tcpConn.close()
   ```
 - `addr` this function will return a `ipAddr` object which will contain the `host` and `port` where socket is bound.
 
 ## Creating a Listener
 
-`listen` function will create a `TCPListener` Instance which will take in following parameters
+`listen` function will create a `tcpListener` Instance which will take in following parameters
 
 **Method:**
 ```python
-proc listen(addr:ipAddr, backlog=5, reuseaddr=true) : TCPListener
+proc listen(addr:ipAddr, backlog=5, reuseaddr=true) : tcpListener
 ```
 
 **Parameters**
@@ -108,44 +108,44 @@ reuseaddr: Boolean - optional parameter, default value = true
 - The `backlog` argument defines the maximum length to which specifies the queue length for completely established sockets waiting to be accepted. If a connection request arrives when the queue is full, the client may receive an error with an indication of `ECONNREFUSED` or, if the underlying protocol supports retransmission, the request may be ignored so that a later reattempt at connection succeeds.
 - Calling in `listen` without `reuseaddr` can return an error that some other socket is already bound to the specified address. This can also be a result of re-running the program after only a short waiting period where the `bind` may find address as already in use.
 
-The `TCPListener` instance will have methods on it to call
-- `accept`: method will return a `TCPConn` instance of any new incoming connection otherwise will yield if no new connection is available at the instant. The communication can then proceed through the `TCPConn` instance returned
+The `tcpListener` instance will have methods on it to call
+- `accept`: method will return a `tcpConn` instance of any new incoming connection otherwise will yield if no new connection is available at the instant. The communication can then proceed through the `tcpConn` instance returned
   ```python
-  proc TCPListener.accept() : TCPConn
+  proc tcpListener.accept() : tcpConn
   ```
 - `close`,
-  calling close on `TCPListener` will close the socket server and it won't accept anymore new connections.
+  calling close on `tcpListener` will close the socket server and it won't accept anymore new connections.
   ```python
-  proc TCPListener.close()
+  proc tcpListener.close()
   ```
 - `family` returns the family of socket `AF_INET` or `AF_INET6`
 - `addr` will return an `ipAddr` instance providing details about the address and port at which socket is listening.
   ```python
-  proc TCPListener.addr() : ipAddr
+  proc tcpListener.addr() : ipAddr
   ```
 
-The additional support with `TCPConn` and `TCPListener` will be to enable or disable two of the prominent optimization algorithm for TCP Protocol that are:
+The additional support with `tcpConn` and `tcpListener` will be to enable or disable two of the prominent optimization algorithm for TCP Protocol that are:
 
 - `nagle`
   This method will set/unset TCP_NODELAY for provided socket.
   ```python
-  proc nagle(socket:TCPConn, tcpNodeDelay:bool = 1)
-  proc nagle(socket:TCPListener, tcpNodeDelay:bool = 1);
-  proc nagle(socket:UDPSocket, tcpNodeDelay:bool = 1);
+  proc nagle(socket:tcpConn, tcpNodeDelay:bool = 1)
+  proc nagle(socket:tcpListener, tcpNodeDelay:bool = 1);
+  proc nagle(socket:udpSocket, tcpNodeDelay:bool = 1);
   ```
 - `quickack`
   This method will set/unset TCP_QUICKACK for provided socket.
   ```python
-  proc quickack(socket:TCPConn, tcpQuickack:bool = 1)
-  proc qucikack(socket:TCPListener, tcpQuickack:bool = 1);
-  proc quickack(socket:UDPSocket, tcpQuickack:bool = 1);
+  proc quickack(socket:tcpConn, tcpQuickack:bool = 1)
+  proc qucikack(socket:tcpListener, tcpQuickack:bool = 1);
+  proc quickack(socket:udpSocket, tcpQuickack:bool = 1);
   ```
 
 ## UDP Support
 
-Support for UDP protocol will be through a separate constructor for `UDPSocket`. They need not be binded or connected as they are connectionless socket.
+Support for UDP protocol will be through a separate constructor for `udpSocket`. They need not be binded or connected as they are connectionless socket.
 ```python
-const socketServ:UDPSocket = new UDPSocket(family=IPFamily.IPv4)
+const socketServ:udpSocket = new udpSocket(family=IPFamily.IPv4)
 ```
 
 A generic `bind` function will be used which will take in any of the socket three object and bind it to provided `host` , `port`.
@@ -159,14 +159,14 @@ proc bind(socketServ, addr:ipAddr, reuseAddr=true)
 **Parameters**
 
 ```
-- socket : TCPListener|TCPConn|UDPSocket - socket object to be bound
+- socket : tcpListener|tcpConn|udpSocket - socket object to be bound
 - addr: contains address info about where to bind the socket.
 - reuseaddr: Boolean - optional parameter, default value = true
 ```
 
-Bind is responsible for binding any socket to a specified address and port. Here the socket can be anything either a UDP or a TCP Socket. listen under the hood will can in bind to bind `TCPListener` to address and port. With either TCPConn or UDPSocket that isn't a requirement as the system assigns any free port and localhost address to them by default.
+Bind is responsible for binding any socket to a specified address and port. Here the socket can be anything either a UDP or a TCP Socket. listen under the hood will can in bind to bind `tcpListener` to address and port. With either tcpConn or udpSocket that isn't a requirement as the system assigns any free port and localhost address to them by default.
 
-While `TCPConn` is in a connected state when they are created `UDPSocket` are connectionless they are just waiting for the user to use them for sending and receiving purpose only. But for sending and receiving purpose user might require a socket to have a known address that is when bind will be useful for `UDPSocket`.
+While `tcpConn` is in a connected state when they are created `udpSocket` are connectionless they are just waiting for the user to use them for sending and receiving purpose only. But for sending and receiving purpose user might require a socket to have a known address that is when bind will be useful for `udpSocket`.
 
 ## Data transfer on UDP
 
@@ -202,3 +202,9 @@ proc socketServ.send(addr:ipAddr ,data:Generic)
 - addr: ipAddr - address info for where to send the data.
 - data: Generic - data to send
 ```
+
+## Options on Socket
+
+For providing more granular control over socket options `setSocketOpt` and `getSocketOpt` will be provided which can be used to manipulate socket options. For more information about them [man page](https://man7.org/linux/man-pages/man2/getsockopt.2.html) can be referred as to what options we can set on sockets.
+
+The functions will use Chapel implementation for them defined in the [Sys module](https://chapel-lang.org/docs/modules/standard/Sys.html#Sys.sys_getsockopt) but user wont need to provide in file descriptor manually then can just pass in `tcpConn|tcpListener|udpSocket` rest arguments will remain same.
