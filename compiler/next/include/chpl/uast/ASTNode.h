@@ -139,10 +139,10 @@ class ASTNode {
   bool shallowMatch(const ASTNode* other) const;
   bool completeMatch(const ASTNode* other) const;
 
-  // keep is some old AST
-  // addin is some new AST we wish to combine with it
+  // 'keep' is some old AST
+  // 'addin' is some new AST we wish to combine with it
   //
-  // on exit, keep stores the AST we need to keep, and anything
+  // on exit, 'keep' stores the AST we need to keep, and anything
   // not kept is stored in 'addin'.
   // the function returns 'true' if anything changed in 'keep'.
   static bool updateAST(owned<ASTNode>& keep, owned<ASTNode>& addin);

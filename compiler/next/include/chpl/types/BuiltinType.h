@@ -58,7 +58,8 @@ class BuiltinType : public Type {
   bool contentsMatchInner(const Type* other) const override {
     const BuiltinType* lhs = this;
     const BuiltinType* rhs = (const BuiltinType*) other;
-    return lhs->kind_ == rhs->kind_;
+    return lhs->kind_ == rhs->kind_ &&
+           lhs->bitwidth_ == rhs->bitwidth_;
   }
 
   void markUniqueStringsInner(Context* context) const override {

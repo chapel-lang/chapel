@@ -32,7 +32,7 @@ namespace types {
   This is the base class for classes that represent a type.
 
   Functions like someType->isRecord() / someAst->toRecord() are available and
-  generated for all Typnode subclasses.
+  generated for all Type subclasses.
 
  */
 class Type {
@@ -80,10 +80,10 @@ class Type {
 
   bool completeMatch(const Type* other) const;
 
-  // keep is some old Type
-  // addin is some new Type we wish to combine with it
+  // 'keep' is some old Type
+  // 'addin' is some new Type we wish to combine with it
   //
-  // on exit, keep stores the Type we need to keep, and anything
+  // on exit, 'keep' stores the Type we need to keep, and anything
   // not kept is stored in 'addin'.
   // the function returns 'true' if anything changed in 'keep'.
   static bool updateType(owned<Type>& keep, owned<Type>& addin);

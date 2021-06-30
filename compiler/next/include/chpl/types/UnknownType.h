@@ -42,7 +42,7 @@ class UnknownType : public Type {
   }
 
   bool isGeneric() override {
-    return false;
+    return true;
   }
 
  public:
