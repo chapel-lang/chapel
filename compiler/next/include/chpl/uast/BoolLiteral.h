@@ -33,7 +33,8 @@ namespace uast {
 class BoolLiteral final : public Literal {
  private:
   BoolLiteral(bool value)
-    : Literal(asttags::BoolLiteral) {
+    : Literal(asttags::BoolLiteral),
+      value_(value) {
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {

@@ -90,10 +90,10 @@ static void testRange(Parser* parser, const char* testName,
 }
 
 // TODO: Check for trailing comma?
-void testArrayDomain(Parser* parser, const char* testName,
-                     bool isArray,
-                     int numElements,
-                     bool hasTrailingComma) {
+static void testArrayDomain(Parser* parser, const char* testName,
+                            bool isArray,
+                            int numElements,
+                            bool hasTrailingComma) {
   // These initializers must have at least one element.
   assert(numElements > 0);
 
