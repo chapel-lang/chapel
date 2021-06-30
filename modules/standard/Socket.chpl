@@ -90,27 +90,25 @@ module Socket {
 
   type tcpConn = file;
 
-  proc tcpConn.fd():int throws {
+  proc tcpConn.fd():c_int throws {
     var tempfd:c_int;
     var err:syserr = ENOERR;
     on this.home {
       err = qio_get_fd(this._file_internal, tempfd);
     }
     if err then try ioerror(err, "in file.fd()");
-    return tempfd:int;
+    return tempfd;
   }
 
-  proc tcpConn.addr() throws {
+  proc tcpConn.addr throws {
+    var addressStorage = new sys_sockaddr_t();
+    var err = sys_getpeername(this.fd(), addressStorage);
+    if(err != 0){
+      throw SystemError.fromSyserr(err,"Failed to create Socket");
+    }
 
+    return new ipAddr(addressStorage);
   }
-
-  // proc tcpConn.init=(x: (tcpConn, ipAddr)) {
-  //   this.init(x(0));
-  // }
-
-  // proc ipAddr.init=(x: (tcpConn, ipAddr)) {
-  //   this.init(x(1).host, x(0).port, x(0).family);
-  // }
 
   private extern proc sizeof(e): size_t;
 
