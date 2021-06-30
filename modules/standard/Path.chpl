@@ -154,6 +154,9 @@ proc absPath(path: string): string throws {
     reliance on :proc:`~FileSystem.locale.cwd()`. Another task on the current
     locale may change the current working directory at any time.
 
+  :arg f: The file whose absolute path is desired.
+  :type f: :type:`~IO.file`
+
   :return: A normalized, absolutized version of the path for the file argument.
   :rtype: `string`
 
@@ -616,7 +619,7 @@ proc realPath(path: string): string throws {
    This resolves and removes any :data:`curDir` and :data:`parentDir` uses
    present, as well as any symbolic links. Returns the result.
 
-   :arg f: A file whose path should be resolved..
+   :arg f: A file whose path should be resolved.
    :type f: :type:`~IO.file`
    
    :return: A canonical path to the file referenced by the given :type:`~IO.file`
