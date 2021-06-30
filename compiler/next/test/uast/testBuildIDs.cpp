@@ -99,8 +99,8 @@ static void test1() {
   Context* ctx = &context;
 
   // test some operations on IDs
-  auto shortpath = UniqueString::build(ctx, "a.chpl");
-  auto longpath = UniqueString::build(ctx, "aVeryLongFilenameIndeed.chpl");
+  auto shortpath = UniqueString::build(ctx, "mod.fn");
+  auto longpath = UniqueString::build(ctx, "aVeryLongModuleNameIndeed.fn");
 
   ID emptyID;
 
@@ -233,6 +233,22 @@ static  void test2() {
   assert(block->stmt(0)->id().compare(block->stmt(0)->id()) == 0);
   assert(block->stmt(0)->id().compare(block->stmt(1)->id()) < 0);
   assert(block->stmt(1)->id().compare(block->stmt(2)->id()) < 0);
+
+  // check parentSymbolId
+  assert(module->id().parentSymbolId(ctx).symbolPath() == "");
+  assert(module->id().parentSymbolId(ctx).postOrderId() == -1);
+  assert(block->id().parentSymbolId(ctx).symbolPath() == "test");
+  assert(block->id().parentSymbolId(ctx).postOrderId() == -1);
+  assert(block->id().parentSymbolId(ctx) == module->id());
+  assert(block->stmt(0)->id().parentSymbolId(ctx).symbolPath() == "test");
+  assert(block->stmt(0)->id().parentSymbolId(ctx).postOrderId() == -1);
+  assert(block->stmt(0)->id().parentSymbolId(ctx) == module->id());
+  assert(block->stmt(1)->id().parentSymbolId(ctx).symbolPath() == "test");
+  assert(block->stmt(1)->id().parentSymbolId(ctx).postOrderId() == -1);
+  assert(block->stmt(1)->id().parentSymbolId(ctx) == module->id());
+  assert(block->stmt(2)->id().parentSymbolId(ctx).symbolPath() == "test");
+  assert(block->stmt(2)->id().parentSymbolId(ctx).postOrderId() == -1);
+  assert(block->stmt(2)->id().parentSymbolId(ctx) == module->id());
 }
 
 static void test3() {
@@ -398,6 +414,30 @@ static void test4() {
 
   assert(!modI->id().contains(modM->id()));
   assert(!modI->id().contains(modM->stmt(1)->id()));
+
+  // check parentSymbolId
+  // M and I
+  assert(modM->id().parentSymbolId(ctx).symbolPath() == "");
+  assert(modM->id().parentSymbolId(ctx).postOrderId() == -1);
+  assert(modI->id().parentSymbolId(ctx).symbolPath() == "M");
+  assert(modI->id().parentSymbolId(ctx).postOrderId() == -1);
+  assert(modI->id().parentSymbolId(ctx) == modM->id());
+
+  // a, b, c
+  assert(modI->stmt(0)->id().parentSymbolId(ctx).symbolPath() == "M.I");
+  assert(modI->stmt(0)->id().parentSymbolId(ctx).postOrderId() == -1);
+  assert(modI->stmt(0)->id().parentSymbolId(ctx) == modI->id());
+  assert(modI->stmt(1)->id().parentSymbolId(ctx).symbolPath() == "M.I");
+  assert(modI->stmt(1)->id().parentSymbolId(ctx).postOrderId() == -1);
+  assert(modI->stmt(1)->id().parentSymbolId(ctx) == modI->id());
+  assert(modI->stmt(2)->id().parentSymbolId(ctx).symbolPath() == "M.I");
+  assert(modI->stmt(2)->id().parentSymbolId(ctx).postOrderId() == -1);
+  assert(modI->stmt(2)->id().parentSymbolId(ctx) == modI->id());
+
+  // x
+  assert(modM->stmt(1)->id().parentSymbolId(ctx).symbolPath() == "M");
+  assert(modM->stmt(1)->id().parentSymbolId(ctx).postOrderId() == -1);
+  assert(modM->stmt(1)->id().parentSymbolId(ctx) == modM->id());
 }
 
 

@@ -24,7 +24,28 @@
 namespace chpl {
 
 
-// Returns 'true' if this symbol contains another AST node.
+ID ID::parentSymbolId(Context* context) const {
+  if (postOrderId_ >= 0) {
+    // Create an ID with postorder id -1 instead
+    return ID(symbolPath_, -1, 0);
+  }
+
+  // remove the last '.' component from the ID
+  const char* path = symbolPath_.c_str();
+  ssize_t lastDot = -1;
+  for (ssize_t i = 0; path[i]; i++) {
+    if (path[i] == '.') lastDot = i;
+  }
+
+  if (lastDot == -1) {
+    // no path component to remove, so return an empty ID
+    return ID();
+  }
+
+  // Otherwise, construct an ID for the parent symbol
+  return ID(UniqueString::build(context, path, lastDot), -1, 0);
+}
+
 bool ID::contains(const ID& other) const {
   UniqueString thisPath = this->symbolPath();
   UniqueString otherPath = other.symbolPath();

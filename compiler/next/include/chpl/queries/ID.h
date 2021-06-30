@@ -24,6 +24,7 @@
 #include "chpl/util/hash.h"
 
 namespace chpl {
+class Context;
 
 
 /**
@@ -39,7 +40,7 @@ class ID final {
 
   // Within that symbol, what is the number of this node in
   // a postorder traversal?
-  // The symbol itself would be the last node traversed.
+  // The symbol itself has ID -1.
   int postOrderId_ = -1;
 
   // How many of the previous ids would be considered within
@@ -98,6 +99,21 @@ class ID final {
     numContainedChildren() == 0.
    */
   int numContainedChildren() const { return numChildIds_; }
+
+  /**
+    Returns a new ID for the parent symbol ID.
+
+    * if postOrderId is >= 0, returns the id with postOrderId == -1
+    * if postOrderId is -1, returns the id from removing the
+      last '.bla' part from the symbolPath.
+
+    If this ID has no parent, returns an empty ID.
+
+    The returned ID always has numContainedChildren() of 0 and
+    it cannot be used with contains(). However it is suitable
+    for use in looking up an ID in a map.
+   */
+  ID parentSymbolId(Context* context) const;
 
   /**
     returns 'true' if the AST node with this ID contains the AST
