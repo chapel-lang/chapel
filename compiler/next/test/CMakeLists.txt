@@ -32,7 +32,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_subdirectory(frontend)
+add_subdirectory(parsing)
 add_subdirectory(queries)
+add_subdirectory(resolution)
 add_subdirectory(uast)
 add_subdirectory(util)

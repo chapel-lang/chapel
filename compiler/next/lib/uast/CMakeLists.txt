@@ -78,6 +78,7 @@ target_sources(libchplcomp-obj
                SimpleBlockLike.cpp
                StringLikeLiteral.cpp
                StringLiteral.cpp
+               Sync.cpp
                TaskVar.cpp
                TupleDecl.cpp
                TypeDecl.cpp
@@ -87,7 +88,6 @@ target_sources(libchplcomp-obj
                Union.cpp
                Variable.cpp
                VarLikeDecl.cpp
-               Visitor.cpp
                While.cpp
                WithClause.cpp
                Yield.cpp

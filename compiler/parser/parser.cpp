@@ -36,7 +36,7 @@
 #include "symbol.h"
 #include "wellknown.h"
 
-#include "chpl/frontend/frontend-queries.h"
+#include "chpl/parsing/parsing-queries.h"
 
 // Turn this on to dump AST/uAST when using --compiler-library-parser.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
@@ -783,7 +783,7 @@ static void uASTParseFile(const char* fileName,
   INT_ASSERT(!include);
 
   auto path = chpl::UniqueString::build(gContext, fileName);
-  auto & modules = chpl::frontend::parse(gContext, path);
+  auto & modules = chpl::parsing::parse(gContext, path);
   for (auto mod : modules) {
     INT_ASSERT(mod != nullptr);
 

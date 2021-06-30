@@ -48,6 +48,10 @@ public:
       lastLine_(lastLine), lastColumn_(lastColumn) {
   }
 
+  bool isEmpty() const {
+    return path_.isEmpty();
+  }
+
   UniqueString path() const { return path_; }
   int firstLine() const { return firstLine_; }
   int firstColumn() const { return firstColumn_; }

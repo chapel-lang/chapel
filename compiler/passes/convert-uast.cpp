@@ -31,7 +31,6 @@
 #include "build.h"
 #include "docsDriver.h"
 
-#include "chpl/frontend/frontend-queries.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
 
@@ -42,8 +41,11 @@ namespace {
 struct Converter {
   chpl::Context* context = nullptr;
   bool inTupleDecl = false;
+  UniqueString thisStr;
 
-  Converter(chpl::Context* context) : context(context) { }
+  Converter(chpl::Context* context) : context(context) {
+    thisStr = UniqueString::build(context, "this");
+  }
 
   Expr* convertAST(const uast::ASTNode* node);
 
@@ -56,16 +58,16 @@ struct Converter {
     return ret;
   }
 
-  Expr* convertComment(const uast::Comment* node) {
+  Expr* visit(const uast::Comment* node) {
     // old ast does not represent comments
     return nullptr;
   }
 
-  Expr* convertErroneousExpression(const uast::ErroneousExpression* node) {
+  Expr* visit(const uast::ErroneousExpression* node) {
     return new CallExpr(PRIM_ERROR);
   }
 
-  UnresolvedSymExpr* convertIdentifier(const uast::Identifier* node) {
+  UnresolvedSymExpr* visit(const uast::Identifier* node) {
     return new UnresolvedSymExpr(node->name().c_str());
   }
 
@@ -83,22 +85,22 @@ struct Converter {
     return block;
   }
 
-  BlockStmt* convertBegin(const uast::Begin* node) {
+  BlockStmt* visit(const uast::Begin* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  BlockStmt* convertBlock(const uast::Block* node) {
+  BlockStmt* visit(const uast::Block* node) {
     return createBlockWithStmts(node->stmts());
   }
 
-  BlockStmt* convertDefer(const uast::Defer* node) {
+  BlockStmt* visit(const uast::Defer* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  BlockStmt* convertLocal(const uast::Local* node) {
-    BlockStmt* body = createBlockWithStmts(node->stmts()); 
+  BlockStmt* visit(const uast::Local* node) {
+    BlockStmt* body = createBlockWithStmts(node->stmts());
     Expr* condition = convertExprOrNull(node->condition());
     if (condition) {
       return buildLocalStmt(condition, body);
@@ -107,14 +109,14 @@ struct Converter {
     }
   }
 
-  BlockStmt* convertOn(const uast::On* node) {
+  BlockStmt* visit(const uast::On* node) {
     Expr* expr = toExpr(convertAST(node->destination()));
     Expr* stmt = toExpr(createBlockWithStmts(node->stmts()));
     return buildOnStmt(expr, stmt);
   }
 
-  BlockStmt* convertSerial(const uast::Serial* node) {
-    BlockStmt* body = createBlockWithStmts(node->stmts()); 
+  BlockStmt* visit(const uast::Serial* node) {
+    BlockStmt* body = createBlockWithStmts(node->stmts());
     Expr* condition = convertExprOrNull(node->condition());
 
     if (condition) {
@@ -126,29 +128,32 @@ struct Converter {
 
   /// Expressions ///
 
-  CallExpr* convertDelete(const uast::Delete* node) {
+  CallExpr* visit(const uast::Delete* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  CallExpr* convertNew(const uast::New* node) {
+  CallExpr* visit(const uast::New* node) {
+    Expr* newedType = convertAST(node->typeExpression());
+    CallExpr* typeCall = new CallExpr(newedType);
+
     switch (node->management()) {
       case uast::New::DEFAULT_MANAGEMENT:
-        return new CallExpr(PRIM_NEW);
+        return new CallExpr(PRIM_NEW, typeCall);
       case uast::New::OWNED:
-        return new CallExpr(PRIM_NEW,
+        return new CallExpr(PRIM_NEW, typeCall,
                             new NamedExpr(astr_chpl_manager,
                                           new SymExpr(dtOwned->symbol)));
       case uast::New::SHARED:
-        return new CallExpr(PRIM_NEW,
+        return new CallExpr(PRIM_NEW, typeCall,
                             new NamedExpr(astr_chpl_manager,
                                           new SymExpr(dtShared->symbol)));
       case uast::New::UNMANAGED:
-        return new CallExpr(PRIM_NEW,
+        return new CallExpr(PRIM_NEW, typeCall,
                             new NamedExpr(astr_chpl_manager,
                                           new SymExpr(dtUnmanaged->symbol)));
       case uast::New::BORROWED:
-        return new CallExpr(PRIM_NEW,
+        return new CallExpr(PRIM_NEW, typeCall,
                             new NamedExpr(astr_chpl_manager,
                                           new SymExpr(dtBorrowed->symbol)));
     }
@@ -156,23 +161,23 @@ struct Converter {
     return nullptr;
   }
 
-  std::pair<Expr*, Expr*> revertAs(const uast::As* node) {
+  std::pair<Expr*, Expr*> convertAs(const uast::As* node) {
     Expr* one = toExpr(convertAST(node->symbol()));
     Expr* two = toExpr(convertAST(node->rename()));
     return std::pair<Expr*, Expr*>(one, two);
   }
 
-  Expr* convertAs(const uast::As* node) {
+  Expr* visit(const uast::As* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
   }
 
-  PotentialRename* revertRename(const uast::Expression* node) {
+  PotentialRename* convertRename(const uast::Expression* node) {
     PotentialRename* ret = new PotentialRename();
 
     if (auto as = node->toAs()) {
       ret->tag = PotentialRename::DOUBLE;
-      ret->renamed = new std::pair<Expr*, Expr*>(revertAs(as));
+      ret->renamed = new std::pair<Expr*, Expr*>(convertAs(as));
     } else {
       ret->tag = PotentialRename::SINGLE;
       ret->elem = toExpr(convertAST(node));
@@ -181,14 +186,14 @@ struct Converter {
     return ret;
   }
 
-  BlockStmt* revertUsePossibleLimitations(const uast::Use* node) {
+  BlockStmt* convertUsePossibleLimitations(const uast::Use* node) {
     INT_ASSERT(node->numUseClauses() == 1);
 
     auto useClause = node->useClause(0);
 
     if (useClause->limitationClauseKind() == uast::UseClause::NONE) {
       INT_ASSERT(useClause->numLimitations() == 0);
-      return revertUseNoLimitations(node);
+      return convertUseNoLimitations(node);
     }
 
     // These are the arguments required by 'buildUseStmt' with limitations.
@@ -203,7 +208,7 @@ struct Converter {
     }
 
     if (auto as = useClause->symbol()->toAs()) {
-      auto exprs = revertAs(as);
+      auto exprs = convertAs(as);
       mod = exprs.first;
       rename = exprs.second;
     } else {
@@ -213,57 +218,57 @@ struct Converter {
 
     // Build the limitations list.
     for (auto limitation : useClause->limitations()) {
-      names->push_back(revertRename(limitation));
+      names->push_back(convertRename(limitation));
     }
 
     return buildUseStmt(mod, rename, names, except, privateUse);
   }
 
-  BlockStmt* revertUseNoLimitations(const uast::Use* node) {
+  BlockStmt* convertUseNoLimitations(const uast::Use* node) {
     auto args = new std::vector<PotentialRename*>();
     bool privateUse = node->visibility() != uast::Decl::PUBLIC;
 
     for (auto useClause : node->useClauses()) {
       INT_ASSERT(useClause->limitationClauseKind() == uast::UseClause::NONE);
       INT_ASSERT(useClause->numLimitations() == 0);
-      PotentialRename* pr = revertRename(useClause->symbol());
+      PotentialRename* pr = convertRename(useClause->symbol());
       args->push_back(pr);
     }
 
     return buildUseStmt(args, privateUse);
   }
 
-  BlockStmt* convertUse(const uast::Use* node) {
+  BlockStmt* visit(const uast::Use* node) {
     INT_ASSERT(node->numUseClauses() > 0);
 
     if (node->numUseClauses() == 1) {
-      return revertUsePossibleLimitations(node);
+      return convertUsePossibleLimitations(node);
     } else {
-      return revertUseNoLimitations(node);
+      return convertUseNoLimitations(node);
     }
   }
 
-  Expr* convertUseClause(const uast::UseClause* node) {
+  Expr* visit(const uast::UseClause* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
   }
 
-  Expr* convertWithClause(const uast::WithClause* node) {
+  Expr* visit(const uast::WithClause* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  GotoStmt* convertBreak(const uast::Break* node) {
+  GotoStmt* visit(const uast::Break* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  BlockStmt* convertCobegin(const uast::Cobegin* node) {
+  BlockStmt* visit(const uast::Cobegin* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  Expr* convertConditional(const uast::Conditional* node) {
+  Expr* visit(const uast::Conditional* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     BlockStmt* thenBlock = createBlockWithStmts(node->thenStmts());
     BlockStmt* elseBlock = nullptr;
@@ -274,35 +279,40 @@ struct Converter {
     return buildIfStmt(condExpr, thenBlock, elseBlock);
   }
 
-  GotoStmt* convertContinue(const uast::Continue* node) {
+  GotoStmt* visit(const uast::Continue* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  DefExpr* convertLabel(const uast::Label* node) {
+  DefExpr* visit(const uast::Label* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  CallExpr* convertReturn(const uast::Return* node) {
+  CallExpr* visit(const uast::Return* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  CallExpr* convertYield(const uast::Yield* node) {
+  BlockStmt* visit(const uast::Sync* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
+  CallExpr* visit(const uast::Yield* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
   /// Loops ///
 
-  BlockStmt* convertDoWhile(const uast::DoWhile* node) {
+  BlockStmt* visit(const uast::DoWhile* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     BlockStmt* body = createBlockWithStmts(node->stmts());
     return DoWhileStmt::build(condExpr, body);
   }
 
-  BlockStmt* convertWhile(const uast::While* node) {
+  BlockStmt* visit(const uast::While* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     BlockStmt* body = createBlockWithStmts(node->stmts());
     return WhileDoStmt::build(condExpr, body);
@@ -312,7 +322,7 @@ struct Converter {
 
   // In the uAST, loop index variables are represented as Decl, but in the
   // old AST they are represented as expressions.
-  Expr* revertLoopIndexDecl(const uast::Decl* index) {
+  Expr* convertLoopIndexDecl(const uast::Decl* index) {
     if (index == nullptr) return nullptr;
 
     if (const uast::Variable* var = index->toVariable()) {
@@ -323,13 +333,13 @@ struct Converter {
     }
   }
 
-  BlockStmt* convertBracketLoop(const uast::BracketLoop* node) {
+  BlockStmt* visit(const uast::BracketLoop* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
   // TODO: Create a common converter for all IndexableLoop if possible?
-  BlockStmt* convertCoforall(const uast::Coforall* node) {
+  BlockStmt* visit(const uast::Coforall* node) {
     INT_ASSERT(!node->isExpressionLevel());
 
     // These are the arguments that 'buildCoforallLoopStmt' requires.
@@ -340,7 +350,7 @@ struct Converter {
     bool zippered = node->iterand()->isZip();
 
     if (node->index()) {
-      indices = revertLoopIndexDecl(node->index());
+      indices = convertLoopIndexDecl(node->index());
     }
 
     if (node->withClause()) {
@@ -352,12 +362,12 @@ struct Converter {
                                  zippered);
   }
 
-  BlockStmt* convertFor(const uast::For* node) {
+  BlockStmt* visit(const uast::For* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  BlockStmt* convertForall(const uast::Forall* node) {
+  BlockStmt* visit(const uast::Forall* node) {
     if (node->isExpressionLevel()) {
       INT_FATAL("TODO");
       return nullptr;
@@ -373,7 +383,7 @@ struct Converter {
       bool serialOK = false;
 
       if (node->index()) {
-        indices = revertLoopIndexDecl(node->index());
+        indices = convertLoopIndexDecl(node->index());
       }
 
       if (node->withClause()) {
@@ -386,14 +396,14 @@ struct Converter {
     }
   }
 
-  BlockStmt* convertForeach(const uast::Foreach* node) {
+  BlockStmt* visit(const uast::Foreach* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
   /// Non-Literal Initializer Expressions (e.g. Array, Range) ///
 
-  CallExpr* convertArray(const uast::Array* node) {
+  CallExpr* visit(const uast::Array* node) {
     CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
 
     for (auto expr : node->exprs()) {
@@ -403,7 +413,7 @@ struct Converter {
     return new CallExpr("chpl__buildArrayExpr", actualList);
   }
 
-  CallExpr* convertDomain(const uast::Domain* node) {
+  CallExpr* visit(const uast::Domain* node) {
     CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
 
     for (auto expr : node->exprs()) {
@@ -414,7 +424,7 @@ struct Converter {
                         new SymExpr(gTrue));
   }
 
-  CallExpr* convertRange(const uast::Range* node) {
+  CallExpr* visit(const uast::Range* node) {
 
     // These are the arguments 'buildBoundedRange' requires.
     Expr* low = nullptr;
@@ -450,13 +460,13 @@ struct Converter {
 
   /// Literals ///
 
-  Expr* convertBoolLiteral(const uast::BoolLiteral* node) {
+  Expr* visit(const uast::BoolLiteral* node) {
     return node->value() ? new SymExpr(gTrue) : new SymExpr(gFalse);
   }
 
   /// NumericLiterals ///
 
-  Expr* convertImagLiteral(const uast::ImagLiteral* node) {
+  Expr* visit(const uast::ImagLiteral* node) {
     SymExpr* se = buildImagLiteral(node->text().c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate && v->immediate->const_kind == NUM_KIND_IMAG);
@@ -464,7 +474,7 @@ struct Converter {
     return se;
   }
 
-  Expr* convertIntLiteral(const uast::IntLiteral* node) {
+  Expr* visit(const uast::IntLiteral* node) {
     SymExpr* se = buildIntLiteral(node->text().c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate && v->immediate->const_kind == NUM_KIND_INT);
@@ -472,7 +482,7 @@ struct Converter {
     return se;
   }
 
-  Expr* convertRealLiteral(const uast::RealLiteral* node) {
+  Expr* visit(const uast::RealLiteral* node) {
     SymExpr* se = buildRealLiteral(node->text().c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate && v->immediate->const_kind == NUM_KIND_REAL);
@@ -480,7 +490,7 @@ struct Converter {
     return se;
   }
 
-  Expr* convertUintLiteral(const uast::UintLiteral* node) {
+  Expr* visit(const uast::UintLiteral* node) {
     SymExpr* se = buildIntLiteral(node->text().c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate && v->immediate->const_kind == NUM_KIND_UINT);
@@ -489,7 +499,7 @@ struct Converter {
   }
 
   /// StringLikeLiterals ///
-  Expr* convertBytesLiteral(const uast::BytesLiteral* node) {
+  Expr* visit(const uast::BytesLiteral* node) {
     std::string quoted = quoteStringForC(node->str());
     SymExpr* se = buildBytesLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
@@ -499,7 +509,7 @@ struct Converter {
     return se;
   }
 
-  Expr* convertCStringLiteral(const uast::CStringLiteral* node) {
+  Expr* visit(const uast::CStringLiteral* node) {
     std::string quoted = quoteStringForC(node->str());
     SymExpr* se = buildCStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
@@ -510,7 +520,7 @@ struct Converter {
 
   }
 
-  Expr* convertStringLiteral(const uast::StringLiteral* node) {
+  Expr* visit(const uast::StringLiteral* node) {
     std::string quoted = quoteStringForC(node->str());
     SymExpr* se = buildStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
@@ -522,8 +532,7 @@ struct Converter {
 
   /// Calls ///
 
-  Expr* convertDot(const uast::Dot* node) {
-
+  Expr* visit(const uast::Dot* node) {
     // These are the arguments that 'buildDotExpr' requires.
     BaseAST* base = toExpr(convertAST(node->calledExpression()));
     const char* member = node->field().c_str();
@@ -537,13 +546,27 @@ struct Converter {
     }
   }
 
-  Expr* convertFnCall(const uast::FnCall* node) {
+  Expr* visit(const uast::FnCall* node) {
     const uast::Expression* calledExpression = node->calledExpression();
     INT_ASSERT(calledExpression);
     Expr* calledExpr = convertAST(calledExpression);
     INT_ASSERT(calledExpr);
 
-    CallExpr* ret = new CallExpr(calledExpr);
+    CallExpr* ret = nullptr;
+    CallExpr* addArgsTo = nullptr;
+    if (calledExpression->isNew()) {
+      // we have (call PRIM_NEW (call C) mgmt)
+      // and need to add the arguments to the (call C)
+      CallExpr* primNew = toCallExpr(calledExpr);
+      INT_ASSERT(primNew->isPrimitive(PRIM_NEW));
+      CallExpr* typeCall = toCallExpr(primNew->get(1));
+      INT_ASSERT(typeCall);
+      ret = primNew;
+      addArgsTo = typeCall;
+    } else {
+      ret = new CallExpr(calledExpr);
+      addArgsTo = ret;
+    }
 
     int nActuals = node->numActuals();
     for (int i = 0; i < nActuals; i++) {
@@ -552,13 +575,13 @@ struct Converter {
       if (node->isNamedActual(i)) {
         actual = buildNamedActual(node->actualName(i).c_str(), actual);
       }
-      ret->insertAtTail(actual);
+      addArgsTo->insertAtTail(actual);
     }
 
     return ret;
   }
 
-  CallExpr* revertDmappedOp(const uast::OpCall* node) {
+  CallExpr* convertDmappedOp(const uast::OpCall* node) {
     INT_ASSERT(node->numActuals() == 2);
 
     CallExpr* ret = new CallExpr("chpl__distributed");
@@ -575,7 +598,7 @@ struct Converter {
     return ret;
   }
 
-  CallExpr* revertRegularBinaryOrUnaryOp(const uast::OpCall* node) {
+  CallExpr* convertRegularBinaryOrUnaryOp(const uast::OpCall* node) {
     CallExpr* ret = new CallExpr(node->op().c_str());
     int nActuals = node->numActuals();
 
@@ -588,34 +611,34 @@ struct Converter {
     return ret;
   }
 
-  Expr* convertOpCall(const uast::OpCall* node) {
+  Expr* visit(const uast::OpCall* node) {
     const char* opStr = node->op().c_str();
 
     if (!strcmp(opStr, "dmapped")) {
-      return revertDmappedOp(node);
+      return convertDmappedOp(node);
     } else {
-      return revertRegularBinaryOrUnaryOp(node);
+      return convertRegularBinaryOrUnaryOp(node);
     }
   }
 
-  Expr* convertPrimCall(const uast::PrimCall* node) {
+  /*Expr* visit(const uast::PrimCall* node) {
     INT_FATAL("TODO");
     return nullptr;
-  }
+  }*/
 
-  Expr* convertZip(const uast::Zip* node) {
+  Expr* visit(const uast::Zip* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
   /// Decls ///
 
-  Expr* convertMultiDecl(const uast::MultiDecl* node) {
+  Expr* visit(const uast::MultiDecl* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
-  Expr* convertTupleDecl(const uast::TupleDecl* node) {
+  Expr* visit(const uast::TupleDecl* node) {
     BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
 
     bool saveInTupleDecl = inTupleDecl;
@@ -646,7 +669,7 @@ struct Converter {
 
   /// NamedDecls ///
 
-  Expr* convertEnumElement(const uast::EnumElement* node) {
+  Expr* visit(const uast::EnumElement* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
@@ -686,7 +709,7 @@ struct Converter {
             name == "<<=");
   }
 
-  Expr* convertFunction(const uast::Function* node) {
+  Expr* visit(const uast::Function* node) {
     FnSymbol* fn = new FnSymbol("_");
     if (node->isInline()) {
       fn->addFlag(FLAG_INLINE);
@@ -696,22 +719,26 @@ struct Converter {
     }
     // TODO: add FLAG_NO_PARENS for parenless functions
 
+    IntentTag thisTag = INTENT_BLANK;
+    Expr* receiverType = nullptr;
+
     // Add the formals
     if (node->numFormals() > 0) {
       for (auto formal : node->formals()) {
-        DefExpr* def = convertFormal(formal);
+        DefExpr* def = visit(formal);
         INT_ASSERT(def);
-        buildFunctionFormal(fn, def); // adds it to the list
+        if (formal->name() != thisStr) {
+          buildFunctionFormal(fn, def); // adds it to the list
+        } else if (!node->isPrimaryMethod()) {
+          thisTag = convertFormalIntent(formal->intent());
+          receiverType = convertExprOrNull(formal->typeExpression());
+        }
       }
     }
 
-    IntentTag thisTag = INTENT_BLANK;
-    Expr* receiver = nullptr;
-    // TODO adjust the above two variables once we have methods
-
     UniqueString name = node->name();
 
-    fn = buildFunctionSymbol(fn, name.c_str(), thisTag, receiver);
+    fn = buildFunctionSymbol(fn, name.c_str(), thisTag, receiverType);
 
     if (isAssignOp(name)) {
       fn->addFlag(FLAG_ASSIGNOP);
@@ -765,7 +792,7 @@ struct Converter {
     return decl;
   }
 
-  DefExpr* convertModule(const uast::Module* node) {
+  DefExpr* visit(const uast::Module* node) {
     chpl::UniqueString ustr = node->name();
     const char* name = ustr.c_str();
     const char* path = context->filePathForID(node->id()).c_str();
@@ -816,7 +843,7 @@ struct Converter {
     return INTENT_BLANK;
   }
 
-  DefExpr* convertFormal(const uast::Formal* node) {
+  DefExpr* visit(const uast::Formal* node) {
     IntentTag intentTag = convertFormalIntent(node->intent());
 
     Expr* typeExpr = convertExprOrNull(node->typeExpression());
@@ -828,7 +855,7 @@ struct Converter {
                            typeExpr, initExpr, varargsVariable);
   }
 
-  Expr* convertTaskVar(const uast::TaskVar* node) {
+  Expr* visit(const uast::TaskVar* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
@@ -840,7 +867,7 @@ struct Converter {
       return name;
   }
 
-  Expr* convertVariable(const uast::Variable* node) {
+  Expr* visit(const uast::Variable* node) {
     auto stmts = new BlockStmt(BLOCK_SCOPELESS);
 
     auto varSym = new VarSymbol(tupleVariableName(node->name().c_str()));
@@ -894,64 +921,51 @@ struct Converter {
 
   /// TypeDecls
 
-  Expr* convertEnum(const uast::Enum* node) {
+  Expr* visit(const uast::Enum* node) {
     INT_FATAL("TODO");
     return nullptr;
   }
 
   /// AggregateDecls
 
-  Expr* convertClass(const uast::Class* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  Expr* visit(const uast::Class* node) {
+    const char* name = node->name().c_str();
+    const char* cname = name;
+    Expr* inherit = convertExprOrNull(node->parentClass());
+    BlockStmt* decls = createBlockWithStmts(node->declOrComments());
+    Flag externFlag = FLAG_UNKNOWN;
+
+    return buildClassDefExpr(name, cname, AGGREGATE_CLASS, inherit, decls,
+                             externFlag, /* docs */ nullptr);
   }
 
-  Expr* convertRecord(const uast::Record* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  Expr* visit(const uast::Record* node) {
+    const char* name = node->name().c_str();
+    const char* cname = name; // TODO: cname could be set for extern record
+    Expr* inherit = nullptr;
+    BlockStmt* decls = createBlockWithStmts(node->declOrComments());
+    Flag externFlag = FLAG_UNKNOWN; // TODO: add extern record support
+
+    return buildClassDefExpr(name, cname, AGGREGATE_RECORD, inherit, decls,
+                             externFlag, /* docs */ nullptr);
   }
 
-  Expr* convertUnion(const uast::Union* node) {
-    INT_FATAL("TODO");
-    return nullptr;
-  }
+  Expr* visit(const uast::Union* node) {
+    const char* name = node->name().c_str();
+    const char* cname = name; // TODO: cname could be set for extern union
+    Expr* inherit = nullptr;
+    BlockStmt* decls = createBlockWithStmts(node->declOrComments());
+    Flag externFlag = FLAG_UNKNOWN; // TODO: add extern union support
 
+    return buildClassDefExpr(name, cname, AGGREGATE_UNION, inherit, decls,
+                             externFlag, /* docs */ nullptr);
+  }
 };
 
 /// Generic conversion calling the above functions ///
 Expr* Converter::convertAST(const uast::ASTNode* node) {
-  switch (node->tag()) {
-    #define CONVERT(NAME) \
-      case chpl::uast::asttags::NAME: \
-      { \
-        astlocMarker markAstLoc(node->id()); \
-        return convert##NAME((const chpl::uast::NAME*) node); \
-      }
-
-    #define IGNORE(NAME) \
-      case chpl::uast::asttags::NAME: \
-        INT_FATAL("case not handled"); \
-        return nullptr;
-
-    #define AST_NODE(NAME) CONVERT(NAME)
-    #define AST_LEAF(NAME) CONVERT(NAME)
-    #define AST_BEGIN_SUBCLASSES(NAME) IGNORE(START_##NAME)
-    #define AST_END_SUBCLASSES(NAME) IGNORE(END_##NAME)
-
-    #include "chpl/uast/ASTClassesList.h"
-
-    IGNORE(NUM_AST_TAGS)
-
-    #undef AST_NODE
-    #undef AST_LEAF
-    #undef AST_BEGIN_SUBCLASSES
-    #undef AST_END_SUBCLASSES
-    #undef CONVERT
-    #undef IGNORE
-  }
-
-  INT_FATAL("case not handled in convertAST");
-  return nullptr;
+  astlocMarker markAstLoc(node->id());
+  return node->dispatch<Expr*>(*this);
 }
 
 } // end anonymous namespace
@@ -960,7 +974,7 @@ ModuleSymbol* convertToplevelModule(chpl::Context* context,
                                     const chpl::uast::Module* mod) {
   astlocMarker markAstLoc(mod->id());
   Converter c(context);
-  DefExpr* def = c.convertModule(mod);
+  DefExpr* def = c.visit(mod);
   ModuleSymbol* ret = toModuleSymbol(def->sym);
   ModuleSymbol::addTopLevelModule(ret);
   return ret;

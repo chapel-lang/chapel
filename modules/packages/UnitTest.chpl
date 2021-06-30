@@ -430,7 +430,10 @@ module UnitTest {
                               "'\nand\n'"+stringify(array2) + "'\n";
 
       // Compare array types, size, and shape
-      if array1.type != array2.type {
+      if array1.rank != array2.rank {
+        const errorMsg = genericErrorMsg + "are not of same rank";
+        throw new owned AssertionError(errorMsg);
+      } else if array1.type != array2.type {
         const errorMsg = genericErrorMsg + "are not of same type";
         throw new owned AssertionError(errorMsg);
       } else if array1.size != array2.size {
@@ -439,14 +442,15 @@ module UnitTest {
       } else if array1.shape != array2.shape {
         const errorMsg = genericErrorMsg + "are not of same shape";
         throw new owned AssertionError(errorMsg);
-      }
+      } else {
 
-      // Compare array values
-      const arraysEqual = && reduce (array1 == array2);
-      if !arraysEqual {
-        const errorMsg = "assert failed -\n'" + stringify(array1) +
-                         "'\n!=\n'"+stringify(array2)+"'";
-        throw new owned AssertionError(errorMsg);
+        // Compare array values
+        const arraysEqual = && reduce (array1 == array2);
+        if !arraysEqual {
+          const errorMsg = "assert failed -\n'" + stringify(array1) +
+                           "'\n!=\n'"+stringify(array2)+"'";
+          throw new owned AssertionError(errorMsg);
+        }
       }
     }
 

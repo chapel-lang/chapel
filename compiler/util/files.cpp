@@ -316,7 +316,10 @@ FILE* openfile(const char* filename,
 
 
 void closefile(FILE* thefile) {
-  if (fclose(thefile) != 0) {
+  if (thefile == nullptr) return;
+
+  int rc = fclose(thefile);
+  if (rc != 0) {
     USR_FATAL("closing file: %s", strerror(errno));
   }
 }
@@ -329,6 +332,7 @@ void openfile(fileinfo* thefile, const char* mode) {
 
 void closefile(fileinfo* thefile) {
   closefile(thefile->fptr);
+  thefile->fptr = nullptr;
 }
 
 
@@ -343,7 +347,7 @@ void openCFile(fileinfo* fi, const char* name, const char* ext) {
 }
 
 void closeCFile(fileinfo* fi, bool beautifyIt) {
-  closefile(fi->fptr);
+  closefile(fi);
   //
   // We should beautify if (1) we were asked to and (2) either (a) we
   // were asked to save the C code or (b) we were asked to codegen cpp

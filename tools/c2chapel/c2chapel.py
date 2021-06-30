@@ -329,14 +329,14 @@ def genFuncDecl(fn):
         genComment("Overload for empty varargs")
         print("extern proc " + fnName + "(" + newArgs + ") : " + retType + ";\n")
 
-def isStructOrUnionDef(decl):
+def getStructOrUnionDef(decl):
     if type(decl) == c_ast.Struct or type(decl) == c_ast.Union:
         if decl.decls is not None:
             return decl
         else:
             return None
     elif type(decl) == c_ast.Decl or type(decl) == c_ast.TypeDecl or type(decl) == c_ast.PtrDecl:
-        return isStructOrUnionDef(decl.type)
+        return getStructOrUnionDef(decl.type)
     else:
         return None
 
@@ -348,13 +348,17 @@ def genStructOrUnion(structOrUnion, name=""):
         else:
             return
 
+    innerDef = getStructOrUnionDef(structOrUnion)
+    isUnion = isinstance(innerDef, c_ast.Union)
+
     if name in chapelKeywords:
-        isStructOrIsUnion = ("struct" if isinstance(structOrUnion, c_ast.Struct) else "union")
-        genComment("Unable to generate " + isStructOrIsUnion + " '" + name + "' " + "because its name is a Chapel keyword")
+        structOrUnion = "union" if isUnion else "struct"
+        genComment("Unable to generate " + structOrUnion + " '" + name + "' " + "because its name is a Chapel keyword")
         print()
         return
 
-    ret = "extern record " + name + " {"
+    ret = "extern union " if isUnion else "extern record ";
+    ret += name + " {"
     foundTypes.add(name)
 
     # Forward Declaration
@@ -366,7 +370,7 @@ def genStructOrUnion(structOrUnion, name=""):
     warnKeyword = False
     warnSkippingAnonymousType = False
     for decl in structOrUnion.decls:
-        innerStructOrUnion = isStructOrUnionDef(decl)
+        innerStructOrUnion = getStructOrUnionDef(decl)
         if innerStructOrUnion is not None:
             genStructOrUnion(innerStructOrUnion)
 
@@ -487,9 +491,12 @@ def genTypedefs(defs):
                 if sn.decls is not None:
                     genStructOrUnion(sn, name=node.name)
                 elif sn.name not in foundTypes:
-                    isStructOrIsUnion = ("struct" if type(node.type.type) == c_ast.Struct else "union")
-                    genComment("Opaque " + isStructOrIsUnion + "?")
-                    print("extern record " + node.name + " {};\n")
+                    isUnion = isinstance(node.type.type, c_ast.Union)
+                    structOrUnion = "union" if isUnion else "struct"
+                    genComment("Opaque " + structOrUnion + "?")
+                    gen = "extern union " if isUnion else "extern record ";
+                    gen += name + " {};\n"
+                    print(gen)
                 else:
                     genTypeAlias(node)
             elif isPointerToStruct(node.type):

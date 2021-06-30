@@ -363,12 +363,6 @@ module CPtr {
   inline operator :(x:c_ptr, type t:uint(64)) where c_uintptr != int(64)
     return __primitive("cast", t, x);
 
-  pragma "no doc"
-  inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
-    __primitive("=", a, b);
-  }
-
-
 
   pragma "no doc"
   inline operator c_ptr.==(a: c_ptr, b: c_ptr) where a.eltType == b.eltType {
@@ -467,14 +461,6 @@ module CPtr {
   pragma "no doc"
   inline proc c_ptrTo(x: c_fn_ptr) {
     return x;
-  }
-  pragma "no doc"
-  proc c_fn_ptr.this() {
-    compilerError("Can't call a C function pointer within Chapel");
-  }
-  pragma "no doc"
-  proc c_fn_ptr.this(args...) {
-    compilerError("Can't call a C function pointer within Chapel");
   }
 
   // Offset the CHPL_RT_MD constant in order to preserve the value through

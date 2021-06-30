@@ -6,7 +6,7 @@ export CHPL_LAUNCHER_PARTITION=clx24
 export CHPL_TARGET_CPU=none
 
 # the lengths we go to, to avoid line wrap ...
-pcca=(-performance-configs gn-ibv-large:v,gn-ibv-fast:v \
+pcca=(-performance-configs gn-ibv-large:v,gn-ibv-fast:v,gn-mpi,ofi \
       -performance \
       -perflabel ml- \
       -startdate 03/11/21)

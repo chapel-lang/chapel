@@ -2,15 +2,24 @@ include $(THIRD_PARTY_DIR)/llvm/Makefile.share
 
 LLVM_CLANG_ARGUMENTS_FILE=${LLVM_INSTALL_DIR}/configured-clang-sysroot-arguments
 LLVM_CONFIG=$(LLVM_INSTALL_DIR)/bin/llvm-config
+export LLVM_CONFIG:=$(CHPL_MAKE_LLVM_CONFIG)
+TEST_LLVM_CONFIG:=$(shell test -x $(LLVM_CONFIG) && echo 1)
+ifeq ($(TEST_LLVM_CONFIG),1)
+  export HAVE_LLVM_CONFIG:=1
+endif
+
+ifdef HAVE_LLVM_CONFIG
 
 # LLVM preprocessor flags (ie -Dbla and -Ibla) 
 ifndef LLVM_CONFIG_CXXFLAGS
-  export LLVM_CONFIG_CXXFLAGS:=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --cxxflags | awk -f $(THIRD_PARTY_DIR)/llvm/filter-llvm-config.awk)
+  export LLVM_CONFIG_CXXFLAGS:=$(shell $(LLVM_CONFIG) --cxxflags | awk -f $(THIRD_PARTY_DIR)/llvm/filter-llvm-config.awk)
 endif
 
 ifndef LLVM_CONFIG_CFLAGS
-  export LLVM_CONFIG_CFLAGS:=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --cflags | awk -f $(THIRD_PARTY_DIR)/llvm/filter-llvm-config.awk)
+  export LLVM_CONFIG_CFLAGS:=$(shell $(LLVM_CONFIG) --cflags | awk -f $(THIRD_PARTY_DIR)/llvm/filter-llvm-config.awk)
 endif
 
 # LLVM_VERSION, LLVM_MAJOR_VERSION, etc
 include $(THIRD_PARTY_DIR)/llvm/Makefile.version
+
+endif

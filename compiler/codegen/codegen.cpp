@@ -144,10 +144,38 @@ const char* legalizeName(const char* name) {
 }
 
 static void legalizeSymbolName(Symbol* sym) {
-  if (!sym->isRenameable())
+  if (!fLibraryCompile && !sym->isRenameable())
     return;
 
   const char* newName = legalizeName(sym->cname);
+
+  // Error when an exported function has an invalid C name, e.g. the module
+  // initializer for a module named 'hyphenated-name.chpl'.
+  if (fLibraryCompile) {
+    if (FnSymbol* fn = toFnSymbol(sym)) {
+      if (fn->hasFlag(FLAG_EXPORT) && isUserRoutine(fn) &&
+          strcmp(sym->cname, newName)) {
+        const char* fmt = fn->hasFlag(FLAG_MODULE_INIT)
+            ? "Cannot export module initializer with name '%s'"
+            : "Cannot export function with name '%s'";
+
+        USR_FATAL_CONT(fmt, sym->cname);
+
+        // If it's a module initializer, hint at changing the module name.
+        if (fn->hasFlag(FLAG_MODULE_INIT)) {
+          ModuleSymbol* mod = fn->getModule();
+          USR_PRINT("Consider changing the name of module '%s' to be a "
+                    "valid C identifier",
+                    mod->name);
+        }
+      }
+    }
+  }
+
+  if (!sym->isRenameable())
+    return;
+
+  // Everything is fine, set the new legalized name.
   sym->cname = newName;
 
   // Add chpl_ to operator names.
@@ -1638,7 +1666,6 @@ static void codegen_header(std::set<const char*> & cnames,
   //
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (ts->defPoint->parentExpr != rootModule->block) {
-      legalizeSymbolName(ts);
       types.push_back(ts);
     }
   }
@@ -1650,7 +1677,6 @@ static void codegen_header(std::set<const char*> & cnames,
   forv_Vec(VarSymbol, var, gVarSymbols) {
     if (var->defPoint->parentExpr != rootModule->block &&
         toModuleSymbol(var->defPoint->parentSymbol)) {
-      legalizeSymbolName(var);
       if ( var->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU ){
         globals.push_back(var);
       }
@@ -1662,7 +1688,6 @@ static void codegen_header(std::set<const char*> & cnames,
   // collect functions and apply canonical sort
   //
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    legalizeSymbolName(fn);
     if (fn->hasFlag(FLAG_GPU_CODEGEN) == gCodegenGPU){
       functions.push_back(fn);
     }
@@ -2389,6 +2414,13 @@ static void codegenPartOne() {
   uniquify_names(cnames, types, functions, globals);
 }
 
+static fileinfo hdrfile    = { NULL, NULL, NULL };
+static fileinfo mainfile   = { NULL, NULL, NULL };
+static fileinfo defnfile   = { NULL, NULL, NULL };
+static fileinfo strconfig  = { NULL, NULL, NULL };
+static fileinfo modulefile = { NULL, NULL, NULL };
+
+
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
 
@@ -2409,11 +2441,6 @@ static void codegenPartTwo() {
   }
 
   SET_LINENO(rootModule);
-
-  fileinfo hdrfile    = { NULL, NULL, NULL };
-  fileinfo mainfile   = { NULL, NULL, NULL };
-  fileinfo defnfile   = { NULL, NULL, NULL };
-  fileinfo strconfig  = { NULL, NULL, NULL };
 
   GenInfo* info     = gGenInfo;
 
@@ -2487,7 +2514,6 @@ static void codegenPartTwo() {
         const char* filename = NULL;
         filename = generateFileName(fileNameHashMap, filename, currentModule->name);
         if(currentModule->modTag == MOD_USER) {
-          fileinfo modulefile;
           openCFile(&modulefile, filename, "c");
           int modulePathLen = strlen(astr(modulefile.pathname));
           char path[FILENAME_MAX];
@@ -2544,7 +2570,6 @@ static void codegenPartTwo() {
       const char* filename = NULL;
       filename = generateFileName(fileNameHashMap, filename,currentModule->name);
 
-      fileinfo modulefile;
       openCFile(&modulefile, filename, "c");
       info->cfile = modulefile.fptr;
       if(fIncrementalCompilation && (currentModule->modTag == MOD_USER))
@@ -2794,4 +2819,13 @@ void nprint_view(GenRet& gen) {
   }
   printf("isUnsigned %i\n", (int) gen.isUnsigned);
   printf("}\n");
+}
+
+void closeCodegenFiles() {
+  // close the C files without trying to beautify
+  closeCFile(&hdrfile, false);
+  closeCFile(&mainfile, false);
+  closeCFile(&defnfile, false);
+  closeCFile(&strconfig, false);
+  closeCFile(&modulefile, false);
 }

@@ -149,7 +149,7 @@ static  void test2() {
 
   auto builder = Builder::build(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
-  Location emptyLoc;
+  Location dummyLoc(UniqueString::build(ctx, "path/to/test.chpl"));
 
   {
     // Create the AST for { a; b; c; }
@@ -158,10 +158,10 @@ static  void test2() {
     auto strC = UniqueString::build(ctx, "c");
     ASTList children;
 
-    children.push_back(Identifier::build(b, emptyLoc, strA));
-    children.push_back(Identifier::build(b, emptyLoc, strB));
-    children.push_back(Identifier::build(b, emptyLoc, strC));
-    auto block = Block::build(b, emptyLoc, std::move(children));
+    children.push_back(Identifier::build(b, dummyLoc, strA));
+    children.push_back(Identifier::build(b, dummyLoc, strB));
+    children.push_back(Identifier::build(b, dummyLoc, strC));
+    auto block = Block::build(b, dummyLoc, std::move(children));
     b->addToplevelExpression(std::move(block));
   }
 
@@ -241,7 +241,7 @@ static void test3() {
 
   auto builder = Builder::build(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
-  Location emptyLoc;
+  Location dummyLoc(UniqueString::build(ctx, "path/to/test.chpl"));
 
   {
     // Create the AST for { a; { } { b; } c; }
@@ -250,18 +250,18 @@ static void test3() {
     auto strC = UniqueString::build(ctx, "c");
 
     ASTList outer;
-    outer.push_back(Identifier::build(b, emptyLoc, strA));
+    outer.push_back(Identifier::build(b, dummyLoc, strA));
     {
       ASTList empty;
-      outer.push_back(Block::build(b, emptyLoc, std::move(empty)));
+      outer.push_back(Block::build(b, dummyLoc, std::move(empty)));
     }
     {
       ASTList block;
-      block.push_back(Identifier::build(b, emptyLoc, strB));
-      outer.push_back(Block::build(b, emptyLoc, std::move(block)));
+      block.push_back(Identifier::build(b, dummyLoc, strB));
+      outer.push_back(Block::build(b, dummyLoc, std::move(block)));
     }
-    outer.push_back(Identifier::build(b, emptyLoc, strC));
-    auto block = Block::build(b, emptyLoc, std::move(outer));
+    outer.push_back(Identifier::build(b, dummyLoc, strC));
+    auto block = Block::build(b, dummyLoc, std::move(outer));
     b->addToplevelExpression(std::move(block));
   }
 
@@ -307,7 +307,7 @@ static void test4() {
 
   auto builder = Builder::build(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
-  Location emptyLoc;
+  Location dummyLoc(UniqueString::build(ctx, "path/to/test.chpl"));
 
   {
     /* Create the AST for
@@ -333,17 +333,17 @@ static void test4() {
     ASTList inner;
     {
       ASTList ii;
-      ii.push_back(Identifier::build(b, emptyLoc, strA));
-      ii.push_back(Identifier::build(b, emptyLoc, strB));
-      ii.push_back(Identifier::build(b, emptyLoc, strC));
-      inner.push_back(Module::build(b, emptyLoc, strI,
+      ii.push_back(Identifier::build(b, dummyLoc, strA));
+      ii.push_back(Identifier::build(b, dummyLoc, strB));
+      ii.push_back(Identifier::build(b, dummyLoc, strC));
+      inner.push_back(Module::build(b, dummyLoc, strI,
                                     Decl::DEFAULT_VISIBILITY,
                                     Module::DEFAULT_MODULE_KIND,
                                     std::move(ii)));
     }
-    inner.push_back(Identifier::build(b, emptyLoc, strX));
+    inner.push_back(Identifier::build(b, dummyLoc, strX));
 
-    auto mod = Module::build(b, emptyLoc, strM,
+    auto mod = Module::build(b, dummyLoc, strM,
                              Decl::DEFAULT_VISIBILITY,
                              Module::DEFAULT_MODULE_KIND,
                              std::move(inner));

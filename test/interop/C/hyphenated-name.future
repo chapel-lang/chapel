@@ -1,2 +1,0 @@
-bug: hyphenated .chpl files can't be compiled into libraries
-#9594

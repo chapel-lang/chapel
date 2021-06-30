@@ -81,6 +81,7 @@ NEXT_UAST_SRCS =                                 \
   SimpleBlockLike.cpp \
   StringLikeLiteral.cpp \
   StringLiteral.cpp \
+  Sync.cpp \
   TaskVar.cpp \
   TupleDecl.cpp \
   TypeDecl.cpp \
@@ -90,7 +91,6 @@ NEXT_UAST_SRCS =                                 \
   Union.cpp \
   Variable.cpp \
   VarLikeDecl.cpp \
-  Visitor.cpp \
   While.cpp \
   WithClause.cpp \
   Yield.cpp \

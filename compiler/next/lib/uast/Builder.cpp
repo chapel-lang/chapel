@@ -84,6 +84,7 @@ Builder::Result Builder::result() {
   ret.errors.swap(errors_);
   ret.locations.swap(locations_);
   locations_map_.clear();
+
   return ret;
 }
 
@@ -125,11 +126,10 @@ void Builder::assignIDs(UniqueString inferredModule) {
   int i = 0;
 
   for (auto const& ownedExpression: topLevelExpressions_) {
-    if (Module* module = ownedExpression->toModule()) {
+    ASTNode* ast = ownedExpression.get();
+    if (ast->isModule() || ast->isComment()) {
       UniqueString emptyString;
-      doAssignIDs(module, emptyString, i, pathVec, duplicates);
-    } else if (ownedExpression->isComment()) {
-      // ignore assigning IDs for toplevel comments
+      doAssignIDs(ast, emptyString, i, pathVec, duplicates);
     } else {
       assert(false && "topLevelExpressions should only be module decls or comments");
     }
@@ -173,8 +173,13 @@ void Builder::assignIDs(UniqueString inferredModule) {
 void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
                           pathVecT& pathVec, declaredHereT& duplicates) {
 
-  if (ast->isComment())
+  if (ast->isComment()) {
+    // store the location for the ast id
+    Location loc = locations_map_[ast];
+    assert(!loc.isEmpty());
+    locations_.push_back(std::make_pair(ast, loc));
     return;
+  }
 
   int firstChildID = i;
 
@@ -253,12 +258,47 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
   }
 
   // store the location for the ast id
-  locations_.push_back(std::make_pair(ast, locations_map_[ast]));
+  Location loc = locations_map_[ast];
+  assert(!loc.isEmpty());
+  locations_.push_back(std::make_pair(ast, loc));
 }
 
 Builder::Result::Result()
   : filePath(), topLevelExpressions(), errors(), locations()
 {
+}
+
+// Recomputes this->locations by gathering Location for all uAST
+// nodes contained from the provided maps and appending these
+// to the provided locations vector.
+static
+void recomputeLocations(
+    const ASTNode* ast,
+    std::vector<std::pair<const ASTNode*, Location>>& locations,
+    const std::unordered_map<const ASTNode*, Location>& mapA,
+    const std::unordered_map<const ASTNode*, Location>& mapB) {
+
+  for (const ASTNode* child : ast->children()) {
+    recomputeLocations(child, locations, mapA, mapB);
+  }
+
+  Location loc;
+  auto searchA = mapA.find(ast);
+  if (searchA != mapA.end()) {
+    // found a location in mapA so use it
+    loc = searchA->second;
+  } else {
+    // check in mapB
+    auto searchB = mapB.find(ast);
+    if (searchB != mapB.end()) {
+      // found a location in mapB so use it
+      loc = searchB->second;
+    } else {
+      assert(false && "Could not find location");
+    }
+  }
+
+  locations.push_back(std::make_pair(ast, loc));
 }
 
 bool Builder::Result::update(Result& keep, Result& addin) {
@@ -267,12 +307,32 @@ bool Builder::Result::update(Result& keep, Result& addin) {
   // update the filePath
   changed |= defaultUpdate(keep.filePath, addin.filePath);
 
-  // update the errors and locations
+  // update the errors
   changed |= defaultUpdate(keep.errors, addin.errors);
-  changed |= defaultUpdate(keep.locations, addin.locations);
+
+  // create maps for the keep and addin locations
+  std::unordered_map<const ASTNode*, Location> keepLocs;
+  std::unordered_map<const ASTNode*, Location> addinLocs;
+
+  for (auto keepLoc : keep.locations) {
+    keepLocs.insert(keepLoc);
+  }
+  for (auto addinLoc : addin.locations) {
+    addinLocs.insert(addinLoc);
+  }
 
   // update the ASTs
   changed |= updateASTList(keep.topLevelExpressions, addin.topLevelExpressions);
+
+  std::vector<std::pair<const ASTNode*, Location>> locationsVec;
+
+  // recompute locationsVec by traversing the AST and using the maps
+  for (const auto& ast : keep.topLevelExpressions) {
+    recomputeLocations(ast.get(), locationsVec, keepLocs, addinLocs);
+  }
+
+  // now update the locations in keep.
+  changed |= defaultUpdate(keep.locations, locationsVec);
 
   return changed;
 }
