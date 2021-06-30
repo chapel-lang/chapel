@@ -54,6 +54,12 @@ namespace resolution {
   const Scope* scopeForScopingSymbol(Context* context, ID id);
 
   /**
+    Given an ID for a Module, returns a Scope that represents
+    the Module scope (and what symbols are defined in it).
+   */
+  const Scope* scopeForModule(Context* context, ID moduleId);
+
+  /**
     Returns the parent Scope for an expression. The parent Scope contains
     NamedDecls defined there as well as use/import statements.
    */

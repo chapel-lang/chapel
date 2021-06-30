@@ -405,6 +405,10 @@ const Scope* scopeForScopingSymbol(Context* context, ID id) {
   return scopeForScopingSymbolQuery(context, id);
 }
 
+const Scope* scopeForModule(Context* context, ID id) {
+  return scopeForScopingSymbol(context, id);
+}
+
 /*
 static std::vector<UniqueString> getTopLevelNames(const Module* module) {
   std::vector<UniqueString> result;

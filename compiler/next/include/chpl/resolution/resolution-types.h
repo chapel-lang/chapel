@@ -29,28 +29,29 @@
 namespace chpl {
 namespace resolution {
 
-// DeclMap key - string name  value - ID of a NamedDecl
+// TODO: Should some/all of these structs be classes
+// with getters etc? That would be appropriate for
+// use as part of the library API.
+
+// DeclMap: key - string name,  value - ID of a NamedDecl
 // Using an ID here prevents needing to recompute the Scope
 // if (say) something in the body of a Function changed
 using DeclMap = std::unordered_map<UniqueString, ID>;
 
-// UsesAndImportsVec stores Use/Import statements
+// UsesAndImportsVec stores IDs of Use/Import statements
 using UsesAndImportsVec = std::vector<ID>;
 
 /**
   A scope roughly corresponds to a `{ }` block. Anywhere a new symbol could be
   defined / is defined is a scope.
 
-  Generic instantiations will generate new scopes (in order to handle point of
-  instantiation).
-
+  While generic instantiations generate something scope-like, the
+  point-of-instantiation reasoning will need to be handled with a different
+  type.
  */
 // TODO: adjust Conditional to contain Blocks so we can associate
 // scopes 1:1 with these blocks.
 struct Scope {
-  // TODO: what to do for generic instantiation scopes?
-  // these are tied to AST
-
   ID parentScopeId; // the Scope for this AST
   ID id;
   DeclMap declared;
@@ -109,7 +110,7 @@ struct TypedFnSignature {
 };
 
 /*
-struct ResolutionResult {
+struct ResolvedExpression {
   // the expr that is resolved
   const uast::Expression* expr = nullptr;
   // For simple cases, which named decl does it refer to?
@@ -123,17 +124,18 @@ struct ResolutionResult {
     : expr(expr), decl(decl), type(type) { }
 };
 
-struct MultiResolutionResult : ResolutionResult {
+struct MultiResolvedExpression : ResolvedExpression {
   // For a function call, it might refer to several Functions
   // and we might not know which return intent to choose yet.
-  std::vector<const uast::Function*> otherFns;
+  std::vector<const uast::Function*> candidates;
+
   // TODO:
   //  establishing types
   //  return-intent overloading
   //  generic instantiation
   //  establish concrete intents
   //  establish copy-init vs move
-  MultiResolutionResult() { }
+  MultiResolvedExpression() { }
 };
 
 // postorder ID (int) -> ResolutionResult *within* a Function etc
