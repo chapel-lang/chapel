@@ -2404,25 +2404,29 @@ proc expm(A: [], param useExactOneNorm=true) throws {
 This method finds P Q Matrices, where P = U + V and Q = -U + V
 it then returns X where Q*X = P.
 */
-private proc solvePQ(U: [?D], V: [D]){
+private proc solvePQ(U: [?D], V: [D]) where usingLAPACK {
+  use SysCTypes;
+
   var P = U + V;
   var Q = -U + V;
-  var res : [D] U.eltType;
-  var b : [D.dim(0)] U.eltType;
+  var ipiv : [0..<D.shape(0)] c_int;
 
-  // Need to rewrite solve function
-  // to solve for A*X = B where B
-  // is also a matrix
+  var info = LAPACK.gesv(lapack_memory_order.row_major, Q, ipiv, P);
+
+  return P;
+}
+
+private proc solvePQ(U: [?D], V: [D]) where !usingLAPACK {
+  use SysCTypes;
+
+  var P = U + V;
+  var Q = -U + V;
+
   for j in D.dim(1) {
-    for i in D.dim(0) {
-      b[i] = P[i,j];
+      P[.., j] = solve(Q, P[.., j]);
     }
-    b = solve(Q, b);
-    for i in D.dim(0) {
-      res[i,j] = b[i];
-    }
-  }
-  return res;
+
+  return P;
 }
 
 /*
