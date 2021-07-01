@@ -1,3 +1,2 @@
-in Child.method arg=0
-in Child.method arg=1
-in Parent.method arg=0
+default-argument-class-override3a.chpl:11: error: param default arguments in overriden classes  are not yet supported.
+default-argument-class-override3a.chpl:11: error: param default arguments in overriden classes  are not yet supported.
