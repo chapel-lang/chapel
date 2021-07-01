@@ -2422,7 +2422,7 @@ private proc solvePQ(U: [?D], V: [D]) where !usingLAPACK {
   var P = U + V;
   var Q = -U + V;
 
-  for j in D.dim(1) {
+  forall j in D.dim(1) {
       P[.., j] = solve(Q, P[.., j]);
     }
 
