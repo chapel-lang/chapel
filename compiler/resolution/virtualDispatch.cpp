@@ -287,7 +287,9 @@ static void collectMethods(FnSymbol*               pfn,
         if (possibleSignatureMatch(pfn, cfn) == true) {
           if (cfn->retTag == RET_PARAM ||
               cfn->retTag == RET_TYPE) {
-            USR_FATAL_CONT(cfn, "default param error");
+            USR_FATAL_CONT(cfn,
+                           "param default arguments in overriden classes "
+                           " are not yet supported.");
           } else {
             methods.push_back(cfn);
           }
