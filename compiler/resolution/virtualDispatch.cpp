@@ -285,7 +285,12 @@ static void collectMethods(FnSymbol*               pfn,
           }
         }
         if (possibleSignatureMatch(pfn, cfn) == true) {
-          methods.push_back(cfn);
+          if (cfn->retTag == RET_PARAM ||
+              cfn->retTag == RET_TYPE) {
+            USR_FATAL_CONT(cfn, "default param error");
+          } else {
+            methods.push_back(cfn);
+          }
 
           // check to see if we are using defaulted actual fns
           // for any of the formals in pfn. If so, make sure the
