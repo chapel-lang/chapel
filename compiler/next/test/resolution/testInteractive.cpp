@@ -19,6 +19,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 
 // always check assertions in this test
@@ -59,11 +60,19 @@ static void printAllScopes(Context* context, const ASTNode* ast) {
       printf("    %s\n", id.toString().c_str());
     }
   }
-  for (const auto& elt : scope->usesAndImports) {
+  for (const auto* elt : scope->usesAndImports) {
     printf("  use/import %s\n",
-           elt.toString().c_str());
+           elt->id().toString().c_str());
   }
   printf("\n");
+
+  if (auto ident = ast->toIdentifier()) {
+    ID decl = findInnermostDecl(context, scope, ident->name());
+    printf("%s %s refers to %s\n",
+           ident->id().toString().c_str(),
+           ident->name().c_str(),
+           decl.toString().c_str());
+  }
 
   for (const ASTNode* child : ast->children()) {
     printAllScopes(context, child);

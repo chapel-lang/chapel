@@ -166,6 +166,44 @@ const ModuleVec& parse(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
+static const Module* const& getToplevelModuleQuery(Context* context,
+                                                   UniqueString name) {
+  QUERY_BEGIN(getToplevelModuleQuery, context, name);
+
+  const Module* result = nullptr;
+
+  auto searchId = ID(name, -1, 0);
+  UniqueString path;
+
+  if (context->hasFilePathForId(searchId)) {
+    auto path = context->filePathForId(searchId);
+
+    // TODO: maybe have a way to query if the context already
+    // has a file path for this ID?
+
+    // rule out empty path and also "<unknown file path>"
+    if (path.isEmpty() == false &&
+        path.c_str()[0] != '<') {
+      const ModuleVec& modVec = parse(context, path);
+      for (const uast::Module* mod : modVec) {
+        if (mod->name() == name) {
+          result = mod;
+          break;
+        }
+      }
+    }
+  } else {
+    // TODO: if we don't have a module read yet, read one.
+    assert(false && "TODO");
+  }
+
+  return QUERY_END(result);
+}
+
+const Module* getToplevelModule(Context* context, UniqueString name) {
+  return getToplevelModuleQuery(context, name);
+}
+
 static const ASTNode* const& astForIDQuery(Context* context, ID id) {
   QUERY_BEGIN(astForIDQuery, context, id);
 

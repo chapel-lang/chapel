@@ -39,7 +39,7 @@ namespace resolution {
 using DeclMap = std::unordered_map<UniqueString, owned<std::vector<ID>>>;
 
 // UsesAndImportsVec stores IDs of Use/Import statements
-using UsesAndImportsVec = std::vector<ID>;
+using UsesAndImportsVec = std::vector<const uast::Expression*>;
 
 /**
   A scope roughly corresponds to a `{ }` block. Anywhere a new symbol could be
@@ -52,7 +52,8 @@ using UsesAndImportsVec = std::vector<ID>;
 // TODO: adjust Conditional to contain Blocks so we can associate
 // scopes 1:1 with these blocks.
 struct Scope {
-  const Scope* parentScope;
+  const Scope* parentScope = nullptr;
+  uast::asttags::ASTTag tag = uast::asttags::NUM_AST_TAGS;
   ID id;
   DeclMap declared;
   UsesAndImportsVec usesAndImports;
@@ -61,6 +62,7 @@ struct Scope {
 
   bool operator==(const Scope& other) const {
     bool match =  parentScope == other.parentScope &&
+                  tag == other.tag &&
                   id == other.id &&
                   declared.size() == other.declared.size() &&
                   usesAndImports == other.usesAndImports;

@@ -94,6 +94,11 @@ namespace parsing {
   const ModuleVec& parse(Context* context, UniqueString path);
 
   /**
+   This query parses a toplevel module by name
+   */
+  const uast::Module* getToplevelModule(Context* context, UniqueString name);
+
+  /**
    Returns the uast node with the given ID.
    */
   const uast::ASTNode* idToAst(Context* context, ID id);

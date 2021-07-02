@@ -66,6 +66,14 @@ namespace resolution {
   const Scope* scopeForModule(Context* context, ID moduleId);
 
   /**
+    Given a name and a Scope, return the innermost and first ID
+    for a definition of that name.
+   */
+  const ID& findInnermostDecl(Context* context,
+                              const Scope* scope,
+                              UniqueString name);
+
+  /**
     Returns the parent Scope for an expression. The parent Scope contains
     NamedDecls defined there as well as use/import statements.
    */

@@ -302,7 +302,7 @@ struct GatherDeclsAndUses {
   void exit(const MultiDecl* d) { }
   // make note of use/import
   bool enter(const Use* d) {
-    usesAndImports.push_back(d->id());
+    usesAndImports.push_back(d);
     return false;
   }
   void exit(const Use* d) { }
@@ -358,6 +358,7 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
     } else {
       ID parentId = parsing::idToParentId(context, id);
       result->parentScope = scopeForIdQuery(context, parentId);
+      result->tag = ast->tag();
       result->id = id;
       gatherDeclsAndUsesWithin(ast, result->declared, result->usesAndImports);
     }
@@ -412,6 +413,71 @@ static const Scope* const& scopeForIdQuery(Context* context, ID id) {
 const Scope* scopeForId(Context* context, ID id) {
   return scopeForIdQuery(context, id);
 }
+
+static bool lookupInnermost(Context* context,
+                            const Scope* scope,
+                            UniqueString name,
+                            ID& result) {
+
+  // Walk up the Scopes until we find something naming it
+  // Return the ID of the first matching declaration.
+  for (const Scope* cur = scope; cur != nullptr; cur = cur->parentScope) {
+    auto search = cur->declared.find(name);
+    if (search != cur->declared.end()) {
+      const owned<std::vector<ID>>& vec = search->second;
+      if (vec.get() != nullptr && vec->size() > 0) {
+        result = (*vec.get())[0];
+        return true;
+      }
+    }
+    for (const auto* elt : cur->usesAndImports) {
+      if (const Use* use = elt->toUse()) {
+        // TODO: do something with visibility
+        for (const UseClause* clause : use->useClauses()) {
+          if (const Identifier* ident = clause->symbol()->toIdentifier()) {
+            UniqueString modName = ident->name();
+            // TODO: handle looking up the module name
+            const Module* mod = parsing::getToplevelModule(context, modName);
+            if (mod == nullptr) {
+              assert(false && "TODO ERROR");
+            } else {
+              // check the scopes of this use statement.
+              printf("Looking up in sym %s in mod %s\n",
+                     name.c_str(), mod->id().toString().c_str());
+              const Scope* modScope = scopeForModule(context, mod->id());
+              bool found = lookupInnermost(context, modScope, name, result);
+              if (found) {
+                return true;
+              }
+            }
+          } else {
+            assert(false && "TODO");
+          }
+        }
+      }
+    }
+
+    // stop if we reach a Module scope
+    if (uast::asttags::isModule(cur->tag))
+      break;
+  }
+
+  return false;
+}
+
+const ID& findInnermostDecl(Context* context,
+                            const Scope* scope,
+                            UniqueString name)
+{
+  QUERY_BEGIN(findInnermostDecl, context, scope, name);
+
+  ID result;
+
+  lookupInnermost(context, scope, name, result);
+
+  return QUERY_END(result);
+}
+
 
 /*
 static
