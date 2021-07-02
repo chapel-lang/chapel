@@ -4,7 +4,7 @@
    By default, Chapel programs are compiled as the main program.  Sometimes the
    program is intended as a library whose contents can be called from other
    sources.  This primer will demonstrate how to call Chapel functions from C
-   and how to use C symbols in Chapel.
+   as well as how to use C symbols in Chapel.
 */
 
 /*
@@ -63,7 +63,9 @@ proc bar() { // bar will not be available to outside code
 // rely on the generated library being named ``libinteropWithC.a``, with a
 // generated header file named ``interopWithC.h``, both of which live in a
 // generated ``lib`` directory.
-//
+// Since ``--static`` is not supported on MacOS you will have to dynamically link
+// the generated library. Please refer to :ref:`readme-libraries` for instructions
+// on how to do that.
 
 /*
    .. _primers-C-interop-using-library:
@@ -78,7 +80,7 @@ proc bar() { // bar will not be available to outside code
 //
 
 /*
-   .. literalinclude:: cClient.c
+   .. literalinclude:: cClient.test.c
       :language: C
       :lines: 1-2
 */
@@ -92,7 +94,7 @@ proc bar() { // bar will not be available to outside code
 //
 
 /*
-   .. literalinclude:: cClient.c
+   .. literalinclude:: cClient.test.c
       :language: C
       :lines: 5-7
 */
@@ -105,7 +107,7 @@ proc bar() { // bar will not be available to outside code
 //
 
 /*
-   .. literalinclude:: cClient.c
+   .. literalinclude:: cClient.test.c
       :language: C
       :lines: 8-9
 */
@@ -115,7 +117,7 @@ proc bar() { // bar will not be available to outside code
 //
 
 /*
-   .. literalinclude:: cClient.c
+   .. literalinclude:: cClien.test.c
       :language: C
       :lines: 11-13
 */
@@ -126,7 +128,7 @@ proc bar() { // bar will not be available to outside code
 //
 
 /*
-   .. literalinclude:: cClient.c
+   .. literalinclude:: cClient.test.c
       :language: C
       :lines: 15-16
 */
@@ -160,11 +162,10 @@ proc bar() { // bar will not be available to outside code
    Using C Code in Chapel
    ----------------------
 */
+// Chapel has support for C code but we need to tell the compiler
+// about the function using the ``extern`` keyword
 
-//
-// C code can be used in Chapel by declaring the symbol as ``extern``:
-//
-extern proc baz(): c_int;
+extern proc baz(): int;
 
 //
 // The function can then be called as normal:
@@ -182,13 +183,27 @@ export proc alsoCallsBaz() {
   callsBaz();
 }
 
+// You can tell the chapel compiler where to look for these C functions by adding a
+// require statement
+require "cHelper.h", "cHelper.c";
+// You must inlcude both a header file and C file.
+// Chapel also supports require statements for ``.o`` files and
+// for archived libraries using the ``-l`` flag
+/*
+   .. code-block:: chapel
+
+         require "foo.o", "-lapache-arrow";
+*/
+
+// Alternatively you can also include their names while invoking the chapel compiler.
+
 //
 // Unlike ``export``, ``extern`` can also be applied to global variables,
 // struct definitions, or even typedefs.
 //
 extern var x: int(32);
 extern var y: uint(32) = 3;
-extern type myType = c_int;
+extern type myType = int;
 extern proc useMyType(arg: myType): int; // an extern function using the typedef
 
 export proc callUseMyType() {
@@ -196,32 +211,106 @@ export proc callUseMyType() {
   writeln(useMyType(blah));
 }
 
+// Chapel also has a standard module named :mod:`SysCTypes` (located under
+//``$CHPL_HOME/modules/standard/gen/...``) which defines a few C types which
+// align with the C compiler specification and do not require the extern keyword
+// such as ``c_int`` and ``c_char``. For more information about these types see
+// the :ref:`readme-extern` Technical Note.
+
+// You can include SysCTypes using a simple use statement
+
+use SysCTypes;
+
+
+// You can also assign default arguments to extern procs which then can be omitted
+// at the callsite as usual. For example
+
+extern proc sum(a: c_int, b: c_int = 1): int;
+
+// We must always make sure the types align as the C compiler specification allows for
+// different sizes for the same type depending on the compiler.
+
+// In order to pass an array to C, we use the following declaration:
+extern proc sumArray(arr: [] int, size: c_int): c_int;
+//Where an arrya would be
+var arr : [0..9] int = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+// Keep in mind that since Chapel has 64 bit ints, the C function must also accept an
+// of type ``int64_t``
+
 //
 // A C struct can be used in Chapel by declaring it as an ``extern record``.
 //
 
 extern record rec {
-  var a: int;
+  var a: c_int;
 }
 
 extern proc giveRec(): rec; // returns an instance of the struct
 
+// You do not have to inform chapel about all the fields of a record,
+// only the ones that you wish to directly manipulate using Chapel code.
 
-//
-// TODO: structs
-//
-// TODO: structs with omitted fields?
-//
-// TODO: demonstrate "external name" syntax, too
-//
-// TODO: demonstrate including the code where the extern symbols are defined
-//       e.g. require statements or providing them on the compile line
-//
-// TODO: talk about types that are already available without extern definitions?
-//       e.g. c_int, etc.
-//
+// For example a record with no declared fields is possible even though
+// the actualy C struct might have a nonzero number of fields.
 
-//
-// TODO:
-// - passing arrays back and forth
-// - finish using C from Chapel
+extern record notReallyEmpty{
+}
+
+// This means that the type is just reduced to being able to be passed around to
+// other functions and without the ability to directly manipulate it.
+
+// As of now the struct must be defined completely in the included header file
+// and must also be typdef'd.
+// In order to include a struct which is not typedef'd or if you want to import it
+// under another name simple state its external name after the ``extern`` keyword
+
+extern "struct person" record person{
+   var name: c_string;
+   var age: c_int;
+}
+
+// ``extern proc``s can also be renamed in a similar fashion.
+
+// Since most functions dealing with structs often return pointers, you can use the
+// ref intent for function arguments when their C counterparts are dealing with 
+// pointers
+
+require "fact.c", "fact.h";
+
+extern record data{
+    var x: c_int;
+}
+
+extern proc getNewData() ref : data;
+
+ref d :data;
+d = getNewData();
+
+extern proc fact_d(ref x: data) ref : data;
+ref f : data;
+f = fact_d(d);
+
+
+// If you do not care about the type for a certain variable or argument, you can
+// use the ``opaque`` keyowrd to indicate to the compiler that you do not know about
+// the type.
+// Such a variable will not be much use except for the ability to pass it to different routines
+// which accept the same underlying type. (Be carefull here as it may lead to unmatched types)
+
+extern proc getDataStructPtr(): opaque;
+var structPtr: opaque = getDataStructPtr();
+
+// For the ability to use C code in Chapel without an external C file,
+// You can also use extern blocks which allow you to put C code directly into Chapel files
+// To avoid cluttering you namespace you can also put these inside a module
+
+module CDemo {
+   extern {
+      #include<math.h>
+
+      static double square(double num){
+         return pow(num,2);
+      }
+   }
+}
+writeln(CDemo.square(3));
