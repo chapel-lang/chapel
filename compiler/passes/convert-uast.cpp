@@ -169,7 +169,7 @@ struct Converter {
     return nullptr;
   }
 
-  Expr* visit(const uast::UseClause* node) {
+  Expr* visit(const uast::VisibilityClause* node) {
     INT_FATAL("TODO");
     return nullptr;
   }

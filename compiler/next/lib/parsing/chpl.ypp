@@ -1049,38 +1049,38 @@ renames_ls:
 use_renames_ls:
   expr
   {
-    auto node = UseClause::build(BUILDER, LOC(@$), toOwned($1));
+    auto node = VisibilityClause::build(BUILDER, LOC(@$), toOwned($1));
     $$ = context->makeList(std::move(node));
   }
 | expr TAS expr
   {
     auto as = context->buildAsExpr(@1, @3, toOwned($1), toOwned($3));
-    auto node = UseClause::build(BUILDER, LOC(@$), toOwned(as));
+    auto node = VisibilityClause::build(BUILDER, LOC(@$), toOwned(as));
     $$ = context->makeList(std::move(node));
   }
 | expr TAS TUNDERSCORE
   {
     auto ident = toOwned(context->buildIdent(@3, $3));
     auto as = context->buildAsExpr(@1, @3, toOwned($1), std::move(ident));
-    auto node = UseClause::build(BUILDER, LOC(@$), toOwned(as));
+    auto node = VisibilityClause::build(BUILDER, LOC(@$), toOwned(as));
     $$ = context->makeList(std::move(node));
   }
 | use_renames_ls TCOMMA expr
   {
-    auto node = UseClause::build(BUILDER, LOC2(@2, @3), toOwned($3));
+    auto node = VisibilityClause::build(BUILDER, LOC2(@2, @3), toOwned($3));
     $$ = context->appendList($1, std::move(node));
   }
 | use_renames_ls TCOMMA expr TAS expr
   {
     auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
-    auto node = UseClause::build(BUILDER, LOC2(@2, @5), toOwned(as));
+    auto node = VisibilityClause::build(BUILDER, LOC2(@2, @5), toOwned(as));
     $$ = context->appendList($1, std::move(node));
   }
 | use_renames_ls TCOMMA expr TAS TUNDERSCORE
   {
     auto ident = context->buildIdent(@5, $5);
     auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned(ident));
-    auto node = UseClause::build(BUILDER, LOC2(@2, @5), toOwned(as));
+    auto node = VisibilityClause::build(BUILDER, LOC2(@2, @5), toOwned(as));
     $$ = context->appendList($1, std::move(node));
   }
 ;
@@ -1113,50 +1113,50 @@ use_stmt:
   }
 | access_control TUSE expr TEXCEPT except_ls TSEMI
   {
-    auto locUseClause = context->makeSpannedLocation(@3, @5);
-    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned($3),
-                                     UseClause::EXCEPT,
+    auto locVisibilityClause = context->makeSpannedLocation(@3, @5);
+    $$ = context->buildSingleUseStmt(@$, locVisibilityClause, $1, toOwned($3),
+                                     VisibilityClause::EXCEPT,
                                      $5);
   }
 | access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
   {
     auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
-    auto locUseClause = context->makeSpannedLocation(@3, @7);
-    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
-                                     UseClause::EXCEPT,
+    auto locVisibilityClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locVisibilityClause, $1, toOwned(as),
+                                     VisibilityClause::EXCEPT,
                                      $7);
   }
 | access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
   {
     auto ident = toOwned(context->buildIdent(@5, $5));
     auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
-    auto locUseClause = context->makeSpannedLocation(@3, @7);
-    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
-                                     UseClause::EXCEPT,
+    auto locVisibilityClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locVisibilityClause, $1, toOwned(as),
+                                     VisibilityClause::EXCEPT,
                                      $7);
   }
 | access_control TUSE expr TONLY opt_only_ls TSEMI
   {
-    auto locUseClause = context->makeSpannedLocation(@3, @5);
-    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned($3),
-                                     UseClause::ONLY,
+    auto locVisibilityClause = context->makeSpannedLocation(@3, @5);
+    $$ = context->buildSingleUseStmt(@$, locVisibilityClause, $1, toOwned($3),
+                                     VisibilityClause::ONLY,
                                      $5);
   }
 | access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI
   {
     auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
-    auto locUseClause = context->makeSpannedLocation(@3, @7);
-    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
-                                     UseClause::ONLY,
+    auto locVisibilityClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locVisibilityClause, $1, toOwned(as),
+                                     VisibilityClause::ONLY,
                                      $7);
   }
 | access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI
   {
     auto ident = toOwned(context->buildIdent(@5, $5));
     auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
-    auto locUseClause = context->makeSpannedLocation(@3, @7);
-    $$ = context->buildSingleUseStmt(@$, locUseClause, $1, toOwned(as),
-                                     UseClause::ONLY,
+    auto locVisibilityClause = context->makeSpannedLocation(@3, @7);
+    $$ = context->buildSingleUseStmt(@$, locVisibilityClause, $1, toOwned(as),
+                                     VisibilityClause::ONLY,
                                      $7);
   }
 ;

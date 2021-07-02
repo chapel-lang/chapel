@@ -1150,19 +1150,21 @@ Expression* ParserContext::buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
 }
 
 CommentsAndStmt ParserContext::
-buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locUseClause,
+buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
                    Decl::Visibility visibility,
                    owned<Expression> name,
-                   UseClause::LimitationClauseKind limitationClauseKind,
+                   VisibilityClause::LimitationKind limitationKind,
                    ParserExprList* limitationExprs) {
   auto comments = gatherComments(locEverything);
 
-  auto useClause = UseClause::build(builder, convertLocation(locUseClause),
-                                    std::move(name),
-                                    limitationClauseKind,
-                                    consumeList(limitationExprs));
+  auto convertedVisClauseLoc = convertLocation(locVisibilityClause);
 
-  auto uses = consumeList(makeList(useClause.release()));
+  auto visClause = VisibilityClause::build(builder, convertedVisClauseLoc,
+                                           std::move(name),
+                                           limitationKind,
+                                           consumeList(limitationExprs));
+
+  auto uses = consumeList(makeList(visClause.release()));
 
   auto node = Use::build(builder, convertLocation(locEverything),
                          visibility,

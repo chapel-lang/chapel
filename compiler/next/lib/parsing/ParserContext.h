@@ -364,10 +364,10 @@ struct ParserContext {
                           owned<Expression> rename);
 
   CommentsAndStmt
-  buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locUseClause,
+  buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
                      Decl::Visibility visibility,
                      owned<Expression> name,
-                     UseClause::LimitationClauseKind limitationClauseKind,
+                     VisibilityClause::LimitationKind limitationKind,
                      ParserExprList* limitationExprs);
 
   CommentsAndStmt buildAggregateTypeDecl(YYLTYPE location,

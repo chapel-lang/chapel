@@ -27,7 +27,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Use.h"
-#include "chpl/uast/UseClause.h"
+#include "chpl/uast/VisibilityClause.h"
 #include "chpl/uast/Variable.h"
 
 // always check assertions in this test
@@ -57,16 +57,16 @@ static void test0(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Use* use = mod->stmt(1)->toUse();
   assert(use->visibility() == Decl::DEFAULT_VISIBILITY);
-  assert(use->numUseClauses() == 1);
-  const UseClause* useClause = use->useClause(0);
-  assert(useClause->symbol()->isAs());
-  const As* as = useClause->symbol()->toAs();
+  assert(use->numVisibilityClauses() == 1);
+  const VisibilityClause* visClause = use->visibilityClause(0);
+  assert(visClause->symbol()->isAs());
+  const As* as = visClause->symbol()->toAs();
   assert(as->symbol()->isIdentifier());
   assert(as->symbol()->toIdentifier()->name() == "Foo");
   assert(as->rename()->isIdentifier());
   assert(as->rename()->toIdentifier()->name() == "X");
-  assert(useClause->limitationClauseKind() == UseClause::NONE);
-  assert(useClause->numLimitations() == 0);
+  assert(visClause->limitationKind() == VisibilityClause::NONE);
+  assert(visClause->numLimitations() == 0);
 }
 
 static void test1(Parser* parser) {
@@ -84,24 +84,24 @@ static void test1(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Use* use = mod->stmt(1)->toUse();
   assert(use->visibility() == Decl::PUBLIC);
-  assert(use->numUseClauses() == 3);
-  // Inspect the first use clause.
+  assert(use->numVisibilityClauses() == 3);
+  // Inspect the first visibility clause.
   {
-    const UseClause* useClause = use->useClause(0);
-    assert(useClause->symbol()->isAs());
-    const As* as = useClause->symbol()->toAs();
+    const VisibilityClause* visClause = use->visibilityClause(0);
+    assert(visClause->symbol()->isAs());
+    const As* as = visClause->symbol()->toAs();
     assert(as->symbol()->isIdentifier());
     assert(as->symbol()->toIdentifier()->name() == "A");
     assert(as->rename()->isIdentifier());
     assert(as->rename()->toIdentifier()->name() == "X");
-    assert(useClause->limitationClauseKind() == UseClause::NONE);
-    assert(useClause->numLimitations() == 0);
+    assert(visClause->limitationKind() == VisibilityClause::NONE);
+    assert(visClause->numLimitations() == 0);
   }
-  // Inspect the second use clause.
+  // Inspect the second visibility clause.
   {
-    const UseClause* useClause = use->useClause(1);
-    assert(useClause->symbol()->isAs());
-    const As* as = useClause->symbol()->toAs();
+    const VisibilityClause* visClause = use->visibilityClause(1);
+    assert(visClause->symbol()->isAs());
+    const As* as = visClause->symbol()->toAs();
     assert(as->symbol()->isDot());
     const Dot* dot = as->symbol()->toDot();
     assert(dot->numActuals() == 0);
@@ -110,31 +110,31 @@ static void test1(Parser* parser) {
     assert(dot->field() == "SM1");
     assert(as->rename()->isIdentifier());
     assert(as->rename()->toIdentifier()->name() == "Y");
-    assert(useClause->limitationClauseKind() == UseClause::NONE);
-    assert(useClause->numLimitations() == 0);
+    assert(visClause->limitationKind() == VisibilityClause::NONE);
+    assert(visClause->numLimitations() == 0);
   }
-  // Inspect the third use clause.
+  // Inspect the third visibility clause.
   {
-    const UseClause* useClause = use->useClause(2);
-    assert(useClause->symbol()->isAs());
-    const As* as = useClause->symbol()->toAs();
+    const VisibilityClause* visClause = use->visibilityClause(2);
+    assert(visClause->symbol()->isAs());
+    const As* as = visClause->symbol()->toAs();
     assert(as->symbol()->isIdentifier());
     assert(as->symbol()->toIdentifier()->name() == "C");
     assert(as->rename()->isIdentifier());
     assert(as->rename()->toIdentifier()->name() == "Z");
-    assert(useClause->limitationClauseKind() == UseClause::NONE);
-    assert(useClause->numLimitations() == 0);
+    assert(visClause->limitationKind() == VisibilityClause::NONE);
+    assert(visClause->numLimitations() == 0);
   }
-  // Make sure the 'useClauses' iterator works as expected.
+  // Make sure the 'visibilityClauses' iterator works as expected.
   {
     int count = 0;
-    for (const auto useClause : use->useClauses()) {
-      assert(useClause->tag() == asttags::UseClause);
-      assert(useClause->isUseClause());
-      assert(useClause == use->useClause(count));
+    for (const auto visClause : use->visibilityClauses()) {
+      assert(visClause->tag() == asttags::VisibilityClause);
+      assert(visClause->isVisibilityClause());
+      assert(visClause == use->visibilityClause(count));
       count++;
     }
-    assert(count == use->numUseClauses());
+    assert(count == use->numVisibilityClauses());
   }
 }
 
@@ -153,30 +153,30 @@ static void test2(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Use* use = mod->stmt(1)->toUse();
   assert(use->visibility() == Decl::PRIVATE);
-  assert(use->numUseClauses() == 1);
-  const UseClause* useClause = use->useClause(0);
-  assert(useClause->symbol()->isAs());
-  const As* as = useClause->symbol()->toAs();
+  assert(use->numVisibilityClauses() == 1);
+  const VisibilityClause* visClause = use->visibilityClause(0);
+  assert(visClause->symbol()->isAs());
+  const As* as = visClause->symbol()->toAs();
   assert(as->symbol()->isIdentifier());
   assert(as->symbol()->toIdentifier()->name() == "A");
   assert(as->rename()->isIdentifier());
   assert(as->rename()->toIdentifier()->name() == "X");
-  assert(useClause->limitationClauseKind() == UseClause::EXCEPT);
-  assert(useClause->numLimitations() == 3);
-  assert(useClause->limitation(0)->isIdentifier()); 
-  assert(useClause->limitation(1)->isIdentifier()); 
-  assert(useClause->limitation(2)->isIdentifier()); 
+  assert(visClause->limitationKind() == VisibilityClause::EXCEPT);
+  assert(visClause->numLimitations() == 3);
+  assert(visClause->limitation(0)->isIdentifier());
+  assert(visClause->limitation(1)->isIdentifier());
+  assert(visClause->limitation(2)->isIdentifier());
 
   // Make sure the limitations iterator works as expected.
   {
     int count = 0;
-    for (const auto limitation : useClause->limitations()) {
+    for (const auto limitation : visClause->limitations()) {
       assert(limitation->tag() == asttags::Identifier);
-      assert(limitation->tag() == useClause->limitation(count)->tag());
+      assert(limitation->tag() == visClause->limitation(count)->tag());
       assert(limitation->isIdentifier());
       count++;
     }
-    assert(count == useClause->numLimitations());
+    assert(count == visClause->numLimitations());
   }
 }
 
@@ -194,19 +194,19 @@ static void test3(Parser* parser) {
   assert(mod->stmt(1)->isUse());
   assert(mod->stmt(2)->isComment());
   const Use* use = mod->stmt(1)->toUse();
-  assert(use->numUseClauses() == 1);
-  const UseClause* useClause = use->useClause(0);
-  assert(useClause->symbol()->isDot());
-  const Dot* dot = useClause->symbol()->toDot();
+  assert(use->numVisibilityClauses() == 1);
+  const VisibilityClause* visClause = use->visibilityClause(0);
+  assert(visClause->symbol()->isDot());
+  const Dot* dot = visClause->symbol()->toDot();
   assert(dot->calledExpression()->isIdentifier());
   assert(dot->calledExpression()->toIdentifier()->name() == "A");
   assert(dot->field() == "SM1");
-  assert(useClause->limitationClauseKind() == UseClause::ONLY);
-  assert(useClause->numLimitations() == 3);
+  assert(visClause->limitationKind() == VisibilityClause::ONLY);
+  assert(visClause->numLimitations() == 3);
   // Check the first limitation.
   {
-    assert(useClause->limitation(0)->isAs());
-    const As* as = useClause->limitation(0)->toAs();
+    assert(visClause->limitation(0)->isAs());
+    const As* as = visClause->limitation(0)->toAs();
     assert(as->symbol()->isIdentifier());
     assert(as->symbol()->toIdentifier()->name() == "Foo");
     assert(as->rename()->isIdentifier());
@@ -214,13 +214,13 @@ static void test3(Parser* parser) {
   }
   // Check the second limitation.
   {
-    assert(useClause->limitation(1)->isIdentifier());
-    assert(useClause->limitation(1)->toIdentifier()->name() == "Bar");
+    assert(visClause->limitation(1)->isIdentifier());
+    assert(visClause->limitation(1)->toIdentifier()->name() == "Bar");
   }
   // Check the third limitation.
   {
-    assert(useClause->limitation(2)->isAs());
-    const As* as = useClause->limitation(2)->toAs();
+    assert(visClause->limitation(2)->isAs());
+    const As* as = visClause->limitation(2)->toAs();
     assert(as->symbol()->isIdentifier());
     assert(as->symbol()->toIdentifier()->name() == "Baz");
     assert(as->rename()->isIdentifier());
@@ -243,12 +243,12 @@ static void test4(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Use* use = mod->stmt(1)->toUse();
   assert(use->visibility() == Decl::DEFAULT_VISIBILITY);
-  assert(use->numUseClauses() == 1);
-  const UseClause* useClause = use->useClause(0);
-  assert(useClause->symbol()->isIdentifier());
-  assert(useClause->symbol()->toIdentifier()->name() == "Foo");
-  assert(useClause->numLimitations() == 0);
-  assert(useClause->limitationClauseKind() == UseClause::ONLY);
+  assert(use->numVisibilityClauses() == 1);
+  const VisibilityClause* visClause = use->visibilityClause(0);
+  assert(visClause->symbol()->isIdentifier());
+  assert(visClause->symbol()->toIdentifier()->name() == "Foo");
+  assert(visClause->numLimitations() == 0);
+  assert(visClause->limitationKind() == VisibilityClause::ONLY);
 }
 
 static void test5(Parser* parser) {
@@ -266,14 +266,14 @@ static void test5(Parser* parser) {
   assert(mod->stmt(2)->isComment());
   const Use* use = mod->stmt(1)->toUse();
   assert(use->visibility() == Decl::DEFAULT_VISIBILITY);
-  assert(use->numUseClauses() == 1);
-  const UseClause* useClause = use->useClause(0);
-  assert(useClause->symbol()->isIdentifier());
-  assert(useClause->symbol()->toIdentifier()->name() == "Foo");
-  assert(useClause->limitationClauseKind() == UseClause::EXCEPT);
-  assert(useClause->numLimitations() == 1);
-  assert(useClause->limitation(0)->isIdentifier());
-  assert(useClause->limitation(0)->toIdentifier()->name() == "*");
+  assert(use->numVisibilityClauses() == 1);
+  const VisibilityClause* visClause = use->visibilityClause(0);
+  assert(visClause->symbol()->isIdentifier());
+  assert(visClause->symbol()->toIdentifier()->name() == "Foo");
+  assert(visClause->limitationKind() == VisibilityClause::EXCEPT);
+  assert(visClause->numLimitations() == 1);
+  assert(visClause->limitation(0)->isIdentifier());
+  assert(visClause->limitation(0)->toIdentifier()->name() == "*");
 }
 
 int main() {
