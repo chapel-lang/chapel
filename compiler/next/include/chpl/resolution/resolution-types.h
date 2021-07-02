@@ -52,7 +52,7 @@ using UsesAndImportsVec = std::vector<ID>;
 // TODO: adjust Conditional to contain Blocks so we can associate
 // scopes 1:1 with these blocks.
 struct Scope {
-  ID parentScopeId; // the Scope for this AST
+  const Scope* parentScope;
   ID id;
   DeclMap declared;
   UsesAndImportsVec usesAndImports;
@@ -60,7 +60,7 @@ struct Scope {
   Scope() { }
 
   bool operator==(const Scope& other) const {
-    return parentScopeId == other.parentScopeId &&
+    return parentScope == other.parentScope &&
            id == other.id &&
            declared == other.declared &&
            usesAndImports == other.usesAndImports;

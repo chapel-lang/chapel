@@ -51,7 +51,13 @@ namespace resolution {
     something for which Builder::astTagIndicatesNewIdScope returns true,
     such as Modules, Functions, and Classes.
    */
-  const Scope* scopeForScopingSymbol(Context* context, ID id);
+  //const Scope* scopeForScopingSymbol(Context* context, ID id);
+
+  /**
+    Returns the Scope for an ID.
+    It does this by finding the parent ID and then computing the Scope.
+   */
+  const Scope* scopeForId(Context* context, ID id);
 
   /**
     Given an ID for a Module, returns a Scope that represents

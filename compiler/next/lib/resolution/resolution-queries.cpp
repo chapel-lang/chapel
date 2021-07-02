@@ -33,7 +33,22 @@
 #include <vector>
 
 namespace chpl {
-
+/*
+template<> struct update<owned<resolution::Scope>> {
+  bool operator()(owned<resolution::Scope>& keep,
+                  owned<resolution::Scope>& addin) const {
+    bool match = ((keep.get() == nullptr) == (addin.get() == nullptr)) &&
+                 (*keep.get() == *addin.get());
+    if (match) {
+      return false;
+    } else {
+      keep.swap(addin);
+      return true;
+    }
+  }
+};
+*/
+/*
 template<> struct update<resolution::ContainedScopesAndScopedSymbols> {
   bool operator()(resolution::ContainedScopesAndScopedSymbols& keep,
                   resolution::ContainedScopesAndScopedSymbols& addin) const {
@@ -48,7 +63,7 @@ template<> struct update<resolution::ContainedScopesAndScopedSymbols> {
     }
   }
 };
-
+*/
   /*
 template<> struct update<resolution::ResolutionResult> {
   bool operator()(resolution::ResolutionResult& keep,
@@ -161,10 +176,12 @@ namespace resolution {
 using namespace uast;
 using namespace types;
 
+/*
 static
 ID parentScopingSymbolId(Context* context, ID id) {
   return id.parentSymbolId(context);
-}
+}*/
+
 /*
 const uast::ASTNode* parentScopingSymbol(Context* context, ID id) {
   return parsing::idToAST(context, parentScopingSymbolId(context, id));
@@ -260,10 +277,6 @@ struct GatherDeclsAndUses {
 
   GatherDeclsAndUses() { }
 
-  bool isEmpty() {
-    return declared.empty() && usesAndImports.empty();
-  }
-
   // Add NamedDecls to the map
   bool enter(const NamedDecl* d) {
     declared.insert({d->name(), d->id()});
@@ -292,6 +305,22 @@ struct GatherDeclsAndUses {
   void exit(const ASTNode* ast) { }
 };
 
+static void gatherDeclsAndUsesWithin(const uast::ASTNode* ast,
+                                     DeclMap& declared,
+                                     UsesAndImportsVec& usesAndImports) {
+  GatherDeclsAndUses visitor;
+
+  // Visit child nodes to e.g. look inside a Function
+  // rather than collecting it as a NamedDecl
+  // Or, look inside a Block for its declarations
+  for (const ASTNode* child : ast->children()) {
+    child->traverse(visitor);
+  }
+
+  declared.swap(visitor.declared);
+  usesAndImports.swap(visitor.usesAndImports);
+}
+
 static bool createsScope(asttags::ASTTag tag) {
   return Builder::astTagIndicatesNewIdScope(tag)
          || asttags::isSimpleBlockLike(tag)
@@ -303,6 +332,80 @@ static bool createsScope(asttags::ASTTag tag) {
          ;
 }
 
+static const Scope* const& scopeForIdQuery(Context* context, ID id);
+
+// This query always constructs a scope
+// (don't call it if the scope does not need to exist)
+static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
+  QUERY_BEGIN(constructScopeQuery, context, id);
+
+  Scope* result = new Scope();
+
+  if (id.isEmpty()) {
+    // use empty scope for top-level
+  } else {
+    const uast::ASTNode* ast = parsing::idToAst(context, id);
+    if (ast == nullptr) {
+      assert(false && "could not find ast for id");
+    } else {
+      ID parentId = parsing::idToParentId(context, id);
+      result->parentScope = scopeForIdQuery(context, parentId);
+      result->id = id;
+      gatherDeclsAndUsesWithin(ast, result->declared, result->usesAndImports);
+    }
+  }
+  return QUERY_END(toOwned(result));
+}
+
+static const Scope* const& scopeForIdQuery(Context* context, ID id) {
+  QUERY_BEGIN(scopeForIdQuery, context, id);
+
+  const Scope* result = nullptr;
+
+  if (id.isEmpty()) {
+    // use empty scope for top-level
+    const owned<Scope>& newScope = constructScopeQuery(context, id);
+    result = newScope.get();
+  } else {
+    // decide whether or not to create a new scope
+    bool newScope = false;
+
+    const uast::ASTNode* ast = parsing::idToAst(context, id);
+    if (ast == nullptr) {
+      assert(false && "could not find ast for id");
+    } else if (createsScope(ast->tag())) {
+      if (Builder::astTagIndicatesNewIdScope(ast->tag())) {
+        // always create a new scope for a Function etc
+        newScope = true;
+      } else {
+        DeclMap declared;
+        UsesAndImportsVec usesAndImports;
+        gatherDeclsAndUsesWithin(ast, declared, usesAndImports);
+
+        // create a new scope if we found any decls/uses immediately in it
+        newScope = !(declared.empty() && usesAndImports.empty());
+      }
+    }
+
+    if (newScope) {
+      // Construct the new scope.
+      const owned<Scope>& newScope = constructScopeQuery(context, id);
+      result = newScope.get();
+    } else {
+      // find the scope for the parent node and return that.
+      ID parentId = parsing::idToParentId(context, id);
+      result = scopeForIdQuery(context, parentId);
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+const Scope* scopeForId(Context* context, ID id) {
+  return scopeForIdQuery(context, id);
+}
+
+/*
 static
 void computeScopesForASTRecursively(Context* context,
                                    const uast::ASTNode* ast,
@@ -349,11 +452,11 @@ void computeScopesForASTRecursively(Context* context,
       computeScopesForASTRecursively(context, child, parentScopeId, result);
     }
   }
-}
+}*/
 
 // Computes Scopes for all contained expressions (e.g. Blocks).
 // Stops at a Scoped Symbol (e.g. Function) but notes these.
-static const ContainedScopesAndScopedSymbols&
+/*static const ContainedScopesAndScopedSymbols&
 scopesForScopingSymbolQuery(Context* context, ID id) {
   QUERY_BEGIN(scopesForScopingSymbolQuery, context, id);
 
@@ -382,8 +485,9 @@ scopesForScopingSymbolQuery(Context* context, ID id) {
   }
 
   return QUERY_END(result);
-}
+}*/
 
+/*
 static const Scope* const& scopeForScopingSymbolQuery(Context* context, ID id) {
   QUERY_BEGIN(scopeForScopingSymbolQuery, context, id);
 
@@ -404,9 +508,10 @@ static const Scope* const& scopeForScopingSymbolQuery(Context* context, ID id) {
 const Scope* scopeForScopingSymbol(Context* context, ID id) {
   return scopeForScopingSymbolQuery(context, id);
 }
+*/
 
 const Scope* scopeForModule(Context* context, ID id) {
-  return scopeForScopingSymbol(context, id);
+  return scopeForId(context, id);
 }
 
 /*
