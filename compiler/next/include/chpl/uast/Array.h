@@ -38,6 +38,7 @@ namespace uast {
 
   \endrst
 
+  An array expression will never contain comments.
  */
 class Array final : public Expression {
  private:

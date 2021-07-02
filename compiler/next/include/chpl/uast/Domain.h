@@ -38,6 +38,7 @@ namespace uast {
 
   \endrst
 
+  A domain expression will never contain comments.
  */
 class Domain final : public Expression {
  private:
