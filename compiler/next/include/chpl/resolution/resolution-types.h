@@ -33,10 +33,10 @@ namespace resolution {
 // with getters etc? That would be appropriate for
 // use as part of the library API.
 
-// DeclMap: key - string name,  value - ID of a NamedDecl
+// DeclMap: key - string name,  value - vector of ID of a NamedDecl
 // Using an ID here prevents needing to recompute the Scope
 // if (say) something in the body of a Function changed
-using DeclMap = std::unordered_map<UniqueString, ID>;
+using DeclMap = std::unordered_map<UniqueString, owned<std::vector<ID>>>;
 
 // UsesAndImportsVec stores IDs of Use/Import statements
 using UsesAndImportsVec = std::vector<ID>;
@@ -60,22 +60,45 @@ struct Scope {
   Scope() { }
 
   bool operator==(const Scope& other) const {
-    return parentScope == other.parentScope &&
-           id == other.id &&
-           declared == other.declared &&
-           usesAndImports == other.usesAndImports;
+    bool match =  parentScope == other.parentScope &&
+                  id == other.id &&
+                  declared.size() == other.declared.size() &&
+                  usesAndImports == other.usesAndImports;
+    if (match) {
+      // check also the contents of the maps
+      for (const auto& pair : declared) {
+        UniqueString key = pair.first;
+        const owned<std::vector<ID>>& val = pair.second;
+        assert(val.get() != nullptr);
+        // look up the same key in other
+        auto search = other.declared.find(key);
+        if (search == other.declared.end()) {
+          return false;
+        }
+        // check that they values are the same
+        const owned<std::vector<ID>>& otherVal = search->second;
+        assert(otherVal.get() != nullptr);
+
+        if (*val.get() != *otherVal.get()) {
+          return false;
+        }
+      }
+    }
+    return match;
   }
   bool operator!=(const Scope& other) const {
     return !(*this == other);
   }
 };
 
+/*
 struct ContainedScopesAndScopedSymbols {
   std::unordered_map<ID, Scope> idToScope;
   std::unordered_map<ID, ID> scopeSymbolsToScopeIds;
 };
 
 using IdToScope = std::unordered_map<ID, Scope*>;
+*/
 
 /**
   An untyped function signature. This is really just the part of a function

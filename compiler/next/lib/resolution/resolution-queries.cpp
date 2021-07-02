@@ -279,7 +279,15 @@ struct GatherDeclsAndUses {
 
   // Add NamedDecls to the map
   bool enter(const NamedDecl* d) {
-    declared.insert({d->name(), d->id()});
+    UniqueString name = d->name();
+    auto search = declared.find(name);
+    if (search == declared.end())
+      search = declared.insert(search,
+                               std::make_pair(name,
+                                              toOwned(new std::vector<ID>)));
+
+    assert(search->second.get() != nullptr);
+    search->second->push_back(d->id());
     return false;
   }
   void exit(const NamedDecl* d) { }

@@ -53,9 +53,11 @@ static void printAllScopes(Context* context, const ASTNode* ast) {
          scope->id.toString().c_str(),
         scope->parentScope->id.toString().c_str());
   for (const auto& pair : scope->declared) {
-    printf("  declaration %s %s\n",
-           pair.first.c_str(),
-           pair.second.toString().c_str());
+    printf("  declarations with name %s:\n", pair.first.c_str());
+    const owned<std::vector<ID>>& vec = pair.second;
+    for (const auto& id : *vec.get()) {
+      printf("    %s\n", id.toString().c_str());
+    }
   }
   for (const auto& elt : scope->usesAndImports) {
     printf("  use/import %s\n",
