@@ -138,6 +138,11 @@ InterfaceSymbol::InterfaceSymbol(const char* name, BlockStmt* body) :
   gInterfaceSymbols.add(this);
 }
 
+InterfaceSymbol::~InterfaceSymbol() {
+  for (InterfaceReps* repData: ifcReps)
+    delete repData;
+}
+
 void InterfaceSymbol::verify() {
   Symbol::verify();
   INT_ASSERT(astTag == E_InterfaceSymbol);
@@ -338,7 +343,7 @@ Expr* ImplementsStmt::getNextExpr(Expr* expr) {
 
 
 /////////////////////////////////////////////////////////////////////////////
-// Support for normalize()
+// Support for normalize() and scopeResolve()
 
 
 //
@@ -389,22 +394,32 @@ void introduceConstrainedTypes(FnSymbol* fn) {
 }
 }
 
+void insertResolutionPoint(Expr* ref, Symbol* sym) {
+  SET_LINENO(sym);
+  ref->insertBefore(new CallExpr(PRIM_RESOLUTION_POINT, sym));
+  ref->insertBefore(new CallExpr(PRIM_END_OF_STATEMENT));
+}
+
 //
 // Change proc cgFun(cgFormal: IFC)
-// to     proc cgFun(cgFormal: t_IFC) where implements IFC(t_IFC)
+// to     proc cgFun(cgFormal: t_IFC) where t_IFC implements IFC
 // plus add (DefExpr type t_IFC) to cgFun.constrainedTypes
 //
-Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
-                             InterfaceSymbol* isym) {
-  FnSymbol* parentFn = toFnSymbol(arg->defPoint->parentSymbol);
-  bool wasConstrainedGeneric = parentFn->isConstrainedGeneric();
+TypeSymbol* desugarInterfaceAsType(FnSymbol* parentFn, ArgSymbol* arg,
+                                   Expr* ref, InterfaceSymbol* isym) {
+  if (isym->numFormals() != 1) {
+    USR_FATAL_CONT(ref, "cannot use the interface %s"
+                   " as a type because it has multiple formals", isym->name);
+    USR_PRINT(isym, "the interface %s is declared here", isym->name);
+  }
+
   InterfaceInfo* ifcInfo = parentFn->ensureInterfaceInfo();
 
   // follows introduceConstrainedTypes()
-  SET_LINENO(se);
+  SET_LINENO(ref);
 
   // introduce a ConstrainedType
-  TypeSymbol* CT = ConstrainedType::buildSym(astr(isym->name, "_t"),
+  TypeSymbol* CT = ConstrainedType::buildSym(astr("t_", isym->name),
                                              CT_CGFUN_FORMAL);
   ifcInfo->addConstrainedType(new DefExpr(CT));
 
@@ -413,22 +428,26 @@ Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
   icon->consActuals.insertAtTail(new SymExpr(CT));
   ifcInfo->addInterfaceConstraint(icon);
 
+  return CT;
+}
+
+Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
+                             InterfaceSymbol* isym) {
+  FnSymbol* parentFn = toFnSymbol(arg->defPoint->parentSymbol);
+  bool wasConstrainedGeneric = parentFn->isConstrainedGeneric();
+
+  TypeSymbol* CT = desugarInterfaceAsType(parentFn, arg, se, isym);
+
   // catch up with moveGlobalDeclarationsToModuleScope()
   if (!wasConstrainedGeneric)
     if (ModuleSymbol* mod = toModuleSymbol(parentFn->defPoint->parentSymbol))
-      {
-        FnSymbol* initFn = mod->initFn;
-        // follows insertResolutionPoint()
-        //
-        // CG TODO: this will place the resolution point at the end of
-        // the module, losing the position of parentFn among the module's
-        // declarations. If this does not work, need to arrange for this
-        // to be called before moveGlobalDeclarationsToModuleScope().
-        //
-        initFn->insertBeforeEpilogue(new CallExpr(PRIM_RESOLUTION_POINT,
-                                                  parentFn));
-        initFn->insertBeforeEpilogue(new CallExpr(PRIM_END_OF_STATEMENT));
-      }
+      //
+      // CG TODO: this will place the resolution point at the end of
+      // the module, losing the position of parentFn among the module's
+      // declarations. If this does not work, need to arrange for this
+      // to be called before moveGlobalDeclarationsToModuleScope().
+      //
+      insertResolutionPoint(mod->initFn->body->body.last(), parentFn);
 
   return CT->type;
 }

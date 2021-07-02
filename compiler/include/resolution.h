@@ -180,13 +180,18 @@ void resolveImplementsStmt(ImplementsStmt* istm);
 void resolveConstrainedGenericFun(FnSymbol* fn);
 void resolveConstrainedGenericSymbol(Symbol* sym, bool mustBeCG);
 Expr* resolveCallToAssociatedType(CallExpr* call, ConstrainedType* recv);
-class ConstraintSat { public: ImplementsStmt* istm; IfcConstraint* icon;
-  ConstraintSat(ImplementsStmt* s, IfcConstraint* c): istm(s), icon(c) { } };
-ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr* call,
-                                                IfcConstraint* constraint,
-                                                SymbolMap& substitutions);
+struct ConstraintSat { ImplementsStmt* istm; IfcConstraint* icon; int indx;
+  ConstraintSat(ImplementsStmt* s): istm(s), icon(0), indx(0) { }
+  ConstraintSat(IfcConstraint* c, int i): istm(0), icon(c), indx(i) { } };
+ConstraintSat constraintIsSatisfiedAtCallSite(CallExpr* call, Expr* addlSite,
+                                              IfcConstraint* constraint,
+                                              SymbolMap& substitutions);
 void cgAddRepsToSubstitutions(FnSymbol* fn, SymbolMap& substitutions,
                               ImplementsStmt* istm, int indx);
+void cgAddInterimRepsToSubstitutions(FnSymbol* fn, SymbolMap& substitutions,
+                                     IfcConstraint* tgtIcon,  int tgtIndx,
+                                     IfcConstraint* callIcon, int callIndx);
+
 void cgConvertAggregateTypes(FnSymbol* fn, Expr* anchor,
                              SymbolMap& substitutions);
 void recordCGInterimInstantiations(CallExpr* call, ResolutionCandidate* best1,

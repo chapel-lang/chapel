@@ -5,15 +5,13 @@ interface HLP {
 }
 
 interface IFC {
-  proc reqFn(formal: ?T) where T implements HLP;
+  proc reqFn(formal: ?T) where T implements HLP {
+    write("in IFC.reqFn  formal = "); write(formal); writeln();
+  }
 }
 
 int implements IFC;
 real implements HLP;
-
-proc reqFn(formal: ?R) where R implements HLP {
-  write("in reqFn.R  formal = "); write(formal); writeln();
-}
 
 proc icFun(arg1: ?Q1, arg2: ?Q2)
   where arg1 implements IFC && arg2 implements HLP

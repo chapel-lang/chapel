@@ -1,0 +1,15 @@
+test1
+key = 1 val = 10
+test1
+init= 1 1
+init= 10 10
+init= 1 1
+init= 10 10
+key = (x = 1, ptr = {xx = 1}) val = (x = 10, ptr = {xx = 10})
+deinit 10 10
+deinit 1 1
+deinit 10 10
+deinit 1 1
+deinit 10 10
+deinit 1 1
+test3
