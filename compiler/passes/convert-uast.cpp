@@ -41,10 +41,18 @@ namespace {
 struct Converter {
   chpl::Context* context = nullptr;
   bool inTupleDecl = false;
+
+  // Cache strings for special identifiers we might compare against.
   UniqueString thisStr;
+  UniqueString typeStr;
+  UniqueString domainStr;
+  UniqueString dmappedStr;
 
   Converter(chpl::Context* context) : context(context) {
     thisStr = UniqueString::build(context, "this");
+    typeStr = UniqueString::build(context, "type");
+    domainStr = UniqueString::build(context, "domain");
+    dmappedStr = UniqueString::build(context, "dmapped");
   }
 
   Expr* convertAST(const uast::ASTNode* node);
@@ -533,16 +541,17 @@ struct Converter {
   /// Calls ///
 
   Expr* visit(const uast::Dot* node) {
+
     // These are the arguments that 'buildDotExpr' requires.
     BaseAST* base = toExpr(convertAST(node->calledExpression()));
-    const char* member = node->field().c_str();
+    auto member = node->field();
 
-    if (!strcmp(member, "type")) {
+    if (!typeStr.compare(member)) {
       return new CallExpr(PRIM_TYPEOF, base);
-    } else if (!strcmp(member, "domain")) {
+    } else if (!domainStr.compare(member)) {
       return buildDotExpr(base, "_dom");
     } else {
-      return buildDotExpr(base, member);
+      return buildDotExpr(base, member.c_str());
     }
   }
 
@@ -612,9 +621,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::OpCall* node) {
-    const char* opStr = node->op().c_str();
-
-    if (!strcmp(opStr, "dmapped")) {
+    if (!dmappedStr.compare(node->op())) {
       return convertDmappedOp(node);
     } else {
       return convertRegularBinaryOrUnaryOp(node);
