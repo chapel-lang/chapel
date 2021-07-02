@@ -39,13 +39,13 @@ startInitCommDiags
 OwnedObject
   from print-module-resolution.ChapelStandard.OwnedObject
 MemConsistency
-  from print-module-resolution.ChapelStandard.SharedObject.ChapelError.ChapelLocks.Atomics.MemConsistency
+  from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelLocks.Atomics.MemConsistency
 Atomics
-  from print-module-resolution.ChapelStandard.SharedObject.ChapelError.ChapelLocks.Atomics
+  from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelLocks.Atomics
 ChapelLocks
-  from print-module-resolution.ChapelStandard.SharedObject.ChapelError.ChapelLocks
-ChapelError
-  from print-module-resolution.ChapelStandard.SharedObject.ChapelError
+  from print-module-resolution.ChapelStandard.SharedObject.Errors.ChapelLocks
+Errors
+  from print-module-resolution.ChapelStandard.SharedObject.Errors
 SharedObject
   from print-module-resolution.ChapelStandard.SharedObject
 NetworkAtomics

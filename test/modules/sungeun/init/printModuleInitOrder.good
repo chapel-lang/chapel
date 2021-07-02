@@ -44,7 +44,7 @@ Initializing Modules:
     ChapelTaskTable
     MemTracking
     ChapelUtil
-    ChapelError
+    Errors
     ExportWrappers
     ChapelAutoAggregation
      CopyAggregation

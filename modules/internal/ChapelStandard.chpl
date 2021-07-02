@@ -61,14 +61,13 @@ module ChapelStandard {
   public use ChapelTaskTable;
   public use MemTracking;
   public use ChapelUtil;
-  public use ChapelError;
+  public use Errors;
   public use ChapelTaskData;
   public use ChapelSerializedBroadcast;
   public use ExportWrappers;
   public use ChapelAutoAggregation;
 
   // Standard modules.
-  public use Builtins;
   public use Types;
   public use Math;
   public use VectorizingIterator;
