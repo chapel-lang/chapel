@@ -113,8 +113,8 @@ const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-const Location& locateID(Context* context, ID id) {
-  QUERY_BEGIN(locateID, context, id);
+const Location& locateId(Context* context, ID id) {
+  QUERY_BEGIN(locateId, context, id);
 
   // Ask the context for the filename from the ID
   UniqueString path = context->filePathForID(id);
@@ -128,8 +128,8 @@ const Location& locateID(Context* context, ID id) {
 
   // Look in idToAST
   {
-    auto search = p.idToAST.find(id);
-    if (search != p.idToAST.end()) {
+    auto search = p.idToAst.find(id);
+    if (search != p.idToAst.end()) {
       ast = search->second;
     }
   }
@@ -146,8 +146,8 @@ const Location& locateID(Context* context, ID id) {
 }
 
 // this is just a convenient wrapper around locating with the id
-const Location& locateAST(Context* context, const ASTNode* ast) {
-  return locateID(context, ast->id());
+const Location& locateAst(Context* context, const ASTNode* ast) {
+  return locateId(context, ast->id());
 }
 
 const ModuleVec& parse(Context* context, UniqueString path) {
@@ -178,16 +178,36 @@ static const ASTNode* const& astForIDQuery(Context* context, ID id) {
   const uast::ASTNode* result = nullptr;
 
   // Look in idToAST
-  auto search = p.idToAST.find(id);
-  if (search != p.idToAST.end()) {
+  auto search = p.idToAst.find(id);
+  if (search != p.idToAst.end()) {
     result = search->second;
   }
 
   return QUERY_END(result);
 }
 
-const ASTNode* idToAST(Context* context, ID id) {
+const ASTNode* idToAst(Context* context, ID id) {
   return astForIDQuery(context, id);
+}
+
+const ID& idToParentId(Context* context, ID id) {
+  QUERY_BEGIN(idToParentId, context, id);
+
+  // Ask the context for the filename from the ID
+  UniqueString path = context->filePathForID(id);
+
+  // Get the result of parsing
+  const uast::Builder::Result& p = parseFile(context, path);
+
+  ID result;
+
+  // Look in idToAST
+  auto search = p.idToParentId.find(id);
+  if (search != p.idToParentId.end()) {
+    result = search->second;
+  }
+
+  return QUERY_END(result);
 }
 
 

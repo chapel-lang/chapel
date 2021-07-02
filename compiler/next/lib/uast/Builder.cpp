@@ -79,7 +79,7 @@ Builder::Result Builder::result() {
   ret.filePath.swap(filepath_);
   ret.topLevelExpressions.swap(topLevelExpressions_);
   ret.errors.swap(errors_);
-  ret.idToAST.swap(idToAST_);
+  ret.idToAst.swap(idToAst_);
   ret.astToLocation.swap(astToLocation_);
 
   return ret;
@@ -266,8 +266,8 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
     ast->setID(ID(symbolPath, myID, numContainedIDs));
   }
 
-  // update idToAST_ for the visited AST node
-  idToAST_[ast->id()] = ast;
+  // update idToAst_ for the visited AST node
+  idToAst_[ast->id()] = ast;
 }
 
 Builder::Result::Result()
@@ -279,18 +279,28 @@ Builder::Result::Result()
 static
 void recomputeIdAndLocMaps(
     const ASTNode* ast,
+    const ASTNode* parentAst,
     std::unordered_map<ID, const ASTNode*>& dstIdToAst,
+    std::unordered_map<ID, ID>& dstIdToParent,
     std::unordered_map<const ASTNode*, Location>& dstAstToLoc,
     const std::unordered_map<const ASTNode*, Location>& astToLocA,
     const std::unordered_map<const ASTNode*, Location>& astToLocB) {
 
   for (const ASTNode* child : ast->children()) {
-    recomputeIdAndLocMaps(child, dstIdToAst,
+    recomputeIdAndLocMaps(child, ast, dstIdToAst, dstIdToParent,
                           dstAstToLoc, astToLocA, astToLocB);
   }
 
   if (!ast->id().isEmpty()) {
     dstIdToAst[ast->id()] = ast;
+
+    if (parentAst != nullptr) {
+      if (!parentAst->id().isEmpty()) {
+        dstIdToParent[ast->id()] = parentAst->id();
+      } else {
+        assert(false && "parentAst does not have valid ID");
+      }
+    }
   }
 
   auto searchA = astToLocA.find(ast);
@@ -313,7 +323,7 @@ void Builder::Result::swap(Result& other) {
   filePath.swap(other.filePath);
   topLevelExpressions.swap(other.topLevelExpressions);
   errors.swap(other.errors);
-  idToAST.swap(other.idToAST);
+  idToAst.swap(other.idToAst);
   astToLocation.swap(other.astToLocation);
 }
 
@@ -329,17 +339,20 @@ bool Builder::Result::update(Result& keep, Result& addin) {
   // update the ASTs
   changed |= updateASTList(keep.topLevelExpressions, addin.topLevelExpressions);
 
-  std::unordered_map<ID, const ASTNode*> newIdToAST;
+  std::unordered_map<ID, const ASTNode*> newIdToAst;
+  std::unordered_map<ID, ID> newIdToParent;
   std::unordered_map<const ASTNode*, Location> newAstToLoc;
 
   // recompute locationsVec by traversing the AST and using the maps
   for (const auto& ast : keep.topLevelExpressions) {
-    recomputeIdAndLocMaps(ast.get(), newIdToAST, newAstToLoc,
-                          keep.astToLocation, addin.astToLocation);
+    recomputeIdAndLocMaps(ast.get(), nullptr,
+                          newIdToAst, newIdToParent,
+                          newAstToLoc, keep.astToLocation, addin.astToLocation);
   }
 
   // now update the ID and Locations maps in keep
-  changed |= defaultUpdate(keep.idToAST, newIdToAST);
+  changed |= defaultUpdate(keep.idToAst, newIdToAst);
+  changed |= defaultUpdate(keep.idToParentId, newIdToParent);
   changed |= defaultUpdate(keep.astToLocation, newAstToLoc);
 
   return changed;

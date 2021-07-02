@@ -495,8 +495,8 @@ static void test5() {
 
     // Now check their locations
     // Not checking comment locations here
-    Location aLoc = locateAST(ctx, A);
-    Location bLoc = locateAST(ctx, B);
+    Location aLoc = locateAst(ctx, A);
+    Location bLoc = locateAst(ctx, B);
     assert(aLoc.path() == modulePath);
     assert(bLoc.path() == modulePath);
     assert(aLoc.line() == 2);
@@ -542,14 +542,21 @@ static void test6() {
 }
 
 static void checkIdsAllChildren(Context* context,
-                                const ASTNode* ast) {
+                                const ASTNode* ast,
+                                const ASTNode* parent) {
   if (!ast->id().isEmpty()) {
-    const ASTNode* got = idToAST(context, ast->id());
+    const ASTNode* got = idToAst(context, ast->id());
     assert(got == ast);
+
+    if (parent != nullptr) {
+      assert(!parent->id().isEmpty());
+      ID gotParentId = idToParentId(context, ast->id());
+      assert(gotParentId == parent->id());
+    }
   }
 
   for (const ASTNode* child : ast->children()) {
-    checkIdsAllChildren(context, child);
+    checkIdsAllChildren(context, child, ast);
   }
 }
 
@@ -574,7 +581,7 @@ static void test7() {
   setFileText(ctx, modulePath, moduleContents);
   const Module* mod = parseOneModule(ctx, modulePath);
 
-  checkIdsAllChildren(ctx, mod);
+  checkIdsAllChildren(ctx, mod, nullptr);
 }
 
 int main() {

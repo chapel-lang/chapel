@@ -80,12 +80,12 @@ namespace parsing {
    If Locations for Comments are needed, use the locations field from
    the result of parseFile.
    */
-  const Location& locateID(Context* context, ID id);
+  const Location& locateId(Context* context, ID id);
   /**
-   This function just runs locateID on ast->id(). Similarly to locateID,
+   This function just runs locateId on ast->id(). Similarly to locateID,
    it cannot be used to get a Location for a Comment.
    */
-  const Location& locateAST(Context* context, const uast::ASTNode* ast);
+  const Location& locateAst(Context* context, const uast::ASTNode* ast);
 
   using ModuleVec = std::vector<const uast::Module*>;
   /**
@@ -96,7 +96,13 @@ namespace parsing {
   /**
    Returns the uast node with the given ID.
    */
-  const uast::ASTNode* idToAST(Context* context, ID id);
+  const uast::ASTNode* idToAst(Context* context, ID id);
+
+  /**
+   Returns the parent ID given an ID
+   */
+  const ID& idToParentId(Context* context, ID id);
+
 
 } // end namespace parsing
 } // end namespace chpl

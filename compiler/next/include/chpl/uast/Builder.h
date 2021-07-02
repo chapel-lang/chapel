@@ -53,14 +53,13 @@ class Builder final {
 
   // note: notedLocations_ might have keys pointing to deleted uAST
   // nodes in the event one is created temporarily during parsing.
+  // These are removed in the astToLocation_ map.
   std::unordered_map<const ASTNode*, Location> notedLocations_;
 
-  // the astToLocation_ map is computed during assignIDs and it only
-  // contains locations for valid uAST nodes.
+  // the following maps are computed during assignIDs
   std::unordered_map<const ASTNode*, Location> astToLocation_;
-
-  // the idToAST_ map is computed also during assignIDs
-  std::unordered_map<ID, const ASTNode*> idToAST_;
+  std::unordered_map<ID, const ASTNode*> idToAst_;
+  std::unordered_map<ID, ID> idToParent_;
 
   Builder(Context* context, UniqueString filepath)
     : context_(context), filepath_(filepath)
@@ -102,7 +101,10 @@ class Builder final {
     std::vector<ErrorMessage> errors;
 
     // Given an ID, what is the ASTNode?
-    std::unordered_map<ID, const ASTNode*> idToAST;
+    std::unordered_map<ID, const ASTNode*> idToAst;
+
+    // Given an ID, what is the parent ID?
+    std::unordered_map<ID, ID> idToParentId;
 
     // Goes from ASTNode* to Location because Comments don't have AST IDs
     std::unordered_map<const ASTNode*, Location> astToLocation;

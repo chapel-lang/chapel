@@ -359,7 +359,7 @@ scopesForScopingSymbolQuery(Context* context, ID id) {
 
   ContainedScopesAndScopedSymbols result;
 
-  const uast::ASTNode* ast = parsing::idToAST(context, id);
+  const uast::ASTNode* ast = parsing::idToAst(context, id);
   assert(ast != nullptr);
   if (ast != nullptr) {
     assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
