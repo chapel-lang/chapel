@@ -169,7 +169,7 @@
 
 /*
    Chapel has support for C code but we need to tell the compiler
-   about the function using the ``extern`` keyword
+   about the C symbols using the ``extern`` keyword
 */
 
    extern proc baz(): int;
@@ -178,7 +178,7 @@
 // The function can then be called as normal:
 //
    proc callsBaz() {
-   writeln(baz());
+      writeln(baz());
    }
 
 //
@@ -186,8 +186,8 @@
 //
 
    export proc alsoCallsBaz() {
-   writeln(baz());
-   callsBaz();
+      writeln(baz());
+      callsBaz();
    }
 
 // You can tell the chapel compiler where to look for these C functions by adding a
@@ -214,20 +214,19 @@
    extern proc useMyType(arg: myType): int; // an extern function using the typedef
 
    export proc callUseMyType() {
-   var blah: myType = 17;
-   writeln(useMyType(blah));
+      var blah: myType = 17;
+      writeln(useMyType(blah));
    }
 
 // Chapel also has a standard module named :mod:`SysCTypes` (located under
 //``$CHPL_HOME/modules/standard/gen/...``) which defines a few C types which
-// align with the C compiler specification and do not require the extern keyword
+// align with the C compiler specification and do not require the ``extern`` keyword, 
 // such as ``c_int`` and ``c_char``. For more information about these types see
 // the :ref:`readme-extern` Technical Note.
 
 // You can include SysCTypes using a simple use statement
 
    use SysCTypes;
-
 
 // You can also assign default arguments to extern procs which then can be omitted
 // at the callsite as usual. For example
@@ -262,7 +261,7 @@
    only the ones that you wish to directly manipulate using Chapel code.
 
    For example a record with no declared fields is possible even though
-   the actualy C struct might have a nonzero number of fields.
+   the actual C struct might have a nonzero number of fields.
 */
 
    extern record notReallyEmpty{
@@ -274,7 +273,7 @@
 // As of now the struct must be defined completely in the included header file
 // and must also be typdef'd.
 // In order to include a struct which is not typedef'd or if you want to import it
-// under another name simple state its external name after the ``extern`` keyword
+// under another name simply state its external name after the ``extern`` keyword
 
    extern "struct person" record person{
       var name: c_string;
@@ -315,7 +314,7 @@
    var structPtr: opaque = getDataStructPtr();
 
 // For the ability to use C code in Chapel without an external C file,
-// You can also use extern blocks which allow you to put C code directly into Chapel files
+// You can also use extern blocks which allow you to put C code directly into Chapel files.
 // To avoid cluttering you namespace you can also put these inside a module
 
    module CDemo {
@@ -328,3 +327,5 @@
       }
    }
    writeln(CDemo.square(3));
+
+// As of now, chapel must be used with LLVM to use the extern block syntax
