@@ -548,10 +548,12 @@ static void checkIdsAllChildren(Context* context,
     const ASTNode* got = idToAst(context, ast->id());
     assert(got == ast);
 
+    ID gotParentId = idToParentId(context, ast->id());
     if (parent != nullptr) {
       assert(!parent->id().isEmpty());
-      ID gotParentId = idToParentId(context, ast->id());
       assert(gotParentId == parent->id());
+    } else {
+      assert(gotParentId.isEmpty());
     }
   }
 

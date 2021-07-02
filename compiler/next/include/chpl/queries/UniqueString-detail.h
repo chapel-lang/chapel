@@ -237,6 +237,19 @@ static inline bool defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin)
     return true; // updated
   }
 }
+template<typename T>
+static inline bool defaultUpdateOwned(owned<T>& keep, owned<T>& addin) {
+  bool match = ((keep.get() == nullptr) == (addin.get() == nullptr)) &&
+               // call == on the values
+               (*keep.get() == *addin.get());
+  if (match) {
+    return false;
+  } else {
+    // call swap on the owned pointers (not the values)
+    keep.swap(addin);
+    return true;
+  }
+}
 template<> struct update<std::string> {
   bool operator()(std::string& keep, std::string& addin) const {
     return defaultUpdate(keep, addin);
@@ -245,6 +258,11 @@ template<> struct update<std::string> {
 template<typename T> struct update<T*> {
   bool operator()(T*& keep, T*& addin) const {
     return defaultUpdateBasic(keep, addin);
+  }
+};
+template<typename T> struct update<owned<T>> {
+  bool operator()(owned<T>& keep, owned<T>& addin) const {
+    return defaultUpdateOwned(keep, addin);
   }
 };
 template<> struct update<int> {

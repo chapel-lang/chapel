@@ -151,18 +151,25 @@ in the appropriate elements from ``addin``. This strategy allows later queries
 that depend on such a result to use pointers to the owned elements and to
 avoid updating everything if just one element changed.
 
-Queries *can* return results that contain non-owning pointers to results from
-dependent queries. In that event, the update function should not rely on the
-contents of these pointers from the ``keep`` value. The system will make sure
-that they refer to valid memory but they might be a combination of old results.
-Additionally, the system will ensure that any old results being replaced will
-remain allocated until the garbage collection runs outside of any query.
+Queries *can* return results that contain non-owning pointers to ``owned``
+results from other queries. However, it is not sufficient to simply use the
+address of the `const &` result of the query - that is a location in the map
+that will not change as the result is updated. Instead, such patterns should
+use `owned` to make sure a new heap-allocated value is created.
+
+When working with results containing pointers, the update function should not
+rely on the contents of these pointers from the ``keep`` value. The system will
+make sure that they refer to valid memory but they might be a combination of old
+results.  Additionally, the system will ensure that any old results being
+replaced will remain allocated until the garbage collection runs outside of any
+query.
 
 For example, a ``parse`` query might result in a list of ``owned`` AST element
 pointers. A follow-on query, ``listSymbols``, can result in something containing
 these AST element pointers, but not owning them. In that event, the
 ``listSymbols`` query needs to use a ``update`` function that does not look
-into the AST element pointers.
+into the AST element pointers. However it can compare the pointers themselves
+because the ``parse`` query will update the pointer if the contents change.
 
 \endrst
 

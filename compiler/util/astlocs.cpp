@@ -20,7 +20,7 @@
 
 #include "astlocs.h"
 
-#include "chpl/parsing/parsing-queries.h" // for locateID
+#include "chpl/parsing/parsing-queries.h" // for locateId
 #include "expr.h"
 #include "stmt.h"
 #include "stringutil.h"
@@ -57,7 +57,7 @@ int astlocT::compare(const astlocT& other) const {
 void astlocT::convertIdToFileLine(const char*& filename, int& lineno) const {
   if (!this->id_.isEmpty()) {
     // figure out the location from the ID
-    chpl::Location loc = chpl::parsing::locateID(gContext, this->id_);
+    chpl::Location loc = chpl::parsing::locateId(gContext, this->id_);
     filename = astr(loc.path().c_str());
     lineno = loc.line();
   } else {

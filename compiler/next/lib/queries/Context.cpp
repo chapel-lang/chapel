@@ -442,7 +442,7 @@ void queryArgsPrintUnknown() {
 }
 
 void queryArgsPrintOne(const ID& v) {
-  printf("ID(%s@%i)", v.symbolPath().c_str(), v.postOrderId());
+  printf("ID(%s)", v.toString().c_str());
 }
 void queryArgsPrintOne(const UniqueString& v) {
   printf("\"%s\"", v.c_str());
