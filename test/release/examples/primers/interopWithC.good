@@ -1,4 +1,3 @@
-interopWithC.chpl:29: warning: This file-scope code is outside of any explicit module declarations (e.g., module CDemo), so an implicit module named 'interopWithC' is being introduced to contain the file's contents.
 20
 11
 Sum of Array: 55

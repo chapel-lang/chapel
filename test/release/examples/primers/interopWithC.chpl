@@ -25,7 +25,7 @@
    ``export`` attached to them will be available from outside the library.
 */
 
-
+module interopWithC {
 
    export proc foo() { // foo will be available to outside code
       writeln("Called foo()");
@@ -327,5 +327,6 @@
       }
    }
    writeln(CDemo.square(3));
+} // interopWithC
 
 // As of now, chapel must be used with LLVM to use the extern block syntax
