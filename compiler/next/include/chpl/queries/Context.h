@@ -259,6 +259,14 @@ class Context {
        const char* traceQueryName,
        bool isInputQuery);
 
+  template<typename ResultType,
+           typename... ArgTs>
+  bool
+  hasResultForQuery(
+       const ResultType& (*queryFunction)(Context* context, ArgTs...),
+       const std::tuple<ArgTs...>& tupleOfArgs,
+       const char* traceQueryName);
+
   void recomputeIfNeeded(const querydetail::QueryMapResultBase* resultEntry);
   void updateForReuse(const querydetail::QueryMapResultBase* resultEntry);
 
@@ -323,7 +331,13 @@ class Context {
   /**
     Return the file path for the file containing this ID.
    */
-  UniqueString filePathForID(ID id);
+  UniqueString filePathForId(ID id);
+
+  /**
+    Returns true if filePathForId is already populated for
+    this ID.
+   */
+  bool hasFilePathForId(ID id);
 
   /**
     This function increments the current revision number stored

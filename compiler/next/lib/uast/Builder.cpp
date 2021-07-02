@@ -377,17 +377,23 @@ void Builder::Result::mark(Context* context, const Result& keep) {
   Builder::Result::updateFilePaths(context, keep);
 }
 
+static void updateFilePathsForModulesRecursively(Context* context,
+                                                 const ASTNode* ast,
+                                                 UniqueString path) {
+  if (const Module* mod = ast->toModule()) {
+    context->setFilePathForModuleID(mod->id(), path);
+  }
+
+  for (const ASTNode* child : ast->children()) {
+    updateFilePathsForModulesRecursively(context, child, path);
+  }
+}
+
 void Builder::Result::updateFilePaths(Context* context, const Result& keep) {
   UniqueString path = keep.filePath;
   // Update the filePathForModuleName query
-  for (auto & topLevelExpression : keep.topLevelExpressions) {
-    if (Module* module = topLevelExpression->toModule()) {
-      context->setFilePathForModuleID(module->id(), path);
-    } else if (topLevelExpression->isComment()) {
-      // ignore comments
-    } else {
-      assert(false && "topLevelExpressions should only be module decls");
-    }
+  for (auto & expr : keep.topLevelExpressions) {
+    updateFilePathsForModulesRecursively(context, expr.get(), path);
   }
 }
 

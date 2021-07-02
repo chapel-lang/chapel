@@ -333,6 +333,35 @@ Context::updateResultForQuery(
   return updateResultForQueryMap(queryMap, tupleOfArgs, std::move(result));
 }
 
+template<typename ResultType,
+         typename... ArgTs>
+bool
+Context::hasResultForQuery(
+     const ResultType& (*queryFunction)(Context* context, ArgTs...),
+     const std::tuple<ArgTs...>& tupleOfArgs,
+     const char* traceQueryName) {
+
+  // Look up the map entry for this query name
+  const void* queryFuncV = (const void*) queryFunction;
+  // Look up the map entry for this query
+  auto search = this->queryDB.find(queryFuncV);
+  if (search == this->queryDB.end()) {
+    return false;
+  }
+
+  // found an entry for this query
+  QueryMapBase* base = search->second.get();
+  auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
+  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
+  auto search2 = queryMap->map.find(key);
+  if (search2 == queryMap->map.end()) {
+    return false;
+  }
+
+  return true;
+}
+
+
 /*
 template<typename ResultType,
          typename... ArgTs>

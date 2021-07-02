@@ -163,20 +163,48 @@ static UniqueString removeLastSymbolPathComponent(Context* context,
   return UniqueString::build(context, s, lastDot);
 }
 
-UniqueString Context::filePathForID(ID id) {
+UniqueString Context::filePathForId(ID id) {
   UniqueString symbolPath = id.symbolPath();
 
   while (!symbolPath.isEmpty()) {
-    const UniqueString& p =
-      filePathForModuleIdSymbolPathQuery(this, symbolPath);
-    if (!p.isEmpty())
+    auto tupleOfArgs = std::make_tuple(symbolPath);
+
+    bool got = hasResultForQuery(filePathForModuleIdSymbolPathQuery,
+                                 tupleOfArgs,
+                                 "filePathForModuleIdSymbolPathQuery");
+
+    if (got) {
+      const UniqueString& p =
+        filePathForModuleIdSymbolPathQuery(this, symbolPath);
       return p;
+    }
 
     // remove the last path component, e.g. M.N -> M
     symbolPath = removeLastSymbolPathComponent(this, symbolPath);
   }
 
   return UniqueString::build(this, "<unknown file path>");
+}
+
+bool Context::hasFilePathForId(ID id) {
+  UniqueString symbolPath = id.symbolPath();
+
+  while (!symbolPath.isEmpty()) {
+    auto tupleOfArgs = std::make_tuple(symbolPath);
+
+    bool got = hasResultForQuery(filePathForModuleIdSymbolPathQuery,
+                                 tupleOfArgs,
+                                 "filePathForModuleIdSymbolPathQuery");
+
+    if (got) {
+      return true;
+    }
+
+    // remove the last path component, e.g. M.N -> M
+    symbolPath = removeLastSymbolPathComponent(this, symbolPath);
+  }
+
+  return false;
 }
 
 void Context::advanceToNextRevision(bool prepareToGC) {
@@ -259,6 +287,7 @@ void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
     printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
            moduleIdSymbolPath.c_str(), path.c_str());
   }
+  assert(hasFilePathForId(moduleID));
 }
 
 void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {

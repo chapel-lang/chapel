@@ -509,7 +509,7 @@ static void test5() {
 static void checkPathAllChildren(Context* context,
                                  const ASTNode* ast,
                                  UniqueString expectPath) {
-  UniqueString gotPath = context->filePathForID(ast->id());
+  UniqueString gotPath = context->filePathForId(ast->id());
   assert(gotPath == expectPath);
 
   for (const ASTNode* child : ast->children()) {

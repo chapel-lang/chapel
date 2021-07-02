@@ -117,7 +117,7 @@ const Location& locateId(Context* context, ID id) {
   QUERY_BEGIN(locateId, context, id);
 
   // Ask the context for the filename from the ID
-  UniqueString path = context->filePathForID(id);
+  UniqueString path = context->filePathForId(id);
 
   // Get the result of parsing
   const uast::Builder::Result& p = parseFile(context, path);
@@ -170,7 +170,7 @@ static const ASTNode* const& astForIDQuery(Context* context, ID id) {
   QUERY_BEGIN(astForIDQuery, context, id);
 
   // Ask the context for the filename from the ID
-  UniqueString path = context->filePathForID(id);
+  UniqueString path = context->filePathForId(id);
 
   // Get the result of parsing
   const uast::Builder::Result& p = parseFile(context, path);
@@ -194,7 +194,7 @@ const ID& idToParentId(Context* context, ID id) {
   QUERY_BEGIN(idToParentId, context, id);
 
   // Ask the context for the filename from the ID
-  UniqueString path = context->filePathForID(id);
+  UniqueString path = context->filePathForId(id);
 
   // Get the result of parsing
   const uast::Builder::Result& p = parseFile(context, path);
