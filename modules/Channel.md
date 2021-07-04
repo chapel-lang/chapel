@@ -43,7 +43,13 @@ support operations on them.
 it is closed.
 
 * `select` statements : This statement lets you wait for multiple channel
-operations and executes if anyone of them is ready for communication.
+operations and executes if anyone of them is ready for communication. `select`
+statements in Go are specifically designed to work with channels.
+Some key points are:
+
+	* The operations are atomic, i.e., checking a channel and performing `recv` or
+		`send` on it is considered as one operation.
+	* The cases are arranged in a random order to prevent starvation.
 
 For e.g.
 ```
