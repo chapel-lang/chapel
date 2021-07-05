@@ -1,5 +1,17 @@
 .. _readme-buildingdocs:
 
+===============================================
+Files that have information about documentation
+===============================================
+
+ - **chapel/README.devel**, how doc/ differs in the release vs. the dev version
+ - **bestPractices/releasingDocs.md**, how to create the release documentation
+   and push it to the website
+ - **chapel/doc/README.rst**, talks about .rst and has a list of the documentation
+   available in .rst
+ - **chapel/doc/rst/developer/bestPractices/buildingdocs.rst**, this file
+
+
 =============================
 Building Chapel Documentation
 =============================
@@ -28,9 +40,9 @@ in three different ways:
 #.  Restructure Text files (with a .rst extension) are converted into .html
     files via sphinx (https://sublime-and-sphinx-guide.readthedocs.io/).
 #.  Comments and code from Chapel source files are converted into .rst files
-    using chpl2rst (FIXME: link to that).
+    using chapel/doc/util/chpl2rst.py.
 #.  Some comments and code from Chapel source files are converted into .rst
-    files using chpldoc (FIXME: link to that), which will leave out TODOs,
+    files using chapel/tools/chpldoc/, which will leave out TODOs,
     FIXMEs, and other parts of the comments.
 
 
@@ -38,71 +50,89 @@ in three different ways:
 Organization of Chapel Documentation Sources
 ============================================
 
-The file doc/rst/index.rst is the root file that sets up the
+The file chapel/doc/rst/index.rst is the root file that sets up the
 structure of the documentation and results in the current sidebar
 displayed on https://chapel-lang.org/docs/.
 
 
-strong correlation in side bar of https://chapel-lang.org/docs/ and rst/ subdirs, except lots of the stuff under Writing Chapel Programs
+There is a strong correlation in side bar of
+https://chapel-lang.org/docs/ and the doc/rst/ subdirectories,
+except for lots of the stuff under Writing Chapel Programs.
 
-Looking at the sidebar of https://chapel-lang.org/docs/, we see:
+Looking at the sidebar of https://chapel-lang.org/docs/, we see ...
 
---- the following all tend to just use sphinx
-
-.. list-table:: Title
-   :widths: 25 25 50
+.. list-table:: Using Sphinx to convert .rst files to .html files
+   :widths: 100 100 100
    :header-rows: 1
 
-   * - Heading row 1, column 1
-     - Heading row 1, column 2
-     - Heading row 1, column 3
-   * - Row 1, column 1
-     -
-     - Row 1, column 3
-   * - Row 2, column 1
-     - Row 2, column 2
-     - Row 2, column 3
-
-COMPILING AND RUNNING CHAPEL
-
-Quickstart Instructions -> doc/rst/usingchapel/QUICKSTART.rst
-Using Chapel -> doc/rst/usingchapel/*  # rst->html via sphinx
-Platform-Specific Notes -> doc/rst/platforms/*  # "
-Technical Notes -> doc/rst/technotes/*  # "
-Tools -> doc/rst/tools/*   # "
-
-
-WRITING CHAPEL PROGRAMS
-
-Quick Reference -> language/reference.rst  # sphinx
---- these use chpl2rst.py on .chpl files and then sphinx to generate html
-Hello World Variants -> examples/index.rst # "
-                     -> + test/release/examples/hello*.chpl  # ./util/chpl2rst.py + sphinx
-Primers -> primers/index.rst # sphinx
-        -> + test/release/examples/primers/*.chpl   # chpl2rst.py + sphinx
---- sphinx again
-        Language Specification -> language/spec/*   # sphinx
-
---- chpldoc + sphinx
-Built-in Types and Functions -> doc/rst/builtins  # sphinx
-                             -> modules/internal/*.chpl  # chpldoc + sphinx
-Standard Modules -> doc/rst/modules/standard  # sphinx
-                 -> modules/standard/*.chpl  # chpldoc + sphinx
-Package Modules -> doc/rst/modules/packages  # sphinx
-                -> modules/packages/*.chpl   # chpldoc + sphinx
-Standard Layouts and Distributions -> doc/rst/modules/layoutdist  # sphinx
-                                   -> modules/layouts/*  # chpldoc + sphinx
-                                   -> modules/dists/*    # "
-
--- sphinx
-Mason Packages  -> doc/rst/mason-packages.rst   # sphinx
-Chapel Users Guide (WIP)  -> doc/rst/users-guide  # sphinx
+   * - Doc name in Sidebar
+     - Source file(s)
+     - Sidebar subheading
+   * - Quickstart Instructions
+     - doc/rst/usingchapel/QUICKSTART.rst
+     - COMPILING AND RUNNING CHAPEL
+   * - Using Chapel
+     - doc/rst/usingchapel/*
+     - COMPILING AND RUNNING CHAPEL
+   * - Platform-Specific Notes
+     - doc/rst/platforms/*
+     - COMPILING AND RUNNING CHAPEL
+   * - Technical Notes
+     - doc/rst/technotes/*
+     - COMPILING AND RUNNING CHAPEL
+   * - Tools
+     - doc/rst/tools/*
+     - COMPILING AND RUNNING CHAPEL
+   * - Quick Reference
+     - language/reference.rst
+     - WRITING CHAPEL PROGRAMS
+   * - Mason Packages
+     - doc/rst/mason-packages.rst
+     - WRITING CHAPEL PROGRAMS
+   * - Chapel Users Guide (WIP)
+     - doc/rst/users-guide
+     - WRITING CHAPEL PROGRAMS
+   * - Chapel Evolution
+     - doc/rst/language/evolution.rst
+     - LANGUAGE HISTORY
+   * - Documentation Archives
+     - language/archivedSpecs.rst
+     - LANGUAGE HISTORY
 
 
-LANGUAGE HISTORY
+.. list-table:: Use chpl2rst.py on .chpl files and then sphinx to generate html
+   :widths: 100 100 100
+   :header-rows: 1
 
-Chapel Evolution  -> doc/rst/language/evolution.rst  # sphinx
-Documentation Archives -> language/archivedSpecs.rst  # sphinx
+   * - Doc name in Sidebar
+     - Source file(s)
+     - Sidebar subheading
+   * - Hello World Variants
+     - examples/index.rst + test/release/examples/hello*.chpl
+     - WRITING CHAPEL PROGRAMS
+   * - Primers
+     - primers/index.rst + test/release/examples/primers/\*.chpl
+     - WRITING CHAPEL PROGRAMS
+
+
+
+.. list-table:: Use chpldoc on .chpl files and then sphinx to generate html
+   :widths: 100 100 100
+   :header-rows: 1
+
+   * - Built-in Types and Functions
+     - doc/rst/builtins + modules/internal/\*.chpl
+     - WRITING CHAPEL PROGRAMS
+   * - Standard Modules
+     - doc/rst/modules/standard + modules/standard/\*.chpl
+     - WRITING CHAPEL PROGRAMS
+   * - Package Modules
+     - doc/rst/modules/packages + modules/packages/\*.chpl
+     - WRITING CHAPEL PROGRAMS
+   * - Standard Layouts and Distributions
+     - doc/rst/modules/layoutdist + modules/layouts/\*.chpl + modules/dists/\*.chpl
+     - WRITING CHAPEL PROGRAMS
+
 
 ===============================================
 Files that have information about documentation
@@ -114,4 +144,5 @@ Files that have information about documentation
  - **chapel/doc/README.rst**, talks about .rst and has a list of the documentation
    available in .rst
  - **chapel/doc/rst/developer/bestPractices/buildingdocs.rst**, this file
-doc/
+
+
