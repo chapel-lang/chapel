@@ -1,17 +1,5 @@
 .. _readme-buildingdocs:
 
-===============================================
-Files that have information about documentation
-===============================================
-
- - **chapel/README.devel**, how doc/ differs in the release vs. the dev version
- - **bestPractices/releasingDocs.md**, how to create the release documentation
-   and push it to the website
- - **chapel/doc/README.rst**, talks about .rst and has a list of the documentation
-   available in .rst
- - **chapel/doc/rst/developer/bestPractices/buildingdocs.rst**, this file
-
-
 =============================
 Building Chapel Documentation
 =============================
