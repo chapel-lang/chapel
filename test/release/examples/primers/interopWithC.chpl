@@ -323,14 +323,19 @@ module interopWithC {
    writeln(d);
    writeln(f);
 
+   extern proc cFree(ref x);
+   cFree(d);
+   cFree(f);
+
 // If you do not care about the type for a certain variable or argument, you can
 // use the ``opaque`` keyword to indicate to the compiler that you do not know about
 // the type.
 // Such a variable will not be much use except for the ability to pass it to different routines
 // which accept the same underlying type. (Be careful here as it may lead to unmatched types.)
 
-   extern proc getDataStructPtr(): opaque;
-   var structPtr: opaque = getDataStructPtr();
+   extern proc getDataStructPtr() ref : opaque;
+   ref structPtr: opaque = getDataStructPtr();
+   cFree(structPtr);
 
 // For the ability to use C code in Chapel without an external C file,
 // you can also use extern blocks which allow you to put C code directly into Chapel files.

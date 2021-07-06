@@ -11,4 +11,6 @@ data* getNewData(void);
 data* fact_d(data* d);
 data* getDataStructPtr(void);
 
+void cFree(void* ptr);
+
 #endif /* FACT_H */
