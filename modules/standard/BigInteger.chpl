@@ -4050,26 +4050,23 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
+  deprecated
+  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
+  proc bigint.div_q(const ref n: bigint,
+                              d: integral,
+                    param     rounding = Round.ZERO) {
+    use Round;
+    if (rounding == UP) {
+      this.divQ(n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.divQ(n, d, round.zero);
+    } else {
+      this.divQ(n, d, round.down);
+    }
+  }
+
   // 5.6 Division Functions
-  /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
-     ``this``.
-
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: ``bigint``
-
-     :arg denom: The denominator of the division operation to be performed
-     :type denom: ``bigint``
-
-     :arg rounding: The rounding style to use, see :enum:`round` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: ``round``
-
-     .. warning::
-        Division is undefined if the denominator is zero.  Passing a zero as the
-        denominator argument will cause an intentional division by zero.  This
-        may result in the program abruptly terminating.
-  */
+  // Note: Documentation on `denom: integral` version
   proc bigint.divQ(const ref numer: bigint,
                    const ref denom: bigint,
                    param rounding = round.zero) {
@@ -4105,21 +4102,6 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  deprecated
-  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
-  proc bigint.div_q(const ref n: bigint,
-                              d: integral,
-                    param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      this.divQ(n, d, round.up);
-    } else if (rounding == ZERO) {
-      this.divQ(n, d, round.zero);
-    } else {
-      this.divQ(n, d, round.down);
-    }
-  }
-
   /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
      ``this``.
 
@@ -4127,7 +4109,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
      :type numer: ``bigint``
 
      :arg denom: The denominator of the division operation to be performed
-     :type denom: ``integral``
+     :type denom: ``bigint``, ``integral``
 
      :arg rounding: The rounding style to use, see :enum:`round` for a
                     description of what the rounding styles entail.  Defaults to
@@ -4135,9 +4117,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
      :type rounding: ``round``
 
      .. warning::
-        Division is undefined if the denominator is zero.  Passing a zero as the
-        denominator argument will cause an intentional division by zero.  This
-        may result in the program abruptly terminating.
+        If the denominator is zero, the progam behavior is undefined.
   */
   proc bigint.divQ(const ref numer: bigint,
                              denom: integral,
@@ -4162,27 +4142,22 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
   }
 
-  /* Divide ``numer`` by ``denom``, forming a remainder and storing it in
-     ``this``.  The absolute value of the remainder will always be greater than
-     or equal to zero and less than the absolute value of the denominator (i.e.
-     ``0 <= abs(this) < abs(denom)``).
+  deprecated
+  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
+  proc bigint.div_r(const ref n: bigint,
+                              d: integral,
+                    param     rounding = Round.ZERO) {
+    use Round;
+    if (rounding == UP) {
+      this.divR(n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.divR(n, d, round.zero);
+    } else {
+      this.divR(n, d, round.down);
+    }
+  }
 
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: ``bigint``
-
-     :arg denom: The denominator of the division operation to be performed
-     :type denom: ``bigint``
-
-     :arg rounding: The rounding style to use, see :enum:`round` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: ``round``
-
-     .. warning::
-        Division is undefined if the denominator is zero.  Passing a zero as the
-        denominator argument will cause an intentional division by zero.  This
-        may result in the program abruptly terminating.
-  */
+  // Note: documentation on `denom: integral` version
   proc bigint.divR(const ref numer: bigint,
                    const ref denom: bigint,
                    param     rounding = round.zero) {
@@ -4218,31 +4193,15 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  deprecated
-  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
-  proc bigint.div_r(const ref n: bigint,
-                              d: integral,
-                    param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      this.divR(n, d, round.up);
-    } else if (rounding == ZERO) {
-      this.divR(n, d, round.zero);
-    } else {
-      this.divR(n, d, round.down);
-    }
-  }
-
   /* Divide ``numer`` by ``denom``, forming a remainder and storing it in
-     ``this``.  The absolute value of the remainder will always be greater than
-     or equal to zero and less than the absolute value of the denominator (i.e.
-     ``0 <= abs(this) < abs(denom)``).
+     ``this``.  The absolute value of the remainder will always be less than the
+     absolute value of the denominator (i.e. ``abs(this) < abs(denom)``).
 
      :arg numer: The numerator of the division operation to be performed
      :type numer: ``bigint``
 
      :arg denom: The denominator of the division operation to be performed
-     :type denom: ``integral``
+     :type denom: ``bigint``, ``integral``
 
      :arg rounding: The rounding style to use, see :enum:`round` for a
                     description of what the rounding styles entail.  Defaults to
@@ -4250,9 +4209,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
      :type rounding: ``round``
 
      .. warning::
-        Division is undefined if the denominator is zero.  Passing a zero as the
-        denominator argument will cause an intentional division by zero.  This
-        may result in the program abruptly terminating.
+        If the denominator is zero, the program behavior is undefined.
   */
   proc bigint.divR(const ref numer: bigint,
                              denom: integral,
@@ -4276,37 +4233,23 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
-     ``this``, and a remainder and storing it in ``remain``.  The quotient and
-     remainder will always satisfy ``numer = this*denom + remain`` after the
-     operation has finished.  The absolute value of the remainder will always be
-     greater than or equal to zero and less than the absolute value of the
-     denominator (i.e.  ``0 <= abs(this) < abs(denom)``).
+  deprecated
+  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
+  proc bigint.div_qr(ref       r: bigint,
+                     const ref n: bigint,
+                               d: integral,
+                     param     rounding = Round.ZERO) {
+    use Round;
+    if (rounding == UP) {
+      this.divQR(r, n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.divQR(r, n, d, round.zero);
+    } else {
+      this.divQR(r, n, d, round.down);
+    }
+  }
 
-     .. warning::
-        Do not also pass ``this`` as the ``remain`` argument, or results will be
-        unpredictable.
-
-     :arg remain: The place where the remainder of the computation will be
-                  stored
-     :type remain: ``bigint``
-
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: ``bigint``
-
-     :arg denom: The denominator of the division operation to be performed
-     :type denom: ``bigint``
-
-     :arg rounding: The rounding style to use, see :enum:`round` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: ``round``
-
-     .. warning::
-        Division is undefined if the denominator is zero.  Passing a zero as the
-        denominator argument will cause an intentional division by zero.  This
-        may result in the program abruptly terminating.
-  */
+  // Note: Documentation on `denom: integral` version
   proc bigint.divQR(ref       remain: bigint,
                     const ref numer: bigint,
                     const ref denom: bigint,
@@ -4356,42 +4299,25 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  deprecated
-  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
-  proc bigint.div_qr(ref       r: bigint,
-                     const ref n: bigint,
-                               d: integral,
-                     param     rounding = Round.ZERO) {
-    use Round;
-    if (rounding == UP) {
-      this.divQR(r, n, d, round.up);
-    } else if (rounding == ZERO) {
-      this.divQR(r, n, d, round.zero);
-    } else {
-      this.divQR(r, n, d, round.down);
-    }
-  }
-
   /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
      ``this``, and a remainder and storing it in ``remain``.  The quotient and
      remainder will always satisfy ``numer = this*denom + remain`` after the
      operation has finished.  The absolute value of the remainder will always be
-     greater than or equal to zero and less than the absolute value of the
-     denominator (i.e.  ``0 <= abs(this) < abs(denom)``).
+     less than the absolute value of the denominator (i.e. ``abs(this) <
+     abs(denom)``).
 
      .. warning::
-        Do not also pass ``this`` as the ``remain`` argument, or results will be
-        unpredictable.
+        If ``this`` is also passed as the ``remain`` argument, the program
+        behavior is undefined.
 
-     :arg remain: The place where the remainder of the computation will be
-                  stored
+     :arg remain: Stores the remainder of the division
      :type remain: ``bigint``
 
      :arg numer: The numerator of the division operation to be performed
      :type numer: ``bigint``
 
      :arg denom: The denominator of the division operation to be performed
-     :type denom: ``integral``
+     :type denom: ``bigint``, ``integral``
 
      :arg rounding: The rounding style to use, see :enum:`round` for a
                     description of what the rounding styles entail.  Defaults to
@@ -4399,9 +4325,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
      :type rounding: ``round``
 
      .. warning::
-        Division is undefined if the denominator is zero.  Passing a zero as the
-        denominator argument will cause an intentional division by zero.  This
-        may result in the program abruptly terminating.
+        If the denominator is zero, the program behavior is undefined.
   */
   proc bigint.divQR(ref       remain: bigint,
                     const ref numer: bigint,
