@@ -50,6 +50,7 @@
 #include "chpl-external-array.h"
 #include "chpl-file-utils.h"
 #include <chplfp.h>
+#include "chpl-gpu.h"
 #include "chplglob.h"
 #include "chplio.h"
 #include "chplmath.h"

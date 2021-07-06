@@ -130,6 +130,7 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, Gen
 
 static GenRet codegenZero();
 static GenRet codegenZero32();
+static GenRet codegenString(const char* val);
 static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
@@ -2945,6 +2946,10 @@ GenRet codegenZero32()
   return new_IntSymbol(0, INT_SIZE_32)->codegen();
 }
 
+static GenRet codegenString(const char* val) {
+  return new_CStringSymbol(val)->codegen();
+}
+
 
 /*
 static
@@ -4696,14 +4701,27 @@ DEFINE_PRIM(PRIM_SET_DYNAMIC_END_COUNT) {
 }
 
 DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
-
+  // Rewrite the call to cuLaunchKernel. Take the first argument passed to the
+  // primitive and pass it to chpl_gpu_getKernel() and pass the result as the
+  // first argument to cuLaunchKernel. Pass all other arguments along to it.
   std::vector<GenRet> args;
+  bool first = true;
   for_actuals(actual, call) {
-    args.push_back(actual->codegen());
+    if(first) {
+      INT_ASSERT(actual->typeInfo() == dtStringC);
+      
+      std::vector<GenRet> argsToGetKernelCall;
+      argsToGetKernelCall.push_back(codegenString("tmp/chpl__gpu.fatbin"));
+      argsToGetKernelCall.push_back(actual->codegen());
+      
+      ret = codegenCallExprWithArgs("chpl_gpu_getKernel", argsToGetKernelCall);
+      args.push_back(ret);
+    
+      first = false;
+    } else {
+      args.push_back(actual->codegen());
+    }
   }
-
-  //arguments for PRIM_GPU_KERNEL_LAUNCH go directly
-  //to cuLaunchKernel
   ret = codegenCallExprWithArgs("cuLaunchKernel", args);
 }
 
