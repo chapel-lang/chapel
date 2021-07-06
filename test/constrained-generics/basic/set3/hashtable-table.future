@@ -1,0 +1,29 @@
+bug: compiler crashes when compiling this test with --no-local
+
+This is a small reproducer of a problem with --no-local compilations
+of rev. fe4b408912 of these two files when compiled together:
+  test/constrained-generics/hashtable/MyHashtable.chpl
+  test/constrained-generics/hashtable/test-chpl-hashtable.chpl
+
+where testConcrete() compiles fine while testIC() causes an assertion
+failure in the codegen pass.
+
+The PR that adds this test also adds a workaround in MyHashtable.chpl
+by adding an implicit ref-intent for the receiver argument or
+the method 'proc tableType.this(idx: int)'.
+
+Here is a possible set of steps taht cause the assertion failure:
+* the method 'HT.table' returns a ref to 'tableType'
+* it is passed to the method 'tableType.this()' by default intent
+* when early-resolving testIC(), which contains the above two,
+  the compiler treats 'tableType' as a record, so the default intent
+  is a [const] ref
+* when instantiating testIC() for my__hashtable, 'tableType' is _ddata,
+  for which is the default intent is by value
+* no further resolution happens upon this instantiation,
+  so the AST is likely left in an inconsistent state w.r.t.
+  by-ref vs. by-value argument passing
+
+This future poses the question of whether the compiler should be
+adjusted to compile this code properly or report an error like
+"cannot use the default intent on arguments of interface types".

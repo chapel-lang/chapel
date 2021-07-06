@@ -395,7 +395,7 @@ interface chpl_Hashtable(HT) {
   type tableType;
   proc chpl__initCopy(arg: tableType, definedConst: bool): tableType;
   operator =(ref lhs: tableType, rhs: tableType);
-  proc tableType.this(idx: int) ref: tableEntryType;  
+  proc ref tableType.this(idx: int) ref: tableEntryType;  
 
   // replaces 'chpl_TableEntry(keyType, valType)'
   // todo: move into its own interface
