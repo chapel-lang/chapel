@@ -43,7 +43,7 @@ class Range final : public Expression {
  public:
   enum OpKind {
     DEFAULT,
-    OPEN_UPPER
+    OPEN_HIGH
   };
 
  private:
@@ -54,7 +54,9 @@ class Range final : public Expression {
       opKind_(opKind),
       lowerBoundChildNum_(lowerBoundChildNum),
       upperBoundChildNum_(upperBoundChildNum) {
-    // TODO: Add some asserts.
+    if (opKind_ == OPEN_HIGH) {
+      assert(upperBoundChildNum_ >= 0);
+    }
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {

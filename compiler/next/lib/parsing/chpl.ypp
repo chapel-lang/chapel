@@ -2421,10 +2421,12 @@ var_decl_stmt:
   }
   var_decl_type var_decl_stmt_inner_ls TSEMI {
     $$ = context->buildVarOrMultiDecl(@$, $4);
+    context->resetDeclState();
   }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
   {
     $$ = context->buildVarOrMultiDecl(@$, $2);
+    context->resetDeclState();
   }
 ;
 
@@ -2967,7 +2969,7 @@ expr:
   }
 | expr TDOTDOTOPENHIGH expr
   {
-    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_UPPER, toOwned($1),
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_HIGH, toOwned($1),
                       toOwned($3)).release();
   }
 | expr TDOTDOT
@@ -2983,7 +2985,7 @@ expr:
   }
 | TDOTDOTOPENHIGH expr
   {
-    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_UPPER,
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_HIGH,
                       /*lowerBound*/ nullptr,
                       toOwned($2)).release();
   }

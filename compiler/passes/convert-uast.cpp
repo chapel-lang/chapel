@@ -409,7 +409,7 @@ struct Converter {
     return nullptr;
   }
 
-  /// Non-Literal Initializer Expressions (e.g. Array, Range) ///
+  /// Array, Domain, Range ///
 
   CallExpr* visit(const uast::Array* node) {
     CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
@@ -448,11 +448,9 @@ struct Converter {
       high = toExpr(convertAST(node->upperBound()));
     }
 
-    switch (node->intervalKind()) {
-      case uast::Range::OPEN_BOTH: openlow = true; openhigh = true; break;
+    switch (node->opKind()) {
       case uast::Range::OPEN_HIGH: openhigh = true; break;
-      case uast::Range::OPEN_LOW: openlow = true; break;
-      case uast::Range::CLOSED: break;
+      case uast::Range::DEFAULT: break;
     }
 
     if (low && high) {
