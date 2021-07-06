@@ -174,6 +174,8 @@ module interopWithC {
 /*
    Chapel has support for C code but we need to tell the compiler
    about the C symbols using the ``extern`` keyword.
+   Using the ``extern`` keyword for declaring external 
+   functions can be done as follows:
 */
 
    extern proc baz(): int;
@@ -339,7 +341,7 @@ module interopWithC {
 
 // For the ability to use C code in Chapel without an external C file,
 // you can also use extern blocks which allow you to put C code directly into Chapel files.
-// To avoid cluttering you namespace you can also put these inside a module.
+// To avoid cluttering your namespace you can also put these inside a module.
 
 /*
    .. warning::

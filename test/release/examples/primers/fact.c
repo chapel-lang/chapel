@@ -42,11 +42,3 @@ data* getDataStructPtr(){
 void cFree(void* ptr){
     free(ptr);
 }
-/*
-int main(int argc, char* argv[]) {
-    data* d = getNewData();
-    data* f = fact_d(d);
-    free(d);
-    free(f);
-    return 0;
-}*/
