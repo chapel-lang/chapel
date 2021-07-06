@@ -197,14 +197,16 @@ module interopWithC {
 // You can tell the chapel compiler where to look for these C functions by adding a
 // require statement:
    require "cHelper.h", "cHelper.c";
-// When requiring a C file, the appropriate header file must also be required.
+// When requiring a C file, object file, or archived library, 
+// the appropriate header file must also be required.
+ 
 
 // Chapel also supports require statements for ``.o`` files and
 // for archived libraries using the ``-l`` flag:
 /*
    .. code-block:: chapel
 
-         require "foo.o", "-lfoo";
+         require "bar.o", "-lfoo";
 */
 
 // Alternatively you can also include their names while invoking the chapel compiler:
@@ -342,7 +344,7 @@ module interopWithC {
 
    module CDemo {
       extern {
-         #include<math.h>
+         #include <math.h>
 
          static double square(double num){
             return pow(num,2);

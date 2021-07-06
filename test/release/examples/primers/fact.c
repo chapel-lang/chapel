@@ -1,7 +1,7 @@
 
-#include<stdio.h>
-#include<stdlib.h>
-#include"fact.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include "fact.h"
 
 
 
