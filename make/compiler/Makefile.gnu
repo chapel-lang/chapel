@@ -245,7 +245,6 @@ WARN_CXXFLAGS += -Wno-class-memaccess
 endif
 
 ifeq ($(shell test $(GNU_GCC_MAJOR_VERSION) -eq 8; echo "$$?"),0)
-WARN_CFLAGS += -Wno-class-memaccess
 RUNTIME_CFLAGS += -Wno-stringop-overflow
 SQUASH_WARN_GEN_CFLAGS += -Wno-array-bounds
 endif
