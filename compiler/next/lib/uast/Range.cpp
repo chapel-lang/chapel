@@ -26,7 +26,7 @@ namespace uast {
 
 
 owned<Range> Range::build(Builder* builder, Location loc,
-                          IntervalKind intervalKind,
+                          OpKind opKind,
                           owned<Expression> lowerBound,
                           owned<Expression> upperBound) {
   ASTList lst;
@@ -43,7 +43,7 @@ owned<Range> Range::build(Builder* builder, Location loc,
     lst.push_back(std::move(upperBound));
   }
 
-  Range* ret = new Range(std::move(lst), intervalKind,
+  Range* ret = new Range(std::move(lst), opKind,
                          lowerBoundChildNum,
                          upperBoundChildNum); 
 

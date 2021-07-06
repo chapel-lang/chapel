@@ -71,9 +71,9 @@ static void testRange(Parser* parser, const char* testName,
 
   // Check the interval kind.
   if (!strcmp(intervalStr, "..<")) {
-    assert(range->intervalKind() == Range::OPEN_HIGH);
+    assert(range->opKind() == Range::OPEN_UPPER);
   } else if (!strcmp(intervalStr, "..")) {
-    assert(range->intervalKind() == Range::CLOSED);
+    assert(range->opKind() == Range::DEFAULT);
   } else {
     assert(false);
   }

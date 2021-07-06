@@ -2962,34 +2962,34 @@ expr:
   }
 | expr TDOTDOT expr
   {
-    $$ = Range::build(BUILDER, LOC(@$), Range::CLOSED, toOwned($1),
+    $$ = Range::build(BUILDER, LOC(@$), Range::DEFAULT, toOwned($1),
                       toOwned($3)).release();
   }
 | expr TDOTDOTOPENHIGH expr
   {
-    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_HIGH, toOwned($1),
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_UPPER, toOwned($1),
                       toOwned($3)).release();
   }
 | expr TDOTDOT
   {
-    $$ = Range::build(BUILDER, LOC(@$), Range::CLOSED, toOwned($1),
+    $$ = Range::build(BUILDER, LOC(@$), Range::DEFAULT, toOwned($1),
                       /*upperBound*/ nullptr).release();
   }
 | TDOTDOT expr
   {
-    $$ = Range::build(BUILDER, LOC(@$), Range::CLOSED,
+    $$ = Range::build(BUILDER, LOC(@$), Range::DEFAULT,
                       /*lowerBound*/ nullptr,
                       toOwned($2)).release();
   }
 | TDOTDOTOPENHIGH expr
   {
-    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_HIGH,
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_UPPER,
                       /*lowerBound*/ nullptr,
                       toOwned($2)).release();
   }
 | TDOTDOT
   {
-    $$ = Range::build(BUILDER, LOC(@$), Range::CLOSED,
+    $$ = Range::build(BUILDER, LOC(@$), Range::DEFAULT,
                       /*lowerBound*/ nullptr,
                       /*upperBound*/ nullptr).release();
   }
@@ -3001,7 +3001,7 @@ expr:
 
 | expr TDOTDOTOPENLOW expr
   {
-    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_LOW, toOwned($1),
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_LOWER, toOwned($1),
                       toOwned($3)).release();
   }
 | expr TDOTDOTOPENBOTH expr
@@ -3011,7 +3011,7 @@ expr:
   }
 | expr TDOTDOTOPENLOW
   {
-    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_LOW, toOwned($1),
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_LOWER, toOwned($1),
                       nullptr).release();
   }
 */

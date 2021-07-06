@@ -41,19 +41,17 @@ namespace uast {
  */
 class Range final : public Expression {
  public:
-  enum IntervalKind {
-    OPEN_BOTH,
-    OPEN_HIGH,
-    OPEN_LOW,
-    CLOSED
+  enum OpKind {
+    DEFAULT,
+    OPEN_UPPER
   };
 
  private:
-  Range(ASTList children, IntervalKind intervalKind,
+  Range(ASTList children, OpKind opKind,
         int8_t lowerBoundChildNum,
         int8_t upperBoundChildNum)
     : Expression(asttags::Range, std::move(children)),
-      intervalKind_(intervalKind),
+      opKind_(opKind),
       lowerBoundChildNum_(lowerBoundChildNum),
       upperBoundChildNum_(upperBoundChildNum) {
     // TODO: Add some asserts.
@@ -61,7 +59,7 @@ class Range final : public Expression {
 
   bool contentsMatchInner(const ASTNode* other) const override {
     const Range* rhs = other->toRange();
-    return this->intervalKind_ == rhs->intervalKind_ &&
+    return this->opKind_ == rhs->opKind_ &&
       this->lowerBoundChildNum_ == rhs->lowerBoundChildNum_ &&
       this->upperBoundChildNum_ == rhs->upperBoundChildNum_ &&
       this->expressionContentsMatchInner(rhs);
@@ -71,7 +69,7 @@ class Range final : public Expression {
     expressionMarkUniqueStringsInner(context);
   }
 
-  IntervalKind intervalKind_;
+  OpKind opKind_;
   int8_t lowerBoundChildNum_;
   int8_t upperBoundChildNum_;
 
@@ -79,18 +77,18 @@ class Range final : public Expression {
   ~Range() override = default;
 
   /**
-    Create and return a Range expression.
+    Create and return a range expression.
   */
   static owned<Range> build(Builder* builder, Location loc,
-                            IntervalKind intervalKind,
+                            OpKind opKind,
                             owned<Expression> lowerBound,
                             owned<Expression> upperBound);
 
   /**
-    Returns the interval kind of this range.
+    Returns the operator kind used to constrct this range.
   */
-  IntervalKind intervalKind() const {
-    return this->intervalKind_;
+  OpKind opKind() const {
+    return this->opKind_;
   }
 
   /**
