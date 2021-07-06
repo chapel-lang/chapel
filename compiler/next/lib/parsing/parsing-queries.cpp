@@ -72,11 +72,7 @@ const FileContents& fileText(Context* context, UniqueString path) {
 }
 
 void setFileText(Context* context, UniqueString path, FileContents result) {
-  context->querySetterUpdateResult(fileText,
-                                   std::make_tuple(path),
-                                   std::move(result),
-                                   "fileText",
-                                   /* isInputQuery */ true);
+  QUERY_STORE_INPUT_RESULT(fileText, context, result, path);
 }
 void setFileText(Context* context, UniqueString path, std::string text) {
   setFileText(context, path, FileContents(std::move(text)));

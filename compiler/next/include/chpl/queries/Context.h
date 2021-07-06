@@ -56,7 +56,7 @@ When running a query, the query system will manage:
  * recording the queries called by that query as dependencies
 
 To write a query, create a function that uses the ``QUERY_`` macros defined in
-QueryImpl.h. The arguments to the function need to be efficient to copy (so
+query-impl.h. The arguments to the function need to be efficient to copy (so
 ``UniqueString``, ``ID``, ``Location``, and pointers are OK, but e.g.
 ``std::vector`` is not).  The function will return a result, which need not be
 POD and can include AST pointers (but see below). The function needs to be
@@ -402,7 +402,19 @@ class Context {
   const ResultType&
   queryGetSaved(const querydetail::QueryMapResult<ResultType, ArgTs...>* r);
 
+  // note an error message in the currently running query
   void queryNoteError(ErrorMessage error);
+
+  // It's a fatal error to run a query recursively.
+  // To avoid that in cases that have some sort of natural recursion,
+  // use this function to ask if a query is already running and to
+  // get the partial result if it is.
+  template<typename ResultType,
+           typename... ArgTs>
+  const ResultType* queryGetRunningQueryPartialResult(
+         const ResultType& (*queryFunction)(Context* context, ArgTs...),
+         const std::tuple<ArgTs...>& tupleOfArgs,
+         const char* traceQueryName);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -414,14 +426,6 @@ class Context {
       ResultType result,
       const char* traceQueryName);
 
-  /*
-  template<typename ResultType,
-           typename... ArgTs>
-  void queryRecomputedUpdateResult(
-      querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
-      const std::tuple<ArgTs...>& tupleOfArgs,
-      ResultType result);
-   */
   template<typename ResultType,
            typename... ArgTs>
   void querySetterUpdateResult(
