@@ -41,6 +41,11 @@ public:
                                        bool       zippered,
                                        bool       isForExpr);
 
+  static BlockStmt*      buildForeachLoop (Expr*      indices,
+                                           Expr*      iteratorExpr,
+                                           BlockStmt* body,
+                                           bool       zippered);
+
   static BlockStmt*      buildCoforallLoop (Expr*      indices,
                                             Expr*      iteratorExpr,
                                             BlockStmt* body,
@@ -60,7 +65,8 @@ private:
                                          bool       coforall,
                                          bool       zippered,
                                          bool       isLoweredForall,
-                                         bool       isForExpr);
+                                         bool       isForExpr,
+                                         bool       isForeach);
 
 
 
