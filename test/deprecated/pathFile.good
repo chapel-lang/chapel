@@ -1,0 +1,4 @@
+pathFile.chpl:6: warning: 'file.getParentName()' is deprecated. Please use 'dirname(realPath(file))' instead.
+pathFile.chpl:7: warning: 'file.absPath()' is deprecated. Please use 'absPath(file)' instead.
+pathFile.chpl:8: warning: 'file.realPath()' is deprecated. Please use 'realPath(file)' instead.
+pathFile.chpl:9: warning: 'file.relPath()' is deprecated. Please use 'relPath(file)' instead.

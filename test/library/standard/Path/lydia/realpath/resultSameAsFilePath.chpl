@@ -7,7 +7,7 @@ var firstRun = realPath(originalPath);
 // use the exact path to open a file
 var f = open(firstRun, iomode.r);
 
-var secondTimeThrough = f.realPath();
+var secondTimeThrough = realPath(f);
 // Nothing should need to be done to f's path, so the result of that
 // call should match the argument.
 if (firstRun == secondTimeThrough) {

@@ -1581,7 +1581,7 @@ Get the path to an open file.
 Note that not all files have a path (e.g. files opened with :proc:`openmem`),
 and that this function may not work on all operating systems.
 
-The function :proc:`Path.file.realPath` is an alternative way
+The function :proc:`Path.realPath` is an alternative way
 to get the path to a file.
 
 :throws SystemError: Thrown if the path could not be retrieved.
