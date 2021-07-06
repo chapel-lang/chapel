@@ -13,7 +13,7 @@
    Chapel as a Library
    -------------------
 
-   .. _primers-C-interop-functions:
+   .. _primers-C-interop-symbol-availability:
 
    Symbol Availability
    +++++++++++++++++++
@@ -49,7 +49,7 @@ module interopWithC {
 
 /*
    To generate a library from a Chapel code file, compile the Chapel file with
-   the ``--library`` flag.  E.g.
+   the ``--library`` flag.  For example:
 */   
 
 /*
@@ -126,6 +126,9 @@ module interopWithC {
       :lines: 11-13
 */
 
+// We will see how we exported ``alsoCallsBaz()`` and ``callUseMyType()`` as
+// well as their definitions later.
+
 /*
    When ending the C program, the user must explicitly shut down the Chapel
    runtime and module code.  This is done by calling ``chpl_library_finalize``:
@@ -138,8 +141,9 @@ module interopWithC {
 */
 
 /*
-   Once shut down, the Chapel runtime cannot be restarted in the current C
-   program.
+   .. note::
+      Once shut down, the Chapel runtime cannot be restarted in the current C
+      program.
 */
 
 /*
@@ -169,7 +173,7 @@ module interopWithC {
 
 /*
    Chapel has support for C code but we need to tell the compiler
-   about the C symbols using the ``extern`` keyword
+   about the C symbols using the ``extern`` keyword.
 */
 
    extern proc baz(): int;
@@ -191,18 +195,26 @@ module interopWithC {
    }
 
 // You can tell the chapel compiler where to look for these C functions by adding a
-// require statement
+// require statement:
    require "cHelper.h", "cHelper.c";
-// You must inlcude both a header file and C file.
+// When requiring a C file, the appropriate header file must also be required.
+
 // Chapel also supports require statements for ``.o`` files and
-// for archived libraries using the ``-l`` flag
+// for archived libraries using the ``-l`` flag:
 /*
    .. code-block:: chapel
 
-         require "foo.o", "-lapache-arrow";
+         require "foo.o", "-lfoo";
 */
 
-// Alternatively you can also include their names while invoking the chapel compiler.
+// Alternatively you can also include their names while invoking the chapel compiler:
+
+/*
+   .. code-block:: bash
+
+      chpl cHelper.h cHelper.c foo.h -lfoo interopWithC.chpl
+*/
+
 
 //
 // Unlike ``export``, ``extern`` can also be applied to global variables,
@@ -218,23 +230,19 @@ module interopWithC {
       writeln(useMyType(blah));
    }
 
-// Chapel also has a standard module named :mod:`SysCTypes` (located under
-//``$CHPL_HOME/modules/standard/gen/...``) which defines a few C types which
-// align with the C compiler specification and do not require the ``extern`` keyword, 
-// such as ``c_int`` and ``c_char``. For more information about these types see
-// the :ref:`readme-extern` Technical Note.
+/*
+   Chapel also has a standard module named :mod:`SysCTypes` (located under
+   ``$CHPL_HOME/modules/standard/gen/...``). 
+   This module defines a few C types which align with the C compiler 
+   specification and do not require the ``extern`` keyword, 
+   such as ``c_int`` and ``c_char``. For more information about these types see
+   the :ref:`readme-extern` Technical Note.
+*/
 
-// You can include SysCTypes using a simple use statement
+// You can include SysCTypes using a simple use statement:
 
    use SysCTypes;
 
-// You can also assign default arguments to extern procs which then can be omitted
-// at the callsite as usual. For example
-
-   extern proc sum(a: c_int, b: c_int = 1): int;
-
-   writeln(sum(10, 10));
-   writeln(sum(10));
 // We must always make sure the types align as the C compiler specification allows for
 // different sizes for the same type depending on the compiler.
 
@@ -242,9 +250,18 @@ module interopWithC {
    extern proc sumArray(arr: [] int, size: c_int): c_int;
 //Where an array would be
    var arr : [0..9] int = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-// Keep in mind that since Chapel has 64 bit ints, the C function must also accept an
-// of type ``int64_t``
+// Keep in mind that since Chapel has 64 bit ints, so is the array we created above.
+// Therefore, the C function must also accept an array of type ``int64_t`` .
    writeln("Sum of Array: ", sumArray(arr, 10:c_int));
+
+// While dealing with ``extern proc`` s, you can also assign default arguments to them 
+// which then can be omitted at the call site as usual. For example:
+
+   extern proc sum(a: c_int, b: c_int = 1): int;
+
+   writeln(sum(10, 10));
+   writeln(sum(10));
+
 
 //
 // A C struct can be used in Chapel by declaring it as an ``extern record``.
@@ -260,7 +277,7 @@ module interopWithC {
    You do not have to inform chapel about all the fields of a record,
    only the ones that you wish to directly manipulate using Chapel code.
 
-   For example a record with no declared fields is possible even though
+   For example, a record with no declared fields is possible even though
    the actual C struct might have a nonzero number of fields.
 */
 
@@ -273,7 +290,7 @@ module interopWithC {
 // As of now the struct must be defined completely in the included header file
 // and must also be typdef'd.
 // In order to include a struct which is not typedef'd or if you want to import it
-// under another name simply state its external name after the ``extern`` keyword
+// under another name simply state its external name after the ``extern`` keyword:
 
    extern "struct person" record person{
       var name: c_string;
@@ -284,7 +301,7 @@ module interopWithC {
 //
 // Since most functions dealing with structs often return pointers, you can use the
 // ref intent for function arguments when their C counterparts are dealing with 
-// pointers
+// pointers.
 
    require "fact.c", "fact.h";
 
@@ -305,17 +322,23 @@ module interopWithC {
    writeln(f);
 
 // If you do not care about the type for a certain variable or argument, you can
-// use the ``opaque`` keyowrd to indicate to the compiler that you do not know about
+// use the ``opaque`` keyword to indicate to the compiler that you do not know about
 // the type.
 // Such a variable will not be much use except for the ability to pass it to different routines
-// which accept the same underlying type. (Be carefull here as it may lead to unmatched types)
+// which accept the same underlying type. (Be careful here as it may lead to unmatched types.)
 
    extern proc getDataStructPtr(): opaque;
    var structPtr: opaque = getDataStructPtr();
 
 // For the ability to use C code in Chapel without an external C file,
-// You can also use extern blocks which allow you to put C code directly into Chapel files.
-// To avoid cluttering you namespace you can also put these inside a module
+// you can also use extern blocks which allow you to put C code directly into Chapel files.
+// To avoid cluttering you namespace you can also put these inside a module.
+
+/*
+   .. warning::
+      As of now, chapel must be used with LLVM to use the extern block syntax
+
+*/
 
    module CDemo {
       extern {
@@ -329,4 +352,3 @@ module interopWithC {
    writeln(CDemo.square(3));
 } // interopWithC
 
-// As of now, chapel must be used with LLVM to use the extern block syntax

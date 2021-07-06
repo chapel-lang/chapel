@@ -96,7 +96,6 @@ primers:
 	@$(CHPL2RST) $(CHPL2RSTOPTS) ../test/release/examples/primers/*doc.chpl --codeblock
 	@mkdir -p $(CHPL_DOC_PRIMERS_RST_DIR)
 	@cp -f $(SOURCEDIR)/meta/primers/* $(CHPL_DOC_PRIMERS_BUILD_DIR)
-	@cp -f ../test/release/examples/primers/cClient.test.c $(SOURCEDIR)/primers/cClient.c
 	@$(COPY_IF_DIFFERENT) $(CHPL_DOC_PRIMERS_BUILD_DIR) $(CHPL_DOC_PRIMERS_RST_DIR)
 
 examples:

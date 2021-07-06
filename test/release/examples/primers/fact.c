@@ -3,7 +3,6 @@
 #include<stdlib.h>
 #include"fact.h"
 
-//#include<arrow-glib/arrow-glib.h>
 
 
 int fact(int x){
