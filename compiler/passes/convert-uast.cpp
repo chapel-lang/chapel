@@ -562,7 +562,7 @@ struct Converter {
   DefExpr* visit(const uast::Module* node) {
     chpl::UniqueString ustr = node->name();
     const char* name = ustr.c_str();
-    const char* path = context->filePathForID(node->id()).c_str();
+    const char* path = context->filePathForId(node->id()).c_str();
     ModTag tag = MOD_USER; // TODO: distinguish internal/standard/etc
     bool priv = (node->visibility() == uast::Decl::PRIVATE);
     bool prototype = (node->kind() == uast::Module::PROTOTYPE ||
