@@ -145,7 +145,8 @@ static void test3(Parser* parser) {
 
 static void checkTest4Decls(const MultiDecl* multi,
                             const Variable* a, const Variable* b,
-                            const Variable* c, const Variable* d);
+                            const Variable* c, const Variable* d,
+                            bool isConfig=false);
 
 static void test4(Parser* parser) {
   auto parseResult = parser->parseString("test4.chpl",
@@ -169,7 +170,8 @@ static void test4(Parser* parser) {
 
 static void checkTest4Decls(const MultiDecl* multi,
                             const Variable* a, const Variable* b,
-                            const Variable* c, const Variable* d)
+                            const Variable* c, const Variable* d,
+                            bool isConfig)
 {
   assert(multi);
   assert(a);
@@ -200,6 +202,13 @@ static void checkTest4Decls(const MultiDecl* multi,
     i++;
   }
   assert(i == 4);
+
+  if (isConfig) {
+    for (auto decl : multi->decls()) {
+      assert(decl->isVariable());
+      assert(decl->toVariable()->isConfig());
+    }
+  }
 }
 
 static void test4a(Parser* parser) {
@@ -408,6 +417,25 @@ static void test4j(Parser* parser) {
   checkTest4Decls(multi, a, b, c, d);
 }
 
+static void test4k(Parser* parser) {
+  auto parseResult = parser->parseString("test4k.chpl",
+      "config var a,\n"
+      "           b : int,\n"
+      "           c,\n"
+      "           d = ii /* comment */ ;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+  auto multi = module->stmt(0)->toMultiDecl();
+  assert(multi->numDeclOrComments() == 4);
+  auto a = multi->declOrComment(0)->toVariable();
+  auto b = multi->declOrComment(1)->toVariable();
+  auto c = multi->declOrComment(2)->toVariable();
+  auto d = multi->declOrComment(3)->toVariable();
+  checkTest4Decls(multi, a, b, c, d, /*isConfig*/ true);
+}
 int main() {
   Context context;
   Context* ctx = &context;
@@ -430,6 +458,7 @@ int main() {
   test4h(p);
   test4i(p);
   test4j(p);
+  test4k(p);
 
   return 0;
 }

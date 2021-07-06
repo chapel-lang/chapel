@@ -113,9 +113,17 @@ Builder::Result Parser::parseFile(const char* path) {
   while (parserStatus == YYPUSH_MORE) {
     YYSTYPE yylval;
 
-    lexerStatus = yychpl_lex(&yylval, &yylloc, parserContext.scanner);
+    // In some situations, the parser context may have set 'atEOF' before
+    // the parser has seen EOF. The lexer will have already produced the
+    // EOF token in this case. The below check prevents the lexer from
+    // trying to swap to a nonexistent buffer.
+    if (!parserContext.atEOF) {
+      lexerStatus = yychpl_lex(&yylval, &yylloc, parserContext.scanner);
+    } else {
+      lexerStatus = 0;
+    }
 
-    if        (lexerStatus >= 0) {
+    if (lexerStatus >= 0) {
       parserStatus          = yychpl_push_parse(parser,
                                                 lexerStatus,
                                                 &yylval,
@@ -126,6 +134,12 @@ Builder::Result Parser::parseFile(const char* path) {
       // comment should already be noted in processBlockComment
     } else if (lexerStatus == YYLEX_SINGLE_LINE_COMMENT) {
       // comment should already be noted in processSingleLineComment
+
+      // Single line comments may cause the parser context to set 'atEOF'
+      // before the parser has registered that EOF occurred (e.g. for a
+      // single line comment followed immediately by EOF). In this case,
+      // complete one more iteration of the loop instead of breaking.
+      if (parserContext.atEOF) continue;
     }
 
     if (lexerStatus == 0 || parserContext.atEOF)
@@ -178,7 +192,15 @@ Builder::Result Parser::parseString(const char* path, const char* str) {
   while (parserStatus == YYPUSH_MORE) {
     YYSTYPE yylval;
 
-    lexerStatus  = yychpl_lex(&yylval, &yylloc, parserContext.scanner);
+    // In some situations, the parser context may have set 'atEOF' before
+    // the parser has seen EOF. The lexer will have already produced the
+    // EOF token in this case. The below check prevents the lexer from
+    // trying to swap to a nonexistent buffer.
+    if (!parserContext.atEOF) {
+      lexerStatus = yychpl_lex(&yylval, &yylloc, parserContext.scanner);
+    } else {
+      lexerStatus = 0;
+    }
 
     if (lexerStatus >= 0) {
       parserStatus          = yychpl_push_parse(parser,
@@ -191,6 +213,12 @@ Builder::Result Parser::parseString(const char* path, const char* str) {
       // comment should already be noted in processBlockComment
     } else if (lexerStatus == YYLEX_SINGLE_LINE_COMMENT) {
       // comment should already be noted in processSingleLineComment
+
+      // Single line comments may cause the parser context to set 'atEOF'
+      // before the parser has registered that EOF occurred (e.g. for a
+      // single line comment followed immediately by EOF). In this case,
+      // complete one more iteration of the loop instead of breaking.
+      if (parserContext.atEOF) continue;
     }
 
     if (lexerStatus == 0 || parserContext.atEOF)

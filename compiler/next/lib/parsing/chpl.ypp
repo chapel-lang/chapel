@@ -641,7 +641,7 @@ program:
 // 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
 toplevel_stmt_ls:
                                       { $$ = context->makeList(); }
-| toplevel_stmt_ls toplevel_stmt      { context->appendList($1, $2); }
+| toplevel_stmt_ls toplevel_stmt      { $$ = context->appendList($1, $2); }
 ;
 
 // Switch between plain statements and those preceded by pragmas
@@ -1759,6 +1759,7 @@ ifvar:
     auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
                                    Decl::DEFAULT_VISIBILITY,
                                    Variable::VAR,
+                                   /*isConfig*/ false,
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
@@ -1769,6 +1770,7 @@ ifvar:
     auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
                                    Decl::DEFAULT_VISIBILITY,
                                    Variable::CONST,
+                                   /*isConfig*/ false,
                                    context->currentScopeIsAggregate(),
                                    /*typeExpression*/ nullptr,
                                    toOwned($4));
@@ -2412,49 +2414,20 @@ var_decl_type:
 ;
 
 var_decl_stmt:
-  TCONFIG var_decl_type var_decl_stmt_inner_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->resetDeclState();
-    }
+  TCONFIG
+  {
+    // Use a mid-rule action to thread along 'isVarDeclConfig'.
+    context->noteIsVarDeclConfig(true);
+  }
+  var_decl_type var_decl_stmt_inner_ls TSEMI {
+    $$ = context->buildVarOrMultiDecl(@$, $4);
+    context->resetDeclState();
+  }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
-    {
-      ParserExprList* lst = $2;
-      int nDecls = 0;
-      Decl* lastDecl = nullptr;
-      for (auto elt : *lst) {
-        if (Decl* d = elt->toDecl()) {
-          lastDecl = d;
-          nDecls++;
-        }
-      }
-      assert(nDecls > 0);
-      assert(lastDecl);
-      if (nDecls == 1) {
-        // gather any comments from before the 'var'
-        // intentionally ignores comments after 'var'
-        CommentsAndStmt cs = {context->gatherCommentsFromList(lst, @1),
-                              lastDecl};
-        $$ = cs;
-        // delete any comments left in lst
-        for (auto elt : *lst) {
-          if (elt->isComment()) {
-            delete elt;
-          }
-        }
-        // delete the list
-        delete lst;
-      } else {
-        // gather any comments from before the 'var'
-        CommentsAndStmt cs = {context->gatherCommentsFromList(lst, @1),
-                              nullptr};
-        auto multi = MultiDecl::build(BUILDER, LOC(@$), context->visibility,
-                                      context->consumeList(lst));
-        cs.stmt = multi.release();
-        $$ = cs;
-      }
-      context->resetDeclState();
-    }
+  {
+    $$ = context->buildVarOrMultiDecl(@$, $2);
+    context->resetDeclState();
+  }
 ;
 
 var_decl_stmt_inner_ls:
@@ -2474,6 +2447,7 @@ var_decl_stmt_inner:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->isVarDeclConfig,
                                      context->currentScopeIsAggregate(),
                                      toOwned($2), toOwned($3));
       // gather the comments like a statement does
@@ -2498,6 +2472,7 @@ tuple_var_decl_component:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->isVarDeclConfig,
                                      context->currentScopeIsAggregate(),
                                      nullptr, nullptr);
       $$ = varDecl.release();
@@ -2508,6 +2483,7 @@ tuple_var_decl_component:
       auto varDecl = Variable::build(BUILDER, LOC(@$),
                                      $1, context->visibility,
                                      context->varDeclKind,
+                                     context->isVarDeclConfig,
                                      context->currentScopeIsAggregate(),
                                      nullptr, nullptr);
       $$ = varDecl.release();
@@ -2983,19 +2959,42 @@ expr:
 | TLP TDOTDOTDOT expr TRP
     { $$ = TODOEXPR(@$); }
 | expr TCOLON expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildBinOp(@$, $1, $2, $3);
+  }
 | expr TDOTDOT expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::DEFAULT, toOwned($1),
+                      toOwned($3)).release();
+  }
 | expr TDOTDOTOPENHIGH expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_HIGH, toOwned($1),
+                      toOwned($3)).release();
+  }
 | expr TDOTDOT
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::DEFAULT, toOwned($1),
+                      /*upperBound*/ nullptr).release();
+  }
 | TDOTDOT expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::DEFAULT,
+                      /*lowerBound*/ nullptr,
+                      toOwned($2)).release();
+  }
 | TDOTDOTOPENHIGH expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_HIGH,
+                      /*lowerBound*/ nullptr,
+                      toOwned($2)).release();
+  }
 | TDOTDOT
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::DEFAULT,
+                      /*lowerBound*/ nullptr,
+                      /*upperBound*/ nullptr).release();
+  }
 
 /* The following cases would extend the current '..<' open range
    interval constructor to also support '<..' and '<..<'.  This
@@ -3003,11 +3002,20 @@ expr:
    in case we change our minds in a future release.
 
 | expr TDOTDOTOPENLOW expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_LOWER, toOwned($1),
+                      toOwned($3)).release();
+  }
 | expr TDOTDOTOPENBOTH expr
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_BOTH, toOwned($1),
+                      toOwned($3)).release();
+  }
 | expr TDOTDOTOPENLOW
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = Range::build(BUILDER, LOC(@$), Range::OPEN_LOWER, toOwned($1),
+                      nullptr).release();
+  }
 */
 
 ;
@@ -3106,8 +3114,8 @@ parenthesized_expr:
 ;
 
 bool_literal:
-  TFALSE { $$ = TODOEXPR(@$); }
-| TTRUE  { $$ = TODOEXPR(@$); }
+  TFALSE { $$ = BoolLiteral::build(BUILDER, LOC(@$), false).release(); }
+| TTRUE  { $$ = BoolLiteral::build(BUILDER, LOC(@$), true).release(); }
 ;
 
 str_bytes_literal:
@@ -3123,18 +3131,30 @@ literal_expr:
 | IMAGLITERAL    { $$ = context->buildNumericLiteral(@$, $1, IMAGLITERAL); }
 | CSTRINGLITERAL      { $$ = $1; }
 | TNONE               { $$ = context->buildIdent(@$, $1); }
-| TLCBR expr_ls TRCBR          { $$ = TODOEXPR(@$); }
-| TLCBR expr_ls TCOMMA TRCBR   { $$ = TODOEXPR(@$); }
-| TLSBR expr_ls TRSBR          { $$ = TODOEXPR(@$); }
-| TLSBR expr_ls TCOMMA TRSBR   { $$ = TODOEXPR(@$); }
+| TLCBR expr_ls TRCBR
+  {
+    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+  }
+| TLCBR expr_ls TCOMMA TRCBR
+  {
+    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+  }
+| TLSBR expr_ls TRSBR
+  {
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+  }
+| TLSBR expr_ls TCOMMA TRSBR
+  {
+    $$ = Array::build(BUILDER, LOC(@$), context->consumeList($2)).release();
+  }
 | TLSBR assoc_expr_ls TRSBR
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = TODOEXPR(@$);
+  }
 | TLSBR assoc_expr_ls TCOMMA TRSBR
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = TODOEXPR(@$);
+  }
 
 ;
 
