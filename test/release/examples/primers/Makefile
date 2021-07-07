@@ -51,6 +51,16 @@ ifdef CRAY_LIBSCI_PREFIX_DIR
 	LAPACK_OPTS = -lgfortran -lsci_gnu
 endif
 
+#
+# Only make interopWithC and cClient if LLVM backend is set
+#
+CHPL_TARGET_COMPILER=$(shell $(CHPL_HOME)/util/chplenv/chpl_compiler.py --target)
+ifeq ($(CHPL_TARGET_COMPILER),llvm)
+	TARGETS += cClient
+	TARGETS += interopWithC
+endif
+
+
 REALS = $(TARGETS:%=%_real)
 
 default: all
@@ -68,5 +78,21 @@ FFTWlib: FFTWlib.chpl
 
 LAPACKlib: LAPACKlib.chpl
 	+$(CHPL) -o $@ $(LAPACK_OPTS) $<
+
+CCLIENT_OPTS = -Llib/ -linteropWithC `$CHPL_HOME/util/config/compileline --libraries`
+INTEROP_LIB_OPTS =  --library --library-makefile --savec ccode
+INTEROP_DEPS = interopWithC.chpl cHelper.h cHelper.c fact.h fact.c
+
+interopWithC: $(INTEROP_DEPS)
+	+$(CHPL) -o $@ $^
+
+
+lib/Makefile.interopWithC:
+	+$(CHPL) $(INTEROP_DEPS) $(INTEROP_LIB_OPTS)
+
+-include lib/Makefile.interopWithC
+
+cClient: cClient.test.c interopWithC.chpl
+	+$(CHPL_COMPILER) $(CHPL_CFLAGS) -o $@ $< $(CHPL_LDFLAGS)
 
 FORCE:

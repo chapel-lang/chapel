@@ -66,13 +66,13 @@ Data Parallelism
    Replicated Distribution <replicated>
    Forall Loops <forallLoops>
 
-Chapel As A Library
+Interoperability
 -------------------
 
 .. toctree::
    :maxdepth: 1
 
-   C interoperability <interopWithC>
+   Chapel<->C interoperability <interopWithC>
 
 Library Utilities
 -----------------
