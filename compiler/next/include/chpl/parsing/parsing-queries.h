@@ -110,8 +110,6 @@ namespace parsing {
   const ID& idToParentId(Context* context, ID id);
 
 
-  // TODO: noteError for an error attached to a particular AST node
-
 } // end namespace parsing
 } // end namespace chpl
 #endif
