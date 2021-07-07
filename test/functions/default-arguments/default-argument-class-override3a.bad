@@ -1,2 +1,2 @@
-default-argument-class-override3a.chpl:11: error: param default arguments in overriden classes  are not yet supported.
-default-argument-class-override3a.chpl:11: error: param default arguments in overriden classes  are not yet supported.
+default-argument-class-override3a.chpl:11: error: param default arguments in overridden methods are not yet supported.
+default-argument-class-override3a.chpl:11: error: param default arguments in overridden methods are not yet supported.

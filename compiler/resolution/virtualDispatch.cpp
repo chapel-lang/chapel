@@ -288,8 +288,8 @@ static void collectMethods(FnSymbol*               pfn,
           if (cfn->retTag == RET_PARAM ||
               cfn->retTag == RET_TYPE) {
             USR_FATAL_CONT(cfn,
-                           "param default arguments in overriden classes "
-                           " are not yet supported.");
+                           "param default arguments in overridden methods "
+                           "are not yet supported.");
           } else {
             methods.push_back(cfn);
           }
