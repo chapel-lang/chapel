@@ -33,6 +33,7 @@ namespace chpl {
 namespace uast {
 
 
+
 /**
   This is the base class for AST types.
 
@@ -255,6 +256,46 @@ class ASTNode {
     assert(false && "this code should never be run");
     return dummy;
   }
+  /**
+    Similar to dispatch but for visitors that return void.
+   */
+  template <typename Visitor>
+  void dispatchVoid(Visitor& v) const {
+
+    switch (this->tag()) {
+      #define CONVERT(NAME) \
+        case chpl::uast::asttags::NAME: \
+        { \
+          v.visit((const chpl::uast::NAME*) this); \
+          return; \
+        }
+
+      #define IGNORE(NAME) \
+        case chpl::uast::asttags::NAME: \
+        { \
+          assert(false && "this code should never be run"); \
+        }
+
+      #define AST_NODE(NAME) CONVERT(NAME)
+      #define AST_LEAF(NAME) CONVERT(NAME)
+      #define AST_BEGIN_SUBCLASSES(NAME) IGNORE(START_##NAME)
+      #define AST_END_SUBCLASSES(NAME) IGNORE(END_##NAME)
+
+      #include "chpl/uast/ASTClassesList.h"
+
+      IGNORE(NUM_AST_TAGS)
+
+      #undef AST_NODE
+      #undef AST_LEAF
+      #undef AST_BEGIN_SUBCLASSES
+      #undef AST_END_SUBCLASSES
+      #undef CONVERT
+      #undef IGNORE
+    }
+
+    assert(false && "this code should never be run");
+  }
+
 
   /**
      The traverse function supports calling a method according to the tag
