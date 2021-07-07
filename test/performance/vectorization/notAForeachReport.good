@@ -1,0 +1,12 @@
+notAForeachReport.chpl:1: In iterator 'myIter':
+notAForeachReport.chpl:2: warning: not a foreach loop, will not be vectorized
+2
+4
+6
+8
+10
+12
+14
+16
+18
+20
