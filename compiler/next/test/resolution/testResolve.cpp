@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Identifier.h"
