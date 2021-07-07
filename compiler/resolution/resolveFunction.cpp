@@ -857,7 +857,6 @@ static void markIterator(FnSymbol* fn) {
                               fn->hasFlag(FLAG_VECTORIZE_YIELDING_LOOPS) ||
                               markOrderIndep;
 
-  bool allYieldingLoopsJustYield = true;
   bool anyNotMarked = false;
 
   std::vector<CallExpr*> callExprs;
@@ -869,7 +868,6 @@ static void markIterator(FnSymbol* fn) {
       if (LoopStmt* loop = LoopStmt::findEnclosingLoop(call)) {
         if (loop->isCoforallLoop() == false) {
           bool justYield = isLoopBodyJustYield(loop);
-          allYieldingLoopsJustYield = allYieldingLoopsJustYield && justYield;
           if (justYield || markAllYieldingLoops) {
             loop->orderIndependentSet(true);
           } else if (loop->isOrderIndependent() == false) {
