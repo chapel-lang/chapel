@@ -18,7 +18,7 @@
  */
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 

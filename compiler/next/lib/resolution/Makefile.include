@@ -21,8 +21,8 @@ NEXT_RESOLUTION_OBJDIR = $(COMPILER_BUILD)/next/lib/resolution
 ALL_SRCS += next/lib/resolution/*.cpp
 
 NEXT_RESOLUTION_SRCS =                              \
-           resolution-queries.cpp                   \
-           resolution-types.cpp                     \
+           scope-queries.cpp                        \
+           scope-types.cpp                          \
 
 
 SRCS = $(NEXT_RESOLUTION_SRCS)

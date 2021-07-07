@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/resolution/resolution-types.h"
+#include "chpl/resolution/scope-types.h"
 
 namespace chpl {
 namespace resolution {

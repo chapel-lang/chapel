@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/scope-queries.h"
 
 #include "chpl/parsing/Parser.h"
 #include "chpl/queries/ErrorMessage.h"

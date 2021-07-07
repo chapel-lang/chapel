@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_RESOLUTION_RESOLUTION_TYPES_H
-#define CHPL_RESOLUTION_RESOLUTION_TYPES_H
+#ifndef CHPL_RESOLUTION_SCOPE_TYPES_H
+#define CHPL_RESOLUTION_SCOPE_TYPES_H
 
 #include "chpl/types/Type.h"
 #include "chpl/uast/ASTNode.h"
