@@ -3,7 +3,7 @@ import zmq
 
 context = zmq.Context()
 socket = context.socket(zmq.REQ)
-socket.connect("tcp://localhost:5555")
+socket.connect("tcp://localhost:5556")
 
 for request in range(10):
     message = "Hello %i from Python" % request
