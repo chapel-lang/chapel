@@ -97,10 +97,68 @@
 // Should be available in sys_xsi_strerror_r.c
 extern int sys_xsi_strerror_r(int errnum, char* buf, size_t buflen);
 
-void sys_init_sys_sockaddr(sys_sockaddr_t* addr)
+void sys_init_sys_sockaddr_t(sys_sockaddr_t* addr)
 {
   memset(addr, 0, sizeof(sys_sockaddr_t));
   addr->len = sizeof(sys_sockaddr_storage_t);
+}
+
+int sys_getsockaddr_family(sys_sockaddr_t* addr){
+  return addr->addr.ss_family;
+}
+
+int sys_set_sys_sockaddr_t(sys_sockaddr_t* addr, const char* host, u_int16_t port, int family)
+{
+  if(family == AF_INET){
+    struct sockaddr_in *addr_inet = (struct sockaddr_in *)&addr->addr;
+    addr_inet->sin_family = AF_INET;
+    addr_inet->sin_port = htons(port);
+    return inet_aton(host, &addr_inet->sin_addr);
+  }
+  else if(family == AF_INET6){
+    struct sockaddr_in6 *addr_inet6 = (struct sockaddr_in6 *)&addr->addr;
+    addr_inet6->sin6_family = AF_INET6;
+    addr_inet6->sin6_port = htons(port);
+    return inet_pton(AF_INET6, host, &addr_inet6->sin6_addr);
+  }
+
+  return 0;
+}
+
+void sys_set_sys_sockaddr_in_t(sys_sockaddr_t* addr, sys_in_addr_t host, u_int16_t port)
+{
+  struct sockaddr_in *addr_inet = (struct sockaddr_in *)&addr->addr;
+  addr_inet->sin_family = AF_INET;
+  addr_inet->sin_port = htons(port);
+  addr_inet->sin_addr.s_addr = htonl(host);
+}
+
+void sys_set_sys_sockaddr_in6_t(sys_sockaddr_t* addr, sys_in6_addr_t host, u_int16_t port)
+{
+  struct sockaddr_in6 *addr_inet6 = (struct sockaddr_in6 *)&addr->addr;
+  addr_inet6->sin6_family = AF_INET6;
+  addr_inet6->sin6_port = htons(port);
+  addr_inet6->sin6_addr = host;
+}
+
+int sys_host_sys_sockaddr_t(sys_sockaddr_t* addr, char* host, socklen_t hostlen, int* length){
+  err_t err_out = 0;
+
+  err_out = getnameinfo((struct sockaddr *)&addr->addr, addr->len, host, hostlen, NULL, 0, NI_NUMERICHOST);
+
+  *length = strlen(host);
+  return err_out;
+}
+
+int sys_port_sys_sockaddr_t(sys_sockaddr_t* addr, uint16_t* numericport){
+  err_t err_out = 0;
+
+  char port[NI_MAXSERV];
+  err_out = getnameinfo((struct sockaddr *)&addr->addr, addr->len, NULL, 0, port, sizeof(port), NI_NUMERICSERV);
+
+  *numericport = atoi(port);
+
+  return err_out;
 }
 
 // -------------------  system call wrappers -----------------------------

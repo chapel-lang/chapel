@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,7 @@
    This module is for low-level programming. It provides Chapel versions of
    many POSIX/Linux C library or system calls. For documentation on these
    system calls and constants, please see your system's manual pages.
-   
+
    Each of the functions in this file provides the same functionality
    as the corresponding function without the ``sys_`` prefix, except that
    the ``sys_`` versions all return an error code (of type :type:`~SysBasic.err_t`)
@@ -32,11 +32,11 @@
    argument.
 
    For example, you can find more about the ``mmap`` call with:
-   
+
    .. code-block:: sh
 
      man mmap
-     
+
    The call available here, :proc:`sys_mmap`, always returns an error
    code (or 0 for no error). The pointer value normally returned by ``mmap``
    will be returned through the final ``ret_out`` argument.
@@ -47,8 +47,9 @@ module Sys {
   use SysBasic;
   private use SysCTypes;
   private use CPtr;
+  private use SysError;
 
- 
+
   // CONSTANTS
 
   // note that if a constant is not defined in the C environment,
@@ -58,6 +59,11 @@ module Sys {
   // C code generation.
   // mferguson -- TODO -- is that still true? Even for LLVM?
 
+  // fcntl command flags
+  extern const F_GETFL:c_int;
+  extern const F_SETFL:c_int;
+  extern const F_GETFD:c_int;
+  extern const F_SETFD:c_int;
 
   // basic file flags
   extern const O_RDONLY:c_int;
@@ -148,10 +154,26 @@ module Sys {
   extern const SHUT_RDWR:c_int;
 
   // socket option 'levels'
+  extern const SOL_SOCKET:c_int;
   extern const IPPROTO_IP:c_int;
   extern const IPPROTO_IPV6:c_int;
   extern const IPPROTO_TCP:c_int;
   extern const IPPROTO_UDP:c_int;
+
+  // socket options
+  extern const SO_ACCEPTCONN:c_int;
+  extern const SO_BROADCAST:c_int;
+  extern const SO_DEBUG:c_int;
+  extern const SO_ERROR:c_int;
+  extern const SO_KEEPALIVE:c_int;
+  extern const SO_LINGER:c_int;
+  extern const SO_OOBINLINE:c_int;
+  extern const SO_RCVBUF:c_int;
+  extern const SO_RCVTIMEO:c_int;
+  extern const SO_REUSEADDR:c_int;
+  extern const SO_SNDBUF:c_int;
+  extern const SO_SNDTIMEO:c_int;
+  extern const SO_SECINFO:c_int;
 
   // IP socket options
   extern const IP_ADD_MEMBERSHIP:c_int;
@@ -208,21 +230,151 @@ module Sys {
   extern const TCP_SYNCNT:c_int;
   extern const TCP_WINDOW_CLAMP:c_int;
 
+  // socket address sizes
+  extern const INET_ADDRSTRLEN:c_int;
+  extern const INET6_ADDRSTRLEN:c_int;
+  extern const NI_MAXHOST:c_int;
+  extern const NI_MAXSERV:c_int;
+
+  // standard ipv4 addresses
+  extern const INADDR_ANY:sys_in_addr_t;
+  extern const INADDR_BROADCAST:sys_in_addr_t;
+  extern const INADDR_LOOPBACK:sys_in_addr_t;
+
+  // standard ipv6 addresses
+  extern const in6addr_any:sys_in6_addr_t;
+  extern const in6addr_loopback:sys_in6_addr_t;
+
   // UDP socket options
   //extern const UDP_CORK:c_int;
 
 
   /* SOCKET STRUCTURE TYPES */
 
+  extern type sys_in_addr_t;
+  extern type sys_in6_addr_t;
+
   extern type sys_sockaddr_storage_t;
   extern record sys_sockaddr_t {
     var addr:sys_sockaddr_storage_t;
     var len:socklen_t;
+
     proc init() {
       this.complete();
       sys_init_sys_sockaddr_t(this);
     }
+
+    /*
+    Initialize sys_sockaddr_t with provided `family`, `host` and
+    `port`. `host` should be provided in standard notation as per
+    family. Note : `host` isn't resolved using DNS Lookup.
+
+    :arg host: hostname address in ipv4 or ipv6 string notation
+    :type host: `string`
+
+    :arg port: port number
+    :type port: `c_uint`
+
+    :arg family: domain of socket
+    :type family: `c_int`
+
+    :throws IllegalArgumentError: Upon failure to provide a compatible
+                                  `host` and `family`.
+    */
+    pragma "no doc"
+    proc set(host: c_string, port: c_uint, family: c_int) throws {
+      var err_out = sys_set_sys_sockaddr_t(this, host, port, family);
+      if err_out != 1 {
+        throw new IllegalArgumentError("Incompatible Address and Family");
+      }
+    }
+
+    /*
+    Initialize sys_sockaddr_t with provided `host` and
+    `port`. `host` should be one of the standard ipv4
+    addresses. family for socket address is assumed to be
+    `AF_INET` based on `host` address being ipv4.
+
+    :arg host: standard hostname address ipv6
+    :type host: `sys_in_addr_t`
+
+    :arg port: port number
+    :type port: `c_uint`
+    */
+    pragma "no doc"
+    proc set(host: sys_in_addr_t, port: c_uint) {
+      sys_set_sys_sockaddr_in_t(this, host, port);
+    }
+
+    /*
+    Initialize sys_sockaddr_t with provided `host` and
+    `port`. `host` should be one of the standard ipv6
+    addresses. family for socket address is assumed to be
+    `AF_INET6` based on `host` address being ipv6.
+
+    :arg host: standard hostname address ipv6
+    :type host: `sys_in6_addr_t`
+
+    :arg port: port number
+    :type port: `c_uint`
+    */
+    pragma "no doc"
+    proc set(host: sys_in6_addr_t, port: c_uint) {
+      sys_set_sys_sockaddr_in6_t(this, host, port);
+    }
+
+    /*
+    Returns the `host` address stored in record.
+
+    :return: Returns numeric host string.
+    :rtype: `string`
+
+    :throws Error: If record was uninitialized and has no information
+                   about `host` or `port`.
+    */
+    pragma "no doc"
+    proc numericHost() throws {
+
+      var buffer = c_calloc(c_char, NI_MAXHOST);
+      var length:c_int;
+
+      var err_out = sys_host_sys_sockaddr_t(this, buffer, NI_MAXHOST, length);
+      if err_out != 0 {
+        throw SystemError.fromSyserr(err_out);
+      }
+
+      return createStringWithOwnedBuffer(buffer, length, NI_MAXHOST);
+    }
+
+    /*
+    Returns the `port` stored in record.
+
+    :return: Returns numeric port.
+    :rtype: `c_uint`
+
+    :throws Error: If record was uninitialized and has no information
+                   about `host` or `port`.
+    */
+    pragma "no doc"
+    proc port() throws {
+      var port:c_uint;
+
+      var err_out = sys_port_sys_sockaddr_t(this, port);
+      if err_out != 0 {
+        throw SystemError.fromSyserr(err_out);
+      }
+
+      return port;
+    }
   }
+
+  /*
+    Returns socket family.
+
+    :returns: a socket family
+    :rtype: `c_int`
+  */
+  proc sys_sockaddr_t.family:c_int { return sys_getsockaddr_family(this); }
 
   extern record sys_addrinfo_t {
     var ai_flags: c_int;
@@ -242,13 +394,19 @@ module Sys {
   // proc sys_addrinfo_ptr_t.canonname:c_string { return sys_getaddrinfo_canonname(this); }
   proc sys_addrinfo_ptr_t.next:sys_addrinfo_ptr_t { return sys_getaddrinfo_next(this); }
 
-  extern proc sys_init_sys_sockaddr(ref addr:sys_sockaddr_t);
+  extern proc sys_init_sys_sockaddr_t(ref addr:sys_sockaddr_t);
+  extern proc sys_getsockaddr_family(ref addr: sys_sockaddr_t):c_int;
+  extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: c_uint, family: c_int):c_int;
+  extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:c_uint):c_int;
+  extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint):c_int;
+  extern proc sys_host_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
+  extern proc sys_port_sys_sockaddr_t(ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
   extern proc sys_strerror(error:err_t, ref string_out:c_string):err_t;
 
   extern proc sys_readlink(path:c_string, ref string_out:c_string):err_t;
 
   /*Check whether or not the environment variable ``name`` is defined.
-    If ``name`` is defined then return 1 and update ``string_out`` 
+    If ``name`` is defined then return 1 and update ``string_out``
     to store the value of the environment variable
     otherwise the function returns 0.
 
@@ -257,7 +415,7 @@ module Sys {
 
     :arg string_out: store the value of ``name`` environment variable if defined
     :type string_out: `c_string`
-    
+
     :returns: 1 if ``name`` is defined and 0 if not
     :rtype: `c_int`
    */
@@ -269,7 +427,7 @@ module Sys {
   extern proc sys_munmap(addr:c_void_ptr, length:size_t):err_t;
 
   // readv, writev, preadv, pwritev -- can't (yet) pass array.
-  
+
   extern proc sys_fcntl(fd:fd_t, cmd:c_int, ref ret_out:c_int):err_t;
   extern proc sys_fcntl_long(fd:fd_t, cmd:c_int, arg:c_long, ref ret_out:c_int):err_t;
   extern proc sys_fcntl_ptr(fd:fd_t, cmd:c_int, arg:c_void_ptr, ref ret_out:c_int):err_t;
@@ -317,4 +475,3 @@ module Sys {
 
   // recv, recvfrom, recvmsg, send, sendto, sendmsg are in io
 }
-
