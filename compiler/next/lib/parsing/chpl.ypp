@@ -1163,26 +1163,39 @@ use_stmt:
 
 import_stmt:
   access_control TIMPORT import_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-      context->visibility = Decl::DEFAULT_VISIBILITY;
-    }
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Import::build(BUILDER, LOC(@$), $1, context->consumeList($3));
+    CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+    $$ = context->finishStmt(cs);
+  }
 ;
 
 import_expr:
   expr
-    { $$ = TODOEXPR(@$); }
+  {
+    auto node = VisibilityClause::build(BUILDER, LOC(@$), toOwned($1));
+    $$ = node.release();
+  }
 | expr TAS ident_use
-    { $$ = TODOEXPR(@$); }
+  {
+    auto ident = toOwned(context->buildIdent(@3, $3));
+    auto as = context->buildAsExpr(@1, @3, toOwned($1), std::move(ident));
+    auto node = VisibilityClause::build(BUILDER, LOC(@$), toOwned(as));
+    $$ = node.release();
+  }
 | expr TDOT TLCBR renames_ls TRCBR
-    { $$ = TODOEXPR(@$); }
+  {
+    auto node = VisibilityClause::build(BUILDER, LOC(@$), toOwned($1),
+                                        VisibilityClause::BRACES,
+                                        context->consumeList($4));
+    $$ = node.release();
+  }
 ;
 
 import_ls:
-  import_expr
-    { $$ = context->makeList($1); }
-| import_ls TCOMMA import_expr
-    { context->appendList($1, $3); }
+  import_expr                   { $$ = context->makeList($1); }
+| import_ls TCOMMA import_expr  { $$ = context->appendList($1, $3); }
 ;
 
 require_stmt:

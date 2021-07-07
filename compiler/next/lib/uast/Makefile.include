@@ -57,6 +57,7 @@ NEXT_UAST_SRCS =                                 \
   Function.cpp \
   Identifier.cpp \
   ImagLiteral.cpp \
+  Import.cpp \
   IndexableLoop.cpp \
   IntLiteral.cpp \
   Label.cpp \

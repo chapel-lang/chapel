@@ -49,6 +49,7 @@
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/ImagLiteral.h"
+#include "chpl/uast/Import.h"
 #include "chpl/uast/IntLiteral.h"
 #include "chpl/uast/Label.h"
 #include "chpl/uast/Literal.h"

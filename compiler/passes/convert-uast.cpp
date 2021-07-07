@@ -131,6 +131,11 @@ struct Converter {
     return nullptr;
   }
 
+  BlockStmt* visit(const uast::Import* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
   CallExpr* visit(const uast::New* node) {
     Expr* newedType = convertAST(node->typeExpression());
     CallExpr* typeCall = new CallExpr(newedType);

@@ -69,7 +69,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Label)                      //
   //AST_NODE(ExternBlock)              // old AST: ExternBlockStmt
   //AST_NODE(Implements)               // old AST: ImplementsStmt
-  //AST_NODE(Import)                   // old AST: ImportStmt
+  AST_NODE(Import)                     // old AST: ImportStmt
   AST_NODE(New)                        //
   //AST_NODE(Require)                  //
   AST_NODE(Return)                     //
