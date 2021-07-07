@@ -44,13 +44,13 @@ proc Launcher(exec: string) {
 proc Master() {
   var context: Context;
   var socket = context.socket(ZMQ.PUSH);
-  socket.bind("tcp://*:5555");
+  socket.bind("tcp://*:5556");
   socket.send(to);
 }
 
 proc Worker() {
   var context: Context;
   var socket = context.socket(ZMQ.PULL);
-  socket.connect("tcp://localhost:5555");
+  socket.connect("tcp://localhost:5556");
   writeln("Hello, ", socket.recv(string));
 }

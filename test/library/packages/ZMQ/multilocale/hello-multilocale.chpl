@@ -5,7 +5,7 @@ proc Master() {
   on Locales[(here.id+1) % numLocales] {
     var socket = context.socket(ZMQ.PUSH);
     on Locales[(here.id+1) % numLocales] {
-      socket.bind("tcp://*:5555");
+      socket.bind("tcp://*:5556");
       on Locales[(here.id+1) % numLocales] {
         writeln("Master socket lives on locale ", socket.classRef.home.id);
         var msg = "I'm locale %i".format(here.id);
@@ -20,7 +20,7 @@ proc Worker() {
   on Locales[(here.id+numLocales-1) % numLocales] {
     var socket = context.socket(ZMQ.PULL);
     on Locales[(here.id+numLocales-1) % numLocales] {
-      socket.connect("tcp://localhost:5555");
+      socket.connect("tcp://localhost:5556");
       on Locales[(here.id+numLocales-1) % numLocales] {
         writeln("Worker socket lives on locale ", socket.classRef.home.id);
         var msg = socket.recv(string);
