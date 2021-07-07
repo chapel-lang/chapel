@@ -1,0 +1,2 @@
+InvokeIters.chpl:23: note: loop vectorization (with parallel access) hinted for DoWhileStmt
+InvokeIters.chpl:31: note: loop vectorization (with parallel access) hinted for CForLoop
