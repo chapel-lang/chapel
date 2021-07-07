@@ -34,6 +34,7 @@ using namespace parsing;
 using namespace resolution;
 using namespace uast;
 
+/*
 static void printAllScopes(Context* context, const ASTNode* ast) {
   // ignore comments
   if (ast->id().isEmpty())
@@ -55,27 +56,47 @@ static void printAllScopes(Context* context, const ASTNode* ast) {
         scope->parentScope->id.toString().c_str());
   for (const auto& pair : scope->declared) {
     printf("  declarations with name %s:\n", pair.first.c_str());
-    const owned<std::vector<ID>>& vec = pair.second;
-    for (const auto& id : *vec.get()) {
-      printf("    %s\n", id.toString().c_str());
+    const OwnedIdsWithName& ids = pair.second;
+    if (ids.moreIds.get() != nullptr) {
+      for (const auto& id : *ids.moreIds.get()) {
+        printf("    %s\n", id.toString().c_str());
+      }
+    } else {
+      printf("    %s\n", ids.id.toString().c_str());
     }
   }
-  for (const auto* elt : scope->usesAndImports) {
-    printf("  use/import %s\n",
-           elt->id().toString().c_str());
+  if (scope->containsUseImport) {
+    printf("  contains use/import\n");
   }
   printf("\n");
 
+  for (const ASTNode* child : ast->children()) {
+    printAllScopes(context, child);
+  }
+}
+*/
+
+static void findInnermostDecls(Context* context, const ASTNode* ast) {
   if (auto ident = ast->toIdentifier()) {
-    ID decl = findInnermostDecl(context, scope, ident->name());
-    printf("%s %s refers to %s\n",
+    printf("%s %s refers to: ",
            ident->id().toString().c_str(),
-           ident->name().c_str(),
-           decl.toString().c_str());
+           ident->name().c_str());
+
+    const Scope* scope = scopeForId(context, ast->id());
+    assert(scope != nullptr);
+
+    const auto& pair = findInnermostDecl(context, scope, ident->name());
+    if (pair.second == 0) {
+      printf("no such name found\n");
+    } else if (pair.second == 1) {
+      printf("%s\n", pair.first.toString().c_str());
+    } else {
+      printf("ambiguity\n");
+    }
   }
 
   for (const ASTNode* child : ast->children()) {
-    printAllScopes(context, child);
+    findInnermostDecls(context, child);
   }
 }
 
@@ -100,7 +121,11 @@ int main(int argc, char** argv) {
         ASTNode::dump(mod);
         printf("\n");
 
-        printAllScopes(ctx, mod);
+        //printAllScopes(ctx, mod);
+        //printf("\n");
+
+        findInnermostDecls(ctx, mod);
+        printf("\n");
       }
 
       /*

@@ -271,23 +271,26 @@ ID parentExprForScopingSymbol(Context* context, ID id) {
 }
 */
 
-struct GatherDeclsAndUses {
+struct GatherDecls {
   DeclMap declared;
-  UsesAndImportsVec usesAndImports;
+  bool containsUseImport = false;
 
-  GatherDeclsAndUses() { }
+  GatherDecls() { }
 
   // Add NamedDecls to the map
   bool enter(const NamedDecl* d) {
     UniqueString name = d->name();
     auto search = declared.find(name);
-    if (search == declared.end())
-      search = declared.insert(search,
-                               std::make_pair(name,
-                                              toOwned(new std::vector<ID>)));
-
-    assert(search->second.get() != nullptr);
-    search->second->push_back(d->id());
+    if (search == declared.end()) {
+      // add a new entry containing just the one ID
+      declared.emplace_hint(search,
+                            name,
+                            OwnedIdsWithName(d->id()));
+    } else {
+      // found an entry, so add to it
+      OwnedIdsWithName& val = search->second;
+      val.appendId(d->id());
+    }
     return false;
   }
   void exit(const NamedDecl* d) { }
@@ -302,7 +305,7 @@ struct GatherDeclsAndUses {
   void exit(const MultiDecl* d) { }
   // make note of use/import
   bool enter(const Use* d) {
-    usesAndImports.push_back(d);
+    containsUseImport = true;
     return false;
   }
   void exit(const Use* d) { }
@@ -313,10 +316,10 @@ struct GatherDeclsAndUses {
   void exit(const ASTNode* ast) { }
 };
 
-static void gatherDeclsAndUsesWithin(const uast::ASTNode* ast,
-                                     DeclMap& declared,
-                                     UsesAndImportsVec& usesAndImports) {
-  GatherDeclsAndUses visitor;
+static void gatherDeclsWithin(const uast::ASTNode* ast,
+                              DeclMap& declared,
+                              bool& containsUseImport) {
+  GatherDecls visitor;
 
   // Visit child nodes to e.g. look inside a Function
   // rather than collecting it as a NamedDecl
@@ -326,7 +329,7 @@ static void gatherDeclsAndUsesWithin(const uast::ASTNode* ast,
   }
 
   declared.swap(visitor.declared);
-  usesAndImports.swap(visitor.usesAndImports);
+  containsUseImport = visitor.containsUseImport;
 }
 
 static bool createsScope(asttags::ASTTag tag) {
@@ -360,7 +363,7 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
       result->parentScope = scopeForIdQuery(context, parentId);
       result->tag = ast->tag();
       result->id = id;
-      gatherDeclsAndUsesWithin(ast, result->declared, result->usesAndImports);
+      gatherDeclsWithin(ast, result->declared, result->containsUseImport);
     }
   }
   return QUERY_END(toOwned(result));
@@ -388,11 +391,11 @@ static const Scope* const& scopeForIdQuery(Context* context, ID id) {
         newScope = true;
       } else {
         DeclMap declared;
-        UsesAndImportsVec usesAndImports;
-        gatherDeclsAndUsesWithin(ast, declared, usesAndImports);
+        bool containsUseImport = false;
+        gatherDeclsWithin(ast, declared, containsUseImport);
 
         // create a new scope if we found any decls/uses immediately in it
-        newScope = !(declared.empty() && usesAndImports.empty());
+        newScope = !(declared.empty() && containsUseImport == false);
       }
     }
 
@@ -414,47 +417,344 @@ const Scope* scopeForId(Context* context, ID id) {
   return scopeForIdQuery(context, id);
 }
 
-static bool lookupInnermost(Context* context,
+enum UseImportOther {
+  UIO_USE,    // the expr is the thing being use'd e.g. use A.B
+  UIO_IMPORT, // the expr is the thing being imported e.g. import C.D
+  UIO_OTHER   // the expr is something else
+};
+
+// Returns true if something was found and stores it in result.
+static bool doLookupInScope(Context* context,
                             const Scope* scope,
                             UniqueString name,
-                            ID& result) {
+                            UseImportOther inUseEtc,
+                            std::unordered_set<const Scope*>& checkedScopes,
+                            BorrowedIdsWithName& result);
+static const ResolvedImportScope* partiallyResolvedImports(Context* context,
+                                                           const Scope* scope);
+
+static bool doLookupInScopeDecls(Context* context,
+                                 const Scope* scope,
+                                 UniqueString name,
+                                 BorrowedIdsWithName& result) {
+  auto search = scope->declared.find(name);
+  if (search != scope->declared.end()) {
+    result = BorrowedIdsWithName(search->second);
+    return true;
+  }
+  return false;
+}
+
+static bool doLookupInImports(Context* context,
+                              const Scope* scope,
+                              UniqueString name,
+                              std::unordered_set<const Scope*>& checkedScopes,
+                              BorrowedIdsWithName& result) {
+  // Look in the (potentially partial) imported symbol data
+  const ResolvedImportScope* r = nullptr;
+  if (scope->containsUseImport) {
+    r = partiallyResolvedImports(context, scope);
+    assert(r);
+  }
+
+  if (r != nullptr) {
+    // check to see if it's mentioned in names/renames
+    for (const ImportedSymbols& is: r->imported) {
+      UniqueString from = name;
+      bool named = false;
+      for (const auto& p : is.names) {
+        if (p.second == name) {
+          from = p.first;
+          named = true;
+          break;
+        }
+      }
+      if (named && is.kind == ImportedSymbols::SYMBOL_ONLY) {
+        result = BorrowedIdsWithName(is.symbolId);
+        return true;
+      } else if (named && is.kind == ImportedSymbols::CONTENTS_EXCEPT) {
+        // mentioned in an except clause, so don't return it
+      } else if (named || is.kind == ImportedSymbols::ALL_CONTENTS) {
+        // find it in the contents
+        const Scope* symScope = scopeForId(context, is.symbolId);
+        // this symbol should be a module/enum etc which has a scope
+        assert(symScope->id == is.symbolId);
+        // find it in that scope
+        bool found = doLookupInScope(context, symScope, name, UIO_OTHER,
+                                     checkedScopes, result);
+        if (found)
+          return true;
+      }
+    }
+  }
+  return false;
+}
+static bool doLookupInToplevelModules(Context* context,
+                                      const Scope* scope,
+                                      UniqueString name,
+                                      BorrowedIdsWithName& result) {
+  const Module* mod = parsing::getToplevelModule(context, name);
+  if (mod == nullptr)
+    return false;
+
+  result = BorrowedIdsWithName(mod->id());
+  return true;
+}
+
+static bool doLookupInScope(Context* context,
+                            const Scope* scope,
+                            UniqueString name,
+                            UseImportOther inUseEtc,
+                            std::unordered_set<const Scope*>& checkedScopes,
+                            BorrowedIdsWithName& result) {
+
+  // TODO: module name itself
+  // TODO: import has different rules for submodules
+
+  auto pair = checkedScopes.insert(scope);
+  if (pair.second == false) {
+    // scope has already been visited by this function,
+    // so don't try it again.
+    return false;
+  }
+
+  if (inUseEtc != UIO_IMPORT &&
+      doLookupInScopeDecls(context, scope, name, result)) {
+    return true;
+  }
+
+  if (doLookupInImports(context, scope, name, checkedScopes, result)) {
+    return true;
+  }
+
+  if (inUseEtc == UIO_USE &&
+      doLookupInToplevelModules(context, scope, name, result)) {
+    return true;
+  }
+
+  return false;
+}
+
+static bool lookupInScope(Context* context,
+                          const Scope* scope,
+                          UniqueString name,
+                          UseImportOther inUseEtc,
+                          BorrowedIdsWithName& result) {
+  std::unordered_set<const Scope*> checkedScopes;
+  return doLookupInScope(context, scope, name, inUseEtc, checkedScopes, result);
+}
+
+/*
+static bool lookupExprInScope(Context* context,
+                              const Scope* scope,
+                              const Expression* expr,
+                              UseImportOther inUseEtc,
+                              BorrowedIdsWithName& result) {
+  if (auto ident = expr->toIdentifier()) {
+    return lookupInScope(context, scope, ident->name(), inUseEtc, result);
+  }
+  if (expr->isDot()) {
+    assert(false && "TODO");
+  }
+  assert(false && "Case not handled");
+  return false;
+}*/
+
+
+struct ImportsResolver {
+  Context* context = nullptr;
+  const Scope* scope = nullptr;
+  ResolvedImportScope* resolvedImports = nullptr;
+  std::vector<ErrorMessage> errors;
+
+  ImportsResolver(Context* context,
+                  const Scope* scope,
+                  ResolvedImportScope* resolvedImports)
+    : context(context), scope(scope), resolvedImports(resolvedImports)
+  { }
+
+  std::vector<std::pair<UniqueString,UniqueString>>
+  convertOneName(UniqueString name) {
+    std::vector<std::pair<UniqueString,UniqueString>> ret;
+    ret.push_back(std::make_pair(name, name));
+    return ret;
+  }
+
+  std::vector<std::pair<UniqueString,UniqueString>>
+  convertLimitations(const UseClause* clause) {
+    std::vector<std::pair<UniqueString,UniqueString>> ret;
+    for (const Expression* e : clause->limitations()) {
+      if (auto ident = e->toIdentifier()) {
+        UniqueString name = ident->name();
+        ret.push_back(std::make_pair(name, name));
+      } else if (auto as = e->toAs()) {
+        UniqueString name;
+        UniqueString rename;
+        if (auto symId = as->symbol()->toIdentifier()) {
+          name = symId->name();
+        } else {
+          assert(false && "TODO");
+        }
+        rename = as->rename()->name();
+        ret.push_back(std::make_pair(name, rename));
+      }
+    }
+    return ret;
+  }
+
+  // make note of use/import
+  bool enter(const Use* use) {
+    bool isPrivate = true;
+    if (use->visibility() == Decl::PUBLIC)
+      isPrivate = false;
+
+    for (auto clause : use->useClauses()) {
+      // First, add the entry for the symbol itself
+      const Expression* sym = clause->symbol();
+
+      if (!sym->isIdentifier()) {
+        assert(false && "TODO");
+        //as->symbol();
+        //as->rename()->name();
+      }
+      auto id = sym->toIdentifier();
+      auto name = id->name();
+
+      BorrowedIdsWithName r;
+      bool foundSym = lookupInScope(context, scope, name, UIO_USE, r);
+      if (foundSym == false) {
+        errors.push_back(
+              ErrorMessage::build(parsing::locateAst(context, use),
+                                  "undeclared identifier %s",
+                                  id->name().c_str()));
+      } else {
+        if (r.moreIds != nullptr) {
+          errors.push_back(
+              ErrorMessage::build(parsing::locateAst(context, use),
+                                  "ambiguity in resolving %s",
+                                  id->name().c_str()));
+        }
+        resolvedImports->imported.push_back(
+            ImportedSymbols(r.id, ImportedSymbols::SYMBOL_ONLY,
+                            isPrivate, convertOneName(name)));
+
+        // Then, add the entries for anything imported
+        ImportedSymbols::Kind kind = ImportedSymbols::ALL_CONTENTS;
+        switch (clause->limitationClauseKind()) {
+          case UseClause::EXCEPT:
+            kind = ImportedSymbols::CONTENTS_EXCEPT;
+            break;
+          case UseClause::ONLY:
+            kind = ImportedSymbols::ONLY_CONTENTS;
+            break;
+          case UseClause::NONE:
+            kind = ImportedSymbols::ALL_CONTENTS;
+            break;
+        }
+        resolvedImports->imported.push_back(
+            ImportedSymbols(r.id, kind, isPrivate,
+                            convertLimitations(clause)));
+      }
+    }
+    return false;
+  }
+  void exit(const Use* d) { }
+  // ignore other AST nodes
+  bool enter(const ASTNode* ast) {
+    return false;
+  }
+  void exit(const ASTNode* ast) { }
+};
+
+
+static
+const owned<ResolvedImportScope>& resolveImportsQuery(Context* context,
+                                                      const Scope* scope)
+{
+  QUERY_BEGIN(resolveImportsQuery, context, scope);
+
+  //printf("Running resolveImportsQuery for %s\n",
+  //       scope->id.toString().c_str());
+
+  owned<ResolvedImportScope>& partialResult = QUERY_CURRENT_RESULT;
+
+  partialResult = toOwned(new ResolvedImportScope(scope));
+
+  // Walk through the use/imports statements in this scope.
+  ImportsResolver visitor(context, scope, partialResult.get());
+
+  const ASTNode* ast = parsing::idToAst(context, scope->id);
+  assert(ast != nullptr);
+  if (ast != nullptr) {
+    // Visit child nodes to e.g. look inside a Module
+    // rather than collecting it as a NamedDecl
+    for (const ASTNode* child : ast->children()) {
+      child->traverse(visitor);
+    }
+  }
+
+  // Save any errors noted
+  for (auto& err : visitor.errors) {
+    QUERY_ERROR(std::move(err));
+  }
+
+  // take the value out of the partial result in order to return it
+  return QUERY_END(std::move(partialResult));
+}
+
+const ResolvedImportScope* resolveImports(Context* context,
+                                          const Scope* scope) {
+  if (scope->containsUseImport) {
+    const owned<ResolvedImportScope>& r = resolveImportsQuery(context, scope);
+    return r.get();
+  }
+
+  return nullptr;
+}
+
+static const ResolvedImportScope* partiallyResolvedImports(Context* context,
+                                                           const Scope* scope) {
+
+  // check for a partial result from a running query
+  const owned<ResolvedImportScope>* r =
+    QUERY_RUNNING_PARTIAL_RESULT(resolveImportsQuery, context, scope);
+  // if there was a partial result, return it
+  if (r != nullptr) {
+    const ResolvedImportScope* ptr = r->get();
+    assert(ptr);
+    return ptr;
+  }
+
+  // otherwise, run the query to compute the full result
+  return resolveImports(context, scope);
+}
+
+// returns a pair of first ID and an int indicating
+//   0 -- no such name found
+//   1 -- exactly one innermost such name is found
+//   2 -- ambiguity
+const std::pair<ID, int>& findInnermostDecl(Context* context,
+                                            const Scope* scope,
+                                            UniqueString name)
+{
+  QUERY_BEGIN(findInnermostDecl, context, scope, name);
+
+  ID id;
+  int count = 0;
 
   // Walk up the Scopes until we find something naming it
   // Return the ID of the first matching declaration.
   for (const Scope* cur = scope; cur != nullptr; cur = cur->parentScope) {
-    auto search = cur->declared.find(name);
-    if (search != cur->declared.end()) {
-      const owned<std::vector<ID>>& vec = search->second;
-      if (vec.get() != nullptr && vec->size() > 0) {
-        result = (*vec.get())[0];
-        return true;
-      }
-    }
-    for (const auto* elt : cur->usesAndImports) {
-      if (const Use* use = elt->toUse()) {
-        // TODO: do something with visibility
-        for (const UseClause* clause : use->useClauses()) {
-          if (const Identifier* ident = clause->symbol()->toIdentifier()) {
-            UniqueString modName = ident->name();
-            // TODO: handle looking up the module name
-            const Module* mod = parsing::getToplevelModule(context, modName);
-            if (mod == nullptr) {
-              assert(false && "TODO ERROR");
-            } else {
-              // check the scopes of this use statement.
-              printf("Looking up in sym %s in mod %s\n",
-                     name.c_str(), mod->id().toString().c_str());
-              const Scope* modScope = scopeForModule(context, mod->id());
-              bool found = lookupInnermost(context, modScope, name, result);
-              if (found) {
-                return true;
-              }
-            }
-          } else {
-            assert(false && "TODO");
-          }
-        }
-      }
+    BorrowedIdsWithName r;
+    bool found = lookupInScope(context, cur, name, UIO_OTHER, r);
+    if (found) {
+      if (r.moreIds != nullptr)
+        count = 2;
+      else
+        count = 1;
+
+      id = r.id;
+      break;
     }
 
     // stop if we reach a Module scope
@@ -462,20 +762,7 @@ static bool lookupInnermost(Context* context,
       break;
   }
 
-  return false;
-}
-
-const ID& findInnermostDecl(Context* context,
-                            const Scope* scope,
-                            UniqueString name)
-{
-  QUERY_BEGIN(findInnermostDecl, context, scope, name);
-
-  ID result;
-
-  lookupInnermost(context, scope, name, result);
-
-  return QUERY_END(result);
+  return QUERY_END(std::make_pair(std::move(id), count));
 }
 
 

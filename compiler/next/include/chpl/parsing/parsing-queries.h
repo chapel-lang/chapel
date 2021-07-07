@@ -94,7 +94,8 @@ namespace parsing {
   const ModuleVec& parse(Context* context, UniqueString path);
 
   /**
-   This query parses a toplevel module by name
+   This query parses a toplevel module by name. Returns nullptr
+   if no such toplevel module can be found.
    */
   const uast::Module* getToplevelModule(Context* context, UniqueString name);
 
@@ -108,6 +109,8 @@ namespace parsing {
    */
   const ID& idToParentId(Context* context, ID id);
 
+
+  // TODO: noteError for an error attached to a particular AST node
 
 } // end namespace parsing
 } // end namespace chpl

@@ -173,10 +173,6 @@ static const Module* const& getToplevelModuleQuery(Context* context,
 
   if (context->hasFilePathForId(searchId)) {
     auto path = context->filePathForId(searchId);
-
-    // TODO: maybe have a way to query if the context already
-    // has a file path for this ID?
-
     // rule out empty path and also "<unknown file path>"
     if (path.isEmpty() == false &&
         path.c_str()[0] != '<') {

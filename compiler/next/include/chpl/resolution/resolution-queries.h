@@ -56,6 +56,7 @@ namespace resolution {
   /**
     Returns the Scope for an ID.
     It does this by finding the parent ID and then computing the Scope.
+    Things that don't have a scope?
    */
   const Scope* scopeForId(Context* context, ID id);
 
@@ -66,12 +67,21 @@ namespace resolution {
   const Scope* scopeForModule(Context* context, ID moduleId);
 
   /**
+    Given a Scope, compute the resolved imports
+    by processing the use/import statements in order.
+
+    If the scope didn't have use/imports, returns nullptr.
+   */
+  const ResolvedImportScope* resolveImports(Context* context,
+                                            const Scope* scope);
+
+  /**
     Given a name and a Scope, return the innermost and first ID
     for a definition of that name.
    */
-  const ID& findInnermostDecl(Context* context,
-                              const Scope* scope,
-                              UniqueString name);
+  const std::pair<ID, int>& findInnermostDecl(Context* context,
+                                              const Scope* scope,
+                                              UniqueString name);
 
   /**
     Returns the parent Scope for an expression. The parent Scope contains

@@ -250,6 +250,19 @@ static inline bool defaultUpdateOwned(owned<T>& keep, owned<T>& addin) {
     return true;
   }
 }
+template<typename A, typename B>
+static inline bool defaultUpdatePair(std::pair<A,B>& keep,
+                                     std::pair<A,B>& addin)
+{
+  chpl::update<A> aCombiner;
+  chpl::update<B> bCombiner;
+
+  bool anyUpdated = false;
+  anyUpdated |= aCombiner(keep.first, addin.first);
+  anyUpdated |= bCombiner(keep.second, addin.second);
+  return anyUpdated;
+}
+
 template<> struct update<std::string> {
   bool operator()(std::string& keep, std::string& addin) const {
     return defaultUpdate(keep, addin);
@@ -286,7 +299,12 @@ template<typename K, typename V> struct update<std::unordered_map<K,V>> {
     return defaultUpdate(keep, addin);
   }
 };
-
+template<typename A, typename B> struct update<std::pair<A,B>> {
+  bool operator()(std::pair<A,B>& keep,
+                  std::pair<A,B>& addin) const {
+    return defaultUpdatePair(keep, addin);
+  }
+};
 
 template<typename T> struct mark {
   void operator()(Context* context, const T& keep) const { }
