@@ -1,7 +1,7 @@
 module iters {
   iter myiter(nn: int, nt: int) {
-    for i in 0..#nt {
-      for j in i*nn..#nn {
+    foreach i in 0..#nt {
+      foreach j in i*nn..#nn {
         yield j;
       }
     }
@@ -22,7 +22,7 @@ module iters {
   }
 
   iter myiter(nn:int, nt: int, followThis, param tag: iterKind) where tag == iterKind.follower {
-    for i in followThis {
+    foreach i in followThis {
       yield i;
     }
   }

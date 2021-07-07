@@ -1,7 +1,7 @@
 module iters {
   iter myiter(nn: int, nt: int) {
-    for i in 0..#nt {
-      for j in i*nn..#nn {
+    foreach i in 0..#nt {
+      foreach j in i*nn..#nn {
         yield j;
       }
     }
