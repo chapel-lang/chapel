@@ -20,9 +20,11 @@
 #ifndef CHPL_UAST_BUILDER_H
 #define CHPL_UAST_BUILDER_H
 
-#include "chpl/uast/ASTNode.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/UniqueString.h"
+#include "chpl/queries/mark-functions.h"
+#include "chpl/queries/update-functions.h"
+#include "chpl/uast/ASTNode.h"
 
 #include <vector>
 #include <unordered_map>

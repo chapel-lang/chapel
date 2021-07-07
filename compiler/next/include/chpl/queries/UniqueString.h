@@ -26,6 +26,8 @@
 #define CHPL_QUERIES_UNIQUE_STRING_H
 
 #include "chpl/queries/UniqueString-detail.h"
+#include "chpl/queries/mark-functions.h"
+#include "chpl/queries/update-functions.h"
 #include "chpl/util/hash.h"
 
 #include <cassert>

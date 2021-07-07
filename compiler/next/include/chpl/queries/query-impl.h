@@ -20,8 +20,10 @@
 #ifndef CHPL_QUERIES_QUERY_IMPL_H
 #define CHPL_QUERIES_QUERY_IMPL_H
 
-#include "chpl/queries/Context.h"
 #include "chpl/queries/Context-detail.h"
+#include "chpl/queries/Context.h"
+#include "chpl/queries/mark-functions.h"
+#include "chpl/queries/update-functions.h"
 
 /**
   This file should be included by .cpp files implementing queries.
