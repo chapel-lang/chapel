@@ -468,14 +468,6 @@ Context::querySetterUpdateResult(
     return QUERY_GET_SAVED(); \
   }
 
-/** Note an error for the currently running query. */
-#define QUERY_ERROR(error) \
-  BEGIN_QUERY_CONTEXT->queryNoteError(error)
-
-/** Note that the currently running query depends on input. */
-//#define QUERY_SET_INPUT_DEPENDENCY() \
-//  BEGIN_QUERY_CONTEXT->queryNoteInputDependency()
-
 /**
   Returns a pointer to the partial result if the query is already running
   and nullptr otherwise.

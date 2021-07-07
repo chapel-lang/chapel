@@ -35,6 +35,10 @@
 
 namespace chpl {
 
+namespace uast {
+  class ASTNode;
+}
+
 /**
 
 \rst
@@ -367,6 +371,49 @@ class Context {
    */
   void setFilePathForModuleID(ID moduleID, UniqueString path);
 
+  /**
+    Note an error for the currently running query.
+   */
+  void error(ErrorMessage error);
+  /**
+    Note an error for the currently running query.
+    This is a convenience overload.
+    This version takes in a Location and a printf-style format string.
+   */
+  void error(Location loc, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+  /**
+    Note an error for the currently running query.
+    This is a convenience overload.
+    This version takes in an ID and a printf-style format string.
+    The ID is used to compute a Location using parsing::locateId.
+   */
+  void error(ID id, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+  /**
+    Note an error for the currently running query.
+    This is a convenience overload.
+    This version takes in an AST node and a printf-style format string.
+    The AST node is used to compute a Location by using a parsing::locateAst.
+   */
+  void error(const uast::ASTNode* ast, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+;
+
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly
 
@@ -401,9 +448,6 @@ class Context {
   template<typename ResultType, typename... ArgTs>
   const ResultType&
   queryGetSaved(const querydetail::QueryMapResult<ResultType, ArgTs...>* r);
-
-  // note an error message in the currently running query
-  void queryNoteError(ErrorMessage error);
 
   // It's a fatal error to run a query recursively.
   // To avoid that in cases that have some sort of natural recursion,

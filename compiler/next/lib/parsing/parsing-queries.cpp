@@ -65,7 +65,7 @@ const FileContents& fileText(Context* context, UniqueString path) {
   ErrorMessage error;
   bool ok = readfile(path.c_str(), text, error);
   if (!ok) {
-    QUERY_ERROR(error);
+    context->error(error);
   }
   auto result = FileContents(std::move(text), std::move(error));
   return QUERY_END(result);
@@ -97,7 +97,7 @@ const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
     result.swap(tmpResult);
     // raise any errors encountered
     for (const ErrorMessage& e : result.errors) {
-      QUERY_ERROR(e);
+      context->error(e);
     }
     Builder::Result::updateFilePaths(context, result);
   } else {

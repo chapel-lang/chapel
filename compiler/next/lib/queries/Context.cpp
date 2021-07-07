@@ -20,11 +20,12 @@
 #include "chpl/queries/Context.h"
 
 #include "chpl/queries/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 
-
+#include <cassert>
+#include <cstdarg>
 #include <cstddef>
 #include <cstdlib>
-#include <cassert>
 
 #include "../util/my_aligned_alloc.h" // assumes size_t defined
 
@@ -290,6 +291,44 @@ void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
   assert(hasFilePathForId(moduleID));
 }
 
+void Context::error(ErrorMessage error) {
+  if (queryStack.size() == 0) {
+    assert(false && "Context::error called with no running query");
+    return;
+  }
+  queryStack.back()->errors.push_back(std::move(error));
+  reportError(queryStack.back()->errors.back());
+}
+
+void Context::error(Location loc, const char* fmt, ...) {
+  ErrorMessage err;
+  va_list vl;
+  va_start(vl, fmt);
+  err = ErrorMessage::vbuild(loc, fmt, vl);
+  va_end(vl);
+  Context::error(err);
+}
+
+void Context::error(ID id, const char* fmt, ...) {
+  Location loc = parsing::locateId(this, id);
+  ErrorMessage err;
+  va_list vl;
+  va_start(vl, fmt);
+  err = ErrorMessage::vbuild(loc, fmt, vl);
+  va_end(vl);
+  Context::error(err);
+}
+
+void Context::error(const uast::ASTNode* ast, const char* fmt, ...) {
+  Location loc = parsing::locateAst(this, ast);
+  ErrorMessage err;
+  va_list vl;
+  va_start(vl, fmt);
+  err = ErrorMessage::vbuild(loc, fmt, vl);
+  va_end(vl);
+  Context::error(err);
+}
+
 void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
 
   if (enableDebugTracing) {
@@ -451,13 +490,6 @@ void Context::haltForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
           r->parentQueryMap->queryName);
   exit(-1);
 }
-
-void Context::queryNoteError(ErrorMessage error) {
-  assert(queryStack.size() > 0);
-  queryStack.back()->errors.push_back(std::move(error));
-  reportError(queryStack.back()->errors.back());
-}
-
 
 namespace querydetail {
 

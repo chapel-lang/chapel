@@ -333,7 +333,6 @@ struct ImportsResolver {
   Context* context = nullptr;
   const Scope* scope = nullptr;
   ResolvedImportScope* resolvedImports = nullptr;
-  std::vector<ErrorMessage> errors;
 
   ImportsResolver(Context* context,
                   const Scope* scope,
@@ -391,16 +390,10 @@ struct ImportsResolver {
       BorrowedIdsWithName r;
       bool foundSym = lookupInScope(context, scope, name, UIO_USE, r);
       if (foundSym == false) {
-        errors.push_back(
-              ErrorMessage::build(parsing::locateAst(context, use),
-                                  "undeclared identifier %s",
-                                  id->name().c_str()));
+        context->error(use, "undeclared identifier %s", id->name().c_str());
       } else {
         if (r.moreIds != nullptr) {
-          errors.push_back(
-              ErrorMessage::build(parsing::locateAst(context, use),
-                                  "ambiguity in resolving %s",
-                                  id->name().c_str()));
+          context->error(use, "ambiguity in resolving %s", id->name().c_str());
         }
         resolvedImports->imported.push_back(
             ImportedSymbols(r.id, ImportedSymbols::SYMBOL_ONLY,
@@ -454,11 +447,6 @@ const owned<ResolvedImportScope>& resolveImportsQuery(Context* context,
     for (const ASTNode* child : ast->children()) {
       child->dispatch<void>(visitor);
     }
-  }
-
-  // Save any errors noted
-  for (auto& err : visitor.errors) {
-    QUERY_ERROR(std::move(err));
   }
 
   // take the value out of the partial result in order to return it
