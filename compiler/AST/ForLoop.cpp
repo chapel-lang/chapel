@@ -302,14 +302,15 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
 BlockStmt* ForLoop::buildForeachLoop(Expr*      indices,
                                      Expr*      iteratorExpr,
                                      BlockStmt* body,
-                                     bool       zippered)
+                                     bool       zippered,
+                                     bool       isForExpr)
                                      
 {
   return doBuildForLoop(indices, iteratorExpr, body,
                         /* coforall */ false,
                         zippered,
                         /* isLoweredForall */ false,
-                        /* isForExpr */ false,
+                        isForExpr,
                         /* isForeach */ true);
 }
 
@@ -338,7 +339,7 @@ BlockStmt* ForLoop::buildLoweredForallLoop(Expr*      indices,
                         zippered,
                         /* isLoweredForall */ true,
                         isForExpr,
-                        /* isForeach */ false);
+                        /* isForeach */ true);
 }
 
 

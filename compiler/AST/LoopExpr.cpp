@@ -399,11 +399,6 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
 {
   FnSymbol* sifn = new FnSymbol(iteratorName);
   sifn->addFlag(FLAG_ITERATOR_FN);
-  if (forall) {
-    sifn->addFlag(FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS);
-  } else {
-    sifn->addFlag(FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS);
-  }
   sifn->setGeneric(true);
 
   ArgSymbol* sifnIterator = new ArgSymbol(INTENT_BLANK, "iterator", dtAny);
@@ -417,11 +412,23 @@ static FnSymbol* buildSerialIteratorFn(const char* iteratorName,
   if (cond)
     stmt = new CondStmt(new CallExpr("_cond_test", cond), stmt);
 
-  sifn->insertAtTail(ForLoop::buildForLoop(indices,
-                                           new SymExpr(sifnIterator),
-                                           new BlockStmt(stmt),
-                                           zippered,
-                                           /*isForExpr*/ true));
+
+  BlockStmt* loop = NULL;
+  if (forall) {
+    loop = ForLoop::buildForLoop(indices,
+                                 new SymExpr(sifnIterator),
+                                 new BlockStmt(stmt),
+                                 zippered,
+                                 /*isForExpr*/ true);
+  }
+  else {
+    loop = ForLoop::buildForeachLoop(indices,
+                                     new SymExpr(sifnIterator),
+                                     new BlockStmt(stmt),
+                                     zippered,
+                                     /*isForExpr*/ true);
+  }
+  sifn->insertAtTail(loop);
 
   return sifn;
 }
@@ -475,11 +482,6 @@ static FnSymbol* buildFollowerIteratorFn(const char* iteratorName,
 {
   FnSymbol* fifn = new FnSymbol(iteratorName);
   fifn->addFlag(FLAG_ITERATOR_FN);
-  if (forall) {
-    fifn->addFlag(FLAG_ORDER_INDEPENDENT_YIELDING_LOOPS);
-  } else {
-    fifn->addFlag(FLAG_NOT_ORDER_INDEPENDENT_YIELDING_LOOPS);
-  }
   fifn->setGeneric(true);
 
   Expr* tag = new SymExpr(gFollowerTag);

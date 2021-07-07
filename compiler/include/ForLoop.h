@@ -44,7 +44,8 @@ public:
   static BlockStmt*      buildForeachLoop (Expr*      indices,
                                            Expr*      iteratorExpr,
                                            BlockStmt* body,
-                                           bool       zippered);
+                                           bool       zippered,
+                                           bool       isForExpr);
 
   static BlockStmt*      buildCoforallLoop (Expr*      indices,
                                             Expr*      iteratorExpr,
