@@ -480,7 +480,7 @@ static bool doLookupInImports(Context* context,
         // this symbol should be a module/enum etc which has a scope
         assert(symScope->id == is.symbolId);
         // find it in that scope
-        bool found = doLookupInScope(context, symScope, name, UIO_OTHER,
+        bool found = doLookupInScope(context, symScope, from, UIO_OTHER,
                                      checkedScopes, result);
         if (found)
           return true;
@@ -603,7 +603,7 @@ struct ImportsResolver {
   }
 
   // make note of use/import
-  bool enter(const Use* use) {
+  void visit(const Use* use) {
     bool isPrivate = true;
     if (use->visibility() == Decl::PUBLIC)
       isPrivate = false;
@@ -656,14 +656,9 @@ struct ImportsResolver {
                             convertLimitations(clause)));
       }
     }
-    return false;
   }
-  void exit(const Use* d) { }
   // ignore other AST nodes
-  bool enter(const ASTNode* ast) {
-    return false;
-  }
-  void exit(const ASTNode* ast) { }
+  void visit(const ASTNode* ast) { }
 };
 
 
@@ -689,7 +684,7 @@ const owned<ResolvedImportScope>& resolveImportsQuery(Context* context,
     // Visit child nodes to e.g. look inside a Module
     // rather than collecting it as a NamedDecl
     for (const ASTNode* child : ast->children()) {
-      child->traverse(visitor);
+      child->dispatch<void>(visitor);
     }
   }
 
