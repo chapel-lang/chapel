@@ -57,10 +57,6 @@ bool LoopStmt::isOrderIndependent() const
 
 void LoopStmt::orderIndependentSet(bool orderIndependent)
 {
-
-  if (this->id == 1758028) {
-
-  }
   mOrderIndependent = orderIndependent;
 }
 
