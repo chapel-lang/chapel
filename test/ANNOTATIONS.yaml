@@ -821,6 +821,8 @@ empty-chpl-barrier.ml-time:
     - Optimize the atomic barrier implementation for network atomics (#10633)
   11/03/20:
     - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+  06/26/21:
+    - Optimize allLocalesBarrier by reducing communication (#17978)
 
 
 exchange:

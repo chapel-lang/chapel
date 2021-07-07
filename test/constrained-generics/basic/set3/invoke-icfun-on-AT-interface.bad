@@ -1,0 +1,4 @@
+invoke-icfun-on-AT-interface.chpl:17: In function 'ic':
+invoke-icfun-on-AT-interface.chpl:18: error: unresolved call 'ic2(AT)'
+invoke-icfun-on-AT-interface.chpl:21: note: this candidate did not match: ic2(z: ?R)
+invoke-icfun-on-AT-interface.chpl:21: note: because interface constraint(s) were not satisfied

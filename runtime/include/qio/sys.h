@@ -2,15 +2,15 @@
  * Copyright 2020-2021 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
- * 
+ *
  * The entirety of this work is licensed under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
- * 
+ *
  * You may obtain a copy of the License at
- * 
+ *
  *     http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,6 +31,7 @@
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #ifndef __CYGWIN__
 #include <netinet/tcp.h>
 #endif
@@ -94,7 +95,8 @@ typedef int fd_t;
 
 
 typedef struct sockaddr_storage sys_sockaddr_storage_t;
-
+typedef in_addr_t sys_in_addr_t;
+typedef struct in6_addr sys_in6_addr_t;
 
 typedef struct sys_sockaddr_s {
   sys_sockaddr_storage_t addr;
@@ -128,12 +130,18 @@ typedef struct addrinfo* sys_addrinfo_ptr_t;
  */
 
 // TODO -- define these once we have appropriate qthreads integration.
-// These need to handle being run when the thread is already on 
+// These need to handle being run when the thread is already on
 // a system-call running pthread.
 #define STARTING_SLOW_SYSCALL { }
 #define DONE_SLOW_SYSCALL { }
 
-void sys_init_sys_sockaddr(sys_sockaddr_t* addr);
+void sys_init_sys_sockaddr_t(sys_sockaddr_t* addr);
+int sys_getsockaddr_family(sys_sockaddr_t *addr);
+int sys_set_sys_sockaddr_t(sys_sockaddr_t *addr, const char *host, u_int16_t port, int family);
+void sys_set_sys_sockaddr_in_t(sys_sockaddr_t *addr, sys_in_addr_t host, u_int16_t port);
+void sys_set_sys_sockaddr_in6_t(sys_sockaddr_t *addr, sys_in6_addr_t host, u_int16_t port);
+int sys_host_sys_sockaddr_t(sys_sockaddr_t* addr, char* host, socklen_t hostlen, int* length);
+int sys_port_sys_sockaddr_t(sys_sockaddr_t* addr, uint16_t* numericport);
 
 size_t sys_page_size(void);
 
@@ -231,7 +239,7 @@ err_t sys_connect(fd_t sockfd, const sys_sockaddr_t* addr);
 
 #ifdef HAS_GETADDRINFO
 /* See comment about this being commented out in sys.c -BLC */
-//err_t sys_getaddrinfo(const char* node, const char* service, 
+//err_t sys_getaddrinfo(const char* node, const char* service,
 //                     const struct addrinfo* hints, struct addrinfo ** res);
 
 

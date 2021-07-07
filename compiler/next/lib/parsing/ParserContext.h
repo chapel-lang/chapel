@@ -67,6 +67,7 @@ struct ParserContext {
   // the parser rules.
   Decl::Visibility visibility;
   Variable::Kind varDeclKind;
+  bool isVarDeclConfig;
   YYLTYPE declStartLocation;
 
   // this type and stack helps the parser know if a function
@@ -91,6 +92,7 @@ struct ParserContext {
     this->comments           = nullptr;
     this->visibility         = Decl::DEFAULT_VISIBILITY;
     this->varDeclKind        = Variable::VAR;
+    this->isVarDeclConfig    = false;
     YYLTYPE emptyLoc = {0};
     this->declStartLocation  = emptyLoc;
     this->atEOF              = false;
@@ -101,6 +103,7 @@ struct ParserContext {
   void noteDeclStartLoc(YYLTYPE loc);
   Decl::Visibility noteVisibility(Decl::Visibility visibility);
   Variable::Kind noteVarDeclKind(Variable::Kind varDeclKind);
+  bool noteIsVarDeclConfig(bool isConfig);
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
 
@@ -370,6 +373,10 @@ struct ParserContext {
                      VisibilityClause::LimitationKind limitationKind,
                      ParserExprList* limitationExprs);
 
+  // Given a list of vars, build either a single var or a multi-decl.
+  CommentsAndStmt
+  buildVarOrMultiDecl(YYLTYPE locEverything, ParserExprList* vars);
+
   CommentsAndStmt buildAggregateTypeDecl(YYLTYPE location,
                                          TypeDeclParts parts,
                                          YYLTYPE inheritLoc,
@@ -377,4 +384,5 @@ struct ParserContext {
                                          YYLTYPE openingBrace,
                                          ParserExprList* contents,
                                          YYLTYPE closingBrace);
+
 };

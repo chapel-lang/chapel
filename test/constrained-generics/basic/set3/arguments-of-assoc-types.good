@@ -1,0 +1,117 @@
+ic1dd     (22.11, false)
+ req1.F1  22.11
+ req1.AT  false
+
+ic1rd     (11.22, false)
+ req1.F1  11.22
+ ref1.F1  11.22
+ req1.AT  false
+ic1dd     (11.22, false)
+ req1.F1  11.22
+ req1.AT  false
+
+ic1dr     (22.33, true)
+ req1.F1  22.33
+ req1.AT  true
+ ref1.AT  true
+ic1dd     (22.33, true)
+ req1.F1  22.33
+ req1.AT  true
+
+ic1rr     (11.22, true)
+ req1.F1  11.22
+ ref1.F1  11.22
+ req1.AT  true
+ ref1.AT  true
+ic1dd     (11.22, true)
+ req1.F1  11.22
+ req1.AT  true
+ic1rd     (11.22, true)
+ req1.F1  11.22
+ ref1.F1  11.22
+ req1.AT  true
+ic1dd     (11.22, true)
+ req1.F1  11.22
+ req1.AT  true
+ic1dr     (11.22, true)
+ req1.F1  11.22
+ req1.AT  true
+ ref1.AT  true
+ic1dd     (11.22, true)
+ req1.F1  11.22
+ req1.AT  true
+
+ic1ii1    (1.1, true, 1.2, false)
+ic1dd     (1.1, true)
+ req1.F1  1.1
+ req1.AT  true
+ic1dd     (1.2, false)
+ req1.F1  1.2
+ req1.AT  false
+
+ic1ii1    (2.1, false, 2.0i, 2.0 + 1.0i)
+ic1dd     (2.1, false)
+ req1.F1  2.1
+ req1.AT  false
+ic1dd     (2.0i, 2.0 + 1.0i)
+ req1.F1  2.0i
+ req1.AT  2.0 + 1.0i
+
+ic1122    (3.1, true, halo, 333)
+ req2.F2  halo
+ req2.AT  333
+ic1dd     (3.1, true)
+ req1.F1  3.1
+ req1.AT  true
+ic1ii1    (3.1, true, 3.1, true)
+ic1dd     (3.1, true)
+ req1.F1  3.1
+ req1.AT  true
+ic1dd     (3.1, true)
+ req1.F1  3.1
+ req1.AT  true
+
+ic12i2i1  (4.1, false, wow, 444, 4.0i, 4.0 + 1.0i)
+ req2.F2  wow
+ req2.AT  444
+ic1dd     (4.1, false)
+ req1.F1  4.1
+ req1.AT  false
+ic1dd     (4.0i, 4.0 + 1.0i)
+ req1.F1  4.0i
+ req1.AT  4.0 + 1.0i
+ic1ii1    (4.1, false, 4.0i, 4.0 + 1.0i)
+ic1dd     (4.1, false)
+ req1.F1  4.1
+ req1.AT  false
+ic1dd     (4.0i, 4.0 + 1.0i)
+ req1.F1  4.0i
+ req1.AT  4.0 + 1.0i
+ic1122    (4.1, false, wow, 444)
+ req2.F2  wow
+ req2.AT  444
+ic1dd     (4.1, false)
+ req1.F1  4.1
+ req1.AT  false
+ic1ii1    (4.1, false, 4.1, false)
+ic1dd     (4.1, false)
+ req1.F1  4.1
+ req1.AT  false
+ic1dd     (4.1, false)
+ req1.F1  4.1
+ req1.AT  false
+ic1122    (4.0i, 4.0 + 1.0i, wow, 444)
+ req2.F2  wow
+ req2.AT  444
+ic1dd     (4.0i, 4.0 + 1.0i)
+ req1.F1  4.0i
+ req1.AT  4.0 + 1.0i
+ic1ii1    (4.0i, 4.0 + 1.0i, 4.0i, 4.0 + 1.0i)
+ic1dd     (4.0i, 4.0 + 1.0i)
+ req1.F1  4.0i
+ req1.AT  4.0 + 1.0i
+ic1dd     (4.0i, 4.0 + 1.0i)
+ req1.F1  4.0i
+ req1.AT  4.0 + 1.0i
+
+done

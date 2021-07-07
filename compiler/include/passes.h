@@ -118,6 +118,9 @@ BlockStmt* copyFnBodyForInlining(CallExpr* call, FnSymbol* fn, Expr* anchor);
 
 // interfaces.cpp, interfaceResolution.cpp
 void  introduceConstrainedTypes(FnSymbol* fn);
+void  insertResolutionPoint(Expr* ref, Symbol* sym);
+TypeSymbol* desugarInterfaceAsType(FnSymbol* parentFn, ArgSymbol* arg,
+                                   Expr* ref, InterfaceSymbol* isym);
 Type* desugarInterfaceAsType(ArgSymbol* arg, SymExpr* se,
                              InterfaceSymbol* isym);
 void  markImplStmtWrapFnAsFailure(FnSymbol* wrapFn);

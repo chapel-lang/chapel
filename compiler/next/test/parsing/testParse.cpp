@@ -20,6 +20,7 @@
 #include "chpl/parsing/Parser.h"
 #include "chpl/queries/Context.h"
 #include "chpl/uast/Block.h"
+#include "chpl/uast/BoolLiteral.h"
 #include "chpl/uast/Call.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Dot.h"
@@ -530,6 +531,9 @@ static void testVarDecl1(Parser* parser) {
   auto varDecl = module->stmt(0)->toVariable();
   assert(varDecl);
 
+  assert(varDecl->name() == "a");
+  assert(!varDecl->isConfig());
+
   auto typeExpr = varDecl->typeExpression();
   assert(typeExpr);
   assert(typeExpr->isIdentifier());
@@ -549,6 +553,9 @@ static void testVarDecl2(Parser* parser) {
 
   auto varDecl = module->stmt(0)->toVariable();
   assert(varDecl);
+
+  assert(varDecl->name() == "a");
+  assert(!varDecl->isConfig());
 
   assert(varDecl->typeExpression() == nullptr);
 
@@ -719,6 +726,31 @@ static void testVarDecl3f(Parser* parser) {
   assert(0 == initExpr->toIdentifier()->name().compare("b"));
 }
 
+static void testVarDecl3g(Parser* parser) {
+  auto parseResult = parser->parseString("testVarDecl3g.chpl",
+      "config var a : int = b /* comment */;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+
+  auto varDecl = module->stmt(0)->toVariable();
+  assert(varDecl);
+
+  assert(varDecl->isConfig());
+  assert(varDecl->name() == "a");
+
+  auto typeExpr = varDecl->typeExpression();
+  assert(typeExpr);
+  assert(typeExpr->isIdentifier());
+  assert(0 == typeExpr->toIdentifier()->name().compare("int"));
+
+  auto initExpr = varDecl->initExpression();
+  assert(initExpr);
+  assert(initExpr->isIdentifier());
+  assert(0 == initExpr->toIdentifier()->name().compare("b"));
+}
 static void testDot1(Parser* parser) {
   auto parseResult = parser->parseString("testDot1.chpl",
                                          "a.b;\n");
@@ -865,6 +897,42 @@ static void testComment6(Parser* parser) {
   assert(0 == strcmp(comment->c_str(), "/* /* bla */"));
 }
 
+static void testBoolLiteral0(Parser* parser) {
+  auto parseResult = parser->parseString("testBoolLiteral0.chpl",
+                                         "var f = false;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+
+  auto var = module->stmt(0)->toVariable();
+  assert(var);
+
+  assert(!var->typeExpression() && var->initExpression());
+  const BoolLiteral* b = var->initExpression()->toBoolLiteral();
+  assert(b);
+  assert(b->value() == false);
+}
+
+static void testBoolLiteral1(Parser* parser) {
+  auto parseResult = parser->parseString("testBoolLiteral1.chpl",
+                                         "var f = true;\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(module->numStmts() == 1);
+
+  auto var = module->stmt(0)->toVariable();
+  assert(var);
+
+  assert(!var->typeExpression() && var->initExpression());
+  const BoolLiteral* b = var->initExpression()->toBoolLiteral();
+  assert(b);
+  assert(b->value() == true);
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -910,6 +978,7 @@ int main() {
   testVarDecl3d(p);
   testVarDecl3e(p);
   testVarDecl3f(p);
+  testVarDecl3g(p);
 
   testDot1(p);
   testDot2(p);
@@ -921,6 +990,9 @@ int main() {
   testComment4(p);
   testComment5(p);
   testComment6(p);
+
+  testBoolLiteral0(p);
+  testBoolLiteral1(p);
 
   return 0;
 }

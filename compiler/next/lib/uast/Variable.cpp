@@ -28,9 +28,10 @@ namespace uast {
 bool Variable::contentsMatchInner(const ASTNode* other) const {
   const Variable* lhs = this;
   const Variable* rhs = (const Variable*) other;
-  return lhs->varLikeDeclContentsMatchInner(rhs) &&
-         lhs->kind_ == rhs->kind_ &&
-         lhs->isField_ == rhs->isField_;
+  return lhs->kind_ == rhs->kind_ &&
+         lhs->isConfig_ == rhs->isConfig_ &&
+         lhs->isField_ == rhs->isField_ &&
+         lhs->varLikeDeclContentsMatchInner(rhs);
 }
 
 void Variable::markUniqueStringsInner(Context* context) const {
@@ -38,9 +39,10 @@ void Variable::markUniqueStringsInner(Context* context) const {
 }
 
 owned<Variable>
-Variable::build(Builder* builder, Location loc,
-                UniqueString name, Decl::Visibility vis,
+Variable::build(Builder* builder, Location loc, UniqueString name,
+                Decl::Visibility vis,
                 Variable::Kind kind,
+                bool isConfig,
                 bool isField,
                 owned<Expression> typeExpression,
                 owned<Expression> initExpression) {
@@ -56,8 +58,10 @@ Variable::build(Builder* builder, Location loc,
     lst.push_back(std::move(initExpression));
   }
 
-  Variable* ret = new Variable(std::move(lst), vis, name, kind, isField,
-                               typeExpressionChildNum, initExpressionChildNum);
+  Variable* ret = new Variable(std::move(lst), vis, name, kind, isConfig,
+                               isField,
+                               typeExpressionChildNum,
+                               initExpressionChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

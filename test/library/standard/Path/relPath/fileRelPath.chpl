@@ -11,7 +11,7 @@ const filePathAbsolute = absPath(filePathRelative);
 // Perform a single test, validating the input.
 proc test(f: file, start: string="") {
   writeln('filepath= ', f.path, ' start= ', start);
-  writeln(f.relPath(start));
+  writeln(relPath(f, start));
 }
 
 

@@ -673,6 +673,14 @@ def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
             extra_msg = '(memory leak) '
             break
 
+    # detect cases of 'GASNet timer calibration on %s detected non-linear
+    # timer behavior:' messages which we can't do much about
+    err_strings = ['GASNet timer calibration on']
+    for s in err_strings:
+        if (re.search(s, output, re.IGNORECASE) != None):
+            extra_msg = '(private issue #480) '
+            break
+
     return extra_msg
 
 

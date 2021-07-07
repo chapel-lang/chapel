@@ -3434,6 +3434,7 @@ module ChapelArray {
       return _value.doiScan(op, this.domain);
     }
 
+    pragma "no doc"
     proc iteratorYieldsLocalElements() param {
       return _value.dsiIteratorYieldsLocalElements();
     }
