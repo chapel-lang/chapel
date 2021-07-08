@@ -7,10 +7,13 @@ module iters {
   }
 
   iter myiter(nn: int, nt: int) {
-    foreach i in 0..#nt {
+    foreach i in 0..(nt-2) {
       foreach j in i*nn..#nn {
         yield j;
       }
+    }
+    foreach j in (nt-1)*nn..#nn {
+      yield j;
     }
   }
 
