@@ -24,9 +24,7 @@ module iters {
     }
   }
 
-  // neither loop will get the pragma since this iter cannot be zippered
-  // inline. I this is reasonable since it's pretty tricky to zipper nested
-  // loops together. Not to say it's impossible.
+  // foreachs should get vectorized
   iter myiter(nn:int, nt: int, followThis, param tag: iterKind) where tag == iterKind.follower {
     foreach i in followThis {
       foreach j in i..i {

@@ -20,7 +20,8 @@ module iters {
                         __primitive( "=", idx, first),
                         __primitive("!=", idx, end),
                         __primitive("+=", idx, str)) {
-        yield idx;
+        var localIdx = idx;
+        yield localIdx;
       }
     }
   }
