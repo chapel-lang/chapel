@@ -2921,7 +2921,7 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName,
   }
 
   // TODO (dlongnecke): Try to move this to a spot before codegen? It would
-  // also be cool if we could point this to the point in the source code
+  // also be cool if we could point this to the location in the source code
   // where the field is being accessed.
   if (!field) {
     auto fmt = "Definition of '%s.%s' not visible in external C code";
