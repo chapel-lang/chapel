@@ -898,6 +898,7 @@ with_forward_bitfields
 with_bsd_qsort_r
 enable_fastcontext
 with_hwloc
+with_hwloc_symbol_prefix
 with_portals4
 '
       ac_precious_vars='build_alias
@@ -1734,6 +1735,8 @@ Optional Packages:
                           implementation (for cross-compiling)
   --with-hwloc=[PATH]     specify the path to the hwloc library; used for both
                           the library and the include files
+  --with-hwloc-symbol-prefix=[prefix]
+                          specify prefix for hwloc symbols [default=hwloc_].
   --with-portals4[=DIR]   Build Portals4 support, with optional install prefix
                           DIR
 
@@ -3244,8 +3247,8 @@ test "$program_suffix" != NONE &&
 ac_script='s/[\\$]/&&/g;s/;s,x,x,$//'
 program_transform_name=`$as_echo "$program_transform_name" | sed "$ac_script"`
 
-# expand $ac_aux_dir to an absolute path
-am_aux_dir=`cd $ac_aux_dir && pwd`
+# Expand $ac_aux_dir to an absolute path.
+am_aux_dir=`cd "$ac_aux_dir" && pwd`
 
 if test x"${MISSING+set}" != xset; then
   case $am_aux_dir in
@@ -25956,6 +25959,15 @@ if test "${with_hwloc+set}" = set; then :
   withval=$with_hwloc;
 fi
 
+
+# Check whether --with-hwloc-symbol-prefix was given.
+if test "${with_hwloc_symbol_prefix+set}" = set; then :
+  withval=$with_hwloc_symbol_prefix;
+else
+  with_hwloc_symbol_prefix="hwloc_"
+fi
+
+
   hwloc_saved_CPPFLAGS="$CPPFLAGS"
   hwloc_saved_LDFLAGS="$LDFLAGS"
   if test "x$with_hwloc" != x; then :
@@ -25977,9 +25989,10 @@ fi
 done
 
   if test "x$qt_allgoodsofar" = xyes; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing hwloc_topology_init" >&5
-$as_echo_n "checking for library containing hwloc_topology_init... " >&6; }
-if ${ac_cv_search_hwloc_topology_init+:} false; then :
+  as_ac_Search=`$as_echo "ac_cv_search_${with_hwloc_symbol_prefix}topology_init" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing ${with_hwloc_symbol_prefix}topology_init" >&5
+$as_echo_n "checking for library containing ${with_hwloc_symbol_prefix}topology_init... " >&6; }
+if eval \${$as_ac_Search+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_func_search_save_LIBS=$LIBS
@@ -25992,11 +26005,11 @@ cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 #ifdef __cplusplus
 extern "C"
 #endif
-char hwloc_topology_init ();
+char ${with_hwloc_symbol_prefix}topology_init ();
 int
 main ()
 {
-return hwloc_topology_init ();
+return ${with_hwloc_symbol_prefix}topology_init ();
   ;
   return 0;
 }
@@ -26009,25 +26022,26 @@ for ac_lib in '' hwloc "hwloc -lnuma"; do
     LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
   fi
   if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_hwloc_topology_init=$ac_res
+  eval "$as_ac_Search=\$ac_res"
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext
-  if ${ac_cv_search_hwloc_topology_init+:} false; then :
+  if eval \${$as_ac_Search+:} false; then :
   break
 fi
 done
-if ${ac_cv_search_hwloc_topology_init+:} false; then :
+if eval \${$as_ac_Search+:} false; then :
 
 else
-  ac_cv_search_hwloc_topology_init=no
+  eval "$as_ac_Search=no"
 fi
 rm conftest.$ac_ext
 LIBS=$ac_func_search_save_LIBS
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_hwloc_topology_init" >&5
-$as_echo "$ac_cv_search_hwloc_topology_init" >&6; }
-ac_res=$ac_cv_search_hwloc_topology_init
+eval ac_res=\$$as_ac_Search
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+eval ac_res=\$$as_ac_Search
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
 
