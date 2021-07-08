@@ -1,7 +1,7 @@
 
 interface IFC {
   proc req(ref arg: Self): void;
-  proc write(arg: Self): void;
+  proc write(arg: Self): bool;
 }
 
 int implements IFC;

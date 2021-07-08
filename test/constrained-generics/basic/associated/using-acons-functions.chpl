@@ -3,7 +3,7 @@
 
 interface I1 {
   proc chpl__initCopy(arg: Self, definedConst: bool): Self;
-  proc write(arg: Self): void;
+  proc write(arg: Self): bool;
   proc reqFn1(arg: Self);
   proc get1(arg: Self): AT1;
   type AT1;
@@ -12,7 +12,7 @@ interface I1 {
 
 interface I2 {
   proc chpl__initCopy(arg: Self, definedConst: bool): Self;
-  proc write(arg: Self): void;
+  proc write(arg: Self): bool;
   proc reqFn2(arg: Self);
   proc get2(arg: Self): AT2;
   type AT2;
@@ -21,7 +21,7 @@ interface I2 {
 
 interface I3 {
   proc chpl__initCopy(arg: Self, definedConst: bool): Self;
-  proc write(arg: Self): void;
+  proc write(arg: Self): bool;
   proc reqFn3(arg: Self);
   proc get3(arg: Self): AT3;
   type AT3;

@@ -5,7 +5,7 @@ where the interface constraint of #2 is satisfied with that of #1.
 
 interface IFC {
   proc show(msg: string, arg: Self);
-  proc writeln(msg: string, arg: Self);
+  proc writeln(msg: string, arg: Self): bool;
 }
 
 int implements IFC;

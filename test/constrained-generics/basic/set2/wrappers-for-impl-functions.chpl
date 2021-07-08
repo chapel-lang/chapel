@@ -7,7 +7,7 @@ interface IFC {
 interface StdOps(Val) {
   operator ==(lhs: Val, rhs: Val): bool;
   proc chpl__initCopy(arg: Val, definedConst: bool): Val;
-  proc write(arg: Val): void;
+  proc write(arg: Val): bool;
 }
 
 

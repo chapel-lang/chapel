@@ -5,7 +5,7 @@ of an 'implements' statement needs to be resolved.
 
 interface MyArray {
   proc Self.reverse();
-  proc writeln(arg: Self);
+  proc writeln(arg: Self): bool;
 }
 
 proc cgFun(arg: MyArray) {

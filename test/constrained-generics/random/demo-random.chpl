@@ -115,7 +115,7 @@ interface StdOps(Val) {
   operator =(ref lhs: Val, rhs: Val): void;
   operator ==(lhs: Val, rhs: Val): bool;
   operator !=(lhs: Val, rhs: Val): bool return !(lhs == rhs);
-  proc write(arg: Val): void;
+  proc write(arg: Val): bool;
 }
 
 bool implements StdOps;
