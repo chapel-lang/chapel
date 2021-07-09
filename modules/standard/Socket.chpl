@@ -160,33 +160,55 @@ module Socket {
     return address.family;
   }
 
-  proc listen(ref address:ipAddr, reuseaddr=true, backlog=5) throws {
-    var family = address.family;
+  proc getAddress(socketFD: int(32)) throws {
+    var addressStorage = new sys_sockaddr_t();
+    var err = sys_getpeername(socketFD, addressStorage);
+    if(err != 0){
+      throw SystemError.fromSyserr(err,"Failed to get address");
+    }
+
+    return new ipAddr(addressStorage);
+  }
+
+  proc socket(family:IPFamily = IPFamily.IPv4, sockType:c_int = SOCK_STREAM, protocol = 0) throws {
     var socketFd: int(32);
-    var err = sys_socket(family,SOCK_STREAM|SOCK_CLOEXEC,0,socketFd);
+    var err = sys_socket(family:int(32), sockType|SOCK_CLOEXEC, 0, socketFd);
     if(err != 0){
       throw SystemError.fromSyserr(err,"Failed to create Socket");
     }
 
-    var enable:int = if reuseaddr then 1 else 0;
+    return socketFd;
+  }
+
+  proc bind(socketFd:fd_t, ref address: ipAddr, reuseAddr = true) throws {
+    var enable:int = if reuseAddr then 1 else 0;
     if enable {
       var ptrEnable:c_ptr(int) = c_ptrTo(enable);
       var voidPtrEnable:c_void_ptr = ptrEnable;
       sys_setsockopt(socketFd,SOL_SOCKET,SO_REUSEADDR,voidPtrEnable,sizeof(enable):int(32));
     }
 
-    err = sys_bind(socketFd, address._addressStorage);
+    var err = sys_bind(socketFd, address._addressStorage);
     if(err != 0){
       throw SystemError.fromSyserr(err,"Failed to bind Socket");
     }
-
-    err = sys_listen(socketFd,backlog:int(32));
-    if(err != 0){
-      throw SystemError.fromSyserr(err,"Failed to listen on socket");
-    }
-
-    const tcpObject = new tcpListener(socketFd, address);
-    return tcpObject;
   }
 
+  proc bind(socket:udpSocket, ref address: ipAddr, reuseAddr = true) throws {
+    var socketFd = socket.socketFd;
+
+    bind(socketFd, address, reuseAddr);
+  }
+
+  proc bind(socket:tcpListener, ref address: ipAddr, reuseAddr = true) throws {
+    var socketFd = socket.socketFd;
+
+    bind(socketFd, address, reuseAddr);
+  }
+
+  proc bind(socket:tcpConn, ref address: ipAddr, reuseAddr = true) throws {
+    var socketFd = socket.fd();
+
+    bind(socketFd, address, reuseAddr);
+  }
 }
