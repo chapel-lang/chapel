@@ -101,13 +101,7 @@ module Socket {
   }
 
   proc tcpConn.addr throws {
-    var addressStorage = new sys_sockaddr_t();
-    var err = sys_getpeername(this.fd(), addressStorage);
-    if(err != 0){
-      throw SystemError.fromSyserr(err,"Failed to create Socket");
-    }
-
-    return new ipAddr(addressStorage);
+    return getAddress(this.fd());
   }
 
   private extern proc sizeof(e): size_t;
@@ -124,18 +118,18 @@ module Socket {
     }
   }
 
-  proc tcpListener.accept():file throws {
+  proc tcpListener.accept(seconds = 0):file throws {
     var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
     var fdOut:int(32);
     var rset, allset: fd_set;
-    var timeo:timeval = new timeval(10,0);
+    var timeout:timeval = new timeval(seconds,0);
 
     sys_fd_zero(allset);
     sys_fd_set(this.socketFd,allset);
     rset = allset;
     var nready:int(32);
 
-    var err = sys_select(socketFd+1,c_ptrTo(rset),nil,nil,c_ptrTo(timeo),nready);
+    var err = sys_select(socketFd+1,c_ptrTo(rset),nil,nil,c_ptrTo(timeout),nready);
     if(nready == 0){
       writeln("timed out");
     }
@@ -158,6 +152,33 @@ module Socket {
 
   proc tcpListener.family {
     return address.family;
+  }
+
+  proc listen(ref address:ipAddr, reuseAddr=true, backlog=5) throws {
+    var family = if address.family == AF_INET6 then IPFamily.IPv6 else IPFamily.IPv4;
+    var socketFd = socket(family,SOCK_STREAM|SOCK_NONBLOCK);
+
+    bind(socketFd, address, reuseAddr);
+
+    var err = sys_listen(socketFd,backlog:int(32));
+    if(err != 0){
+      throw SystemError.fromSyserr(err,"Failed to listen on socket");
+    }
+
+    const tcpObject = new tcpListener(socketFd, address);
+    return tcpObject;
+  }
+
+  record udpSocket {
+    var socketFd:int(32);
+
+    proc init(family:IPFamily = IPFamily.IPv4) {
+      socketFd = socket(family, SOCK_DGRAM|SOCK_NONBLOCK);
+    }
+  }
+
+  proc udpSocket.addr throws {
+    return getAddress(this.socketFd);
   }
 
   proc getAddress(socketFD: int(32)) throws {
