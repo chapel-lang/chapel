@@ -169,6 +169,64 @@ module Socket {
     return tcpObject;
   }
 
+  proc connect(ref address:ipAddr, ref timeout = new timeval(0,0)):tcpConn throws {
+    var family = if address.family == AF_INET6 then IPFamily.IPv6 else IPFamily.IPv4;
+    var socketFd = socket(family, SOCK_STREAM|SOCK_NONBLOCK);
+
+    var err = sys_connect(socketFd, address._addressStorage);
+    if(err != 0 && err != EINPROGRESS){
+      throw SystemError.fromSyserr(err,"Failed to connect");
+    }
+
+    if(err == 0) {
+      var sockFile:tcpConn = openfd(socketFd);
+      return sockFile;
+    }
+
+    var rset, wset: fd_set;
+
+    sys_fd_zero(wset);
+    sys_fd_set(socketFd, wset);
+    rset = wset;
+    var nready:int(32);
+
+    err = sys_select(socketFd + 1, c_ptrTo(rset), c_ptrTo(wset), nil, c_ptrTo(timeout), nready);
+    if(nready == 0){
+      sys_close(socketFd);
+      throw SystemError.fromSyserr(ETIMEDOUT, "connection timed out");
+    }
+    if(err != 0){
+      throw SystemError.fromSyserr(err,"Failed to connect");
+    }
+
+    if(sys_fd_isset(socketFd, rset) != 0 || sys_fd_isset(socketFd, wset) != 0){
+      var tempAddress = new sys_sockaddr_t();
+      err = sys_getpeername(socketFd, address._addressStorage);
+      if(err != 0) {
+        var berkleyError:err_t;
+        var ptrberkleyError = c_ptrTo(berkleyError);
+        var voidPtrberkleyError:c_void_ptr = ptrberkleyError;
+        var berkleySize:socklen_t = sizeof(berkleyError):socklen_t;
+        err = sys_getsockopt(socketFd, SOL_SOCKET, SO_ERROR, voidPtrberkleyError, berkleySize);
+
+        defer sys_close(socketFd);
+        if(err != 0){
+          throw SystemError.fromSyserr(err,"Failed to connect");
+        }
+        else if(berkleyError != 0){
+          throw SystemError.fromSyserr(berkleyError,"Failed to connect");
+        }
+      }
+    }
+    else {
+      sys_close(socketFd);
+      throw new Error("Socket can't be connected");
+    }
+
+    var sockFile:tcpConn = openfd(socketFd);
+    return sockFile;
+  }
+
   record udpSocket {
     var socketFd:int(32);
 
