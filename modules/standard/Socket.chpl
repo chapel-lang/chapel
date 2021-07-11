@@ -23,6 +23,7 @@ module Socket {
   use Time;
   use SysCTypes;
   use SysError;
+  use SysBasic;
   use CPtr;
   use IO;
 
@@ -227,16 +228,120 @@ module Socket {
     return sockFile;
   }
 
+  /**
+  * TODO: complete this
+  */
+  proc connect(host:string, port:int, family:int):tcpConn throws {
+
+  }
+
   record udpSocket {
     var socketFd:int(32);
 
     proc init(family:IPFamily = IPFamily.IPv4) {
-      socketFd = socket(family, SOCK_DGRAM|SOCK_NONBLOCK);
+      this.socketFd = -1;
+      try! {
+        var sockFd = socket(family, SOCK_DGRAM|SOCK_NONBLOCK);
+        this.socketFd = sockFd;
+      }
     }
   }
 
   proc udpSocket.addr throws {
     return getAddress(this.socketFd);
+  }
+
+  extern proc sys_recv(sockfd:fd_t, buffer:c_void_ptr, len:size_t, flags:c_int, ref recvd_out:ssize_t):err_t;
+
+  proc udpSocket.recv(buffer_len: int, in timeout = new timeval(0,0), flags:c_int = 0) throws {
+
+    var rset: fd_set;
+    sys_fd_zero(rset);
+    sys_fd_set(this.socketFd, rset);
+    var nready:int(32);
+
+    var err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
+    if(nready == 0){
+      throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
+    }
+    if(err_out != 0){
+      throw SystemError.fromSyserr(err_out);
+    }
+
+    var buffer = c_calloc(c_uchar, buffer_len);
+    var length:ssize_t;
+    err_out = sys_recv(this.socketFd, buffer, buffer_len:size_t, 0, length);
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out, "error on recv");
+    }
+
+    return createBytesWithOwnedBuffer(buffer, length, buffer_len);
+  }
+
+  extern proc sys_recvfrom(sockfd:fd_t, buffer:c_void_ptr, len:size_t, flags:c_int, ref addr:sys_sockaddr_t,  ref recvd_out:ssize_t):err_t;
+
+  proc udpSocket.recvfrom(buffer_len:int, in timeout = new timeval(0,0), flags:c_int = 0) throws {
+    var rset: fd_set;
+    sys_fd_zero(rset);
+    sys_fd_set(this.socketFd, rset);
+    var nready:int(32);
+
+    var err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
+    if(nready == 0){
+      throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
+    }
+    if(err_out != 0){
+      throw SystemError.fromSyserr(err_out);
+    }
+
+    var buffer = c_calloc(c_uchar, buffer_len);
+    var length:c_int;
+    var addressStorage = new sys_sockaddr_t();
+    err_out = sys_recvfrom(this.socketFd, buffer, buffer_len, 0, addressStorage, length);
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out);
+    }
+
+    return (createBytesWithOwnedBuffer(buffer, length, buffer_len), new ipAddr(addressStorage));
+  }
+
+  extern proc sys_sendto(sockfd:fd_t, buffer:c_void_ptr, len:size_t, flags:c_int, ref addr:sys_sockaddr_t,  ref recvd_out:ssize_t):err_t;
+
+  proc udpSocket.send(data: bytes, in addr: ipAddr, in timeout = new timeval(0,0), flags:c_int = 0) throws {
+    var wset: fd_set;
+    sys_fd_zero(wset);
+    sys_fd_set(this.socketFd, wset);
+    var nready:int(32);
+
+    var err_out = sys_select(socketFd + 1, nil, c_ptrTo(wset), nil, c_ptrTo(timeout), nready);
+    if(nready == 0){
+      throw SystemError.fromSyserr(ETIMEDOUT, "send timed out");
+    }
+    if(err_out != 0){
+      throw SystemError.fromSyserr(err_out);
+    }
+
+    var length:ssize_t;
+    err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:size_t, flags, addr._addressStorage, length);
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out);
+    }
+
+    return length;
+  }
+
+  /**
+  * TODO: complete this
+  */
+  proc setSocketOpt() throws {
+
+  }
+
+  /**
+  * TODO: getsocketOpt with tcpConn, tcpListener and udpSocket
+  */
+  proc getSocketOpt() throws {
+
   }
 
   proc getAddress(socketFD: int(32)) throws {
