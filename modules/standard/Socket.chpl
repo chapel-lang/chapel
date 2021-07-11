@@ -68,7 +68,7 @@ module Socket {
   }
 
   pragma "no doc"
-  proc ipAddr.init(ref address:sys_sockaddr_t) {
+  proc ipAddr.init(in address:sys_sockaddr_t) {
     this._addressStorage = new sys_sockaddr_t();
     try! {
       _addressStorage.set(address.numericHost().c_str(), address.port(), address.family);
@@ -155,7 +155,7 @@ module Socket {
     return address.family;
   }
 
-  proc listen(ref address:ipAddr, reuseAddr=true, backlog=5) throws {
+  proc listen(in address:ipAddr, reuseAddr=true, backlog=5) throws {
     var family = if address.family == AF_INET6 then IPFamily.IPv6 else IPFamily.IPv4;
     var socketFd = socket(family,SOCK_STREAM|SOCK_NONBLOCK);
 
@@ -170,7 +170,7 @@ module Socket {
     return tcpObject;
   }
 
-  proc connect(ref address:ipAddr, ref timeout = new timeval(0,0)):tcpConn throws {
+  proc connect(in address:ipAddr, in timeout = new timeval(0,0)):tcpConn throws {
     var family = if address.family == AF_INET6 then IPFamily.IPv6 else IPFamily.IPv4;
     var socketFd = socket(family, SOCK_STREAM|SOCK_NONBLOCK);
 
@@ -364,7 +364,7 @@ module Socket {
     return socketFd;
   }
 
-  proc bind(socketFd:fd_t, ref address: ipAddr, reuseAddr = true) throws {
+  proc bind(socketFd:fd_t, in address: ipAddr, reuseAddr = true) throws {
     var enable:int = if reuseAddr then 1 else 0;
     if enable {
       var ptrEnable:c_ptr(int) = c_ptrTo(enable);
@@ -378,19 +378,19 @@ module Socket {
     }
   }
 
-  proc bind(socket:udpSocket, ref address: ipAddr, reuseAddr = true) throws {
+  proc bind(socket:udpSocket, in address: ipAddr, reuseAddr = true) throws {
     var socketFd = socket.socketFd;
 
     bind(socketFd, address, reuseAddr);
   }
 
-  proc bind(socket:tcpListener, ref address: ipAddr, reuseAddr = true) throws {
+  proc bind(socket:tcpListener, in address: ipAddr, reuseAddr = true) throws {
     var socketFd = socket.socketFd;
 
     bind(socketFd, address, reuseAddr);
   }
 
-  proc bind(socket:tcpConn, ref address: ipAddr, reuseAddr = true) throws {
+  proc bind(socket:tcpConn, in address: ipAddr, reuseAddr = true) throws {
     var socketFd = socket.fd();
 
     bind(socketFd, address, reuseAddr);
