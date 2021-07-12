@@ -172,8 +172,6 @@ CopyAggregation
   from print-module-resolution.ChapelStandard.ChapelAutoAggregation.CopyAggregation
 ChapelAutoAggregation
   from print-module-resolution.ChapelStandard.ChapelAutoAggregation
-Builtins
-  from print-module-resolution.ChapelStandard.Builtins
 Types
   from print-module-resolution.ChapelStandard.Types
 VectorizingIterator
