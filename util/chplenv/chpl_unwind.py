@@ -2,7 +2,7 @@
 import sys
 
 import chpl_platform, overrides, third_party_utils
-from utils import error, memoize
+from utils import error, memoize, warning
 
 
 @memoize
@@ -13,8 +13,7 @@ def get():
     val = overrides.get('CHPL_UNWIND')
 
     if val == 'libunwind':
-        sys.stderr.write("Warning: CHPL_UNWIND=libunwind is deprecated. "
-                         "Use CHPL_UNWIND=bundled instead\n")
+        warning("CHPL_UNWIND=libunwind is deprecated. Use CHPL_UNWIND=bundled.")
         val = 'bundled'
 
     if linux:

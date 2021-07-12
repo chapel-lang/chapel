@@ -2,7 +2,7 @@
 import sys
 
 import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform, overrides, third_party_utils
-from utils import error, memoize, try_run_command
+from utils import error, memoize, try_run_command, warning
 
 
 @memoize
@@ -22,14 +22,13 @@ def get():
         if libfabric_val == 'none':
             error("CHPL_LIBFABRIC must not be 'none' when CHPL_COMM is ofi")
         if platform_val == 'hpe-cray-ex' and libfabric_val != 'system':
-            sys.stderr.write('Warning: CHPL_LIBFABRIC!=system is discouraged '
-                             'on HPE Cray EX\n')
+            warning('CHPL_LIBFABRIC!=system is discouraged on HPE Cray EX')
     else:
         libfabric_val = 'none'
 
     if libfabric_val == 'libfabric':
-        sys.stderr.write("Warning: CHPL_LIBFABRIC=libfabric is deprecated. "
-                         "Use CHPL_LIBFABRIC=bundled instead.\n")
+        warning("CHPL_LIBFABRIC=libfabric is deprecated. Use "
+                "CHPL_LIBFABRIC=bundled instead.")
         libfabric_val = 'bundled'
 
     return libfabric_val
