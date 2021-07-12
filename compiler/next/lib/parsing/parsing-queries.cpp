@@ -221,6 +221,10 @@ const ASTNode* idToAst(Context* context, ID id) {
 }
 
 const ID& idToParentId(Context* context, ID id) {
+  // Performance: Would it be better to have the parse query
+  // set this query as an alternative to computing maps
+  // in Builder::Result and then redundantly setting them here?
+
   QUERY_BEGIN(idToParentId, context, id);
 
   // Ask the context for the filename from the ID
