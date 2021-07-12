@@ -397,8 +397,8 @@ module Sys {
   extern proc sys_init_sys_sockaddr_t(ref addr:sys_sockaddr_t);
   extern proc sys_getsockaddr_family(ref addr: sys_sockaddr_t):c_int;
   extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: c_uint, family: c_int):c_int;
-  extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:c_uint):c_int;
-  extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint):c_int;
+  extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:c_uint);
+  extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint);
   extern proc sys_host_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
   extern proc sys_port_sys_sockaddr_t(ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
   extern proc sys_strerror(error:err_t, ref string_out:c_string):err_t;
