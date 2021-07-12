@@ -717,7 +717,16 @@ module Errors {
    */
   pragma "function terminates program"
   pragma "always propagate line file info"
+  proc halt(msg:string) {
+    halt(msg.localize().c_str());
+  }
+
+  pragma "no doc"
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  pragma "last resort"
   proc halt(s:string) {
+    compilerWarning('halt(s=...) is deprecated, use halt(msg=...)');
     halt(s.localize().c_str());
   }
 
@@ -738,7 +747,15 @@ module Errors {
     in the Chapel source, followed by the argument(s) to the call.
   */
   pragma "always propagate line file info"
+  proc warning(msg:string) {
+    __primitive("chpl_warning", msg.localize().c_str());
+  }
+
+  pragma "no doc"
+  pragma "always propagate line file info"
+  pragma "last resort"
   proc warning(s:string) {
+    compilerWarning('warning(s=...) is deprecated, use warning(msg=...)');
     __primitive("chpl_warning", s.localize().c_str());
   }
 
