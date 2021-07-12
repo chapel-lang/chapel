@@ -260,7 +260,6 @@ class QueryMap final : public QueryMapBase {
         // Keep the result
         ++iter;
       } else {
-        //printf("Removing result %p %s\n", &result, queryName);
         // Remove the result
         iter = map.erase(iter);
       }

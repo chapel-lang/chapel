@@ -62,6 +62,19 @@ static const int& recursiveQuery(Context* context, int arg) {
   return QUERY_END(result);
 }
 
+/* This test passes if it runs to completion
+   and doesn't run into the query system's fatal
+   error for recursive queries. Nonetheless here is
+   the expected output from test 0:
+
+    test 0
+    recursiveQuery(0)
+    checking 1
+    no partial result for 1
+    recursiveQuery(1)
+    checking 0
+    found partial result for 0
+ */
 static void test0() {
   Context ctx;
   Context* context = &ctx;
@@ -71,6 +84,19 @@ static void test0() {
   assert(r0 == 1);
 }
 
+/* This test passes if it runs to completion
+   and doesn't run into the query system's fatal
+   error for recursive queries. Nonetheless here is
+   the expected output from test 1:
+
+    test 1
+    recursiveQuery(1)
+    checking 0
+    no partial result for 0
+    recursiveQuery(0)
+    checking 1
+    found partial result for 1
+*/
 static void test1() {
   Context ctx;
   Context* context = &ctx;

@@ -470,7 +470,10 @@ Context::querySetterUpdateResult(
 
 /**
   Returns a pointer to the partial result if the query is already running
-  and nullptr otherwise.
+  and nullptr otherwise. The partial result is set by assigning to
+  QUERY_CURRENT_RESULT in some other invocation of func with the exact
+  same arguments.
+
   Arguments are like QUERY_BEGIN.
  */
 #define QUERY_RUNNING_PARTIAL_RESULT(func, context, ...) \

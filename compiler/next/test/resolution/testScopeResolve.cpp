@@ -129,6 +129,8 @@ static void test3() {
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
   
+  // design of findInnermostDecl is to return the
+  // innermost and first if there is any ambiguity.
   auto pair = findInnermostDecl(context, scopeForIdent, xIdent->name());
   assert(pair.first == x1->id());
   assert(pair.second == 2);
