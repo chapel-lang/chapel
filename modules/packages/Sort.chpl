@@ -493,7 +493,7 @@ proc sort(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator)
 proc isSorted(Data: [?Dom] ?eltType, comparator:?rec=defaultComparator): bool {
   chpl_check_comparator(comparator, eltType);
 
-  const stride = if Dom.stridable then abs(Dom.stride) else 1;
+  const stride = if Dom.stridable then abs(Dom.stride) else 1:Dom.idxType;
   var sorted = true;
   forall (element, i) in zip(Data, Dom) with (&& reduce sorted) {
     if i > Dom.alignedLow {
