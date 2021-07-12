@@ -117,6 +117,28 @@ static bool createsScope(asttags::ASTTag tag) {
 
 static const Scope* const& scopeForIdQuery(Context* context, ID id);
 
+static void addBuiltinType(Context* context, Scope* scope, const char* name) {
+  // Just refer to empty ID since their declarations don't
+  // actually exist in the AST.
+  // The resolver knows that the empty ID means a builtin thing.
+  scope->declared.emplace(UniqueString::build(context, name), ID());
+}
+
+static void populateScopeWithBuiltins(Context* context, Scope* scope) {
+  addBuiltinType(context, scope, "int");
+  addBuiltinType(context, scope, "real");
+  addBuiltinType(context, scope, "imag");
+  addBuiltinType(context, scope, "complex");
+  addBuiltinType(context, scope, "class");
+  addBuiltinType(context, scope, "record");
+  addBuiltinType(context, scope, "union");
+  addBuiltinType(context, scope, "owned");
+  addBuiltinType(context, scope, "shared");
+  addBuiltinType(context, scope, "borrowed");
+  addBuiltinType(context, scope, "unmanaged");
+  // there are more of these to add in the future.
+}
+
 // This query always constructs a scope
 // (don't call it if the scope does not need to exist)
 static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
@@ -125,7 +147,9 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
   Scope* result = new Scope();
 
   if (id.isEmpty()) {
-    // use empty scope for top-level
+    // empty ID indicates to make the root scope
+    // populate it with builtins
+    populateScopeWithBuiltins(context, result);
   } else {
     const uast::ASTNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
@@ -499,7 +523,8 @@ const std::pair<ID, int>& findInnermostDecl(Context* context,
 
   // Walk up the Scopes until we find something naming it
   // Return the ID of the first matching declaration.
-  for (const Scope* cur = scope; cur != nullptr; cur = cur->parentScope) {
+  const Scope* cur = nullptr;
+  for (cur = scope; cur != nullptr; cur = cur->parentScope) {
     BorrowedIdsWithName r;
     bool found = lookupInScope(context, cur, name, UIO_OTHER, r);
     if (found) {
@@ -515,6 +540,27 @@ const std::pair<ID, int>& findInnermostDecl(Context* context,
     // stop if we reach a Module scope
     if (uast::asttags::isModule(cur->tag))
       break;
+  }
+
+  // look also in root scope
+  if (count == 0) {
+    const Scope* rootScope = nullptr;
+    for (; cur != nullptr; cur = cur->parentScope) {
+      if (cur->parentScope == nullptr)
+        rootScope = cur;
+    }
+    if (rootScope != nullptr) {
+      BorrowedIdsWithName r;
+      bool found = lookupInScope(context, rootScope, name, UIO_OTHER, r);
+      if (found) {
+        if (r.moreIds != nullptr)
+          count = 2;
+        else
+          count = 1;
+
+        id = r.id;
+      }
+    }
   }
 
   return QUERY_END(std::make_pair(std::move(id), count));

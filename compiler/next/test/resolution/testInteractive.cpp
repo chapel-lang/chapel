@@ -89,7 +89,11 @@ static void findInnermostDecls(Context* context, const ASTNode* ast) {
     if (pair.second == 0) {
       printf("no such name found\n");
     } else if (pair.second == 1) {
-      printf("%s\n", pair.first.toString().c_str());
+      if (pair.first.isEmpty()) {
+        printf("builtin\n");
+      } else {
+        printf("%s\n", pair.first.toString().c_str());
+      }
     } else {
       printf("ambiguity\n");
     }
