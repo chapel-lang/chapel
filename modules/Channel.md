@@ -33,8 +33,9 @@ support operations on them.
 	* `send(value : eltType)` : This function waits for a space in the buffer
 	and	sends the `value` to the channel.
 
-	* `recv() : eltType` : This function waits until the buffer is empty and
-	returns the value sent to the channel.
+	* `recv(out value : eltType) : bool` : This function waits until the buffer
+	is empty and stores the received entity in `value`. It also returns the status
+	i.e., the operation is executed successfully or not.
 
 	* `close()` : This function is used to close the channel such that no more
 	values will be sent to it.
@@ -47,8 +48,9 @@ operations and executes if anyone of them is ready for communication. `select`
 statements in Go are specifically designed to work with channels.
 Some key points are:
 
-	* The operations are atomic, i.e., checking a channel and performing `recv` or
-		`send` on it is considered as one operation.
+	* `select` statements are commonly used in Go code when working with channels.
+	* The operations are atomic, i.e., checking a channel and performing `recv`
+		or `send` on it is considered as one operation.
 	* The cases are arranged in a random order to prevent starvation.
 
 For e.g.
@@ -62,6 +64,17 @@ select {
 		fmt.Println("Received", msg2)
 	default :
 		fmt.Println("None")
+}
+```
+
+```
+// Select statements can be used to implement try-send or try-recv
+// default case is executed when none of the cases are ready yet.
+select {
+	case val := <-chan1 :
+		fmt.Println("Received", val);
+	default :
+		fmt.Println("Channel not ready");
 }
 ```
 
