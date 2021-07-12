@@ -2422,6 +2422,12 @@ private proc solvePQ(U: [?D], V: [D]) where !usingLAPACK {
   var P = U + V;
   var Q = -U + V;
 
+  // This is a potential performance issue:
+  // The solve method is called N times and
+  // every solve call does an LU factorization on
+  // Matrix Q (which is redundant in this case
+  // since we could get away with a single LU calls
+  // for all the N iterations).
   forall j in D.dim(1) {
       P[.., j] = solve(Q, P[.., j]);
     }

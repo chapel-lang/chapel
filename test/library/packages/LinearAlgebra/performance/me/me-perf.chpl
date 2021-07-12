@@ -40,11 +40,13 @@ proc test_expm() {
       setDiag(X, 0, 1);
       var Y = X * b[i];
 
+      var M: [X.domain] eltType;
+
       var curIter = 0;
       t.start();
       do {
         for 1..iters {
-          expm(Y);
+          M = expm(Y);
         }
         curIter += iters;
       } while (curIter <= iterLimit && t.elapsed() <= timeLimit);
@@ -54,11 +56,11 @@ proc test_expm() {
         writeln('LinearAlgebra.expm_pade' + (pade[i]: string)
                               + ': ' + ((t.elapsed()/curIter): string));
       else
-        writeln("");
+        writeln(M);
 
       t.clear();
     }
-    writeln("");
+    writeln();
   }
 
 
@@ -78,11 +80,13 @@ proc test_expm() {
       X(1,1) = -1.0;
       X(0,1) = b[i];
 
+      var M: [X.domain] eltType;
+
       var curIter = 0;
       t.start();
       do {
         for 1..iters {
-          expm(X);
+          M = expm(X);
         }
         curIter += iters;
       } while (curIter <= iterLimit && t.elapsed() <= timeLimit);
@@ -92,11 +96,11 @@ proc test_expm() {
         writeln('LinearAlgebra.expm_10pow' + (i: string)
                               + ": " + ((t.elapsed()/curIter): string));
       else
-        writeln("");
+        writeln(M);
 
       t.clear();
     }
-    writeln("");
+    writeln();
   }
 
 
@@ -111,11 +115,13 @@ proc test_expm() {
     setDiag(X, 1, 1.0);
     setDiag(X, -1, -1.0);
 
+    var M: [X.domain] eltType;
+
     var curIter = 0;
     t.start();
     do {
       for 1..iters {
-        expm(X);
+        M = expm(X);
       }
       curIter += iters;
     } while (curIter <= iterLimit && t.elapsed() <= timeLimit);
@@ -124,8 +130,8 @@ proc test_expm() {
     if !correctness then
       writeln('LinearAlgebra.expm_gradient: ' + ((t.elapsed()/curIter): string));
     else
-      writeln("");
-    writeln("");
+      writeln(M);
+    writeln();
 
     t.clear();
   }
@@ -142,11 +148,13 @@ proc test_expm() {
     setDiag(X, 1, 1.0);
     setDiag(X, -1, -1.0);
 
+    var M: [X.domain] eltType;
+
     var curIter = 0;
     t.start();
     do {
       for 1..iters {
-        expm(X);
+        M = expm(X);
       }
       curIter += iters;
     } while (curIter <= iterLimit && t.elapsed() <= timeLimit);
@@ -155,8 +163,8 @@ proc test_expm() {
     if !correctness then
       writeln('LinearAlgebra.expm_edge: ' + ((t.elapsed()/curIter): string));
     else
-      writeln("");
-    writeln("");
+      writeln(M);
+    writeln();
 
     t.clear();
   }
@@ -186,8 +194,8 @@ proc test_expm() {
     if !correctness then
       writeln('LinearAlgebra.expm_sparse: ' + ((t.elapsed()/curIter): string));
     else
-      writeln("");
-    writeln("");
+      writeln();
+    writeln();
 
     t.clear();
   }
@@ -218,8 +226,8 @@ proc test_expm() {
     if !correctness then
       writeln('LinearAlgebra.expm_dense: ' + ((t.elapsed()/curIter): string));
     else
-      writeln("");
-    writeln("");
+      writeln();
+    writeln();
 
     t.clear();
   }
@@ -235,11 +243,13 @@ proc test_expm() {
     setDiag(X, 1, 1.0);
     setDiag(X, -1, -1.0);
 
+    var M: [X.domain] complex;
+
     var curIter = 0;
     t.start();
     do {
       for 1..iters {
-        expm(X);
+        M = expm(X);
       }
       curIter += iters;
     } while (curIter <= iterLimit && t.elapsed() <= timeLimit);
@@ -248,8 +258,8 @@ proc test_expm() {
     if !correctness then
       writeln('LinearAlgebra.expm_complex: ' + ((t.elapsed()/curIter): string));
     else
-      writeln("");
-    writeln("");
+      writeln(M);
+    writeln();
 
     t.clear();
   }
@@ -269,11 +279,13 @@ proc test_sinm() {
     setDiag(X, 1, 1.0);
     setDiag(X, -1, -1.0);
 
+    var M: [X.domain] complex;
+
     var curIter = 0;
     t.start();
     do {
       for 1..iters {
-        sinm(X);
+        M = sinm(X);
       }
       curIter += iters;
     } while (curIter <= iterLimit && t.elapsed() <= timeLimit);
@@ -282,8 +294,8 @@ proc test_sinm() {
     if !correctness then
       writeln('LinearAlgebra.sinm: ' + ((t.elapsed()/curIter): string));
     else
-      writeln("");
-    writeln("");
+      writeln(M);
+    writeln();
 
     t.clear();
 }
@@ -302,11 +314,13 @@ proc test_cosm() {
     setDiag(X, 1, 1.0);
     setDiag(X, -1, -1.0);
 
+    var M: [X.domain] complex;
+
     var curIter = 0;
     t.start();
     do {
       for 1..iters {
-        cosm(X);
+        M = cosm(X);
       }
       curIter += iters;
     } while (curIter <= iterLimit && t.elapsed() <= timeLimit);
@@ -315,8 +329,8 @@ proc test_cosm() {
     if !correctness then
       writeln('LinearAlgebra.cosm: ' + ((t.elapsed()/curIter): string));
     else
-      writeln("");
-    writeln("");
+      writeln(M);
+    writeln();
 
     t.clear();
 }
@@ -335,11 +349,14 @@ proc test_sincos() {
     setDiag(X, 1, 1.0);
     setDiag(X, -1, -1.0);
 
+    //var M: ([X.domain] complex, [X.domain] complex);
+    var M = (X,X);
+
     var curIter = 0;
     t.start();
     do {
       for 1..iters {
-        sincos(X);
+        M = sincos(X);
       }
       curIter += iters;
     } while (curIter <= iterLimit && t.elapsed() <= timeLimit);
@@ -348,8 +365,8 @@ proc test_sincos() {
     if !correctness then
       writeln('LinearAlgebra.sincos: ' + ((t.elapsed()/curIter): string));
     else
-      writeln("");
-    writeln("");
+      writeln(M);
+    writeln();
 
     t.clear();
 }
