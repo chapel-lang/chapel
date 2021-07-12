@@ -748,7 +748,7 @@ module Errors {
   */
   pragma "always propagate line file info"
   proc warning(args ...?numArgs) {
-    var tmpstring = stringify((...args));
+    var tmpstring = chpl_stringify_wrapper((...args));
     warning(tmpstring);
   }
 }
