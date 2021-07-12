@@ -62,21 +62,25 @@ struct GatherDecls {
     return false;
   }
   void exit(const NamedDecl* d) { }
+
   // Traverse into TupleDecl and MultiDecl looking for NamedDecls
   bool enter(const TupleDecl* d) {
     return true;
   }
   void exit(const TupleDecl* d) { }
+
   bool enter(const MultiDecl* d) {
     return true;
   }
   void exit(const MultiDecl* d) { }
+
   // make note of use/import
   bool enter(const Use* d) {
     containsUseImport = true;
     return false;
   }
   void exit(const Use* d) { }
+
   // ignore other AST nodes
   bool enter(const ASTNode* ast) {
     return false;

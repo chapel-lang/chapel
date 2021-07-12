@@ -50,7 +50,10 @@ namespace resolution {
 
   /**
     Given a name and a Scope, return the innermost and first ID
-    for a definition of that name.
+    for a definition of that name, and an integer indicating:
+     * 0 if no such name was found
+     * 1 if just one match for the name was found
+     * 2 if multiple matches for the name were found
    */
   const std::pair<ID, int>& findInnermostDecl(Context* context,
                                               const Scope* scope,
