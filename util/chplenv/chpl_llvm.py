@@ -5,7 +5,7 @@ import sys
 
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party
-from utils import memoize, error, run_command, try_run_command
+from utils import memoize, error, run_command, try_run_command, warning
 
 # returns a tuple of supported major LLVM versions as strings
 def llvm_versions():
@@ -154,8 +154,7 @@ def get_llvm_config():
         llvm_subdir = get_bundled_llvm_dir()
         bundled_config = os.path.join(llvm_subdir, 'bin', 'llvm-config')
         if llvm_config != 'none' and llvm_config != bundled_config:
-            sys.stderr.write("Warning: CHPL_LLVM_CONFIG is ignored for "
-                             "CHPL_LLVM=bundled\n");
+            warning("CHPL_LLVM_CONFIG is ignored for CHPL_LLVM=bundled");
         llvm_config = bundled_config
 
     elif llvm_config == 'none' and llvm_val == 'system':
@@ -244,14 +243,13 @@ def get():
             llvm_val = 'none'
 
     if llvm_val == 'llvm':
-        sys.stderr.write("Warning: CHPL_LLVM=llvm is deprecated. "
-                         "Use CHPL_LLVM=bundled instead\n")
+        warning("CHPL_LLVM=llvm is deprecated. Use CHPL_LLVM=bundled instead")
         llvm_val = 'bundled'
 
     if not compatible_platform_for_llvm():
         if llvm_val != 'none' and llvm_val != 'unset':
-            sys.stderr.write("Warning: CHPL_LLVM={0} is not compatible "
-                             "with this platform".format(llvm_val))
+            warning("CHPL_LLVM={0} is not compatible with this "
+                    "platform".format(llvm_val))
 
     return llvm_val
 

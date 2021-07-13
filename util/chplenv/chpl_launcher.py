@@ -3,7 +3,7 @@ from distutils.spawn import find_executable
 import sys
 
 import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
-from utils import error, memoize
+from utils import error, memoize, warning
 
 def slurm_prefix(base_launcher, platform_val):
     """ If salloc is available and we're on a cray-cs, prefix with slurm-"""
@@ -46,9 +46,8 @@ def get():
                 #        has_aprun and has_slurm should look other places
                 #        (maybe the modules?) to decide.
                 #        (thomasvandoren, 2014-08-12)
-                sys.stderr.write(
-                    'Warning: Cannot detect launcher on this system. Please '
-                    'set CHPL_LAUNCHER in the environment.\n')
+                warning('Cannot detect launcher on this system. Please '
+                        'set CHPL_LAUNCHER in the environment.')
         elif comm_val == 'gasnet':
             if substrate_val == 'smp':
                 launcher_val = 'smp'

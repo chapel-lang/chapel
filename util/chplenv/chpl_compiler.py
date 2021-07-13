@@ -6,7 +6,7 @@ import sys
 from distutils.spawn import find_executable
 
 import chpl_platform, overrides
-from utils import error, memoize
+from utils import error, memoize, warning
 
 
 #
@@ -22,7 +22,7 @@ def validate(compiler_val):
         chpl_home = chpl_home_utils.get_chpl_home()
         comp_makefile = os.path.join(chpl_home, 'make', 'compiler', 'Makefile.{0}'.format(compiler_val))
         if not os.path.isfile(comp_makefile):
-            sys.stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler_val))
+            warning('Unknown compiler: "{0}"'.format(compiler_val))
 
 
 
@@ -35,7 +35,7 @@ def get_prgenv_compiler():
             return "cray-prgenv-{0}".format(subcompiler.lower())
 
         else:
-            sys.stderr.write("Warning: Compiling on {0} without a PrgEnv loaded\n".format(platform_val))
+            warning("Compiling on {0} without a PrgEnv loaded".format(platform_val))
 
     return 'none'
 

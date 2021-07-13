@@ -559,8 +559,8 @@ std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap) {
   for (auto& ii : varMap)
     command += ii.first + "=" + ii.second + " ";
 
-  // Toss stderr away until printchplenv supports a '--suppresswarnings' flag
-  command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple 2> /dev/null";
+  command += "CHPLENV_SUPPRESS_WARNINGS=true ";
+  command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple";
 
   return runCommand(command);
 }
@@ -568,8 +568,8 @@ std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap) {
 std::string getChplDepsApp() {
   // Runs `util/chplenv/chpl_home_utils.py --chpldeps` and removes the newline
 
-  std::string command = "CHPL_HOME=" + std::string(CHPL_HOME) + " python3 ";
-  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --chpldeps 2> /dev/null";
+  std::string command = "CHPLENV_SUPPRESS_WARNINGS=true CHPL_HOME=" + std::string(CHPL_HOME) + " python3 ";
+  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --chpldeps";
 
   std::string venvDir = runCommand(command);
   venvDir.erase(venvDir.find_last_not_of("\n\r")+1);
@@ -600,7 +600,7 @@ std::string runCommand(std::string& command) {
   }
 
   if (pclose(pipe)) {
-    USR_FATAL("%s did not run successfully", command.c_str());
+    USR_FATAL("'%s' did not run successfully", command.c_str());
   }
 
   return result;
