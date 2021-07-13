@@ -235,7 +235,6 @@ module ChapelHashtable {
     }
   }
 
-  pragma "order independent yielding loops"
   private iter _allSlots(size: int, followThis, param tag: iterKind)
     where tag == iterKind.follower {
 
@@ -245,7 +244,7 @@ module ChapelHashtable {
       writeln("In associative domain _allSlots follower iterator: ",
               "Following ", chunk);
 
-    for slot in chunk {
+    foreach slot in chunk {
       yield slot;
     }
   }
@@ -385,11 +384,10 @@ module ChapelHashtable {
       return (false, -1);
     }
 
-    pragma "order independent yielding loops"
     iter _lookForSlots(key: keyType, numSlots = tableSize) {
       const baseSlot = chpl__defaultHashWrapper(key):uint;
       if numSlots == 0 then return;
-      for probe in 0..numSlots/2 {
+      foreach probe in 0..numSlots/2 {
         var uprobe = probe:uint;
         var n = numSlots:uint;
         yield ((baseSlot + uprobe**2)%n):int;

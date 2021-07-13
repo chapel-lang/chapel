@@ -764,7 +764,6 @@ module Treap {
       
       :yields: A constant reference to an element in this orderedSet.
     */
-    pragma "not order independent yielding loops"
     iter const these() {
       var node = _first();
       while node != nil {
