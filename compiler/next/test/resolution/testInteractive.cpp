@@ -34,48 +34,6 @@ using namespace parsing;
 using namespace resolution;
 using namespace uast;
 
-/*
-static void printAllScopes(Context* context, const ASTNode* ast) {
-  // ignore comments
-  if (ast->id().isEmpty())
-    return;
-
-  printf("\n");
-  printf("computing scope for id %s ast %p\n",
-         ast->id().toString().c_str(),
-         ast);
-
-  const Scope* scope = scopeForId(context, ast->id());
-  assert(scope != nullptr);
-
-  printf("\n");
-  printf("%s -> scope ptr %p -- parent scope ptr %p\n",
-         ast->id().toString().c_str(), scope, scope->parentScope);
-  printf("  scope id %s -- parent scope id %s\n",
-         scope->id.toString().c_str(),
-        scope->parentScope->id.toString().c_str());
-  for (const auto& pair : scope->declared) {
-    printf("  declarations with name %s:\n", pair.first.c_str());
-    const OwnedIdsWithName& ids = pair.second;
-    if (ids.moreIds.get() != nullptr) {
-      for (const auto& id : *ids.moreIds.get()) {
-        printf("    %s\n", id.toString().c_str());
-      }
-    } else {
-      printf("    %s\n", ids.id.toString().c_str());
-    }
-  }
-  if (scope->containsUseImport) {
-    printf("  contains use/import\n");
-  }
-  printf("\n");
-
-  for (const ASTNode* child : ast->children()) {
-    printAllScopes(context, child);
-  }
-}
-*/
-
 static void findInnermostDecls(Context* context, const ASTNode* ast) {
   if (auto ident = ast->toIdentifier()) {
     printf("%s %s refers to: ",
