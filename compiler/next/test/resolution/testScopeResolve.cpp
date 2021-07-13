@@ -289,9 +289,9 @@ static void test7() {
 
   {
     contents = "module M {\n"
-                         "  var x;\n"
-                         "  y;\n"
-                         "}\n";
+               "  var x;\n"
+               "  y;\n"
+               "}\n";
 
     context->advanceToNextRevision(true);
     setFileText(context, path, contents);
@@ -308,7 +308,9 @@ static void test7() {
     assert(m != oldM);
     // lookup scope
     mScope = scopeForId(context, m->id());
-    assert(mScope && mScope->id == m->id() && mScope->declared.size() == 1);
+    assert(mScope);
+    assert(mScope->id == m->id() && mScope->declared.size() == 1);
+    assert(mScope->containsUseImport == false);
     // scope contents changed so Scope pointer should change
     assert(mScope != oldMScope);
 
@@ -324,9 +326,9 @@ static void test7() {
 
   {
     contents = "module M {\n"
-                         "  var x;\n"
-                         "  x;\n"
-                         "}\n";
+               "  var x;\n"
+               "  x;\n"
+               "}\n";
 
     context->advanceToNextRevision(true);
     setFileText(context, path, contents);
@@ -347,7 +349,9 @@ static void test7() {
     assert(ident != oldIdent);
     // lookup scope
     mScope = scopeForId(context, m->id());
-    assert(mScope && mScope->id == m->id() && mScope->declared.size() == 1);
+    assert(mScope);
+    assert(mScope->id == m->id() && mScope->declared.size() == 1);
+    assert(mScope->containsUseImport == false);
     // scope contents did not change so Scope pointer should be the same
     assert(mScope == oldMScope);
 
@@ -360,7 +364,106 @@ static void test7() {
     oldX = x;
     oldIdent = ident;
   }
+
+  {
+    contents = "module M {\n"
+               "  var x;\n"
+               "  x;\n"
+               "  use N;\n"
+               "}\n"
+               "module N { }\n";
+
+    context->advanceToNextRevision(true);
+    setFileText(context, path, contents);
+    const ModuleVec& vec = parse(context, path);
+    assert(vec.size() == 2);
+    m = vec[0];
+    assert(m->numStmts() == 3);
+    x = m->stmt(0)->toVariable();
+    ident = m->stmt(1)->toIdentifier();
+    assert(x);
+    assert(ident);
+
+    // module contents changed so pointer should change
+    assert(m != oldM);
+    // x didn't change so pointer should be the same
+    assert(x == oldX);
+    // ident didn't change so pointer should be the same
+    assert(ident == oldIdent);
+    // lookup scope
+    mScope = scopeForId(context, m->id());
+    assert(mScope);
+    assert(mScope->id == m->id() && mScope->declared.size() == 1);
+    assert(mScope->containsUseImport == true);
+    // scope contents did change so Scope pointer should differ
+    assert(mScope != oldMScope);
+
+    const auto& match = findInnermostDecl(context, mScope, ident->name());
+    assert(match.found == InnermostMatch::ONE);
+    assert(match.id == x->id());
+
+    oldM = m;
+    oldMScope = mScope;
+    oldX = x;
+    oldIdent = ident;
+  }
 }
+
+// test variable shadowing
+static void test8() {
+  printf("test8\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::build(context, "test8.chpl");
+  std::string contents = "module M {\n"
+                         "  var x;\n"
+                         "  {\n"
+                         "    var x;\n"
+                         "    x;\n"
+                         "  }\n"
+                         "  x;\n"
+                         "}\n";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 3);
+  const Variable* outerX = m->stmt(0)->toVariable();
+  assert(outerX);
+  const Block* block = m->stmt(1)->toBlock();
+  assert(block);
+  const Identifier* outerIdent = m->stmt(2)->toIdentifier();
+  assert(outerIdent);
+
+  assert(block->numStmts() == 2);
+  const Variable* innerX = block->stmt(0)->toVariable();
+  assert(innerX);
+  const Identifier* innerIdent = block->stmt(1)->toIdentifier();
+  assert(innerIdent);
+
+  const Scope* outerScope = scopeForId(context, outerIdent->id());
+  assert(outerScope);
+  const Scope* innerScope = scopeForId(context, innerIdent->id());
+  assert(innerIdent);
+
+  auto xStr = UniqueString::build(context, "x");
+
+  {
+    const auto& match = findInnermostDecl(context, outerScope, xStr);
+    assert(match.id == outerX->id());
+    assert(match.found == InnermostMatch::ONE);
+  }
+ 
+  {
+    const auto& match = findInnermostDecl(context, innerScope, xStr);
+    assert(match.id == innerX->id());
+    assert(match.found == InnermostMatch::ONE);
+  }
+}
+
 
 
 
@@ -372,6 +475,7 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
 
   return 0;
 }
