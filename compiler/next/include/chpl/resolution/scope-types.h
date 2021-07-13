@@ -152,7 +152,9 @@ struct Scope {
 };
 
 // This class supports both use and import
-struct ImportedSymbols {
+// It stores a normalized form of the symbols made available
+// by a use/import clause.
+struct VisibilitySymbols {
   ID symbolId;       // ID of the imported symbol, e.g. ID of a Module
   enum Kind {
     SYMBOL_ONLY,     // the named symbol itself only (one name in names)
@@ -168,24 +170,24 @@ struct ImportedSymbols {
   //  pair.second is the name here
   std::vector<std::pair<UniqueString,UniqueString>> names;
 
-  ImportedSymbols() { }
-  ImportedSymbols(ID symbolId, Kind kind, bool isPrivate,
-                  std::vector<std::pair<UniqueString,UniqueString>> names)
+  VisibilitySymbols() { }
+  VisibilitySymbols(ID symbolId, Kind kind, bool isPrivate,
+                    std::vector<std::pair<UniqueString,UniqueString>> names)
     : symbolId(symbolId), kind(kind), isPrivate(isPrivate),
       names(std::move(names))
   { }
 
 
-  bool operator==(const ImportedSymbols& other) const {
+  bool operator==(const VisibilitySymbols& other) const {
     return symbolId == other.symbolId &&
            kind == other.kind &&
            names == other.names;
   }
-  bool operator!=(const ImportedSymbols& other) const {
+  bool operator!=(const VisibilitySymbols& other) const {
     return !(*this == other);
   }
 
-  void swap(ImportedSymbols& other) {
+  void swap(VisibilitySymbols& other) {
     symbolId.swap(other.symbolId);
     Kind tmp = kind;
     kind = other.kind;
@@ -199,17 +201,17 @@ struct ImportedSymbols {
 // if the language design was that symbols available due to use/import
 // are only available after that statement (and in that case this analysis
 // could fold into the logic about variable declarations).
-struct ResolvedImportScope {
+struct ResolvedVisibilityScope {
   const Scope* scope;
-  std::vector<ImportedSymbols> imported;
-  ResolvedImportScope(const Scope* scope)
+  std::vector<VisibilitySymbols> visibilityClauses;
+  ResolvedVisibilityScope(const Scope* scope)
     : scope(scope)
   { }
-  bool operator==(const ResolvedImportScope& other) const {
+  bool operator==(const ResolvedVisibilityScope& other) const {
     return scope == other.scope &&
-           imported == other.imported;
+           visibilityClauses == other.visibilityClauses;
   }
-  bool operator!=(const ResolvedImportScope& other) const {
+  bool operator!=(const ResolvedVisibilityScope& other) const {
     return !(*this == other);
   }
 };

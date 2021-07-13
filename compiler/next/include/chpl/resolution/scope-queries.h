@@ -40,13 +40,13 @@ namespace resolution {
   const Scope* scopeForModule(Context* context, ID moduleId);
 
   /**
-    Given a Scope, compute the resolved imports
+    Given a Scope, compute the ResolvedVisibilityScope
     by processing the use/import statements in order.
 
     If the scope didn't have use/imports, returns nullptr.
    */
-  const ResolvedImportScope* resolveImports(Context* context,
-                                            const Scope* scope);
+  const ResolvedVisibilityScope* resolveVisibilityStmts(Context* context,
+                                                        const Scope* scope);
 
   /**
     Given a name and a Scope, return the innermost and first ID
