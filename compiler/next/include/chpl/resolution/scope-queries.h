@@ -28,8 +28,6 @@ namespace resolution {
 
   /**
     Returns the Scope for an ID.
-    It does this by finding the parent ID and then computing the Scope.
-    Things that don't have a scope?
    */
   const Scope* scopeForId(Context* context, ID id);
 
