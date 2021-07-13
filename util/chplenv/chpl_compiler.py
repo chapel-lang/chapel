@@ -65,8 +65,10 @@ def get_compiler_from_cc_cxx():
         else:
             error("Conflicting compiler families for CC and CXX settings\n"
                   "  {0} -> {1}\n"
-                  "  {2} -> {3}".format(cc_val, cc_compiler,
-                                        cxx_val, cxx_compiler))
+                  "  {2} -> {3}\n"
+                  "Set CHPL_HOST_COMPILER and CHPL_TARGET_COMPILER to the "
+                  "desired compiler family".format(cc_val, cc_compiler,
+                      cxx_val, cxx_compiler))
             compiler_val = 'unknown'
 
     else:
