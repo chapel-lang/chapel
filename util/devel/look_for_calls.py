@@ -127,14 +127,13 @@ def check_for_calls(functions, search_dir, exclude_paths=None, rel_paths=True):
           # to the user.
           alternative = None
           if isinstance(func, tuple):
-            alternative = func[1]
-            func = func[0]
+            func, alternative = func
             
           out = cscope_find_calls(func, cscope_database_name)
           if out:
               found_calls = True
               msg = 'found call to "{0}"'.format(func)
-              if alternative is not None:
+              if alternative:
                 msg += ' consider using "{0}" instead'.format(alternative)
               log_error(msg)
               sys.stdout.write(out.replace(rel_dir, '') + '\n')
@@ -147,10 +146,10 @@ def get_alloc_funcs():
     # If list element is a tuple then consider the second element to
     # be an alternative for the first. If the list element is a
     # not a tuple then their is no known alternative.
-    std = [('malloc', 'chpl_malloc'),
-           ('calloc', 'chpl_calloc'),
-           ('realloc', 'chpl_realloc'),
-           ('free', 'chpl_free')]
+    std = [('malloc', 'chpl_mem_alloc'),
+           ('calloc', 'chpl_mem_calloc'),
+           ('realloc', 'chpl_mem_realloc'),
+           ('free', 'chpl_mem_free')]
     align = ['aligned_alloc', 'posix_memalign', 'memalign']
     page_align = ['valloc', 'pvalloc']
     string = ['strdup', 'strndup', 'asprintf', 'vasprintf']
