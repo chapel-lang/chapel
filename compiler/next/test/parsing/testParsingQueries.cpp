@@ -539,6 +539,9 @@ static void test6() {
   const Module* mod = parseOneModule(ctx, modulePath);
 
   checkPathAllChildren(ctx, mod, modulePath);
+
+  auto got = getToplevelModule(ctx, UniqueString::build(ctx, "MyModule"));
+  assert(got == mod);
 }
 
 static void checkIdsAllChildren(Context* context,
@@ -586,6 +589,31 @@ static void test7() {
   checkIdsAllChildren(ctx, mod, nullptr);
 }
 
+static void test8() {
+  printf("test8\n");
+  Context context;
+  Context* ctx = &context;
+
+  auto filepath = UniqueString::build(ctx, "test8.chpl");
+  std::string contents;
+
+  contents = "module M { }\n"
+             "module N { }\n"
+             "module O { }\n";
+  setFileText(ctx, filepath, contents);
+
+  const ModuleVec& v = parse(ctx, filepath);
+  assert(v.size() == 3);
+
+  auto m = getToplevelModule(ctx, UniqueString::build(ctx, "M"));
+  assert(m == v[0]);
+  auto n = getToplevelModule(ctx, UniqueString::build(ctx, "N"));
+  assert(n == v[1]);
+  auto o = getToplevelModule(ctx, UniqueString::build(ctx, "O"));
+  assert(o == v[2]);
+}
+
+
 int main() {
   test0();
   test1();
@@ -595,6 +623,7 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
 
   return 0;
 }
