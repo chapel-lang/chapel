@@ -63,9 +63,9 @@ static void test1() {
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
   
-  auto pair = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(pair.first == x->id());
-  assert(pair.second == 1);
+  const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
+  assert(match.id == x->id());
+  assert(match.found == InnermostMatch::ONE);
 }
 
 // testing no matching variable declaration
@@ -95,9 +95,9 @@ static void test2() {
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
   
-  auto pair = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(pair.first == ID());
-  assert(pair.second == 0);
+  const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
+  assert(match.id == ID());
+  assert(match.found == InnermostMatch::ZERO);
 }
 
 // testing duplicate matching variable declarations
@@ -131,9 +131,9 @@ static void test3() {
   
   // design of findInnermostDecl is to return the
   // innermost and first if there is any ambiguity.
-  auto pair = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(pair.first == x1->id());
-  assert(pair.second == 2);
+  const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
+  assert(match.id == x1->id());
+  assert(match.found == InnermostMatch::MANY);
 }
 
 // testing a simple use statement
@@ -170,9 +170,9 @@ static void test4() {
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
   
-  auto pair = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(pair.first == x->id());
-  assert(pair.second == 1);
+  const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
+  assert(match.id == x->id());
+  assert(match.found == InnermostMatch::ONE);
 }
 
 // testing a simple recursive use statement
@@ -210,9 +210,9 @@ static void test5() {
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
   
-  auto pair = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(pair.first == x->id());
-  assert(pair.second == 1);
+  const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
+  assert(match.id == x->id());
+  assert(match.found == InnermostMatch::ONE);
 }
 
 // testing symbol from parent scope
@@ -247,9 +247,9 @@ static void test6() {
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
   
-  auto pair = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(pair.first == x->id());
-  assert(pair.second == 1);
+  const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
+  assert(match.id == x->id());
+  assert(match.found == InnermostMatch::ONE);
 }
 
 

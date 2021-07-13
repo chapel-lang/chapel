@@ -33,6 +33,20 @@
 #include <vector>
 
 namespace chpl {
+
+template<> struct update<resolution::InnermostMatch> {
+  bool operator()(resolution::InnermostMatch& keep,
+                  resolution::InnermostMatch& addin) const {
+    bool match = (keep == addin);
+    if (match) {
+      return false;
+    } else {
+      keep.swap(addin);
+      return true;
+    }
+  }
+};
+
 namespace resolution {
 
 
@@ -510,18 +524,14 @@ const ResolvedVisibilityScope* partiallyResolvedVisibilityScope(
   return resolveVisibilityStmts(context, scope);
 }
 
-// returns a pair of first ID and an int indicating
-//   0 -- no such name found
-//   1 -- exactly one innermost such name is found
-//   2 -- ambiguity
-const std::pair<ID, int>& findInnermostDecl(Context* context,
-                                            const Scope* scope,
-                                            UniqueString name)
+const InnermostMatch& findInnermostDecl(Context* context,
+                                     const Scope* scope,
+                                     UniqueString name)
 {
   QUERY_BEGIN(findInnermostDecl, context, scope, name);
 
   ID id;
-  int count = 0;
+  InnermostMatch::MatchesFound count = InnermostMatch::ZERO;
 
   // Walk up the Scopes until we find something naming it
   // Return the ID of the first matching declaration.
@@ -531,9 +541,9 @@ const std::pair<ID, int>& findInnermostDecl(Context* context,
     bool found = lookupInScope(context, cur, name, VIS_NEITHER, r);
     if (found) {
       if (r.moreIds != nullptr)
-        count = 2;
+        count = InnermostMatch::MANY;
       else
-        count = 1;
+        count = InnermostMatch::ONE;
 
       id = r.id;
       break;
@@ -545,7 +555,7 @@ const std::pair<ID, int>& findInnermostDecl(Context* context,
   }
 
   // look also in root scope
-  if (count == 0) {
+  if (count == InnermostMatch::ZERO) {
     const Scope* rootScope = nullptr;
     for (; cur != nullptr; cur = cur->parentScope) {
       if (cur->parentScope == nullptr)
@@ -556,16 +566,16 @@ const std::pair<ID, int>& findInnermostDecl(Context* context,
       bool found = lookupInScope(context, rootScope, name, VIS_NEITHER, r);
       if (found) {
         if (r.moreIds != nullptr)
-          count = 2;
+          count = InnermostMatch::MANY;
         else
-          count = 1;
+          count = InnermostMatch::ONE;
 
         id = r.id;
       }
     }
   }
 
-  return QUERY_END(std::make_pair(std::move(id), count));
+  return QUERY_END(InnermostMatch(id, count));
 }
 
 const Scope* scopeForModule(Context* context, ID id) {

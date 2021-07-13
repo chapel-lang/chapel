@@ -216,6 +216,34 @@ struct ResolvedVisibilityScope {
   }
 };
 
+struct InnermostMatch {
+  typedef enum {
+    ZERO = 0,
+    ONE = 1,
+    MANY = 2,
+  } MatchesFound;
+
+  ID id;
+  MatchesFound found = ZERO;
+
+  InnermostMatch() { }
+  InnermostMatch(ID id, MatchesFound found)
+    : id(id), found(found)
+  { }
+  bool operator==(const InnermostMatch& other) const {
+    return id == other.id &&
+           found == other.found;
+  }
+  bool operator!=(const InnermostMatch& other) const {
+    return !(*this == other);
+  }
+  void swap(InnermostMatch& other) {
+    id.swap(other.id);
+    MatchesFound tmp = found;
+    found = other.found;
+    other.found = tmp;
+  }
+};
 
 } // end namespace resolution
 } // end namespace chpl

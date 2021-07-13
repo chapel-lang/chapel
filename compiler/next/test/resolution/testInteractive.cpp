@@ -85,14 +85,14 @@ static void findInnermostDecls(Context* context, const ASTNode* ast) {
     const Scope* scope = scopeForId(context, ast->id());
     assert(scope != nullptr);
 
-    const auto& pair = findInnermostDecl(context, scope, ident->name());
-    if (pair.second == 0) {
+    const auto& m = findInnermostDecl(context, scope, ident->name());
+    if (m.found == InnermostMatch::ZERO) {
       printf("no such name found\n");
-    } else if (pair.second == 1) {
-      if (pair.first.isEmpty()) {
+    } else if (m.found == InnermostMatch::ONE) {
+      if (m.id.isEmpty()) {
         printf("builtin\n");
       } else {
-        printf("%s\n", pair.first.toString().c_str());
+        printf("%s\n", m.id.toString().c_str());
       }
     } else {
       printf("ambiguity\n");
