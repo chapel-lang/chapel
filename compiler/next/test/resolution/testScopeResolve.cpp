@@ -252,6 +252,117 @@ static void test6() {
   assert(match.found == InnermostMatch::ONE);
 }
 
+// test scope resolution handles incremental changes OK
+static void test7() {
+  printf("test7\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::build(context, "test7.chpl");
+  std::string contents = "";
+
+  const Module* m = nullptr;
+  const Module* oldM = nullptr;
+  const Scope* mScope = nullptr;
+  const Scope* oldMScope = nullptr;
+  const Variable* x = nullptr;
+  const Variable* oldX = nullptr;
+  const Identifier* ident = nullptr;
+  const Identifier* oldIdent = nullptr;
+
+  {
+    contents = "module M { }\n";
+
+    context->advanceToNextRevision(true);
+    setFileText(context, path, contents);
+    const ModuleVec& vec = parse(context, path);
+    assert(vec.size() == 1);
+    m = vec[0];
+    mScope = scopeForId(context, m->id());
+    assert(mScope && mScope->id == m->id());
+
+    oldM = m;
+    oldMScope = mScope;
+    oldX = x;
+    oldIdent = ident;
+  }
+
+  {
+    contents = "module M {\n"
+                         "  var x;\n"
+                         "  y;\n"
+                         "}\n";
+
+    context->advanceToNextRevision(true);
+    setFileText(context, path, contents);
+    const ModuleVec& vec = parse(context, path);
+    assert(vec.size() == 1);
+    m = vec[0];
+    assert(m->numStmts() == 2);
+    x = m->stmt(0)->toVariable();
+    ident = m->stmt(1)->toIdentifier();
+    assert(x);
+    assert(ident);
+
+    // module contents changed so pointer should change
+    assert(m != oldM);
+    // lookup scope
+    mScope = scopeForId(context, m->id());
+    assert(mScope && mScope->id == m->id() && mScope->declared.size() == 1);
+    // scope contents changed so Scope pointer should change
+    assert(mScope != oldMScope);
+
+    const auto& match = findInnermostDecl(context, mScope, ident->name());
+    assert(match.found == InnermostMatch::ZERO);
+    assert(match.id == ID());
+
+    oldM = m;
+    oldMScope = mScope;
+    oldX = x;
+    oldIdent = ident;
+  }
+
+  {
+    contents = "module M {\n"
+                         "  var x;\n"
+                         "  x;\n"
+                         "}\n";
+
+    context->advanceToNextRevision(true);
+    setFileText(context, path, contents);
+    const ModuleVec& vec = parse(context, path);
+    assert(vec.size() == 1);
+    m = vec[0];
+    assert(m->numStmts() == 2);
+    x = m->stmt(0)->toVariable();
+    ident = m->stmt(1)->toIdentifier();
+    assert(x);
+    assert(ident);
+
+    // module contents changed so pointer should change
+    assert(m != oldM);
+    // x didn't change so pointer should be the same
+    assert(x == oldX);
+    // ident changed so pointer should differ
+    assert(ident != oldIdent);
+    // lookup scope
+    mScope = scopeForId(context, m->id());
+    assert(mScope && mScope->id == m->id() && mScope->declared.size() == 1);
+    // scope contents did not change so Scope pointer should be the same
+    assert(mScope == oldMScope);
+
+    const auto& match = findInnermostDecl(context, mScope, ident->name());
+    assert(match.found == InnermostMatch::ONE);
+    assert(match.id == x->id());
+
+    oldM = m;
+    oldMScope = mScope;
+    oldX = x;
+    oldIdent = ident;
+  }
+}
+
+
 
 int main() {
   test1();
@@ -260,6 +371,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 
   return 0;
 }
