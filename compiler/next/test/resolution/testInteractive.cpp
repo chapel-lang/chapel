@@ -18,7 +18,8 @@
  */
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/scope-queries.h"
+#include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 
 // always check assertions in this test
@@ -32,6 +33,34 @@ using namespace chpl;
 using namespace parsing;
 using namespace resolution;
 using namespace uast;
+
+static void findInnermostDecls(Context* context, const ASTNode* ast) {
+  if (auto ident = ast->toIdentifier()) {
+    printf("%s %s refers to: ",
+           ident->id().toString().c_str(),
+           ident->name().c_str());
+
+    const Scope* scope = scopeForId(context, ast->id());
+    assert(scope != nullptr);
+
+    const auto& m = findInnermostDecl(context, scope, ident->name());
+    if (m.found == InnermostMatch::ZERO) {
+      printf("no such name found\n");
+    } else if (m.found == InnermostMatch::ONE) {
+      if (m.id.isEmpty()) {
+        printf("builtin\n");
+      } else {
+        printf("%s\n", m.id.toString().c_str());
+      }
+    } else {
+      printf("ambiguity\n");
+    }
+  }
+
+  for (const ASTNode* child : ast->children()) {
+    findInnermostDecls(context, child);
+  }
+}
 
 int main(int argc, char** argv) {
 
@@ -50,8 +79,14 @@ int main(int argc, char** argv) {
       auto filepath = UniqueString::build(ctx, argv[i]);
 
       const ModuleVec& mods = parse(ctx, filepath);
-      for (const auto module : mods) {
-        ASTNode::dump(module);
+      for (const auto mod : mods) {
+        ASTNode::dump(mod);
+        printf("\n");
+
+        //printAllScopes(ctx, mod);
+        //printf("\n");
+
+        findInnermostDecls(ctx, mod);
         printf("\n");
       }
 
@@ -71,6 +106,7 @@ int main(int argc, char** argv) {
         }
       }*/
 
+      /*
       const ResolvedSymbolVec& rmods = resolveFile(ctx, filepath);
       for (const auto& elt : rmods) {
         const Module* module = elt->decl->toModule();
@@ -89,7 +125,7 @@ int main(int argc, char** argv) {
             printf("\n");
           }
         }
-      }
+      }*/
     }
     if (gc) {
       ctx->collectGarbage();

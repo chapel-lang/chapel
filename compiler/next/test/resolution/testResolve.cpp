@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-#include "chpl/resolution/resolution-queries.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
@@ -35,6 +36,7 @@ using namespace parsing;
 using namespace resolution;
 using namespace uast;
 
+/*
 static void test1() {
   printf("test1\n");
   Context ctx;
@@ -128,11 +130,11 @@ static void test2() {
     context->collectGarbage();
   }
 }
-
+*/
 
 int main() {
-  test1();
-  test2();
+  //test1();
+  //test2();
 
   return 0;
 }

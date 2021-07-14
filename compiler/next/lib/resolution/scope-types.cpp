@@ -17,24 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_RESOLUTION_RESOLUTION_QUERIES_H
-#define CHPL_RESOLUTION_RESOLUTION_QUERIES_H
-
-#include "chpl/resolution/resolution-types.h"
+#include "chpl/resolution/scope-types.h"
 
 namespace chpl {
 namespace resolution {
 
 
-  /*
-  // Resolves the top-level declarations in a module
-  const ResolvedSymbol&
-  resolveModule(Context* context, const uast::Module* mod);
-
-  const ResolvedSymbolVec& resolveFile(Context* context, UniqueString path);
-   */
-
-
 } // end namespace resolution
 } // end namespace chpl
-#endif

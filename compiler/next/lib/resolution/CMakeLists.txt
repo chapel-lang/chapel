@@ -20,5 +20,7 @@ target_sources(libchplcomp-obj
 
                resolution-queries.cpp
                resolution-types.cpp
+               scope-queries.cpp
+               scope-types.cpp
 
               )

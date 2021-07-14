@@ -53,13 +53,19 @@ ErrorMessage::ErrorMessage(Location location, const char* message)
   : level_(0), location_(location), message_(message) {
 }
 
-ErrorMessage ErrorMessage::build(Location loc, const char* fmt, ...) {
+ErrorMessage ErrorMessage::vbuild(Location loc, const char* fmt, va_list vl) {
   std::string ret;
+  ret = vprint_to_string(fmt, vl);
+  return ErrorMessage(loc, ret);
+}
+
+ErrorMessage ErrorMessage::build(Location loc, const char* fmt, ...) {
+  ErrorMessage ret;
   va_list vl;
   va_start(vl, fmt);
-  ret = vprint_to_string(fmt, vl);
+  ret = ErrorMessage::vbuild(loc, fmt, vl);
   va_end(vl);
-  return ErrorMessage(loc, ret);
+  return ret;
 }
 
 void ErrorMessage::addDetail(ErrorMessage err) {

@@ -17,24 +17,30 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_RESOLUTION_RESOLUTION_QUERIES_H
-#define CHPL_RESOLUTION_RESOLUTION_QUERIES_H
+/*
+  This file implements the generic chpl::mark.
+ */
 
-#include "chpl/resolution/resolution-types.h"
+#ifndef CHPL_QUERIES_MARK_FUNCTIONS_H
+#define CHPL_QUERIES_MARK_FUNCTIONS_H
+
+#include <cassert>
+#include <cstring>
+#include <functional>
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include "chpl/util/memory.h"
 
 namespace chpl {
-namespace resolution {
+class Context;
 
 
-  /*
-  // Resolves the top-level declarations in a module
-  const ResolvedSymbol&
-  resolveModule(Context* context, const uast::Module* mod);
-
-  const ResolvedSymbolVec& resolveFile(Context* context, UniqueString path);
-   */
+template<typename T> struct mark {
+  void operator()(Context* context, const T& keep) const { }
+};
 
 
-} // end namespace resolution
 } // end namespace chpl
+
 #endif

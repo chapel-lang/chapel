@@ -22,9 +22,7 @@
 #include "chpl/parsing/Parser.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/query-impl.h"
-#include "chpl/uast/ASTNode.h"
-#include "chpl/uast/Identifier.h"
-#include "chpl/uast/Module.h"
+#include "chpl/uast/all-uast.h"
 
 #include <cstdio>
 #include <set>
@@ -35,7 +33,38 @@
 #include <vector>
 
 namespace chpl {
-
+/*
+template<> struct update<owned<resolution::Scope>> {
+  bool operator()(owned<resolution::Scope>& keep,
+                  owned<resolution::Scope>& addin) const {
+    bool match = ((keep.get() == nullptr) == (addin.get() == nullptr)) &&
+                 (*keep.get() == *addin.get());
+    if (match) {
+      return false;
+    } else {
+      keep.swap(addin);
+      return true;
+    }
+  }
+};
+*/
+/*
+template<> struct update<resolution::ContainedScopesAndScopedSymbols> {
+  bool operator()(resolution::ContainedScopesAndScopedSymbols& keep,
+                  resolution::ContainedScopesAndScopedSymbols& addin) const {
+    bool match = keep.idToScope == addin.idToScope &&
+                 keep.scopeSymbolsToScopeIds == addin.scopeSymbolsToScopeIds;
+    if (match) {
+      return false; // no update required
+    } else {
+      keep.idToScope.swap(addin.idToScope);
+      keep.scopeSymbolsToScopeIds.swap(addin.scopeSymbolsToScopeIds);
+      return true; // updated
+    }
+  }
+};
+*/
+  /*
 template<> struct update<resolution::ResolutionResult> {
   bool operator()(resolution::ResolutionResult& keep,
                   resolution::ResolutionResult& addin) const {
@@ -94,6 +123,7 @@ template<> struct update<resolution::ResolvedSymbol> {
     }
   }
 };
+*/
 
 /*
 template<> struct update<resolution::DefinedTopLevelNames> {
@@ -114,52 +144,51 @@ template<> struct update<frontend::DefinedTopLevelNames> {
 };
 */
 
+/*
+template<> struct update<resolution::Scope> {
+  bool operator()(resolution::Scope& keep,
+                  resolution::Scope& addin) const {
+
+    bool match = keep.parent == addin.parent &&
+                 keep.declared.size() == addin.declared.size() &&
+                 keep.usesAndImports.size() == addin.usesAndImports.size();
+
+    if (match) {
+      // check also the contents of the map/vec
+      match = keep.declared == addin.declared &&
+              keep.usesAndImports == addin.usesAndImports;
+    }
+
+    if (match) {
+      return false; // no update required
+    } else {
+      keep.parent.swap(addin.parent);
+      keep.declared.swap(addin.declared);
+      keep.usesAndImports.swap(addin.usesAndImports);
+      return true; // updated
+    }
+  }
+};
+*/
+
 namespace resolution {
 
 using namespace uast;
 using namespace types;
 
-
 /*
-static std::vector<UniqueString> getTopLevelNames(const Module* module) {
-  std::vector<UniqueString> result;
-  int nStmts = module->numStmts();
-  for (int i = 0; i < nStmts; i++) {
-    const Expression* expr = module->stmt(i);
-    if (const NamedDecl* decl = expr->toNamedDecl()) {
-      result.push_back(decl->name());
-    }
-  }
-  return result;
-}
-
-const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
-                                                    UniqueString path) {
-  QUERY_BEGIN(moduleLevelDeclNames, context, path);
-
-  DefinedTopLevelNamesVec result;
-
-  // Get the result of parsing modules
-  const ModuleVec& p = parse(context, path);
-  for (const Module* module : p) {
-    result.push_back(DefinedTopLevelNames(module, getTopLevelNames(module)));
-  }
-
-  return QUERY_END(result);
-}
-*/
-
 using DeclsByName = std::unordered_map<UniqueString, const NamedDecl*>;
 
 struct ResolvingScope {
   DeclsByName declsDefinedHere;
   const ResolvingScope* parentScope;
+  // TODO: use'd / imported decls
 
   ResolvingScope(const ResolvingScope* parentScope)
     : declsDefinedHere(), parentScope(parentScope) {
   }
 
-  const NamedDecl* findDeclForName(UniqueString name) const {
+  const NamedDecl* innermostDeclWithName(UniqueString name) const {
     const ResolvingScope* cur = this;
     while (cur != nullptr) {
       auto search = cur->declsDefinedHere.find(name);
@@ -170,6 +199,51 @@ struct ResolvingScope {
       cur = cur->parentScope;
     }
     return nullptr;
+  }
+
+  // TODO: something to return all of the decls with a particular name
+  // (and their scopes?) (for fns)
+};
+
+class SingleResolver {
+  Context* context;
+  ResolvingScope* inScope;
+  std::set<UniqueString>* undefinedInFn;
+
+  ResolutionResult visit(const uast::Identifier* ident) {
+    UniqueString name = ident->name();
+    const NamedDecl* decl = inScope->findDeclForName(name);
+    if (decl != nullptr) {
+      // found an existing entry in the map, so we can add a resolution result.
+      return ResolutionResult(ident, decl);
+    } else {
+      // nothing found in the map, so give an undefined symbol error,
+      // unless we've already done so.
+      if (undefinedInFn.count(name) == 0) {
+        Location loc = parsing::locate(context, ident);
+        auto error = ErrorMessage::build(loc,
+                     "'%s' undeclared (first use this function)", name.c_str());
+        context->queryNoteError(std::move(error));
+        undefinedInFn.insert(name);
+      }
+    }
+  }
+  ResolutionResult visit(const uast::NamedDecl* decl) {
+    UniqueString name = decl->name();
+    auto search = inScope.declsDefinedHere.find(name);
+    if (search != inScope.declsDefinedHere.end()) {
+      const NamedDecl* prevDecl = search->second;
+      // found an existing entry in the map, so give an error.
+      Location prevLoc = parsing::locate(context, prevDecl);
+      Location curLoc = parsing::locate(context, decl);
+      auto error = ErrorMessage::build(prevLoc,
+                   "'%s' has multiple definitions", name.c_str());
+      error.addDetail(ErrorMessage::build(curLoc, "redefined here"));
+
+      context->queryNoteError(std::move(error));
+    } else {
+      inScope.declsDefinedHere.insert(search, std::make_pair(name, decl));
+    }
   }
 };
 
@@ -182,14 +256,8 @@ static void resolveAST(Context* context,
                        ResolutionResultByPostorderID& resultByPostorderID,
                        std::set<UniqueString>& undefined) {
 
-  // if this node is an Identifier, resolve it using the parent scope,
-  // since an Identifier can't create a new scope.
   if (const Identifier* ident = ast->toIdentifier()) {
-    UniqueString name = ident->name();
-    const NamedDecl* decl = parentScope->findDeclForName(name);
-    if (decl != nullptr) {
-      // found an existing entry in the map, so we can add a resolution result.
-      int postorderId = ident->id().postOrderId();
+    int postorderId = ident->id().postOrderId();
       assert(postorderId >= 0);
       // make sure the vector has room for this element
       if (postorderId >= (int)resultByPostorderID.size()) {
@@ -197,17 +265,7 @@ static void resolveAST(Context* context,
       }
       resultByPostorderID[postorderId].expr = ident;
       resultByPostorderID[postorderId].decl = decl;
-    } else {
-      // nothing found in the map, so give an undefined symbol error,
-      // unless we've already done so.
-      if (undefined.count(name) == 0) {
-        Location loc = parsing::locate(context, ident);
-        auto error = ErrorMessage::build(loc,
-                     "'%s' undeclared (first use this function)", name.c_str());
-        context->queryNoteError(std::move(error));
-        undefined.insert(name);
-      }
-    }
+
     return;
   }
 
@@ -281,6 +339,7 @@ const ResolvedSymbolVec& resolveFile(Context* context, UniqueString path) {
 
   return QUERY_END(result);
 }
+*/
 
 
 } // end namespace resolution
