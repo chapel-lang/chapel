@@ -994,8 +994,7 @@ module ZMQ {
     // recv, strings and bytes
     pragma "no doc"
     proc recv(type T, flags: int = 0) throws where isString(T) || isBytes(T) {
-      var ret: T;
-      on classRef.home {
+      proc innerRecv() throws {
         // Initialize an empty ZeroMQ message
         var msg: zmq_msg_t;
         if (0 != zmq_msg_init(msg)) {
@@ -1024,11 +1023,16 @@ module ZMQ {
         if (0 != zmq_msg_close(msg)) {
           try throw_socket_error(errno, "recv");
         }
-
-        // Return the value to the calling locale
-        ret = val;
+        return val;
       }
-      return ret;
+
+      if here == classRef.home {
+        return innerRecv();
+      } else {
+        var localRet: T;
+        on classRef.home do localRet = innerRecv();
+        return localRet;
+      }
     }
 
     // recv, numeric types
