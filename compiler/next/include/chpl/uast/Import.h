@@ -49,7 +49,12 @@ class Import final : public Expression {
     : Expression(asttags::Import, std::move(children)),
       visibility_(visibility) {
     assert(numChildren() >= 1);
-    // TODO: Import specific asserts here.
+
+    for (auto vc : visibilityClauses()) {
+      bool acceptable = vc->limitationKind() == VisibilityClause::NONE ||
+                        vc->limitationKind() == VisibilityClause::BRACES;
+      assert(acceptable);
+    }
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {

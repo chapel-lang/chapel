@@ -276,6 +276,21 @@ static void test5(Parser* parser) {
   assert(visClause->limitation(0)->toIdentifier()->name() == "*");
 }
 
+static void test6(Parser* parser) {
+  auto parseResult = parser->parseString("test6.chpl",
+      "/*c1*/\n"
+      "use 1+1;\n"
+      "/*c7*/\n");
+  assert(parseResult.errors.size() == 1);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isErroneousExpression());
+  assert(mod->stmt(2)->isComment());
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -289,6 +304,7 @@ int main() {
   test3(p);
   test4(p);
   test5(p);
+  test6(p);
 
   return 0;
 }

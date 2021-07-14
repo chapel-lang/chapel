@@ -49,7 +49,18 @@ class Use final : public Expression {
     : Expression(asttags::Use, std::move(children)),
       visibility_(visibility) {
     assert(numChildren() >= 1);
-    // TODO: Use specific asserts here.
+
+    if (numVisibilityClauses() == 1) {
+      auto vc = visibilityClause(0);
+      bool acceptable = vc->limitationKind() == VisibilityClause::NONE ||
+                        vc->limitationKind() == VisibilityClause::EXCEPT ||
+                        vc->limitationKind() == VisibilityClause::ONLY;
+      assert(acceptable);
+    } else {
+      for (auto vc : visibilityClauses()) {
+        assert(vc->limitationKind() == VisibilityClause::NONE);
+      }
+    }
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {

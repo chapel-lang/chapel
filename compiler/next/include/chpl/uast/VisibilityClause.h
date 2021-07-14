@@ -116,12 +116,12 @@ class VisibilityClause final : public Expression {
                                        ASTList limitations);
 
   /**
-    Get the symbol of this visibility clause. It may be a dot expression,
-    an as expression, or an identifier.
+    Get the symbol of this visibility clause. It may be a Dot, As,
+    or Identifier.
   */
   const Expression* symbol() const {
     auto ret = child(symbolChildNum_);
-    assert(ret->isExpression());
+    assert(ret->isDot() || ret->isAs() || ret->isIdentifier());
     return (const Expression*)ret;
   }
 
@@ -152,9 +152,9 @@ class VisibilityClause final : public Expression {
 
   /**
     Return the i'th limitation of this visibility clause. If the limitation
-    kind is 'EXCEPT', then the limitations will all be identifiers. If the
+    kind is 'EXCEPT', then the limitations will all be Identifier. If the
     limitation kind is 'ONLY' or 'BRACES', then the limitations may be
-    identifers or as expressions containing identifiers.
+    Identifer or As expressions.
   */
   const Expression* limitation(int i) const {
     assert(i >= 0 && i < numLimitations_);

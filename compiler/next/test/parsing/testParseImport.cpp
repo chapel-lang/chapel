@@ -195,6 +195,69 @@ static void test2(Parser* parser) {
   }
 }
 
+static void test3(Parser* parser) {
+  auto parseResult = parser->parseString("test3.chpl",
+      "/*c1*/\n"
+      "private import /*c2*/ B.{Y};\n"
+      "/*c7*/\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  const Module* mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isImport());
+  assert(mod->stmt(2)->isComment());
+  const Import* imp = mod->stmt(1)->toImport();
+  assert(imp->visibility() == Decl::PRIVATE);
+  assert(imp->numVisibilityClauses() == 1);
+  auto vc = imp->visibilityClause(0);
+  assert(vc->limitationKind() == VisibilityClause::BRACES);
+  assert(vc->numLimitations() == 1);
+  assert(vc->limitation(0)->isIdentifier());
+}
+
+static void test4(Parser* parser) {
+  auto parseResult = parser->parseString("test4.chpl",
+      "/*c1*/\n"
+      "import /*c2*/ B.{Y as Z};\n"
+      "/*c7*/\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isImport());
+  assert(mod->stmt(2)->isComment());
+  const Import* imp = mod->stmt(1)->toImport();
+  assert(imp->visibility() == Decl::DEFAULT_VISIBILITY);
+  assert(imp->numVisibilityClauses() == 1);
+  auto vc = imp->visibilityClause(0);
+  assert(vc->limitationKind() == VisibilityClause::BRACES);
+  assert(vc->numLimitations() == 1);
+  assert(vc->limitation(0)->isAs());
+  const As* as = vc->limitation(0)->toAs();
+  assert(as->symbol()->isIdentifier());
+  assert(as->symbol()->toIdentifier()->name() == "Y");
+  assert(as->rename()->name() == "Z");
+}
+
+static void test5(Parser* parser) {
+  auto parseResult = parser->parseString("test5.chpl",
+      "/*c1*/\n"
+      "import /*c2*/ 1+1;\n"
+      "/*c7*/\n");
+  assert(parseResult.errors.size() == 1);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isErroneousExpression());
+  assert(mod->stmt(2)->isComment());
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -205,6 +268,9 @@ int main() {
   test0(p);
   test1(p);
   test2(p);
+  test3(p);
+  test4(p);
+  test5(p);
 
   return 0;
 }

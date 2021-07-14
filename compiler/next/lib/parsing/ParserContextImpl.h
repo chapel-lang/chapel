@@ -1136,12 +1136,51 @@ Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
   return ret;
 }
 
+Expression* ParserContext::
+buildVisibilityClause(YYLTYPE location, owned<Expression> symbol,
+                      VisibilityClause::LimitationKind limitationKind,
+                      ASTList limitations) {
+  if (!symbol->isAs() && !symbol->isIdentifier() && !symbol->isDot()) {
+    auto msg = "Expected symbol in visibility clause";
+    return raiseError(location, msg);
+  }
+
+  for (auto& expr : limitations) {
+    if (expr->isAs() || expr->isIdentifier() || expr->isDot() ||
+        expr->isComment()) {
+      continue;
+    } else {
+      auto msg = "Expected symbol in limitation list";
+      return raiseError(location, msg);
+    }
+  }
+
+  auto node = VisibilityClause::build(builder, convertLocation(location),
+                                      std::move(symbol),
+                                      limitationKind,
+                                      std::move(limitations));
+
+  return node.release();
+}
+
+Expression* ParserContext::
+buildVisibilityClause(YYLTYPE location, owned<Expression> symbol) {
+  return buildVisibilityClause(location, std::move(symbol),
+                               VisibilityClause::NONE,
+                               ASTList());
+}
+
 Expression* ParserContext::buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
                                        owned<Expression> name,
                                        owned<Expression> rename) {
   if (!rename->isIdentifier()) {
     const char* msg = "Rename in as expression must be identifier";
     return raiseError(locRename, msg);
+  }
+
+  if (!name->isDot() && !name->isIdentifier()) {
+    const char* msg = "Symbol in as expression must be dot or identifer";
+    return raiseError(locName, msg);
   }
 
   auto renameAsIdent = toOwned(rename.release()->toIdentifier());
@@ -1156,6 +1195,51 @@ Expression* ParserContext::buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
 }
 
 CommentsAndStmt ParserContext::
+buildImportStmt(YYLTYPE locEverything, Decl::Visibility visibility,
+                ParserExprList* visibilityClauses) {
+  auto comments = gatherComments(locEverything);
+  auto convLoc = convertLocation(locEverything);
+
+  auto vcs = consumeList(visibilityClauses);
+
+  // If any of the clauses are EEs, then discard the entire import.
+  for (auto& vc : vcs) {
+    if (vc->isErroneousExpression()) {
+      auto node = ErroneousExpression::build(builder, convLoc);
+      return { .comments=comments, .stmt=node.release() };
+    }
+  }
+
+  auto node = Import::build(builder, convLoc, visibility, std::move(vcs));
+
+  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+  return finishStmt(cs);
+}
+
+CommentsAndStmt ParserContext::
+buildMultiUseStmt(YYLTYPE locEverything, Decl::Visibility visibility,
+                  ParserExprList* visibilityClauses) {
+  auto comments = gatherComments(locEverything);
+  auto convLoc = convertLocation(locEverything);
+
+  auto vcs = consumeList(visibilityClauses);
+
+  // If any of the clauses are EEs, then discard the entire use.
+  for (auto& vc : vcs) {
+    if (vc->isErroneousExpression()) {
+      auto node = ErroneousExpression::build(builder, convLoc);
+      return { .comments=comments, .stmt=node.release() };
+    }
+  }
+
+  // TODO: Make sure that all the vis clauses are correct for multi-use?
+  auto node = Use::build(builder, convLoc, visibility, std::move(vcs));
+
+  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+  return finishStmt(cs);
+}
+
+CommentsAndStmt ParserContext::
 buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
                    Decl::Visibility visibility,
                    owned<Expression> name,
@@ -1163,14 +1247,19 @@ buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
                    ParserExprList* limitationExprs) {
   auto comments = gatherComments(locEverything);
 
-  auto convertedVisClauseLoc = convertLocation(locVisibilityClause);
+  auto visClause = buildVisibilityClause(locVisibilityClause,
+                                         std::move(name),
+                                         limitationKind,
+                                         consumeList(limitationExprs));
 
-  auto visClause = VisibilityClause::build(builder, convertedVisClauseLoc,
-                                           std::move(name),
-                                           limitationKind,
-                                           consumeList(limitationExprs));
+  if (visClause->isErroneousExpression()) {
+    auto convLoc = convertLocation(locVisibilityClause);
+    auto node = ErroneousExpression::build(builder, convLoc);
+    return { .comments=comments, .stmt=node.release() };
+  }
 
-  auto uses = consumeList(makeList(visClause.release()));
+  ASTList uses;
+  uses.push_back(toOwned(visClause));
 
   auto node = Use::build(builder, convertLocation(locEverything),
                          visibility,
