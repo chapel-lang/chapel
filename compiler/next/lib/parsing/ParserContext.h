@@ -241,7 +241,7 @@ struct ParserContext {
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
   // Build a loop index decl from a given expression. The expression is owned
-  // because it will be consumed. 
+  // because it will be consumed.
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, owned<Expression> e);
 
   FnCall* wrapCalledExpressionInNew(YYLTYPE location,
@@ -292,7 +292,7 @@ struct ParserContext {
                          ParserExprList*& outExprLst,
                          BlockStyle& outBlockStyle,
                          YYLTYPE locStartKeyword,
-                         YYLTYPE locBodyAnchor, 
+                         YYLTYPE locBodyAnchor,
                          BlockOrDo consume);
 
   CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLeftBracket,

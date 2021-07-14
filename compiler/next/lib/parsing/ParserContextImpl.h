@@ -427,7 +427,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
     auto scope = currentScope();
     if (currentScopeIsAggregate()) {
       if (fp.receiver == nullptr) {
-        auto loc = convertLocation(location); 
+        auto loc = convertLocation(location);
         auto ths = UniqueString::build(context(), "this");
         UniqueString cls = scope.name;
         fp.receiver = Formal::build(builder, loc,
@@ -507,7 +507,7 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
   return fnCall;
 }
 
-owned<Block> 
+owned<Block>
 ParserContext::consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst) {
   // if it consists of only a block, return that block
   if (lst != nullptr && lst->size() == 1) {
@@ -622,14 +622,14 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
   assert(indexExpr);
   auto index = buildLoopIndexDecl(locIndex, toOwned(indexExpr));
 
-  auto stmts = consumeAndFlattenTopLevelBlocks(exprLst);
+  auto body = consumeToBlock(locBodyAnchor, exprLst);
 
   auto node = BracketLoop::build(builder, convertLocation(locLeftBracket),
                                  std::move(index),
                                  toOwned(iterandExpr),
                                  toOwned(withClause),
                                  blockStyle,
-                                 std::move(stmts),
+                                 std::move(body),
                                  /*isExpressionLevel*/ false);
 
   return { .comments=comments, .stmt=node.release() };
@@ -664,14 +664,14 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
 
   assert(iterandExpr);
 
-  auto stmts = consumeAndFlattenTopLevelBlocks(exprLst);
+  auto body = consumeToBlock(locBodyAnchor, exprLst);
 
   auto node = BracketLoop::build(builder, convertLocation(locLeftBracket),
                                  /*index*/ nullptr,
                                  toOwned(iterandExpr),
                                  toOwned(withClause),
                                  blockStyle,
-                                 std::move(stmts),
+                                 std::move(body),
                                  /*isExpressionLevel*/ false);
 
   return { .comments=comments, .stmt=node.release() };
@@ -695,14 +695,14 @@ CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
                     locBodyAnchor,
                     blockOrDo);
 
-  auto stmts = consumeAndFlattenTopLevelBlocks(exprLst);
+  auto body = consumeToBlock(locBodyAnchor, exprLst);
 
   auto node = Forall::build(builder, convertLocation(locForall),
                             std::move(index),
                             toOwned(iterandExpr),
                             toOwned(withClause),
                             blockStyle,
-                            std::move(stmts),
+                            std::move(body),
                             /*isExpressionLevel*/ false);
 
   return { .comments=comments, .stmt=node.release() };
@@ -726,14 +726,14 @@ CommentsAndStmt ParserContext::buildForeachLoopStmt(YYLTYPE locForeach,
                     locBodyAnchor,
                     blockOrDo);
 
-  auto stmts = consumeAndFlattenTopLevelBlocks(exprLst);
+  auto body = consumeToBlock(locBodyAnchor, exprLst);
 
   auto node = Foreach::build(builder, convertLocation(locForeach),
                              std::move(index),
                              toOwned(iterandExpr),
                              toOwned(withClause),
                              blockStyle,
-                             std::move(stmts));
+                             std::move(body));
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -755,13 +755,13 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                     locBodyAnchor,
                     blockOrDo);
 
-  auto stmts = consumeAndFlattenTopLevelBlocks(exprLst);
+  auto body = consumeToBlock(locBodyAnchor, exprLst);
 
   auto node = For::build(builder, convertLocation(locFor),
                          std::move(index),
                          toOwned(iterandExpr),
                          blockStyle,
-                         std::move(stmts),
+                         std::move(body),
                          /*isExpressionLevel*/ false,
                          /*isParam*/ false);
 
@@ -786,14 +786,14 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                     locBodyAnchor,
                     blockOrDo);
 
-  auto stmts = consumeAndFlattenTopLevelBlocks(exprLst);
+  auto body = consumeToBlock(locBodyAnchor, exprLst);
 
   auto node = Coforall::build(builder, convertLocation(locCoforall),
                               std::move(index),
                               toOwned(iterandExpr),
                               toOwned(withClause),
                               blockStyle,
-                              std::move(stmts));
+                              std::move(body));
 
   return { .comments=comments, .stmt=node.release() };
 }

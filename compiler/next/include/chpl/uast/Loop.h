@@ -21,6 +21,7 @@
 #define CHPL_UAST_LOOP_H
 
 #include "chpl/uast/ASTNode.h"
+#include "chpl/uast/Block.h"
 #include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Expression.h"
 
@@ -34,18 +35,31 @@ namespace uast {
 class Loop: public Expression {
  protected:
   Loop(asttags::ASTTag tag, ASTList children, BlockStyle blockStyle,
-       int loopBodyChildNum,
-       int numLoopBodyStmts)
+       int loopBodyChildNum)
     : Expression(tag, std::move(children)),
       blockStyle_(blockStyle),
-      loopBodyChildNum_(loopBodyChildNum),
-      numLoopBodyStmts_(numLoopBodyStmts) {
+      loopBodyChildNum_(loopBodyChildNum) {
 
-    assert(loopBodyChildNum_ >= 0 && numLoopBodyStmts_ >= 0);
-    assert((loopBodyChildNum_ + numLoopBodyStmts_) <= this->numChildren());
+    assert(0 <= loopBodyChildNum_ &&
+           loopBodyChildNum_ < (int) children_.size());
+    assert(children_[loopBodyChildNum_]->isBlock());
   }
 
-  bool loopContentsMatchInner(const Loop* other) const;
+  bool loopContentsMatchInner(const Loop* other) const {
+    const Loop* lhs = this;
+    const Loop* rhs = other;
+
+    if (lhs->loopBodyChildNum_ != rhs->loopBodyChildNum_)
+      return false;
+
+    if (lhs->blockStyle_ != rhs->blockStyle_)
+      return false;
+
+    if (!lhs->expressionContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
 
   void loopMarkUniqueStringsInner(Context* context) const {
     expressionMarkUniqueStringsInner(context);
@@ -53,35 +67,34 @@ class Loop: public Expression {
 
   BlockStyle blockStyle_;
   int loopBodyChildNum_;
-  int numLoopBodyStmts_;
 
  public:
   virtual ~Loop() override = 0; // this is an abstract base class
+
+  const Block* body() const {
+    auto ret = child(loopBodyChildNum_);
+    return (const Block*) ret;
+  }
 
   /**
     Return a way to iterate over the statements of this loop.
    */
   ASTListIteratorPair<Expression> stmts() const {
-    auto begin = children_.begin() + loopBodyChildNum_;
-    auto end = begin + numLoopBodyStmts_;
-    return ASTListIteratorPair<Expression>(begin, end);
+    return body()->stmts();
   }
 
   /**
    Return the number of statements in the loop.
    */
   int numStmts() const {
-    return numLoopBodyStmts_;
+    return body()->numStmts();
   }
 
   /**
    Return the i'th statement in the loop.
    */
   const Expression* stmt(int i) const {
-    assert(i >= 0 && i < numLoopBodyStmts_);
-    const ASTNode* ast = this->child(i+loopBodyChildNum_);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
+    return body()->stmt(i);
   }
 
   /**
