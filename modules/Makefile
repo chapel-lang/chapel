@@ -71,7 +71,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
-	standard/Builtins.chpl \
 	standard/ChapelEnv.chpl \
 	standard/ChapelIO.chpl \
 	standard/CommDiagnostics.chpl \
@@ -144,7 +143,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/UnitTest.chpl \
 	packages/UnorderedAtomics.chpl \
 	packages/UnorderedCopy.chpl \
-	packages/URL.chpl
+	packages/URL.chpl \
+
 
 DISTS_TO_DOCUMENT = \
 	dists/BlockCycDist.chpl \
@@ -160,19 +160,20 @@ DISTS_TO_DOCUMENT = \
 	dists/dims/ReplicatedDim.chpl \
 	layouts/LayoutCS.chpl \
 
+
 INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/Atomics.chpl                 \
+	internal/Bytes.chpl                   \
 	internal/ChapelArray.chpl             \
 	internal/ChapelComplex_forDocs.chpl   \
-	internal/ChapelError.chpl             \
 	internal/ChapelLocale.chpl            \
 	internal/ChapelRange.chpl             \
-	internal/Bytes.chpl                   \
-	internal/String.chpl                  \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \
+	internal/Errors.chpl                  \
 	internal/OwnedObject.chpl             \
-	internal/SharedObject.chpl
+	internal/SharedObject.chpl            \
+	internal/String.chpl                  \
 
 
 documentation: $(SYS_CTYPES_MODULE_DOC)

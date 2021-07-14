@@ -86,7 +86,7 @@ The default intent for :record:`shared` types is ``const ref``.
  */
 module SharedObject {
 
-  use ChapelError, Atomics, ChapelBase;
+  use Errors, Atomics, ChapelBase;
   use OwnedObject;
 
   // TODO unify with RefCountBase. Even though that one is for

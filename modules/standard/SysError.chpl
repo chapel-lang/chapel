@@ -40,7 +40,7 @@ private use CPtr;
 
 /*
 
-   :class:`SystemError` is a base class for :class:`ChapelError.Error` s
+   :class:`SystemError` is a base class for :class:`Errors.Error` s
    generated from ``syserr``. It provides factory methods to create different
    subtypes based on the ``syserr`` that is passed.
 
