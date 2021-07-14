@@ -368,11 +368,27 @@ struct ParserContext {
                           owned<Expression> name,
                           owned<Expression> rename);
 
+  Expression*
+  buildVisibilityClause(YYLTYPE location, owned<Expression> symbol);
+
+  Expression*
+  buildVisibilityClause(YYLTYPE location, owned<Expression> symbol,
+                        VisibilityClause::LimitationKind limitationKind,
+                        ASTList limitations);
+
   CommentsAndStmt
-  buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locUseClause,
+  buildImportStmt(YYLTYPE locEverything, Decl::Visibility visibility,
+                  ParserExprList* visibilityClauses);
+
+  CommentsAndStmt
+  buildMultiUseStmt(YYLTYPE locEverything, Decl::Visibility visibility,
+                    ParserExprList* visibilityClauses);
+
+  CommentsAndStmt
+  buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
                      Decl::Visibility visibility,
                      owned<Expression> name,
-                     UseClause::LimitationClauseKind limitationClauseKind,
+                     VisibilityClause::LimitationKind limitationKind,
                      ParserExprList* limitationExprs);
 
   // Given a list of vars, build either a single var or a multi-decl.

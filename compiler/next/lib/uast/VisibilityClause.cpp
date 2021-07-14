@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/UseClause.h"
+#include "chpl/uast/VisibilityClause.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,10 +25,11 @@ namespace chpl {
 namespace uast {
 
 
-owned<UseClause> UseClause::build(Builder* builder, Location loc,
-                                  owned<Expression> symbol,
-                                  LimitationClauseKind limitationClauseKind,
-                                  ASTList limitationClause) {
+owned<VisibilityClause>
+VisibilityClause::build(Builder* builder, Location loc,
+                        owned<Expression> symbol,
+                        LimitationKind limitationKind,
+                        ASTList limitations) {
   assert(symbol.get() != nullptr);
 
   ASTList lst;
@@ -36,22 +37,26 @@ owned<UseClause> UseClause::build(Builder* builder, Location loc,
 
   lst.push_back(std::move(symbol));
 
-  if (limitationClause.size()) {
-    numLimitations = limitationClause.size();
-    for (auto& ast : limitationClause) {
+  if (limitations.size()) {
+    numLimitations = limitations.size();
+    for (auto& ast : limitations) {
       lst.push_back(std::move(ast));
     }
   }
 
-  UseClause* ret = new UseClause(std::move(lst), limitationClauseKind,
-                                 numLimitations);
+  VisibilityClause* ret = new VisibilityClause(std::move(lst),
+                                               limitationKind,
+                                               numLimitations);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
 
-owned<UseClause> UseClause::build(Builder* builder, Location loc,
-                                  owned<Expression> symbol) {
-  return build(builder, loc, std::move(symbol), UseClause::NONE, ASTList());
+owned<VisibilityClause>
+VisibilityClause::build(Builder* builder, Location loc,
+                        owned<Expression> symbol) {
+  return build(builder, loc, std::move(symbol),
+               VisibilityClause::NONE,
+               ASTList());
 }
 
 } // namespace uast

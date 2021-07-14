@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Use.h"
+#include "chpl/uast/Import.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,10 +25,10 @@ namespace chpl {
 namespace uast {
 
 
-owned<Use> Use::build(Builder* builder, Location loc,
-                      Decl::Visibility visibility,
-                      ASTList visibilityClauses) {
-  Use* ret = new Use(std::move(visibilityClauses), visibility);
+owned<Import> Import::build(Builder* builder, Location loc,
+                            Decl::Visibility visibility,
+                            ASTList visibilityClauses) {
+  Import* ret = new Import(std::move(visibilityClauses), visibility);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

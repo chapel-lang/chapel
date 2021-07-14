@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_USE_H
-#define CHPL_UAST_USE_H
+#ifndef CHPL_UAST_IMPORT_H
+#define CHPL_UAST_IMPORT_H
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Decl.h"
@@ -30,41 +30,35 @@ namespace uast {
 
 
 /**
-  This class represents a use statement. For example:
+  This class represents an import statement. For example:
 
   \rst
   .. code-block:: chapel
 
       // Example 1:
-      use Foo, Bar as A;
+      import Foo, Bar as A;
 
   \endrst
 
-  This creates a use statement that has two visibility clauses, 'Foo' and
-  'Bar as A'.
+  This creates an import statement that has two visibility clauses, 'Foo'
+  and 'Bar as A'.
 */
-class Use final : public Expression {
+class Import final : public Expression {
  private:
-  Use(ASTList children, Decl::Visibility visibility)
-    : Expression(asttags::Use, std::move(children)),
+  Import(ASTList children, Decl::Visibility visibility)
+    : Expression(asttags::Import, std::move(children)),
       visibility_(visibility) {
     assert(numChildren() >= 1);
 
-    if (numVisibilityClauses() == 1) {
-      auto vc = visibilityClause(0);
+    for (auto vc : visibilityClauses()) {
       bool acceptable = vc->limitationKind() == VisibilityClause::NONE ||
-                        vc->limitationKind() == VisibilityClause::EXCEPT ||
-                        vc->limitationKind() == VisibilityClause::ONLY;
+                        vc->limitationKind() == VisibilityClause::BRACES;
       assert(acceptable);
-    } else {
-      for (auto vc : visibilityClauses()) {
-        assert(vc->limitationKind() == VisibilityClause::NONE);
-      }
     }
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
-    const Use* rhs = other->toUse();
+    const Import* rhs = other->toImport();
     return this->visibility_ == rhs->visibility_ &&
       this->expressionContentsMatchInner(rhs);
   }
@@ -78,14 +72,14 @@ class Use final : public Expression {
  public:
 
   /**
-    Create and return a use statement.
+    Create and return an import statement.
   */
-  static owned<Use> build(Builder* builder, Location loc,
-                          Decl::Visibility visibility,
-                          ASTList visibilityClauses);
+  static owned<Import> build(Builder* builder, Location loc,
+                             Decl::Visibility visibility,
+                             ASTList visibilityClauses);
 
   /**
-    Return the visibility of this use statement.
+    Return the visibility of this import statement.
   */
   Decl::Visibility visibility() const {
     return visibility_;
@@ -100,14 +94,14 @@ class Use final : public Expression {
   }
 
   /**
-    Return the number of visibility clauses in this use statement.
+    Return the number of visibility clauses in this import statement.
   */
   int numVisibilityClauses() const {
     return this->numChildren();
   }
 
   /**
-    Return the i'th visibility clause in this use statement.
+    Return the i'th visibility clause in this import statement.
   */
   const VisibilityClause* visibilityClause(int i) const {
     auto ret = this->child(i);
