@@ -25,37 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Conditional::contentsMatchInner(const ASTNode* other) const {
-  const Conditional* lhs = this;
-  const Conditional* rhs = other->toConditional();
-
-  if (lhs->thenBlockStyle_ != rhs->thenBlockStyle_)
-    return false;
-
-  if (lhs->thenBodyChildNum_ != rhs->thenBodyChildNum_)
-    return false;
-
-  if (lhs->numThenBodyStmts_ != rhs->numThenBodyStmts_)
-    return false;
-
-  if (lhs->elseBlockStyle_ != rhs->elseBlockStyle_)
-    return false;
-
-  if (lhs->elseBodyChildNum_ != rhs->elseBodyChildNum_)
-    return false;
-
-  if (lhs->numElseBodyStmts_ != rhs->numElseBodyStmts_)
-    return false;
-
-  if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
-    return false;
-
-  if (!lhs->expressionContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<Conditional> Conditional::build(Builder* builder, Location loc,
                                       owned<Expression> condition,
                                       BlockStyle thenBlockStyle,
