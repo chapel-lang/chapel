@@ -25,40 +25,24 @@ namespace chpl {
 namespace uast {
 
 
-bool DoWhile::contentsMatchInner(const ASTNode* other) const {
-  const DoWhile* lhs = this;
-  const DoWhile* rhs = (const DoWhile*) other;
-
-  if (lhs->conditionChildNum_ != rhs->conditionChildNum_)
-    return false;
-
-  if (!lhs->loopContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<DoWhile> DoWhile::build(Builder* builder, Location loc,
                               BlockStyle blockStyle,
-                              ASTList stmts,
+                              owned<Block> body,
                               owned<Expression> condition) {
 
   assert(condition.get() != nullptr);
+  assert(body.get() != nullptr);
 
   ASTList lst;
   const int loopBodyChildNum = lst.size();
-  const int numLoopBodyStmts = stmts.size();
 
-  for (auto& stmt: stmts) {
-    lst.push_back(std::move(stmt));
-  }
+  lst.push_back(std::move(body));
 
   int conditionChildNum = lst.size();
   lst.push_back(std::move(condition));
 
   DoWhile* ret = new DoWhile(std::move(lst), blockStyle,
                              loopBodyChildNum,
-                             numLoopBodyStmts,
                              conditionChildNum);
 
   builder->noteLocation(ret, loc);

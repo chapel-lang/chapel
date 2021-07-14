@@ -51,7 +51,6 @@ class Forall final : public IndexableLoop {
          int8_t withClauseChildNum,
          BlockStyle blockStyle,
          int loopBodyChildNum,
-         int numLoopBodyStmts,
          bool isExpressionLevel)
     : IndexableLoop(asttags::Forall, std::move(children),
                     indexChildNum,
@@ -59,7 +58,6 @@ class Forall final : public IndexableLoop {
                     withClauseChildNum,
                     blockStyle,
                     loopBodyChildNum,
-                    numLoopBodyStmts,
                     isExpressionLevel) {
     assert(isExpressionASTList(children_));
   }
@@ -83,7 +81,7 @@ class Forall final : public IndexableLoop {
                              owned<Expression> iterand,
                              owned<WithClause> withClause,
                              BlockStyle blockStyle,
-                             ASTList stmts,
+                             owned<Block> body,
                              bool isExpressionLevel);
 
 };

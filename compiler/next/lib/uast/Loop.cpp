@@ -22,24 +22,6 @@
 namespace chpl {
 namespace uast {
 
-bool Loop::loopContentsMatchInner(const Loop* other) const {
-  const Loop* lhs = this;
-  const Loop* rhs = other;
-
-  if (lhs->loopBodyChildNum_ != rhs->loopBodyChildNum_)
-    return false;
-
-  if (lhs->numLoopBodyStmts_ != rhs->numLoopBodyStmts_)
-    return false;
-
-  if (lhs->blockStyle_ != rhs->blockStyle_)
-    return false;
-
-  if (!lhs->expressionContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
 
 Loop::~Loop() {
 }

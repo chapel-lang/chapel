@@ -35,8 +35,14 @@ class ErroneousExpression final : public Expression {
   ErroneousExpression()
     : Expression(asttags::ErroneousExpression) {
   }
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const ErroneousExpression* lhs = this;
+    const ErroneousExpression* rhs = (const ErroneousExpression*) other;
+    return lhs->expressionContentsMatchInner(rhs);
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    expressionMarkUniqueStringsInner(context);
+  }
 
  public:
   ~ErroneousExpression() = default;

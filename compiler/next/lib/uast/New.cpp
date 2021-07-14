@@ -23,22 +23,6 @@
 namespace chpl {
 namespace uast {
 
-bool New::contentsMatchInner(const ASTNode* other) const {
-  const New* lhs = this;
-  const New* rhs = (const New*) other;
-
-  if (!lhs->expressionContentsMatchInner(rhs))
-    return false;
-
-  if (lhs->management_ != rhs->management_)
-    return false;
-
-  return true;
-}
-
-void New::markUniqueStringsInner(Context* context) const {
-  return expressionMarkUniqueStringsInner(context);
-}
 
 owned<New> New::build(Builder* builder,
                       Location loc,

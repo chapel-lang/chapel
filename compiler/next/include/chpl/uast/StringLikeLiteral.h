@@ -49,8 +49,16 @@ class StringLikeLiteral : public Literal {
       quotes_(quotes)
   { }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const StringLikeLiteral* lhs = this;
+    const StringLikeLiteral* rhs = (const StringLikeLiteral*) other;
+    return lhs->literalContentsMatchInner(rhs) &&
+           lhs->value_ == rhs->value_ &&
+           lhs->quotes_ == rhs->quotes_;
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    literalMarkUniqueStringsInner(context);
+  }
 
  public:
   virtual ~StringLikeLiteral() = 0; // this is an abstract base class

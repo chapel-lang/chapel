@@ -49,15 +49,13 @@ class Coforall final : public IndexableLoop {
            int8_t iterandChildNum,
            int8_t withClauseChildNum,
            BlockStyle blockStyle,
-           int loopBodyChildNum,
-           int numLoopBodyStmts)
+           int loopBodyChildNum)
     : IndexableLoop(asttags::Coforall, std::move(children),
                     indexChildNum,
                     iterandChildNum,
                     withClauseChildNum,
                     blockStyle,
                     loopBodyChildNum,
-                    numLoopBodyStmts,
                     /*isExpressionLevel*/ false) {
     assert(isExpressionASTList(children_));
   }
@@ -81,7 +79,7 @@ class Coforall final : public IndexableLoop {
                                owned<Expression> iterand,
                                owned<WithClause> withClause,
                                BlockStyle blockStyle,
-                               ASTList stmts);
+                               owned<Block> body);
 
 
 };

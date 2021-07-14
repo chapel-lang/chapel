@@ -25,25 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Cobegin::contentsMatchInner(const ASTNode* other) const {
-  const Cobegin* lhs = this;
-  const Cobegin* rhs = (const Cobegin*) other;
-
-  if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
-    return false;
-
-  if (lhs->bodyChildNum_ != rhs->bodyChildNum_)
-    return false;
-
-  if (lhs->numTaskBodies_ != rhs->numTaskBodies_)
-    return false;
-
-  if (!lhs->expressionContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<Cobegin> Cobegin::build(Builder* builder,
                               Location loc,
                               owned<WithClause> withClause,

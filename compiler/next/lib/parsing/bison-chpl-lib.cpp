@@ -6652,7 +6652,7 @@ yyreduce:
                                false, locBodyAnchor, (yyvsp[0].commentsAndStmt));
     assert(blockStyle == BlockStyle::EXPLICIT);
     auto taskBodies = context->consumeAndFlattenTopLevelBlocks(exprLst);
-    auto node = Cobegin::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[-1].withClause)), 
+    auto node = Cobegin::build(BUILDER, LOC((yyloc)), toOwned((yyvsp[-1].withClause)),
                                std::move(taskBodies));
     CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
     (yyval.commentsAndStmt) = context->finishStmt(ret);
@@ -7743,9 +7743,9 @@ yyreduce:
     if (blockStyle == BlockStyle::IMPLICIT) {
       exprLst = context->appendList(exprLst, context->gatherComments((yylsp[-2])));
     }
-    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto body = context->consumeToBlock((yylsp[-4]), exprLst);
     auto node = DoWhile::build(BUILDER, LOC((yyloc)), blockStyle,
-                               std::move(stmts),
+                               std::move(body),
                                toOwned((yyvsp[-1].expr)));
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     (yyval.commentsAndStmt) = context->finishStmt(cs);
@@ -7760,10 +7760,10 @@ yyreduce:
     ParserExprList* exprLst;
     BlockStyle blockStyle;
     context->prepareStmtPieces(comments, exprLst, blockStyle, (yylsp[-2]), (yylsp[0]), (yyvsp[0].blockOrDo));
-    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto body = context->consumeToBlock((yylsp[0]), exprLst);
     auto node = While::build(BUILDER, LOC((yylsp[-2])), toOwned((yyvsp[-1].expr)),
                              blockStyle,
-                             std::move(stmts));
+                             std::move(body));
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     (yyval.commentsAndStmt) = context->finishStmt(cs);
   }
@@ -7777,10 +7777,10 @@ yyreduce:
     ParserExprList* exprLst;
     BlockStyle blockStyle;
     context->prepareStmtPieces(comments, exprLst, blockStyle, (yylsp[-2]), (yylsp[0]), (yyvsp[0].blockOrDo));
-    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto body = context->consumeToBlock((yylsp[0]), exprLst);
     auto node = While::build(BUILDER, LOC((yylsp[-2])), toOwned((yyvsp[-1].expr)),
                              blockStyle,
-                             std::move(stmts));
+                             std::move(body));
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
     (yyval.commentsAndStmt) = context->finishStmt(cs);
   }
@@ -7852,11 +7852,11 @@ yyreduce:
     context->prepareStmtPieces(comments, exprLst, blockStyle, (yylsp[-5]), (yylsp[0]), (yyvsp[0].blockOrDo));
     Expression* ident = context->buildIdent((yylsp[-3]), (yyvsp[-3].uniqueStr));
     auto index = context->buildLoopIndexDecl((yylsp[-3]), toOwned(ident));
-    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
+    auto body = context->consumeToBlock((yylsp[0]), exprLst);
     auto node = For::build(BUILDER, LOC((yylsp[-5])), std::move(index),
                            toOwned((yyvsp[-1].expr)),
                            blockStyle,
-                           std::move(stmts),
+                           std::move(body),
                            /*isExpressionLevel*/ false,
                            /*isParam*/ true);
     CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };

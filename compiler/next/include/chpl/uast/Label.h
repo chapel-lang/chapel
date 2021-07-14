@@ -51,9 +51,24 @@ class Label final : public Expression {
     assert(numChildren() == 1);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Label* lhs = this;
+    const Label* rhs = other->toLabel();
 
+    assert(lhs->loopChildNum_ == rhs->loopChildNum_);
+
+    if (lhs->name_ != rhs->name_)
+      return false;
+
+    if (!lhs->expressionContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    name_.mark(context);
+    expressionMarkUniqueStringsInner(context);
+  }
   // This always exists and its position can never change.
   static const int8_t loopChildNum_ = 0;
 
