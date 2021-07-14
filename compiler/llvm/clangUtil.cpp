@@ -2919,6 +2919,15 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName,
       break;
     }
   }
+
+  // TODO (dlongnecke): Try to move this to a spot before codegen? It would
+  // also be cool if we could point this to the location in the source code
+  // where the field is being accessed.
+  if (!field) {
+    auto fmt = "Definition of '%s.%s' not visible in external C code";
+    USR_FATAL(fmt, typeName, fieldName);
+  }
+
   INT_ASSERT(field);
 
   isCArrayField = field->getType()->isArrayType();
