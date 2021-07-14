@@ -224,6 +224,7 @@ const ID& idToParentId(Context* context, ID id) {
   // Performance: Would it be better to have the parse query
   // set this query as an alternative to computing maps
   // in Builder::Result and then redundantly setting them here?
+  // Or, should we store parent ID as a field in ASTNode?
 
   QUERY_BEGIN(idToParentId, context, id);
 
