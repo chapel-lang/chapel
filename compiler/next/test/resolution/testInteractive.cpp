@@ -18,6 +18,7 @@
  */
 
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/queries/query-impl.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
@@ -36,25 +37,38 @@ using namespace uast;
 
 static void findInnermostDecls(Context* context, const ASTNode* ast) {
   if (auto ident = ast->toIdentifier()) {
-    printf("%s %s refers to: ",
-           ident->id().toString().c_str(),
-           ident->name().c_str());
-
     const Scope* scope = scopeForId(context, ast->id());
     assert(scope != nullptr);
 
-    const auto& m = findInnermostDecl(context, scope, ident->name());
+    auto name = ident->name();
+    const auto& m = findInnermostDecl(context, scope, name);
+
+    auto status = context->queryStatus(findInnermostDecl,
+                                      std::make_tuple(scope, name));
+
+    printf("%8s %-8s refers to: ",
+           ident->id().toString().c_str(),
+           ident->name().c_str());
+
     if (m.found == InnermostMatch::ZERO) {
-      printf("no such name found\n");
+      printf("%-32s ", "no such name found");
+    } else if (m.found == InnermostMatch::ONE && m.id.isEmpty()) {
+      printf("%-32s ", "builtin");
     } else if (m.found == InnermostMatch::ONE) {
-      if (m.id.isEmpty()) {
-        printf("builtin\n");
-      } else {
-        printf("%s\n", m.id.toString().c_str());
-      }
+      printf("%-32s ", m.id.toString().c_str());
     } else {
-      printf("ambiguity\n");
+      printf("%-32s ", "ambiguity");
     }
+
+    if (status == Context::NOT_CHECKED_NOT_CHANGED) {
+      printf("(not checked)");
+    } else if (status == Context::REUSED) {
+      printf("(reused)");
+    } else if (status == Context::CHANGED) {
+      printf("(changed)");
+    }
+
+    printf("\n");
   }
 
   for (const ASTNode* child : ast->children()) {
