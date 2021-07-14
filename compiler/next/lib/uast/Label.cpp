@@ -24,25 +24,6 @@
 namespace chpl {
 namespace uast {
 
-bool Label::contentsMatchInner(const ASTNode* other) const {
-  const Label* lhs = this;
-  const Label* rhs = other->toLabel();
-
-  assert(lhs->loopChildNum_ == rhs->loopChildNum_);
-
-  if (lhs->name_ != rhs->name_)
-    return false;
-
-  if (!lhs->expressionContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
-void Label::markUniqueStringsInner(Context* context) const {
-  name_.mark(context);
-  expressionMarkUniqueStringsInner(context);
-}
 
 owned<Label> Label::build(Builder* builder, Location loc, UniqueString name,
                           owned<Loop> loop) {

@@ -46,19 +46,6 @@ bool TupleDecl::assertAcceptableTupleDecl() {
   return true;
 }
 
-bool TupleDecl::contentsMatchInner(const ASTNode* other) const {
-  const TupleDecl* lhs = this;
-  const TupleDecl* rhs = (const TupleDecl*) other;
-  return lhs->declContentsMatchInner(rhs) &&
-         lhs->kind_ == rhs->kind_ &&
-         lhs->numElements_ == rhs->numElements_ &&
-         lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
-         lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
-}
-void TupleDecl::markUniqueStringsInner(Context* context) const {
-  declMarkUniqueStringsInner(context);
-}
-
 owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
                                   Decl::Visibility vis,
                                   Variable::Kind kind,

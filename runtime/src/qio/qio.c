@@ -4388,6 +4388,18 @@ qioerr qio_get_fs_type(qio_file_t* fl, int* out)
   return 0;
 }
 
+qioerr qio_get_fd(qio_file_t* fl, int* out)
+{
+  if(fl != NULL && fl->fd != -1)
+    *out = fl->fd;
+  else {
+    *out = -1;
+    QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd");
+  }
+
+  return 0;
+}
+
 
 qioerr qio_get_chunk(qio_file_t* fl, int64_t* len_out)
 {
@@ -4439,4 +4451,3 @@ qioerr qio_locales_for_region(qio_file_t* fl, off_t start, off_t end, const char
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "Unable to get locale for specified region of file");
   }
 }
-

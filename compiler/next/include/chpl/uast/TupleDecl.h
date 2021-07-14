@@ -72,8 +72,19 @@ class TupleDecl final : public Decl {
     assert(assertAcceptableTupleDecl());
   }
   bool assertAcceptableTupleDecl();
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const TupleDecl* lhs = this;
+    const TupleDecl* rhs = (const TupleDecl*) other;
+    return lhs->declContentsMatchInner(rhs) &&
+           lhs->kind_ == rhs->kind_ &&
+           lhs->numElements_ == rhs->numElements_ &&
+           lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
+           lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    declMarkUniqueStringsInner(context);
+  }
 
  public:
   ~TupleDecl() override = default;

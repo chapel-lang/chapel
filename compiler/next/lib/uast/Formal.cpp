@@ -25,17 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Formal::contentsMatchInner(const ASTNode* other) const {
-  const Formal* lhs = this;
-  const Formal* rhs = (const Formal*) other;
-  return lhs->varLikeDeclContentsMatchInner(rhs) &&
-         lhs->intent_ == rhs->intent_;
-}
-
-void Formal::markUniqueStringsInner(Context* context) const {
-  varLikeDeclMarkUniqueStringsInner(context);
-}
-
 owned<Formal>
 Formal::build(Builder* builder, Location loc,
               UniqueString name,

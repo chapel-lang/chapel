@@ -76,8 +76,17 @@ class Variable final : public VarLikeDecl {
         isField_(isField) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Variable* lhs = this;
+    const Variable* rhs = (const Variable*) other;
+    return lhs->kind_ == rhs->kind_ &&
+           lhs->isConfig_ == rhs->isConfig_ &&
+           lhs->isField_ == rhs->isField_ &&
+           lhs->varLikeDeclContentsMatchInner(rhs);
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    varLikeDeclMarkUniqueStringsInner(context);
+  }
 
   Kind kind_;
   bool isConfig_;

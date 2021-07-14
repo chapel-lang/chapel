@@ -22,28 +22,76 @@
 
 #include "chpl/types/Type.h"
 #include "chpl/uast/ASTNode.h"
+#include "chpl/util/memory.h"
+
+#include <unordered_map>
 
 namespace chpl {
 namespace resolution {
 
+// TODO: Should some/all of these structs be classes
+// with getters etc? That would be appropriate for
+// use as part of the library API.
 
-struct ResolutionResult {
+/**
+  An untyped function signature. This is really just the part of a function
+  including the formals.
+ */
+struct UntypedFnSignature {
+  UniqueString name;
+  bool isMethod; // in that case, formals[0] is the receiver
+  std::vector<const uast::Formal*> formals;
+};
+
+struct CallInfoActual {
+  const types::Type* type;
+  UniqueString byName;
+};
+
+struct CallInfo {
+  bool isMethod; // in that case, actuals[0] is the receiver
+  std::vector<CallInfoActual> actuals;
+};
+
+struct TypedFnSignatureFormal {
+  const uast::Formal* formal;
+  const types::Type* type;
+  // TODO: param value
+};
+
+struct TypedFnSignature {
+  UniqueString name;
+  bool isMethod; // in that case, formals[0] is the receiver
+  std::vector<TypedFnSignatureFormal> formals;
+};
+
+/*
+struct ResolvedExpression {
   // the expr that is resolved
   const uast::Expression* expr = nullptr;
   // For simple cases, which named decl does it refer to?
   const uast::NamedDecl* decl = nullptr;
   // What is its type?
   const types::Type* type = nullptr;
+  ResolutionResult() { }
+  ResolutionResult(const uast::Expression* expr,
+                   const uast::NamedDecl* decl,
+                   const types::Type* type)
+    : expr(expr), decl(decl), type(type) { }
+};
+
+struct MultiResolvedExpression : ResolvedExpression {
   // For a function call, it might refer to several Functions
   // and we might not know which return intent to choose yet.
-  std::vector<const uast::Function*> otherFns;
+  std::vector<const uast::Function*> candidates;
+
   // TODO:
   //  establishing types
   //  return-intent overloading
   //  generic instantiation
   //  establish concrete intents
   //  establish copy-init vs move
-  ResolutionResult() { }
+  MultiResolvedExpression() { }
 };
 
 // postorder ID (int) -> ResolutionResult *within* a Function etc
@@ -70,7 +118,7 @@ struct ResolvedSymbol {
 };
 
 using ResolvedSymbolVec = std::vector<const ResolvedSymbol*>;
-
+*/
 /*
 struct DefinedTopLevelNames {
   // the module

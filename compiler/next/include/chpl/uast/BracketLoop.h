@@ -48,7 +48,6 @@ class BracketLoop final : public IndexableLoop {
               int8_t withClauseChildNum,
               BlockStyle blockStyle,
               int loopBodyChildNum,
-              int numLoopBodyStmts,
               bool isExpressionLevel)
     : IndexableLoop(asttags::BracketLoop, std::move(children),
                     indexChildNum,
@@ -56,7 +55,6 @@ class BracketLoop final : public IndexableLoop {
                     withClauseChildNum,
                     blockStyle,
                     loopBodyChildNum,
-                    numLoopBodyStmts,
                     isExpressionLevel) {
     assert(isExpressionASTList(children_));
   }
@@ -80,7 +78,7 @@ class BracketLoop final : public IndexableLoop {
                                   owned<Expression> iterand,
                                   owned<WithClause> withClause,
                                   BlockStyle blockStyle,
-                                  ASTList stmts,
+                                  owned<Block> body,
                                   bool isExpressionLevel);
 
 

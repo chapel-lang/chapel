@@ -20,22 +20,18 @@
 #ifndef CHPL_RESOLUTION_RESOLUTION_QUERIES_H
 #define CHPL_RESOLUTION_RESOLUTION_QUERIES_H
 
-#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-types.h"
 
 namespace chpl {
 namespace resolution {
 
 
+  /*
   // Resolves the top-level declarations in a module
   const ResolvedSymbol&
   resolveModule(Context* context, const uast::Module* mod);
 
   const ResolvedSymbolVec& resolveFile(Context* context, UniqueString path);
-
-  /*
-  const DefinedTopLevelNamesVec& moduleLevelDeclNames(Context* context,
-                                                      UniqueString path);
    */
 
 

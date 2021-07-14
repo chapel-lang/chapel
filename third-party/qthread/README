@@ -26,3 +26,5 @@ as follows:
   order for better affinity between consecutive parallel loops.
 
 * We fixed a bug in the binders topology layer.
+
+* Added --with-hwloc-symbol-prefix configuration option.

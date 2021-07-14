@@ -1,2 +1,3 @@
 InvokeIters.chpl:15: note: loop vectorization (with parallel access) hinted for CForLoop
 InvokeIters.chpl:23: note: loop vectorization (with parallel access) hinted for CForLoop
+InvokeIters.chpl:31: note: loop vectorization (with parallel access) hinted for CForLoop

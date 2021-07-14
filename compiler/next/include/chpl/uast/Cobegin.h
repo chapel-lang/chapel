@@ -56,7 +56,24 @@ class Cobegin final : public Expression {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Cobegin* lhs = this;
+    const Cobegin* rhs = (const Cobegin*) other;
+
+    if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
+      return false;
+
+    if (lhs->bodyChildNum_ != rhs->bodyChildNum_)
+      return false;
+
+    if (lhs->numTaskBodies_ != rhs->numTaskBodies_)
+      return false;
+
+    if (!lhs->expressionContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
 
   void markUniqueStringsInner(Context* context) const override {
     expressionMarkUniqueStringsInner(context);

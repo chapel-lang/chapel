@@ -50,6 +50,7 @@ class ErrorMessage final {
   ErrorMessage(Location location, std::string message);
   ErrorMessage(Location location, const char* message);
 
+  static ErrorMessage vbuild(Location loc, const char* fmt, va_list vl);
   static ErrorMessage build(Location loc, const char* fmt, ...)
 #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'

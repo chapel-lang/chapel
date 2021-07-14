@@ -25,28 +25,16 @@ namespace chpl {
 namespace uast {
 
 
-bool For::contentsMatchInner(const ASTNode* other) const {
-  const For* lhs = this;
-  const For* rhs = (const For*) other;
-
-  if (lhs->isParam_ != rhs->isParam_)
-    return false;
-
-  if (!lhs->indexableLoopContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<For> For::build(Builder* builder,
                       Location loc,
                       owned<Decl> index,
                       owned<Expression> iterand,
                       BlockStyle blockStyle,
-                      ASTList stmts,
+                      owned<Block> body,
                       bool isExpressionLevel,
                       bool isParam) {
   assert(iterand.get() != nullptr);
+  assert(body.get() != nullptr);
   if (isParam) assert(!isExpressionLevel);
 
   ASTList lst;
@@ -64,17 +52,12 @@ owned<For> For::build(Builder* builder,
   }
 
   const int loopBodyChildNum = lst.size();
-  const int numLoopBodyStmts = stmts.size();
-
-  for (auto& stmt : stmts) {
-    lst.push_back(std::move(stmt));
-  }
+  lst.push_back(std::move(body));
 
   For* ret = new For(std::move(lst), indexChildNum,
                      iterandChildNum,
                      blockStyle,
                      loopBodyChildNum,
-                     numLoopBodyStmts,
                      isExpressionLevel,
                      isParam);
   builder->noteLocation(ret, loc);
