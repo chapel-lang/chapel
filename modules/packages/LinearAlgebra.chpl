@@ -2694,6 +2694,10 @@ proc argsort(A: [], param desc=false) {
     B[i] = ab[1];
     i += 1;
   }
+
+  if desc then
+    B.reverse();
+
   return B;
 }
 
