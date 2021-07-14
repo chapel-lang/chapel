@@ -45,8 +45,23 @@ class OpCall final : public Call {
            /* hasCalledExpression */ false),
       op_(op) {
   }
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const OpCall* lhs = this;
+    const OpCall* rhs = (const OpCall*) other;
+
+    if (lhs->op_ != rhs->op_)
+      return false;
+
+    if (!lhs->callContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    callMarkUniqueStringsInner(context);
+    op_.mark(context);
+  }
 
  public:
   ~OpCall() override = default;

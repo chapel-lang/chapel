@@ -25,19 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Serial::contentsMatchInner(const ASTNode* other) const {
-  const Serial* lhs = this;
-  const Serial* rhs = (const Serial*) other;
-
-  if (lhs->condChildNum_ != rhs->condChildNum_)
-    return false;
-
-  if (!lhs->simpleBlockLikeContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<Serial> Serial::build(Builder* builder,
                           Location loc,
                           BlockStyle blockStyle,

@@ -58,7 +58,24 @@ class SimpleBlockLike : public Expression {
     assert(isExpressionASTList(children_));
   }
 
-  bool simpleBlockLikeContentsMatchInner(const ASTNode* other) const;
+  bool simpleBlockLikeContentsMatchInner(const ASTNode* other) const {
+    const SimpleBlockLike* lhs = this;
+    const SimpleBlockLike* rhs = other->toSimpleBlockLike();
+
+    if (lhs->blockStyle_ != rhs->blockStyle_)
+      return false;
+
+    if (lhs->bodyChildNum_ != rhs->bodyChildNum_)
+      return false;
+
+    if (lhs->numBodyStmts_ != rhs->numBodyStmts_)
+      return false;
+
+    if (!lhs->expressionContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
 
   void simpleBlockLikeMarkUniqueStringsInner(Context* context) const {
     expressionMarkUniqueStringsInner(context);

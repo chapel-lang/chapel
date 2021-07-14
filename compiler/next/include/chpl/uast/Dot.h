@@ -55,8 +55,22 @@ class Dot final : public Call {
            /* hasCalledExpression */ true),
       fieldName_(fieldName) {
   }
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Dot* lhs = this;
+    const Dot* rhs = (const Dot*) other;
+
+    if (lhs->fieldName_ != rhs->fieldName_)
+      return false;
+
+    if (!lhs->callContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    callMarkUniqueStringsInner(context);
+    fieldName_.mark(context);
+  }
 
  public:
   ~Dot() override = default;

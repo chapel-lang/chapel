@@ -45,8 +45,15 @@ class Comment final : public Expression {
    : Expression(asttags::Comment), comment_(std::move(s)) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Comment* lhs = this;
+    const Comment* rhs = (const Comment*) other;
+    return lhs->expressionContentsMatchInner(rhs) &&
+           lhs->comment_ == rhs->comment_ ;
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    return expressionMarkUniqueStringsInner(context);
+  }
 
  public:
   ~Comment() override = default;

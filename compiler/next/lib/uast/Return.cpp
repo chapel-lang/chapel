@@ -25,19 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Return::contentsMatchInner(const ASTNode* other) const {
-  const Return* lhs = this;
-  const Return* rhs = (const Return*) other;
-
-  if (lhs->valueChildNum_ != rhs->valueChildNum_)
-    return false;
-
-  if (!lhs->expressionContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<Return> Return::build(Builder* builder, Location loc,
                             owned<Expression> value) {
   ASTList lst;
