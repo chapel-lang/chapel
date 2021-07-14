@@ -507,6 +507,21 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
   return fnCall;
 }
 
+owned<Block> 
+ParserContext::consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst) {
+  // if it consists of only a block, return that block
+  if (lst != nullptr && lst->size() == 1) {
+    if (Block* b = (*lst)[0]->toBlock()) {
+      delete lst;
+      return toOwned(b);
+    }
+  }
+
+  // if it consists of other non-block statements, create a new block
+  return Block::build(builder, convertLocation(blockLoc),
+                      consumeList(lst));
+}
+
 ASTList
 ParserContext::consumeAndFlattenTopLevelBlocks(ParserExprList* exprLst) {
   return builder->flattenTopLevelBlocks(consumeList(exprLst));
@@ -798,12 +813,12 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
                     locThenBodyAnchor,
                     thenCs);
 
-  auto thenStmts = consumeAndFlattenTopLevelBlocks(thenExprLst);
+  auto thenBlock = consumeToBlock(locThenBodyAnchor, thenExprLst);
 
   auto node = Conditional::build(builder, convertLocation(locIf),
                                  toOwned(condition),
                                  thenBlockStyle,
-                                 std::move(thenStmts));
+                                 std::move(thenBlock));
 
   // Do NOT clear comments here! Due to lookahead we might clear a valid
   // comment that has already been stored.
@@ -833,7 +848,7 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   auto elseBlockStyle = isElseBodyBlock ? BlockStyle::EXPLICIT
                                         : BlockStyle::IMPLICIT;
 
-  auto thenStmts = consumeAndFlattenTopLevelBlocks(thenExprLst);
+  auto thenBlock = consumeToBlock(locThenBodyAnchor, thenExprLst);
 
   // If the else body is a block, discard all comments preceding it.
   if (isElseBodyBlock) {
@@ -846,14 +861,14 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   // If else body is not a block, discard comments preceding the 'else'.
   if (!isElseBodyBlock) discardCommentsFromList(elseExprLst, locElse);
 
-  auto elseStmts = consumeAndFlattenTopLevelBlocks(elseExprLst);
+  auto elseBlock = consumeToBlock(locElse, elseExprLst);
 
   auto node = Conditional::build(builder, convertLocation(locIf),
                                  toOwned(condition),
                                  thenBlockStyle,
-                                 std::move(thenStmts),
+                                 std::move(thenBlock),
                                  elseBlockStyle,
-                                 std::move(elseStmts),
+                                 std::move(elseBlock),
                                  /*isExpressionLevel*/ false);
 
   return { .comments=comments, .stmt=node.release() };

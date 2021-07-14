@@ -21,6 +21,7 @@
 #define CHPL_UAST_CONDITIONAL_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/Block.h"
 #include "chpl/uast/BlockStyle.h"
 #include "chpl/uast/Expression.h"
 
@@ -43,26 +44,23 @@ namespace uast {
  */
 class Conditional final : public Expression {
  private:
-  Conditional(ASTList children, BlockStyle thenBlockStyle,
-              int8_t thenBodyChildNum,
-              int numThenBodyStmts,
+  Conditional(ASTList children,
+              BlockStyle thenBlockStyle,
               BlockStyle elseBlockStyle,
-              int elseBodyChildNum,
-              int numElseBodyStmts,
               bool isExpressionLevel)
       : Expression(asttags::Conditional, std::move(children)),
         thenBlockStyle_(thenBlockStyle),
-        thenBodyChildNum_(thenBodyChildNum),
-        numThenBodyStmts_(numThenBodyStmts),
         elseBlockStyle_(elseBlockStyle),
-        elseBodyChildNum_(elseBodyChildNum),
-        numElseBodyStmts_(numElseBodyStmts),
         isExpressionLevel_(isExpressionLevel) {
     assert(isExpressionASTList(children_));
 
-    if (!hasElseBlock()) {
-      assert(numElseBodyStmts_ == 0);
-      assert(elseBodyChildNum_ < 0);
+    assert(children_[thenBodyChildNum_]->isBlock());
+
+    if (hasElseBlock()) {
+      assert(0 <= elseBodyChildNum_);
+      assert(elseBodyChildNum_ <= children_.size());
+      assert(children_[elseBodyChildNum_]->isBlock());
+    } else {
       assert(elseBlockStyle_ == BlockStyle::IMPLICIT);
     }
 
@@ -72,15 +70,12 @@ class Conditional final : public Expression {
       assert(hasElseBlock());
       assert(thenBlockStyle_ == BlockStyle::IMPLICIT);
       assert(elseBlockStyle_ == BlockStyle::IMPLICIT);
-      assert(numThenBodyStmts == 1);
-      assert(numElseBodyStmts == 1);
-    } else {
-      assert(numThenBodyStmts_ >= 1);
-      assert(numElseBodyStmts_ >= 0);
+      assert(numThenStmts() == 1);
+      assert(numElseStmts() == 1);
     }
 
-    auto numKnownChildren = 1 + numThenBodyStmts + numElseBodyStmts;
-    assert(((size_t)numKnownChildren) <= children_.size());
+    assert(conditionChildNum_ < (int) children_.size());
+    assert(thenBodyChildNum_ < (int) children_.size());
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
@@ -90,19 +85,7 @@ class Conditional final : public Expression {
     if (lhs->thenBlockStyle_ != rhs->thenBlockStyle_)
       return false;
 
-    if (lhs->thenBodyChildNum_ != rhs->thenBodyChildNum_)
-      return false;
-
-    if (lhs->numThenBodyStmts_ != rhs->numThenBodyStmts_)
-      return false;
-
     if (lhs->elseBlockStyle_ != rhs->elseBlockStyle_)
-      return false;
-
-    if (lhs->elseBodyChildNum_ != rhs->elseBodyChildNum_)
-      return false;
-
-    if (lhs->numElseBodyStmts_ != rhs->numElseBodyStmts_)
       return false;
 
     if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
@@ -120,13 +103,13 @@ class Conditional final : public Expression {
 
   // Condition always exists, and its position is always the same.
   static const int8_t conditionChildNum_ = 0;
+  // Ditto then
+  static const int8_t thenBodyChildNum_ = 1;
+  // Ditto else (if this > children_.size(), there is no else clause)
+  static const int8_t elseBodyChildNum_ = 2;
 
   BlockStyle thenBlockStyle_;
-  int8_t thenBodyChildNum_;
-  int numThenBodyStmts_;
   BlockStyle elseBlockStyle_;
-  int elseBodyChildNum_;
-  int numElseBodyStmts_;
   bool isExpressionLevel_;
 
  public:
@@ -138,9 +121,9 @@ class Conditional final : public Expression {
   static owned<Conditional> build(Builder* builder, Location loc,
                                   owned<Expression> condition,
                                   BlockStyle thenBlockStyle,
-                                  ASTList thenStmts,
+                                  owned<Block> thenBlock,
                                   BlockStyle elseBlockStyle,
-                                  ASTList elseStmts,
+                                  owned<Block> elseBlock,
                                   bool isExpressionLevel);
 
   /**
@@ -149,7 +132,7 @@ class Conditional final : public Expression {
   static owned<Conditional> build(Builder* builder, Location loc,
                                   owned<Expression> condition,
                                   BlockStyle thenBlockStyle,
-                                  ASTList thenStmts);
+                                  owned<Block> thenBlock);
 
   /**
     Get the condition of this conditional.
@@ -160,29 +143,32 @@ class Conditional final : public Expression {
   }
 
   /**
+    Return the Block containing the then statements.
+   */
+  const Block* thenBlock() const {
+    auto ret = child(thenBodyChildNum_);
+    return (const Block*) ret;
+  }
+
+  /**
     Iterate over the statements in the then block of this conditional.
   */
   ASTListIteratorPair<Expression> thenStmts() const {
-    auto begin = children_.begin() + thenBodyChildNum_;
-    auto end = begin + numThenBodyStmts_;
-    return ASTListIteratorPair<Expression>(begin, end);
+    return thenBlock()->stmts();
   }
 
   /**
     Get the number of statements in the then block of this conditional.
   */
   int numThenStmts() const {
-    return numThenBodyStmts_;
+    return thenBlock()->numStmts();
   }
 
   /**
     Get the i'th statement in the then block of this conditional.
   */
   const Expression* thenStmt(int i) const {
-    assert(i >= 0 && i < numThenBodyStmts_);
-    auto ret = this->child(i+thenBodyChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    return thenBlock()->stmt(i);
   }
 
   /**
@@ -196,34 +182,57 @@ class Conditional final : public Expression {
     Returns true if this conditional has an else block.
   */
   bool hasElseBlock() const {
-    return elseBodyChildNum_ >= 0;
+    return 0 <= elseBodyChildNum_ && elseBodyChildNum_ < children_.size();
+  }
+
+  /**
+    Return the Block containing the else statements, or
+    nullptr if this Conditional has no else.
+   */
+  const Block* elseBlock() const {
+    if (!hasElseBlock())
+      return nullptr;
+
+    auto ret = child(elseBodyChildNum_);
+    return (const Block*) ret;
   }
 
   /**
     Iterate over the statements in the else block of this conditional.
   */
   ASTListIteratorPair<Expression> elseStmts() const {
-    auto begin = hasElseBlock() ? children_.begin() + elseBodyChildNum_
-                                : children_.end();
-    auto end = begin + numElseBodyStmts_;
-    return ASTListIteratorPair<Expression>(begin, end);
+    const Block* elseB = elseBlock();
+
+    if (elseB == nullptr) {
+      return ASTListIteratorPair<Expression>(children_.end(), children_.end());
+    }
+
+    return elseB->stmts();
   }
 
   /**
     Get the number of statements in the else block of this conditional.
+    If there is no else block, returns 0.
   */
   int numElseStmts() const {
-    return numElseBodyStmts_;
+    const Block* elseB = elseBlock();
+
+    if (elseB == nullptr) {
+      return 0;
+    }
+
+    return elseB->numStmts();
   }
 
   /**
     Get the i'th statement in the else block of this conditional.
+    It is an error to call this function if there is no else block.
   */
   const Expression* elseStmt(int i) const {
-    assert(i >= 0 && i < numElseBodyStmts_);
-    auto ret = this->child(i+elseBodyChildNum_);
-    assert(ret->isExpression());
-    return (const Expression*)ret;
+    const Block* elseB = elseBlock();
+    assert(elseB != nullptr);
+
+    return elseB->stmt(i);
   }
 
   /**

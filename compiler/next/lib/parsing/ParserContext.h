@@ -181,9 +181,9 @@ struct ParserContext {
   ParserExprList* appendList(ParserExprList* dst, CommentsAndStmt cs);
   ASTList consumeList(ParserExprList* lst);
 
- void consumeNamedActuals(MaybeNamedActualList* lst,
-                          ASTList& actualsOut,
-                          std::vector<UniqueString>& namesOut);
+  void consumeNamedActuals(MaybeNamedActualList* lst,
+                           ASTList& actualsOut,
+                           std::vector<UniqueString>& namesOut);
 
   std::vector<ParserComment>* gatherCommentsFromList(ParserExprList* lst,
                                                      YYLTYPE location);
@@ -251,6 +251,8 @@ struct ParserContext {
   BlockStyle determineBlockStyle(BlockOrDo blockOrDo);
 
   ASTList consumeAndFlattenTopLevelBlocks(ParserExprList* exprLst);
+
+  owned<Block> consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst);
 
   // Lift up top level comments, clear expression level comments, prepare
   // the statement body, and determine the block style.
