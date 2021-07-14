@@ -176,7 +176,9 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
       gatherDeclsWithin(ast, result->declared, result->containsUseImport);
     }
   }
-  return QUERY_END(toOwned(result));
+
+  auto ownedResult = toOwned(result);
+  return QUERY_END(ownedResult);
 }
 
 static const Scope* const& scopeForIdQuery(Context* context, ID id) {
@@ -491,7 +493,7 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
   }
 
   // take the value out of the partial result in order to return it
-  return QUERY_END(std::move(partialResult));
+  return QUERY_END(partialResult);
 }
 
 const ResolvedVisibilityScope* resolveVisibilityStmts(Context* context,
@@ -575,7 +577,8 @@ const InnermostMatch& findInnermostDecl(Context* context,
     }
   }
 
-  return QUERY_END(InnermostMatch(id, count));
+  auto result = InnermostMatch(id, count);
+  return QUERY_END(result);
 }
 
 const Scope* scopeForModule(Context* context, ID id) {
