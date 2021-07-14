@@ -439,6 +439,11 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
       }
     }
 
+    owned<Block> body;
+    if (fp.body != nullptr) {
+      body = consumeToBlock(location, fp.body);
+    }
+
     auto f = Function::build(builder, this->convertLocation(location),
                              fp.name, this->visibility,
                              fp.linkage, toOwned(fp.linkageNameExpr),
@@ -453,7 +458,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                              toOwned(fp.returnType),
                              toOwned(fp.where),
                              this->consumeList(fp.lifetime),
-                             this->consumeList(fp.body));
+                             std::move(body));
     cs.stmt = f.release();
   } else {
     cs.stmt = fp.errorExpr;
