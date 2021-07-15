@@ -132,6 +132,7 @@ module MasonArgParse {
           throw new ArgumentError("\\".join(act.opts) + " has extra values");
         }
       }
+      
       checkSatisfiedOptions();
 
       if arguments.size > 0 && this.actions.size == 0 {

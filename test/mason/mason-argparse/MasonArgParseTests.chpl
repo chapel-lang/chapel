@@ -104,6 +104,28 @@ proc testOptRangeStringShortOptExtraVal(test: borrowed Test) throws {
 }
 
 
+// a short string opt with 0..1 range and accepted values supplied
+// with an additional, undefined argument
+proc testOptRangeStringShortOptOkValBadArg(test: borrowed Test) throws {
+  var argList = ["progName","-n","twenty","-p","thirty"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=0..1);
+  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
 // a short string opt with 0..1 value and 1 value supplied
 proc testSingleStringShortOptNoOpts(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty"];
