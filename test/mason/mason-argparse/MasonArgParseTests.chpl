@@ -39,6 +39,47 @@ proc testSingleStringShortOptRepeated(test: borrowed Test) throws {
   test.assertEqual(myStrArg.getValue(),"forty");
 }
 
+// a short string opt with range value, expressed multiple times
+proc testRangeStringShortOptRepeated(test: borrowed Test) throws {
+  var argList = ["progName","-n","twenty","two","hundred","-n",
+                 "thirty","five","-n","forty"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=1..3);
+  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(myStrArg.getValue(),"forty");
+  test.assertEqual(new list(myStrArg.getValues()),new list(argList[9..9]));
+}
+
+// a short string opt with range value, expressed multiple times, with
+// too many values supplied in first instance
+proc testRangeStringShortOptRepeatedTooManyFirst(test: borrowed Test) throws {
+  var argList = ["progName","-n","twenty","two","hundred","fifty","-n",
+                 "thirty","five","-n","forty"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=1..3);
+  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(myStrArg.getValue(),"forty");
+  test.assertEqual(new list(myStrArg.getValues()),new list(argList[10..10]));
+}
+
 // a short string opt with single value and no values supplied
 proc testOptSingleStringShortOptNoOpts(test: borrowed Test) throws {
   var argList = ["progName"];
