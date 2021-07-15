@@ -21,6 +21,24 @@ proc testSingleStringShortOpt(test: borrowed Test) throws {
   test.assertEqual(myStrArg.getValue(),"twenty");
 }
 
+// a short string opt with single value, expressed multiple times
+proc testSingleStringShortOptRepeated(test: borrowed Test) throws {
+  var argList = ["progName","-n","twenty","-n","thirty","-n","forty"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=1);
+  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(myStrArg.getValue(),"forty");
+}
+
 // a short string opt with single value and no values supplied
 proc testOptSingleStringShortOptNoOpts(test: borrowed Test) throws {
   var argList = ["progName"];

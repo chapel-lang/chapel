@@ -99,12 +99,12 @@ module MasonArgParse {
       var pos = argsD.low;
       var k = 0;
       // identify optionIndices where opts start
-      var optionIndices : map(int, string);
+      var optionIndices : map(string, int);
       for i in argsD {
         if options.contains(arguments[i]) {
           writeErr("found option " + arguments[i]);
           // create an entry for this index and the argument name
-          optionIndices.add(i, options.getValue(arguments[i]));
+          optionIndices.addOrSet(options.getValue(arguments[i]), i);
           writeErr("added option " + arguments[i]);
         } 
       }
@@ -112,7 +112,7 @@ module MasonArgParse {
       var arrayoptionIndices = optionIndices.toArray();
       sort(arrayoptionIndices);      
       // try to match for each of the identified options
-      for (idx, name) in arrayoptionIndices {
+      for (name, idx) in arrayoptionIndices {
         // get a ref to the argument
         var arg = result.getReference(name);
         writeErr("got reference to argument " + name);
@@ -128,9 +128,9 @@ module MasonArgParse {
         // make sure we don't overrun the array,
         // then check that we don't have extra values
         if k < arrayoptionIndices.size {
-          if endPos != arrayoptionIndices[k][0] {
-            writeErr("endpos != arrayoptionIndices[k][0] :"+endPos:string+" "
-                     + arrayoptionIndices[k][0]:string);
+          if endPos != arrayoptionIndices[k][1] {
+            writeErr("endpos != arrayoptionIndices[k][1] :"+endPos:string+" "
+                     + arrayoptionIndices[k][1]:string);
             writeErr("arrayoptionIndices " + arrayoptionIndices:string);
             throw new ArgumentError("\\".join(act.opts) + " has extra values");
           }
