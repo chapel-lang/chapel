@@ -54,8 +54,17 @@ class Module final : public NamedDecl {
 
     assert(isExpressionASTList(children_));
   }
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Module* lhs = this;
+    const Module* rhs = (const Module*) other;
+    return lhs->namedDeclContentsMatchInner(rhs) &&
+           lhs->kind_ == rhs->kind_;
+
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    namedDeclMarkUniqueStringsInner(context);
+  }
 
  public:
   ~Module() override = default;

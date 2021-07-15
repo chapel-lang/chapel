@@ -50,8 +50,15 @@ class Enum final : public TypeDecl {
     assert(isEnumElementAndCommentList(children_));
   }
   static bool isEnumElementAndCommentList(const ASTList& list);
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Enum* lhs = this;
+    const Enum* rhs = (const Enum*) other;
+    return lhs->typeDeclContentsMatchInner(rhs);
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    typeDeclMarkUniqueStringsInner(context);
+  }
 
  public:
   ~Enum() override = default;

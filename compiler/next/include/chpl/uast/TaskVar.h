@@ -71,8 +71,19 @@ class TaskVar final : public VarLikeDecl {
                     initExpressionChildNum),
         intent_(intent) {}
 
-  bool contentsMatchInner(const ASTNode* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const TaskVar* lhs = this;
+    const TaskVar* rhs = (const TaskVar*) other;
 
+    if (lhs->intent_ != rhs->intent_)
+      return false;
+
+    if (!lhs->varLikeDeclContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
+ 
   void markUniqueStringsInner(Context* context) const override {
     varLikeDeclMarkUniqueStringsInner(context);
   }

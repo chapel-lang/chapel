@@ -268,6 +268,37 @@ const ResultType* Context::queryGetRunningQueryPartialResult(
 }
 
 template<typename ResultType,
+        typename... ArgTs>
+Context::QueryStatus Context::queryStatus(
+             const ResultType& (*queryFunction)(Context* context, ArgTs...),
+             const std::tuple<ArgTs...>& tupleOfArgs) {
+  // Look up the map entry for this query name
+  const void* queryFuncV = (const void*) queryFunction;
+  // Look up the map entry for this query
+  auto search = this->queryDB.find(queryFuncV);
+  if (search == this->queryDB.end()) {
+    return NOT_CHECKED_NOT_CHANGED;
+  }
+
+  // found an entry for this query
+  QueryMapBase* base = search->second.get();
+  auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
+  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
+  auto search2 = queryMap->map.find(key);
+  if (search2 == queryMap->map.end()) {
+    return NOT_CHECKED_NOT_CHANGED;
+  }
+
+  if (search2->lastChanged == this->currentRevisionNumber) {
+    return CHANGED;
+  } else if (search2->lastChecked == this->currentRevisionNumber) {
+    return REUSED;
+  } else {
+    return NOT_CHECKED_NOT_CHANGED;
+  }
+}
+
+template<typename ResultType,
          typename... ArgTs>
 const ResultType&
 Context::queryEnd(

@@ -48,7 +48,18 @@ class Break : public Expression {
     assert(numChildren() <= 1);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Break* lhs = this;
+    const Break* rhs = other->toBreak();
+
+    if (lhs->targetChildNum_ != rhs->targetChildNum_)
+      return false;
+
+    if (!lhs->expressionContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
 
   void markUniqueStringsInner(Context* context) const override {
     expressionMarkUniqueStringsInner(context);

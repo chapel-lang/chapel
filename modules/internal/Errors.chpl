@@ -19,12 +19,17 @@
  */
 
 /*
-   :class:`Error` is the parent type for errors in Chapel.  :class:`TaskErrors`
-   is the type of errors thrown from parallel constructs where more than one
-   error can be simultaneously encountered.
+   This module contains several features related to error conditions and error
+   handling:
 
+     * :class:`Error` - the parent type for errors in Chapel that can be
+       thrown and caught - as well as a few subclasses
+     * runtime functions :proc:`halt`, :proc:`warning`, :proc:`assert`, and
+       :proc:`exit`
+     * compilation diagnostic functions :proc:`compilerError`,
+       :proc:`compilerWarning`, and :proc:`compilerAssert`
  */
-module ChapelError {
+module Errors {
   private use ChapelStandard;
   private use ChapelLocks;
   private use CPtr;
@@ -44,7 +49,7 @@ module ChapelError {
 
     pragma "no doc"
     var _msg: string;
-    
+
     pragma "no doc"
     var _hasThrowInfo: bool = false;
 
@@ -55,12 +60,12 @@ module ChapelError {
 
     /* Construct an :class:`Error` with a message. */
     proc init(msg: string) {
-      this._msg = msg; 
+      this._msg = msg;
     }
 
     /* Override this method to provide an error message
        of type string in case the error is printed out or never caught.
-      
+
        :rtype: string
     */
     proc message():string {
@@ -100,7 +105,7 @@ module ChapelError {
    sequences.
    */
   class DecodeError: Error {
-    
+
     pragma "no doc"
     override proc message() {
       return "Invalid UTF-8 character encountered.";
@@ -556,5 +561,211 @@ module ChapelError {
       throw new owned IllegalArgumentError("bad cast from bytes '" +
                                            casted.decode(decodePolicy.replace) +
                                            "' to enum '" + enumName + "'");
+  }
+
+  /*
+    Assert that a boolean condition is true.  If it is false, prints
+    'assert failed' and halts the program.
+
+    .. note :: In the current implementation, this assert never becomes a no-op.
+               That is, using it will always incur execution-time checks.
+
+    :arg test: the boolean condition
+    :type test: `bool`
+  */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc assert(test: bool) {
+    if !test then
+      __primitive("chpl_error", c"assert failed");
+  }
+
+
+  /*
+    Assert that a boolean condition is true.  If it is false, prints
+    'assert failed - ' followed by all subsequent arguments, as though
+    printed using :proc:`~ChapelIO.write()`.
+
+    .. note :: In the current implementation, this assert never becomes a no-op.
+               That is, using it will always incur execution-time checks.
+
+    :arg test: the boolean condition
+    :type test: `bool`
+
+    :arg args: other arguments to print
+  */
+  pragma "insert line file info"
+  pragma "always propagate line file info"
+  proc assert(test: bool, args ...?numArgs) {
+    if !test {
+      var tmpstring = "assert failed - " + chpl_stringify_wrapper((...args));
+      __primitive("chpl_error", tmpstring.c_str());
+    }
+  }
+
+  //
+  // compile-time diagnostics
+  //
+  // Note: the message printed by "error" and "warning" primitives
+  // consists of the formals of the enclosing function, not their own args.
+  //
+
+  /*
+     Generate a compile-time error.
+     The error text is a concatenation of the string arguments.
+
+     :arg errorDepth: controls the depth of the error stack trace
+  */
+  pragma "no doc"
+  proc compilerError(param msg: string ...?n, param errorDepth: int) {
+    __primitive("error");
+  }
+
+  /*
+     Generate a compile-time error.
+     The error text is a concatenation of the arguments.
+  */
+  proc compilerError(param msg: string ...?n) {
+    __primitive("error");
+  }
+
+  /*
+     Generate a compile-time warning.
+     The warning text is a concatenation of the string arguments.
+
+     :arg errorDepth: controls the depth of the error stack trace
+  */
+  pragma "no doc"
+  proc compilerWarning(param msg: string ...?n, param errorDepth: int) {
+    __primitive("warning");
+  }
+
+  /*
+     Generate a compile-time warning.
+     The warning text is a concatenation of the arguments.
+  */
+  proc compilerWarning(param msg: string ...?n) {
+    __primitive("warning");
+  }
+
+  /*
+     Generate a compile-time error if the `test` argument is false.
+  */
+  proc compilerAssert(param test: bool) {
+    if !test then compilerError("assert failed");
+  }
+
+  /*
+     Generate a compile-time error if the `test` argument is false.
+
+     :arg errorDepth: controls the depth of the error stack trace
+  */
+  pragma "no doc"
+  proc compilerAssert(param test: bool, param errorDepth: int) {
+    if !test then compilerError("assert failed", errorDepth + 1);
+  }
+
+  /*
+     Generate a compile-time error if the `test` argument is false.
+     The warning text is a concatenation of the string arguments.
+  */
+  proc compilerAssert(param test: bool, param msg: string ...?n) {
+    if !test then compilerError("assert failed - ", (...msg));
+  }
+
+  /*
+     Generate a compile-time error if the `test` argument is false.
+     The warning text is a concatenation of the string arguments.
+
+     :arg errorDepth: controls the depth of the error stack trace
+  */
+  pragma "no doc"
+  proc compilerAssert(param test: bool, param msg: string ...?n,
+                      param errorDepth: int) {
+    if !test then compilerError("assert failed - ", (...msg), errorDepth + 1);
+  }
+
+  //
+  // end compile-time diagnostics
+  //
+
+  /*
+    Exit the program
+
+    :arg status: The exit code for the program
+  */
+  pragma "function terminates program"
+  inline proc exit(status: int=0) {
+    __primitive("chpl_exit_any", status);
+  }
+
+  /*
+     Prints an error message to stderr giving the location of the call to
+     ``halt`` in the Chapel source, followed by the arguments to the call,
+     if any, then exits the program.
+   */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc halt() {
+    __primitive("chpl_error", c"halt reached");
+  }
+
+  /*
+     Prints an error message to stderr giving the location of the call to
+     ``halt`` in the Chapel source, followed by the arguments to the call,
+     if any, then exits the program.
+   */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc halt(msg:string) {
+    halt(msg.localize().c_str());
+  }
+
+  pragma "no doc"
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  pragma "last resort"
+  proc halt(s:string) {
+    compilerWarning('halt(s=...) is deprecated, use halt(msg=...)');
+    halt(s.localize().c_str());
+  }
+
+  /*
+     Prints an error message to stderr giving the location of the call to
+     ``halt`` in the Chapel source, followed by the arguments to the call,
+     if any, then exits the program.
+   */
+  pragma "function terminates program"
+  pragma "always propagate line file info"
+  proc halt(args ...?numArgs) {
+    var tmpstring = "halt reached - " + chpl_stringify_wrapper((...args));
+    __primitive("chpl_error", tmpstring.c_str());
+  }
+
+  /*
+    Prints a warning to stderr giving the location of the call to ``warning``
+    in the Chapel source, followed by the argument(s) to the call.
+  */
+  pragma "always propagate line file info"
+  proc warning(msg:string) {
+    __primitive("chpl_warning", msg.localize().c_str());
+  }
+
+  pragma "no doc"
+  pragma "always propagate line file info"
+  pragma "last resort"
+  proc warning(s:string) {
+    compilerWarning('warning(s=...) is deprecated, use warning(msg=...)');
+    __primitive("chpl_warning", s.localize().c_str());
+  }
+
+  /*
+    Prints a warning to stderr giving the location of the call to ``warning``
+    in the Chapel source, followed by the argument(s) to the call.
+  */
+  pragma "always propagate line file info"
+  proc warning(args ...?numArgs) {
+    var tmpstring = chpl_stringify_wrapper((...args));
+    warning(tmpstring);
   }
 }

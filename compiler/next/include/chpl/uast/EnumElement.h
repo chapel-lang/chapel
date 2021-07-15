@@ -48,8 +48,14 @@ class EnumElement final : public NamedDecl {
     assert(children_.size() == 0 || children_.size() == 1);
     assert(isExpressionASTList(children_));
   }
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const EnumElement* lhs = (const EnumElement*) this;
+    const EnumElement* rhs = (const EnumElement*) other;
+    return lhs->namedDeclContentsMatchInner(rhs);
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    namedDeclMarkUniqueStringsInner(context);
+  }
 
  public:
   ~EnumElement() override = default;

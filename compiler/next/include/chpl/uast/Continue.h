@@ -47,7 +47,18 @@ class Continue : public Expression {
     assert(numChildren() <= 1);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Continue* lhs = this;
+    const Continue* rhs = other->toContinue();
+
+    if (lhs->targetChildNum_ != rhs->targetChildNum_)
+      return false;
+
+    if (!lhs->expressionContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
 
   void markUniqueStringsInner(Context* context) const override {
     expressionMarkUniqueStringsInner(context);

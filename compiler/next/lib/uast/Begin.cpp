@@ -25,19 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Begin::contentsMatchInner(const ASTNode* other) const {
-  const Begin* lhs = this;
-  const Begin* rhs = (const Begin*) other;
-
-  if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
-    return false;
-
-  if (!lhs->simpleBlockLikeContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<Begin> Begin::build(Builder* builder,
                           Location loc,
                           owned<WithClause> withClause,

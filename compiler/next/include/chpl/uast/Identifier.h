@@ -50,8 +50,16 @@ class Identifier final : public Expression {
     assert(!name.isEmpty());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Identifier* lhs = this;
+    const Identifier* rhs = (const Identifier*) other;
+    return lhs->expressionContentsMatchInner(rhs) &&
+           lhs->name_ == rhs->name_;
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    expressionMarkUniqueStringsInner(context);
+    this->name_.mark(context);
+  }
 
  public:
   ~Identifier() override = default;

@@ -25,19 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Continue::contentsMatchInner(const ASTNode* other) const {
-  const Continue* lhs = this;
-  const Continue* rhs = other->toContinue();
-
-  if (lhs->targetChildNum_ != rhs->targetChildNum_)
-    return false;
-
-  if (!lhs->expressionContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<Continue> Continue::build(Builder* builder, Location loc,
                                 owned<Identifier> target) {
   ASTList lst;

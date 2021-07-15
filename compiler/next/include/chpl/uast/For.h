@@ -48,7 +48,6 @@ class For final : public IndexableLoop {
       int8_t iterandChildNum,
       BlockStyle blockStyle,
       int loopBodyChildNum,
-      int numLoopBodyStmts,
       bool isExpressionLevel,
       bool isParam)
     : IndexableLoop(asttags::For, std::move(children),
@@ -57,7 +56,6 @@ class For final : public IndexableLoop {
                     /*withClauseChildNum*/ -1,
                     blockStyle,
                     loopBodyChildNum,
-                    numLoopBodyStmts,
                     isExpressionLevel),
       isParam_(isParam) {
 
@@ -65,7 +63,18 @@ class For final : public IndexableLoop {
     assert(withClause() == nullptr);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const For* lhs = this;
+    const For* rhs = (const For*) other;
+
+    if (lhs->isParam_ != rhs->isParam_)
+      return false;
+
+    if (!lhs->indexableLoopContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
 
   void markUniqueStringsInner(Context* context) const override {
     indexableLoopMarkUniqueStringsInner(context);
@@ -83,7 +92,7 @@ class For final : public IndexableLoop {
                           owned<Decl> index,
                           owned<Expression> iterand,
                           BlockStyle blockStyle,
-                          ASTList stmts,
+                          owned<Block> body,
                           bool isExpressionLevel,
                           bool isParam);
 

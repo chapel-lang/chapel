@@ -25,15 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool EnumElement::contentsMatchInner(const ASTNode* other) const {
-  const EnumElement* lhs = this;
-  const EnumElement* rhs = (const EnumElement*) other;
-  return lhs->namedDeclContentsMatchInner(rhs);
-}
-void EnumElement::markUniqueStringsInner(Context* context) const {
-  namedDeclMarkUniqueStringsInner(context);
-}
-
 owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
                                       UniqueString name,
                                       owned<Expression> initExpression) {

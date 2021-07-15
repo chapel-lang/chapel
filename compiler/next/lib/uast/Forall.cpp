@@ -30,9 +30,10 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
                             owned<Expression> iterand,
                             owned<WithClause> withClause,
                             BlockStyle blockStyle,
-                            ASTList stmts,
+                            owned<Block> body,
                             bool isExpressionLevel) {
   assert(iterand.get() != nullptr);
+  assert(body.get() != nullptr);
 
   ASTList lst;
   int8_t indexChildNum = -1;
@@ -55,18 +56,13 @@ owned<Forall> Forall::build(Builder* builder, Location loc,
   }
 
   const int loopBodyChildNum = lst.size();
-  const int numLoopBodyStmts = stmts.size();
-
-  for (auto& stmt : stmts) {
-    lst.push_back(std::move(stmt));
-  }
+  lst.push_back(std::move(body));
 
   Forall* ret = new Forall(std::move(lst), indexChildNum,
                            iterandChildNum,
                            withClauseChildNum,
                            blockStyle,
                            loopBodyChildNum,
-                           numLoopBodyStmts,
                            isExpressionLevel);
   builder->noteLocation(ret, loc);
   return toOwned(ret);

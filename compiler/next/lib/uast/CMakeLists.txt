@@ -57,6 +57,7 @@ target_sources(libchplcomp-obj
                Function.cpp
                Identifier.cpp
                ImagLiteral.cpp
+               Import.cpp
                IndexableLoop.cpp
                IntLiteral.cpp
                Label.cpp
@@ -84,10 +85,10 @@ target_sources(libchplcomp-obj
                TypeDecl.cpp
                UintLiteral.cpp
                Use.cpp
-               UseClause.cpp
                Union.cpp
                Variable.cpp
                VarLikeDecl.cpp
+               VisibilityClause.cpp
                While.cpp
                WithClause.cpp
                Yield.cpp

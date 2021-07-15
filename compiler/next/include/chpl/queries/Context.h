@@ -414,6 +414,26 @@ class Context {
   #endif
 ;
 
+  typedef enum {
+    NOT_CHECKED_NOT_CHANGED = 0,
+    REUSED = 1,
+    CHANGED = 2
+  } QueryStatus;
+
+  /**
+    Returns:
+      0 if the query was not checked or changed in this revision
+      1 if the query was checked but not changed in this revision
+      2 if the query was changed in this revision
+
+    This is intended only as a debugging aid.
+   */
+  template<typename ResultType,
+           typename... ArgTs>
+  QueryStatus queryStatus(
+         const ResultType& (*queryFunction)(Context* context, ArgTs...),
+         const std::tuple<ArgTs...>& tupleOfArgs);
+
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly
 
