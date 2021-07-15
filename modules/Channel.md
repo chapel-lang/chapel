@@ -102,6 +102,9 @@ between `select` in Chapel and Channels.
 	* `select` for Channels can be blocking or non-blocking while `select`
 	in Chapel is always non-blocking.
 
+	* A Go-style `select` statement has no argument but a Chapel one does have an
+	argument. As a result these could be easily distinguished at the syntax level.
+
 * Should operators be used for `send` and `recv` routines ? The operators in Go
  behave differently in case of receive operation
 	* `val := <-chan` will only return receive value.
