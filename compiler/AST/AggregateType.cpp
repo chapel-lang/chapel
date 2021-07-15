@@ -286,10 +286,15 @@ static DecoratorTypePair getTypeExprDecorator(Expr* e) {
   return DecoratorTypePair(CLASS_TYPE_UNMANAGED_NILABLE, NULL);
 }
 
+static bool doFieldIsGeneric(Symbol* field,
+                             bool &hasDefault,
+                             std::set<AggregateType*>& visited);
+
 // Note that a field with generic type where that type has
 // default values for all of its generic fields is considered concrete
 // for the purposes of this function.
-static bool isFieldTypeExprGeneric(Expr* typeExpr) {
+static bool isFieldTypeExprGeneric(Expr* typeExpr,
+                                   std::set<AggregateType*>& visited) {
   // Look in the field declaration for a concrete type
   Symbol* sym = NULL;
 
@@ -325,6 +330,10 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
   if (sym) {
     Type* t = sym->type;
     if (AggregateType* at = toAggregateType(t)) {
+      auto pair = visited.insert(at);
+      if (!pair.second) {
+        return false; // it was already present
+      }
       if (at->isGeneric()) {
         // If it's a generic type that has default values
         // for all of it's generic attributes, it won't
@@ -332,7 +341,7 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
         bool foundGenericWithoutInit = false;
         for_fields(field, at) {
           bool hasDefault = false;
-          bool fieldGeneric = at->fieldIsGeneric(field, hasDefault);
+          bool fieldGeneric = doFieldIsGeneric(field, hasDefault, visited);
           if (fieldGeneric && !hasDefault)
             foundGenericWithoutInit = true;
         }
@@ -346,7 +355,9 @@ static bool isFieldTypeExprGeneric(Expr* typeExpr) {
   return false;
 }
 
-bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
+static bool doFieldIsGeneric(Symbol* field,
+                             bool &hasDefault,
+                             std::set<AggregateType*>& visited) {
   bool retval = false;
 
   DefExpr* def = field->defPoint;
@@ -370,14 +381,9 @@ bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
 
         retval = true;
       } else if (def->exprType != NULL) {
-        // Temporarily mark the aggregate type as generic with defaults
-        // in order to avoid infinite recursion.
-        bool wasGenericWithDefaults = mIsGenericWithDefaults;
-        mIsGenericWithDefaults = true;
-        if (isFieldTypeExprGeneric(def->exprType)) {
+        if (isFieldTypeExprGeneric(def->exprType, visited)) {
           retval = true;
         }
-        mIsGenericWithDefaults = wasGenericWithDefaults;
       }
 
     }
@@ -386,6 +392,12 @@ bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
   hasDefault = (def->init != NULL);
 
   return retval;
+}
+
+bool AggregateType::fieldIsGeneric(Symbol* field, bool &hasDefault) {
+  std::set<AggregateType*> visited;
+
+  return doFieldIsGeneric(field, hasDefault, visited);
 }
 
 DefExpr* AggregateType::toSuperField(const char*  name) const {
@@ -1013,7 +1025,7 @@ static Expr* resolveFieldExpr(Expr* expr, bool addCopy) {
   } else {
     // If the field's type expression is already a BlockStmt, then some
     // recursive case was not handled correctly.
-    INT_ASSERT(false);
+    USR_FATAL("this recursive type construction is not yet handled");
   }
 
   BlockStmt* block = toBlockStmt(expr);
@@ -2175,6 +2187,8 @@ void AggregateType::processGenericFields() {
     return;
   }
 
+  std::set<AggregateType*> visited;
+
   foundGenericFields = true;
   bool isGenericWithDefaults = mIsGeneric;
 
@@ -2209,7 +2223,7 @@ void AggregateType::processGenericFields() {
       if (field->defPoint->exprType == NULL) {
         genericFields.push_back(field); // "var x;"
         isGenericWithDefaults = false;
-      } else if (isFieldTypeExprGeneric(field->defPoint->exprType)) {
+      } else if (isFieldTypeExprGeneric(field->defPoint->exprType, visited)) {
         genericFields.push_back(field); // "var x : integral;"
         isGenericWithDefaults = false;
       }
@@ -2345,7 +2359,7 @@ void AggregateType::fieldToArg(FnSymbol*              fn,
               CallExpr* copy = new CallExpr(astr_initCopy);
               defPoint->init->replace(copy);
 
-              Symbol *definedConst = defPoint->sym->hasFlag(FLAG_CONST) ? 
+              Symbol *definedConst = defPoint->sym->hasFlag(FLAG_CONST) ?
                                      gTrue : gFalse;
               copy->insertAtTail(fe);
               copy->insertAtTail(definedConst);
