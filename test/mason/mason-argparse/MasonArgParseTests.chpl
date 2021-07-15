@@ -42,6 +42,31 @@ proc testOptSingleStringShortOptNoOpts(test: borrowed Test) throws {
   test.assertTrue(false);
 }
 
+
+// a parser with no arguments defined, gets no arguments
+proc testNoOptsDefined(test: borrowed Test) throws {
+  var argList = ["progName"];
+  var parser = new argumentParser(); 
+  parser.parseArgs(argList[1..]);
+  test.assertTrue(true);
+}
+
+// a parser with no arguments defined, gets 1 argument
+proc testNoOptsDefinedUnknownOptGiven(test: borrowed Test) throws {
+  var argList = ["progName","-n","twenty"];
+  var parser = new argumentParser(); 
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+
 // a short string opt with 0..1 range and no values supplied
 proc testOptRangeStringShortOpt1Val(test: borrowed Test) throws {
   var argList = ["progName"];

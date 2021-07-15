@@ -51,9 +51,14 @@ module MasonArgParse {
     var opts:[0..numOpts-1] string;
     var numArgs:range;
 
+    // TODO: Decouple the argument from the action
+    // maybe pass a list to fill by reference and have the argparser populate
+    // the argument instead?
+    // also need a bool by ref to indicate presence of arg or not
     proc match(args:[?argsD]string, startPos:int, ref myArg:Argument) throws {
       var high = 0;
       
+      // TODO: Replace this high bound with something more reasonable
       if !this.numArgs.hasHighBound() {
         high = 10000000000;
       } else {
@@ -88,22 +93,22 @@ module MasonArgParse {
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
       writeErr("start parsing args");
       var pos = argsD.low;
-      // identify indices where opts start
-      var indices : map(int, string);
+      var k = 0;
+      // identify optionIndices where opts start
+      var optionIndices : map(int, string);
       for i in argsD {
         if options.contains(arguments[i]) {
           writeErr("found option " + arguments[i]);
           // create an entry for this index and the argument name
-          indices.add(i, options.getValue(arguments[i]));
+          optionIndices.add(i, options.getValue(arguments[i]));
           writeErr("added option " + arguments[i]);
         } 
       }
       // get this as an array so we can sort it, because maps are order-less
-      var arrayIndices = indices.toArray();
-      sort(arrayIndices);
-      var k = 0;
+      var arrayoptionIndices = optionIndices.toArray();
+      sort(arrayoptionIndices);      
       // try to match for each of the identified options
-      for (idx, name) in arrayIndices {
+      for (idx, name) in arrayoptionIndices {
         // get a ref to the argument
         var arg = result.getReference(name);
         writeErr("got reference to argument " + name);
@@ -114,13 +119,13 @@ module MasonArgParse {
         writeErr("got end position " + endPos:string);
         k+=1;
         writeErr("k val = " + k:string);
-        writeErr("arrayIndices.size is " + arrayIndices.size:string);
+        writeErr("arrayoptionIndices.size is " + arrayoptionIndices.size:string);
         // make sure we don't overrun the array,
         // then check that we don't have extra values
-        if k < arrayIndices.size {
-          if endPos != arrayIndices[k][0] {
-            writeErr("endpos != arrayIndices[k][0] :"+endPos:string+" "+arrayIndices[k][0]:string);
-            writeErr("arrayIndices " + arrayIndices:string);
+        if k < arrayoptionIndices.size {
+          if endPos != arrayoptionIndices[k][0] {
+            writeErr("endpos != arrayoptionIndices[k][0] :"+endPos:string+" "+arrayoptionIndices[k][0]:string);
+            writeErr("arrayoptionIndices " + arrayoptionIndices:string);
             throw new ArgumentError("\\".join(act.opts) + " has extra values");
           }
         }else if endPos <= argsD.high {
@@ -128,6 +133,10 @@ module MasonArgParse {
         }
       }
       checkSatisfiedOptions();
+
+      if arguments.size > 0 && this.actions.size == 0 {
+        throw new ArgumentError("unrecognized options/values encountered: " + " ".join(arguments));
+      }
     }
 
     proc checkSatisfiedOptions() throws {
