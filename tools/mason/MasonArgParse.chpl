@@ -5,8 +5,13 @@ module MasonArgParse {
   private use Sort;
 
   const DEBUG=false;
-
+  // TODO: Implement required/optional flag
+  // TODO: Implement default values for optional opts
+  // TODO: Verify no duplicate names, flags defined by dev
+  // TODO: Make sure we don't shadow Chapel flags
+  // TODO: Make sure we don't shadow config vars  
   // TODO: Add public github issue when available
+  // TODO: Implement Help message and formatting
   if chpl_warnUnstable then
     compilerWarning("ArgumentParser is unstable.");
 
