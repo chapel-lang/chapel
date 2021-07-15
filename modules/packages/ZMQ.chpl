@@ -175,28 +175,6 @@ automatically as `multipart messages
 :chpl:mod:`Reflection` module.  Currently, the ZMQ module can serialize records
 of primitive numeric types, strings, bytes and other serializable records.
 
-.. note::
-
-   The serialization protocol for strings changed in Chapel 1.16 in order to
-   support inter-language messaging through ZeroMQ. (See
-   :ref:`notes on interoperability <interop>` below.)
-   As a result, programs using ZMQ that were compiled by Chapel 1.15 or
-   earlier cannot communicate using strings with programs compiled by
-   Chapel 1.16 or later, although such communication can be used between
-   programs compiled by the same version without issue.
-
-   Prior to Chapel 1.16, ZMQ would send a string as two multipart messages:
-   the first sent the length as `int`; the second sent the character array
-   (in bytes).  It was identified that this scheme was incompatible with how
-   other language bindings for ZeroMQ serialize and send strings.
-
-   As of Chapel 1.16, the ZMQ module uses the C-level ``zmq_msg_send()`` and
-   ``zmq_msg_recv()`` API for :proc:`Socket.send()` and :proc:`Socket.recv()`,
-   respectively, when transmitting strings.  Further, ZMQ sends the string as
-   a single message of only the byte stream of the string's character array.
-   (Recall that Chapel's ``string`` type currently only supports ASCII
-   strings, not full Unicode strings.)
-
 .. _interop:
 
 Interoperability
@@ -442,7 +420,7 @@ module ZMQ {
   const unset = -42;
 
   pragma "no doc"
-  proc free_helper(data: c_void_ptr, hint: c_void_ptr) {
+  export proc free_helper(data: c_void_ptr, hint: c_void_ptr) {
     chpl_here_free(data);
   }
 
