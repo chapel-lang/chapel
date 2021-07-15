@@ -69,6 +69,7 @@ module MasonArgParse {
         next+=1;
         matched+=1;
         myArg.values.append(args[pos]);
+        myArg.present=true;
         writeErr("matched val: " + args[pos] + " at pos: " + pos:string);     
       }
       if matched < this.numArgs.low {
@@ -87,7 +88,6 @@ module MasonArgParse {
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
       writeErr("start parsing args");
       var pos = argsD.low;
-      // TODO: Implement parsing
       // identify indices where opts start
       var indices : map(int, string);
       for i in argsD {
@@ -127,7 +127,19 @@ module MasonArgParse {
           throw new ArgumentError("\\".join(act.opts) + " has extra values");
         }
       }
-  }
+      checkSatisfiedOptions();
+    }
+
+    proc checkSatisfiedOptions() throws {
+      // make sure we satisfied options that need at least 1 value
+      for name in this.actions.keys() {
+        var act = this.actions.getBorrowed(name);
+        var arg = this.result.getReference(name);
+        if act.numArgs.low > 0 && !arg.present {
+          throw new ArgumentError("\\".join(act.opts) + " not enough values");
+        }        
+      }
+    }
 
     proc addOption(name:string,
                   opts:[]string,

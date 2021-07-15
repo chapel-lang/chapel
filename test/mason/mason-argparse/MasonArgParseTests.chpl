@@ -22,7 +22,7 @@ proc testSingleStringShortOpt(test: borrowed Test) throws {
 }
 
 // a short string opt with single value and no values supplied
-proc testSingleStringShortOptNoOpts(test: borrowed Test) throws {
+proc testOptSingleStringShortOptNoOpts(test: borrowed Test) throws {
   var argList = ["progName"];
   var parser = new argumentParser();
   var myStrArg = parser.addOption(name="StringOpt",
@@ -32,10 +32,70 @@ proc testSingleStringShortOptNoOpts(test: borrowed Test) throws {
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
   //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+// a short string opt with 0..1 range and no values supplied
+proc testOptRangeStringShortOpt1Val(test: borrowed Test) throws {
+  var argList = ["progName"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=0..1);
+  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
   parser.parseArgs(argList[1..]);
   test.assertFalse(myStrArg.hasValue());
 }
 
+// a short string opt with 0..1 range and extra values supplied
+proc testOptRangeStringShortOptExtraVal(test: borrowed Test) throws {
+  var argList = ["progName","-n","twenty","two"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=0..1);
+  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+
+// a short string opt with 0..1 value and 1 value supplied
+proc testSingleStringShortOptNoOpts(test: borrowed Test) throws {
+  var argList = ["progName","-n","twenty"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=0..1);
+  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(myStrArg.getValue(),"twenty");
+}
 
 // a long string opt with single value and expected # values supplied
 proc testSingleStringLongOpt(test: borrowed Test) throws {
