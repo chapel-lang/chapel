@@ -18,6 +18,14 @@ testOptRangeStringShortOpt1Val()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testOptRangeStringShortOptOptNoVal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testOptRangeStringShortOptPresentNoVal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 testOptRangeStringShortOptExtraVal()
 Flavour: OK
 ======================================================================
@@ -120,6 +128,7 @@ Flavour: OK
 ----------------------------------------------------------------------
 -n\--stringVal not enough values
 unrecognized options/values encountered: -n twenty
+-n\--stringVal not enough values
 -n\--stringVal has extra values
 -n\--stringVal has extra values
 -n\--stringVal not enough values
