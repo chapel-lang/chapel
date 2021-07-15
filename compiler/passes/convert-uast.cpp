@@ -141,6 +141,11 @@ struct Converter {
     return nullptr;
   }
 
+  BlockStmt* visit(const uast::Import* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
   CallExpr* visit(const uast::New* node) {
     Expr* newedType = convertAST(node->typeExpression());
     CallExpr* typeCall = new CallExpr(newedType);
@@ -195,12 +200,12 @@ struct Converter {
   }
 
   BlockStmt* convertUsePossibleLimitations(const uast::Use* node) {
-    INT_ASSERT(node->numUseClauses() == 1);
+    INT_ASSERT(node->numVisibilityClauses() == 1);
 
-    auto useClause = node->useClause(0);
+    auto vc = node->visibilityClause(0);
 
-    if (useClause->limitationClauseKind() == uast::UseClause::NONE) {
-      INT_ASSERT(useClause->numLimitations() == 0);
+    if (vc->limitationKind() == uast::VisibilityClause::NONE) {
+      INT_ASSERT(vc->numLimitations() == 0);
       return convertUseNoLimitations(node);
     }
 
@@ -211,21 +216,21 @@ struct Converter {
     bool except = false;
     bool privateUse = node->visibility() != uast::Decl::PUBLIC;
 
-    if (useClause->limitationClauseKind() == uast::UseClause::EXCEPT) {
+    if (vc->limitationKind() == uast::VisibilityClause::EXCEPT) {
       except = true;
     }
 
-    if (auto as = useClause->symbol()->toAs()) {
+    if (auto as = vc->symbol()->toAs()) {
       auto exprs = convertAs(as);
       mod = exprs.first;
       rename = exprs.second;
     } else {
-      mod = toExpr(convertAST(useClause->symbol()));
+      mod = toExpr(convertAST(vc->symbol()));
       rename = new UnresolvedSymExpr("");
     }
 
     // Build the limitations list.
-    for (auto limitation : useClause->limitations()) {
+    for (auto limitation : vc->limitations()) {
       names->push_back(convertRename(limitation));
     }
 
@@ -236,10 +241,10 @@ struct Converter {
     auto args = new std::vector<PotentialRename*>();
     bool privateUse = node->visibility() != uast::Decl::PUBLIC;
 
-    for (auto useClause : node->useClauses()) {
-      INT_ASSERT(useClause->limitationClauseKind() == uast::UseClause::NONE);
-      INT_ASSERT(useClause->numLimitations() == 0);
-      PotentialRename* pr = convertRename(useClause->symbol());
+    for (auto vc : node->visibilityClauses()) {
+      INT_ASSERT(vc->limitationKind() == uast::VisibilityClause::NONE);
+      INT_ASSERT(vc->numLimitations() == 0);
+      PotentialRename* pr = convertRename(vc->symbol());
       args->push_back(pr);
     }
 
@@ -247,16 +252,16 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::Use* node) {
-    INT_ASSERT(node->numUseClauses() > 0);
+    INT_ASSERT(node->numVisibilityClauses() > 0);
 
-    if (node->numUseClauses() == 1) {
+    if (node->numVisibilityClauses() == 1) {
       return convertUsePossibleLimitations(node);
     } else {
       return convertUseNoLimitations(node);
     }
   }
 
-  Expr* visit(const uast::UseClause* node) {
+  Expr* visit(const uast::VisibilityClause* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
   }

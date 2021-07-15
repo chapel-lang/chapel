@@ -27,8 +27,8 @@ namespace uast {
 
 owned<Use> Use::build(Builder* builder, Location loc,
                       Decl::Visibility visibility,
-                      ASTList useClauses) {
-  Use* ret = new Use(std::move(useClauses), visibility);
+                      ASTList visibilityClauses) {
+  Use* ret = new Use(std::move(visibilityClauses), visibility);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

@@ -393,7 +393,7 @@ struct ImportsResolver {
   }
 
   std::vector<std::pair<UniqueString,UniqueString>>
-  convertLimitations(const UseClause* clause) {
+  convertLimitations(const VisibilityClause* clause) {
     std::vector<std::pair<UniqueString,UniqueString>> ret;
     for (const Expression* e : clause->limitations()) {
       if (auto ident = e->toIdentifier()) {
@@ -420,7 +420,7 @@ struct ImportsResolver {
     if (use->visibility() == Decl::PUBLIC)
       isPrivate = false;
 
-    for (auto clause : use->useClauses()) {
+    for (auto clause : use->visibilityClauses()) {
       // First, add the entry for the symbol itself
       const Expression* sym = clause->symbol();
 
@@ -446,15 +446,18 @@ struct ImportsResolver {
 
         // Then, add the entries for anything imported
         VisibilitySymbols::Kind kind = VisibilitySymbols::ALL_CONTENTS;
-        switch (clause->limitationClauseKind()) {
-          case UseClause::EXCEPT:
+        switch (clause->limitationKind()) {
+          case VisibilityClause::EXCEPT:
             kind = VisibilitySymbols::CONTENTS_EXCEPT;
             break;
-          case UseClause::ONLY:
+          case VisibilityClause::ONLY:
             kind = VisibilitySymbols::ONLY_CONTENTS;
             break;
-          case UseClause::NONE:
+          case VisibilityClause::NONE:
             kind = VisibilitySymbols::ALL_CONTENTS;
+            break;
+          case VisibilityClause::BRACES:
+            assert(false && "Should not be possible");
             break;
         }
         resolvedVisibilityScope->visibilityClauses.push_back(

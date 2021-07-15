@@ -57,7 +57,18 @@ class Begin final : public SimpleBlockLike {
     assert(isExpressionASTList(children_));
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Begin* lhs = this;
+    const Begin* rhs = (const Begin*) other;
+
+    if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
+      return false;
+
+    if (!lhs->simpleBlockLikeContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
 
   void markUniqueStringsInner(Context* context) const override {
     simpleBlockLikeMarkUniqueStringsInner(context);

@@ -25,19 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Variable::contentsMatchInner(const ASTNode* other) const {
-  const Variable* lhs = this;
-  const Variable* rhs = (const Variable*) other;
-  return lhs->kind_ == rhs->kind_ &&
-         lhs->isConfig_ == rhs->isConfig_ &&
-         lhs->isField_ == rhs->isField_ &&
-         lhs->varLikeDeclContentsMatchInner(rhs);
-}
-
-void Variable::markUniqueStringsInner(Context* context) const {
-  varLikeDeclMarkUniqueStringsInner(context);
-}
-
 owned<Variable>
 Variable::build(Builder* builder, Location loc, UniqueString name,
                 Decl::Visibility vis,

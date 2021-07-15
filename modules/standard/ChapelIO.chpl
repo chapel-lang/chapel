@@ -623,59 +623,6 @@ module ChapelIO {
       }
     }
 
-  /*
-     Prints an error message to stderr giving the location of the call to
-     ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
-   */
-  pragma "function terminates program"
-  pragma "always propagate line file info"
-  proc halt() {
-    __primitive("chpl_error", c"halt reached");
-  }
-
-  /*
-     Prints an error message to stderr giving the location of the call to
-     ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
-   */
-  pragma "function terminates program"
-  pragma "always propagate line file info"
-  proc halt(s:string) {
-    halt(s.localize().c_str());
-  }
-
-  /*
-     Prints an error message to stderr giving the location of the call to
-     ``halt`` in the Chapel source, followed by the arguments to the call,
-     if any, then exits the program.
-   */
-  pragma "function terminates program"
-  pragma "always propagate line file info"
-  proc halt(args ...?numArgs) {
-    var tmpstring = "halt reached - " + stringify((...args));
-    __primitive("chpl_error", tmpstring.c_str());
-  }
-
-  /*
-    Prints a warning to stderr giving the location of the call to ``warning``
-    in the Chapel source, followed by the argument(s) to the call.
-  */
-  pragma "always propagate line file info"
-  proc warning(s:string) {
-    __primitive("chpl_warning", s.localize().c_str());
-  }
-
-  /*
-    Prints a warning to stderr giving the location of the call to ``warning``
-    in the Chapel source, followed by the argument(s) to the call.
-  */
-  pragma "always propagate line file info"
-  proc warning(args ...?numArgs) {
-    var tmpstring = stringify((...args));
-    warning(tmpstring);
-  }
-
   pragma "no doc"
   proc locale.writeThis(f) throws {
     // FIXME this doesn't resolve without `this`
@@ -851,6 +798,12 @@ module ChapelIO {
     try! {
       return stdout.writef(fmt);
     }
+  }
+
+  pragma "no doc"
+  proc chpl_stringify_wrapper(const args ...):string {
+    use IO only stringify;
+    return stringify((...args));
   }
 
   //

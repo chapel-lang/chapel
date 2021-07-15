@@ -25,15 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool ErroneousExpression::contentsMatchInner(const ASTNode* other) const {
-  const ErroneousExpression* lhs = this;
-  const ErroneousExpression* rhs = (const ErroneousExpression*) other;
-  return lhs->expressionContentsMatchInner(rhs);
-}
-void ErroneousExpression::markUniqueStringsInner(Context* context) const {
-  expressionMarkUniqueStringsInner(context);
-}
-
 owned<ErroneousExpression> ErroneousExpression::build(Builder* builder,
                                                       Location loc) {
   ErroneousExpression* ret = new ErroneousExpression();

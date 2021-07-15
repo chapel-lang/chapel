@@ -25,19 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool TaskVar::contentsMatchInner(const ASTNode* other) const {
-  const TaskVar* lhs = this;
-  const TaskVar* rhs = (const TaskVar*) other;
-
-  if (lhs->intent_ != rhs->intent_)
-    return false;
-
-  if (!lhs->varLikeDeclContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<TaskVar> TaskVar::build(Builder* builder, Location loc,
                               UniqueString name, 
                               TaskVar::Intent intent,

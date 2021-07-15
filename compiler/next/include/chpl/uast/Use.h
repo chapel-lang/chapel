@@ -23,7 +23,7 @@
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Decl.h"
 #include "chpl/uast/Expression.h"
-#include "chpl/uast/UseClause.h"
+#include "chpl/uast/VisibilityClause.h"
 
 namespace chpl {
 namespace uast {
@@ -40,7 +40,7 @@ namespace uast {
 
   \endrst
 
-  This creates a use statement that has two use clauses, 'Foo' and
+  This creates a use statement that has two visibility clauses, 'Foo' and
   'Bar as A'.
 */
 class Use final : public Expression {
@@ -50,8 +50,16 @@ class Use final : public Expression {
       visibility_(visibility) {
     assert(numChildren() >= 1);
 
-    for (auto useClause : useClauses()) {
-      assert(useClause->isUseClause());
+    if (numVisibilityClauses() == 1) {
+      auto vc = visibilityClause(0);
+      bool acceptable = vc->limitationKind() == VisibilityClause::NONE ||
+                        vc->limitationKind() == VisibilityClause::EXCEPT ||
+                        vc->limitationKind() == VisibilityClause::ONLY;
+      assert(acceptable);
+    } else {
+      for (auto vc : visibilityClauses()) {
+        assert(vc->limitationKind() == VisibilityClause::NONE);
+      }
     }
   }
 
@@ -74,37 +82,37 @@ class Use final : public Expression {
   */
   static owned<Use> build(Builder* builder, Location loc,
                           Decl::Visibility visibility,
-                          ASTList useClauses);
+                          ASTList visibilityClauses);
 
   /**
-    Return the visibility of the use clauses in this use statement.
+    Return the visibility of this use statement.
   */
   Decl::Visibility visibility() const {
     return visibility_;
   }
 
   /**
-    Return a way to iterate over the uses clauses.
+    Return a way to iterate over the visibility clauses.
   */
-  ASTListIteratorPair<UseClause> useClauses() const {
-    return ASTListIteratorPair<UseClause>(children_.begin(),
-                                          children_.end());
+  ASTListIteratorPair<VisibilityClause> visibilityClauses() const {
+    return ASTListIteratorPair<VisibilityClause>(children_.begin(),
+                                                 children_.end());
   }
 
   /**
-    Return the number of use clauses in this use statement.
+    Return the number of visibility clauses in this use statement.
   */
-  int numUseClauses() const {
+  int numVisibilityClauses() const {
     return this->numChildren();
   }
 
   /**
-    Return the i'th use clause in this use statement.
+    Return the i'th visibility clause in this use statement.
   */
-  const UseClause* useClause(int i) const {
+  const VisibilityClause* visibilityClause(int i) const {
     auto ret = this->child(i);
-    assert(ret->isUseClause());
-    return (const UseClause*)ret;
+    assert(ret->isVisibilityClause());
+    return (const VisibilityClause*)ret;
   }
 
 };

@@ -25,17 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Identifier::contentsMatchInner(const ASTNode* other) const {
-  const Identifier* lhs = this;
-  const Identifier* rhs = (const Identifier*) other;
-  return lhs->expressionContentsMatchInner(rhs) &&
-         lhs->name_ == rhs->name_;
-}
-void Identifier::markUniqueStringsInner(Context* context) const {
-  expressionMarkUniqueStringsInner(context);
-  this->name_.mark(context);
-}
-
 owned<Identifier> Identifier::build(Builder* builder,
                                     Location loc, UniqueString name) {
   Identifier* ret = new Identifier(name);

@@ -42,14 +42,13 @@ Initializing Modules:
     ChapelIO
     LocaleTree
     ChapelTaskTable
+     Errors
     MemTracking
     ChapelUtil
-    ChapelError
     ExportWrappers
     ChapelAutoAggregation
      CopyAggregation
       AggregationPrimitives
-    Builtins
     Types
     AlignedTSupport
    printModuleInitOrder

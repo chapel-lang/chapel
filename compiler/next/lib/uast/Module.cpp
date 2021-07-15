@@ -25,16 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Module::contentsMatchInner(const ASTNode* other) const {
-  const Module* lhs = this;
-  const Module* rhs = (const Module*) other;
-  return lhs->namedDeclContentsMatchInner(rhs) &&
-         lhs->kind_ == rhs->kind_;
-}
-void Module::markUniqueStringsInner(Context* context) const {
-  namedDeclMarkUniqueStringsInner(context);
-}
-
 owned<Module>
 Module::build(Builder* builder, Location loc,
               UniqueString name, Decl::Visibility vis,

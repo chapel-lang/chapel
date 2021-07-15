@@ -50,7 +50,18 @@ class Return final : public Expression {
     assert(valueChildNum_ <= 0);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Return* lhs = this;
+    const Return* rhs = (const Return*) other;
+
+    if (lhs->valueChildNum_ != rhs->valueChildNum_)
+      return false;
+
+    if (!lhs->expressionContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
 
   void markUniqueStringsInner(Context* context) const override {
     expressionMarkUniqueStringsInner(context);

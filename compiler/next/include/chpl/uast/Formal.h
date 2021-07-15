@@ -69,8 +69,15 @@ class Formal final : public VarLikeDecl {
                   initExpressionChildNum),
       intent_(intent) {}
 
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Formal* lhs = this;
+    const Formal* rhs = (const Formal*) other;
+    return lhs->varLikeDeclContentsMatchInner(rhs) &&
+           lhs->intent_ == rhs->intent_;
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    varLikeDeclMarkUniqueStringsInner(context);
+  }
 
  public:
   ~Formal() override = default;
