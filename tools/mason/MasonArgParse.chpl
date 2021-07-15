@@ -46,7 +46,7 @@ module MasonArgParse {
     var opts:[0..numOpts-1] string;
     var numArgs:range;
 
-    proc match(args:[?argsD]string, startPos:int, ref argument:Argument) throws {
+    proc match(args:[?argsD]string, startPos:int, ref myArg:Argument) throws {
       var high = 0;
       
       if !this.numArgs.hasHighBound() {
@@ -54,20 +54,22 @@ module MasonArgParse {
       } else {
         high = this.numArgs.high;
       }
-      writeErr("expecting between " + numArgs.low:string + " and " + high:string);
+      writeErr("expecting between " + numArgs.low:string + " and "+high:string);
       var matched = 0;
       var pos = startPos;
+      var next = pos+1;
       writeErr("starting at pos: " + pos:string);
-      while matched < high && pos+1 <= argsD.high && !args[pos+1].startsWith("-"){
-        pos += 1;
-        matched +=1;
-        argument.values.append(args[pos]);
+      while matched < high && next <= argsD.high && !args[next].startsWith("-"){
+        pos=next;
+        next+=1;
+        matched+=1;
+        myArg.values.append(args[pos]);
         writeErr("matched val: " + args[pos] + " at pos: " + pos:string);     
       }
       if matched < this.numArgs.low {
         throw new ArgumentError("\\".join(opts) + " not enough values");
       }
-      return pos;
+      return next;
     }
  }
 
@@ -75,8 +77,6 @@ module MasonArgParse {
     var result: map(string, shared Argument);
     var actions: map(string, owned Action);
     var options: map(string, string);
-    var unknownArgs: list(string);
-
 
     proc parseArgs(arguments:[?argsD]string) throws {
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
@@ -93,32 +93,32 @@ module MasonArgParse {
           writeErr("added option " + arguments[i]);
         } 
       }
-
-      // try to match for each of the identified options
-      var knownIndex = indices.keysToArray();
-      sort(knownIndex);
-      var k = 0;
+      // get this as an array so we can sort it, because maps are order-less
       var arrayIndices = indices.toArray();
       sort(arrayIndices);
+      var k = 0;
+      // try to match for each of the identified options
       for (idx, name) in arrayIndices {
         // get a ref to the argument
         var arg = result.getReference(name);
         writeErr("got reference to argument " + name);
         // get the action to match
         var act = actions.getBorrowed(name);
-
+        // try to match values in argstring, get the last value position
         var endPos = act.match(arguments, idx, arg);
         writeErr("got end position " + endPos:string);
         k+=1;
         writeErr("k val = " + k:string);
-        writeErr("knownIndex.size is " + knownIndex.size:string);
-        if k < knownIndex.size {
-          if endPos + 1 != knownIndex[k] {
-            writeErr("endpos != knownIndex[k] :" + endPos:string + " " + knownIndex[k]:string);
-            writeErr("knownIndex " + knownIndex:string);
+        writeErr("arrayIndices.size is " + arrayIndices.size:string);
+        // make sure we don't overrun the array,
+        // then check that we don't have extra values
+        if k < arrayIndices.size {
+          if endPos != arrayIndices[k][0] {
+            writeErr("endpos != arrayIndices[k][0] :"+endPos:string+" "+arrayIndices[k][0]:string);
+            writeErr("arrayIndices " + arrayIndices:string);
             throw new ArgumentError("\\".join(act.opts) + " has extra values");
           }
-        }else if endPos < argsD.high {
+        }else if endPos <= argsD.high {
           throw new ArgumentError("\\".join(act.opts) + " has extra values");
         }
       }
@@ -153,5 +153,4 @@ module MasonArgParse {
   proc writeErr(msg:string) {
     if DEBUG then try! {stderr.writeln(msg);}
   }
-
 }

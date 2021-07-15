@@ -21,6 +21,22 @@ proc testSingleStringShortOpt(test: borrowed Test) throws {
   test.assertEqual(myStrArg.getValue(),"twenty");
 }
 
+// a short string opt with single value and no values supplied
+proc testSingleStringShortOptNoOpts(test: borrowed Test) throws {
+  var argList = ["progName"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=1);
+  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  test.assertFalse(myStrArg.hasValue());
+}
+
+
 // a long string opt with single value and expected # values supplied
 proc testSingleStringLongOpt(test: borrowed Test) throws {
   var argList = ["progName","--stringVal","twenty"];
@@ -53,8 +69,7 @@ proc testMultiStringShortOpt(test: borrowed Test) throws {
   //make sure we now have a value
   test.assertTrue(myStrArg.hasValue());
   //ensure the value passed is correct
-  var ret = new list(myStrArg.getValues());
-  test.assertEqual(ret, new list(argList[2..]));
+  test.assertEqual(new list(myStrArg.getValues()), new list(argList[2..]));
 }
 
 // a long string option with exact numArgs and expected # values supplied
@@ -64,7 +79,6 @@ proc testMultiStringLongOpt(test: borrowed Test) throws {
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],            
                                   numArgs=3);
-  var expect = new list(argList[2..]);
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
   //parse the options
@@ -72,8 +86,7 @@ proc testMultiStringLongOpt(test: borrowed Test) throws {
   //make sure we now have a value
   test.assertTrue(myStrArg.hasValue());
   //ensure the value passed is correct
-  var ret = new list(myStrArg.getValues());
-  test.assertEqual(ret, expect);
+  test.assertEqual(new list(myStrArg.getValues()), new list(argList[2..]));
 }
 
 // a short string opt with fixed range numArgs, max # supplied
@@ -83,7 +96,6 @@ proc testMultiStringShortOptVar(test: borrowed Test) throws {
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],            
                                   numArgs=1..3);
-  var expect = new list(argList[2..]);
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
   //parse the options
@@ -91,8 +103,7 @@ proc testMultiStringShortOptVar(test: borrowed Test) throws {
   //make sure we now have a value
   test.assertTrue(myStrArg.hasValue());
   //ensure the value passed is correct
-  var ret = new list(myStrArg.getValues());
-  test.assertEqual(ret, expect);
+  test.assertEqual(new list(myStrArg.getValues()), new list(argList[2..]));
 }
 
 // test a long string option with fixed range of numArgs, max # supplied
@@ -102,7 +113,6 @@ proc testMultiStringLongOptVar(test: borrowed Test) throws {
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],            
                                   numArgs=1..3);
-  var expect = new list(argList[2..]);
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
   //parse the options
@@ -110,8 +120,7 @@ proc testMultiStringLongOptVar(test: borrowed Test) throws {
   //make sure we now have a value
   test.assertTrue(myStrArg.hasValue());
   //ensure the value passed is correct
-  var ret = new list(myStrArg.getValues());
-  test.assertEqual(ret, expect);
+  test.assertEqual(new list(myStrArg.getValues()), new list(argList[2..]));
 }
 
 // test a short string option with fixed range of numArgs, less than
@@ -122,7 +131,6 @@ proc testMultiStringShortOptVarLess(test: borrowed Test) throws {
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],            
                                   numArgs=1..3);
-  var expect = new list(argList[2..]);
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
   //parse the options
@@ -130,8 +138,7 @@ proc testMultiStringShortOptVarLess(test: borrowed Test) throws {
   //make sure we now have a value
   test.assertTrue(myStrArg.hasValue());
   //ensure the value passed is correct
-  var ret = new list(myStrArg.getValues());
-  test.assertEqual(ret, expect);
+  test.assertEqual(new list(myStrArg.getValues()), new list(argList[2..]));
 }
 
 // test a short string option with fixed range of numArgs more than 1,
@@ -229,7 +236,6 @@ proc testUnboundStringLongOptVar(test: borrowed Test) throws {
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1..1000000);
-  var expect = new list(argList[2..]);
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
   //parse the options
@@ -237,8 +243,7 @@ proc testUnboundStringLongOptVar(test: borrowed Test) throws {
   //make sure we now have a value
   test.assertTrue(myStrArg.hasValue());
   //ensure the value passed is correct
-  var ret = new list(myStrArg.getValues());
-  test.assertEqual(ret, expect);
+  test.assertEqual(new list(myStrArg.getValues()), new list(argList[2..]));
 }
 
 // two short string opts with single value and expected # values supplied
@@ -526,10 +531,8 @@ proc testThreeMixedStringShortOptAllValues(test: borrowed Test) throws {
   test.assertTrue(myStrArg3.hasValue());
   //ensure the value passed is correct
   test.assertEqual(myStrArg1.getValue(),"twenty");
-  var ret2 = new list(myStrArg2.getValues());
-  var ret3 = new list(myStrArg3.getValues());
-  test.assertEqual(ret2, new list(argList[4..5]));
-  test.assertEqual(ret3, new list(argList[7..8]));
+  test.assertEqual(new list(myStrArg2.getValues()), new list(argList[4..5]));
+  test.assertEqual(new list(myStrArg3.getValues()), new list(argList[7..8]));
 }
 
 // three short string opts with fixed range multi value opts,
@@ -559,10 +562,8 @@ proc testThreeMultiStringShortOptPartialValues(test: borrowed Test) throws {
   test.assertTrue(myStrArg3.hasValue());
   //ensure the value passed is correct
   test.assertEqual(myStrArg1.getValue(),"twenty");
-  var ret2 = new list(myStrArg2.getValues());
-  var ret3 = new list(myStrArg3.getValues());
-  test.assertEqual(ret2, new list(argList[4..5]));
-  test.assertEqual(ret3, new list(argList[7..8]));
+  test.assertEqual(new list(myStrArg2.getValues()), new list(argList[4..5]));
+  test.assertEqual(new list(myStrArg3.getValues()), new list(argList[7..8]));
 }
 
 UnitTest.main();
