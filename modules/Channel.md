@@ -33,9 +33,9 @@ buffer and support operations on them.
 	* `send(value : eltType)` : This function waits for a space in the buffer
 	and	sends the `value` to the channel.
 
-	* `recv(out value : eltType) : bool` : This function waits until the buffer
-	is empty and stores the received entity in `value`. It also returns the status
-	i.e., the operation is executed successfully or not.
+	* `recv(out value : eltType) : bool` : This function waits until there is
+	something in the buffer and stores the received entity in `value`. It also
+	returns the status i.e., the operation is executed successfully or not.
 
 	* `close()` : This function is used to close the channel such that no more
 	values will be sent to it.
