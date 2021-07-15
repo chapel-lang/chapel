@@ -123,12 +123,14 @@ module MasonArgParse {
         writeErr("got end position " + endPos:string);
         k+=1;
         writeErr("k val = " + k:string);
-        writeErr("arrayoptionIndices.size is " + arrayoptionIndices.size:string);
+        writeErr("arrayoptionIndices.size is " 
+                 + arrayoptionIndices.size:string);
         // make sure we don't overrun the array,
         // then check that we don't have extra values
         if k < arrayoptionIndices.size {
           if endPos != arrayoptionIndices[k][0] {
-            writeErr("endpos != arrayoptionIndices[k][0] :"+endPos:string+" "+arrayoptionIndices[k][0]:string);
+            writeErr("endpos != arrayoptionIndices[k][0] :"+endPos:string+" "
+                     + arrayoptionIndices[k][0]:string);
             writeErr("arrayoptionIndices " + arrayoptionIndices:string);
             throw new ArgumentError("\\".join(act.opts) + " has extra values");
           }
@@ -140,7 +142,8 @@ module MasonArgParse {
       checkSatisfiedOptions();
 
       if arguments.size > 0 && this.actions.size == 0 {
-        throw new ArgumentError("unrecognized options/values encountered: " + " ".join(arguments));
+        throw new ArgumentError("unrecognized options/values encountered: " +
+                                " ".join(arguments));
       }
     }
 

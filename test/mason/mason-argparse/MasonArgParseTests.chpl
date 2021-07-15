@@ -651,7 +651,8 @@ proc testThreeStringShortOptExtraMidMissingLast(test: borrowed Test) throws {
 // three short string opts with mixed single and multi value opts,
 // expected # supplied
 proc testThreeMixedStringShortOptAllValues(test: borrowed Test) throws {
-  var argList = ["progName","-n","twenty","-p","thirty","five","-t","forty","two"];
+  var argList = ["progName","-n","twenty","-p","thirty","five","-t",
+                 "forty","two"];
   var parser = new argumentParser();
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],            
@@ -682,7 +683,8 @@ proc testThreeMixedStringShortOptAllValues(test: borrowed Test) throws {
 // three short string opts with fixed range multi value opts,
 // min, mid, and max # values supplied respectively
 proc testThreeMultiStringShortOptPartialValues(test: borrowed Test) throws {
-  var argList=["progName","-n","twenty","-p","thirty","five","-t","forty","two"];
+  var argList=["progName","-n","twenty","-p","thirty","five","-t",
+               "forty","two"];
   var parser = new argumentParser();
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],            
