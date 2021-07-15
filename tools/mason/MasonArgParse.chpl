@@ -10,8 +10,12 @@ module MasonArgParse {
   // TODO: Verify no duplicate names, flags defined by dev
   // TODO: Make sure we don't shadow Chapel flags
   // TODO: Make sure we don't shadow config vars  
-  // TODO: Add public github issue when available
   // TODO: Implement Help message and formatting
+  // TODO: Add bool flags
+  // TODO: Add int opts
+  // TODO: Add positional arguments
+  // TODO: Add public github issue when available
+
   if chpl_warnUnstable then
     compilerWarning("ArgumentParser is unstable.");
 
@@ -132,7 +136,7 @@ module MasonArgParse {
           throw new ArgumentError("\\".join(act.opts) + " has extra values");
         }
       }
-      
+
       checkSatisfiedOptions();
 
       if arguments.size > 0 && this.actions.size == 0 {

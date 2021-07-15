@@ -82,6 +82,43 @@ proc testOptRangeStringShortOpt1Val(test: borrowed Test) throws {
   test.assertFalse(myStrArg.hasValue());
 }
 
+// a short string opt with 0..1 range and opt, but no value supplied
+proc testOptRangeStringShortOptOptNoVal(test: borrowed Test) throws {
+  var argList = ["progName","-n"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=0..1);
+  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  test.assertFalse(myStrArg.hasValue());
+}
+
+// a short string opt with 1..2 range and opt, but no value supplied
+proc testOptRangeStringShortOptPresentNoVal(test: borrowed Test) throws {
+  var argList = ["progName","-n"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=1..2);
+  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+  
+}
+
 // a short string opt with 0..1 range and extra values supplied
 proc testOptRangeStringShortOptExtraVal(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","two"];
