@@ -22,10 +22,10 @@ func main() {
 }
 ```
 
-The module will have a generic `Channel` class to store the channel buffer and
-support operations on them.
+The module will have a generic `Channel` class (or record) to store the channel
+buffer and support operations on them.
 
-* Here are some functions that the module should have
+* The main functions that the module should have
 
 	* `init(type eltType, size : int)` : Specify the buffer data type and size
 	for creating a Channel.
@@ -78,13 +78,18 @@ select {
 }
 ```
 
-Some related questions -
+### Some important questions related to the module-
 
 * Should this module be standard or package ?
 
 * What should be the name of the module ? Some names in other languages
 	* `chan` in Golang
 	* `crossbeam` in Rust
+
+* What should be the name of the channel data type? Should it be record or
+class ?
+	* Channel should always be passed as a reference therfore we could make
+	it a class or a record-wrapped class.
 
 * What should be the syntax of Channel `select` statements in Chapel ?
 Should we use Chapel's `select` statement for that? Some semantic differences
@@ -97,4 +102,8 @@ between `select` in Chapel and Channels.
 	* `select` for Channels can be blocking or non-blocking while `select`
 	in Chapel is always non-blocking.
 
-* Should operators be used for `send` and `recv` routines ?
+* Should operators be used for `send` and `recv` routines ? The operators in Go
+ behave differently in case of receive operation
+	* `val := <-chan` will only return receive value.
+	* `val, ok := <-chan` will store received value in `val` and status in `ok`.
+Does operators in our Channels need to have this kind of behaviour?
