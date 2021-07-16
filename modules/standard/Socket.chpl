@@ -119,20 +119,26 @@ module Socket {
     }
   }
 
-  proc tcpListener.accept(seconds = 0):file throws {
+  proc tcpListener.accept(in timeout:timeval = new timeval(-1,0)) throws {
     var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
     var fdOut:int(32);
     var rset, allset: fd_set;
-    var timeout:timeval = new timeval(seconds,0);
 
     sys_fd_zero(allset);
     sys_fd_set(this.socketFd,allset);
     rset = allset;
     var nready:int(32);
+    var err:err_t;
 
-    var err = sys_select(socketFd+1,c_ptrTo(rset),nil,nil,c_ptrTo(timeout),nready);
+    if timeout.tv_sec == -1 {
+      err = sys_select(socketFd+1,c_ptrTo(rset),nil,nil,nil,nready);
+    }
+    else {
+      err = sys_select(socketFd+1,c_ptrTo(rset),nil,nil,c_ptrTo(timeout),nready);
+    }
+
     if(nready == 0){
-      writeln("timed out");
+      throw SystemError.fromSyserr(ETIMEDOUT, "listen() timed out");
     }
 
     if(sys_fd_isset(socketFd,rset)){
@@ -170,7 +176,7 @@ module Socket {
     return tcpObject;
   }
 
-  proc connect(in address:ipAddr, in timeout = new timeval(0,0)):tcpConn throws {
+  proc connect(in address:ipAddr, in timeout = new timeval(-1,0)):tcpConn throws {
     var family = if address.family == AF_INET6 then IPFamily.IPv6 else IPFamily.IPv4;
     var socketFd = socket(family, SOCK_STREAM|SOCK_NONBLOCK);
 
@@ -191,7 +197,13 @@ module Socket {
     rset = wset;
     var nready:int(32);
 
-    err = sys_select(socketFd + 1, c_ptrTo(rset), c_ptrTo(wset), nil, c_ptrTo(timeout), nready);
+    if timeout.tv_sec == -1 {
+      err = sys_select(socketFd + 1, c_ptrTo(rset), c_ptrTo(wset), nil, nil, nready);
+    }
+    else {
+      err = sys_select(socketFd + 1, c_ptrTo(rset), c_ptrTo(wset), nil, c_ptrTo(timeout), nready);
+    }
+
     if(nready == 0){
       sys_close(socketFd);
       throw SystemError.fromSyserr(ETIMEDOUT, "connection timed out");
@@ -253,14 +265,21 @@ module Socket {
 
   extern proc sys_recv(sockfd:fd_t, buffer:c_void_ptr, len:size_t, flags:c_int, ref recvd_out:ssize_t):err_t;
 
-  proc udpSocket.recv(buffer_len: int, in timeout = new timeval(0,0), flags:c_int = 0) throws {
+  proc udpSocket.recv(buffer_len: int, in timeout = new timeval(-1,0), flags:c_int = 0) throws {
 
     var rset: fd_set;
     sys_fd_zero(rset);
     sys_fd_set(this.socketFd, rset);
     var nready:int(32);
+    var err_out:err_t;
 
-    var err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
+    if timeout.tv_sec == -1 {
+      err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, nil, nready);
+    }
+    else {
+      err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
+    }
+
     if(nready == 0){
       throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
     }
@@ -280,13 +299,20 @@ module Socket {
 
   extern proc sys_recvfrom(sockfd:fd_t, buffer:c_void_ptr, len:size_t, flags:c_int, ref addr:sys_sockaddr_t,  ref recvd_out:ssize_t):err_t;
 
-  proc udpSocket.recvfrom(buffer_len:int, in timeout = new timeval(0,0), flags:c_int = 0) throws {
+  proc udpSocket.recvfrom(buffer_len:int, in timeout = new timeval(-1,0), flags:c_int = 0) throws {
     var rset: fd_set;
     sys_fd_zero(rset);
     sys_fd_set(this.socketFd, rset);
     var nready:int(32);
+    var err_out:err_t;
 
-    var err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
+    if timeout.tv_sec == -1 {
+      err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, nil, nready);
+    }
+    else {
+      err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
+    }
+
     if(nready == 0){
       throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
     }
@@ -312,8 +338,15 @@ module Socket {
     sys_fd_zero(wset);
     sys_fd_set(this.socketFd, wset);
     var nready:int(32);
+    var err_out:err_t;
 
-    var err_out = sys_select(socketFd + 1, nil, c_ptrTo(wset), nil, c_ptrTo(timeout), nready);
+    if timeout.tv_sec == -1 {
+      err_out = sys_select(socketFd + 1, nil, c_ptrTo(wset), nil, nil, nready);
+    }
+    else {
+      err_out = sys_select(socketFd + 1, nil, c_ptrTo(wset), nil, c_ptrTo(timeout), nready);
+    }
+
     if(nready == 0){
       throw SystemError.fromSyserr(ETIMEDOUT, "send timed out");
     }
