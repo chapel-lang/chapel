@@ -554,14 +554,13 @@ proc testSingleStringShortOptNoVal(test: borrowed Test) throws {
   test.assertTrue(false);
 }
 
-// test a long string option with unlimited range of numArgs, inbound # supplied
+// test a long string option with unbound range of numArgs, inbound # supplied
 proc testUnboundStringLongOptVar(test: borrowed Test) throws {
   var argList = ["progName","--stringVal","twenty","thirty","forty","fifty"];
   var parser = new argumentParser();
-  // TODO: WHY IS UNBOUNDED RANGE A COMPILATION ERROR?
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
-                                  numArgs=1..1000000);
+                                  numArgs=1..);
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
   //parse the options

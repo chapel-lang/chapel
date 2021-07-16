@@ -41,9 +41,11 @@ module MasonArgParse {
   // A generic argument parser error
   class ArgumentError : Error {
     var _msg:string;
+    
     proc init(msg:string) {
       this._msg = msg;
     }
+
     override proc message() {
       return _msg;
     }
@@ -59,11 +61,13 @@ module MasonArgParse {
     proc value(){     
       return this._values.first();
     }
+
     iter values(){
       for val in _values {
         yield val;
       }      
     }
+
     proc hasValue(){
       return !this._values.isEmpty() && this._present;
     }
@@ -85,20 +89,15 @@ module MasonArgParse {
     // the argument instead?
     // also need a bool by ref to indicate presence of arg or not
     proc _match(args:[?argsD]string, startPos:int, myArg:Argument) throws {
-      var high = 0;      
-      
-      if !this._numArgs.hasHighBound() {
-        high = max(uint);
-      } else {
-        high = this._numArgs.high;
-      }
+      var high = _numArgs.high;
       debugTrace("expecting between " + 
                  _numArgs.low:string + " and " + high:string);
       var matched = 0;
       var pos = startPos;
       var next = pos+1;
       debugTrace("starting at pos: " + pos:string);
-      while matched < high && next <= argsD.high && !args[next].startsWith("-"){
+      while matched < high && next <= argsD.high && !args[next].startsWith("-") 
+      {
         pos=next;
         next+=1;
         matched+=1;
@@ -121,7 +120,7 @@ module MasonArgParse {
     // map an option string to its familiar name
     var _options: map(string, string);
 
-    proc parseArgs(arguments:[?argsD]string) throws {
+    proc parseArgs(arguments:[?argsD] string) throws {
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
       debugTrace("start parsing args");   
       var k = 0;
@@ -212,6 +211,15 @@ module MasonArgParse {
       return addOption(name=name,
                       opts=opts,
                       numArgs=numArgs..numArgs);
+    }
+
+    proc addOption(name:string,
+                   opts:[]string,
+                   numArgs:range(boundedType=BoundedRangeType.boundedLow)) 
+                   throws {
+      return addOption(name=name,
+                      opts=opts,
+                      numArgs=numArgs.low..max(int));
     }
 
     // define a new string option with range of values expected
