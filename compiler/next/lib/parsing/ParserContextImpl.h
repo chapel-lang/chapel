@@ -422,6 +422,12 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                                                  FunctionParts& fp) {
   CommentsAndStmt cs = {fp.comments, nullptr};
   if (fp.errorExpr == nullptr) {
+    // detect parenless functions
+    bool parenless = false;
+    if (fp.formals == parenlessMarker) {
+      parenless = true;
+      fp.formals = nullptr; // don't try to free the marker
+    }
     // Detect primary methods and create a receiver for them
     bool primaryMethod = false;
     auto scope = currentScope();
@@ -454,6 +460,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
                              fp.returnIntent,
                              fp.throws,
                              primaryMethod,
+                             parenless,
                              this->consumeList(fp.formals),
                              toOwned(fp.returnType),
                              toOwned(fp.where),
