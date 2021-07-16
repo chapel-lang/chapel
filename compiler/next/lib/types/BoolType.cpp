@@ -17,10 +17,15 @@
  * limitations under the License.
  */
 
-#include "chpl/types/BuiltinType.h"
+#include "chpl/types/BoolType.h"
 
 namespace chpl {
 namespace types {
+
+
+owned<BoolType> BoolType::build(int bitwidth) {
+  return toOwned(new BoolType(bitwidth));
+}
 
 
 } // end namespace types

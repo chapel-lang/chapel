@@ -18,10 +18,16 @@
 target_sources(libchplcomp-obj
                PRIVATE
 
+               BoolType.cpp
                BuiltinType.cpp
+               ComplexType.cpp
                ErroneousType.cpp
+               ImagType.cpp
+               IntType.cpp
+               RealType.cpp
                Type.cpp
                TypeTag.cpp
+               UintType.cpp
                UnknownType.cpp
 
               )

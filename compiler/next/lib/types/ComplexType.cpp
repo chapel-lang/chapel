@@ -17,10 +17,15 @@
  * limitations under the License.
  */
 
-#include "chpl/types/BuiltinType.h"
+#include "chpl/types/ComplexType.h"
 
 namespace chpl {
 namespace types {
+
+
+owned<ComplexType> ComplexType::build(int bitwidth) {
+  return toOwned(new ComplexType(bitwidth));
+}
 
 
 } // end namespace types

@@ -17,10 +17,15 @@
  * limitations under the License.
  */
 
-#include "chpl/types/BuiltinType.h"
+#include "chpl/types/RealType.h"
 
 namespace chpl {
 namespace types {
+
+
+owned<RealType> RealType::build(int bitwidth) {
+  return toOwned(new RealType(bitwidth));
+}
 
 
 } // end namespace types

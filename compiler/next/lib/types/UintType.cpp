@@ -17,10 +17,15 @@
  * limitations under the License.
  */
 
-#include "chpl/types/BuiltinType.h"
+#include "chpl/types/UintType.h"
 
 namespace chpl {
 namespace types {
+
+
+owned<UintType> UintType::build(int bitwidth) {
+  return toOwned(new UintType(bitwidth));
+}
 
 
 } // end namespace types

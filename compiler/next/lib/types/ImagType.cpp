@@ -17,10 +17,15 @@
  * limitations under the License.
  */
 
-#include "chpl/types/BuiltinType.h"
+#include "chpl/types/ImagType.h"
 
 namespace chpl {
 namespace types {
+
+
+owned<ImagType> ImagType::build(int bitwidth) {
+  return toOwned(new ImagType(bitwidth));
+}
 
 
 } // end namespace types

@@ -21,10 +21,16 @@ NEXT_TYPES_OBJDIR = $(COMPILER_BUILD)/next/lib/types
 ALL_SRCS += next/lib/types/*.cpp
 
 NEXT_TYPES_SRCS =                                 \
+  BoolType.cpp \
   BuiltinType.cpp \
+  ComplexType.cpp \
   ErroneousType.cpp \
+  ImagType.cpp \
+  IntType.cpp \
+  RealType.cpp \
   Type.cpp \
   TypeTag.cpp \
+  UintType.cpp \
   UnknownType.cpp \
 
 
