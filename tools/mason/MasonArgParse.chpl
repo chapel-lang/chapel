@@ -38,7 +38,7 @@ module MasonArgParse {
   if chpl_warnUnstable then
     compilerWarning("ArgumentParser is unstable.");
 
-// A generic argument parser error
+  // A generic argument parser error
   class ArgumentError : Error {
     var msg:string;
     proc init(msg:string) {
@@ -49,56 +49,62 @@ module MasonArgParse {
     }
   }
   
-// indicates a result of argument parsing
+  // indicates a result of argument parsing
   class Argument {
+    //indicates if an argument was entered on the command line
     var present: bool=false;
-    var values: list(string);     
+    // hold the values of the argument from the command line
+    var _values: list(string);     
     
-    proc getValue(){     
-      return this.values.first();
+    proc value(){     
+      return this._values.first();
     }
-    iter getValues(){
-      for val in values {
+    iter values(){
+      for val in _values {
         yield val;
       }      
-    }    
+    }
     proc hasValue(){
-      return !this.values.isEmpty();
+      return !this._values.isEmpty() && this.present;
     }
   }
 
   // stores the definition of an option
   class Action {
+    // friendly name for this argument
     var name:string;
+    // number of option flags that can indicate this argument
     var numOpts:int;
+    // value of option flag(s) that can indicate this argument
     var opts:[0..numOpts-1] string;
+    // number of acceptable values to be present after argument is indicated
     var numArgs:range;
 
     // TODO: Decouple the argument from the action
     // maybe pass a list to fill by reference and have the argparser populate
     // the argument instead?
     // also need a bool by ref to indicate presence of arg or not
-    proc match(args:[?argsD]string, startPos:int, ref myArg:Argument) throws {
-      var high = 0;
+    proc match(args:[?argsD]string, startPos:int, myArg:Argument) throws {
+      var high = 0;      
       
-      // TODO: Replace this high bound with something more reasonable
       if !this.numArgs.hasHighBound() {
-        high = 10000000000;
+        high = max(uint);
       } else {
         high = this.numArgs.high;
       }
-      writeErr("expecting between " + numArgs.low:string + " and "+high:string);
+      debugTrace("expecting between " + 
+                 numArgs.low:string + " and "+high:string);
       var matched = 0;
       var pos = startPos;
       var next = pos+1;
-      writeErr("starting at pos: " + pos:string);
+      debugTrace("starting at pos: " + pos:string);
       while matched < high && next <= argsD.high && !args[next].startsWith("-"){
         pos=next;
         next+=1;
         matched+=1;
-        myArg.values.append(args[pos]);
+        myArg._values.append(args[pos]);
         myArg.present=true;
-        writeErr("matched val: " + args[pos] + " at pos: " + pos:string);     
+        debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);     
       }
       if matched < this.numArgs.low {
         throw new ArgumentError("\\".join(opts) + " not enough values");
@@ -108,64 +114,68 @@ module MasonArgParse {
  }
 
   record argumentParser {
+    // store the arguments by their familiar names
     var result: map(string, shared Argument);
+    // store the actions by their familiar names
     var actions: map(string, owned Action);
+    // map an option string to its familiar name
     var options: map(string, string);
 
     proc parseArgs(arguments:[?argsD]string) throws {
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
-      writeErr("start parsing args");   
+      debugTrace("start parsing args");   
       var k = 0;
       // identify optionIndices where opts start
       var optionIndices : map(string, int);
-      const zArgsD = {0..argsD.size-1};
-      var zeroArgs = arguments.reindex(zArgsD);
-      var argsList = new list(zeroArgs);
+      var argsList = new list(arguments);
       
-      for i in zArgsD {
+      for i in argsD {
         // look for = sign after opt, split into two elements
-        if zeroArgs[i].startsWith("-") && zeroArgs[i].find("=") > 0 {
-          var elems = new list(zeroArgs[i].split("=", 1));
+        if arguments[i].startsWith("-") && arguments[i].find("=") > 0 {
+          var elems = new list(arguments[i].split("=", 1));
           // replace this opt=val with opt val
-          argsList.pop(i);
-          argsList.insert(i, elems.toArray());
+          var idx = argsList.indexOf(arguments[i]);
+          argsList.pop(idx);
+          argsList.insert(idx, elems.toArray());
         }
       }
       
-      for i in argsList.indices {        
-        if options.contains(argsList.this(i)) {
-          writeErr("found option " + argsList.this(i));
+      for i in argsList.indices {
+        const argElt = argsList[i];    
+        if options.contains(argElt) {
+          debugTrace("found option " + argElt);
           // create an entry for this index and the argument name
-          optionIndices.addOrSet(options.getValue(argsList.this(i)), i);
-          writeErr("added option " + argsList.this(i));
+          optionIndices.addOrSet(options.getValue(argElt), i);
+          debugTrace("added option " + argElt);
         } 
       }
       // get this as an array so we can sort it, because maps are order-less
+      // TODO: Can we eliminate this extra logic by using an OrderedMap type?
       var arrayoptionIndices = optionIndices.toArray();
       sort(arrayoptionIndices);      
       // try to match for each of the identified options
       for (name, idx) in arrayoptionIndices {
         // get a ref to the argument
         var arg = result.getReference(name);
-        writeErr("got reference to argument " + name);
+        debugTrace("got reference to argument " + name);
         // get the action to match
-        var act = actions.getBorrowed(name);
+        const act = actions.getBorrowed(name);
         // try to match values in argstring, get the last value position
-        var endPos = act.match(argsList.toArray(), idx, arg);
-        writeErr("got end position " + endPos:string);
+        const endPos = act.match(argsList.toArray(), idx, arg);
+        debugTrace("got end position " + endPos:string);
         k+=1;
-        writeErr("k val = " + k:string);
-        writeErr("arrayoptionIndices.size is " 
+        debugTrace("k val = " + k:string);
+        debugTrace("arrayoptionIndices.size is " 
                  + arrayoptionIndices.size:string);
-        writeErr("argsList.size = " + argsList.size:string);
-        writeErr("zArgsD.high = " + zArgsD.high:string);
+        debugTrace("argsList.size = " + argsList.size:string);
+        debugTrace("argsD.high = " + argsD.high:string);
         // make sure we don't overrun the array,
         // then check that we don't have extra values
         if k < arrayoptionIndices.size {
           if endPos != arrayoptionIndices[k][1] {
-            writeErr("endpos != arrayoptionIndices[k][1] :"+endPos:string+" "
+            debugTrace("endpos != arrayoptionIndices[k][1] :"+endPos:string+" "
                      + arrayoptionIndices[k][1]:string);
-            writeErr("arrayoptionIndices " + arrayoptionIndices:string);
+            debugTrace("arrayoptionIndices " + arrayoptionIndices:string);
             throw new ArgumentError("\\".join(act.opts) + " has extra values");
           }
         // check that we consumed all the values in the input string
@@ -186,8 +196,8 @@ module MasonArgParse {
     proc checkSatisfiedOptions() throws {
       // make sure we satisfied options that need at least 1 value
       for name in this.actions.keys() {
-        var act = this.actions.getBorrowed(name);
-        var arg = this.result.getReference(name);
+        const act = this.actions.getBorrowed(name);
+        const arg = this.result.getReference(name);
         if act.numArgs.low > 0 && !arg.present {
           throw new ArgumentError("\\".join(act.opts) + " not enough values");
         }        
@@ -227,10 +237,10 @@ module MasonArgParse {
       var arg = new shared Argument();
       this.result.add(name, arg);
       return arg;
-      }
+    }
   }
   
-  proc writeErr(msg:string) {
+  proc debugTrace(msg:string) {
     if DEBUG then try! {stderr.writeln(msg);}
   }
 }
