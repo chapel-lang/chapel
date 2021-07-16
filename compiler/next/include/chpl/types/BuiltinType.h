@@ -27,23 +27,30 @@ namespace types {
 
 
 /**
-  This class represents a builtin type, e.g. `int`.
+  This class represents a builtin type that only needs a name to
+  be used by resolution.
+
+  For example, `numeric`, `borrowed`, `chpl_anyreal`.
+
+  Types that are used very commonly (e.g. AnyType, UnknownType) should get
+  their own clases.
+
+  Types that have need for different fields (e.g. PrimitiveType) should get
+  their own class.
 
  */
 class BuiltinType : public Type {
  public:
   enum Kind {
     // concrete builtin types
-    BOOL,
-    COMPLEX,
-    IMAG,
-    INT,
-    REAL,
-    UINT,
 
     // generic builtin types
     // (note: isGeneric relies on NUMERIC being the first)
     NUMERIC,
+
+    ANY_BOOL,
+    ANY_REAL,
+    BORROWED,
   };
 
  private:

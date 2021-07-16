@@ -38,8 +38,21 @@
 /// \cond DO_NOT_DOCUMENT
 
 TYPE_NODE(BuiltinType)
+
+   // get their own because they have need for different fields
+TYPE_BEGIN_SUBCLASSES(PrimitiveType) // has bitwidth field
+    IntType
+    UintType
+    RealType
+    ImagType
+    ComplexType
+    BoolType
+
 TYPE_NODE(ErroneousType)
+
+  // get their own because they seem really important
 TYPE_NODE(UnknownType)
+TYPE_NODE(AnyType)
 
 TYPE_BEGIN_SUBCLASSES(DeclaredType)
   TYPE_NODE(EnumType)
