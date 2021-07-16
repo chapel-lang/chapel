@@ -1,0 +1,5 @@
+#!/bin/bash
+
+nvcc -O3 -c streamKernel.cu -o streamKernel.o 
+nvcc -O3 streamKernel.o -o streamKernelDlinked.o -dlink
+
