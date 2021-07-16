@@ -528,9 +528,8 @@ class UserMapAssocDom: BaseAssociativeDom {
 
   proc dsiHasSingleLocalSubdomain() param return false;
 
-  pragma "order independent yielding loops"
   iter dsiLocalSubdomains(loc: locale) {
-    for (idx,l) in zip(dist.targetLocDom, dist.targetLocales) {
+    foreach (idx,l) in zip(dist.targetLocDom, dist.targetLocales) {
       if l == loc {
         yield locDoms[idx]!.myInds;
       }
