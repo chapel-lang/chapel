@@ -33,14 +33,17 @@ namespace uast {
  */
 class VarLikeDecl : public NamedDecl {
  protected:
+  IntentList storageKind_;
   int8_t typeExpressionChildNum_;
   int8_t initExpressionChildNum_;
 
   VarLikeDecl(ASTTag tag, ASTList children, Decl::Visibility vis,
               UniqueString name,
+              IntentList storageKind,
               int8_t typeExpressionChildNum,
               int8_t initExpressionChildNum)
     : NamedDecl(tag, std::move(children), vis, name),
+      storageKind_(storageKind),
       typeExpressionChildNum_(typeExpressionChildNum),
       initExpressionChildNum_(initExpressionChildNum) {
 
@@ -59,6 +62,7 @@ class VarLikeDecl : public NamedDecl {
     const VarLikeDecl* lhs = this;
     const VarLikeDecl* rhs = (const VarLikeDecl*) other;
     return lhs->namedDeclContentsMatchInner(rhs) &&
+           lhs->storageKind_ == rhs->storageKind_ &&
            lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
            lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
   }
@@ -69,6 +73,15 @@ class VarLikeDecl : public NamedDecl {
 
  public:
   ~VarLikeDecl() = 0; // this is an abstract base class
+
+  /**
+    Returns the storage kind (e.g. type, param, in, etc).
+    Subclasses have more specific functions that return the
+    subset appropriate for that subclass.
+   */
+  IntentList storageKind() {
+    return storageKind_;
+  }
 
   /**
     Returns the type expression used in this VarLikeDecl's declaration, or

@@ -65,15 +65,15 @@ class Formal final : public VarLikeDecl {
     : VarLikeDecl(asttags::Formal, std::move(children),
                   Decl::DEFAULT_VISIBILITY,
                   name,
+                  (IntentList)((int)intent),
                   typeExpressionChildNum,
-                  initExpressionChildNum),
-      intent_(intent) {}
+                  initExpressionChildNum)
+  { }
 
   bool contentsMatchInner(const ASTNode* other) const override {
     const Formal* lhs = this;
     const Formal* rhs = (const Formal*) other;
-    return lhs->varLikeDeclContentsMatchInner(rhs) &&
-           lhs->intent_ == rhs->intent_;
+    return lhs->varLikeDeclContentsMatchInner(rhs);
   }
   void markUniqueStringsInner(Context* context) const override {
     varLikeDeclMarkUniqueStringsInner(context);
@@ -92,7 +92,7 @@ class Formal final : public VarLikeDecl {
    Returns the intent of the formal, e.g. in `proc f(const ref y: int)`,
    the formal `y` has intent `const ref`.
    */
-  Intent intent() const { return this->intent_; }
+  Intent intent() const { return (Intent)((int)storageKind()); }
 
 };
 
