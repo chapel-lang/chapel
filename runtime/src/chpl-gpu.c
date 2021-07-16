@@ -19,6 +19,8 @@
 
 #include "sys_basic.h"
 #include "chplrt.h"
+#include "chpl-mem.h"
+#include "error.h"
 
 #ifdef HAS_GPU_LOCALE
 
@@ -26,7 +28,6 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
-#define 
 static void checkCudaErrors(CUresult err) {
   if(err != CUDA_SUCCESS) {
     chpl_internal_error("Encountered error calling CUDA function");
@@ -63,7 +64,7 @@ void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) {
     fseek (f, 0, SEEK_END);
     length = ftell (f);
     fseek (f, 0, SEEK_SET);
-    buffer = (char* )malloc (length);
+    buffer = (char* )chpl_malloc (length);
     if (buffer)
     {
       fread (buffer, 1, length, f);
