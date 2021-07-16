@@ -384,7 +384,7 @@ module Sys {
     var ai_addrlen: socklen_t;
     var ai_next: c_ptr(sys_addrinfo_t);
   }
-  type sys_addrinfo_ptr_t = c_ptr(sys_addrinfo_t); // opaque
+  type sys_addrinfo_ptr_t = c_ptr(sys_addrinfo_t);
 
   proc sys_addrinfo_ptr_t.flags:c_int { return sys_getaddrinfo_flags(this); }
   proc sys_addrinfo_ptr_t.family:c_int { return sys_getaddrinfo_family(this); }
@@ -442,6 +442,7 @@ module Sys {
   extern proc sys_getaddrinfo_family(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_socktype(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_protocol(res:sys_addrinfo_ptr_t):c_int;
+  extern proc sys_getaddrinfo_addrlen(res:sys_addrinfo_ptr_t):socklen_t;
   extern proc sys_getaddrinfo_addr(res:sys_addrinfo_ptr_t):sys_sockaddr_t;
   extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
   extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
