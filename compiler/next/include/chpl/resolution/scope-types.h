@@ -93,6 +93,14 @@ struct BorrowedIdsWithName {
   bool operator!=(const BorrowedIdsWithName& other) const {
     return !(*this == other);
   }
+
+  const ID& firstId() {
+    if (moreIds == nullptr) {
+      return id;
+    } else {
+      return (*moreIds)[0];
+    }
+  }
 };
 
 // DeclMap: key - string name,  value - vector of ID of a NamedDecl

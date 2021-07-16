@@ -118,7 +118,7 @@ static void gatherDeclsWithin(const uast::ASTNode* ast,
   containsUseImport = visitor.containsUseImport;
 }
 
-static bool createsScope(asttags::ASTTag tag) {
+bool createsScope(asttags::ASTTag tag) {
   return Builder::astTagIndicatesNewIdScope(tag)
          || asttags::isSimpleBlockLike(tag)
          || asttags::isLoop(tag)
@@ -235,23 +235,24 @@ enum VisibilityStmtKind {
   VIS_NEITHER // the expr is something else e.g. an Identifier or Function
 };
 
-// Returns true if something was found and stores it in result.
-static bool doLookupInScope(Context* context,
+static void doLookupInScope(Context* context,
                             const Scope* scope,
                             UniqueString name,
                             VisibilityStmtKind inUseEtc,
+                            bool findOne,
                             std::unordered_set<const Scope*>& checkedScopes,
-                            BorrowedIdsWithName& result);
-static const ResolvedVisibilityScope* partiallyResolvedVisibilityScope(Context* context,
-                                                           const Scope* scope);
+                            std::vector<BorrowedIdsWithName>& result);
+
+static const ResolvedVisibilityScope*
+  partiallyResolvedVisibilityScope(Context* context, const Scope* scope);
 
 static bool doLookupInScopeDecls(Context* context,
                                  const Scope* scope,
                                  UniqueString name,
-                                 BorrowedIdsWithName& result) {
+                                 std::vector<BorrowedIdsWithName>& result) {
   auto search = scope->declared.find(name);
   if (search != scope->declared.end()) {
-    result = BorrowedIdsWithName(search->second);
+    result.push_back(BorrowedIdsWithName(search->second));
     return true;
   }
   return false;
@@ -260,8 +261,9 @@ static bool doLookupInScopeDecls(Context* context,
 static bool doLookupInImports(Context* context,
                               const Scope* scope,
                               UniqueString name,
+                              bool findOne,
                               std::unordered_set<const Scope*>& checkedScopes,
-                              BorrowedIdsWithName& result) {
+                              std::vector<BorrowedIdsWithName>& result) {
   // Look in the (potentially partial) imported symbol data
   const ResolvedVisibilityScope* r = nullptr;
   if (scope->containsUseImport) {
@@ -294,7 +296,7 @@ static bool doLookupInImports(Context* context,
         // find it in that scope
         bool found = doLookupInScope(context, symScope, from, VIS_NEITHER,
                                      checkedScopes, result);
-        if (found)
+        if (found && findOne)
           return true;
       }
     }
@@ -304,7 +306,7 @@ static bool doLookupInImports(Context* context,
 static bool doLookupInToplevelModules(Context* context,
                                       const Scope* scope,
                                       UniqueString name,
-                                      BorrowedIdsWithName& result) {
+                                      std::vector<BorrowedIdsWithName>& result){
   const Module* mod = parsing::getToplevelModule(context, name);
   if (mod == nullptr)
     return false;
@@ -317,8 +319,9 @@ static bool doLookupInScope(Context* context,
                             const Scope* scope,
                             UniqueString name,
                             VisibilityStmtKind inUseEtc,
+                            bool findOne,
                             std::unordered_set<const Scope*>& checkedScopes,
-                            BorrowedIdsWithName& result) {
+                            std::vector<BorrowedIdsWithName>& result) {
 
   // TODO: module name itself
   // TODO: import has different rules for submodules
@@ -332,45 +335,54 @@ static bool doLookupInScope(Context* context,
 
   if (inUseEtc != VIS_IMPORT &&
       doLookupInScopeDecls(context, scope, name, result)) {
-    return true;
+    if (findOne) return true;
   }
 
   if (doLookupInImports(context, scope, name, checkedScopes, result)) {
-    return true;
+    if (findOne) return true;
   }
 
   if (inUseEtc == VIS_USE &&
       doLookupInToplevelModules(context, scope, name, result)) {
+    if (findOne) return true;
+  }
+
+  return false;
+}
+
+static bool lookupNameInScope(Context* context,
+                              const Scope* scope,
+                              UniqueString name,
+                              VisibilityStmtKind inUseEtc,
+                              bool findOne,
+                              BorrowedIdsWithName& result) {
+  std::unordered_set<const Scope*> checkedScopes;
+  std::vector<BorrowedIdsWithName> vec;
+  bool got = doLookupInScope(context, scope, name, inUseEtc, findOne,
+                             checkedScopes, vec);
+  if (got && vec.size() > 0) {
+    result = vec[0];
     return true;
   }
 
   return false;
 }
 
-static bool lookupInScope(Context* context,
-                          const Scope* scope,
-                          UniqueString name,
-                          VisibilityStmtKind inUseEtc,
-                          BorrowedIdsWithName& result) {
+std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
+                                               const Scope* scope,
+                                               const Expression* expr,
+                                               bool findOne) {
   std::unordered_set<const Scope*> checkedScopes;
-  return doLookupInScope(context, scope, name, inUseEtc, checkedScopes, result);
-}
+  std::vector<BorrowedIdsWithName> vec;
 
-/* TODO
-static bool lookupExprInScope(Context* context,
-                              const Scope* scope,
-                              const Expression* expr,
-                              VisibilityStmtKind inUseEtc,
-                              BorrowedIdsWithName& result) {
   if (auto ident = expr->toIdentifier()) {
-    return lookupInScope(context, scope, ident->name(), inUseEtc, result);
+    doLookupInScope(context, scope, ident->name(), VIS_NEITHER, findOne, vec);
   }
   if (expr->isDot()) {
     assert(false && "TODO");
   }
-  assert(false && "Case not handled");
-  return false;
-}*/
+  return vec;
+}
 
 
 struct ImportsResolver {
@@ -433,7 +445,7 @@ struct ImportsResolver {
       auto name = id->name();
 
       BorrowedIdsWithName r;
-      bool foundSym = lookupInScope(context, scope, name, VIS_USE, r);
+      bool foundSym = lookupNameInScope(context, scope, name, VIS_USE, r);
       if (foundSym == false) {
         context->error(use, "undeclared identifier %s", id->name().c_str());
       } else {
@@ -543,7 +555,7 @@ const InnermostMatch& findInnermostDecl(Context* context,
   const Scope* cur = nullptr;
   for (cur = scope; cur != nullptr; cur = cur->parentScope) {
     BorrowedIdsWithName r;
-    bool found = lookupInScope(context, cur, name, VIS_NEITHER, r);
+    bool found = lookupNameInScope(context, cur, name, VIS_NEITHER, r);
     if (found) {
       if (r.moreIds != nullptr)
         count = InnermostMatch::MANY;
@@ -568,7 +580,7 @@ const InnermostMatch& findInnermostDecl(Context* context,
     }
     if (rootScope != nullptr) {
       BorrowedIdsWithName r;
-      bool found = lookupInScope(context, rootScope, name, VIS_NEITHER, r);
+      bool found = lookupNameInScope(context, rootScope, name, VIS_NEITHER, r);
       if (found) {
         if (r.moreIds != nullptr)
           count = InnermostMatch::MANY;

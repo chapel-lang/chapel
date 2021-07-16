@@ -27,6 +27,11 @@ namespace resolution {
 
 
   /**
+    Returns true if this AST type can create a scope.
+   */
+  bool createsScope(asttags::ASTTag tag);
+
+  /**
     Returns the Scope for an ID.
    */
   const Scope* scopeForId(Context* context, ID id);
@@ -45,6 +50,33 @@ namespace resolution {
    */
   const ResolvedVisibilityScope* resolveVisibilityStmts(Context* context,
                                                         const Scope* scope);
+
+  /**
+    Given an Expression and a Scope, return the things
+    that Expression might refer to.
+
+    If findOne is true, limits search to the innermost scope
+    with a match.
+
+    Expression can be Identifier or Dot.
+   */
+  std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
+                                                 const Scope* scope,
+                                                 const Expression* expr,
+                                                 bool findOne);
+
+  /**
+    Given a name and a Scope, return the things
+    that name might refer to.
+
+    If findOne is true, limits search to the innermost scope
+    with a match.
+   */
+  std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
+                                                 const Scope* scope,
+                                                 UniqueString name,
+                                                 bool findOne);
+
 
   /**
     Given a name and a Scope, return the innermost and first ID
