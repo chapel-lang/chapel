@@ -390,6 +390,7 @@ module Sys {
   proc sys_addrinfo_ptr_t.family:c_int { return sys_getaddrinfo_family(this); }
   proc sys_addrinfo_ptr_t.socktype:c_int { return sys_getaddrinfo_socktype(this); }
   proc sys_addrinfo_ptr_t.socktype:c_int { return sys_getaddrinfo_socktype(this); }
+  proc sys_addrinfo_ptr_t.addrlen:socklen_t { return sys_getaddrinfo_addrlen(this); }
   proc sys_addrinfo_ptr_t.addr:sys_sockaddr_t { return sys_getaddrinfo_addr(this); }
   // Not supported yet
   // proc sys_addrinfo_ptr_t.canonname:c_string { return sys_getaddrinfo_canonname(this); }
@@ -443,6 +444,7 @@ module Sys {
   extern proc sys_getaddrinfo_family(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_socktype(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_protocol(res:sys_addrinfo_ptr_t):c_int;
+  extern proc sys_getaddrinfo_addrlen(res:sys_addrinfo_ptr_t):socklen_t;
   extern proc sys_getaddrinfo_addr(res:sys_addrinfo_ptr_t):sys_sockaddr_t;
   extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
   extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);
