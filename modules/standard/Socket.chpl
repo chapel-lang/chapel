@@ -51,19 +51,19 @@ module Socket {
     }
   }
 
-  proc ipAddr.init(host:sys_in_addr_t, port: uint(16) = 8000) {
+  proc ipAddr.init(host:sys_in_addr_t, port:uint(16) = 8000) {
     _addressStorage = new sys_sockaddr_t();
 
     try! {
-      _addressStorage.set(host,port);
+      _addressStorage.set(host, port);
     }
   }
 
-  proc ipAddr.init(host:sys_in6_addr_t, port: uint(16) = 8000) {
+  proc ipAddr.init(host:sys_in6_addr_t, port:uint(16) = 8000) {
     _addressStorage = new sys_sockaddr_t();
 
     try! {
-      _addressStorage.set(host,port);
+      _addressStorage.set(host, port);
     }
   }
 
@@ -125,24 +125,24 @@ module Socket {
     var rset, allset: fd_set;
 
     sys_fd_zero(allset);
-    sys_fd_set(this.socketFd,allset);
+    sys_fd_set(this.socketFd, allset);
     rset = allset;
     var nready:int(32);
     var err:err_t;
 
     if timeout.tv_sec == -1 {
-      err = sys_select(socketFd+1,c_ptrTo(rset),nil,nil,nil,nready);
+      err = sys_select(socketFd+1, c_ptrTo(rset), nil, nil, nil, nready);
     }
     else {
-      err = sys_select(socketFd+1,c_ptrTo(rset),nil,nil,c_ptrTo(timeout),nready);
+      err = sys_select(socketFd+1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
     }
 
     if(nready == 0){
       throw SystemError.fromSyserr(ETIMEDOUT, "listen() timed out");
     }
 
-    if(sys_fd_isset(socketFd,rset)){
-      sys_accept(socketFd,client_addr,fdOut);
+    if(sys_fd_isset(socketFd, rset)){
+      sys_accept(socketFd, client_addr, fdOut);
     }
 
     var sockFile:tcpConn = openfd(fdOut);
@@ -161,27 +161,27 @@ module Socket {
     return address.family;
   }
 
-  proc listen(in address:ipAddr, reuseAddr=true, backlog=5) throws {
+  proc listen(in address:ipAddr, reuseAddr = true, backlog = 5) throws {
     var family = if address.family == AF_INET6 then IPFamily.IPv6 else IPFamily.IPv4;
-    var socketFd = socket(family,SOCK_STREAM|SOCK_NONBLOCK);
+    var socketFd = socket(family, SOCK_STREAM | SOCK_NONBLOCK);
 
     bind(socketFd, address, reuseAddr);
 
-    var err = sys_listen(socketFd,backlog:int(32));
-    if(err != 0){
-      throw SystemError.fromSyserr(err,"Failed to listen on socket");
+    var err = sys_listen(socketFd, backlog:int(32));
+    if err != 0 {
+      throw SystemError.fromSyserr(err, "Failed to listen on socket");
     }
 
-    const tcpObject = new tcpListener(socketFd, address);
-    return tcpObject;
+    const listener = new tcpListener(socketFd, address);
+    return listener;
   }
 
-  proc connect(in address:ipAddr, in timeout = new timeval(-1,0)):tcpConn throws {
+  proc connect(in address:ipAddr, in timeout = new timeval(-1,0)) throws {
     var family = if address.family == AF_INET6 then IPFamily.IPv6 else IPFamily.IPv4;
-    var socketFd = socket(family, SOCK_STREAM|SOCK_NONBLOCK);
+    var socketFd = socket(family, SOCK_STREAM | SOCK_NONBLOCK);
 
     var err = sys_connect(socketFd, address._addressStorage);
-    if(err != 0 && err != EINPROGRESS){
+    if(err != 0 && err != EINPROGRESS) {
       throw SystemError.fromSyserr(err,"Failed to connect");
     }
 
@@ -204,12 +204,13 @@ module Socket {
       err = sys_select(socketFd + 1, c_ptrTo(rset), c_ptrTo(wset), nil, c_ptrTo(timeout), nready);
     }
 
-    if(nready == 0){
+    if nready == 0 {
       sys_close(socketFd);
       throw SystemError.fromSyserr(ETIMEDOUT, "connection timed out");
     }
-    if(err != 0){
-      throw SystemError.fromSyserr(err,"Failed to connect");
+
+    if err != 0 {
+      throw SystemError.fromSyserr(err, "Failed to connect");
     }
 
     if(sys_fd_isset(socketFd, rset) != 0 || sys_fd_isset(socketFd, wset) != 0){
@@ -224,10 +225,10 @@ module Socket {
 
         defer sys_close(socketFd);
         if(err != 0){
-          throw SystemError.fromSyserr(err,"Failed to connect");
+          throw SystemError.fromSyserr(err, "Failed to connect");
         }
         else if(berkleyError != 0){
-          throw SystemError.fromSyserr(berkleyError,"Failed to connect");
+          throw SystemError.fromSyserr(berkleyError, "Failed to connect");
         }
       }
     }
@@ -253,7 +254,7 @@ module Socket {
     proc init(family:IPFamily = IPFamily.IPv4) {
       this.socketFd = -1;
       try! {
-        var sockFd = socket(family, SOCK_DGRAM|SOCK_NONBLOCK);
+        var sockFd = socket(family, SOCK_DGRAM | SOCK_NONBLOCK);
         this.socketFd = sockFd;
       }
     }
@@ -280,10 +281,10 @@ module Socket {
       err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
     }
 
-    if(nready == 0){
+    if nready == 0 {
       throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
     }
-    if(err_out != 0){
+    if err_out != 0 {
       throw SystemError.fromSyserr(err_out);
     }
 
@@ -313,10 +314,10 @@ module Socket {
       err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
     }
 
-    if(nready == 0){
+    if nready == 0 {
       throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
     }
-    if(err_out != 0){
+    if err_out != 0 {
       throw SystemError.fromSyserr(err_out);
     }
 
@@ -347,10 +348,10 @@ module Socket {
       err_out = sys_select(socketFd + 1, nil, c_ptrTo(wset), nil, c_ptrTo(timeout), nready);
     }
 
-    if(nready == 0){
+    if nready == 0 {
       throw SystemError.fromSyserr(ETIMEDOUT, "send timed out");
     }
-    if(err_out != 0){
+    if err_out != 0 {
       throw SystemError.fromSyserr(err_out);
     }
 
@@ -380,8 +381,8 @@ module Socket {
   proc getAddress(socketFD: int(32)) throws {
     var addressStorage = new sys_sockaddr_t();
     var err = sys_getpeername(socketFD, addressStorage);
-    if(err != 0){
-      throw SystemError.fromSyserr(err,"Failed to get address");
+    if err != 0 {
+      throw SystemError.fromSyserr(err, "Failed to get address");
     }
 
     return new ipAddr(addressStorage);
@@ -389,9 +390,9 @@ module Socket {
 
   proc socket(family:IPFamily = IPFamily.IPv4, sockType:c_int = SOCK_STREAM, protocol = 0) throws {
     var socketFd: int(32);
-    var err = sys_socket(family:int(32), sockType|SOCK_CLOEXEC, 0, socketFd);
-    if(err != 0){
-      throw SystemError.fromSyserr(err,"Failed to create Socket");
+    var err = sys_socket(family:int(32), sockType | SOCK_CLOEXEC, protocol:c_int, socketFd);
+    if err != 0 {
+      throw SystemError.fromSyserr(err, "Failed to create Socket");
     }
 
     return socketFd;
@@ -402,12 +403,12 @@ module Socket {
     if enable {
       var ptrEnable:c_ptr(int) = c_ptrTo(enable);
       var voidPtrEnable:c_void_ptr = ptrEnable;
-      sys_setsockopt(socketFd,SOL_SOCKET,SO_REUSEADDR,voidPtrEnable,sizeof(enable):int(32));
+      sys_setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, voidPtrEnable, sizeof(enable):int(32));
     }
 
     var err = sys_bind(socketFd, address._addressStorage);
-    if(err != 0){
-      throw SystemError.fromSyserr(err,"Failed to bind Socket");
+    if err != 0 {
+      throw SystemError.fromSyserr(err, "Failed to bind Socket");
     }
   }
 
