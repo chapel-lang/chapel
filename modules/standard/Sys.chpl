@@ -376,18 +376,18 @@ module Sys {
   */
   proc sys_sockaddr_t.family:c_int { return sys_getsockaddr_family(this); }
 
-  extern record sys_addrinfo_t {
+  extern "struct addrinfo" record sys_addrinfo_t {
     var ai_flags: c_int;
     var ai_family: c_int;
     var ai_socktype: c_int;
     var ai_protocol: c_int;
+    var ai_addrlen: socklen_t;
+    var ai_next: c_ptr(sys_addrinfo_t);
   }
-  extern type sys_addrinfo_ptr_t; // opaque
-
+  type sys_addrinfo_ptr_t = c_ptr(sys_addrinfo_t); // opaque
 
   proc sys_addrinfo_ptr_t.flags:c_int { return sys_getaddrinfo_flags(this); }
   proc sys_addrinfo_ptr_t.family:c_int { return sys_getaddrinfo_family(this); }
-  proc sys_addrinfo_ptr_t.socktype:c_int { return sys_getaddrinfo_socktype(this); }
   proc sys_addrinfo_ptr_t.socktype:c_int { return sys_getaddrinfo_socktype(this); }
   proc sys_addrinfo_ptr_t.addr:sys_sockaddr_t { return sys_getaddrinfo_addr(this); }
   // Not supported yet
@@ -437,7 +437,7 @@ module Sys {
   extern proc sys_accept(sockfd:fd_t, ref add_out:sys_sockaddr_t, ref fd_out:fd_t):err_t;
   extern proc sys_bind(sockfd:fd_t, ref addr:sys_sockaddr_t):err_t;
   extern proc sys_connect(sockfd:fd_t, ref addr:sys_sockaddr_t):err_t;
-  extern proc sys_getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):err_t;
+  extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):err_t;
   extern proc sys_getaddrinfo_flags(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_family(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_socktype(res:sys_addrinfo_ptr_t):c_int;
