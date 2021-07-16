@@ -39,18 +39,17 @@
 
 TYPE_NODE(BuiltinType)
 
-   // get their own because they have need for different fields
-TYPE_BEGIN_SUBCLASSES(PrimitiveType) // has bitwidth field
-    IntType
-    UintType
-    RealType
-    ImagType
-    ComplexType
-    BoolType
+TYPE_BEGIN_SUBCLASSES(PrimitiveType)
+    TYPE_NODE(BoolType)
+    TYPE_NODE(ComplexType)
+    TYPE_NODE(ImagType)
+    TYPE_NODE(IntType)
+    TYPE_NODE(RealType)
+    TYPE_NODE(UintType)
+TYPE_END_SUBCLASSES(PrimitiveType)
 
 TYPE_NODE(ErroneousType)
 
-  // get their own because they seem really important
 TYPE_NODE(UnknownType)
 TYPE_NODE(AnyType)
 
