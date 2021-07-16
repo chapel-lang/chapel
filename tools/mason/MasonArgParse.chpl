@@ -40,19 +40,19 @@ module MasonArgParse {
 
   // A generic argument parser error
   class ArgumentError : Error {
-    var msg:string;
+    var _msg:string;
     proc init(msg:string) {
-      this.msg = msg;
+      this._msg = msg;
     }
     override proc message() {
-      return msg;
+      return _msg;
     }
   }
   
-  // indicates a result of argument parsing
+  // indicates a _result of argument parsing
   class Argument {
     //indicates if an argument was entered on the command line
-    var present: bool=false;
+    var _present: bool=false;
     // hold the values of the argument from the command line
     var _values: list(string);     
     
@@ -65,35 +65,35 @@ module MasonArgParse {
       }      
     }
     proc hasValue(){
-      return !this._values.isEmpty() && this.present;
+      return !this._values.isEmpty() && this._present;
     }
   }
 
   // stores the definition of an option
   class Action {
     // friendly name for this argument
-    var name:string;
+    var _name:string;
     // number of option flags that can indicate this argument
-    var numOpts:int;
+    var _numOpts:int;
     // value of option flag(s) that can indicate this argument
-    var opts:[0..numOpts-1] string;
+    var _opts:[0.._numOpts-1] string;
     // number of acceptable values to be present after argument is indicated
-    var numArgs:range;
+    var _numArgs:range;
 
     // TODO: Decouple the argument from the action
     // maybe pass a list to fill by reference and have the argparser populate
     // the argument instead?
     // also need a bool by ref to indicate presence of arg or not
-    proc match(args:[?argsD]string, startPos:int, myArg:Argument) throws {
+    proc _match(args:[?argsD]string, startPos:int, myArg:Argument) throws {
       var high = 0;      
       
-      if !this.numArgs.hasHighBound() {
+      if !this._numArgs.hasHighBound() {
         high = max(uint);
       } else {
-        high = this.numArgs.high;
+        high = this._numArgs.high;
       }
       debugTrace("expecting between " + 
-                 numArgs.low:string + " and "+high:string);
+                 _numArgs.low:string + " and " + high:string);
       var matched = 0;
       var pos = startPos;
       var next = pos+1;
@@ -103,11 +103,11 @@ module MasonArgParse {
         next+=1;
         matched+=1;
         myArg._values.append(args[pos]);
-        myArg.present=true;
+        myArg._present=true;
         debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);     
       }
-      if matched < this.numArgs.low {
-        throw new ArgumentError("\\".join(opts) + " not enough values");
+      if matched < this._numArgs.low {
+        throw new ArgumentError("\\".join(_opts) + " not enough values");
       }
       return next;
     }
@@ -115,11 +115,11 @@ module MasonArgParse {
 
   record argumentParser {
     // store the arguments by their familiar names
-    var result: map(string, shared Argument);
+    var _result: map(string, shared Argument);
     // store the actions by their familiar names
-    var actions: map(string, owned Action);
+    var _actions: map(string, owned Action);
     // map an option string to its familiar name
-    var options: map(string, string);
+    var _options: map(string, string);
 
     proc parseArgs(arguments:[?argsD]string) throws {
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
@@ -130,11 +130,12 @@ module MasonArgParse {
       var argsList = new list(arguments);
       
       for i in argsD {
+        const arrElt = arguments[i];
         // look for = sign after opt, split into two elements
-        if arguments[i].startsWith("-") && arguments[i].find("=") > 0 {
-          var elems = new list(arguments[i].split("=", 1));
+        if arrElt.startsWith("-") && arrElt.find("=") > 0 {
+          var elems = new list(arrElt.split("=", 1));
           // replace this opt=val with opt val
-          var idx = argsList.indexOf(arguments[i]);
+          var idx = argsList.indexOf(arrElt);
           argsList.pop(idx);
           argsList.insert(idx, elems.toArray());
         }
@@ -142,10 +143,10 @@ module MasonArgParse {
       
       for i in argsList.indices {
         const argElt = argsList[i];    
-        if options.contains(argElt) {
+        if _options.contains(argElt) {
           debugTrace("found option " + argElt);
           // create an entry for this index and the argument name
-          optionIndices.addOrSet(options.getValue(argElt), i);
+          optionIndices.addOrSet(_options.getValue(argElt), i);
           debugTrace("added option " + argElt);
         } 
       }
@@ -153,15 +154,15 @@ module MasonArgParse {
       // TODO: Can we eliminate this extra logic by using an OrderedMap type?
       var arrayoptionIndices = optionIndices.toArray();
       sort(arrayoptionIndices);      
-      // try to match for each of the identified options
+      // try to match for each of the identified _options
       for (name, idx) in arrayoptionIndices {
         // get a ref to the argument
-        var arg = result.getReference(name);
+        var arg = _result.getReference(name);
         debugTrace("got reference to argument " + name);
         // get the action to match
-        const act = actions.getBorrowed(name);
+        const act = _actions.getBorrowed(name);
         // try to match values in argstring, get the last value position
-        const endPos = act.match(argsList.toArray(), idx, arg);
+        const endPos = act._match(argsList.toArray(), idx, arg);
         debugTrace("got end position " + endPos:string);
         k+=1;
         debugTrace("k val = " + k:string);
@@ -176,30 +177,30 @@ module MasonArgParse {
             debugTrace("endpos != arrayoptionIndices[k][1] :"+endPos:string+" "
                      + arrayoptionIndices[k][1]:string);
             debugTrace("arrayoptionIndices " + arrayoptionIndices:string);
-            throw new ArgumentError("\\".join(act.opts) + " has extra values");
+            throw new ArgumentError("\\".join(act._opts) + " has extra values");
           }
         // check that we consumed all the values in the input string
         }else if endPos <= argsList.size-1 {
-          throw new ArgumentError("\\".join(act.opts) + " has extra values");
+          throw new ArgumentError("\\".join(act._opts) + " has extra values");
         }
       }
-      // make sure all options defined got values if needed
-      checkSatisfiedOptions();
+      // make sure all _options defined got values if needed
+      _checkSatisfied_options();
 
       // check for when arguments passed but none defined
-      if argsList.size > 0 && this.actions.size == 0 {
+      if argsList.size > 0 && this._actions.size == 0 {
         throw new ArgumentError("unrecognized options/values encountered: " +
                                 " ".join(argsList.these()));
       }
     }
 
-    proc checkSatisfiedOptions() throws {
-      // make sure we satisfied options that need at least 1 value
-      for name in this.actions.keys() {
-        const act = this.actions.getBorrowed(name);
-        const arg = this.result.getReference(name);
-        if act.numArgs.low > 0 && !arg.present {
-          throw new ArgumentError("\\".join(act.opts) + " not enough values");
+    proc _checkSatisfied_options() throws {
+      // make sure we satisfied _options that need at least 1 value
+      for name in this._actions.keys() {
+        const act = this._actions.getBorrowed(name);
+        const arg = this._result.getReference(name);
+        if act._numArgs.low > 0 && !arg._present {
+          throw new ArgumentError("\\".join(act._opts) + " not enough values");
         }        
       }
     }
@@ -225,17 +226,17 @@ module MasonArgParse {
         }
       }
       
-      var action = new owned Action(name=name, 
-                                    numOpts=opts.size,
-                                    opts=opts,
-                                    numArgs=numArgs);
+      var action = new owned Action(_name=name, 
+                                    _numOpts=opts.size,
+                                    _opts=opts,
+                                    _numArgs=numArgs);
       // collect all the option strings
-      for opt in opts do options.add(opt, name);
+      for opt in opts do _options.add(opt, name);
       // store the action
-      actions.add(name, action);
+      _actions.add(name, action);
       //create, add, and return the shared argument
       var arg = new shared Argument();
-      this.result.add(name, arg);
+      this._result.add(name, arg);
       return arg;
     }
   }
