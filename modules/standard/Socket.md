@@ -36,10 +36,10 @@ host: string - standard ip addresses
 port: uint(16) - port number for socket
 ```
 
-Family is determined based on type of standard address used `sys_in_addr_t` for ipv4 and `sys_in6_addr_t` for ipv6. Details about available options can be found [here](https://www.ibm.com/docs/en/zos/2.3.0?topic=considerations-special-ip-addresses#ipv6d0131000420__specialip)
+Family is determined based on type of standard address used `sys_in_addr_t` for ipv4 and `sys_in6_addr_t` for ipv6. Details about available options can be found [here](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/netinet_in.h.html)
 
 
-`ipAddr` instance created will then have getters for all the three arguments i.e. `host`, `port` and `family` which dont take up any space inside the record and are fetched from [sockaddr_storage](https://www.usenix.org/legacy/publications/library/proceedings/usenix2000/freenix/full_papers/metzprotocol/metzprotocol_html/node10.html)  using [getnameinfo](https://www.ibm.com/docs/en/zos/2.4.0?topic=reference-getnameinfo-flags-returned-information-examples#getnameinfofe) internally. [sockaddr_storage] is the only thing `ipAddr` stores and takes up memory for.
+`ipAddr` instance created will then have getters for all the three arguments i.e. `host`, `port` and `family` which dont take up any space inside the record and are fetched from [sockaddr_storage](https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/sys_socket.h.html) field stored in `ipAddr`.
 
 ## Connecting to remote sockets
 
@@ -70,7 +70,7 @@ port: Integer - port number
 family: Integer - AF_INET or AF_INET6 or AF_UNSPEC
 ```
 
-The purpose of family is important for address resolution and converting addr string to standard notation as well as validation. How the family can affect address resolution depends on [getaddrinfo](https://www.ibm.com/docs/en/zos/2.1.0?topic=functions-getaddrinfo-get-address-information#getaddrinfo) function.
+The purpose of family is important for address resolution and converting addr string to standard notation as well as validation. How the family can affect address resolution depends on [getaddrinfo](https://pubs.opengroup.org/onlinepubs/9699919799/functions/getaddrinfo.html) function.
 
 The `tcpConn` instance is basically a chapel `file` instance with added methods aligned to its nature as a socket. All the usual `file` methods are available on it:
 - `reader`
@@ -121,7 +121,7 @@ The `tcpListener` instance will have methods on it to call
 - `family` returns the family of socket `AF_INET` or `AF_INET6`
 - `addr` will return an `ipAddr` instance providing details about the address and port at which socket is listening.
   ```python
-  proc tcpListener.addr() : ipAddr
+  proc tcpListener.addr : ipAddr
   ```
 
 The additional support with `tcpConn` and `tcpListener` will be to enable or disable two of the prominent optimization algorithm for TCP Protocol that are:
@@ -137,7 +137,7 @@ The additional support with `tcpConn` and `tcpListener` will be to enable or dis
   This method will set/unset TCP_QUICKACK for provided socket.
   ```python
   proc quickack(socket:tcpConn, tcpQuickack:bool = 1)
-  proc qucikack(socket:tcpListener, tcpQuickack:bool = 1);
+  proc quickack(socket:tcpListener, tcpQuickack:bool = 1);
   proc quickack(socket:udpSocket, tcpQuickack:bool = 1);
   ```
 
@@ -207,4 +207,4 @@ proc socketServ.send(addr:ipAddr ,data:Generic)
 
 For providing more granular control over socket options `setSocketOpt` and `getSocketOpt` will be provided which can be used to manipulate socket options. For more information about them [man page](https://man7.org/linux/man-pages/man2/getsockopt.2.html) can be referred as to what options we can set on sockets.
 
-The functions will use Chapel implementation for them defined in the [Sys module](https://chapel-lang.org/docs/modules/standard/Sys.html#Sys.sys_getsockopt) but user wont need to provide in file descriptor manually then can just pass in `tcpConn|tcpListener|udpSocket` rest arguments will remain same.
+The functions will use Chapel implementation for them defined in the [Sys module](https://chapel-lang.org/docs/modules/standard/Sys.html#Sys.sys_getsockopt) but user won't need to provide in file descriptor manually then can just pass in `tcpConn|tcpListener|udpSocket` rest arguments will remain same.
