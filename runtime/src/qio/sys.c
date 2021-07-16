@@ -1532,7 +1532,7 @@ sys_sockaddr_t sys_getaddrinfo_addr(sys_addrinfo_ptr_t a) {
 }
 sys_addrinfo_ptr_t sys_getaddrinfo_next(sys_addrinfo_ptr_t a) {return a->ai_next;}
 
-void sys_freeaddr_info(sys_addrinfo_ptr_t *p)
+void sys_freeaddrinfo(sys_addrinfo_ptr_t *p)
 {
   freeaddrinfo(*p);
   *p = NULL;

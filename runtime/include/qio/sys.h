@@ -250,7 +250,7 @@ int sys_getaddrinfo_protocol(sys_addrinfo_ptr_t a);
 sys_sockaddr_t sys_getaddrinfo_addr(sys_addrinfo_ptr_t a);
 sys_addrinfo_ptr_t sys_getaddrinfo_next(sys_addrinfo_ptr_t a);
 
-void sys_freeaddr_info(sys_addrinfo_ptr_t* p);
+void sys_freeaddrinfo(sys_addrinfo_ptr_t* p);
 
 
 err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_out, int flags);
