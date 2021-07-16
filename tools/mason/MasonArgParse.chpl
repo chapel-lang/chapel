@@ -49,7 +49,7 @@ module MasonArgParse {
     }
   }
   
-  // indicates a _result of argument parsing
+  // indicates a result of argument parsing
   class Argument {
     //indicates if an argument was entered on the command line
     var _present: bool=false;
@@ -154,7 +154,7 @@ module MasonArgParse {
       // TODO: Can we eliminate this extra logic by using an OrderedMap type?
       var arrayoptionIndices = optionIndices.toArray();
       sort(arrayoptionIndices);      
-      // try to match for each of the identified _options
+      // try to match for each of the identified options
       for (name, idx) in arrayoptionIndices {
         // get a ref to the argument
         var arg = _result.getReference(name);
@@ -184,8 +184,8 @@ module MasonArgParse {
           throw new ArgumentError("\\".join(act._opts) + " has extra values");
         }
       }
-      // make sure all _options defined got values if needed
-      _checkSatisfied_options();
+      // make sure all options defined got values if needed
+      _checkSatisfiedOptions();
 
       // check for when arguments passed but none defined
       if argsList.size > 0 && this._actions.size == 0 {
@@ -194,8 +194,8 @@ module MasonArgParse {
       }
     }
 
-    proc _checkSatisfied_options() throws {
-      // make sure we satisfied _options that need at least 1 value
+    proc _checkSatisfiedOptions() throws {
+      // make sure we satisfied options that need at least 1 value
       for name in this._actions.keys() {
         const act = this._actions.getBorrowed(name);
         const arg = this._result.getReference(name);
