@@ -95,17 +95,30 @@ module MasonArgParse {
 
     proc parseArgs(arguments:[?argsD]string) throws {
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
-      writeErr("start parsing args");
-      var pos = argsD.low;
+      writeErr("start parsing args");   
       var k = 0;
       // identify optionIndices where opts start
       var optionIndices : map(string, int);
-      for i in argsD {
-        if options.contains(arguments[i]) {
-          writeErr("found option " + arguments[i]);
+      const zArgsD = {0..argsD.size-1};
+      var zeroArgs = arguments.reindex(zArgsD);
+      var argsList = new list(zeroArgs);
+      
+      for i in zArgsD {
+        // look for = sign after opt, split into two elements
+        if zeroArgs[i].startsWith("-") && zeroArgs[i].find("=") > 0 {
+          var elems = new list(zeroArgs[i].split("=", 1));
+          // replace this opt=val with opt val
+          argsList.pop(i);
+          argsList.insert(i, elems.toArray());
+        }
+      }
+      
+      for i in argsList.indices {        
+        if options.contains(argsList.this(i)) {
+          writeErr("found option " + argsList.this(i));
           // create an entry for this index and the argument name
-          optionIndices.addOrSet(options.getValue(arguments[i]), i);
-          writeErr("added option " + arguments[i]);
+          optionIndices.addOrSet(options.getValue(argsList.this(i)), i);
+          writeErr("added option " + argsList.this(i));
         } 
       }
       // get this as an array so we can sort it, because maps are order-less
@@ -119,12 +132,14 @@ module MasonArgParse {
         // get the action to match
         var act = actions.getBorrowed(name);
         // try to match values in argstring, get the last value position
-        var endPos = act.match(arguments, idx, arg);
+        var endPos = act.match(argsList.toArray(), idx, arg);
         writeErr("got end position " + endPos:string);
         k+=1;
         writeErr("k val = " + k:string);
         writeErr("arrayoptionIndices.size is " 
                  + arrayoptionIndices.size:string);
+        writeErr("argsList.size = " + argsList.size:string);
+        writeErr("zArgsD.high = " + zArgsD.high:string);
         // make sure we don't overrun the array,
         // then check that we don't have extra values
         if k < arrayoptionIndices.size {
@@ -134,16 +149,18 @@ module MasonArgParse {
             writeErr("arrayoptionIndices " + arrayoptionIndices:string);
             throw new ArgumentError("\\".join(act.opts) + " has extra values");
           }
-        }else if endPos <= argsD.high {
+        // check that we consumed all the values in the input string
+        }else if endPos <= argsList.size-1 {
           throw new ArgumentError("\\".join(act.opts) + " has extra values");
         }
       }
-
+      // make sure all options defined got values if needed
       checkSatisfiedOptions();
 
-      if arguments.size > 0 && this.actions.size == 0 {
+      // check for when arguments passed but none defined
+      if argsList.size > 0 && this.actions.size == 0 {
         throw new ArgumentError("unrecognized options/values encountered: " +
-                                " ".join(arguments));
+                                " ".join(argsList.these()));
       }
     }
 
@@ -158,22 +175,32 @@ module MasonArgParse {
       }
     }
 
+    // define a new string option with fixed number of values expected
     proc addOption(name:string,
-                  opts:[]string,
-                  numArgs:int) throws {
+                   opts:[]string,
+                   numArgs:int) throws {
       return addOption(name=name,
                       opts=opts,
                       numArgs=numArgs..numArgs);
     }
 
+    // define a new string option with range of values expected
     proc addOption(name:string,
-                  opts:[]string,
-                  numArgs:range) throws {
+                   opts:[?optsD]string,
+                   numArgs:range) throws {
+      
+      for i in optsD {
+        if !opts[i].startsWith("-") {
+          throw new ArgumentError("Use '-' or '--' to indicate opt flags. " +
+                                  "Positional arguments not yet supported");
+        }
+      }
+      
       var action = new owned Action(name=name, 
                                     numOpts=opts.size,
                                     opts=opts,
                                     numArgs=numArgs);
-      // add all the option strings
+      // collect all the option strings
       for opt in opts do options.add(opt, name);
       // store the action
       actions.add(name, action);

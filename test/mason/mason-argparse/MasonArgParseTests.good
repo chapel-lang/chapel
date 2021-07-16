@@ -2,6 +2,26 @@ testSingleStringShortOpt()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testSingleStringShortOptEquals()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testSingleStringShortOptEqualsExtra()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMultiStringShortOptEqualsOK()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testTryMakeEmptyOpts()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testTryMakeBadOptID()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 testSingleStringShortOptRepeated()
 Flavour: OK
 ======================================================================
@@ -138,6 +158,9 @@ testThreeMultiStringShortOptPartialValues()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+-n\--stringVal has extra values
+Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
+Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
 -n\--stringVal not enough values
 unrecognized options/values encountered: -n twenty
 -n\--stringVal not enough values
