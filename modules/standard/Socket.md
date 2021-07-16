@@ -47,27 +47,31 @@ Family is determined based on type of standard address used `sys_in_addr_t` for 
 
 **Method:**
 ```python
-proc connect(addr:ipAddr) : tcpConn
+proc connect(in address:ipAddr, in timeout = new timeval(-1,0)) : tcpConn
 ```
 
 **Parameters:**
 
 ```
-addr: ipAddr - address information of remote socket
+address: ipAddr - address information of remote socket
+timeout: timval - defines the time in `(seconds, microseconds)` function should wait before
+                  throwing `TimeoutError`. `(-1, 0)` implies indefinite blocking.
 ```
 
 A higher level construct for socket will take in `host` as `string` which can perform DNS resolution and convert to `ipAddr` internally.
 
 **Method:**
 ```python
-proc connect(host:string, port:int, family:int) : tcpConn
+proc connect(host:string, port, family:IPFamily = IPFamily.IPv4, in timeout = new timeval(-1,0)) : tcpConn
 ```
 
 **Parameters:**
 ```
 host: String - host name either in dot-dash or domain form default "localhost"
 port: Integer - port number
-family: Integer - AF_INET or AF_INET6 or AF_UNSPEC
+family: IPFamily - Internet Protocol version which can be IPFamily.IPv4 or IPFamily.IPv6
+timeout: timval - defines the time in `(seconds, microseconds)` function should wait before
+                  throwing `TimeoutError`. `(-1, 0)` implies indefinite blocking.
 ```
 
 The purpose of family is important for address resolution and converting addr string to standard notation as well as validation. How the family can affect address resolution depends on [getaddrinfo](https://pubs.opengroup.org/onlinepubs/9699919799/functions/getaddrinfo.html) function.
@@ -95,14 +99,14 @@ The `tcpConn` instance is basically a chapel `file` instance with added methods 
 
 **Method:**
 ```python
-proc listen(addr:ipAddr, backlog=5, reuseaddr=true) : tcpListener
+proc listen(in address:ipAddr, reuseAddr = true, backlog = 5) : tcpListener
 ```
 
 **Parameters**
 ```
-addr: ipAddr - contains family info of socket to create and where to bind it.
-backlog: int - optional parameter, default value = 0
+address: ipAddr - contains family info of socket to create and where to bind it.
 reuseaddr: Boolean - optional parameter, default value = true
+backlog: int - optional parameter, default value = 0
 ```
 
 - The `backlog` argument defines the maximum length to which specifies the queue length for completely established sockets waiting to be accepted. If a connection request arrives when the queue is full, the client may receive an error with an indication of `ECONNREFUSED` or, if the underlying protocol supports retransmission, the request may be ignored so that a later reattempt at connection succeeds.
@@ -111,8 +115,10 @@ reuseaddr: Boolean - optional parameter, default value = true
 The `tcpListener` instance will have methods on it to call
 - `accept`: method will return a `tcpConn` instance of any new incoming connection otherwise will yield if no new connection is available at the instant. The communication can then proceed through the `tcpConn` instance returned
   ```python
-  proc tcpListener.accept() : tcpConn
+  proc tcpListener.accept(in timeout:timeval = new timeval(-1,0)) : tcpConn
   ```
+  `accept` will throw`TimeoutError` on not being able to accept any new connection
+  before `timeout`.
 - `close`,
   calling close on `tcpListener` will close the socket server and it won't accept anymore new connections.
   ```python
@@ -153,15 +159,15 @@ A generic `bind` function will be used which will take in any of the socket thre
 **Method**
 
 ```
-proc bind(socketServ, addr:ipAddr, reuseAddr=true)
+proc bind(socket, in address:ipAddr, reuseAddr = true)
 ```
 
 **Parameters**
 
 ```
-- socket : tcpListener|tcpConn|udpSocket - socket object to be bound
-- addr: contains address info about where to bind the socket.
-- reuseaddr: Boolean - optional parameter, default value = true
+socket : tcpListener|tcpConn|udpSocket - socket object to be bound
+address: contains address info about where to bind the socket.
+reuseaddr: Boolean - optional parameter, default value = true
 ```
 
 Bind is responsible for binding any socket to a specified address and port. Here the socket can be anything either a UDP or a TCP Socket. listen under the hood will can in bind to bind `tcpListener` to address and port. With either tcpConn or udpSocket that isn't a requirement as the system assigns any free port and localhost address to them by default.
@@ -174,33 +180,53 @@ UDP Sockets will have method to call `recvFrom` on it this will return the `addr
 
 **Method:**
 ```python
-proc socketServ.recvFrom() : (addr:ipAddr, data:Generic)
+proc socketServ.recvFrom(buffer_len:int, in timeout = new timeval(-1,0)) : (address:ipAddr, data:bytes)
+```
+
+**Parameters**
+
+```
+buffer_len: int - number of bytes to read
+timeout: timval - defines the time in `(seconds, microseconds)` function should wait till
+                  `recvfrom` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
+reuseaddr: Boolean - optional parameter, default value = true
 ```
 
 **Return:**
 ```
-- addr: ipAddr - contains family info of socket that sent data to our UDP Socket.
-- data: Generic - data to send
+address: ipAddr - contains family info of socket that sent data to our UDP Socket.
+data: bytes - data received
 ```
 
 Another alternate method will be `recv` which will return just the `data` and no details abouts about client socket.
 
 __Method:__
 ```python
-proc socketServ.recv() : (data:Generic)
+proc socketServ.recv(buffer_len: int, in timeout = new timeval(-1,0)) : bytes
 ```
 
-The `send` method on socket will take in `addr`, `port` and `data` to write to the socket at provided address
+**Parameters**
+
+```
+buffer_len: int - number of bytes to read
+timeout: timval - defines the time in `(seconds, microseconds)` function should wait till
+                  `recv` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
+reuseaddr: Boolean - optional parameter, default value = true
+```
+
+The `send` method on socket will take in `addr`, `timeout`, `flags` and `data` to write to the socket at provided `address`.
 
 __Method:__
 ```python
-proc socketServ.send(addr:ipAddr ,data:Generic)
+proc socketServ.send(data: bytes, in address: ipAddr, in timeout = new timeval(0,0))
 ```
 
 **Parameters:**
 ```
-- addr: ipAddr - address info for where to send the data.
-- data: Generic - data to send
+data: bytes - data to send
+address: ipAddr - address info for where to send the data.
+timeout: timval - defines the time in `(seconds, microseconds)` function should wait till
+                  `send` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
 ```
 
 ## Options on Socket
