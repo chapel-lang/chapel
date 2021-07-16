@@ -58,8 +58,6 @@ class TaskVar final : public VarLikeDecl {
   };
 
  private:
-  Intent intent_;
-
   TaskVar(ASTList children, UniqueString name,
           TaskVar::Intent intent,
           int8_t typeExpressionChildNum,
@@ -69,7 +67,7 @@ class TaskVar final : public VarLikeDecl {
                     name,
                     (IntentList)((int)intent),
                     typeExpressionChildNum,
-                    initExpressionChildNum),
+                    initExpressionChildNum)
   { }
 
   bool contentsMatchInner(const ASTNode* other) const override {

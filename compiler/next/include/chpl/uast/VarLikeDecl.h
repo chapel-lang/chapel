@@ -79,7 +79,7 @@ class VarLikeDecl : public NamedDecl {
     Subclasses have more specific functions that return the
     subset appropriate for that subclass.
    */
-  IntentList storageKind() {
+  IntentList storageKind() const {
     return storageKind_;
   }
 
