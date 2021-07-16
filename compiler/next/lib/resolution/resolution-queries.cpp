@@ -19,7 +19,7 @@
 
 #include "chpl/resolution/resolution-queries.h"
 
-#include "chpl/parsing/Parser.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/query-impl.h"
 #include "chpl/uast/all-uast.h"
@@ -175,75 +175,276 @@ namespace resolution {
 
 using namespace uast;
 using namespace types;
+struct SymbolResolver;
 
-/*
-using DeclsByName = std::unordered_map<UniqueString, const NamedDecl*>;
+static
+const owned<UntypedFnSignature>& untypedSignatureQuery(Context* context, ID id)
+{
+  QUERY_BEGIN(untypedSignatureQuery, context, id);
 
-struct ResolvingScope {
-  DeclsByName declsDefinedHere;
-  const ResolvingScope* parentScope;
-  // TODO: use'd / imported decls
+  auto ast = parsing::idToAst(context, id);
+  auto fn = ast->toFunction();
 
-  ResolvingScope(const ResolvingScope* parentScope)
-    : declsDefinedHere(), parentScope(parentScope) {
+  owned<UntypedFnSignature> result;
+
+  if (fn != nullptr) {
+    auto sig = new UntypedFnSignature(fn);
+    result = toOwned(sig);
   }
 
-  const NamedDecl* innermostDeclWithName(UniqueString name) const {
-    const ResolvingScope* cur = this;
-    while (cur != nullptr) {
-      auto search = cur->declsDefinedHere.find(name);
-      if (search != cur->declsDefinedHere.end()) {
-        // found an existing entry in the map, so use that
-        return search->second;
-      }
-      cur = cur->parentScope;
+  return QUERY_END(result);
+}
+
+UntypedFnSignature* untypedSignature(Context* context, ID id) {
+  const owned<UntypedFnSignature>& r = untypedSignatureQuery(context, id);
+  return r.get();
+}
+
+static KindParamType::Kind computeKindForAst(const ASTNode* ast) {
+  KindParamType::Kind result = KindParamType::UNKNOWN;
+  if (ast->isFunction()) {
+    result = KindParamType::FUNCTION;
+  } else if (ast->isTypeDecl()) {
+    result = KindParamType::TYPE;
+  } else if (ast->isVarLikeDecl()) {
+    Variable* var = ast->toVariable();
+    Formal* formal = ast->toFormal();
+    if ((var && var->kind() == Variable::TYPE) ||
+        (formal && formal->intent() == Formal::TYPE)) {
+      result = KindParamType::TYPE;
+    } else if ((var && var->kind() == Variable::PARAM) ||
+               (formal && formal->intent() == Formal::PARAM)) {
+      result = KindParamType::PARAM;
+    } else {
+      result = KindParamType::VALUE;
     }
-    return nullptr;
   }
 
-  // TODO: something to return all of the decls with a particular name
-  // (and their scopes?) (for fns)
-};
+  return result;
+}
 
-class SingleResolver {
+static const Type* computeTypeForAst(const ASTNode* ast,
+                                     SymbolResolver* symResolver) {
+  Type* result = nullptr;
+  if (ast->isFunction()) {
+    // TODO: function types
+    result = nullptr;
+  } else if (ast->isTypeDecl()) {
+    // TODO: class/record/union/enum types
+    result = nullptr;
+  } else if (VarLikeDecl* var = ast->toVarLikeDecl()) {
+    // Figure out variable type based upon:
+    //  * the type in the variable declaration
+    //  * the initialization expression in the variable declaration
+    //  * the initialization expression from split-init
+
+    Expression* typeExpr = var->typeExpression();
+    Expression* initExpr = var->initExpression();
+
+    if (typeExpr) {
+      // compute the type based upon the expression
+      result = computeTypeForAst(typeExpr, symResolver);
+    }
+
+    if (initExpr) {
+      // compute the type based upon the init expression
+
+      // note a type already established
+      Type* typeExprType = result;
+      Type* initExprType = computeTypeForAst(initExpr, symResolver);
+
+      if (typeExprType != nullptr) {
+        // check type compatibility and combine types
+        assert(false && "TODO -- check type compatability & combine");
+        result = typeExprType;
+      } else {
+        result = initExprType;
+      }
+    }
+
+    if (var->kind() == Variable::TYPE) {
+      result = KindParamType::TYPE;
+    } else if (var->kind() == Variable::PARAM) {
+      result = KindParamType::PARAM;
+    } else {
+      result = KindParamType::VALUE;
+    }
+
+    // TODO: handle split init
+    // TODO: handle generic & instantiated formal arguments
+  } else if () {
+  }
+}
+
+
+const KindParamType& typeForId(Context* context, ID id) {
+  QUERY_BEGIN(typeForId, context, id);
+
+  KindParamType result;
+  auto ast = parsing::idToAst(context, id);
+
+  result.kind = computeKindForAst(ast);
+  result.type = comptueTypeForAst(ast);
+
+  return QUERY_END(result);
+}
+
+struct SymbolResolver {
   Context* context;
-  ResolvingScope* inScope;
-  std::set<UniqueString>* undefinedInFn;
+  ID symbolId;
+  std::vector<const Scope*> scopeStack;
+  std::set<UniqueString> undefined;
+  ResolutionResultByPostorderID byPostorder;
 
-  ResolutionResult visit(const uast::Identifier* ident) {
-    UniqueString name = ident->name();
-    const NamedDecl* decl = inScope->findDeclForName(name);
-    if (decl != nullptr) {
-      // found an existing entry in the map, so we can add a resolution result.
-      return ResolutionResult(ident, decl);
+  ResolvedExpression& resultForId(const ID& id) {
+    auto postorder = id.postOrderId();
+    assert(0 <= postorder);
+    if (postorder < byPostorder.size()) {
+      // OK
     } else {
-      // nothing found in the map, so give an undefined symbol error,
-      // unless we've already done so.
-      if (undefinedInFn.count(name) == 0) {
-        Location loc = parsing::locate(context, ident);
-        auto error = ErrorMessage::build(loc,
-                     "'%s' undeclared (first use this function)", name.c_str());
-        context->queryNoteError(std::move(error));
-        undefinedInFn.insert(name);
-      }
+      byPostorder.resize(postorder+1);
+    }
+    return byPostorder[postorder];
+  }
+
+  KindParamType typeForId(const ID& id) {
+    // if the id is contained within this symbol,
+    // get the type information from the resolution result.
+    if (id.symbolPath() == symbolId.symbolPath()) {
+      return resultForId(id);
+    }
+
+    // otherwise, use a query to try to look it up top-level.
+    return typeForSymbol(id);
+  }
+
+  // otherwise, use a query to try to look it up top-level.
+  return typeForSymbol(id);
+
+  }
+
+  void enterScope(ASTNode* ast) {
+    if (createsScope(ast->tag())) {
+      scope = scopeStack.push_back(scopeForId(context, ast->id()));
     }
   }
-  ResolutionResult visit(const uast::NamedDecl* decl) {
-    UniqueString name = decl->name();
-    auto search = inScope.declsDefinedHere.find(name);
-    if (search != inScope.declsDefinedHere.end()) {
-      const NamedDecl* prevDecl = search->second;
-      // found an existing entry in the map, so give an error.
-      Location prevLoc = parsing::locate(context, prevDecl);
-      Location curLoc = parsing::locate(context, decl);
-      auto error = ErrorMessage::build(prevLoc,
-                   "'%s' has multiple definitions", name.c_str());
-      error.addDetail(ErrorMessage::build(curLoc, "redefined here"));
-
-      context->queryNoteError(std::move(error));
-    } else {
-      inScope.declsDefinedHere.insert(search, std::make_pair(name, decl));
+  void exitScope(ASTNode* ast) {
+    if (createsScope(ast->tag())) {
+      scopeStack.pop_back();
     }
+  }
+  ResolvedExpression& resultById(ID id) {
+    int postorder = id.postOrderId();
+    assert(0 <= postorder);
+    if (i < byPostorder.size()) {
+      // OK
+    } else {
+      byPostorder.resize(i+1);
+    }
+  }
+  ResolvedExpression& resultById(ASTNode* ast) {
+    return resultById(ast->id());
+  }
+  KindParamType inSymTypeForId(ID id) {
+    KindParamType ret;
+    // if the id is contained within this symbol,
+    // get the type information from the resolution result.
+    if (id.symbolPath() == symbolId.symbolPath()) {
+      assert(id.postOrderId() != -1);
+      return resultById(id).type;
+    }
+
+    return typeForId(id);
+  }
+
+  bool enter(const Identifier* ident) {
+    assert(scopeStack.size() > 0);
+
+    const Scope* scope = scopeStack.back();
+    ResolvedExpression& result = resultById(ident);
+    result.id = ident->id();
+
+    auto vec = lookupInScope(context, scope, ident, /*one*/ true);
+    if (vec.size() == 0) {
+      auto name = ident->name();
+      if (undefined.count(name) == 0) {
+        context->error(ident,
+                       "'%s' undeclared (first use this function)",
+                       name.c_str());
+        undefined.insert(name);
+      }
+    } else {
+      ID id = vec[0].firstId();
+      result.type = inSymTypeForId(id);
+      result.toId = id;
+      // if there are multiple ids we should have gotten
+      // a multiple definition error at the declarations.
+    }
+  }
+  void exit(const Identifier* ident) {
+  }
+
+  bool enter(const NamedDecl* decl) {
+    assert(scopeStack.size() > 0);
+
+    const Scope* scope = scopeStack.back();
+    ResolvedExpression& result = resultById(decl);
+    result.id = decl->id();
+
+    bool canOverload = false;
+    if (const Function* fn = decl->toFunction()) {
+      if (fn->isParenless() == false) {
+        canOverload = true;
+      }
+    }
+
+    if (canOverload == false) {
+      // check for multiple definitions
+      auto vec = lookupInScope(context, scope, decl->name(), /*one*/ true);
+
+      if (vec.size() > 0) {
+        const BorrowedIdsWithName& m = vec[0];
+        if (m.firstId() == decl->id()) {
+          if (m.moreIds != nullptr) {
+            Location loc = parsing::locateId(context, decl->id());
+            auto error =
+              ErrorMessage::build(loc, "'%s' has multiple definitions",
+                                  decl->name().c_str());
+            for (const ID& id: *m.moreIds) {
+              if (id != decl->id()) {
+                Location curLoc = parsing::locateId(context, id);
+                error.addDetail(ErrorMessage::build(curLoc, "redefined here"));
+              }
+            }
+            context->error(error);
+          }
+        }
+      }
+    }
+
+    if (decl->isFunction()) {
+    }
+
+    // TODO: establish the type
+    assert(false && "establish type");
+
+    // don't visit e.g. nested functions - these will be resolved
+    // when calling them.
+    bool visitChildren = !Builder::astTagIndicatesNewIdScope(decl->tag());
+
+    enterScope(decl);
+
+    return visitChildren;
+  }
+  void exit(const NamedDecl* decl) {
+    exitScope(decl);
+  }
+
+  bool enter(const ASTNode* ast) {
+    enterScope(decl);
+  }
+  void exit(const ASTNode* ast) {
+    exitScope(decl);
   }
 };
 
@@ -340,6 +541,16 @@ const ResolvedSymbolVec& resolveFile(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 */
+
+const ResolvedSymbol& resolveConcreteFunction(Context* context,
+                                              const Function* fn) {
+  QUERY_BEGIN(resolveFunction, context, fn);
+
+  ResolvedSymbol result;
+  result.decl = fn;
+
+  return QUERY_END(result);
+}
 
 
 } // end namespace resolution

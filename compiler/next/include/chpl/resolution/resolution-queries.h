@@ -26,6 +26,18 @@ namespace chpl {
 namespace resolution {
 
 
+  /**
+    Create an UntypedFnSignature for a Function, or return
+    nullptr if the passed ID is not a Function.
+   */
+  UntypedFnSignature* untypedSignature(Context* context, ID id);
+
+  /**
+    Compute the type for a NamedDecl with a particular id.
+    This is not used for local variables.
+   */
+  const KindParamType& typeForSymbol(Context* context, ID id);
+
   /*
   // Resolves the top-level declarations in a module
   const ResolvedSymbol&

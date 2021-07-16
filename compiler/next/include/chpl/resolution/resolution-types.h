@@ -22,6 +22,7 @@
 
 #include "chpl/types/Type.h"
 #include "chpl/uast/ASTNode.h"
+#include "chpl/uast/Function.h"
 #include "chpl/util/memory.h"
 
 #include <unordered_map>
@@ -35,69 +36,153 @@ namespace resolution {
 
 /**
   An untyped function signature. This is really just the part of a function
-  including the formals.
+  including the formals. It exists so that the process of identifying
+  candidates does not need to depend on the bodies of the function
+  (in terms of incremental recomputation).
  */
 struct UntypedFnSignature {
+  ID functionId;
   UniqueString name;
   bool isMethod; // in that case, formals[0] is the receiver
   std::vector<const uast::Formal*> formals;
+  const uast::Expression* whereClause;
+
+  UntypedFnSignature(const uast::Function* fn)
+    : functionId(fn->id()),
+      name(fn->name()),
+      isMethod(fn->isMethod()),
+      whereClause(fn->whereClause()) {
+    for (auto formal : fn->formals()) {
+      formals.push_back(formal);
+    }
+  }
+
+  bool operator==(const UntypedFnSignature& other) const {
+    return functionId != other.functionId &&
+           name == other.name &&
+           isMethod == other.isMethod &&
+           formals == other.formals &&
+           whereClause == other.whereClause;
+  }
+  bool operator!=(const UntypedFnSignature& other) const {
+    return !(*this == other);
+  }
+};
+
+struct KindParamType {
+  typedef enum {
+    UNKNOWN,
+    VALUE,
+    TYPE,
+    PARAM,
+    FUNCTION,
+  } Kind;
+  Kind kind = UNKNOWN;
+  const types::Type* type = nullptr;
+  // TODO: param value
+
+  KindParamType() { }
+
+  bool operator==(const KindParamType& other) const {
+    return kind == other.kind &&
+           type == other.type;
+  }
+  bool operator!=(const KindParamType& other) const {
+    return !(*this == other);
+  }
 };
 
 struct CallInfoActual {
-  const types::Type* type;
+  KindParamType type;
   UniqueString byName;
+  // TODO: param and type actuals
+
+  bool operator==(const CallInfoActual& other) const {
+    return type == other.type &&
+           byName == other.byName;
+  }
+  bool operator!=(const CallInfoActual& other) const {
+    return !(*this == other);
+  }
 };
 
 struct CallInfo {
   bool isMethod; // in that case, actuals[0] is the receiver
   std::vector<CallInfoActual> actuals;
+
+  bool operator==(const CallInfo& other) const {
+    return isMethod == other.isMethod &&
+           actuals == other.actuals;
+  }
+  bool operator!=(const CallInfo& other) const {
+    return !(*this == other);
+  }
 };
 
 struct TypedFnSignatureFormal {
   const uast::Formal* formal;
-  const types::Type* type;
-  // TODO: param value
+  KindParamType type;
+
+  bool operator==(const TypedFnSignatureFormal& other) const {
+    return formal == other.formal &&
+           type == other.type;
+  }
+  bool operator!=(const TypedFnSignatureFormal& other) const {
+    return !(*this == other);
+  }
 };
 
 struct TypedFnSignature {
-  UniqueString name;
-  bool isMethod; // in that case, formals[0] is the receiver
+  UntypedFnSignature* untypedSignature;
   std::vector<TypedFnSignatureFormal> formals;
+
+  bool evaluatedWhereClause;
+
+  // substitutions (only used for generic functions/types)
+  //std::unordered_map<uast::NamedDecl*, types::Type*> typeSubs;
+  // TODO: int -> Immediate
+  //std::unordered_map<uast::NamedDecl*, int> paramSubs;
+
+  // the point of instantiation
+  TypedFnSignature* instantiationPointFn = nullptr;
+  ID instantiationPointId;
+
+  bool operator==(const TypedFnSignature& other) const {
+    return untypedSignature == other.untypedSignature &&
+           formals == other.formals &&
+           evaluatedWhereClause == other.evaluatedWhereClause &&
+           instantiationPointfn == other.instantiationPointFn &&
+           instantiationPointId == other.instantiationPointId;
+  }
+  bool operator!=(const TypedFnSignature& other) const {
+    return !(*this == other);
+  }
 };
 
-/*
 struct ResolvedExpression {
-  // the expr that is resolved
-  const uast::Expression* expr = nullptr;
-  // For simple cases, which named decl does it refer to?
-  const uast::NamedDecl* decl = nullptr;
-  // What is its type?
-  const types::Type* type = nullptr;
+  // the ID that is resolved
+  ID id;
+  // What is its type and param value?
+  KindParamType type;
+  // For simple (non-function) cases, the ID of a NamedDecl it refers to
+  ID toId;
+
+  // For a function call, it refers to a typed function
+  // (that might be a generic instantiation)
+  TypedFnSignature* function;
+
+  // Some calls use return intent overloading. In that event,
+  // all overloads are stored in this vector. They need to be
+  // resolved in a different order.
+  std::vector<TypedFnSignature*> overloads;
+
   ResolutionResult() { }
-  ResolutionResult(const uast::Expression* expr,
-                   const uast::NamedDecl* decl,
-                   const types::Type* type)
-    : expr(expr), decl(decl), type(type) { }
 };
 
-struct MultiResolvedExpression : ResolvedExpression {
-  // For a function call, it might refer to several Functions
-  // and we might not know which return intent to choose yet.
-  std::vector<const uast::Function*> candidates;
-
-  // TODO:
-  //  establishing types
-  //  return-intent overloading
-  //  generic instantiation
-  //  establish concrete intents
-  //  establish copy-init vs move
-  MultiResolvedExpression() { }
-};
-
-// postorder ID (int) -> ResolutionResult *within* a Function etc
+// postorder ID (int) -> ResolvedExpression *within* a Function etc
 // an inner Function would not be covered here since it would get
 // a different ResolvedSymbol entry.
-using ResolutionResultByPostorderID = std::vector<ResolutionResult>;
+using ResolutionResultByPostorderID = std::vector<ResolvedExpression>;
 
 // A resolution result for a Function, Module, or TypeDecl (Record/Class/etc)
 struct ResolvedSymbol {
@@ -116,22 +201,6 @@ struct ResolvedSymbol {
   // this is the output of the resolution process
   ResolutionResultByPostorderID resolutionById;
 };
-
-using ResolvedSymbolVec = std::vector<const ResolvedSymbol*>;
-*/
-/*
-struct DefinedTopLevelNames {
-  // the module
-  const uast::Module* module;
-  // these are in program order
-  std::vector<UniqueString> topLevelNames;
-  DefinedTopLevelNames(const uast::Module* module,
-                       std::vector<UniqueString> topLevelNames)
-    : module(module), topLevelNames(std::move(topLevelNames)) {
-  }
-};
-using DefinedTopLevelNamesVec = std::vector<DefinedTopLevelNames>;
-*/
 
 
 } // end namespace resolution
