@@ -6,6 +6,7 @@ use force;
 use forcelj;
 use forceeam;
 use BlockDist;
+use DateTime;
 use Time;
 use VisualDebug;
 use rand;
@@ -541,7 +542,7 @@ tArray[timerEnum.F1].stop();
 
   writeln(); 
 
-  var yyyymmdd = getCurrentDate();
+  var yyyymmdd = date.today().isocalendar();
   writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), " Initialization Finished");
 }
 
@@ -741,7 +742,7 @@ if useChplVis then pauseVdebug();
   writeln("Mini-Application Name: ", "CoMD-Chapel");
   writeln("Mini-Application Version: ", 1.0);
 
-  var yyyymmdd = getCurrentDate();
+  var yyyymmdd = date.today().isocalendar();
   writeln("Run Date/Time: ", yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), "(number of hours since midnight)");
 
   writeln("Command Line Parameters:");
@@ -778,7 +779,7 @@ tArray[timerEnum.INIT].stop();
 
   writeln(); 
 
-  yyyymmdd = getCurrentDate();
+  yyyymmdd = date.today().isocalendar();
   writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), " Starting simulation");
   writeln(); 
   writeln("#                                                                                         Performance");
@@ -806,7 +807,7 @@ tArray[timerEnum.LOOP].stop();
 if useChplVis then stopVdebug();
 tArray[timerEnum.TOTAL].stop();
 
-  yyyymmdd = getCurrentDate();
+  yyyymmdd = date.today().isocalendar();
   writeln(); 
   writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), " Ending simulation");
   writeln(); 
@@ -847,7 +848,7 @@ tArray[timerEnum.TOTAL].stop();
   }
 
   writeln(); 
-  yyyymmdd = getCurrentDate();
+  yyyymmdd = date.today().isocalendar();
   writeln(yyyymmdd(0), "-", yyyymmdd(1), "-", yyyymmdd(2), ", ", getCurrentTime(TimeUnits.hours), " CoMD Ending");
 
   // Cleanup

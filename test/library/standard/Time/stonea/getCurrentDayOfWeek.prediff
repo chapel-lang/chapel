@@ -1,3 +1,0 @@
-#!/bin/sh
-
-date +%A > getCurrentDayOfWeek.good
