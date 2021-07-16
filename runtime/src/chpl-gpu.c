@@ -17,14 +17,8 @@
  * limitations under the License.
  */
 
-// This #define needs to be before the other #includes
-// since it affects included files
-#ifdef __linux__
-#define _GNU_SOURCE
-#endif
-
+#include "sys_basic.h"
 #include "chplrt.h"
-#include "chplsys.h"
 
 #ifdef HAS_GPU_LOCALE
 
@@ -32,8 +26,11 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
+#define 
 static void checkCudaErrors(CUresult err) {
-  assert(err == CUDA_SUCCESS);
+  if(err != CUDA_SUCCESS) {
+    chpl_internal_error("Encountered error calling CUDA function");
+  }
 }
 
 void chpl_gpu_init() {
@@ -42,11 +39,11 @@ void chpl_gpu_init() {
   int         devCount;
 
   // CUDA initialization
-  cuInit(0);
+  checkCudaErrors(cuInit(0));
 
-  cuDeviceGetCount(&devCount);
+  checkCudaErrors(cuDeviceGetCount(&devCount));
 
-  cuDeviceGet(&device, 0);
+  checkCudaErrors(cuDeviceGet(&device, 0));
 
   // Create driver context
   checkCudaErrors(cuCtxCreate(&context, 0, device));
@@ -75,10 +72,10 @@ void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) {
   }
 
   // Create module for object
-  cuModuleLoadData(&cudaModule, buffer);
+  checkCudaErrors(cuModuleLoadData(&cudaModule, buffer));
 
   // Get kernel function
-  cuModuleGetFunction(&function, cudaModule, kernelName);
+  checkCudaErrors(cuModuleGetFunction(&function, cudaModule, kernelName));
 
   return (void*)function;
 }

@@ -128,10 +128,11 @@ RUNTIME_DEFS += $(SHARED_LIB_CFLAGS)
 endif
 
 # If compiling for GPU locale add CUDA runtime headers to include path
-ifeq ($(CHPL_LOCALE_MODEL),gpu)
+ifeq ($(CHPL_MAKE_LOCALE_MODEL),gpu)
 RUNTIME_INCLS += -I/usr/local/cuda/include
 RUNTIME_DEFS += -DHAS_GPU_LOCALE
 endif
 
 RUNTIME_CFLAGS += $(RUNTIME_DEFS)
 RUNTIME_CXXFLAGS += $(RUNTIME_DEFS) $(CXXFLAGS)
+

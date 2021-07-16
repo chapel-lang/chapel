@@ -130,7 +130,7 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, Gen
 
 static GenRet codegenZero();
 static GenRet codegenZero32();
-static GenRet codegenString(const char* val);
+static GenRet codegenCString(const char* val);
 static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
@@ -2946,7 +2946,7 @@ GenRet codegenZero32()
   return new_IntSymbol(0, INT_SIZE_32)->codegen();
 }
 
-static GenRet codegenString(const char* val) {
+static GenRet codegenCString(const char* val) {
   return new_CStringSymbol(val)->codegen();
 }
 
@@ -4711,7 +4711,7 @@ DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
       INT_ASSERT(actual->typeInfo() == dtStringC);
       
       std::vector<GenRet> argsToGetKernelCall;
-      argsToGetKernelCall.push_back(codegenString("tmp/chpl__gpu.fatbin"));
+      argsToGetKernelCall.push_back(codegenCString("tmp/chpl__gpu.fatbin"));
       argsToGetKernelCall.push_back(actual->codegen());
       
       ret = codegenCallExprWithArgs("chpl_gpu_getKernel", argsToGetKernelCall);
