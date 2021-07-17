@@ -23,19 +23,30 @@
 namespace chpl {
 namespace types {
 
-const owned<BuiltinType>& BuiltinType::getBuiltinType(Context* context,
-                                                      BuiltinType::Kind kind) {
-  QUERY_BEGIN(getBuiltinType, context, kind);
+// implement the subclasses using macros and TypeClassesList.h
+#define TYPE_NODE(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
 
-  auto result = toOwned(new BuiltinType(kind));
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) \
+  const owned<NAME>& NAME::get##NAME(Context* context) { \
+    QUERY_BEGIN(get##NAME, context); \
+    auto result = toOwned(new NAME()); \
+    return QUERY_END(result); \
+  }
 
-  return QUERY_END(result);
-}
+// Apply the above macros to TypeClassesList.h
+#include "chpl/types/TypeClassesList.h"
+
+// clear the macros
+#undef TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef BUILTIN_TYPE_NODE
 
 static void gatherType(Context* context,
                        std::unordered_map<UniqueString,const Type*>& map,
-                       BuiltinType::Kind kind) {
-  auto t = BuiltinType::get(context, kind);
+                       const BuiltinType* t) {
   auto name = UniqueString::build(context, t->c_str());
   map.insert( {name, t} );
 }
@@ -43,31 +54,48 @@ static void gatherType(Context* context,
 void BuiltinType::gatherBuiltins(Context* context,
                                  std::unordered_map<UniqueString,const Type*>& map) {
 
-  // call gatherType for each Kind using macros and BuiltinTypeList.h
-  #define BUILTIN_TYPE(ENUM_NAME, CHPL_NAME_STR) \
-    gatherType(context, map, ENUM_NAME);
-  // Apply the above macro to BuiltinTypeList.h
-  #include "chpl/types/BuiltinTypeList.h"
-  // clear the macro
-  #undef BUILTIN_TYPE
-}
+  // call gatherType for each Kind using macros and TypeClassesList.h
+  #define TYPE_NODE(NAME)
+  #define TYPE_BEGIN_SUBCLASSES(NAME)
+  #define TYPE_END_SUBCLASSES(NAME)
 
-const BuiltinType* BuiltinType::get(Context* context, BuiltinType::Kind kind) {
-  return getBuiltinType(context, kind).get();
+  #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) \
+    gatherType(context, map, NAME::get(context));
+
+  // Apply the above macros to TypeClassesList.h
+  #include "chpl/types/TypeClassesList.h"
+
+  // clear the macros
+  #undef TYPE_NODE
+  #undef TYPE_BEGIN_SUBCLASSES
+  #undef TYPE_END_SUBCLASSES
+  #undef BUILTIN_TYPE_NODE
 }
 
 const char* BuiltinType::c_str() const {
-  // call gatherType for each Kind using macros and BuiltinTypeList.h
-  #define BUILTIN_TYPE(ENUM_NAME, CHPL_NAME_STR) \
-    case ENUM_NAME: return CHPL_NAME_STR;
-  switch (kind_) {
-    // Apply the above macro to BuiltinTypeList.h
-    #include "chpl/types/BuiltinTypeList.h"
+  // create switch statement using macros and TypeClassesList.h
+  #define TYPE_NODE(NAME)
+  #define TYPE_BEGIN_SUBCLASSES(NAME)
+  #define TYPE_END_SUBCLASSES(NAME)
+
+  #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) \
+    case typetags::NAME: return CHPL_NAME_STR;
+
+  switch (tag()) {
+    // Apply the above macros to TypeClassesList.h
+    #include "chpl/types/TypeClassesList.h"
+    // Default case should not be reachable
+    default:
+      assert(false && "should not be reachable");
+      return "<unknown builtin type>";
   }
-  // clear the macro
-  #undef BUILTIN_TYPE
-  assert(false && "should not be reachable");
-  return "<unknown builtin type>";
+
+  // clear the macros
+  #undef TYPE_NODE
+  #undef TYPE_BEGIN_SUBCLASSES
+  #undef TYPE_END_SUBCLASSES
+  #undef BUILTIN_TYPE_NODE
+
 }
 
 

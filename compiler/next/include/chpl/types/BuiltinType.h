@@ -40,54 +40,27 @@ namespace types {
 
  */
 class BuiltinType : public Type {
- public:
-  // define the Kind enum using macros and BuiltinTypeList.h
-  /// \cond DO_NOT_DOCUMENT
-  #define BUILTIN_TYPE(ENUM_NAME, CHPL_NAME_STR) ENUM_NAME,
-  /// \endcond
-  enum Kind {
-    // Apply the above macro to BuiltinTypeList.h
-    #include "chpl/types/BuiltinTypeList.h"
-  };
-  // clear the macro
-  #undef BUILTIN_TYPE
-
- private:
-  Kind kind_;
-
-  BuiltinType(Kind kind)
-    : Type(typetags::BuiltinType), kind_(kind) {
+ protected:
+  BuiltinType(TypeTag tag)
+    : Type(tag) {
   }
 
   bool contentsMatchInner(const Type* other) const override {
-    const BuiltinType* lhs = this;
-    const BuiltinType* rhs = (const BuiltinType*) other;
-    return lhs->kind_ == rhs->kind_;
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
   }
 
   bool isGeneric() override {
-    return kind_ >= ANY_BOOL;
+    return (int) tag() >= (int) typetags::AnyBoolType;
   }
-
-  static const owned<BuiltinType>& getBuiltinType(Context* context, Kind kind);
 
  public:
   ~BuiltinType() = default;
 
   static void gatherBuiltins(Context* context,
                              std::unordered_map<UniqueString,const Type*>& map);
-
-  static const BuiltinType* get(Context* context, Kind kind);
-
-  /**
-    Returns the kind indicating which BuiltinType it is.
-   */
-  Kind kind() const {
-    return kind_;
-  }
 
   /**
     Returns a C string for the name of this BuiltinType.
@@ -101,6 +74,34 @@ class BuiltinType : public Type {
     return !(*this == other);
   }*/
 };
+
+// define the subclasses using macros and BuiltinTypeList.h
+/// \cond DO_NOT_DOCUMENT
+#define TYPE_NODE(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
+
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) \
+  class NAME : public BuiltinType { \
+   private: \
+    NAME() : BuiltinType(typetags::NAME) { } \
+    static const owned<NAME>& get##NAME(Context* context); \
+   public: \
+    ~NAME() = default; \
+    static const NAME* get(Context* context) { \
+      return get##NAME(context).get(); \
+    } \
+  };
+/// \endcond
+
+// Apply the above macros to TypeClassesList.h
+#include "chpl/types/TypeClassesList.h"
+
+// clear the macros
+#undef TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef BUILTIN_TYPE_NODE
 
 
 } // end namespace uast

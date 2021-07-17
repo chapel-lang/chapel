@@ -29,6 +29,7 @@ namespace types {
 /// \cond DO_NOT_DOCUMENT
 #define TYPE_DECL(NAME) class NAME;
 #define TYPE_NODE(NAME) TYPE_DECL(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_DECL(NAME)
 #define TYPE_LEAF(NAME) TYPE_DECL(NAME)
 #define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_DECL(NAME)
 #define TYPE_END_SUBCLASSES(NAME)
@@ -37,7 +38,7 @@ namespace types {
 #include "chpl/types/TypeClassesList.h"
 // clear the macros
 #undef TYPE_NODE
-#undef TYPE_LEAF
+#undef BUILTIN_TYPE_NODE
 #undef TYPE_BEGIN_SUBCLASSES
 #undef TYPE_END_SUBCLASSES
 #undef TYPE_DECL

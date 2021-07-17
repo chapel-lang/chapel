@@ -110,6 +110,7 @@ class Type {
       return typetags::is##NAME(this->tag_); \
     }
   #define TYPE_NODE(NAME) TYPE_IS(NAME)
+  #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_IS(NAME)
   #define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_IS(NAME)
   #define TYPE_END_SUBCLASSES(NAME)
   /// \endcond
@@ -117,6 +118,7 @@ class Type {
   #include "chpl/types/TypeClassesList.h"
   // clear the macros
   #undef TYPE_NODE
+  #undef BUILTIN_TYPE_NODE
   #undef TYPE_BEGIN_SUBCLASSES
   #undef TYPE_END_SUBCLASSES
   #undef TYPE_IS
@@ -133,6 +135,7 @@ class Type {
       return this->is##NAME() ? (NAME *)this : nullptr; \
     }
   #define TYPE_NODE(NAME) TYPE_TO(NAME)
+  #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_TO(NAME)
   #define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_TO(NAME)
   #define TYPE_END_SUBCLASSES(NAME)
   /// \endcond
@@ -140,6 +143,7 @@ class Type {
   #include "chpl/types/TypeClassesList.h"
   // clear the macros
   #undef TYPE_NODE
+  #undef BUILTIN_TYPE_NODE
   #undef TYPE_BEGIN_SUBCLASSES
   #undef TYPE_END_SUBCLASSES
   #undef TYPE_TO

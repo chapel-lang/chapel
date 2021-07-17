@@ -22,10 +22,12 @@
 //
 // Each line consists of one of
 //   TYPE_NODE(NAME)
+//   BUILTIN_TYPE_NODE(NAME, "chapel name")
 //   TYPE_BEGIN_SUBCLASSES(NAME)
 //   TYPE_END_SUBCLASSES(NAME)
 //
 // TYPE_NODE is for an ASTType subclass
+// BUILTIN_TYPE_NODE is for BuiltinType subclasses
 // TYPE_BEGIN_SUBCLASSES/TYPE_END_SUBCLASSES mark subclasses of abstract classes
 
 // These Type nodes are documented in their respective header files
@@ -38,16 +40,48 @@
 /// \cond DO_NOT_DOCUMENT
 
 TYPE_NODE(AnyType)
-TYPE_NODE(BuiltinType)
 TYPE_NODE(ErroneousType)
 TYPE_NODE(UnknownType)
 TYPE_NODE(NilType)
 TYPE_NODE(VoidType)
 TYPE_NODE(NoneType)
 
+TYPE_BEGIN_SUBCLASSES(BuiltinType)
+  // concrete builtin types
+  BUILTIN_TYPE_NODE(CFileType, "_cfile")
+  BUILTIN_TYPE_NODE(CFnPtrType, "c_fn_ptr")
+  BUILTIN_TYPE_NODE(CVoidPtrType, "chpl__c_void_ptr")
+  BUILTIN_TYPE_NODE(OpaqueType, "opaque")
+  BUILTIN_TYPE_NODE(SyncAuxType, "_sync_aux_t")
+  BUILTIN_TYPE_NODE(TaskIdType, "chpl_nullTaskID")
+
+  // generic builtin types. AnyBoolType must be the first of these
+  // (or else BuiltinType::isGeneric and this comment)
+  BUILTIN_TYPE_NODE(AnyBoolType, "chpl_anybool")
+  BUILTIN_TYPE_NODE(AnyComplexType, "chpl_anycomplex")
+  BUILTIN_TYPE_NODE(AnyImagType, "chpl_anyimag")
+  BUILTIN_TYPE_NODE(AnyMaganementAnyNilableType, "_anyManagementAnyNilable")
+  BUILTIN_TYPE_NODE(AnyManagementNilableType, "_anyManagementNilable")
+  BUILTIN_TYPE_NODE(AnyPodType, "chpl_anyPOD")
+  BUILTIN_TYPE_NODE(AnyRealType, "chpl_anyreal")
+  BUILTIN_TYPE_NODE(AnyBorrowedType, "borrowed")
+  BUILTIN_TYPE_NODE(AnyBorrowedNonNilableType, "_borrowedNonNilable")
+  BUILTIN_TYPE_NODE(AnyClassType, "class")
+  BUILTIN_TYPE_NODE(AnyEnumType, "enum")
+  BUILTIN_TYPE_NODE(AnyIntegralType, "integral")
+  BUILTIN_TYPE_NODE(AnyIteratorClassType, "_iteratorClass")
+  BUILTIN_TYPE_NODE(AnyIteratorRecordType, "_iteratorRecord")
+  BUILTIN_TYPE_NODE(AnyNumericType, "numeric")
+  BUILTIN_TYPE_NODE(AnyRecordType, "record")
+  BUILTIN_TYPE_NODE(AnyUninstantiatedType, "_uninstantiated")
+  BUILTIN_TYPE_NODE(AnyUnionType, "union")
+  BUILTIN_TYPE_NODE(AnyUnmanagedType, "unmanaged")
+  BUILTIN_TYPE_NODE(AnyUnmanagedNilableType, "_unmanagedNilable")
+  BUILTIN_TYPE_NODE(AnyUnmanagedNonNilableType, "_unmanagedNonNilable")
+TYPE_END_SUBCLASSES(BuiltinType)
+
 TYPE_BEGIN_SUBCLASSES(DeclaredType)
   TYPE_NODE(EnumType)
-  TYPE_NODE(OpaqueType)
   TYPE_NODE(FunctionType)
   TYPE_NODE(TupleType)
 
