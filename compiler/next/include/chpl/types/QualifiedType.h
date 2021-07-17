@@ -69,9 +69,33 @@ class QualifiedType {
   bool operator!=(const QualifiedType& other) const {
     return !(*this == other);
   }
+  void swap(QualifiedType& other) {
+    Kind tmpKind = this->kind_;
+    this->kind_ = other.kind_;
+    other.kind_ = tmpKind;
+
+    const Type* tmpType = this->type_;
+    this->type_ = other.type_;
+    other.type_ = tmpType;
+
+    int tmpParam = this->param_;
+    this->param_ = other.param_;
+    other.param_ = tmpParam;
+  }
 };
 
 
 } // end namespace resolution
+
+// docs are turned off for this as a workaround for breathe errors
+/// \cond DO_NOT_DOCUMENT
+template<> struct update<chpl::types::QualifiedType> {
+  bool operator()(chpl::types::QualifiedType& keep,
+                  chpl::types::QualifiedType& addin) const {
+    return defaultUpdate(keep, addin);
+  }
+};
+/// \endcond
+
 } // end namespace chpl
 #endif
