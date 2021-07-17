@@ -59,12 +59,12 @@ class PrimitiveType : public Type {
    Returns the bit width selected for numeric types.
    Returns 8 for the default sized bool.
    */
-  virtual int bitwidth() const;
+  virtual int bitwidth() const = 0;
 
   /**
     Returns a C string for the name of this PrimitiveType.
    */
-  virtual const char* c_str() const;
+  virtual const char* c_str() const = 0;
 };
 
 

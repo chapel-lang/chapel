@@ -28,6 +28,7 @@ NEXT_TYPES_SRCS =                                 \
   ErroneousType.cpp \
   ImagType.cpp \
   IntType.cpp \
+  PrimitiveType.cpp \
   QualifiedType.cpp \
   RealType.cpp \
   Type.cpp \
