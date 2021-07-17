@@ -112,7 +112,7 @@ module Socket {
     var address:ipAddr;
 
     pragma "no doc"
-    proc init(socketFd:int(32), address:ipAddr) {
+    proc init(socketFd:c_int, address:ipAddr) {
       this.complete();
       this.socketFd = socketFd;
       this.address = address;
@@ -121,28 +121,39 @@ module Socket {
 
   proc tcpListener.accept(in timeout:timeval = new timeval(-1,0)) throws {
     var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
-    var fdOut:int(32);
+    var fdOut:fd_t;
     var rset, allset: fd_set;
 
     sys_fd_zero(allset);
     sys_fd_set(this.socketFd, allset);
     rset = allset;
-    var nready:int(32);
-    var err:err_t;
+    var nready:c_int;
+    var err_out:err_t;
 
     if timeout.tv_sec == -1 {
-      err = sys_select(socketFd+1, c_ptrTo(rset), nil, nil, nil, nready);
+      err_out = sys_select(socketFd+1, c_ptrTo(rset), nil, nil, nil, nready);
     }
     else {
-      err = sys_select(socketFd+1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
+      err_out = sys_select(socketFd+1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
     }
 
-    if(nready == 0){
-      throw SystemError.fromSyserr(ETIMEDOUT, "listen() timed out");
+    if nready == 0 {
+      throw SystemError.fromSyserr(ETIMEDOUT, "accept() timed out");
+    }
+
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out, "accept() failed");
     }
 
     if(sys_fd_isset(socketFd, rset)){
-      sys_accept(socketFd, client_addr, fdOut);
+      err_out = sys_accept(socketFd, client_addr, fdOut);
+    }
+    else{
+      throw new Error("connection disconnected");
+    }
+
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out, "accept() failed");
     }
 
     var sockFile:tcpConn = openfd(fdOut);
@@ -167,9 +178,9 @@ module Socket {
 
     bind(socketFd, address, reuseAddr);
 
-    var err = sys_listen(socketFd, backlog:int(32));
-    if err != 0 {
-      throw SystemError.fromSyserr(err, "Failed to listen on socket");
+    var err_out = sys_listen(socketFd, backlog:c_int);
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out, "Failed to listen on socket");
     }
 
     const listener = new tcpListener(socketFd, address);
@@ -180,12 +191,13 @@ module Socket {
     var family = if address.family == AF_INET6 then IPFamily.IPv6 else IPFamily.IPv4;
     var socketFd = socket(family, SOCK_STREAM | SOCK_NONBLOCK);
 
-    var err = sys_connect(socketFd, address._addressStorage);
-    if(err != 0 && err != EINPROGRESS) {
-      throw SystemError.fromSyserr(err,"Failed to connect");
+    var err_out = sys_connect(socketFd, address._addressStorage);
+    if(err_out != 0 && err_out != EINPROGRESS) {
+      sys_close(socketFd);
+      throw SystemError.fromSyserr(err_out,"Failed to connect");
     }
 
-    if(err == 0) {
+    if(err_out == 0) {
       var sockFile:tcpConn = openfd(socketFd);
       return sockFile;
     }
@@ -198,34 +210,35 @@ module Socket {
     var nready:int(32);
 
     if timeout.tv_sec == -1 {
-      err = sys_select(socketFd + 1, c_ptrTo(rset), c_ptrTo(wset), nil, nil, nready);
+      err_out = sys_select(socketFd + 1, c_ptrTo(rset), c_ptrTo(wset), nil, nil, nready);
     }
     else {
-      err = sys_select(socketFd + 1, c_ptrTo(rset), c_ptrTo(wset), nil, c_ptrTo(timeout), nready);
+      err_out = sys_select(socketFd + 1, c_ptrTo(rset), c_ptrTo(wset), nil, c_ptrTo(timeout), nready);
     }
 
     if nready == 0 {
       sys_close(socketFd);
-      throw SystemError.fromSyserr(ETIMEDOUT, "connection timed out");
+      throw SystemError.fromSyserr(ETIMEDOUT, "connect timed out");
     }
 
-    if err != 0 {
-      throw SystemError.fromSyserr(err, "Failed to connect");
+    if err_out != 0 {
+      sys_close(socketFd);
+      throw SystemError.fromSyserr(err_out, "connect() failed");
     }
 
     if(sys_fd_isset(socketFd, rset) != 0 || sys_fd_isset(socketFd, wset) != 0){
       var tempAddress = new sys_sockaddr_t();
-      err = sys_getpeername(socketFd, address._addressStorage);
-      if(err != 0) {
+      err_out = sys_getpeername(socketFd, address._addressStorage);
+      if(err_out != 0) {
         var berkleyError:err_t;
         var ptrberkleyError = c_ptrTo(berkleyError);
         var voidPtrberkleyError:c_void_ptr = ptrberkleyError;
         var berkleySize:socklen_t = sizeof(berkleyError):socklen_t;
-        err = sys_getsockopt(socketFd, SOL_SOCKET, SO_ERROR, voidPtrberkleyError, berkleySize);
+        err_out = sys_getsockopt(socketFd, SOL_SOCKET, SO_ERROR, voidPtrberkleyError, berkleySize);
 
         defer sys_close(socketFd);
-        if(err != 0){
-          throw SystemError.fromSyserr(err, "Failed to connect");
+        if(err_out != 0){
+          throw SystemError.fromSyserr(err_out, "Failed to connect");
         }
         else if(berkleyError != 0){
           throw SystemError.fromSyserr(berkleyError, "Failed to connect");
@@ -234,7 +247,7 @@ module Socket {
     }
     else {
       sys_close(socketFd);
-      throw new Error("Socket can't be connected");
+      throw new Error("connect() failed");
     }
 
     var sockFile:tcpConn = openfd(socketFd);
@@ -349,7 +362,7 @@ module Socket {
 
   }
 
-  proc getAddress(socketFD: int(32)) throws {
+  proc getAddress(socketFD: fd_t) throws {
     var addressStorage = new sys_sockaddr_t();
     var err = sys_getpeername(socketFD, addressStorage);
     if err != 0 {
@@ -360,10 +373,10 @@ module Socket {
   }
 
   proc socket(family:IPFamily = IPFamily.IPv4, sockType:c_int = SOCK_STREAM, protocol = 0) throws {
-    var socketFd: int(32);
-    var err = sys_socket(family:int(32), sockType | SOCK_CLOEXEC, protocol:c_int, socketFd);
+    var socketFd: c_int;
+    var err = sys_socket(family:c_int, sockType | SOCK_CLOEXEC, protocol:c_int, socketFd);
     if err != 0 {
-      throw SystemError.fromSyserr(err, "Failed to create Socket");
+      throw SystemError.fromSyserr(err, "Failed to create socket");
     }
 
     return socketFd;
