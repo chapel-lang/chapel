@@ -33,7 +33,6 @@
 #include "chpl/types/RealType.h"
 #include "chpl/types/Type.h"
 #include "chpl/types/TypeClasses.h"
-#include "chpl/types/TypeClassesList.h"
 #include "chpl/types/TypeTag.h"
 #include "chpl/types/UintType.h"
 #include "chpl/types/UnknownType.h"
