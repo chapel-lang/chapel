@@ -370,11 +370,13 @@ module Socket {
   }
 
   proc bind(socketFd:fd_t, in address: ipAddr, reuseAddr = true) throws {
-    var enable:int = if reuseAddr then 1 else 0;
-    if enable {
-      var ptrEnable:c_ptr(int) = c_ptrTo(enable);
-      var voidPtrEnable:c_void_ptr = ptrEnable;
-      sys_setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, voidPtrEnable, sizeof(enable):int(32));
+    var enable = if reuseAddr then 1 else 0;
+    if reuseAddr {
+      var ptrEnable = c_ptrTo(enable);
+      var err_out = sys_setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, ptrEnable:c_void_ptr, sizeof(enable):c_int);
+      if err_out != 0 {
+        throw SystemError.fromSyserr(err_out, "Failed to bind Socket");
+      }
     }
 
     var err = sys_bind(socketFd, address._addressStorage);
