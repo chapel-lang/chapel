@@ -80,7 +80,7 @@ template<typename... Ts>
 inline size_t hash(const std::tuple<Ts...>& tuple) {
   return hash_tuple_impl(tuple, std::index_sequence_for<Ts...>{});
 }
-inline size_t hash(const std::tuple<>& tuple) {
+static inline size_t hash(const std::tuple<>& tuple) {
   return 0;
 }
 

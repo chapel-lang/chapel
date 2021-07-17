@@ -95,7 +95,7 @@ bool queryArgsEquals(const std::tuple<Ts...>& lhs, const std::tuple<Ts...>& rhs)
 {
   return queryArgsEqualsImpl(lhs, rhs, std::index_sequence_for<Ts...>{});
 }
-bool queryArgsEquals(const std::tuple<>& lhs, const std::tuple<>& rhs)
+static inline bool queryArgsEquals(const std::tuple<>& lhs, const std::tuple<>& rhs)
 {
   return true;
 }
@@ -152,7 +152,7 @@ template<typename... Ts>
 void queryArgsPrint(const std::tuple<Ts...>& tuple) {
   queryArgsPrintImpl(tuple, std::index_sequence_for<Ts...>{});
 }
-void queryArgsPrint(const std::tuple<>& tuple) {
+static inline void queryArgsPrint(const std::tuple<>& tuple) {
 }
 
 using QueryDependencyVec = std::vector<const QueryMapResultBase*>;
