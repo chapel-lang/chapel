@@ -85,6 +85,9 @@ class Type {
     return !(*this == other);
   }
 
+  static void gatherBuiltins(Context* context,
+                             std::unordered_map<UniqueString,const Type*>& map);
+
   bool completeMatch(const Type* other) const;
 
   // 'keep' is some old Type

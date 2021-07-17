@@ -23,7 +23,6 @@
 namespace chpl {
 namespace types {
 
-
 const owned<BuiltinType>& BuiltinType::getBuiltinType(Context* context,
                                                       BuiltinType::Kind kind) {
   QUERY_BEGIN(getBuiltinType, context, kind);
@@ -33,8 +32,42 @@ const owned<BuiltinType>& BuiltinType::getBuiltinType(Context* context,
   return QUERY_END(result);
 }
 
+static void gatherType(Context* context,
+                       std::unordered_map<UniqueString,const Type*>& map,
+                       BuiltinType::Kind kind) {
+  auto t = BuiltinType::get(context, kind);
+  auto name = UniqueString::build(context, t->c_str());
+  map.insert( {name, t} );
+}
+
+void BuiltinType::gatherBuiltins(Context* context,
+                                 std::unordered_map<UniqueString,const Type*>& map) {
+
+  // call gatherType for each Kind using macros and BuiltinTypeList.h
+  #define BUILTIN_TYPE(ENUM_NAME, CHPL_NAME_STR) \
+    gatherType(context, map, ENUM_NAME);
+  // Apply the above macro to BuiltinTypeList.h
+  #include "chpl/types/BuiltinTypeList.h"
+  // clear the macro
+  #undef BUILTIN_TYPE
+}
+
 const BuiltinType* BuiltinType::get(Context* context, BuiltinType::Kind kind) {
   return getBuiltinType(context, kind).get();
+}
+
+const char* BuiltinType::c_str() const {
+  // call gatherType for each Kind using macros and BuiltinTypeList.h
+  #define BUILTIN_TYPE(ENUM_NAME, CHPL_NAME_STR) \
+    case ENUM_NAME: return CHPL_NAME_STR;
+  switch (kind_) {
+    // Apply the above macro to BuiltinTypeList.h
+    #include "chpl/types/BuiltinTypeList.h"
+  }
+  // clear the macro
+  #undef BUILTIN_TYPE
+  assert(false && "should not be reachable");
+  return "<unknown builtin type>";
 }
 
 

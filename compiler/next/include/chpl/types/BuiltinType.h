@@ -41,17 +41,16 @@ namespace types {
  */
 class BuiltinType : public Type {
  public:
+  // define the Kind enum using macros and BuiltinTypeList.h
+  /// \cond DO_NOT_DOCUMENT
+  #define BUILTIN_TYPE(ENUM_NAME, CHPL_NAME_STR) ENUM_NAME,
+  /// \endcond
   enum Kind {
-    // concrete builtin types
-
-    // generic builtin types
-    // (note: isGeneric relies on NUMERIC being the first)
-    NUMERIC,
-
-    ANY_BOOL,
-    ANY_REAL,
-    BORROWED,
+    // Apply the above macro to BuiltinTypeList.h
+    #include "chpl/types/BuiltinTypeList.h"
   };
+  // clear the macro
+  #undef BUILTIN_TYPE
 
  private:
   Kind kind_;
@@ -70,13 +69,16 @@ class BuiltinType : public Type {
   }
 
   bool isGeneric() override {
-    return kind_ >= NUMERIC;
+    return kind_ >= ANY_BOOL;
   }
 
   static const owned<BuiltinType>& getBuiltinType(Context* context, Kind kind);
 
  public:
   ~BuiltinType() = default;
+
+  static void gatherBuiltins(Context* context,
+                             std::unordered_map<UniqueString,const Type*>& map);
 
   static const BuiltinType* get(Context* context, Kind kind);
 

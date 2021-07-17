@@ -19,11 +19,71 @@
 
 #include "chpl/types/Type.h"
 
+#include "chpl/types/AnyType.h"
+#include "chpl/types/BoolType.h"
+#include "chpl/types/BuiltinType.h"
+#include "chpl/types/ComplexType.h"
+#include "chpl/types/ImagType.h"
+#include "chpl/types/IntType.h"
+#include "chpl/types/PrimitiveType.h"
+#include "chpl/types/RealType.h"
+#include "chpl/types/UintType.h"
+#include "chpl/types/UnknownType.h"
+
 namespace chpl {
 namespace types {
 
 
 Type::~Type() {
+}
+
+static void gatherType(Context* context,
+                       std::unordered_map<UniqueString,const Type*>& map,
+                       const char* c_str,
+                       const Type* t) {
+  auto name = UniqueString::build(context, c_str);
+  map.insert( {name, t} );
+}
+
+static
+void gatherPrimitiveType(Context* context,
+                         std::unordered_map<UniqueString,const Type*>& map,
+                         const PrimitiveType* p) {
+  gatherType(context, map, p->c_str(), p);
+}
+
+void Type::gatherBuiltins(Context* context,
+                          std::unordered_map<UniqueString,const Type*>& map) {
+
+  gatherPrimitiveType(context, map, BoolType::get(context, 0));
+  gatherPrimitiveType(context, map, BoolType::get(context, 8));
+  gatherPrimitiveType(context, map, BoolType::get(context, 16));
+  gatherPrimitiveType(context, map, BoolType::get(context, 32));
+  gatherPrimitiveType(context, map, BoolType::get(context, 64));
+
+  gatherPrimitiveType(context, map, IntType::get(context, 8));
+  gatherPrimitiveType(context, map, IntType::get(context, 16));
+  gatherPrimitiveType(context, map, IntType::get(context, 32));
+  gatherPrimitiveType(context, map, IntType::get(context, 64));
+
+  gatherPrimitiveType(context, map, UintType::get(context, 8));
+  gatherPrimitiveType(context, map, UintType::get(context, 16));
+  gatherPrimitiveType(context, map, UintType::get(context, 32));
+  gatherPrimitiveType(context, map, UintType::get(context, 64));
+
+  gatherPrimitiveType(context, map, RealType::get(context, 32));
+  gatherPrimitiveType(context, map, RealType::get(context, 64));
+
+  gatherPrimitiveType(context, map, ImagType::get(context, 32));
+  gatherPrimitiveType(context, map, ImagType::get(context, 64));
+
+  gatherPrimitiveType(context, map, ComplexType::get(context, 64));
+  gatherPrimitiveType(context, map, ComplexType::get(context, 128));
+
+  gatherType(context, map, "_any", AnyType::get(context));
+  gatherType(context, map, "_unknown", UnknownType::get(context));
+
+  BuiltinType::gatherBuiltins(context, map);
 }
 
 bool Type::completeMatch(const Type* other) const {
