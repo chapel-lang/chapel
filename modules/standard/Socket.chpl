@@ -264,47 +264,13 @@ module Socket {
     return getAddress(this.socketFd);
   }
 
-  extern proc sys_recv(sockfd:fd_t, buffer:c_void_ptr, len:size_t, flags:c_int, ref recvd_out:ssize_t):err_t;
-
-  proc udpSocket.recv(buffer_len: int, in timeout = new timeval(-1,0), flags:c_int = 0) throws {
-
-    var rset: fd_set;
-    sys_fd_zero(rset);
-    sys_fd_set(this.socketFd, rset);
-    var nready:int(32);
-    var err_out:err_t;
-
-    if timeout.tv_sec == -1 {
-      err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, nil, nready);
-    }
-    else {
-      err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
-    }
-
-    if nready == 0 {
-      throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
-    }
-    if err_out != 0 {
-      throw SystemError.fromSyserr(err_out);
-    }
-
-    var buffer = c_calloc(c_uchar, buffer_len);
-    var length:ssize_t;
-    err_out = sys_recv(this.socketFd, buffer, buffer_len:size_t, 0, length);
-    if err_out != 0 {
-      throw SystemError.fromSyserr(err_out, "error on recv");
-    }
-
-    return createBytesWithOwnedBuffer(buffer, length, buffer_len);
-  }
-
-  extern proc sys_recvfrom(sockfd:fd_t, buffer:c_void_ptr, len:size_t, flags:c_int, ref addr:sys_sockaddr_t,  ref recvd_out:ssize_t):err_t;
+  extern proc sys_recvfrom(sockfd:fd_t, buffer:c_void_ptr, len:size_t, flags:c_int, ref address:sys_sockaddr_t, ref recvd_out:ssize_t):err_t;
 
   proc udpSocket.recvfrom(buffer_len:int, in timeout = new timeval(-1,0), flags:c_int = 0) throws {
     var rset: fd_set;
     sys_fd_zero(rset);
     sys_fd_set(this.socketFd, rset);
-    var nready:int(32);
+    var nready:c_int;
     var err_out:err_t;
 
     if timeout.tv_sec == -1 {
@@ -318,27 +284,32 @@ module Socket {
       throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
     }
     if err_out != 0 {
-      throw SystemError.fromSyserr(err_out);
+      throw SystemError.fromSyserr(err_out, "recv failed");
     }
 
     var buffer = c_calloc(c_uchar, buffer_len);
-    var length:c_int;
+    var length:ssize_t;
     var addressStorage = new sys_sockaddr_t();
-    err_out = sys_recvfrom(this.socketFd, buffer, buffer_len, 0, addressStorage, length);
+    err_out = sys_recvfrom(this.socketFd, buffer, buffer_len:size_t, 0, addressStorage, length);
     if err_out != 0 {
-      throw SystemError.fromSyserr(err_out);
+      throw SystemError.fromSyserr(err_out, "recv failed");
     }
 
     return (createBytesWithOwnedBuffer(buffer, length, buffer_len), new ipAddr(addressStorage));
   }
 
-  extern proc sys_sendto(sockfd:fd_t, buffer:c_void_ptr, len:size_t, flags:c_int, ref addr:sys_sockaddr_t,  ref recvd_out:ssize_t):err_t;
+  proc udpSocket.recv(buffer_len: int, in timeout = new timeval(-1,0)) throws {
+    var (data, _) = this.recvfrom(buffer_len, timeout);
+    return data;
+  }
 
-  proc udpSocket.send(data: bytes, in addr: ipAddr, in timeout = new timeval(0,0), flags:c_int = 0) throws {
+  extern proc sys_sendto(sockfd:fd_t, buffer:c_void_ptr, len:c_long, flags:c_int, ref address:sys_sockaddr_t,  ref recvd_out:ssize_t):err_t;
+
+  proc udpSocket.send(data: bytes, in addr: ipAddr, in timeout = new timeval(-1,0)) throws {
     var wset: fd_set;
     sys_fd_zero(wset);
     sys_fd_set(this.socketFd, wset);
-    var nready:int(32);
+    var nready:c_int;
     var err_out:err_t;
 
     if timeout.tv_sec == -1 {
@@ -352,13 +323,13 @@ module Socket {
       throw SystemError.fromSyserr(ETIMEDOUT, "send timed out");
     }
     if err_out != 0 {
-      throw SystemError.fromSyserr(err_out);
+      throw SystemError.fromSyserr(err_out, "send failed");
     }
 
     var length:ssize_t;
-    err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:size_t, flags, addr._addressStorage, length);
+    err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, addr._addressStorage, length);
     if err_out != 0 {
-      throw SystemError.fromSyserr(err_out);
+      throw SystemError.fromSyserr(err_out, "send failed");
     }
 
     return length;
