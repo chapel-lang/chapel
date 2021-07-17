@@ -37,21 +37,10 @@
 // the following comment disables doxygen for these
 /// \cond DO_NOT_DOCUMENT
 
-TYPE_NODE(BuiltinType)
-
-TYPE_BEGIN_SUBCLASSES(PrimitiveType)
-    TYPE_NODE(BoolType)
-    TYPE_NODE(ComplexType)
-    TYPE_NODE(ImagType)
-    TYPE_NODE(IntType)
-    TYPE_NODE(RealType)
-    TYPE_NODE(UintType)
-TYPE_END_SUBCLASSES(PrimitiveType)
-
-TYPE_NODE(ErroneousType)
-
-TYPE_NODE(UnknownType)
 TYPE_NODE(AnyType)
+TYPE_NODE(BuiltinType)
+TYPE_NODE(ErroneousType)
+TYPE_NODE(UnknownType)
 
 TYPE_BEGIN_SUBCLASSES(DeclaredType)
   TYPE_NODE(EnumType)
@@ -66,6 +55,15 @@ TYPE_BEGIN_SUBCLASSES(DeclaredType)
   TYPE_END_SUBCLASSES(AggregateType)
 
 TYPE_END_SUBCLASSES(DeclaredType)
+
+TYPE_BEGIN_SUBCLASSES(PrimitiveType)
+    TYPE_NODE(BoolType)
+    TYPE_NODE(ComplexType)
+    TYPE_NODE(ImagType)
+    TYPE_NODE(IntType)
+    TYPE_NODE(RealType)
+    TYPE_NODE(UintType)
+TYPE_END_SUBCLASSES(PrimitiveType)
 
 
 /// \endcond
