@@ -57,16 +57,16 @@ class QualifiedType {
     : kind_(PARAM), type_(type), param_(param)
   { }
 
-  Kind kind() { return kind_; }
-  Type* type() { return type_; }
-  int param() { return param_; }
+  Kind kind() const { return kind_; }
+  const Type* type() const { return type_; }
+  int param() const { return param_; }
 
-  bool operator==(const KindParamType& other) const {
-    return kind == other.kind &&
-           type == other.type &&
-           param == other.param;
+  bool operator==(const QualifiedType& other) const {
+    return kind_ == other.kind_ &&
+           type_ == other.type_ &&
+           param_ == other.param_;
   }
-  bool operator!=(const KindParamType& other) const {
+  bool operator!=(const QualifiedType& other) const {
     return !(*this == other);
   }
 };
