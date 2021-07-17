@@ -381,6 +381,17 @@ std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
   return vec;
 }
 
+std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
+                                               const Scope* scope,
+                                               UniqueString name,
+                                               bool findOne) {
+  std::unordered_set<const Scope*> checkedScopes;
+  std::vector<BorrowedIdsWithName> vec;
+
+  doLookupInScope(context, scope, name, VIS_NEITHER, findOne,
+                  checkedScopes, vec);
+  return vec;
+}
 
 struct ImportsResolver {
   Context* context = nullptr;
