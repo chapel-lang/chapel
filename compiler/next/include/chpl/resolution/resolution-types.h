@@ -21,6 +21,7 @@
 #define CHPL_RESOLUTION_RESOLUTION_TYPES_H
 
 #include "chpl/types/Type.h"
+#include "chpl/types/QualifiedType.h"
 #include "chpl/uast/ASTNode.h"
 #include "chpl/uast/Function.h"
 #include "chpl/util/memory.h"
@@ -69,31 +70,8 @@ struct UntypedFnSignature {
   }
 };
 
-struct KindParamType {
-  typedef enum {
-    UNKNOWN,
-    VALUE,
-    TYPE,
-    PARAM,
-    FUNCTION,
-  } Kind;
-  Kind kind = UNKNOWN;
-  const types::Type* type = nullptr;
-  // TODO: param value
-
-  KindParamType() { }
-
-  bool operator==(const KindParamType& other) const {
-    return kind == other.kind &&
-           type == other.type;
-  }
-  bool operator!=(const KindParamType& other) const {
-    return !(*this == other);
-  }
-};
-
 struct CallInfoActual {
-  KindParamType type;
+  types::QualifiedType type;
   UniqueString byName;
   // TODO: param and type actuals
 
@@ -121,7 +99,7 @@ struct CallInfo {
 
 struct TypedFnSignatureFormal {
   const uast::Formal* formal;
-  KindParamType type;
+  types::QualifiedType type;
 
   bool operator==(const TypedFnSignatureFormal& other) const {
     return formal == other.formal &&
@@ -143,6 +121,7 @@ struct TypedFnSignature {
   // TODO: int -> Immediate
   //std::unordered_map<uast::NamedDecl*, int> paramSubs;
 
+  // TODO: move instantiation stuff to function/class Type
   // the point of instantiation
   TypedFnSignature* instantiationPointFn = nullptr;
   ID instantiationPointId;
@@ -151,7 +130,7 @@ struct TypedFnSignature {
     return untypedSignature == other.untypedSignature &&
            formals == other.formals &&
            evaluatedWhereClause == other.evaluatedWhereClause &&
-           instantiationPointfn == other.instantiationPointFn &&
+           instantiationPointFn == other.instantiationPointFn &&
            instantiationPointId == other.instantiationPointId;
   }
   bool operator!=(const TypedFnSignature& other) const {
@@ -163,20 +142,43 @@ struct ResolvedExpression {
   // the ID that is resolved
   ID id;
   // What is its type and param value?
-  KindParamType type;
-  // For simple (non-function) cases, the ID of a NamedDecl it refers to
+  types::QualifiedType type;
+  // For simple (non-function Identifier) cases,
+  // the ID of a NamedDecl it refers to
   ID toId;
 
   // For a function call, it refers to a typed function
   // (that might be a generic instantiation)
-  TypedFnSignature* function;
+  const TypedFnSignature* function;
 
   // Some calls use return intent overloading. In that event,
   // all overloads are stored in this vector. They need to be
   // resolved in a different order.
-  std::vector<TypedFnSignature*> overloads;
+  std::vector<const TypedFnSignature*> overloads;
 
-  ResolutionResult() { }
+  ResolvedExpression() { }
+
+  bool operator==(const ResolvedExpression& other) const {
+    return id == other.id &&
+           type == other.type &&
+           toId == other.toId &&
+           function == other.function &&
+           overloads == other.overloads;
+  }
+  bool operator!=(const ResolvedExpression& other) const {
+    return !(*this == other);
+  }
+  void swap(ResolvedExpression& other) {
+    id.swap(other.id);
+    type.swap(other.type);
+    toId.swap(other.toId);
+
+    const TypedFnSignature* tmpFunction = function;
+    function = other.function;
+    other.function = tmpFunction;
+
+    overloads.swap(other.overloads);
+  }
 };
 
 // postorder ID (int) -> ResolvedExpression *within* a Function etc

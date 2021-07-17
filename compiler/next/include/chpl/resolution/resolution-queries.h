@@ -33,10 +33,21 @@ namespace resolution {
   UntypedFnSignature* untypedSignature(Context* context, ID id);
 
   /**
+    Resolve the contents of a Symbol
+   */
+  const ResolutionResultByPostorderID& resolveSymbolContents(Context* context,
+                                                             ID id);
+
+  /**
     Compute the type for a NamedDecl with a particular id.
     This is not used for local variables.
    */
-  const KindParamType& typeForSymbol(Context* context, ID id);
+  const types::QualifiedType& typeForSymbol(Context* context, ID id);
+
+  /**
+    Compute the type for a Builtin type using just its name
+   */
+  const types::QualifiedType& typeForBuiltin(Context* context, UniqueString name);
 
   /*
   // Resolves the top-level declarations in a module
