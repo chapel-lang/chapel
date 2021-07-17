@@ -429,4 +429,46 @@ module Socket {
 
     bind(socketFd, address, reuseAddr);
   }
+
+  proc naggle(socketFd:fd_t, enable:bool = true) throws {
+    var c_enable = if enable then 0 else 1;
+    var ptrEnable = c_ptrTo(c_enable);
+    var err_out = sys_setsockopt(socketFd, IPPROTO_TCP, TCP_NODELAY, ptrEnable:c_void_ptr, sizeof(c_enable):c_int);
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out, "Failed naggle");
+    }
+  }
+
+  proc naggle(socket:tcpListener, enable:bool = true) throws {
+    var socketFd = socket.socketFd;
+
+    naggle(socketFd, enable);
+  }
+
+  proc naggle(socket:tcpConn, enable:bool = true) throws {
+    var socketFd = socket.fd();
+
+    naggle(socketFd, enable);
+  }
+
+  proc delayAck(socketFd:fd_t, enable:bool = true) throws {
+    var c_enable = if enable then 0 else 1;
+    var ptrEnable = c_ptrTo(c_enable);
+    var err_out = sys_setsockopt(socketFd, IPPROTO_TCP, TCP_QUICKACK, ptrEnable:c_void_ptr, sizeof(c_enable):c_int);
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out, "Failed delayAck");
+    }
+  }
+
+  proc delayAck(socket:tcpListener, enable:bool = true) throws {
+    var socketFd = socket.socketFd;
+
+    delayAck(socketFd, enable);
+  }
+
+  proc delayAck(socket:tcpConn, enable:bool = true) throws {
+    var socketFd = socket.fd();
+
+    delayAck(socketFd, enable);
+  }
 }
