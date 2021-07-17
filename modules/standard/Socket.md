@@ -139,12 +139,12 @@ The additional support with `tcpConn` and `tcpListener` will be to enable or dis
   proc nagle(socket:tcpListener, tcpNodeDelay:bool = 1);
   proc nagle(socket:udpSocket, tcpNodeDelay:bool = 1);
   ```
-- `quickack`
+- `quickAck`
   This method will set/unset TCP_QUICKACK for provided socket.
   ```python
-  proc quickack(socket:tcpConn, tcpQuickack:bool = 1)
-  proc quickack(socket:tcpListener, tcpQuickack:bool = 1);
-  proc quickack(socket:udpSocket, tcpQuickack:bool = 1);
+  proc quickAck(socket:tcpConn, tcpQuickAck:bool = 1)
+  proc quickAck(socket:tcpListener, tcpQuickAck:bool = 1);
+  proc quickAck(socket:udpSocket, tcpQuickAck:bool = 1);
   ```
 
 ## UDP Support
