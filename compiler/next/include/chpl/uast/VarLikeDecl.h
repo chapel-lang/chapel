@@ -22,6 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/NamedDecl.h"
+#include "chpl/uast/IntentList.h"
 
 namespace chpl {
 namespace uast {
