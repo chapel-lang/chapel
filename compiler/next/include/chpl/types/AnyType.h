@@ -17,59 +17,44 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_COMPLEXTYPE_H
-#define CHPL_TYPES_COMPLEXTYPE_H
+#ifndef CHPL_TYPES_ANYTYPE_H
+#define CHPL_TYPES_ANYTYPE_H
 
-#include "chpl/types/PrimitiveType.h"
+#include "chpl/types/Type.h"
 
 namespace chpl {
 namespace types {
 
 
 /**
-  This class represents a complex type, e.g. `complex` or `complex(64)`.
+  This class represents a generic type that can instantiate to any type.
  */
-class ComplexType : public PrimitiveType {
+class AnyType : public Type {
  private:
-  ComplexType(int bitwidth)
-    : PrimitiveType(typetags::ComplexType, bitwidth)
-  { }
+  AnyType() : Type(typetags::AnyType) { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return primitiveTypeContentsMatchInner((PrimitiveType*) other);
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    primitiveTypeMarkUniqueStringsInner(context);
   }
 
-  static const owned<ComplexType>& getComplexType(Context* context, int bitwidth);
+  bool isGeneric() override {
+    return true;
+  }
+
+  static const owned<AnyType>& getAnyType(Context* context);
 
  public:
-  ~ComplexType() = default;
+  ~AnyType() = default;
 
-  static const ComplexType* get(Context* context, int bitwidth);
+  static const AnyType* get(Context* context);
 
-  int bitwidth() const override {
-    return bitwidth_;
-  }
-
-  const char* c_str() const override {
-    switch (bitwidth_) {
-      case 64:
-        return "complex(64)";
-      case 128:
-        return "complex(128)";
-      default:
-        assert(false && "complex bit width case not handled");
-        return "complex(<unknown>)";
-    }
-  }
-
-  /*bool operator==(const ComplexType& other) const {
+  /*bool operator==(const AnyType& other) const {
     return completeMatch(&other);
   }
-  bool operator!=(const ComplexType& other) const {
+  bool operator!=(const AnyType& other) const {
     return !(*this == other);
   }*/
 };

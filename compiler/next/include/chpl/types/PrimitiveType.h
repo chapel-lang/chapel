@@ -35,9 +35,8 @@ class PrimitiveType : public Type {
  protected:
   int bitwidth_;
 
-  BuiltinType(typetags::TypeTag tag, int bitwidth)
+  PrimitiveType(typetags::TypeTag tag, int bitwidth)
     : Type(tag), bitwidth_(bitwidth) {
-    canonicalizeBitWidth();
   }
 
   bool primitiveTypeContentsMatchInner(const PrimitiveType* other) const {
@@ -52,8 +51,6 @@ class PrimitiveType : public Type {
   bool isGeneric() override {
     return false;
   }
-
-  virtual void canonicalizeBitWidth();
 
  public:
   ~PrimitiveType() = default;

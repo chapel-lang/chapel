@@ -45,10 +45,19 @@ class ErroneousType : public Type {
     return false;
   }
 
+  static const owned<ErroneousType>& getErroneousType(Context* context);
+
  public:
   ~ErroneousType() = default;
 
-  static owned<ErroneousType> build();
+  static const ErroneousType* get(Context* context);
+
+  /*bool operator==(const ComplexType& other) const {
+    return completeMatch(&other);
+  }
+  bool operator!=(const ComplexType& other) const {
+    return !(*this == other);
+  }*/
 };
 
 

@@ -18,13 +18,23 @@
  */
 
 #include "chpl/types/ComplexType.h"
+#include "chpl/queries/query-impl.h"
 
 namespace chpl {
 namespace types {
 
+const owned<ComplexType>& ComplexType::getComplexType(Context* context, int bitwidth) {
+  QUERY_BEGIN(getComplexType, context, bitwidth);
 
-owned<ComplexType> ComplexType::build(int bitwidth) {
-  return toOwned(new ComplexType(bitwidth));
+  auto result = toOwned(new ComplexType(bitwidth));
+
+  return QUERY_END(result);
+}
+
+const ComplexType* ComplexType::get(Context* context, int bitwidth) {
+  assert(bitwidth == 0 || bitwidth == 64 || bitwidth == 128);
+  if (bitwidth == 0) bitwidth = 128; // canonicalize default width
+  return getComplexType(context, bitwidth).get();
 }
 
 

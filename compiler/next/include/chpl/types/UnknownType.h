@@ -27,8 +27,8 @@ namespace types {
 
 
 /**
-  This class represents an unknown type which can be used to represent a case
-  where the type is not established because it is generic.
+  This class represents an unknown type when the type is
+  not known because it is not yet established.
  */
 class UnknownType : public Type {
  private:
@@ -42,13 +42,22 @@ class UnknownType : public Type {
   }
 
   bool isGeneric() override {
-    return true;
+    return false; // well actually we don't know, because it is unknown
   }
+
+  static const owned<UnknownType>& getUnknownType(Context* context);
 
  public:
   ~UnknownType() = default;
 
-  static owned<UnknownType> build();
+  static const UnknownType* get(Context* context);
+
+  /*bool operator==(const UnknownType& other) const {
+    return true;
+  }
+  bool operator!=(const UnknownType& other) const {
+    return !(*this == other);
+  }*/
 };
 
 

@@ -35,12 +35,6 @@ class RealType : public PrimitiveType {
     : PrimitiveType(typetags::RealType, bitwidth)
   { }
 
-  void canonicalizeBitWidth() override {
-    if (bitwidth_ == 0) bitwidth_ = 64;
-    assert(bitwidth_ == 8 || bitwidth_ == 16 ||
-           bitwidth_ == 32 || bitwidth_ == 64);
-  }
-
   bool contentsMatchInner(const Type* other) const override {
     return primitiveTypeContentsMatchInner((PrimitiveType*) other);
   }
@@ -49,8 +43,12 @@ class RealType : public PrimitiveType {
     primitiveTypeMarkUniqueStringsInner(context);
   }
 
+  static const owned<RealType>& getRealType(Context* context, int bitwidth);
+
  public:
   ~RealType() = default;
+
+  static const RealType* get(Context* context, int bitwidth);
 
   int bitwidth() const override {
     return bitwidth_;
@@ -68,7 +66,13 @@ class RealType : public PrimitiveType {
     }
   }
 
-  static const owned<RealType>& build(Context* context, int bitwidth);
+  /*bool operator==(const RealType& other) const {
+    return primitiveTypeContentsMatchInner(&other);
+  }
+  bool operator!=(const RealType& other) const {
+    return !(*this == other);
+  }*/
+
 };
 
 

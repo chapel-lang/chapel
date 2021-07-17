@@ -78,6 +78,13 @@ class Type {
     return tag_;
   }
 
+  bool operator==(const Type& other) const {
+    return completeMatch(&other);
+  }
+  bool operator!=(const Type& other) const {
+    return !(*this == other);
+  }
+
   bool completeMatch(const Type* other) const;
 
   // 'keep' is some old Type

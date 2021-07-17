@@ -18,9 +18,24 @@
  */
 
 #include "chpl/types/BuiltinType.h"
+#include "chpl/queries/query-impl.h"
 
 namespace chpl {
 namespace types {
+
+
+const owned<BuiltinType>& BuiltinType::getBuiltinType(Context* context,
+                                                      BuiltinType::Kind kind) {
+  QUERY_BEGIN(getBuiltinType, context, kind);
+
+  auto result = toOwned(new BuiltinType(kind));
+
+  return QUERY_END(result);
+}
+
+const BuiltinType* BuiltinType::get(Context* context, BuiltinType::Kind kind) {
+  return getBuiltinType(context, kind).get();
+}
 
 
 } // end namespace types

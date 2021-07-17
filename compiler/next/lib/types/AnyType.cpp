@@ -17,25 +17,23 @@
  * limitations under the License.
  */
 
-#include "chpl/types/RealType.h"
+#include "chpl/types/AnyType.h"
 #include "chpl/queries/query-impl.h"
 
 namespace chpl {
 namespace types {
 
 
-const owned<RealType>& RealType::getRealType(Context* context, int bitwidth) {
-  QUERY_BEGIN(getRealType, context, bitwidth);
+const owned<AnyType>& AnyType::getAnyType(Context* context) {
+  QUERY_BEGIN(getAnyType, context);
 
-  auto result = toOwned(new RealType(bitwidth));
+  auto result = toOwned(new AnyType());
 
   return QUERY_END(result);
 }
 
-const RealType* RealType::get(Context* context, int bitwidth) {
-  assert(bitwidth == 0 || bitwidth == 32 || bitwidth == 64);
-  if (bitwidth == 0) bitwidth = 64; // canonicalize default width
-  return getRealType(context, bitwidth).get();
+const AnyType* AnyType::get(Context* context) {
+  return getAnyType(context).get();
 }
 
 

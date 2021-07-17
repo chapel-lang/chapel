@@ -37,12 +37,6 @@ class BoolType : public PrimitiveType {
     : PrimitiveType(typetags::BoolType, bitwidth)
   { }
 
-  void canonicalizeBitWidth() override {
-    // leave bitwidth 0 alone
-    assert(bitwidth_ == 0 || bitwidth_ == 8 || bitwidth_ == 16 ||
-           bitwidth_ == 32 || bitwidth_ == 64);
-  }
-
   bool contentsMatchInner(const Type* other) const override {
     return primitiveTypeContentsMatchInner((PrimitiveType*) other);
   }
@@ -51,8 +45,12 @@ class BoolType : public PrimitiveType {
     primitiveTypeMarkUniqueStringsInner(context);
   }
 
+  static const owned<BoolType>& getBoolType(Context* context, int bitwidth);
+
  public:
   ~BoolType() = default;
+
+  static const BoolType* get(Context* context, int bitwidth);
 
   int bitwidth() const override {
     if (bitwidth_ == 0) return 8;
@@ -77,7 +75,21 @@ class BoolType : public PrimitiveType {
     }
   }
 
-  static const owned<BoolType>& build(Context* context, int bitwidth);
+  /**
+   Returns `true` if this is the type `bool` which is distinct from
+   `bool(8)`.
+   */
+  bool isDefaultBool() const {
+    return bitwidth_ == 0;
+  }
+
+  /*bool operator==(const BoolType& other) const {
+    return completeMatch(&other);
+  }
+  bool operator!=(const BoolType& other) const {
+    return !(*this == other);
+  }*/
+
 };
 
 

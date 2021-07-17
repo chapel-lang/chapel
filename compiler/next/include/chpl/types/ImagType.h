@@ -35,12 +35,6 @@ class ImagType : public PrimitiveType {
     : PrimitiveType(typetags::ImagType, bitwidth)
   { }
 
-  void canonicalizeBitWidth() override {
-    if (bitwidth_ == 0) bitwidth_ = 64;
-    assert(bitwidth_ == 8 || bitwidth_ == 16 ||
-           bitwidth_ == 32 || bitwidth_ == 64);
-  }
-
   bool contentsMatchInner(const Type* other) const override {
     return primitiveTypeContentsMatchInner((PrimitiveType*) other);
   }
@@ -49,8 +43,12 @@ class ImagType : public PrimitiveType {
     primitiveTypeMarkUniqueStringsInner(context);
   }
 
+  static const owned<ImagType>& getImagType(Context* context, int bitwidth);
+
  public:
   ~ImagType() = default;
+
+  static const ImagType* get(Context* context, int bitwidth);
 
   int bitwidth() const override {
     return bitwidth_;
@@ -68,7 +66,12 @@ class ImagType : public PrimitiveType {
     }
   }
 
-  static const owned<ImagType>& build(Context* context, int bitwidth);
+  /*bool operator==(const ImagType& other) const {
+    return primitiveTypeContentsMatchInner(&other);
+  }
+  bool operator!=(const ImagType& other) const {
+    return !(*this == other);
+  }*/
 };
 
 

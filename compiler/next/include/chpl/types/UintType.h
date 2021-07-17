@@ -35,12 +35,6 @@ class UintType : public PrimitiveType {
     : PrimitiveType(typetags::UintType, bitwidth)
   { }
 
-  void canonicalizeBitWidth() override {
-    if (bitwidth_ == 0) bitwidth_ = 64;
-    assert(bitwidth_ == 8 || bitwidth_ == 16 ||
-           bitwidth_ == 32 || bitwidth_ == 64);
-  }
-
   bool contentsMatchInner(const Type* other) const override {
     return primitiveTypeContentsMatchInner((PrimitiveType*) other);
   }
@@ -49,8 +43,12 @@ class UintType : public PrimitiveType {
     primitiveTypeMarkUniqueStringsInner(context);
   }
 
+  static const owned<UintType>& getUintType(Context* context, int bitwidth);
+
  public:
   ~UintType() = default;
+
+  static const UintType* get(Context* context, int bitwidth);
 
   int bitwidth() const override {
     return bitwidth_;
@@ -72,7 +70,13 @@ class UintType : public PrimitiveType {
     }
   }
 
-  static const owned<UintType>& build(Context* context, int bitwidth);
+  /*bool operator==(const UintType& other) const {
+    return primitiveTypeContentsMatchInner(&other);
+  }
+  bool operator!=(const UintType& other) const {
+    return !(*this == other);
+  }*/
+
 };
 
 

@@ -18,6 +18,7 @@
 target_sources(libchplcomp-obj
                PRIVATE
 
+               AnyType.cpp
                BoolType.cpp
                BuiltinType.cpp
                ComplexType.cpp

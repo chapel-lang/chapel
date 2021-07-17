@@ -18,13 +18,23 @@
  */
 
 #include "chpl/types/BoolType.h"
+#include "chpl/queries/query-impl.h"
 
 namespace chpl {
 namespace types {
 
+const owned<BoolType>& BoolType::getBoolType(Context* context, int bitwidth) {
+  QUERY_BEGIN(getBoolType, context, bitwidth);
 
-owned<BoolType> BoolType::build(int bitwidth) {
-  return toOwned(new BoolType(bitwidth));
+  auto result = toOwned(new BoolType(bitwidth));
+
+  return QUERY_END(result);
+}
+
+const BoolType* BoolType::get(Context* context, int bitwidth) {
+  assert(bitwidth == 0 || bitwidth == 8 || bitwidth == 16 ||
+         bitwidth == 32 || bitwidth == 64);
+  return getBoolType(context, bitwidth).get();
 }
 
 

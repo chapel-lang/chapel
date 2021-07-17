@@ -55,18 +55,15 @@ class BuiltinType : public Type {
 
  private:
   Kind kind_;
-  int bitwidth_;
 
-  BuiltinType(Kind kind, int bitwidth)
-    : Type(typetags::BuiltinType), kind_(kind), bitwidth_(bitwidth) {
-    canonicalizeBitWidth();
+  BuiltinType(Kind kind)
+    : Type(typetags::BuiltinType), kind_(kind) {
   }
 
   bool contentsMatchInner(const Type* other) const override {
     const BuiltinType* lhs = this;
     const BuiltinType* rhs = (const BuiltinType*) other;
-    return lhs->kind_ == rhs->kind_ &&
-           lhs->bitwidth_ == rhs->bitwidth_;
+    return lhs->kind_ == rhs->kind_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -76,12 +73,12 @@ class BuiltinType : public Type {
     return kind_ >= NUMERIC;
   }
 
-  void canonicalizeBitWidth();
+  static const owned<BuiltinType>& getBuiltinType(Context* context, Kind kind);
 
  public:
   ~BuiltinType() = default;
 
-  static owned<BuiltinType> build(Kind kind, int bitwidth);
+  static const BuiltinType* get(Context* context, Kind kind);
 
   /**
     Returns the kind indicating which BuiltinType it is.
@@ -91,26 +88,16 @@ class BuiltinType : public Type {
   }
 
   /**
-   Returns the bit width selected for numeric types.
-   Returns 8 for the default sized bool.
-   */
-  int bitwidth() const {
-    if (isDefaultBool()) return 8;
-    return bitwidth_;
-  }
-
-  /**
-   Returns `true` if this is the type `bool` which is distinct from
-   `bool(8)`.
-   */
-  bool isDefaultBool() const {
-    return kind_ == BOOL && bitwidth_ == 0;
-  }
-
-  /**
     Returns a C string for the name of this BuiltinType.
    */
   const char* c_str() const;
+
+  /*bool operator==(const BuiltinType& other) const {
+    return completeMatch(&other);
+  }
+  bool operator!=(const BoolType& other) const {
+    return !(*this == other);
+  }*/
 };
 
 

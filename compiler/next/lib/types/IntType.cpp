@@ -18,13 +18,25 @@
  */
 
 #include "chpl/types/IntType.h"
+#include "chpl/queries/query-impl.h"
 
 namespace chpl {
 namespace types {
 
 
-owned<IntType> IntType::build(int bitwidth) {
-  return toOwned(new IntType(bitwidth));
+const owned<IntType>& IntType::getIntType(Context* context, int bitwidth) {
+  QUERY_BEGIN(getIntType, context, bitwidth);
+
+  auto result = toOwned(new IntType(bitwidth));
+
+  return QUERY_END(result);
+}
+
+const IntType* IntType::get(Context* context, int bitwidth) {
+  assert(bitwidth == 0 || bitwidth == 8 || bitwidth == 16 ||
+         bitwidth == 32 || bitwidth == 64);
+  if (bitwidth == 0) bitwidth = 64; // canonicalize default width
+  return getIntType(context, bitwidth).get();
 }
 
 

@@ -18,13 +18,24 @@
  */
 
 #include "chpl/types/ImagType.h"
+#include "chpl/queries/query-impl.h"
 
 namespace chpl {
 namespace types {
 
 
-owned<ImagType> ImagType::build(int bitwidth) {
-  return toOwned(new ImagType(bitwidth));
+const owned<ImagType>& ImagType::getImagType(Context* context, int bitwidth) {
+  QUERY_BEGIN(getImagType, context, bitwidth);
+
+  auto result = toOwned(new ImagType(bitwidth));
+
+  return QUERY_END(result);
+}
+
+const ImagType* ImagType::get(Context* context, int bitwidth) {
+  assert(bitwidth == 0 || bitwidth == 32 || bitwidth == 64);
+  if (bitwidth == 0) bitwidth = 64; // canonicalize default width
+  return getImagType(context, bitwidth).get();
 }
 
 
