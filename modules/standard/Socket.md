@@ -176,6 +176,8 @@ While `tcpConn` is in a connected state when they are created `udpSocket` are co
 
 ## Data transfer on UDP
 
+>UDP I/O can't work the same as TCP because it's stateless there is no persistent connection between the sockets. So because of the absence of a `file` user has to handle I/O by sending in bytes and specify the amount of bytes they are willing to retrieve.
+
 UDP Sockets will have method to call `recvFrom` on it this will return the `addr`, `port` of client socket and `data` being written to the socket.
 
 **Method:**
@@ -187,8 +189,7 @@ proc socketServ.recvFrom(buffer_len:int, in timeout = new timeval(-1,0)) : (addr
 
 ```
 buffer_len: int - number of bytes to read
-timeout: timval - defines the time in `(seconds, microseconds)` function should wait till
-                  `recvfrom` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
+timeout: timval - defines the time in `(seconds, microseconds)` function should wait till `recvfrom` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
 reuseaddr: Boolean - optional parameter, default value = true
 ```
 
@@ -209,8 +210,7 @@ proc socketServ.recv(buffer_len: int, in timeout = new timeval(-1,0)) : bytes
 
 ```
 buffer_len: int - number of bytes to read
-timeout: timval - defines the time in `(seconds, microseconds)` function should wait till
-                  `recv` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
+timeout: timval - defines the time in `(seconds, microseconds)` function should wait till `recv` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
 reuseaddr: Boolean - optional parameter, default value = true
 ```
 
@@ -218,15 +218,14 @@ The `send` method on socket will take in `addr`, `timeout`, `flags` and `data` t
 
 __Method:__
 ```python
-proc socketServ.send(data: bytes, in address: ipAddr, in timeout = new timeval(0,0))
+proc socketServ.send(data: bytes, in address: ipAddr, in timeout = new timeval(-1,0))
 ```
 
 **Parameters:**
 ```
 data: bytes - data to send
 address: ipAddr - address info for where to send the data.
-timeout: timval - defines the time in `(seconds, microseconds)` function should wait till
-                  `send` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
+timeout: timval - defines the time in `(seconds, microseconds)` function should wait till `send` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
 ```
 
 ## Options on Socket
