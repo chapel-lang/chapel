@@ -54,7 +54,7 @@ proc connect(in address:ipAddr, in timeout = new timeval(-1,0)) : tcpConn
 
 ```
 address: ipAddr - address information of remote socket
-timeout: timval - defines the time in `(seconds, microseconds)` function should wait before
+timeout: timeval - defines the time in `(seconds, microseconds)` function should wait before
                   throwing `TimeoutError`. `(-1, 0)` implies indefinite blocking.
 ```
 
@@ -70,7 +70,7 @@ proc connect(host:string, port, family:IPFamily = IPFamily.IPv4, in timeout = ne
 host: String - host name either in dot-dash or domain form default "localhost"
 port: Integer - port number
 family: IPFamily - Internet Protocol version which can be IPFamily.IPv4 or IPFamily.IPv6
-timeout: timval - defines the time in `(seconds, microseconds)` function should wait before
+timeout: timeval - defines the time in `(seconds, microseconds)` function should wait before
                   throwing `TimeoutError`. `(-1, 0)` implies indefinite blocking.
 ```
 
@@ -189,7 +189,7 @@ proc socketServ.recvFrom(buffer_len:int, in timeout = new timeval(-1,0)) : (addr
 
 ```
 buffer_len: int - number of bytes to read
-timeout: timval - defines the time in `(seconds, microseconds)` function should wait till `recvfrom` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
+timeout: timeval - defines the time in `(seconds, microseconds)` function should wait till `recvfrom` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
 reuseaddr: Boolean - optional parameter, default value = true
 ```
 
@@ -210,7 +210,7 @@ proc socketServ.recv(buffer_len: int, in timeout = new timeval(-1,0)) : bytes
 
 ```
 buffer_len: int - number of bytes to read
-timeout: timval - defines the time in `(seconds, microseconds)` function should wait till `recv` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
+timeout: timeval - defines the time in `(seconds, microseconds)` function should wait till `recv` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
 reuseaddr: Boolean - optional parameter, default value = true
 ```
 
@@ -225,7 +225,7 @@ proc socketServ.send(data: bytes, in address: ipAddr, in timeout = new timeval(-
 ```
 data: bytes - data to send
 address: ipAddr - address info for where to send the data.
-timeout: timval - defines the time in `(seconds, microseconds)` function should wait till `send` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
+timeout: timeval - defines the time in `(seconds, microseconds)` function should wait till `send` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
 ```
 
 ## Options on Socket
