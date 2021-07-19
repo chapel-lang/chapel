@@ -167,6 +167,9 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
       result->parentScope = scopeForIdQuery(context, parentId);
       result->tag = ast->tag();
       result->id = id;
+      if (auto decl = ast->toNamedDecl()) {
+        result->name = decl->name();
+      }
       gatherDeclsWithin(ast, result->declared, result->containsUseImport);
     }
   }

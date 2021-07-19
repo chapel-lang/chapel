@@ -125,6 +125,7 @@ struct Scope {
   uast::asttags::ASTTag tag = uast::asttags::NUM_AST_TAGS;
   bool containsUseImport = false;
   ID id;
+  UniqueString name;
   DeclMap declared;
 
   Scope() { }
