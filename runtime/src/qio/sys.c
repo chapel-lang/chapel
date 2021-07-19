@@ -1524,6 +1524,7 @@ int sys_getaddrinfo_flags(sys_addrinfo_ptr_t a) {return a->ai_flags;}
 int sys_getaddrinfo_family(sys_addrinfo_ptr_t a) {return a->ai_family;}
 int sys_getaddrinfo_socktype(sys_addrinfo_ptr_t a) {return a->ai_socktype;}
 int sys_getaddrinfo_protocol(sys_addrinfo_ptr_t a) {return a->ai_protocol;}
+socklen_t sys_getaddrinfo_addrlen(sys_addrinfo_ptr_t a) {return a->ai_addrlen;}
 sys_sockaddr_t sys_getaddrinfo_addr(sys_addrinfo_ptr_t a) {
   sys_sockaddr_t ret;
   qio_memcpy(&ret.addr, a->ai_addr, a->ai_addrlen);
@@ -1532,10 +1533,9 @@ sys_sockaddr_t sys_getaddrinfo_addr(sys_addrinfo_ptr_t a) {
 }
 sys_addrinfo_ptr_t sys_getaddrinfo_next(sys_addrinfo_ptr_t a) {return a->ai_next;}
 
-void sys_freeaddr_info(sys_addrinfo_ptr_t *p)
+void sys_freeaddrinfo(sys_addrinfo_ptr_t p)
 {
-  freeaddrinfo(*p);
-  *p = NULL;
+  freeaddrinfo(p);
 }
 
 err_t sys_getnameinfo(const sys_sockaddr_t* addr, char** host_out, char** serv_out, int flags)
