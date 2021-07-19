@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+
+#Script for updating version numbers and adding prerelease tags after creation of release branch. Arguments are the old and new version numbers as follows:
+#1 - Old Major
+#2 - New Major
+#3 - Old Minor
+#4 - New Minor
+#5 - Old Update
+#6 - New Update
+
+sed -i '' 35s/true/false/ ../../compiler/main/version_num.h
+sed -i '' 25s/$3/$4/ ../../compiler/main/version_num.h
+sed -i '' 2s/"$1\.$3\.$5"/"$2\.$4\.$6 pre-release"/ ../../man/confchpl.rst
+sed -i '' 2s/"$1\.$3\.$5"/"$2\.$4\.$6 pre-release"/ ../../man/confchpldoc.rst
+sed -i '' 1s/"$1\.$3\.$5"/"$2\.$4\.$6"/ ../../test/compflags/bradc/printstuff/version.goodstart
+sed -i '' 8s/'# '// ../../test/compflags/bradc/printstuff/versionhelp.sh
+sed -i '' 9s/'# '// ../../test/compflags/bradc/printstuff/versionhelp.sh
+sed -i '' 11s/^/'# '/ ../../test/compflags/bradc/printstuff/versionhelp.sh
+sed -i '' 83s/'# '// ../../doc/rst/conf.py
+sed -i '' 83s/"$1\.$3\.$5"/"$2\.$4\.$6/ ../../doc/rst/conf.py
+sed -i '' 84s/^/'# '/ ../../doc/rst/conf.py
