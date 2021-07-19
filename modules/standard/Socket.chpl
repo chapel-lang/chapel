@@ -29,7 +29,8 @@ module Socket {
 
   enum IPFamily {
     IPv4 = 2,
-    IPv6 = 10
+    IPv6 = 10,
+    IPUnspec = 0
   }
 
   const IPv4Localhost = INADDR_LOOPBACK;
@@ -254,11 +255,42 @@ module Socket {
     return sockFile;
   }
 
-  /**
-  * TODO: complete this
-  */
-  proc connect(host:string, port:int, family:int):tcpConn throws {
+  proc connect(in host:string, in service:string, family:IPFamily = IPFamily.IPUnspec, in timeout = new timeval(-1,0)):tcpConn throws {
+    var result:sys_addrinfo_ptr_t;
+    var hints = new sys_addrinfo_t();
 
+    hints.ai_family = family:c_int;
+    hints.ai_socktype = SOCK_STREAM;
+
+    var err = sys_getaddrinfo(host.c_str(), service.c_str(), hints, result);
+    if err != 0 {
+      throw new Error("Can't resolve address");
+    }
+
+    var tempPointer = result;
+    var conn:tcpConn;
+    while tempPointer != nil {
+      var address = new ipAddr(tempPointer.addr);
+      try {
+        conn = connect(address, timeout);
+        break;
+      }
+      catch {
+        tempPointer = tempPointer.next;
+        continue;
+      }
+    }
+
+    sys_freeaddrinfo(result);
+    if tempPointer == nil {
+      throw new Error("Can't resolve address");
+    }
+
+    return conn;
+  }
+
+  proc connect(in host:string, in port:uint(16), family:IPFamily = IPFamily.IPUnspec, in timeout = new timeval(-1,0)) throws {
+    return connect(host, port:string, family, timeout);
   }
 
   record udpSocket {
