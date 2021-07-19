@@ -23,5 +23,11 @@ namespace chpl {
 namespace types {
 
 
+std::string PrimitiveType::toString() const {
+  std::string ret = this->c_str();
+  return ret;
+}
+
+
 } // end namespace types
 } // end namespace chpl

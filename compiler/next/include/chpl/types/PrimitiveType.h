@@ -65,6 +65,11 @@ class PrimitiveType : public Type {
     Returns a C string for the name of this PrimitiveType.
    */
   virtual const char* c_str() const = 0;
+
+  /**
+   Compute a string representing this type.
+   */
+  std::string toString() const override;
 };
 
 

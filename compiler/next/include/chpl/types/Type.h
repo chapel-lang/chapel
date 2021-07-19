@@ -102,6 +102,8 @@ class Type {
 
   static void dump(const Type* type, int leadingSpaces=0);
 
+  virtual std::string toString() const;
+
   // define is__ methods for the various Type subclasses
   // using macros and TypeClassesList.h
   /// \cond DO_NOT_DOCUMENT

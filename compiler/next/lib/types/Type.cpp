@@ -122,6 +122,11 @@ void Type::dump(const Type* type, int leadingSpaces) {
   printf("type %s \n", typetags::tagToString(type->tag()));
 }
 
+std::string Type::toString() const {
+  std::string ret = typetags::tagToString(tag());
+  return ret;
+}
+
 
 } // end namespace types
 } // end namespace chpl

@@ -39,6 +39,7 @@ class QualifiedType {
     TYPE,
     PARAM,
     FUNCTION,
+    MODULE,
   } Kind;
 
  private:
@@ -82,6 +83,8 @@ class QualifiedType {
     this->param_ = other.param_;
     other.param_ = tmpParam;
   }
+
+  std::string toString() const;
 };
 
 

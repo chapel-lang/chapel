@@ -23,5 +23,43 @@ namespace chpl {
 namespace types {
 
 
+static const char* kindToString(QualifiedType::Kind kind) {
+  switch (kind) {
+    case QualifiedType::UNKNOWN:     return "unknown";
+    case QualifiedType::CONST:       return "const";
+    case QualifiedType::REF:         return "ref";
+    case QualifiedType::CONST_REF:   return "const ref";
+    case QualifiedType::VALUE:       return "val";
+    case QualifiedType::CONST_VALUE: return "const val";
+    case QualifiedType::TYPE:        return "type";
+    case QualifiedType::PARAM:       return "param";
+    case QualifiedType::FUNCTION:    return "function";
+    case QualifiedType::MODULE:      return "module";
+  }
+
+  assert(false && "should not be reachable");
+  return "unknown";
+}
+
+std::string QualifiedType::toString() const {
+  const char* kindStr = kindToString(kind_);
+  std::string typeStr = (type_)?(type_->toString()):(std::string("nullptr"));
+
+  std::string ret = kindStr;
+
+  if (type_ != nullptr) {
+    ret += " ";
+    ret += type_->toString();
+  }
+
+  if (kind_ == QualifiedType::PARAM) {
+    ret += " ";
+    ret += std::to_string(param_);
+  }
+
+  return ret;
+}
+
+
 } // end namespace types
 } // end namespace chpl
