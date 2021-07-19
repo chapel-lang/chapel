@@ -210,7 +210,7 @@ UntypedFnSignature* untypedSignature(Context* context, ID id) {
 }
 
 const QualifiedType& typeForBuiltin(Context* context,
-                                           UniqueString name) {
+                                    UniqueString name) {
   QUERY_BEGIN(typeForBuiltin, context, name);
 
   QualifiedType result;
@@ -231,6 +231,8 @@ const QualifiedType& typeForBuiltin(Context* context,
 static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
   if (decl->isFunction()) {
     return QualifiedType::FUNCTION;
+  } else if (decl->isModule()) {
+    return QualifiedType::MODULE;
   } else if (decl->isTypeDecl()) {
     return QualifiedType::TYPE;
   } else if (const VarLikeDecl* vd = decl->toVarLikeDecl()) {
@@ -273,10 +275,11 @@ struct SymbolResolver {
   ID symbolId;
   std::vector<const Scope*> scopeStack;
   std::set<UniqueString> undefined;
-  ResolutionResultByPostorderID byPostorder;
+  ResolutionResultByPostorderID& byPostorder;
 
-  SymbolResolver(Context* context, const ASTNode* symbol)
-    : context(context), symbolId(symbol->id()) {
+  SymbolResolver(Context* context, const ASTNode* symbol,
+                 ResolutionResultByPostorderID& byPostorder)
+    : context(context), symbolId(symbol->id()), byPostorder(byPostorder) {
     enterScope(symbol);
   }
 
@@ -319,6 +322,7 @@ struct SymbolResolver {
 
   ResolvedExpression& resultById(ID id) {
     int postorder = id.postOrderId();
+
     assert(0 <= postorder);
     if ((size_t) postorder < byPostorder.size()) {
       // OK
@@ -333,12 +337,16 @@ struct SymbolResolver {
 
   bool enter(const Identifier* ident) {
     assert(scopeStack.size() > 0);
-
     const Scope* scope = scopeStack.back();
     ResolvedExpression& result = resultByAst(ident);
     result.id = ident->id();
 
-    auto vec = lookupInScope(context, scope, ident, /*one*/ true);
+    auto vec = lookupInScope(context, scope, ident,
+                             /* checkDecls */ true,
+                             /* checkUseImport */ true,
+                             /* checkParents */ true,
+                             /* checkToplevel */ false,
+                             /* findOne */ true);
     if (vec.size() == 0) {
       auto name = ident->name();
       if (undefined.count(name) == 0) {
@@ -383,7 +391,12 @@ struct SymbolResolver {
 
     if (canOverload == false) {
       // check for multiple definitions
-      auto vec = lookupInScope(context, scope, decl->name(), /*one*/ true);
+      auto vec = lookupInScope(context, scope, decl->name(),
+                               /* checkDecls */ true,
+                               /* checkUseImport */ false,
+                               /* checkParents */ false,
+                               /* checkToplevel */ false,
+                               /* findOne */ false);
 
       if (vec.size() > 0) {
         const BorrowedIdsWithName& m = vec[0];
@@ -415,81 +428,102 @@ struct SymbolResolver {
   }
 
   void exit(const NamedDecl* decl) {
-    // Figure out the Kind of the declaration
-    auto qtKind = qualifiedTypeKindForDecl(decl);
+    if (decl->id().postOrderId() < 0) {
+      // It's a scoped symbol. Don't try to resolve it now in this
+      // traversal. Instead, resolve it e.g. when the function is called.
 
-    // Figure out the Type of the declaration
-    // Nested Identifiers and Expressions should already be resolved
+    } else {
 
-    const Type* typePtr = nullptr;
-    if (decl->isFunction()) {
-      // TODO: function types
-      typePtr = nullptr;
-    } else if (decl->isTypeDecl()) {
-      // TODO: class/record/union/enum types
-      typePtr = nullptr;
-    } else if (auto var = decl->toVarLikeDecl()) {
-      // Figure out variable type based upon:
-      //  * the type in the variable declaration
-      //  * the initialization expression in the variable declaration
-      //  * the initialization expression from split-init
+      // Figure out the Kind of the declaration
+      auto qtKind = qualifiedTypeKindForDecl(decl);
 
-      auto typeExpr = var->typeExpression();
-      auto initExpr = var->initExpression();
+      // Figure out the Type of the declaration
+      // Nested Identifiers and Expressions should already be resolved
+      const Type* typePtr = nullptr;
 
-      if (typeExpr) {
-        // get the type we should have already computed postorder
-        ResolvedExpression& r = resultByAst(typeExpr);
-        // check that the resolution of that expression is a type
-        if (r.type.kind() == QualifiedType::TYPE) {
-          typePtr = r.type.type();
-        } else {
-          typePtr = ErroneousType::get(context);
-          context->error(typeExpr, "Value provided where type expected");
-        }
-      }
 
-      if (initExpr) {
-        // compute the type based upon the init expression
-        ResolvedExpression& r = resultByAst(initExpr);
-        const QualifiedType& initType = r.type;
+      if (decl->isFunction()) {
+        // TODO: function types
+        typePtr = nullptr;
+      } else if (decl->isTypeDecl()) {
+        // TODO: class/record/union/enum types
+        typePtr = nullptr;
+      } else if (auto var = decl->toVarLikeDecl()) {
+        // Figure out variable type based upon:
+        //  * the type in the variable declaration
+        //  * the initialization expression in the variable declaration
+        //  * the initialization expression from split-init
 
-        // check that the init expression has compatible kind
-        if (qtKind == QualifiedType::TYPE &&
-            initType.kind() != QualifiedType::TYPE) {
-          context->error(initExpr, "Cannot initialize type with value");
-        } else if (qtKind == QualifiedType::PARAM &&
-                   initType.kind() != QualifiedType::PARAM) {
-          context->error(initExpr, "Cannot initialize param with non-param");
-        }
+        auto typeExpr = var->typeExpression();
+        auto initExpr = var->initExpression();
 
-        if (typePtr != nullptr) {
-          // check that the initExpr type is compatible with declared type
-          if (initType.type() != typePtr) {
-            context->error(typeExpr, "Cannot initialize this type with that");
-            // TODO: better error
-            // TODO: implicit conversions and instantiations
+        if (typeExpr) {
+          // get the type we should have already computed postorder
+          ResolvedExpression& r = resultByAst(typeExpr);
+          // check that the resolution of that expression is a type
+          auto kind = r.type.kind();
+          if (kind == QualifiedType::TYPE) {
+            typePtr = r.type.type();
+          } else if (kind != QualifiedType::UNKNOWN) {
+            typePtr = ErroneousType::get(context);
+            context->error(typeExpr, "Value provided where type expected");
           }
-        } else {
-          // Infer the type of the variable from its initialization expr
-          typePtr = initType.type();
+          // otherwise, typePtr can remain nullptr.
+        }
+
+        if (initExpr) {
+          // compute the type based upon the init expression
+          ResolvedExpression& r = resultByAst(initExpr);
+          const QualifiedType& initType = r.type;
+
+          // check that the init expression has compatible kind
+          if (qtKind == QualifiedType::TYPE &&
+              initType.kind() != QualifiedType::TYPE) {
+            context->error(initExpr, "Cannot initialize type with value");
+          } else if (qtKind == QualifiedType::PARAM &&
+                     initType.kind() != QualifiedType::PARAM) {
+            context->error(initExpr, "Cannot initialize param with non-param");
+          }
+
+          if (typePtr != nullptr) {
+            // check that the initExpr type is compatible with declared type
+            if (initType.type() != typePtr) {
+              context->error(typeExpr, "Cannot initialize this type with that");
+              // TODO: better error
+              // TODO: implicit conversions and instantiations
+            }
+          } else {
+            // Infer the type of the variable from its initialization expr
+            typePtr = initType.type();
+          }
+        }
+
+
+        // TODO: handle split init
+        // TODO: handle generic & instantiated formal arguments
+
+        if (typePtr == nullptr) {
+          context->error(var, "Cannot establish type for %s",
+                               var->name().c_str());
+          typePtr = ErroneousType::get(context);
         }
       }
 
+      if (typePtr == nullptr) {
+        if (qtKind == QualifiedType::FUNCTION ||
+            qtKind == QualifiedType::MODULE) {
+          // OK, type can be null for now
+        } else {
+          // type should have been established above
+          context->error(decl, "Cannot establish type");
+          typePtr = ErroneousType::get(context);
+        }
+      }
 
-      // TODO: handle split init
-      // TODO: handle generic & instantiated formal arguments
+      ResolvedExpression& result = resultById(decl->id());
+      result.id = decl->id();
+      result.type = QualifiedType(qtKind, typePtr);
     }
-
-    if (typePtr == nullptr) {
-      // type should be established above
-      assert(false && "Could not establish type");
-      typePtr = ErroneousType::get(context);
-    }
-
-    ResolvedExpression& result = resultById(decl->id());
-    result.id = decl->id();
-    result.type = QualifiedType(qtKind, typePtr);
 
     exitScope(decl);
   }
@@ -507,16 +541,39 @@ const ResolutionResultByPostorderID& resolveSymbolContents(Context* context,
                                                            ID id) {
   QUERY_BEGIN(resolveSymbolContents, context, id);
 
-  ResolutionResultByPostorderID result;
+  ResolutionResultByPostorderID& partialResult = QUERY_CURRENT_RESULT;
 
   auto ast = parsing::idToAst(context, id);
   if (ast != nullptr && Builder::astTagIndicatesNewIdScope(ast->tag())) {
-    SymbolResolver visitor(context, ast);
-    ast->traverse(visitor);
-    result.swap(visitor.byPostorder);
+    partialResult.resize(ast->id().numContainedChildren());
+
+    SymbolResolver visitor(context, ast, partialResult);
+    for (auto child: ast->children()) {
+      child->traverse(visitor);
+    }
   }
 
+  // take the value out of the partial result in order to return it
+  ResolutionResultByPostorderID result;
+  result.swap(partialResult);
   return QUERY_END(result);
+}
+
+static
+const ResolutionResultByPostorderID& partiallyResolvedSymbolContents(
+                                                           Context* context,
+                                                           ID id) {
+
+  // check for a partial result from a running query
+  const ResolutionResultByPostorderID* r =
+    QUERY_RUNNING_PARTIAL_RESULT(resolveSymbolContents, context, id);
+  // if there was a partial result, return it
+  if (r != nullptr) {
+    return *r;
+  }
+
+  // otherwise, run the query to compute the full result
+  return resolveSymbolContents(context, id);
 }
 
 const QualifiedType& typeForSymbol(Context* context, ID id) {
@@ -526,12 +583,21 @@ const QualifiedType& typeForSymbol(Context* context, ID id) {
   int postOrderId = id.postOrderId();
   if (postOrderId >= 0) {
     // Find the parent scope for the ID - i.e. where the id is declared
-    ID parentId = parsing::idToParentId(context, id);
-    auto& r = resolveSymbolContents(context, parentId);
+    ID parentSymbolId = id.parentSymbolId(context);
+    auto& r = partiallyResolvedSymbolContents(context, parentSymbolId);
     assert((size_t) postOrderId < r.size());
     result = r[postOrderId].type;
   } else {
-    assert(false && "TODO -- handle finding type for fn etc");
+    QualifiedType::Kind kind = QualifiedType::UNKNOWN;
+
+    auto ast = parsing::idToAst(context, id);
+    if (auto* decl = ast->toNamedDecl()) {
+      kind = qualifiedTypeKindForDecl(decl);
+    } else {
+      assert(false && "case not handled");
+    }
+
+    result = QualifiedType(kind, nullptr);
   }
 
   return QUERY_END(result);

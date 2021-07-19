@@ -19,6 +19,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/query-impl.h"
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
@@ -35,7 +36,25 @@ using namespace parsing;
 using namespace resolution;
 using namespace uast;
 
-static void findInnermostDecls(Context* context, const ASTNode* ast) {
+static const char* nameForAst(const ASTNode* ast) {
+  if (auto ident = ast->toIdentifier()) {
+    return ident->name().c_str();
+  } else if (auto decl = ast->toNamedDecl()) {
+    return decl->name().c_str();
+  }
+
+  return "";
+}
+
+static void printId(const ASTNode* ast) {
+  printf("%-8s %-8s", ast->id().toString().c_str(), nameForAst(ast));
+}
+
+static void computeAndPrintStuff(Context* context, const ASTNode* ast) {
+  for (const ASTNode* child : ast->children()) {
+    computeAndPrintStuff(context, child);
+  }
+
   if (auto ident = ast->toIdentifier()) {
     const Scope* scope = scopeForId(context, ast->id());
     assert(scope != nullptr);
@@ -44,11 +63,10 @@ static void findInnermostDecls(Context* context, const ASTNode* ast) {
     const auto& m = findInnermostDecl(context, scope, name);
 
     auto status = context->queryStatus(findInnermostDecl,
-                                      std::make_tuple(scope, name));
+                                       std::make_tuple(scope, name));
 
-    printf("%8s %-8s refers to: ",
-           ident->id().toString().c_str(),
-           ident->name().c_str());
+    printId(ast);
+    printf(" refers to: ");
 
     if (m.found == InnermostMatch::ZERO) {
       printf("%-32s ", "no such name found");
@@ -71,8 +89,25 @@ static void findInnermostDecls(Context* context, const ASTNode* ast) {
     printf("\n");
   }
 
-  for (const ASTNode* child : ast->children()) {
-    findInnermostDecls(context, child);
+  // check the type
+  if (ast->isIdentifier() || ast->isNamedDecl()) {
+    const auto& t = typeForSymbol(context, ast->id());
+
+    printId(ast);
+    printf(" has type:  ");
+    printf("%-32s ", t.toString().c_str());
+
+    auto status = context->queryStatus(typeForSymbol,
+                                       std::make_tuple(ast->id()));
+
+    if (status == Context::NOT_CHECKED_NOT_CHANGED) {
+      printf("(not checked)");
+    } else if (status == Context::REUSED) {
+      printf("(reused)");
+    } else if (status == Context::CHANGED) {
+      printf("(changed)");
+    }
+    printf("\n");
   }
 }
 
@@ -97,49 +132,9 @@ int main(int argc, char** argv) {
         ASTNode::dump(mod);
         printf("\n");
 
-        //printAllScopes(ctx, mod);
-        //printf("\n");
-
-        findInnermostDecls(ctx, mod);
+        computeAndPrintStuff(ctx, mod);
         printf("\n");
       }
-
-      /*
-      const DefinedTopLevelNamesVec& vec = moduleLevelDeclNames(ctx, filepath);
-
-      for (const auto& elt : vec) {
-        const Module* module = elt.module;
-        const std::vector<UniqueString>& topLevelNames = elt.topLevelNames;
-
-        printf("Module %s:\n", module->name().c_str());
-        ASTNode::dump(module);
-
-        printf("Defines these toplevel names:\n");
-        for (const UniqueString& name : topLevelNames) {
-          printf("%s\n", name.c_str());
-        }
-      }*/
-
-      /*
-      const ResolvedSymbolVec& rmods = resolveFile(ctx, filepath);
-      for (const auto& elt : rmods) {
-        const Module* module = elt->decl->toModule();
-
-        printf("Module %s:\n", module->name().c_str());
-        ASTNode::dump(module);
-        printf("\n");
-
-        const ResolutionResultByPostorderID& resolution = elt->resolutionById;
-        for (const auto& rr : resolution) {
-          if (rr.expr != nullptr && rr.decl != nullptr) {
-            printf("Resolved:\n");
-            ASTNode::dump(rr.expr, 2);
-            printf("to:\n");
-            ASTNode::dump(rr.decl, 2);
-            printf("\n");
-          }
-        }
-      }*/
     }
     if (gc) {
       ctx->collectGarbage();

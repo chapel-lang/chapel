@@ -40,7 +40,6 @@ namespace resolution {
 
   /**
     Compute the type for a NamedDecl with a particular id.
-    This is not used for local variables.
    */
   const types::QualifiedType& typeForSymbol(Context* context, ID id);
 
