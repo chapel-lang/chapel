@@ -627,48 +627,22 @@ const InnermostMatch& findInnermostDecl(Context* context,
   ID id;
   InnermostMatch::MatchesFound count = InnermostMatch::ZERO;
 
-  // Walk up the Scopes until we find something naming it
-  // Return the ID of the first matching declaration.
-  const Scope* cur = nullptr;
-  for (cur = scope; cur != nullptr; cur = cur->parentScope) {
-    BorrowedIdsWithName r;
-    bool found = lookupNameInScope(context, cur, name,
-                                   VIS_NEITHER, /*findOne*/ true, r);
-    if (found) {
-      if (r.moreIds != nullptr)
-        count = InnermostMatch::MANY;
-      else
-        count = InnermostMatch::ONE;
+  std::vector<BorrowedIdsWithName> vec =
+    lookupInScope(context, scope, name,
+                  /* checkDecls */ true,
+                  /* checkUseImport */ true,
+                  /* checkParents */ true,
+                  /* checkToplevel */ false,
+                  /* findOne */ true);
 
-      id = r.id;
-      break;
-    }
+  if (vec.size() > 0) {
+    const BorrowedIdsWithName& r = vec[0];
+    if (r.moreIds != nullptr)
+      count = InnermostMatch::MANY;
+    else
+      count = InnermostMatch::ONE;
 
-    // stop if we reach a Module scope
-    if (asttags::isModule(cur->tag))
-      break;
-  }
-
-  // look also in root scope
-  if (count == InnermostMatch::ZERO) {
-    const Scope* rootScope = nullptr;
-    for (; cur != nullptr; cur = cur->parentScope) {
-      if (cur->parentScope == nullptr)
-        rootScope = cur;
-    }
-    if (rootScope != nullptr) {
-      BorrowedIdsWithName r;
-      bool found = lookupNameInScope(context, rootScope, name,
-                                     VIS_NEITHER, /*findOne*/ true, r);
-      if (found) {
-        if (r.moreIds != nullptr)
-          count = InnermostMatch::MANY;
-        else
-          count = InnermostMatch::ONE;
-
-        id = r.id;
-      }
-    }
+    id = r.id;
   }
 
   auto result = InnermostMatch(id, count);
