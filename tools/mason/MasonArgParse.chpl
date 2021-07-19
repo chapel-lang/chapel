@@ -24,8 +24,6 @@ module MasonArgParse {
   private use Sort;
 
   const DEBUG=false;
-  // TODO: Implement required/optional flag
-  // TODO: Implement default values for optional opts
   // TODO: Verify no duplicate names, flags defined by dev
   // TODO: Make sure we don't shadow Chapel flags
   // TODO: Make sure we don't shadow config vars  
@@ -83,7 +81,25 @@ module MasonArgParse {
     var _opts:[0.._numOpts-1] string;
     // number of acceptable values to be present after argument is indicated
     var _numArgs:range;
+    // whether or not the user is required to choose a value for this option
+    var _required:bool;
+    // one or more default values to assign if opt is not entered by user
+    var _defaultValue:list(string);
+    proc init(name:string, numOpts:int, opts:[?argsD] string, numArgs:range, 
+              required=false, defaultValue=new list(string)){
+                _name=name;
+                _numOpts=numOpts;
+                _opts=opts;
+                _numArgs=numArgs;
+                _required=required;
+                _defaultValue=defaultValue;
 
+                // make sure that if we make an argument required no default set
+                assert(!(_required && _defaultValue.size > 0), 
+                        "Required options do not support default values");
+              }
+
+    
     // TODO: Decouple the argument from the action
     // maybe pass a list to fill by reference and have the argparser populate
     // the argument instead?
@@ -186,6 +202,16 @@ module MasonArgParse {
       // make sure all options defined got values if needed
       _checkSatisfiedOptions();
 
+      // set any default values as needed
+      for name in this._actions.keys() {
+        const act = this._actions.getBorrowed(name);
+        const arg = this._result.getReference(name);
+        if !arg._present && !act._defaultValue.isEmpty() {
+          arg._values.extend(act._defaultValue);
+          arg._present = true;
+        }
+      }
+
       // check for when arguments passed but none defined
       if argsList.size > 0 && this._actions.size == 0 {
         throw new ArgumentError("unrecognized options/values encountered: " +
@@ -194,38 +220,76 @@ module MasonArgParse {
     }
 
     proc _checkSatisfiedOptions() throws {
-      // make sure we satisfied options that need at least 1 value
+      // make sure we satisfied options that require a value
       for name in this._actions.keys() {
         const act = this._actions.getBorrowed(name);
         const arg = this._result.getReference(name);
-        if act._numArgs.low > 0 && !arg._present {
+        if act._required && !arg._present {
           throw new ArgumentError("\\".join(act._opts) + " not enough values");
         }        
       }
     }
 
-    // define a new string option with fixed number of values expected
+    // define a new string option with fixed number of values expected no
+    // default value
     proc addOption(name:string,
                    opts:[]string,
-                   numArgs:int) throws {
+                   numArgs:int,
+                   required=false) throws {      
       return addOption(name=name,
                       opts=opts,
-                      numArgs=numArgs..numArgs);
+                      numArgs=numArgs..numArgs,
+                      required=required,
+                      defaultValue=new list(string));
     }
 
     proc addOption(name:string,
                    opts:[]string,
-                   numArgs:range(boundedType=BoundedRangeType.boundedLow)) 
+                   numArgs:int,
+                   required=false,
+                   defaultValue:list(string)) throws {      
+      return addOption(name=name,
+                      opts=opts,
+                      numArgs=numArgs..numArgs,
+                      required=required,
+                      defaultValue=defaultValue);
+    }
+    
+    // define a new string option with fixed number of values expected and a
+    // single default value
+    proc addOption(name:string,
+                   opts:[]string,
+                   numArgs:int,
+                   required=false,
+                   defaultValue:string) throws {
+      var defaults = new list(string);
+      defaults.append(defaultValue);
+      return addOption(name=name,
+                      opts=opts,
+                      numArgs=numArgs..numArgs,
+                      required=required,
+                      defaultValue=defaults);
+    }
+
+    proc addOption(name:string,
+                   opts:[]string,
+                   numArgs:range(boundedType=BoundedRangeType.boundedLow),
+                   required=false,
+                   defaultValue=new list(string)) 
                    throws {
       return addOption(name=name,
                       opts=opts,
-                      numArgs=numArgs.low..max(int));
+                      numArgs=numArgs.low..max(int),
+                      required=required,
+                      defaultValue=defaultValue);
     }
 
     // define a new string option with range of values expected
     proc addOption(name:string,
                    opts:[?optsD]string,
-                   numArgs:range) throws {
+                   numArgs:range,
+                   required=false,
+                   defaultValue=new list(string)) throws {
       
       for i in optsD {
         if !opts[i].startsWith("-") {
@@ -234,10 +298,12 @@ module MasonArgParse {
         }
       }
       
-      var action = new owned Action(_name=name, 
-                                    _numOpts=opts.size,
-                                    _opts=opts,
-                                    _numArgs=numArgs);
+      var action = new owned Action(name=name, 
+                                    numOpts=opts.size,
+                                    opts=opts,
+                                    numArgs=numArgs,
+                                    required=required,
+                                    defaultValue=defaultValue);
       // collect all the option strings
       for opt in opts do _options.add(opt, name);
       // store the action
