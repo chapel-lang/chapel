@@ -46,6 +46,10 @@ testOptSingleStringShortReqOptNoOpts()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testOptSingleStringShortReqOptReqVal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 testNoOptsDefined()
 Flavour: OK
 ======================================================================
@@ -186,6 +190,10 @@ testMultStringShortOptDefMultiValReqVal()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testMultStringShortOptDefMultiValReqNoVal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 -n\--stringVal has extra values
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
@@ -205,3 +213,4 @@ unrecognized options/values encountered: -n twenty
 -p\--stringVal2 has extra values
 -t\--stringVal3 has extra values
 -p\--stringVal2 has extra values
+-p\--stringVal2 not enough values

@@ -202,6 +202,17 @@ module MasonArgParse {
       // make sure all options defined got values if needed
       _checkSatisfiedOptions();
 
+      // assign and missing values their defaults, if supplied
+      _assignDefaultsToMissingOpts();
+
+      // check for when arguments passed but none defined
+      if argsList.size > 0 && this._actions.size == 0 {
+        throw new ArgumentError("unrecognized options/values encountered: " +
+                                " ".join(argsList.these()));
+      }
+    }
+
+    proc _assignDefaultsToMissingOpts() {
       // set any default values as needed
       for name in this._actions.keys() {
         const act = this._actions.getBorrowed(name);
@@ -210,12 +221,6 @@ module MasonArgParse {
           arg._values.extend(act._defaultValue);
           arg._present = true;
         }
-      }
-
-      // check for when arguments passed but none defined
-      if argsList.size > 0 && this._actions.size == 0 {
-        throw new ArgumentError("unrecognized options/values encountered: " +
-                                " ".join(argsList.these()));
       }
     }
 

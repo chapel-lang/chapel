@@ -204,6 +204,7 @@ proc testRangeStringShortOptRepeatedTooManyFirst(test: borrowed Test) throws {
 }
 
 // a short string opt with single value and no values supplied
+// optional value not supplied
 proc testOptSingleStringShortOptNoOpts(test: borrowed Test) throws {
   var argList = ["progName"];
   var parser = new argumentParser();
@@ -220,6 +221,7 @@ proc testOptSingleStringShortOptNoOpts(test: borrowed Test) throws {
 }
 
 // a short string opt with single required value and no values supplied
+// required value not supplied
 proc testOptSingleStringShortReqOptNoOpts(test: borrowed Test) throws {
   var argList = ["progName"];
   var parser = new argumentParser();
@@ -239,6 +241,27 @@ proc testOptSingleStringShortReqOptNoOpts(test: borrowed Test) throws {
     return;
   }
   test.assertTrue(false);
+}
+
+// a short string opt with single required value and 1 value supplied
+// required value supplied
+proc testOptSingleStringShortReqOptReqVal(test: borrowed Test) throws {
+  var argList = ["progName","--stringVal","twenty"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=1,
+                                  required=true);
+  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options  
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(myStrArg.value(),"twenty");
+
 }
 
 // a parser with no arguments defined, gets no arguments
@@ -911,6 +934,7 @@ proc testThreeMultiStringShortOptPartialValues(test: borrowed Test) throws {
 
 // a short string opt with single value and default value specified,
 // no value supplied by the user
+// optional value not supplied, default assigned
 proc testSingleStringShortOptDefNoVal(test: borrowed Test) throws {
   var argList = ["progName"];
   var parser = new argumentParser();
@@ -931,6 +955,7 @@ proc testSingleStringShortOptDefNoVal(test: borrowed Test) throws {
 
 // a short string opt with single value and default value specified,
 // with a value supplied by the user
+// optional value supplied
 proc testSingleStringShortOptDefOneVal(test: borrowed Test) throws {
   var argList = ["progName","-n","forty"];
   var parser = new argumentParser();
@@ -951,6 +976,7 @@ proc testSingleStringShortOptDefOneVal(test: borrowed Test) throws {
 
 // a short string opt with multiple values and default value specified,
 // with a value supplied by the user
+// multiple optional values defined and supplied by user
 proc testMultStringShortOptDefMultiVal(test: borrowed Test) throws {
   var argList=["progName","-n","twenty","-p","thirty","five","-t",
                "forty","two"];
@@ -1018,6 +1044,7 @@ proc testMultStringShortOptDefMultiValNoVal(test: borrowed Test) throws {
 
 // a short string opt with multiple values and default values specified,
 // with a required option and required value supplied by the user
+// required value supplied, optional values get defaults
 proc testMultStringShortOptDefMultiValReqVal(test: borrowed Test) throws {
   var argList=["progName","-p","forty","two","thirty","five"];
   var parser = new argumentParser();
@@ -1050,8 +1077,40 @@ proc testMultStringShortOptDefMultiValReqVal(test: borrowed Test) throws {
   test.assertEqual(new list(myStrArg3.values()), new list(["1","2"]));
 }
 
+// a short string opt with multiple values and default values specified,
+// with a required option and no required value supplied by the user
+// required value not supplied, optional values not supplied
+proc testMultStringShortOptDefMultiValReqNoVal(test: borrowed Test) throws {
+  var argList=["progName"];
+  var parser = new argumentParser();
+  var myStrArg1 = parser.addOption(name="StringOpt1",
+                                   opts=["-n","--stringVal1"],
+                                   defaultValue=new list(["one","two"]),
+                                   numArgs=1..3);
+  var myStrArg2 = parser.addOption(name="StringOpt2",
+                                   opts=["-p","--stringVal2"],
+                                   required=true,
+                                   numArgs=1..4);
+  var myStrArg3 = parser.addOption(name="StringOpt3",
+                                   opts=["-t","--stringVal3"],
+                                   defaultValue=new list(["1","2"]),
+                                   numArgs=1..2);
 
+  //make sure no value currently exists
+  test.assertFalse(myStrArg1.hasValue());
+  test.assertFalse(myStrArg2.hasValue());
+  test.assertFalse(myStrArg3.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+
+}
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
-// TODO: ADD TESTS TO COVER DEFAULT/REQUIRED CASES
 
 UnitTest.main();
