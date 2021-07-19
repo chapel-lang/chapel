@@ -2,9 +2,9 @@
 
 A channel is a FIFO data structure used to communicate between different Chapel
 tasks. You can learn more about how go-channels work by following this
-[link](https://gobyexample.com/channels)
-Since the operations on the channel are blocking by default, it enables to send
-values from one task to another in a synchronized manner.
+[link](https://gobyexample.com/channels).
+Since the operations on the channel are blocking by default, it enables the user
+to send values from one task to another in a synchronized manner.
 Here is a simple example in Go.
 
 ```
@@ -27,7 +27,7 @@ buffer and support operations on them.
 
 * The main functions that the module should have
 
-	* `init(type eltType, size : int)` : Specify the buffer data type and size
+	* `init(type eltType, size = 0)` : Specify the buffer data type and buffer size
 	for creating a Channel.
 
 	* `send(value : eltType)` : This function waits for a space in the buffer
@@ -35,7 +35,7 @@ buffer and support operations on them.
 
 	* `recv(out value : eltType) : bool` : This function waits until there is
 	something in the buffer and stores the received entity in `value`. It also
-	returns the status i.e., the operation is executed successfully or not.
+	returns the status (`false` if the channel is closed and its buffer is empty).
 
 	* `close()` : This function is used to close the channel such that no more
 	values will be sent to it.
@@ -43,33 +43,46 @@ buffer and support operations on them.
 * `iter these()` : An iterator to receive the values sent to the channel until
 it is closed.
 
-* `select` statements : This statement lets you wait for multiple channel
-operations and executes if anyone of them is ready for communication. `select`
-statements in Go are specifically designed to work with channels.
-Some key points are:
+For e.g., the above Go code in chapel would look like
+
+```
+var messages = new Channel(string);
+begin {
+	messages.send("ping");
+}
+
+var msg : string;
+messages.recv(msg);
+writeln(msg);
+```
+
+### Select statement
+
+This statement lets you wait for multiple channel operations and executes if
+any one of them is ready for communication. `select`statements in Go are
+specifically designed to work with channels.
+
+Some key points of `select` are:
 
 	* `select` statements are commonly used in Go code when working with channels.
 	* The operations are atomic, i.e., checking a channel and performing `recv`
 		or `send` on it is considered as one operation.
-	* The cases are arranged in a random order to prevent starvation.
+	* The cases are evaluated in a random order to prevent starvation.
 
 For e.g.
 ```
 // Select syntax in Go to wait on any one of the two channels for receiving
-// If every channel is blocked, the default case is executed.
 select {
 	case msg1 := <-chan1 :
 		fmt.Println("Received", msg1)
 	case msg2 := <-chan2 :
 		fmt.Println("Received", msg2)
-	default :
-		fmt.Println("None")
 }
 ```
 
 ```
 // Select statements can be used to implement try-send or try-recv
-// default case is executed when none of the cases are ready yet.
+// default case is executed when none of the other cases are ready yet.
 select {
 	case val := <-chan1 :
 		fmt.Println("Received", val);
@@ -109,4 +122,4 @@ between `select` in Chapel and Channels.
  behave differently in case of receive operation
 	* `val := <-chan` will only return receive value.
 	* `val, ok := <-chan` will store received value in `val` and status in `ok`.
-Does operators in our Channels need to have this kind of behaviour?
+Does operators in Chapel channels need to have this kind of behaviour?
