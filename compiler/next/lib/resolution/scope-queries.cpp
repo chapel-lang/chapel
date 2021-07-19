@@ -226,16 +226,13 @@ const Scope* scopeForId(Context* context, ID id) {
   return scopeForIdQuery(context, id);
 }
 
-enum VisibilityStmtKind {
-  VIS_USE,    // the expr is the thing being use'd e.g. use A.B
-  VIS_IMPORT, // the expr is the thing being imported e.g. import C.D
-  VIS_NEITHER // the expr is something else e.g. an Identifier or Function
-};
-
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
                             UniqueString name,
-                            VisibilityStmtKind inUseEtc,
+                            bool checkDecls,
+                            bool checkUseImport,
+                            bool checkParents,
+                            bool checkToplevel,
                             bool findOne,
                             std::unordered_set<const Scope*>& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result);
@@ -291,8 +288,13 @@ static bool doLookupInImports(Context* context,
         // this symbol should be a module/enum etc which has a scope
         assert(symScope->id == is.symbolId);
         // find it in that scope
-        bool found = doLookupInScope(context, symScope, from, VIS_NEITHER,
-                                     findOne, checkedScopes, result);
+        bool found = doLookupInScope(context, symScope, from,
+                                     /*checkDecls*/ true,
+                                     /*checkUseImport*/ true,
+                                     /*checkParents*/ false,
+                                     /*checkToplevel*/ false,
+                                     findOne,
+                                     checkedScopes, result);
         if (found && findOne)
           return true;
       }
@@ -315,13 +317,13 @@ static bool doLookupInToplevelModules(Context* context,
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
                             UniqueString name,
-                            VisibilityStmtKind inUseEtc,
+                            bool checkDecls,
+                            bool checkUseImport,
+                            bool checkParents,
+                            bool checkToplevel,
                             bool findOne,
                             std::unordered_set<const Scope*>& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result) {
-
-  // TODO: module name itself
-  // TODO: import has different rules for submodules
 
   size_t startSize = result.size();
 
@@ -332,22 +334,66 @@ static bool doLookupInScope(Context* context,
     return false;
   }
 
-  if (inUseEtc != VIS_IMPORT &&
-      doLookupInScopeDecls(context, scope, name, result)) {
-    if (findOne) return true;
+  if (checkDecls) {
+    bool got = doLookupInScopeDecls(context, scope, name, result);
+    if (findOne && got) return true;
   }
 
-  if (doLookupInImports(context, scope, name, findOne, checkedScopes, result)) {
-    if (findOne) return true;
+  if (checkUseImport) {
+    bool got = doLookupInImports(context, scope, name, findOne,
+                                 checkedScopes, result);
+    if (findOne && got) return true;
   }
 
-  if (inUseEtc == VIS_USE &&
-      doLookupInToplevelModules(context, scope, name, result)) {
-    if (findOne) return true;
+  if (checkParents) {
+    const Scope* cur = nullptr;
+    for (cur = scope->parentScope; cur != nullptr; cur = cur->parentScope) {
+      bool got = doLookupInScope(context, cur, name,
+                                 /* checkDecls */ true,
+                                 /* checkUseImport */ checkUseImport,
+                                 /* checkParents */ false,
+                                 /* checkToplevel */ false,
+                                 findOne,
+                                 checkedScopes, result);
+      if (findOne && got) return true;
+
+      // stop if we reach a Module scope
+      if (asttags::isModule(cur->tag))
+        break;
+    }
+
+    // check also in the root scope if this isn't already the root scope
+    const Scope* rootScope = nullptr;
+    for (cur = scope->parentScope; cur != nullptr; cur = cur->parentScope) {
+      if (cur->parentScope == nullptr)
+        rootScope = cur;
+    }
+    if (rootScope != nullptr) {
+      bool got = doLookupInScope(context, rootScope, name,
+                                 /* checkDecls */ true,
+                                 /* checkUseImport */ false,
+                                 /* checkParents */ false,
+                                 /* checkToplevel */ false,
+                                 findOne,
+                                 checkedScopes, result);
+      if (findOne && got) return true;
+    }
+  }
+
+  if (checkToplevel) {
+    bool got = doLookupInToplevelModules(context, scope, name, result);
+    if (findOne && got) return true;
   }
 
   return result.size() > startSize;
 }
+
+
+enum VisibilityStmtKind {
+  VIS_USE,    // the expr is the thing being use'd e.g. use A.B
+  VIS_IMPORT, // the expr is the thing being imported e.g. import C.D
+  VIS_NEITHER // the expr is something else e.g. an Identifier or Function
+};
 
 static bool lookupNameInScope(Context* context,
                               const Scope* scope,
@@ -357,7 +403,12 @@ static bool lookupNameInScope(Context* context,
                               BorrowedIdsWithName& result) {
   std::unordered_set<const Scope*> checkedScopes;
   std::vector<BorrowedIdsWithName> vec;
-  bool got = doLookupInScope(context, scope, name, inUseEtc, findOne,
+  bool got = doLookupInScope(context, scope, name,
+                             /* checkDecls */ inUseEtc != VIS_IMPORT,
+                             /* checkUseImport */ true,
+                             /* checkParents */ true,
+                             /* checkToplevel */ inUseEtc != VIS_NEITHER,
+                             findOne,
                              checkedScopes, vec);
   if (got && vec.size() > 0) {
     result = vec[0];
@@ -370,12 +421,18 @@ static bool lookupNameInScope(Context* context,
 std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                const Scope* scope,
                                                const Expression* expr,
+                                               bool checkDecls,
+                                               bool checkUseImport,
+                                               bool checkParents,
+                                               bool checkToplevel,
                                                bool findOne) {
   std::unordered_set<const Scope*> checkedScopes;
   std::vector<BorrowedIdsWithName> vec;
 
   if (auto ident = expr->toIdentifier()) {
-    doLookupInScope(context, scope, ident->name(), VIS_NEITHER, findOne,
+    doLookupInScope(context, scope, ident->name(),
+                    checkDecls, checkUseImport, checkParents,
+                    checkToplevel, findOne,
                     checkedScopes, vec);
   }
   if (expr->isDot()) {
@@ -387,11 +444,17 @@ std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
 std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                const Scope* scope,
                                                UniqueString name,
+                                               bool checkDecls,
+                                               bool checkUseImport,
+                                               bool checkParents,
+                                               bool checkToplevel,
                                                bool findOne) {
   std::unordered_set<const Scope*> checkedScopes;
   std::vector<BorrowedIdsWithName> vec;
 
-  doLookupInScope(context, scope, name, VIS_NEITHER, findOne,
+  doLookupInScope(context, scope, name,
+                  checkDecls, checkUseImport, checkParents,
+                  checkToplevel, findOne,
                   checkedScopes, vec);
   return vec;
 }
@@ -520,7 +583,9 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
   }
 
   // take the value out of the partial result in order to return it
-  return QUERY_END(partialResult);
+  owned<ResolvedVisibilityScope> result;
+  result.swap(partialResult);
+  return QUERY_END(result);
 }
 
 const ResolvedVisibilityScope* resolveVisibilityStmts(Context* context,
@@ -580,7 +645,7 @@ const InnermostMatch& findInnermostDecl(Context* context,
     }
 
     // stop if we reach a Module scope
-    if (uast::asttags::isModule(cur->tag))
+    if (asttags::isModule(cur->tag))
       break;
   }
 

@@ -55,26 +55,38 @@ namespace resolution {
     Given an Expression and a Scope, return the things
     that Expression might refer to.
 
-    If findOne is true, limits search to the innermost scope
-    with a match.
+    * If checkDecls is true, looks for symbols declared in this Scope.
+    * If checkUseImport is true, looks for symbols from use/import statements in
+      this Scope.
+    * If checkParents is true, looks for symbols from parent scopes
+      (but not parent modules of a module) including looking for declarations
+      and handling imports, and including finding declarations in the root
+      module.
+    * If checkToplevel is true, checks the for a toplevel module with this name.
+    * If findOne is true, limits search to the innermost scope with a match.
 
     Expression can be Identifier or Dot.
    */
   std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                  const Scope* scope,
                                                  const uast::Expression* expr,
+                                                 bool checkDecls,
+                                                 bool checkUseImport,
+                                                 bool checkParents,
+                                                 bool checkToplevel,
                                                  bool findOne);
 
   /**
-    Given a name and a Scope, return the things
-    that name might refer to.
-
-    If findOne is true, limits search to the innermost scope
-    with a match.
+    Same as lookupInScope above but uses a name instead of an
+    Expression.
    */
   std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                  const Scope* scope,
                                                  UniqueString name,
+                                                 bool checkDecls,
+                                                 bool checkUseImport,
+                                                 bool checkParents,
+                                                 bool checkToplevel,
                                                  bool findOne);
 
 
