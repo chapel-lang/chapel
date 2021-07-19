@@ -283,7 +283,7 @@ struct SymbolResolver {
   ResolvedExpression& resultForId(const ID& id) {
     auto postorder = id.postOrderId();
     assert(0 <= postorder);
-    if (postorder < byPostorder.size()) {
+    if ((size_t) postorder < byPostorder.size()) {
       // OK
     } else {
       byPostorder.resize(postorder+1);
@@ -320,7 +320,7 @@ struct SymbolResolver {
   ResolvedExpression& resultById(ID id) {
     int postorder = id.postOrderId();
     assert(0 <= postorder);
-    if (postorder < byPostorder.size()) {
+    if ((size_t) postorder < byPostorder.size()) {
       // OK
     } else {
       byPostorder.resize(postorder+1);
@@ -528,7 +528,7 @@ const QualifiedType& typeForSymbol(Context* context, ID id) {
     // Find the parent scope for the ID - i.e. where the id is declared
     ID parentId = parsing::idToParentId(context, id);
     auto& r = resolveSymbolContents(context, parentId);
-    assert(postOrderId < r.size());
+    assert((size_t) postOrderId < r.size());
     result = r[postOrderId].type;
   } else {
     assert(false && "TODO -- handle finding type for fn etc");
