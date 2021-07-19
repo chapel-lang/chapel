@@ -65,20 +65,30 @@ void Type::gatherBuiltins(Context* context,
   gatherPrimitiveType(context, map, IntType::get(context, 16));
   gatherPrimitiveType(context, map, IntType::get(context, 32));
   gatherPrimitiveType(context, map, IntType::get(context, 64));
+  // and 'int' as an alias for 'int(64)'
+  gatherType(context, map, "int", IntType::get(context, 0));
 
   gatherPrimitiveType(context, map, UintType::get(context, 8));
   gatherPrimitiveType(context, map, UintType::get(context, 16));
   gatherPrimitiveType(context, map, UintType::get(context, 32));
   gatherPrimitiveType(context, map, UintType::get(context, 64));
+  // and 'uint' as an alias for 'uint(64)'
+  gatherType(context, map, "uint", UintType::get(context, 0));
 
   gatherPrimitiveType(context, map, RealType::get(context, 32));
   gatherPrimitiveType(context, map, RealType::get(context, 64));
+  // and 'real' as an alias for 'real(64)'
+  gatherType(context, map, "real", RealType::get(context, 0));
 
   gatherPrimitiveType(context, map, ImagType::get(context, 32));
   gatherPrimitiveType(context, map, ImagType::get(context, 64));
+  // and 'imag' as an alias for 'imag(64)'
+  gatherType(context, map, "imag", ImagType::get(context, 0));
 
   gatherPrimitiveType(context, map, ComplexType::get(context, 64));
   gatherPrimitiveType(context, map, ComplexType::get(context, 128));
+  // and 'complex' as an alias for 'complex(128)'
+  gatherType(context, map, "imag", ImagType::get(context, 0));
 
   gatherType(context, map, "_any", AnyType::get(context));
   gatherType(context, map, "_unknown", UnknownType::get(context));
