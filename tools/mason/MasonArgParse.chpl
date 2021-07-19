@@ -85,19 +85,20 @@ module MasonArgParse {
     var _required:bool;
     // one or more default values to assign if opt is not entered by user
     var _defaultValue:list(string);
+    
     proc init(name:string, numOpts:int, opts:[?argsD] string, numArgs:range, 
-              required=false, defaultValue=new list(string)){
-                _name=name;
-                _numOpts=numOpts;
-                _opts=opts;
-                _numArgs=numArgs;
-                _required=required;
-                _defaultValue=defaultValue;
+              required=false, defaultValue=new list(string)) {
+      _name=name;
+      _numOpts=numOpts;
+      _opts=opts;
+      _numArgs=numArgs;
+      _required=required;
+      _defaultValue=defaultValue;
 
-                // make sure that if we make an argument required no default set
-                assert(!(_required && _defaultValue.size > 0), 
-                        "Required options do not support default values");
-              }
+      // make sure that if we make an argument required no default set
+      assert(!(_required && _defaultValue.size > 0), 
+              "Required options do not support default values");
+    }
 
     
     // TODO: Decouple the argument from the action
@@ -242,10 +243,10 @@ module MasonArgParse {
                    numArgs:int,
                    required=false) throws {      
       return addOption(name=name,
-                      opts=opts,
-                      numArgs=numArgs..numArgs,
-                      required=required,
-                      defaultValue=new list(string));
+                       opts=opts,
+                       numArgs=numArgs..numArgs,
+                       required=required,
+                       defaultValue=new list(string));
     }
 
     proc addOption(name:string,
@@ -254,10 +255,10 @@ module MasonArgParse {
                    required=false,
                    defaultValue:list(string)) throws {      
       return addOption(name=name,
-                      opts=opts,
-                      numArgs=numArgs..numArgs,
-                      required=required,
-                      defaultValue=defaultValue);
+                       opts=opts,
+                       numArgs=numArgs..numArgs,
+                       required=required,
+                       defaultValue=defaultValue);
     }
     
     // define a new string option with fixed number of values expected and a
@@ -270,10 +271,10 @@ module MasonArgParse {
       var defaults = new list(string);
       defaults.append(defaultValue);
       return addOption(name=name,
-                      opts=opts,
-                      numArgs=numArgs..numArgs,
-                      required=required,
-                      defaultValue=defaults);
+                       opts=opts,
+                       numArgs=numArgs..numArgs,
+                       required=required,
+                       defaultValue=defaults);
     }
 
     proc addOption(name:string,
@@ -283,10 +284,10 @@ module MasonArgParse {
                    defaultValue=new list(string)) 
                    throws {
       return addOption(name=name,
-                      opts=opts,
-                      numArgs=numArgs.low..max(int),
-                      required=required,
-                      defaultValue=defaultValue);
+                       opts=opts,
+                       numArgs=numArgs.low..max(int),
+                       required=required,
+                       defaultValue=defaultValue);
     }
 
     // define a new string option with range of values expected
