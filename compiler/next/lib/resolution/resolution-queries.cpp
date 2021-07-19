@@ -228,6 +228,20 @@ const QualifiedType& typeForBuiltin(Context* context,
   return QUERY_END(result);
 }
 
+static QualifiedType typeForLiteral(Context* context, const Literal* literal) {
+  const Type* typePtr = nullptr;
+  int64_t param = 0; // TODO: replace with Immediate
+
+  if (auto i = literal->toIntLiteral()) {
+    typePtr = IntType::get(context, 0);
+    param = i->value();
+  } else {
+    // TODO: handle the other literals as params
+  }
+
+  return QualifiedType(QualifiedType::PARAM, typePtr, param);
+}
+
 static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
   if (decl->isFunction()) {
     return QualifiedType::FUNCTION;
@@ -335,6 +349,15 @@ struct SymbolResolver {
     return resultById(ast->id());
   }
 
+  bool enter(const Literal* literal) {
+    ResolvedExpression& result = resultByAst(literal);
+    result.id = literal->id();
+    result.type = typeForLiteral(context, literal);
+    return false;
+  }
+  void exit(const Literal* literal) {
+  }
+
   bool enter(const Identifier* ident) {
     assert(scopeStack.size() > 0);
     const Scope* scope = scopeStack.back();
@@ -433,7 +456,6 @@ struct SymbolResolver {
       // traversal. Instead, resolve it e.g. when the function is called.
 
     } else {
-
       // Figure out the Kind of the declaration
       auto qtKind = qualifiedTypeKindForDecl(decl);
 
@@ -441,6 +463,8 @@ struct SymbolResolver {
       // Nested Identifiers and Expressions should already be resolved
       const Type* typePtr = nullptr;
 
+      // Figure out the param value, if any
+      int64_t param = 0; // TODO: replace with Immediates
 
       if (decl->isFunction()) {
         // TODO: function types
@@ -485,6 +509,9 @@ struct SymbolResolver {
             context->error(initExpr, "Cannot initialize param with non-param");
           }
 
+          if (initType.kind() == QualifiedType::PARAM) {
+            param = initType.param();
+          }
           if (typePtr != nullptr) {
             // check that the initExpr type is compatible with declared type
             if (initType.type() != typePtr) {
@@ -522,7 +549,7 @@ struct SymbolResolver {
 
       ResolvedExpression& result = resultById(decl->id());
       result.id = decl->id();
-      result.type = QualifiedType(qtKind, typePtr);
+      result.type = QualifiedType(qtKind, typePtr, param);
     }
 
     exitScope(decl);

@@ -90,7 +90,7 @@ static void computeAndPrintStuff(Context* context, const ASTNode* ast) {
   }
 
   // check the type
-  if (ast->isIdentifier() || ast->isNamedDecl()) {
+  if (!(ast->isLoop() || ast->isBlock())) {
     const auto& t = typeForSymbol(context, ast->id());
 
     printId(ast);
