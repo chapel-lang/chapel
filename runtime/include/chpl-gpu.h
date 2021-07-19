@@ -27,7 +27,7 @@ extern "C" {
 
 #ifdef HAS_GPU_LOCALE
 
-void  chpl_gpu_init();
+void  chpl_gpu_init(void);
 void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName);
 
 #endif // HAS_GPU_LOCALE

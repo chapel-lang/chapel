@@ -20,6 +20,7 @@
 #include "sys_basic.h"
 #include "chplrt.h"
 #include "chpl-mem.h"
+#include "chpl-gpu.h"
 #include "error.h"
 
 #ifdef HAS_GPU_LOCALE
