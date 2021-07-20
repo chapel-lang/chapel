@@ -1268,6 +1268,63 @@ proc testEmptyListDefaultVal(test: borrowed Test) throws {
   test.assertEqual(new list(myStrArg.values()),new list(string));
 }
 
+// attempt to define a name twice
+proc testTryDuplicateNameOpt(test: borrowed Test) throws {
+  var argList = ["progName","-n=twenty","thirty"];
+  var parser = new argumentParser();
+  var myStrArg1 = parser.addOption(name="StringOpt",
+                                opts=["-n","--strArg"],            
+                                numArgs=1);
+  try {
+    var myStrArg2 = parser.addOption(name="StringOpt",
+                                    opts=["-p","--print"],            
+                                    numArgs=1);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);  
+}
+
+// attempt to define a short option twice
+proc testTryDuplicateShortOpt(test: borrowed Test) throws {
+  var argList = ["progName","-n=twenty","thirty"];
+  var parser = new argumentParser();
+  var myStrArg1 = parser.addOption(name="StringOpt",
+                                opts=["-n","--strArg"],            
+                                numArgs=1);
+  try {
+    var myStrArg2 = parser.addOption(name="PrintOpt",
+                                    opts=["-n","--print"],            
+                                    numArgs=1);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);  
+}
+
+// attempt to define a short option twice
+proc testTryDuplicateLongOpt(test: borrowed Test) throws {
+  var argList = ["progName","-n=twenty","thirty"];
+  var parser = new argumentParser();
+  var myStrArg1 = parser.addOption(name="StringOpt",
+                                opts=["-n","--strArg"],            
+                                numArgs=1);
+  try {
+    var myStrArg2 = parser.addOption(name="PrintOpt",
+                                    opts=["-p","--strArg"],            
+                                    numArgs=1);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);  
+}
+
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
 UnitTest.main();

@@ -275,8 +275,20 @@ module MasonArgParse {
           throw new ArgumentError("Use '-' or '--' to indicate opt flags. " +
                                   "Positional arguments not yet supported");
         }
+
+        // ensure we don't redefine an existing option flag
+        if _options.contains(opts[i]) {
+          throw new ArgumentError("Option flag " + opts[i] + " is previously " +
+                                  "defined");
+        }
       }
 
+      // ensure option names are unique
+      if _actions.contains(name) {
+        throw new ArgumentError("Option name " + name + 
+                                " is previously defined");
+      }     
+      
       var myDefault = new list(string);
 
       if isStringType(t) {
