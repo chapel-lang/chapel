@@ -230,6 +230,6 @@ timeout: timeval - defines the time in `(seconds, microseconds)` function should
 
 ## Options on Socket
 
-For providing more granular control over socket options `setSocketOpt` and `getSocketOpt` will be provided which can be used to manipulate socket options. For more information about them [man page](https://man7.org/linux/man-pages/man2/getsockopt.2.html) can be referred as to what options we can set on sockets.
+For providing more granular control over socket options `setSocketOpt` and `getSocketOpt` will be provided which can be used to manipulate socket options. For more information about them [posix doc](https://pubs.opengroup.org/onlinepubs/9699919799/functions/getsockopt.html) can be referred as to what options we can set on sockets.
 
 The functions will use Chapel implementation for them defined in the [Sys module](https://chapel-lang.org/docs/modules/standard/Sys.html#Sys.sys_getsockopt) but user won't need to provide in file descriptor manually then can just pass in `tcpConn|tcpListener|udpSocket` rest arguments will remain same.
