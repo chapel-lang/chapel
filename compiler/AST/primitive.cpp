@@ -799,6 +799,18 @@ initPrimitive() {
   prim_def(PRIM_SET_DYNAMIC_END_COUNT, "set dynamic end count", returnInfoVoid, true);
 
   prim_def(PRIM_GPU_KERNEL_LAUNCH, "gpu kernel launch", returnInfoVirtualMethodCall, true);
+  prim_def(PRIM_GPU_THREADIDX_X, "gpu threadIdx x", returnInfoInt32, true);
+  prim_def(PRIM_GPU_THREADIDX_Y, "gpu threadIdx y", returnInfoInt32, true);
+  prim_def(PRIM_GPU_THREADIDX_Z, "gpu threadIdx z", returnInfoInt32, true);
+  prim_def(PRIM_GPU_BLOCKIDX_X, "gpu blockIdx x", returnInfoInt32, true);
+  prim_def(PRIM_GPU_BLOCKIDX_Y, "gpu blockIdx y", returnInfoInt32, true);
+  prim_def(PRIM_GPU_BLOCKIDX_Z, "gpu blockIdx z", returnInfoInt32, true);
+  prim_def(PRIM_GPU_BLOCKDIM_X, "gpu blockDim x", returnInfoInt32, true);
+  prim_def(PRIM_GPU_BLOCKDIM_Y, "gpu blockDim y", returnInfoInt32, true);
+  prim_def(PRIM_GPU_BLOCKDIM_Z, "gpu blockDim z", returnInfoInt32, true);
+  prim_def(PRIM_GPU_GRIDDIM_X, "gpu gridDim x", returnInfoInt32, true);
+  prim_def(PRIM_GPU_GRIDDIM_Y, "gpu gridDim y", returnInfoInt32, true);
+  prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
   // task primitives
   // get serial state

@@ -305,6 +305,18 @@ classifyPrimitive(CallExpr *call) {
     return NOT_FAST_NOT_LOCAL;
 
   case PRIM_GPU_KERNEL_LAUNCH:
+  case PRIM_GPU_THREADIDX_X:
+  case PRIM_GPU_THREADIDX_Y:
+  case PRIM_GPU_THREADIDX_Z:
+  case PRIM_GPU_BLOCKIDX_X:
+  case PRIM_GPU_BLOCKIDX_Y:
+  case PRIM_GPU_BLOCKIDX_Z:
+  case PRIM_GPU_BLOCKDIM_X:
+  case PRIM_GPU_BLOCKDIM_Y:
+  case PRIM_GPU_BLOCKDIM_Z:
+  case PRIM_GPU_GRIDDIM_X:
+  case PRIM_GPU_GRIDDIM_Y:
+  case PRIM_GPU_GRIDDIM_Z:
     return LOCAL_NOT_FAST;
 
   // no default, so that it is usually a C compilation

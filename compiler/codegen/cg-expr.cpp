@@ -42,6 +42,7 @@
 
 #ifdef HAVE_LLVM
 #include "llvm/IR/Module.h"
+#include "llvmUtil.h"
 #include "clang/CodeGen/CGFunctionInfo.h"
 #endif
 
@@ -4724,6 +4725,39 @@ DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
   }
   ret = codegenCallExprWithArgs("cuLaunchKernel", args);
 }
+
+static GenRet codegenCallToPtxTgtIntrinsic(const char *fcnName) {
+  INT_ASSERT(HAVE_LLVM);
+  llvm::Type *llvmReturnType = llvm::Type::getInt32Ty(gGenInfo->llvmContext);
+  Type *chplReturnType = dtInt[INT_SIZE_32];
+
+  llvm::Function* fun = gGenInfo->module->getFunction(fcnName);
+  if(!fun) {
+    llvm::FunctionType *fun_type = llvm::FunctionType::get(llvmReturnType, false);
+    fun = llvm::Function::Create(fun_type, llvm::GlobalValue::ExternalLinkage, fcnName, gGenInfo->module);
+    INT_ASSERT(fun);
+  }
+
+  GenRet ret;
+  ret.val = gGenInfo->irBuilder->CreateCall(fun);
+  ret.isLVPtr = GEN_VAL;
+  ret.chplType = chplReturnType;
+
+  return ret;
+}
+
+DEFINE_PRIM(PRIM_GPU_THREADIDX_X) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.x"); }
+DEFINE_PRIM(PRIM_GPU_THREADIDX_Y) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.y"); }
+DEFINE_PRIM(PRIM_GPU_THREADIDX_Z) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.z"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKIDX_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.x"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKIDX_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.y"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKIDX_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.z"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKDIM_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.x"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKDIM_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.y"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKDIM_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.z"); }
+DEFINE_PRIM(PRIM_GPU_GRIDDIM_X)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.x"); }
+DEFINE_PRIM(PRIM_GPU_GRIDDIM_Y)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.y"); }
+DEFINE_PRIM(PRIM_GPU_GRIDDIM_Z)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.z"); }
 
 static void codegenPutGet(CallExpr* call, GenRet &ret) {
     // args are:
