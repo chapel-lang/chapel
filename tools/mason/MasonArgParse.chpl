@@ -24,9 +24,7 @@ module MasonArgParse {
   private use Sort;
 
   const DEBUG=false;
-  // TODO: Verify no duplicate names, flags defined by dev
-  // TODO: Make sure we don't shadow Chapel flags
-  // TODO: Make sure we don't shadow config vars  
+  // TODO: Add sub-commands
   // TODO: Implement Help message and formatting
   // TODO: Add bool flags
   // TODO: Add int opts
