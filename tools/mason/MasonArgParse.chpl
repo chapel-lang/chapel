@@ -85,21 +85,23 @@ module MasonArgParse {
     var _required:bool;
     // one or more default values to assign if opt is not entered by user
     var _defaultValue:list(string);
-    
+    // flag to identify if this action has a default value assigned by dev
+    var _hasDefault:bool;
+
     proc init(name:string, numOpts:int, opts:[?argsD] string, numArgs:range, 
-              required=false, defaultValue=new list(string)) {
+              required=false, defaultValue=new list(string), hasDefault=false) {
       _name=name;
       _numOpts=numOpts;
       _opts=opts;
       _numArgs=numArgs;
       _required=required;
       _defaultValue=defaultValue;
-
+      _hasDefault=hasDefault;
+      
       // make sure that if we make an argument required no default set
       assert(!(_required && _defaultValue.size > 0), 
               "Required options do not support default values");
     }
-
     
     // TODO: Decouple the argument from the action
     // maybe pass a list to fill by reference and have the argparser populate
@@ -218,7 +220,7 @@ module MasonArgParse {
       for name in this._actions.keys() {
         const act = this._actions.getBorrowed(name);
         const arg = this._result.getReference(name);
-        if !arg._present && !act._defaultValue.isEmpty() {
+        if !arg._present && act._hasDefault {
           arg._values.extend(act._defaultValue);
           arg._present = true;
         }
@@ -235,54 +237,26 @@ module MasonArgParse {
         }        
       }
     }
-
-    // define a new string option with fixed number of values expected no
-    // default value
+    
+    // define a new string option with fixed number of values expected
     proc addOption(name:string,
-                   opts:[]string,
-                   numArgs:int,
-                   required=false) throws {      
-      return addOption(name=name,
-                       opts=opts,
-                       numArgs=numArgs..numArgs,
-                       required=required,
-                       defaultValue=new list(string));
-    }
-
-    proc addOption(name:string,
-                   opts:[]string,
+                   opts:[?optsD]string,
                    numArgs:int,
                    required=false,
-                   defaultValue:list(string)) throws {      
+                   defaultValue:?t=none) throws {
       return addOption(name=name,
                        opts=opts,
                        numArgs=numArgs..numArgs,
                        required=required,
                        defaultValue=defaultValue);
     }
-    
-    // define a new string option with fixed number of values expected and a
-    // single default value
-    proc addOption(name:string,
-                   opts:[]string,
-                   numArgs:int,
-                   required=false,
-                   defaultValue:string) throws {
-      var defaults = new list(string);
-      defaults.append(defaultValue);
-      return addOption(name=name,
-                       opts=opts,
-                       numArgs=numArgs..numArgs,
-                       required=required,
-                       defaultValue=defaults);
-    }
 
+    // define a new string option with a low bounded range of values expected
     proc addOption(name:string,
-                   opts:[]string,
+                   opts:[?optsD]string,
                    numArgs:range(boundedType=BoundedRangeType.boundedLow),
                    required=false,
-                   defaultValue=new list(string)) 
-                   throws {
+                   defaultValue:?t=none) throws {                   
       return addOption(name=name,
                        opts=opts,
                        numArgs=numArgs.low..max(int),
@@ -290,28 +264,39 @@ module MasonArgParse {
                        defaultValue=defaultValue);
     }
 
-    // define a new string option with range of values expected
+    // define a new string option with bounded range of values expected
     proc addOption(name:string,
                    opts:[?optsD]string,
                    numArgs:range,
                    required=false,
-                   defaultValue=new list(string)) throws {
-      
+                   defaultValue:?t=none) throws {      
       for i in optsD {
         if !opts[i].startsWith("-") {
           throw new ArgumentError("Use '-' or '--' to indicate opt flags. " +
                                   "Positional arguments not yet supported");
         }
       }
-      
+
+      var myDefault = new list(string);
+
+      if isStringType(t) {
+        myDefault.append(defaultValue);
+      }else if t==list(string) {
+        myDefault.extend(defaultValue);
+      }else if !isNothingType(t) {
+        throw new ArgumentError("Only string and list of strings are supported "
+                                + "as default values at this time");
+      }
+
       var action = new owned Action(name=name, 
                                     numOpts=opts.size,
                                     opts=opts,
                                     numArgs=numArgs,
                                     required=required,
-                                    defaultValue=defaultValue);
+                                    defaultValue=myDefault,
+                                    hasDefault=!isNothingType(t));
       // collect all the option strings
-      for opt in opts do _options.add(opt, name);
+      for i in optsD do _options.add(opts[i], name);
       // store the action
       _actions.add(name, action);
       //create, add, and return the shared argument
