@@ -23,15 +23,19 @@
 
 #include "astutil.h"
 #include "bb.h"
+#include "CForLoop.h"
 #include "driver.h"
 #include "expr.h"
 #include "ForLoop.h"
+#include "LoopStmt.h"
 #include "ModuleSymbol.h"
 #include "passes.h"
+#include "resolveFunction.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "WhileStmt.h"
 #include "DoWhileStmt.h"
+#include "view.h"
 
 #include <queue>
 #include <set>
@@ -434,6 +438,207 @@ static void deadModuleElimination() {
   }
 }
 
+static bool shouldOutlineLoop(CForLoop *loop) {
+  if (strcmp(loop->fname(), "/Users/ekayraklio/code/chapel/versions/f03/chapel/gpuOutline.chpl") == 0) {
+    if (loop->isOrderIndependent()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
+  DefExpr* def = sym->defPoint;
+
+  return LoopStmt::findEnclosingLoop(def) == loop;
+}
+
+static bool isIndexVariable(Symbol* sym, CForLoop* loop) {
+
+  std::vector<CallExpr*> calls;
+  collectCallExprs(loop->initBlockGet(), calls);
+
+  for_vector (CallExpr, call, calls) {
+    if (call->isPrimitive(PRIM_ASSIGN)) {
+      SymExpr* lhsSE = toSymExpr(call->get(1));
+      INT_ASSERT(lhsSE);
+
+      if (lhsSE->symbol() == sym) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+static void outlineGPUKernels() {
+  forv_Vec(FnSymbol*, fn, gFnSymbols) {
+    std::vector<BaseAST*> asts;
+
+    collect_asts(fn, asts);
+
+    for_vector(BaseAST, ast, asts) {
+      if (CForLoop* loop = toCForLoop(ast)) {
+          SET_LINENO(loop);
+          FnSymbol* outlinedFunction = new FnSymbol("chpl_gpu_kernel"); // put this inside the if
+          outlinedFunction->addFlag(FLAG_RESOLVED);
+        if (shouldOutlineLoop(loop)) {
+          fn->defPoint->insertBefore(new DefExpr(outlinedFunction));
+
+          BlockStmt* gpuLaunchBlock = new BlockStmt();
+          loop->insertBefore(gpuLaunchBlock);
+
+          CallExpr* gpuCall = new CallExpr(outlinedFunction);
+          gpuCall->setResolvedFunction(outlinedFunction);
+
+          std::vector<SymExpr*> symExprs;
+          std::vector<SymExpr*> maybeArrSymExpr;
+          std::vector<SymExpr*> arraysWhoseDataAccessed;
+          std::vector<CallExpr*> fieldAccessors;
+          std::vector<Type*> formalTypes;
+
+          Symbol* indexSymbol = NULL;
+          SymbolMap copyMap;
+
+          for_alist(node, loop->body) {
+
+            bool copyNode = true;
+            std::vector<SymExpr*> symExprsInBody;
+            collectSymExprs(node, symExprsInBody);
+
+            if (DefExpr* def = toDefExpr(node)) {
+              copyNode = false; // we'll do it here
+
+              DefExpr* newDef = def->copy();
+              copyMap.put(def->sym, newDef->sym);
+
+              outlinedFunction->insertAtTail(newDef);
+            }
+            else {
+
+              for_vector(SymExpr, symExpr, symExprsInBody) {
+                Symbol* sym = symExpr->symbol();
+
+                if (isDefinedInTheLoop(symExpr->symbol(), loop)) {
+                  //std::cout << "Defined in the loop\n";
+                  //nprint_view(sym);
+                }
+                else {
+                  // either something that we need to pass as argument (and
+                  // potentially offload), or the index variable
+                  if (isIndexVariable(sym, loop)) {
+                    std::cout << "The Index variable\n";
+                    nprint_view(sym);
+
+                    if (indexSymbol == NULL) {
+                      indexSymbol = sym;
+                      VarSymbol* fakeIndex = new VarSymbol("fakeIndex", sym->type);
+                      outlinedFunction->insertAtTail(new DefExpr(fakeIndex));
+
+                      copyMap.put(sym, fakeIndex);
+                    }
+                  }
+                  else {
+                    if (sym->type->symbol->hasFlag(FLAG_DATA_CLASS)) {
+                      if (CallExpr* firstParent = toCallExpr(symExpr->parentExpr)) {
+                        if (firstParent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+                          SymExpr* maybeArrSymExpr = toSymExpr(firstParent->get(1));
+                          INT_ASSERT(maybeArrSymExpr);
+
+                          if (CallExpr* secondParent = toCallExpr(firstParent->parentExpr)) {
+                            if (secondParent->isPrimitive(PRIM_MOVE)) {
+                              SymExpr* lhsSE = toSymExpr(secondParent->get(1));
+                              INT_ASSERT(lhsSE);
+
+                              ArgSymbol* newFormal = new ArgSymbol(INTENT_REF, "data_formal", lhsSE->typeInfo());
+                              formalTypes.push_back(lhsSE->typeInfo());
+                              outlinedFunction->insertFormalAtTail(newFormal);
+                              copyMap.put(lhsSE->symbol(), newFormal);
+                              copyNode = false;
+
+                              arraysWhoseDataAccessed.push_back(maybeArrSymExpr);
+                              fieldAccessors.push_back(firstParent);
+                            }
+                          }
+                        }
+                      }
+                    }
+                    else {
+                      std::cout << "Defined outside the loop\n";
+                      nprint_view(sym);
+                      maybeArrSymExpr.push_back(symExpr);
+                    }
+                  }
+                }
+              }
+            }
+
+            if (copyNode) {
+              outlinedFunction->insertAtTail(node->copy());
+            }
+          }
+
+          if (maybeArrSymExpr.size() == arraysWhoseDataAccessed.size()) {
+            for (int i = 0 ; i < maybeArrSymExpr.size() ; i++) {
+              if (maybeArrSymExpr[i]->symbol() != arraysWhoseDataAccessed[i]->symbol()) {
+                INT_FATAL("Something went wrong (1)");
+              }
+              else {
+                //Symbol* arrSym = maybeArrSymExpr[i]->symbol();
+                VarSymbol* newActual = new VarSymbol("data_actual", formalTypes[i]);
+                //CallExpr* getPtrCall = new CallExpr("getGPUPtr", arrSym);
+                //Symbol* dataField = toAggregateType(arrSym->type)->getField("data");
+                //CallExpr* getPtrCall = new CallExpr(PRIM_GET_MEMBER_VALUE, arrSym, new_StringSymbol("data"));
+                CallExpr* getPtrCall = toCallExpr(fieldAccessors[i]->remove());
+                //CallExpr* getPtrCall = new CallExpr(PRIM_GET_MEMBER_VALUE, arrSym, new UnresolvedSymExpr("data"));
+                CallExpr* moveCall = new CallExpr(PRIM_MOVE, newActual, getPtrCall);
+                gpuLaunchBlock->insertAtTail(new DefExpr(newActual));
+                gpuLaunchBlock->insertAtTail(moveCall);
+
+                gpuCall->insertAtTail(new SymExpr(newActual));
+              }
+            }
+          }
+          else {
+            INT_FATAL("Something went wrong (2)");
+          }
+
+          update_symbols(outlinedFunction->body, &copyMap);
+
+          gpuLaunchBlock->insertAtTail(gpuCall);
+          resolveExpr(gpuCall);
+          normalize(outlinedFunction);
+          resolveFunction(outlinedFunction, gpuCall);
+          gpuLaunchBlock->flattenAndRemove();
+          loop->remove();
+
+          for_alist (node, outlinedFunction->body->body) {
+            if (CallExpr* call = toCallExpr(node)) {
+              if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
+                call->remove();
+              }
+            }
+          }
+
+          cleanupLoopBlocks(outlinedFunction);
+
+          deadVariableElimination(outlinedFunction);
+
+          // 2014/10/17   Noakes and Elliot
+          // Dead Variable Elimination may convert some "uninteresting" loops
+          // that were left behind by DeadBlockElimination and turn them in to
+          // "malformed" loops.  Cleanup again.
+          cleanupLoopBlocks(outlinedFunction);
+
+          deadExpressionElimination(outlinedFunction);
+
+        }
+      }
+    }
+  }
+}
+
+
 void deadCodeElimination() {
   if (!fNoDeadCodeElimination) {
     deadBlockElimination();
@@ -466,6 +671,8 @@ void deadCodeElimination() {
 
     cleanupAfterTypeRemoval();
   }
+
+  outlineGPUKernels();
 }
 
 void deadBlockElimination()

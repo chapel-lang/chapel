@@ -21,12 +21,15 @@
 #include "passes.h"
 
 #include "astutil.h"
+#include "CForLoop.h"
 #include "driver.h"
+#include "LoopStmt.h"
 #include "expr.h"
 #include "optimizations.h"
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "view.h"
 
 #include <set>
 #include <vector>
