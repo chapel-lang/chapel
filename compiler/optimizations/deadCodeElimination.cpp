@@ -439,6 +439,7 @@ static void deadModuleElimination() {
 }
 
 static bool shouldOutlineLoop(CForLoop *loop) {
+  // Obvious TODO :)
   if (strcmp(loop->fname(), "/Users/ekayraklio/code/chapel/versions/f03/chapel/gpuOutline.chpl") == 0) {
     if (loop->isOrderIndependent()) {
       return true;
@@ -448,13 +449,15 @@ static bool shouldOutlineLoop(CForLoop *loop) {
 }
 
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
-  DefExpr* def = sym->defPoint;
-
-  return LoopStmt::findEnclosingLoop(def) == loop;
+  return LoopStmt::findEnclosingLoop(sym->defPoint) == loop;
 }
 
 static bool isIndexVariable(Symbol* sym, CForLoop* loop) {
 
+  // This is really a poor check. My hope is that we can achieve this here much
+  // simpler by associating index variable(s) with CForLoops when we create
+  // them. For now, this prototype only checks for an `idx = ` in the initBlock
+  // of the C loop.
   std::vector<CallExpr*> calls;
   collectCallExprs(loop->initBlockGet(), calls);
 
@@ -468,21 +471,22 @@ static bool isIndexVariable(Symbol* sym, CForLoop* loop) {
       }
     }
   }
+
   return false;
 }
 
 static void outlineGPUKernels() {
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
     std::vector<BaseAST*> asts;
-
     collect_asts(fn, asts);
 
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
-          SET_LINENO(loop);
-          FnSymbol* outlinedFunction = new FnSymbol("chpl_gpu_kernel"); // put this inside the if
-          outlinedFunction->addFlag(FLAG_RESOLVED);
         if (shouldOutlineLoop(loop)) {
+          SET_LINENO(loop);
+          FnSymbol* outlinedFunction = new FnSymbol("chpl_gpu_kernel");
+          outlinedFunction->addFlag(FLAG_RESOLVED);
+
           fn->defPoint->insertBefore(new DefExpr(outlinedFunction));
 
           BlockStmt* gpuLaunchBlock = new BlockStmt();
@@ -491,7 +495,9 @@ static void outlineGPUKernels() {
           CallExpr* gpuCall = new CallExpr(outlinedFunction);
           gpuCall->setResolvedFunction(outlinedFunction);
 
-          std::vector<SymExpr*> symExprs;
+          // TODO add a struct or something to store all the information that we
+          // need to keep track of per symbol, and make the following vectors
+          // into a single vector of that type. LoopOutlineInfo or something.
           std::vector<SymExpr*> maybeArrSymExpr;
           std::vector<SymExpr*> arraysWhoseDataAccessed;
           std::vector<CallExpr*> fieldAccessors;
@@ -507,7 +513,7 @@ static void outlineGPUKernels() {
             collectSymExprs(node, symExprsInBody);
 
             if (DefExpr* def = toDefExpr(node)) {
-              copyNode = false; // we'll do it here
+              copyNode = false; // we'll do it here to adjust our symbol map
 
               DefExpr* newDef = def->copy();
               copyMap.put(def->sym, newDef->sym);
@@ -515,17 +521,22 @@ static void outlineGPUKernels() {
               outlinedFunction->insertAtTail(newDef);
             }
             else {
-
               for_vector(SymExpr, symExpr, symExprsInBody) {
                 Symbol* sym = symExpr->symbol();
 
                 if (isDefinedInTheLoop(symExpr->symbol(), loop)) {
-                  //std::cout << "Defined in the loop\n";
-                  //nprint_view(sym);
+                  // looks like this symbol was declared within the loop body,
+                  // so do nothing. TODO: I am hoping that we don't need to
+                  // check the type of the variable here, and we'll know that it
+                  // is a valid variable to declare on the gpu via the loop body
+                  // analysis
                 }
                 else {
-                  // either something that we need to pass as argument (and
-                  // potentially offload), or the index variable
+                  // TODO: we want to have a better way of recognizing the index
+                  // variable. Either we move this "pass" earlier, and we lower
+                  // a ForLoop directly into a gpu kernel, or we record
+                  // something into the CForLoop. Or, we flag the user's index
+                  // with one of the index flags, and check for it here.
                   if (isIndexVariable(sym, loop)) {
                     std::cout << "The Index variable\n";
                     nprint_view(sym);
@@ -533,12 +544,19 @@ static void outlineGPUKernels() {
                     if (indexSymbol == NULL) {
                       indexSymbol = sym;
                       VarSymbol* fakeIndex = new VarSymbol("fakeIndex", sym->type);
+
                       outlinedFunction->insertAtTail(new DefExpr(fakeIndex));
+                      outlinedFunction->insertAtTail(new CallExpr(PRIM_MOVE,
+                                                                  fakeIndex,
+                                                                  new_IntSymbol(0)));
 
                       copyMap.put(sym, fakeIndex);
                     }
                   }
                   else {
+                    // if we hit a ddata/cptr that's defined outside the loop,
+                    // try to associate it with an "array". Also, make that
+                    // ddata into a formal in the gpu kernel
                     if (sym->type->symbol->hasFlag(FLAG_DATA_CLASS)) {
                       if (CallExpr* firstParent = toCallExpr(symExpr->parentExpr)) {
                         if (firstParent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
@@ -550,7 +568,7 @@ static void outlineGPUKernels() {
                               SymExpr* lhsSE = toSymExpr(secondParent->get(1));
                               INT_ASSERT(lhsSE);
 
-                              ArgSymbol* newFormal = new ArgSymbol(INTENT_REF, "data_formal", lhsSE->typeInfo());
+                              ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, "data_formal", lhsSE->typeInfo());
                               formalTypes.push_back(lhsSE->typeInfo());
                               outlinedFunction->insertFormalAtTail(newFormal);
                               copyMap.put(lhsSE->symbol(), newFormal);
@@ -578,19 +596,18 @@ static void outlineGPUKernels() {
             }
           }
 
+          // create the GPU launch block (that'll be flattened later). The fatal
+          // errors here can occur if there's a symbol inside the loop body that
+          // was defined outside, and its uses were not something that we
+          // understand. i.e. something that's not of a recognized array type
           if (maybeArrSymExpr.size() == arraysWhoseDataAccessed.size()) {
             for (int i = 0 ; i < maybeArrSymExpr.size() ; i++) {
               if (maybeArrSymExpr[i]->symbol() != arraysWhoseDataAccessed[i]->symbol()) {
                 INT_FATAL("Something went wrong (1)");
               }
               else {
-                //Symbol* arrSym = maybeArrSymExpr[i]->symbol();
                 VarSymbol* newActual = new VarSymbol("data_actual", formalTypes[i]);
-                //CallExpr* getPtrCall = new CallExpr("getGPUPtr", arrSym);
-                //Symbol* dataField = toAggregateType(arrSym->type)->getField("data");
-                //CallExpr* getPtrCall = new CallExpr(PRIM_GET_MEMBER_VALUE, arrSym, new_StringSymbol("data"));
                 CallExpr* getPtrCall = toCallExpr(fieldAccessors[i]->remove());
-                //CallExpr* getPtrCall = new CallExpr(PRIM_GET_MEMBER_VALUE, arrSym, new UnresolvedSymExpr("data"));
                 CallExpr* moveCall = new CallExpr(PRIM_MOVE, newActual, getPtrCall);
                 gpuLaunchBlock->insertAtTail(new DefExpr(newActual));
                 gpuLaunchBlock->insertAtTail(moveCall);
@@ -607,11 +624,16 @@ static void outlineGPUKernels() {
 
           gpuLaunchBlock->insertAtTail(gpuCall);
           resolveExpr(gpuCall);
+
           normalize(outlinedFunction);
           resolveFunction(outlinedFunction, gpuCall);
+
           gpuLaunchBlock->flattenAndRemove();
+
           loop->remove();
 
+          // We'll get an end of statement for the fake index we add. I am not
+          // sure how much it matters for the long term, for now just remove it.
           for_alist (node, outlinedFunction->body->body) {
             if (CallExpr* call = toCallExpr(node)) {
               if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
@@ -620,18 +642,11 @@ static void outlineGPUKernels() {
             }
           }
 
+          // just repeat the dead code elimination steps for the new function
           cleanupLoopBlocks(outlinedFunction);
-
           deadVariableElimination(outlinedFunction);
-
-          // 2014/10/17   Noakes and Elliot
-          // Dead Variable Elimination may convert some "uninteresting" loops
-          // that were left behind by DeadBlockElimination and turn them in to
-          // "malformed" loops.  Cleanup again.
           cleanupLoopBlocks(outlinedFunction);
-
           deadExpressionElimination(outlinedFunction);
-
         }
       }
     }
