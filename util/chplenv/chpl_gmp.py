@@ -4,7 +4,7 @@ import sys
 
 import chpl_compiler, chpl_platform, overrides, third_party_utils
 from chpl_home_utils import get_chpl_third_party
-from utils import memoize
+from utils import memoize, warning
 
 
 @memoize
@@ -27,8 +27,7 @@ def get():
         else:
             gmp_val = 'none'
     elif gmp_val == 'gmp':
-        sys.stderr.write("Warning: CHPL_GMP=gmp is deprecated. "
-                         "Use CHPL_GMP=bundled instead.\n")
+        warning("CHPL_GMP=gmp is deprecated. Use CHPL_GMP=bundled.")
         gmp_val = 'bundled'
 
     return gmp_val

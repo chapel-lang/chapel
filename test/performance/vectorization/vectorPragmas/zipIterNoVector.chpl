@@ -43,6 +43,7 @@ module zipIterNoVector {
       A[j] += j;
     }
     for a in A do writeln(a);
+    for a in A do writeln(a);  // tests in this dir are expected to print twice
   }
 }
 

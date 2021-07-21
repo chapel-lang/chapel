@@ -25,19 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Local::contentsMatchInner(const ASTNode* other) const {
-  const Local* lhs = this;
-  const Local* rhs = (const Local*) other;
-
-  if (lhs->condChildNum_ != rhs->condChildNum_)
-    return false;
-
-  if (!lhs->simpleBlockLikeContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<Local> Local::build(Builder* builder,
                           Location loc,
                           BlockStyle blockStyle,

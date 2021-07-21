@@ -1086,14 +1086,10 @@ loop_stmt:
 | TFORALL          expr              forall_intent_clause do_stmt  { $$ = ForallStmt::build(NULL, $2, $3,   $4, false, false); }
 | TFORALL          zippered_iterator                      do_stmt  { $$ = ForallStmt::build(NULL, $2, NULL, $3, true,  false); }
 | TFORALL          zippered_iterator forall_intent_clause do_stmt  { $$ = ForallStmt::build(NULL, $2, $3,   $4, true,  false); }
-| TFOREACH expr TIN expr                                   do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH expr TIN expr              forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH expr TIN zippered_iterator                      do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH expr TIN zippered_iterator forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH          expr                                   do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH          expr              forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH          zippered_iterator                      do_stmt { $$ = foreachNotImplementedError(); }
-| TFOREACH          zippered_iterator forall_intent_clause do_stmt { $$ = foreachNotImplementedError(); }
+| TFOREACH expr TIN expr do_stmt                    { $$ = ForLoop::buildForeachLoop(  $2, $4, $5, false, false); }
+| TFOREACH expr TIN zippered_iterator do_stmt       { $$ = ForLoop::buildForeachLoop(  $2, $4, $5, true, false); }
+| TFOREACH expr do_stmt                             { $$ = ForLoop::buildForeachLoop(NULL, $2, $3, false, false); }
+| TFOREACH zippered_iterator do_stmt                { $$ = ForLoop::buildForeachLoop(NULL, $2, $3, true, false); }
 | TLSBR expr_ls TIN expr TRSBR stmt
     {
       if ($2->argList.length != 1)

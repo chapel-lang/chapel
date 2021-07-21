@@ -750,6 +750,11 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
               if( info->cfile ) {
                 fnAddress.c = "(" + funcPtrType.c + ")";
                 fnAddress.c += vfn->cname;
+                if (fGenIDS) {
+                  fnAddress.c += " /* ";
+                  fnAddress.c += std::to_string(vfn->id);
+                  fnAddress.c += " */";
+                }
               } else {
 #ifdef HAVE_LLVM
                 INT_ASSERT(funcPtrType.type);

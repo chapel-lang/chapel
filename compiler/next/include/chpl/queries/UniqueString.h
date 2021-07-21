@@ -26,6 +26,8 @@
 #define CHPL_QUERIES_UNIQUE_STRING_H
 
 #include "chpl/queries/UniqueString-detail.h"
+#include "chpl/queries/mark-functions.h"
+#include "chpl/queries/update-functions.h"
 #include "chpl/util/hash.h"
 
 #include <cassert>
@@ -157,7 +159,6 @@ template<> struct update<chpl::UniqueString> {
 template<> struct mark<chpl::UniqueString> {
   void operator()(Context* context,
                   const chpl::UniqueString& keep) const {
-    printf("MARKING UNIQUE STRING %s\n", keep.c_str());
     keep.mark(context);
   }
 };

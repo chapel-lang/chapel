@@ -23,8 +23,10 @@ target_sources(libchplcomp-obj
                ASTNode.cpp
                ASTTag.cpp
                As.cpp
+               Array.cpp
                Begin.cpp
                Block.cpp
+               BoolLiteral.cpp
                BracketLoop.cpp
                Break.cpp
                Builder.cpp
@@ -40,6 +42,7 @@ target_sources(libchplcomp-obj
                Decl.cpp
                Defer.cpp
                Delete.cpp
+               Domain.cpp
                Dot.cpp
                DoWhile.cpp
                Enum.cpp
@@ -54,6 +57,7 @@ target_sources(libchplcomp-obj
                Function.cpp
                Identifier.cpp
                ImagLiteral.cpp
+               Import.cpp
                IndexableLoop.cpp
                IntLiteral.cpp
                Label.cpp
@@ -67,6 +71,7 @@ target_sources(libchplcomp-obj
                NumericLiteral.cpp
                On.cpp
                OpCall.cpp
+               Range.cpp
                RealLiteral.cpp
                Record.cpp
                Return.cpp
@@ -80,10 +85,10 @@ target_sources(libchplcomp-obj
                TypeDecl.cpp
                UintLiteral.cpp
                Use.cpp
-               UseClause.cpp
                Union.cpp
                Variable.cpp
                VarLikeDecl.cpp
+               VisibilityClause.cpp
                While.cpp
                WithClause.cpp
                Yield.cpp

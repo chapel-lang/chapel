@@ -98,7 +98,6 @@ primers:
 	@cp -f $(SOURCEDIR)/meta/primers/* $(CHPL_DOC_PRIMERS_BUILD_DIR)
 	@$(COPY_IF_DIFFERENT) $(CHPL_DOC_PRIMERS_BUILD_DIR) $(CHPL_DOC_PRIMERS_RST_DIR)
 
-
 examples:
 	@echo
 	@echo "Generating hellos from "'$$CHPL_HOME'"/test/release/examples to $(SOURCEDIR)/examples"

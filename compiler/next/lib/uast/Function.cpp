@@ -19,37 +19,12 @@
 
 #include "chpl/uast/Function.h"
 
+#include "chpl/uast/Block.h"
 #include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
-
-bool Function::contentsMatchInner(const ASTNode* other) const {
-  const Function* lhs = this;
-  const Function* rhs = (const Function*) other;
-  return lhs->namedDeclContentsMatchInner(rhs) &&
-         lhs->linkage_ == rhs->linkage_ &&
-         lhs->kind_ == rhs->kind_ &&
-         lhs->returnIntent_ == rhs->returnIntent_ &&
-         lhs->inline_ == rhs->inline_ &&
-         lhs->override_ == rhs->override_ &&
-         lhs->throws_ == rhs->throws_ &&
-         lhs->primaryMethod_ == rhs->primaryMethod_ &&
-         lhs->linkageNameExprChildNum_ == rhs->linkageNameExprChildNum_ &&
-         lhs->formalsChildNum_ == rhs->formalsChildNum_ &&
-         lhs->thisFormalChildNum_ == rhs->thisFormalChildNum_ &&
-         lhs->numFormals_ == rhs->numFormals_ &&
-         lhs->returnTypeChildNum_ == rhs->returnTypeChildNum_ &&
-         lhs->whereChildNum_ == rhs->whereChildNum_ &&
-         lhs->lifetimeChildNum_ == rhs->lifetimeChildNum_ &&
-         lhs->numLifetimeParts_ == rhs->numLifetimeParts_ &&
-         lhs->bodyChildNum_ == rhs->bodyChildNum_ &&
-         lhs->numBodyStmts_ == rhs->numBodyStmts_;
-}
-void Function::markUniqueStringsInner(Context* context) const {
-  namedDeclMarkUniqueStringsInner(context);
-}
 
 owned<Function> Function::build(Builder* builder, Location loc,
                                 UniqueString name, Decl::Visibility vis,
@@ -66,7 +41,7 @@ owned<Function> Function::build(Builder* builder, Location loc,
                                 owned<Expression> returnType,
                                 owned<Expression> where,
                                 ASTList lifetime,
-                                ASTList body) {
+                                owned<Block> body) {
   ASTList lst;
 
   int linkageNameExprChildNum = -1;
@@ -78,7 +53,6 @@ owned<Function> Function::build(Builder* builder, Location loc,
   int lifetimeChildNum = -1;
   int numLifetimeParts = 0;
   int bodyChildNum = -1;
-  int numBodyStmts = 0;
 
   if (linkageNameExpr.get() != nullptr) {
     linkageNameExprChildNum = lst.size();
@@ -116,12 +90,9 @@ owned<Function> Function::build(Builder* builder, Location loc,
       lst.push_back(std::move(part));
     }
   }
-  numBodyStmts = body.size();
-  if (numBodyStmts != 0) {
+  if (body.get() != nullptr) {
     bodyChildNum = lst.size();
-    for (auto & stmt : body) {
-      lst.push_back(std::move(stmt));
-    }
+    lst.push_back(std::move(body));
   }
 
   Function* ret = new Function(std::move(lst), name, vis,
@@ -135,8 +106,7 @@ owned<Function> Function::build(Builder* builder, Location loc,
                                whereChildNum,
                                lifetimeChildNum,
                                numLifetimeParts,
-                               bodyChildNum,
-                               numBodyStmts);
+                               bodyChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

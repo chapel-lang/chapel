@@ -20,44 +20,118 @@
 #ifndef CHPL_RESOLUTION_RESOLUTION_TYPES_H
 #define CHPL_RESOLUTION_RESOLUTION_TYPES_H
 
-#include "chpl/uast/TypeDecl.h"
+#include "chpl/types/Type.h"
+#include "chpl/uast/ASTNode.h"
+#include "chpl/util/memory.h"
+
+#include <unordered_map>
 
 namespace chpl {
 namespace resolution {
 
+// TODO: Should some/all of these structs be classes
+// with getters etc? That would be appropriate for
+// use as part of the library API.
 
-class Type {
- public:
-  enum TypeTag {
-    FROM_DECL,
-    INT8,
-    INT16,
-    INT32,
-    INT64,
-    UINT8,
-    UINT16,
-    UINT32,
-    UINT64,
-    BOOL,
-    BOOL8,
-    BOOL16,
-    BOOL32,
-    BOOL64,
-    REAL32,
-    REAL64,
-    IMAG32,
-    IMAG64,
-    COMPLEX64,
-    COMPLEX128,
-  };
- private:
-  TypeTag tag_;
-  const uast::TypeDecl* typeDecl_;
- public:
-  TypeTag tag() { return tag_; } 
-  const uast::TypeDecl* typeDecl() { return typeDecl_; }
-  UniqueString name(Context* context);
+/**
+  An untyped function signature. This is really just the part of a function
+  including the formals.
+ */
+struct UntypedFnSignature {
+  UniqueString name;
+  bool isMethod; // in that case, formals[0] is the receiver
+  std::vector<const uast::Formal*> formals;
 };
+
+struct CallInfoActual {
+  const types::Type* type;
+  UniqueString byName;
+};
+
+struct CallInfo {
+  bool isMethod; // in that case, actuals[0] is the receiver
+  std::vector<CallInfoActual> actuals;
+};
+
+struct TypedFnSignatureFormal {
+  const uast::Formal* formal;
+  const types::Type* type;
+  // TODO: param value
+};
+
+struct TypedFnSignature {
+  UniqueString name;
+  bool isMethod; // in that case, formals[0] is the receiver
+  std::vector<TypedFnSignatureFormal> formals;
+};
+
+/*
+struct ResolvedExpression {
+  // the expr that is resolved
+  const uast::Expression* expr = nullptr;
+  // For simple cases, which named decl does it refer to?
+  const uast::NamedDecl* decl = nullptr;
+  // What is its type?
+  const types::Type* type = nullptr;
+  ResolutionResult() { }
+  ResolutionResult(const uast::Expression* expr,
+                   const uast::NamedDecl* decl,
+                   const types::Type* type)
+    : expr(expr), decl(decl), type(type) { }
+};
+
+struct MultiResolvedExpression : ResolvedExpression {
+  // For a function call, it might refer to several Functions
+  // and we might not know which return intent to choose yet.
+  std::vector<const uast::Function*> candidates;
+
+  // TODO:
+  //  establishing types
+  //  return-intent overloading
+  //  generic instantiation
+  //  establish concrete intents
+  //  establish copy-init vs move
+  MultiResolvedExpression() { }
+};
+
+// postorder ID (int) -> ResolutionResult *within* a Function etc
+// an inner Function would not be covered here since it would get
+// a different ResolvedSymbol entry.
+using ResolutionResultByPostorderID = std::vector<ResolutionResult>;
+
+// A resolution result for a Function, Module, or TypeDecl (Record/Class/etc)
+struct ResolvedSymbol {
+  // the following are input for the resolution process but these
+  // are repeated here in case they are needed in follow-on processing.
+
+  // the NamedDecl that is resolved
+  const uast::NamedDecl* decl = nullptr;
+  // substitutions (only used for generic functions/types)
+  std::unordered_map<uast::NamedDecl*, types::Type*> typeSubs;
+  // TODO: int -> Immediate
+  std::unordered_map<uast::NamedDecl*, int> paramSubs;
+  // the point of instantiation
+  const ResolvedSymbol* instantiationPoint = nullptr;
+
+  // this is the output of the resolution process
+  ResolutionResultByPostorderID resolutionById;
+};
+
+using ResolvedSymbolVec = std::vector<const ResolvedSymbol*>;
+*/
+/*
+struct DefinedTopLevelNames {
+  // the module
+  const uast::Module* module;
+  // these are in program order
+  std::vector<UniqueString> topLevelNames;
+  DefinedTopLevelNames(const uast::Module* module,
+                       std::vector<UniqueString> topLevelNames)
+    : module(module), topLevelNames(std::move(topLevelNames)) {
+  }
+};
+using DefinedTopLevelNamesVec = std::vector<DefinedTopLevelNames>;
+*/
 
 
 } // end namespace resolution

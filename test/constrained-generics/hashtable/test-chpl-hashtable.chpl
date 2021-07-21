@@ -1,53 +1,61 @@
-use ChapelHashtable;
+/*
+2021-06: this started as rev. 309ebb8173 of:
+  test/types/chplhashtable/test-chpl-hashtable.chpl
+
+WIP: conversion from record 'chpl__hashtable' to interface 'chpl_Hashtable'.
+*/
+
+use MyHashtable;
 
 config var printInitDeinit = true;
 config const debug = false;
 
 
-proc printTable(h: chpl__hashtable) {
+proc printTable(h: chpl_Hashtable) {
   writeln("printing table tableSize=", h.tableSize,
           " tableNumFullSlots=", h.tableNumFullSlots);
-  for slot in h.allSlots() {
+  for slot in h.ifcAllSlots() {
     ref entry = h.table[slot];
     if entry.status == chpl__hash_status.full {
-      writeln("slot ", slot, " full. key = ", entry.key, " val = ", entry.val);
+      writeln("slot ", slot, " full. key = ", toString(entry.key), " val = ", toString(entry.val));
     } else {
       writeln("slot ", slot, " ", entry.status:string, ".");
     }
   }
 }
 
-proc test1() {
+proc test1(ref h: chpl_Hashtable, key1: h.keyType, val1: h.valType) {
   writeln("test1");
-  var h = new chpl__hashtable(int, int);
 
   var foundFullSlot: bool;
   var slotNum: int;
 
-  (foundFullSlot, slotNum) = h.findAvailableSlot(1);
+  (foundFullSlot, slotNum) = h.findAvailableSlot(key1);
   assert(!foundFullSlot);
   assert(slotNum > 0);
-  h.fillSlot(slotNum, 1, 10);
+  h.fillSlot(slotNum, key1, val1);
 
-  for slot in h.allSlots() {
+  for slot in h.ifcAllSlots() {
     if h.isSlotFull(slot) {
       ref entry = h.table[slot];
-      writeln("key = ", entry.key, " val = ", entry.val);
+      writeln("key = ", toString(entry.key), " val = ", toString(entry.val));
     }
   }
 
-  (foundFullSlot, slotNum) = h.findFullSlot(1);
+  (foundFullSlot, slotNum) = h.findFullSlot(key1);
   assert(foundFullSlot);
   assert(slotNum > 0);
 
-  var gotKey: int;
-  var gotVal: int;
+  var gotKey: h.keyType;
+  var gotVal: h.valType;
   h.clearSlot(slotNum, gotKey, gotVal);
-  assert(gotKey == 1);
-  assert(gotVal == 10);
+  assert(gotKey == key1);
+  assert(gotVal == val1);
   h.maybeShrinkAfterRemove();
 }
-test1();
+
+var h1 = new chpl__hashtable(int, int);
+test1(h1, 1, 10); // instantiates 'chpl__hashtable implements chpl_Hashtable;'
 
 class C {
   var xx: int = 0;
@@ -92,6 +100,8 @@ proc chpl__defaultHash(o: R) {
                                   1);
 }
 
+R implements Hashable;
+R implements StdOps;
 
 printInitDeinit = false;
 var globalRone = new R(1);
@@ -100,6 +110,7 @@ var globalRoneCopy = globalRone;
 assert(globalRoneCopy == globalRone);
 printInitDeinit = true;
 
+/*
 proc test2() {
   writeln("test2");
   var h = new chpl__hashtable(R, R);
@@ -159,7 +170,12 @@ proc test2() {
   h.maybeShrinkAfterRemove();
 }
 test2();
+*/
 
+var h2 = new chpl__hashtable(R, R);
+test1(h2, globalRone, globalRten); // instantiates 'chpl__h implements chpl_H'
+
+// todo: remove this test -- it is not interesting
 proc test3() {
   writeln("test3");
   var h = new chpl__hashtable(R, R);

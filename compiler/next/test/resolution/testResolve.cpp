@@ -17,7 +17,8 @@
  * limitations under the License.
  */
 
-#include "chpl/resolution/resolution-queries.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
@@ -35,6 +36,7 @@ using namespace parsing;
 using namespace resolution;
 using namespace uast;
 
+/*
 static void test1() {
   printf("test1\n");
   Context ctx;
@@ -49,17 +51,16 @@ static void test1() {
 
     auto& vec = resolveFile(context, path);
     assert(vec.size() == 1);
-    const Module* module = vec[0].module;
-    const auto* byId = vec[0].resolution; 
+    const Module* module = vec[0]->decl->toModule();
+    const auto& byId = vec[0]->resolutionById;
     const Variable* varDecl = module->child(0)->toVariable();
     const Identifier* identifier = module->child(1)->toIdentifier();
     assert(varDecl);
     assert(identifier);
     assert(0 == varDecl->name().compare("x"));
     assert(0 == identifier->name().compare("x"));
-    assert(byId);
-    const ResolutionResult& rr = (*byId)[identifier->id().postOrderId()];
-    assert(rr.exp != nullptr);
+    const ResolutionResult& rr = byId[identifier->id().postOrderId()];
+    assert(rr.expr != nullptr);
     assert(rr.decl != nullptr);
     assert(rr.decl == varDecl);
     context->collectGarbage();
@@ -81,7 +82,7 @@ static void test2() {
    
     auto& vec = resolveFile(context, path);
     assert(vec.size() == 1);
-    const Module* module = vec[0].module;
+    const Module* module = vec[0]->decl->toModule();
     ASTNode::dump(module, 2);
     context->collectGarbage();
   }
@@ -95,7 +96,7 @@ static void test2() {
 
     auto& vec = resolveFile(context, path);
     assert(vec.size() == 1);
-    const Module* module = vec[0].module;
+    const Module* module = vec[0]->decl->toModule();
     ASTNode::dump(module, 2);
     const Variable* varDecl = module->child(0)->toVariable();
     assert(varDecl);
@@ -113,28 +114,27 @@ static void test2() {
 
     auto& vec = resolveFile(context, path);
     assert(vec.size() == 1);
-    const Module* module = vec[0].module;
+    const Module* module = vec[0]->decl->toModule();
     ASTNode::dump(module, 2);
-    const auto* byId = vec[0].resolution; 
+    const auto& byId = vec[0]->resolutionById;
     const Variable* varDecl = module->child(0)->toVariable();
     const Identifier* identifier = module->child(1)->toIdentifier();
     assert(varDecl);
     assert(identifier);
     assert(0 == varDecl->name().compare("x"));
     assert(0 == identifier->name().compare("x"));
-    assert(byId);
-    const ResolutionResult& rr = (*byId)[identifier->id().postOrderId()];
-    assert(rr.exp != nullptr);
+    const ResolutionResult& rr = byId[identifier->id().postOrderId()];
+    assert(rr.expr != nullptr);
     assert(rr.decl != nullptr);
     assert(rr.decl == varDecl);
     context->collectGarbage();
   }
 }
-
+*/
 
 int main() {
-  test1();
-  test2();
+  //test1();
+  //test2();
 
   return 0;
 }

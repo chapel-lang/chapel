@@ -62,8 +62,31 @@ class FnCall : public Call {
       actualNames_(std::move(actualNames)),
       callUsedSquareBrackets_(callUsedSquareBrackets) {
   }
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const FnCall* lhs = this;
+    const FnCall* rhs = (const FnCall*) other;
+
+    if (!lhs->callContentsMatchInner(rhs))
+      return false;
+
+    if (lhs->callUsedSquareBrackets_ != rhs->callUsedSquareBrackets_ ||
+        lhs->actualNames_.size() != rhs->actualNames_.size())
+      return false;
+
+    int nActualNames = (int) lhs->actualNames_.size();
+    for (int i = 0; i < nActualNames; i++) {
+      if (lhs->actualNames_[i] != rhs->actualNames_[i])
+        return false;
+    }
+
+    return true;
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    callMarkUniqueStringsInner(context);
+    for (const auto& str : actualNames_) {
+      str.mark(context);
+    }
+  }
 
  public:
   ~FnCall() override = default;

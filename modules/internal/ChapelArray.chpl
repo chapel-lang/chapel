@@ -2328,13 +2328,11 @@ module ChapelArray {
                  place (defaults to `here`)
        :type loc: locale
     */
-    pragma "order independent yielding loops"
-    pragma "no redundant order independent pragma warning"
     iter localSubdomains(loc: locale = here) {
       if _value.dsiHasSingleLocalSubdomain() {
         yield localSubdomain(loc);
       } else {
-        for d in _value.dsiLocalSubdomains(loc) do yield d;
+        foreach d in _value.dsiLocalSubdomains(loc) do yield d;
       }
     }
 
@@ -3434,6 +3432,7 @@ module ChapelArray {
       return _value.doiScan(op, this.domain);
     }
 
+    pragma "no doc"
     proc iteratorYieldsLocalElements() param {
       return _value.dsiIteratorYieldsLocalElements();
     }

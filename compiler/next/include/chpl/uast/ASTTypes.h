@@ -20,12 +20,6 @@
 #ifndef CHPL_UAST_ASTTYPES_H
 #define CHPL_UAST_ASTTYPES_H
 
-#include "chpl/util/memory.h"
-
-#include <iterator>
-#include <utility>
-#include <vector>
-
 namespace chpl {
 namespace uast {
 

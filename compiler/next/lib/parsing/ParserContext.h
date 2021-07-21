@@ -67,6 +67,7 @@ struct ParserContext {
   // the parser rules.
   Decl::Visibility visibility;
   Variable::Kind varDeclKind;
+  bool isVarDeclConfig;
   YYLTYPE declStartLocation;
 
   // this type and stack helps the parser know if a function
@@ -91,6 +92,7 @@ struct ParserContext {
     this->comments           = nullptr;
     this->visibility         = Decl::DEFAULT_VISIBILITY;
     this->varDeclKind        = Variable::VAR;
+    this->isVarDeclConfig    = false;
     YYLTYPE emptyLoc = {0};
     this->declStartLocation  = emptyLoc;
     this->atEOF              = false;
@@ -101,6 +103,7 @@ struct ParserContext {
   void noteDeclStartLoc(YYLTYPE loc);
   Decl::Visibility noteVisibility(Decl::Visibility visibility);
   Variable::Kind noteVarDeclKind(Variable::Kind varDeclKind);
+  bool noteIsVarDeclConfig(bool isConfig);
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
 
@@ -178,9 +181,9 @@ struct ParserContext {
   ParserExprList* appendList(ParserExprList* dst, CommentsAndStmt cs);
   ASTList consumeList(ParserExprList* lst);
 
- void consumeNamedActuals(MaybeNamedActualList* lst,
-                          ASTList& actualsOut,
-                          std::vector<UniqueString>& namesOut);
+  void consumeNamedActuals(MaybeNamedActualList* lst,
+                           ASTList& actualsOut,
+                           std::vector<UniqueString>& namesOut);
 
   std::vector<ParserComment>* gatherCommentsFromList(ParserExprList* lst,
                                                      YYLTYPE location);
@@ -238,7 +241,7 @@ struct ParserContext {
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
   // Build a loop index decl from a given expression. The expression is owned
-  // because it will be consumed. 
+  // because it will be consumed.
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, owned<Expression> e);
 
   FnCall* wrapCalledExpressionInNew(YYLTYPE location,
@@ -248,6 +251,8 @@ struct ParserContext {
   BlockStyle determineBlockStyle(BlockOrDo blockOrDo);
 
   ASTList consumeAndFlattenTopLevelBlocks(ParserExprList* exprLst);
+
+  owned<Block> consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst);
 
   // Lift up top level comments, clear expression level comments, prepare
   // the statement body, and determine the block style.
@@ -287,7 +292,7 @@ struct ParserContext {
                          ParserExprList*& outExprLst,
                          BlockStyle& outBlockStyle,
                          YYLTYPE locStartKeyword,
-                         YYLTYPE locBodyAnchor, 
+                         YYLTYPE locBodyAnchor,
                          BlockOrDo consume);
 
   CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLeftBracket,
@@ -363,12 +368,32 @@ struct ParserContext {
                           owned<Expression> name,
                           owned<Expression> rename);
 
+  Expression*
+  buildVisibilityClause(YYLTYPE location, owned<Expression> symbol);
+
+  Expression*
+  buildVisibilityClause(YYLTYPE location, owned<Expression> symbol,
+                        VisibilityClause::LimitationKind limitationKind,
+                        ASTList limitations);
+
   CommentsAndStmt
-  buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locUseClause,
+  buildImportStmt(YYLTYPE locEverything, Decl::Visibility visibility,
+                  ParserExprList* visibilityClauses);
+
+  CommentsAndStmt
+  buildMultiUseStmt(YYLTYPE locEverything, Decl::Visibility visibility,
+                    ParserExprList* visibilityClauses);
+
+  CommentsAndStmt
+  buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
                      Decl::Visibility visibility,
                      owned<Expression> name,
-                     UseClause::LimitationClauseKind limitationClauseKind,
+                     VisibilityClause::LimitationKind limitationKind,
                      ParserExprList* limitationExprs);
+
+  // Given a list of vars, build either a single var or a multi-decl.
+  CommentsAndStmt
+  buildVarOrMultiDecl(YYLTYPE locEverything, ParserExprList* vars);
 
   CommentsAndStmt buildAggregateTypeDecl(YYLTYPE location,
                                          TypeDeclParts parts,
@@ -377,4 +402,5 @@ struct ParserContext {
                                          YYLTYPE openingBrace,
                                          ParserExprList* contents,
                                          YYLTYPE closingBrace);
+
 };

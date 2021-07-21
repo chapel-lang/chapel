@@ -1,6 +1,8 @@
 // interface with an IC function
 
-interface HLP { }
+interface HLP {
+  proc write(arg: Self);
+}
 
 interface IFC {
   proc reqFn(formal: ?T) where T implements HLP;
@@ -10,7 +12,7 @@ int implements IFC;
 real implements HLP;
 
 proc reqFn(formal: ?R) where R implements HLP {
-  writeln("in reqFn.R");
+  write("in reqFn.R  formal = "); write(formal); writeln();
 }
 
 proc icFun(arg1: ?Q1, arg2: ?Q2)

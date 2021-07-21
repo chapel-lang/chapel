@@ -249,7 +249,6 @@ module ChapelTuple {
   //
   pragma "no doc"
   pragma "reference to const when const this"
-  pragma "order independent yielding loops"
   iter _tuple.these() ref
   {
 
@@ -266,7 +265,7 @@ module ChapelTuple {
     if CHPL_WARN_TUPLE_ITERATION == "true" then
       compilerWarning("Iterating over tuples. If you intended to use zippered iteration, add the new keyword 'zip' before the tuple of iteratable expressions.");
 
-    for i in 0..#this.size {
+    foreach i in 0..#this.size {
       yield(this(i));
     }
   }
@@ -296,7 +295,6 @@ module ChapelTuple {
 
   pragma "no doc"
   pragma "reference to const when const this"
-  pragma "order independent yielding loops"
   iter _tuple.these(param tag:iterKind, followThis: _tuple) ref
       where tag == iterKind.follower
   {
@@ -305,7 +303,7 @@ module ChapelTuple {
 
     var fThis = followThis(0);
 
-    for i in fThis {
+    foreach i in fThis {
       yield this(i);
     }
   }

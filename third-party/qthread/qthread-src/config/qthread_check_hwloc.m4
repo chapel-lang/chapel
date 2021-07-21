@@ -10,6 +10,11 @@ AC_DEFUN([QTHREAD_CHECK_HWLOC], [
   AC_ARG_WITH([hwloc],
               [AS_HELP_STRING([--with-hwloc=[[PATH]]],
 			                  [specify the path to the hwloc library; used for both the library and the include files])])
+  AC_ARG_WITH([hwloc-symbol-prefix], 
+              [AS_HELP_STRING([--with-hwloc-symbol-prefix=[[prefix]]],
+                        [specify prefix for hwloc symbols @<:@default=hwloc_@:>@.])], [], 
+                        [with_hwloc_symbol_prefix="hwloc_"])
+
   hwloc_saved_CPPFLAGS="$CPPFLAGS"
   hwloc_saved_LDFLAGS="$LDFLAGS"
   AS_IF([test "x$with_hwloc" != x],
@@ -18,7 +23,7 @@ AC_DEFUN([QTHREAD_CHECK_HWLOC], [
   AC_CHECK_HEADERS([hwloc.h],[],
   				   [qt_allgoodsofar=no])
   AS_IF([test "x$qt_allgoodsofar" = xyes],
-	    [AC_SEARCH_LIBS([hwloc_topology_init], [hwloc "hwloc -lnuma"], [],
+	    [AC_SEARCH_LIBS([${with_hwloc_symbol_prefix}topology_init], [hwloc "hwloc -lnuma"], [],
 		                [qt_allgoodsofar=no])])
   AS_IF([test "x$qt_allgoodsofar" = xyes],
         [AC_MSG_CHECKING([for distance support in hwloc])

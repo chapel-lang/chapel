@@ -51,6 +51,7 @@ class Immediate;
 class IteratorInfo;
 class Stmt;
 class SymExpr;
+struct InterfaceReps;
 
 const int INTENT_FLAG_IN          = 0x01;
 const int INTENT_FLAG_OUT         = 0x02;
@@ -587,6 +588,7 @@ public:
   static DefExpr* buildDef(const char* name, CallExpr* formals, BlockStmt* body);
   static DefExpr* buildFormal(const char* name, IntentTag intent);
   InterfaceSymbol(const char* name, BlockStmt* body);
+ ~InterfaceSymbol() override;
 
   DECLARE_SYMBOL_COPY(InterfaceSymbol);
   InterfaceSymbol* copyInner(SymbolMap* map)             override;
@@ -611,6 +613,9 @@ public:
 
   // constraints to be checked for each implementation
   std::vector<IfcConstraint*> associatedConstraints;
+
+  // representatives for the symbols in associatedConstraints' interfaces
+  std::vector<InterfaceReps*> ifcReps;
 
   // each FnSymbol for the interface's required function is mapped
   //  - to itself, if there is a default implementation

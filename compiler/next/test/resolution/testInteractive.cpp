@@ -18,7 +18,9 @@
  */
 
 #include "chpl/parsing/parsing-queries.h"
-#include "chpl/resolution/resolution-queries.h"
+#include "chpl/queries/query-impl.h"
+#include "chpl/resolution/scope-queries.h"
+#include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 
 // always check assertions in this test
@@ -32,6 +34,47 @@ using namespace chpl;
 using namespace parsing;
 using namespace resolution;
 using namespace uast;
+
+static void findInnermostDecls(Context* context, const ASTNode* ast) {
+  if (auto ident = ast->toIdentifier()) {
+    const Scope* scope = scopeForId(context, ast->id());
+    assert(scope != nullptr);
+
+    auto name = ident->name();
+    const auto& m = findInnermostDecl(context, scope, name);
+
+    auto status = context->queryStatus(findInnermostDecl,
+                                      std::make_tuple(scope, name));
+
+    printf("%8s %-8s refers to: ",
+           ident->id().toString().c_str(),
+           ident->name().c_str());
+
+    if (m.found == InnermostMatch::ZERO) {
+      printf("%-32s ", "no such name found");
+    } else if (m.found == InnermostMatch::ONE && m.id.isEmpty()) {
+      printf("%-32s ", "builtin");
+    } else if (m.found == InnermostMatch::ONE) {
+      printf("%-32s ", m.id.toString().c_str());
+    } else {
+      printf("%-32s ", "ambiguity");
+    }
+
+    if (status == Context::NOT_CHECKED_NOT_CHANGED) {
+      printf("(not checked)");
+    } else if (status == Context::REUSED) {
+      printf("(reused)");
+    } else if (status == Context::CHANGED) {
+      printf("(changed)");
+    }
+
+    printf("\n");
+  }
+
+  for (const ASTNode* child : ast->children()) {
+    findInnermostDecls(context, child);
+  }
+}
 
 int main(int argc, char** argv) {
 
@@ -50,8 +93,14 @@ int main(int argc, char** argv) {
       auto filepath = UniqueString::build(ctx, argv[i]);
 
       const ModuleVec& mods = parse(ctx, filepath);
-      for (const auto module : mods) {
-        ASTNode::dump(module);
+      for (const auto mod : mods) {
+        ASTNode::dump(mod);
+        printf("\n");
+
+        //printAllScopes(ctx, mod);
+        //printf("\n");
+
+        findInnermostDecls(ctx, mod);
         printf("\n");
       }
 
@@ -71,25 +120,26 @@ int main(int argc, char** argv) {
         }
       }*/
 
-      const ResolvedModuleVec& rmods = resolveFile(ctx, filepath);
+      /*
+      const ResolvedSymbolVec& rmods = resolveFile(ctx, filepath);
       for (const auto& elt : rmods) {
-        const Module* module = elt.module;
+        const Module* module = elt->decl->toModule();
 
         printf("Module %s:\n", module->name().c_str());
         ASTNode::dump(module);
         printf("\n");
 
-        const ResolutionResultByPostorderID& resolution = *elt.resolution;
+        const ResolutionResultByPostorderID& resolution = elt->resolutionById;
         for (const auto& rr : resolution) {
-          if (rr.exp != nullptr && rr.decl != nullptr) {
+          if (rr.expr != nullptr && rr.decl != nullptr) {
             printf("Resolved:\n");
-            ASTNode::dump(rr.exp, 2);
+            ASTNode::dump(rr.expr, 2);
             printf("to:\n");
             ASTNode::dump(rr.decl, 2);
             printf("\n");
           }
         }
-      }
+      }*/
     }
     if (gc) {
       ctx->collectGarbage();

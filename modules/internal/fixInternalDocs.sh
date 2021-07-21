@@ -217,13 +217,12 @@ replace "chpl_bytes" "bytes" $file
 
 ## End of Bytes ##
 
-## ChapelError ##
+## Errors ##
 
-file=ChapelError.rst
-fixTitle "Errors" $file
+file=Errors.rst
 removeUsage $file
 
-## End of ChapelError ##
+## End of Errors ##
 
 ## OwnedObject ##
 file=OwnedObject.rst

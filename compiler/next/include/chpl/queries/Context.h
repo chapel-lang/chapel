@@ -35,6 +35,10 @@
 
 namespace chpl {
 
+namespace uast {
+  class ASTNode;
+}
+
 /**
 
 \rst
@@ -56,7 +60,7 @@ When running a query, the query system will manage:
  * recording the queries called by that query as dependencies
 
 To write a query, create a function that uses the ``QUERY_`` macros defined in
-QueryImpl.h. The arguments to the function need to be efficient to copy (so
+query-impl.h. The arguments to the function need to be efficient to copy (so
 ``UniqueString``, ``ID``, ``Location``, and pointers are OK, but e.g.
 ``std::vector`` is not).  The function will return a result, which need not be
 POD and can include AST pointers (but see below). The function needs to be
@@ -70,7 +74,7 @@ myArg2:
 
 .. code-block:: c++
 
-    #include "chpl/Queries/QueryImpl.h"
+    #include "chpl/queries/query-impl.h"
 
     const MyResultType& myQueryFunction(Context* context,
                                         MyArgType MyArg1,
@@ -151,18 +155,25 @@ in the appropriate elements from ``addin``. This strategy allows later queries
 that depend on such a result to use pointers to the owned elements and to
 avoid updating everything if just one element changed.
 
-Queries *can* return results that contain non-owning pointers to results from
-dependent queries. In that event, the update function should not rely on the
-contents of these pointers from the ``keep`` value. The system will make sure
-that they refer to valid memory but they might be a combination of old results.
-Additionally, the system will ensure that any old results being replaced will
-remain allocated until the garbage collection runs outside of any query.
+Queries *can* return results that contain non-owning pointers to ``owned``
+results from other queries. However, it is not sufficient to simply use the
+address of the `const &` result of the query - that is a location in the map
+that will not change as the result is updated. Instead, such patterns should
+use `owned` to make sure a new heap-allocated value is created.
+
+When working with results containing pointers, the update function should not
+rely on the contents of these pointers from the ``keep`` value. The system will
+make sure that they refer to valid memory but they might be a combination of old
+results.  Additionally, the system will ensure that any old results being
+replaced will remain allocated until the garbage collection runs outside of any
+query.
 
 For example, a ``parse`` query might result in a list of ``owned`` AST element
 pointers. A follow-on query, ``listSymbols``, can result in something containing
 these AST element pointers, but not owning them. In that event, the
 ``listSymbols`` query needs to use a ``update`` function that does not look
-into the AST element pointers.
+into the AST element pointers. However it can compare the pointers themselves
+because the ``parse`` query will update the pointer if the contents change.
 
 \endrst
 
@@ -252,6 +263,14 @@ class Context {
        const char* traceQueryName,
        bool isInputQuery);
 
+  template<typename ResultType,
+           typename... ArgTs>
+  bool
+  hasResultForQuery(
+       const ResultType& (*queryFunction)(Context* context, ArgTs...),
+       const std::tuple<ArgTs...>& tupleOfArgs,
+       const char* traceQueryName);
+
   void recomputeIfNeeded(const querydetail::QueryMapResultBase* resultEntry);
   void updateForReuse(const querydetail::QueryMapResultBase* resultEntry);
 
@@ -316,7 +335,13 @@ class Context {
   /**
     Return the file path for the file containing this ID.
    */
-  UniqueString filePathForID(ID id);
+  UniqueString filePathForId(ID id);
+
+  /**
+    Returns true if filePathForId is already populated for
+    this ID.
+   */
+  bool hasFilePathForId(ID id);
 
   /**
     This function increments the current revision number stored
@@ -345,6 +370,69 @@ class Context {
     is suitable to call from a parse query.
    */
   void setFilePathForModuleID(ID moduleID, UniqueString path);
+
+  /**
+    Note an error for the currently running query.
+   */
+  void error(ErrorMessage error);
+  /**
+    Note an error for the currently running query.
+    This is a convenience overload.
+    This version takes in a Location and a printf-style format string.
+   */
+  void error(Location loc, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+  /**
+    Note an error for the currently running query.
+    This is a convenience overload.
+    This version takes in an ID and a printf-style format string.
+    The ID is used to compute a Location using parsing::locateId.
+   */
+  void error(ID id, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+  ;
+  /**
+    Note an error for the currently running query.
+    This is a convenience overload.
+    This version takes in an AST node and a printf-style format string.
+    The AST node is used to compute a Location by using a parsing::locateAst.
+   */
+  void error(const uast::ASTNode* ast, const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 3, 4)))
+  #endif
+;
+
+  typedef enum {
+    NOT_CHECKED_NOT_CHANGED = 0,
+    REUSED = 1,
+    CHANGED = 2
+  } QueryStatus;
+
+  /**
+    Returns:
+      0 if the query was not checked or changed in this revision
+      1 if the query was checked but not changed in this revision
+      2 if the query was changed in this revision
+
+    This is intended only as a debugging aid.
+   */
+  template<typename ResultType,
+           typename... ArgTs>
+  QueryStatus queryStatus(
+         const ResultType& (*queryFunction)(Context* context, ArgTs...),
+         const std::tuple<ArgTs...>& tupleOfArgs);
 
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly
@@ -381,7 +469,16 @@ class Context {
   const ResultType&
   queryGetSaved(const querydetail::QueryMapResult<ResultType, ArgTs...>* r);
 
-  void queryNoteError(ErrorMessage error);
+  // It's a fatal error to run a query recursively.
+  // To avoid that in cases that have some sort of natural recursion,
+  // use this function to ask if a query is already running and to
+  // get the partial result if it is.
+  template<typename ResultType,
+           typename... ArgTs>
+  const ResultType* queryGetRunningQueryPartialResult(
+         const ResultType& (*queryFunction)(Context* context, ArgTs...),
+         const std::tuple<ArgTs...>& tupleOfArgs,
+         const char* traceQueryName);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -393,14 +490,6 @@ class Context {
       ResultType result,
       const char* traceQueryName);
 
-  /*
-  template<typename ResultType,
-           typename... ArgTs>
-  void queryRecomputedUpdateResult(
-      querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
-      const std::tuple<ArgTs...>& tupleOfArgs,
-      ResultType result);
-   */
   template<typename ResultType,
            typename... ArgTs>
   void querySetterUpdateResult(

@@ -1,0 +1,3 @@
+warning: Ambiguous module source file -- using std/Path.chpl over $CHPL_HOME/modules/standard/Path.chpl
+In my personal copy of Path
+In overridePath

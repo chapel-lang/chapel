@@ -48,18 +48,27 @@ class DoWhile final : public Loop {
  private:
   DoWhile(ASTList children, BlockStyle blockStyle,
           int loopBodyChildNum,
-          int numLoopBodyStmts,
           int conditionChildNum)
     : Loop(asttags::DoWhile, std::move(children),
            blockStyle,
-           loopBodyChildNum,
-           numLoopBodyStmts),
+           loopBodyChildNum),
       conditionChildNum_(conditionChildNum) {
     assert(isExpressionASTList(children_));
     assert(condition());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const DoWhile* lhs = this;
+    const DoWhile* rhs = (const DoWhile*) other;
+
+    if (lhs->conditionChildNum_ != rhs->conditionChildNum_)
+      return false;
+
+    if (!lhs->loopContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
 
   void markUniqueStringsInner(Context* context) const override {
     loopMarkUniqueStringsInner(context);
@@ -75,7 +84,7 @@ class DoWhile final : public Loop {
   */
   static owned<DoWhile> build(Builder* builder, Location loc,
                               BlockStyle blockStyle,
-                              ASTList stmts,
+                              owned<Block> body,
                               owned<Expression> condition);
 
 

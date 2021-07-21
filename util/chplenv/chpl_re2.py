@@ -4,7 +4,7 @@ import sys
 
 import chpl_compiler, chpl_platform, overrides, third_party_utils
 from chpl_home_utils import get_chpl_third_party
-from utils import memoize
+from utils import memoize, warning
 
 
 @memoize
@@ -14,9 +14,8 @@ def get():
     if regexp:
         if not re2:
             re2 = 'bundled' if regexp == 're2' else 'none'
-        sys.stderr.write("Warning: CHPL_REGEXP is deprecated.\n"
-                         "Set CHPL_RE2 to 'bundled' or 'none'.\n"
-                         "Assuming CHPL_RE2={}.\n".format(re2))
+
+        warning("CHPL_REGEXP is deprecated. Use CHPL_RE2.")
     elif not re2:
         re2_header = os.path.join(get_chpl_third_party(), 're2',
                                   'install', get_uniq_cfg_path(),

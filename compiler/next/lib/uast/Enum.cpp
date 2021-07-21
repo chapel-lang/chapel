@@ -35,14 +35,6 @@ bool Enum::isEnumElementAndCommentList(const ASTList& list) {
   }
   return true;
 }
-bool Enum::contentsMatchInner(const ASTNode* other) const {
-  const Enum* lhs = this;
-  const Enum* rhs = (const Enum*) other;
-  return lhs->typeDeclContentsMatchInner(rhs);
-}
-void Enum::markUniqueStringsInner(Context* context) const {
-  typeDeclMarkUniqueStringsInner(context);
-}
 
 owned<Enum> Enum::build(Builder* builder, Location loc,
                         UniqueString name, Decl::Visibility vis,

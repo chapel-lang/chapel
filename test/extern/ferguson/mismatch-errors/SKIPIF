@@ -1,0 +1,2 @@
+CHPL_TARGET_COMPILER!=llvm
+# these tests are for error messages in LLVM compilation

@@ -35,15 +35,6 @@ bool MultiDecl::isAcceptableMultiDecl() {
   return true;
 }
 
-bool MultiDecl::contentsMatchInner(const ASTNode* other) const {
-  const MultiDecl* lhs = this;
-  const MultiDecl* rhs = (const MultiDecl*) other;
-  return lhs->declContentsMatchInner(rhs);
-}
-void MultiDecl::markUniqueStringsInner(Context* context) const {
-  declMarkUniqueStringsInner(context);
-}
-
 owned<MultiDecl> MultiDecl::build(Builder* builder,
                                   Location loc,
                                   Decl::Visibility vis,

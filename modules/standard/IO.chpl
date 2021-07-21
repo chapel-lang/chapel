@@ -1581,7 +1581,7 @@ Get the path to an open file.
 Note that not all files have a path (e.g. files opened with :proc:`openmem`),
 and that this function may not work on all operating systems.
 
-The function :proc:`Path.file.realPath` is an alternative way
+The function :proc:`Path.realPath` is an alternative way
 to get the path to a file.
 
 :throws SystemError: Thrown if the path could not be retrieved.
@@ -4224,7 +4224,6 @@ record ItemReader {
   }
 
   /* iterate through all items of that type read from the channel */
-  pragma "not order independent yielding loops"
   iter these() { // TODO: this should be throws
     while true {
       var x:ItemType;
@@ -7249,7 +7248,6 @@ proc channel.match(re:regex(?), ref captures ...?k):regexMatch throws
    :yields: tuples of :record:`Regex.regexMatch` objects, where the first element
             is the whole pattern.  The tuples will have 1+captures elements.
  */
-pragma "not order independent yielding loops"
 iter channel.matches(re:regex(?), param captures=0, maxmatches:int = max(int))
 // TODO: should be throws
 {
