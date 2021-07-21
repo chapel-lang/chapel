@@ -27,7 +27,9 @@
 #include "DecoratedClassType.h"
 #include "driver.h"
 #include "expr.h"
+#include "ForLoop.h"
 #include "iterator.h"
+#include "primitive.h"
 #include "stmt.h"
 #include "stlUtil.h"
 #include "stringutil.h"
@@ -49,7 +51,7 @@ static void checkReturnPaths(FnSymbol* fn);
 static void checkCalls();
 static void checkExternProcs();
 static void checkExportedProcs();
-
+static void testFitForGPU();
 
 static void
 checkConstLoops() {
@@ -123,6 +125,8 @@ checkResolved() {
       }
     }
   }
+
+  testFitForGPU();
   // check for no record deletes, no invalid PRIM_ADDR_OF
   checkCalls();
   checkConstLoops();
@@ -530,6 +534,50 @@ checkBadAddrOf(CallExpr* call)
           if (rhsExprTemp || rhs->symbol()->isConstant()) {
             USR_FATAL_CONT(call, "Cannot set a non-const reference to a const variable.");
           }
+        }
+      }
+    }
+  }
+}
+
+
+extern int classifyPrimitive(CallExpr *call, bool inLocal);
+extern bool inLocalBlock(CallExpr *call);
+
+static bool blockLooksLikeStreamForGPU(BlockStmt* blk) {
+  if (blk->getModule()->modTag != MOD_USER)
+    return false;
+  std::vector<CallExpr*> calls;
+  collectCallExprs(blk, calls);
+  for_vector(CallExpr, call, calls) {
+    if (call->primitive) {
+      // only primitives that are fast and local are allowed for now
+      bool inLocal = inLocalBlock(call);
+      int is = classifyPrimitive(call, inLocal);
+      if ((is != FAST_AND_LOCAL)) {
+        return false;
+      }
+    }
+  /*else {
+      std::set<FnSymbol*>& fnSet;
+      FnSymbol* f = call->findFnSymbol();
+      if (!fitForGPUOffload(f, fnSet))
+        return false;
+    } */
+
+  }
+  return true;
+}
+
+
+
+static void
+testFitForGPU() {
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (ForLoop* forLoop = toForLoop(block)) {
+      if (forLoop->isOrderIndependent()) {
+        if (blockLooksLikeStreamForGPU(forLoop)) {
+          printf("found suitable GPU loop at %s:%d\n", forLoop->fname(), forLoop->linenum());
         }
       }
     }

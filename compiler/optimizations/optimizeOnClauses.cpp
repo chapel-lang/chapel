@@ -36,31 +36,6 @@
 
 #include <vector>
 
-
-// There are two questions:
-// 1- is the primitive/function eligible to run in a fast block?
-//    any blocking or system call disqualifies it since a fast
-//    AM handler can be run in a signal handler
-// 2- is the primitive/function communication free?
-
-// Any function containing communication can't run in a fast block.
-
-enum {
-  // The primitive is ineligible for a fast (e.g. uses a lock or allocator)
-  // AND it causes communication
-  NOT_FAST_NOT_LOCAL,
-  // Is the primitive ineligible for a fast (e.g. uses a lock or allocator)
-  // but communication free?
-  LOCAL_NOT_FAST,
-  // Does the primitive communicate?
-  // This implies NOT_FAST, unless it is in a local block
-  // if it is in a local block, this means IS_FAST.
-  FAST_NOT_LOCAL,
-  // Is the primitive function fast (ie, could it be run in a signal handler)
-  // IS_FAST implies IS_LOCAL.
-  FAST_AND_LOCAL
-};
-
 //
 // Return NOT_FAST, NOT_LOCAL, IS_LOCAL, or IS_FAST.
 //
@@ -87,6 +62,8 @@ classifyPrimitive(CallExpr *call) {
       case PRIM_GET_USER_LINE:
       case PRIM_GET_USER_FILE:
       case PRIM_BLOCK_LOCAL:
+      case PRIM_END_OF_STATEMENT:
+      case PRIM_YIELD:
         return FAST_AND_LOCAL;
 
       // Loops can have arbitrary trip counts, don't consider fast
@@ -345,7 +322,7 @@ isLocal(int is)
 
 
 
-static int
+int
 classifyPrimitive(CallExpr *call, bool inLocal)
 {
   int is = classifyPrimitive(call);
@@ -356,7 +333,7 @@ classifyPrimitive(CallExpr *call, bool inLocal)
   return is;
 }
 
-static bool
+bool
 inLocalBlock(CallExpr *call) {
   for (Expr* parent = call->parentExpr; parent; parent = parent->parentExpr) {
     if (BlockStmt* blk = toBlockStmt(parent)) {
