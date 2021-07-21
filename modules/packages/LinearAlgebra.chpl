@@ -2664,6 +2664,17 @@ proc column_resample(A: [?D], col = 0) {
   return A;
 }
 
+proc sparseDenseMatmul(A: [], B: []) where isSparseArr(A) || !isSparseArr(B) {
+  var resDom = {0..<A.domain.shape(0), 0..<B.domain.shape(1)};
+  var C: [resDom] A.eltType;
+
+  for i in 0..<B.domain.shape(1) {
+    C[.., i] = dot(A, B[.., i]);
+  }
+  return C;
+}
+
+
 proc onenormest(A: [?D], param t=2,param itmax=5) throws {
   if (D.shape(0) != D.shape(1)) {
     throw new LinearAlgebraError("onenormest(): Square Matrix Expected");
@@ -2713,18 +2724,18 @@ proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
 
   X /= n;
   //var usedInd = [0];
-  var oldEstimate = 0;
+  var oldEstimate = 0.0;
   var S = zeros(wD);
   var oldS = zeros(wD);
   var k = 1;
   //var ind = [];
   //var bestColSofar: [0..<n] X.eltType;
-  var Y: [X.dom] X.eltType;
+  var Y: [{0..<n, 0..<t}] X.eltType;
   var ind_best = 0;
   var visited_ind: set(X.eltType);
 
   while true {
-    Y = dot(A, X);
+    Y = sparseDenseMatmul(A, X);
     // sum along axis zero taken on (n,t) dimension
     // sparse matrix for a large n and a very small t
     // this operation can be attributed to O(n) complexity.
@@ -2762,7 +2773,7 @@ proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
       }
     }
 
-    var Z = dot(A.T, S);
+    var Z = sparseDenseMatmul(A.T, S);
     var h = max(abs(Z), axis=1);
 
     var maxHVal = max reduce(h);
@@ -3174,8 +3185,9 @@ module Sparse {
     }
     // matrix-matrix
     else if Adom.rank == 2 && Bdom.rank == 2 {
-      if !isCSArr(A) || !isCSArr(B) then
+      if !isCSArr(A) || !isCSArr(B) then {
         compilerError("Only CSR format is supported for sparse multiplication");
+      }
       return _csrmatmatMult(A, B);
     }
     else {
