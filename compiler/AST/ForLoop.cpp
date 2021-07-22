@@ -356,6 +356,7 @@ ForLoop::ForLoop() : LoopStmt(0)
   mZippered = false;
   mLoweredForall = false;
   mIsForExpr = false;
+  mIsGPUSuitable = false;
 }
 
 ForLoop::ForLoop(VarSymbol* index,
@@ -370,6 +371,7 @@ ForLoop::ForLoop(VarSymbol* index,
   mZippered = zippered;
   mLoweredForall = isLoweredForall;
   mIsForExpr = isForExpr;
+  mIsGPUSuitable = false;
 }
 
 ForLoop* ForLoop::copyInner(SymbolMap* map)
@@ -390,6 +392,7 @@ ForLoop* ForLoop::copyInner(SymbolMap* map)
   // MPF 2020-01-21: It seems it should also copy mLoweredForall,
   // but doing so causes problems in lowerIterators.
   retval->mIsForExpr        = mIsForExpr;
+  retval->mIsGPUSuitable    = mIsGPUSuitable;
 
   for_alist(expr, body)
     retval->insertAtTail(expr->copy(map, true));
@@ -454,6 +457,16 @@ bool ForLoop::isLoweredForallLoop() const
 bool ForLoop::isForExpr() const
 {
   return mIsForExpr;
+}
+
+bool ForLoop::isGPUSuitable() const
+{
+  return mIsGPUSuitable;
+}
+
+void ForLoop::setIsGPUSuitable(bool isSuitable)
+{
+  mIsGPUSuitable = isSuitable;
 }
 
 SymExpr* ForLoop::indexGet() const

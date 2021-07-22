@@ -59,6 +59,7 @@ void loopInvariantCodeMotion();
 void lowerErrorHandling();
 void lowerIterators();
 void makeBinary();
+void markGPUSuitableLoops();
 void normalize();
 void optimizeOnClauses();
 void parallel();
