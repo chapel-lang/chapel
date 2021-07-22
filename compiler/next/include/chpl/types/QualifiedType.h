@@ -73,7 +73,8 @@ class QualifiedType {
   bool isGenericOrUnknown() const {
     bool genericKind = kind_ == UNKNOWN;
     bool genericParam = kind_ == PARAM && !hasParam();
-    bool genericType = !hasType() || type_->isGeneric();
+    bool genericType = !hasType() || type_->isGeneric() ||
+                       type_->isUnknownType();
     return genericKind || genericParam || genericType;
   }
 
