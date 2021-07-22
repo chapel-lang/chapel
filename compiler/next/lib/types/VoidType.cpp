@@ -17,25 +17,25 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_ALL_TYPES_H
-#define CHPL_TYPES_ALL_TYPES_H
-
-#include "chpl/types/Type.h"
-#include "chpl/types/AnyType.h"
-#include "chpl/types/BoolType.h"
-#include "chpl/types/BuiltinType.h"
-#include "chpl/types/ComplexType.h"
-#include "chpl/types/ErroneousType.h"
-#include "chpl/types/ImagType.h"
-#include "chpl/types/IntType.h"
-#include "chpl/types/PrimitiveType.h"
-#include "chpl/types/QualifiedType.h"
-#include "chpl/types/RealType.h"
-#include "chpl/types/Type.h"
-#include "chpl/types/TypeClasses.h"
-#include "chpl/types/TypeTag.h"
-#include "chpl/types/UintType.h"
-#include "chpl/types/UnknownType.h"
 #include "chpl/types/VoidType.h"
+#include "chpl/queries/query-impl.h"
 
-#endif
+namespace chpl {
+namespace types {
+
+
+const owned<VoidType>& VoidType::getVoidType(Context* context) {
+  QUERY_BEGIN(getVoidType, context);
+
+  auto result = toOwned(new VoidType());
+
+  return QUERY_END(result);
+}
+
+const VoidType* VoidType::get(Context* context) {
+  return getVoidType(context).get();
+}
+
+
+} // end namespace types
+} // end namespace chpl

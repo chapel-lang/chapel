@@ -32,5 +32,6 @@ target_sources(libchplcomp-obj
                TypeTag.cpp
                UintType.cpp
                UnknownType.cpp
+               VoidType.cpp
 
               )

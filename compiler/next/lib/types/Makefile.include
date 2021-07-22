@@ -35,6 +35,7 @@ NEXT_TYPES_SRCS =                                 \
   TypeTag.cpp \
   UintType.cpp \
   UnknownType.cpp \
+  VoidType.cpp \
 
 
 SRCS = $(NEXT_TYPES_SRCS)
