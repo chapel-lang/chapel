@@ -83,10 +83,9 @@ namespace resolution {
     Checks the generic cache for potential for reuse. When reuse occurs,
     the ResolvedFunction might point to a different TypedFnSignature.
    */
-  const ResolutionResultByPostorderID&
-  resolvedFunction(Context* context,
-                   const TypedFnSignature* sig,
-                   const PoiScope* poiScope);
+  const ResolvedFunction& resolvedFunction(Context* context,
+                                           const TypedFnSignature* sig,
+                                           const PoiScope* poiScope);
 
 
   /////// call resolution
@@ -125,13 +124,14 @@ namespace resolution {
   /**
     Given a CallInfo representing a call, a Scope representing the
     scope of that call, and a PoiScope representing the point-of-instantiation
-    scope of that call, find the most specific candidates.
+    scope of that call, find the most specific candidates as well
+    as the point-of-instantiation scopes that were used when resolving them.
    */
-  MostSpecificCandidates resolveCall(Context* context,
-                                     const uast::Call* call,
-                                     CallInfo ci,
-                                     const Scope* scope,
-                                     const PoiScope* poiScope);
+  CallResolutionResult resolveCall(Context* context,
+                                   const uast::Call* call,
+                                   CallInfo ci,
+                                   const Scope* scope,
+                                   const PoiScope* poiScope);
 
 
 } // end namespace resolution

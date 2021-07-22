@@ -521,9 +521,14 @@ struct Resolver {
       i++;
     }
 
-    MostSpecificCandidates c = resolveCall(context, call, ci, scope, poiScope);
+    CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
+
+    // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = resultByAst(call);
-    r.candidates = c;
+    r.mostSpecific = c.mostSpecific;
+
+    // gather the poi scopes used when resolving the call
+    poiScopesUsed.insert(c.poiScopesUsed.begin(), c.poiScopesUsed.end());
   }
 
   bool enter(const ASTNode* ast) {
@@ -637,21 +642,22 @@ typedSignatureQuery(Context* context,
                     const UntypedFnSignature* untypedSignature,
                     std::vector<types::QualifiedType> formalTypes,
                     TypedFnSignature::WhereClauseResult whereClauseResult,
-                    bool generic,
+                    bool needsInstantiation,
                     const TypedFnSignature* instantiatedFrom,
                     const TypedFnSignature* parentFn,
                     std::set<const PoiScope*> poiScopesUsed) {
   QUERY_BEGIN(typedSignatureQuery, context,
               untypedSignature, formalTypes, whereClauseResult,
-              generic, instantiatedFrom, parentFn, poiScopesUsed);
+              needsInstantiation, instantiatedFrom, parentFn, poiScopesUsed);
 
   owned<TypedFnSignature> result;
   result->untypedSignature = untypedSignature;
   result->formalTypes = formalTypes;
   result->whereClauseResult = whereClauseResult;
-  result->generic = generic;
+  result->needsInstantiation = needsInstantiation;
   result->instantiatedFrom = instantiatedFrom;
   result->parentFn = parentFn;
+  result->poiScopesUsed = std::move(poiScopesUsed);
 
   return QUERY_END(result);
 }
@@ -792,58 +798,59 @@ const TypedFnSignature* instantiateSignature(Context* context,
   return result.get();
 }
 
-static const ResolutionResultByPostorderID&
+static const ResolvedFunction&
 resolvedFunctionQuery(Context* context,
                       const TypedFnSignature* sig,
                       std::set<const PoiScope*> poiScopesUsed) {
   QUERY_BEGIN(resolvedFunctionQuery, context, sig, poiScopesUsed);
 
-  ResolutionResultByPostorderID result;
+  ResolvedFunction result;
   // the actual value is set in resolvedFunction after it is computed
-  // because computing it generates the poiScopesUsed.
+  // because computing it generates the poiScopesUsed which is part
+  // of the key for this query.
+  assert(false && "should not be reached");
 
   return QUERY_END(result);
 }
 
-const ResolutionResultByPostorderID&
-resolvedFunction(Context* context,
-                 const TypedFnSignature* sig,
-                 const PoiScope* poiScope) {
+const ResolvedFunction& resolvedFunction(Context* context,
+                                         const TypedFnSignature* sig,
+                                         const PoiScope* poiScope) {
 
   // this should only be applied to concrete fns or instantiations
-  assert(!sig->generic);
+  assert(!sig->needsInstantiation);
 
   const UntypedFnSignature* untypedSignature = sig->untypedSignature;
   const ASTNode* ast = parsing::idToAst(context, untypedSignature->functionId);
   const Function* fn = ast->toFunction();
 
-  ResolutionResultByPostorderID result;
-  std::set<const PoiScope*> poiScopes;
+  ResolvedFunction result;
+  result.signature = sig;
 
   if (fn) {
-    Resolver visitor(context, fn, poiScope, sig, result);
+    Resolver visitor(context, fn, poiScope, sig, result.resolutionById);
 
     // visit the formals and body
     for (auto child: fn->children()) {
       child->traverse(visitor);
     }
 
-    poiScopes.swap(visitor.poiScopesUsed);
+    result.poiScopesUsed.swap(visitor.poiScopesUsed);
 
-    // store the result in the query under the POIs used
-    // this should not update the value if there was already one
+    // Store the result in the query under the POIs used.
+    // This should not update the value if there was already one
     // and they are the same.
     QUERY_STORE_RESULT(resolvedFunctionQuery,
                        context,
                        result,
                        sig,
-                       poiScopes);
+                       result.poiScopesUsed);
   } else {
     assert(false && "this query should be called on Functions");
   }
 
-  // Now get the ref to the value stored in the query map.
-  return resolvedFunctionQuery(context, sig, std::move(poiScopes));
+  // Now get the ref to the unique value stored in the query map.
+  return resolvedFunctionQuery(context, sig, result.poiScopesUsed);
 }
 
 
@@ -984,7 +991,7 @@ filterCandidatesInstantiating(Context* context,
   std::vector<const TypedFnSignature*> result;
 
   for (const TypedFnSignature* typedSignature : lst) {
-    if (typedSignature->generic) {
+    if (typedSignature->needsInstantiation) {
       const TypedFnSignature* instantiated =
         doIsCandidateApplicableInstantiating(context,
                                              typedSignature,
@@ -1049,11 +1056,39 @@ std::vector<BorrowedIdsWithName> lookupCalledExpr(Context* context,
 }
 
 
-MostSpecificCandidates resolveCall(Context* context,
-                                   const Call* call,
-                                   CallInfo ci,
-                                   const Scope* scope,
-                                   const PoiScope* poiScope) {
+static
+void gatherPoisUsedByResolvingBody(Context* context,
+                                   const TypedFnSignature* signature,
+                                   const PoiScope* poiScope,
+                                   std::set<const PoiScope*>& poiScopesUsed) {
+
+  if (signature == nullptr) {
+    return;
+  }
+
+  assert(!signature->needsInstantiation);
+
+  if (signature->instantiatedFrom == nullptr) {
+    // if it's not an instantiation, no need to gather POIs
+    return;
+  }
+
+  // gather POI scopes from instantiating the signature
+  poiScopesUsed.insert(signature->poiScopesUsed.begin(),
+                       signature->poiScopesUsed.end());
+
+  // resolve the body
+  const ResolvedFunction& r = resolvedFunction(context, signature, poiScope);
+
+  // gather the POI scopes from instantiating the function body
+  poiScopesUsed.insert(r.poiScopesUsed.begin(), r.poiScopesUsed.end());
+}
+
+CallResolutionResult resolveCall(Context* context,
+                                 const Call* call,
+                                 CallInfo ci,
+                                 const Scope* scope,
+                                 const PoiScope* poiScope) {
 
   // compute the potential functions that it could resolve to
   std::vector<BorrowedIdsWithName> lst = lookupCalledExpr(context, scope, call);
@@ -1068,11 +1103,21 @@ MostSpecificCandidates resolveCall(Context* context,
                                                   poiScope);
 
   // find most specific candidates / disambiguate
-  MostSpecificCandidates result = findMostSpecificCandidates(context,
-                                                             candidates,
-                                                             ci);
+  MostSpecificCandidates mostSpecific = findMostSpecificCandidates(context,
+                                                                   candidates,
+                                                                   ci);
 
-  return result;
+  // fully resolve each candidate function and gather poiScopesUsed.
+  std::set<const PoiScope*> poiScopesUsed;
+
+  gatherPoisUsedByResolvingBody(context, mostSpecific.bestRef,
+                                poiScope, poiScopesUsed);
+  gatherPoisUsedByResolvingBody(context, mostSpecific.bestConstRef,
+                                poiScope, poiScopesUsed);
+  gatherPoisUsedByResolvingBody(context, mostSpecific.bestValue,
+                                poiScope, poiScopesUsed);
+
+  return CallResolutionResult(mostSpecific, std::move(poiScopesUsed));
 }
 
 

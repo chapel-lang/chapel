@@ -173,7 +173,7 @@ struct TypedFnSignature {
   WhereClauseResult whereClauseResult = WHERE_TBD;
 
   // Are any of the formals generic or unknown at this point?
-  bool generic = true;
+  bool needsInstantiation = true;
 
   // Is this TypedFnSignature representing an instantiation?
   // If so, what is the generic TypedFnSignature that was instantiated?
@@ -183,6 +183,10 @@ struct TypedFnSignature {
   // function signature?
   const TypedFnSignature* parentFn = nullptr;
 
+  // If it's an instantiation, what are the point-of-instantiation scopes
+  // that were needed for resolving the signature?
+  std::set<const PoiScope*> poiScopesUsed;
+
   // TODO: This could include a substitutions map, if we need it.
   // The formalTypes above might be enough, though.
 
@@ -190,40 +194,15 @@ struct TypedFnSignature {
     return untypedSignature == other.untypedSignature &&
            formalTypes == other.formalTypes &&
            whereClauseResult == other.whereClauseResult &&
-           generic == other.generic &&
+           needsInstantiation == other.needsInstantiation &&
            instantiatedFrom == other.instantiatedFrom &&
-           parentFn == other.parentFn;
+           parentFn == other.parentFn &&
+           poiScopesUsed == other.poiScopesUsed;
   }
   bool operator!=(const TypedFnSignature& other) const {
     return !(*this == other);
   }
 };
-
-// Point-of-instantiation call info (for reusing instantiations)
-/*struct PoiCallInfo {
-  ID fnId;                  // the ID of the function being called
-  const PoiScope* poiScope; // the POI Scope where that function is declared
-
-  bool operator==(const PoiCallInfo& other) const {
-    return fnId == other.fnId &&
-           poiScope == other.poiScope;
-  }
-  bool operator!=(const PoiCallInfo& other) const {
-    return !(*this == other);
-  }
-};*/
-
-// A resolution result for a Function
-/*struct ResolvedFunction {
-  const TypedFnSignature* signature;
-
-  // used for determining when an instantiation can be reused
-  // (see PR #16261).
-  //std::vector<PoiCallInfo> poiCalls;
-
-  // this is the output of the resolution process
-  ResolutionResultByPostorderID resolutionById;
-};*/
 
 struct MostSpecificCandidates {
   const TypedFnSignature* bestRef = nullptr;
@@ -266,6 +245,30 @@ struct MostSpecificCandidates {
   }
 };
 
+struct CallResolutionResult {
+  MostSpecificCandidates mostSpecific;
+  // if any of the candidates were instantiated, what point-of-instantiation
+  // scopes were used when resolving their signature or body?
+  std::set<const PoiScope*> poiScopesUsed;
+
+  CallResolutionResult(MostSpecificCandidates mostSpecific,
+                       std::set<const PoiScope*> poiScopesUsed)
+    : mostSpecific(std::move(mostSpecific)),
+      poiScopesUsed(std::move(poiScopesUsed)) {
+  }
+
+  bool operator==(const CallResolutionResult& other) const {
+    return mostSpecific == other.mostSpecific &&
+           poiScopesUsed == other.poiScopesUsed;
+  }
+  bool operator!=(const CallResolutionResult& other) const {
+    return !(*this == other);
+  }
+  void swap(CallResolutionResult& other) {
+    mostSpecific.swap(other.mostSpecific);
+    poiScopesUsed.swap(other.poiScopesUsed);
+  }
+};
 
 struct ResolvedExpression {
   // the ID that is resolved
@@ -281,7 +284,7 @@ struct ResolvedExpression {
   // candidates.
   // The choice between these needs to happen
   // later than the main function resolution.
-  MostSpecificCandidates candidates;
+  MostSpecificCandidates mostSpecific;
 
   ResolvedExpression() { }
 
@@ -289,7 +292,7 @@ struct ResolvedExpression {
     return id == other.id &&
            type == other.type &&
            toId == other.toId &&
-           candidates == other.candidates;
+           mostSpecific == other.mostSpecific;
   }
   bool operator!=(const ResolvedExpression& other) const {
     return !(*this == other);
@@ -298,7 +301,7 @@ struct ResolvedExpression {
     id.swap(other.id);
     type.swap(other.type);
     toId.swap(other.toId);
-    candidates.swap(other.candidates);
+    mostSpecific.swap(other.mostSpecific);
   }
 };
 
@@ -306,6 +309,31 @@ struct ResolvedExpression {
 // an inner Function would not be covered here since it would get
 // a different ResolvedSymbol entry.
 using ResolutionResultByPostorderID = std::vector<ResolvedExpression>;
+
+// A resolution result for a Function
+struct ResolvedFunction {
+  const TypedFnSignature* signature = nullptr;
+
+  // this is the output of the resolution process
+  ResolutionResultByPostorderID resolutionById;
+
+  // the set of point-of-instantiation scopes used by the instantiation
+  std::set<const PoiScope*> poiScopesUsed;
+
+  bool operator==(const ResolvedFunction& other) const {
+    return signature == other.signature &&
+           resolutionById == other.resolutionById &&
+           poiScopesUsed == other.poiScopesUsed;
+  }
+  bool operator!=(const ResolvedFunction& other) const {
+    return !(*this == other);
+  }
+  void swap(ResolvedFunction& other) {
+    std::swap(signature, other.signature);
+    resolutionById.swap(other.resolutionById);
+    poiScopesUsed.swap(other.poiScopesUsed);
+  }
+};
 
 
 } // end namespace resolution
@@ -324,6 +352,14 @@ template<> struct update<chpl::resolution::MostSpecificCandidates> {
     return defaultUpdate(keep, addin);
   }
 };
+
+template<> struct update<chpl::resolution::ResolvedFunction> {
+  bool operator()(chpl::resolution::ResolvedFunction& keep,
+                  chpl::resolution::ResolvedFunction& addin) const {
+    return defaultUpdate(keep, addin);
+  }
+};
+
 
 
 } // end namespace chpl
