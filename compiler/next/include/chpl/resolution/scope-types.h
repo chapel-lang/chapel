@@ -25,6 +25,7 @@
 #include "chpl/util/memory.h"
 
 #include <unordered_map>
+#include <utility>
 
 namespace chpl {
 namespace resolution {
@@ -46,7 +47,7 @@ struct OwnedIdsWithName {
   owned<std::vector<ID>> moreIds;
 
   OwnedIdsWithName(ID id)
-    : id(id), moreIds(nullptr)
+    : id(std::move(id)), moreIds(nullptr)
   { }
 
   void appendId(ID newId) {
@@ -82,7 +83,7 @@ struct BorrowedIdsWithName {
   ID id;
   const std::vector<ID>* moreIds = nullptr;
   BorrowedIdsWithName() { }
-  BorrowedIdsWithName(ID id) : id(id) { }
+  BorrowedIdsWithName(ID id) : id(std::move(id)) { }
   BorrowedIdsWithName(const OwnedIdsWithName& o)
     : id(o.id), moreIds(o.moreIds.get())
   { }
@@ -92,6 +93,17 @@ struct BorrowedIdsWithName {
   }
   bool operator!=(const BorrowedIdsWithName& other) const {
     return !(*this == other);
+  }
+  size_t hash() const {
+    size_t ret = 0;
+    if (moreIds == nullptr) {
+      ret = hash_combine(ret, chpl::hash(id));
+    } else {
+      for (const ID& x : *moreIds) {
+        ret = hash_combine(ret, chpl::hash(x));
+      }
+    }
+    return ret;
   }
 
   const ID& firstId() const {
@@ -198,9 +210,7 @@ struct VisibilitySymbols {
 
   void swap(VisibilitySymbols& other) {
     symbolId.swap(other.symbolId);
-    Kind tmp = kind;
-    kind = other.kind;
-    other.kind = tmp;
+    std::swap(kind, other.kind);
     names.swap(other.names);
   }
 };
@@ -248,12 +258,37 @@ struct InnermostMatch {
   }
   void swap(InnermostMatch& other) {
     id.swap(other.id);
-    MatchesFound tmp = found;
-    found = other.found;
-    other.found = tmp;
+    std::swap(found, other.found);
   }
 };
 
 } // end namespace resolution
+
+template<> struct update<resolution::InnermostMatch> {
+  bool operator()(resolution::InnermostMatch& keep,
+                  resolution::InnermostMatch& addin) const {
+    bool match = (keep == addin);
+    if (match) {
+      return false;
+    } else {
+      keep.swap(addin);
+      return true;
+    }
+  }
+};
+
+
 } // end namespace chpl
+
+namespace std {
+
+template<> struct hash<chpl::resolution::BorrowedIdsWithName>
+{
+  size_t operator()(const chpl::resolution::BorrowedIdsWithName& key) const {
+    return key.hash();
+  }
+};
+
+} // end namespace std
+
 #endif

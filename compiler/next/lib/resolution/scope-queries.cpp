@@ -33,20 +33,6 @@
 #include <vector>
 
 namespace chpl {
-
-template<> struct update<resolution::InnermostMatch> {
-  bool operator()(resolution::InnermostMatch& keep,
-                  resolution::InnermostMatch& addin) const {
-    bool match = (keep == addin);
-    if (match) {
-      return false;
-    } else {
-      keep.swap(addin);
-      return true;
-    }
-  }
-};
-
 namespace resolution {
 
 
@@ -325,6 +311,14 @@ static bool doLookupInScope(Context* context,
                             std::unordered_set<const Scope*>& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result) {
 
+  // TODO: to include checking for symbol privacy,
+  // add a findPrivate argument to doLookupInScope and set it
+  // to false when traversing a use/import of a module not visible.
+  // Adjust the checkedScopes set to be a map to bool, where
+  // the bool indicates if findPrivate was true or not. If we
+  // have visited but only got public symbols, we have to visit again
+  // for private symbols. But we'd like to avoid splitting overloads into
+  // two 'result' vector entries in that case...
   size_t startSize = result.size();
 
   auto pair = checkedScopes.insert(scope);
