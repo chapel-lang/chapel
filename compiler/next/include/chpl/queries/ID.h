@@ -201,12 +201,12 @@ namespace std {
       return key.hash();
     }
   };
-  template<> struct equal_to<chpl::ID> {
+  /*template<> struct equal_to<chpl::ID> {
     inline bool operator()(const chpl::ID& lhs,
-                    const chpl::ID& rhs) const {
+                           const chpl::ID& rhs) const {
       return lhs == rhs;
     }
-  };
+  };*/
 } // end namespace std
 
 #endif
