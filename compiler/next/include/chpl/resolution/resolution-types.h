@@ -205,6 +205,8 @@ struct TypedFnSignature {
   bool operator!=(const TypedFnSignature& other) const {
     return !(*this == other);
   }
+
+  std::string toString() const;
 };
 
 struct MostSpecificCandidates {

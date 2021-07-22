@@ -132,6 +132,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     formalIdx++;
   }
 
+  mappingIsValid = true;
   return true;
 }
 
@@ -153,6 +154,22 @@ FormalActualMap FormalActualMap::build(const TypedFnSignature* sig,
   if (!ok) {
     ret.mappingIsValid = false;
   }
+  return ret;
+}
+
+std::string TypedFnSignature::toString() const {
+  std::string ret = untypedSignature->functionId.toString();
+  ret += " ";
+  for (size_t i = 0; i < untypedSignature->formals.size(); i++) {
+    if (i != 0)
+      ret += ",";
+
+    ret += " ";
+    ret += untypedSignature->formals[i]->name().c_str();
+    ret += " : ";
+    ret += formalTypes[i].toString();
+  }
+
   return ret;
 }
 

@@ -43,6 +43,9 @@ using namespace types;
 struct Resolver;
 
 
+static QualifiedType::Kind resolveIntent(const QualifiedType& t);
+
+
 const QualifiedType& typeForBuiltin(Context* context,
                                     UniqueString name) {
   QUERY_BEGIN(typeForBuiltin, context, name);
@@ -123,7 +126,7 @@ struct Resolver {
   Context* context = nullptr;
   const ASTNode* symbol = nullptr;
   const PoiScope* poiScope = nullptr;
-  const SubstitutionsMap* substitutions;
+  const SubstitutionsMap* substitutions = nullptr;
 
   // internal variables
   std::vector<const Scope*> scopeStack;
@@ -459,6 +462,22 @@ struct Resolver {
           }
         }
 
+        if (const Formal* formal = decl->toFormal()) {
+          // Lack of initializer for a formal means the Any type
+          if (typeExpr == nullptr && initExpr == nullptr) {
+            typePtr = AnyType::get(context);
+          }
+
+          // use substitutions computed for formals
+          if (substitutions != nullptr) {
+            auto search = substitutions->find(formal);
+            if (search != substitutions->end()) {
+              const QualifiedType& t = search->second;
+              typePtr = t.type();
+              param = t.param();
+            }
+          }
+        }
 
         // TODO: handle split init
         // TODO: handle generic & instantiated formal arguments
@@ -691,15 +710,19 @@ typedSignatureQuery(Context* context,
   return QUERY_END(result);
 }
 
-static
-std::vector<types::QualifiedType> getFormalTypes(
-                                     const Function* fn,
-                                     const ResolutionResultByPostorderID& r) {
+static std::vector<types::QualifiedType>
+getFormalTypes(const Function* fn,
+               const ResolutionResultByPostorderID& r) {
   std::vector<types::QualifiedType> formalTypes;
   for (auto formal : fn->formals()) {
     int postorder = formal->id().postOrderId();
-    assert(0 <= postorder && postorder < (int) r.size()); 
-    formalTypes.push_back(r[postorder].type);
+    assert(0 <= postorder && postorder < (int) r.size());
+
+    QualifiedType t = r[postorder].type;
+    // compute concrete intent
+    t = QualifiedType(resolveIntent(t), t.type(), t.param());
+
+    formalTypes.push_back(std::move(t));
   }
   return formalTypes;
 }
@@ -788,6 +811,8 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
                                              CallInfo call,
                                              const PoiScope* poiScope) {
+
+  assert(sig->needsInstantiation);
 
   const UntypedFnSignature* untypedSignature = sig->untypedSignature;
   const ASTNode* ast = parsing::idToAst(context, untypedSignature->functionId);
@@ -987,6 +1012,19 @@ const QualifiedType& returnType(Context* context,
   return QUERY_END(result);
 }
 
+// TODO move these to a core logic of resolution file
+static QualifiedType::Kind resolveIntent(const QualifiedType& t) {
+  if (t.type()->isPrimitiveType()) {
+    if (t.kind() == QualifiedType::UNKNOWN || t.kind() == QualifiedType::CONST)
+      return QualifiedType::CONST_VALUE;
+  } else if (t.isGenericOrUnknown()) {
+    return QualifiedType::UNKNOWN;
+  } else {
+    assert(false && "TODO");
+  }
+  return t.kind();
+}
+
 static bool canPassInitial(const QualifiedType& actualType,
                            const QualifiedType& formalType) {
   // TODO: pull logic from canDispatch
@@ -998,6 +1036,7 @@ static bool canPassInitial(const QualifiedType& actualType,
 static bool canPass(const QualifiedType& actualType,
                     const QualifiedType& formalType) {
   if (actualType.type() == formalType.type()) return true;
+  if (formalType.type()->isAnyType()) return true;
   return false;
 }
 
@@ -1008,6 +1047,9 @@ doIsCandidateApplicableInitial(Context* context,
                                const ID& candidateId,
                                const CallInfo& call) {
 
+  printf("CHECKING APPLICABLE INITIAL %s\n",
+        candidateId.toString().c_str());
+
   auto uSig = untypedSignature(context, candidateId);
   // First, check that the untyped properties allow a match:
   //  * number of arguments
@@ -1017,6 +1059,7 @@ doIsCandidateApplicableInitial(Context* context,
 
   auto faMap = FormalActualMap::build(uSig, call);
   if (!faMap.mappingIsValid) {
+    printf("MAPING NOT VALID\n");
     return nullptr;
   }
 
@@ -1030,15 +1073,19 @@ doIsCandidateApplicableInitial(Context* context,
     const auto& actualType = entry.actualType;
     const auto& formalType = initialTypedSignature->formalTypes[formalIdx];
     bool ok = canPassInitial(actualType, formalType);
-    if (!ok)
+    if (!ok) {
+      printf("CAN PASS FAILED\n");
       return nullptr;
+    }
 
     formalIdx++;
   }
 
   // check that the where clause applies
-  if (initialTypedSignature->whereClauseResult == TypedFnSignature::WHERE_FALSE)
+  if (initialTypedSignature->whereClauseResult==TypedFnSignature::WHERE_FALSE) {
+    printf("WHERE CLAUSE FAILED\n");
     return nullptr;
+  }
 
   return initialTypedSignature;
 }
@@ -1051,8 +1098,17 @@ doIsCandidateApplicableInstantiating(Context* context,
                                      const CallInfo& call,
                                      const PoiScope* poiScope) {
 
+  printf("CHECKING APPLICABLE INSTANTIATING %p %s\n",
+         typedSignature,
+         typedSignature->untypedSignature->functionId.toString().c_str());
+
+  printf("SIG %s\n", typedSignature->toString().c_str());
+
   const TypedFnSignature* instantiated =
     instantiateSignature(context, typedSignature, call, poiScope);
+
+  printf("INSTANTIATED TO %p\n", instantiated);
+  printf("SIG %s\n", instantiated->toString().c_str());
 
   if (instantiated == nullptr)
     return nullptr;
@@ -1231,11 +1287,11 @@ CallResolutionResult resolveCall(Context* context,
   std::vector<BorrowedIdsWithName> lst = lookupCalledExpr(context, scope, call);
 
   // filter without instantiating yet
-  const auto& initialCondidates = filterCandidatesInitial(context, lst, ci);
+  const auto& initialCandidates = filterCandidatesInitial(context, lst, ci);
 
   // find candidates, doing instantiation if necessary
   auto candidates = filterCandidatesInstantiating(context, 
-                                                  initialCondidates,
+                                                  initialCandidates,
                                                   ci,
                                                   poiScope);
 
