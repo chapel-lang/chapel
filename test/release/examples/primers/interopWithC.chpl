@@ -345,7 +345,8 @@ module interopWithC {
 
 /*
    .. warning::
-      As of now, chapel must be used with LLVM to use the extern block syntax
+      As of now, chapel must be used with LLVM support to use the extern block syntax.
+      See :ref:`readme-llvm` on how to build chapel with LLVM support.
 
 */
 
