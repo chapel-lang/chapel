@@ -35,179 +35,13 @@
 #include <vector>
 
 namespace chpl {
-
-template<> struct update<chpl::resolution::ResolvedExpression> {
-  bool operator()(chpl::resolution::ResolvedExpression& keep,
-                  chpl::resolution::ResolvedExpression& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
-/*
-template<> struct update<owned<resolution::Scope>> {
-  bool operator()(owned<resolution::Scope>& keep,
-                  owned<resolution::Scope>& addin) const {
-    bool match = ((keep.get() == nullptr) == (addin.get() == nullptr)) &&
-                 (*keep.get() == *addin.get());
-    if (match) {
-      return false;
-    } else {
-      keep.swap(addin);
-      return true;
-    }
-  }
-};
-*/
-/*
-template<> struct update<resolution::ContainedScopesAndScopedSymbols> {
-  bool operator()(resolution::ContainedScopesAndScopedSymbols& keep,
-                  resolution::ContainedScopesAndScopedSymbols& addin) const {
-    bool match = keep.idToScope == addin.idToScope &&
-                 keep.scopeSymbolsToScopeIds == addin.scopeSymbolsToScopeIds;
-    if (match) {
-      return false; // no update required
-    } else {
-      keep.idToScope.swap(addin.idToScope);
-      keep.scopeSymbolsToScopeIds.swap(addin.scopeSymbolsToScopeIds);
-      return true; // updated
-    }
-  }
-};
-*/
-  /*
-template<> struct update<resolution::ResolutionResult> {
-  bool operator()(resolution::ResolutionResult& keep,
-                  resolution::ResolutionResult& addin) const {
-    bool match = keep.expr == addin.expr &&
-                 keep.decl == addin.decl &&
-                 keep.type == addin.type &&
-                 keep.otherFns == addin.otherFns;
-    if (match) {
-      return false; // no update required
-    } else {
-      keep.expr = addin.expr;
-      keep.decl = addin.decl;
-      keep.type = addin.type;
-      keep.otherFns.swap(addin.otherFns);
-      return true; // updated
-    }
-  }
-};
-
-template<> struct update<resolution::ResolvedSymbol> {
-  bool operator()(resolution::ResolvedSymbol& keep,
-                  resolution::ResolvedSymbol& addin) const {
-    bool match = keep.decl == addin.decl &&
-                 keep.typeSubs == addin.typeSubs &&
-                 keep.paramSubs == addin.paramSubs &&
-                 keep.instantiationPoint == addin.instantiationPoint &&
-                 keep.resolutionById.size() == addin.resolutionById.size();
-
-    if (match) {
-      // check also the resolutionById - we know sizes match here.
-      size_t n = keep.resolutionById.size();
-      for (size_t i = 0; i < n; i++) {
-        resolution::ResolutionResult& keepR = keep.resolutionById[i];
-        resolution::ResolutionResult& addinR = addin.resolutionById[i];
-        if (keepR.expr == addinR.expr &&
-            keepR.decl == addinR.decl &&
-            keepR.type == addinR.type &&
-            keepR.otherFns == addinR.otherFns) {
-          // OK, it matches
-        } else {
-          match = false;
-          break;
-        }
-      }
-    }
-
-    if (match) {
-      return false; // no update required
-    } else {
-      keep.decl = addin.decl;
-      keep.typeSubs.swap(addin.typeSubs);
-      keep.paramSubs.swap(addin.paramSubs);
-      keep.instantiationPoint = addin.instantiationPoint;
-      keep.resolutionById.swap(addin.resolutionById);
-      return true; // updated
-    }
-  }
-};
-*/
-
-/*
-template<> struct update<resolution::DefinedTopLevelNames> {
-  bool operator()(resolution::DefinedTopLevelNames& keep,
-                  resolution::DefinedTopLevelNames& addin) const {
-template<> struct update<frontend::DefinedTopLevelNames> {
-  bool operator()(frontend::DefinedTopLevelNames& keep,
-                  frontend::DefinedTopLevelNames& addin) const {
-
-    if (keep.module == addin.module) {
-      return defaultUpdateVec(keep.topLevelNames, addin.topLevelNames);
-    } else {
-      keep.module = addin.module;
-      keep.topLevelNames.swap(addin.topLevelNames);
-      return false;
-    }
-  }
-};
-*/
-
-/*
-template<> struct update<resolution::Scope> {
-  bool operator()(resolution::Scope& keep,
-                  resolution::Scope& addin) const {
-
-    bool match = keep.parent == addin.parent &&
-                 keep.declared.size() == addin.declared.size() &&
-                 keep.usesAndImports.size() == addin.usesAndImports.size();
-
-    if (match) {
-      // check also the contents of the map/vec
-      match = keep.declared == addin.declared &&
-              keep.usesAndImports == addin.usesAndImports;
-    }
-
-    if (match) {
-      return false; // no update required
-    } else {
-      keep.parent.swap(addin.parent);
-      keep.declared.swap(addin.declared);
-      keep.usesAndImports.swap(addin.usesAndImports);
-      return true; // updated
-    }
-  }
-};
-*/
-
 namespace resolution {
 
 using namespace uast;
 using namespace types;
-struct SymbolResolver;
 
-static
-const owned<UntypedFnSignature>& untypedSignatureQuery(Context* context, ID id)
-{
-  QUERY_BEGIN(untypedSignatureQuery, context, id);
+struct Resolver;
 
-  auto ast = parsing::idToAst(context, id);
-  auto fn = ast->toFunction();
-
-  owned<UntypedFnSignature> result;
-
-  if (fn != nullptr) {
-    auto sig = new UntypedFnSignature(fn);
-    result = toOwned(sig);
-  }
-
-  return QUERY_END(result);
-}
-
-UntypedFnSignature* untypedSignature(Context* context, ID id) {
-  const owned<UntypedFnSignature>& r = untypedSignatureQuery(context, id);
-  return r.get();
-}
 
 const QualifiedType& typeForBuiltin(Context* context,
                                     UniqueString name) {
@@ -284,18 +118,112 @@ static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
   return QualifiedType::UNKNOWN;
 }
 
-struct SymbolResolver {
-  Context* context;
-  ID symbolId;
+struct Resolver {
+  // inputs to the resolution process
+  Context* context = nullptr;
+  const ASTNode* symbol = nullptr;
+  const PoiScope* poiScope = nullptr;
+  const SubstitutionsMap* substitutions;
+
+  // internal variables
   std::vector<const Scope*> scopeStack;
   std::set<UniqueString> undefined;
+  bool signatureOnly = false;
+  const Block* fnBody = nullptr;
+
+  // results of the resolution process
+
+  // the resolution results for the contained Expressions
   ResolutionResultByPostorderID& byPostorder;
 
-  SymbolResolver(Context* context, const ASTNode* symbol,
-                 ResolutionResultByPostorderID& byPostorder)
-    : context(context), symbolId(symbol->id()), byPostorder(byPostorder) {
+  // the set of POI scopes from which POI functions were used --
+  // these are gathered here during resolution in order to
+  // allow accurate caching and reuse of instantiations
+  std::set<const PoiScope*> poiScopesUsed;
+
+  // set up Resolver to resolve a Module
+  Resolver(Context* context,
+           const Module* mod,
+           ResolutionResultByPostorderID& byPostorder)
+    : context(context),
+      symbol(mod),
+      byPostorder(byPostorder) {
+
+    byPostorder.resize(mod->id().numContainedChildren());
     enterScope(symbol);
   }
+
+  // set up Resolver to resolve a potentially generic Function signature
+  Resolver(Context* context,
+           const Function* fn,
+           ResolutionResultByPostorderID& byPostorder)
+    : context(context),
+      symbol(fn),
+      signatureOnly(true),
+      fnBody(fn->body()),
+      byPostorder(byPostorder) {
+
+    int bodyPostorder = fnBody->id().postOrderId();
+    assert(0 <= bodyPostorder);
+    byPostorder.resize(bodyPostorder);
+    enterScope(symbol);
+  }
+
+  // set up Resolver to resolve an instantiation of a Function signature
+  Resolver(Context* context,
+           const Function* fn,
+           const SubstitutionsMap& substitutions,
+           const PoiScope* poiScope,
+           ResolutionResultByPostorderID& byPostorder)
+    : context(context),
+      symbol(fn),
+      poiScope(poiScope),
+      substitutions(&substitutions),
+      signatureOnly(true),
+      fnBody(fn->body()),
+      byPostorder(byPostorder) {
+
+    int bodyPostorder = fnBody->id().postOrderId();
+    assert(0 <= bodyPostorder);
+    byPostorder.resize(bodyPostorder);
+    enterScope(symbol);
+  }
+
+  // set up Resolver to resolve a Function body
+  Resolver(Context* context,
+           const Function* fn,
+           const PoiScope* poiScope,
+           const TypedFnSignature* typedFnSignature,
+           ResolutionResultByPostorderID& byPostorder)
+    : context(context),
+      symbol(fn),
+      poiScope(poiScope),
+      signatureOnly(false),
+      fnBody(fn->body()),
+      byPostorder(byPostorder) {
+
+    assert(typedFnSignature);
+    assert(typedFnSignature->untypedSignature);
+
+    byPostorder.resize(fn->id().numContainedChildren());
+    enterScope(symbol);
+
+    // set the resolution results for the formals according to
+    // the typedFnSignature
+    const UntypedFnSignature* uSig = typedFnSignature->untypedSignature;
+    assert(typedFnSignature->formalTypes.size() == uSig->formals.size());
+    size_t nFormals = uSig->formals.size();
+    for (size_t i = 0; i < nFormals; i++) {
+      const Formal* formal = uSig->formals[i];
+      const auto& qt = typedFnSignature->formalTypes[i];
+      int postorder = formal->id().postOrderId();
+      assert(0 <= postorder && postorder < (int) byPostorder.size());
+      ResolvedExpression& r = byPostorder[postorder];
+      r.id = formal->id();
+      r.type = qt;
+    }
+  }
+
 
   ResolvedExpression& resultForId(const ID& id) {
     auto postorder = id.postOrderId();
@@ -311,12 +239,14 @@ struct SymbolResolver {
   QualifiedType typeForId(const ID& id) {
     // if the id is contained within this symbol,
     // get the type information from the resolution result.
-    if (id.symbolPath() == symbolId.symbolPath()) {
+    if (id.symbolPath() == symbol->id().symbolPath()) {
       return resultForId(id).type;
     }
 
+    // TODO: handle outer function variables
+
     // otherwise, use a query to try to look it up top-level.
-    return typeForSymbol(context, id);
+    return typeForModuleLevelSymbol(context, id);
   }
 
   QualifiedType typeForAst(const ASTNode* ast) {
@@ -337,9 +267,10 @@ struct SymbolResolver {
   ResolvedExpression& resultById(ID id) {
     int postorder = id.postOrderId();
 
-    assert(0 <= postorder);
-    if ((size_t) postorder < byPostorder.size()) {
-      // OK
+    if (postorder < 0) {
+      assert(false && "should not be reached");
+    } else if ((size_t) postorder < byPostorder.size()) {
+      // OK, nothing to do
     } else {
       byPostorder.resize(postorder+1);
     }
@@ -380,7 +311,11 @@ struct SymbolResolver {
       }
       result.type = QualifiedType(QualifiedType::UNKNOWN,
                                   ErroneousType::get(context));
+    } else if (vec.size() > 1) {
+      // can't establish the type. If this is in a function
+      // call, we'll establish it later anyway.
     } else {
+      // vec.size() == 1
       ID id = vec[0].firstId();
       QualifiedType type;
       if (id.isEmpty()) {
@@ -402,7 +337,6 @@ struct SymbolResolver {
 
   bool enter(const NamedDecl* decl) {
     assert(scopeStack.size() > 0);
-
     const Scope* scope = scopeStack.back();
 
     bool canOverload = false;
@@ -555,26 +489,64 @@ struct SymbolResolver {
     exitScope(decl);
   }
 
+  bool enter(const Call* call) {
+    return true;
+  }
+  void exit(const Call* call) {
+    assert(scopeStack.size() > 0);
+    const Scope* scope = scopeStack.back();
+
+    // Generate a CallInfo for the call
+    CallInfo ci;
+
+    if (auto called = call->calledExpression()) {
+      if (auto calledIdent = called->toIdentifier()) {
+        ci.name = calledIdent->name();
+      } else {
+        assert(false && "TODO: method calls with Dot called");
+      }
+    }
+
+    const FnCall* fnCall = call->toFnCall();
+
+    int i = 0;
+    for (auto actual : call->actuals()) {
+      CallInfoActual ciActual;
+      ResolvedExpression& r = resultByAst(actual);
+      ciActual.type = r.type;
+      if (fnCall && fnCall->isNamedActual(i)) {
+        ciActual.byName = fnCall->actualName(i);
+      }
+      ci.actuals.push_back(ciActual);
+      i++;
+    }
+
+    MostSpecificCandidates c = resolveCall(context, call, ci, scope, poiScope);
+    ResolvedExpression& r = resultByAst(call);
+    r.candidates = c;
+  }
+
   bool enter(const ASTNode* ast) {
     enterScope(ast);
-    return true;
+
+    bool skipChildren = signatureOnly && ast == fnBody;
+    return !skipChildren;
   }
   void exit(const ASTNode* ast) {
     exitScope(ast);
   }
 };
 
-const ResolutionResultByPostorderID& resolveSymbolContents(Context* context,
-                                                           ID id) {
-  QUERY_BEGIN(resolveSymbolContents, context, id);
+const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
+  QUERY_BEGIN(resolveModule, context, id);
 
   ResolutionResultByPostorderID& partialResult = QUERY_CURRENT_RESULT;
 
   auto ast = parsing::idToAst(context, id);
-  if (ast != nullptr && Builder::astTagIndicatesNewIdScope(ast->tag())) {
-    partialResult.resize(ast->id().numContainedChildren());
+  if (const Module* mod = ast->toModule()) {
+    partialResult.resize(mod->id().numContainedChildren());
 
-    SymbolResolver visitor(context, ast, partialResult);
+    Resolver visitor(context, mod, partialResult);
     for (auto child: ast->children()) {
       child->traverse(visitor);
     }
@@ -587,39 +559,43 @@ const ResolutionResultByPostorderID& resolveSymbolContents(Context* context,
 }
 
 static
-const ResolutionResultByPostorderID& partiallyResolvedSymbolContents(
-                                                           Context* context,
-                                                           ID id) {
+const ResolutionResultByPostorderID& partiallyResolvedModule(Context* context,
+                                                             ID id) {
 
   // check for a partial result from a running query
   const ResolutionResultByPostorderID* r =
-    QUERY_RUNNING_PARTIAL_RESULT(resolveSymbolContents, context, id);
+    QUERY_RUNNING_PARTIAL_RESULT(resolveModule, context, id);
   // if there was a partial result, return it
   if (r != nullptr) {
     return *r;
   }
 
   // otherwise, run the query to compute the full result
-  return resolveSymbolContents(context, id);
+  return resolveModule(context, id);
 }
 
-const QualifiedType& typeForSymbol(Context* context, ID id) {
-  QUERY_BEGIN(typeForSymbol, context, id);
+const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
+  QUERY_BEGIN(typeForModuleLevelSymbol, context, id);
 
   QualifiedType result;
+
   int postOrderId = id.postOrderId();
   if (postOrderId >= 0) {
     // Find the parent scope for the ID - i.e. where the id is declared
     ID parentSymbolId = id.parentSymbolId(context);
-    auto& r = partiallyResolvedSymbolContents(context, parentSymbolId);
-    assert((size_t) postOrderId < r.size());
-    result = r[postOrderId].type;
+    ASTTag parentTag = parsing::idToTag(context, parentSymbolId);
+    if (asttags::isModule(parentTag)) {
+      auto& r = partiallyResolvedModule(context, parentSymbolId);
+      assert((size_t) postOrderId < r.size());
+      result = r[postOrderId].type;
+    }
   } else {
     QualifiedType::Kind kind = QualifiedType::UNKNOWN;
 
     auto ast = parsing::idToAst(context, id);
     if (auto* decl = ast->toNamedDecl()) {
       kind = qualifiedTypeKindForDecl(decl);
+      // TODO -- compute type
     } else {
       assert(false && "case not handled");
     }
@@ -630,17 +606,474 @@ const QualifiedType& typeForSymbol(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-/*
-const ResolvedSymbol& resolveConcreteFunction(Context* context,
-                                              const Function* fn) {
-  QUERY_BEGIN(resolveConcreteFunction, context, fn);
 
-  ResolvedSymbol result;
-  result.decl = fn;
+/////// function resolution
+
+static
+const owned<UntypedFnSignature>& untypedSignatureQuery(Context* context, ID id)
+{
+  QUERY_BEGIN(untypedSignatureQuery, context, id);
+
+  auto ast = parsing::idToAst(context, id);
+  auto fn = ast->toFunction();
+
+  owned<UntypedFnSignature> result;
+
+  if (fn != nullptr) {
+    auto sig = new UntypedFnSignature(fn);
+    result = toOwned(sig);
+  }
 
   return QUERY_END(result);
 }
-*/
+
+const UntypedFnSignature* untypedSignature(Context* context, ID id) {
+  const owned<UntypedFnSignature>& r = untypedSignatureQuery(context, id);
+  return r.get();
+}
+
+static const owned<TypedFnSignature>&
+typedSignatureQuery(Context* context,
+                    const UntypedFnSignature* untypedSignature,
+                    std::vector<types::QualifiedType> formalTypes,
+                    TypedFnSignature::WhereClauseResult whereClauseResult,
+                    bool generic,
+                    const TypedFnSignature* instantiatedFrom,
+                    const TypedFnSignature* parentFn,
+                    std::set<const PoiScope*> poiScopesUsed) {
+  QUERY_BEGIN(typedSignatureQuery, context,
+              untypedSignature, formalTypes, whereClauseResult,
+              generic, instantiatedFrom, parentFn, poiScopesUsed);
+
+  owned<TypedFnSignature> result;
+  result->untypedSignature = untypedSignature;
+  result->formalTypes = formalTypes;
+  result->whereClauseResult = whereClauseResult;
+  result->generic = generic;
+  result->instantiatedFrom = instantiatedFrom;
+  result->parentFn = parentFn;
+
+  return QUERY_END(result);
+}
+
+static
+std::vector<types::QualifiedType> getFormalTypes(
+                                     const Function* fn,
+                                     const ResolutionResultByPostorderID& r) {
+  std::vector<types::QualifiedType> formalTypes;
+  for (auto formal : fn->formals()) {
+    int postorder = formal->id().postOrderId();
+    assert(0 <= postorder && postorder < (int) r.size()); 
+    formalTypes.push_back(r[postorder].type);
+  }
+  return formalTypes;
+}
+
+static
+bool isAnyFormalGeneric(const std::vector<types::QualifiedType>& formalTypes) {
+  bool generic = false;
+  for (const auto& qt : formalTypes) {
+    bool genericKind = qt.kind() == QualifiedType::UNKNOWN;
+    bool genericParam = qt.kind() == QualifiedType::PARAM && !qt.hasParam();
+    bool genericType = !qt.hasType() || qt.type()->isGeneric();
+    if (genericKind || genericParam || genericType)
+      generic = true;
+  }
+  return generic;
+}
+
+static TypedFnSignature::WhereClauseResult whereClauseResult(
+                                     Context* context,
+                                     const Function* fn,
+                                     const ResolutionResultByPostorderID& r,
+                                     bool generic) {
+  auto whereClauseResult = TypedFnSignature::WHERE_TBD;
+  if (const Expression* where = fn->whereClause()) {
+    int postorder = where->id().postOrderId();
+    assert(0 <= postorder && postorder < (int) r.size());
+    const QualifiedType& qt = r[postorder].type;
+    if (qt.kind() == QualifiedType::PARAM && qt.type()->isBoolType()) {
+      // OK, we know the result of the where clause
+      // TODO: handle Immediate
+      if (qt.param() != 0) {
+        whereClauseResult = TypedFnSignature::WHERE_TRUE;
+      } else {
+        whereClauseResult = TypedFnSignature::WHERE_FALSE;
+      }
+    } else if (generic) {
+      // it's OK, need to establish the value of the where clause later
+      whereClauseResult = TypedFnSignature::WHERE_TBD;
+    } else {
+      // where clause should be resolved by now
+      context->error(where,
+                     "where clause does not result in a param bool value");
+    }
+  } else {
+    whereClauseResult = TypedFnSignature::WHERE_NONE;
+  }
+
+  return whereClauseResult;
+}
+               
+const TypedFnSignature*
+typedSignatureInital(Context* context,
+                     const UntypedFnSignature* untypedSignature) {
+
+  const ASTNode* ast = parsing::idToAst(context, untypedSignature->functionId);
+  const Function* fn = ast->toFunction();
+
+  if (ast == nullptr) {
+    return nullptr;
+  }
+
+  ResolutionResultByPostorderID r;
+  Resolver visitor(context, fn, r);
+  // visit the formals, return type, where clause
+  for (auto child: fn->children()) {
+    child->traverse(visitor);
+  }
+
+  // now, construct a TypedFnSignature from the result
+  std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
+  bool generic = isAnyFormalGeneric(formalTypes);
+  auto whereResult = whereClauseResult(context, fn, r, generic);
+  std::set<const PoiScope*> poiScopesUsed;
+
+  const auto& result = typedSignatureQuery(context,
+                                           untypedSignature,
+                                           std::move(formalTypes),
+                                           whereResult,
+                                           generic,
+                                           /* instantiatedFrom */ nullptr,
+                                           /* parentFn */ nullptr, // TODO
+                                           std::move(poiScopesUsed));
+  return result.get();
+}
+
+const TypedFnSignature* instantiateSignature(Context* context,
+                                             const TypedFnSignature* sig,
+                                             CallInfo call,
+                                             const PoiScope* poiScope) {
+
+  const UntypedFnSignature* untypedSignature = sig->untypedSignature;
+  const ASTNode* ast = parsing::idToAst(context, untypedSignature->functionId);
+  const Function* fn = ast->toFunction();
+
+  if (fn == nullptr) {
+    return nullptr;
+  }
+
+  // compute the substitutions
+  SubstitutionsMap substitutions;
+  assert(false && "TODO -- compute substitutions");
+
+  ResolutionResultByPostorderID r;
+  Resolver visitor(context, fn, substitutions, poiScope, r);
+  // visit the formals, return type, where clause
+  for (auto child: fn->children()) {
+    child->traverse(visitor);
+  }
+
+  // now, construct a TypedFnSignature from the result
+  std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
+  bool generic = isAnyFormalGeneric(formalTypes);
+  auto whereResult = whereClauseResult(context, fn, r, generic);
+  std::set<const PoiScope*> poiScopesUsed;
+  poiScopesUsed.swap(visitor.poiScopesUsed);
+
+  const auto& result = typedSignatureQuery(context,
+                                           untypedSignature,
+                                           std::move(formalTypes),
+                                           whereResult,
+                                           generic,
+                                           /* instantiatedFrom */ sig,
+                                           /* parentFn */ nullptr, // TODO
+                                           std::move(poiScopesUsed));
+  return result.get();
+}
+
+static const ResolutionResultByPostorderID&
+resolvedFunctionQuery(Context* context,
+                      const TypedFnSignature* sig,
+                      std::set<const PoiScope*> poiScopesUsed) {
+  QUERY_BEGIN(resolvedFunctionQuery, context, sig, poiScopesUsed);
+
+  ResolutionResultByPostorderID result;
+  // the actual value is set in resolvedFunction after it is computed
+  // because computing it generates the poiScopesUsed.
+
+  return QUERY_END(result);
+}
+
+const ResolutionResultByPostorderID&
+resolvedFunction(Context* context,
+                 const TypedFnSignature* sig,
+                 const PoiScope* poiScope) {
+
+  // this should only be applied to concrete fns or instantiations
+  assert(!sig->generic);
+
+  const UntypedFnSignature* untypedSignature = sig->untypedSignature;
+  const ASTNode* ast = parsing::idToAst(context, untypedSignature->functionId);
+  const Function* fn = ast->toFunction();
+
+  ResolutionResultByPostorderID result;
+  std::set<const PoiScope*> poiScopes;
+
+  if (fn) {
+    Resolver visitor(context, fn, poiScope, sig, result);
+
+    // visit the formals and body
+    for (auto child: fn->children()) {
+      child->traverse(visitor);
+    }
+
+    poiScopes.swap(visitor.poiScopesUsed);
+
+    // store the result in the query under the POIs used
+    // this should not update the value if there was already one
+    // and they are the same.
+    QUERY_STORE_RESULT(resolvedFunctionQuery,
+                       context,
+                       result,
+                       sig,
+                       poiScopes);
+  } else {
+    assert(false && "this query should be called on Functions");
+  }
+
+  // Now get the ref to the value stored in the query map.
+  return resolvedFunctionQuery(context, sig, std::move(poiScopes));
+}
+
+
+static bool canPassInitial(const QualifiedType& actualType,
+                           const QualifiedType& formalType) {
+  // TODO: pull logic from canDispatch
+  if (actualType.type() == formalType.type()) return true;
+  if (formalType.kind() == QualifiedType::UNKNOWN) return true;
+  return false;
+}
+
+static bool canPass(const QualifiedType& actualType,
+                    const QualifiedType& formalType) {
+  if (actualType.type() == formalType.type()) return true;
+  return false;
+}
+
+// returns nullptr if the candidate is not applicable,
+// or the result of typedSignatureInitial if it is.
+static const TypedFnSignature*
+doIsCandidateApplicableInitial(Context* context,
+                               const ID& candidateId,
+                               const CallInfo& call) {
+
+  auto uSig = untypedSignature(context, candidateId);
+  // First, check that the untyped properties allow a match:
+  //  * number of arguments
+  //  * names of arguments
+  //  * method-ness
+  //  * ref-ness
+  if (call.actuals.size() != uSig->formals.size()) {
+    return nullptr;
+  }
+  // TODO: check named and default arguments
+  // TODO: check method-ness
+  // TODO: reason failed
+
+  auto initialTypedSignature = typedSignatureInital(context, uSig);
+  // Next, check that the types are compatible
+  size_t nActuals = call.actuals.size();
+  for (size_t i = 0; i < nActuals; i++) {
+    const QualifiedType& actualType = call.actuals[i].type;
+    const QualifiedType& formalType = initialTypedSignature->formalTypes[i];
+    bool ok = canPassInitial(actualType, formalType);
+    if (!ok)
+      return nullptr;
+  }
+
+  // check that the where clause applies
+  if (initialTypedSignature->whereClauseResult == TypedFnSignature::WHERE_FALSE)
+    return nullptr;
+
+  return initialTypedSignature;
+}
+
+// returns nullptr if the candidate is not applicable,
+// or the result of an instantiated typedSignature if it is.
+static const TypedFnSignature*
+doIsCandidateApplicableInstantiating(Context* context,
+                                     const TypedFnSignature* typedSignature,
+                                     const CallInfo& call,
+                                     const PoiScope* poiScope) {
+
+  const TypedFnSignature* instantiated =
+    instantiateSignature(context, typedSignature, call, poiScope);
+
+  if (instantiated == nullptr)
+    return nullptr;
+
+  // Next, check that the types are compatible
+  size_t nActuals = call.actuals.size();
+  for (size_t i = 0; i < nActuals; i++) {
+    const QualifiedType& actualType = call.actuals[i].type;
+    const QualifiedType& formalType = instantiated->formalTypes[i];
+    bool ok = canPass(actualType, formalType);
+    if (!ok)
+      return nullptr;
+  }
+
+  // check that the where clause applies
+  if (instantiated->whereClauseResult == TypedFnSignature::WHERE_FALSE)
+    return nullptr;
+
+  return instantiated;
+}
+
+static const TypedFnSignature* const&
+isCandidateApplicableInitialQuery(Context* context,
+                                  ID candidateId,
+                                  CallInfo call) {
+
+  QUERY_BEGIN(isCandidateApplicableInitialQuery, context, candidateId, call);
+
+  const TypedFnSignature* result =
+    doIsCandidateApplicableInitial(context, candidateId, call);
+
+  return QUERY_END(result);
+}
+
+const std::vector<const TypedFnSignature*>&
+filterCandidatesInitial(Context* context,
+                        std::vector<BorrowedIdsWithName> lst,
+                        CallInfo call) {
+  QUERY_BEGIN(filterCandidatesInitial, context, lst, call);
+
+  std::vector<const TypedFnSignature*> result;
+
+  for (const BorrowedIdsWithName& ids : lst) {
+    if (ids.moreIds == nullptr) {
+      const TypedFnSignature* s =
+        isCandidateApplicableInitialQuery(context, ids.id, call);
+      if (s != nullptr) {
+        result.push_back(s);
+      }
+    } else {
+      for (const ID& id : *ids.moreIds) {
+        const TypedFnSignature* s =
+          isCandidateApplicableInitialQuery(context, id, call);
+        if (s != nullptr) {
+          result.push_back(s);
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+std::vector<const TypedFnSignature*>
+filterCandidatesInstantiating(Context* context,
+                              std::vector<const TypedFnSignature*> lst,
+                              CallInfo call,
+                              const PoiScope* poiScope) {
+
+  // Performance: Would it help to make this a query?
+  // (I left it not as a query since it runs some other queries
+  //  and seems like it might have limited ability for reuse).
+  std::vector<const TypedFnSignature*> result;
+
+  for (const TypedFnSignature* typedSignature : lst) {
+    if (typedSignature->generic) {
+      const TypedFnSignature* instantiated =
+        doIsCandidateApplicableInstantiating(context,
+                                             typedSignature,
+                                             call,
+                                             poiScope);
+      if (instantiated != nullptr) {
+        result.push_back(instantiated);
+      }
+    } else {
+      // if it's already concrete, we already know it is a candidate.
+      result.push_back(typedSignature);
+    }
+  }
+
+  return result;
+}
+
+const MostSpecificCandidates&
+findMostSpecificCandidates(Context* context,
+                           std::vector<const TypedFnSignature*> lst,
+                           CallInfo call) {
+  QUERY_BEGIN(findMostSpecificCandidates, context, lst, call);
+
+  MostSpecificCandidates result;
+
+  if (lst.size() > 1) {
+    assert(false && "TODO");
+  }
+  if (lst.size() == 1) {
+    // TODO: set it according to return intent?
+    result.bestRef = lst[0];
+  }
+
+  return QUERY_END(result);
+}
+
+static
+std::vector<BorrowedIdsWithName> lookupCalledExpr(Context* context,
+                                                  const Scope* scope,
+                                                  const Call* call) {
+  std::vector<BorrowedIdsWithName> ret;
+
+  if (auto op = call->toOpCall()) {
+    auto vec = lookupInScope(context, scope, op->op(),
+                             /* checkDecls */ true,
+                             /* checkUseImport */ true,
+                             /* checkParents */ true,
+                             /* checkToplevel */ false,
+                             /* findOne */ false);
+    ret.swap(vec);
+  } else if (const Expression* called = call->calledExpression()) {
+    auto vec = lookupInScope(context, scope, called,
+                             /* checkDecls */ true,
+                             /* checkUseImport */ true,
+                             /* checkParents */ true,
+                             /* checkToplevel */ false,
+                             /* findOne */ false);
+    ret.swap(vec);
+  }
+
+  return ret;
+}
+
+
+MostSpecificCandidates resolveCall(Context* context,
+                                   const Call* call,
+                                   CallInfo ci,
+                                   const Scope* scope,
+                                   const PoiScope* poiScope) {
+
+  // compute the potential functions that it could resolve to
+  std::vector<BorrowedIdsWithName> lst = lookupCalledExpr(context, scope, call);
+
+  // filter without instantiating yet
+  const auto& initialCondidates = filterCandidatesInitial(context, lst, ci);
+
+  // find candidates, doing instantiation if necessary
+  auto candidates = filterCandidatesInstantiating(context, 
+                                                  initialCondidates,
+                                                  ci,
+                                                  poiScope);
+
+  // find most specific candidates / disambiguate
+  MostSpecificCandidates result = findMostSpecificCandidates(context,
+                                                             candidates,
+                                                             ci);
+
+  return result;
+}
 
 
 } // end namespace resolution

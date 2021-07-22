@@ -91,13 +91,13 @@ static void computeAndPrintStuff(Context* context, const ASTNode* ast) {
 
   // check the type
   if (!(ast->isLoop() || ast->isBlock())) {
-    const auto& t = typeForSymbol(context, ast->id());
+    const auto& t = typeForModuleLevelSymbol(context, ast->id());
 
     printId(ast);
     printf(" has type:  ");
     printf("%-32s ", t.toString().c_str());
 
-    auto status = context->queryStatus(typeForSymbol,
+    auto status = context->queryStatus(typeForModuleLevelSymbol,
                                        std::make_tuple(ast->id()));
 
     if (status == Context::NOT_CHECKED_NOT_CHANGED) {

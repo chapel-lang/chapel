@@ -27,6 +27,7 @@
 #include "chpl/util/memory.h"
 
 #include <unordered_map>
+#include <utility>
 
 namespace chpl {
 namespace resolution {
@@ -70,10 +71,28 @@ struct UntypedFnSignature {
   }
 };
 
+using SubstitutionsMap = std::unordered_map<const uast::Formal*, types::QualifiedType>;
+
+/*
+struct InstantiationInfo {
+  SubstitutionsMap substitutions;
+  TypedFnSignature* instantiationPointFn = nullptr;
+  ID instantiationPointId;
+
+  bool operator==(const InstantiationInfo& other) const {
+    return substitutions == other.substitutions &&
+           instantiationPointFn == other.instantiationPointFn &&
+           instantiationPointId == other.instantiationPointId;
+  }
+  bool operator!=(const InstantiationInfo& other) const {
+    return !(*this == other);
+  }
+};
+*/
+
 struct CallInfoActual {
   types::QualifiedType type;
   UniqueString byName;
-  // TODO: param and type actuals
 
   bool operator==(const CallInfoActual& other) const {
     return type == other.type &&
@@ -82,61 +101,171 @@ struct CallInfoActual {
   bool operator!=(const CallInfoActual& other) const {
     return !(*this == other);
   }
+  size_t hash() const {
+    size_t h1 = chpl::hash(type);
+    size_t h2 = chpl::hash(byName);
+    size_t ret = 0;
+    ret = hash_combine(ret, h1);
+    ret = hash_combine(ret, h2);
+    return ret;
+  }
 };
 
 struct CallInfo {
-  bool isMethod; // in that case, actuals[0] is the receiver
-  std::vector<CallInfoActual> actuals;
+  UniqueString name;                   // the name of the called thing
+  bool isMethod = false;               // in that case, actuals[0] is receiver
+  std::vector<CallInfoActual> actuals; // types/params/names of actuals 
 
   bool operator==(const CallInfo& other) const {
-    return isMethod == other.isMethod &&
+    return name == other.name &&
+           isMethod == other.isMethod &&
            actuals == other.actuals;
   }
   bool operator!=(const CallInfo& other) const {
     return !(*this == other);
   }
+  size_t hash() const {
+    size_t h1 = chpl::hash(name);
+    size_t h2 = isMethod;
+    size_t h3 = chpl::hash(actuals);
+    size_t ret = 0;
+    ret = hash_combine(ret, h1);
+    ret = hash_combine(ret, h2);
+    ret = hash_combine(ret, h3);
+    return ret;
+  }
 };
 
-struct TypedFnSignatureFormal {
-  const uast::Formal* formal;
-  types::QualifiedType type;
+// When resolving a traditional generic, we also need to consider
+// the point-of-instantiation scope as a place to find visible functions.
+// This type tracks such a scope.
+//
+// PoiScopes do not need to consider scopes that are visible from
+// the function declaration. These can be collapsed away.
+struct PoiScope {
+  const PoiScope* inFnPoi = nullptr;      // what is the POI of this POI?
+  ID inScopeId;                           // ID of parent Scope for the Call
 
-  bool operator==(const TypedFnSignatureFormal& other) const {
-    return formal == other.formal &&
-           type == other.type;
+  bool operator==(const PoiScope& other) const {
+    return inFnPoi == other.inFnPoi &&
+           inScopeId == other.inScopeId;
   }
-  bool operator!=(const TypedFnSignatureFormal& other) const {
+  bool operator!=(const PoiScope& other) const {
     return !(*this == other);
   }
 };
 
+
+// TODO: should this actually be types::FunctionType?
 struct TypedFnSignature {
-  UntypedFnSignature* untypedSignature;
-  std::vector<TypedFnSignatureFormal> formals;
+  typedef enum {
+    WHERE_NONE,  // no where clause
+    WHERE_TBD,   // where clause not resolved yet
+    WHERE_TRUE,  // where resulted in true
+    WHERE_FALSE, // where resulted in false
+  } WhereClauseResult;
 
-  bool evaluatedWhereClause;
+  // What is the untyped function signature?
+  const UntypedFnSignature* untypedSignature;
+  // What is the type of each of the formals?
+  std::vector<types::QualifiedType> formalTypes;
+  // If there was a where clause, what was the result of evaluating it?
+  WhereClauseResult whereClauseResult = WHERE_TBD;
 
-  // substitutions (only used for generic functions/types)
-  //std::unordered_map<uast::NamedDecl*, types::Type*> typeSubs;
-  // TODO: int -> Immediate
-  //std::unordered_map<uast::NamedDecl*, int> paramSubs;
+  // Are any of the formals generic or unknown at this point?
+  bool generic = true;
 
-  // TODO: move instantiation stuff to function/class Type
-  // the point of instantiation
-  TypedFnSignature* instantiationPointFn = nullptr;
-  ID instantiationPointId;
+  // Is this TypedFnSignature representing an instantiation?
+  // If so, what is the generic TypedFnSignature that was instantiated?
+  const TypedFnSignature* instantiatedFrom = nullptr;
+
+  // Is this for an inner Function? If so, what is the parent
+  // function signature?
+  const TypedFnSignature* parentFn = nullptr;
+
+  // TODO: This could include a substitutions map, if we need it.
+  // The formalTypes above might be enough, though.
 
   bool operator==(const TypedFnSignature& other) const {
     return untypedSignature == other.untypedSignature &&
-           formals == other.formals &&
-           evaluatedWhereClause == other.evaluatedWhereClause &&
-           instantiationPointFn == other.instantiationPointFn &&
-           instantiationPointId == other.instantiationPointId;
+           formalTypes == other.formalTypes &&
+           whereClauseResult == other.whereClauseResult &&
+           generic == other.generic &&
+           instantiatedFrom == other.instantiatedFrom &&
+           parentFn == other.parentFn;
   }
   bool operator!=(const TypedFnSignature& other) const {
     return !(*this == other);
   }
 };
+
+// Point-of-instantiation call info (for reusing instantiations)
+/*struct PoiCallInfo {
+  ID fnId;                  // the ID of the function being called
+  const PoiScope* poiScope; // the POI Scope where that function is declared
+
+  bool operator==(const PoiCallInfo& other) const {
+    return fnId == other.fnId &&
+           poiScope == other.poiScope;
+  }
+  bool operator!=(const PoiCallInfo& other) const {
+    return !(*this == other);
+  }
+};*/
+
+// A resolution result for a Function
+/*struct ResolvedFunction {
+  const TypedFnSignature* signature;
+
+  // used for determining when an instantiation can be reused
+  // (see PR #16261).
+  //std::vector<PoiCallInfo> poiCalls;
+
+  // this is the output of the resolution process
+  ResolutionResultByPostorderID resolutionById;
+};*/
+
+struct MostSpecificCandidates {
+  const TypedFnSignature* bestRef = nullptr;
+  const TypedFnSignature* bestConstRef = nullptr;
+  const TypedFnSignature* bestValue = nullptr;
+
+  const TypedFnSignature* only() {
+    const TypedFnSignature* ret = nullptr;
+    int i = 0;
+    if (bestRef != nullptr) {
+      ret = bestRef;
+      i++;
+    }
+    if (bestConstRef != nullptr) {
+      ret = bestConstRef;
+      i++;
+    }
+    if (bestValue != nullptr) {
+      ret = bestValue;
+      i++;
+    }
+    if (i != 1) {
+      return nullptr;
+    }
+    return ret;
+  }
+
+  bool operator==(const MostSpecificCandidates& other) const {
+    return bestRef == other.bestRef &&
+           bestConstRef == other.bestConstRef &&
+           bestValue == other.bestValue;
+  }
+  bool operator!=(const MostSpecificCandidates& other) const {
+    return !(*this == other);
+  }
+  void swap(MostSpecificCandidates& other) {
+    std::swap(bestRef, other.bestRef);
+    std::swap(bestConstRef, other.bestConstRef);
+    std::swap(bestValue, other.bestValue);
+  }
+};
+
 
 struct ResolvedExpression {
   // the ID that is resolved
@@ -147,14 +276,12 @@ struct ResolvedExpression {
   // the ID of a NamedDecl it refers to
   ID toId;
 
-  // For a function call, it refers to a typed function
-  // (that might be a generic instantiation)
-  const TypedFnSignature* function;
-
-  // Some calls use return intent overloading. In that event,
-  // all overloads are stored in this vector. They need to be
-  // resolved in a different order.
-  std::vector<const TypedFnSignature*> overloads;
+  // For a function call, what is the most specific candidate,
+  // or when using return intent overloading, what are the most specific
+  // candidates.
+  // The choice between these needs to happen
+  // later than the main function resolution.
+  MostSpecificCandidates candidates;
 
   ResolvedExpression() { }
 
@@ -162,8 +289,7 @@ struct ResolvedExpression {
     return id == other.id &&
            type == other.type &&
            toId == other.toId &&
-           function == other.function &&
-           overloads == other.overloads;
+           candidates == other.candidates;
   }
   bool operator!=(const ResolvedExpression& other) const {
     return !(*this == other);
@@ -172,12 +298,7 @@ struct ResolvedExpression {
     id.swap(other.id);
     type.swap(other.type);
     toId.swap(other.toId);
-
-    const TypedFnSignature* tmpFunction = function;
-    function = other.function;
-    other.function = tmpFunction;
-
-    overloads.swap(other.overloads);
+    candidates.swap(other.candidates);
   }
 };
 
@@ -186,25 +307,45 @@ struct ResolvedExpression {
 // a different ResolvedSymbol entry.
 using ResolutionResultByPostorderID = std::vector<ResolvedExpression>;
 
-// A resolution result for a Function, Module, or TypeDecl (Record/Class/etc)
-struct ResolvedSymbol {
-  // the following are input for the resolution process but these
-  // are repeated here in case they are needed in follow-on processing.
 
-  // the NamedDecl that is resolved
-  const uast::NamedDecl* decl = nullptr;
-  // substitutions (only used for generic functions/types)
-  std::unordered_map<uast::NamedDecl*, types::Type*> typeSubs;
-  // TODO: int -> Immediate
-  std::unordered_map<uast::NamedDecl*, int> paramSubs;
-  // the point of instantiation
-  const ResolvedSymbol* instantiationPoint = nullptr;
+} // end namespace resolution
 
-  // this is the output of the resolution process
-  ResolutionResultByPostorderID resolutionById;
+
+template<> struct update<chpl::resolution::ResolvedExpression> {
+  bool operator()(chpl::resolution::ResolvedExpression& keep,
+                  chpl::resolution::ResolvedExpression& addin) const {
+    return defaultUpdate(keep, addin);
+  }
+};
+
+template<> struct update<chpl::resolution::MostSpecificCandidates> {
+  bool operator()(chpl::resolution::MostSpecificCandidates& keep,
+                  chpl::resolution::MostSpecificCandidates& addin) const {
+    return defaultUpdate(keep, addin);
+  }
 };
 
 
-} // end namespace resolution
 } // end namespace chpl
+
+
+namespace std {
+
+template<> struct hash<chpl::resolution::CallInfoActual>
+{
+  size_t operator()(const chpl::resolution::CallInfoActual& key) const {
+    return key.hash();
+  }
+};
+
+template<> struct hash<chpl::resolution::CallInfo>
+{
+  size_t operator()(const chpl::resolution::CallInfo& key) const {
+    return key.hash();
+  }
+};
+
+} // end namespace std
+
+
 #endif
