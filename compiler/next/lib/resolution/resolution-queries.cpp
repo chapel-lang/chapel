@@ -527,6 +527,35 @@ struct Resolver {
     ResolvedExpression& r = resultByAst(call);
     r.mostSpecific = c.mostSpecific;
 
+    // compute the return types
+    QualifiedType retType;
+    bool retTypeSet = false;
+    if (r.mostSpecific.bestRef) {
+      retType = returnType(context, r.mostSpecific.bestRef, poiScope);
+      retTypeSet = true;
+    }
+    if (r.mostSpecific.bestConstRef) {
+      auto t = returnType(context, r.mostSpecific.bestConstRef, poiScope);
+      if (retTypeSet && retType.type() != t.type()) {
+        context->error(r.mostSpecific.bestConstRef,
+                       nullptr,
+                       "return intent overload type does not match");
+      }
+      retType = t;
+      retTypeSet = true;
+    }
+    if (r.mostSpecific.bestValue) {
+      auto t = returnType(context, r.mostSpecific.bestValue, poiScope);
+      if (retTypeSet && retType.type() != t.type()) {
+        context->error(r.mostSpecific.bestValue,
+                       nullptr,
+                       "return intent overload type does not match");
+      }
+      retType = t;
+      retTypeSet = true;
+    }
+    r.type = retType;
+
     // gather the poi scopes used when resolving the call
     poiScopesUsed.insert(c.poiScopesUsed.begin(), c.poiScopesUsed.end());
   }
@@ -838,10 +867,8 @@ const ResolvedFunction& resolvedFunction(Context* context,
   if (fn) {
     Resolver visitor(context, fn, poiScope, sig, result.resolutionById);
 
-    // visit the formals and body
-    for (auto child: fn->children()) {
-      child->traverse(visitor);
-    }
+    // visit the body
+    fn->body()->traverse(visitor);
 
     result.poiScopesUsed.swap(visitor.poiScopesUsed);
 
@@ -861,6 +888,104 @@ const ResolvedFunction& resolvedFunction(Context* context,
   return resolvedFunctionQuery(context, sig, result.poiScopesUsed);
 }
 
+struct ReturnTypeInferer {
+  // input
+  Context* context;
+  const ResolutionResultByPostorderID& resolutionById;
+
+  // output
+  std::vector<QualifiedType> returnedTypes;
+
+  ReturnTypeInferer(Context* context, const ResolvedFunction& resolvedFn)
+    : context(context), resolutionById(resolvedFn.resolutionById) {
+  }
+
+  bool enter(const Function* fn) {
+    return false;
+  }
+  void exit(const Function* fn) {
+  }
+
+  void noteVoidReturnType(const Expression* inExpr) {
+    QualifiedType voidType(QualifiedType::VALUE, VoidType::get(context));
+    returnedTypes.push_back(voidType);
+  }
+  void noteReturnType(const Expression* expr, const Expression* inExpr) {
+    int postorder = expr->id().postOrderId();
+    assert(0 <= postorder && postorder < (int)resolutionById.size());
+    returnedTypes.push_back(resolutionById[postorder].type);
+  }
+
+  QualifiedType returnedType() {
+    if (returnedTypes.size() == 0) {
+      return QualifiedType(QualifiedType::VALUE, VoidType::get(context));
+    } else if (returnedTypes.size() == 1) {
+      return returnedTypes[0];
+    } else {
+      assert(false && "TODO");
+    }
+  }
+
+  bool enter(const Return* ret) {
+    if (const Expression* expr = ret->value()) {
+      noteReturnType(expr, ret);
+    } else {
+      noteVoidReturnType(ret);
+    }
+    return false;
+  }
+  void exit(const Return* ret) {
+  }
+
+  bool enter(const Yield* ret) {
+    noteReturnType(ret->value(), ret);
+    return false;
+  }
+  void exit(const Yield* ret) {
+  }
+
+  bool enter(const ASTNode* ast) {
+    return true;
+  }
+  void exit(const ASTNode* ast) {
+  }
+};
+
+const QualifiedType& returnType(Context* context,
+                                const TypedFnSignature* sig,
+                                const PoiScope* poiScope) {
+  QUERY_BEGIN(returnType, context, sig, poiScope);
+
+  // this should only be applied to concrete fns or instantiations
+  assert(!sig->needsInstantiation);
+
+  const UntypedFnSignature* untypedSignature = sig->untypedSignature;
+  const ASTNode* ast = parsing::idToAst(context, untypedSignature->functionId);
+  const Function* fn = ast->toFunction();
+
+  QualifiedType result;
+
+  if (fn) {
+    if (const Expression* retType = fn->returnType()) {
+      // resolve the return type
+      ResolutionResultByPostorderID resolutionById;
+      Resolver visitor(context, fn, poiScope, sig, resolutionById);
+      retType->traverse(visitor);
+      int postorder = retType->id().postOrderId();
+      assert(0 <= postorder && postorder < (int) resolutionById.size());
+      result = resolutionById[postorder].type;
+    } else {
+      // resolve the function body
+      const ResolvedFunction& rFn = resolvedFunction(context, sig, poiScope);
+      // infer the return type
+      ReturnTypeInferer visitor(context, rFn);
+      fn->body()->traverse(visitor);
+      result = visitor.returnedType();
+    }
+  }
+
+  return QUERY_END(result);
+}
 
 static bool canPassInitial(const QualifiedType& actualType,
                            const QualifiedType& formalType) {

@@ -88,6 +88,13 @@ namespace resolution {
                                            const PoiScope* poiScope);
 
 
+  /**
+    Compute the return/yield type for a function.
+   */
+  const types::QualifiedType& returnType(Context* context,
+                                         const TypedFnSignature* sig,
+                                         const PoiScope* poiScope);
+
   /////// call resolution
 
   /**
