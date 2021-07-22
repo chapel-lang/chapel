@@ -104,9 +104,8 @@ static void test1(Parser* parser) {
     const As* as = visClause->symbol()->toAs();
     assert(as->symbol()->isDot());
     const Dot* dot = as->symbol()->toDot();
-    assert(dot->numActuals() == 0);
-    assert(dot->calledExpression()->isIdentifier());
-    assert(dot->calledExpression()->toIdentifier()->name() == "B");
+    assert(dot->receiver()->isIdentifier());
+    assert(dot->receiver()->toIdentifier()->name() == "B");
     assert(dot->field() == "SM1");
     assert(as->rename()->isIdentifier());
     assert(as->rename()->toIdentifier()->name() == "Y");
