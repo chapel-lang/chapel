@@ -61,7 +61,7 @@ class Type {
    This function needs to be defined by subclasses.
    It returns 'true` if the type represents a generic type.
    */
-  virtual bool isGeneric() = 0;
+  virtual bool isGeneric() const = 0;
 
  protected:
   Type(TypeTag tag)

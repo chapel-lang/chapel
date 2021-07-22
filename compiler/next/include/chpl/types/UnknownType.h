@@ -41,7 +41,7 @@ class UnknownType : public Type {
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  bool isGeneric() override {
+  bool isGeneric() const override {
     return false; // well actually we don't know, because it is unknown
   }
 

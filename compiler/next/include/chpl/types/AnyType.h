@@ -40,7 +40,7 @@ class AnyType : public Type {
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  bool isGeneric() override {
+  bool isGeneric() const override {
     return true;
   }
 
