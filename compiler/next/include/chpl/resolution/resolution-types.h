@@ -46,6 +46,7 @@ struct UntypedFnSignature {
   ID functionId;
   UniqueString name;
   bool isMethod; // in that case, formals[0] is the receiver
+  uast::Function::Kind kind;
   std::vector<const uast::Formal*> formals;
   const uast::Expression* whereClause;
 
@@ -53,6 +54,7 @@ struct UntypedFnSignature {
     : functionId(fn->id()),
       name(fn->name()),
       isMethod(fn->isMethod()),
+      kind(fn->kind()),
       whereClause(fn->whereClause()) {
     for (auto formal : fn->formals()) {
       formals.push_back(formal);
@@ -63,6 +65,7 @@ struct UntypedFnSignature {
     return functionId != other.functionId &&
            name == other.name &&
            isMethod == other.isMethod &&
+           kind == other.kind &&
            formals == other.formals &&
            whereClause == other.whereClause;
   }
@@ -334,6 +337,32 @@ struct ResolvedFunction {
     poiScopesUsed.swap(other.poiScopesUsed);
   }
 };
+
+struct FormalActual {
+  const uast::Formal* formal = nullptr;
+  types::QualifiedType formalType;
+  bool hasActual = false; // == false means uses formal default value
+  int actualIdx = -1;
+  types::QualifiedType actualType;
+};
+
+struct FormalActualMap {
+  std::vector<FormalActual> byFormalIdx;
+  std::vector<int> actualIdxToFormalIdx;
+  bool mappingIsValid = false;
+  int failingActualIdx = -1;
+  int failingFormalIdx = -1;
+
+  bool computeAlignment(const UntypedFnSignature* untyped,
+                        const TypedFnSignature* typed,
+                        const CallInfo& call);
+
+  static FormalActualMap build(const UntypedFnSignature* untyped,
+                               const CallInfo& call);
+  static FormalActualMap build(const TypedFnSignature* typed,
+                               const CallInfo& call);
+};
+
 
 
 } // end namespace resolution

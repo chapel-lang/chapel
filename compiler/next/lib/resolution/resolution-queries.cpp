@@ -650,7 +650,7 @@ typedSignatureQuery(Context* context,
               untypedSignature, formalTypes, whereClauseResult,
               needsInstantiation, instantiatedFrom, parentFn, poiScopesUsed);
 
-  owned<TypedFnSignature> result;
+  auto result = toOwned(new TypedFnSignature());
   result->untypedSignature = untypedSignature;
   result->formalTypes = formalTypes;
   result->whereClauseResult = whereClauseResult;
@@ -675,24 +675,23 @@ std::vector<types::QualifiedType> getFormalTypes(
   return formalTypes;
 }
 
-static
-bool isAnyFormalGeneric(const std::vector<types::QualifiedType>& formalTypes) {
-  bool generic = false;
-  for (const auto& qt : formalTypes) {
-    bool genericKind = qt.kind() == QualifiedType::UNKNOWN;
-    bool genericParam = qt.kind() == QualifiedType::PARAM && !qt.hasParam();
-    bool genericType = !qt.hasType() || qt.type()->isGeneric();
-    if (genericKind || genericParam || genericType)
-      generic = true;
+static bool
+anyFormalNeedsInstantiation(const std::vector<types::QualifiedType>& formalTs) {
+  bool genericOrUnknown = false;
+  for (const auto& qt : formalTs) {
+    if (qt.isGenericOrUnknown()) {
+      genericOrUnknown = true;
+      break;
+    }
   }
-  return generic;
+  return genericOrUnknown;
 }
 
 static TypedFnSignature::WhereClauseResult whereClauseResult(
                                      Context* context,
                                      const Function* fn,
                                      const ResolutionResultByPostorderID& r,
-                                     bool generic) {
+                                     bool needsInstantiation) {
   auto whereClauseResult = TypedFnSignature::WHERE_TBD;
   if (const Expression* where = fn->whereClause()) {
     int postorder = where->id().postOrderId();
@@ -706,7 +705,7 @@ static TypedFnSignature::WhereClauseResult whereClauseResult(
       } else {
         whereClauseResult = TypedFnSignature::WHERE_FALSE;
       }
-    } else if (generic) {
+    } else if (needsInstantiation) {
       // it's OK, need to establish the value of the where clause later
       whereClauseResult = TypedFnSignature::WHERE_TBD;
     } else {
@@ -741,15 +740,15 @@ typedSignatureInital(Context* context,
 
   // now, construct a TypedFnSignature from the result
   std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
-  bool generic = isAnyFormalGeneric(formalTypes);
-  auto whereResult = whereClauseResult(context, fn, r, generic);
+  bool needsInstantiation = anyFormalNeedsInstantiation(formalTypes);
+  auto whereResult = whereClauseResult(context, fn, r, needsInstantiation);
   std::set<const PoiScope*> poiScopesUsed;
 
   const auto& result = typedSignatureQuery(context,
                                            untypedSignature,
                                            std::move(formalTypes),
                                            whereResult,
-                                           generic,
+                                           needsInstantiation,
                                            /* instantiatedFrom */ nullptr,
                                            /* parentFn */ nullptr, // TODO
                                            std::move(poiScopesUsed));
@@ -769,9 +768,18 @@ const TypedFnSignature* instantiateSignature(Context* context,
     return nullptr;
   }
 
+  auto faMap = FormalActualMap::build(sig, call);
+  if (!faMap.mappingIsValid) {
+    return nullptr;
+  }
+
   // compute the substitutions
   SubstitutionsMap substitutions;
-  assert(false && "TODO -- compute substitutions");
+  for (const FormalActual& entry : faMap.byFormalIdx) {
+    if (entry.formalType.isGenericOrUnknown()) {
+      substitutions.insert({entry.formal, entry.actualType});
+    }
+  }
 
   ResolutionResultByPostorderID r;
   Resolver visitor(context, fn, substitutions, poiScope, r);
@@ -782,8 +790,8 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
   // now, construct a TypedFnSignature from the result
   std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
-  bool generic = isAnyFormalGeneric(formalTypes);
-  auto whereResult = whereClauseResult(context, fn, r, generic);
+  bool needsInstantiation = anyFormalNeedsInstantiation(formalTypes);
+  auto whereResult = whereClauseResult(context, fn, r, needsInstantiation);
   std::set<const PoiScope*> poiScopesUsed;
   poiScopesUsed.swap(visitor.poiScopesUsed);
 
@@ -791,7 +799,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                            untypedSignature,
                                            std::move(formalTypes),
                                            whereResult,
-                                           generic,
+                                           needsInstantiation,
                                            /* instantiatedFrom */ sig,
                                            /* parentFn */ nullptr, // TODO
                                            std::move(poiScopesUsed));
@@ -881,22 +889,26 @@ doIsCandidateApplicableInitial(Context* context,
   //  * names of arguments
   //  * method-ness
   //  * ref-ness
-  if (call.actuals.size() != uSig->formals.size()) {
+
+  auto faMap = FormalActualMap::build(uSig, call);
+  if (!faMap.mappingIsValid) {
     return nullptr;
   }
-  // TODO: check named and default arguments
+
   // TODO: check method-ness
   // TODO: reason failed
 
   auto initialTypedSignature = typedSignatureInital(context, uSig);
   // Next, check that the types are compatible
-  size_t nActuals = call.actuals.size();
-  for (size_t i = 0; i < nActuals; i++) {
-    const QualifiedType& actualType = call.actuals[i].type;
-    const QualifiedType& formalType = initialTypedSignature->formalTypes[i];
+  size_t formalIdx = 0;
+  for (const FormalActual& entry : faMap.byFormalIdx) {
+    const auto& actualType = entry.actualType;
+    const auto& formalType = initialTypedSignature->formalTypes[formalIdx];
     bool ok = canPassInitial(actualType, formalType);
     if (!ok)
       return nullptr;
+
+    formalIdx++;
   }
 
   // check that the where clause applies
