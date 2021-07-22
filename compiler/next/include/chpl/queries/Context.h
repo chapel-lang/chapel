@@ -39,6 +39,11 @@ namespace uast {
   class ASTNode;
 }
 
+namespace resolution {
+  struct TypedFnSignature;
+}
+
+
 /**
 
 \rst
@@ -418,6 +423,23 @@ class Context {
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
     __attribute__ ((format (printf, 3, 4)))
+  #endif
+;
+  /**
+    Note an error for the currently running query.
+    This is a convenience overload.
+    This version takes in a TypedFnSignature and an AST node and a
+    printf-style format string.
+    The AST node is used to compute a Location by using a parsing::locateAst.
+    The TypedFnSignature is used to print out instantiation information.
+   */
+  void error(const resolution::TypedFnSignature* inFn,
+             const uast::ASTNode* ast,
+             const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 4, 5)))
   #endif
 ;
 
