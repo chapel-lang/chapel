@@ -91,6 +91,10 @@ Linking between files in https://chapel-lang.org/docs/ and
 the repository.
 FIXME: Brad, how do I do this?
 
+FIXME: I want to link this file into the bullet at https://chapel-lang.org/contributing.html
+about doing a PR to fix documentation.  How would I do that?
+
+
 ============================================
 Organization of Chapel Documentation Sources
 ============================================
