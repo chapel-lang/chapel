@@ -100,3 +100,8 @@ void chpl_comm_ofi_oob_bcast(void* buf, size_t len) {
     INTERNAL_ERROR_V("multi-locale bcast not supported");
   }
 }
+
+int chpl_comm_ofi_oob_locales_on_node(void) {
+  // assume the answer is 1
+  return 1;
+}

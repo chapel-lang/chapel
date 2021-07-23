@@ -39,7 +39,6 @@
 
 #include "comm-ofi-internal.h"
 
-
 #define PMI2_SUCCESS 0
 #define PMI2_ID_NULL -1
 #define PMI2_MAX_VALLEN 1024
@@ -284,4 +283,9 @@ void decode_kvs(char* raw, const char* enc, size_t size) {
     raw[i] =   ((enc[2 * i + 0] - 'a') << (0 * 4))
              | ((enc[2 * i + 1] - 'a') << (1 * 4));
   }
+}
+
+int chpl_comm_ofi_oob_locales_on_node(void) {
+  // TODO: figure out how to implement this correctly
+  return 1;
 }
