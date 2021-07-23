@@ -1869,45 +1869,58 @@ extern void chpl_task_yield(void);
 err_t sys_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds, struct timeval* timeout, int* nset) {
   int got_nset;
   err_t err_out = 0;
-#ifdef QTHREAD_VERSION
-  got_nset = qt_select(nfds, readfds, writefds, exceptfds, timeout);
-#else
 
-  struct timeval deadline;
-  struct timeval now;
-  struct timeval real_timeout;
-  long wait_usec = 5;
+  struct timeval first_timeout;
+  struct timeval second_timeout = {0};
+  if(timeout != NULL) {
+    second_timeout = *timeout;
+  }
 
-  if (timeout != NULL) {
-    gettimeofday(&deadline, NULL);
-    deadline.tv_sec += timeout->tv_sec;
-    deadline.tv_usec += timeout->tv_usec;
-    if (deadline.tv_usec > 1000000) {
-      deadline.tv_sec++;
-      deadline.tv_usec -= 1000000;
+  first_timeout.tv_sec = 0;
+  // 64 milliseconds allows instantaneous connections whereas 32000 doesn't
+  // and is small enough to not block process for longtime
+  first_timeout.tv_usec = 64000;
+
+  // calculate available timeout
+  if (timeout != NULL){
+    first_timeout.tv_usec = (second_timeout.tv_usec > 64000 || second_timeout.tv_sec >= 1) ? 64000 : second_timeout.tv_usec;
+
+    second_timeout.tv_usec -= first_timeout.tv_usec;
+    if(second_timeout.tv_usec < 0){
+      second_timeout.tv_sec -= 1;
+      second_timeout.tv_usec += 1000000;
     }
-  } else if (timeout->tv_sec == 0) {
-    if (timeout->tv_usec < wait_usec)
-      wait_usec = timeout->tv_usec;
   }
 
-  real_timeout.tv_sec = 0;
-  real_timeout.tv_usec = wait_usec;
+  // create new fd_sets otherwise original will be overwritten
+  fd_set temp_readfds, temp_writefds, temp_exceptfds;
+  FD_ZERO(&temp_readfds);
+  FD_ZERO(&temp_writefds);
+  FD_ZERO(&temp_exceptfds);
+  if(readfds != NULL)
+    temp_readfds = *readfds;
+  if(writefds != NULL)
+    temp_writefds = *writefds;
+  if(exceptfds != NULL)
+    temp_exceptfds = *exceptfds;
 
-  while (1) {
-    // It would be nicer if the tasking layer supported a select
-    // call and knew to wait in the select call if no task was waiting
-    got_nset = select(nfds, readfds, writefds, exceptfds, &real_timeout);
-    if (got_nset == -1) err_out = errno; // save error
-    if (got_nset != 0) break; // exit loop if something happened
-#ifndef CHPL_RT_UNIT_TEST
-    chpl_task_yield();
-#endif
-    gettimeofday(&now, NULL);
-    if (now.tv_sec > deadline.tv_sec ||
-        (now.tv_sec == deadline.tv_sec && now.tv_usec > deadline.tv_usec))
-      break;
+  got_nset = select(nfds, &temp_readfds, &temp_writefds, &temp_exceptfds, &first_timeout);
+  if (got_nset == -1) err_out = errno; // save error
+
+  // check for error/success else check if first_timeout subtraced all the timeout.
+  if(got_nset != 0 || (timeout != NULL && second_timeout.tv_sec == 0 && second_timeout.tv_usec == 0)){
+    *nset = got_nset;
+    return err_out;
   }
+
+  struct timeval* second_timeout_ptr = NULL;
+  if (timeout != NULL)
+    second_timeout_ptr = &second_timeout;
+
+#if defined(QTHREAD_VERSION) && !defined(CHPL_RT_UNIT_TEST)
+  got_nset = qt_select(nfds, readfds, writefds, exceptfds, second_timeout_ptr);
+#else
+  got_nset = select(nfds, readfds, writefds, exceptfds, second_timeout_ptr);
 #endif
   if (got_nset == -1) err_out = errno; // save error
   *nset = got_nset;
