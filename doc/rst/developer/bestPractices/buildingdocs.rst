@@ -1,5 +1,7 @@
 .. _readme-buildingdocs:
 
+.. _Chapel Developers: https://chapel.discourse.group/c/developers
+
 =============================
 Building Chapel Documentation
 =============================
@@ -69,30 +71,53 @@ in github and using the preview option.  The way to see all of the links that
 are created is to do the ``make docs`` that is described above.
 
 
-Files that live in the repository
-=======================================
+Files that live in a repository
+===============================
 Some of the documentation files are not converted into html files.  Instead
-they are raw html files or raw .rst files that live in the chapel-www internal
-repository (FIXME: correct?) or the public github respository.
+they are raw html files in the chapel-www repository (currently only accessible
+by core developers) or raw .rst files that live in the public github respository.
 
 Examples include:
-https://chapel-lang.org/contributing.html
-
-https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/ContributorInfo.rst
+ - https://chapel-lang.org/contributing.html
+ - https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/ContributorInfo.rst
 
 
 
 Linking between files
 =======================================
+
 Linking between files when both files are in https://chapel-lang.org/docs/.
-FIXME: talk about using the ref:file-anchor.
+ - RST files in the `docs/rst/` or `chapel/test/release/examples/primers/`
+   subdirectory trees can refer to each other and
+   when they are converted to html, those are converted to links.
+ - The file being linked to has a ``.. _file-tag-name:`` at the top of it.
+ - The file linking to another file uses ``:ref:`file-tag-name``` anywhere
+   in the text.
+ - See https://github.com/chapel-lang/chapel/blob/main/test/release/examples/primers/interopWithC.chpl
+   for an example of ``:ref:`readme-libraries``` that links to
+   the html for
+   https://raw.githubusercontent.com/chapel-lang/chapel/main/doc/rst/technotes/libraries.rst. The rst source file has
+   ``.. _readme-libraries:`` at the top.
+
 
 Linking between files in https://chapel-lang.org/docs/ and 
-the repository.
-FIXME: Brad, how do I do this?
+html files in https://chapel-lang.org .
 
-FIXME: I want to link this file into the bullet at https://chapel-lang.org/contributing.html
-about doing a PR to fix documentation.  How would I do that?
+- Linking from an rst file to an html file directly in https://chapel-lang.org
+  is done by naming the needed URL in the .rst file and using that name.
+  Here are some examples:
+
+``.. _Chapel Developers: https://chapel.discourse.group/c/developers``
+
+``.. _Chapel Users: https://chapel.discourse.group/c/users``
+
+``.. _chapel-lang/chapel: https://github.com/chapel-lang/chapel``
+
+Here is a reference to the ```Chapel Developers`_`` URL later in the .rst file.
+
+- Linking from one of the html files at https://chapel-lang.org such as
+  https://chapel-lang.org/contributing.html can only be done by a core contributor.
+  Post an inquiry to the `Chapel Developers`_ Discourse forum.
 
 
 ============================================
@@ -137,7 +162,7 @@ heading the file is under.
      - doc/rst/tools/*
      - COMPILING AND RUNNING CHAPEL
    * - Quick Reference
-     - language/reference.rst
+     - doc/rst/language/reference.rst
      - WRITING CHAPEL PROGRAMS
    * - Mason Packages
      - doc/rst/mason-packages.rst
@@ -149,7 +174,7 @@ heading the file is under.
      - doc/rst/language/evolution.rst
      - LANGUAGE HISTORY
    * - Documentation Archives
-     - language/archivedSpecs.rst
+     - doc/rst/language/archivedSpecs.rst
      - LANGUAGE HISTORY
 
 
@@ -161,10 +186,10 @@ heading the file is under.
      - Source file(s)
      - Sidebar subheading
    * - Hello World Variants
-     - examples/index.rst + test/release/examples/hello*.chpl
+     - doc/rst/meta/examples/index.rst + test/release/examples/hello*.chpl
      - WRITING CHAPEL PROGRAMS
    * - Primers
-     - primers/index.rst + test/release/examples/primers/\*.chpl
+     - doc/rst/meta/primers/index.rst + test/release/examples/primers/\*.chpl
      - WRITING CHAPEL PROGRAMS
 
 
@@ -191,15 +216,15 @@ heading the file is under.
 Files that have information about documentation
 ===============================================
 
- - **chapel/README.devel**, how doc/ differs in the release vs. the dev version
- - **chapel/doc/bestPractices/releasingDocs.md**, how to create the release documentation
-   and push it to the website
- - **chapel/doc/README.rst**, talks about .rst and has a list of the documentation
-   available in .rst
- - **chapel/doc/rst/developer/bestPractices/buildingdocs.rst**, this file
+- **chapel/README.devel**, how doc/ differs in the release vs. the dev version
+- **chapel/doc/bestPractices/releasingDocs.md**, how to create the release documentation
+  and push it to the website
+- **chapel/doc/README.rst**, talks about .rst and has a list of the documentation
+  available in .rst
+- **chapel/doc/rst/developer/bestPractices/buildingdocs.rst**, this file
  
- Developers should also consider looking through the files in ``doc/rst/developer/bestPractices/``.
- Some of these files do not end up linked into the public documentation web pages.
+Developers should also consider looking through the files in ``doc/rst/developer/bestPractices/``.
+Some of these files do not end up linked into the public documentation web pages.
  
 
 
