@@ -20,8 +20,9 @@
 #ifndef CHPL_RESOLUTION_RESOLUTION_TYPES_H
 #define CHPL_RESOLUTION_RESOLUTION_TYPES_H
 
-#include "chpl/types/Type.h"
+#include "chpl/resolution/scope-types.h"
 #include "chpl/types/QualifiedType.h"
+#include "chpl/types/Type.h"
 #include "chpl/uast/ASTNode.h"
 #include "chpl/uast/Function.h"
 #include "chpl/util/memory.h"
@@ -145,19 +146,42 @@ struct CallInfo {
 //
 // PoiScopes do not need to consider scopes that are visible from
 // the function declaration. These can be collapsed away.
+//
+// Performance: could have better reuse of PoiScope if it used the Scope ID
+// rather than changing if the contents do. But, the downside is that
+// further queries would be required to compute which functions are
+// visible. Which is better?
+// If we want to make PoiScope not depend on the contents it might be nice
+// to make Scope itself not depend on the contents, too.
 struct PoiScope {
+  const Scope* inScope = nullptr;         // parent Scope for the Call
   const PoiScope* inFnPoi = nullptr;      // what is the POI of this POI?
-  ID inScopeId;                           // ID of parent Scope for the Call
 
   bool operator==(const PoiScope& other) const {
-    return inFnPoi == other.inFnPoi &&
-           inScopeId == other.inScopeId;
+    return inScope == other.inScope &&
+           inFnPoi == other.inFnPoi;
   }
   bool operator!=(const PoiScope& other) const {
     return !(*this == other);
   }
 };
 
+
+struct PoiInfo {
+  // For a not-yet-resolved instantiation
+  const PoiScope* poiScope;
+
+  // TODO: add VisibilityInfo etc
+
+  // For a resolved instantiation,
+  // what are the point-of-instantiation scopes
+  // that were needed for resolving the signature?
+  std::set<const PoiScope*> poiScopesUsed;
+
+  // TODO: operator == for the hashtable comparison but
+  // a different .equals for use in the update function
+  // for TypedFnSignature / ResolvedFunction
+};
 
 // TODO: should this actually be types::FunctionType?
 struct TypedFnSignature {
@@ -314,6 +338,8 @@ struct ResolvedExpression {
 // an inner Function would not be covered here since it would get
 // a different ResolvedSymbol entry.
 using ResolutionResultByPostorderID = std::vector<ResolvedExpression>;
+// TODO: make the above type a struct to have helper methods
+// (mainly get existing result by ID)
 
 // A resolution result for a Function
 struct ResolvedFunction {

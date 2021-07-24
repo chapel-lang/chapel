@@ -110,12 +110,17 @@ namespace resolution {
     Further filter the result of filterCandidatesInitial down by doing
     instantiations. After this, all of the resulting TypedFnSignatures
     are actually candidates.
+
+    If instantiation occurs, gets/creates the new POI scope for
+    inScope/inPoiScope.
+
    */
   std::vector<const TypedFnSignature*>
   filterCandidatesInstantiating(Context* context,
                                 std::vector<const TypedFnSignature*> lst,
                                 CallInfo call,
-                                const PoiScope* poiScope);
+                                const Scope* inScope,
+                                const PoiScope* inPoiScope);
 
   /**
     Given the result of filterCandidatesInstantiating, run
@@ -137,8 +142,8 @@ namespace resolution {
   CallResolutionResult resolveCall(Context* context,
                                    const uast::Call* call,
                                    CallInfo ci,
-                                   const Scope* scope,
-                                   const PoiScope* poiScope);
+                                   const Scope* inScope,
+                                   const PoiScope* inPoiScope);
 
 
 } // end namespace resolution

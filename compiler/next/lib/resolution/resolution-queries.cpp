@@ -771,7 +771,7 @@ static TypedFnSignature::WhereClauseResult whereClauseResult(
 
   return whereClauseResult;
 }
-               
+
 const TypedFnSignature*
 typedSignatureInital(Context* context,
                      const UntypedFnSignature* untypedSignature) {
@@ -1040,6 +1040,49 @@ static bool canPass(const QualifiedType& actualType,
   return false;
 }
 
+static
+const owned<PoiScope>& constructPoiScopeQuery(Context* context,
+                                              const Scope* scope,
+                                              const PoiScope* parentPoiScope) {
+  QUERY_BEGIN(constructPoiScopeQuery, context, scope, parentPoiScope);
+
+  owned<PoiScope> result = toOwned(new PoiScope());
+  result->inScope = scope;
+  result->inFnPoi = parentPoiScope;
+
+  return QUERY_END(result);
+}
+
+static
+const PoiScope* const& poiScopeQuery(Context* context,
+                                     const Scope* scope,
+                                     const PoiScope* parentPoiScope) {
+  QUERY_BEGIN(poiScopeQuery, context, scope, parentPoiScope);
+
+  // figure out which POI scope to create.
+  // PoiScopes do not need to consider scopes that are visible from
+  // the call site itself. These can be collapsed away.
+
+  const PoiScope* usePoi = nullptr;
+  for (usePoi = parentPoiScope;
+       usePoi != nullptr;
+       usePoi = usePoi->inFnPoi) {
+
+    bool collapse = isWholeScopeVisibleFromScope(context,
+                                                 usePoi->inScope,
+                                                 scope);
+    if (collapse == false) {
+      break;
+    }
+  }
+
+  // get the poi scope for scope+usePoi
+  const owned<PoiScope>& ps = constructPoiScopeQuery(context, scope, usePoi);
+  const PoiScope* result = ps.get();
+
+  return QUERY_END(result);
+}
+
 // returns nullptr if the candidate is not applicable,
 // or the result of typedSignatureInitial if it is.
 static const TypedFnSignature*
@@ -1176,20 +1219,26 @@ std::vector<const TypedFnSignature*>
 filterCandidatesInstantiating(Context* context,
                               std::vector<const TypedFnSignature*> lst,
                               CallInfo call,
-                              const PoiScope* poiScope) {
+                              const Scope* inScope,
+                              const PoiScope* inPoiScope) {
 
   // Performance: Would it help to make this a query?
   // (I left it not as a query since it runs some other queries
   //  and seems like it might have limited ability for reuse).
   std::vector<const TypedFnSignature*> result;
+  const PoiScope* instantiationPoiScope = nullptr;
 
   for (const TypedFnSignature* typedSignature : lst) {
     if (typedSignature->needsInstantiation) {
+      if (instantiationPoiScope == nullptr) {
+        instantiationPoiScope = poiScopeQuery(context, inScope, inPoiScope);
+      }
+
       const TypedFnSignature* instantiated =
         doIsCandidateApplicableInstantiating(context,
                                              typedSignature,
                                              call,
-                                             poiScope);
+                                             instantiationPoiScope);
       if (instantiated != nullptr) {
         result.push_back(instantiated);
       }
@@ -1280,20 +1329,21 @@ void gatherPoisUsedByResolvingBody(Context* context,
 CallResolutionResult resolveCall(Context* context,
                                  const Call* call,
                                  CallInfo ci,
-                                 const Scope* scope,
-                                 const PoiScope* poiScope) {
+                                 const Scope* inScope,
+                                 const PoiScope* inPoiScope) {
 
   // compute the potential functions that it could resolve to
-  std::vector<BorrowedIdsWithName> lst = lookupCalledExpr(context, scope, call);
+  std::vector<BorrowedIdsWithName> v = lookupCalledExpr(context, inScope, call);
 
   // filter without instantiating yet
-  const auto& initialCandidates = filterCandidatesInitial(context, lst, ci);
+  const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
 
   // find candidates, doing instantiation if necessary
-  auto candidates = filterCandidatesInstantiating(context, 
+  auto candidates = filterCandidatesInstantiating(context,
                                                   initialCandidates,
                                                   ci,
-                                                  poiScope);
+                                                  inScope,
+                                                  inPoiScope);
 
   // find most specific candidates / disambiguate
   MostSpecificCandidates mostSpecific = findMostSpecificCandidates(context,
@@ -1304,11 +1354,11 @@ CallResolutionResult resolveCall(Context* context,
   std::set<const PoiScope*> poiScopesUsed;
 
   gatherPoisUsedByResolvingBody(context, mostSpecific.bestRef,
-                                poiScope, poiScopesUsed);
+                                inPoiScope, poiScopesUsed);
   gatherPoisUsedByResolvingBody(context, mostSpecific.bestConstRef,
-                                poiScope, poiScopesUsed);
+                                inPoiScope, poiScopesUsed);
   gatherPoisUsedByResolvingBody(context, mostSpecific.bestValue,
-                                poiScope, poiScopesUsed);
+                                inPoiScope, poiScopesUsed);
 
   return CallResolutionResult(mostSpecific, std::move(poiScopesUsed));
 }
