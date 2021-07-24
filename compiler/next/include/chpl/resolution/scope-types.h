@@ -128,10 +128,6 @@ using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
   point-of-instantiation reasoning will need to be handled with a different
   type.
  */
-// TODO: adjust Conditional to contain Blocks so we can associate
-// scopes 1:1 with these blocks.
-// TODO: also adjust Function to store body in a separate node from args
-// TODO: also adjust Loops to store body separate from index variables
 struct Scope {
   const Scope* parentScope = nullptr;
   uast::asttags::ASTTag tag = uast::asttags::NUM_AST_TAGS;

@@ -453,6 +453,61 @@ std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
   return vec;
 }
 
+
+static
+bool doIsWholeScopeVisibleFromScope(Context* context,
+                                   const Scope* checkScope,
+                                   const Scope* fromScope,
+                                   std::unordered_set<const Scope*>& checked) {
+
+  auto pair = checked.insert(fromScope);
+  if (pair.second == false) {
+    // scope has already been visited by this function,
+    // so don't try it again.
+    return false;
+  }
+
+  // go through parent scopes checking for a match
+  for (const Scope* cur = fromScope; cur != nullptr; cur = cur->parentScope) {
+    if (checkScope == cur) {
+      return true;
+    }
+
+    if (cur->containsUseImport) {
+      const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, cur);
+
+      for (const VisibilitySymbols& is: r->visibilityClauses) {
+        if (is.kind == VisibilitySymbols::ALL_CONTENTS) {
+          // find it in the contents
+          const Scope* usedScope = scopeForId(context, is.symbolId);
+          // check it recursively
+          bool found = doIsWholeScopeVisibleFromScope(context,
+                                                      checkScope,
+                                                      usedScope,
+                                                      checked);
+          if (found) {
+            return true;
+          }
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
+bool isWholeScopeVisibleFromScope(Context* context,
+                                  const Scope* checkScope,
+                                  const Scope* fromScope) {
+
+  std::unordered_set<const Scope*> checked;
+
+  return doIsWholeScopeVisibleFromScope(context,
+                                        checkScope,
+                                        fromScope,
+                                        checked);
+}
+
 struct ImportsResolver {
   Context* context = nullptr;
   const Scope* scope = nullptr;

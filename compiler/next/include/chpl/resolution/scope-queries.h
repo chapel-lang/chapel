@@ -90,6 +90,13 @@ namespace resolution {
                                                  bool findOne);
 
 
+  /**
+    Returns true if all of checkScope is visible from fromScope.
+   */
+  bool isWholeScopeVisibleFromScope(Context* context,
+                                    const Scope* checkScope,
+                                    const Scope* fromScope);
+
   // TODO: lookupInScope accepting visited set
   // for use in POI traversal
 
