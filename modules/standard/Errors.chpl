@@ -29,6 +29,7 @@
      * compilation diagnostic functions :proc:`compilerError`,
        :proc:`compilerWarning`, and :proc:`compilerAssert`
  */
+pragma "module included by default"
 module Errors {
   private use ChapelStandard;
   private use ChapelLocks;
