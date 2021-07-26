@@ -166,7 +166,6 @@ public:
   bool                        fieldIsGeneric(Symbol* field,
                                              bool &hasDefault);
 
-
   Type*                       cArrayElementType()                        const;
   int64_t                     cArrayLength()                             const;
 
