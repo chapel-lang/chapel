@@ -62,12 +62,12 @@ namespace resolution {
     The pointer result is unique'd and safe to use as a query argument.
    */
   const TypedFnSignature*
-  typedSignatureInital(Context* context,
-                       const UntypedFnSignature* untypedSig);
+  typedSignatureInitial(Context* context,
+                        const UntypedFnSignature* untypedSig);
 
   /**
     Instantiate a TypedFnSignature from
-     * the result of typedSignatureInital,
+     * the result of typedSignatureInitial,
      * a CallInfo describing the types at the call site, and
      * a point-of-instantiation scope representing the POI scope of the call
 

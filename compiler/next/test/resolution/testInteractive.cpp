@@ -50,11 +50,41 @@ static void printId(const ASTNode* ast) {
   printf("%-8s %-8s", ast->id().toString().c_str(), nameForAst(ast));
 }
 
+static const ResolvedExpression*
+resolvedExpressionForAst(Context* context, const ASTNode* ast) {
+  if (!(ast->isLoop() || ast->isBlock())) {
+    // compute the parent module or function
+    int postorder = ast->id().postOrderId();
+    if (postorder >= 0) {
+      ID parentId = ast->id().parentSymbolId(context);
+      auto parentAst = idToAst(context, parentId);
+      if (parentAst != nullptr) {
+        if (parentAst->isModule()) {
+          const auto& byId = resolveModule(context, parentAst->id());
+          assert(0 <= postorder && postorder < byId.size());
+          return &byId[postorder];
+        } else if (parentAst->isFunction()) {
+          auto untyped = untypedSignature(context, parentAst->id());
+          auto typed = typedSignatureInitial(context, untyped);
+          if (!typed->needsInstantiation) {
+            auto rFn = resolvedFunction(context, typed, nullptr);
+            assert(0 <= postorder && postorder < rFn->resolutionById.size());
+            return &rFn->resolutionById[postorder];
+          }
+        }
+      }
+    }
+  }
+
+  return nullptr;
+}
+
 static void computeAndPrintStuff(Context* context, const ASTNode* ast) {
   for (const ASTNode* child : ast->children()) {
     computeAndPrintStuff(context, child);
   }
 
+  /*
   if (auto ident = ast->toIdentifier()) {
     const Scope* scope = scopeForId(context, ast->id());
     assert(scope != nullptr);
@@ -87,9 +117,23 @@ static void computeAndPrintStuff(Context* context, const ASTNode* ast) {
     }
 
     printf("\n");
+  }*/
+
+  int beforeCount = context->numQueriesRunThisRevision();
+  const ResolvedExpression* r = resolvedExpressionForAst(context, ast);
+  int afterCount = context->numQueriesRunThisRevision();
+  if (r != nullptr) {
+    printId(ast);
+    printf(" resolved to ");
+    printf("%-32s ", r->toString().c_str());
+    if (afterCount > beforeCount) {
+      printf(" (ran %i queries)", afterCount - beforeCount);
+    }
+    printf("\n");
   }
 
   // check the type
+  /*
   if (!(ast->isLoop() || ast->isBlock())) {
     const auto& t = typeForModuleLevelSymbol(context, ast->id());
 
@@ -108,7 +152,7 @@ static void computeAndPrintStuff(Context* context, const ASTNode* ast) {
       printf("(changed)");
     }
     printf("\n");
-  }
+  }*/
 }
 
 int main(int argc, char** argv) {
@@ -136,6 +180,10 @@ int main(int argc, char** argv) {
         printf("\n");
       }
     }
+
+    printf("Ran %i queries to compute the above\n\n",
+           ctx->numQueriesRunThisRevision());
+
     if (gc) {
       ctx->collectGarbage();
       gc = false;

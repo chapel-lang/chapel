@@ -187,6 +187,37 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false; // TODO -- consider function names etc -- see PR #16261
 }
 
+std::string ResolvedExpression::toString() const {
+  std::string ret;
+  ret += " : ";
+  ret += type.toString();
+  if (!toId.isEmpty()) {
+    ret += " refers to ";
+    ret += toId.toString();
+  } else {
+    auto onlyFn = mostSpecific.only();
+    if (onlyFn) {
+      ret += " calls ";
+      ret += onlyFn->toString();
+    } else {
+      if (mostSpecific.bestRef) {
+        ret += " calls ref ";
+        ret += mostSpecific.bestRef->toString();
+      }
+      if (mostSpecific.bestConstRef) {
+        ret += " calls const ref ";
+        ret += mostSpecific.bestConstRef->toString();
+      }
+      if (mostSpecific.bestValue) {
+        ret += " calls value ";
+        ret += mostSpecific.bestValue->toString();
+      }
+    }
+  }
+
+  return ret;
+}
+
 
 } // end namespace resolution
 } // end namespace chpl

@@ -789,8 +789,8 @@ static ID parentFunctionId(Context* context, ID functionId) {
 }
 
 const TypedFnSignature*
-typedSignatureInital(Context* context,
-                     const UntypedFnSignature* untypedSig) {
+typedSignatureInitial(Context* context,
+                      const UntypedFnSignature* untypedSig) {
 
   const ASTNode* ast = parsing::idToAst(context, untypedSig->functionId);
   const Function* fn = ast->toFunction();
@@ -805,7 +805,7 @@ typedSignatureInital(Context* context,
   ID parentFnId = parentFunctionId(context, fn->id());
   if (!parentFnId.isEmpty()) {
     parentFnUntyped = untypedSignature(context, parentFnId);
-    parentFnTyped = typedSignatureInital(context, parentFnUntyped);
+    parentFnTyped = typedSignatureInitial(context, parentFnUntyped);
   }
 
   ResolutionResultByPostorderID r;
@@ -1102,8 +1102,7 @@ doIsCandidateApplicableInitial(Context* context,
                                const ID& candidateId,
                                const CallInfo& call) {
 
-  printf("CHECKING APPLICABLE INITIAL %s\n",
-        candidateId.toString().c_str());
+  printf("CHECKING APPLICABLE INITIAL %s\n", candidateId.toString().c_str());
 
   auto uSig = untypedSignature(context, candidateId);
   // First, check that the untyped properties allow a match:
@@ -1121,7 +1120,7 @@ doIsCandidateApplicableInitial(Context* context,
   // TODO: check method-ness
   // TODO: reason failed
 
-  auto initialTypedSignature = typedSignatureInital(context, uSig);
+  auto initialTypedSignature = typedSignatureInitial(context, uSig);
   // Next, check that the types are compatible
   size_t formalIdx = 0;
   for (const FormalActual& entry : faMap.byFormalIdx) {

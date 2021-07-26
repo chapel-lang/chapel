@@ -259,7 +259,7 @@ struct MostSpecificCandidates {
   const TypedFnSignature* bestConstRef = nullptr;
   const TypedFnSignature* bestValue = nullptr;
 
-  const TypedFnSignature* only() {
+  const TypedFnSignature* only() const {
     const TypedFnSignature* ret = nullptr;
     int i = 0;
     if (bestRef != nullptr) {
@@ -353,6 +353,8 @@ struct ResolvedExpression {
     toId.swap(other.toId);
     mostSpecific.swap(other.mostSpecific);
   }
+
+  std::string toString() const;
 };
 
 // postorder ID (int) -> ResolvedExpression *within* a Function etc
