@@ -140,32 +140,6 @@ struct CallInfo {
   }
 };
 
-// When resolving a traditional generic, we also need to consider
-// the point-of-instantiation scope as a place to find visible functions.
-// This type tracks such a scope.
-//
-// PoiScopes do not need to consider scopes that are visible from
-// the function declaration. These can be collapsed away.
-//
-// Performance: could have better reuse of PoiScope if it used the Scope ID
-// rather than changing if the contents do. But, the downside is that
-// further queries would be required to compute which functions are
-// visible. Which is better?
-// If we want to make PoiScope not depend on the contents it might be nice
-// to make Scope itself not depend on the contents, too.
-struct PoiScope {
-  const Scope* inScope = nullptr;         // parent Scope for the Call
-  const PoiScope* inFnPoi = nullptr;      // what is the POI of this POI?
-
-  bool operator==(const PoiScope& other) const {
-    return inScope == other.inScope &&
-           inFnPoi == other.inFnPoi;
-  }
-  bool operator!=(const PoiScope& other) const {
-    return !(*this == other);
-  }
-};
-
 
 struct PoiInfo {
   // For a not-yet-resolved instantiation

@@ -351,12 +351,12 @@ struct Resolver {
 
     if (canOverload == false) {
       // check for multiple definitions
-      auto vec = lookupInScope(context, scope, decl->name(),
-                               /* checkDecls */ true,
-                               /* checkUseImport */ false,
-                               /* checkParents */ false,
-                               /* checkToplevel */ false,
-                               /* findOne */ false);
+      auto vec = lookupNameInScope(context, scope, decl->name(),
+                                   /* checkDecls */ true,
+                                   /* checkUseImport */ false,
+                                   /* checkParents */ false,
+                                   /* checkToplevel */ false,
+                                   /* findOne */ false);
 
       if (vec.size() > 0) {
         const BorrowedIdsWithName& m = vec[0];
@@ -1040,49 +1040,6 @@ static bool canPass(const QualifiedType& actualType,
   return false;
 }
 
-static
-const owned<PoiScope>& constructPoiScopeQuery(Context* context,
-                                              const Scope* scope,
-                                              const PoiScope* parentPoiScope) {
-  QUERY_BEGIN(constructPoiScopeQuery, context, scope, parentPoiScope);
-
-  owned<PoiScope> result = toOwned(new PoiScope());
-  result->inScope = scope;
-  result->inFnPoi = parentPoiScope;
-
-  return QUERY_END(result);
-}
-
-static
-const PoiScope* const& poiScopeQuery(Context* context,
-                                     const Scope* scope,
-                                     const PoiScope* parentPoiScope) {
-  QUERY_BEGIN(poiScopeQuery, context, scope, parentPoiScope);
-
-  // figure out which POI scope to create.
-  // PoiScopes do not need to consider scopes that are visible from
-  // the call site itself. These can be collapsed away.
-
-  const PoiScope* usePoi = nullptr;
-  for (usePoi = parentPoiScope;
-       usePoi != nullptr;
-       usePoi = usePoi->inFnPoi) {
-
-    bool collapse = isWholeScopeVisibleFromScope(context,
-                                                 usePoi->inScope,
-                                                 scope);
-    if (collapse == false) {
-      break;
-    }
-  }
-
-  // get the poi scope for scope+usePoi
-  const owned<PoiScope>& ps = constructPoiScopeQuery(context, scope, usePoi);
-  const PoiScope* result = ps.get();
-
-  return QUERY_END(result);
-}
-
 // returns nullptr if the candidate is not applicable,
 // or the result of typedSignatureInitial if it is.
 static const TypedFnSignature*
@@ -1231,7 +1188,7 @@ filterCandidatesInstantiating(Context* context,
   for (const TypedFnSignature* typedSignature : lst) {
     if (typedSignature->needsInstantiation) {
       if (instantiationPoiScope == nullptr) {
-        instantiationPoiScope = poiScopeQuery(context, inScope, inPoiScope);
+        instantiationPoiScope = poiScope(context, inScope, inPoiScope);
       }
 
       const TypedFnSignature* instantiated =
@@ -1260,10 +1217,10 @@ findMostSpecificCandidates(Context* context,
   MostSpecificCandidates result;
 
   if (lst.size() > 1) {
+    // TODO: handle return intent overloading
     assert(false && "TODO");
   }
   if (lst.size() == 1) {
-    // TODO: set it according to return intent?
     result.bestRef = lst[0];
   }
 
@@ -1277,12 +1234,12 @@ std::vector<BorrowedIdsWithName> lookupCalledExpr(Context* context,
   std::vector<BorrowedIdsWithName> ret;
 
   if (auto op = call->toOpCall()) {
-    auto vec = lookupInScope(context, scope, op->op(),
-                             /* checkDecls */ true,
-                             /* checkUseImport */ true,
-                             /* checkParents */ true,
-                             /* checkToplevel */ false,
-                             /* findOne */ false);
+    auto vec = lookupNameInScope(context, scope, op->op(),
+                                 /* checkDecls */ true,
+                                 /* checkUseImport */ true,
+                                 /* checkParents */ true,
+                                 /* checkToplevel */ false,
+                                 /* findOne */ false);
     ret.swap(vec);
   } else if (const Expression* called = call->calledExpression()) {
     auto vec = lookupInScope(context, scope, called,
