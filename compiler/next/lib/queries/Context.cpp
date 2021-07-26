@@ -210,6 +210,8 @@ bool Context::hasFilePathForId(ID id) {
 
 void Context::advanceToNextRevision(bool prepareToGC) {
   this->currentRevisionNumber++;
+  this->numQueriesRunThisRevision_ = 0;
+
   if (prepareToGC) {
     this->lastPrepareToGCRevisionNumber = this->currentRevisionNumber;
     gcCounter++;
@@ -452,6 +454,8 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
     // by evaluating the query.
     resultEntry->dependencies.clear();
     resultEntry->errors.clear();
+    // increment the number of queries run in this revision
+    numQueriesRunThisRevision_++;
   }
 
   return useSaved;
