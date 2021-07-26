@@ -21,6 +21,7 @@
 #include "chpl/queries/query-impl.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/uast/Call.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 
@@ -41,13 +42,15 @@ static const char* nameForAst(const ASTNode* ast) {
     return ident->name().c_str();
   } else if (auto decl = ast->toNamedDecl()) {
     return decl->name().c_str();
+  } else if (auto call = ast->toCall()) {
+    return nameForAst(call->calledExpression());
   }
 
   return "";
 }
 
 static void printId(const ASTNode* ast) {
-  printf("%-8s %-8s", ast->id().toString().c_str(), nameForAst(ast));
+  printf("%-16s %-8s", ast->id().toString().c_str(), nameForAst(ast));
 }
 
 static const ResolvedExpression*
@@ -72,7 +75,7 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast,
             typed = inFn;
           }
           if (!typed->needsInstantiation) {
-            auto rFn = resolvedFunction(context, typed, nullptr);
+            auto rFn = resolvedFunction(context, typed, typed->poiInfo.poiScope);
             assert(0 <= postorder && postorder < rFn->resolutionById.size());
             return &rFn->resolutionById[postorder];
           }
@@ -141,7 +144,7 @@ computeAndPrintStuff(Context* context,
       calledFns.insert(r->mostSpecific.bestValue);
 
     printId(ast);
-    printf("%-32s ", r->toString().c_str());
+    printf("%-35s ", r->toString().c_str());
     if (afterCount > beforeCount) {
       printf(" (ran %i queries)", afterCount - beforeCount);
     }
@@ -220,6 +223,7 @@ int main(int argc, char** argv) {
             auto uSig = untypedSignature(ctx, ast->id());
             auto initialType = typedSignatureInitial(ctx, uSig);
             printf("Instantiation of %s\n", initialType->toString().c_str());
+            printf("Instantiation is %s\n", calledFn->toString().c_str());
             computeAndPrintStuff(ctx, ast, calledFn, calledFns);
             printf("\n");
           }

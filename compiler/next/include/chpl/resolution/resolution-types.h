@@ -280,6 +280,12 @@ struct MostSpecificCandidates {
     return ret;
   }
 
+  bool anyInstantiated() const {
+    return (bestRef && bestRef->instantiatedFrom) ||
+           (bestConstRef && bestConstRef->instantiatedFrom) ||
+           (bestValue && bestValue->instantiatedFrom);
+  }
+
   bool operator==(const MostSpecificCandidates& other) const {
     return bestRef == other.bestRef &&
            bestConstRef == other.bestConstRef &&

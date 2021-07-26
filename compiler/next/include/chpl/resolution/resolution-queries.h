@@ -115,12 +115,13 @@ namespace resolution {
     inScope/inPoiScope.
 
    */
-  std::vector<const TypedFnSignature*>
+  void
   filterCandidatesInstantiating(Context* context,
                                 std::vector<const TypedFnSignature*> lst,
                                 CallInfo call,
                                 const Scope* inScope,
-                                const PoiScope* inPoiScope);
+                                const PoiScope* inPoiScope,
+                                std::vector<const TypedFnSignature*>& result);
 
   /**
     Given the result of filterCandidatesInstantiating, run

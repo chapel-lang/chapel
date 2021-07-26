@@ -130,7 +130,6 @@ struct Resolver {
 
   // internal variables
   std::vector<const Scope*> scopeStack;
-  std::set<UniqueString> undefined;
   bool signatureOnly = false;
   const Block* fnBody = nullptr;
 
@@ -185,6 +184,8 @@ struct Resolver {
       fnBody(fn->body()),
       byPostorder(byPostorder) {
 
+    poiInfo.poiScope = poiScope;
+
     int bodyPostorder = fnBody->id().postOrderId();
     assert(0 <= bodyPostorder);
     byPostorder.resize(bodyPostorder);
@@ -206,6 +207,8 @@ struct Resolver {
 
     assert(typedFnSignature);
     assert(typedFnSignature->untypedSignature);
+
+    poiInfo.poiScope = poiScope;
 
     // include any pois required for the signature in the resulting PoiInfo
     poiInfo.accumulate(typedFnSignature->poiInfo);
@@ -307,13 +310,6 @@ struct Resolver {
                              /* checkToplevel */ false,
                              /* findOne */ true);
     if (vec.size() == 0) {
-      auto name = ident->name();
-      if (undefined.count(name) == 0) {
-        context->error(ident,
-                       "'%s' undeclared (first use this function)",
-                       name.c_str());
-        undefined.insert(name);
-      }
       result.type = QualifiedType(QualifiedType::UNKNOWN,
                                   ErroneousType::get(context));
     } else if (vec.size() > 1) {
@@ -403,7 +399,7 @@ struct Resolver {
       const Type* typePtr = nullptr;
 
       // Figure out the param value, if any
-      int64_t param = 0; // TODO: replace with Immediates
+      int64_t param = -1; // TODO: replace with Immediates
 
       if (decl->isFunction()) {
         // TODO: function types
@@ -880,6 +876,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
   bool needsInstantiation = anyFormalNeedsInstantiation(formalTypes);
   auto whereResult = whereClauseResult(context, fn, r, needsInstantiation);
   PoiInfo poiInfo;
+  poiInfo.swap(visitor.poiInfo);
 
   const auto& result = typedSignatureQuery(context,
                                            untypedSignature,
@@ -934,6 +931,12 @@ resolvedFunctionByInfoQuery(Context* context,
     resolvedPoiInfo.swap(visitor.poiInfo);
     resolvedPoiInfo.resolved = true;
     resolvedPoiInfo.poiScope = nullptr;
+
+    // save the POI info in the resolution result
+    resolved->poiInfo = resolvedPoiInfo;
+
+    if (resolvedPoiInfo.poiScopesUsed.size() != 0)
+      printf("BOBB\n");
 
     // Store the result in the query under the POIs used.
     // This should not update the value if there was already one
@@ -1148,14 +1151,24 @@ static bool canPassInitial(const QualifiedType& actualType,
                            const QualifiedType& formalType) {
   // TODO: pull logic from canDispatch
   if (actualType.type() == formalType.type()) return true;
+
+  if (actualType.type()->isIntType() &&
+      formalType.type()->isRealType()) return true;
+
   if (formalType.kind() == QualifiedType::UNKNOWN) return true;
+
   return false;
 }
 
 static bool canPass(const QualifiedType& actualType,
                     const QualifiedType& formalType) {
+  // TODO: pull logic from canDispatch
   if (actualType.type() == formalType.type()) return true;
   if (formalType.type()->isAnyType()) return true;
+
+  if (actualType.type()->isIntType() &&
+      formalType.type()->isRealType()) return true;
+
   return false;
 }
 
@@ -1276,17 +1289,17 @@ filterCandidatesInitial(Context* context,
   return QUERY_END(result);
 }
 
-std::vector<const TypedFnSignature*>
+void
 filterCandidatesInstantiating(Context* context,
                               std::vector<const TypedFnSignature*> lst,
                               CallInfo call,
                               const Scope* inScope,
-                              const PoiScope* inPoiScope) {
+                              const PoiScope* inPoiScope,
+                              std::vector<const TypedFnSignature*>& result) {
 
   // Performance: Would it help to make this a query?
   // (I left it not as a query since it runs some other queries
   //  and seems like it might have limited ability for reuse).
-  std::vector<const TypedFnSignature*> result;
   const PoiScope* instantiationPoiScope = nullptr;
 
   for (const TypedFnSignature* typedSignature : lst) {
@@ -1309,8 +1322,6 @@ filterCandidatesInstantiating(Context* context,
       result.push_back(typedSignature);
     }
   }
-
-  return result;
 }
 
 const MostSpecificCandidates&
@@ -1322,8 +1333,15 @@ findMostSpecificCandidates(Context* context,
   MostSpecificCandidates result;
 
   if (lst.size() > 1) {
+    // TODO: find most specific -- pull over disambiguation code
     // TODO: handle return intent overloading
-    assert(false && "TODO");
+    // TODO: this is demo code
+    if (call.actuals.size() > 1 &&
+        call.actuals[1].type.type()->isIntType()) {
+      result.bestRef = lst[0];
+    } else {
+      result.bestRef = lst[lst.size()-1];
+    }
   }
   if (lst.size() == 1) {
     result.bestRef = lst[0];
@@ -1332,27 +1350,31 @@ findMostSpecificCandidates(Context* context,
   return QUERY_END(result);
 }
 
-static
-std::vector<BorrowedIdsWithName> lookupCalledExpr(Context* context,
-                                                  const Scope* scope,
-                                                  const Call* call) {
+static std::vector<BorrowedIdsWithName>
+lookupCalledExpr(Context* context,
+                 const Scope* scope,
+                 const Call* call,
+                 std::unordered_set<const Scope*>& visited) {
+
   std::vector<BorrowedIdsWithName> ret;
 
   if (auto op = call->toOpCall()) {
-    auto vec = lookupNameInScope(context, scope, op->op(),
-                                 /* checkDecls */ true,
-                                 /* checkUseImport */ true,
-                                 /* checkParents */ true,
-                                 /* checkToplevel */ false,
-                                 /* findOne */ false);
+    auto vec = lookupNameInScopeWithSet(context, scope, op->op(),
+                                        /* checkDecls */ true,
+                                        /* checkUseImport */ true,
+                                        /* checkParents */ true,
+                                        /* checkToplevel */ false,
+                                        /* findOne */ false,
+                                        visited);
     ret.swap(vec);
   } else if (const Expression* called = call->calledExpression()) {
-    auto vec = lookupInScope(context, scope, called,
-                             /* checkDecls */ true,
-                             /* checkUseImport */ true,
-                             /* checkParents */ true,
-                             /* checkToplevel */ false,
-                             /* findOne */ false);
+    auto vec = lookupInScopeWithSet(context, scope, called,
+                                    /* checkDecls */ true,
+                                    /* checkUseImport */ true,
+                                    /* checkParents */ true,
+                                    /* checkToplevel */ false,
+                                    /* findOne */ false,
+                                    visited);
     ret.swap(vec);
   }
 
@@ -1390,18 +1412,61 @@ CallResolutionResult resolveCall(Context* context,
                                  const Scope* inScope,
                                  const PoiScope* inPoiScope) {
 
-  // compute the potential functions that it could resolve to
-  std::vector<BorrowedIdsWithName> v = lookupCalledExpr(context, inScope, call);
+  // search for candidates at each POI until we have found a candidate
+  std::vector<const TypedFnSignature*> candidates;
+  std::unordered_set<const Scope*> visited;
+  PoiInfo poiInfo;
 
-  // filter without instantiating yet
-  const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
+  // first, look for candidates without using POI.
 
-  // find candidates, doing instantiation if necessary
-  auto candidates = filterCandidatesInstantiating(context,
-                                                  initialCandidates,
-                                                  ci,
-                                                  inScope,
-                                                  inPoiScope);
+  {
+    // compute the potential functions that it could resolve to
+    auto v = lookupCalledExpr(context, inScope, call, visited);
+
+    // filter without instantiating yet
+    const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
+
+    // find candidates, doing instantiation if necessary
+    filterCandidatesInstantiating(context,
+                                  initialCandidates,
+                                  ci,
+                                  inScope,
+                                  inPoiScope,
+                                  candidates);
+  }
+
+  // next, look for candidates using POI
+  for (const PoiScope* curPoi = inPoiScope;
+       curPoi != nullptr;
+       curPoi = curPoi->inFnPoi) {
+
+    // stop if any candidate has been found.
+    if (candidates.empty() == false) {
+      break;
+    }
+
+    // compute the potential functions that it could resolve to
+    auto v = lookupCalledExpr(context, curPoi->inScope, call, visited);
+
+    // filter without instantiating yet
+    const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
+
+    size_t before = candidates.size();
+
+    // find candidates, doing instantiation if necessary
+    filterCandidatesInstantiating(context,
+                                  initialCandidates,
+                                  ci,
+                                  inScope,
+                                  inPoiScope,
+                                  candidates);
+
+    // record declaration scopes for any functions found here
+    size_t after = candidates.size();
+    if (after > before) {
+      poiInfo.poiScopesUsed.insert(curPoi);
+    }
+  }
 
   // find most specific candidates / disambiguate
   MostSpecificCandidates mostSpecific = findMostSpecificCandidates(context,
@@ -1409,14 +1474,21 @@ CallResolutionResult resolveCall(Context* context,
                                                                    ci);
 
   // fully resolve each candidate function and gather poiScopesUsed.
-  PoiInfo poiInfo;
+
+  // figure out the poiScope to use
+  const PoiScope* instantiationPoiScope = nullptr;
+  if (mostSpecific.anyInstantiated()) {
+    instantiationPoiScope =
+      pointOfInstantiationScope(context, inScope, inPoiScope);
+    poiInfo.poiScope = instantiationPoiScope;
+  }
 
   accumulatePoisUsedByResolvingBody(context, mostSpecific.bestRef,
-                                    inPoiScope, poiInfo);
+                                    instantiationPoiScope, poiInfo);
   accumulatePoisUsedByResolvingBody(context, mostSpecific.bestConstRef,
-                                    inPoiScope, poiInfo);
+                                    instantiationPoiScope, poiInfo);
   accumulatePoisUsedByResolvingBody(context, mostSpecific.bestValue,
-                                    inPoiScope, poiInfo);
+                                    instantiationPoiScope, poiInfo);
 
   return CallResolutionResult(mostSpecific, std::move(poiInfo));
 }
