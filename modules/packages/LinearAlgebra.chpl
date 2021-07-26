@@ -2491,22 +2491,22 @@ proc cosm(A: []) throws {
 }
 
 // Gets sums along specified axes. Method for Rectangular matrix.
-proc absSum(A: [?D], param axis=0) where !isCSDom(D) {
-  if (axis != 0 || axis != 1) {
+proc absSum(A: [?D], axis=0) throws where !isCSDom(D) {
+  if (axis != 0 && axis != 1) {
     throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
   }
 
   if axis == 0 then
     // axis=0 sums along column
     return forall j in D.dim(1-axis) do (+ reduce abs(A[D.dim(axis), j..j]));
-  else if axis == 1 then
+  else
     // axis=1 sums along row
     return forall i in D.dim(1-axis) do (+ reduce abs(A[i..i, D.dim(axis)]));
 }
 
 // Gets sums along specified axes. Method for CSR matrix.
-proc absSum(A: [?ADom], param axis=0) where isCSDom(ADom) {
-  if (axis != 0 || axis != 1) {
+proc absSum(A: [?ADom], axis=0) throws where isCSDom(ADom) {
+  if (axis != 0 && axis != 1) {
     throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
   }
 
@@ -2519,7 +2519,7 @@ proc absSum(A: [?ADom], param axis=0) where isCSDom(ADom) {
     }
     return b;
   }
-  else if axis == 1 {
+  else {
     // axis=1 sums along rows
     var b: [0..<n] A.eltType;
     forall (i,j) in ADom with (+ reduce b) {
@@ -2530,21 +2530,50 @@ proc absSum(A: [?ADom], param axis=0) where isCSDom(ADom) {
 }
 
 // Gets max along specified axes. Method for CSR matrix.
-proc max(A: [?ADom], param axis=0) where isCSDom(ADom) {
+proc maxAlongAxis(A: [?ADom], axis=0) throws where isCSDom(ADom) {
+  if (axis != 0 && axis != 1) {
+    throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
+  }
+
   var (n,t) = ADom.shape;
   if axis == 0 {
     // axis=0 sums along column
     var b: [0..<t] A.eltType;
-    forall (i,j) in ADom {
+    forall (i,j) in ADom with (max reduce b) {
       b[j] = max(b[j], A[i,j]);
     }
     return b;
   }
-  else if axis == 1 {
+  else {
     // axis=1 sums along rows
     var b: [0..<n] A.eltType;
-    forall (i,j) in ADom {
+    forall (i,j) in ADom with (max reduce b) {
       b[i] = max(b[i], A[i,j]);
+    }
+    return b;
+  }
+}
+
+// Gets max along specified axes. Method for Rectangular matrix.
+proc maxAlongAxis(A: [?ADom], axis=0) throws where !isCSDom(ADom) {
+  if (axis != 0 && axis != 1) {
+    throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
+  }
+
+  var (n,t) = ADom.shape;
+  if axis == 0 {
+    // axis=0 sums along column
+    var b: [0..<t] A.eltType;
+    forall i in 0..<t {
+      b[i] = max reduce A[.., i];
+    }
+    return b;
+  }
+  else {
+    // axis=1 sums along rows
+    var b: [0..<n] A.eltType;
+    forall i in 0..<n {
+      b[i] = max reduce A[i, ..];
     }
     return b;
   }
@@ -2569,7 +2598,7 @@ proc zeros(Dom: domain(2), type eltType=real) {
 
 
 // Returns an index's unit vector of size n.
-proc elementary_vector(param n, param ind) {
+proc elementary_vector(n,ind) {
   var v: [0..<n] real;
   v[ind] = 1;
   return v;
@@ -2577,7 +2606,7 @@ proc elementary_vector(param n, param ind) {
 
 // Given an array A, returns indexes
 // corresponding to the sorted ordering of A.
-proc argsort(A: [], param desc=false) {
+proc argsort(A: [], desc=false) {
   use Sort;
 
   record Cmp { }
@@ -2612,7 +2641,7 @@ proc every_col_of_X_is_parallel_to_a_col_of_Y(X: [?xD], Y: [?yD]){
     var b = X[.., i];
     var fg = false;
     for j in yD.dim(1) {
-      if dot(Y[.., j], b) == n {
+      if && reduce Y[.., j]==b {
         fg = true;
         break;
       }
@@ -2637,18 +2666,18 @@ proc sign_round_up(A: []){
   return A;
 }
 
-proc column_needs_resampling(A: [?D], col=0, Y=none) {
+proc column_needs_resampling(A: [?D], col=0, Y: [], shouldResampleBasedOnY=false) {
   var n = D.shape(0);
   var b = A[.., col];
   for i in 0..<col {
-    if dot(A[.., i], b) == n {
+    if && reduce A[.., i]==b {
       return true;
     }
   }
-  if Y != none {
+  if shouldResampleBasedOnY {
     var yCol = Y.domain.shape(1);
     for i in 0..<yCol {
-      if dot(A[.., i], b) == n {
+      if && reduce Y[.., i]==b {
         return true;
       }
     }
@@ -2704,7 +2733,7 @@ proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
 
   var n = D.shape(0);
 
-  if (t <= n) {
+  if (t > n) {
     throw new LinearAlgebraError("_onenormest(): t can't be larger than the order of the matrix");
   }
 
@@ -2716,7 +2745,7 @@ proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
       X = column_resample(X, i);
     }
     for i in 0..<t {
-      while (column_needs_resampling(X, i)) {
+      while (column_needs_resampling(X, i, X)) {
         X = column_resample(X, i);
       }
     }
@@ -2732,7 +2761,7 @@ proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
   //var bestColSofar: [0..<n] X.eltType;
   var Y: [{0..<n, 0..<t}] X.eltType;
   var ind_best = 0;
-  var visited_ind: set(X.eltType);
+  var visited_ind: set(int);
 
   while true {
     Y = sparseDenseMatmul(A, X);
@@ -2767,22 +2796,22 @@ proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
       // are repeated and none of them are same as taht of
       // the oldS
       for i in 0..<t {
-        while column_needs_resampling(S, i, oldS){
-          column_resample(S,i);
+        while column_needs_resampling(S, i, oldS, true){
+          S = column_resample(S,i);
         }
       }
     }
-
     var Z = sparseDenseMatmul(A.T, S);
-    var h = max(abs(Z), axis=1);
+    var absZ = abs(Z);
+    var h = maxAlongAxis(absZ, 1);
 
-    var maxHVal = max reduce(h);
+    var maxHVal = max reduce h;
     if k>=2 && maxHVal == h[ind_best] {
       break;
     }
 
     // Get the argsorted indices of h.
-    var ind = argsort(h, desc=true)[0..<(t + visited_ind.size)];
+    var ind = argsort(h, desc=true)[0..<(min(h.size, t + visited_ind.size))];
 
     if t > 1 {
       var all_indices_visited = true;
@@ -2801,7 +2830,7 @@ proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
       // the front of the ind array and the visited ones
       // at the back. We do so while preserving the
       // argsorted order of h.
-      var seen: set(X.eltType);
+      var seen: set(int);
       for idx in ind {
         if visited_ind.contains(idx) {
           // All the elements of ind which
