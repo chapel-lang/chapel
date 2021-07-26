@@ -434,9 +434,9 @@ err_t sys_strerror_internal(err_t error, char** string_out, size_t extra_space)
     }
     buf = newbuf;
     got = sys_xsi_strerror_r(error, buf, buf_sz);
-    if( got == 0 ) break;
-    if( got == -1 && errno != ERANGE ) {
-      err_out = errno;
+    if (got == 0) break;
+    if (got != ERANGE) {
+      err_out = got;
       break;
     }
     buf_sz *= 2; // try again with a bigger buffer.
@@ -444,7 +444,7 @@ err_t sys_strerror_internal(err_t error, char** string_out, size_t extra_space)
 
   // maybe it's a EAI/gai error, which we add GAI_ERROR_OFFSET to.
 #ifdef HAS_GETADDRINFO
-  if( got == -1 && err_out == EINVAL ) {
+  if( got != 0 && err_out == EINVAL ) {
     const char* gai_str;
     int len;
     gai_str = gai_strerror(error - GAI_ERROR_OFFSET);

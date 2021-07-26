@@ -45,12 +45,16 @@ int sys_xsi_strerror_r(int errnum, char* buf, size_t buflen);
 int sys_xsi_strerror_r(int errnum, char* buf, size_t buflen)
 {
 #ifdef HAS_STRERROR_R
-  return strerror_r(errnum, buf, buflen);
+  int rc = strerror_r(errnum, buf, buflen);
+  if (rc == -1) {
+    rc = errno;
+  }
+  return rc;
 #else
   char* msg = strerror(errnum);
   if( strlen(msg) + 1 < buflen ) {
-   strcpy(buf, msg);
-   return 0;
+    strcpy(buf, msg);
+    return 0;
   }
   return ERANGE;
 #endif
