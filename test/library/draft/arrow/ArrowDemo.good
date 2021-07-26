@@ -1,0 +1,42 @@
+Int Array:
+[
+  1,
+  2,
+  3,
+  4
+]
+String Array:
+[
+  "foo",
+  "bar",
+  "baz",
+  null
+]
+Int Array:
+[
+  true,
+  null,
+  false,
+  true
+]
+
+Record batch from above arrays:
+field0:   [
+    1,
+    2,
+    3,
+    4
+  ]
+field1:   [
+    "foo",
+    "bar",
+    "baz",
+    null
+  ]
+field2:   [
+    true,
+    null,
+    false,
+    true
+  ]
+
