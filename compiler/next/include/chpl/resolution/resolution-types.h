@@ -77,23 +77,6 @@ struct UntypedFnSignature {
 
 using SubstitutionsMap = std::unordered_map<const uast::Formal*, types::QualifiedType>;
 
-/*
-struct InstantiationInfo {
-  SubstitutionsMap substitutions;
-  TypedFnSignature* instantiationPointFn = nullptr;
-  ID instantiationPointId;
-
-  bool operator==(const InstantiationInfo& other) const {
-    return substitutions == other.substitutions &&
-           instantiationPointFn == other.instantiationPointFn &&
-           instantiationPointId == other.instantiationPointId;
-  }
-  bool operator!=(const InstantiationInfo& other) const {
-    return !(*this == other);
-  }
-};
-*/
-
 struct CallInfoActual {
   types::QualifiedType type;
   UniqueString byName;
@@ -141,20 +124,84 @@ struct CallInfo {
 };
 
 
+/**
+  Contains information about symbols available from point-of-instantiation
+  in order to implement caching of instantiations.
+ */
 struct PoiInfo {
-  // For a not-yet-resolved instantiation
-  const PoiScope* poiScope;
+  // is this PoiInfo for a function that has been resolved, or
+  // for a function we are about to resolve?
+  bool resolved = false;
 
-  // TODO: add VisibilityInfo etc
+  // For a not-yet-resolved instantiation
+  const PoiScope* poiScope = nullptr;
+
+  // TODO: add VisibilityInfo etc -- names of calls.
+  // see PR #16261
 
   // For a resolved instantiation,
   // what are the point-of-instantiation scopes
   // that were needed for resolving the signature?
   std::set<const PoiScope*> poiScopesUsed;
 
-  // TODO: operator == for the hashtable comparison but
-  // a different .equals for use in the update function
-  // for TypedFnSignature / ResolvedFunction
+  // default construct a PoiInfo
+  PoiInfo() { }
+
+  // construct a PoiInfo for a not-yet-resolved instantiation
+  PoiInfo(const PoiScope* poiScope)
+    : resolved(false), poiScope(poiScope) {
+  }
+  // construct a PoiInfo for a resolved instantiation
+  PoiInfo(std::set<const PoiScope*> poiScopesUsed)
+    : resolved(true), poiScopesUsed(std::move(poiScopesUsed)) {
+  }
+
+  // return true if the two passed PoiInfos represent the same information
+  // (for use in an update function)
+  static bool updateEquals(const PoiInfo& a, const PoiInfo& b) {
+    return a.resolved == b.resolved &&
+           a.poiScope == b.poiScope &&
+           a.poiScopesUsed == b.poiScopesUsed;
+  }
+
+  void swap(PoiInfo& other) {
+    std::swap(resolved, other.resolved);
+    std::swap(poiScope, other.poiScope);
+    poiScopesUsed.swap(other.poiScopesUsed);
+  }
+
+  // accumulate PoiInfo from a call into this PoiInfo
+  void accumulate(const PoiInfo& addPoiInfo);
+
+  // return true if 'this' represents a resolved function that can
+  // be reused given the PoiInfo for a not-yet-resolved function in 'check'.
+  bool canReuse(const PoiInfo& check) const;
+
+  // return true if one of the PoiInfos is a resolved function that
+  // can be reused given PoiInfo for a not-yet-resolved function.
+  static bool reuseEquals(const PoiInfo& a, const PoiInfo& b) {
+    if (a.resolved && !b.resolved) {
+      return a.canReuse(b);
+    }
+    if (b.resolved && !a.resolved) {
+      return b.canReuse(a);
+    }
+    return updateEquals(a, b);
+  }
+
+  // hashing a PoiInfo gives 0 always
+  // (instead we rely on == in the hashtable so that we can
+  //  apply canReuse to figure out if an instantiation can be reused).
+  size_t hash() const {
+    return 0;
+  }
+  // == and != for the hashtable
+  bool operator==(const PoiInfo& other) const {
+    return PoiInfo::reuseEquals(*this, other);
+  }
+  bool operator!=(const PoiInfo& other) const {
+    return !(*this == other);
+  }
 };
 
 // TODO: should this actually be types::FunctionType?
@@ -186,7 +233,7 @@ struct TypedFnSignature {
 
   // If it's an instantiation, what are the point-of-instantiation scopes
   // that were needed for resolving the signature?
-  std::set<const PoiScope*> poiScopesUsed;
+  PoiInfo poiInfo;
 
   // TODO: This could include a substitutions map, if we need it.
   // The formalTypes above might be enough, though.
@@ -198,7 +245,7 @@ struct TypedFnSignature {
            needsInstantiation == other.needsInstantiation &&
            instantiatedFrom == other.instantiatedFrom &&
            parentFn == other.parentFn &&
-           poiScopesUsed == other.poiScopesUsed;
+           PoiInfo::updateEquals(poiInfo, other.poiInfo);
   }
   bool operator!=(const TypedFnSignature& other) const {
     return !(*this == other);
@@ -252,24 +299,24 @@ struct CallResolutionResult {
   MostSpecificCandidates mostSpecific;
   // if any of the candidates were instantiated, what point-of-instantiation
   // scopes were used when resolving their signature or body?
-  std::set<const PoiScope*> poiScopesUsed;
+  PoiInfo poiInfo;
 
   CallResolutionResult(MostSpecificCandidates mostSpecific,
-                       std::set<const PoiScope*> poiScopesUsed)
+                       PoiInfo poiInfo)
     : mostSpecific(std::move(mostSpecific)),
-      poiScopesUsed(std::move(poiScopesUsed)) {
+      poiInfo(std::move(poiInfo)) {
   }
 
   bool operator==(const CallResolutionResult& other) const {
     return mostSpecific == other.mostSpecific &&
-           poiScopesUsed == other.poiScopesUsed;
+           PoiInfo::updateEquals(poiInfo, other.poiInfo);
   }
   bool operator!=(const CallResolutionResult& other) const {
     return !(*this == other);
   }
   void swap(CallResolutionResult& other) {
     mostSpecific.swap(other.mostSpecific);
-    poiScopesUsed.swap(other.poiScopesUsed);
+    poiInfo.swap(other.poiInfo);
   }
 };
 
@@ -323,12 +370,12 @@ struct ResolvedFunction {
   ResolutionResultByPostorderID resolutionById;
 
   // the set of point-of-instantiation scopes used by the instantiation
-  std::set<const PoiScope*> poiScopesUsed;
+  PoiInfo poiInfo;
 
   bool operator==(const ResolvedFunction& other) const {
     return signature == other.signature &&
            resolutionById == other.resolutionById &&
-           poiScopesUsed == other.poiScopesUsed;
+           PoiInfo::updateEquals(poiInfo, other.poiInfo);
   }
   bool operator!=(const ResolvedFunction& other) const {
     return !(*this == other);
@@ -336,7 +383,7 @@ struct ResolvedFunction {
   void swap(ResolvedFunction& other) {
     std::swap(signature, other.signature);
     resolutionById.swap(other.resolutionById);
-    poiScopesUsed.swap(other.poiScopesUsed);
+    poiInfo.swap(other.poiInfo);
   }
 };
 
@@ -370,27 +417,19 @@ struct FormalActualMap {
 } // end namespace resolution
 
 
-template<> struct update<chpl::resolution::ResolvedExpression> {
-  bool operator()(chpl::resolution::ResolvedExpression& keep,
-                  chpl::resolution::ResolvedExpression& addin) const {
+template<> struct update<resolution::ResolvedExpression> {
+  bool operator()(resolution::ResolvedExpression& keep,
+                  resolution::ResolvedExpression& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
 
-template<> struct update<chpl::resolution::MostSpecificCandidates> {
-  bool operator()(chpl::resolution::MostSpecificCandidates& keep,
-                  chpl::resolution::MostSpecificCandidates& addin) const {
+template<> struct update<resolution::MostSpecificCandidates> {
+  bool operator()(resolution::MostSpecificCandidates& keep,
+                  resolution::MostSpecificCandidates& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
-
-template<> struct update<chpl::resolution::ResolvedFunction> {
-  bool operator()(chpl::resolution::ResolvedFunction& keep,
-                  chpl::resolution::ResolvedFunction& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
-
 
 
 } // end namespace chpl
@@ -411,6 +450,14 @@ template<> struct hash<chpl::resolution::CallInfo>
     return key.hash();
   }
 };
+
+template<> struct hash<chpl::resolution::PoiInfo>
+{
+  size_t operator()(const chpl::resolution::PoiInfo& key) const {
+    return key.hash();
+  }
+};
+
 
 } // end namespace std
 

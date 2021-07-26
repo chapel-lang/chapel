@@ -63,7 +63,7 @@ namespace resolution {
    */
   const TypedFnSignature*
   typedSignatureInital(Context* context,
-                       const UntypedFnSignature* untypedSignature);
+                       const UntypedFnSignature* untypedSig);
 
   /**
     Instantiate a TypedFnSignature from
@@ -83,7 +83,7 @@ namespace resolution {
     Checks the generic cache for potential for reuse. When reuse occurs,
     the ResolvedFunction might point to a different TypedFnSignature.
    */
-  const ResolvedFunction& resolvedFunction(Context* context,
+  const ResolvedFunction* resolvedFunction(Context* context,
                                            const TypedFnSignature* sig,
                                            const PoiScope* poiScope);
 

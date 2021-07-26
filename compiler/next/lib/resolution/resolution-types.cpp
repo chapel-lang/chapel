@@ -174,5 +174,19 @@ std::string TypedFnSignature::toString() const {
 }
 
 
+void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {
+  poiScopesUsed.insert(addPoiInfo.poiScopesUsed.begin(),
+                       addPoiInfo.poiScopesUsed.end());
+}
+
+// this is a resolved function
+// check is a not-yet-resolved function
+bool PoiInfo::canReuse(const PoiInfo& check) const {
+  assert(resolved && !check.resolved);
+
+  return false; // TODO -- consider function names etc -- see PR #16261
+}
+
+
 } // end namespace resolution
 } // end namespace chpl
