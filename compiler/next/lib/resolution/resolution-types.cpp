@@ -159,16 +159,16 @@ FormalActualMap FormalActualMap::build(const TypedFnSignature* sig,
 
 std::string TypedFnSignature::toString() const {
   std::string ret = untypedSignature->functionId.toString();
-  ret += " ";
+  ret += "(";
   for (size_t i = 0; i < untypedSignature->formals.size(); i++) {
-    if (i != 0)
-      ret += ",";
-
-    ret += " ";
+    if (i != 0) {
+      ret += ", ";
+    }
     ret += untypedSignature->formals[i]->name().c_str();
     ret += " : ";
     ret += formalTypes[i].toString();
   }
+  ret += ")";
 
   return ret;
 }
@@ -191,6 +191,7 @@ std::string ResolvedExpression::toString() const {
   std::string ret;
   ret += " : ";
   ret += type.toString();
+  ret += " ; ";
   if (!toId.isEmpty()) {
     ret += " refers to ";
     ret += toId.toString();

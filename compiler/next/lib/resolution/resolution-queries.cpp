@@ -924,6 +924,7 @@ resolvedFunctionByInfoQuery(Context* context,
   if (fn) {
     owned<ResolvedFunction> resolved = toOwned(new ResolvedFunction());
     resolved->signature = sig;
+    resolved->returnIntent = fn->returnIntent();
 
     Resolver visitor(context, fn, poiScope, sig, resolved->resolutionById);
 
@@ -971,13 +972,17 @@ const ResolvedFunction* resolvedFunction(Context* context,
 struct ReturnTypeInferer {
   // input
   Context* context;
+  Function::ReturnIntent returnIntent;
   const ResolutionResultByPostorderID& resolutionById;
 
   // output
   std::vector<QualifiedType> returnedTypes;
 
-  ReturnTypeInferer(Context* context, const ResolvedFunction& resolvedFn)
-    : context(context), resolutionById(resolvedFn.resolutionById) {
+  ReturnTypeInferer(Context* context,
+                    const ResolvedFunction& resolvedFn)
+    : context(context),
+      returnIntent(resolvedFn.returnIntent),
+      resolutionById(resolvedFn.resolutionById) {
   }
 
   bool enter(const Function* fn) {
@@ -986,14 +991,73 @@ struct ReturnTypeInferer {
   void exit(const Function* fn) {
   }
 
+  void checkReturn(const Expression* inExpr, const QualifiedType& qt) {
+    if (qt.type()->isVoidType()) {
+      if (returnIntent == Function::REF) {
+        context->error(inExpr, "Cannot return void with ref return intent");
+      } else if (returnIntent == Function::PARAM) {
+        context->error(inExpr, "Cannot return void with param return intent");
+      } else if (returnIntent == Function::TYPE) {
+        context->error(inExpr, "Cannot return void with type return intent");
+      }
+    } else {
+      bool ok = true;
+      if ((qt.kind() == QualifiedType::TYPE ||
+           qt.kind() == QualifiedType::PARAM) &&
+          (returnIntent == Function::CONST_REF ||
+           returnIntent == Function::REF)) {
+        ok = false;
+      } else if (returnIntent == Function::TYPE &&
+                 qt.kind() != QualifiedType::TYPE) {
+        ok = false;
+      } else if (returnIntent == Function::PARAM &&
+                 qt.kind() != QualifiedType::PARAM) {
+        ok = false;
+      }
+      if (!ok) {
+        context->error(inExpr, "cannot return it with provided return intent");
+      }
+    }
+  }
+
   void noteVoidReturnType(const Expression* inExpr) {
-    QualifiedType voidType(QualifiedType::VALUE, VoidType::get(context));
+    auto voidType = QualifiedType(QualifiedType::VALUE, VoidType::get(context));
     returnedTypes.push_back(voidType);
+
+    checkReturn(inExpr, voidType);
   }
   void noteReturnType(const Expression* expr, const Expression* inExpr) {
     int postorder = expr->id().postOrderId();
     assert(0 <= postorder && postorder < (int)resolutionById.size());
-    returnedTypes.push_back(resolutionById[postorder].type);
+    const QualifiedType& qt = resolutionById[postorder].type;
+
+    QualifiedType::Kind kind = qt.kind();
+    const Type* type = qt.type();
+
+    checkReturn(inExpr, qt);
+
+    switch (returnIntent) {
+      case Function::DEFAULT_RETURN_INTENT:
+        kind = QualifiedType::VALUE;
+        break;
+      case Function::CONST:
+        kind = QualifiedType::CONST_VALUE;
+        break;
+      case Function::CONST_REF:
+        kind = QualifiedType::CONST_REF;
+        break;
+      case Function::REF:
+        kind = QualifiedType::REF;
+        break;
+      case Function::PARAM:
+        kind = QualifiedType::PARAM;
+        break;
+      case Function::TYPE:
+        kind = QualifiedType::TYPE;
+        break;
+    }
+
+    returnedTypes.push_back(QualifiedType(kind, type));
   }
 
   QualifiedType returnedType() {
@@ -1102,8 +1166,6 @@ doIsCandidateApplicableInitial(Context* context,
                                const ID& candidateId,
                                const CallInfo& call) {
 
-  printf("CHECKING APPLICABLE INITIAL %s\n", candidateId.toString().c_str());
-
   auto uSig = untypedSignature(context, candidateId);
   // First, check that the untyped properties allow a match:
   //  * number of arguments
@@ -1113,7 +1175,6 @@ doIsCandidateApplicableInitial(Context* context,
 
   auto faMap = FormalActualMap::build(uSig, call);
   if (!faMap.mappingIsValid) {
-    printf("MAPING NOT VALID\n");
     return nullptr;
   }
 
@@ -1128,7 +1189,6 @@ doIsCandidateApplicableInitial(Context* context,
     const auto& formalType = initialTypedSignature->formalTypes[formalIdx];
     bool ok = canPassInitial(actualType, formalType);
     if (!ok) {
-      printf("CAN PASS FAILED\n");
       return nullptr;
     }
 
@@ -1137,7 +1197,6 @@ doIsCandidateApplicableInitial(Context* context,
 
   // check that the where clause applies
   if (initialTypedSignature->whereClauseResult==TypedFnSignature::WHERE_FALSE) {
-    printf("WHERE CLAUSE FAILED\n");
     return nullptr;
   }
 
@@ -1152,17 +1211,8 @@ doIsCandidateApplicableInstantiating(Context* context,
                                      const CallInfo& call,
                                      const PoiScope* poiScope) {
 
-  printf("CHECKING APPLICABLE INSTANTIATING %p %s\n",
-         typedSignature,
-         typedSignature->untypedSignature->functionId.toString().c_str());
-
-  printf("SIG %s\n", typedSignature->toString().c_str());
-
   const TypedFnSignature* instantiated =
     instantiateSignature(context, typedSignature, call, poiScope);
-
-  printf("INSTANTIATED TO %p\n", instantiated);
-  printf("SIG %s\n", instantiated->toString().c_str());
 
   if (instantiated == nullptr)
     return nullptr;

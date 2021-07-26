@@ -53,7 +53,7 @@ std::string QualifiedType::toString() const {
   }
 
   if (kind_ == QualifiedType::PARAM) {
-    ret += " ";
+    ret += " = ";
     ret += std::to_string(param_);
   }
 

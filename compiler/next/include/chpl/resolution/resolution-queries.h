@@ -145,7 +145,6 @@ namespace resolution {
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope);
 
-
 } // end namespace resolution
 } // end namespace chpl
 #endif

@@ -368,6 +368,9 @@ using ResolutionResultByPostorderID = std::vector<ResolvedExpression>;
 struct ResolvedFunction {
   const TypedFnSignature* signature = nullptr;
 
+  uast::Function::ReturnIntent returnIntent =
+    uast::Function::DEFAULT_RETURN_INTENT;
+
   // this is the output of the resolution process
   ResolutionResultByPostorderID resolutionById;
 
@@ -376,6 +379,7 @@ struct ResolvedFunction {
 
   bool operator==(const ResolvedFunction& other) const {
     return signature == other.signature &&
+           returnIntent == other.returnIntent &&
            resolutionById == other.resolutionById &&
            PoiInfo::updateEquals(poiInfo, other.poiInfo);
   }
@@ -384,6 +388,7 @@ struct ResolvedFunction {
   }
   void swap(ResolvedFunction& other) {
     std::swap(signature, other.signature);
+    std::swap(returnIntent, other.returnIntent);
     resolutionById.swap(other.resolutionById);
     poiInfo.swap(other.poiInfo);
   }

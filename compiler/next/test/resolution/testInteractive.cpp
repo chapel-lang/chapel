@@ -51,7 +51,8 @@ static void printId(const ASTNode* ast) {
 }
 
 static const ResolvedExpression*
-resolvedExpressionForAst(Context* context, const ASTNode* ast) {
+resolvedExpressionForAst(Context* context, const ASTNode* ast,
+                         const TypedFnSignature* inFn) {
   if (!(ast->isLoop() || ast->isBlock())) {
     // compute the parent module or function
     int postorder = ast->id().postOrderId();
@@ -66,6 +67,10 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast) {
         } else if (parentAst->isFunction()) {
           auto untyped = untypedSignature(context, parentAst->id());
           auto typed = typedSignatureInitial(context, untyped);
+          // use inFn if it matches
+          if (inFn && inFn->untypedSignature == untyped) {
+            typed = inFn;
+          }
           if (!typed->needsInstantiation) {
             auto rFn = resolvedFunction(context, typed, nullptr);
             assert(0 <= postorder && postorder < rFn->resolutionById.size());
@@ -79,9 +84,14 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast) {
   return nullptr;
 }
 
-static void computeAndPrintStuff(Context* context, const ASTNode* ast) {
+static void
+computeAndPrintStuff(Context* context,
+                     const ASTNode* ast,
+                     const TypedFnSignature* inFn,
+                     std::set<const TypedFnSignature*>& calledFns) {
+
   for (const ASTNode* child : ast->children()) {
-    computeAndPrintStuff(context, child);
+    computeAndPrintStuff(context, child, inFn, calledFns);
   }
 
   /*
@@ -120,11 +130,17 @@ static void computeAndPrintStuff(Context* context, const ASTNode* ast) {
   }*/
 
   int beforeCount = context->numQueriesRunThisRevision();
-  const ResolvedExpression* r = resolvedExpressionForAst(context, ast);
+  const ResolvedExpression* r = resolvedExpressionForAst(context, ast, inFn);
   int afterCount = context->numQueriesRunThisRevision();
   if (r != nullptr) {
+    if (r->mostSpecific.bestRef)
+      calledFns.insert(r->mostSpecific.bestRef);
+    if (r->mostSpecific.bestConstRef)
+      calledFns.insert(r->mostSpecific.bestConstRef);
+    if (r->mostSpecific.bestValue)
+      calledFns.insert(r->mostSpecific.bestValue);
+
     printId(ast);
-    printf(" resolved to ");
     printf("%-32s ", r->toString().c_str());
     if (afterCount > beforeCount) {
       printf(" (ran %i queries)", afterCount - beforeCount);
@@ -168,6 +184,9 @@ int main(int argc, char** argv) {
 
   while (true) {
     ctx->advanceToNextRevision(gc);
+
+    std::set<const TypedFnSignature*> calledFns;
+
     for (int i = 1; i < argc; i++) {
       auto filepath = UniqueString::build(ctx, argv[i]);
 
@@ -176,9 +195,40 @@ int main(int argc, char** argv) {
         ASTNode::dump(mod);
         printf("\n");
 
-        computeAndPrintStuff(ctx, mod);
+        computeAndPrintStuff(ctx, mod, nullptr, calledFns);
         printf("\n");
       }
+    }
+
+    printf("Instantiations:\n");
+
+    std::set<const TypedFnSignature*> printed;
+
+    // Gather all instantiations, transitively
+    while (true) {
+
+      std::set<const TypedFnSignature*> iterCalledFns = calledFns;
+      size_t startCount = calledFns.size();
+
+      for (auto calledFn : iterCalledFns) {
+        if (calledFn->instantiatedFrom != nullptr) {
+          calledFns.insert(calledFn);
+          auto pair = printed.insert(calledFn);
+          bool added = pair.second;
+          if (added) {
+            auto ast = idToAst(ctx, calledFn->untypedSignature->functionId);
+            auto uSig = untypedSignature(ctx, ast->id());
+            auto initialType = typedSignatureInitial(ctx, uSig);
+            printf("Instantiation of %s\n", initialType->toString().c_str());
+            computeAndPrintStuff(ctx, ast, calledFn, calledFns);
+            printf("\n");
+          }
+        }
+      }
+
+      size_t endCount = calledFns.size();
+
+      if (startCount == endCount) break;
     }
 
     printf("Ran %i queries to compute the above\n\n",
