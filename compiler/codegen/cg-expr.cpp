@@ -4727,7 +4727,9 @@ DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
 }
 
 static GenRet codegenCallToPtxTgtIntrinsic(const char *fcnName) {
-  INT_ASSERT(HAVE_LLVM);
+  GenRet ret;
+
+#ifdef HAVE_LLVM
   llvm::Type *llvmReturnType = llvm::Type::getInt32Ty(gGenInfo->llvmContext);
   Type *chplReturnType = dtInt[INT_SIZE_32];
 
@@ -4738,10 +4740,10 @@ static GenRet codegenCallToPtxTgtIntrinsic(const char *fcnName) {
     INT_ASSERT(fun);
   }
 
-  GenRet ret;
   ret.val = gGenInfo->irBuilder->CreateCall(fun);
   ret.isLVPtr = GEN_VAL;
   ret.chplType = chplReturnType;
+#endif
 
   return ret;
 }
