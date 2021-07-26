@@ -1,6 +1,6 @@
 module ArrowStreamDecl {
-    require "ArrayDecl.chpl", "PrintingDecl.chpl";
-    private use ArrayDecl, PrintingDecl;
+    require "ArrayDecl.chpl", "ArrowRecordDecl.chpl";
+    private use ArrayDecl, ArrowRecordDecl;
     use SysCTypes, CPtr;
 
 

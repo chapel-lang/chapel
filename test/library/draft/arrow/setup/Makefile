@@ -25,4 +25,4 @@ cbuild: $(CBUILD_SRCS)
 
 .PHONY: clean
 clean:
-	rm -rf *.o cbuild build
+	rm -rf *.o cbuild build cbuild.dSYM

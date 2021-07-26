@@ -165,6 +165,8 @@ module ArrayDecl {
 
     extern proc garrow_int32_array_get_value(array: GArrowInt32Array, i: gint64): gint32;
 
+    extern proc garrow_array_to_string (array: GArrowArray, error: c_ptr(GErrorPtr)): c_string;
+
     extern proc isNull(ptr: c_void_ptr): c_int;
 
     extern proc getNULL(): c_void_ptr;
