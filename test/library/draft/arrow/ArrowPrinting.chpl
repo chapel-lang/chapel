@@ -5,7 +5,7 @@ module ArrowPrinting {
 
     // Functions for printing
 
-    proc printArray(array: GArrowArray){
+    proc printArray(array: GArrowArray) {
         var error: GErrorPtr;
         var str: c_string = garrow_array_to_string(array, c_ptrTo(error));
         if(str == ""){
@@ -16,7 +16,7 @@ module ArrowPrinting {
         g_print("%s\n",str);
     }
 
-    proc printRecordBatch(recordBatch: GArrowRecordBatch){
+    proc printRecordBatch(recordBatch: GArrowRecordBatch) {
         var error: GErrorPtr;
         var str = garrow_record_batch_to_string(recordBatch, c_ptrTo(error));
         if(str == ""){

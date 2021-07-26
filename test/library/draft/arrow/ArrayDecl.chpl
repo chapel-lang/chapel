@@ -103,19 +103,19 @@ module ArrayDecl {
     extern proc garrow_int32_array_builder_append_value(
                                     builder: GArrowInt32ArrayBuilder,
                                     value: gint32,
-                                    error: c_ptr(c_ptr(GError))) : gboolean;
+                                    error: c_ptr(c_ptr(GError))): gboolean;
     extern proc garrow_int64_array_builder_append_value(
                                     builder: GArrowInt64ArrayBuilder,
                                     value: gint64,
-                                    error: c_ptr(c_ptr(GError))) : gboolean;
+                                    error: c_ptr(c_ptr(GError))): gboolean;
     extern proc garrow_string_array_builder_append_string(
                                     builder: GArrowStringArrayBuilder,
                                     value: c_string,
-                                    error: c_ptr(c_ptr(GError))) : gboolean;
+                                    error: c_ptr(c_ptr(GError))): gboolean;
     extern proc garrow_boolean_array_builder_append_value(
                                     builder: GArrowBooleanArrayBuilder,
                                     value: gboolean,
-                                    error: c_ptr(c_ptr(GError))) : gboolean;
+                                    error: c_ptr(c_ptr(GError))): gboolean;
 
     extern proc garrow_int32_array_builder_append_values(
                                     builder: GArrowInt32ArrayBuilder, 

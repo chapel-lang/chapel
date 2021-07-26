@@ -7,7 +7,7 @@ module ArrowRecord {
     private use ArrayDecl, ArrowRecordDecl;
     use CPtr;
 
-    proc recordBatch (args ...?n): GArrowRecordBatch{
+    proc recordBatch (args ...?n): GArrowRecordBatch {
 
         
         // Verifying the Integrity of the arguments
@@ -33,9 +33,9 @@ module ArrowRecord {
         var fields: GList = getNULL();
         for param i in 1..n by 2{
             // Building the (column)
-            var col : GArrowField = garrow_field_new(
+            var col: GArrowField = garrow_field_new(
                 args[i-1].c_str(), 
-                garrow_array_get_value_data_type(args[i]:GArrowArray));
+                garrow_array_get_value_data_type(args[i]: GArrowArray));
 
             // Adding the column to the list
             fields = g_list_append(fields, col);
@@ -50,7 +50,7 @@ module ArrowRecord {
 
         // We might want to check the equality of the arrays length but the error will give it to us
         // anyway if they are not equal
-        var n_rows: guint32 = garrow_array_get_length(args[1]) : guint32;
+        var n_rows: guint32 = garrow_array_get_length(args[1]): guint32;
 
         var arrays: GList = getNULL();
         for param j in 1..n by 2 {
