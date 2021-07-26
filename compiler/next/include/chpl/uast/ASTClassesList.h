@@ -59,6 +59,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
   AST_NODE(As)                         //
   AST_NODE(Break)                      // old AST: GotoStmt
+  AST_NODE(Catch)                      // old AST: CatchStmt
   AST_NODE(Cobegin)                    //
   AST_NODE(Conditional)                // old AST: IfExpr/CondStmt
   AST_LEAF(Comment)                    //
@@ -75,7 +76,8 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Return)                     //
   //AST_NODE(Select)                   //
   AST_NODE(Sync)                       //
-  //AST_NODE(TryCatch)                 // old AST: TryStmt/CatchStmt
+  AST_NODE(Throw)                      //
+  AST_NODE(Try)                        // old AST: TryStmt
   AST_NODE(Use)                        // old AST: UseStmt
   AST_NODE(VisibilityClause)           //
   AST_NODE(WithClause)                 //
@@ -125,7 +127,6 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(FnCall)
     AST_NODE(OpCall)
     //AST_NODE(PrimCall)                 // old AST: CallExpr/PrimitiveOp
-    //AST_NODE(Try)                      //
     AST_NODE(Zip)
   AST_END_SUBCLASSES(Call)
 

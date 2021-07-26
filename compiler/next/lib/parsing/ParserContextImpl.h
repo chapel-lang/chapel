@@ -354,6 +354,15 @@ CommentsAndStmt ParserContext::finishStmt(CommentsAndStmt cs) {
   this->clearComments();
   return cs;
 }
+
+CommentsAndStmt ParserContext::finishStmt(YYLTYPE location,
+                                          CommentsAndStmt cs) {
+  auto last = makeLocationAtLast(location);
+  auto commentsToDiscard = gatherComments(last);
+  clearComments(commentsToDiscard);
+  return cs;
+}
+
 CommentsAndStmt ParserContext::finishStmt(Expression* e) {
   this->clearComments();
   return makeCommentsAndStmt(NULL, e);
@@ -1390,4 +1399,93 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
 
   cs.stmt = decl;
   return cs;
+}
+
+CommentsAndStmt
+ParserContext::buildTryExprStmt(YYLTYPE location, Expression* expr,
+                                bool isTryBang) {
+  auto comments = gatherComments(location);
+  auto node = Try::build(builder, convertLocation(location), toOwned(expr),
+                         isTryBang,
+                         /*isExpressionLevel*/ false);
+  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+  return ret;
+}
+
+CommentsAndStmt
+ParserContext::buildTryExprStmt(YYLTYPE location, CommentsAndStmt cs,
+                                bool isTryBang) {
+
+  // TODO: The gathered comments from two different locations may not be
+  // stored in order - I am assuming that they are for now.
+  auto commentList = makeList();
+  appendList(commentList, gatherComments(location));
+  appendList(commentList, cs.comments);
+  cs.comments = nullptr;
+
+  auto comments = gatherCommentsFromList(commentList, location);
+  clearComments(commentList);
+
+  auto node = Try::build(builder, convertLocation(location),
+                         toOwned(cs.stmt),
+                         isTryBang,
+                         /*isExpressionLevel*/ false);
+
+  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+  return ret;
+}
+
+Expression*
+ParserContext::buildTryExpr(YYLTYPE location, Expression* expr,
+                            bool isTryBang) {
+  auto node = Try::build(builder, convertLocation(location), toOwned(expr),
+                         isTryBang,
+                         /*isExpressionLevel*/ true);
+  return node.release();
+}
+
+CommentsAndStmt
+ParserContext::buildTryCatchStmt(YYLTYPE location, CommentsAndStmt block,
+                                 ParserExprList* handlers,
+                                 bool isTryBang) {
+
+  // TODO: The gathered comments from two different locations may not be
+  // stored in order - I am assuming that they are for now.
+  auto commentList = makeList();
+  appendList(commentList, gatherComments(location));
+  appendList(commentList, block.comments);
+  block.comments = nullptr;
+
+  auto comments = gatherCommentsFromList(commentList, location);
+  clearComments(commentList);
+
+  auto stmts = consumeAndFlattenTopLevelBlocks(makeList(block));
+  auto catches = consumeList(handlers);
+
+  auto node = Try::build(builder, convertLocation(location),
+                         std::move(stmts),
+                         std::move(catches),
+                         isTryBang);
+
+  CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
+  return ret;
+}
+
+Expression* ParserContext::buildCatch(YYLTYPE location, Expression* error,
+                                      CommentsAndStmt cs,
+                                      bool hasParensAroundError) {
+  assert(cs.stmt->isBlock());
+  if (error != nullptr) assert(error->isVariable());
+
+  clearComments(cs.comments);
+  cs.comments = nullptr;
+
+  auto errorVar = error ? error->toVariable() : nullptr;
+
+  auto node = Catch::build(builder, convertLocation(location),
+                           toOwned(errorVar),
+                           toOwned(cs.stmt->toBlock()),
+                           hasParensAroundError);
+
+  return node.release();
 }
