@@ -2500,6 +2500,401 @@ proc cosm(A: []) throws {
   }
 }
 
+// Gets sums along specified axes. Method for Rectangular matrix.
+proc absSum(A: [?D], axis=0) throws where !isCSDom(D) {
+  if (axis != 0 && axis != 1) {
+    throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
+  }
+
+  if axis == 0 then
+    // axis=0 sums along column
+    return forall j in D.dim(1-axis) do (+ reduce abs(A[D.dim(axis), j..j]));
+  else
+    // axis=1 sums along row
+    return forall i in D.dim(1-axis) do (+ reduce abs(A[i..i, D.dim(axis)]));
+}
+
+// Gets sums along specified axes. Method for CSR matrix.
+proc absSum(A: [?ADom], axis=0) throws where isCSDom(ADom) {
+  if (axis != 0 && axis != 1) {
+    throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
+  }
+
+  var (n,t) = ADom.shape;
+  if axis == 0 {
+    // axis=0 sums along column
+    var b: [0..<t] A.eltType;
+    forall (i,j) in ADom with (+ reduce b) {
+      b[j] += abs(A[i,j]);
+    }
+    return b;
+  }
+  else {
+    // axis=1 sums along rows
+    var b: [0..<n] A.eltType;
+    forall (i,j) in ADom with (+ reduce b) {
+      b[i] += abs(A[i,j]);
+    }
+    return b;
+  }
+}
+
+// Gets max along specified axes. Method for CSR matrix.
+proc maxAlongAxis(A: [?ADom], axis=0) throws where isCSDom(ADom) {
+  if (axis != 0 && axis != 1) {
+    throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
+  }
+
+  var (n,t) = ADom.shape;
+  if axis == 0 {
+    // axis=0 sums along column
+    var b: [0..<t] A.eltType;
+    forall (i,j) in ADom with (max reduce b) {
+      b[j] = max(b[j], A[i,j]);
+    }
+    return b;
+  }
+  else {
+    // axis=1 sums along rows
+    var b: [0..<n] A.eltType;
+    forall (i,j) in ADom with (max reduce b) {
+      b[i] = max(b[i], A[i,j]);
+    }
+    return b;
+  }
+}
+
+// Gets max along specified axes. Method for Rectangular matrix.
+proc maxAlongAxis(A: [?ADom], axis=0) throws where !isCSDom(ADom) {
+  if (axis != 0 && axis != 1) {
+    throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
+  }
+
+  var (n,t) = ADom.shape;
+  if axis == 0 {
+    // axis=0 sums along column
+    var b: [0..<t] A.eltType;
+    forall i in 0..<t {
+      b[i] = max reduce A[.., i];
+    }
+    return b;
+  }
+  else {
+    // axis=1 sums along rows
+    var b: [0..<n] A.eltType;
+    forall i in 0..<n {
+      b[i] = max reduce A[i, ..];
+    }
+    return b;
+  }
+}
+
+// Given the Domain and element-type, method
+// returns a Matrix of ones.
+proc ones(Dom: domain(2), type eltType=real) {
+  const (m,n) = Dom.shape;
+  var A: [Dom] eltType = 1 : eltType;
+  return A;
+}
+
+
+// Given the Domain and element-type, method
+// returns a Matrix of ones.
+proc zeros(Dom: domain(2), type eltType=real) {
+  const (m,n) = Dom.shape;
+  var A: [Dom] eltType = 0 : eltType;
+  return A;
+}
+
+
+// Returns an index's unit vector of size n.
+proc elementary_vector(n,ind) {
+  var v: [0..<n] real;
+  v[ind] = 1;
+  return v;
+}
+
+// Given an array A, returns indexes
+// corresponding to the sorted ordering of A.
+proc argsort(A: [], desc=false) {
+  use Sort;
+
+  record Cmp { }
+
+  proc Cmp.compare(a, b) {
+    return a[0] - b[0];
+  }
+
+  var cmp: Cmp;
+  var B: [A.domain] int;
+  var n = B.size;
+  for i in 0..<n {
+    B[i] = i;
+  }
+
+  const AB = [ab in zip(A, B)] ab;
+  var i = 0;
+  for ab in AB.sorted(comparator=cmp) {
+    B[i] = ab[1];
+    i += 1;
+  }
+
+  if desc then
+    B.reverse();
+
+  return B;
+}
+
+proc every_col_of_X_is_parallel_to_a_col_of_Y(X: [?xD], Y: [?yD]){
+  var n = xD.shape(0);
+  for i in xD.dim(1) {
+    var b = X[.., i];
+    var fg = false;
+    for j in yD.dim(1) {
+      if && reduce Y[.., j]==b {
+        fg = true;
+        break;
+      }
+    }
+    if !fg {
+      return false;
+    }
+  }
+  return true;
+}
+
+// Rounds up the elements of the Matrix to
+// 1.0 if element >= 0
+// -1.0 if element < 0
+proc sign_round_up(A: []){
+  forall a in A {
+    if a == 0.0 then {
+      a += 1.0;
+    }
+    a /= abs(a);
+  }
+  return A;
+}
+
+proc column_needs_resampling(A: [?D], col=0, Y: [], shouldResampleBasedOnY=false) {
+  var n = D.shape(0);
+  var b = A[.., col];
+  for i in 0..<col {
+    if && reduce A[.., i]==b {
+      return true;
+    }
+  }
+  if shouldResampleBasedOnY {
+    var yCol = Y.domain.shape(1);
+    for i in 0..<yCol {
+      if && reduce Y[.., i]==b {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+proc column_resample(A: [?D], col = 0) {
+  use Random;
+
+  fillRandom(A[.., col]);
+  A[.., col] = round(A[.., col])*2 - 1;
+  return A;
+}
+
+proc sparseDenseMatmul(A: [], B: []) where isSparseArr(A) || !isSparseArr(B) {
+  var resDom = {0..<A.domain.shape(0), 0..<B.domain.shape(1)};
+  var C: [resDom] A.eltType;
+
+  for i in 0..<B.domain.shape(1) {
+    C[.., i] = dot(A, B[.., i]);
+  }
+  return C;
+}
+
+
+proc onenormest(A: [?D], param t=2,param itmax=5) throws {
+  if (D.shape(0) != D.shape(1)) {
+    throw new LinearAlgebraError("onenormest(): Square Matrix Expected");
+  }
+
+  var n = D.shape(0);
+  var est;
+  if (t >= n) {
+    est = norm(A);
+  }
+  else {
+    est = _onenormest(A);
+  }
+
+  return est;
+}
+
+proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
+  use Set;
+
+  if (itmax < 2) {
+    throw new LinearAlgebraError("_onenormest(): At least two iterations are required");
+  }
+  if (t < 1) {
+    throw new LinearAlgebraError("_onenormest(): At least one column is required");
+  }
+
+  var n = D.shape(0);
+
+  if (t > n) {
+    throw new LinearAlgebraError("_onenormest(): t can't be larger than the order of the matrix");
+  }
+
+  var wD = {0..<n, 0..<t};
+  var X = ones(wD);
+
+  if t > 1 {
+    for i in 1..<t {
+      X = column_resample(X, i);
+    }
+    for i in 0..<t {
+      while (column_needs_resampling(X, i, X)) {
+        X = column_resample(X, i);
+      }
+    }
+  }
+
+  X /= n;
+  //var usedInd = [0];
+  var oldEstimate = 0.0;
+  var S = zeros(wD);
+  var oldS = zeros(wD);
+  var k = 1;
+  //var ind = [];
+  //var bestColSofar: [0..<n] X.eltType;
+  var Y: [{0..<n, 0..<t}] X.eltType;
+  var ind_best = 0;
+  var visited_ind: set(int);
+
+  while true {
+    Y = sparseDenseMatmul(A, X);
+    // sum along axis zero taken on (n,t) dimension
+    // sparse matrix for a large n and a very small t
+    // this operation can be attributed to O(n) complexity.
+    var mags = absSum(Y);
+    var (est, bestJ) = maxloc reduce zip(mags, mags.domain);
+    if est > oldEstimate || k == 2 {
+      if k>=2 {
+        ind_best = bestJ;
+      }
+      //var bestColSofar = Y[.., bestJ];
+    }
+    if k >= 2 && est <= oldEstimate {
+      est = oldEstimate;
+      break;
+    }
+    oldEstimate = est;
+    var oldS = S;
+    if k > itmax {
+      break;
+    }
+    S = sign_round_up(Y);
+
+    if every_col_of_X_is_parallel_to_a_col_of_Y(S, oldS) {
+      break;
+    }
+
+    if t>1 {
+      // We resample S to be sure that none of its Columns
+      // are repeated and none of them are same as taht of
+      // the oldS
+      for i in 0..<t {
+        while column_needs_resampling(S, i, oldS, true){
+          S = column_resample(S,i);
+        }
+      }
+    }
+    var Z = sparseDenseMatmul(A.T, S);
+    var absZ = abs(Z);
+    var h = maxAlongAxis(absZ, 1);
+
+    var maxHVal = max reduce h;
+    if k>=2 && maxHVal == h[ind_best] {
+      break;
+    }
+
+    // Get the argsorted indices of h.
+    var ind = argsort(h, desc=true)[0..<(min(h.size, t + visited_ind.size))];
+
+    if t > 1 {
+      var all_indices_visited = true;
+      for idx in ind[0..<t] {
+        if !visited_ind.contains(idx) {
+          all_indices_visited = false;
+          break;
+        }
+      }
+      // We break if all the indices are already visited.
+      if all_indices_visited {
+        break;
+      }
+
+      // We put the most promising unvisited indices at
+      // the front of the ind array and the visited ones
+      // at the back. We do so while preserving the
+      // argsorted order of h.
+      var seen: set(int);
+      for idx in ind {
+        if visited_ind.contains(idx) {
+          // All the elements of ind which
+          // are also present in visited_ind
+          // are added to seen set.
+          seen.add(idx);
+        }
+      }
+
+      // Created new_ind for final ordering
+      // which is same size as ind.
+      var new_ind: [0..<ind.size] ind.eltType;
+      var i = 0;
+      for idx in ind {
+        if !seen.contains(idx) {
+          // Adding all the elements not
+          // present in seen to the front of
+          // new_ind array.
+          new_ind[i] = idx;
+          i += 1;
+        }
+      }
+
+      var seen_arr = seen.toArray();
+
+      for idx in seen_arr {
+        // Adding all the elements present
+        // in seen to the back of the new_ind.
+        new_ind[i] = idx;
+        i += 1;
+      }
+      ind = new_ind;
+    }
+
+    // Updating Matrix X's with the most promising
+    // elementary_vectors
+    for j in 0..<t {
+      X[.., j] = elementary_vector(n, ind[j]);
+    }
+
+    // Add all the first t elements of ind which aren't
+    // there in visited_ind to visited_ind.
+    for j in 0..<t {
+      if !visited_ind.contains(ind[j]) {
+        visited_ind.add(ind[j]);
+      }
+    }
+
+    k += 1;
+  }
+  return oldEstimate;
+}
+
+
 //
 // Type helpers
 //
@@ -2829,8 +3224,9 @@ module Sparse {
     }
     // matrix-matrix
     else if Adom.rank == 2 && Bdom.rank == 2 {
-      if !isCSArr(A) || !isCSArr(B) then
+      if !isCSArr(A) || !isCSArr(B) then {
         compilerError("Only CSR format is supported for sparse multiplication");
+      }
       return _csrmatmatMult(A, B);
     }
     else {
