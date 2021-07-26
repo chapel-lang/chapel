@@ -126,6 +126,7 @@ namespace parsing {
    */
   const ID& idToParentId(Context* context, ID id);
 
+  // TODO: make a wrapper for ID.parentSymbolId
 
 } // end namespace parsing
 } // end namespace chpl
