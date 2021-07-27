@@ -80,43 +80,42 @@ module Socket {
     return _addressStorage.family;
   }
 
-  proc ipAddr.host throws {
-    return _addressStorage.numericHost();
+  proc ipAddr.host {
+    return try! _addressStorage.numericHost();
   }
 
-  proc ipAddr.port throws {
-    return _addressStorage.port();
+  proc ipAddr.port {
+    return try! _addressStorage.port();
+  }
+
   }
 
   private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:c_int):syserr;
 
   type tcpConn = file;
 
-  proc tcpConn.fd():c_int throws {
+  proc tcpConn.socketFd throws {
     var tempfd:c_int;
     var err:syserr = ENOERR;
     on this.home {
       err = qio_get_fd(this._file_internal, tempfd);
     }
-    if err then try ioerror(err, "in file.fd()");
+    if err then try ioerror(err, "in tcpConn.socketFd");
     return tempfd;
   }
 
-  proc tcpConn.addr throws {
-    return getAddress(this.fd());
+  proc tcpConn.addr {
+    return try! remoteAddress(this.socketFd);
   }
 
   private extern proc sizeof(e): size_t;
 
   record tcpListener {
     var socketFd:int(32);
-    var address:ipAddr;
 
     pragma "no doc"
-    proc init(socketFd:c_int, address:ipAddr) {
-      this.complete();
+    proc init(socketFd:c_int) {
       this.socketFd = socketFd;
-      this.address = address;
     }
   }
 
@@ -161,16 +160,12 @@ module Socket {
     return sockFile;
   }
 
-  proc tcpListener.close() throws {
-    sys_close(socketFd);
+  proc tcpListener.close() {
+    sys_close(this.socketFd);
   }
 
   proc tcpListener.addr {
-    return address;
-  }
-
-  proc tcpListener.family {
-    return address.family;
+    return try! localAddress(this.socketFd);
   }
 
   proc listen(in address:ipAddr, reuseAddr = true, backlog = 5) throws {
@@ -184,7 +179,7 @@ module Socket {
       throw SystemError.fromSyserr(err_out, "Failed to listen on socket");
     }
 
-    const listener = new tcpListener(socketFd, address);
+    const listener = new tcpListener(socketFd);
     return listener;
   }
 
@@ -262,7 +257,7 @@ module Socket {
     hints.ai_family = family:c_int;
     hints.ai_socktype = SOCK_STREAM;
 
-    var err = sys_getaddrinfo(host.c_str(), service.c_str(), hints, result);
+    var err = getaddrinfo(host.c_str(), service.c_str(), hints, result);
     if err != 0 {
       throw new Error("Can't resolve address");
     }
@@ -305,8 +300,8 @@ module Socket {
     }
   }
 
-  proc udpSocket.addr throws {
-    return getAddress(this.socketFd);
+  proc udpSocket.addr {
+    return try! localAddress(this.socketFd);
   }
 
   extern proc sys_recvfrom(sockfd:fd_t, buffer:c_void_ptr, len:size_t, flags:c_int, ref address:sys_sockaddr_t, ref recvd_out:ssize_t):err_t;
@@ -394,7 +389,7 @@ module Socket {
 
   }
 
-  proc getAddress(socketFD: fd_t) throws {
+  proc remoteAddress(socketFD: fd_t) throws {
     var addressStorage = new sys_sockaddr_t();
     var err = sys_getpeername(socketFD, addressStorage);
     if err != 0 {
@@ -402,6 +397,40 @@ module Socket {
     }
 
     return new ipAddr(addressStorage);
+  }
+
+  proc remoteAddress(ref socket: tcpConn) throws {
+    var socketFd = socket.socketFd;
+
+    return remoteAddress(socketFd);
+  }
+
+  proc localAddress(socketFD: fd_t) throws {
+    var addressStorage = new sys_sockaddr_t();
+    var err = sys_getsockname(socketFD, addressStorage);
+    if err != 0 {
+      throw SystemError.fromSyserr(err, "Failed to get address");
+    }
+
+    return new ipAddr(addressStorage);
+  }
+
+  proc localAddress(ref socket: tcpConn) throws {
+    var socketFd = socket.socketFd;
+
+    return localAddress(socketFd);
+  }
+
+  proc localAddress(ref socket: tcpListener) throws {
+    var socketFd = socket.socketFd;
+
+    return localAddress(socketFd);
+  }
+
+  proc localAddress(ref socket: udpSocket) throws {
+    var socketFd = socket.socketFd;
+
+    return localAddress(socketFd);
   }
 
   proc socket(family:IPFamily = IPFamily.IPv4, sockType:c_int = SOCK_STREAM, protocol = 0) throws {
