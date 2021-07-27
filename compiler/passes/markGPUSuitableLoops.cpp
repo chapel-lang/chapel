@@ -49,7 +49,6 @@ void markGPUSuitableLoops() {
     if (ForLoop* forLoop = toForLoop(block)) {
       if (forLoop->isOrderIndependent()) {
         if (blockLooksLikeStreamForGPU(forLoop)) {
-          printf("found suitable GPU loop at %s:%d\n", forLoop->fname(), forLoop->linenum());
           forLoop->setIsGPUSuitable(true);
         }
       }
@@ -58,7 +57,6 @@ void markGPUSuitableLoops() {
 
   forv_Vec(ForallStmt, fs, gForallStmts) {
     if (blockLooksLikeStreamForGPU(fs->loopBody())) {
-      printf("found suitable GPU loop at %s:%d\n", fs->fname(), fs->linenum());
       fs->setIsGPUSuitable(true);
     }
   }
