@@ -94,7 +94,7 @@ struct BorrowedIdsWithName {
     return !(*this == other);
   }
 
-  const ID& firstId() {
+  const ID& firstId() const {
     if (moreIds == nullptr) {
       return id;
     } else {

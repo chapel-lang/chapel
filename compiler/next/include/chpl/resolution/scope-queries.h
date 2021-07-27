@@ -29,7 +29,7 @@ namespace resolution {
   /**
     Returns true if this AST type can create a scope.
    */
-  bool createsScope(asttags::ASTTag tag);
+  bool createsScope(uast::ASTTag tag);
 
   /**
     Returns the Scope for an ID.
@@ -62,7 +62,7 @@ namespace resolution {
    */
   std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                  const Scope* scope,
-                                                 const Expression* expr,
+                                                 const uast::Expression* expr,
                                                  bool findOne);
 
   /**
