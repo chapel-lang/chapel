@@ -1,26 +1,29 @@
 #!/usr/bin/env sh
 
 #Script for removing pre-release tag and updating version number before creating release branch. Arguments are the old and new version numbers as follows:
-#1 - Old Major
-#2 - New Major
-#3 - Old Minor
-#4 - New Minor
-#5 - Old Update
-#6 - New Update
+(E.G. Release 1.24.0 to Release 1.25.0)
+#1 - Old Major - 1
+#2 - New Major - 24
+#3 - Old Minor - 0
+#4 - New Minor - 1
+#5 - Old Update - 25
+#6 - New Update - 0
+#7 - Older Major(For archivedSpecs only) - 1
+#8 - Older Minor(For archivedSpecs only) - 23
 
-sed -i '' 35s/false/true/ ../../compiler/main/version_num.h
-sed -i '' 83s/^/'# '/ ../../doc/rst/conf.py
-sed -i '' 84s/'# '// ../../doc/rst/conf.py
-sed -i '' 84s/"$1\.$3\.$5"/"$2\.$4\.$6"/ ../../doc/rst/conf.py
-sed -i '' "9i\\
+sed -i '' '/officialRelease =/s/false/true/' $CHPL_HOME/compiler/main/version_num.h
+sed -i '' "/^release =/s/^/# /" $CHPL_HOME/doc/rst/conf.py
+sed -i '' "/release = '$1\.$3\.$5'/s/# //" $CHPL_HOME/doc/rst/conf.py
+sed -i '' "/release = '$1\.$3\.$5'/s/"$1\.$3\.$5"/"$2\.$4\.$6"/" $CHPL_HOME/doc/rst/conf.py
+sed -i '' "/* \`Chapel $7\.$8/i\\
 * \`Chapel $1\.$3 \<https://chapel-lang.org/docs/$1\.$3/index.html\>\`_
-" ../../doc/rst/language/archivedSpecs.rst
-sed -i '' 19s/"$1\.$3"/"$2\.$4"/ ../../doc/rst/usingchapel/QUICKSTART.rst
-sed -i '' 31s/"$1\.$3\.$5"/"$2\.$4\.$6"/ ../../doc/rst/usingchapel/QUICKSTART.rst
-sed -i '' 38s/"$1\.$3\.$5"/"$2\.$4\.$6"/ ../../doc/rst/usingchapel/QUICKSTART.rst
-sed -i '' 40s/"$1\.$3\.$5"/"$2\.$4\.$6"/ ../../doc/rst/usingchapel/chplenv.rst
-sed -i '' 2s/' pre-release'// ../../man/confchpl.rst
-sed -i '' 2s/' pre-release'// ../../man/confchpldoc.rst
-sed -i '' 8s/^/'# '/ ../../test/compflags/bradc/printstuff/versionhelp.sh
-sed -i '' 9s/^/'# '/ ../../test/compflags/bradc/printstuff/versionhelp.sh
-sed -i '' 11s/'# '// ../../test/compflags/bradc/printstuff/versionhelp.sh
+" $CHPL_HOME/doc/rst/language/archivedSpecs.rst
+sed -i '' "/1)/s/"$1\.$3"/"$2\.$4"/" $CHPL_HOME/doc/rst/usingchapel/QUICKSTART.rst
+sed -i '' "/tar xzf/s/"$1\.$3\.$5"/"$2\.$4\.$6"/" $CHPL_HOME/doc/rst/usingchapel/QUICKSTART.rst
+sed -i '' "/cd chapel/s/"$1\.$3\.$5"/"$2\.$4\.$6"/" $CHPL_HOME/doc/rst/usingchapel/QUICKSTART.rst
+sed -i '' "/export CHPL_HOME/s/"$1\.$3\.$5"/"$2\.$4\.$6"/" $CHPL_HOME/doc/rst/usingchapel/chplenv.rst
+sed -i '' /Version/s/' pre-release'// $CHPL_HOME/man/confchpl.rst
+sed -i '' /Version/s/' pre-release'// $CHPL_HOME/man/confchpldoc.rst
+sed -i '' "/diff $CWD/s/^/# /" $CHPL_HOME/test/compflags/bradc/printstuff/versionhelp.sh
+sed -i '' "/{ echo/s/^/# /" $CHPL_HOME/test/compflags/bradc/printstuff/versionhelp.sh
+sed -i '' "/# echo ""/s/# //" $CHPL_HOME/test/compflags/bradc/printstuff/versionhelp.sh
