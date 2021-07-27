@@ -45,7 +45,7 @@ class QualifiedType {
  private:
   Kind kind_ = UNKNOWN;
   const Type* type_ = nullptr;
-  int param_ = 0; // TODO: replace with Immediates
+  int64_t param_ = 0; // TODO: replace with Immediates
 
  public:
   QualifiedType() { }
@@ -54,13 +54,13 @@ class QualifiedType {
     : kind_(kind), type_(type)
   { }
 
-  QualifiedType(const Type* type, int param)
-    : kind_(PARAM), type_(type), param_(param)
+  QualifiedType(Kind kind, const Type* type, int64_t param)
+    : kind_(kind), type_(type), param_(param)
   { }
 
   Kind kind() const { return kind_; }
   const Type* type() const { return type_; }
-  int param() const { return param_; }
+  int64_t param() const { return param_; }
 
   bool operator==(const QualifiedType& other) const {
     return kind_ == other.kind_ &&
