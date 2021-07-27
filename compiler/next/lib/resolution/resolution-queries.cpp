@@ -935,9 +935,6 @@ resolvedFunctionByInfoQuery(Context* context,
     // save the POI info in the resolution result
     resolved->poiInfo = resolvedPoiInfo;
 
-    if (resolvedPoiInfo.poiScopesUsed.size() != 0)
-      printf("BOBB\n");
-
     // Store the result in the query under the POIs used.
     // This should not update the value if there was already one
     // and they are the same.
