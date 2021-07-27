@@ -24,9 +24,7 @@ module MasonArgParse {
   private use Sort;
 
   const DEBUG=false;
-  // TODO: Verify no duplicate names, flags defined by dev
-  // TODO: Make sure we don't shadow Chapel flags
-  // TODO: Make sure we don't shadow config vars  
+  // TODO: Add sub-commands
   // TODO: Implement Help message and formatting
   // TODO: Add bool flags
   // TODO: Add int opts
@@ -275,8 +273,20 @@ module MasonArgParse {
           throw new ArgumentError("Use '-' or '--' to indicate opt flags. " +
                                   "Positional arguments not yet supported");
         }
+
+        // ensure we don't redefine an existing option flag
+        if _options.contains(opts[i]) {
+          throw new ArgumentError("Option flag " + opts[i] + " is previously " +
+                                  "defined");
+        }
       }
 
+      // ensure option names are unique
+      if _actions.contains(name) {
+        throw new ArgumentError("Option name " + name + 
+                                " is previously defined");
+      }     
+      
       var myDefault = new list(string);
 
       if isStringType(t) {

@@ -214,6 +214,18 @@ testEmptyListDefaultVal()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testTryDuplicateNameOpt()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testTryDuplicateShortOpt()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testTryDuplicateLongOpt()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 -n\--stringVal has extra values
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
@@ -238,3 +250,6 @@ Only string and list of strings are supported as default values at this time
 Only string and list of strings are supported as default values at this time
 Only string and list of strings are supported as default values at this time
 Only string and list of strings are supported as default values at this time
+Option name StringOpt is previously defined
+Option flag -n is previously defined
+Option flag --strArg is previously defined
