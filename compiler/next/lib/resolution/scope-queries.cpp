@@ -80,6 +80,11 @@ struct GatherDecls {
     return false;
   }
   void exit(const Use* d) { }
+  bool enter(const Import* d) {
+    containsUseImport = true;
+    return false;
+  }
+  void exit(const Import* d) { }
 
   // ignore other AST nodes
   bool enter(const ASTNode* ast) {
@@ -556,7 +561,7 @@ struct ImportsResolver {
       isPrivate = false;
 
     for (auto clause : use->visibilityClauses()) {
-      // First, add the entry for the symbol itself
+      // Figure out what was use'd
       const Expression* sym = clause->symbol();
 
       if (!sym->isIdentifier()) {
@@ -576,6 +581,7 @@ struct ImportsResolver {
         if (r.moreIds != nullptr) {
           context->error(use, "ambiguity in resolving %s", id->name().c_str());
         }
+        // First, add the entry for the symbol itself
         resolvedVisibilityScope->visibilityClauses.push_back(
             VisibilitySymbols(r.id, VisibilitySymbols::SYMBOL_ONLY,
                               isPrivate, convertOneName(name)));
@@ -599,6 +605,57 @@ struct ImportsResolver {
         resolvedVisibilityScope->visibilityClauses.push_back(
             VisibilitySymbols(r.id, kind, isPrivate,
                               convertLimitations(clause)));
+      }
+    }
+  }
+  void visit(const Import* imp) {
+    bool isPrivate = true;
+    if (imp->visibility() == Decl::PUBLIC)
+      isPrivate = false;
+
+    for (auto clause : imp->visibilityClauses()) {
+      // Figure out what was imported
+      const Expression* sym = clause->symbol();
+
+      if (!sym->isIdentifier()) {
+        assert(false && "TODO");
+      }
+      auto id = sym->toIdentifier();
+      auto name = id->name();
+
+      BorrowedIdsWithName r;
+      bool foundSym = lookupNameInScopeViz(context, scope, name,
+                                           VIS_IMPORT, /*findOne*/ true, r);
+      if (foundSym == false) {
+        context->error(imp, "undeclared identifier %s", id->name().c_str());
+      } else {
+        if (r.moreIds != nullptr) {
+          context->error(imp, "ambiguity in resolving %s", id->name().c_str());
+        }
+
+        // Then, add the entries for anything imported
+        VisibilitySymbols::Kind kind = VisibilitySymbols::ONLY_CONTENTS;
+
+        switch (clause->limitationKind()) {
+          case VisibilityClause::EXCEPT:
+          case VisibilityClause::ONLY:
+            assert(false && "Should not be possible");
+            break;
+          case VisibilityClause::NONE:
+            kind = VisibilitySymbols::SYMBOL_ONLY;
+            // Add an entry for the imported thing
+            resolvedVisibilityScope->visibilityClauses.push_back(
+                VisibilitySymbols(r.id, kind, isPrivate,
+                                  convertOneName(name)));
+            break;
+          case VisibilityClause::BRACES:
+            kind = VisibilitySymbols::ONLY_CONTENTS;
+            // Add an entry for the imported things
+            resolvedVisibilityScope->visibilityClauses.push_back(
+            VisibilitySymbols(r.id, kind, isPrivate,
+                              convertLimitations(clause)));
+            break;
+        }
       }
     }
   }
