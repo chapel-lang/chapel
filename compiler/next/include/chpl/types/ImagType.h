@@ -65,13 +65,6 @@ class ImagType : public PrimitiveType {
         return "real(<unknown>)";
     }
   }
-
-  /*bool operator==(const ImagType& other) const {
-    return primitiveTypeContentsMatchInner(&other);
-  }
-  bool operator!=(const ImagType& other) const {
-    return !(*this == other);
-  }*/
 };
 
 

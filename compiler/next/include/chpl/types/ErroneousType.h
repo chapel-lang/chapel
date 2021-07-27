@@ -51,13 +51,6 @@ class ErroneousType : public Type {
   ~ErroneousType() = default;
 
   static const ErroneousType* get(Context* context);
-
-  /*bool operator==(const ComplexType& other) const {
-    return completeMatch(&other);
-  }
-  bool operator!=(const ComplexType& other) const {
-    return !(*this == other);
-  }*/
 };
 
 

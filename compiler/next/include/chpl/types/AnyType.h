@@ -50,13 +50,6 @@ class AnyType : public Type {
   ~AnyType() = default;
 
   static const AnyType* get(Context* context);
-
-  /*bool operator==(const AnyType& other) const {
-    return completeMatch(&other);
-  }
-  bool operator!=(const AnyType& other) const {
-    return !(*this == other);
-  }*/
 };
 
 

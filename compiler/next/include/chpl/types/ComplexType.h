@@ -65,13 +65,6 @@ class ComplexType : public PrimitiveType {
         return "complex(<unknown>)";
     }
   }
-
-  /*bool operator==(const ComplexType& other) const {
-    return completeMatch(&other);
-  }
-  bool operator!=(const ComplexType& other) const {
-    return !(*this == other);
-  }*/
 };
 
 

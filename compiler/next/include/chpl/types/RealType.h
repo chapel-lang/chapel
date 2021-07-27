@@ -65,14 +65,6 @@ class RealType : public PrimitiveType {
         return "real(<unknown>)";
     }
   }
-
-  /*bool operator==(const RealType& other) const {
-    return primitiveTypeContentsMatchInner(&other);
-  }
-  bool operator!=(const RealType& other) const {
-    return !(*this == other);
-  }*/
-
 };
 
 

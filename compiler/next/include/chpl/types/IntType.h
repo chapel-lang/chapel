@@ -69,13 +69,6 @@ class IntType : public PrimitiveType {
         return "int(<unknown>)";
     }
   }
-
-  /*bool operator==(const IntType& other) const {
-    return primitiveTypeContentsMatchInner(&other);
-  }
-  bool operator!=(const IntType& other) const {
-    return !(*this == other);
-  }*/
 };
 
 

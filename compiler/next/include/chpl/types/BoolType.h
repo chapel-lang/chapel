@@ -82,14 +82,6 @@ class BoolType : public PrimitiveType {
   bool isDefaultBool() const {
     return bitwidth_ == 0;
   }
-
-  /*bool operator==(const BoolType& other) const {
-    return completeMatch(&other);
-  }
-  bool operator!=(const BoolType& other) const {
-    return !(*this == other);
-  }*/
-
 };
 
 

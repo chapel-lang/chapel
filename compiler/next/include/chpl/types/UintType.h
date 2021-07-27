@@ -69,14 +69,6 @@ class UintType : public PrimitiveType {
         return "uint(<unknown>)";
     }
   }
-
-  /*bool operator==(const UintType& other) const {
-    return primitiveTypeContentsMatchInner(&other);
-  }
-  bool operator!=(const UintType& other) const {
-    return !(*this == other);
-  }*/
-
 };
 
 

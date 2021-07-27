@@ -51,13 +51,6 @@ class UnknownType : public Type {
   ~UnknownType() = default;
 
   static const UnknownType* get(Context* context);
-
-  /*bool operator==(const UnknownType& other) const {
-    return true;
-  }
-  bool operator!=(const UnknownType& other) const {
-    return !(*this == other);
-  }*/
 };
 
 
