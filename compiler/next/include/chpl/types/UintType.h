@@ -65,7 +65,7 @@ class UintType : public PrimitiveType {
       case 64:
         return "uint(64)";
       default:
-        assert(false && "int bit width case not handled");
+        assert(false && "uint bit width case not handled");
         return "uint(<unknown>)";
     }
   }

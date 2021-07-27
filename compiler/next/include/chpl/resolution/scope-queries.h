@@ -62,7 +62,7 @@ namespace resolution {
       (but not parent modules of a module) including looking for declarations
       and handling imports, and including finding declarations in the root
       module.
-    * If checkToplevel is true, checks the for a toplevel module with this name.
+    * If checkToplevel is true, checks for a toplevel module with this name.
     * If findOne is true, limits search to the innermost scope with a match.
 
     Expression can be Identifier or Dot.
@@ -119,7 +119,7 @@ namespace resolution {
 
   /**
     Returns true if all of checkScope is visible from fromScope
-    due to scope containement or whole-module use statements.
+    due to scope containment or whole-module use statements.
    */
   bool isWholeScopeVisibleFromScope(Context* context,
                                     const Scope* checkScope,

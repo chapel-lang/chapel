@@ -33,10 +33,10 @@ namespace types {
   For example, `numeric`, `borrowed`, `chpl_anyreal`.
 
   Types that are used very commonly (e.g. AnyType, UnknownType) should get
-  their own clases.
+  their own classes.
 
   Types that have need for different fields (e.g. PrimitiveType) should get
-  their own class.
+  their own classes.
 
  */
 class BuiltinType : public Type {
@@ -66,13 +66,6 @@ class BuiltinType : public Type {
     Returns a C string for the name of this BuiltinType.
    */
   const char* c_str() const;
-
-  /*bool operator==(const BuiltinType& other) const {
-    return completeMatch(&other);
-  }
-  bool operator!=(const BoolType& other) const {
-    return !(*this == other);
-  }*/
 };
 
 // define the subclasses using macros and BuiltinTypeList.h
