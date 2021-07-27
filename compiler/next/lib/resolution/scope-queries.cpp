@@ -520,6 +520,7 @@ static bool lookupInScopeViz(Context* context,
   return true;
 }
 
+// note: expr must be Dot or Identifier
 std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                const Scope* scope,
                                                const Expression* expr,

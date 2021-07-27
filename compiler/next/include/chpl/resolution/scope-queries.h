@@ -64,8 +64,6 @@ namespace resolution {
       module.
     * If checkToplevel is true, checks for a toplevel module with this name.
     * If findOne is true, limits search to the innermost scope with a match.
-
-    Expression can be Identifier or Dot.
    */
   std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                  const Scope* scope,
