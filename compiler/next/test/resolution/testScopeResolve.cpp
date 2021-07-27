@@ -62,7 +62,7 @@ static void test1() {
 
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
-  
+
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
   assert(match.id == x->id());
   assert(match.found == InnermostMatch::ONE);
@@ -94,7 +94,7 @@ static void test2() {
 
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
-  
+
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
   assert(match.id == ID());
   assert(match.found == InnermostMatch::ZERO);
@@ -128,7 +128,7 @@ static void test3() {
 
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
-  
+
   // design of findInnermostDecl is to return the
   // innermost and first if there is any ambiguity.
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
@@ -169,7 +169,7 @@ static void test4() {
 
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
-  
+
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
   assert(match.id == x->id());
   assert(match.found == InnermostMatch::ONE);
@@ -209,7 +209,7 @@ static void test5() {
 
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
-  
+
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
   assert(match.id == x->id());
   assert(match.found == InnermostMatch::ONE);
@@ -246,7 +246,7 @@ static void test6() {
 
   const Scope* scopeForIdent = scopeForId(context, xIdent->id());
   assert(scopeForIdent);
-  
+
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
   assert(match.id == x->id());
   assert(match.found == InnermostMatch::ONE);
@@ -456,7 +456,7 @@ static void test8() {
     assert(match.id == outerX->id());
     assert(match.found == InnermostMatch::ONE);
   }
- 
+
   {
     const auto& match = findInnermostDecl(context, innerScope, xStr);
     assert(match.id == innerX->id());
@@ -464,8 +464,225 @@ static void test8() {
   }
 }
 
+// testing a simple import statement
+static void test9() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
 
+  auto path = UniqueString::build(context, "test9.chpl");
+  std::string contents = "module M {\n"
+                         "  import N;\n"
+                         "  N;\n"
+                         "}\n"
+                         "module N {\n"
+                         "  var x;\n"
+                         "}\n";
+  setFileText(context, path, contents);
 
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 2);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 2);
+  const Module* n = vec[1]->toModule();
+  assert(n);
+  assert(n->numStmts() == 1);
+
+  const Variable* x = n->stmt(0)->toVariable();
+  assert(x);
+
+  const Identifier* nIdent = m->stmt(1)->toIdentifier();
+  assert(nIdent);
+
+  const Scope* scopeForIdent = scopeForId(context, nIdent->id());
+  assert(scopeForIdent);
+
+  const auto& match = findInnermostDecl(context, scopeForIdent, nIdent->name());
+  assert(match.id == n->id());
+  assert(match.found == InnermostMatch::ONE);
+}
+
+// testing a dotted import statement
+static void test10() {
+  printf("test10\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::build(context, "test10.chpl");
+  std::string contents = "module M {\n"
+                         "  import N.x;\n"
+                         "  x;\n"
+                         "}\n"
+                         "module N {\n"
+                         "  var x;\n"
+                         "}\n";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 2);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 2);
+  const Module* n = vec[1]->toModule();
+  assert(n);
+  assert(n->numStmts() == 1);
+
+  const Variable* x = n->stmt(0)->toVariable();
+  assert(x);
+
+  const Identifier* xIdent = m->stmt(1)->toIdentifier();
+  assert(xIdent);
+
+  const Scope* scopeForIdent = scopeForId(context, xIdent->id());
+  assert(scopeForIdent);
+
+  const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
+  assert(match.id == x->id());
+  assert(match.found == InnermostMatch::ONE);
+}
+
+// testing a dotted import with braces
+static void test11() {
+  printf("test11\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::build(context, "test11.chpl");
+  std::string contents = "module M {\n"
+                         "  import N.{x,y};\n"
+                         "  x;\n"
+                         "  y;\n"
+                         "}\n"
+                         "module N {\n"
+                         "  var x;\n"
+                         "  var y;\n"
+                         "}\n";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 2);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 3);
+  const Module* n = vec[1]->toModule();
+  assert(n);
+  assert(n->numStmts() == 2);
+
+  const Variable* x = n->stmt(0)->toVariable();
+  assert(x);
+  const Variable* y = n->stmt(1)->toVariable();
+  assert(y);
+
+  const Identifier* xIdent = m->stmt(1)->toIdentifier();
+  assert(xIdent);
+  const Identifier* yIdent = m->stmt(2)->toIdentifier();
+  assert(xIdent);
+
+  const Scope* scopeForIdent = scopeForId(context, xIdent->id());
+  assert(scopeForIdent);
+
+  const auto& mx = findInnermostDecl(context, scopeForIdent, xIdent->name());
+  assert(mx.id == x->id());
+  assert(mx.found == InnermostMatch::ONE);
+
+  const auto& my = findInnermostDecl(context, scopeForIdent, yIdent->name());
+  assert(my.id == y->id());
+  assert(my.found == InnermostMatch::ONE);
+
+}
+
+// testing import of a nested module
+static void test12() {
+  printf("test12\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::build(context, "test12.chpl");
+  std::string contents = "module M {\n"
+                         "  import N.NN.NNN.x;\n"
+                         "  x;\n"
+                         "}\n"
+                         "module N {\n"
+                         "  module NN {\n"
+                         "    module NNN {\n"
+                         "      var x;\n"
+                         "    }\n"
+                         "  }\n"
+                         "}\n";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 2);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 2);
+  const Module* n = vec[1]->toModule();
+  assert(n);
+  assert(n->numStmts() == 1);
+  const Module* nn = n->stmt(0)->toModule();
+  assert(nn);
+  const Module* nnn = nn->stmt(0)->toModule();
+  assert(nnn);
+  const Variable* x = nnn->stmt(0)->toVariable();
+  assert(x);
+
+  const Identifier* xIdent = m->stmt(1)->toIdentifier();
+  assert(xIdent);
+
+  const Scope* scopeForIdent = scopeForId(context, xIdent->id());
+  assert(scopeForIdent);
+
+  const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
+  assert(match.id == x->id());
+  assert(match.found == InnermostMatch::ONE);
+}
+
+// testing use of a nested module
+static void test13() {
+  printf("test13\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::build(context, "test13.chpl");
+  std::string contents = "module M {\n"
+                         "  use N.NN.NNN;\n"
+                         "  x;\n"
+                         "}\n"
+                         "module N {\n"
+                         "  module NN {\n"
+                         "    module NNN {\n"
+                         "      var x;\n"
+                         "    }\n"
+                         "  }\n"
+                         "}\n";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 2);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 2);
+  const Module* n = vec[1]->toModule();
+  assert(n);
+  assert(n->numStmts() == 1);
+  const Module* nn = n->stmt(0)->toModule();
+  assert(nn);
+  const Module* nnn = nn->stmt(0)->toModule();
+  assert(nnn);
+  const Variable* x = nnn->stmt(0)->toVariable();
+  assert(x);
+
+  const Identifier* xIdent = m->stmt(1)->toIdentifier();
+  assert(xIdent);
+
+  const Scope* scopeForIdent = scopeForId(context, xIdent->id());
+  assert(scopeForIdent);
+
+  const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
+  assert(match.id == x->id());
+  assert(match.found == InnermostMatch::ONE);
+}
 
 int main() {
   test1();
@@ -476,6 +693,11 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
+  test10();
+  test11();
+  test12();
+  test13();
 
   return 0;
 }
