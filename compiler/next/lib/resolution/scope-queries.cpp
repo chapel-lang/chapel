@@ -240,6 +240,18 @@ static bool doLookupInScope(Context* context,
                             std::unordered_set<const Scope*>& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result);
 
+static bool doLookupExprInScope(Context* context,
+                                const Scope* scope,
+                                const Expression* expr,
+                                bool checkDecls,
+                                bool checkUseImport,
+                                bool checkParents,
+                                bool checkToplevel,
+                                bool findOne,
+                                std::unordered_set<const Scope*>& checkedScopes,
+                                std::vector<BorrowedIdsWithName>& result,
+                                UniqueString& name);
+
 static const ResolvedVisibilityScope*
   partiallyResolvedVisibilityScope(Context* context, const Scope* scope);
 
@@ -399,6 +411,70 @@ static bool doLookupInScope(Context* context,
   return result.size() > startSize;
 }
 
+static bool doLookupExprInScope(Context* context,
+                                const Scope* scope,
+                                const Expression* expr,
+                                bool checkDecls,
+                                bool checkUseImport,
+                                bool checkParents,
+                                bool checkToplevel,
+                                bool findOne,
+                                std::unordered_set<const Scope*>& checkedScopes,
+                                std::vector<BorrowedIdsWithName>& result,
+                                UniqueString& name) {
+
+  if (auto ident = expr->toIdentifier()) {
+    UniqueString n = ident->name();
+    name = n;
+    return doLookupInScope(context, scope, n,
+                           checkDecls, checkUseImport, checkParents,
+                           checkToplevel, findOne,
+                           checkedScopes, result);
+  } else if (auto dot = expr->toDot()) {
+    const Expression* rcv = dot->receiver();
+    UniqueString fieldName = dot->field();
+
+    std::vector<BorrowedIdsWithName> rcvResult;
+    ID rcvId;
+    UniqueString rcvName;
+
+    // lookup the receiver, recursively
+    bool ok = doLookupExprInScope(context, scope, rcv,
+                                  checkDecls, checkUseImport,
+                                  checkParents, checkToplevel,
+                                  /* findOne */ true,
+                                  checkedScopes, rcvResult, rcvName);
+
+    if (ok == false || rcvResult.size() == 0) {
+      return false;
+    }
+
+    if (rcvResult.size() > 1 || rcvResult[0].moreIds != nullptr) {
+      context->error(expr, "ambiguity in resolving dot receiver");
+    }
+    rcvId = rcvResult[0].id;
+
+    // find the fieldName in the scope of rcvId
+    const Scope* rcvScope = scopeForId(context, rcvId);
+
+    // save the field name we used
+    name = fieldName;
+    // look in rcvScope's declarations for fieldName
+    // using a new set of checked scopes
+    std::unordered_set<const Scope*> freshCheckedScopes;
+    return doLookupInScope(context, rcvScope, fieldName,
+                           /* checkDecls */ true,
+                           /* checkUseImport */ true,
+                           /* checkParents */ false,
+                           /* checkToplevel */ false,
+                           findOne,
+                           freshCheckedScopes, result);
+  } else {
+    context->error(expr, "this expression type is not allowed here");
+    return false;
+  }
+}
+
 
 enum VisibilityStmtKind {
   VIS_USE,    // the expr is the thing being use'd e.g. use A.B
@@ -406,27 +482,42 @@ enum VisibilityStmtKind {
   VIS_NEITHER // the expr is something else e.g. an Identifier or Function
 };
 
-static bool lookupNameInScopeViz(Context* context,
-                                 const Scope* scope,
-                                 UniqueString name,
-                                 VisibilityStmtKind inUseEtc,
-                                 bool findOne,
-                                 BorrowedIdsWithName& result) {
-  std::unordered_set<const Scope*> checkedScopes;
-  std::vector<BorrowedIdsWithName> vec;
-  bool got = doLookupInScope(context, scope, name,
-                             /* checkDecls */ inUseEtc != VIS_IMPORT,
-                             /* checkUseImport */ true,
-                             /* checkParents */ true,
-                             /* checkToplevel */ inUseEtc != VIS_NEITHER,
-                             findOne,
-                             checkedScopes, vec);
-  if (got && vec.size() > 0) {
-    result = vec[0];
-    return true;
+static bool lookupInScopeViz(Context* context,
+                             const Scope* scope,
+                             const Expression* expr,
+                             VisibilityStmtKind inUseEtc,
+                             ID& result,
+                             UniqueString& nameOfResult) {
+
+  if (expr->isIdentifier() || expr->isDot()) {
+    // OK
+  } else {
+    context->error(expr, "expression type not supported in use/import");
+    return false;
   }
 
-  return false;
+  std::unordered_set<const Scope*> checkedScopes;
+  std::vector<BorrowedIdsWithName> vec;
+
+  bool got = doLookupExprInScope(context, scope, expr,
+                                 /* checkDecls */ inUseEtc != VIS_IMPORT,
+                                 /* checkUseImport */ true,
+                                 /* checkParents */ true,
+                                 /* checkToplevel */ inUseEtc != VIS_NEITHER,
+                                 /* findOne */ true,
+                                 checkedScopes,
+                                 vec,
+                                 nameOfResult);
+
+  if (got == false || vec.size() == 0) {
+    context->error(expr, "could not find imported thing");
+    return false;
+  } else if (vec.size() > 1 || vec[0].moreIds != nullptr) {
+    context->error(expr, "ambiguity in resolving");
+  }
+
+  result = vec[0].id;
+  return true;
 }
 
 std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
@@ -472,16 +563,13 @@ lookupInScopeWithSet(Context* context,
                      bool findOne,
                      std::unordered_set<const Scope*>& visited) {
   std::vector<BorrowedIdsWithName> vec;
+  UniqueString name;
 
-  if (auto ident = expr->toIdentifier()) {
-    doLookupInScope(context, scope, ident->name(),
-                    checkDecls, checkUseImport, checkParents,
-                    checkToplevel, findOne,
-                    visited, vec);
-  }
-  if (expr->isDot()) {
-    assert(false && "TODO");
-  }
+  doLookupExprInScope(context, scope, expr,
+                      checkDecls, checkUseImport, checkParents,
+                      checkToplevel, findOne,
+                      visited, vec, name);
+
   return vec;
 }
 
@@ -586,13 +674,16 @@ struct ImportsResolver {
       if (auto ident = e->toIdentifier()) {
         UniqueString name = ident->name();
         ret.push_back(std::make_pair(name, name));
+      } else if (auto dot = e->toDot()) {
+        context->error(dot, "dot expression not supported here");
       } else if (auto as = e->toAs()) {
         UniqueString name;
         UniqueString rename;
-        if (auto symId = as->symbol()->toIdentifier()) {
+        auto s = as->symbol();
+        if (auto symId = s->toIdentifier()) {
           name = symId->name();
         } else {
-          assert(false && "TODO");
+          context->error(s, "expression type not supported for 'as'");
         }
         rename = as->rename()->name();
         ret.push_back(std::make_pair(name, rename));
@@ -609,29 +700,16 @@ struct ImportsResolver {
 
     for (auto clause : use->visibilityClauses()) {
       // Figure out what was use'd
-      const Expression* sym = clause->symbol();
+      const Expression* expr = clause->symbol();
 
-      if (!sym->isIdentifier()) {
-        assert(false && "TODO");
-        //as->symbol();
-        //as->rename()->name();
-      }
-      auto id = sym->toIdentifier();
-      auto name = id->name();
-
-      BorrowedIdsWithName r;
-      bool foundSym = lookupNameInScopeViz(context, scope, name,
-                                           VIS_USE, /*findOne*/ true, r);
-      if (foundSym == false) {
-        context->error(use, "undeclared identifier %s", id->name().c_str());
-      } else {
-        if (r.moreIds != nullptr) {
-          context->error(use, "ambiguity in resolving %s", id->name().c_str());
-        }
+      ID r;
+      UniqueString n;
+      bool foundSym = lookupInScopeViz(context, scope, expr, VIS_USE, r, n);
+      if (foundSym) {
         // First, add the entry for the symbol itself
         resolvedVisibilityScope->visibilityClauses.push_back(
-            VisibilitySymbols(r.id, VisibilitySymbols::SYMBOL_ONLY,
-                              isPrivate, convertOneName(name)));
+            VisibilitySymbols(r, VisibilitySymbols::SYMBOL_ONLY,
+                              isPrivate, convertOneName(n)));
 
         // Then, add the entries for anything imported
         VisibilitySymbols::Kind kind = VisibilitySymbols::ALL_CONTENTS;
@@ -650,7 +728,7 @@ struct ImportsResolver {
             break;
         }
         resolvedVisibilityScope->visibilityClauses.push_back(
-            VisibilitySymbols(r.id, kind, isPrivate,
+            VisibilitySymbols(r, kind, isPrivate,
                               convertLimitations(clause)));
       }
     }
@@ -662,24 +740,12 @@ struct ImportsResolver {
 
     for (auto clause : imp->visibilityClauses()) {
       // Figure out what was imported
-      const Expression* sym = clause->symbol();
+      const Expression* expr = clause->symbol();
 
-      if (!sym->isIdentifier()) {
-        assert(false && "TODO");
-      }
-      auto id = sym->toIdentifier();
-      auto name = id->name();
-
-      BorrowedIdsWithName r;
-      bool foundSym = lookupNameInScopeViz(context, scope, name,
-                                           VIS_IMPORT, /*findOne*/ true, r);
-      if (foundSym == false) {
-        context->error(imp, "undeclared identifier %s", id->name().c_str());
-      } else {
-        if (r.moreIds != nullptr) {
-          context->error(imp, "ambiguity in resolving %s", id->name().c_str());
-        }
-
+      ID r;
+      UniqueString n;
+      bool foundSym = lookupInScopeViz(context, scope, expr, VIS_IMPORT, r, n);
+      if (foundSym) {
         // Then, add the entries for anything imported
         VisibilitySymbols::Kind kind = VisibilitySymbols::ONLY_CONTENTS;
 
@@ -692,14 +758,14 @@ struct ImportsResolver {
             kind = VisibilitySymbols::SYMBOL_ONLY;
             // Add an entry for the imported thing
             resolvedVisibilityScope->visibilityClauses.push_back(
-                VisibilitySymbols(r.id, kind, isPrivate,
-                                  convertOneName(name)));
+                VisibilitySymbols(r, kind, isPrivate,
+                                  convertOneName(n)));
             break;
           case VisibilityClause::BRACES:
             kind = VisibilitySymbols::ONLY_CONTENTS;
             // Add an entry for the imported things
             resolvedVisibilityScope->visibilityClauses.push_back(
-            VisibilitySymbols(r.id, kind, isPrivate,
+            VisibilitySymbols(r, kind, isPrivate,
                               convertLimitations(clause)));
             break;
         }
