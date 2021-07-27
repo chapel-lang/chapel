@@ -2505,7 +2505,7 @@ proc absSum(A: [?D], axis=0) throws where !isCSDom(D) {
 }
 
 // Gets sums along specified axes. Method for CSR matrix.
-proc absSum(A: [?ADom], axis=0) throws where isCSDom(ADom) {
+private proc absSum(A: [?ADom], axis=0) throws where isCSDom(ADom) {
   if (axis != 0 && axis != 1) {
     throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
   }
@@ -2530,7 +2530,7 @@ proc absSum(A: [?ADom], axis=0) throws where isCSDom(ADom) {
 }
 
 // Gets max along specified axes. Method for CSR matrix.
-proc maxAlongAxis(A: [?ADom], axis=0) throws where isCSDom(ADom) {
+private proc maxAlongAxis(A: [?ADom], axis=0) throws where isCSDom(ADom) {
   if (axis != 0 && axis != 1) {
     throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
   }
@@ -2555,7 +2555,7 @@ proc maxAlongAxis(A: [?ADom], axis=0) throws where isCSDom(ADom) {
 }
 
 // Gets max along specified axes. Method for Rectangular matrix.
-proc maxAlongAxis(A: [?ADom], axis=0) throws where !isCSDom(ADom) {
+private proc maxAlongAxis(A: [?ADom], axis=0) throws where !isCSDom(ADom) {
   if (axis != 0 && axis != 1) {
     throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
   }
@@ -2581,7 +2581,7 @@ proc maxAlongAxis(A: [?ADom], axis=0) throws where !isCSDom(ADom) {
 
 // Given the Domain and element-type, method
 // returns a Matrix of ones.
-proc ones(Dom: domain(2), type eltType=real) {
+private proc ones(Dom: domain(2), type eltType=real) {
   const (m,n) = Dom.shape;
   var A: [Dom] eltType = 1 : eltType;
   return A;
@@ -2590,7 +2590,7 @@ proc ones(Dom: domain(2), type eltType=real) {
 
 // Given the Domain and element-type, method
 // returns a Matrix of ones.
-proc zeros(Dom: domain(2), type eltType=real) {
+private proc zeros(Dom: domain(2), type eltType=real) {
   const (m,n) = Dom.shape;
   var A: [Dom] eltType = 0 : eltType;
   return A;
@@ -2598,7 +2598,7 @@ proc zeros(Dom: domain(2), type eltType=real) {
 
 
 // Returns an index's unit vector of size n.
-proc elementary_vector(n,ind) {
+private proc elementaryVector(n,ind) {
   var v: [0..<n] real;
   v[ind] = 1;
   return v;
@@ -2606,7 +2606,7 @@ proc elementary_vector(n,ind) {
 
 // Given an array A, returns indexes
 // corresponding to the sorted ordering of A.
-proc argsort(A: [], desc=false) {
+private proc argsort(A: [], desc=false) {
   use Sort;
 
   record Cmp { }
@@ -2635,13 +2635,16 @@ proc argsort(A: [], desc=false) {
   return B;
 }
 
-proc every_col_of_X_is_parallel_to_a_col_of_Y(X: [?xD], Y: [?yD]){
+// Method returns false if there is atleast one
+// column in X which isn't parallel to a column
+// in Y. Else the method returns true.
+private proc everyColOfXParallelToColOfY(X: [?xD], Y: [?yD]){
   var n = xD.shape(0);
   for i in xD.dim(1) {
     var b = X[.., i];
     var fg = false;
     for j in yD.dim(1) {
-      if && reduce Y[.., j]==b {
+      if && reduce (Y[.., j]==b) {
         fg = true;
         break;
       }
@@ -2656,7 +2659,7 @@ proc every_col_of_X_is_parallel_to_a_col_of_Y(X: [?xD], Y: [?yD]){
 // Rounds up the elements of the Matrix to
 // 1.0 if element >= 0
 // -1.0 if element < 0
-proc sign_round_up(A: []){
+private proc signRoundUp(A: []){
   forall a in A {
     if a == 0.0 then {
       a += 1.0;
@@ -2666,18 +2669,22 @@ proc sign_round_up(A: []){
   return A;
 }
 
-proc column_needs_resampling(A: [?D], col=0, Y: [], shouldResampleBasedOnY=false) {
+// Method returns true if there is atleast one
+// column which is parallel to one of its previous
+// columns. If Y is not None, then method also
+// checks on columns of Y.
+private proc columnNeedsResampling(A: [?D], col=0, Y: [], shouldResampleBasedOnY=false) {
   var n = D.shape(0);
   var b = A[.., col];
   for i in 0..<col {
-    if && reduce A[.., i]==b {
+    if && reduce (A[.., i]==b) {
       return true;
     }
   }
   if shouldResampleBasedOnY {
     var yCol = Y.domain.shape(1);
     for i in 0..<yCol {
-      if && reduce Y[.., i]==b {
+      if && reduce (Y[.., i]==b) {
         return true;
       }
     }
@@ -2685,7 +2692,7 @@ proc column_needs_resampling(A: [?D], col=0, Y: [], shouldResampleBasedOnY=false
   return false;
 }
 
-proc column_resample(A: [?D], col = 0) {
+private proc columnResample(A: [?D], col = 0) {
   use Random;
 
   fillRandom(A[.., col]);
@@ -2693,7 +2700,7 @@ proc column_resample(A: [?D], col = 0) {
   return A;
 }
 
-proc sparseDenseMatmul(A: [], B: []) where isSparseArr(A) || !isSparseArr(B) {
+private proc sparseDenseMatmul(A: [], B: []) where isSparseArr(A) || !isSparseArr(B) {
   var resDom = {0..<A.domain.shape(0), 0..<B.domain.shape(1)};
   var C: [resDom] A.eltType;
 
@@ -2702,7 +2709,6 @@ proc sparseDenseMatmul(A: [], B: []) where isSparseArr(A) || !isSparseArr(B) {
   }
   return C;
 }
-
 
 proc onenormest(A: [?D], param t=2,param itmax=5) throws {
   if (D.shape(0) != D.shape(1)) {
@@ -2742,11 +2748,11 @@ proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
 
   if t > 1 {
     for i in 1..<t {
-      X = column_resample(X, i);
+      X = columnResample(X, i);
     }
     for i in 0..<t {
-      while (column_needs_resampling(X, i, X)) {
-        X = column_resample(X, i);
+      while (columnNeedsResampling(X, i, X)) {
+        X = columnResample(X, i);
       }
     }
   }
@@ -2760,11 +2766,11 @@ proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
   //var ind = [];
   //var bestColSofar: [0..<n] X.eltType;
   var Y: [{0..<n, 0..<t}] X.eltType;
-  var ind_best = 0;
-  var visited_ind: set(int);
+  var indBest = 0;
+  var visitedInd: set(int);
 
   while true {
-    Y = sparseDenseMatmul(A, X);
+    Y = dot(A, X);
     // sum along axis zero taken on (n,t) dimension
     // sparse matrix for a large n and a very small t
     // this operation can be attributed to O(n) complexity.
@@ -2772,7 +2778,7 @@ proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
     var (est, bestJ) = maxloc reduce zip(mags, mags.domain);
     if est > oldEstimate || k == 2 {
       if k>=2 {
-        ind_best = bestJ;
+        indBest = bestJ;
       }
       //var bestColSofar = Y[.., bestJ];
     }
@@ -2785,9 +2791,9 @@ proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
     if k > itmax {
       break;
     }
-    S = sign_round_up(Y);
+    S = signRoundUp(Y);
 
-    if every_col_of_X_is_parallel_to_a_col_of_Y(S, oldS) {
+    if everyColOfXParallelToColOfY(S, oldS) {
       break;
     }
 
@@ -2796,33 +2802,33 @@ proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
       // are repeated and none of them are same as taht of
       // the oldS
       for i in 0..<t {
-        while column_needs_resampling(S, i, oldS, true){
-          S = column_resample(S,i);
+        while columnNeedsResampling(S, i, oldS, true){
+          S = columnResample(S,i);
         }
       }
     }
-    var Z = sparseDenseMatmul(A.T, S);
+    var Z = dot(A.T, S);
     var absZ = abs(Z);
     var h = maxAlongAxis(absZ, 1);
 
     var maxHVal = max reduce h;
-    if k>=2 && maxHVal == h[ind_best] {
+    if k>=2 && maxHVal == h[indBest] {
       break;
     }
 
     // Get the argsorted indices of h.
-    var ind = argsort(h, desc=true)[0..<(min(h.size, t + visited_ind.size))];
+    var ind = argsort(h, desc=true)[0..<(min(h.size, t + visitedInd.size))];
 
     if t > 1 {
-      var all_indices_visited = true;
+      var allIndicesVisited = true;
       for idx in ind[0..<t] {
-        if !visited_ind.contains(idx) {
-          all_indices_visited = false;
+        if !visitedInd.contains(idx) {
+          allIndicesVisited = false;
           break;
         }
       }
       // We break if all the indices are already visited.
-      if all_indices_visited {
+      if allIndicesVisited {
         break;
       }
 
@@ -2832,50 +2838,50 @@ proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
       // argsorted order of h.
       var seen: set(int);
       for idx in ind {
-        if visited_ind.contains(idx) {
+        if visitedInd.contains(idx) {
           // All the elements of ind which
-          // are also present in visited_ind
+          // are also present in visitedInd
           // are added to seen set.
           seen.add(idx);
         }
       }
 
-      // Created new_ind for final ordering
+      // Created newInd for final ordering
       // which is same size as ind.
-      var new_ind: [0..<ind.size] ind.eltType;
+      var newInd: [0..<ind.size] ind.eltType;
       var i = 0;
       for idx in ind {
         if !seen.contains(idx) {
           // Adding all the elements not
           // present in seen to the front of
-          // new_ind array.
-          new_ind[i] = idx;
+          // newInd array.
+          newInd[i] = idx;
           i += 1;
         }
       }
 
-      var seen_arr = seen.toArray();
+      var seenArr = seen.toArray();
 
-      for idx in seen_arr {
+      for idx in seenArr {
         // Adding all the elements present
-        // in seen to the back of the new_ind.
-        new_ind[i] = idx;
+        // in seen to the back of the newInd.
+        newInd[i] = idx;
         i += 1;
       }
-      ind = new_ind;
+      ind = newInd;
     }
 
     // Updating Matrix X's with the most promising
-    // elementary_vectors
+    // Elementary Vectors
     for j in 0..<t {
-      X[.., j] = elementary_vector(n, ind[j]);
+      X[.., j] = elementaryVector(n, ind[j]);
     }
 
     // Add all the first t elements of ind which aren't
-    // there in visited_ind to visited_ind.
+    // there in visitedInd to visitedInd.
     for j in 0..<t {
-      if !visited_ind.contains(ind[j]) {
-        visited_ind.add(ind[j]);
+      if !visitedInd.contains(ind[j]) {
+        visitedInd.add(ind[j]);
       }
     }
 
@@ -3215,9 +3221,17 @@ module Sparse {
     // matrix-matrix
     else if Adom.rank == 2 && Bdom.rank == 2 {
       if !isCSArr(A) || !isCSArr(B) then {
-        compilerError("Only CSR format is supported for sparse multiplication");
+        if isCSArr(A) && !isCSArr(B) then {
+          return sparseDenseMatmul(A, B);
+        }
+        else if !isCSArr(A) && isCSArr(B) then {
+          var res = sparseDenseMatmul(B.T, A.T);
+          return res.T;
+        }
       }
-      return _csrmatmatMult(A, B);
+      else {
+        return _csrmatmatMult(A, B);
+      }
     }
     else {
       compilerError("Ranks are not 1 or 2");
