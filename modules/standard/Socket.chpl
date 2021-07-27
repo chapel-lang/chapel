@@ -20,9 +20,9 @@
 module Socket {
 
   public use Sys;
+  public use SysError;
   use Time;
   use SysCTypes;
-  use SysError;
   use SysBasic;
   use CPtr;
   use IO;
@@ -34,7 +34,11 @@ module Socket {
   }
 
   const IPv4Localhost = INADDR_LOOPBACK;
+  const IPv4Any = INADDR_ANY;
+  const IPv4Broadcast = INADDR_BROADCAST;
   const IPv6Localhost = in6addr_loopback;
+  const IPv6Any = in6addr_any;
+
 
   record ipAddr {
     var _addressStorage:sys_sockaddr_t;
@@ -443,13 +447,13 @@ module Socket {
     return socketFd;
   }
 
-  proc bind(socketFd:fd_t, in address: ipAddr, reuseAddr = true) throws {
+  proc bind(socketFd:fd_t, ref address: ipAddr, reuseAddr = true) throws {
     var enable = if reuseAddr then 1 else 0;
     if reuseAddr {
       var ptrEnable = c_ptrTo(enable);
       var err_out = sys_setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, ptrEnable:c_void_ptr, sizeof(enable):c_int);
       if err_out != 0 {
-        throw SystemError.fromSyserr(err_out, "Failed to bind Socket");
+        throw SystemError.fromSyserr(err_out, "Failed to reuse address");
       }
     }
 
@@ -459,20 +463,20 @@ module Socket {
     }
   }
 
-  proc bind(socket:udpSocket, in address: ipAddr, reuseAddr = true) throws {
+  proc bind(ref socket:udpSocket, ref address: ipAddr, reuseAddr = true) throws {
     var socketFd = socket.socketFd;
 
     bind(socketFd, address, reuseAddr);
   }
 
-  proc bind(socket:tcpListener, in address: ipAddr, reuseAddr = true) throws {
+  proc bind(ref socket:tcpListener, ref address: ipAddr, reuseAddr = true) throws {
     var socketFd = socket.socketFd;
 
     bind(socketFd, address, reuseAddr);
   }
 
-  proc bind(socket:tcpConn, in address: ipAddr, reuseAddr = true) throws {
-    var socketFd = socket.fd();
+  proc bind(ref socket:tcpConn, ref address: ipAddr, reuseAddr = true) throws {
+    var socketFd = socket.socketFd;
 
     bind(socketFd, address, reuseAddr);
   }
@@ -486,14 +490,14 @@ module Socket {
     }
   }
 
-  proc naggle(socket:tcpListener, enable:bool = true) throws {
+  proc naggle(ref socket:tcpListener, enable:bool = true) throws {
     var socketFd = socket.socketFd;
 
     naggle(socketFd, enable);
   }
 
-  proc naggle(socket:tcpConn, enable:bool = true) throws {
-    var socketFd = socket.fd();
+  proc naggle(ref socket:tcpConn, enable:bool = true) throws {
+    var socketFd = socket.socketFd;
 
     naggle(socketFd, enable);
   }
@@ -507,14 +511,14 @@ module Socket {
     }
   }
 
-  proc delayAck(socket:tcpListener, enable:bool = true) throws {
+  proc delayAck(ref socket:tcpListener, enable:bool = true) throws {
     var socketFd = socket.socketFd;
 
     delayAck(socketFd, enable);
   }
 
-  proc delayAck(socket:tcpConn, enable:bool = true) throws {
-    var socketFd = socket.fd();
+  proc delayAck(ref socket:tcpConn, enable:bool = true) throws {
+    var socketFd = socket.socketFd;
 
     delayAck(socketFd, enable);
   }
