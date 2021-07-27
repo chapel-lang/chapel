@@ -198,7 +198,7 @@ module MasonArgParse {
             throw new ArgumentError("\\".join(act._opts) + " has extra values");
           }
         // check that we consumed all the values in the input string
-        }else if endPos <= argsList.size-1 {
+        } else if endPos <= argsList.size-1 {
           throw new ArgumentError("\\".join(act._opts) + " has extra values");
         }
       }
@@ -281,9 +281,9 @@ module MasonArgParse {
 
       if isStringType(t) {
         myDefault.append(defaultValue);
-      }else if t==list(string) {
+      } else if t==list(string) {
         myDefault.extend(defaultValue);
-      }else if !isNothingType(t) {
+      } else if !isNothingType(t) {
         throw new ArgumentError("Only string and list of strings are supported "
                                 + "as default values at this time");
       }
