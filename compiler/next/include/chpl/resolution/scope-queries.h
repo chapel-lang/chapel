@@ -80,24 +80,61 @@ namespace resolution {
     Same as lookupInScope above but uses a name instead of an
     Expression.
    */
-  std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
-                                                 const Scope* scope,
-                                                 UniqueString name,
-                                                 bool checkDecls,
-                                                 bool checkUseImport,
-                                                 bool checkParents,
-                                                 bool checkToplevel,
-                                                 bool findOne);
-
+  std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
+                                                     const Scope* scope,
+                                                     UniqueString name,
+                                                     bool checkDecls,
+                                                     bool checkUseImport,
+                                                     bool checkParents,
+                                                     bool checkToplevel,
+                                                     bool findOne);
 
   /**
-    Returns true if all of checkScope is visible from fromScope.
+    Same as lookupInScope but includes a set tracking visited scopes.
+   */
+  std::vector<BorrowedIdsWithName>
+  lookupInScopeWithSet(Context* context,
+                       const Scope* scope,
+                       const uast::Expression* expr,
+                       bool checkDecls,
+                       bool checkUseImport,
+                       bool checkParents,
+                       bool checkToplevel,
+                       bool findOne,
+                       std::unordered_set<const Scope*>& visited);
+
+  /**
+    Same as lookupNameInScope but includes a set tracking visited scopes.
+   */
+  std::vector<BorrowedIdsWithName>
+  lookupNameInScopeWithSet(Context* context,
+                           const Scope* scope,
+                           UniqueString name,
+                           bool checkDecls,
+                           bool checkUseImport,
+                           bool checkParents,
+                           bool checkToplevel,
+                           bool findOne,
+                           std::unordered_set<const Scope*>& visited);
+
+  /**
+    Returns true if all of checkScope is visible from fromScope
+    due to scope containement or whole-module use statements.
    */
   bool isWholeScopeVisibleFromScope(Context* context,
                                     const Scope* checkScope,
                                     const Scope* fromScope);
 
-  // TODO: lookupInScope accepting visited set
+  /**
+    Returns a unique'd point-of-instantiation scope for the passed
+    scope and parent POI scope. Collapses away POI scopes that
+    do not affect visible functions.
+   */
+  const PoiScope* poiScope(Context* context,
+                           const Scope* scope,
+                           const PoiScope* parentPoiScope);
+
+ // TODO: lookupInScope accepting visited set
   // for use in POI traversal
 
   /**

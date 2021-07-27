@@ -132,6 +132,7 @@ struct Scope {
   const Scope* parentScope = nullptr;
   uast::asttags::ASTTag tag = uast::asttags::NUM_AST_TAGS;
   bool containsUseImport = false;
+  bool containsFunctionDecls = false;
   ID id;
   UniqueString name;
   DeclMap declared;
@@ -139,29 +140,12 @@ struct Scope {
   Scope() { }
 
   bool operator==(const Scope& other) const {
-    bool match =  parentScope == other.parentScope &&
-                  tag == other.tag &&
-                  containsUseImport == other.containsUseImport &&
-                  id == other.id &&
-                  declared.size() == other.declared.size();
-    if (match) {
-      // check also the contents of the maps
-      for (const auto& pair : declared) {
-        UniqueString key = pair.first;
-        const OwnedIdsWithName& val = pair.second;
-        // look up the same key in other
-        auto search = other.declared.find(key);
-        if (search == other.declared.end()) {
-          return false;
-        }
-        // check that they values are the same
-        const OwnedIdsWithName& otherVal = search->second;
-        if (val != otherVal) {
-          return false;
-        }
-      }
-    }
-    return match;
+    return parentScope == other.parentScope &&
+           tag == other.tag &&
+           containsUseImport == other.containsUseImport &&
+           containsFunctionDecls == other.containsFunctionDecls &&
+           id == other.id &&
+           declared == other.declared;
   }
   bool operator!=(const Scope& other) const {
     return !(*this == other);
@@ -227,6 +211,32 @@ struct ResolvedVisibilityScope {
            visibilityClauses == other.visibilityClauses;
   }
   bool operator!=(const ResolvedVisibilityScope& other) const {
+    return !(*this == other);
+  }
+};
+
+// When resolving a traditional generic, we also need to consider
+// the point-of-instantiation scope as a place to find visible functions.
+// This type tracks such a scope.
+//
+// PoiScopes do not need to consider scopes that are visible from
+// the function declaration. These can be collapsed away.
+//
+// Performance: could have better reuse of PoiScope if it used the Scope ID
+// rather than changing if the contents do. But, the downside is that
+// further queries would be required to compute which functions are
+// visible. Which is better?
+// If we want to make PoiScope not depend on the contents it might be nice
+// to make Scope itself not depend on the contents, too.
+struct PoiScope {
+  const Scope* inScope = nullptr;         // parent Scope for the Call
+  const PoiScope* inFnPoi = nullptr;      // what is the POI of this POI?
+
+  bool operator==(const PoiScope& other) const {
+    return inScope == other.inScope &&
+           inFnPoi == other.inFnPoi;
+  }
+  bool operator!=(const PoiScope& other) const {
     return !(*this == other);
   }
 };

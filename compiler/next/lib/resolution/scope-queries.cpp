@@ -42,6 +42,7 @@ using namespace types;
 struct GatherDecls {
   DeclMap declared;
   bool containsUseImport = false;
+  bool containsFunctionDecls = false;
 
   GatherDecls() { }
 
@@ -59,6 +60,12 @@ struct GatherDecls {
       OwnedIdsWithName& val = search->second;
       val.appendId(d->id());
     }
+
+    if (d->isFunction()) {
+      // make a note if we encountered a function
+      containsFunctionDecls = true;
+    }
+
     return false;
   }
   void exit(const NamedDecl* d) { }
@@ -95,7 +102,8 @@ struct GatherDecls {
 
 static void gatherDeclsWithin(const uast::ASTNode* ast,
                               DeclMap& declared,
-                              bool& containsUseImport) {
+                              bool& containsUseImport,
+                              bool& containsFunctionDecls) {
   GatherDecls visitor;
 
   // Visit child nodes to e.g. look inside a Function
@@ -107,6 +115,7 @@ static void gatherDeclsWithin(const uast::ASTNode* ast,
 
   declared.swap(visitor.declared);
   containsUseImport = visitor.containsUseImport;
+  containsFunctionDecls = visitor.containsFunctionDecls;
 }
 
 bool createsScope(asttags::ASTTag tag) {
@@ -161,7 +170,9 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
       if (auto decl = ast->toNamedDecl()) {
         result->name = decl->name();
       }
-      gatherDeclsWithin(ast, result->declared, result->containsUseImport);
+      gatherDeclsWithin(ast, result->declared,
+                        result->containsUseImport,
+                        result->containsFunctionDecls);
     }
   }
 
@@ -192,7 +203,8 @@ static const Scope* const& scopeForIdQuery(Context* context, ID id) {
       } else {
         DeclMap declared;
         bool containsUseImport = false;
-        gatherDeclsWithin(ast, declared, containsUseImport);
+        bool containsFns = false;
+        gatherDeclsWithin(ast, declared, containsUseImport, containsFns);
 
         // create a new scope if we found any decls/uses immediately in it
         newScope = !(declared.empty() && containsUseImport == false);
@@ -394,12 +406,12 @@ enum VisibilityStmtKind {
   VIS_NEITHER // the expr is something else e.g. an Identifier or Function
 };
 
-static bool lookupNameInScope(Context* context,
-                              const Scope* scope,
-                              UniqueString name,
-                              VisibilityStmtKind inUseEtc,
-                              bool findOne,
-                              BorrowedIdsWithName& result) {
+static bool lookupNameInScopeViz(Context* context,
+                                 const Scope* scope,
+                                 UniqueString name,
+                                 VisibilityStmtKind inUseEtc,
+                                 bool findOne,
+                                 BorrowedIdsWithName& result) {
   std::unordered_set<const Scope*> checkedScopes;
   std::vector<BorrowedIdsWithName> vec;
   bool got = doLookupInScope(context, scope, name,
@@ -426,13 +438,46 @@ std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                bool checkToplevel,
                                                bool findOne) {
   std::unordered_set<const Scope*> checkedScopes;
+
+  return lookupInScopeWithSet(context, scope, expr,
+                              checkDecls, checkUseImport,
+                              checkParents, checkToplevel,
+                              findOne, checkedScopes);
+}
+
+std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
+                                                   const Scope* scope,
+                                                   UniqueString name,
+                                                   bool checkDecls,
+                                                   bool checkUseImport,
+                                                   bool checkParents,
+                                                   bool checkToplevel,
+                                                   bool findOne) {
+  std::unordered_set<const Scope*> checkedScopes;
+
+  return lookupNameInScopeWithSet(context, scope, name,
+                                  checkDecls, checkUseImport,
+                                  checkParents, checkToplevel,
+                                  findOne, checkedScopes);
+}
+
+std::vector<BorrowedIdsWithName>
+lookupInScopeWithSet(Context* context,
+                     const Scope* scope,
+                     const Expression* expr,
+                     bool checkDecls,
+                     bool checkUseImport,
+                     bool checkParents,
+                     bool checkToplevel,
+                     bool findOne,
+                     std::unordered_set<const Scope*>& visited) {
   std::vector<BorrowedIdsWithName> vec;
 
   if (auto ident = expr->toIdentifier()) {
     doLookupInScope(context, scope, ident->name(),
                     checkDecls, checkUseImport, checkParents,
                     checkToplevel, findOne,
-                    checkedScopes, vec);
+                    visited, vec);
   }
   if (expr->isDot()) {
     assert(false && "TODO");
@@ -440,23 +485,25 @@ std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
   return vec;
 }
 
-std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
-                                               const Scope* scope,
-                                               UniqueString name,
-                                               bool checkDecls,
-                                               bool checkUseImport,
-                                               bool checkParents,
-                                               bool checkToplevel,
-                                               bool findOne) {
-  std::unordered_set<const Scope*> checkedScopes;
+std::vector<BorrowedIdsWithName>
+lookupNameInScopeWithSet(Context* context,
+                         const Scope* scope,
+                         UniqueString name,
+                         bool checkDecls,
+                         bool checkUseImport,
+                         bool checkParents,
+                         bool checkToplevel,
+                         bool findOne,
+                         std::unordered_set<const Scope*>& visited) {
   std::vector<BorrowedIdsWithName> vec;
 
   doLookupInScope(context, scope, name,
                   checkDecls, checkUseImport, checkParents,
                   checkToplevel, findOne,
-                  checkedScopes, vec);
+                  visited, vec);
   return vec;
 }
+
 
 
 static
@@ -573,8 +620,8 @@ struct ImportsResolver {
       auto name = id->name();
 
       BorrowedIdsWithName r;
-      bool foundSym = lookupNameInScope(context, scope, name,
-                                        VIS_USE, /*findOne*/ true, r);
+      bool foundSym = lookupNameInScopeViz(context, scope, name,
+                                           VIS_USE, /*findOne*/ true, r);
       if (foundSym == false) {
         context->error(use, "undeclared identifier %s", id->name().c_str());
       } else {
@@ -724,6 +771,66 @@ const ResolvedVisibilityScope* partiallyResolvedVisibilityScope(
   return resolveVisibilityStmts(context, scope);
 }
 
+static
+const owned<PoiScope>& constructPoiScopeQuery(Context* context,
+                                              const Scope* scope,
+                                              const PoiScope* parentPoiScope) {
+  QUERY_BEGIN(constructPoiScopeQuery, context, scope, parentPoiScope);
+
+  owned<PoiScope> result = toOwned(new PoiScope());
+  result->inScope = scope;
+  result->inFnPoi = parentPoiScope;
+
+  return QUERY_END(result);
+}
+
+static
+const PoiScope* const& poiScopeQuery(Context* context,
+                                     const Scope* scope,
+                                     const PoiScope* parentPoiScope) {
+  QUERY_BEGIN(poiScopeQuery, context, scope, parentPoiScope);
+
+  // figure out which POI scope to create.
+  const Scope* useScope = nullptr;
+  const PoiScope* usePoi = nullptr;
+
+  // Scopes that do not contain function declarations or use/import
+  // thereof can be collapsed away.
+  for (useScope = scope;
+       useScope != nullptr;
+       useScope = useScope->parentScope) {
+    if (useScope->containsUseImport || useScope->containsFunctionDecls) {
+      break;
+    }
+  }
+
+  // PoiScopes do not need to consider scopes that are visible from
+  // the call site itself. These can be collapsed away.
+  for (usePoi = parentPoiScope;
+       usePoi != nullptr;
+       usePoi = usePoi->inFnPoi) {
+
+    bool collapse = isWholeScopeVisibleFromScope(context,
+                                                 usePoi->inScope,
+                                                 scope);
+    if (collapse == false) {
+      break;
+    }
+  }
+
+  // get the poi scope for scope+usePoi
+  const owned<PoiScope>& ps = constructPoiScopeQuery(context, useScope, usePoi);
+  const PoiScope* result = ps.get();
+
+  return QUERY_END(result);
+}
+
+const PoiScope* poiScope(Context* context,
+                         const Scope* scope,
+                         const PoiScope* parentPoiScope) {
+  return poiScopeQuery(context, scope, parentPoiScope);
+}
+
 const InnermostMatch& findInnermostDecl(Context* context,
                                      const Scope* scope,
                                      UniqueString name)
@@ -734,12 +841,12 @@ const InnermostMatch& findInnermostDecl(Context* context,
   InnermostMatch::MatchesFound count = InnermostMatch::ZERO;
 
   std::vector<BorrowedIdsWithName> vec =
-    lookupInScope(context, scope, name,
-                  /* checkDecls */ true,
-                  /* checkUseImport */ true,
-                  /* checkParents */ true,
-                  /* checkToplevel */ false,
-                  /* findOne */ true);
+    lookupNameInScope(context, scope, name,
+                      /* checkDecls */ true,
+                      /* checkUseImport */ true,
+                      /* checkParents */ true,
+                      /* checkToplevel */ false,
+                      /* findOne */ true);
 
   if (vec.size() > 0) {
     const BorrowedIdsWithName& r = vec[0];
