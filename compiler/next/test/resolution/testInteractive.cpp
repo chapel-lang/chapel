@@ -37,20 +37,21 @@ using namespace parsing;
 using namespace resolution;
 using namespace uast;
 
-static const char* nameForAst(const ASTNode* ast) {
+static UniqueString nameForAst(const ASTNode* ast) {
   if (auto ident = ast->toIdentifier()) {
-    return ident->name().c_str();
+    return ident->name();
   } else if (auto decl = ast->toNamedDecl()) {
-    return decl->name().c_str();
+    return decl->name();
   } else if (auto call = ast->toCall()) {
     return nameForAst(call->calledExpression());
   }
 
-  return "";
+  UniqueString empty;
+  return empty;
 }
 
 static void printId(const ASTNode* ast) {
-  printf("%-16s %-8s", ast->id().toString().c_str(), nameForAst(ast));
+  printf("%-16s %-8s", ast->id().toString().c_str(), nameForAst(ast).c_str());
 }
 
 static const ResolvedExpression*
