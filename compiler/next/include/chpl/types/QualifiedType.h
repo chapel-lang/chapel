@@ -70,6 +70,13 @@ class QualifiedType {
     return kind_ == PARAM && param_ != -1;
   }
 
+  bool isGenericOrUnknown() const {
+    bool genericKind = kind_ == UNKNOWN;
+    bool genericParam = kind_ == PARAM && !hasParam();
+    bool genericType = !hasType() || type_->isGeneric();
+    return genericKind || genericParam || genericType;
+  }
+
   bool operator==(const QualifiedType& other) const {
     return kind_ == other.kind_ &&
            type_ == other.type_ &&
