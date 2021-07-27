@@ -114,7 +114,7 @@ int rxd_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 		return -FI_ENOMEM;
 
 	ret = ofi_get_core_info(fabric->api_version, NULL, NULL,
-				0, &rxd_util_prov, info,
+				0, &rxd_util_prov, info, NULL,
 				rxd_info_to_core, &dg_info);
 	if (ret)
 		goto err1;

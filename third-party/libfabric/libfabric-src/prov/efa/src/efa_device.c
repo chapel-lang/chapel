@@ -87,6 +87,8 @@ int efa_device_init(void)
 	int ctx_idx;
 	int ret;
 
+	fastlock_init(&pd_list_lock);
+
 	device_list = ibv_get_device_list(&dev_cnt);
 	if (dev_cnt <= 0)
 		return -ENODEV;
@@ -97,12 +99,19 @@ int efa_device_init(void)
 		goto err_free_dev_list;
 	}
 
+	pd_list = calloc(dev_cnt, sizeof(*pd_list));
+	if (!pd_list) {
+		ret = -ENOMEM;
+		goto err_free_ctx_list;
+	}
+
 	for (ctx_idx = 0; ctx_idx < dev_cnt; ctx_idx++) {
 		ctx_list[ctx_idx] = efa_device_open(device_list[ctx_idx]);
 		if (!ctx_list[ctx_idx]) {
 			ret = -ENODEV;
 			goto err_close_devs;
 		}
+		ctx_list[ctx_idx]->dev_idx = ctx_idx;
 	}
 
 	ibv_free_device_list(device_list);
@@ -112,11 +121,33 @@ int efa_device_init(void)
 err_close_devs:
 	for (ctx_idx--; ctx_idx >= 0; ctx_idx--)
 		efa_device_close(ctx_list[ctx_idx]);
+	free(pd_list);
+err_free_ctx_list:
 	free(ctx_list);
 err_free_dev_list:
 	ibv_free_device_list(device_list);
 	dev_cnt = 0;
 	return ret;
+}
+
+bool efa_device_support_rdma_read(void)
+{
+#ifdef HAVE_RDMA_SIZE
+	int err;
+	struct efadv_device_attr efadv_attr;
+
+	if (dev_cnt <=0)
+		return false;
+
+	assert(dev_cnt > 0);
+	err = efadv_query_device(ctx_list[0]->ibv_ctx, &efadv_attr, sizeof(efadv_attr));
+	if (err)
+		return false;
+
+	return efadv_attr.device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_READ;
+#else
+	return false;
+#endif
 }
 
 void efa_device_free(void)
@@ -126,8 +157,10 @@ void efa_device_free(void)
 	for (i = 0; i < dev_cnt; i++)
 		efa_device_close(ctx_list[i]);
 
+	free(pd_list);
 	free(ctx_list);
 	dev_cnt = 0;
+	fastlock_destroy(&pd_list_lock);
 }
 
 struct efa_context **efa_device_get_context_list(int *num_ctx)

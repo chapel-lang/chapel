@@ -51,7 +51,7 @@ static void rstream_default_settings(struct fi_info *core_info)
 }
 
 int rstream_info_to_core(uint32_t version, const struct fi_info *irstream_info,
-	struct fi_info *core_info)
+	const struct fi_info *base_info, struct fi_info *core_info)
 {
 	core_info->ep_attr->type = FI_EP_MSG;
 	core_info->ep_attr->protocol = FI_PROTO_UNSPEC;
@@ -90,7 +90,7 @@ static void update_rstream_info(const struct fi_info *core_info)
 }
 
 int rstream_info_to_rstream(uint32_t version, const struct fi_info *core_info,
-	struct fi_info *info)
+	const struct fi_info *base_info, struct fi_info *info)
 {
 	info->caps = RSTREAM_CAPS;
 	info->mode = 0;

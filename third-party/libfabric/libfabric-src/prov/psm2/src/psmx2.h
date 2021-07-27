@@ -72,6 +72,7 @@ extern "C" {
 #include "ofi_mem.h"
 #include "rbtree.h"
 #include "version.h"
+#include "fi_ext_psm2.h"
 
 #ifdef FABRIC_DIRECT_ENABLED
 #define DIRECT_FN __attribute__((visibility ("default")))
@@ -475,7 +476,6 @@ struct psmx2_multi_recv {
 
 struct psmx2_fid_fabric {
 	struct util_fabric	util_fabric;
-	psm2_uuid_t		uuid;
 	struct util_ns		name_server;
 
 	/* list of all opened domains */
@@ -528,6 +528,8 @@ struct psmx2_trx_ctxt {
 	ofi_atomic32_t		poll_refcnt;
 	int			poll_active;
 
+	psm2_uuid_t		uuid;
+
 	struct dlist_entry	entry;
 };
 
@@ -540,6 +542,7 @@ struct psmx2_fid_domain {
 	struct psmx2_fid_fabric	*fabric;
 	uint64_t		mode;
 	uint64_t		caps;
+	psm2_uuid_t		uuid;
 
 	enum fi_mr_mode		mr_mode;
 	fastlock_t		mr_lock;
@@ -587,6 +590,11 @@ struct psmx2_fid_domain {
 	psmx2_unlock_fn_t	context_unlock_fn;
 	psmx2_trylock_fn_t	poll_trylock_fn;
 	psmx2_unlock_fn_t	poll_unlock_fn;
+
+	/* parameters that can be set via domain_ops */
+	struct {
+		int		disconnect;
+	} params;
 };
 
 #define PSMX2_EP_REGULAR	0
@@ -628,7 +636,8 @@ struct psmx2_cq_event {
 		struct fi_cq_err_entry		err;
 	} cqe;
 	int			error;
-	int			source_is_valid;
+	int8_t			source_is_valid;
+	uint8_t			source_sep_id;
 	psm2_epaddr_t		source;
 	struct psmx2_fid_av	*source_av;
 	struct slist_entry	list_entry;
@@ -766,6 +775,7 @@ struct psmx2_fid_ep {
 	size_t			min_multi_recv;
 	uint32_t		iov_seq_num;
 	int			service;
+	int			sep_id;
 };
 
 struct psmx2_sep_ctxt {
@@ -987,7 +997,8 @@ int	psmx2_domain_enable_ep(struct psmx2_fid_domain *domain, struct psmx2_fid_ep 
 void	psmx2_trx_ctxt_free(struct psmx2_trx_ctxt *trx_ctxt, int usage_flags);
 struct	psmx2_trx_ctxt *psmx2_trx_ctxt_alloc(struct psmx2_fid_domain *domain,
 					     struct psmx2_ep_name *src_addr,
-					     int sep_ctxt_idx, int usage_flags);
+					     int sep_ctxt_idx, int usage_flags,
+					     uint8_t *uuid);
 
 static inline
 int	psmx2_ns_service_cmp(void *svc1, void *svc2)
@@ -1021,7 +1032,7 @@ struct	psmx2_cq_event *psmx2_cq_create_event(struct psmx2_fid_cq *cq,
 int	psmx2_cq_poll_mq(struct psmx2_fid_cq *cq, struct psmx2_trx_ctxt *trx_ctxt,
 			 struct psmx2_cq_event *event, int count, fi_addr_t *src_addr);
 
-int	psmx2_epid_to_epaddr(struct psmx2_trx_ctxt *trx_ctxt,
+void	psmx2_epid_to_epaddr(struct psmx2_trx_ctxt *trx_ctxt,
 			     psm2_epid_t epid, psm2_epaddr_t *epaddr);
 
 int	psmx2_av_add_trx_ctxt(struct psmx2_fid_av *av, struct psmx2_trx_ctxt *trx_ctxt);
@@ -1041,7 +1052,6 @@ psm2_epaddr_t psmx2_av_translate_addr(struct psmx2_fid_av *av,
 	psm2_epaddr_t epaddr;
 	size_t idx;
 	int ctxt;
-	int err;
 
 	if (av_type == FI_AV_MAP)
 		return (psm2_epaddr_t) addr;
@@ -1066,25 +1076,18 @@ psm2_epaddr_t psmx2_av_translate_addr(struct psmx2_fid_av *av,
 		ctxt = PSMX2_ADDR_CTXT(addr, av->rx_ctx_bits);
 		assert(ctxt < av->sep_info[idx].ctxt_cnt);
 
-		if (OFI_UNLIKELY(!av->conn_info[trx_ctxt->id].sepaddrs[idx][ctxt])) {
-			err = psmx2_epid_to_epaddr(trx_ctxt,
-						   av->sep_info[idx].epids[ctxt],
-						   &av->conn_info[trx_ctxt->id].sepaddrs[idx][ctxt]);
-			assert(!err);
-		}
+		if (OFI_UNLIKELY(!av->conn_info[trx_ctxt->id].sepaddrs[idx][ctxt]))
+			 psmx2_epid_to_epaddr(trx_ctxt,
+					      av->sep_info[idx].epids[ctxt],
+					      &av->conn_info[trx_ctxt->id].sepaddrs[idx][ctxt]);
 		epaddr = av->conn_info[trx_ctxt->id].sepaddrs[idx][ctxt];
 	} else {
-		if (OFI_UNLIKELY(!av->conn_info[trx_ctxt->id].epaddrs[idx])) {
-			err = psmx2_epid_to_epaddr(trx_ctxt, av->table[idx].epid,
-						   &av->conn_info[trx_ctxt->id].epaddrs[idx]);
-			assert(!err);
-		}
+		if (OFI_UNLIKELY(!av->conn_info[trx_ctxt->id].epaddrs[idx]))
+			psmx2_epid_to_epaddr(trx_ctxt, av->table[idx].epid,
+					     &av->conn_info[trx_ctxt->id].epaddrs[idx]);
 		epaddr = av->conn_info[trx_ctxt->id].epaddrs[idx];
 	}
 
-#ifdef NDEBUG
-	(void) err;
-#endif
 	av->domain->av_unlock_fn(&av->lock, 1);
 	return epaddr;
 }
@@ -1158,22 +1161,29 @@ static inline void psmx2_cntr_inc(struct psmx2_fid_cntr *cntr, int error)
 		cntr->wait->signal(cntr->wait);
 }
 
-fi_addr_t psmx2_av_translate_source(struct psmx2_fid_av *av, psm2_epaddr_t source);
+fi_addr_t psmx2_av_translate_source(struct psmx2_fid_av *av,
+				    psm2_epaddr_t source, int source_sep_id);
 
-static inline void psmx2_get_source_name(psm2_epaddr_t source, struct psmx2_ep_name *name)
+static inline void psmx2_get_source_name(psm2_epaddr_t source,
+					 int source_sep_id,
+					 struct psmx2_ep_name *name)
 {
 	memset(name, 0, sizeof(*name));
 	psm2_epaddr_to_epid(source, &name->epid);
-	name->type = PSMX2_EP_REGULAR;
+	name->sep_id = source_sep_id;
+	name->type = source_sep_id ? PSMX2_EP_SCALABLE : PSMX2_EP_REGULAR;
 }
 
-static inline void psmx2_get_source_string_name(psm2_epaddr_t source, char *name, size_t *len)
+static inline void psmx2_get_source_string_name(psm2_epaddr_t source,
+						int source_sep_id,
+						char *name, size_t *len)
 {
 	struct psmx2_ep_name ep_name;
 
 	memset(&ep_name, 0, sizeof(ep_name));
 	psm2_epaddr_to_epid(source, &ep_name.epid);
-	ep_name.type = PSMX2_EP_REGULAR;
+	ep_name.sep_id = source_sep_id;
+	ep_name.type = source_sep_id ? PSMX2_EP_SCALABLE : PSMX2_EP_REGULAR;
 
 	ofi_straddr(name, len, FI_ADDR_PSMX2, &ep_name);
 }

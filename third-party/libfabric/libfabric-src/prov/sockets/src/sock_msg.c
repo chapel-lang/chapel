@@ -135,6 +135,7 @@ ssize_t sock_ep_recvmsg(struct fid_ep *ep, const struct fi_msg *msg,
 	SOCK_LOG_DBG("New rx_entry: %p (ctx: %p)\n", rx_entry, rx_ctx);
 	fastlock_acquire(&rx_ctx->lock);
 	dlist_insert_tail(&rx_entry->entry, &rx_ctx->rx_entry_list);
+	rx_ctx->progress_start = &rx_ctx->rx_buffered_list;
 	fastlock_release(&rx_ctx->lock);
 	return 0;
 }
@@ -479,6 +480,7 @@ ssize_t sock_ep_trecvmsg(struct fid_ep *ep,
 	fastlock_acquire(&rx_ctx->lock);
 	SOCK_LOG_DBG("New rx_entry: %p (ctx: %p)\n", rx_entry, rx_ctx);
 	dlist_insert_tail(&rx_entry->entry, &rx_ctx->rx_entry_list);
+	rx_ctx->progress_start = &rx_ctx->rx_buffered_list;
 	fastlock_release(&rx_ctx->lock);
 	return 0;
 }

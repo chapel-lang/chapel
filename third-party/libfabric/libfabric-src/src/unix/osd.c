@@ -91,6 +91,21 @@ int fi_fd_nonblock(int fd)
 	return 0;
 }
 
+int fi_fd_block(int fd)
+{
+	long flags = 0;
+
+	flags = fcntl(fd, F_GETFL);
+	if (flags < 0) {
+		return -errno;
+	}
+
+	if(fcntl(fd, F_SETFL, flags & ~O_NONBLOCK))
+		return -errno;
+
+	return 0;
+}
+
 int fi_wait_cond(pthread_cond_t *cond, pthread_mutex_t *mut, int timeout_ms)
 {
 	uint64_t t;
@@ -112,16 +127,17 @@ int ofi_shm_map(struct util_shm *shm, const char *name, size_t size,
 	int i, ret = FI_SUCCESS;
 	int flags = O_RDWR | (readonly ? 0 : O_CREAT);
 	struct stat mapstat;
+	int fname_size = 0;
 
 	*mapped = MAP_FAILED;
 	memset(shm, 0, sizeof(*shm));
 
-	fname = calloc(1, strlen(name) + 2); /* '/' + %s + trailing 0 */
+	fname_size = strlen(name) + 2; /* '/' + %s + trailing 0 */
+	fname = calloc(1, fname_size);
 	if (!fname)
 		return -FI_ENOMEM;
 
-	strcpy(fname, "/");
-	strcat(fname, name);
+	snprintf(fname, fname_size, "/%s", name);
 	shm->name = fname;
 
 	for (i = 0; i < strlen(fname); i++) {

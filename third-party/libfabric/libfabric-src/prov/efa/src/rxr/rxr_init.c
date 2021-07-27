@@ -36,6 +36,7 @@
 #include <ofi_prov.h>
 #include "rxr.h"
 #include "efa.h"
+#include "ofi_hmem.h"
 
 struct fi_info *shm_info;
 
@@ -50,9 +51,13 @@ struct rxr_env rxr_env = {
 	.tx_queue_size = 0,
 	.enable_shm_transfer = 1,
 	.use_device_rdma = 0,
+	.use_zcpy_rx = 1,
+	.zcpy_rx_seed = 0,
 	.shm_av_size = 128,
 	.shm_max_medium_size = 4096,
 	.recvwin_size = RXR_RECVWIN_SIZE,
+	.readcopy_pool_size = 256,
+	.atomrsp_pool_size = 1024,
 	.cq_size = RXR_DEF_CQ_SIZE,
 	.max_memcpy_size = 4096,
 	.mtu_size = 0,
@@ -67,6 +72,7 @@ struct rxr_env rxr_env = {
 	.efa_cq_read_size = 50,
 	.shm_cq_read_size = 50,
 	.efa_max_medium_msg_size = 65536,
+	.efa_min_read_msg_size = 1048576,
 	.efa_min_read_write_size = 65536,
 	.efa_read_segment_size = 1073741824,
 };
@@ -79,9 +85,12 @@ static void rxr_init_env(void)
 	fi_param_get_int(&rxr_prov, "tx_queue_size", &rxr_env.tx_queue_size);
 	fi_param_get_int(&rxr_prov, "enable_shm_transfer", &rxr_env.enable_shm_transfer);
 	fi_param_get_int(&rxr_prov, "use_device_rdma", &rxr_env.use_device_rdma);
+	fi_param_get_int(&rxr_prov, "use_zcpy_rx", &rxr_env.use_zcpy_rx);
+	fi_param_get_int(&rxr_prov, "zcpy_rx_seed", &rxr_env.zcpy_rx_seed);
 	fi_param_get_int(&rxr_prov, "shm_av_size", &rxr_env.shm_av_size);
 	fi_param_get_int(&rxr_prov, "shm_max_medium_size", &rxr_env.shm_max_medium_size);
 	fi_param_get_int(&rxr_prov, "recvwin_size", &rxr_env.recvwin_size);
+	fi_param_get_int(&rxr_prov, "readcopy_pool_size", &rxr_env.readcopy_pool_size);
 	fi_param_get_int(&rxr_prov, "cq_size", &rxr_env.cq_size);
 	fi_param_get_size_t(&rxr_prov, "max_memcpy_size",
 			    &rxr_env.max_memcpy_size);
@@ -110,6 +119,8 @@ static void rxr_init_env(void)
 			 &rxr_env.shm_cq_read_size);
 	fi_param_get_size_t(&rxr_prov, "inter_max_medium_message_size",
 			    &rxr_env.efa_max_medium_msg_size);
+	fi_param_get_size_t(&rxr_prov, "inter_min_read_message_size",
+			    &rxr_env.efa_min_read_msg_size);
 	fi_param_get_size_t(&rxr_prov, "inter_min_read_write_size",
 			    &rxr_env.efa_min_read_write_size);
 	fi_param_get_size_t(&rxr_prov, "inter_read_segment_size",
@@ -169,7 +180,7 @@ void rxr_info_to_core_mr_modes(uint32_t version,
 					hints->domain_attr->mr_mode & OFI_MR_BASIC_MAP;
 			core_info->addr_format = hints->addr_format;
 		}
-#ifdef HAVE_LIBCUDA
+#if HAVE_LIBCUDA
 		core_info->domain_attr->mr_mode |= FI_MR_HMEM;
 #endif
 	}
@@ -212,6 +223,9 @@ static int rxr_copy_attr(const struct fi_info *info, struct fi_info *dup)
 		if (!dup->nic)
 			return -FI_ENOMEM;
 	}
+	if (info->caps & FI_HMEM)
+		dup->caps |= FI_HMEM;
+
 	return 0;
 }
 
@@ -276,6 +290,10 @@ void rxr_reset_rx_tx_to_core(const struct fi_info *user_info,
 		user_info->tx_attr->size : core_info->tx_attr->size;
 }
 
+/*
+ * Used to set tx/rx attributes that are characteristic of the device for the
+ * two endpoint types and not emulated in software.
+ */
 void rxr_set_rx_tx_size(struct fi_info *info,
 			const struct fi_info *core_info)
 {
@@ -327,6 +345,16 @@ static int rxr_info_to_rxr(uint32_t version, const struct fi_info *core_info,
 	info->domain_attr->mr_key_size = core_info->domain_attr->mr_key_size;
 
 	/*
+	 * Do not advertise FI_HMEM capabilities when the core can not support
+	 * it or when the application passes NULL hints (given this is a primary
+	 * cap). The logic for device-specific checks pertaining to HMEM comes
+	 * further along this path.
+	 */
+	if ((core_info && !(core_info->caps & FI_HMEM)) || !hints) {
+		info->caps &= ~FI_HMEM;
+	}
+
+	/*
 	 * Handle user-provided hints and adapt the info object passed back up
 	 * based on EFA-specific constraints.
 	 */
@@ -364,11 +392,7 @@ static int rxr_info_to_rxr(uint32_t version, const struct fi_info *core_info,
 			info->domain_attr->data_progress = FI_PROGRESS_MANUAL;
 		}
 
-		/* Use a table for AV if the app has no strong requirement */
-		if (!hints->domain_attr || hints->domain_attr->av_type == FI_AV_UNSPEC)
-			info->domain_attr->av_type = FI_AV_TABLE;
-
-#ifdef HAVE_LIBCUDA
+#if HAVE_LIBCUDA
 		/* If the application requires HMEM support, we will add FI_MR_HMEM
 		 * to mr_mode, because we need application to provide descriptor
 		 * for cuda buffer.
@@ -381,29 +405,84 @@ static int rxr_info_to_rxr(uint32_t version, const struct fi_info *core_info,
 		 * which means FI_MR_HMEM implies FI_MR_LOCAL for cuda buffer
 		 */
 		if (hints->caps & FI_HMEM) {
+
+			if (!efa_device_support_rdma_read()) {
+				FI_WARN(&rxr_prov, FI_LOG_CORE,
+				        "FI_HMEM capability requires RDMA, which this device does not support.\n");
+				return -FI_ENODATA;
+
+			}
+
+			if (!rxr_env.use_device_rdma) {
+				FI_WARN(&rxr_prov, FI_LOG_CORE,
+				        "FI_HMEM capability requires RDMA, which is turned off. You can turn it on by set environment variable FI_EFA_USE_DEVICE_RDMA to 1.\n");
+				return -FI_ENODATA;
+			}
+
 			if (hints->domain_attr &&
 			    !(hints->domain_attr->mr_mode & FI_MR_HMEM)) {
-				FI_INFO(&rxr_prov, FI_LOG_CORE,
+				FI_WARN(&rxr_prov, FI_LOG_CORE,
 				        "FI_HMEM capability requires device registrations (FI_MR_HMEM)\n");
 				return -FI_ENODATA;
 			}
 
 			info->domain_attr->mr_mode |= FI_MR_HMEM;
 
+		} else {
 			/*
-			 * If in this case application add FI_MR_LOCAL to hints,
-			 * it would mean that application want provide descriptor
-			 * for system memory too, which we are able to use, so
-			 * we add FI_MR_LOCAL to mr_mode.
-			 *
-			 * TODO: add FI_MR_LOCAL to mr_mode for any applcations
-			 * the requested it, not just CUDA application.
+			 * FI_HMEM is a primary capability. Providers should
+			 * only enable it if requested by applications.
 			 */
-			if (hints->domain_attr->mr_mode & FI_MR_LOCAL)
-				info->domain_attr->mr_mode |= FI_MR_LOCAL;
+			info->caps &= ~FI_HMEM;
 		}
 #endif
+		/*
+		 * The provider does not force applications to register buffers
+		 * with the device, but if an application is able to, reuse
+		 * their registrations and avoid the bounce buffers.
+		 */
+		if (hints->domain_attr && hints->domain_attr->mr_mode & FI_MR_LOCAL)
+			info->domain_attr->mr_mode |= FI_MR_LOCAL;
+
+		/*
+		 * Same goes for prefix mode, where the protocol does not
+		 * absolutely need a prefix before receive buffers, but it can
+		 * use it when available to optimize transfers with endpoints
+		 * having the following profile:
+		 *	- Requires FI_MSG and not FI_TAGGED/FI_ATOMIC/FI_RMA
+		 *	- Can handle registrations (FI_MR_LOCAL)
+		 *	- No need for FI_DIRECTED_RECV
+		 *	- Guaranteed to send msgs smaller than info->nic->link_attr->mtu
+		 */
+		if (hints->mode & FI_MSG_PREFIX) {
+			FI_INFO(&rxr_prov, FI_LOG_CORE,
+				"FI_MSG_PREFIX supported by application.\n");
+			info->mode |= FI_MSG_PREFIX;
+			info->tx_attr->mode |= FI_MSG_PREFIX;
+			info->rx_attr->mode |= FI_MSG_PREFIX;
+
+			/*
+			 * The prefix needs to be a multiple of 8. The pkt_entry
+			 * is already at 64 bytes (128 with debug).
+			 */
+			info->ep_attr->msg_prefix_size =  sizeof(struct rxr_pkt_entry)
+							  + sizeof(struct rxr_eager_msgrtm_hdr);
+			assert(!(info->ep_attr->msg_prefix_size % 8));
+			FI_INFO(&rxr_prov, FI_LOG_CORE,
+				"FI_MSG_PREFIX size = %ld\n", info->ep_attr->msg_prefix_size);
+		}
 	}
+
+	/* Use a table for AV if the app has no strong requirement */
+	if (!hints || !hints->domain_attr ||
+	    hints->domain_attr->av_type == FI_AV_UNSPEC)
+		info->domain_attr->av_type = FI_AV_TABLE;
+
+	if (!hints || !hints->domain_attr ||
+	    hints->domain_attr->resource_mgmt == FI_RM_UNSPEC)
+		info->domain_attr->resource_mgmt = FI_RM_ENABLED;
+	else
+		info->domain_attr->resource_mgmt = hints->domain_attr->resource_mgmt;
 
 	rxr_set_rx_tx_size(info, core_info);
 	return 0;
@@ -590,7 +669,7 @@ dgram_info:
 		ret = 0;
 
 	if (!ret && rxr_env.enable_shm_transfer && !shm_info) {
-		shm_info = fi_allocinfo();
+		shm_info = NULL;
 		shm_hints = fi_allocinfo();
 		rxr_set_shm_hints(shm_hints);
 		ret = fi_getinfo(FI_VERSION(1, 8), NULL, NULL,
@@ -635,15 +714,16 @@ static void rxr_fini(void)
 	}
 
 #if HAVE_EFA_DL
-	ofi_monitor_cleanup();
+	ofi_monitors_cleanup();
+	ofi_hmem_cleanup();
 	ofi_mem_fini();
 #endif
 }
 
 struct fi_provider rxr_prov = {
 	.name = "efa",
-	.version = FI_VERSION(RXR_MAJOR_VERSION, RXR_MINOR_VERSION),
-	.fi_version = RXR_FI_VERSION,
+	.version = OFI_VERSION_DEF_PROV,
+	.fi_version = OFI_VERSION_LATEST,
 	.getinfo = rxr_getinfo,
 	.fabric = rxr_fabric,
 	.cleanup = rxr_fini
@@ -663,12 +743,18 @@ EFA_INI
 			"Enable using SHM provider to provide the communication between processes on the same system. (Default: 1)");
 	fi_param_define(&rxr_prov, "use_device_rdma", FI_PARAM_INT,
 			"whether to use device's RDMA functionality for one-sided and two-sided transfer.");
+	fi_param_define(&rxr_prov, "use_zcpy_rx", FI_PARAM_INT,
+			"Enables the use of application's receive buffers in place of bounce-buffers when feasible. (Default: 1)");
+	fi_param_define(&rxr_prov, "zcpy_rx_seed", FI_PARAM_INT,
+			"Defines the number of bounce-buffers the provider will prepost during EP initialization.  (Default: 0)");
 	fi_param_define(&rxr_prov, "shm_av_size", FI_PARAM_INT,
 			"Defines the maximum number of entries in SHM provider's address vector (Default 128).");
 	fi_param_define(&rxr_prov, "shm_max_medium_size", FI_PARAM_INT,
 			"Defines the switch point between small/medium message and large message. The message larger than this switch point will be transferred with large message protocol (Default 4096).");
 	fi_param_define(&rxr_prov, "recvwin_size", FI_PARAM_INT,
 			"Defines the size of sliding receive window. (Default: 16384)");
+	fi_param_define(&rxr_prov, "readcopy_pool_size", FI_PARAM_INT,
+			"Defines the size of readcopy packet pool size. (Default: 256)");
 	fi_param_define(&rxr_prov, "cq_size", FI_PARAM_INT,
 			"Define the size of completion queue. (Default: 8192)");
 	fi_param_define(&rxr_prov, "mr_cache_enable", FI_PARAM_BOOL,
@@ -702,7 +788,10 @@ EFA_INI
 	fi_param_define(&rxr_prov, "shm_cq_read_size", FI_PARAM_SIZE_T,
 			"Set the number of SHM completion entries to read for one loop for one iteration of the progress engine. (Default: 50)");
 	fi_param_define(&rxr_prov, "inter_max_medium_message_size", FI_PARAM_INT,
-			"The maximum message size for inter EFA medium message protocol, messages whose size is larger than this value will be sent either by read message protocol (depend on firmware support), or long message protocol (Default 65536).");
+			"The maximum message size for inter EFA medium message protocol (Default 65536).");
+	fi_param_define(&rxr_prov, "inter_min_read_message_size", FI_PARAM_INT,
+			"The minimum message size for inter EFA read message protocol. If instance support RDMA read, messages whose size is larger than this value will be sent by read message protocol (Default 1048576).");
+
 	fi_param_define(&rxr_prov, "inter_min_read_write_size", FI_PARAM_INT,
 			"The mimimum message size for inter EFA write to use read write protocol. If firmware support RDMA read, and FI_EFA_USE_DEVICE_RDMA is 1, write requests whose size is larger than this value will use the read write protocol (Default 65536).");
 	fi_param_define(&rxr_prov, "inter_read_segment_size", FI_PARAM_INT,
@@ -711,7 +800,8 @@ EFA_INI
 
 #if HAVE_EFA_DL
 	ofi_mem_init();
-	ofi_monitor_init();
+	ofi_hmem_init();
+	ofi_monitors_init();
 #endif
 
 	lower_efa_prov = init_lower_efa_prov();

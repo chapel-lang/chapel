@@ -61,13 +61,9 @@ static int rxr_domain_close(fid_t fid)
 {
 	int ret;
 	struct rxr_domain *rxr_domain;
-	struct efa_domain *efa_domain;
 
 	rxr_domain = container_of(fid, struct rxr_domain,
 				  util_domain.domain_fid.fid);
-	efa_domain = container_of(rxr_domain->rdm_domain, struct efa_domain,
-				  util_domain.domain_fid);
-
 	ret = fi_close(&rxr_domain->rdm_domain->fid);
 	if (ret)
 		return ret;
@@ -75,12 +71,6 @@ static int rxr_domain_close(fid_t fid)
 	ret = ofi_domain_close(&rxr_domain->util_domain);
 	if (ret)
 		return ret;
-
-	if (rxr_env.enable_shm_transfer) {
-		ret = fi_close(&efa_domain->shm_domain->fid);
-		if (ret)
-			return ret;
-	}
 
 	free(rxr_domain);
 	return 0;
@@ -106,9 +96,6 @@ int rxr_mr_regattr(struct fid *domain_fid, const struct fi_mr_attr *attr,
 
 	rxr_domain = container_of(domain_fid, struct rxr_domain,
 				  util_domain.domain_fid.fid);
-
-	if (attr->iface == FI_HMEM_CUDA)
-		flags |= OFI_MR_NOCACHE;
 
 	ret = fi_mr_regattr(rxr_domain->rdm_domain, attr, flags, mr);
 	if (ret) {
@@ -190,6 +177,7 @@ int rxr_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 	if (!rxr_domain)
 		return -FI_ENOMEM;
 
+	rxr_domain->rxr_mr_local = ofi_mr_local(info);
 	rxr_domain->type = EFA_DOMAIN_RDM;
 
 	ret = rxr_get_lower_rdm_info(fabric->api_version, NULL, NULL, 0,
@@ -220,8 +208,6 @@ int rxr_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 				info->src_addrlen : info->dest_addrlen;
 	rxr_domain->cq_size = MAX(info->rx_attr->size + info->tx_attr->size,
 				  rxr_env.cq_size);
-	rxr_domain->mr_local = ofi_mr_local(rdm_info);
-	rxr_domain->resource_mgmt = rdm_info->domain_attr->resource_mgmt;
 
 	ret = ofi_domain_init(fabric, info, &rxr_domain->util_domain, context);
 	if (ret)

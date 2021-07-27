@@ -32,7 +32,6 @@
  */
 
 #include "efa.h"
-#include "efa_cuda.h"
 #include "rxr.h"
 #include "rxr_msg.h"
 #include "rxr_cntr.h"
@@ -68,41 +67,69 @@ ssize_t rxr_pkt_init_handshake(struct rxr_ep *ep,
 	return 0;
 }
 
-void rxr_pkt_post_handshake(struct rxr_ep *ep,
-			    struct rxr_peer *peer,
-			    fi_addr_t addr)
+/** @brief Post a handshake packet to a peer.
+ *
+ * @param ep The endpoint on which the handshake packet is sent out.
+ * @param peer The peer to which the handshake packet is posted.
+ * @return 0 on success, fi_errno on error.
+ */
+ssize_t rxr_pkt_post_handshake(struct rxr_ep *ep, struct rxr_peer *peer)
 {
 	struct rxr_pkt_entry *pkt_entry;
+	fi_addr_t addr;
 	ssize_t ret;
 
-	assert(!(peer->flags & RXR_PEER_HANDSHAKE_SENT));
-
+	addr = peer->efa_fiaddr;
 	pkt_entry = rxr_pkt_entry_alloc(ep, ep->tx_pkt_efa_pool);
 	if (OFI_UNLIKELY(!pkt_entry))
-		return;
+		return -FI_EAGAIN;
 
 	rxr_pkt_init_handshake(ep, pkt_entry, addr);
 
-	/*
-	 * TODO: Once we start using a core's selective completion capability,
-	 * post the HANDSHAKE packets without FI_COMPLETION.
-	 */
 	ret = rxr_pkt_entry_send(ep, pkt_entry, addr);
-
-	/*
-	 * Skip sending this handshake on error and try again when processing the
-	 * next REQ from this peer containing the source information
-	 */
 	if (OFI_UNLIKELY(ret)) {
 		rxr_pkt_entry_release_tx(ep, pkt_entry);
-		if (ret == -FI_EAGAIN)
-			return;
-		FI_WARN(&rxr_prov, FI_LOG_CQ,
-			"Failed to send a HANDSHAKE packet: ret %zd\n", ret);
-		return;
 	}
+	return ret;
+}
 
-	peer->flags |= RXR_PEER_HANDSHAKE_SENT;
+/** @brief Post a handshake packet to a peer.
+ *
+ * Note that if FI_EAGAIN is returned from the post of the handshake
+ * packet, the peer will be added into queue_peer_list for retry
+ * later. For other errors, we will hard fail.
+ *
+ * @param ep The endpoint on which the handshake packet is sent out.
+ * @param peer The peer to which the handshake packet is posted.
+ * @return Void.
+ */
+void rxr_pkt_post_handshake_or_queue(struct rxr_ep *ep, struct rxr_peer *peer)
+{
+	ssize_t ret;
+
+	assert(!(peer->flags & RXR_PEER_HANDSHAKE_SENT_OR_QUEUED));
+
+	ret = rxr_pkt_post_handshake(ep, peer);
+	if (OFI_UNLIKELY(ret)) {
+		if (ret == -FI_EAGAIN) {
+			/* add peer to peer_queued_list for retry later */
+			dlist_insert_tail(&peer->queued_entry,
+					  &ep->peer_queued_list);
+		} else {
+			FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+				"Failed to post HANDSHAKE to peer %ld: %s\n",
+				peer->efa_fiaddr, fi_strerror(-ret));
+			assert(0 && "Failed to post HANDSHAKE to peer");
+			efa_eq_write_error(&ep->util_ep, FI_EIO, -ret);
+		}
+	}
+	/*
+	 * If rxr_pkt_post_handshake returns success or FI_EAGAIN,
+	 * set the flag to RXR_PEER_HANDSHAKE_SENT_OR_QUEUED to
+	 * avoid posting handshake packet multiple times to the
+	 * same peer.
+	 */
+	peer->flags |= RXR_PEER_HANDSHAKE_SENT_OR_QUEUED;
 }
 
 void rxr_pkt_handle_handshake_recv(struct rxr_ep *ep,
@@ -181,7 +208,7 @@ ssize_t rxr_pkt_init_cts(struct rxr_ep *ep,
 	cts_hdr->tx_id = rx_entry->tx_id;
 	cts_hdr->rx_id = rx_entry->rx_id;
 
-	bytes_left = rx_entry->total_len - rx_entry->bytes_done;
+	bytes_left = rx_entry->total_len - rx_entry->bytes_received;
 	peer = rxr_ep_get_peer(ep, rx_entry->addr);
 	rxr_pkt_calc_cts_window_credits(ep, peer, bytes_left,
 					rx_entry->credit_request,
@@ -271,16 +298,20 @@ void rxr_pkt_handle_readrsp_sent(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_en
 {
 	struct rxr_tx_entry *tx_entry;
 	size_t data_len;
+	struct efa_domain *efa_domain;
+	struct rxr_domain *rxr_domain = rxr_ep_domain(ep);
+
+	efa_domain = container_of(rxr_domain->rdm_domain, struct efa_domain,
+				  util_domain.domain_fid);
 
 	tx_entry = (struct rxr_tx_entry *)pkt_entry->x_entry;
 	data_len = rxr_get_readrsp_hdr(pkt_entry->pkt)->seg_size;
-	tx_entry->state = RXR_TX_SENT_READRSP;
 	tx_entry->bytes_sent += data_len;
 	tx_entry->window -= data_len;
 	assert(tx_entry->window >= 0);
 	if (tx_entry->bytes_sent < tx_entry->total_len) {
-		assert(!rxr_ep_is_cuda_mr(tx_entry->desc[0]));
-		if (efa_mr_cache_enable && rxr_ep_mr_local(ep))
+		assert(!efa_ep_is_cuda_mr(tx_entry->desc[0]));
+		if (tx_entry->desc[0] || efa_is_cache_available(efa_domain))
 			rxr_prepare_desc_send(rxr_ep_domain(ep), tx_entry);
 
 		tx_entry->state = RXR_TX_SEND;
@@ -367,10 +398,12 @@ void rxr_pkt_handle_rma_read_completion(struct rxr_ep *ep,
 {
 	struct rxr_tx_entry *tx_entry;
 	struct rxr_rx_entry *rx_entry;
+	struct rxr_pkt_entry *pkt_entry;
 	struct rxr_read_entry *read_entry;
 	struct rxr_rma_context_pkt *rma_context_pkt;
 	struct rxr_peer *peer;
 	int inject;
+	size_t data_size;
 	ssize_t ret;
 
 	rma_context_pkt = (struct rxr_rma_context_pkt *)context_pkt_entry->pkt;
@@ -382,42 +415,46 @@ void rxr_pkt_handle_rma_read_completion(struct rxr_ep *ep,
 	assert(read_entry->bytes_finished <= read_entry->total_len);
 
 	if (read_entry->bytes_finished == read_entry->total_len) {
-		if (read_entry->x_entry_type == RXR_TX_ENTRY) {
-			tx_entry = ofi_bufpool_get_ibuf(ep->tx_entry_pool, read_entry->x_entry_id);
+		if (read_entry->context_type == RXR_READ_CONTEXT_TX_ENTRY) {
+			tx_entry = read_entry->context;
 			assert(tx_entry && tx_entry->cq_entry.flags & FI_READ);
 			rxr_cq_write_tx_completion(ep, tx_entry);
-		} else {
+		} else if (read_entry->context_type == RXR_READ_CONTEXT_RX_ENTRY) {
+			rx_entry = read_entry->context;
+			if (rx_entry->op == ofi_op_msg || rx_entry->op == ofi_op_tagged) {
+				rxr_cq_write_rx_completion(ep, rx_entry);
+			} else {
+				assert(rx_entry->op == ofi_op_write);
+				if (rx_entry->cq_entry.flags & FI_REMOTE_CQ_DATA)
+					rxr_cq_write_rx_completion(ep, rx_entry);
+			}
+
 			inject = (read_entry->lower_ep_type == SHM_EP);
-			rx_entry = ofi_bufpool_get_ibuf(ep->rx_entry_pool, read_entry->x_entry_id);
 			ret = rxr_pkt_post_ctrl_or_queue(ep, RXR_RX_ENTRY, rx_entry, RXR_EOR_PKT, inject);
 			if (OFI_UNLIKELY(ret)) {
 				if (rxr_cq_handle_rx_error(ep, rx_entry, ret))
 					assert(0 && "failed to write err cq entry");
 				rxr_release_rx_entry(ep, rx_entry);
 			}
-
-			if (inject) {
-				/* inject will not generate a completion, so we write rx completion here,
-				 * otherwise, rx completion is write in rxr_pkt_handle_eor_send_completion
-				 */
-				if (rx_entry->op == ofi_op_msg || rx_entry->op == ofi_op_tagged) {
-					rxr_cq_write_rx_completion(ep, rx_entry);
-				} else {
-					assert(rx_entry->op == ofi_op_write);
-					if (rx_entry->cq_entry.flags & FI_REMOTE_CQ_DATA)
-						rxr_cq_write_rx_completion(ep, rx_entry);
-				}
-
-				rxr_release_rx_entry(ep, rx_entry);
-			}
+		} else {
+			assert(read_entry->context_type == RXR_READ_CONTEXT_PKT_ENTRY);
+			pkt_entry = read_entry->context;
+			data_size = rxr_pkt_data_size(pkt_entry);
+			assert(data_size > 0);
+			rxr_pkt_handle_data_copied(ep, pkt_entry, data_size);
 		}
 
 		rxr_read_release_entry(ep, read_entry);
 	}
 
-	peer = rxr_ep_get_peer(ep, context_pkt_entry->addr);
-	if (!peer->is_local)
-		rxr_ep_dec_tx_pending(ep, peer, 0);
+	if (read_entry->context_type == RXR_READ_CONTEXT_PKT_ENTRY) {
+		assert(context_pkt_entry->addr == FI_ADDR_NOTAVAIL);
+		ep->tx_pending--;
+	} else {
+		peer = rxr_ep_get_peer(ep, context_pkt_entry->addr);
+		if (!peer->is_local)
+			rxr_ep_dec_tx_pending(ep, peer, 0);
+	}
 }
 
 void rxr_pkt_handle_rma_completion(struct rxr_ep *ep,
@@ -469,25 +506,17 @@ int rxr_pkt_init_eor(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry, struct rx
 	return 0;
 }
 
+void rxr_pkt_handle_eor_sent(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry)
+{
+}
+
 void rxr_pkt_handle_eor_send_completion(struct rxr_ep *ep,
 					struct rxr_pkt_entry *pkt_entry)
 {
-	struct rxr_eor_hdr *eor_hdr;
 	struct rxr_rx_entry *rx_entry;
 
-	eor_hdr = (struct rxr_eor_hdr *)pkt_entry->pkt;
-
-	rx_entry = ofi_bufpool_get_ibuf(ep->rx_entry_pool, eor_hdr->rx_id);
-	assert(rx_entry && rx_entry->rx_id == eor_hdr->rx_id);
-
-	if (rx_entry->op == ofi_op_msg || rx_entry->op == ofi_op_tagged) {
-		rxr_cq_write_rx_completion(ep, rx_entry);
-	} else {
-		assert(rx_entry->op == ofi_op_write);
-		if (rx_entry->cq_entry.flags & FI_REMOTE_CQ_DATA)
-			rxr_cq_write_rx_completion(ep, rx_entry);
-	}
-
+	rx_entry = pkt_entry->x_entry;
+	assert(rx_entry && rx_entry->rx_id == rxr_get_eor_hdr(pkt_entry->pkt)->rx_id);
 	rxr_release_rx_entry(ep, rx_entry);
 }
 
@@ -500,26 +529,48 @@ void rxr_pkt_handle_eor_recv(struct rxr_ep *ep,
 {
 	struct rxr_eor_hdr *eor_hdr;
 	struct rxr_tx_entry *tx_entry;
-	ssize_t err;
 
 	eor_hdr = (struct rxr_eor_hdr *)pkt_entry->pkt;
 
 	/* pre-post buf used here, so can NOT track back to tx_entry with x_entry */
 	tx_entry = ofi_bufpool_get_ibuf(ep->tx_entry_pool, eor_hdr->tx_id);
-
-	err = rxr_tx_entry_mr_dereg(tx_entry);
-	if (OFI_UNLIKELY(err)) {
-		if (rxr_cq_handle_tx_error(ep, tx_entry, err))
-			assert(0 && "failed to write err cq entry");
-		rxr_release_tx_entry(ep, tx_entry);
-		rxr_pkt_entry_release_rx(ep, pkt_entry);
-		return;
-	}
-
 	rxr_cq_write_tx_completion(ep, tx_entry);
 	rxr_pkt_entry_release_rx(ep, pkt_entry);
 }
 
+/* receipt packet related functions */
+int rxr_pkt_init_receipt(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry,
+			 struct rxr_pkt_entry *pkt_entry)
+{
+	struct rxr_receipt_hdr *receipt_hdr;
+
+	receipt_hdr = rxr_get_receipt_hdr(pkt_entry->pkt);
+	receipt_hdr->type = RXR_RECEIPT_PKT;
+	receipt_hdr->version = RXR_BASE_PROTOCOL_VERSION;
+	receipt_hdr->flags = 0;
+	receipt_hdr->tx_id = rx_entry->tx_id;
+	receipt_hdr->msg_id = rx_entry->msg_id;
+
+	pkt_entry->pkt_size = sizeof(struct rxr_receipt_hdr);
+	pkt_entry->addr = rx_entry->addr;
+	pkt_entry->x_entry = rx_entry;
+
+	return 0;
+}
+
+void rxr_pkt_handle_receipt_sent(struct rxr_ep *ep,
+				 struct rxr_pkt_entry *pkt_entry)
+{
+}
+
+void rxr_pkt_handle_receipt_send_completion(struct rxr_ep *ep,
+					    struct rxr_pkt_entry *pkt_entry)
+{
+	struct rxr_rx_entry *rx_entry;
+
+	rx_entry = (struct rxr_rx_entry *)pkt_entry->x_entry;
+	rxr_release_rx_entry(ep, rx_entry);
+}
 
 /* atomrsp packet related functions: init, handle_sent, handle_send_completion and recv
  *
@@ -530,12 +581,9 @@ void rxr_pkt_handle_eor_recv(struct rxr_ep *ep,
 int rxr_pkt_init_atomrsp(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry,
 			 struct rxr_pkt_entry *pkt_entry)
 {
-	size_t pkt_size;
 	struct rxr_atomrsp_hdr *atomrsp_hdr;
 
-	assert(rx_entry->atomrsp_pkt);
-	pkt_size = rx_entry->atomrsp_pkt->pkt_size;
-	pkt_entry->pkt_size = pkt_size;
+	assert(rx_entry->atomrsp_data);
 	pkt_entry->addr = rx_entry->addr;
 	pkt_entry->x_entry = rx_entry;
 
@@ -549,8 +597,8 @@ int rxr_pkt_init_atomrsp(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry,
 
 	assert(RXR_ATOMRSP_HDR_SIZE + atomrsp_hdr->seg_size < ep->mtu_size);
 
-	/* rx_entry->atomrsp_buf was filled in rxr_pkt_handle_req_recv() */
-	memcpy((char*)pkt_entry->pkt + RXR_ATOMRSP_HDR_SIZE, rx_entry->atomrsp_buf, atomrsp_hdr->seg_size);
+	/* rx_entry->atomrsp_data was filled in rxr_pkt_handle_req_recv() */
+	memcpy((char*)pkt_entry->pkt + RXR_ATOMRSP_HDR_SIZE, rx_entry->atomrsp_data, atomrsp_hdr->seg_size);
 	pkt_entry->pkt_size = RXR_ATOMRSP_HDR_SIZE + atomrsp_hdr->seg_size;
 	return 0;
 }
@@ -564,7 +612,8 @@ void rxr_pkt_handle_atomrsp_send_completion(struct rxr_ep *ep, struct rxr_pkt_en
 	struct rxr_rx_entry *rx_entry;
 	
 	rx_entry = (struct rxr_rx_entry *)pkt_entry->x_entry;
-	rxr_pkt_entry_release_tx(ep, rx_entry->atomrsp_pkt);
+	ofi_buf_free(rx_entry->atomrsp_data);
+	rx_entry->atomrsp_data = NULL;
 	rxr_release_rx_entry(ep, rx_entry);
 }
 
@@ -590,6 +639,41 @@ void rxr_pkt_handle_atomrsp_recv(struct rxr_ep *ep,
 	} else {
 		efa_cntr_report_tx_completion(&ep->util_ep, tx_entry->cq_entry.flags);
 		rxr_release_tx_entry(ep, tx_entry);
+	}
+
+	rxr_pkt_entry_release_rx(ep, pkt_entry);
+}
+
+void rxr_pkt_handle_receipt_recv(struct rxr_ep *ep,
+				 struct rxr_pkt_entry *pkt_entry)
+{
+	struct rxr_tx_entry *tx_entry = NULL;
+	struct rxr_receipt_hdr *receipt_hdr;
+
+	receipt_hdr = rxr_get_receipt_hdr(pkt_entry->pkt);
+	/* Retrieve the tx_entry that will be written into TX CQ*/
+	tx_entry = ofi_bufpool_get_ibuf(ep->tx_entry_pool,
+					receipt_hdr->tx_id);
+	if (!tx_entry) {
+		FI_WARN(&rxr_prov, FI_LOG_CQ,
+			"Failed to retrive the tx_entry when hadling receipt packet.\n");
+		return;
+	}
+
+	tx_entry->rxr_flags |= RXR_RECEIPT_RECEIVED;
+	if (tx_entry->rxr_flags & RXR_LONGCTS_PROTOCOL) {
+		/*
+		 * For long message protocol, when FI_DELIVERY_COMPLETE
+		 * is requested, we have to write tx completions
+		 * in either rxr_pkt_handle_data_send_completion()
+		 * or rxr_pkt_handle_receipt_recv() depending on which of them
+		 * is called later due to avoid accessing released
+		 * tx_entry.
+		 */
+		if (tx_entry->total_len == tx_entry->bytes_acked)
+			rxr_cq_handle_tx_completion(ep, tx_entry);
+	} else {
+		rxr_cq_handle_tx_completion(ep, tx_entry);
 	}
 
 	rxr_pkt_entry_release_rx(ep, pkt_entry);

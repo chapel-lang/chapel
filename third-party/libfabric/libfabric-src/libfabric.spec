@@ -11,7 +11,7 @@
 %{!?modulefile_path: %define modulefile_path /usr/share/Modules/modulefiles}
 
 Name: libfabric
-Version: 1.10.1
+Version: 1.12.1
 Release: 1%{?dist}
 Summary: User-space RDMA Fabric Interfaces
 
@@ -20,6 +20,9 @@ License: GPLv2 or BSD
 Url: http://www.github.com/ofiwg/libfabric
 Source: http://www.github.org/ofiwg/%{name}/releases/download/v{%version}/%{name}-%{version}.tar.bz2
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+%if 0%{?suse_version} >= 1
+Provides: libfabric1 = %{version}-%{release}
+%endif
 
 %description
 libfabric provides a user-space API to access high-performance fabric
@@ -75,9 +78,12 @@ EOF
 %endif
 %endif
 
-%makeinstall installdirs
+%make_install installdirs
 # remove unpackaged files from the buildroot
 rm -f %{buildroot}%{_libdir}/*.la
+%if 0%{?_version_symbolic_link:1}
+%{__ln_s} %{version} %{buildroot}/%{_version_symbolic_link}
+%endif
 
 %clean
 rm -rf %{buildroot}
@@ -91,6 +97,9 @@ rm -rf %{buildroot}
 %{_bindir}/fi_info
 %{_bindir}/fi_strerror
 %{_bindir}/fi_pingpong
+%if 0%{?_version_symbolic_link:1}
+%{_version_symbolic_link}
+%endif
 %dir %{_libdir}/libfabric/
 %doc AUTHORS COPYING README
 

@@ -63,7 +63,6 @@ struct ofi_pollfds {
 	int		nfds;
 	struct pollfd	*fds;
 	void		**context;
-	int		index;
 	struct fd_signal signal;
 	struct slist	work_item_list;
 	fastlock_t	lock;

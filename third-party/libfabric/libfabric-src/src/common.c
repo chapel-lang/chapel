@@ -3,6 +3,7 @@
  * Copyright (c) 2006-2017 Cisco Systems, Inc.  All rights reserved.
  * Copyright (c) 2013-2018 Intel Corp., Inc.  All rights reserved.
  * Copyright (c) 2015 Los Alamos Nat. Security, LLC. All rights reserved.
+ * Copyright (c) 2020 Amazon.com, Inc. or its affiliates.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -79,6 +80,8 @@ struct ofi_common_locks common_locks = {
 	.util_fabric_lock = PTHREAD_MUTEX_INITIALIZER,
 };
 
+size_t ofi_universe_size = 1024;
+
 int fi_poll_fd(int fd, int timeout)
 {
 	struct pollfd fds;
@@ -116,64 +119,66 @@ uint8_t ofi_lsb(uint64_t num)
 	return ofi_msb(num & (~(num - 1)));
 }
 
-int ofi_send_allowed(uint64_t caps)
+bool ofi_send_allowed(uint64_t caps)
 {
-	if (caps & FI_MSG ||
-		caps & FI_TAGGED) {
+	if ((caps & FI_MSG) || (caps & FI_TAGGED)) {
 		if (caps & FI_SEND)
-			return 1;
+			return true;
 		if (caps & FI_RECV)
-			return 0;
-		return 1;
+			return false;
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
-int ofi_recv_allowed(uint64_t caps)
+bool ofi_recv_allowed(uint64_t caps)
 {
-	if (caps & FI_MSG ||
-		caps & FI_TAGGED) {
+	if ((caps & FI_MSG) || (caps & FI_TAGGED)) {
 		if (caps & FI_RECV)
-			return 1;
+			return true;
 		if (caps & FI_SEND)
-			return 0;
-		return 1;
+			return false;
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
-int ofi_rma_initiate_allowed(uint64_t caps)
+bool ofi_rma_initiate_allowed(uint64_t caps)
 {
-	if (caps & FI_RMA ||
-		caps & FI_ATOMICS) {
-		if (caps & FI_WRITE ||
-			caps & FI_READ)
-			return 1;
-		if (caps & FI_REMOTE_WRITE ||
-			caps & FI_REMOTE_READ)
-			return 0;
-		return 1;
+	if ((caps & FI_RMA) || (caps & FI_ATOMICS)) {
+		if ((caps & FI_WRITE) || (caps & FI_READ))
+			return true;
+		if ((caps & FI_REMOTE_WRITE) || (caps & FI_REMOTE_READ))
+			return false;
+		return true;
 	}
 
-	return 0;
+	return false;
 }
 
-int ofi_rma_target_allowed(uint64_t caps)
+bool ofi_rma_target_allowed(uint64_t caps)
 {
-	if (caps & FI_RMA ||
-		caps & FI_ATOMICS) {
-		if (caps & FI_REMOTE_WRITE ||
-			caps & FI_REMOTE_READ)
-			return 1;
-		if (caps & FI_WRITE ||
-			caps & FI_READ)
-			return 0;
-		return 1;
+	if ((caps & FI_RMA) || (caps & FI_ATOMICS)) {
+		if ((caps & FI_REMOTE_WRITE) || (caps & FI_REMOTE_READ))
+			return true;
+		if ((caps & FI_WRITE) || (caps & FI_READ))
+			return false;
+		return true;
 	}
 
-	return 0;
+	return false;
+}
+
+bool ofi_needs_tx(uint64_t caps)
+{
+	return ofi_send_allowed(caps) || ofi_rma_initiate_allowed(caps);
+}
+
+bool ofi_needs_rx(uint64_t caps)
+{
+	return ofi_recv_allowed(caps);
 }
 
 int ofi_ep_bind_valid(const struct fi_provider *prov, struct fid *bfid, uint64_t flags)
@@ -216,6 +221,20 @@ int ofi_check_rx_mode(const struct fi_info *info, uint64_t flags)
 		return 1;
 
 	return (info->mode & flags) ? 1 : 0;
+}
+
+uint32_t ofi_generate_seed(void)
+{
+	/* Time returns long; keep the lower and most significant 32 bits */
+	uint32_t rand_seed;
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	rand_seed = ((getpid() & 0xffffffff) << 16);
+
+	/* Mix the PID into the upper bits */
+	rand_seed |= (uint32_t) tv.tv_usec;
+
+	return rand_seed;
 }
 
 uint64_t ofi_gettime_ns(void)
@@ -267,6 +286,7 @@ const char *ofi_straddr(char *buf, size_t *len,
 	const struct sockaddr *sock_addr;
 	const struct sockaddr_in6 *sin6;
 	const struct sockaddr_in *sin;
+	const struct ofi_sockaddr_ib *sib;
 	char str[INET6_ADDRSTRLEN + 8];
 	size_t size;
 
@@ -315,7 +335,19 @@ sa_sin6:
 				str, *((uint16_t *)addr + 8), *((uint32_t *)addr + 5));
 		break;
 	case FI_SOCKADDR_IB:
-		size = snprintf(buf, *len, "fi_sockaddr_ib://%p", addr);
+		sib = addr;
+		memset(str, 0, sizeof(str));
+		if (!inet_ntop(AF_INET6, sib->sib_addr, str, INET6_ADDRSTRLEN))
+			return NULL;
+
+		size = snprintf(buf, *len, "fi_sockaddr_ib://[%s]" /* GID */
+			     ":0x%" PRIx16 /* P_Key */
+			     ":0x%" PRIx16 /* port space */
+			     ":0x%" PRIx8 /* Scope ID */,
+			     str, /* GID */
+			     ntohs(sib->sib_pkey), /* P_Key */
+			     (uint16_t)(ntohll(sib->sib_sid) >> 16) & 0xfff, /* port space */
+				 (uint8_t)ntohll(sib->sib_scope_id) & 0xff);
 		break;
 	case FI_ADDR_PSMX:
 		size = snprintf(buf, *len, "fi_addr_psmx://%" PRIx64,
@@ -324,6 +356,11 @@ sa_sin6:
 	case FI_ADDR_PSMX2:
 		size =
 		    snprintf(buf, *len, "fi_addr_psmx2://%" PRIx64 ":%" PRIx64,
+			     *(uint64_t *)addr, *((uint64_t *)addr + 1));
+		break;
+	case FI_ADDR_PSMX3:
+		size =
+		    snprintf(buf, *len, "fi_addr_psmx3://%" PRIx64 ":%" PRIx64,
 			     *(uint64_t *)addr, *((uint64_t *)addr + 1));
 		break;
 	case FI_ADDR_GNI:
@@ -363,16 +400,16 @@ sa_sin6:
 	return buf;
 }
 
-static uint32_t ofi_addr_format(const char *str)
+uint32_t ofi_addr_format(const char *str)
 {
-	char fmt[16];
+	char fmt[17];
 	int ret;
 
+	memset(fmt, 0, sizeof(fmt));
 	ret = sscanf(str, "%16[^:]://", fmt);
 	if (ret != 1)
 		return FI_FORMAT_UNSPEC;
 
-	fmt[sizeof(fmt) - 1] = '\0';
 	if (!strcasecmp(fmt, "fi_sockaddr_in"))
 		return FI_SOCKADDR_IN;
 	else if (!strcasecmp(fmt, "fi_sockaddr_in6"))
@@ -383,6 +420,8 @@ static uint32_t ofi_addr_format(const char *str)
 		return FI_ADDR_PSMX;
 	else if (!strcasecmp(fmt, "fi_addr_psmx2"))
 		return FI_ADDR_PSMX2;
+	else if (!strcasecmp(fmt, "fi_addr_psmx3"))
+		return FI_ADDR_PSMX3;
 	else if (!strcasecmp(fmt, "fi_addr_gni"))
 		return FI_ADDR_GNI;
 	else if (!strcasecmp(fmt, "fi_addr_bgq"))
@@ -432,6 +471,24 @@ static int ofi_str_to_psmx2(const char *str, void **addr, size_t *len)
 	return -FI_EINVAL;
 }
 
+static int ofi_str_to_psmx3(const char *str, void **addr, size_t *len)
+{
+	int ret;
+
+	*len = 2 * sizeof(uint64_t);
+	*addr = calloc(1, *len);
+	if (!(*addr))
+		return -FI_ENOMEM;
+
+	ret = sscanf(str, "%*[^:]://%" SCNx64 ":%" SCNx64,
+		     (uint64_t *) *addr, (uint64_t *) *addr + 1);
+	if (ret == 2)
+		return 0;
+
+	free(*addr);
+	return -FI_EINVAL;
+}
+
 static int ofi_str_to_ib_ud(const char *str, void **addr, size_t *len)
 {
 	int ret;
@@ -454,6 +511,101 @@ static int ofi_str_to_ib_ud(const char *str, void **addr, size_t *len)
 		     (uint8_t *)*addr + 26);
 	if ((ret == 5) && (inet_pton(AF_INET6, gid, *addr) > 0))
 		return FI_SUCCESS;
+
+	free(*addr);
+	return -FI_EINVAL;
+}
+
+static int ofi_str_to_sib(const char *str, void **addr, size_t *len)
+{
+	int ret;
+	char *tok, *endptr, *saveptr;
+	struct ofi_sockaddr_ib *sib;
+	uint16_t pkey;
+	uint16_t ps;
+	uint64_t scope_id;
+	uint16_t port;
+	char gid[64 + 1];
+	char extra_str[64 + 1];
+
+	memset(gid, 0, sizeof(gid));
+
+	ret = sscanf(str, "%*[^:]://[%64[^]]]" /* GID */
+		     ":%64s", /* P_Key : port_space : Scope ID : port */
+		     gid, extra_str);
+	if (ret != 2) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Invalid GID in address: %s\n", str);
+		return -FI_EINVAL;
+	}
+
+	tok = strtok_r(extra_str, ":", &saveptr);
+	if (!tok) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Invalid pkey in address: %s\n", str);
+		return -FI_EINVAL;
+	}
+
+	pkey = strtol(tok, &endptr, 0);
+	if (*endptr) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Invalid pkey in address: %s\n", str);
+		return -FI_EINVAL;
+	}
+
+	tok = strtok_r(NULL, ":", &saveptr);
+	if (!tok) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Invalid port space in address: %s\n", str);
+		return -FI_EINVAL;
+	}
+
+	ps = strtol(tok, &endptr, 0);
+	if (*endptr) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Invalid port space in address: %s\n", str);
+		return -FI_EINVAL;
+	}
+
+	tok = strtok_r(NULL, ":", &saveptr);
+	if (!tok) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Invalid scope id in address: %s\n", str);
+		return -FI_EINVAL;
+	}
+
+	scope_id = strtol(tok, &endptr, 0);
+	if (*endptr) {
+		FI_WARN(&core_prov, FI_LOG_CORE,
+			"Invalid scope id in address: %s\n", str);
+		return -FI_EINVAL;
+	}
+
+	/* Port is optional */
+	tok = strtok_r(NULL, ":", &saveptr);
+	if (tok)
+		port = strtol(tok, &endptr, 0);
+	else
+		port = 0;
+
+	*len = sizeof(struct ofi_sockaddr_ib);
+	*addr = calloc(1, *len);
+	if (!*addr)
+		return -FI_ENOMEM;
+
+	sib = (struct ofi_sockaddr_ib *)(*addr);
+
+	if (inet_pton(AF_INET6, gid, sib->sib_addr) > 0) {
+		sib->sib_family = AF_IB;
+		sib->sib_pkey = htons(pkey);
+		if (ps && port) {
+			sib->sib_sid = htonll(((uint64_t) ps << 16) + port);
+			sib->sib_sid_mask = htonll(OFI_IB_IP_PS_MASK |
+			                           OFI_IB_IP_PORT_MASK);
+		}
+		sib->sib_scope_id = htonll(scope_id);
+		return FI_SUCCESS;
+	}
 
 	free(*addr);
 	return -FI_EINVAL;
@@ -669,11 +821,14 @@ int ofi_str_toaddr(const char *str, uint32_t *addr_format,
 		return ofi_str_to_psmx(str, addr, len);
 	case FI_ADDR_PSMX2:
 		return ofi_str_to_psmx2(str, addr, len);
+	case FI_ADDR_PSMX3:
+		return ofi_str_to_psmx3(str, addr, len);
 	case FI_ADDR_IB_UD:
 		return ofi_str_to_ib_ud(str, addr, len);
 	case FI_ADDR_EFA:
 		return ofi_str_to_efa(str, addr, len);
 	case FI_SOCKADDR_IB:
+		return ofi_str_to_sib(str, addr, len);
 	case FI_ADDR_GNI:
 	case FI_ADDR_BGQ:
 	case FI_ADDR_MLX:
@@ -732,10 +887,10 @@ static int ofi_is_any_addr_port(struct sockaddr *addr)
 {
 	switch (ofi_sa_family(addr)) {
 	case AF_INET:
-		return (ofi_ipv4_is_any_addr(addr) &&
+		return (ofi_sin_is_any_addr(addr) &&
 			ofi_sin_port(addr));
 	case AF_INET6:
-		return (ofi_ipv6_is_any_addr(addr) &&
+		return (ofi_sin6_is_any_addr(addr) &&
 			ofi_sin6_port(addr));
 	default:
 		FI_WARN(&core_prov, FI_LOG_CORE,
@@ -744,8 +899,8 @@ static int ofi_is_any_addr_port(struct sockaddr *addr)
 	}
 }
 
-int ofi_is_wildcard_listen_addr(const char *node, const char *service,
-				uint64_t flags, const struct fi_info *hints)
+bool ofi_is_wildcard_listen_addr(const char *node, const char *service,
+				 uint64_t flags, const struct fi_info *hints)
 {
 	struct addrinfo *res = NULL;
 	int ret;
@@ -754,30 +909,30 @@ int ofi_is_wildcard_listen_addr(const char *node, const char *service,
 	    hints->addr_format != FI_SOCKADDR &&
 	    hints->addr_format != FI_SOCKADDR_IN &&
 	    hints->addr_format != FI_SOCKADDR_IN6)
-		return 0;
+		return false;
 
 	/* else it's okay to call getaddrinfo, proceed with processing */
 
 	if (node) {
 		if (!(flags & FI_SOURCE))
-			return 0;
+			return false;
 		ret = getaddrinfo(node, service, NULL, &res);
 		if (ret) {
 			FI_WARN(&core_prov, FI_LOG_CORE,
 				"getaddrinfo failed!\n");
-			return 0;
+			return false;
 		}
 		if (ofi_is_any_addr_port(res->ai_addr)) {
 			freeaddrinfo(res);
 			goto out;
 		}
 		freeaddrinfo(res);
-		return 0;
+		return false;
 	}
 
 	if (hints) {
 		if (hints->dest_addr)
-			return 0;
+			return false;
 
 		if (!hints->src_addr)
 			goto out;
@@ -785,7 +940,7 @@ int ofi_is_wildcard_listen_addr(const char *node, const char *service,
 		return ofi_is_any_addr_port(hints->src_addr);
 	}
 out:
-	return ((flags & FI_SOURCE) && service) ? 1 : 0;
+	return ((flags & FI_SOURCE) && service);
 }
 
 size_t ofi_mask_addr(struct sockaddr *maskaddr, const struct sockaddr *srcaddr,
@@ -828,9 +983,13 @@ void ofi_straddr_log_internal(const char *func, int line,
 	size_t len = sizeof(buf);
 
 	if (fi_log_enabled(prov, level, subsys)) {
-		addr_format = ofi_translate_addr_format(ofi_sa_family(addr));
-		fi_log(prov, level, subsys, func, line, "%s: %s\n", log_str,
-		       ofi_straddr(buf, &len, addr_format, addr));
+		if (addr) {
+			addr_format = ofi_translate_addr_format(ofi_sa_family(addr));
+			fi_log(prov, level, subsys, func, line, "%s: %s\n", log_str,
+			       ofi_straddr(buf, &len, addr_format, addr));
+		} else {
+			fi_log(prov, level, subsys, func, line, "%s: (null)\n", log_str);
+		}
 	}
 }
 
@@ -943,13 +1102,14 @@ static void ofi_pollfds_cleanup(struct ofi_pollfds *pfds)
 
 	for (i = 0; i < pfds->nfds; i++) {
 		while (pfds->fds[i].fd == INVALID_SOCKET) {
-			pfds->fds[i].fd = pfds->fds[pfds->nfds-1].fd;
-			pfds->fds[i].events = pfds->fds[pfds->nfds-1].events;
-			pfds->fds[i].revents = pfds->fds[pfds->nfds-1].revents;
-			pfds->context[i] = pfds->context[pfds->nfds-1];
 			pfds->nfds--;
 			if (i == pfds->nfds)
 				break;
+
+			pfds->fds[i].fd = pfds->fds[pfds->nfds].fd;
+			pfds->fds[i].events = pfds->fds[pfds->nfds].events;
+			pfds->fds[i].revents = pfds->fds[pfds->nfds].revents;
+			pfds->context[i] = pfds->context[pfds->nfds];
 		}
 	}
 }
@@ -1028,20 +1188,13 @@ int ofi_pollfds_wait(struct ofi_pollfds *pfds, void **contexts,
 		fastlock_release(&pfds->lock);
 
 		/* Index 0 is the internal signaling fd, skip it */
-		for (i = pfds->index; i < pfds->nfds && found < max_contexts; i++) {
-			if (pfds->fds[i].revents && i) {
+		for (i = 1; i < pfds->nfds && found < max_contexts; i++) {
+			if (pfds->fds[i].revents) {
 				contexts[found++] = pfds->context[i];
-				pfds->index = i;
-			}
-		}
-		for (i = 0; i < pfds->index && found < max_contexts; i++) {
-			if (pfds->fds[i].revents && i) {
-				contexts[found++] = pfds->context[i];
-				pfds->index = i;
 			}
 		}
 
-		if (timeout > 0)
+		if (!found && timeout > 0)
 			timeout -= (int) (ofi_gettime_ms() - start);
 
 	} while (timeout > 0 && !found);
@@ -1086,10 +1239,11 @@ void ofi_insert_loopback_addr(const struct fi_provider *prov, struct slist *addr
 {
 	struct ofi_addr_list_entry *addr_entry;
 
-	addr_entry = calloc(1, sizeof(struct ofi_addr_list_entry));
+	addr_entry = calloc(1, sizeof(*addr_entry));
 	if (!addr_entry)
 		return;
 
+	addr_entry->comm_caps = FI_LOCAL_COMM;
 	addr_entry->ipaddr.sin.sin_family = AF_INET;
 	addr_entry->ipaddr.sin.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
 	ofi_straddr_log(prov, FI_LOG_INFO, FI_LOG_CORE,
@@ -1100,10 +1254,11 @@ void ofi_insert_loopback_addr(const struct fi_provider *prov, struct slist *addr
 	strncpy(addr_entry->ifa_name, "lo", sizeof(addr_entry->ifa_name));
 	slist_insert_tail(&addr_entry->entry, addr_list);
 
-	addr_entry = calloc(1, sizeof(struct ofi_addr_list_entry));
+	addr_entry = calloc(1, sizeof(*addr_entry));
 	if (!addr_entry)
 		return;
 
+	addr_entry->comm_caps = FI_LOCAL_COMM;
 	addr_entry->ipaddr.sin6.sin6_family = AF_INET6;
 	addr_entry->ipaddr.sin6.sin6_addr = in6addr_loopback;
 	ofi_straddr_log(prov, FI_LOG_INFO, FI_LOG_CORE,
@@ -1228,10 +1383,11 @@ void ofi_get_list_of_addr(const struct fi_provider *prov, const char *env_name,
 		if (!addr_entry)
 			continue;
 
+		addr_entry->comm_caps = FI_LOCAL_COMM | FI_REMOTE_COMM;
 		memcpy(&addr_entry->ipaddr, ifa->ifa_addr,
 			ofi_sizeofaddr(ifa->ifa_addr));
 		strncpy(addr_entry->ifa_name, ifa->ifa_name,
-			sizeof(addr_entry->ifa_name));
+			sizeof(addr_entry->ifa_name) - 1);
 		ofi_set_netmask_str(addr_entry->net_name,
 				    sizeof(addr_entry->net_name), ifa);
 
@@ -1292,6 +1448,7 @@ void ofi_get_list_of_addr(const struct fi_provider *prov, const char *env_name,
 			if (!addr_entry)
 				break;
 
+			addr_entry->comm_caps = FI_LOCAL_COMM | FI_REMOTE_COMM;
 			addr_entry->ipaddr.sin.sin_family = AF_INET;
 			addr_entry->ipaddr.sin.sin_addr.s_addr =
 						iptbl->table[i].dwAddr;
@@ -1601,4 +1758,55 @@ struct fid_nic *ofi_nic_dup(const struct fid_nic *nic)
 fail:
 	ofi_nic_close(&dup_nic->fid);
 	return NULL;
+}
+
+/*
+ * Calculate bits per second based on verbs port active_speed and active_width.
+ */
+size_t ofi_vrb_speed(uint8_t speed, uint8_t width)
+{
+	const size_t gbit_2_bit_coef = 1000 * 1000 * 1000;
+	size_t width_val, speed_val;
+
+	switch (speed) {
+	case 1:
+		speed_val = (size_t) (2.5 * (float) gbit_2_bit_coef);
+		break;
+	case 2:
+		speed_val = 5 * gbit_2_bit_coef;
+		break;
+	case 4:
+	case 8:
+		speed_val = 8 * gbit_2_bit_coef;
+		break;
+	case 16:
+		speed_val = 14 * gbit_2_bit_coef;
+		break;
+	case 32:
+		speed_val = 25 * gbit_2_bit_coef;
+		break;
+	default:
+		speed_val = 0;
+		break;
+	}
+
+	switch (width) {
+	case 1:
+		width_val = 1;
+		break;
+	case 2:
+		width_val = 4;
+		break;
+	case 4:
+		width_val = 8;
+		break;
+	case 8:
+		width_val = 12;
+		break;
+	default:
+		width_val = 0;
+		break;
+	}
+
+	return width_val * speed_val;
 }

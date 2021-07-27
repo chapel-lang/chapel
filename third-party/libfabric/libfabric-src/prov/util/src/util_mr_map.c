@@ -219,10 +219,39 @@ static struct fi_ops ofi_mr_fi_ops = {
 	.ops_open = fi_no_ops_open
 };
 
+void ofi_mr_update_attr(uint32_t user_version, uint64_t caps,
+			const struct fi_mr_attr *user_attr,
+			struct fi_mr_attr *cur_abi_attr)
+{
+	cur_abi_attr->mr_iov = (struct iovec *) user_attr->mr_iov;
+	cur_abi_attr->iov_count = user_attr->iov_count;
+	cur_abi_attr->access = user_attr->access;
+	cur_abi_attr->offset = user_attr->offset;
+	cur_abi_attr->requested_key = user_attr->requested_key;
+	cur_abi_attr->context = user_attr->context;
+
+	if (FI_VERSION_GE(user_version, FI_VERSION(1, 5))) {
+		cur_abi_attr->auth_key_size = user_attr->auth_key_size;
+		cur_abi_attr->auth_key = user_attr->auth_key;
+	} else {
+		cur_abi_attr->auth_key_size = 0;
+		cur_abi_attr->auth_key = NULL;
+	}
+
+	if (caps & FI_HMEM) {
+		cur_abi_attr->iface = user_attr->iface;
+		cur_abi_attr->device = user_attr->device;
+	} else {
+		cur_abi_attr->iface = FI_HMEM_SYSTEM;
+		cur_abi_attr->device.reserved = 0;
+	}
+}
+
 int ofi_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 		   uint64_t flags, struct fid_mr **mr_fid)
 {
 	struct util_domain *domain;
+	struct fi_mr_attr cur_abi_attr;
 	struct ofi_mr *mr;
 	uint64_t key;
 	int ret = 0;
@@ -235,6 +264,8 @@ int ofi_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	if (!mr)
 		return -FI_ENOMEM;
 
+	ofi_mr_update_attr(domain->fabric->fabric_fid.api_version,
+			   domain->info_domain_caps, attr, &cur_abi_attr);
 	fastlock_acquire(&domain->lock);
 
 	mr->mr_fid.fid.fclass = FI_CLASS_MR;
@@ -242,15 +273,17 @@ int ofi_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	mr->mr_fid.fid.ops = &ofi_mr_fi_ops;
 	mr->domain = domain;
 	mr->flags = flags;
+	mr->iface = cur_abi_attr.iface;
+	mr->device = cur_abi_attr.device.reserved;
 
-	ret = ofi_mr_map_insert(&domain->mr_map, attr, &key, mr);
+	ret = ofi_mr_map_insert(&domain->mr_map, &cur_abi_attr, &key, mr);
 	if (ret) {
 		free(mr);
 		goto out;
 	}
 
 	mr->mr_fid.key = mr->key = key;
-	mr->mr_fid.mem_desc = (void *) (uintptr_t) key;
+	mr->mr_fid.mem_desc = (void *) mr;
 
 	*mr_fid = &mr->mr_fid;
 	ofi_atomic_inc32(&domain->ref);
@@ -273,6 +306,9 @@ int ofi_mr_regv(struct fid *fid, const struct iovec *iov,
 	attr.offset = offset;
 	attr.requested_key = requested_key;
 	attr.context = context;
+	attr.iface = FI_HMEM_SYSTEM;
+	attr.device.reserved = 0;
+
 	return ofi_mr_regattr(fid, &attr, flags, mr_fid);
 }
 

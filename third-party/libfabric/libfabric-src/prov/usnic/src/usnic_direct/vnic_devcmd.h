@@ -820,7 +820,7 @@ struct vnic_devcmd_notify {
 struct vnic_devcmd_provinfo {
 	u8 oui[3];
 	u8 type;
-	u8 data[0];
+	u8 data[];
 };
 
 /*
@@ -1038,7 +1038,7 @@ enum {
 struct filter_tlv {
 	u_int32_t type;
 	u_int32_t length;
-	u_int32_t val[0];
+	u_int32_t val[];
 };
 
 /* Data for CMD_ADD_FILTER is 2 TLV and filter + action structs */
@@ -1379,9 +1379,9 @@ typedef enum {
  *
  * in:  (u32) a0 = RDMA_SUBCMD_GET_STATS
  *
- * out: (u64) a0 = IG packet count 
+ * out: (u64) a0 = IG packet count
  *      (u64) a1 = IG byte count
- *      (u64) a2 = EG packet count 
+ *      (u64) a2 = EG packet count
  *      (u64) a3 = EG byte count
  */
 #define RDMA_SUBCMD_GET_STATS             7

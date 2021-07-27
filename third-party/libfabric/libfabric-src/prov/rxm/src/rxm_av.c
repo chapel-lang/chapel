@@ -61,6 +61,10 @@ static int rxm_av_remove(struct fid_av *av_fid, fi_addr_t *fi_addr,
 	return ofi_ip_av_remove(av_fid, fi_addr, count, flags);
 }
 
+/* TODO: Determine if it's cleaner to insert an address into the cmap only
+ * when we need to send to that address, rather than inserting the address
+ * into the cmap when adding it to the AV.
+ */
 static int
 rxm_av_insert_cmap(struct fid_av *av_fid, const void *addr, size_t count,
 		   fi_addr_t *fi_addr, uint64_t flags)
@@ -133,7 +137,7 @@ static int rxm_av_insertsym(struct fid_av *av_fid, const char *node,
 	size_t addrlen, count = nodecnt * svccnt;
 	int ret, retv;
 
-	ret = ofi_verify_av_insert(av, flags);
+	ret = ofi_verify_av_insert(av, flags, context);
 	if (ret)
 		return ret;
 
@@ -144,13 +148,17 @@ static int rxm_av_insertsym(struct fid_av *av_fid, const char *node,
 
 	assert(ret == count);
 
-	ret = ofi_ip_av_insertv(av, addr, addrlen, count, fi_addr, context);
-	if (ret < 0)
-		goto out;
+	ret = ofi_ip_av_insertv(av, addr, addrlen, count, fi_addr, flags,
+				context);
+	if (!av->eq && ret < count) {
+		count = ret;
+	}
 
-	if (!av->eq && !ret)
-		goto out;
-
+	/* If the AV is bound to an EQ, we can't determine which entries were
+	 * added successfully to the AV until we process the insertion events
+	 * later when reading the EQ.  Add all addresses to the cmap
+	 * optimistically.
+	 */
 	retv = rxm_av_insert_cmap(av_fid, addr, count, fi_addr, flags);
 	if (retv) {
 		ret = rxm_av_remove(av_fid, fi_addr, count, flags);
@@ -159,10 +167,9 @@ static int rxm_av_insertsym(struct fid_av *av_fid, const char *node,
 				"from AV during error handling\n");
 		ret = retv;
 	}
-out:
+
 	free(addr);
 	return ret;
-
 }
 
 int rxm_av_insertsvc(struct fid_av *av, const char *node, const char *service,

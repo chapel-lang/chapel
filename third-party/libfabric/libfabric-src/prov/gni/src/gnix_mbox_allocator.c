@@ -125,6 +125,7 @@ static int __generate_file_name(size_t page_size, char **filename)
 	int my_file_id;
 	int size;
 	int ret;
+	int file_name_size;
 
 	if (!filename) {
 		GNIX_WARN(FI_LOG_EP_CTRL, "filename pointer is NULL.\n");
@@ -151,7 +152,8 @@ static int __generate_file_name(size_t page_size, char **filename)
 		goto err_snprintf;
 	}
 
-	full_filename = malloc(size + 1);
+	file_name_size = size + 1;
+	full_filename = malloc(file_name_size);
 	if (!full_filename) {
 		error = strerror_r(errno, error_buf, sizeof(error_buf));
 		GNIX_WARN(FI_LOG_EP_CTRL,
@@ -161,8 +163,8 @@ static int __generate_file_name(size_t page_size, char **filename)
 		goto err_snprintf;
 	}
 
-	sprintf(full_filename, "%s/%s.%d.%d", huge_page, basename, getpid(),
-		my_file_id);
+	snprintf(full_filename, file_name_size, "%s/%s.%d.%d", huge_page, basename,
+			getpid(), my_file_id);
 
 	GNIX_DEBUG(FI_LOG_EP_CTRL, "Generated filename: %s\n", full_filename);
 

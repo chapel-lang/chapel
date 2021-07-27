@@ -79,6 +79,7 @@ ssize_t efa_cq_readerr(struct fid_cq *cq_fid, struct fi_cq_err_entry *entry,
 	entry->flags = efa_cq_wc_to_fi_flags(&wce->wc);
 	entry->err = EIO;
 	entry->prov_errno = wce->wc.ibv_wc.status;
+	EFA_WARN(FI_LOG_CQ, "Work completion status: %s\n", ibv_wc_status_str(wce->wc.ibv_wc.status));
 
 	/* We currently don't have err_data to give back to the user. */
 	if (FI_VERSION_GE(api_version, FI_VERSION(1, 5)))

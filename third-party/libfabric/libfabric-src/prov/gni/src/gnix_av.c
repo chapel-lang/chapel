@@ -2,7 +2,7 @@
  * Copyright (c) 2015-2017 Cray Inc. All rights reserved.
  * Copyright (c) 2015-2017 Los Alamos National Security, LLC.
  *                         All rights reserved.
- * Copyright (c) 2019      Triad National Security, LLC.
+ * Copyright (c) 2019-2020 Triad National Security, LLC.
  *                         All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -361,7 +361,7 @@ static int map_insert(struct gnix_fid_av *av_priv, const void *addr,
 					ret_cnt = -FI_EINVAL;
 					continue;
 				}
-				GNIX_DEBUG(FI_LOG_DEBUG, "ep_name doesn't fit "
+				GNIX_DEBUG(FI_LOG_AV, "ep_name doesn't fit "
 					"into the av context bits\n");
 				return -FI_EINVAL; /* TODO: should try to do
 						      cleanup */
@@ -745,7 +745,7 @@ DIRECT_FN const char *gnix_av_straddr(struct fid_av *av,
 	struct gnix_fid_av *av_priv;
 
 	if (!av || !addr || !buf || !len) {
-		GNIX_DEBUG(FI_LOG_DEBUG, "NULL parameter in gnix_av_straddr\n");
+		GNIX_DEBUG(FI_LOG_AV, "NULL parameter in gnix_av_straddr\n");
 		return NULL;
 	}
 

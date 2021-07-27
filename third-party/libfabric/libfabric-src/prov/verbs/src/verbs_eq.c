@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2013-2015 Intel Corporation, Inc.  All rights reserved.
- * Copyright (c) 2018 Cray Inc. All rights reserved.
+ * Copyright (c) 2018-2019 Cray Inc. All rights reserved.
+ * Copyright (c) 2018-2019 System Fabric Works, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -225,13 +226,15 @@ vrb_eq_cm_getinfo(struct rdma_cm_event *event, struct fi_info *pep_info,
 
 	free((*info)->src_addr);
 
-	(*info)->src_addrlen = vrb_sockaddr_len(rdma_get_local_addr(event->id));
-	if (!((*info)->src_addr = malloc((*info)->src_addrlen)))
+	(*info)->src_addrlen = ofi_sizeofaddr(rdma_get_local_addr(event->id));
+	(*info)->src_addr = malloc((*info)->src_addrlen);
+	if (!((*info)->src_addr))
 		goto err2;
 	memcpy((*info)->src_addr, rdma_get_local_addr(event->id), (*info)->src_addrlen);
 
-	(*info)->dest_addrlen = vrb_sockaddr_len(rdma_get_peer_addr(event->id));
-	if (!((*info)->dest_addr = malloc((*info)->dest_addrlen)))
+	(*info)->dest_addrlen = ofi_sizeofaddr(rdma_get_peer_addr(event->id));
+	(*info)->dest_addr = malloc((*info)->dest_addrlen);
+	if (!((*info)->dest_addr))
 		goto err2;
 	memcpy((*info)->dest_addr, rdma_get_peer_addr(event->id), (*info)->dest_addrlen);
 
@@ -248,7 +251,7 @@ vrb_eq_cm_getinfo(struct rdma_cm_event *event, struct fi_info *pep_info,
 	connreq->handle.fclass = FI_CLASS_CONNREQ;
 	connreq->id = event->id;
 
-	if (vrb_is_xrc(*info)) {
+	if (vrb_is_xrc_info(*info)) {
 		connreq->is_xrc = 1;
 		ret = vrb_eq_set_xrc_info(event, &connreq->xrc);
 		if (ret)
@@ -281,6 +284,17 @@ static inline int vrb_eq_copy_event_data(struct fi_eq_cm_entry *entry,
 	return datalen;
 }
 
+static void vrb_eq_skip_rdma_cm_hdr(const void **priv_data,
+						size_t *priv_data_len)
+{
+	size_t rdma_cm_hdr_len = sizeof(struct vrb_rdma_cm_hdr);
+
+	if (*priv_data_len > rdma_cm_hdr_len) {
+		*priv_data = (void*)((char *)*priv_data + rdma_cm_hdr_len);
+		*priv_data_len -= rdma_cm_hdr_len;
+	}
+}
+
 static void vrb_eq_skip_xrc_cm_data(const void **priv_data,
 				       size_t *priv_data_len)
 {
@@ -309,19 +323,19 @@ static int vrb_sidr_conn_compare(struct ofi_rbmap *map,
 	int ret;
 
 	assert(_key->addr->sa_family ==
-	       ofi_sa_family(ep->base_ep.info->dest_addr));
+	       ofi_sa_family(ep->base_ep.info_attr.dest_addr));
 
 	/* The interface address and the passive endpoint port define
 	 * the unique connection to a peer */
 	switch(_key->addr->sa_family) {
 	case AF_INET:
 		ret = memcmp(&ofi_sin_addr(_key->addr),
-			     &ofi_sin_addr(ep->base_ep.info->dest_addr),
+			     &ofi_sin_addr(ep->base_ep.info_attr.dest_addr),
 			     sizeof(ofi_sin_addr(_key->addr)));
 		break;
 	case AF_INET6:
 		ret = memcmp(&ofi_sin6_addr(_key->addr),
-			     &ofi_sin6_addr(ep->base_ep.info->dest_addr),
+			     &ofi_sin6_addr(ep->base_ep.info_attr.dest_addr),
 			     sizeof(ofi_sin6_addr(_key->addr)));
 		break;
 	default:
@@ -367,7 +381,7 @@ int vrb_eq_add_sidr_conn(struct vrb_xrc_ep *ep,
 	assert(param_len);
 	assert(ep->tgt_id && ep->tgt_id->ps == RDMA_PS_UDP);
 
-	vrb_set_sidr_conn_key(ep->base_ep.info->dest_addr,
+	vrb_set_sidr_conn_key(ep->base_ep.info_attr.dest_addr,
 				 ep->remote_pep_port, ep->recip_accept, &key);
 	ep->accept_param_data = calloc(1, param_len);
 	if (!ep->accept_param_data) {
@@ -506,7 +520,7 @@ vrb_eq_xrc_connreq_event(struct vrb_eq *eq, struct fi_eq_cm_entry *entry,
 
 	ep->tgt_id = connreq->id;
 	ep->tgt_id->context = &ep->base_ep.util_ep.ep_fid.fid;
-	ep->base_ep.info->handle = entry->info->handle;
+	ep->base_ep.info_attr.handle = entry->info->handle;
 
 	ret = rdma_migrate_id(ep->tgt_id, ep->base_ep.eq->channel);
 	if (ret) {
@@ -694,14 +708,14 @@ static inline int
 vrb_eq_xrc_connect_retry(struct vrb_xrc_ep *ep,
 			 struct rdma_cm_event *cma_event, int *acked)
 {
-	if (ep->base_ep.info->src_addr)
+	if (ep->base_ep.info_attr.src_addr)
 		ofi_straddr_dbg(&vrb_prov, FI_LOG_EP_CTRL,
 				"Connect retry src ",
-				ep->base_ep.info->src_addr);
-	if (ep->base_ep.info->dest_addr)
+				ep->base_ep.info_attr.src_addr);
+	if (ep->base_ep.info_attr.dest_addr)
 		ofi_straddr_dbg(&vrb_prov, FI_LOG_EP_CTRL,
 				"Connect retry dest ",
-				ep->base_ep.info->dest_addr);
+				ep->base_ep.info_attr.dest_addr);
 
 	*acked = 1;
 	rdma_ack_cm_event(cma_event);
@@ -752,12 +766,12 @@ vrb_eq_xrc_cm_err_event(struct vrb_eq *eq,
 
 	VERBS_WARN(FI_LOG_EP_CTRL, "CM error event %s, status %d\n",
 		   rdma_event_str(cma_event->event), cma_event->status);
-	if (ep->base_ep.info->src_addr)
+	if (ep->base_ep.info_attr.src_addr)
 		ofi_straddr_log(&vrb_prov, FI_LOG_WARN, FI_LOG_EP_CTRL,
-				"Src ", ep->base_ep.info->src_addr);
-	if (ep->base_ep.info->dest_addr)
+				"Src ", ep->base_ep.info_attr.src_addr);
+	if (ep->base_ep.info_attr.dest_addr)
 		ofi_straddr_log(&vrb_prov, FI_LOG_WARN, FI_LOG_EP_CTRL,
-				"Dest ", ep->base_ep.info->dest_addr);
+				"Dest ", ep->base_ep.info_attr.dest_addr);
         ep->conn_state = VRB_XRC_ERROR;
         return FI_SUCCESS;
 }
@@ -860,7 +874,7 @@ vrb_eq_cm_process_event(struct vrb_eq *eq,
 			FI_WARN(&vrb_prov, FI_LOG_EP_CTRL,
 				"rdma_connect failed: %s (%d)\n",
 				strerror(-ret), -ret);
-			if (vrb_is_xrc(ep->info)) {
+			if (vrb_is_xrc_ep(ep)) {
 				xrc_ep = container_of(fid, struct vrb_xrc_ep,
 						      base_ep.util_ep.ep_fid);
 				vrb_put_shared_ini_conn(xrc_ep);
@@ -882,7 +896,7 @@ vrb_eq_cm_process_event(struct vrb_eq *eq,
 			goto err;
 		}
 
-		if (vrb_is_xrc(entry->info)) {
+		if (vrb_is_xrc_info(entry->info)) {
 			ret = vrb_eq_xrc_connreq_event(eq, entry, len, event,
 							  cma_event, &acked,
 							  &priv_data, &priv_datalen);
@@ -893,6 +907,8 @@ vrb_eq_cm_process_event(struct vrb_eq *eq,
 			}
 			if (*event == FI_CONNECTED)
 				goto ack;
+		} else if (cma_event->id->route.addr.src_addr.sa_family == AF_IB) {
+			vrb_eq_skip_rdma_cm_hdr(&priv_data, &priv_datalen);
 		}
 		break;
 	case RDMA_CM_EVENT_CONNECT_RESPONSE:
@@ -907,7 +923,7 @@ vrb_eq_cm_process_event(struct vrb_eq *eq,
 				goto ack;
 		}
 		ep = container_of(fid, struct vrb_ep, util_ep.ep_fid);
-		if (vrb_is_xrc(ep->info)) {
+		if (vrb_is_xrc_ep(ep)) {
 			ret = vrb_eq_xrc_connected_event(eq, cma_event,
 							    &acked, entry, len,
 							    event);
@@ -917,7 +933,7 @@ vrb_eq_cm_process_event(struct vrb_eq *eq,
 		break;
 	case RDMA_CM_EVENT_DISCONNECTED:
 		ep = container_of(fid, struct vrb_ep, util_ep.ep_fid);
-		if (vrb_is_xrc(ep->info)) {
+		if (vrb_is_xrc_ep(ep)) {
 			vrb_eq_xrc_disconnect_event(eq, cma_event, &acked);
 			ret = -FI_EAGAIN;
 			goto ack;
@@ -927,7 +943,7 @@ vrb_eq_cm_process_event(struct vrb_eq *eq,
 		break;
 	case RDMA_CM_EVENT_TIMEWAIT_EXIT:
 		ep = container_of(fid, struct vrb_ep, util_ep.ep_fid);
-		if (vrb_is_xrc(ep->info))
+		if (vrb_is_xrc_ep(ep))
 			vrb_eq_xrc_timewait_event(eq, cma_event, &acked);
 		ret = -FI_EAGAIN;
 		goto ack;
@@ -936,8 +952,7 @@ vrb_eq_cm_process_event(struct vrb_eq *eq,
 	case RDMA_CM_EVENT_CONNECT_ERROR:
 	case RDMA_CM_EVENT_UNREACHABLE:
 		ep = container_of(fid, struct vrb_ep, util_ep.ep_fid);
-		assert(ep->info);
-		if (vrb_is_xrc(ep->info)) {
+		if (vrb_is_xrc_ep(ep)) {
 			/* SIDR Reject is reported as UNREACHABLE unless
 			 * status is negative */
 			if (cma_event->id->ps == RDMA_PS_UDP &&
@@ -963,7 +978,7 @@ vrb_eq_cm_process_event(struct vrb_eq *eq,
 		goto err;
 	case RDMA_CM_EVENT_REJECTED:
 		ep = container_of(fid, struct vrb_ep, util_ep.ep_fid);
-		if (vrb_is_xrc(ep->info)) {
+		if (vrb_is_xrc_ep(ep)) {
 xrc_shared_reject:
 			ret = vrb_eq_xrc_rej_event(eq, cma_event);
 			if (ret == -FI_EAGAIN)

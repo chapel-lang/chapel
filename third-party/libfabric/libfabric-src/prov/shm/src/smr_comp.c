@@ -48,36 +48,67 @@ int smr_complete_tx(struct smr_ep *ep, void *context, uint32_t op,
 	return ep->tx_comp(ep, context, op, flags, err);
 }
 
+static int
+smr_write_err_comp(struct util_cq *cq, void *context,
+		   uint64_t flags, uint64_t tag, uint64_t err)
+{
+	struct fi_cq_err_entry err_entry;
+
+	memset(&err_entry, 0, sizeof err_entry);
+	err_entry.op_context = context;
+	err_entry.flags = flags;
+	err_entry.tag = tag;
+	err_entry.err = err;
+	err_entry.prov_errno = -err;
+	return ofi_cq_insert_error(cq, &err_entry);
+}
+
+static int
+smr_write_comp(struct util_cq *cq, void *context,
+	       uint64_t flags, size_t len, void *buf,
+	       uint64_t tag, uint64_t data, uint64_t err)
+{
+	if (err)
+		return smr_write_err_comp(cq, context, flags, tag, err);
+
+	if (ofi_cirque_freecnt(cq->cirq) > 1) {
+		ofi_cq_write_entry(cq, context, flags, len,
+				   buf, data, tag);
+		return 0;
+	} else {
+		return ofi_cq_write_overflow(cq, context, flags,
+					     len, buf, data, tag,
+					     FI_ADDR_NOTAVAIL);
+	}
+}
+
+static int
+smr_write_src_comp(struct util_cq *cq, void *context,
+		   uint64_t flags, size_t len, void *buf, fi_addr_t addr,
+		   uint64_t tag, uint64_t data, uint64_t err)
+{
+	if (err)
+		return smr_write_err_comp(cq, context, flags, tag, err);
+
+	if (ofi_cirque_freecnt(cq->cirq) > 1) {
+		ofi_cq_write_src_entry(cq, context, flags, len,
+				       buf, data, tag, addr);
+		return 0;
+	} else {
+		return ofi_cq_write_overflow(cq, context, flags,
+					     len, buf, data, tag, addr);
+	}
+}
+
 int smr_tx_comp(struct smr_ep *ep, void *context, uint32_t op,
 		uint16_t flags, uint64_t err)
 {
-	struct fi_cq_tagged_entry *comp;
-	struct util_cq_oflow_err_entry *entry;
-
-	comp = ofi_cirque_tail(ep->util_ep.tx_cq->cirq);
-	if (err) {
-		if (!(entry = calloc(1, sizeof(*entry))))
-			return -FI_ENOMEM;
-		entry->comp.op_context = context;
-		entry->comp.flags = ofi_tx_cq_flags(op);
-		entry->comp.err = err;
-		entry->comp.prov_errno = -err;
-		slist_insert_tail(&entry->list_entry,
-				  &ep->util_ep.tx_cq->oflow_err_list);
-		comp->flags = UTIL_FLAG_ERROR;
-	} else {
-		comp->op_context = context;
-		comp->flags = ofi_tx_cq_flags(op);
-		comp->len = 0;
-		comp->buf = NULL;
-		comp->data = 0;
-	}
-	ofi_cirque_commit(ep->util_ep.tx_cq->cirq);
-	return 0;
+	return smr_write_comp(ep->util_ep.tx_cq, context,
+			      ofi_tx_cq_flags(op), 0, NULL, 0, 0, err);
 }
 
 int smr_tx_comp_signal(struct smr_ep *ep, void *context, uint32_t op,
-		uint16_t flags, uint64_t err)
+		       uint16_t flags, uint64_t err)
 {
 	int ret;
 
@@ -88,62 +119,40 @@ int smr_tx_comp_signal(struct smr_ep *ep, void *context, uint32_t op,
 	return 0;
 }
 
-int smr_complete_rx(struct smr_ep *ep, void *context, uint32_t op, uint16_t flags,
-		    size_t len, void *buf, fi_addr_t addr, uint64_t tag, uint64_t data,
-		    uint64_t err)
+int smr_complete_rx(struct smr_ep *ep, void *context, uint32_t op,
+		    uint16_t flags, size_t len, void *buf, int64_t id,
+		    uint64_t tag, uint64_t data, uint64_t err)
 {
+	fi_addr_t fiaddr = FI_ADDR_UNSPEC;
+
 	ofi_ep_rx_cntr_inc_func(&ep->util_ep, op);
 
 	if (!err && !(flags & (SMR_REMOTE_CQ_DATA | SMR_RX_COMPLETION)))
 		return 0;
 
+	if (ep->util_ep.domain->info_domain_caps & FI_SOURCE)
+		fiaddr = ep->region->map->peers[id].fiaddr;
+
 	return ep->rx_comp(ep, context, op, flags, len, buf,
-			   addr, tag, data, err);
+			   fiaddr, tag, data, err);
 }
 
 int smr_rx_comp(struct smr_ep *ep, void *context, uint32_t op,
 		uint16_t flags, size_t len, void *buf, fi_addr_t addr,
 		uint64_t tag, uint64_t data, uint64_t err)
 {
-	struct fi_cq_tagged_entry *comp;
-	struct util_cq_oflow_err_entry *entry;
-
-	if (ofi_cirque_isfull(ep->util_ep.rx_cq->cirq))
-		return ofi_cq_write_overflow(ep->util_ep.rx_cq, context,
-					     smr_rx_cq_flags(op, flags),
-					     len, buf, data, tag, addr);
-
-	comp = ofi_cirque_tail(ep->util_ep.rx_cq->cirq);
-	if (err) {
-		if (!(entry = calloc(1, sizeof(*entry))))
-			return -FI_ENOMEM;
-		entry->comp.op_context = context;
-		entry->comp.flags = smr_rx_cq_flags(op, flags);
-		entry->comp.tag = tag;
-		entry->comp.err = err;
-		entry->comp.prov_errno = -err;
-		slist_insert_tail(&entry->list_entry,
-				  &ep->util_ep.rx_cq->oflow_err_list);
-		comp->flags = UTIL_FLAG_ERROR;
-	} else {
-		comp->op_context = context;
-		comp->flags = smr_rx_cq_flags(op, flags);
-		comp->len = len;
-		comp->buf = buf;
-		comp->data = data;
-		comp->tag = tag;
-	}
-	ofi_cirque_commit(ep->util_ep.rx_cq->cirq);
-	return 0;
+	return smr_write_comp(ep->util_ep.rx_cq, context,
+			      smr_rx_cq_flags(op, flags), len, buf,
+			      tag, data, err);
 }
 
 int smr_rx_src_comp(struct smr_ep *ep, void *context, uint32_t op,
 		    uint16_t flags, size_t len, void *buf, fi_addr_t addr,
 		    uint64_t tag, uint64_t data, uint64_t err)
 {
-	ep->util_ep.rx_cq->src[ofi_cirque_windex(ep->util_ep.rx_cq->cirq)] = addr;
-	return smr_rx_comp(ep, context, op, flags, len, buf, addr, tag,
-			   data, err);
+	return smr_write_src_comp(ep->util_ep.rx_cq, context,
+				  smr_rx_cq_flags(op, flags), len, buf, addr,
+				  tag, data, err);
 }
 
 int smr_rx_comp_signal(struct smr_ep *ep, void *context, uint32_t op,
@@ -152,7 +161,8 @@ int smr_rx_comp_signal(struct smr_ep *ep, void *context, uint32_t op,
 {
 	int ret;
 
-	ret = smr_rx_comp(ep, context, op, flags, len, buf, addr, tag, data, err);
+	ret = smr_rx_comp(ep, context, op, flags, len, buf, addr, tag,
+			  data, err);
 	if (ret)
 		return ret;
 	ep->util_ep.rx_cq->wait->signal(ep->util_ep.rx_cq->wait);
