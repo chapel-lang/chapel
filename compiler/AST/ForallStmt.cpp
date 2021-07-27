@@ -51,6 +51,7 @@ ForallStmt::ForallStmt(BlockStmt* body):
   fRequireSerialIterator(false),
   fVectorizationHazard(false),
   fIsForallExpr(false),
+  fIsGPUSuitable(false),
   fContinueLabel(NULL),
   fErrorHandlerLabel(NULL),
   fRecIterIRdef(NULL),
@@ -87,6 +88,7 @@ ForallStmt* ForallStmt::copyInner(SymbolMap* map) {
   _this->fRequireSerialIterator = fRequireSerialIterator;
   _this->fVectorizationHazard   = fVectorizationHazard;
   _this->fIsForallExpr          = fIsForallExpr;
+  _this->fIsGPUSuitable         = fIsGPUSuitable;
   // todo: fContinueLabel, fErrorHandlerLabel
 
   _this->fRecIterIRdef        = COPY_INT(fRecIterIRdef);

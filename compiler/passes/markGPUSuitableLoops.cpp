@@ -20,6 +20,7 @@
 
 #include "primitive.h"
 #include "ForLoop.h"
+#include "ForallStmt.h"
 
 extern int classifyPrimitive(CallExpr *call, bool inLocal);
 extern bool inLocalBlock(CallExpr *call);
@@ -52,6 +53,13 @@ void markGPUSuitableLoops() {
           forLoop->setIsGPUSuitable(true);
         }
       }
+    }
+  }
+
+  forv_Vec(ForallStmt, fs, gForallStmts) {
+    if (blockLooksLikeStreamForGPU(fs->loopBody())) {
+      printf("found suitable GPU loop at %s:%d\n", fs->fname(), fs->linenum());
+      fs->setIsGPUSuitable(true);
     }
   }
 }

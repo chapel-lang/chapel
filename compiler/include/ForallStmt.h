@@ -83,6 +83,9 @@ public:
   LabelSymbol* continueLabel();      // create it if not already
   CallExpr* zipCall() const;
 
+  bool      isGPUSuitable() const; // is suitable for running on GPU
+  void      setIsGPUSuitable(bool isSuitable); // if passed suitability checks
+
   // when originating from a ForLoop or a reduce expression
   bool createdFromForLoop()     const;  // is converted from a for-loop
   bool needToHandleOuterVars()  const;  // yes, convert to shadow vars
@@ -152,6 +155,7 @@ private:
   bool           fRequireSerialIterator;
   bool           fVectorizationHazard;
   bool           fIsForallExpr;
+  bool           fIsGPUSuitable;
 
   // constructor
   ForallStmt(BlockStmt* body);
@@ -206,7 +210,8 @@ inline bool ForallStmt::fromReduce()            const { return  fFromReduce;  }
 inline bool ForallStmt::overTupleExpand()       const { return fOverTupleExpand;       }
 inline bool ForallStmt::allowSerialIterator()   const { return fAllowSerialIterator;   }
 inline bool ForallStmt::requireSerialIterator() const { return fRequireSerialIterator; }
-
+inline bool ForallStmt::isGPUSuitable() const { return fIsGPUSuitable; }
+inline void ForallStmt::setIsGPUSuitable(bool isSuitable) { fIsGPUSuitable = isSuitable; }
 /// conveniences ///
 
 inline int   ForallStmt::numInductionVars()  const { return fIterVars.length; }
