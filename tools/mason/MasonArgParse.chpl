@@ -24,8 +24,6 @@ module MasonArgParse {
   private use Sort;
 
   const DEBUG=false;
-  // TODO: Implement required/optional flag
-  // TODO: Implement default values for optional opts
   // TODO: Verify no duplicate names, flags defined by dev
   // TODO: Make sure we don't shadow Chapel flags
   // TODO: Make sure we don't shadow config vars  
@@ -83,7 +81,28 @@ module MasonArgParse {
     var _opts:[0.._numOpts-1] string;
     // number of acceptable values to be present after argument is indicated
     var _numArgs:range;
+    // whether or not the user is required to choose a value for this option
+    var _required:bool;
+    // one or more default values to assign if opt is not entered by user
+    var _defaultValue:list(string);
+    // flag to identify if this action has a default value assigned by dev
+    var _hasDefault:bool;
 
+    proc init(name:string, numOpts:int, opts:[?argsD] string, numArgs:range, 
+              required=false, defaultValue=new list(string), hasDefault=false) {
+      _name=name;
+      _numOpts=numOpts;
+      _opts=opts;
+      _numArgs=numArgs;
+      _required=required;
+      _defaultValue=defaultValue;
+      _hasDefault=hasDefault;
+      
+      // make sure that if we make an argument required no default set
+      assert(!(_required && _defaultValue.size > 0), 
+              "Required options do not support default values");
+    }
+    
     // TODO: Decouple the argument from the action
     // maybe pass a list to fill by reference and have the argparser populate
     // the argument instead?
@@ -179,12 +198,15 @@ module MasonArgParse {
             throw new ArgumentError("\\".join(act._opts) + " has extra values");
           }
         // check that we consumed all the values in the input string
-        }else if endPos <= argsList.size-1 {
+        } else if endPos <= argsList.size-1 {
           throw new ArgumentError("\\".join(act._opts) + " has extra values");
         }
       }
       // make sure all options defined got values if needed
       _checkSatisfiedOptions();
+
+      // assign and missing values their defaults, if supplied
+      _assignDefaultsToMissingOpts();
 
       // check for when arguments passed but none defined
       if argsList.size > 0 && this._actions.size == 0 {
@@ -193,53 +215,88 @@ module MasonArgParse {
       }
     }
 
-    proc _checkSatisfiedOptions() throws {
-      // make sure we satisfied options that need at least 1 value
+    proc _assignDefaultsToMissingOpts() {
+      // set any default values as needed
       for name in this._actions.keys() {
         const act = this._actions.getBorrowed(name);
         const arg = this._result.getReference(name);
-        if act._numArgs.low > 0 && !arg._present {
+        if !arg._present && act._hasDefault {
+          arg._values.extend(act._defaultValue);
+          arg._present = true;
+        }
+      }
+    }
+
+    proc _checkSatisfiedOptions() throws {
+      // make sure we satisfied options that require a value
+      for name in this._actions.keys() {
+        const act = this._actions.getBorrowed(name);
+        const arg = this._result.getReference(name);
+        if act._required && !arg._present {
           throw new ArgumentError("\\".join(act._opts) + " not enough values");
         }        
       }
     }
-
+    
     // define a new string option with fixed number of values expected
     proc addOption(name:string,
-                   opts:[]string,
-                   numArgs:int) throws {
+                   opts:[?optsD]string,
+                   numArgs:int,
+                   required=false,
+                   defaultValue:?t=none) throws {
       return addOption(name=name,
-                      opts=opts,
-                      numArgs=numArgs..numArgs);
+                       opts=opts,
+                       numArgs=numArgs..numArgs,
+                       required=required,
+                       defaultValue=defaultValue);
     }
 
-    proc addOption(name:string,
-                   opts:[]string,
-                   numArgs:range(boundedType=BoundedRangeType.boundedLow)) 
-                   throws {
-      return addOption(name=name,
-                      opts=opts,
-                      numArgs=numArgs.low..max(int));
-    }
-
-    // define a new string option with range of values expected
+    // define a new string option with a low bounded range of values expected
     proc addOption(name:string,
                    opts:[?optsD]string,
-                   numArgs:range) throws {
-      
+                   numArgs:range(boundedType=BoundedRangeType.boundedLow),
+                   required=false,
+                   defaultValue:?t=none) throws {                   
+      return addOption(name=name,
+                       opts=opts,
+                       numArgs=numArgs.low..max(int),
+                       required=required,
+                       defaultValue=defaultValue);
+    }
+
+    // define a new string option with bounded range of values expected
+    proc addOption(name:string,
+                   opts:[?optsD]string,
+                   numArgs:range,
+                   required=false,
+                   defaultValue:?t=none) throws {      
       for i in optsD {
         if !opts[i].startsWith("-") {
           throw new ArgumentError("Use '-' or '--' to indicate opt flags. " +
                                   "Positional arguments not yet supported");
         }
       }
-      
-      var action = new owned Action(_name=name, 
-                                    _numOpts=opts.size,
-                                    _opts=opts,
-                                    _numArgs=numArgs);
+
+      var myDefault = new list(string);
+
+      if isStringType(t) {
+        myDefault.append(defaultValue);
+      } else if t==list(string) {
+        myDefault.extend(defaultValue);
+      } else if !isNothingType(t) {
+        throw new ArgumentError("Only string and list of strings are supported "
+                                + "as default values at this time");
+      }
+
+      var action = new owned Action(name=name, 
+                                    numOpts=opts.size,
+                                    opts=opts,
+                                    numArgs=numArgs,
+                                    required=required,
+                                    defaultValue=myDefault,
+                                    hasDefault=!isNothingType(t));
       // collect all the option strings
-      for opt in opts do _options.add(opt, name);
+      for i in optsD do _options.add(opts[i], name);
       // store the action
       _actions.add(name, action);
       //create, add, and return the shared argument

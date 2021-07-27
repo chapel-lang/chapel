@@ -42,6 +42,14 @@ testOptSingleStringShortOptNoOpts()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testOptSingleStringShortReqOptNoOpts()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testOptSingleStringShortReqOptReqVal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 testNoOptsDefined()
 Flavour: OK
 ======================================================================
@@ -162,6 +170,50 @@ testThreeMultiStringShortOptPartialValues()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testSingleStringShortOptDefNoVal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testSingleStringShortOptDefOneVal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMultStringShortOptDefMultiVal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMultStringShortOptDefMultiValNoVal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMultStringShortOptDefMultiValReqVal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMultStringShortOptDefMultiValReqNoVal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testTryMakeIntListOpts()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testTryMakeIntOpt()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testTryMakeBoolListOpts()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testTryMakeBoolOpt()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testEmptyListDefaultVal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 -n\--stringVal has extra values
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
@@ -181,3 +233,8 @@ unrecognized options/values encountered: -n twenty
 -p\--stringVal2 has extra values
 -t\--stringVal3 has extra values
 -p\--stringVal2 has extra values
+-p\--stringVal2 not enough values
+Only string and list of strings are supported as default values at this time
+Only string and list of strings are supported as default values at this time
+Only string and list of strings are supported as default values at this time
+Only string and list of strings are supported as default values at this time
