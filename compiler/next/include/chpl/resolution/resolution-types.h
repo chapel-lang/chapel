@@ -257,7 +257,8 @@ struct TypedFnSignature {
   std::string toString() const;
 };
 
-struct MostSpecificCandidates {
+class MostSpecificCandidates {
+ public:
   typedef enum {
     REF = 0,
     CONST_REF = 1,
@@ -265,13 +266,25 @@ struct MostSpecificCandidates {
     N = 3,
   } Intent;
 
+ private:
   const TypedFnSignature* candidates[N] = {nullptr};
 
+ public:
   const TypedFnSignature* const* begin() const {
     return &candidates[0];
   }
   const TypedFnSignature* const* end() const {
     return &candidates[N];
+  }
+
+  void setBestRef(const TypedFnSignature* sig) {
+    candidates[REF] = sig;
+  }
+  void setBestConstRef(const TypedFnSignature* sig) {
+    candidates[CONST_REF] = sig;
+  }
+  void setBestValue(const TypedFnSignature* sig) {
+    candidates[VALUE] = sig;
   }
 
   const TypedFnSignature* bestRef() const {
@@ -385,16 +398,22 @@ struct ResolvedExpression {
 
  Note that an inner Function would not be covered here.
  */
-struct ResolutionResultByPostorderID {
+class ResolutionResultByPostorderID {
+ private:
+  ID symbolId;
   std::vector<ResolvedExpression> vec;
 
+ public:
   /** prepare to resolve the contents of the passed symbol */
-  void resizeForSymbol(const uast::ASTNode* ast);
+  void setupForSymbol(const uast::ASTNode* ast);
   /** prepare to resolve the signature of the passed function */
-  void resizeForSignature(const uast::Function* func);
+  void setupForSignature(const uast::Function* func);
+  /** prepare to resolve the body of the passed function */
+  void setupForFunction(const uast::Function* func);
 
   ResolvedExpression& byIdExpanding(const ID& id) {
     auto postorder = id.postOrderId();
+    assert(id.symbolPath() == symbolId.symbolPath());
     assert(0 <= postorder);
     if ((size_t) postorder < vec.size()) {
       // OK
@@ -408,6 +427,7 @@ struct ResolutionResultByPostorderID {
   }
   ResolvedExpression& byId(const ID& id) {
     auto postorder = id.postOrderId();
+    assert(id.symbolPath() == symbolId.symbolPath());
     assert(0 <= postorder && (size_t) postorder < vec.size());
     return vec[postorder];
   }

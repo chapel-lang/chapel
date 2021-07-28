@@ -150,7 +150,7 @@ struct Resolver {
       symbol(mod),
       byPostorder(byPostorder) {
 
-    byPostorder.resizeForSymbol(mod);
+    byPostorder.setupForSymbol(mod);
     enterScope(symbol);
   }
 
@@ -164,7 +164,7 @@ struct Resolver {
       fnBody(fn->body()),
       byPostorder(byPostorder) {
 
-    byPostorder.resizeForSignature(fn);
+    byPostorder.setupForSignature(fn);
     enterScope(symbol);
   }
 
@@ -184,7 +184,7 @@ struct Resolver {
 
     poiInfo.poiScope = poiScope;
 
-    byPostorder.resizeForSignature(fn);
+    byPostorder.setupForSignature(fn);
     enterScope(symbol);
   }
 
@@ -209,7 +209,7 @@ struct Resolver {
     // include any pois required for the signature in the resulting PoiInfo
     poiInfo.accumulate(typedFnSignature->poiInfo);
 
-    byPostorder.resizeForSymbol(fn);
+    byPostorder.setupForFunction(fn);
     enterScope(symbol);
 
     // set the resolution results for the formals according to
@@ -550,7 +550,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
 
   auto ast = parsing::idToAst(context, id);
   if (const Module* mod = ast->toModule()) {
-    partialResult.resizeForSymbol(mod);
+    partialResult.setupForSymbol(mod);
 
     Resolver visitor(context, mod, partialResult);
     for (auto child: ast->children()) {
@@ -1281,13 +1281,13 @@ findMostSpecificCandidates(Context* context,
     // TODO: this is demo code
     if (call.actuals.size() > 1 &&
         call.actuals[1].type.type()->isIntType()) {
-      result.candidates[MostSpecificCandidates::REF] = lst[0];
+      result.setBestRef(lst[0]);
     } else {
-      result.candidates[MostSpecificCandidates::REF] = lst[lst.size()-1];
+      result.setBestRef(lst[lst.size()-1]);
     }
   }
   if (lst.size() == 1) {
-    result.candidates[MostSpecificCandidates::REF] = lst[0];
+    result.setBestRef(lst[0]);
   }
 
   return QUERY_END(result);

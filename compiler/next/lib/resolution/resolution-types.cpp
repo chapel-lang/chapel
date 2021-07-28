@@ -27,16 +27,23 @@ namespace resolution {
 
 using namespace uast;
 
-void ResolutionResultByPostorderID::resizeForSymbol(const ASTNode* ast) {
+void ResolutionResultByPostorderID::setupForSymbol(const ASTNode* ast) {
   assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
   vec.resize(ast->id().numContainedChildren());
+
+  symbolId = ast->id();
 }
-void ResolutionResultByPostorderID::resizeForSignature(const Function* func) {
+void ResolutionResultByPostorderID::setupForSignature(const Function* func) {
   int bodyPostorder = 0;
   if (func && func->body())
     bodyPostorder = func->body()->id().postOrderId();
   assert(0 <= bodyPostorder);
   vec.resize(bodyPostorder);
+
+  symbolId = func->id();
+}
+void ResolutionResultByPostorderID::setupForFunction(const Function* func) {
+  setupForSymbol(func);
 }
 
 bool ResolutionResultByPostorderID::update(ResolutionResultByPostorderID& keep,
