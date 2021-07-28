@@ -24,11 +24,12 @@ module MasonArgParse {
   private use Sort;
 
   const DEBUG=false;
-  // TODO: Add sub-commands
-  // TODO: Implement Help message and formatting
   // TODO: Add bool flags
-  // TODO: Add int opts
   // TODO: Add positional arguments
+  // TODO: Add pass-thru options following "-" or "--"
+  // TODO: Add int opts
+  
+  // TODO: Implement Help message and formatting
   // TODO: Add public github issue when available
 
   if chpl_warnUnstable then
@@ -69,6 +70,7 @@ module MasonArgParse {
     }
   }
 
+  // stores an argument definition
   class Action {
     // friendly name for this argument
     var _name:string;
@@ -90,8 +92,13 @@ module MasonArgParse {
       return false;
     }
 
+    proc _validate(present:bool, valueCount:int):string {
+        return "";      
+    }
+
   }
 
+  // stores a subcommand name
   class SubCommand : Action {
     
     proc init(cmd:string) {
@@ -111,7 +118,7 @@ module MasonArgParse {
       {      
         if args[pos] == this._name {
           myArg._values.append(args[pos]);
-          myArg._present=true;
+          //myArg._present=true;
           debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
           rest.extend(args[next..]);
           return next;
@@ -174,24 +181,41 @@ module MasonArgParse {
                         throws {
       var high = _numArgs.high;
       debugTrace("expecting between " + 
-                 _numArgs.low:string + " and " + high:string);
+                 _numArgs.low:string + " and " + _numArgs.low:string);
       var matched = 0;
       var pos = startPos;
       var next = pos+1;
       debugTrace("starting at pos: " + pos:string);
+      
       while matched < high && next <= argsD.high && !args[next].startsWith("-") 
       {
         pos=next;
         next+=1;
         matched+=1;
+        //if high > myArg._values.size {
         myArg._values.append(args[pos]);
-        myArg._present=true;
+        //} else {
+        //   throw new ArgumentError("\\".join(_opts) + " too many values");
+        // }
+        //myArg._present=true;
         debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);     
       }
-      if matched < this._numArgs.low {
-        throw new ArgumentError("\\".join(_opts) + " not enough values");
-      }
+      // if matched < this._numArgs.low {
+      //   throw new ArgumentError("\\".join(_opts) + " not enough values");
+      // }
       return next;
+    }
+
+    override proc _validate(present:bool, valueCount:int):string {
+        if !present && _required {
+        return "Required value missing";
+      } else if valueCount > _numArgs.high {
+        return "Too many values";
+      } else if valueCount < _numArgs.low && present {
+        return "Not enough values";
+      } else {
+        return "";
+      }
     }
  }
 
@@ -203,16 +227,16 @@ module MasonArgParse {
     // map an option string to its familiar name
     var _options: map(string, string);
 
-    var _subcommands: list(string);
-
     proc parseArgs(arguments:[?argsD] string) throws {
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
       debugTrace("start parsing args");   
       var k = 0;
       // identify optionIndices where opts start
-      var optionIndices : map(string, int);
+      var optionIndices : map(int, string);
       var argsList = new list(arguments);
       var rest = new list(string);
+      var endPos = 0;
+
       for i in argsD {
         const arrElt = arguments[i];
         // look for = sign after opt, split into two elements
@@ -230,17 +254,23 @@ module MasonArgParse {
         if _options.contains(argElt) {
           debugTrace("found option " + argElt);
           // create an entry for this index and the argument name
-          optionIndices.addOrSet(_options.getValue(argElt), i);
-          debugTrace("added option " + argElt);
+          optionIndices.add(i, _options.getValue(argElt));
+          _result.getValue(_options.getValue(argElt))._present = true;          
         }
       }
-      var endPos:int;
+      
       // get this as an array so we can sort it, because maps are order-less
       // TODO: Can we eliminate this extra logic by using an OrderedMap type?
       var arrayoptionIndices = optionIndices.toArray();
-      sort(arrayoptionIndices);      
+      sort(arrayoptionIndices);
+
+      // check for undefined argument provided
+      if arrayoptionIndices.size > 0 && arrayoptionIndices[0][0] != 0 {
+          throw new ArgumentError("Found undefined values: " + argsList[0]);                                  
+      }
+
       // try to match for each of the identified options
-      for (name, idx) in arrayoptionIndices {
+      for (idx, name) in arrayoptionIndices {
         // get a ref to the argument
         var arg = _result.getReference(name);
         debugTrace("got reference to argument " + name);
@@ -258,16 +288,16 @@ module MasonArgParse {
         // make sure we don't overrun the array,
         // then check that we don't have extra values
         if k < arrayoptionIndices.size {
-          if endPos != arrayoptionIndices[k][1] {
-            debugTrace("endpos != arrayoptionIndices[k][1] :"+endPos:string+" "
-                     + arrayoptionIndices[k][1]:string);
+          if endPos != arrayoptionIndices[k][0] {
+            debugTrace("endpos != arrayoptionIndices[k][0] :"+endPos:string+" "
+                     + arrayoptionIndices[k][0]:string);
             debugTrace("arrayoptionIndices " + arrayoptionIndices:string);
             throw new ArgumentError("\\".join(act._name) + " has extra values");
-          }
-        // check that we consumed all the values in the input string
-        } else if endPos < argsList.size && endPos + rest.size < argsList.size {
-          throw new ArgumentError("\\".join(act._name) + " has extra values");
-        }
+          }       
+        } 
+        // else if endPos < argsList.size && endPos + rest.size < argsList.size {
+        //   throw new ArgumentError("\\".join(act._name) + " has extra values");
+        // }
       }
       // make sure all options defined got values if needed
       _checkSatisfiedOptions();
@@ -281,8 +311,16 @@ module MasonArgParse {
                                 " ".join(argsList.these()));
       }
 
+      // check for undefined argument provided
+      if endPos < argsList.size && endPos + rest.size < argsList.size {
+          throw new ArgumentError("Found undefined values: " + 
+                                  " ".join(argsList.toArray()[endPos..]));
+      }
+
       return rest;
     }
+
+
 
     proc _assignDefaultsToMissingOpts() {
       // set any default values as needed
@@ -301,8 +339,9 @@ module MasonArgParse {
       for name in this._actions.keys() {
         const act = this._actions.getBorrowed(name);
         const arg = this._result.getReference(name);
-        if act._isRequired() && !arg._present {
-          throw new ArgumentError("\\".join(act._name) + " not enough values");
+        var rtnMsg = act._validate(arg._present, arg._values.size);
+        if rtnMsg != "" {
+          throw new ArgumentError(act._name + " " + rtnMsg);
         }        
       }
     }
