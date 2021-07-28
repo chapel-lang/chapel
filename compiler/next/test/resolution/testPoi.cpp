@@ -78,12 +78,13 @@ static void test1() {
   const ResolutionResultByPostorderID& rr = resolveModule(context, n->id());
 
   const TypedFnSignature* sig = rr.byAst(genericCall).mostSpecific.only();
+  const PoiScope* poiScope = rr.byAst(genericCall).poiScope;
   assert(sig);
   assert(sig->untypedSignature->functionId == mGeneric->id());
+  assert(poiScope);
 
   // get the resolved function
-  const ResolvedFunction* rfunc = resolvedFunction(context, sig,
-                                                   sig->poiInfo.poiScope);
+  const ResolvedFunction* rfunc = resolvedFunction(context, sig, poiScope);
   assert(rfunc);
   assert(rfunc->signature == sig);
 
@@ -94,7 +95,7 @@ static void test1() {
 }
 
 // showing the challenging program from issue 18081
-/*static void test2() {
+static void test2() {
   printf("test2\n");
   Context ctx;
   Context* context = &ctx;
@@ -113,7 +114,8 @@ static void test1() {
       use G;
       proc bar(arg: int) { }
       proc runM1() {
-        foo(1, 20);
+        var x: int;
+        foo(1, x);
       }
     }
 
@@ -121,7 +123,8 @@ static void test1() {
       use G;
       proc bar(arg: int) { }
       proc runM2() {
-        foo(1, 20.0);
+        var y: real;
+        foo(1, y);
       }
     }
 
@@ -152,45 +155,68 @@ static void test1() {
   assert(user);
   assert(user->numStmts() == 2);
 
+  const Function* fooA = g->stmt(0)->toFunction();
+  assert(fooA);
+  const Call* fooABarCall = fooA->stmt(0)->toCall();
+  assert(fooABarCall);
+  const Function* fooB = g->stmt(1)->toFunction();
+  assert(fooB);
+  const Call* fooBBarCall = fooB->stmt(0)->toCall();
+  assert(fooBBarCall);
+
   const Function* m1Bar = m1->stmt(1)->toFunction();
   assert(m1Bar);
   const Function* runM1 = m1->stmt(2)->toFunction();
   assert(runM1);
+  const Call* runM1FooCall = runM1->stmt(1)->toCall();
+  assert(runM1FooCall);
   const Function* m2Bar = m2->stmt(1)->toFunction();
   assert(m2Bar);
   const Function* runM2 = m2->stmt(2)->toFunction();
   assert(runM2);
+  const Call* runM2FooCall = runM2->stmt(1)->toCall();
+  assert(runM2FooCall);
 
   // resolve runM1
-  const ResolvedFunction* rRunM1 = resolvedConcreteFunction(runM1);
+  const ResolvedFunction* rRunM1 =
+    resolvedConcreteFunction(context, runM1->id());
   assert(rRunM1);
   // resolve runM2
-  const ResolvedFunction* rRunM2 = resolvedConcreteFunction(runM2);
+  const ResolvedFunction* rRunM2 =
+    resolvedConcreteFunction(context, runM2->id());
   assert(rRunM2);
 
-  // find the resolved calls to foo
-  const in r
+  // find the resolved calls to foo in runM1 and runM2
+  const ResolvedExpression& runM1FooCallR = rRunM1->byAst(runM1FooCall);
+  const ResolvedExpression& runM2FooCallR = rRunM2->byAst(runM2FooCall);
+  assert(runM1FooCallR.mostSpecific.only());
+  assert(runM2FooCallR.mostSpecific.only());
 
-  const TypedFnSignature* sig = rr.byAst(genericCall).mostSpecific.only();
-  assert(sig);
-  assert(sig->untypedSignature->functionId == mGeneric->id());
+  const ResolvedFunction* m1foo =
+    resolvedFunction(context, runM1FooCallR.mostSpecific.only(),
+                              runM1FooCallR.poiScope);
 
-  // get the resolved function
-  const ResolvedFunction* rfunc = resolvedFunction(context, sig,
-                                                   sig->poiInfo.poiScope);
-  assert(rfunc);
-  assert(rfunc->signature == sig);
+  const ResolvedFunction* m2foo =
+    resolvedFunction(context, runM2FooCallR.mostSpecific.only(),
+                              runM2FooCallR.poiScope);
 
-  const ResolvedExpression& re = rfunc->resolutionById.byAst(helperCall);
-  const TypedFnSignature* helpSig = re.mostSpecific.only();
-  assert(helpSig);
-  assert(helpSig->untypedSignature->functionId == nHelper->id());
+
+  assert(m1foo->functionId() == fooA->id());
+  assert(m2foo->functionId() == fooB->id());
+
+  const ResolvedExpression& fooABarCallR = m1foo->byAst(fooABarCall);
+  const ResolvedExpression& fooBBarCallR = m2foo->byAst(fooBBarCall);
+  assert(fooABarCallR.mostSpecific.only());
+  assert(fooBBarCallR.mostSpecific.only());
+
+  assert(fooABarCallR.mostSpecific.only()->functionId() == m1Bar->id());
+  assert(fooBBarCallR.mostSpecific.only()->functionId() == m2Bar->id());
 }
-*/
 
 
 int main() {
   test1();
+  test2();
 
   return 0;
 }
