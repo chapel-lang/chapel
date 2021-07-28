@@ -175,8 +175,8 @@ std::string TypedFnSignature::toString() const {
 
 
 void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {
-  poiScopesUsed.insert(addPoiInfo.poiScopesUsed.begin(),
-                       addPoiInfo.poiScopesUsed.end());
+  poiFnIdsUsed.insert(addPoiInfo.poiFnIdsUsed.begin(),
+                      addPoiInfo.poiFnIdsUsed.end());
 }
 
 // this is a resolved function
@@ -201,17 +201,17 @@ std::string ResolvedExpression::toString() const {
       ret += " calls ";
       ret += onlyFn->toString();
     } else {
-      if (mostSpecific.bestRef) {
+      if (auto sig = mostSpecific.bestRef()) {
         ret += " calls ref ";
-        ret += mostSpecific.bestRef->toString();
+        ret += sig->toString();
       }
-      if (mostSpecific.bestConstRef) {
+      if (auto sig = mostSpecific.bestConstRef()) {
         ret += " calls const ref ";
-        ret += mostSpecific.bestConstRef->toString();
+        ret += sig->toString();
       }
-      if (mostSpecific.bestValue) {
+      if (auto sig = mostSpecific.bestValue()) {
         ret += " calls value ";
-        ret += mostSpecific.bestValue->toString();
+        ret += sig->toString();
       }
     }
   }

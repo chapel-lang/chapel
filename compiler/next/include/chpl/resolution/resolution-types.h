@@ -139,10 +139,13 @@ struct PoiInfo {
   // TODO: add VisibilityInfo etc -- names of calls.
   // see PR #16261
 
-  // For a resolved instantiation,
-  // what are the point-of-instantiation scopes
-  // that were needed for resolving the signature?
-  std::set<const PoiScope*> poiScopesUsed;
+  // For a resolved instantiation
+
+  // Tracking how calls using POI were resolved.
+  // This is a set of pairs of (Call ID, Function ID).
+  // This includes POI calls from functions called in this Function,
+  // transitively
+  std::set<std::pair<ID, ID>> poiFnIdsUsed;
 
   // default construct a PoiInfo
   PoiInfo() { }
@@ -152,8 +155,8 @@ struct PoiInfo {
     : resolved(false), poiScope(poiScope) {
   }
   // construct a PoiInfo for a resolved instantiation
-  PoiInfo(std::set<const PoiScope*> poiScopesUsed)
-    : resolved(true), poiScopesUsed(std::move(poiScopesUsed)) {
+  PoiInfo(std::set<std::pair<ID, ID>> poiFnIdsUsed)
+    : resolved(true), poiFnIdsUsed(std::move(poiFnIdsUsed)) {
   }
 
   // return true if the two passed PoiInfos represent the same information
@@ -161,13 +164,13 @@ struct PoiInfo {
   static bool updateEquals(const PoiInfo& a, const PoiInfo& b) {
     return a.resolved == b.resolved &&
            a.poiScope == b.poiScope &&
-           a.poiScopesUsed == b.poiScopesUsed;
+           a.poiFnIdsUsed == b.poiFnIdsUsed;
   }
 
   void swap(PoiInfo& other) {
     std::swap(resolved, other.resolved);
     std::swap(poiScope, other.poiScope);
-    poiScopesUsed.swap(other.poiScopesUsed);
+    poiFnIdsUsed.swap(other.poiFnIdsUsed);
   }
 
   // accumulate PoiInfo from a call into this PoiInfo
@@ -255,49 +258,62 @@ struct TypedFnSignature {
 };
 
 struct MostSpecificCandidates {
-  const TypedFnSignature* bestRef = nullptr;
-  const TypedFnSignature* bestConstRef = nullptr;
-  const TypedFnSignature* bestValue = nullptr;
+  typedef enum {
+    REF = 0,
+    CONST_REF = 1,
+    VALUE = 2,
+    N = 3,
+  } Intent;
+
+  const TypedFnSignature* candidates[N] = {nullptr};
+
+  const TypedFnSignature* const* begin() const {
+    return &candidates[0];
+  }
+  const TypedFnSignature* const* end() const {
+    return &candidates[N];
+  }
+
+  const TypedFnSignature* bestRef() const {
+    return candidates[REF];
+  }
+  const TypedFnSignature* bestConstRef() const {
+    return candidates[CONST_REF];
+  }
+  const TypedFnSignature* bestValue() const {
+    return candidates[VALUE];
+  }
 
   const TypedFnSignature* only() const {
     const TypedFnSignature* ret = nullptr;
-    int i = 0;
-    if (bestRef != nullptr) {
-      ret = bestRef;
-      i++;
+    int nPresent = 0;
+    for (int i = 0; i < N; i++) {
+      const TypedFnSignature* sig = candidates[i];
+      if (sig != nullptr) {
+        ret = sig;
+        nPresent++;
+      }
     }
-    if (bestConstRef != nullptr) {
-      ret = bestConstRef;
-      i++;
-    }
-    if (bestValue != nullptr) {
-      ret = bestValue;
-      i++;
-    }
-    if (i != 1) {
+    if (nPresent != 1) {
       return nullptr;
     }
     return ret;
   }
 
-  bool anyInstantiated() const {
-    return (bestRef && bestRef->instantiatedFrom) ||
-           (bestConstRef && bestConstRef->instantiatedFrom) ||
-           (bestValue && bestValue->instantiatedFrom);
-  }
-
   bool operator==(const MostSpecificCandidates& other) const {
-    return bestRef == other.bestRef &&
-           bestConstRef == other.bestConstRef &&
-           bestValue == other.bestValue;
+    for (int i = 0; i < N; i++) {
+      if (candidates[i] != other.candidates[i])
+        return false;
+    }
+    return true;
   }
   bool operator!=(const MostSpecificCandidates& other) const {
     return !(*this == other);
   }
   void swap(MostSpecificCandidates& other) {
-    std::swap(bestRef, other.bestRef);
-    std::swap(bestConstRef, other.bestConstRef);
-    std::swap(bestValue, other.bestValue);
+    for (int i = 0; i < N; i++) {
+      std::swap(candidates[i], other.candidates[i]);
+    }
   }
 };
 

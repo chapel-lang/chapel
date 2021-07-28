@@ -137,12 +137,11 @@ computeAndPrintStuff(Context* context,
   const ResolvedExpression* r = resolvedExpressionForAst(context, ast, inFn);
   int afterCount = context->numQueriesRunThisRevision();
   if (r != nullptr) {
-    if (r->mostSpecific.bestRef)
-      calledFns.insert(r->mostSpecific.bestRef);
-    if (r->mostSpecific.bestConstRef)
-      calledFns.insert(r->mostSpecific.bestConstRef);
-    if (r->mostSpecific.bestValue)
-      calledFns.insert(r->mostSpecific.bestValue);
+    for (const TypedFnSignature* candidate : r->mostSpecific) {
+      if (candidate != nullptr) {
+        calledFns.insert(candidate);
+      }
+    }
 
     printId(ast);
     printf("%-35s ", r->toString().c_str());
