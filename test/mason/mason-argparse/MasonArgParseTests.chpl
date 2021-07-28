@@ -1314,7 +1314,7 @@ proc testTryDuplicateShortOpt(test: borrowed Test) throws {
   test.assertTrue(false);  
 }
 
-// attempt to define a short option twice
+// attempt to define a long option twice
 proc testTryDuplicateLongOpt(test: borrowed Test) throws {
   var argList = ["progName","-n=twenty","thirty"];
   var parser = new argumentParser();

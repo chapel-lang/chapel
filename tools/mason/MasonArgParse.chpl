@@ -118,7 +118,6 @@ module MasonArgParse {
       {      
         if args[pos] == this._name {
           myArg._values.append(args[pos]);
-          //myArg._present=true;
           debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
           rest.extend(args[next..]);
           return next;
@@ -191,18 +190,10 @@ module MasonArgParse {
       {
         pos=next;
         next+=1;
-        matched+=1;
-        //if high > myArg._values.size {
-        myArg._values.append(args[pos]);
-        //} else {
-        //   throw new ArgumentError("\\".join(_opts) + " too many values");
-        // }
-        //myArg._present=true;
+        matched+=1; 
+        myArg._values.append(args[pos]);  
         debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);     
       }
-      // if matched < this._numArgs.low {
-      //   throw new ArgumentError("\\".join(_opts) + " not enough values");
-      // }
       return next;
     }
 
@@ -210,9 +201,11 @@ module MasonArgParse {
         if !present && _required {
         return "Required value missing";
       } else if valueCount > _numArgs.high {
-        return "Too many values";
+        return "Too many values: expected " + _numArgs:string + 
+               " got " + valueCount:string;
       } else if valueCount < _numArgs.low && present {
-        return "Not enough values";
+        return "Not enough values: expected " + _numArgs:string + 
+               " got " + valueCount:string;
       } else {
         return "";
       }
@@ -295,9 +288,6 @@ module MasonArgParse {
             throw new ArgumentError("\\".join(act._name) + " has extra values");
           }       
         } 
-        // else if endPos < argsList.size && endPos + rest.size < argsList.size {
-        //   throw new ArgumentError("\\".join(act._name) + " has extra values");
-        // }
       }
       // make sure all options defined got values if needed
       _checkSatisfiedOptions();
