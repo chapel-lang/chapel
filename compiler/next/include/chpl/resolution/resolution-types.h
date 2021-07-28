@@ -255,6 +255,10 @@ struct TypedFnSignature {
   }
 
   std::string toString() const;
+
+  const ID& functionId() const {
+    return untypedSignature->functionId;
+  }
 };
 
 class MostSpecificCandidates {
@@ -485,6 +489,17 @@ struct ResolvedFunction {
     std::swap(returnIntent, other.returnIntent);
     resolutionById.swap(other.resolutionById);
     poiInfo.swap(other.poiInfo);
+  }
+
+  const ResolvedExpression& byId(const ID& id) const {
+    return resolutionById.byId(id);
+  }
+  const ResolvedExpression& byAst(const uast::ASTNode* ast) const {
+    return resolutionById.byAst(ast);
+  }
+
+  const ID& functionId() const {
+    return signature->functionId();
   }
 };
 
