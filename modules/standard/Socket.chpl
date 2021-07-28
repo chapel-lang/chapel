@@ -379,18 +379,153 @@ module Socket {
     return length;
   }
 
-  /**
-  * TODO: complete this
-  */
-  proc setSocketOpt() throws {
+  proc setSocketOpt(socketFd:fd_t, level:c_int, optname:c_int, value:c_int) throws {
+    var optlen = sizeof(value);
+    var ptroptval = c_ptrTo(value);
 
+    var err_out = sys_setsockopt(socketFd, level, optname, ptroptval:c_void_ptr, optlen);
+
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out, "Failed to set socket option");
+    }
   }
 
-  /**
-  * TODO: getsocketOpt with tcpConn, tcpListener and udpSocket
-  */
-  proc getSocketOpt() throws {
+  proc setSocketOpt(ref socket:tcpConn, level:c_int, optname:c_int, value:c_int) throws {
+    var socketFd = socket.socketFd;
 
+    setSocketOpt(socketFd, level, optname, value);
+  }
+
+  proc setSocketOpt(ref socket:tcpListener, level:c_int, optname:c_int, value:c_int) throws {
+    var socketFd = socket.socketFd;
+
+    setSocketOpt(socketFd, level, optname, value);
+  }
+
+  proc setSocketOpt(ref socket:udpSocket, level:c_int, optname:c_int, value:c_int) throws {
+    var socketFd = socket.socketFd;
+
+    setSocketOpt(socketFd, level, optname, value);
+  }
+
+  proc setSocketOpt(socketFd:fd_t, level:c_int, optname:c_int, value:bytes) throws {
+    var optlen = value.size;
+    var ptroptval = value.c_str();
+
+    var err_out = sys_setsockopt(socketFd, level, optname, ptroptval, optlen);
+
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out, "Failed to set socket option");
+    }
+  }
+
+  proc setSocketOpt(ref socket:tcpConn, level:c_int, optname:c_int, value:bytes) throws {
+    var socketFd = socket.socketFd;
+
+    setSocketOpt(socketFd, level, optname, value);
+  }
+
+  proc setSocketOpt(ref socket:tcpListener, level:c_int, optname:c_int, value:bytes) throws {
+    var socketFd = socket.socketFd;
+
+    setSocketOpt(socketFd, level, optname, value);
+  }
+
+  proc setSocketOpt(ref socket:udpSocket, level:c_int, optname:c_int, value:bytes) throws {
+    var socketFd = socket.socketFd;
+
+    setSocketOpt(socketFd, level, optname, value);
+  }
+
+  proc setSocketOpt(socketFd:fd_t, level:c_int, optname:c_int, value:nothing, optlen:socklen_t) throws {
+    var err_out = sys_setsockopt(socketFd, level, optname, nil, optlen);
+
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out, "Failed to set socket option");
+    }
+  }
+
+  proc setSocketOpt(ref socket:tcpConn, level:c_int, optname:c_int, value:nothing, optlen:socklen_t) throws {
+    var socketFd = socket.socketFd;
+
+    setSocketOpt(socketFd, level, optname, value, optlen);
+  }
+
+  proc setSocketOpt(ref socket:tcpListener, level:c_int, optname:c_int, value:nothing, optlen:socklen_t) throws {
+    var socketFd = socket.socketFd;
+
+    setSocketOpt(socketFd, level, optname, value, optlen);
+  }
+
+  proc setSocketOpt(ref socket:udpSocket, level:c_int, optname:c_int, value:nothing, optlen:socklen_t) throws {
+    var socketFd = socket.socketFd;
+
+    setSocketOpt(socketFd, level, optname, value, optlen);
+  }
+
+  proc getSocketOpt(socketFd:fd_t, level:c_int, optname:c_int) throws {
+    var optval:c_int;
+    var ptroptval = c_ptrTo(optval);
+    var optlen = sizeof(optval);
+
+    var err_out = sys_getsockopt(socketFd, level, ptroptval:c_void_ptr, optlen);
+    if err_out != 0 {
+      throw SystemError.fromSyserr(err_out, "Failed to get socket option");
+    }
+
+    return optval;
+  }
+
+  proc getSocketOpt(ref socket:tcpConn, level:c_int, optname:c_int) throws {
+    var socketFd = socket.socketFd;
+
+    return getSocketOpt(socketFd, level, optname) ;
+  }
+
+  proc getSocketOpt(ref socket:tcpListener, level:c_int, optname:c_int) throws {
+    var socketFd = socket.socketFd;
+
+    return getSocketOpt(socketFd, level, optname) ;
+  }
+
+  proc getSocketOpt(ref socket:udpSocket, level:c_int, optname:c_int) throws {
+    var socketFd = socket.socketFd;
+
+    return getSocketOpt(socketFd, level, optname) ;
+  }
+
+  proc getSocketOpt(socketFd:fd_t, level:c_int, optname:c_int, buflen = 0) throws {
+    if buflen < 0 || buflen > 1024 {
+      throw new Error("getSocketOpt buflen out of range");
+    }
+    else {
+      var len:socklen_t = buflen;
+      var buffer = c_calloc(c_uchar, buflen);
+      var err_out = sys_getsockopt(socketFd, level, buffer:c_void_ptr, len:socklen_t);
+      if err_out != 0 {
+        throw SystemError.fromSyserr(err_out, "Failed to get socket option");
+      }
+
+      return createBytesWithOwnedBuffer(buffer, len, buflen);
+    }
+  }
+
+  proc getSocketOpt(ref socket:tcpConn, level:c_int, optname:c_int, buflen = 0) throws {
+    var socketFd = socket.socketFd;
+
+    return getSocketOpt(socketFd, level, optname, buflen) ;
+  }
+
+  proc getSocketOpt(ref socket:tcpListener, level:c_int, optname:c_int, buflen = 0) throws {
+    var socketFd = socket.socketFd;
+
+    return getSocketOpt(socketFd, level, optname, buflen) ;
+  }
+
+  proc getSocketOpt(ref socket:udpSocket, level:c_int, optname:c_int, buflen = 0) throws {
+    var socketFd = socket.socketFd;
+
+    return getSocketOpt(socketFd, level, optname, buflen) ;
   }
 
   proc remoteAddress(socketFD: fd_t) throws {
