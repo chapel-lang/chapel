@@ -1580,6 +1580,38 @@ proc testOptsRangeWithSubCommandSameSubOptionsLow(test: borrowed Test) throws {
   test.assertEqual(new list(argList[4..]),remain);
 }
 
+
+// add a subcommand with sub options, and options before with same flags
+// when main command has low bound range
+proc testFromArgParseExample(test: borrowed Test) throws {
+  var argList = ["progName","-o","w","a","y","d","t","a?","-t=tea","time",
+                 "--myConfigVar=@10","subCmd1","-c","one","-t","two"];
+  var parser = new argumentParser();
+  var strArg = parser.addOption(name="strArg1",
+                                opts=["-o","--option"],
+                                numArgs=1..10,
+                                required=false,
+                                defaultValue=none);
+  var typArg = parser.addOption(name="strArg2",
+                                opts=["-t","--types"],
+                                numArgs=1..);
+  var confArg = parser.addOption(name="strArg3",
+                                opts=["--myConfigVar"],
+                                numArgs=1);
+
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertTrue(strArg.hasValue());
+  test.assertEqual(new list(strArg.values()), 
+                   new list(["w","a","y","d","t","a?"]));
+  test.assertEqual(new list(typArg.values()), new list(["tea","time"]));
+  test.assertEqual(confArg.value(),"@10");
+  test.assertEqual(remain.size,4);
+  test.assertTrue(subCmd1.hasValue());
+  test.assertEqual(new list(argList[12..]),remain);
+}
+  
+
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
 UnitTest.main();

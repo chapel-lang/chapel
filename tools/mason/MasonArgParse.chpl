@@ -23,7 +23,7 @@ module MasonArgParse {
   private use IO;
   private use Sort;
 
-  const DEBUG=false;
+  const DEBUG=true;
   // TODO: Add bool flags
   // TODO: Add positional arguments
   // TODO: Add pass-thru options following "-" or "--"
