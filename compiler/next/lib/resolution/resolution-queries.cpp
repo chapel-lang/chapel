@@ -1284,14 +1284,18 @@ findMostSpecificCandidates(Context* context,
   MostSpecificCandidates result;
 
   if (lst.size() > 1) {
+
     // TODO: find most specific -- pull over disambiguation code
     // TODO: handle return intent overloading
     // TODO: this is demo code
-    if (call.actuals.size() > 1 &&
-        call.actuals[1].type.type()->isIntType()) {
-      result.setBestRef(lst[0]);
+    if (call.actuals.size() > 1) {
+      if (call.actuals[1].type.type()->isIntType()) {
+        result.setBestRef(lst[0]);
+      } else {
+        result.setBestRef(lst[lst.size()-1]);
+      }
     } else {
-      result.setBestRef(lst[lst.size()-1]);
+      result.setBestRef(lst[0]);
     }
   }
   if (lst.size() == 1) {
