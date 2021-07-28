@@ -799,6 +799,22 @@ initPrimitive() {
   prim_def(PRIM_SET_DYNAMIC_END_COUNT, "set dynamic end count", returnInfoVoid, true);
 
   prim_def(PRIM_GPU_KERNEL_LAUNCH, "gpu kernel launch", returnInfoVirtualMethodCall, true);
+
+  // Primitive functions to access thread, block, and grid information:
+  //
+  // Threads, blocks, and grids are CUDA terminology; the corresponding terms
+  // in OpenCL are: workitems, workgroups, and n-dimensional ranges.
+  //
+  // Threads correspond to a stream of instructions to execute on one core
+  // of a GPU. A streaming multiprocessor (SM) may operate on multiple threads
+  // simultaneously in a SIMT (single instruction multiple threads) manner.
+  //
+  // When launching a kernel the user specifies a 3-dimensional block size.
+  // Blocks are groups of threads. Grids are groups of blocks and when
+  // launching a kernel the user specifies a 3-dimensional grid size.
+  //
+  // Threads can be indexed as a 3-dimensional location within a block,
+  // which itself can be indexed as a 3-dimensional location within a grid.
   prim_def(PRIM_GPU_THREADIDX_X, "gpu threadIdx x", returnInfoInt32, true);
   prim_def(PRIM_GPU_THREADIDX_Y, "gpu threadIdx y", returnInfoInt32, true);
   prim_def(PRIM_GPU_THREADIDX_Z, "gpu threadIdx z", returnInfoInt32, true);
