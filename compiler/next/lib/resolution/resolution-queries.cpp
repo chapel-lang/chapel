@@ -537,8 +537,8 @@ struct Resolver {
   }
 };
 
-const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
-  QUERY_BEGIN(resolveModule, context, id);
+const ResolutionResultByPostorderID& resolvedModule(Context* context, ID id) {
+  QUERY_BEGIN(resolvedModule, context, id);
 
   ResolutionResultByPostorderID& partialResult = QUERY_CURRENT_RESULT;
 
@@ -564,14 +564,14 @@ const ResolutionResultByPostorderID& partiallyResolvedModule(Context* context,
 
   // check for a partial result from a running query
   const ResolutionResultByPostorderID* r =
-    QUERY_RUNNING_PARTIAL_RESULT(resolveModule, context, id);
+    QUERY_RUNNING_PARTIAL_RESULT(resolvedModule, context, id);
   // if there was a partial result, return it
   if (r != nullptr) {
     return *r;
   }
 
   // otherwise, run the query to compute the full result
-  return resolveModule(context, id);
+  return resolvedModule(context, id);
 }
 
 const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
@@ -925,6 +925,17 @@ const ResolvedFunction* resolvedConcreteFunction(Context* context, ID id) {
 
   const ResolvedFunction* ret = resolvedFunction(context, sig, nullptr);
   return ret;
+}
+
+const ResolvedFunction* resolvedOnlyCandidate(Context* context,
+                                              const ResolvedExpression& r) {
+  const TypedFnSignature* sig = r.mostSpecific.only();
+  const PoiScope* poiScope = r.poiScope;
+
+  if (sig == nullptr)
+    return nullptr;
+
+  return resolvedFunction(context, sig, poiScope);
 }
 
 struct ReturnTypeInferer {

@@ -65,7 +65,7 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast,
       auto parentAst = idToAst(context, parentId);
       if (parentAst != nullptr) {
         if (parentAst->isModule()) {
-          const auto& byId = resolveModule(context, parentAst->id());
+          const auto& byId = resolvedModule(context, parentAst->id());
           return &byId.byAst(ast);
         } else if (parentAst->isFunction()) {
           auto untyped = untypedSignature(context, parentAst->id());
