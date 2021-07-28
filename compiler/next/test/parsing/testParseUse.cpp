@@ -104,9 +104,8 @@ static void test1(Parser* parser) {
     const As* as = visClause->symbol()->toAs();
     assert(as->symbol()->isDot());
     const Dot* dot = as->symbol()->toDot();
-    assert(dot->numActuals() == 0);
-    assert(dot->calledExpression()->isIdentifier());
-    assert(dot->calledExpression()->toIdentifier()->name() == "B");
+    assert(dot->receiver()->isIdentifier());
+    assert(dot->receiver()->toIdentifier()->name() == "B");
     assert(dot->field() == "SM1");
     assert(as->rename()->isIdentifier());
     assert(as->rename()->toIdentifier()->name() == "Y");
@@ -198,8 +197,8 @@ static void test3(Parser* parser) {
   const VisibilityClause* visClause = use->visibilityClause(0);
   assert(visClause->symbol()->isDot());
   const Dot* dot = visClause->symbol()->toDot();
-  assert(dot->calledExpression()->isIdentifier());
-  assert(dot->calledExpression()->toIdentifier()->name() == "A");
+  assert(dot->receiver()->isIdentifier());
+  assert(dot->receiver()->toIdentifier()->name() == "A");
   assert(dot->field() == "SM1");
   assert(visClause->limitationKind() == VisibilityClause::ONLY);
   assert(visClause->numLimitations() == 3);

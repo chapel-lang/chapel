@@ -17,39 +17,17 @@
  * limitations under the License.
  */
 
-#include "chpl/types/TypeTag.h"
+#include "chpl/types/PrimitiveType.h"
 
 namespace chpl {
 namespace types {
-namespace typetags {
 
 
-static const char* tagToStringTable[NUM_TYPE_TAGS] = {
-// define tag to string conversion
-#define NAMESTR(NAME) \
-  #NAME,
-#define TYPE_NODE(NAME) NAMESTR(NAME)
-#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) NAMESTR(NAME)
-#define TYPE_BEGIN_SUBCLASSES(NAME) NAMESTR(START_##NAME)
-#define TYPE_END_SUBCLASSES(NAME) NAMESTR(END_##NAME)
-// Apply the above macros to TypeClassesList.h
-#include "chpl/types/TypeClassesList.h"
-// clear the macros
-#undef TYPE_NODE
-#undef BUILTIN_TYPE_NODE
-#undef TYPE_BEGIN_SUBCLASSES
-#undef TYPE_END_SUBCLASSES
-#undef NAMESTR
-};
-
-const char* tagToString(TypeTag tag) {
-  if (0 <= tag && tag < NUM_TYPE_TAGS)
-    return tagToStringTable[tag];
-  else
-    return "<unknown-tag>";
+std::string PrimitiveType::toString() const {
+  std::string ret = this->c_str();
+  return ret;
 }
 
 
-} // end namespace typetags
 } // end namespace types
 } // end namespace chpl

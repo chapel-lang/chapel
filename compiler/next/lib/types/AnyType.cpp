@@ -17,39 +17,25 @@
  * limitations under the License.
  */
 
-#include "chpl/types/TypeTag.h"
+#include "chpl/types/AnyType.h"
+#include "chpl/queries/query-impl.h"
 
 namespace chpl {
 namespace types {
-namespace typetags {
 
 
-static const char* tagToStringTable[NUM_TYPE_TAGS] = {
-// define tag to string conversion
-#define NAMESTR(NAME) \
-  #NAME,
-#define TYPE_NODE(NAME) NAMESTR(NAME)
-#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) NAMESTR(NAME)
-#define TYPE_BEGIN_SUBCLASSES(NAME) NAMESTR(START_##NAME)
-#define TYPE_END_SUBCLASSES(NAME) NAMESTR(END_##NAME)
-// Apply the above macros to TypeClassesList.h
-#include "chpl/types/TypeClassesList.h"
-// clear the macros
-#undef TYPE_NODE
-#undef BUILTIN_TYPE_NODE
-#undef TYPE_BEGIN_SUBCLASSES
-#undef TYPE_END_SUBCLASSES
-#undef NAMESTR
-};
+const owned<AnyType>& AnyType::getAnyType(Context* context) {
+  QUERY_BEGIN(getAnyType, context);
 
-const char* tagToString(TypeTag tag) {
-  if (0 <= tag && tag < NUM_TYPE_TAGS)
-    return tagToStringTable[tag];
-  else
-    return "<unknown-tag>";
+  auto result = toOwned(new AnyType());
+
+  return QUERY_END(result);
+}
+
+const AnyType* AnyType::get(Context* context) {
+  return getAnyType(context).get();
 }
 
 
-} // end namespace typetags
 } // end namespace types
 } // end namespace chpl

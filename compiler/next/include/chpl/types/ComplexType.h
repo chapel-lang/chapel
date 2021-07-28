@@ -17,40 +17,54 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_ERRONEOUSTYPE_H
-#define CHPL_TYPES_ERRONEOUSTYPE_H
+#ifndef CHPL_TYPES_COMPLEXTYPE_H
+#define CHPL_TYPES_COMPLEXTYPE_H
 
-#include "chpl/types/Type.h"
+#include "chpl/types/PrimitiveType.h"
 
 namespace chpl {
 namespace types {
 
 
 /**
-  This class represents an erroneous type - that is, a type used as an error
-  sentinel type. Errors with this type should be ignored.
+  This class represents a complex type, e.g. `complex` or `complex(64)`.
  */
-class ErroneousType : public Type {
+class ComplexType : public PrimitiveType {
  private:
-  ErroneousType() : Type(typetags::ErroneousType) { }
+  ComplexType(int bitwidth)
+    : PrimitiveType(typetags::ComplexType, bitwidth)
+  { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return true;
+    return primitiveTypeContentsMatchInner((PrimitiveType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
+    primitiveTypeMarkUniqueStringsInner(context);
   }
 
-  bool isGeneric() const override {
-    return false;
-  }
-
-  static const owned<ErroneousType>& getErroneousType(Context* context);
+  static const owned<ComplexType>& getComplexType(Context* context, int bitwidth);
 
  public:
-  ~ErroneousType() = default;
+  ~ComplexType() = default;
 
-  static const ErroneousType* get(Context* context);
+  static const ComplexType* get(Context* context, int bitwidth);
+
+  int bitwidth() const override {
+    return bitwidth_;
+  }
+
+  const char* c_str() const override {
+    switch (bitwidth_) {
+      case 64:
+        return "complex(64)";
+      case 128:
+        return "complex(128)";
+      default:
+        assert(false && "complex bit width case not handled");
+        return "complex(<unknown>)";
+    }
+  }
 };
 
 

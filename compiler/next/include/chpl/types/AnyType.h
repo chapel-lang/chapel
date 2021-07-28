@@ -17,25 +17,43 @@
  * limitations under the License.
  */
 
-#include "chpl/types/UnknownType.h"
-#include "chpl/queries/query-impl.h"
+#ifndef CHPL_TYPES_ANYTYPE_H
+#define CHPL_TYPES_ANYTYPE_H
+
+#include "chpl/types/Type.h"
 
 namespace chpl {
 namespace types {
 
 
-const owned<UnknownType>& UnknownType::getUnknownType(Context* context) {
-  QUERY_BEGIN(getUnknownType, context);
+/**
+  This class represents a generic type that can instantiate to any type.
+ */
+class AnyType : public Type {
+ private:
+  AnyType() : Type(typetags::AnyType) { }
 
-  auto result = toOwned(new UnknownType());
+  bool contentsMatchInner(const Type* other) const override {
+    return true;
+  }
 
-  return QUERY_END(result);
-}
+  void markUniqueStringsInner(Context* context) const override {
+  }
 
-const UnknownType* UnknownType::get(Context* context) {
-  return getUnknownType(context).get();
-}
+  bool isGeneric() const override {
+    return true;
+  }
+
+  static const owned<AnyType>& getAnyType(Context* context);
+
+ public:
+  ~AnyType() = default;
+
+  static const AnyType* get(Context* context);
+};
 
 
-} // end namespace types
+} // end namespace uast
 } // end namespace chpl
+
+#endif

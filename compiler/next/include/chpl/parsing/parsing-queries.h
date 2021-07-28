@@ -43,6 +43,18 @@ namespace parsing {
       : text(std::move(text)), error() { }
     FileContents(std::string text, ErrorMessage error)
       : text(std::move(text)), error(std::move(error)) { }
+
+    bool operator==(const FileContents& other) const {
+      return text == other.text &&
+             error == other.error;
+    }
+    bool operator!=(const FileContents& other) const {
+      return !(*this == other);
+    }
+    void swap(FileContents& other) {
+      text.swap(other.text);
+      error.swap(other.error);
+    }
   };
 
   /**
@@ -105,10 +117,16 @@ namespace parsing {
   const uast::ASTNode* idToAst(Context* context, ID id);
 
   /**
+   Returns the tag for the node with the given ID.
+   */
+  uast::ASTTag idToTag(Context* context, ID id);
+
+  /**
    Returns the parent ID given an ID
    */
   const ID& idToParentId(Context* context, ID id);
 
+  // TODO: make a wrapper for ID.parentSymbolId
 
 } // end namespace parsing
 } // end namespace chpl

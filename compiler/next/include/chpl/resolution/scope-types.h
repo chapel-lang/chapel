@@ -25,6 +25,7 @@
 #include "chpl/util/memory.h"
 
 #include <unordered_map>
+#include <utility>
 
 namespace chpl {
 namespace resolution {
@@ -46,7 +47,7 @@ struct OwnedIdsWithName {
   owned<std::vector<ID>> moreIds;
 
   OwnedIdsWithName(ID id)
-    : id(id), moreIds(nullptr)
+    : id(std::move(id)), moreIds(nullptr)
   { }
 
   void appendId(ID newId) {
@@ -82,7 +83,7 @@ struct BorrowedIdsWithName {
   ID id;
   const std::vector<ID>* moreIds = nullptr;
   BorrowedIdsWithName() { }
-  BorrowedIdsWithName(ID id) : id(id) { }
+  BorrowedIdsWithName(ID id) : id(std::move(id)) { }
   BorrowedIdsWithName(const OwnedIdsWithName& o)
     : id(o.id), moreIds(o.moreIds.get())
   { }
@@ -92,6 +93,25 @@ struct BorrowedIdsWithName {
   }
   bool operator!=(const BorrowedIdsWithName& other) const {
     return !(*this == other);
+  }
+  size_t hash() const {
+    size_t ret = 0;
+    if (moreIds == nullptr) {
+      ret = hash_combine(ret, chpl::hash(id));
+    } else {
+      for (const ID& x : *moreIds) {
+        ret = hash_combine(ret, chpl::hash(x));
+      }
+    }
+    return ret;
+  }
+
+  const ID& firstId() const {
+    if (moreIds == nullptr) {
+      return id;
+    } else {
+      return (*moreIds)[0];
+    }
   }
 };
 
@@ -108,43 +128,24 @@ using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
   point-of-instantiation reasoning will need to be handled with a different
   type.
  */
-// TODO: adjust Conditional to contain Blocks so we can associate
-// scopes 1:1 with these blocks.
-// TODO: also adjust Function to store body in a separate node from args
-// TODO: also adjust Loops to store body separate from index variables
 struct Scope {
   const Scope* parentScope = nullptr;
   uast::asttags::ASTTag tag = uast::asttags::NUM_AST_TAGS;
   bool containsUseImport = false;
+  bool containsFunctionDecls = false;
   ID id;
+  UniqueString name;
   DeclMap declared;
 
   Scope() { }
 
   bool operator==(const Scope& other) const {
-    bool match =  parentScope == other.parentScope &&
-                  tag == other.tag &&
-                  containsUseImport == other.containsUseImport &&
-                  id == other.id &&
-                  declared.size() == other.declared.size();
-    if (match) {
-      // check also the contents of the maps
-      for (const auto& pair : declared) {
-        UniqueString key = pair.first;
-        const OwnedIdsWithName& val = pair.second;
-        // look up the same key in other
-        auto search = other.declared.find(key);
-        if (search == other.declared.end()) {
-          return false;
-        }
-        // check that they values are the same
-        const OwnedIdsWithName& otherVal = search->second;
-        if (val != otherVal) {
-          return false;
-        }
-      }
-    }
-    return match;
+    return parentScope == other.parentScope &&
+           tag == other.tag &&
+           containsUseImport == other.containsUseImport &&
+           containsFunctionDecls == other.containsFunctionDecls &&
+           id == other.id &&
+           declared == other.declared;
   }
   bool operator!=(const Scope& other) const {
     return !(*this == other);
@@ -189,9 +190,7 @@ struct VisibilitySymbols {
 
   void swap(VisibilitySymbols& other) {
     symbolId.swap(other.symbolId);
-    Kind tmp = kind;
-    kind = other.kind;
-    other.kind = tmp;
+    std::swap(kind, other.kind);
     names.swap(other.names);
   }
 };
@@ -212,6 +211,41 @@ struct ResolvedVisibilityScope {
            visibilityClauses == other.visibilityClauses;
   }
   bool operator!=(const ResolvedVisibilityScope& other) const {
+    return !(*this == other);
+  }
+};
+
+enum {
+  LOOKUP_DECLS = 1,
+  LOOKUP_IMPORT_AND_USE = 2,
+  LOOKUP_PARENTS = 4,
+  LOOKUP_TOPLEVEL = 8,
+  LOOKUP_INNERMOST = 16,
+};
+using LookupConfig = unsigned int;
+
+// When resolving a traditional generic, we also need to consider
+// the point-of-instantiation scope as a place to find visible functions.
+// This type tracks such a scope.
+//
+// PoiScopes do not need to consider scopes that are visible from
+// the function declaration. These can be collapsed away.
+//
+// Performance: could have better reuse of PoiScope if it used the Scope ID
+// rather than changing if the contents do. But, the downside is that
+// further queries would be required to compute which functions are
+// visible. Which is better?
+// If we want to make PoiScope not depend on the contents it might be nice
+// to make Scope itself not depend on the contents, too.
+struct PoiScope {
+  const Scope* inScope = nullptr;         // parent Scope for the Call
+  const PoiScope* inFnPoi = nullptr;      // what is the POI of this POI?
+
+  bool operator==(const PoiScope& other) const {
+    return inScope == other.inScope &&
+           inFnPoi == other.inFnPoi;
+  }
+  bool operator!=(const PoiScope& other) const {
     return !(*this == other);
   }
 };
@@ -239,12 +273,37 @@ struct InnermostMatch {
   }
   void swap(InnermostMatch& other) {
     id.swap(other.id);
-    MatchesFound tmp = found;
-    found = other.found;
-    other.found = tmp;
+    std::swap(found, other.found);
   }
 };
 
 } // end namespace resolution
+
+template<> struct update<resolution::InnermostMatch> {
+  bool operator()(resolution::InnermostMatch& keep,
+                  resolution::InnermostMatch& addin) const {
+    bool match = (keep == addin);
+    if (match) {
+      return false;
+    } else {
+      keep.swap(addin);
+      return true;
+    }
+  }
+};
+
+
 } // end namespace chpl
+
+namespace std {
+
+template<> struct hash<chpl::resolution::BorrowedIdsWithName>
+{
+  size_t operator()(const chpl::resolution::BorrowedIdsWithName& key) const {
+    return key.hash();
+  }
+};
+
+} // end namespace std
+
 #endif

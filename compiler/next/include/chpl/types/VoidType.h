@@ -17,25 +17,43 @@
  * limitations under the License.
  */
 
-#include "chpl/types/UnknownType.h"
-#include "chpl/queries/query-impl.h"
+#ifndef CHPL_TYPES_VOIDTYPE_H
+#define CHPL_TYPES_VOIDTYPE_H
+
+#include "chpl/types/Type.h"
 
 namespace chpl {
 namespace types {
 
 
-const owned<UnknownType>& UnknownType::getUnknownType(Context* context) {
-  QUERY_BEGIN(getUnknownType, context);
+/**
+  This class represents the void type.
+ */
+class VoidType : public Type {
+ private:
+  VoidType() : Type(typetags::VoidType) { }
 
-  auto result = toOwned(new UnknownType());
+  bool contentsMatchInner(const Type* other) const override {
+    return true;
+  }
 
-  return QUERY_END(result);
-}
+  void markUniqueStringsInner(Context* context) const override {
+  }
 
-const UnknownType* UnknownType::get(Context* context) {
-  return getUnknownType(context).get();
-}
+  bool isGeneric() const override {
+    return false;
+  }
+
+  static const owned<VoidType>& getVoidType(Context* context);
+
+ public:
+  ~VoidType() = default;
+
+  static const VoidType* get(Context* context);
+};
 
 
-} // end namespace types
+} // end namespace uast
 } // end namespace chpl
+
+#endif

@@ -346,6 +346,7 @@ class ASTNode {
         { \
           const NAME* casted = (const NAME*) this; \
           v.enter(casted); \
+          assert(this->numChildren() == 0); \
           v.exit(casted); \
           break; \
         }

@@ -199,9 +199,9 @@ class Context {
 
   std::vector<const querydetail::QueryMapResultBase*> queryStack;
 
-
   querydetail::RevisionNumber currentRevisionNumber = 1;
   bool enableDebugTracing = false;
+  int numQueriesRunThisRevision_ = 0;
 
   static void defaultReportError(const ErrorMessage& err);
   void (*reportError)(const ErrorMessage& err) = defaultReportError;
@@ -353,6 +353,13 @@ class Context {
     (by marking elements appropriately).
    */
   void advanceToNextRevision(bool prepareToGC);
+
+  /**
+    Returns the number of query bodies executed in this revision.
+   */
+  int numQueriesRunThisRevision() const {
+    return numQueriesRunThisRevision_;
+  }
 
   /**
     This function runs garbage collection. It will collect UniqueStrings

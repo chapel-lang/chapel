@@ -18,13 +18,22 @@
  */
 
 #include "chpl/types/ErroneousType.h"
+#include "chpl/queries/query-impl.h"
 
 namespace chpl {
 namespace types {
 
 
-owned<ErroneousType> ErroneousType::build() {
-  return toOwned(new ErroneousType());
+const owned<ErroneousType>& ErroneousType::getErroneousType(Context* context) {
+  QUERY_BEGIN(getErroneousType, context);
+
+  auto result = toOwned(new ErroneousType());
+
+  return QUERY_END(result);
+}
+
+const ErroneousType* ErroneousType::get(Context* context) {
+  return getErroneousType(context).get();
 }
 
 

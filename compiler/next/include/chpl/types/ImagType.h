@@ -17,40 +17,54 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_ERRONEOUSTYPE_H
-#define CHPL_TYPES_ERRONEOUSTYPE_H
+#ifndef CHPL_TYPES_IMAGTYPE_H
+#define CHPL_TYPES_IMAGTYPE_H
 
-#include "chpl/types/Type.h"
+#include "chpl/types/PrimitiveType.h"
 
 namespace chpl {
 namespace types {
 
 
 /**
-  This class represents an erroneous type - that is, a type used as an error
-  sentinel type. Errors with this type should be ignored.
+  This class represents a imag type, e.g. `imag` or `imag(32)`.
  */
-class ErroneousType : public Type {
+class ImagType : public PrimitiveType {
  private:
-  ErroneousType() : Type(typetags::ErroneousType) { }
+  ImagType(int bitwidth)
+    : PrimitiveType(typetags::ImagType, bitwidth)
+  { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return true;
+    return primitiveTypeContentsMatchInner((PrimitiveType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
+    primitiveTypeMarkUniqueStringsInner(context);
   }
 
-  bool isGeneric() const override {
-    return false;
-  }
-
-  static const owned<ErroneousType>& getErroneousType(Context* context);
+  static const owned<ImagType>& getImagType(Context* context, int bitwidth);
 
  public:
-  ~ErroneousType() = default;
+  ~ImagType() = default;
 
-  static const ErroneousType* get(Context* context);
+  static const ImagType* get(Context* context, int bitwidth);
+
+  int bitwidth() const override {
+    return bitwidth_;
+  }
+
+  const char* c_str() const override {
+    switch (bitwidth_) {
+      case 32:
+        return "imag(32)";
+      case 64:
+          return "imag(64)";
+      default:
+        assert(false && "imag bit width case not handled");
+        return "real(<unknown>)";
+    }
+  }
 };
 
 

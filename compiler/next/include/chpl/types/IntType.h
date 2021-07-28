@@ -17,40 +17,58 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_ERRONEOUSTYPE_H
-#define CHPL_TYPES_ERRONEOUSTYPE_H
+#ifndef CHPL_TYPES_INTTYPE_H
+#define CHPL_TYPES_INTTYPE_H
 
-#include "chpl/types/Type.h"
+#include "chpl/types/PrimitiveType.h"
 
 namespace chpl {
 namespace types {
 
 
 /**
-  This class represents an erroneous type - that is, a type used as an error
-  sentinel type. Errors with this type should be ignored.
+  This class represents an int type, e.g. `int` or `int(32)`.
  */
-class ErroneousType : public Type {
+class IntType : public PrimitiveType {
  private:
-  ErroneousType() : Type(typetags::ErroneousType) { }
+  IntType(int bitwidth)
+    : PrimitiveType(typetags::IntType, bitwidth)
+  { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return true;
+    return primitiveTypeContentsMatchInner((PrimitiveType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
+    primitiveTypeMarkUniqueStringsInner(context);
   }
 
-  bool isGeneric() const override {
-    return false;
-  }
-
-  static const owned<ErroneousType>& getErroneousType(Context* context);
+  static const owned<IntType>& getIntType(Context* context, int bitwidth);
 
  public:
-  ~ErroneousType() = default;
+  ~IntType() = default;
 
-  static const ErroneousType* get(Context* context);
+  static const IntType* get(Context* context, int bitwidth);
+
+  int bitwidth() const override {
+    return bitwidth_;
+  }
+
+  const char* c_str() const override {
+    switch (bitwidth_) {
+      case 8:
+        return "int(8)";
+      case 16:
+        return "int(16)";
+      case 32:
+        return "int(32)";
+      case 64:
+        return "int(64)";
+      default:
+        assert(false && "int bit width case not handled");
+        return "int(<unknown>)";
+    }
+  }
 };
 
 

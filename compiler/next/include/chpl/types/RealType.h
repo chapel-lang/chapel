@@ -17,40 +17,54 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_ERRONEOUSTYPE_H
-#define CHPL_TYPES_ERRONEOUSTYPE_H
+#ifndef CHPL_TYPES_REALTYPE_H
+#define CHPL_TYPES_REALTYPE_H
 
-#include "chpl/types/Type.h"
+#include "chpl/types/PrimitiveType.h"
 
 namespace chpl {
 namespace types {
 
 
 /**
-  This class represents an erroneous type - that is, a type used as an error
-  sentinel type. Errors with this type should be ignored.
+  This class represents a real type, e.g. `real` or `real(32)`.
  */
-class ErroneousType : public Type {
+class RealType : public PrimitiveType {
  private:
-  ErroneousType() : Type(typetags::ErroneousType) { }
+  RealType(int bitwidth)
+    : PrimitiveType(typetags::RealType, bitwidth)
+  { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return true;
+    return primitiveTypeContentsMatchInner((PrimitiveType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
+    primitiveTypeMarkUniqueStringsInner(context);
   }
 
-  bool isGeneric() const override {
-    return false;
-  }
-
-  static const owned<ErroneousType>& getErroneousType(Context* context);
+  static const owned<RealType>& getRealType(Context* context, int bitwidth);
 
  public:
-  ~ErroneousType() = default;
+  ~RealType() = default;
 
-  static const ErroneousType* get(Context* context);
+  static const RealType* get(Context* context, int bitwidth);
+
+  int bitwidth() const override {
+    return bitwidth_;
+  }
+
+  const char* c_str() const override {
+    switch (bitwidth_) {
+      case 32:
+        return "real(32)";
+      case 64:
+          return "real(64)";
+      default:
+        assert(false && "real bit width case not handled");
+        return "real(<unknown>)";
+    }
+  }
 };
 
 

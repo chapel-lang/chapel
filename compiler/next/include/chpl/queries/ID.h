@@ -74,7 +74,7 @@ class ID final {
   /**
     Returns the numbering of this node in a postorder traversal
     of a symbol's nodes. When the AST node defines a new ID symbol scope,
-    (as with a function or module) this will return numContainedChildren.
+    (as with Function or Module) this will return -1.
    */
   int postOrderId() const { return postOrderId_; }
 
@@ -199,12 +199,6 @@ namespace std {
   template<> struct hash<chpl::ID> {
     inline size_t operator()(const chpl::ID& key) const {
       return key.hash();
-    }
-  };
-  template<> struct equal_to<chpl::ID> {
-    inline bool operator()(const chpl::ID& lhs,
-                    const chpl::ID& rhs) const {
-      return lhs == rhs;
     }
   };
 } // end namespace std
