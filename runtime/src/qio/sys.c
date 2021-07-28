@@ -408,7 +408,6 @@ err_t sys_strerror_internal(err_t error, char** string_out, size_t extra_space)
   char* buf = NULL;
   char* newbuf;
   const char* errmsg;
-  int got;
   err_t err_out;
 
   err_out = 0;
@@ -433,18 +432,16 @@ err_t sys_strerror_internal(err_t error, char** string_out, size_t extra_space)
       return ENOMEM;
     }
     buf = newbuf;
-    got = sys_xsi_strerror_r(error, buf, buf_sz);
-    if (got == 0) break;
-    if (got != ERANGE) {
-      err_out = got;
-      break;
-    }
-    buf_sz *= 2; // try again with a bigger buffer.
+    err_out = sys_xsi_strerror_r(error, buf, buf_sz);
+    if (err_out == 0) break;
+    if (err_out != ERANGE) break;
+    // otherwise, the error was ERANGE so try again with a bigger buffer
+    buf_sz *= 2;
   }
 
   // maybe it's a EAI/gai error, which we add GAI_ERROR_OFFSET to.
 #ifdef HAS_GETADDRINFO
-  if( got != 0 && err_out == EINVAL ) {
+  if( err_out == EINVAL ) {
     const char* gai_str;
     int len;
     gai_str = gai_strerror(error - GAI_ERROR_OFFSET);
