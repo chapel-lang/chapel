@@ -92,6 +92,12 @@ module Socket {
     return try! _addressStorage.port();
   }
 
+  inline operator !=(in lhs: ipAddr,in rhs: ipAddr) {
+    return lhs.family != rhs.family || lhs.host != rhs.host || lhs.port != rhs.port;
+  }
+
+  proc ipAddr.writeThis(f) throws {
+    f.write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
   }
 
   private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:c_int):syserr;
@@ -110,6 +116,14 @@ module Socket {
 
   proc tcpConn.addr {
     return try! remoteAddress(this.socketFd);
+  }
+
+  inline operator !=(in lhs: tcpConn,in rhs: tcpConn) {
+    return lhs.socketFd != rhs.socketFd;
+  }
+
+  proc tcpConn.writeThis(f) throws {
+    f.write("(","addr:",this.addr,",fd:",this.socketFd);
   }
 
   private extern proc sizeof(e): size_t;
@@ -170,6 +184,14 @@ module Socket {
 
   proc tcpListener.addr {
     return try! localAddress(this.socketFd);
+  }
+
+  inline operator !=(in lhs: tcpListener,in rhs: tcpListener) {
+    return lhs.socketFd != rhs.socketFd;
+  }
+
+  proc tcpListener.writeThis(f) throws {
+    f.write("(","addr:",this.addr,",fd:",this.socketFd);
   }
 
   proc listen(in address:ipAddr, reuseAddr = true, backlog = 5) throws {
@@ -377,6 +399,14 @@ module Socket {
     }
 
     return length;
+  }
+
+  inline operator !=(in lhs: udpSocket,in rhs: udpSocket) {
+    return lhs.socketFd != rhs.socketFd;
+  }
+
+  proc udpSocket.writeThis(f) throws {
+    f.write("(","addr:",this.addr,",fd:",this.socketFd);
   }
 
   proc setSocketOpt(socketFd:fd_t, level:c_int, optname:c_int, value:c_int) throws {
