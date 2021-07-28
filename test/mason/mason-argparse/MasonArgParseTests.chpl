@@ -1325,6 +1325,44 @@ proc testTryDuplicateLongOpt(test: borrowed Test) throws {
   test.assertTrue(false);  
 }
 
+// add a subcommand
+proc testAddSubCommand(test: borrowed Test) throws {
+  var argList = ["progName","subCommand1"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertEqual(remain.size,0);
+  test.assertTrue(mySubCmd1._present);
+}
+
+// use an option and then a subcommand
+proc testOptionPlusSubCommand(test: borrowed Test) throws {
+  var argList = ["progName","-n","20","subCommand1"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var myStrArg1 = parser.addOption(name="StringOpt",
+                              opts=["-n","--strArg"],            
+                              numArgs=1);
+  var remain = parser.parseArgs(argList[1..]);
+//  test.assertEqual(pos,1);
+  test.assertTrue(mySubCmd1._present);
+  test.assertEqual(remain.size, 0);
+  test.assertTrue(myStrArg1.hasValue());
+  test.assertEqual(myStrArg1.value(), "20");
+}
+
+
+// add a subcommand with sub options
+proc testAddSubCommandSubOptions(test: borrowed Test) throws {
+  var argList = ["progName","subCommand1","-n","20"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertEqual(remain.size,2);
+  test.assertTrue(mySubCmd1._present);
+  test.assertEqual(new list(argList[2..]),remain);
+}
+
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
 UnitTest.main();
