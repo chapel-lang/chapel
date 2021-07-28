@@ -94,7 +94,7 @@ static void test1() {
   assert(helpSig->untypedSignature->functionId == nHelper->id());
 }
 
-// showing the challenging program from issue 18081
+// testing the challenging program from issue 18081
 static void test2() {
   printf("test2\n");
   Context ctx;
@@ -213,10 +213,220 @@ static void test2() {
   assert(fooBBarCallR.mostSpecific.only()->functionId() == m2Bar->id());
 }
 
+// testing the challenging program from issue 18119
+static void test3() {
+  printf("test3\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::build(context, "input.chpl");
+  std::string contents = R""""(
+    module G {
+      proc genericfunc(param p) {
+        helper1();
+        helper2();
+        helper3();
+      }
+    }
+
+    module M {
+      use G;
+      proc mCallFunc() {
+        genericfunc(1);
+        proc helper2() { }
+        // M.helper1, M.call.helper2, M.helper3
+      }
+      proc mGenericCallFunc(param p) {
+        genericfunc(p); // this call has POI here, parent POI N
+                        // uses M.helper1, N.helper2, M.helper3
+                        // -- so used scopes is {M,N}
+      }
+      proc helper1() { }
+      proc helper3() { }
+    }
+
+    module N {
+      use G,M;
+      proc nCallFunc() {
+        genericfunc(1); // this call has POI here, no parent POI
+                        // uses N.helper1, N.helper2, M.helper3
+                        // -- so used scopes is {M,N}
+      }
+      proc helper1() { }
+      proc helper2() { }
+
+      proc main() {
+        nCallFunc();
+        mCallFunc();
+        mGenericCallFunc(1); // no bug if this call is first
+      }
+    }
+  )"""";
+
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 3);
+  const Module* G = vec[0]->toModule();
+  assert(G);
+  assert(G->numStmts() == 1);
+  const Module* M = vec[1]->toModule();
+  assert(M);
+  assert(M->numStmts() == 5);
+  const Module* N = vec[2]->toModule();
+  assert(N);
+  assert(N->numStmts() == 5);
+
+  auto genericfunc = G->stmt(0)->toFunction();
+  assert(genericfunc);
+  auto helperCall1 = genericfunc->stmt(0)->toCall();
+  assert(helperCall1);
+  auto helperCall2 = genericfunc->stmt(1)->toCall();
+  assert(helperCall2);
+  auto helperCall3 = genericfunc->stmt(2)->toCall();
+  assert(helperCall3);
+
+  auto mCallFunc = M->stmt(1)->toFunction();
+  assert(mCallFunc);
+  assert(mCallFunc->numStmts() == 3);
+  auto mCallFuncGCall = mCallFunc->stmt(0)->toCall();
+  assert(mCallFuncGCall);
+  auto mHelper2 = mCallFunc->stmt(1)->toFunction();
+  assert(mHelper2);
+  auto mGenericCallFunc = M->stmt(2)->toFunction();
+  assert(mGenericCallFunc);
+  auto mGenericCallFuncGCall = mGenericCallFunc->stmt(0)->toCall();
+  assert(mCallFuncGCall);
+  auto mHelper1 = M->stmt(3)->toFunction();
+  assert(mHelper1);
+  auto mHelper3 = M->stmt(4)->toFunction();
+  assert(mHelper3);
+
+  auto nCallFunc = N->stmt(1)->toFunction();
+  assert(nCallFunc);
+  auto nCallFuncGCall = nCallFunc->stmt(0)->toCall();
+  assert(nCallFuncGCall);
+  auto nHelper1 = N->stmt(2)->toFunction();
+  assert(nHelper1);
+  auto nHelper2 = N->stmt(3)->toFunction();
+  assert(nHelper2);
+  auto main = N->stmt(4)->toFunction();
+  assert(main);
+  assert(main->numStmts() >= 3);
+
+  auto nCall = main->stmt(0)->toCall();
+  assert(nCall);
+  auto mCall = main->stmt(1)->toCall();
+  assert(mCall);
+  auto mGenericCall = main->stmt(2)->toCall();
+  assert(mGenericCall);
+
+  // resolve main
+  const ResolvedFunction* rMain = resolvedConcreteFunction(context, main->id());
+  assert(rMain);
+
+  // find the resolved calls in main to nCallFunc, mCallFunc, mGenericCallFunc
+  const ResolvedExpression& rNCall = rMain->byAst(nCall);
+  const ResolvedExpression& rMCall = rMain->byAst(mCall);
+  const ResolvedExpression& rMGenericCall = rMain->byAst(mGenericCall);
+  assert(rNCall.mostSpecific.only());
+  assert(rMCall.mostSpecific.only());
+  assert(rMGenericCall.mostSpecific.only());
+
+  const ResolvedFunction* rNCallFunc =
+    resolvedFunction(context, rNCall.mostSpecific.only(), rNCall.poiScope);
+  assert(rNCallFunc);
+
+  const ResolvedFunction* rMCallFunc =
+    resolvedFunction(context, rMCall.mostSpecific.only(), rMCall.poiScope);
+  assert(rMCallFunc);
+
+  const ResolvedFunction* rMGenericCallFunc =
+    resolvedFunction(context, rMGenericCall.mostSpecific.only(),
+                              rMGenericCall.poiScope);
+  assert(rMGenericCallFunc);
+
+  // within each of those, find the call to genericfunc
+  const ResolvedExpression& rNCallFuncGCall =
+    rNCallFunc->byAst(nCallFuncGCall);
+  const ResolvedExpression& rMCallFuncGCall =
+    rMCallFunc->byAst(mCallFuncGCall);
+  const ResolvedExpression& rMGenericCallFuncGCall =
+    rMGenericCallFunc->byAst(mGenericCallFuncGCall);
+  assert(rNCallFuncGCall.mostSpecific.only());
+  assert(rMCallFuncGCall.mostSpecific.only());
+  assert(rMGenericCallFuncGCall.mostSpecific.only());
+
+  const ResolvedFunction* rNCallGF =
+    resolvedFunction(context, rNCallFuncGCall.mostSpecific.only(),
+                              rNCallFuncGCall.poiScope);
+  assert(rNCallGF);
+  const ResolvedFunction* rMCallGF =
+    resolvedFunction(context, rMCallFuncGCall.mostSpecific.only(),
+                              rMCallFuncGCall.poiScope);
+  assert(rMCallGF);
+  const ResolvedFunction* rMGenericCallGF =
+    resolvedFunction(context, rMGenericCallFuncGCall.mostSpecific.only(),
+                              rMGenericCallFuncGCall.poiScope);
+  assert(rMGenericCallGF);
+
+  // now within each one of those, check the
+  // helper1 / helper2 / helper3 calls go to the right place.
+
+  // first, check in nCall
+  {
+    const ResolvedExpression& h1 = rNCallGF->byAst(helperCall1);
+    const ResolvedExpression& h2 = rNCallGF->byAst(helperCall2);
+    const ResolvedExpression& h3 = rNCallGF->byAst(helperCall3);
+
+    assert(h1.mostSpecific.only());
+    assert(h1.mostSpecific.only()->functionId() == nHelper1->id());
+
+    assert(h2.mostSpecific.only());
+    assert(h2.mostSpecific.only()->functionId() == nHelper2->id());
+
+    assert(h3.mostSpecific.only());
+    assert(h3.mostSpecific.only()->functionId() == mHelper3->id());
+  }
+
+  // next, check in mCall
+  {
+    const ResolvedExpression& h1 = rMCallGF->byAst(helperCall1);
+    const ResolvedExpression& h2 = rMCallGF->byAst(helperCall2);
+    const ResolvedExpression& h3 = rMCallGF->byAst(helperCall3);
+
+    assert(h1.mostSpecific.only());
+    assert(h1.mostSpecific.only()->functionId() == mHelper1->id());
+
+    assert(h2.mostSpecific.only());
+    assert(h2.mostSpecific.only()->functionId() == mHelper2->id());
+
+    assert(h3.mostSpecific.only());
+    assert(h3.mostSpecific.only()->functionId() == mHelper3->id());
+  }
+
+  // then, check in mGenericCall
+  {
+    const ResolvedExpression& h1 = rMGenericCallGF->byAst(helperCall1);
+    const ResolvedExpression& h2 = rMGenericCallGF->byAst(helperCall2);
+    const ResolvedExpression& h3 = rMGenericCallGF->byAst(helperCall3);
+
+    assert(h1.mostSpecific.only());
+    assert(h1.mostSpecific.only()->functionId() == mHelper1->id());
+
+    assert(h2.mostSpecific.only());
+    assert(h2.mostSpecific.only()->functionId() == nHelper2->id());
+
+    assert(h3.mostSpecific.only());
+    assert(h3.mostSpecific.only()->functionId() == mHelper3->id());
+  }
+}
 
 int main() {
   test1();
   test2();
+  test3();
 
   return 0;
 }
