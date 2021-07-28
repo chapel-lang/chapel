@@ -100,7 +100,7 @@ class QualifiedType {
     other.param_ = tmpParam;
   }
   size_t hash() const {
-    size_t h1 = chpl::hash(kind_);
+    size_t h1 = chpl::hash((unsigned) kind_);
     size_t h2 = chpl::hash(type_);
     size_t h3 = chpl::hash(param_);
 
