@@ -215,6 +215,15 @@ struct ResolvedVisibilityScope {
   }
 };
 
+enum {
+  LOOKUP_DECLS = 1,
+  LOOKUP_IMPORT_AND_USE = 2,
+  LOOKUP_PARENTS = 4,
+  LOOKUP_TOPLEVEL = 8,
+  LOOKUP_INNERMOST = 16,
+};
+using LookupConfig = unsigned int;
+
 // When resolving a traditional generic, we also need to consider
 // the point-of-instantiation scope as a place to find visible functions.
 // This type tracks such a scope.

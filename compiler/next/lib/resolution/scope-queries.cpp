@@ -232,22 +232,14 @@ const Scope* scopeForId(Context* context, ID id) {
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
                             UniqueString name,
-                            bool checkDecls,
-                            bool checkUseImport,
-                            bool checkParents,
-                            bool checkToplevel,
-                            bool findOne,
+                            LookupConfig config,
                             std::unordered_set<const Scope*>& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result);
 
 static bool doLookupExprInScope(Context* context,
                                 const Scope* scope,
                                 const Expression* expr,
-                                bool checkDecls,
-                                bool checkUseImport,
-                                bool checkParents,
-                                bool checkToplevel,
-                                bool findOne,
+                                LookupConfig config,
                                 std::unordered_set<const Scope*>& checkedScopes,
                                 std::vector<BorrowedIdsWithName>& result,
                                 UniqueString& name);
@@ -270,7 +262,7 @@ static bool doLookupInScopeDecls(Context* context,
 static bool doLookupInImports(Context* context,
                               const Scope* scope,
                               UniqueString name,
-                              bool findOne,
+                              bool onlyInnermost,
                               std::unordered_set<const Scope*>& checkedScopes,
                               std::vector<BorrowedIdsWithName>& result) {
   // Look in the (potentially partial) imported symbol data
@@ -302,15 +294,18 @@ static bool doLookupInImports(Context* context,
         const Scope* symScope = scopeForId(context, is.symbolId);
         // this symbol should be a module/enum etc which has a scope
         assert(symScope->id == is.symbolId);
+
+        LookupConfig newConfig = LOOKUP_DECLS |
+                                 LOOKUP_IMPORT_AND_USE;
+
+        if (onlyInnermost) {
+          newConfig |= LOOKUP_INNERMOST;
+        }
+
         // find it in that scope
-        bool found = doLookupInScope(context, symScope, from,
-                                     /*checkDecls*/ true,
-                                     /*checkUseImport*/ true,
-                                     /*checkParents*/ false,
-                                     /*checkToplevel*/ false,
-                                     findOne,
+        bool found = doLookupInScope(context, symScope, from, newConfig,
                                      checkedScopes, result);
-        if (found && findOne)
+        if (found && onlyInnermost)
           return true;
       }
     }
@@ -332,13 +327,15 @@ static bool doLookupInToplevelModules(Context* context,
 static bool doLookupInScope(Context* context,
                             const Scope* scope,
                             UniqueString name,
-                            bool checkDecls,
-                            bool checkUseImport,
-                            bool checkParents,
-                            bool checkToplevel,
-                            bool findOne,
+                            LookupConfig config,
                             std::unordered_set<const Scope*>& checkedScopes,
                             std::vector<BorrowedIdsWithName>& result) {
+
+  bool checkDecls = (config & LOOKUP_DECLS) != 0;
+  bool checkUseImport = (config & LOOKUP_IMPORT_AND_USE) != 0;
+  bool checkParents = (config & LOOKUP_PARENTS) != 0;
+  bool checkToplevel = (config & LOOKUP_TOPLEVEL) != 0;
+  bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
 
   // TODO: to include checking for symbol privacy,
   // add a findPrivate argument to doLookupInScope and set it
@@ -359,26 +356,29 @@ static bool doLookupInScope(Context* context,
 
   if (checkDecls) {
     bool got = doLookupInScopeDecls(context, scope, name, result);
-    if (findOne && got) return true;
+    if (onlyInnermost && got) return true;
   }
 
   if (checkUseImport) {
-    bool got = doLookupInImports(context, scope, name, findOne,
+    bool got = doLookupInImports(context, scope, name, onlyInnermost,
                                  checkedScopes, result);
-    if (findOne && got) return true;
+    if (onlyInnermost && got) return true;
   }
 
   if (checkParents) {
+    LookupConfig newConfig = LOOKUP_DECLS;
+    if (checkUseImport) {
+      newConfig |= LOOKUP_IMPORT_AND_USE;
+    }
+    if (onlyInnermost) {
+      newConfig |= LOOKUP_INNERMOST;
+    }
+
     const Scope* cur = nullptr;
     for (cur = scope->parentScope; cur != nullptr; cur = cur->parentScope) {
-      bool got = doLookupInScope(context, cur, name,
-                                 /* checkDecls */ true,
-                                 /* checkUseImport */ checkUseImport,
-                                 /* checkParents */ false,
-                                 /* checkToplevel */ false,
-                                 findOne,
+      bool got = doLookupInScope(context, cur, name, newConfig,
                                  checkedScopes, result);
-      if (findOne && got) return true;
+      if (onlyInnermost && got) return true;
 
       // stop if we reach a Module scope
       if (asttags::isModule(cur->tag))
@@ -392,20 +392,15 @@ static bool doLookupInScope(Context* context,
         rootScope = cur;
     }
     if (rootScope != nullptr) {
-      bool got = doLookupInScope(context, rootScope, name,
-                                 /* checkDecls */ true,
-                                 /* checkUseImport */ false,
-                                 /* checkParents */ false,
-                                 /* checkToplevel */ false,
-                                 findOne,
+      bool got = doLookupInScope(context, rootScope, name, newConfig,
                                  checkedScopes, result);
-      if (findOne && got) return true;
+      if (onlyInnermost && got) return true;
     }
   }
 
   if (checkToplevel) {
     bool got = doLookupInToplevelModules(context, scope, name, result);
-    if (findOne && got) return true;
+    if (onlyInnermost && got) return true;
   }
 
   return result.size() > startSize;
@@ -414,11 +409,7 @@ static bool doLookupInScope(Context* context,
 static bool doLookupExprInScope(Context* context,
                                 const Scope* scope,
                                 const Expression* expr,
-                                bool checkDecls,
-                                bool checkUseImport,
-                                bool checkParents,
-                                bool checkToplevel,
-                                bool findOne,
+                                LookupConfig config,
                                 std::unordered_set<const Scope*>& checkedScopes,
                                 std::vector<BorrowedIdsWithName>& result,
                                 UniqueString& name) {
@@ -426,9 +417,7 @@ static bool doLookupExprInScope(Context* context,
   if (auto ident = expr->toIdentifier()) {
     UniqueString n = ident->name();
     name = n;
-    return doLookupInScope(context, scope, n,
-                           checkDecls, checkUseImport, checkParents,
-                           checkToplevel, findOne,
+    return doLookupInScope(context, scope, n, config,
                            checkedScopes, result);
   } else if (auto dot = expr->toDot()) {
     const Expression* rcv = dot->receiver();
@@ -438,11 +427,10 @@ static bool doLookupExprInScope(Context* context,
     ID rcvId;
     UniqueString rcvName;
 
+    LookupConfig rcvConfig = config | LOOKUP_INNERMOST;
+
     // lookup the receiver, recursively
-    bool ok = doLookupExprInScope(context, scope, rcv,
-                                  checkDecls, checkUseImport,
-                                  checkParents, checkToplevel,
-                                  /* findOne */ true,
+    bool ok = doLookupExprInScope(context, scope, rcv, rcvConfig,
                                   checkedScopes, rcvResult, rcvName);
 
     if (ok == false || rcvResult.size() == 0) {
@@ -457,17 +445,18 @@ static bool doLookupExprInScope(Context* context,
     // find the fieldName in the scope of rcvId
     const Scope* rcvScope = scopeForId(context, rcvId);
 
+    LookupConfig fieldConfig = LOOKUP_DECLS |
+                               LOOKUP_IMPORT_AND_USE;
+    if ((config & LOOKUP_INNERMOST) != 0) {
+      fieldConfig |= LOOKUP_INNERMOST;
+    }
+
     // save the field name we used
     name = fieldName;
     // look in rcvScope's declarations for fieldName
     // using a new set of checked scopes
     std::unordered_set<const Scope*> freshCheckedScopes;
-    return doLookupInScope(context, rcvScope, fieldName,
-                           /* checkDecls */ true,
-                           /* checkUseImport */ true,
-                           /* checkParents */ false,
-                           /* checkToplevel */ false,
-                           findOne,
+    return doLookupInScope(context, rcvScope, fieldName, fieldConfig,
                            freshCheckedScopes, result);
   } else {
     context->error(expr, "this expression type is not allowed here");
@@ -499,15 +488,20 @@ static bool lookupInScopeViz(Context* context,
   std::unordered_set<const Scope*> checkedScopes;
   std::vector<BorrowedIdsWithName> vec;
 
-  bool got = doLookupExprInScope(context, scope, expr,
-                                 /* checkDecls */ inUseEtc != VIS_IMPORT,
-                                 /* checkUseImport */ true,
-                                 /* checkParents */ true,
-                                 /* checkToplevel */ inUseEtc != VIS_NEITHER,
-                                 /* findOne */ true,
-                                 checkedScopes,
-                                 vec,
-                                 nameOfResult);
+  LookupConfig config = LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_PARENTS |
+                        LOOKUP_INNERMOST;
+
+  if (inUseEtc != VIS_IMPORT) {
+    config |= LOOKUP_DECLS;
+  }
+
+  if (inUseEtc != VIS_NEITHER) {
+    config |= LOOKUP_TOPLEVEL;
+  }
+
+  bool got = doLookupExprInScope(context, scope, expr, config,
+                                 checkedScopes, vec, nameOfResult);
 
   if (got == false || vec.size() == 0) {
     context->error(expr, "could not find imported thing");
@@ -524,51 +518,31 @@ static bool lookupInScopeViz(Context* context,
 std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                const Scope* scope,
                                                const Expression* expr,
-                                               bool checkDecls,
-                                               bool checkUseImport,
-                                               bool checkParents,
-                                               bool checkToplevel,
-                                               bool findOne) {
+                                               LookupConfig config) {
   std::unordered_set<const Scope*> checkedScopes;
 
-  return lookupInScopeWithSet(context, scope, expr,
-                              checkDecls, checkUseImport,
-                              checkParents, checkToplevel,
-                              findOne, checkedScopes);
+  return lookupInScopeWithSet(context, scope, expr, config, checkedScopes);
 }
 
 std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
                                                    const Scope* scope,
                                                    UniqueString name,
-                                                   bool checkDecls,
-                                                   bool checkUseImport,
-                                                   bool checkParents,
-                                                   bool checkToplevel,
-                                                   bool findOne) {
+                                                   LookupConfig config) {
   std::unordered_set<const Scope*> checkedScopes;
 
-  return lookupNameInScopeWithSet(context, scope, name,
-                                  checkDecls, checkUseImport,
-                                  checkParents, checkToplevel,
-                                  findOne, checkedScopes);
+  return lookupNameInScopeWithSet(context, scope, name, config, checkedScopes);
 }
 
 std::vector<BorrowedIdsWithName>
 lookupInScopeWithSet(Context* context,
                      const Scope* scope,
                      const Expression* expr,
-                     bool checkDecls,
-                     bool checkUseImport,
-                     bool checkParents,
-                     bool checkToplevel,
-                     bool findOne,
+                     LookupConfig config,
                      std::unordered_set<const Scope*>& visited) {
   std::vector<BorrowedIdsWithName> vec;
   UniqueString name;
 
-  doLookupExprInScope(context, scope, expr,
-                      checkDecls, checkUseImport, checkParents,
-                      checkToplevel, findOne,
+  doLookupExprInScope(context, scope, expr, config,
                       visited, vec, name);
 
   return vec;
@@ -578,17 +552,11 @@ std::vector<BorrowedIdsWithName>
 lookupNameInScopeWithSet(Context* context,
                          const Scope* scope,
                          UniqueString name,
-                         bool checkDecls,
-                         bool checkUseImport,
-                         bool checkParents,
-                         bool checkToplevel,
-                         bool findOne,
+                         LookupConfig config,
                          std::unordered_set<const Scope*>& visited) {
   std::vector<BorrowedIdsWithName> vec;
 
-  doLookupInScope(context, scope, name,
-                  checkDecls, checkUseImport, checkParents,
-                  checkToplevel, findOne,
+  doLookupInScope(context, scope, name, config,
                   visited, vec);
   return vec;
 }
@@ -907,13 +875,13 @@ const InnermostMatch& findInnermostDecl(Context* context,
   ID id;
   InnermostMatch::MatchesFound count = InnermostMatch::ZERO;
 
+  LookupConfig config = LOOKUP_DECLS |
+                        LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_PARENTS |
+                        LOOKUP_INNERMOST;
+
   std::vector<BorrowedIdsWithName> vec =
-    lookupNameInScope(context, scope, name,
-                      /* checkDecls */ true,
-                      /* checkUseImport */ true,
-                      /* checkParents */ true,
-                      /* checkToplevel */ false,
-                      /* findOne */ true);
+    lookupNameInScope(context, scope, name, config);
 
   if (vec.size() > 0) {
     const BorrowedIdsWithName& r = vec[0];

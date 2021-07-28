@@ -55,24 +55,24 @@ namespace resolution {
     Given an Expression and a Scope, return the things
     that Expression might refer to.
 
-    * If checkDecls is true, looks for symbols declared in this Scope.
-    * If checkUseImport is true, looks for symbols from use/import statements in
-      this Scope.
-    * If checkParents is true, looks for symbols from parent scopes
-      (but not parent modules of a module) including looking for declarations
-      and handling imports, and including finding declarations in the root
-      module.
-    * If checkToplevel is true, checks for a toplevel module with this name.
-    * If findOne is true, limits search to the innermost scope with a match.
+    The config argument is a group of or-ed together bit flags
+    that adjusts the behavior of the lookup:
+
+    * If LOOKUP_DECLS is set, looks for symbols declared in this Scope.
+    * If LOOKUP_IMPORT_AND_USE is set, looks for symbols from use/import
+      statements in this Scope.
+    * If LOOKUP_PARENTS is set, looks for symbols from parent scopes (but not
+      parent modules of a module) including looking for declarations and
+      handling imports, and including finding declarations in the root module.
+    * If LOOKUP_TOPLEVEL is set, checks for a toplevel module with this name.
+    * If LOOKUP_INNERMOST is true, limits search to the innermost scope with a
+      match.
+
    */
   std::vector<BorrowedIdsWithName> lookupInScope(Context* context,
                                                  const Scope* scope,
                                                  const uast::Expression* expr,
-                                                 bool checkDecls,
-                                                 bool checkUseImport,
-                                                 bool checkParents,
-                                                 bool checkToplevel,
-                                                 bool findOne);
+                                                 LookupConfig config);
 
   /**
     Same as lookupInScope above but uses a name instead of an
@@ -81,11 +81,7 @@ namespace resolution {
   std::vector<BorrowedIdsWithName> lookupNameInScope(Context* context,
                                                      const Scope* scope,
                                                      UniqueString name,
-                                                     bool checkDecls,
-                                                     bool checkUseImport,
-                                                     bool checkParents,
-                                                     bool checkToplevel,
-                                                     bool findOne);
+                                                     LookupConfig config);
 
   /**
     Same as lookupInScope but includes a set tracking visited scopes.
@@ -94,11 +90,7 @@ namespace resolution {
   lookupInScopeWithSet(Context* context,
                        const Scope* scope,
                        const uast::Expression* expr,
-                       bool checkDecls,
-                       bool checkUseImport,
-                       bool checkParents,
-                       bool checkToplevel,
-                       bool findOne,
+                       LookupConfig config,
                        std::unordered_set<const Scope*>& visited);
 
   /**
@@ -108,11 +100,7 @@ namespace resolution {
   lookupNameInScopeWithSet(Context* context,
                            const Scope* scope,
                            UniqueString name,
-                           bool checkDecls,
-                           bool checkUseImport,
-                           bool checkParents,
-                           bool checkToplevel,
-                           bool findOne,
+                           LookupConfig config,
                            std::unordered_set<const Scope*>& visited);
 
   /**
