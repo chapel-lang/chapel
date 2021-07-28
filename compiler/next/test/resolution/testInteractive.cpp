@@ -56,7 +56,7 @@ static void printId(const ASTNode* ast) {
 
 static const ResolvedExpression*
 resolvedExpressionForAst(Context* context, const ASTNode* ast,
-                         const TypedFnSignature* inFn) {
+                         const ResolvedFunction* inFn) {
   if (!(ast->isLoop() || ast->isBlock())) {
     // compute the parent module or function
     int postorder = ast->id().postOrderId();
@@ -69,14 +69,15 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast,
           return &byId.byAst(ast);
         } else if (parentAst->isFunction()) {
           auto untyped = untypedSignature(context, parentAst->id());
-          auto typed = typedSignatureInitial(context, untyped);
           // use inFn if it matches
-          if (inFn && inFn->untypedSignature == untyped) {
-            typed = inFn;
-          }
-          if (!typed->needsInstantiation) {
-            auto rFn = resolvedFunction(context, typed, typed->poiInfo.poiScope);
-            return &rFn->resolutionById.byAst(ast);
+          if (inFn && inFn->signature->untypedSignature == untyped) {
+            return &inFn->resolutionById.byAst(ast);
+          } else {
+            auto typed = typedSignatureInitial(context, untyped);
+            if (!typed->needsInstantiation) {
+              auto rFn = resolvedFunction(context, typed, nullptr);
+              return &rFn->resolutionById.byAst(ast);
+            }
           }
         }
       }
@@ -89,8 +90,8 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast,
 static void
 computeAndPrintStuff(Context* context,
                      const ASTNode* ast,
-                     const TypedFnSignature* inFn,
-                     std::set<const TypedFnSignature*>& calledFns) {
+                     const ResolvedFunction* inFn,
+                     std::set<const ResolvedFunction*>& calledFns) {
 
   for (const ASTNode* child : ast->children()) {
     computeAndPrintStuff(context, child, inFn, calledFns);
@@ -135,9 +136,10 @@ computeAndPrintStuff(Context* context,
   const ResolvedExpression* r = resolvedExpressionForAst(context, ast, inFn);
   int afterCount = context->numQueriesRunThisRevision();
   if (r != nullptr) {
-    for (const TypedFnSignature* candidate : r->mostSpecific) {
-      if (candidate != nullptr) {
-        calledFns.insert(candidate);
+    for (const TypedFnSignature* sig : r->mostSpecific) {
+      if (sig != nullptr) {
+        auto fn = resolvedFunction(context, sig, r->poiScope);
+        calledFns.insert(fn);
       }
     }
 
@@ -186,7 +188,7 @@ int main(int argc, char** argv) {
   while (true) {
     ctx->advanceToNextRevision(gc);
 
-    std::set<const TypedFnSignature*> calledFns;
+    std::set<const ResolvedFunction*> calledFns;
 
     for (int i = 1; i < argc; i++) {
       auto filepath = UniqueString::build(ctx, argv[i]);
@@ -203,25 +205,26 @@ int main(int argc, char** argv) {
 
     printf("Instantiations:\n");
 
-    std::set<const TypedFnSignature*> printed;
+    std::set<const ResolvedFunction*> printed;
 
     // Gather all instantiations, transitively
     while (true) {
 
-      std::set<const TypedFnSignature*> iterCalledFns = calledFns;
+      std::set<const ResolvedFunction*> iterCalledFns = calledFns;
       size_t startCount = calledFns.size();
 
       for (auto calledFn : iterCalledFns) {
-        if (calledFn->instantiatedFrom != nullptr) {
+        const TypedFnSignature* sig = calledFn->signature;
+        if (sig->instantiatedFrom != nullptr) {
           calledFns.insert(calledFn);
           auto pair = printed.insert(calledFn);
           bool added = pair.second;
           if (added) {
-            auto ast = idToAst(ctx, calledFn->untypedSignature->functionId);
+            auto ast = idToAst(ctx, sig->untypedSignature->functionId);
             auto uSig = untypedSignature(ctx, ast->id());
             auto initialType = typedSignatureInitial(ctx, uSig);
             printf("Instantiation of %s\n", initialType->toString().c_str());
-            printf("Instantiation is %s\n", calledFn->toString().c_str());
+            printf("Instantiation is %s\n", sig->toString().c_str());
             computeAndPrintStuff(ctx, ast, calledFn, calledFns);
             printf("\n");
           }
