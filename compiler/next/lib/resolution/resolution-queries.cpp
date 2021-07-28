@@ -274,8 +274,7 @@ struct Resolver {
 
     auto vec = lookupInScope(context, scope, ident, config);
     if (vec.size() == 0) {
-      result.type = QualifiedType(QualifiedType::UNKNOWN,
-                                  ErroneousType::get(context));
+      result.type = QualifiedType(QualifiedType::UNKNOWN, nullptr);
     } else if (vec.size() > 1) {
       // can't establish the type. If this is in a function
       // call, we'll establish it later anyway.
