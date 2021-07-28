@@ -267,12 +267,12 @@ struct Resolver {
     const Scope* scope = scopeStack.back();
     ResolvedExpression& result = byPostorder.byAst(ident);
 
-    auto vec = lookupInScope(context, scope, ident,
-                             /* checkDecls */ true,
-                             /* checkUseImport */ true,
-                             /* checkParents */ true,
-                             /* checkToplevel */ false,
-                             /* findOne */ true);
+    LookupConfig config = LOOKUP_DECLS |
+                          LOOKUP_IMPORT_AND_USE |
+                          LOOKUP_PARENTS |
+                          LOOKUP_INNERMOST;
+
+    auto vec = lookupInScope(context, scope, ident, config);
     if (vec.size() == 0) {
       result.type = QualifiedType(QualifiedType::UNKNOWN,
                                   ErroneousType::get(context));
@@ -313,12 +313,8 @@ struct Resolver {
 
     if (canOverload == false) {
       // check for multiple definitions
-      auto vec = lookupNameInScope(context, scope, decl->name(),
-                                   /* checkDecls */ true,
-                                   /* checkUseImport */ false,
-                                   /* checkParents */ false,
-                                   /* checkToplevel */ false,
-                                   /* findOne */ false);
+      LookupConfig config = LOOKUP_DECLS;
+      auto vec = lookupNameInScope(context, scope, decl->name(), config);
 
       if (vec.size() > 0) {
         const BorrowedIdsWithName& m = vec[0];
@@ -1314,22 +1310,16 @@ lookupCalledExpr(Context* context,
 
   std::vector<BorrowedIdsWithName> ret;
 
+  LookupConfig config = LOOKUP_DECLS |
+                        LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_PARENTS;
+
   if (auto op = call->toOpCall()) {
-    auto vec = lookupNameInScopeWithSet(context, scope, op->op(),
-                                        /* checkDecls */ true,
-                                        /* checkUseImport */ true,
-                                        /* checkParents */ true,
-                                        /* checkToplevel */ false,
-                                        /* findOne */ false,
+    auto vec = lookupNameInScopeWithSet(context, scope, op->op(), config,
                                         visited);
     ret.swap(vec);
   } else if (const Expression* called = call->calledExpression()) {
-    auto vec = lookupInScopeWithSet(context, scope, called,
-                                    /* checkDecls */ true,
-                                    /* checkUseImport */ true,
-                                    /* checkParents */ true,
-                                    /* checkToplevel */ false,
-                                    /* findOne */ false,
+    auto vec = lookupInScopeWithSet(context, scope, called, config,
                                     visited);
     ret.swap(vec);
   }
