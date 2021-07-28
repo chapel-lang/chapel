@@ -356,8 +356,6 @@ struct CallResolutionResult {
 };
 
 struct ResolvedExpression {
-  // the ID that is resolved
-  ID id;
   // What is its type and param value?
   types::QualifiedType type;
   // For simple (non-function Identifier) cases,
@@ -370,23 +368,26 @@ struct ResolvedExpression {
   // The choice between these needs to happen
   // later than the main function resolution.
   MostSpecificCandidates mostSpecific;
+  // What point of instantiation scope is should be used when
+  // resolving functions in mostSpecific?
+  const PoiScope* poiScope = nullptr;
 
   ResolvedExpression() { }
 
   bool operator==(const ResolvedExpression& other) const {
-    return id == other.id &&
-           type == other.type &&
+    return type == other.type &&
            toId == other.toId &&
-           mostSpecific == other.mostSpecific;
+           mostSpecific == other.mostSpecific &&
+           poiScope == other.poiScope;
   }
   bool operator!=(const ResolvedExpression& other) const {
     return !(*this == other);
   }
   void swap(ResolvedExpression& other) {
-    id.swap(other.id);
     type.swap(other.type);
     toId.swap(other.toId);
     mostSpecific.swap(other.mostSpecific);
+    std::swap(poiScope, other.poiScope);
   }
 
   std::string toString() const;

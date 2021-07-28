@@ -222,7 +222,6 @@ struct Resolver {
       const auto& qt = typedFnSignature->formalTypes[i];
 
       ResolvedExpression& r = byPostorder.byAst(formal);
-      r.id = formal->id();
       r.type = qt;
     }
   }
@@ -257,7 +256,6 @@ struct Resolver {
 
   bool enter(const Literal* literal) {
     ResolvedExpression& result = byPostorder.byAst(literal);
-    result.id = literal->id();
     result.type = typeForLiteral(context, literal);
     return false;
   }
@@ -268,7 +266,6 @@ struct Resolver {
     assert(scopeStack.size() > 0);
     const Scope* scope = scopeStack.back();
     ResolvedExpression& result = byPostorder.byAst(ident);
-    result.id = ident->id();
 
     auto vec = lookupInScope(context, scope, ident,
                              /* checkDecls */ true,
@@ -466,7 +463,6 @@ struct Resolver {
       }
 
       ResolvedExpression& result = byPostorder.byAst(decl);
-      result.id = decl->id();
       result.type = QualifiedType(qtKind, typePtr, param);
     }
 
@@ -507,16 +503,19 @@ struct Resolver {
 
     CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
 
+    const PoiScope* callPoiScope = c.poiInfo.poiScope;
+
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
     r.mostSpecific = c.mostSpecific;
+    r.poiScope = callPoiScope;
 
     // compute the return types
     QualifiedType retType;
     bool retTypeSet = false;
     for (const TypedFnSignature* candidate : r.mostSpecific) {
       if (candidate != nullptr) {
-        QualifiedType t = returnType(context, candidate, poiScope);
+        QualifiedType t = returnType(context, candidate, callPoiScope);
         if (retTypeSet && retType.type() != t.type()) {
           context->error(candidate,
                          nullptr,
@@ -917,6 +916,20 @@ const ResolvedFunction* resolvedFunction(Context* context,
 
   // lookup in the map using this PoiInfo
   return resolvedFunctionByInfoQuery(context, sig, std::move(poiInfo));
+}
+
+const ResolvedFunction* resolvedConcreteFunction(Context* context, ID id) {
+  auto func = parsing::idToAst(context, id)->toFunction();
+  if (func == nullptr)
+    return nullptr;
+
+  const UntypedFnSignature* uSig = untypedSignature(context, func->id());
+  const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
+  if (sig->needsInstantiation)
+    return nullptr;
+
+  const ResolvedFunction* ret = resolvedFunction(context, sig, nullptr);
+  return ret;
 }
 
 struct ReturnTypeInferer {

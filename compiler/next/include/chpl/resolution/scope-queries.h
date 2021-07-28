@@ -120,9 +120,6 @@ namespace resolution {
                                             const Scope* scope,
                                             const PoiScope* parentPoiScope);
 
- // TODO: lookupInScope accepting visited set
-  // for use in POI traversal
-
   /**
     Given a name and a Scope, return the innermost and first ID
     for a definition of that name, and an indication of

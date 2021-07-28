@@ -232,7 +232,7 @@ using LookupConfig = unsigned int;
 // the function declaration. These can be collapsed away.
 //
 // Performance: could have better reuse of PoiScope if it used the Scope ID
-// rather than changing if the contents do. But, the downside is that
+// rather than changing if the Scope contents do. But, the downside is that
 // further queries would be required to compute which functions are
 // visible. Which is better?
 // If we want to make PoiScope not depend on the contents it might be nice

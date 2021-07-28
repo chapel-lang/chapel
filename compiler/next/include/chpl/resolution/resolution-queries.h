@@ -89,6 +89,11 @@ namespace resolution {
 
 
   /**
+    Resolves a concrete function using the above queries.
+    */
+  const ResolvedFunction* resolvedConcreteFunction(Context* context, ID id);
+
+  /**
     Compute the return/yield type for a function.
    */
   const types::QualifiedType& returnType(Context* context,
