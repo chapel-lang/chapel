@@ -41,6 +41,7 @@ import sys
 
 try:
     from pycparser import c_parser, c_ast, parse_file
+    from pycparserext import ext_c_parser
 except ImportError as e:
     sys.exit("Unable to import pycparser: " + str(e));
 
@@ -61,8 +62,8 @@ VARARGS_STR = "c__varargs ..."
 ## be registered here.
 c2chapel = {}
 
-c2chapel["double"] = "c_double"
-c2chapel["float"]  = "c_float"
+c2chapel["double"] = "real(64)"
+c2chapel["float"]  = "real(32)"
 c2chapel["char"]   = "c_char"
 c2chapel["void"]   = ""
 
@@ -84,6 +85,11 @@ c2chapel["uintptr_t"]          = "c_uintptr"
 c2chapel["ptrdiff_t"]          = "c_ptrdiff"
 c2chapel["ssize_t"]            = "ssize_t"
 c2chapel["size_t"]             = "size_t"
+c2chapel["long double"]        = "c_longlong"
+c2chapel["signed short"]       = "c_short"
+c2chapel["signed int"]         = "c_int"
+c2chapel["signed long long"]   = "c_longlong"
+c2chapel["signed long"]        = "c_long"
 
 # Note: this mapping is defined by the compiler, not the SysCTypes file
 c2chapel["FILE"] = "_file"
@@ -116,7 +122,8 @@ chapelKeywords = set(["align","as","atomic","begin","break","by","class",
     "nil","noinit","on","only","otherwise","out","param","private","proc",
     "public","record","reduce","ref","require","return","scan","select",
     "serial","single","sparse","subdomain","sync","then","type","union","use",
-    "var","when","where","while","with","yield","zip"])
+                      "var","when","where","while","with","yield","zip",
+                      "string", "bytes", "locale"])
 
 
 def getArgs():
@@ -262,14 +269,17 @@ def toChapelType(ty):
         return "c_string"
     elif isPointerTo(ty, "void"):
         return "c_void_ptr"
-    elif type(ty) == c_ast.ArrayDecl:
-        return "c_ptr(" + toChapelType(ty.type) + ")"
+    elif type(ty) == c_ast.ArrayDecl or type(ty) == ext_c_parser.ArrayDeclExt:
+        try:
+            return "c_ptr(" + toChapelType(ty.type) + ")"
+        except:
+            pass
     elif type(ty) == c_ast.PtrDecl:
         if type(ty.type) == c_ast.FuncDecl:
             return "c_fn_ptr"
         else:
             return "c_ptr(" + toChapelType(ty.type) + ")"
-    elif type(ty) == c_ast.TypeDecl:
+    elif type(ty) == c_ast.TypeDecl or type(ty) == ext_c_parser.TypeDeclExt:
         inner = ty.type
         name = ""
         try:
@@ -281,7 +291,7 @@ def toChapelType(ty):
             return c2chapel[name]
 
         return name
-    elif type(ty) == c_ast.FuncDecl:
+    elif type(ty) == c_ast.FuncDecl or type(ty) == ext_c_parser.FuncDeclExt:
         return "c_fn_ptr"
     else:
         ty.show()
@@ -374,7 +384,10 @@ def genStructOrUnion(structOrUnion, name=""):
         if innerStructOrUnion is not None:
             genStructOrUnion(innerStructOrUnion)
 
-        fieldName = getDeclName(decl)
+        if type(decl) is not c_ast.Pragma:
+            fieldName = getDeclName(decl)
+        else:
+            break
         if fieldName in chapelKeywords:
             members = ""
             warnKeyword = True
@@ -397,6 +410,9 @@ def genStructOrUnion(structOrUnion, name=""):
 
 def genVar(decl):
     name = decl.name
+    if name in chapelKeywords:
+        name = 'c2chapel_' + name
+    
     ty   = toChapelType(decl.type)
     print("extern var " + name + " : " + ty + ";")
     print()
@@ -446,7 +462,7 @@ class ChapelVisitor(c_ast.NodeVisitor):
         for c_name, c in node.children():
             if type(c) == c_ast.Struct or type(c) == c_ast.Union:
                 self.visit_StructOrUnion(c)
-            elif type(c) == c_ast.FuncDecl:
+            elif type(c) == c_ast.FuncDecl or type(c) ==  ext_c_parser.FuncDeclExt:
                 self.visit_FuncDecl(c)
             elif type(c) == c_ast.Enum:
                 genEnum(c)
@@ -462,8 +478,12 @@ def genTypeAlias(node):
     alias = node.name
     if type(node.type) == c_ast.PtrDecl or type(node.type) == c_ast.TypeDecl:
         typeName = toChapelType(node.type)
+        # let compiler handle void typedefs
+        if typeName == '':
+            print("extern type " + alias + ";")
+        else:
+            print("extern type " + alias + " = " + typeName + ";")
         foundTypes.add(alias);
-        print("extern type " + alias + " = " + typeName + ";")
         print()
 
 def isPointerToStruct(node):
@@ -616,6 +636,9 @@ def preamble(args, fakes):
     # generate, but for now this is good enough
     print("use CPtr;")
 
+    # Needed for C types (previous testing didn't account for this)
+    print("use SysCTypes;")
+
 # TODO: accept file from stdin?
 if __name__=="__main__":
     (args, unknowns)  = getArgs()
@@ -633,7 +656,9 @@ if __name__=="__main__":
         ignores = findIgnores()
 
     try:
-        ast = parse_file(fname, use_cpp=True, cpp_path="cc", cpp_args=["-E"] + fakes + unknowns)
+        from pycparserext.ext_c_parser import GnuCParser
+        gnup = GnuCParser()
+        ast = parse_file(fname, use_cpp=True, cpp_path="cc", cpp_args=["-E"] + fakes + unknowns, parser=gnup)
     except c_parser.ParseError as e:
         sys.exit("Unable to parse file: " + str(e))
 

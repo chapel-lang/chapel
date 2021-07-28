@@ -6,6 +6,7 @@ require "intDefines.h";
 // Note: Generated with fake std headers
 
 use CPtr;
+use SysCTypes;
 // #define'd integer literals:
 // Note: some of these may have been defined with an ifdef
 extern const FOO_OK : int;
