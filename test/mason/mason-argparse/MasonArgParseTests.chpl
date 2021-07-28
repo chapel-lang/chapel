@@ -1332,7 +1332,7 @@ proc testAddSubCommand(test: borrowed Test) throws {
   var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
   var remain = parser.parseArgs(argList[1..]);
   test.assertEqual(remain.size,0);
-  test.assertTrue(mySubCmd1._present);
+  test.assertTrue(mySubCmd1.hasValue());
 }
 
 // use an option and then a subcommand
@@ -1341,11 +1341,11 @@ proc testOptionPlusSubCommand(test: borrowed Test) throws {
   var parser = new argumentParser();
   var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
   var myStrArg1 = parser.addOption(name="StringOpt",
-                              opts=["-n","--strArg"],            
-                              numArgs=1);
+                                   opts=["-n","--strArg"],            
+                                   numArgs=1);
   var remain = parser.parseArgs(argList[1..]);
 //  test.assertEqual(pos,1);
-  test.assertTrue(mySubCmd1._present);
+  test.assertTrue(mySubCmd1.hasValue());
   test.assertEqual(remain.size, 0);
   test.assertTrue(myStrArg1.hasValue());
   test.assertEqual(myStrArg1.value(), "20");
@@ -1359,8 +1359,61 @@ proc testAddSubCommandSubOptions(test: borrowed Test) throws {
   var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
   var remain = parser.parseArgs(argList[1..]);
   test.assertEqual(remain.size,2);
-  test.assertTrue(mySubCmd1._present);
+  test.assertTrue(mySubCmd1.hasValue());
   test.assertEqual(new list(argList[2..]),remain);
+}
+
+// add a subcommand and argument, but don't use subcommand
+proc testAddArgAndSubCommandOnlyArgUsed(test: borrowed Test) throws {
+  var argList = ["progName","-n","20"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var myStrArg1 = parser.addOption(name="StringOpt",
+                                   opts=["-n","--strArg"],            
+                                   numArgs=1);
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertEqual(remain.size,0);
+  test.assertFalse(mySubCmd1.hasValue());
+  test.assertTrue(myStrArg1.hasValue());
+  test.assertEqual(myStrArg1.value(),"20");
+}
+
+// add a subcommand and argument, but don't use either
+proc testAddArgAndSubCommandNoUseEither(test: borrowed Test) throws {
+  var argList = ["progName"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var myStrArg1 = parser.addOption(name="StringOpt",
+                                   opts=["-n","--strArg"],            
+                                   numArgs=1);
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertEqual(remain.size,0);
+  test.assertFalse(mySubCmd1.hasValue());
+  test.assertFalse(myStrArg1.hasValue());  
+}
+
+// add two subcommands and use first
+proc testAddTwoSubCommandUseFirst(test: borrowed Test) throws {
+  var argList = ["progName","subCommand1"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var mySubCmd2 = parser.addSubCommand(cmd="subCommand2");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertEqual(remain.size,0);
+  test.assertTrue(mySubCmd1.hasValue());
+  test.assertFalse(mySubCmd2.hasValue());
+}
+
+// add two subcommands and use second
+proc testAddTwoSubCommandUseSecond(test: borrowed Test) throws {
+  var argList = ["progName","subCommand2"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var mySubCmd2 = parser.addSubCommand(cmd="subCommand2");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertEqual(remain.size,0);
+  test.assertFalse(mySubCmd1.hasValue());
+  test.assertTrue(mySubCmd2.hasValue());
 }
 
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE

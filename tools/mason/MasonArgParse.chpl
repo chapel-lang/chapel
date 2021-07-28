@@ -72,7 +72,6 @@ module MasonArgParse {
   class Action {
     // friendly name for this argument
     var _name:string;
-    var _required:bool=false;
 
     proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
                 ref rest:list(string)):int throws {
@@ -86,6 +85,11 @@ module MasonArgParse {
     proc _getDefaultValue() {
       return new list(string);
     }
+
+    proc _isRequired() {
+      return false;
+    }
+
   }
 
   class SubCommand : Action {
@@ -101,20 +105,19 @@ module MasonArgParse {
                          ref rest:list(string))
                         throws {      
       var pos = startPos;
-      
+      var next = pos + 1;
       debugTrace("starting at pos: " + pos:string);
       while pos <= argsD.high 
       {      
         if args[pos] == this._name {
-          //TODO: When we match a subcommand, put remainder of args somewhere
-          // and indicate that we are done parsing
           myArg._values.append(args[pos]);
           myArg._present=true;
           debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
-          rest.extend(args[pos+1..]);
-          return pos+1;
+          rest.extend(args[next..]);
+          return next;
         }
-        pos+=1;  
+        pos = next;
+        next+=1;  
       }
       return pos;                  
     }
@@ -122,16 +125,15 @@ module MasonArgParse {
   }
 
   // stores the definition of an option
-  class Option : Action {
-    
+  class Option : Action {    
     // number of option flags that can indicate this argument
     var _numOpts:int;
     // value of option flag(s) that can indicate this argument
     var _opts:[0.._numOpts-1] string;
     // number of acceptable values to be present after argument is indicated
     var _numArgs:range;
-    // whether or not the user is required to choose a value for this option
-    //var _required:bool;
+    // whether or not the user is required to enter a value for this action
+    var _required:bool=false;
     // one or more default values to assign if opt is not entered by user
     var _defaultValue:list(string);
 
@@ -144,13 +146,16 @@ module MasonArgParse {
       _opts=opts;
       _numArgs=numArgs;
       _required=required;
-      _defaultValue=defaultValue;
-      //_hasDefault=hasDefault;
+      _defaultValue=defaultValue;  
       
       // make sure that if we make an argument required no default set
       assert(!(_required && _defaultValue.size > 0), 
               "Required options do not support default values");
       this.complete();
+    }
+
+    override proc _isRequired() {
+      return _required;
     }
 
     override proc _getDefaultValue() {
@@ -260,7 +265,7 @@ module MasonArgParse {
             throw new ArgumentError("\\".join(act._name) + " has extra values");
           }
         // check that we consumed all the values in the input string
-        } else if endPos <= argsList.size-1 && endPos + rest.size <= argsList.size-1{
+        } else if endPos < argsList.size && endPos + rest.size < argsList.size {
           throw new ArgumentError("\\".join(act._name) + " has extra values");
         }
       }
@@ -296,7 +301,7 @@ module MasonArgParse {
       for name in this._actions.keys() {
         const act = this._actions.getBorrowed(name);
         const arg = this._result.getReference(name);
-        if act._required && !arg._present {
+        if act._isRequired() && !arg._present {
           throw new ArgumentError("\\".join(act._name) + " not enough values");
         }        
       }
