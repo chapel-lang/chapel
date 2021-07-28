@@ -150,7 +150,7 @@ struct Resolver {
       symbol(mod),
       byPostorder(byPostorder) {
 
-    byPostorder.resize(mod->id().numContainedChildren());
+    byPostorder.resizeForSymbol(mod);
     enterScope(symbol);
   }
 
@@ -164,9 +164,7 @@ struct Resolver {
       fnBody(fn->body()),
       byPostorder(byPostorder) {
 
-    int bodyPostorder = fnBody->id().postOrderId();
-    assert(0 <= bodyPostorder);
-    byPostorder.resize(bodyPostorder);
+    byPostorder.resizeForSignature(fn);
     enterScope(symbol);
   }
 
@@ -186,9 +184,7 @@ struct Resolver {
 
     poiInfo.poiScope = poiScope;
 
-    int bodyPostorder = fnBody->id().postOrderId();
-    assert(0 <= bodyPostorder);
-    byPostorder.resize(bodyPostorder);
+    byPostorder.resizeForSignature(fn);
     enterScope(symbol);
   }
 
@@ -213,7 +209,7 @@ struct Resolver {
     // include any pois required for the signature in the resulting PoiInfo
     poiInfo.accumulate(typedFnSignature->poiInfo);
 
-    byPostorder.resize(fn->id().numContainedChildren());
+    byPostorder.resizeForSymbol(fn);
     enterScope(symbol);
 
     // set the resolution results for the formals according to
@@ -224,31 +220,18 @@ struct Resolver {
     for (size_t i = 0; i < nFormals; i++) {
       const Formal* formal = uSig->formals[i];
       const auto& qt = typedFnSignature->formalTypes[i];
-      int postorder = formal->id().postOrderId();
-      assert(0 <= postorder && postorder < (int) byPostorder.size());
-      ResolvedExpression& r = byPostorder[postorder];
+
+      ResolvedExpression& r = byPostorder.byAst(formal);
       r.id = formal->id();
       r.type = qt;
     }
-  }
-
-
-  ResolvedExpression& resultForId(const ID& id) {
-    auto postorder = id.postOrderId();
-    assert(0 <= postorder);
-    if ((size_t) postorder < byPostorder.size()) {
-      // OK
-    } else {
-      byPostorder.resize(postorder+1);
-    }
-    return byPostorder[postorder];
   }
 
   QualifiedType typeForId(const ID& id) {
     // if the id is contained within this symbol,
     // get the type information from the resolution result.
     if (id.symbolPath() == symbol->id().symbolPath()) {
-      return resultForId(id).type;
+      return byPostorder.byId(id).type;
     }
 
     // TODO: handle outer function variables
@@ -272,24 +255,8 @@ struct Resolver {
     }
   }
 
-  ResolvedExpression& resultById(ID id) {
-    int postorder = id.postOrderId();
-
-    if (postorder < 0) {
-      assert(false && "should not be reached");
-    } else if ((size_t) postorder < byPostorder.size()) {
-      // OK, nothing to do
-    } else {
-      byPostorder.resize(postorder+1);
-    }
-    return byPostorder[postorder];
-  }
-  ResolvedExpression& resultByAst(const ASTNode* ast) {
-    return resultById(ast->id());
-  }
-
   bool enter(const Literal* literal) {
-    ResolvedExpression& result = resultByAst(literal);
+    ResolvedExpression& result = byPostorder.byAst(literal);
     result.id = literal->id();
     result.type = typeForLiteral(context, literal);
     return false;
@@ -300,7 +267,7 @@ struct Resolver {
   bool enter(const Identifier* ident) {
     assert(scopeStack.size() > 0);
     const Scope* scope = scopeStack.back();
-    ResolvedExpression& result = resultByAst(ident);
+    ResolvedExpression& result = byPostorder.byAst(ident);
     result.id = ident->id();
 
     auto vec = lookupInScope(context, scope, ident,
@@ -418,7 +385,7 @@ struct Resolver {
 
         if (typeExpr) {
           // get the type we should have already computed postorder
-          ResolvedExpression& r = resultByAst(typeExpr);
+          ResolvedExpression& r = byPostorder.byAst(typeExpr);
           // check that the resolution of that expression is a type
           auto kind = r.type.kind();
           if (kind == QualifiedType::TYPE) {
@@ -432,7 +399,7 @@ struct Resolver {
 
         if (initExpr) {
           // compute the type based upon the init expression
-          ResolvedExpression& r = resultByAst(initExpr);
+          ResolvedExpression& r = byPostorder.byAst(initExpr);
           const QualifiedType& initType = r.type;
 
           // check that the init expression has compatible kind
@@ -498,7 +465,7 @@ struct Resolver {
         }
       }
 
-      ResolvedExpression& result = resultById(decl->id());
+      ResolvedExpression& result = byPostorder.byAst(decl);
       result.id = decl->id();
       result.type = QualifiedType(qtKind, typePtr, param);
     }
@@ -529,7 +496,7 @@ struct Resolver {
     int i = 0;
     for (auto actual : call->actuals()) {
       CallInfoActual ciActual;
-      ResolvedExpression& r = resultByAst(actual);
+      ResolvedExpression& r = byPostorder.byAst(actual);
       ciActual.type = r.type;
       if (fnCall && fnCall->isNamedActual(i)) {
         ciActual.byName = fnCall->actualName(i);
@@ -541,7 +508,7 @@ struct Resolver {
     CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
 
     // save the most specific candidates in the resolution result for the id
-    ResolvedExpression& r = resultByAst(call);
+    ResolvedExpression& r = byPostorder.byAst(call);
     r.mostSpecific = c.mostSpecific;
 
     // compute the return types
@@ -583,7 +550,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
 
   auto ast = parsing::idToAst(context, id);
   if (const Module* mod = ast->toModule()) {
-    partialResult.resize(mod->id().numContainedChildren());
+    partialResult.resizeForSymbol(mod);
 
     Resolver visitor(context, mod, partialResult);
     for (auto child: ast->children()) {
@@ -624,9 +591,8 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
     ID parentSymbolId = id.parentSymbolId(context);
     ASTTag parentTag = parsing::idToTag(context, parentSymbolId);
     if (asttags::isModule(parentTag)) {
-      auto& r = partiallyResolvedModule(context, parentSymbolId);
-      assert((size_t) postOrderId < r.size());
-      result = r[postOrderId].type;
+      auto& partial = partiallyResolvedModule(context, parentSymbolId);
+      result = partial.byId(id).type;
     }
   } else {
     QualifiedType::Kind kind = QualifiedType::UNKNOWN;
@@ -701,10 +667,7 @@ getFormalTypes(const Function* fn,
                const ResolutionResultByPostorderID& r) {
   std::vector<types::QualifiedType> formalTypes;
   for (auto formal : fn->formals()) {
-    int postorder = formal->id().postOrderId();
-    assert(0 <= postorder && postorder < (int) r.size());
-
-    QualifiedType t = r[postorder].type;
+    QualifiedType t = r.byAst(formal).type;
     // compute concrete intent
     t = QualifiedType(resolveIntent(t), t.type(), t.param());
 
@@ -732,9 +695,7 @@ static TypedFnSignature::WhereClauseResult whereClauseResult(
                                      bool needsInstantiation) {
   auto whereClauseResult = TypedFnSignature::WHERE_TBD;
   if (const Expression* where = fn->whereClause()) {
-    int postorder = where->id().postOrderId();
-    assert(0 <= postorder && postorder < (int) r.size());
-    const QualifiedType& qt = r[postorder].type;
+    const QualifiedType& qt = r.byAst(where).type;
     if (qt.kind() == QualifiedType::PARAM && qt.type()->isBoolType()) {
       // OK, we know the result of the where clause
       // TODO: handle Immediate
@@ -1016,9 +977,7 @@ struct ReturnTypeInferer {
     checkReturn(inExpr, voidType);
   }
   void noteReturnType(const Expression* expr, const Expression* inExpr) {
-    int postorder = expr->id().postOrderId();
-    assert(0 <= postorder && postorder < (int)resolutionById.size());
-    const QualifiedType& qt = resolutionById[postorder].type;
+    const QualifiedType& qt = resolutionById.byAst(expr).type;
 
     QualifiedType::Kind kind = qt.kind();
     const Type* type = qt.type();
@@ -1104,9 +1063,7 @@ const QualifiedType& returnType(Context* context,
       ResolutionResultByPostorderID resolutionById;
       Resolver visitor(context, fn, poiScope, sig, resolutionById);
       retType->traverse(visitor);
-      int postorder = retType->id().postOrderId();
-      assert(0 <= postorder && postorder < (int) resolutionById.size());
-      result = resolutionById[postorder].type;
+      result = resolutionById.byAst(retType).type;
     } else {
       // resolve the function body
       const ResolvedFunction* rFn = resolvedFunction(context, sig, poiScope);

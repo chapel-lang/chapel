@@ -66,8 +66,7 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast,
       if (parentAst != nullptr) {
         if (parentAst->isModule()) {
           const auto& byId = resolveModule(context, parentAst->id());
-          assert(0 <= postorder && postorder < (int) byId.size());
-          return &byId[postorder];
+          return &byId.byAst(ast);
         } else if (parentAst->isFunction()) {
           auto untyped = untypedSignature(context, parentAst->id());
           auto typed = typedSignatureInitial(context, untyped);
@@ -77,8 +76,7 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast,
           }
           if (!typed->needsInstantiation) {
             auto rFn = resolvedFunction(context, typed, typed->poiInfo.poiScope);
-            assert(0 <= postorder && postorder < (int)rFn->resolutionById.size());
-            return &rFn->resolutionById[postorder];
+            return &rFn->resolutionById.byAst(ast);
           }
         }
       }

@@ -379,12 +379,63 @@ struct ResolvedExpression {
   std::string toString() const;
 };
 
-// postorder ID (int) -> ResolvedExpression *within* a Function etc
-// an inner Function would not be covered here since it would get
-// a different ResolvedSymbol entry.
-using ResolutionResultByPostorderID = std::vector<ResolvedExpression>;
-// TODO: make the above type a struct to have helper methods
-// (mainly get existing result by ID)
+/**
+ This type is a mapping from postOrderId (which is an integer) to
+ ResolvedExpression for storing resolution results *within* a symbol.
+
+ Note that an inner Function would not be covered here.
+ */
+struct ResolutionResultByPostorderID {
+  std::vector<ResolvedExpression> vec;
+
+  /** prepare to resolve the contents of the passed symbol */
+  void resizeForSymbol(const uast::ASTNode* ast);
+  /** prepare to resolve the signature of the passed function */
+  void resizeForSignature(const uast::Function* func);
+
+  ResolvedExpression& byIdExpanding(const ID& id) {
+    auto postorder = id.postOrderId();
+    assert(0 <= postorder);
+    if ((size_t) postorder < vec.size()) {
+      // OK
+    } else {
+      vec.resize(postorder+1);
+    }
+    return vec[postorder];
+  }
+  ResolvedExpression& byAstExpanding(const uast::ASTNode* ast) {
+    return byIdExpanding(ast->id());
+  }
+  ResolvedExpression& byId(const ID& id) {
+    auto postorder = id.postOrderId();
+    assert(0 <= postorder && (size_t) postorder < vec.size());
+    return vec[postorder];
+  }
+  const ResolvedExpression& byId(const ID& id) const {
+    auto postorder = id.postOrderId();
+    assert(0 <= postorder && (size_t) postorder < vec.size());
+    return vec[postorder];
+  }
+  ResolvedExpression& byAst(const uast::ASTNode* ast) {
+    return byId(ast->id());
+  }
+  const ResolvedExpression& byAst(const uast::ASTNode* ast) const {
+    return byId(ast->id());
+  }
+
+  bool operator==(const ResolutionResultByPostorderID& other) const {
+    return vec == other.vec;
+  }
+  bool operator!=(const ResolutionResultByPostorderID& other) const {
+    return !(*this == other);
+  }
+  void swap(ResolutionResultByPostorderID& other) {
+    vec.swap(other.vec);
+  }
+
+  static bool update(ResolutionResultByPostorderID& keep,
+                     ResolutionResultByPostorderID& addin);
+};
 
 // A resolution result for a Function
 struct ResolvedFunction {
@@ -460,6 +511,12 @@ template<> struct update<resolution::MostSpecificCandidates> {
   }
 };
 
+template<> struct update<resolution::ResolutionResultByPostorderID> {
+  bool operator()(resolution::ResolutionResultByPostorderID& keep,
+                  resolution::ResolutionResultByPostorderID& addin) const {
+    return resolution::ResolutionResultByPostorderID::update(keep, addin);
+  }
+};
 
 } // end namespace chpl
 

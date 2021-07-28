@@ -17,13 +17,33 @@
  * limitations under the License.
  */
 
+#include "chpl/queries/update-functions.h"
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/uast/Builder.h"
 #include "chpl/uast/Formal.h"
 
 namespace chpl {
 namespace resolution {
 
 using namespace uast;
+
+void ResolutionResultByPostorderID::resizeForSymbol(const ASTNode* ast) {
+  assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
+  vec.resize(ast->id().numContainedChildren());
+}
+void ResolutionResultByPostorderID::resizeForSignature(const Function* func) {
+  int bodyPostorder = 0;
+  if (func && func->body())
+    bodyPostorder = func->body()->id().postOrderId();
+  assert(0 <= bodyPostorder);
+  vec.resize(bodyPostorder);
+}
+
+bool ResolutionResultByPostorderID::update(ResolutionResultByPostorderID& keep,
+                                           ResolutionResultByPostorderID& addin)
+{
+  return defaultUpdateVec(keep.vec, addin.vec);
+}
 
 bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
                                        const TypedFnSignature* typed,
