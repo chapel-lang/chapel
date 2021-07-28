@@ -76,7 +76,7 @@ module MasonArgParse {
     var _name:string;
 
     proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
-                ref rest:list(string)):int throws {
+                ref rest:list(string), endPos:int):int throws {
       return 0;
     }
 
@@ -104,13 +104,11 @@ module MasonArgParse {
     proc init(cmd:string) {
       super.init();
       this._name=cmd;
-      this.complete();
-      debugTrace("made new subcommand: " + this._name);
+      this.complete();     
     }
 
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
-                         ref rest:list(string))
-                        throws {      
+                         ref rest:list(string), endPos:int) throws {      
       var pos = startPos;
       var next = pos + 1;
       debugTrace("starting at pos: " + pos:string);
@@ -118,7 +116,7 @@ module MasonArgParse {
       {      
         if args[pos] == this._name {
           myArg._values.append(args[pos]);
-          debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
+          debugTrace("matched cmd: " + args[pos] + " at pos: " + pos:string);
           rest.extend(args[next..]);
           return next;
         }
@@ -176,17 +174,16 @@ module MasonArgParse {
     // the argument instead?
     // also need a bool by ref to indicate presence of arg or not
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument, 
-                         ref rest:list(string))
-                        throws {
+                         ref rest:list(string), endPos:int) throws {
       var high = _numArgs.high;
       debugTrace("expecting between " + 
-                 _numArgs.low:string + " and " + _numArgs.low:string);
+                 _numArgs.low:string + " and " + _numArgs.high:string);
       var matched = 0;
       var pos = startPos;
       var next = pos+1;
       debugTrace("starting at pos: " + pos:string);
-      
-      while matched < high && next <= argsD.high && !args[next].startsWith("-") 
+      debugTrace("searching from: " + pos:string + " to " + endPos:string);
+      while matched < high && next <= endPos && !args[next].startsWith("-") 
       {
         pos=next;
         next+=1;
@@ -263,14 +260,21 @@ module MasonArgParse {
       }
 
       // try to match for each of the identified options
-      for (idx, name) in arrayoptionIndices {
+      for i in arrayoptionIndices.indices {
+        var idx = arrayoptionIndices[i][0];
+        var name = arrayoptionIndices[i][1];
         // get a ref to the argument
         var arg = _result.getReference(name);
         debugTrace("got reference to argument " + name);
         // get the action to match
         const act = _actions.getBorrowed(name);
         // try to match values in argstring, get the last value position
-        endPos = act._match(argsList.toArray(), idx, arg, rest);
+        var stopPos = argsList.size - 1;
+        if arrayoptionIndices.size > i + 1 {
+          stopPos = arrayoptionIndices[i+1][0] - 1;
+        }
+        debugTrace("set stopPos = " + stopPos:string);
+        endPos = act._match(argsList.toArray(), idx, arg, rest, stopPos);
         debugTrace("got end position " + endPos:string);
         k+=1;
         debugTrace("k val = " + k:string);
