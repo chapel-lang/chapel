@@ -19,6 +19,7 @@ target_sources(libchplcomp-obj
                PRIVATE
 
                ifa_vars.cpp
+               hash_multipliers.cpp
                num.cpp
                num.h
                prim_data.h

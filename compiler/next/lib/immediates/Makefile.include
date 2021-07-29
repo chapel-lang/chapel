@@ -22,6 +22,7 @@ ALL_SRCS += next/lib/immediates/*.cpp
 
 NEXT_IMMEDIATES_SRCS =                              \
            ifa_vars.cpp                             \
+           hash_multipliers.cpp                     \
            num.cpp                                  \
 
 SRCS = $(NEXT_IMMEDIATES_SRCS)

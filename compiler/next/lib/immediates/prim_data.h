@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef _prim_data_H
-#define _prim_data_H
+#ifndef CHPL_IMMEDIATES_PRIM_DATA_H
+#define CHPL_IMMEDIATES_PRIM_DATA_H
 
 class Prim;
 
