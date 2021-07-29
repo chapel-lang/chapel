@@ -29,7 +29,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-#include "../ifa/prim_data.h"
+#include "../next/lib/immediates/prim_data.h"
 
 static Expr* postFoldNormal(CallExpr* call);
 

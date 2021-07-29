@@ -69,7 +69,7 @@
 #include "WhileStmt.h"
 #include "wrappers.h"
 
-#include "../ifa/prim_data.h"
+#include "../next/lib/immediates/prim_data.h"
 
 #include <algorithm>
 #include <cmath>

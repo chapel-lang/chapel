@@ -101,7 +101,7 @@
 #include "llvmDebug.h"
 #include "llvmVer.h"
 
-#include "../ifa/prim_data.h"
+#include "../next/lib/immediates/prim_data.h"
 
 typedef Type ChapelType;
 

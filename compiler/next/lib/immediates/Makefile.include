@@ -16,32 +16,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-ifndef CHPL_MAKE_HOME
-export CHPL_MAKE_HOME=$(shell pwd)/../..
-endif
+NEXT_IMMEDIATES_OBJDIR = $(COMPILER_BUILD)/next/lib/immediates
 
-COMPILER_ROOT = ..
-COMPILER_SUBDIR = ifa
+ALL_SRCS += next/lib/immediates/*.cpp
 
-#
-# standard header
-#
-include $(COMPILER_ROOT)/make/Makefile.compiler.head
+NEXT_IMMEDIATES_SRCS =                              \
+           ifa_vars.cpp                             \
+           num.cpp                                  \
 
+SRCS = $(NEXT_IMMEDIATES_SRCS)
 
-IFA_OBJDIR = $(OBJ_SUBDIR)
-include Makefile.share
-
-
-TARGETS = $(IFA_OBJS)
-
-
-include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
-
-
-MAKE_PRIMS = ./make_prims/$(CHPL_MAKE_PLATFORM)/make_prims$(EXE_SUFFIX)
-
-#
-# standard footer
-#
-include $(COMPILER_ROOT)/make/Makefile.compiler.foot
+NEXT_IMMEDIATES_OBJS = \
+	$(NEXT_IMMEDIATES_SRCS:%.cpp=$(NEXT_IMMEDIATES_OBJDIR)/%.$(OBJ_SUFFIX))

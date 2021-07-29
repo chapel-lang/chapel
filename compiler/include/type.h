@@ -26,7 +26,7 @@
 #include "alist.h"
 #include "genret.h"
 
-#include "../ifa/num.h"
+#include "../next/lib/immediates/num.h"
 
 #include <cstdio>
 #include <map>

@@ -39,7 +39,7 @@
 #include "symbol.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
-#include "../ifa/prim_data.h"
+#include "../next/lib/immediates/prim_data.h"
 
 #include <queue>
 
