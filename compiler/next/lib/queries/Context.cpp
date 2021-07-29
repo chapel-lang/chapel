@@ -284,7 +284,8 @@ void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
   updateResultForQuery(filePathForModuleIdSymbolPathQuery,
                        tupleOfArgs, path,
                        "filePathForModuleIdSymbolPathQuery",
-                       false);
+                       /* isInputQuery */ false,
+                       /* forSetter */ true);
 
   if (enableDebugTracing) {
     printf("SETTING FILE PATH FOR MODULE %s -> %s\n",

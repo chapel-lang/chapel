@@ -248,7 +248,8 @@ class Context {
       querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
       const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
       const std::tuple<ArgTs...>& tupleOfArgs,
-      ResultType result);
+      ResultType result,
+      bool forSetter);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -256,7 +257,8 @@ class Context {
   updateResultForQueryMap(
       querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
       const std::tuple<ArgTs...>& tupleOfArgs,
-      ResultType result);
+      ResultType result,
+      bool forSetter);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -266,7 +268,8 @@ class Context {
        const std::tuple<ArgTs...>& tupleOfArgs,
        ResultType result,
        const char* traceQueryName,
-       bool isInputQuery);
+       bool isInputQuery,
+       bool forSetter);
 
   template<typename ResultType,
            typename... ArgTs>

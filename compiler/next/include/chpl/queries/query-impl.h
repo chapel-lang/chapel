@@ -313,7 +313,8 @@ Context::queryEnd(
   assert(queryStack.size() > 0);
 
   const QueryMapResult<ResultType, ArgTs...>* ret =
-    this->updateResultForQueryMapR(queryMap, r, tupleOfArgs, std::move(result));
+    this->updateResultForQueryMapR(queryMap, r, tupleOfArgs,
+                                   std::move(result), /* forSetter */ false);
 
   if (enableDebugTracing) {
     bool changed = ret->lastChanged == this->currentRevisionNumber;
@@ -337,7 +338,8 @@ const QueryMapResult<ResultType, ArgTs...>*
 Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
                                   const QueryMapResult<ResultType, ArgTs...>* r,
                                   const std::tuple<ArgTs...>& tupleOfArgs,
-                                  ResultType result) {
+                                  ResultType result,
+                                  bool forSetter) {
   assert(r != nullptr);
 
   // If we already have found a result, use that.
@@ -347,19 +349,28 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
   // junk. If we wait until a garbageCollect call to free the junk, we can
   // avoid certain cases where a pointer could be allocated, freed, and then
   // allocated; leading to a sort of ABA issue.
-  chpl::update<ResultType> combiner;
-  bool changed = combiner(r->result, result);
+  bool changed = false;
   bool initialResult = (r->lastChanged == -1);
-  // now 'r->result' is updated and 'result' is garbage for collection
+  auto currentRevision = this->currentRevisionNumber;
+
+  // For setter queries, only run the combiner if the last
+  // time the query was checked was an earlier revision.
+  // If the combiner is skipped, changed is left as false.
+  if (forSetter == false || r->lastChecked != currentRevision) {
+    chpl::update<ResultType> combiner;
+    changed = combiner(r->result, result);
+    // now 'r->result' is updated and 'result' is garbage for collection
+  }
 
   // save old result when appropriate
   // no need to save old result 1st time running this query
   // no need to save new result when old one is used due to no changes
-  if (changed==false && initialResult==false) {
+  if (initialResult || changed==false) {
+    // no need to save old result
+  } else {
     queryMap->oldResults.push_back(std::move(result));
   }
 
-  auto currentRevision = this->currentRevisionNumber;
   r->lastChecked = currentRevision;
   if (changed || initialResult) {
     r->lastChanged  = currentRevision;
@@ -372,13 +383,15 @@ template<typename ResultType,
 const QueryMapResult<ResultType, ArgTs...>*
 Context::updateResultForQueryMap(QueryMap<ResultType, ArgTs...>* queryMap,
                                  const std::tuple<ArgTs...>& tupleOfArgs,
-                                 ResultType result) {
+                                 ResultType result,
+                                 bool forSetter) {
   // Look up the current entry
   const QueryMapResult<ResultType, ArgTs...>* r
     = getResult(queryMap, tupleOfArgs);
 
   // Run the version of the function accepting the map and result entry
-  return updateResultForQueryMapR(queryMap, r, tupleOfArgs, std::move(result));
+  return updateResultForQueryMapR(queryMap, r, tupleOfArgs,
+                                  std::move(result), forSetter);
 }
 
 template<typename ResultType,
@@ -389,13 +402,15 @@ Context::updateResultForQuery(
                 const std::tuple<ArgTs...>& tupleOfArgs,
                 ResultType result,
                 const char* traceQueryName,
-                bool isInputQuery) {
+                bool isInputQuery,
+                bool forSetter) {
   // Look up the map entry for this query name
   QueryMap<ResultType, ArgTs...>* queryMap =
     getMap(queryFunction, tupleOfArgs, traceQueryName, isInputQuery);
 
   // Run the version of the function accepting the map
-  return updateResultForQueryMap(queryMap, tupleOfArgs, std::move(result));
+  return updateResultForQueryMap(queryMap, tupleOfArgs,
+                                 std::move(result), forSetter);
 }
 
 template<typename ResultType,
@@ -426,17 +441,6 @@ Context::hasResultForQuery(
   return true;
 }
 
-
-/*
-template<typename ResultType,
-         typename... ArgTs>
-void
-Context::queryRecomputedUpdateResult(QueryMap<ResultType, ArgTs...>* queryMap,
-                                     const std::tuple<ArgTs...>& tupleOfArgs,
-                                     ResultType result) {
-  updateResultForQueryMap(queryMap, tupleOfArgs, std::move(result));
-}*/
-
 template<typename ResultType,
          typename... ArgTs>
 void
@@ -447,7 +451,7 @@ Context::querySetterUpdateResult(
     const char* traceQueryName,
     bool isInputQuery) {
   updateResultForQuery(queryFunction, tupleOfArgs, std::move(result),
-                       traceQueryName, isInputQuery);
+                       traceQueryName, isInputQuery, /* forSetter */ true);
 }
 
 } // end namespace chpl
@@ -547,6 +551,8 @@ Context::querySetterUpdateResult(
    * any number of query arguments
 
   The result will be `std::move`d into the query.
+  If called multiple times within the same revision, only the first
+  stored result in that revision will be saved.
  */
 #define QUERY_STORE_RESULT(func, context, result, ...) \
   context->querySetterUpdateResult(func, \
@@ -566,6 +572,8 @@ Context::querySetterUpdateResult(
    * any number of query arguments
 
   The result will be `std::move`d into the query.
+  If called multiple times within the same revision, only the first
+  stored result in that revision will be saved.
  */
 #define QUERY_STORE_INPUT_RESULT(func, context, result, ...) \
   context->querySetterUpdateResult(func, \
