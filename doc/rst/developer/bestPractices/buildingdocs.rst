@@ -34,7 +34,7 @@ How the HTML is Generated
 The Chapel documentation shown at https://chapel-lang.org/docs/ is generated
 in three different ways:
 
-#.  Restructure Text files (with a .rst extension) are converted into .html
+#.  reStructuredText files (with a .rst extension) are converted into .html
     files via sphinx (https://sublime-and-sphinx-guide.readthedocs.io/).
 #.  Comments and code from Chapel source files are converted into .rst files
     using ``chapel/doc/util/chpl2rst.py``.
