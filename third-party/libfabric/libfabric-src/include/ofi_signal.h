@@ -39,13 +39,14 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
 #include <ofi_file.h>
 #include <ofi_osd.h>
+#include <ofi_atom.h>
 #include <rdma/fi_errno.h>
-#include <ofi_lock.h>
 
 
 enum {
@@ -53,11 +54,20 @@ enum {
 	FI_WRITE_FD
 };
 
+enum ofi_signal_state {
+	OFI_SIGNAL_UNSET,
+	OFI_SIGNAL_WRITE_PREPARE,
+	OFI_SIGNAL_SET,
+	OFI_SIGNAL_READ_PREPARE,
+};
+
 struct fd_signal {
-	fastlock_t	lock;
-	int		rcnt;
-	int		wcnt;
+	ofi_atomic32_t	state;
 	int		fd[2];
+
+#if ENABLE_DEBUG
+	ofi_atomic32_t debug_cnt;
+#endif
 };
 
 static inline int fd_signal_init(struct fd_signal *signal)
@@ -72,10 +82,11 @@ static inline int fd_signal_init(struct fd_signal *signal)
 	if (ret)
 		goto err;
 
-	ret = fastlock_init(&signal->lock);
-	if (ret)
-		goto err;
+	ofi_atomic_initialize32(&signal->state, OFI_SIGNAL_UNSET);
 
+#if ENABLE_DEBUG
+	ofi_atomic_initialize32(&signal->debug_cnt, 0);
+#endif
 	return 0;
 
 err:
@@ -88,30 +99,78 @@ static inline void fd_signal_free(struct fd_signal *signal)
 {
 	ofi_close_socket(signal->fd[0]);
 	ofi_close_socket(signal->fd[1]);
-
-	fastlock_destroy(&signal->lock);
 }
 
 static inline void fd_signal_set(struct fd_signal *signal)
 {
 	char c = 0;
-	fastlock_acquire(&signal->lock);
-	if (signal->wcnt == signal->rcnt) {
-		if (ofi_write_socket(signal->fd[FI_WRITE_FD], &c, sizeof c) == sizeof c)
-			signal->wcnt++;
+	bool cas; /* cas result */
+	int write_rc;
+
+	cas = ofi_atomic_cas_bool_strong32(&signal->state,
+					   OFI_SIGNAL_UNSET,
+					   OFI_SIGNAL_WRITE_PREPARE);
+	if (cas) {
+		write_rc = ofi_write_socket(signal->fd[FI_WRITE_FD], &c,
+					    sizeof c);
+		if (write_rc == sizeof c) {
+#if ENABLE_DEBUG
+			assert(ofi_atomic_inc32(&signal->debug_cnt) == 1);
+#endif
+			ofi_atomic_set32(&signal->state, OFI_SIGNAL_SET);
+		} else {
+			/* XXX: Setting the signal failed, a polling thread
+			 * will not be woken up now and the system might
+			 * get stuck.
+			 * Also, typically this will be totally
+			 * untested code path, as it basically will never
+			 * come up.
+			 */
+			ofi_atomic_set32(&signal->state, OFI_SIGNAL_UNSET);
+		}
 	}
-	fastlock_release(&signal->lock);
 }
 
 static inline void fd_signal_reset(struct fd_signal *signal)
 {
 	char c;
-	fastlock_acquire(&signal->lock);
-	if (signal->rcnt != signal->wcnt) {
-		if (ofi_read_socket(signal->fd[FI_READ_FD], &c, sizeof c) == sizeof c)
-			signal->rcnt++;
-	}
-	fastlock_release(&signal->lock);
+	bool cas; /* cas result */
+	enum ofi_signal_state state;
+	int read_rc;
+
+	do {
+		cas = ofi_atomic_cas_bool_weak32(&signal->state,
+						 OFI_SIGNAL_SET,
+						 OFI_SIGNAL_READ_PREPARE);
+		if (cas) {
+			read_rc = ofi_read_socket(signal->fd[FI_READ_FD], &c,
+						  sizeof c);
+			if (read_rc == sizeof c) {
+#if ENABLE_DEBUG
+				assert(ofi_atomic_dec32(&signal->debug_cnt) == 0);
+#endif
+				ofi_atomic_set32(&signal->state,
+						 OFI_SIGNAL_UNSET);
+				break;
+			} else {
+				ofi_atomic_set32(&signal->state, OFI_SIGNAL_SET);
+
+				/* Avoid spinning forever in this highly
+				 * unlikely code path.
+				 */
+				break;
+			}
+		}
+
+		state = ofi_atomic_get32(&signal->state);
+
+		/* note that this loop also needs to include
+		 * OFI_SIGNAL_WRITE_PREPARE, as the writing thread sets
+		 * the signal to the socket in _WRITE_PREPARE state. The reading
+		 * thread might then race with the writing thread and then
+		 * end up here before the state was switched to OFI_SIGNAL_SET.
+		 */
+	} while (state == OFI_SIGNAL_WRITE_PREPARE || state == OFI_SIGNAL_SET);
 }
 
 static inline int fd_signal_poll(struct fd_signal *signal, int timeout)

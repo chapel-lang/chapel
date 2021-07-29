@@ -215,7 +215,7 @@ struct mrail_recv {
 	uint64_t 		ignore;
 	struct mrail_rndv_recv	rndv;
 };
-DECLARE_FREESTACK(struct mrail_recv, mrail_recv_fs);
+OFI_DECLARE_FREESTACK(struct mrail_recv, mrail_recv_fs);
 
 int mrail_cq_process_buf_recv(struct fi_cq_tagged_entry *comp,
 			      struct mrail_recv *recv);
@@ -316,8 +316,8 @@ mrail_pop_recv(struct mrail_ep *mrail_ep)
 {
 	struct mrail_recv *recv;
 	ofi_ep_lock_acquire(&mrail_ep->util_ep);
-	recv = freestack_isempty(mrail_ep->recv_fs) ? NULL :
-		freestack_pop(mrail_ep->recv_fs);
+	recv = ofi_freestack_isempty(mrail_ep->recv_fs) ? NULL :
+		ofi_freestack_pop(mrail_ep->recv_fs);
 	ofi_ep_lock_release(&mrail_ep->util_ep);
 	return recv;
 }
@@ -326,7 +326,7 @@ static inline void
 mrail_push_recv(struct mrail_recv *recv)
 {
 	ofi_ep_lock_acquire(&recv->ep->util_ep);
-	freestack_push(recv->ep->recv_fs, recv);
+	ofi_freestack_push(recv->ep->recv_fs, recv);
 	ofi_ep_lock_release(&recv->ep->util_ep);
 }
 

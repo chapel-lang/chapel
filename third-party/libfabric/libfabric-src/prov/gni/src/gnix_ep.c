@@ -2,7 +2,8 @@
  * Copyright (c) 2015-2019 Cray Inc. All rights reserved.
  * Copyright (c) 2015-2018 Los Alamos National Security, LLC.
  *                         All rights reserved.
- * Copyright (c) 2019 Triad National Security, LLC. All rights reserved.
+ * Copyright (c) 2019-2020 Triad National Security, LLC.
+ *                         All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -2350,7 +2351,7 @@ DIRECT_FN int gnix_ep_open(struct fid_domain *domain, struct fi_info *info,
 	ep_priv->info = fi_dupinfo(info);
 	ep_priv->info->addr_format = info->addr_format;
 
-	GNIX_DEBUG(FI_LOG_DEBUG, "ep(%p) is using addr_format(%s)\n", ep_priv,
+	GNIX_DEBUG(FI_LOG_EP_CTRL, "ep(%p) is using addr_format(%s)\n", ep_priv,
 		  ep_priv->info->addr_format == FI_ADDR_STR ? "FI_ADDR_STR" :
 		  "FI_ADDR_GNI");
 

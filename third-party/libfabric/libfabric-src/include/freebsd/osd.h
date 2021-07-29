@@ -95,6 +95,62 @@ static inline size_t ofi_process_vm_writev(pid_t pid,
 	return -FI_ENOSYS;
 }
 
+static inline ssize_t ofi_read_socket(SOCKET fd, void *buf, size_t count)
+{
+	return read(fd, buf, count);
+}
+
+static inline ssize_t ofi_write_socket(SOCKET fd, const void *buf, size_t count)
+{
+	return write(fd, buf, count);
+}
+
+static inline ssize_t ofi_recv_socket(SOCKET fd, void *buf, size_t count,
+				      int flags)
+{
+	return recv(fd, buf, count, flags);
+}
+
+static inline ssize_t ofi_recvfrom_socket(SOCKET fd, void *buf, size_t count, int flags,
+					  struct sockaddr *from, socklen_t *fromlen)
+{
+	return recvfrom(fd, buf, count, flags, from, fromlen);
+}
+
+static inline ssize_t ofi_send_socket(SOCKET fd, const void *buf, size_t count,
+				      int flags)
+{
+	return send(fd, buf, count, flags);
+}
+
+static inline ssize_t ofi_sendto_socket(SOCKET fd, const void *buf, size_t count, int flags,
+					const struct sockaddr *to, socklen_t tolen)
+{
+	return sendto(fd, buf, count, flags, to, tolen);
+}
+
+static inline ssize_t ofi_writev_socket(SOCKET fd, struct iovec *iov, size_t iov_cnt)
+{
+	return writev(fd, iov, iov_cnt);
+}
+
+static inline ssize_t ofi_readv_socket(SOCKET fd, struct iovec *iov, int iov_cnt)
+{
+	return readv(fd, iov, iov_cnt);
+}
+
+static inline ssize_t
+ofi_sendmsg_tcp(SOCKET fd, const struct msghdr *msg, int flags)
+{
+	return sendmsg(fd, msg, flags);
+}
+
+static inline ssize_t
+ofi_recvmsg_tcp(SOCKET fd, struct msghdr *msg, int flags)
+{
+	return recvmsg(fd, msg, flags);
+}
+
 #endif /* _FREEBSD_OSD_H_ */
 
 

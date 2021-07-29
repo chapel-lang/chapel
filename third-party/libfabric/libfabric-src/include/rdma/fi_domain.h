@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2017 Intel Corporation. All rights reserved.
+ * (C) Copyright 2020 Hewlett Packard Enterprise Development LP
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -115,6 +116,8 @@ struct fid_mr {
 enum fi_hmem_iface {
 	FI_HMEM_SYSTEM	= 0,
 	FI_HMEM_CUDA,
+	FI_HMEM_ROCR,
+	FI_HMEM_ZE,
 };
 
 struct fi_mr_attr {
@@ -130,6 +133,7 @@ struct fi_mr_attr {
 	union {
 		uint64_t	reserved;
 		int		cuda;
+		int		ze;
 	} device;
 };
 
@@ -138,6 +142,23 @@ struct fi_mr_modify {
 	struct fi_mr_attr	attr;
 };
 
+#define FI_SET_OPS_HMEM_OVERRIDE "hmem_override_ops"
+
+struct fi_hmem_override_ops {
+	size_t	size;
+
+	ssize_t	(*copy_from_hmem_iov)(void *dest, size_t size,
+				      enum fi_hmem_iface iface, uint64_t device,
+				      const struct iovec *hmem_iov,
+				      size_t hmem_iov_count,
+				      uint64_t hmem_iov_offset);
+
+	ssize_t (*copy_to_hmem_iov)(enum fi_hmem_iface iface, uint64_t device,
+				    const struct iovec *hmem_iov,
+				    size_t hmem_iov_count,
+				    uint64_t hmem_iov_offset, const void *src,
+				    size_t size);
+};
 
 #ifdef FABRIC_DIRECT
 #include <rdma/fi_direct_atomic_def.h>
@@ -243,8 +264,9 @@ struct fi_ops_domain {
 	int	(*query_atomic)(struct fid_domain *domain,
 			enum fi_datatype datatype, enum fi_op op,
 			struct fi_atomic_attr *attr, uint64_t flags);
-	int (*query_collective)(struct fid_domain *domain, enum fi_collective_op coll,
-				struct fi_collective_attr *attr, uint64_t flags);
+	int	(*query_collective)(struct fid_domain *domain,
+			enum fi_collective_op coll,
+			struct fi_collective_attr *attr, uint64_t flags);
 };
 
 /* Memory registration flags */

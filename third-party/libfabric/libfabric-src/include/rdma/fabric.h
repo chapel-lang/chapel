@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2013-2017 Intel Corporation. All rights reserved.
  * Copyright (c) 2016 Cisco Systems, Inc. All rights reserved.
+ * (C) Copyright 2020 Hewlett Packard Enterprise Development LP
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -38,6 +39,7 @@
 #include <stddef.h>
 #include <sys/types.h>
 #include <sys/uio.h>
+#include <rdma/fi_errno.h>
 
 #ifdef __GNUC__
 #define FI_DEPRECATED_FUNC __attribute__((deprecated))
@@ -77,7 +79,7 @@ extern "C" {
 #endif
 
 #define FI_MAJOR_VERSION 1
-#define FI_MINOR_VERSION 10
+#define FI_MINOR_VERSION 12
 #define FI_REVISION_VERSION 1
 
 enum {
@@ -152,6 +154,7 @@ typedef struct fid *fid_t;
 #define FI_PEEK			(1ULL << 19)
 #define FI_TRIGGER		(1ULL << 20)
 #define FI_FENCE		(1ULL << 21)
+#define FI_PRIORITY		(1ULL << 22)
 
 #define FI_COMPLETION		(1ULL << 24)
 #define FI_EVENT		FI_COMPLETION
@@ -205,6 +208,7 @@ enum {
 	FI_ADDR_PSMX2,		/* uint64_t[2] */
 	FI_ADDR_IB_UD,		/* uint64_t[4] */
 	FI_ADDR_EFA,
+	FI_ADDR_PSMX3,		/* uint64_t[2] */
 };
 
 #define FI_ADDR_UNSPEC		((uint64_t) -1)
@@ -316,7 +320,8 @@ enum {
 	FI_PROTO_MRAIL,
 	FI_PROTO_RSTREAM,
 	FI_PROTO_RDMA_CM_IB_XRC,
-	FI_PROTO_EFA
+	FI_PROTO_EFA,
+	FI_PROTO_PSMX3
 };
 
 enum {
@@ -530,6 +535,8 @@ struct fi_ops {
 	int	(*ops_open)(struct fid *fid, const char *name,
 			    uint64_t flags, void **ops, void *context);
 	int	(*tostr)(const struct fid *fid, char *buf, size_t len);
+	int	(*ops_set)(struct fid *fid, const char *name, uint64_t flags,
+			   void *ops, void *context);
 };
 
 /* All fabric interface descriptors must start with this structure */
@@ -593,6 +600,11 @@ struct fi_alias {
 	uint64_t		flags;
 };
 
+struct fi_fid_var {
+	int		name;
+	void		*val;
+};
+
 struct fi_mr_raw_attr {
 	uint64_t	flags;
 	uint64_t	*base_addr;
@@ -627,6 +639,8 @@ enum {
 	FI_REFRESH,		/* mr: fi_mr_modify */
 	FI_DUP,			/* struct fid ** */
 	FI_GETWAITOBJ,		/*enum fi_wait_obj * */
+	FI_GET_VAL,		/* struct fi_fid_var */
+	FI_SET_VAL,		/* struct fi_fid_var */
 };
 
 static inline int fi_control(struct fid *fid, int command, void *arg)
@@ -642,11 +656,41 @@ static inline int fi_alias(struct fid *fid, struct fid **alias_fid, uint64_t fla
 	return fi_control(fid, FI_ALIAS, &alias);
 }
 
+/* fid value names */
+/*
+ * Currently no common name is defined. Provider specific names should
+ * have the FI_PROV_SPECIFIC bit set.
+ */
+
+static inline int fi_get_val(struct fid *fid, int name, void *val)
+{
+	struct fi_fid_var var;
+	var.name = name;
+	var.val = val;
+	return fi_control(fid, FI_GET_VAL, &var);
+}
+
+static inline int fi_set_val(struct fid *fid, int name, void *val)
+{
+	struct fi_fid_var var;
+	var.name = name;
+	var.val = val;
+	return fi_control(fid, FI_SET_VAL, &var);
+}
+
 static inline int
 fi_open_ops(struct fid *fid, const char *name, uint64_t flags,
 	    void **ops, void *context)
 {
 	return fid->ops->ops_open(fid, name, flags, ops, context);
+}
+
+static inline int
+fi_set_ops(struct fid *fid, const char *name, uint64_t flags,
+	   void *ops, void *context)
+{
+	return FI_CHECK_OP(fid->ops, struct fi_ops, ops_set) ?
+		fid->ops->ops_set(fid, name, flags, ops, context) : -FI_ENOSYS;
 }
 
 enum fi_type {
@@ -675,9 +719,12 @@ enum fi_type {
 	FI_TYPE_OP_TYPE,
 	FI_TYPE_FID,
 	FI_TYPE_COLLECTIVE_OP,
+	FI_TYPE_HMEM_IFACE,
 };
 
 char *fi_tostr(const void *data, enum fi_type datatype);
+char *fi_tostr_r(char *buf, size_t len, const void *data,
+		 enum fi_type datatype);
 
 enum fi_param_type {
 	FI_PARAM_STRING,

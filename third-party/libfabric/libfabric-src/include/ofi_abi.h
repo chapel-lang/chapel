@@ -90,7 +90,7 @@ extern "C" {
  * {
  *    ...
  * }
- * DEFAULT_SYMVER(bar_, bar, "MYLIB_1.0");
+ * DEFAULT_SYMVER(bar_, bar, MYLIB_1.0);
  *
  * This function is the main entry point for function foo.
  * int DEFAULT_SYMVER_PRE(foo)(void)
@@ -105,13 +105,13 @@ extern "C" {
  * {
  *    ...
  * }
- * COMPAT_SYMVER(foo_1_0, foo, "MYLIB_1.0");
+ * COMPAT_SYMVER(foo_1_0, foo, MYLIB_1.0);
  *
  * By convention, the name of compatibility functions is the exported function
  * name appended with the ABI version that it is compatible with.
  */
 
-#define CURRENT_ABI "FABRIC_1.3"
+#define CURRENT_ABI "FABRIC_1.4"
 
 #if  HAVE_ALIAS_ATTRIBUTE == 1
 #define DEFAULT_SYMVER_PRE(a) a##_

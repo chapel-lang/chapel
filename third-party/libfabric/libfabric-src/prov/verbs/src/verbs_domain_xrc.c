@@ -1,5 +1,6 @@
 /*
- * Copyright (c) 2018 Cray Inc. All rights reserved.
+ * Copyright (c) 2018-2019 Cray Inc. All rights reserved.
+ * Copyright (c) 2018-2019 System Fabric Works, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -44,38 +45,6 @@ struct vrb_ini_conn_key {
 static int vrb_process_ini_conn(struct vrb_xrc_ep *ep,int reciprocal,
 				   void *param, size_t paramlen);
 
-/*
- * This routine is a work around that creates a QP for the only purpose of
- * reserving the QP number. The QP is not transitioned out of the RESET state.
- */
-int vrb_reserve_qpn(struct vrb_xrc_ep *ep, struct ibv_qp **qp)
-{
-	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
-	struct vrb_cq *cq = container_of(ep->base_ep.util_ep.tx_cq,
-					    struct vrb_cq, util_cq);
-	struct ibv_qp_init_attr attr = { 0 };
-	int ret;
-
-	/* Limit library allocated resources and do not INIT QP */
-	attr.cap.max_send_wr = 1;
-	attr.cap.max_send_sge = 1;
-	attr.cap.max_recv_wr = 0;
-	attr.cap.max_recv_sge = 0;
-	attr.cap.max_inline_data = 0;
-	attr.send_cq = cq->cq;
-	attr.recv_cq = cq->cq;
-	attr.qp_type = IBV_QPT_RC;
-
-	*qp = ibv_create_qp(domain->pd, &attr);
-	if (OFI_UNLIKELY(!*qp)) {
-		ret = -errno;
-		VERBS_WARN(FI_LOG_EP_CTRL,
-			   "Reservation QP create failed %d\n", -ret);
-		return ret;
-	}
-	return FI_SUCCESS;
-}
-
 static int vrb_create_ini_qp(struct vrb_xrc_ep *ep)
 {
 #if VERBS_HAVE_XRC
@@ -106,12 +75,12 @@ static int vrb_create_ini_qp(struct vrb_xrc_ep *ep)
 static inline void vrb_set_ini_conn_key(struct vrb_xrc_ep *ep,
 					   struct vrb_ini_conn_key *key)
 {
-	key->addr = ep->base_ep.info->dest_addr;
+	key->addr = ep->base_ep.info_attr.dest_addr;
 	key->tx_cq = container_of(ep->base_ep.util_ep.tx_cq,
 				  struct vrb_cq, util_cq);
 }
 
-/* Caller must hold domain:eq:lock */
+/* Caller must hold domain:xrc.ini_lock */
 int vrb_get_shared_ini_conn(struct vrb_xrc_ep *ep,
 			       struct vrb_ini_shared_conn **ini_conn) {
 	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
@@ -167,8 +136,8 @@ insert_err:
 	return ret;
 }
 
-/* Caller must hold domain:eq:lock */
-void vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep)
+/* Caller must hold domain:xrc.ini_lock */
+void _vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep)
 {
 	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
 	struct vrb_ini_shared_conn *ini_conn;
@@ -212,7 +181,16 @@ void vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep)
 	}
 }
 
-/* Caller must hold domain:eq:lock */
+void vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep)
+{
+	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
+
+	domain->xrc.lock_acquire(&domain->xrc.ini_lock);
+	_vrb_put_shared_ini_conn(ep);
+	domain->xrc.lock_release(&domain->xrc.ini_lock);
+}
+
+/* Caller must hold domain:xrc.ini_lock */
 void vrb_add_pending_ini_conn(struct vrb_xrc_ep *ep, int reciprocal,
 				 void *conn_param, size_t conn_paramlen)
 {
@@ -237,12 +215,11 @@ static void vrb_create_shutdown_event(struct vrb_xrc_ep *ep)
 		dlistfd_insert_tail(&eq_entry->item, &ep->base_ep.eq->list_head);
 }
 
-/* Caller must hold domain:eq:lock */
+/* Caller must hold domain:xrc.ini_lock */
 void vrb_sched_ini_conn(struct vrb_ini_shared_conn *ini_conn)
 {
 	struct vrb_xrc_ep *ep;
 	enum vrb_ini_qp_state last_state;
-	struct sockaddr *addr;
 	int ret;
 
 	/* Continue to schedule shared connections if the physical connection
@@ -261,7 +238,7 @@ void vrb_sched_ini_conn(struct vrb_ini_shared_conn *ini_conn)
 				  &ep->ini_conn->active_list);
 		last_state = ep->ini_conn->state;
 
-		ret = vrb_create_ep(ep->base_ep.info,
+		ret = vrb_create_ep(&ep->base_ep,
 				       last_state == VRB_INI_QP_UNCONNECTED ?
 				       RDMA_PS_TCP : RDMA_PS_UDP,
 				       &ep->base_ep.id);
@@ -305,14 +282,10 @@ void vrb_sched_ini_conn(struct vrb_ini_shared_conn *ini_conn)
 			goto err;
 		}
 
-		addr = rdma_get_local_addr(ep->base_ep.id);
-		if (addr)
-			ofi_straddr_dbg(&vrb_prov, FI_LOG_EP_CTRL,
-					"XRC connect src_addr", addr);
-		addr = rdma_get_peer_addr(ep->base_ep.id);
-		if (addr)
-			ofi_straddr_dbg(&vrb_prov, FI_LOG_EP_CTRL,
-					"XRC connect dest_addr", addr);
+		ofi_straddr_dbg(&vrb_prov, FI_LOG_EP_CTRL, "XRC connect src_addr",
+				rdma_get_local_addr(ep->base_ep.id));
+		ofi_straddr_dbg(&vrb_prov, FI_LOG_EP_CTRL, "XRC connect dest_addr",
+				rdma_get_peer_addr(ep->base_ep.id));
 
 		ep->base_ep.ibv_qp = ep->ini_conn->ini_qp;
 		ret = vrb_process_ini_conn(ep, ep->conn_setup->pending_recip,
@@ -321,7 +294,7 @@ void vrb_sched_ini_conn(struct vrb_ini_shared_conn *ini_conn)
 err:
 		if (ret) {
 			ep->ini_conn->state = last_state;
-			vrb_put_shared_ini_conn(ep);
+			_vrb_put_shared_ini_conn(ep);
 
 			/* We need to let the application know that the
 			 * connect request has failed. */
@@ -559,6 +532,14 @@ int vrb_domain_xrc_init(struct vrb_domain *domain)
 		goto rbmap_err;
 	}
 
+	fastlock_init(&domain->xrc.ini_lock);
+	if (domain->util_domain.threading == FI_THREAD_DOMAIN) {
+		domain->xrc.lock_acquire = ofi_fastlock_acquire_noop;
+		domain->xrc.lock_release = ofi_fastlock_release_noop;
+	} else {
+		domain->xrc.lock_acquire = ofi_fastlock_acquire;
+		domain->xrc.lock_release = ofi_fastlock_release;
+	}
 	domain->flags |= VRB_USE_XRC;
 	return FI_SUCCESS;
 
@@ -581,7 +562,6 @@ int vrb_domain_xrc_cleanup(struct vrb_domain *domain)
 	int ret;
 
 	assert(domain->xrc.xrcd);
-
 	/* All endpoint and hence XRC INI QP should be closed */
 	if (!ofi_rbmap_empty(domain->xrc.ini_conn_rbmap)) {
 		VERBS_WARN(FI_LOG_DOMAIN, "XRC domain busy\n");
@@ -599,6 +579,7 @@ int vrb_domain_xrc_cleanup(struct vrb_domain *domain)
 	}
 
 	ofi_rbmap_destroy(domain->xrc.ini_conn_rbmap);
+	fastlock_destroy(&domain->xrc.ini_lock);
 #endif /* VERBS_HAVE_XRC */
 	return 0;
 }

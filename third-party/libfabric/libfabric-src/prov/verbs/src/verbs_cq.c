@@ -241,7 +241,7 @@ int vrb_poll_cq(struct vrb_cq *cq, struct ibv_wc *wc)
 		wc->wr_id = (uintptr_t) ctx->user_ctx;
 		if (ctx->flags & FI_TRANSMIT) {
 			cq->credits++;
-			ctx->ep->tx_credits++;
+			ctx->ep->sq_credits++;
 		}
 
 		if (wc->status) {

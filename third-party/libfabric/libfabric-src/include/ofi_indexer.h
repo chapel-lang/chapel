@@ -38,6 +38,7 @@
 #include "config.h"
 
 #include <sys/types.h>
+#include <stdbool.h>
 
 /*
  * Indexer:
@@ -79,6 +80,7 @@ struct indexer
 
 int ofi_idx_insert(struct indexer *idx, void *item);
 void *ofi_idx_remove(struct indexer *idx, int index);
+void *ofi_idx_remove_ordered(struct indexer *idx, int index);
 void ofi_idx_replace(struct indexer *idx, int index, void *item);
 void ofi_idx_reset(struct indexer *idx);
 
@@ -97,6 +99,10 @@ static inline void *ofi_idx_lookup(struct indexer *idx, int index)
 	return ofi_idx_is_valid(idx, index) ? ofi_idx_at(idx, index) : NULL;
 }
 
+static inline bool ofi_idx_free_list_empty(struct indexer *idx)
+{
+	return (idx->free_list == 0);
+}
 /*
  * Index map:
  * The index map is similar in concept to the indexer.  It allows the user
@@ -120,7 +126,7 @@ struct index_map
 
 int ofi_idm_set(struct index_map *idm, int index, void *item);
 void *ofi_idm_clear(struct index_map *idm, int index);
-void ofi_idm_reset(struct index_map *idm);
+void ofi_idm_reset(struct index_map *idm, void (*callback)(void *item));
 
 static inline void *ofi_idm_at(struct index_map *idm, int index)
 {
