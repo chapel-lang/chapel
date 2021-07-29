@@ -1,0 +1,4 @@
+deprecatePowm.chpl:11: warning: bigint.powm is deprecated, use bigint.powMod instead
+deprecatePowm.chpl:15: warning: bigint.powm is deprecated, use bigint.powMod instead
+2^4 mod 10 = 6
+2^3 mod 10 = 8
