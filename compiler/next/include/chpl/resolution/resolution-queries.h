@@ -32,7 +32,7 @@ namespace resolution {
   /**
     Resolve the contents of a Module
    */
-  const ResolutionResultByPostorderID& resolvedModule(Context* context, ID id);
+  const ResolutionResultByPostorderID& resolveModule(Context* context, ID id);
 
   /**
     Compute the type for a NamedDecl with a particular id.
@@ -83,23 +83,23 @@ namespace resolution {
     Checks the generic cache for potential for reuse. When reuse occurs,
     the ResolvedFunction might point to a different TypedFnSignature.
    */
-  const ResolvedFunction* resolvedFunction(Context* context,
-                                           const TypedFnSignature* sig,
-                                           const PoiScope* poiScope);
+  const ResolvedFunction* resolveFunction(Context* context,
+                                          const TypedFnSignature* sig,
+                                          const PoiScope* poiScope);
 
 
   /**
     Resolves a concrete function using the above queries.
     */
-  const ResolvedFunction* resolvedConcreteFunction(Context* context, ID id);
+  const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
 
   /**
     Returns the ResolvedFunction called by a particular
     ResolvedExpression, if there was exactly one candidate.
     This function does not handle return intent overloading.
    */
-  const ResolvedFunction* resolvedOnlyCandidate(Context* context,
-                                                const ResolvedExpression& r);
+  const ResolvedFunction* resolveOnlyCandidate(Context* context,
+                                               const ResolvedExpression& r);
   /**
     Compute the return/yield type for a function.
    */

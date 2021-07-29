@@ -65,7 +65,7 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast,
       auto parentAst = idToAst(context, parentId);
       if (parentAst != nullptr) {
         if (parentAst->isModule()) {
-          const auto& byId = resolvedModule(context, parentAst->id());
+          const auto& byId = resolveModule(context, parentAst->id());
           return &byId.byAst(ast);
         } else if (parentAst->isFunction()) {
           auto untyped = untypedSignature(context, parentAst->id());
@@ -75,7 +75,7 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast,
           } else {
             auto typed = typedSignatureInitial(context, untyped);
             if (!typed->needsInstantiation) {
-              auto rFn = resolvedFunction(context, typed, nullptr);
+              auto rFn = resolveFunction(context, typed, nullptr);
               return &rFn->resolutionById.byAst(ast);
             }
           }
@@ -138,7 +138,7 @@ computeAndPrintStuff(Context* context,
   if (r != nullptr) {
     for (const TypedFnSignature* sig : r->mostSpecific) {
       if (sig != nullptr) {
-        auto fn = resolvedFunction(context, sig, r->poiScope);
+        auto fn = resolveFunction(context, sig, r->poiScope);
         calledFns.insert(fn);
       }
     }

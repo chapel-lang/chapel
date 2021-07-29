@@ -534,8 +534,8 @@ struct Resolver {
   }
 };
 
-const ResolutionResultByPostorderID& resolvedModule(Context* context, ID id) {
-  QUERY_BEGIN(resolvedModule, context, id);
+const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
+  QUERY_BEGIN(resolveModule, context, id);
 
   ResolutionResultByPostorderID& partialResult = QUERY_CURRENT_RESULT;
 
@@ -561,14 +561,14 @@ const ResolutionResultByPostorderID& partiallyResolvedModule(Context* context,
 
   // check for a partial result from a running query
   const ResolutionResultByPostorderID* r =
-    QUERY_RUNNING_PARTIAL_RESULT(resolvedModule, context, id);
+    QUERY_RUNNING_PARTIAL_RESULT(resolveModule, context, id);
   // if there was a partial result, return it
   if (r != nullptr) {
     return *r;
   }
 
   // otherwise, run the query to compute the full result
-  return resolvedModule(context, id);
+  return resolveModule(context, id);
 }
 
 const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
@@ -772,7 +772,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                              const PoiScope* poiScope) {
 
   // Performance: Should this query use a similar approach to
-  // resolvedFunctionByInfoQuery, where the PoiInfo and visibility
+  // resolveFunctionByInfoQuery, where the PoiInfo and visibility
   // are consulted?
   //
   // It does not impact correctness, because typedSignatureQuery
@@ -833,25 +833,25 @@ const TypedFnSignature* instantiateSignature(Context* context,
 }
 
 static const owned<ResolvedFunction>&
-resolvedFunctionByPoisQuery(Context* context,
-                            const TypedFnSignature* sig,
-                            std::set<std::pair<ID, ID>> poiFnIdsUsed) {
-  QUERY_BEGIN(resolvedFunctionByPoisQuery, context, sig, poiFnIdsUsed);
+resolveFunctionByPoisQuery(Context* context,
+                           const TypedFnSignature* sig,
+                           std::set<std::pair<ID, ID>> poiFnIdsUsed) {
+  QUERY_BEGIN(resolveFunctionByPoisQuery, context, sig, poiFnIdsUsed);
 
   owned<ResolvedFunction> result;
-  // the actual value is set in resolvedFunction after it is computed
-  // because computing it generates the poiFnIdsUsed which is part
-  // of the key for this query.
+  // the actual value is set in resolveFunctionByInfoQuery after it is
+  // computed because computing it generates the poiFnIdsUsed which is
+  // part of the key for this query.
   assert(false && "should not be reached");
 
   return QUERY_END(result);
 }
 
 static const ResolvedFunction* const&
-resolvedFunctionByInfoQuery(Context* context,
+resolveFunctionByInfoQuery(Context* context,
                             const TypedFnSignature* sig,
                             PoiInfo poiInfo) {
-  QUERY_BEGIN(resolvedFunctionByInfoQuery, context, sig, poiInfo);
+  QUERY_BEGIN(resolveFunctionByInfoQuery, context, sig, poiInfo);
 
   const UntypedFnSignature* untypedSignature = sig->untypedSignature;
   const ASTNode* ast = parsing::idToAst(context, untypedSignature->functionId);
@@ -882,7 +882,7 @@ resolvedFunctionByInfoQuery(Context* context,
     // If there was already a value for this revision, this
     // call will not update it. (If it did, that could lead to
     // memory errors).
-    QUERY_STORE_RESULT(resolvedFunctionByPoisQuery,
+    QUERY_STORE_RESULT(resolveFunctionByPoisQuery,
                        context,
                        resolved,
                        sig,
@@ -893,14 +893,14 @@ resolvedFunctionByInfoQuery(Context* context,
 
   // Return the unique result from the query (that might have been saved above)
   const owned<ResolvedFunction>& resolved =
-   resolvedFunctionByPoisQuery(context, sig, resolvedPoiInfo.poiFnIdsUsed);
+   resolveFunctionByPoisQuery(context, sig, resolvedPoiInfo.poiFnIdsUsed);
 
   const ResolvedFunction* result = resolved.get();
 
   return QUERY_END(result);
 }
 
-const ResolvedFunction* resolvedFunction(Context* context,
+const ResolvedFunction* resolveFunction(Context* context,
                                          const TypedFnSignature* sig,
                                          const PoiScope* poiScope) {
   // this should only be applied to concrete fns or instantiations
@@ -910,10 +910,10 @@ const ResolvedFunction* resolvedFunction(Context* context,
   auto poiInfo = PoiInfo(poiScope);
 
   // lookup in the map using this PoiInfo
-  return resolvedFunctionByInfoQuery(context, sig, std::move(poiInfo));
+  return resolveFunctionByInfoQuery(context, sig, std::move(poiInfo));
 }
 
-const ResolvedFunction* resolvedConcreteFunction(Context* context, ID id) {
+const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   auto func = parsing::idToAst(context, id)->toFunction();
   if (func == nullptr)
     return nullptr;
@@ -923,11 +923,11 @@ const ResolvedFunction* resolvedConcreteFunction(Context* context, ID id) {
   if (sig->needsInstantiation)
     return nullptr;
 
-  const ResolvedFunction* ret = resolvedFunction(context, sig, nullptr);
+  const ResolvedFunction* ret = resolveFunction(context, sig, nullptr);
   return ret;
 }
 
-const ResolvedFunction* resolvedOnlyCandidate(Context* context,
+const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                               const ResolvedExpression& r) {
   const TypedFnSignature* sig = r.mostSpecific.only();
   const PoiScope* poiScope = r.poiScope;
@@ -935,7 +935,7 @@ const ResolvedFunction* resolvedOnlyCandidate(Context* context,
   if (sig == nullptr)
     return nullptr;
 
-  return resolvedFunction(context, sig, poiScope);
+  return resolveFunction(context, sig, poiScope);
 }
 
 struct ReturnTypeInferer {
@@ -1085,7 +1085,7 @@ const QualifiedType& returnType(Context* context,
       result = resolutionById.byAst(retType).type;
     } else {
       // resolve the function body
-      const ResolvedFunction* rFn = resolvedFunction(context, sig, poiScope);
+      const ResolvedFunction* rFn = resolveFunction(context, sig, poiScope);
       // infer the return type
       ReturnTypeInferer visitor(context, *rFn);
       fn->body()->traverse(visitor);
@@ -1360,7 +1360,7 @@ void accumulatePoisUsedByResolvingBody(Context* context,
   }
 
   // resolve the body
-  const ResolvedFunction* r = resolvedFunction(context, signature, poiScope);
+  const ResolvedFunction* r = resolveFunction(context, signature, poiScope);
 
   // gather the POI scopes from instantiating the function body
   poiInfo.accumulate(r->poiInfo);

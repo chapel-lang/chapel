@@ -60,7 +60,7 @@ static void test1() {
     const Identifier* xIdent = m->stmt(1)->toIdentifier();
     assert(xIdent);
 
-    const ResolutionResultByPostorderID& rr = resolvedModule(context, m->id());
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
     assert(rr.byAst(x).type.type()->isIntType());
     assert(rr.byAst(xIdent).type.type()->isIntType());
@@ -87,7 +87,7 @@ static void test2() {
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
     assert(m);
-    resolvedModule(context, m->id());
+    resolveModule(context, m->id());
 
     context->collectGarbage();
   }
@@ -103,7 +103,7 @@ static void test2() {
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
     assert(m);
-    resolvedModule(context, m->id());
+    resolveModule(context, m->id());
 
     context->collectGarbage();
   }
@@ -123,7 +123,7 @@ static void test2() {
     const Variable* x = m->stmt(0)->toVariable();
     assert(x);
 
-    const ResolutionResultByPostorderID& rr = resolvedModule(context, m->id());
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
     assert(rr.byAst(x).type.type()->isIntType());
 
     context->collectGarbage();
@@ -148,7 +148,7 @@ static void test2() {
     const Identifier* xIdent = m->stmt(1)->toIdentifier();
     assert(xIdent);
 
-    const ResolutionResultByPostorderID& rr = resolvedModule(context, m->id());
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
     assert(rr.byAst(x).type.type()->isIntType());
     assert(rr.byAst(xIdent).type.type()->isIntType());

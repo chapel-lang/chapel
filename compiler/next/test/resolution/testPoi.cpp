@@ -75,15 +75,15 @@ static void test1() {
   assert(genericCall);
 
   // resolve module N
-  const ResolutionResultByPostorderID& rr = resolvedModule(context, n->id());
+  const ResolutionResultByPostorderID& rr = resolveModule(context, n->id());
 
   // get the resolved function
   const ResolvedFunction* rfunc =
-    resolvedOnlyCandidate(context, rr.byAst(genericCall));
+    resolveOnlyCandidate(context, rr.byAst(genericCall));
   assert(rfunc);
 
   const ResolvedFunction* rhelp =
-    resolvedOnlyCandidate(context, rfunc->resolutionById.byAst(helperCall));
+    resolveOnlyCandidate(context, rfunc->resolutionById.byAst(helperCall));
   assert(rhelp);
   assert(rhelp->functionId() == nHelper->id());
 }
@@ -173,29 +173,29 @@ static void test2() {
 
   // resolve runM1
   const ResolvedFunction* rRunM1 =
-    resolvedConcreteFunction(context, runM1->id());
+    resolveConcreteFunction(context, runM1->id());
   assert(rRunM1);
   // resolve runM2
   const ResolvedFunction* rRunM2 =
-    resolvedConcreteFunction(context, runM2->id());
+    resolveConcreteFunction(context, runM2->id());
   assert(rRunM2);
 
   // find the resolved calls to foo in runM1 and runM2
   const ResolvedFunction* m1foo =
-    resolvedOnlyCandidate(context, rRunM1->byAst(runM1FooCall));
+    resolveOnlyCandidate(context, rRunM1->byAst(runM1FooCall));
   assert(m1foo);
   assert(m1foo->functionId() == fooA->id());
   const ResolvedFunction* m2foo =
-    resolvedOnlyCandidate(context, rRunM2->byAst(runM2FooCall));
+    resolveOnlyCandidate(context, rRunM2->byAst(runM2FooCall));
   assert(m2foo);
   assert(m2foo->functionId() == fooB->id());
 
   const ResolvedFunction* m1foobar =
-    resolvedOnlyCandidate(context, m1foo->byAst(fooABarCall));
+    resolveOnlyCandidate(context, m1foo->byAst(fooABarCall));
   assert(m1foobar);
   assert(m1foobar->functionId() == m1Bar->id());
   const ResolvedFunction* m2foobar =
-    resolvedOnlyCandidate(context, m2foo->byAst(fooBBarCall));
+    resolveOnlyCandidate(context, m2foo->byAst(fooBBarCall));
   assert(m2foobar);
   assert(m2foobar->functionId() == m2Bar->id());
 }
@@ -310,31 +310,31 @@ static void test3() {
   assert(mGenericCall);
 
   // resolve main
-  const ResolvedFunction* rMain = resolvedConcreteFunction(context, main->id());
+  const ResolvedFunction* rMain = resolveConcreteFunction(context, main->id());
   assert(rMain);
 
   // find the resolved calls in main to nCallFunc, mCallFunc, mGenericCallFunc
   const ResolvedFunction* rNCallFunc =
-    resolvedOnlyCandidate(context, rMain->byAst(nCall));
+    resolveOnlyCandidate(context, rMain->byAst(nCall));
   assert(rNCallFunc);
 
   const ResolvedFunction* rMCallFunc =
-    resolvedOnlyCandidate(context, rMain->byAst(mCall));
+    resolveOnlyCandidate(context, rMain->byAst(mCall));
   assert(rMCallFunc);
 
   const ResolvedFunction* rMGenericCallFunc =
-    resolvedOnlyCandidate(context, rMain->byAst(mGenericCall));
+    resolveOnlyCandidate(context, rMain->byAst(mGenericCall));
   assert(rMGenericCallFunc);
 
   // within each of those, find the call to genericfunc
   const ResolvedFunction* rNCallGF =
-    resolvedOnlyCandidate(context, rNCallFunc->byAst(nCallFuncGCall));
+    resolveOnlyCandidate(context, rNCallFunc->byAst(nCallFuncGCall));
   assert(rNCallGF);
   const ResolvedFunction* rMCallGF =
-    resolvedOnlyCandidate(context, rMCallFunc->byAst(mCallFuncGCall));
+    resolveOnlyCandidate(context, rMCallFunc->byAst(mCallFuncGCall));
   assert(rMCallGF);
   const ResolvedFunction* rMGenericCallGF =
-    resolvedOnlyCandidate(context, rMGenericCallFunc->byAst(mGenericCallFuncGCall));
+    resolveOnlyCandidate(context, rMGenericCallFunc->byAst(mGenericCallFuncGCall));
   assert(rMGenericCallGF);
 
   // now within each one of those, check the
@@ -343,11 +343,11 @@ static void test3() {
   // first, check in nCall
   {
     const ResolvedFunction* h1 =
-      resolvedOnlyCandidate(context, rNCallGF->byAst(helperCall1));
+      resolveOnlyCandidate(context, rNCallGF->byAst(helperCall1));
     const ResolvedFunction* h2 =
-      resolvedOnlyCandidate(context, rNCallGF->byAst(helperCall2));
+      resolveOnlyCandidate(context, rNCallGF->byAst(helperCall2));
     const ResolvedFunction* h3 =
-      resolvedOnlyCandidate(context, rNCallGF->byAst(helperCall3));
+      resolveOnlyCandidate(context, rNCallGF->byAst(helperCall3));
 
     assert(h1);
     assert(h1->functionId() == nHelper1->id());
@@ -362,11 +362,11 @@ static void test3() {
   // next, check in mCall
   {
     const ResolvedFunction* h1 =
-      resolvedOnlyCandidate(context, rMCallGF->byAst(helperCall1));
+      resolveOnlyCandidate(context, rMCallGF->byAst(helperCall1));
     const ResolvedFunction* h2 =
-      resolvedOnlyCandidate(context, rMCallGF->byAst(helperCall2));
+      resolveOnlyCandidate(context, rMCallGF->byAst(helperCall2));
     const ResolvedFunction* h3 =
-      resolvedOnlyCandidate(context, rMCallGF->byAst(helperCall3));
+      resolveOnlyCandidate(context, rMCallGF->byAst(helperCall3));
 
     assert(h1);
     assert(h1->functionId() == mHelper1->id());
@@ -381,11 +381,11 @@ static void test3() {
   // then, check in mGenericCall
   {
     const ResolvedFunction* h1 =
-      resolvedOnlyCandidate(context, rMGenericCallGF->byAst(helperCall1));
+      resolveOnlyCandidate(context, rMGenericCallGF->byAst(helperCall1));
     const ResolvedFunction* h2 =
-      resolvedOnlyCandidate(context, rMGenericCallGF->byAst(helperCall2));
+      resolveOnlyCandidate(context, rMGenericCallGF->byAst(helperCall2));
     const ResolvedFunction* h3 =
-      resolvedOnlyCandidate(context, rMGenericCallGF->byAst(helperCall3));
+      resolveOnlyCandidate(context, rMGenericCallGF->byAst(helperCall3));
 
     assert(h1);
     assert(h1->functionId() == mHelper1->id());
@@ -433,11 +433,11 @@ static void test4() {
   auto bCall = M->stmt(3)->toCall();
   assert(bCall);
 
-  const auto& rM = resolvedModule(context, M->id());
+  const auto& rM = resolveModule(context, M->id());
 
-  auto rAGeneric = resolvedOnlyCandidate(context, rM.byAst(aCall));
+  auto rAGeneric = resolveOnlyCandidate(context, rM.byAst(aCall));
   assert(rAGeneric);
-  auto rBGeneric = resolvedOnlyCandidate(context, rM.byAst(bCall));
+  auto rBGeneric = resolveOnlyCandidate(context, rM.byAst(bCall));
   assert(rBGeneric);
 
   // check that these two are the same instantiation.
@@ -497,13 +497,13 @@ static void test5() {
   auto bCall = B->stmt(2)->toCall();
   assert(bCall);
 
-  resolvedModule(context, Main->id());
-  const auto& rA = resolvedModule(context, A->id());
-  const auto& rB = resolvedModule(context, B->id());
+  resolveModule(context, Main->id());
+  const auto& rA = resolveModule(context, A->id());
+  const auto& rB = resolveModule(context, B->id());
 
-  auto rAGeneric = resolvedOnlyCandidate(context, rA.byAst(aCall));
+  auto rAGeneric = resolveOnlyCandidate(context, rA.byAst(aCall));
   assert(rAGeneric);
-  auto rBGeneric = resolvedOnlyCandidate(context, rB.byAst(bCall));
+  auto rBGeneric = resolveOnlyCandidate(context, rB.byAst(bCall));
   assert(rBGeneric);
 
   // check that these two are the same instantiation.
@@ -572,15 +572,15 @@ static void test6() {
   auto bCall = B->stmt(2)->toCall();
   assert(bCall);
 
-  resolvedModule(context, Main->id());
-  const auto& rA = resolvedModule(context, A->id());
-  const auto& rB = resolvedModule(context, B->id());
+  resolveModule(context, Main->id());
+  const auto& rA = resolveModule(context, A->id());
+  const auto& rB = resolveModule(context, B->id());
 
-  auto rACallGeneric = resolvedOnlyCandidate(context, rA.byAst(aCall));
+  auto rACallGeneric = resolveOnlyCandidate(context, rA.byAst(aCall));
   assert(rACallGeneric);
   assert(rACallGeneric->signature);
   assert(rACallGeneric->signature->untypedSignature);
-  auto rBCallGeneric = resolvedOnlyCandidate(context, rB.byAst(bCall));
+  auto rBCallGeneric = resolveOnlyCandidate(context, rB.byAst(bCall));
   assert(rBCallGeneric);
   assert(rBCallGeneric->signature->untypedSignature);
 
