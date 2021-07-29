@@ -438,14 +438,30 @@ static void deadModuleElimination() {
   }
 }
 
+
 static bool shouldOutlineLoop(CForLoop *loop) {
   // Obvious TODO :)
-  if (strcmp(loop->fname(), "/Users/ekayraklio/code/chapel/versions/f03/chapel/gpuOutline.chpl") == 0) {
-    if (loop->isOrderIndependent()) {
-      return true;
+  
+  const char* testModuleName = "GPUOutlineTest";
+  bool inTestModule = false;
+
+  Symbol* cur = loop->parentSymbol;
+
+  do {
+    if (ModuleSymbol* parentModule = toModuleSymbol(cur)) {
+      if (strcmp(parentModule->name, testModuleName) == 0) {
+        inTestModule = true;
+      }
     }
-  }
-  return false;
+
+    if (cur->defPoint != NULL)
+      cur = cur->defPoint->parentSymbol;
+    else
+      cur = NULL;
+
+  } while (cur != NULL && !inTestModule);
+
+  return inTestModule && loop->isOrderIndependent();
 }
 
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
