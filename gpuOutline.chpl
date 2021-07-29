@@ -1,3 +1,4 @@
+// this module name is hard-coded in the compiler
 module GPUOutlineTest {
   record GPUAbleArray {
     type eltType;
