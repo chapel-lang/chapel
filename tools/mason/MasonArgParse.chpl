@@ -23,7 +23,7 @@ module MasonArgParse {
   private use IO;
   private use Sort;
 
-  const DEBUG=true;
+  const DEBUG=false;
   // TODO: Add bool flags
   // TODO: Add positional arguments
   // TODO: Add pass-thru options following "-" or "--"
@@ -238,14 +238,16 @@ module MasonArgParse {
           argsList.insert(idx, elems.toArray());
         }
       }
-      
+
       for i in argsList.indices {
-        const argElt = argsList[i];
+        const argElt = argsList[i];        
         if _options.contains(argElt) {
+          var optName = _options.getValue(argElt);
+          var argRslt = _result.getValue(optName);
           debugTrace("found option " + argElt);
           // create an entry for this index and the argument name
-          optionIndices.add(i, _options.getValue(argElt));
-          _result.getValue(_options.getValue(argElt))._present = true;          
+          optionIndices.add(i, optName);
+          argRslt._present = true;
         }
       }
       
@@ -282,11 +284,21 @@ module MasonArgParse {
                  + arrayoptionIndices.size:string);
         debugTrace("argsList.size = " + argsList.size:string);
         debugTrace("argsD.high = " + argsD.high:string);
+        //check if we consumed the rest of the arguments
+        if rest.size + endPos == argsList.size {
+          // stop processing more arguments, let subcommand eat the rest
+          // needed when a subcommand defines same flag as parent command
+          // or else the parent command will try to match on the subcommand arg
+          debugTrace("Subcommand " + act._name +" consumes rest of arguments");
+          break;
+        }
+
         // make sure we don't overrun the array,
-        // then check that we don't have extra values
+        // then check that we don't have extra values        
         if k < arrayoptionIndices.size {
           if endPos != arrayoptionIndices[k][0] {
-            debugTrace("endpos != arrayoptionIndices[k][0] :"+endPos:string+" "
+            debugTrace("Rest.size= " + rest.size:string);
+            debugTrace("endpos != arrayoptionIndices[k][0] :"+endPos:string+"!="
                      + arrayoptionIndices[k][0]:string);
             debugTrace("arrayoptionIndices " + arrayoptionIndices:string);
             throw new ArgumentError("\\".join(act._name) + " has extra values");
