@@ -38,7 +38,7 @@ using namespace parsing;
 using namespace resolution;
 using namespace uast;
 
-// very simple test showing point-of-instantiation behavior
+// test showing point-of-instantiation behavior
 static void test1() {
   printf("test1\n");
   Context ctx;
@@ -396,6 +396,10 @@ static void test3() {
     assert(h3);
     assert(h3->functionId() == mHelper3->id());
   }
+
+  // check that the generic function signatures are the same
+  assert(rNCallGF->signature == rMCallGF->signature);
+  assert(rMCallGF->signature == rMGenericCallGF->signature);
 }
 
 // check generic reuse from the same scope
@@ -574,8 +578,14 @@ static void test6() {
 
   auto rACallGeneric = resolvedOnlyCandidate(context, rA.byAst(aCall));
   assert(rACallGeneric);
+  assert(rACallGeneric->signature);
+  assert(rACallGeneric->signature->untypedSignature);
   auto rBCallGeneric = resolvedOnlyCandidate(context, rB.byAst(bCall));
   assert(rBCallGeneric);
+  assert(rBCallGeneric->signature->untypedSignature);
+
+  // check that these two have the same signature
+  assert(rACallGeneric->signature == rBCallGeneric->signature);
 
   // check that these two are the same instantiation.
   assert(rACallGeneric == rBCallGeneric);
