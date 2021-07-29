@@ -206,9 +206,6 @@ struct Resolver {
 
     poiInfo.poiScope = poiScope;
 
-    // include any pois required for the signature in the resulting PoiInfo
-    poiInfo.accumulate(typedFnSignature->poiInfo);
-
     byPostorder.setupForFunction(fn);
     enterScope(symbol);
 
@@ -638,11 +635,10 @@ typedSignatureQuery(Context* context,
                     TypedFnSignature::WhereClauseResult whereClauseResult,
                     bool needsInstantiation,
                     const TypedFnSignature* instantiatedFrom,
-                    const TypedFnSignature* parentFn,
-                    PoiInfo poiInfo) {
+                    const TypedFnSignature* parentFn) {
   QUERY_BEGIN(typedSignatureQuery, context,
               untypedSignature, formalTypes, whereClauseResult,
-              needsInstantiation, instantiatedFrom, parentFn, poiInfo);
+              needsInstantiation, instantiatedFrom, parentFn);
 
   auto result = toOwned(new TypedFnSignature());
   result->untypedSignature = untypedSignature;
@@ -651,7 +647,6 @@ typedSignatureQuery(Context* context,
   result->needsInstantiation = needsInstantiation;
   result->instantiatedFrom = instantiatedFrom;
   result->parentFn = parentFn;
-  result->poiInfo = std::move(poiInfo);
 
   return QUERY_END(result);
 }
@@ -767,8 +762,7 @@ typedSignatureInitial(Context* context,
                                            whereResult,
                                            needsInstantiation,
                                            /* instantiatedFrom */ nullptr,
-                                           /* parentFn */ parentFnTyped,
-                                           std::move(poiFnIdsUsed));
+                                           /* parentFn */ parentFnTyped);
   return result.get();
 }
 
@@ -819,8 +813,6 @@ const TypedFnSignature* instantiateSignature(Context* context,
   std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
   bool needsInstantiation = anyFormalNeedsInstantiation(formalTypes);
   auto whereResult = whereClauseResult(context, fn, r, needsInstantiation);
-  PoiInfo poiInfo;
-  poiInfo.swap(visitor.poiInfo);
 
   const auto& result = typedSignatureQuery(context,
                                            untypedSignature,
@@ -828,8 +820,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                            whereResult,
                                            needsInstantiation,
                                            /* instantiatedFrom */ sig,
-                                           /* parentFn */ parentFnTyped,
-                                           std::move(poiInfo));
+                                           /* parentFn */ parentFnTyped);
   return result.get();
 }
 

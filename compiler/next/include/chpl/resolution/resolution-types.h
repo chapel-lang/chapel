@@ -234,10 +234,6 @@ struct TypedFnSignature {
   // function signature?
   const TypedFnSignature* parentFn = nullptr;
 
-  // If it's an instantiation, what are the point-of-instantiation scopes
-  // that were needed for resolving the signature?
-  PoiInfo poiInfo;
-
   // TODO: This could include a substitutions map, if we need it.
   // The formalTypes above might be enough, though.
 
@@ -247,8 +243,7 @@ struct TypedFnSignature {
            whereClauseResult == other.whereClauseResult &&
            needsInstantiation == other.needsInstantiation &&
            instantiatedFrom == other.instantiatedFrom &&
-           parentFn == other.parentFn &&
-           PoiInfo::updateEquals(poiInfo, other.poiInfo);
+           parentFn == other.parentFn;
   }
   bool operator!=(const TypedFnSignature& other) const {
     return !(*this == other);
