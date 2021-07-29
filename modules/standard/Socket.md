@@ -99,14 +99,14 @@ The `tcpConn` instance is basically a chapel `file` instance with added methods 
 
 **Method:**
 ```python
-proc listen(in address:ipAddr, reuseAddr = true, backlog = 5) : tcpListener
+proc listen(in address:ipAddr, reuseAddr = true, backlog = DEFAULT_BACKLOG) : tcpListener
 ```
 
 **Parameters**
 ```
 address: ipAddr - contains family info of socket to create and where to bind it.
 reuseaddr: Boolean - optional parameter, default value = true
-backlog: int - optional parameter, default value = 0
+backlog: int - optional parameter, default value = min(SOMAXCONN, 128)
 ```
 
 - The `backlog` argument defines the maximum length to which specifies the queue length for completely established sockets waiting to be accepted. If a connection request arrives when the queue is full, the client may receive an error with an indication of `ECONNREFUSED` or, if the underlying protocol supports retransmission, the request may be ignored so that a later reattempt at connection succeeds.
@@ -135,16 +135,16 @@ The additional support with `tcpConn` and `tcpListener` will be to enable or dis
 - `nagle`
   This method will set/unset TCP_NODELAY for provided socket.
   ```python
-  proc nagle(socket:tcpConn, tcpNodeDelay:bool = 1)
-  proc nagle(socket:tcpListener, tcpNodeDelay:bool = 1);
-  proc nagle(socket:udpSocket, tcpNodeDelay:bool = 1);
+  proc nagle(socket:tcpConn, enable:bool = 1)
+  proc nagle(socket:tcpListener, enable:bool = 1);
+  proc nagle(socket:udpSocket, enable:bool = 1);
   ```
-- `quickAck`
+- `delayAck`
   This method will set/unset TCP_QUICKACK for provided socket.
   ```python
-  proc quickAck(socket:tcpConn, tcpQuickAck:bool = 1)
-  proc quickAck(socket:tcpListener, tcpQuickAck:bool = 1);
-  proc quickAck(socket:udpSocket, tcpQuickAck:bool = 1);
+  proc delayAck(socket:tcpConn, enable:bool = 1)
+  proc delayAck(socket:tcpListener, enable:bool = 1);
+  proc delayAck(socket:udpSocket, enable:bool = 1);
   ```
 
 ## UDP Support
@@ -170,7 +170,7 @@ address: contains address info about where to bind the socket.
 reuseaddr: Boolean - optional parameter, default value = true
 ```
 
-Bind is responsible for binding any socket to a specified address and port. Here the socket can be anything either a UDP or a TCP Socket. listen under the hood will can in bind to bind `tcpListener` to address and port. With either tcpConn or udpSocket that isn't a requirement as the system assigns any free port and localhost address to them by default.
+Bind is responsible for binding any socket to a specified address and port. Here the socket can be anything either a UDP or a TCP Socket. listen under the hood will call in `bind` to bind `tcpListener` to address and port. With either tcpConn or udpSocket that isn't a requirement as the system assigns any free port and localhost address to them by default.
 
 While `tcpConn` is in a connected state when they are created `udpSocket` are connectionless they are just waiting for the user to use them for sending and receiving purpose only. But for sending and receiving purpose user might require a socket to have a known address that is when bind will be useful for `udpSocket`.
 
@@ -190,7 +190,6 @@ proc socketServ.recvFrom(buffer_len:int, in timeout = new timeval(-1,0)) : (addr
 ```
 buffer_len: int - number of bytes to read
 timeout: timeval - defines the time in `(seconds, microseconds)` function should wait till `recvfrom` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
-reuseaddr: Boolean - optional parameter, default value = true
 ```
 
 **Return:**
@@ -211,7 +210,6 @@ proc socketServ.recv(buffer_len: int, in timeout = new timeval(-1,0)) : bytes
 ```
 buffer_len: int - number of bytes to read
 timeout: timeval - defines the time in `(seconds, microseconds)` function should wait till `recv` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
-reuseaddr: Boolean - optional parameter, default value = true
 ```
 
 The `send` method on socket will take in `addr`, `timeout`, `flags` and `data` to write to the socket at provided `address`.
