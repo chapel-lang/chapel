@@ -23,6 +23,7 @@ createTaskFunctions :
 resolve :
 resolveIntents :
 checkResolved :
+markGPUSuitableLoops :
 replaceArrayAccessesWithRefTemps :
 flattenFunctions :
 cullOverReferences :
