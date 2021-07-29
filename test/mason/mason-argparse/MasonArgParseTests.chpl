@@ -1611,6 +1611,34 @@ proc testFromArgParseExample(test: borrowed Test) throws {
   test.assertEqual(new list(argList[12..]),remain);
 }
   
+// short option interrupted with bad flag value
+proc testOptRangeInterruptBadFlag(test: borrowed Test) throws {
+  var argList = ["progName","-n","twenty","-f","-p","thirty","-t","two"];
+  var parser = new argumentParser();
+  var myStrArg1 = parser.addOption(name="StringOpt1",
+                                   opts=["-n","--stringVal1"],            
+                                   numArgs=1..);
+  var myStrArg2 = parser.addOption(name="StringOpt2",
+                                   opts=["-p","--stringVal2"],            
+                                   numArgs=1);
+  var myStrArg3 = parser.addOption(name="StringOpt3",
+                                   opts=["-t","--stringVal3"],            
+                                   numArgs=1);
+
+  //make sure no value currently exists
+  test.assertFalse(myStrArg1.hasValue());
+  test.assertFalse(myStrArg2.hasValue());
+  test.assertFalse(myStrArg3.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
 
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 

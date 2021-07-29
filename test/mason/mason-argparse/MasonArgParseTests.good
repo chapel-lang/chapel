@@ -274,6 +274,30 @@ testRangeStringShortOptRepeatedAllowableCount()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testOptionsWithSubCommandSubOptions()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testOptionsRangeWithSubCommandSubOptions()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testOptionsRangeWithSubCommandSameSubOptions()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testOptsRangeWithSubCommandSameSubOptionsLow()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testFromArgParseExample()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testOptRangeInterruptBadFlag()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 Found undefined values: thirty
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
@@ -307,3 +331,4 @@ Option flag --strArg is previously defined
 Found undefined values: subCommandNone
 Found undefined values: subCommandNone
 Found undefined values: -x
+StringOpt1 has extra values

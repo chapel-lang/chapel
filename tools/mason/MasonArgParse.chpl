@@ -98,13 +98,12 @@ module MasonArgParse {
 
   }
 
-  // stores a subcommand name
+  // stores a subcommand definition
   class SubCommand : Action {
     
     proc init(cmd:string) {
       super.init();
       this._name=cmd;
-      this.complete();     
     }
 
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
@@ -112,7 +111,7 @@ module MasonArgParse {
       var pos = startPos;
       var next = pos + 1;
       debugTrace("starting at pos: " + pos:string);
-      while pos <= argsD.high 
+      while pos <= endPos 
       {      
         if args[pos] == this._name {
           myArg._values.append(args[pos]);
@@ -128,7 +127,7 @@ module MasonArgParse {
 
   }
 
-  // stores the definition of an option
+  // stores an option definition
   class Option : Action {    
     // number of option flags that can indicate this argument
     var _numOpts:int;
@@ -155,7 +154,6 @@ module MasonArgParse {
       // make sure that if we make an argument required no default set
       assert(!(_required && _defaultValue.size > 0), 
               "Required options do not support default values");
-      this.complete();
     }
 
     override proc _isRequired() {
