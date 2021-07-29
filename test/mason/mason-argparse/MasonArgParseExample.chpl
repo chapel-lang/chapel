@@ -7,7 +7,9 @@ module M {
         writeln(myConfigVar);
         
         writeln("Arguments Received from CL:");
-        for i in argsD {
+        // print the contents of args, skipping the executable name
+        // as it can vary depending on the test environment
+        for i in 1..argsD.high {
             writeln(i:string + " " + args[i]);
         }
 

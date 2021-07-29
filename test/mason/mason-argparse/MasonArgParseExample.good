@@ -1,7 +1,6 @@
 Config Var Values:
 testVar
 Arguments Received from CL:
-0 ./MasonArgParseExample
 1 -o
 2 w
 3 a
