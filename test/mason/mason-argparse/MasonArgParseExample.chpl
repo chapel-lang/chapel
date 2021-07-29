@@ -7,7 +7,7 @@ module M {
         writeln(myConfigVar);
         
         writeln("Arguments Received from CL:");
-        for i in argsD {
+        for i in 1..argsD.high {
             writeln(i:string + " " + args[i]);
         }
 
