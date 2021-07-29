@@ -549,6 +549,15 @@ template<> struct update<resolution::ResolutionResultByPostorderID> {
   }
 };
 
+template<> struct update<owned<resolution::ResolvedFunction>> {
+  bool operator()(owned<resolution::ResolvedFunction>& keep,
+                  owned<resolution::ResolvedFunction>& addin) const {
+    // this function is just here to make debugging easier
+    return defaultUpdateOwned(keep, addin);
+  }
+};
+
+
 } // end namespace chpl
 
 

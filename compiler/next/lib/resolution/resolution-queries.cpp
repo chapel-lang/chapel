@@ -771,6 +771,14 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                              CallInfo call,
                                              const PoiScope* poiScope) {
 
+  // Performance: Should this query use a similar approach to
+  // resolvedFunctionByInfoQuery, where the PoiInfo and visibility
+  // are consulted?
+  //
+  // It does not impact correctness, because typedSignatureQuery
+  // will arrange to construct a unique TypedFnSignature by
+  // its contents.
+
   assert(sig->needsInstantiation);
 
   const UntypedFnSignature* untypedSignature = sig->untypedSignature;
@@ -871,8 +879,9 @@ resolvedFunctionByInfoQuery(Context* context,
     resolved->poiInfo = resolvedPoiInfo;
 
     // Store the result in the query under the POIs used.
-    // This should not update the value if there was already one
-    // and they are the same.
+    // If there was already a value for this revision, this
+    // call will not update it. (If it did, that could lead to
+    // memory errors).
     QUERY_STORE_RESULT(resolvedFunctionByPoisQuery,
                        context,
                        resolved,
