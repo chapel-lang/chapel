@@ -26,7 +26,14 @@ namespace chpl {
 namespace types {
 
 
-// TODO: is this name too weird given that it includes param values?
+/**
+  This class represents a combination of 3 things:
+    a Type subclass pointer representing a Chapel type
+    a Kind representing variable kind or intent (e.g. ref, value, const)
+    a param value for when the Kind is PARAM.
+
+  This combination is the type information that the resolver needs.
+ */
 class QualifiedType {
  public:
   typedef enum {
@@ -115,7 +122,7 @@ class QualifiedType {
 };
 
 
-} // end namespace resolution
+} // end namespace types
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
