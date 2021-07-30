@@ -617,7 +617,8 @@ static void outlineGPUKernels() {
           // was defined outside, and its uses were not something that we
           // understand. i.e. something that's not of a recognized array type
           if (maybeArrSymExpr.size() == arraysWhoseDataAccessed.size()) {
-            for (int i = 0 ; i < maybeArrSymExpr.size() ; i++) {
+            std::vector<SymExpr*>::size_type i;
+            for (i = 0 ; i < maybeArrSymExpr.size() ; i++) {
               if (maybeArrSymExpr[i]->symbol() != arraysWhoseDataAccessed[i]->symbol()) {
                 INT_FATAL("Something went wrong (1)");
               }
@@ -703,7 +704,9 @@ void deadCodeElimination() {
     cleanupAfterTypeRemoval();
   }
 
-  outlineGPUKernels();
+  if (strcmp(CHPL_LOCALE_MODEL, "gpu") == 0) {
+    outlineGPUKernels();
+  }
 }
 
 void deadBlockElimination()
