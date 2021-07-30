@@ -39,6 +39,7 @@ class Context;
 
 namespace detail {
 
+bool stringContainsZeroBytes(const char* s, size_t len);
 
 // We can make it store 6 bytes in line this way:
 // alloc all such strings aligned to 2 bytes
@@ -116,8 +117,8 @@ struct InlinedString {
     if (s == nullptr || len == 0)
       return {{ nullptr }};
 
-    assert(strlen(s) == len);
     assert(len <= MAX_SIZE_INLINED);
+    assert(!stringContainsZeroBytes(s, len));
 
     uintptr_t val = INLINE_TAG; // store the tag in the low-order bits, 0s
     char* dst = dataAssumingTag(&val);
@@ -156,7 +157,7 @@ struct InlinedString {
   }
   static InlinedString build(Context* context, const char* s, size_t len) {
     bool innerNull = false;
-    if (s != NULL) innerNull = len != strlen(s);
+    if (s != NULL) innerNull = stringContainsZeroBytes(s, len);
     return InlinedString::build(context, s, len, innerNull);
   }
   static InlinedString build(Context* context, const char* s) {

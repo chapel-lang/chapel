@@ -135,6 +135,11 @@ static void test0() {
   assert(h_plus != h1);
   const char* h_p = ctx->uniqueCString("hello\0p", 7);
   assert(h_p != h_plus && h_p != h1);
+
+  // check that truncation works for short strings and long ones
+  assert(h1 == ctx->uniqueCString("hello____", strlen("hello")));
+  assert(x == ctx->uniqueCString("aVeryLongIdentifierName____",
+                                 strlen("aVeryLongIdentifierName")));
 }
 
 
@@ -166,6 +171,11 @@ static void test1() {
   // check that default-constructed unique string matches one from ""
   UniqueString empty;
   assert(empty == UniqueString::build(ctx, ""));
+
+  // check that truncation works for short strings and long ones
+  assert(h1 == UniqueString::build(ctx, "hello____", strlen("hello")));
+  assert(t1 == UniqueString::build(ctx, TEST1STRING "_____",
+                                   strlen(TEST1STRING)));
 
   // check ==
   assert(t1 == t2);

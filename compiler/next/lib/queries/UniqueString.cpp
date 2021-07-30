@@ -27,6 +27,13 @@
 namespace chpl {
 namespace detail {
 
+bool stringContainsZeroBytes(const char* s, size_t len) {
+  for (size_t i = 0; i < len; i++) {
+    if (s[i] == '\0')
+      return true;
+  }
+  return false;
+}
 
 InlinedString InlinedString::buildUsingContextTable(Context* context,
                                                     const char* s,
@@ -41,19 +48,11 @@ InlinedString InlinedString::buildUsingContextTable(Context* context,
 } // end namespace detail
 
 
-static bool stringContainsZeroBytes(const char* s, size_t len) {
-  for (size_t i = 0; i < len; i++) {
-    if (s[i] == '\0')
-      return true;
-  }
-  return false;
-}
-
 UniqueString UniqueString::build(Context* context,
                                  const char* s, size_t len) {
   if (s == nullptr || len == 0) return UniqueString();
 
-  assert(!stringContainsZeroBytes(s, len));
+  assert(!chpl::detail::stringContainsZeroBytes(s, len));
 
   if (s[len] == '\0') {
     // string is already appropriately null terminated
