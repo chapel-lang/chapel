@@ -53,16 +53,16 @@ module MasonArgParse {
     //indicates if an argument was entered on the command line
     var _present: bool=false;
     // hold the values of the argument from the command line
-    var _values: list(string);     
+    var _values: list(string);
     
-    proc value(){     
+    proc value(){
       return this._values.first();
     }
 
     iter values(){
       for val in _values {
         yield val;
-      }      
+      }
     }
 
     proc hasValue(){
@@ -93,7 +93,7 @@ module MasonArgParse {
     }
 
     proc _validate(present:bool, valueCount:int):string {
-        return "";      
+        return "";
     }
 
   }
@@ -107,12 +107,12 @@ module MasonArgParse {
     }
 
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
-                         ref rest:list(string), endPos:int) throws {      
+                         ref rest:list(string), endPos:int) throws {
       var pos = startPos;
       var next = pos + 1;
       debugTrace("starting at pos: " + pos:string);
       while pos <= endPos 
-      {      
+      {
         if args[pos] == this._name {
           myArg._values.append(args[pos]);
           debugTrace("matched cmd: " + args[pos] + " at pos: " + pos:string);
@@ -120,15 +120,15 @@ module MasonArgParse {
           return next;
         }
         pos = next;
-        next+=1;  
+        next+=1;
       }
-      return pos;                  
+      return pos;
     }
 
   }
 
   // stores an option definition
-  class Option : Action {    
+  class Option : Action {
     // number of option flags that can indicate this argument
     var _numOpts:int;
     // value of option flag(s) that can indicate this argument
@@ -141,18 +141,18 @@ module MasonArgParse {
     var _defaultValue:list(string);
 
 
-    proc init(name:string, numOpts:int, opts:[?argsD] string, numArgs:range, 
+    proc init(name:string, numOpts:int, opts:[?argsD] string, numArgs:range,
               required=false, defaultValue=new list(string)) {
-      super.init();      
+      super.init();
       _name=name;
       _numOpts=numOpts;
       _opts=opts;
       _numArgs=numArgs;
       _required=required;
-      _defaultValue=defaultValue;  
+      _defaultValue=defaultValue;
       
       // make sure that if we make an argument required no default set
-      assert(!(_required && _defaultValue.size > 0), 
+      assert(!(_required && _defaultValue.size > 0),
               "Required options do not support default values");
     }
 
@@ -163,7 +163,7 @@ module MasonArgParse {
     override proc _getDefaultValue() {
       return _defaultValue;
     }
-    
+
     override proc _hasDefault():bool {
       return !_defaultValue.isEmpty();
     }
@@ -181,13 +181,13 @@ module MasonArgParse {
       var next = pos+1;
       debugTrace("starting at pos: " + pos:string);
       debugTrace("searching from: " + pos:string + " to " + endPos:string);
-      while matched < high && next <= endPos && !args[next].startsWith("-") 
+      while matched < high && next <= endPos && !args[next].startsWith("-")
       {
         pos=next;
         next+=1;
         matched+=1; 
-        myArg._values.append(args[pos]);  
-        debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);     
+        myArg._values.append(args[pos]);
+        debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
       }
       return next;
     }
@@ -238,7 +238,7 @@ module MasonArgParse {
       }
 
       for i in argsList.indices {
-        const argElt = argsList[i];        
+        const argElt = argsList[i];
         if _options.contains(argElt) {
           var optName = _options.getValue(argElt);
           var argRslt = _result.getValue(optName);
@@ -248,7 +248,7 @@ module MasonArgParse {
           argRslt._present = true;
         }
       }
-      
+
       // get this as an array so we can sort it, because maps are order-less
       // TODO: Can we eliminate this extra logic by using an OrderedMap type?
       var arrayoptionIndices = optionIndices.toArray();
@@ -256,7 +256,7 @@ module MasonArgParse {
 
       // check for undefined argument provided
       if arrayoptionIndices.size > 0 && arrayoptionIndices[0][0] != 0 {
-          throw new ArgumentError("Found undefined values: " + argsList[0]);                                  
+          throw new ArgumentError("Found undefined values: " + argsList[0]);
       }
 
       // try to match for each of the identified options
@@ -292,7 +292,7 @@ module MasonArgParse {
         }
 
         // make sure we don't overrun the array,
-        // then check that we don't have extra values        
+        // then check that we don't have extra values
         if k < arrayoptionIndices.size {
           if endPos != arrayoptionIndices[k][0] {
             debugTrace("Rest.size= " + rest.size:string);
@@ -350,7 +350,7 @@ module MasonArgParse {
       }
     }
 
-    proc _addAction(in action : Action) throws { 
+    proc _addAction(in action : Action) throws {
 
       // ensure option names are unique
       if _actions.contains(action._name) {
@@ -368,7 +368,7 @@ module MasonArgParse {
       return arg;
     }
 
-    proc addSubCommand(cmd:string) throws {       
+    proc addSubCommand(cmd:string) throws {
       var act = new owned SubCommand(cmd);
       _options.add(cmd, cmd);
       return _addAction(act);
@@ -392,7 +392,7 @@ module MasonArgParse {
                    opts:[?optsD]string,
                    numArgs:range(boundedType=BoundedRangeType.boundedLow),
                    required=false,
-                   defaultValue:?t=none) throws {                   
+                   defaultValue:?t=none) throws {
       return addOption(name=name,
                        opts=opts,
                        numArgs=numArgs.low..max(int),
@@ -405,7 +405,7 @@ module MasonArgParse {
                    opts:[?optsD]string,
                    numArgs:range,
                    required=false,
-                   defaultValue:?t=none) throws {      
+                   defaultValue:?t=none) throws {
       for i in optsD {
         if !opts[i].startsWith("-") {
           throw new ArgumentError("Use '-' or '--' to indicate opt flags. " +
