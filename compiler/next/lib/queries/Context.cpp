@@ -60,10 +60,17 @@ void Context::defaultReportError(const ErrorMessage& err) {
   defaultReportErrorPrintDetail(err, "", "error");
 }
 
+// unique'd strings are preceeded by gcMark and 0x02
+// this number must be even
+#define UNIQUED_STRING_METADATA_BYTES 2
+
 Context::~Context() {
   // free all of the unique'd strings
-  for (auto& item: uniqueStringsTable)
-    free(item.second);
+  for (auto& item: uniqueStringsTable) {
+    char* buf = (char*) item.str;
+    buf -= UNIQUED_STRING_METADATA_BYTES;
+    free(buf);
+  }
 }
 
 #define ALIGN_DN(i, size)  ((i) & ~((size) - 1))
@@ -71,6 +78,8 @@ Context::~Context() {
 
 static char* allocateEvenAligned(size_t amt) {
   char* buf = (char*) malloc(amt);
+  // UNIQUED_STRING_METADATA_BYTES must be even
+  assert((UNIQUED_STRING_METADATA_BYTES & 1) == 0);
   // Normally, malloc returns something that is aligned to 16 bytes,
   // but it's technically possible that a platform library
   // could not do so. So, here we check.
@@ -87,34 +96,41 @@ static char* allocateEvenAligned(size_t amt) {
   return buf;
 }
 
-const char* Context::getOrCreateUniqueString(const char* str) {
-  auto search = this->uniqueStringsTable.find(str);
+const char* Context::getOrCreateUniqueString(const char* str, size_t len) {
+  chpl::detail::StringAndLength key = {str, len};
+  auto search = this->uniqueStringsTable.find(key);
   if (search != this->uniqueStringsTable.end()) {
-    char* buf = search->second;
-    const char* key = buf+2; // pass the 2 bytes of metadata
+    const char* ret = search->str;
     // update the GC mark
-    this->markUniqueCString(key);
-    return key;
+    this->markUniqueCString(ret);
+    return ret;
   }
   char gcMark = this->gcCounter & 0xff;
-  size_t strLen = strlen(str);
-  size_t allocLen = strLen+3; // 2 bytes of metadata, str data, '\0'
+  size_t allocLen = len+UNIQUED_STRING_METADATA_BYTES+1; // metadata, len, null
   char* buf = allocateEvenAligned(allocLen);
   // set the GC mark
   buf[0] = gcMark;
   // set the unused metadata (need to still have even alignment)
   buf[1] = 0x02;
-  // copy the string data, including the null terminator
-  memcpy(buf+2, str, strLen+1);
-  const char* key = buf+2; // pass the 2 bytes of metadata
+  buf += UNIQUED_STRING_METADATA_BYTES; // and pass the metadata bytes
+  // copy the string data
+  memcpy(buf, str, len);
+  // null terminate
+  buf[len] = 0x0;
   // Add it to the table
-  this->uniqueStringsTable.insert(search, {key, buf});
-  return key;
+  chpl::detail::StringAndLength ret = {buf, len};
+  this->uniqueStringsTable.insert(search, ret);
+  return buf;
+}
+
+const char* Context::uniqueCString(const char* s, size_t len) {
+  if (len == 0 || s == nullptr) s = "";
+  return this->getOrCreateUniqueString(s, len);
 }
 
 const char* Context::uniqueCString(const char* s) {
   if (s == nullptr) s = "";
-  return this->getOrCreateUniqueString(s);
+  return this->getOrCreateUniqueString(s, strlen(s));
 }
 
 void Context::markUniqueCString(const char* s) {
@@ -123,7 +139,7 @@ void Context::markUniqueCString(const char* s) {
       s != nullptr) {
     char gcMark = this->gcCounter & 0xff;
     char* buf = (char*) s;
-    buf -= 2; // the string is preceeded by gcMark and 0x02
+    buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
     assert(buf[1] == 0x02);
     buf[0] = gcMark;
   }
@@ -250,10 +266,11 @@ void Context::collectGarbage() {
     std::vector<char*> toFree;
     // warning: this loop proceeds in a nondeterministic order
     for (auto& e: uniqueStringsTable) {
-      const char* key = e.first;
-      char* buf = e.second;
+      const char* key = e.str;
+      char* buf = (char*)key;
+      buf -= UNIQUED_STRING_METADATA_BYTES; // find start of allocation
       if (buf[0] == gcMark) {
-        newTable.insert(std::make_pair(key, buf));
+        newTable.insert(e);
         if (enableDebugTracing) {
           printf("COPYING OVER UNIQUESTRING %s\n", key);
         }

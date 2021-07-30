@@ -186,8 +186,7 @@ because the ``parse`` query will update the pointer if the contents change.
 class Context {
  private:
   // map that supports uniqueCString / UniqueString
-  // TODO this could be an unordered_set
-  using UniqueStringsTableType = std::unordered_map<const char*, char*, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual>;
+  using UniqueStringsTableType = std::unordered_set<chpl::detail::StringAndLength, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual>;
   UniqueStringsTableType uniqueStringsTable;
 
   // Map from a query function pointer to appropriate QueryMap object.
@@ -215,7 +214,7 @@ class Context {
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
   querydetail::RevisionNumber gcCounter = 1;
 
-  const char* getOrCreateUniqueString(const char* s);
+  const char* getOrCreateUniqueString(const char* s, size_t len);
 
   // saves the dependency in the parent query, which is assumed
   // to be at queryStack.back().
@@ -330,6 +329,10 @@ class Context {
     The function `UniqueString::build` returns such a string
     with a wrapper type. It should be preferred for type safety
     and to reduce redundant checks.
+   */
+  const char* uniqueCString(const char* s, size_t len);
+  /**
+    Calls uniqueCString with len=strlen(s).
    */
   const char* uniqueCString(const char* s);
 

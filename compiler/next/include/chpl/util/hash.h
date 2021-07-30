@@ -47,6 +47,15 @@ inline size_t hash(const char* s)
   return (size_t) seed;
 }
 
+// FNV-1a hash function for strings with length
+inline size_t hash(const char* s, size_t len)
+{
+  uint64_t seed = FNV_offset_basis;
+  for(size_t i = 0; i < len; i++)
+    seed = (seed ^ static_cast<unsigned char>(s[i])) * FNV_prime;
+  return (size_t) seed;
+}
+
 // FNV-1a hash function for C++ std::string
 inline size_t hash(const std::string& s)
 {

@@ -40,7 +40,7 @@ class Context;
 
 
 /**
-  This class represents a unique'd NULL-terminated string.
+  This class represents a unique'd string.
   Unique'd strings allow:
     * fast == and !=
     * not worrying about freeing them
@@ -55,7 +55,7 @@ class UniqueString final {
  public:
   /** create a UniqueString storing the empty string */
   UniqueString() {
-    this->s.i = detail::InlinedString::buildFromAligned("", 0);
+    this->s.i = detail::InlinedString::build();
   }
   /** create a UniqueString from a PODUniqueString.
       this constructor intentionally allows implicit conversion.

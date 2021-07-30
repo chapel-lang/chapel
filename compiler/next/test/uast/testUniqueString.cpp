@@ -124,8 +124,17 @@ static void test0() {
   // check that uniqueString(NULL) != nullptr
   assert(ctx->uniqueCString(nullptr) != nullptr);
 
+  // check that zero-length uniqueString is the empty string too
+  assert(ctx->uniqueCString("bab", 0) == ctx->uniqueCString(""));
+
   const char* x = ctx->uniqueCString("aVeryLongIdentifierName");
   assert(x != h1 && x != nullptr);
+
+  // check that strings with null bytes are uniqued differently
+  const char* h_plus = ctx->uniqueCString("hello\0plus", 10);
+  assert(h_plus != h1);
+  const char* h_p = ctx->uniqueCString("hello\0p", 7);
+  assert(h_p != h_plus && h_p != h1);
 }
 
 

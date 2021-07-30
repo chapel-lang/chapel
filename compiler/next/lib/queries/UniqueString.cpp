@@ -29,11 +29,12 @@ namespace detail {
 
 
 InlinedString InlinedString::buildUsingContextTable(Context* context,
-                                                    const char* s, size_t len) {
-  const char* u = context->uniqueCString(s);
+                                                    const char* s,
+                                                    size_t len) {
+  const char* u = context->uniqueCString(s, len);
   // assert that the address returned is even
   assert( (((uintptr_t)u)&1)==0 );
-  return InlinedString::buildFromAligned(u, len);
+  return InlinedString::buildFromAlignedPtr(u, len);
 }
 
 
