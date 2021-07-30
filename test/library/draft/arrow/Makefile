@@ -13,8 +13,8 @@ default : all
 
 .PHONY: all
 all: ArrowDemo
-DECL_FILES = ArrayDecl.chpl ArrowDecl.chpl ArrowIODecl.chpl ArrowRecordDecl.chpl ArrowStreamDecl.chpl
-FUNC_FILES = Arrow.chpl ArrowPrinting.chpl ArrowRecord.chpl
+DECL_FILES = ArrayDecl.chpl ArrowDecl.chpl ArrowIODecl.chpl ArrowRecordDecl.chpl ArrowStreamDecl.chpl ParquetDecl.chpl
+FUNC_FILES = Arrow.chpl ArrowPrinting.chpl ArrowRecord.chpl ArrowParquet.chpl
 %: %.chpl  $(DECL_FILES) $(FUNC_FILES)
 	+$(CHPL) $(GLIB_INCLUDES) $(GLIB_LINKS) -o $@ $<
 

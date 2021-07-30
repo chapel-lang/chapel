@@ -244,4 +244,10 @@ module Arrow {
 
     require "ArrowRecord.chpl";
     public use ArrowRecord;
+
+
+    // -------------------------- Parquet -------------------------------------
+
+    require "ArrowParquet.chpl";
+    public use ArrowParquet;
 }

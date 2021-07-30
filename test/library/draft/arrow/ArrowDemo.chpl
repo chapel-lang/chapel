@@ -22,5 +22,9 @@ module ArrowDemo {
         writeln("\nRecord batch from above arrays:");
         printRecordBatch(rcbatch);
         
+        writeln("----Parquet Demo-----");
+
+        var table = Arrow.readParquetFileToTable("example.parquet");
+        printTable(table);
     }
 }
