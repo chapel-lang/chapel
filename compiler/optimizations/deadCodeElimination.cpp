@@ -491,6 +491,33 @@ static bool isIndexVariable(Symbol* sym, CForLoop* loop) {
   return false;
 }
 
+static  CallExpr* generateLaunchCall(FnSymbol* kernel,
+                                     std::vector<VarSymbol*> actuals,
+                                     BlockStmt* launchBlock) {
+  CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH);
+  call->insertAtTail(new_CStringSymbol(kernel->cname));
+
+  call->insertAtTail(new_IntSymbol(1));  // grid size
+  call->insertAtTail(new_IntSymbol(1));  // block size
+
+  call->insertAtTail(new_IntSymbol(actuals.size()));
+
+  for_vector (VarSymbol, actual, actuals) {
+
+    //VarSymbol* actualAddr = new VarSymbol("data_actual_addr", dtCVoidPtr);
+    //launchBlock->insertAtTail(new DefExpr(actualAddr));
+
+    //launchBlock->insertAtTail(new CallExpr(PRIM_MOVE, actualAddr,
+                                           //new CallExpr(PRIM_ADDR_OF, actual)));
+
+    //call->insertAtTail(new SymExpr(actualAddr));
+    call->insertAtTail(new SymExpr(actual));
+  }
+
+  return call;
+}
+
+
 static void outlineGPUKernels() {
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
     std::vector<BaseAST*> asts;
@@ -502,14 +529,18 @@ static void outlineGPUKernels() {
           SET_LINENO(loop);
           FnSymbol* outlinedFunction = new FnSymbol("chpl_gpu_kernel");
           outlinedFunction->addFlag(FLAG_RESOLVED);
+          outlinedFunction->addFlag(FLAG_ALWAYS_RESOLVE);
+          outlinedFunction->addFlag(FLAG_GPU_CODEGEN);
 
           fn->defPoint->insertBefore(new DefExpr(outlinedFunction));
 
           BlockStmt* gpuLaunchBlock = new BlockStmt();
           loop->insertBefore(gpuLaunchBlock);
 
-          CallExpr* gpuCall = new CallExpr(outlinedFunction);
-          gpuCall->setResolvedFunction(outlinedFunction);
+          //CallExpr* gpuCall = new CallExpr(outlinedFunction);
+          //GPUKernelLaunchCall gpuCall;
+          //gpuCall.kernel = outlinedFunction;
+          std::vector<VarSymbol*> kernelActuals;
 
           // TODO add a struct or something to store all the information that we
           // need to keep track of per symbol, and make the following vectors
@@ -629,7 +660,7 @@ static void outlineGPUKernels() {
                 gpuLaunchBlock->insertAtTail(new DefExpr(newActual));
                 gpuLaunchBlock->insertAtTail(moveCall);
 
-                gpuCall->insertAtTail(new SymExpr(newActual));
+                kernelActuals.push_back(newActual);
               }
             }
           }
@@ -639,11 +670,14 @@ static void outlineGPUKernels() {
 
           update_symbols(outlinedFunction->body, &copyMap);
 
+          CallExpr* gpuCall = generateLaunchCall(outlinedFunction,
+                                                 kernelActuals,
+                                                 gpuLaunchBlock);
           gpuLaunchBlock->insertAtTail(gpuCall);
-          resolveExpr(gpuCall);
+          //resolveExpr(gpuCall);
 
           normalize(outlinedFunction);
-          resolveFunction(outlinedFunction, gpuCall);
+          //resolveFunction(outlinedFunction, gpuCall);
 
           gpuLaunchBlock->flattenAndRemove();
 
