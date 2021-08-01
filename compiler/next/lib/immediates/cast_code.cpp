@@ -632,59 +632,61 @@ switch (to->const_kind) {
    switch (from->const_kind) {
    default: assert(false && "Illegal case in coerce_immediate switch statement"); break;
    case NUM_KIND_BOOL:
-     to->v_string = from->bool_value() ? astr("true") : astr("false"); break;
+     to->v_string = istrFromUserBool(context, from->bool_value()); break;
    case NUM_KIND_UINT:
      switch (from->num_index) {
      case INT_SIZE_8:
-       to->v_string = istrFromUserUint(from->v_uint8); break;
+       to->v_string = istrFromUserUint(context, from->v_uint8); break;
      case INT_SIZE_16:
-       to->v_string = istrFromUserUint(from->v_uint16); break;
+       to->v_string = istrFromUserUint(context, from->v_uint16); break;
      case INT_SIZE_32:
-       to->v_string = istrFromUserUint(from->v_uint32); break;
+       to->v_string = istrFromUserUint(context, from->v_uint32); break;
      case INT_SIZE_64:
-       to->v_string = istrFromUserUint(from->v_uint64); break;
+       to->v_string = istrFromUserUint(context, from->v_uint64); break;
      default:
        assert(false && "Illegal case in coerce_immediate switch statement"); break;
      } break;
    case NUM_KIND_INT:
      switch (from->num_index) {
      case INT_SIZE_8:
-       to->v_string = istrFromUserInt(from->v_int8); break;
+       to->v_string = istrFromUserInt(context, from->v_int8); break;
      case INT_SIZE_16:
-       to->v_string = istrFromUserInt(from->v_int16); break;
+       to->v_string = istrFromUserInt(context, from->v_int16); break;
      case INT_SIZE_32:
-       to->v_string = istrFromUserInt(from->v_int32); break;
+       to->v_string = istrFromUserInt(context, from->v_int32); break;
      case INT_SIZE_64:
-       to->v_string = istrFromUserInt(from->v_int64); break;
+       to->v_string = istrFromUserInt(context, from->v_int64); break;
      default:
        assert(false && "Illegal case in coerce_immediate switch statement"); break;
      } break;
    case NUM_KIND_REAL:
      switch (from->num_index) {
      case FLOAT_SIZE_32:
-       to->v_string = istrFromUserDouble(from->v_float32); break;
+       to->v_string = istrFromUserDouble(context, from->v_float32); break;
      case FLOAT_SIZE_64:
-       to->v_string = istrFromUserDouble(from->v_float64); break;
+       to->v_string = istrFromUserDouble(context, from->v_float64); break;
      default:
        assert(false && "Illegal case in coerce_immediate switch statement"); break;
      } break;
    case NUM_KIND_IMAG:
      switch (from->num_index) {
      case FLOAT_SIZE_32:
-       to->v_string = istrFromUserImag(from->v_float32); break;
+       to->v_string = istrFromUserImag(context, from->v_float32); break;
      case FLOAT_SIZE_64:
-       to->v_string = istrFromUserImag(from->v_float64); break;
+       to->v_string = istrFromUserImag(context, from->v_float64); break;
      default:
        assert(false && "Illegal case in coerce_immediate switch statement"); break;
      } break;
    case NUM_KIND_COMPLEX:
      switch (from->num_index) {
      case COMPLEX_SIZE_64:
-       to->v_string = istrFromUserComplex(from->v_complex64.r,
+       to->v_string = istrFromUserComplex(context,
+                                          from->v_complex64.r,
                                           from->v_complex64.i);
        break;
      case COMPLEX_SIZE_128:
-       to->v_string = istrFromUserComplex(from->v_complex128.r,
+       to->v_string = istrFromUserComplex(context,
+                                          from->v_complex128.r,
                                           from->v_complex128.i);
        break;
      default:

@@ -45,16 +45,42 @@ struct complex128 {
   double r;
   double i;
 };
+
+// needs to not have a constructor so it can be used in the union
 struct ImmUniqueStringAndLength {
   chpl::detail::PODUniqueString s;
   size_t len;
-  std::string toString() {
+
+  static ImmUniqueStringAndLength build(chpl::Context* context,
+                                        const char* strIn,
+                                        size_t lenIn) {
+    ImmUniqueStringAndLength ret;
+    ret.s = chpl::detail::PODUniqueString::build(context, strIn, lenIn);
+    ret.len = lenIn;
+    return ret;
+  }
+  static ImmUniqueStringAndLength build(chpl::Context* context,
+                                        const char* strIn) {
+    return ImmUniqueStringAndLength::build(context, strIn, strlen(strIn));
+  }
+
+  void set(chpl::Context* context, const char* strIn, size_t lenIn) {
+    s = chpl::detail::PODUniqueString::build(context, strIn, lenIn);
+    len = lenIn;
+  }
+  void set(chpl::Context* context, const char* strIn) {
+    size_t lenIn = strlen(strIn);
+    s = chpl::detail::PODUniqueString::build(context, strIn, lenIn);
+    len = lenIn;
+  }
+
+  std::string toString() const {
     return std::string(s.c_str(), len);
   }
-  const char* c_str() {
+  const char* c_str() const {
     return s.c_str();
   }
-  chpl::UniqueString str() {
+  chpl::UniqueString str() const {
     return chpl::UniqueString(s);
   }
 };
@@ -63,16 +89,16 @@ struct ImmUniqueStringAndLength {
 // NOTE: NUM_KIND_LAST is used to mark the last entry in this enum. The
 // 'IF1_const_kind' enum below uses it to set values.
 //
-enum IF1_num_kind {
+enum IF1_num_kind : uint8_t {
   NUM_KIND_NONE, NUM_KIND_BOOL, NUM_KIND_UINT, NUM_KIND_INT, NUM_KIND_REAL,
   NUM_KIND_IMAG, NUM_KIND_COMPLEX, NUM_KIND_COMMID, NUM_KIND_LAST
 };
 
-enum IF1_const_kind {
+enum IF1_const_kind : uint8_t {
   CONST_KIND_STRING = NUM_KIND_LAST + 1, CONST_KIND_SYMBOL
 };
 
-enum IF1_string_kind {
+enum IF1_string_kind : uint8_t {
   STRING_KIND_STRING,
   STRING_KIND_BYTES,
   STRING_KIND_C_STRING
@@ -85,24 +111,24 @@ enum IF1_string_kind {
 //
 #define BOOL_SYS_WIDTH 0
 
-enum IF1_bool_type {
+enum IF1_bool_type : uint8_t {
   BOOL_SIZE_SYS, BOOL_SIZE_8, BOOL_SIZE_16, BOOL_SIZE_32,
   BOOL_SIZE_64, BOOL_SIZE_NUM
 };
 
 // when updating these, be sure to also update int_type_precision!
-enum IF1_int_type {
+enum IF1_int_type : uint8_t {
   INT_SIZE_8, INT_SIZE_16, INT_SIZE_32, INT_SIZE_64, INT_SIZE_NUM
 };
 
 // when updating these, be sure to also update float_type_precision!
-enum IF1_float_type {
+enum IF1_float_type : uint8_t {
   FLOAT_SIZE_32, FLOAT_SIZE_64, FLOAT_SIZE_NUM
 };
 
 // these should correspond to double the IF1_float_types.
 // i.e. float_type_precision[i] here should refer to the real size of i
-enum IF1_complex_type {
+enum IF1_complex_type : uint8_t {
   COMPLEX_SIZE_64, COMPLEX_SIZE_128, COMPLEX_SIZE_NUM
 };
 
@@ -123,7 +149,7 @@ namespace types {
 
 class Immediate { public:
   uint8_t const_kind;
-  uint8_t string_kind;
+  IF1_string_kind string_kind;
   uint8_t num_index;
   union {
     // Unions are initialized based off the first element, so we need to have
@@ -383,14 +409,17 @@ ImmHashFns::equal(Immediate *imm1, Immediate *imm2) {
 
 int fprint_imm(FILE *fp, const Immediate &imm, bool showType = false);
 int snprint_imm(char *s, size_t max, const Immediate &imm);
-void coerce_immediate(Immediate *from, Immediate *to);
+void coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to);
 void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
-void fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm);
+void fold_constant(chpl::Context* context, int op,
+                   Immediate *im1, Immediate *im2, Immediate *imm);
 void convert_string_to_immediate(const char *str, Immediate *imm);
-const char* istrFromUserUint(long long unsigned int i);
-const char* istrFromUserInt(long long int i);
-const char* istrFromUserDouble(double i);
-const char* istrFromUserImag(double i);
-const char* istrFromUserComplex(double re, double im);
+ImmUniqueStringAndLength istrFromUserBool(chpl::Context* context, bool b);
+ImmUniqueStringAndLength istrFromUserUint(chpl::Context* context, uint64_t i);
+ImmUniqueStringAndLength istrFromUserInt(chpl::Context* context, int64_t i);
+ImmUniqueStringAndLength istrFromUserDouble(chpl::Context* context, double i);
+ImmUniqueStringAndLength istrFromUserImag(chpl::Context* context, double i);
+ImmUniqueStringAndLength istrFromUserComplex(chpl::Context* context,
+                                             double re, double im);
 
 #endif

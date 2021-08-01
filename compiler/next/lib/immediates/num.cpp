@@ -274,7 +274,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
 }
 
 void
-coerce_immediate(Immediate *from, Immediate *to) {
+coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
 #include "cast_code.cpp"
 }
 
@@ -831,7 +831,8 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
 }
 
 void
-fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
+fold_constant(chpl::Context* context, int op,
+              Immediate *aim1, Immediate *aim2, Immediate *imm) {
   Immediate im1(*aim1), im2, coerce;
   if (aim2)
     im2 = *aim2;
@@ -879,10 +880,10 @@ fold_constant(int op, Immediate *aim1, Immediate *aim2, Immediate *imm) {
       break;
   }
   if (coerce.const_kind) {
-    coerce_immediate(&im1, &coerce);
+    coerce_immediate(context, &im1, &coerce);
     im1 = coerce;
     if (aim2) {
-      coerce_immediate(&im2, &coerce);
+      coerce_immediate(context, &im2, &coerce);
       im2 = coerce;
     }
   }
@@ -992,38 +993,44 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
 
 
 // these support coerce_immediate (param casts)
-const char* istrFromUserUint(long long unsigned int i) {
-  char s[64];
-  if (snprintf(s, sizeof(s), "%llu", i) >= (int) sizeof(s))
-    assert(false && "istr buffer overflow");
-  return astr(s);
+ImmUniqueStringAndLength istrFromUserBool(chpl::Context* context, bool b) {
+  const char* s = b ? "true" : "false";
+  return ImmUniqueStringAndLength::build(context, s);
 }
 
-const char* istrFromUserInt(long long int i) {
+ImmUniqueStringAndLength istrFromUserUint(chpl::Context* context,
+                                          uint64_t i) {
   char s[64];
-  if (snprintf(s, sizeof(s), "%lld", i) >= (int) sizeof(s))
+  if (snprintf(s, sizeof(s), "%llu", (long long unsigned)i) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return astr(s);
+  return ImmUniqueStringAndLength::build(context, s);
 }
 
-const char* istrFromUserDouble(double i) {
+ImmUniqueStringAndLength istrFromUserInt(chpl::Context* context, int64_t i) {
+  char s[64];
+  if (snprintf(s, sizeof(s), "%lld", (long long)i) >= (int) sizeof(s))
+    assert(false && "istr buffer overflow");
+  return ImmUniqueStringAndLength::build(context, s);
+}
+
+ImmUniqueStringAndLength istrFromUserDouble(chpl::Context* context, double i) {
   char s[64];
   if (snprint_float_val(s, sizeof(s), i, false) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return astr(s);
+  return ImmUniqueStringAndLength::build(context, s);
 }
 
-const char* istrFromUserImag(double i) {
+ImmUniqueStringAndLength istrFromUserImag(chpl::Context* context, double i) {
   char s[64];
   if (snprint_imag_val(s, sizeof(s), i, false) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return astr(s);
+  return ImmUniqueStringAndLength::build(context, s);
 }
 
-
-const char* istrFromUserComplex(double re, double im) {
+ImmUniqueStringAndLength istrFromUserComplex(chpl::Context* context,
+                                             double re, double im) {
   char s[140];
   if (snprint_complex_val(s, sizeof(s), re, im) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return astr(s);
+  return ImmUniqueStringAndLength::build(context, s);
 }
