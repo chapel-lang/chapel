@@ -118,6 +118,11 @@ class UniqueString final {
     return s.i.c_str();
   }
 
+  /** return a std::string containing the string up to the first null byte */
+  std::string toString() const {
+    return std::string(c_str());
+  }
+
   bool isEmpty() const {
     return s.i.c_str()[0] == '\0';
   }
@@ -159,6 +164,14 @@ class UniqueString final {
   inline bool operator==(const UniqueString other) const {
     return this->s.i.v == other.s.i.v;
   }
+  /**
+    Checks to see if the string contents match a C string.
+    \rst
+    .. note::
+
+      will only compare up to the first null byte.
+    \endrst
+   */
   inline bool operator==(const char* other) const {
     return 0 == this->compare(other);
   }
@@ -169,6 +182,18 @@ class UniqueString final {
     return 0 != this->compare(other);
   }
 
+  /**
+   Returns:
+     * -1 if this string is less than the passed string
+     * 0 if they are the same
+     * 1 if this string is greater
+
+    \rst
+    .. note::
+
+      will only compare up to the first null byte.
+    \endrst
+   */
   int compare(const UniqueString other) const {
     return *this == other ? 0 : compare(other.c_str());
   }
