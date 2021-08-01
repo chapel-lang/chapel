@@ -214,7 +214,11 @@ class Context {
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
   querydetail::RevisionNumber gcCounter = 1;
 
-  const char* getOrCreateUniqueString(const char* s, size_t len);
+  char* setupStringMetadata(char* buf, size_t len);
+  const char* getOrCreateUniqueStringWithAllocation(char* buf,
+                                                    const char* str,
+                                                    size_t len);
+  const char* getOrCreateUniqueString(const char* str, size_t len);
 
   // saves the dependency in the parent query, which is assumed
   // to be at queryStack.back().
@@ -320,9 +324,12 @@ class Context {
   }
 
   /**
-    Get or create a unique string for a NULL-terminated C string
-    and return it as a C string. If the passed string is NULL,
-    this function will return an empty string.
+
+    Get or create a unique string and return it as a C string. If the passed
+    string is NULL, this function will return an empty string.
+
+    The returned string will store len bytes, even if there are interior
+    NULL bytes. It will be NULL terminated either way.
 
     Strings returned by this function will always be aligned to 2 bytes.
 
@@ -332,9 +339,24 @@ class Context {
    */
   const char* uniqueCString(const char* s, size_t len);
   /**
-    Calls uniqueCString with len=strlen(s).
+    Calls uniqueCString with len=strlen(s). This simpler
+    call can be used for C strings that don't contain zero bytes
+    other than the terminator.
    */
   const char* uniqueCString(const char* s);
+  /**
+    Get or create a unique string by concatenating up to 9 strings.
+   */
+  const char* uniqueCString(const char* s1, size_t len1,
+                            const char* s2, size_t len2,
+                            const char* s3 = nullptr, size_t len3 = 0,
+                            const char* s4 = nullptr, size_t len4 = 0,
+                            const char* s5 = nullptr, size_t len5 = 0,
+                            const char* s6 = nullptr, size_t len6 = 0,
+                            const char* s7 = nullptr, size_t len7 = 0,
+                            const char* s8 = nullptr, size_t len8 = 0,
+                            const char* s9 = nullptr, size_t len9 = 0);
+
 
   /**
    When the context is configured to run with garbage collection

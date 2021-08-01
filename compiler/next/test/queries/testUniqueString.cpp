@@ -140,6 +140,31 @@ static void test0() {
   assert(h1 == ctx->uniqueCString("hello____", strlen("hello")));
   assert(x == ctx->uniqueCString("aVeryLongIdentifierName____",
                                  strlen("aVeryLongIdentifierName")));
+
+  // check concatenation builder
+  const char* ab1 = ctx->uniqueCString("aabbb");
+  const char* ab2 = ctx->uniqueCString("aa", 2, "bbb", 3);
+  assert(ab1 == ab2);
+
+  const char* abcd1 = ctx->uniqueCString("a"
+                                         "bb"
+                                         "ccc"
+                                         "dddd"
+                                         "eeeee"
+                                         "ffffff"
+                                         "ggggggg"
+                                         "hhhhhhhh"
+                                         "iiiiiiiii");
+  const char* abcd2 = ctx->uniqueCString("a", 1,
+                                         "bb", 2,
+                                         "ccc", 3,
+                                         "dddd", 4,
+                                         "eeeee", 5,
+                                         "ffffff", 6,
+                                         "ggggggg", 7,
+                                         "hhhhhhhh", 8,
+                                         "iiiiiiiii", 9);
+  assert(abcd1 == abcd2);
 }
 
 
@@ -176,6 +201,43 @@ static void test1() {
   assert(h1 == UniqueString::build(ctx, "hello____", strlen("hello")));
   assert(t1 == UniqueString::build(ctx, TEST1STRING "_____",
                                    strlen(TEST1STRING)));
+
+  // check concatenation builder
+  UniqueString ab1 = UniqueString::build(ctx, "aabbb");
+  UniqueString ab2 = UniqueString::build(ctx, "aa", "bbb");
+  assert(ab1 == ab2);
+  assert(0 == strcmp(ab1.c_str(), "aabbb"));
+
+  UniqueString abcd1 = UniqueString::build(ctx,
+                                           "a"
+                                           "bb"
+                                           "ccc"
+                                           "dddd"
+                                           "eeeee"
+                                           "ffffff"
+                                           "ggggggg"
+                                           "hhhhhhhh"
+                                           "iiiiiiiii");
+  UniqueString abcd2 = UniqueString::build(ctx,
+                                           "a",
+                                           "bb",
+                                           "ccc",
+                                           "dddd",
+                                           "eeeee",
+                                           "ffffff",
+                                           "ggggggg",
+                                           "hhhhhhhh",
+                                           "iiiiiiiii");
+  assert(abcd1 == abcd2);
+  assert(0 == strcmp(abcd1.c_str(), "a"
+                                    "bb"
+                                    "ccc"
+                                    "dddd"
+                                    "eeeee"
+                                    "ffffff"
+                                    "ggggggg"
+                                    "hhhhhhhh"
+                                    "iiiiiiiii"));
 
   // check ==
   assert(t1 == t2);

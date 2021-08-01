@@ -69,8 +69,30 @@ class UniqueString final {
     If NULL is provided, this function will return the UniqueString
     representing "".
    */
-  static inline UniqueString build(Context* context, const char* s) {
+  static UniqueString build(Context* context, const char* s) {
     detail::PODUniqueString ret = detail::PODUniqueString::build(context, s);
+    return UniqueString(ret);
+  }
+
+  /**
+    Get or create a unique string by concatenating up to 9 input C strings.
+    These input strings cannot contain null bytes other than the null
+    terminator.
+   */
+  static UniqueString build(Context* context,
+                            const char* s1, const char* s2,
+                            const char* s3 = nullptr,
+                            const char* s4 = nullptr,
+                            const char* s5 = nullptr,
+                            const char* s6 = nullptr, 
+                            const char* s7 = nullptr,
+                            const char* s8 = nullptr,
+                            const char* s9 = nullptr) {
+    detail::PODUniqueString ret = detail::PODUniqueString::build(context,
+                                                                 s1, s2,
+                                                                 s3, s4,
+                                                                 s5, s6,
+                                                                 s7, s8, s9);
     return UniqueString(ret);
   }
 
@@ -79,21 +101,16 @@ class UniqueString final {
     Get or create a unique string for a string from a pointer
     and a length. If the length is 0, this function will return
     the UniqueString representing "".
-    The length can be passed to truncate a string but it's
-    an error if the string contains a zero byte.
+    The length can be passed to truncate a string.
+    The string can contain zero bytes.
    */
   static UniqueString build(Context* context, const char* s, size_t len);
 
   /**
-    Get or create a unique string for a C++ string
-    \rst
-    .. note::
-
-      will not handle strings with embedded ``'\0'`` bytes
-    \endrst
+    Get or create a unique string for a C++ string.
    */
   static inline UniqueString build(Context* context, const std::string& s) {
-    return UniqueString::build(context, s.c_str());
+    return UniqueString::build(context, s.c_str(), s.size());
   }
 
   /** return the null-terminated string */
@@ -105,12 +122,36 @@ class UniqueString final {
     return s.i.c_str()[0] == '\0';
   }
 
+  /**
+    Checks to see if the string starts with another string.
+    \rst
+    .. note::
+
+      will not handle prefix strings with embedded ``'\0'`` bytes
+    \endrst
+   */
   bool startsWith(const char* prefix) const {
     return (0 == strncmp(this->c_str(), prefix, strlen(prefix)));
   }
+  /**
+    Checks to see if the string starts with another string.
+    \rst
+    .. note::
+
+      will not handle prefix strings with embedded ``'\0'`` bytes
+    \endrst
+   */
   bool startsWith(const UniqueString prefix) const {
     return this->startsWith(prefix.c_str());
   }
+  /**
+    Checks to see if the string starts with another string.
+    \rst
+    .. note::
+
+      will not handle prefix strings with embedded ``'\0'`` bytes
+    \endrst
+   */
   bool startsWith(const std::string& prefix) const {
     return this->startsWith(prefix.c_str());
   }

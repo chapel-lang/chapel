@@ -168,6 +168,15 @@ struct InlinedString {
   static InlinedString build() {
     return InlinedString::buildInlined("", 0);
   }
+  static InlinedString build(Context* context,
+                             const char* s1, const char* s2,
+                             const char* s3 = nullptr,
+                             const char* s4 = nullptr,
+                             const char* s5 = nullptr,
+                             const char* s6 = nullptr,
+                             const char* s7 = nullptr,
+                             const char* s8 = nullptr,
+                             const char* s9 = nullptr);
 
   bool isInline() const {
     return alignmentIndicatesTag(this->v);
@@ -195,6 +204,22 @@ struct PODUniqueString {
   static PODUniqueString build(Context* context, const char* s) {
     return { InlinedString::build(context, s) };
   }
+  static PODUniqueString build(Context* context,
+                               const char* s1, const char* s2,
+                               const char* s3 = nullptr,
+                               const char* s4 = nullptr,
+                               const char* s5 = nullptr,
+                               const char* s6 = nullptr,
+                               const char* s7 = nullptr,
+                               const char* s8 = nullptr,
+                               const char* s9 = nullptr) {
+    return { InlinedString::build(context, s1, s2,
+                                  s3, s4,
+                                  s5, s6,
+                                  s7, s8, s9) };
+  }
+
+
   static inline PODUniqueString build() {
     PODUniqueString ret = {InlinedString::build()};
     return ret;

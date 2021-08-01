@@ -96,6 +96,21 @@ static char* allocateEvenAligned(size_t amt) {
   return buf;
 }
 
+// Assumes buf starts with UNIQUED_STRING_METADATA_BYTES of metadata and has
+// room for len and then a null terminator.
+// Assumes that buf is allocated with even alignment
+// Returns the pointer to where to copy the string and null terminator.
+char* Context::setupStringMetadata(char* buf, size_t len) {
+  char gcMark = this->gcCounter & 0xff;
+  // set the GC mark
+  buf[0] = gcMark;
+  // set the unused metadata (need to still have even alignment)
+  buf[1] = 0x02;
+  buf += UNIQUED_STRING_METADATA_BYTES; // and pass the metadata bytes
+  return buf;
+}
+
+// allocates new storage for the string if it was not found
 const char* Context::getOrCreateUniqueString(const char* str, size_t len) {
   chpl::detail::StringAndLength key = {str, len};
   auto search = this->uniqueStringsTable.find(key);
@@ -105,33 +120,106 @@ const char* Context::getOrCreateUniqueString(const char* str, size_t len) {
     this->markUniqueCString(ret);
     return ret;
   }
-  char gcMark = this->gcCounter & 0xff;
+
   size_t allocLen = len+UNIQUED_STRING_METADATA_BYTES+1; // metadata, len, null
   char* buf = allocateEvenAligned(allocLen);
-  // set the GC mark
-  buf[0] = gcMark;
-  // set the unused metadata (need to still have even alignment)
-  buf[1] = 0x02;
-  buf += UNIQUED_STRING_METADATA_BYTES; // and pass the metadata bytes
-  // copy the string data
-  memcpy(buf, str, len);
+  // setup metadata
+  char* s = setupStringMetadata(buf, len);
+  // copy string data and null terminator 
+  memcpy(s, str, len);
   // null terminate
-  buf[len] = 0x0;
+  s[len] = 0x0;
   // Add it to the table
-  chpl::detail::StringAndLength ret = {buf, len};
+  chpl::detail::StringAndLength ret = {s, len};
   this->uniqueStringsTable.insert(search, ret);
-  return buf;
+  return s;
 }
 
-const char* Context::uniqueCString(const char* s, size_t len) {
-  if (len == 0 || s == nullptr) s = "";
-  return this->getOrCreateUniqueString(s, len);
+const char* Context::uniqueCString(const char* str, size_t len) {
+  if (len == 0 || str == nullptr) str = "";
+  return this->getOrCreateUniqueString(str, len);
 }
 
-const char* Context::uniqueCString(const char* s) {
-  if (s == nullptr) s = "";
-  return this->getOrCreateUniqueString(s, strlen(s));
+const char* Context::uniqueCString(const char* str) {
+  if (str == nullptr) str = "";
+  return this->getOrCreateUniqueString(str, strlen(str));
 }
+
+const char* Context::uniqueCString(const char* s1, size_t len1,
+                                   const char* s2, size_t len2,
+                                   const char* s3, size_t len3,
+                                   const char* s4, size_t len4,
+                                   const char* s5, size_t len5,
+                                   const char* s6, size_t len6,
+                                   const char* s7, size_t len7,
+                                   const char* s8, size_t len8,
+                                   const char* s9, size_t len9) {
+  size_t len = len1 + len2 + len3 + len4 + len5 + len6 + len7 + len8 + len9;
+
+  size_t allocLen = len+UNIQUED_STRING_METADATA_BYTES+1; // metadata, len, null
+  char* buf = allocateEvenAligned(allocLen);
+  // setup metadata
+  char* s = setupStringMetadata(buf, len);
+
+  len = 0;
+
+  // copy each non-empty string
+  if (len1 > 0) {
+    memcpy(&s[len], s1, len1);
+    len += len1;
+  }
+  if (len2 > 0) {
+    memcpy(&s[len], s2, len2);
+    len += len2;
+  }
+  if (len3 > 0) {
+    memcpy(&s[len], s3, len3);
+    len += len3;
+  }
+  if (len4 > 0) {
+    memcpy(&s[len], s4, len4);
+    len += len4;
+  }
+  if (len5 > 0) {
+    memcpy(&s[len], s5, len5);
+    len += len5;
+  }
+  if (len6 > 0) {
+    memcpy(&s[len], s6, len6);
+    len += len6;
+  }
+  if (len7 > 0) {
+    memcpy(&s[len], s7, len7);
+    len += len7;
+  }
+  if (len8 > 0) {
+    memcpy(&s[len], s8, len8);
+    len += len8;
+  }
+  if (len9 > 0) {
+    memcpy(&s[len], s9, len9);
+    len += len9;
+  }
+
+  // null terminate
+  s[len] = '\0';
+
+  // Check for it in the table
+  chpl::detail::StringAndLength key = {s, len};
+  auto search = this->uniqueStringsTable.find(key);
+  if (search != this->uniqueStringsTable.end()) {
+    const char* ret = search->str;
+    // update the GC mark
+    this->markUniqueCString(ret);
+    return ret;
+  }
+
+  // Add it to the table
+  chpl::detail::StringAndLength ret = {s, len};
+  this->uniqueStringsTable.insert(search, ret);
+  return s;
+}
+
 
 void Context::markUniqueCString(const char* s) {
   // Performance: Would it be better to do this store unconditionally?
