@@ -46,13 +46,16 @@ struct complex128 {
   double i;
 };
 struct ImmUniqueStringAndLength {
-  chpl::detail::PODUniqueString str;
+  chpl::detail::PODUniqueString s;
   size_t len;
   std::string toString() {
-    return std::string(str.c_str(), len);
+    return std::string(s.c_str(), len);
   }
   const char* c_str() {
-    return str.c_str();
+    return s.c_str();
+  }
+  chpl::UniqueString str() {
+    return chpl::UniqueString(s);
   }
 };
 
