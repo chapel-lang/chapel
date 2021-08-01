@@ -205,6 +205,12 @@ struct PODUniqueString {
   bool isEmpty() const {
     return i.c_str()[0] == '\0';
   }
+  inline bool operator==(const PODUniqueString other) const {
+    return this->i.v == other.i.v;
+  }
+  inline bool operator!=(const PODUniqueString other) const {
+    return !(*this == other);
+  }
 };
 
 
