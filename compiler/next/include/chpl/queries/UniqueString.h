@@ -179,12 +179,12 @@ namespace std {
       return key.hash();
     }
   };
-  template<> struct equal_to<chpl::UniqueString> {
-    bool operator()(const chpl::UniqueString lhs,
-                    const chpl::UniqueString rhs) const {
-      return lhs == rhs;
+  template<> struct hash<chpl::detail::PODUniqueString> {
+    size_t operator()(const chpl::detail::PODUniqueString key) const {
+      return key.hash();
     }
   };
+
 } // end namespace std
 
 #endif

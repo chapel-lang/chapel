@@ -18,7 +18,15 @@
  */
 
 #include "chpl/queries/query-impl.h"
+#include "chpl/types/BoolType.h"
+#include "chpl/types/BytesType.h"
+#include "chpl/types/ComplexType.h"
+#include "chpl/types/ImagType.h"
+#include "chpl/types/IntType.h"
 #include "chpl/types/Param.h"
+#include "chpl/types/RealType.h"
+#include "chpl/types/StringType.h"
+#include "chpl/types/UintType.h"
 
 #include "../immediates/num.h"
 #include "../immediates/prim_data.h"
@@ -30,7 +38,7 @@ namespace types {
 Param::Param()
 {
   // clear the union members
-  memset(u, 0, sizeof(u));
+  memset(&u, 0, sizeof(u));
 }
 
 bool Param::equals(const Param& a, const Param& b) {
@@ -45,7 +53,7 @@ bool Param::equals(const Param& a, const Param& b) {
     // define the cases using macros and ParamClassesList.h
     /// \cond DO_NOT_DOCUMENT
     #define PARAM_NODE(NAME, TYPE) \
-      case NAME: \
+    case paramtags::NAME: \
         return a.u.NAME == b.u.NAME;
     /// \endcond
     // Apply the above macros to ParamClassesList.h
@@ -57,9 +65,9 @@ bool Param::equals(const Param& a, const Param& b) {
   return true;
 }
 
-static const owned<Param> Param::getIntQuery(Context* context,
-                                             int64_t v,
-                                             int bitwidth) {
+const owned<Param>& Param::getIntQuery(Context* context,
+                                       int64_t v,
+                                       int bitwidth) {
   QUERY_BEGIN(getIntQuery, context, v, bitwidth);
 
   auto result = toOwned(new Param());
@@ -94,9 +102,9 @@ const Param* Param::getInt(Context* context, int64_t v, int bitwidth) {
   return getIntQuery(context, v, bitwidth).get();
 }
 
-static const owned<Param> Param::getUintQuery(Context* context,
-                                              uint64_t v,
-                                              int bitwidth) {
+const owned<Param>& Param::getUintQuery(Context* context,
+                                        uint64_t v,
+                                        int bitwidth) {
   QUERY_BEGIN(getUintQuery, context, v, bitwidth);
 
   auto result = toOwned(new Param());
@@ -131,9 +139,9 @@ const Param* Param::getUint(Context* context, uint64_t v, int bitwidth) {
   return getUintQuery(context, v, bitwidth).get();
 }
 
-static const owned<Param> Param::getBoolQuery(Context* context,
-                                              uint64_t v,
-                                              int bitwidth) {
+const owned<Param>& Param::getBoolQuery(Context* context,
+                                        uint64_t v,
+                                        int bitwidth) {
   QUERY_BEGIN(getBoolQuery, context, v, bitwidth);
 
   auto result = toOwned(new Param());
@@ -172,9 +180,9 @@ const Param* Param::getBool(Context* context, uint64_t v, int bitwidth) {
   return getBoolQuery(context, v, bitwidth).get();
 }
 
-static const owned<Param> Param::getRealQuery(Context* context,
-                                              double v,
-                                              int bitwidth) {
+const owned<Param>& Param::getRealQuery(Context* context,
+                                        double v,
+                                        int bitwidth) {
   QUERY_BEGIN(getRealQuery, context, v, bitwidth);
 
   auto result = toOwned(new Param());
@@ -196,14 +204,14 @@ static const owned<Param> Param::getRealQuery(Context* context,
   return QUERY_END(result);
 }
 
-const Param* Param::getReal(Context* context, uint64_t v, int bitwidth) {
+const Param* Param::getReal(Context* context, double v, int bitwidth) {
   if (bitwidth == 0) bitwidth = 64; // canonicalize default width
   return getRealQuery(context, v, bitwidth).get();
 }
 
-static const owned<Param> Param::getImagQuery(Context* context,
-                                              double v,
-                                              int bitwidth) {
+const owned<Param>& Param::getImagQuery(Context* context,
+                                        double v,
+                                        int bitwidth) {
   QUERY_BEGIN(getImagQuery, context, v, bitwidth);
 
   auto result = toOwned(new Param());
@@ -225,14 +233,14 @@ static const owned<Param> Param::getImagQuery(Context* context,
   return QUERY_END(result);
 }
 
-const Param* Param::getImag(Context* context, uint64_t v, int bitwidth) {
+const Param* Param::getImag(Context* context, double v, int bitwidth) {
   if (bitwidth == 0) bitwidth = 64; // canonicalize default width
-  return getImag(context, v, bitwidth).get();
+  return getImagQuery(context, v, bitwidth).get();
 }
 
-static const owned<Param> Param::getComplexQuery(Context* context,
-                                                 double re, double im,
-                                                 int bitwidth) {
+const owned<Param>& Param::getComplexQuery(Context* context,
+                                           double re, double im,
+                                           int bitwidth) {
   QUERY_BEGIN(getComplexQuery, context, re, im, bitwidth);
 
   auto result = toOwned(new Param());
@@ -241,13 +249,13 @@ static const owned<Param> Param::getComplexQuery(Context* context,
   switch (bitwidth) {
     case 128:
       result->tag_ = paramtags::Complex128;
-      result->u.Complex128.r = re;
-      result->u.Complex128.i = im;
+      result->u.Complex128.re = re;
+      result->u.Complex128.im = im;
       break;
     case 64:
       result->tag_ = paramtags::Complex64;
-      result->u.Complex64.r = re;
-      result->u.Complex64.i = im;
+      result->u.Complex64.re = re;
+      result->u.Complex64.im = im;
       break;
     default:
       assert(false && "should not be reachable");
@@ -256,44 +264,45 @@ static const owned<Param> Param::getComplexQuery(Context* context,
   return QUERY_END(result);
 }
 
-const Param* Param::getComplex(Context* context, uint64_t v, int bitwidth) {
+const Param* Param::getComplex(Context* context,
+                               double re, double im, int bitwidth) {
   if (bitwidth == 0) bitwidth = 128; // canonicalize default width
-  return getComplex(context, v, bitwidth).get();
+  return getComplexQuery(context, re, im, bitwidth).get();
 }
 
-static const owned<Param> Param::getStringQuery(Context* context,
-                                                PODUniqueString str,
-                                                size_t len) {
+const owned<Param>& Param::getStringQuery(Context* context,
+                                          chpl::detail::PODUniqueString str,
+                                          size_t len) {
   QUERY_BEGIN(getStringQuery, context, str, len);
 
   auto result = toOwned(new Param());
   result->type_ = StringType::get(context);
-  result->tag_ = paramtags:String;
-  result->String = UniqueStringAndLength::build(str, len);
+  result->tag_ = paramtags::String;
+  result->u.String = UniqueStringAndLength::build(str, len);
 
   return QUERY_END(result);
 }
 
 const Param* Param::getString(Context* context, const char* str, size_t len) {
-  auto s = PODUniqueString::build(str, len);
+  auto s = chpl::detail::PODUniqueString::build(context, str, len);
   return getStringQuery(context, s, len).get();
 }
 
-static const owned<Param> Param::getBytesQuery(Context* context,
-                                               PODUniqueString str,
-                                               size_t len) {
+const owned<Param>& Param::getBytesQuery(Context* context,
+                                         chpl::detail::PODUniqueString str,
+                                         size_t len) {
   QUERY_BEGIN(getBytesQuery, context, str, len);
 
   auto result = toOwned(new Param());
   result->type_ = BytesType::get(context);
-  result->tag_ = paramtags:Bytes;
-  result->Bytes = UniqueStringAndLength::build(str, len);
+  result->tag_ = paramtags::Bytes;
+  result->u.Bytes = UniqueStringAndLength::build(str, len);
 
   return QUERY_END(result);
 }
 
 const Param* Param::getBytes(Context* context, const char* str, size_t len) {
-  auto s = PODUniqueString::build(str, len);
+  auto s = chpl::detail::PODUniqueString::build(context, str, len);
   return getBytesQuery(context, s, len).get();
 }
 

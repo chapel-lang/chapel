@@ -89,25 +89,24 @@ class Param {
 
   Param();
 
-  static Param* getIntQuery(Context* context, int64_t v, int bitwidth);
-  static Param* getUintQuery(Context* context, uint64_t v, int bitwidth);
-  static Param* getBoolQuery(Context* context, uint64_t v, int bitwidth);
-  static Param* getRealQuery(Context* context, double v, int bitwidth);
-  static Param* getImagQuery(Context* context, double v, int bitwidth);
-  static Param* getComplexQuery(Context* context, double re, double im, int bitwidth);
-  static Param* getStringQuery(Context* context, chpl::detail::PODUniqueString str, size_t len);
-  static Param* getBytesQuery(Context* context, chpl::detail::PODUniqueString str, size_t len);
-
+  static const owned<Param>& getIntQuery(Context* context, int64_t v, int bitwidth);
+  static const owned<Param>& getUintQuery(Context* context, uint64_t v, int bitwidth);
+  static const owned<Param>& getBoolQuery(Context* context, uint64_t v, int bitwidth);
+  static const owned<Param>& getRealQuery(Context* context, double v, int bitwidth);
+  static const owned<Param>& getImagQuery(Context* context, double v, int bitwidth);
+  static const owned<Param>& getComplexQuery(Context* context, double re, double im, int bitwidth);
+  static const owned<Param>& getStringQuery(Context* context, chpl::detail::PODUniqueString str, size_t len);
+  static const owned<Param>& getBytesQuery(Context* context, chpl::detail::PODUniqueString str, size_t len);
 
  public:
-  static Param* getInt(Context* context, int64_t v, int bitwidth);
-  static Param* getUint(Context* context, uint64_t v, int bitwidth);
-  static Param* getBool(Context* context, uint64_t v, int bitwidth);
-  static Param* getReal(Context* context, double v, int bitwidth);
-  static Param* getImag(Context* context, double v, int bitwidth);
-  static Param* getComplex(Context* context, double re, double im, int bitwidth);
-  static Param* getString(Context* context, const char* str, size_t len);
-  static Param* getBytes(Context* context, const char* str, size_t len);
+  static const Param* getInt(Context* context, int64_t v, int bitwidth);
+  static const Param* getUint(Context* context, uint64_t v, int bitwidth);
+  static const Param* getBool(Context* context, uint64_t v, int bitwidth);
+  static const Param* getReal(Context* context, double v, int bitwidth);
+  static const Param* getImag(Context* context, double v, int bitwidth);
+  static const Param* getComplex(Context* context, double re, double im, int bitwidth);
+  static const Param* getString(Context* context, const char* str, size_t len);
+  static const Param* getBytes(Context* context, const char* str, size_t len);
 
   ParamTag tag() const { return tag_; }
   const Type* type(Context* context) const { return type_; }

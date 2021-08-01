@@ -211,6 +211,10 @@ struct PODUniqueString {
   inline bool operator!=(const PODUniqueString other) const {
     return !(*this == other);
   }
+  size_t hash() const {
+    std::hash<size_t> hasher;
+    return hasher((size_t) i.v);
+  }
 };
 
 
