@@ -40,11 +40,13 @@
 /// \cond DO_NOT_DOCUMENT
 
 TYPE_NODE(AnyType)
+TYPE_NODE(BytesType)
 TYPE_NODE(ErroneousType)
-TYPE_NODE(UnknownType)
 TYPE_NODE(NilType)
-TYPE_NODE(VoidType)
 TYPE_NODE(NoneType)
+TYPE_NODE(StringType)
+TYPE_NODE(UnknownType)
+TYPE_NODE(VoidType)
 
 TYPE_BEGIN_SUBCLASSES(BuiltinType)
   // concrete builtin types
