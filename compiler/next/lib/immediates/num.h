@@ -21,6 +21,8 @@
 #ifndef CHPL_IMMEDIATES_NUM_H
 #define CHPL_IMMEDIATES_NUM_H
 
+#include "chpl/queries/UniqueString.h"
+
 #include <cassert>
 #include <cstring>
 #include <sstream>
@@ -35,8 +37,24 @@
 
 extern unsigned int open_hash_multipliers[256];
 
-typedef struct { float r; float i; } complex64;
-typedef struct { double r; double i; } complex128;
+struct complex64 {
+  float r;
+  float i;
+};
+struct complex128 {
+  double r;
+  double i;
+};
+struct ImmUniqueStringAndLength {
+  chpl::detail::PODUniqueString str;
+  size_t len;
+  std::string toString() {
+    return std::string(str.c_str(), len);
+  }
+  const char* c_str() {
+    return str.c_str();
+  }
+};
 
 //
 // NOTE: NUM_KIND_LAST is used to mark the last entry in this enum. The
@@ -97,11 +115,13 @@ enum IF1_complex_type {
 #define FLOAT_SIZE_DEFAULT FLOAT_SIZE_64
 #define COMPLEX_SIZE_DEFAULT COMPLEX_SIZE_128
 
+namespace chpl {
+namespace types {
 
 class Immediate { public:
-  uint32_t const_kind;
-  IF1_string_kind string_kind;
-  uint32_t num_index;
+  uint8_t const_kind;
+  uint8_t string_kind;
+  uint8_t num_index;
   union {
     // Unions are initialized based off the first element, so we need to have
     // the largest thing first to make sure it is all zero initialized
@@ -132,14 +152,14 @@ class Immediate { public:
     uint64_t   v_bool;
 
     // string value
-    const char *v_string;
+    ImmUniqueStringAndLength v_string;
   };
 
   int64_t  int_value( void)     const;
   int64_t  commid_value( void)  const;
   uint64_t uint_value( void)    const;
   uint64_t bool_value( void)    const;
-  const char* string_value( void)const;
+  ImmUniqueStringAndLength string_value( void)const;
   double real_value( void)const;
   // calls int_value, uint_value, or bool_value as appropriate.
   int64_t  to_int( void)        const;
@@ -153,7 +173,7 @@ class Immediate { public:
     v_bool = b;
     return *this;
   }
-  Immediate& operator=(char *s) {
+  Immediate& operator=(ImmUniqueStringAndLength s) {
     const_kind = CONST_KIND_STRING;
     string_kind = STRING_KIND_C_STRING;
     v_string = s;
@@ -169,7 +189,7 @@ class Immediate { public:
     v_bool = b;
   }
 
-  Immediate(const char *s, IF1_string_kind kind) :
+  Immediate(ImmUniqueStringAndLength s, IF1_string_kind kind) :
     const_kind(CONST_KIND_STRING),
     string_kind(kind),
     num_index(0)
@@ -180,6 +200,11 @@ class Immediate { public:
   Immediate();
   Immediate(const Immediate &im);
 };
+
+} // end namespace chpl
+} // end namespace types
+
+using Immediate = chpl::types::Immediate;
 
 inline uint64_t
 Immediate::bool_value( void) const {
@@ -202,7 +227,7 @@ Immediate::int_value( void) const {
   return val;
 }
 
-inline const char*
+inline ImmUniqueStringAndLength
 Immediate::string_value( void) const {
   assert(const_kind == CONST_KIND_STRING);
   assert(string_kind == STRING_KIND_STRING ||
@@ -228,8 +253,7 @@ Immediate::real_value( void) const {
 
 inline int64_t
 Immediate::commid_value( void) const {
-  assert(const_kind == NUM_KIND_COMMID &&
-             num_index == INT_SIZE_64);
+  assert(const_kind == NUM_KIND_COMMID && num_index == INT_SIZE_64);
   return v_int64;
 }
 
@@ -282,7 +306,7 @@ inline std::string Immediate::to_string(void) const {
   case NUM_KIND_INT: ss << int_value(); break;
   case NUM_KIND_BOOL: ss << bool_value(); break;
   case NUM_KIND_UINT: ss << uint_value(); break;
-  case CONST_KIND_STRING: return string_value();
+  case CONST_KIND_STRING: return string_value().toString();
   case NUM_KIND_REAL: {
     if (num_index == FLOAT_SIZE_32) {
       ss << v_float32;
@@ -367,4 +391,3 @@ const char* istrFromUserImag(double i);
 const char* istrFromUserComplex(double re, double im);
 
 #endif
-
