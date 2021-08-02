@@ -168,7 +168,6 @@ module ChapelDistribution {
     proc deinit() {
     }
 
-    pragma "order independent yielding loops"
     iter _arrs: unmanaged BaseArr {
       var tmp = _arrs_head;
       while tmp != nil {
