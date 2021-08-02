@@ -105,12 +105,17 @@ module MasonArgParse {
       super.init();
       this._name=cmd;
     }
-
+    
+    // for subcommands, _match attempts to identify values at the index of the 
+    // subcommadn at position startPos (inclusive) and through the 
+    // endPos (inclusive) parameter [startPos, endPos]
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
-                         ref rest:list(string), endPos:int) throws {
+                         ref rest:list(string), endPos:int) throws {                           
       var pos = startPos;
       var next = pos + 1;
       debugTrace("starting at pos: " + pos:string);
+      debugTrace("Searching positions from: " + pos:string + " to " 
+                 + endPos:string);
       while pos <= endPos 
       {
         if args[pos] == this._name {
@@ -171,6 +176,9 @@ module MasonArgParse {
     // maybe pass a list to fill by reference and have the argparser populate
     // the argument instead?
     // also need a bool by ref to indicate presence of arg or not
+    // for option values, _match attempts to identify values after the option
+    // at position startPos (exclusive) and through the endPos (inclusive)
+    // parameter (startPos, endPos]
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument, 
                          ref rest:list(string), endPos:int) throws {
       var high = _numArgs.high;
@@ -225,6 +233,9 @@ module MasonArgParse {
       var rest = new list(string);
       var endPos = 0;
 
+      // as noted in the comments on PR#18141, breaking up the arguments
+      // when they contain = disconnects the resulting array's indices from 
+      // the original.
       for i in argsD {
         const arrElt = arguments[i];
         // look for = sign after opt, split into two elements
