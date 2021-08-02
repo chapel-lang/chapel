@@ -1133,7 +1133,7 @@ get_string(Expr *e, const char **s) {
   }
 
   if (imm && imm->const_kind == CONST_KIND_STRING) {
-    *s = imm->v_string.c_str();
+    *s = astr(imm->v_string.c_str());
     return true;
   }
 

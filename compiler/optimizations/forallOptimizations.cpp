@@ -2396,7 +2396,7 @@ static bool isLocalAccess(CallExpr *call) {
       if (SymExpr *secondArgSE = toSymExpr(baseCall->get(2))) {
         if (VarSymbol *secondArgSym = toVarSymbol(secondArgSE->symbol())) {
           if (Immediate *imm = secondArgSym->immediate) {
-            if(strcmp(imm->string_value().c_str(), "localAccess") == 0) {
+            if(strcmp(imm->string_value(), "localAccess") == 0) {
               return true;
             }
           }

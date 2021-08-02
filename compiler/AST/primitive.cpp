@@ -308,8 +308,7 @@ returnInfoGetMember(CallExpr* call) {
     Symbol* field = NULL;
     if (imm->const_kind == CONST_KIND_STRING)
     {
-      const char* name = var->immediate->v_string.c_str();
-      field = ct->getField(name);
+      field = ct->getField(var->immediate->v_string.c_str());
     }
     if (imm->const_kind == NUM_KIND_INT)
     {
@@ -362,8 +361,7 @@ returnInfoGetMemberRef(CallExpr* call) {
     Symbol* field = NULL;
     if (imm->const_kind == CONST_KIND_STRING)
     {
-      const char* name = var->immediate->v_string.c_str();
-      field = ct->getField(name);
+      field = ct->getField(var->immediate->v_string.c_str());
     }
     if (imm->const_kind == NUM_KIND_INT)
     {

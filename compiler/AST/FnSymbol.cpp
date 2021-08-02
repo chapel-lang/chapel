@@ -1386,7 +1386,7 @@ static std::string argToString(FnSymbol* fn,
         if (t == dtBytes)
           value += "b";
         value += '"';
-        value += imm->string_value().c_str();
+        value += imm->string_value();
         value += '"';
       } else {
         const size_t bufSize = 128;

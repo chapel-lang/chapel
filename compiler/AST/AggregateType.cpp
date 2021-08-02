@@ -2044,7 +2044,7 @@ QualifiedType AggregateType::getFieldType(Expr* e) {
 
   // Special case: star tuples can have run-time integer field access
   if (name == NULL && this->symbol->hasFlag(FLAG_STAR_TUPLE)) {
-    name = astr("x0"); // get the initial field's type; they're all the same
+    name = "x0"; // get the initial field's type; they're all the same
   }
 
   Symbol* fs = NULL;

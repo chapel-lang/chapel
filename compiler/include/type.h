@@ -583,7 +583,7 @@ void setDataClassType(TypeSymbol* ts, TypeSymbol* ets);
 // defined in codegen.cpp
 GenRet codegenImmediate(Immediate* i);
 
-Immediate getDefaultImmediate(Type* t);
+const Immediate& getDefaultImmediate(Type* t);
 
 
 #define CLASS_ID_TYPE dtInt[INT_SIZE_32]

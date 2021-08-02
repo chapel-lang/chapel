@@ -6649,7 +6649,7 @@ static void resolveInitField(CallExpr* call) {
   VarSymbol* var = toVarSymbol(sym->symbol());
   if (!var || !var->immediate)
     INT_FATAL(call, "bad initializer set field primitive");
-  const char* name = var->immediate->v_string.c_str();
+  const char* name = astr(var->immediate->v_string.c_str());
 
   // Get the type
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
@@ -10486,8 +10486,7 @@ Symbol* getPrimGetRuntimeTypeField_Field(CallExpr* call) {
   Symbol* field = NULL;
   if (Immediate* imm = fieldName->immediate) {
     INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
-    const char* name = imm->v_string.c_str();
-    field = rtt->getField(name);
+    field = rtt->getField(imm->v_string.c_str());
   } else {
     field = fieldName;
   }

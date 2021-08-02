@@ -1521,11 +1521,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   // Hash the string and return an existing symbol if found.
   // Aka. uniquify all string literals
-  Immediate imm;
-  imm.const_kind = CONST_KIND_STRING;
-  imm.string_kind = STRING_KIND_STRING;
   size_t len = strlen(str);
-  imm.v_string = ImmString::build(gContext, str, len);
+  Immediate imm(str, len, STRING_KIND_STRING);
   VarSymbol *s = stringLiteralsHash.get(&imm);
   if (s) {
     return s;
@@ -1607,11 +1604,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 }
 
 VarSymbol *new_BytesSymbol(const char *str) {
-  Immediate imm;
-  imm.const_kind = CONST_KIND_STRING;
-  imm.string_kind = STRING_KIND_BYTES;
   size_t len = strlen(str);
-  imm.v_string = ImmString::build(gContext, str, len);
+  Immediate imm(str, len, STRING_KIND_BYTES);
   VarSymbol *s = bytesLiteralsHash.get(&imm);
   if (s) {
     return s;
@@ -1686,11 +1680,8 @@ VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
 }
 
 VarSymbol *new_CStringSymbol(const char *str) {
-  Immediate imm;
-  imm.const_kind = CONST_KIND_STRING;
-  imm.string_kind = STRING_KIND_C_STRING;
   size_t len = strlen(str);
-  imm.v_string = ImmString::build(gContext, str, len);
+  Immediate imm(str, len, STRING_KIND_C_STRING);
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtStringC;
   if (s) {
@@ -2243,7 +2234,7 @@ const char* toString(VarSymbol* var, bool withType) {
       if (t == dtBytes)
         value += "b";
       value += '"';
-      value += imm->string_value().c_str();
+      value += imm->string_value();
       value += '"';
       return astr(value.c_str());
     } else {

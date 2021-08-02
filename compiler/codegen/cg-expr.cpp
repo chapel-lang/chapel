@@ -4663,10 +4663,11 @@ DEFINE_PRIM(PRIM_LOCAL_CHECK) {
     GenRet lhs = call->get(1);
     Symbol* lhsType = lhs.chplType->symbol;
     auto immediate = toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate;
-    const char* error = immediate->v_string.c_str();
+    const char* errorStr = immediate->v_string.c_str();
 
     if (lhsType->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) == true) {
       GenRet filename = GenRet(call->get(4));
+      GenRet error = GenRet(errorStr);
 
       GenRet lhs = call->get(1);
       if (call->get(1)->isRef()) {

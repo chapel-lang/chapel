@@ -875,9 +875,7 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
         return false;
 
       Immediate dstImm = getDefaultImmediate(t);
-
       coerce_immediate(&rhsImm, &dstImm);
-
       retImm = dstImm;
     }
 

@@ -820,7 +820,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     // Check if this immediate is a string
     if (chplEnv->const_kind == CONST_KIND_STRING) {
-      envKey = chplEnv->v_string.c_str();
+      envKey = chplEnv->v_string.toString();
 
     } else {
       USR_FATAL(call, "expected immediate of type string");
@@ -1824,7 +1824,7 @@ static Symbol* findMatchingEnumSymbol(Immediate* imm, EnumType* typeEnum) {
     fromUint = imm->uint_value();
   } else if (imm->const_kind == CONST_KIND_STRING) {
     haveString = true;
-    fromString = astr(imm->string_value().c_str());
+    fromString = astr(imm->string_value());
   }
 
   INT_ASSERT(haveInt || haveUint || haveString);
@@ -2149,8 +2149,6 @@ static Expr* preFoldNamed(CallExpr* call) {
 
           // Handle casting between numeric types
           if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
-            Immediate coerce = getDefaultImmediate(newType);
-
             if (fWarnUnstable && fromEnum && !toIntUint) {
               if (is_bool_type(newType)) {
                 USR_WARN(call, "enum-to-bool casts are likely to be deprecated in the future");
@@ -2159,6 +2157,7 @@ static Expr* preFoldNamed(CallExpr* call) {
               }
             }
 
+            Immediate coerce = getDefaultImmediate(newType);
             coerce_immediate(gContext, imm, &coerce);
 
             retval = new SymExpr(new_ImmediateSymbol(&coerce));
@@ -2232,9 +2231,7 @@ static Expr* preFoldNamed(CallExpr* call) {
             if (newType == dtStringC)
               skind = STRING_KIND_C_STRING;
 
-            auto empty = ImmString::build(gContext, "");
-            Immediate coerce = Immediate(empty, skind);
-
+            Immediate coerce = Immediate("", 0, skind);
             coerce_immediate(gContext, imm, &coerce);
 
             if (newType == dtStringC)
