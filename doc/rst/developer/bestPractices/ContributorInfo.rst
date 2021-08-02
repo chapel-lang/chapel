@@ -654,11 +654,12 @@ Reviewer responsibilities
   "Merge pull request" button in the "command-line instructions" link
   to checkout a local copy of the PR for testing.  They will look something
   like the following:
-  ```
+
+.. code-block:: bash
   git checkout -b contribusername-prbranchname main
   git pull https://github.com/contribusername/chapel.git prbranchname
-  ```
-  Also make sure to recompile locally before you run tests.
+
+Also make sure to recompile locally before you run tests.
 
 * If you're reviewing a commit from a developer outside the Chapel core
   team, be sure their commits are signed via the DCO bot (one of several
