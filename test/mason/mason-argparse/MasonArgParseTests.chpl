@@ -1640,6 +1640,80 @@ proc testOptRangeInterruptBadFlag(test: borrowed Test) throws {
   test.assertTrue(false);
 }
 
+// a short bool flag test
+proc testBoolFlag(test: borrowed Test) throws {
+  var argList = ["progName","-n"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addFlag(name="BoolFlag",
+                                opts=["-n","--boolVal"]);  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(myStrArg.value(),"true");
+}
+
+// a long bool flag test
+proc testBoolLongFlag(test: borrowed Test) throws {
+  var argList = ["progName","--boolVal"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addFlag(name="BoolFlag",
+                                opts=["-n","--boolVal"]);  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(myStrArg.value(),"true");
+}
+
+// a long bool flag test with default value and no-option
+proc testBoolLongNoFlag(test: borrowed Test) throws {
+  var argList = ["progName","--no-boolVal"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addFlag(name="BoolFlag",
+                                opts=["-n","--boolVal"],
+                                defaultValue=true);
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(myStrArg.value(),"false");
+}
+
+// combine a subcommand and boolean flag
+proc testSubCommandAndBoolLongFlag(test: borrowed Test) throws {
+  var argList = ["progName","subCmd","--no-boolVal"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCmd");                         
+  //make sure no value currently exists
+  test.assertFalse(mySubCmd1.hasValue());
+  //parse the options
+  var remain = parser.parseArgs(argList[1..]);   
+  //make sure we now have a value
+  test.assertTrue(mySubCmd1.hasValue());
+  //ensure the value passed is correct  
+  test.assertEqual(remain, new list(argList[2..]));
+
+  var subParser = new argumentParser();
+  var myBoolArg = subParser.addFlag(name="BoolFlag",
+                              opts=["-n","--boolVal"],
+                              defaultValue=true);
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  subParser.parseArgs(remain.toArray());
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertEqual(myBoolArg.value(), "false");
+}
+
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
 UnitTest.main();
