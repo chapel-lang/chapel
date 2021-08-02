@@ -993,44 +993,44 @@ convert_string_to_immediate(const char *str, Immediate *imm) {
 
 
 // these support coerce_immediate (param casts)
-ImmUniqueStringAndLength istrFromUserBool(chpl::Context* context, bool b) {
+ImmString istrFromUserBool(chpl::Context* context, bool b) {
   const char* s = b ? "true" : "false";
-  return ImmUniqueStringAndLength::build(context, s);
+  return ImmString::build(context, s);
 }
 
-ImmUniqueStringAndLength istrFromUserUint(chpl::Context* context,
+ImmString istrFromUserUint(chpl::Context* context,
                                           uint64_t i) {
   char s[64];
   if (snprintf(s, sizeof(s), "%llu", (long long unsigned)i) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return ImmUniqueStringAndLength::build(context, s);
+  return ImmString::build(context, s);
 }
 
-ImmUniqueStringAndLength istrFromUserInt(chpl::Context* context, int64_t i) {
+ImmString istrFromUserInt(chpl::Context* context, int64_t i) {
   char s[64];
   if (snprintf(s, sizeof(s), "%lld", (long long)i) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return ImmUniqueStringAndLength::build(context, s);
+  return ImmString::build(context, s);
 }
 
-ImmUniqueStringAndLength istrFromUserDouble(chpl::Context* context, double i) {
+ImmString istrFromUserDouble(chpl::Context* context, double i) {
   char s[64];
   if (snprint_float_val(s, sizeof(s), i, false) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return ImmUniqueStringAndLength::build(context, s);
+  return ImmString::build(context, s);
 }
 
-ImmUniqueStringAndLength istrFromUserImag(chpl::Context* context, double i) {
+ImmString istrFromUserImag(chpl::Context* context, double i) {
   char s[64];
   if (snprint_imag_val(s, sizeof(s), i, false) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return ImmUniqueStringAndLength::build(context, s);
+  return ImmString::build(context, s);
 }
 
-ImmUniqueStringAndLength istrFromUserComplex(chpl::Context* context,
+ImmString istrFromUserComplex(chpl::Context* context,
                                              double re, double im) {
   char s[140];
   if (snprint_complex_val(s, sizeof(s), re, im) >= (int) sizeof(s))
     assert(false && "istr buffer overflow");
-  return ImmUniqueStringAndLength::build(context, s);
+  return ImmString::build(context, s);
 }

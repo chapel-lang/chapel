@@ -21,6 +21,7 @@
 #ifndef CHPL_IMMEDIATES_NUM_H
 #define CHPL_IMMEDIATES_NUM_H
 
+#include "chpl/queries/Context.h"
 #include "chpl/queries/UniqueString.h"
 
 #include <cassert>
@@ -47,45 +48,36 @@ struct complex128 {
 };
 
 // needs to not have a constructor so it can be used in the union
-struct ImmUniqueStringAndLength {
-  chpl::detail::PODUniqueString s;
-  size_t len;
+class ImmString {
+  const char* s_;
+  size_t len_;
 
-  static ImmUniqueStringAndLength build(chpl::Context* context,
-                                        const char* strIn,
-                                        size_t lenIn) {
-    ImmUniqueStringAndLength ret;
-    ret.s = chpl::detail::PODUniqueString::build(context, strIn, lenIn);
-    ret.len = lenIn;
+ public:
+  static ImmString build(chpl::Context* context,
+                         const char* strIn,
+                         size_t lenIn) {
+    ImmString ret;
+    ret.s_ = context->uniqueCString(strIn, lenIn);
+    ret.len_ = lenIn;
     return ret;
   }
-  static ImmUniqueStringAndLength build(chpl::Context* context,
-                                        const char* strIn) {
-    return ImmUniqueStringAndLength::build(context, strIn, strlen(strIn));
-  }
-
-  void set(chpl::Context* context, const char* strIn, size_t lenIn) {
-    s = chpl::detail::PODUniqueString::build(context, strIn, lenIn);
-    len = lenIn;
-  }
-  void set(chpl::Context* context, const char* strIn) {
-    size_t lenIn = strlen(strIn);
-    s = chpl::detail::PODUniqueString::build(context, strIn, lenIn);
-    len = lenIn;
+  static ImmString build(chpl::Context* context,
+                         const char* strIn) {
+    return ImmString::build(context, strIn, strlen(strIn));
   }
 
   std::string toString() const {
-    return std::string(s.c_str(), len);
+    return std::string(s_, len_);
   }
   const char* c_str() const {
-    return s.c_str();
+    return s_;
   }
-  const char* astr(chpl::Context* context) const {
-    return s.astr(context);
+  /*const char* astr(chpl::Context* context) const {
+    return s_.astr(context);
   }
   chpl::UniqueString str() const {
     return chpl::UniqueString(s);
-  }
+  }*/
 };
 
 //
@@ -184,14 +176,14 @@ class Immediate { public:
     uint64_t   v_bool;
 
     // string value
-    ImmUniqueStringAndLength v_string;
+    ImmString v_string;
   };
 
   int64_t  int_value( void)     const;
   int64_t  commid_value( void)  const;
   uint64_t uint_value( void)    const;
   uint64_t bool_value( void)    const;
-  ImmUniqueStringAndLength string_value( void)const;
+  ImmString string_value( void)const;
   double real_value( void)const;
   // calls int_value, uint_value, or bool_value as appropriate.
   int64_t  to_int( void)        const;
@@ -205,7 +197,7 @@ class Immediate { public:
     v_bool = b;
     return *this;
   }
-  Immediate& operator=(ImmUniqueStringAndLength s) {
+  Immediate& operator=(ImmString s) {
     const_kind = CONST_KIND_STRING;
     string_kind = STRING_KIND_C_STRING;
     v_string = s;
@@ -221,7 +213,7 @@ class Immediate { public:
     v_bool = b;
   }
 
-  Immediate(ImmUniqueStringAndLength s, IF1_string_kind kind) :
+  Immediate(ImmString s, IF1_string_kind kind) :
     const_kind(CONST_KIND_STRING),
     string_kind(kind),
     num_index(0)
@@ -259,7 +251,7 @@ Immediate::int_value( void) const {
   return val;
 }
 
-inline ImmUniqueStringAndLength
+inline ImmString
 Immediate::string_value( void) const {
   assert(const_kind == CONST_KIND_STRING);
   assert(string_kind == STRING_KIND_STRING ||
@@ -417,12 +409,12 @@ void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
 void fold_constant(chpl::Context* context, int op,
                    Immediate *im1, Immediate *im2, Immediate *imm);
 void convert_string_to_immediate(const char *str, Immediate *imm);
-ImmUniqueStringAndLength istrFromUserBool(chpl::Context* context, bool b);
-ImmUniqueStringAndLength istrFromUserUint(chpl::Context* context, uint64_t i);
-ImmUniqueStringAndLength istrFromUserInt(chpl::Context* context, int64_t i);
-ImmUniqueStringAndLength istrFromUserDouble(chpl::Context* context, double i);
-ImmUniqueStringAndLength istrFromUserImag(chpl::Context* context, double i);
-ImmUniqueStringAndLength istrFromUserComplex(chpl::Context* context,
-                                             double re, double im);
+ImmString istrFromUserBool(chpl::Context* context, bool b);
+ImmString istrFromUserUint(chpl::Context* context, uint64_t i);
+ImmString istrFromUserInt(chpl::Context* context, int64_t i);
+ImmString istrFromUserDouble(chpl::Context* context, double i);
+ImmString istrFromUserImag(chpl::Context* context, double i);
+ImmString istrFromUserComplex(chpl::Context* context,
+                                       double re, double im);
 
 #endif
