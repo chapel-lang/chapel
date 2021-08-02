@@ -2231,7 +2231,7 @@ static Expr* preFoldNamed(CallExpr* call) {
             if (newType == dtStringC)
               skind = STRING_KIND_C_STRING;
 
-            Immediate coerce = Immediate("", 0, skind);
+            Immediate coerce = Immediate(gContext, "", 0, skind);
             coerce_immediate(gContext, imm, &coerce);
 
             if (newType == dtStringC)

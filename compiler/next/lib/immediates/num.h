@@ -54,35 +54,17 @@ class ImmString {
   size_t len_;
 
  public:
-  static ImmString build(const char* strIn,
+  static ImmString build(chpl::Context* context,
+                         const char* strIn,
                          size_t lenIn) {
     ImmString ret;
-    char* buf = (char*) malloc(lenIn+1); // include room for null
-    memcpy(buf, strIn, lenIn);
-    buf[lenIn] = 0; // null terminate
-
-    ret.s_ = buf;
+    ret.s_ = context->uniqueCString(strIn, lenIn);;
     ret.len_ = lenIn;
     return ret;
   }
   static ImmString build(chpl::Context* context,
-                         const char* strIn,
-                         size_t lenIn) {
-    return ImmString::build(strIn, lenIn);
-  }
-  static ImmString build(chpl::Context* context,
                          const char* strIn) {
-    return ImmString::build(strIn, strlen(strIn));
-  }
-
-  static void postBitCopy(ImmString& imm) {
-    // after a bit copy, need to allocate a new string.
-    imm = ImmString::build(imm.s_, imm.len_);
-  }
-  static void freeString(ImmString& imm) {
-    free((char*) imm.s_);
-    imm.s_ = nullptr;
-    imm.len_ = 0;
+    return ImmString::build(context, strIn, strlen(strIn));
   }
 
   std::string toString() const {
@@ -205,9 +187,6 @@ class Immediate { public:
 
   Immediate& operator=(const Immediate&);
   Immediate& operator=(bool b) {
-    if (const_kind == CONST_KIND_STRING) {
-      ImmString::freeString(v_string);
-    }
     const_kind = NUM_KIND_BOOL;
     num_index = BOOL_SIZE_SYS;
     v_bool = b;
@@ -229,17 +208,18 @@ class Immediate { public:
     v_bool = b;
   }
 
-  Immediate(const char* str, size_t len, IF1_string_kind kind) :
+  Immediate(Context* context,
+            const char* str, size_t len,
+            IF1_string_kind kind) :
     const_kind(CONST_KIND_STRING),
     string_kind(kind),
     num_index(0)
   {
-    v_string = ImmString::build(str, len);
+    v_string = ImmString::build(context, str, len);
   }
 
   Immediate();
   Immediate(const Immediate &im);
-  ~Immediate();
 };
 
 } // end namespace chpl
@@ -394,38 +374,16 @@ IFA_EXTERN const char *num_kind_string[4][8] IFA_EXTERN_INIT(CPP_IS_LAME);
 #undef CPP_IS_LAME
 
 inline Immediate& Immediate::operator=(const Immediate& imm) {
-  ImmString toFree;
-  bool needsFree = false;
-  if (const_kind == CONST_KIND_STRING) {
-    toFree = v_string;
-    needsFree = true;
-  }
   memcpy((void*)this, &imm, sizeof(imm));
-  if (const_kind == CONST_KIND_STRING) {
-    ImmString::postBitCopy(v_string);
-  }
-  if (needsFree) {
-    ImmString::freeString(toFree);
-  }
   return *this;
 }
 
 inline Immediate::Immediate(const Immediate& imm) {
   memcpy((void*)this, &imm, sizeof(imm));
-  if (const_kind == CONST_KIND_STRING) {
-    ImmString::postBitCopy(v_string);
-  }
 }
 
 inline Immediate::Immediate() {
   memset((void*)this, 0, sizeof(*this));
-}
-
-inline Immediate::~Immediate() {
-  // if there is a string value, free it
-  if (const_kind == CONST_KIND_STRING) {
-    ImmString::freeString(v_string);
-  }
 }
 
 inline unsigned int

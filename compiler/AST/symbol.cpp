@@ -1522,7 +1522,7 @@ VarSymbol *new_StringSymbol(const char *str) {
   // Hash the string and return an existing symbol if found.
   // Aka. uniquify all string literals
   size_t len = strlen(str);
-  Immediate imm(str, len, STRING_KIND_STRING);
+  Immediate imm(gContext, str, len, STRING_KIND_STRING);
   VarSymbol *s = stringLiteralsHash.get(&imm);
   if (s) {
     return s;
@@ -1605,7 +1605,7 @@ VarSymbol *new_StringSymbol(const char *str) {
 
 VarSymbol *new_BytesSymbol(const char *str) {
   size_t len = strlen(str);
-  Immediate imm(str, len, STRING_KIND_BYTES);
+  Immediate imm(gContext, str, len, STRING_KIND_BYTES);
   VarSymbol *s = bytesLiteralsHash.get(&imm);
   if (s) {
     return s;
@@ -1681,7 +1681,7 @@ VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
 
 VarSymbol *new_CStringSymbol(const char *str) {
   size_t len = strlen(str);
-  Immediate imm(str, len, STRING_KIND_C_STRING);
+  Immediate imm(gContext, str, len, STRING_KIND_C_STRING);
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtStringC;
   if (s) {

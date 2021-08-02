@@ -275,22 +275,7 @@ fprint_imm(FILE *fp, const Immediate &imm, bool showType) {
 
 void
 coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
-  ImmString toFree;
-  bool needsFree = false;
-  if (to->const_kind == CONST_KIND_STRING) {
-    toFree = to->v_string;
-    needsFree = true;
-  }
-
 #include "cast_code.cpp"
-
-  if (needsFree) {
-    if (to->const_kind == CONST_KIND_STRING) {
-      assert(to->v_string.c_str() != toFree.c_str());
-    }
-    ImmString::freeString(toFree);
-  }
-
 }
 
 #define DO_FOLD(_op,add,sub) \
