@@ -1644,49 +1644,49 @@ proc testOptRangeInterruptBadFlag(test: borrowed Test) throws {
 proc testBoolFlag(test: borrowed Test) throws {
   var argList = ["progName","-n"];
   var parser = new argumentParser();
-  var myStrArg = parser.addFlag(name="BoolFlag",
+  var myBoolArg = parser.addFlag(name="BoolFlag",
                                 opts=["-n","--boolVal"]);  
   //make sure no value currently exists
-  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(myBoolArg.hasValue());
   //parse the options
   parser.parseArgs(argList[1..]);
   //make sure we now have a value
-  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(myBoolArg.hasValue());
   //ensure the value passed is correct
-  test.assertEqual(myStrArg.value(),"true");
+  test.assertTrue(myBoolArg.valueAsBool());
 }
 
 // a long bool flag test
 proc testBoolLongFlag(test: borrowed Test) throws {
   var argList = ["progName","--boolVal"];
   var parser = new argumentParser();
-  var myStrArg = parser.addFlag(name="BoolFlag",
+  var myBoolArg = parser.addFlag(name="BoolFlag",
                                 opts=["-n","--boolVal"]);  
   //make sure no value currently exists
-  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(myBoolArg.hasValue());
   //parse the options
   parser.parseArgs(argList[1..]);
   //make sure we now have a value
-  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(myBoolArg.hasValue());
   //ensure the value passed is correct
-  test.assertEqual(myStrArg.value(),"true");
+  test.assertTrue(myBoolArg.valueAsBool());
 }
 
 // a long bool flag test with default value and no-option
 proc testBoolLongNoFlag(test: borrowed Test) throws {
   var argList = ["progName","--no-boolVal"];
   var parser = new argumentParser();
-  var myStrArg = parser.addFlag(name="BoolFlag",
+  var myBoolArg = parser.addFlag(name="BoolFlag",
                                 opts=["-n","--boolVal"],
                                 defaultValue=true);
   //make sure no value currently exists
-  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(myBoolArg.hasValue());
   //parse the options
   parser.parseArgs(argList[1..]);
   //make sure we now have a value
-  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(myBoolArg.hasValue());
   //ensure the value passed is correct
-  test.assertEqual(myStrArg.value(),"false");
+  test.assertFalse(myBoolArg.valueAsBool());
 }
 
 // combine a subcommand and boolean flag
@@ -1711,7 +1711,7 @@ proc testSubCommandAndBoolLongFlag(test: borrowed Test) throws {
   test.assertFalse(myBoolArg.hasValue());
   subParser.parseArgs(remain.toArray());
   test.assertTrue(myBoolArg.hasValue());
-  test.assertEqual(myBoolArg.value(), "false");
+  test.assertFalse(myBoolArg.valueAsBool());
 }
 
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE

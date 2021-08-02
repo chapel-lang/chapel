@@ -69,6 +69,20 @@ module MasonArgParse {
     proc hasValue(){
       return !this._values.isEmpty() && this._present;
     }
+
+    proc valueAsBool() throws {
+      var rtn:bool;
+      
+      if !this.hasValue() {
+        throw new ArgumentError("No value in this argument to convert");
+      } else if _convertStringToBool(this._values.first(), rtn) {
+        return rtn;
+      }
+      else {
+        throw new ArgumentError("Boolean requested but could not convert " + 
+                                this._values.first():string + " to bool");
+      }
+    }
   }
 
 
