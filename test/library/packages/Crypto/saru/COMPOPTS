@@ -2,9 +2,14 @@
 
 import subprocess
 
-pkg, opts = 'libcrypto', ''
-cflags = subprocess.check_output('pkg-config --cflags %s' % pkg, shell=True).rstrip()
-lflags = subprocess.check_output('pkg-config --libs %s' % pkg, shell=True).rstrip()
+opts = ''
+cflags = subprocess.check_output(['pkg-config', '--cflags', 'libcrypto'])
+cflags = cflags.rstrip()
+cflags = str(cflags, encoding='utf-8', errors='surrogateescape')
+
+lflags = subprocess.check_output(['pkg-config', '--libs', 'libcrypto'])
+lflags = lflags.rstrip()
+lflags = str(lflags, encoding='utf-8', errors='surrogateescape')
 
 if cflags:
     opts += '--ccflags %s ' % cflags

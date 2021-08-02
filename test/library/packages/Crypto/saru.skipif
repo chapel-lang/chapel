@@ -1,14 +1,25 @@
 #!/usr/bin/env python3
 
+import os
 import subprocess
+import sys
 from distutils.version import LooseVersion
 
-try:
-    pkgconfig_version = subprocess.check_output('which pkg-config', shell=True).rstrip()
-    libcrypto_version = subprocess.check_output('pkg-config --modversion libcrypto', shell=True).rstrip()
-    if LooseVersion(libcrypto_version) >= LooseVersion('1.0'):
-        print(False)
-    else:
-        print(True)
-except: # if pkg-config is not found
-    print(True)
+platform=os.getenv('CHPL_TARGET_PLATFORM')
+
+Ok=False
+
+if platform!='linux64':
+    Ok=False # not linux
+else:
+
+    v = subprocess.check_output(['pkg-config', '--modversion', 'libcrypto'])
+    v = v.rstrip()
+    v = str(v, encoding='utf-8', errors='surrogateescape')
+
+    if LooseVersion(v) >= LooseVersion('1.1'):
+        # OK, version is compatible.
+        Ok = True
+
+
+print(not Ok)
