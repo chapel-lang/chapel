@@ -168,15 +168,15 @@ struct InlinedString {
   static InlinedString build() {
     return InlinedString::buildInlined("", 0);
   }
-  static InlinedString build(Context* context,
-                             const char* s1, const char* s2,
-                             const char* s3 = nullptr,
-                             const char* s4 = nullptr,
-                             const char* s5 = nullptr,
-                             const char* s6 = nullptr,
-                             const char* s7 = nullptr,
-                             const char* s8 = nullptr,
-                             const char* s9 = nullptr);
+  static InlinedString buildConcat(Context* context,
+                                   const char* s1, const char* s2,
+                                   const char* s3 = nullptr,
+                                   const char* s4 = nullptr,
+                                   const char* s5 = nullptr,
+                                   const char* s6 = nullptr,
+                                   const char* s7 = nullptr,
+                                   const char* s8 = nullptr,
+                                   const char* s9 = nullptr);
 
   bool isInline() const {
     return alignmentIndicatesTag(this->v);
@@ -189,6 +189,8 @@ struct InlinedString {
     // otherwise, s is a real pointer
     return this->v;
   }
+  // return a long-lived pointer
+  const char* astr(Context* context) const;
 };
 
 // This class is POD and has only the trivial constructor to help the parser
@@ -204,19 +206,19 @@ struct PODUniqueString {
   static PODUniqueString build(Context* context, const char* s) {
     return { InlinedString::build(context, s) };
   }
-  static PODUniqueString build(Context* context,
-                               const char* s1, const char* s2,
-                               const char* s3 = nullptr,
-                               const char* s4 = nullptr,
-                               const char* s5 = nullptr,
-                               const char* s6 = nullptr,
-                               const char* s7 = nullptr,
-                               const char* s8 = nullptr,
-                               const char* s9 = nullptr) {
-    return { InlinedString::build(context, s1, s2,
-                                  s3, s4,
-                                  s5, s6,
-                                  s7, s8, s9) };
+  static PODUniqueString buildConcat(Context* context,
+                                     const char* s1, const char* s2,
+                                     const char* s3 = nullptr,
+                                     const char* s4 = nullptr,
+                                     const char* s5 = nullptr,
+                                     const char* s6 = nullptr,
+                                     const char* s7 = nullptr,
+                                     const char* s8 = nullptr,
+                                     const char* s9 = nullptr) {
+    return { InlinedString::buildConcat(context, s1, s2,
+                                        s3, s4,
+                                        s5, s6,
+                                        s7, s8, s9) };
   }
 
 
@@ -227,6 +229,11 @@ struct PODUniqueString {
   const char* c_str() const {
     return i.c_str();
   }
+  // return a long-lived pointer
+  const char* astr(Context* context) const {
+    return i.astr(context);
+  }
+
   bool isEmpty() const {
     return i.c_str()[0] == '\0';
   }

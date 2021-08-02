@@ -80,6 +80,9 @@ struct ImmUniqueStringAndLength {
   const char* c_str() const {
     return s.c_str();
   }
+  const char* astr(chpl::Context* context) const {
+    return s.astr(context);
+  }
   chpl::UniqueString str() const {
     return chpl::UniqueString(s);
   }

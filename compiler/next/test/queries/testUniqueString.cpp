@@ -143,7 +143,7 @@ static void test0() {
 
   // check concatenation builder
   const char* ab1 = ctx->uniqueCString("aabbb");
-  const char* ab2 = ctx->uniqueCString("aa", 2, "bbb", 3);
+  const char* ab2 = ctx->uniqueCStringConcatLen("aa", 2, "bbb", 3);
   assert(ab1 == ab2);
 
   const char* abcd1 = ctx->uniqueCString("a"
@@ -155,16 +155,36 @@ static void test0() {
                                          "ggggggg"
                                          "hhhhhhhh"
                                          "iiiiiiiii");
-  const char* abcd2 = ctx->uniqueCString("a", 1,
-                                         "bb", 2,
-                                         "ccc", 3,
-                                         "dddd", 4,
-                                         "eeeee", 5,
-                                         "ffffff", 6,
-                                         "ggggggg", 7,
-                                         "hhhhhhhh", 8,
-                                         "iiiiiiiii", 9);
+  const char* abcd2 = ctx->uniqueCStringConcatLen("a", 1,
+                                                  "bb", 2,
+                                                  "ccc", 3,
+                                                  "dddd", 4,
+                                                  "eeeee", 5,
+                                                  "ffffff", 6,
+                                                  "ggggggg", 7,
+                                                  "hhhhhhhh", 8,
+                                                  "iiiiiiiii", 9);
+  const char* abcd3 = ctx->uniqueCStringConcat("a",
+                                               "bb",
+                                               "ccc",
+                                               "dddd",
+                                               "eeeee",
+                                               "ffffff",
+                                               "ggggggg",
+                                               "hhhhhhhh",
+                                               "iiiiiiiii");
+
+  assert(0 == strcmp(abcd1,  "a"
+                             "bb"
+                             "ccc"
+                             "dddd"
+                             "eeeee"
+                             "ffffff"
+                             "ggggggg"
+                             "hhhhhhhh"
+                             "iiiiiiiii"));
   assert(abcd1 == abcd2);
+  assert(abcd2 == abcd3);
 }
 
 
@@ -204,7 +224,7 @@ static void test1() {
 
   // check concatenation builder
   UniqueString ab1 = UniqueString::build(ctx, "aabbb");
-  UniqueString ab2 = UniqueString::build(ctx, "aa", "bbb");
+  UniqueString ab2 = UniqueString::buildConcat(ctx, "aa", "bbb");
   assert(ab1 == ab2);
   assert(0 == strcmp(ab1.c_str(), "aabbb"));
 
@@ -218,16 +238,16 @@ static void test1() {
                                            "ggggggg"
                                            "hhhhhhhh"
                                            "iiiiiiiii");
-  UniqueString abcd2 = UniqueString::build(ctx,
-                                           "a",
-                                           "bb",
-                                           "ccc",
-                                           "dddd",
-                                           "eeeee",
-                                           "ffffff",
-                                           "ggggggg",
-                                           "hhhhhhhh",
-                                           "iiiiiiiii");
+  UniqueString abcd2 = UniqueString::buildConcat(ctx,
+                                                 "a",
+                                                 "bb",
+                                                 "ccc",
+                                                 "dddd",
+                                                 "eeeee",
+                                                 "ffffff",
+                                                 "ggggggg",
+                                                 "hhhhhhhh",
+                                                 "iiiiiiiii");
   assert(abcd1 == abcd2);
   assert(0 == strcmp(abcd1.c_str(), "a"
                                     "bb"

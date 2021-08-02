@@ -345,17 +345,31 @@ class Context {
    */
   const char* uniqueCString(const char* s);
   /**
+    Get or create a unique string by concatenating up to 9 strings
+    with lengths.
+   */
+  const char* uniqueCStringConcatLen(const char* s1, size_t len1,
+                                     const char* s2, size_t len2,
+                                     const char* s3 = nullptr, size_t len3 = 0,
+                                     const char* s4 = nullptr, size_t len4 = 0,
+                                     const char* s5 = nullptr, size_t len5 = 0,
+                                     const char* s6 = nullptr, size_t len6 = 0,
+                                     const char* s7 = nullptr, size_t len7 = 0,
+                                     const char* s8 = nullptr, size_t len8 = 0,
+                                     const char* s9 = nullptr, size_t len9 = 0);
+  /**
     Get or create a unique string by concatenating up to 9 strings.
    */
-  const char* uniqueCString(const char* s1, size_t len1,
-                            const char* s2, size_t len2,
-                            const char* s3 = nullptr, size_t len3 = 0,
-                            const char* s4 = nullptr, size_t len4 = 0,
-                            const char* s5 = nullptr, size_t len5 = 0,
-                            const char* s6 = nullptr, size_t len6 = 0,
-                            const char* s7 = nullptr, size_t len7 = 0,
-                            const char* s8 = nullptr, size_t len8 = 0,
-                            const char* s9 = nullptr, size_t len9 = 0);
+  const char* uniqueCStringConcat(const char* s1,
+                                  const char* s2,
+                                  const char* s3 = nullptr,
+                                  const char* s4 = nullptr,
+                                  const char* s5 = nullptr,
+                                  const char* s6 = nullptr,
+                                  const char* s7 = nullptr,
+                                  const char* s8 = nullptr,
+                                  const char* s9 = nullptr);
+
 
 
   /**

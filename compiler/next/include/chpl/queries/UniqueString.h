@@ -79,20 +79,20 @@ class UniqueString final {
     These input strings cannot contain null bytes other than the null
     terminator.
    */
-  static UniqueString build(Context* context,
-                            const char* s1, const char* s2,
-                            const char* s3 = nullptr,
-                            const char* s4 = nullptr,
-                            const char* s5 = nullptr,
-                            const char* s6 = nullptr, 
-                            const char* s7 = nullptr,
-                            const char* s8 = nullptr,
-                            const char* s9 = nullptr) {
-    detail::PODUniqueString ret = detail::PODUniqueString::build(context,
-                                                                 s1, s2,
-                                                                 s3, s4,
-                                                                 s5, s6,
-                                                                 s7, s8, s9);
+  static UniqueString buildConcat(Context* context,
+                                  const char* s1, const char* s2,
+                                  const char* s3 = nullptr,
+                                  const char* s4 = nullptr,
+                                  const char* s5 = nullptr,
+                                  const char* s6 = nullptr,
+                                  const char* s7 = nullptr,
+                                  const char* s8 = nullptr,
+                                  const char* s9 = nullptr) {
+    auto ret = detail::PODUniqueString::buildConcat(context,
+                                                    s1, s2,
+                                                    s3, s4,
+                                                    s5, s6,
+                                                    s7, s8, s9);
     return UniqueString(ret);
   }
 
@@ -113,9 +113,22 @@ class UniqueString final {
     return UniqueString::build(context, s.c_str(), s.size());
   }
 
-  /** return the null-terminated string */
+  /**
+    Return the null-terminated string.
+    The returned pointer may refer to invalid memory if the UniqueString
+    goes out of scope.
+   */
   const char* c_str() const {
     return s.i.c_str();
+  }
+
+  /**
+    Return the null-terminated string as a pointer to an entry
+    in Context's string table. This pointer is safe to use after
+    this UniqueString goes out of scope.
+   */
+  const char* astr(Context* context) const {
+    return s.i.astr(context);
   }
 
   /** return a std::string containing the string up to the first null byte */

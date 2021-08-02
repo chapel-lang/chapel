@@ -44,15 +44,15 @@ InlinedString InlinedString::buildUsingContextTable(Context* context,
   return InlinedString::buildFromAlignedPtr(u, len);
 }
 
-InlinedString InlinedString::build(Context* context,
-                                   const char* s1, const char* s2,
-                                   const char* s3,
-                                   const char* s4,
-                                   const char* s5,
-                                   const char* s6,
-                                   const char* s7,
-                                   const char* s8,
-                                   const char* s9) {
+InlinedString InlinedString::buildConcat(Context* context,
+                                         const char* s1, const char* s2,
+                                         const char* s3,
+                                         const char* s4,
+                                         const char* s5,
+                                         const char* s6,
+                                         const char* s7,
+                                         const char* s8,
+                                         const char* s9) {
   size_t len, len1, len2, len3, len4, len5, len6, len7, len8, len9;
   len = len1 = len2 = len3 = len4 = len5 = len6 = len7 = len8 = len9 = 0;
 
@@ -126,14 +126,22 @@ InlinedString InlinedString::build(Context* context,
     return buildInlined(s, len);
 
   } else {
-    const char* u = context->uniqueCString(s1, len1, s2, len2,
-                                           s3, len3, s4, len4,
-                                           s5, len5, s6, len6,
-                                           s7, len7, s8, len8,
-                                           s9, len9);
+    const char* u = context->uniqueCStringConcatLen(s1, len1, s2, len2,
+                                                    s3, len3, s4, len4,
+                                                    s5, len5, s6, len6,
+                                                    s7, len7, s8, len8,
+                                                    s9, len9);
     // assert that the address returned is even
     assert( (((uintptr_t)u)&1)==0 );
     return InlinedString::buildFromAlignedPtr(u, len);
+  }
+}
+
+const char* InlinedString::astr(Context* context) const {
+  if (isInline()) {
+    return context->uniqueCString(c_str());
+  } else {
+    return c_str();
   }
 }
 

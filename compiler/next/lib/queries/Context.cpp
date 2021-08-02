@@ -145,15 +145,15 @@ const char* Context::uniqueCString(const char* str) {
   return this->getOrCreateUniqueString(str, strlen(str));
 }
 
-const char* Context::uniqueCString(const char* s1, size_t len1,
-                                   const char* s2, size_t len2,
-                                   const char* s3, size_t len3,
-                                   const char* s4, size_t len4,
-                                   const char* s5, size_t len5,
-                                   const char* s6, size_t len6,
-                                   const char* s7, size_t len7,
-                                   const char* s8, size_t len8,
-                                   const char* s9, size_t len9) {
+const char* Context::uniqueCStringConcatLen(const char* s1, size_t len1,
+                                            const char* s2, size_t len2,
+                                            const char* s3, size_t len3,
+                                            const char* s4, size_t len4,
+                                            const char* s5, size_t len5,
+                                            const char* s6, size_t len6,
+                                            const char* s7, size_t len7,
+                                            const char* s8, size_t len8,
+                                            const char* s9, size_t len9) {
   size_t len = len1 + len2 + len3 + len4 + len5 + len6 + len7 + len8 + len9;
 
   size_t allocLen = len+UNIQUED_STRING_METADATA_BYTES+1; // metadata, len, null
@@ -220,6 +220,39 @@ const char* Context::uniqueCString(const char* s1, size_t len1,
   return s;
 }
 
+const char* Context::uniqueCStringConcat(const char* s1,
+                                         const char* s2,
+                                         const char* s3,
+                                         const char* s4,
+                                         const char* s5,
+                                         const char* s6,
+                                         const char* s7,
+                                         const char* s8,
+                                         const char* s9) {
+  size_t len1 = 0;
+  size_t len2 = 0;
+  size_t len3 = 0;
+  size_t len4 = 0;
+  size_t len5 = 0;
+  size_t len6 = 0;
+  size_t len7 = 0;
+  size_t len8 = 0;
+  size_t len9 = 0;
+
+  if (s1 != nullptr) len1 = strlen(s1);
+  if (s2 != nullptr) len2 = strlen(s2);
+  if (s3 != nullptr) len3 = strlen(s3);
+  if (s4 != nullptr) len4 = strlen(s4);
+  if (s5 != nullptr) len5 = strlen(s5);
+  if (s6 != nullptr) len6 = strlen(s6);
+  if (s7 != nullptr) len7 = strlen(s7);
+  if (s8 != nullptr) len8 = strlen(s8);
+  if (s9 != nullptr) len9 = strlen(s9);
+
+  return uniqueCStringConcatLen(s1, len1, s2, len2,
+                                s3, len3, s4, len4, s5, len5, s6, len6,
+                                s7, len7, s8, len8, s9, len9);
+}
 
 void Context::markUniqueCString(const char* s) {
   // Performance: Would it be better to do this store unconditionally?
