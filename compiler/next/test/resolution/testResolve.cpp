@@ -130,6 +130,8 @@ static void test2() {
   }
 
 
+  // Run it a few times to make sure there aren't errors related to
+  // collectGarbage being run across multiple revisions.
   for (int i = 0; i < 3; i++) {
     printf("part %i\n", 3+i);
     context->advanceToNextRevision(true);

@@ -39,6 +39,10 @@ using namespace resolution;
 using namespace uast;
 
 // test showing point-of-instantiation behavior
+// This test has a function 'helper' that is only available
+// from the point-of-instantiaton of a generic function. This
+// test checks that the 'helper' function is found through
+// the point-of-instantiation.
 static void test1() {
   printf("test1\n");
   Context ctx;
@@ -81,12 +85,77 @@ static void test1() {
   const ResolvedFunction* rfunc =
     resolveOnlyCandidate(context, rr.byAst(genericCall));
   assert(rfunc);
+  assert(rfunc->functionId() == mGeneric->id());
+  assert(rfunc->signature->instantiatedFrom != nullptr);
 
   const ResolvedFunction* rhelp =
     resolveOnlyCandidate(context, rfunc->resolutionById.byAst(helperCall));
   assert(rhelp);
   assert(rhelp->functionId() == nHelper->id());
 }
+
+// variant of the above, testing that a call to 'helper' is not
+// resolved if it is present only in a scope that is neither a
+// parent of the generic function nor available from the point
+// of instantiation.
+static void test1n() {
+  printf("test1n\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::build(context, "input.chpl");
+  std::string contents = "module M {\n"
+                         "  proc generic(param p) {\n"
+                         "    helper();\n"
+                         "  }\n"
+                         "}\n"
+                         "module N {\n"
+                         "  use M;\n"
+                         "  import H;\n"
+                         "  generic(1);\n"
+                         "}\n"
+                         "module H {\n"
+                         "  proc helper() { }\n"
+                         "}\n";
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 3);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 1);
+  const Module* n = vec[1]->toModule();
+  assert(n);
+  assert(n->numStmts() == 3);
+  const Module* h = vec[2]->toModule();
+  assert(h);
+  assert(h->numStmts() == 1);
+
+  const Function* mGeneric = m->stmt(0)->toFunction();
+  assert(mGeneric);
+  const Call* helperCall = mGeneric->stmt(0)->toCall();
+  assert(helperCall);
+  const Function* hHelper = h->stmt(0)->toFunction();
+  assert(hHelper);
+  const Call* genericCall = n->stmt(2)->toCall();
+  assert(genericCall);
+
+  // resolve module N
+  const ResolutionResultByPostorderID& rr = resolveModule(context, n->id());
+
+  // get the resolved function
+  const ResolvedFunction* rfunc =
+    resolveOnlyCandidate(context, rr.byAst(genericCall));
+  assert(rfunc);
+  assert(rfunc->functionId() == mGeneric->id());
+  assert(rfunc->signature->instantiatedFrom != nullptr);
+
+  const ResolvedExpression& rhelp = rfunc->resolutionById.byAst(helperCall);
+  for (auto candidate : rhelp.mostSpecific) {
+    assert(candidate == nullptr);
+  }
+}
+
 
 // testing the challenging program from issue 18081
 static void test2() {
@@ -594,6 +663,7 @@ static void test6() {
 
 int main() {
   test1();
+  test1n();
   test2();
   test3();
   test4();

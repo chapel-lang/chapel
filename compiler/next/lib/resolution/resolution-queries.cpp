@@ -395,6 +395,9 @@ struct Resolver {
           if (qtKind == QualifiedType::TYPE &&
               initType.kind() != QualifiedType::TYPE) {
             context->error(initExpr, "Cannot initialize type with value");
+          } else if (qtKind != QualifiedType::TYPE &&
+                     initType.kind() == QualifiedType::TYPE) {
+            context->error(initExpr, "Cannot initialize value with type");
           } else if (qtKind == QualifiedType::PARAM &&
                      initType.kind() != QualifiedType::PARAM) {
             context->error(initExpr, "Cannot initialize param with non-param");

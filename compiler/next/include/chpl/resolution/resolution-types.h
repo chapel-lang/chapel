@@ -296,6 +296,10 @@ class MostSpecificCandidates {
     return candidates[VALUE];
   }
 
+  /**
+    If there is exactly one candidate, return that candidate.
+    Otherwise, return nullptr.
+   */
   const TypedFnSignature* only() const {
     const TypedFnSignature* ret = nullptr;
     int nPresent = 0;
@@ -363,11 +367,11 @@ struct ResolvedExpression {
 
   // For a function call, what is the most specific candidate,
   // or when using return intent overloading, what are the most specific
-  // candidates.
+  // candidates?
   // The choice between these needs to happen
   // later than the main function resolution.
   MostSpecificCandidates mostSpecific;
-  // What point of instantiation scope is should be used when
+  // What point of instantiation scope should be used when
   // resolving functions in mostSpecific?
   const PoiScope* poiScope = nullptr;
 

@@ -355,7 +355,7 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
 
   // For setter queries, only run the combiner if the last
   // time the query was checked was an earlier revision.
-  // If the combiner is skipped, changed is left as false.
+  // If the combiner is skipped, 'changed' is left as false.
   if (forSetter == false || r->lastChecked != currentRevision) {
     chpl::update<ResultType> combiner;
     changed = combiner(r->result, result);
