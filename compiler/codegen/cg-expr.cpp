@@ -4706,21 +4706,8 @@ DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
   // primitive and pass it to chpl_gpu_getKernel() and pass the result as the
   // first argument to cuLaunchKernel. Pass all other arguments along to it.
   std::vector<GenRet> args;
-  //bool first = true;
   int i = 0;
   for_actuals(actual, call) {
-    //if(first) {
-      //INT_ASSERT(actual->typeInfo() == dtStringC);
-      
-      //std::vector<GenRet> argsToGetKernelCall;
-      //argsToGetKernelCall.push_back(codegenCString("tmp/chpl__gpu.fatbin"));
-      //argsToGetKernelCall.push_back(actual->codegen());
-      
-      //ret = codegenCallExprWithArgs("chpl_gpu_getKernel", argsToGetKernelCall);
-      //args.push_back(ret);
-    
-      //first = false;
-    //} else {
     if (i > 3) {
       args.push_back(codegenAddrOf(actual));
       i++; // probably unneccesary
@@ -4730,7 +4717,6 @@ DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
       i++;
 
     }
-    //}
   }
   ret = codegenCallExprWithArgs("chpl_gpu_launch_kernel", args);
 }
