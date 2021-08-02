@@ -23,6 +23,7 @@
 #include "astlocs.h"
 #include "baseAST.h"
 #include "chpl.h"
+#include "chpl/queries/Context.h"
 #include "codegen.h"
 #include "driver.h"
 #include "expr.h"
@@ -1015,7 +1016,8 @@ void clean_exit(int status) {
 
   cleanup_for_exit();
 
-  deleteStrings();
+  delete gContext;
+  gContext = nullptr;
 
   exit(status);
 }

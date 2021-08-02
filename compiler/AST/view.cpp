@@ -71,7 +71,7 @@ list_sym(const Symbol* sym, bool type = true, bool intents = true) {
         printf("%" PRId64 " ", var->immediate->int_value());
         return;
       } else if (var->immediate->const_kind == CONST_KIND_STRING) {
-        printf("\"%s\" ", var->immediate->v_string);
+        printf("\"%s\" ", var->immediate->v_string.c_str());
         return;
       }
     }

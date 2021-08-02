@@ -81,7 +81,8 @@ void localizeGlobals() {
                 if (Immediate* immediate = localVarSym->immediate)
                   if (immediate->const_kind == CONST_KIND_STRING)
                     local_global->immediate =
-                      new Immediate(immediate->v_string, immediate->string_kind);
+                      new Immediate(immediate->v_string,
+                                    immediate->string_kind);
 
             globals.put(var, local_global);
           }

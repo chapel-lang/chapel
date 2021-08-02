@@ -198,7 +198,7 @@ static const char* toImmediateString(Expr* expr) {
       if (var->isImmediate()) {
         Immediate* imm = var->immediate;
         if (imm->const_kind == CONST_KIND_STRING) {
-          return imm->v_string;
+          return imm->v_string.c_str();
         }
       }
     }
@@ -1612,7 +1612,7 @@ static const char* cnameExprToString(Expr* cnameExpr) {
     if (VarSymbol* v = toVarSymbol(se->symbol()))
       if (v->isImmediate())
         if (v->immediate->const_kind == CONST_KIND_STRING)
-          return v->immediate->v_string;
+          return v->immediate->v_string.c_str();
   return NULL;
 }
 

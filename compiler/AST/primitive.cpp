@@ -192,7 +192,7 @@ returnInfoStaticFieldType(CallExpr* call) {
   VarSymbol* nameSym = toVarSymbol(toSymExpr(call->get(2))->symbol());
   // caller's responsibility
   INT_ASSERT(nameSym->immediate->const_kind == CONST_KIND_STRING);
-  Symbol* field = at->getField(nameSym->immediate->v_string, true);
+  Symbol* field = at->getField(nameSym->immediate->v_string.c_str(), true);
   return field->qualType().toVal();
 }
 
@@ -308,7 +308,7 @@ returnInfoGetMember(CallExpr* call) {
     Symbol* field = NULL;
     if (imm->const_kind == CONST_KIND_STRING)
     {
-      const char* name = var->immediate->v_string;
+      const char* name = var->immediate->v_string.c_str();
       field = ct->getField(name);
     }
     if (imm->const_kind == NUM_KIND_INT)
@@ -362,7 +362,7 @@ returnInfoGetMemberRef(CallExpr* call) {
     Symbol* field = NULL;
     if (imm->const_kind == CONST_KIND_STRING)
     {
-      const char* name = var->immediate->v_string;
+      const char* name = var->immediate->v_string.c_str();
       field = ct->getField(name);
     }
     if (imm->const_kind == NUM_KIND_INT)

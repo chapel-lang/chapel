@@ -537,7 +537,7 @@ DefExpr* AggregateType::toLocalField(CallExpr* expr) const {
           var                                    != NULL &&
           var->immediate                         != NULL &&
           var->immediate->const_kind             == CONST_KIND_STRING) {
-        retval = toLocalField(var->immediate->v_string);
+        retval = toLocalField(var->immediate->v_string.c_str());
       }
     }
   }
@@ -1721,7 +1721,7 @@ AggregateType* AggregateType::getCurInstantiation(Symbol* sym, Type* symType) {
         Immediate result;
         Immediate* lhs = getSymbolImmediate(at->substitutions.get(field));
         Immediate* rhs = getSymbolImmediate(sym);
-        fold_constant(P_prim_equal, lhs, rhs, &result);
+        fold_constant(gContext, P_prim_equal, lhs, rhs, &result);
         if (result.v_bool) {
           retval = at;
         }
@@ -1790,7 +1790,7 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
         fieldType != sym->getValType()) {
       Immediate coerce = getDefaultImmediate(fieldType);
       Immediate* from = toVarSymbol(sym)->immediate;
-      coerce_immediate(from, &coerce);
+      coerce_immediate(gContext, from, &coerce);
       sym = new_ImmediateSymbol(&coerce);
       symType = sym->type;
     }
@@ -2040,7 +2040,7 @@ QualifiedType AggregateType::getFieldType(Expr* e) {
 
   // Typical case: field is identified by its name
   if (var && var->immediate)
-    name = var->immediate->v_string;
+    name = var->immediate->v_string.c_str();
 
   // Special case: star tuples can have run-time integer field access
   if (name == NULL && this->symbol->hasFlag(FLAG_STAR_TUPLE)) {

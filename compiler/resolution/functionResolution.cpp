@@ -6530,7 +6530,7 @@ static Symbol* resolveFieldSymbol(Type* base, Expr* fieldExpr) {
   }
 
   // Get the field name.
-  const char* name = var->immediate->v_string;
+  const char* name = var->immediate->v_string.c_str();
 
   // Special case: An integer field name is actually a tuple member index.
   {
@@ -6649,7 +6649,7 @@ static void resolveInitField(CallExpr* call) {
   VarSymbol* var = toVarSymbol(sym->symbol());
   if (!var || !var->immediate)
     INT_FATAL(call, "bad initializer set field primitive");
-  const char* name = var->immediate->v_string;
+  const char* name = var->immediate->v_string.c_str();
 
   // Get the type
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
@@ -9128,7 +9128,7 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
         USR_FATAL(from, "arguments to compilerWarning() and compilerError(),"
           " except for the optional depth argument, must be cast to string");
        else
-        str = astr(str, var->immediate->v_string);
+        str = astr(str, var->immediate->v_string.c_str());
       }
     }
 
@@ -10486,7 +10486,7 @@ Symbol* getPrimGetRuntimeTypeField_Field(CallExpr* call) {
   Symbol* field = NULL;
   if (Immediate* imm = fieldName->immediate) {
     INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
-    const char* name = imm->v_string;
+    const char* name = imm->v_string.c_str();
     field = rtt->getField(name);
   } else {
     field = fieldName;
@@ -10989,7 +10989,7 @@ static Symbol* resolvePrimInitGetField(CallExpr* call) {
 
     if (Immediate* imm = var->immediate) {
       if (imm->const_kind == CONST_KIND_STRING) {
-        retval = ct->getField(var->immediate->v_string);
+        retval = ct->getField(var->immediate->v_string.c_str());
 
       } else if (imm->const_kind == NUM_KIND_INT) {
         int64_t i = imm->int_value();

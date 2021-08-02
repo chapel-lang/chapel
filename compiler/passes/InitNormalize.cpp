@@ -1069,7 +1069,7 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
       return false;
     } else {
       Immediate*     imm        = getSymbolImmediate(toSymExpr(node->get(2))->symbol());
-      const char*    methodName = imm->string_value();
+      const char*    methodName = imm->string_value().c_str();
       AggregateType* parentType = type->dispatchParents.v[0];
 
       if (typeHasMethod(parentType, methodName) == false) {

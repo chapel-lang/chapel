@@ -623,7 +623,7 @@ static Symbol *getDotDomBaseSym(Expr *expr) {
       if (SymExpr *se = toSymExpr(ce->get(2))) {
         if (VarSymbol *var = toVarSymbol(se->symbol())) {
           if (var->immediate->const_kind == CONST_KIND_STRING) {
-            if (strcmp(var->immediate->v_string, "_dom") == 0) {
+            if (strcmp(var->immediate->v_string.c_str(), "_dom") == 0) {
               if (SymExpr *se = toSymExpr(ce->get(1))) {
                 return se->symbol();
               }
@@ -2396,7 +2396,7 @@ static bool isLocalAccess(CallExpr *call) {
       if (SymExpr *secondArgSE = toSymExpr(baseCall->get(2))) {
         if (VarSymbol *secondArgSym = toVarSymbol(secondArgSE->symbol())) {
           if (Immediate *imm = secondArgSym->immediate) {
-            if(strcmp(imm->string_value(), "localAccess") == 0) {
+            if(strcmp(imm->string_value().c_str(), "localAccess") == 0) {
               return true;
             }
           }

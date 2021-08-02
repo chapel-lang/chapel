@@ -47,7 +47,6 @@ class BasicBlock;
 class BlockStmt;
 class DefExpr;
 class FnSymbol;
-class Immediate;
 class IteratorInfo;
 class Stmt;
 class SymExpr;

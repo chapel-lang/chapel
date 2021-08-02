@@ -638,7 +638,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       INT_FATAL(call, "proc name must be a string");
     }
 
-    const char* name = imm->v_string;
+    const char* name = imm->v_string.c_str();
 
     // temporarily add a call to try resolving.
     CallExpr* tryCall = NULL;
@@ -751,7 +751,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
 
-    const char*    fieldName  = imm->v_string;
+    const char*    fieldName  = imm->v_string.c_str();
     int            fieldCount = 0;
     int            num        = 0;
 
@@ -820,7 +820,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     // Check if this immediate is a string
     if (chplEnv->const_kind == CONST_KIND_STRING) {
-      envKey = chplEnv->v_string;
+      envKey = chplEnv->v_string.c_str();
 
     } else {
       USR_FATAL(call, "expected immediate of type string");
@@ -893,7 +893,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
     Immediate* imm = toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate;
-    Symbol* field = at->getField(imm->v_string);
+    Symbol* field = at->getField(imm->v_string.c_str());
     if (at->symbol->hasFlag(FLAG_GENERIC) &&
         std::find(at->genericFields.begin(), at->genericFields.end(), field) != at->genericFields.end()) {
       retval = new SymExpr(gFalse);
@@ -1824,7 +1824,7 @@ static Symbol* findMatchingEnumSymbol(Immediate* imm, EnumType* typeEnum) {
     fromUint = imm->uint_value();
   } else if (imm->const_kind == CONST_KIND_STRING) {
     haveString = true;
-    fromString = imm->string_value();
+    fromString = astr(imm->string_value().c_str());
   }
 
   INT_ASSERT(haveInt || haveUint || haveString);
@@ -2159,7 +2159,7 @@ static Expr* preFoldNamed(CallExpr* call) {
               }
             }
 
-            coerce_immediate(imm, &coerce);
+            coerce_immediate(gContext, imm, &coerce);
 
             retval = new SymExpr(new_ImmediateSymbol(&coerce));
 
@@ -2203,23 +2203,23 @@ static Expr* preFoldNamed(CallExpr* call) {
           } else if (imm != NULL && fromString && toString) {
 
             if (newType == dtStringC)
-              retval = new SymExpr(new_CStringSymbol(imm->v_string));
+              retval = new SymExpr(new_CStringSymbol(imm->v_string.c_str()));
             else
-              retval = new SymExpr(new_StringSymbol(imm->v_string));
+              retval = new SymExpr(new_StringSymbol(imm->v_string.c_str()));
 
             call->replace(retval);
 
           // Handle string:bytes and c_string:bytes casts
           } else if (imm != NULL && fromString && toBytes) {
 
-            retval = new SymExpr(new_BytesSymbol(imm->v_string));
+            retval = new SymExpr(new_BytesSymbol(imm->v_string.c_str()));
 
             call->replace(retval);
 
           // Handle bytes:c_string casts (bytes.c_str()) is used in IO
           } else if (imm != NULL && fromBytes && newType == dtStringC) {
 
-            retval = new SymExpr(new_CStringSymbol(imm->v_string));
+            retval = new SymExpr(new_CStringSymbol(imm->v_string.c_str()));
 
             call->replace(retval);
 
@@ -2232,16 +2232,17 @@ static Expr* preFoldNamed(CallExpr* call) {
             if (newType == dtStringC)
               skind = STRING_KIND_C_STRING;
 
-            Immediate coerce = Immediate("", skind);
+            auto empty = ImmString::build(gContext, "");
+            Immediate coerce = Immediate(empty, skind);
 
-            coerce_immediate(imm, &coerce);
+            coerce_immediate(gContext, imm, &coerce);
 
             if (newType == dtStringC)
-              retval = new SymExpr(new_CStringSymbol(coerce.v_string));
+              retval = new SymExpr(new_CStringSymbol(coerce.v_string.c_str()));
             else if (newType == dtBytes)
-              retval = new SymExpr(new_BytesSymbol(coerce.v_string));
+              retval = new SymExpr(new_BytesSymbol(coerce.v_string.c_str()));
             else
-              retval = new SymExpr(new_StringSymbol(coerce.v_string));
+              retval = new SymExpr(new_StringSymbol(coerce.v_string.c_str()));
 
             call->replace(retval);
 
@@ -2491,7 +2492,7 @@ static Symbol* determineQueriedField(CallExpr* call) {
   Symbol*        retval = NULL;
 
   if (var->immediate->const_kind == CONST_KIND_STRING) {
-    retval = at->getField(var->immediate->v_string, false);
+    retval = at->getField(var->immediate->v_string.c_str(), false);
 
   } else {
     Vec<Symbol*> args;
@@ -2533,8 +2534,8 @@ static Symbol* determineQueriedField(CallExpr* call) {
       INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
 
       for (int j = 0; j < args.n; j++) {
-        if (args.v[j]                                         != NULL &&
-            strcmp(args.v[j]->name, var->immediate->v_string) ==    0) {
+        if (args.v[j] != NULL &&
+            strcmp(args.v[j]->name, var->immediate->v_string.c_str()) == 0) {
           args.v[j] = NULL;
         }
       }
