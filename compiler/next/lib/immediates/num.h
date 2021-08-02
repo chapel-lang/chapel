@@ -50,7 +50,7 @@ struct complex128 {
 
 // needs to not have a ctor, copy ctor, = so it can be used in the union
 class ImmString {
-  const char* s_;
+  chpl::detail::PODUniqueString s_;
   size_t len_;
 
  public:
@@ -58,7 +58,7 @@ class ImmString {
                          const char* strIn,
                          size_t lenIn) {
     ImmString ret;
-    ret.s_ = context->uniqueCString(strIn, lenIn);;
+    ret.s_ = chpl::detail::PODUniqueString::build(context, strIn, lenIn);
     ret.len_ = lenIn;
     return ret;
   }
@@ -68,10 +68,16 @@ class ImmString {
   }
 
   std::string toString() const {
-    return std::string(s_, len_);
+    return std::string(s_.c_str(), len_);
   }
   const char* c_str() const {
-    return s_;
+    return s_.c_str();
+  }
+  chpl::UniqueString str() const {
+    return chpl::UniqueString(s_);
+  }
+  size_t len() const {
+    return len_;
   }
 };
 
