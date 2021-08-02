@@ -259,21 +259,24 @@ struct TypedFnSignature {
 class MostSpecificCandidates {
  public:
   typedef enum {
+    // the slots in the candidates array for return intent
+    // overloading
     REF = 0,
-    CONST_REF = 1,
-    VALUE = 2,
-    N = 3,
+    CONST_REF,
+    VALUE,
+    // NUM_INTENTS is the size of the candidates array
+    NUM_INTENTS,
   } Intent;
 
  private:
-  const TypedFnSignature* candidates[N] = {nullptr};
+  const TypedFnSignature* candidates[NUM_INTENTS] = {nullptr};
 
  public:
   const TypedFnSignature* const* begin() const {
     return &candidates[0];
   }
   const TypedFnSignature* const* end() const {
-    return &candidates[N];
+    return &candidates[NUM_INTENTS];
   }
 
   void setBestRef(const TypedFnSignature* sig) {
@@ -303,7 +306,7 @@ class MostSpecificCandidates {
   const TypedFnSignature* only() const {
     const TypedFnSignature* ret = nullptr;
     int nPresent = 0;
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < NUM_INTENTS; i++) {
       const TypedFnSignature* sig = candidates[i];
       if (sig != nullptr) {
         ret = sig;
@@ -317,7 +320,7 @@ class MostSpecificCandidates {
   }
 
   bool operator==(const MostSpecificCandidates& other) const {
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < NUM_INTENTS; i++) {
       if (candidates[i] != other.candidates[i])
         return false;
     }
@@ -327,7 +330,7 @@ class MostSpecificCandidates {
     return !(*this == other);
   }
   void swap(MostSpecificCandidates& other) {
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < NUM_INTENTS; i++) {
       std::swap(candidates[i], other.candidates[i]);
     }
   }
