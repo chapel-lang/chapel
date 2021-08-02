@@ -24,74 +24,49 @@ module GPUOutlineTest {
       return devBufferX;
     }
 
-    static void **getKernelParams(CUdeviceptr *devBufferX){
-      static void* kernelParams[1];
-      kernelParams[0] = devBufferX;
-      return kernelParams;
-    }
-
-
     static double getDataFromDevice(CUdeviceptr devBufferX){
       double X;
       checkCudaErrors(cuMemcpyDtoH(&X, devBufferX, sizeof(double)));
       return X;
     }
-
   }
 
-  config param allocOnGpu = true;
+  record GPUAbleValue {
+    var value;
+    forwarding var data: _ddata(value.type);
 
-  record GPUAbleArray {
-    type eltType;
-    var size = 0: int;
-    forwarding var data: _ddata(eltType);
+    proc init(value) {
+      this.value = value;
 
-    proc postinit() {
-      var dummy = false;
-      if allocOnGpu {
-        var devPtr = getDeviceBufferPointer(size:real);
-        data = __primitive("cast", c_ptr(eltType), devPtr):data.type;
-      }
-      else
-        data = _ddata_allocate_noinit(eltType, size, dummy);
+      var devPtr = getDeviceBufferPointer(value:real);
+      this.data = __primitive("cast", _ddata(value.type), devPtr);
     }
 
-    proc getHostArray() {
-      if allocOnGpu {
-        var dataOnHost = getDataFromDevice(__primitive("cast", CUdeviceptr, data));
-        return dataOnHost;
-      }
-      else {
-        compilerError("This doesn't make much sense");
-      }
+    proc getValue() {
+      var dataOnHost = getDataFromDevice(__primitive("cast", CUdeviceptr, data));
+      return dataOnHost;
     }
   }
 
   proc testMain() {
     chpl_gpu_init();
 
-    var a = new GPUAbleArray(real, 5);
-    var b = new GPUAbleArray(real, 10);
+    var a = new GPUAbleValue(value=5.0);
+    var b = new GPUAbleValue(value=10.0);
 
-    /*if !allocOnGpu {*/
-      /*for i in 0..9 do a[i] = 1;*/
-      /*for i in 0..9 do b[i] = 2;*/
-    /*}*/
-
-    var rhs = b.getHostArray();
-    var lhs = a.getHostArray();
+    var initialRHS = b.getValue();
+    var initialLHS = a.getValue();
 
     forall i in 0..0 {
       a[i] = b[i];
     }
 
-    var result = a.getHostArray();
+    var finalLHS = a.getValue();
 
-    writeln(rhs, " ", lhs, " ", result);
-
-    writeln("Hello world");
+    writeln("initialRHS = ", initialRHS);
+    writeln("initialLHS = ", initialLHS);
+    writeln("finalLHS   = ", finalLHS);
   }
 
   testMain();
-  /*writeln();*/
 }

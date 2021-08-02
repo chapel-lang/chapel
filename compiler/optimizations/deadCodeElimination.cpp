@@ -571,9 +571,6 @@ static void outlineGPUKernels() {
                   // something into the CForLoop. Or, we flag the user's index
                   // with one of the index flags, and check for it here.
                   if (isIndexVariable(sym, loop)) {
-                    std::cout << "The Index variable\n";
-                    nprint_view(sym);
-
                     if (indexSymbol == NULL) {
                       indexSymbol = sym;
                       VarSymbol* fakeIndex = new VarSymbol("fakeIndex", sym->type);
