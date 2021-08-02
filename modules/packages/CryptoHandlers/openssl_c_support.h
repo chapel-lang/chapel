@@ -38,6 +38,11 @@ typedef const EVP_MD* CONST_EVP_MD_PTR;
 typedef const EVP_CIPHER* CONST_EVP_CIPHER_PTR;
 
 #if OPENSSL_VERSION_NUMBER < 0x1010000fL
+
+// Error because before 1.1 multithreading does not work right
+// and the result is random core dumps.
+#error "Chapel OpenSSL support requires OpenSSL 1.1 or newer"
+
 // OpenSSL 1.0 used EVP_MD_CTX_init, EVP_MD_CTX_cleanup
 // EVP_CIPHER_CTX_init, EVP_CIPHER_CTX_cleanup
 typedef EVP_MD_CTX CHPL_EVP_MD_CTX; 
