@@ -223,7 +223,9 @@ class UniqueString final {
     other = oldThis;
   }
 
-  void mark(Context* context) const;
+  void mark(Context* context) const {
+    s.i.mark(context);
+  }
 };
 
 

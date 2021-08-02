@@ -72,6 +72,9 @@ class Param {
       UniqueStringAndLength ret = {str, len};
       return ret;
     }
+    void mark(Context* context) const {
+      str.mark(context);
+    }
   };
 
   ParamTag tag_ = paramtags::None;
@@ -119,12 +122,19 @@ class Param {
   bool operator!=(const Param& other) const {
     return !(*this == other);
   }
-
-
+  void mark(Context* context) const;
 };
 
 
 } // end namespace types
+
+template<> struct mark<chpl::types::Param> {
+  void operator()(Context* context,
+                  const chpl::types::Param& keep) const {
+    keep.mark(context);
+  }
+};
+
 } // end namespace chpl
 
 #endif

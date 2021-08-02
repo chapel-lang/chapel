@@ -145,6 +145,15 @@ const char* InlinedString::astr(Context* context) const {
   }
 }
 
+void InlinedString::mark(Context* context) const {
+  if (isInline()) {
+    // nothing to do since string data is stored inline, not in map
+  } else {
+    context->markUniqueCString(c_str());
+  }
+}
+
+
 } // end namespace detail
 
 
@@ -165,14 +174,6 @@ UniqueString UniqueString::build(Context* context,
     detail::PODUniqueString ret =
       detail::PODUniqueString::build(context, str.c_str(), len);
     return UniqueString(ret);
-  }
-}
-
-void UniqueString::mark(Context* context) const {
-  if (this->s.i.isInline()) {
-    // nothing to do since string data is stored inline, not in map
-  } else {
-    context->markUniqueCString(this->c_str());
   }
 }
 

@@ -65,6 +65,16 @@ bool Param::equals(const Param& a, const Param& b) {
   return true;
 }
 
+void Param::mark(Context* context) const {
+  switch (tag_) {
+    case paramtags::Bytes:   u.Bytes.mark(context);   break;
+    case paramtags::CString: u.CString.mark(context); break;
+    case paramtags::String:  u.String.mark(context);  break;
+    default:
+      ; // do nothing
+  }
+}
+
 const owned<Param>& Param::getIntQuery(Context* context,
                                        int64_t v,
                                        int bitwidth) {

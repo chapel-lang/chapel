@@ -44,9 +44,12 @@ PARAM_NODE(Bool64, uint64_t)
 PARAM_NODE(Bool32, uint32_t)
 PARAM_NODE(Bool16, uint16_t)
 PARAM_NODE(Bool8, uint8_t)
-PARAM_NODE(String, UniqueStringAndLength)
-PARAM_NODE(Bytes, UniqueStringAndLength)
 PARAM_NODE(None, uint8_t)
+
+// update Param::mark if any others storing string are added
+PARAM_NODE(Bytes, UniqueStringAndLength)
+PARAM_NODE(CString, UniqueStringAndLength)
+PARAM_NODE(String, UniqueStringAndLength)
 
 /// \endcond
 

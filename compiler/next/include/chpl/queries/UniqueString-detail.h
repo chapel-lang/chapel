@@ -191,6 +191,8 @@ struct InlinedString {
   }
   // return a long-lived pointer
   const char* astr(Context* context) const;
+  // mark the string as used this revision (so it is not GC'd)
+  void mark(Context* context) const;
 };
 
 // This class is POD and has only the trivial constructor to help the parser
@@ -246,6 +248,9 @@ struct PODUniqueString {
   size_t hash() const {
     std::hash<size_t> hasher;
     return hasher((size_t) i.v);
+  }
+  void mark(Context* context) const {
+    i.mark(context);
   }
 };
 
