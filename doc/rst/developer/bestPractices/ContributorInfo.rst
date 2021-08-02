@@ -656,10 +656,11 @@ Reviewer responsibilities
   like the following:
 
 .. code-block:: bash
+
   git checkout -b contribusername-prbranchname main
   git pull https://github.com/contribusername/chapel.git prbranchname
+  // don't forget to recompile before you test
 
-Also make sure to recompile locally before you run tests.
 
 * If you're reviewing a commit from a developer outside the Chapel core
   team, be sure their commits are signed via the DCO bot (one of several
