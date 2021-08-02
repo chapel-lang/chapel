@@ -201,14 +201,18 @@ static void test1() {
   UniqueString t1 = UniqueString::build(ctx, test1);
   UniqueString t2 = UniqueString::build(ctx, test1Copy);
   UniqueString t3 = UniqueString::build(ctx, TEST1STRING);
+  assert(0 == strcmp(t1.c_str(), test1.c_str()));
   assert(t1.c_str() == t2.c_str());
   assert(t2.c_str() == t3.c_str());
+  assert(t1.astr(ctx) == ctx->uniqueCString(test1.c_str()));
 
   // this string is short enough to be inlined
   std::string hello = "hello";
   UniqueString h1 = UniqueString::build(ctx, "hello");
   UniqueString h2 = UniqueString::build(ctx, hello);
+  assert(0 == strcmp(h1.c_str(), hello.c_str()));
   assert(h1 == h2);
+  assert(h1.astr(ctx) == ctx->uniqueCString(hello.c_str()));
 
   // check that uniqueString(NULL) == uniqueString("")
   assert(UniqueString::build(ctx, NULL) == UniqueString::build(ctx, ""));
