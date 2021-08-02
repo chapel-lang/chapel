@@ -131,7 +131,6 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, Gen
 
 static GenRet codegenZero();
 static GenRet codegenZero32();
-//static GenRet codegenCString(const char* val);
 static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
@@ -2946,11 +2945,6 @@ GenRet codegenZero32()
 {
   return new_IntSymbol(0, INT_SIZE_32)->codegen();
 }
-
-//static GenRet codegenCString(const char* val) {
-  //return new_CStringSymbol(val)->codegen();
-//}
-
 
 /*
 static
