@@ -29,41 +29,48 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
+#define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
 
-static void checkCudaErrorsHelp(int err, const char* fn_name) {
+static void CHPL_GPU_LOG(const char *str, ...) {
+#ifdef CHPL_GPU_DEBUG
+  va_list args;
+  va_start(args, str);
+  vfprintf(stdout, str, args);
+  va_end(args);
+  fflush(stdout);
+#endif
+}
+
+static void chpl_gpu_cuda_check(int err, const char* file, int line) {
   if(err != CUDA_SUCCESS) {
     const int msg_len = 80;
     char msg[msg_len];
 
     snprintf(msg, msg_len,
-             "Encountered error calling CUDA function %s. (Error code: %d)",
-             fn_name, err);
+             "%s:%d: Error calling CUDA function. (Code: %d)",
+             file, line, err);
     
     chpl_internal_error(msg);
   }
 }
 
-static void checkCudaErrors(CUresult err, const char* fn_name) {
-  checkCudaErrorsHelp((int)err, fn_name);
-}
-static void checkCudaRTErrors(cudaError_t err, const char* fn_name) {
-  checkCudaErrorsHelp((int)err, fn_name);
-}
+#define CUDA_CALL(call) do {\
+  chpl_gpu_cuda_check((int)call, __FILE__, __LINE__);\
+} while(0);
 
-void chpl_gpu_init() {
-  CUdevice    device;
+void chpl_gpu_init() { CUdevice    device;
   CUcontext   context;
   int         devCount;
 
   // CUDA initialization
-  checkCudaErrors(cuInit(0), "cuInit");
+  CUDA_CALL(cuInit(0));
 
-  checkCudaErrors(cuDeviceGetCount(&devCount), "cuDeviceGetCount");
+  CUDA_CALL(cuDeviceGetCount(&devCount));
 
-  checkCudaErrors(cuDeviceGet(&device, 0), "cuDeviceGet");
+  CUDA_CALL(cuDeviceGet(&device, 0));
 
   // Create driver context
-  checkCudaErrors(cuCtxCreate(&context, 0, device), "cuCtxCreate");
+  CUDA_CALL(cuCtxCreate(&context, 0, device));
 }
 
 void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) {
@@ -89,11 +96,10 @@ void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) {
   }
 
   // Create module for object
-  checkCudaErrors(cuModuleLoadData(&cudaModule, buffer), "cuModuleLoadData");
+  CUDA_CALL(cuModuleLoadData(&cudaModule, buffer));
 
   // Get kernel function
-  checkCudaErrors(cuModuleGetFunction(&function, cudaModule, kernelName),
-                  "cuModuleGetFunction");
+  CUDA_CALL(cuModuleGetFunction(&function, cudaModule, kernelName));
 
   return (void*)function;
 }
@@ -101,13 +107,10 @@ void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) {
 static void chpl_gpu_check_device_ptr(void* ptr) {
   CUdeviceptr base;
   size_t size;
-  checkCudaErrors(cuMemGetAddressRange(&base, &size, *((CUdeviceptr*)ptr)),
-                  "cuMemGetAddressRange");
+  CUDA_CALL(cuMemGetAddressRange(&base, &size, *((CUdeviceptr*)ptr)));
 
   assert(base);
   assert(size > 0);
-
-  printf("Base for %p is %p with size %zu\n", ptr, (void*)base, size);
 }
 
 void chpl_gpu_launch_kernel(const char* name, int grid_dim_x, int block_dim_x,
@@ -116,45 +119,44 @@ void chpl_gpu_launch_kernel(const char* name, int grid_dim_x, int block_dim_x,
   int i;
 
   void* function = chpl_gpu_getKernel("tmp/chpl__gpu.fatbin", name);
-  assert(function);
   // TODO: this should use chpl_mem_alloc
   void** kernel_params = chpl_malloc(nargs*sizeof(void*));
+
+  assert(function);
   assert(kernel_params);
 
-  printf("Creating kernel parameters\n");
-  fflush(stdout);
+  CHPL_GPU_LOG("Creating kernel parameters\n");
 
   va_start(args, nargs);
   for (i=0 ; i<nargs ; i++) {
     kernel_params[i] = va_arg(args, void*);
-    chpl_gpu_check_device_ptr(kernel_params[i]);
-    printf("Kernel parameter %d: %p\n", i, kernel_params[i]);
-    fflush(stdout);
-  }
 
+    // TODO: we can remove this check after some point, or enable only if some
+    // advanced debugging is enabled.
+    chpl_gpu_check_device_ptr(kernel_params[i]);
+
+    CHPL_GPU_LOG("\tKernel parameter %d: %p\n", i, kernel_params[i]);
+  }
   va_end(args);
 
-  printf("Calling gpu function named %s\n", name);
-  fflush(stdout);
+  CHPL_GPU_LOG("Calling gpu function named %s\n", name);
 
-  checkCudaErrors(cuLaunchKernel((CUfunction)function,
-                                  grid_dim_x, 1, 1,  // grid dimensions
-                                  block_dim_x, 1, 1, // block dimensions
-                                  0,  // shared memory in bytes
-                                  0,  // stream ID
-                                  kernel_params,
-                                  NULL),  // extra options
-                  "cuLaunchKernel");
+  CUDA_CALL(cuLaunchKernel((CUfunction)function,
+                           grid_dim_x, 1, 1,  // grid dimensions
+                           block_dim_x, 1, 1, // block dimensions
+                           0,  // shared memory in bytes
+                           0,  // stream ID
+                           kernel_params,
+                           NULL));  // extra options
 
-  printf("Call returned %s\n", name);
-  fflush(stdout);
+  CHPL_GPU_LOG("Call returned %s\n", name);
   
-  checkCudaRTErrors(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
+  CUDA_CALL(cudaDeviceSynchronize());
 
-  printf("Synchronization complete %s\n", name);
-  fflush(stdout);
+  CHPL_GPU_LOG("Synchronization complete %s\n", name);
 
-  /*chpl_free(kernel_params);*/
+  // TODO: this should use chpl_mem_free
+  chpl_free(kernel_params);
 }
 
 #endif // HAS_GPU_LOCALE

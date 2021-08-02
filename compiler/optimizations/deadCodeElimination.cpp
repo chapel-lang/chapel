@@ -438,7 +438,6 @@ static void deadModuleElimination() {
   }
 }
 
-
 static bool shouldOutlineLoop(CForLoop *loop) {
   // Obvious TODO :)
   
@@ -491,9 +490,8 @@ static bool isIndexVariable(Symbol* sym, CForLoop* loop) {
   return false;
 }
 
-static  CallExpr* generateLaunchCall(FnSymbol* kernel,
-                                     std::vector<VarSymbol*> actuals,
-                                     BlockStmt* launchBlock) {
+static  CallExpr* generateGPUCall(FnSymbol* kernel,
+                                     std::vector<VarSymbol*> actuals) {
   CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH);
   call->insertAtTail(new_CStringSymbol(kernel->cname));
 
@@ -503,14 +501,6 @@ static  CallExpr* generateLaunchCall(FnSymbol* kernel,
   call->insertAtTail(new_IntSymbol(actuals.size()));
 
   for_vector (VarSymbol, actual, actuals) {
-
-    //VarSymbol* actualAddr = new VarSymbol("data_actual_addr", dtCVoidPtr);
-    //launchBlock->insertAtTail(new DefExpr(actualAddr));
-
-    //launchBlock->insertAtTail(new CallExpr(PRIM_MOVE, actualAddr,
-                                           //new CallExpr(PRIM_ADDR_OF, actual)));
-
-    //call->insertAtTail(new SymExpr(actualAddr));
     call->insertAtTail(new SymExpr(actual));
   }
 
@@ -537,11 +527,6 @@ static void outlineGPUKernels() {
           BlockStmt* gpuLaunchBlock = new BlockStmt();
           loop->insertBefore(gpuLaunchBlock);
 
-          //CallExpr* gpuCall = new CallExpr(outlinedFunction);
-          //GPUKernelLaunchCall gpuCall;
-          //gpuCall.kernel = outlinedFunction;
-          std::vector<VarSymbol*> kernelActuals;
-
           // TODO add a struct or something to store all the information that we
           // need to keep track of per symbol, and make the following vectors
           // into a single vector of that type. LoopOutlineInfo or something.
@@ -549,6 +534,7 @@ static void outlineGPUKernels() {
           std::vector<SymExpr*> arraysWhoseDataAccessed;
           std::vector<CallExpr*> fieldAccessors;
           std::vector<Type*> formalTypes;
+          std::vector<VarSymbol*> kernelActuals;
 
           Symbol* indexSymbol = NULL;
           SymbolMap copyMap;
@@ -629,8 +615,6 @@ static void outlineGPUKernels() {
                       }
                     }
                     else {
-                      std::cout << "Defined outside the loop\n";
-                      nprint_view(sym);
                       maybeArrSymExpr.push_back(symExpr);
                     }
                   }
@@ -669,19 +653,7 @@ static void outlineGPUKernels() {
           }
 
           update_symbols(outlinedFunction->body, &copyMap);
-
-          CallExpr* gpuCall = generateLaunchCall(outlinedFunction,
-                                                 kernelActuals,
-                                                 gpuLaunchBlock);
-          gpuLaunchBlock->insertAtTail(gpuCall);
-          //resolveExpr(gpuCall);
-
           normalize(outlinedFunction);
-          //resolveFunction(outlinedFunction, gpuCall);
-
-          gpuLaunchBlock->flattenAndRemove();
-
-          loop->remove();
 
           // We'll get an end of statement for the fake index we add. I am not
           // sure how much it matters for the long term, for now just remove it.
@@ -692,6 +664,12 @@ static void outlineGPUKernels() {
               }
             }
           }
+
+          CallExpr* gpuCall = generateGPUCall(outlinedFunction, kernelActuals);
+          gpuLaunchBlock->insertAtTail(gpuCall);
+          gpuLaunchBlock->flattenAndRemove();
+
+          loop->remove();
 
           // just repeat the dead code elimination steps for the new function
           cleanupLoopBlocks(outlinedFunction);
