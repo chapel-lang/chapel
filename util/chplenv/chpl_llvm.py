@@ -142,7 +142,7 @@ def find_system_llvm_config():
     if command and version and not config_err:
         return found[0]
 
-    return ''
+    return 'none'
 
 
 @memoize
