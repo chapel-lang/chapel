@@ -1210,7 +1210,7 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
   if (bounded) {
     if (!onBlock) { block->insertAtHead(new CallExpr("chpl_resetTaskSpawn", numTasks)); }
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
-    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr("chpl_boundedCoforallSize", iterator)));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr("chpl_boundedCoforallSize", iterator, zippered ? gTrue : gFalse)));
     block->insertAtHead(new DefExpr(numTasks));
     block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks, numTasks));
@@ -1311,7 +1311,7 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   isBounded->addFlag(FLAG_MAYBE_PARAM);
   coforallBlk->insertAtTail(new DefExpr(isBounded));
 
-  coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, isBounded, new CallExpr("chpl_supportsBoundedCoforall", tmpIter)));
+  coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, isBounded, new CallExpr("chpl_supportsBoundedCoforall", tmpIter, zippered ? gTrue : gFalse)));
 
   coforallBlk->insertAtTail(new CondStmt(new SymExpr(isBounded),
                                          vectorCoforallBlk,

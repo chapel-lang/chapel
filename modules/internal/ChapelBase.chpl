@@ -2378,17 +2378,22 @@ module ChapelBase {
   // Support for bounded coforall task counting optimizations
   //
 
-  proc chpl_supportsBoundedCoforall(iterable) param {
-    if isRange(iterable) || isDomain(iterable) || isArray(iterable) then
+  proc chpl_supportsBoundedCoforall(iterable, param zippered) param {
+    if zippered && isTuple(iterable) then
+      return chpl_supportsBoundedCoforall(iterable[0], zippered=false);
+    else if isRange(iterable) || isDomain(iterable) || isArray(iterable) then
       return true;
-    return false;
+    else
+      return false;
   }
 
-  proc chpl_boundedCoforallSize(iterable) {
-    if isRange(iterable) || isDomain(iterable) || isArray(iterable) then
+  proc chpl_boundedCoforallSize(iterable, param zippered) {
+    if zippered && isTuple(iterable) then
+      return chpl_boundedCoforallSize(iterable[0], zippered=false);
+    else if isRange(iterable) || isDomain(iterable) || isArray(iterable) then
       return iterable.sizeAs(iterable.intIdxType);
     else
-      return iterable.size;
+      compilerError("Called chpl_boundedCoforallSize on an unsupported type");
   }
 
   /* The following chpl_field_*() overloads support compiler-generated
