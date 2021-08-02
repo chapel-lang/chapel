@@ -1,12 +1,6 @@
 warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
 warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
 warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
-Creating kernel parameters
-	Kernel parameter 0: prediffed
-	Kernel parameter 1: prediffed
-Calling gpu function named chpl_gpu_kernel
-Call returned chpl_gpu_kernel
-Synchronization complete chpl_gpu_kernel
 initialRHS = 10.0
 initialLHS = 5.0
 finalLHS   = 10.0
