@@ -2829,13 +2829,33 @@ module Sparse {
     }
     // matrix-matrix
     else if Adom.rank == 2 && Bdom.rank == 2 {
-      if !isCSArr(A) || !isCSArr(B) then
-        compilerError("Only CSR format is supported for sparse multiplication");
-      return _csrmatmatMult(A, B);
+      if !isCSArr(A) || !isCSArr(B) then {
+        if isCSArr(A) && !isCSArr(B) then {
+          return sparseDenseMatmul(A, B);
+        }
+        else if !isCSArr(A) && isCSArr(B) then {
+          var res = sparseDenseMatmul(B.T, A.T);
+          return res.T;
+        }
+      }
+      else {
+        return _csrmatmatMult(A, B);
+      }
     }
     else {
       compilerError("Ranks are not 1 or 2");
     }
+  }
+
+  // Method returns the product of a Sparse and a Dense Matrix.
+  private proc sparseDenseMatmul(A: [], B: []) where isSparseArr(A) || !isSparseArr(B) {
+    var resDom = {0..<A.domain.shape(0), 0..<B.domain.shape(1)};
+    var C: [resDom] A.eltType;
+
+    for i in 0..<B.domain.shape(1) {
+      C[.., i] = dot(A, B[.., i]);
+    }
+    return C;
   }
 
   /* Compute the dot-product */
