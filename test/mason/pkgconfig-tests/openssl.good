@@ -9,8 +9,8 @@ chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
 
 [system.openssl]
 name = "openssl"
-version = "opensslversion"
-libs = "opensslflags"
-include = "/usr/include"
+version = "prediffedvers"
+libs = "prediffedlibs"
+include = "prediffedincs"
 
 
