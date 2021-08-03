@@ -26,6 +26,7 @@ NEXT_TYPES_SRCS =                                 \
   BuiltinType.cpp \
   BytesType.cpp \
   ComplexType.cpp \
+  CStringType.cpp \
   ErroneousType.cpp \
   ImagType.cpp \
   IntType.cpp \

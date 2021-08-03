@@ -41,6 +41,7 @@
 
 TYPE_NODE(AnyType)
 TYPE_NODE(BytesType)
+TYPE_NODE(CStringType)
 TYPE_NODE(ErroneousType)
 TYPE_NODE(NilType)
 TYPE_NODE(NoneType)

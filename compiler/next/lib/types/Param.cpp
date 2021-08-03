@@ -21,6 +21,7 @@
 #include "chpl/types/BoolType.h"
 #include "chpl/types/BytesType.h"
 #include "chpl/types/ComplexType.h"
+#include "chpl/types/CStringType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
 #include "chpl/types/Param.h"
@@ -315,6 +316,25 @@ const Param* Param::getBytes(Context* context, const char* str, size_t len) {
   auto s = chpl::detail::PODUniqueString::build(context, str, len);
   return getBytesQuery(context, s, len).get();
 }
+
+const owned<Param>& Param::getCStringQuery(Context* context,
+                                           chpl::detail::PODUniqueString str,
+                                           size_t len) {
+  QUERY_BEGIN(getCStringQuery, context, str, len);
+
+  auto result = toOwned(new Param());
+  result->type_ = CStringType::get(context);
+  result->tag_ = paramtags::CString;
+  result->u.CString = UniqueStringAndLength::build(str, len);
+
+  return QUERY_END(result);
+}
+
+const Param* Param::getCString(Context* context, const char* str, size_t len) {
+  auto s = chpl::detail::PODUniqueString::build(context, str, len);
+  return getCStringQuery(context, s, len).get();
+}
+
 
 
 } // end namespace types

@@ -23,6 +23,7 @@ target_sources(libchplcomp-obj
                BuiltinType.cpp
                BytesType.cpp
                ComplexType.cpp
+               CStringType.cpp
                ErroneousType.cpp
                ImagType.cpp
                IntType.cpp

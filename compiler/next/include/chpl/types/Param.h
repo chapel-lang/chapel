@@ -100,6 +100,7 @@ class Param {
   static const owned<Param>& getComplexQuery(Context* context, double re, double im, int bitwidth);
   static const owned<Param>& getStringQuery(Context* context, chpl::detail::PODUniqueString str, size_t len);
   static const owned<Param>& getBytesQuery(Context* context, chpl::detail::PODUniqueString str, size_t len);
+  static const owned<Param>& getCStringQuery(Context* context, chpl::detail::PODUniqueString str, size_t len);
 
  public:
   static const Param* getInt(Context* context, int64_t v, int bitwidth);
@@ -110,6 +111,7 @@ class Param {
   static const Param* getComplex(Context* context, double re, double im, int bitwidth);
   static const Param* getString(Context* context, const char* str, size_t len);
   static const Param* getBytes(Context* context, const char* str, size_t len);
+  static const Param* getCString(Context* context, const char* str, size_t len);
 
   ParamTag tag() const { return tag_; }
   const Type* type(Context* context) const { return type_; }
