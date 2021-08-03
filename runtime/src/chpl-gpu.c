@@ -73,7 +73,7 @@ void chpl_gpu_init() { CUdevice    device;
   CUDA_CALL(cuCtxCreate(&context, 0, device));
 }
 
-void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) {
+static void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) {
   CUmodule    cudaModule;
   CUfunction  function;
 

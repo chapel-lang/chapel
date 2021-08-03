@@ -4696,9 +4696,17 @@ DEFINE_PRIM(PRIM_SET_DYNAMIC_END_COUNT) {
 }
 
 DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
-  // Rewrite the call to cuLaunchKernel. Take the first argument passed to the
-  // primitive and pass it to chpl_gpu_getKernel() and pass the result as the
-  // first argument to cuLaunchKernel. Pass all other arguments along to it.
+  // Call `chpl_gpu_launch_kernel` runtime function.
+  //
+  // The primitive's arguments are
+  //   - function name
+  //   - grid size
+  //   - block size
+  //   - number of kernel parameters
+  //   - any number of arguments
+  //
+  // The runtime function needs the kernel parameters to be passed by address.
+  // The other arguments to this primitive are passed along directly.
   std::vector<GenRet> args;
   int i = 0;
   for_actuals(actual, call) {
