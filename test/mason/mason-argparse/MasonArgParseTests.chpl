@@ -82,7 +82,7 @@ proc testMultiStringShortOptEqualsOK(test: borrowed Test) throws {
 }
 
 
-// attempt to specify no argument
+// attempt to specify no option flag
 proc testTryMakeEmptyOpts(test: borrowed Test) throws {
   var argList = ["progName","-n=twenty","thirty"];
   var parser = new argumentParser();
@@ -138,7 +138,7 @@ proc testThreeMultiStringShortOptPartValEquals(test: borrowed Test) throws {
   test.assertEqual(new list(myStrArg3.values()), new list(["forty","two"]));
 }
 
-// attempt to specify invalid argument opt
+// attempt to specify invalid argument option flag
 proc testTryMakeBadOptID(test: borrowed Test) throws {
   var argList = ["progName","-n=twenty","thirty"];
   var parser = new argumentParser();  
@@ -167,12 +167,16 @@ proc testSingleStringShortOptRepeated(test: borrowed Test) throws {
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
   //parse the options
-  parser.parseArgs(argList[1..]);
-  //make sure we now have a value
-  test.assertTrue(myStrArg.hasValue());
-  //ensure the value passed is correct
-  test.assertEqual(myStrArg.value(),"forty");
+  try {
+    parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);      
 }
+
 
 // a short string opt with range value, expressed multiple times
 proc testRangeStringShortOptRepeated(test: borrowed Test) throws {
@@ -188,12 +192,14 @@ proc testRangeStringShortOptRepeated(test: borrowed Test) throws {
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
   //parse the options
-  parser.parseArgs(argList[1..]);
-  //make sure we now have a value
-  test.assertTrue(myStrArg.hasValue());
-  //ensure the value passed is correct
-  test.assertEqual(myStrArg.value(),"forty");
-  test.assertEqual(new list(myStrArg.values()),new list(argList[9..9]));
+  try {
+    parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);      
 }
 
 // a short string opt with range value, expressed multiple times, with
@@ -210,12 +216,14 @@ proc testRangeStringShortOptRepeatedTooManyFirst(test: borrowed Test) throws {
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
   //parse the options
-  parser.parseArgs(argList[1..]);
-  //make sure we now have a value
-  test.assertTrue(myStrArg.hasValue());
-  //ensure the value passed is correct
-  test.assertEqual(myStrArg.value(),"forty");
-  test.assertEqual(new list(myStrArg.values()),new list(argList[10..10]));
+  try {
+    parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);      
 }
 
 // a short string opt with single value and no values supplied
@@ -1306,7 +1314,7 @@ proc testTryDuplicateShortOpt(test: borrowed Test) throws {
   test.assertTrue(false);  
 }
 
-// attempt to define a short option twice
+// attempt to define a long option twice
 proc testTryDuplicateLongOpt(test: borrowed Test) throws {
   var argList = ["progName","-n=twenty","thirty"];
   var parser = new argumentParser();
@@ -1323,6 +1331,313 @@ proc testTryDuplicateLongOpt(test: borrowed Test) throws {
     return;
   }
   test.assertTrue(false);  
+}
+
+// add a subcommand
+proc testAddSubCommand(test: borrowed Test) throws {
+  var argList = ["progName","subCommand1"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertEqual(remain.size,0);
+  test.assertTrue(mySubCmd1.hasValue());
+}
+
+// use an option and then a subcommand
+proc testOptionPlusSubCommand(test: borrowed Test) throws {
+  var argList = ["progName","-n","20","subCommand1"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var myStrArg1 = parser.addOption(name="StringOpt",
+                                   opts=["-n","--strArg"],            
+                                   numArgs=1);
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertTrue(mySubCmd1.hasValue());
+  test.assertEqual(remain.size, 0);
+  test.assertTrue(myStrArg1.hasValue());
+  test.assertEqual(myStrArg1.value(), "20");
+}
+
+
+// add a subcommand with sub options
+proc testAddSubCommandSubOptions(test: borrowed Test) throws {
+  var argList = ["progName","subCommand1","-n","20"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertEqual(remain.size,2);
+  test.assertTrue(mySubCmd1.hasValue());
+  test.assertEqual(new list(argList[2..]),remain);
+}
+
+// add a subcommand and argument, but don't use subcommand
+proc testAddArgAndSubCommandOnlyArgUsed(test: borrowed Test) throws {
+  var argList = ["progName","-n","20"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var myStrArg1 = parser.addOption(name="StringOpt",
+                                   opts=["-n","--strArg"],            
+                                   numArgs=1);
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertEqual(remain.size,0);
+  test.assertFalse(mySubCmd1.hasValue());
+  test.assertTrue(myStrArg1.hasValue());
+  test.assertEqual(myStrArg1.value(),"20");
+}
+
+// add a subcommand and argument, but don't use either
+proc testAddArgAndSubCommandNoUseEither(test: borrowed Test) throws {
+  var argList = ["progName"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var myStrArg1 = parser.addOption(name="StringOpt",
+                                   opts=["-n","--strArg"],            
+                                   numArgs=1);
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertEqual(remain.size,0);
+  test.assertFalse(mySubCmd1.hasValue());
+  test.assertFalse(myStrArg1.hasValue());  
+}
+
+// add two subcommands and use first
+proc testAddTwoSubCommandUseFirst(test: borrowed Test) throws {
+  var argList = ["progName","subCommand1"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var mySubCmd2 = parser.addSubCommand(cmd="subCommand2");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertEqual(remain.size,0);
+  test.assertTrue(mySubCmd1.hasValue());
+  test.assertFalse(mySubCmd2.hasValue());
+}
+
+// add two subcommands and use second
+proc testAddTwoSubCommandUseSecond(test: borrowed Test) throws {
+  var argList = ["progName","subCommand2"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var mySubCmd2 = parser.addSubCommand(cmd="subCommand2");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertEqual(remain.size,0);
+  test.assertFalse(mySubCmd1.hasValue());
+  test.assertTrue(mySubCmd2.hasValue());
+}
+
+// add two subcommands and use none
+proc testAddTwoSubCommandUseNone(test: borrowed Test) throws {
+  var argList = ["progName"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var mySubCmd2 = parser.addSubCommand(cmd="subCommand2");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertEqual(remain.size,0);
+  test.assertFalse(mySubCmd1.hasValue());
+  test.assertFalse(mySubCmd2.hasValue());
+}
+
+// add two subcommands and use an undefined command
+proc testAddTwoSubCommandUseUndefined(test: borrowed Test) throws {
+  var argList = ["progName","subCommandNone"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var mySubCmd2 = parser.addSubCommand(cmd="subCommand2");
+  try {
+    var remain = parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+      test.assertTrue(true);
+      stderr.writeln(ex.message());
+      return;
+  }
+  test.assertTrue(false); 
+}
+
+// add two subcommands and use an undefined command with good command
+proc testAddTwoSubCommandUseUndefinedWithGood(test: borrowed Test) throws {
+  var argList = ["progName","subCommandNone", "subCommand1"];
+  var parser = new argumentParser();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var mySubCmd2 = parser.addSubCommand(cmd="subCommand2");
+  try {
+    var remain = parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+      test.assertTrue(true);
+      stderr.writeln(ex.message());
+      return;
+  }
+  test.assertTrue(false); 
+}
+
+// test a short string option with bad option first
+proc testStringShortOptVarBadVarNoVal(test: borrowed Test) throws {
+  var argList = ["progName","-x","-n","twenty"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=1..3,
+                                  required=false,
+                                  defaultValue=none);
+
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+// a short string opt with range value, expressed multiple times, with
+// allowable number of values supplied overall
+proc testRangeStringShortOptRepeatedAllowableCount(test: borrowed Test) throws {
+  var argList = ["progName","-n","twenty","-n","thirty","-n","forty"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=1..3,
+                                  required=false,
+                                  defaultValue=none);  
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  test.assertTrue(myStrArg.hasValue());
+  test.assertEqual(new list(myStrArg.values()), 
+                   new list(["twenty","thirty","forty"]));
+}
+
+// add a subcommand with sub options, and options before
+proc testOptionsWithSubCommandSubOptions(test: borrowed Test) throws {
+  var argList = ["progName","-x","four","subCommand1","-n","20"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-x","--stringVal"],            
+                                  numArgs=1);
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertTrue(myStrArg.hasValue());
+  test.assertEqual(myStrArg.value(), "four");
+  test.assertEqual(remain.size,2);
+  test.assertTrue(mySubCmd1.hasValue());
+  test.assertEqual(new list(argList[4..]),remain);
+}
+
+// add a subcommand with sub options, and options before
+proc testOptionsRangeWithSubCommandSubOptions(test: borrowed Test) throws {
+  var argList = ["progName","-x","four","subCommand1","-n","20"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-x","--stringVal"],            
+                                  numArgs=1..2,
+                                  required=false,
+                                  defaultValue=none);
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertTrue(myStrArg.hasValue());
+  test.assertEqual(myStrArg.value(), "four");
+  test.assertEqual(remain.size,2);
+  test.assertTrue(mySubCmd1.hasValue());
+  test.assertEqual(new list(argList[4..]),remain);
+}
+
+// add a subcommand with sub options, and options before with same flags
+proc testOptionsRangeWithSubCommandSameSubOptions(test: borrowed Test) throws {
+  var argList = ["progName","-n","four","subCommand1","-n","20","-x","30"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=1..2,
+                                  required=false,
+                                  defaultValue=none);
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertTrue(myStrArg.hasValue());
+  test.assertEqual(myStrArg.value(), "four");
+  test.assertEqual(remain.size,4);
+  test.assertTrue(mySubCmd1.hasValue());
+  test.assertEqual(new list(argList[4..]),remain);
+}
+
+// add a subcommand with sub options, and options before with same flags
+// when main command has low bound range
+proc testOptsRangeWithSubCommandSameSubOptionsLow(test: borrowed Test) throws {
+  var argList = ["progName","-n","four","subCommand1","-n","20","-x","30"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],            
+                                  numArgs=1..,
+                                  required=false,
+                                  defaultValue=none);
+  var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertTrue(myStrArg.hasValue());
+  test.assertEqual(myStrArg.value(), "four");
+  test.assertEqual(remain.size,4);
+  test.assertTrue(mySubCmd1.hasValue());
+  test.assertEqual(new list(argList[4..]),remain);
+}
+
+
+// add a subcommand with sub options, and options before with same flags
+// when main command has low bound range
+proc testFromArgParseExample(test: borrowed Test) throws {
+  var argList = ["progName","-o","w","a","y","d","t","a?","-t=tea","time",
+                 "--myConfigVar=@10","subCmd1","-c","one","-t","two"];
+  var parser = new argumentParser();
+  var strArg = parser.addOption(name="strArg1",
+                                opts=["-o","--option"],
+                                numArgs=1..10,
+                                required=false,
+                                defaultValue=none);
+  var typArg = parser.addOption(name="strArg2",
+                                opts=["-t","--types"],
+                                numArgs=1..);
+  var confArg = parser.addOption(name="strArg3",
+                                opts=["--myConfigVar"],
+                                numArgs=1);
+
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+  var remain = parser.parseArgs(argList[1..]);
+  test.assertTrue(strArg.hasValue());
+  test.assertEqual(new list(strArg.values()), 
+                   new list(["w","a","y","d","t","a?"]));
+  test.assertEqual(new list(typArg.values()), new list(["tea","time"]));
+  test.assertEqual(confArg.value(),"@10");
+  test.assertEqual(remain.size,4);
+  test.assertTrue(subCmd1.hasValue());
+  test.assertEqual(new list(argList[12..]),remain);
+}
+  
+// short option interrupted with bad flag value
+proc testOptRangeInterruptBadFlag(test: borrowed Test) throws {
+  var argList = ["progName","-n","twenty","-f","-p","thirty","-t","two"];
+  var parser = new argumentParser();
+  var myStrArg1 = parser.addOption(name="StringOpt1",
+                                   opts=["-n","--stringVal1"],            
+                                   numArgs=1..);
+  var myStrArg2 = parser.addOption(name="StringOpt2",
+                                   opts=["-p","--stringVal2"],            
+                                   numArgs=1);
+  var myStrArg3 = parser.addOption(name="StringOpt3",
+                                   opts=["-t","--stringVal3"],            
+                                   numArgs=1);
+
+  //make sure no value currently exists
+  test.assertFalse(myStrArg1.hasValue());
+  test.assertFalse(myStrArg2.hasValue());
+  test.assertFalse(myStrArg3.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
 }
 
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE

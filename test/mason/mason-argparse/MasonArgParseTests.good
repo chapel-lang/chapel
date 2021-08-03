@@ -226,26 +226,101 @@ testTryDuplicateLongOpt()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
--n\--stringVal has extra values
+testAddSubCommand()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testOptionPlusSubCommand()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testAddSubCommandSubOptions()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testAddArgAndSubCommandOnlyArgUsed()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testAddArgAndSubCommandNoUseEither()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testAddTwoSubCommandUseFirst()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testAddTwoSubCommandUseSecond()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testAddTwoSubCommandUseNone()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testAddTwoSubCommandUseUndefined()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testAddTwoSubCommandUseUndefinedWithGood()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testStringShortOptVarBadVarNoVal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testRangeStringShortOptRepeatedAllowableCount()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testOptionsWithSubCommandSubOptions()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testOptionsRangeWithSubCommandSubOptions()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testOptionsRangeWithSubCommandSameSubOptions()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testOptsRangeWithSubCommandSameSubOptionsLow()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testFromArgParseExample()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testOptRangeInterruptBadFlag()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+Found undefined values: thirty
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
--n\--stringVal not enough values
+StringOpt Too many values: expected 1..1 got 3
+StringOpt Too many values: expected 1..3 got 6
+StringOpt has extra values
+StringOpt Required value missing
 unrecognized options/values encountered: -n twenty
--n\--stringVal not enough values
--n\--stringVal has extra values
--n\--stringVal has extra values
--n\--stringVal not enough values
--n\--stringVal has extra values
--n\--stringVal not enough values
--n\--stringVal not enough values
--n\--stringVal1 not enough values
--p\--stringVal2 not enough values
--t\--stringVal3 not enough values
--n\--stringVal1 has extra values
--p\--stringVal2 has extra values
--t\--stringVal3 has extra values
--p\--stringVal2 has extra values
--p\--stringVal2 not enough values
+StringOpt Not enough values: expected 1..2 got 0
+Found undefined values: two
+Found undefined values: -p thirty
+StringOpt Not enough values: expected 3..5 got 2
+Found undefined values: fifty
+StringOpt Not enough values: expected 1..3 got 0
+StringOpt Not enough values: expected 1..1 got 0
+StringOpt1 Not enough values: expected 1..1 got 0
+StringOpt2 Not enough values: expected 1..1 got 0
+StringOpt3 Not enough values: expected 1..1 got 0
+StringOpt1 has extra values
+StringOpt2 has extra values
+Found undefined values: five
+StringOpt2 has extra values
+StringOpt2 Required value missing
 Only string and list of strings are supported as default values at this time
 Only string and list of strings are supported as default values at this time
 Only string and list of strings are supported as default values at this time
@@ -253,3 +328,7 @@ Only string and list of strings are supported as default values at this time
 Option name StringOpt is previously defined
 Option flag -n is previously defined
 Option flag --strArg is previously defined
+Found undefined values: subCommandNone
+Found undefined values: subCommandNone
+Found undefined values: -x
+StringOpt1 has extra values

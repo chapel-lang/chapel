@@ -11,6 +11,11 @@ Arguments Received from CL:
 8 -t=tea
 9 time
 10 --myConfigVar=@10
+11 subCmd1
+12 -c
+13 one
+14 -t
+15 two
 Values received from argparse:
 w
 a
@@ -21,3 +26,7 @@ a?
 tea
 time
 @10
+SubCommand1 was called
+args parsed in subcommand:
+one
+two
