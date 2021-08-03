@@ -201,12 +201,11 @@ module MasonArgParse {
     }
 
     override proc _validate(present:bool, valueCount:int):string {
+      debugTrace("expected " + _numArgs:string + " got " + valueCount:string);
+      debugTrace("present="+present:string + " requred="+_required:string);
       if !present && _required {
         return "Required value missing";
-      // } else if valueCount > _numArgs.high {
-      //   return "Too many values: expected " + _numArgs:string + 
-      //          " got " + valueCount:string;
-      } else if valueCount < _numArgs.low && present {
+      } else if valueCount < _numArgs.low && present {        
         return "Not enough values: expected " + _numArgs:string + 
                " got " + valueCount:string;
       } else {
@@ -224,11 +223,11 @@ module MasonArgParse {
       var next = pos+1;
       debugTrace("starting at pos: " + pos:string);
       debugTrace("searching from: " + pos:string + " to " + endPos:string);
-      if _yesFlags.contains(args[pos]) {
+      if _yesFlags.contains(args[pos]) && _numArgs.low == 0 {
         myArg._values.clear();
         myArg._values.append("true");
         debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
-      } else if _noFlags.contains(args[pos]) {
+      } else if _noFlags.contains(args[pos]) && _numArgs.low == 0 {
         myArg._values.clear();
         myArg._values.append("false");
         debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);

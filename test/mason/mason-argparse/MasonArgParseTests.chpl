@@ -1714,6 +1714,180 @@ proc testSubCommandAndBoolLongFlag(test: borrowed Test) throws {
   test.assertFalse(myBoolArg.valueAsBool());
 }
 
+// combine a parent argument, subcommand and boolean flag
+proc testParentCommandSubCommandAndBoolLongFlag(test: borrowed Test) throws {
+  var argList = ["progName","-n","twenty", "subCmd","--no-boolVal"];
+  var parser = new argumentParser();
+  var myStrArg1 = parser.addOption(name="StringOpt1",
+                                  opts=["-n","--stringVal1"],            
+                                  numArgs=1..);
+  var mySubCmd1 = parser.addSubCommand(cmd="subCmd");                         
+  //make sure no value currently exists
+  test.assertFalse(mySubCmd1.hasValue());
+  test.assertFalse(myStrArg1.hasValue());
+  //parse the options
+  var remain = parser.parseArgs(argList[1..]);   
+  //make sure we now have a value
+  test.assertTrue(mySubCmd1.hasValue());
+  test.assertTrue(myStrArg1.hasValue());
+  //ensure the value passed is correct  
+  test.assertEqual(remain, new list(argList[4..]));
+  test.assertEqual(myStrArg1.value(), "twenty");
+
+  var subParser = new argumentParser();
+  var myBoolArg = subParser.addFlag(name="BoolFlag",
+                              opts=["-n","--boolVal"],
+                              defaultValue=true);
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  subParser.parseArgs(remain.toArray());
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertFalse(myBoolArg.valueAsBool());
+}
+
+// a short bool flag test with =
+proc testBoolEqFlag(test: borrowed Test) throws {
+  var argList = ["progName","-n=true"];
+  var parser = new argumentParser();
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-n","--boolVal"],
+                                numArgs=0..1,
+                                noFlag=false,
+                                defaultValue=none);  
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  //ensure the value passed is correct
+  test.assertTrue(myBoolArg.valueAsBool());
+}
+
+// a short bool flag test with =, or value required
+proc testBoolEqForceOneFlag(test: borrowed Test) throws {
+  var argList = ["progName","-n=true"];
+  var parser = new argumentParser();
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-n","--boolVal"],
+                                numArgs=1,
+                                noFlag=false,
+                                defaultValue=none);  
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  //ensure the value passed is correct
+  test.assertTrue(myBoolArg.valueAsBool());
+}
+
+// a short bool flag test with value required
+proc testBoolForceOneFlag(test: borrowed Test) throws {
+  var argList = ["progName","-n","true"];
+  var parser = new argumentParser();
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-n","--boolVal"],
+                                numArgs=1,
+                                noFlag=false,
+                                defaultValue=none);  
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  //ensure the value passed is correct
+  test.assertTrue(myBoolArg.valueAsBool());
+}
+
+
+// a short bool flag test with value required but none provided
+proc testBoolZeroToOneFlagNoVal(test: borrowed Test) throws {
+  var argList = ["progName","-n"];
+  var parser = new argumentParser();
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-n","--boolVal"],
+                                numArgs=0..1,
+                                noFlag=false,
+                                defaultValue=none);  
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  //ensure the value passed is correct
+  test.assertTrue(myBoolArg.valueAsBool());
+}
+
+// a short bool flag test with value required but none provided
+proc testBoolForceOneFlagNoVal(test: borrowed Test) throws {
+  var argList = ["progName","-n"];
+  var parser = new argumentParser();
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-n","--boolVal"],
+                                numArgs=1,
+                                noFlag=false,
+                                defaultValue=none);  
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+// a short bool flag test with too many values
+proc testBoolForceOneFlagExtraGiven(test: borrowed Test) throws {
+  var argList = ["progName","-n","true","false"];
+  var parser = new argumentParser();
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-n","--boolVal"],
+                                numArgs=1,
+                                noFlag=false,
+                                defaultValue=none);  
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+// a short bool flag test with too many values
+proc testBoolRangeFlagExtraGiven(test: borrowed Test) throws {
+  var argList = ["progName","-n","true","false"];
+  var parser = new argumentParser();
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-n","--boolVal"],
+                                numArgs=0..1,
+                                noFlag=false,
+                                defaultValue=none);  
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
 UnitTest.main();
