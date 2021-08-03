@@ -724,7 +724,7 @@ module ChapelTuple {
   }
 
   inline operator +(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x + y(d);
@@ -739,7 +739,7 @@ module ChapelTuple {
   }
 
   inline operator -(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x - y(d);
@@ -754,7 +754,7 @@ module ChapelTuple {
   }
 
   inline operator *(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x * y(d);
@@ -769,7 +769,7 @@ module ChapelTuple {
   }
 
   inline operator /(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x / y(d);
@@ -784,7 +784,7 @@ module ChapelTuple {
   }
 
   inline operator %(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x % y(d);
@@ -799,7 +799,7 @@ module ChapelTuple {
   }
 
   inline operator **(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                         isSubtype(t, (y(0).type)) {
+                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x ** y(d);
@@ -814,7 +814,7 @@ module ChapelTuple {
   }
 
   inline operator &(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x & y(d);
@@ -829,7 +829,7 @@ module ChapelTuple {
   }
 
   inline operator |(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x | y(d);
@@ -844,7 +844,7 @@ module ChapelTuple {
   }
 
   inline operator ^(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                        isSubtype(t, (y(0).type)) {
+                                            isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x ^ y(d);
@@ -859,7 +859,7 @@ module ChapelTuple {
   }
 
   inline operator <<(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                         isSubtype(t, (y(0).type)) {
+                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x << y(d);
@@ -874,7 +874,7 @@ module ChapelTuple {
   }
 
   inline operator >>(x: ?t, y: _tuple) where isHomogeneousTuple(y) &&
-                                         isSubtype(t, (y(0).type)) {
+                                             isCoercible(t, (y(0).type)) {
     var result: y.size * y(0).type;
     for param d in 0..y.size-1 do
       result(d) = x >> y(d);
