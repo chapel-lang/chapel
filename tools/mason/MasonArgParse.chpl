@@ -23,13 +23,12 @@ module MasonArgParse {
   private use IO;
   private use Sort;
 
-  const DEBUG=false;
-  // TODO: Add bool flags
+  const DEBUG=false;  
   // TODO: Add positional arguments
   // TODO: Add pass-thru options following "-" or "--"
-  // TODO: Add int opts
-  
+  // TODO: Add int opts  
   // TODO: Implement Help message and formatting
+  // TODO: Move logic splitting '=' into '_match'
   // TODO: Add public github issue when available
 
   if chpl_warnUnstable then
@@ -147,62 +146,48 @@ module MasonArgParse {
 
   }
 
-  class Flag : Action {
-
+  // stores the definition of a Flag (bool) argument
+  class Flag : Action {    
+    // indicates if this flag is required to be entered by the user
     var _required:bool;
+    // default value to use when flag is not present
     var _defaultValue:list(string);
     // number of option flags that can indicate this argument
     var _numFlags:int;
-    // value of flag(s) that can indicate yes for this argument
+    // value of flag(s) that can indicate true for this argument
     var _yesFlags:list(string);
-    // value of flag(s) that can indicate no for this argument
+    // value of flag(s) that can indicate false for this argument
     var _noFlags:list(string);
     // number of acceptable values to be present after argument is indicated
     var _numArgs:range;
 
-
-    proc init(name:string, required:bool=false, yesFlags:[]string,
-              noFlags:[]string,numArgs=0..0) {
+    proc init(name:string, defaultValue:?t=none, required:bool=false,
+              yesFlags:[]string, noFlags:[]string, numArgs=0..0) {
       super.init();      
-      this._name=name;
+      this._name=name; 
       this._required = required;
-      this._defaultValue = new list(string);      
+      this._defaultValue = new list(string);
+      if isBoolType(t) then this._defaultValue.append(defaultValue:string);
       this._yesFlags = new list(yesFlags);
       this._noFlags = new list(noFlags);
       this._numArgs = numArgs;
     }
 
-    proc init(name:string, defaultValue:bool, required:bool=false,
-               yesFlags:[]string, noFlags:[]string,numArgs=0..0) {
-      super.init();      
-      this._name=name;
-      // TODO: Some assignments may not make sense
-      // for example, a required flag with a default value of true
-      // will not be able to be set to false
-      this._name=name;
-      this._required = required;
-      this._defaultValue = new list(string);
-      this._defaultValue.append(defaultValue:string);     
-      this._yesFlags = new list(yesFlags);
-      this._noFlags = new list(noFlags);
-      this._numArgs = numArgs;      
-    }
-
     override proc _hasDefault():bool{
-      return !_defaultValue.isEmpty();
+      return !this._defaultValue.isEmpty();
     }
 
     override proc _getDefaultValue() {
-      return _defaultValue;
+      return this._defaultValue;
     }
 
     override proc _isRequired() {
-      return _required;
+      return this._required;
     }
 
     override proc _validate(present:bool, valueCount:int):string {
       debugTrace("expected " + _numArgs:string + " got " + valueCount:string);
-      debugTrace("present="+present:string + " requred="+_required:string);
+      debugTrace("present="+present:string + " required="+_required:string);
       if !present && _required {
         return "Required value missing";
       } else if valueCount < _numArgs.low && present {        
@@ -454,9 +439,9 @@ module MasonArgParse {
 
     proc _assignDefaultsToMissingOpts() {
       // set any default values as needed
-      for name in this._actions.keys() {
+      for name in this._actions.keys() {        
         const act = this._actions.getBorrowed(name);
-        const arg = this._result.getReference(name);
+        const arg = this._result.getReference(name);        
         if !arg._present && act._hasDefault() {
           arg._values.extend(act._getDefaultValue());
           arg._present = true;
@@ -496,24 +481,35 @@ module MasonArgParse {
     }
 
     proc addFlag(name:string, opts:[?optsD],
-                 required=false, defaultValue:?t=none, noFlag=true,
+                 required=false, defaultValue:?t=none, flagInversion=true,
                  numArgs=0) throws {
       return addFlag(name=name,
                      opts=opts,
                      required=required,
                      defaultValue=defaultValue,
-                     noFlag=noFlag,
+                     flagInversion=flagInversion,
                      numArgs=numArgs..numArgs);
-
     }
 
     proc addFlag(name:string, opts:[?optsD],
-                 required=false, defaultValue:?t=none, noFlag=true,
+                 required=false, defaultValue:?t=none, flagInversion=true,
                  numArgs:range) throws {
       
-      assert((noFlag && numArgs.high == 0) || (!noFlag), 
-             "Creating 'no' flag options prevents the use of --flag=true or " +
-             "--flag=flase to avoid confusion");
+      if (flagInversion && numArgs.high > 0) {
+        throw new ArgumentError("Creating 'no' flag options prevents " +
+                                "using value to set flag");
+      }
+
+      if isBoolType(t) {
+        if !flagInversion && defaultValue && numArgs.high < 1 && required {
+          throw new ArgumentError("Setting up a required flag that defaults " +
+                                  "to true with no way for user to set false");
+        }
+      }
+      
+      if numArgs.high > 1 {
+        throw new ArgumentError("Maximum number of values for a flag is 1");
+      }
 
       for i in optsD {
         if !opts[i].startsWith("-") {
@@ -532,7 +528,7 @@ module MasonArgParse {
       for i in optsD {
         _options.add(opts[i], name);
         // if user chooses to automatically create 'no' version of flag
-        if noFlag {          
+        if flagInversion {          
           var flagStr = opts[i].strip('-',leading=true, trailing=false);
           if flagStr.size == 1 {
             noFlagOpts[i] = "-no-"+flagStr;
@@ -544,29 +540,13 @@ module MasonArgParse {
       }
 
       var act = new owned Flag(name=name,
-                                 required=required,                                 
-                                 yesFlags=opts,
-                                 noFlags=noFlagOpts,
-                                 numArgs=numArgs);
-
-      if isBoolType(t){
-        var act = new owned Flag(name=name,
                                  required=required,
                                  defaultValue=defaultValue,
                                  yesFlags=opts,
                                  noFlags=noFlagOpts,
-                                 numArgs=numArgs);
-      } else {
-        var act = new owned Flag(name=name,
-                                 required=required,
-                                 yesFlags=opts,
-                                 noFlags=noFlagOpts,
-                                 numArgs=numArgs);
-      }      
+                                 numArgs=numArgs); 
 
       return _addAction(act);
-
-      
     }
 
     proc addSubCommand(cmd:string) throws {

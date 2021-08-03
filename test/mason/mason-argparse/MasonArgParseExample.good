@@ -11,11 +11,13 @@ Arguments Received from CL:
 8 -t=tea
 9 time
 10 --myConfigVar=@10
-11 subCmd1
-12 -c
-13 one
-14 -t
-15 two
+11 --flagOn
+12 subCmd1
+13 -c
+14 one
+15 -t
+16 two
+17 -f
 Values received from argparse:
 w
 a
@@ -26,7 +28,9 @@ a?
 tea
 time
 @10
+boolArg: true
 SubCommand1 was called
 args parsed in subcommand:
 one
 two
+subBoolFlag: true
