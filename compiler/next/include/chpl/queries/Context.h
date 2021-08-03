@@ -328,6 +328,8 @@ class Context {
     Get or create a unique string and return it as a C string. If the passed
     string is NULL, this function will return an empty string.
 
+    Unique strings are limited to 2**31 bytes.
+
     The returned string will store len bytes, even if there are interior
     NULL bytes. It will be NULL terminated either way.
 
@@ -376,8 +378,17 @@ class Context {
    When the context is configured to run with garbage collection
    enabled, unique strings that are reused need to be marked.
    This function does that for a C string stored in the map.
+   It will cause program crashes if called on a string that
+   is not the result of one of the uniqueCString calls.
    */
   void markUniqueCString(const char* s);
+
+  /**
+   For a unique string, return the length of the string when it was created.
+   It will cause program crashes if called on a string that
+   is not the result of one of the uniqueCString calls.
+   */
+  size_t lengthForUniqueString(const char* s);
 
   /**
     Return the file path for the file containing this ID.

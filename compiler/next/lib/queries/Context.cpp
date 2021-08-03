@@ -25,6 +25,7 @@
 #include <cassert>
 #include <cstdarg>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
 
 #include "../util/my_aligned_alloc.h" // assumes size_t defined
@@ -60,9 +61,10 @@ void Context::defaultReportError(const ErrorMessage& err) {
   defaultReportErrorPrintDetail(err, "", "error");
 }
 
-// unique'd strings are preceeded by gcMark and 0x02
+// unique'd strings are preceeded by 4 bytes of length, gcMark and 0x02
 // this number must be even
-#define UNIQUED_STRING_METADATA_BYTES 2
+#define UNIQUED_STRING_METADATA_BYTES 6
+#define UNIQUED_STRING_METADATA_LEN 4
 
 Context::~Context() {
   // free all of the unique'd strings
@@ -102,11 +104,23 @@ static char* allocateEvenAligned(size_t amt) {
 // Returns the pointer to where to copy the string and null terminator.
 char* Context::setupStringMetadata(char* buf, size_t len) {
   char gcMark = this->gcCounter & 0xff;
+
+  assert(len <= INT32_MAX);
+
+  int32_t len32 = len;
+  // this assert should fail if the below code needs to change
+  assert(sizeof(len32) + 2 == UNIQUED_STRING_METADATA_BYTES);
+  assert(sizeof(len32) == UNIQUED_STRING_METADATA_LEN);
+
+  // copy the length
+  memcpy(buf, &len32, sizeof(len32));
+  buf += sizeof(len32);
   // set the GC mark
-  buf[0] = gcMark;
+  *buf = gcMark;
+  buf++;
   // set the unused metadata (need to still have even alignment)
-  buf[1] = 0x02;
-  buf += UNIQUED_STRING_METADATA_BYTES; // and pass the metadata bytes
+  *buf = 0x02;
+  buf++;
   return buf;
 }
 
@@ -121,11 +135,11 @@ const char* Context::getOrCreateUniqueString(const char* str, size_t len) {
     return ret;
   }
 
-  size_t allocLen = len+UNIQUED_STRING_METADATA_BYTES+1; // metadata, len, null
+  size_t allocLen = UNIQUED_STRING_METADATA_BYTES+len+1; // metadata, len, null
   char* buf = allocateEvenAligned(allocLen);
   // setup metadata
   char* s = setupStringMetadata(buf, len);
-  // copy string data and null terminator 
+  // copy string data and null terminator
   memcpy(s, str, len);
   // null terminate
   s[len] = 0x0;
@@ -156,7 +170,7 @@ const char* Context::uniqueCStringConcatLen(const char* s1, size_t len1,
                                             const char* s9, size_t len9) {
   size_t len = len1 + len2 + len3 + len4 + len5 + len6 + len7 + len8 + len9;
 
-  size_t allocLen = len+UNIQUED_STRING_METADATA_BYTES+1; // metadata, len, null
+  size_t allocLen = UNIQUED_STRING_METADATA_BYTES+len+1; // metadata, len, null
   char* buf = allocateEvenAligned(allocLen);
   // setup metadata
   char* s = setupStringMetadata(buf, len);
@@ -261,9 +275,19 @@ void Context::markUniqueCString(const char* s) {
     char gcMark = this->gcCounter & 0xff;
     char* buf = (char*) s;
     buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
-    assert(buf[1] == 0x02);
+    buf += UNIQUED_STRING_METADATA_LEN; // pass the length
     buf[0] = gcMark;
+    assert(buf[1] == 0x02);
   }
+}
+
+size_t Context::lengthForUniqueString(const char* s) {
+  const char* buf = (char*) s;
+  buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
+  int32_t len32 = 0;
+  memcpy(&len32, buf, sizeof(len32));
+  assert(len32 >= 0);
+  return len32;
 }
 
 static
@@ -390,20 +414,22 @@ void Context::collectGarbage() {
       const char* key = e.str;
       char* buf = (char*)key;
       buf -= UNIQUED_STRING_METADATA_BYTES; // find start of allocation
+      char* allocation = buf;
+      buf += UNIQUED_STRING_METADATA_LEN; // pass the length
       if (buf[0] == gcMark) {
         newTable.insert(e);
         if (enableDebugTracing) {
           printf("COPYING OVER UNIQUESTRING %s\n", key);
         }
       } else {
-        toFree.push_back(buf);
+        toFree.push_back(allocation);
         if (enableDebugTracing) {
           printf("WILL FREE UNIQUESTRING %s\n", key);
         }
       }
     }
-    for (char* buf: toFree) {
-      free(buf);
+    for (char* allocation: toFree) {
+      free(allocation);
     }
     uniqueStringsTable.swap(newTable);
 
