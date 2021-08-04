@@ -138,7 +138,7 @@ class Param {
   /**
     Returns the type of the Param.
    */
-  const Type* getType(Context* context) {
+  const Type* getType(Context* context) const {
     return getTypeInner(context);
   }
 

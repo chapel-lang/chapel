@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-// This file lists the Param union types to help with macros generating code
+// This file lists the Param subclasses to help with macros generating code
 // for each.
 //
 // The arguments are (name of field and tag, type of field, type expr)

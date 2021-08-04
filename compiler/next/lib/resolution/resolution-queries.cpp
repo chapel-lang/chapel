@@ -67,16 +67,20 @@ const QualifiedType& typeForBuiltin(Context* context,
 
 static QualifiedType typeForLiteral(Context* context, const Literal* literal) {
   const Type* typePtr = nullptr;
-  int64_t param = 0; // TODO: replace with Immediate
+  const Param* paramPtr = nullptr;
 
   if (auto i = literal->toIntLiteral()) {
     typePtr = IntType::get(context, 0);
-    param = i->value();
+    paramPtr = Int64Param::get(context, i->value());
   } else {
     // TODO: handle the other literals as params
   }
 
-  return QualifiedType(QualifiedType::PARAM, typePtr, param);
+  if (paramPtr != nullptr) {
+    assert(typePtr == paramPtr->getType(context));
+  }
+
+  return QualifiedType(QualifiedType::PARAM, typePtr, paramPtr);
 }
 
 static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
@@ -355,7 +359,7 @@ struct Resolver {
       const Type* typePtr = nullptr;
 
       // Figure out the param value, if any
-      int64_t param = -1; // TODO: replace with Immediates
+      const Param* paramPtr = nullptr;
 
       if (decl->isFunction()) {
         // TODO: function types
@@ -404,7 +408,7 @@ struct Resolver {
           }
 
           if (initType.kind() == QualifiedType::PARAM) {
-            param = initType.param();
+            paramPtr = initType.param();
           }
           if (typePtr != nullptr) {
             // check that the initExpr type is compatible with declared type
@@ -431,7 +435,7 @@ struct Resolver {
             if (search != substitutions->end()) {
               const QualifiedType& t = search->second;
               typePtr = t.type();
-              param = t.param();
+              paramPtr = t.param();
             }
           }
         }
@@ -458,7 +462,7 @@ struct Resolver {
       }
 
       ResolvedExpression& result = byPostorder.byAst(decl);
-      result.type = QualifiedType(qtKind, typePtr, param);
+      result.type = QualifiedType(qtKind, typePtr, paramPtr);
     }
 
     exitScope(decl);
