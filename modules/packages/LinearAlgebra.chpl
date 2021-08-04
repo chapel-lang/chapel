@@ -894,7 +894,13 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
              else {Adom.dim(0)};
 
   var Y: [Ydom] eltType;
-  BLAS.gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
+  
+  if chpl__isArrayView(X) {
+    var temp = X;
+    BLAS.gemv(A, temp, Y, 1:eltType, 0:eltType, opA=op);
+  } else {
+    BLAS.gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
+  }
   return Y;
 }
 
