@@ -51,7 +51,7 @@ var output: real(64);
 var deviceBuffer = getDeviceBufferPointer();
 
 // arguments are: function name, grid size, block size, number of arguments
-__primitive("gpu kernel launch", c"add_nums", 1, 1, 1, deviceBuffer);
+__primitive("gpu kernel launch flat", c"add_nums", 1, 1, 1, deviceBuffer);
 output = getDataFromDevice(deviceBuffer);
 
 writeln(output);

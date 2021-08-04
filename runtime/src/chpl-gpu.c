@@ -113,11 +113,16 @@ static void chpl_gpu_check_device_ptr(void* ptr) {
   assert(size > 0);
 }
 
-void chpl_gpu_launch_kernel(const char* name, int grid_dim_x, int block_dim_x,
-                            int nargs, ...) {
-  va_list args;
+static void chpl_gpu_launch_kernel_help(const char* name,
+                                        int grd_dim_x,
+                                        int grd_dim_y,
+                                        int grd_dim_z,
+                                        int blk_dim_x,
+                                        int blk_dim_y,
+                                        int blk_dim_z,
+                                        int nargs,
+                                        va_list args) {
   int i;
-
   void* function = chpl_gpu_getKernel("tmp/chpl__gpu.fatbin", name);
   // TODO: this should use chpl_mem_alloc
   void** kernel_params = chpl_malloc(nargs*sizeof(void*));
@@ -125,9 +130,16 @@ void chpl_gpu_launch_kernel(const char* name, int grid_dim_x, int block_dim_x,
   assert(function);
   assert(kernel_params);
 
+  CHPL_GPU_LOG("Kernel launcher called.\
+               \n\tKernel: %s\n\tGrid: %d,%d,%d\n\t\
+               Block: %d,%d,%d\n\tNumArgs: %d\n",
+               name,
+               grd_dim_x, grd_dim_y, grd_dim_z,
+               blk_dim_x, blk_dim_y, blk_dim_z,
+               nargs);
+
   CHPL_GPU_LOG("Creating kernel parameters\n");
 
-  va_start(args, nargs);
   for (i=0 ; i<nargs ; i++) {
     kernel_params[i] = va_arg(args, void*);
 
@@ -137,13 +149,12 @@ void chpl_gpu_launch_kernel(const char* name, int grid_dim_x, int block_dim_x,
 
     CHPL_GPU_LOG("\tKernel parameter %d: %p\n", i, kernel_params[i]);
   }
-  va_end(args);
 
   CHPL_GPU_LOG("Calling gpu function named %s\n", name);
 
   CUDA_CALL(cuLaunchKernel((CUfunction)function,
-                           grid_dim_x, 1, 1,  // grid dimensions
-                           block_dim_x, 1, 1, // block dimensions
+                           grd_dim_x, grd_dim_y, grd_dim_z,
+                           blk_dim_x, blk_dim_y, blk_dim_z,
                            0,  // shared memory in bytes
                            0,  // stream ID
                            kernel_params,
@@ -157,6 +168,30 @@ void chpl_gpu_launch_kernel(const char* name, int grid_dim_x, int block_dim_x,
 
   // TODO: this should use chpl_mem_free
   chpl_free(kernel_params);
+}
+
+void chpl_gpu_launch_kernel(const char* name,
+                            int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                            int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                            int nargs, ...) {
+  va_list args;
+  va_start(args, nargs);
+  chpl_gpu_launch_kernel_help(name,
+                              grd_dim_x, grd_dim_y, grd_dim_z,
+                              blk_dim_x, blk_dim_y, blk_dim_z,
+                              nargs, args);
+  va_end(args);
+}
+
+void chpl_gpu_launch_kernel_flat(const char* name, int grd_dim, int blk_dim,
+                                 int nargs, ...) {
+  va_list args;
+  va_start(args, nargs);
+  chpl_gpu_launch_kernel_help(name,
+                              grd_dim, 1, 1,
+                              blk_dim, 1, 1,
+                              nargs, args);
+  va_end(args);
 }
 
 #endif // HAS_GPU_LOCALE

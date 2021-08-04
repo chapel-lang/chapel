@@ -492,7 +492,7 @@ static bool isIndexVariable(Symbol* sym, CForLoop* loop) {
 
 static  CallExpr* generateGPUCall(FnSymbol* kernel,
                                      std::vector<VarSymbol*> actuals) {
-  CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH);
+  CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
   call->insertAtTail(new_CStringSymbol(kernel->cname));
 
   call->insertAtTail(new_IntSymbol(1));  // grid size

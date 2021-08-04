@@ -28,8 +28,12 @@ extern "C" {
 #ifdef HAS_GPU_LOCALE
 
 void  chpl_gpu_init(void);
-void chpl_gpu_launch_kernel(const char* name, int grid_dim_x, int block_dim_x,
+void chpl_gpu_launch_kernel(const char* name,
+                            int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                            int blk_dim_x, int blk_dim_y, int blk_dim_z,
                             int nargs, ...);
+void chpl_gpu_launch_kernel_flat(const char* name, int grid_dim_x, int block_dim_x,
+                                 int nargs, ...);
 
 #endif // HAS_GPU_LOCALE
 
