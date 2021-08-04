@@ -15,7 +15,6 @@ proc writeArr(spsArr: [?Dom] ?eltType, parentDom: domain(2)) {
 
 // Returns a Dense array of ones
 proc ones(Dom: domain(2), type eltType=real) {
-  const (m,n) = Dom.shape;
   var A: [Dom] eltType = 1 : eltType;
   return A;
 }
