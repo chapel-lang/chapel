@@ -137,8 +137,19 @@ InlinedString InlinedString::buildConcat(Context* context,
   }
 }
 
+size_t InlinedString::length() const {
+  const char* cs = c_str();
+  if (this->isInline()) {
+    // inlined strings never contain inner nulls
+    return strlen(cs);
+  }
+
+  return Context::lengthForUniqueString(cs);
+}
+
 const char* InlinedString::astr(Context* context) const {
   if (isInline()) {
+    // inlined strings never contain inner nulls, so this is OK
     return context->uniqueCString(c_str());
   } else {
     return c_str();

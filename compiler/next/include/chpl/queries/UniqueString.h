@@ -123,6 +123,13 @@ class UniqueString final {
   }
 
   /**
+    Return the length of the unique string.
+   */
+  size_t length() const {
+    return s.i.length();
+  }
+
+  /**
     Return the null-terminated string as a pointer to an entry
     in Context's string table. This pointer is safe to use after
     this UniqueString goes out of scope.
@@ -131,9 +138,9 @@ class UniqueString final {
     return s.i.astr(context);
   }
 
-  /** return a std::string containing the string up to the first null byte */
+  /** return a std::string containing the string */
   std::string toString() const {
-    return std::string(c_str());
+    return std::string(c_str(), length());
   }
 
   bool isEmpty() const {

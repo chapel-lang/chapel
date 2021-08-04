@@ -388,7 +388,7 @@ class Context {
    It will cause program crashes if called on a string that
    is not the result of one of the uniqueCString calls.
    */
-  size_t lengthForUniqueString(const char* s);
+  static size_t lengthForUniqueString(const char* s);
 
   /**
     Return the file path for the file containing this ID.

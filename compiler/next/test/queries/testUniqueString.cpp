@@ -117,6 +117,8 @@ static void test0() {
   const char* h1 = ctx->uniqueCString("hello");
   const char* h2 = ctx->uniqueCString(hello.c_str());
   assert(h1 == h2);
+  assert(0 == strcmp("hello", h1));
+  assert(strlen("hello") == ctx->lengthForUniqueString(h1));
 
   // check that uniqueString(NULL) == uniqueString("")
   assert(ctx->uniqueCString(nullptr) == ctx->uniqueCString(""));
@@ -129,12 +131,16 @@ static void test0() {
 
   const char* x = ctx->uniqueCString("aVeryLongIdentifierName");
   assert(x != h1 && x != nullptr);
+  assert(0 == strcmp("aVeryLongIdentifierName", x));
+  assert(strlen("aVeryLongIdentifierName") == ctx->lengthForUniqueString(x));
 
   // check that strings with null bytes are uniqued differently
   const char* h_plus = ctx->uniqueCString("hello\0plus", 10);
   assert(h_plus != h1);
+  assert(ctx->lengthForUniqueString(h_plus) == 10);
   const char* h_p = ctx->uniqueCString("hello\0p", 7);
   assert(h_p != h_plus && h_p != h1);
+  assert(ctx->lengthForUniqueString(h_p) == 7);
 
   // check that truncation works for short strings and long ones
   assert(h1 == ctx->uniqueCString("hello____", strlen("hello")));
@@ -205,6 +211,7 @@ static void test1() {
   assert(t1.c_str() == t2.c_str());
   assert(t2.c_str() == t3.c_str());
   assert(t1.astr(ctx) == ctx->uniqueCString(test1.c_str()));
+  assert(t1.length() == strlen(TEST1STRING));
 
   // this string is short enough to be inlined
   std::string hello = "hello";
@@ -213,6 +220,7 @@ static void test1() {
   assert(0 == strcmp(h1.c_str(), hello.c_str()));
   assert(h1 == h2);
   assert(h1.astr(ctx) == ctx->uniqueCString(hello.c_str()));
+  assert(h1.length() == strlen("hello"));
 
   // check that uniqueString(NULL) == uniqueString("")
   assert(UniqueString::build(ctx, NULL) == UniqueString::build(ctx, ""));

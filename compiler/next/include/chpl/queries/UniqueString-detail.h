@@ -189,8 +189,15 @@ struct InlinedString {
     // otherwise, s is a real pointer
     return this->v;
   }
+  size_t length() const;
+
   // return a long-lived pointer
   const char* astr(Context* context) const;
+
+  std::string toString() const {
+    return std::string(c_str(), length());
+  }
+
   // mark the string as used this revision (so it is not GC'd)
   void mark(Context* context) const;
 };
@@ -231,9 +238,17 @@ struct PODUniqueString {
   const char* c_str() const {
     return i.c_str();
   }
+  size_t length() const {
+    return i.length();
+  }
+
   // return a long-lived pointer
   const char* astr(Context* context) const {
     return i.astr(context);
+  }
+
+  std::string toString() const {
+    return std::string(c_str(), length());
   }
 
   bool isEmpty() const {
