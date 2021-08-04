@@ -906,7 +906,7 @@ static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
   fn->addFlag(FLAG_LAST_RESORT);
   fn->addFlag(FLAG_OPERATOR);
 
-  // Make the generated operator as an operator method
+  // Make the generated operator be an operator method
   ArgSymbol* methodToken = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
   fn->insertFormalAtTail(methodToken);
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
@@ -1455,6 +1455,18 @@ static void buildRecordAssignmentFunction(AggregateType* ct) {
   fn->addFlag(FLAG_ASSIGNOP);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
+  fn->addFlag(FLAG_OPERATOR);
+
+  // Make the generated operator be an operator method
+  ArgSymbol* methodToken = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
+  fn->insertFormalAtTail(methodToken);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", ct);
+  _this->addFlag(FLAG_TYPE_VARIABLE);
+  _this->addFlag(FLAG_ARG_THIS);
+  fn->insertFormalAtTail(_this);
+  fn->_this = _this;
+  fn->setMethod(true);
+  ct->methods.add(fn);
 
   ArgSymbol* arg1 = new ArgSymbol(INTENT_REF, "_arg1", ct);
   arg1->addFlag(FLAG_MARKED_GENERIC);
