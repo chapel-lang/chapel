@@ -204,7 +204,7 @@ class Param {
   class NAME : public Param { \
    private: \
     VALTYPE value_; \
-    NAME(VALTYPE value) : Param(paramtags::NAME), value_(value) { } \
+    explicit NAME(VALTYPE value) : Param(paramtags::NAME), value_(value) { } \
     static const owned<NAME>& get##NAME(Context* context, VALTYPE value); \
     bool contentsMatchInner(const Param* other) const override { \
       const NAME* lhs = this; \

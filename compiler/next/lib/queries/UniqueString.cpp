@@ -172,8 +172,6 @@ UniqueString UniqueString::build(Context* context,
                                  const char* s, size_t len) {
   if (s == nullptr || len == 0) return UniqueString();
 
-  assert(!chpl::detail::stringContainsZeroBytes(s, len));
-
   if (s[len] == '\0') {
     // string is already appropriately null terminated
     detail::PODUniqueString ret =

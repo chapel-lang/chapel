@@ -30,9 +30,9 @@ namespace uast {
 /**
   This class represents an imaginary floating point literal, e.g. ``10.4i``.
  */
-class ImagLiteral final : public NumericLiteral<double> {
+class ImagLiteral final : public NumericLiteral<double, types::Imag64Param> {
  private:
-  ImagLiteral(double value, UniqueString text)
+  ImagLiteral(const types::Imag64Param* value, UniqueString text)
     : NumericLiteral(asttags::ImagLiteral, value, text)
   { }
 

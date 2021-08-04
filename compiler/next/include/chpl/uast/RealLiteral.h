@@ -31,9 +31,9 @@ namespace uast {
   This class represents a floating point literal that is not imaginary.
   That is, it is a "real" number. Examples include ``0.0``, and `3e24`.
  */
-class RealLiteral final : public NumericLiteral<double> {
+class RealLiteral final : public NumericLiteral<double, types::Real64Param> {
  private:
-  RealLiteral(double value, UniqueString text)
+  RealLiteral(const types::Real64Param* value, UniqueString text)
     : NumericLiteral(asttags::RealLiteral, value, text)
   { }
 

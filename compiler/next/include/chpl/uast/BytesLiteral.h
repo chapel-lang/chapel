@@ -34,8 +34,9 @@ namespace uast {
  */
 class BytesLiteral final : public StringLikeLiteral {
  private:
-  BytesLiteral(std::string value, StringLikeLiteral::QuoteStyle quotes)
-    : StringLikeLiteral(asttags::BytesLiteral, std::move(value), quotes)
+  BytesLiteral(const types::BytesParam* value,
+               StringLikeLiteral::QuoteStyle quotes)
+    : StringLikeLiteral(asttags::BytesLiteral, value, quotes)
   { }
 
   // contentsMatchInner / markUniqueStringsInner are in StringLikeLiteral
@@ -45,8 +46,18 @@ class BytesLiteral final : public StringLikeLiteral {
   ~BytesLiteral() override = default;
 
   static owned<BytesLiteral> build(Builder* builder, Location loc,
-                                   std::string value,
+                                   const std::string& value,
                                    StringLikeLiteral::QuoteStyle quotes);
+
+  /**
+    Returns the value of this bytes literal as a UniqueString
+    which does not include the quotes.
+   */
+  UniqueString str() const {
+    assert(value_->isBytesParam());
+    const types::BytesParam* p = (const types::BytesParam*) value_;
+    return p->value();
+  }
 };
 
 

@@ -33,8 +33,9 @@ namespace uast {
  */
 class StringLiteral final : public StringLikeLiteral {
  private:
-  StringLiteral(std::string value, StringLikeLiteral::QuoteStyle quotes)
-    : StringLikeLiteral(asttags::StringLiteral, std::move(value), quotes)
+  StringLiteral(const types::StringParam* value,
+                StringLikeLiteral::QuoteStyle quotes)
+    : StringLikeLiteral(asttags::StringLiteral, value, quotes)
   { }
 
   // contentsMatchInner / markUniqueStringsInner are in StringLikeLiteral
@@ -44,8 +45,18 @@ class StringLiteral final : public StringLikeLiteral {
   ~StringLiteral() override = default;
 
   static owned<StringLiteral> build(Builder* builder, Location loc,
-                                    std::string value,
+                                    const std::string& value,
                                     StringLikeLiteral::QuoteStyle quotes);
+
+  /**
+    Returns the value of this string literal as a UniqueString
+    which does not include the quotes.
+   */
+  UniqueString str() const {
+    assert(value_->isStringParam());
+    const types::StringParam* p = (const types::StringParam*) value_;
+    return p->value();
+  }
 };
 
 

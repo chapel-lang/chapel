@@ -594,7 +594,7 @@ struct Converter {
 
   /// StringLikeLiterals ///
   Expr* visit(const uast::BytesLiteral* node) {
-    std::string quoted = quoteStringForC(node->str());
+    std::string quoted = quoteStringForC(node->str().toString());
     SymExpr* se = buildBytesLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
@@ -604,7 +604,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::CStringLiteral* node) {
-    std::string quoted = quoteStringForC(node->str());
+    std::string quoted = quoteStringForC(node->str().toString());
     SymExpr* se = buildCStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
@@ -615,7 +615,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::StringLiteral* node) {
-    std::string quoted = quoteStringForC(node->str());
+    std::string quoted = quoteStringForC(node->str().toString());
     SymExpr* se = buildStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);

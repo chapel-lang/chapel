@@ -27,7 +27,9 @@ namespace uast {
 
 owned<BoolLiteral> BoolLiteral::build(Builder* builder, Location loc,
                                       bool value) {
-  BoolLiteral* ret = new BoolLiteral(value);
+  // construct the Param
+  auto p = types::BoolSysParam::get(builder->context(), value);
+  BoolLiteral* ret = new BoolLiteral(p);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
