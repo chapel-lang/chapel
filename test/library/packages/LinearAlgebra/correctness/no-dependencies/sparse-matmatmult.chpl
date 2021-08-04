@@ -13,6 +13,13 @@ proc writeArr(spsArr: [?Dom] ?eltType, parentDom: domain(2)) {
   writeln();
 }
 
+// Returns a Dense array of ones
+proc ones(Dom: domain(2), type eltType=real) {
+  const (m,n) = Dom.shape;
+  var A: [Dom] eltType = 1 : eltType;
+  return A;
+}
+
 // Usage similar to primers/sparse.chpl, but using the CSR domain.
 // Combination of 0-based, 1-based, and other-based parent domains.
 {
@@ -100,4 +107,61 @@ proc writeArr(spsArr: [?Dom] ?eltType, parentDom: domain(2)) {
     var C = A.dot(B);
     writeln("C = A.dot(B) =");
     writeArr(C, {0..#3,0..#3});
+}
+
+{
+  // Case 1: Product of a Dense matrix (3x3) and a Sparse matrix (3x3).
+  // Case 2: Product of a Sparse matrix (3x3) and a Dense matrix (3x3).
+  // Case 3: Product of a Sparse matrix (3x3) and a Dense matrix (3x4).
+  // Case 4: Product of a Dense matrix (4x3) and a Sparse matrix (3x3).
+  const BparentDom = {0..2,0..2};
+  var D = {0..2,0..2};
+  var D34 = {0..2,0..3};
+  var D43 = {0..3,0..2};
+
+  var BDom: sparse subdomain(BparentDom) dmapped CS(compressRows=true,sortedIndices=true);
+  var B: [BDom] real;
+  BDom += [(0,0),(0,1),(1,1),(2,2)];
+
+  B(0,0) = 0.0;
+  B(0,1) = 5.0;
+  B(1,1) = -9.0;
+  B(2,2) = 5.0;
+
+  var C = ones(D);
+  var C34 = ones(D34);
+  var C43 = ones(D43);
+
+  writeln("B =");
+  writeArr(B,{0..#3,0..#3});
+
+  writeln("C =");
+  writeArr(C,{0..#3,0..#3});
+
+  writeln("C34 =");
+  writeArr(C34,{0..#3,0..#4});
+
+  writeln("C43 =");
+  writeArr(C43,{0..#4,0..#3});
+
+  var BC = dot(B,C);
+  var CB = dot(C,B);
+  var BC34 = dot(B,C34);
+  var C43B = dot(C43,B);
+
+  writeln("// Product of a Dense matrix (3x3) and a Sparse matrix (3x3)");
+  writeln("BC = dot(B,C) =");
+  writeArr(BC,{0..#3,0..#3});
+
+  writeln("// Product of a Sparse matrix (3x3) and a Dense matrix (3x3)");
+  writeln("CB = dot(C,B) =");
+  writeArr(CB,{0..#3,0..#3});
+
+  writeln("// Product of a Sparse matrix (3x3) and a Dense matrix (3x4)");
+  writeln("BC34 = dot(B,C34) =");
+  writeArr(BC34,{0..#3,0..#4});
+
+  writeln("// Product of a Dense matrix (4x3) and a Sparse matrix (3x3)");
+  writeln("C43B = dot(C43,B) =");
+  writeArr(C43B,{0..#4,0..#3});
 }

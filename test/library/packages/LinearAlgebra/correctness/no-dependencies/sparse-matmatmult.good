@@ -53,3 +53,49 @@ C = A.dot(B) =
 9000 3000 6000 
 0 20000 25000 
 
+B =
+0.0 5.0 0.0 
+0.0 -9.0 0.0 
+0.0 0.0 5.0 
+
+C =
+1.0 1.0 1.0 
+1.0 1.0 1.0 
+1.0 1.0 1.0 
+
+C34 =
+1.0 1.0 1.0 1.0 
+1.0 1.0 1.0 1.0 
+1.0 1.0 1.0 1.0 
+
+C43 =
+1.0 1.0 1.0 
+1.0 1.0 1.0 
+1.0 1.0 1.0 
+1.0 1.0 1.0 
+
+// Product of a Dense matrix (3x3) and a Sparse matrix (3x3)
+BC = dot(B,C) =
+5.0 5.0 5.0 
+-9.0 -9.0 -9.0 
+5.0 5.0 5.0 
+
+// Product of a Sparse matrix (3x3) and a Dense matrix (3x3)
+CB = dot(C,B) =
+0.0 -4.0 5.0 
+0.0 -4.0 5.0 
+0.0 -4.0 5.0 
+
+// Product of a Sparse matrix (3x3) and a Dense matrix (3x4)
+BC34 = dot(B,C34) =
+5.0 5.0 5.0 5.0 
+-9.0 -9.0 -9.0 -9.0 
+5.0 5.0 5.0 5.0 
+
+// Product of a Dense matrix (4x3) and a Sparse matrix (3x3)
+C43B = dot(C43,B) =
+0.0 -4.0 5.0 
+0.0 -4.0 5.0 
+0.0 -4.0 5.0 
+0.0 -4.0 5.0 
+
