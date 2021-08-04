@@ -819,11 +819,11 @@ const owned<PoiScope>& constructPoiScopeQuery(Context* context,
   return QUERY_END(result);
 }
 
-static
-const PoiScope* const& poiScopeQuery(Context* context,
-                                     const Scope* scope,
-                                     const PoiScope* parentPoiScope) {
-  QUERY_BEGIN(poiScopeQuery, context, scope, parentPoiScope);
+static const PoiScope* const&
+pointOfInstantiationScopeQuery(Context* context,
+                               const Scope* scope,
+                               const PoiScope* parentPoiScope) {
+  QUERY_BEGIN(pointOfInstantiationScopeQuery, context, scope, parentPoiScope);
 
   // figure out which POI scope to create.
   const Scope* useScope = nullptr;
@@ -860,10 +860,10 @@ const PoiScope* const& poiScopeQuery(Context* context,
   return QUERY_END(result);
 }
 
-const PoiScope* poiScope(Context* context,
-                         const Scope* scope,
-                         const PoiScope* parentPoiScope) {
-  return poiScopeQuery(context, scope, parentPoiScope);
+const PoiScope* pointOfInstantiationScope(Context* context,
+                                          const Scope* scope,
+                                          const PoiScope* parentPoiScope) {
+  return pointOfInstantiationScopeQuery(context, scope, parentPoiScope);
 }
 
 const InnermostMatch& findInnermostDecl(Context* context,

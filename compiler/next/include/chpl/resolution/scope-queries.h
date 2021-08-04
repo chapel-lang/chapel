@@ -116,12 +116,9 @@ namespace resolution {
     scope and parent POI scope. Collapses away POI scopes that
     do not affect visible functions.
    */
-  const PoiScope* poiScope(Context* context,
-                           const Scope* scope,
-                           const PoiScope* parentPoiScope);
-
- // TODO: lookupInScope accepting visited set
-  // for use in POI traversal
+  const PoiScope* pointOfInstantiationScope(Context* context,
+                                            const Scope* scope,
+                                            const PoiScope* parentPoiScope);
 
   /**
     Given a name and a Scope, return the innermost and first ID
