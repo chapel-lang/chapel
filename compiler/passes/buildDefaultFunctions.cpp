@@ -890,8 +890,11 @@ static FnSymbol* buildRecordIsComparableFunc(AggregateType* ct,
 }
 
 static void buildRecordComparisonFunc(AggregateType* ct, const char* op) {
-  if (functionExists(op, ct, ct))
+  if (functionExists(op, ct, ct)) {
     return;
+  } else if (functionExists(op, dtMethodToken, dtAny, ct, ct)) {
+    return;
+  }
 
   const char* astrOp = astr(op);
 
