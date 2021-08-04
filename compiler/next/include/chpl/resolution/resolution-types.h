@@ -63,7 +63,7 @@ struct UntypedFnSignature {
   }
 
   bool operator==(const UntypedFnSignature& other) const {
-    return functionId != other.functionId &&
+    return functionId == other.functionId &&
            name == other.name &&
            isMethod == other.isMethod &&
            kind == other.kind &&
