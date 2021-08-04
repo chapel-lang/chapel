@@ -591,6 +591,14 @@ template<> struct hash<chpl::resolution::PoiInfo>
   }
 };
 
+template<> struct hash<chpl::resolution::TypedFnSignature::WhereClauseResult>
+{
+  size_t operator()(const chpl::resolution::TypedFnSignature::WhereClauseResult& key) const {
+    return key;
+  }
+};
+
+
 
 } // end namespace std
 
