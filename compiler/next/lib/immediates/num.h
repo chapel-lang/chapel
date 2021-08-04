@@ -48,38 +48,7 @@ struct complex128 {
   double i;
 };
 
-// needs to not have a ctor, copy ctor, = so it can be used in the union
-class ImmString {
-  chpl::detail::PODUniqueString s_;
-  size_t len_;
-
- public:
-  static ImmString build(chpl::Context* context,
-                         const char* strIn,
-                         size_t lenIn) {
-    ImmString ret;
-    ret.s_ = chpl::detail::PODUniqueString::build(context, strIn, lenIn);
-    ret.len_ = lenIn;
-    return ret;
-  }
-  static ImmString build(chpl::Context* context,
-                         const char* strIn) {
-    return ImmString::build(context, strIn, strlen(strIn));
-  }
-
-  std::string toString() const {
-    return std::string(s_.c_str(), len_);
-  }
-  const char* c_str() const {
-    return s_.c_str();
-  }
-  chpl::UniqueString str() const {
-    return chpl::UniqueString(s_);
-  }
-  size_t len() const {
-    return len_;
-  }
-};
+using ImmString = chpl::detail::PODUniqueString;
 
 //
 // NOTE: NUM_KIND_LAST is used to mark the last entry in this enum. The

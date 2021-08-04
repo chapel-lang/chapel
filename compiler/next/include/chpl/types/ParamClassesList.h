@@ -47,9 +47,9 @@ PARAM_NODE(Bool8, uint8_t)
 PARAM_NODE(None, uint8_t)
 
 // update Param::mark if any others storing string are added
-PARAM_NODE(Bytes, UniqueStringAndLength)
-PARAM_NODE(CString, UniqueStringAndLength)
-PARAM_NODE(String, UniqueStringAndLength)
+PARAM_NODE(Bytes, chpl::detail::PODUniqueString)
+PARAM_NODE(CString, chpl::detail::PODUniqueString)
+PARAM_NODE(String, chpl::detail::PODUniqueString)
 
 /// \endcond
 

@@ -282,57 +282,54 @@ const Param* Param::getComplex(Context* context,
 }
 
 const owned<Param>& Param::getStringQuery(Context* context,
-                                          chpl::detail::PODUniqueString str,
-                                          size_t len) {
-  QUERY_BEGIN(getStringQuery, context, str, len);
+                                          chpl::detail::PODUniqueString str) {
+  QUERY_BEGIN(getStringQuery, context, str);
 
   auto result = toOwned(new Param());
   result->type_ = StringType::get(context);
   result->tag_ = paramtags::String;
-  result->u.String = UniqueStringAndLength::build(str, len);
+  result->u.String = str;
 
   return QUERY_END(result);
 }
 
 const Param* Param::getString(Context* context, const char* str, size_t len) {
   auto s = chpl::detail::PODUniqueString::build(context, str, len);
-  return getStringQuery(context, s, len).get();
+  return getStringQuery(context, s).get();
 }
 
 const owned<Param>& Param::getBytesQuery(Context* context,
-                                         chpl::detail::PODUniqueString str,
-                                         size_t len) {
-  QUERY_BEGIN(getBytesQuery, context, str, len);
+                                         chpl::detail::PODUniqueString str) {
+  QUERY_BEGIN(getBytesQuery, context, str);
 
   auto result = toOwned(new Param());
   result->type_ = BytesType::get(context);
   result->tag_ = paramtags::Bytes;
-  result->u.Bytes = UniqueStringAndLength::build(str, len);
+  result->u.Bytes = str;
 
   return QUERY_END(result);
 }
 
 const Param* Param::getBytes(Context* context, const char* str, size_t len) {
   auto s = chpl::detail::PODUniqueString::build(context, str, len);
-  return getBytesQuery(context, s, len).get();
+  return getBytesQuery(context, s).get();
 }
 
 const owned<Param>& Param::getCStringQuery(Context* context,
-                                           chpl::detail::PODUniqueString str,
-                                           size_t len) {
-  QUERY_BEGIN(getCStringQuery, context, str, len);
+                                           chpl::detail::PODUniqueString str) {
+  QUERY_BEGIN(getCStringQuery, context, str);
 
   auto result = toOwned(new Param());
   result->type_ = CStringType::get(context);
   result->tag_ = paramtags::CString;
-  result->u.CString = UniqueStringAndLength::build(str, len);
+  result->u.CString = str;
 
   return QUERY_END(result);
 }
 
 const Param* Param::getCString(Context* context, const char* str, size_t len) {
   auto s = chpl::detail::PODUniqueString::build(context, str, len);
-  return getCStringQuery(context, s, len).get();
+  return getCStringQuery(context, s).get();
 }
 
 

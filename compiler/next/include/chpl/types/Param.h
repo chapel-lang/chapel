@@ -59,24 +59,6 @@ class Param {
       return !(*this == other);
     }
   };
-  struct UniqueStringAndLength {
-    chpl::detail::PODUniqueString str;
-    size_t len;
-    bool operator==(const UniqueStringAndLength& other) const {
-      return this->str == other.str && this->len == other.len;
-    }
-    bool operator!=(const UniqueStringAndLength& other) const {
-      return !(*this == other);
-    }
-    static UniqueStringAndLength build(chpl::detail::PODUniqueString str, size_t len) {
-      UniqueStringAndLength ret = {str, len};
-      return ret;
-    }
-    void mark(Context* context) const {
-      str.mark(context);
-    }
-  };
-
   ParamTag tag_ = paramtags::None;
   union {
     // define the enum using macros and ParamClassesList.h
@@ -98,9 +80,9 @@ class Param {
   static const owned<Param>& getRealQuery(Context* context, double v, int bitwidth);
   static const owned<Param>& getImagQuery(Context* context, double v, int bitwidth);
   static const owned<Param>& getComplexQuery(Context* context, double re, double im, int bitwidth);
-  static const owned<Param>& getStringQuery(Context* context, chpl::detail::PODUniqueString str, size_t len);
-  static const owned<Param>& getBytesQuery(Context* context, chpl::detail::PODUniqueString str, size_t len);
-  static const owned<Param>& getCStringQuery(Context* context, chpl::detail::PODUniqueString str, size_t len);
+  static const owned<Param>& getStringQuery(Context* context, chpl::detail::PODUniqueString str);
+  static const owned<Param>& getBytesQuery(Context* context, chpl::detail::PODUniqueString str);
+  static const owned<Param>& getCStringQuery(Context* context, chpl::detail::PODUniqueString str);
 
  public:
   static const Param* getInt(Context* context, int64_t v, int bitwidth);
