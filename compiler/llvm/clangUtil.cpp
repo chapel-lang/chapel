@@ -665,6 +665,19 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
     Token tok = *start; // the main token
     ++start;
 
+    if (start != end) {
+      /* return NULL unless it's a specific pattern we know how to handle */
+      bool canHandle = false;
+      if (tok.getKind() == tok::identifier) {
+        IdentifierInfo* tokId = tok.getIdentifierInfo();
+        if (const clang::MacroInfo* macro
+              = info->lvt->getMacro(tokId->getName()))
+          canHandle = true;
+      }
+      if (!canHandle)
+        return NULL;
+    }
+
     if (tok.getKind() == tok::identifier) {
       IdentifierInfo* tokId = tok.getIdentifierInfo();
       ii = tokId;
