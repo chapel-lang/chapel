@@ -131,7 +131,6 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, Gen
 
 static GenRet codegenZero();
 static GenRet codegenZero32();
-static GenRet codegenCString(const char* val);
 static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
@@ -2947,11 +2946,6 @@ GenRet codegenZero32()
   return new_IntSymbol(0, INT_SIZE_32)->codegen();
 }
 
-static GenRet codegenCString(const char* val) {
-  return new_CStringSymbol(val)->codegen();
-}
-
-
 /*
 static
 GenRet codegenOne()
@@ -4701,30 +4695,51 @@ DEFINE_PRIM(PRIM_SET_DYNAMIC_END_COUNT) {
       ret = rcall->codegen();
 }
 
-DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
-  // Rewrite the call to cuLaunchKernel. Take the first argument passed to the
-  // primitive and pass it to chpl_gpu_getKernel() and pass the result as the
-  // first argument to cuLaunchKernel. Pass all other arguments along to it.
+static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
+  // Used to codegen for PRIM_GPU_KERNEL_LAUNCH_FLAT and PRIM_GPU_KERNEL_LAUNCH.
+  // They differ in number of arguments only. The first passes 1 integer for
+  // grid and block size each, the other passes 3 for each.
+  //
+  // Call `chpl_gpu_launch_kernel` runtime function.
+  //
+  // The primitive's arguments are
+  //   - function name
+  //   - grid size (1 arg or 3 args)
+  //   - block size (1 arg or 3 args)
+  //   - number of kernel parameters (we can probably drop this safely)
+  //   - any number of arguments to be passed to the kernel
+  //
+  // The runtime function needs the kernel parameters to be passed by address.
+  // The other arguments to this primitive are passed along directly.
+
+  // number of arguments that are not kernel params
+  int nNonKernelParamArgs = is3d ? 8:4;
+  const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
+
   std::vector<GenRet> args;
-  bool first = true;
+  int i = 0;
   for_actuals(actual, call) {
-    if(first) {
-      INT_ASSERT(actual->typeInfo() == dtStringC);
-      
-      std::vector<GenRet> argsToGetKernelCall;
-      argsToGetKernelCall.push_back(codegenCString("tmp/chpl__gpu.fatbin"));
-      argsToGetKernelCall.push_back(actual->codegen());
-      
-      ret = codegenCallExprWithArgs("chpl_gpu_getKernel", argsToGetKernelCall);
-      args.push_back(ret);
-    
-      first = false;
-    } else {
+    if (i >= nNonKernelParamArgs) {
+      args.push_back(codegenAddrOf(actual));
+      i++; // probably unneccesary
+    }
+    else {
       args.push_back(actual->codegen());
+      i++;
     }
   }
-  ret = codegenCallExprWithArgs("cuLaunchKernel", args);
+
+  return codegenCallExprWithArgs(fn, args);
 }
+
+DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH_FLAT) {
+  ret = codegenGPUKernelLaunch(call, /* is3d= */ false);
+}
+
+DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
+  ret = codegenGPUKernelLaunch(call, /* is3d= */ true);
+}
+
 
 static GenRet codegenCallToPtxTgtIntrinsic(const char *fcnName) {
   GenRet ret;

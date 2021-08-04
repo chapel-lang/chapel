@@ -49,9 +49,9 @@ chpl_gpu_init();
 
 var output: real(64);
 var deviceBuffer = getDeviceBufferPointer();
-var ptr: c_ptr(uint(64)) = c_ptrTo(deviceBuffer);
-var kernelParams = getKernelParams(ptr);
-__primitive("gpu kernel launch", c"add_nums", 1, 1, 1, 1, 1, 1, 0, 0, kernelParams, 0);
+
+// arguments are: function name, grid size, block size, number of arguments
+__primitive("gpu kernel launch flat", c"add_nums", 1, 1, 1, deviceBuffer);
 output = getDataFromDevice(deviceBuffer);
 
 writeln(output);
