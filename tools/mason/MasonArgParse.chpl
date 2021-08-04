@@ -27,10 +27,10 @@ module MasonArgParse {
 
   config var OTFDebug=false;
 
-  const DEBUG = false;//_checkDebug();
+  const DEBUG = _checkDebug();
 
   proc _checkDebug() : bool {
-    var envValue:string;
+    var envValue = "FALSE";
     var rtn = false;
 
    // if sys_getenv("ARGPARSE_DEBUG", envValue) == 1 ) {
@@ -41,7 +41,6 @@ module MasonArgParse {
     return false;
   }
 
-  // TODO: Add positional arguments
   // TODO: Add pass-thru options following "-" or "--"
   // TODO: Add int opts
   // TODO: Implement Help message and formatting

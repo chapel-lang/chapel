@@ -398,6 +398,30 @@ unitTestStringToBool()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testSinglePositionalArgument()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPositionalArgumentDefault()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPositionalArgumentRangeOneOrMore()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixPosBoolOptWithValues()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixPosBoolOptWithValuesFixed()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixPosBoolOptWithValuesSubCommand()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 Found undefined values: thirty
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
@@ -405,7 +429,7 @@ StringOpt Too many values: expected 1..1 got 3
 StringOpt Too many values: expected 1..3 got 6
 StringOpt has extra values
 StringOpt Required value missing
-unrecognized options/values encountered: -n twenty
+Found some unrecognizable arguments
 StringOpt Not enough values: expected 1..2 got 0
 Found undefined values: two
 Found undefined values: -p thirty
@@ -428,9 +452,9 @@ Only string and list of strings are supported as default values at this time
 Option name StringOpt is previously defined
 Option flag -n is previously defined
 Option flag --strArg is previously defined
-Found undefined values: subCommandNone
-Found undefined values: subCommandNone
-Found undefined values: -x
+Found some unrecognizable arguments
+Found some unrecognizable arguments
+Found some unrecognizable arguments
 StringOpt1 has extra values
 BoolFlag Not enough values: expected 1..1 got 0
 Found undefined values: false
