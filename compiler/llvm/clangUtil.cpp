@@ -875,7 +875,7 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
         return false;
 
       Immediate dstImm = getDefaultImmediate(t);
-      coerce_immediate(&rhsImm, &dstImm);
+      coerce_immediate(gContext, &rhsImm, &dstImm);
       retImm = dstImm;
     }
 
@@ -888,7 +888,7 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
 
     if (doCastToType != NULL) {
       Immediate dstImm = getDefaultImmediate(doCastToType);
-      coerce_immediate(&retImm, &dstImm);
+      coerce_immediate(gContext, &retImm, &dstImm);
       *imm = dstImm;
       cCastToTypeRet = NULL; // cast already handled
     } else {
@@ -928,7 +928,7 @@ static bool handleNumericUnaryPrefixExpr(const MacroInfo* inMacro,
         INT_FATAL("unhandled case");
     }
 
-    fold_constant(p, &rhsImm, NULL, imm);
+    fold_constant(gContext, p, &rhsImm, NULL, imm);
     return true;
   }
 
@@ -1112,7 +1112,7 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
       return false; // this operator not handled
   }
 
-  fold_constant(p, &lhsImm, &rhsImm, imm);
+  fold_constant(gContext, p, &lhsImm, &rhsImm, imm);
   return true;
 }
 

@@ -385,7 +385,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       // with C escapes - that is newline is 2 chars \ n
       // so we have to convert to a sequence of bytes
       // for LLVM (the C backend can just print it out).
-      std::string newString = unescapeString(i->v_string, NULL);
+      std::string newString = unescapeString(i->v_string.c_str(), NULL);
       ret = info->irBuilder->CreateGlobalString(newString);
       break;
   }

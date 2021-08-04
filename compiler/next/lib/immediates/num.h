@@ -175,21 +175,23 @@ class Immediate { public:
   }*/
 
   explicit
-  Immediate(bool b) :
-    const_kind(NUM_KIND_BOOL),
-    string_kind(STRING_KIND_STRING),
-    num_index(BOOL_SIZE_SYS)
-  {
+  Immediate(bool b) {
+    memset((void*)this, 0, sizeof(*this));
+
+    const_kind = NUM_KIND_BOOL;
+    string_kind = STRING_KIND_STRING;
+    num_index = BOOL_SIZE_SYS;
     v_bool = b;
   }
 
   Immediate(Context* context,
             const char* str, size_t len,
-            IF1_string_kind kind) :
-    const_kind(CONST_KIND_STRING),
-    string_kind(kind),
-    num_index(0)
-  {
+            IF1_string_kind kind) {
+    memset((void*)this, 0, sizeof(*this));
+
+    const_kind = CONST_KIND_STRING;
+    string_kind = kind;
+    num_index = 0;
     v_string = ImmString::build(context, str, len);
   }
 
