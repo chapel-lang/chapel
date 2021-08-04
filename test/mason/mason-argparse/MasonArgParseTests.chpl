@@ -2093,6 +2093,52 @@ proc testBoolMultipleEntryValues(test: borrowed Test) throws {
   test.assertEqual((new list(myBoolArg.values())).size, 1);
 }
 
+// a short bool flag with an unrecognized value
+proc testFlagBadBoolValue(test: borrowed Test) throws {
+  var argList = ["progName","-n","tru"];
+  var parser = new argumentParser();
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-n","--boolVal"],
+                                numArgs=1,
+                                flagInversion=false);
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+// check expected output from helper string to bool method
+proc unitTestStringToBool(test: borrowed Test) throws {
+  var trueStrVals = ["true","1","yes"," true ", " yes ", " 1 "];
+  var falseStrVals =  ["no", "0", "false", " no ", " 0 ", " false "];
+  var badStrVals = ["truf", "not", "10", "01", "2", "bad", "good"];
+
+  var rtn:bool;
+
+  for tVal in trueStrVals {
+    test.assertTrue(_convertStringToBool(tVal, rtn));
+    test.assertTrue(rtn);
+  }
+
+  for fVal in falseStrVals {
+    test.assertTrue(_convertStringToBool(fVal, rtn));
+    test.assertFalse(rtn);
+  }
+  rtn = false;
+  for bVal in badStrVals {
+    test.assertFalse(_convertStringToBool(bVal, rtn));
+    test.assertFalse(rtn);
+  }
+
+}
+
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
 UnitTest.main();

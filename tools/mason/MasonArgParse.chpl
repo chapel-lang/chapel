@@ -225,6 +225,8 @@ module MasonArgParse {
           myArg._values.append(flagVal:string);
           pos = next;
           next += 1;
+        } else if _numArgs.low > 0 {
+          throw new ArgumentError("Unrecognized value " + args[next]);
         }
       }
 
@@ -627,10 +629,15 @@ module MasonArgParse {
 
   // helper to convert string values to booleans
   proc _convertStringToBool(strVal:string, inout boolVal:bool) : bool {
-    if strVal.strip(" ") == "1" || strVal.toLower() == "true" {
+    var strippedVal = strVal.strip(" ").toLower();
+    if strippedVal == "1"
+       || strippedVal == "true"
+       || strippedVal == "yes" {
       boolVal = true;
       return true;
-    } else if strVal.strip(" ") == "0" || strVal.toLower() == "false" {
+    } else if strippedVal == "0"
+              || strippedVal == "false"
+              || strippedVal == "no" {
       boolVal = false;
       return true;
     }

@@ -390,6 +390,14 @@ testBoolMultipleEntryValues()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testFlagBadBoolValue()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+unitTestStringToBool()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 Found undefined values: thirty
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
@@ -431,3 +439,4 @@ Creating 'no' flag options prevents using value to set flag
 Setting up a required flag that defaults to true with no way for user to set false
 Creating 'no' flag options prevents using value to set flag
 Creating 'no' flag options prevents using value to set flag
+Unrecognized value tru
