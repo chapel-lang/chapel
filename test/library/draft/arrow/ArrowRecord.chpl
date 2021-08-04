@@ -9,7 +9,6 @@ module ArrowRecord {
 
   proc recordBatch (args ...?n): GArrowRecordBatch {
 
-    
     // Verifying the Integrity of the arguments
     if(n%2==1) then
       compilerError("Mismatched arguments");
@@ -22,14 +21,7 @@ module ArrowRecord {
           compilerError("Wrong odd argument type");
       }
     }
-    
-    // for param i in 0..#n {
-    //     writeln(args(i));
-    // }
-    // writeln(args[1]);
-    // Making a schema for the record batch.
 
-    
     var fields: GList = getNULL();
     for param i in 1..n by 2{
       // Building the (column)
@@ -69,15 +61,29 @@ module ArrowRecord {
     return record_batch;
   }
 
-  proc table(in recordBatches: [] GArrowRecordBatch): GArrowTable {
+  proc table(recordBatches: [] GArrowRecordBatch): GArrowTable {
     var error: GErrorPtr;
     var schema: GArrowSchema = garrow_record_batch_get_schema(recordBatches[0]);
     var retval: GArrowTable;
     retval = garrow_table_new_record_batches(schema, recordBatches, recordBatches.size : guint64, c_ptrTo(error));
     
     if(isNull(retval)){
-      g_print("%s\n", error.deref().message);
+      g_print("Error creating table: %s\n", error.deref().message);
     }
     return retval;
   }
+
+  proc table(recordBatches: GArrowRecordBatch ...?n){
+    var error: GErrorPtr;
+    var schema: GArrowSchema = garrow_record_batch_get_schema(recordBatches[0]);
+    var retval: GArrowTable;
+    var rbArray = [rb in recordBatches] rb;
+    retval = garrow_table_new_record_batches(schema, rbArray, recordBatches.size : guint64, c_ptrTo(error));
+    
+    if(isNull(retval)){
+      printGError("Error creating table:", error);
+    }
+    return retval;
+  }
+
 }

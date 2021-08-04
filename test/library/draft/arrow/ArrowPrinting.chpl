@@ -28,6 +28,7 @@ module ArrowPrinting {
   }
 
   proc printTable(table: GArrowTable) {
+    if(isNull(table)) then return;
     var error: GErrorPtr;
     var str = garrow_table_to_string(table, c_ptrTo(error));
     if(str == ""){

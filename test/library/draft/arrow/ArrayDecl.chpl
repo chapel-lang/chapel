@@ -7,15 +7,6 @@ module ArrayDecl {
   require "arrow-glib/arrow-glib.h", "-larrow-glib", "-lglib-2.0", "-lgobject-2.0";
   require "null.h", "null.c";
 
-  // #defines in build.c
-  // extern {
-  //     #define EXIT_FAILURE 1
-  //     #define EXIT_SUCCESS 0
-  //     #define G_GINT64_FORMAT "lli"
-  //     #define	FALSE	(0)
-  //     #define	TRUE	(!FALSE)
-  // }
-
   extern const EXIT_FAILURE: int ;
   extern const EXIT_SUCCESS: int;
   extern const G_GINT64_FORMAT: c_string;
@@ -172,4 +163,12 @@ module ArrayDecl {
   extern proc isNull(ptr: c_void_ptr): c_int;
 
   extern proc getNULL(): c_void_ptr;
+
+
+
+  // Temporary Error caller for convenience.
+  inline proc printGError(msg: string, error: GErrorPtr){
+    g_print("%s %s\n", msg.c_str(), error.deref().message);
+    g_error_free(error);
+  }
 }
