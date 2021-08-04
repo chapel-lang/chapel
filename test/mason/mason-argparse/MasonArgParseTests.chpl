@@ -2136,8 +2136,199 @@ proc unitTestStringToBool(test: borrowed Test) throws {
     test.assertFalse(_convertStringToBool(bVal, rtn));
     test.assertFalse(rtn);
   }
-
 }
+
+// single positional argument test
+proc testSinglePositionalArgument(test: borrowed Test) throws {
+  var argList = ["progName","myFileName"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addPositional(name="FileName");
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myPosArg.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(myPosArg.value(),argList[1]);
+  test.assertEqual((new list(myPosArg.values())).size, 1);
+}
+
+// single positional argument test with default value
+proc testPositionalArgumentDefault(test: borrowed Test) throws {
+  var argList = ["progName"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addPositional(name="FileName",
+                                      defaultValue=".",
+                                      numArgs=0..1);
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myPosArg.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(myPosArg.value(),".");
+  test.assertEqual((new list(myPosArg.values())).size, 1);
+}
+
+// multiple value positional argument test
+proc testPositionalArgumentRangeOneOrMore(test: borrowed Test) throws {
+  var argList = ["progName","file1","file2","file3","file4"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addPositional(name="FileNames",
+                                      numArgs=1..);
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myPosArg.hasValue());
+  //ensure the value passed is correct
+  var valList = new list(myPosArg.values());
+  test.assertEqual(valList,new list(argList[1..]));
+  test.assertEqual(valList.size, 4);
+}
+
+// a mix of positionals, bools, and options
+proc testMixPosBoolOptWithValues(test: borrowed Test) throws {
+  var argList = ["progName","myFile1","myFile2","myFile3","-b","true", "-n",
+                 "myStrOpt1", "myStrOpt2", "myStrOpt3"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-b","--boolVal"],
+                                numArgs=1,
+                                flagInversion=false);
+  var myPosArg = parser.addPositional(name="FileNames",
+                                      numArgs=1..);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=1..3,
+                                  required=false,
+                                  defaultValue=none);
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  var posList = new list(myPosArg.values());
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(posList, new list(argList[1..3]));
+  test.assertEqual(optList, new list(argList[7..9]));
+}
+
+// a mix of positionals, bools, and options with fixed # values expected
+proc testMixPosBoolOptWithValuesFixed(test: borrowed Test) throws {
+  var argList = ["progName","myFile1","myFile2","myFile3","-b","true", "-n",
+                 "myStrOpt1", "myStrOpt2", "myStrOpt3"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-b","--boolVal"],
+                                numArgs=1,
+                                flagInversion=false);
+  var myPosArg = parser.addPositional(name="FileNames",
+                                      numArgs=3);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  var posList = new list(myPosArg.values());
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(posList, new list(argList[1..3]));
+  test.assertEqual(optList, new list(argList[7..9]));
+}
+
+// a mix of positionals, bools, and options with ranges of values and subcommand
+// with optional positional, bools, and options.
+proc testMixPosBoolOptWithValuesSubCommand(test: borrowed Test) throws {
+  var argList = ["progName","myFile1","myFile2","myFile3","-b","true", "-n",
+                 "myStrOpt1", "myStrOpt2", "myStrOpt3","subCmd1","-b","false",
+                 "--stringVal=s1","--stringVal=s2","-n","s3"];
+
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-b","--boolVal"],
+                                numArgs=0..1,
+                                flagInversion=false,
+                                defaultValue=none);
+  var myPosArg = parser.addPositional(name="FileNames",
+                                      numArgs=1..);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=1..10,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand("subCmd1");
+  // setup the subcommand parser
+  var subParser = new argumentParser();
+  var subCmdBoolArg = subParser.addFlag(name="BoolFlag",
+                              opts=["-b","--boolVal"],
+                              numArgs=0..1,
+                              flagInversion=false,
+                              defaultValue=none);
+  var subCmdPosArg = subParser.addPositional(name="FileNames",
+                                      numArgs=0..,
+                                      defaultValue=(new list(["f1","f2"])));
+  var subCmdStrArg = subParser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=1..10,
+                                  required=false,
+                                  defaultValue=none);
+
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  var posList = new list(myPosArg.values());
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(posList, new list(argList[1..3]));
+  test.assertEqual(optList, new list(argList[7..9]));
+
+  //make sure no sub-values currently exist
+  test.assertFalse(subCmdBoolArg.hasValue());
+  test.assertFalse(subCmdPosArg.hasValue());
+  test.assertFalse(subCmdStrArg.hasValue());
+  //parse the remaining args
+  subParser.parseArgs(rest.toArray());
+  //make sure we now have a value
+  test.assertTrue(subCmdBoolArg.hasValue());
+  test.assertTrue(subCmdPosArg.hasValue());
+  test.assertTrue(subCmdStrArg.hasValue());
+  //ensure the value passed is correct
+  var subCmdPosList = new list(subCmdPosArg.values());
+  var subCmdOptList = new list(subCmdStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(subCmdPosList, new list(["f1","f2"]));
+  test.assertEqual(subCmdOptList, new list(["s1","s2","s3"]));
+}
+
 
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
