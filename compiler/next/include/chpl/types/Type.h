@@ -31,7 +31,7 @@ namespace types {
 /**
   This is the base class for classes that represent a type.
 
-  Functions like someType->isRecord() / someAst->toRecord() are available and
+  Functions like someType->isRecord() / someType->toRecord() are available and
   generated for all Type subclasses.
 
  */

@@ -17,33 +17,40 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_TYPECLASSES_H
-#define CHPL_TYPES_TYPECLASSES_H
+#ifndef CHPL_TYPES_NOTHINGTYPE_H
+#define CHPL_TYPES_NOTHINGTYPE_H
+
+#include "chpl/types/Type.h"
 
 namespace chpl {
 namespace types {
 
 
-// forward declare the various Type subclasses
-// using macros and TypeClassesList.h
-/// \cond DO_NOT_DOCUMENT
-#define TYPE_DECL(NAME) class NAME;
-#define TYPE_NODE(NAME) TYPE_DECL(NAME)
-#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_DECL(NAME)
-#define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_DECL(NAME)
-#define TYPE_END_SUBCLASSES(NAME)
-/// \endcond
-// Apply the above macros to TypeClassesList.h
-#include "chpl/types/TypeClassesList.h"
-// clear the macros
-#undef TYPE_NODE
-#undef BUILTIN_TYPE_NODE
-#undef TYPE_BEGIN_SUBCLASSES
-#undef TYPE_END_SUBCLASSES
-#undef TYPE_DECL
+/**
+  This class represents the nothing type.
+ */
+class NothingType : public Type {
+ private:
+  NothingType() : Type(typetags::NothingType) { }
 
-// forward declare other classes
-class Type;
+  bool contentsMatchInner(const Type* other) const override {
+    return true;
+  }
+
+  void markUniqueStringsInner(Context* context) const override {
+  }
+
+  bool isGeneric() const override {
+    return false;
+  }
+
+  static const owned<NothingType>& getNothingType(Context* context);
+
+ public:
+  ~NothingType() = default;
+
+  static const NothingType* get(Context* context);
+};
 
 
 } // end namespace uast

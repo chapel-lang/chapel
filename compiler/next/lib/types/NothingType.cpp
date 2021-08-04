@@ -17,36 +17,25 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_TYPECLASSES_H
-#define CHPL_TYPES_TYPECLASSES_H
+#include "chpl/types/NothingType.h"
+#include "chpl/queries/query-impl.h"
 
 namespace chpl {
 namespace types {
 
 
-// forward declare the various Type subclasses
-// using macros and TypeClassesList.h
-/// \cond DO_NOT_DOCUMENT
-#define TYPE_DECL(NAME) class NAME;
-#define TYPE_NODE(NAME) TYPE_DECL(NAME)
-#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_DECL(NAME)
-#define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_DECL(NAME)
-#define TYPE_END_SUBCLASSES(NAME)
-/// \endcond
-// Apply the above macros to TypeClassesList.h
-#include "chpl/types/TypeClassesList.h"
-// clear the macros
-#undef TYPE_NODE
-#undef BUILTIN_TYPE_NODE
-#undef TYPE_BEGIN_SUBCLASSES
-#undef TYPE_END_SUBCLASSES
-#undef TYPE_DECL
+const owned<NothingType>& NothingType::getNothingType(Context* context) {
+  QUERY_BEGIN(getNothingType, context);
 
-// forward declare other classes
-class Type;
+  auto result = toOwned(new NothingType());
+
+  return QUERY_END(result);
+}
+
+const NothingType* NothingType::get(Context* context) {
+  return getNothingType(context).get();
+}
 
 
-} // end namespace uast
+} // end namespace types
 } // end namespace chpl
-
-#endif
