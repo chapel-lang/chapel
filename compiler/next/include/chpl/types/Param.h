@@ -20,25 +20,34 @@
 #ifndef CHPL_TYPES_PARAM_H
 #define CHPL_TYPES_PARAM_H
 
-#include "chpl/queries/UniqueString.h"
+#include "chpl/queries/Context.h"
+#include "chpl/types/BoolType.h"
+#include "chpl/types/BytesType.h"
+#include "chpl/types/CStringType.h"
+#include "chpl/types/ComplexType.h"
+#include "chpl/types/ImagType.h"
+#include "chpl/types/IntType.h"
+#include "chpl/types/NothingType.h"
+#include "chpl/types/ParamClasses.h"
 #include "chpl/types/ParamTag.h"
-
-#include <cstddef>
-#include <cstdint>
+#include "chpl/types/RealType.h"
+#include "chpl/types/StringType.h"
+#include "chpl/types/UintType.h"
+#include "chpl/util/hash.h"
 
 namespace chpl {
-class Context;
-
 namespace types {
-class Type;
-class QualifiedType;
-class Immediate;
+
 
 /**
-  This type represents a param value.
+  This is the base class for classes that represent a param value.
+
+  Functions like someParam->isUint32Param() / someParam->toUint32Param() are
+  available and generated for all Param subclasses.
+
  */
 class Param {
- private:
+ public:
   struct Complex128Storage {
     double re;
     double im;
@@ -47,6 +56,9 @@ class Param {
     }
     bool operator!=(const Complex128Storage& other) const {
       return !(*this == other);
+    }
+    size_t hash() const {
+      return chpl::hash(re, im);
     }
   };
   struct Complex64Storage {
@@ -58,67 +70,187 @@ class Param {
     bool operator!=(const Complex64Storage& other) const {
       return !(*this == other);
     }
+    size_t hash() const {
+      return chpl::hash(re, im);
+    }
   };
-  ParamTag tag_ = paramtags::None;
-  union {
-    // define the enum using macros and ParamClassesList.h
-    /// \cond DO_NOT_DOCUMENT
-    #define PARAM_NODE(NAME, TYPE) TYPE NAME;
-    /// \endcond
-    // Apply the above macros to ParamClassesList.h
-    #include "chpl/types/ParamClassesList.h"
-    // clear the macros
-    #undef PARAM_NODE
-  } u;
-  const Type* type_ = nullptr;
 
-  Param();
+ private:
+  ParamTag tag_;
 
-  static const owned<Param>& getIntQuery(Context* context, int64_t v, int bitwidth);
-  static const owned<Param>& getUintQuery(Context* context, uint64_t v, int bitwidth);
-  static const owned<Param>& getBoolQuery(Context* context, uint64_t v, int bitwidth);
-  static const owned<Param>& getRealQuery(Context* context, double v, int bitwidth);
-  static const owned<Param>& getImagQuery(Context* context, double v, int bitwidth);
-  static const owned<Param>& getComplexQuery(Context* context, double re, double im, int bitwidth);
-  static const owned<Param>& getStringQuery(Context* context, chpl::detail::PODUniqueString str);
-  static const owned<Param>& getBytesQuery(Context* context, chpl::detail::PODUniqueString str);
-  static const owned<Param>& getCStringQuery(Context* context, chpl::detail::PODUniqueString str);
+ protected:
+  /**
+    This function needs to be defined by subclasses.
+    It should check only those fields defined in subclasses
+    (it should not check the Param fields such as tag_).
+    It can assume that other has the same type as the receiver.
+   */
+  virtual bool contentsMatchInner(const Param* other) const = 0;
+
+  /**
+   This function needs to be defined by subclasses.
+   It should call the 'mark' method on any UniqueStrings
+   stored as fields.
+   */
+  virtual void markUniqueStringsInner(Context* context) const = 0;
+
+  /**
+    This function needs to be defined by subclasses. It should
+    return the Type of the Param.
+   */
+  virtual const Type* getTypeInner(Context* context) const = 0;
+
+  // helper functions to mark a value
+  static void markValue(Context* context, UniqueString v) {
+    v.mark(context);
+  }
+  // do nothing for non-UniqueString values
+  template<typename T> static void markValue(Context* context, T v) { }
+
+  // helper function to convert a value to a string
+  static std::string valueToString(UniqueString v) {
+    return v.toString();
+  }
+  static std::string valueToString(Complex128Storage v) {
+    return std::to_string(v.re) + "+" + std::to_string(v.im) + "i";
+  }
+  static std::string valueToString(Complex64Storage v) {
+    return std::to_string(v.re) + "+" + std::to_string(v.im) + "i";
+  }
+  template<typename T> static std::string valueToString(T v) {
+    return std::to_string(v);
+  }
+
+  Param(ParamTag tag)
+    : tag_(tag) {
+  }
 
  public:
-  static const Param* getInt(Context* context, int64_t v, int bitwidth);
-  static const Param* getUint(Context* context, uint64_t v, int bitwidth);
-  static const Param* getBool(Context* context, uint64_t v, int bitwidth);
-  static const Param* getReal(Context* context, double v, int bitwidth);
-  static const Param* getImag(Context* context, double v, int bitwidth);
-  static const Param* getComplex(Context* context, double re, double im, int bitwidth);
-  static const Param* getString(Context* context, const char* str, size_t len);
-  static const Param* getBytes(Context* context, const char* str, size_t len);
-  static const Param* getCString(Context* context, const char* str, size_t len);
+  virtual ~Param() = 0; // this is an abstract base class
 
-  ParamTag tag() const { return tag_; }
-  const Type* type(Context* context) const { return type_; }
+  /**
+    Returns the tag indicating which Param subclass this is.
+   */
+  ParamTag tag() const {
+    return tag_;
+  }
 
-  static bool equals(const Param& a, const Param& b);
+  /**
+    Returns the type of the Param.
+   */
+  const Type* getType(Context* context) {
+    return getTypeInner(context);
+  }
 
   bool operator==(const Param& other) const {
-    return equals(*this, other);
+    return completeMatch(&other);
   }
   bool operator!=(const Param& other) const {
     return !(*this == other);
   }
-  void mark(Context* context) const;
+
+  bool completeMatch(const Param* other) const;
+
+  // 'keep' is some old Param
+  // 'addin' is some new Param we wish to combine with it
+  //
+  // on exit, 'keep' stores the Param we need to keep, and anything
+  // not kept is stored in 'addin'.
+  // the function returns 'true' if anything changed in 'keep'.
+  static bool updateParam(owned<Param>& keep, owned<Param>& addin);
+
+  static void markParam(Context* context, const Param* keep);
+
+  std::string toString() const;
+
+  // define is__ methods for the various Param subclasses
+  // using macros and ParamClassesList.h
+  /// \cond DO_NOT_DOCUMENT
+  #define PARAM_IS(NAME) \
+    bool is##NAME() const { \
+      return paramtags::is##NAME(this->tag_); \
+    }
+  #define PARAM_NODE(NAME, VALTYPE, TYPEEXPR) PARAM_IS(NAME)
+  /// \endcond
+  // Apply the above macros to ParamClassesList.h
+  #include "chpl/types/ParamClassesList.h"
+  // clear the macros
+  #undef PARAM_NODE
+  #undef PARAM_IS
+
+  // define to__ methods for the various Param subclasses
+  // using macros and ParamClassesList.h
+  // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
+  /// \cond DO_NOT_DOCUMENT
+  #define PARAM_TO(NAME) \
+    const NAME * to##NAME() const { \
+      return this->is##NAME() ? (const NAME *)this : nullptr; \
+    } \
+    NAME * to##NAME() { \
+      return this->is##NAME() ? (NAME *)this : nullptr; \
+    }
+  #define PARAM_NODE(NAME, VALTYPE, TYPEEXPR) PARAM_TO(NAME)
+  /// \endcond
+  // Apply the above macros to ParamClassesList.h
+  #include "chpl/types/ParamClassesList.h"
+  // clear the macros
+  #undef PARAM_NODE
+  #undef PARAM_TO
 };
+
+// define the subclasses using macros and ParamClassesList.h
+/// \cond DO_NOT_DOCUMENT
+#define PARAM_NODE(NAME, VALTYPE, TYPEEXPR) \
+  class NAME : public Param { \
+   private: \
+    VALTYPE value_; \
+    NAME(VALTYPE value) : Param(paramtags::NAME), value_(value) { } \
+    static const owned<NAME>& get##NAME(Context* context, VALTYPE value); \
+    bool contentsMatchInner(const Param* other) const override { \
+      const NAME* lhs = this; \
+      const NAME* rhs = (const NAME*) other; \
+      return lhs->value_ == rhs->value_; \
+    } \
+    void markUniqueStringsInner(Context* context) const override { \
+      Param::markValue(context, value_); \
+    } \
+    const Type* getTypeInner(Context* context) const override { \
+      return TYPEEXPR; \
+    } \
+   public: \
+    ~NAME() = default; \
+    static const NAME* get(Context* context, VALTYPE value) { \
+      return get##NAME(context, value).get(); \
+    } \
+    VALTYPE value() const { \
+      return value_; \
+    } \
+  };
+/// \endcond
+
+// Apply the above macros to ParamClassesList.h
+#include "chpl/types/ParamClassesList.h"
+
+// clear the macros
+#undef PARAM_NODE
 
 
 } // end namespace types
-
-template<> struct mark<chpl::types::Param> {
-  void operator()(Context* context,
-                  const chpl::types::Param& keep) const {
-    keep.mark(context);
-  }
-};
-
 } // end namespace chpl
+
+// TODO: is there a reasonable way to define std::less on Param*?
+// Comparing pointers would lead to some nondeterministic ordering.
+namespace std {
+  template<> struct hash<chpl::types::Param::Complex128Storage> {
+    size_t operator()(const chpl::types::Param::Complex128Storage key) const {
+      return key.hash();
+    }
+  };
+  template<> struct hash<chpl::types::Param::Complex64Storage> {
+    size_t operator()(const chpl::types::Param::Complex64Storage key) const {
+      return key.hash();
+    }
+  };
+} // end namespace std
 
 #endif

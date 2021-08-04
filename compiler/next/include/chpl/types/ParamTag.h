@@ -32,13 +32,26 @@ namespace paramtags {
 enum ParamTag {
   // define the enum using macros and ParamClassesList.h
   /// \cond DO_NOT_DOCUMENT
-  #define PARAM_NODE(NAME, TYPE) NAME ,
+  #define PARAM_NODE(NAME, VALTYPE, TYPEEXPR) NAME ,
   /// \endcond
   // Apply the above macros to ParamClassesList.h
   #include "chpl/types/ParamClassesList.h"
   // clear the macros
   #undef PARAM_NODE
 };
+
+// define is___ for regular nodes
+// (not yet for abstract parent classes)
+/// \cond DO_NOT_DOCUMENT
+#define PARAM_NODE(NAME, VALTYPE, TYPEEXPR) \
+  static inline bool is##NAME(ParamTag tag) { \
+    return tag == NAME; \
+  }
+/// \endcond
+// Apply the above macros to ParamClassesList.h
+#include "chpl/types/ParamClassesList.h"
+// clear the macros
+#undef PARAM_NODE
 
 
 } // end namespace paramtags

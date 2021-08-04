@@ -17,33 +17,25 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_TYPECLASSES_H
-#define CHPL_TYPES_TYPECLASSES_H
+#ifndef CHPL_TYPES_PARAMCLASSES_H
+#define CHPL_TYPES_PARAMCLASSES_H
 
 namespace chpl {
 namespace types {
 
 
-// forward declare the various Type subclasses
-// using macros and TypeClassesList.h
+// forward declare the various Param subclasses
+// using macros and ParamClassesList.h
 /// \cond DO_NOT_DOCUMENT
-#define TYPE_DECL(NAME) class NAME;
-#define TYPE_NODE(NAME) TYPE_DECL(NAME)
-#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_DECL(NAME)
-#define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_DECL(NAME)
-#define TYPE_END_SUBCLASSES(NAME)
+#define PARAM_NODE(NAME, VALTYPE, TYPEEXPR) class NAME;
 /// \endcond
-// Apply the above macros to TypeClassesList.h
-#include "chpl/types/TypeClassesList.h"
+// Apply the above macros to ParamClassesList.h
+#include "chpl/types/ParamClassesList.h"
 // clear the macros
-#undef TYPE_NODE
-#undef BUILTIN_TYPE_NODE
-#undef TYPE_BEGIN_SUBCLASSES
-#undef TYPE_END_SUBCLASSES
-#undef TYPE_DECL
+#undef PARAM_NODE
 
 // forward declare other classes
-class Type;
+class Param;
 
 
 } // end namespace types
