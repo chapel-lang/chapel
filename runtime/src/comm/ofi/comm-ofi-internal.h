@@ -235,6 +235,12 @@ extern int chpl_comm_ofi_abort_on_error;
       }                                                                 \
     } while (0)
 
+#define CHK_SYS_FREE(p)                                                 \
+  do {                                                                  \
+    sys_free(p);                                                        \
+    p = NULL;                                                           \
+  } while (0)
+
 #define CHPL_CALLOC_SZ(p, n, s)                                         \
   do {                                                                  \
     p = chpl_mem_calloc((n), (s), CHPL_RT_MD_COMM_UTIL, 0, 0);          \
