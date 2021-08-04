@@ -24,12 +24,11 @@ module MasonArgParse {
   private use Sort;
 
   const DEBUG=false;
-  // TODO: Add bool flags
   // TODO: Add positional arguments
   // TODO: Add pass-thru options following "-" or "--"
   // TODO: Add int opts
-  
   // TODO: Implement Help message and formatting
+  // TODO: Move logic splitting '=' into '_match'
   // TODO: Add public github issue when available
 
   if chpl_warnUnstable then
@@ -38,7 +37,7 @@ module MasonArgParse {
   // A generic argument parser error
   class ArgumentError : Error {
     var _msg:string;
-    
+
     proc init(msg:string) {
       this._msg = msg;
     }
@@ -47,14 +46,15 @@ module MasonArgParse {
       return _msg;
     }
   }
-  
+
   // indicates a result of argument parsing
   class Argument {
+
     //indicates if an argument was entered on the command line
     var _present: bool=false;
     // hold the values of the argument from the command line
     var _values: list(string);
-    
+
     proc value(){
       return this._values.first();
     }
@@ -68,7 +68,23 @@ module MasonArgParse {
     proc hasValue(){
       return !this._values.isEmpty() && this._present;
     }
+
+    // get the value back as a boolean, if possible
+    proc valueAsBool() throws {
+      var rtn:bool;
+
+      if !this.hasValue() {
+        throw new ArgumentError("No value in this argument to convert");
+      } else if _convertStringToBool(this._values.first(), rtn) {
+        return rtn;
+      }
+      else {
+        throw new ArgumentError("Boolean requested but could not convert " +
+                                this._values.first():string + " to bool");
+      }
+    }
   }
+
 
   // stores an argument definition
   class Action {
@@ -95,28 +111,27 @@ module MasonArgParse {
     proc _validate(present:bool, valueCount:int):string {
         return "";
     }
-
   }
 
   // stores a subcommand definition
   class SubCommand : Action {
-    
+
     proc init(cmd:string) {
       super.init();
       this._name=cmd;
     }
-    
-    // for subcommands, _match attempts to identify values at the index of the 
-    // subcommadn at position startPos (inclusive) and through the 
+
+    // for subcommands, _match attempts to identify values at the index of the
+    // subcommadn at position startPos (inclusive) and through the
     // endPos (inclusive) parameter [startPos, endPos]
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
-                         ref rest:list(string), endPos:int) throws {                           
+                         ref rest:list(string), endPos:int) throws {
       var pos = startPos;
       var next = pos + 1;
       debugTrace("starting at pos: " + pos:string);
-      debugTrace("Searching positions from: " + pos:string + " to " 
+      debugTrace("Searching positions from: " + pos:string + " to "
                  + endPos:string);
-      while pos <= endPos 
+      while pos <= endPos
       {
         if args[pos] == this._name {
           myArg._values.append(args[pos]);
@@ -128,6 +143,94 @@ module MasonArgParse {
         next+=1;
       }
       return pos;
+    }
+
+  }
+
+  // stores the definition of a Flag (bool) argument
+  class Flag : Action {
+    // indicates if this flag is required to be entered by the user
+    var _required:bool;
+    // default value to use when flag is not present
+    var _defaultValue:list(string);
+    // number of option flags that can indicate this argument
+    var _numFlags:int;
+    // value of flag(s) that can indicate true for this argument
+    var _yesFlags:list(string);
+    // value of flag(s) that can indicate false for this argument
+    var _noFlags:list(string);
+    // number of acceptable values to be present after argument is indicated
+    var _numArgs:range;
+
+    proc init(name:string, defaultValue:?t=none, required:bool=false,
+              yesFlags:[]string, noFlags:[]string, numArgs=0..0) {
+      super.init();
+      this._name=name;
+      this._required = required;
+      this._defaultValue = new list(string);
+      if isBoolType(t) then this._defaultValue.append(defaultValue:string);
+      this._yesFlags = new list(yesFlags);
+      this._noFlags = new list(noFlags);
+      this._numArgs = numArgs;
+    }
+
+    override proc _hasDefault():bool{
+      return !this._defaultValue.isEmpty();
+    }
+
+    override proc _getDefaultValue() {
+      return this._defaultValue;
+    }
+
+    override proc _isRequired() {
+      return this._required;
+    }
+
+    override proc _validate(present:bool, valueCount:int):string {
+      debugTrace("expected " + _numArgs:string + " got " + valueCount:string);
+      debugTrace("present="+present:string + " required="+_required:string);
+      if !present && _required {
+        return "Required value missing";
+      } else if valueCount < _numArgs.low && present {
+        return "Not enough values: expected " + _numArgs:string +
+               " got " + valueCount:string;
+      } else {
+        return "";
+      }
+    }
+
+    override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
+                         ref rest:list(string), endPos:int) throws {
+      var high = _numArgs.high;
+      debugTrace("expecting between " +
+                 _numArgs.low:string + " and " + _numArgs.high:string);
+      var matched = 0;
+      var pos = startPos;
+      var next = pos+1;
+      debugTrace("starting at pos: " + pos:string);
+      debugTrace("searching from: " + pos:string + " to " + endPos:string);
+      if _yesFlags.contains(args[pos]) && _numArgs.low == 0 {
+        myArg._values.clear();
+        myArg._values.append("true");
+        debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
+      } else if _noFlags.contains(args[pos]) && _numArgs.low == 0 {
+        myArg._values.clear();
+        myArg._values.append("false");
+        debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
+      }
+      if high > 0 && next <= endPos {
+        var flagVal:bool;
+        if _convertStringToBool(args[next], flagVal) {
+          myArg._values.clear();
+          myArg._values.append(flagVal:string);
+          pos = next;
+          next += 1;
+        } else if _numArgs.low > 0 {
+          throw new ArgumentError("Unrecognized value " + args[next]);
+        }
+      }
+
+      return next;
     }
 
   }
@@ -155,7 +258,7 @@ module MasonArgParse {
       _numArgs=numArgs;
       _required=required;
       _defaultValue=defaultValue;
-      
+
       // make sure that if we make an argument required no default set
       assert(!(_required && _defaultValue.size > 0),
               "Required options do not support default values");
@@ -179,10 +282,10 @@ module MasonArgParse {
     // for option values, _match attempts to identify values after the option
     // at position startPos (exclusive) and through the endPos (inclusive)
     // parameter (startPos, endPos]
-    override proc _match(args:[?argsD]string, startPos:int, myArg:Argument, 
+    override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
                          ref rest:list(string), endPos:int) throws {
       var high = _numArgs.high;
-      debugTrace("expecting between " + 
+      debugTrace("expecting between " +
                  _numArgs.low:string + " and " + _numArgs.high:string);
       var matched = 0;
       var pos = startPos;
@@ -193,7 +296,7 @@ module MasonArgParse {
       {
         pos=next;
         next+=1;
-        matched+=1; 
+        matched+=1;
         myArg._values.append(args[pos]);
         debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
       }
@@ -204,10 +307,10 @@ module MasonArgParse {
         if !present && _required {
         return "Required value missing";
       } else if valueCount > _numArgs.high {
-        return "Too many values: expected " + _numArgs:string + 
+        return "Too many values: expected " + _numArgs:string +
                " got " + valueCount:string;
       } else if valueCount < _numArgs.low && present {
-        return "Not enough values: expected " + _numArgs:string + 
+        return "Not enough values: expected " + _numArgs:string +
                " got " + valueCount:string;
       } else {
         return "";
@@ -225,7 +328,7 @@ module MasonArgParse {
 
     proc parseArgs(arguments:[?argsD] string) throws {
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
-      debugTrace("start parsing args");   
+      debugTrace("start parsing args");
       var k = 0;
       // identify optionIndices where opts start
       var optionIndices : map(int, string);
@@ -234,7 +337,7 @@ module MasonArgParse {
       var endPos = 0;
 
       // as noted in the comments on PR#18141, breaking up the arguments
-      // when they contain = disconnects the resulting array's indices from 
+      // when they contain = disconnects the resulting array's indices from
       // the original.
       for i in argsD {
         const arrElt = arguments[i];
@@ -289,7 +392,7 @@ module MasonArgParse {
         debugTrace("got end position " + endPos:string);
         k+=1;
         debugTrace("k val = " + k:string);
-        debugTrace("arrayoptionIndices.size is " 
+        debugTrace("arrayoptionIndices.size is "
                  + arrayoptionIndices.size:string);
         debugTrace("argsList.size = " + argsList.size:string);
         debugTrace("argsD.high = " + argsD.high:string);
@@ -311,8 +414,8 @@ module MasonArgParse {
                      + arrayoptionIndices[k][0]:string);
             debugTrace("arrayoptionIndices " + arrayoptionIndices:string);
             throw new ArgumentError("\\".join(act._name) + " has extra values");
-          }       
-        } 
+          }
+        }
       }
       // make sure all options defined got values if needed
       _checkSatisfiedOptions();
@@ -328,7 +431,7 @@ module MasonArgParse {
 
       // check for undefined argument provided
       if endPos < argsList.size && endPos + rest.size < argsList.size {
-          throw new ArgumentError("Found undefined values: " + 
+          throw new ArgumentError("Found undefined values: " +
                                   " ".join(argsList.toArray()[endPos..]));
       }
 
@@ -357,26 +460,96 @@ module MasonArgParse {
         var rtnMsg = act._validate(arg._present, arg._values.size);
         if rtnMsg != "" {
           throw new ArgumentError(act._name + " " + rtnMsg);
-        }        
+        }
       }
     }
+
 
     proc _addAction(in action : Action) throws {
 
       // ensure option names are unique
       if _actions.contains(action._name) {
-        throw new ArgumentError("Option name " + action._name + 
+        throw new ArgumentError("Option name " + action._name +
                                 " is previously defined");
-      }      
-      
+      }
+
       //create, add, and return the shared argument
       var arg = new shared Argument();
       this._result.add(action._name, arg);
       // store the action
       debugTrace("added action: " + action._name);
       _actions.add(action._name, action);
-      
+
       return arg;
+    }
+
+    proc addFlag(name:string, opts:[?optsD],
+                 required=false, defaultValue:?t=none, flagInversion=true,
+                 numArgs=0) throws {
+      return addFlag(name=name,
+                     opts=opts,
+                     required=required,
+                     defaultValue=defaultValue,
+                     flagInversion=flagInversion,
+                     numArgs=numArgs..numArgs);
+    }
+
+    proc addFlag(name:string, opts:[?optsD],
+                 required=false, defaultValue:?t=none, flagInversion=true,
+                 numArgs:range) throws {
+
+      if (flagInversion && numArgs.high > 0) {
+        throw new ArgumentError("Creating 'no' flag options prevents " +
+                                "using value to set flag");
+      }
+
+      if isBoolType(t) {
+        if !flagInversion && defaultValue && numArgs.high < 1 && required {
+          throw new ArgumentError("Setting up a required flag that defaults " +
+                                  "to true with no way for user to set false");
+        }
+      }
+
+      if numArgs.high > 1 {
+        throw new ArgumentError("Maximum number of values for a flag is 1");
+      }
+
+      for i in optsD {
+        if !opts[i].startsWith("-") {
+          throw new ArgumentError("Use '-' or '--' to indicate flags. " +
+                                  "Positional arguments not yet supported");
+        }
+        // ensure we don't redefine an existing option flag
+        if _options.contains(opts[i]) {
+          throw new ArgumentError("Flag " + opts[i] + " is previously " +
+                                  "defined");
+        }
+      }
+
+      var noFlagOpts:[optsD]string;
+      // collect all the option strings
+      for i in optsD {
+        _options.add(opts[i], name);
+        // if user chooses to automatically create 'no' version of flag
+        if flagInversion {
+          var flagStr = opts[i].strip('-',leading=true, trailing=false);
+          if flagStr.size == 1 {
+            noFlagOpts[i] = "-no-"+flagStr;
+          } else {
+            noFlagOpts[i] = "--no-"+flagStr;
+          }
+          _options.add(noFlagOpts[i], name);
+        }
+      }
+
+      var act = new owned Flag(name=name,
+                               required=required,
+                               defaultValue=defaultValue,
+                               yesFlags=opts,
+                               noFlags=noFlagOpts,
+                               numArgs=numArgs);
+
+      return _addAction(act);
     }
 
     proc addSubCommand(cmd:string) throws {
@@ -384,7 +557,7 @@ module MasonArgParse {
       _options.add(cmd, cmd);
       return _addAction(act);
     }
-    
+
     // define a new string option with fixed number of values expected
     proc addOption(name:string,
                    opts:[?optsD]string,
@@ -423,14 +596,13 @@ module MasonArgParse {
                                   "Positional arguments not yet supported");
         }
 
-              
         // ensure we don't redefine an existing option flag
         if _options.contains(opts[i]) {
           throw new ArgumentError("Option flag " + opts[i] + " is previously " +
                                   "defined");
         }
       }
-      
+
       var myDefault = new list(string);
 
       if isStringType(t) {
@@ -442,7 +614,7 @@ module MasonArgParse {
                                 + "as default values at this time");
       }
 
-      var action = new owned Option(name=name, 
+      var action = new owned Option(name=name,
                                     numOpts=opts.size,
                                     opts=opts,
                                     numArgs=numArgs,
@@ -454,7 +626,24 @@ module MasonArgParse {
       return _addAction(action);
     }
   }
-  
+
+  // helper to convert string values to booleans
+  proc _convertStringToBool(strVal:string, inout boolVal:bool) : bool {
+    var strippedVal = strVal.strip(" ").toLower();
+    if strippedVal == "1"
+       || strippedVal == "true"
+       || strippedVal == "yes" {
+      boolVal = true;
+      return true;
+    } else if strippedVal == "0"
+              || strippedVal == "false"
+              || strippedVal == "no" {
+      boolVal = false;
+      return true;
+    }
+    return false;
+  }
+
   proc debugTrace(msg:string) {
     if DEBUG then try! {stderr.writeln(msg);}
   }
