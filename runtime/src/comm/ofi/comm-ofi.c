@@ -1339,7 +1339,7 @@ chpl_bool canBindTxCtxs(struct fi_info* info) {
 
   //
   // Gather invariant info.  The simplistic first-time check here is
-  // sufficent because we only get called from single-threaded code
+  // sufficient because we only get called from single-threaded code
   // while examining provider candidates.
   //
   static chpl_bool haveInvariants = false;
