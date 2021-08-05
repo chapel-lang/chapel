@@ -1,13 +1,17 @@
-use IO, List;
+use IO, LinkedLists;
 
 record MyRecord {
-  var numbers:list(int); // could it be [1..0] int ?
+  var numbers:LinkedList(int); // could it be [1..0] int ?
+
+  proc deinit() {
+    numbers.destroy();
+  }
 }
 
 var myEntry:MyRecord;
-myEntry.numbers.append(1);
-myEntry.numbers.append(2);
-myEntry.numbers.append(3);
+myEntry.numbers.push_back(1);
+myEntry.numbers.push_back(2);
+myEntry.numbers.push_back(3);
 
 writef("testing json write: %jt\n", myEntry);
 
