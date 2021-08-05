@@ -1,29 +1,74 @@
 #!/usr/bin/env sh
 
 #Script for removing pre-release tag and updating version number before creating release branch. Arguments are the old and new version numbers as follows:
-(E.G. Release 1.24.0 to Release 1.25.0)
+#(E.G. Release 1.24.0 to Release 1.25.0)
 #1 - Old Major - 1
-#2 - New Major - 24
-#3 - Old Minor - 0
-#4 - New Minor - 1
-#5 - Old Update - 25
+#2 - New Major - 1
+#3 - Old Minor - 24
+#4 - New Minor - 25
+#5 - Old Update - 0
 #6 - New Update - 0
 #7 - Older Major(For archivedSpecs only) - 1
 #8 - Older Minor(For archivedSpecs only) - 23
 
+usage="changePrerelease [-h] [-options]
+-h: help
+options:
+Arguments for E.G. Release 1.24.0 to Release 1.25.0
+1 - Old Major - 1
+2 - New Major - 1
+3 - Old Minor - 24
+4 - New Minor - 25
+5 - Old Update - 0
+6 - New Update - 0
+7 - Older Major(For archivedSpecs only) - 1
+8 - Older Minor(For archivedSpecs only) - 23"
+
+while getopts 'h' option; do
+  case "$option" in
+    h) echo "$usage"
+       exit
+       ;;
+   \?) printf "illegal option: -%s\n" "$OPTARG" >&2
+       echo "$usage"
+       exit 1
+       ;;
+  esac
+done
+
+if [ $# -ne 8 ]
+  then
+    echo "Incorrect number of arguments"
+    echo "$usage"
+    exit
+fi
+
+echo "Changing officialRelease to true in version_num.h"
 sed -i '' '/officialRelease =/s/false/true/' $CHPL_HOME/compiler/main/version_num.h
+
+echo "Changing release number in conf.py"
 sed -i '' "/^release =/s/^/# /" $CHPL_HOME/doc/rst/conf.py
 sed -i '' "/release = '$1\.$3\.$5'/s/# //" $CHPL_HOME/doc/rst/conf.py
 sed -i '' "/release = '$1\.$3\.$5'/s/"$1\.$3\.$5"/"$2\.$4\.$6"/" $CHPL_HOME/doc/rst/conf.py
+
+echo "Adding last release to archivedSpecs.rst"
 sed -i '' "/* \`Chapel $7\.$8/i\\
 * \`Chapel $1\.$3 \<https://chapel-lang.org/docs/$1\.$3/index.html\>\`_
 " $CHPL_HOME/doc/rst/language/archivedSpecs.rst
+
+echo "Changing version numbers in QUICKSTART.rst"
 sed -i '' "/1)/s/"$1\.$3"/"$2\.$4"/" $CHPL_HOME/doc/rst/usingchapel/QUICKSTART.rst
 sed -i '' "/tar xzf/s/"$1\.$3\.$5"/"$2\.$4\.$6"/" $CHPL_HOME/doc/rst/usingchapel/QUICKSTART.rst
 sed -i '' "/cd chapel/s/"$1\.$3\.$5"/"$2\.$4\.$6"/" $CHPL_HOME/doc/rst/usingchapel/QUICKSTART.rst
+
+echo "Changing version number in chplenv.rst"
 sed -i '' "/export CHPL_HOME/s/"$1\.$3\.$5"/"$2\.$4\.$6"/" $CHPL_HOME/doc/rst/usingchapel/chplenv.rst
+
+echo "Changing version number in confchpl.rst and confchpldoc.rst"
 sed -i '' /Version/s/' pre-release'// $CHPL_HOME/man/confchpl.rst
 sed -i '' /Version/s/' pre-release'// $CHPL_HOME/man/confchpldoc.rst
+
+echo "Changing output in versionhelp.sh"
 sed -i '' "/diff $CWD/s/^/# /" $CHPL_HOME/test/compflags/bradc/printstuff/versionhelp.sh
 sed -i '' "/{ echo/s/^/# /" $CHPL_HOME/test/compflags/bradc/printstuff/versionhelp.sh
 sed -i '' "/# echo ""/s/# //" $CHPL_HOME/test/compflags/bradc/printstuff/versionhelp.sh
