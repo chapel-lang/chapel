@@ -521,29 +521,11 @@ struct Resolver {
 
     CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
 
-    const PoiScope* callPoiScope = c.poiInfo.poiScope;
-
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
     r.mostSpecific = c.mostSpecific;
-    r.poiScope = callPoiScope;
-
-    // compute the return types
-    QualifiedType retType;
-    bool retTypeSet = false;
-    for (const TypedFnSignature* candidate : r.mostSpecific) {
-      if (candidate != nullptr) {
-        QualifiedType t = returnType(context, candidate, callPoiScope);
-        if (retTypeSet && retType.type() != t.type()) {
-          context->error(candidate,
-                         nullptr,
-                         "return intent overload type does not match");
-        }
-        retType = t;
-        retTypeSet = true;
-      }
-    }
-    r.type = retType;
+    r.poiScope = c.poiInfo.poiScope;
+    r.type = c.exprType;
 
     // gather the poi scopes used when resolving the call
     poiInfo.accumulate(c.poiInfo);
@@ -794,7 +776,7 @@ typedSignatureInitial(Context* context,
 
 const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
-                                             CallInfo call,
+                                             const CallInfo& call,
                                              const PoiScope* poiScope) {
 
   // Performance: Should this query use a similar approach to
@@ -1280,7 +1262,7 @@ filterCandidatesInitial(Context* context,
 void
 filterCandidatesInstantiating(Context* context,
                               std::vector<const TypedFnSignature*> lst,
-                              CallInfo call,
+                              const CallInfo& call,
                               const Scope* inScope,
                               const PoiScope* inPoiScope,
                               std::vector<const TypedFnSignature*>& result) {
@@ -1392,11 +1374,12 @@ void accumulatePoisUsedByResolvingBody(Context* context,
   poiInfo.accumulate(r->poiInfo);
 }
 
-CallResolutionResult resolveCall(Context* context,
-                                 const Call* call,
-                                 CallInfo ci,
-                                 const Scope* inScope,
-                                 const PoiScope* inPoiScope) {
+static
+CallResolutionResult resolveFnCall(Context* context,
+                                   const Call* call,
+                                   const CallInfo& ci,
+                                   const Scope* inScope,
+                                   const PoiScope* inPoiScope) {
 
   // search for candidates at each POI until we have found a candidate
   std::vector<const TypedFnSignature*> candidates;
@@ -1494,7 +1477,59 @@ CallResolutionResult resolveCall(Context* context,
     }
   }
 
-  return CallResolutionResult(mostSpecific, std::move(poiInfo));
+  // compute the return types
+  QualifiedType retType;
+  bool retTypeSet = false;
+  for (const TypedFnSignature* candidate : mostSpecific) {
+    if (candidate != nullptr) {
+      QualifiedType t = returnType(context, candidate, instantiationPoiScope);
+      if (retTypeSet && retType.type() != t.type()) {
+        context->error(candidate,
+                       nullptr,
+                       "return intent overload type does not match");
+      }
+      retType = t;
+      retTypeSet = true;
+    }
+  }
+
+  return CallResolutionResult(mostSpecific, retType, std::move(poiInfo));
+}
+
+static
+CallResolutionResult resolvePrimCall(Context* context,
+                                     const PrimCall* call,
+                                     const CallInfo& ci,
+                                     const Scope* inScope,
+                                     const PoiScope* inPoiScope) {
+  auto plus = UniqueString::build(context, "+");
+  if (call->prim() == plus) {
+    printf("PRIM PLUS\n");
+  }
+
+  assert(false && "should not be reached");
+  MostSpecificCandidates emptyCandidates;
+  QualifiedType emptyType;
+  PoiInfo emptyPoi;
+  return CallResolutionResult(emptyCandidates, emptyType, emptyPoi);
+}
+
+CallResolutionResult resolveCall(Context* context,
+                                 const Call* call,
+                                 const CallInfo& ci,
+                                 const Scope* inScope,
+                                 const PoiScope* inPoiScope) {
+  if (call->isFnCall() || call->isOpCall()) {
+    return resolveFnCall(context, call, ci, inScope, inPoiScope);
+  } else if (auto prim = call->toPrimCall()) {
+    return resolvePrimCall(context, prim, ci, inScope, inPoiScope);
+  }
+
+  assert(false && "should not be reached");
+  MostSpecificCandidates emptyCandidates;
+  QualifiedType emptyType;
+  PoiInfo emptyPoi;
+  return CallResolutionResult(emptyCandidates, emptyType, emptyPoi);
 }
 
 
