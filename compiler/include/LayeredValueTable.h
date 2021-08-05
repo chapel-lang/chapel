@@ -85,6 +85,9 @@ class LayeredValueTable
         VarSymbol* chplVar;
         // For macros
         const char* castChplVarTo;
+        // 'forwardToName' and 'macro' are only for use during macro
+        // handling/clang parsing. After clang parsing is done they likely
+        // refer to invalid memory.
         const char* forwardToName;
         const clang::MacroInfo* macro;
       } u;
