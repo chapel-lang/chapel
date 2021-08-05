@@ -4721,7 +4721,7 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   for_actuals(actual, call) {
     if (i >= nNonKernelParamArgs) {
       args.push_back(codegenAddrOf(actual));
-      i++; // probably unneccesary
+      i++; // probably unnecessary
     }
     else {
       args.push_back(actual->codegen());
