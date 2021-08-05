@@ -52,9 +52,7 @@ class Param {
       return chpl::hash(re, im);
     }
   };
-  class NoneValue {
-    bool unused_;
-   public:
+  struct NoneValue {
     bool operator==(const NoneValue& other) const {
       return true;
     }
