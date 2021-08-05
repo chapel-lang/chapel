@@ -2399,8 +2399,529 @@ proc testMixPosBoolOptWithValuesSubCommandLight(test: borrowed Test) throws {
   test.assertEqual(subCmdOptList, new list(["s1","s2","s3"]));
 }
 
+// mockup of a Mason interface testing "new" options
+proc testMockMasonNew(test: borrowed Test) throws {
+  var argList = ["mason","new","--no-vcs","myPackage"];
+
+  var parser = new argumentParser();
+  var newCmd = parser.addSubCommand("new");
+  var initCmd = parser.addSubCommand("init");
+  var addCmd = parser.addSubCommand("add");
+  var rmCmd = parser.addSubCommand("rm");
+  var upCmd = parser.addSubCommand("update");
+  var testCmd = parser.addSubCommand("test");
+  var buildCmd = parser.addSubCommand("build");
+  var runCmd = parser.addSubCommand("run");
+  var searchCmd = parser.addSubCommand("search");
+  var envCmd = parser.addSubCommand("env");
+  var cleanCmd = parser.addSubCommand("clean");
+  var docCmd = parser.addSubCommand("doc");
+  var sysCmd = parser.addSubCommand("system");
+  var extCmd = parser.addSubCommand("external");
+  var pubCmd = parser.addSubCommand("publish");
+  var helpFlag = parser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  var verFlag = parser.addFlag(name="version",
+                              opts=["-V","--version"],
+                              defaultValue=false,
+                              flagInversion=false);
+  // setup the subcommand parsers (normally done in each sub-module)
+  var newParser = new argumentParser();
+  var initParser = new argumentParser();
+  var addParser = new argumentParser();
+  var rmParser = new argumentParser();
+  var upParser = new argumentParser();
+  var testParser = new argumentParser();
+  var buildParser = new argumentParser();
+  var runParser = new argumentParser();
+  var searchParser = new argumentParser();
+  var envParser = new argumentParser();
+  var cleanParser = new argumentParser();
+  var docParser = new argumentParser();
+  var sysParser = new argumentParser();
+  var extParser = new argumentParser();
+  var pubParser = new argumentParser();
+
+  // setup arguments for subcommand 'new'
+  var newVCS = newParser.addFlag(name="vcs",
+                                 opts=["--vcs"],
+                                 defaultValue=true);
+  var newShow = newParser.addFlag(name="show",
+                                  opts=["--show"],
+                                  defaultValue=false,
+                                  flagInversion=false);
+  var newLegalName = newParser.addOption(name="legalName",
+                                    opts=["--name"]);
+  var newName = newParser.addPositional(name="name");
+
+  var newHelpFlag = newParser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  // setup arguments for subcommand 'add'
+  var addExt = addParser.addFlag(name="external",
+                                 opts=["--external"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addSys = addParser.addFlag(name="system",
+                                 opts=["--system"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addPkg = addParser.addPositional(name="package");
+
+  var addHelpFlag = addParser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  //make sure no value currently exists
+  test.assertFalse(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertFalse(helpFlag.hasValue());
+  test.assertFalse(verFlag.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertTrue(helpFlag.hasValue());
+  test.assertTrue(verFlag.hasValue());
+  test.assertFalse(helpFlag.valueAsBool());
+  test.assertFalse(verFlag.valueAsBool());
+  test.assertFalse(newLegalName.hasValue());
+  //parse the remaining args
+  newParser.parseArgs(rest.toArray());
+  //make sure we now have a value
+  test.assertTrue(newVCS.hasValue());
+  test.assertTrue(newName.hasValue());
+  test.assertTrue(newHelpFlag.hasValue());
+  test.assertFalse(newHelpFlag.valueAsBool());
+  //ensure the value passed is correct
+  test.assertFalse(newVCS.valueAsBool());
+  test.assertEqual(newName.value(), "myPackage");
+}
 
 
+// mockup of a Mason interface testing "new" options
+proc testMockMasonNewDiffName(test: borrowed Test) throws {
+  var argList = ["mason","new","--no-vcs","--name","notMyPackage","myPackage"];
+
+  var parser = new argumentParser();
+  var newCmd = parser.addSubCommand("new");
+  var initCmd = parser.addSubCommand("init");
+  var addCmd = parser.addSubCommand("add");
+  var rmCmd = parser.addSubCommand("rm");
+  var upCmd = parser.addSubCommand("update");
+  var testCmd = parser.addSubCommand("test");
+  var buildCmd = parser.addSubCommand("build");
+  var runCmd = parser.addSubCommand("run");
+  var searchCmd = parser.addSubCommand("search");
+  var envCmd = parser.addSubCommand("env");
+  var cleanCmd = parser.addSubCommand("clean");
+  var docCmd = parser.addSubCommand("doc");
+  var sysCmd = parser.addSubCommand("system");
+  var extCmd = parser.addSubCommand("external");
+  var pubCmd = parser.addSubCommand("publish");
+  var helpFlag = parser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  var verFlag = parser.addFlag(name="version",
+                              opts=["-V","--version"],
+                              defaultValue=false,
+                              flagInversion=false);
+  // setup the subcommand parsers (normally done in each sub-module)
+  var newParser = new argumentParser();
+  var initParser = new argumentParser();
+  var addParser = new argumentParser();
+  var rmParser = new argumentParser();
+  var upParser = new argumentParser();
+  var testParser = new argumentParser();
+  var buildParser = new argumentParser();
+  var runParser = new argumentParser();
+  var searchParser = new argumentParser();
+  var envParser = new argumentParser();
+  var cleanParser = new argumentParser();
+  var docParser = new argumentParser();
+  var sysParser = new argumentParser();
+  var extParser = new argumentParser();
+  var pubParser = new argumentParser();
+
+  // setup arguments for subcommand 'new'
+  var newVCS = newParser.addFlag(name="vcs",
+                                 opts=["--vcs"],
+                                 defaultValue=true);
+  var newShow = newParser.addFlag(name="show",
+                                  opts=["--show"],
+                                  defaultValue=false,
+                                  flagInversion=false);
+  var newLegalName = newParser.addOption(name="legalName",
+                                    opts=["--name"]);
+  var newName = newParser.addPositional(name="name");
+
+  var newHelpFlag = newParser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  // setup arguments for subcommand 'add'
+  var addExt = addParser.addFlag(name="external",
+                                 opts=["--external"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addSys = addParser.addFlag(name="system",
+                                 opts=["--system"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addPkg = addParser.addPositional(name="package");
+
+  var addHelpFlag = addParser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  //make sure no value currently exists
+  test.assertFalse(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertFalse(helpFlag.hasValue());
+  test.assertFalse(verFlag.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertTrue(helpFlag.hasValue());
+  test.assertTrue(verFlag.hasValue());
+  test.assertFalse(helpFlag.valueAsBool());
+  test.assertFalse(verFlag.valueAsBool());
+  test.assertFalse(newLegalName.hasValue());
+  //parse the remaining args
+  newParser.parseArgs(rest.toArray());
+  //make sure we now have a value
+  test.assertTrue(newVCS.hasValue());
+  test.assertTrue(newName.hasValue());
+  test.assertTrue(newLegalName.hasValue());
+  test.assertTrue(newHelpFlag.hasValue());
+  test.assertFalse(newHelpFlag.valueAsBool());
+  //ensure the value passed is correct
+  test.assertFalse(newVCS.valueAsBool());
+  test.assertEqual(newLegalName.value(),"notMyPackage");
+  test.assertEqual(newName.value(), "myPackage");
+}
+
+// mockup of a Mason interface testing "new" options
+proc testMockMasonNewTypical(test: borrowed Test) throws {
+  var argList = ["mason","new","myPackage"];
+
+  var parser = new argumentParser();
+  var newCmd = parser.addSubCommand("new");
+  var initCmd = parser.addSubCommand("init");
+  var addCmd = parser.addSubCommand("add");
+  var rmCmd = parser.addSubCommand("rm");
+  var upCmd = parser.addSubCommand("update");
+  var testCmd = parser.addSubCommand("test");
+  var buildCmd = parser.addSubCommand("build");
+  var runCmd = parser.addSubCommand("run");
+  var searchCmd = parser.addSubCommand("search");
+  var envCmd = parser.addSubCommand("env");
+  var cleanCmd = parser.addSubCommand("clean");
+  var docCmd = parser.addSubCommand("doc");
+  var sysCmd = parser.addSubCommand("system");
+  var extCmd = parser.addSubCommand("external");
+  var pubCmd = parser.addSubCommand("publish");
+  var helpFlag = parser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  var verFlag = parser.addFlag(name="version",
+                              opts=["-V","--version"],
+                              defaultValue=false,
+                              flagInversion=false);
+  // setup the subcommand parsers (normally done in each sub-module)
+  var newParser = new argumentParser();
+  var initParser = new argumentParser();
+  var addParser = new argumentParser();
+  var rmParser = new argumentParser();
+  var upParser = new argumentParser();
+  var testParser = new argumentParser();
+  var buildParser = new argumentParser();
+  var runParser = new argumentParser();
+  var searchParser = new argumentParser();
+  var envParser = new argumentParser();
+  var cleanParser = new argumentParser();
+  var docParser = new argumentParser();
+  var sysParser = new argumentParser();
+  var extParser = new argumentParser();
+  var pubParser = new argumentParser();
+
+  // setup arguments for subcommand 'new'
+  var newVCS = newParser.addFlag(name="vcs",
+                                 opts=["--vcs"],
+                                 defaultValue=true);
+  var newShow = newParser.addFlag(name="show",
+                                  opts=["--show"],
+                                  defaultValue=false,
+                                  flagInversion=false);
+  var newLegalName = newParser.addOption(name="legalName",
+                                    opts=["--name"]);
+  var newName = newParser.addPositional(name="name");
+
+  var newHelpFlag = newParser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  // setup arguments for subcommand 'add'
+  var addExt = addParser.addFlag(name="external",
+                                 opts=["--external"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addSys = addParser.addFlag(name="system",
+                                 opts=["--system"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addPkg = addParser.addPositional(name="package");
+
+  var addHelpFlag = addParser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  //make sure no value currently exists
+  test.assertFalse(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertFalse(helpFlag.hasValue());
+  test.assertFalse(verFlag.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertTrue(helpFlag.hasValue());
+  test.assertTrue(verFlag.hasValue());
+  test.assertFalse(helpFlag.valueAsBool());
+  test.assertFalse(verFlag.valueAsBool());
+  test.assertFalse(newLegalName.hasValue());
+  //parse the remaining args
+  newParser.parseArgs(rest.toArray());
+  //make sure we now have a value
+  test.assertTrue(newVCS.hasValue());
+  test.assertTrue(newName.hasValue());
+  test.assertFalse(newLegalName.hasValue());
+  test.assertTrue(newHelpFlag.hasValue());
+  test.assertFalse(newHelpFlag.valueAsBool());
+  //ensure the value passed is correct
+  test.assertTrue(newVCS.valueAsBool());
+  test.assertEqual(newName.value(), "myPackage");
+}
+
+// mockup of a Mason interface testing "add" options
+proc testMockMasonAddExternal(test: borrowed Test) throws {
+  var argList = ["mason","add","--external","externalPackage@0.2.3"];
+
+  var parser = new argumentParser();
+  var newCmd = parser.addSubCommand("new");
+  var initCmd = parser.addSubCommand("init");
+  var addCmd = parser.addSubCommand("add");
+  var rmCmd = parser.addSubCommand("rm");
+  var upCmd = parser.addSubCommand("update");
+  var testCmd = parser.addSubCommand("test");
+  var buildCmd = parser.addSubCommand("build");
+  var runCmd = parser.addSubCommand("run");
+  var searchCmd = parser.addSubCommand("search");
+  var envCmd = parser.addSubCommand("env");
+  var cleanCmd = parser.addSubCommand("clean");
+  var docCmd = parser.addSubCommand("doc");
+  var sysCmd = parser.addSubCommand("system");
+  var extCmd = parser.addSubCommand("external");
+  var pubCmd = parser.addSubCommand("publish");
+  var helpFlag = parser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  var verFlag = parser.addFlag(name="version",
+                              opts=["-V","--version"],
+                              defaultValue=false,
+                              flagInversion=false);
+  // setup the subcommand parsers (normally done in each sub-module)
+  var newParser = new argumentParser();
+  var initParser = new argumentParser();
+  var addParser = new argumentParser();
+  var rmParser = new argumentParser();
+  var upParser = new argumentParser();
+  var testParser = new argumentParser();
+  var buildParser = new argumentParser();
+  var runParser = new argumentParser();
+  var searchParser = new argumentParser();
+  var envParser = new argumentParser();
+  var cleanParser = new argumentParser();
+  var docParser = new argumentParser();
+  var sysParser = new argumentParser();
+  var extParser = new argumentParser();
+  var pubParser = new argumentParser();
+
+  // setup arguments for subcommand 'new'
+  var newVCS = newParser.addFlag(name="vcs",
+                                 opts=["--vcs"],
+                                 defaultValue=true);
+  var newShow = newParser.addFlag(name="show",
+                                  opts=["--show"],
+                                  defaultValue=false,
+                                  flagInversion=false);
+  var newLegalName = newParser.addOption(name="legalName",
+                                    opts=["--name"]);
+  var newName = newParser.addPositional(name="name");
+
+  var newHelpFlag = newParser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  // setup arguments for subcommand 'add'
+  var addExt = addParser.addFlag(name="external",
+                                 opts=["--external"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addSys = addParser.addFlag(name="system",
+                                 opts=["--system"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addPkg = addParser.addPositional(name="package");
+
+  var addHelpFlag = addParser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  //make sure no value currently exists
+  test.assertFalse(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertFalse(helpFlag.hasValue());
+  test.assertFalse(verFlag.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertFalse(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertTrue(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertTrue(helpFlag.hasValue());
+  test.assertTrue(verFlag.hasValue());
+  test.assertFalse(helpFlag.valueAsBool());
+  test.assertFalse(verFlag.valueAsBool());
+  test.assertFalse(addPkg.hasValue());
+  test.assertFalse(addExt.hasValue());
+  test.assertFalse(addSys.hasValue());
+  //parse the remaining args
+  addParser.parseArgs(rest.toArray());
+  //make sure we now have a value
+  test.assertTrue(addExt.hasValue());
+  test.assertTrue(addPkg.hasValue());
+  test.assertTrue(addSys.hasValue());
+  test.assertTrue(addHelpFlag.hasValue());
+  test.assertFalse(addHelpFlag.valueAsBool());
+  //ensure the value passed is correct
+  test.assertFalse(addSys.valueAsBool());
+  test.assertTrue(addExt.valueAsBool());
+  test.assertEqual(addPkg.value(), "externalPackage@0.2.3");
+}
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
 UnitTest.main();

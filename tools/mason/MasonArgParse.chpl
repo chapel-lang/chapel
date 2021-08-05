@@ -41,8 +41,11 @@ module MasonArgParse {
     return false;
   }
 
-  // TODO: Add pass-thru options following "-" or "--"
+  // TODO: Add pass-thru options following "-"
   // TODO: Add int opts
+  // TODO: Add automatic -h, --help flag generation
+  // TODO: Add program metadata when setting up parser
+  // TODO: Recognize '--' as separator between flags/options and positionals
   // TODO: Implement Help message and formatting
   // TODO: Move logic splitting '=' into '_match'
   // TODO: Add public github issue when available
@@ -423,7 +426,7 @@ module MasonArgParse {
 
     proc _parsePositionals(arguments:[?argsD] string, endIdx:int) throws {
       var endPos = 0;
-      var idx = 0;
+      var idx = argsD.low;
       var rest = new list(string);
       debugTrace("Parsing Positionals...");
       debugTrace(arguments:string + " " + endIdx:string);
@@ -469,6 +472,7 @@ module MasonArgParse {
         }
       }
 
+      // identify the index values where known options/flags are located
       for i in argsList.indices {
         const argElt = argsList[i];
         if _options.contains(argElt) {
@@ -493,6 +497,7 @@ module MasonArgParse {
         firstFlagIdx = arrayOptionIndices[0][0];
       if firstFlagIdx > 0 then
         endPos = _parsePositionals(argsList.toArray(), firstFlagIdx);
+
 
       // check for undefined argument provided at beginning of cmd string
       if arrayOptionIndices.size > 0 && arrayOptionIndices[0][0] != endPos {
@@ -543,11 +548,10 @@ module MasonArgParse {
           }
         }
       }
-      // make sure all options defined got values if needed
-      _checkSatisfiedOptions();
 
-      // assign and missing values their defaults, if supplied
-      _assignDefaultsToMissingOpts();
+      // check for positionals at end of argument string
+      // if endPos < argsList.size && endPos + rest.size < argsList.size then
+      //   endPos = _parsePositionals(argsList.toArray()[endPos..], argsList.size);
 
       // check for when arguments passed but none defined
       if argsList.size > 0 && _actions.size == 0 && _positionals.size == 0 {
@@ -555,11 +559,21 @@ module MasonArgParse {
                                 " ".join(argsList.these()));
       }
 
-      // check for undefined argument provided
+      // check for undefined argument provided or possible positional args
+      // placed at end of command string
       if endPos < argsList.size && endPos + rest.size < argsList.size {
+        var oldEnd=endPos;
+        endPos = _parsePositionals(argsList.toArray()[endPos..], argsList.size);
+        if oldEnd == endPos then
           throw new ArgumentError("Found undefined values: " +
                                   " ".join(argsList.toArray()[endPos..]));
       }
+
+      // make sure all options defined got values if needed
+      _checkSatisfiedOptions();
+
+      // assign and missing values their defaults, if supplied
+      _assignDefaultsToMissingOpts();
 
       return rest;
     }
@@ -707,7 +721,7 @@ module MasonArgParse {
 
       for arg in _positionals {
         if arg._numArgs.high >= 1 && arg._numArgs.low != arg._numArgs.high {
-          throw new ArgumentError("Postional arguments that allow for range " +
+          throw new ArgumentError("Positional arguments that allow for range " +
                                   "of values must be in the last position");
         }
       }
@@ -724,7 +738,7 @@ module MasonArgParse {
     // define a new string option with fixed number of values expected
     proc addOption(name:string,
                    opts:[?optsD]string,
-                   numArgs:int,
+                   numArgs=1,
                    required=false,
                    defaultValue:?t=none) throws {
       return addOption(name=name,
