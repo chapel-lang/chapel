@@ -32,6 +32,7 @@ target_sources(libchplcomp-obj
                Builder.cpp
                BytesLiteral.cpp
                Call.cpp
+               Catch.cpp
                Class.cpp
                Cobegin.cpp
                Coforall.cpp
@@ -81,6 +82,8 @@ target_sources(libchplcomp-obj
                StringLiteral.cpp
                Sync.cpp
                TaskVar.cpp
+               Throw.cpp
+               Try.cpp
                TupleDecl.cpp
                TypeDecl.cpp
                UintLiteral.cpp

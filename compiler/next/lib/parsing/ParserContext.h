@@ -202,6 +202,7 @@ struct ParserContext {
   // to handle things like this
   //     { /* doc comment } proc myproc()
   CommentsAndStmt finishStmt(CommentsAndStmt cs);
+  CommentsAndStmt finishStmt(YYLTYPE location, CommentsAndStmt cs);
   CommentsAndStmt finishStmt(Expression* e);
   CommentsAndStmt finishStmt(owned<Expression> e) {
     return this->finishStmt(e.release());
@@ -408,5 +409,22 @@ struct ParserContext {
                                          YYLTYPE openingBrace,
                                          ParserExprList* contents,
                                          YYLTYPE closingBrace);
+
+  CommentsAndStmt buildTryExprStmt(YYLTYPE location, Expression* expr,
+                                   bool isTryBang);
+
+  CommentsAndStmt buildTryExprStmt(YYLTYPE location, CommentsAndStmt cs,
+                                   bool isTryBang);
+
+  Expression* buildTryExpr(YYLTYPE location, Expression* expr,
+                           bool isTryBang);
+
+  CommentsAndStmt buildTryCatchStmt(YYLTYPE location, CommentsAndStmt block,
+                                    ParserExprList* handlers,
+                                    bool isTryBang);
+
+  Expression* buildCatch(YYLTYPE location, Expression* error,
+                         CommentsAndStmt block,
+                         bool hasParensAroundError);
 
 };
