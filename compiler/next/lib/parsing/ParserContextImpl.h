@@ -418,7 +418,7 @@ Expression* ParserContext::buildPrimCall(YYLTYPE location,
 
   consumeNamedActuals(lst, actuals, actualNames);
 
-  bool anyNames;
+  bool anyNames = false;
   for (auto name : actualNames) {
     if (!name.isEmpty()) {
       anyNames = true;
