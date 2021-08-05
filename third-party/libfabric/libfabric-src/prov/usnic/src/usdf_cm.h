@@ -51,7 +51,7 @@ struct usdf_connreq_msg {
 	uint32_t creq_result;
 	uint32_t creq_reason;
 	uint32_t creq_datalen;
-	uint8_t creq_data[0];
+	uint8_t creq_data[];
 } __attribute__((packed));
 
 struct usdf_connreq {
@@ -67,7 +67,7 @@ struct usdf_connreq {
 	size_t cr_resid;
 
 	size_t cr_datalen;
-	uint8_t cr_data[0];
+	uint8_t cr_data[];
 };
 
 void usdf_cm_report_failure(struct usdf_connreq *crp, int error,

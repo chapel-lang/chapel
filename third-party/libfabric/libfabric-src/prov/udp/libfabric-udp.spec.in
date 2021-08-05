@@ -1,11 +1,12 @@
 %{!?configopts: %global configopts LDFLAGS=-Wl,--build-id}
-%{!?provider: %define provider usnic}
-%{!?provider_formal: %define provider_formal usNIC}
+%{!?provider: %define provider udp}
+%{!?provider_formal: %define provider_formal udp}
 
 Name: libfabric-%{provider}
 Version: @VERSION@
 Release: 1%{?dist}
 Summary: Dynamic %{provider_formal} provider for user-space Open Fabric Interfaces
+
 Group: System Environment/Libraries
 License: GPLv2 or BSD
 Url: http://www.github.com/ofiwg/libfabric

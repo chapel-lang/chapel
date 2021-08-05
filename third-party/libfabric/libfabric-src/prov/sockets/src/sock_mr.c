@@ -133,6 +133,7 @@ static int sock_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 {
 	struct fi_eq_entry eq_entry;
 	struct sock_domain *dom;
+	struct fi_mr_attr cur_abi_attr;
 	struct sock_mr *_mr;
 	uint64_t key;
 	struct fid_domain *domain;
@@ -149,6 +150,8 @@ static int sock_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	if (!_mr)
 		return -FI_ENOMEM;
 
+	ofi_mr_update_attr(dom->fab->fab_fid.api_version, dom->info.caps,
+			   attr, &cur_abi_attr);
 	fastlock_acquire(&dom->lock);
 
 	_mr->mr_fid.fid.fclass = FI_CLASS_MR;
@@ -158,12 +161,12 @@ static int sock_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	_mr->domain = dom;
 	_mr->flags = flags;
 
-	ret = ofi_mr_map_insert(&dom->mr_map, attr, &key, _mr);
+	ret = ofi_mr_map_insert(&dom->mr_map, &cur_abi_attr, &key, _mr);
 	if (ret != 0)
 		goto err;
 
 	_mr->mr_fid.key = _mr->key = key;
-	_mr->mr_fid.mem_desc = (void *)(uintptr_t)key;
+	_mr->mr_fid.mem_desc = (void *) (uintptr_t) key;
 	fastlock_release(&dom->lock);
 
 	*mr = &_mr->mr_fid;

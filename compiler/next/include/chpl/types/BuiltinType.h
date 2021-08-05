@@ -27,84 +27,74 @@ namespace types {
 
 
 /**
-  This class represents a builtin type, e.g. `int`.
+  This class represents a builtin type that only needs a name to
+  be used by resolution.
+
+  For example, `numeric`, `borrowed`, `chpl_anyreal`.
+
+  Types that are used very commonly (e.g. AnyType, UnknownType) should get
+  their own classes.
+
+  Types that have need for different fields (e.g. PrimitiveType) should get
+  their own classes.
 
  */
 class BuiltinType : public Type {
- public:
-  enum Kind {
-    // concrete builtin types
-    BOOL,
-    COMPLEX,
-    IMAG,
-    INT,
-    REAL,
-    UINT,
-
-    // generic builtin types
-    // (note: isGeneric relies on NUMERIC being the first)
-    NUMERIC,
-  };
-
- private:
-  Kind kind_;
-  int bitwidth_;
-
-  BuiltinType(Kind kind, int bitwidth)
-    : Type(typetags::BuiltinType), kind_(kind), bitwidth_(bitwidth) {
-    canonicalizeBitWidth();
+ protected:
+  BuiltinType(TypeTag tag)
+    : Type(tag) {
   }
 
   bool contentsMatchInner(const Type* other) const override {
-    const BuiltinType* lhs = this;
-    const BuiltinType* rhs = (const BuiltinType*) other;
-    return lhs->kind_ == rhs->kind_ &&
-           lhs->bitwidth_ == rhs->bitwidth_;
+    return true;
   }
 
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  bool isGeneric() override {
-    return kind_ >= NUMERIC;
+  bool isGeneric() const override {
+    return (int) tag() >= (int) typetags::AnyBoolType;
   }
-
-  void canonicalizeBitWidth();
 
  public:
   ~BuiltinType() = default;
 
-  static owned<BuiltinType> build(Kind kind, int bitwidth);
-
-  /**
-    Returns the kind indicating which BuiltinType it is.
-   */
-  Kind kind() const {
-    return kind_;
-  }
-
-  /**
-   Returns the bit width selected for numeric types.
-   Returns 8 for the default sized bool.
-   */
-  int bitwidth() const {
-    if (isDefaultBool()) return 8;
-    return bitwidth_;
-  }
-
-  /**
-   Returns `true` if this is the type `bool` which is distinct from
-   `bool(8)`.
-   */
-  bool isDefaultBool() const {
-    return kind_ == BOOL && bitwidth_ == 0;
-  }
+  static void gatherBuiltins(Context* context,
+                             std::unordered_map<UniqueString,const Type*>& map);
 
   /**
     Returns a C string for the name of this BuiltinType.
    */
   const char* c_str() const;
 };
+
+// define the subclasses using macros and BuiltinTypeList.h
+/// \cond DO_NOT_DOCUMENT
+#define TYPE_NODE(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
+
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) \
+  class NAME : public BuiltinType { \
+   private: \
+    NAME() : BuiltinType(typetags::NAME) { } \
+    static const owned<NAME>& get##NAME(Context* context); \
+   public: \
+    ~NAME() = default; \
+    static const NAME* get(Context* context) { \
+      return get##NAME(context).get(); \
+    } \
+  };
+/// \endcond
+
+// Apply the above macros to TypeClassesList.h
+#include "chpl/types/TypeClassesList.h"
+
+// clear the macros
+#undef TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef BUILTIN_TYPE_NODE
 
 
 } // end namespace uast

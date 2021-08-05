@@ -526,24 +526,6 @@ int psmx2_ep_open_internal(struct psmx2_fid_domain *domain_priv,
 	else
 		ep_cap = FI_TAGGED;
 
-	if (info && info->ep_attr && info->ep_attr->auth_key) {
-		if (info->ep_attr->auth_key_size != sizeof(psm2_uuid_t)) {
-			FI_WARN(&psmx2_prov, FI_LOG_EP_CTRL,
-				"Invalid auth_key_len %"PRIu64
-				", should be %"PRIu64".\n",
-				info->ep_attr->auth_key_size,
-				sizeof(psm2_uuid_t));
-			goto errout;
-		}
-		if (memcmp(domain_priv->fabric->uuid, info->ep_attr->auth_key,
-			   sizeof(psm2_uuid_t))) {
-			FI_WARN(&psmx2_prov, FI_LOG_EP_CTRL,
-				"Invalid auth_key: %s\n",
-				psmx2_uuid_to_string((void *)info->ep_attr->auth_key));
-			goto errout;
-		}
-	}
-
 	ep_priv = (struct psmx2_fid_ep *) calloc(1, sizeof *ep_priv);
 	if (!ep_priv) {
 		err = -FI_ENOMEM;
@@ -625,6 +607,7 @@ int psmx2_ep_open(struct fid_domain *domain, struct fi_info *info,
 	struct psmx2_trx_ctxt *trx_ctxt = NULL;
 	int err = -FI_EINVAL;
 	int usage_flags = PSMX2_TX_RX;
+	uint8_t *uuid = NULL;
 
 	domain_priv = container_of(domain, struct psmx2_fid_domain,
 				   util_domain.domain_fid.fid);
@@ -655,9 +638,21 @@ int psmx2_ep_open(struct fid_domain *domain, struct fi_info *info,
 			src_addr = info->src_addr;
 	}
 
+	if (info && info->ep_attr && info->ep_attr->auth_key) {
+		if (info->ep_attr->auth_key_size != sizeof(psm2_uuid_t)) {
+			FI_WARN(&psmx2_prov, FI_LOG_EP_CTRL,
+				"Invalid auth_key_len %"PRIu64
+				", should be %"PRIu64".\n",
+				info->ep_attr->auth_key_size,
+				sizeof(psm2_uuid_t));
+			goto errout;
+		}
+		uuid = info->ep_attr->auth_key;
+	}
+
 	if (usage_flags) {
 		trx_ctxt = psmx2_trx_ctxt_alloc(domain_priv, src_addr, -1,
-						usage_flags);
+						usage_flags, uuid);
 		if (!trx_ctxt)
 			goto errout;
 	} else {
@@ -758,7 +753,9 @@ int psmx2_stx_ctx(struct fid_domain *domain, struct fi_tx_attr *attr,
 		goto errout;
 	}
 
-	trx_ctxt = psmx2_trx_ctxt_alloc(domain_priv, NULL, -1, PSMX2_TX);
+	/* no auth_key is provided, use NULL to pick the default uuid */
+	trx_ctxt = psmx2_trx_ctxt_alloc(domain_priv, NULL, -1, PSMX2_TX,
+					NULL);
 	if (!trx_ctxt) {
 		err = -FI_ENOMEM;
 		goto errout_free_stx;
@@ -941,6 +938,7 @@ int psmx2_sep_open(struct fid_domain *domain, struct fi_info *info,
 	size_t ctxt_cnt = 1;
 	size_t ctxt_size;
 	int err = -FI_EINVAL;
+	uint8_t *uuid = NULL;
 	int i;
 
 	domain_priv = container_of(domain, struct psmx2_fid_domain,
@@ -949,6 +947,16 @@ int psmx2_sep_open(struct fid_domain *domain, struct fi_info *info,
 		goto errout;
 
 	if (info && info->ep_attr) {
+		if (info->ep_attr->auth_key_size != sizeof(psm2_uuid_t)) {
+			FI_WARN(&psmx2_prov, FI_LOG_EP_CTRL,
+				"Invalid auth_key_len %"PRIu64
+				", should be %"PRIu64".\n",
+				info->ep_attr->auth_key_size,
+				sizeof(psm2_uuid_t));
+			goto errout;
+		}
+		uuid = info->ep_attr->auth_key;
+
 		if (info->ep_attr->tx_ctx_cnt > psmx2_hfi_info.max_trx_ctxt) {
 			FI_WARN(&psmx2_prov, FI_LOG_EP_CTRL,
 				"tx_ctx_cnt %"PRIu64" exceed limit %d.\n",
@@ -1000,7 +1008,7 @@ int psmx2_sep_open(struct fid_domain *domain, struct fi_info *info,
 	for (i = 0; i < ctxt_cnt; i++) {
 		trx_ctxt = psmx2_trx_ctxt_alloc(domain_priv, src_addr,
 						(ctxt_cnt > 1) ? i : -1,
-						PSMX2_TX_RX);
+						PSMX2_TX_RX, uuid);
 		if (!trx_ctxt) {
 			err = -FI_ENOMEM;
 			goto errout_free_ctxt;
@@ -1032,6 +1040,8 @@ int psmx2_sep_open(struct fid_domain *domain, struct fi_info *info,
 				   ((uintptr_t)sep_priv & 0xFFFF);
 
 	sep_priv->id = ofi_atomic_inc32(&domain_priv->sep_cnt);
+	for (i = 0; i < ctxt_cnt; i++)
+		sep_priv->ctxts[i].ep->sep_id = sep_priv->id;
 
 	domain_priv->sep_lock_fn(&domain_priv->sep_lock, 1);
 	dlist_insert_before(&sep_priv->entry, &domain_priv->sep_list);

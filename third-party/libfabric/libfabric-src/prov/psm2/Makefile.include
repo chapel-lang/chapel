@@ -22,6 +22,9 @@ _psm2_files = \
 	prov/psm2/src/psmx2_wait.c \
 	prov/psm2/src/psmx2_util.c
 
+_psm2_cppflags = \
+	-I$(top_srcdir)/prov/psm2/include
+
 if HAVE_PSM2_SRC
 _psm2_files += \
 	prov/psm2/src/psm2_revision.c
@@ -97,7 +100,7 @@ _psm2_nodist_files += \
 	prov/psm2/src/psm2/opa/opa_dwordcpy-x86_64-fast.S
 endif
 
-_psm2_cppflags = \
+_psm2_cppflags += \
 	-I$(top_srcdir)/prov/psm2/src/psm2 \
 	-I$(top_srcdir)/prov/psm2/src/psm2/include \
 	-I$(top_srcdir)/prov/psm2/src/psm2/include/linux-i386 \
@@ -132,6 +135,7 @@ src_libfabric_la_LIBADD += libpsmx2.la
 src_libfabric_la_DEPENDENCIES += libpsmx2.la
 endif !HAVE_PSM2_DL
 
+rdmainclude_HEADERS += prov/psm2/include/fi_ext_psm2.h
 prov_install_man_pages += man/man7/fi_psm2.7
 
 endif HAVE_PSM2

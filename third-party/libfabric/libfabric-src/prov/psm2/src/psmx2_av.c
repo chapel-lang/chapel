@@ -202,8 +202,8 @@ static void psmx2_set_epaddr_context(struct psmx2_trx_ctxt *trx_ctxt,
 	trx_ctxt->domain->peer_unlock_fn(&trx_ctxt->peer_lock, 2);
 }
 
-int psmx2_epid_to_epaddr(struct psmx2_trx_ctxt *trx_ctxt,
-			 psm2_epid_t epid, psm2_epaddr_t *epaddr)
+void psmx2_epid_to_epaddr(struct psmx2_trx_ctxt *trx_ctxt,
+			  psm2_epid_t epid, psm2_epaddr_t *epaddr)
 {
 	int err;
 	psm2_error_t errors;
@@ -215,7 +215,7 @@ int psmx2_epid_to_epaddr(struct psmx2_trx_ctxt *trx_ctxt,
 		context = psm2_epaddr_getctxt(epconn.addr);
 		if (context && context->epid  == epid) {
 			*epaddr = epconn.addr;
-			return 0;
+			return;
 		}
 	}
 
@@ -223,13 +223,17 @@ int psmx2_epid_to_epaddr(struct psmx2_trx_ctxt *trx_ctxt,
 			      (int64_t) psmx2_env.conn_timeout * 1000000000LL);
 	if (err == PSM2_OK || err == PSM2_EPID_ALREADY_CONNECTED) {
 		psmx2_set_epaddr_context(trx_ctxt, epid, *epaddr);
-		return 0;
+		return;
 	}
 
-	FI_WARN(&psmx2_prov, FI_LOG_AV,
-		"psm2_ep_connect retured error %s, remote epid=%lx.\n",
-		psm2_error_get_string(err), epid);
-	return psmx2_errno(err);
+	/* call fi_log() directly to always generate the output */
+	fi_log(&psmx2_prov, FI_LOG_WARN, FI_LOG_AV, __func__, __LINE__,
+		"psm2_ep_connect retured error %s, remote epid=%lx."
+		"If it is a timeout error, try setting FI_PSM2_CONN_TIMEOUT "
+		"to a larger value (current: %d seconds).\n",
+		psm2_error_get_string(err), epid, psmx2_env.conn_timeout);
+
+	abort();
 }
 
 /*
@@ -335,11 +339,9 @@ int psmx2_av_query_sep(struct psmx2_fid_av *av,
 	psm2_amarg_t args[3];
 	int error;
 
-	if (!av->conn_info[trx_ctxt->id].epaddrs[idx]) {
+	if (!av->conn_info[trx_ctxt->id].epaddrs[idx])
 		psmx2_epid_to_epaddr(trx_ctxt, av->table[idx].epid,
 				     &av->conn_info[trx_ctxt->id].epaddrs[idx]);
-		assert(av->conn_info[trx_ctxt->id].epaddrs[idx]);
-	}
 
 	psmx2_am_init(trx_ctxt); /* check AM handler installation */
 
@@ -350,9 +352,12 @@ int psmx2_av_query_sep(struct psmx2_fid_av *av,
 	args[0].u32w1 = av->table[idx].sep_id;
 	args[1].u64 = (uint64_t)(uintptr_t)&av->sep_info[idx];
 	args[2].u64 = (uint64_t)(uintptr_t)&status;
-	psm2_am_request_short(av->conn_info[trx_ctxt->id].epaddrs[idx],
-			      PSMX2_AM_SEP_HANDLER, args, 3, NULL,
-			      0, 0, NULL, NULL);
+	error = psm2_am_request_short(av->conn_info[trx_ctxt->id].epaddrs[idx],
+				      PSMX2_AM_SEP_HANDLER, args, 3, NULL,
+				      0, 0, NULL, NULL);
+
+	if (error)
+		return error;
 
 	/*
 	 * make sure AM is progressed promptly. don't call
@@ -730,6 +735,7 @@ STATIC int psmx2_av_map_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t cou
 	struct psmx2_fid_av *av_priv;
 	struct psmx2_trx_ctxt *trx_ctxt;
 	psm2_error_t *errors;
+	int i;
 
 	av_priv = container_of(av, struct psmx2_fid_av, av);
 
@@ -743,6 +749,17 @@ STATIC int psmx2_av_map_remove(struct fid_av *av, fi_addr_t *fi_addr, size_t cou
 	errors = calloc(count, sizeof(*errors));
 	if (!errors)
 		return -FI_ENOMEM;
+
+	trx_ctxt->domain->peer_lock_fn(&trx_ctxt->peer_lock, 2);
+	for (i = 0; i < count; i++) {
+		dlist_remove_first_match(&trx_ctxt->peer_list,
+					 psmx2_peer_match,
+					 (psm2_epaddr_t)(fi_addr[i]));
+	}
+	trx_ctxt->domain->peer_unlock_fn(&trx_ctxt->peer_lock, 2);
+
+	for (i = 0; i < count; i++)
+		psm2_epaddr_setctxt((psm2_epaddr_t)(fi_addr[i]), NULL);
 
 	psm2_ep_disconnect2(trx_ctxt->psm2_ep, count, (psm2_epaddr_t *)fi_addr,
 			    NULL, errors, PSM2_EP_DISCONNECT_FORCE, 0);
@@ -821,11 +838,13 @@ STATIC int psmx2_av_map_lookup(struct fid_av *av, fi_addr_t fi_addr, void *addr,
 	return 0;
 }
 
-fi_addr_t psmx2_av_translate_source(struct psmx2_fid_av *av, psm2_epaddr_t source)
+fi_addr_t psmx2_av_translate_source(struct psmx2_fid_av *av,
+				    psm2_epaddr_t source, int source_sep_id)
 {
 	psm2_epid_t epid;
 	fi_addr_t ret;
 	int i, j, found;
+	int ep_type = source_sep_id ? PSMX2_EP_SCALABLE : PSMX2_EP_REGULAR;
 
 	if (av->type == FI_AV_MAP)
 		return (fi_addr_t) source;
@@ -841,11 +860,22 @@ fi_addr_t psmx2_av_translate_source(struct psmx2_fid_av *av, psm2_epaddr_t sourc
 			continue;
 
 		if (av->table[i].type == PSMX2_EP_REGULAR) {
+			if (ep_type == PSMX2_EP_SCALABLE)
+				continue;
 			if (av->table[i].epid == epid) {
 				ret = (fi_addr_t)i;
 				found = 1;
 			}
 		} else {
+			/*
+			 * scalable endpoint must match sep_id exactly.
+			 * regular endpoint can match a context of any
+			 * scalable endpoint.
+			 */
+			if (ep_type == PSMX2_EP_SCALABLE &&
+			    av->table[i].sep_id != source_sep_id)
+				continue;
+
 			if (!av->sep_info[i].epids) {
 				for (j = 0; j < av->max_trx_ctxt; j++) {
 					if (av->conn_info[j].trx_ctxt)
@@ -857,6 +887,7 @@ fi_addr_t psmx2_av_translate_source(struct psmx2_fid_av *av, psm2_epaddr_t sourc
 				if (!av->sep_info[i].epids)
 					continue;
 			}
+
 			for (j=0; j<av->sep_info[i].ctxt_cnt; j++) {
 				if (av->sep_info[i].epids[j] == epid) {
 					ret = fi_rx_addr((fi_addr_t)i, j,

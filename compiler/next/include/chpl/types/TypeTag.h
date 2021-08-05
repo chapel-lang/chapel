@@ -34,6 +34,7 @@ enum TypeTag {
   // using macros and TypeClassesList.h
   /// \cond DO_NOT_DOCUMENT
   #define TYPE_NODE(NAME) NAME ,
+  #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) NAME ,
   #define TYPE_BEGIN_SUBCLASSES(NAME) START_##NAME ,
   #define TYPE_END_SUBCLASSES(NAME) END_##NAME ,
   /// \endcond
@@ -41,6 +42,7 @@ enum TypeTag {
   #include "chpl/types/TypeClassesList.h"
   // clear the macros
   #undef TYPE_NODE
+  #undef BUILTIN_TYPE_NODE
   #undef TYPE_BEGIN_SUBCLASSES
   #undef TYPE_END_SUBCLASSES
   NUM_TYPE_TAGS
@@ -54,6 +56,7 @@ enum TypeTag {
     return tag == NAME; \
   }
 #define TYPE_NODE(NAME) IS_TYPE(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) IS_TYPE(NAME)
 #define TYPE_BEGIN_SUBCLASSES(NAME)
 #define TYPE_END_SUBCLASSES(NAME)
 /// \endcond
@@ -61,6 +64,7 @@ enum TypeTag {
 #include "chpl/types/TypeClassesList.h"
 // clear the macros
 #undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
 #undef TYPE_BEGIN_SUBCLASSES
 #undef TYPE_END_SUBCLASSES
 #undef IS_TYPE
@@ -72,6 +76,7 @@ enum TypeTag {
     return START_##NAME < tag && tag < END_##NAME; \
   }
 #define TYPE_NODE(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR)
 #define TYPE_BEGIN_SUBCLASSES(NAME) IS_BASE_CLASS_TYPE(NAME)
 #define TYPE_END_SUBCLASSES(NAME)
 /// \endcond
@@ -79,6 +84,7 @@ enum TypeTag {
 #include "chpl/types/TypeClassesList.h"
 // clear the macros
 #undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
 #undef TYPE_BEGIN_SUBCLASSES
 #undef TYPE_END_SUBCLASSES
 #undef IS_BASE_CLASS_TYPE

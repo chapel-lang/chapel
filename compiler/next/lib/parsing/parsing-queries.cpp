@@ -41,17 +41,17 @@ namespace chpl {
 template<> struct update<parsing::FileContents> {
   bool operator()(parsing::FileContents& keep,
                   parsing::FileContents& addin) const {
-    bool match = keep.text == addin.text &&
-                 keep.error == addin.error;
-    if (match) {
-      return false; // no update required
-    } else {
-      keep.text.swap(addin.text);
-      keep.error.swap(addin.error);
-      return true; // updated
-    }
+    return defaultUpdate(keep, addin);
   }
 };
+
+template<> struct update<uast::ASTTag> {
+  bool operator()(uast::ASTTag& keep,
+                  uast::ASTTag& addin) const {
+    return defaultUpdateBasic(keep, addin);
+  }
+};
+
 
 namespace parsing {
 
@@ -218,6 +218,22 @@ static const ASTNode* const& astForIDQuery(Context* context, ID id) {
 
 const ASTNode* idToAst(Context* context, ID id) {
   return astForIDQuery(context, id);
+}
+
+static const ASTTag& idToTagQuery(Context* context, ID id) {
+  QUERY_BEGIN(idToTagQuery, context, id);
+
+  ASTTag result = asttags::NUM_AST_TAGS;
+
+  const ASTNode* ast = astForIDQuery(context, id);
+  if (ast != nullptr)
+    result = ast->tag();
+
+  return QUERY_END(result);
+}
+
+ASTTag idToTag(Context* context, ID id) {
+  return idToTagQuery(context, id);
 }
 
 const ID& idToParentId(Context* context, ID id) {

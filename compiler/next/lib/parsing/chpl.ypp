@@ -2264,7 +2264,7 @@ assignop_ident:
 ;
 
 opt_formal_ls:
-                     { $$ = nullptr; /* TODO: mark as no-parens */ }
+                     { $$ = context->parenlessMarker; }
 | TLP formal_ls TRP  { $$ = $2; }
 ;
 

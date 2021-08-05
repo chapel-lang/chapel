@@ -304,6 +304,11 @@ static void parseInternalModules() {
     if (sysctypes == NULL && fMinimalModules == false) {
       USR_FATAL("Could not find module 'SysCTypes', which should be defined by '%s/SysCTypes.chpl'", stdGenModulesPath);
     }
+    // ditto Errors
+    ModuleSymbol* errors = parseMod("Errors", false);
+    if (errors == NULL && fMinimalModules == false) {
+      USR_FATAL("Could not find standard module 'Errors'");
+    }
 
     parseDependentModules(true);
 

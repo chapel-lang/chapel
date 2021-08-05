@@ -77,6 +77,7 @@ static int hook_mr_regv(struct fid *fid, const struct iovec *iov,
 	attr.context = context;
 	attr.auth_key_size = 0;
 	attr.auth_key = NULL;
+	attr.iface = FI_HMEM_SYSTEM;
 
 	return hook_mr_regattr(fid, &attr, flags, mr);
 }

@@ -1,5 +1,6 @@
 Parsing module files:
   $CHPL_HOME/modules/standard/gen/.../SysCTypes.chpl
+  $CHPL_HOME/modules/standard/Errors.chpl
 module search dirs:
   subdir
   .

@@ -52,9 +52,23 @@ struct tcpx_port_range port_range = {
 	.high = 0,
 };
 
+int tcpx_nodelay = -1;
+
+
 static void tcpx_init_env(void)
 {
-	srand(getpid());
+	fi_param_define(&tcpx_prov, "iface", FI_PARAM_STRING,
+			"Specify interface name");
+
+	fi_param_define(&tcpx_prov,"port_low_range", FI_PARAM_INT,
+			"define port low range");
+
+	fi_param_define(&tcpx_prov,"port_high_range", FI_PARAM_INT,
+			"define port high range");
+
+	fi_param_define(&tcpx_prov, "nodelay", FI_PARAM_BOOL,
+			"overrides default TCP_NODELAY socket setting");
+	fi_param_get_bool(&tcpx_prov, "nodelay", &tcpx_nodelay);
 
 	fi_param_get_int(&tcpx_prov, "port_high_range", &port_range.high);
 	fi_param_get_int(&tcpx_prov, "port_low_range", &port_range.low);
@@ -90,15 +104,6 @@ TCP_INI
 #if HAVE_TCP_DL
 	ofi_pmem_init();
 #endif
-	fi_param_define(&tcpx_prov, "iface", FI_PARAM_STRING,
-			"Specify interface name");
-
-	fi_param_define(&tcpx_prov,"port_low_range", FI_PARAM_INT,
-			"define port low range");
-
-	fi_param_define(&tcpx_prov,"port_high_range", FI_PARAM_INT,
-			"define port high range");
-
 	tcpx_init_env();
 	return &tcpx_prov;
 }

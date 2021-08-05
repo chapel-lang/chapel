@@ -77,6 +77,7 @@ MODULES_TO_DOCUMENT = \
 	standard/CPtr.chpl \
 	standard/DateTime.chpl \
 	standard/DynamicIters.chpl \
+	standard/Errors.chpl \
 	standard/FileSystem.chpl \
 	standard/GMP.chpl \
 	standard/Heap.chpl \
@@ -170,7 +171,6 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/ChapelRange.chpl             \
 	internal/ChapelSyncvar.chpl           \
 	internal/ChapelTuple.chpl             \
-	internal/Errors.chpl                  \
 	internal/OwnedObject.chpl             \
 	internal/SharedObject.chpl            \
 	internal/String.chpl                  \

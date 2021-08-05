@@ -82,7 +82,8 @@ static inline struct name * name ## _create(size_t size)	\
 static inline void name ## _free(struct name *cq)		\
 {								\
 	free(cq);						\
-}
+}								\
+void dummy ## name (void) /* work-around global ; scope */
 
 #define ofi_cirque_isempty(cq)		((cq)->wcnt == (cq)->rcnt)
 #define ofi_cirque_usedcnt(cq)		((cq)->wcnt - (cq)->rcnt)
@@ -91,8 +92,10 @@ static inline void name ## _free(struct name *cq)		\
 
 #define ofi_cirque_rindex(cq)		((cq)->rcnt & (cq)->size_mask)
 #define ofi_cirque_windex(cq)		((cq)->wcnt & (cq)->size_mask)
+#define ofi_cirque_tindex(cq)		(((cq)->wcnt - 1) & (cq)->size_mask)
 #define ofi_cirque_head(cq)		(&(cq)->buf[ofi_cirque_rindex(cq)])
-#define ofi_cirque_tail(cq)		(&(cq)->buf[ofi_cirque_windex(cq)])
+#define ofi_cirque_tail(cq)		(&(cq)->buf[ofi_cirque_tindex(cq)])
+#define ofi_cirque_next(cq)		(&(cq)->buf[ofi_cirque_windex(cq)])
 #define ofi_cirque_insert(cq, x)	(cq)->buf[(cq)->wcnt++ & (cq)->size_mask] = x
 #define ofi_cirque_remove(cq)		(&(cq)->buf[(cq)->rcnt++ & (cq)->size_mask])
 #define ofi_cirque_discard(cq)		((cq)->rcnt++)

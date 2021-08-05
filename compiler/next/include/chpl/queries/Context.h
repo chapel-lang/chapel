@@ -39,6 +39,11 @@ namespace uast {
   class ASTNode;
 }
 
+namespace resolution {
+  struct TypedFnSignature;
+}
+
+
 /**
 
 \rst
@@ -199,9 +204,9 @@ class Context {
 
   std::vector<const querydetail::QueryMapResultBase*> queryStack;
 
-
   querydetail::RevisionNumber currentRevisionNumber = 1;
   bool enableDebugTracing = false;
+  int numQueriesRunThisRevision_ = 0;
 
   static void defaultReportError(const ErrorMessage& err);
   void (*reportError)(const ErrorMessage& err) = defaultReportError;
@@ -243,7 +248,8 @@ class Context {
       querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
       const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
       const std::tuple<ArgTs...>& tupleOfArgs,
-      ResultType result);
+      ResultType result,
+      bool forSetter);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -251,7 +257,8 @@ class Context {
   updateResultForQueryMap(
       querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
       const std::tuple<ArgTs...>& tupleOfArgs,
-      ResultType result);
+      ResultType result,
+      bool forSetter);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -261,7 +268,8 @@ class Context {
        const std::tuple<ArgTs...>& tupleOfArgs,
        ResultType result,
        const char* traceQueryName,
-       bool isInputQuery);
+       bool isInputQuery,
+       bool forSetter);
 
   template<typename ResultType,
            typename... ArgTs>
@@ -355,6 +363,13 @@ class Context {
   void advanceToNextRevision(bool prepareToGC);
 
   /**
+    Returns the number of query bodies executed in this revision.
+   */
+  int numQueriesRunThisRevision() const {
+    return numQueriesRunThisRevision_;
+  }
+
+  /**
     This function runs garbage collection. It will collect UniqueStrings
     if the last call to advanceToNextRevision passed prepareToGC=true.
 
@@ -411,6 +426,23 @@ class Context {
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.
     __attribute__ ((format (printf, 3, 4)))
+  #endif
+;
+  /**
+    Note an error for the currently running query.
+    This is a convenience overload.
+    This version takes in a TypedFnSignature and an AST node and a
+    printf-style format string.
+    The AST node is used to compute a Location by using a parsing::locateAst.
+    The TypedFnSignature is used to print out instantiation information.
+   */
+  void error(const resolution::TypedFnSignature* inFn,
+             const uast::ASTNode* ast,
+             const char* fmt, ...)
+  #ifndef DOXYGEN
+    // docs generator has trouble with the attribute applied to 'build'
+    // so the above ifndef works around the issue.
+    __attribute__ ((format (printf, 4, 5)))
   #endif
 ;
 

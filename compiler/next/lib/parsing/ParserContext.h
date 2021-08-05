@@ -81,6 +81,8 @@ struct ParserContext {
   // note when EOF is reached
   bool atEOF;
 
+  ParserExprList* parenlessMarker;
+
   ParserContext(const char* filename, Builder* builder)
   {
     auto uniqueFilename = UniqueString::build(builder->context(), filename);
@@ -96,6 +98,10 @@ struct ParserContext {
     YYLTYPE emptyLoc = {0};
     this->declStartLocation  = emptyLoc;
     this->atEOF              = false;
+    this->parenlessMarker    = new ParserExprList();
+  }
+  ~ParserContext() {
+    delete this->parenlessMarker;
   }
 
   Context* context() { return builder->context(); }

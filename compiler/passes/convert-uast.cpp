@@ -605,7 +605,7 @@ struct Converter {
   Expr* visit(const uast::Dot* node) {
 
     // These are the arguments that 'buildDotExpr' requires.
-    BaseAST* base = toExpr(convertAST(node->calledExpression()));
+    BaseAST* base = toExpr(convertAST(node->receiver()));
     auto member = node->field();
 
     if (!typeStr.compare(member)) {

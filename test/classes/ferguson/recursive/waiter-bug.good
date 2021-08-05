@@ -1,0 +1,4 @@
+waiter-bug.chpl:8: In initializer:
+waiter-bug.chpl:8: error: Cannot default-initialize a variable with generic type
+waiter-bug.chpl:8: note: 'prev' has generic type 'unmanaged Waiter?'
+  waiter-bug.chpl:14: called as Waiter.init(value: int(64))

@@ -105,19 +105,19 @@ static void ofi_delete_tree(struct ofi_rbmap *map, struct ofi_rbnode *node)
 
 void ofi_rbmap_cleanup(struct ofi_rbmap *map)
 {
-	ofi_delete_tree(map, map->root);
-}
-
-void ofi_rbmap_destroy(struct ofi_rbmap *map)
-{
 	struct ofi_rbnode *node;
 
-	ofi_rbmap_cleanup(map);
+	ofi_delete_tree(map, map->root);
 	while (map->free_list) {
 		node = map->free_list;
 		map->free_list = node->right;
 		free(node);
 	}
+}
+
+void ofi_rbmap_destroy(struct ofi_rbmap *map)
+{
+	ofi_rbmap_cleanup(map);
 	free(map);
 }
 
@@ -229,8 +229,11 @@ int ofi_rbmap_insert(struct ofi_rbmap *map, void *key, void *data,
 
 	while (current != &map->sentinel) {
 		ret = map->compare(map, key, current->data);
-		if (ret == 0)
+		if (ret == 0) {
+			if (ret_node)
+				*ret_node = current;
 			return -FI_EALREADY;
+		}
 
 		parent = current;
 		current = (ret < 0) ? current->left : current->right;
@@ -376,6 +379,13 @@ void ofi_rbmap_delete(struct ofi_rbmap *map, struct ofi_rbnode *node)
 	/* swap y in for node, so we can free node */
 	ofi_rbmap_replace_node_ptr(map, node, y);
 	ofi_rbnode_free(map, node);
+}
+
+struct ofi_rbnode *ofi_rbmap_get_root(struct ofi_rbmap *map)
+{
+	if (ofi_rbmap_empty(map))
+		return NULL;
+	return map->root;
 }
 
 struct ofi_rbnode *ofi_rbmap_find(struct ofi_rbmap *map, void *key)

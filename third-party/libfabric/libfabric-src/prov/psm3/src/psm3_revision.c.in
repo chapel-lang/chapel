@@ -1,0 +1,21 @@
+#ifndef PSMX3_IFS_VERSION
+#define PSMX3_IFS_VERSION	"@IFS_VERSION@"
+#endif
+
+#ifndef PSMX3_BUILD_TIMESTAMP
+#define PSMX3_BUILD_TIMESTAMP	"@BUILD_TIMESTAMP@"
+#endif
+
+#ifndef PSMX3_SRC_CHECKSUM
+#define PSMX3_SRC_CHECKSUM	"@SRC_CHECKSUM@"
+#endif
+
+#ifndef PSMX3_GIT_CHECKSUM
+#define PSMX3_GIT_CHECKSUM	"@GIT_HASH@"
+#endif
+
+char psmi_hfi_IFS_version[] = PSMX3_IFS_VERSION;
+char psmi_hfi_build_timestamp[] = PSMX3_BUILD_TIMESTAMP;
+char psmi_hfi_sources_checksum[] = PSMX3_SRC_CHECKSUM;
+char psmi_hfi_git_checksum[] = PSMX3_GIT_CHECKSUM;
+

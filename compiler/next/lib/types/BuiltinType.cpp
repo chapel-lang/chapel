@@ -18,139 +18,84 @@
  */
 
 #include "chpl/types/BuiltinType.h"
+#include "chpl/queries/query-impl.h"
 
 namespace chpl {
 namespace types {
 
+// implement the subclasses using macros and TypeClassesList.h
+#define TYPE_NODE(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
 
-void BuiltinType::canonicalizeBitWidth() {
-  switch (kind()) {
-    case BOOL:
-    case INT:
-    case UINT:
-      if (bitwidth_ == 0) {
-        if (kind() == BOOL) {
-          // OK, 'bool' is separate type from other bool(num),
-          // represent that with bit width 0.
-        } else {
-          bitwidth_ = 64; // e.g. `int` means `int(64)`.
-        }
-      } else {
-        assert(bitwidth_ == 8 || bitwidth_ == 16 ||
-               bitwidth_ == 32 || bitwidth_ == 64);
-      }
-      break;
-
-    case IMAG:
-    case REAL:
-      if (bitwidth_ == 0) {
-        bitwidth_ = 64;
-      } else {
-        assert(bitwidth_ == 32 || bitwidth_ == 64);
-      }
-      break;
-
-    case COMPLEX:
-      if (bitwidth_ == 0) {
-        bitwidth_ = 128;
-      } else {
-        assert(bitwidth_ == 64 || bitwidth_ == 128);
-      }
-      break;
-
-    default:
-      // always use 0 bitwidth
-      bitwidth_ = 0;
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) \
+  const owned<NAME>& NAME::get##NAME(Context* context) { \
+    QUERY_BEGIN(get##NAME, context); \
+    auto result = toOwned(new NAME()); \
+    return QUERY_END(result); \
   }
+
+// Apply the above macros to TypeClassesList.h
+#include "chpl/types/TypeClassesList.h"
+
+// clear the macros
+#undef TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef BUILTIN_TYPE_NODE
+
+static void gatherType(Context* context,
+                       std::unordered_map<UniqueString,const Type*>& map,
+                       const BuiltinType* t) {
+  auto name = UniqueString::build(context, t->c_str());
+  map.insert( {name, t} );
+}
+
+void BuiltinType::gatherBuiltins(Context* context,
+                                 std::unordered_map<UniqueString,const Type*>& map) {
+
+  // call gatherType for each Kind using macros and TypeClassesList.h
+  #define TYPE_NODE(NAME)
+  #define TYPE_BEGIN_SUBCLASSES(NAME)
+  #define TYPE_END_SUBCLASSES(NAME)
+
+  #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) \
+    gatherType(context, map, NAME::get(context));
+
+  // Apply the above macros to TypeClassesList.h
+  #include "chpl/types/TypeClassesList.h"
+
+  // clear the macros
+  #undef TYPE_NODE
+  #undef TYPE_BEGIN_SUBCLASSES
+  #undef TYPE_END_SUBCLASSES
+  #undef BUILTIN_TYPE_NODE
 }
 
 const char* BuiltinType::c_str() const {
-  switch (kind_) {
-    case INT:
-      switch (bitwidth_) {
-        case 8:
-          return "int(8)";
-        case 16:
-          return "int(16)";
-        case 32:
-          return "int(32)";
-        case 64:
-          return "int(64)";
-        default:
-          assert(false && "int bit width case not handled");
-          return "int(<unknown>)";
-      }
-    case UINT:
-      switch (bitwidth_) {
-        case 8:
-          return "uint(8)";
-        case 16:
-          return "uint(16)";
-        case 32:
-          return "uint(32)";
-        case 64:
-          return "uint(64)";
-        default:
-          assert(false && "uint bit width case not handled");
-          return "uint(<unknown>)";
-      }
-    case BOOL:
-      switch (bitwidth_) {
-        case 0:
-          return "bool";
-        case 8:
-          return "bool(8)";
-        case 16:
-          return "bool(16)";
-        case 32:
-          return "bool(32)";
-        case 64:
-          return "bool(64)";
-        default:
-          assert(false && "bool bit width case not handled");
-          return "bool(<unknown>)";
-      }
-    case REAL:
-      switch (bitwidth_) {
-        case 32:
-          return "real(32)";
-        case 64:
-            return "real(64)";
-        default:
-          assert(false && "real bit width case not handled");
-          return "real(<unknown>)";
-      }
-    case IMAG:
-      switch (bitwidth_) {
-        case 32:
-          return "imag(32)";
-        case 64:
-            return "imag(64)";
-        default:
-          assert(false && "imag bit width case not handled");
-          return "imag(<unknown>)";
-      }
-    case COMPLEX:
-      switch (bitwidth_) {
-        case 64:
-          return "complex(64)";
-        case 128:
-          return "complex(128)";
-        default:
-          assert(false && "complex bit width case not handled");
-          return "complex(<unknown>)";
-      }
+  // create switch statement using macros and TypeClassesList.h
+  #define TYPE_NODE(NAME)
+  #define TYPE_BEGIN_SUBCLASSES(NAME)
+  #define TYPE_END_SUBCLASSES(NAME)
 
-    case NUMERIC:
-      return "numeric";
+  #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) \
+    case typetags::NAME: return CHPL_NAME_STR;
+
+  switch (tag()) {
+    // Apply the above macros to TypeClassesList.h
+    #include "chpl/types/TypeClassesList.h"
+    // Default case should not be reachable
+    default:
+      assert(false && "should not be reachable");
+      return "<unknown builtin type>";
   }
 
-  assert(false && "case not handled");
-  return "<unknown>";
-}
+  // clear the macros
+  #undef TYPE_NODE
+  #undef TYPE_BEGIN_SUBCLASSES
+  #undef TYPE_END_SUBCLASSES
+  #undef BUILTIN_TYPE_NODE
 
-owned<BuiltinType> BuiltinType::build(BuiltinType::Kind kind, int bitwidth) {
-  return toOwned(new BuiltinType(kind, bitwidth));
 }
 
 

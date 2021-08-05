@@ -248,10 +248,12 @@ static inline int psmx2_cq_any_complete(struct psmx2_fid_cq *poll_cq,
 
 	if (is_recv) {
 		psm2_epaddr_t source = PSMX2_STATUS_PEER(status);
+		int source_sep_id = (flags & FI_REMOTE_CQ_DATA) ? 0 : data;
 
 		if (event == event_in) {
 			if (src_addr) {
-				src_addr[0] = psmx2_av_translate_source(av, source);
+				src_addr[0] = psmx2_av_translate_source(av, source,
+									source_sep_id);
 				if (src_addr[0] == FI_ADDR_NOTAVAIL) {
 					*event_saved = 0;
 					event = psmx2_cq_alloc_event(comp_cq);
@@ -264,16 +266,21 @@ static inline int psmx2_cq_any_complete(struct psmx2_fid_cq *poll_cq,
 					event->error = !!event->cqe.err.err;
 					if (av->addr_format == FI_ADDR_STR) {
 						event->cqe.err.err_data_size = PSMX2_ERR_DATA_SIZE;
-						psmx2_get_source_string_name(source, (void *)&comp_cq->error_data,
-										 &event->cqe.err.err_data_size);
+						psmx2_get_source_string_name(
+							source, source_sep_id,
+							(void *)&comp_cq->error_data,
+							&event->cqe.err.err_data_size);
 					} else {
-						psmx2_get_source_name(source, (void *)&comp_cq->error_data);
+						psmx2_get_source_name(
+							source, source_sep_id,
+							(void *)&comp_cq->error_data);
 						event->cqe.err.err_data_size = sizeof(struct psmx2_ep_name);
 					}
 				}
 			}
 		} else {
 			event->source_is_valid = 1;
+			event->source_sep_id = source_sep_id;
 			event->source = source;
 			event->source_av = av;
 		}
@@ -433,11 +440,9 @@ psmx2_mq_status_copy(struct psm2_mq_req_user *req, void *status_array, int entry
 		if (ep->recv_cq) {
 			op_context = fi_context;
 			buf = PSMX2_CTXT_USER(fi_context);
-			data = 0;
-			if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(req)))) {
+			data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(req));
+			if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(req))))
 				flags |= FI_REMOTE_CQ_DATA;
-				data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(req));
-			}
 			err = psmx2_cq_rx_complete(
 					status_data->poll_cq, ep->recv_cq, ep->av,
 					req, op_context, buf, flags, data,
@@ -457,11 +462,9 @@ psmx2_mq_status_copy(struct psm2_mq_req_user *req, void *status_array, int entry
 		if (ep->recv_cq) {
 			op_context = fi_context;
 			buf = PSMX2_CTXT_USER(fi_context);
-			data = 0;
-			if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(req)))) {
+			data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(req));
+			if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(req))))
 				flags |= FI_REMOTE_CQ_DATA;
-				data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(req));
-			}
 			err = psmx2_cq_rx_complete(
 					status_data->poll_cq, ep->recv_cq, ep->av,
 					req, op_context, buf, flags, data,
@@ -481,11 +484,9 @@ psmx2_mq_status_copy(struct psm2_mq_req_user *req, void *status_array, int entry
 		}
 		PSMX2_EP_PUT_OP_CONTEXT(ep, fi_context);
 		if (OFI_UNLIKELY(ep->recv_cq && PSMX2_STATUS_ERROR(req))) {
-			data = 0;
-			if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(req)))) {
+			data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(req));
+			if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(req))))
 				flags |= FI_REMOTE_CQ_DATA;
-				data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(req));
-			}
 			err = psmx2_cq_rx_complete(
 					status_data->poll_cq, ep->recv_cq, ep->av,
 					req, NULL, NULL, flags, data,
@@ -505,9 +506,12 @@ psmx2_mq_status_copy(struct psm2_mq_req_user *req, void *status_array, int entry
 		}
 		PSMX2_EP_PUT_OP_CONTEXT(ep, fi_context);
 		if (OFI_UNLIKELY(ep->recv_cq && PSMX2_STATUS_ERROR(req))) {
+			data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(req));
+			if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(req))))
+				flags |= FI_REMOTE_CQ_DATA;
 			err = psmx2_cq_rx_complete(
 					status_data->poll_cq, ep->recv_cq, ep->av,
-					req, NULL, NULL, flags, 0,
+					req, NULL, NULL, flags, data,
 					entry, status_data->src_addr, &event_saved);
 			if (OFI_UNLIKELY(err))
 				return err;
@@ -619,11 +623,9 @@ psmx2_mq_status_copy(struct psm2_mq_req_user *req, void *status_array, int entry
 		if (ep->recv_cq) {
 			op_context = fi_context;
 			buf = multi_recv_req->buf + multi_recv_req->offset;
-			data = 0;
-			if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(req)))) {
+			data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(req));
+			if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(req))))
 				flags |= FI_REMOTE_CQ_DATA;
-				data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(req));
-			}
 			if (multi_recv_req->offset + PSMX2_STATUS_RCVLEN(req) +
 				multi_recv_req->min_buf_size > multi_recv_req->len)
 				flags |= FI_MULTI_RECV;	/* buffer used up */
@@ -955,10 +957,12 @@ static inline int psmx2_cq_any_complete(struct psmx2_fid_cq *poll_cq,
 
 	if (is_recv) {
 		psm2_epaddr_t source = PSMX2_STATUS_PEER(status);
+		int source_sep_id = (flags & FI_REMOTE_CQ_DATA) ? 0 : data;
 
 		if (event == event_in) {
 			if (src_addr) {
-				src_addr[*read_count] = psmx2_av_translate_source(av, source);
+				src_addr[*read_count] = 
+					psmx2_av_translate_source(av, source, source_sep_id);
 				if (src_addr[*read_count] == FI_ADDR_NOTAVAIL) {
 					event = psmx2_cq_alloc_event(comp_cq);
 					if (!event)
@@ -970,10 +974,14 @@ static inline int psmx2_cq_any_complete(struct psmx2_fid_cq *poll_cq,
 					event->error = !!event->cqe.err.err;
 					if (av->addr_format == FI_ADDR_STR) {
 						event->cqe.err.err_data_size = PSMX2_ERR_DATA_SIZE;
-						psmx2_get_source_string_name(source, (void *)&comp_cq->error_data,
-									     &event->cqe.err.err_data_size);
+						psmx2_get_source_string_name(
+							source, source_sep_id,
+							(void *)&comp_cq->error_data,
+							&event->cqe.err.err_data_size);
 					} else {
-						psmx2_get_source_name(source, (void *)&comp_cq->error_data);
+						psmx2_get_source_name(
+							source, source_sep_id,
+							(void *)&comp_cq->error_data);
 						event->cqe.err.err_data_size = sizeof(struct psmx2_ep_name);
 					}
 
@@ -982,6 +990,7 @@ static inline int psmx2_cq_any_complete(struct psmx2_fid_cq *poll_cq,
 			}
 		} else {
 			event->source_is_valid = 1;
+			event->source_sep_id = source_sep_id;
 			event->source = source;
 			event->source_av = av;
 		}
@@ -1136,12 +1145,9 @@ int psmx2_cq_poll_mq(struct psmx2_fid_cq *cq,
 					op_context = fi_context;
 					buf = PSMX2_CTXT_USER(fi_context);
 					flags = psmx2_comp_flags[context_type];
-					if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(status)))) {
+					data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(status));
+					if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(status))))
 						flags |= FI_REMOTE_CQ_DATA;
-						data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(status));
-					} else {
-						data = 0;
-					}
 					err = psmx2_cq_rx_complete(
 							cq, ep->recv_cq, ep->av,
 							status, op_context, buf, flags, data,
@@ -1162,12 +1168,9 @@ int psmx2_cq_poll_mq(struct psmx2_fid_cq *cq,
 					op_context = fi_context;
 					buf = PSMX2_CTXT_USER(fi_context);
 					flags = psmx2_comp_flags[context_type];
-					if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(status)))) {
+					data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(status));
+					if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(status))))
 						flags |= FI_REMOTE_CQ_DATA;
-						data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(status));
-					} else {
-						data = 0;
-					}
 					err = psmx2_cq_rx_complete(
 							cq, ep->recv_cq, ep->av,
 							status, op_context, buf, flags, data,
@@ -1191,12 +1194,9 @@ int psmx2_cq_poll_mq(struct psmx2_fid_cq *cq,
 					op_context = NULL;
 					buf = NULL;
 					flags = psmx2_comp_flags[context_type];
-					if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(status)))) {
+					data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(status));
+					if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(status))))
 						flags |= FI_REMOTE_CQ_DATA;
-						data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(status));
-					} else {
-						data = 0;
-					}
 					err = psmx2_cq_rx_complete(
 							cq, ep->recv_cq, ep->av,
 							status, op_context, buf, flags, data,
@@ -1220,9 +1220,12 @@ int psmx2_cq_poll_mq(struct psmx2_fid_cq *cq,
 					op_context = NULL;
 					buf = NULL;
 					flags = psmx2_comp_flags[context_type];
+					data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(status));
+					if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(status))))
+						flags |= FI_REMOTE_CQ_DATA;
 					err = psmx2_cq_rx_complete(
 							cq, ep->recv_cq, ep->av,
-							status, op_context, buf, flags, 0,
+							status, op_context, buf, flags, data,
 							event_in, count, &read_count,
 							&read_more, src_addr);
 					if (err)
@@ -1347,12 +1350,9 @@ int psmx2_cq_poll_mq(struct psmx2_fid_cq *cq,
 					op_context = fi_context;
 					buf = multi_recv_req->buf + multi_recv_req->offset;
 					flags = psmx2_comp_flags[context_type];
-					if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(status)))) {
+					data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(status));
+					if (PSMX2_HAS_IMM(PSMX2_GET_FLAGS(PSMX2_STATUS_TAG(status))))
 						flags |= FI_REMOTE_CQ_DATA;
-						data = PSMX2_GET_CQDATA(PSMX2_STATUS_TAG(status));
-					} else {
-						data = 0;
-					}
 					if (multi_recv_req->offset + PSMX2_STATUS_RCVLEN(status) +
 					    multi_recv_req->min_buf_size > multi_recv_req->len)
 						flags |= FI_MULTI_RECV;	/* buffer used up */
@@ -1609,16 +1609,21 @@ STATIC ssize_t psmx2_cq_readfrom(struct fid_cq *cq, void *buf, size_t count,
 		if (event) {
 			if (!event->error) {
 				if (src_addr && event->source_is_valid) {
-					source = psmx2_av_translate_source(event->source_av,
-									   event->source);
+					source = psmx2_av_translate_source(
+							event->source_av, event->source,
+							event->source_sep_id);
 					if (source == FI_ADDR_NOTAVAIL) {
 						if (cq_priv->domain->addr_format == FI_ADDR_STR) {
 							event->cqe.err.err_data_size = PSMX2_ERR_DATA_SIZE;
-							psmx2_get_source_string_name(event->source,
-										     (void *)&cq_priv->error_data,
-										     &event->cqe.err.err_data_size);
+							psmx2_get_source_string_name(
+								event->source, event->source_sep_id,
+								(void *)&cq_priv->error_data,
+								&event->cqe.err.err_data_size);
 						} else {
-							psmx2_get_source_name(event->source, (void *)&cq_priv->error_data);
+							psmx2_get_source_name(
+								event->source,
+								event->source_sep_id,
+								(void *)&cq_priv->error_data);
 							event->cqe.err.err_data_size = sizeof(struct psmx2_ep_name);
 						}
 						event->cqe.err.err_data = &cq_priv->error_data;

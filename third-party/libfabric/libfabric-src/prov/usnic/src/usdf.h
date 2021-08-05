@@ -425,7 +425,7 @@ enum {
 struct usdf_err_data_entry {
 	struct slist_entry entry;
 	uint8_t seen;
-	uint8_t err_data[0];
+	uint8_t err_data[];
 };
 
 struct usdf_event {

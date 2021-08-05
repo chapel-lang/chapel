@@ -48,7 +48,6 @@
 #include <assert.h>
 #include <pthread.h>
 #include <sys/epoll.h>
-#include <uthash.h>
 
 #include <rdma/fabric.h>
 #include <rdma/fi_cm.h>
@@ -152,7 +151,7 @@ struct efa_domain {
 	struct ibv_pd		*ibv_pd;
 	struct fi_info		*info;
 	struct efa_fabric	*fab;
-	struct ofi_mr_cache	cache;
+	struct ofi_mr_cache	*cache;
 	struct efa_qp		**qp_table;
 	size_t			qp_table_sz_m1;
 };
@@ -194,11 +193,17 @@ struct efa_cq {
 
 struct efa_context {
 	struct ibv_context	*ibv_ctx;
+	int			dev_idx;
 	uint64_t		max_mr_size;
 	uint16_t		inline_buf_size;
 	uint16_t		max_wr_rdma_sge;
 	uint32_t		max_rdma_size;
 	uint32_t		device_caps;
+};
+
+struct efa_pd {
+	struct ibv_pd	   *ibv_pd;
+	int		   use_cnt;
 };
 
 struct efa_qp {
@@ -246,16 +251,17 @@ struct efa_ep {
 	struct ibv_recv_wr	*recv_more_wr_tail;
 	struct ofi_bufpool	*send_wr_pool;
 	struct ofi_bufpool	*recv_wr_pool;
+	struct ibv_ah		*self_ah;
 };
 
 struct efa_send_wr {
 	struct ibv_send_wr wr;
-	struct ibv_sge sge[0];
+	struct ibv_sge sge[];
 };
 
 struct efa_recv_wr {
 	struct ibv_recv_wr wr;
-	struct ibv_sge sge[0];
+	struct ibv_sge sge[];
 };
 
 typedef struct efa_conn *
@@ -273,8 +279,8 @@ struct efa_av {
 	enum fi_av_type		type;
 	efa_addr_to_conn_func	addr_to_conn;
 	struct efa_reverse_av	*reverse_av;
-	struct efa_av_entry     *av_map;
 	struct util_av		util_av;
+	size_t			count;
 	enum fi_ep_type         ep_type;
 	/* Used only for FI_AV_TABLE */
 	struct efa_conn         **conn_table;
@@ -285,7 +291,6 @@ struct efa_av_entry {
 	fi_addr_t		rdm_addr;
 	fi_addr_t		shm_rdm_addr;
 	bool			local_mapping;
-	UT_hash_handle		hh;
 };
 
 struct efa_ah_qpn {
@@ -334,6 +339,13 @@ extern struct fi_ops_cm efa_ep_cm_ops;
 extern struct fi_ops_msg efa_ep_msg_ops;
 extern struct fi_ops_rma efa_ep_rma_ops;
 
+ssize_t efa_rma_post_read(struct efa_ep *ep, const struct fi_msg_rma *msg,
+			  uint64_t flags, bool self_comm);
+
+extern fastlock_t pd_list_lock;
+// This list has the same indicies as ctx_list.
+extern struct efa_pd *pd_list;
+
 int efa_device_init(void);
 void efa_device_free(void);
 
@@ -363,9 +375,13 @@ fi_addr_t efa_ahn_qpn_to_addr(struct efa_av *av, uint16_t ahn, uint16_t qpn);
 
 struct fi_provider *init_lower_efa_prov();
 
+ssize_t efa_post_flush(struct efa_ep *ep, struct ibv_send_wr **bad_wr);
+
 ssize_t efa_cq_readfrom(struct fid_cq *cq_fid, void *buf, size_t count, fi_addr_t *src_addr);
 
 ssize_t efa_cq_readerr(struct fid_cq *cq_fid, struct fi_cq_err_entry *entry, uint64_t flags);
+
+bool efa_device_support_rdma_read(void);
 
 static inline
 bool efa_ep_support_rdma_read(struct fid_ep *ep_fid)
@@ -377,6 +393,19 @@ bool efa_ep_support_rdma_read(struct fid_ep *ep_fid)
 }
 
 static inline
+bool efa_ep_support_rnr_retry_modify(struct fid_ep *ep_fid)
+{
+#ifdef HAVE_CAPS_RNR_RETRY
+	struct efa_ep *efa_ep;
+
+	efa_ep = container_of(ep_fid, struct efa_ep, util_ep.ep_fid);
+	return efa_ep->domain->ctx->device_caps & EFADV_DEVICE_ATTR_CAPS_RNR_RETRY;
+#else
+	return false;
+#endif
+}
+
+static inline
 bool efa_peer_support_rdma_read(struct rxr_peer *peer)
 {
 	/* RDMA READ is an extra feature defined in version 4 (the base version).
@@ -385,6 +414,19 @@ bool efa_peer_support_rdma_read(struct rxr_peer *peer)
 	 */
 	return (peer->flags & RXR_PEER_HANDSHAKE_RECEIVED) &&
 	       (peer->features[0] & RXR_REQ_FEATURE_RDMA_READ);
+}
+
+static inline
+bool rxr_peer_support_delivery_complete(struct rxr_peer *peer)
+{
+	/* FI_DELIVERY_COMPLETE is an extra feature defined
+	 * in version 4 (the base version).
+	 * Because it is an extra feature,
+	 * an EP will assume the peer does not support
+	 * it before a handshake packet was received.
+	 */
+	return (peer->flags & RXR_PEER_HANDSHAKE_RECEIVED) &&
+	       (peer->features[0] & RXR_REQ_FEATURE_DELIVERY_COMPLETE);
 }
 
 static inline
@@ -404,6 +446,69 @@ size_t efa_max_rdma_size(struct fid_ep *ep_fid)
 
 	efa_ep = container_of(ep_fid, struct efa_ep, util_ep.ep_fid);
 	return efa_ep->domain->ctx->max_rdma_size;
+}
+
+static inline
+struct rxr_peer *efa_ep_get_peer(struct dlist_entry *ep_list_entry,
+				 fi_addr_t addr)
+{
+	struct util_ep *util_ep;
+	struct rxr_ep *rxr_ep;
+
+	util_ep = container_of(ep_list_entry, struct util_ep,
+			       av_entry);
+	rxr_ep = container_of(util_ep, struct rxr_ep, util_ep);
+	return rxr_ep_get_peer(rxr_ep, addr);
+}
+
+static inline
+int efa_peer_in_use(struct rxr_peer *peer)
+{
+	struct rxr_pkt_entry *pending_pkt;
+
+	if ((peer->tx_pending) || (peer->flags & RXR_PEER_IN_BACKOFF))
+		return -FI_EBUSY;
+	if (peer->rx_init) {
+		pending_pkt = *ofi_recvwin_peek(peer->robuf);
+		if (pending_pkt && pending_pkt->pkt)
+			return -FI_EBUSY;
+	}
+	return 0;
+}
+static inline
+void efa_free_robuf(struct rxr_peer *peer)
+{
+	ofi_recvwin_free(peer->robuf);
+	ofi_buf_free(peer->robuf);
+}
+
+static inline
+void efa_peer_reset(struct rxr_peer *peer)
+{
+	efa_free_robuf(peer);
+#ifdef ENABLE_EFA_POISONING
+	rxr_poison_mem_region((uint32_t *)peer, sizeof(struct rxr_peer));
+#endif
+	memset(peer, 0, sizeof(struct rxr_peer));
+	dlist_init(&peer->rnr_entry);
+}
+
+static inline bool efa_ep_is_cuda_mr(struct efa_mr *efa_mr)
+{
+	return efa_mr ? (efa_mr->peer.iface == FI_HMEM_CUDA): false;
+}
+
+/*
+ * efa_is_cache_available() is a check to see whether a memory registration
+ * cache is available to be used by this domain.
+ *
+ * Return value:
+ *    return true if a memory registration cache exists in this domain.
+ *    return false if a memory registration cache does not exist in this domain.
+ */
+static inline bool efa_is_cache_available(struct efa_domain *efa_domain)
+{
+	return efa_domain->cache;
 }
 
 #endif /* EFA_H */

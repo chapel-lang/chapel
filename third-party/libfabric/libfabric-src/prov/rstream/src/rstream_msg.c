@@ -118,7 +118,7 @@ static struct fi_context *rstream_get_rx_ctx(struct rstream_ep *ep)
 static struct fi_context *rstream_get_tx_ctx(struct rstream_ep *ep, int len)
 {
 	struct rstream_tx_ctx_fs *fs = ep->tx_ctxs;
-	struct rstream_ctx_data *rtn_ctx = freestack_pop(fs);
+	struct rstream_ctx_data *rtn_ctx = ofi_freestack_pop(fs);
 
 	if (!rtn_ctx)
 		return NULL;
@@ -135,7 +135,7 @@ static int rstream_return_tx_ctx(struct fi_context *ctx_ptr,
 
 	struct rstream_ctx_data *ctx_data = (struct rstream_ctx_data *)ctx_ptr;
 	len = ctx_data->len;
-	freestack_push(fs, ctx_data);
+	ofi_freestack_push(fs, ctx_data);
 
 	return len;
 }

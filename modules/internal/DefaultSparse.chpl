@@ -64,8 +64,6 @@ module DefaultSparse {
                                             initElts=initElts);
     }
 
-    // ?FromMMS: this doesn't appear to be an order independent yielding loop,
-    // why does it use foreach?
     iter dsiIndsIterSafeForRemoving() {
       foreach i in 0..#_nnz by -1 {
         yield _indices(i);

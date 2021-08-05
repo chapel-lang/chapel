@@ -2,7 +2,8 @@
  * Copyright (c) 2015-2019 Cray Inc. All rights reserved.
  * Copyright (c) 2015-2018 Los Alamos National Security, LLC.
  *                         All rights reserved.
- * Copyright (c) 2019 Triad National Security, LLC. All rights reserved.
+ * Copyright (c) 2019-2020 Triad National Security, LLC.
+ *                         All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -407,7 +408,7 @@ static int __recv_completion_src(
 	char *buffer;
 	size_t buf_len;
 
-	GNIX_DBG_TRACE(FI_LOG_TRACE, "\n");
+	GNIX_DBG_TRACE(FI_LOG_EP_DATA, "\n");
 
 	if ((req->msg.recv_flags & FI_COMPLETION) && ep->recv_cq) {
 		if ((src_addr == FI_ADDR_NOTAVAIL) &&

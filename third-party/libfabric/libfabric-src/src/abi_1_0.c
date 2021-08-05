@@ -88,41 +88,7 @@ struct fi_ep_attr_1_0 {
 	size_t			rx_ctx_cnt;
 };
 
-struct fi_info_1_0 {
-	struct fi_info			*next;
-	uint64_t			caps;
-	uint64_t			mode;
-	uint32_t			addr_format;
-	size_t				src_addrlen;
-	size_t				dest_addrlen;
-	void				*src_addr;
-	void				*dest_addr;
-	fid_t				handle;
-	struct fi_tx_attr		*tx_attr;
-	struct fi_rx_attr		*rx_attr;
-	struct fi_ep_attr_1_0		*ep_attr;
-	struct fi_domain_attr_1_0	*domain_attr;
-	struct fi_fabric_attr_1_0	*fabric_attr;
-};
-
-struct fi_info_1_1 {
-	struct fi_info			*next;
-	uint64_t			caps;
-	uint64_t			mode;
-	uint32_t			addr_format;
-	size_t				src_addrlen;
-	size_t				dest_addrlen;
-	void				*src_addr;
-	void				*dest_addr;
-	fid_t				handle;
-	struct fi_tx_attr		*tx_attr;
-	struct fi_rx_attr		*rx_attr;
-	struct fi_ep_attr_1_0		*ep_attr;
-	struct fi_domain_attr_1_0	*domain_attr;
-	struct fi_fabric_attr_1_0	*fabric_attr;
-};
-
-struct fi_tx_attr_1_2 {
+struct fi_tx_attr_1_0 {
         uint64_t                caps;
         uint64_t                mode;
         uint64_t                op_flags;
@@ -134,23 +100,27 @@ struct fi_tx_attr_1_2 {
         size_t                  rma_iov_limit;
 };
 
-struct fi_ep_attr_1_2 {
-        enum fi_ep_type         type;
-        uint32_t                protocol;
-        uint32_t                protocol_version;
-        size_t                  max_msg_size;
-        size_t                  msg_prefix_size;
-        size_t                  max_order_raw_size;
-        size_t                  max_order_war_size;
-        size_t                  max_order_waw_size;
-        uint64_t                mem_tag_format;
-        size_t                  tx_ctx_cnt;
-        size_t                  rx_ctx_cnt;
-        size_t                  auth_key_size;
-        uint8_t                 *auth_key;
+/* External structure is still ABI 1.0 compliant */
+#define fi_rx_attr_1_0 fi_rx_attr
+
+struct fi_info_1_0 {
+	struct fi_info			*next;
+	uint64_t			caps;
+	uint64_t			mode;
+	uint32_t			addr_format;
+	size_t				src_addrlen;
+	size_t				dest_addrlen;
+	void				*src_addr;
+	void				*dest_addr;
+	fid_t				handle;
+	struct fi_tx_attr_1_0		*tx_attr;
+	struct fi_rx_attr_1_0		*rx_attr;
+	struct fi_ep_attr_1_0		*ep_attr;
+	struct fi_domain_attr_1_0	*domain_attr;
+	struct fi_fabric_attr_1_0	*fabric_attr;
 };
 
-struct fi_domain_attr_1_2 {
+struct fi_domain_attr_1_1 {
         struct fid_domain       *domain;
         char                    *name;
         enum fi_threading       threading;
@@ -179,6 +149,35 @@ struct fi_domain_attr_1_2 {
         size_t                  mr_cnt;
 };
 
+#define fi_tx_attr_1_1 fi_tx_attr_1_0
+#define fi_rx_attr_1_1 fi_rx_attr_1_0
+#define fi_ep_attr_1_1 fi_ep_attr
+#define fi_fabric_attr_1_1 fi_fabric_attr
+
+struct fi_info_1_1 {
+	struct fi_info			*next;
+	uint64_t			caps;
+	uint64_t			mode;
+	uint32_t			addr_format;
+	size_t				src_addrlen;
+	size_t				dest_addrlen;
+	void				*src_addr;
+	void				*dest_addr;
+	fid_t				handle;
+	struct fi_tx_attr_1_1		*tx_attr;
+	struct fi_rx_attr_1_1		*rx_attr;
+	struct fi_ep_attr_1_1		*ep_attr;
+	struct fi_domain_attr_1_1	*domain_attr;
+	struct fi_fabric_attr_1_1	*fabric_attr;
+};
+
+#define fi_tx_attr_1_2 fi_tx_attr_1_1
+#define fi_rx_attr_1_2 fi_rx_attr_1_1
+#define fi_ep_attr_1_2 fi_ep_attr_1_1
+#define fi_domain_attr_1_2 fi_domain_attr_1_1
+#define fi_fabric_attr_1_2 fi_fabric_attr_1_1
+#define fid_nic_1_2 fid_nic
+
 struct fi_info_1_2 {
         struct fi_info            *next;
         uint64_t                  caps;
@@ -190,12 +189,21 @@ struct fi_info_1_2 {
         void                      *dest_addr;
         fid_t                     handle;
         struct fi_tx_attr_1_2     *tx_attr;
-        struct fi_rx_attr         *rx_attr;
+        struct fi_rx_attr_1_2      *rx_attr;
         struct fi_ep_attr_1_2     *ep_attr;
         struct fi_domain_attr_1_2 *domain_attr;
-        struct fi_fabric_attr     *fabric_attr;
-        struct fid_nic            *nic;
+        struct fi_fabric_attr_1_2 *fabric_attr;
+        struct fid_nic_1_2        *nic;
 };
+
+/*
+#define fi_tx_attr_1_3 fi_tx_attr
+#define fi_rx_attr_1_3 fi_rx_attr_1_2
+#define fi_ep_attr_1_3 fi_ep_attr_1_2
+#define fi_domain_attr_1_3 fi_domain_attr
+#define fi_fabric_attr_1_3 fi_fabric_attr_1_2
+fi_info_1_3 -> fi_info
+*/
 
 #define ofi_dup_attr(dst, src)				\
 	do {						\

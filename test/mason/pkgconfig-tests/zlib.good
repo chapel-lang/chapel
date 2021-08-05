@@ -9,8 +9,8 @@ chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
 
 [system.zlib]
 name = "zlib"
-version = "zlibversion"
-libs = "zlibflags"
-include = "/usr/include"
+version = "prediffedvers"
+libs = "prediffedlibs"
+include = "prediffedincs"
 
 

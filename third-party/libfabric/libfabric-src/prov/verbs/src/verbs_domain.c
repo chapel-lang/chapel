@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013-2015 Intel Corporation, Inc.  All rights reserved.
+ * (C) Copyright 2020 Hewlett Packard Enterprise Development LP
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -36,6 +37,59 @@
 
 #include "fi_verbs.h"
 #include <malloc.h>
+
+
+
+static void vrb_set_threshold(struct fid_ep *ep_fid, size_t threshold)
+{
+	struct vrb_ep *ep = container_of(ep_fid, struct vrb_ep, util_ep.ep_fid);
+	ep->threshold = threshold;
+}
+
+static void vrb_set_credit_handler(struct fid_domain *domain_fid,
+		ssize_t (*credit_handler)(struct fid_ep *ep, size_t credits))
+{
+	struct vrb_domain *domain;
+
+	domain = container_of(domain_fid, struct vrb_domain,
+			      util_domain.domain_fid.fid);
+	domain->send_credits = credit_handler;
+}
+
+static int vrb_enable_ep_flow_ctrl(struct fid_ep *ep_fid)
+{
+	struct vrb_ep *ep = container_of(ep_fid, struct vrb_ep, util_ep.ep_fid);
+	// only enable if we are not using SRQ
+	if (!ep->srq_ep && ep->ibv_qp && ep->ibv_qp->qp_type == IBV_QPT_RC) {
+		ep->peer_rq_credits = 1;
+		return FI_SUCCESS;
+	}
+
+	return -FI_ENOSYS;
+}
+
+struct ofi_ops_flow_ctrl vrb_ops_flow_ctrl = {
+	.size = sizeof(struct ofi_ops_flow_ctrl),
+	.set_threshold = vrb_set_threshold,
+	.add_credits = vrb_add_credits,
+	.enable = vrb_enable_ep_flow_ctrl,
+	.set_send_handler = vrb_set_credit_handler,
+};
+
+static int
+vrb_domain_ops_open(struct fid *fid, const char *name, uint64_t flags,
+		    void **ops, void *context)
+{
+	if (flags)
+		return -FI_EBADFLAGS;
+
+	if (!strcasecmp(name, OFI_OPS_FLOW_CTRL)) {
+		*ops = &vrb_ops_flow_ctrl;
+		return 0;
+	}
+
+	return -FI_ENOSYS;
+}
 
 
 #if VERBS_HAVE_QUERY_EX
@@ -190,7 +244,7 @@ static struct fi_ops vrb_fid_ops = {
 	.close = vrb_domain_close,
 	.bind = vrb_domain_bind,
 	.control = fi_no_control,
-	.ops_open = fi_no_ops_open,
+	.ops_open = vrb_domain_ops_open,
 };
 
 static struct fi_ops_domain vrb_msg_domain_ops = {
@@ -225,6 +279,12 @@ static int
 vrb_domain(struct fid_fabric *fabric, struct fi_info *info,
 	      struct fid_domain **domain, void *context)
 {
+	struct ofi_mem_monitor *memory_monitors[OFI_HMEM_MAX] = {
+		[FI_HMEM_SYSTEM] = default_monitor,
+		[FI_HMEM_CUDA] = default_cuda_monitor,
+		[FI_HMEM_ROCR] = default_rocr_monitor,
+	};
+	enum fi_hmem_iface iface;
 	struct vrb_domain *_domain;
 	int ret;
 	struct vrb_fabric *fab =
@@ -253,7 +313,7 @@ vrb_domain(struct fid_fabric *fabric, struct fi_info *info,
 		goto err2;
 
 	_domain->ep_type = VRB_EP_TYPE(info);
-	_domain->flags |= vrb_is_xrc(info) ? VRB_USE_XRC : 0;
+	_domain->flags |= vrb_is_xrc_info(info) ? VRB_USE_XRC : 0;
 
 	ret = vrb_open_device_by_name(_domain, info->domain_attr->name);
 	if (ret)
@@ -269,16 +329,25 @@ vrb_domain(struct fid_fabric *fabric, struct fi_info *info,
 	_domain->util_domain.domain_fid.fid.fclass = FI_CLASS_DOMAIN;
 	_domain->util_domain.domain_fid.fid.context = context;
 	_domain->util_domain.domain_fid.fid.ops = &vrb_fid_ops;
+	_domain->util_domain.domain_fid.mr = &vrb_mr_ops;
 
 	_domain->cache.entry_data_size = sizeof(struct vrb_mem_desc);
 	_domain->cache.add_region = vrb_mr_cache_add_region;
 	_domain->cache.delete_region = vrb_mr_cache_delete_region;
-	ret = ofi_mr_cache_init(&_domain->util_domain, default_monitor,
+	ret = ofi_mr_cache_init(&_domain->util_domain, memory_monitors,
 				&_domain->cache);
-	if (!ret)
-		_domain->util_domain.domain_fid.mr = &vrb_mr_cache_ops;
-	else
-		_domain->util_domain.domain_fid.mr = &vrb_mr_ops;
+	if (ret) {
+		VERBS_INFO(FI_LOG_MR,
+			   "MR cache init failed: %s. MR caching disabled.\n",
+			   fi_strerror(-ret));
+	} else {
+		for (iface = 0; iface < OFI_HMEM_MAX; iface++) {
+			if (_domain->cache.monitors[iface])
+				VERBS_INFO(FI_LOG_MR,
+					   "MR cache enabled for %s memory\n",
+					   fi_tostr(&iface, FI_TYPE_HMEM_IFACE));
+		}
+	}
 
 	switch (_domain->ep_type) {
 	case FI_EP_DGRAM:

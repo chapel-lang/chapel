@@ -116,12 +116,30 @@ static size_t efa_av_tbl_find_first_empty(struct efa_av *av, size_t hint)
 	assert(av->type == FI_AV_TABLE);
 
 	conn_table = av->conn_table;
-	for (; hint < av->util_av.count; hint++) {
+	for (; hint < av->count; hint++) {
 		if (!conn_table[hint])
 			return hint;
 	}
 
 	return -1;
+}
+
+static int efa_peer_resize(struct rxr_ep *ep, size_t current_count,
+			   size_t new_count)
+{
+	void *p = realloc(&ep->peer[0], (new_count * sizeof(struct rxr_peer)));
+
+	if (p)
+		ep->peer = p;
+	else
+		return -FI_ENOMEM;
+#ifdef ENABLE_EFA_POISONING
+	rxr_poison_mem_region((uint32_t *)&ep->peer[current_count], (new_count -
+			      current_count) * sizeof(struct rxr_peer));
+#endif
+	memset(&ep->peer[current_count], 0,
+		(new_count - current_count) * sizeof(struct rxr_peer));
+	return 0;
 }
 
 static int efa_av_resize(struct efa_av *av, size_t new_av_count)
@@ -136,11 +154,17 @@ static int efa_av_resize(struct efa_av *av, size_t new_av_count)
 		else
 			return -FI_ENOMEM;
 
-		memset(av->conn_table + av->util_av.count, 0,
-		       (new_av_count - av->util_av.count) * sizeof(*av->conn_table));
+#ifdef ENABLE_EFA_POISONING
+	rxr_poison_mem_region((uint32_t *)av->conn_table + av->count,
+			      (new_av_count - av->count) *
+			      sizeof(*av->conn_table));
+#endif
+
+		memset(av->conn_table + av->count, 0,
+		       (new_av_count - av->count) * sizeof(*av->conn_table));
 	}
 
-	av->util_av.count = new_av_count;
+	av->count = new_av_count;
 
 	return 0;
 }
@@ -197,11 +221,13 @@ static int efa_av_insert_ah(struct efa_av *av, struct efa_ep_addr *addr,
 
 		break;
 	case FI_AV_TABLE:
-		av->next = efa_av_tbl_find_first_empty(av, av->next);
-		assert(av->next != -1);
-		*fi_addr = av->next;
+		if (av->ep_type == FI_EP_DGRAM) {
+			av->next = efa_av_tbl_find_first_empty(av, av->next);
+			assert(av->next != -1);
+			*fi_addr = av->next;
+		}
 
-		av->conn_table[av->next] = conn;
+		av->conn_table[*fi_addr] = conn;
 		av->next++;
 		break;
 	default:
@@ -259,41 +285,51 @@ int efa_av_insert_addr(struct efa_av *av, struct efa_ep_addr *addr,
 			   void *context)
 {
 	struct efa_av_entry *av_entry;
+	struct util_av_entry *util_av_entry;
 	int ret = 0;
 	struct rxr_peer *peer;
 	struct rxr_ep *rxr_ep;
 	struct util_ep *util_ep;
 	struct dlist_entry *ep_list_entry;
 	fi_addr_t shm_fiaddr;
-	char smr_name[RXR_MAX_NAME_LENGTH];
+	char smr_name[NAME_MAX];
 
 	fastlock_acquire(&av->util_av.lock);
+	ret = ofi_av_insert_addr(&av->util_av, addr, fi_addr);
 
-	HASH_FIND(hh, av->av_map, addr, EFA_EP_ADDR_LEN, av_entry);
-	if (av_entry) {
-		*fi_addr = av_entry->rdm_addr;
-		goto find_out;
-	}
-	if (av->used + 1 > av->util_av.count) {
-		ret = efa_av_resize(av, av->used + 1);
-		if (ret)
-			goto out;
-	}
-	ret = efa_av_insert_ah(av, addr, fi_addr,
-				flags, context);
 	if (ret) {
 		EFA_WARN(FI_LOG_AV, "Error in inserting address: %s\n",
 			 fi_strerror(ret));
 		goto out;
 	}
-	av_entry = calloc(1, sizeof(*av_entry));
-	if (OFI_UNLIKELY(!av_entry)) {
-		ret = -FI_ENOMEM;
-		EFA_WARN(FI_LOG_AV, "Failed to allocate memory for av_entry\n");
-		goto out;
-	}
-	memcpy((void *)&av_entry->ep_addr, addr, EFA_EP_ADDR_LEN);
+	util_av_entry = ofi_bufpool_get_ibuf(av->util_av.av_entry_pool,
+					     *fi_addr);
+	/*
+	 * If the entry already exists then calling ofi_av_insert_addr would
+	 * increase the use_cnt by 1. For a new entry use_cnt will be 1, whereas
+	 * for a duplicate entry, use_cnt will be more that 1.
+	 */
+	if (ofi_atomic_get32(&util_av_entry->use_cnt) > 1)
+		goto find_out;
+
+	av_entry = (struct efa_av_entry *)util_av_entry->data;
 	av_entry->rdm_addr = *fi_addr;
+	av_entry->local_mapping = 0;
+
+	if (av->used + 1 > av->count) {
+		ret = efa_av_resize(av, av->count * 2);
+		if (ret)
+			goto out;
+		dlist_foreach(&av->util_av.ep_list, ep_list_entry) {
+			util_ep = container_of(ep_list_entry, struct util_ep,
+					       av_entry);
+			rxr_ep = container_of(util_ep, struct rxr_ep, util_ep);
+			ret = efa_peer_resize(rxr_ep, av->used,
+					      av->count);
+			if (ret)
+				goto out;
+		}
+	}
 
 	/*
 	 * Walk through all the EPs that bound to the AV,
@@ -303,7 +339,7 @@ int efa_av_insert_addr(struct efa_av *av, struct efa_ep_addr *addr,
 		util_ep = container_of(ep_list_entry, struct util_ep, av_entry);
 		rxr_ep = container_of(util_ep, struct rxr_ep, util_ep);
 		peer = rxr_ep_get_peer(rxr_ep, *fi_addr);
-		assert(peer);
+		peer->efa_fiaddr = *fi_addr;
 		peer->is_self = efa_is_same_addr((struct efa_ep_addr *)rxr_ep->core_addr,
 						 addr);
 	}
@@ -356,8 +392,13 @@ int efa_av_insert_addr(struct efa_av *av, struct efa_ep_addr *addr,
 			}
 		}
 	}
-	HASH_ADD(hh, av->av_map, ep_addr,
-			EFA_EP_ADDR_LEN, av_entry);
+	ret = efa_av_insert_ah(av, addr, fi_addr,
+			       flags, context);
+	if (ret) {
+		EFA_WARN(FI_LOG_AV, "Error in inserting address: %s\n",
+			 fi_strerror(ret));
+		goto err_free_av_entry;
+	}
 
 find_out:
 	EFA_INFO(FI_LOG_AV,
@@ -365,7 +406,7 @@ find_out:
 			*(uint64_t *)addr, *fi_addr);
 	goto out;
 err_free_av_entry:
-	free(av_entry);
+	ofi_ibuf_free(util_av_entry);
 out:
 	fastlock_release(&av->util_av.lock);
 	return ret;
@@ -390,15 +431,6 @@ int efa_av_insert(struct fid_av *av_fid, const void *addr,
 		return -FI_ENOSYS;
 
 	if (av->ep_type == FI_EP_RDM) {
-		if (av->used + count > av->util_av.count) {
-			EFA_WARN(FI_LOG_AV,
-				"AV insert failed. Expect inserting %zu AV entries, but only %zu available\n",
-				count, av->util_av.count - av->used);
-			if (av->util_av.eq)
-				ofi_av_write_event(&av->util_av, i, FI_ENOMEM,
-					context);
-			goto out;
-		}
 		for (i = 0; i < count; i++) {
 			addr_i = (struct efa_ep_addr *) ((uint8_t *)addr + i * EFA_EP_ADDR_LEN);
 			ret = efa_av_insert_addr(av, addr_i, &fi_addr_res,
@@ -410,7 +442,7 @@ int efa_av_insert(struct fid_av *av_fid, const void *addr,
 			success_cnt++;
 		}
 	} else {
-		if (av->used + count > av->util_av.count) {
+		if (av->used + count > av->count) {
 			ret = efa_av_resize(av, av->used + count);
 			if (ret)
 				goto out;
@@ -459,7 +491,7 @@ static int efa_av_lookup(struct fid_av *av_fid, fi_addr_t fi_addr,
 	if (av->type == FI_AV_MAP) {
 		conn = (struct efa_conn *)fi_addr;
 	} else { /* (av->type == FI_AV_TABLE) */
-		if (fi_addr >= av->util_av.count)
+		if (fi_addr >= av->count)
 			return -FI_EINVAL;
 
 		conn = av->conn_table[fi_addr];
@@ -527,50 +559,81 @@ static int efa_av_remove(struct fid_av *av_fid, fi_addr_t *fi_addr,
 	int ret = 0;
 	size_t i;
 	struct efa_av *av;
+	struct util_av_entry *util_av_entry;
 	struct efa_av_entry *av_entry;
-	struct efa_ep_addr addr;
+	struct rxr_peer *peer;
+	struct dlist_entry *ep_list_entry;
 
 	av = container_of(av_fid, struct efa_av, util_av.av_fid);
-	if (av->ep_type == FI_EP_RDM) {
-		fastlock_acquire(&av->util_av.lock);
+	if (av->ep_type == FI_EP_DGRAM) {
 		for (i = 0; i < count; i++) {
-			ret = efa_av_lookup(&av->util_av.av_fid, fi_addr[i],
-						&addr, &av->util_av.addrlen);
-			if (ret)
-				goto release_lock;
-
-			ret = efa_av_remove_ah(&av->util_av.av_fid, &fi_addr[i], 1, flags);
-			if (ret)
-				goto release_lock;
-			HASH_FIND(hh, av->av_map, &addr, av->util_av.addrlen, av_entry);
-			if (!av_entry) {
-				ret = -FI_EINVAL;
-				goto release_lock;
-			}
-			/* remove an address from shm provider's av */
-			if (rxr_env.enable_shm_transfer && av_entry->local_mapping) {
-				ret = fi_av_remove(av->shm_rdm_av, &av_entry->shm_rdm_addr, 1, flags);
-				if (ret)
-					goto err_free_av_entry;
-
-				av->shm_used--;
-				assert(av_entry->shm_rdm_addr < rxr_env.shm_av_size);
-				av->shm_rdm_addr_map[av_entry->shm_rdm_addr] = FI_ADDR_UNSPEC;
-			}
-			HASH_DEL(av->av_map, av_entry);
-			free(av_entry);
-		}
-		fastlock_release(&av->util_av.lock);
-	} else {
-		for (i = 0; i < count; i++) {
-			ret = efa_av_remove_ah(&av->util_av.av_fid, &fi_addr[i], 1, flags);
+			ret = efa_av_remove_ah(&av->util_av.av_fid, &fi_addr[i],
+					       1, flags);
 			if (ret)
 				goto out;
 		}
+		goto out;
 	}
+	fastlock_acquire(&av->util_av.lock);
+	for (i = 0; i < count; i++) {
+		if (fi_addr[i] == FI_ADDR_NOTAVAIL ||
+		    fi_addr[i] > av->count) {
+			ret = -FI_ENOENT;
+			goto release_lock;
+		}
+		util_av_entry = ofi_bufpool_get_ibuf(
+						av->util_av.av_entry_pool,
+						fi_addr[i]);
+		if (!util_av_entry) {
+			ret = -FI_ENOENT;
+			goto release_lock;
+		}
+		/*
+		 * If use_cnt is greater than 1, then just decrement
+		 * the count by 1, without removing the entry.
+		 */
+		if (ofi_atomic_get32(&util_av_entry->use_cnt) > 1) {
+			ret = ofi_av_remove_addr(&av->util_av, fi_addr[i]);
+			goto release_lock;
+		}
+		av_entry = (struct efa_av_entry *)util_av_entry->data;
+
+		/* Check if the peer is in use if it is then return */
+		dlist_foreach(&av->util_av.ep_list, ep_list_entry) {
+			peer = efa_ep_get_peer(ep_list_entry, fi_addr[i]);
+			ret = efa_peer_in_use(peer);
+			if (ret)
+				goto release_lock;
+		}
+
+		/* Only if the peer is not in use reset the peer */
+		dlist_foreach(&av->util_av.ep_list, ep_list_entry) {
+			peer = efa_ep_get_peer(ep_list_entry, fi_addr[i]);
+			if (peer->rx_init)
+				efa_peer_reset(peer);
+		}
+		ret = efa_av_remove_ah(&av->util_av.av_fid, &fi_addr[i], 1,
+				       flags);
+		if (ret)
+			goto release_lock;
+		/* remove an address from shm provider's av */
+		if (rxr_env.enable_shm_transfer && av_entry->local_mapping) {
+			ret = fi_av_remove(av->shm_rdm_av, &av_entry->shm_rdm_addr, 1, flags);
+			if (ret)
+				goto err_free_av_entry;
+
+			av->shm_used--;
+			assert(av_entry->shm_rdm_addr < rxr_env.shm_av_size);
+			av->shm_rdm_addr_map[av_entry->shm_rdm_addr] = FI_ADDR_UNSPEC;
+		}
+		ret = ofi_av_remove_addr(&av->util_av, *fi_addr);
+		if (ret)
+			goto err_free_av_entry;
+	}
+	fastlock_release(&av->util_av.lock);
 	goto out;
 err_free_av_entry:
-	free(av_entry);
+	ofi_ibuf_free(util_av_entry);
 release_lock:
 	fastlock_release(&av->util_av.lock);
 out:
@@ -596,13 +659,12 @@ static struct fi_ops_av efa_av_ops = {
 static int efa_av_close(struct fid *fid)
 {
 	struct efa_av *av;
-	struct efa_av_entry *current_av_entry, *tmp;
 	int ret = 0;
 	int err = 0;
 	int i;
 
 	av = container_of(fid, struct efa_av, util_av.av_fid.fid);
-	for (i = 0; i < av->util_av.count; i++) {
+	for (i = 0; i < av->count; i++) {
 		fi_addr_t addr = i;
 
 		ret = efa_av_remove_ah(&av->util_av.av_fid, &addr, 1, 0);
@@ -628,10 +690,6 @@ static int efa_av_close(struct fid *fid)
 			err = ret;
 			EFA_WARN(FI_LOG_AV, "Failed to close av: %s\n",
 				fi_strerror(ret));
-		}
-		HASH_ITER(hh, av->av_map, current_av_entry, tmp) {
-			HASH_DEL(av->av_map, current_av_entry);
-			free(current_av_entry);
 		}
 	}
 	free(av);
@@ -708,6 +766,7 @@ int efa_av_open(struct fid_domain *domain_fid, struct fi_av_attr *attr,
 			attr->count = MAX(attr->count, universe_size);
 
 		util_attr.addrlen = EFA_EP_ADDR_LEN;
+		util_attr.context_len = sizeof(struct efa_av_entry) - EFA_EP_ADDR_LEN;
 		util_attr.flags = 0;
 		ret = ofi_av_init(&efa_domain->util_domain, attr, &util_attr,
 					&av->util_av, context);
@@ -750,9 +809,10 @@ int efa_av_open(struct fid_domain *domain_fid, struct fi_av_attr *attr,
 	av->used = 0;
 	av->next = 0;
 	av->shm_used = 0;
+	av->count = attr->count;
 
-	if (av->type == FI_AV_TABLE && av->util_av.count > 0) {
-		av->conn_table = calloc(av->util_av.count, sizeof(*av->conn_table));
+	if (av->type == FI_AV_TABLE && av->count > 0) {
+		av->conn_table = calloc(av->count, sizeof(*av->conn_table));
 		if (!av->conn_table) {
 			ret = -FI_ENOMEM;
 			if (av->ep_type == FI_EP_DGRAM)

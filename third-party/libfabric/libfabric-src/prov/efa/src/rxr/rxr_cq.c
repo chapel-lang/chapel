@@ -40,6 +40,7 @@
 #include "rxr_rma.h"
 #include "rxr_msg.h"
 #include "rxr_cntr.h"
+#include "rxr_read.h"
 #include "rxr_atomic.h"
 #include "efa.h"
 
@@ -193,7 +194,6 @@ int rxr_cq_handle_tx_error(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry,
 	case RXR_TX_QUEUED_DATA_RNR:
 		dlist_remove(&tx_entry->queued_entry);
 		break;
-	case RXR_TX_SENT_READRSP:
 	case RXR_TX_WAIT_READ_FINISH:
 		break;
 	default:
@@ -305,6 +305,7 @@ int rxr_cq_handle_cq_error(struct rxr_ep *ep, ssize_t err)
 	struct rxr_pkt_entry *pkt_entry;
 	struct rxr_rx_entry *rx_entry;
 	struct rxr_tx_entry *tx_entry;
+	struct rxr_read_entry *read_entry;
 	struct rxr_peer *peer;
 	ssize_t ret;
 
@@ -391,8 +392,8 @@ int rxr_cq_handle_cq_error(struct rxr_ep *ep, ssize_t err)
 		rxr_ep_dec_tx_pending(ep, peer, 1);
 	if (RXR_GET_X_ENTRY_TYPE(pkt_entry) == RXR_TX_ENTRY) {
 		tx_entry = (struct rxr_tx_entry *)pkt_entry->x_entry;
-		if (err_entry.err != -FI_EAGAIN ||
-		    rxr_ep_domain(ep)->resource_mgmt == FI_RM_ENABLED) {
+		if (err_entry.prov_errno != IBV_WC_RNR_RETRY_EXC_ERR ||
+		    ep->handle_resource_management != FI_RM_ENABLED) {
 			ret = rxr_cq_handle_tx_error(ep, tx_entry,
 						     err_entry.prov_errno);
 			rxr_pkt_entry_release_tx(ep, pkt_entry);
@@ -413,8 +414,8 @@ int rxr_cq_handle_cq_error(struct rxr_ep *ep, ssize_t err)
 		return 0;
 	} else if (RXR_GET_X_ENTRY_TYPE(pkt_entry) == RXR_RX_ENTRY) {
 		rx_entry = (struct rxr_rx_entry *)pkt_entry->x_entry;
-		if (err_entry.err != -FI_EAGAIN ||
-		    rxr_ep_domain(ep)->resource_mgmt == FI_RM_ENABLED) {
+		if (err_entry.prov_errno != IBV_WC_RNR_RETRY_EXC_ERR ||
+		    ep->handle_resource_management != FI_RM_ENABLED) {
 			ret = rxr_cq_handle_rx_error(ep, rx_entry,
 						     err_entry.prov_errno);
 			rxr_pkt_entry_release_tx(ep, pkt_entry);
@@ -427,6 +428,14 @@ int rxr_cq_handle_cq_error(struct rxr_ep *ep, ssize_t err)
 					  &ep->rx_entry_queued_list);
 		}
 		return 0;
+	} else if (RXR_GET_X_ENTRY_TYPE(pkt_entry) == RXR_READ_ENTRY) {
+		read_entry = (struct rxr_read_entry *)pkt_entry->x_entry;
+		/* read requests is not expected to get RNR, so we call
+		 * rxr_read_handle_error() to handle general error here.
+		 */
+		ret = rxr_read_handle_error(ep, read_entry, err_entry.prov_errno);
+		rxr_pkt_entry_release_tx(ep, pkt_entry);
+		return ret;
 	}
 
 	FI_WARN(&rxr_prov, FI_LOG_CQ,
@@ -521,13 +530,10 @@ void rxr_cq_handle_rx_completion(struct rxr_ep *ep,
 
 	if (rx_entry->cq_entry.flags & FI_WRITE) {
 		/*
-		 * must be on the remote side, notify cq/counter
-		 * if FI_RMA_EVENT is requested or REMOTE_CQ_DATA is on
+		 * must be on the remote side, notify cq if REMOTE_CQ_DATA is on
 		 */
 		if (rx_entry->cq_entry.flags & FI_REMOTE_CQ_DATA)
 			rxr_cq_write_rx_completion(ep, rx_entry);
-		else if (ep->util_ep.caps & FI_RMA_EVENT)
-			efa_cntr_report_rx_completion(&ep->util_ep, rx_entry->cq_entry.flags);
 
 		rxr_pkt_entry_release_rx(ep, pkt_entry);
 		return;
@@ -552,8 +558,7 @@ void rxr_cq_handle_rx_completion(struct rxr_ep *ep,
 		 * rx_entry receiving data
 		 * receive completed              send completed
 		 * handle_rx_completion()         handle_pkt_send_completion()
-		 * |->write_tx_completion()       |-> if (FI_RMA_EVENT)
-		 *                                         write_rx_completion()
+		 * |->write_tx_completion()
 		 *
 		 * As can be seen, although there is a rx_entry on remote side,
 		 * the entry will not enter into rxr_cq_handle_rx_completion
@@ -633,7 +638,9 @@ int rxr_cq_reorder_msg(struct rxr_ep *ep,
 	cur_ooo_entry = *ofi_recvwin_get_msg(peer->robuf, msg_id);
 	if (cur_ooo_entry) {
 		assert(rxr_get_base_hdr(cur_ooo_entry->pkt)->type == RXR_MEDIUM_MSGRTM_PKT ||
-		       rxr_get_base_hdr(cur_ooo_entry->pkt)->type == RXR_MEDIUM_TAGRTM_PKT);
+		       rxr_get_base_hdr(cur_ooo_entry->pkt)->type == RXR_MEDIUM_TAGRTM_PKT ||
+		       rxr_get_base_hdr(cur_ooo_entry->pkt)->type == RXR_DC_MEDIUM_MSGRTM_PKT ||
+		       rxr_get_base_hdr(cur_ooo_entry->pkt)->type == RXR_DC_MEDIUM_TAGRTM_PKT);
 		assert(rxr_pkt_msg_id(cur_ooo_entry) == msg_id);
 		assert(rxr_pkt_rtm_total_len(cur_ooo_entry) == rxr_pkt_rtm_total_len(ooo_entry));
 		rxr_pkt_entry_append(cur_ooo_entry, ooo_entry);
@@ -795,41 +802,12 @@ void rxr_cq_write_tx_completion(struct rxr_ep *ep,
 	return;
 }
 
-int rxr_tx_entry_mr_dereg(struct rxr_tx_entry *tx_entry)
-{
-	int i, err = 0;
-
-	for (i = 0; i < tx_entry->iov_count; i++) {
-		if (tx_entry->mr[i]) {
-			err = fi_close((struct fid *)tx_entry->mr[i]);
-			if (OFI_UNLIKELY(err)) {
-				FI_WARN(&rxr_prov, FI_LOG_CQ, "mr dereg failed. err=%d\n", err);
-				return err;
-			}
-
-			tx_entry->mr[i] = NULL;
-		}
-	}
-
-	return 0;
-}
-
 void rxr_cq_handle_tx_completion(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry)
 {
-	int ret;
 	struct rxr_peer *peer;
 
 	if (tx_entry->state == RXR_TX_SEND)
 		dlist_remove(&tx_entry->entry);
-
-	if (efa_mr_cache_enable && rxr_ep_mr_local(ep)) {
-		ret = rxr_tx_entry_mr_dereg(tx_entry);
-		if (OFI_UNLIKELY(ret)) {
-			FI_WARN(&rxr_prov, FI_LOG_MR,
-				"In-line memory deregistration failed with error: %s.\n",
-				fi_strerror(-ret));
-		}
-	}
 
 	peer = rxr_ep_get_peer(ep, tx_entry->addr);
 	peer->tx_credits += tx_entry->credit_allocated;
@@ -845,12 +823,6 @@ void rxr_cq_handle_tx_completion(struct rxr_ep *ep, struct rxr_tx_entry *tx_entr
 		assert(rx_entry);
 		assert(rx_entry->state == RXR_RX_WAIT_READ_FINISH);
 
-		if (ep->util_ep.caps & FI_RMA_EVENT) {
-			rx_entry->cq_entry.len = rx_entry->total_len;
-			rx_entry->bytes_done = rx_entry->total_len;
-			efa_cntr_report_rx_completion(&ep->util_ep, rx_entry->cq_entry.flags);
-		}
-
 		rxr_release_rx_entry(ep, rx_entry);
 		/* just release tx, do not write completion */
 		rxr_release_tx_entry(ep, tx_entry);
@@ -858,7 +830,8 @@ void rxr_cq_handle_tx_completion(struct rxr_ep *ep, struct rxr_tx_entry *tx_entr
 		if (tx_entry->fi_flags & FI_COMPLETION) {
 			rxr_cq_write_tx_completion(ep, tx_entry);
 		} else {
-			efa_cntr_report_tx_completion(&ep->util_ep, tx_entry->cq_entry.flags);
+			if (!(tx_entry->fi_flags & RXR_NO_COUNTER))
+				efa_cntr_report_tx_completion(&ep->util_ep, tx_entry->cq_entry.flags);
 			rxr_release_tx_entry(ep, tx_entry);
 		}
 	} else {

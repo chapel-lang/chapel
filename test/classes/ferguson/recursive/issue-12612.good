@@ -1,0 +1,2 @@
+issue-12612.chpl:7: error: this recursive type construction is not yet handled
+Note: This source location is a guess.

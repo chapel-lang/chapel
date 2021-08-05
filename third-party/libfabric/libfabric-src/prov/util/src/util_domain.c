@@ -37,7 +37,7 @@
 #include <ofi_util.h>
 
 
-int ofi_domain_bind_eq(struct util_domain *domain, struct util_eq *eq)
+static int ofi_domain_bind_eq(struct util_domain *domain, struct util_eq *eq)
 {
 	if (domain->eq) {
 		FI_WARN(domain->prov, FI_LOG_DOMAIN,
@@ -50,11 +50,34 @@ int ofi_domain_bind_eq(struct util_domain *domain, struct util_eq *eq)
 	return 0;
 }
 
+int ofi_domain_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
+{
+	struct util_domain *domain;
+	struct util_eq *eq;
+
+	domain = container_of(fid, struct util_domain, domain_fid.fid);
+	if (flags) {
+		FI_WARN(domain->prov, FI_LOG_DOMAIN,
+			"unsupported bind flags\n");
+		return -FI_EBADFLAGS;
+	}
+
+	switch (bfid->fclass) {
+	case FI_CLASS_EQ:
+		eq = container_of(bfid, struct util_eq, eq_fid.fid);
+		return ofi_domain_bind_eq(domain, eq);
+	default:
+		return -EINVAL;
+	}
+}
+
 int ofi_domain_close(struct util_domain *domain)
 {
 	if (ofi_atomic_get32(&domain->ref))
 		return -FI_EBUSY;
 
+	if (domain->eq)
+		ofi_atomic_dec32(&domain->eq->ref);
 	if (domain->mr_map.rbtree)
 		ofi_mr_map_close(&domain->mr_map);
 
