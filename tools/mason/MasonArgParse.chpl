@@ -22,7 +22,6 @@ module MasonArgParse {
   private use Map;
   private use IO;
   private use Sort;
-  private use OrderedMap;
   private use Sys only sys_getenv;
 
   config var OTFDebug=false;
@@ -425,7 +424,7 @@ module MasonArgParse {
     var _subcommands: list(string);
 
     proc _parsePositionals(arguments:[?argsD] string, endIdx:int) throws {
-      var endPos = 0;
+      var endPos = argsD.low;
       var idx = argsD.low;
       var rest = new list(string);
       debugTrace("Parsing Positionals...");
@@ -440,11 +439,10 @@ module MasonArgParse {
 
       // check that we consumed everything we expected to
       if endPos < endIdx then{
-        throw new ArgumentError("Found some unrecognizable arguments");
+        throw new ArgumentError("Found some unrecognizable arguments: " +
+                                " ".join(arguments[endPos..]));
       }
-
       return endPos;
-
     }
 
     proc parseArgs(arguments:[?argsD] string) throws {
@@ -482,9 +480,15 @@ module MasonArgParse {
           // create an entry for this index and the argument name
           optionIndices.add(i, optName);
           argRslt._present = true;
-          // if subcommand found, stop processing more args
+          // if subcommand found, stop processing more args, save for subcmd
           if _subcommands.contains(argElt) then break;
         }
+      }
+
+      // check for when arguments passed but none defined
+      if argsList.size > 0 && _actions.size == 0 {
+        throw new ArgumentError("unrecognized options/values encountered: " +
+                                " ".join(argsList.these()));
       }
 
       // get this as an array so we can sort it, because maps are orderless
@@ -547,16 +551,6 @@ module MasonArgParse {
             throw new ArgumentError("\\".join(act._name) + " has extra values");
           }
         }
-      }
-
-      // check for positionals at end of argument string
-      // if endPos < argsList.size && endPos + rest.size < argsList.size then
-      //   endPos = _parsePositionals(argsList.toArray()[endPos..], argsList.size);
-
-      // check for when arguments passed but none defined
-      if argsList.size > 0 && _actions.size == 0 && _positionals.size == 0 {
-        throw new ArgumentError("unrecognized options/values encountered: " +
-                                " ".join(argsList.these()));
       }
 
       // check for undefined argument provided or possible positional args
@@ -656,8 +650,8 @@ module MasonArgParse {
 
       for i in optsD {
         if !opts[i].startsWith("-") {
-          throw new ArgumentError("Use '-' or '--' to indicate flags. " +
-                                  "Positional arguments not yet supported");
+          throw new ArgumentError("Use '-' or '--' to indicate flags, " +
+                                  "or use positional arguments.");
         }
         // ensure we don't redefine an existing option flag
         if _options.contains(opts[i]) {
@@ -715,7 +709,7 @@ module MasonArgParse {
       var act = new owned Positional(name, defaultValue, numArgs);
       // ensure names are unique
       if _result.contains(name) {
-        throw new ArgumentError("Option name " + act._name +
+        throw new ArgumentError("Argument name " + act._name +
                                 " is previously defined");
       }
 
@@ -769,8 +763,8 @@ module MasonArgParse {
                    defaultValue:?t=none) throws {
       for i in optsD {
         if !opts[i].startsWith("-") {
-          throw new ArgumentError("Use '-' or '--' to indicate opt flags. " +
-                                  "Positional arguments not yet supported");
+          throw new ArgumentError("Use '-' or '--' to indicate options, " +
+                                  "or use positional arguments.");
         }
 
         // ensure we don't redefine an existing option flag

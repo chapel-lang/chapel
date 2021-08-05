@@ -442,19 +442,19 @@ testMockMasonAddExternal()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-Found some unrecognizable arguments
-Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
-Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
+Found some unrecognizable arguments: thirty
+Use '-' or '--' to indicate options, or use positional arguments.
+Use '-' or '--' to indicate options, or use positional arguments.
 StringOpt Too many values: expected 1..1 got 3
 StringOpt Too many values: expected 1..3 got 6
 StringOpt has extra values
 StringOpt Required value missing
-Found some unrecognizable arguments
+unrecognized options/values encountered: -n twenty
 StringOpt Not enough values: expected 1..2 got 0
-Found some unrecognizable arguments
-Found some unrecognizable arguments
+Found some unrecognizable arguments: two
+Found some unrecognizable arguments: -p thirty
 StringOpt Not enough values: expected 3..5 got 2
-Found some unrecognizable arguments
+Found some unrecognizable arguments: fifty
 StringOpt Not enough values: expected 1..3 got 0
 StringOpt Not enough values: expected 1..1 got 0
 StringOpt1 Not enough values: expected 1..1 got 0
@@ -462,7 +462,7 @@ StringOpt2 Not enough values: expected 1..1 got 0
 StringOpt3 Not enough values: expected 1..1 got 0
 StringOpt1 has extra values
 StringOpt2 has extra values
-Found some unrecognizable arguments
+Found some unrecognizable arguments: five
 StringOpt2 has extra values
 StringOpt2 Required value missing
 Only string and list of strings are supported as default values at this time
@@ -472,13 +472,13 @@ Only string and list of strings are supported as default values at this time
 Option name StringOpt is previously defined
 Option flag -n is previously defined
 Option flag --strArg is previously defined
-Found some unrecognizable arguments
-Found some unrecognizable arguments
-Found some unrecognizable arguments
+Found some unrecognizable arguments: subCommandNone
+Found some unrecognizable arguments: subCommandNone subCommand1
+Found some unrecognizable arguments: -x -n twenty
 StringOpt1 has extra values
 BoolFlag Not enough values: expected 1..1 got 0
-Found some unrecognizable arguments
-Found some unrecognizable arguments
+Found some unrecognizable arguments: false
+Found some unrecognizable arguments: false
 Creating 'no' flag options prevents using value to set flag
 Setting up a required flag that defaults to true with no way for user to set false
 Creating 'no' flag options prevents using value to set flag
