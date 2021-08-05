@@ -2215,8 +2215,10 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
       path = createStringWithNewBuffer(tmp_path,
                                        policy=decodePolicy.replace);
       chpl_free_c_string(tmp_path);
-      offset = tmp_offset;
+    } else {
+      tmp_offset = qio_channel_offset_unlocked(_channel_internal);
     }
+    offset = tmp_offset;
   }
   try ioerror(error, msg, path, offset);
 }
@@ -2235,8 +2237,10 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
       path = createStringWithNewBuffer(tmp_path,
                                        policy=decodePolicy.replace);
       chpl_free_c_string(tmp_path);
-      offset = tmp_offset;
+    } else {
+      tmp_offset = qio_channel_offset_unlocked(_channel_internal);
     }
+    offset = tmp_offset;
   }
   try ioerror(errstr, msg, path, offset);
 }
