@@ -28,7 +28,7 @@ namespace uast {
 owned<RealLiteral> RealLiteral::build(Builder* builder, Location loc,
                                       double value, UniqueString text) {
   // construct the Param
-  auto p = types::Real64Param::get(builder->context(), value);
+  auto p = types::RealParam::get(builder->context(), value);
   RealLiteral* ret = new RealLiteral(p, text);
   builder->noteLocation(ret, loc);
   return toOwned(ret);

@@ -32,9 +32,9 @@ namespace uast {
   It is only used for integers too large to fit into `int64_t`.
   Such integer literals have type `uint`.
  */
-class UintLiteral final : public NumericLiteral<uint64_t, types::Uint64Param> {
+class UintLiteral final : public NumericLiteral<uint64_t, types::UintParam> {
  private:
-  UintLiteral(const types::Uint64Param* value, UniqueString text)
+  UintLiteral(const types::UintParam* value, UniqueString text)
     : NumericLiteral(asttags::UintLiteral, value, text)
   { }
 

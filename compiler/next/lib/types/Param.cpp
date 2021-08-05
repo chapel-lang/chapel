@@ -60,7 +60,7 @@ std::string Param::toString() const {
   std::string ret;
 
   switch (tag_) {
-#define PARAM_NODE(NAME, VALTYPE, TYPEEXPR) \
+#define PARAM_NODE(NAME, VALTYPE) \
     case paramtags::NAME: { \
       const NAME* casted = (const NAME*) this; \
       auto value = casted->value(); \
@@ -77,7 +77,7 @@ std::string Param::toString() const {
 }
 
 // implement the subclasses using macros and ParamClassesList.h
-#define PARAM_NODE(NAME, VALTYPE, TYPEEXPR) \
+#define PARAM_NODE(NAME, VALTYPE) \
   const owned<NAME>& NAME::get##NAME(Context* context, VALTYPE value) { \
     QUERY_BEGIN(get##NAME, context, value); \
     auto result = toOwned(new NAME(value)); \

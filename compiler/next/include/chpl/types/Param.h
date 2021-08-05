@@ -21,18 +21,9 @@
 #define CHPL_TYPES_PARAM_H
 
 #include "chpl/queries/Context.h"
-#include "chpl/types/BoolType.h"
-#include "chpl/types/BytesType.h"
-#include "chpl/types/CStringType.h"
-#include "chpl/types/ComplexType.h"
-#include "chpl/types/ImagType.h"
-#include "chpl/types/IntType.h"
-#include "chpl/types/NothingType.h"
+#include "chpl/queries/UniqueString.h"
 #include "chpl/types/ParamClasses.h"
 #include "chpl/types/ParamTag.h"
-#include "chpl/types/RealType.h"
-#include "chpl/types/StringType.h"
-#include "chpl/types/UintType.h"
 #include "chpl/util/hash.h"
 
 namespace chpl {
@@ -48,30 +39,30 @@ namespace types {
  */
 class Param {
  public:
-  struct Complex128Storage {
+  struct ComplexDouble {
     double re;
     double im;
-    bool operator==(const Complex128Storage& other) const {
+    bool operator==(const ComplexDouble& other) const {
       return this->re == other.re && this->im == other.im;
     }
-    bool operator!=(const Complex128Storage& other) const {
+    bool operator!=(const ComplexDouble& other) const {
       return !(*this == other);
     }
     size_t hash() const {
       return chpl::hash(re, im);
     }
   };
-  struct Complex64Storage {
-    float re;
-    float im;
-    bool operator==(const Complex64Storage& other) const {
-      return this->re == other.re && this->im == other.im;
+  class NoneValue {
+    bool unused_;
+   public:
+    bool operator==(const NoneValue& other) const {
+      return true;
     }
-    bool operator!=(const Complex64Storage& other) const {
-      return !(*this == other);
+    bool operator!=(const NoneValue& other) const {
+      return false;
     }
     size_t hash() const {
-      return chpl::hash(re, im);
+      return 0;
     }
   };
 
@@ -94,12 +85,6 @@ class Param {
    */
   virtual void markUniqueStringsInner(Context* context) const = 0;
 
-  /**
-    This function needs to be defined by subclasses. It should
-    return the Type of the Param.
-   */
-  virtual const Type* getTypeInner(Context* context) const = 0;
-
   // helper functions to mark a value
   static void markValue(Context* context, UniqueString v) {
     v.mark(context);
@@ -111,11 +96,11 @@ class Param {
   static std::string valueToString(UniqueString v) {
     return v.toString();
   }
-  static std::string valueToString(Complex128Storage v) {
+  static std::string valueToString(ComplexDouble v) {
     return std::to_string(v.re) + "+" + std::to_string(v.im) + "i";
   }
-  static std::string valueToString(Complex64Storage v) {
-    return std::to_string(v.re) + "+" + std::to_string(v.im) + "i";
+  static std::string valueToString(NoneValue v) {
+    return "none";
   }
   template<typename T> static std::string valueToString(T v) {
     return std::to_string(v);
@@ -133,13 +118,6 @@ class Param {
    */
   ParamTag tag() const {
     return tag_;
-  }
-
-  /**
-    Returns the type of the Param.
-   */
-  const Type* getType(Context* context) const {
-    return getTypeInner(context);
   }
 
   bool operator==(const Param& other) const {
@@ -170,7 +148,7 @@ class Param {
     bool is##NAME() const { \
       return paramtags::is##NAME(this->tag_); \
     }
-  #define PARAM_NODE(NAME, VALTYPE, TYPEEXPR) PARAM_IS(NAME)
+  #define PARAM_NODE(NAME, VALTYPE) PARAM_IS(NAME)
   /// \endcond
   // Apply the above macros to ParamClassesList.h
   #include "chpl/types/ParamClassesList.h"
@@ -189,7 +167,7 @@ class Param {
     NAME * to##NAME() { \
       return this->is##NAME() ? (NAME *)this : nullptr; \
     }
-  #define PARAM_NODE(NAME, VALTYPE, TYPEEXPR) PARAM_TO(NAME)
+  #define PARAM_NODE(NAME, VALTYPE) PARAM_TO(NAME)
   /// \endcond
   // Apply the above macros to ParamClassesList.h
   #include "chpl/types/ParamClassesList.h"
@@ -200,7 +178,7 @@ class Param {
 
 // define the subclasses using macros and ParamClassesList.h
 /// \cond DO_NOT_DOCUMENT
-#define PARAM_NODE(NAME, VALTYPE, TYPEEXPR) \
+#define PARAM_NODE(NAME, VALTYPE) \
   class NAME : public Param { \
    private: \
     VALTYPE value_; \
@@ -213,9 +191,6 @@ class Param {
     } \
     void markUniqueStringsInner(Context* context) const override { \
       Param::markValue(context, value_); \
-    } \
-    const Type* getTypeInner(Context* context) const override { \
-      return TYPEEXPR; \
     } \
    public: \
     ~NAME() = default; \
@@ -241,13 +216,13 @@ class Param {
 // TODO: is there a reasonable way to define std::less on Param*?
 // Comparing pointers would lead to some nondeterministic ordering.
 namespace std {
-  template<> struct hash<chpl::types::Param::Complex128Storage> {
-    size_t operator()(const chpl::types::Param::Complex128Storage key) const {
+  template<> struct hash<chpl::types::Param::ComplexDouble> {
+    size_t operator()(const chpl::types::Param::ComplexDouble key) const {
       return key.hash();
     }
   };
-  template<> struct hash<chpl::types::Param::Complex64Storage> {
-    size_t operator()(const chpl::types::Param::Complex64Storage key) const {
+  template<> struct hash<chpl::types::Param::NoneValue> {
+    size_t operator()(const chpl::types::Param::NoneValue key) const {
       return key.hash();
     }
   };

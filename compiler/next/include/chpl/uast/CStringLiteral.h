@@ -33,7 +33,7 @@ namespace uast {
  */
 class CStringLiteral final : public StringLikeLiteral {
  private:
-  CStringLiteral(const types::CStringParam* value,
+  CStringLiteral(const types::StringParam* value,
                  StringLikeLiteral::QuoteStyle quotes)
     : StringLikeLiteral(asttags::CStringLiteral, value, quotes)
   { }
@@ -53,8 +53,8 @@ class CStringLiteral final : public StringLikeLiteral {
     which does not include the quotes.
    */
   UniqueString str() const {
-    assert(value_->isCStringParam());
-    const types::CStringParam* p = (const types::CStringParam*) value_;
+    assert(value_->isStringParam());
+    const types::StringParam* p = (const types::StringParam*) value_;
     return p->value();
   }
 };

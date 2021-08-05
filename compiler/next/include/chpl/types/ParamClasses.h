@@ -27,7 +27,7 @@ namespace types {
 // forward declare the various Param subclasses
 // using macros and ParamClassesList.h
 /// \cond DO_NOT_DOCUMENT
-#define PARAM_NODE(NAME, VALTYPE, TYPEEXPR) class NAME;
+#define PARAM_NODE(NAME, VALTYPE) class NAME;
 /// \endcond
 // Apply the above macros to ParamClassesList.h
 #include "chpl/types/ParamClassesList.h"

@@ -31,7 +31,7 @@ owned<BytesLiteral> BytesLiteral::build(Builder* builder, Location loc,
   // Construct the UniqueString
   auto u = UniqueString::build(builder->context(), value);
   // Construct the Param
-  auto p = types::BytesParam::get(builder->context(), u);
+  auto p = types::StringParam::get(builder->context(), u);
   // Construct the BytesLiteral
   BytesLiteral* ret = new BytesLiteral(p, quotes);
   builder->noteLocation(ret, loc);

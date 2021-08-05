@@ -28,7 +28,7 @@ namespace uast {
 owned<UintLiteral> UintLiteral::build(Builder* builder, Location loc,
                                       uint64_t value, UniqueString text) {
   // construct the Param
-  auto p = types::Uint64Param::get(builder->context(), value);
+  auto p = types::UintParam::get(builder->context(), value);
   UintLiteral* ret = new UintLiteral(p, text);
   builder->noteLocation(ret, loc);
   return toOwned(ret);

@@ -25,10 +25,9 @@ namespace chpl {
 namespace uast {
 
 
-template NumericLiteral<double, types::Imag64Param>::~NumericLiteral();
-template NumericLiteral<double, types::Real64Param>::~NumericLiteral();
-template NumericLiteral<int64_t, types::Int64Param>::~NumericLiteral();
-template NumericLiteral<uint64_t, types::Uint64Param>::~NumericLiteral();
+template NumericLiteral<double, types::RealParam>::~NumericLiteral();
+template NumericLiteral<int64_t, types::IntParam>::~NumericLiteral();
+template NumericLiteral<uint64_t, types::UintParam>::~NumericLiteral();
 
 
 } // namespace uast

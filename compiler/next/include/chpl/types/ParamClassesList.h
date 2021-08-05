@@ -25,31 +25,15 @@
 // the following comment disables doxygen for these
 /// \cond DO_NOT_DOCUMENT
 
-PARAM_NODE(Complex128Param, Complex128Storage, ComplexType::get(context, 128))
-PARAM_NODE(Complex64Param, Complex64Storage, ComplexType::get(context, 64))
-PARAM_NODE(Real64Param, double, RealType::get(context, 64))
-PARAM_NODE(Real32Param, float, RealType::get(context,32))
-PARAM_NODE(Imag64Param, double, ImagType::get(context, 64))
-PARAM_NODE(Imag32Param, float, ImagType::get(context, 32))
-PARAM_NODE(Int64Param, int64_t, IntType::get(context, 64))
-PARAM_NODE(Int32Param, int32_t, IntType::get(context, 32))
-PARAM_NODE(Int16Param, int16_t, IntType::get(context, 16))
-PARAM_NODE(Int8Param, int8_t, IntType::get(context, 8))
-PARAM_NODE(Uint64Param, uint64_t, UintType::get(context, 64))
-PARAM_NODE(Uint32Param, uint32_t, UintType::get(context, 32))
-PARAM_NODE(Uint16Param, uint16_t, UintType::get(context, 16))
-PARAM_NODE(Uint8Param, uint8_t, UintType::get(context, 8))
-PARAM_NODE(BoolSysParam, uint64_t, BoolType::get(context, 0))
-PARAM_NODE(Bool64Param, uint64_t, BoolType::get(context, 64))
-PARAM_NODE(Bool32Param, uint32_t, BoolType::get(context, 32))
-PARAM_NODE(Bool16Param, uint16_t, BoolType::get(context, 16))
-PARAM_NODE(Bool8Param, uint8_t, BoolType::get(context, 8))
-PARAM_NODE(NoneParam, uint8_t, NothingType::get(context))
+PARAM_NODE(ComplexParam, ComplexDouble)
+PARAM_NODE(RealParam, double)
+PARAM_NODE(IntParam, int64_t)
+PARAM_NODE(UintParam, uint64_t)
+PARAM_NODE(BoolParam, bool)
+PARAM_NODE(NoneParam, NoneValue)
 
 // update Param::mark if any others storing string are added
-PARAM_NODE(BytesParam, UniqueString, BytesType::get(context))
-PARAM_NODE(CStringParam, UniqueString, CStringType::get(context))
-PARAM_NODE(StringParam, UniqueString, StringType::get(context))
+PARAM_NODE(StringParam, UniqueString)
 
 /// \endcond
 

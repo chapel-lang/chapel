@@ -33,7 +33,7 @@ namespace uast {
  */
 class BoolLiteral final : public Literal {
  private:
-  explicit BoolLiteral(const types::BoolSysParam* value)
+  explicit BoolLiteral(const types::BoolParam* value)
     : Literal(asttags::BoolLiteral, value) {
   }
 
@@ -59,7 +59,7 @@ class BoolLiteral final : public Literal {
     Returns the value of this bool literal.
   */
   bool value() const {
-    auto p = (const types::BoolSysParam*) value_;
+    auto p = (const types::BoolParam*) value_;
     return p->value() != 0;
   }
 };

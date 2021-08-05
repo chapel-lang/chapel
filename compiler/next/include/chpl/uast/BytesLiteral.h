@@ -34,7 +34,7 @@ namespace uast {
  */
 class BytesLiteral final : public StringLikeLiteral {
  private:
-  BytesLiteral(const types::BytesParam* value,
+  BytesLiteral(const types::StringParam* value,
                StringLikeLiteral::QuoteStyle quotes)
     : StringLikeLiteral(asttags::BytesLiteral, value, quotes)
   { }
@@ -54,8 +54,8 @@ class BytesLiteral final : public StringLikeLiteral {
     which does not include the quotes.
    */
   UniqueString str() const {
-    assert(value_->isBytesParam());
-    const types::BytesParam* p = (const types::BytesParam*) value_;
+    assert(value_->isStringParam());
+    const types::StringParam* p = (const types::StringParam*) value_;
     return p->value();
   }
 };

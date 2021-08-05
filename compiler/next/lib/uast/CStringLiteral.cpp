@@ -32,7 +32,7 @@ CStringLiteral::build(Builder* builder, Location loc,
   // Construct the UniqueString
   auto u = UniqueString::build(builder->context(), value);
   // Construct the Param
-  auto p = types::CStringParam::get(builder->context(), u);
+  auto p = types::StringParam::get(builder->context(), u);
   // Construct the CStringLiteral
   CStringLiteral* ret = new CStringLiteral(p, quotes);
   builder->noteLocation(ret, loc);

@@ -34,9 +34,9 @@ namespace uast {
   However there are no negative literals. Negative numbers are created
   by applying the unary `-` operator.
  */
-class IntLiteral final : public NumericLiteral<int64_t, types::Int64Param> {
+class IntLiteral final : public NumericLiteral<int64_t, types::IntParam> {
  private:
-  IntLiteral(const types::Int64Param* value, UniqueString text)
+  IntLiteral(const types::IntParam* value, UniqueString text)
     : NumericLiteral(asttags::IntLiteral, value, text)
   { }
 

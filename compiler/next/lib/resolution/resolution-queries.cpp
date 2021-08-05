@@ -69,16 +69,35 @@ static QualifiedType typeForLiteral(Context* context, const Literal* literal) {
   const Type* typePtr = nullptr;
   const Param* paramPtr = nullptr;
 
-  if (auto i = literal->toIntLiteral()) {
-    typePtr = IntType::get(context, 0);
-    paramPtr = Int64Param::get(context, i->value());
-  } else {
-    // TODO: handle the other literals as params
+  switch (literal->tag()) {
+    case asttags::BoolLiteral:
+      typePtr = BoolType::get(context, 0);
+      break;
+    case asttags::ImagLiteral:
+      typePtr = ImagType::get(context, 0);
+      break;
+    case asttags::IntLiteral:
+      typePtr = IntType::get(context, 0);
+      break;
+    case asttags::RealLiteral:
+      typePtr = RealType::get(context, 0);
+      break;
+    case asttags::UintLiteral:
+      typePtr = UintType::get(context, 0);
+      break;
+    case asttags::BytesLiteral:
+      typePtr = BytesType::get(context);
+      break;
+    case asttags::CStringLiteral:
+      typePtr = CStringType::get(context);
+      break;
+    case asttags::StringLiteral:
+      typePtr = StringType::get(context);
+      break;
+    default:
+      assert(false && "case not handled");
   }
-
-  if (paramPtr != nullptr) {
-    assert(typePtr == paramPtr->getType(context));
-  }
+  paramPtr = literal->param();
 
   return QualifiedType(QualifiedType::PARAM, typePtr, paramPtr);
 }

@@ -28,7 +28,7 @@ namespace uast {
 owned<IntLiteral> IntLiteral::build(Builder* builder, Location loc,
                                     int64_t value, UniqueString text) {
   // construct the Param
-  auto p = types::Int64Param::get(builder->context(), value);
+  auto p = types::IntParam::get(builder->context(), value);
   IntLiteral* ret = new IntLiteral(p, text);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
