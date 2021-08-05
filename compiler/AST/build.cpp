@@ -1210,7 +1210,7 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
   if (bounded) {
     if (!onBlock) { block->insertAtHead(new CallExpr("chpl_resetTaskSpawn", numTasks)); }
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
-    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr("chpl_coforallSize", iterator)));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr("chpl_boundedCoforallSize", iterator, zippered ? gTrue : gFalse)));
     block->insertAtHead(new DefExpr(numTasks));
     block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks, numTasks));
@@ -1242,10 +1242,10 @@ static void removeWrappingBlock(BlockStmt*& block) {
 // This effectively builds up:
 //
 //     var tmpIter = iterator;
-//     param bounded = isBoundedRange(tmpIter) || isDomain(tmpIter) || isArray(tmpIter);
+//     param isBounded = chpl_supportsBoundedCoforall(tmpIter);
 //     param useLocalEndCount, countRunningTasks = !bodyContainsOnStmt();
-//     if bounded {
-//       var numTasks = tmpIter.size;
+//     if isBounded {
+//       var numTasks = chpl_boundedCoforallSize(tmpIter);
 //       var _coforallCount = _endCountAlloc(useLocalEndCount);
 //       // only bump EndCount once, instead of once per task
 //       _upEndCount(_coforallCount, countRunningTasks, numTasks);
@@ -1307,15 +1307,13 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   BlockStmt* vectorCoforallBlk = buildLoweredCoforall(indices, tmpIter, copyByrefVars(byref_vars), body->copy(), zippered, /*bounded=*/true);
   BlockStmt* nonVectorCoforallBlk = buildLoweredCoforall(indices, tmpIter, byref_vars, body, zippered, /*bounded=*/false);
 
-  VarSymbol* isRngDomArr = newTemp("isRngDomArr");
-  isRngDomArr->addFlag(FLAG_MAYBE_PARAM);
-  coforallBlk->insertAtTail(new DefExpr(isRngDomArr));
+  VarSymbol* isBounded = newTemp("isBounded");
+  isBounded->addFlag(FLAG_MAYBE_PARAM);
+  coforallBlk->insertAtTail(new DefExpr(isBounded));
 
-  coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, isRngDomArr,
-                            new CallExpr("||", new CallExpr("isBoundedRange", tmpIter),
-                            new CallExpr("||", new CallExpr("isDomain", tmpIter), new CallExpr("isArray", tmpIter)))));
+  coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, isBounded, new CallExpr("chpl_supportsBoundedCoforall", tmpIter, zippered ? gTrue : gFalse)));
 
-  coforallBlk->insertAtTail(new CondStmt(new SymExpr(isRngDomArr),
+  coforallBlk->insertAtTail(new CondStmt(new SymExpr(isBounded),
                                          vectorCoforallBlk,
                                          nonVectorCoforallBlk));
   return coforallBlk;

@@ -2374,17 +2374,26 @@ module ChapelBase {
     return x;
   }
 
-
-  // This is a helper function that I injected to reduce the
-  // compiler's reliance on 'iterable.size' for coforall loops because
-  // we started generating warnings for the return type of
-  // '[range|domain|array].size' changing.
   //
-  proc chpl_coforallSize(iterable) {
-    if (isRange(iterable) || isDomain(iterable) || isArray(iterable)) then
+  // Support for bounded coforall task counting optimizations
+  //
+
+  proc chpl_supportsBoundedCoforall(iterable, param zippered) param {
+    if zippered && isTuple(iterable) then
+      return chpl_supportsBoundedCoforall(iterable[0], zippered=false);
+    else if isRange(iterable) || isDomain(iterable) || isArray(iterable) then
+      return true;
+    else
+      return false;
+  }
+
+  proc chpl_boundedCoforallSize(iterable, param zippered) {
+    if zippered && isTuple(iterable) then
+      return chpl_boundedCoforallSize(iterable[0], zippered=false);
+    else if isRange(iterable) || isDomain(iterable) || isArray(iterable) then
       return iterable.sizeAs(iterable.intIdxType);
     else
-      return iterable.size;
+      compilerError("Called chpl_boundedCoforallSize on an unsupported type");
   }
 
   /* The following chpl_field_*() overloads support compiler-generated
