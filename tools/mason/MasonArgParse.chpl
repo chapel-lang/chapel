@@ -138,7 +138,7 @@ module MasonArgParse {
     }
 
     // for subcommands, _match attempts to identify values at the index of the
-    // subcommadn at position startPos (inclusive) and through the
+    // subcommand at position startPos (inclusive) and through the
     // endPos (inclusive) parameter [startPos, endPos]
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
                          ref rest:list(string), endPos:int) throws {
@@ -418,6 +418,8 @@ module MasonArgParse {
     var _options: map(string, string);
     // store positional definitions
     var _positionals: list(borrowed Positional);
+    // store subcommand names
+    var _subcommands: list(string);
 
     proc _parsePositionals(arguments:[?argsD] string, endIdx:int) throws {
       var endPos = 0;
@@ -476,6 +478,8 @@ module MasonArgParse {
           // create an entry for this index and the argument name
           optionIndices.add(i, optName);
           argRslt._present = true;
+          // if subcommand found, stop processing more args
+          if _subcommands.contains(argElt) then break;
         }
       }
 
@@ -676,6 +680,7 @@ module MasonArgParse {
 
     proc addSubCommand(cmd:string) throws {
       var act = new owned SubCommand(cmd);
+      _subcommands.append(cmd);
       _options.add(cmd, cmd);
       return _addAction(act);
     }

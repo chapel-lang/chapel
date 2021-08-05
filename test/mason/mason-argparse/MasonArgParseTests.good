@@ -422,6 +422,10 @@ testMixPosBoolOptWithValuesSubCommand()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testMixPosBoolOptWithValuesSubCommandLight()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 Found undefined values: thirty
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
 Use '-' or '--' to indicate opt flags. Positional arguments not yet supported

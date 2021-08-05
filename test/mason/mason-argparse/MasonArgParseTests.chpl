@@ -2297,13 +2297,18 @@ proc testMixPosBoolOptWithValuesSubCommand(test: borrowed Test) throws {
                                   numArgs=1..10,
                                   required=false,
                                   defaultValue=none);
-
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
   //parse the options
   var rest = parser.parseArgs(argList[1..]);
   //make sure we now have a value
   test.assertTrue(myBoolArg.hasValue());
   test.assertTrue(myPosArg.hasValue());
   test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
   //ensure the value passed is correct
   var posList = new list(myPosArg.values());
   var optList = new list(myStrArg.values());
@@ -2324,10 +2329,76 @@ proc testMixPosBoolOptWithValuesSubCommand(test: borrowed Test) throws {
   //ensure the value passed is correct
   var subCmdPosList = new list(subCmdPosArg.values());
   var subCmdOptList = new list(subCmdStrArg.values());
-  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertFalse(subCmdBoolArg.valueAsBool());
   test.assertEqual(subCmdPosList, new list(["f1","f2"]));
   test.assertEqual(subCmdOptList, new list(["s1","s2","s3"]));
 }
+
+// a mix of positionals, bools, and options with ranges of values and subcommand
+// with optional positional, bools, and options.
+proc testMixPosBoolOptWithValuesSubCommandLight(test: borrowed Test) throws {
+  var argList = ["progName","subCmd1","-b=true","--stringVal", "s1","s2","s3"];
+
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-b","--boolVal"],
+                                numArgs=0..1,
+                                flagInversion=false,
+                                defaultValue=none);
+  var myPosArg = parser.addPositional(name="FileNames",
+                                      numArgs=0..);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=1..10,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand("subCmd1");
+  // setup the subcommand parser
+  var subParser = new argumentParser();
+  var subCmdBoolArg = subParser.addFlag(name="BoolFlag",
+                              opts=["-b","--boolVal"],
+                              numArgs=0..1,
+                              flagInversion=false,
+                              defaultValue=none);
+  var subCmdPosArg = subParser.addPositional(name="FileNames",
+                                      numArgs=0..,
+                                      defaultValue=(new list(["f1","f2"])));
+  var subCmdStrArg = subParser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=1..10,
+                                  required=false,
+                                  defaultValue=none);
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //make sure no sub-values currently exist
+  test.assertFalse(subCmdBoolArg.hasValue());
+  test.assertFalse(subCmdPosArg.hasValue());
+  test.assertFalse(subCmdStrArg.hasValue());
+  //parse the remaining args
+  subParser.parseArgs(rest.toArray());
+  //make sure we now have a value
+  test.assertTrue(subCmdBoolArg.hasValue());
+  test.assertTrue(subCmdPosArg.hasValue());
+  test.assertTrue(subCmdStrArg.hasValue());
+  //ensure the value passed is correct
+  var subCmdPosList = new list(subCmdPosArg.values());
+  var subCmdOptList = new list(subCmdStrArg.values());
+  test.assertTrue(subCmdBoolArg.valueAsBool());
+  test.assertEqual(subCmdPosList, new list(["f1","f2"]));
+  test.assertEqual(subCmdOptList, new list(["s1","s2","s3"]));
+}
+
 
 
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
