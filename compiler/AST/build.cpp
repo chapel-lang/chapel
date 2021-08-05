@@ -492,6 +492,8 @@ BlockStmt* buildUseStmt(Expr* mod, const char * rename,
     PotentialRename* listElem = (*names)[0];
     if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
       if (name->unresolved[0] == '\0') {
+        USR_WARN(mod, "'use <mod> except *;' is deprecated, use 'use <mod>"
+                 " only;' or 'import <mod>;' instead");
         except = false;
       }
     }
