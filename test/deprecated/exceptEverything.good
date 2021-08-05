@@ -1,3 +1,4 @@
+exceptEverything.chpl:11: warning: 'use <mod> except *;' is deprecated, use 'use <mod> only;' or 'import <mod>;' instead
 exceptEverything.chpl:13: In function 'main':
 exceptEverything.chpl:17: error: unresolved call 'foo()'
 exceptEverything.chpl:17: note: because no functions named foo found in scope
