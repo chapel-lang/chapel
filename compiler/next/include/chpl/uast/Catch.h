@@ -59,7 +59,7 @@ class Catch final : public Expression {
     return this->errorChildNum_ == rhs->errorChildNum_ &&
       this->bodyChildNum_ == rhs->bodyChildNum_ &&
       this->hasParensAroundError_ == rhs->hasParensAroundError_ &&
-      this->contentsMatchInner(rhs);
+      this->expressionContentsMatchInner(rhs);
   }
 
   void markUniqueStringsInner(Context* context) const override {

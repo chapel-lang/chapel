@@ -31,16 +31,26 @@ namespace uast {
 
 
 /**
-  This class represents a try statement. For example:
+  This class represents a try statement or try expression. For example:
 
   \rst
   .. code-block:: chapel
 
-      // Example 1:
+      // Example of a try expression:
       var x = try! foo();
+
+      // Example of a try statement:
+      try! {
+        foo();
+      } catch e: FooError {
+        halt('A FooError occurred');
+      }
 
   \endrst
 
+  A try statement may contain a number of catch blocks (represented by the
+  Catch uAST node), while a try expression will never contain a catch
+  block.
  */
 class Try final : public Expression {
  private:
