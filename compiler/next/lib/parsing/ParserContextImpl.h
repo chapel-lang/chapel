@@ -409,6 +409,43 @@ Identifier* ParserContext::buildIdent(YYLTYPE location, PODUniqueString name) {
   return Identifier::build(builder, convertLocation(location), name).release();
 }
 
+Expression* ParserContext::buildPrimCall(YYLTYPE location,
+                                         MaybeNamedActualList* lst) {
+  Location loc = convertLocation(location);
+  ASTList actuals;
+  std::vector<UniqueString> actualNames;
+  UniqueString primName;
+
+  consumeNamedActuals(lst, actuals, actualNames);
+
+  bool anyNames;
+  for (auto name : actualNames) {
+    if (!name.isEmpty()) {
+      anyNames = true;
+    }
+  }
+  // first argument must be a string literal
+  if (actuals.size() > 0) {
+    if (auto lit = actuals[0]->toStringLiteral()) {
+      primName = lit->str();
+      // and erase that element
+      actuals.erase(actuals.begin());
+    }
+  }
+
+  if (anyNames || primName.isEmpty()) {
+    if (anyNames)
+      noteError(location, "primitive calls cannot use named arguments");
+    else
+      noteError(location, "primitive calls must start with string literal");
+
+    return ErroneousExpression::build(builder, loc).release();
+  }
+
+  auto prim = PrimCall::build(builder, loc, primName, std::move(actuals));
+  return prim.release();
+}
+
 OpCall* ParserContext::buildBinOp(YYLTYPE location,
                                   Expression* lhs,
                                   PODUniqueString op,

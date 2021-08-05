@@ -239,6 +239,8 @@ struct ParserContext {
   Identifier* buildEmptyIdent(YYLTYPE location);
   Identifier* buildIdent(YYLTYPE location, PODUniqueString name);
 
+  Expression* buildPrimCall(YYLTYPE location, MaybeNamedActualList* lst);
+
   OpCall* buildBinOp(YYLTYPE location,
                      Expression* lhs, PODUniqueString op, Expression* rhs);
   OpCall* buildUnaryOp(YYLTYPE location,
