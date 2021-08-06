@@ -749,6 +749,8 @@ distCreate-arrays-deinit.cc-perf: &distCreate-base
     - A few communication micro-optimizations to improve Block array creation (#17354)
   04/07/21:
     - Revert a recent change in block array creation that caused performance regression (#17531)
+  08/05/21:
+    - Extend bounded coforall optimization to zippered loops (#18162)
 
 distCreate-arrays-init.cc-perf:
   <<: *distCreate-base
@@ -2150,6 +2152,21 @@ arkouda: &arkouda-base
     - Upgrade Arkouda release testing from 1.23.0 to 1.24.1 (#17773)
   06/02/21:
     - Make the array values in groupby and aggregate benchmarks consistent (mhmerrill/arkouda#832)
+  06/29/21:
+    - Improve the performance of client-server array transfers (mhmerrill/arkouda#856)
+  07/10/21:
+    - Optimize client conversions for client-server array transfers (mhmerrill/arkouda#870)
+  07/15/21:
+    - Optimize server conversions for client-server array transfers (mhmerrill/arkouda#880)
+  07/28/21:
+    - Optimize the number of copies for client-server array transfers (mhmerrill/arkouda#885)
+  07/31/21:
+    - Optimize out a copy in ZMQ recv for local operations (#18126)
+  08/04/21:
+    - Further reduce the number of copies for client-server array transfers (mhmerrill/arkouda#893)
+  08/05/21:
+    - Parallelize bytes copies over a certain threshold in ZMQ (#18140)
+    - Upgrade to PyZMQ 22.2.0 (includes mutable pyzmq improvement)
 
 arkouda-string:
   <<: *arkouda-base
