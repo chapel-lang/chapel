@@ -30,10 +30,166 @@
 module LocaleModel { 
 
   public use LocaleModelHelpGPU;
-  public use LocaleModelHelpMem;
   require "-lcudart";
 
-  use IO;
+  use IO, SysCTypes, CPtr;
+
+  private inline
+  proc allocatingInGPUSublocale(): bool {
+    extern proc chpl_gpu_has_context(): bool;
+    return chpl_gpu_has_context() && chpl_task_getRequestedSubloc()>0;
+  }
+
+  /*private inline*/
+  /*proc addrIsInGPU(addr:c_void_ptr): bool {*/
+  /*}*/
+
+  pragma "fn synchronization free"
+  private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
+
+  // Note that there are 2 nearly identical chpl_here_alloc() functions. This
+  // one takes an int(64) size and is marked with "locale model alloc" while
+  // the second version takes a generic `integral` size and is not marked
+  // "locale model alloc". Calls to the "locale model alloc" version are
+  // inserted by the compiler (sometimes after resolution) for class/record
+  // allocations. As a result, there can only be a single function with "locale
+  // model alloc" in any compilation and the function must be fully specified.
+  pragma "allocator"
+  pragma "locale model alloc"
+  pragma "always propagate line file info"
+  proc chpl_here_alloc(size:int(64), md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_gpu_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
+
+    if allocatingInGPUSublocale() then
+      return chpl_gpu_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
+    else 
+      return chpl_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
+  }
+
+  pragma "allocator"
+  pragma "llvm return noalias"
+  pragma "always propagate line file info"
+  proc chpl_here_alloc(size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_gpu_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
+
+    if allocatingInGPUSublocale() then
+      return chpl_gpu_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
+    else
+      return chpl_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
+  }
+
+  pragma "allocator"
+  pragma "llvm return noalias"
+  pragma "always propagate line file info"
+  proc chpl_here_aligned_alloc(alignment:integral, size:integral,
+                               md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_memalign(alignment:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_gpu_mem_memalign(alignment:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
+    if allocatingInGPUSublocale() then
+      return chpl_gpu_mem_memalign(alignment.safeCast(size_t),
+                                   size.safeCast(size_t),
+                                   md + chpl_memhook_md_num());
+    else
+      return chpl_mem_memalign(alignment.safeCast(size_t),
+                               size.safeCast(size_t),
+                               md + chpl_memhook_md_num());
+  }
+
+  pragma "allocator"
+  pragma "llvm return noalias"
+  pragma "always propagate line file info"
+  proc chpl_here_calloc(size:integral, number:integral, md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_calloc(number:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_gpu_mem_calloc(number:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
+    if allocatingInGPUSublocale() then
+      return chpl_gpu_mem_calloc(number.safeCast(size_t), size.safeCast(size_t), md + chpl_memhook_md_num());
+    else
+      return chpl_mem_calloc(number.safeCast(size_t), size.safeCast(size_t), md + chpl_memhook_md_num());
+  }
+
+  pragma "allocator"
+  pragma "always propagate line file info"
+  proc chpl_here_realloc(ptr:c_void_ptr, size:integral, md:chpl_mem_descInt_t): c_void_ptr {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_gpu_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
+
+    halt("Not ready for realloc, yet");
+
+    /*const useGPU = if ptr == nil*/
+                   /*then allocatingInGPUSublocale()*/
+                   /*else addrIsInGPU(ptr);*/
+
+    /*if useGPU then*/
+      /*return chpl_gpu_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());*/
+    /*else*/
+      /*return chpl_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());*/
+  }
+
+  pragma "fn synchronization free"
+  pragma "always propagate line file info"
+  proc chpl_here_good_alloc_size(min_size:integral): min_size.type {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_good_alloc_size(min_size:size_t) : size_t;
+
+    /*pragma "fn synchronization free"*/
+    /*pragma "insert line file info"*/
+    /*extern proc chpl_gpu_mem_good_alloc_size(min_size:size_t) : size_t;*/
+
+    /*if allocatingInGPUSublocale() then*/
+      /*return chpl_gpu_mem_good_alloc_size(min_size.safeCast(size_t)).safeCast(min_size.type);*/
+    /*else*/
+      return chpl_mem_good_alloc_size(min_size.safeCast(size_t)).safeCast(min_size.type);
+  }
+
+  pragma "locale model free"
+  pragma "always propagate line file info"
+  proc chpl_here_free(ptr:c_void_ptr): void {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_free(ptr:c_void_ptr) : void;
+
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_gpu_mem_free(ptr:c_void_ptr) : void;
+
+    // TODO do we need a free for wide pointers?
+    /*if addrIsInGPU(ptr) then*/
+      /*chpl_gpu_mem_free(ptr);*/
+    /*else*/
+      /*chpl_mem_free(ptr);*/
+  }
 
   //
   // The task layer calls these to convert between full sublocales and
@@ -104,7 +260,10 @@ module LocaleModel {
     override proc chpl_name() return name;
 
     proc init() {
+      extern proc chpl_gpu_init(): void;
+      chpl_gpu_init();
     }
+
     proc deinit() {
      extern proc hsa_shutdown(): void ;
 

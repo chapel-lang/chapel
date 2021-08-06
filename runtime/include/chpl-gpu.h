@@ -35,6 +35,25 @@ void chpl_gpu_launch_kernel(const char* name,
 void chpl_gpu_launch_kernel_flat(const char* name, int grid_dim_x, int block_dim_x,
                                  int nargs, ...);
 
+void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
+                         int32_t lineno, int32_t filename);
+void* chpl_gpu_mem_calloc(size_t number, size_t size,
+                          chpl_mem_descInt_t description,
+                          int32_t lineno, int32_t filename);
+void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
+                           chpl_mem_descInt_t description,
+                           int32_t lineno, int32_t filename);
+void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
+                            chpl_mem_descInt_t description,
+                            int32_t lineno, int32_t filename);
+void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename);
+
+bool chpl_gpu_has_context(void);
+size_t chpl_gpu_get_alloc_size(void* ptr);
+
+void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n);
+void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n);
+                           
 #endif // HAS_GPU_LOCALE
 
 #ifdef __cplusplus

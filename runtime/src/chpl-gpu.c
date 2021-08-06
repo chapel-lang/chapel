@@ -29,7 +29,7 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
-// #define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
+ #define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
 
 static void CHPL_GPU_LOG(const char *str, ...) {
 #ifdef CHPL_GPU_DEBUG
@@ -58,9 +58,12 @@ static void chpl_gpu_cuda_check(int err, const char* file, int line) {
   chpl_gpu_cuda_check((int)call, __FILE__, __LINE__);\
 } while(0);
 
-void chpl_gpu_init() { CUdevice    device;
+void chpl_gpu_init() {
+  CUdevice    device;
   CUcontext   context;
   int         devCount;
+
+  CHPL_GPU_LOG("Initializing GPU\n");
 
   // CUDA initialization
   CUDA_CALL(cuInit(0));
@@ -71,6 +74,13 @@ void chpl_gpu_init() { CUdevice    device;
 
   // Create driver context
   CUDA_CALL(cuCtxCreate(&context, 0, device));
+  CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
+
+  CUcontext cuda_context = NULL;
+  cuCtxGetCurrent(&cuda_context);
+  if (cuda_context == NULL) {
+    CHPL_GPU_LOG("No context for init\n");
+  }
 }
 
 static void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) {
@@ -107,10 +117,19 @@ static void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) 
 static void chpl_gpu_check_device_ptr(void* ptr) {
   CUdeviceptr base;
   size_t size;
-  CUDA_CALL(cuMemGetAddressRange(&base, &size, *((CUdeviceptr*)ptr)));
+  CUDA_CALL(cuMemGetAddressRange(&base, &size, ((CUdeviceptr)ptr)));
+
 
   assert(base);
   assert(size > 0);
+}
+
+size_t chpl_gpu_get_alloc_size(void* ptr) {
+  CUdeviceptr base;
+  size_t size;
+  CUDA_CALL(cuMemGetAddressRange(&base, &size, (CUdeviceptr)ptr));
+
+  return size;
 }
 
 static void chpl_gpu_launch_kernel_help(const char* name,
@@ -145,7 +164,7 @@ static void chpl_gpu_launch_kernel_help(const char* name,
 
     // TODO: we can remove this check after some point, or enable only if some
     // advanced debugging is enabled.
-    chpl_gpu_check_device_ptr(kernel_params[i]);
+    chpl_gpu_check_device_ptr(*((void**)kernel_params[i]));
 
     CHPL_GPU_LOG("\tKernel parameter %d: %p\n", i, kernel_params[i]);
   }
@@ -170,6 +189,22 @@ static void chpl_gpu_launch_kernel_help(const char* name,
   chpl_free(kernel_params);
 }
 
+void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n) {
+  chpl_gpu_check_device_ptr(src);
+
+  CHPL_GPU_LOG("Copying %zu bytes from device to host", n);
+
+  CUDA_CALL(cuMemcpyDtoH(dst, (CUdeviceptr)src, n));
+}
+
+void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n) {
+  chpl_gpu_check_device_ptr(dst);
+
+  CHPL_GPU_LOG("Copying %zu bytes from host to device", n);
+
+  CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
+}
+
 void chpl_gpu_launch_kernel(const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
                             int blk_dim_x, int blk_dim_y, int blk_dim_z,
@@ -192,6 +227,65 @@ void chpl_gpu_launch_kernel_flat(const char* name, int grd_dim, int blk_dim,
                               blk_dim, 1, 1,
                               nargs, args);
   va_end(args);
+}
+
+bool chpl_gpu_has_context() {
+  CUcontext cuda_context = NULL;
+
+  CUresult ret = cuCtxGetCurrent(&cuda_context);
+
+  if (ret == CUDA_ERROR_NOT_INITIALIZED || ret == CUDA_ERROR_DEINITIALIZED) {
+    return false;
+  }
+  else {
+    return cuda_context != NULL;
+  }
+}
+
+void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
+                         int32_t lineno, int32_t filename) {
+  CHPL_GPU_LOG("chpl_gpu_mem_alloc called. Size:%d file:%d line:%d\n", size,
+               filename, lineno);
+
+  CUdeviceptr ptr;
+  CUDA_CALL(cuMemAlloc(&ptr,  size));
+  return (void*)ptr;
+}
+
+void* chpl_gpu_mem_calloc(size_t number, size_t size,
+                          chpl_mem_descInt_t description,
+                          int32_t lineno, int32_t filename) {
+  CHPL_GPU_LOG("chpl_gpu_mem_calloc called. Size:%d\n", size);
+
+  CUdeviceptr ptr;
+  CUDA_CALL(cuMemAlloc(&ptr,  size));
+  CUDA_CALL(cuMemsetD8(ptr, 0, size));
+  return (void*)ptr;
+}
+
+void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
+                           chpl_mem_descInt_t description,
+                           int32_t lineno, int32_t filename) {
+  CHPL_GPU_LOG("chpl_gpu_mem_realloc called. Size:%d\n", size);
+
+  /*size_t cur_*/
+
+  CUdeviceptr ptr;
+  CUDA_CALL(cuMemAlloc(&ptr,  size));
+  CUDA_CALL(cuMemsetD8(ptr, 0, size));
+  return (void*)ptr;
+}
+
+void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
+                            chpl_mem_descInt_t description,
+                            int32_t lineno, int32_t filename) {
+  CHPL_GPU_LOG("chpl_gpu_mem_memalign called. Size:%d\n", size);
+  return chpl_mem_memalign(boundary, size, description, lineno, filename);
+}
+
+void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
+  CHPL_GPU_LOG("chpl_gpu_mem_free called.\n");
+  chpl_mem_free(memAlloc, lineno, filename);
 }
 
 #endif // HAS_GPU_LOCALE
