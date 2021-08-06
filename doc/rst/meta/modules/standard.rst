@@ -54,6 +54,7 @@ Files/IO
    FileSystem <standard/FileSystem>
    IO <standard/IO>
    Path <standard/Path>
+   Socket <standard/Socket>
 
 
 Language Support

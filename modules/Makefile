@@ -94,6 +94,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Reflection.chpl \
 	standard/Regex.chpl \
 	standard/Set.chpl \
+	standard/Socket.chpl \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
