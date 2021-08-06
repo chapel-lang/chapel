@@ -147,6 +147,10 @@ class UniqueString final {
     return s.i.c_str()[0] == '\0';
   }
 
+  detail::PODUniqueString podUniqueString() const {
+    return s;
+  }
+
   /**
     Checks to see if the string starts with another string.
     \rst

@@ -120,7 +120,7 @@ class Immediate { public:
     // Unions are initialized based off the first element, so we need to have
     // the largest thing first to make sure it is all zero initialized
 
-    // complex values - only used for the type's default value
+    // complex values
     complex128 v_complex128;
     complex64  v_complex64;
 

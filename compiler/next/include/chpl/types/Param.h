@@ -24,6 +24,7 @@
 #include "chpl/queries/UniqueString.h"
 #include "chpl/types/ParamClasses.h"
 #include "chpl/types/ParamTag.h"
+#include "chpl/types/QualifiedType.h"
 #include "chpl/util/hash.h"
 
 namespace chpl {
@@ -42,6 +43,9 @@ class Param {
   struct ComplexDouble {
     double re;
     double im;
+    ComplexDouble(double re, double im)
+      : re(re), im(im)
+    { }
     bool operator==(const ComplexDouble& other) const {
       return this->re == other.re && this->im == other.im;
     }
@@ -136,6 +140,11 @@ class Param {
   static bool updateParam(owned<Param>& keep, owned<Param>& addin);
 
   static void markParam(Context* context, const Param* keep);
+
+  static QualifiedType fold(Context* context,
+                            UniqueString op,
+                            QualifiedType a,
+                            QualifiedType b);
 
   std::string toString() const;
 

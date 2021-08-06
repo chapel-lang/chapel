@@ -20,12 +20,16 @@
 #ifndef CHPL_TYPES_QUALIFIEDTYPE_H
 #define CHPL_TYPES_QUALIFIEDTYPE_H
 
-#include "chpl/types/Type.h"
-#include "chpl/types/Param.h"
+#include "chpl/util/hash.h"
+#include "chpl/queries/update-functions.h"
+
+#include <cstddef>
+#include <string>
 
 namespace chpl {
 namespace types {
-
+class Param;
+class Type;
 
 /**
   This class represents a combination of 3 things:
@@ -77,13 +81,7 @@ class QualifiedType {
     return kind_ == PARAM && param_ != nullptr;
   }
 
-  bool isGenericOrUnknown() const {
-    bool genericKind = kind_ == UNKNOWN;
-    bool genericParam = kind_ == PARAM && !hasParam();
-    bool genericType = !hasType() || type_->isGeneric() ||
-                       type_->isUnknownType();
-    return genericKind || genericParam || genericType;
-  }
+  bool isGenericOrUnknown() const;
 
   bool operator==(const QualifiedType& other) const {
     return kind_ == other.kind_ &&

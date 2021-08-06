@@ -1042,6 +1042,8 @@ struct ReturnTypeInferer {
       return returnedTypes[0];
     } else {
       assert(false && "TODO");
+      QualifiedType ret;
+      return ret;
     }
   }
 

@@ -28,7 +28,6 @@
 #include <cstring>
 #include "num.h"
 #include "prim_data.h"
-#include "stringutil.h"
 
 static int
 snprint_float_val(char* buf, size_t max, double val, bool hex) {

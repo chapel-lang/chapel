@@ -19,9 +19,20 @@
 
 #include "chpl/types/QualifiedType.h"
 
+#include "chpl/types/Param.h"
+#include "chpl/types/Type.h"
+
 namespace chpl {
 namespace types {
 
+
+bool QualifiedType::isGenericOrUnknown() const {
+  bool genericKind = kind_ == UNKNOWN;
+  bool genericParam = kind_ == PARAM && !hasParam();
+  bool genericType = !hasType() || type_->isGeneric() ||
+                     type_->isUnknownType();
+  return genericKind || genericParam || genericType;
+}
 
 static const char* kindToString(QualifiedType::Kind kind) {
   switch (kind) {

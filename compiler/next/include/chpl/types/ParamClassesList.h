@@ -25,15 +25,13 @@
 // the following comment disables doxygen for these
 /// \cond DO_NOT_DOCUMENT
 
-PARAM_NODE(ComplexParam, ComplexDouble)
-PARAM_NODE(RealParam, double)
-PARAM_NODE(IntParam, int64_t)
-PARAM_NODE(UintParam, uint64_t)
 PARAM_NODE(BoolParam, bool)
+PARAM_NODE(ComplexParam, ComplexDouble)
+PARAM_NODE(IntParam, int64_t)
 PARAM_NODE(NoneParam, NoneValue)
-
-// update Param::mark if any others storing string are added
+PARAM_NODE(RealParam, double)
 PARAM_NODE(StringParam, UniqueString)
+PARAM_NODE(UintParam, uint64_t)
 
 /// \endcond
 
