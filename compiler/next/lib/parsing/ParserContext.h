@@ -363,12 +363,6 @@ struct ParserContext {
                                        CommentsAndStmt thenCs,
                                        CommentsAndStmt elseCs);
 
-  uint64_t binStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
-  uint64_t octStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
-  uint64_t decStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
-  uint64_t hexStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
-  double str2double(YYLTYPE location, const char* str, bool& erroroneous);
-
   Expression* buildNumericLiteral(YYLTYPE location,
                                   PODUniqueString str,
                                   int type);

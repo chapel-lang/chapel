@@ -25,21 +25,21 @@
 #ifndef CHPL_QUERIES_UNIQUE_STRING_DETAIL_H
 #define CHPL_QUERIES_UNIQUE_STRING_DETAIL_H
 
+#include "chpl/util/memory.h"
+#include "chpl/util/string-escapes.h"
+
 #include <cassert>
 #include <cstring>
 #include <functional>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "chpl/util/memory.h"
 
 /// \cond DO_NOT_DOCUMENT
 namespace chpl {
 class Context;
 
 namespace detail {
-
-bool stringContainsZeroBytes(const char* s, size_t len);
 
 // We can make it store 6 bytes in line this way:
 // alloc all such strings aligned to 2 bytes

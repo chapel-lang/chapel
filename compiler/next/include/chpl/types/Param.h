@@ -148,6 +148,13 @@ class Param {
 
   std::string toString() const;
 
+  static uint64_t binStr2uint64(const char* str, size_t len, std::string& err);
+  static uint64_t octStr2uint64(const char* str, size_t len, std::string& err);
+  static uint64_t decStr2uint64(const char* str, size_t len, std::string& err);
+  static int64_t decStr2int64(const char* str, size_t len, std::string& err);
+  static uint64_t hexStr2uint64(const char* str, size_t len, std::string& err);
+  static double str2double(const char* str, size_t len, std::string& err);
+
   // define is__ methods for the various Param subclasses
   // using macros and ParamClassesList.h
   /// \cond DO_NOT_DOCUMENT

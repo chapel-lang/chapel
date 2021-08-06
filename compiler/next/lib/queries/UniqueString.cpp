@@ -20,6 +20,7 @@
 #include "chpl/queries/UniqueString.h"
 
 #include "chpl/queries/Context.h"
+#include "chpl/util/string-escapes.h"
 
 #include <cassert>
 #include <cstring>
@@ -27,13 +28,6 @@
 namespace chpl {
 namespace detail {
 
-bool stringContainsZeroBytes(const char* s, size_t len) {
-  for (size_t i = 0; i < len; i++) {
-    if (s[i] == '\0')
-      return true;
-  }
-  return false;
-}
 
 InlinedString InlinedString::buildUsingContextTable(Context* context,
                                                     const char* s,

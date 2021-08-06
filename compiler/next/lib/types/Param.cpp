@@ -33,6 +33,10 @@
 #include "../immediates/num.h"
 #include "../immediates/prim_data.h"
 
+#include <cfloat>
+#include <cinttypes>
+#include <cmath>
+
 namespace chpl {
 namespace types {
 
@@ -314,6 +318,7 @@ QualifiedType Param::fold(Context* context,
   int immOp = 0;
 #define USTR(s) UniqueString::build(context, s)
 
+  // TODO: use an integer identifying a Primitive here
   if      (op == USTR("**")) immOp = P_prim_pow;
   else if (op == USTR("*"))  immOp = P_prim_mult;
   else if (op == USTR("/"))  immOp = P_prim_div;
@@ -364,6 +369,274 @@ std::string Param::toString() const {
   }
 
   return ret;
+}
+
+uint64_t Param::binStr2uint64(const char* str, size_t len, std::string& err) {
+  if (str == nullptr ||
+      !(str[0] == '0' && (str[1] == 'b' || str[1] == 'B')) ||
+      stringContainsZeroBytes(str, len)) {
+    assert(false && "should not be reached");
+    err = "Invalid binary string";
+    return 0;
+  }
+
+  assert(len >= 3);
+
+  // Remove leading 0s
+  size_t startPos = 2;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+  // Check length
+  if (len-startPos > 64) {
+    err = "Integer literal overflow: '";
+    err += str;
+    err += "' is too big for type uint64";
+    return 0;
+  }
+  uint64_t val = 0;
+  for (size_t i=startPos; i<len; i++) {
+    val <<= 1;
+    switch (str[i]) {
+    case '0':
+      break;
+    case '1':
+      val += 1;
+      break;
+    default:
+      err = "illegal character '";
+      err += str[i];
+      err += "' in binary literal";
+      return 0;
+    }
+  }
+
+  return val;
+}
+
+uint64_t Param::octStr2uint64(const char* str, size_t len, std::string& err) {
+  if (str == nullptr ||
+      !(str[0] == '0' && (str[1] == 'o' || str[1] == 'O')) ||
+      stringContainsZeroBytes(str, len)) {
+    assert(false && "should not be reached");
+    err = "Invalid octal string";
+    return 0;
+  }
+
+  /* Remove leading 0s */
+  size_t startPos = 2;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+
+  if (len-startPos > 22 || (len-startPos == 22 && str[startPos] != '1')) {
+    err = "Integer literal overflow: '";
+    err += str;
+    err += "' is too big for type uint64";
+    return 0;
+  }
+
+  for (size_t i = startPos; i < len; i++) {
+    if ('0' <= str[i] && str[i] <= '8') {
+      // OK
+    } else {
+      err = "illegal character '";
+      err += str[i];
+      err += "' in octal literal";
+      return 0;
+    }
+  }
+
+  uint64_t val;
+  int numitems = sscanf(str+startPos, "%" SCNo64, &val);
+  if (numitems != 1) {
+    err = "error converting octal literal";
+    return 0;
+  }
+
+  return val;
+}
+
+uint64_t Param::decStr2uint64(const char* str, size_t len, std::string& err) {
+  if (str == nullptr ||
+      str[0] == 0 ||
+      stringContainsZeroBytes(str, len)) {
+    assert(false && "should not be reached");
+    err = "Invalid decimal string";
+    return 0;
+  }
+
+  assert(len >= 1);
+
+  /* Remove leading 0s */
+  size_t startPos = 0;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+
+  for (size_t i = startPos; i < len; i++) {
+    if ('0' <= str[i] && str[i] <= '9') {
+      // OK
+    } else {
+      err = "illegal character '";
+      err += str[i];
+      err += "' in decimal literal";
+      return 0;
+    }
+  }
+
+  int64_t val;
+  int numitems = sscanf(str+startPos, "%" SCNu64, &val);
+  if (numitems != 1) {
+    err = "error converting decimal literal";
+    return 0;
+  }
+
+  char* checkStr = (char*)malloc(len+1);
+  snprintf(checkStr, len+1, "%" SCNu64, val);
+  if (strcmp(str+startPos, checkStr) != 0) {
+    err = "Integer literal overflow: '";
+    err += str;
+    err += "' is too big for type uint64";
+    return 0;
+  }
+  free(checkStr);
+
+  return val;
+}
+
+int64_t Param::decStr2int64(const char* str, size_t len, std::string& err) {
+  if (str == nullptr ||
+      str[0] == 0 ||
+      stringContainsZeroBytes(str, len)) {
+    assert(false && "should not be reached");
+    err = "Invalid decimal string";
+    return 0;
+  }
+
+  assert(len >= 1);
+
+  size_t startPos = 0;
+  bool negate = false;
+  /* Remove leading - */
+  while (str[startPos] == '-' && startPos < len-1) {
+    negate = !negate;
+    startPos++;
+  }
+  /* Remove leading 0s */
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+
+  for (size_t i = startPos; i < len; i++) {
+    if ('0' <= str[i] && str[i] <= '9') {
+      // OK
+    } else {
+      err = "illegal character '";
+      err += str[i];
+      err += "' in decimal literal";
+      return 0;
+    }
+  }
+
+  int64_t val;
+  int numitems = sscanf(str+startPos, "%" SCNd64, &val);
+  if (numitems != 1) {
+    err = "error converting decimal literal";
+    return 0;
+  }
+
+  char* checkStr = (char*)malloc(len+1);
+  snprintf(checkStr, len+1, "%" SCNu64, val);
+  if (strcmp(str+startPos, checkStr) != 0) {
+    err = "Integer literal overflow: '";
+    err += str;
+    err += "' is too big for type uint64";
+    return 0;
+  }
+  free(checkStr);
+
+  if (negate)
+    return -val;
+  else
+    return val;
+}
+
+
+
+
+uint64_t Param::hexStr2uint64(const char* str, size_t len, std::string &err) {
+  if (str == nullptr ||
+      !(str[0] == '0' && (str[1] == 'x' || str[1] == 'X')) ||
+      stringContainsZeroBytes(str, len)) {
+    assert(false && "should not be reached");
+    err = "Invalid hexadecimal string";
+    return 0;
+  }
+
+  assert(len >= 3);
+
+  /* Remove leading 0s */
+  size_t startPos = 2;
+  while (str[startPos] == '0' && startPos < len-1) {
+    startPos++;
+  }
+
+  if (len-startPos > 16) {
+    err = "Integer literal overflow: '";
+    err += str;
+    err += "' is too big for type uint64";
+    return 0;
+  }
+
+  for (size_t i = startPos; i < len; i++) {
+    if (('0' <= str[i] && str[i] <= '9') ||
+        ('a' <= str[i] && str[i] <= 'f') ||
+        ('A' <= str[i] && str[i] <= 'F')) {
+      // OK
+    } else {
+      err = "illegal character '";
+      err += str[i];
+      err += "' in hexadecimal literal";
+      return 0;
+    }
+  }
+
+  uint64_t val;
+  int numitems = sscanf(str+2, "%" SCNx64, &val);
+  if (numitems != 1) {
+    err = "error converting hexadecimal literal";
+    return 0;
+  }
+  return val;
+}
+
+double Param::str2double(const char* str, size_t len, std::string& err) {
+  if (str == nullptr ||
+      str[0] == 0 ||
+      stringContainsZeroBytes(str, len)) {
+    assert(false && "should not be reached");
+    err = "Invalid decimal string";
+    return 0;
+  }
+
+  char* endptr = nullptr;
+  double num = strtod(str, &endptr);
+  if (std::isnan(num) || std::isinf(num)) {
+    // don't worry about checking magnitude of these
+  } else {
+    double mag = fabs(num);
+    // check strtod result
+    if ((mag == HUGE_VAL || mag == DBL_MIN) && errno == ERANGE) {
+      err = "overflow or underflow in floating point literal";
+      return 0.0;
+    } else if (num == 0.0 && endptr == str) {
+      err = "error in floating point literal";
+      return 0.0;
+    }
+  }
+
+  return num;
 }
 
 // implement the subclasses using macros and ParamClassesList.h
