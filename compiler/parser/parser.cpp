@@ -366,7 +366,7 @@ static void parseCommandLineFiles() {
       {
         // error message to print placeholders for fileName and maxLength
         const char *errorMessage = "%s, filename is longer than maximum allowed length of %d\n";
-        // throwr error will concatenated messages
+        // throw error with concatenated message
         USR_FATAL(errorMessage, baseName, maxFileName);
       }
 
