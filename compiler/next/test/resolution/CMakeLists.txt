@@ -33,6 +33,7 @@
 # limitations under the License.
 
 comp_unit_test(testInteractive)
+comp_unit_test(testParams)
 comp_unit_test(testPoi)
 comp_unit_test(testResolve)
 comp_unit_test(testScopeResolve)
