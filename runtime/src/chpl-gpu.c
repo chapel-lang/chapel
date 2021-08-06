@@ -115,12 +115,13 @@ static void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) 
 }
 
 static void chpl_gpu_check_device_ptr(void* ptr) {
-  CUdeviceptr base;
-  size_t size;
-  CUDA_CALL(cuMemGetAddressRange(&base, &size, ((CUdeviceptr)ptr)));
+  /*CUdeviceptr base;*/
+  /*size_t size;*/
+  /*CUDA_CALL(cuMemGetAddressRange(&base, &size, ((CUdeviceptr)ptr)));*/
 
-  assert(base);
-  assert(size > 0);
+  /*assert(base);*/
+  /*assert(size > 0);*/
+  assert(chpl_gpu_is_device_ptr(ptr));
 }
 
 bool chpl_gpu_is_device_ptr(void* ptr) {
@@ -214,7 +215,7 @@ static void chpl_gpu_launch_kernel_help(const char* name,
 void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n) {
   chpl_gpu_check_device_ptr(src);
 
-  CHPL_GPU_LOG("Copying %zu bytes from device to host", n);
+  CHPL_GPU_LOG("Copying %zu bytes from device to host\n", n);
 
   CUDA_CALL(cuMemcpyDtoH(dst, (CUdeviceptr)src, n));
 }
@@ -222,7 +223,7 @@ void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n) {
 void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n) {
   chpl_gpu_check_device_ptr(dst);
 
-  CHPL_GPU_LOG("Copying %zu bytes from host to device", n);
+  CHPL_GPU_LOG("Copying %zu bytes from host to device\n", n);
 
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
 }
@@ -292,9 +293,9 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
 
   chpl_gpu_check_device_ptr(memAlloc);
 
-  size_t alloc_size = chpl_gpu_get_alloc_size(memAlloc);
+  size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);
 
-  if (size == alloc_size) {
+  if (size == cur_size) {
     return memAlloc;
   }
 
@@ -303,7 +304,7 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
 
   CUdeviceptr ptr;
   CUDA_CALL(cuMemAlloc(&ptr,  size));
-  CUDA_CALL(cuMemcpyDtoD(ptr, (CUdeviceptr)memAlloc, alloc_size));
+  CUDA_CALL(cuMemcpyDtoD(ptr, (CUdeviceptr)memAlloc, cur_size));
   CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
 
   return (void*)ptr;
@@ -313,12 +314,17 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
                             chpl_mem_descInt_t description,
                             int32_t lineno, int32_t filename) {
   CHPL_GPU_LOG("chpl_gpu_mem_memalign called. Size:%d\n", size);
-  return chpl_mem_memalign(boundary, size, description, lineno, filename);
+  chpl_internal_error("Not ready to allocate aligned memory on GPU, yet.");
+
+  return NULL;
 }
 
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   CHPL_GPU_LOG("chpl_gpu_mem_free called.\n");
-  chpl_mem_free(memAlloc, lineno, filename);
+
+  chpl_gpu_check_device_ptr(memAlloc);
+
+  CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
 }
 
 #endif // HAS_GPU_LOCALE

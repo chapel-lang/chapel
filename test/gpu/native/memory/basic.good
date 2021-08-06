@@ -1,0 +1,45 @@
+warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
+warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
+Initializing GPU
+
+Start testing chpl_here_alloc
+chpl_gpu_mem_alloc called. Size:3 file:62 line:34
+Allocated 3 bytes on gpu
+Copying 3 bytes from host to device
+Data copied to device
+Copying 3 bytes from device to host
+Data copied back to host:
+0 10 20 
+End testing chpl_here_alloc
+
+
+Start testing chpl_here_calloc
+chpl_gpu_mem_calloc called. Size:3
+Allocated 3 bytes on gpu
+Copying 3 bytes from device to host
+Data copied to host:
+0 0 0 
+End testing chpl_here_calloc
+
+
+Start testing chpl_here_realloc
+chpl_gpu_mem_realloc called. Size:6
+Allocated 6 bytes on gpu
+Copying 3 bytes from host to device
+Data copied to device
+Copying 6 bytes from device to host
+Data copied back to host
+0 10 20 0 10 20 
+End testing chpl_here_realloc
+
+
+Start testing chpl_here_free
+false
+true
+true
+chpl_gpu_mem_free called.
+chpl_gpu_mem_free called.
+End testing chpl_here_free
+
+End of test
+warning: 2 NUMA domains but only 1 Qthreads shepherds; may get internal errors
