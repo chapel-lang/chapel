@@ -1499,21 +1499,75 @@ CallResolutionResult resolveFnCall(Context* context,
 }
 
 static
+UniqueString getParamOp(Context* context, const PrimCall* call) {
+  UniqueString prim = call->prim();
+  // TODO: use a map
+  // TODO: have this return an integer identifying a Primitive
+#define USTR(s) UniqueString::build(context, s)
+  if (prim == USTR("") ||
+      prim == USTR("*") ||
+      prim == USTR("/") ||
+      prim == USTR("%") ||
+      prim == USTR("+") ||
+      prim == USTR("-") ||
+      prim == USTR("<<") ||
+      prim == USTR(">>") ||
+      prim == USTR("<") ||
+      prim == USTR("<=") ||
+      prim == USTR(">") ||
+      prim == USTR(">=") ||
+      prim == USTR("==") ||
+      prim == USTR("!=") ||
+      prim == USTR("&") ||
+      prim == USTR("^") ||
+      prim == USTR("|") ||
+      prim == USTR("&&") ||
+      prim == USTR("||") ||
+      prim == USTR("u+") ||
+      prim == USTR("u-") ||
+      prim == USTR("~") ||
+      prim == USTR("!")) {
+    return prim;
+  }
+
+  UniqueString empty;
+  return empty;
+}
+
+static
 CallResolutionResult resolvePrimCall(Context* context,
                                      const PrimCall* call,
                                      const CallInfo& ci,
                                      const Scope* inScope,
                                      const PoiScope* inPoiScope) {
-  auto plus = UniqueString::build(context, "+");
-  if (call->prim() == plus) {
-    printf("PRIM PLUS\n");
+
+  bool allParam = true;
+  for (const CallInfoActual& actual : ci.actuals) {
+    if (!actual.type.hasParam()) {
+      allParam = false;
+      break;
+    }
   }
 
-  assert(false && "should not be reached");
-  MostSpecificCandidates emptyCandidates;
-  QualifiedType emptyType;
-  PoiInfo emptyPoi;
-  return CallResolutionResult(emptyCandidates, emptyType, emptyPoi);
+  MostSpecificCandidates candidates;
+  QualifiedType type;
+  PoiInfo poi;
+
+  // start with a non-param result type based on the 1st argument
+  // TODO: do something more intelligent with a table of params
+  if (ci.actuals.size() > 0) {
+    type = QualifiedType(QualifiedType::VALUE, ci.actuals[0].type.type());
+  }
+
+  // handle param folding
+  auto prim = getParamOp(context, call);
+  if (!prim.isEmpty()) {
+    if (allParam && ci.actuals.size() == 2) {
+      type = Param::fold(context, prim, ci.actuals[0].type, ci.actuals[1].type);
+    }
+  }
+
+  return CallResolutionResult(candidates, type, poi);
 }
 
 CallResolutionResult resolveCall(Context* context,

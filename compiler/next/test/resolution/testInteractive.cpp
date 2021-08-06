@@ -38,7 +38,11 @@ using namespace resolution;
 using namespace uast;
 
 static UniqueString nameForAst(const ASTNode* ast) {
-  if (auto ident = ast->toIdentifier()) {
+  UniqueString empty;
+
+  if (ast == nullptr) {
+    return empty;
+  } else if (auto ident = ast->toIdentifier()) {
     return ident->name();
   } else if (auto decl = ast->toNamedDecl()) {
     return decl->name();
@@ -46,7 +50,6 @@ static UniqueString nameForAst(const ASTNode* ast) {
     return nameForAst(call->calledExpression());
   }
 
-  UniqueString empty;
   return empty;
 }
 
