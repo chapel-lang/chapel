@@ -382,7 +382,6 @@ void coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to);
 void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
 void fold_constant(chpl::Context* context, int op,
                    Immediate *im1, Immediate *im2, Immediate *imm);
-void convert_string_to_immediate(const char *str, Immediate *imm);
 ImmString istrFromUserBool(chpl::Context* context, bool b);
 ImmString istrFromUserUint(chpl::Context* context, uint64_t i);
 ImmString istrFromUserInt(chpl::Context* context, int64_t i);

@@ -22,10 +22,16 @@
 #define __STDC_FORMAT_MACROS
 #endif
 
+#include "chpl/types/Param.h"
+#include "chpl/util/string-escapes.h"
+
+#include <cfloat>
 #include <cinttypes>
+#include <cmath>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+
 #include "num.h"
 #include "prim_data.h"
 
@@ -916,80 +922,6 @@ fold_constant(chpl::Context* context, int op,
   }
   }
 }
-
-void
-convert_string_to_immediate(const char *str, Immediate *imm) {
-  switch (imm->const_kind) {
-    case NUM_KIND_NONE:
-      break;
-    case NUM_KIND_BOOL: {
-      if (!strcmp(str, "false")) {
-        imm->v_bool = false;
-      } else if (!strcmp(str, "true")) {
-        imm->v_bool = true;
-      } else if (str[0] == '\0') {
-        imm->v_bool = !imm->v_bool;
-      } else {
-        assert(false && "Bad bool value");
-      }
-      break;
-    }
-    case NUM_KIND_UINT: {
-      switch (imm->num_index) {
-        case INT_SIZE_8:
-          if (str[0] != '\'')
-            imm->v_uint8 = str2uint8(str);
-          else {
-            if (str[1] != '\\')
-              imm->v_uint8 = str[1];
-            else
-              imm->v_uint8 = str[2];
-          }
-          break;
-        case INT_SIZE_16:
-          imm->v_uint16 = str2uint16(str); break;
-        case INT_SIZE_32:
-          imm->v_uint32 = str2uint32(str); break;
-        case INT_SIZE_64:
-          imm->v_uint64 = str2uint64(str); break;
-        default: assert(false && "Unhandled case in switch statement");
-      }
-      break;
-    }
-    case NUM_KIND_INT: {
-      switch (imm->num_index) {
-        case INT_SIZE_8:
-          if (str[0] != '\'')
-            imm->v_int8 = str2int8(str);
-          else {
-            if (str[1] != '\\')
-              imm->v_int8 = str[1];
-            else
-              imm->v_int8 = str[2];
-          }
-          break;
-        case INT_SIZE_16:
-          imm->v_int16 = str2int16(str); break;
-        case INT_SIZE_32:
-          imm->v_int32 = str2int32(str); break;
-        case INT_SIZE_64:
-          imm->v_int64 = str2int64(str); break;
-        default: assert(false && "Unhandled case in switch statement");
-      }
-      break;
-    }
-    case NUM_KIND_REAL: case NUM_KIND_IMAG:
-      switch (imm->num_index) {
-        case FLOAT_SIZE_32:
-          imm->v_float32 = atof( str); break;
-        case FLOAT_SIZE_64:
-          imm->v_float64 = atof( str); break;
-        default: assert(false && "Unhandled case in switch statement");
-      }
-      break;
-  }
-}
-
 
 // these support coerce_immediate (param casts)
 ImmString istrFromUserBool(chpl::Context* context, bool b) {
