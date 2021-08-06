@@ -40,9 +40,11 @@ module LocaleModel {
     return chpl_gpu_has_context() && chpl_task_getRequestedSubloc()>0;
   }
 
-  /*private inline*/
-  /*proc addrIsInGPU(addr:c_void_ptr): bool {*/
-  /*}*/
+  private inline
+  proc addrIsInGPU(addr:c_void_ptr): bool {
+    extern proc chpl_gpu_is_device_ptr(ptr): bool;
+    return chpl_gpu_is_device_ptr(addr);
+  }
 
   pragma "fn synchronization free"
   private extern proc chpl_memhook_md_num(): chpl_mem_descInt_t;
@@ -144,16 +146,15 @@ module LocaleModel {
     pragma "insert line file info"
     extern proc chpl_gpu_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
 
-    halt("Not ready for realloc, yet");
-
-    /*const useGPU = if ptr == nil*/
-                   /*then allocatingInGPUSublocale()*/
-                   /*else addrIsInGPU(ptr);*/
-
-    /*if useGPU then*/
-      /*return chpl_gpu_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());*/
-    /*else*/
-      /*return chpl_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());*/
+    if addrIsInGPU(ptr) {
+      if !allocatingInGPUSublocale() {
+        halt("Trying to realloc a GPU pointer outside a GPU sublocale");
+      }
+      return chpl_gpu_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());
+    }
+    else {
+      return chpl_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());
+    }
   }
 
   pragma "fn synchronization free"
@@ -163,14 +164,10 @@ module LocaleModel {
     pragma "insert line file info"
     extern proc chpl_mem_good_alloc_size(min_size:size_t) : size_t;
 
-    /*pragma "fn synchronization free"*/
-    /*pragma "insert line file info"*/
-    /*extern proc chpl_gpu_mem_good_alloc_size(min_size:size_t) : size_t;*/
-
-    /*if allocatingInGPUSublocale() then*/
-      /*return chpl_gpu_mem_good_alloc_size(min_size.safeCast(size_t)).safeCast(min_size.type);*/
-    /*else*/
-      return chpl_mem_good_alloc_size(min_size.safeCast(size_t)).safeCast(min_size.type);
+    // This is currently here only for completeness: I am not sure if need
+    // something like this for the GPU, and it doesn't call anything specific
+    // for it.
+    return chpl_mem_good_alloc_size(min_size.safeCast(size_t)).safeCast(min_size.type);
   }
 
   pragma "locale model free"
@@ -184,11 +181,15 @@ module LocaleModel {
     pragma "insert line file info"
     extern proc chpl_gpu_mem_free(ptr:c_void_ptr) : void;
 
-    // TODO do we need a free for wide pointers?
-    /*if addrIsInGPU(ptr) then*/
-      /*chpl_gpu_mem_free(ptr);*/
-    /*else*/
-      /*chpl_mem_free(ptr);*/
+    if addrIsInGPU(ptr) {
+      if !allocatingInGPUSublocale() {
+        halt("Trying to free a GPU pointer outside a GPU sublocale");
+      }
+      chpl_gpu_mem_free(ptr);
+    }
+    else {
+      chpl_mem_free(ptr);
+    }
   }
 
   //

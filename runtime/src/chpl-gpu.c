@@ -119,9 +119,31 @@ static void chpl_gpu_check_device_ptr(void* ptr) {
   size_t size;
   CUDA_CALL(cuMemGetAddressRange(&base, &size, ((CUdeviceptr)ptr)));
 
-
   assert(base);
   assert(size > 0);
+}
+
+bool chpl_gpu_is_device_ptr(void* ptr) {
+  unsigned int res;
+  
+  // We call CUDA_CALL later, because we want to treat some error codes
+  // separately
+  CUresult ret_val = cuPointerGetAttribute(&res, CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+                                           (CUdeviceptr)ptr);
+
+  if (ret_val == CUDA_SUCCESS) {
+    return res == CU_MEMORYTYPE_DEVICE;
+  }
+  else if (ret_val == CUDA_ERROR_INVALID_VALUE ||
+           ret_val == CUDA_ERROR_NOT_INITIALIZED ||
+           ret_val == CUDA_ERROR_DEINITIALIZED) {
+    return false;  // this is a cpu pointer that CUDA doesn't even know about
+  }
+
+  // there must be an error in calling the cuda function. report that.
+  CUDA_CALL(ret_val);
+
+  return false;
 }
 
 size_t chpl_gpu_get_alloc_size(void* ptr) {
@@ -268,11 +290,22 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
                            int32_t lineno, int32_t filename) {
   CHPL_GPU_LOG("chpl_gpu_mem_realloc called. Size:%d\n", size);
 
-  /*size_t cur_*/
+  chpl_gpu_check_device_ptr(memAlloc);
+
+  size_t alloc_size = chpl_gpu_get_alloc_size(memAlloc);
+
+  if (size == alloc_size) {
+    return memAlloc;
+  }
+
+  // TODO we could probably do something smarter, especially for the case where
+  // the new allocation size is smaller than the original allocation size.
 
   CUdeviceptr ptr;
   CUDA_CALL(cuMemAlloc(&ptr,  size));
-  CUDA_CALL(cuMemsetD8(ptr, 0, size));
+  CUDA_CALL(cuMemcpyDtoD(ptr, (CUdeviceptr)memAlloc, alloc_size));
+  CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
+
   return (void*)ptr;
 }
 
