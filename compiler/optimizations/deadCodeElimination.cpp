@@ -507,7 +507,7 @@ static  CallExpr* generateGPUCall(FnSymbol* kernel,
   return call;
 }
 
-static Expr* generateIndexComputation() {
+static CallExpr* generateIndexComputation() {
   // Generates Chapel AST corresponding to the following CUDA code:
   // blockIdx.x * blockDim.x + threadIdx.x
   CallExpr* call = new CallExpr(PRIM_ADD,
