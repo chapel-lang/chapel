@@ -62,8 +62,8 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   // create the mapping handling named and default arguments
 
   // clear the current mapping
-  byFormalIdx.empty();
-  actualIdxToFormalIdx.empty();
+  byFormalIdx.clear();
+  actualIdxToFormalIdx.clear();
   mappingIsValid = false;
   failingActualIdx = -1;
 
