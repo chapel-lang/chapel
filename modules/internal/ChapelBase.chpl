@@ -911,6 +911,18 @@ module ChapelBase {
   pragma "no doc"
   extern type chpl_mem_descInt_t = int(16);
 
+  private inline
+  proc addrIsInGPU(addr:c_void_ptr): bool {
+    extern proc chpl_gpu_is_device_ptr(ptr): bool;
+    return chpl_gpu_is_device_ptr(addr);
+  }
+
+  private inline
+  proc allocatingInGPUSublocale(): bool {
+    extern proc chpl_gpu_has_context(): bool;
+    return chpl_gpu_has_context() && chpl_task_getRequestedSubloc()>0;
+  }
+
   // dynamic data block class
   // (note that c_ptr(type) is similar, but local only,
   //  and defined in SysBasic.chpl)
@@ -968,6 +980,25 @@ module ChapelBase {
   proc _ddata_allocate_noinit(type eltType, size: integral,
                                      out callPostAlloc: bool,
                                      subloc = c_sublocid_none) {
+    if CHPL_LOCALE_MODEL == "gpu" {
+      if allocatingInGPUSublocale() {
+        /*pragma "fn synchronization free"*/
+        /*pragma "insert line file info"*/
+        /*extern proc chpl_mem_alloc(n: size_t, desc);*/
+
+        extern proc printf(s...);
+        printf("Allocating in the GPU sublocale\n");
+        callPostAlloc = false;
+
+        var ret: _ddata(eltType);
+
+        ret = chpl_here_alloc(size:uint(64) *
+            (_ddata_sizeof_element(ret)):uint(64), 0): _ddata(eltType);
+
+        return ret;
+      }
+    }
+
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_alloc(nmemb: size_t, eltSize: size_t,
@@ -1058,6 +1089,12 @@ module ChapelBase {
 
 
   inline proc _ddata_free(data: _ddata, size: integral) {
+    if CHPL_LOCALE_MODEL == "gpu" {
+      if addrIsInGPU(data:c_void_ptr) {
+        chpl_here_free(data:c_void_ptr);
+        return;
+      }
+    }
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_free(data: c_void_ptr,

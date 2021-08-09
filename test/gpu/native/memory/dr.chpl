@@ -1,35 +1,23 @@
+use CPtr;
+
 extern proc chpl_gpu_init(): void;
 
-/*class MyClass {*/
-  /*var x: int;*/
-
-  /*[>pragma "codegen for GPU"<]*/
-  /*proc init() {*/
-
-  /*}*/
-
-/*}*/
-
-/*on here.getChild(1) {*/
-  /*chpl_gpu_init();*/
-
-  /*var c = new unmanaged MyClass();*/
-
-  /*[>var arr: [1..10] int;<]*/
-
-/*}*/
-
 pragma "always resolve function"
 pragma "codegen for GPU"
-export proc bar() {
-
+export proc setIndex(ptr: c_ptr(int)) {
+  ptr[2] = 2;
 }
 
-pragma "always resolve function"
-pragma "codegen for GPU"
-export proc foo() {
-  bar();
-}
+config const n = 5;
 
-chpl_gpu_init();
-__primitive("gpu kernel launch flat", c"foo", 1, 1, 0);
+on here.getChild(1) {
+  chpl_gpu_init();
+
+  var a: [0..#n] int;
+
+  for i in a.domain {
+    __primitive("gpu kernel launch flat", c"setIndex", 1, 1, 1, c_ptrTo(a[0]));
+  }
+
+  writeln(a);
+}

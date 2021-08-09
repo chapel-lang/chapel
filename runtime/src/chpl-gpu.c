@@ -29,7 +29,7 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
- #define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
+ /*#define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this*/
 
 static void CHPL_GPU_LOG(const char *str, ...) {
 #ifdef CHPL_GPU_DEBUG
@@ -133,7 +133,7 @@ bool chpl_gpu_is_device_ptr(void* ptr) {
                                            (CUdeviceptr)ptr);
 
   if (ret_val == CUDA_SUCCESS) {
-    return res == CU_MEMORYTYPE_DEVICE;
+    return res == CU_MEMORYTYPE_DEVICE || res == CU_MEMORYTYPE_UNIFIED;
   }
   else if (ret_val == CUDA_ERROR_INVALID_VALUE ||
            ret_val == CUDA_ERROR_NOT_INITIALIZED ||
@@ -271,8 +271,12 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
                filename, lineno);
 
   CUdeviceptr ptr;
-  CUDA_CALL(cuMemAlloc(&ptr,  size));
+  CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
+
+  CHPL_GPU_LOG("chpl_gpu_mem_alloc returning %p\n", (void*)ptr);
+
   return (void*)ptr;
+
 }
 
 void* chpl_gpu_mem_calloc(size_t number, size_t size,
@@ -281,7 +285,7 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
   CHPL_GPU_LOG("chpl_gpu_mem_calloc called. Size:%d\n", size);
 
   CUdeviceptr ptr;
-  CUDA_CALL(cuMemAlloc(&ptr,  size));
+  CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
   CUDA_CALL(cuMemsetD8(ptr, 0, size));
   return (void*)ptr;
 }
@@ -303,7 +307,7 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
   // the new allocation size is smaller than the original allocation size.
 
   CUdeviceptr ptr;
-  CUDA_CALL(cuMemAlloc(&ptr,  size));
+  CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
   CUDA_CALL(cuMemcpyDtoD(ptr, (CUdeviceptr)memAlloc, cur_size));
   CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
 
@@ -320,7 +324,7 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
 }
 
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
-  CHPL_GPU_LOG("chpl_gpu_mem_free called.\n");
+  CHPL_GPU_LOG("chpl_gpu_mem_free called. Ptr=%p\n", memAlloc);
 
   chpl_gpu_check_device_ptr(memAlloc);
 
