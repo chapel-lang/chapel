@@ -507,6 +507,16 @@ static  CallExpr* generateGPUCall(FnSymbol* kernel,
   return call;
 }
 
+static Expr* generateIndexComputation() {
+  // Generates Chapel AST corresponding to the following CUDA code:
+  // blockIdx.x * blockDim.x + threadIdx.x
+  CallExpr* call = new CallExpr(PRIM_ADD,
+    new CallExpr(PRIM_MULT,
+      new CallExpr(PRIM_GPU_BLOCKDIM_X),
+      new CallExpr(PRIM_GPU_BLOCKIDX_X)),
+    new CallExpr(PRIM_GPU_THREADIDX_X));
+  return call;
+}
 
 static void outlineGPUKernels() {
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
@@ -578,7 +588,7 @@ static void outlineGPUKernels() {
                       outlinedFunction->insertAtTail(new DefExpr(fakeIndex));
                       outlinedFunction->insertAtTail(new CallExpr(PRIM_MOVE,
                                                                   fakeIndex,
-                                                                  new_IntSymbol(0)));
+                                                                  generateIndexComputation()));
 
                       copyMap.put(sym, fakeIndex);
                     }
@@ -663,6 +673,7 @@ static void outlineGPUKernels() {
           }
 
           CallExpr* gpuCall = generateGPUCall(outlinedFunction, kernelActuals);
+
           gpuLaunchBlock->insertAtTail(gpuCall);
           gpuLaunchBlock->flattenAndRemove();
 
