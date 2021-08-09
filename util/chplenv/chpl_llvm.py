@@ -7,7 +7,6 @@ import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party
 from utils import memoize, error, run_command, try_run_command, warning
 import chpl_make
-import utils
 
 # returns a tuple of supported major LLVM versions as strings
 def llvm_versions():
@@ -205,63 +204,30 @@ def get_llvm_clang_command_name(lang):
     else:
         return 'clang'
 
-def myrun(cmd, arg=None):
-
-    use_cmd = list(cmd)
-    if arg:
-        use_cmd += [arg]
-
-    # Run $use_cmd but filter out e.g. make[2]: lines
-    # (about which directory we are in)
-    ret = ""
-    output = utils.run_command(use_cmd)
-    lines = [line for line in output.splitlines(True)
-                  if not line.startswith("make")]
-    ret = ''.join(lines)
-
-    return ret
-
 # lang should be C or CXX
 @memoize
 def get_llvm_clang(lang):
     clang_name = get_llvm_clang_command_name(lang)
-    make = chpl_make.get()
-
-    orig_make = make
-    # Do not print directory changes.
-    make = [make, "--no-print-directory"]
-
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    chpl_home_dir = os.path.dirname(os.path.dirname(script_dir))
-    os.environ["CHPL_MAKE_HOME"] = chpl_home_dir
-    make_helper = make + ["-f", chpl_home_dir + "/runtime/etc/Makefile.include"]
 
     llvm_val = get()
     if llvm_val == 'system':
         bindir = get_system_llvm_config_bindir()
         clang = os.path.join(bindir, clang_name)
-        # llvminstall = myrun(make_helper, "printllvminstall")
-        # sys.stdout.write("llvminstall: " + llvmInstall + "\n")
-        # llvminstall = llvminstall.strip()
-        llvminstall = get_chpl_third_party() + "/llvm/install/" + get_uniq_cfg_path_for(llvm_val)
-        fname = os.path.join(llvminstall, "configured-clang-sysroot-arguments")
-#        sys.stdout.write("fname: " + fname + "\n")
-        if os.path.isfile(fname):
-            with open(fname) as f:
-                for line in f:
-                    clang += " " + line.rstrip()
-#        sys.stdout.write("system: " + clang + "\n")
-        return clang
     elif llvm_val == 'bundled':
         llvm_subdir = get_bundled_llvm_dir()
         clang = os.path.join(llvm_subdir, 'bin', clang_name)
-        llvminstall = myrun(make_helper, "printllvminstall")
-        llvminstall = llvminstall.strip()
-        clang = os.path.join(llvminstall, "configured-clang-sysroot-arguments")
-        sys.stdout.write("bundled: " + clang + "\n")
-        return clang
     else:
         return ''
+    # tack on the contents of configured-clang-sysroot-arguments
+    llvminstall = get_chpl_third_party() + "/llvm/install/" + get_uniq_cfg_path_for(llvm_val)
+    fname = os.path.join(llvminstall, "configured-clang-sysroot-arguments")
+    if os.path.isfile(fname):
+        with open(fname) as f:
+            for line in f:
+                clang += " " + line.rstrip()
+#        sys.stdout.write(llvm_val + ": " + clang + "\n")
+    return clang
+
 
 def has_compatible_installed_llvm():
     llvm_config = find_system_llvm_config()
