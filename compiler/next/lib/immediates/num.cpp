@@ -916,10 +916,10 @@ fold_constant(chpl::Context* context, int op,
     case P_prim_minus: DO_FOLD1(-); break;
     case P_prim_not: DO_FOLD1I(~); break;
     case P_prim_lnot: DO_FOLD1(!); break;
-  case P_prim_pow: {
-    DO_FOLDPOW();
-    break;
-  }
+    case P_prim_pow: {
+      DO_FOLDPOW();
+      break;
+    }
   }
 }
 
