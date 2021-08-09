@@ -1,0 +1,2 @@
+testParenFulVsLess.chpl:6: error: Can't overload function 'foo' with and without parentheses
+  other version at: testParenFulVsLess.chpl:1

@@ -398,6 +398,26 @@ bool ResolveScope::extend(Symbol* newSym, bool isTopLevel) {
 
     // Do not complain if they are both functions
     if (oldFn != NULL && newFn != NULL) {
+      FnSymbol* parenLess = NULL;
+      FnSymbol* parenFull = NULL;
+      if (oldFn->hasFlag(FLAG_NO_PARENS) && oldFn->_this == NULL) {
+        parenLess = oldFn;
+      } else {
+        parenFull = oldFn;
+      }
+      if (newFn->hasFlag(FLAG_NO_PARENS) && newFn->_this == NULL) {
+        if (parenLess != NULL) {
+          USR_FATAL(newSym, "Can't overload paren-less function '%s'; previous definition at:\n  %s", name, oldSym->stringLoc());
+        } else {
+          parenLess = newFn;
+        }
+      } else {
+        parenFull = newFn;
+      }
+      if (parenLess) {
+        USR_FATAL(parenFull, "Can't overload function '%s' with and without parentheses\n  other version at: %s", name, parenLess->stringLoc());
+      }
+
       retval = true;
 
     // Methods currently leak their scope and can conflict with variables
