@@ -583,14 +583,14 @@ static void outlineGPUKernels() {
                   if (isIndexVariable(sym, loop)) {
                     if (indexSymbol == NULL) {
                       indexSymbol = sym;
-                      VarSymbol* fakeIndex = new VarSymbol("fakeIndex", sym->type);
+                      VarSymbol* flatIndex = new VarSymbol("flatIndex", sym->type);
 
-                      outlinedFunction->insertAtTail(new DefExpr(fakeIndex));
+                      outlinedFunction->insertAtTail(new DefExpr(flatIndex));
                       outlinedFunction->insertAtTail(new CallExpr(PRIM_MOVE,
-                                                                  fakeIndex,
+                                                                  flatIndex,
                                                                   generateIndexComputation()));
 
-                      copyMap.put(sym, fakeIndex);
+                      copyMap.put(sym, flatIndex);
                     }
                   }
                   else {
