@@ -172,7 +172,7 @@ istr(int i) {
 //
 // returns a canonicalized substring that contains the first part of
 // 's' up to 'e'
-// note: e must be a pointer that points within in s
+// note: e must be a pointer that points within s
 //
 const char* asubstr(const char* s, const char* e) {
   char* ss = (char*)malloc(e-s+1);

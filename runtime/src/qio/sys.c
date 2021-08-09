@@ -1907,7 +1907,7 @@ err_t sys_select(int nfds, fd_set* readfds, fd_set* writefds, fd_set* exceptfds,
   got_nset = select(nfds, &temp_readfds, &temp_writefds, &temp_exceptfds, &first_timeout);
   if (got_nset == -1) err_out = errno; // save error
 
-  // check for error/success else check if first_timeout subtraced all the timeout.
+  // check for error/success else check if first_timeout subtracted all the timeout.
   if(got_nset != 0 || (timeout != NULL && second_timeout.tv_sec == 0 && second_timeout.tv_usec == 0)){
     *nset = got_nset;
     return err_out;

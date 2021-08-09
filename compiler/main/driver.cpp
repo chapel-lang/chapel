@@ -1479,7 +1479,7 @@ static void checkLLVMCodeGen() {
   // LLVM does not currently work on 32-bit x86
   bool unsupportedLlvmConfiguration = (0 == strcmp(CHPL_TARGET_ARCH, "i686"));
   if (fLlvmCodegen && unsupportedLlvmConfiguration)
-    USR_FATAL("CHPL_TARGET_COMPLIER=llvm not yet supported for this architecture");
+    USR_FATAL("CHPL_TARGET_COMPILER=llvm not yet supported for this architecture");
 
   if (0 == strcmp(CHPL_LLVM, "none")) {
     if (fLlvmCodegen)

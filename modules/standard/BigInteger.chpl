@@ -4157,7 +4157,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
      :type rounding: ``round``
 
      .. warning::
-        If the denominator is zero, the progam behavior is undefined.
+        If the denominator is zero, the program behavior is undefined.
   */
   proc bigint.divQ(const ref numer: bigint,
                              denom: integral,
