@@ -60,6 +60,27 @@ proc testSingleStringShortOptEqualsExtra(test: borrowed Test) throws {
   test.assertTrue(false);
 }
 
+// test to catch undefined args entered at beginning of cmd string
+proc testBadArgsAtFront(test: borrowed Test) throws {
+  var argList = ["progName","badArg1","--BadFlag","-n=twenty"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=1);
+
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
 // a short string opt with range of value with = and OK # values supplied
 proc testMultiStringShortOptEqualsOK(test: borrowed Test) throws {
   var argList = ["progName","-n=twenty","thirty"];

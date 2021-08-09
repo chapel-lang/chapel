@@ -10,6 +10,10 @@ testSingleStringShortOptEqualsExtra()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testBadArgsAtFront()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 testMultiStringShortOptEqualsOK()
 Flavour: OK
 ======================================================================
@@ -443,6 +447,7 @@ Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
 Found some unrecognizable arguments: thirty
+Found some unrecognizable arguments: badArg1 --BadFlag
 Use '-' or '--' to indicate options, or use positional arguments.
 Use '-' or '--' to indicate options, or use positional arguments.
 StringOpt Too many values: expected 1..1 got 3
@@ -473,8 +478,8 @@ Option name StringOpt is previously defined
 Option flag -n is previously defined
 Option flag --strArg is previously defined
 Found some unrecognizable arguments: subCommandNone
-Found some unrecognizable arguments: subCommandNone subCommand1
-Found some unrecognizable arguments: -x -n twenty
+Found some unrecognizable arguments: subCommandNone
+Found some unrecognizable arguments: -x
 StringOpt1 has extra values
 BoolFlag Not enough values: expected 1..1 got 0
 Found some unrecognizable arguments: false

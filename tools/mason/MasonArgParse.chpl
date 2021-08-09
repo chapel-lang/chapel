@@ -440,7 +440,7 @@ module MasonArgParse {
       // check that we consumed everything we expected to
       if endPos < endIdx then{
         throw new ArgumentError("Found some unrecognizable arguments: " +
-                                " ".join(arguments[endPos..]));
+                                " ".join(arguments[endPos..<endIdx]));
       }
       return endPos;
     }
@@ -501,12 +501,6 @@ module MasonArgParse {
         firstFlagIdx = arrayOptionIndices[0][0];
       if firstFlagIdx > 0 then
         endPos = _parsePositionals(argsList.toArray(), firstFlagIdx);
-
-
-      // check for undefined argument provided at beginning of cmd string
-      if arrayOptionIndices.size > 0 && arrayOptionIndices[0][0] != endPos {
-          throw new ArgumentError("Found undefined values: " + argsList[0]);
-      }
 
       // try to match for each of the identified options
       for i in arrayOptionIndices.indices {
