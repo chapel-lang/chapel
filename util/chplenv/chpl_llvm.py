@@ -6,7 +6,6 @@ import sys
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party
 from utils import memoize, error, run_command, try_run_command, warning
-import chpl_make
 
 # returns a tuple of supported major LLVM versions as strings
 def llvm_versions():
