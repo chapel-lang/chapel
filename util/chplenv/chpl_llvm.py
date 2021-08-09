@@ -142,7 +142,7 @@ def find_system_llvm_config():
     if command and version and not config_err:
         return found[0]
 
-    return ''
+    return 'none'
 
 
 @memoize
@@ -163,9 +163,12 @@ def get_llvm_config():
     return llvm_config
 
 @memoize
-def validate_llvm_config():
+def validate_llvm_config(llvm_config=None):
     llvm_val = get()
-    llvm_config = get_llvm_config()
+    # We pass in llvm_config if has already been computed (so we don't
+    # end up in an infinite loop).
+    if llvm_config is None:
+      llvm_config = get_llvm_config()
     if llvm_val == 'system':
         if llvm_config == 'none':
             error("CHPL_LLVM=system but could not find an installed LLVM"
@@ -183,6 +186,7 @@ def validate_llvm_config():
 @memoize
 def get_system_llvm_config_bindir():
     llvm_config = get_llvm_config()
+    validate_llvm_config(llvm_config)
     bindir = run_command([llvm_config, '--bindir']).strip()
 
     if os.path.isdir(bindir):
