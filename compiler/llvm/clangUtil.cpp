@@ -670,8 +670,7 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
       bool canHandle = false;
       if (tok.getKind() == tok::identifier) {
         IdentifierInfo* tokId = tok.getIdentifierInfo();
-        if (const clang::MacroInfo* macro
-              = info->lvt->getMacro(tokId->getName()))
+        if (info->lvt->getMacro(tokId->getName()))
           canHandle = true;
       }
       if (!canHandle)
