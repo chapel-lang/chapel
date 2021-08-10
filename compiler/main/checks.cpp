@@ -167,14 +167,6 @@ void check_checkResolved()
   // The checkResolved pass should not make any changes, so skip checks.
 }
 
-void check_markGPUSuitableLoops()
-{
-  check_afterEveryPass();
-  check_afterNormalization();
-  check_afterResolution();
-  check_afterResolveIntents();
-}
-
 void check_replaceArrayAccessesWithRefTemps()
 {
   check_afterEveryPass();

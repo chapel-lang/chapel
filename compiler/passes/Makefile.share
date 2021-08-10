@@ -39,7 +39,6 @@ PASSES_SRCS =                                              \
         InitNormalize.cpp                                  \
         insertLineNumbers.cpp                              \
         insertWideReferences.cpp                           \
-        markGPUSuitableLoops.cpp                           \
         normalize.cpp                                      \
         normalizeErrors.cpp                                \
         parallel.cpp                                       \

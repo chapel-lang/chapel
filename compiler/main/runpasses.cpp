@@ -55,7 +55,6 @@ struct PassInfo {
 #define LOG_resolve                            'r'
 #define LOG_resolveIntents                     LOG_NO_SHORT
 #define LOG_checkResolved                      LOG_NEVER
-#define LOG_markGPUSuitableLoops               LOG_NO_SHORT
 #define LOG_replaceArrayAccessesWithRefTemps   LOG_NO_SHORT
 #define LOG_flattenFunctions                   LOG_NO_SHORT
 #define LOG_cullOverReferences                 LOG_NO_SHORT
@@ -119,7 +118,6 @@ static PassInfo sPassList[] = {
   RUN(resolveIntents),          // resolve argument intents
   RUN(checkResolved),           // checks semantics of resolved AST
 
-  RUN(markGPUSuitableLoops),    // mark loops that can run on GPU
   RUN(replaceArrayAccessesWithRefTemps), // replace multiple array access calls with reference temps
 
   // Post-resolution cleanup
