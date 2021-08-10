@@ -30,7 +30,7 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
-//#define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
+// #define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
 
 static void CHPL_GPU_LOG(const char *str, ...) {
 #ifdef CHPL_GPU_DEBUG
@@ -115,16 +115,6 @@ static void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) 
   return (void*)function;
 }
 
-static void chpl_gpu_check_device_ptr(void* ptr) {
-  /*CUdeviceptr base;*/
-  /*size_t size;*/
-  /*CUDA_CALL(cuMemGetAddressRange(&base, &size, ((CUdeviceptr)ptr)));*/
-
-  /*assert(base);*/
-  /*assert(size > 0);*/
-  assert(chpl_gpu_is_device_ptr(ptr));
-}
-
 bool chpl_gpu_is_device_ptr(void* ptr) {
   unsigned int res;
   
@@ -142,7 +132,7 @@ bool chpl_gpu_is_device_ptr(void* ptr) {
     return false;  // this is a cpu pointer that CUDA doesn't even know about
   }
 
-  // there must be an error in calling the cuda function. report that.
+  // there must have been an error in calling the cuda function. report that.
   CUDA_CALL(ret_val);
 
   return false;
@@ -192,7 +182,7 @@ static void chpl_gpu_launch_kernel_help(const char* name,
 
     // TODO: we can remove this check after some point, or enable only if some
     // advanced debugging is enabled.
-    chpl_gpu_check_device_ptr(*((void**)kernel_params[i]));
+    assert(chpl_gpu_is_device_ptr((*((void**)kernel_params[i]))));
 
     CHPL_GPU_LOG("\tKernel parameter %d: %p\n", i, kernel_params[i]);
   }
@@ -218,7 +208,7 @@ static void chpl_gpu_launch_kernel_help(const char* name,
 }
 
 void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n) {
-  chpl_gpu_check_device_ptr(src);
+  assert(chpl_gpu_is_device_ptr(src));
 
   CHPL_GPU_LOG("Copying %zu bytes from device to host\n", n);
 
@@ -226,7 +216,7 @@ void chpl_gpu_copy_device_to_host(void* dst, void* src, size_t n) {
 }
 
 void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n) {
-  chpl_gpu_check_device_ptr(dst);
+  assert(chpl_gpu_is_device_ptr(dst));
 
   CHPL_GPU_LOG("Copying %zu bytes from host to device\n", n);
 
@@ -300,7 +290,7 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
                            int32_t lineno, int32_t filename) {
   CHPL_GPU_LOG("chpl_gpu_mem_realloc called. Size:%d\n", size);
 
-  chpl_gpu_check_device_ptr(memAlloc);
+  assert(chpl_gpu_is_device_ptr(memAlloc));
 
   size_t cur_size = chpl_gpu_get_alloc_size(memAlloc);
 
@@ -331,7 +321,7 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
   CHPL_GPU_LOG("chpl_gpu_mem_free called. Ptr=%p\n", memAlloc);
 
-  chpl_gpu_check_device_ptr(memAlloc);
+  assert(chpl_gpu_is_device_ptr(memAlloc));
 
   CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
 }
