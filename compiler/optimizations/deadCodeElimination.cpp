@@ -611,10 +611,8 @@ static VarSymbol* generateIndexComputation(FnSymbol* fn, Symbol* sym) {
   return tempVar1;
 }
 
-static  CallExpr* generateGPUCall(VarSymbol *varBlockSize,
-                                  FnSymbol* kernel,
-                                  std::vector<VarSymbol*> actuals)
-{
+static  CallExpr* generateGPUCall(FnSymbol* kernel,
+                                  std::vector<Symbol*> actuals) {
   CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
   call->insertAtTail(new_CStringSymbol(kernel->cname));
 
@@ -655,7 +653,9 @@ static void outlineGPUKernels() {
           std::vector<SymExpr*> arraysWhoseDataAccessed;
           std::vector<CallExpr*> fieldAccessors;
           std::vector<Type*> formalTypes;
-          std::vector<VarSymbol*> kernelActuals;
+          std::vector<Symbol*> kernelActuals;
+
+
 
           Symbol* indexSymbol = NULL;
           SymbolMap copyMap;
@@ -701,39 +701,61 @@ static void outlineGPUKernels() {
                     }
                   }
                   else {
-                    // if we hit a ddata/cptr that's defined outside the loop,
-                    // try to associate it with an "array". Also, make that
-                    // ddata into a formal in the gpu kernel
-                    if (sym->type->symbol->hasFlag(FLAG_DATA_CLASS)) {
-                      if (CallExpr* firstParent = toCallExpr(symExpr->parentExpr)) {
-                        if (firstParent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-                          SymExpr* maybeArrSymExpr = toSymExpr(firstParent->get(1));
-                          INT_ASSERT(maybeArrSymExpr);
+                    std::cout << "Declared outside the loop" << std::endl;
+                    list_view(sym);
 
-                          if (CallExpr* secondParent =
-                            toCallExpr(firstParent->parentExpr))
-                          {
-                            if (secondParent->isPrimitive(PRIM_MOVE)) {
-                              SymExpr* lhsSE = toSymExpr(secondParent->get(1));
-                              INT_ASSERT(lhsSE);
+                    if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
+                      if (parent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+                        if (symExpr == parent->get(2)) {  // this is a field
+                          // do nothing
+                        }
+                        else if (symExpr == parent->get(1)) {
+                          Type* symType = symExpr->typeInfo();
+                          ArgSymbol* newFormal = new ArgSymbol(INTENT_IN,
+                                                               "data_formal",
+                                                               symType);
+                          formalTypes.push_back(symType);
+                          outlinedFunction->insertFormalAtTail(newFormal);
+                          copyMap.put(sym, newFormal);
+                          copyNode = true;
 
-                              ArgSymbol* newFormal = new ArgSymbol(INTENT_IN,
-                                "data_formal", lhsSE->typeInfo());
-                              formalTypes.push_back(lhsSE->typeInfo());
-                              outlinedFunction->insertFormalAtTail(newFormal);
-                              copyMap.put(lhsSE->symbol(), newFormal);
-                              copyNode = false;
-
-                              arraysWhoseDataAccessed.push_back(maybeArrSymExpr);
-                              fieldAccessors.push_back(firstParent);
-                            }
-                          }
+                          kernelActuals.push_back(symExpr->symbol());
+                        }
+                        else {
+                          INT_FATAL("Malformed PRIM_GET_MEMBER_VALUE");
                         }
                       }
                     }
-                    else {
-                      maybeArrSymExpr.push_back(symExpr);
-                    }
+                    // if we hit a ddata/cptr that's defined outside the loop,
+                    // try to associate it with an "array". Also, make that
+                    // ddata into a formal in the gpu kernel
+                    //if (sym->type->symbol->hasFlag(FLAG_DATA_CLASS)) {
+                      //if (CallExpr* firstParent = toCallExpr(symExpr->parentExpr)) {
+                        //if (firstParent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+                          //SymExpr* maybeArrSymExpr = toSymExpr(firstParent->get(1));
+                          //INT_ASSERT(maybeArrSymExpr);
+
+                          //if (CallExpr* secondParent = toCallExpr(firstParent->parentExpr)) {
+                            //if (secondParent->isPrimitive(PRIM_MOVE)) {
+                              //SymExpr* lhsSE = toSymExpr(secondParent->get(1));
+                              //INT_ASSERT(lhsSE);
+
+                              //ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, "data_formal", lhsSE->typeInfo());
+                              //formalTypes.push_back(lhsSE->typeInfo());
+                              //outlinedFunction->insertFormalAtTail(newFormal);
+                              //copyMap.put(lhsSE->symbol(), newFormal);
+                              //copyNode = false;
+
+                              //arraysWhoseDataAccessed.push_back(maybeArrSymExpr);
+                              //fieldAccessors.push_back(firstParent);
+                            //}
+                          //}
+                        //}
+                      //}
+                    //}
+                    //else {
+                      //maybeArrSymExpr.push_back(symExpr);
+                    //}
                   }
                 }
               }
@@ -744,34 +766,6 @@ static void outlineGPUKernels() {
             }
           }
 
-          // create the GPU launch block (that'll be flattened later). The fatal
-          // errors here can occur if there's a symbol inside the loop body that
-          // was defined outside, and its uses were not something that we
-          // understand. i.e. something that's not of a recognized array type
-          if (maybeArrSymExpr.size() == arraysWhoseDataAccessed.size()) {
-            std::vector<SymExpr*>::size_type i;
-            for (i = 0 ; i < maybeArrSymExpr.size() ; i++) {
-              if (maybeArrSymExpr[i]->symbol() !=
-                arraysWhoseDataAccessed[i]->symbol())
-              {
-                INT_FATAL("Something went wrong (1)");
-              }
-              else {
-                VarSymbol* newActual = new VarSymbol("data_actual",
-                  formalTypes[i]);
-                CallExpr* getPtrCall = toCallExpr(fieldAccessors[i]->remove());
-                CallExpr* moveCall = new CallExpr(PRIM_MOVE, newActual,
-                  getPtrCall);
-                gpuLaunchBlock->insertAtTail(new DefExpr(newActual));
-                gpuLaunchBlock->insertAtTail(moveCall);
-
-                kernelActuals.push_back(newActual);
-              }
-            }
-          }
-          else {
-            INT_FATAL("Something went wrong (2)");
-          }
 
           update_symbols(outlinedFunction->body, &copyMap);
           normalize(outlinedFunction);

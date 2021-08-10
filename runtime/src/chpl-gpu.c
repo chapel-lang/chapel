@@ -19,6 +19,7 @@
 
 #include "sys_basic.h"
 #include "chplrt.h"
+#include "chpl-linefile-support.h"
 #include "chpl-mem.h"
 #include "chpl-gpu.h"
 #include "chpl-tasks.h"
@@ -30,7 +31,7 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
-// #define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
+#define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
 
 static void CHPL_GPU_LOG(const char *str, ...) {
 #ifdef CHPL_GPU_DEBUG
@@ -181,7 +182,14 @@ static void chpl_gpu_launch_kernel_help(const char* name,
   CHPL_GPU_LOG("Creating kernel parameters\n");
 
   for (i=0 ; i<nargs ; i++) {
-    kernel_params[i] = va_arg(args, void*);
+    void* cur_arg = va_arg(args, void*);
+
+    void *gpu_arg = chpl_gpu_mem_alloc(192, 0, 0, 0);
+    chpl_gpu_copy_host_to_device(gpu_arg, cur_arg, 192);
+
+
+    /*kernel_params[i] = va_arg(args, void*);*/
+    kernel_params[i] = gpu_arg;
 
     CHPL_GPU_LOG("\tKernel parameter %d: %p%s\n", i, kernel_params[i],
                  chpl_gpu_is_device_ptr((*((void**)kernel_params[i]))) ?
@@ -263,8 +271,8 @@ bool chpl_gpu_has_context() {
 
 void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename) {
-  CHPL_GPU_LOG("chpl_gpu_mem_alloc called. Size:%d file:%d line:%d\n", size,
-               filename, lineno);
+  CHPL_GPU_LOG("chpl_gpu_mem_alloc called. Size:%d file:%s line:%d\n", size,
+               chpl_lookupFilename(filename), lineno);
 
   CUdeviceptr ptr;
   CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
