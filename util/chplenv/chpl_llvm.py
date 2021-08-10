@@ -218,13 +218,11 @@ def get_llvm_clang(lang):
     else:
         return ''
     # tack on the contents of configured-clang-sysroot-arguments
-    llvminstall = get_chpl_third_party() + "/llvm/install/" + get_uniq_cfg_path_for(llvm_val)
-    fname = os.path.join(llvminstall, "configured-clang-sysroot-arguments")
+    fname = os.path.join(get_chpl_third_party(), "llvm", "install", get_uniq_cfg_path_for(llvm_val), "configured-clang-sysroot-arguments")
     if os.path.isfile(fname):
         with open(fname) as f:
             for line in f:
                 clang += " " + line.rstrip()
-#        sys.stdout.write(llvm_val + ": " + clang + "\n")
     return clang
 
 
