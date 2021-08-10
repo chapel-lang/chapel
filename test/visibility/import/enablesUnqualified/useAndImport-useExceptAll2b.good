@@ -1,2 +1,0 @@
-useAndImport-useExceptAll2b.chpl:22: In function 'main':
-useAndImport-useExceptAll2b.chpl:23: error: 'x' undeclared (first use this function)

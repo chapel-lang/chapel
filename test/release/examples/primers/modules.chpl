@@ -535,20 +535,10 @@ module MainModule {
     }
 
     /* You can also ``use`` a module without making any symbols
-       available in an unqualified manner using an asterisk after
-       ``except``...
+       available in an unqualified manner using an empty identifier list after
+       ``only``.  This form is typically used by programmers who prefer to
+       always fully qualify accesses to their modules' symbols.
     */
-    {
-      use modToUse except *;
-      use Conflict except *;
-      writeln(modToUse.bar);  // Outputs modToUse.bar ('2')
-      writeln(Conflict.bar);  // Outputs Conflict.bar ('5')
-      // writeln(bar);        // this won't resolve since bar isn't available
-    }
-
-    /* ...or equivalently, an empty identifier list after ``only``.
-       These forms are typically used by programmers who prefer to
-       always fully qualify accesses to their modules' symbols. */
     {
       use modToUse only;
       use Conflict only;
@@ -557,7 +547,7 @@ module MainModule {
       // writeln(bar);        // this won't resolve since bar isn't available
     }
 
-    /* Again, these are similar to an ``import`` of just the module itself.
+    /* Again, this is similar to an ``import`` of just the module itself.
      */
     {
       import modToUse;
