@@ -313,6 +313,12 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
   CHPL_GPU_LOG("chpl_gpu_mem_memalign called. Size:%d\n", size);
   chpl_internal_error("Not ready to allocate aligned memory on GPU, yet.");
 
+  // ENGIN: I don't know if it is possible to allocate memory with custom
+  // alignment on GPU. It looks like GPU's typically have a default alignment
+  // (512?) that cannot be changed. I don't think we'd need more than that
+  // today, and if we want, we can play some pointer games to return something
+  // with a smaller alignment here.
+
   return NULL;
 }
 

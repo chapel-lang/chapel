@@ -911,18 +911,6 @@ module ChapelBase {
   pragma "no doc"
   extern type chpl_mem_descInt_t = int(16);
 
-  private inline
-  proc addrIsInGPU(addr:c_void_ptr): bool {
-    extern proc chpl_gpu_is_device_ptr(ptr): bool;
-    return chpl_gpu_is_device_ptr(addr);
-  }
-
-  private inline
-  proc allocatingInGPUSublocale(): bool {
-    extern proc chpl_gpu_has_context(): bool;
-    return chpl_gpu_has_context() && chpl_task_getRequestedSubloc()>0;
-  }
-
   // dynamic data block class
   // (note that c_ptr(type) is similar, but local only,
   //  and defined in SysBasic.chpl)

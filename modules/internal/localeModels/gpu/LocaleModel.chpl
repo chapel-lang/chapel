@@ -35,7 +35,7 @@ module LocaleModel {
   use IO, SysCTypes, CPtr;
 
   private inline
-  proc allocatingInGPUSublocale(): bool {
+  proc runningOnGPUSublocale(): bool {
     extern proc chpl_gpu_has_context(): bool;
     return chpl_gpu_has_context() && chpl_task_getRequestedSubloc()>0;
   }
@@ -69,7 +69,7 @@ module LocaleModel {
     extern proc chpl_gpu_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
 
 
-    if allocatingInGPUSublocale() then
+    if runningOnGPUSublocale() then
       return chpl_gpu_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
     else 
       return chpl_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
@@ -88,7 +88,7 @@ module LocaleModel {
     extern proc chpl_gpu_mem_alloc(size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
 
 
-    if allocatingInGPUSublocale() then
+    if runningOnGPUSublocale() then
       return chpl_gpu_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
     else
       return chpl_mem_alloc(size.safeCast(size_t), md + chpl_memhook_md_num());
@@ -107,7 +107,7 @@ module LocaleModel {
     pragma "insert line file info"
     extern proc chpl_gpu_mem_memalign(alignment:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
 
-    if allocatingInGPUSublocale() then
+    if runningOnGPUSublocale() then
       return chpl_gpu_mem_memalign(alignment.safeCast(size_t),
                                    size.safeCast(size_t),
                                    md + chpl_memhook_md_num());
@@ -129,7 +129,7 @@ module LocaleModel {
     pragma "insert line file info"
     extern proc chpl_gpu_mem_calloc(number:size_t, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
 
-    if allocatingInGPUSublocale() then
+    if runningOnGPUSublocale() then
       return chpl_gpu_mem_calloc(number.safeCast(size_t), size.safeCast(size_t), md + chpl_memhook_md_num());
     else
       return chpl_mem_calloc(number.safeCast(size_t), size.safeCast(size_t), md + chpl_memhook_md_num());
@@ -147,7 +147,7 @@ module LocaleModel {
     extern proc chpl_gpu_mem_realloc(ptr:c_void_ptr, size:size_t, md:chpl_mem_descInt_t) : c_void_ptr;
 
     if addrIsInGPU(ptr) {
-      if !allocatingInGPUSublocale() {
+      if !runningOnGPUSublocale() {
         halt("Trying to realloc a GPU pointer outside a GPU sublocale");
       }
       return chpl_gpu_mem_realloc(ptr, size.safeCast(size_t), md + chpl_memhook_md_num());
@@ -182,7 +182,7 @@ module LocaleModel {
     extern proc chpl_gpu_mem_free(ptr:c_void_ptr) : void;
 
     if addrIsInGPU(ptr) {
-      if !allocatingInGPUSublocale() {
+      if !runningOnGPUSublocale() {
         halt("Trying to free a GPU pointer outside a GPU sublocale");
       }
       chpl_gpu_mem_free(ptr);
