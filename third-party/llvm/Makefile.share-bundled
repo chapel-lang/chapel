@@ -1,6 +1,5 @@
 include $(THIRD_PARTY_DIR)/llvm/Makefile.share
 
-LLVM_CLANG_ARGUMENTS_FILE=${LLVM_INSTALL_DIR}/configured-clang-sysroot-arguments
 LLVM_CONFIG=$(LLVM_INSTALL_DIR)/bin/llvm-config
 export LLVM_CONFIG:=$(CHPL_MAKE_LLVM_CONFIG)
 TEST_LLVM_CONFIG:=$(shell test -x $(LLVM_CONFIG) && echo 1)
