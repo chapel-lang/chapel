@@ -149,18 +149,17 @@ module MasonArgParse {
       debugTrace("starting at pos: " + pos:string);
       debugTrace("Searching positions from: " + pos:string + " to "
                  + endPos:string);
-      while pos <= endPos
-      {
-        if args[pos] == this._name {
-          myArg._values.append(args[pos]);
-          debugTrace("matched cmd: " + args[pos] + " at pos: " + pos:string);
-          rest.extend(args[next..]);
-          return next;
-        }
-        pos = next;
-        next+=1;
+
+      if args[pos] == this._name {
+        myArg._values.append(args[pos]);
+        debugTrace("matched cmd: " + args[pos] + " at pos: " + pos:string);
+        rest.extend(args[next..]);
+        return next;
+      } else {
+        debugTrace("Tried to match cmd " + _name + " at position "
+                    + pos:string + " and failed...this shouldn't happen");
+        return pos;
       }
-      return pos;
     }
 
   }
@@ -181,9 +180,11 @@ module MasonArgParse {
       // add default value(s) if supplied
       if isStringType(t) {
         this._defaultValue.append(defaultValue);
-      } else if t == list(string) {
+      } else if t == list(string) || isArray(t) {
         this._defaultValue.extend(defaultValue);
       }
+      debugTrace("positional arg: " + name + " has default value of "
+                 + _defaultValue:string);
       this._numArgs = numArgs;
     }
 
@@ -225,16 +226,20 @@ module MasonArgParse {
       var next = pos+1;
       debugTrace("expecting between " +
                  _numArgs.low:string + " and " + _numArgs.high:string);
-      debugTrace("starting at pos: " + pos:string);
       debugTrace("searching from: " + pos:string + " to " + endPos:string);
+      debugTrace("currently have " + myArg._values.size:string + " values");
+      debugTrace("current values are: " + myArg._values:string);
+      // make sure we didn't already satisfy this positional
+      if myArg._present && myArg._values.size == high then return startPos;
       do {
         myArg._values.append(args[pos]);
         myArg._present = true;
         debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
         pos=next;
         next+=1;
+        matched+=1;
       }
-      while matched < high && pos < endPos ;//&& !args[next].startsWith("-")
+      while matched < high && pos < endPos;
 
       return pos;
     }
@@ -435,6 +440,7 @@ module MasonArgParse {
         endPos = act._match(arguments, idx, arg, rest, endIdx);
         idx = endPos;
         debugTrace("got endPos " + endPos:string);
+        if idx == endIdx then break;
       }
 
       // check that we consumed everything we expected to
@@ -542,7 +548,16 @@ module MasonArgParse {
             debugTrace("endpos != arrayOptionIndices[k][0] :"+endPos:string+"!="
                      + arrayOptionIndices[k][0]:string);
             debugTrace("arrayOptionIndices " + arrayOptionIndices:string);
-            throw new ArgumentError("\\".join(act._name) + " has extra values");
+            // check for undefined argument provided or possible positional args
+            // placed at end of command string
+            if endPos < argsList.size && endPos + rest.size < argsList.size {
+              var oldEnd=endPos;
+              endPos = _parsePositionals(argsList.toArray()[endPos..],
+                                         arrayOptionIndices[k][0]);
+              if oldEnd == endPos then
+                throw new ArgumentError("Found undefined values: " +
+                                        " ".join(argsList.toArray()[endPos..]));
+            }
           }
         }
       }
@@ -574,6 +589,7 @@ module MasonArgParse {
         const act = this._actions.getBorrowed(name);
         const arg = this._result.getReference(name);
         if !arg._present && act._hasDefault() {
+          debugTrace("Assigning default value to " + name);
           arg._values.extend(act._getDefaultValue());
           arg._present = true;
         }
@@ -701,11 +717,6 @@ module MasonArgParse {
                        numArgs:range,
                        defaultValue:?t=none) throws {
       var act = new owned Positional(name, defaultValue, numArgs);
-      // ensure names are unique
-      if _result.contains(name) {
-        throw new ArgumentError("Argument name " + act._name +
-                                " is previously defined");
-      }
 
       for arg in _positionals {
         if arg._numArgs.high >= 1 && arg._numArgs.low != arg._numArgs.high {
@@ -715,12 +726,8 @@ module MasonArgParse {
       }
 
       _positionals.append(act.borrow());
-      _actions.add(name, act);
-
       //create, add, and return the shared argument
-      var arg = new shared Argument();
-      this._result.add(name, arg);
-      return arg;
+      return _addAction(act);
     }
 
     // define a new string option with fixed number of values expected
@@ -772,7 +779,8 @@ module MasonArgParse {
 
       if isStringType(t) {
         myDefault.append(defaultValue);
-      } else if t==list(string) {
+      } else if t==list(string) ||
+                (isArray(t) && isString(defaultValue[0])) {
         myDefault.extend(defaultValue);
       } else if !isNothingType(t) {
         throw new ArgumentError("Only string and list of strings are supported "

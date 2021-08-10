@@ -1073,7 +1073,7 @@ proc testMultStringShortOptDefMultiVal(test: borrowed Test) throws {
                                    defaultValue=none);
   var myStrArg3 = parser.addOption(name="StringOpt3",
                                    opts=["-t","--stringVal3"],
-                                   defaultValue=new list(["1","2"]),
+                                   defaultValue=["1","2"],
                                    numArgs=1..2,
                                    required=false);
 
@@ -1100,7 +1100,7 @@ proc testMultStringShortOptDefMultiValNoVal(test: borrowed Test) throws {
   var parser = new argumentParser();
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],
-                                   defaultValue=new list(["one","two"]),
+                                   defaultValue=["one","two"],
                                    numArgs=1..3,
                                    required=false);
   var myStrArg2 = parser.addOption(name="StringOpt2",
@@ -2279,6 +2279,279 @@ proc testMixPosBoolOptWithValuesFixed(test: borrowed Test) throws {
   test.assertTrue(myBoolArg.valueAsBool());
   test.assertEqual(posList, new list(argList[1..3]));
   test.assertEqual(optList, new list(argList[7..9]));
+}
+
+// a mix of positionals, bools, and options with fixed # values expected
+// and positional argument after the boolean flag
+proc testMixPosBoolOptWithValuesFixedPosAfterBool(test: borrowed Test) throws {
+  var argList = ["progName","-n","myStrOpt1","myStrOpt2","myStrOpt3",
+                 "-b","myFile1","subCmd1"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-b","--boolVal"]);
+  var myPosArg = parser.addPositional(name="FileNames");
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //ensure the value passed is correct
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(myPosArg.value(), argList[6]);
+  test.assertEqual(optList, new list(argList[2..4]));
+  test.assertEqual(subCmd1.value(),"subCmd1");
+}
+
+// a mix of positionals, bools, and options with fixed # values expected
+// and positional argument intermixed in the input
+proc testMixPosBoolOptWithValuesFixedPosInterMixed(test: borrowed Test) throws {
+  var argList = ["progName","p1","-n","myStrOpt1","myStrOpt2","myStrOpt3","p2",
+                 "-b","myFile1","subCmd1"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-b","--boolVal"]);
+  var myPosArg0 = parser.addPositional(name="pos0");
+  var myPosArg1 = parser.addPositional(name="pos1");
+  var myPosArg2 = parser.addPositional(name="FileName");
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg0.hasValue());
+  test.assertFalse(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg0.hasValue());
+  test.assertTrue(myPosArg1.hasValue());
+  test.assertTrue(myPosArg2.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //ensure the value passed is correct
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(myPosArg0.value(), argList[1]);
+  test.assertEqual(myPosArg1.value(), argList[6]);
+  test.assertEqual(myPosArg2.value(), argList[8]);
+  test.assertEqual(optList, new list(argList[3..5]));
+  test.assertEqual(subCmd1.value(),"subCmd1");
+}
+
+// a mix of positionals, bools, and options with fixed # values expected
+// and positional argument intermixed in the input
+proc testMixPosBoolOptWithValuesPosInterMixedRange(test: borrowed Test) throws {
+  var argList = ["progName","p1","-n","myStrOpt1","myStrOpt2","myStrOpt3","p2",
+                 "-b","subCmd1"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-b","--boolVal"]);
+  var myPosArg0 = parser.addPositional(name="pos0");
+  var myPosArg1 = parser.addPositional(name="pos1");
+  var myPosArg2 = parser.addPositional(name="FileName",
+                                       numArgs=0..1,
+                                       defaultValue=none);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg0.hasValue());
+  test.assertFalse(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg0.hasValue());
+  test.assertTrue(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //ensure the value passed is correct
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(myPosArg0.value(), argList[1]);
+  test.assertEqual(myPosArg1.value(), argList[6]);
+  test.assertEqual(optList, new list(argList[3..5]));
+  test.assertEqual(subCmd1.value(),"subCmd1");
+}
+
+// a mix of positionals, bools, and options with fixed # values expected
+// and positional argument intermixed in the input, with several values
+// expected for last positional argument
+proc testMixPosBoolOptPosInterMixedRangeWithVals(test: borrowed Test) throws {
+  var argList = ["progName","p1","-n","myStrOpt1","myStrOpt2","myStrOpt3","p2",
+                 "myFile0","-b","myFile1","myFile2","subCmd1"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-b","--boolVal"]);
+  var myPosArg0 = parser.addPositional(name="pos0");
+  var myPosArg1 = parser.addPositional(name="pos1");
+  var myPosArg2 = parser.addPositional(name="FileName",
+                                       numArgs=0..,
+                                       defaultValue=none);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg0.hasValue());
+  test.assertFalse(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg0.hasValue());
+  test.assertTrue(myPosArg1.hasValue());
+  test.assertTrue(myPosArg2.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //ensure the value passed is correct
+  var optList = new list(myStrArg.values());
+  var posList = new list(myPosArg2.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(myPosArg0.value(), argList[1]);
+  test.assertEqual(myPosArg1.value(), argList[6]);
+  test.assertEqual(optList, new list(argList[3..5]));
+  test.assertEqual(posList, new list(["myFile0","myFile1","myFile2"]));
+  test.assertEqual(subCmd1.value(),"subCmd1");
+}
+
+// a mix of positionals, bools, and options some with fixed # values expected
+// and positional argument intermixed in the input, with several values
+// possible for last positional argument, but none provided
+proc testMixPosBoolOptPosInterMixedRangeDefVals(test: borrowed Test) throws {
+  var argList = ["progName","p1","-n","myStrOpt1","myStrOpt2","myStrOpt3","p2",
+                "-b","subCmd1"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-b","--boolVal"]);
+  var myPosArg0 = parser.addPositional(name="pos0");
+  var myPosArg1 = parser.addPositional(name="pos1");
+  var myPosArg2 = parser.addPositional(name="FileName",
+                                       numArgs=0..,
+                                       defaultValue=["1","2","3"]);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg0.hasValue());
+  test.assertFalse(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg0.hasValue());
+  test.assertTrue(myPosArg1.hasValue());
+  test.assertTrue(myPosArg2.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //ensure the value passed is correct
+  var optList = new list(myStrArg.values());
+  var posList = new list(myPosArg2.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(myPosArg0.value(), argList[1]);
+  test.assertEqual(myPosArg1.value(), argList[6]);
+  test.assertEqual(posList, new list(["1","2","3"]));
+  test.assertEqual(optList, new list(argList[3..5]));
+  test.assertEqual(subCmd1.value(),"subCmd1");
+}
+
+// a mix of positionals, bools, and options with fixed # values expected
+// and positional argument intermixed in the input, with several values
+// expected for last positional argument
+proc testMixPosBoolOptPosInterMixedRangeNoVals(test: borrowed Test) throws {
+  var argList = ["progName","p1","-n","myStrOpt1","myStrOpt2","myStrOpt3","p2",
+                "-b","subCmd1"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                opts=["-b","--boolVal"]);
+  var myPosArg0 = parser.addPositional(name="pos0");
+  var myPosArg1 = parser.addPositional(name="pos1");
+  var myPosArg2 = parser.addPositional(name="FileName",
+                                       numArgs=0..,
+                                       defaultValue=none);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg0.hasValue());
+  test.assertFalse(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg0.hasValue());
+  test.assertTrue(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //ensure the value passed is correct
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(myPosArg0.value(), argList[1]);
+  test.assertEqual(myPosArg1.value(), argList[6]);
+  test.assertEqual(optList, new list(argList[3..5]));
+  test.assertEqual(subCmd1.value(),"subCmd1");
 }
 
 // a mix of positionals, bools, and options with ranges of values and subcommand
