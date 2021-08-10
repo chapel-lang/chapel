@@ -12,7 +12,7 @@ String Array:
   "baz",
   null
 ]
-Int Array:
+Boolean Array:
 [
   true,
   null,
@@ -40,7 +40,9 @@ field2:   [
     true
   ]
 
-----Parquet Demo-----
+
+---------Parquet Demo-------------
+
 field0: int64
 field1: string
 field2: bool

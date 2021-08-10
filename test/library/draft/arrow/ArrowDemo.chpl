@@ -1,13 +1,14 @@
 module ArrowDemo {
   require "Arrow.chpl";
-  import Arrow;
+  require "-larrow-glib", "-lglib-2.0", "-lgobject-2.0";
+  use Arrow;
   use ArrowDecl;
   use CPtr;
 
   proc main(){
-    var arrowInt64Array = Arrow.array([1,2,3,4]);
-    var arrowStringArray = Arrow.array(["foo", "bar", "baz", "some_invalid_value"],validIndices=[0,1,2]);
-    var arrowBooleanArray = Arrow.array([true, false, false, true], invalidIndices=[1]);
+    var arrowInt64Array: ArrowArray = new ArrowArray([1,2,3,4]);
+    var arrowStringArray =  new ArrowArray(["foo", "bar", "baz", "some_invalid_value"],validIndices=[0,1,2]);
+    var arrowBooleanArray = new ArrowArray([true, false, false, true], invalidIndices=[1]);
 
     writeln("Int Array:");
     printArray(arrowInt64Array);
@@ -16,8 +17,8 @@ module ArrowDemo {
     writeln("Boolean Array:");
     printArray(arrowBooleanArray);
     
-    var rcbatch: GArrowRecordBatch = Arrow.recordBatch("field0", arrowInt64Array, "field1", arrowStringArray, "field2", arrowBooleanArray);
-    var rcbatch2: GArrowRecordBatch = Arrow.recordBatch("field0", arrowInt64Array, "field1", arrowStringArray);
+    var rcbatch: ArrowRecordBatch = new ArrowRecordBatch("field0", arrowInt64Array, "field1", arrowStringArray, "field2", arrowBooleanArray);
+    var rcbatch2: ArrowRecordBatch = ("field0", arrowInt64Array, "field1", arrowStringArray);
     writeln("\nRecord batch from above arrays:");
     printRecordBatch(rcbatch);
     
@@ -25,7 +26,7 @@ module ArrowDemo {
 
     // Taking the recordBatch above and putting it in a table
     //var table1 = Arrow.table([rcbatch, rcbatch]); // Alternative
-    var table1 = Arrow.table(rcbatch, rcbatch);
+    var table1 = new ArrowTable(rcbatch, rcbatch);
     printTable(table1);
 
     // Putting that table in a parquet file

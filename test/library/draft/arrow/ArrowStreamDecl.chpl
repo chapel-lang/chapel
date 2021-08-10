@@ -22,8 +22,6 @@ module ArrowStreamDecl {
   
   extern type GArrowRecordBatchStreamReader = c_void_ptr;
 
-  extern type GArrowSchema = c_void_ptr;
-
   extern type GArrowInputStream = c_void_ptr;
 
   extern type GArrowOutputStream = c_void_ptr;

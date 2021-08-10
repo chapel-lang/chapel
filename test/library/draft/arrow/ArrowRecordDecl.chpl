@@ -29,8 +29,6 @@ module ArrowRecordDecl {
 
   extern proc garrow_schema_new(fields: GList): GArrowSchema;
 
-  extern proc garrow_record_batch_get_schema(record_batch : GArrowRecordBatch) : GArrowSchema;
-
   extern proc garrow_record_batch_new(schema: GArrowSchema, n_rows: guint32, columns: GList, error: c_ptr(GErrorPtr)): GArrowRecordBatch;
 
   extern proc garrow_record_batch_to_string (record_batch: GArrowRecordBatch, error: c_ptr(GErrorPtr)): c_string;
