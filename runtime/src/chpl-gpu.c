@@ -74,13 +74,16 @@ void chpl_gpu_init() {
   CUDA_CALL(cuDeviceGet(&device, 0));
 
   // Create driver context
+  // TODO CUDA documentation recommends using cuDevicePrimaryCtxRetain instead:
+  // 
+  // CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
+  
   CUDA_CALL(cuCtxCreate(&context, 0, device));
-  CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
 
   CUcontext cuda_context = NULL;
   cuCtxGetCurrent(&cuda_context);
   if (cuda_context == NULL) {
-    CHPL_GPU_LOG("No context for init\n");
+    chpl_internal_error("CUDA context creation failed\n");
   }
 }
 

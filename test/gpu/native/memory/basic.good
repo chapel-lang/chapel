@@ -25,9 +25,9 @@ End testing chpl_here_realloc
 
 
 Start testing chpl_here_free
-false
-true
-true
+Should be false: false
+Should be true: true
+Should be true: true
 End testing chpl_here_free
 
 End of test

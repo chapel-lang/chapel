@@ -261,10 +261,7 @@ module LocaleModel {
     override proc chpl_name() return name;
 
     proc init() {
-      extern proc chpl_gpu_init(): void;
-      chpl_gpu_init();
     }
-
     proc deinit() {
      extern proc hsa_shutdown(): void ;
 

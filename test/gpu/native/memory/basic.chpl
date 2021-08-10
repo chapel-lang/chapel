@@ -27,6 +27,7 @@ var s: uint;
 on here.getChild(1) {
   chpl_gpu_init();
 
+  ////////////////////////////////////////////////////
 
   writeln();
   writeln("Start testing chpl_here_alloc");
@@ -48,6 +49,8 @@ on here.getChild(1) {
   writeln("End testing chpl_here_alloc");
   writeln();
 
+  ////////////////////////////////////////////////////
+
   writeln();
   writeln("Start testing chpl_here_calloc");
 
@@ -63,6 +66,8 @@ on here.getChild(1) {
 
   writeln("End testing chpl_here_calloc");
   writeln();
+
+  ////////////////////////////////////////////////////
 
   writeln();
   writeln("Start testing chpl_here_realloc");
@@ -85,12 +90,16 @@ on here.getChild(1) {
   writeln("End testing chpl_here_realloc");
   writeln();
 
+  ////////////////////////////////////////////////////
+
   writeln();
   writeln("Start testing chpl_here_free");
 
-  writeln(chpl_gpu_is_device_ptr(ptrDev)); // ptrDev has already been freed
-  writeln(chpl_gpu_is_device_ptr(ptrDevZeroes));
-  writeln(chpl_gpu_is_device_ptr(expandedPtrDev));
+  // ptrDev has already been freed by realloc
+  writeln("Should be false: ", chpl_gpu_is_device_ptr(ptrDev));
+
+  writeln("Should be true: ", chpl_gpu_is_device_ptr(ptrDevZeroes));
+  writeln("Should be true: ", chpl_gpu_is_device_ptr(expandedPtrDev));
 
   chpl_here_free(ptrDevZeroes);
   chpl_here_free(expandedPtrDev);
