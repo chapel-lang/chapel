@@ -398,6 +398,10 @@ testFlagBadBoolValue()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testFlagBadBoolNumArgs()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 unitTestStringToBool()
 Flavour: OK
 ======================================================================
@@ -411,6 +415,10 @@ Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
 testPositionalArgumentRangeOneOrMore()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPositionalArgumentRangeBeforePos()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
@@ -513,3 +521,5 @@ Setting up a required flag that defaults to true with no way for user to set fal
 Creating 'no' flag options prevents using value to set flag
 Creating 'no' flag options prevents using value to set flag
 Unrecognized value tru
+Maximum number of values for a flag is 1
+Positional arguments that allow for range of values must be last relative to other positional arguments

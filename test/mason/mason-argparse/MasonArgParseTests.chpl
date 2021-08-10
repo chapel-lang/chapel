@@ -2135,6 +2135,28 @@ proc testFlagBadBoolValue(test: borrowed Test) throws {
   test.assertTrue(false);
 }
 
+// a short bool flag with too many values defined
+proc testFlagBadBoolNumArgs(test: borrowed Test) throws {
+  var argList = ["progName","-n"];
+  var parser = new argumentParser();
+  try {
+    var myBoolArg = parser.addFlag(name="BoolFlag",
+                                  opts=["-n","--boolVal"],
+                                  numArgs=2,
+                                  flagInversion=false);
+    //make sure no value currently exists
+  //test.assertFalse(myBoolArg.hasValue());
+  //parse the options
+
+   // parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
 // check expected output from helper string to bool method
 proc unitTestStringToBool(test: borrowed Test) throws {
   var trueStrVals = ["true","1","yes"," true ", " yes ", " 1 "];
@@ -2209,6 +2231,22 @@ proc testPositionalArgumentRangeOneOrMore(test: borrowed Test) throws {
   var valList = new list(myPosArg.values());
   test.assertEqual(valList,new list(argList[1..]));
   test.assertEqual(valList.size, 4);
+}
+
+// multiple value positional arguments with range before other positional
+proc testPositionalArgumentRangeBeforePos(test: borrowed Test) throws {
+  var argList = ["progName","file1","file2","file3","file4"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addPositional(name="FileNames",
+                                      numArgs=1..);
+  try {
+    var myPosArg = parser.addPositional(name="otherArg");
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
 }
 
 // a mix of positionals, bools, and options

@@ -728,7 +728,8 @@ module MasonArgParse {
       for arg in _positionals {
         if arg._numArgs.high >= 1 && arg._numArgs.low != arg._numArgs.high {
           throw new ArgumentError("Positional arguments that allow for range " +
-                                  "of values must be in the last position");
+                                  "of values must be last relative to other " +
+                                  "positional arguments");
         }
       }
 
