@@ -1006,6 +1006,20 @@ module ChapelBase {
     return ret;
   }
 
+  inline proc _ddata_supports_reallocate(oldDdata,
+                                         type eltType,
+                                         oldSize: integral,
+                                         newSize: integral) {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_array_supports_realloc(ptr: c_void_ptr,
+                                                oldNmemb: size_t, newNmemb:
+                                                size_t, eltSize: size_t): bool;
+      return chpl_mem_array_supports_realloc(oldDdata: c_void_ptr,
+                                             oldSize.safeCast(size_t),
+                                             newSize.safeCast(size_t),
+                                             _ddata_sizeof_element(oldDdata));
+    }
 
   inline proc _ddata_reallocate(oldDdata,
                                 type eltType,
