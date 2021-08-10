@@ -472,8 +472,8 @@ Flavour: OK
 ----------------------------------------------------------------------
 Found some unrecognizable arguments: thirty
 Found some unrecognizable arguments: badArg1 --BadFlag
-Use '-' or '--' to indicate options, or use positional arguments.
-Use '-' or '--' to indicate options, or use positional arguments.
+Use '-' or '--' to indicate option/flag, or use positional arguments.
+Use '-' or '--' to indicate option/flag, or use positional arguments.
 StringOpt Too many values: expected 1..1 got 3
 StringOpt Too many values: expected 1..3 got 6
 Found some unrecognizable arguments: fifty
@@ -499,8 +499,8 @@ Only string and list of strings are supported as default values at this time
 Only string and list of strings are supported as default values at this time
 Only string and list of strings are supported as default values at this time
 Option name StringOpt is previously defined
-Option flag -n is previously defined
-Option flag --strArg is previously defined
+Option/flag -n is previously defined
+Option/flag --strArg is previously defined
 Found some unrecognizable arguments: subCommandNone
 Found some unrecognizable arguments: subCommandNone
 Found some unrecognizable arguments: -x

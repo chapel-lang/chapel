@@ -200,22 +200,6 @@ module MasonArgParse {
       return this._required;
     }
 
-    override proc _validate(present:bool, valueCount:int):string {
-      debugTrace("expected " + _numArgs:string + " got " + valueCount:string);
-      debugTrace("present="+present:string + " required="+_required:string);
-      if !present && _required {
-        return "Required value missing";
-      } else if valueCount > _numArgs.high {
-        return "Too many values: expected " + _numArgs:string +
-               " got " + valueCount:string;
-      } else if valueCount < _numArgs.low && present {
-        return "Not enough values: expected " + _numArgs:string +
-               " got " + valueCount:string;
-      } else {
-        return "";
-      }
-    }
-
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
                          ref rest:list(string), endPos:int) throws {
       // make sure we didn't receive an empty array
@@ -242,6 +226,22 @@ module MasonArgParse {
       while matched < high && pos < endPos;
 
       return pos;
+    }
+
+    override proc _validate(present:bool, valueCount:int):string {
+      debugTrace("expected " + _numArgs:string + " got " + valueCount:string);
+      debugTrace("present="+present:string + " required="+_required:string);
+      if !present && _required {
+        return "Required value missing";
+      } else if valueCount > _numArgs.high {
+        return "Too many values: expected " + _numArgs:string +
+               " got " + valueCount:string;
+      } else if valueCount < _numArgs.low && present {
+        return "Not enough values: expected " + _numArgs:string +
+               " got " + valueCount:string;
+      } else {
+        return "";
+      }
     }
   }
 
@@ -284,19 +284,6 @@ module MasonArgParse {
       return this._required;
     }
 
-    override proc _validate(present:bool, valueCount:int):string {
-      debugTrace("expected " + _numArgs:string + " got " + valueCount:string);
-      debugTrace("present="+present:string + " required="+_required:string);
-      if !present && _required {
-        return "Required value missing";
-      } else if valueCount < _numArgs.low && present {
-        return "Not enough values: expected " + _numArgs:string +
-               " got " + valueCount:string;
-      } else {
-        return "";
-      }
-    }
-
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
                          ref rest:list(string), endPos:int) throws {
       var high = _numArgs.high;
@@ -331,6 +318,18 @@ module MasonArgParse {
       return next;
     }
 
+    override proc _validate(present:bool, valueCount:int):string {
+      debugTrace("expected " + _numArgs:string + " got " + valueCount:string);
+      debugTrace("present="+present:string + " required="+_required:string);
+      if !present && _required {
+        return "Required value missing";
+      } else if valueCount < _numArgs.low && present {
+        return "Not enough values: expected " + _numArgs:string +
+               " got " + valueCount:string;
+      } else {
+        return "";
+      }
+    }
   }
 
   // stores an option definition
@@ -475,7 +474,7 @@ module MasonArgParse {
           argsList.insert(idx, elems.toArray());
         }
       }
-
+      var firstFlagIdx = argsList.size;
       // identify the index values where known options/flags are located
       for i in argsList.indices {
         const argElt = argsList[i];
@@ -492,7 +491,7 @@ module MasonArgParse {
       }
 
       // check for when arguments passed but none defined
-      if argsList.size > 0 && _actions.size == 0 {
+      if firstFlagIdx > 0 && _actions.size == 0 {
         throw new ArgumentError("unrecognized options/values encountered: " +
                                 " ".join(argsList.these()));
       }
@@ -502,7 +501,7 @@ module MasonArgParse {
       var arrayOptionIndices = optionIndices.toArray();
       sort(arrayOptionIndices);
 
-      var firstFlagIdx = argsList.size;
+
       if arrayOptionIndices.size > 0 then
         firstFlagIdx = arrayOptionIndices[0][0];
       if firstFlagIdx > 0 then
@@ -545,43 +544,44 @@ module MasonArgParse {
         if k < arrayOptionIndices.size {
           if endPos != arrayOptionIndices[k][0] {
             debugTrace("Rest.size= " + rest.size:string);
-            debugTrace("endpos != arrayOptionIndices[k][0] :"+endPos:string+"!="
+            debugTrace("endpos != arrayOptionIndices[k][0]:"+endPos:string+"!="
                      + arrayOptionIndices[k][0]:string);
             debugTrace("arrayOptionIndices " + arrayOptionIndices:string);
             // check for undefined argument provided or possible positional args
-            // placed at end of command string
-            if endPos < argsList.size && endPos + rest.size < argsList.size {
-              var oldEnd=endPos;
-              endPos = _parsePositionals(argsList.toArray()[endPos..],
-                                         arrayOptionIndices[k][0]);
-              if oldEnd == endPos then
-                throw new ArgumentError("Found undefined values: " +
-                                        " ".join(argsList.toArray()[endPos..]));
-            }
+            // intermixed in command string
+            _checkTrailingPositionals(argsList.toArray()[endPos..],
+                                      arrayOptionIndices[k][0],
+                                      argsList.size, rest.size);
           }
         }
       }
 
       // check for undefined argument provided or possible positional args
       // placed at end of command string
-      if endPos < argsList.size && endPos + rest.size < argsList.size {
-        var oldEnd=endPos;
-        endPos = _parsePositionals(argsList.toArray()[endPos..], argsList.size);
-        if oldEnd == endPos then
-          throw new ArgumentError("Found undefined values: " +
-                                  " ".join(argsList.toArray()[endPos..]));
-      }
+      _checkTrailingPositionals(argsList.toArray()[endPos..], argsList.size,
+                                argsList.size, rest.size);
 
       // make sure all options defined got values if needed
       _checkSatisfiedOptions();
 
-      // assign and missing values their defaults, if supplied
+      // assign missing values their defaults, if supplied
       _assignDefaultsToMissingOpts();
 
       return rest;
     }
 
-
+    proc _checkTrailingPositionals(remainingArgs:[?argsD]string, stopPos:int,
+                                   argLen:int, restLen:int) throws {
+      // check if unidentified value is a positional or an error
+      var curPos = argsD.low;
+      if curPos < argLen && curPos + restLen < argLen {
+        var oldEnd=curPos;
+        curPos = _parsePositionals(remainingArgs, stopPos);
+        if oldEnd == curPos then
+          throw new ArgumentError("Found undefined values: " +
+                                  " ".join(remainingArgs[..<stopPos]));
+      }
+    }
 
     proc _assignDefaultsToMissingOpts() {
       // set any default values as needed
@@ -605,6 +605,24 @@ module MasonArgParse {
         if rtnMsg != "" {
           throw new ArgumentError(act._name + " " + rtnMsg);
         }
+      }
+    }
+
+    proc _checkAndSaveOpts(opts:[?optsD], name:string) throws {
+      // validate supplied opt vals have valid prefix and don't conflict
+      // then collect them
+      for i in optsD {
+        if !opts[i].startsWith("-") {
+          throw new ArgumentError("Use '-' or '--' to indicate option/flag, " +
+                                  "or use positional arguments.");
+        }
+        // ensure we don't redefine an existing option
+        if _options.contains(opts[i]) {
+          throw new ArgumentError("Option/flag " + opts[i] + " is previously " +
+                                  "defined");
+        }
+        // collect all the option strings
+        _options.add(opts[i], name);
       }
     }
 
@@ -658,24 +676,13 @@ module MasonArgParse {
         throw new ArgumentError("Maximum number of values for a flag is 1");
       }
 
-      for i in optsD {
-        if !opts[i].startsWith("-") {
-          throw new ArgumentError("Use '-' or '--' to indicate flags, " +
-                                  "or use positional arguments.");
-        }
-        // ensure we don't redefine an existing option flag
-        if _options.contains(opts[i]) {
-          throw new ArgumentError("Flag " + opts[i] + " is previously " +
-                                  "defined");
-        }
-      }
+      _checkAndSaveOpts(opts, name);
 
       var noFlagOpts:[optsD]string;
-      // collect all the option strings
-      for i in optsD {
-        _options.add(opts[i], name);
-        // if user chooses to automatically create 'no' version of flag
-        if flagInversion {
+
+      // if user chooses to automatically create 'no' version of flag
+      if flagInversion {
+        for i in optsD {
           var flagStr = opts[i].strip('-',leading=true, trailing=false);
           if flagStr.size == 1 {
             noFlagOpts[i] = "-no-"+flagStr;
@@ -762,19 +769,8 @@ module MasonArgParse {
                    numArgs:range,
                    required=false,
                    defaultValue:?t=none) throws {
-      for i in optsD {
-        if !opts[i].startsWith("-") {
-          throw new ArgumentError("Use '-' or '--' to indicate options, " +
-                                  "or use positional arguments.");
-        }
 
-        // ensure we don't redefine an existing option flag
-        if _options.contains(opts[i]) {
-          throw new ArgumentError("Option flag " + opts[i] + " is previously " +
-                                  "defined");
-        }
-      }
-
+      _checkAndSaveOpts(opts, name);
       var myDefault = new list(string);
 
       if isStringType(t) {
@@ -794,8 +790,6 @@ module MasonArgParse {
                                     required=required,
                                     defaultValue=myDefault
                                     );
-      // collect all the option strings
-      for i in optsD do _options.add(opts[i], name);
       return _addAction(action);
     }
   }
