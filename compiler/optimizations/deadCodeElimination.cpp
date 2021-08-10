@@ -507,17 +507,6 @@ static  CallExpr* generateGPUCall(FnSymbol* kernel,
   return call;
 }
 
-/*static CallExpr* generateIndexComputation() {
-  // Generates Chapel AST corresponding to the following CUDA code:
-  // blockIdx.x * blockDim.x + threadIdx.x
-  CallExpr* call = new CallExpr(PRIM_ADD,
-    new CallExpr(PRIM_MULT,
-      new CallExpr(PRIM_GPU_BLOCKDIM_X),
-      new CallExpr(PRIM_GPU_BLOCKIDX_X)),
-    new CallExpr(PRIM_GPU_THREADIDX_X));
-  return call;
-}*/
-
 static void outlineGPUKernels() {
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
     std::vector<BaseAST*> asts;
