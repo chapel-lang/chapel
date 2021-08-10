@@ -31,4 +31,3 @@ true
 End testing chpl_here_free
 
 End of test
-warning: 2 NUMA domains but only 1 Qthreads shepherds; may get internal errors

@@ -180,11 +180,9 @@ static void chpl_gpu_launch_kernel_help(const char* name,
   for (i=0 ; i<nargs ; i++) {
     kernel_params[i] = va_arg(args, void*);
 
-    // TODO: we can remove this check after some point, or enable only if some
-    // advanced debugging is enabled.
-    assert(chpl_gpu_is_device_ptr((*((void**)kernel_params[i]))));
-
-    CHPL_GPU_LOG("\tKernel parameter %d: %p\n", i, kernel_params[i]);
+    CHPL_GPU_LOG("\tKernel parameter %d: %p%s\n", i, kernel_params[i],
+                 chpl_gpu_is_device_ptr((*((void**)kernel_params[i]))) ?
+                    " (GPU pointer)" : "");
   }
 
   CHPL_GPU_LOG("Calling gpu function named %s\n", name);
