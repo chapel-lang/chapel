@@ -1488,7 +1488,9 @@ static void checkLLVMCodeGen() {
 #else
   // compiler wasn't built with LLVM, so if LLVM is enabled, error
   if (fLlvmCodegen)
-    USR_FATAL("This compiler was built without LLVM support");
+    USR_FATAL("You have requested a 'CHPL_LLVM=%s' compilation, but this copy of\n"
+              "       'chpl' was built without LLVM support.  Either set 'CHPL_LLVM=none'\n"
+              "       or re-build your compiler with LLVM enabled.", CHPL_LLVM);
 #endif
 }
 
