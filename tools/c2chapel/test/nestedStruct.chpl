@@ -6,6 +6,8 @@ require "nestedStruct.h";
 // Note: Generated with fake std headers
 
 use CPtr;
+use SysCTypes;
+use SysBasic;
 extern record first {
   var a : c_int;
   var b : c_string;
