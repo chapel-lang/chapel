@@ -21,6 +21,7 @@
 #include "chplrt.h"
 #include "chpl-mem.h"
 #include "chpl-gpu.h"
+#include "chpl-tasks.h"
 #include "error.h"
 
 #ifdef HAS_GPU_LOCALE
@@ -29,7 +30,7 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
- /*#define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this*/
+//#define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
 
 static void CHPL_GPU_LOG(const char *str, ...) {
 #ifdef CHPL_GPU_DEBUG
@@ -153,6 +154,10 @@ size_t chpl_gpu_get_alloc_size(void* ptr) {
   CUDA_CALL(cuMemGetAddressRange(&base, &size, (CUdeviceptr)ptr));
 
   return size;
+}
+
+bool chpl_gpu_running_on_gpu_locale() {
+  return chpl_gpu_has_context() && chpl_task_getRequestedSubloc()>0;
 }
 
 static void chpl_gpu_launch_kernel_help(const char* name,
