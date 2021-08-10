@@ -299,7 +299,7 @@ int chpl_comm_ofi_oob_locales_on_node(void) {
     // do an allgather of hostname hashes to determine the locales on the same node as us
     // assumes each hostname has a unique hash
 
-    char hostname[256];
+    char hostname[HOST_NAME_MAX+1];
     int rc = gethostname(hostname, sizeof(hostname));
     CHK_TRUE(rc == 0);
 
