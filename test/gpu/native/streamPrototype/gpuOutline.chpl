@@ -50,7 +50,6 @@ module GPUOutlineTest {
 
   proc testMain() {
     chpl_gpu_init();
-
     var a = new GPUAbleValue(value=5.0);
     var b = new GPUAbleValue(value=10.0);
 

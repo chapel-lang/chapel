@@ -4706,27 +4706,34 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   //   - function name
   //   - grid size (1 arg or 3 args)
   //   - block size (1 arg or 3 args)
-  //   - number of kernel parameters (we can probably drop this safely)
   //   - any number of arguments to be passed to the kernel
   //
   // The runtime function needs the kernel parameters to be passed by address.
   // The other arguments to this primitive are passed along directly.
 
   // number of arguments that are not kernel params
-  int nNonKernelParamArgs = is3d ? 8:4;
+  int nNonKernelParamArgs = is3d ? 7:3;
+  int nKernelParamArgs = call->numActuals() - nNonKernelParamArgs;
+
   const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
 
   std::vector<GenRet> args;
-  int i = 0;
+  int curArg = 1;
   for_actuals(actual, call) {
-    if (i >= nNonKernelParamArgs) {
+    if (curArg > nNonKernelParamArgs) {
       args.push_back(codegenAddrOf(actual));
-      i++; // probably unnecessary
     }
     else {
       args.push_back(actual->codegen());
-      i++;
+
+      // if we finished adding non-kernel parameters, add number of kernel
+      // parameters first before the parameters themselves.
+      if (curArg == nNonKernelParamArgs) {
+        GenRet numParams = new_IntSymbol(nKernelParamArgs);
+        args.push_back(numParams);
+      }
     }
+    curArg++;
   }
 
   return codegenCallExprWithArgs(fn, args);

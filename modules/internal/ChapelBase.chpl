@@ -1058,12 +1058,16 @@ module ChapelBase {
 
 
   inline proc _ddata_free(data: _ddata, size: integral) {
+    var subloc = chpl_sublocFromLocaleID(__primitive("_wide_get_locale", data));
+
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_free(data: c_void_ptr,
-                                    nmemb: size_t, eltSize: size_t);
+                                    nmemb: size_t, eltSize: size_t,
+                                    subloc: chpl_sublocID_t);
     chpl_mem_array_free(data:c_void_ptr, size:size_t,
-                        _ddata_sizeof_element(data));
+                        _ddata_sizeof_element(data),
+                        subloc);
   }
 
   inline operator ==(a: _ddata, b: _ddata)

@@ -1,0 +1,33 @@
+warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
+warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
+
+Start testing chpl_here_alloc
+Allocated 3 bytes on gpu
+Data copied to device
+Data copied back to host:
+0 10 20 
+End testing chpl_here_alloc
+
+
+Start testing chpl_here_calloc
+Allocated 3 bytes on gpu
+Data copied to host:
+0 0 0 
+End testing chpl_here_calloc
+
+
+Start testing chpl_here_realloc
+Allocated 6 bytes on gpu
+Data copied to device
+Data copied back to host
+0 10 20 0 10 20 
+End testing chpl_here_realloc
+
+
+Start testing chpl_here_free
+Should be false: false
+Should be true: true
+Should be true: true
+End testing chpl_here_free
+
+End of test

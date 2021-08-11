@@ -107,7 +107,7 @@ proc runExample(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ) {
   var deviceBuffer = getDeviceBufferPointer(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ);
   __primitive("gpu kernel launch", c"add_nums",
               gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ,
-              1, deviceBuffer);
+              deviceBuffer);
   getAndPrintDataFromDevice(deviceBuffer, gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ);
 
   writeln();

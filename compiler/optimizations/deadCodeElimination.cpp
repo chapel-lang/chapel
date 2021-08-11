@@ -498,8 +498,6 @@ static  CallExpr* generateGPUCall(FnSymbol* kernel,
   call->insertAtTail(new_IntSymbol(1));  // grid size
   call->insertAtTail(new_IntSymbol(1));  // block size
 
-  call->insertAtTail(new_IntSymbol(actuals.size()));
-
   for_vector (VarSymbol, actual, actuals) {
     call->insertAtTail(new SymExpr(actual));
   }
