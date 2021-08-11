@@ -169,19 +169,30 @@ module Curl {
 
       // This reasoning is pulled from the libcurl source
       if (opt < CURLOPTTYPE_OBJECTPOINT) {
+        // < OBJECTPOINT means CURLOPTTYPE_LONG; libcurl wants a "long" arg.
         if isIntegralType(arg.type) || isBoolType(arg.type) {
           var tmp:c_long = arg:c_long;
           err = qio_int_to_err(curl_easy_setopt_long(curl, opt:CURLoption, tmp));
         }
       } else if (opt < CURLOPTTYPE_OFF_T) {
+          // CURLOPTTYPE_OBJECTPOINT
+          // (alias CURLOPTTYPE_STRINGPOINT, alias CURLOPTTYPE_SLISTPOINT
+          //  alias CURLOPTTYPE_CBPOINT)
+          // arg to libcurl should be a pointer to an object, or to a
+          // slist, or a char*, or a void* (CBPOINT).
+          // CURLOPTTYPE_FUNCTIONPOINT is also in this range.
         if isAnyCPtr(arg.type) {
           var tmp:c_void_ptr = arg:c_void_ptr;
           err = qio_int_to_err(curl_easy_setopt_ptr(curl, opt:CURLoption, tmp));
         } else if arg.type == slist {
           var tmp:c_void_ptr = arg.list:c_void_ptr;
           err = qio_int_to_err(curl_easy_setopt_ptr(curl, opt:CURLoption, tmp));
+        } else if arg.type == string {
+          var tmp = arg.localize().c_str():c_void_ptr;
+          err = qio_int_to_err(curl_easy_setopt_ptr(curl, opt:CURLoption, tmp));
         }
       } else {
+        // Must be CURLOPTTYPE_OFF_T or CURLOPTTYPE_BLOB
         if isIntegralType(arg.type) {
           var tmp:curl_off_t = arg:curl_off_t;
           err = qio_int_to_err(curl_easy_setopt_offset(curl, opt:CURLoption, tmp));
@@ -189,7 +200,8 @@ module Curl {
       }
     }
 
-    if err then try ioerror(err, "in file.setopt(opt:c_int, arg)");
+    if err then try ioerror(err, "in Curl.setopt(" + opt:string + "), " +
+                            arg:string + ": " + arg.type:string + ")");
     return true;
   }
 
