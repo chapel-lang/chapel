@@ -312,7 +312,13 @@ module BigInteger {
       return ret;
     }
 
+    deprecated
+    "bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead"
     proc sizeinbase(base: int) : uint {
+      return sizeInBase(base).safeCast(uint);
+    }
+
+    proc sizeInBase(base: int) : uint {
       const base_ = base.safeCast(c_int);
       var   ret: size_t;
 
