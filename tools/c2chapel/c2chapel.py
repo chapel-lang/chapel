@@ -84,6 +84,11 @@ c2chapel["uintptr_t"]          = "c_uintptr"
 c2chapel["ptrdiff_t"]          = "c_ptrdiff"
 c2chapel["ssize_t"]            = "ssize_t"
 c2chapel["size_t"]             = "size_t"
+c2chapel["long double"]        = "c_longlong"
+c2chapel["signed short"]       = "c_short"
+c2chapel["signed int"]         = "c_int"
+c2chapel["signed long long"]   = "c_longlong"
+c2chapel["signed long"]        = "c_long"
 
 # Note: this mapping is defined by the compiler, not the SysCTypes file
 c2chapel["FILE"] = "_file"
@@ -116,7 +121,7 @@ chapelKeywords = set(["align","as","atomic","begin","break","by","class",
     "nil","noinit","on","only","otherwise","out","param","private","proc",
     "public","record","reduce","ref","require","return","scan","select",
     "serial","single","sparse","subdomain","sync","then","type","union","use",
-    "var","when","where","while","with","yield","zip"])
+    "var","when","where","while","with","yield","zip", "string", "bytes", "locale"])
 
 
 def getArgs():
@@ -153,27 +158,27 @@ def commentNode(node):
 
 def getDeclName(decl):
     inner = decl
-    if type(inner) == c_ast.TypeDecl:
+    if isinstance(inner, c_ast.TypeDecl):
         inner = inner.type
 
     name = ""
-    if type(inner) == c_ast.IdentifierType:
+    if isinstance(inner, c_ast.IdentifierType):
         name = " ".join(inner.names)
-    elif type(inner) == c_ast.Struct or type(inner) == c_ast.Union:
+    elif isinstance(inner, c_ast.Struct) or isinstance(inner, c_ast.Union):
         # Because Unions and Structs should be handled in the same way
         name = inner.name
-    elif type(inner) == c_ast.Decl:
+    elif isinstance(inner, c_ast.Decl):
         name = inner.name
-    elif type(inner) == c_ast.Enum:
+    elif isinstance(inner, c_ast.Enum):
         name = "c_int"
     else:
         raise Exception("Unhandled node type: " + str(type(inner)))
     return name
 
 def computeArgName(decl):
-    if type(decl) == c_ast.Typename:
+    if isinstance(decl, c_ast.Typename):
         return ""
-    elif type(decl) == c_ast.Decl:
+    elif isinstance(decl, c_ast.Decl):
         if decl.name in chapelKeywords:
             return decl.name + "_arg"
         else:
@@ -185,15 +190,15 @@ def computeArgName(decl):
 def isStructOrUnionType(ast):
     inner = ast
 
-    if type(inner) == c_ast.TypeDecl:
+    if isinstance(inner, c_ast.TypeDecl):
         inner = inner.type
 
-    if type(inner) == c_ast.IdentifierType:
+    if isinstance(inner, c_ast.IdentifierType):
         name = " ".join(inner.names)
         if name in typeDefs:
             return isStructOrUnionType(typeDefs[name].type)
 
-    if type(inner) == c_ast.Struct or type(inner) == c_ast.Union:
+    if isinstance(inner, c_ast.Struct) or isinstance(inner, c_ast.Union):
         return True
 
     return False
@@ -204,10 +209,10 @@ def getIntentInfo(ty):
     curType   = ty
     ptrType = ""
 
-    if type(curType) == c_ast.PtrDecl:
+    if isinstance(curType, c_ast.PtrDecl):
         ptrType = toChapelType(curType)
 
-    if type(curType) == c_ast.PtrDecl and not (isPointerTo(curType, "char") or isPointerTo(curType, "void") or toChapelType(curType) == "c_fn_ptr"):
+    if isinstance(curType, c_ast.PtrDecl) and not (isPointerTo(curType, "char") or isPointerTo(curType, "void") or toChapelType(curType) == "c_fn_ptr"):
         refIntent = "ref"
         curType = curType.type
     else:
@@ -226,7 +231,7 @@ def computeArgs(pl):
         return ("", "")
 
     for (i, arg) in enumerate(pl.params):
-        if type(arg) == c_ast.EllipsisParam:
+        if isinstance(arg, c_ast.EllipsisParam):
             formals.append(VARARGS_STR)
             ptrFormals.append(VARARGS_STR);
         else:
@@ -250,8 +255,8 @@ def computeArgs(pl):
     return (", ".join(formals), ", ".join(ptrFormals))
 
 def isPointerTo(ty, text):
-    if type(ty) == c_ast.PtrDecl:
-        if type(ty.type) == c_ast.TypeDecl:
+    if isinstance(ty, c_ast.PtrDecl):
+        if isinstance(ty.type, c_ast.TypeDecl):
             name = getDeclName(ty.type)
             if name == text:
                 return True
@@ -262,14 +267,14 @@ def toChapelType(ty):
         return "c_string"
     elif isPointerTo(ty, "void"):
         return "c_void_ptr"
-    elif type(ty) == c_ast.ArrayDecl:
+    elif isinstance(ty, c_ast.ArrayDecl):
         return "c_ptr(" + toChapelType(ty.type) + ")"
-    elif type(ty) == c_ast.PtrDecl:
-        if type(ty.type) == c_ast.FuncDecl:
+    elif isinstance(ty, c_ast.PtrDecl):
+        if isinstance(ty.type, c_ast.FuncDecl):
             return "c_fn_ptr"
         else:
             return "c_ptr(" + toChapelType(ty.type) + ")"
-    elif type(ty) == c_ast.TypeDecl:
+    elif isinstance(ty, c_ast.TypeDecl):
         inner = ty.type
         name = ""
         try:
@@ -281,7 +286,7 @@ def toChapelType(ty):
             return c2chapel[name]
 
         return name
-    elif type(ty) == c_ast.FuncDecl:
+    elif isinstance(ty, c_ast.FuncDecl):
         return "c_fn_ptr"
     else:
         ty.show()
@@ -289,12 +294,12 @@ def toChapelType(ty):
 
 
 def getFunctionName(ty):
-    if type(ty) == c_ast.PtrDecl:
+    if isinstance(ty, c_ast.PtrDecl):
         return getFunctionName(ty.type)
-    elif type(ty) == c_ast.FuncDecl:
+    elif isinstance(ty, c_ast.FuncDecl):
         return getFunctionName(ty.type)
     else:
-        if type(ty) != c_ast.TypeDecl:
+        if not isinstance(ty, c_ast.TypeDecl):
             ty.show()
             raise c_parser.ParseError("Expecting TypeDecl...")
         return ty.declname
@@ -330,12 +335,12 @@ def genFuncDecl(fn):
         print("extern proc " + fnName + "(" + newArgs + ") : " + retType + ";\n")
 
 def getStructOrUnionDef(decl):
-    if type(decl) == c_ast.Struct or type(decl) == c_ast.Union:
+    if isinstance(decl, c_ast.Struct) or isinstance(decl, c_ast.Union):
         if decl.decls is not None:
             return decl
         else:
             return None
-    elif type(decl) == c_ast.Decl or type(decl) == c_ast.TypeDecl or type(decl) == c_ast.PtrDecl:
+    elif isinstance(decl, c_ast.Decl) or isinstance(decl, c_ast.TypeDecl) or isinstance(decl, c_ast.PtrDecl):
         return getStructOrUnionDef(decl.type)
     else:
         return None
@@ -403,7 +408,7 @@ def genVar(decl):
 
 
 def genEnum(decl):
-    if type(decl) == c_ast.Enum:
+    if isinstance(decl, c_ast.Enum):
         if decl.name:
             genComment("Enum: " + decl.name)
         else:
@@ -413,7 +418,7 @@ def genEnum(decl):
         print("\n")
 
 def genTypeEnum(decl):
-    if type(decl.type) == c_ast.Enum:
+    if isinstance(decl.type, c_ast.Enum):
         for child in decl.children():
             for val in child[1].children():
                 for value in val[1].enumerators:
@@ -444,13 +449,13 @@ class ChapelVisitor(c_ast.NodeVisitor):
             genComment("Evaluating node:")
             commentNode(node)
         for c_name, c in node.children():
-            if type(c) == c_ast.Struct or type(c) == c_ast.Union:
+            if isinstance(c, c_ast.Struct) or isinstance(c, c_ast.Union):
                 self.visit_StructOrUnion(c)
-            elif type(c) == c_ast.FuncDecl:
+            elif isinstance(c, c_ast.FuncDecl):
                 self.visit_FuncDecl(c)
-            elif type(c) == c_ast.Enum:
+            elif isinstance(c, c_ast.Enum):
                 genEnum(c)
-            elif type(c) == c_ast.TypeDecl or type(c) == c_ast.PtrDecl or type(c) == c_ast.ArrayDecl:
+            elif isinstance(c, c_ast.TypeDecl) or isinstance(c, c_ast.PtrDecl) or isinstance(c, c_ast.ArrayDecl):
                 genVar(node)
             else:
                 node.show()
@@ -460,23 +465,23 @@ class ChapelVisitor(c_ast.NodeVisitor):
 
 def genTypeAlias(node):
     alias = node.name
-    if type(node.type) == c_ast.PtrDecl or type(node.type) == c_ast.TypeDecl:
+    if isinstance(node.type, c_ast.PtrDecl) or isinstance(node.type, c_ast.TypeDecl):
         typeName = toChapelType(node.type)
         foundTypes.add(alias);
         print("extern type " + alias + " = " + typeName + ";")
         print()
 
 def isPointerToStruct(node):
-    if type(node) == c_ast.PtrDecl:
-        if type(node.type) == c_ast.TypeDecl and type(node.type.type) == c_ast.Struct:
+    if isinstance(node, c_ast.PtrDecl):
+        if isinstance(node.type, c_ast.TypeDecl) and isinstance(node.type.type, c_ast.Struct):
             return node.type.type
         else:
             return isPointerToStruct(node.type)
     return None
 
 def isPointerToUnion(node):
-    if type(node) == c_ast.PtrDecl:
-        if type(node.type) == c_ast.TypeDecl and type(node.type.type) == c_ast.Union:
+    if isinstance(node, c_ast.PtrDecl):
+        if isinstance(node.type, c_ast.TypeDecl) and isinstance(node.type.type, c_ast.Union):
             return node.type.type
         else:
             return isPointerToUnion(node.type)
@@ -486,7 +491,7 @@ def genTypedefs(defs):
     for name in sorted(defs):
         node = defs[name]
         if node is not None:
-            if type(node.type.type) == c_ast.Struct or type(node.type.type) == c_ast.Union:
+            if isinstance(node.type.type, c_ast.Struct) or isinstance(node.type.type, c_ast.Union):
                 sn = node.type.type
                 if sn.decls is not None:
                     genStructOrUnion(sn, name=node.name)
@@ -505,7 +510,7 @@ def genTypedefs(defs):
             elif isPointerToUnion(node.type):
                 genComment("Typedef'd pointer to union")
                 print("extern type " + node.name + ";\n")
-            elif type(node.type.type) == c_ast.Enum:
+            elif isinstance(node.type.type, c_ast.Enum):
                 genComment(node.name + " enum")
                 print("extern type " + node.name + " = c_int;")
                 genTypeEnum(node.type)
