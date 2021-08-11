@@ -506,6 +506,21 @@ static void setupChplHome(const char* argv0) {
   }
 }
 
+#ifndef HAVE_LLVM
+
+// If the compiler was built without LLVM and CHPL_LLVM is not set in
+// the environment, set it to 'none' in order to avoid having the
+// chplenv scripts potentially infer it to be 'system' or 'bundled',
+// which can only result in an error.
+//
+static void setupChplLLVM(void) {
+  // set CHPL_LLVM to 'none' if it isn't already set
+  if (setenv("CHPL_LLVM", "none", 0) != 0) {
+    INT_FATAL("Problem setting CHPL_LLVM");
+  }
+}
+#endif
+
 static void recordCodeGenStrings(int argc, char* argv[]) {
   compileCommand = astr("chpl ");
   // WARNING: This does not handle arbitrary sequences of escaped characters
@@ -1395,6 +1410,9 @@ static void setupChplGlobals(const char* argv0) {
     // Keep envMap updated
     envMap["CHPL_HOME"] = CHPL_HOME;
   }
+#ifndef HAVE_LLVM
+  setupChplLLVM();
+#endif
 
   // Populate envMap from printchplenv, never overwriting existing elements
   populateEnvMap();
@@ -1488,9 +1506,9 @@ static void checkLLVMCodeGen() {
 #else
   // compiler wasn't built with LLVM, so if LLVM is enabled, error
   if (fLlvmCodegen)
-    USR_FATAL("You have requested a 'CHPL_LLVM=%s' compilation, but this copy of\n"
-              "       'chpl' was built without LLVM support.  Either set 'CHPL_LLVM=none'\n"
-              "       or re-build your compiler with LLVM enabled.", CHPL_LLVM);
+    USR_FATAL("You have requested 'llvm' as the target compiler, but this copy of\n"
+              "       'chpl' was built without LLVM support.  Either select a different\n"
+              "       target compiler or re-build your compiler with LLVM enabled.");
 #endif
 }
 
@@ -1578,9 +1596,11 @@ static void checkNotLibraryAndMinimalModules(void) {
   return;
 }
 
-static void postprocess_args() {
-  // Processes that depend on results of passed arguments or values of CHPL_vars
 
+// Take actions for which settings are inferred based on other arguments
+// or CHPL_ settings
+//
+static void postprocess_args() {
   setMaxCIndentLen();
 
   postLocal();
@@ -1597,9 +1617,17 @@ static void postprocess_args() {
 
   checkLibraryPythonAndLibmode();
 
-  checkNotLibraryAndMinimalModules();
-
   setPrintCppLineno();
+}
+
+
+// check for things that may be invalid; this happens after
+// 'printStuff()' to avoid having things like 'chpl --help' print
+// errors rather than doing what the user said (for which these
+// checks don't apply because we're not going to compile anything).
+//
+static void checkStuff() {
+  checkNotLibraryAndMinimalModules();
 
   checkLLVMCodeGen();
 
@@ -1662,6 +1690,7 @@ int main(int argc, char* argv[]) {
   } // astlocMarker scope
 
   printStuff(argv[0]);
+  checkStuff();
 
   if (fRungdb)
     runCompilerInGDB(argc, argv);
