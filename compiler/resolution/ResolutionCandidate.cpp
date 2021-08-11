@@ -62,19 +62,26 @@ ResolutionCandidate::ResolutionCandidate(FnSymbol* function) {
 ************************************** | *************************************/
 
 bool ResolutionCandidate::isApplicable(CallInfo& info,
-                                       VisibilityInfo* visInfo) {
+                                       VisibilityInfo* visInfo,
+                                       bool explain) {
   bool retval = false;
 
+  if (explain)
+    printf("In isApplicable()\n");
+  
   TagGenericResult tagResult = fn->tagIfGeneric(NULL, true);
-  if (tagResult == TGR_TAGGING_ABORTED)
+  if (tagResult == TGR_TAGGING_ABORTED) {
+    if (explain)
+      printf("Tagging aborted\n");
     return false;
+  }
 
   resolveConstrainedGenericFun(fn);
 
   if (! fn->isGeneric()) {
-    retval = isApplicableConcrete(info, visInfo);
+    retval = isApplicableConcrete(info, visInfo, explain);
   } else {
-    retval = isApplicableGeneric(info, visInfo);
+    retval = isApplicableGeneric(info, visInfo, explain);
   }
 
   // Note: for generic instantiations, this code will be executed twice.
@@ -90,25 +97,42 @@ bool ResolutionCandidate::isApplicable(CallInfo& info,
 }
 
 bool ResolutionCandidate::isApplicableConcrete(CallInfo& info,
-                                               VisibilityInfo* visInfo) {
-
+                                               VisibilityInfo* visInfo,
+                                               bool explain) {
+  if (explain)
+    printf("In concrete case\n");
+  
   fn = expandIfVarArgs(fn, info);
   if (fn == NULL) {
     reason = RESOLUTION_CANDIDATE_OTHER;
+    if (explain)
+      printf("Return A\n");
     return false;
   }
 
   resolveTypedefedArgTypes();
 
-  if (computeAlignment(info) == false)
+  if (fn->hasFlag(FLAG_NO_PARENS)) {
+    if (explain)
+      printf("Short-cutting the alignment check\n");
+    return true;
+  }
+  
+  if (computeAlignment(info) == false) {
+    if (explain)
+      printf("Return B\n");
     return false;
+  }
 
   return checkResolveFormalsWhereClauses(info, visInfo);
 }
 
 bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
-                                              VisibilityInfo* visInfo) {
+                                              VisibilityInfo* visInfo,
+                                              bool explain) {
 
+  if (explain)
+    printf("In generic case\n");
   FnSymbol* oldFn = fn;
 
   fn = expandIfVarArgs(fn, info);
@@ -212,6 +236,10 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   formalIdxToActual.clear();
   actualIdxToFormal.clear();
 
+  if (fn->hasFlag(FLAG_NO_PARENS)) {
+    return true;
+  }
+  
   for (int i = 0; i < fn->numFormals(); i++) {
     formalIdxToActual.push_back(NULL);
   }
@@ -1309,7 +1337,7 @@ void explainGatherCandidate(const CallInfo&            info,
       forv_Vec(ResolutionCandidate*, candidate, candidates) {
         USR_PRINT(candidate->fn,
                   "%s %s",
-                  first ? "candidates are:" : "               ",
+                  first ? "B: candidates are:" : "               ",
                   toString(candidate->fn));
 
         first = false;

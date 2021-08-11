@@ -94,7 +94,8 @@ public:
                           ResolutionCandidate(FnSymbol* fn);
 
   bool                    isApplicable(CallInfo& info,
-                                       VisibilityInfo* visInfo);
+                                       VisibilityInfo* visInfo,
+                                       bool explain=false);
 
   FnSymbol*               fn;
   std::vector<Symbol*>    formalIdxToActual;
@@ -112,10 +113,12 @@ private:
                           ResolutionCandidate();
 
   bool                    isApplicableConcrete(CallInfo& info,
-                                               VisibilityInfo* visInfo);
+                                               VisibilityInfo* visInfo,
+                                               bool explain=false);
 
   bool                    isApplicableGeneric(CallInfo& info,
-                                              VisibilityInfo* visInfo);
+                                              VisibilityInfo* visInfo,
+                                              bool explain=false);
 
   bool                    isApplicableCG(CallInfo& info,
                                          VisibilityInfo* visInfo);

@@ -3632,7 +3632,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
   instantiateBody(best->fn);
 
   if (explainCallLine != 0 && explainCallMatch(call) == true) {
-    USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
+    USR_PRINT(best->fn, "A: best candidate is: %s", toString(best->fn));
   }
 
   if (call->partialTag                  == false ||
@@ -3726,7 +3726,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
   }
 
   if (explainCallLine != 0 && explainCallMatch(call) == true) {
-    USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
+    USR_PRINT(best->fn, "B: best candidate is: %s", toString(best->fn));
   }
 
   if (call->partialTag                  == true &&
@@ -4318,7 +4318,7 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
   int nFnsWithOutIntentFormals = 0;
   forv_Vec(ResolutionCandidate, cand, candidates) {
     if (printedOne == false) {
-      USR_PRINT(cand->fn, "candidates are: %s", toString(cand->fn));
+      USR_PRINT(cand->fn, "A: candidates are: %s", toString(cand->fn));
       printedOne = true;
 
     } else {
@@ -4700,7 +4700,14 @@ static void findVisibleFunctionsAndCandidates(
   CallExpr* call = info.call;
   FnSymbol* fn   = call->resolvedFunction();
   Vec<FnSymbol*> visibleFns;
-
+  bool print = ((explainCallLine != 1 && explainCallMatch(info.call) == true) ||
+                call->id == explainCallID);
+  
+  if (print) {
+    printf("candidates.n = %d\n", candidates.n);
+    printf("fn == %p\n", fn);
+  }
+  
   if (fn != NULL) {
     visibleFns.add(fn);
     mostApplicable.add(fn); // for better error reporting
@@ -4734,11 +4741,21 @@ static void findVisibleFunctionsAndCandidates(
     findVisibleFunctions(info, &visInfo, &visited,
                          &numVisitedVis, visibleFns);
 
+    if (print)
+      printf("found %d visible fns\n", visibleFns.n);
+    
     trimVisibleCandidates(info, mostApplicable,
                           numVisitedVis, visibleFns);
 
+    if (print)
+      printf("trimmed to %d visible fns, %d most applicable\n", visibleFns.n, mostApplicable.n);
+
     gatherCandidatesAndLastResort(info, visInfo, mostApplicable, numVisitedMA,
                                   lrc, candidates);
+
+    if (print)
+      printf("gathered to %d candidates, %d most applicable\n", candidates.n, mostApplicable.n);
+
 
     advanceCurrStart(visInfo);
   }
@@ -4796,8 +4813,8 @@ static void gatherCandidates(CallInfo&                  info,
         filterCandidate(info, visInfo, fn, candidates);
 
       } else {
-        if (fn->hasFlag(FLAG_NO_PARENS) == true) {
-          filterCandidate(info, visInfo, fn, candidates);
+        if (fn->hasFlag(FLAG_NO_PARENS) == true) {  
+        //        filterCandidate(info, visInfo, fn, candidates);
         }
       }
 }
@@ -4842,9 +4859,11 @@ static void filterCandidate(CallInfo&                  info,
                             Vec<ResolutionCandidate*>& candidates) {
   ResolutionCandidate* candidate = new ResolutionCandidate(fn);
 
-  if (fExplainVerbose &&
-      ((explainCallLine && explainCallMatch(info.call)) ||
-       info.call->id == explainCallID)) {
+  bool explain = fExplainVerbose &&
+    ((explainCallLine && explainCallMatch(info.call)) ||
+     info.call->id == explainCallID);
+  
+  if (explain) {
     USR_PRINT(fn, "Considering function: %s", toString(fn));
 
     if (info.call->id == breakOnResolveID) {
@@ -4852,9 +4871,13 @@ static void filterCandidate(CallInfo&                  info,
     }
   }
 
-  if (candidate->isApplicable(info, &visInfo)) {
+  if (candidate->isApplicable(info, &visInfo, explain)) {
+    if (explain)
+      USR_PRINT(fn, "...Adding function: %s", toString(fn));
     candidates.add(candidate);
   } else {
+    if (explain)
+      USR_PRINT(fn, "...Deleting function: %s", toString(fn));
     delete candidate;
   }
 }
@@ -5341,6 +5364,7 @@ disambiguateByMatch(Vec<ResolutionCandidate*>&   candidates,
   // we already know it can not be the best match.
   std::vector<bool> notBest(candidates.n, false);
 
+  EXPLAIN("Considering %d candidates\n", candidates.n);
   for (int i = 0; i < candidates.n; ++i) {
     EXPLAIN("##########################\n");
     EXPLAIN("# Considering function %d #\n", i);
@@ -5456,6 +5480,14 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
   bool                prefer1 = false;
   bool                prefer2 = false;
 
+  // if the functions aren't either both paren-ful or paren-less,
+  // neither can be more specific than the other; it's simply an
+  // ambiguity.
+  if (candidate1->fn->hasFlag(FLAG_NO_PARENS) !=
+      candidate2->fn->hasFlag(FLAG_NO_PARENS)) {
+    return 0;
+  }
+  
   for (int k = start; k < DC.actuals->n; ++k) {
     Symbol*    actual  = DC.actuals->v[k];
     ArgSymbol* formal1 = candidate1->actualIdxToFormal[k];
