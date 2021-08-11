@@ -295,6 +295,8 @@ bool fCompilerLibraryParser = false;
 
 chpl::Context* gContext = nullptr;
 
+static bool setChplLLVM = false;
+
 /* Note -- LLVM provides a way to get the path to the executable...
 // This function isn't referenced outside its translation unit, but it
 // can't use the "static" keyword because its address is used for
@@ -515,8 +517,11 @@ static void setupChplHome(const char* argv0) {
 //
 static void setupChplLLVM(void) {
   // set CHPL_LLVM to 'none' if it isn't already set
-  if (setenv("CHPL_LLVM", "none", 0) != 0) {
-    INT_FATAL("Problem setting CHPL_LLVM");
+  if (getenv("CHPL_LLVM") == NULL) {
+    if (setenv("CHPL_LLVM", "none", 0) != 0) {
+      INT_FATAL("Problem setting CHPL_LLVM");
+    }
+    setChplLLVM = true;
   }
 }
 #endif
@@ -1254,6 +1259,10 @@ static void printStuff(const char* argv0) {
       USR_FATAL("CHPL_HOME path name is too long");
     }
     int status = mysystem(buf, "running printchplenv", false);
+    if (setChplLLVM) {
+      printf("---\n");
+      printf("* Note: CHPL_LLVM was set by 'chpl' since it was built without LLVM support.\n");
+    }
     clean_exit(status);
   }
 
