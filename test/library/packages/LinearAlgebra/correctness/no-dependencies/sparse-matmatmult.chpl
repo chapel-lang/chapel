@@ -109,12 +109,12 @@ proc ones(Dom: domain(2), type eltType=real) {
 }
 
 {
-  // Case 1: Product of a Dense matrix (3x3) and a Sparse matrix (3x3). [eltType = real]
-  // Case 2: Product of a Sparse matrix (3x3) and a Dense matrix (3x3). [eltType = real]
+  // Case 1: Product of a Sparse matrix (3x3) and a Dense matrix (3x3). [eltType = real]
+  // Case 2: Product of a Dense matrix (3x3) and a Sparse matrix (3x3). [eltType = real]
   // Case 3: Product of a Sparse matrix (3x3) and a Dense matrix (3x4). [eltType = real]
   // Case 4: Product of a Dense matrix (4x3) and a Sparse matrix (3x3). [eltType = real]
-  // Case 5: Product of a Dense matrix (3x3) and a Sparse matrix (3x3). [eltType = complex]
-  // Case 6: Product of a Sparse matrix (3x3) and a Dense matrix (3x3). [eltType = complex]
+  // Case 5: Product of a Sparse matrix (3x3) and a Dense matrix (3x3). [eltType = complex]
+  // Case 6: Product of a Dense matrix (3x3) and a Sparse matrix (3x3). [eltType = complex]
   // Case 7: Product of a Sparse matrix (3x3) and a Dense matrix (3x4). [eltType = complex]
   // Case 8: Product of a Dense matrix (4x3) and a Sparse matrix (3x3). [eltType = complex]
 
