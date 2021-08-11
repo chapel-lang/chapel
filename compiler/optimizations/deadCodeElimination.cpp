@@ -47,10 +47,11 @@ static bool         isInCForLoopHeader(Expr* expr);
 static void         cleanupLoopBlocks(FnSymbol* fn);
 
 static void markGPUSuitableLoops();
-static bool blockLooksLikeStreamForGPU(BlockStmt* blk);
+static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls);
 static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk,
                                            std::set<FnSymbol*>& okFns,
-                                           std::set<FnSymbol*> visitedFns);
+                                           std::set<FnSymbol*> visitedFns,
+                                           bool allowFnCalls);
 
 static unsigned int deadBlockCount;
 static unsigned int deadModuleCount;
@@ -668,18 +669,19 @@ extern int classifyPrimitive(CallExpr *call, bool inLocal);
 extern bool inLocalBlock(CallExpr *call);
 
 bool debugPrint = false; 
+bool allowFnCallsFromGPU = false;
 int indent = 0;
 
-static bool blockLooksLikeStreamForGPU(BlockStmt* blk) {
+static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls) {
   if (blk->getModule()->modTag != MOD_USER)
     return false;
   std::set<FnSymbol*> okFns;
   std::set<FnSymbol*> visitedFns;
 
-  return blockLooksLikeStreamForGPUHelp(blk, okFns, visitedFns);
+  return blockLooksLikeStreamForGPUHelp(blk, okFns, visitedFns, allowFnCalls);
 }
 
-static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk, std::set<FnSymbol*>& okFns, std::set<FnSymbol*> visitedFns) {
+static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk, std::set<FnSymbol*>& okFns, std::set<FnSymbol*> visitedFns, bool allowFnCalls) {
 
   if (debugPrint) {
     FnSymbol* fn = blk->getFunction();
@@ -688,7 +690,7 @@ static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk, std::set<FnSymbol*>& 
 
   if (visitedFns.count(blk->getFunction()) != 0) {
     if (blk->getFunction()->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
-      return true;
+      return true; // allow `halt` to be potentially called recursively
     } else {
       return false;
     }
@@ -708,10 +710,13 @@ static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk, std::set<FnSymbol*>& 
         return false;
       }
     } else if (call->isResolved()) {
+      if (!allowFnCalls)
+        return false;
+
       FnSymbol* fn = call->resolvedFunction();
       indent += 2;
       if (okFns.count(fn) != 0 ||
-          blockLooksLikeStreamForGPUHelp(fn->body, okFns, visitedFns)) {
+          blockLooksLikeStreamForGPUHelp(fn->body, okFns, visitedFns, allowFnCalls)) {
         indent -= 2;
         okFns.insert(fn);
       } else {
@@ -727,19 +732,24 @@ static void markGPUSuitableLoops() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* forLoop = toForLoop(block)) {
       if (forLoop->isOrderIndependent()) {
-        if (blockLooksLikeStreamForGPU(forLoop)) {
+        if (blockLooksLikeStreamForGPU(forLoop, allowFnCallsFromGPU)) {
+          if (debugPrint)
+            printf("Found viable forLoop %s:%d[%d]\n", forLoop->fname(), forLoop->linenum(), forLoop->id);
           forLoop->setIsGPUSuitable(true);
         }
       }
     } else if (CForLoop* forLoop = toCForLoop(block)) {
-      if (blockLooksLikeStreamForGPU(forLoop)) {
-        printf("Found viable CForLoop %s:%d[%d]\n", forLoop->fname(), forLoop->linenum(), forLoop->id);
+      if (blockLooksLikeStreamForGPU(forLoop, allowFnCallsFromGPU)) {
+        if (debugPrint)
+          printf("Found viable CForLoop %s:%d[%d]\n", forLoop->fname(), forLoop->linenum(), forLoop->id);
       }
     }
   }
 
   forv_Vec(ForallStmt, fs, gForallStmts) {
-    if (blockLooksLikeStreamForGPU(fs->loopBody())) {
+    if (blockLooksLikeStreamForGPU(fs->loopBody(), allowFnCallsFromGPU)) {
+      if (debugPrint)
+        printf("Found viable forallStmt %s:%d[%d]\n", fs->fname(), fs->linenum(), fs->id);
       fs->setIsGPUSuitable(true);
     }
   }
