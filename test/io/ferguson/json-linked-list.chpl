@@ -1,13 +1,15 @@
-use List, IO;
+use LinkedLists, IO;
 
 {
-  var mylist = new list(int);
+  var mylist = new LinkedList(int);
 
   mylist.append(1);
   mylist.append(2);
   mylist.append(3);
 
   writef("testing json write: %jt\n", mylist);
+
+  mylist.destroy();
 }
 
 var f = opentmp();
@@ -22,13 +24,15 @@ var f = opentmp();
 {
   var reader = f.reader();
 
-  var mylist:list(int);
+  var mylist:LinkedList(int);
 
   reader.readf("%jt", mylist);
 
   writeln("Read: ", mylist);
 
   reader.close();
+
+  mylist.destroy();
 }
 
 {
@@ -43,13 +47,15 @@ var f = opentmp();
 {
   var reader = f.reader();
 
-  var mylist:list(int);
+  var mylist:LinkedList(int);
 
   reader.readf("%jt", mylist);
 
   writeln("Read: ", mylist);
 
   reader.close();
+
+  mylist.destroy();
 }
 
 
@@ -65,13 +71,15 @@ var f = opentmp();
 {
   var reader = f.reader();
 
-  var mylist:list(int);
+  var mylist:LinkedList(int);
 
   reader.readf("%jt", mylist);
 
   writeln("Read: ", mylist);
 
   reader.close();
+
+  mylist.destroy();
 }
 
 {
@@ -86,13 +94,15 @@ var f = opentmp();
 {
   var reader = f.reader();
 
-  var mylist:list(int);
+  var mylist:LinkedList(int);
 
   reader.readf("%jt", mylist);
 
   writeln("Read: ", mylist);
 
   reader.close();
+
+  mylist.destroy();
 }
 
 {
@@ -107,12 +117,14 @@ var f = opentmp();
 {
   var reader = f.reader();
 
-  var mylist:list(int);
+  var mylist:LinkedList(int);
 
   reader.readf("%jt", mylist);
 
   writeln("Read: ", mylist);
 
   reader.close();
+
+  mylist.destroy();
 }
 
