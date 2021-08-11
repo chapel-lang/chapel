@@ -56,10 +56,11 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
                            c_sublocid_t subloc, chpl_bool* callPostAlloc,
                            int32_t lineno, int32_t filename) {
   void* p = NULL;
+  const size_t size = nmemb * eltSize;
 #ifdef HAS_GPU_LOCALE
   if (chpl_gpu_running_on_gpu_locale()) {
     *callPostAlloc = false;
-    p = chpl_gpu_mem_alloc(nmemb*eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+    p = chpl_gpu_mem_alloc(size, CHPL_RT_MD_ARRAY_ELEMENTS,
                            lineno, filename);
   }
   else {
@@ -79,7 +80,6 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
   chpl_memhook_malloc_pre(nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                           lineno, filename);
 
-  const size_t size = nmemb * eltSize;
   *callPostAlloc = false;
   if (chpl_mem_size_justifies_comm_alloc(size)) {
     p = chpl_comm_regMemAlloc(size, CHPL_RT_MD_ARRAY_ELEMENTS,
@@ -90,7 +90,7 @@ void* chpl_mem_array_alloc(size_t nmemb, size_t eltSize,
   }
 
   if (p == NULL) {
-    p = chpl_malloc(nmemb * eltSize);
+    p = chpl_malloc(size);
   }
 
   chpl_memhook_malloc_post(p, nmemb, eltSize, CHPL_RT_MD_ARRAY_ELEMENTS,
@@ -118,17 +118,26 @@ void* chpl_mem_array_realloc(void* p, size_t oldNmemb, size_t newNmemb,
                              size_t eltSize,
                              c_sublocid_t subloc, chpl_bool* callPostAlloc,
                              int32_t lineno, int32_t filename) {
+  void* newp = NULL;
+  const size_t newSize = newNmemb * eltSize;
+#ifdef HAS_GPU_LOCALE
+  if (chpl_gpu_running_on_gpu_locale()) {
+    *callPostAlloc = false;
+    newp = chpl_gpu_mem_realloc(p, newSize, CHPL_RT_MD_ARRAY_ELEMENTS,
+                                lineno, filename);
+  }
+  else {
+#endif
+
   //
   // Support for dynamic array registration by comm layers is done here
   // via *callPostAlloc, the same as for chpl_mem_array_alloc().  See
   // there for further information.
 
-  const size_t newSize = newNmemb * eltSize;
   chpl_memhook_realloc_pre(p, newSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                            lineno, filename);
 
   const size_t oldSize = oldNmemb * eltSize;
-  void* newp = NULL;
   *callPostAlloc = false;
   if (chpl_mem_size_justifies_comm_alloc(oldSize)) {
     newp = chpl_comm_regMemRealloc(p, oldSize, newSize,
@@ -145,7 +154,9 @@ void* chpl_mem_array_realloc(void* p, size_t oldNmemb, size_t newNmemb,
 
   chpl_memhook_realloc_post(newp, p, newSize, CHPL_RT_MD_ARRAY_ELEMENTS,
                            lineno, filename);
-
+#ifdef HAS_GPU_LOCALE
+  }
+#endif
   return newp;
 }
 
