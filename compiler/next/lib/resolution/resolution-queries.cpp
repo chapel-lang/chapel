@@ -1529,6 +1529,7 @@ UniqueString getParamOp(Context* context, const PrimCall* call) {
       prim == USTR("!")) {
     return prim;
   }
+#undef USTR
 
   UniqueString empty;
   return empty;

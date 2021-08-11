@@ -316,8 +316,8 @@ QualifiedType Param::fold(Context* context,
 
   // fold
   int immOp = 0;
-#define USTR(s) UniqueString::build(context, s)
 
+#define USTR(s) UniqueString::build(context, s)
   // TODO: use an integer identifying a Primitive here
   if      (op == USTR("**")) immOp = P_prim_pow;
   else if (op == USTR("*"))  immOp = P_prim_mult;
@@ -343,6 +343,7 @@ QualifiedType Param::fold(Context* context,
   else if (op == USTR("~"))  immOp = P_prim_not;
   else if (op == USTR("!"))  immOp = P_prim_lnot;
   else assert(false && "case not handled");
+#undef USTR
 
   fold_constant(context, immOp, &aImm, &bImm, &result);
 
