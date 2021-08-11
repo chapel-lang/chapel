@@ -187,7 +187,7 @@ module Curl {
         } else if arg.type == slist {
           var tmp:c_void_ptr = arg.list:c_void_ptr;
           err = qio_int_to_err(curl_easy_setopt_ptr(curl, opt:CURLoption, tmp));
-        } else if arg.type == string {
+        } else if arg.type == string || arg.type == bytes {
           var tmp = arg.localize().c_str():c_void_ptr;
           err = qio_int_to_err(curl_easy_setopt_ptr(curl, opt:CURLoption, tmp));
         }
@@ -200,8 +200,8 @@ module Curl {
       }
     }
 
-    if err then try ioerror(err, "in Curl.setopt(" + opt:string + "), " +
-                            arg:string + ": " + arg.type:string + ")");
+    if err then try ioerror(err, "in Curl.setopt(" + opt:string + ", arg: " +
+                            arg.type:string + ")");
     return true;
   }
 

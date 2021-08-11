@@ -72,9 +72,28 @@ proc test3() {
   stdout.flush();
 }
 
+// Test a bytes-type option, CURLOPT_URL
+proc test4() {
+  writeln("\ntest3\n");
+  var f = "test.txt";
+  var url = "http://" + host + ":" + port + "/" + f;
+  var urlreader = openUrlReader(""); // set real url via setopt()
+
+  setopt(urlreader, CURLOPT_VERBOSE, true);
+  setopt(urlreader, CURLOPT_URL, url:bytes);
+
+  var str: string;
+  while urlreader.readline(str) {
+    writeln(str);
+  }
+
+  stderr.flush();
+  stdout.flush();
+}
 
 startServer();
 test1();
 test2();
 test3();
+test4();
 stopServer();
