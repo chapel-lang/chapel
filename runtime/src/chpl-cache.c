@@ -1342,10 +1342,11 @@ void ain_evict(struct rdcache_s* cache,
     if (y==NULL)
       return;
 
-    assert(y->entryReservedByTask != task_local);
     // give up if locked
     if (give_up_if_locked && y->entryReservedByTask != NULL)
       return;
+
+    assert(y->entryReservedByTask != task_local);
 
     if (!try_reserve_entry(cache, task_local, y)) {
       // could not "lock" entry y so try again
