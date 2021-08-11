@@ -8,7 +8,7 @@ CC = clang
 CFLAGS = -Wall -g
 
 GLIB_INCLUDES = -I /usr/local/include/glib-2.0 -I /usr/local/lib/glib-2.0/include
-GLIB_LINKS = -larrow-glib -lglib-2.0 -lgobject-2.0
+GLIB_LINKS = -larrow-glib -lparquet-glib -lglib-2.0 -lgobject-2.0
 ASAN = -fsanitize=address
 
 default : all
