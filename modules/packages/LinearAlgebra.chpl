@@ -2830,13 +2830,7 @@ module Sparse {
     // matrix-matrix
     else if Adom.rank == 2 && Bdom.rank == 2 {
       if !isCSArr(A) || !isCSArr(B) then {
-        if isCSArr(A) && !isCSArr(B) then {
-          return sparseDenseMatmul(A, B);
-        }
-        else if !isCSArr(A) && isCSArr(B) then {
-          var res = sparseDenseMatmul(B.T, A.T);
-          return res.T;
-        }
+        return sparseDenseMatmul(A, B);
       }
       else {
         return _csrmatmatMult(A, B);
@@ -2848,17 +2842,25 @@ module Sparse {
   }
 
   // Method returns the product of a Sparse and a Dense Matrix.
-  private proc sparseDenseMatmul(A: [?ADom], B: [?BDom]) where isSparseArr(A) || !isSparseArr(B) {
+  private proc sparseDenseMatmul(A: [?ADom], B: [?BDom]) where !isCSArr(A) || !isCSArr(B) {
     if ADom.dim(1) != BDom.dim(0) then
         halt("Mismatched shape in sparse-dense matrix multiplication");
 
     var resDom = {0..<A.domain.shape(0), 0..<B.domain.shape(1)};
     var C: [resDom] A.eltType;
 
-    for i in 0..<B.domain.shape(1) {
-      C[.., i] = dot(A, B[.., i]);
+    if isCSArr(A) && !isCSArr(B) {
+      forall i in 0..<B.domain.shape(1) {
+        C[.., i] = dot(A, B[.., i]);
+      }
+      return C;
     }
-    return C;
+    else {
+      forall i in 0..<A.domain.shape(0) {
+        C[i, ..] = dot(A[i, ..], B);
+      }
+      return C;
+    }
   }
 
   /* Compute the dot-product */

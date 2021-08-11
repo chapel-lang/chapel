@@ -165,11 +165,11 @@ proc ones(Dom: domain(2), type eltType=real) {
   var BC34 = dot(B,C34);
   var C43B = dot(C43,B);
 
-  writeln("// Product of a Dense matrix (3x3) and a Sparse matrix (3x3) [eltType = real]");
+  writeln("// Product of a Sparse matrix (3x3) and a Dense matrix (3x3) [eltType = real]");
   writeln("BC = dot(B,C) =");
   writeArr(BC,{0..#3,0..#3});
 
-  writeln("// Product of a Sparse matrix (3x3) and a Dense matrix (3x3) [eltType = real]");
+  writeln("// Product of a Dense matrix (3x3) and a Sparse matrix (3x3) [eltType = real]");
   writeln("CB = dot(C,B) =");
   writeArr(CB,{0..#3,0..#3});
 
@@ -200,11 +200,11 @@ proc ones(Dom: domain(2), type eltType=real) {
   var BC34_complex = dot(B_complex,C34_complex);
   var C43B_complex = dot(C43_complex,B_complex);
 
-  writeln("// Product of a Dense matrix (3x3) and a Sparse matrix (3x3) [eltType = complex]");
+  writeln("// Product of a Sparse matrix (3x3) and a Dense matrix (3x3) [eltType = complex]");
   writeln("BC_complex = dot(B_complex,C_complex) =");
   writeArr(BC_complex,{0..#3,0..#3});
 
-  writeln("// Product of a Sparse matrix (3x3) and a Dense matrix (3x3) [eltType = complex]");
+  writeln("// Product of a Dense matrix (3x3) and a Sparse matrix (3x3) [eltType = complex]");
   writeln("CB_complex = dot(C_complex,B_complex) =");
   writeArr(CB_complex,{0..#3,0..#3});
 
