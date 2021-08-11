@@ -155,7 +155,6 @@ private:
   bool           fRequireSerialIterator;
   bool           fVectorizationHazard;
   bool           fIsForallExpr;
-  bool           fIsGPUSuitable;
 
   // constructor
   ForallStmt(BlockStmt* body);
@@ -210,8 +209,6 @@ inline bool ForallStmt::fromReduce()            const { return  fFromReduce;  }
 inline bool ForallStmt::overTupleExpand()       const { return fOverTupleExpand;       }
 inline bool ForallStmt::allowSerialIterator()   const { return fAllowSerialIterator;   }
 inline bool ForallStmt::requireSerialIterator() const { return fRequireSerialIterator; }
-inline bool ForallStmt::isGPUSuitable() const { return fIsGPUSuitable; }
-inline void ForallStmt::setIsGPUSuitable(bool isSuitable) { fIsGPUSuitable = isSuitable; }
 /// conveniences ///
 
 inline int   ForallStmt::numInductionVars()  const { return fIterVars.length; }

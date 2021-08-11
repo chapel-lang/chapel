@@ -735,7 +735,6 @@ static void markGPUSuitableLoops() {
         if (blockLooksLikeStreamForGPU(forLoop, allowFnCallsFromGPU)) {
           if (debugPrint)
             printf("Found viable forLoop %s:%d[%d]\n", forLoop->fname(), forLoop->linenum(), forLoop->id);
-          forLoop->setIsGPUSuitable(true);
         }
       }
     } else if (CForLoop* forLoop = toCForLoop(block)) {
@@ -750,7 +749,6 @@ static void markGPUSuitableLoops() {
     if (blockLooksLikeStreamForGPU(fs->loopBody(), allowFnCallsFromGPU)) {
       if (debugPrint)
         printf("Found viable forallStmt %s:%d[%d]\n", fs->fname(), fs->linenum(), fs->id);
-      fs->setIsGPUSuitable(true);
     }
   }
 }

@@ -113,10 +113,6 @@ public:
   // indicates this is a for-expression (as opposed to a for-statement)
   bool                   isForExpr()                                  const;
 
-  // is this suitable to run on GPU?
-  bool                   isGPUSuitable()                              const;
-  void                   setIsGPUSuitable(bool isSuitable);
-
   BlockStmt*             copyBody();
   BlockStmt*             copyBody(SymbolMap* map);
   void                   copyBodyHelper(Expr* beforeHere,
@@ -139,7 +135,6 @@ private:
   bool                   mZippered;
   bool                   mLoweredForall;
   bool                   mIsForExpr;
-  bool                   mIsGPUSuitable;
 };
 
 #endif
