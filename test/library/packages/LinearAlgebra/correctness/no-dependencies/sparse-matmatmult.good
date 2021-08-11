@@ -74,28 +74,74 @@ C43 =
 1.0 1.0 1.0 
 1.0 1.0 1.0 
 
-// Product of a Dense matrix (3x3) and a Sparse matrix (3x3)
+// Product of a Dense matrix (3x3) and a Sparse matrix (3x3) [eltType = real]
 BC = dot(B,C) =
 5.0 5.0 5.0 
 -9.0 -9.0 -9.0 
 5.0 5.0 5.0 
 
-// Product of a Sparse matrix (3x3) and a Dense matrix (3x3)
+// Product of a Sparse matrix (3x3) and a Dense matrix (3x3) [eltType = real]
 CB = dot(C,B) =
 0.0 -4.0 5.0 
 0.0 -4.0 5.0 
 0.0 -4.0 5.0 
 
-// Product of a Sparse matrix (3x3) and a Dense matrix (3x4)
+// Product of a Sparse matrix (3x3) and a Dense matrix (3x4) [eltType = real]
 BC34 = dot(B,C34) =
 5.0 5.0 5.0 5.0 
 -9.0 -9.0 -9.0 -9.0 
 5.0 5.0 5.0 5.0 
 
-// Product of a Dense matrix (4x3) and a Sparse matrix (3x3)
+// Product of a Dense matrix (4x3) and a Sparse matrix (3x3) [eltType = real]
 C43B = dot(C43,B) =
 0.0 -4.0 5.0 
 0.0 -4.0 5.0 
 0.0 -4.0 5.0 
 0.0 -4.0 5.0 
+
+B_complex =
+0.0 + 0.0i 5.0 + 0.0i 0.0 + 0.0i 
+0.0 + 0.0i -9.0 + 0.0i 0.0 + 0.0i 
+0.0 + 0.0i 0.0 + 0.0i 5.0 + 0.0i 
+
+C_complex =
+1.0 + 0.0i 1.0 + 0.0i 1.0 + 0.0i 
+1.0 + 0.0i 1.0 + 0.0i 1.0 + 0.0i 
+1.0 + 0.0i 1.0 + 0.0i 1.0 + 0.0i 
+
+C34_complex =
+1.0 + 0.0i 1.0 + 0.0i 1.0 + 0.0i 1.0 + 0.0i 
+1.0 + 0.0i 1.0 + 0.0i 1.0 + 0.0i 1.0 + 0.0i 
+1.0 + 0.0i 1.0 + 0.0i 1.0 + 0.0i 1.0 + 0.0i 
+
+C43_complex =
+1.0 + 0.0i 1.0 + 0.0i 1.0 + 0.0i 
+1.0 + 0.0i 1.0 + 0.0i 1.0 + 0.0i 
+1.0 + 0.0i 1.0 + 0.0i 1.0 + 0.0i 
+1.0 + 0.0i 1.0 + 0.0i 1.0 + 0.0i 
+
+// Product of a Dense matrix (3x3) and a Sparse matrix (3x3) [eltType = complex]
+BC_complex = dot(B_complex,C_complex) =
+5.0 + 0.0i 5.0 + 0.0i 5.0 + 0.0i 
+-9.0 + 0.0i -9.0 + 0.0i -9.0 + 0.0i 
+5.0 + 0.0i 5.0 + 0.0i 5.0 + 0.0i 
+
+// Product of a Sparse matrix (3x3) and a Dense matrix (3x3) [eltType = complex]
+CB_complex = dot(C_complex,B_complex) =
+0.0 + 0.0i -4.0 + 0.0i 5.0 + 0.0i 
+0.0 + 0.0i -4.0 + 0.0i 5.0 + 0.0i 
+0.0 + 0.0i -4.0 + 0.0i 5.0 + 0.0i 
+
+// Product of a Sparse matrix (3x3) and a Dense matrix (3x4) [eltType = complex]
+BC34_complex = dot(B_complex,C34_complex) =
+5.0 + 0.0i 5.0 + 0.0i 5.0 + 0.0i 5.0 + 0.0i 
+-9.0 + 0.0i -9.0 + 0.0i -9.0 + 0.0i -9.0 + 0.0i 
+5.0 + 0.0i 5.0 + 0.0i 5.0 + 0.0i 5.0 + 0.0i 
+
+// Product of a Dense matrix (4x3) and a Sparse matrix (3x3) [eltType = complex]
+C43B_complex = dot(C43_complex,B_complex) =
+0.0 + 0.0i -4.0 + 0.0i 5.0 + 0.0i 
+0.0 + 0.0i -4.0 + 0.0i 5.0 + 0.0i 
+0.0 + 0.0i -4.0 + 0.0i 5.0 + 0.0i 
+0.0 + 0.0i -4.0 + 0.0i 5.0 + 0.0i 
 
