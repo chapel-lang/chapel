@@ -177,10 +177,10 @@ void chpl_mem_array_postRealloc(void* oldp, size_t oldNmemb,
 
 static inline
 void chpl_mem_array_free(void* p,
-                         size_t nmemb, size_t eltSize,
+                         size_t nmemb, size_t eltSize, c_sublocid_t subloc,
                          int32_t lineno, int32_t filename) {
 #ifdef HAS_GPU_LOCALE
-  if (chpl_gpu_is_device_ptr(p)) {
+  if (subloc > 0) {
     chpl_gpu_mem_free(p, lineno, filename);
   }
   else {
