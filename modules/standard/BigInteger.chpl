@@ -291,6 +291,7 @@ module BigInteger {
       }
     }
 
+    deprecated "bigint.size() is deprecated"
     proc size() : size_t {
       var ret: size_t;
 
