@@ -22,23 +22,8 @@ module MasonArgParse {
   private use Map;
   private use IO;
   private use Sort;
-  private use Sys only sys_getenv;
 
-  config var OTFDebug=false;
-
-  const DEBUG = _checkDebug();
-
-  proc _checkDebug() : bool {
-    var envValue = "FALSE";
-    var rtn = false;
-
-   // if sys_getenv("ARGPARSE_DEBUG", envValue) == 1 ) {
-      if _convertStringToBool(envValue, rtn) {
-        return rtn || OTFDebug;
-      }
-   // }
-    return false;
-  }
+  private config var DEBUG=false;
 
   // TODO: Add pass-thru options following "-"
   // TODO: Add int opts
@@ -165,11 +150,11 @@ module MasonArgParse {
   }
 
   class Positional : Action {
-    // indicates if this flag is required to be entered by the user
+    // indicates if this argument is required to be entered by the user
     var _required:bool;
-    // default value to use when flag is not present
+    // default value to use when argument is not present
     var _defaultValue:list(string);
-    // number of acceptable values to be present after argument is indicated
+    // number of acceptable values to be present for this argument
     var _numArgs:range;
 
     proc init(name:string, defaultValue:?t=none, numArgs=1..1) {
@@ -233,10 +218,7 @@ module MasonArgParse {
       debugTrace("present="+present:string + " required="+_required:string);
       if !present && _required {
         return "Required value missing";
-      } else if valueCount > _numArgs.high {
-        return "Too many values: expected " + _numArgs:string +
-               " got " + valueCount:string;
-      } else if valueCount < _numArgs.low && present {
+      } else if valueCount < _numArgs.low {
         return "Not enough values: expected " + _numArgs:string +
                " got " + valueCount:string;
       } else {

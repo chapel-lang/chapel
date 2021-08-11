@@ -2215,6 +2215,21 @@ proc testPositionalArgumentDefault(test: borrowed Test) throws {
   test.assertEqual((new list(myPosArg.values())).size, 1);
 }
 
+// single positional argument test with no default value
+proc testPositionalArgumentOptionalMissing(test: borrowed Test) throws {
+  var argList = ["progName"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addPositional(name="FileName",
+                                      defaultValue=none,
+                                      numArgs=0..1);
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we still don't have a value
+  test.assertFalse(myPosArg.hasValue());
+}
+
 // multiple value positional argument test
 proc testPositionalArgumentRangeOneOrMore(test: borrowed Test) throws {
   var argList = ["progName","file1","file2","file3","file4"];
@@ -2231,6 +2246,65 @@ proc testPositionalArgumentRangeOneOrMore(test: borrowed Test) throws {
   var valList = new list(myPosArg.values());
   test.assertEqual(valList,new list(argList[1..]));
   test.assertEqual(valList.size, 4);
+}
+
+// too many values for positional argument
+proc testPositionalArgumentTooManyVals(test: borrowed Test) throws {
+  var argList = ["progName","file1","file2","file3","file4"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addPositional(name="FileNames",
+                                      numArgs=1..2,
+                                      defaultValue=none);
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+// not enough values for positional argument
+proc testPositionalArgumentNotEnoughVals(test: borrowed Test) throws {
+  var argList = ["progName","file1","file2","file3","file4"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addPositional(name="FileNames",
+                                      numArgs=5..7,
+                                      defaultValue=none);
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+// no values for positional argument
+proc testPositionalArgumentNoVals(test: borrowed Test) throws {
+  var argList = ["progName"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addPositional(name="FileNames",
+                                      numArgs=1..);
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
 }
 
 // multiple value positional arguments with range before other positional

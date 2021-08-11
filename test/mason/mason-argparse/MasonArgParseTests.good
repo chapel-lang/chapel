@@ -414,7 +414,23 @@ testPositionalArgumentDefault()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testPositionalArgumentOptionalMissing()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 testPositionalArgumentRangeOneOrMore()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPositionalArgumentTooManyVals()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPositionalArgumentNotEnoughVals()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPositionalArgumentNoVals()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
@@ -522,4 +538,7 @@ Creating 'no' flag options prevents using value to set flag
 Creating 'no' flag options prevents using value to set flag
 Unrecognized value tru
 Maximum number of values for a flag is 1
+Found some unrecognizable arguments: file3 file4
+FileNames Not enough values: expected 5..7 got 4
+FileNames Required value missing
 Positional arguments that allow for range of values must be last relative to other positional arguments
