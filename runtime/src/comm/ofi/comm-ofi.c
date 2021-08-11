@@ -3702,7 +3702,7 @@ void amRequestCommon(c_nodeid_t node,
   //
   // If blocking, make sure target can RMA PUT the indicator to us.
   //
-  amDone_t amDone;
+  amDone_t amDone = 0;
   amDone_t* pAmDone = NULL;
   if (ppAmDone != NULL) {
     pAmDone = mrLocalizeTargetRemote(&amDone, sizeof(*pAmDone),
