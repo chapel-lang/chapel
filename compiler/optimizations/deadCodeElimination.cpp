@@ -490,13 +490,43 @@ static bool isIndexVariable(Symbol* sym, CForLoop* loop) {
   return false;
 }
 
+static Symbol* extractUpperBoundFromLoop(CForLoop* loop) {
+  std::cout << "===========================" << std::endl;
+  std::cout << "===========================" << std::endl;
+
+  if(BlockStmt* bs = toBlockStmt(loop->testBlockGet())) {
+    for_alist(entry, bs->body) {
+      if(CallExpr *call = toCallExpr(entry)) {
+        if(call->isPrimitive(PRIM_LESSOREQUAL)) {
+          if(SymExpr *symExpr = toSymExpr(call->get(2))) {
+            return symExpr->symbol();
+          }
+        }
+      }
+    }
+
+    std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+
+    //std::cout << "===========================" << std::endl;
+    //std::cout << "===========================" << std::endl;
+    //std::cout << bs->isStmtExpr() << std::endl;
+    //print_view(bs->getStmtExpr());
+    //std::cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~" << std::endl;
+  }
+
+  INT_FATAL("Unexpected upper bound for loop designated as GPU kernel");
+
+  return nullptr;
+}
+
 static  CallExpr* generateGPUCall(FnSymbol* kernel,
-                                     std::vector<VarSymbol*> actuals) {
+                                  std::vector<VarSymbol*> actuals,
+                                  Symbol* blockSize) {
   CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
   call->insertAtTail(new_CStringSymbol(kernel->cname));
 
   call->insertAtTail(new_IntSymbol(1));  // grid size
-  call->insertAtTail(new_IntSymbol(1));  // block size
+  call->insertAtTail(blockSize); //new_IntSymbol(1));  // block size
 
   for_vector (VarSymbol, actual, actuals) {
     call->insertAtTail(new SymExpr(actual));
@@ -509,6 +539,8 @@ static void outlineGPUKernels() {
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
     std::vector<BaseAST*> asts;
     collect_asts(fn, asts);
+
+    //print_view(fn);
 
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
@@ -659,7 +691,7 @@ static void outlineGPUKernels() {
             }
           }
 
-          CallExpr* gpuCall = generateGPUCall(outlinedFunction, kernelActuals);
+          CallExpr* gpuCall = generateGPUCall(outlinedFunction, kernelActuals, extractUpperBoundFromLoop(loop));
 
           gpuLaunchBlock->insertAtTail(gpuCall);
           gpuLaunchBlock->flattenAndRemove();
