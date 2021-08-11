@@ -616,6 +616,10 @@ def preamble(args, fakes):
     # generate, but for now this is good enough
     print("use CPtr;")
 
+    # Needed for C types
+    print("use SysCTypes;")
+    print("use SysBasic;")
+
 # TODO: accept file from stdin?
 if __name__=="__main__":
     (args, unknowns)  = getArgs()
