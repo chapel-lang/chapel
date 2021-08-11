@@ -447,6 +447,7 @@ module MasonArgParse {
       // the original.
       for i in argsD {
         const arrElt = arguments[i];
+        if _subcommands.contains(arrElt) then break;
         // look for = sign after opt, split into two elements
         if arrElt.startsWith("-") && arrElt.find("=") > 0 {
           var elems = new list(arrElt.split("=", 1));
@@ -625,6 +626,10 @@ module MasonArgParse {
       _actions.add(action._name, action);
 
       return arg;
+    }
+
+    proc setPassThrough(identifier:string) throws {
+      return addSubCommand(identifier);
     }
 
     proc addFlag(name:string, opts:[?optsD],

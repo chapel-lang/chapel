@@ -3328,6 +3328,202 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
   test.assertTrue(addExt.valueAsBool());
   test.assertEqual(addPkg.value(), "externalPackage@0.2.3");
 }
+
+// mockup of a Mason interface testing "run" options
+proc testMockMasonRun(test: borrowed Test) throws {
+  var argList = ["mason","run","--build","--","--myConfigVar=true"];
+
+  var parser = new argumentParser();
+  var newCmd = parser.addSubCommand("new");
+  var initCmd = parser.addSubCommand("init");
+  var addCmd = parser.addSubCommand("add");
+  var rmCmd = parser.addSubCommand("rm");
+  var upCmd = parser.addSubCommand("update");
+  var testCmd = parser.addSubCommand("test");
+  var buildCmd = parser.addSubCommand("build");
+  var runCmd = parser.addSubCommand("run");
+  var searchCmd = parser.addSubCommand("search");
+  var envCmd = parser.addSubCommand("env");
+  var cleanCmd = parser.addSubCommand("clean");
+  var docCmd = parser.addSubCommand("doc");
+  var sysCmd = parser.addSubCommand("system");
+  var extCmd = parser.addSubCommand("external");
+  var pubCmd = parser.addSubCommand("publish");
+  var helpFlag = parser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  var verFlag = parser.addFlag(name="version",
+                              opts=["-V","--version"],
+                              defaultValue=false,
+                              flagInversion=false);
+  // setup the subcommand parsers (normally done in each sub-module)
+  var newParser = new argumentParser();
+  var initParser = new argumentParser();
+  var addParser = new argumentParser();
+  var rmParser = new argumentParser();
+  var upParser = new argumentParser();
+  var testParser = new argumentParser();
+  var buildParser = new argumentParser();
+  var runParser = new argumentParser();
+  var searchParser = new argumentParser();
+  var envParser = new argumentParser();
+  var cleanParser = new argumentParser();
+  var docParser = new argumentParser();
+  var sysParser = new argumentParser();
+  var extParser = new argumentParser();
+  var pubParser = new argumentParser();
+
+  // setup arguments for subcommand 'run'
+  var runBuild = runParser.addFlag(name="build",
+                                 opts=["--build"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var runShow = runParser.addFlag(name="show",
+                                  opts=["--show"],
+                                  defaultValue=false,
+                                  flagInversion=false);
+  var runExample = runParser.addOption(name="example",
+                                       opts=["--example"],
+                                       numArgs=0..);
+  var runPassThrough = runParser.setPassThrough("--");
+
+  var runHelpFlag = runParser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  // setup arguments for subcommand 'add'
+  var addExt = addParser.addFlag(name="external",
+                                 opts=["--external"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addSys = addParser.addFlag(name="system",
+                                 opts=["--system"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addPkg = addParser.addPositional(name="package");
+
+  var addHelpFlag = addParser.addFlag(name="help",
+                               opts=["-h","--help"],
+                               defaultValue=false,
+                               flagInversion=false);
+  //make sure no value currently exists
+  test.assertFalse(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertFalse(helpFlag.hasValue());
+  test.assertFalse(verFlag.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertFalse(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertTrue(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertTrue(helpFlag.hasValue());
+  test.assertTrue(verFlag.hasValue());
+  test.assertFalse(helpFlag.valueAsBool());
+  test.assertFalse(verFlag.valueAsBool());
+  test.assertFalse(runBuild.hasValue());
+  test.assertFalse(runShow.hasValue());
+  test.assertFalse(runExample.hasValue());
+  test.assertFalse(runPassThrough.hasValue());
+  //parse the remaining args
+  var runTimeArgs = runParser.parseArgs(rest.toArray());
+  //make sure we now have a value
+  test.assertTrue(runBuild.hasValue());
+  test.assertTrue(runShow.hasValue());
+  test.assertFalse(runExample.hasValue());
+  test.assertTrue(runPassThrough.hasValue());
+  test.assertTrue(runHelpFlag.hasValue());
+  test.assertFalse(runHelpFlag.valueAsBool());
+  //ensure the value passed is correct
+  test.assertFalse(runShow.valueAsBool());
+  test.assertTrue(runBuild.valueAsBool());
+  test.assertEqual(runTimeArgs, new list(argList[4..]));
+}
+
+// test passthrough arg with nothing else
+proc testPassthrough(test: borrowed Test) throws {
+  var argList = ["progName","--","--myVar","setting"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addPositional(name="FileName",
+                                      defaultValue=none,
+                                      numArgs=0..1);
+  var passThrough = parser.setPassThrough("--");
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(passThrough.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we have a value
+  test.assertFalse(myPosArg.hasValue());
+  test.assertTrue(passThrough.hasValue());
+  test.assertEqual(rest, new list(argList[2..]));
+}
+
+// test passthrough arg with positional first
+proc testPassthroughWithPositional(test: borrowed Test) throws {
+  var argList = ["progName","myFile","--","--myVar","setting"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addPositional(name="FileName",
+                                      defaultValue=none,
+                                      numArgs=0..1);
+  var passThrough = parser.setPassThrough("--");
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(passThrough.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we have a value
+  test.assertTrue(myPosArg.hasValue());
+  test.assertTrue(passThrough.hasValue());
+  test.assertEqual(myPosArg.value(),argList[1]);
+  test.assertEqual(rest, new list(argList[3..]));
+}
+
+// test passthrough arg with positional first and no values
+proc testPassthroughWithPositionalNoVals(test: borrowed Test) throws {
+  var argList = ["progName"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addPositional(name="FileName",
+                                      defaultValue=none,
+                                      numArgs=0..1);
+  var passThrough = parser.setPassThrough("--");
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(passThrough.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we have no value
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(passThrough.hasValue());
+  test.assertEqual(rest, new list(string));
+}
+
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
 UnitTest.main();
