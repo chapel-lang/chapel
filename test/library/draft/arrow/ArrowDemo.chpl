@@ -2,7 +2,6 @@ module ArrowDemo {
   require "Arrow.chpl";
   require "-larrow-glib", "-lglib-2.0", "-lgobject-2.0";
   use Arrow;
-  use ArrowDecl;
   use CPtr;
 
   proc main(){
@@ -18,7 +17,7 @@ module ArrowDemo {
     printArray(arrowBooleanArray);
     
     var rcbatch: ArrowRecordBatch = new ArrowRecordBatch("field0", arrowInt64Array, "field1", arrowStringArray, "field2", arrowBooleanArray);
-    var rcbatch2: ArrowRecordBatch = ("field0", arrowInt64Array, "field1", arrowStringArray);
+    var rcbatch2: ArrowRecordBatch = new ArrowRecordBatch("field0", arrowInt64Array, "field1", arrowStringArray);
     writeln("\nRecord batch from above arrays:");
     printRecordBatch(rcbatch);
     

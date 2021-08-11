@@ -1,1 +1,1 @@
--I /usr/local/include/glib-2.0 -I /usr/local/lib/glib-2.0/include -larrow-glib -lglib-2.0 -lgobject-2.0
+-I /usr/local/include/glib-2.0 -I /usr/local/lib/glib-2.0/include -larrow-glib -lparquet-glib -lglib-2.0 -lgobject-2.0
