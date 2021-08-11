@@ -4718,9 +4718,9 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
 
   std::vector<GenRet> args;
-  int i = 0;
+  int curArg = 1;
   for_actuals(actual, call) {
-    if (i++ > nNonKernelParamArgs) {
+    if (curArg > nNonKernelParamArgs) {
       args.push_back(codegenAddrOf(actual));
     }
     else {
@@ -4728,12 +4728,12 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
 
       // if we finished adding non-kernel parameters, add number of kernel
       // parameters first before the parameters themselves.
-      if (i == nNonKernelParamArgs) {
+      if (curArg == nNonKernelParamArgs) {
         GenRet numParams = new_IntSymbol(nKernelParamArgs);
         args.push_back(numParams);
-        i++;
       }
     }
+    curArg++;
   }
 
   return codegenCallExprWithArgs(fn, args);
