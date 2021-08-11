@@ -673,7 +673,7 @@ bool allowFnCallsFromGPU = false;
 int indent = 0;
 
 static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls) {
-  if (blk->getModule()->modTag != MOD_USER)
+  if (!blk->inTree() || blk->getModule()->modTag != MOD_USER)
     return false;
   std::set<FnSymbol*> okFns;
   std::set<FnSymbol*> visitedFns;
