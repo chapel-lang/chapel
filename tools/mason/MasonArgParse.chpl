@@ -90,7 +90,7 @@ module MasonArgParse {
 
 
   // stores an argument definition
-  class Action {
+  class ArgumentHandler {
     // friendly name for this argument
     var _name:string;
 
@@ -117,7 +117,7 @@ module MasonArgParse {
   }
 
   // stores a subcommand definition
-  class SubCommand : Action {
+  class SubCommand : ArgumentHandler {
 
     proc init(cmd:string) {
       super.init();
@@ -148,7 +148,7 @@ module MasonArgParse {
 
   }
 
-  class Positional : Action {
+  class Positional : ArgumentHandler {
     // indicates if this argument is required to be entered by the user
     var _required:bool;
     // default value to use when argument is not present
@@ -227,7 +227,7 @@ module MasonArgParse {
   }
 
   // stores the definition of a Flag (bool) argument
-  class Flag : Action {
+  class Flag : ArgumentHandler {
     // indicates if this flag is required to be entered by the user
     var _required:bool;
     // default value to use when flag is not present
@@ -314,14 +314,14 @@ module MasonArgParse {
   }
 
   // stores an option definition
-  class Option : Action {
+  class Option : ArgumentHandler {
     // number of option flags that can indicate this argument
     var _numOpts:int;
     // value of option flag(s) that can indicate this argument
     var _opts:[0.._numOpts-1] string;
     // number of acceptable values to be present after argument is indicated
     var _numArgs:range;
-    // whether or not the user is required to enter a value for this action
+    // whether or not the user is required to enter a value for this argument
     var _required:bool=false;
     // one or more default values to assign if opt is not entered by user
     var _defaultValue:list(string);
@@ -353,7 +353,7 @@ module MasonArgParse {
     override proc _hasDefault():bool {
       return !_defaultValue.isEmpty();
     }
-    // TODO: Decouple the argument from the action
+    // TODO: Decouple the argument from the argumenthandler
     // maybe pass a list to fill by reference and have the argparser populate
     // the argument instead?
     // also need a bool by ref to indicate presence of arg or not
@@ -399,8 +399,8 @@ module MasonArgParse {
   record argumentParser {
     // store the arguments by their familiar names
     var _result: map(string, shared Argument);
-    // store the actions by their familiar names
-    var _actions: map(string, owned Action);
+    // store the argument handlers by their familiar names
+    var _handlers: map(string, owned ArgumentHandler);
     // map an option string to its familiar name
     var _options: map(string, string);
     // store positional definitions
@@ -413,10 +413,10 @@ module MasonArgParse {
       var idx = argsD.low;
       debugTrace("Parsing Positionals...");
       debugTrace(arguments:string + " " + endIdx:string);
-      for act in _positionals {
-        var arg = _result.getReference(act._name);
-        debugTrace("begin matching " + act._name);
-        endPos = act._match(arguments, idx, arg, endIdx);
+      for handler in _positionals {
+        var arg = _result.getReference(handler._name);
+        debugTrace("begin matching " + handler._name);
+        endPos = handler._match(arguments, idx, arg, endIdx);
         idx = endPos;
         debugTrace("got endPos " + endPos:string);
         if idx == endIdx then break;
@@ -472,7 +472,7 @@ module MasonArgParse {
       }
 
       // check for when arguments passed but none defined
-      if firstFlagIdx > 0 && _actions.size == 0 {
+      if firstFlagIdx > 0 && _handlers.size == 0 {
         throw new ArgumentError("unrecognized options/values encountered: " +
                                 " ".join(argsList.these()));
       }
@@ -495,15 +495,15 @@ module MasonArgParse {
         // get a ref to the argument
         var arg = _result.getReference(name);
         debugTrace("got reference to argument " + name);
-        // get the action to match
-        const act = _actions.getBorrowed(name);
+        // get the argument handler to match
+        const handler = _handlers.getBorrowed(name);
         // try to match values in argstring, get the last value position
         var stopPos = argsList.size - 1;
         if arrayOptionIndices.size > i + 1 {
           stopPos = arrayOptionIndices[i+1][0] - 1;
         }
         debugTrace("set stopPos = " + stopPos:string);
-        endPos = act._match(argsList.toArray(), idx, arg, stopPos);
+        endPos = handler._match(argsList.toArray(), idx, arg, stopPos);
         debugTrace("got end position " + endPos:string);
         k+=1;
         debugTrace("k val = " + k:string);
@@ -516,7 +516,8 @@ module MasonArgParse {
           // stop processing more arguments, let subcommand eat the rest
           // needed when a subcommand defines same flag as parent command
           // or else the parent command will try to match on the subcommand arg
-          debugTrace("Subcommand " + act._name +" consumes rest of arguments");
+          debugTrace("Subcommand " + handler._name +
+                     " consumes rest of arguments");
           break;
         }
 
@@ -565,12 +566,12 @@ module MasonArgParse {
 
     proc _assignDefaultsToMissingOpts() {
       // set any default values as needed
-      for name in this._actions.keys() {
-        const act = this._actions.getBorrowed(name);
+      for name in this._handlers.keys() {
+        const handler = this._handlers.getBorrowed(name);
         const arg = this._result.getReference(name);
-        if !arg._present && act._hasDefault() {
+        if !arg._present && handler._hasDefault() {
           debugTrace("Assigning default value to " + name);
-          arg._values.extend(act._getDefaultValue());
+          arg._values.extend(handler._getDefaultValue());
           arg._present = true;
         }
       }
@@ -578,12 +579,12 @@ module MasonArgParse {
 
     proc _checkSatisfiedOptions() throws {
       // make sure we satisfied options that require a value
-      for name in this._actions.keys() {
-        const act = this._actions.getBorrowed(name);
+      for name in this._handlers.keys() {
+        const handler = this._handlers.getBorrowed(name);
         const arg = this._result.getReference(name);
-        var rtnMsg = act._validate(arg._present, arg._values.size);
+        var rtnMsg = handler._validate(arg._present, arg._values.size);
         if rtnMsg != "" {
-          throw new ArgumentError(act._name + " " + rtnMsg);
+          throw new ArgumentError(handler._name + " " + rtnMsg);
         }
       }
     }
@@ -607,20 +608,20 @@ module MasonArgParse {
     }
 
 
-    proc _addAction(in action : Action) throws {
+    proc _addHandler(in handler : ArgumentHandler) throws {
 
       // ensure option names are unique
-      if _actions.contains(action._name) {
-        throw new ArgumentError("Option name " + action._name +
+      if _handlers.contains(handler._name) {
+        throw new ArgumentError("Option name " + handler._name +
                                 " is previously defined");
       }
 
       //create, add, and return the shared argument
       var arg = new shared Argument();
-      this._result.add(action._name, arg);
-      // store the action
-      debugTrace("added action: " + action._name);
-      _actions.add(action._name, action);
+      this._result.add(handler._name, arg);
+      // store the handler
+      debugTrace("added handler: " + handler._name);
+      _handlers.add(handler._name, handler);
 
       return arg;
     }
@@ -677,21 +678,21 @@ module MasonArgParse {
         }
       }
 
-      var act = new owned Flag(name=name,
+      var handler = new owned Flag(name=name,
                                required=required,
                                defaultValue=defaultValue,
                                yesFlags=opts,
                                noFlags=noFlagOpts,
                                numArgs=numArgs);
 
-      return _addAction(act);
+      return _addHandler(handler);
     }
 
     proc addSubCommand(cmd:string) throws {
-      var act = new owned SubCommand(cmd);
+      var handler = new owned SubCommand(cmd);
       _subcommands.append(cmd);
       _options.add(cmd, cmd);
-      return _addAction(act);
+      return _addHandler(handler);
     }
 
     proc addArgument(name:string, numArgs=1, defaultValue:?t=none) throws {
@@ -699,15 +700,10 @@ module MasonArgParse {
     }
 
     proc addArgument(name:string,
-                       numArgs:range(boundedType=BoundedRangeType.boundedLow),
-                       defaultValue:?t=none) throws {
-      return addArgument(name, numArgs.low..max(int), defaultValue);
-    }
-
-    proc addArgument(name:string,
-                       numArgs:range,
-                       defaultValue:?t=none) throws {
-      var act = new owned Positional(name, defaultValue, numArgs);
+                     numArgs:range(?),
+                     defaultValue:?t=none) throws {
+      var nArgs = _prepareRange(numArgs);
+      var handler = new owned Positional(name, defaultValue, nArgs);
 
       for arg in _positionals {
         if arg._numArgs.high >= 1 && arg._numArgs.low != arg._numArgs.high {
@@ -717,9 +713,9 @@ module MasonArgParse {
         }
       }
 
-      _positionals.append(act.borrow());
+      _positionals.append(handler.borrow());
       //create, add, and return the shared argument
-      return _addAction(act);
+      return _addHandler(handler);
     }
 
     // define a new string option with fixed number of values expected
@@ -735,26 +731,13 @@ module MasonArgParse {
                        defaultValue=defaultValue);
     }
 
-    // define a new string option with a low bounded range of values expected
-    proc addOption(name:string,
-                   opts:[?optsD]string,
-                   numArgs:range(boundedType=BoundedRangeType.boundedLow),
-                   required=false,
-                   defaultValue:?t=none) throws {
-      return addOption(name=name,
-                       opts=opts,
-                       numArgs=numArgs.low..max(int),
-                       required=required,
-                       defaultValue=defaultValue);
-    }
-
     // define a new string option with bounded range of values expected
     proc addOption(name:string,
                    opts:[?optsD]string,
-                   numArgs:range,
+                   numArgs:range(?),
                    required=false,
                    defaultValue:?t=none) throws {
-
+      var nArgs = _prepareRange(numArgs);
       _checkAndSaveOpts(opts, name);
       var myDefault = new list(string);
 
@@ -768,15 +751,28 @@ module MasonArgParse {
                                 + "as default values at this time");
       }
 
-      var action = new owned Option(name=name,
+      var handler = new owned Option(name=name,
                                     numOpts=opts.size,
                                     opts=opts,
-                                    numArgs=numArgs,
+                                    numArgs=nArgs,
                                     required=required,
                                     defaultValue=myDefault
                                     );
-      return _addAction(action);
+      return _addHandler(handler);
     }
+  }
+
+  // helper to prepare numArgs ranges for use
+  proc _prepareRange(rIn: range(?)) :range throws {
+      var nArgs:range;
+      if !rIn.hasHighBound() {
+        nArgs = rIn.low..max(int);
+      } else if !rIn.hasLowBound() {
+        throw new ArgumentError("numArgs must have low bound");
+      } else {
+        nArgs = rIn;
+      }
+      return nArgs;
   }
 
   // helper to convert string values to booleans
