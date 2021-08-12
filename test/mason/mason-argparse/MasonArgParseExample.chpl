@@ -1,5 +1,7 @@
 module M {
     private use MasonArgParse;
+    private use List;
+
     config var myConfigVar:string;
 
     proc main(args:[?argsD]string) throws {
@@ -38,8 +40,8 @@ module M {
       // add a subcommand that has its own parser (defined later)
       var subCmd1 = parser.addSubCommand(cmd="subCmd1");
 
-      // parse the args and collect any remaining values in rest
-      var rest = parser.parseArgs(args[1..]);
+      // parse the args
+      parser.parseArgs(args);
 
       writeln("Values received from argparse:");
       if strArg.hasValue() {
@@ -50,7 +52,7 @@ module M {
       if boolArg.hasValue() then writeln("boolArg: " + boolArg.value());
       if posArg.hasValue() then writeln("positional value: " + posArg.value());
       if subCmd1.hasValue() {
-        mySubCmd1(rest.toArray());
+        mySubCmd1((new list(subCmd1.values())).toArray());
       }
 
 
@@ -81,7 +83,7 @@ module M {
                                          numArgs=0..1,
                                          defaultValue=none);
 
-      var rest = parser.parseArgs(args);
+      parser.parseArgs(args);
       writeln("args parsed in subcommand:");
       for item in subCmdArg1.values() do writeln(item);
       for item in subCmdArg2.values() do writeln(item);

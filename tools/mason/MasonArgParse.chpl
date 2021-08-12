@@ -95,7 +95,7 @@ module MasonArgParse {
     var _name:string;
 
     proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
-                ref rest:list(string), endPos:int):int throws {
+                endPos:int):int throws {
       return 0;
     }
 
@@ -128,7 +128,7 @@ module MasonArgParse {
     // subcommand at position startPos (inclusive) and through the
     // endPos (inclusive) parameter [startPos, endPos]
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
-                         ref rest:list(string), endPos:int) throws {
+                         endPos:int) throws {
       var pos = startPos;
       var next = pos + 1;
       debugTrace("starting at pos: " + pos:string);
@@ -136,10 +136,9 @@ module MasonArgParse {
                  + endPos:string);
 
       if args[pos] == this._name {
-        myArg._values.append(args[pos]);
+        myArg._values.extend(args[pos..]);
         debugTrace("matched cmd: " + args[pos] + " at pos: " + pos:string);
-        rest.extend(args[next..]);
-        return next;
+        return argsD.high + 1;
       } else {
         debugTrace("Tried to match cmd " + _name + " at position "
                     + pos:string + " and failed...this shouldn't happen");
@@ -186,7 +185,7 @@ module MasonArgParse {
     }
 
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
-                         ref rest:list(string), endPos:int) throws {
+                         endPos:int) throws {
       // make sure we didn't receive an empty array
       if argsD.high < 0 then return 0;
       var high = _numArgs.high;
@@ -267,7 +266,7 @@ module MasonArgParse {
     }
 
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
-                         ref rest:list(string), endPos:int) throws {
+                         endPos:int) throws {
       var high = _numArgs.high;
       debugTrace("expecting between " +
                  _numArgs.low:string + " and " + _numArgs.high:string);
@@ -362,7 +361,7 @@ module MasonArgParse {
     // at position startPos (exclusive) and through the endPos (inclusive)
     // parameter (startPos, endPos]
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
-                         ref rest:list(string), endPos:int) throws {
+                         endPos:int) throws {
       var high = _numArgs.high;
       debugTrace("expecting between " +
                  _numArgs.low:string + " and " + _numArgs.high:string);
@@ -412,13 +411,12 @@ module MasonArgParse {
     proc _parsePositionals(arguments:[?argsD] string, endIdx:int) throws {
       var endPos = argsD.low;
       var idx = argsD.low;
-      var rest = new list(string);
       debugTrace("Parsing Positionals...");
       debugTrace(arguments:string + " " + endIdx:string);
       for act in _positionals {
         var arg = _result.getReference(act._name);
         debugTrace("begin matching " + act._name);
-        endPos = act._match(arguments, idx, arg, rest, endIdx);
+        endPos = act._match(arguments, idx, arg, endIdx);
         idx = endPos;
         debugTrace("got endPos " + endPos:string);
         if idx == endIdx then break;
@@ -432,20 +430,20 @@ module MasonArgParse {
       return endPos;
     }
 
+    // TODO: Find out why the in intent is breaking here
     proc parseArgs(arguments:[?argsD] string) throws {
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
       debugTrace("Begin parsing args...");
       var k = 0;
       // identify optionIndices where opts start
       var optionIndices : map(int, string);
-      var argsList = new list(arguments);
-      var rest = new list(string);
+      var argsList = new list(arguments[argsD.low+1..]);
       var endPos = 0;
 
       // as noted in the comments on PR#18141, breaking up the arguments
       // when they contain = disconnects the resulting array's indices from
       // the original.
-      for i in argsD {
+      for i in argsD.low+1..argsD.high {
         const arrElt = arguments[i];
         if _subcommands.contains(arrElt) then break;
         // look for = sign after opt, split into two elements
@@ -505,7 +503,7 @@ module MasonArgParse {
           stopPos = arrayOptionIndices[i+1][0] - 1;
         }
         debugTrace("set stopPos = " + stopPos:string);
-        endPos = act._match(argsList.toArray(), idx, arg, rest, stopPos);
+        endPos = act._match(argsList.toArray(), idx, arg, stopPos);
         debugTrace("got end position " + endPos:string);
         k+=1;
         debugTrace("k val = " + k:string);
@@ -514,7 +512,7 @@ module MasonArgParse {
         debugTrace("argsList.size = " + argsList.size:string);
         debugTrace("argsD.high = " + argsD.high:string);
         //check if we consumed the rest of the arguments
-        if rest.size > 0 && rest.size + endPos == argsList.size {
+        if endPos == argsList.size {
           // stop processing more arguments, let subcommand eat the rest
           // needed when a subcommand defines same flag as parent command
           // or else the parent command will try to match on the subcommand arg
@@ -526,7 +524,6 @@ module MasonArgParse {
         // then check that we don't have extra values
         if k < arrayOptionIndices.size {
           if endPos != arrayOptionIndices[k][0] {
-            debugTrace("Rest.size= " + rest.size:string);
             debugTrace("endpos != arrayOptionIndices[k][0]:"+endPos:string+"!="
                      + arrayOptionIndices[k][0]:string);
             debugTrace("arrayOptionIndices " + arrayOptionIndices:string);
@@ -534,7 +531,7 @@ module MasonArgParse {
             // intermixed in command string
             _checkTrailingPositionals(argsList.toArray()[endPos..],
                                       arrayOptionIndices[k][0],
-                                      argsList.size, rest.size);
+                                      argsList.size);
           }
         }
       }
@@ -542,7 +539,7 @@ module MasonArgParse {
       // check for undefined argument provided or possible positional args
       // placed at end of command string
       _checkTrailingPositionals(argsList.toArray()[endPos..], argsList.size,
-                                argsList.size, rest.size);
+                                argsList.size);
 
       // make sure all options defined got values if needed
       _checkSatisfiedOptions();
@@ -550,14 +547,14 @@ module MasonArgParse {
       // assign missing values their defaults, if supplied
       _assignDefaultsToMissingOpts();
 
-      return rest;
+      return 0;
     }
 
     proc _checkTrailingPositionals(remainingArgs:[?argsD]string, stopPos:int,
-                                   argLen:int, restLen:int) throws {
+                                   argLen:int) throws {
       // check if unidentified value is a positional or an error
       var curPos = argsD.low;
-      if curPos < argLen && curPos + restLen < argLen {
+      if curPos < argLen {
         var oldEnd=curPos;
         curPos = _parsePositionals(remainingArgs, stopPos);
         if oldEnd == curPos then
