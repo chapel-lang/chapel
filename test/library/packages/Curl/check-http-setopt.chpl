@@ -8,6 +8,7 @@ use DateTime;
 
 extern const CURLOPT_VERBOSE: CURLoption;
 extern const CURLOPT_FILETIME: CURLoption;
+extern const CURLOPT_URL: CURLoption;
 extern const CURLINFO_FILETIME: CURLINFO;
 
 proc test1() {
@@ -52,7 +53,47 @@ proc test2() {
   stdout.flush();
 }
 
+// Test a string-type option, CURLOPT_URL
+proc test3() {
+  writeln("\ntest3\n");
+  var f = "test.txt";
+  var url = "http://" + host + ":" + port + "/" + f;
+  var urlreader = openUrlReader(""); // set real url via setopt()
+
+  setopt(urlreader, CURLOPT_VERBOSE, true);
+  setopt(urlreader, CURLOPT_URL, url);
+
+  var str: string;
+  while urlreader.readline(str) {
+    writeln(str);
+  }
+
+  stderr.flush();
+  stdout.flush();
+}
+
+// Test a bytes-type option, CURLOPT_URL
+proc test4() {
+  writeln("\ntest4\n");
+  var f = "test.txt";
+  var url = "http://" + host + ":" + port + "/" + f;
+  var urlreader = openUrlReader(""); // set real url via setopt()
+
+  setopt(urlreader, CURLOPT_VERBOSE, true);
+  setopt(urlreader, CURLOPT_URL, url:bytes);
+
+  var str: string;
+  while urlreader.readline(str) {
+    writeln(str);
+  }
+
+  stderr.flush();
+  stdout.flush();
+}
+
 startServer();
 test1();
 test2();
+test3();
+test4();
 stopServer();
