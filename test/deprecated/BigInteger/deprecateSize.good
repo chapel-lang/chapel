@@ -1,0 +1,6 @@
+deprecateSize.chpl:8: warning: bigint.size() is deprecated
+deprecateSize.chpl:9: warning: bigint.size() is deprecated
+deprecateSize.chpl:10: warning: bigint.size() is deprecated
+-65533256 has 1 limb(s)
+-639283632585 has 1 limb(s)
+-2745472373880471808926250560 has 2 limb(s)
