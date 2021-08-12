@@ -74,7 +74,7 @@ proc test3() {
 
 // Test a bytes-type option, CURLOPT_URL
 proc test4() {
-  writeln("\ntest3\n");
+  writeln("\ntest4\n");
   var f = "test.txt";
   var url = "http://" + host + ":" + port + "/" + f;
   var urlreader = openUrlReader(""); // set real url via setopt()
