@@ -469,6 +469,8 @@ all:
       config: 16-node-cs, 16-node-cs-hdr
   05/14/21:
     - Use LLVM by default if LLVM is available either as system or bundled (#17079)
+  08/05/21:
+    - Extend bounded coforall optimization to zippered loops (#18162)
 
 # End all
 
@@ -749,8 +751,6 @@ distCreate-arrays-deinit.cc-perf: &distCreate-base
     - A few communication micro-optimizations to improve Block array creation (#17354)
   04/07/21:
     - Revert a recent change in block array creation that caused performance regression (#17531)
-  08/05/21:
-    - Extend bounded coforall optimization to zippered loops (#18162)
 
 distCreate-arrays-init.cc-perf:
   <<: *distCreate-base
