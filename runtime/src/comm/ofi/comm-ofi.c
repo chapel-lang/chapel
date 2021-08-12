@@ -1339,7 +1339,7 @@ chpl_bool canBindTxCtxs(struct fi_info* info) {
 
   //
   // Gather invariant info.  The simplistic first-time check here is
-  // sufficent because we only get called from single-threaded code
+  // sufficient because we only get called from single-threaded code
   // while examining provider candidates.
   //
   static chpl_bool haveInvariants = false;
@@ -1845,7 +1845,19 @@ struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced) {
                                  | FI_MR_VIRT_ADDR
                                  | FI_MR_PROV_KEY // TODO: avoid pkey bcast?
                                  | FI_MR_ENDPOINT);
-  if (chpl_numNodes > 1 && envMaxHeapSize != 0 && !envOversubscribed) {
+  // 
+  // Consider ourselves oversubscribed if either the environment variable is set or
+  // there is more than one locale on the local node. The call to
+  // chpl_comm_ofi_oob_locales_on_node was added to prevent chapcs from using the
+  // verbs;ofi_rxm provider which currently doesn't work and shouldn't be selected
+  // even if CHPL_RT_OVERSUBSCRIBED isn't set.   The logic for setting
+  // FI_MR_ALLOCATED should be revisited as oversubscription alone isn't a
+  // sufficient reason.
+  //
+  int num_locales_on_node = chpl_comm_ofi_oob_locales_on_node();
+  chpl_bool oversubscribed = envOversubscribed || (num_locales_on_node > 1);
+
+  if (chpl_numNodes > 1 && envMaxHeapSize != 0 && !oversubscribed) {
     hints->domain_attr->mr_mode |= FI_MR_ALLOCATED;
   }
 
@@ -2365,15 +2377,26 @@ void findMoreMemoryRegions(void) {
       }
     }
 
-    if (!seen
-        && ((pnLen > 0 && strcmp(path, progName) == 0)
-            || strcmp(path, "[heap]") == 0
-            || strcmp(path, "[stack]") == 0)) {
-      DBG_PRINTF(DBG_MR, "record mem map region: %p %#zx \"%s\"",
-                 addr, size, path);
-      memTab[memTabCount].addr = addr;
-      memTab[memTabCount].size = size;
-      memTabCount++;
+    if (!seen) {
+      //
+      // Matching the initialized data, heap, and stack is easy (first
+      // three tests). The uninitialized .bss part of the static data
+      // is assumed to have an empty path and directly follow something
+      // we've already registered, namely the initialized data.
+      //
+      if ((pnLen > 0 && strcmp(path, progName) == 0)
+          || strcmp(path, "[heap]") == 0
+          || strcmp(path, "[stack]") == 0
+          || (path[0] == '\0'
+              && memTabCount > 0
+              && (char*) addr == ((char*) memTab[memTabCount - 1].addr
+                                  + memTab[memTabCount - 1].size))) {
+        DBG_PRINTF(DBG_MR, "record mem map region: %p %#zx \"%s\"",
+                   addr, size, path);
+        memTab[memTabCount].addr = addr;
+        memTab[memTabCount].size = size;
+        memTabCount++;
+      }
     }
   }
 }
@@ -2887,13 +2910,27 @@ void init_fixedHeap(void) {
   }
 
   //
-  // We'll use a fixed heap.  If its size is not specified, default
-  // to 85% of physical memory.
+  // If we get this far we'll use a fixed heap.
+  // 
+  uint64_t total_memory = chpl_sys_physicalMemoryBytes();
+
+  //
+  // Don't use more than 85% of the total memory for heaps.
+  //
+  uint64_t max_heap_memory = (size_t) (0.85 * total_memory);
+
+  int num_locales_on_node = chpl_comm_ofi_oob_locales_on_node();
+  size_t max_heap_per_locale = (size_t) (max_heap_memory / num_locales_on_node);
+
+
+  //
+  // If the maximum heap size is not specified or it's greater than the maximum heap per
+  // locale, set it to the maximum heap per locale.
   //
   ssize_t size = envMaxHeapSize;
   CHK_TRUE(size != 0);
-  if (size < 0) {
-    size = (size_t) (0.85 * chpl_sys_physicalMemoryBytes());
+  if ((size < 0) || (size > max_heap_per_locale)) {
+    size = max_heap_per_locale;
   }
 
   //
@@ -2917,19 +2954,8 @@ void init_fixedHeap(void) {
   size = ALIGN_UP(size, page_size);
 
   //
-  // As a hedge against silliness, first reduce any request so that it's
-  // no larger than the physical memory.  As a beneficial side effect
-  // when the user request is ridiculously large, this also causes the
-  // reduce-by-5% loop below to run faster and produce a final size
-  // closer to the maximum available.
-  //
-  const size_t size_phys = ALIGN_DN(chpl_sys_physicalMemoryBytes(), page_size);
-  if (size > size_phys)
-    size = size_phys;
-
-  //
   // Work our way down from the starting size in (roughly) 5% steps
-  // until we can actually get that much from the system.
+  // until we can actually allocate a heap that size.
   //
   size_t decrement;
   if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
@@ -2967,7 +2993,6 @@ void init_fixedHeap(void) {
                chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
   }
 #endif
-
   fixedHeapSize  = size;
   fixedHeapStart = start;
 }
@@ -3677,7 +3702,7 @@ void amRequestCommon(c_nodeid_t node,
   //
   // If blocking, make sure target can RMA PUT the indicator to us.
   //
-  amDone_t amDone;
+  amDone_t amDone = 0;
   amDone_t* pAmDone = NULL;
   if (ppAmDone != NULL) {
     pAmDone = mrLocalizeTargetRemote(&amDone, sizeof(*pAmDone),

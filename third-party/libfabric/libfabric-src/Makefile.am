@@ -2,6 +2,7 @@
 # Copyright (c) 2016 Cisco Systems, Inc.  All rights reserved.
 # Copyright (c) 2017-2018 Intel Corporation, Inc. All right reserved.
 # Copyright (c) 2018 Amazon.com, Inc. or its affiliates. All rights reserved.
+# (C) Copyright 2020 Hewlett Packard Enterprise Development LP
 #
 # Makefile.am for libfabric
 
@@ -39,6 +40,11 @@ rdmainclude_HEADERS =
 
 # internal utility functions shared by in-tree providers:
 common_srcs =				\
+	src/hmem.c			\
+	src/hmem_rocr.c			\
+	src/hmem_cuda.c			\
+	src/hmem_cuda_gdrcopy.c		\
+	src/hmem_ze.c			\
 	src/common.c			\
 	src/enosys.c			\
 	src/rbtree.c			\
@@ -68,10 +74,13 @@ common_srcs =				\
 	prov/util/src/util_mem_monitor.c\
 	prov/util/src/util_mem_hooks.c	\
 	prov/util/src/util_mr_cache.c	\
+	prov/util/src/cuda_mem_monitor.c \
+	prov/util/src/rocr_mem_monitor.c \
 	prov/util/src/util_coll.c
 
 
 if MACOS
+common_srcs += src/osx/osd.c
 common_srcs += src/unix/osd.c
 common_srcs += include/osx/osd.h
 common_srcs += include/unix/osd.h
@@ -118,6 +127,7 @@ util_fi_pingpong_LDADD = $(linkback)
 
 nodist_src_libfabric_la_SOURCES =
 src_libfabric_la_SOURCES =			\
+	include/ofi_hmem.h			\
 	include/ofi.h				\
 	include/ofi_abi.h			\
 	include/ofi_atom.h			\
@@ -175,7 +185,7 @@ src_libfabric_la_LIBADD =
 src_libfabric_la_DEPENDENCIES = libfabric.map
 
 if !EMBEDDED
-src_libfabric_la_LDFLAGS += -version-info 14:1:13
+src_libfabric_la_LDFLAGS += -version-info 16:1:15
 endif
 src_libfabric_la_LDFLAGS += -export-dynamic \
 			   $(libfabric_version_script)
@@ -399,6 +409,7 @@ include prov/efa/Makefile.include
 include prov/usnic/Makefile.include
 include prov/psm/Makefile.include
 include prov/psm2/Makefile.include
+include prov/psm3/Makefile.include
 include prov/gni/Makefile.include
 include prov/rxm/Makefile.include
 include prov/mrail/Makefile.include
@@ -414,6 +425,7 @@ include prov/hook/hook_debug/Makefile.include
 man_MANS = $(real_man_pages) $(prov_install_man_pages) $(dummy_man_pages)
 
 EXTRA_DIST += \
+        autogen.sh \
         NEWS.md \
         libfabric.spec.in \
         config/distscript.pl \

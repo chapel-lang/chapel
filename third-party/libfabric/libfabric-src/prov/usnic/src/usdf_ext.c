@@ -57,7 +57,8 @@ usdf_usnic_getinfo_v1(uint32_t version, struct fid_fabric *fabric,
 
 	uip->ui.v1.ui_link_speed = dap->uda_bandwidth;
 	uip->ui.v1.ui_netmask_be = dap->uda_netmask_be;
-	strcpy(uip->ui.v1.ui_ifname, dap->uda_ifname);
+	snprintf(uip->ui.v1.ui_ifname, sizeof(uip->ui.v1.ui_ifname), "%s",
+		 dap->uda_ifname);
 	uip->ui.v1.ui_num_vf = dap->uda_num_vf;
 	uip->ui.v1.ui_qp_per_vf = dap->uda_qp_per_vf;
 	uip->ui.v1.ui_cq_per_vf = dap->uda_cq_per_vf;

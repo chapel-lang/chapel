@@ -42,6 +42,7 @@
 
 #ifdef HAVE_LLVM
 #include "llvm/IR/Module.h"
+#include "llvmUtil.h"
 #include "clang/CodeGen/CGFunctionInfo.h"
 #endif
 
@@ -130,7 +131,6 @@ static void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, Gen
 
 static GenRet codegenZero();
 static GenRet codegenZero32();
-static GenRet codegenCString(const char* val);
 static GenRet codegen_prim_get_real(GenRet, Type*, bool real);
 
 static int codegen_tmp = 1;
@@ -2946,11 +2946,6 @@ GenRet codegenZero32()
   return new_IntSymbol(0, INT_SIZE_32)->codegen();
 }
 
-static GenRet codegenCString(const char* val) {
-  return new_CStringSymbol(val)->codegen();
-}
-
-
 /*
 static
 GenRet codegenOne()
@@ -4700,30 +4695,93 @@ DEFINE_PRIM(PRIM_SET_DYNAMIC_END_COUNT) {
       ret = rcall->codegen();
 }
 
-DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
-  // Rewrite the call to cuLaunchKernel. Take the first argument passed to the
-  // primitive and pass it to chpl_gpu_getKernel() and pass the result as the
-  // first argument to cuLaunchKernel. Pass all other arguments along to it.
+static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
+  // Used to codegen for PRIM_GPU_KERNEL_LAUNCH_FLAT and PRIM_GPU_KERNEL_LAUNCH.
+  // They differ in number of arguments only. The first passes 1 integer for
+  // grid and block size each, the other passes 3 for each.
+  //
+  // Call `chpl_gpu_launch_kernel` runtime function.
+  //
+  // The primitive's arguments are
+  //   - function name
+  //   - grid size (1 arg or 3 args)
+  //   - block size (1 arg or 3 args)
+  //   - any number of arguments to be passed to the kernel
+  //
+  // The runtime function needs the kernel parameters to be passed by address.
+  // The other arguments to this primitive are passed along directly.
+
+  // number of arguments that are not kernel params
+  int nNonKernelParamArgs = is3d ? 7:3;
+  int nKernelParamArgs = call->numActuals() - nNonKernelParamArgs;
+
+  const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
+
   std::vector<GenRet> args;
-  bool first = true;
+  int curArg = 1;
   for_actuals(actual, call) {
-    if(first) {
-      INT_ASSERT(actual->typeInfo() == dtStringC);
-      
-      std::vector<GenRet> argsToGetKernelCall;
-      argsToGetKernelCall.push_back(codegenCString("tmp/chpl__gpu.fatbin"));
-      argsToGetKernelCall.push_back(actual->codegen());
-      
-      ret = codegenCallExprWithArgs("chpl_gpu_getKernel", argsToGetKernelCall);
-      args.push_back(ret);
-    
-      first = false;
-    } else {
-      args.push_back(actual->codegen());
+    if (curArg > nNonKernelParamArgs) {
+      args.push_back(codegenAddrOf(actual));
     }
+    else {
+      args.push_back(actual->codegen());
+
+      // if we finished adding non-kernel parameters, add number of kernel
+      // parameters first before the parameters themselves.
+      if (curArg == nNonKernelParamArgs) {
+        GenRet numParams = new_IntSymbol(nKernelParamArgs);
+        args.push_back(numParams);
+      }
+    }
+    curArg++;
   }
-  ret = codegenCallExprWithArgs("cuLaunchKernel", args);
+
+  return codegenCallExprWithArgs(fn, args);
 }
+
+DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH_FLAT) {
+  ret = codegenGPUKernelLaunch(call, /* is3d= */ false);
+}
+
+DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
+  ret = codegenGPUKernelLaunch(call, /* is3d= */ true);
+}
+
+
+static GenRet codegenCallToPtxTgtIntrinsic(const char *fcnName) {
+  GenRet ret;
+
+#ifdef HAVE_LLVM
+  llvm::Type *llvmReturnType = llvm::Type::getInt32Ty(gGenInfo->llvmContext);
+  Type *chplReturnType = dtInt[INT_SIZE_32];
+
+  llvm::Function* fun = gGenInfo->module->getFunction(fcnName);
+  if(!fun) {
+    llvm::FunctionType *fun_type = llvm::FunctionType::get(llvmReturnType, false);
+    fun = llvm::Function::Create(fun_type, llvm::GlobalValue::ExternalLinkage, fcnName, gGenInfo->module);
+    INT_ASSERT(fun);
+  }
+
+  ret.val = gGenInfo->irBuilder->CreateCall(fun);
+  ret.isLVPtr = GEN_VAL;
+  ret.chplType = chplReturnType;
+#endif
+
+  return ret;
+}
+
+DEFINE_PRIM(PRIM_GPU_THREADIDX_X) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.x"); }
+DEFINE_PRIM(PRIM_GPU_THREADIDX_Y) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.y"); }
+DEFINE_PRIM(PRIM_GPU_THREADIDX_Z) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.z"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKIDX_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.x"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKIDX_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.y"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKIDX_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.z"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKDIM_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.x"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKDIM_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.y"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKDIM_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.z"); }
+DEFINE_PRIM(PRIM_GPU_GRIDDIM_X)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.x"); }
+DEFINE_PRIM(PRIM_GPU_GRIDDIM_Y)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.y"); }
+DEFINE_PRIM(PRIM_GPU_GRIDDIM_Z)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.z"); }
 
 static void codegenPutGet(CallExpr* call, GenRet &ret) {
     // args are:

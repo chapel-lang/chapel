@@ -12,14 +12,14 @@ Case 6
 Captured string length should be 7 : 7
 Case 7 -- Take 1
 Caught expected error: 
-SystemError: Invalid argument: Argument type mismatch in argument x (in channel.readf(fmt:string, ...) with path "unknown" offset -1)
+SystemError: Invalid argument: Argument type mismatch in argument x (in channel.readf(fmt:string, ...) with path "unknown" offset 33)
 Case 7 -- Take 2
 Captured bytes length should be 8 : 8
 Case 8 -- Take 1
 Caught expected error
-BadFormatError: bad format: no match (in channel.readf(fmt:string, ...) with path "unknown" offset -1)
+BadFormatError: bad format: no match (in channel.readf(fmt:string, ...) with path "unknown" offset 51)
 Case 8 -- Take 2
 Caught expected error
-SystemError: Invalid argument: Argument type mismatch in argument x (in channel.readf(fmt:string, ...) with path "unknown" offset -1)
+SystemError: Invalid argument: Argument type mismatch in argument x (in channel.readf(fmt:string, ...) with path "unknown" offset 51)
 Case 8 -- Take 3
 Captured bytes length should be 8 : 8

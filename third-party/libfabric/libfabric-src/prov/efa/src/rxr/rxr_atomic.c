@@ -32,6 +32,7 @@
  */
 
 #include <ofi_atomic.h>
+#include "efa.h"
 #include "rxr.h"
 #include "rxr_rma.h"
 #include "rxr_cntr.h"
@@ -112,6 +113,7 @@ ssize_t rxr_atomic_generic_efa(struct rxr_ep *rxr_ep,
 {
 	struct rxr_tx_entry *tx_entry;
 	struct rxr_peer *peer;
+	bool delivery_complete_requested;
 	ssize_t err;
 	static int req_pkt_type_list[] = {
 		[ofi_op_atomic] = RXR_WRITE_RTA_PKT,
@@ -130,6 +132,11 @@ ssize_t rxr_atomic_generic_efa(struct rxr_ep *rxr_ep,
 
 	peer = rxr_ep_get_peer(rxr_ep, msg->addr);
 
+	if (peer->flags & RXR_PEER_IN_BACKOFF) {
+		err = -FI_EAGAIN;
+		goto out;
+	}
+
 	tx_entry = rxr_atomic_alloc_tx_entry(rxr_ep, msg, atomic_ex, op, flags);
 	if (OFI_UNLIKELY(!tx_entry)) {
 		err = -FI_EAGAIN;
@@ -137,12 +144,56 @@ ssize_t rxr_atomic_generic_efa(struct rxr_ep *rxr_ep,
 		goto out;
 	}
 
+	delivery_complete_requested = tx_entry->fi_flags & FI_DELIVERY_COMPLETE;
+	if (delivery_complete_requested && !(peer->is_local)) {
+		tx_entry->rxr_flags |= RXR_DELIVERY_COMPLETE_REQUESTED;
+		/*
+		 * Because delivery complete is defined as an extra
+		 * feature, the receiver might not support it.
+		 *
+		 * The sender cannot send with FI_DELIVERY_COMPLETE
+		 * if the peer is not able to handle it.
+		 *
+		 * If the sender does not know whether the peer
+		 * can handle it, it needs to trigger
+		 * a handshake packet from the peer.
+		 *
+		 * The handshake packet contains
+		 * the information whether the peer
+		 * support it or not.
+		 */
+		err = rxr_pkt_trigger_handshake(rxr_ep, tx_entry->addr, peer);
+		if (OFI_UNLIKELY(err))
+			goto out;
+
+		if (!(peer->flags & RXR_PEER_HANDSHAKE_RECEIVED)) {
+			err = -FI_EAGAIN;
+			goto out;
+		} else if (!rxr_peer_support_delivery_complete(peer)) {
+			err = -FI_EOPNOTSUPP;
+			goto out;
+		}
+	}
+
 	tx_entry->msg_id = (peer->next_msg_id != ~0) ?
 			    peer->next_msg_id++ : ++peer->next_msg_id;
 
-	err = rxr_pkt_post_ctrl_or_queue(rxr_ep, RXR_TX_ENTRY,
-					tx_entry, req_pkt_type_list[op],
+	if (delivery_complete_requested && op == ofi_op_atomic) {
+		err = rxr_pkt_post_ctrl(rxr_ep, RXR_TX_ENTRY,
+					tx_entry,
+					RXR_DC_WRITE_RTA_PKT,
 					0);
+	} else {
+		/*
+		 * Fetch atomic and compare atomic
+		 * support DELIVERY_COMPLETE
+		 * by nature
+		 */
+		err = rxr_pkt_post_ctrl(rxr_ep, RXR_TX_ENTRY,
+					tx_entry,
+					req_pkt_type_list[op],
+					0);
+	}
 
 	if (OFI_UNLIKELY(err)) {
 		rxr_release_tx_entry(rxr_ep, tx_entry);

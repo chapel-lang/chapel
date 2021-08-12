@@ -6,6 +6,8 @@ require "dashEye.h";
 // Note: Generated with fake std headers
 
 use CPtr;
+use SysCTypes;
+use SysBasic;
 extern proc otherFunction(ref arr : c_int) : void;
 
 extern proc otherFunction(arr : c_ptr(c_int)) : void;

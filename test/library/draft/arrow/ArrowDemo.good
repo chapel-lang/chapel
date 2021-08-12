@@ -1,0 +1,145 @@
+Int Array:
+[
+  1,
+  2,
+  3,
+  4
+]
+String Array:
+[
+  "foo",
+  "bar",
+  "baz",
+  null
+]
+Boolean Array:
+[
+  true,
+  null,
+  false,
+  true
+]
+
+Record batch from above arrays:
+field0:   [
+    1,
+    2,
+    3,
+    4
+  ]
+field1:   [
+    "foo",
+    "bar",
+    "baz",
+    null
+  ]
+field2:   [
+    true,
+    null,
+    false,
+    true
+  ]
+
+
+---------Parquet Demo-------------
+
+field0: int64
+field1: string
+field2: bool
+----
+field0:
+  [
+    [
+      1,
+      2,
+      3,
+      4
+    ],
+    [
+      1,
+      2,
+      3,
+      4
+    ]
+  ]
+field1:
+  [
+    [
+      "foo",
+      "bar",
+      "baz",
+      null
+    ],
+    [
+      "foo",
+      "bar",
+      "baz",
+      null
+    ]
+  ]
+field2:
+  [
+    [
+      true,
+      null,
+      false,
+      true
+    ],
+    [
+      true,
+      null,
+      false,
+      true
+    ]
+  ]
+
+field0: int64
+  -- field metadata --
+  PARQUET:field_id: '1'
+field1: string
+  -- field metadata --
+  PARQUET:field_id: '2'
+field2: bool
+  -- field metadata --
+  PARQUET:field_id: '3'
+----
+field0:
+  [
+    [
+      1,
+      2,
+      3,
+      4,
+      1,
+      2,
+      3,
+      4
+    ]
+  ]
+field1:
+  [
+    [
+      "foo",
+      "bar",
+      "baz",
+      null,
+      "foo",
+      "bar",
+      "baz",
+      null
+    ]
+  ]
+field2:
+  [
+    [
+      true,
+      null,
+      false,
+      true,
+      true,
+      null,
+      false,
+      true
+    ]
+  ]
+

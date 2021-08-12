@@ -58,7 +58,7 @@ void tcpx_cq_progress(struct util_cq *cq)
 		tcpx_try_func(&ep->util_ep);
 		fastlock_acquire(&ep->lock);
 		tcpx_progress_tx(ep);
-		if (ep->stage_buf.off != ep->stage_buf.len)
+		if (ep->stage_buf.cur_pos < ep->stage_buf.bytes_avail)
 			tcpx_progress_rx(ep);
 		fastlock_release(&ep->lock);
 	}
@@ -125,8 +125,8 @@ struct tcpx_xfer_entry *tcpx_xfer_entry_alloc(struct tcpx_cq *tcpx_cq,
 	return xfer_entry;
 }
 
-void tcpx_xfer_entry_release(struct tcpx_cq *tcpx_cq,
-			     struct tcpx_xfer_entry *xfer_entry)
+void tcpx_xfer_entry_free(struct tcpx_cq *tcpx_cq,
+			  struct tcpx_xfer_entry *xfer_entry)
 {
 	if (xfer_entry->ep->cur_rx_entry == xfer_entry)
 		xfer_entry->ep->cur_rx_entry = NULL;

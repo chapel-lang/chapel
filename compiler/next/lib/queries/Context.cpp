@@ -210,6 +210,8 @@ bool Context::hasFilePathForId(ID id) {
 
 void Context::advanceToNextRevision(bool prepareToGC) {
   this->currentRevisionNumber++;
+  this->numQueriesRunThisRevision_ = 0;
+
   if (prepareToGC) {
     this->lastPrepareToGCRevisionNumber = this->currentRevisionNumber;
     gcCounter++;
@@ -282,7 +284,8 @@ void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
   updateResultForQuery(filePathForModuleIdSymbolPathQuery,
                        tupleOfArgs, path,
                        "filePathForModuleIdSymbolPathQuery",
-                       false);
+                       /* isInputQuery */ false,
+                       /* forSetter */ true);
 
   if (enableDebugTracing) {
     printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
@@ -328,6 +331,20 @@ void Context::error(const uast::ASTNode* ast, const char* fmt, ...) {
   va_end(vl);
   Context::error(err);
 }
+
+void Context::error(const resolution::TypedFnSignature* inFn,
+                    const uast::ASTNode* ast,
+                    const char* fmt, ...) {
+  Location loc = parsing::locateAst(this, ast);
+  ErrorMessage err;
+  va_list vl;
+  va_start(vl, fmt);
+  err = ErrorMessage::vbuild(loc, fmt, vl);
+  va_end(vl);
+  Context::error(err);
+  // TODO: add note about instantiation & POI stack
+}
+
 
 void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
 
@@ -452,6 +469,8 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
     // by evaluating the query.
     resultEntry->dependencies.clear();
     resultEntry->errors.clear();
+    // increment the number of queries run in this revision
+    numQueriesRunThisRevision_++;
   }
 
   return useSaved;

@@ -1,0 +1,12 @@
+The purpose of this test is to demonstrate that the attributes that clang
+applies when the intrinsic llvm.nvvm.read.ptx.sreg.tid.x is used is the same
+attributes that will be applied when Chapel uses the intrinsic. 
+
+Why do we care?
+
+The assumption is the clang knows best what attributes should be placed on this
+intrinsic. Unfortunately I haven't figured out a way to construct the
+declaration to this intrinsic function by calling out to the Clang API, so I
+end up manually constructing the LLVM IR for it. For now everything matches as
+we expect\want, but if Clang updates to give more specific \ better attributes
+it would be nice to have this test fail to inform us.

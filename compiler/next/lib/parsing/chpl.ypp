@@ -716,7 +716,7 @@ stmt:
     CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
     $$ = context->finishStmt(ret);
   }
-| try_stmt                  { $$ = context->finishStmt($1); }
+| try_stmt                  { $$ = context->finishStmt(@$, $1); }
 | throw_stmt                { $$ = context->finishStmt($1); }
 | return_stmt               { $$ = context->finishStmt($1); }
 | stmt_level_expr TSEMI     { $$ = context->finishStmt(STMT(@$,$1)); }
@@ -1863,38 +1863,79 @@ ifc_constraint:
 
 try_stmt:
   TTRY     expr            TSEMI
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildTryExprStmt(@$, $2, false);
+  }
 | TTRYBANG expr            TSEMI
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildTryExprStmt(@$, $2, true);
+  }
 | TTRY     assignment_stmt
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildTryExprStmt(@$, $2, false);
+  }
 | TTRYBANG assignment_stmt
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildTryExprStmt(@$, $2, true);
+  }
 | TTRY     block_stmt      catch_expr_ls
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildTryCatchStmt(@$, $2, $3, false);
+  }
 | TTRYBANG block_stmt      catch_expr_ls
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildTryCatchStmt(@$, $2, $3, true);
+  }
 ;
 
 catch_expr_ls:
-                           { $$ = context->makeList(); }
-| catch_expr_ls catch_expr { context->appendList($1, $2); }
+                            { $$ = context->makeList(); }
+| catch_expr_ls catch_expr  { $$ = context->appendList($1, $2); }
 ;
 
 catch_expr:
-  TCATCH                          block_stmt { $$ = TODOEXPR(@$); }
-| TCATCH     catch_expr_inner     block_stmt { $$ = TODOEXPR(@$); }
-| TCATCH TLP catch_expr_inner TRP block_stmt { $$ = TODOEXPR(@$); }
+  TCATCH                          block_stmt
+  {
+    $$ = context->buildCatch(@$, nullptr, $2, false);
+  }
+| TCATCH     catch_expr_inner     block_stmt
+  {
+    $$ = context->buildCatch(@$, $2, $3, false);
+  }
+| TCATCH TLP catch_expr_inner TRP block_stmt
+  {
+    $$ = context->buildCatch(@$, $3, $5, true);
+  }
 ;
 
 catch_expr_inner:
-  ident_def             { $$ = TODOEXPR(@$); }
-| ident_def TCOLON expr { $$ = TODOEXPR(@$); }
+  ident_def
+  {
+    $$ = Variable::build(BUILDER, LOC(@$), $1, Decl::DEFAULT_VISIBILITY,
+                         Variable::VAR,
+                         /*isConfig*/ false,
+                         /*isField*/ false,
+                         /*typeExpression*/ nullptr,
+                         /*initExpression*/ nullptr).release();
+  }
+| ident_def TCOLON expr
+  {
+    $$ = Variable::build(BUILDER, LOC(@$), $1, Decl::DEFAULT_VISIBILITY,
+                         Variable::VAR,
+                         /*isConfig*/ false,
+                         /*isField*/ false,
+                         /*typeExpression*/ toOwned($3),
+                         /*initExpression*/ nullptr).release();
+  }
 ;
 
 throw_stmt:
   TTHROW expr TSEMI
-    { $$ = TODOSTMT(@$); }
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Throw::build(BUILDER, LOC(@$), toOwned($2));
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR
@@ -2223,7 +2264,7 @@ assignop_ident:
 ;
 
 opt_formal_ls:
-                     { $$ = nullptr; /* TODO: mark as no-parens */ }
+                     { $$ = context->parenlessMarker; }
 | TLP formal_ls TRP  { $$ = $2; }
 ;
 
@@ -3032,8 +3073,8 @@ opt_expr:
 ;
 
 opt_try_expr:
-  TTRY expr       { $$ = TODOEXPR(@$); }
-| TTRYBANG expr   { $$ = TODOEXPR(@$); }
+  TTRY expr       { $$ = context->buildTryExpr(@$, $2, false); }
+| TTRYBANG expr   { $$ = context->buildTryExpr(@$, $2, true); }
 | expr            { $$ = $1; }
 ;
 

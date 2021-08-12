@@ -41,14 +41,16 @@ class ErroneousType : public Type {
   void markUniqueStringsInner(Context* context) const override {
   }
 
-  bool isGeneric() override {
+  bool isGeneric() const override {
     return false;
   }
+
+  static const owned<ErroneousType>& getErroneousType(Context* context);
 
  public:
   ~ErroneousType() = default;
 
-  static owned<ErroneousType> build();
+  static const ErroneousType* get(Context* context);
 };
 
 

@@ -3,12 +3,27 @@
 /* adds build_id to version if it was defined */
 #undef BUILD_ID
 
+/* dlopen CUDA libraries */
+#undef ENABLE_CUDA_DLOPEN
+
 /* defined to 1 if libfabric was configured with --enable-debug, 0 otherwise
    */
 #undef ENABLE_DEBUG
 
 /* EFA memory poisoning support for debugging */
 #undef ENABLE_EFA_POISONING
+
+/* dlopen CUDA libraries */
+#undef ENABLE_GDRCOPY_DLOPEN
+
+/* Define to 1 to enable memhooks memory monitor */
+#undef ENABLE_MEMHOOKS_MONITOR
+
+/* dlopen ROCR libraries */
+#undef ENABLE_ROCR_DLOPEN
+
+/* Define to 1 to enable uffd memory monitor */
+#undef ENABLE_UFFD_MONITOR
 
 /* define when building with FABRIC_DIRECT support */
 #undef FABRIC_DIRECT_ENABLED
@@ -34,6 +49,9 @@
 /* Set to 1 to use built-in intrinsics memory model aware atomics */
 #undef HAVE_BUILTIN_MM_ATOMICS
 
+/* EFADV_DEVICE_ATTR_CAPS_RNR_RETRY is defined */
+#undef HAVE_CAPS_RNR_RETRY
+
 /* Define to 1 if clock_gettime is available. */
 #undef HAVE_CLOCK_GETTIME
 
@@ -53,6 +71,10 @@
 /* Define to 1 if you have the declaration of `SPEED_UNKNOWN', and to 0 if you
    don't. */
 #undef HAVE_DECL_SPEED_UNKNOWN
+
+/* Define to 1 if you have the declaration of `__syscall', and to 0 if you
+   don't. */
+#undef HAVE_DECL___SYSCALL
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
@@ -75,6 +97,12 @@
 /* Set to 1 to use ethtool */
 #undef HAVE_ETHTOOL
 
+/* Define to 1 if you have the <gdrapi.h> header file. */
+#undef HAVE_GDRAPI_H
+
+/* Whether we have gdrcopy development library or not */
+#undef HAVE_GDRCOPY
+
 /* Define to 1 if you have the `getifaddrs' function. */
 #undef HAVE_GETIFADDRS
 
@@ -93,6 +121,9 @@
 /* hook_debug provider is built as DSO */
 #undef HAVE_HOOK_DEBUG_DL
 
+/* Define to 1 if you have the <hsa/hsa_ext_amd.h> header file. */
+#undef HAVE_HSA_HSA_EXT_AMD_H
+
 /* Define to 1 if you have the <infiniband/efadv.h> header file. */
 #undef HAVE_INFINIBAND_EFADV_H
 
@@ -105,7 +136,10 @@
 /* Define to 1 if kdreg available */
 #undef HAVE_KDREG
 
-/* CUDA support */
+/* Define to 1 if you have the <level_zero/ze_api.h> header file. */
+#undef HAVE_LEVEL_ZERO_ZE_API_H
+
+/* Whether we have CUDA runtime or not */
 #undef HAVE_LIBCUDA
 
 /* Define to 1 if you have the `dl' library (-ldl). */
@@ -116,6 +150,12 @@
 
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
+
+/* ZE support */
+#undef HAVE_LIBZE
+
+/* Define to 1 if you have the <linux/mman.h> header file. */
+#undef HAVE_LINUX_MMAN_H
 
 /* Whether we have __builtin_ia32_rdpmc() and linux/perf_event.h file or not
    */
@@ -175,6 +215,15 @@
 /* PSM2 source is built-in */
 #undef HAVE_PSM2_SRC
 
+/* psm3 provider is built */
+#undef HAVE_PSM3
+
+/* psm3 provider is built as DSO */
+#undef HAVE_PSM3_DL
+
+/* PSM3 source is built-in */
+#undef HAVE_PSM3_SRC
+
 /* psm provider is built as DSO */
 #undef HAVE_PSM_DL
 
@@ -184,14 +233,23 @@
 /* Define to 1 if you have the <rdma/rdma_cma.h> header file. */
 #undef HAVE_RDMA_RDMA_CMA_H
 
+/* Define to 1 if you have the <rdma/rv_user_ioctls.h> header file. */
+#undef HAVE_RDMA_RV_USER_IOCTLS_H
+
 /* efadv_device_attr has max_rdma_size */
 #undef HAVE_RDMA_SIZE
+
+/* ROCR HSA support */
+#undef HAVE_ROCR
 
 /* rstream provider is built */
 #undef HAVE_RSTREAM
 
 /* rstream provider is built as DSO */
 #undef HAVE_RSTREAM_DL
+
+/* Define to 1 if you have the <rv/rv_user_ioctls.h> header file. */
+#undef HAVE_RV_RV_USER_IOCTLS_H
 
 /* rxd provider is built */
 #undef HAVE_RXD
@@ -241,6 +299,9 @@
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
 
+/* Define to 1 if you have the <sys/syscall.h> header file. */
+#undef HAVE_SYS_SYSCALL_H
+
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
@@ -279,6 +340,15 @@
 
 /* Define to 1 if xpmem available */
 #undef HAVE_XPMEM
+
+/* Define to 1 if you have the `__clear_cache' function. */
+#undef HAVE___CLEAR_CACHE
+
+/* Define to 1 if you have the `__curbrk' function. */
+#undef HAVE___CURBRK
+
+/* Define to 1 if you have the `__syscall' function. */
+#undef HAVE___SYSCALL
 
 /* Define to 1 to enable valgrind annotations */
 #undef INCLUDE_VALGRIND
@@ -330,3 +400,17 @@
 
 /* Define to __typeof__ if your compiler spells it that way. */
 #undef typeof
+
+
+#if defined(__linux__) && (defined(__x86_64__) || defined(__amd64__) || defined(__aarch64__)) && ENABLE_MEMHOOKS_MONITOR
+#define HAVE_MEMHOOKS_MONITOR 1
+#else
+#define HAVE_MEMHOOKS_MONITOR 0
+#endif
+
+#if HAVE_UFFD_UNMAP && ENABLE_UFFD_MONITOR
+#define HAVE_UFFD_MONITOR 1
+#else
+#define HAVE_UFFD_MONITOR 0
+#endif
+

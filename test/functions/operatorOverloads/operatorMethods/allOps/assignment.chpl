@@ -2,6 +2,11 @@
 record Foo {
   var x: int;
 
+  proc init=(other: Foo) {
+    writeln("In init=");
+    this.x = other.x;
+  }
+
   operator =(ref lhs: Foo, rhs: Foo) {
     writeln("In Foo.=");
     lhs.x = rhs.x;

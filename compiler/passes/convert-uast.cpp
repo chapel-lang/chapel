@@ -25,8 +25,10 @@
 
 #include "convert-uast.h"
 
+#include "CatchStmt.h"
 #include "DoWhileStmt.h"
 #include "ForallStmt.h"
+#include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
 #include "docsDriver.h"
@@ -276,6 +278,27 @@ struct Converter {
     return nullptr;
   }
 
+  CatchStmt* visit(const uast::Catch* node) {
+    auto errorVar = node->error();
+    const char* name = errorVar ? errorVar->name().c_str() : nullptr;
+    Expr* type = errorVar ? convertExprOrNull(errorVar->typeExpression())
+                          : nullptr;
+    BlockStmt* body = toBlockStmt(convertAST(node->body()));
+    CatchStmt* ret = nullptr;
+
+    if (name && type) {
+      ret = CatchStmt::build(name, type, body);
+    } else if (name) {
+      ret = CatchStmt::build(name, body);
+    } else {
+      ret = CatchStmt::build(body);
+    }
+
+    assert(ret != nullptr);
+
+    return ret;
+  }
+
   BlockStmt* visit(const uast::Cobegin* node) {
     INT_FATAL("TODO");
     return nullptr;
@@ -303,13 +326,49 @@ struct Converter {
   }
 
   CallExpr* visit(const uast::Return* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    CallExpr* ret = new CallExpr(PRIM_RETURN);
+
+    if (node->value()) {
+      ret->insertAtTail(toExpr(convertAST(node->value())));
+    }
+
+    return ret;
   }
 
   BlockStmt* visit(const uast::Sync* node) {
     INT_FATAL("TODO");
     return nullptr;
+  }
+
+  CallExpr* visit(const uast::Throw* node) {
+    CallExpr* ret = new CallExpr(PRIM_THROW);
+    ret->insertAtTail(toExpr(convertAST(node->errorExpression())));
+    return ret;
+  }
+
+  BlockStmt* visit(const uast::Try* node) {
+    if (node->isExpressionLevel()) {
+
+      assert(node->numStmts() == 1);
+      assert(node->stmt(0)->isExpression() && !node->stmt(0)->isBlock());
+      bool tryBang = node->isTryBang();
+      Expr* expr = convertAST(node->stmt(0));
+      return TryStmt::build(tryBang, expr);
+
+    } else {
+      bool tryBang = node->isTryBang();
+      BlockStmt* body = createBlockWithStmts(node->stmts());
+      BlockStmt* catches = new BlockStmt();
+      bool isSyncTry = false; // TODO: When can this be true?
+
+      for (auto handler : node->handlers()) {
+        assert(handler->isCatch());
+        auto conv = toExpr(convertAST(handler));
+        catches->insertAtTail(conv);
+      }
+
+      return TryStmt::build(tryBang, body, catches, isSyncTry);
+    }
   }
 
   CallExpr* visit(const uast::Yield* node) {
@@ -546,7 +605,7 @@ struct Converter {
   Expr* visit(const uast::Dot* node) {
 
     // These are the arguments that 'buildDotExpr' requires.
-    BaseAST* base = toExpr(convertAST(node->calledExpression()));
+    BaseAST* base = toExpr(convertAST(node->receiver()));
     auto member = node->field();
 
     if (!typeStr.compare(member)) {

@@ -22,9 +22,11 @@
 
 #include <cstddef>
 #include <functional>
+#include <set>
 #include <string>
 #include <tuple>
 #include <utility>
+#include <vector>
 
 namespace chpl {
 
@@ -64,10 +66,10 @@ inline size_t hash(const T& x) {
 // Default hash function for zero or more than one argument
 template<typename... Ts>
 inline size_t hash(const Ts&... data) {
-  size_t seed = 0;
+  size_t ret = 0;
   for (auto h : { hash(data)... })
-    seed = hash_combine(seed, h);
-  return seed;
+    ret = hash_combine(ret, h);
+  return ret;
 }
 
 // Hash function for std::tuple
@@ -80,7 +82,66 @@ template<typename... Ts>
 inline size_t hash(const std::tuple<Ts...>& tuple) {
   return hash_tuple_impl(tuple, std::index_sequence_for<Ts...>{});
 }
+static inline size_t hash(const std::tuple<>& tuple) {
+  return 0;
+}
+
+// Hash function for vector
+template<typename T>
+inline size_t hashVector(const std::vector<T>& key) {
+  size_t ret = 0;
+  for (const auto& elt : key) {
+    ret = hash_combine(ret, hash(elt));
+  }
+  return ret;
+}
+
+// Hash function for set
+template<typename T>
+inline size_t hashSet(const std::set<T>& key) {
+  size_t ret = 0;
+  for (const auto& elt : key) {
+    ret = hash_combine(ret, hash(elt));
+  }
+  return ret;
+}
+
+// Hash function for pair
+template<typename T, typename U>
+inline size_t hashPair(const std::pair<T, U>& key) {
+  size_t ret = 0;
+  ret = hash_combine(ret, hash(key.first));
+  ret = hash_combine(ret, hash(key.second));
+  return ret;
+}
+
+
 
 } // end namespace chpl
+
+namespace std {
+
+// These std::hash functions are here b/c the hash functions
+// above can't have partial template specialization.
+template<typename T> struct hash<std::vector<T>> {
+  size_t operator()(const std::vector<T>& key) const {
+    return chpl::hashVector(key);
+  }
+};
+template<typename T> struct hash<std::set<T>> {
+  size_t operator()(const std::set<T>& key) const {
+    return chpl::hashSet(key);
+  }
+};
+template<typename T, typename U> struct hash<std::pair<T,U>> {
+  size_t operator()(const std::pair<T,U>& key) const {
+    return chpl::hashPair(key);
+  }
+};
+
+
+
+} // end namespace std
+
 
 #endif

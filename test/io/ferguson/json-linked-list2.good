@@ -1,0 +1,21 @@
+testing json write: {"numbers":[1, 2, 3]}
+Writing JSON: {"numbers": []}
+Read: (numbers = )
+Writing JSON: {"numbers": [1]}
+Read: (numbers = 1)
+Writing JSON: {"numbers": [1,2]}
+Read: (numbers = 1 2)
+Writing JSON: {"numbers": [1,2,3]}
+Read: (numbers = 1 2 3)
+Writing JSON: {"numbers": [1,2,3,4]}
+Read: (numbers = 1 2 3 4)
+Writing JSON: {"numbers": [1,2,3,4,5]}
+Read: (numbers = 1 2 3 4 5)
+Writing JSON: {"numbers": [1,2,3,4,5,6]}
+Read: (numbers = 1 2 3 4 5 6)
+Writing JSON: {"numbers": [1,2,3,4,5,6,7]}
+Read: (numbers = 1 2 3 4 5 6 7)
+Writing JSON: {"numbers": [1,2,3,4,5,6,7,8]}
+Read: (numbers = 1 2 3 4 5 6 7 8)
+Writing JSON: {"numbers": [1,2,3,4,5,6,7,8,9]}
+Read: (numbers = 1 2 3 4 5 6 7 8 9)

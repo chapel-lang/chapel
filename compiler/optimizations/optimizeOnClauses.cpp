@@ -272,6 +272,18 @@ classifyPrimitive(CallExpr *call) {
 
   case PRIM_GET_DYNAMIC_END_COUNT:
   case PRIM_SET_DYNAMIC_END_COUNT:
+  case PRIM_GPU_THREADIDX_X:
+  case PRIM_GPU_THREADIDX_Y:
+  case PRIM_GPU_THREADIDX_Z:
+  case PRIM_GPU_BLOCKIDX_X:
+  case PRIM_GPU_BLOCKIDX_Y:
+  case PRIM_GPU_BLOCKIDX_Z:
+  case PRIM_GPU_BLOCKDIM_X:
+  case PRIM_GPU_BLOCKDIM_Y:
+  case PRIM_GPU_BLOCKDIM_Z:
+  case PRIM_GPU_GRIDDIM_X:
+  case PRIM_GPU_GRIDDIM_Y:
+  case PRIM_GPU_GRIDDIM_Z:
     return FAST_AND_LOCAL;
 
     // Temporarily unclassified (legacy) cases.
@@ -288,7 +300,8 @@ classifyPrimitive(CallExpr *call) {
     return NOT_FAST_NOT_LOCAL;
 
   case PRIM_GPU_KERNEL_LAUNCH:
-    return LOCAL_NOT_FAST;
+  case PRIM_GPU_KERNEL_LAUNCH_FLAT:
+   return LOCAL_NOT_FAST;
 
   // no default, so that it is usually a C compilation
   // error when a primitive is added but not included here.

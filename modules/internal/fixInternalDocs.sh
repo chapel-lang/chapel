@@ -217,13 +217,6 @@ replace "chpl_bytes" "bytes" $file
 
 ## End of Bytes ##
 
-## Errors ##
-
-file=Errors.rst
-removeUsage $file
-
-## End of Errors ##
-
 ## OwnedObject ##
 file=OwnedObject.rst
 fixTitle "owned" $file

@@ -61,7 +61,7 @@ class Type {
    This function needs to be defined by subclasses.
    It returns 'true` if the type represents a generic type.
    */
-  virtual bool isGeneric() = 0;
+  virtual bool isGeneric() const = 0;
 
  protected:
   Type(TypeTag tag)
@@ -78,6 +78,16 @@ class Type {
     return tag_;
   }
 
+  bool operator==(const Type& other) const {
+    return completeMatch(&other);
+  }
+  bool operator!=(const Type& other) const {
+    return !(*this == other);
+  }
+
+  static void gatherBuiltins(Context* context,
+                             std::unordered_map<UniqueString,const Type*>& map);
+
   bool completeMatch(const Type* other) const;
 
   // 'keep' is some old Type
@@ -92,6 +102,8 @@ class Type {
 
   static void dump(const Type* type, int leadingSpaces=0);
 
+  virtual std::string toString() const;
+
   // define is__ methods for the various Type subclasses
   // using macros and TypeClassesList.h
   /// \cond DO_NOT_DOCUMENT
@@ -100,6 +112,7 @@ class Type {
       return typetags::is##NAME(this->tag_); \
     }
   #define TYPE_NODE(NAME) TYPE_IS(NAME)
+  #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_IS(NAME)
   #define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_IS(NAME)
   #define TYPE_END_SUBCLASSES(NAME)
   /// \endcond
@@ -107,6 +120,7 @@ class Type {
   #include "chpl/types/TypeClassesList.h"
   // clear the macros
   #undef TYPE_NODE
+  #undef BUILTIN_TYPE_NODE
   #undef TYPE_BEGIN_SUBCLASSES
   #undef TYPE_END_SUBCLASSES
   #undef TYPE_IS
@@ -123,6 +137,7 @@ class Type {
       return this->is##NAME() ? (NAME *)this : nullptr; \
     }
   #define TYPE_NODE(NAME) TYPE_TO(NAME)
+  #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_TO(NAME)
   #define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_TO(NAME)
   #define TYPE_END_SUBCLASSES(NAME)
   /// \endcond
@@ -130,6 +145,7 @@ class Type {
   #include "chpl/types/TypeClassesList.h"
   // clear the macros
   #undef TYPE_NODE
+  #undef BUILTIN_TYPE_NODE
   #undef TYPE_BEGIN_SUBCLASSES
   #undef TYPE_END_SUBCLASSES
   #undef TYPE_TO

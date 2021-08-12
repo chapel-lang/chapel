@@ -641,7 +641,7 @@ static int util_coll_scatter(struct util_coll_operation *coll_op, const void *da
 			// according to destination rank. if we're rank 3, data intended for
 			// ranks 0-2 will be moved to the end
 			*temp = malloc(cur_cnt * ofi_datatype_size(datatype));
-			if (!temp)
+			if (!*temp)
 				return -FI_ENOMEM;
 			ret = util_coll_sched_copy(coll_op,
 						   (char *) data + nbytes * local_rank, *temp,
@@ -871,11 +871,10 @@ void util_coll_collective_comp(struct util_coll_operation *coll_op)
 static int util_coll_proc_reduce_item(struct util_coll_reduce_item *reduce_item)
 {
 	if (FI_MIN <= reduce_item->op && FI_BXOR >= reduce_item->op) {
-		ofi_atomic_write_handlers[reduce_item->op]
-					 [reduce_item->datatype](
-						 reduce_item->inout_buf,
-						 reduce_item->in_buf,
-						 reduce_item->count);
+		ofi_atomic_write_handler(reduce_item->op, reduce_item->datatype,
+					 reduce_item->inout_buf,
+					 reduce_item->in_buf,
+					 reduce_item->count);
 	} else {
 		return -FI_ENOSYS;
 	}
@@ -1146,8 +1145,8 @@ static int util_coll_av_init(struct util_av *av)
 	if (ret)
 		goto err3;
 
-	coll_mc->av_set->fi_addr_array =
-		calloc(av->count, sizeof(*coll_mc->av_set->fi_addr_array));
+	coll_mc->av_set->fi_addr_array = calloc(ofi_av_size(av),
+					 sizeof(*coll_mc->av_set->fi_addr_array));
 	if (!coll_mc->av_set->fi_addr_array) {
 		ret = -FI_ENOMEM;
 		goto err2;
@@ -1195,7 +1194,8 @@ int ofi_av_set(struct fid_av *av, struct fi_av_set_attr *attr,
 	if (ret)
 		goto err1;
 
-	av_set->fi_addr_array = calloc(util_av->count, sizeof(*av_set->fi_addr_array));
+	av_set->fi_addr_array = calloc(ofi_av_size(util_av),
+				       sizeof(*av_set->fi_addr_array));
 	if (!av_set->fi_addr_array)
 		goto err2;
 

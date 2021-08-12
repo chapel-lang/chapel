@@ -42,6 +42,7 @@ typedef struct _qt_blocking_queue_node_s {
     syscall_t                         op;
     uintptr_t                         args[5];
     ssize_t                           ret;
+    int                               err;
 } qt_blocking_queue_node_t;
 
 typedef struct qthread_addrstat_s {

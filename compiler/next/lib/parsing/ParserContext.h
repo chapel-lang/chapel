@@ -81,6 +81,8 @@ struct ParserContext {
   // note when EOF is reached
   bool atEOF;
 
+  ParserExprList* parenlessMarker;
+
   ParserContext(const char* filename, Builder* builder)
   {
     auto uniqueFilename = UniqueString::build(builder->context(), filename);
@@ -96,6 +98,10 @@ struct ParserContext {
     YYLTYPE emptyLoc = {0};
     this->declStartLocation  = emptyLoc;
     this->atEOF              = false;
+    this->parenlessMarker    = new ParserExprList();
+  }
+  ~ParserContext() {
+    delete this->parenlessMarker;
   }
 
   Context* context() { return builder->context(); }
@@ -196,6 +202,7 @@ struct ParserContext {
   // to handle things like this
   //     { /* doc comment } proc myproc()
   CommentsAndStmt finishStmt(CommentsAndStmt cs);
+  CommentsAndStmt finishStmt(YYLTYPE location, CommentsAndStmt cs);
   CommentsAndStmt finishStmt(Expression* e);
   CommentsAndStmt finishStmt(owned<Expression> e) {
     return this->finishStmt(e.release());
@@ -402,5 +409,22 @@ struct ParserContext {
                                          YYLTYPE openingBrace,
                                          ParserExprList* contents,
                                          YYLTYPE closingBrace);
+
+  CommentsAndStmt buildTryExprStmt(YYLTYPE location, Expression* expr,
+                                   bool isTryBang);
+
+  CommentsAndStmt buildTryExprStmt(YYLTYPE location, CommentsAndStmt cs,
+                                   bool isTryBang);
+
+  Expression* buildTryExpr(YYLTYPE location, Expression* expr,
+                           bool isTryBang);
+
+  CommentsAndStmt buildTryCatchStmt(YYLTYPE location, CommentsAndStmt block,
+                                    ParserExprList* handlers,
+                                    bool isTryBang);
+
+  Expression* buildCatch(YYLTYPE location, Expression* error,
+                         CommentsAndStmt block,
+                         bool hasParensAroundError);
 
 };

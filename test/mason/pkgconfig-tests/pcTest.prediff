@@ -7,19 +7,36 @@ curver=`$compiler --version | head -1 | sed 's/chpl version \([0-9]\.[0-9][0-9]*
 curver=`echo $curver | sed 's/\./\\\./g'`
 
 opensslVersion=`pkg-config openssl --modversion`
-opensslFlag=`pkg-config openssl --libs`
-opensslFlags="$(echo -e "${opensslFlag}" | sed -e 's/[[:space:]]*$//')"
+opensslLib=`pkg-config openssl --libs`
+opensslLibs="$(echo -e "${opensslLib}" | sed -e 's/[[:space:]]*$//')"
+opensslInc=`pkg-config openssl --cflags-only-I`
+opensslIncs="$(echo -e "${opensslInc}" | sed -e 's/[[:space:]]*$//' | sed -e 's/-I//g')"
+if [ -z "$opensslIncs" ]
+then
+  opensslIncs=/usr/include
+fi
+
 zlibVersion=`pkg-config zlib --modversion`
-zlibFlag=`pkg-config zlib --libs`
-zlibFlags="$(echo -e "${zlibFlag}" | sed -e 's/[[:space:]]*$//')"
+zlibLib=`pkg-config zlib --libs`
+zlibLibs="$(echo -e "${zlibLib}" | sed -e 's/[[:space:]]*$//')"
+zlibInc=`pkg-config zlib --cflags-only-I`
+zlibIncs="$(echo -e "${zlibInc}" | sed -e 's/[[:space:]]*$//' | sed -e 's/-I//g')"
+if [ -z "$zlibIncs" ]
+then
+  zlibIncs=/usr/include
+fi
 
 sed "s:$curver:CHPL_CUR_FULL:g" $outputfile > $outputfile.tmp
 mv $outputfile.tmp $outputfile
-sed "s:$opensslFlags:opensslflags:g" $outputfile > $outputfile.tmp
+sed "s:$opensslLibs:prediffedlibs:g" $outputfile > $outputfile.tmp
 mv $outputfile.tmp $outputfile
-sed "s:$opensslVersion:opensslversion:g" $outputfile > $outputfile.tmp
+sed "s:$opensslIncs:prediffedincs:g" $outputfile > $outputfile.tmp
 mv $outputfile.tmp $outputfile
-sed "s:$zlibVersion:zlibversion:g" $outputfile > $outputfile.tmp
+sed "s:$opensslVersion:prediffedvers:g" $outputfile > $outputfile.tmp
 mv $outputfile.tmp $outputfile
-sed "s:$zlibFlags:zlibflags:g" $outputfile > $outputfile.tmp
+sed "s:$zlibVersion:prediffedvers:g" $outputfile > $outputfile.tmp
+mv $outputfile.tmp $outputfile
+sed "s:$zlibLibs:prediffedlibs:g" $outputfile > $outputfile.tmp
+mv $outputfile.tmp $outputfile
+sed "s:$zlibIncs:prediffedincs:g" $outputfile > $outputfile.tmp
 mv $outputfile.tmp $outputfile

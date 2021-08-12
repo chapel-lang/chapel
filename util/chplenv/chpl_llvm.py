@@ -211,12 +211,20 @@ def get_llvm_clang(lang):
     llvm_val = get()
     if llvm_val == 'system':
         bindir = get_system_llvm_config_bindir()
-        return os.path.join(bindir, clang_name)
+        clang = os.path.join(bindir, clang_name)
     elif llvm_val == 'bundled':
         llvm_subdir = get_bundled_llvm_dir()
-        return os.path.join(llvm_subdir, 'bin', clang_name)
+        clang = os.path.join(llvm_subdir, 'bin', clang_name)
     else:
         return ''
+    # tack on the contents of configured-clang-sysroot-arguments
+    fname = os.path.join(get_chpl_third_party(), "llvm", "install", get_uniq_cfg_path_for(llvm_val), "configured-clang-sysroot-arguments")
+    if os.path.isfile(fname):
+        with open(fname) as f:
+            for line in f:
+                clang += " " + line.rstrip()
+    return clang
+
 
 def has_compatible_installed_llvm():
     llvm_config = find_system_llvm_config()

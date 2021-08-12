@@ -35,6 +35,7 @@ NEXT_UAST_SRCS =                                 \
   Builder.cpp \
   BytesLiteral.cpp \
   Call.cpp \
+  Catch.cpp \
   Class.cpp \
   Cobegin.cpp \
   Coforall.cpp \
@@ -84,6 +85,8 @@ NEXT_UAST_SRCS =                                 \
   StringLiteral.cpp \
   Sync.cpp \
   TaskVar.cpp \
+  Throw.cpp \
+  Try.cpp \
   TupleDecl.cpp \
   TypeDecl.cpp \
   UintLiteral.cpp \

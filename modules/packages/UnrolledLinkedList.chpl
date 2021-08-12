@@ -1108,11 +1108,10 @@ module UnrolledLinkedList {
 
       :yields: A reference to one of the elements contained in this unrolledLinkedList.
     */
-    pragma "order independent yielding loops"
     iter these() ref {
       var cur = _head;
       while cur != nil {
-        for i in 0..#cur!.size {
+        foreach i in 0..#cur!.size {
           yield cur!.data[i];
         }
         cur = cur!.next;

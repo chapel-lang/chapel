@@ -1,5 +1,5 @@
 usage: c2chapel [-h] [--no-typedefs] [--debug] [--no-fake-headers]
-                [--no-comments] [-V]
+                [--no-comments] [-V] [--gnu-extensions]
                 file [cppFlags [cppFlags ...]]
 
 Generate C bindings for Chapel
@@ -16,3 +16,4 @@ optional arguments:
   --no-fake-headers  do not use fake headers included with c2chapel
   --no-comments      instruct c2chapel to not generate comments
   -V, --version      show program's version number and exit
+  --gnu-extensions   allow GNU extensions in C99 files

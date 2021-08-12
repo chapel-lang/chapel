@@ -58,39 +58,39 @@ static inline int ofi_bitmask_create(struct bitmask *mask, size_t size)
 	mask->size = size;
 
 	return FI_SUCCESS;
-};
+}
 
 static inline void ofi_bitmask_free(struct bitmask *mask)
 {
 	free(mask->bytes);
 	mask->bytes = NULL;
-};
+}
 
 static inline size_t ofi_bitmask_bytesize(struct bitmask *mask)
 {
 	return (mask->size % 8) ? (mask->size / 8 + 1) : (mask->size / 8);
-};
+}
 
 static inline void ofi_bitmask_unset(struct bitmask *mask, size_t idx)
 {
 	assert(idx <= mask->size);
 	mask->bytes[idx / 8] &= ~(0x01 << (idx % 8));
-};
+}
 
 static inline void ofi_bitmask_set(struct bitmask *mask, size_t idx)
 {
 	assert(idx <= mask->size);
 	mask->bytes[idx / 8] |= (0x01 << (idx % 8));
-};
+}
 
 static inline void ofi_bitmask_set_all(struct bitmask *mask)
 {
 	memset(mask->bytes, 0xff, ofi_bitmask_bytesize(mask));
-};
+}
 
 static inline size_t ofi_bitmask_get_lsbset(struct bitmask mask)
 {
-	int cur;
+	size_t cur;
 	uint8_t tmp;
 	size_t ret = 0;
 
@@ -109,6 +109,6 @@ static inline size_t ofi_bitmask_get_lsbset(struct bitmask mask)
 
 	assert(ret <= (mask.size));
 	return ret;
-};
+}
 
 #endif

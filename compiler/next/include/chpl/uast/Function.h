@@ -77,6 +77,7 @@ class Function final : public NamedDecl {
   ReturnIntent returnIntent_;
   bool throws_;
   bool primaryMethod_;
+  bool parenless_;
 
   // children store
   //   linkageNameExpr
@@ -104,6 +105,7 @@ class Function final : public NamedDecl {
            ReturnIntent returnIntent,
            bool throws,
            bool primaryMethod,
+           bool parenless,
            int linkageNameExprChildNum,
            int formalsChildNum,
            int thisFormalChildNum,
@@ -121,6 +123,7 @@ class Function final : public NamedDecl {
       returnIntent_(returnIntent),
       throws_(throws),
       primaryMethod_(primaryMethod),
+      parenless_(parenless),
       linkageNameExprChildNum_(linkageNameExprChildNum),
       formalsChildNum_(formalsChildNum),
       thisFormalChildNum_(thisFormalChildNum),
@@ -169,6 +172,7 @@ class Function final : public NamedDecl {
            lhs->override_ == rhs->override_ &&
            lhs->throws_ == rhs->throws_ &&
            lhs->primaryMethod_ == rhs->primaryMethod_ &&
+           lhs->parenless_ == rhs->parenless_ &&
            lhs->linkageNameExprChildNum_ == rhs->linkageNameExprChildNum_ &&
            lhs->formalsChildNum_ == rhs->formalsChildNum_ &&
            lhs->thisFormalChildNum_ == rhs->thisFormalChildNum_ &&
@@ -197,6 +201,7 @@ class Function final : public NamedDecl {
                                Function::ReturnIntent returnIntent,
                                bool throws,
                                bool primaryMethod,
+                               bool parenless,
                                ASTList formals,
                                owned<Expression> returnType,
                                owned<Expression> where,
@@ -210,6 +215,7 @@ class Function final : public NamedDecl {
   bool isOverride() const { return this->override_; }
   bool throws() const { return this->throws_; }
   bool isPrimaryMethod() const { return primaryMethod_; }
+  bool isParenless() const { return parenless_; }
 
   /**
    Return the linkage name expression, e.g. "f_c_name"
@@ -276,6 +282,13 @@ class Function final : public NamedDecl {
     } else {
       return nullptr;
     }
+  }
+
+  /**
+   Returns 'true' if this Function represents a method.
+   */
+  bool isMethod() const {
+    return thisFormal() != nullptr || isPrimaryMethod();
   }
 
   /**

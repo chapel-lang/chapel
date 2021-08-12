@@ -175,28 +175,6 @@ automatically as `multipart messages
 :chpl:mod:`Reflection` module.  Currently, the ZMQ module can serialize records
 of primitive numeric types, strings, bytes and other serializable records.
 
-.. note::
-
-   The serialization protocol for strings changed in Chapel 1.16 in order to
-   support inter-language messaging through ZeroMQ. (See
-   :ref:`notes on interoperability <interop>` below.)
-   As a result, programs using ZMQ that were compiled by Chapel 1.15 or
-   earlier cannot communicate using strings with programs compiled by
-   Chapel 1.16 or later, although such communication can be used between
-   programs compiled by the same version without issue.
-
-   Prior to Chapel 1.16, ZMQ would send a string as two multipart messages:
-   the first sent the length as `int`; the second sent the character array
-   (in bytes).  It was identified that this scheme was incompatible with how
-   other language bindings for ZeroMQ serialize and send strings.
-
-   As of Chapel 1.16, the ZMQ module uses the C-level ``zmq_msg_send()`` and
-   ``zmq_msg_recv()`` API for :proc:`Socket.send()` and :proc:`Socket.recv()`,
-   respectively, when transmitting strings.  Further, ZMQ sends the string as
-   a single message of only the byte stream of the string's character array.
-   (Recall that Chapel's ``string`` type currently only supports ASCII
-   strings, not full Unicode strings.)
-
 .. _interop:
 
 Interoperability
@@ -442,7 +420,7 @@ module ZMQ {
   const unset = -42;
 
   pragma "no doc"
-  proc free_helper(data: c_void_ptr, hint: c_void_ptr) {
+  export proc free_helper(data: c_void_ptr, hint: c_void_ptr) {
     chpl_here_free(data);
   }
 
@@ -913,7 +891,8 @@ module ZMQ {
         // 
         // Note: the string factory below can throw DecodeError
         var copy = if isString(T) then createStringWithNewBuffer(x=data)
-                                  else createBytesWithNewBuffer(x=data);
+                   else parallelCreateBytesWithNewBuffer(data.localize().buff,
+                                                         length=data.size);
         copy.isOwned = false;
 
         // Create the ZeroMQ message from the data buffer
@@ -994,8 +973,7 @@ module ZMQ {
     // recv, strings and bytes
     pragma "no doc"
     proc recv(type T, flags: int = 0) throws where isString(T) || isBytes(T) {
-      var ret: T;
-      on classRef.home {
+      proc innerRecv() throws {
         // Initialize an empty ZeroMQ message
         var msg: zmq_msg_t;
         if (0 != zmq_msg_init(msg)) {
@@ -1019,16 +997,21 @@ module ZMQ {
                       createStringWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
                                                 length=len, size=len+1)
                     else
-                      createBytesWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
-                                               length=len, size=len+1);
+                      parallelCreateBytesWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
+                                                       length=len, size=len+1);
         if (0 != zmq_msg_close(msg)) {
           try throw_socket_error(errno, "recv");
         }
-
-        // Return the value to the calling locale
-        ret = val;
+        return val;
       }
-      return ret;
+
+      if here == classRef.home {
+        return innerRecv();
+      } else {
+        var localRet: T;
+        on classRef.home do localRet = innerRecv();
+        return localRet;
+      }
     }
 
     // recv, numeric types
@@ -1097,6 +1080,41 @@ module ZMQ {
     }
     // Assign
     lhs.classRef = rhs.classRef;
+  }
+
+  // Note: The bytes copies are parallelized in this file
+  // only temporarily, where long term we would like to do that
+  // parallelization in the internal bytes module, but are having
+  // to delay that due to some resolution issues. Also, the string
+  // assignment can likely be parallelized similarly, but was not
+  // included in this temporary effort.
+  private proc parallelCreateBytesWithNewBuffer(x: c_ptr(?t), length: int, size=length+1) {
+    if size < parallelAssignThreshold then return createBytesWithNewBuffer(x, length, size);
+    use ByteBufferHelpers;
+    use DSIUtil;
+    var ret: bytes;
+    if length == 0 then return ret;
+
+    ret.isOwned = true;
+    ret.buffLen = length;
+    const (dst, allocSize) = bufferAlloc(length+1);
+
+    const numTasks = if __primitive("task_get_serial") then 1 else _computeNumChunks(length);
+
+    const lenPerTask = length/numTasks;
+
+    coforall tid in 0..#numTasks {
+      const myOffset = tid*lenPerTask;
+      const myLen = if tid == numTasks-1 then length:int-myOffset else lenPerTask;
+
+      c_memmove(dst+myOffset,x+myOffset,myLen);
+    }
+
+    dst[length] = 0;
+    ret.buff = dst;
+    ret.buffSize = allocSize;
+
+    return ret;
   }
 
   /*

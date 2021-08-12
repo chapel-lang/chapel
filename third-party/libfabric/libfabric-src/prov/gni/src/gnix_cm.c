@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2015-2017 Cray Inc.  All rights reserved.
  * Copyright (c) 2015-2017 Los Alamos National Security, LLC. All rights reserved.
+ * Copyright (c) 2020 Triad National Security, LLC. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -55,7 +56,7 @@ int _gnix_ep_name_to_str(struct gnix_ep_name *ep_name, char **out_buf)
 	char *str;
 	size_t len = GNIX_FI_ADDR_STR_LEN;
 
-	GNIX_TRACE(FI_LOG_TRACE, "\n");
+	GNIX_TRACE(FI_LOG_EP_CTRL, "\n");
 
 	if (*out_buf == NULL) {
 		str = calloc(len, sizeof(char));
@@ -90,10 +91,10 @@ int _gnix_ep_name_from_str(const char *addr,
 	long tok_val;
 	char *dup_addr;
 
-	GNIX_TRACE(FI_LOG_TRACE, "\n");
+	GNIX_TRACE(FI_LOG_EP_CTRL, "\n");
 
 	if (!addr || !resolved_addr) {
-		GNIX_WARN(FI_LOG_WARN, "NULL parameter in "
+		GNIX_WARN(FI_LOG_EP_CTRL, "NULL parameter in "
 			"__gnix_resolved_name_from_str");
 		return -FI_EINVAL;
 	}
@@ -105,34 +106,34 @@ int _gnix_ep_name_from_str(const char *addr,
 
 	tok = strtok(dup_addr, ";");
 	if (!tok) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid address.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid address.\n");
 		return -FI_EINVAL;
 	}
 
 	ret = memcmp(tok, "gni", 3);
 	if (ret) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid address.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid address.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
 
 	tok = strtok(NULL, ";");/*node*/
 	if (!tok) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid address.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid address.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
 
 	tok = strtok(NULL, ";");/*service*/
 	if (!tok) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid address.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid address.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
 
 	tok = strtok(NULL, ";");/*GNIX_AV_STR_ADDR_VERSION*/
 	if (!tok) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid address.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid address.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
@@ -140,13 +141,13 @@ int _gnix_ep_name_from_str(const char *addr,
 	/*device_addr*/
 	tok = strtok(NULL, ";");
 	if (!tok) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid address.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid address.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
 	tok_val = strtol(tok, &endptr, 16);
 	if (*endptr) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid device_addr.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid device_addr.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
@@ -155,13 +156,13 @@ int _gnix_ep_name_from_str(const char *addr,
 	/*cdm_id*/
 	tok = strtok(NULL, ";");
 	if (!tok) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid address.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid address.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
 	tok_val = strtol(tok, &endptr, 16);
 	if (*endptr) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid cdm_id.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid cdm_id.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
@@ -170,13 +171,13 @@ int _gnix_ep_name_from_str(const char *addr,
 	/*name_type*/
 	tok = strtok(NULL, ";");
 	if (!tok) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid address.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid address.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
 	tok_val = strtol(tok, &endptr, 10);
 	if (*endptr) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid name_type.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid name_type.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
@@ -185,13 +186,13 @@ int _gnix_ep_name_from_str(const char *addr,
 	/*cm_nic_cdm_id*/
 	tok = strtok(NULL, ";");
 	if (!tok) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid address.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid address.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
 	tok_val = strtol(tok, &endptr, 16);
 	if (*endptr) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid cm_nic_cdm_id.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid cm_nic_cdm_id.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
@@ -200,13 +201,13 @@ int _gnix_ep_name_from_str(const char *addr,
 	/*cookie*/
 	tok = strtok(NULL, ";");
 	if (!tok) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid address.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid address.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
 	tok_val = strtol(tok, &endptr, 16);
 	if (*endptr) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid cookie.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid cookie.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
@@ -215,13 +216,13 @@ int _gnix_ep_name_from_str(const char *addr,
 	/*rx_ctx_cnt*/
 	tok = strtok(NULL, ";");
 	if (!tok) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid address.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid address.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}
 	tok_val = strtol(tok, &endptr, 10);
 	if (*endptr) {
-		GNIX_WARN(FI_LOG_WARN, "Invalid rx_ctx_cnt.\n");
+		GNIX_WARN(FI_LOG_EP_CTRL, "Invalid rx_ctx_cnt.\n");
 		free(dup_addr);
 		return -FI_EINVAL;
 	}

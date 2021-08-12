@@ -79,7 +79,7 @@ char *psmx2_uuid_to_string(psm2_uuid_t uuid)
 {
 	static char s[40];
 
-	sprintf(s,
+	snprintf(s, sizeof(s),
 		"%02hhX%02hhX%02hhX%02hhX-"
 		"%02hhX%02hhX-%02hhX%02hhX-%02hhX%02hhX-"
 		"%02hhX%02hhX%02hhX%02hhX%02hhX%02hhX",
