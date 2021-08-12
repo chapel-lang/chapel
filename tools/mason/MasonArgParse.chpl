@@ -25,7 +25,6 @@ module MasonArgParse {
 
   private config var DEBUG=false;
 
-  // TODO: Add pass-thru options following "-"
   // TODO: Add int opts
   // TODO: Add automatic -h, --help flag generation
   // TODO: Add program metadata when setting up parser
@@ -353,10 +352,11 @@ module MasonArgParse {
     override proc _hasDefault():bool {
       return !_defaultValue.isEmpty();
     }
-    // TODO: Decouple the argument from the argumenthandler
-    // maybe pass a list to fill by reference and have the argparser populate
-    // the argument instead?
+    // TODO: Decouple the argument from the argument handler
+    // maybe pass a list to fill by reference and have the handler populate
+    // the argument values directly instead?
     // also need a bool by ref to indicate presence of arg or not
+
     // for option values, _match attempts to identify values after the option
     // at position startPos (exclusive) and through the endPos (inclusive)
     // parameter (startPos, endPos]
