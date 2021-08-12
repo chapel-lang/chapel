@@ -318,7 +318,7 @@ module BigInteger {
       return sizeInBase(base).safeCast(uint);
     }
 
-    proc sizeInBase(base: int) : uint {
+    proc sizeInBase(base: int) : int {
       const base_ = base.safeCast(c_int);
       var   ret: size_t;
 
@@ -336,7 +336,7 @@ module BigInteger {
         }
       }
 
-      return ret;
+      return ret.safeCast(int);
     }
 
     proc numLimbs : uint {
