@@ -31,7 +31,7 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
-#define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
+// #define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
 
 static void CHPL_GPU_LOG(const char *str, ...) {
 #ifdef CHPL_GPU_DEBUG
@@ -211,8 +211,8 @@ static void chpl_gpu_launch_kernel_help(const char* name,
       kernel_params[i] = cur_arg;
     }
 
-    CHPL_GPU_LOG("\tKernel parameter %d: %p%s\n", i, *((void**)(kernel_params[i])),
-                 chpl_gpu_is_device_ptr(*((void**)(kernel_params[i]))) ?
+    CHPL_GPU_LOG("\tKernel parameter %d: %p%s\n", i, kernel_params[i],
+                 chpl_gpu_is_device_ptr(kernel_params[i]) ?
                     " (GPU pointer)" : "");
   }
 

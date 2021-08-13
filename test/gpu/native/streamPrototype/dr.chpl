@@ -9,6 +9,7 @@ module GPUOutlineTest {
     on here.getChild(1) {
       chpl_gpu_init();
       var a: [0..10] int;
+      var value = 20;
 
       /*writeln("A._instance: ", chpl_gpu_is_device_ptr(a._instance));*/
       /*writeln("A._instance.data: ", chpl_gpu_is_device_ptr(a._instance.data));*/
@@ -23,21 +24,32 @@ module GPUOutlineTest {
       /*writeln("A._instance.shiftedData: ", (a._instance.shiftedData):c_void_ptr);*/
       /*writeln("PRIM A._instance.shiftedData: ", __primitive("_wide_get_addr", a._instance.shiftedData));*/
       /*writef("A's address: %xu\n", __primitive("_wide_get_addr", a)));*/
-      /*writeln("A's address: ", __primitive("_wide_get_addr", a));*/
+
+      /*writeln("A's address: ", __primitive("addr of", a));*/
+      /*writeln("value's address: ", __primitive("addr of", value));*/
+
 
       forall i in 0..0 {
-        a[i] = i+10;
+        a[i] += i+10;
       }
 
-      /*var value = 20;*/
-      /*forall i in 0..0 {*/
-        /*a[i] = i+value;*/
-      /*}*/
+      writeln(a);
 
-      /*var value = 20;*/
-      /*foreach i in 0..0 {*/
-        /*a[i] = i+10;*/
-      /*}*/
+      forall i in 0..0 {
+        a[i] += i+value;
+      }
+
+      writeln(a);
+
+      foreach i in 0..0 {
+        a[i] += i+10;
+      }
+
+      writeln(a);
+
+      foreach i in 0..0 {
+        a[i] += i+value;
+      }
 
       writeln(a);
     }

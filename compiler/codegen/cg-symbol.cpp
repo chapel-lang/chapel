@@ -1758,6 +1758,7 @@ static llvm::FunctionType* codegenFunctionTypeLLVM(FnSymbol* fn,
                                              llvm::AttributeList& attrs,
                                              std::vector<const char*>& argNames)
 {
+
   // This function is inspired by clang's CodeGenTypes::GetFunctionType
   // and CodeGenModule::ConstructAttributeList
 
