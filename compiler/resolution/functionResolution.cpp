@@ -7110,7 +7110,8 @@ void resolveInitVar(CallExpr* call) {
              targetType->getValType()->symbol->hasFlag(FLAG_ARRAY) ||
              isDomainWithoutNew ||
              initCopySyncSingle ||
-             (targetType->getValType()->symbol->hasFlag(FLAG_TUPLE) && srcType->getValType()->symbol->hasFlag(FLAG_TUPLE)) ||
+             (targetType->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+              srcType->getValType()->symbol->hasFlag(FLAG_TUPLE)) ||
              initCopyIter) {
     // These cases require an initCopy to implement special initialization
     // semantics (e.g. reading a sync for variable initialization).
