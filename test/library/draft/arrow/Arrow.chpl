@@ -21,9 +21,6 @@
       this.val = array(arr, validIndices, invalidIndices);
     }
 
-    // proc init=( (arr, validIndices, invalidIndices) ){
-    //   this.val = array(arr, validIndices, invalidIndices);
-    // }
   }
 
   proc arrowInt32(): GArrowInt32DataType {
@@ -80,9 +77,8 @@
   proc int64Array(arr: [] int, validity: [] gboolean) : c_ptr(GArrowInt64Array) {
     var success: gboolean = 1;
     var error: GErrorPtr;
-
     var builder: c_ptr(GArrowInt64ArrayBuilder) = garrow_int64_array_builder_new();
-
+    var retval: c_ptr(GArrowInt64Array);
     if (success) {
       var intArrLen: gint64 = arr.size;
       var intValArr = [val in arr] val;
@@ -95,7 +91,7 @@
       g_object_unref(builder);
       return retval;
     }
-    var retval: c_ptr(GArrowInt64Array) = garrow_array_builder_finish(
+    retval = garrow_array_builder_finish(
       GARROW_ARRAY_BUILDER(builder), c_ptrTo(error)) : c_ptr(GArrowInt64Array);
     if (isNull(retval)) {
       printGError("failed to finish:", error);
@@ -110,7 +106,7 @@
     var success: gboolean = 1;
     var error: GErrorPtr;
     var builder: c_ptr(GArrowInt32ArrayBuilder) = garrow_int32_array_builder_new();
-
+    var retval: c_ptr(GArrowInt32Array);
     if (success) {
       var intArrLen: gint64 = arr.size;
       var intValArr = [val in arr] val: gint32;
@@ -123,7 +119,7 @@
       g_object_unref(builder);
       return retval;
     }
-    var retval: c_ptr(GArrowInt32Array) = garrow_array_builder_finish(
+    retval = garrow_array_builder_finish(
       GARROW_ARRAY_BUILDER(builder), c_ptrTo(error)) : c_ptr(GArrowInt32Array);
     if (isNull(retval)) {
       printGError("failed to finish:", error);
@@ -137,9 +133,8 @@
   proc stringArray(arr: [] string, validity: [] gboolean) : c_ptr(GArrowStringArray) {
     var success: gboolean = 1;
     var error: GErrorPtr;
-
     var builder: c_ptr(GArrowStringArrayBuilder) = garrow_string_array_builder_new();
-
+    var retval: c_ptr(GArrowStringArray);
     if (success) {
       var strArrLen: gint64 = arr.size: gint64;
       var strValArr = [val in arr] val.c_str() : c_ptr(gchar);
@@ -152,7 +147,7 @@
       g_object_unref(builder);
       return retval;
     }
-    var retval: c_ptr(GArrowStringArray) = garrow_array_builder_finish(
+    retval = garrow_array_builder_finish(
       GARROW_ARRAY_BUILDER(builder), c_ptrTo(error)) : c_ptr(GArrowStringArray);
     if (isNull(retval)) {
       printGError("failed to finish:", error);
@@ -167,9 +162,8 @@
   proc boolArray(arr: [] bool, validity: [] gboolean) : c_ptr(GArrowBooleanArray) {
     var success: gboolean = 1;
     var error: GErrorPtr;
-
     var builder: c_ptr(GArrowBooleanArrayBuilder) = garrow_boolean_array_builder_new();
-
+    var retval: c_ptr(GArrowBooleanArray);
     if (success) {
 
       var boolArrLen: gint64 = arr.size: gint64;
@@ -183,13 +177,13 @@
       g_object_unref(builder);
       return retval;
     }
-    var retval: c_ptr(GArrowBooleanArray) = garrow_array_builder_finish(
+    retval = garrow_array_builder_finish(
       GARROW_ARRAY_BUILDER(builder), c_ptrTo(error)) : c_ptr(GArrowBooleanArray);
     if (isNull(retval)) {
       printGError("failed to finish:", error);
       g_object_unref(builder);
       return retval;
-  }
+    }
     g_object_unref(builder); 
 
     return retval;
@@ -271,7 +265,7 @@
     proc init(table: c_ptr(GArrowTable)){
       this.tbl = table;
     }
-    
+
   }
   proc table(recordBatches: [] ArrowRecordBatch): c_ptr(GArrowTable) {
     var error: GErrorPtr;
@@ -310,7 +304,7 @@
                                                   path.c_str(): c_ptr(gchar), 
                                                   writer_properties,
                                                   c_ptrTo(error));
-  if(isNull(writer)){
+    if(isNull(writer)){
       printGError("failed to initialize writer:", error);
       exit(EXIT_FAILURE);
     }
