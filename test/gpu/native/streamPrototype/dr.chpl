@@ -25,14 +25,19 @@ module GPUOutlineTest {
       /*writef("A's address: %xu\n", __primitive("_wide_get_addr", a)));*/
       /*writeln("A's address: ", __primitive("_wide_get_addr", a));*/
 
+      forall i in 0..0 {
+        a[i] = i+10;
+      }
+
+      /*var value = 20;*/
       /*forall i in 0..0 {*/
-        /*a[i] = i+10;*/
+        /*a[i] = i+value;*/
       /*}*/
 
-      var value = 20;
-      forall i in 0..0 {
-        a[i] = i+value;
-      }
+      /*var value = 20;*/
+      /*foreach i in 0..0 {*/
+        /*a[i] = i+10;*/
+      /*}*/
 
       writeln(a);
     }

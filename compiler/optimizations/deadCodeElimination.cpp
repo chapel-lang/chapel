@@ -692,12 +692,15 @@ static void outlineGPUKernels() {
               for_vector(SymExpr, symExpr, symExprsInBody) {
                 Symbol* sym = symExpr->symbol();
 
-                if (isDefinedInTheLoop(symExpr->symbol(), loop)) {
+                if (isDefinedInTheLoop(sym, loop)) {
                   // looks like this symbol was declared within the loop body,
                   // so do nothing. TODO: I am hoping that we don't need to
                   // check the type of the variable here, and we'll know that it
                   // is a valid variable to declare on the gpu via the loop body
                   // analysis
+                }
+                else if (sym->isImmediate()) {
+                  // nothing to do
                 }
                 else {
                   // TODO: we want to have a better way of recognizing the index
@@ -724,7 +727,7 @@ static void outlineGPUKernels() {
                           // do nothing
                         }
                         else if (symExpr == parent->get(1)) {
-                          addKernelArgument(outlinedFunction, symExpr->symbol(),
+                          addKernelArgument(outlinedFunction, sym,
                                             kernelActuals, copyMap);
                           copyNode = true;
                         }
@@ -733,7 +736,7 @@ static void outlineGPUKernels() {
                         }
                       }
                       else if (parent->isPrimitive()) {
-                        addKernelArgument(outlinedFunction, symExpr->symbol(),
+                        addKernelArgument(outlinedFunction, sym,
                                           kernelActuals, copyMap);
                         copyNode = true;
                       }
