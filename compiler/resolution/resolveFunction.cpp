@@ -446,20 +446,26 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
     }
   }
 
-  resolveBlockStmt(fn->retExprType);
-
-  retType = fn->retExprType->body.tail->typeInfo();
-
-  if (SymExpr* se = toSymExpr(fn->retExprType->body.tail)) {
-    // Try resolving global type aliases
-    if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
-      retType = resolveTypeAlias(se);
+  if (!fn->retExprType) {
+    if (fn->hasFlag(FLAG_EXTERN)) {
+      retType = dtVoid;
     }
+  } else {
+    resolveBlockStmt(fn->retExprType);
+    retType = fn->retExprType->body.tail->typeInfo();
 
-    if (retType->symbol->hasFlag(FLAG_GENERIC)    == true) {
-      SET_LINENO(fn->retExprType->body.tail);
 
-      retType = resolveDefaultGenericTypeSymExpr(se);
+    if (SymExpr* se = toSymExpr(fn->retExprType->body.tail)) {
+      // Try resolving global type aliases
+      if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) == true) {
+        retType = resolveTypeAlias(se);
+      }
+
+      if (retType->symbol->hasFlag(FLAG_GENERIC)    == true) {
+        SET_LINENO(fn->retExprType->body.tail);
+
+        retType = resolveDefaultGenericTypeSymExpr(se);
+      }
     }
   }
 

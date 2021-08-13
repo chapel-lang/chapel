@@ -78,15 +78,17 @@ bool ResolutionCandidate::isApplicable(CallInfo& info,
 
   resolveConstrainedGenericFun(fn);
 
-  if (fn->hasFlag(FLAG_NO_PARENS)) {
-    return true;
-  }
-  
   if (! fn->isGeneric()) {
     retval = isApplicableConcrete(info, visInfo, explain);
   } else {
     retval = isApplicableGeneric(info, visInfo, explain);
   }
+  // no-paren functions are always applicable
+  /*
+  if (fn->hasFlag(FLAG_NO_PARENS)) {
+    retval = true;
+  } 
+  */
 
   // Note: for generic instantiations, this code will be executed twice.
   // This is because by the time the generic branch returns, its function will
@@ -116,11 +118,13 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info,
 
   resolveTypedefedArgTypes();
 
+  /*
   if (fn->hasFlag(FLAG_NO_PARENS)) {
     if (explain)
       printf("Short-cutting the alignment check\n");
     return true;
   }
+  */
   
   if (computeAlignment(info) == false) {
     if (explain)
@@ -240,9 +244,11 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   formalIdxToActual.clear();
   actualIdxToFormal.clear();
 
+  /*
   if (fn->hasFlag(FLAG_NO_PARENS)) {
     return true;
   }
+  */
   
   for (int i = 0; i < fn->numFormals(); i++) {
     formalIdxToActual.push_back(NULL);

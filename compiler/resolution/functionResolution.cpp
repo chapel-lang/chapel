@@ -4815,9 +4815,9 @@ static void gatherCandidates(CallInfo&                  info,
         filterCandidate(info, visInfo, fn, candidates);
 
       } else {
-        if (fn->hasFlag(FLAG_NO_PARENS) == true) {
+        //        if (fn->hasFlag(FLAG_NO_PARENS) == true) {
           filterCandidate(info, visInfo, fn, candidates);
-        }
+          //        }
       }
 }
 
