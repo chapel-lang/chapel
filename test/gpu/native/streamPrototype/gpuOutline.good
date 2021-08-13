@@ -1,3 +1,4 @@
+gpuOutline.chpl:30: warning: This file-scope code is outside of any explicit module declarations (e.g., module GPUOutlineTest), so an implicit module named 'gpuOutline' is being introduced to contain the file's contents.
 warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
 warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
 warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
