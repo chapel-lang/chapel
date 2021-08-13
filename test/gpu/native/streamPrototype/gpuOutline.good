@@ -1,7 +1,7 @@
 warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
 warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
 warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
-initialRHS = 10.0
-initialLHS = 5.0
-finalLHS   = 10.0
+initialRHS = 111.1, 222.2, 333.3, 444.4
+initialLHS = 0.0, 0.0, 0.0, 0.0
+finalLHS   = 111.1, 222.2, 333.3, 444.4
 warning: 2 NUMA domains but only 1 Qthreads shepherds; may get internal errors
