@@ -295,6 +295,8 @@ bool fCompilerLibraryParser = false;
 
 chpl::Context* gContext = nullptr;
 
+static bool compilerSetChplLLVM = false;
+
 /* Note -- LLVM provides a way to get the path to the executable...
 // This function isn't referenced outside its translation unit, but it
 // can't use the "static" keyword because its address is used for
@@ -504,6 +506,24 @@ static void setupChplHome(const char* argv0) {
       if( rc ) USR_FATAL("Could not setenv CHPL_CONFIG");
     }
   }
+}
+
+// If the compiler was built without LLVM and CHPL_LLVM is not set in
+// the environment, set it to 'none' in order to avoid having the
+// chplenv scripts potentially infer it to be 'system' or 'bundled',
+// which can only result in an error.
+//
+static void setupChplLLVM(void) {
+#ifndef HAVE_LLVM
+  // set CHPL_LLVM to 'none' if it isn't already set and we were built
+  // without it
+  if (getenv("CHPL_LLVM") == NULL) {
+    if (setenv("CHPL_LLVM", "none", 0) != 0) {
+      INT_FATAL("Problem setting CHPL_LLVM");
+    }
+    compilerSetChplLLVM = true;
+  }
+#endif
 }
 
 static void recordCodeGenStrings(int argc, char* argv[]) {
@@ -1239,6 +1259,10 @@ static void printStuff(const char* argv0) {
       USR_FATAL("CHPL_HOME path name is too long");
     }
     int status = mysystem(buf, "running printchplenv", false);
+    if (compilerSetChplLLVM) {
+      printf("---\n");
+      printf("* Note: CHPL_LLVM was set by 'chpl' since it was built without LLVM support.\n");
+    }
     clean_exit(status);
   }
 
@@ -1395,6 +1419,7 @@ static void setupChplGlobals(const char* argv0) {
     // Keep envMap updated
     envMap["CHPL_HOME"] = CHPL_HOME;
   }
+  setupChplLLVM();
 
   // Populate envMap from printchplenv, never overwriting existing elements
   populateEnvMap();
@@ -1488,7 +1513,9 @@ static void checkLLVMCodeGen() {
 #else
   // compiler wasn't built with LLVM, so if LLVM is enabled, error
   if (fLlvmCodegen)
-    USR_FATAL("This compiler was built without LLVM support");
+    USR_FATAL("You have requested 'llvm' as the target compiler, but this copy of\n"
+              "       'chpl' was built without LLVM support.  Either select a different\n"
+              "       target compiler or re-build your compiler with LLVM enabled.");
 #endif
 }
 
@@ -1576,9 +1603,11 @@ static void checkNotLibraryAndMinimalModules(void) {
   return;
 }
 
-static void postprocess_args() {
-  // Processes that depend on results of passed arguments or values of CHPL_vars
 
+// Take actions for which settings are inferred based on other arguments
+// or CHPL_ settings
+//
+static void postprocess_args() {
   setMaxCIndentLen();
 
   postLocal();
@@ -1595,9 +1624,17 @@ static void postprocess_args() {
 
   checkLibraryPythonAndLibmode();
 
-  checkNotLibraryAndMinimalModules();
-
   setPrintCppLineno();
+}
+
+
+// check for things that may be invalid; this happens after
+// 'printStuff()' to avoid having things like 'chpl --help' print
+// errors rather than doing what the user said (for which these
+// checks don't apply because we're not going to compile anything).
+//
+static void validateSettings() {
+  checkNotLibraryAndMinimalModules();
 
   checkLLVMCodeGen();
 
@@ -1659,7 +1696,17 @@ int main(int argc, char* argv[]) {
     recordCodeGenStrings(argc, argv);
   } // astlocMarker scope
 
+  // we print things (--help*, --copyright, etc.) before validating
+  // settings so that someone's attempt to run 'chpl --help' won't
+  // result in a "you can't compile with those settings!!!" type of
+  // error when all they were trying to do was get some help.
+  //
+  // That said, we also print stuff _after_ postprocess_args() and the
+  // other steps above so that if they run '--help-settings' or the
+  // like, they'll get the full set of set and inferred settings.
+  //
   printStuff(argv[0]);
+  validateSettings();
 
   if (fRungdb)
     runCompilerInGDB(argc, argv);
