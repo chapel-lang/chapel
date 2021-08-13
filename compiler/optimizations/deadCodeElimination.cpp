@@ -660,6 +660,8 @@ static void outlineGPUKernels() {
           Symbol* indexSymbol = NULL;
           SymbolMap copyMap;
 
+          int copiedNodes = 0;
+
           for_alist(node, loop->body) {
 
             bool copyNode = true;
@@ -726,36 +728,6 @@ static void outlineGPUKernels() {
                         }
                       }
                     }
-                    // if we hit a ddata/cptr that's defined outside the loop,
-                    // try to associate it with an "array". Also, make that
-                    // ddata into a formal in the gpu kernel
-                    //if (sym->type->symbol->hasFlag(FLAG_DATA_CLASS)) {
-                      //if (CallExpr* firstParent = toCallExpr(symExpr->parentExpr)) {
-                        //if (firstParent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-                          //SymExpr* maybeArrSymExpr = toSymExpr(firstParent->get(1));
-                          //INT_ASSERT(maybeArrSymExpr);
-
-                          //if (CallExpr* secondParent = toCallExpr(firstParent->parentExpr)) {
-                            //if (secondParent->isPrimitive(PRIM_MOVE)) {
-                              //SymExpr* lhsSE = toSymExpr(secondParent->get(1));
-                              //INT_ASSERT(lhsSE);
-
-                              //ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, "data_formal", lhsSE->typeInfo());
-                              //formalTypes.push_back(lhsSE->typeInfo());
-                              //outlinedFunction->insertFormalAtTail(newFormal);
-                              //copyMap.put(lhsSE->symbol(), newFormal);
-                              //copyNode = false;
-
-                              //arraysWhoseDataAccessed.push_back(maybeArrSymExpr);
-                              //fieldAccessors.push_back(firstParent);
-                            //}
-                          //}
-                        //}
-                      //}
-                    //}
-                    //else {
-                      //maybeArrSymExpr.push_back(symExpr);
-                    //}
                   }
                 }
               }
@@ -763,9 +735,10 @@ static void outlineGPUKernels() {
 
             if (copyNode) {
               outlinedFunction->insertAtTail(node->copy());
+              copiedNodes++;
+
             }
           }
-
 
           update_symbols(outlinedFunction->body, &copyMap);
           normalize(outlinedFunction);

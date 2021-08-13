@@ -4721,7 +4721,10 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   int curArg = 1;
   for_actuals(actual, call) {
     if (curArg > nNonKernelParamArgs) {
-      args.push_back(codegenAddrOf(actual));
+      args.push_back(codegenLocalAddrOf(actual));
+      //GenRet actualGen = codegenDeref(actual);
+      //args.push_back(actualGen);
+      //args.push_back(codegenSizeof(actualGen.chplType));
     }
     else {
       args.push_back(actual->codegen());

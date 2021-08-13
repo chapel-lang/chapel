@@ -2561,6 +2561,7 @@ module ChapelArray {
     return false;
   }
 
+
   // Array wrapper record
   pragma "array"
   pragma "has runtime type"
@@ -2610,6 +2611,13 @@ module ChapelArray {
     proc deinit() {
       _do_destroy_array(this);
     }
+
+    /*pragma "always resolve function"*/
+    /*private proc chpl_offloadArrayRecord() {*/
+      /*extern proc sizeof(x): size_t;*/
+      /*extern proc printf(s...);*/
+      /*printf("in chpl_offfloadArrayRecord, record size %zu\n", sizeof(this));*/
+    /*}*/
 
     /* The type of elements contained in the array */
     proc eltType type return _value.eltType;

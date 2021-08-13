@@ -166,7 +166,7 @@ static void chpl_gpu_launch_kernel_help(const char* name,
   int i;
   void* function = chpl_gpu_getKernel("tmp/chpl__gpu.fatbin", name);
   // TODO: this should use chpl_mem_alloc
-  void** kernel_params = chpl_malloc(nargs*sizeof(void*));
+  void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
 
   assert(function);
   assert(kernel_params);
@@ -183,16 +183,30 @@ static void chpl_gpu_launch_kernel_help(const char* name,
 
   for (i=0 ; i<nargs ; i++) {
     void* cur_arg = va_arg(args, void*);
+    /*size_t cur_arg_size = va_arg(args, size_t);*/
+    /*CHPL_GPU_LOG("\tCur arg size %zu\n", cur_arg_size);*/
 
-    void *gpu_arg = chpl_gpu_mem_alloc(192, 0, 0, 0);
-    chpl_gpu_copy_host_to_device(gpu_arg, cur_arg, 192);
+    CHPL_GPU_LOG("\tCur arg: %x\n", cur_arg);
+    for (int i = 0; i < 24; i++) {
+      CHPL_GPU_LOG("\tCur arg %d: %x\n", i, *(*((unsigned char**)cur_arg)+i));
+    }
+    CHPL_GPU_LOG("\tCur arg 0: %d\n", *(*((int64_t**)cur_arg)+0));
+    CHPL_GPU_LOG("\tCur arg 1: %x\n", *(*((int64_t**)cur_arg)+1));
+    CHPL_GPU_LOG("\tCur arg 2: %x\n", *(*((int64_t**)cur_arg)+2));
+
+    /*void *gpu_arg = chpl_gpu_mem_alloc(24, 0, 0, 0);*/
+    /*chpl_gpu_copy_host_to_device(gpu_arg, cur_arg, 24);*/
 
 
-    /*kernel_params[i] = va_arg(args, void*);*/
-    kernel_params[i] = gpu_arg;
+    /*kernel_params[i] = cur_arg;*/
+    
+    kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
+    *kernel_params[i] = chpl_gpu_mem_alloc(240, 0, 0, 0);
 
-    CHPL_GPU_LOG("\tKernel parameter %d: %p%s\n", i, kernel_params[i],
-                 chpl_gpu_is_device_ptr((*((void**)kernel_params[i]))) ?
+    chpl_gpu_copy_host_to_device(*kernel_params[i], *((void**)cur_arg), 240);
+
+    CHPL_GPU_LOG("\tKernel parameter %d: %p%s\n", i, *((void**)(kernel_params[i])),
+                 chpl_gpu_is_device_ptr(*((void**)(kernel_params[i]))) ?
                     " (GPU pointer)" : "");
   }
 
@@ -203,7 +217,7 @@ static void chpl_gpu_launch_kernel_help(const char* name,
                            blk_dim_x, blk_dim_y, blk_dim_z,
                            0,  // shared memory in bytes
                            0,  // stream ID
-                           kernel_params,
+                           (void**)kernel_params,
                            NULL));  // extra options
 
   CHPL_GPU_LOG("Call returned %s\n", name);
