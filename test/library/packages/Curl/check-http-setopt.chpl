@@ -1,6 +1,8 @@
 // This test verifies that Curl + QIO integration
 // allows Curl setopt calls before the transfer starts.
 
+module CheckHttpSetOpt {
+
 use RunServer;
 use URL;
 use Curl;
@@ -11,7 +13,7 @@ extern const CURLOPT_FILETIME: CURLoption;
 extern const CURLOPT_URL: CURLoption;
 extern const CURLINFO_FILETIME: CURLINFO;
 
-proc test1() {
+proc test1() throws {
   writeln("\ntest1\n");
   var f = "test.txt";
   var url = "http://" + host + ":" + port + "/" + f;
@@ -29,7 +31,7 @@ proc test1() {
 }
 
 
-proc test2() {
+proc test2() throws {
   writeln("\ntest2\n");
   var f = "test.txt";
   var url = "http://" + host + ":" + port + "/" + f;
@@ -54,7 +56,7 @@ proc test2() {
 }
 
 // Test a string-type option, CURLOPT_URL
-proc test3() {
+proc test3() throws {
   writeln("\ntest3\n");
   var f = "test.txt";
   var url = "http://" + host + ":" + port + "/" + f;
@@ -73,7 +75,7 @@ proc test3() {
 }
 
 // Test a bytes-type option, CURLOPT_URL
-proc test4() {
+proc test4() throws {
   writeln("\ntest4\n");
   var f = "test.txt";
   var url = "http://" + host + ":" + port + "/" + f;
@@ -91,9 +93,13 @@ proc test4() {
   stdout.flush();
 }
 
-startServer();
-test1();
-test2();
-test3();
-test4();
-stopServer();
+proc main() throws {
+  startServer();
+  defer stopServer();
+  test1();
+  test2();
+  test3();
+  test4();
+}
+
+}
