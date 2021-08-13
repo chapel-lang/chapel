@@ -19,9 +19,13 @@ record Foo {
 
 var bar: Foo = new Foo(10, "Hi");
 var baz: Foo = (11, "Bye");
+const tup = (12, "Wait!");
+var bab: Foo = tup;
 
 writeln(bar);
 writeln(baz);
+writeln(bab);
 
 writeln(isTuple(bar));
 writeln(isTuple(baz));
+writeln(isTuple(bab));
