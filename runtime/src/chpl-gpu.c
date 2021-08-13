@@ -183,16 +183,16 @@ static void chpl_gpu_launch_kernel_help(const char* name,
 
   for (i=0 ; i<nargs ; i++) {
     void* cur_arg = va_arg(args, void*);
-    /*size_t cur_arg_size = va_arg(args, size_t);*/
-    /*CHPL_GPU_LOG("\tCur arg size %zu\n", cur_arg_size);*/
+    size_t cur_arg_size = va_arg(args, size_t);
+    CHPL_GPU_LOG("\tCur arg size %zu\n", cur_arg_size);
 
-    CHPL_GPU_LOG("\tCur arg: %x\n", cur_arg);
-    for (int i = 0; i < 24; i++) {
-      CHPL_GPU_LOG("\tCur arg %d: %x\n", i, *(*((unsigned char**)cur_arg)+i));
-    }
-    CHPL_GPU_LOG("\tCur arg 0: %d\n", *(*((int64_t**)cur_arg)+0));
-    CHPL_GPU_LOG("\tCur arg 1: %x\n", *(*((int64_t**)cur_arg)+1));
-    CHPL_GPU_LOG("\tCur arg 2: %x\n", *(*((int64_t**)cur_arg)+2));
+    /*CHPL_GPU_LOG("\tCur arg: %x\n", cur_arg);*/
+    /*for (int i = 0; i < 24; i++) {*/
+      /*CHPL_GPU_LOG("\tCur arg %d: %x\n", i, *(*((unsigned char**)cur_arg)+i));*/
+    /*}*/
+    /*CHPL_GPU_LOG("\tCur arg 0: %d\n", *(*((int64_t**)cur_arg)+0));*/
+    /*CHPL_GPU_LOG("\tCur arg 1: %x\n", *(*((int64_t**)cur_arg)+1));*/
+    /*CHPL_GPU_LOG("\tCur arg 2: %x\n", *(*((int64_t**)cur_arg)+2));*/
 
     /*void *gpu_arg = chpl_gpu_mem_alloc(24, 0, 0, 0);*/
     /*chpl_gpu_copy_host_to_device(gpu_arg, cur_arg, 24);*/
@@ -201,9 +201,9 @@ static void chpl_gpu_launch_kernel_help(const char* name,
     /*kernel_params[i] = cur_arg;*/
     
     kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
-    *kernel_params[i] = chpl_gpu_mem_alloc(240, 0, 0, 0);
+    *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, 0, 0, 0);
 
-    chpl_gpu_copy_host_to_device(*kernel_params[i], *((void**)cur_arg), 240);
+    chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
 
     CHPL_GPU_LOG("\tKernel parameter %d: %p%s\n", i, *((void**)(kernel_params[i])),
                  chpl_gpu_is_device_ptr(*((void**)(kernel_params[i]))) ?
