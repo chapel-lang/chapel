@@ -4,7 +4,8 @@ config const size = 256 * 1024 * 1024;
 config const numTasks = max(here.maxTaskPar, max(int(8)));
 
 config const trials = 3;
-coforall taskid in 1..here.maxTaskPar {
+coforall i in 1..here.maxTaskPar {
+  var taskid = i % max(int(8));
   for 1..trials {
     var m = c_malloc(int(8), size);
     c_memset(m, taskid, size);
