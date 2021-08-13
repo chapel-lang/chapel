@@ -1,0 +1,6 @@
+-serrorCase=0  # allGenericsDefaulted.good
+-serrorCase=1  # allGenericsDefaulted-err1.good
+-serrorCase=2  # allGenericsDefaulted-err2.good
+-serrorCase=3  # allGenericsDefaulted-err3.good
+-serrorCase=4  # allGenericsDefaulted-err4.good
+-serrorCase=5  # allGenericsDefaulted-err5.good
