@@ -532,7 +532,8 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
     if (fn->hasFlag(FLAG_EXTERN) == true) {
       resolveBlockStmt(fn->body);
 
-      resolveReturnType(fn);
+      resolveSpecifiedReturnType(fn);
+      //      resolveReturnType(fn);
 
     } else {
       if (fn->isIterator() == true) {
@@ -1860,6 +1861,10 @@ static void checkInterfaceFunctionRetType(FnSymbol* fn, Type* retType,
 // specified explicitly.
 void resolveReturnTypeAndYieldedType(FnSymbol* fn, Type** yieldedType) {
 
+  if (fn->hasFlag(FLAG_EXTERN)) {
+    INT_FATAL(fn, "Can't infer return type from extern function");
+  }
+  
   bool isIterator = fn->isIterator(); // TODO - do we need || fn->iteratorInfo != NULL;
   Symbol* ret     = fn->getReturnSymbol();
   Type*   retType = ret->type;

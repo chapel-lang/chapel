@@ -3973,10 +3973,12 @@ static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
       checkForInfiniteRecord(at);
     }
   }
-  best->fn = wrapAndCleanUpActuals(best->fn,
-                                   info,
-                                   best->actualIdxToFormal,
-                                   followerChecks);
+  if (!best->fn->hasFlag(FLAG_NO_PARENS)) {
+    best->fn = wrapAndCleanUpActuals(best->fn,
+                                     info,
+                                     best->actualIdxToFormal,
+                                     followerChecks);
+  }
 
   return best->fn;
 }
@@ -4813,8 +4815,8 @@ static void gatherCandidates(CallInfo&                  info,
         filterCandidate(info, visInfo, fn, candidates);
 
       } else {
-        if (fn->hasFlag(FLAG_NO_PARENS) == true) {  
-        //        filterCandidate(info, visInfo, fn, candidates);
+        if (fn->hasFlag(FLAG_NO_PARENS) == true) {
+          filterCandidate(info, visInfo, fn, candidates);
         }
       }
 }
@@ -5483,11 +5485,15 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
   // if the functions aren't either both paren-ful or paren-less,
   // neither can be more specific than the other; it's simply an
   // ambiguity.
-  if (candidate1->fn->hasFlag(FLAG_NO_PARENS) !=
-      candidate2->fn->hasFlag(FLAG_NO_PARENS)) {
+  bool noParens1 = candidate1->fn->hasFlag(FLAG_NO_PARENS);
+  bool noParens2 = candidate2->fn->hasFlag(FLAG_NO_PARENS);
+  if (noParens1 != noParens2) {
+    printf("Returning due to noparens mismatch\n");
     return 0;
   }
-  
+
+  //  if (!noParens1 && !noParens2) {
+  if (true) {
   for (int k = start; k < DC.actuals->n; ++k) {
     Symbol*    actual  = DC.actuals->v[k];
     ArgSymbol* formal1 = candidate1->actualIdxToFormal[k];
@@ -5519,6 +5525,9 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
                    i,
                    j,
                    DS);
+  }
+  } else {
+    EXPLAIN("\nThey're both paren-less, so not comparing their arguments\n");
   }
 
   if (DS.fn1Promotes != DS.fn2Promotes) {

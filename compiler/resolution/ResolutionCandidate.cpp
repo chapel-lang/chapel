@@ -78,6 +78,10 @@ bool ResolutionCandidate::isApplicable(CallInfo& info,
 
   resolveConstrainedGenericFun(fn);
 
+  if (fn->hasFlag(FLAG_NO_PARENS)) {
+    return true;
+  }
+  
   if (! fn->isGeneric()) {
     retval = isApplicableConcrete(info, visInfo, explain);
   } else {
