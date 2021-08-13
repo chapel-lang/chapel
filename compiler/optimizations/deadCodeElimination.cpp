@@ -626,6 +626,18 @@ static  CallExpr* generateGPUCall(FnSymbol* kernel,
   return call;
 }
 
+static void addKernelArgument(FnSymbol* kernel, Symbol* symInLoop,
+                              std::vector<Symbol*>& actuals,
+                              SymbolMap& copyMap) {
+  Type* symType = symInLoop->typeInfo();
+  ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, "data_formal", symType);
+  kernel->insertFormalAtTail(newFormal);
+
+  copyMap.put(symInLoop, newFormal);
+
+  actuals.push_back(symInLoop);
+}
+
 static void outlineGPUKernels() {
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
     std::vector<BaseAST*> asts;
@@ -652,7 +664,7 @@ static void outlineGPUKernels() {
           std::vector<SymExpr*> maybeArrSymExpr;
           std::vector<SymExpr*> arraysWhoseDataAccessed;
           std::vector<CallExpr*> fieldAccessors;
-          std::vector<Type*> formalTypes;
+          //std::vector<Type*> formalTypes;
           std::vector<Symbol*> kernelActuals;
 
 
@@ -703,8 +715,8 @@ static void outlineGPUKernels() {
                     }
                   }
                   else {
-                    std::cout << "Declared outside the loop" << std::endl;
-                    list_view(sym);
+                    //std::cout << "Declared outside the loop" << std::endl;
+                    //list_view(sym);
 
                     if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
                       if (parent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
@@ -712,20 +724,21 @@ static void outlineGPUKernels() {
                           // do nothing
                         }
                         else if (symExpr == parent->get(1)) {
-                          Type* symType = symExpr->typeInfo();
-                          ArgSymbol* newFormal = new ArgSymbol(INTENT_IN,
-                                                               "data_formal",
-                                                               symType);
-                          formalTypes.push_back(symType);
-                          outlinedFunction->insertFormalAtTail(newFormal);
-                          copyMap.put(sym, newFormal);
+                          addKernelArgument(outlinedFunction, symExpr->symbol(),
+                                            kernelActuals, copyMap);
                           copyNode = true;
-
-                          kernelActuals.push_back(symExpr->symbol());
                         }
                         else {
                           INT_FATAL("Malformed PRIM_GET_MEMBER_VALUE");
                         }
+                      }
+                      else if (parent->isPrimitive()) {
+                        addKernelArgument(outlinedFunction, symExpr->symbol(),
+                                          kernelActuals, copyMap);
+                        copyNode = true;
+                      }
+                      else {
+                        INT_FATAL("Unexpected call expression");
                       }
                     }
                   }

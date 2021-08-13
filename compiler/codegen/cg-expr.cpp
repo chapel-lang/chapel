@@ -4722,20 +4722,21 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   for_actuals(actual, call) {
     if (curArg > nNonKernelParamArgs) {
       Symbol* actualSym = toSymExpr(actual)->symbol();
-      Type* valType = NULL;
 
       if (actualSym->isRef()) {
-        valType = actual->typeInfo()->getValType();
+        // we pass the ref as-is, and give the size of the thing that it points
+        // to. This allows runtime to copy that thing into GPU memory, and pass
+        // a GPU pointer to the kernel instead.
+        args.push_back(actual->codegen());
+        args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
       }
       else {
-        valType = actual->typeInfo();
+        // we pass val's address to the runtime. Runtime will put this address
+        // into the kernel parameters array, which will cause the value to be
+        // copied into the GPU. (0 size signals this to the runtime)
+        args.push_back(codegenAddrOf(actual));
+        args.push_back(new_IntSymbol(0));
       }
-
-      args.push_back(actual->codegen());
-      args.push_back(codegenSizeof(valType));
-      
-
-
 
 
       //args.push_back(codegenLocalAddrOf(actual));

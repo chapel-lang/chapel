@@ -184,6 +184,8 @@ static void chpl_gpu_launch_kernel_help(const char* name,
   for (i=0 ; i<nargs ; i++) {
     void* cur_arg = va_arg(args, void*);
     size_t cur_arg_size = va_arg(args, size_t);
+
+    CHPL_GPU_LOG("\tCur arg %p\n", cur_arg);
     CHPL_GPU_LOG("\tCur arg size %zu\n", cur_arg_size);
 
     /*CHPL_GPU_LOG("\tCur arg: %x\n", cur_arg);*/
@@ -200,10 +202,14 @@ static void chpl_gpu_launch_kernel_help(const char* name,
 
     /*kernel_params[i] = cur_arg;*/
     
-    kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
-    *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, 0, 0, 0);
-
-    chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
+    if (cur_arg_size > 0) {
+      kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
+      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, 0, 0, 0);
+      chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
+    }
+    else {
+      kernel_params[i] = cur_arg;
+    }
 
     CHPL_GPU_LOG("\tKernel parameter %d: %p%s\n", i, *((void**)(kernel_params[i])),
                  chpl_gpu_is_device_ptr(*((void**)(kernel_params[i]))) ?
