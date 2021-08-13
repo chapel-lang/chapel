@@ -1,0 +1,4 @@
+allGenericsDefaulted.chpl:55: error: could not find a copy initializer ('init=') for type 'R(int(64),2)' from type 'R(real(64),3)'
+allGenericsDefaulted.chpl:3: note: this candidate did not match: R.init=(other: this.type)
+allGenericsDefaulted.chpl:55: note: because actual argument #1 with type 'R(real(64),3)'
+allGenericsDefaulted.chpl:3: note: is passed to formal 'other: R(int(64),2)'

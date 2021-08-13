@@ -13,8 +13,10 @@ proc foo(r: R) {
 var ri2: R(int);
 var rr2: R(real, 2);
 var ri3: R(int, 3);
+var rr3: R = new R(real, 3);
 
 foo(ri2);
 foo(rr2);
 foo(ri3);
+foo(rr3);
 writeln();

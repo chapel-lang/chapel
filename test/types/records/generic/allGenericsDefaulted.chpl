@@ -49,3 +49,7 @@ boo(rr2);
 if errorCase == 4 then
   boo(ri3);
 writeln();
+
+
+if errorCase == 5 then
+  var ri4: R = new R(real, 3);
