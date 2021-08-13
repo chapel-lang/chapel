@@ -36,6 +36,9 @@
 
 #include <vector>
 
+int classifyPrimitive(CallExpr *call, bool inLocal);
+bool inLocalBlock(CallExpr *call);
+
 //
 // Return NOT_FAST, NOT_LOCAL, IS_LOCAL, or IS_FAST.
 //
