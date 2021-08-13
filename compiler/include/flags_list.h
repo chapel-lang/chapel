@@ -190,6 +190,9 @@ symbolFlag( FLAG_IMPLICIT_MODULE, npr, "implicit top-level module", ncm )
 symbolFlag( FLAG_INCLUDED_MODULE, npr, "included sub-module", ncm )
 symbolFlag( FLAG_INDEX_VAR , npr, "index var" , ncm )
 
+symbolFlag( FLAG_MANAGER_HANDLE, npr, "manager handle", ncm)
+symbolFlag( FLAG_MANAGER_RESOURCE_INFER_STORAGE, npr, "manager resource infer storage", ncm)
+
 // This can also mark a temp that serves as an intermediate step of
 // destructuring a tuple-typed FLAG_INDEX_OF_INTEREST variable
 // into loop index variables.
@@ -400,6 +403,7 @@ symbolFlag( FLAG_RANGE , ypr, "range" , "indicates the range type" )
 symbolFlag( FLAG_RECURSIVE_ITERATOR , npr, "recursive iterator" , "iterators which call themselves" )
 symbolFlag( FLAG_REDUCESCANOP , ypr, "ReduceScanOp" , "the ReduceScanOp class" )
 symbolFlag( FLAG_REF , ypr, "ref" , ncm )
+symbolFlag( FLAG_REF_IF_MODIFIED , npr, "ref if modified", ncm )
 symbolFlag( FLAG_REF_FOR_CONST_FIELD_OF_THIS , npr, "reference to a const field of 'this'" , ncm )
 symbolFlag( FLAG_REF_ITERATOR_CLASS , npr, "ref iterator class" , ncm )
 // "ref to const" is like Chapel's 'const ref' variable:

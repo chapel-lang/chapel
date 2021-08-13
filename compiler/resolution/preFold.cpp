@@ -67,6 +67,8 @@ static std::vector<Expr* >                                 testCaptureVector;
 // lookup table for test function names and their index in testCaptureVector
 static std::map<std::string,int>                           testNameIndex;
 
+static Expr*          preFoldPrimInitVarForManagerResource(CallExpr* call);
+
 static Expr*          preFoldPrimOp(CallExpr* call);
 
 static Expr*          preFoldNamed (CallExpr* call);
@@ -458,6 +460,140 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
   }
 }
 
+//
+// Infer the correct storage kind for a context manager resource when no
+// explicit storage is given, e.g.
+//
+//    manage myManager() as myResource do ...;
+//
+// Look for PRIM_INIT_VAR calls where the LHS is a variable marked with
+// FLAG_MANAGER_RESOURCE_INFER_STORAGE, then chase the call temp on
+// the RHS (it should always be a call temp).
+//
+// If the call temp was initialized by a ContextCall, search through the CC
+// and record if:
+//
+//    - Any ref overload is present (if so, we will prefer them)
+//    - If both ref/const ref overloads are present
+//    - If const ref is present but not ref
+//
+// If any ref overload is present, we replace the PRIM_INIT_VAR with a
+// PRIM_MOVE, and mark the LHS with FLAG_REF_VAR.
+//
+// If both ref/const ref overloads are present, we also mark the LHS with
+// FLAG_REF_IF_MODIFIED, because the overload to select depends on how
+// the resource is used.
+//
+// Lastly, if only the const ref overload is present (but not the ref), we
+// always prefer it over a value overload.
+//
+// If only the value overload exists, leave the PRIM_INIT_VAR call alone.
+// The init= call it gets lowered to will be elided later regardless.
+//
+static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
+  CallExpr* ret = call;
+
+  if (!call->isPrimitive(PRIM_INIT_VAR)) return ret;
+
+  if (SymExpr* se = toSymExpr(call->get(1))) {
+    if (se->symbol()->hasFlag(FLAG_MANAGER_RESOURCE_INFER_STORAGE)) {
+      INT_ASSERT(isSymExpr(call->get(2)));
+
+      if (call->id == breakOnResolveID) {
+        gdbShouldBreakHere();
+      }
+
+      Symbol* lhs = se->symbol();
+      Symbol* rhs = toSymExpr(call->get(2))->symbol();
+
+      INT_ASSERT(rhs->hasFlag(FLAG_TEMP));
+
+      // Locate the move used to initialize the RHS temp.
+      CallExpr* moveIntoTemp = nullptr;
+      for_SymbolSymExprs(se, rhs) {
+        if (CallExpr* move = toCallExpr(se->parentExpr)) {
+          if (move->isPrimitive(PRIM_MOVE) && move->get(1) == se) {
+            moveIntoTemp = move;
+            break;
+          }
+        }
+      }
+
+      INT_ASSERT(moveIntoTemp);
+
+      bool isAnyRefOverloadPresent = false;
+      bool isConstnessUncertain = false;
+      bool isCertainlyConstRef = false;
+
+      if (ContextCallExpr* cc = toContextCallExpr(moveIntoTemp->get(2))) {
+        CallExpr* refCall = nullptr;
+        CallExpr* valueCall = nullptr;
+        CallExpr* constRefCall = nullptr;
+
+        cc->getCalls(refCall, valueCall, constRefCall);
+
+        isAnyRefOverloadPresent = (constRefCall || refCall);
+        isConstnessUncertain = (constRefCall && refCall);
+        isCertainlyConstRef = (constRefCall && !refCall);
+
+        // Replace or remove the CC entirely if a ref option is present.
+        if (isAnyRefOverloadPresent && valueCall) {
+          if (refCall && constRefCall) {
+            auto swp = new ContextCallExpr();
+
+            refCall->remove();
+            constRefCall->remove();
+            swp->setRefValueConstRefOptions(refCall, nullptr, constRefCall);
+            cc->replace(swp);
+
+          // If there is only one ref option, replace the CC with it.
+          } else {
+            CallExpr* callToUse = refCall ? refCall : constRefCall;
+            INT_ASSERT(callToUse);
+
+            if (callToUse == constRefCall) rhs->addFlag(FLAG_CONST);
+
+            callToUse->remove();
+            cc->replace(callToUse);
+          }
+        }
+
+      // There is no context call, so we can respect the RHS call.
+      } else {
+        auto enterThisCall = toCallExpr(moveIntoTemp->get(2));
+
+        INT_ASSERT(enterThisCall);
+
+        // If this doesn't fire, then there was already a resolution error.
+        if (FnSymbol* fn = enterThisCall->resolvedFunction()) {
+          bool isTagConstRef = fn->retTag == RET_CONST_REF;
+          bool isTagRef = fn->retTag == RET_REF;
+
+          isAnyRefOverloadPresent = (isTagConstRef || isTagRef);
+          isCertainlyConstRef = isTagConstRef;
+        }
+      }
+
+      // Make any final adjustments based on what was discovered.
+      if (isAnyRefOverloadPresent) {
+        ret = new CallExpr(PRIM_MOVE, new SymExpr(lhs), new SymExpr(rhs));
+
+        lhs->addFlag(FLAG_REF_VAR);
+
+        if (isConstnessUncertain) {
+          lhs->addFlag(FLAG_REF_IF_MODIFIED);
+          INT_ASSERT(!isCertainlyConstRef);
+        } else if (isCertainlyConstRef) {
+          lhs->addFlag(FLAG_CONST);
+        }
+
+        call->replace(ret);
+      }
+    }
+  }
+
+  return ret;
+}
 
 static Expr* preFoldPrimOp(CallExpr* call) {
   Expr* retval = NULL;
@@ -865,6 +1001,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
             call->replace(retval);
           }
         }
+      }
+    }
+
+    break;
+  }
+
+  case PRIM_INIT_VAR: {
+    if (SymExpr* se = toSymExpr(call->get(1))) {
+      if (se->symbol()->hasFlag(FLAG_MANAGER_RESOURCE_INFER_STORAGE)) {
+        retval = preFoldPrimInitVarForManagerResource(call);
       }
     }
 

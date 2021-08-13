@@ -246,9 +246,13 @@ bool symbolIsUsedAsConstRef(Symbol* sym) {
 static
 bool symExprIsSet(SymExpr* se)
 {
-  // The ref is necessary if it is for an explicit ref var
-  if (se->symbol()->hasFlag(FLAG_REF_VAR)) {
-    return true;
+  Symbol* sym = se->symbol();
+
+  // The ref is necessary if it is for an explicit ref var. But if marked
+  // with REF_IF_MODIFIED, then it is still possible for the symbol to be
+  // const (so we can't just return true).
+  if (sym->hasFlag(FLAG_REF_VAR) && !sym->hasFlag(FLAG_REF_IF_MODIFIED)) {
+      return true;
   }
 
   // a ref is not necessary if the LHS is a value
@@ -447,6 +451,11 @@ void markSymbolConst(Symbol* sym)
   sym->qual = QualifiedType::qualifierToConst(sym->qual);
   if (arg && arg->intent == INTENT_REF_MAYBE_CONST)
     arg->intent = INTENT_CONST_REF;
+
+  if (sym->hasFlag(FLAG_REF_IF_MODIFIED)) {
+    sym->removeFlag(FLAG_REF_IF_MODIFIED);
+    sym->addFlag(FLAG_CONST);
+  }
 }
 static
 void markSymbolNotConst(Symbol* sym)
@@ -460,6 +469,10 @@ void markSymbolNotConst(Symbol* sym)
   INT_ASSERT(!sym->qualType().isConst());
   if (arg && arg->intent == INTENT_REF_MAYBE_CONST)
     arg->intent = INTENT_REF;
+
+  if (sym->hasFlag(FLAG_REF_IF_MODIFIED)) {
+    sym->removeFlag(FLAG_REF_IF_MODIFIED);
+  }
 }
 
 static
