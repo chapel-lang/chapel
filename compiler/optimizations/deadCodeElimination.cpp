@@ -520,7 +520,8 @@ static void outlineGPUKernels() {
 
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
-        if (shouldOutlineLoop(loop)) {
+        if (shouldOutlineLoop(loop) &&
+            blockLooksLikeStreamForGPU(loop, /*allowFnCalls=*/false)) {
           SET_LINENO(loop);
           FnSymbol* outlinedFunction = new FnSymbol("chpl_gpu_kernel");
           outlinedFunction->addFlag(FLAG_RESOLVED);
@@ -925,6 +926,11 @@ int indent = 0;
 static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls) {
   if (!blk->inTree() || blk->getModule()->modTag != MOD_USER)
     return false;
+
+  if (CForLoop* cfl = toCForLoop(blk))
+    if (!cfl->isOrderIndependent())
+      return false;
+
   std::set<FnSymbol*> okFns;
   std::set<FnSymbol*> visitedFns;
 
