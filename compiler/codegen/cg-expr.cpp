@@ -4720,7 +4720,13 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   std::vector<GenRet> args;
   int curArg = 1;
   for_actuals(actual, call) {
-    if (curArg > nNonKernelParamArgs) {
+    if (curArg == 1) {
+      FnSymbol* fn = toFnSymbol(toSymExpr(actual)->symbol());
+      INT_ASSERT(fn, "1st argument to GPU launch primitive must be a FnSymbol*");
+
+      args.push_back(new_CStringSymbol(fn->cname));
+    }
+    else if (curArg > nNonKernelParamArgs) {
       Symbol* actualSym = toSymExpr(actual)->symbol();
       Type* actualValType = actual->typeInfo()->getValType();
 
@@ -4743,47 +4749,6 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
           args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
         }
       }
-
-      // create the argument for the runtime helper
-      //if (!actualSym->isRef() || isAggregateType(actualValType)) {
-        //args.push_back(codegenAddrOf(codegenValuePtr(actual)));
-        //args.push_back(new_IntSymbol(0));
-      //}
-      //else {
-        //args.push_back(actual->codegen());
-        //args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
-      //}
-
-      // create the argument size
-      //if (actualSym->isRef()) {
-        //args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
-      //}
-      //else {
-        //args.push_back(new_IntSymbol(0));
-      //}
-
-      //if (actualSym->isRef()) {
-        //// we pass the ref as-is, and give the size of the thing that it points
-        //// to. This allows runtime to copy that thing into GPU memory, and pass
-        //// a GPU pointer to the kernel instead.
-        //args.push_back(actual->codegen());
-        //args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
-      //}
-      //else {
-        //// we pass val's address to the runtime. Runtime will put this address
-        //// into the kernel parameters array, which will cause the value to be
-        //// copied into the GPU. (0 size signals this to the runtime)
-        //args.push_back(codegenAddrOf(codegenValuePtr(actual)));
-        ////args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
-        //args.push_back(new_IntSymbol(0));
-      //}
-
-
-      //args.push_back(codegenLocalAddrOf(actual));
-      //args.push_back(codegenAddrOf(actual));
-      //GenRet actualGen = codegenDeref(actual);
-      //args.push_back(actualGen);
-      //args.push_back(codegenSizeof(actualGen.chplType));
     }
     else {
       args.push_back(actual->codegen());

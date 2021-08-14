@@ -52,6 +52,7 @@ module GPUOutlineTest {
       }
 
       writeln(a);
+
     }
   }
 

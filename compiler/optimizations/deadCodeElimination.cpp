@@ -614,7 +614,8 @@ static VarSymbol* generateIndexComputation(FnSymbol* fn, Symbol* sym) {
 static  CallExpr* generateGPUCall(FnSymbol* kernel,
                                   std::vector<Symbol*> actuals) {
   CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
-  call->insertAtTail(new_CStringSymbol(kernel->cname));
+  //call->insertAtTail(new_CStringSymbol(kernel->cname));
+  call->insertAtTail(kernel);
 
   call->insertAtTail(new_IntSymbol(1));  // grid size
   call->insertAtTail(varBlockSize); // block size
