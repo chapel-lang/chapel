@@ -154,6 +154,7 @@ Expr* preFold(CallExpr* call) {
         call->insertAtHead(actual);
       }
 
+      // This seems to be where we rewrite ((myR . foo) 1) to (myR . foo 1)
       callExpr->replace(callExpr->baseExpr->remove());
 
       if (Expr* tmp = preFoldNamed(call)) {

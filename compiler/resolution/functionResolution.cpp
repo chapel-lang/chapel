@@ -4756,6 +4756,24 @@ static void findVisibleFunctionsAndCandidates(
     trimVisibleCandidates(info, mostApplicable,
                           numVisitedVis, visibleFns);
 
+    // This catches that there are paren-ful and less overloads but
+    // chokes on the fact that we have numBytes in both forms in the
+    // modules
+    /*
+    if (visibleFns.n > 1) {
+      bool parenLess = visibleFns.v[0]->hasFlag(FLAG_NO_PARENS);
+      for (int i = 1; i < visibleFns.n; ++i) {
+        if (visibleFns.v[i]->hasFlag(FLAG_NO_PARENS) != parenLess) {
+          // TODO: Except... shouldn't we at least filter to those for whom
+          // the 'this' argument matches?
+          printf("Can't disambiguate between paren-less and paren-ful methods\n");
+          return;
+          //          return NULL;
+        }
+      }
+    }
+    */
+
     if (explain)
       printf("trimmed to %d visible fns, %d most applicable\n", visibleFns.n, mostApplicable.n);
 
