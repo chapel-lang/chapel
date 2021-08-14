@@ -4702,12 +4702,13 @@ static void findVisibleFunctionsAndCandidates(
   CallExpr* call = info.call;
   FnSymbol* fn   = call->resolvedFunction();
   Vec<FnSymbol*> visibleFns;
-  bool print = ((explainCallLine != 1 && explainCallMatch(info.call) == true) ||
+  bool explain = ((explainCallLine != 1 && explainCallMatch(info.call) == true) ||
                 call->id == explainCallID);
   
-  if (print) {
+  if (explain) {
     printf("candidates.n = %d\n", candidates.n);
     printf("fn == %p\n", fn);
+    printf("numActuals = %d\n", info.actuals.n);
   }
   
   if (fn != NULL) {
@@ -4736,6 +4737,10 @@ static void findVisibleFunctionsAndCandidates(
   visInfo.currStart = getVisibilityScope(call);
   INT_ASSERT(visInfo.poiDepth == -1); // we have not used it
 
+  if (explain) {
+    printf("before finding visible fns, num actuals = %d\n", info.actuals.n);
+  }
+
   do {
     // CG TODO: no POI for CG functions
     visInfo.poiDepth++;
@@ -4743,19 +4748,21 @@ static void findVisibleFunctionsAndCandidates(
     findVisibleFunctions(info, &visInfo, &visited,
                          &numVisitedVis, visibleFns);
 
-    if (print)
+    if (explain) {
       printf("found %d visible fns\n", visibleFns.n);
+      printf("num actuals = %d\n", info.actuals.n);
+    }
     
     trimVisibleCandidates(info, mostApplicable,
                           numVisitedVis, visibleFns);
 
-    if (print)
+    if (explain)
       printf("trimmed to %d visible fns, %d most applicable\n", visibleFns.n, mostApplicable.n);
 
     gatherCandidatesAndLastResort(info, visInfo, mostApplicable, numVisitedMA,
                                   lrc, candidates);
 
-    if (print)
+    if (explain)
       printf("gathered to %d candidates, %d most applicable\n", candidates.n, mostApplicable.n);
 
 
@@ -4864,6 +4871,10 @@ static void filterCandidate(CallInfo&                  info,
   bool explain = fExplainVerbose &&
     ((explainCallLine && explainCallMatch(info.call)) ||
      info.call->id == explainCallID);
+
+  if (explain) {
+    printf("info has %d actuals\n", info.actuals.n);
+  }
   
   if (explain) {
     USR_PRINT(fn, "Considering function: %s", toString(fn));

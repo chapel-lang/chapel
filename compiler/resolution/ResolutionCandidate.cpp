@@ -126,7 +126,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info,
   }
   */
   
-  if (computeAlignment(info) == false) {
+  if (computeAlignment(info, explain) == false) {
     if (explain)
       printf("Return B\n");
     return false;
@@ -240,7 +240,7 @@ bool ResolutionCandidate::isApplicableCG(CallInfo& info,
 *                                                                             *
 ************************************** | *************************************/
 
-bool ResolutionCandidate::computeAlignment(CallInfo& info) {
+bool ResolutionCandidate::computeAlignment(CallInfo& info, bool explain) {
   formalIdxToActual.clear();
   actualIdxToFormal.clear();
 
@@ -249,6 +249,11 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
     return true;
   }
   */
+
+  if (explain) {
+    printf("computeAlignment sees %d formals and %d actuals\n",
+           fn->numFormals(), info.actuals.n);
+  }
   
   for (int i = 0; i < fn->numFormals(); i++) {
     formalIdxToActual.push_back(NULL);
@@ -284,6 +289,9 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
       if (match == false) {
         failingArgument = info.actuals.v[i];
         reason = RESOLUTION_CANDIDATE_NO_NAMED_ARGUMENT;
+        if (explain) {
+          printf("Returning because of no named argument\n");
+        }
         return false;
       }
     }
@@ -303,6 +311,9 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 
       while (formal != NULL) {
         if (formal->variableExpr) {
+          if (explain) {
+            printf("Returning isGeneric()");
+          }
           return fn->isGeneric();
         }
 
@@ -362,10 +373,16 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
           if (! fn->isGeneric()) {
             failingArgument = info.actuals.v[i];
             reason = RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS;
+            if (explain) {
+              printf("too many arguments\n");
+            }
             return false;
           } else if (fn->hasFlag(FLAG_INIT_TUPLE) == false) {
             failingArgument = info.actuals.v[i];
             reason = RESOLUTION_CANDIDATE_TOO_MANY_ARGUMENTS;
+            if (explain) {
+              printf("too many arguments B\n");
+            }
             return false;
           }
         }
@@ -375,6 +392,9 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
 
   // Make sure that any remaining formals are matched by name
   // or have a default value.
+  if (explain) {
+    gdbShouldBreakHere();
+  }
   while (formal) {
     if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL) {
       if (fn->hasFlag(FLAG_OPERATOR) && (formal->typeInfo() == dtMethodToken ||
@@ -384,6 +404,9 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
       } else {
         failingArgument = formal;
         reason = RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS;
+        if (explain) {
+          printf("too few arguments\n");
+        }
         return false;
       }
     }

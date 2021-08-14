@@ -123,7 +123,7 @@ private:
   bool                    isApplicableCG(CallInfo& info,
                                          VisibilityInfo* visInfo);
 
-  bool                    computeAlignment(CallInfo& info);
+  bool                    computeAlignment(CallInfo& info, bool explain=false);
 
   bool                    computeSubstitutions(Expr* ctx);
 
