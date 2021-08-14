@@ -4731,9 +4731,6 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
       Type* actualValType = actual->typeInfo()->getValType();
 
       // TODO can we use codegenArgForFormal instead of this logic?
-      // Note that the primitive currently passes the function name, and the
-      // reason for that is more historic than anything, we should probably pass
-      // the FnSymbol to the launch primitive.
       if (actualSym->isRef()) {
         INT_ASSERT(isAggregateType(actualValType));
         args.push_back(actual->codegen());
