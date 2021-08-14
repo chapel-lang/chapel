@@ -48,7 +48,7 @@ Functions and Methods
 
 Function and method names should be camelCase.
 
-Generally speaking, it's desireable to use methods on a value (vs
+Generally speaking, it's desirable to use methods on a value (vs
 functions that aren't methods) when there is a clear type responsible for
 the operation.
 

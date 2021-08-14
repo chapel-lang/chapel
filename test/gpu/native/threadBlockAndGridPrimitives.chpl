@@ -105,10 +105,9 @@ proc runExample(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ) {
   writeln("Block size: ", bdimX, " x ", bdimY, " x ", bdimZ);
 
   var deviceBuffer = getDeviceBufferPointer(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ);
-  var ptr: c_ptr(uint(64)) = c_ptrTo(deviceBuffer);
-  var kernelParams = getKernelParams(ptr);
-  __primitive("gpu kernel launch", c"add_nums", gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ,
-    0, 0, kernelParams, 0);
+  __primitive("gpu kernel launch", c"add_nums",
+              gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ,
+              deviceBuffer);
   getAndPrintDataFromDevice(deviceBuffer, gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ);
 
   writeln();

@@ -148,8 +148,18 @@ bool ResolutionCandidate::isApplicableGeneric(CallInfo& info,
 
   // Return early if instantiating the function resulted in the same function.
   // This avoids infinite recursion.
-  if (fn == oldFn)
+  if (fn == oldFn) {
+    if (evaluateWhereClause(fn) == false) {
+      if (fn->hasFlag(FLAG_COMPILER_ADDED_WHERE))
+        // RESOLUTION_CANDIDATE_WHERE_FAILED is not helpful to the user
+        // if they did not write the where clause.
+        reason = RESOLUTION_CANDIDATE_IMPLICIT_WHERE_FAILED;
+      else
+        reason = RESOLUTION_CANDIDATE_WHERE_FAILED;
+      return false;
+    }
     return true;
+  }
 
   return isApplicable(info, visInfo);
 }

@@ -894,7 +894,13 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
              else {Adom.dim(0)};
 
   var Y: [Ydom] eltType;
-  BLAS.gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
+  
+  if chpl__isArrayView(X) {
+    var temp = X;
+    BLAS.gemv(A, temp, Y, 1:eltType, 0:eltType, opA=op);
+  } else {
+    BLAS.gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
+  }
   return Y;
 }
 
@@ -2829,12 +2835,37 @@ module Sparse {
     }
     // matrix-matrix
     else if Adom.rank == 2 && Bdom.rank == 2 {
-      if !isCSArr(A) || !isCSArr(B) then
-        compilerError("Only CSR format is supported for sparse multiplication");
-      return _csrmatmatMult(A, B);
+      if !isCSArr(A) || !isCSArr(B) then {
+        return sparseDenseMatmul(A, B);
+      }
+      else {
+        return _csrmatmatMult(A, B);
+      }
     }
     else {
       compilerError("Ranks are not 1 or 2");
+    }
+  }
+
+  // Method returns the product of a Sparse and a Dense Matrix.
+  private proc sparseDenseMatmul(A: [?ADom], B: [?BDom]) where !isCSArr(A) || !isCSArr(B) {
+    if ADom.dim(1) != BDom.dim(0) then
+        halt("Mismatched shape in sparse-dense matrix multiplication");
+
+    var resDom = {0..<A.domain.shape(0), 0..<B.domain.shape(1)};
+    var C: [resDom] A.eltType;
+
+    if isCSArr(A) && !isCSArr(B) {
+      forall i in 0..<B.domain.shape(1) {
+        C[.., i] = dot(A, B[.., i]);
+      }
+      return C;
+    }
+    else {
+      forall i in 0..<A.domain.shape(0) {
+        C[i, ..] = dot(A[i, ..], B);
+      }
+      return C;
     }
   }
 

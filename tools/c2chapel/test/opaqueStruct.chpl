@@ -6,6 +6,8 @@ require "opaqueStruct.h";
 // Note: Generated with fake std headers
 
 use CPtr;
+use SysCTypes;
+use SysBasic;
 extern record foobar {
   var a : c_int;
   var b : c_int;

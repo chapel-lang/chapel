@@ -317,6 +317,7 @@ classifyPrimitive(CallExpr *call) {
     return NOT_FAST_NOT_LOCAL;
 
   case PRIM_GPU_KERNEL_LAUNCH:
+  case PRIM_GPU_KERNEL_LAUNCH_FLAT:
    return LOCAL_NOT_FAST;
 
   // no default, so that it is usually a C compilation

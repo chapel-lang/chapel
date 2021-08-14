@@ -798,6 +798,11 @@ initPrimitive() {
   prim_def(PRIM_GET_DYNAMIC_END_COUNT, "get dynamic end count", returnInfoEndCount);
   prim_def(PRIM_SET_DYNAMIC_END_COUNT, "set dynamic end count", returnInfoVoid, true);
 
+  // this assumes the grid and the blocks are 1D
+  prim_def(PRIM_GPU_KERNEL_LAUNCH_FLAT, "gpu kernel launch flat", returnInfoVirtualMethodCall, true);
+
+  // this requires sizes in all 3D to be specified. For 2D launches, 1 can be
+  // passed as one or more of these arguments.
   prim_def(PRIM_GPU_KERNEL_LAUNCH, "gpu kernel launch", returnInfoVirtualMethodCall, true);
 
   // Primitive functions to access thread, block, and grid information:

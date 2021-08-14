@@ -2,6 +2,10 @@ record C
 {
   var i:int;
 
+  proc init=(other: C) {
+    this.i = other.i;
+  }
+
   operator =(ref lhs: C, rhs:C)
   {
     writeln("Called =(:C, :C)");

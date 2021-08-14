@@ -1339,7 +1339,7 @@ chpl_bool canBindTxCtxs(struct fi_info* info) {
 
   //
   // Gather invariant info.  The simplistic first-time check here is
-  // sufficent because we only get called from single-threaded code
+  // sufficient because we only get called from single-threaded code
   // while examining provider candidates.
   //
   static chpl_bool haveInvariants = false;
@@ -2377,15 +2377,26 @@ void findMoreMemoryRegions(void) {
       }
     }
 
-    if (!seen
-        && ((pnLen > 0 && strcmp(path, progName) == 0)
-            || strcmp(path, "[heap]") == 0
-            || strcmp(path, "[stack]") == 0)) {
-      DBG_PRINTF(DBG_MR, "record mem map region: %p %#zx \"%s\"",
-                 addr, size, path);
-      memTab[memTabCount].addr = addr;
-      memTab[memTabCount].size = size;
-      memTabCount++;
+    if (!seen) {
+      //
+      // Matching the initialized data, heap, and stack is easy (first
+      // three tests). The uninitialized .bss part of the static data
+      // is assumed to have an empty path and directly follow something
+      // we've already registered, namely the initialized data.
+      //
+      if ((pnLen > 0 && strcmp(path, progName) == 0)
+          || strcmp(path, "[heap]") == 0
+          || strcmp(path, "[stack]") == 0
+          || (path[0] == '\0'
+              && memTabCount > 0
+              && (char*) addr == ((char*) memTab[memTabCount - 1].addr
+                                  + memTab[memTabCount - 1].size))) {
+        DBG_PRINTF(DBG_MR, "record mem map region: %p %#zx \"%s\"",
+                   addr, size, path);
+        memTab[memTabCount].addr = addr;
+        memTab[memTabCount].size = size;
+        memTabCount++;
+      }
     }
   }
 }
@@ -3691,7 +3702,7 @@ void amRequestCommon(c_nodeid_t node,
   //
   // If blocking, make sure target can RMA PUT the indicator to us.
   //
-  amDone_t amDone;
+  amDone_t amDone = 0;
   amDone_t* pAmDone = NULL;
   if (ppAmDone != NULL) {
     pAmDone = mrLocalizeTargetRemote(&amDone, sizeof(*pAmDone),

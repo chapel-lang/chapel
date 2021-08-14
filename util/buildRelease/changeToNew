@@ -1,0 +1,63 @@
+#!/usr/bin/env sh
+
+#Script for updating version numbers and adding prerelease tags after creation of release branch. Arguments are the old and new version numbers as follows:
+#(E.G. Release 1.25.0 to Pre-release 1.26.0)
+#1 - Old Major 1
+#2 - New Major 1
+#3 - Old Minor 25
+#4 - New Minor 26
+#5 - Old Update 0
+#6 - New Update 0
+
+usage="changePrerelease [-h] [-options]
+-h: help
+options:
+Arguments for E.G. Release 1.24.0 to Release 1.25.0
+1 - Old Major - 1
+2 - New Major - 1
+3 - Old Minor - 25
+4 - New Minor - 26
+5 - Old Update - 0
+6 - New Update - 0"
+
+while getopts 'h' option; do
+  case "$option" in
+    h) echo "$usage"
+       exit
+       ;;
+   \?) printf "illegal option: -%s\n" "$OPTARG" >&2
+       echo "$usage"
+       exit 1
+       ;;
+  esac
+done
+
+if [ $# -ne 6 ]
+  then
+    echo "Incorrect number of arguments"
+    echo "$usage"
+    exit
+fi
+
+echo "Changing version number and setting officialRelease to false in version_num.h"
+sed -i '' '/officialRelease =/s/true/false/' $CHPL_HOME/compiler/main/version_num.h
+sed -i '' "/#define MAJOR_VERSION/s/$1/$2/" $CHPL_HOME/compiler/main/version_num.h
+sed -i '' "/#define MINOR_VERSION/s/$3/$4/" $CHPL_HOME/compiler/main/version_num.h
+sed -i '' "/#define UPDATE_VERSION/s/$5/$6/" $CHPL_HOME/compiler/main/version_num.h
+
+echo "Changing version number to prerelease in confchpl.rst and confchpldoc.rst"
+sed -i '' /Version/s/"$1\.$3\.$5"/"$2\.$4\.$6 pre-release"/ $CHPL_HOME/man/confchpl.rst
+sed -i '' /Version/s/"$1\.$3\.$5"/"$2\.$4\.$6 pre-release"/ $CHPL_HOME/man/confchpldoc.rst
+
+echo "Changing version number in version.goodstart"
+sed -i '' s/"$1\.$3\.$5"/"$2\.$4\.$6"/ $CHPL_HOME/test/compflags/bradc/printstuff/version.goodstart
+
+echo"Changing output in versionhelp.sh"
+sed -i '' "/# diff $CWD/s/# //" $CHPL_HOME/test/compflags/bradc/printstuff/versionhelp.sh
+sed -i '' "/#         { echo/s/# //" $CHPL_HOME/test/compflags/bradc/printstuff/versionhelp.sh
+sed -i '' "/^echo \"\"/s/^/# /" $CHPL_HOME/test/compflags/bradc/printstuff/versionhelp.sh
+
+echo "Changing version number in conf.py"
+sed -i '' /'# release ='/s/"$1\.$3\.$5"/"$2\.$4\.$6"/ $CHPL_HOME/doc/rst/conf.py
+sed -i '' "/$2\.$4\.$6/s/# //" $CHPL_HOME/doc/rst/conf.py
+sed -i '' "/$1\.$3\.$5/s/^/# /" $CHPL_HOME/doc/rst/conf.py

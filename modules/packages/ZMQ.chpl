@@ -891,7 +891,8 @@ module ZMQ {
         // 
         // Note: the string factory below can throw DecodeError
         var copy = if isString(T) then createStringWithNewBuffer(x=data)
-                                  else createBytesWithNewBuffer(x=data);
+                   else parallelCreateBytesWithNewBuffer(data.localize().buff,
+                                                         length=data.size);
         copy.isOwned = false;
 
         // Create the ZeroMQ message from the data buffer
@@ -996,8 +997,8 @@ module ZMQ {
                       createStringWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
                                                 length=len, size=len+1)
                     else
-                      createBytesWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
-                                               length=len, size=len+1);
+                      parallelCreateBytesWithNewBuffer(zmq_msg_data(msg):c_ptr(uint(8)),
+                                                       length=len, size=len+1);
         if (0 != zmq_msg_close(msg)) {
           try throw_socket_error(errno, "recv");
         }
@@ -1079,6 +1080,41 @@ module ZMQ {
     }
     // Assign
     lhs.classRef = rhs.classRef;
+  }
+
+  // Note: The bytes copies are parallelized in this file
+  // only temporarily, where long term we would like to do that
+  // parallelization in the internal bytes module, but are having
+  // to delay that due to some resolution issues. Also, the string
+  // assignment can likely be parallelized similarly, but was not
+  // included in this temporary effort.
+  private proc parallelCreateBytesWithNewBuffer(x: c_ptr(?t), length: int, size=length+1) {
+    if size < parallelAssignThreshold then return createBytesWithNewBuffer(x, length, size);
+    use ByteBufferHelpers;
+    use DSIUtil;
+    var ret: bytes;
+    if length == 0 then return ret;
+
+    ret.isOwned = true;
+    ret.buffLen = length;
+    const (dst, allocSize) = bufferAlloc(length+1);
+
+    const numTasks = if __primitive("task_get_serial") then 1 else _computeNumChunks(length);
+
+    const lenPerTask = length/numTasks;
+
+    coforall tid in 0..#numTasks {
+      const myOffset = tid*lenPerTask;
+      const myLen = if tid == numTasks-1 then length:int-myOffset else lenPerTask;
+
+      c_memmove(dst+myOffset,x+myOffset,myLen);
+    }
+
+    dst[length] = 0;
+    ret.buff = dst;
+    ret.buffSize = allocSize;
+
+    return ret;
   }
 
   /*

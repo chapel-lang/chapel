@@ -155,12 +155,14 @@ void Builder::assignIDs() {
   that is just after the last element contained within.
 
   When printing IDs we use the notation of putting the symbolPath
-  part first and then '@' and then the postOrderId.
+  part first and then '@' and then the postOrderId. We leave out the
+  @ and postOrderId when the postOrderId is -1. That is the case
+  with AST nodes that create a new scope (Modules, Functions, Type decls).
 
   For example:
 
-  M@-1      module M {
-  M.Inner@3   module Inner {
+  M         module M {
+  M.Inner     module Inner {
   M.Inner@0     a;
   M.Inner@1     b;
   M.Inner@2     c;

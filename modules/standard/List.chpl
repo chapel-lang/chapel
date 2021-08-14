@@ -1249,6 +1249,18 @@ module List {
       return;
     }
 
+    pragma "no doc"
+    proc _clearLocked() {
+      _fireAllDestructors();
+      _freeAllArrays();
+      _sanity(_totalCapacity == 0);
+      _sanity(_size == 0);
+      _sanity(_arrays == nil);
+
+      // All array operations assume a consistent initial state.
+      _firstTimeInitializeArrays();
+    }
+
     /*
       Clear the contents of this list.
 
@@ -1260,16 +1272,7 @@ module List {
     proc ref clear() {
       on this {
         _enter();
-
-        _fireAllDestructors();
-        _freeAllArrays();
-        _sanity(_totalCapacity == 0);
-        _sanity(_size == 0);
-        _sanity(_arrays == nil);
-
-        // All array operations assume a consistent initial state.
-        _firstTimeInitializeArrays();
-
+        _clearLocked();
         _leave();
       }
     }
@@ -1300,7 +1303,7 @@ module List {
       :rtype: `int`
     */
     proc const indexOf(x: eltType, start: int=0, end: int=-1): int {
-      
+
       param error = -1;
 
       if _size == 0 then
@@ -1315,7 +1318,7 @@ module List {
         if !_withinBounds(start) then
           boundsCheckHalt("Start" + msg + start:string);
       }
-        
+
       if end >= 0 && end < start then
         return error;
 
@@ -1657,18 +1660,100 @@ module List {
 
       :arg ch: A channel to write to.
     */
-    proc readWriteThis(ch: channel) throws {
+    proc writeThis(ch: channel) throws {
+      var isBinary = ch.binary();
+
       _enter();
 
-      ch <~> "[";
+      if isBinary {
+        // Write the number of elements
+        ch <~> _size;
+      } else {
+        ch <~> new ioLiteral("[");
+      }
 
-      for i in 0..(_size - 2) do
-        ch <~> _getRef(i) <~> ", ";
+      for i in 0..(_size - 2) {
+        ch <~> _getRef(i);
+        if !isBinary {
+          ch <~> new ioLiteral(", ");
+        }
+      }
 
       if _size > 0 then
         ch <~> _getRef(_size-1);
 
-      ch <~> "]";
+      if !isBinary {
+        ch <~> new ioLiteral("]");
+      }
+
+      _leave();
+    }
+
+    /*
+     Read the contents of this list from a channel.
+
+     :arg ch: A channel to read from.
+     */
+    proc readThis(ch: channel) throws {
+      //
+      // Special handling for reading in order to handle reading an arbitrary
+      // size.
+      //
+      const isBinary = ch.binary();
+
+      _enter();
+
+      _clearLocked();
+
+      if isBinary {
+        // How many elements should we read (for binary mode)?
+        var num = 0;
+        ch <~> num;
+        for i in 0..#num {
+          pragma "no auto destroy"
+          var elt: eltType;
+          ch <~> elt;
+          _appendByRef(elt);
+        }
+      } else {
+        var isFirst = true;
+        var hasReadEnd = false;
+
+        ch <~> new ioLiteral("[");
+
+        while !hasReadEnd {
+          if isFirst {
+            isFirst = false;
+
+            // Try reading an end bracket. If we don't, then continue on.
+            try {
+              ch <~> new ioLiteral("]");
+              hasReadEnd = true;
+              break;
+            } catch err: BadFormatError {
+              // Continue on if we didn't read an end bracket.
+            }
+          } else {
+
+            // Try to read a comma. Break if we don't.
+            try {
+              ch <~> new ioLiteral(",");
+            } catch err: BadFormatError {
+              break;
+            }
+          }
+
+          // read an element
+          pragma "no auto destroy"
+          var elt: eltType;
+          ch <~> elt;
+          _appendByRef(elt);
+        }
+
+        if !hasReadEnd {
+          ch <~> new ioLiteral("]");
+        }
+      }
 
       _leave();
     }

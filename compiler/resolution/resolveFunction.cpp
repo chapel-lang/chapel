@@ -580,7 +580,13 @@ static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
 
   if (fn->name == astrSassign &&
       fn->numFormals() >= 1) {
-    ArgSymbol* lhs = fn->getFormal(1);
+    int lhsNum = 1;
+    if (fn->getFormal(1)->typeInfo() == dtMethodToken) {
+      // Operator methods have a "_this" and method token argument, but
+      // standalone operators do not.  Need to consider both here.
+      lhsNum += 2;
+    }
+    ArgSymbol* lhs = fn->getFormal(lhsNum);
     Type* t = lhs->getValType();
     if (fn->hasFlag(FLAG_COMPILER_GENERATED))
       t->symbol->addFlag(FLAG_TYPE_DEFAULT_ASSIGN);

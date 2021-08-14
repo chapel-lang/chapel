@@ -2215,8 +2215,10 @@ proc channel._ch_ioerror(error:syserr, msg:string) throws {
       path = createStringWithNewBuffer(tmp_path,
                                        policy=decodePolicy.replace);
       chpl_free_c_string(tmp_path);
-      offset = tmp_offset;
+    } else {
+      tmp_offset = qio_channel_offset_unlocked(_channel_internal);
     }
+    offset = tmp_offset;
   }
   try ioerror(error, msg, path, offset);
 }
@@ -2235,8 +2237,10 @@ proc channel._ch_ioerror(errstr:string, msg:string) throws {
       path = createStringWithNewBuffer(tmp_path,
                                        policy=decodePolicy.replace);
       chpl_free_c_string(tmp_path);
-      offset = tmp_offset;
+    } else {
+      tmp_offset = qio_channel_offset_unlocked(_channel_internal);
     }
+    offset = tmp_offset;
   }
   try ioerror(errstr, msg, path, offset);
 }
@@ -3349,7 +3353,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      :returns: ch
      :throws SystemError: When an IO error has occurred.
    */
-  inline operator <~>(const ref ch: channel, const x) const ref throws
+  inline operator channel.<~>(const ref ch: channel, const x) const ref throws
   where ch.writing {
     try ch.readwrite(x);
     return ch;
@@ -3357,7 +3361,7 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
 
   // documented in the writing version.
   pragma "no doc"
-  inline operator <~>(const ref ch: channel, ref x) const ref throws
+  inline operator channel.<~>(const ref ch: channel, ref x) const ref throws
   where !ch.writing {
     try ch.readwrite(x);
     return ch;
@@ -3378,7 +3382,8 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      works without requiring an explicit temporary value to store
      the ioLiteral.
    */
-  inline operator <~>(const ref r: channel, lit:ioLiteral) const ref throws
+  inline operator channel.<~>(const ref r: channel,
+                              lit:ioLiteral) const ref throws
   where !r.writing {
     var litCopy = lit;
     try r.readIt(litCopy);
@@ -3395,7 +3400,8 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
      works without requiring an explicit temporary value to store
      the ioNewline.
    */
-  inline operator <~>(const ref r: channel, nl:ioNewline) const ref throws
+  inline operator channel.<~>(const ref r: channel,
+                              nl:ioNewline) const ref throws
   where !r.writing {
     var nlCopy = nl;
     try r.readIt(nlCopy);

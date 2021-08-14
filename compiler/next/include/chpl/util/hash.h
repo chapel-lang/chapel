@@ -106,6 +106,16 @@ inline size_t hashSet(const std::set<T>& key) {
   return ret;
 }
 
+// Hash function for pair
+template<typename T, typename U>
+inline size_t hashPair(const std::pair<T, U>& key) {
+  size_t ret = 0;
+  ret = hash_combine(ret, hash(key.first));
+  ret = hash_combine(ret, hash(key.second));
+  return ret;
+}
+
+
 
 } // end namespace chpl
 
@@ -123,6 +133,12 @@ template<typename T> struct hash<std::set<T>> {
     return chpl::hashSet(key);
   }
 };
+template<typename T, typename U> struct hash<std::pair<T,U>> {
+  size_t operator()(const std::pair<T,U>& key) const {
+    return chpl::hashPair(key);
+  }
+};
+
 
 
 } // end namespace std
