@@ -1,4 +1,0 @@
-#!/bin/sh
-
-sed -e 's/\(Kernel parameter.*:\).*/\1 prediffed/' $2> $2.prediffed
-mv $2.prediffed $2
