@@ -122,7 +122,6 @@ checkResolved() {
       }
     }
   }
-
   // check for no record deletes, no invalid PRIM_ADDR_OF
   checkCalls();
   checkConstLoops();

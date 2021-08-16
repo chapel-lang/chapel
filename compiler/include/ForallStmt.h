@@ -83,7 +83,6 @@ public:
   LabelSymbol* continueLabel();      // create it if not already
   CallExpr* zipCall() const;
 
-
   // when originating from a ForLoop or a reduce expression
   bool createdFromForLoop()     const;  // is converted from a for-loop
   bool needToHandleOuterVars()  const;  // yes, convert to shadow vars
