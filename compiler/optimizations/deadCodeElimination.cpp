@@ -614,7 +614,6 @@ static VarSymbol* generateIndexComputation(FnSymbol* fn, Symbol* sym) {
 static  CallExpr* generateGPUCall(FnSymbol* kernel,
                                   std::vector<Symbol*> actuals) {
   CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
-  //call->insertAtTail(new_CStringSymbol(kernel->cname));
   call->insertAtTail(kernel);
 
   call->insertAtTail(new_IntSymbol(1));  // grid size
@@ -665,15 +664,10 @@ static void outlineGPUKernels() {
           std::vector<SymExpr*> maybeArrSymExpr;
           std::vector<SymExpr*> arraysWhoseDataAccessed;
           std::vector<CallExpr*> fieldAccessors;
-          //std::vector<Type*> formalTypes;
           std::vector<Symbol*> kernelActuals;
-
-
 
           Symbol* indexSymbol = NULL;
           SymbolMap copyMap;
-
-          int copiedNodes = 0;
 
           for_alist(node, loop->body) {
 
@@ -703,47 +697,42 @@ static void outlineGPUKernels() {
                 else if (sym->isImmediate()) {
                   // nothing to do
                 }
-                else {
-                  // TODO: we want to have a better way of recognizing the index
-                  // variable. Either we move this "pass" earlier, and we lower
-                  // a ForLoop directly into a gpu kernel, or we record
-                  // something into the CForLoop. Or, we flag the user's index
-                  // with one of the index flags, and check for it here.
-                  if (isIndexVariable(sym, loop)) {
-                    if (indexSymbol == NULL) {
+                // TODO: we want to have a better way of recognizing the index
+                // variable. Either we move this "pass" earlier, and we lower
+                // a ForLoop directly into a gpu kernel, or we record
+                // something into the CForLoop. Or, we flag the user's index
+                // with one of the index flags, and check for it here.
+                else if (isIndexVariable(sym, loop)) {
+                  if (indexSymbol == NULL) {
                       indexSymbol = sym;
                       VarSymbol* flatIndex = generateIndexComputation(
                         outlinedFunction, sym);
                       
                       copyMap.put(sym, flatIndex);
-                    }
                   }
-                  else {
-                    //std::cout << "Declared outside the loop" << std::endl;
-                    //list_view(sym);
-
-                    if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
-                      if (parent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-                        if (symExpr == parent->get(2)) {  // this is a field
-                          // do nothing
-                        }
-                        else if (symExpr == parent->get(1)) {
-                          addKernelArgument(outlinedFunction, sym,
-                                            kernelActuals, copyMap);
-                          copyNode = true;
-                        }
-                        else {
-                          INT_FATAL("Malformed PRIM_GET_MEMBER_VALUE");
-                        }
+                }
+                else {
+                  if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
+                    if (parent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+                      if (symExpr == parent->get(2)) {  // this is a field
+                        // do nothing
                       }
-                      else if (parent->isPrimitive()) {
+                      else if (symExpr == parent->get(1)) {
                         addKernelArgument(outlinedFunction, sym,
                                           kernelActuals, copyMap);
                         copyNode = true;
                       }
                       else {
-                        INT_FATAL("Unexpected call expression");
+                        INT_FATAL("Malformed PRIM_GET_MEMBER_VALUE");
                       }
+                    }
+                    else if (parent->isPrimitive()) {
+                      addKernelArgument(outlinedFunction, sym,
+                                        kernelActuals, copyMap);
+                      copyNode = true;
+                    }
+                    else {
+                      INT_FATAL("Unexpected call expression");
                     }
                   }
                 }
@@ -752,16 +741,14 @@ static void outlineGPUKernels() {
 
             if (copyNode) {
               outlinedFunction->insertAtTail(node->copy());
-              copiedNodes++;
-
             }
           }
 
           update_symbols(outlinedFunction->body, &copyMap);
           normalize(outlinedFunction);
 
-          // We'll get an end of statement for the fake index we add. I am not
-          // sure how much it matters for the long term, for now just remove it.
+          // We'll get an end of statement for the index we add. I am not sure
+          // how much it matters for the long term, for now just remove it.
           for_alist (node, outlinedFunction->body->body) {
             if (CallExpr* call = toCallExpr(node)) {
               if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
