@@ -26,7 +26,6 @@
 #include "CForLoop.h"
 #include "driver.h"
 #include "expr.h"
-#include "ForallStmt.h"
 #include "ForLoop.h"
 #include "LoopStmt.h"
 #include "ModuleSymbol.h"
@@ -59,6 +58,9 @@ static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk,
 static unsigned int deadBlockCount;
 static unsigned int deadModuleCount;
 
+bool debugPrintGPUChecks = false;
+bool allowFnCallsFromGPU = false;
+int indentGPUChecksLevel = 0;
 
 
 //
@@ -720,7 +722,9 @@ void deadCodeElimination() {
     cleanupAfterTypeRemoval();
   }
 
-  markGPUSuitableLoops();
+  if (debugPrintGPUChecks) {
+    markGPUSuitableLoops();
+  }
 
   // For now, we are doing GPU outlining here. In the future, it should probably
   // be its own pass.
@@ -919,10 +923,6 @@ static void cleanupLoopBlocks(FnSymbol* fn) {
 extern int classifyPrimitive(CallExpr *call, bool inLocal);
 extern bool inLocalBlock(CallExpr *call);
 
-bool debugPrint = false; 
-bool allowFnCallsFromGPU = false;
-int indent = 0;
-
 static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls) {
   if (!blk->inTree() || blk->getModule()->modTag != MOD_USER)
     return false;
@@ -937,11 +937,15 @@ static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls) {
   return blockLooksLikeStreamForGPUHelp(blk, okFns, visitedFns, allowFnCalls);
 }
 
-static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk, std::set<FnSymbol*>& okFns, std::set<FnSymbol*> visitedFns, bool allowFnCalls) {
+static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk,
+                                           std::set<FnSymbol*>& okFns,
+                                           std::set<FnSymbol*> visitedFns,
+                                           bool allowFnCalls) {
 
-  if (debugPrint) {
+  if (debugPrintGPUChecks) {
     FnSymbol* fn = blk->getFunction();
-    printf("%*s%s:%d: %s[%d]\n", indent, "", fn->fname(), fn->linenum(), fn->name, fn->id);
+    printf("%*s%s:%d: %s[%d]\n", indentGPUChecksLevel, "",
+           fn->fname(), fn->linenum(), fn->name, fn->id);
   }
 
   if (visitedFns.count(blk->getFunction()) != 0) {
@@ -970,13 +974,14 @@ static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk, std::set<FnSymbol*>& 
         return false;
 
       FnSymbol* fn = call->resolvedFunction();
-      indent += 2;
+      indentGPUChecksLevel += 2;
       if (okFns.count(fn) != 0 ||
-          blockLooksLikeStreamForGPUHelp(fn->body, okFns, visitedFns, allowFnCalls)) {
-        indent -= 2;
+          blockLooksLikeStreamForGPUHelp(fn->body, okFns,
+                                         visitedFns, allowFnCalls)) {
+        indentGPUChecksLevel -= 2;
         okFns.insert(fn);
       } else {
-        indent -= 2;
+        indentGPUChecksLevel -= 2;
         return false;
       }
     }
@@ -989,22 +994,17 @@ static void markGPUSuitableLoops() {
     if (ForLoop* forLoop = toForLoop(block)) {
       if (forLoop->isOrderIndependent()) {
         if (blockLooksLikeStreamForGPU(forLoop, allowFnCallsFromGPU)) {
-          if (debugPrint)
-            printf("Found viable forLoop %s:%d[%d]\n", forLoop->fname(), forLoop->linenum(), forLoop->id);
+          if (debugPrintGPUChecks)
+            printf("Found viable forLoop %s:%d[%d]\n",
+                   forLoop->fname(), forLoop->linenum(), forLoop->id);
         }
       }
     } else if (CForLoop* forLoop = toCForLoop(block)) {
       if (blockLooksLikeStreamForGPU(forLoop, allowFnCallsFromGPU)) {
-        if (debugPrint)
-          printf("Found viable CForLoop %s:%d[%d]\n", forLoop->fname(), forLoop->linenum(), forLoop->id);
+        if (debugPrintGPUChecks)
+          printf("Found viable CForLoop %s:%d[%d]\n",
+                 forLoop->fname(), forLoop->linenum(), forLoop->id);
       }
-    }
-  }
-
-  forv_Vec(ForallStmt, fs, gForallStmts) {
-    if (blockLooksLikeStreamForGPU(fs->loopBody(), allowFnCallsFromGPU)) {
-      if (debugPrint)
-        printf("Found viable forallStmt %s:%d[%d]\n", fs->fname(), fs->linenum(), fs->id);
     }
   }
 }

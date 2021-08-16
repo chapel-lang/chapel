@@ -83,8 +83,6 @@ public:
   LabelSymbol* continueLabel();      // create it if not already
   CallExpr* zipCall() const;
 
-  bool      isGPUSuitable() const; // is suitable for running on GPU
-  void      setIsGPUSuitable(bool isSuitable); // if passed suitability checks
 
   // when originating from a ForLoop or a reduce expression
   bool createdFromForLoop()     const;  // is converted from a for-loop

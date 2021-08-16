@@ -64,10 +64,7 @@ classifyPrimitive(CallExpr *call) {
     switch (call->primitive->tag) {
       case PRIM_GET_USER_LINE:
       case PRIM_GET_USER_FILE:
-      case PRIM_BLOCK_ELIDED_ON:
       case PRIM_BLOCK_LOCAL:
-      case PRIM_END_OF_STATEMENT:
-      case PRIM_YIELD:
         return FAST_AND_LOCAL;
 
       // Loops can have arbitrary trip counts, don't consider fast
@@ -75,11 +72,6 @@ classifyPrimitive(CallExpr *call) {
       case PRIM_BLOCK_DOWHILE_LOOP:
       case PRIM_BLOCK_FOR_LOOP:
       case PRIM_BLOCK_C_FOR_LOOP:
-      case PRIM_ZIP:
-        return LOCAL_NOT_FAST;
-
-      case PRIM_CURRENT_ERROR:
-      case PRIM_THROW:
         return LOCAL_NOT_FAST;
 
       default:
