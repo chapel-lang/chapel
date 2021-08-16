@@ -2321,6 +2321,10 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
 BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block) {
   auto ret = new BlockStmt();
 
+  if (fWarnUnstable) {
+    USR_WARN(managers, "manage statements are not stable and may change");
+  }
+
   // Used to thread context managers. Start by inserting into outer block.
   BlockStmt* insertionPoint = ret;
 
