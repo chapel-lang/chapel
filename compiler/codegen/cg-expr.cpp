@@ -4720,14 +4720,19 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   std::vector<GenRet> args;
   int curArg = 1;
   for_actuals(actual, call) {
+    Symbol* actualSym = toSymExpr(actual)->symbol();
     if (curArg == 1) {
-      FnSymbol* fn = toFnSymbol(toSymExpr(actual)->symbol());
-      INT_ASSERT(fn, "1st argument to GPU launch primitive must be a FnSymbol*");
-
-      args.push_back(new_CStringSymbol(fn->cname));
+      if (FnSymbol* fn = toFnSymbol(actualSym)) {
+        args.push_back(new_CStringSymbol(fn->cname));
+      }
+      else if (actualSym->isImmediate()) {
+        args.push_back(actual->codegen());
+      }
+      else {
+        INT_FATAL("Unknown argument type in GPU launch primitive");
+      }
     }
     else if (curArg > nNonKernelParamArgs) {
-      Symbol* actualSym = toSymExpr(actual)->symbol();
       Type* actualValType = actual->typeInfo()->getValType();
 
       // TODO can we use codegenArgForFormal instead of this logic?
