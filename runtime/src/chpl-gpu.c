@@ -185,35 +185,18 @@ static void chpl_gpu_launch_kernel_help(const char* name,
     void* cur_arg = va_arg(args, void*);
     size_t cur_arg_size = va_arg(args, size_t);
 
-    CHPL_GPU_LOG("\tCur arg %p\n", cur_arg);
-    CHPL_GPU_LOG("\tCur arg size %zu\n", cur_arg_size);
-
-    /*CHPL_GPU_LOG("\tCur arg: %x\n", cur_arg);*/
-    /*for (int i = 0; i < 24; i++) {*/
-      /*CHPL_GPU_LOG("\tCur arg %d: %x\n", i, *(*((unsigned char**)cur_arg)+i));*/
-    /*}*/
-    /*CHPL_GPU_LOG("\tCur arg 0: %d\n", *(*((int64_t**)cur_arg)+0));*/
-    /*CHPL_GPU_LOG("\tCur arg 1: %x\n", *(*((int64_t**)cur_arg)+1));*/
-    /*CHPL_GPU_LOG("\tCur arg 2: %x\n", *(*((int64_t**)cur_arg)+2));*/
-
-    /*void *gpu_arg = chpl_gpu_mem_alloc(24, 0, 0, 0);*/
-    /*chpl_gpu_copy_host_to_device(gpu_arg, cur_arg, 24);*/
-
-
-    /*kernel_params[i] = cur_arg;*/
-    
     if (cur_arg_size > 0) {
       kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
       *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, 0, 0, 0);
       chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
+      CHPL_GPU_LOG("\tKernel parameter %d: %p (device ptr)\n",
+                   i, *kernel_params[i]);
     }
     else {
       kernel_params[i] = cur_arg;
+      CHPL_GPU_LOG("\tKernel parameter %d: %p\n",
+                   i, kernel_params[i]);
     }
-
-    CHPL_GPU_LOG("\tKernel parameter %d: %p%s\n", i, kernel_params[i],
-                 chpl_gpu_is_device_ptr(kernel_params[i]) ?
-                    " (GPU pointer)" : "");
   }
 
   CHPL_GPU_LOG("Calling gpu function named %s\n", name);
