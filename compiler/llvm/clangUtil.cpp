@@ -3931,7 +3931,7 @@ void makeBinaryLLVM(void) {
       mysystem(ptxCmd.c_str(), "PTX to  object file");
 
       std::string fatbinaryCmd = std::string("fatbinary -64 ") +
-                                 std::string(" --create ") + fatbinFilename.c_str() +
+                                 std::string("--create ") + fatbinFilename.c_str() +
                                  std::string(" --image=profile=sm_60,file=") + ptxObjectFilename.c_str() +
                                  std::string(" --image=profile=compute_60,file=") + asmFilename.c_str();
 
