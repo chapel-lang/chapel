@@ -94,6 +94,7 @@ Contributors to GASNet-EX include:
  * Artem Y. Polyakov <artemp@mellanox.com>
  * Sean Treichler <sean@nvidia.com>
  * Ralph Castain <rhc@open-mpi.org>
+ * Elliot Ronaghan <elliot.ronaghan@hpe.com>
 
 The authors/contributors of GASNet-1 (upon which GASNet-EX is based) include:
 

@@ -29,6 +29,8 @@
 #ifdef GASNETI_USE_ALLOCA
   // Keep defn
 #elif HAVE_ALLOCA && !PLATFORM_COMPILER_PGI
+  // This is the work-around for Bug 2079.  However, the need has not been
+  // revalidated with recent PGI compilers nor the "nvhpc" branded ones.
   #define GASNETI_USE_ALLOCA 1
 #endif
 #if GASNETI_USE_ALLOCA && HAVE_ALLOC_H
@@ -178,18 +180,23 @@ static communication_domain_struct_t * gasnetc_cdom_data;
 #if (GASNETC_DOMAIN_THREAD_DISTRIBUTION == GASNETC_DOMAIN_THREAD_DISTRIBUTION_BULK)
 int gasnetc_get_domain_idx(gasnete_threadidx_t tidx)
 {
+  gasneti_assert(gasnetc_threads_per_domain);
+  gasneti_assert(gasnetc_domain_count);
   int didx = (tidx / gasnetc_threads_per_domain) % gasnetc_domain_count;
   return didx;
 }
 GASNETI_INLINE(gasnetc_get_domain_first_thread_idx)
 gasnete_threadidx_t gasnetc_get_domain_first_thread_idx(int didx)
 {
+  gasneti_assert(gasnetc_threads_per_domain);
+  gasneti_assert(gasnetc_domain_count);
   int tidx = didx * gasnetc_threads_per_domain;
   return tidx;
 }
 #else
 int gasnetc_get_domain_idx(gasnete_threadidx_t tidx)
 {
+  gasneti_assert(gasnetc_domain_count);
   int didx = tidx % gasnetc_domain_count;
   return didx;
 }
@@ -197,6 +204,7 @@ int gasnetc_get_domain_idx(gasnete_threadidx_t tidx)
 GASNETI_INLINE(gasnetc_get_domain_first_thread_idx)
 gasnete_threadidx_t gasnetc_get_domain_first_thread_idx(int didx)
 {
+  gasneti_assert(gasnetc_domain_count);
   int tidx = didx;
   return tidx;
 }
@@ -468,7 +476,6 @@ static int gasnetc_register_udreg(gasnetc_post_descriptor_t *gpd, uint32_t memre
         continue;
       } else if (UDREG_RC_NO_MATCH == rc) {
         GASNETC_UNLOCK_UDREG();
-        GASNETI_WAITHOOK();
         gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
         GASNETC_LOCK_UDREG();
       } else {
@@ -519,20 +526,17 @@ static int gasnetc_register_gni(gasnetc_post_descriptor_t *gpd, uint32_t memreg_
   int trial = 0;
   gni_return_t status;
 
-  if_pf (gasnetc_reg_credit_max &&
-         !gasnetc_weakatomic_dec_if_positive(&gasnetc_reg_credit)) {
+  if (gasnetc_reg_credit_max &&
+      !gasnetc_weakatomic_dec_if_positive(&gasnetc_reg_credit)) {
     /* We may simple not have polled the Cq recently.
        So, WAITHOOK and STALL tracing only if still nothing after first poll */
     GASNETC_TRACE_WAIT_BEGIN();
     int stall = 0;
-    goto first;
-    do {
-      GASNETI_WAITHOOK();
-      stall = 1;
-first:
-      gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
-    } while (!gasnetc_weakatomic_dec_if_positive(&gasnetc_reg_credit));
-    if_pf (stall) GASNETC_TRACE_WAIT_END(MEM_REG_STALL);
+    gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
+    GASNETI_SPIN_UNTIL(gasnetc_weakatomic_dec_if_positive(&gasnetc_reg_credit), {
+      stall = 1; gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
+    });
+    if (stall) GASNETC_TRACE_WAIT_END(MEM_REG_STALL);
   }
 
   memreg_flags |= gasnetc_memreg_flags;
@@ -545,7 +549,6 @@ first:
       GASNETC_STAT_EVENT_VAL(MEM_REG_RETRY, trial);
       return 1;
     } else if (status == GNI_RC_ERROR_RESOURCE) {
-      GASNETI_WAITHOOK();
       gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
       ++trial;
     } else if (status == GNI_RC_INVALID_PARAM) {
@@ -963,6 +966,52 @@ void  gasnetc_create_parallel_domain(gasnete_threadidx_t tidx)
 }
 #endif
 
+#if GASNETC_USE_MULTI_DOMAIN
+void gasnetc_init_md(void)
+{
+  GASNETC_DIDX_POST(GASNETC_DEFAULT_DOMAIN);
+  gasnetc_domain_count = gasneti_getenv_int_withdefault("GASNET_DOMAIN_COUNT",
+               GASNETC_DOMAIN_COUNT_DEFAULT,0);
+  if (! gasnetc_domain_count) {
+    gasneti_static_assert(GASNETC_DOMAIN_COUNT_DEFAULT != 0);
+    if (! gasneti_mynode) {
+      gasneti_console_message("WARNING",
+                              "Requested GASNET_DOMAIN_COUNT of 0 increased to 1");
+    }
+    gasnetc_domain_count = 1;
+  }
+  gasnetc_poll_am_domain_mask = gasneti_getenv_int_withdefault("GASNET_AM_DOMAIN_POLL_MASK",
+               GASNETC_AM_DOMAIN_POLL_MASK_DEFAULT,0);
+  if (gasnetc_poll_am_domain_mask) {
+    for (unsigned int i=2; i<gasnetc_domain_count; i<<=1) {
+      gasnetc_poll_am_domain_mask = (gasnetc_poll_am_domain_mask << 1) | 1;
+    }
+  }
+  unsigned int *all_domain_counts = gasneti_malloc(gasneti_nodes * sizeof(unsigned int));
+  gasneti_spawner->Exchange(&gasnetc_domain_count, sizeof(unsigned int), all_domain_counts);
+  gasnetc_domain_count_max = gasnetc_domain_count;
+  for (gex_Rank_t i = 0; i < gasneti_nodes; ++i) {
+    gasnetc_domain_count_max = MAX(gasnetc_domain_count_max, all_domain_counts[i]);
+  }
+  gasneti_free(all_domain_counts);
+ #if (GASNETC_DOMAIN_THREAD_DISTRIBUTION == GASNETC_DOMAIN_THREAD_DISTRIBUTION_BULK)
+  gasnetc_threads_per_domain =  gasneti_getenv_int_withdefault("GASNET_GNI_PTHREADS_PER_DOMAIN",
+               GASNETC_PTHREADS_PER_DOMAIN_DEFAULT,0);
+  if (! gasnetc_threads_per_domain) {
+    gasneti_static_assert(GASNETC_PTHREADS_PER_DOMAIN_DEFAULT != 0);
+    if (! gasneti_mynode) {
+      gasneti_console_message("WARNING",
+                              "Requested GASNET_GNI_PTHREADS_PER_DOMAIN of 0 increased to 1");
+    }
+    gasnetc_threads_per_domain = 1;
+  }
+ #endif
+  gasnetc_cdom_data = gasneti_malloc(gasnetc_domain_count * sizeof(communication_domain_struct_t));
+  for (unsigned int i=0; i<gasnetc_domain_count; i++)
+    reset_comm_data(gasnetc_cdom_data+i);
+}
+#endif
+
 uintptr_t gasnetc_init_messaging(void)
 {
   const gex_Rank_t remote_nodes = gasneti_nodes - (GASNET_PSHM ? gasneti_nodemap_local_count : 1);
@@ -982,29 +1031,11 @@ uintptr_t gasnetc_init_messaging(void)
   gni_nic_handle_t nic_handle;
   gni_cq_handle_t bound_cq_handle;
   peer_struct_t *peer_data;
-  gasnetc_domain_count = gasneti_getenv_int_withdefault("GASNET_DOMAIN_COUNT",
-               GASNETC_DOMAIN_COUNT_DEFAULT,0);
-  gasnetc_poll_am_domain_mask = gasneti_getenv_int_withdefault("GASNET_AM_DOMAIN_POLL_MASK",
-               GASNETC_AM_DOMAIN_POLL_MASK_DEFAULT,0);
-  if (gasnetc_poll_am_domain_mask) {
-    for (i=2; i<gasnetc_domain_count; i<<=1) {
-      gasnetc_poll_am_domain_mask = (gasnetc_poll_am_domain_mask << 1) | 1;
-    }
-  }
-  unsigned int *all_domain_counts = gasneti_malloc(gasneti_nodes * sizeof(unsigned int));
-  gasneti_spawner->Exchange(&gasnetc_domain_count, sizeof(unsigned int), all_domain_counts);
-  gasnetc_domain_count_max = gasnetc_domain_count;
-  for (i = 0; i < gasneti_nodes; ++i) {
-    gasnetc_domain_count_max = MAX(gasnetc_domain_count_max, all_domain_counts[i]);
-  }
-  gasneti_free(all_domain_counts);
+
+  gasneti_assert(gasnetc_domain_count);
  #if (GASNETC_DOMAIN_THREAD_DISTRIBUTION == GASNETC_DOMAIN_THREAD_DISTRIBUTION_BULK)
-  gasnetc_threads_per_domain =  gasneti_getenv_int_withdefault("GASNET_GNI_PTHREADS_PER_DOMAIN",
-               GASNETC_PTHREADS_PER_DOMAIN_DEFAULT,0);
+  gasneti_assert(gasnetc_threads_per_domain);
  #endif
-  gasnetc_cdom_data = gasneti_malloc(gasnetc_domain_count * sizeof(communication_domain_struct_t));
-  for(i=0;i<gasnetc_domain_count;i++)
-    reset_comm_data(gasnetc_cdom_data+i);
 #endif
 
   // Process GASNET_GNI_FMA_SHARING, if supported
@@ -1496,10 +1527,6 @@ void gasnetc_shutdown(void)
         }
       }
       if (!left) break;
-#if 0
-      GASNETI_WAITHOOK();
-      gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
-#endif
     }
     if_pf (left > 0) {
       gasnetc_GNIT_Log("at shutdown: %d endpoints left after 10 tries", left);
@@ -1595,18 +1622,15 @@ void *gasnetc_alloc_bounce_buffer(gex_Flags_t flags GASNETC_DIDX_FARG)
 {
   gasneti_lifo_head_t * const pool_p = &DOMAIN_SPECIFIC_VAL(bounce_buffer_pool);
   void *buf = gasneti_lifo_pop(pool_p);
-  if_pf (!buf) {
+  if (!buf) {
     /* We may simple not have polled the Cq recently.
        So, WAITHOOK and STALL tracing only if still nothing after first poll */
     GASNETC_TRACE_WAIT_BEGIN();
     gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
     buf = gasneti_lifo_pop(pool_p);
-    if_pf (!buf && !(flags & GEX_FLAG_IMMEDIATE)) {
-      do {
-        GASNETI_WAITHOOK();
-        gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
-        buf = gasneti_lifo_pop(pool_p);
-      } while (!buf);
+    if (!buf && !(flags & GEX_FLAG_IMMEDIATE)) {
+      GASNETI_SPIN_DOUNTIL((buf = gasneti_lifo_pop(pool_p)),
+                           gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE));
       GASNETC_TRACE_WAIT_END(ALLOC_BB_STALL);
     }
   }
@@ -1653,7 +1677,6 @@ int gasnetc_send_am_common(peer_struct_t *peer, gni_post_descriptor_t *pd)
       return GASNET_ERR_RESOURCE;
     }
 
-    GASNETI_WAITHOOK();
     gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
     GASNETC_LOCK_GNI();
   }
@@ -1731,7 +1754,6 @@ int send_ctrl(peer_struct_t * const peer, uint32_t value, gasneti_weakatomic_t *
       return GASNET_ERR_RESOURCE;
     }
 
-    GASNETI_WAITHOOK();
     gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
   }
 
@@ -1975,7 +1997,7 @@ gasnetc_post_descriptor_t *request_post_descriptor_inner(gex_Rank_t dest,
     if (imm_flag) goto out_immediate_1;
     do {
       GASNETC_UNLOCK_AM_BUFFER();
-      while (peer->remote_request_lock) GASNETI_WAITHOOK();
+      GASNETI_SPIN_WHILE(peer->remote_request_lock,((void)0));
       GASNETC_LOCK_AM_BUFFER();
     } while (peer->remote_request_lock);
   }
@@ -2901,7 +2923,6 @@ gni_return_t myPostRdma(gni_ep_handle_t ep, gasnetc_post_descriptor_t *gpd, int 
         return GNI_RC_SUCCESS;
       }
       if (status != GNI_RC_ERROR_RESOURCE) break; /* Fatal */
-      GASNETI_WAITHOOK();
       gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
   } while (++trial < GASNETC_RESOURCE_RETRIES);
   if (status == GNI_RC_ERROR_RESOURCE) {
@@ -2931,7 +2952,6 @@ gni_return_t myPostFma(gni_ep_handle_t ep, gasnetc_post_descriptor_t *gpd, int l
         return GNI_RC_SUCCESS;
       }
       if (status != GNI_RC_ERROR_RESOURCE) break; /* Fatal */
-      GASNETI_WAITHOOK();
       gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
   } while (++trial < GASNETC_RESOURCE_RETRIES);
   if (status == GNI_RC_ERROR_RESOURCE) {
@@ -3553,10 +3573,8 @@ void gasnetc_rdma_put_long(
         gpd->gpd_flags = gpd_flags | GC_POST_UNBOUNCE;
 
         // Stall
-        while (initiated != gasneti_weakatomic_read(&completed, 0)) {
-          GASNETI_WAITHOOK();
-          gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
-        }
+        GASNETI_SPIN_UNTIL(initiated == gasneti_weakatomic_read(&completed, 0),
+                           gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE));
 
         // Fall through to inject final chunk
       } else {
@@ -3589,7 +3607,6 @@ void gasnetc_rdma_put_long(
       return; // Normal exit path
     }
     if (status != GNI_RC_ERROR_RESOURCE) break; /* Fatal */
-    GASNETI_WAITHOOK();
     gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
   } while (++trial < GASNETC_RESOURCE_RETRIES);
  } // End of scope: 'trial', 'ep' and 'instid'
@@ -4117,7 +4134,7 @@ gasnetc_post_descriptor_t *gasnetc_alloc_post_descriptor(gex_Flags_t flags GASNE
 {
   gasneti_lifo_head_t * const pool_p = &DOMAIN_SPECIFIC_VAL(post_descriptor_pool);
   gasnetc_post_descriptor_t *gpd = (gasnetc_post_descriptor_t *) gasneti_lifo_pop(pool_p);
-  if_pf (!gpd) {
+  if (!gpd) {
     /* We may simple not have polled the Cq recently.
        So, WAITHOOK and STALL tracing only if still nothing after first poll */
     GASNETC_TRACE_WAIT_BEGIN();
@@ -4128,11 +4145,8 @@ gasnetc_post_descriptor_t *gasnetc_alloc_post_descriptor(gex_Flags_t flags GASNE
     } else if (flags & GEX_FLAG_IMMEDIATE) {
       return NULL;
     } else {
-      do {
-        GASNETI_WAITHOOK();
-        gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE);
-        gpd = (gasnetc_post_descriptor_t *) gasneti_lifo_pop(pool_p);
-      } while (!gpd);
+      GASNETI_SPIN_DOUNTIL((gpd = (gasnetc_post_descriptor_t *) gasneti_lifo_pop(pool_p)),
+                           gasnetc_poll_local_queue(GASNETC_DIDX_PASS_ALONE));
       GASNETC_TRACE_WAIT_END(ALLOC_PD_STALL);
     }
   }

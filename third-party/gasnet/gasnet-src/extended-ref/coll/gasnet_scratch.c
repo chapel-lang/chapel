@@ -526,10 +526,9 @@ void gasnete_coll_free_scratch(gasnete_coll_op_t *op) {
 }
 
 void gasnete_coll_scratch_req_purge(gasnete_coll_team_t team) {
-  gasnete_coll_scratch_req_t *req = team->scratch_free_list;
-  while (req) {
-    gasnete_coll_scratch_req_t *next = req->next;
+  gasneti_lifo_head_t *freelist_p = &team->scratch_free_list;
+  gasnete_coll_scratch_req_t *req;
+  while ((req = gasneti_lifo_pop(freelist_p))) {
     gasneti_free(req);
-    req = next;
   }
 }

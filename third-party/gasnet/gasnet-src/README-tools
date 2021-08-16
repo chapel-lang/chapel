@@ -1,7 +1,7 @@
 ============================
 README file for GASNet tools
 ============================
-GASNet tools specification version: 1.17
+GASNet tools specification version: 1.18 // work-in-progress, not "closed"
 Authors: Dan Bonachea <dobonachea@lbl.gov>
          Paul H. Hargrove <PHHargrove@lbl.gov>
 
@@ -708,6 +708,16 @@ gasnett_unreachable()
   This annotation marks the current code location as unreachable (using compiler-specific
   mechanisms), to assist optimization of surrounding code.
 
+gasnett_assume(cond)
+
+  States simple expression cond is always true, as an annotation directive to guide compiler analysis.
+  Becomes an assertion in DEBUG mode and an analysis directive (when available) in NDEBUG mode.
+  This notably differs from typical assertions in that the expression must remain valid in NDEBUG mode
+  (because it is not preprocessed away), and furthermore may or may not be evaluated at runtime.
+  To ensure portability and performance, cond should NOT contain any function calls or side-effects.
+  WARNING: passing a cond which is ever false in NDEBUG mode could lead the compiler 
+  to mis-optimize surrounding code in unintuitive/unexpected ways.
+
 GASNETT_FALLTHROUGH
 
  This annotation is used to annotate a deliberate/explicit fallthrough of control from
@@ -1311,8 +1321,9 @@ gasnett_spinloop_hint()
 
    Some processors get measurably better performance when a special instruction
    is inserted in spin-loops (eg to avoid a memory hazard stall on spin loop exit 
-   and reduce power consumption). This macro issues such an instruction, if an
-   appropriate instruction exists for this architecture.
+   and reduce power consumption).  If such an instruction exists for this
+   architecture, this macro issues the instruction and a compiler fence.
+   Otherwise, this macro expands to the same as gasnett_compiler_fence().
 
 int gasnett_maximize_rlimits();
 int gasnett_maximize_rlimit(int res, const char *lim_desc);

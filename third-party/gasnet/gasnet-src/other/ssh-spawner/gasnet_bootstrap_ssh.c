@@ -219,6 +219,7 @@ static int mypid;
 static volatile int exit_status = 0;
 static gex_Rank_t nnodes = 0;	/* nodes, as distinct from ranks */
 static int nnodes_set = 0;		/* non-zero if nnodes set explicitly */
+static int keepdup = -1; // Value of [PREFIX]_SSH_KEEPDUP
 
 GASNETI_FORMAT_PRINTF(do_verbose,1,2,
 static void do_verbose(const char *fmt, ...)) {
@@ -953,7 +954,9 @@ static void configure_ssh(void) {
 /* Reduce nnodes when presented with a short nodelist */
 static char ** short_nodelist(char **nodelist, gex_Rank_t count) {
   if (nnodes_set) {
-    fprintf(stderr, "WARNING: Request for %d nodes ignored because only %d nodes are available.\n", nnodes, count);
+    fprintf(stderr, "WARNING: "
+                    "Request for %d nodes ignored because only %d nodes are available%s.\n",
+                    nnodes, count, keepdup?"":" after de-duplication");
     fflush(stderr);
   }
 
@@ -964,43 +967,56 @@ static char ** short_nodelist(char **nodelist, gex_Rank_t count) {
   return nodelist;
 }
 
+// Return non-zero if the given `elem` does not yet appear in `list`
+// (of `len` elements) OR if GASNET_SSH_KEEPDUP is `true`.
+static int keep_nodelist_elem(char **list, size_t len, char *elem) {
+  // 0) empty list is trivially free of dups:
+  if (!len) return 1;
+
+  // 1) check GASNET_SSH_KEEPDUP env var:
+  gasneti_assert(keepdup == !!keepdup); // checks for uninitialised use
+  if (keepdup) return 1;
+
+  // 2) check for consecutive dups
+  // This optimizes for a data source which replicate entries per-core
+  const size_t last = len - 1;
+  if (! strcmp(elem, list[last])) return 0;
+
+  // 3) scan the remainder for dups
+  // Working from start (as opposed to reverse) works well for cyclic repetition
+  for (size_t i = 0; i < last; ++i) {
+    if (! strcmp(elem, list[i])) return 0;
+  }
+
+  return 1;
+}
+
 /* Build an array of hostnames from a stdio stream */
 static char ** parse_nodestream(FILE *fp) {
-  char **result = NULL;
-  gex_Rank_t i;
+  char *buf = NULL;
+  size_t buflen = 0;
 
-  result = gasneti_malloc(nnodes * sizeof(char *));
-  for (i = 0; i < nnodes;) {
-    static char buf[1024];
-    char *p;
+  char **result = gasneti_malloc(nnodes * sizeof(char *));
 
-    if (!fgets(buf, sizeof(buf), fp)) {
+  for (gex_Rank_t i = 0; i < nnodes;) {
+    if (gasneti_getline(&buf, &buflen, fp) == -1) {
       /* ran out of lines */
       result = short_nodelist(result, i);
       break;
     }
  
-    p = buf;
+    char *p = buf;
     while (*p && strchr(WHITESPACE, *p)) ++p; /* eat leading whitespace */
     if (*p != '#') {
       p[strcspn(p, WHITESPACE)] = '\0';
-      result[i] = gasneti_strdup(p);
-
-      /* Discard consecutive duplicates unless nnodes was given explicitly.
-       * When running w/ PBS and nodes=2:ppn=2 we see NODE0,NODE0,NODE1,NODE1
-       * while running the same config w/ LSF gives just NODE0,NODE1.
-       * We get consistent results by squeezing out the PBS style dups.
-       * TODO: O(N^2) work to remove ALL duplicates?
-       */
-      if (!nnodes_set && (i > 0) && !strcmp(result[i], result[i-1])) {
-        gasneti_free(result[i]);
-	continue;
+      if (keep_nodelist_elem(result, i, p)) {
+        result[i++] = gasneti_strdup(p);
+        BOOTSTRAP_VERBOSE(("\t%s\n", p));
       }
-      ++i;
-      BOOTSTRAP_VERBOSE(("\t%s\n", p));
     }
   }
 
+  gasneti_free(buf);
   return result;
 }
 
@@ -1043,26 +1059,26 @@ static char ** parse_nodepipe(const char *cmd) {
 /* Build an array of hostnames from a delimited string */
 static char ** parse_servers(const char *list) {
   static const char *delims = SSH_SERVERS_DELIM_CHARS;
-  char **result = NULL;
-  char *string, *alloc;
-  gex_Rank_t i;
 
-  alloc = string = gasneti_strdup(list);
-  result = gasneti_malloc(nnodes * sizeof(char *));
+  char *string;
+  char *alloc = string = gasneti_strdup(list);
+  char **result = gasneti_malloc(nnodes * sizeof(char *));
+
   BOOTSTRAP_VERBOSE(("Parsing servers list '%s'\n", string));
-  for (i = 0; i < nnodes; ++i) {
-    char *p;
+  for (gex_Rank_t i = 0; i < nnodes; ) {
     while (*string && strchr(delims,*string)) ++string; /* eat leading delimiters */
     if (!*string) {
       /* ran out of words */
       result = short_nodelist(result, i);
       break;
     }
-    p = string;
+    char *p = string;
     string += strcspn(string, delims);
     if (*string) *(string++) = '\0';
-    result[i] = gasneti_strdup(p);
-    BOOTSTRAP_VERBOSE(("\t%s\n", result[i]));
+    if (keep_nodelist_elem(result, i, p)) {
+      result[i++] = gasneti_strdup(p);
+      BOOTSTRAP_VERBOSE(("\t%s\n", p));
+    }
   }
   gasneti_free(alloc);
 
@@ -1071,8 +1087,9 @@ static char ** parse_servers(const char *list) {
 
 static void build_nodelist(void)
 {
-  const char *env_string;
+  keepdup = gasneti_getenv_yesno_withdefault(ENV_PREFIX "SSH_KEEPDUP", 0);
 
+  const char *env_string;
   if ((env_string = my_getenv_withdefault(ENV_PREFIX "SSH_NODEFILE",
                                           GASNETI_DEFAULT_SSH_NODEFILE)) != NULL) {
     nodelist = parse_nodefile(env_string);
@@ -1092,27 +1109,6 @@ static void build_nodelist(void)
     nodelist = parse_nodepipe("scontrol show hostname");
   } else {
     die(1, "No " ENV_PREFIX "SSH_NODEFILE, " ENV_PREFIX "SSH_SERVERS, or " ENV_PREFIX "NODEFILE in environment");
-  }
-
-  if (! gasneti_getenv_yesno_withdefault(ENV_PREFIX "SSH_KEEPDUP", 0) && (nnodes > 1)) {
-    int count = 1;
-    for (int i = 1; i < nnodes; ++i) {
-      char *p = nodelist[i];
-      int j;
-      for (j = 0; j < count; ++j) {
-        if (! strcmp(p, nodelist[j])) break;
-      }
-      if (j == count) { // NOT a dup
-        nodelist[count++] = p;
-      } else {
-        gasneti_free(p);
-      }
-    }
-    if (count != nnodes) {
-      BOOTSTRAP_VERBOSE(("Deduplication reduced node count from %d to %d\n", nnodes, count));
-      nnodes = count;
-      nodelist = gasneti_realloc(nodelist, nnodes * sizeof(char *));
-    }
   }
 }
 

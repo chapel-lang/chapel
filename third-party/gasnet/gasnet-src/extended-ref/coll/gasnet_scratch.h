@@ -62,19 +62,14 @@ struct gasnete_coll_scratch_req_t_ {
 };
 
 // Allocate and free scratch_requests
-// TODO-EX:
-// Storage is currently manged with a simple per-team freelist with no
-// serialization for concurrency.  When multiple endpoints are added then either
-// the calls need to be serialized by team->threads_mutex, or a lifo used here.
 GASNETI_INLINE(gasnete_coll_scratch_alloc_req) GASNETI_MALLOC
 gasnete_coll_scratch_req_t *gasnete_coll_scratch_alloc_req(gasnete_coll_team_t team)
 {
-  gasnete_coll_scratch_req_t *scratch_req = team->scratch_free_list;
+  gasnete_coll_scratch_req_t *scratch_req = gasneti_lifo_pop(&team->scratch_free_list);
   if_pf (! scratch_req) {
     scratch_req = gasneti_calloc(1,sizeof(gasnete_coll_scratch_req_t));
     scratch_req->team = team;
   } else {
-    team->scratch_free_list = scratch_req->next;
     gasneti_assert(scratch_req->team == team);
   }
   return scratch_req;
@@ -83,8 +78,7 @@ GASNETI_INLINE(gasnete_coll_scratch_free_req)
 void gasnete_coll_scratch_free_req(gasnete_coll_scratch_req_t *scratch_req)
 {
   gasnete_coll_team_t team = scratch_req->team;
-  scratch_req->next = team->scratch_free_list;
-  team->scratch_free_list = scratch_req;
+  gasneti_lifo_push(&team->scratch_free_list, scratch_req);
 }
 
 void gasnete_coll_scratch_req_purge(gasnete_coll_team_t team);

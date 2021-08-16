@@ -83,6 +83,25 @@ precedence.
 
 @ Section: Runtime Configuration @
 
+Ucx-conduit supports all of the standard GASNet environment variables
+and the optional GASNET_EXITTIMEOUT family of environment variables.
+See GASNet's top-level README for documentation.
+
+Additional environment variables:
+
+  + GASNET_UCX_AM_ORDERED_TLS
+
+    This Boolean setting determines if the logic for transfer of AM Long
+    payloads may assume UCX is using an in-order transport.  This results in
+    faster transfers, but could yield data corruption if the payload and header
+    are reordered.
+    Setting to 1 forces this optimization, while 0 disables it.
+    The default is to enable this setting if the conduit can determine that
+    GASNet's PSHM (which guarantees ordering) is used for all intra-node
+    communication, as opposed to UCX shared-memory transport which does not
+    guarantee ordering (see bug 4155).
+
+
   In order to control UCX parameters (i.e. device or transport selection), environment
   variables are used. 
   

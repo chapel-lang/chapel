@@ -51,6 +51,14 @@
   #pragma clang diagnostic ignored "-Wconstant-logical-operand"
 #endif
 
+#if PLATFORM_COMPILER_NVHPC
+  // bug4158: NVHPC misoptimizes gasnete_{puts,gets}_AMPipeline at -O2 or higher without this qualifier,
+  // leading to garbage in the high word of the packed pointer sent as an AM argument
+  #define BUG4158_WORKAROUND volatile
+#else
+  #define BUG4158_WORKAROUND const
+#endif
+
 /* helper macros */
 /* increment the values in init[0..(stridelevels-1)] by incval chunks, 
    using provided count[0..(stridelevels-1)] dimensional extents.
@@ -731,7 +739,7 @@ gex_Event_t gasnete_puts_AMPipeline(gasneti_vis_smd_t * const smd,
   // except for local_init[], which is deliberately positioned to allow sending the suffix
   //
   gasneti_vis_smd_dim_t const * const sdim = smd->dim;
-  const void * const dstaddr = smd->addr[SMD_PEER];
+  const void * BUG4158_WORKAROUND dstaddr = smd->addr[SMD_PEER];
   size_t const stridelevels = smd->stridelevels;
   size_t const chunksz = smd->elemsz;
   size_t const totalchunks = smd->elemcnt;
@@ -1099,7 +1107,7 @@ gex_Event_t gasnete_gets_AMPipeline(gasneti_vis_smd_t * const smd,
   void      * const header = count;
   size_t const headersz = (uint8_t*)&peer_strides[stridelevels] - (uint8_t*)header;
 
-  void * const srcaddr = smd->addr[SMD_PEER];
+  void * BUG4158_WORKAROUND srcaddr = smd->addr[SMD_PEER];
   for (size_t d = 0; d < stridelevels; d++) {
     count[d] = smd->dim[d].count; 
     peer_strides[d] = smd->dim[d].stride[SMD_PEER]; 

@@ -23,17 +23,14 @@ int gasnetc_thread_dummy = 1;
 
 #else
 
-#if GASNETC_DEBUG_PTHR
-  static void my_cleanup(void *arg) {
-    gasnetc_progress_thread_t * const pthr_p = arg;
-    fprintf(stderr, "@%d> thread w/ fn_arg=%p terminated\n", gasneti_mynode, pthr_p->fn_arg);
+static void my_cleanup(void *arg) {
+  gasnetc_progress_thread_t * const pthr_p = arg;
+  if (pthr_p->exclusive_poll) {
+    GASNETC_POLL_CQ_UP(pthr_p->exclusive_poll);
   }
-  #define my_cleanup_push pthread_cleanup_push
-  #define my_cleanup_pop  pthread_cleanup_pop
-#else
-  #define my_cleanup_push(f,a)  ((void)0)
-  #define my_cleanup_pop(e)     ((void)0)
-#endif
+  GASNETI_TRACE_PRINTF(I, ("Terminated progress thread with id 0x%"PRIxPTR,
+                           (uintptr_t)(pthr_p->thread_id)));
+}
 
 #if GASNETC_THREAD_CANCEL && defined(PTHREAD_CANCEL_ENABLE)
   #define my_cancel_enable()  (void)pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL)
@@ -57,6 +54,7 @@ static void * gasnetc_progress_thread(void *arg)
   void (* const fn)(struct ibv_wc *, void *)= pthr_p->fn;
   void * const fn_arg                       = pthr_p->fn_arg;
   const uint64_t min_ns                     = pthr_p->min_ns;
+  gasnetc_atomic_t * const serialize_poll   = pthr_p->serialize_poll;
   int fd = compl_hndl->fd;
   fd_set readfds;
 
@@ -69,15 +67,30 @@ static void * gasnetc_progress_thread(void *arg)
   FD_ZERO(&readfds);
   FD_SET(fd, &readfds);
 
-  my_cleanup_push(my_cleanup, arg);
   my_cancel_deferred();
+
+  if (pthr_p->exclusive_poll) {
+    gasneti_waitwhile( GASNETC_POLL_CQ_TRYDOWN(pthr_p->exclusive_poll) );
+  }
+  pthread_cleanup_push(my_cleanup, arg);
+
   my_cancel_disable();
 
   while (!pthr_p->done) {
     struct ibv_wc comp;
     int rc;
 
-    rc = ibv_poll_cq(cq_hndl, 1, &comp);
+    if (serialize_poll) {
+      if (GASNETC_POLL_CQ_TRYDOWN(serialize_poll)) {
+        GASNETI_WAITHOOK();
+        continue;
+      }
+      rc = ibv_poll_cq(cq_hndl, 1, &comp);
+      GASNETC_POLL_CQ_UP(serialize_poll);
+    } else {
+      rc = ibv_poll_cq(cq_hndl, 1, &comp);
+    }
+
     if (rc == 1) {
       gasneti_assert((comp.opcode == IBV_WC_RECV) ||
 		     (comp.status != IBV_WC_SUCCESS));
@@ -127,7 +140,7 @@ static void * gasnetc_progress_thread(void *arg)
     }
   }
 
-  my_cleanup_pop(1);
+  pthread_cleanup_pop(1);
   return NULL;
 }
 

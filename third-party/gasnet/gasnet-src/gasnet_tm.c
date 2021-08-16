@@ -84,6 +84,7 @@ size_t gasneti_TM_Split(gex_TM_t *new_tm_p, gex_TM_t e_parent, int color, int ke
 
   GASNETI_TRACE_PRINTF(O,("gex_TM_Split: parent="GASNETI_TMSELFFMT" color=%d key=%d flags=%d",
                           GASNETI_TMSELFSTR(e_parent), color, key, flags));
+  GASNETI_CHECK_INJECT();
 
   static int did_warn = 0;
   if ((flags & GEX_FLAG_TM_SCRATCH_SIZE_MIN) && !did_warn) {
@@ -194,6 +195,7 @@ size_t gasneti_TM_Create(
 
   GASNETI_TRACE_PRINTF(O,("gex_TM_Create: parent="GASNETI_TMSELFFMT" num_new_tms=%"PRIuSZ" nmembers=%"PRIuSZ" scratch_size=%"PRIuSZ" flags=%d",
                           GASNETI_TMSELFSTR(e_parent), num_new_tms, nmembers, scratch_size, flags));
+  GASNETI_CHECK_INJECT();
 
   static int did_warn = 0;
   if ((flags & GEX_FLAG_TM_SCRATCH_SIZE_MIN) && !did_warn) {
@@ -305,6 +307,7 @@ int gasneti_TM_Destroy(
   if (1) { // TODO: w/ multi-EP exactly one tm per proc should log this event
     GASNETI_STAT_EVENT(O, TEAM_DESTROY);
   }
+  GASNETI_CHECK_INJECT();
 
   if (gasneti_is_tm0(i_tm)) {
     gasneti_fatalerror("Invalid gasneti_TM_Destroy() of the primordial team");
