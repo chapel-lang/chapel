@@ -3519,6 +3519,15 @@ static bool overloadSetsOK(CallExpr* call, check_state_t checkState,
 static FnSymbol* resolveForwardedCall(CallInfo& info, check_state_t checkState);
 static bool typeUsesForwarding(Type* t);
 
+static bool aCandidateIsParenLess(Vec<ResolutionCandidate*> candidates) {
+  forv_Vec(ResolutionCandidate, candidate, candidates) {
+    if (candidate->fn->hasFlag(FLAG_NO_PARENS)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   Vec<FnSymbol*>            mostApplicable;
   Vec<ResolutionCandidate*> candidates;
@@ -3565,7 +3574,8 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   }
 
   if (numMatches == 0) {
-    if (info.call->partialTag == false) {
+    if (info.call->partialTag == false ||
+        (info.call->partialTag == true && aCandidateIsParenLess(candidates))) {
       if (checkState == CHECK_NORMAL_CALL) {
         if (candidates.n == 0) {
           bool existingErrors = fatalErrorsEncountered();
@@ -4709,6 +4719,7 @@ static void findVisibleFunctionsAndCandidates(
     printf("candidates.n = %d\n", candidates.n);
     printf("fn == %p\n", fn);
     printf("numActuals = %d\n", info.actuals.n);
+    printf("partial = %d\n", call->partialTag);
   }
   
   if (fn != NULL) {

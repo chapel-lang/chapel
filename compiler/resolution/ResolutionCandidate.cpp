@@ -33,6 +33,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
+#include "view.h"
 
 static ResolutionCandidateFailureReason
 classifyTypeMismatch(Type* actualType, Type* formalType);
@@ -402,12 +403,23 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info, bool explain) {
       // Operator calls are allowed to skip matching the method token and "this"
       // arguments
       } else {
-        failingArgument = formal;
-        reason = RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS;
-        if (explain) {
-          printf("too few arguments\n");
+        if (info.call->partialTag == false) {
+          failingArgument = formal;
+          reason = RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS;
+          if (explain) {
+            printf("too few arguments\n");
+          }
+          return false;
+        } else {
+          if (explain) {
+            printf("too few arguments, but this is a partialTag=true case\n");
+          }
+          printf("Letting this through which we didn't before: %s\n", fn->name);
+          // This is a case where we're resolving t.x but may still find
+          // a t.x(...) at the next level up in the CallExpr chain, so
+          // let it through.
+          return true;
         }
-        return false;
       }
     }
 
