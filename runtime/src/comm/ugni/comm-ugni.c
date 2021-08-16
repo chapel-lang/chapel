@@ -6142,11 +6142,10 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
-  //
-  // We assume here that no object can span a boundary between mapped
-  // and unmapped memory, so we only have to check the start address.
-  //
-  return mreg_for_remote_addr(start, node) != NULL;
+  // This call asks if a future GET is safe, but we can't know that in the case
+  // of dynamic registration. We could support it for a static/fixed heap, but
+  // that's not a very common configuration.
+  return 0;
 }
 
 
