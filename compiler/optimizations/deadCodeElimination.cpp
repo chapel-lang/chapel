@@ -493,14 +493,14 @@ static bool isIndexVariable(Symbol* sym, CForLoop* loop) {
 
 static Symbol* extractUpperBoundFromLoop(CForLoop* loop) {
   if(BlockStmt* bs = toBlockStmt(loop->testBlockGet())) {
-      if(CallExpr *call = toCallExpr(bs->body.head)) {
-        if(call->isPrimitive(PRIM_LESSOREQUAL)) {
-          if(SymExpr *symExpr = toSymExpr(call->get(2))) {
-            return symExpr->symbol();
-          }
+    if(CallExpr *call = toCallExpr(bs->body.head)) {
+      if(call->isPrimitive(PRIM_LESSOREQUAL)) {
+        if(SymExpr *symExpr = toSymExpr(call->get(2))) {
+          return symExpr->symbol();
         }
       }
-  }
+    }
+}
 
   INT_FATAL("Unexpected upper bound for loop identified for extraction as "
     "GPU kernel");
@@ -509,12 +509,10 @@ static Symbol* extractUpperBoundFromLoop(CForLoop* loop) {
 
 static Symbol* extractLowerBoundFromLoop(CForLoop* loop) {
   if(BlockStmt* bs = toBlockStmt(loop->initBlockGet())) {
-    for_alist(entry, bs->body) {
-      if(CallExpr *call = toCallExpr(entry)) {
-        if(call->isPrimitive(PRIM_ASSIGN)) {
-          if(SymExpr *symExpr = toSymExpr(call->get(2))) {
-            return symExpr->symbol();
-          }
+    if(CallExpr *call = toCallExpr(bs->body.head)) {
+      if(call->isPrimitive(PRIM_ASSIGN)) {
+        if(SymExpr *symExpr = toSymExpr(call->get(2))) {
+          return symExpr->symbol();
         }
       }
     }
@@ -525,7 +523,7 @@ static Symbol* extractLowerBoundFromLoop(CForLoop* loop) {
   return nullptr;
 }
 
-static VarSymbol* generateNewVariable(BlockStmt* insertionPoint, const char* name,
+static VarSymbol* insertNewVarAndDef(BlockStmt* insertionPoint, const char* name,
   Type* type) {
   VarSymbol *var = new VarSymbol(name, type);
   var->defPoint = new DefExpr(var);
@@ -533,15 +531,24 @@ static VarSymbol* generateNewVariable(BlockStmt* insertionPoint, const char* nam
   return var;
 }
 
+/**
+ * Given a CForLoop with lowerbound lb and upper bound ub
+ * (See extractUpperBoundFromLoop\extractLowerBoundFromLoop to
+ * see what we pattern match and extract), generate the
+ * following AST and insert it into gpuLaunchBlock:
+ * 
+ *   blockDelta = ub - lb
+ *   blockSize = blockDelta + 1
+ */
 static VarSymbol* generateBlockSizeComputation(
   BlockStmt* gpuLaunchBlock,
   CForLoop* loop) {
   Symbol* ub = extractUpperBoundFromLoop(loop);
   Symbol* lb = extractLowerBoundFromLoop(loop);
 
-  VarSymbol *varBoundDelta = generateNewVariable(
+  VarSymbol *varBoundDelta = insertNewVarAndDef(
     gpuLaunchBlock, "blockDelta", dtInt[INT_SIZE_DEFAULT]);
-  VarSymbol *varBlockSize = generateNewVariable(
+  VarSymbol *varBlockSize = insertNewVarAndDef(
     gpuLaunchBlock, "blockSize", dtInt[INT_SIZE_DEFAULT]);
 
   CallExpr *c1 = new CallExpr(PRIM_ASSIGN, varBoundDelta, new CallExpr(
@@ -558,12 +565,21 @@ static VarSymbol* generateBlockSizeComputation(
 static VarSymbol* generateAssignmentToPrimitive(
   FnSymbol* fn, const char *varName, PrimitiveTag prim, Type *primReturnType) {
 
-  VarSymbol *var = generateNewVariable(fn->body, varName, primReturnType);
+  VarSymbol *var = insertNewVarAndDef(fn->body, varName, primReturnType);
   CallExpr *c1 = new CallExpr(PRIM_MOVE, var, new CallExpr(prim));
   fn->insertAtTail(c1);
   return var;
 }
 
+/**
+ *  Generates and inserts the following AST into fn:
+ *
+ *  blockIdxX  = __primitve('gpu blockIdx x')
+ *  blockDimX  = __primitve('gpu blockDim x')
+ *  threadIdxX = __primitve('gpu threadIdx x')
+ *  t0 = varBlockIdxX * varBlockDimX 
+ *  t1 = t0 + threadIdxX
+ **/
 static VarSymbol* generateIndexComputation(FnSymbol* fn, Symbol* sym) {
   VarSymbol *varBlockIdxX = generateAssignmentToPrimitive(fn, "blockIdxX",
     PRIM_GPU_BLOCKIDX_X, dtInt[INT_SIZE_32]);
@@ -572,12 +588,12 @@ static VarSymbol* generateIndexComputation(FnSymbol* fn, Symbol* sym) {
   VarSymbol *varThreadIdxX = generateAssignmentToPrimitive(fn, "threadIdxX",
     PRIM_GPU_THREADIDX_X, dtInt[INT_SIZE_32]);
 
-  VarSymbol *tempVar = generateNewVariable(fn->body, "t0", dtInt[INT_SIZE_32]);
+  VarSymbol *tempVar = insertNewVarAndDef(fn->body, "t0", dtInt[INT_SIZE_32]);
   CallExpr *c1 = new CallExpr(PRIM_MOVE, tempVar, new CallExpr(PRIM_MULT,
     varBlockIdxX, varBlockDimX));
   fn->insertAtTail(c1);
 
-  VarSymbol *tempVar1 = generateNewVariable(fn->body, "t1", dtInt[INT_SIZE_32]);
+  VarSymbol *tempVar1 = insertNewVarAndDef(fn->body, "t1", dtInt[INT_SIZE_32]);
   CallExpr *c2 = new CallExpr(PRIM_MOVE, tempVar1, new CallExpr(PRIM_ADD, tempVar,
     varThreadIdxX));
   fn->insertAtTail(c2);
@@ -585,12 +601,10 @@ static VarSymbol* generateIndexComputation(FnSymbol* fn, Symbol* sym) {
   return tempVar1;
 }
 
-static  CallExpr* generateGPUCall(CForLoop* loop,
-                                  BlockStmt* gpuLaunchBlock,
+static  CallExpr* generateGPUCall(VarSymbol *varBlockSize,
                                   FnSymbol* kernel,
-                                  std::vector<VarSymbol*> actuals) {
-  VarSymbol *varBlockSize = generateBlockSizeComputation(gpuLaunchBlock, loop);
-
+                                  std::vector<VarSymbol*> actuals)
+{
   CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
   call->insertAtTail(new_CStringSymbol(kernel->cname));
 
@@ -761,8 +775,10 @@ static void outlineGPUKernels() {
             }
           }
 
-          CallExpr* gpuCall = generateGPUCall(
-            loop, gpuLaunchBlock, outlinedFunction, kernelActuals);
+          VarSymbol *varBlockSize = generateBlockSizeComputation(gpuLaunchBlock,
+            loop);
+          CallExpr* gpuCall = generateGPUCall(varBlockSize, outlinedFunction,
+            kernelActuals);
           gpuLaunchBlock->insertAtTail(gpuCall);
           gpuLaunchBlock->flattenAndRemove();
 
