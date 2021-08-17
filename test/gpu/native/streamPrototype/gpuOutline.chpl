@@ -65,17 +65,17 @@ module GPUOutlineTest {
     return str;
   }
   proc testMain(a,b) {
-    var initialRHS = b.getValue();
     var initialLHS = a.getValue();
+    var initialRHS = b.getValue();
 
-    forall i in 0..4 {
+    forall i in 0..3 {
       a[i] = b[i];
     }
 
     var finalLHS = a.getValue();
 
-    writeln("initialRHS = ", CArrayToStr(initialRHS, a.size));
     writeln("initialLHS = ", CArrayToStr(initialLHS, a.size));
+    writeln("initialRHS = ", CArrayToStr(initialRHS, a.size));
     writeln("finalLHS   = ", CArrayToStr(finalLHS, a.size));
   }
 }
