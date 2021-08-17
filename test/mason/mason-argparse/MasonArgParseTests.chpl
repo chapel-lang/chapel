@@ -60,6 +60,27 @@ proc testSingleStringShortOptEqualsExtra(test: borrowed Test) throws {
   test.assertTrue(false);
 }
 
+// test to catch undefined args entered at beginning of cmd string
+proc testBadArgsAtFront(test: borrowed Test) throws {
+  var argList = ["progName","badArg1","--BadFlag","-n=twenty"];
+  var parser = new argumentParser();
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=1);
+
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  }catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
 // a short string opt with range of value with = and OK # values supplied
 proc testMultiStringShortOptEqualsOK(test: borrowed Test) throws {
   var argList = ["progName","-n=twenty","thirty"];
@@ -1052,7 +1073,7 @@ proc testMultStringShortOptDefMultiVal(test: borrowed Test) throws {
                                    defaultValue=none);
   var myStrArg3 = parser.addOption(name="StringOpt3",
                                    opts=["-t","--stringVal3"],
-                                   defaultValue=new list(["1","2"]),
+                                   defaultValue=["1","2"],
                                    numArgs=1..2,
                                    required=false);
 
@@ -1079,7 +1100,7 @@ proc testMultStringShortOptDefMultiValNoVal(test: borrowed Test) throws {
   var parser = new argumentParser();
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],
-                                   defaultValue=new list(["one","two"]),
+                                   defaultValue=["one","two"],
                                    numArgs=1..3,
                                    required=false);
   var myStrArg2 = parser.addOption(name="StringOpt2",
@@ -1281,12 +1302,12 @@ proc testTryDuplicateNameOpt(test: borrowed Test) throws {
   var argList = ["progName","-n=twenty","thirty"];
   var parser = new argumentParser();
   var myStrArg1 = parser.addOption(name="StringOpt",
-                                opts=["-n","--strArg"],
-                                numArgs=1);
+                                   opts=["-n","--strArg"],
+                                   numArgs=1);
   try {
     var myStrArg2 = parser.addOption(name="StringOpt",
-                                    opts=["-p","--print"],
-                                    numArgs=1);
+                                     opts=["-p","--print"],
+                                     numArgs=1);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -1300,12 +1321,12 @@ proc testTryDuplicateShortOpt(test: borrowed Test) throws {
   var argList = ["progName","-n=twenty","thirty"];
   var parser = new argumentParser();
   var myStrArg1 = parser.addOption(name="StringOpt",
-                                opts=["-n","--strArg"],
-                                numArgs=1);
+                                   opts=["-n","--strArg"],
+                                   numArgs=1);
   try {
     var myStrArg2 = parser.addOption(name="PrintOpt",
-                                    opts=["-n","--print"],
-                                    numArgs=1);
+                                     opts=["-n","--print"],
+                                     numArgs=1);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -1319,12 +1340,12 @@ proc testTryDuplicateLongOpt(test: borrowed Test) throws {
   var argList = ["progName","-n=twenty","thirty"];
   var parser = new argumentParser();
   var myStrArg1 = parser.addOption(name="StringOpt",
-                                opts=["-n","--strArg"],
-                                numArgs=1);
+                                   opts=["-n","--strArg"],
+                                   numArgs=1);
   try {
     var myStrArg2 = parser.addOption(name="PrintOpt",
-                                    opts=["-p","--strArg"],
-                                    numArgs=1);
+                                     opts=["-p","--strArg"],
+                                     numArgs=1);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -1596,8 +1617,8 @@ proc testFromArgParseExample(test: borrowed Test) throws {
                                 opts=["-t","--types"],
                                 numArgs=1..);
   var confArg = parser.addOption(name="strArg3",
-                                opts=["--myConfigVar"],
-                                numArgs=1);
+                                 opts=["--myConfigVar"],
+                                 numArgs=1);
 
   var subCmd1 = parser.addSubCommand(cmd="subCmd1");
   var remain = parser.parseArgs(argList[1..]);
@@ -1645,7 +1666,7 @@ proc testBoolFlag(test: borrowed Test) throws {
   var argList = ["progName","-n"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"]);
+                                 opts=["-n","--boolVal"]);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1661,7 +1682,7 @@ proc testBoolLongFlag(test: borrowed Test) throws {
   var argList = ["progName","--boolVal"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"]);
+                                 opts=["-n","--boolVal"]);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1677,8 +1698,8 @@ proc testBoolLongNoFlag(test: borrowed Test) throws {
   var argList = ["progName","--no-boolVal"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                defaultValue=true);
+                                 opts=["-n","--boolVal"],
+                                 defaultValue=true);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1705,8 +1726,8 @@ proc testSubCommandAndBoolLongFlag(test: borrowed Test) throws {
 
   var subParser = new argumentParser();
   var myBoolArg = subParser.addFlag(name="BoolFlag",
-                              opts=["-n","--boolVal"],
-                              defaultValue=true);
+                                    opts=["-n","--boolVal"],
+                                    defaultValue=true);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   subParser.parseArgs(remain.toArray());
@@ -1719,8 +1740,8 @@ proc testParentCommandSubCommandAndBoolLongFlag(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty", "subCmd","--no-boolVal"];
   var parser = new argumentParser();
   var myStrArg1 = parser.addOption(name="StringOpt1",
-                                  opts=["-n","--stringVal1"],
-                                  numArgs=1..);
+                                   opts=["-n","--stringVal1"],
+                                   numArgs=1..);
   var mySubCmd1 = parser.addSubCommand(cmd="subCmd");
   //make sure no value currently exists
   test.assertFalse(mySubCmd1.hasValue());
@@ -1736,8 +1757,8 @@ proc testParentCommandSubCommandAndBoolLongFlag(test: borrowed Test) throws {
 
   var subParser = new argumentParser();
   var myBoolArg = subParser.addFlag(name="BoolFlag",
-                              opts=["-n","--boolVal"],
-                              defaultValue=true);
+                                    opts=["-n","--boolVal"],
+                                    defaultValue=true);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   subParser.parseArgs(remain.toArray());
@@ -1750,10 +1771,10 @@ proc testBoolEqFlag(test: borrowed Test) throws {
   var argList = ["progName","-n=true"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=0..1,
-                                flagInversion=false,
-                                defaultValue=none);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=0..1,
+                                 flagInversion=false,
+                                 defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1769,10 +1790,10 @@ proc testBoolEqForceOneFlag(test: borrowed Test) throws {
   var argList = ["progName","-n=true"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=1,
-                                flagInversion=false,
-                                defaultValue=none);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=1,
+                                 flagInversion=false,
+                                 defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1788,10 +1809,10 @@ proc testBoolForceOneFlag(test: borrowed Test) throws {
   var argList = ["progName","-n","true"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=1,
-                                flagInversion=false,
-                                defaultValue=none);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=1,
+                                 flagInversion=false,
+                                 defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1808,10 +1829,10 @@ proc testBoolZeroToOneFlagNoVal(test: borrowed Test) throws {
   var argList = ["progName","-n"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=0..1,
-                                flagInversion=false,
-                                defaultValue=none);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=0..1,
+                                 flagInversion=false,
+                                 defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1827,10 +1848,10 @@ proc testBoolForceOneFlagNoVal(test: borrowed Test) throws {
   var argList = ["progName","-n"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=1,
-                                flagInversion=false,
-                                defaultValue=none);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=1,
+                                 flagInversion=false,
+                                 defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1849,10 +1870,10 @@ proc testBoolForceOneFlagExtraGiven(test: borrowed Test) throws {
   var argList = ["progName","-n","true","false"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=1,
-                                flagInversion=false,
-                                defaultValue=none);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=1,
+                                 flagInversion=false,
+                                 defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1871,10 +1892,10 @@ proc testBoolRangeFlagExtraGiven(test: borrowed Test) throws {
   var argList = ["progName","-n","true","false"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=0..1,
-                                flagInversion=false,
-                                defaultValue=none);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=0..1,
+                                 flagInversion=false,
+                                 defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1894,10 +1915,10 @@ proc testTryMakeBadFlagRange(test: borrowed Test) throws {
   var parser = new argumentParser();
   try {
     var myNewArg = parser.addFlag(name="BoolOpt",
-                                    opts=["--name","-n"],
-                                    numArgs=0..2,
-                                    required=false,
-                                    defaultValue=none);
+                                  opts=["--name","-n"],
+                                  numArgs=0..2,
+                                  required=false,
+                                  defaultValue=none);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -1912,10 +1933,10 @@ proc testTryMakeNonSenseFlag(test: borrowed Test) throws {
   var parser = new argumentParser();
   try {
     var myNewArg = parser.addFlag(name="BoolOpt",
-                                    opts=["--name","-n"],
-                                    flagInversion=false,
-                                    required=true,
-                                    defaultValue=true);
+                                  opts=["--name","-n"],
+                                  flagInversion=false,
+                                  required=true,
+                                  defaultValue=true);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -1930,10 +1951,10 @@ proc testTryMakeNonSenseFlagRange(test: borrowed Test) throws {
   var parser = new argumentParser();
   try {
     var myNewArg = parser.addFlag(name="BoolOpt",
-                                    opts=["--name","-n"],
-                                    numArgs=0..1,
-                                    required=true,
-                                    defaultValue=true);
+                                  opts=["--name","-n"],
+                                  numArgs=0..1,
+                                  required=true,
+                                  defaultValue=true);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -1948,10 +1969,10 @@ proc testTryMakeNonSenseFlagFixed(test: borrowed Test) throws {
   var parser = new argumentParser();
   try {
     var myNewArg = parser.addFlag(name="BoolOpt",
-                                    opts=["--name","-n"],
-                                    numArgs=1,
-                                    required=true,
-                                    defaultValue=true);
+                                  opts=["--name","-n"],
+                                  numArgs=1,
+                                  required=true,
+                                  defaultValue=true);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -1965,10 +1986,10 @@ proc testBoolZeroToOneFlagNoValDefaultTrue(test: borrowed Test) throws {
   var argList = ["progName"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=0..1,
-                                flagInversion=false,
-                                defaultValue=true);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=0..1,
+                                 flagInversion=false,
+                                 defaultValue=true);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1984,10 +2005,10 @@ proc testBoolZeroToOneFlagNoValDefaultFalse(test: borrowed Test) throws {
   var argList = ["progName"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=0..1,
-                                flagInversion=false,
-                                defaultValue=false);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=0..1,
+                                 flagInversion=false,
+                                 defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -2003,10 +2024,10 @@ proc testBoolOneFlagNoValDefaultTrue(test: borrowed Test) throws {
   var argList = ["progName"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=1,
-                                flagInversion=false,
-                                defaultValue=true);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=1,
+                                 flagInversion=false,
+                                 defaultValue=true);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -2041,10 +2062,10 @@ proc testBoolZeroFlagNoValDefaultTrue(test: borrowed Test) throws {
   var argList = ["progName"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=1,
-                                flagInversion=false,
-                                defaultValue=true);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=1,
+                                 flagInversion=false,
+                                 defaultValue=true);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -2060,10 +2081,10 @@ proc testBoolZeroFlagNoValDefaultFalse(test: borrowed Test) throws {
   var argList = ["progName"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=1,
-                                flagInversion=false,
-                                defaultValue=false);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=1,
+                                 flagInversion=false,
+                                 defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -2079,9 +2100,9 @@ proc testBoolMultipleEntryValues(test: borrowed Test) throws {
   var argList = ["progName","-n","true","-n=false"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=1,
-                                flagInversion=false);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=1,
+                                 flagInversion=false);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -2098,14 +2119,36 @@ proc testFlagBadBoolValue(test: borrowed Test) throws {
   var argList = ["progName","-n","tru"];
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
-                                opts=["-n","--boolVal"],
-                                numArgs=1,
-                                flagInversion=false);
+                                 opts=["-n","--boolVal"],
+                                 numArgs=1,
+                                 flagInversion=false);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
   try {
     parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+// a short bool flag with too many values defined
+proc testFlagBadBoolNumArgs(test: borrowed Test) throws {
+  var argList = ["progName","-n"];
+  var parser = new argumentParser();
+  try {
+    var myBoolArg = parser.addFlag(name="BoolFlag",
+                                   opts=["-n","--boolVal"],
+                                   numArgs=2,
+                                   flagInversion=false);
+    //make sure no value currently exists
+  //test.assertFalse(myBoolArg.hasValue());
+  //parse the options
+
+   // parser.parseArgs(argList[1..]);
   } catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -2136,9 +2179,1155 @@ proc unitTestStringToBool(test: borrowed Test) throws {
     test.assertFalse(_convertStringToBool(bVal, rtn));
     test.assertFalse(rtn);
   }
-
 }
 
+// single positional argument test
+proc testSinglePositionalArgument(test: borrowed Test) throws {
+  var argList = ["progName","myFileName"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addArgument(name="FileName");
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myPosArg.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(myPosArg.value(),argList[1]);
+  test.assertEqual((new list(myPosArg.values())).size, 1);
+}
+
+// single positional argument test with default value
+proc testPositionalArgumentDefault(test: borrowed Test) throws {
+  var argList = ["progName"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addArgument(name="FileName",
+                                    defaultValue=".",
+                                    numArgs=0..1);
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myPosArg.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(myPosArg.value(),".");
+  test.assertEqual((new list(myPosArg.values())).size, 1);
+}
+
+// single positional argument test with no default value
+proc testPositionalArgumentOptionalMissing(test: borrowed Test) throws {
+  var argList = ["progName"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addArgument(name="FileName",
+                                    defaultValue=none,
+                                    numArgs=0..1);
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we still don't have a value
+  test.assertFalse(myPosArg.hasValue());
+}
+
+// multiple value positional argument test
+proc testPositionalArgumentRangeOneOrMore(test: borrowed Test) throws {
+  var argList = ["progName","file1","file2","file3","file4"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addArgument(name="FileNames",
+                                    numArgs=1..);
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myPosArg.hasValue());
+  //ensure the value passed is correct
+  var valList = new list(myPosArg.values());
+  test.assertEqual(valList,new list(argList[1..]));
+  test.assertEqual(valList.size, 4);
+}
+
+// too many values for positional argument
+proc testPositionalArgumentTooManyVals(test: borrowed Test) throws {
+  var argList = ["progName","file1","file2","file3","file4"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addArgument(name="FileNames",
+                                    numArgs=1..2,
+                                    defaultValue=none);
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+// not enough values for positional argument
+proc testPositionalArgumentNotEnoughVals(test: borrowed Test) throws {
+  var argList = ["progName","file1","file2","file3","file4"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addArgument(name="FileNames",
+                                    numArgs=5..7,
+                                    defaultValue=none);
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+// no values for positional argument
+proc testPositionalArgumentNoVals(test: borrowed Test) throws {
+  var argList = ["progName"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addArgument(name="FileNames",
+                                    numArgs=1..);
+  //make sure no value currently exists
+  test.assertFalse(myPosArg.hasValue());
+  //parse the options
+  try {
+    parser.parseArgs(argList[1..]);
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+// multiple value positional arguments with range before other positional
+proc testPositionalArgumentRangeBeforePos(test: borrowed Test) throws {
+  var argList = ["progName","file1","file2","file3","file4"];
+  var parser = new argumentParser();
+  var myPosArg = parser.addArgument(name="FileNames",
+                                    numArgs=1..);
+  try {
+    var myPosArg = parser.addArgument(name="otherArg");
+  } catch ex: ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+    return;
+  }
+  test.assertTrue(false);
+}
+
+// a mix of positionals, bools, and options
+proc testMixPosBoolOptWithValues(test: borrowed Test) throws {
+  var argList = ["progName","myFile1","myFile2","myFile3","-b","true", "-n",
+                 "myStrOpt1", "myStrOpt2", "myStrOpt3"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                 opts=["-b","--boolVal"],
+                                 numArgs=1,
+                                 flagInversion=false);
+  var myPosArg = parser.addArgument(name="FileNames",
+                                    numArgs=1..);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=1..3,
+                                  required=false,
+                                  defaultValue=none);
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  var posList = new list(myPosArg.values());
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(posList, new list(argList[1..3]));
+  test.assertEqual(optList, new list(argList[7..9]));
+}
+
+// a mix of positionals, bools, and options with fixed # values expected
+proc testMixPosBoolOptWithValuesFixed(test: borrowed Test) throws {
+  var argList = ["progName","myFile1","myFile2","myFile3","-b","true", "-n",
+                 "myStrOpt1", "myStrOpt2", "myStrOpt3"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                 opts=["-b","--boolVal"],
+                                 numArgs=1,
+                                 flagInversion=false);
+  var myPosArg = parser.addArgument(name="FileNames",
+                                    numArgs=3);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  var posList = new list(myPosArg.values());
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(posList, new list(argList[1..3]));
+  test.assertEqual(optList, new list(argList[7..9]));
+}
+
+// a mix of positionals, bools, and options with fixed # values expected
+// and positional argument after the boolean flag
+proc testMixPosBoolOptWithValuesFixedPosAfterBool(test: borrowed Test) throws {
+  var argList = ["progName","-n","myStrOpt1","myStrOpt2","myStrOpt3",
+                 "-b","myFile1","subCmd1"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                 opts=["-b","--boolVal"]);
+  var myPosArg = parser.addArgument(name="FileNames");
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //ensure the value passed is correct
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(myPosArg.value(), argList[6]);
+  test.assertEqual(optList, new list(argList[2..4]));
+  test.assertEqual(subCmd1.value(),"subCmd1");
+}
+
+// a mix of positionals, bools, and options with fixed # values expected
+// and positional argument intermixed in the input
+proc testMixPosBoolOptWithValuesFixedPosInterMixed(test: borrowed Test) throws {
+  var argList = ["progName","p1","-n","myStrOpt1","myStrOpt2","myStrOpt3","p2",
+                 "-b","myFile1","subCmd1"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                 opts=["-b","--boolVal"]);
+  var myPosArg0 = parser.addArgument(name="pos0");
+  var myPosArg1 = parser.addArgument(name="pos1");
+  var myPosArg2 = parser.addArgument(name="FileName");
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg0.hasValue());
+  test.assertFalse(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg0.hasValue());
+  test.assertTrue(myPosArg1.hasValue());
+  test.assertTrue(myPosArg2.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //ensure the value passed is correct
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(myPosArg0.value(), argList[1]);
+  test.assertEqual(myPosArg1.value(), argList[6]);
+  test.assertEqual(myPosArg2.value(), argList[8]);
+  test.assertEqual(optList, new list(argList[3..5]));
+  test.assertEqual(subCmd1.value(),"subCmd1");
+}
+
+// a mix of positionals, bools, and options with fixed # values expected
+// and positional argument intermixed in the input
+proc testMixPosBoolOptWithValuesPosInterMixedRange(test: borrowed Test) throws {
+  var argList = ["progName","p1","-n","myStrOpt1","myStrOpt2","myStrOpt3","p2",
+                 "-b","subCmd1"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                 opts=["-b","--boolVal"]);
+  var myPosArg0 = parser.addArgument(name="pos0");
+  var myPosArg1 = parser.addArgument(name="pos1");
+  var myPosArg2 = parser.addArgument(name="FileName",
+                                     numArgs=0..1,
+                                     defaultValue=none);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg0.hasValue());
+  test.assertFalse(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg0.hasValue());
+  test.assertTrue(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //ensure the value passed is correct
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(myPosArg0.value(), argList[1]);
+  test.assertEqual(myPosArg1.value(), argList[6]);
+  test.assertEqual(optList, new list(argList[3..5]));
+  test.assertEqual(subCmd1.value(),"subCmd1");
+}
+
+// a mix of positionals, bools, and options with fixed # values expected
+// and positional argument intermixed in the input, with several values
+// expected for last positional argument
+proc testMixPosBoolOptPosInterMixedRangeWithVals(test: borrowed Test) throws {
+  var argList = ["progName","p1","-n","myStrOpt1","myStrOpt2","myStrOpt3","p2",
+                 "myFile0","-b","myFile1","myFile2","subCmd1"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                 opts=["-b","--boolVal"]);
+  var myPosArg0 = parser.addArgument(name="pos0");
+  var myPosArg1 = parser.addArgument(name="pos1");
+  var myPosArg2 = parser.addArgument(name="FileName",
+                                     numArgs=0..,
+                                     defaultValue=none);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg0.hasValue());
+  test.assertFalse(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg0.hasValue());
+  test.assertTrue(myPosArg1.hasValue());
+  test.assertTrue(myPosArg2.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //ensure the value passed is correct
+  var optList = new list(myStrArg.values());
+  var posList = new list(myPosArg2.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(myPosArg0.value(), argList[1]);
+  test.assertEqual(myPosArg1.value(), argList[6]);
+  test.assertEqual(optList, new list(argList[3..5]));
+  test.assertEqual(posList, new list(["myFile0","myFile1","myFile2"]));
+  test.assertEqual(subCmd1.value(),"subCmd1");
+}
+
+// a mix of positionals, bools, and options some with fixed # values expected
+// and positional argument intermixed in the input, with several values
+// possible for last positional argument, but none provided
+proc testMixPosBoolOptPosInterMixedRangeDefVals(test: borrowed Test) throws {
+  var argList = ["progName","p1","-n","myStrOpt1","myStrOpt2","myStrOpt3","p2",
+                "-b","subCmd1"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                 opts=["-b","--boolVal"]);
+  var myPosArg0 = parser.addArgument(name="pos0");
+  var myPosArg1 = parser.addArgument(name="pos1");
+  var myPosArg2 = parser.addArgument(name="FileName",
+                                     numArgs=0..,
+                                     defaultValue=["1","2","3"]);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg0.hasValue());
+  test.assertFalse(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg0.hasValue());
+  test.assertTrue(myPosArg1.hasValue());
+  test.assertTrue(myPosArg2.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //ensure the value passed is correct
+  var optList = new list(myStrArg.values());
+  var posList = new list(myPosArg2.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(myPosArg0.value(), argList[1]);
+  test.assertEqual(myPosArg1.value(), argList[6]);
+  test.assertEqual(posList, new list(["1","2","3"]));
+  test.assertEqual(optList, new list(argList[3..5]));
+  test.assertEqual(subCmd1.value(),"subCmd1");
+}
+
+// a mix of positionals, bools, and options with fixed # values expected
+// and positional argument intermixed in the input, with several values
+// expected for last positional argument
+proc testMixPosBoolOptPosInterMixedRangeNoVals(test: borrowed Test) throws {
+  var argList = ["progName","p1","-n","myStrOpt1","myStrOpt2","myStrOpt3","p2",
+                "-b","subCmd1"];
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                 opts=["-b","--boolVal"]);
+  var myPosArg0 = parser.addArgument(name="pos0");
+  var myPosArg1 = parser.addArgument(name="pos1");
+  var myPosArg2 = parser.addArgument(name="FileName",
+                                     numArgs=0..,
+                                     defaultValue=none);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=3,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg0.hasValue());
+  test.assertFalse(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg0.hasValue());
+  test.assertTrue(myPosArg1.hasValue());
+  test.assertFalse(myPosArg2.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //ensure the value passed is correct
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(myPosArg0.value(), argList[1]);
+  test.assertEqual(myPosArg1.value(), argList[6]);
+  test.assertEqual(optList, new list(argList[3..5]));
+  test.assertEqual(subCmd1.value(),"subCmd1");
+}
+
+// a mix of positionals, bools, and options with ranges of values and subcommand
+// with optional positional, bools, and options.
+proc testMixPosBoolOptWithValuesSubCommand(test: borrowed Test) throws {
+  var argList = ["progName","myFile1","myFile2","myFile3","-b","true", "-n",
+                 "myStrOpt1", "myStrOpt2", "myStrOpt3","subCmd1","-b","false",
+                 "--stringVal=s1","--stringVal=s2","-n","s3"];
+
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                 opts=["-b","--boolVal"],
+                                 numArgs=0..1,
+                                 flagInversion=false,
+                                 defaultValue=none);
+  var myPosArg = parser.addArgument(name="FileNames",
+                                    numArgs=1..);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=1..10,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand("subCmd1");
+  // setup the subcommand parser
+  var subParser = new argumentParser();
+  var subCmdBoolArg = subParser.addFlag(name="BoolFlag",
+                                        opts=["-b","--boolVal"],
+                                        numArgs=0..1,
+                                        flagInversion=false,
+                                        defaultValue=none);
+  var subCmdPosArg = subParser.addArgument(name="FileNames",
+                                           numArgs=0..,
+                                           defaultValue=(["f1","f2"]));
+  var subCmdStrArg = subParser.addOption(name="StringOpt",
+                                         opts=["-n","--stringVal"],
+                                         numArgs=1..10,
+                                         required=false,
+                                         defaultValue=none);
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(myBoolArg.hasValue());
+  test.assertTrue(myPosArg.hasValue());
+  test.assertTrue(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //ensure the value passed is correct
+  var posList = new list(myPosArg.values());
+  var optList = new list(myStrArg.values());
+  test.assertTrue(myBoolArg.valueAsBool());
+  test.assertEqual(posList, new list(argList[1..3]));
+  test.assertEqual(optList, new list(argList[7..9]));
+
+  //make sure no sub-values currently exist
+  test.assertFalse(subCmdBoolArg.hasValue());
+  test.assertFalse(subCmdPosArg.hasValue());
+  test.assertFalse(subCmdStrArg.hasValue());
+  //parse the remaining args
+  subParser.parseArgs(rest.toArray());
+  //make sure we now have a value
+  test.assertTrue(subCmdBoolArg.hasValue());
+  test.assertTrue(subCmdPosArg.hasValue());
+  test.assertTrue(subCmdStrArg.hasValue());
+  //ensure the value passed is correct
+  var subCmdPosList = new list(subCmdPosArg.values());
+  var subCmdOptList = new list(subCmdStrArg.values());
+  test.assertFalse(subCmdBoolArg.valueAsBool());
+  test.assertEqual(subCmdPosList, new list(["f1","f2"]));
+  test.assertEqual(subCmdOptList, new list(["s1","s2","s3"]));
+}
+
+// a mix of positionals, bools, and options with ranges of values and subcommand
+// with optional positional, bools, and options.
+proc testMixPosBoolOptWithValuesSubCommandLight(test: borrowed Test) throws {
+  var argList = ["progName","subCmd1","-b=true","--stringVal", "s1","s2","s3"];
+
+  var parser = new argumentParser();
+
+  var myBoolArg = parser.addFlag(name="BoolFlag",
+                                 opts=["-b","--boolVal"],
+                                 numArgs=0..1,
+                                 flagInversion=false,
+                                 defaultValue=none);
+  var myPosArg = parser.addArgument(name="FileNames",
+                                      numArgs=0..);
+  var myStrArg = parser.addOption(name="StringOpt",
+                                  opts=["-n","--stringVal"],
+                                  numArgs=1..10,
+                                  required=false,
+                                  defaultValue=none);
+  var subCmd1 = parser.addSubCommand("subCmd1");
+  // setup the subcommand parser
+  var subParser = new argumentParser();
+  var subCmdBoolArg = subParser.addFlag(name="BoolFlag",
+                                        opts=["-b","--boolVal"],
+                                        numArgs=0..1,
+                                        flagInversion=false,
+                                        defaultValue=none);
+  var subCmdPosArg = subParser.addArgument(name="FileNames",
+                                           numArgs=0..,
+                                           defaultValue=(["f1","f2"]));
+  var subCmdStrArg = subParser.addOption(name="StringOpt",
+                                         opts=["-n","--stringVal"],
+                                         numArgs=1..10,
+                                         required=false,
+                                         defaultValue=none);
+  //make sure no value currently exists
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(subCmd1.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertFalse(myBoolArg.hasValue());
+  test.assertFalse(myPosArg.hasValue());
+  test.assertFalse(myStrArg.hasValue());
+  test.assertTrue(subCmd1.hasValue());
+  //make sure no sub-values currently exist
+  test.assertFalse(subCmdBoolArg.hasValue());
+  test.assertFalse(subCmdPosArg.hasValue());
+  test.assertFalse(subCmdStrArg.hasValue());
+  //parse the remaining args
+  subParser.parseArgs(rest.toArray());
+  //make sure we now have a value
+  test.assertTrue(subCmdBoolArg.hasValue());
+  test.assertTrue(subCmdPosArg.hasValue());
+  test.assertTrue(subCmdStrArg.hasValue());
+  //ensure the value passed is correct
+  var subCmdPosList = new list(subCmdPosArg.values());
+  var subCmdOptList = new list(subCmdStrArg.values());
+  test.assertTrue(subCmdBoolArg.valueAsBool());
+  test.assertEqual(subCmdPosList, new list(["f1","f2"]));
+  test.assertEqual(subCmdOptList, new list(["s1","s2","s3"]));
+}
+
+// mockup of a Mason interface testing "new" options
+proc testMockMasonNew(test: borrowed Test) throws {
+  var argList = ["mason","new","--no-vcs","myPackage"];
+
+  var parser = new argumentParser();
+  var newCmd = parser.addSubCommand("new");
+  var initCmd = parser.addSubCommand("init");
+  var addCmd = parser.addSubCommand("add");
+  var rmCmd = parser.addSubCommand("rm");
+  var upCmd = parser.addSubCommand("update");
+  var testCmd = parser.addSubCommand("test");
+  var buildCmd = parser.addSubCommand("build");
+  var runCmd = parser.addSubCommand("run");
+  var searchCmd = parser.addSubCommand("search");
+  var envCmd = parser.addSubCommand("env");
+  var cleanCmd = parser.addSubCommand("clean");
+  var docCmd = parser.addSubCommand("doc");
+  var sysCmd = parser.addSubCommand("system");
+  var extCmd = parser.addSubCommand("external");
+  var pubCmd = parser.addSubCommand("publish");
+  var helpFlag = parser.addFlag(name="help",
+                                opts=["-h","--help"],
+                                defaultValue=false,
+                                flagInversion=false);
+  var verFlag = parser.addFlag(name="version",
+                               opts=["-V","--version"],
+                               defaultValue=false,
+                               flagInversion=false);
+  // setup the subcommand parsers (normally done in each sub-module)
+  var newParser = new argumentParser();
+  var initParser = new argumentParser();
+  var addParser = new argumentParser();
+  var rmParser = new argumentParser();
+  var upParser = new argumentParser();
+  var testParser = new argumentParser();
+  var buildParser = new argumentParser();
+  var runParser = new argumentParser();
+  var searchParser = new argumentParser();
+  var envParser = new argumentParser();
+  var cleanParser = new argumentParser();
+  var docParser = new argumentParser();
+  var sysParser = new argumentParser();
+  var extParser = new argumentParser();
+  var pubParser = new argumentParser();
+
+  // setup arguments for subcommand 'new'
+  var newVCS = newParser.addFlag(name="vcs",
+                                 opts=["--vcs"],
+                                 defaultValue=true);
+  var newShow = newParser.addFlag(name="show",
+                                  opts=["--show"],
+                                  defaultValue=false,
+                                  flagInversion=false);
+  var newLegalName = newParser.addOption(name="legalName",
+                                    opts=["--name"]);
+  var newName = newParser.addArgument(name="name");
+
+  var newHelpFlag = newParser.addFlag(name="help",
+                                      opts=["-h","--help"],
+                                      defaultValue=false,
+                                      flagInversion=false);
+  // setup arguments for subcommand 'add'
+  var addExt = addParser.addFlag(name="external",
+                                 opts=["--external"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addSys = addParser.addFlag(name="system",
+                                 opts=["--system"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addPkg = addParser.addArgument(name="package");
+
+  var addHelpFlag = addParser.addFlag(name="help",
+                                      opts=["-h","--help"],
+                                      defaultValue=false,
+                                      flagInversion=false);
+  //make sure no value currently exists
+  test.assertFalse(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertFalse(helpFlag.hasValue());
+  test.assertFalse(verFlag.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertTrue(helpFlag.hasValue());
+  test.assertTrue(verFlag.hasValue());
+  test.assertFalse(helpFlag.valueAsBool());
+  test.assertFalse(verFlag.valueAsBool());
+  test.assertFalse(newLegalName.hasValue());
+  //parse the remaining args
+  newParser.parseArgs(rest.toArray());
+  //make sure we now have a value
+  test.assertTrue(newVCS.hasValue());
+  test.assertTrue(newName.hasValue());
+  test.assertTrue(newHelpFlag.hasValue());
+  test.assertFalse(newHelpFlag.valueAsBool());
+  //ensure the value passed is correct
+  test.assertFalse(newVCS.valueAsBool());
+  test.assertEqual(newName.value(), "myPackage");
+}
+
+
+// mockup of a Mason interface testing "new" options
+proc testMockMasonNewDiffName(test: borrowed Test) throws {
+  var argList = ["mason","new","--no-vcs","--name","notMyPackage","myPackage"];
+
+  var parser = new argumentParser();
+  var newCmd = parser.addSubCommand("new");
+  var initCmd = parser.addSubCommand("init");
+  var addCmd = parser.addSubCommand("add");
+  var rmCmd = parser.addSubCommand("rm");
+  var upCmd = parser.addSubCommand("update");
+  var testCmd = parser.addSubCommand("test");
+  var buildCmd = parser.addSubCommand("build");
+  var runCmd = parser.addSubCommand("run");
+  var searchCmd = parser.addSubCommand("search");
+  var envCmd = parser.addSubCommand("env");
+  var cleanCmd = parser.addSubCommand("clean");
+  var docCmd = parser.addSubCommand("doc");
+  var sysCmd = parser.addSubCommand("system");
+  var extCmd = parser.addSubCommand("external");
+  var pubCmd = parser.addSubCommand("publish");
+  var helpFlag = parser.addFlag(name="help",
+                                opts=["-h","--help"],
+                                defaultValue=false,
+                                flagInversion=false);
+  var verFlag = parser.addFlag(name="version",
+                               opts=["-V","--version"],
+                               defaultValue=false,
+                               flagInversion=false);
+  // setup the subcommand parsers (normally done in each sub-module)
+  var newParser = new argumentParser();
+  var initParser = new argumentParser();
+  var addParser = new argumentParser();
+  var rmParser = new argumentParser();
+  var upParser = new argumentParser();
+  var testParser = new argumentParser();
+  var buildParser = new argumentParser();
+  var runParser = new argumentParser();
+  var searchParser = new argumentParser();
+  var envParser = new argumentParser();
+  var cleanParser = new argumentParser();
+  var docParser = new argumentParser();
+  var sysParser = new argumentParser();
+  var extParser = new argumentParser();
+  var pubParser = new argumentParser();
+
+  // setup arguments for subcommand 'new'
+  var newVCS = newParser.addFlag(name="vcs",
+                                 opts=["--vcs"],
+                                 defaultValue=true);
+  var newShow = newParser.addFlag(name="show",
+                                  opts=["--show"],
+                                  defaultValue=false,
+                                  flagInversion=false);
+  var newLegalName = newParser.addOption(name="legalName",
+                                    opts=["--name"]);
+  var newName = newParser.addArgument(name="name");
+
+  var newHelpFlag = newParser.addFlag(name="help",
+                                      opts=["-h","--help"],
+                                      defaultValue=false,
+                                      flagInversion=false);
+  // setup arguments for subcommand 'add'
+  var addExt = addParser.addFlag(name="external",
+                                 opts=["--external"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addSys = addParser.addFlag(name="system",
+                                 opts=["--system"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addPkg = addParser.addArgument(name="package");
+
+  var addHelpFlag = addParser.addFlag(name="help",
+                                      opts=["-h","--help"],
+                                      defaultValue=false,
+                                      flagInversion=false);
+  //make sure no value currently exists
+  test.assertFalse(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertFalse(helpFlag.hasValue());
+  test.assertFalse(verFlag.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertTrue(helpFlag.hasValue());
+  test.assertTrue(verFlag.hasValue());
+  test.assertFalse(helpFlag.valueAsBool());
+  test.assertFalse(verFlag.valueAsBool());
+  test.assertFalse(newLegalName.hasValue());
+  //parse the remaining args
+  newParser.parseArgs(rest.toArray());
+  //make sure we now have a value
+  test.assertTrue(newVCS.hasValue());
+  test.assertTrue(newName.hasValue());
+  test.assertTrue(newLegalName.hasValue());
+  test.assertTrue(newHelpFlag.hasValue());
+  test.assertFalse(newHelpFlag.valueAsBool());
+  //ensure the value passed is correct
+  test.assertFalse(newVCS.valueAsBool());
+  test.assertEqual(newLegalName.value(),"notMyPackage");
+  test.assertEqual(newName.value(), "myPackage");
+}
+
+// mockup of a Mason interface testing "new" options
+proc testMockMasonNewTypical(test: borrowed Test) throws {
+  var argList = ["mason","new","myPackage"];
+
+  var parser = new argumentParser();
+  var newCmd = parser.addSubCommand("new");
+  var initCmd = parser.addSubCommand("init");
+  var addCmd = parser.addSubCommand("add");
+  var rmCmd = parser.addSubCommand("rm");
+  var upCmd = parser.addSubCommand("update");
+  var testCmd = parser.addSubCommand("test");
+  var buildCmd = parser.addSubCommand("build");
+  var runCmd = parser.addSubCommand("run");
+  var searchCmd = parser.addSubCommand("search");
+  var envCmd = parser.addSubCommand("env");
+  var cleanCmd = parser.addSubCommand("clean");
+  var docCmd = parser.addSubCommand("doc");
+  var sysCmd = parser.addSubCommand("system");
+  var extCmd = parser.addSubCommand("external");
+  var pubCmd = parser.addSubCommand("publish");
+  var helpFlag = parser.addFlag(name="help",
+                                opts=["-h","--help"],
+                                defaultValue=false,
+                                flagInversion=false);
+  var verFlag = parser.addFlag(name="version",
+                               opts=["-V","--version"],
+                               defaultValue=false,
+                               flagInversion=false);
+  // setup the subcommand parsers (normally done in each sub-module)
+  var newParser = new argumentParser();
+  var initParser = new argumentParser();
+  var addParser = new argumentParser();
+  var rmParser = new argumentParser();
+  var upParser = new argumentParser();
+  var testParser = new argumentParser();
+  var buildParser = new argumentParser();
+  var runParser = new argumentParser();
+  var searchParser = new argumentParser();
+  var envParser = new argumentParser();
+  var cleanParser = new argumentParser();
+  var docParser = new argumentParser();
+  var sysParser = new argumentParser();
+  var extParser = new argumentParser();
+  var pubParser = new argumentParser();
+
+  // setup arguments for subcommand 'new'
+  var newVCS = newParser.addFlag(name="vcs",
+                                 opts=["--vcs"],
+                                 defaultValue=true);
+  var newShow = newParser.addFlag(name="show",
+                                  opts=["--show"],
+                                  defaultValue=false,
+                                  flagInversion=false);
+  var newLegalName = newParser.addOption(name="legalName",
+                                         opts=["--name"]);
+  var newName = newParser.addArgument(name="name");
+
+  var newHelpFlag = newParser.addFlag(name="help",
+                                      opts=["-h","--help"],
+                                      defaultValue=false,
+                                      flagInversion=false);
+  // setup arguments for subcommand 'add'
+  var addExt = addParser.addFlag(name="external",
+                                 opts=["--external"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addSys = addParser.addFlag(name="system",
+                                 opts=["--system"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addPkg = addParser.addArgument(name="package");
+
+  var addHelpFlag = addParser.addFlag(name="help",
+                                      opts=["-h","--help"],
+                                      defaultValue=false,
+                                      flagInversion=false);
+  //make sure no value currently exists
+  test.assertFalse(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertFalse(helpFlag.hasValue());
+  test.assertFalse(verFlag.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertTrue(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertTrue(helpFlag.hasValue());
+  test.assertTrue(verFlag.hasValue());
+  test.assertFalse(helpFlag.valueAsBool());
+  test.assertFalse(verFlag.valueAsBool());
+  test.assertFalse(newLegalName.hasValue());
+  //parse the remaining args
+  newParser.parseArgs(rest.toArray());
+  //make sure we now have a value
+  test.assertTrue(newVCS.hasValue());
+  test.assertTrue(newName.hasValue());
+  test.assertFalse(newLegalName.hasValue());
+  test.assertTrue(newHelpFlag.hasValue());
+  test.assertFalse(newHelpFlag.valueAsBool());
+  //ensure the value passed is correct
+  test.assertTrue(newVCS.valueAsBool());
+  test.assertEqual(newName.value(), "myPackage");
+}
+
+// mockup of a Mason interface testing "add" options
+proc testMockMasonAddExternal(test: borrowed Test) throws {
+  var argList = ["mason","add","--external","externalPackage@0.2.3"];
+
+  var parser = new argumentParser();
+  var newCmd = parser.addSubCommand("new");
+  var initCmd = parser.addSubCommand("init");
+  var addCmd = parser.addSubCommand("add");
+  var rmCmd = parser.addSubCommand("rm");
+  var upCmd = parser.addSubCommand("update");
+  var testCmd = parser.addSubCommand("test");
+  var buildCmd = parser.addSubCommand("build");
+  var runCmd = parser.addSubCommand("run");
+  var searchCmd = parser.addSubCommand("search");
+  var envCmd = parser.addSubCommand("env");
+  var cleanCmd = parser.addSubCommand("clean");
+  var docCmd = parser.addSubCommand("doc");
+  var sysCmd = parser.addSubCommand("system");
+  var extCmd = parser.addSubCommand("external");
+  var pubCmd = parser.addSubCommand("publish");
+  var helpFlag = parser.addFlag(name="help",
+                                opts=["-h","--help"],
+                                defaultValue=false,
+                                flagInversion=false);
+  var verFlag = parser.addFlag(name="version",
+                               opts=["-V","--version"],
+                               defaultValue=false,
+                               flagInversion=false);
+  // setup the subcommand parsers (normally done in each sub-module)
+  var newParser = new argumentParser();
+  var initParser = new argumentParser();
+  var addParser = new argumentParser();
+  var rmParser = new argumentParser();
+  var upParser = new argumentParser();
+  var testParser = new argumentParser();
+  var buildParser = new argumentParser();
+  var runParser = new argumentParser();
+  var searchParser = new argumentParser();
+  var envParser = new argumentParser();
+  var cleanParser = new argumentParser();
+  var docParser = new argumentParser();
+  var sysParser = new argumentParser();
+  var extParser = new argumentParser();
+  var pubParser = new argumentParser();
+
+  // setup arguments for subcommand 'new'
+  var newVCS = newParser.addFlag(name="vcs",
+                                 opts=["--vcs"],
+                                 defaultValue=true);
+  var newShow = newParser.addFlag(name="show",
+                                  opts=["--show"],
+                                  defaultValue=false,
+                                  flagInversion=false);
+  var newLegalName = newParser.addOption(name="legalName",
+                                    opts=["--name"]);
+  var newName = newParser.addArgument(name="name");
+
+  var newHelpFlag = newParser.addFlag(name="help",
+                                      opts=["-h","--help"],
+                                      defaultValue=false,
+                                      flagInversion=false);
+  // setup arguments for subcommand 'add'
+  var addExt = addParser.addFlag(name="external",
+                                 opts=["--external"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addSys = addParser.addFlag(name="system",
+                                 opts=["--system"],
+                                 defaultValue=false,
+                                 flagInversion=false);
+  var addPkg = addParser.addArgument(name="package");
+
+  var addHelpFlag = addParser.addFlag(name="help",
+                                      opts=["-h","--help"],
+                                      defaultValue=false,
+                                      flagInversion=false);
+  //make sure no value currently exists
+  test.assertFalse(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertFalse(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertFalse(helpFlag.hasValue());
+  test.assertFalse(verFlag.hasValue());
+  //parse the options
+  var rest = parser.parseArgs(argList[1..]);
+  //make sure we now have a value
+  test.assertFalse(newCmd.hasValue());
+  test.assertFalse(initCmd.hasValue());
+  test.assertTrue(addCmd.hasValue());
+  test.assertFalse(rmCmd.hasValue());
+  test.assertFalse(upCmd.hasValue());
+  test.assertFalse(testCmd.hasValue());
+  test.assertFalse(buildCmd.hasValue());
+  test.assertFalse(runCmd.hasValue());
+  test.assertFalse(searchCmd.hasValue());
+  test.assertFalse(envCmd.hasValue());
+  test.assertFalse(cleanCmd.hasValue());
+  test.assertFalse(docCmd.hasValue());
+  test.assertFalse(sysCmd.hasValue());
+  test.assertFalse(extCmd.hasValue());
+  test.assertFalse(pubCmd.hasValue());
+  test.assertTrue(helpFlag.hasValue());
+  test.assertTrue(verFlag.hasValue());
+  test.assertFalse(helpFlag.valueAsBool());
+  test.assertFalse(verFlag.valueAsBool());
+  test.assertFalse(addPkg.hasValue());
+  test.assertFalse(addExt.hasValue());
+  test.assertFalse(addSys.hasValue());
+  //parse the remaining args
+  addParser.parseArgs(rest.toArray());
+  //make sure we now have a value
+  test.assertTrue(addExt.hasValue());
+  test.assertTrue(addPkg.hasValue());
+  test.assertTrue(addSys.hasValue());
+  test.assertTrue(addHelpFlag.hasValue());
+  test.assertFalse(addHelpFlag.valueAsBool());
+  //ensure the value passed is correct
+  test.assertFalse(addSys.valueAsBool());
+  test.assertTrue(addExt.valueAsBool());
+  test.assertEqual(addPkg.value(), "externalPackage@0.2.3");
+}
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
 UnitTest.main();

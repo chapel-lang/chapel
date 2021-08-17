@@ -10,6 +10,10 @@ testSingleStringShortOptEqualsExtra()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testBadArgsAtFront()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 testMultiStringShortOptEqualsOK()
 Flavour: OK
 ======================================================================
@@ -394,49 +398,147 @@ testFlagBadBoolValue()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testFlagBadBoolNumArgs()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 unitTestStringToBool()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-Found undefined values: thirty
-Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
-Use '-' or '--' to indicate opt flags. Positional arguments not yet supported
+testSinglePositionalArgument()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPositionalArgumentDefault()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPositionalArgumentOptionalMissing()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPositionalArgumentRangeOneOrMore()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPositionalArgumentTooManyVals()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPositionalArgumentNotEnoughVals()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPositionalArgumentNoVals()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPositionalArgumentRangeBeforePos()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixPosBoolOptWithValues()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixPosBoolOptWithValuesFixed()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixPosBoolOptWithValuesFixedPosAfterBool()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixPosBoolOptWithValuesFixedPosInterMixed()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixPosBoolOptWithValuesPosInterMixedRange()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixPosBoolOptPosInterMixedRangeWithVals()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixPosBoolOptPosInterMixedRangeDefVals()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixPosBoolOptPosInterMixedRangeNoVals()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixPosBoolOptWithValuesSubCommand()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixPosBoolOptWithValuesSubCommandLight()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMockMasonNew()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMockMasonNewDiffName()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMockMasonNewTypical()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMockMasonAddExternal()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+Found some unrecognizable arguments: thirty
+Found some unrecognizable arguments: badArg1 --BadFlag
+Use '-' or '--' to indicate option/flag, or use positional arguments.
+Use '-' or '--' to indicate option/flag, or use positional arguments.
 StringOpt Too many values: expected 1..1 got 3
 StringOpt Too many values: expected 1..3 got 6
-StringOpt has extra values
+Found some unrecognizable arguments: fifty
 StringOpt Required value missing
 unrecognized options/values encountered: -n twenty
 StringOpt Not enough values: expected 1..2 got 0
-Found undefined values: two
-Found undefined values: -p thirty
+Found some unrecognizable arguments: two
+Found some unrecognizable arguments: -p thirty
 StringOpt Not enough values: expected 3..5 got 2
-Found undefined values: fifty
+Found some unrecognizable arguments: fifty
 StringOpt Not enough values: expected 1..3 got 0
 StringOpt Not enough values: expected 1..1 got 0
 StringOpt1 Not enough values: expected 1..1 got 0
 StringOpt2 Not enough values: expected 1..1 got 0
 StringOpt3 Not enough values: expected 1..1 got 0
-StringOpt1 has extra values
-StringOpt2 has extra values
-Found undefined values: five
-StringOpt2 has extra values
+Found some unrecognizable arguments: five
+Found some unrecognizable arguments: five
+Found some unrecognizable arguments: five
+Found some unrecognizable arguments: five
 StringOpt2 Required value missing
 Only string and list of strings are supported as default values at this time
 Only string and list of strings are supported as default values at this time
 Only string and list of strings are supported as default values at this time
 Only string and list of strings are supported as default values at this time
 Option name StringOpt is previously defined
-Option flag -n is previously defined
-Option flag --strArg is previously defined
-Found undefined values: subCommandNone
-Found undefined values: subCommandNone
-Found undefined values: -x
-StringOpt1 has extra values
+Option/flag -n is previously defined
+Option/flag --strArg is previously defined
+Found some unrecognizable arguments: subCommandNone
+Found some unrecognizable arguments: subCommandNone
+Found some unrecognizable arguments: -x
+Found some unrecognizable arguments: -f
 BoolFlag Not enough values: expected 1..1 got 0
-Found undefined values: false
-Found undefined values: false
+Found some unrecognizable arguments: false
+Found some unrecognizable arguments: false
 Creating 'no' flag options prevents using value to set flag
 Setting up a required flag that defaults to true with no way for user to set false
 Creating 'no' flag options prevents using value to set flag
 Creating 'no' flag options prevents using value to set flag
 Unrecognized value tru
+Maximum number of values for a flag is 1
+Found some unrecognizable arguments: file3 file4
+FileNames Not enough values: expected 5..7 got 4
+FileNames Required value missing
+Positional arguments that allow for range of values must be last relative to other positional arguments
