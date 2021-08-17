@@ -370,7 +370,7 @@ BACKLOG_DEFAULT = (if SOMAXCONN <= 128 then SOMAXCONN else 128):uint(16);
 */
 proc listen(in address: ipAddr, reuseAddr: bool = true, backlog: uint(16) = BACKLOG_DEFAULT): tcpListener throws {
   var family = address.family;
-  var socketFd = socket(family, SOCK_STREAM | SOCK_NONBLOCK);
+  var socketFd = socket(family, SOCK_STREAM);
   bind(socketFd, address, reuseAddr);
   var err_out = sys_listen(socketFd, backlog:c_int);
   if err_out != 0 {
@@ -396,7 +396,7 @@ proc listen(in address: ipAddr, reuseAddr: bool = true, backlog: uint(16) = BACK
 */
 proc connect(in address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws {
   var family = address.family;
-  var socketFd = socket(family, SOCK_STREAM | SOCK_NONBLOCK);
+  var socketFd = socket(family, SOCK_STREAM);
   var err_out = sys_connect(socketFd, address._addressStorage);
   if(err_out != 0 && err_out != EINPROGRESS) {
     sys_close(socketFd);
@@ -535,7 +535,7 @@ record udpSocket {
   proc init(family: IPFamily = IPFamily.IPv4) {
     this.socketFd = -1;
     try! {
-      var sockFd = socket(family, SOCK_DGRAM | SOCK_NONBLOCK);
+      var sockFd = socket(family, SOCK_DGRAM);
       this.socketFd = sockFd;
     }
   }
@@ -975,9 +975,18 @@ proc getsockname(ref socket: udpSocket): ipAddr throws {
 pragma "no doc"
 proc socket(family:IPFamily = IPFamily.IPv4, sockType:c_int = SOCK_STREAM, protocol = 0) throws {
   var socketFd: c_int;
-  var err = sys_socket(family:c_int, sockType | SOCK_CLOEXEC, protocol:c_int, socketFd);
+  var err = sys_socket(family:c_int, sockType, protocol:c_int, socketFd);
   if err != 0 {
     throw SystemError.fromSyserr(err, "Failed to create socket");
+  }
+  var flags:c_int;
+  err = sys_fcntl(socketFd, F_GETFL, flags);
+  if err != 0 {
+    throw SystemError.fromSyserr(err, "Failed to get socket flags");
+  }
+  err = sys_fcntl_long(socketFd, F_SETFL, flags | O_NONBLOCK, flags);
+  if err != 0 {
+    throw SystemError.fromSyserr(err, "Failed to make socket non blocking");
   }
   return socketFd;
 }
