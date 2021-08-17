@@ -3236,7 +3236,7 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
                                   defaultValue=false,
                                   flagInversion=false);
   var newLegalName = newParser.addOption(name="legalName",
-                                    opts=["--name"]);
+                                         opts=["--name"]);
   var newName = newParser.addArgument(name="name");
 
   var newHelpFlag = newParser.addFlag(name="help",
@@ -3336,13 +3336,13 @@ proc testMockMasonRun(test: borrowed Test) throws {
   var extCmd = parser.addSubCommand("external");
   var pubCmd = parser.addSubCommand("publish");
   var helpFlag = parser.addFlag(name="help",
-                               opts=["-h","--help"],
+                                opts=["-h","--help"],
+                                defaultValue=false,
+                                flagInversion=false);
+  var verFlag = parser.addFlag(name="version",
+                               opts=["-V","--version"],
                                defaultValue=false,
                                flagInversion=false);
-  var verFlag = parser.addFlag(name="version",
-                              opts=["-V","--version"],
-                              defaultValue=false,
-                              flagInversion=false);
   // setup the subcommand parsers (normally done in each sub-module)
   var newParser = new argumentParser();
   var initParser = new argumentParser();
@@ -3375,9 +3375,9 @@ proc testMockMasonRun(test: borrowed Test) throws {
   var runPassThrough = runParser.setPassThrough("--");
 
   var runHelpFlag = runParser.addFlag(name="help",
-                               opts=["-h","--help"],
-                               defaultValue=false,
-                               flagInversion=false);
+                                      opts=["-h","--help"],
+                                      defaultValue=false,
+                                      flagInversion=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
@@ -3387,12 +3387,12 @@ proc testMockMasonRun(test: borrowed Test) throws {
                                  opts=["--system"],
                                  defaultValue=false,
                                  flagInversion=false);
-  var addPkg = addParser.addPositional(name="package");
+  var addPkg = addParser.addArgument(name="package");
 
   var addHelpFlag = addParser.addFlag(name="help",
-                               opts=["-h","--help"],
-                               defaultValue=false,
-                               flagInversion=false);
+                                      opts=["-h","--help"],
+                                      defaultValue=false,
+                                      flagInversion=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -3456,9 +3456,9 @@ proc testMockMasonRun(test: borrowed Test) throws {
 proc testPassthrough(test: borrowed Test) throws {
   var argList = ["progName","--","--myVar","setting"];
   var parser = new argumentParser();
-  var myPosArg = parser.addPositional(name="FileName",
-                                      defaultValue=none,
-                                      numArgs=0..1);
+  var myPosArg = parser.addArgument(name="FileName",
+                                    defaultValue=none,
+                                    numArgs=0..1);
   var passThrough = parser.setPassThrough("--");
   //make sure no value currently exists
   test.assertFalse(myPosArg.hasValue());
@@ -3475,9 +3475,9 @@ proc testPassthrough(test: borrowed Test) throws {
 proc testPassthroughWithPositional(test: borrowed Test) throws {
   var argList = ["progName","myFile","--","--myVar","setting"];
   var parser = new argumentParser();
-  var myPosArg = parser.addPositional(name="FileName",
-                                      defaultValue=none,
-                                      numArgs=0..1);
+  var myPosArg = parser.addArgument(name="FileName",
+                                    defaultValue=none,
+                                    numArgs=0..1);
   var passThrough = parser.setPassThrough("--");
   //make sure no value currently exists
   test.assertFalse(myPosArg.hasValue());
@@ -3495,9 +3495,9 @@ proc testPassthroughWithPositional(test: borrowed Test) throws {
 proc testPassthroughWithPositionalNoVals(test: borrowed Test) throws {
   var argList = ["progName"];
   var parser = new argumentParser();
-  var myPosArg = parser.addPositional(name="FileName",
-                                      defaultValue=none,
-                                      numArgs=0..1);
+  var myPosArg = parser.addArgument(name="FileName",
+                                    defaultValue=none,
+                                    numArgs=0..1);
   var passThrough = parser.setPassThrough("--");
   //make sure no value currently exists
   test.assertFalse(myPosArg.hasValue());
