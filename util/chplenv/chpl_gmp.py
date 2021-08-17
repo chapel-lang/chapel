@@ -26,9 +26,6 @@ def get():
             gmp_val = 'system'
         else:
             gmp_val = 'none'
-    elif gmp_val == 'gmp':
-        warning("CHPL_GMP=gmp is deprecated. Use CHPL_GMP=bundled.")
-        gmp_val = 'bundled'
 
     return gmp_val
 
