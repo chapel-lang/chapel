@@ -48,9 +48,19 @@ static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable);
 static bool         isInCForLoopHeader(Expr* expr);
 static void         cleanupLoopBlocks(FnSymbol* fn);
 
+static void markGPUSuitableLoops();
+static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls);
+static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk,
+                                           std::set<FnSymbol*>& okFns,
+                                           std::set<FnSymbol*> visitedFns,
+                                           bool allowFnCalls);
+
 static unsigned int deadBlockCount;
 static unsigned int deadModuleCount;
 
+bool debugPrintGPUChecks = false;
+bool allowFnCallsFromGPU = false;
+int indentGPUChecksLevel = 0;
 
 
 //
@@ -512,7 +522,8 @@ static void outlineGPUKernels() {
 
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
-        if (shouldOutlineLoop(loop)) {
+        if (shouldOutlineLoop(loop) &&
+            blockLooksLikeStreamForGPU(loop, /*allowFnCalls=*/false)) {
           SET_LINENO(loop);
           FnSymbol* outlinedFunction = new FnSymbol("chpl_gpu_kernel");
           outlinedFunction->addFlag(FLAG_RESOLVED);
@@ -711,6 +722,10 @@ void deadCodeElimination() {
     cleanupAfterTypeRemoval();
   }
 
+  if (debugPrintGPUChecks) {
+    markGPUSuitableLoops();
+  }
+
   // For now, we are doing GPU outlining here. In the future, it should probably
   // be its own pass.
   if (strcmp(CHPL_LOCALE_MODEL, "gpu") == 0) {
@@ -901,6 +916,95 @@ static void cleanupLoopBlocks(FnSymbol* fn) {
   for_vector (Expr, expr, stmts) {
     if (BlockStmt* stmt = toBlockStmt(expr)) {
       stmt->deadBlockCleanup();
+    }
+  }
+}
+
+extern int classifyPrimitive(CallExpr *call, bool inLocal);
+extern bool inLocalBlock(CallExpr *call);
+
+static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls) {
+  if (!blk->inTree() || blk->getModule()->modTag != MOD_USER)
+    return false;
+
+  if (CForLoop* cfl = toCForLoop(blk))
+    if (!cfl->isOrderIndependent())
+      return false;
+
+  std::set<FnSymbol*> okFns;
+  std::set<FnSymbol*> visitedFns;
+
+  return blockLooksLikeStreamForGPUHelp(blk, okFns, visitedFns, allowFnCalls);
+}
+
+static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk,
+                                           std::set<FnSymbol*>& okFns,
+                                           std::set<FnSymbol*> visitedFns,
+                                           bool allowFnCalls) {
+
+  if (debugPrintGPUChecks) {
+    FnSymbol* fn = blk->getFunction();
+    printf("%*s%s:%d: %s[%d]\n", indentGPUChecksLevel, "",
+           fn->fname(), fn->linenum(), fn->name, fn->id);
+  }
+
+  if (visitedFns.count(blk->getFunction()) != 0) {
+    if (blk->getFunction()->hasFlag(FLAG_FUNCTION_TERMINATES_PROGRAM)) {
+      return true; // allow `halt` to be potentially called recursively
+    } else {
+      return false;
+    }
+  }
+
+  visitedFns.insert(blk->getFunction());
+
+  std::vector<CallExpr*> calls;
+  collectCallExprs(blk, calls);
+
+  for_vector(CallExpr, call, calls) {
+    if (call->primitive) {
+      // only primitives that are fast and local are allowed for now
+      bool inLocal = inLocalBlock(call);
+      int is = classifyPrimitive(call, inLocal);
+      if ((is != FAST_AND_LOCAL)) {
+        return false;
+      }
+    } else if (call->isResolved()) {
+      if (!allowFnCalls)
+        return false;
+
+      FnSymbol* fn = call->resolvedFunction();
+      indentGPUChecksLevel += 2;
+      if (okFns.count(fn) != 0 ||
+          blockLooksLikeStreamForGPUHelp(fn->body, okFns,
+                                         visitedFns, allowFnCalls)) {
+        indentGPUChecksLevel -= 2;
+        okFns.insert(fn);
+      } else {
+        indentGPUChecksLevel -= 2;
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
+static void markGPUSuitableLoops() {
+  forv_Vec(BlockStmt, block, gBlockStmts) {
+    if (ForLoop* forLoop = toForLoop(block)) {
+      if (forLoop->isOrderIndependent()) {
+        if (blockLooksLikeStreamForGPU(forLoop, allowFnCallsFromGPU)) {
+          if (debugPrintGPUChecks)
+            printf("Found viable forLoop %s:%d[%d]\n",
+                   forLoop->fname(), forLoop->linenum(), forLoop->id);
+        }
+      }
+    } else if (CForLoop* forLoop = toCForLoop(block)) {
+      if (blockLooksLikeStreamForGPU(forLoop, allowFnCallsFromGPU)) {
+        if (debugPrintGPUChecks)
+          printf("Found viable CForLoop %s:%d[%d]\n",
+                 forLoop->fname(), forLoop->linenum(), forLoop->id);
+      }
     }
   }
 }

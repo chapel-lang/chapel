@@ -206,7 +206,6 @@ inline bool ForallStmt::fromReduce()            const { return  fFromReduce;  }
 inline bool ForallStmt::overTupleExpand()       const { return fOverTupleExpand;       }
 inline bool ForallStmt::allowSerialIterator()   const { return fAllowSerialIterator;   }
 inline bool ForallStmt::requireSerialIterator() const { return fRequireSerialIterator; }
-
 /// conveniences ///
 
 inline int   ForallStmt::numInductionVars()  const { return fIterVars.length; }
