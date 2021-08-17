@@ -320,8 +320,6 @@ var crossProduct = cross(y, y);
 
   There are several functions for computing matrix properties.
 
-  Note that ``norm`` procedures are documented in the :mod:`Norm` module.
-
 */
 
 // Trace of a matrix
