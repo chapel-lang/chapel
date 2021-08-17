@@ -122,7 +122,8 @@ void deadVariableElimination(FnSymbol* fn) {
 
         rhs->remove();
         CallExpr* rhsCall = toCallExpr(rhs);
-        if (rhsCall && (rhsCall->isResolved() || rhsCall->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))) {
+        if (rhsCall && (rhsCall->isResolved() || rhsCall->isPrimitive(
+          PRIM_VIRTUAL_METHOD_CALL))) {
           // RHS might have side-effects, leave it alone
           call->replace(rhs);
         } else {
@@ -501,7 +502,8 @@ static Symbol* extractUpperBoundFromLoop(CForLoop* loop) {
       }
   }
 
-  INT_FATAL("Unexpected upper bound for loop identified for extraction as GPU kernel");
+  INT_FATAL("Unexpected upper bound for loop identified for extraction as "
+    "GPU kernel");
   return nullptr;
 }
 
@@ -518,28 +520,36 @@ static Symbol* extractLowerBoundFromLoop(CForLoop* loop) {
     }
   }
 
-  INT_FATAL("Unexpected lower bound for loop identified for extraction as GPU kernel");
+  INT_FATAL("Unexpected lower bound for loop identified for extraction as GPU "
+    "kernel");
   return nullptr;
 }
 
-static VarSymbol* generateNewVariable(BlockStmt* insertionPoint, const char* name, Type* type) {
+static VarSymbol* generateNewVariable(BlockStmt* insertionPoint, const char* name,
+  Type* type) {
   VarSymbol *var = new VarSymbol(name, type);
   var->defPoint = new DefExpr(var);
   insertionPoint->insertAtTail(var->defPoint);
   return var;
 }
 
-static VarSymbol* generateBlockSizeComputation(BlockStmt* gpuLaunchBlock, CForLoop* loop) {
+static VarSymbol* generateBlockSizeComputation(
+  BlockStmt* gpuLaunchBlock,
+  CForLoop* loop) {
   Symbol* ub = extractUpperBoundFromLoop(loop);
   Symbol* lb = extractLowerBoundFromLoop(loop);
 
-  VarSymbol *varBoundDelta = generateNewVariable(gpuLaunchBlock, "blockDelta", dtInt[INT_SIZE_DEFAULT]);
-  VarSymbol *varBlockSize = generateNewVariable(gpuLaunchBlock, "blockSize", dtInt[INT_SIZE_DEFAULT]);
+  VarSymbol *varBoundDelta = generateNewVariable(
+    gpuLaunchBlock, "blockDelta", dtInt[INT_SIZE_DEFAULT]);
+  VarSymbol *varBlockSize = generateNewVariable(
+    gpuLaunchBlock, "blockSize", dtInt[INT_SIZE_DEFAULT]);
 
-  CallExpr *c1 = new CallExpr(PRIM_ASSIGN, varBoundDelta, new CallExpr(PRIM_SUBTRACT, ub, lb));
+  CallExpr *c1 = new CallExpr(PRIM_ASSIGN, varBoundDelta, new CallExpr(
+    PRIM_SUBTRACT, ub, lb));
   gpuLaunchBlock->insertAtTail(c1);
 
-  CallExpr *c2 = new CallExpr(PRIM_ASSIGN, varBlockSize, new CallExpr(PRIM_ADD, varBoundDelta, new_IntSymbol(1)));
+  CallExpr *c2 = new CallExpr(PRIM_ASSIGN, varBlockSize, new CallExpr(
+    PRIM_ADD, varBoundDelta, new_IntSymbol(1)));
   gpuLaunchBlock->insertAtTail(c2);
 
   return varBlockSize;
@@ -555,16 +565,21 @@ static VarSymbol* generateAssignmentToPrimitive(
 }
 
 static VarSymbol* generateIndexComputation(FnSymbol* fn, Symbol* sym) {
-  VarSymbol *varBlockIdxX = generateAssignmentToPrimitive(fn, "blockIdxX", PRIM_GPU_BLOCKIDX_X, dtInt[INT_SIZE_32]);
-  VarSymbol *varBlockDimX = generateAssignmentToPrimitive(fn, "blockDimX", PRIM_GPU_BLOCKDIM_X, dtInt[INT_SIZE_32]);
-  VarSymbol *varThreadIdxX = generateAssignmentToPrimitive(fn, "threadIdxX", PRIM_GPU_THREADIDX_X, dtInt[INT_SIZE_32]);
+  VarSymbol *varBlockIdxX = generateAssignmentToPrimitive(fn, "blockIdxX",
+    PRIM_GPU_BLOCKIDX_X, dtInt[INT_SIZE_32]);
+  VarSymbol *varBlockDimX = generateAssignmentToPrimitive(fn, "blockDimX",
+    PRIM_GPU_BLOCKDIM_X, dtInt[INT_SIZE_32]);
+  VarSymbol *varThreadIdxX = generateAssignmentToPrimitive(fn, "threadIdxX",
+    PRIM_GPU_THREADIDX_X, dtInt[INT_SIZE_32]);
 
   VarSymbol *tempVar = generateNewVariable(fn->body, "t0", dtInt[INT_SIZE_32]);
-  CallExpr *c1 = new CallExpr(PRIM_MOVE, tempVar, new CallExpr(PRIM_MULT, varBlockIdxX, varBlockDimX));
+  CallExpr *c1 = new CallExpr(PRIM_MOVE, tempVar, new CallExpr(PRIM_MULT,
+    varBlockIdxX, varBlockDimX));
   fn->insertAtTail(c1);
 
   VarSymbol *tempVar1 = generateNewVariable(fn->body, "t1", dtInt[INT_SIZE_32]);
-  CallExpr *c2 = new CallExpr(PRIM_MOVE, tempVar1, new CallExpr(PRIM_ADD, tempVar, varThreadIdxX));
+  CallExpr *c2 = new CallExpr(PRIM_MOVE, tempVar1, new CallExpr(PRIM_ADD, tempVar,
+    varThreadIdxX));
   fn->insertAtTail(c2);
 
   return tempVar1;
@@ -654,7 +669,8 @@ static void outlineGPUKernels() {
                   if (isIndexVariable(sym, loop)) {
                     if (indexSymbol == NULL) {
                       indexSymbol = sym;
-                      VarSymbol* flatIndex = generateIndexComputation(outlinedFunction, sym);
+                      VarSymbol* flatIndex = generateIndexComputation(
+                        outlinedFunction, sym);
                       
                       copyMap.put(sym, flatIndex);
                     }
@@ -669,12 +685,15 @@ static void outlineGPUKernels() {
                           SymExpr* maybeArrSymExpr = toSymExpr(firstParent->get(1));
                           INT_ASSERT(maybeArrSymExpr);
 
-                          if (CallExpr* secondParent = toCallExpr(firstParent->parentExpr)) {
+                          if (CallExpr* secondParent =
+                            toCallExpr(firstParent->parentExpr))
+                          {
                             if (secondParent->isPrimitive(PRIM_MOVE)) {
                               SymExpr* lhsSE = toSymExpr(secondParent->get(1));
                               INT_ASSERT(lhsSE);
 
-                              ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, "data_formal", lhsSE->typeInfo());
+                              ArgSymbol* newFormal = new ArgSymbol(INTENT_IN,
+                                "data_formal", lhsSE->typeInfo());
                               formalTypes.push_back(lhsSE->typeInfo());
                               outlinedFunction->insertFormalAtTail(newFormal);
                               copyMap.put(lhsSE->symbol(), newFormal);
@@ -707,13 +726,17 @@ static void outlineGPUKernels() {
           if (maybeArrSymExpr.size() == arraysWhoseDataAccessed.size()) {
             std::vector<SymExpr*>::size_type i;
             for (i = 0 ; i < maybeArrSymExpr.size() ; i++) {
-              if (maybeArrSymExpr[i]->symbol() != arraysWhoseDataAccessed[i]->symbol()) {
+              if (maybeArrSymExpr[i]->symbol() !=
+                arraysWhoseDataAccessed[i]->symbol())
+              {
                 INT_FATAL("Something went wrong (1)");
               }
               else {
-                VarSymbol* newActual = new VarSymbol("data_actual", formalTypes[i]);
+                VarSymbol* newActual = new VarSymbol("data_actual",
+                  formalTypes[i]);
                 CallExpr* getPtrCall = toCallExpr(fieldAccessors[i]->remove());
-                CallExpr* moveCall = new CallExpr(PRIM_MOVE, newActual, getPtrCall);
+                CallExpr* moveCall = new CallExpr(PRIM_MOVE, newActual,
+                  getPtrCall);
                 gpuLaunchBlock->insertAtTail(new DefExpr(newActual));
                 gpuLaunchBlock->insertAtTail(moveCall);
 
@@ -738,7 +761,8 @@ static void outlineGPUKernels() {
             }
           }
 
-          CallExpr* gpuCall = generateGPUCall(loop, gpuLaunchBlock, outlinedFunction, kernelActuals);
+          CallExpr* gpuCall = generateGPUCall(
+            loop, gpuLaunchBlock, outlinedFunction, kernelActuals);
           gpuLaunchBlock->insertAtTail(gpuCall);
           gpuLaunchBlock->flattenAndRemove();
 
@@ -879,8 +903,10 @@ static void deleteUnreachableBlocks(FnSymbol* fn, BasicBlockSet& reachable)
       // In some cases (associated with iterator code), defs appear in dead
       // blocks but are used in later blocks, so removing the defs results
       // in a verify error.
-      // TODO: Perhaps this reformulation of unreachable block removal does a better
-      // job and those blocks are now removed as well.  If so, this IF can be removed.
+      //
+      // TODO: Perhaps this reformulation of unreachable block removal does a
+      // better job and those blocks are now removed as well.  If so, this IF
+      // can be removed.
       if (toDefExpr(expr))
         continue;
 
@@ -939,7 +965,8 @@ void removeDeadIterResumeGotos() {
 void verifyRemovedIterResumeGotos() {
   forv_Vec(LabelSymbol, labsym, removedIterResumeLabels) {
     if (!isAlive(labsym) && isAlive(labsym->iterResumeGoto))
-      INT_FATAL("unexpected live goto for a dead removedIterResumeLabels label - missing a call to removeDeadIterResumeGotos?");
+      INT_FATAL("unexpected live goto for a dead removedIterResumeLabels label "
+        "- missing a call to removeDeadIterResumeGotos?");
   }
 }
 
