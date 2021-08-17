@@ -14,7 +14,7 @@ To initialize an `ipAddr` there are several available overloads and defaults.
 
 **Method**
 ```python
-proc ipAddr.init(host:string = "localhost", port:uint(16) = 8000, family:IPFamily = IPFamily.IPv4)
+proc type ipAddr.create(host:string = "127.0.0.1", port:uint(16) = 8000, family:IPFamily = IPFamily.IPv4)
 ```
 **Parameters**
 ```
@@ -27,12 +27,12 @@ There are two more initialzers which can take in standard IP Addresses like loop
 
 **Method**
 ```python
-proc ipAddr.init(host:sys_in_addr_t, port: uint(16) = 8000)
-proc ipAddr.init(host:sys_in6_addr_t, port: uint(16) = 8000)
+proc type ipAddr.ipv4(host:ipv4Addr, port: uint(16) = 8000)
+proc type ipAddr.ipv6(host:ipv6Addr, port: uint(16) = 8000)
 ```
 **Parameter**
 ```
-host: string - standard ip addresses
+host: ipv4Addr/ipv6Addr - standard ip addresses
 port: uint(16) - port number for socket
 ```
 
@@ -137,14 +137,12 @@ The additional support with `tcpConn` and `tcpListener` will be to enable or dis
   ```python
   proc nagle(socket:tcpConn, enable:bool = 1)
   proc nagle(socket:tcpListener, enable:bool = 1);
-  proc nagle(socket:udpSocket, enable:bool = 1);
   ```
 - `delayAck`
   This method will set/unset TCP_QUICKACK for provided socket.
   ```python
   proc delayAck(socket:tcpConn, enable:bool = 1)
   proc delayAck(socket:tcpListener, enable:bool = 1);
-  proc delayAck(socket:udpSocket, enable:bool = 1);
   ```
 
 ## UDP Support
@@ -182,13 +180,13 @@ UDP Sockets will have method to call `recvFrom` on it this will return the `addr
 
 **Method:**
 ```python
-proc socketServ.recvFrom(buffer_len:int, in timeout = new timeval(-1,0)) : (address:ipAddr, data:bytes)
+proc socketServ.recvFrom(bufferLen:int, in timeout = new timeval(-1,0)) : (address:ipAddr, data:bytes)
 ```
 
 **Parameters**
 
 ```
-buffer_len: int - number of bytes to read
+bufferLen: int - number of bytes to read
 timeout: timeval - defines the time in `(seconds, microseconds)` function should wait till `recvfrom` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
 ```
 
@@ -202,13 +200,13 @@ Another alternate method will be `recv` which will return just the `data` and no
 
 __Method:__
 ```python
-proc socketServ.recv(buffer_len: int, in timeout = new timeval(-1,0)) : bytes
+proc socketServ.recv(bufferLen: int, in timeout = new timeval(-1,0)) : bytes
 ```
 
 **Parameters**
 
 ```
-buffer_len: int - number of bytes to read
+bufferLen: int - number of bytes to read
 timeout: timeval - defines the time in `(seconds, microseconds)` function should wait till `recv` fails with `TimeoutError`. `(-1, 0)` implies indefinite blocking.
 ```
 
