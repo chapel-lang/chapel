@@ -692,17 +692,17 @@ module MasonArgParse {
       return _addAction(act);
     }
 
-    proc addPositional(name:string, numArgs=1, defaultValue:?t=none) throws {
-      return addPositional(name, numArgs..numArgs, defaultValue);
+    proc addArgument(name:string, numArgs=1, defaultValue:?t=none) throws {
+      return addArgument(name, numArgs..numArgs, defaultValue);
     }
 
-    proc addPositional(name:string,
+    proc addArgument(name:string,
                        numArgs:range(boundedType=BoundedRangeType.boundedLow),
                        defaultValue:?t=none) throws {
-      return addPositional(name, numArgs.low..max(int), defaultValue);
+      return addArgument(name, numArgs.low..max(int), defaultValue);
     }
 
-    proc addPositional(name:string,
+    proc addArgument(name:string,
                        numArgs:range,
                        defaultValue:?t=none) throws {
       var act = new owned Positional(name, defaultValue, numArgs);

@@ -33,7 +33,7 @@ module M {
                                    opts=["--flagOn"]);
 
       // add a positional argument that expects 1 value
-      var posArg = parser.addPositional(name="positionalArg");
+      var posArg = parser.addArgument(name="positionalArg");
 
       // add a subcommand that has its own parser (defined later)
       var subCmd1 = parser.addSubCommand(cmd="subCmd1");
@@ -77,9 +77,9 @@ module M {
                                    defaultValue=false);
 
       // add a positional argument to the subcommand that expects 0 or 1 values
-      var subPosArg = parser.addPositional(name="subItem",
-                                           numArgs=0..1,
-                                           defaultValue=none);
+      var subPosArg = parser.addArgument(name="subItem",
+                                         numArgs=0..1,
+                                         defaultValue=none);
 
       var rest = parser.parseArgs(args);
       writeln("args parsed in subcommand:");
