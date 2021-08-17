@@ -170,7 +170,7 @@ def validate_llvm_config(llvm_config=None):
     if llvm_config is None:
       llvm_config = get_llvm_config()
     if llvm_val == 'system':
-        if not llvm_config or llvm_config == 'none':
+        if llvm_config == '' or llvm_config == 'none':
             error("CHPL_LLVM=system but could not find an installed LLVM"
                   " with one of the supported versions: {0}".format(
                   llvm_versions_string()))
