@@ -301,7 +301,6 @@ void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
   CHPL_GPU_LOG("chpl_gpu_mem_alloc called. Size:%d file:%s line:%d\n", size,
                chpl_lookupFilename(filename), lineno);
 
-
   CUdeviceptr ptr;
   CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
 
