@@ -189,7 +189,7 @@ static void chpl_gpu_launch_kernel_help(const char* name,
       // TODO this allocation needs to use `chpl_mem_alloc` with a proper desc
       kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
 
-      //TODO pass the location info to this function and use a proper mem desc
+      // TODO pass the location info to this function and use a proper mem desc
       *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, 0, 0, 0);
 
       chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
