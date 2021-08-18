@@ -443,7 +443,9 @@ module MasonArgParse {
       // as noted in the comments on PR#18141, breaking up the arguments
       // when they contain = disconnects the resulting array's indices from
       // the original.
-      for i in argsD.low+1..argsD.high {
+      // skip the first value in the args b/c it is expected to be the
+      // name of the program or subcommand
+      for i in argsD.low + 1..argsD.high {
         const arrElt = arguments[i];
         if _subcommands.contains(arrElt) then break;
         // look for = sign after opt, split into two elements
@@ -455,6 +457,7 @@ module MasonArgParse {
           argsList.insert(idx, elems.toArray());
         }
       }
+      // assume we should read the whole list
       var firstFlagIdx = argsList.size;
       // identify the index values where known options/flags are located
       for i in argsList.indices {
@@ -482,7 +485,7 @@ module MasonArgParse {
       var arrayOptionIndices = optionIndices.toArray();
       sort(arrayOptionIndices);
 
-
+      // checking for positionals at beginning of input
       if arrayOptionIndices.size > 0 then
         firstFlagIdx = arrayOptionIndices[0][0];
       if firstFlagIdx > 0 then

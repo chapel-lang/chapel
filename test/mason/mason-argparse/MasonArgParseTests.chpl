@@ -3510,6 +3510,26 @@ proc testPassthroughWithPositionalNoVals(test: borrowed Test) throws {
   test.assertEqual(new list(passThrough.values()), new list(string));
 }
 
+// specify pass-through on main command with a subcommand
+// note that the subCmd will not match because it's after the
+// pass-thru indicator ++
+proc testSubCmdAndPassThruOnMain(test: borrowed Test) throws {
+  var argList = ["progName","-n","20","++","--strArg","passValue","subCmd"];
+  var parser = new argumentParser();
+  var passThru = parser.addPassThrough();
+  var mySubCmd1 = parser.addSubCommand(cmd="subCmd");
+  var myStrArg1 = parser.addOption(name="StringOpt",
+                                   opts=["-n","--strArg"],
+                                   numArgs=1);
+  parser.parseArgs(argList);
+  test.assertFalse(mySubCmd1.hasValue());
+  test.assertTrue(myStrArg1.hasValue());
+  test.assertEqual(myStrArg1.value(),"20");
+  test.assertFalse(mySubCmd1.hasValue());
+  test.assertTrue(passThru.hasValue());
+  test.assertEqual(new list(passThru.values()), new list(argList[3..]));
+}
+
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
 UnitTest.main();
