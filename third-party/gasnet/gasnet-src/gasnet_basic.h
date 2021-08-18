@@ -116,7 +116,38 @@
 #if PLATFORM_COMPILER_CLANG && PLATFORM_COMPILER_VERSION_LT(3,6,0)
   // bug3801: old clangs report __has_attribute(__fallthrough__)=1, but incorrectly implement the attribute
   // in a way that leads to empty statement warnings when used as per GNU instructions
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_FALLTHROUGH
   #define GASNETT_USE_GCC_ATTRIBUTE_FALLTHROUGH 0
+  #endif
+#endif
+
+#if PLATFORM_COMPILER_INTEL && PLATFORM_COMPILER_VERSION_GE(20,21,20210228) && !__INTEL_CLANG_COMPILER
+  // bug4255:
+  // The following misbehaviors have been observed in the 2021.2.0 release (and
+  // newer) of the "Classic" Intel C/C++ compilers (icc/icpc) but not the
+  // "oneAPI" compilers (icx/icpx).
+  // 1) Intel C/C++ compilers report __has_attribute(__fallthrough__)=1, but
+  //    incorrectly implement the attribute when used as per GNU instructions.
+  //    a) The C compiler implements it in a way which produces:
+  //          warning #169: expected a declaration
+  //    b) The C++ compiler implements it in a way which *sometimes* produces:
+  //          warning #2621: attribute "__fallthrough__" does not apply here
+  // 2) Intel C++ compilers report __has_cpp_attribute(fallthrough)=1, but
+  //    then complain of an unknown attribute when it is used:
+  //          warning #1292: unknown attribute "fallthrough"
+  // 3) These C++ compilers also report __has_cpp_attrbute(clang::fallthrough)=1,
+  //    but using this attribute leads to yet another warning:
+  //          warning #3924: attribute namespace "clang" is unrecognized
+  // No, __has_cpp_attrbute() is not *always* true.
+  #ifndef GASNETT_USE_GCC_ATTRIBUTE_FALLTHROUGH
+  #define GASNETT_USE_GCC_ATTRIBUTE_FALLTHROUGH 0
+  #endif
+  #ifndef GASNETT_USE_CXX11_ATTRIBUTE_FALLTHROUGH
+  #define GASNETT_USE_CXX11_ATTRIBUTE_FALLTHROUGH 0
+  #endif
+  #ifndef GASNETT_USE_CXX11_ATTRIBUTE_CLANG__FALLTHROUGH
+  #define GASNETT_USE_CXX11_ATTRIBUTE_CLANG__FALLTHROUGH 0
+  #endif
 #endif
 
 // token expansion: expands to configure-detected token GASNETI_<id>_<feature> for the current compiler
@@ -874,6 +905,7 @@ typedef union { uint64_t _u; char _c[8]; } gasneti_magic_t;
 // See also: gasnetc_{AM,Token}_Max*() macros.
 
 #if PLATFORM_COMPILER_PGI
+  // Not needed with NVHPC-branded releases
   GASNETI_INLINE(gasneti_empty_function)
   void gasneti_empty_function(void) {}
   #define GASNETI_UNUSED_ARG_PRE_ gasneti_empty_function(),

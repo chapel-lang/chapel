@@ -77,6 +77,7 @@ int gex_MK_Create(
 
   GASNETI_TRACE_PRINTF(O,("gex_MK_Create: client='%s' flags=%d",
                           client ? client->_name : "(NULL)", flags));
+  GASNETI_CHECK_INJECT();
 
   if (! client) {
     gasneti_fatalerror("Invalid call to gex_MK_Create with NULL client");
@@ -141,6 +142,7 @@ void gex_MK_Destroy(
 
   GASNETI_TRACE_PRINTF(O,("gex_MK_Destroy: memkind=%p, class='%s' flags=%d",
                           (void*)e_mk, MK_IMPL(i_mk,name), flags));
+  GASNETI_CHECK_INJECT();
 
   if (flags) {
     gasneti_fatalerror("Invalid call to gex_MK_Destroy with non-zero flags");

@@ -320,7 +320,8 @@ static char test_section;
 static char test_sections[255];
 
 #define TEST_SECTION_BEGIN()        ((void)(!test_section ? test_section = 'A' : test_section++))
-#define TEST_SECTION_ENABLED()      ((!test_sections[0] || strchr(test_sections, test_section)))
+#define TEST_SECTION_ENABLED_FWD(n)   ((!test_sections[0] || strchr(test_sections, test_section+(n))))
+#define TEST_SECTION_ENABLED()      TEST_SECTION_ENABLED_FWD(0)
 #define TEST_SECTION_BEGIN_ENABLED() (TEST_SECTION_BEGIN(), TEST_SECTION_ENABLED())
 #define TEST_SECTION_NAME() ((char)test_section)
 #define TEST_SECTION_PARSE(arg) do {       \

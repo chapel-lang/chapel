@@ -640,16 +640,16 @@ extern int gex_EP_Create(
             gex_EP_Capabilities_t  _capabilities,
             gex_Flags_t            _flags);
 
+extern int gex_EP_RegisterHandlers(
+            gex_EP_t       _ep,
+            gex_AM_Entry_t *_table,
+            size_t         _numentries);
+
 extern void gex_EP_BindSegment(
             gex_EP_t       _ep,
             gex_Segment_t  _segment,
             gex_Flags_t    _flags);
 
-#if GASNETC_HAVE_EP_PUBLISHBOUNDSEGMENT
-  #define gex_EP_PublishBoundSegment gasnetc_EP_PublishBoundSegment
-#else
-  #define gex_EP_PublishBoundSegment gasneti_EP_PublishBoundSegment
-#endif
 extern int gex_EP_PublishBoundSegment(
             gex_TM_t       _tm,
             gex_EP_t       *_eps,
@@ -671,6 +671,19 @@ extern gex_Event_t gex_EP_QueryBoundSegmentNB(
             void           **_localaddr_p,
             uintptr_t      *_size_p,
             gex_Flags_t    _flags) GASNETI_WARN_UNUSED_RESULT;
+
+extern int gex_Segment_Attach(
+            gex_Segment_t  *_segment_p,
+            gex_TM_t       _tm,
+            uintptr_t      _length);
+
+extern int gex_Segment_Create(
+            gex_Segment_t  *_segment_p,
+            gex_Client_t   _client,
+            gex_Addr_t     _address,
+            uintptr_t      _length,
+            gex_MK_t       _kind,
+            gex_Flags_t    _flags);
 
 /* ------------------------------------------------------------------------------------ */
 /* extended types */

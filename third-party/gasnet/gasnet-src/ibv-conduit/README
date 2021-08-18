@@ -102,6 +102,12 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   The use of specific HCA ports is controlled at run time by the environment
   variable GASNET_IBV_PORTS, described below.  The default value of this
   variable can be set at configure time using '--with-ibv-ports=...'.
+  Closely connected to selection of HCA ports is the setting of the
+  environment variable GASNET_USE_FENCED_PUTS, also described below. Its
+  default value can be set using '--with-ibv-fenced-puts=val' where 'val'
+  is either '0' or '1'.  Alternatively, '--with-ibv-fenced-puts' (with no
+  argument) and '--without-ibv-fenced-puts' can be used to select defaults
+  of 1 and 0, respectively.
 
   When using dynamic connections (see GASNET_CONNECT_DYNAMIC env var,
   below) there is an extra thread spawned to block for the arrival of
@@ -135,6 +141,12 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
      README-{ssh,mpi,pmi}-spawner (installed)
   or
      other/{ssh,mpi,pmi}-spawner/README (source).
+
+  By default, ibv-conduit serializes calls to `ibv_poll_cq()` in a manner which
+  reduces time spent blocked on the mutex internal to its implementation.  One
+  can configure using `--disable-ibv-serialize-poll-cq` to disable this
+  behavior.  For more information, see the `GASNET_RCV_THREAD_POLL_MODE`
+  environment variable documentation, below.
 
 @ Section: Job Spawning @
 
@@ -321,6 +333,20 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     Of course, even on the same system, your mileage may vary.
     By default 'GASNET_IBV_PORTS_TYPE' is "Socket" and all other variables in
     this family are unset.
+
+  + GASNET_IBV_PORTS_VERBOSE
+    This integer setting controls the detail of any warnings printed when there
+    are non-fatal issues related to the selection of HCAs and ports to be used.
+    A value of 0 supresses the warnings entirely.
+    A value of 1 (the default) or higher will warn if one or more HCAs are
+    excluded from consideration other than due to failure to match
+    GASNET_IBV_PORTS (or the numerically suffixed variants).  In particular, a
+    warning is issued if more HCAs are detected than supported by
+    '--with-ibv-max-hcas=N' (where N defaults to 2 when configured using
+    `--enable-ibv-multirail`, and 1 otherwise).
+    Values of 2 or higher are reserved to request printing additional
+    details in future releases.
+    This setting defaults to 1.
 
   + GASNET_IBV_LIST_PORTS
     The value is a boolean: "0" to disable or "1" to enable the reporting of
@@ -514,8 +540,8 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
   node, but doing so may not be useful.
 
   + GASNET_RCV_THREAD
-    This gives a boolean: "0" to disable, or "1" to enable, the use of
-    an extra thread that blocks waiting for an Active Message Request
+    This gives a boolean: "0" to disable, or "1" to enable, the use of an
+    extra thread per-HCA port to block waiting for an Active Message Request
     or Reply to arrive.  This allows ibv-conduit to remain attentive
     to incoming AM traffic even while the application is not making any
     calls to GASNet.  The down side is that when this thread wakes it
@@ -542,6 +568,35 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     The default value is 0, which means no limit is imposed.
     NOTE: A future release may implement GASNET_RCV_THREAD_LOAD to
     impose a limit on the *fraction* of time the thread spends awake.
+
+  + GASNET_RCV_THREAD_POLL_MODE
+    If GASNET_RCV_THREAD is enabled, then this setting determines if/how the
+    AM receive thread participates in the serialization of calls to
+    `ibv_poll_cq()`.  This serialization can improve the throughput of
+    clients with multiple threads (the AM receive thread included) by reducing
+    the time spent blocked while polling.
+    The following values (case-insensitive) are recognized:
+      * 'serialized' - The AM receive thread will poll the completion queue
+        for AM arrivals while participating in the same serialization protocol
+        as client threads.  (default)
+      * 'unserialized' - The AM receive thread will poll the completion queue
+        for AM arrivals without regard to the serialization protocol observed
+        by client threads.
+      * 'exclusive' - The AM receive thread will utilize the serialization
+        protocol observed by client threads to become the only poller of the
+        completion queue for AM arrivals.
+    The default is "serialized".
+    The value "exclusive" is the only option which directly affects the
+    behavior of application threads.  The others have only an indirect affect
+    via the degree of contention they may experience due to the receive thread.
+    If the AM receive thread is disabled (via `'--disable-ibv-rcv-thread` at
+    configure time or via the `GASNET_RCV_THREAD` environment variable), then
+    this setting is ignored.  In particular, setting `GASNET_RCV_THREAD=0`
+    and `GASNET_RCV_THREAD_POLL_MODE=exclusive` does not prevent application
+    threads from polling the completion queue for AM arrivals.
+    If serialization of calls to `ibv_poll_cq()` was disabled at configure
+    time via `--disable-ibv-serialize-poll-cq`, then this setting is ignored
+    and the behavior is equivalent to "unserialized".
 
   Pinnable memory probe configuration:
   -----------------------------------
@@ -646,11 +701,6 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     is signaled by the HCA.  Such transfers up to and including size
     GASNET_NONBULKPUT_BOUNCE_LIMIT are performed using bounce buffers while
     larger transfers stall return from injection until the RMA is acknowledged.
-    Currently, this parameter also controls the use of bounce buffers versus
-    non-blocking RMA for initiation of all AMLong payload transfers and
-    for PUTs not passing GEX_EVENT_DEFER for the lc_opt parameter.  However,
-    cases other than GEX_EVENT_NOW are not the intended scope of this
-    parameter, and this behavior is subject to change.
     The default value is 64KB.
     A value of zero disables use of bounce buffers.
     
@@ -747,7 +797,8 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     may wish to enable this setting.
     If enabled when multirail support was not enabled at configure time, a
     warning will be issued.
-    This setting defaults to 0 (disabled).
+    The default can be set at configure time via '--with-ibv-fenced-puts=...'
+    and is 0 (disabled) in the absence of that configure option.
 
   Resource usage parameters:
   -------------------------
@@ -993,6 +1044,26 @@ Paul H. Hargrove <PHHargrove@lbl.gov>
     internal information of use to the developers.  You may be asked
     to run with this environment variable set if you report a bug that
     appears related to the firehose algorithm. 
+
+  External library settings:
+  --------------------------
+  These parameters must be equal across all nodes, and the behavior
+  otherwise is undefined.
+
+  + MLX4_SINGLE_THREADED and MLX5_SINGLE_THREADED
+    In a SEQ or PARSYNC build, ibv-conduit will set these environment
+    variables to '1' under appropriate conditions (which include the default
+    configure and environment settings) to instruct libibverbs to elide
+    locking.  These variables influence the libibverbs implementations for,
+    respectively, the "mlx4" and "mlx5" drivers.
+    Here "appropriate conditions" means that ibv-conduit is not starting any
+    asynchronous threads.  In particular, these variables are *not* set by the
+    conduit if use of GASNET_RCV_THREAD has requested the asynchronous AM
+    receive thread, or if the combination of GASNET_CONN_* settings may require
+    starting a thread to receive dynamic connection requests.  For more
+    information on these variables, see their respective documentation, above.
+    In all cases, a user's setting of either variable is preserved, allowing an
+    explicit setting of '0' to prevent the conduit from setting it to '1'.
 
 @ Section: Multi-rail Support @
 

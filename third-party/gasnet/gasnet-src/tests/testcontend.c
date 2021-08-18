@@ -37,8 +37,15 @@ int amactive;
 int peer = -1;
 char *peerseg = NULL;
 int threads;
-gasnett_atomic_t pong;
-volatile int signal_done = 0;
+struct {
+  char pad0[GASNETT_CACHE_LINE_BYTES];
+  gasnett_atomic_t _pong;
+  char pad1[GASNETT_CACHE_LINE_BYTES - sizeof(gasnett_atomic_t)];
+  volatile int _signal_done;
+  char pad2[GASNETT_CACHE_LINE_BYTES - sizeof(int)];
+} globals = {{0}, gasnett_atomic_init(0), {0}, 0, {0}};
+#define pong globals._pong
+#define signal_done globals._signal_done
 #define thread_barrier() PTHREAD_BARRIER(threads)
 
 int revthreads = 0;
@@ -77,6 +84,7 @@ gex_AM_Entry_t htable[] = {
     
 int _havereport = 0;
 char _reportstr[644];
+static gasnett_atomic_t pgcounter = gasnett_atomic_init(0);
 const char *getreport(void) {
   if (_havereport) {
     _havereport = 0;
@@ -84,10 +92,13 @@ const char *getreport(void) {
   } else return NULL;
 }
 void report(gasnett_tick_t ticks) {
-  double timeus = (double)gasnett_ticks_to_us(ticks);
+  double timeus = (double)gasnett_ticks_to_ns(ticks)/1000;
+  char pgcount[32] = {0};
+  gasnett_atomic_val_t count = gasnett_atomic_swap(&pgcounter,0,0);
+  if (count && (timeus > 0.)) snprintf(pgcount, sizeof(pgcount), "%12lu ops/s", (unsigned long)(count/(timeus*1e-6)));
   snprintf(_reportstr, sizeof(_reportstr),
-     "%7.3f us\t%5.3f sec", 
-     timeus/iters, timeus/1000000);
+     "%7.3f us\t%5.3f sec%s", 
+     timeus/iters, timeus/1000000, pgcount);
   _havereport = 1;
 }
 
@@ -133,7 +144,11 @@ AMPINGPONG(ampingpong_barrier_active, BARRIER_UNTIL)
 
 #define PUTGETPINGPONG(fnname, POLLUNTIL, putgetstmt)                                   \
   void * fnname(void *args) {                                                           \
-    int64_t tmp = 0;                                                                    \
+    struct {                                                                            \
+      char pad0[GASNETT_CACHE_LINE_BYTES];                                              \
+      int64_t datum;                                                                    \
+      char pad1[GASNETT_CACHE_LINE_BYTES-sizeof(int64_t)];                              \
+    } locals = {{0}, 0, {0}};                                                           \
     int mythread = ARG2THREAD(args);                                                    \
     static int nonzero_present = 0;                                                     \
     gasnett_tick_t start, end;                                                          \
@@ -164,20 +179,25 @@ AMPINGPONG(ampingpong_barrier_active, BARRIER_UNTIL)
     return NULL;                                                                        \
   }
 
-PUTGETPINGPONG(put_poll_active, SPINPOLL_UNTIL, gex_RMA_PutBlocking(myteam, peer, peerseg, &tmp, 8, 0))
-PUTGETPINGPONG(get_poll_active, SPINPOLL_UNTIL, gex_RMA_GetBlocking(myteam, &tmp, peer, peerseg, 8, 0))
-PUTGETPINGPONG(put_block_active, GASNET_BLOCKUNTIL, gex_RMA_PutBlocking(myteam, peer, peerseg, &tmp, 8, 0))
-PUTGETPINGPONG(get_block_active, GASNET_BLOCKUNTIL, gex_RMA_GetBlocking(myteam, &tmp, peer, peerseg, 8, 0))
+PUTGETPINGPONG(put_poll_active, SPINPOLL_UNTIL, gex_RMA_PutBlocking(myteam, peer, peerseg, &locals.datum, 8, 0))
+PUTGETPINGPONG(get_poll_active, SPINPOLL_UNTIL, gex_RMA_GetBlocking(myteam, &locals.datum, peer, peerseg, 8, 0))
+PUTGETPINGPONG(put_block_active, GASNET_BLOCKUNTIL, gex_RMA_PutBlocking(myteam, peer, peerseg, &locals.datum, 8, 0))
+PUTGETPINGPONG(get_block_active, GASNET_BLOCKUNTIL, gex_RMA_GetBlocking(myteam, &locals.datum, peer, peerseg, 8, 0))
 
-PUTGETPINGPONG(put_barrier_active, BARRIER_UNTIL, gex_RMA_PutBlocking(myteam, peer, peerseg, &tmp, 8, 0))
-PUTGETPINGPONG(get_barrier_active, BARRIER_UNTIL, gex_RMA_GetBlocking(myteam, &tmp, peer, peerseg, 8, 0))
+PUTGETPINGPONG(put_barrier_active, BARRIER_UNTIL, gex_RMA_PutBlocking(myteam, peer, peerseg, &locals.datum, 8, 0))
+PUTGETPINGPONG(get_barrier_active, BARRIER_UNTIL, gex_RMA_GetBlocking(myteam, &locals.datum, peer, peerseg, 8, 0))
 
 #define PGFIGHT(fnname, putgetstmt_loner, putgetstmt_rest)                              \
   void * fnname(void *args) {                                                           \
-    int64_t tmp = 0;                                                                    \
+    struct {                                                                            \
+      char pad0[GASNETT_CACHE_LINE_BYTES];                                              \
+      int64_t datum;                                                                    \
+      char pad1[GASNETT_CACHE_LINE_BYTES-sizeof(int64_t)];                              \
+    } locals = {{0}, 0, {0}};                                                           \
     int mythread = ARG2THREAD(args);                                                    \
     gasnett_tick_t start, end;                                                          \
     signal_done = 0;                                                                    \
+    if (mythread == 0) gasnett_atomic_set(&pgcounter,0,0);                              \
     thread_barrier();                                                                   \
     if (mythread == 0) {                                                                \
       int i;                                                                            \
@@ -188,20 +208,24 @@ PUTGETPINGPONG(get_barrier_active, BARRIER_UNTIL, gex_RMA_GetBlocking(myteam, &t
       end = gasnett_ticks_now();                                                        \
       gex_AM_RequestShort0(myteam, peer, hidx_markdone_shorthandler, 0);            \
       gex_AM_RequestShort0(myteam, myrank, hidx_markdone_shorthandler, 0); \
+      gasnett_atomic_add(&pgcounter,iters,0);                                           \
     } else {                                                                            \
+      gasnett_atomic_val_t count = 0;                                                   \
       while(!signal_done) {                                                             \
         putgetstmt_rest;                                                                \
+        count++;                                                                        \
       }                                                                                 \
+      gasnett_atomic_add(&pgcounter,count,0);                                           \
     }                                                                                   \
     thread_barrier();                                                                   \
     if (mythread == 0 && amactive) report(end-start);                                   \
     return NULL;                                                                        \
   }                                                                                     \
 
-PGFIGHT(put_put_active, gex_RMA_PutBlocking(myteam, peer, peerseg, &tmp, 8, 0), gex_RMA_PutBlocking(myteam, peer, peerseg, &tmp, 8, 0))
-PGFIGHT(put_get_active, gex_RMA_PutBlocking(myteam, peer, peerseg, &tmp, 8, 0), gex_RMA_GetBlocking(myteam, &tmp, peer, peerseg, 8, 0))
-PGFIGHT(get_put_active, gex_RMA_GetBlocking(myteam, &tmp, peer, peerseg, 8, 0), gex_RMA_PutBlocking(myteam, peer, peerseg, &tmp, 8, 0))
-PGFIGHT(get_get_active, gex_RMA_GetBlocking(myteam, &tmp, peer, peerseg, 8, 0), gex_RMA_GetBlocking(myteam, &tmp, peer, peerseg, 8, 0))
+PGFIGHT(put_put_active, gex_RMA_PutBlocking(myteam, peer, peerseg, &locals.datum, 8, 0), gex_RMA_PutBlocking(myteam, peer, peerseg, &locals.datum, 8, 0))
+PGFIGHT(put_get_active, gex_RMA_PutBlocking(myteam, peer, peerseg, &locals.datum, 8, 0), gex_RMA_GetBlocking(myteam, &locals.datum, peer, peerseg, 8, 0))
+PGFIGHT(get_put_active, gex_RMA_GetBlocking(myteam, &locals.datum, peer, peerseg, 8, 0), gex_RMA_PutBlocking(myteam, peer, peerseg, &locals.datum, 8, 0))
+PGFIGHT(get_get_active, gex_RMA_GetBlocking(myteam, &locals.datum, peer, peerseg, 8, 0), gex_RMA_GetBlocking(myteam, &locals.datum, peer, peerseg, 8, 0))
 
 void * poll_passive(void *args) {
   int mythread = ARG2THREAD(args);

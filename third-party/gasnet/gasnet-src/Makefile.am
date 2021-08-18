@@ -57,6 +57,7 @@ CONDUITMODE_EXTRA_DIST =    	\
 	gasnet_syncops.h   	\
 	gasnet_trace.c
 CONDUITMODE_INSTALL_DOCS =    \
+	docs/memory_kinds.md  \
 	docs/GASNet-EX.txt
 # GASNET_TOOLSONLY_FALSE_END
 
@@ -361,8 +362,12 @@ distclean: force
 
 if TOOLSONLY_MODE
 TESTDIST = README testtools.c test.h Makefile.in
+# A tools-only git clone is *always* dirty, but we don't want to see the
+# string '-dirty' in version info of distributed tarballs and resuting installs.
+GIT_DESCRIBE_DIRTY =
 else
 TESTDIST = `find . -print | grep -v ^./mpi`
+GIT_DESCRIBE_DIRTY = --dirty
 endif
 
 dist-hook:
@@ -371,7 +376,7 @@ dist-hook:
            exit 1 ; \
         fi
 	if test -d $(srcdir)/.git ; then \
-	  GASNET_DESC=`( cd $(srcdir) && $${GIT=git} describe --long --dirty --always ) 2>/dev/null | head -n 1`; \
+	  GASNET_DESC=`( cd $(srcdir) && $${GIT=git} describe --long --always $(GIT_DESCRIBE_DIRTY) ) 2>/dev/null | head -n 1`; \
 	  if test -z "$$GASNET_DESC"; then \
 	    echo 'Use of git describe failed even though .git exists' 1>&2; \
 	    exit 1;                        \

@@ -117,6 +117,11 @@ libgasnet_dependencies =                  \
 	$(CONDUIT_EXTRAHEADERS)           \
 	$(CONDUIT_EXTRADEPS)
 
+# A tools-only git clone is *always* dirty, but we don't want to see the
+# string '-dirty' in version info of distributed tarballs and resuting installs.
+@TOOLSONLY_MODE_TRUE@GIT_DESCRIBE_DIRTY = # empty
+@TOOLSONLY_MODE_FALSE@GIT_DESCRIBE_DIRTY = --dirty
+
 # library targets 
 THREAD_MODEL=SEQ
 THREAD_MODEL_LC=`echo "$(THREAD_MODEL)" | @AWK@ '{print tolower($$0)}'`
@@ -128,7 +133,7 @@ do-libgasnet: $(CONDUIT_SPECIAL_OBJS) $(KINDS_SPECIAL_OBJS)
 	if test -z '$(KEEPTMPS)'; then rmcmd="&& rm -f $$libgasnet_objects"; fi; \
 	unset GASNET_DESC; \
 	if test -d $(top_srcdir)/.git ; then \
-	  GASNET_DESC=`( cd $(top_srcdir) && $${GIT=git} describe --long --dirty --always ) 2>/dev/null | head -n 1`; \
+	  GASNET_DESC=`( cd $(top_srcdir) && $${GIT=git} describe --long --always $(GIT_DESCRIBE_DIRTY) ) 2>/dev/null | head -n 1`; \
 	fi; \
 	if test -z "$$GASNET_DESC" && test -f $(top_srcdir)/version.git ; then  \
 	  GASNET_DESC=`cat $(top_srcdir)/version.git` || exit $$? ; \
@@ -235,7 +240,7 @@ do-pkgconfig-tools: force
 	           >> $(pkgconfig_file)
 	@unset GASNET_DESC; \
 	if test -d $(top_srcdir)/.git ; then \
-	  GASNET_DESC=`( cd $(top_srcdir) && $${GIT=git} describe --long --dirty --always ) 2>/dev/null | head -n 1`; \
+	  GASNET_DESC=`( cd $(top_srcdir) && $${GIT=git} describe --long --always $(GIT_DESCRIBE_DIRTY) ) 2>/dev/null | head -n 1`; \
 	fi; \
 	if test -z "$$GASNET_DESC" && test -f $(top_srcdir)/version.git ; then \
 	  GASNET_DESC=`cat $(top_srcdir)/version.git` || exit $$? ; \

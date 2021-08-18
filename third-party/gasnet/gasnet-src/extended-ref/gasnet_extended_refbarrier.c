@@ -1136,24 +1136,35 @@ static void gasnete_amdbarrier_init(gasnete_coll_team_t team) {
  */
 
 #if !GASNETI_THREADS
-  #define GASNETE_RMDBARRIER_LOCK(_var)		/* empty */
+  #define gasnete_rmdbarrier_lock_t             %%%error%%%
   #define gasnete_rmdbarrier_lock_init(_var)	((void)0)
   #define gasnete_rmdbarrier_trylock(_var)	(0/*success*/)
   #define gasnete_rmdbarrier_unlock(_var)	((void)0)
 #elif GASNETI_HAVE_SPINLOCK
-  #define GASNETE_RMDBARRIER_LOCK(_var)		gasneti_atomic_t _var;
+  #define gasnete_rmdbarrier_lock_t             gasneti_atomic_t
   #define gasnete_rmdbarrier_lock_init(_var)	gasneti_spinlock_init(_var)
   #define gasnete_rmdbarrier_trylock(_var)	gasneti_spinlock_trylock(_var)
   #define gasnete_rmdbarrier_unlock(_var)	gasneti_spinlock_unlock(_var)
 #else
-  #define GASNETE_RMDBARRIER_LOCK(_var)		gasneti_mutex_t _var;
+  #define gasnete_rmdbarrier_lock_t             gasneti_mutex_t
   #define gasnete_rmdbarrier_lock_init(_var)	gasneti_mutex_init(_var)
   #define gasnete_rmdbarrier_trylock(_var)	gasneti_mutex_trylock(_var)
   #define gasnete_rmdbarrier_unlock(_var)	gasneti_mutex_unlock(_var)
 #endif
 
 typedef struct {
-  GASNETE_RMDBARRIER_LOCK(barrier_lock) /* no semicolon */
+  // Read/write data (note that struct is allocated cache-aligned)
+#if GASNETI_THREADS
+  gasnete_rmdbarrier_lock_t barrier_lock;
+  char _pad0[GASNETI_CACHE_PAD(sizeof(gasnete_rmdbarrier_lock_t))];
+#endif
+  int volatile barrier_state; /*  (step << 1) | phase, where step is 1-based (0 is pshm notify) */
+  int volatile barrier_value; /*  barrier value (evolves from local value) */
+  int volatile barrier_flags; /*  barrier flags (evolves from local value) */
+#if GASNETI_THREADS
+  char _pad1[GASNETI_CACHE_PAD(3 * sizeof(int))];
+#endif
+  // Read-only data
   struct {
     gex_Rank_t    jobrank;
     uintptr_t     addr;
@@ -1164,9 +1175,6 @@ typedef struct {
 #endif
   int barrier_size;           /*  ceil(lg(nodes)) */
   int barrier_goal;           /*  (1+ceil(lg(nodes)) << 1) == final barrier_state for phase=0 */
-  int volatile barrier_state; /*  (step << 1) | phase, where step is 1-based (0 is pshm notify) */
-  int volatile barrier_value; /*  barrier value (evolves from local value) */
-  int volatile barrier_flags; /*  barrier flags (evolves from local value) */
   void *barrier_inbox;        /*  in-segment memory to recv notifications */
 #if !GASNETI_THREADS
   gex_Event_t *barrier_events; /* array of events for non-blocking puts */
@@ -1226,9 +1234,11 @@ void gasnete_rmdbarrier_send(gasnete_coll_rmdbarrier_t *barrier_data,
   payload->flags2 = ~flags;
   payload->value2 = ~value;
 
-  /* Here we use NBI bulk puts in a recursive NBI access region, which avoids
-   * consuming any of the 65535 explicit events promised to the client.
-   */
+  // Below we unconditionally use NBI bulk puts in a recursive NBI access
+  // region.  This was written to avoid consuming any of the 65535 explicit
+  // events promised to the client in GASNet-1.  However, that limit does not
+  // exist for GASNet-EX and it might be profitable to specialize for step==1.
+  // TODO: update the injection loop below (see bug 4278)
 
   gasnete_begin_nbi_accessregion(0,1 GASNETI_THREAD_PASS);
   for (i = 0; i < numsteps; ++i, state += 2, step += 1) {
@@ -1240,7 +1250,11 @@ void gasnete_rmdbarrier_send(gasnete_coll_rmdbarrier_t *barrier_data,
   event = gasnete_end_nbi_accessregion(0 GASNETI_THREAD_PASS);
 
 #if GASNETI_THREADS
-  /* sync the new ops, since we can't know this thread will re-enter the barrier code */
+  // Below we sync the new ops, since in GASNet-1 handles were thread-specific
+  // and we could not know that this thread would ever re-enter the barrier
+  // code.  In GASNet-EX events are NOT thread-specific and this stall could
+  // be removed.
+  // TODO: remove the stall below (see bug 4278)
   gasnete_wait(event GASNETI_THREAD_PASS);
 #else
   /* save the new ops to sync after the barrier is complete */
@@ -1996,8 +2010,8 @@ int gasnete_coll_barrier_result(gasnete_coll_team_t team, int *id GASNETI_THREAD
  */
 
 void gasnet_barrier_notify(int id, int flags) {
-  GASNETI_CHECK_INJECT();
   GASNETI_TRACE_PRINTF(B, ("BARRIER_NOTIFY(team=GASNET_TEAM_ALL,id=%i,flags=%i)", id, flags));
+  GASNETI_CHECK_INJECT();
   #if GASNETI_STATS_OR_TRACE
     gasnete_barrier_notifytime = GASNETI_TICKS_NOW_IFENABLED(B);
   #endif
@@ -2008,12 +2022,12 @@ void gasnet_barrier_notify(int id, int flags) {
 }
 
 int gasnet_barrier_wait(int id, int flags) {
-  GASNETI_CHECK_INJECT();
   #if GASNETI_STATS_OR_TRACE
     gasneti_tick_t wait_start = GASNETI_TICKS_NOW_IFENABLED(B);
   #endif
   int retval;
   GASNETI_TRACE_EVENT_TIME(B,BARRIER_NOTIFYWAIT,GASNETI_TICKS_NOW_IFENABLED(B)-gasnete_barrier_notifytime);
+  GASNETI_CHECK_INJECT();
   
   gasneti_assert(GASNET_TEAM_ALL->barrier_wait);
   gasneti_assert(flags == (flags & GASNETE_BARRIERFLAGS_CLIENT_ALL));
@@ -2036,8 +2050,8 @@ int gasnet_barrier_try(int id, int flags) {
 }
 
 int gasnet_barrier(int id, int flags) {
-  GASNETI_CHECK_INJECT();
   GASNETI_TRACE_PRINTF(B, ("BARRIER(team=GASNET_TEAM_ALL,id=%i,flags=%i)", id, flags));
+  GASNETI_CHECK_INJECT();
 
   gasneti_assert(GASNET_TEAM_ALL->barrier);
   gasneti_assert(flags == (flags & GASNETE_BARRIERFLAGS_CLIENT_ALL));

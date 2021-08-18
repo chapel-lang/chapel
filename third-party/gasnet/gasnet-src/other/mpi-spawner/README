@@ -90,7 +90,7 @@ command.  For instance
 
     - Open MPI
       Pass "--mca btl tcp,self" to mpirun, OR
-      Set environment variable OMPI_MCA_BTL=tcp,self.
+      Set environment variable OMPI_MCA_btl=tcp,self.
     - MPICH or MPICH2
       These normally default to TCP/IP, so no special action is required.
     - MVAPICH family

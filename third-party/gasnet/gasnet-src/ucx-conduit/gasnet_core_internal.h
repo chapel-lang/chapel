@@ -402,8 +402,7 @@ int gasnetc_am_reqrep_inner(gasnetc_ucx_am_type_t am_type,
            uint32_t nbytes,
            void *dst_addr,
            gasnetc_atomic_val_t *local_cnt,
-           gasnetc_cbfunc_t local_cb,
-           gasnetc_counter_t *counter
+           gasnetc_cbfunc_t local_cb
            GASNETI_THREAD_FARG);
 extern int gasnetc_RequestSysShort(gex_Rank_t jobrank,
                                    gasnetc_counter_t *counter,

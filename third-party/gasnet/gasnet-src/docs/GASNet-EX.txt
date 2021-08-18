@@ -32,14 +32,14 @@
 // This takes the form YEAR.MONTH.PATCH in GASNet-EX releases,
 // providing a clear distinction from GASNet-1 with MAJOR==1.
 #define GASNET_RELEASE_VERSION_MAJOR 2021
-#define GASNET_RELEASE_VERSION_MINOR 3
+#define GASNET_RELEASE_VERSION_MINOR 8
 #define GASNET_RELEASE_VERSION_PATCH 0
 
 // Major and Minor versions of the GASNet-EX specification.
 //
 // This is currently a version number for *this* document.
 #define GEX_SPEC_VERSION_MAJOR 0
-#define GEX_SPEC_VERSION_MINOR 13
+#define GEX_SPEC_VERSION_MINOR 14 // work-in-progress, not "closed"
 
 // Major and Minor versions of the GASNet-1 specification.
 //
@@ -53,7 +53,7 @@
 //
 // This is the spec version for the GASNet Tools
 #define GASNETT_SPEC_VERSION_MAJOR 1
-#define GASNETT_SPEC_VERSION_MINOR 17
+#define GASNETT_SPEC_VERSION_MINOR 18 // work-in-progress, not "closed"
 
 //
 // Relationship to GASNet-1 APIs:
@@ -2479,8 +2479,7 @@ int  gex_HSL_Trylock(gex_HSL_t *hsl);
 // opaque user-defined data type in the context of a reduction operation.
 //     GEX_DT_USER
 //
-// It is guaranteed that all GEX_DT_* values can be combined via bit-wise OR
-// without loss of information.
+// It is guaranteed that all GEX_DT_* values are represented by disjoint non-zero bits.
 //
 // Currently, Remote Atomics support all built-in data types listed above.
 // Currently, Reductions support all data types (built-in and user-defined)
@@ -2583,8 +2582,7 @@ typedef [some integer type] gex_DT_t;
 //    - Non-commutative User-Defined Reduction Operation
 //        GEX_OP_USER_NC
 //
-// It is guaranteed that all GEX_OP_* values can be combined via bit-wise OR without
-// loss of information.
+// It is guaranteed that all GEX_OP_* values are represented by disjoint non-zero bits.
 
 typedef [some integer type] gex_OP_t;
 #define GEX_OP_??? ((gex_OP_t)???) // For each GEX_OP_* above

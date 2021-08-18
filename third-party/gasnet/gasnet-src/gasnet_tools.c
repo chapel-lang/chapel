@@ -780,7 +780,7 @@ extern void gasneti_error_abort(void) {
   #endif /* intentional fall-thru */
     abort();
 
-  const char err[] = "ERROR: abort() returned!\n";
+  static const char err[] = "ERROR: abort() returned!\n";
   gasneti_rc_unused = write(2 /*stderr*/, err, sizeof(err));
   (void)fsync(2);
 
@@ -1350,7 +1350,9 @@ static int gasneti_system_redirected_coprocess(const char *cmd, int stdout_fd) {
       struct stat tmpstat;
       while (!gasneti_bt_complete_flag) {
         i++;
-        gasneti_sched_yield(); /* sched_yield seems to be friendlier than sleep() for stack-walkers */
+        // sched_yield seems to be friendlier than sleep() for stack-walkers 
+        // additionally, use a non-error checking call to avoid possible recursive failures
+        _gasneti_sched_yield();
       }
       /* awakened */
       gasneti_bt_complete_flag = 0;
@@ -1389,11 +1391,12 @@ static int gasneti_system_redirected_coprocess(const char *cmd, int stdout_fd) {
 #define GASNETI_BT_PATHSZ PATH_MAX
 #endif
 
+static int gasneti_backtrace_mt;
 static char gasneti_exename_bt[GASNETI_BT_PATHSZ];
 
 static const char *gasneti_tmpdir_bt = "/tmp";
 static int gasneti_bt_mkstemp(char *filename, int limit) {
-  const char template[] = "/gasnet_XXXXXX";
+  static const char template[] = "/gasnet_XXXXXX";
   char *p;
   int len;
 
@@ -1414,7 +1417,7 @@ static int gasneti_bt_mkstemp(char *filename, int limit) {
 #ifdef GASNETI_BT_DBX
   static int gasneti_bt_dbx(int fd) {
     /* dbx's thread support is poor and not easily scriptable */
-    const char fmt[] = "echo 'attach %d; where; quit' | %s '%s'";  
+    static const char fmt[] = "echo 'attach %d; where; quit' | %s '%s'";  
     static char cmd[sizeof(fmt) + 2*GASNETI_BT_PATHSZ];
     const char *dbx = (access(DBX_PATH, X_OK) ? "dbx" : DBX_PATH);
     int rc = snprintf(cmd, sizeof(cmd), fmt, (int)getpid(), dbx, gasneti_exename_bt);
@@ -1425,12 +1428,14 @@ static int gasneti_bt_mkstemp(char *filename, int limit) {
 
 #ifdef GASNETI_BT_IDB
   static int gasneti_bt_idb(int fd) {
-    #if GASNETI_THREADS
-      const char fmt[] = "echo 'set $stoponattach; attach %d; where thread all; quit' | %s -dbx -quiet '%s'"; 
-    #else
-      const char fmt[] = "echo 'set $stoponattach; attach %d; where; quit' | %s -dbx -quiet '%s'"; 
-    #endif
-    static char cmd[sizeof(fmt) + 2*GASNETI_BT_PATHSZ];
+    static const char mt_fmt[] = "echo 'set $stoponattach; attach %d; where thread all; quit' | %s -dbx -quiet '%s'";
+    static const char st_fmt[] = "echo 'set $stoponattach; attach %d; where; quit' | %s -dbx -quiet '%s'";
+    const char *fmt = gasneti_backtrace_mt ? mt_fmt : st_fmt;
+
+    // Size cmd[] to the larger *_fmt:
+    gasneti_static_assert(sizeof(mt_fmt) >= sizeof(st_fmt));
+    static char cmd[sizeof(mt_fmt) + 2*GASNETI_BT_PATHSZ];
+
     const char *idb = (access(IDB_PATH, X_OK) ? "idb" : IDB_PATH);
     int rc = snprintf(cmd, sizeof(cmd), fmt, (int)getpid(), idb, gasneti_exename_bt);
     if ((rc < 0) || (rc >= sizeof(cmd))) return -10;
@@ -1440,12 +1445,14 @@ static int gasneti_bt_mkstemp(char *filename, int limit) {
 
 #ifdef GASNETI_BT_PGDBG
   static int gasneti_bt_pgdbg(int fd) {
-    #if GASNETI_THREADS
-      const char fmt[] = "%s -text -c 'attach %i %s ; threads ; [all] where ; detach ; quit'";
-    #else
-      const char fmt[] = "%s -text -c 'attach %i %s ; where ; detach ; quit'";
-    #endif
-    static char cmd[sizeof(fmt) + 2*GASNETI_BT_PATHSZ];
+    static const char mt_fmt[] = "%s -text -c 'attach %i %s ; threads ; [all] where ; detach ; quit'";
+    static const char st_fmt[] = "%s -text -c 'attach %i %s ; where ; detach ; quit'";
+    const char *fmt = gasneti_backtrace_mt ? mt_fmt : st_fmt;
+
+    // Size cmd[] to the larger *_fmt:
+    gasneti_static_assert(sizeof(mt_fmt) >= sizeof(st_fmt));
+    static char cmd[sizeof(mt_fmt) + 2*GASNETI_BT_PATHSZ];
+
     const char *pgdbg = (access(PGDBG_PATH, X_OK) ? "pgdbg" : PGDBG_PATH);
     int rc = snprintf(cmd, sizeof(cmd), fmt, pgdbg, (int)getpid(), gasneti_exename_bt);
     if ((rc < 0) || (rc >= sizeof(cmd))) return -10;
@@ -1455,7 +1462,7 @@ static int gasneti_bt_mkstemp(char *filename, int limit) {
 
 #ifdef GASNETI_BT_LLDB
   static int gasneti_bt_lldb(int fd) {
-    const char fmt[] = "%s -p %d -o 'bt all' -o quit";
+    static const char fmt[] = "%s -p %d -o 'bt all' -o quit";
     static char cmd[sizeof(fmt) + 2*GASNETI_BT_PATHSZ];
     const char *lldb = (access(LLDB_PATH, X_OK) ? "lldb" : LLDB_PATH);
     int rc = snprintf(cmd, sizeof(cmd), fmt, lldb, (int)getpid());
@@ -1487,16 +1494,18 @@ static int gasneti_bt_mkstemp(char *filename, int limit) {
 #ifdef GASNETI_BT_GDB
   static int gasneti_bt_gdb(int fd) {
     /* Change "backtrace" to "backtrace full" to also see local vars from each frame */
-    #if GASNETI_THREADS
-      const char commands[] = "\ninfo threads\nthread apply all backtrace 50\ndetach\nquit\n";
-    #elif PLATFORM_OS_CYGWIN 
+    static const char mt_commands[] = "\ninfo threads\nthread apply all backtrace 50\ndetach\nquit\n";
+    #if PLATFORM_OS_CYGWIN 
       /* bug1848: cygwin is always multi-threaded, user thread is usually (always?) #1 */
-      const char commands[] = "\nthread 1\nbacktrace 50\ndetach\nquit\n";
+      static const char st_commands[] = "\nthread 1\nbacktrace 50\ndetach\nquit\n";
     #else
-      const char commands[] = "\nbacktrace 50\ndetach\nquit\n";
+      static const char st_commands[] = "\nbacktrace 50\ndetach\nquit\n";
     #endif
-    const char shell_rm[]  = "shell /bin/rm -f ";
-    const char fmt[] = "%s -nx -batch -x %s '%s' %d";
+    const char *commands = gasneti_backtrace_mt ? mt_commands         : st_commands;
+    size_t   commands_sz = gasneti_backtrace_mt ? sizeof(mt_commands) : sizeof(st_commands);
+
+    static const char shell_rm[]  = "shell /bin/rm -f ";
+    static const char fmt[] = "%s -nx -batch -x %s '%s' %d";
     static char cmd[sizeof(fmt) + 3*GASNETI_BT_PATHSZ];
     char filename[GASNETI_BT_PATHSZ];
     const char *gdb = (access(GDB_PATH, X_OK) ? "gdb" : GDB_PATH);
@@ -1515,7 +1524,7 @@ static int gasneti_bt_mkstemp(char *filename, int limit) {
       len = strlen(filename);
       if (len != write(tmpfd, filename, len)) { rc = -13; goto out; }
 
-      len = sizeof(commands) - 1;
+      len = commands_sz - 1;
       if (len != write(tmpfd, commands, len)) { rc = -14; goto out; }
 
       if (0 != close(tmpfd)) { rc = -15; goto out; }
@@ -1556,7 +1565,7 @@ out:
     #if defined(ADDR2LINE_PATH) && !GASNETI_NO_FORK
       // volatile below to avoid an optimizer bug observed on icc 17.0.2
       const char * volatile addr2line_path = (access(ADDR2LINE_PATH, X_OK) ? "addr2line" : ADDR2LINE_PATH);
-      const char fmt[] = "%s -f -e '%s' %p";
+      static const char fmt[] = "%s -f -e '%s' %p";
       static char cmd[sizeof(fmt) + 2*GASNETI_BT_PATHSZ + 10];
       #define XLBUF 64 /* even as short as 2 bytes is still safe */
       static char xlstr[XLBUF];
@@ -1694,6 +1703,13 @@ extern void gasneti_backtrace_init(const char *exename) {
     gasneti_backtrace_userdisabled = 1;
   }
 #endif
+
+#if GASNETI_THREADS
+  #define GASNETI_BACKTRACE_MT_DEFAULT 1
+#else
+  #define GASNETI_BACKTRACE_MT_DEFAULT 0
+#endif
+  gasneti_backtrace_mt = gasneti_getenv_yesno_withdefault("GASNET_BACKTRACE_MT", GASNETI_BACKTRACE_MT_DEFAULT);
 
   gasneti_tmpdir_bt = gasneti_tmpdir();
   if (!gasneti_tmpdir_bt) {
@@ -2285,7 +2301,7 @@ extern void gasneti_envstr_display(const char *key, const char *val, int is_dflt
       }
       if (notyet && verbose > 0) { /* dump cached values */ 
         for (p = displaylist; p; p = p->next) {
-          fputs(displaystr, stderr);
+          fputs(p->displaystr, stderr);
           fflush(stderr);
           free((void *)p->displaystr);
           p->displaystr = NULL;

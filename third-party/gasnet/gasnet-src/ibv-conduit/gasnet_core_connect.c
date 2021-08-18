@@ -85,11 +85,10 @@ typedef struct {
   #define GASNETC_SND_QP_NEEDS_MODIFY(_xrc_snd_qp,_state) 1
 #endif
 
-static const char *gasnetc_connectfile_in  = NULL;
-static const char *gasnetc_connectfile_out = NULL;
+const char *gasnetc_connectfile_in  = NULL;
+const char *gasnetc_connectfile_out = NULL;
 
-static int gasnetc_connectfile_in_base  = 10; /* Defaults to human readable/writable */
-static int gasnetc_connectfile_out_base = 36; /* Defaults to most compact */
+int gasnetc_connectfile_out_base = 36; // Defaults to most compact
 
 /* ------------------------------------------------------------------------------------ */
 
@@ -970,6 +969,19 @@ gasnetc_set_sq_sema(gasnetc_conn_info_t *conn_info)
     return GASNET_OK;
 } /* set_qp_sema */
 
+static uint32_t
+conn_get_srq_num(struct ibv_srq *srq)
+{
+  uint32_t result = 0;
+#if GASNETC_IBV_XRC_OFED
+  int rc = ibv_get_srq_num(srq, &result);
+  GASNETC_IBV_CHECK(rc, "from ibv_get_srq_num()" GASNETC_XRC_HELP_MSG);
+#elif GASNETC_IBV_XRC_MLNX
+  result = srq->xrc_srq_num;
+#endif
+  return result;
+}
+
 #if GASNETC_DYNAMIC_CONNECT
 
 /* ------------------------------------------------------------------------------------ */
@@ -1090,15 +1102,9 @@ gasnetc_snd_post_ud(gasnetc_ud_snd_desc_t *desc, gasnetc_ah_t *ah, gex_Rank_t no
   }
   desc->ah = ah;
 
-  /* Loop until space is available for 1 new entry on the CQ. */
-  if_pf (!conn_sema_trydown(conn_ud_sema_p)) {
-    GASNETC_TRACE_WAIT_BEGIN();
-    do {
-      GASNETI_WAITHOOK();
-      conn_snd_poll();
-    } while (!conn_sema_trydown(conn_ud_sema_p));
-    GASNETC_TRACE_WAIT_END(CONN_STALL_CQ);
-  }
+  // Loop until space is available for 1 new entry on the CQ.
+  GASNETI_SPIN_UNTIL_TRACE(conn_sema_trydown(conn_ud_sema_p),
+                           C, CONN_STALL_CQ, conn_snd_poll());
 
   {
     struct ibv_send_wr *bad_wr;
@@ -1236,32 +1242,11 @@ typedef enum {
 static gasnetc_ud_snd_desc_t *
 conn_get_snd_desc(uint32_t flags)
 {
-  gasnetc_ud_snd_desc_t *desc =  gasneti_lifo_pop(&conn_snd_freelist);
-  GASNETC_TRACE_WAIT_BEGIN();
-
-  if (NULL == desc) {
-    do {
-      GASNETI_WAITHOOK();
-      conn_snd_poll();
-      desc = gasneti_lifo_pop(&conn_snd_freelist);
-    } while (NULL == desc);
-    GASNETC_TRACE_WAIT_END(CONN_STALL_DESC);
-  }
+  gasnetc_ud_snd_desc_t *desc;
+  GASNETI_SPIN_UNTIL_TRACE((desc = gasneti_lifo_pop(&conn_snd_freelist)),
+                           C, CONN_STALL_DESC, conn_snd_poll());
   desc->wr.imm_data = flags | (gasneti_mynode << 16);
   return desc;
-}
-
-static uint32_t
-conn_get_srq_num(struct ibv_srq *srq)
-{
-  uint32_t result = 0;
-#if GASNETC_IBV_XRC_OFED
-  int rc = ibv_get_srq_num(srq, &result);
-  GASNETC_IBV_CHECK(rc, "from ibv_get_srq_num()" GASNETC_XRC_HELP_MSG);
-#elif GASNETC_IBV_XRC_MLNX
-  result = srq->xrc_srq_num;
-#endif
-  return result;
 }
 
 static void
@@ -1715,12 +1700,10 @@ gasnetc_timed_conn_wait(gasnetc_conn_t *conn, gasnetc_conn_state_t state,
 
   gasneti_mutex_unlock(&gasnetc_conn_tbl_lock);
   while (1) {
-    while (((now = gasneti_ticks_now()), 1) &&
-           (conn->state == state) &&
-           (gasneti_ticks_to_ns(now - prev_time) < timeout)) {
-      GASNETI_WAITHOOK();
-      gasnetc_sndrcv_poll(0); /* works even before _attach */
-    }
+    GASNETI_SPIN_WHILE((((now = gasneti_ticks_now()), 1) &&
+                        (conn->state == state) &&
+                        (gasneti_ticks_to_ns(now - prev_time) < timeout)),
+                       gasnetc_sndrcv_poll(0));
 
     if (conn->state != state) break; /* Done */
 
@@ -1910,12 +1893,7 @@ gasnetc_connect_to(gasnetc_EP_t ep, gex_Rank_t node)
   } while (0);
   gasneti_mutex_unlock(&gasnetc_conn_tbl_lock);
 
-  result = GASNETC_NODE2CEP(ep, node);
-  while (NULL == result) {
-    GASNETI_WAITHOOK();
-    gasnetc_sndrcv_poll(0);
-    result = GASNETC_NODE2CEP(ep, node);
-  }
+  GASNETI_SPIN_UNTIL((result = GASNETC_NODE2CEP(ep, node)), gasnetc_sndrcv_poll(0));
 #if 0
   /* Alpha (no longer supported) was only CPU which failed to order
    * dependent loads.  So, this RMB (originally meant to ensure any
@@ -2195,6 +2173,7 @@ my_strtol(const char *ptr, char **endptr, int base) {
 static gex_Rank_t
 get_next_conn(FILE *fp)
 {
+  static int gasnetc_connectfile_in_base  = 10; // Defaults to human readable/writable
   static gex_Rank_t range_lo = GASNET_MAXNODES;
   static gex_Rank_t range_hi = 0;
 
@@ -2449,14 +2428,15 @@ gasnetc_connect_static(gasnetc_EP_t ep)
   return static_nodes;
 } /* gasnetc_connect_static */
 
+int gasnetc_conn_static = 1;
+#if GASNETC_DYNAMIC_CONNECT
+int gasnetc_conn_dynamic = 0;
+#endif
+
 /* Setup statically-connected communication and prepare for dynamic connections */
 extern int
 gasnetc_connect_init(gasnetc_EP_t ep0)
 {
-  int do_static = 1;
-#if GASNETC_DYNAMIC_CONNECT
-  int do_dynamic = 0;
-#endif
   int fully_connected = 0;
 
   /* Allocate node->cep lookup table */
@@ -2470,32 +2450,10 @@ gasnetc_connect_init(gasnetc_EP_t ep0)
   }
 
 #if GASNETC_DYNAMIC_CONNECT
-  /* Parse connection related env vars */
  #if GASNET_DEBUG
   gasnetc_conn_drop_denom =
         gasneti_getenv_int_withdefault("GASNET_CONNECT_DROP_DENOM", 0, 0);
  #endif
-  gasnetc_connectfile_in  = gasnet_getenv("GASNET_CONNECTFILE_IN");
-  if (gasnetc_connectfile_in && !gasnetc_connectfile_in[0]) { /* empty string */
-    gasnetc_connectfile_in = NULL;
-  }
-  gasnetc_connectfile_out = gasnet_getenv("GASNET_CONNECTFILE_OUT");
-  if (gasnetc_connectfile_out && !gasnetc_connectfile_out[0]) { /* empty string */
-    gasnetc_connectfile_out = NULL;
-  }
-  gasnetc_connectfile_out_base =
-        gasneti_getenv_int_withdefault("GASNET_CONNECTFILE_BASE",
-                                       gasnetc_connectfile_out_base, 0);
-
-  do_static = gasneti_getenv_yesno_withdefault("GASNET_CONNECT_STATIC", 1);
-  do_dynamic = gasneti_getenv_yesno_withdefault("GASNET_CONNECT_DYNAMIC", 1);
-  if (!do_static && !do_dynamic) {
-    if (!gasneti_mynode) {
-      fprintf(stderr, "WARNING: Both GASNET_CONNECT_STATIC and GASNET_CONNECT_DYNAMIC are FALSE.\n"
-                      "         Enabling dynamic connection support.\n");
-    }
-    do_dynamic = 1;
-  }
 
   { /* Env vars are in us, but internal vars are in ns */
     int64_t tmp_min, tmp_max;
@@ -2542,7 +2500,7 @@ gasnetc_connect_init(gasnetc_EP_t ep0)
   }
 
   /* Create static connections unless disabled */
-  if (do_static) {
+  if (gasnetc_conn_static) {
     gex_Rank_t static_nodes = gasnetc_connect_static(ep0);
     fully_connected = (static_nodes == gasneti_nodes);
     GASNETI_TRACE_PRINTF(I, ("%s connected at startup to %d of %d remote nodes",
@@ -2553,9 +2511,9 @@ gasnetc_connect_init(gasnetc_EP_t ep0)
   }
 
 #if GASNETC_DYNAMIC_CONNECT
-  if (!do_dynamic) {
+  if (!gasnetc_conn_dynamic) {
     GASNETI_TRACE_PRINTF(I, ("Dynamic connection has been disabled at user request"));
-  } else if (do_static && !gasnetc_connectfile_in) {
+  } else if (gasnetc_conn_static && !gasnetc_connectfile_in) {
     GASNETI_TRACE_PRINTF(I, ("Dynamic connection automatically disabled for fully-connected job"));
   } else {
     /* TODO: allow env var to select specific port for UD */
@@ -2744,11 +2702,10 @@ gasnetc_connect_shutdown(gasnetc_EP_t ep0) {
   #if GASNETC_USE_CONN_THREAD
     if (conn_ud_snd_cq) {
       int remain = gasnetc_ud_snds;
-      while (remain) {
-        GASNETI_WAITHOOK();
-        conn_snd_poll();
-        remain -= conn_sema_partial(conn_ud_sema_p, remain);
-      }
+      GASNETI_SPIN_WHILE(remain, {
+          conn_snd_poll();
+          remain -= conn_sema_partial(conn_ud_sema_p, remain);
+        });
     }
   #else
     /* conn_ud_hca->snd_cq, if any, has already been drained */
