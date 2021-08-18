@@ -611,7 +611,8 @@ static VarSymbol* generateIndexComputation(FnSymbol* fn, Symbol* sym) {
   return tempVar1;
 }
 
-static  CallExpr* generateGPUCall(FnSymbol* kernel,
+static  CallExpr* generateGPUCall(VarSymbol* varBlockSize,
+                                  FnSymbol* kernel,
                                   std::vector<Symbol*> actuals) {
   CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
   call->insertAtTail(kernel);
@@ -758,9 +759,9 @@ static void outlineGPUKernels() {
           }
 
           VarSymbol *varBlockSize = generateBlockSizeComputation(gpuLaunchBlock,
-            loop);
+                                                                 loop);
           CallExpr* gpuCall = generateGPUCall(varBlockSize, outlinedFunction,
-            kernelActuals);
+                                              kernelActuals);
           gpuLaunchBlock->insertAtTail(gpuCall);
           gpuLaunchBlock->flattenAndRemove();
 
