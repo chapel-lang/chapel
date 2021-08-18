@@ -3372,7 +3372,7 @@ proc testMockMasonRun(test: borrowed Test) throws {
   var runExample = runParser.addOption(name="example",
                                        opts=["--example"],
                                        numArgs=0..);
-  var runPassThrough = runParser.setPassThrough("--");
+  var runPassThrough = runParser.addPassThrough("--");
 
   var runHelpFlag = runParser.addFlag(name="help",
                                       opts=["-h","--help"],
@@ -3459,7 +3459,7 @@ proc testPassthrough(test: borrowed Test) throws {
   var myPosArg = parser.addArgument(name="FileName",
                                     defaultValue=none,
                                     numArgs=0..1);
-  var passThrough = parser.setPassThrough("--");
+  var passThrough = parser.addPassThrough("--");
   //make sure no value currently exists
   test.assertFalse(myPosArg.hasValue());
   test.assertFalse(passThrough.hasValue());
@@ -3478,7 +3478,7 @@ proc testPassthroughWithPositional(test: borrowed Test) throws {
   var myPosArg = parser.addArgument(name="FileName",
                                     defaultValue=none,
                                     numArgs=0..1);
-  var passThrough = parser.setPassThrough("--");
+  var passThrough = parser.addPassThrough("--");
   //make sure no value currently exists
   test.assertFalse(myPosArg.hasValue());
   test.assertFalse(passThrough.hasValue());
@@ -3498,7 +3498,7 @@ proc testPassthroughWithPositionalNoVals(test: borrowed Test) throws {
   var myPosArg = parser.addArgument(name="FileName",
                                     defaultValue=none,
                                     numArgs=0..1);
-  var passThrough = parser.setPassThrough("--");
+  var passThrough = parser.addPassThrough("--");
   //make sure no value currently exists
   test.assertFalse(myPosArg.hasValue());
   test.assertFalse(passThrough.hasValue());

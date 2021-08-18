@@ -1,10 +1,11 @@
-module M {
-    private use MasonArgParse;
-    private use List;
+private use MasonArgParse;
+private use List;
 
-    config var myConfigVar:string;
+config var myConfigVar:string;
 
-    proc main(args:[?argsD]string) throws {
+    proc main(args: []string) throws {
+
+      var argsD = args.domain;
       writeln("Config Var Values:");
       writeln(myConfigVar);
 
@@ -16,7 +17,7 @@ module M {
       }
       // create a parser for the main entry point
       var parser = new argumentParser();
-
+      try {
       // add a string option that accepts between 1 and 10 values
       var strArg = parser.addOption(name="strArg1",
                                     opts=["-o","--option"],
@@ -54,7 +55,11 @@ module M {
       if subCmd1.hasValue() {
         mySubCmd1((new list(subCmd1.values())).toArray());
       }
-
+      }
+      catch ex : ArgumentError {
+        writeln(ex.message());
+        exit(1);
+      }
 
     }
 
@@ -83,6 +88,13 @@ module M {
                                          numArgs=0..1,
                                          defaultValue=none);
 
+      // add a passthrough identifier for collecting remaining args intended
+      // for some other use `--` is commonly used for this purpose
+      // but the Chapel runtime is set to recognize this and consume it
+      // so we are using an alternative `++` for our program.
+      // also define a place to read the passed through values
+      var passedThrough = parser.addPassThrough();
+
       parser.parseArgs(args);
       writeln("args parsed in subcommand:");
       for item in subCmdArg1.values() do writeln(item);
@@ -90,7 +102,8 @@ module M {
       writeln("subBoolFlag: " + boolArg.value());
       if subPosArg.hasValue() then writeln("subcommand positional value: " +
                                             subPosArg.value());
+      for passed in passedThrough.values() do writeln(passed);
 
     }
-}
+
 

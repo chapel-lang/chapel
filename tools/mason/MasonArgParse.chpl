@@ -626,7 +626,11 @@ module MasonArgParse {
       return arg;
     }
 
-    proc setPassThrough(identifier:string) throws {
+    // convention would dictate this default to `--`, however since the
+    // chapel runtime currently recognizes and consumes the first `--`
+    // in any command string, we are using `++` as a workaround.
+    // this can be overridden by the developer if they prefer something else
+    proc addPassThrough(identifier="++") throws {
       return addSubCommand(identifier);
     }
 
