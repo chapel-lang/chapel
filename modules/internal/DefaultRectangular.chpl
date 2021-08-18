@@ -1621,7 +1621,8 @@ module DefaultRectangular {
     return str;
   }
 
-  proc DefaultRectangularDom.dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialWrite(f) throws { 
+this.dsiSerialReadWrite(f); }
   proc DefaultRectangularDom.dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
 
   proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
@@ -1657,10 +1658,16 @@ module DefaultRectangular {
 
   proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws {
     param rank = arr.rank;
+    var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+    var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f.binary();
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
 
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
+
+    if rank > 1 && ischpl {
+      throw new owned IllegalArgumentError("Can not perform Chapel write of multidimensional array.");
+    }
 
     proc writeSpaces(dim:int) throws {
       for i in 1..dim {
@@ -1669,6 +1676,7 @@ module DefaultRectangular {
     }
 
     proc recursiveArrayWriter(in idx: rank*idxType, dim=0, in last=false) throws {
+
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -1724,7 +1732,6 @@ module DefaultRectangular {
         }
         else f <~> new ioLiteral("]");
       }
-
     }
 
     if false && !f.writing && !f.binary() &&
@@ -1822,6 +1829,7 @@ module DefaultRectangular {
     } else if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
               _isSimpleIoType(arr.eltType) && f.binary() &&
               isNative && arr.isDataContiguous(dom) {
+
       // If we can, we would like to read/write the array as a single write op
       // since _ddata is just a pointer to the memory location we just pass
       // that along with the size of the array. This is only possible when the

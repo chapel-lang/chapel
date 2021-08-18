@@ -1,0 +1,7 @@
+hi hi
+hi hi
+hi hi
+["hi", "hi"]
+uncaught IllegalArgumentError: Can not perform Chapel write of multidimensional array.
+  printDifferentRankArrays.chpl:8: thrown here
+  printDifferentRankArrays.chpl:8: uncaught here
