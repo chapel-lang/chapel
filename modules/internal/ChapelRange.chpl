@@ -220,7 +220,7 @@ module ChapelRange {
   {
     type idxType = int;                            // element type
     param boundedType: BoundedRangeType = BoundedRangeType.bounded; // bounded or not
-    param stridable: bool = false;                 // range can be strided
+    param stridable: bool;                 // range can be strided
 
     var _low       : chpl__idxTypeToIntIdxType(idxType);  // lower bound
     var _high      : chpl__idxTypeToIntIdxType(idxType);  // upper bound

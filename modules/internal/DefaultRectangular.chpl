@@ -459,13 +459,13 @@ module DefaultRectangular {
                   "### nranges = ", ranges);
         }
 
-        var locBlock: rank*range(intIdxType);
+        var locBlock: rank*range(intIdxType, stridable=false);
         for param i in 0..rank-1 do
           locBlock(i) = offset(i)..#(ranges(i).sizeAs(intIdxType));
         if debugDefaultDist then
           chpl_debug_writeln("*** DI: locBlock = ", locBlock);
         coforall chunk in 0..#numChunks {
-          var followMe: rank*range(intIdxType) = locBlock;
+          var followMe: rank*range(intIdxType, stridable=false) = locBlock;
           const (lo,hi) = _computeBlock(locBlock(parDim).sizeAs(intIdxType),
                                         numChunks, chunk,
                                         locBlock(parDim)._high,

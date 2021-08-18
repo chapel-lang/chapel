@@ -473,7 +473,7 @@ proc setupTargetLocalesArray(ref targetLocDom, targetLocArr, specifiedLocArr) {
 }
 
 proc setupTargetLocRanges(param rank, specifiedLocArr) {
-  var ranges: rank*range;
+  var ranges: rank*range(stridable=false);
 
   if rank != 1 && specifiedLocArr.rank == 1 {
     const factors = _factor(rank, specifiedLocArr.size);
