@@ -4710,7 +4710,7 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   // They differ in number of arguments only. The first passes 1 integer for
   // grid and block size each, the other passes 3 for each.
   //
-  // Call `chpl_gpu_launch_kernel` runtime function.
+  // Generates a call to the `chpl_gpu_launch_kernel*` runtime functions.
   //
   // The primitive's arguments are
   //   - function name (c_string immediate) or symbol (FnSymbol)
@@ -4737,7 +4737,7 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   int curArg = 1;
   for_actuals(actual, call) {
     Symbol* actualSym = toSymExpr(actual)->symbol();
-    if (curArg == 1) {
+    if (curArg == 1) {  // function name or symbol
       if (FnSymbol* fn = toFnSymbol(actualSym)) {
         args.push_back(new_CStringSymbol(fn->cname));
       }
@@ -4748,7 +4748,17 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
         INT_FATAL("Unknown argument type in GPU launch primitive");
       }
     }
-    else if (curArg > nNonKernelParamArgs) {
+    else if (curArg <= nNonKernelParamArgs) {  // grid and block size args
+      args.push_back(actual->codegen());
+
+      // if we finished adding non-kernel parameters, add number of kernel
+      // parameters first before the parameters themselves.
+      if (curArg == nNonKernelParamArgs) {
+        GenRet numParams = new_IntSymbol(nKernelParamArgs);
+        args.push_back(numParams);
+      }
+    }
+    else { // kernel args
       Type* actualValType = actual->typeInfo()->getValType();
 
       // TODO can we use codegenArgForFormal instead of this logic?
@@ -4764,16 +4774,6 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
       else {
         args.push_back(codegenAddrOf(codegenValuePtr(actual)));
         args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
-      }
-    }
-    else {
-      args.push_back(actual->codegen());
-
-      // if we finished adding non-kernel parameters, add number of kernel
-      // parameters first before the parameters themselves.
-      if (curArg == nNonKernelParamArgs) {
-        GenRet numParams = new_IntSymbol(nKernelParamArgs);
-        args.push_back(numParams);
       }
     }
     curArg++;
