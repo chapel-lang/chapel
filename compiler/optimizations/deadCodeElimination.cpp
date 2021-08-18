@@ -449,31 +449,6 @@ static void deadModuleElimination() {
   }
 }
 
-static bool shouldOutlineLoop(CForLoop *loop) {
-  // Obvious TODO :)
-  
-  const char* testModuleName = "GPUOutlineTest";
-  bool inTestModule = false;
-
-  Symbol* cur = loop->parentSymbol;
-
-  do {
-    if (ModuleSymbol* parentModule = toModuleSymbol(cur)) {
-      if (strcmp(parentModule->name, testModuleName) == 0) {
-        inTestModule = true;
-      }
-    }
-
-    if (cur->defPoint != NULL)
-      cur = cur->defPoint->parentSymbol;
-    else
-      cur = NULL;
-
-  } while (cur != NULL && !inTestModule);
-
-  return inTestModule && loop->isOrderIndependent();
-}
-
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
   return LoopStmt::findEnclosingLoop(sym->defPoint) == loop;
 }
@@ -646,8 +621,7 @@ static void outlineGPUKernels() {
 
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
-        if (shouldOutlineLoop(loop) &&
-            blockLooksLikeStreamForGPU(loop, /*allowFnCalls=*/false)) {
+        if (blockLooksLikeStreamForGPU(loop, /*allowFnCalls=*/false)) {
           SET_LINENO(loop);
           FnSymbol* outlinedFunction = new FnSymbol("chpl_gpu_kernel");
           outlinedFunction->addFlag(FLAG_RESOLVED);
