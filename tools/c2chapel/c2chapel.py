@@ -272,7 +272,11 @@ def toChapelType(ty):
     elif isPointerTo(ty, "void"):
         return "c_void_ptr"
     elif type(ty) in (c_ast.ArrayDecl, ext_c_parser.ArrayDeclExt):
-        return "c_ptr(" + toChapelType(ty.type) + ")"
+        eltType = toChapelType(ty.type)
+        if eltType is not None:
+            return "c_ptr(" + eltType + ")"
+        else:
+            return None
     elif type(ty) == c_ast.PtrDecl:
         if type(ty.type) in (c_ast.FuncDecl, ext_c_parser.FuncDeclExt):
             return "c_fn_ptr"
