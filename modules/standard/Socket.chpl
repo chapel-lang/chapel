@@ -276,6 +276,10 @@ record tcpListener {
   returns a new :type:`tcpConn` if successful. Default
   time to wait for a new connection is indefinite.
 
+  .. code-block:: Chapel
+
+    const client = server.accept()
+
   :arg timeout: time to wait for new connection.
   :type timeval: :type:`~Sys.timeval`
   :return: accepted connection.
@@ -360,6 +364,11 @@ BACKLOG_DEFAULT = (if SOMAXCONN <= 128 then SOMAXCONN else 128):uint(16);
   accept) before the socket will begin to reject them. The default
   value of backlog is `BACKLOG_DEFAULT`.
 
+  .. code-block:: Chapel
+
+    const address = ipAddr.create("127.0.0.1", 8000, IPFamily.IPv4);
+    const server = listen(address);
+
   :arg address: address to connect to
   :type address: :type:`ipAddr`
   :arg timeout: standard ipv6 address.
@@ -385,6 +394,12 @@ proc listen(in address: ipAddr, reuseAddr: bool = true, backlog: uint(16) = BACK
   `address`.`timeout` determines how much time to wait for
   connection to be established. The default value for `timeout` is
   indefinite.
+
+  .. code-block:: Chapel
+
+    const address = ipAddr.create("127.0.0.1", 8000, IPFamily.IPv4);
+    const timeout = new timeval(4,0);
+    const connectedClient = connect(address, timeout);
 
   :arg address: address to connect to
   :type address: :type:`ipAddr`
@@ -457,6 +472,11 @@ proc connect(in address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws
   The `timeout` is tired for all resolved addresses and the first
   successful one is returned back.
 
+  .. code-block:: Chapel
+
+    const timeout = new timeval(4,0);
+    const connectedClient = connect("google.com", "tcp", IPFamily.IPv4, timeout);
+
   :arg host: host to connect to or resolve if not in standard ip notation
   :type host: `string`
   :arg service: service to connect to on resolved `host`
@@ -508,6 +528,11 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
   The `timeout` is tired for all resolved addresses and the first
   successful one is returned back.
 
+  .. code-block:: Chapel
+
+    const timeout = new timeval(4,0);
+    const connectedClient = connect("google.com", 80, IPFamily.IPv4, timeout);
+
   :arg host: address of host to connect or resolve if not in ip notation
   :type host: `string`
   :arg port: port to connect to on `host`
@@ -554,6 +579,12 @@ extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:size_t, flags:c_int, 
   return a tuple of (data, address), where address will be a
   :type:`ipAddr` pointing to address of the socket from where data was received.
 
+  .. code-block:: Chapel
+
+    const timeout = new timeval(4,0);
+    const socket = new udpSocket();
+    const (data, sender) = socket.recvFrom(40, timeout);
+
   :arg bufferLen: number of bytes to read
   :type bufferLen: `int`
   :arg timeout: time to wait for data to arrive.
@@ -596,6 +627,12 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0), flags:c_
   return a tuple of read bytes, which can have size smaller than asked and if
   the size is more they will be truncated.
 
+  .. code-block:: Chapel
+
+    const timeout = new timeval(4,0);
+    const socket = new udpSocket();
+    const data = socket.recv(40, timeout);
+
   :arg bufferLen: number of bytes to read
   :type bufferLen: `int`
   :arg timeout: time to wait for data to arrive.
@@ -617,14 +654,20 @@ extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c_int, re
   Send `data` over socket to the provided address and
   return number of bytes sent if successful.
 
+  .. code-block:: Chapel
+
+    const timeout = new timeval(4,0);
+    const socket = new udpSocket();
+    const sentBytes = socket.send("hello world!":bytes, timeout);
+
   :arg data: data to send to address
   :type data: :mod:`bytes <Bytes>`
   :arg address: socket address for sending data
   :type address: :type:`ipAddr`
   :arg timeout: time to wait for data to arrive.
   :type timeval: :type:`~Sys.timeval`
-  :return: data
-  :rtype: :mod:`bytes <Bytes>`
+  :return: sentBytes
+  :rtype: `ssize_t`
   :throws SystemError: Upon failure to send any data
                         within given `timeout`.
 */
@@ -676,6 +719,10 @@ proc setSockOpt(socketFd: fd_t, level: c_int, optname: c_int, ref value: c_int) 
   Set the value of the given socket option (see `setsockopt(2) </https://pubs.opengroup.org/onlinepubs/9699919799/functions/setsockopt.html#>`_)
   on provided :type:`tcpConn`. The needed symbolic constants (SO_* etc.)
   are defined in the :mod:`Sys`.
+
+  .. code-block:: Chapel
+
+    setSockOpt(socket, IPPROTO_TCP, TCP_QUICKACK, 1:c_int);
 
   :arg socket: socket to set option on
   :type socket: `tcpConn`
@@ -1003,7 +1050,14 @@ proc bind(socketFd:fd_t, ref address: ipAddr, reuseAddr = true) throws {
 
 
 /*
-  Bind the socket to address. The socket must not already be bound.
+  Bind the socket to address. The socket must not already
+  be bound to any address prior to calling this procedure.
+
+  .. code-block:: Chapel
+
+    var socket =  new udpSocket();
+    var address = ipAddr.create("127.0.0.1", 8111);
+    bind(socket, address);
 
   :arg socket: socket to set option on
   :type socket: `tcpConn`
