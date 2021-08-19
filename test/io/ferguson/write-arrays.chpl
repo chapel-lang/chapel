@@ -35,7 +35,7 @@ for (i,j) in B.domain {
 
 writeln(B);
 
-writef("%ht\n", B);
+//writef("%ht\n", B);
 writef("%jt\n", B);
 
 var C:[1..3, 1..3, 1..3] int;
@@ -46,7 +46,7 @@ for (i,j,k) in C.domain {
 
 writeln(C);
 
-writef("%ht\n", C);
+//writef("%ht\n", C);
 writef("%jt\n", C);
 
 var D:[1..2, 1..2, 1..2, 1..2] int;
@@ -57,7 +57,7 @@ for (i,j,k,l) in D.domain {
 
 writeln(D);
 
-writef("%ht\n", D);
+//writef("%ht\n", D);
 writef("%jt\n", D);
 
 
