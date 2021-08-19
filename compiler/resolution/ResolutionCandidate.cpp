@@ -235,6 +235,13 @@ bool ResolutionCandidate::isApplicableCG(CallInfo& info,
 }
 
 
+static bool foundReasonableParenlessMatch = false;
+
+void resetAlignmentTallies() {
+  foundReasonableParenlessMatch = false;
+}
+
+
 /************************************* | **************************************
 *                                                                             *
 *                                                                             *
@@ -403,7 +410,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info, bool explain) {
       // Operator calls are allowed to skip matching the method token and "this"
       // arguments
       } else {
-        if (info.call->partialTag == false) {
+        if (info.call->partialTag == false ||
+            foundReasonableParenlessMatch == false) {
           failingArgument = formal;
           reason = RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS;
           if (explain) {
@@ -418,13 +426,19 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info, bool explain) {
           // This is a case where we're resolving t.x but may still find
           // a t.x(...) at the next level up in the CallExpr chain, so
           // let it through.
-          return true;
         }
       }
     }
 
     formal = next_formal(formal);
     j++;
+  }
+
+  // Note that we found a reasonable match that is paren-less (which
+  // could result in an ambiguity if suitable paren-ful matches
+  // follow...)
+  if (fn->hasFlag(FLAG_NO_PARENS)) {
+    foundReasonableParenlessMatch = true;
   }
 
   return true;

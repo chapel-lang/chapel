@@ -146,6 +146,7 @@ private:
   SymbolMap               substitutions;
 };
 
+void resetAlignmentTallies();
 
 void explainCandidateRejection(CallInfo& info, FnSymbol* fn);
 

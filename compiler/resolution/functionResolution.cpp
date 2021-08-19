@@ -4865,11 +4865,20 @@ static void gatherCandidatesAndLastResort(CallInfo&     info,
                              int&                       numVisited,
                              LastResortCandidates&      lrc,
                              Vec<ResolutionCandidate*>& candidates) {
+  resetAlignmentTallies();
+  // Handle the paren-less functions first to see if any are viable;
+  // and tuck the last resort functions away
   for (int i = numVisited; i < visibleFns.n; i++) {
     FnSymbol* fn = visibleFns.v[i];
     if (fn->hasFlag(FLAG_LAST_RESORT))
       lrc.push_back(fn);
-    else
+    else if (fn->hasFlag(FLAG_NO_PARENS))
+      gatherCandidates(info, visInfo, fn, candidates);
+  }
+  // Then those with parens
+  for (int i = numVisited; i < visibleFns.n; i++) {
+    FnSymbol* fn = visibleFns.v[i];
+    if (!fn->hasFlag(FLAG_NO_PARENS))
       gatherCandidates(info, visInfo, fn, candidates);
   }
   markEndOfPOI(lrc);
@@ -5528,7 +5537,7 @@ static int compareSpecificity(ResolutionCandidate*         candidate1,
   bool noParens1 = candidate1->fn->hasFlag(FLAG_NO_PARENS);
   bool noParens2 = candidate2->fn->hasFlag(FLAG_NO_PARENS);
   if (noParens1 != noParens2) {
-    printf("Returning due to noparens mismatch\n");
+    EXPLAIN("Returning due to noparens mismatch\n");
     return 0;
   }
 
