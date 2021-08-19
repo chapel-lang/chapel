@@ -422,7 +422,6 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info, bool explain) {
           if (explain) {
             printf("too few arguments, but this is a partialTag=true case\n");
           }
-          printf("Letting this through which we didn't before: %s\n", fn->name);
           // This is a case where we're resolving t.x but may still find
           // a t.x(...) at the next level up in the CallExpr chain, so
           // let it through.

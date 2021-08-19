@@ -4868,18 +4868,29 @@ static void gatherCandidatesAndLastResort(CallInfo&     info,
   resetAlignmentTallies();
   // Handle the paren-less functions first to see if any are viable;
   // and tuck the last resort functions away
-  for (int i = numVisited; i < visibleFns.n; i++) {
-    FnSymbol* fn = visibleFns.v[i];
-    if (fn->hasFlag(FLAG_LAST_RESORT))
-      lrc.push_back(fn);
-    else if (fn->hasFlag(FLAG_NO_PARENS))
-      gatherCandidates(info, visInfo, fn, candidates);
-  }
-  // Then those with parens
-  for (int i = numVisited; i < visibleFns.n; i++) {
-    FnSymbol* fn = visibleFns.v[i];
-    if (!fn->hasFlag(FLAG_NO_PARENS))
-      gatherCandidates(info, visInfo, fn, candidates);
+  for (int pass = 0; pass < 2; pass ++) {
+    for (int i = numVisited; i < visibleFns.n; i++) {
+      FnSymbol* fn = visibleFns.v[i];
+      // On the initial pass, we'll tuck aside any last resorts...
+      if (fn->hasFlag(FLAG_LAST_RESORT)) {
+        if (pass == 0) {
+          lrc.push_back(fn);
+        }
+
+      // And process any cases without parens first, to see if any are
+      // candidates...
+      } else if (fn->hasFlag(FLAG_NO_PARENS)) {
+        if (pass == 0)
+          gatherCandidates(info, visInfo, fn, candidates);
+
+
+      // Then on the subsequent pass, we'll handle the remaining
+      // (paren-ful, non-last resort) cases
+      } else {
+        if (pass == 1)
+          gatherCandidates(info, visInfo, fn, candidates);
+      }
+    }   
   }
   markEndOfPOI(lrc);
   numVisited = visibleFns.n;
