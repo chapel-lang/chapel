@@ -254,10 +254,6 @@ def get():
             # for one reason or another. So default to CHPL_LLVM=none.
             llvm_val = 'none'
 
-    if llvm_val == 'llvm':
-        warning("CHPL_LLVM=llvm is deprecated. Use CHPL_LLVM=bundled instead")
-        llvm_val = 'bundled'
-
     if not compatible_platform_for_llvm():
         if llvm_val != 'none' and llvm_val != 'unset':
             warning("CHPL_LLVM={0} is not compatible with this "
