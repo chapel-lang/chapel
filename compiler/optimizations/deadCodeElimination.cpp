@@ -611,21 +611,32 @@ static VarSymbol* generateIndexComputation(FnSymbol* fn, Symbol* sym) {
   return tempVar1;
 }
 
-static  CallExpr* generateGPUCall(VarSymbol *varBlockSize,
+static  CallExpr* generateGPUCall(VarSymbol* varBlockSize,
                                   FnSymbol* kernel,
-                                  std::vector<VarSymbol*> actuals)
-{
+                                  std::vector<Symbol*> actuals) {
   CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
-  call->insertAtTail(new_CStringSymbol(kernel->cname));
+  call->insertAtTail(kernel);
 
   call->insertAtTail(new_IntSymbol(1));  // grid size
   call->insertAtTail(varBlockSize); // block size
 
-  for_vector (VarSymbol, actual, actuals) {
+  for_vector (Symbol, actual, actuals) {
     call->insertAtTail(new SymExpr(actual));
   }
 
   return call;
+}
+
+static void addKernelArgument(FnSymbol* kernel, Symbol* symInLoop,
+                              std::vector<Symbol*>& actuals,
+                              SymbolMap& copyMap) {
+  Type* symType = symInLoop->typeInfo();
+  ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, "data_formal", symType);
+  kernel->insertFormalAtTail(newFormal);
+
+  copyMap.put(symInLoop, newFormal);
+
+  actuals.push_back(symInLoop);
 }
 
 static void outlineGPUKernels() {
@@ -654,8 +665,7 @@ static void outlineGPUKernels() {
           std::vector<SymExpr*> maybeArrSymExpr;
           std::vector<SymExpr*> arraysWhoseDataAccessed;
           std::vector<CallExpr*> fieldAccessors;
-          std::vector<Type*> formalTypes;
-          std::vector<VarSymbol*> kernelActuals;
+          std::vector<Symbol*> kernelActuals;
 
           Symbol* indexSymbol = NULL;
           SymbolMap copyMap;
@@ -678,61 +688,52 @@ static void outlineGPUKernels() {
               for_vector(SymExpr, symExpr, symExprsInBody) {
                 Symbol* sym = symExpr->symbol();
 
-                if (isDefinedInTheLoop(symExpr->symbol(), loop)) {
+                if (isDefinedInTheLoop(sym, loop)) {
                   // looks like this symbol was declared within the loop body,
                   // so do nothing. TODO: I am hoping that we don't need to
                   // check the type of the variable here, and we'll know that it
                   // is a valid variable to declare on the gpu via the loop body
                   // analysis
                 }
-                else {
-                  // TODO: we want to have a better way of recognizing the index
-                  // variable. Either we move this "pass" earlier, and we lower
-                  // a ForLoop directly into a gpu kernel, or we record
-                  // something into the CForLoop. Or, we flag the user's index
-                  // with one of the index flags, and check for it here.
-                  if (isIndexVariable(sym, loop)) {
-                    if (indexSymbol == NULL) {
+                else if (sym->isImmediate()) {
+                  // nothing to do
+                }
+                // TODO: we want to have a better way of recognizing the index
+                // variable. Either we move this "pass" earlier, and we lower
+                // a ForLoop directly into a gpu kernel, or we record
+                // something into the CForLoop. Or, we flag the user's index
+                // with one of the index flags, and check for it here.
+                else if (isIndexVariable(sym, loop)) {
+                  if (indexSymbol == NULL) {
                       indexSymbol = sym;
                       VarSymbol* flatIndex = generateIndexComputation(
                         outlinedFunction, sym);
                       
                       copyMap.put(sym, flatIndex);
-                    }
                   }
-                  else {
-                    // if we hit a ddata/cptr that's defined outside the loop,
-                    // try to associate it with an "array". Also, make that
-                    // ddata into a formal in the gpu kernel
-                    if (sym->type->symbol->hasFlag(FLAG_DATA_CLASS)) {
-                      if (CallExpr* firstParent = toCallExpr(symExpr->parentExpr)) {
-                        if (firstParent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
-                          SymExpr* maybeArrSymExpr = toSymExpr(firstParent->get(1));
-                          INT_ASSERT(maybeArrSymExpr);
-
-                          if (CallExpr* secondParent =
-                            toCallExpr(firstParent->parentExpr))
-                          {
-                            if (secondParent->isPrimitive(PRIM_MOVE)) {
-                              SymExpr* lhsSE = toSymExpr(secondParent->get(1));
-                              INT_ASSERT(lhsSE);
-
-                              ArgSymbol* newFormal = new ArgSymbol(INTENT_IN,
-                                "data_formal", lhsSE->typeInfo());
-                              formalTypes.push_back(lhsSE->typeInfo());
-                              outlinedFunction->insertFormalAtTail(newFormal);
-                              copyMap.put(lhsSE->symbol(), newFormal);
-                              copyNode = false;
-
-                              arraysWhoseDataAccessed.push_back(maybeArrSymExpr);
-                              fieldAccessors.push_back(firstParent);
-                            }
-                          }
-                        }
+                }
+                else {
+                  if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
+                    if (parent->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+                      if (symExpr == parent->get(2)) {  // this is a field
+                        // do nothing
+                      }
+                      else if (symExpr == parent->get(1)) {
+                        addKernelArgument(outlinedFunction, sym,
+                                          kernelActuals, copyMap);
+                        copyNode = true;
+                      }
+                      else {
+                        INT_FATAL("Malformed PRIM_GET_MEMBER_VALUE");
                       }
                     }
+                    else if (parent->isPrimitive()) {
+                      addKernelArgument(outlinedFunction, sym,
+                                        kernelActuals, copyMap);
+                      copyNode = true;
+                    }
                     else {
-                      maybeArrSymExpr.push_back(symExpr);
+                      INT_FATAL("Unexpected call expression");
                     }
                   }
                 }
@@ -744,40 +745,11 @@ static void outlineGPUKernels() {
             }
           }
 
-          // create the GPU launch block (that'll be flattened later). The fatal
-          // errors here can occur if there's a symbol inside the loop body that
-          // was defined outside, and its uses were not something that we
-          // understand. i.e. something that's not of a recognized array type
-          if (maybeArrSymExpr.size() == arraysWhoseDataAccessed.size()) {
-            std::vector<SymExpr*>::size_type i;
-            for (i = 0 ; i < maybeArrSymExpr.size() ; i++) {
-              if (maybeArrSymExpr[i]->symbol() !=
-                arraysWhoseDataAccessed[i]->symbol())
-              {
-                INT_FATAL("Something went wrong (1)");
-              }
-              else {
-                VarSymbol* newActual = new VarSymbol("data_actual",
-                  formalTypes[i]);
-                CallExpr* getPtrCall = toCallExpr(fieldAccessors[i]->remove());
-                CallExpr* moveCall = new CallExpr(PRIM_MOVE, newActual,
-                  getPtrCall);
-                gpuLaunchBlock->insertAtTail(new DefExpr(newActual));
-                gpuLaunchBlock->insertAtTail(moveCall);
-
-                kernelActuals.push_back(newActual);
-              }
-            }
-          }
-          else {
-            INT_FATAL("Something went wrong (2)");
-          }
-
           update_symbols(outlinedFunction->body, &copyMap);
           normalize(outlinedFunction);
 
-          // We'll get an end of statement for the fake index we add. I am not
-          // sure how much it matters for the long term, for now just remove it.
+          // We'll get an end of statement for the index we add. I am not sure
+          // how much it matters for the long term, for now just remove it.
           for_alist (node, outlinedFunction->body->body) {
             if (CallExpr* call = toCallExpr(node)) {
               if (call->isPrimitive(PRIM_END_OF_STATEMENT)) {
@@ -787,9 +759,9 @@ static void outlineGPUKernels() {
           }
 
           VarSymbol *varBlockSize = generateBlockSizeComputation(gpuLaunchBlock,
-            loop);
+                                                                 loop);
           CallExpr* gpuCall = generateGPUCall(varBlockSize, outlinedFunction,
-            kernelActuals);
+                                              kernelActuals);
           gpuLaunchBlock->insertAtTail(gpuCall);
           gpuLaunchBlock->flattenAndRemove();
 

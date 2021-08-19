@@ -19,6 +19,7 @@
 
 #include "sys_basic.h"
 #include "chplrt.h"
+#include "chpl-linefile-support.h"
 #include "chpl-mem.h"
 #include "chpl-gpu.h"
 #include "chpl-tasks.h"
@@ -165,7 +166,7 @@ static void chpl_gpu_launch_kernel_help(const char* name,
   int i;
   void* function = chpl_gpu_getKernel("tmp/chpl__gpu.fatbin", name);
   // TODO: this should use chpl_mem_alloc
-  void** kernel_params = chpl_malloc(nargs*sizeof(void*));
+  void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
 
   assert(function);
   assert(kernel_params);
@@ -181,11 +182,25 @@ static void chpl_gpu_launch_kernel_help(const char* name,
   CHPL_GPU_LOG("Creating kernel parameters\n");
 
   for (i=0 ; i<nargs ; i++) {
-    kernel_params[i] = va_arg(args, void*);
+    void* cur_arg = va_arg(args, void*);
+    size_t cur_arg_size = va_arg(args, size_t);
 
-    CHPL_GPU_LOG("\tKernel parameter %d: %p%s\n", i, kernel_params[i],
-                 chpl_gpu_is_device_ptr((*((void**)kernel_params[i]))) ?
-                    " (GPU pointer)" : "");
+    if (cur_arg_size > 0) {
+      // TODO this allocation needs to use `chpl_mem_alloc` with a proper desc
+      kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
+
+      // TODO pass the location info to this function and use a proper mem desc
+      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, 0, 0, 0);
+
+      chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
+      CHPL_GPU_LOG("\tKernel parameter %d: %p (device ptr)\n",
+                   i, *kernel_params[i]);
+    }
+    else {
+      kernel_params[i] = cur_arg;
+      CHPL_GPU_LOG("\tKernel parameter %d: %p\n",
+                   i, kernel_params[i]);
+    }
   }
 
   CHPL_GPU_LOG("Calling gpu function named %s\n", name);
@@ -195,7 +210,7 @@ static void chpl_gpu_launch_kernel_help(const char* name,
                            blk_dim_x, blk_dim_y, blk_dim_z,
                            0,  // shared memory in bytes
                            0,  // stream ID
-                           kernel_params,
+                           (void**)kernel_params,
                            NULL));  // extra options
 
   CHPL_GPU_LOG("Call returned %s\n", name);
@@ -263,8 +278,8 @@ bool chpl_gpu_has_context() {
 
 void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename) {
-  CHPL_GPU_LOG("chpl_gpu_mem_alloc called. Size:%d file:%d line:%d\n", size,
-               filename, lineno);
+  CHPL_GPU_LOG("chpl_gpu_mem_alloc called. Size:%d file:%s line:%d\n", size,
+               chpl_lookupFilename(filename), lineno);
 
   CUdeviceptr ptr;
   CUDA_CALL(cuMemAllocManaged(&ptr, size, CU_MEM_ATTACH_GLOBAL));
