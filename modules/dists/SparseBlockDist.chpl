@@ -183,7 +183,7 @@ class SparseBlockDom: BaseSparseDomImpl {
 
     if !dataSorted then sort(inds, comparator=comp);
 
-    var localeRanges: [dist.targetLocDom] range;
+    var localeRanges: [dist.targetLocDom] range(stridable=false);
     on inds {
       for l in dist.targetLocDom {
         const blockval = locDoms[l]!.mySparseBlock._value;
