@@ -2,12 +2,13 @@
 module GPUOutlineTest {
   extern proc chpl_gpu_init(): void;
 
-  config const n = 10;
+  config const start = 1;
+  config const end = 10;
 
   proc testMain() {
     on here.getChild(1) {
       chpl_gpu_init();
-      var a, b: [0..n] int;
+      var a, b: [start..end] int;
       var value = 20;
 
       // one array

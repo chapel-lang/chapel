@@ -516,6 +516,20 @@ static VarSymbol* insertNewVarAndDef(BlockStmt* insertionPoint, const char* name
   return var;
 }
 
+struct OutlineInfo {
+  CForLoop* loop;
+  Symbol* lowerBound;
+  Symbol* upperBound;
+};
+
+static OutlineInfo collectOutlineInfo(CForLoop* loop) {
+  OutlineInfo info;
+  info.loop = loop;
+  info.lowerBound = extractLowerBoundFromLoop(loop);
+  info.upperBound = extractUpperBoundFromLoop(loop);
+  return info;
+}
+
 /**
  * Given a CForLoop with lowerbound lb and upper bound ub
  * (See extractUpperBoundFromLoop\extractLowerBoundFromLoop to
@@ -525,19 +539,18 @@ static VarSymbol* insertNewVarAndDef(BlockStmt* insertionPoint, const char* name
  *   blockDelta = ub - lb
  *   blockSize = blockDelta + 1
  */
-static VarSymbol* generateBlockSizeComputation(
-  BlockStmt* gpuLaunchBlock,
-  CForLoop* loop) {
-  Symbol* ub = extractUpperBoundFromLoop(loop);
-  Symbol* lb = extractLowerBoundFromLoop(loop);
+static VarSymbol* generateBlockSizeComputation(BlockStmt* gpuLaunchBlock,
+                                               OutlineInfo& info) {
 
   VarSymbol *varBoundDelta = insertNewVarAndDef(
     gpuLaunchBlock, "blockDelta", dtInt[INT_SIZE_DEFAULT]);
   VarSymbol *varBlockSize = insertNewVarAndDef(
     gpuLaunchBlock, "blockSize", dtInt[INT_SIZE_DEFAULT]);
 
-  CallExpr *c1 = new CallExpr(PRIM_ASSIGN, varBoundDelta, new CallExpr(
-    PRIM_SUBTRACT, ub, lb));
+  CallExpr *c1 = new CallExpr(PRIM_ASSIGN, varBoundDelta,
+                              new CallExpr(PRIM_SUBTRACT,
+                                           info.upperBound,
+                                           info.lowerBound));
   gpuLaunchBlock->insertAtTail(c1);
 
   CallExpr *c2 = new CallExpr(PRIM_ASSIGN, varBlockSize, new CallExpr(
@@ -556,6 +569,18 @@ static VarSymbol* generateAssignmentToPrimitive(
   return var;
 }
 
+static Symbol* addKernelArgument(FnSymbol* kernel, Symbol* symInLoop,
+                                 std::vector<Symbol*>& actuals) {
+  Type* symType = symInLoop->typeInfo();
+  ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, "data_formal", symType);
+  kernel->insertFormalAtTail(newFormal);
+
+  actuals.push_back(symInLoop);
+
+  return newFormal;
+}
+
+
 /**
  *  Generates and inserts the following AST into fn:
  *
@@ -564,8 +589,10 @@ static VarSymbol* generateAssignmentToPrimitive(
  *  threadIdxX = __primitve('gpu threadIdx x')
  *  t0 = varBlockIdxX * varBlockDimX 
  *  t1 = t0 + threadIdxX
+ *  index = t1 + startOffset
  **/
-static VarSymbol* generateIndexComputation(FnSymbol* fn, Symbol* sym) {
+static VarSymbol* generateIndexComputation(FnSymbol* fn, OutlineInfo& info,
+                                           std::vector<Symbol*>& actuals) {
   VarSymbol *varBlockIdxX = generateAssignmentToPrimitive(fn, "blockIdxX",
     PRIM_GPU_BLOCKIDX_X, dtInt[INT_SIZE_32]);
   VarSymbol *varBlockDimX = generateAssignmentToPrimitive(fn, "blockDimX",
@@ -575,15 +602,24 @@ static VarSymbol* generateIndexComputation(FnSymbol* fn, Symbol* sym) {
 
   VarSymbol *tempVar = insertNewVarAndDef(fn->body, "t0", dtInt[INT_SIZE_32]);
   CallExpr *c1 = new CallExpr(PRIM_MOVE, tempVar, new CallExpr(PRIM_MULT,
-    varBlockIdxX, varBlockDimX));
+                                                               varBlockIdxX,
+                                                               varBlockDimX));
   fn->insertAtTail(c1);
 
   VarSymbol *tempVar1 = insertNewVarAndDef(fn->body, "t1", dtInt[INT_SIZE_32]);
-  CallExpr *c2 = new CallExpr(PRIM_MOVE, tempVar1, new CallExpr(PRIM_ADD, tempVar,
-    varThreadIdxX));
+  CallExpr *c2 = new CallExpr(PRIM_MOVE, tempVar1, new CallExpr(PRIM_ADD,
+                                                                tempVar,
+                                                                varThreadIdxX));
   fn->insertAtTail(c2);
 
-  return tempVar1;
+  Symbol* startOffset = addKernelArgument(fn, info.lowerBound, actuals);
+  VarSymbol* index = insertNewVarAndDef(fn->body, "chpl_simt_index",
+                                        dtInt[INT_SIZE_32]);
+  fn->insertAtTail(new CallExpr(PRIM_MOVE, index, new CallExpr(PRIM_ADD,
+                                                               tempVar1,
+                                                               startOffset)));
+
+  return index;
 }
 
 static  CallExpr* generateGPUCall(VarSymbol* varBlockSize,
@@ -602,18 +638,6 @@ static  CallExpr* generateGPUCall(VarSymbol* varBlockSize,
   return call;
 }
 
-static void addKernelArgument(FnSymbol* kernel, Symbol* symInLoop,
-                              std::vector<Symbol*>& actuals,
-                              SymbolMap& copyMap) {
-  Type* symType = symInLoop->typeInfo();
-  ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, "data_formal", symType);
-  kernel->insertFormalAtTail(newFormal);
-
-  copyMap.put(symInLoop, newFormal);
-
-  actuals.push_back(symInLoop);
-}
-
 static void outlineGPUKernels() {
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
     std::vector<BaseAST*> asts;
@@ -623,6 +647,9 @@ static void outlineGPUKernels() {
       if (CForLoop* loop = toCForLoop(ast)) {
         if (shouldOutlineLoop(loop, /*allowFnCalls=*/false)) {
           SET_LINENO(loop);
+
+          OutlineInfo info = collectOutlineInfo(loop);
+
           FnSymbol* outlinedFunction = new FnSymbol("chpl_gpu_kernel");
           outlinedFunction->addFlag(FLAG_RESOLVED);
           outlinedFunction->addFlag(FLAG_ALWAYS_RESOLVE);
@@ -684,7 +711,7 @@ static void outlineGPUKernels() {
                   if (indexSymbol == NULL) {
                       indexSymbol = sym;
                       VarSymbol* flatIndex = generateIndexComputation(
-                        outlinedFunction, sym);
+                        outlinedFunction, info, kernelActuals);
                       
                       copyMap.put(sym, flatIndex);
                   }
@@ -696,8 +723,10 @@ static void outlineGPUKernels() {
                         // do nothing
                       }
                       else if (symExpr == parent->get(1)) {
-                        addKernelArgument(outlinedFunction, sym,
-                                          kernelActuals, copyMap);
+                        Symbol* newFormal = addKernelArgument(outlinedFunction,
+                                                              sym,
+                                                              kernelActuals);
+                        copyMap.put(sym, newFormal);
                         copyNode = true;
                       }
                       else {
@@ -705,8 +734,10 @@ static void outlineGPUKernels() {
                       }
                     }
                     else if (parent->isPrimitive()) {
-                      addKernelArgument(outlinedFunction, sym,
-                                        kernelActuals, copyMap);
+                      Symbol* newFormal = addKernelArgument(outlinedFunction,
+                                                            sym,
+                                                            kernelActuals);
+                      copyMap.put(sym, newFormal);
                       copyNode = true;
                     }
                     else {
@@ -735,8 +766,9 @@ static void outlineGPUKernels() {
             }
           }
 
+
           VarSymbol *varBlockSize = generateBlockSizeComputation(gpuLaunchBlock,
-                                                                 loop);
+                                                                 info);
           CallExpr* gpuCall = generateGPUCall(varBlockSize, outlinedFunction,
                                               kernelActuals);
           gpuLaunchBlock->insertAtTail(gpuCall);
