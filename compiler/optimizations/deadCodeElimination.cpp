@@ -660,12 +660,6 @@ static void outlineGPUKernels() {
           BlockStmt* gpuLaunchBlock = new BlockStmt();
           loop->insertBefore(gpuLaunchBlock);
 
-          // TODO add a struct or something to store all the information that we
-          // need to keep track of per symbol, and make the following vectors
-          // into a single vector of that type. LoopOutlineInfo or something.
-          std::vector<SymExpr*> maybeArrSymExpr;
-          std::vector<SymExpr*> arraysWhoseDataAccessed;
-          std::vector<CallExpr*> fieldAccessors;
           std::vector<Symbol*> kernelActuals;
 
           Symbol* indexSymbol = NULL;
