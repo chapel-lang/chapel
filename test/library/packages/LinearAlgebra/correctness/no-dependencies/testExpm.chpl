@@ -118,20 +118,10 @@ use TestUtils;
 
     // Test 3*3 Dense Matrix Pade cases using onenormest function.
     E = expm(Y, false);
-    if pade[i] == 13 then {
-      // Handling pade-13 case separately since onenormest function
-      // gives a different estimate with precision to 10^-3.
-      setDiag(X, 0, 22026.466280);
-    }
     assertAlmostEqual(E, X, 'Matrix Exponential for 3*3 Dense Matrix using onenormest - X = 3*3 : Uses Pade' + (pade[i]: string));
 
     // Test 3*3 Sparse Matrix Pade cases using onenormest function.
     E = expm(A, false);
-    if pade[i] == 13 then {
-      // Handling pade-13 case separately since onenormest function
-      // gives a different estimate with precision to 10^-3.
-      setDiag(X, 0, 22026.466280);
-    }
     assertAlmostEqual(E, X, 'Matrix Exponential for 3*3 Sparse Matrix using onenormest - X = 3*3 : Uses Pade' + (pade[i]: string));
   }
 }

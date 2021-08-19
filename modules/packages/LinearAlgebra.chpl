@@ -231,29 +231,40 @@ hence we do a lazy computation depending on the norm value
 of the matrix.
 */
 class ExpmPadeHelper {
+  // Ideally, exponential of matrix is just an application
+  // of taylor series expansion of exponential to a
+  // matrix. We could have gotten away by just plugging-in
+  // that formula. This taylor series expansion requires us
+  // to take powers of matrix i.e., A^2,A^4,A^6,A^8,A^10.
+  // Besides, we also have exactDs and approxDs a.k.a
+  // D values of a Matrix. (exactDs are computed using
+  // onenorms and approxDs are computed using estimate
+  // of onenorms).
+  //
+  // Optimization Question: Do we need to take all the above
+  // specified matrix powers? Can we trade off some precision?
+  // Can we improve performance by caching the results?
+  //
+  // Research: There is a paper by Awad H. Al-Mohy which finds a
+  // relation between the D values of a matrix and the precision.
+  // Something like, if max of D4 and D6 doesn't exceed 1.495585
+  // then we can get away by only computing pade3 which internally
+  // computes only A^2,A^4. We also make use of Lazy computation
+  // and caching of matrices. ExpmPadeHelper class helps us achieve
+  // all of this.
   type matType;
-  var A: matType;
-  var A2: matType;
-  var A4: matType;
-  var A6: matType;
-  var A8: matType;
-  var A10: matType;
-  var exactD4: real;
-  var exactD6: real;
-  var exactD8: real;
-  var exactD10: real;
-  var approxD4: real;
-  var approxD6: real;
-  var approxD8: real;
-  var approxD10: real;
-  var ident: matType;
-  param useExactOneNorm: bool;
   type eltType;
-  // Boolean arrays to know if A, Exactd, Approxd
+  param useExactOneNorm: bool;
+  var A: matType;
+  var As: [2..10 by 2] matType;
+  var exactDs: [4..10 by 2] real;
+  var approxDs: [4..10 by 2] real;
+  var ident: matType;
+  // Boolean arrays to know if A, exactDs, approxDs
   // have been computed.
-  var isAComputed: ["A2", "A4", "A6", "A8", "A10"] bool;
-  var isExactdComputed: ["A4", "A6", "A8", "A10"] bool;
-  var isApproxdComputed: ["A4", "A6", "A8", "A10"] bool;
+  var isAComputed: [2..10 by 2] bool;
+  var isExactdComputed: [4..10 by 2] bool;
+  var isApproxdComputed: [4..10 by 2] bool;
 
   /*
     :arg A: Expects an N*N square matrix.
@@ -264,186 +275,81 @@ class ExpmPadeHelper {
   */
   proc init(A, param useExactOneNorm: bool) {
     this.matType = A.type;
+    this.eltType = A.eltType;
+    this.useExactOneNorm = isComplexType(this.eltType) || useExactOneNorm;
     this.A = A;
     this.ident = eye(A.indices);
-    this.useExactOneNorm = useExactOneNorm;
-    this.eltType = A.eltType;
   }
 
-  proc comp_A2(){
-    if !isAComputed["A2"] then {
-      this.A2 = dot(this.A, this.A);
-      isAComputed["A2"] = true;
+  proc comp_A(param val){
+    if !isAComputed[val] then {
+      if val == 2 {
+        this.As[val] = dot(this.A, this.A);
+      }
+      else {
+        this.As[val] = dot(comp_A(val-2), comp_A(2));
+      }
+      isAComputed[val] = true;
     }
-    return this.A2;
+    return this.As[val];
   }
 
-  proc comp_A4(){
-    if !isAComputed["A4"] then {
-      this.A4 = dot(comp_A2(), comp_A2());
-      isAComputed["A4"] = true;
+  proc comp_exactD(param val){
+    if !isExactdComputed[val] then {
+      this.exactDs[val] = norm(comp_A(val), normType.norm1)**(1/(val: real));
+      isExactdComputed[val] = true;
     }
-    return this.A4;
+    return this.exactDs[val];
   }
 
-  proc comp_A6(){
-    if !isAComputed["A6"] then {
-      this.A6 = dot(comp_A4(), comp_A2());
-      isAComputed["A6"] = true;
-    }
-    return this.A6;
-  }
-
-  proc comp_A8(){
-    if !isAComputed["A8"] then {
-      this.A8 = dot(comp_A6(), comp_A2());
-      isAComputed["A8"] = true;
-    }
-    return this.A8;
-  }
-
-  proc comp_A10(){
-    if !isAComputed["A10"] then {
-      this.A10 = dot(comp_A8(), comp_A2());
-      isAComputed["A10"] = true;
-    }
-    return this.A10;
-  }
-
-  proc comp_exactD4(){
-    if !isExactdComputed["A4"] then {
-      this.exactD4 = norm(comp_A4(), normType.norm1)**(1/4.0);
-      isExactdComputed["A4"] = true;
-    }
-    return this.exactD4;
-  }
-
-  proc comp_exactD6(){
-    if !isExactdComputed["A6"] then {
-      this.exactD6 = norm(comp_A6(), normType.norm1)**(1/6.0);
-      isExactdComputed["A6"] = true;
-    }
-    return this.exactD6;
-  }
-
-  proc comp_exactD8(){
-    if !isExactdComputed["A8"] then {
-      this.exactD8 = norm(comp_A8(), normType.norm1)**(1/8.0);
-      isExactdComputed["A8"] = true;
-    }
-    return this.exactD8;
-  }
-
-  proc comp_exactD10(){
-    if !isExactdComputed["A10"] then {
-      this.exactD10 = norm(comp_A10(), normType.norm1)**(1/10.0);
-      isExactdComputed["A10"] = true;
-    }
-    return this.exactD10;
-  }
-
-  proc comp_looseD4() {
-    if this.useExactOneNorm || isComplexType(this.eltType) then {
-      return comp_exactD4();
+  proc comp_looseD(param val) throws {
+    if this.useExactOneNorm then {
+      return comp_exactD(val);
     }
     else {
-      if !isApproxdComputed["A4"] then {
-        try {
-          this.approxD4 = onenormest(comp_A4())**(1/4.0);
+      if !isApproxdComputed[val] then {
+        if this.A.domain.shape(0) == this.A.domain.shape(1) {
+          this.approxDs[val] = oneNormEst(comp_A(val))**(1/(val: real));
         }
-        catch e{
-          this.approxD4 = comp_exactD4();
+        else {
+          this.approxDs[val] = comp_exactD(val);
         }
-        isApproxdComputed["A4"] = true;
+        isApproxdComputed[val] = true;
       }
-      return this.approxD4;
-    }
-  }
-
-  proc comp_looseD6() {
-    if this.useExactOneNorm || isComplexType(this.eltType) then {
-      return comp_exactD6();
-    }
-    else {
-      if !isApproxdComputed["A6"] then {
-        try {
-          this.approxD4 = onenormest(comp_A6())**(1/6.0);
-        }
-        catch e{
-          this.approxD4 = comp_exactD6();
-        }
-        isApproxdComputed["A6"] = true;
-      }
-      return this.approxD6;
-    }
-  }
-
-  proc comp_looseD8() {
-    if this.useExactOneNorm || isComplexType(this.eltType) then {
-      return comp_exactD8();
-    }
-    else {
-      if !isApproxdComputed["A8"] then {
-        try {
-          this.approxD4 = onenormest(comp_A8())**(1/8.0);
-        }
-        catch e{
-          this.approxD4 = comp_exactD8();
-        }
-        isApproxdComputed["A8"] = true;
-      }
-      return this.approxD8;
-    }
-  }
-
-  proc comp_looseD10() {
-    if this.useExactOneNorm || isComplexType(this.eltType) then {
-      return comp_exactD10();
-    }
-    else {
-      if !isApproxdComputed["A10"] then {
-        try {
-          this.approxD4 = onenormest(comp_A10())**(1/10.0);
-        }
-        catch e{
-          this.approxD4 = comp_exactD10();
-        }
-        isApproxdComputed["A10"] = true;
-      }
-      return this.approxD10;
+      return this.approxDs[val];
     }
   }
 
   proc pade3(){
     const b = [120.0, 60.0, 12.0, 1.0];
-    var temp = b[3]*comp_A2() + b[1]*this.ident;
+    var temp = b[3]*comp_A(2) + b[1]*this.ident;
     var U = dot(this.A, temp);
-    var V = b[2]*comp_A2() + b[0]*this.ident;
+    var V = b[2]*comp_A(2) + b[0]*this.ident;
     return (U,V);
   }
 
   proc pade5(){
     const b = [30240.0, 15120.0, 3360.0, 420.0, 30.0, 1.0];
-    var temp = b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
+    var temp = b[5]*comp_A(4) + b[3]*comp_A(2) + b[1]*this.ident;
     var U = dot(this.A, temp);
-    var V = b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
+    var V = b[4]*comp_A(4) + b[2]*comp_A(2) + b[0]*this.ident;
     return (U,V);
   }
 
   proc pade7(){
     const b = [17297280.0, 8648640.0, 1995840.0, 277200.0, 25200.0, 1512.0, 56.0, 1.0];
-    var temp = b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
+    var temp = b[7]*comp_A(6) + b[5]*comp_A(4) + b[3]*comp_A(2) + b[1]*this.ident;
     var U = dot(this.A, temp);
-    var V = b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
+    var V = b[6]*comp_A(6) + b[4]*comp_A(4) + b[2]*comp_A(2) + b[0]*this.ident;
     return (U,V);
   }
 
   proc pade9(){
     const b = [17643225600.0, 8821612800.0, 2075673600.0, 302702400.0, 30270240.0,
                 2162160.0, 110880.0, 3960.0, 90.0, 1.0];
-    var temp = b[9]*comp_A8() + b[7]*comp_A6() + b[5]*comp_A4() + b[3]*comp_A2() + b[1]*this.ident;
+    var temp = b[9]*comp_A(8) + b[7]*comp_A(6) + b[5]*comp_A(4) + b[3]*comp_A(2) + b[1]*this.ident;
     var U = dot(this.A, temp);
-    var V = b[8]*comp_A8() + b[6]*comp_A6() + b[4]*comp_A4() + b[2]*comp_A2() + b[0]*this.ident;
+    var V = b[8]*comp_A(8) + b[6]*comp_A(6) + b[4]*comp_A(4) + b[2]*comp_A(2) + b[0]*this.ident;
     return (U,V);
   }
 
@@ -454,9 +360,9 @@ class ExpmPadeHelper {
                 16380.0, 182.0, 1.0];
 
     var B = this.A * 2**-s;
-    var B2 = comp_A2() * 2**(-2*s);
-    var B4 = comp_A4() * 2**(-4*s);
-    var B6 = comp_A6() * 2**(-6*s);
+    var B2 = comp_A(2) * 2**(-2*s);
+    var B4 = comp_A(4) * 2**(-4*s);
+    var B6 = comp_A(6) * 2**(-6*s);
 
     var temp2 = b[13]*B6 + b[11]*B4 + b[9]*B2;
     var U2 = dot(B6, temp2);
@@ -471,21 +377,21 @@ class ExpmPadeHelper {
   proc printFields() {
     writeln("useExactOneNorm = ", this.useExactOneNorm);
 
-    writeln("A2 = ", comp_A2());
-    writeln("A4 = ", comp_A4());
-    writeln("A6 = ", comp_A6());
-    writeln("A8 = ", comp_A8());
-    writeln("A10 = ", comp_A10());
+    writeln("A2 = ", comp_A(2));
+    writeln("A4 = ", comp_A(4));
+    writeln("A6 = ", comp_A(6));
+    writeln("A8 = ", comp_A(8));
+    writeln("A10 = ", comp_A(10));
 
-    writeln("exact_d4 = ", comp_exactD4());
-    writeln("exact_d6 = ", comp_exactD6());
-    writeln("exact_d8 = ", comp_exactD8());
-    writeln("exact_d10 = ", comp_exactD10());
+    writeln("exactD4 = ", comp_exactD(4));
+    writeln("exactD6 = ", comp_exactD(6));
+    writeln("exactD8 = ", comp_exactD(8));
+    writeln("exactD10 = ", comp_exactD(10));
 
-    writeln("loose_d4 = ", comp_looseD4());
-    writeln("loose_d6 = ", comp_looseD6());
-    writeln("loose_d8 = ", comp_looseD8());
-    writeln("loose_d10 = ", comp_looseD10());
+    writeln("looseD4 = ", comp_looseD(4));
+    writeln("looseD6 = ", comp_looseD(6));
+    writeln("looseD8 = ", comp_looseD(8));
+    writeln("looseD10 = ", comp_looseD(10));
   }
 }
 
@@ -2331,6 +2237,8 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   return C;
 }
 
+pragma "no doc"
+/* This method accepts both Dense and CSR/CRC arrays. */
 proc expm(A: [],param useExactOneNorm = true) throws where isCSArr(A) {
   var B = getDense(A);
   return expm(B, useExactOneNorm);
@@ -2367,21 +2275,21 @@ proc expm(A: [],param useExactOneNorm = true) throws where !isCSArr(A) {
   var h = new ExpmPadeHelper(A, useExactOneNorm);
 
   // Try Pade order 3
-  var eta_1 = max(abs(h.comp_looseD4()), abs(h.comp_looseD6()));
+  var eta_1 = max(abs(h.comp_looseD(4)), abs(h.comp_looseD(6)));
   if eta_1 < 1.495585217958292e-002 then {
     var (U,V) = h.pade3();
     return solvePQ(U, V);
   }
 
   // Try Pade order 5
-  var eta_2 = max(abs(h.comp_exactD4()), abs(h.comp_looseD6()));
+  var eta_2 = max(abs(h.comp_exactD(4)), abs(h.comp_looseD(6)));
   if eta_2 < 2.539398330063230e-001 then {
     var (U,V) = h.pade5();
     return solvePQ(U, V);
   }
 
   // Try Pade order 7 and 9
-  var eta_3 = max(abs(h.comp_exactD6()), abs(h.comp_looseD8()));
+  var eta_3 = max(abs(h.comp_exactD(6)), abs(h.comp_looseD(8)));
   if eta_3 < 9.504178996162932e-001 then {
     var (U,V) = h.pade7();
     return solvePQ(U, V);
@@ -2393,7 +2301,7 @@ proc expm(A: [],param useExactOneNorm = true) throws where !isCSArr(A) {
   }
 
   // Use Pade order 13.
-  var eta_4 = max(abs(h.comp_looseD8()), abs(h.comp_looseD10()));
+  var eta_4 = max(abs(h.comp_looseD(8)), abs(h.comp_looseD(10)));
   var eta_5 = min(eta_3, eta_4);
   var theta_13 = 4.25;
 
@@ -2517,93 +2425,62 @@ proc cosm(A: []) throws {
   }
 }
 
-// Gets sums along specified axes. Method for Rectangular matrix.
-proc absSum(A: [?D], axis=0) throws where !isCSDom(D) {
+// Gets sums along specified axes. Supports both Dense & CSR/CRC matrices.
+// axis=0 sums along column.
+// axis=1 sums along rows.
+private proc absSum(A: [?ADom], axis=0) throws {
   if (axis != 0 && axis != 1) {
     throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
   }
 
-  if axis == 0 then
-    // axis=0 sums along column
-    return forall j in D.dim(1-axis) do (+ reduce abs(A[D.dim(axis), j]));
-  else
-    // axis=1 sums along row
-    return forall i in D.dim(1-axis) do (+ reduce abs(A[i, D.dim(axis)]));
-}
-
-// Gets sums along specified axes. Method for CSR matrix.
-private proc absSum(A: [?ADom], axis=0) throws where isCSDom(ADom) {
-  if (axis != 0 && axis != 1) {
-    throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
+  if ADom.rank != 2 {
+    throw new LinearAlgebraError("absSum(): Rank is not equal to 2");
   }
 
-  var (n,t) = ADom.shape;
-  if axis == 0 {
-    // axis=0 sums along column
-    var b: [0..<t] A.eltType;
-    forall (i,j) in ADom with (+ reduce b) {
-      b[j] += abs(A[i,j]);
+  var b: [ADom.dim(1-axis)] A.eltType;
+
+  if isCSDom(ADom) {
+    for idx in ADom {
+      const bIdx = idx[1-axis];
+      b[bIdx] += A[idx];
     }
-    return b;
   }
   else {
-    // axis=1 sums along rows
-    var b: [0..<n] A.eltType;
-    forall (i,j) in ADom with (+ reduce b) {
-      b[i] += abs(A[i,j]);
+    for idx in ADom.dim(1-axis) {
+      var arr = if axis==0 then A[.., idx] else A[idx, ..];
+      b[idx] = (+ reduce arr);
     }
-    return b;
   }
+  return b;
 }
 
-// Gets max along specified axes. Method for CSR matrix.
-private proc maxAlongAxis(A: [?ADom], axis=0) throws where isCSDom(ADom) {
+// Gets max along specified axes. Supports both Dense & CSR/CRC matrices.
+// axis=0 max along column.
+// axis=1 max along rows.
+private proc maxAlongAxis(A: [?ADom], axis=0) throws {
   if (axis != 0 && axis != 1) {
-    throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
+    throw new LinearAlgebraError("maxAlongAxis(): axis=0 or axis=1 expected");
   }
 
-  var (n,t) = ADom.shape;
-  if axis == 0 {
-    // axis=0 sums along column
-    var b: [0..<t] A.eltType;
-    forall (i,j) in ADom with (max reduce b) {
-      b[j] = max(b[j], A[i,j]);
+  if ADom.rank != 2 {
+    throw new LinearAlgebraError("maxAlongAxis(): Rank is not equal to 2");
+  }
+
+  var b: [ADom.dim(1-axis)] A.eltType;
+
+  if isCSDom(ADom) {
+    for idx in ADom {
+      const bIdx = idx[1-axis];
+      b[bIdx] = max(b[bIdx], A[idx]);
     }
-    return b;
   }
   else {
-    // axis=1 sums along rows
-    var b: [0..<n] A.eltType;
-    forall (i,j) in ADom with (max reduce b) {
-      b[i] = max(b[i], A[i,j]);
+    for idx in ADom.dim(1-axis) {
+      var arr = if axis==0 then A[.., idx] else A[idx, ..];
+      b[idx] = max reduce arr;
     }
-    return b;
   }
-}
-
-// Gets max along specified axes. Method for Rectangular matrix.
-private proc maxAlongAxis(A: [?ADom], axis=0) throws where !isCSDom(ADom) {
-  if (axis != 0 && axis != 1) {
-    throw new LinearAlgebraError("absSum(): axis=0 or axis=1 expected");
-  }
-
-  var (n,t) = ADom.shape;
-  if axis == 0 {
-    // axis=0 sums along column
-    var b: [0..<t] A.eltType;
-    forall i in 0..<t {
-      b[i] = max reduce A[.., i];
-    }
-    return b;
-  }
-  else {
-    // axis=1 sums along rows
-    var b: [0..<n] A.eltType;
-    forall i in 0..<n {
-      b[i] = max reduce A[i, ..];
-    }
-    return b;
-  }
+  return b;
 }
 
 // Given the Domain and element-type, method
@@ -2629,17 +2506,17 @@ private proc elementaryVector(n,ind) {
   return v;
 }
 
-record Cmp {
+record ArgSortComparator {
   param desc;
   var A;
-}
 
-proc Cmp.compare(a, b) {
-  if desc then {
-    return -(A[a] - A[b]);
-  }
-  else {
-    return A[a] - A[b];
+  proc compare(a, b) {
+    if desc then {
+      return -(A[a] - A[b]);
+    }
+    else {
+      return A[a] - A[b];
+    }
   }
 }
 
@@ -2647,22 +2524,24 @@ proc Cmp.compare(a, b) {
 // corresponding to the sorted ordering of A.
 private proc argsort(A: [], param desc=false) {
   use Sort;
-  var cmp = new Cmp(desc, A);
+  var cmp = new ArgSortComparator(desc, A);
   var B = [ii in A.domain] ii;
   sort(B, comparator=cmp);
   return B;
 }
 
-// Method returns false if there is atleast one
+// Method returns false if there is at least one
 // column in X which isn't parallel to a column
 // in Y. Else the method returns true.
+// A column in X is parallel to a column in Y if
+// all the corresponding elements are equal.
 private proc everyColOfXParallelToColOfY(X: [?xD], Y: [?yD]){
   var n = xD.shape(0);
   for i in xD.dim(1) {
     var b = X[.., i];
     var fg = false;
     for j in yD.dim(1) {
-      if && reduce (Y[.., j]==b) {
+      if && reduce (Y[.., j] == b) {
         fg = true;
         break;
       }
@@ -2680,29 +2559,31 @@ private proc everyColOfXParallelToColOfY(X: [?xD], Y: [?yD]){
 private proc signRoundUp(A: []){
   forall a in A {
     if a == 0.0 then {
-      a += 1.0;
+      a = 1.0;
     }
-    a /= abs(a);
+    a = sgn(a);
   }
   return A;
 }
 
-// Method returns true if there is atleast one
+// Method returns true if there is at least one
 // column which is parallel to one of its previous
 // columns. If Y is not None, then method also
 // checks on columns of Y.
+// A column in X is parallel to a column in Y if
+// all the corresponding elements are equal.
 private proc columnNeedsResampling(A: [?D], col=0, Y: [], shouldResampleBasedOnY=false) {
   var n = D.shape(0);
   var b = A[.., col];
   for i in 0..<col {
-    if && reduce (A[.., i]==b) {
+    if && reduce (A[.., i] == b) {
       return true;
     }
   }
   if shouldResampleBasedOnY {
     var yCol = Y.domain.shape(1);
     for i in 0..<yCol {
-      if && reduce (Y[.., i]==b) {
+      if && reduce (Y[.., i] == b) {
         return true;
       }
     }
@@ -2719,18 +2600,33 @@ private proc columnResample(A: [?D], col = 0) {
 }
 
 // Method returns the product of a Sparse and a Dense Matrix.
-private proc sparseDenseMatmul(A: [], B: []) where isSparseArr(A) || !isSparseArr(B) {
+private proc sparseDenseMatmul(A: [?ADom], B: [?BDom]) where !isCSArr(A) || !isCSArr(B) {
+  if ADom.dim(1) != BDom.dim(0) then
+      halt("Mismatched shape in sparse-dense matrix multiplication");
+
   var resDom = {0..<A.domain.shape(0), 0..<B.domain.shape(1)};
   var C: [resDom] A.eltType;
 
-  for i in 0..<B.domain.shape(1) {
-    C[.., i] = dot(A, B[.., i]);
+  if isCSArr(A) && !isCSArr(B) {
+    forall i in 0..<B.domain.shape(1) {
+      C[.., i] = dot(A, B[.., i]);
+    }
+    return C;
   }
-  return C;
+  else {
+    forall i in 0..<A.domain.shape(0) {
+      C[i, ..] = dot(A[i, ..], B);
+    }
+    return C;
+  }
 }
 
 // Given Sparse Matrix, Function returns the Dense Matrix.
-private proc getDense(A: []) where isSparseArr(A) {
+private proc getDense(A: [?ADom]) where isSparseArr(A) {
+  if ADom.rank != 2 {
+    throw new LinearAlgebraError("getDense(): Rank is not equal to 2");
+  }
+
   const (m,n) = A.domain.shape;
   var resDom = {0..<m, 0..<n};
   var C: [resDom] A.eltType;
@@ -2740,41 +2636,53 @@ private proc getDense(A: []) where isSparseArr(A) {
   return C;
 }
 
-proc onenormest(A: [?D], param t=2,param itmax=5) throws {
-  // TODO: Currently, onenormest only supports matrices with
+/*
+This method is an alternative to Norm function. This method
+estimates the value of the norm. Norm function runs in O(n^2)
+time while, oneNormEst takes O(k*N) time.
+
+  :arg A: Expects an N*N square matrix.
+  :type A: `A`
+
+  :arg t: A positive parameter controlling the tradeoff between
+          accuracy versus time and memory.
+  :type t: `t`
+
+  :arg itMax: Maximum number of iterations to use.
+  :type itMax: `itMax`
+
+  :returns: Matrix returns the onenorm estimate of the
+            given matrix.
+  :rtype: `A`
+*/
+proc oneNormEst(A: [?D], param t=2, param itMax=5) throws {
+  // TODO: Currently, oneNormEst only supports matrices with
   // eltType=real. Need to bring in some changes and
   // experimentation with columnResample method to make this
-  // method work for real numbers.
+  // method work for complex numbers.
   if (D.shape(0) != D.shape(1)) {
-    throw new LinearAlgebraError("onenormest(): Square Matrix Expected");
+    throw new LinearAlgebraError("oneNormEst(): Square Matrix Expected");
   }
 
   var n = D.shape(0);
-  var est;
-  if (t >= n) {
-    est = norm(A);
-  }
-  else {
-    est = _onenormest(A);
-  }
-
+  var est = if t>=n then norm(A) else _oneNormEst(A);
   return est;
 }
 
-private proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
+private proc _oneNormEst(A: [?D], param t=2, param itMax=5) throws {
   use Set;
 
-  if (itmax < 2) {
-    throw new LinearAlgebraError("_onenormest(): At least two iterations are required");
+  if (itMax < 2) {
+    throw new LinearAlgebraError("_oneNormEst(): At least two iterations are required");
   }
   if (t < 1) {
-    throw new LinearAlgebraError("_onenormest(): At least one column is required");
+    throw new LinearAlgebraError("_oneNormEst(): At least one column is required");
   }
 
   var n = D.shape(0);
 
   if (t > n) {
-    throw new LinearAlgebraError("_onenormest(): t can't be larger than the order of the matrix");
+    throw new LinearAlgebraError("_oneNormEst(): t can't be larger than the order of the matrix");
   }
 
   var wD = {0..<n, 0..<t};
@@ -2818,7 +2726,7 @@ private proc _onenormest(A: [?D], param t=2,param itmax=5) throws {
     }
     oldEstimate = est;
     var oldS = S;
-    if k > itmax {
+    if k > itMax {
       break;
     }
     S = signRoundUp(Y);
@@ -3250,9 +3158,12 @@ module Sparse {
     }
     // matrix-matrix
     else if Adom.rank == 2 && Bdom.rank == 2 {
-      if !isCSArr(A) || !isCSArr(B) then
-        compilerError("Only CSR format is supported for sparse multiplication");
-      return _csrmatmatMult(A, B);
+      if !isCSArr(A) || !isCSArr(B) then {
+        return sparseDenseMatmul(A, B);
+      }
+      else {
+        return _csrmatmatMult(A, B);
+      }
     }
     else {
       compilerError("Ranks are not 1 or 2");
