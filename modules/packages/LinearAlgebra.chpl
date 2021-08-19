@@ -2626,14 +2626,7 @@ private proc getDense(A: [?ADom]) where isSparseArr(A) {
   if ADom.rank != 2 {
     throw new LinearAlgebraError("getDense(): Rank is not equal to 2");
   }
-
-  const (m,n) = A.domain.shape;
-  var resDom = {0..<m, 0..<n};
-  var C: [resDom] A.eltType;
-
-  forall (i,j) in A.domain do C[i,j] = A[i,j];
-
-  return C;
+  return [(i, j) in {(...A.domain.dims())}] A[i,j];
 }
 
 /*
