@@ -136,6 +136,19 @@ struct Converter {
     }
   }
 
+  CondStmt* visit(const uast::When* node) {
+    auto args = new CallExpr(PRIM_ACTUALS_LIST);
+
+    for (auto caseExpr : node->caseExprs()) {
+      args->insertAtTail(convertAST(caseExpr));
+    }
+
+    CallExpr* when = new CallExpr(PRIM_WHEN, args);
+    BlockStmt* block = createBlockWithStmts(node->stmts());
+
+    return new CondStmt(when, block);
+  }
+
   /// Expressions ///
 
   CallExpr* visit(const uast::Delete* node) {
@@ -333,6 +346,17 @@ struct Converter {
     }
 
     return ret;
+  }
+
+  BlockStmt* visit(const uast::Select* node) {
+    Expr* selectCond = toExpr(convertAST(node->expr()));
+    BlockStmt* whenStmts = new BlockStmt();
+
+    for (auto when : node->whenStmts()) {
+      whenStmts->insertAtTail(toExpr(convertAST(when)));
+    }
+
+    return buildSelectStmt(selectCond, whenStmts);
   }
 
   BlockStmt* visit(const uast::Sync* node) {
