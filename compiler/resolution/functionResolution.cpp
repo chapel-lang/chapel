@@ -3642,7 +3642,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
   instantiateBody(best->fn);
 
   if (explainCallLine != 0 && explainCallMatch(call) == true) {
-    USR_PRINT(best->fn, "A: best candidate is: %s", toString(best->fn));
+    USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
   }
 
   if (call->partialTag                  == false ||
@@ -3736,7 +3736,7 @@ static FnSymbol* resolveNormalCall(CallInfo&            info,
   }
 
   if (explainCallLine != 0 && explainCallMatch(call) == true) {
-    USR_PRINT(best->fn, "B: best candidate is: %s", toString(best->fn));
+    USR_PRINT(best->fn, "best candidate is: %s", toString(best->fn));
   }
 
   if (call->partialTag                  == true &&
@@ -4330,7 +4330,7 @@ void printResolutionErrorAmbiguous(CallInfo&                  info,
   int nFnsWithOutIntentFormals = 0;
   forv_Vec(ResolutionCandidate, cand, candidates) {
     if (printedOne == false) {
-      USR_PRINT(cand->fn, "A: candidates are: %s", toString(cand->fn));
+      USR_PRINT(cand->fn, "candidates are: %s", toString(cand->fn));
       printedOne = true;
 
     } else {
@@ -4714,14 +4714,14 @@ static void findVisibleFunctionsAndCandidates(
   Vec<FnSymbol*> visibleFns;
   bool explain = ((explainCallLine != 1 && explainCallMatch(info.call) == true) ||
                 call->id == explainCallID);
-  
+
   if (explain) {
     printf("candidates.n = %d\n", candidates.n);
     printf("fn == %p\n", fn);
     printf("numActuals = %d\n", info.actuals.n);
     printf("partial = %d\n", call->partialTag);
   }
-  
+
   if (fn != NULL) {
     visibleFns.add(fn);
     mostApplicable.add(fn); // for better error reporting
@@ -4763,7 +4763,7 @@ static void findVisibleFunctionsAndCandidates(
       printf("found %d visible fns\n", visibleFns.n);
       printf("num actuals = %d\n", info.actuals.n);
     }
-    
+
     trimVisibleCandidates(info, mostApplicable,
                           numVisitedVis, visibleFns);
 
@@ -4849,11 +4849,8 @@ static void gatherCandidates(CallInfo&                  info,
 
       if (info.call->methodTag == false) {
         filterCandidate(info, visInfo, fn, candidates);
-
       } else {
-        //        if (fn->hasFlag(FLAG_NO_PARENS) == true) {
-          filterCandidate(info, visInfo, fn, candidates);
-          //        }
+        filterCandidate(info, visInfo, fn, candidates);
       }
 }
 
@@ -4890,7 +4887,7 @@ static void gatherCandidatesAndLastResort(CallInfo&     info,
         if (pass == 1)
           gatherCandidates(info, visInfo, fn, candidates);
       }
-    }   
+    }
   }
   markEndOfPOI(lrc);
   numVisited = visibleFns.n;
@@ -4924,7 +4921,7 @@ static void filterCandidate(CallInfo&                  info,
   if (explain) {
     printf("info has %d actuals\n", info.actuals.n);
   }
-  
+
   if (explain) {
     USR_PRINT(fn, "Considering function: %s", toString(fn));
 

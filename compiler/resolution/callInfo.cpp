@@ -26,7 +26,6 @@
 #include "iterator.h"
 #include "resolution.h"
 #include "stringutil.h"
-#include "view.h"
 
 CallInfo::CallInfo() {
   call  = NULL;
@@ -38,7 +37,6 @@ bool CallInfo::isWellFormed(CallExpr* callExpr) {
   bool retval = true;
 
   call = callExpr;
-  //  list_view(call);
 
   if (SymExpr* se = toSymExpr(call->baseExpr)) {
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {

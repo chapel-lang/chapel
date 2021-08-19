@@ -33,7 +33,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "symbol.h"
-#include "view.h"
 
 static ResolutionCandidateFailureReason
 classifyTypeMismatch(Type* actualType, Type* formalType);
@@ -69,7 +68,7 @@ bool ResolutionCandidate::isApplicable(CallInfo& info,
 
   if (explain)
     printf("In isApplicable()\n");
-  
+
   TagGenericResult tagResult = fn->tagIfGeneric(NULL, true);
   if (tagResult == TGR_TAGGING_ABORTED) {
     if (explain)
@@ -84,12 +83,6 @@ bool ResolutionCandidate::isApplicable(CallInfo& info,
   } else {
     retval = isApplicableGeneric(info, visInfo, explain);
   }
-  // no-paren functions are always applicable
-  /*
-  if (fn->hasFlag(FLAG_NO_PARENS)) {
-    retval = true;
-  } 
-  */
 
   // Note: for generic instantiations, this code will be executed twice.
   // This is because by the time the generic branch returns, its function will
@@ -108,7 +101,7 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info,
                                                bool explain) {
   if (explain)
     printf("In concrete case\n");
-  
+
   fn = expandIfVarArgs(fn, info);
   if (fn == NULL) {
     reason = RESOLUTION_CANDIDATE_OTHER;
@@ -119,14 +112,6 @@ bool ResolutionCandidate::isApplicableConcrete(CallInfo& info,
 
   resolveTypedefedArgTypes();
 
-  /*
-  if (fn->hasFlag(FLAG_NO_PARENS)) {
-    if (explain)
-      printf("Short-cutting the alignment check\n");
-    return true;
-  }
-  */
-  
   if (computeAlignment(info, explain) == false) {
     if (explain)
       printf("Return B\n");
@@ -252,17 +237,11 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info, bool explain) {
   formalIdxToActual.clear();
   actualIdxToFormal.clear();
 
-  /*
-  if (fn->hasFlag(FLAG_NO_PARENS)) {
-    return true;
-  }
-  */
-
   if (explain) {
     printf("computeAlignment sees %d formals and %d actuals\n",
            fn->numFormals(), info.actuals.n);
   }
-  
+
   for (int i = 0; i < fn->numFormals(); i++) {
     formalIdxToActual.push_back(NULL);
   }
@@ -1395,7 +1374,7 @@ void explainGatherCandidate(const CallInfo&            info,
       forv_Vec(ResolutionCandidate*, candidate, candidates) {
         USR_PRINT(candidate->fn,
                   "%s %s",
-                  first ? "B: candidates are:" : "               ",
+                  first ? "candidates are:" : "               ",
                   toString(candidate->fn));
 
         first = false;

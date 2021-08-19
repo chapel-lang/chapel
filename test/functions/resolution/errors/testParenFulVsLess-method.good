@@ -1,0 +1,3 @@
+testParenFulVsLess-method.chpl:15: error: ambiguous call 'R.foo'
+testParenFulVsLess-method.chpl:2: note: candidates are: R.foo
+testParenFulVsLess-method.chpl:7: note:                 R.foo(x: int)
