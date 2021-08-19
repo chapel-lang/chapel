@@ -91,6 +91,17 @@ type ipv6Addr = sys_in6_addr_t;
 const IPv6Localhost:ipv6Addr = in6addr_loopback;
 const IPv6Any:ipv6Addr = in6addr_any;
 
+pragma "no doc"
+proc sys_sockaddr_t.init(in other: sys_sockaddr_t) {
+  this.init();
+  try! {
+    var host = other.numericHost();
+    var port = other.port();
+    var family = other.family;
+    this.set(host.c_str(), port, family:c_int);
+  }
+}
+
 /*
   Abstract supertype for network addresses. Contains data
   about :type:`IPFamily`, `host` and `port`.
@@ -102,9 +113,7 @@ record ipAddr {
 
 pragma "no doc"
 proc ipAddr.init(in address: sys_sockaddr_t) {
-  this._addressStorage = new sys_sockaddr_t();
-  // this won't halt as sys_sockaddr_t was set without any errors
-  try! this._addressStorage.set(address.numericHost().c_str(), address.port(), address.family);
+  this._addressStorage = new sys_sockaddr_t(address);
 }
 
 /*
@@ -572,7 +581,7 @@ proc udpSocket.addr {
 }
 
 pragma "no doc"
-extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:ssize_t):err_t;
+private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:ssize_t):err_t;
 
 /*
   Reads incoming `bufferLen` number of bytes on socket, and
@@ -648,7 +657,7 @@ proc udpSocket.recv(bufferLen: int, in timeout = new timeval(-1,0)) throws {
 }
 
 pragma "no doc"
-extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c_int, ref address:sys_sockaddr_t,  ref num_sent_out:ssize_t):err_t;
+private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c_int, const ref address:sys_sockaddr_t,  ref num_sent_out:ssize_t):err_t;
 
 /*
   Send `data` over socket to the provided address and
@@ -690,7 +699,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr, in timeout = new timeval(-1
     throw SystemError.fromSyserr(err_out, "send failed I/O");
   }
   var length:ssize_t;
-  err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, addr._addressStorage, length);
+  err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
   if err_out != 0 {
     throw SystemError.fromSyserr(err_out, "send failed");
   }
