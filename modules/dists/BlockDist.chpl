@@ -727,7 +727,7 @@ proc chpl__computeBlock(locid, targetLocBox:domain, boundingBox:domain,
                         boundingBoxDims /* boundingBox.dims() */) {
   param rank = targetLocBox.rank;
   type idxType = boundingBox.idxType;
-  var inds: rank*range(idxType);
+  var inds: rank*range(idxType, stridable=false);
   for param i in 0..rank-1 {
     const lo = boundingBoxDims(i).low;
     const hi = boundingBoxDims(i).high;

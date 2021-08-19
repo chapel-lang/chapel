@@ -2513,7 +2513,7 @@ operator :(r: range(?), type t: range(?)) {
           yield i;
 
       } else {
-        var r:range(idxType);
+        var r:range(idxType, stridable=false);
 
         if flwlen != 0 {
           const low = this.orderToIndex(myFollowThis.first);
