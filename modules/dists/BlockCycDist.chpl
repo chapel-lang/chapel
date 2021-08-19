@@ -543,7 +543,7 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
     // passed through nested loops correctly (or at all).
     for follow in locDom.myStarts.these(iterKind.leader, maxTasks, ignoreRunning, minSize) {
       for i in locDom.myStarts.these(iterKind.follower, follow, maxTasks, ignoreRunning, minSize) {
-        var retblock: rank*range(idxType);
+        var retblock: rank*range(idxType, stridable=false);
         for param j in 0..rank-1 {
           const lo     = if rank == 1 then i else i(j);
           const dim    = whole.dim(j);
@@ -1070,7 +1070,7 @@ iter do_dsiLocalSubdomains(indexDom) {
   const blockSizes = indexDom.globDom.dist.blocksize;
   const globDims = indexDom.globDom.whole.dims();
   foreach i in indexDom.myStarts {
-    var temp : rank*range(idxType);
+    var temp : rank*range(idxType, stridable=false);
     for param j in 0..rank-1 {
       var lo: idxType;
       if rank == 1 then lo = i;

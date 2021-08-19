@@ -645,7 +645,7 @@ iter Stencil.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low = chpl__tuplify(targetLocsIdx(locSpace.first));
   const high = chpl__tuplify(targetLocsIdx(locSpace.last));
-  var dims : rank*range(low(0).type);
+  var dims : rank*range(low(0).type, stridable=false);
   for param i in 0..rank-1 {
     dims(i) = low(i)..high(i);
   }
@@ -673,7 +673,7 @@ iter Stencil.activeTargetLocales(const space : domain = boundingBox) {
 proc chpl__computeBlock(locid, targetLocBox, boundingBox) {
   param rank = targetLocBox.rank;
   type idxType = chpl__tuplify(boundingBox)(0).idxType;
-  var inds: rank*range(idxType);
+  var inds: rank*range(idxType, stridable=false);
   for param i in 0..rank-1 {
     const lo = boundingBox.dim(i).low;
     const hi = boundingBox.dim(i).high;
@@ -929,7 +929,7 @@ proc StencilDom.dsiLocalSlice(param stridable: bool, ranges) {
 
 // Create a domain that points to the nearest neighboring locales
 private proc nearestDom(param rank) {
-  var nearest : rank*range;
+  var nearest : rank*range(stridable=false);
   for param i in 0..rank-1 do nearest(i) = -1..1;
   const ND : domain(rank) = nearest;
   return ND;

@@ -698,7 +698,7 @@ iter Block.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low = chpl__tuplify(targetLocsIdx(locSpace.first));
   const high = chpl__tuplify(targetLocsIdx(locSpace.last));
-  var dims : rank*range(low(0).type);
+  var dims : rank*range(low(0).type, stridable=false);
   for param i in 0..rank-1 {
     dims(i) = low(i)..high(i);
   }
