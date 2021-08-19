@@ -100,7 +100,7 @@ class PrivateDom: BaseRectangularDom {
 
   iter these(param tag: iterKind) where tag == iterKind.leader {
     coforall loc in Locales do on loc {
-      var t: 1*range(idxType);
+      var t: 1*range(idxType, stridable=false);
       t(0) = here.id..here.id;
       yield t;
     }
@@ -293,7 +293,7 @@ iter PrivateArr.these() ref {
 
 iter PrivateArr.these(param tag: iterKind) where tag == iterKind.leader {
   coforall loc in Locales do on loc {
-    var t: 1*range(idxType);
+    var t: 1*range(idxType, stridable=false);
     t(0) = here.id..here.id;
     yield t;
   }

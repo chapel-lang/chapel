@@ -300,7 +300,7 @@ proc Replicated1locdom.dsiMyDensifiedRangeForTaskID1d(globDD, taskid:int, numTas
 // REQ the range type returned/yielded by dsiMyDensifiedRangeForSingleTask1d()
 // and (if applicable) by dsiMyDensifiedRangeForTaskID1d().
 proc Replicated1locdom.dsiMyDensifiedRangeType1d(globDD) type
-  return range(globDD.idxType);
+  return range(globDD.idxType, stridable=false);
 
 // REQ-2 if !dsiStorageUsesUserIndices
 // Returns a range of storage indices corresponding to the user indices

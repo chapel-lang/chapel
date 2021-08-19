@@ -1634,7 +1634,7 @@ module String {
               string, or -1 if the `needle` is not in the string.
    */
   inline proc string.find(needle: string,
-                          region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
+                          region: range(?) = this.byteIndices:range(byteIndex,stridable=false)) : byteIndex {
     // TODO: better name than region?
     if this.isASCII() then
       return doSearchNoEnc(this, needle, region, count=false): byteIndex;
@@ -1652,7 +1652,7 @@ module String {
               within a string, or -1 if the `needle` is not in the string.
    */
   inline proc string.rfind(needle: string,
-                           region: range(?) = this.byteIndices:range(byteIndex)) : byteIndex {
+                           region: range(?) = this.byteIndices:range(byteIndex,stridable=false)) : byteIndex {
     if this.isASCII() then
       return doSearchNoEnc(this, needle, region,
                            count=false, fromLeft=false): byteIndex;
