@@ -118,6 +118,7 @@ module Curl {
   require "curl/curl.h";
   require "-lcurl";
 
+  extern proc curl_slist_append(csl: c_ptr(curl_slist), char: c_string) : c_ptr(curl_slist);
 
   /* Returns the ``CURL`` handle connected to a channel opened with
      :proc:`URL.openUrlReader` or :proc:`URL.openUrlWriter`.
@@ -152,7 +153,7 @@ module Curl {
 
     var err:syserr = ENOERR;
 
-    if (arg.type == slist) && (slist.home != ch.home) {
+    if (arg.type == slist) && (arg.home != ch.home) {
       throw SystemError.fromSyserr(EINVAL, "in channel.setopt(): slist, and curl handle do not reside on the same locale");
     }
 
