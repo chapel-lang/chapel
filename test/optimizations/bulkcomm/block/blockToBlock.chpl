@@ -100,7 +100,7 @@ proc testCore(DestDom : domain, DestLocales : [],
 
 proc testDim(param rank : int, DestLocales : [], SrcLocales : []) {
   printDebug("  ----- rank=", rank:string, " -----");
-  var denseRanges : rank*range;
+  var denseRanges : rank*range(stridable=false);
   const len = if rank <= 2 then n else n/3;
   for i in 0..#rank do denseRanges(i) = 1..len;
 

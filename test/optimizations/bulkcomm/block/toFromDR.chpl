@@ -108,7 +108,7 @@ proc testCore(DestDom : domain, SrcDom  : domain, param useDist : bool) {
 
 proc testDim(param rank : int, param useDist : bool) {
   printDebug("  ----- rank=", rank:string, " -----");
-  var denseRanges : rank*range;
+  var denseRanges : rank*range(stridable=false);
   for i in 0..#rank do denseRanges(i) = 1..n;
 
   var stridedRanges : rank*range(stridable=true);

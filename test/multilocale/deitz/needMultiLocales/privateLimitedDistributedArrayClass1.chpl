@@ -5,7 +5,7 @@ if n < numLocales || n % numLocales != 0 then
   halt("the number of locales, ", numLocales, ", does not evenly divide n,", n);
 
 class DistributedArray {
-  var ndata: range(int);
+  var ndata: range(int, stridable=false);
   var data: [ndata] int;
   var others: [0..numLocales-1] unmanaged DistributedArray?;
 }
