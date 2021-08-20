@@ -533,8 +533,8 @@ proc AccumStencil.dsiCreateReindexDist(newSpace, oldSpace) {
 proc LocAccumStencil.init(param rank: int,
                           type idxType,
                           locid, // the locale index from the target domain
-                          boundingBox: rank*range(idxType),
-                          targetLocBox: rank*range) {
+                          boundingBox: rank*range(idxType,stridable=false),
+                          targetLocBox: rank*range(stridable=false)) {
   this.rank = rank;
   this.idxType = idxType;
   if rank == 1 {
@@ -546,7 +546,7 @@ proc LocAccumStencil.init(param rank: int,
                                      max(idxType), min(idxType), lo);
     myChunk = {blo..bhi};
   } else {
-    var inds: rank*range(idxType);
+    var inds: rank*range(idxType, stridable=false);
     for param i in 0..rank-1 {
       const lo = boundingBox(i).low;
       const hi = boundingBox(i).high;
@@ -1264,7 +1264,7 @@ iter AccumStencilArr.dsiBoundaries() {
       return {(...r)};
     }
 
-    var ndr : rank*range;
+    var ndr : rank*range(stridable=false);
     for i in 0..rank-1 do ndr(i) = -1..1;
     const ND = {(...ndr)};
 
@@ -1317,7 +1317,7 @@ iter AccumStencilArr.dsiBoundaries(param tag : iterKind) where tag == iterKind.s
       return {(...r)};
     }
 
-    var ndr : rank*range;
+    var ndr : rank*range(stridable=false);
     for i in 0..rank-1 do ndr(i) = -1..1;
     const ND = {(...ndr)};
 

@@ -15,7 +15,7 @@ module Histogram {
     proc init(param dim : int, nbins : dim*int, limits : dim*(real,real)) {
       this.dim = dim;
       this.complete();
-      var dd : dim*range;
+      var dd : dim*range(stridable=false);
       this.nbins = nbins;
       for param ii in 0..dim-1 {
         lo[ii] = limits(ii)(0);

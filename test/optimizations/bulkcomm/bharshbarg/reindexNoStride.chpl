@@ -2,7 +2,7 @@
 use util;
 
 iter halves(dom) {
-  var ret : dom.rank*range;
+  var ret : dom.rank*range(stridable=false);
   for i in 0..#2**dom.rank {
     for j in 0..#dom.rank {
       const r = dom.dim(j);
@@ -23,7 +23,7 @@ proc assignHalves(left, right) {
 }
 
 proc testDim(param rank : int) {
-  var ones, zeroes : rank*range;
+  var ones, zeroes : rank*range(stridable=false);
   for param i in 0..rank-1 {
     ones(i) = 1..8;
     zeroes(i) = 0..7;

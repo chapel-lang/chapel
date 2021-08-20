@@ -2,7 +2,7 @@ module blockindices {
 use fock;
 
 class blockIndices {
-  const is, js, ks, ls: range(int);
+  const is, js, ks, ls: range(int, stridable=false);
 
   proc init(iat, jat, kat, lat) {
     is = bas_info(iat);

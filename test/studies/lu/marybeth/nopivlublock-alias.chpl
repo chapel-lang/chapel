@@ -20,7 +20,7 @@ var A: [A2D] real;
 
 // The variable slice is used to implement D(k+1..),
 // where D would be a subdomain (but is currently a range).
-var slice: range;
+var slice: range(stridable=false);
 
 initA(A,'Adata.dat');
 

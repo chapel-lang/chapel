@@ -1,5 +1,5 @@
 enum color { red, green, blue };
 
 var r = color.red..color.blue;
-var r2 = r: range(int);
+var r2 = r: range(int, stridable=false);
 writeln(r2);

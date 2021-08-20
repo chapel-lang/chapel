@@ -1,5 +1,5 @@
-var r: range;
-var r2: range;
+var r: range(stridable=false);
+var r2: range(stridable=false);
 
 
 writeln(r.contains(r2));

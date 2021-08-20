@@ -20,7 +20,7 @@ var dm1 = new unmanaged Block(LocaleSpace); test("dist", dm1);
 var dm2 = new dmap(dm1); test("dmap", dm2);
 var dom: domain(1);      test("domain", dom);
 var arr: [dom] int;      test("array", arr);
-var rng: range(int);     test("range", rng);
+var rng: range(int,stridable=false);     test("range", rng);
 var tu1 = (1,);          test("tuple-1", tu1);
 var tu2 = (1,2);         test("tuple-2", tu2);
 var tu3 = (1,2,3);       test("tuple-3", tu3);

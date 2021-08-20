@@ -17,7 +17,7 @@ use DSIUtil;
 
 // Stole this from the setupTargetLocalesArray()
 const factors = _factor(rank, numLocales);
-var ranges: rank*range;
+var ranges: rank*range(stridable=false);
 for param i in 0..rank-1 do
   ranges(i) = 0..#factors(i);
 const D = {(...ranges)};

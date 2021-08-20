@@ -1,6 +1,6 @@
 
 record Foo {
-  var x : 3*range;
+  var x : 3*range(stridable=false);
 
   proc init() {
     x = (1..1, 1..2, 1..3);

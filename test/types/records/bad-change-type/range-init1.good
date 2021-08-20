@@ -1,3 +1,0 @@
-range-init1.chpl:1: In function 'test':
-range-init1.chpl:4: error: invalid copy-initialization
-range-init1.chpl:4: error: cannot initialize a non-stridable range from a stridable range

@@ -1,3 +1,3 @@
 enum E {A};
-const r: range(idxType=E);
+const r: range(idxType=E, stridable=false);
 writeln(r);

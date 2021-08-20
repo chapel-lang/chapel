@@ -25,7 +25,7 @@ proc setup3(A3) {
 }
 
 proc d2d(DIMS) {
-  var ranges: DIMS.size * range;
+  var ranges: DIMS.size * range(stridable=false);
   for param dim in 0..DIMS.size-1 do
     ranges(dim) = 
       if isRange(DIMS(dim)) then DIMS(dim)

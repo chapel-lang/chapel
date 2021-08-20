@@ -1,6 +1,6 @@
 proc test1() {
   writeln("test1");
-  var a:range;
+  var a:range(stridable=false);
   writeln(a.type:string, " ", a);
 
   var b;
@@ -11,7 +11,7 @@ proc test1() {
   c = 2..20 by 2;
   writeln(c.type:string, " ", c);
   
-  var d:range;
+  var d:range(stridable=false);
   d = 3..30;
   writeln(d.type:string, " ", d);
 }

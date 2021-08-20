@@ -11,7 +11,7 @@ proc checkit(d1, d2) {
   writeln(d1!=d2);
 }
 
-var init_range: rank*range;
+var init_range: rank*range(stridable=false);
 var myIdx: [0..rank-1] rank*int;
 for param i in 0..rank-1 {
   init_range(i) = 1..n*(i+1);

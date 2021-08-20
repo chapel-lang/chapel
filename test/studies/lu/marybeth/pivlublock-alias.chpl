@@ -19,7 +19,7 @@ param n = 10;
 param blk = 5;
 
 var A1D = 1..n;
-var slice0, slice1, slice2: range;
+var slice0, slice1, slice2: range(stridable=false);
 const A2D = {A1D,A1D}; 
 var A: [A2D] real;
 var piv: [A1D] int;

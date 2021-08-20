@@ -6,7 +6,7 @@ proc verifyStencil(A : [?dom], debug = false) {
   assert(dom._value.periodic);
   var Neighs : domain(rank);
   {
-    var n : rank*range;
+    var n : rank*range(stridable=false);
     for i in 0..#rank do n(i) = -1..1;
     Neighs = {(...n)};
   }

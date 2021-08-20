@@ -91,7 +91,7 @@ var cls:  borrowed ClassType = new borrowed ClassType();
 var rec1: RecordSmall;
 var unn:  UnionType;
 
-var rng1: range;
+var rng1: range(stridable=false);
 var rng2: range(uint(8), BoundedRangeType.boundedNone, true);
 var dmp = defaultDist;
 var dom1: DomType1;

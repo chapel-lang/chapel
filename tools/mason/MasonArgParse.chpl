@@ -155,7 +155,7 @@ module MasonArgParse {
     // default value to use when argument is not present
     var _defaultValue:list(string);
     // number of acceptable values to be present for this argument
-    var _numArgs:range;
+    var _numArgs:range(stridable=false);
 
     proc init(name:string, defaultValue:?t=none, numArgs=1..1) {
       super.init();

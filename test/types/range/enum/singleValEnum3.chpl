@@ -44,5 +44,5 @@ forall c in C do
   writeln(c);
 
 
-var r2: range(color);
+var r2: range(color, stridable=false);
 writeln(r2);

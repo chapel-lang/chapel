@@ -6,14 +6,14 @@ enum color { red };
   testit(r);
 
   writeln("overwritten:");
-  var r2: range(color);
+  var r2: range(color, stridable=false);
   r = r2;
   testit(r);
 }
 
 {
   writeln("default initialized");
-  var r: range(color);
+  var r: range(color, stridable=false);
   testit(r);
 
   writeln("overwritten:");

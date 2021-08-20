@@ -1,3 +1,3 @@
 
-var D : domain(range);
+var D : domain(range(stridable=false));
 var A : [D] int;

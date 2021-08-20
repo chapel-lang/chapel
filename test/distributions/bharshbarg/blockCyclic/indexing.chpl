@@ -41,7 +41,7 @@ iter blockIter(param r : int) {
 proc main() {
   if n < 1 then halt("config 'n' must be >= 1.");
 
-  var dims : rank*range;
+  var dims : rank*range(stridable=false);
   for param i in 0..rank-1 {
     dims(i) = 1..n;
   }

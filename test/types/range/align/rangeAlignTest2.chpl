@@ -1,4 +1,4 @@
-var r1: range(int);
+var r1: range(int, stridable=false);
 writeln(r1.aligned);
 
 var r2: range(int, stridable=true);

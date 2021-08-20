@@ -3,7 +3,7 @@ iter foo(n: int) {
     yield i;
 }
 
-iter foo(param tag: iterKind, n: int):range where tag == iterKind.leader {
+iter foo(param tag: iterKind, n: int):range(stridable=false) where tag == iterKind.leader {
   if n == 1 then
     yield 1..1;
   else {

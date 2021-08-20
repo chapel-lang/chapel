@@ -1,7 +1,7 @@
 
 var globInt:    int;
 var globString: string;
-var globRange:  range;
+var globRange:  range(stridable=false);
 var globDomain: domain(1);
 var globArray:  [globDomain] int;
 

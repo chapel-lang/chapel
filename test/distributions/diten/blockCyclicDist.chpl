@@ -74,7 +74,7 @@ class BlockCyclicDom {
         }
       }
       on dist.locales(pos) {
-        var locRanges: nDims*range(idxType, BoundedRangeType.bounded);
+        var locRanges: nDims*range(idxType, BoundedRangeType.bounded, stridable=false);
         for i in 0..#nDims {
           locRanges(i) = 1..locSize(i);
         }
@@ -101,7 +101,7 @@ class LocBlockCyclicDom {
   param nDims: int;
   type idxType;
   const whole: unmanaged BlockCyclicDom(nDims, idxType);
-  const locRanges: nDims*range(idxType, BoundedRangeType.bounded);
+  const locRanges: nDims*range(idxType, BoundedRangeType.bounded, stridable=false);
   const locDom: domain(nDims);
   proc postinit() {
     locDom.setIndices(locRanges);

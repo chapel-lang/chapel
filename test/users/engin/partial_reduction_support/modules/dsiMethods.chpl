@@ -203,7 +203,7 @@ iter DefaultSparseDom.dsiPartialThese(param onlyDim: int, otherIdx,
 
   const otherIdxTup = chpl__tuplify(otherIdx);
 
-  var rowRange: range;
+  var rowRange: range(stridable=false);
   if onlyDim==rank-1 then rowRange = __private_findRowRange(otherIdxTup);
 
   const l = if onlyDim!=rank-1 then _indices.domain.low else rowRange.low;
