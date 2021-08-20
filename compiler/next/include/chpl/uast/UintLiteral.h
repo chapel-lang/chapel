@@ -34,8 +34,8 @@ namespace uast {
  */
 class UintLiteral final : public NumericLiteral<uint64_t> {
  private:
-  UintLiteral(uint64_t value, int base)
-    : NumericLiteral(asttags::UintLiteral, value, base)
+  UintLiteral(uint64_t value, UniqueString text)
+    : NumericLiteral(asttags::UintLiteral, value, text)
   { }
 
   // contentsMatchInner / markUniqueStringsInner are in NumericLiteral
@@ -45,7 +45,7 @@ class UintLiteral final : public NumericLiteral<uint64_t> {
   ~UintLiteral() override = default;
 
   static owned<UintLiteral> build(Builder* builder, Location loc,
-                                  uint64_t value, int base);
+                                  uint64_t value, UniqueString text);
 };
 
 

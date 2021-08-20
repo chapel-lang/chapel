@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Full test suite with CHPL_LLVM=system and pass --llvm flag to
-# compiler on linux64.
+# Full test suite with CHPL_LLVM=system and CHPL_TARGET_COMPILER=llvm
+# on linux64.
 #
 # No paratest.
 

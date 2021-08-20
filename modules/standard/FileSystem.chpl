@@ -700,20 +700,18 @@ proc exists(out error: syserr, name: string): bool {
    :yield:  The paths to any files found, relative to `startdir`, as strings
 */
 
-pragma "order independent yielding loops"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false): string {
   if (recursive) then
-    for subdir in walkdirs(startdir, hidden=hidden) do
-      for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+    foreach subdir in walkdirs(startdir, hidden=hidden) do
+      foreach file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
-    for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+    foreach file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
 }
 
 pragma "no doc"
-pragma "order independent yielding loops"
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -722,10 +720,10 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
     // [const] ref intents in forall loops over recursive parallel iterators
     // such as walkdirs().
     forall subdir in walkdirs(startdir, hidden=hidden) with (ref hidden) do
-      for file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
+      foreach file in listdir(subdir, hidden=hidden, dirs=false, files=true, listlinks=true) do
         yield subdir+"/"+file;
   else
-    for file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
+    foreach file in listdir(startdir, hidden=hidden, dirs=false, files=true, listlinks=false) do
       yield startdir+"/"+file;
 }
 
@@ -929,7 +927,6 @@ private module GlobWrappers {
 
    :yield: The matching filenames as strings
 */
-pragma "order independent yielding loops"
 iter glob(pattern: string = "*"): string {
   use GlobWrappers;
   var glb : glob_t;
@@ -937,7 +934,7 @@ iter glob(pattern: string = "*"): string {
   glob_w(pattern, glb);
   const num = glob_num_w(glb);
 
-  for i in 0..num-1 do
+  foreach i in 0..num-1 do
     yield glob_index_w(glb, i);
 
   globfree_w(glb);
@@ -945,7 +942,6 @@ iter glob(pattern: string = "*"): string {
 
 
 pragma "no doc"
-pragma "order independent yielding loops"
 iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
   use GlobWrappers;
@@ -987,7 +983,6 @@ iter glob(pattern: string = "*", param tag: iterKind)
 }
 
 pragma "no doc"
-pragma "order independent yielding loops"
 iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
   use GlobWrappers;
@@ -1001,7 +996,7 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
   if (r.high >= num) then
     HaltWrappers.zipLengthHalt("glob() is being zipped with something too big; it only has " + num:string + " matches");
 
-  for i in r do
+  foreach i in r do
     yield glob_index_w(glb, i);
 
   globfree_w(glb);
@@ -1197,7 +1192,6 @@ proc isMount(out error:syserr, name: string): bool {
 
    :yield: The names of the specified directory's contents, as strings
 */
-pragma "not order independent yielding loops"
 iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
   extern type DIRptr;

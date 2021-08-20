@@ -172,11 +172,12 @@ void bulk_test(int iters) {GASNET_BEGIN_FUNCTION();
 
 }
 
-void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
+void bulk_test_nbi(int iters, int doalc) {GASNET_BEGIN_FUNCTION();
     int i;
     int64_t begin, end;
     stat_struct_t stget, stput;
     size_t payload;
+    gex_Event_t *lc_opt = doalc ? GEX_EVENT_GROUP : GEX_EVENT_DEFER;
     
 	for (payload = min_payload; payload <= max_payload && payload > 0; ) {
 		init_stat(&stput, payload);
@@ -187,9 +188,9 @@ void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
 			/* measure the throughput of sending a message */
 			begin = TIME();
 			for (i = 0; i < iters; i++) {
-				gex_RMA_PutNBI(myteam, peerproc, tgtmem, msgbuf, payload, GEX_EVENT_DEFER, 0);
+				gex_RMA_PutNBI(myteam, peerproc, tgtmem, msgbuf, payload, lc_opt, 0);
 			}
-			gex_NBI_Wait(GEX_EC_PUT,0);
+			gex_NBI_Wait(doalc ? GEX_EC_ALL : GEX_EC_PUT, 0);
 			end = TIME();
 		 	update_stat(&stput, (end - begin), iters);
 		}
@@ -197,12 +198,13 @@ void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
 
 		if (iamsender && doputs) {
-			print_stat(myproc, &stput, "PutNBI+DEFER throughput", PRINT_THROUGHPUT);
+			const char *name = doalc ? "PutNBI+GROUP throughput" : "PutNBI+DEFER throughput";
+			print_stat(myproc, &stput, name, PRINT_THROUGHPUT);
 		}	
 	
 		init_stat(&stget, payload);
 
-		if (iamsender && dogets) {
+		if (iamsender && dogets && !doalc) {
 			/* measure the throughput of receiving a message */
 			begin = TIME();
 			for (i = 0; i < iters; i++) {
@@ -215,7 +217,7 @@ void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
 	
 		BARRIER();
 
-		if (iamsender && dogets) {
+		if (iamsender && dogets && !doalc) {
 			print_stat(myproc, &stget, "GetNBI throughput", PRINT_THROUGHPUT);
 		}	
 
@@ -224,14 +226,14 @@ void bulk_test_nbi(int iters) {GASNET_BEGIN_FUNCTION();
 
 }
 
-void bulk_test_nb(int iters) {GASNET_BEGIN_FUNCTION();
+void bulk_test_nb(int iters, int doalc) {GASNET_BEGIN_FUNCTION();
     int i;
     int64_t begin, end;
     stat_struct_t stget, stput;
     gex_Event_t *events;
     size_t payload;
     
-	events = (gex_Event_t *) test_malloc(sizeof(gex_Event_t) * iters);
+	events = (gex_Event_t *) test_malloc(sizeof(gex_Event_t) * iters * (doalc ? 2 : 1));
 
 	for (payload = min_payload; payload <= max_payload && payload > 0; ) {
 		init_stat(&stput, payload);
@@ -240,11 +242,13 @@ void bulk_test_nb(int iters) {GASNET_BEGIN_FUNCTION();
 	
 		if (iamsender && doputs) {
 			/* measure the throughput of sending a message */
+			gex_Event_t *lc_opt = doalc ? (events+iters) : GEX_EVENT_DEFER;
 			begin = TIME();
-			for (i = 0; i < iters; i++) {
-				events[i] = gex_RMA_PutNB(myteam, peerproc, tgtmem, msgbuf, payload, GEX_EVENT_DEFER, 0);
+			for (i = 0; i < iters; i++, lc_opt += doalc) {
+				events[i] = gex_RMA_PutNB(myteam, peerproc, tgtmem, msgbuf, payload, lc_opt, 0);
 			}
-			gex_Event_WaitAll(events, iters, 0);
+			if (doalc) gex_Event_WaitAll(events+iters, iters, 0); // leaf events first...
+			gex_Event_WaitAll(events, iters, 0); // ...then root events
 			end = TIME();
 		 	update_stat(&stput, (end - begin), iters);
 		}
@@ -252,12 +256,13 @@ void bulk_test_nb(int iters) {GASNET_BEGIN_FUNCTION();
 		BARRIER();
        
 		if (iamsender && doputs) {
-			print_stat(myproc, &stput, "PutNB+DEFER throughput", PRINT_THROUGHPUT);
+			const char *name = doalc ? "PutNB+event throughput" : "PutNB+DEFER throughput";
+			print_stat(myproc, &stput, name, PRINT_THROUGHPUT);
 		}	
 	
 		init_stat(&stget, payload);
 
-		if (iamsender && dogets) {
+		if (iamsender && dogets && !doalc) {
 			/* measure the throughput of receiving a message */
 			begin = TIME();
 			for (i = 0; i < iters; i++) {
@@ -270,7 +275,7 @@ void bulk_test_nb(int iters) {GASNET_BEGIN_FUNCTION();
 	
 		BARRIER();
 
-		if (iamsender && dogets) {
+		if (iamsender && dogets && !doalc) {
 			print_stat(myproc, &stget, "GetNB throughput", PRINT_THROUGHPUT);
 		}	
 
@@ -478,8 +483,10 @@ int main(int argc, char **argv)
         BARRIER();
 
 	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test(iters);
-	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test_nbi(iters);
-	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test_nb(iters);
+	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test_nbi(iters,0);
+	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test_nb(iters,0);
+	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test_nbi(iters,1);
+	if (TEST_SECTION_BEGIN_ENABLED()) bulk_test_nb(iters,1);
 
         BARRIER();
         if (alloc) test_free(alloc);

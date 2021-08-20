@@ -1,6 +1,9 @@
 /*
  * Copyright (c) 2013-2018 Intel Corporation, Inc.  All rights reserved.
  * Copyright (c) 2016 Cisco Systems, Inc. All rights reserved.
+ * Copyright (c) 2018-2019 Cray Inc. All rights reserved.
+ * Copyright (c) 2018-2019 System Fabric Works, Inc. All rights reserved.
+ * (C) Copyright 2020 Hewlett Packard Enterprise Development LP
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -71,6 +74,8 @@
 #include "ofi_util.h"
 #include "ofi_tree.h"
 #include "ofi_indexer.h"
+#include "ofi_iov.h"
+#include "ofi_hmem.h"
 
 #include "ofi_verbs_priv.h"
 
@@ -94,15 +99,18 @@
 #define VERBS_WARN(subsys, ...) FI_WARN(&vrb_prov, subsys, __VA_ARGS__)
 
 
-#define VERBS_INJECT_FLAGS(ep, len, flags) ((((flags) & FI_INJECT) || \
-		len <= (ep)->inject_limit) ? IBV_SEND_INLINE : 0)
-#define VERBS_INJECT(ep, len) VERBS_INJECT_FLAGS(ep, len, (ep)->info->tx_attr->op_flags)
+#define VERBS_INJECT_FLAGS(ep, len, flags, desc) \
+	(((flags) & FI_INJECT) || !(desc) || \
+	 ((((struct vrb_mem_desc *) (desc))->info.iface == FI_HMEM_SYSTEM) && \
+	  ((len) <= (ep)->info_attr.inject_size))) ? IBV_SEND_INLINE : 0
+#define VERBS_INJECT(ep, len, desc) \
+	VERBS_INJECT_FLAGS(ep, len, (ep)->util_ep.tx_op_flags, desc)
 
 #define VERBS_COMP_FLAGS(ep, flags, context)		\
 	(((ep)->util_ep.tx_op_flags | (flags)) &		\
 	 FI_COMPLETION ? context : VERBS_NO_COMP_FLAG)
 #define VERBS_COMP(ep, context)						\
-	VERBS_COMP_FLAGS((ep), (ep)->info->tx_attr->op_flags, context)
+	VERBS_COMP_FLAGS((ep), (ep)->util_ep.tx_op_flags, context)
 
 #define VERBS_WCE_CNT 1024
 #define VERBS_WRE_CNT 1024
@@ -116,10 +124,10 @@
 #define VERBS_CM_DATA_SIZE	(VRB_CM_DATA_SIZE -		\
 				 sizeof(struct vrb_cm_data_hdr))
 
-#define VRB_CM_REJ_CONSUMER_DEFINED	28
+#define VRB_CM_REJ_CONSUMER_DEFINED		28
 #define VRB_CM_REJ_SIDR_CONSUMER_DEFINED	2
 
-#define VERBS_DGRAM_MSG_PREFIX_SIZE	(40)
+#define VERBS_DGRAM_MSG_PREFIX_SIZE		(40)
 
 #define VRB_EP_TYPE(info)						\
 	((info && info->ep_attr) ? info->ep_attr->type : FI_EP_MSG)
@@ -169,6 +177,8 @@ extern struct vrb_gl_data {
 		int	prefer_xrc;
 		char	*xrcd_filename;
 	} msg;
+
+	bool	peer_mem_support;
 } vrb_gl_data;
 
 struct verbs_addr {
@@ -209,17 +219,18 @@ struct ofi_ib_ud_ep_name {
 static inline
 int vrb_dgram_ns_is_service_wildcard(void *svc)
 {
-	return (*(int *)svc == VERBS_IB_UD_NS_ANY_SERVICE);
+	return (*(int *) svc == VERBS_IB_UD_NS_ANY_SERVICE);
 }
 
 static inline
 int vrb_dgram_ns_service_cmp(void *svc1, void *svc2)
 {
-	int service1 = *(int *)svc1, service2 = *(int *)svc2;
+	int service1 = *(int *) svc1, service2 = *(int *) svc2;
 
 	if (vrb_dgram_ns_is_service_wildcard(svc1) ||
 	    vrb_dgram_ns_is_service_wildcard(svc2))
 		return 0;
+
 	return (service1 < service2) ? -1 : (service1 > service2);
 }
 
@@ -312,7 +323,7 @@ int vrb_av_open(struct fid_domain *domain, struct fi_av_attr *attr,
 
 struct vrb_pep {
 	struct fid_pep		pep_fid;
-	struct vrb_eq	*eq;
+	struct vrb_eq		*eq;
 	struct rdma_cm_id	*id;
 
 	/* XRC uses SIDR based RDMA CM exchanges for setting up
@@ -347,9 +358,12 @@ struct vrb_domain {
 
 	enum fi_ep_type			ep_type;
 	struct fi_info			*info;
+
 	/* The EQ is utilized by verbs/MSG */
-	struct vrb_eq		*eq;
+	struct vrb_eq			*eq;
 	uint64_t			eq_flags;
+
+	ssize_t		(*send_credits)(struct fid_ep *ep, uint64_t credits);
 
 	/* Indicates that MSG endpoints should use the XRC transport.
 	 * TODO: Move selection of XRC/RC to endpoint info from domain */
@@ -358,11 +372,15 @@ struct vrb_domain {
 		int			xrcd_fd;
 		struct ibv_xrcd		*xrcd;
 
-		/* The domain maintains a RBTree for mapping an endpoint
-		 * destination addresses to physical XRC INI QP connected
-		 * to that host. The map is protected using the EQ lock
-		 * bound to the domain to avoid the need for additional
-		 * locking. */
+		/* XRC INI QP connections can be shared between endpoint
+		 * within the same domain. The domain maintains an RBTree
+		 * for mapping endpoint destination addresses to the
+		 * physical XRC INI connection to the associated node. The
+		 * map and XRC INI connection object state information are
+		 * protected via the ini_lock. */
+		fastlock_t		ini_lock;
+		ofi_fastlock_acquire_t	lock_acquire;
+		ofi_fastlock_release_t	lock_release;
 		struct ofi_rbmap	*ini_conn_rbmap;
 	} xrc;
 
@@ -415,13 +433,13 @@ struct vrb_mem_desc {
 	struct fid_mr		mr_fid;
 	struct ibv_mr		*mr;
 	struct vrb_domain	*domain;
-	size_t			len;
 	/* this field is used only by MR cache operations */
 	struct ofi_mr_entry	*entry;
+	struct ofi_mr_info	info;
+	uint32_t		lkey;
 };
 
 extern struct fi_ops_mr vrb_mr_ops;
-extern struct fi_ops_mr vrb_mr_cache_ops;
 
 int vrb_mr_cache_add_region(struct ofi_mr_cache *cache,
 			       struct ofi_mr_entry *entry);
@@ -471,12 +489,6 @@ struct vrb_srq_ep {
 int vrb_srq_context(struct fid_domain *domain, struct fi_rx_attr *attr,
 		       struct fid_ep **rx_ep, void *context);
 
-static inline int vrb_is_xrc(struct fi_info *info)
-{
-	return (VRB_EP_TYPE(info) == FI_EP_MSG) &&
-	       (VRB_EP_PROTO(info) == FI_PROTO_RDMA_CM_IB_XRC);
-}
-
 int vrb_domain_xrc_init(struct vrb_domain *domain);
 int vrb_domain_xrc_cleanup(struct vrb_domain *domain);
 
@@ -498,14 +510,14 @@ enum vrb_ini_qp_state {
 struct vrb_ini_shared_conn {
 	/* To share, EP must have same remote peer host addr and TX CQ */
 	struct sockaddr			*peer_addr;
-	struct vrb_cq		*tx_cq;
+	struct vrb_cq			*tx_cq;
 
 	/* The physical INI/TGT QPN connection. Virtual connections to the
 	 * same remote peer and TGT QPN will share this connection, with
 	 * the remote end opening the specified XRC TGT QPN for sharing
 	 * During the physical connection setup, phys_conn_id identifies
 	 * the RDMA CM ID (and MSG_EP) associated with the operation. */
-	enum vrb_ini_qp_state	state;
+	enum vrb_ini_qp_state		state;
 	struct rdma_cm_id		*phys_conn_id;
 	struct ibv_qp			*ini_qp;
 	uint32_t			tgt_qpn;
@@ -560,21 +572,36 @@ struct vrb_ep {
 	struct ibv_qp			*ibv_qp;
 
 	/* Protected by send CQ lock */
-	size_t				tx_credits;
+	uint64_t			sq_credits;
+	uint64_t			peer_rq_credits;
+	/* Protected by recv CQ lock */
+	int64_t				rq_credits_avail;
+	int64_t				threshold;
 
 	union {
-		struct rdma_cm_id		*id;
+		struct rdma_cm_id	*id;
 		struct {
 			struct ofi_ib_ud_ep_name	ep_name;
 			int				service;
 		};
 	};
 
-	size_t				inject_limit;
-
-	struct vrb_eq		*eq;
+	struct {
+		size_t			inject_size;
+		size_t                  tx_size;
+		size_t                  tx_iov_limit;
+		size_t                  rx_size;
+		size_t                  rx_iov_limit;
+		uint32_t                protocol;
+		uint32_t                addr_format;
+		size_t                  src_addrlen;
+		size_t                  dest_addrlen;
+		void                    *src_addr;
+		void                    *dest_addr;
+		void                    *handle;
+	} info_attr;
+	struct vrb_eq			*eq;
 	struct vrb_srq_ep		*srq_ep;
-	struct fi_info			*info;
 
 	struct {
 		struct ibv_send_wr	rma_wr;
@@ -583,7 +610,9 @@ struct vrb_ep {
 	} *wrs;
 	size_t				rx_cq_size;
 	struct rdma_conn_param		conn_param;
-	struct vrb_cm_data_hdr	*cm_hdr;
+	struct vrb_cm_data_hdr		*cm_hdr;
+	void				*cm_priv_data;
+	bool				hmem_enabled;
 };
 
 
@@ -599,7 +628,7 @@ struct vrb_context {
 #define VERBS_XRC_EP_MAGIC		0x1F3D5B79
 struct vrb_xrc_ep {
 	/* Must be first */
-	struct vrb_ep		base_ep;
+	struct vrb_ep			base_ep;
 
 	/* XRC only fields */
 	struct rdma_cm_id		*tgt_id;
@@ -628,11 +657,23 @@ struct vrb_xrc_ep {
 	struct vrb_xrc_ep_conn_setup	*conn_setup;
 };
 
+static inline int vrb_is_xrc_info(struct fi_info *info)
+{
+	return (VRB_EP_TYPE(info) == FI_EP_MSG) &&
+		(VRB_EP_PROTO(info) == FI_PROTO_RDMA_CM_IB_XRC);
+}
+
+static inline int vrb_is_xrc_ep(struct vrb_ep *ep)
+{
+	return (ep->util_ep.type == FI_EP_MSG) &&
+		(ep->info_attr.protocol == FI_PROTO_RDMA_CM_IB_XRC);
+}
+
 int vrb_open_ep(struct fid_domain *domain, struct fi_info *info,
 		   struct fid_ep **ep, void *context);
 int vrb_passive_ep(struct fid_fabric *fabric, struct fi_info *info,
 		      struct fid_pep **pep, void *context);
-int vrb_create_ep(const struct fi_info *hints, enum rdma_port_space ps,
+int vrb_create_ep(struct vrb_ep *ep, enum rdma_port_space ps,
 		     struct rdma_cm_id **id);
 int vrb_dgram_av_open(struct fid_domain *domain_fid, struct fi_av_attr *attr,
 			 struct fid_av **av_fid, void *context);
@@ -690,6 +731,17 @@ struct vrb_connreq {
 	struct vrb_xrc_conn_info	xrc;
 };
 
+/* Structure below is a copy of the RDMA CM header (structure ib_connect_hdr in
+ * file librdmacm/cma.h)
+ * DO NOT MODIFY! */
+struct vrb_rdma_cm_hdr {
+	uint8_t  cma_version; /* Set by the kernel */
+	uint8_t  ip_version; /*  IP version: 7:4 */
+	uint16_t port;
+	uint32_t src_addr[4];
+	uint32_t dst_addr[4];
+};
+
 struct vrb_cm_data_hdr {
 	uint8_t	size;
 	char	data[];
@@ -732,7 +784,6 @@ void vrb_sched_ini_conn(struct vrb_ini_shared_conn *ini_conn);
 int vrb_get_shared_ini_conn(struct vrb_xrc_ep *ep,
 			       struct vrb_ini_shared_conn **ini_conn);
 void vrb_put_shared_ini_conn(struct vrb_xrc_ep *ep);
-int vrb_reserve_qpn(struct vrb_xrc_ep *ep, struct ibv_qp **qp);
 
 void vrb_save_priv_data(struct vrb_xrc_ep *ep, const void *data,
 			   size_t len);
@@ -745,8 +796,6 @@ void vrb_ep_tgt_conn_done(struct vrb_xrc_ep *qp);
 int vrb_ep_destroy_xrc_qp(struct vrb_xrc_ep *ep);
 
 int vrb_xrc_close_srq(struct vrb_srq_ep *srq_ep);
-int vrb_sockaddr_len(struct sockaddr *addr);
-
 
 int vrb_init_info(const struct fi_info **all_infos);
 int vrb_getinfo(uint32_t version, const char *node, const char *service,
@@ -754,13 +803,13 @@ int vrb_getinfo(uint32_t version, const char *node, const char *service,
 		   struct fi_info **info);
 const struct fi_info *vrb_get_verbs_info(const struct fi_info *ilist,
 					    const char *domain_name);
-int vrb_fi_to_rai(const struct fi_info *fi, uint64_t flags,
-		     struct rdma_addrinfo *rai);
-int vrb_get_rdma_rai(const char *node, const char *service, uint64_t flags,
-			const struct fi_info *hints, struct rdma_addrinfo **rai);
+int vrb_set_rai(uint32_t addr_format, void *src_addr, size_t src_addrlen,
+		void *dest_addr, size_t dest_addrlen, uint64_t flags,
+		struct rdma_addrinfo *rai);
 int vrb_get_matching_info(uint32_t version, const struct fi_info *hints,
 			     struct fi_info **info, const struct fi_info *verbs_info,
 			     uint8_t passive);
+int vrb_get_port_space(uint32_t addr_format);
 void vrb_alter_info(const struct fi_info *hints, struct fi_info *info);
 
 struct verbs_ep_domain {
@@ -841,60 +890,26 @@ static inline ssize_t vrb_convert_ret(int ret)
 int vrb_poll_cq(struct vrb_cq *cq, struct ibv_wc *wc);
 int vrb_save_wc(struct vrb_cq *cq, struct ibv_wc *wc);
 
-#define vrb_init_sge(buf, len, desc) (struct ibv_sge)		\
-	{ .addr = (uintptr_t)buf,					\
-	  .length = (uint32_t)len,					\
-	  .lkey = (uint32_t)(uintptr_t)desc }
+#define vrb_init_sge(buf, len, desc) (struct ibv_sge)	\
+	{ .addr = (uintptr_t) buf,			\
+	  .length = (uint32_t) len,			\
+	  .lkey = (desc) ? ((struct vrb_mem_desc *) (desc))->lkey : 0 }
 
-#define vrb_set_sge_iov(sg_list, iov, count, desc)	\
-({							\
-	size_t i;					\
-	sg_list = alloca(sizeof(*sg_list) * count);	\
-	for (i = 0; i < count; i++) {			\
-		sg_list[i] = vrb_init_sge(		\
-				iov[i].iov_base,	\
-				iov[i].iov_len,		\
-				desc[i]);		\
-	}						\
-})
-
-#define vrb_set_sge_iov_count_len(sg_list, iov, count, desc, len)	\
-({									\
-	size_t i;							\
-	sg_list = alloca(sizeof(*sg_list) * count);			\
-	for (i = 0; i < count; i++) {					\
-		sg_list[i] = vrb_init_sge(				\
-				iov[i].iov_base,			\
-				iov[i].iov_len,				\
-				desc[i]);				\
-		len += iov[i].iov_len;					\
-	}								\
-})
-
-#define vrb_init_sge_inline(buf, len) vrb_init_sge(buf, len, NULL)
-
-#define vrb_set_sge_iov_inline(sg_list, iov, count, len)	\
-({								\
+#define vrb_iov_dupa(dst, iov, desc, count)			\
+do {								\
 	size_t i;						\
-	sg_list = alloca(sizeof(*sg_list) * count);		\
+	dst = alloca(sizeof(*dst) * count);			\
 	for (i = 0; i < count; i++) {				\
-		sg_list[i] = vrb_init_sge_inline(		\
-					iov[i].iov_base,	\
-					iov[i].iov_len);	\
-		len += iov[i].iov_len;				\
+		dst[i] = vrb_init_sge(iov[i].iov_base,		\
+				      iov[i].iov_len, desc[i]);	\
 	}							\
-})
+} while (0)
 
-#define vrb_send_iov(ep, wr, iov, desc, count)		\
-	vrb_send_iov_flags(ep, wr, iov, desc, count,		\
-			      (ep)->info->tx_attr->op_flags)
+#define vrb_wr_consumes_recv(wr)						\
+	( wr->opcode == IBV_WR_SEND || wr->opcode == IBV_WR_SEND_WITH_IMM	\
+	|| wr->opcode == IBV_WR_RDMA_WRITE_WITH_IMM )
 
-#define vrb_send_msg(ep, wr, msg, flags)				\
-	vrb_send_iov_flags(ep, wr, (msg)->msg_iov, (msg)->desc,	\
-			      (msg)->iov_count, flags)
-
-
-ssize_t vrb_post_send(struct vrb_ep *ep, struct ibv_send_wr *wr);
+ssize_t vrb_post_send(struct vrb_ep *ep, struct ibv_send_wr *wr, uint64_t flags);
 ssize_t vrb_post_recv(struct vrb_ep *ep, struct ibv_recv_wr *wr);
 
 static inline ssize_t
@@ -903,49 +918,17 @@ vrb_send_buf(struct vrb_ep *ep, struct ibv_send_wr *wr,
 {
 	struct ibv_sge sge = vrb_init_sge(buf, len, desc);
 
-	assert(wr->wr_id != VERBS_NO_COMP_FLAG);
-
 	wr->sg_list = &sge;
 	wr->num_sge = 1;
 
-	return vrb_post_send(ep, wr);
+	return vrb_post_send(ep, wr, 0);
 }
 
-static inline ssize_t
-vrb_send_buf_inline(struct vrb_ep *ep, struct ibv_send_wr *wr,
-		       const void *buf, size_t len)
-{
-	struct ibv_sge sge = vrb_init_sge_inline(buf, len);
+ssize_t vrb_send_iov(struct vrb_ep *ep, struct ibv_send_wr *wr,
+		     const struct iovec *iov, void **desc, int count,
+		     uint64_t flags);
 
-	assert(wr->wr_id == VERBS_NO_COMP_FLAG);
-
-	wr->sg_list = &sge;
-	wr->num_sge = 1;
-
-	return vrb_post_send(ep, wr);
-}
-
-static inline ssize_t
-vrb_send_iov_flags(struct vrb_ep *ep, struct ibv_send_wr *wr,
-		      const struct iovec *iov, void **desc, int count,
-		      uint64_t flags)
-{
-	size_t len = 0;
-
-	if (!desc)
-		vrb_set_sge_iov_inline(wr->sg_list, iov, count, len);
-	else
-		vrb_set_sge_iov_count_len(wr->sg_list, iov, count, desc, len);
-
-	wr->num_sge = count;
-	wr->send_flags = VERBS_INJECT_FLAGS(ep, len, flags);
-	wr->wr_id = VERBS_COMP_FLAGS(ep, flags, wr->wr_id);
-
-	if (flags & FI_FENCE)
-		wr->send_flags |= IBV_SEND_FENCE;
-
-	return vrb_post_send(ep, wr);
-}
+void vrb_add_credits(struct fid_ep *ep, size_t credits);
 
 int vrb_get_rai_id(const char *node, const char *service, uint64_t flags,
 		      const struct fi_info *hints, struct rdma_addrinfo **rai,

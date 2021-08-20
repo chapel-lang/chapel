@@ -196,7 +196,6 @@ int gasnete_get_nbi (gex_TM_t tm, void *dest, gex_Rank_t rank, void *src,
                      size_t nbytes, gex_Flags_t flags GASNETI_THREAD_FARG)
 {
   GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
-  int ret;
 
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
   gasnete_iop_t *op = mythread->current_iop;
@@ -204,12 +203,12 @@ int gasnete_get_nbi (gex_TM_t tm, void *dest, gex_Rank_t rank, void *src,
   gex_Rank_t jobrank = gasneti_e_tm_rank_to_jobrank(tm, rank);
 
   GASNETC_LOCK_ACQUIRE(GASNETC_LOCK_REGULAR);
-  ret = gasnetc_ucx_putget_inner(
-        0, jobrank, dest, nbytes, src, &op->initiated_get_cnt,
-        op->next ? gasnetc_cb_nar_get : gasnetc_cb_iop_get,
-        NULL, NULL);
+  gasnetc_ucx_putget_inner(0, jobrank, dest, nbytes, src,
+                           &op->initiated_get_cnt,
+                           op->next ? gasnetc_cb_nar_get : gasnetc_cb_iop_get,
+                           NULL, NULL);
   GASNETC_LOCK_RELEASE(GASNETC_LOCK_REGULAR);
-  return ret;
+  return 0;
 }
 
 extern

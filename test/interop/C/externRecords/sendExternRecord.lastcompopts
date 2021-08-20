@@ -1,1 +1,1 @@
--Llib/ -lreceiveExternRecord `$CHPL_HOME/util/config/compileline --libraries`
+-Llib/ -lreceiveExternRecord `$CHPL_HOME/util/config/compileline --libraries` -lreceiveExternRecord

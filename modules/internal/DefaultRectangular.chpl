@@ -21,6 +21,8 @@
 // DefaultRectangular.chpl
 //
 module DefaultRectangular {
+  import HaltWrappers;
+
   config const dataParTasksPerLocale = 0;
   config const dataParIgnoreRunningTasks = false;
   config const dataParMinGranularity: int = 1;
@@ -206,18 +208,17 @@ module DefaultRectangular {
       chpl_assignDomainWithGetSetIndices(this, rhs);
     }
 
-    pragma "order independent yielding loops"
     iter these_help(param d: int) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == rank-1 {
-        for i in ranges(d) do
+        foreach i in ranges(d) do
           yield i;
       } else if d == rank - 2 {
-        for i in ranges(d) do
-          for j in these_help(rank-1) do
+        foreach i in ranges(d) do
+          foreach j in these_help(rank-1) do
             yield (i, j);
       } else {
-        for i in ranges(d) do
-          for j in these_help(d+1) do
+        foreach i in ranges(d) do
+          foreach j in these_help(d+1) do
             yield (i, (...j));
       }
     }
@@ -239,18 +240,17 @@ module DefaultRectangular {
     }
 */
 
-    pragma "order independent yielding loops"
     iter these_help(param d: int, block) /*where storageOrder == ArrayStorageOrder.RMO*/ {
       if d == block.size-1 {
-        for i in block(d) do
+        foreach i in block(d) do
           yield i;
       } else if d == block.size - 2 {
-        for i in block(d) do
-          for j in these_help(block.size-1, block) do
+        foreach i in block(d) do
+          foreach j in these_help(block.size-1, block) do
             yield (i, j);
       } else {
-        for i in block(d) do
-          for j in these_help(d+1, block) do
+        foreach i in block(d) do
+          foreach j in these_help(d+1, block) do
             yield (i, (...j));
       }
     }
@@ -479,7 +479,6 @@ module DefaultRectangular {
       }
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -487,6 +486,11 @@ module DefaultRectangular {
                offset=createTuple(rank, intIdxType, 0:intIdxType))
       where tag == iterKind.follower {
 
+      if followThis.size != this.rank then
+        compilerError("rank mismatch in zippered iteration (can't zip a " +
+                      followThis.size:string + "D expression with a " +
+                      this.rank:string + "D domain)");
+        
       proc anyStridable(rangeTuple, param i: int = 0) param
         return if i == rangeTuple.size-1 then rangeTuple(i).stridable
                else rangeTuple(i).stridable || anyStridable(rangeTuple, i+1);
@@ -498,6 +502,10 @@ module DefaultRectangular {
 
       param stridable = this.stridable || anyStridable(followThis);
       var block: rank*range(idxType=intIdxType, stridable=stridable);
+      if boundsChecking then
+        for param i in 0..rank-1 do
+          if followThis(i).high >= ranges(i).sizeAs(uint) then
+            HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration (dimension " + i:string + ")");
       if stridable {
         type strType = chpl__signedType(intIdxType);
         for param i in 0..rank-1 {
@@ -525,11 +533,11 @@ module DefaultRectangular {
       }
 
       if rank == 1 {
-        for i in zip((...block)) {
+        foreach i in zip((...block)) {
           yield chpl_intToIdx(i);
         }
       } else {
-        for i in these_help(0, block) {
+        foreach i in these_help(0, block) {
           yield chpl_intToIdx(i);
         }
       }
@@ -704,7 +712,6 @@ module DefaultRectangular {
       }
     }
 
-    pragma "order independent yielding loops"
     iter dsiLocalSubdomains(loc: locale) {
       yield dsiLocalSubdomain(loc);
     }
@@ -1127,7 +1134,6 @@ module DefaultRectangular {
       for elem in chpl__serialViewIter(this, dom) do yield elem;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
@@ -1136,7 +1142,7 @@ module DefaultRectangular {
       if debugDefaultDist {
         chpl_debug_writeln("*** In defRectArr simple-dd standalone iterator");
       }
-      for i in dom.these(tag, tasksPerLocale,
+      foreach i in dom.these(tag, tasksPerLocale,
                          ignoreRunning, minIndicesPerTask) {
         yield dsiAccess(i);
       }
@@ -1157,18 +1163,22 @@ module DefaultRectangular {
         yield followThis;
     }
 
-    pragma "order independent yielding loops"
     iter these(param tag: iterKind, followThis,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity)
       ref where tag == iterKind.follower {
+      if followThis.size != this.rank then
+        compilerError("rank mismatch in zippered iteration (can't zip a " +
+                      followThis.size:string + "D expression with a " +
+                      this.rank:string + "D array)");
+
       if debugDefaultDist {
         chpl_debug_writeln("*** In defRectArr simple-dd follower iterator: ",
                            followThis);
       }
 
-      for i in dom.these(tag=iterKind.follower, followThis,
+      foreach i in dom.these(tag=iterKind.follower, followThis,
                          tasksPerLocale,
                          ignoreRunning,
                          minIndicesPerTask) do
@@ -1519,7 +1529,6 @@ module DefaultRectangular {
       }
     }
 
-    pragma "order independent yielding loops"
     iter dsiLocalSubdomains(loc: locale) {
       yield dsiLocalSubdomain(loc);
     }
@@ -1529,7 +1538,6 @@ module DefaultRectangular {
     }
   }
 
-  pragma "order independent yielding loops"
   iter chpl__serialViewIter(arr, viewDom) ref
     where chpl__isDROrDRView(arr) {
     param useCache = chpl__isArrayView(arr) && arr.shouldUseIndexCache();
@@ -1554,7 +1562,7 @@ module DefaultRectangular {
         const second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, chpl__idxToInt(viewDom.dsiLow)+1));
         const step   = (second-first);
         const last   = first + (viewDom.dsiNumIndices:step.type-1) * step;
-        for i in chpl_direct_pos_stride_range_iter(first, last, step) {
+        foreach i in chpl_direct_pos_stride_range_iter(first, last, step) {
           yield info.theData(i);
         }
       } else {
@@ -1572,16 +1580,16 @@ module DefaultRectangular {
           last <=> first;
 
         var data = info.theData;
-        for i in first..last by step do
+        foreach i in first..last by step do
           yield data(i);
       }
     } else if useCache {
-      for i in viewDom {
+      foreach i in viewDom {
         const dataIdx = info.getDataIndex(i);
         yield info.getDataElem(dataIdx);
       }
     } else {
-      for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
+      foreach elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
     }
   }
 
@@ -1589,9 +1597,8 @@ module DefaultRectangular {
     for elem in chpl__serialViewIterHelper(arr, viewDom) do yield elem;
   }
 
-  pragma "order independent yielding loops"
   iter chpl__serialViewIterHelper(arr, viewDom) ref {
-    for i in viewDom {
+    foreach i in viewDom {
       const dataIdx = if arr.isReindexArrayView() then chpl_reindexConvertIdx(i, arr.dom, arr.downdom)
                       else if arr.isRankChangeArrayView() then chpl_rankChangeConvertIdx(i, arr.collapsedDim, arr.idx)
                       else i;

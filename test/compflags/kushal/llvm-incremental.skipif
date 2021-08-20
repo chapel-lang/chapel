@@ -1,2 +1,2 @@
-CHPL_LLVM==none
+CHPL_TARGET_COMPILER != llvm
 COMPOPTS <= --fast

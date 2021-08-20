@@ -26,8 +26,8 @@ namespace uast {
 
 
 owned<UintLiteral> UintLiteral::build(Builder* builder, Location loc,
-                                      uint64_t value, int base) {
-  UintLiteral* ret = new UintLiteral(value, base);
+                                      uint64_t value, UniqueString text) {
+  UintLiteral* ret = new UintLiteral(value, text);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

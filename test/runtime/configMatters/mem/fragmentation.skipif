@@ -1,1 +1,2 @@
 CHPL_MEM != jemalloc
+CHPL_COMM == ugni

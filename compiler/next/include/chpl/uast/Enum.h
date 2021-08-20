@@ -43,17 +43,22 @@ namespace uast {
   (for a, b, c in the example).
  */
 class Enum final : public TypeDecl {
- friend class EnumDecl;
-
  private:
-  Enum(ASTList children, Visibility vis, UniqueString name)
+  Enum(ASTList children, Decl::Visibility vis, UniqueString name)
     : TypeDecl(asttags::Enum, std::move(children), vis, name) {
 
     assert(isEnumElementAndCommentList(children_));
   }
   static bool isEnumElementAndCommentList(const ASTList& list);
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Enum* lhs = this;
+    const Enum* rhs = (const Enum*) other;
+    return lhs->typeDeclContentsMatchInner(rhs);
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    typeDeclMarkUniqueStringsInner(context);
+  }
 
  public:
   ~Enum() override = default;

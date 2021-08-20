@@ -263,7 +263,7 @@ Expr* buildFormalArrayType(Expr* iterator, Expr* eltType, Expr* index) {
   }
 }
 
-Expr* buildIntLiteral(const char* pch, const char* file, int line) {
+SymExpr* buildIntLiteral(const char* pch, const char* file, int line) {
   uint64_t ull;
   int len = strlen(pch);
   char* noUnderscores = (char*)malloc(len+1);
@@ -298,12 +298,12 @@ Expr* buildIntLiteral(const char* pch, const char* file, int line) {
 }
 
 
-Expr* buildRealLiteral(const char* pch) {
+SymExpr* buildRealLiteral(const char* pch) {
   return new SymExpr(new_RealSymbol(pch));
 }
 
 
-Expr* buildImagLiteral(const char* pch) {
+SymExpr* buildImagLiteral(const char* pch) {
   char* str = strdup(pch);
   str[strlen(pch)-1] = '\0';
   SymExpr* se = new SymExpr(new_ImagSymbol(str));
@@ -312,15 +312,15 @@ Expr* buildImagLiteral(const char* pch) {
 }
 
 
-Expr* buildStringLiteral(const char* pch) {
+SymExpr* buildStringLiteral(const char* pch) {
   return new SymExpr(new_StringSymbol(pch));
 }
 
-Expr* buildBytesLiteral(const char* pch) {
+SymExpr* buildBytesLiteral(const char* pch) {
   return new SymExpr(new_BytesSymbol(pch));
 }
 
-Expr* buildCStringLiteral(const char* pch) {
+SymExpr* buildCStringLiteral(const char* pch) {
   return new SymExpr(new_CStringSymbol(pch));
 }
 
@@ -382,6 +382,15 @@ DefExpr* buildDeprecated(DefExpr* def, const char* msg) {
   Symbol* sym = def->sym;
   sym->addFlag(FLAG_DEPRECATED);
   sym->deprecationMsg = msg;
+
+  if (sym->hasFlag(FLAG_CONFIG)) {
+    // Trigger a warning now if the deprecated config has been set via the
+    // compilation line
+    if (isUsedCmdLineConfig(sym->name)) {
+      USR_WARN("%s", sym->getDeprecationMsg());
+      USR_PRINT("'%s' was set via a compiler flag", sym->name);
+    }
+  }
   return def;
 }
 
@@ -483,6 +492,8 @@ BlockStmt* buildUseStmt(Expr* mod, const char * rename,
     PotentialRename* listElem = (*names)[0];
     if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
       if (name->unresolved[0] == '\0') {
+        USR_WARN(mod, "'use <mod> except *;' is deprecated, use 'use <mod>"
+                 " only;' or 'import <mod>;' instead");
         except = false;
       }
     }
@@ -1201,7 +1212,7 @@ static BlockStmt* buildLoweredCoforall(Expr* indices,
   if (bounded) {
     if (!onBlock) { block->insertAtHead(new CallExpr("chpl_resetTaskSpawn", numTasks)); }
     block->insertAtHead(new CallExpr("_upEndCount", coforallCount, countRunningTasks, numTasks));
-    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr("chpl_coforallSize", iterator)));
+    block->insertAtHead(new CallExpr(PRIM_MOVE, numTasks, new CallExpr("chpl_boundedCoforallSize", iterator, zippered ? gTrue : gFalse)));
     block->insertAtHead(new DefExpr(numTasks));
     block->insertAtTail(new DeferStmt(new CallExpr("_endCountFree", coforallCount)));
     block->insertAtTail(new CallExpr("_waitEndCount", coforallCount, countRunningTasks, numTasks));
@@ -1233,10 +1244,10 @@ static void removeWrappingBlock(BlockStmt*& block) {
 // This effectively builds up:
 //
 //     var tmpIter = iterator;
-//     param bounded = isBoundedRange(tmpIter) || isDomain(tmpIter) || isArray(tmpIter);
+//     param isBounded = chpl_supportsBoundedCoforall(tmpIter);
 //     param useLocalEndCount, countRunningTasks = !bodyContainsOnStmt();
-//     if bounded {
-//       var numTasks = tmpIter.size;
+//     if isBounded {
+//       var numTasks = chpl_boundedCoforallSize(tmpIter);
 //       var _coforallCount = _endCountAlloc(useLocalEndCount);
 //       // only bump EndCount once, instead of once per task
 //       _upEndCount(_coforallCount, countRunningTasks, numTasks);
@@ -1298,15 +1309,13 @@ BlockStmt* buildCoforallLoopStmt(Expr* indices,
   BlockStmt* vectorCoforallBlk = buildLoweredCoforall(indices, tmpIter, copyByrefVars(byref_vars), body->copy(), zippered, /*bounded=*/true);
   BlockStmt* nonVectorCoforallBlk = buildLoweredCoforall(indices, tmpIter, byref_vars, body, zippered, /*bounded=*/false);
 
-  VarSymbol* isRngDomArr = newTemp("isRngDomArr");
-  isRngDomArr->addFlag(FLAG_MAYBE_PARAM);
-  coforallBlk->insertAtTail(new DefExpr(isRngDomArr));
+  VarSymbol* isBounded = newTemp("isBounded");
+  isBounded->addFlag(FLAG_MAYBE_PARAM);
+  coforallBlk->insertAtTail(new DefExpr(isBounded));
 
-  coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, isRngDomArr,
-                            new CallExpr("||", new CallExpr("isBoundedRange", tmpIter),
-                            new CallExpr("||", new CallExpr("isDomain", tmpIter), new CallExpr("isArray", tmpIter)))));
+  coforallBlk->insertAtTail(new CallExpr(PRIM_MOVE, isBounded, new CallExpr("chpl_supportsBoundedCoforall", tmpIter, zippered ? gTrue : gFalse)));
 
-  coforallBlk->insertAtTail(new CondStmt(new SymExpr(isRngDomArr),
+  coforallBlk->insertAtTail(new CondStmt(new SymExpr(isBounded),
                                          vectorCoforallBlk,
                                          nonVectorCoforallBlk));
   return coforallBlk;

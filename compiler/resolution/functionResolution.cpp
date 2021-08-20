@@ -2334,7 +2334,7 @@ void checkForStoringIntoTuple(CallExpr* call, FnSymbol* resolvedFn)
 static const char* defaultRecordAssignmentTo(FnSymbol* fn) {
   if (fn->name == astrSassign) {
     if (fn->hasFlag(FLAG_COMPILER_GENERATED)) {
-      Type* desttype = fn->getFormal(1)->type->getValType();
+      Type* desttype = fn->getFormal(3)->type->getValType();
       INT_ASSERT(desttype != dtUnknown); // otherwise this test is unreliable
       if (isRecord(desttype) || isUnion(desttype))
         return desttype->symbol->name;
@@ -7110,7 +7110,8 @@ void resolveInitVar(CallExpr* call) {
              targetType->getValType()->symbol->hasFlag(FLAG_ARRAY) ||
              isDomainWithoutNew ||
              initCopySyncSingle ||
-             srcType->getValType()->symbol->hasFlag(FLAG_TUPLE) ||
+             (targetType->getValType()->symbol->hasFlag(FLAG_TUPLE) &&
+              srcType->getValType()->symbol->hasFlag(FLAG_TUPLE)) ||
              initCopyIter) {
     // These cases require an initCopy to implement special initialization
     // semantics (e.g. reading a sync for variable initialization).

@@ -25,70 +25,27 @@ namespace chpl {
 namespace uast {
 
 
-bool Conditional::contentsMatchInner(const ASTNode* other) const {
-  const Conditional* lhs = this;
-  const Conditional* rhs = other->toConditional();
-
-  if (lhs->thenBlockStyle_ != rhs->thenBlockStyle_)
-    return false;
-
-  if (lhs->thenBodyChildNum_ != rhs->thenBodyChildNum_)
-    return false;
-
-  if (lhs->numThenBodyStmts_ != rhs->numThenBodyStmts_)
-    return false;
-
-  if (lhs->elseBlockStyle_ != rhs->elseBlockStyle_)
-    return false;
-
-  if (lhs->elseBodyChildNum_ != rhs->elseBodyChildNum_)
-    return false;
-
-  if (lhs->numElseBodyStmts_ != rhs->numElseBodyStmts_)
-    return false;
-
-  if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
-    return false;
-
-  if (!lhs->controlFlowContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<Conditional> Conditional::build(Builder* builder, Location loc,
                                       owned<Expression> condition,
                                       BlockStyle thenBlockStyle,
-                                      ASTList thenStmts,
+                                      owned<Block> thenBlock,
                                       BlockStyle elseBlockStyle,
-                                      ASTList elseStmts,
+                                      owned<Block> elseBlock,
                                       bool isExpressionLevel) {
   assert(condition.get() != nullptr);
 
   ASTList lst;
 
   lst.push_back(std::move(condition));
+  lst.push_back(std::move(thenBlock));
 
-  const int8_t thenBodyChildNum = lst.size();
-  const int numThenBodyStmts = thenStmts.size();
-
-  for (auto& stmt : thenStmts) {
-    lst.push_back(std::move(stmt));
+  if (elseBlock.get() != nullptr) {
+    lst.push_back(std::move(elseBlock));
   }
 
-  const int elseBodyChildNum = lst.size();
-  const int numElseBodyStmts = elseStmts.size();
-
-  for (auto& stmt : elseStmts) {
-    lst.push_back(std::move(stmt));
-  }
-
-  Conditional* ret = new Conditional(std::move(lst), thenBlockStyle,
-                                     thenBodyChildNum,
-                                     numThenBodyStmts,
+  Conditional* ret = new Conditional(std::move(lst),
+                                     thenBlockStyle,
                                      elseBlockStyle,
-                                     elseBodyChildNum,
-                                     numElseBodyStmts,
                                      isExpressionLevel);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
@@ -97,29 +54,18 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
 owned<Conditional> Conditional::build(Builder* builder, Location loc,
                                       owned<Expression> condition,
                                       BlockStyle thenBlockStyle,
-                                      ASTList thenStmts) {
+                                      owned<Block> thenBlock) {
   assert(condition.get() != nullptr);
   ASTList lst;
 
   lst.push_back(std::move(condition));
-
-  const int8_t thenBodyChildNum = lst.size();
-  const int numThenBodyStmts = thenStmts.size();
-
-  for (auto& stmt : thenStmts) {
-    lst.push_back(std::move(stmt));
-  }
+  lst.push_back(std::move(thenBlock));
 
   const BlockStyle elseBlockStyle = BlockStyle::IMPLICIT;
-  const int elseBodyChildNum = -1;
-  const int numElseBodyStmts = 0; 
 
-  Conditional* ret = new Conditional(std::move(lst), thenBlockStyle,
-                                     thenBodyChildNum,
-                                     numThenBodyStmts,
+  Conditional* ret = new Conditional(std::move(lst),
+                                     thenBlockStyle,
                                      elseBlockStyle,
-                                     elseBodyChildNum,
-                                     numElseBodyStmts,
                                      /*isExpressionLevel*/ false);
   builder->noteLocation(ret, loc);
   return toOwned(ret);

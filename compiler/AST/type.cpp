@@ -1583,6 +1583,8 @@ bool typeNeedsCopyInitDeinit(Type* type) {
     } else {
       retval = true;
     }
+  } else if (isConstrainedType(type)) {
+    retval = true;
   }
 
   return retval;

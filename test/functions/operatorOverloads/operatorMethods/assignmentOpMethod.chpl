@@ -5,6 +5,11 @@ record Foo {
     writeln("In user init");
     this.x = x;
   }
+
+  proc init=(other: Foo) {
+    writeln("in user init=");
+    this.x = other.x;
+  }
 }
 operator Foo.=(ref lhs: Foo, val: Foo) {
   writeln("In user =");

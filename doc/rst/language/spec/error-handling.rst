@@ -448,7 +448,7 @@ TaskErrors
 ``TaskErrors`` class helps coordinate errors among groups of tasks by
 collecting them for centralized handling. It can be iterated on and
 filtered for different kinds of errors. See also
-the module documentation for :class:`TaskErrors <ChapelError.TaskErrors>`.
+the module documentation for :class:`TaskErrors <Errors.TaskErrors>`.
 
 Nested ``coforall`` statements do not produce nested ``TaskErrors``.
 Instead, the nested errors are flattened into the ``TaskErrors`` error
@@ -579,7 +579,7 @@ Creating New Error Types
 Errors in Chapel are implemented as classes, with a base class ``Error``
 defined in the standard modules. ``Error`` may be used directly, and new
 subclass hierarchies may be created from it. See also
-the module documentation for :mod:`ChapelError`.
+the module documentation for :mod:`Errors`.
 
 A hierarchy for system errors is included in the ``SysError`` module,
 accessed with a ``use`` statement. See also

@@ -1,0 +1,1 @@
+zipArrMismatch.chpl:4: error: halt reached - size mismatch in zippered iteration (dimension 0)

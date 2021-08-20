@@ -20,22 +20,30 @@
 
 #include "parser.h"
 
+#include "ImportStmt.h"
 #include "bison-chapel.h"
 #include "build.h"
 #include "config.h"
+#include "convert-uast.h"
 #include "countTokens.h"
 #include "docsDriver.h"
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
 #include "flex-chapel.h"
-#include "ImportStmt.h"
 #include "insertLineNumbers.h"
 #include "stringutil.h"
 #include "symbol.h"
 #include "wellknown.h"
 
-#include "chpl/frontend/frontend-queries.h"
+#include "chpl/parsing/parsing-queries.h"
+
+// Turn this on to dump AST/uAST when using --compiler-library-parser.
+#define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
+
+#if DUMP_WHEN_CONVERTING_UAST_TO_AST
+#include "view.h"
+#endif
 
 #include <cstdlib>
 
@@ -75,10 +83,10 @@ static ModuleSymbol* parseFile(const char* fileName,
                                bool        namedOnCommandLine,
                                bool        include);
 
-static ModuleSymbol* uASTParseFile(const char* fileName,
-                                   ModTag      modTag,
-                                   bool        namedOnCommandLine,
-                                   bool        include);
+static void uASTParseFile(const char* fileName,
+                          ModTag      modTag,
+                          bool        namedOnCommandLine,
+                          bool        include);
 
 
 static const char*   stdModNameToPath(const char* modName,
@@ -203,11 +211,7 @@ void setupModulePaths() {
                            "/",
                            modulesRoot,
                            "/standard/gen/",
-                           CHPL_TARGET_PLATFORM,
-                           "-",
-                           CHPL_TARGET_ARCH,
-                           "-",
-                           CHPL_TARGET_COMPILER);
+                           CHPL_SYS_MODULES_SUBDIR);
   sStdModPath.add(stdGenModulesPath);
 
   sStdModPath.add(astr(CHPL_HOME, "/", modulesRoot, "/standard"));
@@ -300,6 +304,11 @@ static void parseInternalModules() {
     if (sysctypes == NULL && fMinimalModules == false) {
       USR_FATAL("Could not find module 'SysCTypes', which should be defined by '%s/SysCTypes.chpl'", stdGenModulesPath);
     }
+    // ditto Errors
+    ModuleSymbol* errors = parseMod("Errors", false);
+    if (errors == NULL && fMinimalModules == false) {
+      USR_FATAL("Could not find standard module 'Errors'");
+    }
 
     parseDependentModules(true);
 
@@ -357,7 +366,7 @@ static void parseCommandLineFiles() {
       {
         // error message to print placeholders for fileName and maxLength
         const char *errorMessage = "%s, filename is longer than maximum allowed length of %d\n";
-        // throwr error will concatenated messages
+        // throw error with concatenated message
         USR_FATAL(errorMessage, baseName, maxFileName);
       }
 
@@ -765,10 +774,10 @@ static ModuleSymbol* parseFile(const char* path,
 }
 
 
-static ModuleSymbol* uASTParseFile(const char* fileName,
-                                   ModTag      modTag,
-                                   bool        namedOnCommandLine,
-                                   bool        include) {
+static void uASTParseFile(const char* fileName,
+                          ModTag      modTag,
+                          bool        namedOnCommandLine,
+                          bool        include) {
 
   if (gContext == nullptr)
     INT_FATAL("compiler library context not initialized");
@@ -779,16 +788,23 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
   INT_ASSERT(!include);
 
   auto path = chpl::UniqueString::build(gContext, fileName);
-  auto & modules = chpl::frontend::parse(gContext, path);
+  auto & modules = chpl::parsing::parse(gContext, path);
   for (auto mod : modules) {
     INT_ASSERT(mod != nullptr);
+
+#if DUMP_WHEN_CONVERTING_UAST_TO_AST
     chpl::uast::ASTNode::dump(mod);
-    // TODO: convert
+    printf("Converting module named %s\n", mod->name().c_str());
+#endif
+
+    ModuleSymbol* got = convertToplevelModule(gContext, mod);
+
+    got->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
+
+#if DUMP_WHEN_CONVERTING_UAST_TO_AST
+    nprint_view(got);
+#endif
   }
-
-  USR_FATAL("ending compilation since the rest is not implemented");
-
-  return nullptr;
 }
 
 static bool containsOnlyModules(BlockStmt* block, const char* path) {

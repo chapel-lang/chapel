@@ -692,10 +692,19 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
           Expr* arg1 = call->get(1);
           Type* arg1Type = arg1->getValType();
           namedTypes = use->typeWasNamed(arg1Type);
+          Type* canonArg1Type = canonicalClassType(arg1Type);
+          if (canonArg1Type != arg1Type) {
+            use->typeWasNamed(canonArg1Type, &namedTypes);
+          }
+
           if (call->numActuals() == 2) {
             Expr* arg2 = call->get(2);
             Type* arg2Type = arg2->getValType();
             use->typeWasNamed(arg2Type, &namedTypes);
+            Type* canonArg2Type = canonicalClassType(arg2Type);
+            if (canonArg2Type != arg2Type) {
+              use->typeWasNamed(canonArg2Type, &namedTypes);
+            }
           }
           if (use->hasExceptList() && namedTypes.size() == 0) {
             // The intersection of symbols allowed by the except list and this
@@ -724,10 +733,19 @@ static void getVisibleMethodsFromUseListFiltered(const char* name,
           Expr* arg1 = call->get(1);
           Type* arg1Type = arg1->getValType();
           namedTypes = import->typeWasNamed(arg1Type);
+          Type* canonArg1Type = canonicalClassType(arg1Type);
+          if (canonArg1Type != arg1Type) {
+            import->typeWasNamed(canonArg1Type, &namedTypes);
+          }
+
           if (call->numActuals() == 2) {
             Expr* arg2 = call->get(2);
             Type* arg2Type = arg2->getValType();
             import->typeWasNamed(arg2Type, &namedTypes);
+            Type* canonArg2Type = canonicalClassType(arg2Type);
+            if (canonArg2Type != arg2Type) {
+              import->typeWasNamed(canonArg2Type, &namedTypes);
+            }
           }
         }
       }

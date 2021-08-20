@@ -36,6 +36,7 @@ int qt_system(const char *command)
     me->thread_state        = QTHREAD_STATE_SYSCALL;
     qthread_back_to_master(me);
     ret = job->ret;
+    errno = job->err;
     FREE_SYSCALLJOB(job);
     return ret;
 }

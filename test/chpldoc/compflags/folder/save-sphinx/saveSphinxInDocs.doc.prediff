@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# Hide the Sphinx version in the .bad output so we don't have to keep updating
+# it.
+
+tmpfile=$2
+
+tmptmp=`mktemp "tmp.XXXXXX"`
+
+regex='s/Running Sphinx v[0-9]*.[0-9]*.[0-9]*/Running Sphinx vN.N.N/'
+
+sed -e "$regex" $tmpfile > $tmptmp
+
+mv $tmptmp $tmpfile

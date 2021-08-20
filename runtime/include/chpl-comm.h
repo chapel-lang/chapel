@@ -167,6 +167,12 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles);
 // this function always returns 0 since although any address is in the
 // segment, not all addresses are readable without causing a segmentation
 // violation on the remote locale.
+//
+// Note that this call is asking if a future GET will be safe, so in cases
+// where memory is registered dynamically or on-demand it's possible that
+// another task might deregister memory between this call and the GET so it
+// should also return 0 in such configurations.
+//
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len);
 
 //

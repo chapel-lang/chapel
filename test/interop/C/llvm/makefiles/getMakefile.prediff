@@ -1,5 +1,0 @@
-#!/bin/bash
-
-make mytest >> $2 2>&1
-sed '/mytest.c:/d' $2 > $2.tmp
-mv $2.tmp $2

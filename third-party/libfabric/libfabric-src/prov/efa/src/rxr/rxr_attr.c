@@ -37,7 +37,7 @@
 const uint32_t rxr_poison_value = 0xdeadbeef;
 #endif
 
-#ifdef HAVE_LIBCUDA
+#if HAVE_LIBCUDA
 #define EFA_HMEM_CAP FI_HMEM
 #else
 #define EFA_HMEM_CAP 0
@@ -52,7 +52,7 @@ const uint32_t rxr_poison_value = 0xdeadbeef;
 /* TODO: Add support for true FI_DELIVERY_COMPLETE */
 #define RXR_TX_OP_FLAGS (FI_INJECT | FI_COMPLETION | FI_TRANSMIT_COMPLETE | \
 			 FI_DELIVERY_COMPLETE)
-#define RXR_RX_OP_FLAGS (FI_COMPLETION)
+#define RXR_RX_OP_FLAGS (FI_COMPLETION | FI_MULTI_RECV)
 
 struct fi_tx_attr rxr_tx_attr = {
 	.caps = RXR_TX_CAPS,
@@ -84,6 +84,7 @@ struct fi_ep_attr rxr_ep_attr = {
 	.mem_tag_format = FI_TAG_GENERIC,
 	.protocol_version = RXR_CUR_PROTOCOL_VERSION,
 	.max_msg_size = UINT64_MAX,
+	.msg_prefix_size = 0,
 	.tx_ctx_cnt = 1,
 	.rx_ctx_cnt = 1
 };
@@ -110,7 +111,7 @@ struct fi_domain_attr rxr_domain_attr = {
 };
 
 struct fi_fabric_attr rxr_fabric_attr = {
-	.prov_version = FI_VERSION(RXR_MAJOR_VERSION, RXR_MINOR_VERSION),
+	.prov_version = OFI_VERSION_DEF_PROV,
 };
 
 struct fi_info rxr_info = {

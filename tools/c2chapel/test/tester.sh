@@ -62,7 +62,7 @@ function helper() {
   rm $diffFile > /dev/null 2>&1
 }
 
-echo "Testing c2chapel...\n"
+echo "Testing c2chapel..."
 
 helper "No arguments" "" "no-args.good" "no-args.2.good"
 helper "--help" "--help" "help.good"
@@ -74,7 +74,20 @@ for f in *.h ; do
   if [ -e $title.execopts ]; then
     otherArgs=`cat $title.execopts`
   fi
-  helper "$title" "$f $otherArgs" "$title.chpl"
+  if [[ $title != "gnu"* ]]; then
+      helper "$title" "$f $otherArgs" "$title.chpl"
+  fi
+done
+
+echo 'Testing using GNU parser... '
+
+for f in *.h ; do
+    title=`basename $f .h`
+    otherArgs="--gnu-extensions"
+    if [ -e $title.execopts ]; then
+        otherArgs=`cat $title.execopts`
+    fi
+    helper "$title" "$f $otherArgs" "$title.chpl"
 done
 
 helper ".c file" "justC.c" "justC.chpl"

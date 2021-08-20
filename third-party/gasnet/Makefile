@@ -56,11 +56,11 @@ endif
 
 # The cross-configure scripts used on Crays ignore our CC and always use CC=cc
 # (the PrgEnv wrappers.) Use PrgEnv-gnu to produce something that is ABI and
-# compiler option compatible with clang-included.
+# compiler option compatible with llvm-clang.
 ifeq ($(CRAY_CROSS_CONFIGURE), y)
-ifeq ($(CHPL_MAKE_COMPILER), clang-included)
-ifneq (, $(filter cray-prgenv-%,$(CHPL_MAKE_ORIG_TARGET_COMPILER)))
-ORIG_PRGENV = $(subst cray-prgenv-,,$(CHPL_MAKE_ORIG_TARGET_COMPILER))
+ifeq ($(CHPL_MAKE_COMPILER), llvm)
+ifneq (, $(filter cray-prgenv-%,$(CHPL_MAKE_TARGET_COMPILER_PRGENV)))
+ORIG_PRGENV = $(subst cray-prgenv-,,$(CHPL_MAKE_TARGET_COMPILER_PRGENV))
 ifneq ($(ORIG_PRGENV), gnu)
 ENSURE_GASNET_COMPATIBLE_COMPILER=. $$MODULESHOME/init/sh; module unload PrgEnv-$(ORIG_PRGENV); module load PrgEnv-gnu;
 endif
@@ -85,6 +85,12 @@ GASNET_CFLAGS += $(SHARED_LIB_CFLAGS)
 # MPI_CFLAGS overides autodetection, which we don't want so add to MPI_CC
 MPI_CC += $(SHARED_LIB_CFLAGS)
 endif
+
+# Disable hwloc until https://github.com/chapel-lang/chapel/issues/18050
+CHPL_GASNET_CFG_OPTIONS += --disable-hwloc
+
+# Disable IBV ODP due to https://upc-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4008
+CHPL_GASNET_CFG_OPTIONS += --disable-ibv-odp
 
 CHPL_GASNET_ENV_VARS:= CC='$(CC)' CXX='$(CXX)' MPI_CC='$(MPI_CC)' CFLAGS='$(GASNET_CFLAGS)' CXXFLAGS='$(GASNET_CFLAGS)'
 

@@ -540,8 +540,8 @@ llvm::DISubprogram* debug_data::construct_function(FnSymbol *function)
   const char *name = function->name;
   const char *cname = function->cname;
   ModuleSymbol* modSym = (ModuleSymbol*) function->defPoint->parentSymbol;
-  const char *file_name = function->astloc.filename;
-  int line_number = function->astloc.lineno;
+  const char *file_name = function->astloc.filename();
+  int line_number = function->astloc.lineno();
   // Get the function using the cname since that is how it is
   // stored in the generated code. The name is just used within Chapel.
 
@@ -597,8 +597,8 @@ llvm::DIGlobalVariableExpression* debug_data::construct_global_variable(VarSymbo
 {
   const char *name = gVarSym->name;
   const char *cname = gVarSym->cname;
-  const char *file_name = gVarSym->astloc.filename;
-  int line_number = gVarSym->astloc.lineno;
+  const char *file_name = gVarSym->astloc.filename();
+  int line_number = gVarSym->astloc.lineno();
 
   llvm::DIFile* file = get_file(file_name);
   llvm::DIType* gVarSym_type = get_type(gVarSym->type); // type is member of Symbol
@@ -632,8 +632,8 @@ llvm::DIGlobalVariableExpression* debug_data::get_global_variable(VarSymbol *gVa
 llvm::DIVariable* debug_data::construct_variable(VarSymbol *varSym)
 {
   const char *name = varSym->name;
-  const char *file_name = varSym->astloc.filename;
-  int line_number = varSym->astloc.lineno;
+  const char *file_name = varSym->astloc.filename();
+  int line_number = varSym->astloc.lineno();
   FnSymbol *funcSym = varSym->defPoint->getFunction();
 
   llvm::DISubprogram* scope = get_function(funcSym);
@@ -673,8 +673,8 @@ llvm::DIVariable* debug_data::get_variable(VarSymbol *varSym)
 llvm::DIVariable* debug_data::construct_formal_arg(ArgSymbol *argSym, unsigned ArgNo)
 {
   const char *name = argSym->name;
-  const char *file_name = argSym->astloc.filename;
-  int line_number = argSym->astloc.lineno;
+  const char *file_name = argSym->astloc.filename();
+  int line_number = argSym->astloc.lineno();
   FnSymbol *funcSym = NULL;
   if(isFnSymbol(argSym->defPoint->parentSymbol))
     funcSym = (FnSymbol*)argSym->defPoint->parentSymbol;

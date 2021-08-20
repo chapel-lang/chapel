@@ -36,7 +36,7 @@
 size_t					gasnetc_fh_align;
 size_t					gasnetc_fh_align_mask;
 size_t                                  gasnetc_inline_limit;
-size_t                   		gasnetc_bounce_limit;
+size_t                   		gasnetc_nonbulk_bounce_limit;
 size_t					gasnetc_packedlong_limit; // TODO-EX: adjust w/ nargs?
 size_t                                  gasnetc_put_stripe_sz, gasnetc_put_stripe_split;
 size_t                                  gasnetc_get_stripe_sz, gasnetc_get_stripe_split;
@@ -56,13 +56,17 @@ int					gasnetc_use_rcv_thread = GASNETC_USE_RCV_THREAD;
 #if GASNETC_IBV_ODP
   int					gasnetc_use_odp = 1;
 #endif
-#if (GASNETC_IB_MAX_HCAS > 1)
+#if GASNETC_HAVE_FENCED_PUTS
   int                                   gasnetc_use_fenced_puts = 0;
 #endif
 int					gasnetc_am_credits_slack;
 int					gasnetc_am_credits_slack_orig;
 int					gasnetc_alloc_qps;
 int					gasnetc_num_qps;
+#if GASNETC_USE_RCV_THREAD && GASNETC_SERIALIZE_POLL_CQ
+int                                     gasnetc_rcv_thread_poll_serialize = -1;
+int                                     gasnetc_rcv_thread_poll_exclusive = -1;
+#endif
 
 #if GASNETC_PIN_SEGMENT
   // Rkeys for non-primordial remote EPs
@@ -321,6 +325,31 @@ gasnetc_create_cq(struct ibv_context * hca_hndl, int req_size,
     return 1;
   }
 }
+
+
+// Simple round-robin (w/ a harmless multi-thread race)
+// Note use of casts to volatile ensure the compiler will not move the accesses
+// (reads earlier, or writes later) so as to defeat the entire purpose of
+// advancing a counter to be observed by other threads.
+#if GASNETC_ANY_PAR
+  #define GASNETC_WEAK_COUNTER_DECL(var,val) \
+    static struct {                                     \
+       char pad0[GASNETI_CACHE_LINE_BYTES];             \
+       int  cntr;                                       \
+       char pad1[GASNETI_CACHE_LINE_BYTES-sizeof(int)]; \
+    } var = {{0},(val),{0}}
+  #define GASNETC_WEAK_COUNTER_READ(var) \
+    (*(volatile int *)(&(var).cntr))
+  #define GASNETC_WEAK_COUNTER_WRITE(var,val) \
+    do { *(volatile int *)(&(var).cntr) = (val); } while (0)
+#else
+  #define GASNETC_WEAK_COUNTER_DECL(var,val) \
+    static int var = (val)
+  #define GASNETC_WEAK_COUNTER_READ(var) \
+    (*(volatile int *)&(var))
+  #define GASNETC_WEAK_COUNTER_WRITE(var,val) \
+    do { *(volatile int *)&(var) = (val); } while (0)
+#endif
 
 #if GASNETC_IB_MAX_HCAS > 1
   #define GASNETC_HCA_IDX(_cep)		((_cep)->hca_index)
@@ -673,11 +702,9 @@ static int gasnetc_snd_reap(int limit) {
   #endif
 
   #if GASNETC_IB_MAX_HCAS > 1
-    /* Simple round-robin (w/ a harmless multi-thread race) */
-    /* Note use of casts to volatile are require to work around bug 1586 */
-    static int index = 0;
-    int tmp = *(volatile int *)(&index);
-    *(volatile int *)(&index) = ((tmp == 0) ? gasnetc_num_hcas : tmp) - 1;
+    GASNETC_WEAK_COUNTER_DECL(index, 0);
+    int tmp = GASNETC_WEAK_COUNTER_READ(index);
+    GASNETC_WEAK_COUNTER_WRITE(index, ((tmp == 0) ? gasnetc_num_hcas : tmp) - 1);
     gasnetc_hca_t *hca = &gasnetc_hca[tmp];
   #else
     gasnetc_hca_t *hca = &gasnetc_hca[0];
@@ -686,7 +713,9 @@ static int gasnetc_snd_reap(int limit) {
   gasneti_assert(limit <= GASNETC_SND_REAP_LIMIT);
 
   for (count = 0; count < limit; ++count) {
+    if (GASNETC_POLL_CQ_TRYDOWN_SND(hca)) break;
     int rc = ibv_poll_cq(hca->snd_cq, 1, &comp);
+    GASNETC_POLL_CQ_UP_SND(hca);
     if_pt (rc == 0) {
       /* CQ empty - we are done */
       break;
@@ -699,7 +728,7 @@ static int gasnetc_snd_reap(int limit) {
         } else
       #endif
         if_pt (sreq) {
-	  gasnetc_sema_up(sreq->cep->snd_cq_sema_p);
+	  gasnetc_sema_up(hca->snd_cq_sema_p);
         again:
 	  gasnetc_sema_up(GASNETC_CEP_SQ_SEMA(sreq->cep));
 
@@ -779,7 +808,7 @@ static int gasnetc_snd_reap(int limit) {
 	    }
 	    break;
 
-          #if GASNETC_IB_MAX_HCAS > 1
+          #if GASNETC_HAVE_FENCED_PUTS
           case GASNETC_OP_FENCE:        // Atomic after PUT, with descriptor chaining
 	    gasneti_assert(comp.opcode == IBV_WC_FETCH_ADD);
             sreq->opcode = GASNETC_OP_FREE;
@@ -855,12 +884,10 @@ gasnetc_epid_t gasnetc_epid_select_qpi(gasnetc_cep_t *ceps, gasnetc_epid_t epid)
       }
     }
  #else
-    /* Simple round-robin (w/ a harmless multi-thread race) */
-    /* Note use of casts to volatile are require to work around bug 1586 */
-    static int prev = 0;
-    qpi = *(volatile int *)(&prev);
+    GASNETC_WEAK_COUNTER_DECL(prev, 0);
+    qpi = GASNETC_WEAK_COUNTER_READ(prev);
     qpi = ((qpi == 0) ? gasnetc_num_qps : qpi) - 1;
-    *(volatile int *)(&prev) = qpi;
+    GASNETC_WEAK_COUNTER_WRITE(prev, qpi);
  #endif
     gasneti_assert(qpi < gasnetc_num_qps);
   } else {
@@ -902,14 +929,14 @@ gasnetc_cep_t *gasnetc_bind_cep_inner(gasnetc_EP_t ep, gasnetc_epid_t epid, gasn
     }
   #endif
 
-    do {
-      if (!gasnetc_snd_reap(1)) {
-        GASNETI_WAITHOOK();
-      }
-      /* Redo load balancing choice */
-      qpi = gasnetc_epid_select_qpi(ceps, epid);
-      cep = &ceps[qpi];
-    } while (!gasnetc_sema_trydown(GASNETC_CEP_SQ_SEMA(cep)));
+    GASNETI_SPIN_DOUNTIL(
+      gasnetc_sema_trydown(GASNETC_CEP_SQ_SEMA(cep)),
+      {
+        gasnetc_snd_reap(1);
+        /* Redo load balancing choice */
+        qpi = gasnetc_epid_select_qpi(ceps, epid);
+        cep = &ceps[qpi];
+      });
     GASNETC_TRACE_WAIT_END(POST_SR_STALL_SQ);
   }
   cep->used = 1;
@@ -1050,7 +1077,9 @@ static int gasnetc_rcv_reap(gasnetc_hca_t *hca, const int limit, gasnetc_rbuf_t 
   int count;
 
   for (count = 0; count < limit; ++count) {
+    if (GASNETC_POLL_CQ_TRYDOWN_RCV(hca)) break;
     int rc = ibv_poll_cq(hca->rcv_cq, 1, &comp);
+    GASNETC_POLL_CQ_UP_RCV(hca);
     if_pt (rc == 0) {
       /* CQ empty - we are done */
       break;
@@ -1107,11 +1136,9 @@ void gasnetc_poll_rcv_hca(gasnetc_EP_t ep, gasnetc_hca_t *hca, int limit GASNETI
 
 void gasnetc_poll_rcv_all(gasnetc_EP_t ep, int limit GASNETI_THREAD_FARG) {
   #if GASNETC_IB_MAX_HCAS > 1
-    /* Simple round-robin (w/ a harmless multi-thread race) */
-    /* Note use of casts to volatile are require to work around bug 1586 */
-    static int index = 0;
-    int tmp = *(volatile int *)(&index);
-    *(volatile int *)(&index) = ((tmp == 0) ? gasnetc_num_hcas : tmp) - 1;
+    GASNETC_WEAK_COUNTER_DECL(index, 0);
+    int tmp = GASNETC_WEAK_COUNTER_READ(index);
+    GASNETC_WEAK_COUNTER_WRITE(index, ((tmp == 0) ? gasnetc_num_hcas : tmp) - 1);
     gasnetc_hca_t *hca = &gasnetc_hca[tmp];
   #else
     gasnetc_hca_t *hca = &gasnetc_hca[0];
@@ -1210,17 +1237,17 @@ gasnetc_buffer_t *gasnetc_get_bbuf(int block GASNETI_THREAD_FARG) {
   GASNETC_STAT_EVENT(GET_BBUF);
 
   bbuf = gasnetc_lifo_pop(&gasnetc_bbuf_freelist);
-  if_pf (!bbuf) {
-    gasnetc_poll_snd();
-    bbuf = gasnetc_lifo_pop(&gasnetc_bbuf_freelist);
-    if (block) {
-      while (!bbuf) {
-        GASNETI_WAITHOOK();
+  if_pt (bbuf) {
+    // done
+  } else if (block) {
+    GASNETI_SPIN_DOUNTIL(bbuf, {
         gasnetc_poll_snd();
         bbuf = gasnetc_lifo_pop(&gasnetc_bbuf_freelist);
-      }
-      GASNETC_TRACE_WAIT_END(GET_BBUF_STALL);
-    }
+      });
+    GASNETC_TRACE_WAIT_END(GET_BBUF_STALL);
+  } else {
+    gasnetc_poll_snd();
+    bbuf = gasnetc_lifo_pop(&gasnetc_bbuf_freelist);
   }
   gasneti_assert((bbuf != NULL) || !block);
 
@@ -1338,14 +1365,8 @@ gasnetc_snd_post_inner(gasnetc_cep_t * const cep, struct ibv_send_wr *sr_desc, i
   // Loop until space is available for 1 new entry on the CQ.
   // If we hold the last one then threads sending to ANY node will stall.
   // So this is the last resource to acquire
-  if_pf (!gasnetc_sema_trydown(cep->snd_cq_sema_p)) {
-    GASNETC_TRACE_WAIT_BEGIN();
-    do {
-      GASNETI_WAITHOOK();
-      gasnetc_poll_snd();
-    } while (!gasnetc_sema_trydown(cep->snd_cq_sema_p));
-    GASNETC_TRACE_WAIT_END(POST_SR_STALL_CQ);
-  }
+  GASNETI_SPIN_UNTIL_TRACE(gasnetc_sema_trydown(cep->snd_cq_sema_p),
+                           C, POST_SR_STALL_CQ, gasnetc_poll_snd());
 
   // Post the operation
   struct ibv_send_wr *bad_wr;
@@ -1443,13 +1464,8 @@ void gasnetc_snd_post_common(gasnetc_sreq_t *sreq, struct ibv_send_wr *sr_desc, 
       sr_desc = amo_sr_desc;
       is_inline = 0;
       // Now we spin to obtain a SQ slot for just the Atomic operation
-      if_pf (!gasnetc_sema_trydown(GASNETC_CEP_SQ_SEMA(cep))) {
-        GASNETC_TRACE_WAIT_BEGIN();
-        do {
-          if (!gasnetc_snd_reap(1)) GASNETI_WAITHOOK();
-        } while (!gasnetc_sema_trydown(GASNETC_CEP_SQ_SEMA(cep)));
-        GASNETC_TRACE_WAIT_END(POST_SR_STALL_SQ2);
-      }
+      GASNETI_SPIN_UNTIL_TRACE(gasnetc_sema_trydown(GASNETC_CEP_SQ_SEMA(cep)),
+                               C, POST_SR_STALL_SQ2, gasnetc_snd_reap(1));
     }
   }
 #endif
@@ -1489,7 +1505,13 @@ static void gasnetc_rcv_thread(struct ibv_wc *comp_p, void *arg)
     /* Handler might have queued work for firehose */
     firehose_poll();
   #endif 
-    GASNETI_PROGRESSFNS_RUN();
+  #if GASNETC_SERIALIZE_POLL_CQ
+    // In exclusive mode it is not safe to run progress functions, because
+    // AM Request injection within a progress function cannot poll for credits.
+    // TODO: revisit if/when non-communicating progress functions are separated.
+    if (! gasnetc_rcv_thread_poll_exclusive)
+  #endif 
+      GASNETI_PROGRESSFNS_RUN();
   }
 }
 #endif /* GASNETC_USE_RCV_THREAD */
@@ -2168,8 +2190,9 @@ size_t gasnetc_fh_put_helper(
    * done by the put-in-move optimization, under the assumption that
    * the original request len is representative of future requests.
    */
+  int is_nonbulk = (sreq->fh_lc_cb == gasnetc_cb_counter); // GEX_EVENT_NOW
   if ((len <= gasnetc_inline_limit) ||
-	((local_cnt != NULL) && (len <= gasnetc_bounce_limit))) {
+	(is_nonbulk && (len <= gasnetc_nonbulk_bounce_limit))) {
     sreq->fh_count = 1; /* Just the remote one */
   } else {
     size_t new_len = gasnetc_get_local_fh(sreq, loc_addr, len);
@@ -2219,7 +2242,7 @@ size_t gasnetc_fh_put_helper(
       if (remote_cnt != NULL) {
 	++(*remote_cnt);
       }
-    } else if ((nbytes <= gasnetc_bounce_limit) && (local_cnt != NULL)) {
+    } else if (is_nonbulk && (nbytes <= gasnetc_nonbulk_bounce_limit)) {
       /* Bounce buffer use for non-bulk puts (upto a limit) */
       sreq->opcode = is_long_payload ? GASNETC_OP_LONG_BOUNCE : GASNETC_OP_PUT_BOUNCE;
       if_pf (fh_rem == NULL) { /* Memory will be copied asynchronously */
@@ -2309,6 +2332,11 @@ size_t gasnetc_fh_get_helper(gasnetc_EP_t ep, gasnetc_epid_t epid,
 }
 #endif
 
+GASNETI_INLINE(idiv_round_up)
+int idiv_round_up(int numerator, int denominator) {
+  return (numerator + denominator - 1) / denominator;
+}
+
 /* ------------------------------------------------------------------------------------ *
  *  Externally visible functions                                                        *
  * ------------------------------------------------------------------------------------ */
@@ -2361,7 +2389,7 @@ extern int gasnetc_sndrcv_limits(void) {
       gasnetc_op_oust_per_qp = MIN(gasnetc_op_oust_per_qp, (tmp / gasnetc_hca[h].qps));
     }
   } else {
-    gasnetc_op_oust_per_qp = MIN(GASNETI_ATOMIC_MAX, gasnetc_op_oust_limit) / gasnetc_num_qps;
+    gasnetc_op_oust_per_qp = idiv_round_up(MIN(GASNETI_ATOMIC_MAX, gasnetc_op_oust_limit), gasnetc_num_qps);
     GASNETC_FOR_ALL_HCA(hca) {
       int tmp = hca->qps * gasnetc_op_oust_per_qp;
       if (tmp > hca->hca_cap.max_cqe) {
@@ -2369,7 +2397,7 @@ extern int gasnetc_sndrcv_limits(void) {
       }
     }
   }
-  gasnetc_op_oust_pp /= gasnetc_num_qps;
+  gasnetc_op_oust_pp = idiv_round_up(gasnetc_op_oust_pp, gasnetc_num_qps);
   gasnetc_op_oust_per_qp = MIN(gasnetc_op_oust_per_qp, gasnetc_op_oust_pp*gasneti_nodes);
   gasnetc_op_oust_limit = gasnetc_num_qps * gasnetc_op_oust_per_qp;
   GASNETI_TRACE_PRINTF(I, ("Final/effective GASNET_NETWORKDEPTH_TOTAL = %d", gasnetc_op_oust_limit));
@@ -2381,16 +2409,16 @@ extern int gasnetc_sndrcv_limits(void) {
    * (3) (gasnetc_am_oust_pp * hca->max_qps) used to catch Replies
    * However distribution over QPs and SRQ may each reduce the second two.
    */
-  gasnetc_am_oust_pp /= gasnetc_num_qps;
+  gasnetc_am_oust_pp = idiv_round_up(gasnetc_am_oust_pp, gasnetc_num_qps);
   gasnetc_am_rqst_per_qp = gasnetc_am_oust_pp * (gasneti_nodes - 1);
 
   // Compute gasnetc_am_oust_pp (and report GASNET_AM_CREDITS_PP)
   GASNETC_FOR_ALL_HCA(hca) {
     int tmp = hca->hca_cap.max_cqe - gasnetc_rbuf_spares;
-    tmp /= 2 * hca->qps; // Remainder to be split between Request and Reply, spread over the qps
+    tmp = idiv_round_up(tmp, 2 * hca->qps); // Remainder to be split between Request and Reply, spread over the qps
     gasnetc_am_rqst_per_qp = MIN(gasnetc_am_rqst_per_qp, tmp);
   }
-  gasnetc_am_oust_pp = gasnetc_am_rqst_per_qp / MAX(1, (gasneti_nodes - 1));
+  gasnetc_am_oust_pp = idiv_round_up(gasnetc_am_rqst_per_qp, MAX(1, (gasneti_nodes - 1)));
   GASNETI_TRACE_PRINTF(I, ("Final/effective GASNET_AM_CREDITS_PP = %d", gasnetc_am_oust_pp * gasnetc_num_qps));
 
   // Compute gasnetc_am_oust_limit (and report GASNET_AM_CREDITS_TOTAL)
@@ -2665,6 +2693,10 @@ extern int gasnetc_sndrcv_init(gasnetc_EP_t ep) {
         gasneti_assert(hca->rcv_thread_priv != NULL);
       }
 #endif
+#if GASNETC_SERIALIZE_POLL_CQ
+      gasnetc_atomic_set(&hca->poll_cq_semas.snd,0,0);
+      gasnetc_atomic_set(&hca->poll_cq_semas.rcv,0,0);
+#endif
     }
   }
 
@@ -2747,7 +2779,7 @@ extern void gasnetc_sndrcv_init_peer(gex_Rank_t node, gasnetc_cep_t *cep) {
   for (int i = 0; i < gasnetc_alloc_qps; ++i, ++cep) {
     gasnetc_hca_t *hca = cep->hca;
     cep->epid = gasnetc_epid(node, i);
-    cep->snd_cq_sema_p = &gasnetc_cq_semas[GASNETC_HCA_IDX(cep)];
+    cep->snd_cq_sema_p = hca->snd_cq_sema_p;
 
   #if GASNETC_IB_MAX_HCAS > 1
     /* "Cache" the local keys associated w/ this cep */
@@ -2914,10 +2946,8 @@ gasnetc_sndrcv_quiesce(void) {
       for (qpi = qpi_offset, cep += qpi_offset; qpi < gasnetc_alloc_qps; ++qpi, ++cep) {
         int remain = gasnetc_am_oust_pp;
         gasnetc_sema_t *sema = &cep->am_rem;
-        while (0 != (remain -= gasnetc_sema_trydown_partial(sema, remain))) {
-          GASNETI_WAITHOOK();
-          gasnetc_poll_both();
-        }
+        GASNETI_SPIN_WHILE((remain -= gasnetc_sema_trydown_partial(sema, remain)),
+                           gasnetc_poll_both());
       }
     }
   }
@@ -2937,10 +2967,7 @@ gasnetc_sndrcv_quiesce(void) {
         /* OK if some other AM Request gets in this gap; we'll block for the reply. */
         gasnetc_RequestSysShort(cep->epid, &dummy, gasneti_handleridx(gasnetc_sys_close_reqh), 0);
       }
-      while (! gasnetc_close_recvd[shift]) {
-        GASNETI_WAITHOOK();
-        gasnetc_poll_both();
-      }
+      GASNETI_SPIN_UNTIL(gasnetc_close_recvd[shift], gasnetc_poll_both());
       gasnetc_close_recvd[shift] = 0;
     }
   }
@@ -2949,11 +2976,8 @@ gasnetc_sndrcv_quiesce(void) {
   GASNETC_FOR_ALL_HCA(hca) {
     int remain = hca->snd_cq->cqe;
     gasnetc_sema_t *sema = hca->snd_cq_sema_p;
-
-    while (0 != (remain -= gasnetc_sema_trydown_partial(sema, remain))) {
-      GASNETI_WAITHOOK();
-      gasnetc_poll_both();
-    }
+    GASNETI_SPIN_WHILE((remain -= gasnetc_sema_trydown_partial(sema, remain)),
+                       gasnetc_poll_both());
   }
 
   /* Resume credit coallescing (in any) */
@@ -3007,6 +3031,15 @@ extern void gasnetc_sndrcv_start_thread(void) {
       if (rcv_max_rate > 0) {
         hca->rcv_thread.min_ns = ((uint64_t)1E9) / rcv_max_rate;
       }
+    #if GASNETC_SERIALIZE_POLL_CQ
+      gasneti_assert(!gasnetc_rcv_thread_poll_exclusive ||
+                     !gasnetc_rcv_thread_poll_serialize); // mutually exclusive
+      if (gasnetc_rcv_thread_poll_exclusive) {
+        hca->rcv_thread.exclusive_poll = &hca->poll_cq_semas.rcv;
+      } else if (gasnetc_rcv_thread_poll_serialize) {
+        hca->rcv_thread.serialize_poll = &hca->poll_cq_semas.rcv;
+      }
+    #endif
     #if GASNETI_THREADINFO_OPT
       hca->rcv_threadinfo = NULL;
     #endif
@@ -3040,18 +3073,15 @@ extern void gasnetc_counter_wait_aux(gasnetc_counter_t *counter, int handler_con
   const gasnetc_atomic_val_t initiated = (counter->initiated & GASNETI_ATOMIC_MAX);
   gasnetc_atomic_t * const completed = &counter->completed;
 
+  // caller has checked that (initiated != completed)
+  // so the spin loops below are "DOUNTIL"
   if (handler_context) {
-    do {
-      /* must not poll rcv queue in hander context */
-      GASNETI_WAITHOOK();
-      gasnetc_poll_snd();
-    } while (initiated != gasnetc_atomic_read(completed, 0));
+    // must not poll rcv queue in hander context
+    GASNETI_SPIN_DOUNTIL((initiated == gasnetc_atomic_read(completed, 0)),
+                         gasnetc_poll_snd());
   } else {
-    do {
-      GASNETI_WAITHOOK();
-      gasnetc_poll_both();
-      GASNETI_PROGRESSFNS_RUN();
-    } while (initiated != gasnetc_atomic_read(completed, 0));
+    GASNETI_SPIN_DOUNTIL((initiated == gasnetc_atomic_read(completed, 0)),
+                         { gasnetc_poll_both(); GASNETI_PROGRESSFNS_RUN(); });
   }
 }
 
@@ -3158,7 +3188,8 @@ extern int gasnetc_rdma_put(
     // Also use bounce buffers if (firehose disabled AND src is in neither the client
     // nor aux segment) OR zero copy fails such as for read-only memory (bug 3338).
     size_t to_xfer = nbytes;
-    if ((nbytes <= gasnetc_bounce_limit) ||
+    int is_nonbulk = (local_cb == gasnetc_cb_counter); // GEX_EVENT_NOW
+    if ((is_nonbulk && (nbytes <= gasnetc_nonbulk_bounce_limit)) ||
         (!GASNETC_USE_FIREHOSE &&
          !gasnetc_in_bound_segment(ep, (uintptr_t)src_ptr, nbytes) &&
          !gasneti_in_local_auxsegment((gasneti_EP_t)ep, src_ptr, nbytes)) ||
@@ -3225,7 +3256,8 @@ extern int gasnetc_rdma_long_put(
   // Also use bounce buffers if (firehose disabled AND src is in neither the client
   // nor aux segment) OR zero copy fails such as for read-only memory (bug 3338).
   size_t to_xfer = nbytes;
-  if ((nbytes <= gasnetc_bounce_limit) ||
+  int is_nonbulk = (local_cb == gasnetc_cb_counter); // GEX_EVENT_NOW
+  if ((is_nonbulk && (nbytes <= gasnetc_nonbulk_bounce_limit)) ||
       (!GASNETC_USE_FIREHOSE &&
        !gasnetc_in_bound_segment(ep, (uintptr_t)src_ptr, nbytes) &&
        !gasneti_in_local_auxsegment((gasneti_EP_t)ep, src_ptr, nbytes)) ||

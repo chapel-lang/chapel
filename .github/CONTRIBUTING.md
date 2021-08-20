@@ -63,6 +63,6 @@ project, please refer to:
 ---
 
 [0]: https://developercertificate.org/
-[1]: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/bestPractices/DCO.rst
+[1]: https://github.com/chapel-lang/chapel/tree/main/doc/rst/developer/bestPractices/DCO.rst
 [2]: https://chapel-lang.org/contributing.html
-[3]: https://github.com/chapel-lang/chapel/tree/master/doc/rst/developer/bestPractices/ContributorInfo.rst
+[3]: https://github.com/chapel-lang/chapel/tree/main/doc/rst/developer/bestPractices/ContributorInfo.rst

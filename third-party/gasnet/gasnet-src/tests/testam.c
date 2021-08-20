@@ -245,10 +245,12 @@ gex_AM_Entry_t htable[] = {
 };
 
 /* ------------------------------------------------------------------------------------ */
+int skipwarmup = 0;
 int crossmachinemode = 0;
 int insegment = 1;
 int asynclc = 0;
 int iters=0;
+int warmupiters=0;
 int pollers=0;
 int i = 0;
 uintptr_t maxmedreq, maxmedrep, maxlongreq, maxlongrep;
@@ -287,6 +289,9 @@ int main(int argc, char **argv) {
     } else if (!strcmp(argv[arg], "-c")) {
       crossmachinemode = 1;
       ++arg;
+    } else if (!strcmp(argv[arg], "-s")) {
+      ++arg;
+      skipwarmup = 1;
     } else if (!strcmp(argv[arg], "-sync-req")) {
       asynclc = 0;
       lc_opt = GEX_EVENT_NOW;
@@ -333,6 +338,8 @@ int main(int argc, char **argv) {
 
   if (!max_step) max_step = maxsz;
 
+  warmupiters = MIN(iters, 10000);
+
   GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
   GASNET_Safe(gex_EP_RegisterHandlers(myep, htable, sizeof(htable)/sizeof(gex_AM_Entry_t)));
 
@@ -361,6 +368,7 @@ int main(int argc, char **argv) {
                "      -src-noop:      no per-operation initialization (default)\n"
                "      -src-generate:  initialized (w/o memory reads) on each AM injection\n"
                "      -src-memcpy:    initialized using memcpy() on each AM injection\n"
+               "  The -s option skips warm-up iterations.\n"
                "  The -c option enables cross-machine pairing (default is nearest neighbor).\n");
   if (help || argc > arg) test_usage();
 
@@ -465,18 +473,18 @@ int main(int argc, char **argv) {
 void doAMShort(void) {
     GASNET_BEGIN_FUNCTION();
 
-    if (sender) { /* warm-up */
+    if (TEST_SECTION_BEGIN_ENABLED() && sender && !skipwarmup) { /* warm-up */
       flag = 0;                                                                                  
-      for (i=0; i < iters; i++) {
+      for (i=0; i < warmupiters; i++) {
         gex_AM_RequestShort0(myteam, peer, hidx_ping_shorthandler_flood, 0);
       }
-      GASNET_BLOCKUNTIL(flag == iters);
+      GASNET_BLOCKUNTIL(flag == warmupiters);
       gex_AM_RequestShort0(myteam, peer, hidx_ping_shorthandler, 0);
-      GASNET_BLOCKUNTIL(flag == iters+1);
+      GASNET_BLOCKUNTIL(flag == warmupiters+1);
     }
     BARRIER();
     /* ------------------------------------------------------------------------------------ */
-    if (TEST_SECTION_BEGIN_ENABLED() && sender) {
+    if (TEST_SECTION_ENABLED() && sender) {
       int64_t start = TIME();
       flag = -1;
       for (i=0; i < iters; i++) {
@@ -570,17 +578,20 @@ void doAMShort(void) {
 #define TESTAM_PERF(DESC_STR, AMREQUEST, PING_HIDX, PONG_HIDX,                   \
                                                MAXREQ, MAXREP, DEST) do {        \
     uintptr_t MAXREQREP = MIN(MAXREQ, MAXREP);                                   \
-    if (sender) { /* warm-up */                                                  \
+    if (sender && !skipwarmup &&                                                 \
+        (TEST_SECTION_ENABLED_FWD(1) || TEST_SECTION_ENABLED_FWD(2) ||           \
+         TEST_SECTION_ENABLED_FWD(3) || TEST_SECTION_ENABLED_FWD(4) ||           \
+         TEST_SECTION_ENABLED_FWD(5))) { /* warm-up */                           \
       flag = 0;                                                                  \
       AMREQUEST(myteam, peer, PING_HIDX, myseg,                                  \
                 MAXREQREP DEST, lc_opt, 0);                                      \
       GASNET_BLOCKUNTIL(flag == 1);                                              \
       if (asynclc) gex_NBI_Wait(GEX_EC_AM,0);                                    \
-      for (i=0; i < iters; i++) {                                                \
+      for (i=0; i < warmupiters; i++) {                                          \
         AMREQUEST(myteam, peer, PING_HIDX##_flood, myseg,                        \
                   MAXREQREP DEST, lc_opt, 0);                                    \
       }                                                                          \
-      GASNET_BLOCKUNTIL(flag == iters+1);                                        \
+      GASNET_BLOCKUNTIL(flag == warmupiters+1);                                  \
       if (asynclc) gex_NBI_Wait(GEX_EC_AM,0);                                    \
     }                                                                            \
     BARRIER();                                                                   \

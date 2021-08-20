@@ -40,11 +40,18 @@
 #define RXD_RX_OP_FLAGS (FI_MULTI_RECV | FI_COMPLETION)
 #define RXD_DOMAIN_CAPS (FI_LOCAL_COMM | FI_REMOTE_COMM)
 
+#define RXD_MSG_ORDER (FI_ORDER_ATOMIC_RAR | FI_ORDER_ATOMIC_RAW |	\
+		       FI_ORDER_ATOMIC_WAR | FI_ORDER_ATOMIC_WAW |	\
+		       FI_ORDER_RAR | FI_ORDER_RAS | FI_ORDER_RAW |	\
+		       FI_ORDER_RMA_RAR | FI_ORDER_RMA_RAW |		\
+		       FI_ORDER_RMA_WAW | FI_ORDER_SAS | FI_ORDER_SAW |	\
+		       FI_ORDER_WAS | FI_ORDER_WAW)
+
 struct fi_tx_attr rxd_tx_attr = {
 	.caps = RXD_TX_CAPS,
 	.op_flags = RXD_TX_OP_FLAGS,
 	.comp_order = FI_ORDER_NONE,
-	.msg_order = FI_ORDER_SAS,
+	.msg_order = RXD_MSG_ORDER,
 	.inject_size = RXD_MAX_MTU_SIZE - sizeof(struct rxd_base_hdr),
 	.size = (1ULL << RXD_MAX_TX_BITS),
 	.iov_limit = RXD_IOV_LIMIT,
@@ -55,7 +62,7 @@ struct fi_rx_attr rxd_rx_attr = {
 	.caps = RXD_RX_CAPS,
 	.op_flags = RXD_RX_OP_FLAGS,
 	.comp_order = FI_ORDER_NONE,
-	.msg_order = FI_ORDER_SAS,
+	.msg_order = RXD_MSG_ORDER,
 	.total_buffered_recv = 0,
 	.size = (1ULL << RXD_MAX_RX_BITS),
 	.iov_limit = RXD_IOV_LIMIT

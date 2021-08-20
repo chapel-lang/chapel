@@ -1534,7 +1534,7 @@ void FindInvalidNonNilables::exitCallExpr(CallExpr* call) {
             Expr* astPoint = findLocationIgnoringInternalInlining(call);
             FnSymbol* inFn = astPoint->getFunction();
             astlocT point = astPoint->astloc;
-            if (inFn->userInstantiationPointLoc.filename != NULL)
+            if (!inFn->userInstantiationPointLoc.isEmpty())
               point = inFn->userInstantiationPointLoc;
 
             const char* error = NULL;

@@ -673,6 +673,14 @@ def filter_errors(output_in, pre_exec_output, execgoodfile, execlog):
             extra_msg = '(memory leak) '
             break
 
+    # detect cases of 'GASNet timer calibration on %s detected non-linear
+    # timer behavior:' messages which we can't do much about
+    err_strings = ['GASNet timer calibration on']
+    for s in err_strings:
+        if (re.search(s, output, re.IGNORECASE) != None):
+            extra_msg = '(private issue #480) '
+            break
+
     return extra_msg
 
 
@@ -727,6 +735,25 @@ p = py3_compat.Popen([compileline, '--compile-c++'],
 cpp_compiler = p.communicate()[0].rstrip()
 if p.returncode != 0:
   Fatal('Cannot find c++ compiler')
+
+p = py3_compat.Popen([compileline, '--host-c-compiler'],
+                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+host_c_compiler = p.communicate()[0].rstrip()
+if p.returncode != 0:
+  Fatal('Cannot find host c compiler')
+
+p = py3_compat.Popen([compileline, '--host-cxx-compiler'],
+                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+host_cpp_compiler = p.communicate()[0].rstrip()
+if p.returncode != 0:
+  Fatal('Cannot find host c++ compiler')
+
+# Get runtime includes and defines
+p = py3_compat.Popen([compileline, '--includes-and-defines'],
+                     stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+runtime_includes_and_defines= p.communicate()[0].rstrip()
+if p.returncode != 0:
+  Fatal('Cannot find runtime includes and defines')
 
 # Find the test directory
 testdir=chpl_home+'/test'
@@ -1559,10 +1586,16 @@ for testname in testsrc:
             # for `chpl` so don't include them here
             args = ['-o', test_filename]+shlex.split(compopts)+[testname]
             cmd = None
-            if is_c_test or is_ml_c_test:
+            if is_c_test:
                 cmd = c_compiler
-            elif is_cpp_test or is_ml_cpp_test:
+            elif is_ml_c_test:
+                cmd_pieces = [host_c_compiler, runtime_includes_and_defines]
+                cmd = ' '.join(cmd_pieces)
+            elif is_cpp_test:
                 cmd = cpp_compiler
+            elif is_ml_cpp_test:
+                cmd_pieces = [host_cpp_compiler, runtime_includes_and_defines]
+                cmd = ' '.join(cmd_pieces)
         else:
             if test_is_chpldoc and not compiler.endswith('chpldoc'):
                 # For tests with .doc.chpl suffix, use chpldoc compiler. Update

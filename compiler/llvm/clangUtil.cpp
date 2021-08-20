@@ -84,6 +84,7 @@
 #include "driver.h"
 #include "expr.h"
 #include "files.h"
+#include "mli.h"
 #include "mysystem.h"
 #include "passes.h"
 #include "stmt.h"
@@ -268,8 +269,7 @@ void addMinMax(const char* prefix, int nbits, bool isSigned)
 
   astlocT prevloc = currentAstLoc;
 
-  currentAstLoc.lineno = 0;
-  currentAstLoc.filename = astr("<internal>");
+  currentAstLoc = astlocT(0, astr("<internal>"));
 
   const char* min_name = astr(prefix, "_MIN");
   const char* max_name = astr(prefix, "_MAX");
@@ -389,6 +389,7 @@ static astlocT getClangDeclLocation(clang::Decl* d) {
 static const bool debugPrintMacros = false;
 
 static void handleMacroExpr(const MacroInfo* inMacro,
+                            const IdentifierInfo* origID,
                             MacroInfo::tokens_iterator start,
                             MacroInfo::tokens_iterator end,
                             VarSymbol*& varRet,
@@ -396,6 +397,85 @@ static void handleMacroExpr(const MacroInfo* inMacro,
                             ValueDecl*& cValueRet,
                             const char*& cCastToTypeRet);
 
+static void handleCallMacro(const IdentifierInfo* origID,
+                            const MacroInfo* inMacro,
+                            const MacroInfo* calledMacro) {
+  if (inMacro->getNumTokens() != 6)
+    return;
+  if (calledMacro->getNumParams() != 2)
+    return;
+  if (calledMacro->getNumTokens() != 3)
+    return;
+
+  // expect 'LAPACK_GLOBAL' '(' 'actual1' ',' 'actual2' ')'
+  Token actual1, actual2;
+  int count = 0;
+  for (MacroInfo::tokens_iterator tok = inMacro->tokens_begin();
+       tok != inMacro->tokens_end(); ++tok) {
+    count++;
+    if (count == 3)
+      actual1 = *tok;
+    if (count == 5)
+      actual2 = *tok;
+  }
+
+  IdentifierInfo* formal1;
+  IdentifierInfo* formal2;
+  count = 0;
+  for (MacroInfo::param_iterator param = calledMacro->param_begin();
+       param != calledMacro->param_end(); ++param) {
+    count++;
+    if (count == 1)
+      formal1 = *param;
+    if (count == 2)
+      formal2 = *param;
+  }
+
+  // expecting 'identifier' ## '_'
+  count = 0;
+  Token body1, body2, body3;
+  for (MacroInfo::tokens_iterator tok = calledMacro->tokens_begin();
+       tok != calledMacro->tokens_end(); ++tok) {
+    count++;
+    if (count == 1) {
+      if (tok->getKind() != tok::identifier)
+        return;
+      body1 = *tok;
+    }
+    if (count == 2) {
+      if (tok->getKind() != tok::hashhash)
+        return;
+      body2 = *tok;
+    }
+    if (count == 3) {
+      if (tok->getKind() != tok::identifier)
+        return;
+      body3 = *tok;
+    }
+  }
+
+  llvm::StringRef lhsName;
+  if (body1.getIdentifierInfo()->getName() == formal1->getName()) {
+    lhsName = actual1.getIdentifierInfo()->getName();
+  } else if (body1.getIdentifierInfo()->getName() == formal2->getName()) {
+    lhsName = actual2.getIdentifierInfo()->getName();
+  } else {
+    return;
+  }
+
+  std::string replacement = lhsName.str() +
+                            body3.getIdentifierInfo()->getName().str();
+
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(info);
+
+  info->lvt->addForwardName(origID->getName(), replacement.c_str());
+
+  if (debugPrintMacros) {
+    printf("replacing: %s with %s\n", origID->getName().str().c_str(),
+                                      replacement.c_str());
+  }
+}
 
 // Adds a mapping from id->getName() to a variable or CDecl to info->lvt
 static
@@ -406,9 +486,10 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
+  std::string name = id->getName().str();
   const bool debugPrint = debugPrintMacros;
 
-  if (debugPrint) printf("Working on macro %s\n", id->getName().str().c_str());
+  if (debugPrint) printf("Working on macro %s\n", name.c_str());
 
   //Handling only simple string or integer defines
   if (macro->getNumParams() > 0)
@@ -416,7 +497,11 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
     if( debugPrint) {
       printf("the macro takes arguments\n");
     }
-    return; // TODO -- handle macro functions.
+    if (name == "LAPACK_GLOBAL") {
+      info->lvt->addMacro(name, macro);
+    } else {
+      return; // TODO -- handle macro functions.
+    }
   }
 
   VarSymbol* varRet = NULL;
@@ -424,7 +509,7 @@ void handleMacro(const IdentifierInfo* id, const MacroInfo* macro)
   ValueDecl* cValueRet = NULL;
   const char* cCastToTypeRet = NULL;
 
-  handleMacroExpr(macro,
+  handleMacroExpr(macro, id,
                   macro->tokens_begin(), macro->tokens_end(),
                   varRet, cTypeRet, cValueRet, cCastToTypeRet);
 
@@ -520,9 +605,11 @@ static bool findParenthesizedExpr(const MacroInfo* inMacro,
 
 // Returns a type/identifier/macro name or NULL if it was not handled
 static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
+                                              const IdentifierInfo* origID,
                                               MacroInfo::tokens_iterator start,
                                               MacroInfo::tokens_iterator end,
                                               IdentifierInfo*& ii) {
+  GenInfo* info = gGenInfo;
   ii = NULL;
 
   // handle things like 'unsigned int'
@@ -578,14 +665,28 @@ static const char* handleTypeOrIdentifierExpr(const MacroInfo* inMacro,
     Token tok = *start; // the main token
     ++start;
 
-    // Give up if there are any tokens beyond the main token
-    if (start != end)
-      return NULL;
+    if (start != end) {
+      /* return NULL unless it's a specific pattern we know how to handle */
+      bool canHandle = false;
+      if (tok.getKind() == tok::identifier) {
+        IdentifierInfo* tokId = tok.getIdentifierInfo();
+        if (info->lvt->getMacro(tokId->getName()))
+          canHandle = true;
+      }
+      if (!canHandle)
+        return NULL;
+    }
 
     if (tok.getKind() == tok::identifier) {
       IdentifierInfo* tokId = tok.getIdentifierInfo();
       ii = tokId;
-      return astr(tokId->getNameStart());
+      if (const clang::MacroInfo* macro =
+            info->lvt->getMacro(tokId->getName())) {
+        INT_ASSERT(origID != NULL);
+        handleCallMacro(origID, inMacro, macro);
+      } else {
+        return astr(tokId->getNameStart());
+      }
     }
   } else {
     // Give up if we didn't handle all the tokens in the above loop
@@ -738,7 +839,7 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
 
     const char* castTo = NULL;
     clang::IdentifierInfo* ii = NULL;
-    castTo = handleTypeOrIdentifierExpr(inMacro, castStart, castEnd, ii);
+    castTo = handleTypeOrIdentifierExpr(inMacro, NULL, castStart, castEnd, ii);
     if (castTo == NULL)
       return false;
     start = castEnd;
@@ -750,7 +851,7 @@ static bool handleNumericCastExpr(const MacroInfo* inMacro,
     ValueDecl* tmpVal = NULL;
     const char* tmpCastToType = NULL;
 
-    handleMacroExpr(inMacro, castStart, castEnd,
+    handleMacroExpr(inMacro, NULL, castStart, castEnd,
                     tmpVar, tmpType, tmpVal, tmpCastToType);
 
     if (tmpType == NULL || tmpCastToType != NULL)
@@ -1018,6 +1119,7 @@ static bool handleNumericBinOpExpr(const MacroInfo* inMacro,
 }
 
 static void handleMacroExpr(const MacroInfo* inMacro,
+                            const IdentifierInfo* origID,
                             MacroInfo::tokens_iterator start,
                             MacroInfo::tokens_iterator end,
                             VarSymbol*& varRet,
@@ -1049,12 +1151,13 @@ static void handleMacroExpr(const MacroInfo* inMacro,
          cur != end;
          ++cur) {
       Token t = *cur;
-      printf("Found token type %i\n", t.getKind());
+      printf("Found token type %i name %s\n", t.getKind(), t.getName());
     }
   }
 
   clang::IdentifierInfo* ii = NULL;
-  const char* idName = handleTypeOrIdentifierExpr(inMacro, start, end, ii);
+  const char* idName = handleTypeOrIdentifierExpr(inMacro, origID,
+                                                  start, end, ii);
   if (idName != NULL) {
     if( debugPrint) {
       printf("id = %s\n", idName);
@@ -2161,9 +2264,12 @@ void runClang(const char* just_parse_filename) {
 
   clangCCArgs.push_back("-pthread");
 
-  // library directories/files and ldflags are handled during linking later.
-
-  clangCCArgs.push_back("-DCHPL_GEN_CODE");
+  // Library directories/files and ldflags are handled during linking later.
+  // Skip this in multi-locale libraries because the C blob that is built
+  // already defines this.
+  if (!fMultiLocaleInterop) {
+    clangCCArgs.push_back("-DCHPL_GEN_CODE");
+  }
 
   // tell clang to use CUDA support
   if (localeUsesGPU()) {
@@ -2232,6 +2338,20 @@ void runClang(const char* just_parse_filename) {
       clangOtherArgs.push_back("-include");
       clangOtherArgs.push_back(gAllExternCode.filename);
     }
+
+    // Include a few extra things if generating a multi-locale library.
+    if (fMultiLocaleInterop) {
+
+      // Include the contents of the server bundle...
+      clangOtherArgs.push_back("-include");
+      INT_ASSERT(gMultiLocaleLibServerFile != NULL);
+      clangOtherArgs.push_back(gMultiLocaleLibServerFile);
+
+      // As well as the path to extra code for the client and server.
+      std::string incPath = std::string("-I") + std::string(CHPL_HOME);
+      incPath += "/runtime/etc/src/";
+      clangOtherArgs.push_back(incPath);
+    }
   } else {
     // Just running clang to parse the extern blocks for this module.
     clangOtherArgs.push_back("-include");
@@ -2253,12 +2373,19 @@ void runClang(const char* just_parse_filename) {
     printf("\n");
   }
 
+  bool parseOnly = (just_parse_filename != NULL);
+
   // Initialize gGenInfo
   // Toggle LLVM code generation in our clang run;
   // turn it off if we just wanted to parse some C.
-  gGenInfo = new GenInfo();
-
-  bool parseOnly = (just_parse_filename != NULL);
+  if (parseOnly) {
+    // TODO (dlongnecke): Always initialize outside of this function?
+    gGenInfo = new GenInfo();
+  } else {
+    // Note that if we are calling 'runClang(NULL)' then the final gGenInfo
+    // Should have already been initialized for us.
+    INT_ASSERT(gGenInfo != NULL);
+  }
 
   gGenInfo->lvt = new LayeredValueTable();
 
@@ -2683,8 +2810,25 @@ void LayeredValueTable::addBlock(StringRef name, llvm::BasicBlock *block) {
   (*blockLayer)[name] = store;
 }
 
+void LayeredValueTable::addMacro(StringRef name,
+                                 const clang::MacroInfo *macro) {
+  Storage store;
+  store.u.macro = macro;
+  (layers.back())[name] = store;
+}
+
+void LayeredValueTable::addForwardName(llvm::StringRef name, const char* forwardName) {
+  Storage store;
+  store.u.forwardToName = astr(forwardName);
+  (layers.back())[name] = store;
+}
+
 GenRet LayeredValueTable::getValue(StringRef name) {
   if(Storage *store = get(name)) {
+    if (store->u.forwardToName) {
+      store = get(store->u.forwardToName);
+    }
+
     if( store->u.value ) {
       INT_ASSERT(isa<Value>(store->u.value));
       GenRet ret;
@@ -2773,6 +2917,9 @@ void LayeredValueTable::getCDecl(StringRef name, TypeDecl** cTypeOut,
   if (cCastedToTypeOut) *cCastedToTypeOut = NULL;
 
   if(Storage *store = get(name)) {
+    if (store->u.forwardToName) {
+      store = get(store->u.forwardToName);
+    }
     if( store->u.cValueDecl ) {
       INT_ASSERT(isa<ValueDecl>(store->u.cValueDecl));
       // we have a clang value decl.
@@ -2810,6 +2957,16 @@ VarSymbol* LayeredValueTable::getVarSymbol(StringRef name) {
       // maybe immediate number or string, possibly variable reference.
       // These come from macros.
       return store->u.chplVar;
+    }
+  }
+  return NULL;
+}
+
+const clang::MacroInfo* LayeredValueTable::getMacro(StringRef name) {
+  if (Storage *store = get(name)) {
+    if (store->u.macro) {
+      INT_ASSERT(isa<clang::MacroInfo>(store->u.macro));
+      return store->u.macro;
     }
   }
   return NULL;
@@ -2895,6 +3052,15 @@ int getCRecordMemberGEP(const char* typeName, const char* fieldName,
       break;
     }
   }
+
+  // TODO (dlongnecke): Try to move this to a spot before codegen? It would
+  // also be cool if we could point this to the location in the source code
+  // where the field is being accessed.
+  if (!field) {
+    auto fmt = "Definition of '%s.%s' not visible in external C code";
+    USR_FATAL(fmt, typeName, fieldName);
+  }
+
   INT_ASSERT(field);
 
   isCArrayField = field->getType()->isArrayType();
@@ -3854,6 +4020,16 @@ void makeBinaryLLVM(void) {
     clangLDArgs = runtimeArgs;
   }
 
+  // Grab extra dependencies for multilocale libraries if needed.
+  if (fMultiLocaleInterop) {
+    std::string cmd = std::string(CHPL_HOME);
+    cmd += "/util/config/compileline --multilocale-lib-deps";
+    std::string libs = runCommand(cmd);
+    // Erase trailing newline.
+    libs.erase(libs.size() - 1);
+    clangLDArgs.push_back(libs);
+  }
+
   // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
   expandInstallationPaths(clangLDArgs);
 
@@ -3961,11 +4137,18 @@ void makeBinaryLLVM(void) {
   mainfile.filename = "chpl__module.o";
   mainfile.pathname = moduleFilename.c_str();
   const char* tmpbinname = NULL;
+  const char* tmpservername = NULL;
 
-  codegen_makefile(&mainfile, &tmpbinname, true);
-  INT_ASSERT(tmpbinname);
+  if (fMultiLocaleInterop) {
+    codegen_makefile(&mainfile, &tmpbinname, &tmpservername, true);
+    INT_ASSERT(tmpservername);
+    INT_ASSERT(tmpbinname);
+  } else {
+    codegen_makefile(&mainfile, &tmpbinname, NULL, true);
+    INT_ASSERT(tmpbinname);
+  }
 
-  if (fLibraryCompile) {
+  if (fLibraryCompile && !fMultiLocaleInterop) {
     switch (fLinkStyle) {
     // The default library link style for Chapel is _static_.
     case LS_DEFAULT:
@@ -3981,8 +4164,10 @@ void makeBinaryLLVM(void) {
       break;
     }
   } else {
+    const char* outbin = fMultiLocaleInterop ? tmpservername : tmpbinname;
+
     // Runs the LLVM link command for executables.
-    runLLVMLinking(useLinkCXX, options, moduleFilename, maino, tmpbinname,
+    runLLVMLinking(useLinkCXX, options, moduleFilename, maino, outbin,
                    dotOFiles, clangLDArgs, sawSysroot);
   }
 
@@ -4137,10 +4322,14 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
   std::string command = useLinkCXX + " " + options + " " +
                         moduleFilename + " " + maino;
 
-  // For dynamic linking, leave it alone.  For static, append -static .
+  // For dynamic linking, leave it alone.  For static, append -static.
   // See $CHPL_HOME/make/compiler/Makefile.clang (and keep this in sync
   // with it).
-  if (fLinkStyle == LS_STATIC) {
+  // Note that in multi-locale interop we are building a server executable
+  // that cannot be built with `-static`, because because it depends on
+  // dynamic libraries. So even if the client library is being built as
+  // static, the server cannot be.
+  if (fLinkStyle == LS_STATIC && !fMultiLocaleInterop) {
     command += " -static";
   }
 

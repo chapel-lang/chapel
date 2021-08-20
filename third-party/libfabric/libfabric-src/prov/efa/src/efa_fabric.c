@@ -83,6 +83,7 @@
 int efa_mr_cache_enable		= EFA_DEF_MR_CACHE_ENABLE;
 size_t efa_mr_max_cached_count;
 size_t efa_mr_max_cached_size;
+int efa_set_rdmav_hugepages_safe = 0;
 
 static void efa_addr_to_str(const uint8_t *raw_addr, char *str);
 static int efa_get_addr(struct efa_context *ctx, void *src_addr);
@@ -100,11 +101,7 @@ const struct fi_domain_attr efa_domain_attr = {
 	.control_progress	= FI_PROGRESS_AUTO,
 	.data_progress		= FI_PROGRESS_AUTO,
 	.resource_mgmt		= FI_RM_DISABLED,
-#ifdef HAVE_LIBCUDA
-	.mr_mode		= OFI_MR_BASIC_MAP | FI_MR_LOCAL | FI_MR_BASIC | FI_MR_HMEM,
-#else
 	.mr_mode		= OFI_MR_BASIC_MAP | FI_MR_LOCAL | FI_MR_BASIC,
-#endif
 	.mr_key_size		= sizeof_field(struct ibv_sge, lkey),
 	.cq_data_size		= 0,
 	.tx_ctx_cnt		= 1024,
@@ -427,9 +424,9 @@ static int efa_alloc_fid_nic(struct fi_info *fi, struct efa_context *ctx,
 
 	efa_addr_to_str(src_addr, link_attr->address);
 
-	link_attr->mtu = port_attr->max_msg_sz;
-
-	link_attr->speed = 0;
+	link_attr->mtu = port_attr->max_msg_sz - rxr_pkt_max_header_size();
+	link_attr->speed = ofi_vrb_speed(port_attr->active_speed,
+	                                 port_attr->active_width);
 
 	switch (port_attr->state) {
 	case IBV_PORT_DOWN:
@@ -468,6 +465,55 @@ err_free_nic:
 	fi->nic = NULL;
 	return ret;
 }
+
+#if HAVE_LIBCUDA
+/*
+ * efa_get_gdr_support() check if GPUDirect RDMA is supported by
+ * reading from sysfs file "class/infiniband/<device_name>/gdr"
+ * and set content of gdr_support accordingly.
+ *
+ * Return value:
+ *   return 1 if sysfs file exist and has 1 in it.
+ *   return 0 if sysfs file does not exist or has 0 in it.
+ *   return a negatie value if error happened.
+ */
+static int efa_get_gdr_support(char *device_name)
+{
+	static const int MAX_GDR_SUPPORT_STRLEN = 8;
+	char *gdr_path = NULL;
+	char gdr_support_str[MAX_GDR_SUPPORT_STRLEN];
+	int ret, read_len;
+
+	ret = asprintf(&gdr_path, "class/infiniband/%s/device/gdr", device_name);
+	if (ret < 0) {
+		EFA_INFO_ERRNO(FI_LOG_FABRIC, "asprintf to build sysfs file name failed", ret);
+		goto out;
+	}
+
+	ret = fi_read_file(get_sysfs_path(), gdr_path,
+			   gdr_support_str, MAX_GDR_SUPPORT_STRLEN);
+	if (ret < 0) {
+		if (errno == ENOENT) {
+			/* sysfs file does not exist, gdr is not supported */
+			ret = 0;
+		}
+
+		goto out;
+	}
+
+	if (ret == 0) {
+		EFA_WARN(FI_LOG_FABRIC, "Sysfs file %s is empty\n", gdr_path);
+		ret = -FI_EINVAL;
+		goto out;
+	}
+
+	read_len = MIN(ret, MAX_GDR_SUPPORT_STRLEN);
+	ret = (0 == strncmp(gdr_support_str, "1", read_len));
+out:
+	free(gdr_path);
+	return ret;
+}
+#endif
 
 static int efa_get_device_attrs(struct efa_context *ctx, struct fi_info *info)
 {
@@ -514,6 +560,23 @@ static int efa_get_device_attrs(struct efa_context *ctx, struct fi_info *info)
 	info->domain_attr->max_ep_rx_ctx	= 1;
 	info->domain_attr->resource_mgmt	= FI_RM_DISABLED;
 	info->domain_attr->mr_cnt		= base_attr->max_mr;
+
+#if HAVE_LIBCUDA
+	if (info->ep_attr->type == FI_EP_RDM) {
+		ret = efa_get_gdr_support(ctx->ibv_ctx->device->name);
+		if (ret < 0) {
+			EFA_WARN(FI_LOG_FABRIC, "get gdr support failed!\n");
+			return ret;
+		}
+
+		if (ret == 1) {
+			info->caps			|= FI_HMEM;
+			info->tx_attr->caps		|= FI_HMEM;
+			info->rx_attr->caps		|= FI_HMEM;
+			info->domain_attr->mr_mode	|= FI_MR_HMEM;
+		}
+	}
+#endif
 
 	EFA_DBG(FI_LOG_DOMAIN, "Domain attribute :\n"
 				"\t info->domain_attr->cq_cnt		= %zu\n"
@@ -861,7 +924,6 @@ static int efa_fabric_close(fid_t fid)
 	struct efa_fabric *fab;
 	int ret;
 
-	unsetenv("RDMAV_HUGEPAGES_SAFE");
 	fab = container_of(fid, struct efa_fabric, util_fabric.fabric_fid.fid);
 	ret = ofi_fabric_close(&fab->util_fabric);
 	if (ret)
@@ -888,6 +950,48 @@ static struct fi_ops_fabric efa_ops_fabric = {
 	.trywait = ofi_trywait
 };
 
+static
+void efa_atfork_callback()
+{
+	static int visited = 0;
+
+	if (visited)
+		return;
+
+	visited = 1;
+	if (getenv("RDMAV_FORK_SAFE") || getenv("IBV_FORK_SAFE") )
+		return;
+
+	fprintf(stderr,
+		"A process has executed an operation involving a call\n"
+		"to the fork() system call to create a child process.\n"
+		"\n"
+		"As a result, the libfabric EFA provider is operating in\n"
+		"a condition that could result in memory corruption or\n"
+		"other system errors.\n"
+		"\n"
+		"For the libfabric EFA provider to work safely when fork()\n"
+		"is called, the application must handle memory registrations\n"
+		"(FI_MR_LOCAL) and you will need to set the following environment\n"
+		"variables:\n"
+		"          RDMAV_FORK_SAFE=1\n"
+		"MPI applications do not support this mode.\n"
+		"\n"
+		"However, this setting can result in signficant performance\n"
+		"impact to your application due to increased cost of memory\n"
+		"registration.\n"
+		"\n"
+		"You may want to check with your application vendor to see\n"
+		"if an application-level alternative (of not using fork)\n"
+		"exists.\n"
+		"\n"
+		"Please refer to https://github.com/ofiwg/libfabric/issues/6332\n"
+		"for more information.\n"
+		"\n"
+		"Your job will now abort.\n");
+	abort();
+}
+
 int efa_fabric(struct fi_fabric_attr *attr, struct fid_fabric **fabric_fid,
 	       void *context)
 {
@@ -895,26 +999,11 @@ int efa_fabric(struct fi_fabric_attr *attr, struct fid_fabric **fabric_fid,
 	struct efa_fabric *fab;
 	int ret = 0;
 
-	/*
-	 * Enable rdma-core fork support and huge page support. We want call
-	 * this only when the EFA provider is selected. It is safe to call this
-	 * function again if multiple EFA fabrics are opened or if the fabric
-	 * is closed and opened again.
-	 *
-	 * TODO: allow users to disable this once the fork() to check ptrace
-	 * permissions is removed.
-	 */
-	ret = setenv("RDMAV_HUGEPAGES_SAFE", "1", 1);
-	if (ret)
-		return -errno;
-
-	ret = ibv_fork_init();
+	ret = pthread_atfork(efa_atfork_callback, NULL, NULL);
 	if (ret) {
-		EFA_WARN(FI_LOG_FABRIC, "Failed to initialize libibverbs "
-					"fork support. Please check your "
-					"application to ensure it is not "
-					"making verbs calls before "
-					"initializing EFA.\n");
+		EFA_WARN(FI_LOG_FABRIC,
+			 "Unable to register atfork callback: %s\n",
+			 strerror(-ret));
 		return -ret;
 	}
 
@@ -947,6 +1036,9 @@ static void fi_efa_fini(void)
 	struct efa_context **ctx_list;
 	int num_devices;
 
+	if (efa_set_rdmav_hugepages_safe)
+		unsetenv("RDMAV_HUGEPAGES_SAFE");
+
 	fi_freeinfo((void *)efa_util_prov.info);
 	efa_util_prov.info = NULL;
 
@@ -955,7 +1047,7 @@ static void fi_efa_fini(void)
 	efa_device_free();
 #if HAVE_EFA_DL
 	smr_cleanup();
-#endif 
+#endif
 }
 
 struct fi_provider efa_prov = {
@@ -1017,6 +1109,25 @@ static int efa_init_info(const struct fi_info **all_infos)
 
 struct fi_provider *init_lower_efa_prov()
 {
+	int err;
+
+	if (!getenv("RDMAV_HUGEPAGES_SAFE")) {
+		/*
+		 * Setting RDMAV_HUGEPAGES_SAFE alone will not impact
+		 * application performance, because rdma-core will only
+		 * check this environment variable when either
+		 * RDMAV_FORK_SAFE or IBV_FORK_SAFE is set.
+		 */
+		err = setenv("RDMAV_HUGEPAGES_SAFE", "1", 1);
+		if (err) {
+			EFA_WARN(FI_LOG_FABRIC,
+				 "Unable to set environment variable RDMAV_HUGEPAGES_SAFE\n");
+			return NULL;
+		}
+
+		efa_set_rdmav_hugepages_safe = 1;
+	}
+
 	if (efa_init_info(&efa_util_prov.info))
 		return NULL;
 

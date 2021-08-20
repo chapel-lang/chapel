@@ -15,7 +15,7 @@ developers.  A possible reading order is roughly as follows:
 `Compiler documentation`: 
   The compiler overview document in 
 
-  ``$CHPL_HOME/doc/rst/developer/compilerOverview``
+  ``$CHPL_HOME/doc/rst/developer/implementation/compilerOverview``
 
   `CompilerDebugging.rst`: 
     Tips on debugging the compiler.

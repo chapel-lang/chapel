@@ -13,7 +13,7 @@ To use this script:
   $CHPL_HOME/util/test/paratest.chapcs
 
 paratest.server options can be passed as additional command-line arguments
-(e.g. -compopts --llvm).
+(e.g. -compopts --fast).
 """
 
 from __future__ import print_function

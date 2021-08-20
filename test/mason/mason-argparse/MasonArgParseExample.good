@@ -1,0 +1,40 @@
+Config Var Values:
+testVar
+Arguments Received from CL:
+1 -o
+2 w
+3 a
+4 y
+5 d
+6 t
+7 a?
+8 -t=tea
+9 time
+10 --myConfigVar=@10
+11 --flagOn
+12 aValue
+13 subCmd1
+14 bValue
+15 -c
+16 one
+17 -t
+18 two
+19 -f
+Values received from argparse:
+w
+a
+y
+d
+t
+a?
+tea
+time
+@10
+boolArg: true
+positional value: aValue
+SubCommand1 was called
+args parsed in subcommand:
+one
+two
+subBoolFlag: true
+subcommand positional value: bValue

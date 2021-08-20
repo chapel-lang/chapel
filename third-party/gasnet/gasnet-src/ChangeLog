@@ -18,6 +18,79 @@ GASNet-EX ChangeLog
   Users wishing to use other retired conduits may need to download 
   the GASNet v1.x distribution from https://gasnet.lbl.gov.
 
+ ----------------------------------------------------------------------
+ 2021-08-16: GASNet-EX 2021.8.0-snapshot
+
+* General and Misc.
+  - NEW: configure options `--enable-rpath` and `--enable-[pkg]-rpath` can
+    request addition of directories containing required libraries to the
+    runtime library search path (a.k.a. "rpath") via `$(GASNET_LDFLAGS)`.
+  - Environment variable GASNET_BACKTRACE_MT is now available to force
+    multi-threaded or single-threaded backtraces (where supported).
+  - Improved performance of the conduit-independent RDMA-based barrier,
+    used by default by ucx-conduit, in multi-threaded runs.
+  - Improved code factorization to ease addition of new network conduits.
+
+* InfiniBand Verbs (details in ibv-conduit README)
+  - Performance improvement for RMA Put and AM Long utilizing asynchronous
+    local completion and payloads in (roughly) the 4KiB to 64KiB range.
+  - Improved memory utilization at large scale.
+  - SEQ and PARSYNC builds now set MLX{4,5}_SINGLE_THREADED under
+    appropriate conditions to elide locking overheads in libibverbs.
+  - Improved scaling with large thread counts by serializing CQ polling.
+  - NEW: configure option --with-ibv-fenced-puts=... can be used to set the
+    default value for the GASNET_USE_FENCED_PUTS environment variable.
+  - Added feature macros to advertise multi-rail configuration to clients.
+
+* Unified Communication X framework (ucx-conduit) [EXPERIMENTAL]
+  - Improvements to AM Long payload handling
+    + Fix corruption when using UCX-level shared memory communication (bug 4155)
+    + Fix crashes when using synchronous local completion (bug 4277)
+  - Improved handing of non-collective exits
+
+* Shared-memory without a network (smp-conduit)
+  - Performance improvements to remote (inter-process) atomics
+
+* Platform support/portability
+  - Improved support for GCC 11 by suppressing spurious warnings.
+  - Made Cray PMI support conduit-independent, allowing it to function on
+    non-aries Cray systems like the new "HPE Cray EX" (aka Shasta).
+  - This release adds Intel oneAPI as a supported compiler family.
+  - This release adds NVHPC (NVIDIA HPC SDK) as a supported compiler family
+    on x86-64 and ppc64le, starting at version 20.9.
+
+* GASNet tools (spec v1.18): (details in README-tools)
+  - Add gasnett_assume, for exposing annotations to guide optimization
+  - gasnett_spinloop_hint() now includes a compiler fence on all CPU
+    architectures, not just those with a "pause" instruction (or similar).
+
+* Notable bugs fixed in this release: (details at https://gasnet-bugs.lbl.gov)
+  - bug3420: use -rpath when linking
+  - bug3535: additional restrictions for coding standards
+  - bug3936: Problems with multi-rail and GASNET_{AM_CREDITS,NETWORKDEPTH}_PP
+  - bug4053: ibv: Default to setting MLX5_SINGLE_THREADED=1 for SEQ builds
+  - bug4155: ucx: AM Long test failures when PSHM is disabled
+  - bug4162: incorrect return value from gasnet_get_nbi on ucx-conduit
+  - bug4178: ofi: testsegment crash with MR_BASIC
+  - bug4209: ibv: improve ALC with respect to bounce buffer use
+  - bug4212: build failure for ibv conduit with "--with-ibv-max-hcas=1"
+  - bug4213: trace AM handler registration
+  - bug4215: testslice enhancements to test cross-nbrhd RMA
+  - bug4228: Bogus stringop-overflow warnings from GCC-11.1 LTO
+  - bug4230: ssh-spawer de-duplication logic is flawed
+  - bug4232: Bogus array-bounds warning from GCC 11.1 on ILP32/NDEBUG
+  - bug4237: Option for backtrace to provide the stack on all threads even in threadmode=seq
+  - bug4240: ibv: optimize layout of gasnetc_cep_t
+  - bug4246: ibv: better behavior of single-rail build on multi-rail system
+  - bug4255: Intel 2021.2.0+ erroneous __has_{,cpp_}attribute(__fallthrough__)
+  - bug4259/4260/4261/4262: update spinloop constructs in native conduits
+  - bug4263: remove "AD_MY_NBRHD" check on smp-conduit
+  - bug4264: simplify implementation of GEX_FLAG_AD_{ACQ,REL}
+  - bug4265: Collective scratch management is not thread safe
+  - bug4266: gex_Coll_ReduceToAllNB is not thread safe
+  - bug4277: ucx testam hang with Cray and AMD compilers
+  - bug4281: Display glitch in VERBOSEENV console reporting
+
 ----------------------------------------------------------------------
 2021-03-31: GASNet-EX 2021.3.0 Release
 

@@ -45,7 +45,7 @@ and
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0'
-are not of same type
+are not of same rank
 ================================================================================
 Error Caught in Equal High Array Diff Type
 AssertionError: assert failed -

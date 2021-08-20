@@ -3,6 +3,7 @@
  * Copyright (c) 2017-2019 Intel Corporation, Inc.  All rights reserved.
  * Copyright (c) 2019 Amazon.com, Inc. or its affiliates. All rights reserved.
  * Copyright (c) 2020 Cisco Systems, Inc. All rights reserved.
+ * (C) Copyright 2020 Hewlett Packard Enterprise Development LP
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -44,6 +45,8 @@
 
 struct ofi_mr_cache_params cache_params = {
 	.max_cnt = 1024,
+	.cuda_monitor_enabled = true,
+	.rocr_monitor_enabled = true,
 };
 
 static int util_mr_find_within(struct ofi_rbmap *map, void *key, void *data)
@@ -102,7 +105,7 @@ static void util_mr_free_entry(struct ofi_mr_cache *cache,
 	FI_DBG(cache->domain->prov, FI_LOG_MR, "free %p (len: %zu)\n",
 	       entry->info.iov.iov_base, entry->info.iov.iov_len);
 
-	assert(!entry->storage_context);
+	assert(!entry->node);
 	cache->delete_region(cache, entry);
 	util_mr_entry_free(cache, entry);
 }
@@ -116,7 +119,9 @@ static void util_mr_uncache_entry_storage(struct ofi_mr_cache *cache,
 	 * notification events, but is harmless to correct operation.
 	 */
 
-	cache->storage.erase(&cache->storage, entry);
+	ofi_rbmap_delete(&cache->tree, entry->node);
+	entry->node = NULL;
+
 	cache->cached_cnt--;
 	cache->cached_size -= entry->info.iov.iov_len;
 }
@@ -135,6 +140,31 @@ static void util_mr_uncache_entry(struct ofi_mr_cache *cache,
 	}
 }
 
+static struct ofi_mr_entry *ofi_mr_rbt_find(struct ofi_rbmap *tree,
+					    const struct ofi_mr_info *key)
+{
+	struct ofi_rbnode *node;
+
+	node = ofi_rbmap_find(tree, (void *) key);
+	if (!node)
+		return NULL;
+
+	return node->data;
+}
+
+static struct ofi_mr_entry *ofi_mr_rbt_overlap(struct ofi_rbmap *tree,
+					       const struct iovec *key)
+{
+	struct ofi_rbnode *node;
+
+	node = ofi_rbmap_search(tree, (void *) key,
+				util_mr_find_overlap);
+	if (!node)
+		return NULL;
+
+	return node->data;
+}
+
 /* Caller must hold ofi_mem_monitor lock as well as unsubscribe from the region */
 void ofi_mr_cache_notify(struct ofi_mr_cache *cache, const void *addr, size_t len)
 {
@@ -145,29 +175,29 @@ void ofi_mr_cache_notify(struct ofi_mr_cache *cache, const void *addr, size_t le
 	iov.iov_base = (void *) addr;
 	iov.iov_len = len;
 
-	for (entry = cache->storage.overlap(&cache->storage, &iov); entry;
-	     entry = cache->storage.overlap(&cache->storage, &iov))
+	for (entry = ofi_mr_rbt_overlap(&cache->tree, &iov); entry;
+	     entry = ofi_mr_rbt_overlap(&cache->tree, &iov))
 		util_mr_uncache_entry(cache, entry);
 }
 
-bool ofi_mr_cache_flush(struct ofi_mr_cache *cache)
+bool ofi_mr_cache_flush(struct ofi_mr_cache *cache, bool flush_lru)
 {
 	struct ofi_mr_entry *entry;
 
-	pthread_mutex_lock(&cache->monitor->lock);
+	pthread_mutex_lock(&mm_lock);
 	while (!dlist_empty(&cache->flush_list)) {
 		dlist_pop_front(&cache->flush_list, struct ofi_mr_entry,
 				entry, list_entry);
 		FI_DBG(cache->domain->prov, FI_LOG_MR, "flush %p (len: %zu)\n",
 		       entry->info.iov.iov_base, entry->info.iov.iov_len);
-		pthread_mutex_unlock(&cache->monitor->lock);
+		pthread_mutex_unlock(&mm_lock);
 
 		util_mr_free_entry(cache, entry);
-		pthread_mutex_lock(&cache->monitor->lock);
+		pthread_mutex_lock(&mm_lock);
 	}
 
-	if (dlist_empty(&cache->lru_list)) {
-		pthread_mutex_unlock(&cache->monitor->lock);
+	if (!flush_lru || dlist_empty(&cache->lru_list)) {
+		pthread_mutex_unlock(&mm_lock);
 		return false;
 	}
 
@@ -179,15 +209,15 @@ bool ofi_mr_cache_flush(struct ofi_mr_cache *cache)
 		       entry->info.iov.iov_base, entry->info.iov.iov_len);
 
 		util_mr_uncache_entry_storage(cache, entry);
-		pthread_mutex_unlock(&cache->monitor->lock);
+		pthread_mutex_unlock(&mm_lock);
 
 		util_mr_free_entry(cache, entry);
-		pthread_mutex_lock(&cache->monitor->lock);
+		pthread_mutex_lock(&mm_lock);
 
 	} while (!dlist_empty(&cache->lru_list) &&
 		 ((cache->cached_cnt >= cache_params.max_cnt) ||
 		  (cache->cached_size >= cache_params.max_size)));
-	pthread_mutex_unlock(&cache->monitor->lock);
+	pthread_mutex_unlock(&mm_lock);
 
 	return true;
 }
@@ -197,20 +227,20 @@ void ofi_mr_cache_delete(struct ofi_mr_cache *cache, struct ofi_mr_entry *entry)
 	FI_DBG(cache->domain->prov, FI_LOG_MR, "delete %p (len: %zu)\n",
 	       entry->info.iov.iov_base, entry->info.iov.iov_len);
 
-	pthread_mutex_lock(&cache->monitor->lock);
+	pthread_mutex_lock(&mm_lock);
 	cache->delete_cnt++;
 
 	if (--entry->use_cnt == 0) {
-		if (!entry->storage_context) {
+		if (!entry->node) {
 			cache->uncached_cnt--;
 			cache->uncached_size -= entry->info.iov.iov_len;
-			pthread_mutex_unlock(&cache->monitor->lock);
+			pthread_mutex_unlock(&mm_lock);
 			util_mr_free_entry(cache, entry);
 			return;
 		}
 		dlist_insert_tail(&entry->list_entry, &cache->lru_list);
 	}
-	pthread_mutex_unlock(&cache->monitor->lock);
+	pthread_mutex_unlock(&mm_lock);
 }
 
 /*
@@ -229,6 +259,9 @@ util_mr_cache_create(struct ofi_mr_cache *cache, const struct ofi_mr_info *info,
 {
 	struct ofi_mr_entry *cur;
 	int ret;
+	struct ofi_mem_monitor *monitor = cache->monitors[info->iface];
+
+	assert(monitor);
 
 	FI_DBG(cache->domain->prov, FI_LOG_MR, "create %p (len: %zu)\n",
 	       info->iov.iov_base, info->iov.iov_len);
@@ -237,7 +270,7 @@ util_mr_cache_create(struct ofi_mr_cache *cache, const struct ofi_mr_info *info,
 	if (!*entry)
 		return -FI_ENOMEM;
 
-	(*entry)->storage_context = NULL;
+	(*entry)->node = NULL;
 	(*entry)->info = *info;
 	(*entry)->use_cnt = 1;
 
@@ -245,8 +278,8 @@ util_mr_cache_create(struct ofi_mr_cache *cache, const struct ofi_mr_info *info,
 	if (ret)
 		goto free;
 
-	pthread_mutex_lock(&cache->monitor->lock);
-	cur = cache->storage.find(&cache->storage, info);
+	pthread_mutex_lock(&mm_lock);
+	cur = ofi_mr_rbt_find(&cache->tree, info);
 	if (cur) {
 		ret = -FI_EAGAIN;
 		goto unlock;
@@ -257,29 +290,28 @@ util_mr_cache_create(struct ofi_mr_cache *cache, const struct ofi_mr_info *info,
 		cache->uncached_cnt++;
 		cache->uncached_size += info->iov.iov_len;
 	} else {
-		if (cache->storage.insert(&cache->storage,
-					  &(*entry)->info, *entry)) {
+		if (ofi_rbmap_insert(&cache->tree, (void *) &(*entry)->info,
+				     (void *) *entry, &(*entry)->node)) {
 			ret = -FI_ENOMEM;
 			goto unlock;
 		}
 		cache->cached_cnt++;
 		cache->cached_size += info->iov.iov_len;
 
-		ret = ofi_monitor_subscribe(cache->monitor, info->iov.iov_base,
-					    info->iov.iov_len);
+		ret = ofi_monitor_subscribe(monitor, info->iov.iov_base,
+					    info->iov.iov_len,
+					    &(*entry)->hmem_info);
 		if (ret) {
 			util_mr_uncache_entry_storage(cache, *entry);
 			cache->uncached_cnt++;
 			cache->uncached_size += (*entry)->info.iov.iov_len;
-		} else {
-			(*entry)->subscribed = 1;
 		}
 	}
-	pthread_mutex_unlock(&cache->monitor->lock);
+	pthread_mutex_unlock(&mm_lock);
 	return 0;
 
 unlock:
-	pthread_mutex_unlock(&cache->monitor->lock);
+	pthread_mutex_unlock(&mm_lock);
 free:
 	util_mr_free_entry(cache, *entry);
 	return ret;
@@ -290,40 +322,54 @@ int ofi_mr_cache_search(struct ofi_mr_cache *cache, const struct fi_mr_attr *att
 {
 	struct ofi_mr_info info;
 	int ret;
+	struct ofi_mem_monitor *monitor = cache->monitors[attr->iface];
+
+	if (!monitor) {
+		FI_WARN(&core_prov, FI_LOG_MR,
+			"MR cache disabled for %s memory\n",
+			fi_tostr(&attr->iface, FI_TYPE_HMEM_IFACE));
+		return -FI_ENOSYS;
+	}
 
 	assert(attr->iov_count == 1);
 	FI_DBG(cache->domain->prov, FI_LOG_MR, "search %p (len: %zu)\n",
 	       attr->mr_iov->iov_base, attr->mr_iov->iov_len);
 
 	info.iov = *attr->mr_iov;
+	info.iface = attr->iface;
+	info.device = attr->device.reserved;
 
 	do {
-		pthread_mutex_lock(&cache->monitor->lock);
+		pthread_mutex_lock(&mm_lock);
 
 		if ((cache->cached_cnt >= cache_params.max_cnt) ||
 		    (cache->cached_size >= cache_params.max_size)) {
-			pthread_mutex_unlock(&cache->monitor->lock);
-			ofi_mr_cache_flush(cache);
-			pthread_mutex_lock(&cache->monitor->lock);
+			pthread_mutex_unlock(&mm_lock);
+			ofi_mr_cache_flush(cache, true);
+			pthread_mutex_lock(&mm_lock);
 		}
 
 		cache->search_cnt++;
-		*entry = cache->storage.find(&cache->storage, &info);
-		if (*entry && ofi_iov_within(attr->mr_iov, &(*entry)->info.iov))
+		*entry = ofi_mr_rbt_find(&cache->tree, &info);
+
+		if (*entry &&
+		    ofi_iov_within(attr->mr_iov, &(*entry)->info.iov) &&
+		    monitor->valid(monitor,
+				   (const void *)(*entry)->info.iov.iov_base,
+				   (*entry)->info.iov.iov_len,
+				   &(*entry)->hmem_info))
 			goto hit;
 
 		/* Purge regions that overlap with new region */
 		while (*entry) {
-			/* New entry will expand range of subscription */
-			(*entry)->subscribed = 0;
 			util_mr_uncache_entry(cache, *entry);
-			*entry = cache->storage.find(&cache->storage, &info);
+			*entry = ofi_mr_rbt_find(&cache->tree, &info);
 		}
-		pthread_mutex_unlock(&cache->monitor->lock);
+		pthread_mutex_unlock(&mm_lock);
 
 		ret = util_mr_cache_create(cache, &info, entry);
 		if (ret && ret != -FI_EAGAIN) {
-			if (ofi_mr_cache_flush(cache))
+			if (ofi_mr_cache_flush(cache, true))
 				ret = -FI_EAGAIN;
 		}
 	} while (ret == -FI_EAGAIN);
@@ -334,7 +380,7 @@ hit:
 	cache->hit_cnt++;
 	if ((*entry)->use_cnt++ == 0)
 		dlist_remove_init(&(*entry)->list_entry);
-	pthread_mutex_unlock(&cache->monitor->lock);
+	pthread_mutex_unlock(&mm_lock);
 	return 0;
 }
 
@@ -348,11 +394,11 @@ struct ofi_mr_entry *ofi_mr_cache_find(struct ofi_mr_cache *cache,
 	FI_DBG(cache->domain->prov, FI_LOG_MR, "find %p (len: %zu)\n",
 	       attr->mr_iov->iov_base, attr->mr_iov->iov_len);
 
-	pthread_mutex_lock(&cache->monitor->lock);
+	pthread_mutex_lock(&mm_lock);
 	cache->search_cnt++;
 
 	info.iov = *attr->mr_iov;
-	entry = cache->storage.find(&cache->storage, &info);
+	entry = ofi_mr_rbt_find(&cache->tree, &info);
 	if (!entry) {
 		goto unlock;
 	}
@@ -367,7 +413,7 @@ struct ofi_mr_entry *ofi_mr_cache_find(struct ofi_mr_cache *cache,
 		dlist_remove_init(&(entry)->list_entry);
 
 unlock:
-	pthread_mutex_unlock(&cache->monitor->lock);
+	pthread_mutex_unlock(&mm_lock);
 	return entry;
 }
 
@@ -384,14 +430,14 @@ int ofi_mr_cache_reg(struct ofi_mr_cache *cache, const struct fi_mr_attr *attr,
 	if (!*entry)
 		return -FI_ENOMEM;
 
-	pthread_mutex_lock(&cache->monitor->lock);
+	pthread_mutex_lock(&mm_lock);
 	cache->uncached_cnt++;
 	cache->uncached_size += attr->mr_iov->iov_len;
-	pthread_mutex_unlock(&cache->monitor->lock);
+	pthread_mutex_unlock(&mm_lock);
 
 	(*entry)->info.iov = *attr->mr_iov;
 	(*entry)->use_cnt = 1;
-	(*entry)->storage_context = NULL;
+	(*entry)->node = NULL;
 
 	ret = cache->add_region(cache, *entry);
 	if (ret)
@@ -401,10 +447,10 @@ int ofi_mr_cache_reg(struct ofi_mr_cache *cache, const struct fi_mr_attr *attr,
 
 buf_free:
 	util_mr_entry_free(cache, *entry);
-	pthread_mutex_lock(&cache->monitor->lock);
+	pthread_mutex_lock(&mm_lock);
 	cache->uncached_cnt--;
 	cache->uncached_size -= attr->mr_iov->iov_len;
-	pthread_mutex_unlock(&cache->monitor->lock);
+	pthread_mutex_unlock(&mm_lock);
 	return ret;
 }
 
@@ -419,12 +465,12 @@ void ofi_mr_cache_cleanup(struct ofi_mr_cache *cache)
 		cache->search_cnt, cache->delete_cnt, cache->hit_cnt,
 		cache->notify_cnt);
 
-	while (ofi_mr_cache_flush(cache))
+	while (ofi_mr_cache_flush(cache, true))
 		;
 
 	pthread_mutex_destroy(&cache->lock);
-	ofi_monitor_del_cache(cache);
-	cache->storage.destroy(&cache->storage);
+	ofi_monitors_del_cache(cache);
+	ofi_rbmap_cleanup(&cache->tree);
 	ofi_atomic_dec32(&cache->domain->ref);
 	ofi_bufpool_destroy(cache->entry_pool);
 	assert(cache->cached_cnt == 0);
@@ -433,94 +479,9 @@ void ofi_mr_cache_cleanup(struct ofi_mr_cache *cache)
 	assert(cache->uncached_size == 0);
 }
 
-static void ofi_mr_rbt_destroy(struct ofi_mr_storage *storage)
-{
-	ofi_rbmap_destroy(storage->storage);
-}
-
-static struct ofi_mr_entry *ofi_mr_rbt_find(struct ofi_mr_storage *storage,
-					    const struct ofi_mr_info *key)
-{
-	struct ofi_rbnode *node;
-
-	node = ofi_rbmap_find(storage->storage, (void *) key);
-	if (!node)
-		return NULL;
-
-	return node->data;
-}
-
-static struct ofi_mr_entry *ofi_mr_rbt_overlap(struct ofi_mr_storage *storage,
-					       const struct iovec *key)
-{
-	struct ofi_rbnode *node;
-
-	node = ofi_rbmap_search(storage->storage, (void *) key,
-				util_mr_find_overlap);
-	if (!node)
-		return NULL;
-
-	return node->data;
-}
-
-static int ofi_mr_rbt_insert(struct ofi_mr_storage *storage,
-			     struct ofi_mr_info *key,
-			     struct ofi_mr_entry *entry)
-{
-	assert(!entry->storage_context);
-	return ofi_rbmap_insert(storage->storage, (void *) key, (void *) entry,
-				(struct ofi_rbnode **) &entry->storage_context);
-}
-
-static int ofi_mr_rbt_erase(struct ofi_mr_storage *storage,
-			    struct ofi_mr_entry *entry)
-{
-	assert(entry->storage_context);
-	ofi_rbmap_delete(storage->storage,
-			 (struct ofi_rbnode *) entry->storage_context);
-	entry->storage_context = NULL;
-	return 0;
-}
-
-static int ofi_mr_cache_init_rbt(struct ofi_mr_cache *cache)
-{
-	cache->storage.storage = ofi_rbmap_create(util_mr_find_within);
-	if (!cache->storage.storage)
-		return -FI_ENOMEM;
-
-	cache->storage.overlap = ofi_mr_rbt_overlap;
-	cache->storage.destroy = ofi_mr_rbt_destroy;
-	cache->storage.find = ofi_mr_rbt_find;
-	cache->storage.insert = ofi_mr_rbt_insert;
-	cache->storage.erase = ofi_mr_rbt_erase;
-	return 0;
-}
-
-static int ofi_mr_cache_init_storage(struct ofi_mr_cache *cache)
-{
-	int ret;
-
-	switch (cache->storage.type) {
-	case OFI_MR_STORAGE_DEFAULT:
-	case OFI_MR_STORAGE_RBT:
-		ret = ofi_mr_cache_init_rbt(cache);
-		break;
-	case OFI_MR_STORAGE_USER:
-		ret = (cache->storage.storage && cache->storage.overlap &&
-		      cache->storage.destroy && cache->storage.find &&
-		      cache->storage.insert && cache->storage.erase) ?
-			0 : -FI_EINVAL;
-		break;
-	default:
-		ret = -FI_EINVAL;
-		break;
-	}
-
-	return ret;
-}
-
+/* Monitors array must be of size OFI_HMEM_MAX. */
 int ofi_mr_cache_init(struct util_domain *domain,
-		      struct ofi_mem_monitor *monitor,
+		      struct ofi_mem_monitor **monitors,
 		      struct ofi_mr_cache *cache)
 {
 	int ret;
@@ -543,11 +504,8 @@ int ofi_mr_cache_init(struct util_domain *domain,
 	cache->domain = domain;
 	ofi_atomic_inc32(&domain->ref);
 
-	ret = ofi_mr_cache_init_storage(cache);
-	if (ret)
-		goto dec;
-
-	ret = ofi_monitor_add_cache(monitor, cache);
+	ofi_rbmap_init(&cache->tree, util_mr_find_within);
+	ret = ofi_monitors_add_cache(monitors, cache);
 	if (ret)
 		goto destroy;
 
@@ -560,10 +518,9 @@ int ofi_mr_cache_init(struct util_domain *domain,
 
 	return 0;
 del:
-	ofi_monitor_del_cache(cache);
+	ofi_monitors_del_cache(cache);
 destroy:
-	cache->storage.destroy(&cache->storage);
-dec:
+	ofi_rbmap_cleanup(&cache->tree);
 	ofi_atomic_dec32(&cache->domain->ref);
 	pthread_mutex_destroy(&cache->lock);
 	cache->domain = NULL;

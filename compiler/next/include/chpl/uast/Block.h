@@ -22,6 +22,7 @@
 
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Expression.h"
+#include "chpl/uast/SimpleBlockLike.h"
 
 namespace chpl {
 namespace uast {
@@ -30,44 +31,34 @@ namespace uast {
 /**
   This class represents a { } block.
  */
-class Block final : public Expression {
+class Block final : public SimpleBlockLike {
  private:
-  Block(ASTList stmts)
-    : Expression(asttags::Block, std::move(stmts)) {
-
+  Block(ASTList stmts, int bodyChildNum, int numBodyStmts)
+    : SimpleBlockLike(asttags::Block, std::move(stmts),
+                      BlockStyle::EXPLICIT,
+                      bodyChildNum,
+                      numBodyStmts) {
     assert(isExpressionASTList(children_));
+    assert(blockStyle_ == BlockStyle::EXPLICIT);
+    assert(bodyChildNum_ >= 0);
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    return simpleBlockLikeContentsMatchInner(other);
+  }
+
+  void markUniqueStringsInner(Context* context) const override {
+    simpleBlockLikeMarkUniqueStringsInner(context);
+  }
 
  public:
+  ~Block() override = default;
+
   /**
    Create and return a Block containing the passed stmts.
    */
   static owned<Block> build(Builder* builder, Location loc, ASTList stmts);
 
-  /**
-    Return a way to iterate over the statements.
-   */
-  ASTListIteratorPair<Expression> stmts() const {
-    return ASTListIteratorPair<Expression>(children_.begin(), children_.end());
-  }
-
-  /**
-   Return the number of statements in the block.
-   */
-  int numStmts() const {
-    return this->numChildren();
-  }
-  /**
-   Return the i'th statement in the block.
-   */
-  const Expression* stmt(int i) const {
-    const ASTNode* ast = this->child(i);
-    assert(ast->isExpression());
-    return (const Expression*)ast;
-  }
 };
 
 

@@ -1,0 +1,1 @@
+error: Python libraries require position independent code, recompile Chapel with CHPL_LIB_PIC=pic

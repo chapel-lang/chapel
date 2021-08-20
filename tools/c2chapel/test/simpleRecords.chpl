@@ -6,6 +6,8 @@ require "simpleRecords.h";
 // Note: Generated with fake std headers
 
 use CPtr;
+use SysCTypes;
+use SysBasic;
 extern record allInts {
   var a : c_int;
   var b : c_uint;

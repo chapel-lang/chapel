@@ -16,7 +16,7 @@ BRANCH=$2
 if [ -z "$URL" ] || [ -z "$BRANCH" ]
 then
   echo "Usage: test_rpm_module github-url branch"
-  echo "  For example, https://github.com/chapel-lang/chapel master"
+  echo "  For example, https://github.com/chapel-lang/chapel main"
   exit -1
 fi
 

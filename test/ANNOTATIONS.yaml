@@ -469,6 +469,8 @@ all:
       config: 16-node-cs, 16-node-cs-hdr
   05/14/21:
     - Use LLVM by default if LLVM is available either as system or bundled (#17079)
+  08/05/21:
+    - Extend bounded coforall optimization to zippered loops (#18162)
 
 # End all
 
@@ -821,6 +823,8 @@ empty-chpl-barrier.ml-time:
     - Optimize the atomic barrier implementation for network atomics (#10633)
   11/03/20:
     - Do fewer GETs to force PUTs into a visible state, and do them later (#16634)
+  06/26/21:
+    - Optimize allLocalesBarrier by reducing communication (#17978)
 
 
 exchange:
@@ -2081,6 +2085,8 @@ compilerAndTestingStats: &compiler-perf-base
     - Change range.size to return int; add range.sizeAs (#17628)
   06/01/21:
     - Add explicit string casts for common/easy cases (#17855)
+  06/16/21:
+    - Translate uAST to old AST (#17919)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2146,6 +2152,21 @@ arkouda: &arkouda-base
     - Upgrade Arkouda release testing from 1.23.0 to 1.24.1 (#17773)
   06/02/21:
     - Make the array values in groupby and aggregate benchmarks consistent (mhmerrill/arkouda#832)
+  06/29/21:
+    - Improve the performance of client-server array transfers (mhmerrill/arkouda#856)
+  07/10/21:
+    - Optimize client conversions for client-server array transfers (mhmerrill/arkouda#870)
+  07/15/21:
+    - Optimize server conversions for client-server array transfers (mhmerrill/arkouda#880)
+  07/28/21:
+    - Optimize the number of copies for client-server array transfers (mhmerrill/arkouda#885)
+  07/31/21:
+    - Optimize out a copy in ZMQ recv for local operations (#18126)
+  08/04/21:
+    - Further reduce the number of copies for client-server array transfers (mhmerrill/arkouda#893)
+  08/05/21:
+    - Parallelize bytes copies over a certain threshold in ZMQ (#18140)
+    - Upgrade to PyZMQ 22.2.0 (includes mutable pyzmq improvement)
 
 arkouda-string:
   <<: *arkouda-base

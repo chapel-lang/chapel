@@ -699,7 +699,7 @@ There is some urgency to move as rapidly as possible if we want to be
 fully transitioned to the new syntax within the current release.
 However there is also a need to be sensitive to overly large PRs
 within the team, and to provide some notice to early adopters of
-initializers who are tracking master.
+initializers who are tracking main.
 
 We must be able to implement types that rely on the new form of
 initializers as soon as we can and without being required to convert
@@ -760,7 +760,7 @@ the convention of placing complete() as the final statement in the
 body; this will simplify a process of finding these cases and
 removing the unnecessary complete().
 
-These updates can be applied to master in any number of stages
+These updates can be applied to 'main' in any number of stages
 that is most convenient at a cost of just a few hours per issue.
 
 

@@ -429,26 +429,32 @@ static void moveAndCheckInterfaceConstraints() {
       continue;  // this node is part of an ImplementsStmt, do not move it
 
     FnSymbol* fn = toFnSymbol(icon->parentSymbol);
-    if (BlockStmt* block = toBlockStmt(icon->parentExpr)) {
-      if (fn != NULL && fn->where == block) {
-        icon->remove();
-        fn->addInterfaceConstraint(icon);
-        if (block->body.empty())
-          block->remove();
-        continue;
-      }
-    } else if (CallExpr* call = toCallExpr(icon->parentExpr)) {
-      if (isInWhereBlock(fn, call)) {
-        if (! call->isNamed("&&")) {
-          USR_FATAL_CONT(icon, "combining an 'implements' constraint"
-                " with others is currently supported only using '&&'");
+    if (fn != nullptr) {
+      if (BlockStmt* block = toBlockStmt(icon->parentExpr)) {
+        if (fn->where == block) {
+          icon->remove();
+          fn->addInterfaceConstraint(icon);
+          if (block->body.empty())
+            block->remove();
           continue;
         }
-        INT_ASSERT(call->numActuals() == 2);
-        icon->remove();
-        fn->addInterfaceConstraint(icon);
-        call->replace(call->get(1)->remove());
-        continue;
+      } else if (CallExpr* call = toCallExpr(icon->parentExpr)) {
+        if (isInWhereBlock(fn, call)) {
+          if (! call->isNamed("&&")) {
+            USR_FATAL_CONT(icon, "combining an 'implements' constraint"
+                  " with others is currently supported only using '&&'");
+            continue;
+          }
+          INT_ASSERT(call->numActuals() == 2);
+          icon->remove();
+          fn->addInterfaceConstraint(icon);
+          call->replace(call->get(1)->remove());
+          continue;
+        }
+      } else if (InterfaceInfo* ifcInfo = fn->interfaceInfo) {
+        if (icon->list == &(ifcInfo->interfaceConstraints))
+          continue; // this constraint is already in the right spot, due to
+                    // handleReceiverFormals() -> desugarInterfaceAsType()
       }
     }
 
@@ -875,12 +881,6 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
 ************************************** | *************************************/
 
 static std::set<VarSymbol*> globalTemps;
-
-static void insertResolutionPoint(Expr* ref, Symbol* sym) {
-  SET_LINENO(sym);
-  ref->insertBefore(new CallExpr(PRIM_RESOLUTION_POINT, sym));
-  ref->insertBefore(new CallExpr(PRIM_END_OF_STATEMENT));
-}
 
 static void moveGlobalDeclarationsToModuleScope() {
 

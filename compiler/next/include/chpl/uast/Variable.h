@@ -40,9 +40,13 @@ namespace uast {
       const c = 2;
       const ref d = c;
       param e = "hi";
+
+      class C {
+        var f: int;
+      }
   \endrst
 
-  each of these is a VariableDecl that refers to a Variable Sym.
+  each of a-f are Variables.
  */
 class Variable final : public VarLikeDecl {
  public:
@@ -58,18 +62,33 @@ class Variable final : public VarLikeDecl {
   };
 
  private:
-  Kind kind_;
-
   Variable(ASTList children, Decl::Visibility vis, UniqueString name,
            Variable::Kind kind,
-           int8_t typeExpressionChildNum, int8_t initExpressionChildNum)
+           bool isConfig,
+           bool isField,
+           int8_t typeExpressionChildNum,
+           int8_t initExpressionChildNum)
       : VarLikeDecl(asttags::Variable, std::move(children), vis, name,
+                    (IntentList)((int)kind),
                     typeExpressionChildNum,
                     initExpressionChildNum),
-        kind_(kind) {}
+        isConfig_(isConfig),
+        isField_(isField) {
+  }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Variable* lhs = this;
+    const Variable* rhs = (const Variable*) other;
+    return lhs->isConfig_ == rhs->isConfig_ &&
+           lhs->isField_ == rhs->isField_ &&
+           lhs->varLikeDeclContentsMatchInner(rhs);
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    varLikeDeclMarkUniqueStringsInner(context);
+  }
+
+  bool isConfig_;
+  bool isField_;
 
  public:
   ~Variable() override = default;
@@ -77,13 +96,25 @@ class Variable final : public VarLikeDecl {
   static owned<Variable> build(Builder* builder, Location loc,
                                UniqueString name, Decl::Visibility vis,
                                Variable::Kind kind,
+                               bool isConfig,
+                               bool isField,
                                owned<Expression> typeExpression,
                                owned<Expression> initExpression);
 
   /**
     Returns the kind of the variable (`var` / `const` / `param` etc).
    */
-  Kind kind() const { return this->kind_; }
+  Kind kind() const { return (Kind)((int) storageKind()); }
+
+  /**
+    Returns true if this variable is a config variable.
+  */
+  bool isConfig() const { return this->isConfig_; }
+
+  /**
+    Returns true if this Variable reperesents a field.
+  */
+  bool isField() const { return this->isField_; }
 
 };
 

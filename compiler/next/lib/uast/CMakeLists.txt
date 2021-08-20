@@ -18,20 +18,32 @@
 target_sources(libchplcomp-obj
                PRIVATE
 
+               AggregateDecl.cpp
                ASTList.cpp
                ASTNode.cpp
                ASTTag.cpp
+               As.cpp
+               Array.cpp
+               Begin.cpp
                Block.cpp
+               BoolLiteral.cpp
                BracketLoop.cpp
+               Break.cpp
                Builder.cpp
                BytesLiteral.cpp
                Call.cpp
+               Catch.cpp
+               Class.cpp
+               Cobegin.cpp
                Coforall.cpp
                Comment.cpp
                Conditional.cpp
-               ControlFlow.cpp
+               Continue.cpp
                CStringLiteral.cpp
                Decl.cpp
+               Defer.cpp
+               Delete.cpp
+               Domain.cpp
                Dot.cpp
                DoWhile.cpp
                Enum.cpp
@@ -46,8 +58,10 @@ target_sources(libchplcomp-obj
                Function.cpp
                Identifier.cpp
                ImagLiteral.cpp
+               Import.cpp
                IndexableLoop.cpp
                IntLiteral.cpp
+               Label.cpp
                Literal.cpp
                Local.cpp
                Loop.cpp
@@ -56,20 +70,31 @@ target_sources(libchplcomp-obj
                NamedDecl.cpp
                New.cpp
                NumericLiteral.cpp
+               On.cpp
                OpCall.cpp
+               Range.cpp
                RealLiteral.cpp
+               Record.cpp
+               Return.cpp
                Serial.cpp
+               SimpleBlockLike.cpp
                StringLikeLiteral.cpp
                StringLiteral.cpp
+               Sync.cpp
                TaskVar.cpp
+               Throw.cpp
+               Try.cpp
                TupleDecl.cpp
                TypeDecl.cpp
                UintLiteral.cpp
+               Use.cpp
+               Union.cpp
                Variable.cpp
                VarLikeDecl.cpp
-               Visitor.cpp
+               VisibilityClause.cpp
                While.cpp
                WithClause.cpp
+               Yield.cpp
                Zip.cpp
 
               )

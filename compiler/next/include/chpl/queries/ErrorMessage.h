@@ -50,6 +50,7 @@ class ErrorMessage final {
   ErrorMessage(Location location, std::string message);
   ErrorMessage(Location location, const char* message);
 
+  static ErrorMessage vbuild(Location loc, const char* fmt, va_list vl);
   static ErrorMessage build(Location loc, const char* fmt, ...)
 #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
@@ -60,6 +61,7 @@ class ErrorMessage final {
 
   void addDetail(ErrorMessage err);
 
+  bool isEmpty() const { return message_.empty() && details_.empty(); }
   Location location() const { return location_; }
 
   UniqueString path() const { return location_.path(); }

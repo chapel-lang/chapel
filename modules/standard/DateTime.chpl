@@ -1169,8 +1169,8 @@ module DateTime {
      deprecated. */
   pragma "no doc"
   proc type datetime.strptime(date_string: string, format: string = "%a %b %d %H:%M:%S %Y") {
-    compilerWarning("proc type datetype.strptime() is deprecated.\nPlease use proc datetime.strptime() instead.");
-    /* intialization to epoch time */
+    compilerWarning("proc type datetime.strptime() is deprecated.\nPlease use proc datetime.strptime() instead.");
+    /* initialization to epoch time */
     var dt: datetime = new datetime(1970, 1, 1);
     try! dt.strptime(date_string, format);
     return dt;
@@ -1243,7 +1243,6 @@ module DateTime {
     timeStruct.tm_yday = (this.replace(tzinfo=nil) - new datetime(year, 1, 1)).days: int(32);
 
     // Iterate over format specifiers in strftime(), replacing %f with microseconds
-    pragma "not order independent yielding loops"
     iter strftok(const ref s: string)
     {
       var per = "";

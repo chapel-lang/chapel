@@ -1,0 +1,9 @@
+cannotSeeTertiaryOperatorRecord.chpl:1: In module 'OuterModule':
+cannotSeeTertiaryOperatorRecord.chpl:11: error: unresolved call '+(Foo, Foo)'
+$CHPL_HOME/modules/internal/String.chpl:nnnn: note: this candidate did not match: +(x: bufferType, y: byteIndex)
+cannotSeeTertiaryOperatorRecord.chpl:11: note: because actual argument #1 with type 'Foo'
+$CHPL_HOME/modules/internal/String.chpl:nnnn: note: is passed to formal 'x: c_ptr(uint(8))'
+cannotSeeTertiaryOperatorRecord.chpl:11: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: uint(64), b: int(64))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   +(a: int(64), b: uint(64))
+note: and 95 other candidates, use --print-all-candidates to see them

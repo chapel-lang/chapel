@@ -22,6 +22,7 @@ ALL_SRCS += next/lib/util/*.cpp
 
 NEXT_UTIL_SRCS =                                 \
   filesystem.cpp \
+  string-escapes.cpp \
 
 
 SRCS = $(NEXT_UTIL_SRCS) my_aligned_alloc.c my_strerror_r.c

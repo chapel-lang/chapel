@@ -27,7 +27,7 @@ proc doTests(somepath: string) {
   writeln(absPath(somepath));
 
   // Get expected output for our test file.
-  writeln(f.absPath());
+  writeln(absPath(f));
   f.close();
 }
 

@@ -29,7 +29,7 @@
 // This pass then is run to lower the operations on global pointers to
 // appropriate calls to the runtime (e.g. load -> get, store -> put).
 //
-// To invoke, use the flag --llvm-wide-opt along with --llvm and some
+// To invoke, use the flag --llvm-wide-opt and some
 //  reason to generate wide pointers ( --no-local or a comms layer configured )
 //
 //===----------------------------------------------------------------------===//

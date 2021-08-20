@@ -107,6 +107,61 @@ static void computeClassHierarchy() {
   }
 }
 
+// Here we record method names on interface types, that is, T1, ... and
+// AT1, ..., given 'interface IFC(T1, ...) { type AT1; ... }'
+// so that we know when we can insert an implicit 'this' actual arg.
+static std::map<Symbol*, std::set<const char*> > interfaceMethodNames;
+
+// 'interfaceMethodNames' records a 'proc IFC.someMethod...' as a method on T1.
+// 'thisTypeToIfcFormal' maps the type of 'this' in the former to T1.
+static SymbolMap thisTypeToIfcFormal;
+
+static bool isInterfaceMethodName(const char* name, Type* thisType) {
+  if (ConstrainedType* ct = toConstrainedType(thisType)) {
+    Symbol* thisTS = ct->symbol;
+    INT_ASSERT(ct->ctUse != CT_CGFUN_ASSOC_TYPE);
+    if (ct->ctUse == CT_CGFUN_FORMAL)
+      thisTS = thisTypeToIfcFormal.get(thisTS);
+
+    auto it = interfaceMethodNames.find(thisTS);
+    if (it != interfaceMethodNames.end())
+      return it->second.count(name);
+  }
+
+  return false;
+}
+
+static void recordIfcMethod(FnSymbol* fn, Symbol* thisType) {
+  interfaceMethodNames[thisType].insert(fn->name);
+}
+
+static void recordIfcThis(InterfaceSymbol* isym, FnSymbol* fn,
+                          TypeSymbol* thisType) {
+  INT_ASSERT(isConstrainedTypeSymbol(thisType, CT_CGFUN_FORMAL));
+  Symbol* ifcFormal = toDefExpr(isym->ifcFormals.head)->sym;
+  INT_ASSERT(isConstrainedTypeSymbol(ifcFormal, CT_IFC_FORMAL));
+  thisTypeToIfcFormal.put(thisType, ifcFormal);
+  recordIfcMethod(fn, ifcFormal);
+}
+
+static void recordMethodsOnInterfaceFormalsAndATs() {
+  forv_Vec(InterfaceSymbol, isym, gInterfaceSymbols)
+    for_alist(stmt, isym->ifcBody->body)
+      if (DefExpr* def = toDefExpr(stmt))
+       if (FnSymbol* fn = toFnSymbol(def->sym))
+        if (Symbol* _this = fn->_this)
+         if (ConstrainedType* ct = toConstrainedType(_this->type)) {
+           if (ct->ctUse == CT_IFC_FORMAL)
+             INT_ASSERT(ct->symbol->defPoint->list == &(isym->ifcFormals));
+           else if (ct->ctUse == CT_IFC_ASSOC_TYPE)
+             INT_ASSERT(ct->symbol->defPoint->parentExpr == isym->ifcBody);
+           else
+             continue; // otherwise proceed to the next stmt in isym->ifcBody
+
+           recordIfcMethod(fn, ct->symbol);
+         }
+}
+
 static void handleReceiverFormals() {
   //
   // resolve type of this for methods
@@ -121,13 +176,23 @@ static void handleReceiverFormals() {
       if (UnresolvedSymExpr* sym = toUnresolvedSymExpr(stmt)) {
         SET_LINENO(fn->_this);
 
-        if (TypeSymbol* ts = toTypeSymbol(lookup(sym->unresolved, sym))) {
+        Symbol* rsym = lookup(sym->unresolved, sym);
+        if (TypeSymbol* ts = toTypeSymbol(rsym)) {
           sym->replace(new SymExpr(ts));
 
           fn->_this->type = ts->type;
           fn->_this->type->methods.add(fn);
 
           AggregateType::setCreationStyle(ts, fn);
+
+        } else if (InterfaceSymbol* isym = toInterfaceSymbol(rsym)) {
+          // Convert fn(this: IFC, ...) to
+          //   fn(this: ?t_IFC, ...) where t_IFC implements IFC
+          TypeSymbol* ctSym = desugarInterfaceAsType(fn,
+                                toArgSymbol(fn->_this), sym, isym);
+          sym->replace(new SymExpr(ctSym));
+          fn->_this->type = ctSym->type;
+          recordIfcThis(isym, fn, ctSym);
         }
 
       } else if (SymExpr* sym = toSymExpr(stmt)) {
@@ -141,6 +206,8 @@ static void handleReceiverFormals() {
       AggregateType::setCreationStyle(fn->_this->type->symbol, fn);
     }
   }
+
+  recordMethodsOnInterfaceFormalsAndATs();
 }
 
 static void markGenerics() {
@@ -547,7 +614,7 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
                isSymExpr(stmt)           == true ||
                isGotoStmt(stmt)          == true) {
 
-    // May occur in --llvm runs
+    // May occur with LLVM backend
     } else if (isExternBlockStmt(stmt)   == true) {
 
     } else {
@@ -955,7 +1022,8 @@ static void updateMethod(UnresolvedSymExpr* usymExpr,
           if (isAstrOpName(name))
             break;
 
-          if (isAggr == true || isMethodName(name, type) == true) {
+          if (isAggr == true || isMethodName(name, type) == true ||
+              (sym == nullptr && isInterfaceMethodName(name, type))) {
             if (isFunctionNameWithExplicitScope(expr) == false) {
               insertFieldAccess(method, usymExpr, sym, expr);
             }
@@ -1135,8 +1203,8 @@ static void errorDotInsideWithClause(UnresolvedSymExpr* origUSE,
   // As of this writing, a with-clause can be duplicated in the AST.
   // This code avoids multiple error messages for the same symbol.
 
-  std::pair<const char*, int> markLoc(origUSE->astloc.filename,
-                                      origUSE->astloc.lineno);
+  std::pair<const char*, int> markLoc(origUSE->astloc.filename(),
+                                      origUSE->astloc.lineno());
 
   WFDIWmark                   mark(markLoc, origUSE->unresolved);
 
@@ -1432,8 +1500,8 @@ static void resolveModuleCall(CallExpr* call) {
                              mbrName,
                              uSE->unresolved);
               USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
-                        uSE->unresolved, mod->name, renameLoc->filename,
-                        renameLoc->lineno);
+                        uSE->unresolved, mod->name, renameLoc->filename(),
+                        renameLoc->lineno());
 
             }
           }
@@ -1457,8 +1525,8 @@ static void resolveModuleCall(CallExpr* call) {
                              mbrName,
                              uSE->unresolved);
               USR_PRINT("module '%s' was renamed from '%s' at %s:%d",
-                        uSE->unresolved, mod->name, renameLoc->filename,
-                        renameLoc->lineno);
+                        uSE->unresolved, mod->name, renameLoc->filename(),
+                        renameLoc->lineno());
             }
           }
         }
@@ -1621,15 +1689,15 @@ printConflictingSymbols(std::vector<Symbol*>& symbols, Symbol* sym,
       if (VisibilityStmt* reexport = reexportPts[another]) {
         USR_PRINT(another,
                   "symbol '%s', defined here, was last reexported at %s:%d",
-                  another->name, reexport->astloc.filename,
-                  reexport->astloc.lineno);
+                  another->name, reexport->astloc.filename(),
+                  reexport->astloc.lineno());
       }
       astlocT* renameLoc = renameLocs[another];
       if (storeRenames && renameLoc != NULL) {
         USR_PRINT(another,
                   "symbol '%s', defined here, was renamed to '%s' at %s:%d",
-                  another->name, nameUsed, renameLoc->filename,
-                  renameLoc->lineno);
+                  another->name, nameUsed, renameLoc->filename(),
+                  renameLoc->lineno());
       } else {
         USR_PRINT(another, "also defined here");
       }
@@ -1661,12 +1729,12 @@ void checkConflictingSymbols(std::vector<Symbol *>& symbols,
 
         if (VisibilityStmt* reexport = reexportPts[sym]) {
           USR_PRINT("'%s' was last reexported at %s:%d", name,
-                    reexport->astloc.filename, reexport->astloc.lineno);
+                    reexport->astloc.filename(), reexport->astloc.lineno());
         }
         astlocT* symRenameLoc = renameLocs[sym];
         if (storeRenames && symRenameLoc != NULL) {
           USR_PRINT("'%s' was renamed to '%s' at %s:%d", sym->name,
-                    name, symRenameLoc->filename, symRenameLoc->lineno);
+                    name, symRenameLoc->filename(), symRenameLoc->lineno());
         }
         printConflictingSymbols(symbols, sym, name, storeRenames, renameLocs,
                                 reexportPts);
@@ -2989,6 +3057,8 @@ void scopeResolve() {
   destroyModuleUsesCaches();
 
   warnedForDotInsideWith.clear();
+  interfaceMethodNames.clear();
+  thisTypeToIfcFormal.clear();
 
   renameDefaultTypesToReflectWidths();
 

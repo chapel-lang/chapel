@@ -20,8 +20,10 @@
 #ifndef CHPL_QUERIES_QUERY_IMPL_H
 #define CHPL_QUERIES_QUERY_IMPL_H
 
-#include "chpl/queries/Context.h"
 #include "chpl/queries/Context-detail.h"
+#include "chpl/queries/Context.h"
+#include "chpl/queries/mark-functions.h"
+#include "chpl/queries/update-functions.h"
 
 /**
   This file should be included by .cpp files implementing queries.
@@ -234,6 +236,69 @@ Context::queryGetSaved(const QueryMapResult<ResultType, ArgTs...>* r) {
 }
 
 template<typename ResultType,
+        typename... ArgTs>
+const ResultType* Context::queryGetRunningQueryPartialResult(
+             const ResultType& (*queryFunction)(Context* context, ArgTs...),
+             const std::tuple<ArgTs...>& tupleOfArgs,
+             const char* traceQueryName) {
+  // Look up the map entry for this query name
+  const void* queryFuncV = (const void*) queryFunction;
+  // Look up the map entry for this query
+  auto search = this->queryDB.find(queryFuncV);
+  if (search == this->queryDB.end()) {
+    return nullptr;
+  }
+
+  // found an entry for this query
+  QueryMapBase* base = search->second.get();
+  auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
+  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
+  auto search2 = queryMap->map.find(key);
+  if (search2 == queryMap->map.end()) {
+    return nullptr;
+  }
+
+  // found an entry for this query. is it currently running?
+  if (search2->lastChecked != -1) {
+    return nullptr;
+  }
+
+  // query is currently running so return the partial result
+  return &search2->result;
+}
+
+template<typename ResultType,
+        typename... ArgTs>
+Context::QueryStatus Context::queryStatus(
+             const ResultType& (*queryFunction)(Context* context, ArgTs...),
+             const std::tuple<ArgTs...>& tupleOfArgs) {
+  // Look up the map entry for this query name
+  const void* queryFuncV = (const void*) queryFunction;
+  // Look up the map entry for this query
+  auto search = this->queryDB.find(queryFuncV);
+  if (search == this->queryDB.end()) {
+    return NOT_CHECKED_NOT_CHANGED;
+  }
+
+  // found an entry for this query
+  QueryMapBase* base = search->second.get();
+  auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
+  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
+  auto search2 = queryMap->map.find(key);
+  if (search2 == queryMap->map.end()) {
+    return NOT_CHECKED_NOT_CHANGED;
+  }
+
+  if (search2->lastChanged == this->currentRevisionNumber) {
+    return CHANGED;
+  } else if (search2->lastChecked == this->currentRevisionNumber) {
+    return REUSED;
+  } else {
+    return NOT_CHECKED_NOT_CHANGED;
+  }
+}
+
+template<typename ResultType,
          typename... ArgTs>
 const ResultType&
 Context::queryEnd(
@@ -248,7 +313,8 @@ Context::queryEnd(
   assert(queryStack.size() > 0);
 
   const QueryMapResult<ResultType, ArgTs...>* ret =
-    this->updateResultForQueryMapR(queryMap, r, tupleOfArgs, std::move(result));
+    this->updateResultForQueryMapR(queryMap, r, tupleOfArgs,
+                                   std::move(result), /* forSetter */ false);
 
   if (enableDebugTracing) {
     bool changed = ret->lastChanged == this->currentRevisionNumber;
@@ -272,7 +338,8 @@ const QueryMapResult<ResultType, ArgTs...>*
 Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
                                   const QueryMapResult<ResultType, ArgTs...>* r,
                                   const std::tuple<ArgTs...>& tupleOfArgs,
-                                  ResultType result) {
+                                  ResultType result,
+                                  bool forSetter) {
   assert(r != nullptr);
 
   // If we already have found a result, use that.
@@ -282,19 +349,28 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
   // junk. If we wait until a garbageCollect call to free the junk, we can
   // avoid certain cases where a pointer could be allocated, freed, and then
   // allocated; leading to a sort of ABA issue.
-  chpl::update<ResultType> combiner;
-  bool changed = combiner(r->result, result);
+  bool changed = false;
   bool initialResult = (r->lastChanged == -1);
-  // now 'r->result' is updated and 'result' is garbage for collection
+  auto currentRevision = this->currentRevisionNumber;
+
+  // For setter queries, only run the combiner if the last
+  // time the query was checked was an earlier revision.
+  // If the combiner is skipped, 'changed' is left as false.
+  if (forSetter == false || r->lastChecked != currentRevision) {
+    chpl::update<ResultType> combiner;
+    changed = combiner(r->result, result);
+    // now 'r->result' is updated and 'result' is garbage for collection
+  }
 
   // save old result when appropriate
   // no need to save old result 1st time running this query
   // no need to save new result when old one is used due to no changes
-  if (changed==false && initialResult==false) {
+  if (initialResult || changed==false) {
+    // no need to save old result
+  } else {
     queryMap->oldResults.push_back(std::move(result));
   }
 
-  auto currentRevision = this->currentRevisionNumber;
   r->lastChecked = currentRevision;
   if (changed || initialResult) {
     r->lastChanged  = currentRevision;
@@ -307,13 +383,15 @@ template<typename ResultType,
 const QueryMapResult<ResultType, ArgTs...>*
 Context::updateResultForQueryMap(QueryMap<ResultType, ArgTs...>* queryMap,
                                  const std::tuple<ArgTs...>& tupleOfArgs,
-                                 ResultType result) {
+                                 ResultType result,
+                                 bool forSetter) {
   // Look up the current entry
   const QueryMapResult<ResultType, ArgTs...>* r
     = getResult(queryMap, tupleOfArgs);
 
   // Run the version of the function accepting the map and result entry
-  return updateResultForQueryMapR(queryMap, r, tupleOfArgs, std::move(result));
+  return updateResultForQueryMapR(queryMap, r, tupleOfArgs,
+                                  std::move(result), forSetter);
 }
 
 template<typename ResultType,
@@ -324,24 +402,44 @@ Context::updateResultForQuery(
                 const std::tuple<ArgTs...>& tupleOfArgs,
                 ResultType result,
                 const char* traceQueryName,
-                bool isInputQuery) {
+                bool isInputQuery,
+                bool forSetter) {
   // Look up the map entry for this query name
   QueryMap<ResultType, ArgTs...>* queryMap =
     getMap(queryFunction, tupleOfArgs, traceQueryName, isInputQuery);
 
   // Run the version of the function accepting the map
-  return updateResultForQueryMap(queryMap, tupleOfArgs, std::move(result));
+  return updateResultForQueryMap(queryMap, tupleOfArgs,
+                                 std::move(result), forSetter);
 }
 
-/*
 template<typename ResultType,
          typename... ArgTs>
-void
-Context::queryRecomputedUpdateResult(QueryMap<ResultType, ArgTs...>* queryMap,
-                                     const std::tuple<ArgTs...>& tupleOfArgs,
-                                     ResultType result) {
-  updateResultForQueryMap(queryMap, tupleOfArgs, std::move(result));
-}*/
+bool
+Context::hasResultForQuery(
+     const ResultType& (*queryFunction)(Context* context, ArgTs...),
+     const std::tuple<ArgTs...>& tupleOfArgs,
+     const char* traceQueryName) {
+
+  // Look up the map entry for this query name
+  const void* queryFuncV = (const void*) queryFunction;
+  // Look up the map entry for this query
+  auto search = this->queryDB.find(queryFuncV);
+  if (search == this->queryDB.end()) {
+    return false;
+  }
+
+  // found an entry for this query
+  QueryMapBase* base = search->second.get();
+  auto queryMap = (QueryMap<ResultType, ArgTs...>*)base;
+  auto key = QueryMapResult<ResultType, ArgTs...>(queryMap, tupleOfArgs);
+  auto search2 = queryMap->map.find(key);
+  if (search2 == queryMap->map.end()) {
+    return false;
+  }
+
+  return true;
+}
 
 template<typename ResultType,
          typename... ArgTs>
@@ -353,7 +451,7 @@ Context::querySetterUpdateResult(
     const char* traceQueryName,
     bool isInputQuery) {
   updateResultForQuery(queryFunction, tupleOfArgs, std::move(result),
-                       traceQueryName, isInputQuery);
+                       traceQueryName, isInputQuery, /* forSetter */ true);
 }
 
 } // end namespace chpl
@@ -381,24 +479,59 @@ Context::querySetterUpdateResult(
 #define QUERY_GET_SAVED() \
   (BEGIN_QUERY_CONTEXT->queryGetSaved(BEGIN_QUERY_FOUND))
 
+/**
+  Use QUERY_BEGIN at the start of the implementation of a particular query.
+  It checks to see if an earlier result can be used and in that event returns
+  it.
+
+  Pass the name of the enclosing function as func, context is the
+  class Contex, and then pass any arguments to the query.
+ */
 #define QUERY_BEGIN(func, context, ...) \
   QUERY_BEGIN_INNER(false, func, context, __VA_ARGS__); \
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   }
 
+/**
+  QUERY_BEGIN_INPUT is like QUERY_BEGIN but should be used
+  for input queries.
+ */
 #define QUERY_BEGIN_INPUT(func, context, ...) \
   QUERY_BEGIN_INNER(true, func, context, __VA_ARGS__) \
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   }
 
-#define QUERY_ERROR(error) \
-  BEGIN_QUERY_CONTEXT->queryNoteError(error)
+/**
+  Returns a pointer to the partial result if the query is already running
+  and nullptr otherwise. The partial result is set by assigning to
+  QUERY_CURRENT_RESULT in some other invocation of func with the exact
+  same arguments.
 
-#define QUERY_DEPENDS_INPUT() \
-  BEGIN_QUERY_CONTEXT->queryNoteInputDependency()
+  Arguments are like QUERY_BEGIN.
+ */
+#define QUERY_RUNNING_PARTIAL_RESULT(func, context, ...) \
+  context->queryGetRunningQueryPartialResult(func, std::make_tuple(__VA_ARGS__), #func)
 
+/**
+  Get the current partial result for the current query
+  (for use in recursive queries). The result is an lvalue that can be set.
+ */
+#define QUERY_CURRENT_RESULT \
+  (BEGIN_QUERY_FOUND->result)
+
+/**
+  Write
+
+    return QUERY_END(result);
+
+  at the end of the implementation for a particular query. The result
+  will be `std::move`d into the query.
+
+  Runs chpl::update to update the result stored in the map with the passed one.
+  Updates the query's last updated and last computed revisions as needed.
+ */
 #define QUERY_END(result) \
   /* must not use BEGIN_QUERY_SEARCH1 (iterator could be invalidated) */ \
   (BEGIN_QUERY_CONTEXT->queryEnd(BEGIN_QUERY_FUNCTION, \
@@ -408,6 +541,46 @@ Context::querySetterUpdateResult(
                                  std::move(result), \
                                  BEGIN_QUERY_FUNC_NAME))
 
+
+/**
+  Use QUERY_STORE_RESULT to implement a setter for a non-input query.
+  Arguments are:
+   * the query function to update
+   * the context
+   * the new result
+   * any number of query arguments
+
+  The result will be `std::move`d into the query.
+  If called multiple times within the same revision, only the first
+  stored result in that revision will be saved.
+ */
+#define QUERY_STORE_RESULT(func, context, result, ...) \
+  context->querySetterUpdateResult(func, \
+                                   std::make_tuple(__VA_ARGS__), \
+                                   std::move(result), \
+                                   #func, \
+                                   false)
+
+
+/**
+  Use QUERY_STORE_INPUT_RESULT to implement a setter for an input query.
+  This is especially useful for input queries (to e.g. set the file contents).
+  Arguments are:
+   * the query function to update
+   * the context
+   * the new result
+   * any number of query arguments
+
+  The result will be `std::move`d into the query.
+  If called multiple times within the same revision, only the first
+  stored result in that revision will be saved.
+ */
+#define QUERY_STORE_INPUT_RESULT(func, context, result, ...) \
+  context->querySetterUpdateResult(func, \
+                                   std::make_tuple(__VA_ARGS__), \
+                                   std::move(result), \
+                                   #func, \
+                                   true)
 
 /// \endcond
 

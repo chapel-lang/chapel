@@ -11,19 +11,20 @@ the following features:
     parser. Note that it is *not* necessary to use the LLVM code generator in
     order to use extern block support.
 
- 2) Experimental LLVM code generator. The ``--llvm`` flag activates the LLVM
-    code generator. Note that by default, a Chapel compiler built with LLVM
-    support still uses the C backend.
+ 2) LLVM code generator. The LLVM code generator is the default when the
+    Chapel compiler is built with LLVM. It can be selected with
+    ``CHPL_TARGET_COMPILER=llvm`` and toggled off with e.g.
+    ``CHPL_TARGET_COMPILER=gnu``.
 
  3) Experimental LLVM communication optimizations. You can activate these
-    communication optimizations with ``--llvm --llvm-wide-opt``. Some
+    communication optimizations with ``--llvm-wide-opt``. Some
     benchmark programs run faster with these LLVM communication optimizations.
 
 -------------------------
 Building the LLVM support
 -------------------------
 
-To build the compiler with LLVM support for extern blocks, ``--llvm`` code
+To build the compiler with LLVM support for extern blocks, LLVM code
 generation, and support for ``--llvm-wide-opt``:
 
 .. code-block:: sh
@@ -37,9 +38,10 @@ generation, and support for ``--llvm-wide-opt``:
 
 Note:
 
-* If you have a built llvm in ``third-party/llvm/install``, even if you forget
-  to ``export CHPL_LLVM=bundled``, the default will be to use the built llvm.  You
-  can override this default by setting ``CHPL_LLVM=none``.
+* If you have a built llvm in ``third-party/llvm/install``, even if you
+  forget to ``export CHPL_LLVM=bundled``, the default will be to use the
+  built llvm.  You can override this default by setting
+  ``CHPL_LLVM=none``.
 
 * the Makefile in third-party/llvm will unpack LLVM and Clang source releases
   and build them
@@ -55,8 +57,8 @@ Note:
 Activating the LLVM support
 ---------------------------
 
-To compile a program using the LLVM backend, add ``--llvm`` to the chpl command
-line.
+Compiling a program with an LLVM-enabled `chpl` will use the LLVM backend
+by default but this can be controlled with `CHPL_TARGET_COMPILER`.
 
 If you pass a ``--savec`` directory, the LLVM backend will emit two .bc files
 in that directory:
@@ -69,12 +71,11 @@ Passing ``--fast`` will cause LLVM optimizations to run.
 The ``--ccflags`` option can control which LLVM optimizations are run, using the
 same syntax as flags to clang.
 
-Additionally, if you compile a program with ``--llvm --llvm-wide-opt
---fast``, you will allow LLVM optimizations to work with global memory.
-For example, the Loop Invariant Code Motion (LICM) optimization might be
-able to hoist an access of a remote variable - ie, a 'get' - out of a
-loop.  This optimization has produced better performance with some
-benchmarks.
+Additionally, if you compile a program with ``--llvm-wide-opt --fast``,
+you will allow LLVM optimizations to work with global memory.  For
+example, the Loop Invariant Code Motion (LICM) optimization might be able
+to hoist an access of a remote variable - ie, a 'get' - out of a loop.
+This optimization has produced better performance with some benchmarks.
 
 Caveats:
 

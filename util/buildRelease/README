@@ -1,0 +1,21 @@
+changePrelease
+Script for removing pre-release tag and updating version number before creating release branch. Arguments are the old and new version numbers as follows:
+(E.G. Release 1.24.0 to Release 1.25.0)
+1 - Old Major - 1
+2 - New Major - 1
+3 - Old Minor - 24
+4 - New Minor - 25
+5 - Old Update - 0
+6 - New Update - 0
+7 - Older Major(For archivedSpecs only) - 1
+8 - Older Minor(For archivedSpecs only) - 23
+
+changeToNew
+Script for updating version numbers and adding prerelease tags after creation of release branch. Arguments are the old and new version numbers as follows:
+(E.G. Release 1.25.0 to Pre-release 1.26.0)
+1 - Old Major 1
+2 - New Major 1
+3 - Old Minor 25
+4 - New Minor 26
+5 - Old Update 0
+6 - New Update 0

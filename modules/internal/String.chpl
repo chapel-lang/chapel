@@ -819,11 +819,6 @@ module String {
     }
   }
 
-  proc cStrAssignmentDeprWarn() {
-    compilerWarning("Assigning to a string from a c_string is deprecated. ",
-                    "Use createStringWith*Buffer functions instead.");
-  }
-
   //
   // String Implementation
   //
@@ -851,15 +846,6 @@ module String {
     proc init=(s: string) {
       this.complete();
       initWithNewBuffer(this, s);
-    }
-
-    proc init=(cs: c_string) {
-      this.complete();
-      cStrAssignmentDeprWarn();
-      try! {
-        this.cachedNumCodepoints = validateEncoding(cs:bufferType, cs.size);
-      }
-      initWithNewBuffer(this, cs:bufferType, length=cs.size, size=cs.size+1);
     }
 
     proc ref deinit() {
@@ -943,7 +929,6 @@ module String {
       Assume we may accidentally start in the middle of a multibyte character,
       but the string is correctly encoded UTF-8.
     */
-    pragma "not order independent yielding loops"
     iter _cpIndexLen(start = 0:byteIndex) {
       const localThis = this.localize();
       var i = _findStartOfNextCodepointFromByte(this, start);
@@ -959,7 +944,6 @@ module String {
       Assume we may accidentally start in the middle of a multibyte character,
       but the string is correctly encoded UTF-8.
     */
-    pragma "not order independent yielding loops"
     iter _indexLen(start = 0:byteIndex) {
       var localThis: string = this.localize();
 
@@ -1066,7 +1050,6 @@ module String {
       return "";
     }
 
-    pragma "not order independent yielding loops"
     iter doSplitWSUTF8(maxsplit: int) {
       if !this.isEmpty() {
         const localThis = this.localize();
@@ -1356,7 +1339,6 @@ module String {
       c
       d
    */
-  pragma "not order independent yielding loops"
   iter string.items() : string {
     var localThis: string = this.localize();
 
@@ -1410,11 +1392,10 @@ module String {
   /*
     Iterates over the string byte by byte.
   */
-  pragma "order independent yielding loops"
   iter string.chpl_bytes(): byteType {
     var localThis: string = this.localize();
 
-    for i in 0..#localThis.buffLen {
+    foreach i in 0..#localThis.buffLen {
       yield localThis.buff[i];
     }
   }
@@ -1422,7 +1403,6 @@ module String {
   /*
     Iterates over the string Unicode character by Unicode character.
   */
-  pragma "not order independent yielding loops"
   iter string.codepoints(): int(32) {
     const localThis = this.localize();
     var i = 0;
@@ -1735,7 +1715,6 @@ module String {
     :arg maxsplit: The number of times to split the string, negative values
                    indicate no limit.
    */
-  pragma "not order independent yielding loops"
   iter string.split(maxsplit: int = -1) /* : string */ {
     // TODO: specifying return type leads to un-inited string?
     if this.isASCII() {
@@ -2217,22 +2196,6 @@ module String {
   */
   operator =(ref lhs: string, rhs: string) {
     doAssign(lhs, rhs);
-  }
-
-  /*
-     Copies the c_string `rhs_c` into the string `lhs`.
-
-     Halts if `lhs` is a remote string.
-  */
-  operator =(ref lhs: string, rhs_c: c_string) {
-    cStrAssignmentDeprWarn();
-    // I want to use try! but got tripped over by #14465
-    try {
-      lhs = createStringWithNewBuffer(rhs_c);
-    }
-    catch {
-      halt("Assigning a c_string with non-UTF-8 data");
-    }
   }
 
   //

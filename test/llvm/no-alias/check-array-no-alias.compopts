@@ -1,1 +1,1 @@
---fast --llvm --llvm-print-ir test --llvm-print-ir-stage full
+--fast --llvm-print-ir test --llvm-print-ir-stage full

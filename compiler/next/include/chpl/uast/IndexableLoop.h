@@ -40,11 +40,9 @@ class IndexableLoop : public Loop {
                 int8_t withClauseChildNum,
                 BlockStyle blockStyle,
                 int loopBodyChildNum,
-                int numLoopBodyStmts,
                 bool isExpressionLevel)
     : Loop(tag, std::move(children), blockStyle,
-           loopBodyChildNum,
-           numLoopBodyStmts),
+           loopBodyChildNum),
       indexChildNum_(indexChildNum),
       iterandChildNum_(iterandChildNum),
       withClauseChildNum_(withClauseChildNum),
@@ -54,7 +52,27 @@ class IndexableLoop : public Loop {
     assert(iterandChildNum >= 0);
   }
 
-  bool indexableLoopContentsMatchInner(const IndexableLoop* other) const;
+  bool indexableLoopContentsMatchInner(const IndexableLoop* other) const {
+    const IndexableLoop* lhs = this;
+    const IndexableLoop* rhs = other;
+
+    if (lhs->indexChildNum_ != rhs->indexChildNum_)
+      return false;
+
+    if (lhs->iterandChildNum_ != rhs->iterandChildNum_)
+      return false;
+
+    if (lhs->withClauseChildNum_ != rhs->withClauseChildNum_)
+      return false;
+
+    if (lhs->isExpressionLevel_ != rhs->isExpressionLevel_)
+      return false;
+
+    if (!lhs->loopContentsMatchInner(other))
+      return false;
+
+    return true;
+  }
 
   void indexableLoopMarkUniqueStringsInner(Context* context) const {
     loopMarkUniqueStringsInner(context);
@@ -69,8 +87,8 @@ class IndexableLoop : public Loop {
   virtual ~IndexableLoop() override = 0; // this is an abstract base class
 
   /**
-    Returns the index declaration of this indexable loop, or nullptr if it
-    does not exist.
+    Returns the index declaration of this indexable loop, or nullptr if
+    there is none.
   */
   const Decl* index() const {
     if (indexChildNum_ < 0) return nullptr;
@@ -90,8 +108,8 @@ class IndexableLoop : public Loop {
   }
 
   /**
-    Returns the with clause of this indexable loop, or nullptr if it does
-    not exist.
+    Returns the with clause of this indexable loop, or nullptr if there
+    is none.
   */
   const WithClause* withClause() const {
     if (withClauseChildNum_ < 0) return nullptr;

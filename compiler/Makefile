@@ -39,9 +39,10 @@ SUBDIRS = \
 	ifa \
 	llvm \
 	main \
-	next/lib/frontend \
-	next/lib/frontend/Parser \
+	next/lib/parsing \
 	next/lib/queries \
+	next/lib/resolution \
+	next/lib/types \
 	next/lib/uast \
 	next/lib/util \
 	optimizations \
@@ -81,9 +82,10 @@ include codegen/Makefile.include
 include ifa/Makefile.include
 include llvm/Makefile.include
 include main/Makefile.include
-include next/lib/frontend/Makefile.include
-include next/lib/frontend/Parser/Makefile.include
+include next/lib/parsing/Makefile.include
 include next/lib/queries/Makefile.include
+include next/lib/resolution/Makefile.include
+include next/lib/types/Makefile.include
 include next/lib/uast/Makefile.include
 include next/lib/util/Makefile.include
 include optimizations/Makefile.include
@@ -108,11 +110,12 @@ CHPL_OBJS = \
 	$(RESOLUTION_OBJS) \
 	$(SYMTAB_OBJS) \
 	$(UTIL_OBJS) \
-	$(NEXT_UTIL_OBJS) \
+	$(NEXT_PARSING_OBJS) \
 	$(NEXT_QUERIES_OBJS) \
+	$(NEXT_RESOLUTION_OBJS) \
+	$(NEXT_TYPES_OBJS) \
 	$(NEXT_UAST_OBJS) \
-	$(NEXT_FRONTEND_OBJS) \
-	$(NEXT_FRONTEND_PARSER_OBJS) \
+	$(NEXT_UTIL_OBJS) \
 
 
 EXECS = $(CHPL) $(CHPLDOC)

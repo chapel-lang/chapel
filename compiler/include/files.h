@@ -45,7 +45,11 @@ struct fileinfo {
   const char* pathname;
 };
 
-void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL, bool skip_compile_link=false, const std::vector<const char *>& splitFiles = std::vector<const char*>());
+void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL,
+                      const char** tmpservername=NULL,
+                      bool skip_compile_link=false,
+                      const std::vector<const char *>& splitFiles
+                        = std::vector<const char*>());
 
 void ensureDirExists(const char* /* dirname */, const char* /* explanation */);
 const char* getCwd();

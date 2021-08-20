@@ -565,8 +565,10 @@ static VarSymbol* generateReadTupleField(Symbol* fromSym, Symbol* fromField,
     DefExpr* def = new DefExpr(readF);
     if (insertBefore)
       insertBefore->insertBefore(def);
-    else
+    else if (insertAtTail)
       insertAtTail->insertAtTail(def);
+    else
+      INT_FATAL("bad arguments to generateReadTupleField");
     get = new CallExpr(PRIM_GET_MEMBER_VALUE, fromSym, fromName);
   } else {
     // Otherwise, use PRIM_GET_MEMBER
@@ -576,8 +578,10 @@ static VarSymbol* generateReadTupleField(Symbol* fromSym, Symbol* fromField,
     DefExpr* def = new DefExpr(readF);
     if (insertBefore)
       insertBefore->insertBefore(def);
-    else
+    else if (insertAtTail)
       insertAtTail->insertAtTail(def);
+    else
+      INT_FATAL("bad arguments to generateReadTupleField");
 
     get   = new CallExpr(PRIM_GET_MEMBER, fromSym, fromName);
   }
@@ -585,8 +589,10 @@ static VarSymbol* generateReadTupleField(Symbol* fromSym, Symbol* fromField,
   CallExpr* setReadF = new CallExpr(PRIM_MOVE, readF, get);
   if (insertBefore)
     insertBefore->insertBefore(setReadF);
-  else
+  else if (insertAtTail)
     insertAtTail->insertAtTail(setReadF);
+  else
+    INT_FATAL("bad arguments to generateReadTupleField");
 
   resolveCall(setReadF);
 

@@ -3,7 +3,7 @@ import os
 import sys
 
 import chpl_mem, overrides, third_party_utils
-from utils import error, memoize, run_command
+from utils import error, memoize, run_command, warning
 
 
 @memoize
@@ -21,11 +21,6 @@ def get():
 
     if mem_val != 'jemalloc' and jemalloc_val != 'none':
       error("CHPL_JEMALLOC must be 'none' when CHPL_MEM is not jemalloc")
-
-    if jemalloc_val == 'jemalloc':
-        sys.stderr.write("Warning: CHPL_JEMALLOC=jemalloc is deprecated. "
-                         "Use CHPL_JEMALLOC=bundled instead\n")
-        jemalloc_val = 'bundled'
 
     return jemalloc_val
 

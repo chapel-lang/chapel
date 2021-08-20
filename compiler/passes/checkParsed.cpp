@@ -482,7 +482,7 @@ static void includedStrictNames(ModuleSymbol* mod) {
     ModuleSymbol* parent = mod->defPoint->getModule();
 
     // module name should match file name
-    const char* fname = filenameToModulename(parent->astloc.filename);
+    const char* fname = filenameToModulename(parent->astloc.filename());
     if (fname != parent->name) {
       USR_FATAL("Cannot include modules from a module whose name doesn't match its filename");
     }
@@ -493,7 +493,7 @@ static void includedStrictNames(ModuleSymbol* mod) {
     for (ModuleSymbol* cur = parent;
          cur != NULL && cur->defPoint != NULL;
          cur = cur->defPoint->getModule()) {
-      if (parent->astloc.filename == cur->astloc.filename) {
+      if (parent->astloc.filename() == cur->astloc.filename()) {
         lastParentSameFile = cur;
       } else {
         break;

@@ -24,6 +24,7 @@
 #include "chpl/util/hash.h"
 
 namespace chpl {
+class Context;
 
 
 /**
@@ -39,7 +40,7 @@ class ID final {
 
   // Within that symbol, what is the number of this node in
   // a postorder traversal?
-  // The symbol itself would be the last node traversed.
+  // The symbol itself has ID -1.
   int postOrderId_ = -1;
 
   // How many of the previous ids would be considered within
@@ -62,15 +63,21 @@ class ID final {
   }
 
   /**
-    Return a path to the symbol (or, for an expression, the parent symbol)
+    Return a path to the ID symbol scope. For example, a function 'foo'
+    declared in a module M would have symbolPath M.foo.
+
+    Functions, class/record/union/enum declarations, and modules create
+    new ID symbol scopes.
    */
   UniqueString symbolPath() const { return symbolPath_; }
+
   /**
     Returns the numbering of this node in a postorder traversal
-    of a symbol's nodes. This number is not normally relevant
-    when the AST in question is a symbol.
+    of a symbol's nodes. When the AST node defines a new ID symbol scope,
+    (as with Function or Module) this will return -1.
    */
   int postOrderId() const { return postOrderId_; }
+
   /**
     Return the number of ids contained in this node, not including itself. In
     the postorder traversal numbering, the ids contained appear before the node.
@@ -85,8 +92,28 @@ class ID final {
       LeafA has id 0 and numContainedIds 0
       LeafB has id 1 and numContainedIds 0
       Node  has id 2 and numContainedIds 2
+
+    Note that the number of contained children does not include
+    contained IDs with a different symbol scope. So, for example,
+    a module consisting only of a function declaration would have
+    numContainedChildren() == 0.
    */
   int numContainedChildren() const { return numChildIds_; }
+
+  /**
+    Returns a new ID for the parent symbol ID.
+
+    * if postOrderId is >= 0, returns the id with postOrderId == -1
+    * if postOrderId is -1, returns the id from removing the
+      last '.bla' part from the symbolPath.
+
+    If this ID has no parent, returns an empty ID.
+
+    The returned ID always has numContainedChildren() of 0 and
+    it cannot be used with contains(). However it is suitable
+    for use in looking up an ID in a map.
+   */
+  ID parentSymbolId(Context* context) const;
 
   /**
     returns 'true' if the AST node with this ID contains the AST
@@ -111,6 +138,19 @@ class ID final {
     return !(*this == other);
   }
 
+  bool operator<(const ID& other) const {
+    return this->compare(other) < 0;
+  }
+  bool operator<=(const ID& other) const {
+    return this->compare(other) <= 0;
+  }
+  bool operator>(const ID& other) const {
+    return this->compare(other) > 0;
+  }
+  bool operator>=(const ID& other) const {
+    return this->compare(other) >= 0;
+  }
+
   bool isEmpty() const {
     return symbolPath_.isEmpty();
   }
@@ -129,6 +169,8 @@ class ID final {
   void markUniqueStrings(Context* context) const {
     this->symbolPath_.mark(context);
   }
+
+  std::string toString() const;
 };
 
 // docs are turned off for this as a workaround for breathe errors
@@ -157,12 +199,6 @@ namespace std {
   template<> struct hash<chpl::ID> {
     inline size_t operator()(const chpl::ID& key) const {
       return key.hash();
-    }
-  };
-  template<> struct equal_to<chpl::ID> {
-    inline bool operator()(const chpl::ID& lhs,
-                    const chpl::ID& rhs) const {
-      return lhs == rhs;
     }
   };
 } // end namespace std

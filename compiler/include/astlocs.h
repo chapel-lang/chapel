@@ -21,8 +21,10 @@
 #ifndef _ASTLOCS_H_
 #define _ASTLOCS_H_
 
+#include <cassert>
 #include <cstring>
 
+#include "chpl/queries/ID.h"
 #include "stringutil.h"
 
 class BaseAST;
@@ -31,64 +33,81 @@ class Expr;
 // how an AST node knows its location in the source code
 // (assumed to get copied upon assignment and parameter passing)
 class astlocT {
+private:
+  mutable const char* filename_;  // filename of location
+  mutable int         lineno_;    // line number of location
+  chpl::ID            id_;        // id from compiler/next
+
 public:
-  astlocT(int linenoArg, const char* filenameArg) :
-    filename(filenameArg), lineno(linenoArg)
-    {}
-
-  const char* filename;  // filename of location
-  int         lineno;    // line number of location
-
-  inline bool operator==(const astlocT other) const {
-    return this->filename == other.filename && this->lineno == other.lineno;
-  }
-  inline bool operator!=(const astlocT other) const {
-    return this->filename != other.filename || this->lineno != other.lineno;
-  }
-  inline bool operator<(const astlocT other) const {
-    int strResult = strcmp(this->filename, other.filename);
-    if (strResult == 0) {
-      return this->lineno < other.lineno;
-    }
-    else {
-      return strResult < 0;
-    }
-  }
-  inline bool operator>(const astlocT other) const {
-    int strResult = strcmp(this->filename, other.filename);
-    if (strResult == 0) {
-      return this->lineno > other.lineno;
-    }
-    else {
-      return strResult > 0;
-    }
-  }
-  inline bool operator<=(const astlocT other) const {
-    int strResult = strcmp(this->filename, other.filename);
-    if (strResult == 0) {
-      return this->lineno <= other.lineno;
-    }
-    else {
-      return strResult <= 0;
-    }
-  }
-  inline bool operator>=(const astlocT other) const {
-    int strResult = strcmp(this->filename, other.filename);
-    if (strResult == 0) {
-      return this->lineno >= other.lineno;
-    }
-    else {
-      return strResult >= 0;
-    }
+  astlocT(int linenoArg, const char* filenameArg)
+    : filename_(filenameArg), lineno_(linenoArg), id_()
+  {
+    if (filenameArg != nullptr)
+      assert(astr(filename_) == filename_);
   }
 
-  inline const char* stringLoc() const {
-    // FIXME why 256 characters?
-    const int tmpBuffSize = 256;
-    char tmpBuff[tmpBuffSize];
+  astlocT(chpl::ID id)
+    : filename_(nullptr), lineno_(0), id_(std::move(id))
+  { }
 
-    snprintf(tmpBuff, tmpBuffSize, "%s:%d", filename, lineno);
-    return astr(tmpBuff);
+  int compare(const astlocT& other) const;
+  void convertIdToFileLine(const char*& filename, int& lineno) const;
+  const char* stringLoc() const;
+
+  bool isEmpty() const {
+    if (filename_ != nullptr)
+      return false;
+
+    return id_.isEmpty();
+  }
+
+  const chpl::ID& id() const {
+    return id_;
+  }
+
+  // always returns an astr or nullptr
+  const char* filename() const {
+    if (filename_ != nullptr || id_.isEmpty())
+      return filename_;
+
+    // otherwise, get the filename from the id
+    const char* name = nullptr;
+    int line = 0;
+    convertIdToFileLine(name, line);
+    return name;
+  }
+
+  int lineno() const {
+    if (filename_ != nullptr || id_.isEmpty())
+      return lineno_;
+
+    // otherwise, get the lineno from the id
+    const char* name = nullptr;
+    int line = 0;
+    convertIdToFileLine(name, line);
+    return line;
+  }
+
+  bool operator==(const astlocT& other) const {
+    return this->filename_ == other.filename_ &&
+           this->lineno_ == other.lineno_ &&
+           this->id_ == other.id_;
+  }
+  bool operator!=(const astlocT& other) const {
+    return !(*this == other);
+  }
+
+  bool operator<(const astlocT& other) const {
+    return this->compare(other) < 0;
+  }
+  bool operator>(const astlocT other) const {
+    return this->compare(other) > 0;
+  }
+  bool operator<=(const astlocT other) const {
+    return this->compare(other) <= 0;
+  }
+  bool operator>=(const astlocT other) const {
+    return this->compare(other) >= 0;
   }
 };
 

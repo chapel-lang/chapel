@@ -693,7 +693,7 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
     // when we didn't, tests like release/examples/primers/associative.chpl
     // and reductions/bradc/manual/promote.chpl failed their '--verify'
     // test runs for reasons that seemed puzzling and related to the
-    // intracacies of the _toFollower() code path; and it seemed unlikely
+    // intricacies of the _toFollower() code path; and it seemed unlikely
     // that they would care about default arguments and inheritance.
     //
     bool classDefaultArgCase = (fn->_this &&
@@ -762,15 +762,27 @@ static DefaultExprFnEntry buildDefaultedActualFn(FnSymbol*  fn,
   return ret;
 }
 
+// returns a defaultExprFn for the passed formal, or NULL if none was created
+FnSymbol* findExistingDefaultedActualFn(FnSymbol* fn, ArgSymbol* formal) {
+  DefaultExprFnEntry* entry = nullptr;
+  formalToDefaultExprEntryMap::iterator it;
 
-static Symbol* createDefaultedActual(FnSymbol*  fn,
-                                     ArgSymbol* formal,
-                                     CallExpr*  call,
-                                     BlockStmt* body,
-                                     SymbolMap& copyMap) {
+  it = formalToDefaultExprEntry.find(formal);
+  if (it != formalToDefaultExprEntry.end()) {
+    // Use the existing entry
+    entry = &it->second;
+    FnSymbol* ret = entry->defaultExprFn;
+    INT_ASSERT(ret->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION));
+    return ret;
+  }
 
-  // Find the function we are to call, and call it
-  DefaultExprFnEntry* entry = NULL;
+  return nullptr;
+}
+
+static DefaultExprFnEntry* getOrCreateDefaultedActualFnEntry(FnSymbol*  fn,
+                                                             ArgSymbol* formal)
+{
+  DefaultExprFnEntry* entry = nullptr;
   formalToDefaultExprEntryMap::iterator it;
 
   it = formalToDefaultExprEntry.find(formal);
@@ -785,6 +797,26 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
   }
 
   INT_ASSERT(entry);
+
+  return entry;
+}
+
+// This one is called in virtual dispatch handling
+FnSymbol* getOrCreateDefaultedActualFn(FnSymbol* fn, ArgSymbol* formal) {
+  DefaultExprFnEntry* entry = getOrCreateDefaultedActualFnEntry(fn, formal);
+  FnSymbol* ret = entry->defaultExprFn;
+  INT_ASSERT(ret->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION));
+  return ret;
+}
+
+static Symbol* createDefaultedActual(FnSymbol*  fn,
+                                     ArgSymbol* formal,
+                                     CallExpr*  call,
+                                     BlockStmt* body,
+                                     SymbolMap& copyMap) {
+
+  // Find the function we are to call, and call it
+  DefaultExprFnEntry* entry = getOrCreateDefaultedActualFnEntry(fn, formal);
 
   // TODO - can't we get the param formals out of paramMap?
   // Or fn->substitutions?

@@ -2,7 +2,7 @@
 import sys
 
 import chpl_locale_model, chpl_tasks, overrides, third_party_utils
-from utils import error, memoize
+from utils import error, memoize, warning
 
 
 @memoize
@@ -14,10 +14,6 @@ def get():
             hwloc_val = 'bundled'
         else:
             hwloc_val = 'none'
-    elif hwloc_val == 'hwloc':
-        sys.stderr.write("Warning: CHPL_HWLOC=hwloc is deprecated. "
-                         "Use CHPL_HWLOC=bundled instead.\n");
-        hwloc_val = 'bundled'
 
     return hwloc_val
 

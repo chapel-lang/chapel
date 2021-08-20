@@ -17,7 +17,7 @@ use ZMQ;
 
 var context: Context;
 var socket = context.socket(ZMQ.REP);
-socket.bind("tcp://*:5555");
+socket.bind("tcp://*:5556");
 
 for i in 0..#10 {
   var msg = socket.recv(string);

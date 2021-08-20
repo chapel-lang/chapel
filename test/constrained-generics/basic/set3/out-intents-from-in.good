@@ -1,0 +1,27 @@
+wrapDO
+  icDO
+  wrapDO done
+wrapRO
+  icDO
+  icRO
+  icOD
+  icOR
+  icOO
+  wrapRO done
+wrapOD
+  icOD
+  wrapOD done 333
+wrapOR
+  icDO
+  icRO
+  icOD
+  icOR
+  icOO
+  wrapOR done 444
+wrapOO
+  icDO
+  icRO
+  icOD
+  icOR
+  icOO
+  wrapOO done 555

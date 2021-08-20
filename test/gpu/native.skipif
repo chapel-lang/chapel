@@ -5,7 +5,7 @@ import os
 
 # Native GPU tests require nvcc, llvm, and the gpu locale model
 missing_nvcc = find_executable("nvcc") is None
-no_llvm = os.getenv('CHPL_LLVM') == 'none'
+no_llvm = os.getenv('CHPL_TARGET_COMPILER') != 'llvm'
 gpu_loc = os.getenv('CHPL_LOCALE_MODEL') == 'gpu'
 
 # We don't have a great way to autodetect if we're going to launch onto a

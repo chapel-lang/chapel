@@ -35,6 +35,7 @@
 #include "llvmVer.h"
 #include "library.h"
 #include "misc.h"
+#include "mli.h"
 #include "mysystem.h"
 #include "stlUtil.h"
 #include "stringutil.h"
@@ -315,7 +316,10 @@ FILE* openfile(const char* filename,
 
 
 void closefile(FILE* thefile) {
-  if (fclose(thefile) != 0) {
+  if (thefile == nullptr) return;
+
+  int rc = fclose(thefile);
+  if (rc != 0) {
     USR_FATAL("closing file: %s", strerror(errno));
   }
 }
@@ -328,6 +332,7 @@ void openfile(fileinfo* thefile, const char* mode) {
 
 void closefile(fileinfo* thefile) {
   closefile(thefile->fptr);
+  thefile->fptr = nullptr;
 }
 
 
@@ -342,7 +347,7 @@ void openCFile(fileinfo* fi, const char* name, const char* ext) {
 }
 
 void closeCFile(fileinfo* fi, bool beautifyIt) {
-  closefile(fi->fptr);
+  closefile(fi);
   //
   // We should beautify if (1) we were asked to and (2) either (a) we
   // were asked to save the C code or (b) we were asked to codegen cpp
@@ -554,8 +559,8 @@ std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap) {
   for (auto& ii : varMap)
     command += ii.first + "=" + ii.second + " ";
 
-  // Toss stderr away until printchplenv supports a '--suppresswarnings' flag
-  command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple 2> /dev/null";
+  command += "CHPLENV_SUPPRESS_WARNINGS=true ";
+  command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple";
 
   return runCommand(command);
 }
@@ -563,8 +568,8 @@ std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap) {
 std::string getChplDepsApp() {
   // Runs `util/chplenv/chpl_home_utils.py --chpldeps` and removes the newline
 
-  std::string command = "CHPL_HOME=" + std::string(CHPL_HOME) + " python3 ";
-  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --chpldeps 2> /dev/null";
+  std::string command = "CHPLENV_SUPPRESS_WARNINGS=true CHPL_HOME=" + std::string(CHPL_HOME) + " python3 ";
+  command += std::string(CHPL_HOME) + "/util/chplenv/chpl_home_utils.py --chpldeps";
 
   std::string venvDir = runCommand(command);
   venvDir.erase(venvDir.find_last_not_of("\n\r")+1);
@@ -573,7 +578,7 @@ std::string getChplDepsApp() {
 }
 
 bool compilingWithPrgEnv() {
-  return (strstr(CHPL_ORIG_TARGET_COMPILER, "cray-prgenv") != NULL);
+  return 0 != strcmp(CHPL_TARGET_COMPILER_PRGENV, "none");
 }
 
 std::string runCommand(std::string& command) {
@@ -595,7 +600,7 @@ std::string runCommand(std::string& command) {
   }
 
   if (pclose(pipe)) {
-    USR_FATAL("%s did not run successfully", command.c_str());
+    USR_FATAL("'%s' did not run successfully", command.c_str());
   }
 
   return result;
@@ -690,6 +695,7 @@ static std::string genMakefileEnvCache() {
 }
 
 void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
+                      const char** tmpservername,
                       bool skip_compile_link,
                       const std::vector<const char*>& splitFiles) {
   const char* tmpDirName = intDirName;
@@ -768,6 +774,9 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
 
   // Write out the temporary filename to the caller if necessary.
   if (tmpbinname) { *tmpbinname = tmpbin; }
+
+  // Ditto for the server.
+  if (tmpservername) { *tmpservername = tmpserver; }
 
   //
   // BLC: We generate a TMPBINNAME which is the name that will be used
@@ -855,16 +864,16 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   // List source files needed to compile this deliverable.
   if (fMultiLocaleInterop) {
 
-    const char* mli_client = astr(intDirName, "/", "chpl_mli_client.c");
-    const char* mli_server = astr(intDirName, "/", "chpl_mli_server.c");
+    const char* client = astr(intDirName, "/", gMultiLocaleLibClientFile);
+    const char* server = astr(intDirName, "/", gMultiLocaleLibServerFile);
 
     // Only one source file for client (for now).
     fprintf(makefile.fptr, "CHPLSRC = \\\n");
-    fprintf(makefile.fptr, "\t%s \n", mli_client);
+    fprintf(makefile.fptr, "\t%s \n", client);
 
     // The server bundle includes "_main.c", bypassing the need to include it.
     fprintf(makefile.fptr, "CHPLSERVERSRC = \\\n");
-    fprintf(makefile.fptr, "\t%s \n", mli_server);
+    fprintf(makefile.fptr, "\t%s \n", server);
 
   } else {
     fprintf(makefile.fptr, "CHPLSRC = \\\n");

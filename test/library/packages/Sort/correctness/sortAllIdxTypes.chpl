@@ -9,12 +9,15 @@ proc test(X) {
   sort(Y);
   writeln("  sorted: ", Y);
   writeln();
+  assert(isSorted(X));
+  assert(isSorted(Y));
 }
 
 proc testsize(param s) {
   var A : [1:uint(s)..10:uint(s)] int;
   forall i in A.domain do
     A[i] = (10-i):int;
+
   test(A);
 
   var B : [1:uint(s)..254:uint(s)] int;

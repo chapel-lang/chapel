@@ -5,7 +5,7 @@ use IO;
 var filename = "../realpath/./blahblahblah.txt";
 var openedFile = open(filename, iomode.cw);
 
-var path = openedFile.realPath();
+var path = realPath(openedFile);
 var shouldMatch = here.cwd() + "/blahblahblah.txt";
 // May want to use joinPath and basename here when available.
 if path != shouldMatch {

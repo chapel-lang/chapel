@@ -4,11 +4,11 @@ import optparse
 import os
 import platform
 from string import punctuation
-from sys import stderr, stdout
+import sys
 
 import chpl_comm, chpl_compiler, chpl_platform, overrides
 from compiler_utils import CompVersion, target_compiler_is_prgenv, get_compiler_version
-from utils import memoize, run_command
+from utils import memoize, run_command, warning
 
 
 #
@@ -247,10 +247,8 @@ class argument_map(object):
 
         arg_value = cls._get(cpu, compiler, version)
         if not arg_value:
-            stderr.write('Warning: No valid option found: cpu="{0}" '
-                         'compiler="{1}" version="{2}"\n'.format(cpu,
-                                                                 compiler,
-                                                                 version))
+            warning('No valid option found: cpu="{0}" compiler="{1}" '
+                    'version="{2}"'.format(cpu, compiler, version))
         return arg_value or None
 
     @classmethod
@@ -278,14 +276,14 @@ class argument_map(object):
             return 'none'
         elif compiler in ['intel', 'cray-prgenv-intel']:
             return cls.intel.get(cpu, '')
-        elif compiler in ['clang', 'clang-included', 'allinea']:
+        elif compiler in ['clang', 'llvm', 'allinea']:
             # Clang doesn't know how to do architecture detection for aarch64.
             if cpu == 'native':
                 if get_native_machine() == 'aarch64':
                     return 'unknown'
             return cls.clang.get(cpu, '')
         else:
-            stderr.write('Warning: Unknown compiler: "{0}"\n'.format(compiler))
+            warning('Unknown compiler: "{0}"'.format(compiler))
             return ''
 
 
@@ -518,21 +516,20 @@ def adjust_cpu_for_compiler(cpu, flag, get_lcd):
     if isprgenv:
         cray_cpu = os.environ.get('CRAY_CPU_TARGET', 'none')
         if cpu and (cpu != 'none' and cpu != 'unknown' and cpu != cray_cpu):
-            stderr.write("Warning: Setting the processor type through "
-                         "environment variables is not supported for "
-                         "cray-prgenv-*. Please use the appropriate craype-* "
-                         "module for your processor type.\n")
+            warning("Setting the processor type through environment variables "
+                    "is not supported for cray-prgenv-*. Please use the "
+                    "appropriate craype-* module for your processor type.")
         cpu = cray_cpu
         if cpu == 'none':
-            stderr.write("Warning: No craype-* processor type module was "
-                         "detected, please load the appropriate one if you want "
-                         "any specialization to occur.\n")
+            warning("No craype-* processor type module was detected, please "
+                    "load the appropriate one if you want any specialization "
+                    "to occur.")
         if get_lcd:
             cpu = get_module_lcd_cpu(platform_val, cpu)
             if cpu == 'none':
-                stderr.write("Warning: Could not detect the lowest common "
-                             "denominator processor type for this platform. "
-                             "You may be unable to use the Chapel compiler\n")
+                warning("Could not detect the lowest common denominator "
+                        "processor type for this platform. You may be unable "
+                        "to use the Chapel compiler")
         return cpu
     elif 'pgi' in compiler_val:
         return 'none'
@@ -559,7 +556,7 @@ def default_cpu(flag):
       # could be more aggressive in setting a precise architecture using
       # the double checking code above, but it seems like a waste of time
       # to not use the work the backend compilers have already done
-      if compiler_val in ['clang', 'clang-included']:
+      if compiler_val in ['clang', 'llvm']:
           if get_native_machine() == 'aarch64':
               cpu = 'unknown'
           else:
@@ -612,13 +609,12 @@ def verify_cpu(cpu, flag):
             if not feature_sets.subset(cpu, detected_cpu):
                 warn = True
         except ValueError:
-            stderr.write("Warning: Unknown platform, could not find CPU information\n")
+            warning("Unknown platform, could not find CPU information")
 
         if warn:
-                stderr.write("Warning: The supplied processor type does "
-                             "not appear to be compatible with the host "
-                             "processor type. The resultant binary may "
-                             "not run on the current machine.\n")
+                warning("The supplied processor type does not appear to be "
+                        "compatible with the host processor type. The "
+                        "resultant binary may not run on the current machine.")
 
 # get_lcd has no effect on non cray systems and is intended to be used to get
 # the correct runtime and gen directory.
@@ -726,8 +722,8 @@ def _main():
                       options.get_lcd)
 
     if options.compflag:
-        stdout.write("{0}=".format(flag))
-    stdout.write("{0}\n".format(cpu))
+        sys.stdout.write("{0}=".format(flag))
+    sys.stdout.write("{0}\n".format(cpu))
 
 if __name__ == '__main__':
     _main()

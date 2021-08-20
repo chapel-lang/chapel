@@ -340,35 +340,35 @@ module NetworkAtomics {
     return lhs;
   }
 
-  inline operator =(ref a:RAtomicBool, const b:RAtomicBool) {
+  inline operator RAtomicBool.=(ref a:RAtomicBool, const b:RAtomicBool) {
     a.write(b.read());
   }
-  inline operator =(ref a:RAtomicBool, b) {
+  inline operator RAtomicBool.=(ref a:RAtomicBool, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline operator =(ref a:RAtomicT, const b:RAtomicT) {
+  inline operator RAtomicT.=(ref a:RAtomicT, const b:RAtomicT) {
     a.write(b.read());
   }
-  inline operator =(ref a:RAtomicT, b) {
+  inline operator RAtomicT.=(ref a:RAtomicT, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline operator +(a:RAtomicT, b) {
+  inline operator RAtomicT.+(a:RAtomicT, b) {
     compilerError("Cannot directly add atomic variables");
     return a;
   }
-  inline operator -(a:RAtomicT, b) {
+  inline operator RAtomicT.-(a:RAtomicT, b) {
     compilerError("Cannot directly subtract atomic variables");
     return a;
   }
-  inline operator *(a:RAtomicT, b) {
+  inline operator RAtomicT.*(a:RAtomicT, b) {
     compilerError("Cannot directly multiply atomic variables");
     return a;
   }
-  inline operator /(a:RAtomicT, b) {
+  inline operator RAtomicT./(a:RAtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }
-  inline operator %(a:RAtomicT, b) {
+  inline operator RAtomicT.%(a:RAtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }

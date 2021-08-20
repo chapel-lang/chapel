@@ -700,35 +700,35 @@ module Atomics {
   // We need to explicitly define these for all types because the atomic
   // types are records and unless explicitly defined, it will resolve
   // to the normal record version of the function.  Sigh.
-  inline operator =(ref a:AtomicBool, const ref b:AtomicBool) {
+  inline operator AtomicBool.=(ref a:AtomicBool, const ref b:AtomicBool) {
     a.write(b.read());
   }
-  inline operator =(ref a:AtomicBool, b) {
+  inline operator AtomicBool.=(ref a:AtomicBool, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline operator =(ref a:AtomicT, const ref b:AtomicT) {
+  inline operator AtomicT.=(ref a:AtomicT, const ref b:AtomicT) {
     a.write(b.read());
   }
-  inline operator =(ref a:AtomicT, b) {
+  inline operator AtomicT.=(ref a:AtomicT, b) {
     compilerError("Cannot directly assign atomic variables");
   }
-  inline operator +(a:AtomicT, b) {
+  inline operator AtomicT.+(a:AtomicT, b) {
     compilerError("Cannot directly add atomic variables");
     return a;
   }
-  inline operator -(a:AtomicT, b) {
+  inline operator AtomicT.-(a:AtomicT, b) {
     compilerError("Cannot directly subtract atomic variables");
     return a;
   }
-  inline operator *(a:AtomicT, b) {
+  inline operator AtomicT.*(a:AtomicT, b) {
     compilerError("Cannot directly multiply atomic variables");
     return a;
   }
-  inline operator /(a:AtomicT, b) {
+  inline operator AtomicT./(a:AtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }
-  inline operator %(a:AtomicT, b) {
+  inline operator AtomicT.%(a:AtomicT, b) {
     compilerError("Cannot directly divide atomic variables");
     return a;
   }

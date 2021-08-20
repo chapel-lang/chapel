@@ -15,13 +15,24 @@
   #error "VAPI-conduit is no longer supported"
 #endif
 
-#define GASNET_CORE_VERSION      2.7
+#define GASNET_CORE_VERSION      2.8
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         IBV
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
 #define GASNET_CONDUIT_NAME      GASNET_CORE_NAME
 #define GASNET_CONDUIT_NAME_STR  _STRINGIFY(GASNET_CONDUIT_NAME)
 #define GASNET_CONDUIT_IBV       1
+
+// Client-facing indications of multirail support:
+// GASNET_IBV_MULTIRAIL: 1/undef for enabled/disabled
+// GASNET_IBV_MAX_HCAS: positive integer (1 when multirail disabled)
+#if GASNETC_IBV_MAX_HCAS_CONFIGURE
+  #define GASNET_IBV_MULTIRAIL 1
+  #define GASNET_IBV_MAX_HCAS GASNETC_IBV_MAX_HCAS_CONFIGURE
+#else
+  #undef GASNET_IBV_MULTIRAIL
+  #define GASNET_IBV_MAX_HCAS 1
+#endif
 
 #if defined(GASNET_SEGMENT_FAST)
   #define GASNETC_PIN_SEGMENT 1
@@ -124,12 +135,6 @@
    */
 /* #define GASNETC_REQUESTV_POLLS 1 */
 
-  // uncomment if conduit provides a gasnetc-prefixed override
-  // TODO: this should be a hook rather than an override
-#if GASNETC_PIN_SEGMENT
-  #define GASNETC_HAVE_EP_PUBLISHBOUNDSEGMENT 1
-#endif
-
   /* If your conduit uses conduit-specific extensions to the basic object
      types, then define the corresponding SIZEOF macros below to return
      the total length of the conduit-specific object, including the prefix
@@ -167,6 +172,12 @@
 //#define GASNETC_EP_FINI_HOOK(i_ep) (###)
 #define GASNETC_SIZEOF_EP_T() \
   gasnetc_sizeof_ep_t()
+
+  // Uncomment the following defines if conduit provides the corresponding hook.
+  // See gasnet_internal.h for prototypes and brief descriptions.
+#define GASNETC_SEGMENT_ATTACH_HOOK 1
+#define GASNETC_SEGMENT_CREATE_HOOK 1
+#define GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK 1
 
 #if GASNETC_PIN_SEGMENT // multi-EP NOT supported with remote firehose
 // If conduit supports GASNET_MAXEPS!=1, set default and (optional) max values here.

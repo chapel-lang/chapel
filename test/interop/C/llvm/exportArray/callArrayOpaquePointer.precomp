@@ -1,3 +1,0 @@
-#!/bin/bash
-echo Compiling arrayOpaquePointer.chpl
-$3 --llvm --library --static arrayOpaquePointer.chpl

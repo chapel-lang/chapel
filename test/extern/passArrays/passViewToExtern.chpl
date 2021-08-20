@@ -21,6 +21,6 @@ printThree(B.reindex(0..2, 1..6 by 2));
 // index set)
 // Are the results right / appropriate / explainable?
 // Should we be generating execution-time errors for these cases?
-// Note that they behave the same as they did on master pre-array views.
+// Note that they behave the same as they did on main pre-array views.
 printThree(B[2..3, 2..3]);
 printThree(B[.., 2]);

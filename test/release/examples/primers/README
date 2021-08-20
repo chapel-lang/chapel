@@ -17,6 +17,7 @@ demonstrate Chapel feature areas in detail.
      fileIO.chpl                 : File I/O example using arrays
      forallLoops.chpl            : Forall loops - data parallel constructs
      genericClasses.chpl         : Defining and using generic classes
+     interopWithC.chpl           : Using Chapel code in C and vice versa
      iterators.chpl              : Iterator examples
      LAPACKlib.chpl              : the LAPACK standard library
      LinearAlgebralib.chpl       : LinearAlgebra module
@@ -43,3 +44,4 @@ demonstrate Chapel feature areas in detail.
      variables.chpl              : Variables, constants, and parameters
 
      chplvis                     : A directory containing a primer on the chplvis tool
+

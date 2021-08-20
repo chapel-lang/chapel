@@ -1,4 +1,2 @@
 # Does not currently work with multilocale
 CHPL_COMM != none
-# Also not yet supported on LLVM
-CHPL_LLVM != none

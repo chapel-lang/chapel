@@ -58,7 +58,7 @@ proc Launcher(exec: string) {
 proc Master() {
   var context = new ZMQ.Context();
   var socket = context.socket(ZMQ.PAIR);
-  socket.bind("tcp://*:5555");
+  socket.bind("tcp://*:5556");
 
   // Numeric Types
   {
@@ -102,7 +102,7 @@ proc Master() {
 proc Worker() {
   var context = new ZMQ.Context();
   var socket = context.socket(ZMQ.PAIR);
-  socket.connect("tcp://localhost:5555");
+  socket.connect("tcp://localhost:5556");
 
   // Numeric Types
   {

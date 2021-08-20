@@ -36,30 +36,8 @@
 
 #include <vector>
 
-
-// There are two questions:
-// 1- is the primitive/function eligible to run in a fast block?
-//    any blocking or system call disqualifies it since a fast
-//    AM handler can be run in a signal handler
-// 2- is the primitive/function communication free?
-
-// Any function containing communication can't run in a fast block.
-
-enum {
-  // The primitive is ineligible for a fast (e.g. uses a lock or allocator)
-  // AND it causes communication
-  NOT_FAST_NOT_LOCAL,
-  // Is the primitive ineligible for a fast (e.g. uses a lock or allocator)
-  // but communication free?
-  LOCAL_NOT_FAST,
-  // Does the primitive communicate?
-  // This implies NOT_FAST, unless it is in a local block
-  // if it is in a local block, this means IS_FAST.
-  FAST_NOT_LOCAL,
-  // Is the primitive function fast (ie, could it be run in a signal handler)
-  // IS_FAST implies IS_LOCAL.
-  FAST_AND_LOCAL
-};
+int classifyPrimitive(CallExpr *call, bool inLocal);
+bool inLocalBlock(CallExpr *call);
 
 //
 // Return NOT_FAST, NOT_LOCAL, IS_LOCAL, or IS_FAST.
@@ -289,6 +267,18 @@ classifyPrimitive(CallExpr *call) {
 
   case PRIM_GET_DYNAMIC_END_COUNT:
   case PRIM_SET_DYNAMIC_END_COUNT:
+  case PRIM_GPU_THREADIDX_X:
+  case PRIM_GPU_THREADIDX_Y:
+  case PRIM_GPU_THREADIDX_Z:
+  case PRIM_GPU_BLOCKIDX_X:
+  case PRIM_GPU_BLOCKIDX_Y:
+  case PRIM_GPU_BLOCKIDX_Z:
+  case PRIM_GPU_BLOCKDIM_X:
+  case PRIM_GPU_BLOCKDIM_Y:
+  case PRIM_GPU_BLOCKDIM_Z:
+  case PRIM_GPU_GRIDDIM_X:
+  case PRIM_GPU_GRIDDIM_Y:
+  case PRIM_GPU_GRIDDIM_Z:
     return FAST_AND_LOCAL;
 
     // Temporarily unclassified (legacy) cases.
@@ -305,7 +295,8 @@ classifyPrimitive(CallExpr *call) {
     return NOT_FAST_NOT_LOCAL;
 
   case PRIM_GPU_KERNEL_LAUNCH:
-    return LOCAL_NOT_FAST;
+  case PRIM_GPU_KERNEL_LAUNCH_FLAT:
+   return LOCAL_NOT_FAST;
 
   // no default, so that it is usually a C compilation
   // error when a primitive is added but not included here.
@@ -345,7 +336,7 @@ isLocal(int is)
 
 
 
-static int
+int
 classifyPrimitive(CallExpr *call, bool inLocal)
 {
   int is = classifyPrimitive(call);
@@ -356,7 +347,7 @@ classifyPrimitive(CallExpr *call, bool inLocal)
   return is;
 }
 
-static bool
+bool
 inLocalBlock(CallExpr *call) {
   for (Expr* parent = call->parentExpr; parent; parent = parent->parentExpr) {
     if (BlockStmt* blk = toBlockStmt(parent)) {

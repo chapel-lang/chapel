@@ -1,0 +1,3 @@
+uncaught BadFormatError: bad format: missing expected literal (while reading ioLiteral "4" with path "unknown" offset 5)
+  memfile-format-error-offset.chpl:12: thrown here
+  memfile-format-error-offset.chpl:12: uncaught here

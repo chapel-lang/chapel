@@ -6,7 +6,7 @@ Checks environment variables first, then chplconfig file for definitions
 import os
 import sys
 
-from utils import memoize
+from utils import memoize, warning
 
 # List of Chapel Environment Variables
 chplvars = [
@@ -118,8 +118,8 @@ class ChapelConfig(object):
             if name == 'CHPL_CONFIG':
                 self.warnings.append(
                 (
-                    'Warning: No chplconfig or .chplconfig file is found in '
-                    'the defined $CHPL_CONFIG\n'
+                    'No chplconfig or .chplconfig file is found in '
+                    'the defined $CHPL_CONFIG'
                 ))
         return False
 
@@ -157,7 +157,7 @@ class ChapelConfig(object):
                 'Syntax Error: {0}:line {1}\n'
                 '              > {2}\n'
                 '              Expected format is:\n'
-                '              > CHPL_VAR = VALUE\n'
+                '              > CHPL_VAR = VALUE'
             ).format(self.prettypath, linenum, line.strip('\n')))
             return True
 
@@ -165,8 +165,7 @@ class ChapelConfig(object):
         if var not in chplvars:
             self.warnings.append(
             (
-                'Warning: {0}:line {1}: '
-                '"{2}" is not an acceptable variable\n'
+                '{0}:line {1}: "{2}" is not an acceptable variable'
             ).format(self.prettypath, linenum, var))
             return True
 
@@ -174,8 +173,7 @@ class ChapelConfig(object):
         elif var in self.chplconfig.keys():
             self.warnings.append(
             (
-                'Warning: {0}:line {1}: '
-                'Duplicate entry of "{2}"\n'
+                '{0}:line {1}: Duplicate entry of "{2}"'
             ).format(self.prettypath, linenum, var))
 
         # If we reach here, this is a valid assignment, so don't skip
@@ -184,8 +182,8 @@ class ChapelConfig(object):
     def printwarnings(self):
         """ Print any warnings accumulated throughout constructor """
         sys.stderr.write('\n')
-        for warning in self.warnings:
-            sys.stderr.write(warning)
+        for msg in self.warnings:
+            warning(msg)
         sys.stderr.write('\n')
 
 

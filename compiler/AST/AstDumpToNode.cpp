@@ -840,10 +840,10 @@ bool AstDumpToNode::enterFnSym(FnSymbol* node)
   }
 
   newline();
-  fprintf(mFP, "FileName: %s", node->astloc.filename);
+  fprintf(mFP, "FileName: %s", node->astloc.filename());
 
   newline();
-  fprintf(mFP, "LineNum:  %5d", node->astloc.lineno);
+  fprintf(mFP, "LineNum:  %5d", node->astloc.lineno());
 
   if (node->_this && node->_this->defPoint)
   {

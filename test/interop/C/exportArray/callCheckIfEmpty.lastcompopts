@@ -1,1 +1,1 @@
--Llib/ -lcheckIfEmpty `$CHPL_HOME/util/config/compileline --libraries`
+-Llib/ -lcheckIfEmpty `$CHPL_HOME/util/config/compileline --libraries` -lcheckIfEmpty

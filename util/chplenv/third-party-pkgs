@@ -40,7 +40,7 @@ def generate_subdir_map():
     """ Find any aliases for third-party packages """
     pkg_aliases = dict()
 
-    pkg_aliases['CHPL_LLVM-clang-included'] = 'llvm'
+    pkg_aliases['CHPL_LLVM-llvm'] = 'llvm'
     pkg_aliases['CHPL_TASKS-qthreads'] = 'qthread'
     pkg_aliases['CHPL_GMP-bundled'] = 'gmp'
     pkg_aliases['CHPL_HWLOC-bundled'] = 'hwloc'

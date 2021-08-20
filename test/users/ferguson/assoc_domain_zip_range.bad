@@ -1,1 +1,1 @@
-assoc_domain_zip_range.chpl:11: error: iteration over a range with multi-dimensional iterator
+assoc_domain_zip_range.chpl:11: error: rank mismatch in zippered iteration (can't zip a 2D expression with a range, which is 1D)

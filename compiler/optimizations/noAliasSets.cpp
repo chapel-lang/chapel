@@ -72,7 +72,7 @@
    and PRIM_COPIES_NO_ALIAS_SET calls to indicate when a value has the
    same no-alias annotations as another value.
 
-   Initially these primitives are only used in --llvm code generation
+   Initially these primitives are only used in LLVM code generation
    in order to generate !alias.scope and !noalias metadata.
  */
 

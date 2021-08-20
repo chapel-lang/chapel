@@ -24,35 +24,8 @@
 namespace chpl {
 namespace uast {
 
-bool FnCall::contentsMatchInner(const ASTNode* other) const {
-  const FnCall* lhs = this;
-  const FnCall* rhs = (const FnCall*) other;
 
-  if (!lhs->callContentsMatchInner(rhs))
-    return false;
-
-  if (lhs->callUsedSquareBrackets_ != rhs->callUsedSquareBrackets_ ||
-      lhs->actualNames_.size() != rhs->actualNames_.size())
-    return false;
-
-  int nActualNames = (int) lhs->actualNames_.size();
-  for (int i = 0; i < nActualNames; i++) {
-    if (lhs->actualNames_[i] != rhs->actualNames_[i])
-      return false;
-  }
-
-  return true;
-}
-void FnCall::markUniqueStringsInner(Context* context) const {
-
-  callMarkUniqueStringsInner(context);
-
-  for (const auto& str : actualNames_) {
-    str.mark(context);
-  }
-}
-
-owned<FnCall> FnCall::build(Builder* builder,
+  owned<FnCall> FnCall::build(Builder* builder,
                             Location loc,
                             owned<Expression> calledExpression,
                             ASTList actuals,

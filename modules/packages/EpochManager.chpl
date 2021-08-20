@@ -150,7 +150,6 @@ module EpochManager {
         } while(!_head.compareAndSwapABA(oldHead, _node));
       }
 
-      pragma "not order independent yielding loops"
       iter these() : objType {
         var ptr = _head.read();
         while (ptr != nil) {

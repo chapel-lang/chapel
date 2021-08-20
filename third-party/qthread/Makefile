@@ -35,6 +35,9 @@ ifneq ($(CHPL_MAKE_HWLOC),none)
   endif
   ifeq ($(CHPL_MAKE_HWLOC),bundled)
     CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc=$(HWLOC_INSTALL_DIR)
+    ifdef CHPL_HWLOC_PREFIX
+      CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-symbol-prefix="$(CHPL_HWLOC_PREFIX)hwloc_"
+    endif
   endif
 endif
 

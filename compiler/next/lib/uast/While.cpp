@@ -25,25 +25,13 @@ namespace chpl {
 namespace uast {
 
 
-bool While::contentsMatchInner(const ASTNode* other) const {
-  const While* lhs = this;
-  const While* rhs = (const While*) other;
-
-  if (lhs->conditionChildNum_ != rhs->conditionChildNum_)
-    return false;
-
-  if (!lhs->loopContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<While> While::build(Builder* builder, Location loc,
                       owned<Expression> condition,
                       BlockStyle blockStyle,
-                      ASTList stmts) {
+                      owned<Block> body) {
 
   assert(condition.get() != nullptr);
+  assert(body.get() != nullptr);
 
   ASTList lst;
   int8_t conditionChildNum = lst.size();
@@ -51,16 +39,12 @@ owned<While> While::build(Builder* builder, Location loc,
   lst.push_back(std::move(condition));
 
   const int loopBodyChildNum = lst.size();
-  const int numLoopBodyStmts = stmts.size();
 
-  for (auto& stmt: stmts) {
-    lst.push_back(std::move(stmt));
-  }
+  lst.push_back(std::move(body));
 
   While* ret = new While(std::move(lst), conditionChildNum,
                          blockStyle,
-                         loopBodyChildNum,
-                         numLoopBodyStmts);
+                         loopBodyChildNum);
 
   builder->noteLocation(ret, loc);
   return toOwned(ret);

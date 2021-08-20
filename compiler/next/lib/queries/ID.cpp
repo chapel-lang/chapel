@@ -24,7 +24,28 @@
 namespace chpl {
 
 
-// Returns 'true' if this symbol contains another AST node.
+ID ID::parentSymbolId(Context* context) const {
+  if (postOrderId_ >= 0) {
+    // Create an ID with postorder id -1 instead
+    return ID(symbolPath_, -1, 0);
+  }
+
+  // remove the last '.' component from the ID
+  const char* path = symbolPath_.c_str();
+  ssize_t lastDot = -1;
+  for (ssize_t i = 0; path[i]; i++) {
+    if (path[i] == '.') lastDot = i;
+  }
+
+  if (lastDot == -1) {
+    // no path component to remove, so return an empty ID
+    return ID();
+  }
+
+  // Otherwise, construct an ID for the parent symbol
+  return ID(UniqueString::build(context, path, lastDot), -1, 0);
+}
+
 bool ID::contains(const ID& other) const {
   UniqueString thisPath = this->symbolPath();
   UniqueString otherPath = other.symbolPath();
@@ -36,7 +57,8 @@ bool ID::contains(const ID& other) const {
     int otherId = other.postOrderId();
     int thisFirstContained = thisId - thisNContained;
 
-    return thisFirstContained <= otherId && otherId <= thisId;
+    return thisId == -1 ||
+           (thisFirstContained <= otherId && otherId <= thisId);
   } else {
     // No need to consider the IDs in the event that thisPath
     // is a prefix of otherPath. In that event, they are different
@@ -57,5 +79,15 @@ int ID::compare(const ID& other) const {
   return this->postOrderId() - other.postOrderId();
 }
 
+std::string ID::toString() const {
+  std::string ret = this->symbolPath().c_str();
+
+  if (!ret.empty() && this->postOrderId() >= 0) {
+    ret += "@";
+    ret += std::to_string(this->postOrderId());
+  }
+
+  return ret;
+}
 
 } // end namespace chpl

@@ -68,6 +68,27 @@ does not match the type for any other argument.
 Operator methods can be defined on concrete types, generic types, or particular
 instantiations of generic types.
 
+Operator Methods and Classes
+----------------------------
+
+Operators that are defined on classes that are inherited from can run into known
+issues. To avoid these issues, define the class arguments to operator methods
+with ``borrowed``, e.g.:
+
+.. code-block:: chapel
+
+   class Parent {
+     var parentField: int;
+
+     operator <(lhs: borrowed Parent, rhs: borrowed Parent) {
+       return lhs.x < rhs.x;
+     }
+   }
+
+   class Child: Parent {
+     var childField: bool;
+   }
+
 Calling Operator Methods
 ------------------------
 

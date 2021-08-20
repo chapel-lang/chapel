@@ -1,0 +1,6 @@
+# This exposes a problem in --no-local/gasnet/etc. compilations.
+# So, test it only in the --no-local configuration.
+# Once the problem is resolved, remove this skipif.
+
+CHPL_COMM != none
+COMPOPTS  >= --no-local

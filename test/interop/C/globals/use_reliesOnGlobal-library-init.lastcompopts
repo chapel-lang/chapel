@@ -1,1 +1,1 @@
--Llib/ -lreliesOnGlobal `$CHPL_HOME/util/config/compileline --libraries`
+-Llib/ -lreliesOnGlobal `$CHPL_HOME/util/config/compileline --libraries` -lreliesOnGlobal

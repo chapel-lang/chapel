@@ -205,20 +205,22 @@ struct sock_conn_map {
 };
 
 struct sock_conn_listener {
-	ofi_epoll_t emap;
+	ofi_epoll_t epollfd;
 	struct fd_signal signal;
 	fastlock_t signal_lock; /* acquire before map lock */
 	pthread_t listener_thread;
 	int do_listen;
+	bool removed_from_epollfd;
 };
 
 struct sock_ep_cm_head {
-	ofi_epoll_t emap;
+	ofi_epoll_t epollfd;
 	struct fd_signal signal;
-	fastlock_t signal_lock;
+	pthread_mutex_t signal_lock;
 	pthread_t listener_thread;
 	struct dlist_entry msg_list;
 	int do_listen;
+	bool removed_from_epollfd;
 };
 
 struct sock_domain {
@@ -465,7 +467,7 @@ struct sock_eq_entry {
 	size_t len;
 	uint64_t flags;
 	struct dlist_entry entry;
-	char event[0];
+	char event[];
 };
 
 struct sock_eq_err_data_entry {
@@ -653,6 +655,8 @@ struct sock_rx_ctx {
 	struct dlist_entry rx_buffered_list;
 	struct dlist_entry ep_list;
 	fastlock_t lock;
+
+	struct dlist_entry *progress_start;
 
 	struct fi_rx_attr attr;
 	struct sock_rx_entry *rx_entry_pool;
@@ -872,7 +876,7 @@ struct sock_cq_overflow_entry_t {
 	size_t len;
 	fi_addr_t addr;
 	struct dlist_entry entry;
-	char cq_entry[0];
+	char cq_entry[];
 };
 
 struct sock_cq {
@@ -886,8 +890,8 @@ struct sock_cq {
 	struct ofi_ringbuffd cq_rbfd;
 	struct ofi_ringbuf cqerr_rb;
 	struct dlist_entry overflow_list;
-	fastlock_t lock;
-	fastlock_t list_lock;
+	pthread_mutex_t lock;
+	pthread_mutex_t list_lock;
 
 	struct fid_wait *waitset;
 	int signal;
@@ -912,7 +916,7 @@ struct sock_conn_req {
 	struct sock_conn_hdr hdr;
 	union ofi_sock_ip src_addr;
 	uint64_t caps;
-	char cm_data[0];
+	char cm_data[];
 };
 
 enum {
@@ -1216,7 +1220,6 @@ static inline size_t sock_rx_avail_len(struct sock_rx_entry *rx_entry)
 
 int sock_ep_cm_start_thread(struct sock_ep_cm_head *cm_head);
 void sock_ep_cm_signal(struct sock_ep_cm_head *cm_head);
-void sock_ep_cm_signal_locked(struct sock_ep_cm_head *cm_head);
 void sock_ep_cm_stop_thread(struct sock_ep_cm_head *cm_head);
 void sock_ep_cm_wait_handle_finalized(struct sock_ep_cm_head *cm_head,
                                       struct sock_conn_req_handle *handle);

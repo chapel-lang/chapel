@@ -54,7 +54,7 @@ $(TMPBINNAME): $(CHPL_CL_OBJS) FORCE
 		$(CHPLSRC) \
 		$(COMP_GEN_MLI_EXTRA_INCLUDES) \
 		$(CHPL_RT_INC_DIR) \
-		$(CHPL_MLI_INCS)
+		$(CHPL_MLI_INC_DIRS)
 # Throw the client object file and launcher object file into an archive.
 	$(AR) -c -r -s $(TMPBINNAME) \
 		$(TMPBINNAME).o \

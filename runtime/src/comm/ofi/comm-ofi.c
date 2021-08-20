@@ -59,6 +59,7 @@
 #include <sys/uio.h> /* for struct iovec */
 #include <time.h>
 #include <unistd.h>
+#include <arpa/inet.h> // for inet_pton
 
 #ifdef CHPL_COMM_DEBUG
 #include <ctype.h>
@@ -120,19 +121,13 @@ static struct fid_wait* ofi_amhWaitSet; // wait set for AM handler
 // spread the progress load across all the threads when we're doing
 // manual progress.
 //
-static struct fid_ep* ofi_rxEp;         // AM req receive endpoint
-static struct fid_cq* ofi_rxCQ;         // AM req receive endpoint CQ
-static struct fid_ep* ofi_rxEpRma;      // RMA/AMO target endpoint
-static struct fid_cq* ofi_rxCQRma;      // RMA/AMO target endpoint CQ
-static struct fid_cntr* ofi_rxCntrRma;  // RMA/AMO target endpoint counter
-static struct fid* ofi_rxCmplFidRma;    // rxCQRma or rxCntrRma fid
-static void (*checkRxRmaCmplsFn)(void); // fn: check for RMA/AMO EP completions
+static struct fid_ep* ofi_rxEp;         // receive endpoint
+static struct fid_cq* ofi_rxCQ;         // receive endpoint CQ
 
 static struct fid_av* ofi_av;           // address vector
 static fi_addr_t* ofi_rxAddrs;          // table of remote endpoint addresses
 
-#define rxMsgAddr(tcip, n) (ofi_rxAddrs[2 * (n)])
-#define rxRmaAddr(tcip, n) (ofi_rxAddrs[2 * (n) + 1])
+#define rxAddr(n) (ofi_rxAddrs[n])
 
 //
 // Transmit support.
@@ -285,8 +280,7 @@ static void do_remote_get_buff(void*, c_nodeid_t, void*, size_t);
 static void do_remote_amo_nf_buff(void*, c_nodeid_t, void*, size_t,
                                   enum fi_op, enum fi_datatype);
 static void amEnsureProgress(struct perTxCtxInfo_t*);
-static void checkRxRmaCmplsCQ(void);
-static void checkRxRmaCmplsCntr(void);
+static void amCheckRxTxCmpls(chpl_bool*, chpl_bool*, struct perTxCtxInfo_t*);
 static void checkTxCmplsCQ(struct perTxCtxInfo_t*);
 static void checkTxCmplsCntr(struct perTxCtxInfo_t*);
 static size_t readCQ(struct fid_cq*, void*, size_t);
@@ -344,6 +338,14 @@ static void ofiErrReport(const char*, int, const char*);
     do {                                                                \
       retVal = (expr);                                                  \
       if (retVal != FI_SUCCESS && retVal != want2) {                    \
+        OFI_ERR(#expr, retVal, fi_strerror(-retVal));                   \
+      }                                                                 \
+    } while (0)
+
+#define OFI_CHK_3(expr, retVal, want2, want3)                           \
+    do {                                                                \
+      retVal = (expr);                                                  \
+      if (retVal != FI_SUCCESS && retVal != want2 && retVal != want3) { \
         OFI_ERR(#expr, retVal, fi_strerror(-retVal));                   \
       }                                                                 \
     } while (0)
@@ -1255,11 +1257,44 @@ struct fi_info* findProvInList(struct fi_info* info,
                                chpl_bool accept_ungood_provs,
                                chpl_bool accept_RxD_provs,
                                chpl_bool accept_RxM_provs) {
-  while (info != NULL
-         && (   (!accept_ungood_provs && !isGoodCoreProvider(info))
-             || (!accept_RxD_provs && isInProvider("ofi_rxd", info))
-             || (!accept_RxM_provs && isInProvider("ofi_rxm", info)))) {
-    info = info->next;
+
+#ifndef LIBFABRIC_NO_FIXUP
+  
+  // Ignore any provider for the T2 interface on a mac. As of v1.13.0
+  // libfabric does not filter this interface internally. The T2 interface
+  // is identified by the link local address fe80::aede:48ff:fe00:1122.
+
+  struct sockaddr_in6 t2;
+  chpl_bool darwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
+  if (darwin) {
+    int rc = inet_pton(AF_INET6, "fe80::aede:48ff:fe00:1122", &t2.sin6_addr);
+    if (rc != 1) {
+      INTERNAL_ERROR_V("inet_pton failed: %s", strerror(errno));
+    }
+  }
+#endif
+
+  for (; info != NULL; info = info->next) {
+    // break out of the loop when we find one that meets all of our criteria
+    if (!accept_ungood_provs && !isGoodCoreProvider(info)) {
+      continue;
+    }
+    if (!accept_RxD_provs && isInProvider("ofi_rxd", info)) {
+      continue;
+    }
+    if (!accept_RxM_provs && isInProvider("ofi_rxm", info)) {
+      continue;
+    }
+#ifndef LIBFABRIC_NO_FIXUP
+    if (darwin && (info->addr_format == FI_SOCKADDR_IN6) && 
+        !memcmp(&t2.sin6_addr, &((struct sockaddr_in6 *)info->src_addr)->sin6_addr, 
+                sizeof(t2.sin6_addr))) {
+      DBG_PRINTF_NODE0(DBG_PROV, "skipping T2 interface");
+      continue;
+    }
+#endif
+    // got one
+    break;
   }
   return (info == NULL) ? NULL : fi_dupinfo(info);
 }
@@ -1338,7 +1373,7 @@ chpl_bool canBindTxCtxs(struct fi_info* info) {
 
   //
   // Gather invariant info.  The simplistic first-time check here is
-  // sufficent because we only get called from single-threaded code
+  // sufficient because we only get called from single-threaded code
   // while examining provider candidates.
   //
   static chpl_bool haveInvariants = false;
@@ -1844,7 +1879,19 @@ struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced) {
                                  | FI_MR_VIRT_ADDR
                                  | FI_MR_PROV_KEY // TODO: avoid pkey bcast?
                                  | FI_MR_ENDPOINT);
-  if (chpl_numNodes > 1 && envMaxHeapSize != 0 && !envOversubscribed) {
+  // 
+  // Consider ourselves oversubscribed if either the environment variable is set or
+  // there is more than one locale on the local node. The call to
+  // chpl_comm_ofi_oob_locales_on_node was added to prevent chapcs from using the
+  // verbs;ofi_rxm provider which currently doesn't work and shouldn't be selected
+  // even if CHPL_RT_OVERSUBSCRIBED isn't set.   The logic for setting
+  // FI_MR_ALLOCATED should be revisited as oversubscription alone isn't a
+  // sufficient reason.
+  //
+  int num_locales_on_node = chpl_comm_ofi_oob_locales_on_node();
+  chpl_bool oversubscribed = envOversubscribed || (num_locales_on_node > 1);
+
+  if (chpl_numNodes > 1 && envMaxHeapSize != 0 && !oversubscribed) {
     hints->domain_attr->mr_mode |= FI_MR_ALLOCATED;
   }
 
@@ -1957,8 +2004,17 @@ void init_ofiEp(void) {
   // seems to work properly during execution, we haven't found a way to
   // avoid getting -FI_EBUSY when we try to close it.
   //
+  // We don't use poll and wait sets on macOS because the underlying
+  // libfabric support needs epoll, which is from Linux rather than
+  // POSIX and thus not present on macOS.  Unfortunately, libfabric has
+  // not (yet?) worked around the lack of epoll because macOS is rather
+  // a secondary platform.  One can find comments in the libfabric issue
+  // https://github.com/ofiwg/libfabric/issues/5453 that provide some
+  // background, though that issue is for an unrelated problem.
+  //
   if (!providerInUse(provType_efa)
-      && !providerInUse(provType_gni)) {
+      && !providerInUse(provType_gni)
+      && strcmp(CHPL_TARGET_PLATFORM, "darwin") != 0) {
     int ret;
     struct fi_poll_attr pollSetAttr = (struct fi_poll_attr)
                                       { .flags = 0, };
@@ -2106,29 +2162,12 @@ void init_ofiEp(void) {
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid, FI_TRANSMIT | FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEp));
 
-  OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEpRma, NULL));
-  OFI_CHK(fi_ep_bind(ofi_rxEpRma, &ofi_av->fid, 0));
-  if (true /*ofi_info->domain_attr->cntr_cnt == 0*/) { // disable tx counters
-    OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQRma,
-                       &checkRxRmaCmplsFn));
-    ofi_rxCmplFidRma = &ofi_rxCQRma->fid;
-    checkRxRmaCmplsFn = checkRxRmaCmplsCQ;
-  } else {
-    OFI_CHK(fi_cntr_open(ofi_domain, &cntrAttr, &ofi_rxCntrRma,
-                         &checkRxRmaCmplsFn));
-    ofi_rxCmplFidRma = &ofi_rxCntrRma->fid;
-    checkRxRmaCmplsFn = checkRxRmaCmplsCntr;
-  }
-  OFI_CHK(fi_ep_bind(ofi_rxEpRma, ofi_rxCmplFidRma, FI_TRANSMIT | FI_RECV));
-  OFI_CHK(fi_enable(ofi_rxEpRma));
-
   //
   // If we're using poll and wait sets, put all the progress-related
   // CQs and/or counters in the poll set.
   //
   if (ofi_amhPollSet != NULL) {
     OFI_CHK(fi_poll_add(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
-    OFI_CHK(fi_poll_add(ofi_amhPollSet, ofi_rxCmplFidRma, 0));
     OFI_CHK(fi_poll_add(ofi_amhPollSet, tciTab[tciTabLen - 1].txCmplFid, 0));
     pollSetSize = 3;
   }
@@ -2189,11 +2228,7 @@ void init_ofiExchangeAvInfo(void) {
     // Sanity-check our same-address-length assumption.
     //
     size_t len = 0;
-    size_t lenRma = 0;
-
     OFI_CHK_1(fi_getname(&ofi_rxEp->fid, NULL, &len), -FI_ETOOSMALL);
-    OFI_CHK_1(fi_getname(&ofi_rxEpRma->fid, NULL, &lenRma), -FI_ETOOSMALL);
-    CHK_TRUE(len == lenRma);
 
     size_t* lens;
     CHPL_CALLOC(lens, chpl_numNodes);
@@ -2210,26 +2245,20 @@ void init_ofiExchangeAvInfo(void) {
   size_t my_addr_len = 0;
 
   OFI_CHK_1(fi_getname(&ofi_rxEp->fid, NULL, &my_addr_len), -FI_ETOOSMALL);
-  CHPL_CALLOC_SZ(my_addr, 2 * my_addr_len, 1);
+
+  CHPL_CALLOC_SZ(my_addr, my_addr_len, 1);
   OFI_CHK(fi_getname(&ofi_rxEp->fid, my_addr, &my_addr_len));
-  OFI_CHK(fi_getname(&ofi_rxEpRma->fid, my_addr + my_addr_len, &my_addr_len));
-  CHPL_CALLOC_SZ(addrs, chpl_numNodes, 2 * my_addr_len);
+  CHPL_CALLOC_SZ(addrs, chpl_numNodes, my_addr_len);
   if (DBG_TEST_MASK(DBG_CFG_AV)) {
     char nameBuf[128];
     size_t nameLen;
     nameLen = sizeof(nameBuf);
-    char nameBuf2[128];
-    size_t nameLen2;
-    nameLen2 = sizeof(nameBuf2);
     (void) fi_av_straddr(ofi_av, my_addr, nameBuf, &nameLen);
-    (void) fi_av_straddr(ofi_av, my_addr + my_addr_len, nameBuf2, &nameLen2);
-    DBG_PRINTF(DBG_CFG_AV, "my_addrs: %.*s%s, %.*s%s",
+    DBG_PRINTF(DBG_CFG_AV, "my_addrs: %.*s%s",
                (int) nameLen, nameBuf,
-               (nameLen <= sizeof(nameBuf)) ? "" : "[...]",
-               (int) nameLen2, nameBuf2,
-               (nameLen2 <= sizeof(nameBuf2)) ? "" : "[...]");
+               (nameLen <= sizeof(nameBuf)) ? "" : "[...]");
   }
-  chpl_comm_ofi_oob_allgather(my_addr, addrs, 2 * my_addr_len);
+  chpl_comm_ofi_oob_allgather(my_addr, addrs, my_addr_len);
 
   //
   // Insert the addresses into the address vector and build up a vector
@@ -2241,10 +2270,10 @@ void init_ofiExchangeAvInfo(void) {
   // Only when the provider cannot support scalable EPs and we have
   // multiple actual endpoints are the AVs individualized to those.
   //
-  CHPL_CALLOC(ofi_rxAddrs, 2 * chpl_numNodes);
-  CHK_TRUE(fi_av_insert(ofi_av, addrs, 2 * chpl_numNodes, ofi_rxAddrs, 0, NULL)
-           == 2 * chpl_numNodes);
-
+  size_t numAddrs = chpl_numNodes;
+  CHPL_CALLOC(ofi_rxAddrs, numAddrs);
+  CHK_TRUE(fi_av_insert(ofi_av, addrs, numAddrs, ofi_rxAddrs, 0, NULL) == 
+           numAddrs);  
   CHPL_FREE(my_addr);
   CHPL_FREE(addrs);
 }
@@ -2326,7 +2355,7 @@ void init_ofiForMem(void) {
     CHK_TRUE(prov_key || memTab[i].key == i);
     DBG_PRINTF(DBG_MR, "[%d]     key %#" PRIx64, i, memTab[i].key);
     if ((ofi_info->domain_attr->mr_mode & FI_MR_ENDPOINT) != 0) {
-      OFI_CHK(fi_mr_bind(ofiMrTab[i], &ofi_rxEpRma->fid, 0));
+      OFI_CHK(fi_mr_bind(ofiMrTab[i], &ofi_rxEp->fid, 0));
       OFI_CHK(fi_mr_enable(ofiMrTab[i]));
     }
   }
@@ -2382,15 +2411,26 @@ void findMoreMemoryRegions(void) {
       }
     }
 
-    if (!seen
-        && ((pnLen > 0 && strcmp(path, progName) == 0)
-            || strcmp(path, "[heap]") == 0
-            || strcmp(path, "[stack]") == 0)) {
-      DBG_PRINTF(DBG_MR, "record mem map region: %p %#" PRIx64 " \"%s\"",
-                 addr, size, path);
-      memTab[memTabCount].addr = addr;
-      memTab[memTabCount].size = size;
-      memTabCount++;
+    if (!seen) {
+      //
+      // Matching the initialized data, heap, and stack is easy (first
+      // three tests). The uninitialized .bss part of the static data
+      // is assumed to have an empty path and directly follow something
+      // we've already registered, namely the initialized data.
+      //
+      if ((pnLen > 0 && strcmp(path, progName) == 0)
+          || strcmp(path, "[heap]") == 0
+          || strcmp(path, "[stack]") == 0
+          || (path[0] == '\0'
+              && memTabCount > 0
+              && (char*) addr == ((char*) memTab[memTabCount - 1].addr
+                                  + memTab[memTabCount - 1].size))) {
+        DBG_PRINTF(DBG_MR, "record mem map region: %p %#zx \"%s\"",
+                   addr, size, path);
+        memTab[memTabCount].addr = addr;
+        memTab[memTabCount].size = size;
+        memTabCount++;
+      }
     }
   }
 }
@@ -2414,7 +2454,7 @@ chpl_bool nextMemMapEntry(void** pAddr, size_t* pSize,
     int ch;
 
     int scn_cnt;
-    scn_cnt = fscanf(f, "%lx-%lx%4s%*x%*x:%*x%*x", &lo_addr, &hi_addr, perms);
+    scn_cnt = fscanf(f, "%" SCNx64 "-%" SCNx64 "%4s%*x%*x:%*x%*x", &lo_addr, &hi_addr, perms);
     if (scn_cnt == EOF) {
       break;
     } else if (scn_cnt != 3) {
@@ -2761,14 +2801,11 @@ void fini_ofi(void) {
 
   if (ofi_amhPollSet != NULL) {
     OFI_CHK(fi_poll_del(ofi_amhPollSet, tciTab[tciTabLen - 1].txCmplFid, 0));
-    OFI_CHK(fi_poll_del(ofi_amhPollSet, ofi_rxCmplFidRma, 0));
     OFI_CHK(fi_poll_del(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
   }
 
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
-  OFI_CHK(fi_close(&ofi_rxEpRma->fid));
-  OFI_CHK(fi_close(ofi_rxCmplFidRma));
 
   for (int i = 0; i < tciTabLen; i++) {
     OFI_CHK(fi_close(&tciTab[i].txCtx->fid));
@@ -2907,13 +2944,27 @@ void init_fixedHeap(void) {
   }
 
   //
-  // We'll use a fixed heap.  If its size is not specified, default
-  // to 85% of physical memory.
+  // If we get this far we'll use a fixed heap.
+  // 
+  uint64_t total_memory = chpl_sys_physicalMemoryBytes();
+
+  //
+  // Don't use more than 85% of the total memory for heaps.
+  //
+  uint64_t max_heap_memory = (size_t) (0.85 * total_memory);
+
+  int num_locales_on_node = chpl_comm_ofi_oob_locales_on_node();
+  size_t max_heap_per_locale = (size_t) (max_heap_memory / num_locales_on_node);
+
+
+  //
+  // If the maximum heap size is not specified or it's greater than the maximum heap per
+  // locale, set it to the maximum heap per locale.
   //
   ssize_t size = envMaxHeapSize;
   CHK_TRUE(size != 0);
-  if (size < 0) {
-    size = (size_t) (0.85 * chpl_sys_physicalMemoryBytes());
+  if ((size < 0) || (size > max_heap_per_locale)) {
+    size = max_heap_per_locale;
   }
 
   //
@@ -2937,19 +2988,8 @@ void init_fixedHeap(void) {
   size = ALIGN_UP(size, page_size);
 
   //
-  // As a hedge against silliness, first reduce any request so that it's
-  // no larger than the physical memory.  As a beneficial side effect
-  // when the user request is ridiculously large, this also causes the
-  // reduce-by-5% loop below to run faster and produce a final size
-  // closer to the maximum available.
-  //
-  const size_t size_phys = ALIGN_DN(chpl_sys_physicalMemoryBytes(), page_size);
-  if (size > size_phys)
-    size = size_phys;
-
-  //
   // Work our way down from the starting size in (roughly) 5% steps
-  // until we can actually get that much from the system.
+  // until we can actually allocate a heap that size.
   //
   size_t decrement;
   if ((decrement = ALIGN_DN((size_t) (0.05 * size), page_size)) < page_size) {
@@ -2987,7 +3027,6 @@ void init_fixedHeap(void) {
                chpl_snprintf_KMG_z(buf, sizeof(buf), size), size);
   }
 #endif
-
   fixedHeapSize  = size;
   fixedHeapStart = start;
 }
@@ -3697,7 +3736,7 @@ void amRequestCommon(c_nodeid_t node,
   //
   // If blocking, make sure target can RMA PUT the indicator to us.
   //
-  amDone_t amDone;
+  amDone_t amDone = 0;
   amDone_t* pAmDone = NULL;
   if (ppAmDone != NULL) {
     pAmDone = mrLocalizeTargetRemote(&amDone, sizeof(*pAmDone),
@@ -3954,7 +3993,7 @@ ssize_t wrap_fi_send(c_nodeid_t node,
   }
   OFI_RIDE_OUT_EAGAIN(tcip,
                       fi_send(tcip->txCtx, req, reqSize, mrDesc,
-                              rxMsgAddr(tcip, node), ctx));
+                              rxAddr(node), ctx));
   tcip->numTxnsOut++;
   tcip->numTxnsSent++;
   return FI_SUCCESS;
@@ -3973,7 +4012,7 @@ ssize_t wrap_fi_inject(c_nodeid_t node,
   // TODO: How quickly/often does local resource throttling happen?
   OFI_RIDE_OUT_EAGAIN(tcip,
                       fi_inject(tcip->txCtx, req, reqSize,
-                                rxMsgAddr(tcip, node)));
+                                rxAddr(node)));
   tcip->numTxnsSent++;
   return FI_SUCCESS;
 }
@@ -3989,7 +4028,7 @@ ssize_t wrap_fi_sendmsg(c_nodeid_t node,
   const struct fi_msg msg = { .msg_iov = &msg_iov,
                               .desc = mrDesc,
                               .iov_count = 1,
-                              .addr = rxMsgAddr(tcip, node),
+                              .addr = rxAddr(node),
                               .context = ctx };
   if (DBG_TEST_MASK(DBG_AM | DBG_AM_SEND)
       || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
@@ -4167,48 +4206,17 @@ void amHandler(void* argNil) {
   // Process AM requests and watch transmit responses arrive.
   //
   while (!atomic_load_bool(&amHandlersExit)) {
-    if (ofi_amhPollSet != NULL) {
-      void* contexts[pollSetSize];
-      int ret;
-      OFI_CHK_COUNT(fi_poll(ofi_amhPollSet, contexts, pollSetSize), ret);
-
-      if (ret == 0) {
-        ret = fi_wait(ofi_amhWaitSet, 100 /*ms*/);
-        if (ret != FI_SUCCESS
-            && ret != -FI_EINTR
-            && ret != -FI_ETIMEDOUT) {
-          OFI_ERR("fi_wait(ofi_amhWaitSet)", ret, fi_strerror(ret));
-        }
-        OFI_CHK_COUNT(fi_poll(ofi_amhPollSet, contexts, pollSetSize), ret);
-      }
-
-      //
-      // Process the CQs/counters that had events.  We really only have
-      // to take any explicit actions for inbound AM messages and our
-      // transmit endpoint.  For the RMA endpoint we just need to ensure
-      // progress, and the poll call itself did that.
-      //
-      for (int i = 0; i < ret; i++) {
-        if (contexts[i] == &ofi_rxCQ) {
-          processRxAmReq(tcip);
-        } else if (contexts[i] == &tcip->checkTxCmplsFn) {
-          (*tcip->checkTxCmplsFn)(tcip);
-        } else if (contexts[i] == &checkRxRmaCmplsFn) {
-          // no action
-        } else {
-          INTERNAL_ERROR_V("unexpected context %p from fi_poll()",
-                           contexts[i]);
-        }
-      }
-    } else {
-      //
-      // The provider can't do poll sets.
-      //
+    chpl_bool hadRxEvent, hadTxEvent;
+    amCheckRxTxCmpls(&hadRxEvent, &hadTxEvent, tcip);
+    if (hadRxEvent) {
       processRxAmReq(tcip);
-      (*tcip->checkTxCmplsFn)(tcip);
-      (*checkRxRmaCmplsFn)();
-
-      sched_yield();
+    } else if (!hadTxEvent) {
+      //
+      // No activity; avoid CPU monopolization.
+      //
+      int ret;
+      OFI_CHK_3(fi_wait(ofi_amhWaitSet, 100 /*ms*/), ret,
+                -FI_EINTR, -FI_ETIMEDOUT);
     }
 
     if (amDoLivenessChecks) {
@@ -5285,7 +5293,7 @@ ssize_t wrap_fi_write(const void* addr, void* mrDesc,
              (int) node, mrRaddr, addr, size, ctx);
   OFI_RIDE_OUT_EAGAIN(tcip,
                       fi_write(tcip->txCtx, addr, size,
-                               mrDesc, rxRmaAddr(tcip, node),
+                               mrDesc, rxAddr(node),
                                mrRaddr, mrKey, ctx));
   tcip->numTxnsOut++;
   tcip->numTxnsSent++;
@@ -5305,7 +5313,7 @@ ssize_t wrap_fi_inject_write(const void* addr,
   // TODO: How quickly/often does local resource throttling happen?
   OFI_RIDE_OUT_EAGAIN(tcip,
                       fi_inject_write(tcip->txCtx, addr, size,
-                                      rxRmaAddr(tcip, node),
+                                      rxAddr(node),
                                       mrRaddr, mrKey));
   tcip->numTxnsSent++;
   return FI_SUCCESS;
@@ -5329,7 +5337,7 @@ ssize_t wrap_fi_writemsg(const void* addr, void* mrDesc,
                           { .msg_iov = &msg_iov,
                             .desc = mrDesc,
                             .iov_count = 1,
-                            .addr = rxRmaAddr(tcip, node),
+                            .addr = rxAddr(node),
                             .rma_iov = &rma_iov,
                             .rma_iov_count = 1,
                             .context = ctx };
@@ -5681,7 +5689,7 @@ ssize_t wrap_fi_read(void* addr, void* mrDesc,
              addr, (int) node, mrRaddr, size, ctx);
   OFI_RIDE_OUT_EAGAIN(tcip,
                       fi_read(tcip->txCtx, addr, size,
-                              mrDesc, rxRmaAddr(tcip, node),
+                              mrDesc, rxAddr(node),
                               mrRaddr, mrKey, ctx));
   tcip->numTxnsOut++;
   tcip->numTxnsSent++;
@@ -5706,7 +5714,7 @@ ssize_t wrap_fi_readmsg(void* addr, void* mrDesc,
                           { .msg_iov = &msg_iov,
                             .desc = mrDesc,
                             .iov_count = 1,
-                            .addr = rxRmaAddr(tcip, node),
+                            .addr = rxAddr(node),
                             .rma_iov = &rma_iov,
                             .rma_iov_count = 1,
                             .context = ctx };
@@ -5767,7 +5775,7 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
                             { .msg_iov = &msg_iov,
                               .desc = &local_mr_v[vi],
                               .iov_count = 1,
-                              .addr = rxRmaAddr(tcip, locale_v[vi]),
+                              .addr = rxAddr(locale_v[vi]),
                               .rma_iov = &rma_iov,
                               .rma_iov_count = 1,
                               .context = txnTrkEncodeId(__LINE__),
@@ -5905,7 +5913,7 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
   struct amoBundle_t ab = { .m = { .msg_iov = &ab.iovOpnd,
                                    .desc = &ab.mrDescOpnd,
                                    .iov_count = 1,
-                                   .addr = rxRmaAddr(tcip, node),
+                                   .addr = rxAddr(node),
                                    .rma_iov = &ab.iovObj,
                                    .rma_iov_count = 1,
                                    .datatype = ofiType,
@@ -6240,7 +6248,7 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd_v, void* local_mr,
     struct amoBundle_t ab = { .m = { .msg_iov = &ab.iovOpnd,
                                      .desc = &local_mr,
                                      .iov_count = 1,
-                                     .addr = rxRmaAddr(tcip, locale_v[vi]),
+                                     .addr = rxAddr(locale_v[vi]),
                                      .rma_iov = &ab.iovObj,
                                      .rma_iov_count = 1,
                                      .datatype = type_v[vi],
@@ -6268,17 +6276,25 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd_v, void* local_mr,
 }
 
 
+static
 void amEnsureProgress(struct perTxCtxInfo_t* tcip) {
   (*tcip->checkTxCmplsFn)(tcip);
 
   //
-  // We only have responsibility for inbound AMs and RMA if we're doing
+  // We only have responsibility for inbound operations if we're doing
   // manual progress.
   //
   if (ofi_info->domain_attr->data_progress != FI_PROGRESS_MANUAL) {
     return;
   }
 
+  (void) amCheckRxTxCmpls(NULL, NULL, tcip);
+}
+
+
+static
+void amCheckRxTxCmpls(chpl_bool* pHadRxEvent, chpl_bool* pHadTxEvent,
+                      struct perTxCtxInfo_t* tcip) {
   if (ofi_amhPollSet != NULL) {
     void* contexts[pollSetSize];
     int ret;
@@ -6286,18 +6302,22 @@ void amEnsureProgress(struct perTxCtxInfo_t* tcip) {
 
     //
     // Process the CQs/counters that had events.  We really only have
-    // to take any explicit actions for our transmit endpoint.  If we
-    // have inbound AM messages we want to handle those in the main
-    // poll loop.  And for the RMA endpoint we just need to ensure
-    // progress, which the poll call itself will have done.
+    // to consume completions for our transmit endpoint.  If we have
+    // inbound AM messages we'll let the caller know and those can be
+    // dealt with in the main poll loop.  For inbound RMA, ensuring
+    // progress is all that's needed, and the poll call itself will
+    // have done that.
     //
     for (int i = 0; i < ret; i++) {
       if (contexts[i] == &ofi_rxCQ) {
-        // no action
+        if (pHadRxEvent != NULL) {
+          *pHadRxEvent = true;
+        }
       } else if (contexts[i] == &tcip->checkTxCmplsFn) {
         (*tcip->checkTxCmplsFn)(tcip);
-      } else if (contexts[i] == &checkRxRmaCmplsFn) {
-        // no action
+        if (pHadTxEvent != NULL) {
+          *pHadTxEvent = true;
+        }
       } else {
         INTERNAL_ERROR_V("unexpected context %p from fi_poll()",
                          contexts[i]);
@@ -6305,24 +6325,20 @@ void amEnsureProgress(struct perTxCtxInfo_t* tcip) {
     }
   } else {
     //
-    // The provider can't do poll sets.
+    // The provider can't do poll sets.  Consume transmit completions,
+    // and just assume that there may be some inbound operations which
+    // the main loop will handle.  Also, avoid CPU monopolization even
+    // if we had events, because we can't actually tell.
     //
+    sched_yield();
+    if (pHadRxEvent != NULL) {
+      *pHadRxEvent = true;
+    }
     (*tcip->checkTxCmplsFn)(tcip);
-    (*checkRxRmaCmplsFn)();
+    if (pHadTxEvent != NULL) {
+      *pHadTxEvent = true;
+    }
   }
-}
-
-
-static
-void checkRxRmaCmplsCQ(void) {
-  struct fi_cq_data_entry cqe;
-  (void) readCQ(ofi_rxCQRma, &cqe, 1);
-}
-
-
-static
-void checkRxRmaCmplsCntr(void) {
-  (void) fi_cntr_read(ofi_rxCntrRma);
 }
 
 

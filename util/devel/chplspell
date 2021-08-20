@@ -97,7 +97,8 @@ FILTEROUT="compiler/include/bison-chapel.h  \
            doc/rst/examples                 \
            modules/packages/HDF5.chpl       \
            modules/packages/LAPACK.chpl     \
-           modules/packages/NetCDF.chpl"
+           modules/packages/NetCDF.chpl     \
+           compiler/next"
 
 
 # Here endeth the configuration options.  The rest of the script

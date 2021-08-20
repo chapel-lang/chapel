@@ -59,9 +59,16 @@ class MultiDecl final : public Decl {
     assert(isAcceptableMultiDecl());
   }
   bool isAcceptableMultiDecl();
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
 
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const MultiDecl* lhs = this;
+    const MultiDecl* rhs = (const MultiDecl*) other;
+    return lhs->declContentsMatchInner(rhs);
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    declMarkUniqueStringsInner(context);
+  }
+ 
  public:
   ~MultiDecl() override = default;
   static owned<MultiDecl> build(Builder* builder, Location loc,

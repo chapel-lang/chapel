@@ -56,7 +56,7 @@ FileHashing module to compute the file hashes.
 
 The Tuples and Arrays primers might be useful resources for this step:
 
-  https://chapel-lang.org/docs/master/primers/tuples.html
+  https://chapel-lang.org/docs/main/primers/tuples.html
   https://chapel-lang.org/docs/primers/arrays.html
 
 Run your program on the example-files directory and compare the output
@@ -158,7 +158,7 @@ instead of an array of tuples.
 
 The records primer is a good starting point for learning more about records:
 
-  https://chapel-lang.org/docs/master/primers/records.html
+  https://chapel-lang.org/docs/main/primers/records.html
 
 Note that you'll need to change the sort call. Records don't currently
 get comparison operators by default. While that might change in the

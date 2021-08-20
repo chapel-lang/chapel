@@ -82,6 +82,16 @@ void gasneti_AD_Create(
         gex_OP_t                   ops,
         gex_Flags_t                flags)
 {
+#if GASNET_TRACE
+  char *dtstr = (char *)gasneti_malloc(gasneti_format_dt(NULL, dt));
+  char *opstr = (char *)gasneti_malloc(gasneti_format_op(NULL, ops));
+  gasneti_format_dt(dtstr, dt);
+  gasneti_format_op(opstr, ops);
+  GASNETI_TRACE_PRINTF(O,("gex_AD_Create: tm=" GASNETI_TMFMT " dt=%s ops=%s flags=0x%x",
+                          GASNETI_TMSTR(tm), dtstr, opstr, flags));
+#endif
+  GASNETI_CHECK_INJECT();
+
   gasneti_TM_t real_tm = gasneti_import_tm_nonpair(tm);
 
   // Argument validation is done here, rather than gasneti_alloc_ad(), to
@@ -127,6 +137,10 @@ void gasneti_AD_Create(
   gasneti_assert((dt != GEX_DT_DBL) || sizeof(double) == 8);
 #endif
 
+  // Lacking a subsystem init call, this is as good a place as any for these checks:
+  gasneti_static_assert(GEX_FLAG_AD_ACQ == GASNETI_ATOMIC_ACQ);
+  gasneti_static_assert(GEX_FLAG_AD_REL == GASNETI_ATOMIC_REL);
+
   gasneti_AD_t real_ad = gasneti_alloc_ad(real_tm, dt, ops, flags);
 
   // Algorithm selection:
@@ -144,6 +158,9 @@ void gasneti_AD_Create(
 
 void gasneti_AD_Destroy(gex_AD_t ad)
 {
+  GASNETI_TRACE_PRINTF(O,("gex_AD_Destroy: ad=%p", (void*)ad));
+  GASNETI_CHECK_INJECT();
+
   gasneti_AD_t real_ad = gasneti_import_ad(ad);
 
 #if GASNET_DEBUG

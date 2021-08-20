@@ -7,7 +7,6 @@ source $CWD/common-slurm-gasnet-cray-cs.bash
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="cray-cs-gpu-interop"
 
-export CHPL_LLVM=none
 export CHPL_COMM_SUBSTRATE=ibv
 
 module load cudatoolkit

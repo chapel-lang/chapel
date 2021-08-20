@@ -178,6 +178,18 @@ module BigInteger {
     UP   =  1
   }
 
+  /* An enumeration of the different rounding strategies, for use with e.g.
+     :proc:`~bigint.divQ` to determine how to round the quotient when performing
+     the computation.
+
+     - ``round.down`` indicates that the quotient should be rounded down towards
+       -infinity and any remainder should have the same sign as the denominator.
+     - ``round.zero`` indicates that the quotient should be rounded towards zero
+       and any remainder should have the same sign as the numerator.
+     - ``round.up`` indicates that the quotient should be rounded up towards
+       +infinity and any remainder should have the opposite sign as the
+       denominator.
+   */
   enum round {
     down = -1,
     zero = 0,
@@ -279,6 +291,7 @@ module BigInteger {
       }
     }
 
+    deprecated "bigint.size() is deprecated"
     proc size() : size_t {
       var ret: size_t;
 
@@ -299,7 +312,27 @@ module BigInteger {
       return ret;
     }
 
+    deprecated
+    "bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead"
     proc sizeinbase(base: int) : uint {
+      return sizeInBase(base).safeCast(uint);
+    }
+
+    /* Determine the size of ``this`` measured in number of digits in the given
+       ``base``.  The sign of ``this`` is ignored, only the absolute value is
+       used.
+
+       :arg base: The base in which to compute the number of digits used to
+                  represent ``this``.  Can be between 2 and 62.
+       :type base: ``int``
+
+       :returns: The size of ``this`` measured in number of digits in the given
+                 ``base``.  Will either be exact or 1 too big.  If ``base`` is
+                 a power of 2, will always be exact.  If ``this`` is 0, will
+                 always return 1.
+       :rtype: ``int``
+     */
+    proc sizeInBase(base: int) : int {
       const base_ = base.safeCast(c_int);
       var   ret: size_t;
 
@@ -317,7 +350,7 @@ module BigInteger {
         }
       }
 
-      return ret;
+      return ret.safeCast(int);
     }
 
     proc numLimbs : uint {
@@ -2491,10 +2524,35 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
 
 
-  // Exponentiation Functions
+  deprecated
+  "bigint.powm is deprecated, use bigint.powMod instead"
   proc bigint.powm(const ref base: bigint,
                    const ref exp:  bigint,
                    const ref mod:  bigint) {
+    this.powMod(base, exp, mod);
+  }
+
+  deprecated
+  "bigint.powm is deprecated, use bigint.powMod instead"
+  proc bigint.powm(const ref base: bigint,
+                             exp:  int,
+                   const ref mod:  bigint) {
+    this.powMod(base, exp, mod);
+  }
+
+  deprecated
+  "bigint.powm is deprecated, use bigint.powMod instead"
+  proc bigint.powm(const ref base: bigint,
+                             exp:  uint,
+                   const ref mod:  bigint) {
+    this.powMod(base, exp, mod);
+  }
+
+
+  // Exponentiation Functions
+  // Note: Documentation on `exp: uint` version
+  proc bigint.powMod(const ref base: bigint, const ref exp:  bigint,
+                     const ref mod:  bigint) {
     if _local {
       mpz_powm(this.mpz, base.mpz, exp.mpz, mod.mpz);
 
@@ -2517,9 +2575,8 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  proc bigint.powm(const ref base: bigint,
-                             exp:  int,
-                   const ref mod:  bigint) {
+  // Note: Documentation on `exp: uint` version
+  proc bigint.powMod(const ref base: bigint, exp: int, const ref mod: bigint) {
     if exp >= 0 {
       const exp_ = exp.safeCast(c_ulong);
 
@@ -2569,9 +2626,25 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  proc bigint.powm(const ref base: bigint,
-                             exp:  uint,
-                   const ref mod:  bigint) {
+  /* Set ``this`` to the result of (``base`` raised to ``exp``) modulo ``mod``.
+
+     :arg base: The value to be raised to the power of ``exp`` before performin
+                a modulo operation on.
+     :type base: ``bigint``
+
+     :arg exp: The exponent to raise ``base`` to the power of prior to the
+               modulo operation.  Can be negative if the inverse (1/``base``)
+               modulo ``mod`` exists.
+     :type exp: ``bigint``, ``int``, or ``uint``
+
+     :arg mod: The divisor for the modulo operation.
+     :type mod: ``bigint``
+
+     .. warning::
+        The program behavior is undefined if ``exp`` is negative and the inverse
+        (1/``base``) modulo ``mod`` does not exist.
+   */
+  proc bigint.powMod(const ref base: bigint, exp: uint, const ref mod: bigint) {
     const exp_ = exp.safeCast(c_ulong);
 
     if _local {
@@ -4024,324 +4097,428 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   }
 
   deprecated
-  "bigint.div_q using Round is deprecated, use bigint.div_q with round instead"
+  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
   proc bigint.div_q(const ref n: bigint,
                     const ref d: bigint,
-                    param     rounding: Round) {
+                    param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.div_q(n, d, round.up);
+      this.divQ(n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_q(n, d, round.zero);
+      this.divQ(n, d, round.zero);
     } else {
-      this.div_q(n, d, round.down);
+      this.divQ(n, d, round.down);
+    }
+  }
+
+  deprecated
+  "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
+  proc bigint.div_q(const ref n: bigint,
+                              d: integral,
+                    param     rounding = Round.ZERO) {
+    use Round;
+    if (rounding == UP) {
+      this.divQ(n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.divQ(n, d, round.zero);
+    } else {
+      this.divQ(n, d, round.down);
     }
   }
 
   // 5.6 Division Functions
-  proc bigint.div_q(const ref n: bigint,
-                    const ref d: bigint,
-                    param rounding = round.zero) {
+  // Note: Documentation on `denom: integral` version
+  proc bigint.divQ(const ref numer: bigint,
+                   const ref denom: bigint,
+                   param rounding = round.zero) {
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
-        when round.down do mpz_fdiv_q(this.mpz, n.mpz,  d.mpz);
-        when round.zero do mpz_tdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_q(this.mpz, numer.mpz,  denom.mpz);
+        when round.down do mpz_fdiv_q(this.mpz, numer.mpz,  denom.mpz);
+        when round.zero do mpz_tdiv_q(this.mpz, numer.mpz,  denom.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
+              numer.localeId == chpl_nodeID &&
+              denom.localeId == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_q(this.mpz, n.mpz,  d.mpz);
-        when round.down do mpz_fdiv_q(this.mpz, n.mpz,  d.mpz);
-        when round.zero do mpz_tdiv_q(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_q(this.mpz, numer.mpz,  denom.mpz);
+        when round.down do mpz_fdiv_q(this.mpz, numer.mpz,  denom.mpz);
+        when round.zero do mpz_tdiv_q(this.mpz, numer.mpz,  denom.mpz);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
-        const d_ = d;
+        const numer_ = numer;
+        const denom_ = denom;
 
         select rounding {
-          when round.up   do mpz_cdiv_q(this.mpz, n_.mpz, d_.mpz);
-          when round.down do mpz_fdiv_q(this.mpz, n_.mpz, d_.mpz);
-          when round.zero do mpz_tdiv_q(this.mpz, n_.mpz, d_.mpz);
+          when round.up   do mpz_cdiv_q(this.mpz, numer_.mpz, denom_.mpz);
+          when round.down do mpz_fdiv_q(this.mpz, numer_.mpz, denom_.mpz);
+          when round.zero do mpz_tdiv_q(this.mpz, numer_.mpz, denom_.mpz);
           }
       }
     }
   }
 
+  /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
+     ``this``.
+
+     :arg numer: The numerator of the division operation to be performed
+     :type numer: ``bigint``
+
+     :arg denom: The denominator of the division operation to be performed
+     :type denom: ``bigint``, ``integral``
+
+     :arg rounding: The rounding style to use, see :enum:`round` for a
+                    description of what the rounding styles entail.  Defaults to
+                    ``zero`` if unspecified
+     :type rounding: ``round``
+
+     .. warning::
+        If the denominator is zero, the program behavior is undefined.
+  */
+  proc bigint.divQ(const ref numer: bigint,
+                             denom: integral,
+                   param     rounding = round.zero) {
+
+    this.divQ(numer, new bigint(denom), rounding);
+  }
+
   deprecated
-  "bigint.div_q using Round is deprecated, use bigint.div_q with round instead"
-  proc bigint.div_q(const ref n: bigint,
-                              d: integral,
-                    param     rounding: Round) {
+  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
+  proc bigint.div_r(const ref n: bigint,
+                    const ref d: bigint,
+                    param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.div_q(n, d, round.up);
+      this.divR(n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_q(n, d, round.zero);
+      this.divR(n, d, round.zero);
     } else {
-      this.div_q(n, d, round.down);
+      this.divR(n, d, round.down);
+    }
+
+  }
+
+  deprecated
+  "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
+  proc bigint.div_r(const ref n: bigint,
+                              d: integral,
+                    param     rounding = Round.ZERO) {
+    use Round;
+    if (rounding == UP) {
+      this.divR(n, d, round.up);
+    } else if (rounding == ZERO) {
+      this.divR(n, d, round.zero);
+    } else {
+      this.divR(n, d, round.down);
     }
   }
 
-  proc bigint.div_q(const ref n: bigint,
-                              d: integral,
-                    param     rounding = round.zero) {
-
-    this.div_q(n, new bigint(d), rounding);
-  }
-
-  deprecated
-  "bigint.div_r using Round is deprecated, use bigint.div_r with round instead"
-  proc bigint.div_r(const ref n: bigint,
-                    const ref d: bigint,
-                    param     rounding: Round) {
-    use Round;
-    if (rounding == UP) {
-      this.div_r(n, d, round.up);
-    } else if (rounding == ZERO) {
-      this.div_r(n, d, round.zero);
-    } else {
-      this.div_r(n, d, round.down);
-    }
-
-  }
-
-  proc bigint.div_r(const ref n: bigint,
-                    const ref d: bigint,
-                    param     rounding = round.zero) {
+  // Note: documentation on `denom: integral` version
+  proc bigint.divR(const ref numer: bigint,
+                   const ref denom: bigint,
+                   param     rounding = round.zero) {
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
-        when round.down do mpz_fdiv_r(this.mpz, n.mpz,  d.mpz);
-        when round.zero do mpz_tdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_r(this.mpz, numer.mpz,  denom.mpz);
+        when round.down do mpz_fdiv_r(this.mpz, numer.mpz,  denom.mpz);
+        when round.zero do mpz_tdiv_r(this.mpz, numer.mpz,  denom.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
+              numer.localeId == chpl_nodeID &&
+              denom.localeId == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_r(this.mpz, n.mpz,  d.mpz);
-        when round.down do mpz_fdiv_r(this.mpz, n.mpz,  d.mpz);
-        when round.zero do mpz_tdiv_r(this.mpz, n.mpz,  d.mpz);
+        when round.up   do mpz_cdiv_r(this.mpz, numer.mpz,  denom.mpz);
+        when round.down do mpz_fdiv_r(this.mpz, numer.mpz,  denom.mpz);
+        when round.zero do mpz_tdiv_r(this.mpz, numer.mpz,  denom.mpz);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
-        const d_ = d;
+        const numer_ = numer;
+        const denom_ = denom;
 
         select rounding {
-          when round.up   do mpz_cdiv_r(this.mpz, n_.mpz, d_.mpz);
-          when round.down do mpz_fdiv_r(this.mpz, n_.mpz, d_.mpz);
-          when round.zero do mpz_tdiv_r(this.mpz, n_.mpz, d_.mpz);
+          when round.up   do mpz_cdiv_r(this.mpz, numer_.mpz, denom_.mpz);
+          when round.down do mpz_fdiv_r(this.mpz, numer_.mpz, denom_.mpz);
+          when round.zero do mpz_tdiv_r(this.mpz, numer_.mpz, denom_.mpz);
         }
       }
     }
   }
 
-  deprecated
-  "bigint.div_r using Round is deprecated, use bigint.div_r with round instead"
-  proc bigint.div_r(const ref n: bigint,
-                              d: integral,
-                    param     rounding: Round) {
-    use Round;
-    if (rounding == UP) {
-      this.div_r(n, d, round.up);
-    } else if (rounding == ZERO) {
-      this.div_r(n, d, round.zero);
-    } else {
-      this.div_r(n, d, round.down);
-    }
+  /* Divide ``numer`` by ``denom``, forming a remainder and storing it in
+     ``this``.  The absolute value of the remainder will always be less than the
+     absolute value of the denominator (i.e. ``abs(this) < abs(denom)``).
+
+     :arg numer: The numerator of the division operation to be performed
+     :type numer: ``bigint``
+
+     :arg denom: The denominator of the division operation to be performed
+     :type denom: ``bigint``, ``integral``
+
+     :arg rounding: The rounding style to use, see :enum:`round` for a
+                    description of what the rounding styles entail.  Defaults to
+                    ``zero`` if unspecified
+     :type rounding: ``round``
+
+     .. warning::
+        If the denominator is zero, the program behavior is undefined.
+  */
+  proc bigint.divR(const ref numer: bigint,
+                             denom: integral,
+                   param     rounding = round.zero) {
+    this.divR(numer, new bigint(denom), rounding);
   }
 
-  proc bigint.div_r(const ref n: bigint,
-                              d: integral,
-                    param     rounding = round.zero) {
-    this.div_r(n, new bigint(d), rounding);
-  }
-
   deprecated
-  "bigint.div_qr using Round is deprecated, use bigint.div_qr with round instead"
+  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
   proc bigint.div_qr(ref       r:        bigint,
                      const ref n:        bigint,
                      const ref d:        bigint,
-                     param     rounding: Round) {
+                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.div_qr(r, n, d, round.up);
+      this.divQR(r, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_qr(r, n, d, round.zero);
+      this.divQR(r, n, d, round.zero);
     } else {
-      this.div_qr(r, n, d, round.down);
-    }
-  }
-
-  // this gets quotient, r gets remainder
-  proc bigint.div_qr(ref       r:        bigint,
-                     const ref n:        bigint,
-                     const ref d:        bigint,
-                     param     rounding = round.zero) {
-    if _local {
-      select rounding {
-        when round.up   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when round.down do mpz_fdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when round.zero do mpz_tdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-      }
-
-    } else if this.localeId == chpl_nodeID &&
-              r.localeId    == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
-      select rounding {
-        when round.up   do mpz_cdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when round.down do mpz_fdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-        when round.zero do mpz_tdiv_qr(this.mpz, r.mpz, n.mpz, d.mpz);
-      }
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var   r_ = r;
-        const n_ = n;
-        const d_ = d;
-
-        select rounding {
-          when round.up   do mpz_cdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
-          when round.down do mpz_fdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
-          when round.zero do mpz_tdiv_qr(this.mpz, r_.mpz, n_.mpz, d_.mpz);
-        }
-
-        r = r_;
-      }
+      this.divQR(r, n, d, round.down);
     }
   }
 
   deprecated
-  "bigint.div_qr using Round is deprecated, use bigint.div_qr with round instead"
+  "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
   proc bigint.div_qr(ref       r: bigint,
                      const ref n: bigint,
                                d: integral,
-                     param     rounding: Round) {
+                     param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.div_qr(r, n, d, round.up);
+      this.divQR(r, n, d, round.up);
     } else if (rounding == ZERO) {
-      this.div_qr(r, n, d, round.zero);
+      this.divQR(r, n, d, round.zero);
     } else {
-      this.div_qr(r, n, d, round.down);
+      this.divQR(r, n, d, round.down);
     }
   }
 
-  proc bigint.div_qr(ref       r: bigint,
-                     const ref n: bigint,
-                               d: integral,
-                     param     rounding = round.zero) {
-    this.div_qr(r, n, new bigint(d), rounding);
-  }
-
-  deprecated
-  "bigint.div_q_2exp using Round is deprecated, use bigint.div_q_2xp with round instead"
-  proc bigint.div_q_2exp(const ref n: bigint,
-                                   b: integral,
-                         param     rounding: Round) {
-    use Round;
-    if (rounding == UP) {
-      this.div_q_2exp(n, b, round.up);
-    } else if (rounding == ZERO) {
-      this.div_q_2exp(n, b, round.zero);
-    } else {
-      this.div_q_2exp(n, b, round.down);
-    }
-  }
-
-  proc bigint.div_q_2exp(const ref n: bigint,
-                                   b: integral,
-                         param     rounding = round.zero) {
-    const b_ = b.safeCast(mp_bitcnt_t);
-
+  // Note: Documentation on `denom: integral` version
+  proc bigint.divQR(ref       remain: bigint,
+                    const ref numer: bigint,
+                    const ref denom: bigint,
+                    param     rounding = round.zero) {
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_q_2exp(this.mpz, n.mpz, b_);
-        when round.down do mpz_fdiv_q_2exp(this.mpz, n.mpz, b_);
-        when round.zero do mpz_tdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.up do mpz_cdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                     denom.mpz);
+        when round.down do mpz_fdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                       denom.mpz);
+        when round.zero do mpz_tdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                       denom.mpz);
       }
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID {
+              remain.localeId == chpl_nodeID &&
+              numer.localeId == chpl_nodeID &&
+              denom.localeId == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_q_2exp(this.mpz, n.mpz, b_);
-        when round.down do mpz_fdiv_q_2exp(this.mpz, n.mpz, b_);
-        when round.zero do mpz_tdiv_q_2exp(this.mpz, n.mpz, b_);
+        when round.up do mpz_cdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                     denom.mpz);
+        when round.down do mpz_fdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                       denom.mpz);
+        when round.zero do mpz_tdiv_qr(this.mpz, remain.mpz, numer.mpz,
+                                       denom.mpz);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
+        var   remain_ = remain;
+        const numer_ = numer;
+        const denom_ = denom;
 
         select rounding {
-          when round.up   do mpz_cdiv_q_2exp(this.mpz, n_.mpz, b_);
-          when round.down do mpz_fdiv_q_2exp(this.mpz, n_.mpz, b_);
-          when round.zero do mpz_tdiv_q_2exp(this.mpz, n_.mpz, b_);
+          when round.up do mpz_cdiv_qr(this.mpz, remain_.mpz, numer_.mpz,
+                                       denom_.mpz);
+          when round.down do mpz_fdiv_qr(this.mpz, remain_.mpz, numer_.mpz,
+                                         denom_.mpz);
+          when round.zero do mpz_tdiv_qr(this.mpz, remain_.mpz, numer_.mpz,
+                                         denom_.mpz);
+        }
+
+        remain = remain_;
+      }
+    }
+  }
+
+  /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
+     ``this``, and a remainder and storing it in ``remain``.  The quotient and
+     remainder will always satisfy ``numer = this*denom + remain`` after the
+     operation has finished.  The absolute value of the remainder will always be
+     less than the absolute value of the denominator (i.e. ``abs(this) <
+     abs(denom)``).
+
+     .. warning::
+        If ``this`` is also passed as the ``remain`` argument, the program
+        behavior is undefined.
+
+     :arg remain: Stores the remainder of the division
+     :type remain: ``bigint``
+
+     :arg numer: The numerator of the division operation to be performed
+     :type numer: ``bigint``
+
+     :arg denom: The denominator of the division operation to be performed
+     :type denom: ``bigint``, ``integral``
+
+     :arg rounding: The rounding style to use, see :enum:`round` for a
+                    description of what the rounding styles entail.  Defaults to
+                    ``zero`` if unspecified
+     :type rounding: ``round``
+
+     .. warning::
+        If the denominator is zero, the program behavior is undefined.
+  */
+  proc bigint.divQR(ref       remain: bigint,
+                    const ref numer: bigint,
+                              denom: integral,
+                    param     rounding = round.zero) {
+    this.divQR(remain, numer, new bigint(denom), rounding);
+  }
+
+  deprecated
+  "bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead"
+  proc bigint.div_q_2exp(const ref n: bigint,
+                                   b: integral,
+                         param     rounding = Round.ZERO) {
+    use Round;
+    if (rounding == UP) {
+      this.divQ2Exp(n, b, round.up);
+    } else if (rounding == ZERO) {
+      this.divQ2Exp(n, b, round.zero);
+    } else {
+      this.divQ2Exp(n, b, round.down);
+    }
+  }
+
+  /* Divide ``numer`` by ``2^exp``, forming a quotient and storing it in
+     ``this``.
+
+     :arg numer: The numerator of the division operation to be performed
+     :type numer: ``bigint``
+
+     :arg exp: The exponent that 2 should be raised to before being used as the
+               denominator of the division operation to be performed
+     :type exp: ``integral``
+
+     :arg rounding: The rounding style to use, see :enum:`round` for a
+                    description of what the rounding styles entail.  Defaults to
+                    ``zero`` if unspecified
+     :type rounding: ``round``
+   */
+  proc bigint.divQ2Exp(const ref numer: bigint,
+                                 exp: integral,
+                       param     rounding = round.zero) {
+    const exp_ = exp.safeCast(mp_bitcnt_t);
+
+    if _local {
+      select rounding {
+        when round.up   do mpz_cdiv_q_2exp(this.mpz, numer.mpz, exp_);
+        when round.down do mpz_fdiv_q_2exp(this.mpz, numer.mpz, exp_);
+        when round.zero do mpz_tdiv_q_2exp(this.mpz, numer.mpz, exp_);
+      }
+
+    } else if this.localeId == chpl_nodeID &&
+              numer.localeId == chpl_nodeID {
+      select rounding {
+        when round.up   do mpz_cdiv_q_2exp(this.mpz, numer.mpz, exp_);
+        when round.down do mpz_fdiv_q_2exp(this.mpz, numer.mpz, exp_);
+        when round.zero do mpz_tdiv_q_2exp(this.mpz, numer.mpz, exp_);
+      }
+
+    } else {
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", thisLoc) {
+        const numer_ = numer;
+
+        select rounding {
+          when round.up   do mpz_cdiv_q_2exp(this.mpz, numer_.mpz, exp_);
+          when round.down do mpz_fdiv_q_2exp(this.mpz, numer_.mpz, exp_);
+          when round.zero do mpz_tdiv_q_2exp(this.mpz, numer_.mpz, exp_);
         }
       }
     }
   }
 
   deprecated
-  "bigint.div_r_2exp using Round is deprecated, use bigint.div_r_2xp with round instead"
+  "bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead"
   proc bigint.div_r_2exp(const ref n: bigint,
                                    b: integral,
-                         param     rounding: Round) {
+                         param     rounding = Round.ZERO) {
     use Round;
     if (rounding == UP) {
-      this.div_r_2exp(n, b, round.up);
+      this.divR2Exp(n, b, round.up);
     } else if (rounding == ZERO) {
-      this.div_r_2exp(n, b, round.zero);
+      this.divR2Exp(n, b, round.zero);
     } else {
-      this.div_r_2exp(n, b, round.down);
+      this.divR2Exp(n, b, round.down);
     }
   }
 
-  proc bigint.div_r_2exp(const ref n: bigint,
-                                   b: integral,
-                         param     rounding = round.zero) {
-    const b_ = b.safeCast(mp_bitcnt_t);
+  /* Divide ``numer`` by ``2^exp``, forming a remainder and storing it in
+     ``this``.
+
+     :arg numer: The numerator of the division operation to be performed
+     :type numer: ``bigint``
+
+     :arg exp: The exponent that 2 should be raised to before being used as the
+               denominator of the division operation to be performed
+     :type exp: ``integral``
+
+     :arg rounding: The rounding style to use, see :enum:`round` for a
+                    description of what the rounding styles entail.  Defaults to
+                    ``zero`` if unspecified
+     :type rounding: ``round``
+   */
+  proc bigint.divR2Exp(const ref numer: bigint,
+                                 exp: integral,
+                       param     rounding = round.zero) {
+    const exp_ = exp.safeCast(mp_bitcnt_t);
 
     if _local {
       select rounding {
-        when round.up   do mpz_cdiv_r_2exp(this.mpz, n.mpz, b_);
-        when round.down do mpz_fdiv_r_2exp(this.mpz, n.mpz, b_);
-        when round.zero do mpz_tdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_r_2exp(this.mpz, numer.mpz, exp_);
+        when round.down do mpz_fdiv_r_2exp(this.mpz, numer.mpz, exp_);
+        when round.zero do mpz_tdiv_r_2exp(this.mpz, numer.mpz, exp_);
       }
 
-    } else if this.localeId == chpl_nodeID && n.localeId == chpl_nodeID {
+    } else if this.localeId == chpl_nodeID && numer.localeId == chpl_nodeID {
       select rounding {
-        when round.up   do mpz_cdiv_r_2exp(this.mpz, n.mpz, b_);
-        when round.down do mpz_fdiv_r_2exp(this.mpz, n.mpz, b_);
-        when round.zero do mpz_tdiv_r_2exp(this.mpz, n.mpz, b_);
+        when round.up   do mpz_cdiv_r_2exp(this.mpz, numer.mpz, exp_);
+        when round.down do mpz_fdiv_r_2exp(this.mpz, numer.mpz, exp_);
+        when round.zero do mpz_tdiv_r_2exp(this.mpz, numer.mpz, exp_);
       }
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
+        const numer_ = numer;
 
         select rounding {
-          when round.up   do mpz_cdiv_r_2exp(this.mpz, n_.mpz, b_);
-          when round.down do mpz_fdiv_r_2exp(this.mpz, n_.mpz, b_);
-          when round.zero do mpz_tdiv_r_2exp(this.mpz, n_.mpz, b_);
+          when round.up   do mpz_cdiv_r_2exp(this.mpz, numer_.mpz, exp_);
+          when round.down do mpz_fdiv_r_2exp(this.mpz, numer_.mpz, exp_);
+          when round.zero do mpz_tdiv_r_2exp(this.mpz, numer_.mpz, exp_);
         }
       }
     }

@@ -105,9 +105,11 @@ int psmx2_fabric(struct fi_fabric_attr *attr,
 	fastlock_init(&fabric_priv->domain_lock);
 	dlist_init(&fabric_priv->domain_list);
 
-	psmx2_get_uuid(fabric_priv->uuid);
 	if (psmx2_env.name_server) {
-		fabric_priv->name_server.port = psmx2_uuid_to_port(fabric_priv->uuid);
+		psm2_uuid_t uuid;
+
+		psmx2_get_uuid(uuid);
+		fabric_priv->name_server.port = psmx2_uuid_to_port(uuid);
 		fabric_priv->name_server.name_len = sizeof(struct psmx2_ep_name);
 		fabric_priv->name_server.service_len = sizeof(int);
 		fabric_priv->name_server.service_cmp = psmx2_ns_service_cmp;

@@ -257,7 +257,7 @@ Any addition/change to the Chapel test system should pass testing when that
 test/directory is run with ``start_test`` (and performance tests should also
 pass testing for ``start_test -performance``).
 
-.. _Creating a Simple Test: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst#creating-a-simple-test
+.. _Creating a Simple Test: https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/TestSystem.rst#creating-a-simple-test
 
 
 .. _Contributing changes
@@ -525,7 +525,7 @@ Testing your patch
   across a large number of workstations.  If you have limited testing resources
   available to you, you can request that a member of the core Chapel team help.
 
-.. _Test System: https://github.com/chapel-lang/chapel/blob/master/doc/rst/developer/bestPractices/TestSystem.rst
+.. _Test System: https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/TestSystem.rst
 
 .. _Work-in-progress pull request:
 
@@ -629,16 +629,16 @@ non-meaningful commits:
 .. code-block:: bash
 
     git fetch upstream
-    git rebase -i upstream/master
+    git rebase -i upstream/main
 
 Note that this can be particularly cumbersome when there has been significant
-conflicting changes made on upstream master, so it is not a hard requirement.
+conflicting changes made on upstream main, so it is not a hard requirement.
 
 An alternative approach is to use the "squash and merge" option on the GitHub
 merge button which will reduce all commits to a single commit.
 
 It's not generally possible to completely remove a commit from git by the time
-it makes it in to the master branch. So be very careful not to commit anything
+it makes it in to the main branch. So be very careful not to commit anything
 that you might regret later (e.g., sensitive code, code owned by anyone other
 than yourself). Ideally, the review will catch such issues, but the ultimate
 responsibility is on the developer.
@@ -713,7 +713,7 @@ After feature freeze, only bug fixes and documentation updates will be accepted
 for the upcoming release. After code/doc freeze, no contributions will be
 accepted for the upcoming release, barring critical bug fixes. At some point
 between code/doc freeze and the release, a release branch will be "cut", and
-the master branch will begin accepting all contributions again.
+the main branch will begin accepting all contributions again.
 
 The dates for these freezes will be posted on the `Chapel events page`_
 sometime close to each release.

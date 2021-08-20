@@ -1,5 +1,5 @@
 ifndef LLVM_VERSION
-  export LLVM_VERSION:=$(shell test -x $(LLVM_CONFIG) && $(LLVM_CONFIG) --version)
+  export LLVM_VERSION:=$(shell $(LLVM_CONFIG) --version 2>&1)
 endif
 
 ifneq ($(LLVM_VERSION),)

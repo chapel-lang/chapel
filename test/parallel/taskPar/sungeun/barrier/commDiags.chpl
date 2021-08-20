@@ -1,4 +1,5 @@
 use Barriers;
+use AllLocalesBarriers;
 use BlockDist;
 use CommDiagnostics;
 
@@ -10,7 +11,7 @@ proc printCommDiagnostics(diag) {
   }
 }
 
-proc remoteTestBasic(b: Barrier, numRemoteTasks) {
+proc remoteTestBasic(b, numRemoteTasks) {
   const barSpace = 0..#numRemoteTasks;
   var A: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = barSpace;
   var B: [{barSpace} dmapped new dmap(new Block({barSpace}))] int = -1;
@@ -74,3 +75,6 @@ remoteTestBasic(sb, numRemoteTasks);
 sb.reset(numRemoteTasks);
 writeln("sync remote test split phase");
 remoteTestSplitPhase(sb, numRemoteTasks);
+
+writeln("allLocalesBarrier test basic");
+remoteTestBasic(allLocalesBarrier, numRemoteTasks);
