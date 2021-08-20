@@ -28,7 +28,6 @@ module MasonArgParse {
   // TODO: Add int opts
   // TODO: Add automatic -h, --help flag generation
   // TODO: Add program metadata when setting up parser
-  // TODO: Recognize '--' as separator between flags/options and positionals
   // TODO: Implement Help message and formatting
   // TODO: Move logic splitting '=' into '_match'
   // TODO: Add public github issue when available
