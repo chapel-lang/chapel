@@ -27,8 +27,8 @@ proc main(args: [] string) {
   here.chdir('tmp/' + basename);
 
   // Add mason dependency
-  var modArgs: [0..#args.size-2] string = args[2..];
-  masonModify(modArgs);;
+  var modArgs: [0..#args.size-3] string = args[3..];
+  masonModify(modArgs);
 
   // Print manifest for diff against .good file
   showToml('Mason.toml');

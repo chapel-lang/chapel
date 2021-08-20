@@ -21,24 +21,27 @@
  * Github: @Spartee
  */
 
-use FileSystem;
 
-use MasonModify;
-use MasonUtils;
-use MasonHelp;
+
+use FileSystem;
+use Map;
+use MasonArgParse;
+use MasonBuild;
 use MasonDoc;
 use MasonEnv;
-use MasonNew;
-use MasonBuild;
-use MasonUpdate;
-use MasonSearch;
-use MasonTest;
-use MasonRun;
-use MasonSystem;
 use MasonExternal;
-use MasonPublish;
+use MasonHelp;
 use MasonInit;
-
+use MasonModify;
+use MasonNew;
+use MasonPublish;
+use MasonRun;
+use MasonSearch;
+use MasonSystem;
+use MasonTest;
+use MasonUpdate;
+use MasonUtils;
+use List;
 /*
 
 The Design of Mason
@@ -74,41 +77,82 @@ Full documentation is located in the chapel release in $CHPL_HOME/doc/rst/tools/
 
 
 proc main(args: [] string) throws {
-  try! {
-    if args.size < 2 {
-      masonHelp();
-      exit(0);
+
+  var parser = new argumentParser();
+
+  var subCmds = new map(string, shared Argument);
+
+  // define all the supported subcommand strings here
+  var cmds = ["add","build","clean","doc","env","external","init","publish",
+              "new","rm","run","search","system","test","update"];
+  for cmd in cmds {
+    subCmds.add(cmd,parser.addSubCommand(cmd));
+  }
+
+  var helpFlag = parser.addFlag(name="help",
+                                opts=["-h","--help"],
+                                flagInversion=false,
+                                defaultValue=false);
+  var versionFlag = parser.addFlag(name="version",
+                                   opts=["-V","--version"],
+                                   flagInversion=false,
+                                   defaultValue=false);
+  try {
+    parser.parseArgs(args);
+  }
+  catch ex : ArgumentError {
+    stderr.writeln(ex.message());
+    masonHelp();
+    exit(1);
+  }
+  // TODO: Can masonHelp take an exit code and do this itself?
+  if helpFlag.valueAsBool() {
+    masonHelp();
+    exit(0);
+  }
+  // TODO: Can printVersion take an exit code, similar to masonHelp TODO
+  if versionFlag.valueAsBool() {
+    printVersion();
+    exit(0);
+  }
+  var usedCmd:string;
+  var cmdList:list(string);
+  // identify which, if any, subcommand was used and collect its arguments
+  for (cmd, arg) in subCmds.items() {
+    if arg.hasValue() {
+      usedCmd = cmd;
+      cmdList = new list(arg.values());
+      break;
     }
-    select (args[1]) {
-      when 'new' do masonNew(args);
-      when 'init' do masonInit(args);
-      when 'add' do masonModify(args);
-      when 'rm' do masonModify(args);
-      when 'build' do masonBuild(args);
-      when 'update' do masonUpdate(args);
-      when 'run' do masonRun(args);
-      when 'search' do masonSearch(args);
-      when 'system' do masonSystem(args);
-      when 'external' do masonExternal(args);
-      when 'test' do masonTest(args);
-      when 'env' do masonEnv(args);
-      when 'doc' do masonDoc(args);
-      when 'publish' do masonPublish(args);
-      when 'clean' do masonClean(args);
-      when 'help' do masonHelp();
-      when 'version' do printVersion();
-      when '-h' do masonHelp();
-      when '--help' do masonHelp();
-      when '-V' do printVersion();
-      when '--version' do printVersion();
+  }
+  var cmdArgs = cmdList.toArray();
+  // pass the arguments to the appropriate subcommand
+  try {
+    select (usedCmd) {
+      when "new" do masonNew(args);
+      when "init" do masonInit(args);
+      when "add" do masonModify(cmdArgs);
+      when "rm" do masonModify(cmdArgs);
+      when "build" do masonBuild(args);
+      when "update" do masonUpdate(args);
+      when "run" do masonRun(args);
+      when "search" do masonSearch(args);
+      when "system" do masonSystem(args);
+      when "external" do masonExternal(args);
+      when "test" do masonTest(args);
+      when "env" do masonEnv(args);
+      when "doc" do masonDoc(args);
+      when "publish" do masonPublish(args);
+      when "clean" do masonClean(args);
+
       otherwise {
-        throw new owned MasonError('No such subcommand \ntry mason --help');
+        throw new owned MasonError("No such subcommand \ntry mason --help");
         exit(1);
       }
     }
   }
-  catch e: MasonError {
-    stderr.writeln(e.message());
+  catch ex : MasonError {
+    stderr.writeln(ex.message());
     exit(1);
   }
 }
@@ -123,7 +167,7 @@ proc masonClean(args) {
     const cwd = here.cwd();
 
     const projectHome = getProjectHome(cwd);
-    runCommand('rm -rf ' + projectHome + '/target');
+    runCommand("rm -rf " + projectHome + "/target");
   }
   catch e: MasonError {
     stderr.writeln(e.message());
@@ -132,5 +176,5 @@ proc masonClean(args) {
 
 
 proc printVersion() {
-  writeln('mason 0.1.2');
+  writeln("mason 0.1.2");
 }
