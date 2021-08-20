@@ -3983,12 +3983,12 @@ static FnSymbol* wrapAndCleanUpActuals(ResolutionCandidate* best,
       checkForInfiniteRecord(at);
     }
   }
-  if (!best->fn->hasFlag(FLAG_NO_PARENS)) {
+  //  if (!best->fn->hasFlag(FLAG_NO_PARENS)) {
     best->fn = wrapAndCleanUpActuals(best->fn,
                                      info,
                                      best->actualIdxToFormal,
                                      followerChecks);
-  }
+    //  }
 
   return best->fn;
 }
