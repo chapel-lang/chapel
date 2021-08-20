@@ -59,7 +59,7 @@
 
   * ``idxType``: The type of the range's values—must an integral or enum type (defaults to ``int``)
   * ``boundedType``: A :enum:`BoundedRangeType` value indicating which bounds the range stores (defaults to ``bounded``)
-  * ``stridable``: A boolean indicating whether or not the range can be strided (defaults to ``false``)
+  * ``stridable``: A boolean indicating whether or not the range can be strided
 
   The following code shows range variables declared with specified
   type signatures:
