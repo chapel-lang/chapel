@@ -167,7 +167,17 @@ module Curl {
         throw SystemError.fromSyserr(EINVAL, "in channel.setopt(): not a curl channel");
 
       var curl = plugin!.curl;
+      err = setopt(curl, opt, arg);
+    }
 
+    if err then try ioerror(err, "in Curl.setopt(" + opt:string + ", arg: " +
+                            arg.type:string + ")");
+    return true;
+  }
+
+  // setopt on the curl_easy object, for sharing with easySetopt below.
+  private proc setopt(curl: c_ptr(CURL), opt:c_int, arg) {
+      var err: syserr = ENOERR;
       // This reasoning is pulled from the libcurl source
       if (opt < CURLOPTTYPE_OBJECTPOINT) {
         // < OBJECTPOINT means CURLOPTTYPE_LONG; libcurl wants a "long" arg.
@@ -199,11 +209,7 @@ module Curl {
           err = qio_int_to_err(curl_easy_setopt_offset(curl, opt:CURLoption, tmp));
         }
       }
-    }
-
-    if err then try ioerror(err, "in Curl.setopt(" + opt:string + ", arg: " +
-                            arg.type:string + ")");
-    return true;
+      return err;
   }
 
   /* Set curl options on a curl file attached to a channel.
@@ -1091,5 +1097,17 @@ module Curl {
       return ret;
     }
   } // end of module CurlQioIntegration
+
+
+  proc easyInit(): c_ptr(CURL) { return curl_easy_init(); }
+  proc easySetopt(curl: c_ptr(CURL), opt:c_int, arg): bool throws {
+    var err = setopt(curl, opt, arg);
+    if err then try ioerror(err, "in Curl.setopt(" + opt:string + ", arg: " +
+                            arg.type:string + ")");
+
+    return true;
+  }
+  proc easyPerform(curl: c_ptr(CURL)) { return curl_easy_perform(curl); }
+  proc easyCleanup(curl: c_ptr(CURL)) { curl_easy_cleanup(curl); }
 
 } /* end of module */
