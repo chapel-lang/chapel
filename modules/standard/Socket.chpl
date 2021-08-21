@@ -57,6 +57,12 @@
 */
 module Socket {
 
+// TODO: replace with mason config
+require "/usr/include/event2/event.h";
+require "/usr/include/event2/thread.h";
+require "-levent";
+require "-levent_pthreads";
+
 public use Sys;
 public use SysError;
 use Time;
@@ -258,11 +264,98 @@ inline operator !=(in lhs: tcpConn,in rhs: tcpConn) {
 }
 
 proc tcpConn.writeThis(f) throws {
-  f.write("(","addr:",this.addr,",fd:",this.socketFd);
+  f.write("(","addr:",this.addr,",fd:",this.socketFd,")");
 }
 
 pragma "no doc"
 private extern proc sizeof(e): size_t;
+
+extern "struct event_base" record event_base {};
+extern "struct event" record event {};
+
+extern const EV_TIMEOUT:c_short;
+extern const EV_READ:c_short;
+extern const EV_WRITE:c_short;
+extern const EV_SIGNAL:c_short;
+extern const EV_PERSIST:c_short;
+extern const EV_ET:c_short;
+extern const EV_FINALIZE:c_short;
+extern const EV_CLOSED:c_short;
+extern const EVLOOP_NO_EXIT_ON_EMPTY:c_int;
+
+private extern proc event_base_new():c_ptr(event_base);
+private extern proc event_base_dispatch(base: c_ptr(event_base)):c_int;
+private extern proc event_base_loop(base: c_ptr(event_base), flags: c_int):c_int;
+private extern proc event_base_free(base: c_ptr(event_base));
+private extern proc event_base_got_break(base: c_ptr(event_base)):c_int;
+private extern proc event_base_loopbreak(base: c_ptr(event_base)):c_int;
+private extern proc event_new(base: c_ptr(event_base), fd: c_int, events: c_short, callback: c_fn_ptr, callback_arg: c_void_ptr): c_ptr(event);
+private extern proc event_add(ev: c_ptr(event), timeout: c_ptr(timeval)):c_int;
+private extern proc event_del(ev: c_ptr(event)):c_int;
+private extern proc event_free(ev: c_ptr(event)):c_int;
+private extern proc event_remove_timer(ev: c_ptr(event)):c_int;
+private extern proc evutil_make_socket_nonblocking(fd: c_int):c_int;
+private extern proc libevent_global_shutdown();
+
+extern type pthread_t = c_ulong;
+extern type pthread_attr_t;
+private extern proc pthread_create(thread: c_ptr(pthread_t), const attr: c_ptr(pthread_attr_t), start_routine: c_fn_ptr, arg: c_void_ptr): c_int;
+private extern proc pthread_join(thread: pthread_t, retval: c_ptr(c_void_ptr)): c_int;
+private extern proc pthread_exit(retval: c_void_ptr);
+private extern proc evthread_use_pthreads();
+
+evthread_use_pthreads();
+var event_loop_base = event_base_new();
+
+proc dispatchLoop():c_void_ptr throws {
+  if event_loop_base == nil {
+    throw new Error("event loop wasn't initialized");
+  }
+  var ret_val = 0;
+  if event_base_got_break(event_loop_base) == 1 {
+    pthread_exit(c_ptrTo(ret_val):c_void_ptr);
+  }
+  var x = event_base_loop(event_loop_base, EVLOOP_NO_EXIT_ON_EMPTY);
+  if x != 0 {
+    throw new Error("event loop wasn't initialized");
+  }
+  pthread_exit(c_ptrTo(ret_val):c_void_ptr);
+}
+
+var event_loop_thread:pthread_t;
+pthread_create(c_ptrTo(event_loop_thread), nil:c_ptr(pthread_attr_t), c_ptrTo(dispatchLoop), nil);
+
+proc syncRWTCallback(fd: c_int, event: c_short, arg: c_void_ptr) {
+  var syncVariablePtr = arg: c_ptr(sync int);
+  syncVariablePtr.deref().writeEF(event);
+}
+
+proc deinit() {
+  event_base_loopbreak(event_loop_base);
+  pthread_join(event_loop_thread, nil:c_ptr(c_void_ptr));
+  event_base_free(event_loop_base);
+  libevent_global_shutdown();
+}
+
+class EventHelper {
+  var localSync$: sync c_short;
+  var internalEvent:c_ptr(event) = nil;
+
+  pragma "no doc"
+  proc init(socketFd: c_int, events: c_short) {
+    this.localSync$ = 0;
+    this.localSync$.readFE();
+    this.internalEvent = event_new(event_loop_base, socketFd, events, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  }
+
+  proc deinit() {
+    event_free(this.internalEvent);
+  }
+}
+
+override proc EventHelper.writeThis(f) throws {
+  f.write("(","localSync$:",this.localSync$.readXX(),")");
+}
 
 /*
   A record holding reference to a tcp socket
@@ -272,11 +365,13 @@ record tcpListener {
   /*
     File Descriptor Associated with instance
   */
-  var socketFd: int(32);
+  var socketFd: int(32) = -1;
+  var listenerHelper: shared EventHelper;
 
   pragma "no doc"
-  proc init(socketFd:c_int) {
+  proc init(socketFd: c_int) {
     this.socketFd = socketFd;
+    this.listenerHelper = new shared EventHelper(this.socketFd, EV_READ | EV_TIMEOUT);
   }
 }
 
@@ -299,36 +394,33 @@ record tcpListener {
 proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)) throws {
   var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
   var fdOut:fd_t;
-  var rset, allset: fd_set;
-  sys_fd_zero(allset);
-  sys_fd_set(this.socketFd, allset);
-  rset = allset;
-  var nready:c_int;
-  var err_out:err_t;
+  var err_out:err_t = 0;
+  err_out = sys_accept(socketFd, client_addr, fdOut);
+  if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
+    throw SystemError.fromSyserr(err_out, "accept() failed");
+  }
+  if err_out == 0 {
+    return openfd(fdOut):tcpConn;
+  }
   if timeout.tv_sec == -1 {
-    err_out = sys_select(socketFd+1, c_ptrTo(rset), nil, nil, nil, nready);
+    event_remove_timer(this.listenerHelper.internalEvent);
+    err_out = event_add(this.listenerHelper.internalEvent, nil);
   }
   else {
-    err_out = sys_select(socketFd+1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
+    err_out = event_add(this.listenerHelper.internalEvent, c_ptrTo(timeout));
   }
-
-  if nready == 0 {
+  if err_out != 0 {
+    throw new Error("accept() failed");
+  }
+  var retval = this.listenerHelper.localSync$.readFE();
+  if retval & EV_TIMEOUT != 0 {
     throw SystemError.fromSyserr(ETIMEDOUT, "accept() timed out");
   }
+  err_out = sys_accept(socketFd, client_addr, fdOut);
   if err_out != 0 {
     throw SystemError.fromSyserr(err_out, "accept() failed");
   }
-  if(sys_fd_isset(socketFd, rset)){
-    err_out = sys_accept(socketFd, client_addr, fdOut);
-  }
-  else{
-    throw new Error("connection disconnected");
-  }
-  if err_out != 0 {
-    throw SystemError.fromSyserr(err_out, "accept() failed");
-  }
-  var sockFile:tcpConn = openfd(fdOut);
-  return sockFile;
+  return openfd(fdOut):tcpConn;
 }
 
 /*
@@ -422,57 +514,42 @@ proc connect(in address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws
   var family = address.family;
   var socketFd = socket(family, SOCK_STREAM);
   var err_out = sys_connect(socketFd, address._addressStorage);
-  if(err_out != 0 && err_out != EINPROGRESS) {
+  if err_out != 0 && err_out != EINPROGRESS {
     sys_close(socketFd);
-    throw SystemError.fromSyserr(err_out,"Connect not Possible");
+    throw SystemError.fromSyserr(err_out,"connect() failed");
   }
-  if(err_out == 0) {
-    var sockFile:tcpConn = openfd(socketFd);
-    return sockFile;
+  if err_out == 0 {
+    return openfd(socketFd):tcpConn;
   }
-  var rset, wset: fd_set;
-  sys_fd_zero(wset);
-  sys_fd_set(socketFd, wset);
-  rset = wset;
-  var nready:int(32);
+
+  var localSync$: sync int = 0;
+  localSync$.readFE();
+  var writerEvent = event_new(event_loop_base, socketFd, EV_WRITE | EV_TIMEOUT | EV_ET, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  defer {
+    event_del(writerEvent);
+    event_free(writerEvent);
+  }
   if timeout.tv_sec == -1 {
-    err_out = sys_select(socketFd + 1, c_ptrTo(rset), c_ptrTo(wset), nil, nil, nready);
+    err_out = event_add(writerEvent, nil);
   }
   else {
-    err_out = sys_select(socketFd + 1, c_ptrTo(rset), c_ptrTo(wset), nil, c_ptrTo(timeout), nready);
-  }
-  if nready == 0 {
-    sys_close(socketFd);
-    throw SystemError.fromSyserr(ETIMEDOUT, "Connect timed out");
+    err_out = event_add(writerEvent, c_ptrTo(timeout));
   }
   if err_out != 0 {
-    sys_close(socketFd);
-    throw SystemError.fromSyserr(err_out, "Connect failed while I/O waiting");
-  }
-  if(sys_fd_isset(socketFd, rset) != 0 || sys_fd_isset(socketFd, wset) != 0){
-    var tempAddress = new sys_sockaddr_t();
-    err_out = sys_getpeername(socketFd, address._addressStorage);
-    if(err_out != 0) {
-      var berkleyError:err_t;
-      var ptrberkleyError = c_ptrTo(berkleyError);
-      var voidPtrberkleyError:c_void_ptr = ptrberkleyError;
-      var berkleySize:socklen_t = sizeof(berkleyError):socklen_t;
-      err_out = sys_getsockopt(socketFd, SOL_SOCKET, SO_ERROR, voidPtrberkleyError, berkleySize);
-      defer sys_close(socketFd);
-      if(err_out != 0){
-        throw SystemError.fromSyserr(err_out, "Connect Unsuccessful");
-      }
-      else if(berkleyError != 0){
-        throw SystemError.fromSyserr(berkleyError, "Berkley Error");
-      }
-    }
-  }
-  else {
-    sys_close(socketFd);
     throw new Error("connect() failed");
   }
-  var sockFile:tcpConn = openfd(socketFd);
-  return sockFile;
+
+  var retval = localSync$.readFE();
+  if retval & EV_TIMEOUT != 0 {
+    throw SystemError.fromSyserr(ETIMEDOUT);
+  }
+  err_out = sys_connect(socketFd, address._addressStorage);
+  if err_out != 0 {
+    sys_close(socketFd);
+    throw SystemError.fromSyserr(err_out,"connect() failed");
+  }
+
+  return openfd(socketFd):tcpConn;
 }
 
 /*
@@ -564,14 +641,17 @@ proc connect(in host: string, in port: uint(16), family: IPFamily = IPFamily.IPU
   bound to any available port.
 */
 record udpSocket {
+  /*
+    File Descriptor Associated with instance
+  */
   var socketFd: int(32);
+  var readHelper, writeHelper: shared EventHelper;
   /* Create a UDP socket of provided Family. */
   proc init(family: IPFamily = IPFamily.IPv4) {
     this.socketFd = -1;
-    try! {
-      var sockFd = socket(family, SOCK_DGRAM);
-      this.socketFd = sockFd;
-    }
+    try! this.socketFd = socket(family, SOCK_DGRAM);
+    this.readHelper = new shared EventHelper(this.socketFd, EV_READ | EV_TIMEOUT);
+    this.writeHelper = new shared EventHelper(this.socketFd, EV_WRITE | EV_TIMEOUT);
   }
 }
 
@@ -604,28 +684,37 @@ private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:size_t, flags
                     within given `timeout`.
 */
 proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0), flags:c_int = 0) throws {
-  var rset: fd_set;
-  sys_fd_zero(rset);
-  sys_fd_set(this.socketFd, rset);
-  var nready:c_int;
   var err_out:err_t = 0;
-  if timeout.tv_sec == -1 {
-    err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, nil, nready);
-  }
-  else {
-    err_out = sys_select(socketFd + 1, c_ptrTo(rset), nil, nil, c_ptrTo(timeout), nready);
-  }
-  if nready == 0 {
-    throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
-  }
-  if err_out != 0 {
-    throw SystemError.fromSyserr(err_out, "recv failed");
-  }
   var buffer = c_calloc(c_uchar, bufferLen);
   var length:ssize_t;
   var addressStorage = new sys_sockaddr_t();
   err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:size_t, 0, addressStorage, length);
+  if err_out == 0 {
+    return (createBytesWithOwnedBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
+  }
+  if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
+    c_free(buffer);
+    throw SystemError.fromSyserr(err_out,"recv failed");
+  }
+  if timeout.tv_sec == -1 {
+    event_remove_timer(this.readHelper.internalEvent);
+    err_out = event_add(this.readHelper.internalEvent, nil);
+  }
+  else {
+    err_out = event_add(this.readHelper.internalEvent, c_ptrTo(timeout));
+  }
   if err_out != 0 {
+    c_free(buffer);
+    throw new Error("recv failed");
+  }
+  var retval = this.readHelper.localSync$.readFE();
+  if retval & EV_TIMEOUT != 0 {
+    c_free(buffer);
+    throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
+  }
+  err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:size_t, 0, addressStorage, length);
+  if err_out != 0 {
+    c_free(buffer);
     throw SystemError.fromSyserr(err_out, "recv failed");
   }
   return (createBytesWithOwnedBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
@@ -681,24 +770,29 @@ private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c
                         within given `timeout`.
 */
 proc udpSocket.send(data: bytes, in address: ipAddr, in timeout = new timeval(-1,0)) throws {
-  var wset: fd_set;
-  sys_fd_zero(wset);
-  sys_fd_set(this.socketFd, wset);
-  var nready:c_int;
   var err_out:err_t = 0;
+  var length:ssize_t;
+  err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
+  if err_out == 0 {
+    return length;
+  }
+  if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
+    throw SystemError.fromSyserr(err_out, "send failed");
+  }
   if timeout.tv_sec == -1 {
-    err_out = sys_select(socketFd + 1, nil, c_ptrTo(wset), nil, nil, nready);
+    event_remove_timer(this.writeHelper.internalEvent);
+    err_out = event_add(this.writeHelper.internalEvent, nil);
   }
   else {
-    err_out = sys_select(socketFd + 1, nil, c_ptrTo(wset), nil, c_ptrTo(timeout), nready);
-  }
-  if nready == 0 {
-    throw SystemError.fromSyserr(ETIMEDOUT, "send timed out");
+    err_out = event_add(this.writeHelper.internalEvent, c_ptrTo(timeout));
   }
   if err_out != 0 {
-    throw SystemError.fromSyserr(err_out, "send failed I/O");
+    throw SystemError.fromSyserr(err_out, "send failed");
   }
-  var length:ssize_t;
+  var retval = this.readHelper.localSync$.readFE();
+  if retval & EV_TIMEOUT != 0 {
+    throw SystemError.fromSyserr(ETIMEDOUT, "send timed out");
+  }
   err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
   if err_out != 0 {
     throw SystemError.fromSyserr(err_out, "send failed");
