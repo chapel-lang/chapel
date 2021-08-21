@@ -156,17 +156,25 @@ module Curl {
       throw SystemError.fromSyserr(EINVAL, "in channel.setopt(): slist, and curl handle do not reside on the same locale");
     }
 
-    // Invalid argument type for option if the below conditionals
-    // don't handle it.
-    err = EINVAL;
-
     on ch.home {
       var plugin = ch.channelPlugin():CurlChannel?;
       if plugin == nil then
         throw SystemError.fromSyserr(EINVAL, "in channel.setopt(): not a curl channel");
 
       var curl = plugin!.curl;
+      err = setopt(curl, opt, arg);
+    }
 
+    if err then try ioerror(err, "in Curl.setopt(" + opt:string + ", arg: " +
+                            arg.type:string + ")");
+    return true;
+  }
+
+  // setopt on the curl_easy object, for sharing with easySetopt below.
+  private proc setopt(curl: c_ptr(CURL), opt:c_int, arg) {
+      // Invalid argument type for option if the below conditionals
+      // don't handle it.
+      var err: syserr = EINVAL;
       // This reasoning is pulled from the libcurl source
       if (opt < CURLOPTTYPE_OBJECTPOINT) {
         // < OBJECTPOINT means CURLOPTTYPE_LONG; libcurl wants a "long" arg.
@@ -198,11 +206,7 @@ module Curl {
           err = qio_int_to_err(curl_easy_setopt_offset(curl, opt:CURLoption, tmp));
         }
       }
-    }
-
-    if err then try ioerror(err, "in Curl.setopt(" + opt:string + ", arg: " +
-                            arg.type:string + ")");
-    return true;
+      return err;
   }
 
   /* Set curl options on a curl file attached to a channel.
@@ -1079,5 +1083,4 @@ module Curl {
       return ret;
     }
   } // end of module CurlQioIntegration
-
 } /* end of module */
