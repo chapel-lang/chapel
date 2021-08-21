@@ -118,6 +118,7 @@ module Curl {
   require "curl/curl.h";
   require "-lcurl";
 
+  config var debug = false;
 
   /* Returns the ``CURL`` handle connected to a channel opened with
      :proc:`URL.openUrlReader` or :proc:`URL.openUrlWriter`.
