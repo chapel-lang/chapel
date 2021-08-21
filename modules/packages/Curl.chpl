@@ -766,7 +766,7 @@ module Curl {
 
       var amt = realsize.safeCast(ssize_t);
 
-      //writeln("curl_write_received offset=", qio_channel_offset_unlocked(cc.qio_ch), " len=", amt);
+      //writeln("curl_write_received offset=", qio_channel_offset_unlocked(cc!.qio_ch), " len=", amt);
 
       // make sure the channel has room in the buffer for the data
       // copy the data to the channel's buffer
