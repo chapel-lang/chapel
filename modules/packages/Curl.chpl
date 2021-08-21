@@ -516,12 +516,12 @@ module Curl {
     // handle, pause it (i.e., return CURL_WRITE_PAUSE).
     private proc pause_writer(ptr:c_void_ptr, size:size_t, nmemb:size_t, userdata:c_void_ptr):size_t
     {
-      //writeln("in pause_writer");
+      if debug then writeln("in pause_writer");
       return CURL_WRITEFUNC_PAUSE;
     }
     private proc pause_reader(ptr:c_void_ptr, size:size_t, nmemb:size_t, userdata:c_void_ptr):size_t
     {
-      //writeln("in pause_reader");
+      if debug then writeln("in pause_reader");
       return CURL_READFUNC_PAUSE;
     }
 
@@ -535,29 +535,29 @@ module Curl {
       ref ret = retptr.deref();
 
       if size > sys_iov_total_bytes(ret.vec, ret.count) {
-        //writeln("in buf_writer PAUSE");
+        if debug then writeln("in buf_writer PAUSE");
         return CURL_WRITEFUNC_PAUSE;
       }
 
-      //writeln("in buf_writer");
+      if debug then writeln("in buf_writer");
 
       // so that we can "seek" when we cannot request byteranges
       if realsize < ret.offset {
         ret.offset -= realsize;
-        //writeln("A: ", realsize);
+        if debug then writeln("A: ", realsize);
         return realsize;
       } else {
         // nop when we are done -- non-zero the first time through
         ptr_data = ptr_data + ret.offset;
         realsize -= ret.offset;
         ret.offset = 0;
-        //writeln("B: ", realsize);
+        if debug then writeln("B: ", realsize);
       }
 
       // The amount that we have been given by curl is more than we can stick into a
       // single iovbuf. So we need to go from one iovbuf to the other
       while (realsize > ret.vec[ret.curr].iov_len - ret.amt_read) {
-        //writeln("C: ", realsize);
+        if debug then writeln("C: ", realsize);
         var curbase = (ret.vec[ret.curr].iov_base):c_ptr(uint(8));
         var dst = curbase + ret.amt_read;
         var amt = ret.vec[ret.curr].iov_len - ret.amt_read;
@@ -577,7 +577,7 @@ module Curl {
       // The amount of data that we have been given by curl is <= to the amount
       // of space that we have left in this iovbuf. So we can simply read it all in.
       if (realsize <= (ret.vec[ret.curr].iov_len - ret.amt_read)) {
-        //writeln("D: ", realsize);
+        if debug then writeln("D: ", realsize);
         var curbase = (ret.vec[ret.curr].iov_base):c_ptr(uint(8));
         var dst = curbase + ret.amt_read;
         var amt = realsize;
@@ -594,7 +594,7 @@ module Curl {
           }
         }
       }
-      //writeln("E: ", real_realsize);
+      if debug then writeln("E: ", real_realsize);
       return real_realsize;
     }
 
@@ -615,6 +615,8 @@ module Curl {
       var realsize:size_t = size * nmemb;
       var bufptr = userp:c_ptr(curl_str_buf);
       ref buf = bufptr.deref();
+
+      if debug then writeln("curl_write_string(size ", size, ", nmemb ", nmemb, ")");
 
       if buf.len + realsize < buf.alloced {
         // OK
@@ -640,6 +642,8 @@ module Curl {
     private proc seekable(fl:CurlFile, out length:int(64)):bool {
       var buf:curl_str_buf;
       var ret = false;
+
+      if debug then writeln("seekable: checking");
 
       if startsWith(fl.url_c, "http://") || startsWith(fl.url_c, "https://") {
         // We're on HTTP/HTTPS so we should look for byte ranges to see if we
@@ -696,7 +700,7 @@ module Curl {
                                start:int(64),
                                end:int(64)): syserr {
 
-      //writeln("start_channel");
+      if debug then writeln("start_channel(start ", start, ", end ", end, ")");
 
       var curl = curl_easy_init();
       var curlm = curl_multi_init();
@@ -720,7 +724,7 @@ module Curl {
       var writer = qio_channel_writable(cc.qio_ch);
 
       if writer {
-        //writeln("Setting up upload");
+        if debug then writeln("Setting up upload");
         // Set the function to get the data to send
         err = curl_easy_setopt_long(curl, CURLOPT_UPLOAD, 1);
         if err then return EINVAL;
@@ -733,7 +737,7 @@ module Curl {
         //err = curl_easy_setopt_offset(curl, CURLOPT_INFILESIZE_LARGE, 14);
         //if err then return EINVAL;
       } else {
-        //writeln("Setting up download");
+        if debug then writeln("Setting up download");
         // Set the function to process the received data
         err = curl_easy_setopt_ptr(curl, CURLOPT_WRITEFUNCTION, c_ptrTo(curl_write_received):c_void_ptr);
         if err then return EINVAL;
@@ -752,7 +756,7 @@ module Curl {
       // Note, this does not start the operation right away in order
       // to give the user to modify the operation with setopt(channel) calls
 
-      //writeln("finished start_channel");
+      if debug then writeln("finished start_channel");
 
       return ENOERR;
     }
@@ -767,7 +771,7 @@ module Curl {
 
       var amt = realsize.safeCast(ssize_t);
 
-      //writeln("curl_write_received offset=", qio_channel_offset_unlocked(cc!.qio_ch), " len=", amt);
+      if debug then writeln("curl_write_received offset=", qio_channel_offset_unlocked(cc!.qio_ch), " len=", amt);
 
       // make sure the channel has room in the buffer for the data
       // copy the data to the channel's buffer
@@ -815,7 +819,7 @@ module Curl {
 
       cc.saved_error = 0;
 
-      //writeln("performing 1");
+      if debug then writeln("read_atleast: performing 1");
       mcode = curl_multi_perform(curlm, cc.running_handles);
       if mcode != CURLM_OK then
         return EINVAL; // or something...
@@ -852,18 +856,18 @@ module Curl {
           if 0 < timeoutMillis && timeoutMillis < waitMillis then
             waitMillis = timeoutMillis;
 
-          //writeln("sleeping ", waitMillis);
+          if debug then writeln("read_atleast: sleeping ", waitMillis);
           var waitSeconds = waitMillis:real / 1000.0;
           Time.sleep(waitSeconds);
         } else {
-          //writeln("selecting ", timeoutMillis);
+          if debug then writeln("read_atleast: selecting ", timeoutMillis);
           var nset:c_int;
           serr = Sys.sys_select(maxfd+1, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), c_ptrTo(timeout), nset);
           if serr != 0 then
             return serr;
         }
 
-        //writeln("performing 2");
+        if debug then writeln("read_atleast: performing 2");
         mcode = curl_multi_perform(curlm, cc.running_handles);
         if mcode != CURLM_OK then
           return EINVAL; // or something...
@@ -894,6 +898,8 @@ module Curl {
       var cc = userp:unmanaged CurlChannel?;
       var err:syserr = ENOERR;
 
+      if debug then writeln("curl_read_buffered: size: ", size, ", nmemnbb: ", nmemb);
+
       // lock the channel if it's not already locked
       assert(cc!.have_channel_lock);
 
@@ -905,6 +911,8 @@ module Curl {
       var gotamt: ssize_t = 0;
       // copy the data from the channel's buffer
       err = qio_channel_copy_from_buffered_unlocked(cc!.qio_ch, contents, amt, gotamt);
+
+      if debug then writeln("curl_read_buffered: err ", err:int, ", gotamt ", gotamt);
 
       // unlock the channel if we locked it
 
@@ -931,7 +939,7 @@ module Curl {
         cc.have_channel_lock = false;
       }
 
-      //writeln("in write_amount");
+      if debug then writeln("in write_amount, requested ", requestedAmount);
 
       var ch:qio_channel_ptr_t = cc.qio_ch;
       var curl = cc.curl;
@@ -953,7 +961,7 @@ module Curl {
 
       cc.saved_error = 0;
 
-      //writeln("performing 3");
+      if debug then writeln("write_amount: performing 3");
       mcode = curl_multi_perform(curlm, cc.running_handles);
       if mcode != CURLM_OK then
         return EINVAL; // or something...
@@ -995,11 +1003,11 @@ module Curl {
           if 0 < timeoutMillis && timeoutMillis < waitMillis then
             waitMillis = timeoutMillis;
 
-          //writeln("sleeping ", waitMillis);
+          if debug then writeln("write_amount: sleeping ", waitMillis);
           var waitSeconds = waitMillis:real / 1000.0;
           Time.sleep(waitSeconds);
         } else {
-          //writeln("selecting ", timeoutMillis);
+          if debug then writeln("write_amount: selecting ", timeoutMillis);
           var nset:c_int;
           serr = Sys.sys_select(maxfd+1, c_ptrTo(fdread), c_ptrTo(fdwrite), c_ptrTo(fdexcept), c_ptrTo(timeout), nset);
           if serr != 0 then
@@ -1007,10 +1015,12 @@ module Curl {
         }
 
         mcode = curl_multi_perform(curlm, cc.running_handles);
-        if mcode != CURLM_OK then
+        if mcode != CURLM_OK {
+          if debug then writeln("write_amount perform4 returned ", mcode);
           return EINVAL; // or something...
+        }
 
-        // stop if we have read enough data
+        // stop if we have written enough data
         space = qio_channel_nbytes_write_behind_unlocked(ch);
         if space <= target_space then
           break;
@@ -1020,8 +1030,11 @@ module Curl {
           return cc.saved_error;
       }
 
+      if debug then writeln("write_amount: after loop: cc.running_handles ", cc.running_handles);
+
       // Return EEOF if the connection is no longer running
       space = qio_channel_nbytes_write_behind_unlocked(ch);
+      if debug then writeln("write_amount: space: ", space, "; target_space: ", target_space);
       if cc.running_handles == 0 && space > target_space {
         writeln("RETURNING EOF");
         return EEOF;
