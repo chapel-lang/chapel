@@ -157,10 +157,6 @@ module Curl {
       throw SystemError.fromSyserr(EINVAL, "in channel.setopt(): slist, and curl handle do not reside on the same locale");
     }
 
-    // Invalid argument type for option if the below conditionals
-    // don't handle it.
-    err = EINVAL;
-
     on ch.home {
       var plugin = ch.channelPlugin():CurlChannel?;
       if plugin == nil then
@@ -177,7 +173,9 @@ module Curl {
 
   // setopt on the curl_easy object, for sharing with easySetopt below.
   private proc setopt(curl: c_ptr(CURL), opt:c_int, arg) {
-      var err: syserr = ENOERR;
+      // Invalid argument type for option if the below conditionals
+      // don't handle it.
+      var err: syserr = EINVAL;
       // This reasoning is pulled from the libcurl source
       if (opt < CURLOPTTYPE_OBJECTPOINT) {
         // < OBJECTPOINT means CURLOPTTYPE_LONG; libcurl wants a "long" arg.
