@@ -179,6 +179,10 @@ module ChapelArray {
   pragma "no doc"
   param nullPid = -1;
 
+  // This permits a user to opt into upcoming behavior to always have
+  // .indices return local indices for an array
+  config param arrayIndicesAlwaysLocal = false;
+  
   pragma "no doc"
   config param debugBulkTransfer = false;
   pragma "no doc"
@@ -2625,9 +2629,20 @@ module ChapelArray {
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
 
+    proc indices where arrayIndicesAlwaysLocal == false {
+      compilerWarning("In an upcoming release, calling '.indices' on an array will return/yield local indices rather than the array's domain.  To preserve the current behavior, use '.domain'.  To update to the new behavior today, re-compile with '-sarrayIndicesAlwaysLocal=true'.");
+      return _dom;
+    }
+    
     /* return the array's indices as its domain */
-    proc indices
+    proc indices where arrayIndicesAlwaysLocal == true && !isSparseArr(this) && !isAssociativeArr(this) {
       return {(..._dom.getIndices())};
+    }
+
+    iter indices where arrayIndicesAlwaysLocal == true && (isSparseArr(this) || isAssociativeArr(this)) {
+      for i in _dom do
+        yield i;
+    }
 
     // bounds checking helpers
     pragma "insert line file info"
