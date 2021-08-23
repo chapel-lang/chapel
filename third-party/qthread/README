@@ -28,8 +28,11 @@ as follows:
 * Pulled in an upstream fix for the binders topology layer.
   https://github.com/Qthreads/qthreads/pull/82
 
+* Pulled in an upstream fix for handling signals during configure.
+  https://github.com/Qthreads/qthreads/pull/84
+
 * Pulled in an upstream --with-hwloc-symbol-prefix configuration option.
   https://github.com/Qthreads/qthreads/pull/87
 
-* Pulled in an upstream for for errno with syscalls.
+* Pulled in an upstream fix for errno with syscalls.
   https://github.com/Qthreads/qthreads/pull/89

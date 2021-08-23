@@ -15,17 +15,38 @@ AC_CHECK_FUNCS([qsort_r],
                                [AS_IF([test "x$with_bsd_qsort_r" = x],
                                       [AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdlib.h>
+#include <unistd.h>
 #include <assert.h>
+#include <signal.h>
+#include <string.h>
+
+struct sigaction sa;
 
 int cmp(void *a, const void *b, const void*c)
 {
-assert(a == NULL);
-return *(int*)b - *(int*)c;
+  assert(a == NULL);
+  return *(int*)b - *(int*)c;
 }
+
+void handler(int sig, siginfo_t* s, void* v)
+{
+    _exit(1);
+}
+
+void register_handle()
+{
+    memset (&sa, '\0', sizeof(sa));
+    sa.sa_sigaction = &handler;
+    sa.sa_flags = SA_SIGINFO;
+    // Catch SIGSEGV 
+    sigaction(SIGSEGV, &sa, NULL); 
+}
+
 int main()
 {
     int array[5] = {7,3,5,2,8};
     int i;
+    register_handle();
     qsort_r(array,5,sizeof(int),NULL,cmp);
     for (i=0;i<4;i++) {
         assert(array[i] < array[i+1]);
