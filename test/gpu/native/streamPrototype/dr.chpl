@@ -1,9 +1,6 @@
-extern proc chpl_gpu_init(): void;
-
 config const n = 10;
 
 on here.getChild(1) {
-  chpl_gpu_init();
   var a, b: [0..n] int;
   var value = 20;
 
