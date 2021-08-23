@@ -490,7 +490,7 @@ module MasonArgParse {
         endPos = _parsePositionals(argsList.toArray(), firstFlagIdx);
 
       // try to match for each of the identified options
-      for i in arrayOptionIndices.indices {
+      for i in arrayOptionIndices.domain {
         var idx = arrayOptionIndices[i][0];
         var name = arrayOptionIndices[i][1];
         // get a ref to the argument

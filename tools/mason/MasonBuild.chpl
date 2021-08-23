@@ -45,7 +45,7 @@ proc masonBuild(args: [] string) throws {
   if args.size > 2 {
 
     // strip off the first two indices
-    for i in args.indices#-(args.size-2) {
+    for i in args.domain#-(args.size-2) {
       var arg = args[i];
       if opt == true {
         compopts.append(arg);
