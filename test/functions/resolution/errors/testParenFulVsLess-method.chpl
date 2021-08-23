@@ -12,7 +12,7 @@ record R {
 }
 
 var myR: R;
-writeln(myR.foo(1));
 writeln(myR.foo);
 writeln(myR.foo());
+writeln(myR.foo(1));
 
