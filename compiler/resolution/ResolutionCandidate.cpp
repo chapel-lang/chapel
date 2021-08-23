@@ -379,9 +379,9 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info, bool explain) {
 
   // Make sure that any remaining formals are matched by name
   // or have a default value.
-  if (explain) {
+  /*  if (explain) {
     gdbShouldBreakHere();
-  }
+  }  */
   while (formal) {
     if (formalIdxToActual[j] == NULL && formal->defaultExpr == NULL) {
       if (fn->hasFlag(FLAG_OPERATOR) && (formal->typeInfo() == dtMethodToken ||
@@ -389,7 +389,36 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info, bool explain) {
       // Operator calls are allowed to skip matching the method token and "this"
       // arguments
       } else {
-        if (info.call->partialTag == false ||
+        // Cases:
+        // 0) x.y standalone
+        //    - partialTag = false
+        //    - number of args = 2
+        //    - not enough args?  let it through
+        // 1) x.y which is part of a larger x.y(...)
+        //    - partialTag = true
+        //    - number of args = 2
+        //    - not enough args?  let it through
+        // 2) x.y(...)
+        //    - partialTag = false
+        //    - number of args = 2
+        //    - not enough args?  problem
+        
+        bool subDotExpr = info.call->partialTag == true;
+        if (explain) {
+          printf("subDotExpr = %d\n", (int)subDotExpr);
+        }
+        if (info.call->partialTag == false) {
+          if (CallExpr* parent = toCallExpr(info.call->parentExpr)) {
+            // We are the base of the callExpr — presumably a function call
+            if (parent->baseExpr == info.call) {
+              if (explain) {
+                printf("setting subDotExpr to true because we're being called\n");
+              }
+              subDotExpr = true;
+            }
+          }
+        }
+        if (!subDotExpr &&
             foundReasonableParenlessMatch == false) {
           failingArgument = formal;
           reason = RESOLUTION_CANDIDATE_TOO_FEW_ARGUMENTS;
@@ -417,6 +446,12 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info, bool explain) {
   // follow...)
   if (fn->hasFlag(FLAG_NO_PARENS)) {
     foundReasonableParenlessMatch = true;
+    if (explain) {
+      printf("Setting found reasonable parenless\n");
+    }
+  }
+  if (explain) {
+    printf("Returning true\n");
   }
 
   return true;
