@@ -49,8 +49,8 @@ static bool         isInCForLoopHeader(Expr* expr);
 static void         cleanupLoopBlocks(FnSymbol* fn);
 
 static void markGPUSuitableLoops();
-static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls);
-static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk,
+static bool shouldOutlineLoop(BlockStmt* blk, bool allowFnCalls);
+static bool shouldOutlineLoopHelp(BlockStmt* blk,
                                            std::set<FnSymbol*>& okFns,
                                            std::set<FnSymbol*> visitedFns,
                                            bool allowFnCalls);
@@ -621,7 +621,7 @@ static void outlineGPUKernels() {
 
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
-        if (blockLooksLikeStreamForGPU(loop, /*allowFnCalls=*/false)) {
+        if (shouldOutlineLoop(loop, /*allowFnCalls=*/false)) {
           SET_LINENO(loop);
           FnSymbol* outlinedFunction = new FnSymbol("chpl_gpu_kernel");
           outlinedFunction->addFlag(FLAG_RESOLVED);
@@ -990,7 +990,7 @@ static void cleanupLoopBlocks(FnSymbol* fn) {
 extern int classifyPrimitive(CallExpr *call, bool inLocal);
 extern bool inLocalBlock(CallExpr *call);
 
-static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls) {
+static bool shouldOutlineLoop(BlockStmt* blk, bool allowFnCalls) {
   if (!blk->inTree() || blk->getModule()->modTag != MOD_USER)
     return false;
 
@@ -1001,13 +1001,13 @@ static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls) {
   std::set<FnSymbol*> okFns;
   std::set<FnSymbol*> visitedFns;
 
-  return blockLooksLikeStreamForGPUHelp(blk, okFns, visitedFns, allowFnCalls);
+  return shouldOutlineLoopHelp(blk, okFns, visitedFns, allowFnCalls);
 }
 
-static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk,
-                                           std::set<FnSymbol*>& okFns,
-                                           std::set<FnSymbol*> visitedFns,
-                                           bool allowFnCalls) {
+static bool shouldOutlineLoopHelp(BlockStmt* blk,
+                                  std::set<FnSymbol*>& okFns,
+                                  std::set<FnSymbol*> visitedFns,
+                                  bool allowFnCalls) {
 
   if (debugPrintGPUChecks) {
     FnSymbol* fn = blk->getFunction();
@@ -1043,8 +1043,8 @@ static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk,
       FnSymbol* fn = call->resolvedFunction();
       indentGPUChecksLevel += 2;
       if (okFns.count(fn) != 0 ||
-          blockLooksLikeStreamForGPUHelp(fn->body, okFns,
-                                         visitedFns, allowFnCalls)) {
+          shouldOutlineLoopHelp(fn->body, okFns,
+                                visitedFns, allowFnCalls)) {
         indentGPUChecksLevel -= 2;
         okFns.insert(fn);
       } else {
@@ -1060,14 +1060,14 @@ static void markGPUSuitableLoops() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* forLoop = toForLoop(block)) {
       if (forLoop->isOrderIndependent()) {
-        if (blockLooksLikeStreamForGPU(forLoop, allowFnCallsFromGPU)) {
+        if (shouldOutlineLoop(forLoop, allowFnCallsFromGPU)) {
           if (debugPrintGPUChecks)
             printf("Found viable forLoop %s:%d[%d]\n",
                    forLoop->fname(), forLoop->linenum(), forLoop->id);
         }
       }
     } else if (CForLoop* forLoop = toCForLoop(block)) {
-      if (blockLooksLikeStreamForGPU(forLoop, allowFnCallsFromGPU)) {
+      if (shouldOutlineLoop(forLoop, allowFnCallsFromGPU)) {
         if (debugPrintGPUChecks)
           printf("Found viable CForLoop %s:%d[%d]\n",
                  forLoop->fname(), forLoop->linenum(), forLoop->id);
