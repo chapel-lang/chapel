@@ -58,7 +58,7 @@ proc masonModify(args: [] string) throws {
   }
 
   if args[0] == "add" then add = true;
-  // TODO: When argument parser support mutual exclusivity, use that
+  // TODO: remove this once argument parser supports mutual exclusivity
   if extFlag.valueAsBool() && sysFlag.valueAsBool() {
     throw new owned MasonError("Use only '--external' or '--system'");
   }
