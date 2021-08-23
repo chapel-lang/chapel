@@ -45,7 +45,6 @@ export proc add_nums(dst_ptr: c_ptr(real(64))){
 
 
 proc main() {
-chpl_gpu_init();
 
 var output: real(64);
 var deviceBuffer = getDeviceBufferPointer();
