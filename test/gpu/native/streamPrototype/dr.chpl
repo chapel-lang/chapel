@@ -1,27 +1,18 @@
-// this module name is hard-coded in the compiler
-module GPUOutlineTest {
-  extern proc chpl_gpu_init(): void;
+config const n = 10;
 
-  config const n = 10;
+on here.getChild(1) {
+  var a, b: [0..n] int;
+  var value = 20;
 
-  proc testMain() {
-    on here.getChild(1) {
-      chpl_gpu_init();
-      var a, b: [0..n] int;
-      var value = 20;
+  // one array
+  forall  i in 0..n { a[i] += i+10;       } writeln(a);
+  forall  i in 0..n { a[i] += i+value;    } writeln(a);
+  foreach i in 0..n { a[i] += i+10;       } writeln(a);
+  foreach i in 0..n { a[i] += i+value;    } writeln(a);
 
-      // one array
-      forall  i in 0..n { a[i] += i+10;       } writeln(a);
-      forall  i in 0..n { a[i] += i+value;    } writeln(a);
-      foreach i in 0..n { a[i] += i+10;       } writeln(a);
-      foreach i in 0..n { a[i] += i+value;    } writeln(a);
-
-      // two arrays
-      forall  i in 0..n { b[i] += a[i]*10;    } writeln(b);
-      forall  i in 0..n { b[i] += a[i]*value; } writeln(b);
-      foreach i in 0..n { b[i] += a[i]*10;    } writeln(b);
-      foreach i in 0..n { b[i] += a[i]*value; } writeln(b);
-    }
-  }
-  testMain();
+  // two arrays
+  forall  i in 0..n { b[i] += a[i]*10;    } writeln(b);
+  forall  i in 0..n { b[i] += a[i]*value; } writeln(b);
+  foreach i in 0..n { b[i] += a[i]*10;    } writeln(b);
+  foreach i in 0..n { b[i] += a[i]*value; } writeln(b);
 }
