@@ -2,7 +2,7 @@ Standard Module Style
 =====================
 
 This document describes general guidance for style when writing a
-standard module. Of course there will be exceptions to this guidance when
+standard module. Of course, there will be exceptions to this guidance when
 there is a good reason.
 
 PascalCase and camelCase
@@ -54,7 +54,7 @@ the operation.
 
 Use parentheses-less methods only for returning properties that could be
 reasonably implemented as fields. However, if such a method is named
-named isXYZ or hasXYZ it should use parentheses (so, use
+isXYZ or hasXYZ it should use parentheses (so, use
 `proc isReal() { ...  }` rather than `proc isReal { ... }`).
 Parentheses-less functions that aren't methods should be avoided.
 
