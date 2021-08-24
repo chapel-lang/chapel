@@ -18,8 +18,8 @@ coforall i in 1..n with (ref chan1, ref chan2) {
     }
     else {
         var x1 : int, x2 : int;
-        var sel1 : SelBaseClass = new shared SelCase(x1, chan1, selOperation.recv, 0);
-        var sel2 : SelBaseClass = new shared SelCase(x2, chan2, selOperation.recv, 1);
+        var sel1 : SelectBaseClass = new shared SelectCase(x1, chan1, selectOperation.recv, 0);
+        var sel2 : SelectBaseClass = new shared SelectCase(x2, chan2, selectOperation.recv, 1);
 
         var arr = [sel1, sel2];
         selectProcess(arr);

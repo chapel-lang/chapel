@@ -16,4 +16,3 @@ chan1.recv(c);
 
 writeln(c!);
 delete b;
-

@@ -1,6 +1,6 @@
 use Channel;
 
-const debug = true;
+const debug = false;
 var chan1 = new chan(int);
 begin {
     try {

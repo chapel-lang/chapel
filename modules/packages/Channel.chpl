@@ -45,18 +45,18 @@ module Channel {
     use List;
     use Random;
 
-    /*
-    A class used to maintain the properties of suspended tasks.
-    */
     pragma "no doc"
     class Waiter {
+        // Class used to maintain the properties of suspended tasks.
+
         type valueType;
         var val : c_ptr(valueType);
         var processPtr : c_ptr(single bool);
         var isSelect : bool;
-        /* These variables are specific to the waiters for select statement*/
+
+        // These variables are specific to the waiters for select statement
         var isSelectDone : c_ptr(atomic int);
-        var selID : int = -1;
+        var selectId : int = -1;
 
         var prev : unmanaged Waiter(valueType)?;
         var next : unmanaged Waiter(valueType)?;
@@ -68,13 +68,13 @@ module Channel {
             isSelect = false;
         }
 
-        proc init(ref value, ref process$ : single bool, ref selDone : atomic int, caseID : int) {
+        proc init(ref value, ref process$ : single bool, ref selectDone : atomic int, caseId : int) {
             valueType = value.eltType;
             val = value;
             processPtr = c_ptrTo(process$);
             isSelect = true;
-            isSelectDone = c_ptrTo(selDone);
-            selID = caseID;
+            isSelectDone = c_ptrTo(selectDone);
+            selectId = caseId;
         }
 
         proc suspend() : bool {
@@ -116,11 +116,7 @@ module Channel {
         /* Pop the first value from the queue */
         proc deque() : unmanaged Waiter(eltType) {
             var waiter : unmanaged Waiter(eltType)?;
-            if front == nil {
-                // Error
-                writeln("Error");
-            }
-            else if front == back {
+            if front == back {
                 waiter = front;
                 front = nil;
                 back = nil;
@@ -161,9 +157,9 @@ module Channel {
         pragma "no doc"
         var buffer : [0..#bufferSize] eltType;
         pragma "no doc"
-        var sendidx = 0;
+        var sendIdx = 0;
         pragma "no doc"
-        var recvidx = 0;
+        var recvIdx = 0;
         pragma "no doc"
         var count = 0;
         pragma "no doc"
@@ -228,7 +224,7 @@ module Channel {
             }
 
             while !sendWaiters.isEmpty() && sendWaiters.front!.isSelect {
-                if sendWaiters.front!.isSelectDone.deref().compareAndSwap(-1, sendWaiters.front!.selID) {
+                if sendWaiters.front!.isSelectDone.deref().compareAndSwap(-1, sendWaiters.front!.selectId) {
                     break;
                 }
                 else sendWaiters.deque();
@@ -246,16 +242,16 @@ module Channel {
             }
 
             if bufferSize > 0 {
-                val = buffer[recvidx];
+                val = buffer[recvIdx];
             }
 
             if !sendWaiters.isEmpty() {
                 var sender = sendWaiters.deque();
                 if bufferSize > 0 {
-                    buffer[recvidx] = sender.val.deref();
+                    buffer[recvIdx] = sender.val.deref();
 
-                    sendidx = (sendidx + 1) % bufferSize;
-                    recvidx = (recvidx + 1) % bufferSize;
+                    sendIdx = (sendIdx + 1) % bufferSize;
+                    recvIdx = (recvIdx + 1) % bufferSize;
                 }
                 else val = sender.val.deref();
 
@@ -263,7 +259,7 @@ module Channel {
             }
             else {
 
-                recvidx = (recvidx + 1) % bufferSize;
+                recvIdx = (recvIdx + 1) % bufferSize;
                 count -= 1;
 
             }
@@ -295,11 +291,11 @@ module Channel {
 
             if closed {
                 if !selected then unlock();
-                throw new owned ChannelError("Sending on a closed channel");
+                throw new owned ChannelError("Trying to send on a closed channel");
             }
 
             while !recvWaiters.isEmpty() && recvWaiters.front!.isSelect {
-                if recvWaiters.front!.isSelectDone.deref().compareAndSwap(-1, recvWaiters.front!.selID) {
+                if recvWaiters.front!.isSelectDone.deref().compareAndSwap(-1, recvWaiters.front!.selectId) {
                     break;
                 }
                 else recvWaiters.deque();
@@ -315,7 +311,7 @@ module Channel {
                 var status = processing.suspend();
                 delete processing;
                 if status == false {
-                    throw new owned ChannelError("Sending on a closed channel");
+                    throw new owned ChannelError("Trying to send on a closed channel");
                 }
                 return status;
 
@@ -328,9 +324,9 @@ module Channel {
                     receiver.release(true);
                 }
                 else {
-                    buffer[sendidx] = val;
+                    buffer[sendIdx] = val;
 
-                    sendidx = (sendidx + 1) % bufferSize;
+                    sendIdx = (sendIdx + 1) % bufferSize;
                     count += 1;
                 }
 
@@ -351,7 +347,7 @@ module Channel {
             lock();
             if closed {
                 unlock();
-                throw new owned ChannelError("Closing a closed channel");
+                throw new owned ChannelError("Trying to close a closed channel");
             }
             closed = true;
             var queued = new WaiterQue(eltType);
@@ -397,7 +393,7 @@ module Channel {
 
     /* Base class used for aggregating different select-cases */
     pragma "no doc"
-    class SelBaseClass {
+    class SelectBaseClass {
         proc lockChannel() { }
         proc unlockChannel() { }
         proc getID() : int { return 0; }
@@ -409,19 +405,27 @@ module Channel {
 
     /* Enum to specify the operation in a select-case */
     pragma "no doc"
-    enum selOperation { recv, send }
+    enum selectOperation { recv, send }
 
     pragma "no doc"
-    class SelCase : SelBaseClass {
+    class SelectCase : SelectBaseClass {
         type eltType;
         var val : c_ptr(eltType);
         var channel : chan(eltType);
-        var operation : selOperation;
+        var operation : selectOperation;
         var waiter : unmanaged Waiter(eltType)?;
         var id : int;
 
-        proc init(ref value, ref channel : chan(?), op : selOperation, caseID : int) {
+        proc init(ref value, ref channel : chan(?), op : selectOperation, caseID : int) {
             this.eltType = value.type;
+            this.val = c_ptrTo(value);
+            this.channel = channel.borrow();
+            this.operation = op;
+            this.id = caseID;
+        }
+
+        proc setup(ref value : eltType, ref channel : chan(eltType), op : selectOperation, caseID : int) {
+            // this.eltType = value.type;
             this.val = c_ptrTo(value);
             this.channel = channel.borrow();
             this.operation = op;
@@ -442,7 +446,7 @@ module Channel {
 
         /* Carry out the case operation and return the status */
         override proc sendRecv() : bool {
-            if operation == selOperation.recv {
+            if operation == selectOperation.recv {
                 return channel.recv(val.deref(),true);
             }
             else return (try! channel.send(val.deref(), true));
@@ -454,7 +458,7 @@ module Channel {
 
         override proc enqueWaiter(ref process$ : single bool, ref isDone : atomic int) {
             waiter = new unmanaged Waiter(val, process$, isDone, id);
-            if operation == selOperation.recv {
+            if operation == selectOperation.recv {
                 channel.recvWaiters.enque(waiter!);
             }
             else {
@@ -463,7 +467,7 @@ module Channel {
         }
 
         override proc dequeWaiter() {
-            if operation == selOperation.recv {
+            if operation == selectOperation.recv {
                 channel.recvWaiters.deque(waiter!);
             }
             else channel.sendWaiters.deque(waiter!);
@@ -484,19 +488,19 @@ module Channel {
 
     /* Acquire the lock of all involved channels */
     pragma "no doc"
-    proc lockSel(lockOrder : list(shared SelBaseClass)) {
+    proc lockSel(lockOrder : list(shared SelectBaseClass)) {
         for channelWrapper in lockOrder do channelWrapper.lockChannel();
     }
 
     /* Release the lock all involved channels */
     pragma "no doc"
-    proc unlockSel(lockOrder : list(shared SelBaseClass)) {
+    proc unlockSel(lockOrder : list(shared SelectBaseClass)) {
         for idx in lockOrder.indices by -1 do lockOrder[idx].unlockChannel();
     }
 
     /* Entry point for select statements */
     pragma "no doc"
-    proc selectProcess(cases : [] shared SelBaseClass, default : bool = false) : int{
+    proc selectProcess(cases : [] shared SelectBaseClass, default : bool = false) : int{
         var numCases = cases.domain.size;
 
         var addrCmp : Comparator;
@@ -508,7 +512,7 @@ module Channel {
         addresses. This helps prevent deadlock with other concurrently
         executing select statements
         */
-        var lockOrder = new list(shared SelBaseClass);
+        var lockOrder = new list(shared SelectBaseClass);
         for idx in cases.domain {
             if idx == 0 || cases[idx].getAddr() != cases[idx - 1].getAddr() {
                 lockOrder.append(cases[idx]);

@@ -14,6 +14,3 @@ var y = chan1.recv(y1);
 
 writeln((x1, x));
 writeln((y1, y));
-
-
-
