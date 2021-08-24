@@ -114,6 +114,36 @@ module MasonArgParse {
     }
   }
 
+  // stores a passthrough delimiter definition
+  class PassThrough : SubCommand {
+
+    proc init(delimiter:string) {
+      super.init(delimiter);
+    }
+    // for passthrough, _match attempts to identify values at the index of the
+    // delimiter at position startPos, then consumes the rest of
+    // the arguments through endPos (startPos..endPos] collected to pass
+    override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
+                         endPos:int) throws {
+      var pos = startPos;
+      var next = pos + 1;
+      debugTrace("starting at pos: " + pos:string);
+      debugTrace("Searching positions from: " + pos:string + " to "
+                 + endPos:string);
+
+      if args[pos] == this._name {
+        myArg._values.extend(args[pos+1..endPos]);
+        debugTrace("matched delim.: " + args[pos] + " at pos: " + pos:string);
+        return endPos + 1;
+      } else {
+        debugTrace("Tried to match delimiter " + _name + " at position "
+                    + pos:string + " and failed...this shouldn't happen");
+        return pos;
+      }
+    }
+
+  }
+
   // stores a subcommand definition
   class SubCommand : ArgumentHandler {
 
@@ -134,9 +164,9 @@ module MasonArgParse {
                  + endPos:string);
 
       if args[pos] == this._name {
-        myArg._values.extend(args[pos..]);
+        myArg._values.extend(args[pos..endPos]);
         debugTrace("matched cmd: " + args[pos] + " at pos: " + pos:string);
-        return argsD.high + 1;
+        return endPos + 1;
       } else {
         debugTrace("Tried to match cmd " + _name + " at position "
                     + pos:string + " and failed...this shouldn't happen");
@@ -632,8 +662,11 @@ module MasonArgParse {
     // chapel runtime currently recognizes and consumes the first `--`
     // in any command string, we are using `++` as a workaround.
     // this can be overridden by the developer if they prefer something else
-    proc addPassThrough(identifier="++") throws {
-      return addSubCommand(identifier);
+    proc addPassThrough(delimiter="++") throws {
+      var handler = new owned PassThrough(delimiter);
+      _subcommands.append(delimiter);
+      _options.add(delimiter, delimiter);
+      return _addHandler(handler);
     }
 
     proc addFlag(name:string, opts:[?optsD],
@@ -769,7 +802,7 @@ module MasonArgParse {
   }
 
   // helper to prepare numArgs ranges for use
-  proc _prepareRange(rIn: range(?)) :range throws {
+  proc _prepareRange(rIn: range(?)) : range throws {
       var nArgs:range;
       if !rIn.hasHighBound() {
         nArgs = rIn.low..max(int);

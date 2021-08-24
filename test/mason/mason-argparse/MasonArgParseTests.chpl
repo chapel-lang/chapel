@@ -3449,7 +3449,7 @@ proc testMockMasonRun(test: borrowed Test) throws {
   //ensure the value passed is correct
   test.assertFalse(runShow.valueAsBool());
   test.assertTrue(runBuild.valueAsBool());
-  test.assertEqual(new list(runPassThrough.values()), new list(argList[3..]));
+  test.assertEqual(new list(runPassThrough.values()), new list(argList[4..]));
 }
 
 // test passthrough arg with nothing else
@@ -3468,7 +3468,7 @@ proc testPassthrough(test: borrowed Test) throws {
   //make sure we have a value
   test.assertFalse(myPosArg.hasValue());
   test.assertTrue(passThrough.hasValue());
-  test.assertEqual(new list(passThrough.values()), new list(argList[1..]));
+  test.assertEqual(new list(passThrough.values()), new list(argList[2..]));
 }
 
 // test passthrough arg with positional first
@@ -3488,7 +3488,7 @@ proc testPassthroughWithPositional(test: borrowed Test) throws {
   test.assertTrue(myPosArg.hasValue());
   test.assertTrue(passThrough.hasValue());
   test.assertEqual(myPosArg.value(),argList[1]);
-  test.assertEqual(new list(passThrough.values()), new list(argList[2..]));
+  test.assertEqual(new list(passThrough.values()), new list(argList[3..]));
 }
 
 // test passthrough arg with positional first and no values
@@ -3527,7 +3527,7 @@ proc testSubCmdAndPassThruOnMain(test: borrowed Test) throws {
   test.assertEqual(myStrArg1.value(),"20");
   test.assertFalse(mySubCmd1.hasValue());
   test.assertTrue(passThru.hasValue());
-  test.assertEqual(new list(passThru.values()), new list(argList[3..]));
+  test.assertEqual(new list(passThru.values()), new list(argList[4..]));
 }
 
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE

@@ -12,7 +12,6 @@ positional value: positionalVal
 SubCommand1 was called
 args parsed in subcommand:
 subBoolFlag: false
-++
 -c=some
 other
 -t=args,to,passAlong

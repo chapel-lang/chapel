@@ -44,7 +44,6 @@ one
 two
 subBoolFlag: true
 subcommand positional value: bValue
-++
 --extra
 stuff
 that
