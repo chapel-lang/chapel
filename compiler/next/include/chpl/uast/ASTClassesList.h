@@ -48,6 +48,38 @@
 // should we just remove it? Or rename ASTNode to Expression?
 AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
+  AST_NODE(As)                         //
+  AST_NODE(Array)                      //
+  //AST_NODE(AssociativeArray)         //
+  AST_NODE(Break)                      // old AST: GotoStmt
+  AST_NODE(Catch)                      // old AST: CatchStmt
+  AST_NODE(Cobegin)                    //
+  AST_NODE(Conditional)                // old AST: IfExpr/CondStmt
+  AST_LEAF(Comment)                    //
+  AST_NODE(Continue)                   // old AST: GotoStmt
+  AST_NODE(Delete)                     //
+  AST_NODE(Domain)                     //
+  AST_NODE(Dot)                        //
+  AST_LEAF(ErroneousExpression)        //
+  //AST_NODE(ExternBlock)              // old AST: ExternBlockStmt
+  AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
+  //AST_NODE(Implements)               // old AST: ImplementsStmt
+  AST_NODE(Import)                     // old AST: ImportStmt
+  AST_NODE(Label)                      //
+  AST_NODE(New)                        //
+  AST_NODE(Range)                      //
+  //AST_NODE(Require)                  //
+  AST_NODE(Return)                     //
+  //AST_NODE(Select)                   //
+  AST_NODE(Sync)                       //
+  AST_NODE(Throw)                      //
+  AST_NODE(Try)                        // old AST: TryStmt
+  AST_NODE(Tuple)                      //
+  AST_NODE(Use)                        // old AST: UseStmt
+  AST_NODE(VisibilityClause)           //
+  AST_NODE(WithClause)                 //
+  AST_NODE(Yield)                      //
+
   AST_BEGIN_SUBCLASSES(SimpleBlockLike)
     AST_NODE(Begin)
     AST_NODE(Block)                    // old AST: BlockStmt
@@ -57,34 +89,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(Serial)                   //
   AST_END_SUBCLASSES(SimpleBlockLike)
 
-  AST_NODE(As)                         //
-  AST_NODE(Break)                    // old AST: GotoStmt
-  AST_NODE(Cobegin)                  //
-  AST_NODE(Conditional)              // old AST: IfExpr/CondStmt
-  AST_LEAF(Comment)                    //
-  AST_NODE(Continue)                 // old AST: GotoStmt
-  AST_NODE(Delete)                     //
-  AST_LEAF(ErroneousExpression)        //
-  AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
-  AST_NODE(Label)                    //
-  //AST_NODE(ExternBlock)                // old AST: ExternBlockStmt
-  //AST_NODE(Implements)                 // old AST: ImplementsStmt
-  //AST_NODE(Import)                     // old AST: ImportStmt
-  AST_NODE(New)
-  //AST_NODE(Require)                    //
-  AST_NODE(Return)                   //
-  //AST_NODE(Select)                   //
-  AST_NODE(Sync)                     //
-  //AST_NODE(TryCatch)                 // old AST: TryStmt/CatchStmt
-  AST_NODE(Use)                        // old AST: UseStmt
-  AST_NODE(UseClause)                  //
-  AST_NODE(WithClause)
-  AST_NODE(Yield)                    //
-
-  // TODO: Move me after sync'ing with main...
-  AST_NODE(TypeConstructor)
-
-  AST_BEGIN_SUBCLASSES(Loop)         // old AST: LoopExpr / LoopStmt
+  AST_BEGIN_SUBCLASSES(Loop)           // old AST: LoopExpr / LoopStmt
       AST_NODE(DoWhile)                // old AST: DoWhileStmt
       AST_NODE(While)                  // old AST: WhileStmt
 
@@ -97,12 +102,6 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_END_SUBCLASSES(IndexableLoop)
 
   AST_END_SUBCLASSES(Loop)
-
-  AST_NODE(Array)                      //
-  //AST_NODE(AssociativeArray)           //
-  AST_NODE(Domain)                     //
-  AST_NODE(Range)                      //
-  AST_NODE(Tuple)                      //
 
   AST_BEGIN_SUBCLASSES(Literal)        // old AST: Immediate
 
@@ -124,12 +123,11 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_END_SUBCLASSES(Literal)
 
   AST_BEGIN_SUBCLASSES(Call)           // old AST:  CallExpr
-    AST_NODE(Dot)                      //
     AST_NODE(FnCall)
     AST_NODE(OpCall)
     //AST_NODE(PrimCall)               // old AST: CallExpr/PrimitiveOp
-    //AST_NODE(Try)                    //
     AST_NODE(Reduce)                   //
+    AST_NODE(TypeConstructor)          //
     AST_NODE(Zip)
   AST_END_SUBCLASSES(Call)
 
@@ -147,9 +145,9 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       AST_NODE(Module)                     // old AST: ModuleSymbol
 
       AST_BEGIN_SUBCLASSES(VarLikeDecl)
-        AST_LEAF(Formal)                   // old AST: ArgSymbol
-        AST_LEAF(TaskVar)                  // old AST: ShadowVarSymbol
-        AST_LEAF(Variable)                 // old AST: VarSymbol
+        AST_NODE(Formal)                   // old AST: ArgSymbol
+        AST_NODE(TaskVar)                  // old AST: ShadowVarSymbol
+        AST_NODE(Variable)                 // old AST: VarSymbol
       AST_END_SUBCLASSES(VarLikeDecl)
 
       AST_BEGIN_SUBCLASSES(TypeDecl)       // old AST: TypeSymbol/Type

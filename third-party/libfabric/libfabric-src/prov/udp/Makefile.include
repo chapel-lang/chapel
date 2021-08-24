@@ -11,12 +11,11 @@ _udp_files = \
 if HAVE_UDP_DL
 pkglib_LTLIBRARIES += libudp-fi.la
 libudp_fi_la_SOURCES = $(_udp_files) $(common_srcs)
-libudp_fi_la_LIBADD = $(linkback) $(udp_shm_LIBS)
+libudp_fi_la_LIBADD = $(linkback)
 libudp_fi_la_LDFLAGS = -module -avoid-version -shared -export-dynamic
 libudp_fi_la_DEPENDENCIES = $(linkback)
 else !HAVE_UDP_DL
 src_libfabric_la_SOURCES += $(_udp_files)
-src_libfabric_la_LIBADD += $(udp_shm_LIBS)
 endif !HAVE_UDP_DL
 
 prov_install_man_pages += man/man7/fi_udp.7

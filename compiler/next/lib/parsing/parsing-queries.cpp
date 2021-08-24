@@ -41,17 +41,17 @@ namespace chpl {
 template<> struct update<parsing::FileContents> {
   bool operator()(parsing::FileContents& keep,
                   parsing::FileContents& addin) const {
-    bool match = keep.text == addin.text &&
-                 keep.error == addin.error;
-    if (match) {
-      return false; // no update required
-    } else {
-      keep.text.swap(addin.text);
-      keep.error.swap(addin.error);
-      return true; // updated
-    }
+    return defaultUpdate(keep, addin);
   }
 };
+
+template<> struct update<uast::ASTTag> {
+  bool operator()(uast::ASTTag& keep,
+                  uast::ASTTag& addin) const {
+    return defaultUpdateBasic(keep, addin);
+  }
+};
+
 
 namespace parsing {
 
@@ -65,18 +65,14 @@ const FileContents& fileText(Context* context, UniqueString path) {
   ErrorMessage error;
   bool ok = readfile(path.c_str(), text, error);
   if (!ok) {
-    QUERY_ERROR(error);
+    context->error(error);
   }
   auto result = FileContents(std::move(text), std::move(error));
   return QUERY_END(result);
 }
 
 void setFileText(Context* context, UniqueString path, FileContents result) {
-  context->querySetterUpdateResult(fileText,
-                                   std::make_tuple(path),
-                                   std::move(result),
-                                   "fileText",
-                                   true);
+  QUERY_STORE_INPUT_RESULT(fileText, context, result, path);
 }
 void setFileText(Context* context, UniqueString path, std::string text) {
   setFileText(context, path, FileContents(std::move(text)));
@@ -98,12 +94,10 @@ const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
     const char* pathc = path.c_str();
     const char* textc = text.c_str();
     uast::Builder::Result tmpResult = parser->parseString(pathc, textc);
-    result.topLevelExpressions.swap(tmpResult.topLevelExpressions);
-    result.errors.swap(tmpResult.errors);
-    result.locations.swap(tmpResult.locations);
+    result.swap(tmpResult);
     // raise any errors encountered
     for (const ErrorMessage& e : result.errors) {
-      QUERY_ERROR(e);
+      context->error(e);
     }
     Builder::Result::updateFilePaths(context, result);
   } else {
@@ -115,44 +109,41 @@ const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
   return QUERY_END(result);
 }
 
-const LocationsMap& fileLocations(Context* context, UniqueString path) {
-  QUERY_BEGIN(fileLocations, context, path);
+const Location& locateId(Context* context, ID id) {
+  QUERY_BEGIN(locateId, context, id);
+
+  // Ask the context for the filename from the ID
+  UniqueString path = context->filePathForId(id);
 
   // Get the result of parsing
   const uast::Builder::Result& p = parseFile(context, path);
-  // Create a map of ast to Location
-  LocationsMap result(p.locations.size());
-  for (auto& pair : p.locations) {
-    const ASTNode* ast = pair.first;
-    Location loc = pair.second;
-    if (ast != nullptr && !ast->id().isEmpty()) {
-      result.insert({ast->id(), loc});
+
+  Location result(path);
+
+  const uast::ASTNode* ast = nullptr;
+
+  // Look in idToAST
+  {
+    auto search = p.idToAst.find(id);
+    if (search != p.idToAst.end()) {
+      ast = search->second;
+    }
+  }
+
+  if (ast != nullptr) {
+    // Look in astToLocation
+    auto search = p.astToLocation.find(ast);
+    if (search != p.astToLocation.end()) {
+      result = search->second;
     }
   }
 
   return QUERY_END(result);
 }
 
-const Location& locateID(Context* context, ID id) {
-  QUERY_BEGIN(locateID, context, id);
-
-  // Ask the context for the filename from the ID
-  UniqueString path = context->filePathForID(id);
-
-  // Get the map of ID to Location
-  Location result(path);
-  const LocationsMap& map = fileLocations(context, path);
-  auto search = map.find(id);
-  if (search != map.end()) {
-    result = search->second;
-  }
-
-  return QUERY_END(result);
-}
-
 // this is just a convenient wrapper around locating with the id
-const Location& locate(Context* context, const ASTNode* ast) {
-  return locateID(context, ast->id());
+const Location& locateAst(Context* context, const ASTNode* ast) {
+  return locateId(context, ast->id());
 }
 
 const ModuleVec& parse(Context* context, UniqueString path) {
@@ -166,6 +157,105 @@ const ModuleVec& parse(Context* context, UniqueString path) {
     if (const uast::Module* mod = topLevelExpression->toModule()) {
       result.push_back(mod);
     }
+  }
+
+  return QUERY_END(result);
+}
+
+static const Module* const& getToplevelModuleQuery(Context* context,
+                                                   UniqueString name) {
+  QUERY_BEGIN(getToplevelModuleQuery, context, name);
+
+  const Module* result = nullptr;
+
+  auto searchId = ID(name, -1, 0);
+  UniqueString path;
+
+  if (context->hasFilePathForId(searchId)) {
+    auto path = context->filePathForId(searchId);
+    // rule out empty path and also "<unknown file path>"
+    if (path.isEmpty() == false &&
+        path.c_str()[0] != '<') {
+      const ModuleVec& modVec = parse(context, path);
+      for (const uast::Module* mod : modVec) {
+        if (mod->name() == name) {
+          result = mod;
+          break;
+        }
+      }
+    }
+  } else {
+    // TODO: if we don't have a module read yet, read one.
+    assert(false && "TODO");
+  }
+
+  return QUERY_END(result);
+}
+
+const Module* getToplevelModule(Context* context, UniqueString name) {
+  return getToplevelModuleQuery(context, name);
+}
+
+static const ASTNode* const& astForIDQuery(Context* context, ID id) {
+  QUERY_BEGIN(astForIDQuery, context, id);
+
+  // Ask the context for the filename from the ID
+  UniqueString path = context->filePathForId(id);
+
+  // Get the result of parsing
+  const uast::Builder::Result& p = parseFile(context, path);
+
+  const uast::ASTNode* result = nullptr;
+
+  // Look in idToAST
+  auto search = p.idToAst.find(id);
+  if (search != p.idToAst.end()) {
+    result = search->second;
+  }
+
+  return QUERY_END(result);
+}
+
+const ASTNode* idToAst(Context* context, ID id) {
+  return astForIDQuery(context, id);
+}
+
+static const ASTTag& idToTagQuery(Context* context, ID id) {
+  QUERY_BEGIN(idToTagQuery, context, id);
+
+  ASTTag result = asttags::NUM_AST_TAGS;
+
+  const ASTNode* ast = astForIDQuery(context, id);
+  if (ast != nullptr)
+    result = ast->tag();
+
+  return QUERY_END(result);
+}
+
+ASTTag idToTag(Context* context, ID id) {
+  return idToTagQuery(context, id);
+}
+
+const ID& idToParentId(Context* context, ID id) {
+  // Performance: Would it be better to have the parse query
+  // set this query as an alternative to computing maps
+  // in Builder::Result and then redundantly setting them here?
+  // Or, should we store parent ID as a field in ASTNode?
+
+  QUERY_BEGIN(idToParentId, context, id);
+
+  // Ask the context for the filename from the ID
+  UniqueString path = context->filePathForId(id);
+
+  // Get the result of parsing
+  const uast::Builder::Result& p = parseFile(context, path);
+
+  ID result;
+
+  // Look in idToAST
+  auto search = p.idToParentId.find(id);
+  if (search != p.idToParentId.end()) {
+    result = search->second;
   }
 
   return QUERY_END(result);

@@ -481,9 +481,8 @@ module Map {
 
       :yields: A reference to one of the keys contained in this map.
     */
-    pragma "order independent yielding loops"
     iter keys() const ref {
-      for slot in table.allSlots() {
+      foreach slot in table.allSlots() {
         if table.isSlotFull(slot) then
           yield table.table[slot].key;
       }
@@ -495,7 +494,6 @@ module Map {
       :yields: A tuple whose elements are a copy of one of the key-value
                pairs contained in this map.
     */
-    pragma "order independent yielding loops"
     iter items() {
       if !isCopyableType(keyType) then
         compilerError('in map.items(): map key type ' + keyType:string +
@@ -505,7 +503,7 @@ module Map {
         compilerError('in map.items(): map value type ' + valType:string +
                       ' is not copyable');
 
-      for slot in table.allSlots() {
+      foreach slot in table.allSlots() {
         if table.isSlotFull(slot) {
           ref tabEntry = table.table[slot];
           yield (tabEntry.key, tabEntry.val);
@@ -518,20 +516,18 @@ module Map {
 
       :yields: A reference to one of the values contained in this map.
     */
-    pragma "order independent yielding loops"
     iter values() ref
     where !isNonNilableClass(valType) {
-      for slot in table.allSlots() {
+      foreach slot in table.allSlots() {
         if table.isSlotFull(slot) then
           yield table.table[slot].val;
       }
     }
 
     pragma "no doc"
-    pragma "order independent yielding loops"
     iter values() const where isNonNilableClass(valType) {
       try! {
-        for slot in table.allSlots() {
+        foreach slot in table.allSlots() {
           if table.isSlotFull(slot) then
             yield table.table[slot].val: valType;
         }
@@ -550,19 +546,19 @@ module Map {
     proc readWriteThis(ch: channel) throws {
       _enter(); defer _leave();
       var first = true;
-      ch <~> "{";
+      ch <~> new ioLiteral("{");
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
           if first {
             first = false;
           } else {
-            ch <~> ", ";
+            ch <~> new ioLiteral(", ");
           }
           ref tabEntry = table.table[slot];
-          ch <~> tabEntry.key <~> ": " <~> tabEntry.val;
+          ch <~> tabEntry.key <~> new ioLiteral(": ") <~> tabEntry.val;
         }
       }
-      ch <~> "}";
+      ch <~> new ioLiteral("}");
     }
 
     /*

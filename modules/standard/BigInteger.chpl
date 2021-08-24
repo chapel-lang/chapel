@@ -291,6 +291,7 @@ module BigInteger {
       }
     }
 
+    deprecated "bigint.size() is deprecated"
     proc size() : size_t {
       var ret: size_t;
 
@@ -311,7 +312,27 @@ module BigInteger {
       return ret;
     }
 
+    deprecated
+    "bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead"
     proc sizeinbase(base: int) : uint {
+      return sizeInBase(base).safeCast(uint);
+    }
+
+    /* Determine the size of ``this`` measured in number of digits in the given
+       ``base``.  The sign of ``this`` is ignored, only the absolute value is
+       used.
+
+       :arg base: The base in which to compute the number of digits used to
+                  represent ``this``.  Can be between 2 and 62.
+       :type base: ``int``
+
+       :returns: The size of ``this`` measured in number of digits in the given
+                 ``base``.  Will either be exact or 1 too big.  If ``base`` is
+                 a power of 2, will always be exact.  If ``this`` is 0, will
+                 always return 1.
+       :rtype: ``int``
+     */
+    proc sizeInBase(base: int) : int {
       const base_ = base.safeCast(c_int);
       var   ret: size_t;
 
@@ -329,7 +350,7 @@ module BigInteger {
         }
       }
 
-      return ret;
+      return ret.safeCast(int);
     }
 
     proc numLimbs : uint {
@@ -2503,10 +2524,35 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
 
 
-  // Exponentiation Functions
+  deprecated
+  "bigint.powm is deprecated, use bigint.powMod instead"
   proc bigint.powm(const ref base: bigint,
                    const ref exp:  bigint,
                    const ref mod:  bigint) {
+    this.powMod(base, exp, mod);
+  }
+
+  deprecated
+  "bigint.powm is deprecated, use bigint.powMod instead"
+  proc bigint.powm(const ref base: bigint,
+                             exp:  int,
+                   const ref mod:  bigint) {
+    this.powMod(base, exp, mod);
+  }
+
+  deprecated
+  "bigint.powm is deprecated, use bigint.powMod instead"
+  proc bigint.powm(const ref base: bigint,
+                             exp:  uint,
+                   const ref mod:  bigint) {
+    this.powMod(base, exp, mod);
+  }
+
+
+  // Exponentiation Functions
+  // Note: Documentation on `exp: uint` version
+  proc bigint.powMod(const ref base: bigint, const ref exp:  bigint,
+                     const ref mod:  bigint) {
     if _local {
       mpz_powm(this.mpz, base.mpz, exp.mpz, mod.mpz);
 
@@ -2529,9 +2575,8 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  proc bigint.powm(const ref base: bigint,
-                             exp:  int,
-                   const ref mod:  bigint) {
+  // Note: Documentation on `exp: uint` version
+  proc bigint.powMod(const ref base: bigint, exp: int, const ref mod: bigint) {
     if exp >= 0 {
       const exp_ = exp.safeCast(c_ulong);
 
@@ -2581,9 +2626,25 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-  proc bigint.powm(const ref base: bigint,
-                             exp:  uint,
-                   const ref mod:  bigint) {
+  /* Set ``this`` to the result of (``base`` raised to ``exp``) modulo ``mod``.
+
+     :arg base: The value to be raised to the power of ``exp`` before performin
+                a modulo operation on.
+     :type base: ``bigint``
+
+     :arg exp: The exponent to raise ``base`` to the power of prior to the
+               modulo operation.  Can be negative if the inverse (1/``base``)
+               modulo ``mod`` exists.
+     :type exp: ``bigint``, ``int``, or ``uint``
+
+     :arg mod: The divisor for the modulo operation.
+     :type mod: ``bigint``
+
+     .. warning::
+        The program behavior is undefined if ``exp`` is negative and the inverse
+        (1/``base``) modulo ``mod`` does not exist.
+   */
+  proc bigint.powMod(const ref base: bigint, exp: uint, const ref mod: bigint) {
     const exp_ = exp.safeCast(c_ulong);
 
     if _local {
@@ -4117,7 +4178,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
      :type rounding: ``round``
 
      .. warning::
-        If the denominator is zero, the progam behavior is undefined.
+        If the denominator is zero, the program behavior is undefined.
   */
   proc bigint.divQ(const ref numer: bigint,
                              denom: integral,

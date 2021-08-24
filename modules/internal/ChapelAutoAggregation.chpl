@@ -330,14 +330,13 @@ module ChapelAutoAggregation {
 
       // Iterate through buffer elements, must be running on loc. data is passed
       // in to avoid communication.
-      pragma "order independent yielding loops"
       iter localIter(data: c_ptr(elemType), size: int) ref : elemType {
         if boundsChecking {
           assert(this.loc == here.id);
           assert(this.data == data);
           assert(data != c_nil);
         }
-        for i in 0..<size {
+        foreach i in 0..<size {
           yield data[i];
         }
       }

@@ -142,7 +142,7 @@ struct rstream_ctx_data {
 	size_t len;
 };
 
-DECLARE_FREESTACK(struct rstream_ctx_data, rstream_tx_ctx_fs);
+OFI_DECLARE_FREESTACK(struct rstream_ctx_data, rstream_tx_ctx_fs);
 
 struct rstream_tx_ctx {
 	struct rstream_ctx_data *tx_ctxs;
@@ -207,9 +207,9 @@ extern ssize_t rstream_post_cq_data_recv(struct rstream_ep *ep,
 	const struct fi_cq_data_entry *cq_entry);
 
 extern int rstream_info_to_rstream(uint32_t version, const struct fi_info *core_info,
-	struct fi_info *info);
+	const struct fi_info *base_info, struct fi_info *info);
 extern int rstream_info_to_core(uint32_t version, const struct fi_info *rstream_info,
-	struct fi_info *core_info);
+	const struct fi_info *base_info, struct fi_info *core_info);
 extern void rstream_set_info(struct fi_info *info);
 extern struct fi_ops_cm rstream_ops_cm;
 extern struct fi_ops_cm rstream_ops_pep_cm;
@@ -227,6 +227,6 @@ int rstream_ep_open(struct fid_domain *domain, struct fi_info *info,
 int rstream_eq_open(struct fid_fabric *fabric, struct fi_eq_attr *attr,
 	struct fid_eq **eq, void *context);
 int rstream_info_to_core(uint32_t version, const struct fi_info *rstream_info,
-	struct fi_info *core_info);
+	const struct fi_info *base_info, struct fi_info *core_info);
 
 #endif /* _RSTREAM_H_ */

@@ -486,6 +486,8 @@
 #undef GASNETC_IBV_PHYSMEM_MAX_CONFIGURE
 #undef GASNETC_IBV_PHYSMEM_PROBE_CONFIGURE
 #undef GASNETC_IBV_PORTS_CONFIGURE
+#undef GASNETC_IBV_FENCED_PUTS_CONFIGURE
+#undef GASNETC_IBV_SERIALIZE_POLL_CQ_CONFIGURE
 
 /* GASNet bug1389 detection/work-around */
 #undef GASNETI_BUG1389_WORKAROUND
@@ -502,6 +504,7 @@
 #undef GASNETI_PMIX_HACK
 #undef GASNETI_PMI2_FENCE_IS_BARRIER
 #undef HAVE_PMIX_H
+#undef HAVE_PMI_CRAY_H
 
 
 /* Define to one of `_getb67', `GETB67', `getb67' for Cray-2 and Cray-YMP
@@ -605,9 +608,6 @@
 
 /* Define to 1 if you have the `PMI_Bcast' function. */
 #undef HAVE_PMI_BCAST
-
-/* Define to 1 if you have the <pmi_cray.h> header file. */
-#undef HAVE_PMI_CRAY_H
 
 /* Define to 1 if you have the `popen' function. */
 #undef HAVE_POPEN

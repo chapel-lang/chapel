@@ -250,7 +250,7 @@ int rstream_ep_open(struct fid_domain *domain, struct fi_info *info,
 	if (ret)
 		goto err1;
 
-	rstream_info_to_core(FI_VERSION(1, 8), NULL, info);
+	rstream_info_to_core(FI_VERSION(1, 8), NULL, NULL, info);
 
 	if (info->handle && info->handle->fclass == FI_CLASS_PEP) {
 		rstream_pep = container_of(info->handle,
@@ -378,7 +378,7 @@ int rstream_passive_ep(struct fid_fabric *fabric, struct fi_info *info,
 	if (!rstream_pep)
 		return -FI_ENOMEM;
 
-	rstream_info_to_core(FI_VERSION(1, 8), NULL, info);
+	rstream_info_to_core(FI_VERSION(1, 8), NULL, NULL, info);
 
 	ret = fi_passive_ep(rstream_fabric->msg_fabric, info,
 		&rstream_pep->pep_fd, NULL);

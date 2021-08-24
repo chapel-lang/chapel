@@ -44,7 +44,7 @@ static int efa_mr_cache_close(fid_t fid)
 	struct efa_mr *efa_mr = container_of(fid, struct efa_mr,
 					       mr_fid.fid);
 
-	ofi_mr_cache_delete(&efa_mr->domain->cache, efa_mr->entry);
+	ofi_mr_cache_delete(efa_mr->domain->cache, efa_mr->entry);
 
 	return 0;
 }
@@ -166,15 +166,18 @@ static int efa_mr_cache_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	domain = container_of(fid, struct efa_domain,
 			      util_domain.domain_fid.fid);
 
-	ret = ofi_mr_cache_search(&domain->cache, attr, &entry);
+	ret = ofi_mr_cache_search(domain->cache, attr, &entry);
 	if (OFI_UNLIKELY(ret))
 		return ret;
 
 	efa_mr = (struct efa_mr *)entry->data;
 	efa_mr->entry = entry;
 
-	efa_mr->peer.iface = attr->iface;
-	if (attr->iface == FI_HMEM_CUDA)
+	if (domain->util_domain.info_domain_caps & FI_HMEM)
+		efa_mr->peer.iface = attr->iface;
+	else
+		efa_mr->peer.iface = FI_HMEM_SYSTEM;
+	if (efa_mr->peer.iface == FI_HMEM_CUDA)
 		efa_mr->peer.device.cuda = attr->device.cuda;
 
 	*mr_fid = &efa_mr->mr_fid;
@@ -280,7 +283,7 @@ struct fi_ops efa_mr_ops = {
  */
 static int efa_mr_reg_impl(struct efa_mr *efa_mr, uint64_t flags, void *attr)
 {
-	uint64_t core_access;
+	uint64_t core_access, original_access;
 	struct fi_mr_attr *mr_attr = (struct fi_mr_attr *)attr;
 	int fi_ibv_access = 0;
 	int ret = 0;
@@ -299,6 +302,9 @@ static int efa_mr_reg_impl(struct efa_mr *efa_mr, uint64_t flags, void *attr)
 	if (efa_mr->domain->ctx->device_caps & EFADV_DEVICE_ATTR_CAPS_RDMA_READ)
 		fi_ibv_access |= IBV_ACCESS_REMOTE_READ;
 
+	if (efa_mr->domain->cache)
+		ofi_mr_cache_flush(efa_mr->domain->cache, false);
+
 	efa_mr->ibv_mr = ibv_reg_mr(efa_mr->domain->ibv_pd, 
 				    (void *)mr_attr->mr_iov->iov_base,
 				    mr_attr->mr_iov->iov_len, fi_ibv_access);
@@ -310,8 +316,15 @@ static int efa_mr_reg_impl(struct efa_mr *efa_mr, uint64_t flags, void *attr)
 
 	efa_mr->mr_fid.mem_desc = efa_mr;
 	efa_mr->mr_fid.key = efa_mr->ibv_mr->rkey;
-	efa_mr->peer.iface = mr_attr->iface;
-	if (mr_attr->iface == FI_HMEM_CUDA)
+	/*
+	 * Skipping the domain type check is okay here since util_domain is at
+	 * the beginning of efa_domain and rxr_domain.
+	 */
+	if (efa_mr->domain->util_domain.info_domain_caps & FI_HMEM)
+		efa_mr->peer.iface = mr_attr->iface;
+	else
+		efa_mr->peer.iface = FI_HMEM_SYSTEM;
+	if (efa_mr->peer.iface == FI_HMEM_CUDA)
 		efa_mr->peer.device.cuda = mr_attr->device.cuda;
 	assert(efa_mr->mr_fid.key != FI_KEY_NOTAVAIL);
 
@@ -327,8 +340,14 @@ static int efa_mr_reg_impl(struct efa_mr *efa_mr, uint64_t flags, void *attr)
 		return ret;
 	}
 	if (efa_mr->domain->shm_domain && rxr_env.enable_shm_transfer) {
+		/* We need to add FI_REMOTE_READ to allow for Read implemented
+		* message protocols.
+		*/
+		original_access = mr_attr->access;
+		mr_attr->access |= FI_REMOTE_READ;
 		ret = fi_mr_regattr(efa_mr->domain->shm_domain, attr,
 				    flags, &efa_mr->shm_mr);
+		mr_attr->access = original_access;
 		if (ret) {
 			EFA_WARN(FI_LOG_MR,
 				"Unable to register shm MR buf (%s): %p len: %zu\n",

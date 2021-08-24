@@ -153,7 +153,8 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
                           bool       coforall,
                           bool       zippered,
                           bool       isLoweredForall,
-                          bool       isForExpr)
+                          bool       isForExpr,
+                          bool       isForeach)
 {
   VarSymbol*   index         = newTemp("_indexOfInterest");
   VarSymbol*   iterator      = newTemp("_iterator");
@@ -167,6 +168,10 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
   BlockStmt*   retval        = new BlockStmt();
 
   iterator->addFlag(FLAG_EXPR_TEMP);
+
+  if (isForeach) {
+    loop->orderIndependentSet(true);
+  }
 
   // Unzippered loop, treat all objects (including tuples) the same
   if (zippered == false) {
@@ -290,7 +295,23 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
                         /* coforall */ false,
                         zippered,
                         /* isLoweredForall */ false,
-                        isForExpr);
+                        isForExpr,
+                        /* isForeach */ false);
+}
+
+BlockStmt* ForLoop::buildForeachLoop(Expr*      indices,
+                                     Expr*      iteratorExpr,
+                                     BlockStmt* body,
+                                     bool       zippered,
+                                     bool       isForExpr)
+                                     
+{
+  return doBuildForLoop(indices, iteratorExpr, body,
+                        /* coforall */ false,
+                        zippered,
+                        /* isLoweredForall */ false,
+                        isForExpr,
+                        /* isForeach */ true);
 }
 
 BlockStmt* ForLoop::buildCoforallLoop(Expr*      indices,
@@ -302,7 +323,8 @@ BlockStmt* ForLoop::buildCoforallLoop(Expr*      indices,
                         /* coforall */ true,
                         zippered,
                         /* isLoweredForall */ false,
-                        /* isForExpr */ false);
+                        /* isForExpr */ false,
+                        /* isForeach */ false);
 }
 
 
@@ -314,8 +336,10 @@ BlockStmt* ForLoop::buildLoweredForallLoop(Expr*      indices,
 {
   return doBuildForLoop(indices, iteratorExpr, body,
                         /* coforall */ false,
-                        zippered, /* isLoweredForall */ true,
-                        isForExpr);
+                        zippered,
+                        /* isLoweredForall */ true,
+                        isForExpr,
+                        /* isForeach */ true);
 }
 
 

@@ -32,6 +32,7 @@ target_sources(libchplcomp-obj
                Builder.cpp
                BytesLiteral.cpp
                Call.cpp
+               Catch.cpp
                Class.cpp
                Cobegin.cpp
                Coforall.cpp
@@ -57,6 +58,7 @@ target_sources(libchplcomp-obj
                Function.cpp
                Identifier.cpp
                ImagLiteral.cpp
+               Import.cpp
                IndexableLoop.cpp
                IntLiteral.cpp
                Label.cpp
@@ -81,16 +83,18 @@ target_sources(libchplcomp-obj
                StringLiteral.cpp
                Sync.cpp
                TaskVar.cpp
+               Throw.cpp
+               Try.cpp
                Tuple.cpp
                TupleDecl.cpp
                TypeConstructor.cpp
                TypeDecl.cpp
                UintLiteral.cpp
                Use.cpp
-               UseClause.cpp
                Union.cpp
                Variable.cpp
                VarLikeDecl.cpp
+               VisibilityClause.cpp
                While.cpp
                WithClause.cpp
                Yield.cpp

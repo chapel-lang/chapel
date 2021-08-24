@@ -20,11 +20,12 @@
 #include "chpl/queries/Context.h"
 
 #include "chpl/queries/query-impl.h"
+#include "chpl/parsing/parsing-queries.h"
 
-
+#include <cassert>
+#include <cstdarg>
 #include <cstddef>
 #include <cstdlib>
-#include <cassert>
 
 #include "../util/my_aligned_alloc.h" // assumes size_t defined
 
@@ -163,14 +164,21 @@ static UniqueString removeLastSymbolPathComponent(Context* context,
   return UniqueString::build(context, s, lastDot);
 }
 
-UniqueString Context::filePathForID(ID id) {
+UniqueString Context::filePathForId(ID id) {
   UniqueString symbolPath = id.symbolPath();
 
   while (!symbolPath.isEmpty()) {
-    const UniqueString& p =
-      filePathForModuleIdSymbolPathQuery(this, symbolPath);
-    if (!p.isEmpty())
+    auto tupleOfArgs = std::make_tuple(symbolPath);
+
+    bool got = hasResultForQuery(filePathForModuleIdSymbolPathQuery,
+                                 tupleOfArgs,
+                                 "filePathForModuleIdSymbolPathQuery");
+
+    if (got) {
+      const UniqueString& p =
+        filePathForModuleIdSymbolPathQuery(this, symbolPath);
       return p;
+    }
 
     // remove the last path component, e.g. M.N -> M
     symbolPath = removeLastSymbolPathComponent(this, symbolPath);
@@ -179,8 +187,31 @@ UniqueString Context::filePathForID(ID id) {
   return UniqueString::build(this, "<unknown file path>");
 }
 
+bool Context::hasFilePathForId(ID id) {
+  UniqueString symbolPath = id.symbolPath();
+
+  while (!symbolPath.isEmpty()) {
+    auto tupleOfArgs = std::make_tuple(symbolPath);
+
+    bool got = hasResultForQuery(filePathForModuleIdSymbolPathQuery,
+                                 tupleOfArgs,
+                                 "filePathForModuleIdSymbolPathQuery");
+
+    if (got) {
+      return true;
+    }
+
+    // remove the last path component, e.g. M.N -> M
+    symbolPath = removeLastSymbolPathComponent(this, symbolPath);
+  }
+
+  return false;
+}
+
 void Context::advanceToNextRevision(bool prepareToGC) {
   this->currentRevisionNumber++;
+  this->numQueriesRunThisRevision_ = 0;
+
   if (prepareToGC) {
     this->lastPrepareToGCRevisionNumber = this->currentRevisionNumber;
     gcCounter++;
@@ -253,13 +284,67 @@ void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
   updateResultForQuery(filePathForModuleIdSymbolPathQuery,
                        tupleOfArgs, path,
                        "filePathForModuleIdSymbolPathQuery",
-                       false);
+                       /* isInputQuery */ false,
+                       /* forSetter */ true);
 
   if (enableDebugTracing) {
     printf("SETTING FILE PATH FOR MODULE %s -> %s\n",
            moduleIdSymbolPath.c_str(), path.c_str());
   }
+  assert(hasFilePathForId(moduleID));
 }
+
+void Context::error(ErrorMessage error) {
+  if (queryStack.size() == 0) {
+    assert(false && "Context::error called with no running query");
+    return;
+  }
+  queryStack.back()->errors.push_back(std::move(error));
+  reportError(queryStack.back()->errors.back());
+}
+
+void Context::error(Location loc, const char* fmt, ...) {
+  ErrorMessage err;
+  va_list vl;
+  va_start(vl, fmt);
+  err = ErrorMessage::vbuild(loc, fmt, vl);
+  va_end(vl);
+  Context::error(err);
+}
+
+void Context::error(ID id, const char* fmt, ...) {
+  Location loc = parsing::locateId(this, id);
+  ErrorMessage err;
+  va_list vl;
+  va_start(vl, fmt);
+  err = ErrorMessage::vbuild(loc, fmt, vl);
+  va_end(vl);
+  Context::error(err);
+}
+
+void Context::error(const uast::ASTNode* ast, const char* fmt, ...) {
+  Location loc = parsing::locateAst(this, ast);
+  ErrorMessage err;
+  va_list vl;
+  va_start(vl, fmt);
+  err = ErrorMessage::vbuild(loc, fmt, vl);
+  va_end(vl);
+  Context::error(err);
+}
+
+void Context::error(const resolution::TypedFnSignature* inFn,
+                    const uast::ASTNode* ast,
+                    const char* fmt, ...) {
+  Location loc = parsing::locateAst(this, ast);
+  ErrorMessage err;
+  va_list vl;
+  va_start(vl, fmt);
+  err = ErrorMessage::vbuild(loc, fmt, vl);
+  va_end(vl);
+  Context::error(err);
+  // TODO: add note about instantiation & POI stack
+}
+
 
 void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
 
@@ -384,6 +469,8 @@ bool Context::queryCanUseSavedResultAndPushIfNot(
     // by evaluating the query.
     resultEntry->dependencies.clear();
     resultEntry->errors.clear();
+    // increment the number of queries run in this revision
+    numQueriesRunThisRevision_++;
   }
 
   return useSaved;
@@ -423,13 +510,6 @@ void Context::haltForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
   exit(-1);
 }
 
-void Context::queryNoteError(ErrorMessage error) {
-  assert(queryStack.size() > 0);
-  queryStack.back()->errors.push_back(std::move(error));
-  reportError(queryStack.back()->errors.back());
-}
-
-
 namespace querydetail {
 
 
@@ -442,7 +522,7 @@ void queryArgsPrintUnknown() {
 }
 
 void queryArgsPrintOne(const ID& v) {
-  printf("ID(%s@%i)", v.symbolPath().c_str(), v.postOrderId());
+  printf("ID(%s)", v.toString().c_str());
 }
 void queryArgsPrintOne(const UniqueString& v) {
   printf("\"%s\"", v.c_str());

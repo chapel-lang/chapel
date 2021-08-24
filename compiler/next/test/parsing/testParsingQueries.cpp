@@ -495,8 +495,8 @@ static void test5() {
 
     // Now check their locations
     // Not checking comment locations here
-    Location aLoc = locate(ctx, A);
-    Location bLoc = locate(ctx, B);
+    Location aLoc = locateAst(ctx, A);
+    Location bLoc = locateAst(ctx, B);
     assert(aLoc.path() == modulePath);
     assert(bLoc.path() == modulePath);
     assert(aLoc.line() == 2);
@@ -509,7 +509,7 @@ static void test5() {
 static void checkPathAllChildren(Context* context,
                                  const ASTNode* ast,
                                  UniqueString expectPath) {
-  UniqueString gotPath = context->filePathForID(ast->id());
+  UniqueString gotPath = context->filePathForId(ast->id());
   assert(gotPath == expectPath);
 
   for (const ASTNode* child : ast->children()) {
@@ -539,7 +539,80 @@ static void test6() {
   const Module* mod = parseOneModule(ctx, modulePath);
 
   checkPathAllChildren(ctx, mod, modulePath);
+
+  auto got = getToplevelModule(ctx, UniqueString::build(ctx, "MyModule"));
+  assert(got == mod);
 }
+
+static void checkIdsAllChildren(Context* context,
+                                const ASTNode* ast,
+                                const ASTNode* parent) {
+  if (!ast->id().isEmpty()) {
+    const ASTNode* got = idToAst(context, ast->id());
+    assert(got == ast);
+
+    ID gotParentId = idToParentId(context, ast->id());
+    if (parent != nullptr) {
+      assert(!parent->id().isEmpty());
+      assert(gotParentId == parent->id());
+    } else {
+      assert(gotParentId.isEmpty());
+    }
+  }
+
+  for (const ASTNode* child : ast->children()) {
+    checkIdsAllChildren(context, child, ast);
+  }
+}
+
+static void test7() {
+  printf("test7\n");
+  Context context;
+  Context* ctx = &context;
+
+  auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
+  std::string moduleContents;
+
+  moduleContents = "module MyModule {\n"
+                   "  a;\n"
+                   "  module Inner {\n"
+                   "    b;\n"
+                   "    proc innerProc() { }\n"
+                   "  }\n"
+                   "  proc myModuleProc() { }\n"
+                   "  c;\n"
+                   "}\n";
+
+  setFileText(ctx, modulePath, moduleContents);
+  const Module* mod = parseOneModule(ctx, modulePath);
+
+  checkIdsAllChildren(ctx, mod, nullptr);
+}
+
+static void test8() {
+  printf("test8\n");
+  Context context;
+  Context* ctx = &context;
+
+  auto filepath = UniqueString::build(ctx, "test8.chpl");
+  std::string contents;
+
+  contents = "module M { }\n"
+             "module N { }\n"
+             "module O { }\n";
+  setFileText(ctx, filepath, contents);
+
+  const ModuleVec& v = parse(ctx, filepath);
+  assert(v.size() == 3);
+
+  auto m = getToplevelModule(ctx, UniqueString::build(ctx, "M"));
+  assert(m == v[0]);
+  auto n = getToplevelModule(ctx, UniqueString::build(ctx, "N"));
+  assert(n == v[1]);
+  auto o = getToplevelModule(ctx, UniqueString::build(ctx, "O"));
+  assert(o == v[2]);
+}
+
 
 int main() {
   test0();
@@ -549,6 +622,8 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
+  test8();
 
   return 0;
 }

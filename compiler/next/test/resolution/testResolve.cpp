@@ -17,7 +17,9 @@
  * limitations under the License.
  */
 
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/scope-queries.h"
 #include "chpl/uast/Comment.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
@@ -35,6 +37,7 @@ using namespace parsing;
 using namespace resolution;
 using namespace uast;
 
+// test resolving a very simple module
 static void test1() {
   printf("test1\n");
   Context ctx;
@@ -43,29 +46,31 @@ static void test1() {
   {
     context->advanceToNextRevision(true);
     auto path = UniqueString::build(context, "input.chpl");
-    std::string contents = "var x;\n"
+    std::string contents = "var x: int;\n"
                            "x;";
     setFileText(context, path, contents);
 
-    auto& vec = resolveFile(context, path);
+    const ModuleVec& vec = parse(context, path);
     assert(vec.size() == 1);
-    const Module* module = vec[0]->decl->toModule();
-    const auto& byId = vec[0]->resolutionById;
-    const Variable* varDecl = module->child(0)->toVariable();
-    const Identifier* identifier = module->child(1)->toIdentifier();
-    assert(varDecl);
-    assert(identifier);
-    assert(0 == varDecl->name().compare("x"));
-    assert(0 == identifier->name().compare("x"));
-    const ResolutionResult& rr = byId[identifier->id().postOrderId()];
-    assert(rr.expr != nullptr);
-    assert(rr.decl != nullptr);
-    assert(rr.decl == varDecl);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    assert(m->numStmts() == 2);
+    const Variable* x = m->stmt(0)->toVariable();
+    assert(x);
+    const Identifier* xIdent = m->stmt(1)->toIdentifier();
+    assert(xIdent);
+
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+    assert(rr.byAst(x).type.type()->isIntType());
+    assert(rr.byAst(xIdent).type.type()->isIntType());
+    assert(rr.byAst(xIdent).toId == x->id());
+
     context->collectGarbage();
   }
 }
 
-
+// test resolving a module in an incremental manner
 static void test2() {
   printf("test2\n");
   Context ctx;
@@ -77,11 +82,13 @@ static void test2() {
     auto path = UniqueString::build(context, "input.chpl");
     std::string contents = "";
     setFileText(context, path, contents);
-   
-    auto& vec = resolveFile(context, path);
+
+    const ModuleVec& vec = parse(context, path);
     assert(vec.size() == 1);
-    const Module* module = vec[0]->decl->toModule();
-    ASTNode::dump(module, 2);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    resolveModule(context, m->id());
+
     context->collectGarbage();
   }
 
@@ -92,43 +99,66 @@ static void test2() {
     std::string contents = "var x;";
     setFileText(context, path, contents);
 
-    auto& vec = resolveFile(context, path);
+    const ModuleVec& vec = parse(context, path);
     assert(vec.size() == 1);
-    const Module* module = vec[0]->decl->toModule();
-    ASTNode::dump(module, 2);
-    const Variable* varDecl = module->child(0)->toVariable();
-    assert(varDecl);
-    assert(0 == varDecl->name().compare("x"));
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    resolveModule(context, m->id());
+
     context->collectGarbage();
   }
 
+  {
+    printf("part 3\n");
+    context->advanceToNextRevision(true);
+    auto path = UniqueString::build(context, "input.chpl");
+    std::string contents = "var x: int;";
+    setFileText(context, path, contents);
+
+    const ModuleVec& vec = parse(context, path);
+    assert(vec.size() == 1);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+
+    const Variable* x = m->stmt(0)->toVariable();
+    assert(x);
+
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+    assert(rr.byAst(x).type.type()->isIntType());
+
+    context->collectGarbage();
+  }
+
+
+  // Run it a few times to make sure there aren't errors related to
+  // collectGarbage being run across multiple revisions.
   for (int i = 0; i < 3; i++) {
     printf("part %i\n", 3+i);
     context->advanceToNextRevision(true);
     auto path = UniqueString::build(context, "input.chpl");
-    std::string contents = "var x;\n"
+    std::string contents = "var x: int;\n"
                            "x;";
     setFileText(context, path, contents);
 
-    auto& vec = resolveFile(context, path);
+    const ModuleVec& vec = parse(context, path);
     assert(vec.size() == 1);
-    const Module* module = vec[0]->decl->toModule();
-    ASTNode::dump(module, 2);
-    const auto& byId = vec[0]->resolutionById;
-    const Variable* varDecl = module->child(0)->toVariable();
-    const Identifier* identifier = module->child(1)->toIdentifier();
-    assert(varDecl);
-    assert(identifier);
-    assert(0 == varDecl->name().compare("x"));
-    assert(0 == identifier->name().compare("x"));
-    const ResolutionResult& rr = byId[identifier->id().postOrderId()];
-    assert(rr.expr != nullptr);
-    assert(rr.decl != nullptr);
-    assert(rr.decl == varDecl);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    assert(m->numStmts() == 2);
+    const Variable* x = m->stmt(0)->toVariable();
+    assert(x);
+    const Identifier* xIdent = m->stmt(1)->toIdentifier();
+    assert(xIdent);
+
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+    assert(rr.byAst(x).type.type()->isIntType());
+    assert(rr.byAst(xIdent).type.type()->isIntType());
+    assert(rr.byAst(xIdent).toId == x->id());
+
     context->collectGarbage();
   }
 }
-
 
 int main() {
   test1();

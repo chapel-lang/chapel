@@ -24,24 +24,6 @@
 namespace chpl {
 namespace uast {
 
-bool Dot::contentsMatchInner(const ASTNode* other) const {
-  const Dot* lhs = this;
-  const Dot* rhs = (const Dot*) other;
-
-  if (lhs->fieldName_ != rhs->fieldName_)
-    return false;
-
-  if (!lhs->callContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-void Dot::markUniqueStringsInner(Context* context) const {
-
-  callMarkUniqueStringsInner(context);
-
-  fieldName_.mark(context);
-}
 
 owned<Dot> Dot::build(Builder* builder,
                       Location loc,

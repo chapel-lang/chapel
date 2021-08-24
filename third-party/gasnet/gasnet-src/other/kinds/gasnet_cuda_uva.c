@@ -174,6 +174,8 @@ static gasneti_mk_impl_t *get_impl(void) {
       result = &the_impl;
     }
     gasneti_mutex_unlock(&lock);
+  } else {
+    gasneti_sync_reads();
   }
 
   gasneti_assert(result);

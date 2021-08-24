@@ -116,7 +116,7 @@ Basic Syntax
 ------------
 
 ```chpl
-proc ..... where IFC_CONSTRAINT...  // where-clause constains 1 or more
+proc ..... where IFC_CONSTRAINT...  // where-clause contains 1 or more
 { .... }                            // interface constraints &&-ed together
 
 IFC_CONSTRAINT ::= implements IFC_NAME(TYPE...)

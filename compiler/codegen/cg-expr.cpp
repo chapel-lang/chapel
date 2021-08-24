@@ -42,6 +42,7 @@
 
 #ifdef HAVE_LLVM
 #include "llvm/IR/Module.h"
+#include "llvmUtil.h"
 #include "clang/CodeGen/CGFunctionInfo.h"
 #endif
 
@@ -2945,7 +2946,6 @@ GenRet codegenZero32()
   return new_IntSymbol(0, INT_SIZE_32)->codegen();
 }
 
-
 /*
 static
 GenRet codegenOne()
@@ -4695,17 +4695,136 @@ DEFINE_PRIM(PRIM_SET_DYNAMIC_END_COUNT) {
       ret = rcall->codegen();
 }
 
-DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
-
-  std::vector<GenRet> args;
-  for_actuals(actual, call) {
-    args.push_back(actual->codegen());
+static bool isCStringImmediate(Symbol* sym) {
+  if (sym->isImmediate()) {
+    VarSymbol* varSym = toVarSymbol(sym);
+    return varSym->immediate->const_kind == CONST_KIND_STRING &&
+           varSym->immediate->string_kind == STRING_KIND_C_STRING;
   }
 
-  //arguments for PRIM_GPU_KERNEL_LAUNCH go directly
-  //to cuLaunchKernel
-  ret = codegenCallExprWithArgs("cuLaunchKernel", args);
+  return false;
 }
+
+static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
+  // Used to codegen for PRIM_GPU_KERNEL_LAUNCH_FLAT and PRIM_GPU_KERNEL_LAUNCH.
+  // They differ in number of arguments only. The first passes 1 integer for
+  // grid and block size each, the other passes 3 for each.
+  //
+  // Generates a call to the `chpl_gpu_launch_kernel*` runtime functions.
+  //
+  // The primitive's arguments are
+  //   - function name (c_string immediate) or symbol (FnSymbol)
+  //   - grid size (1 arg or 3 args)
+  //   - block size (1 arg or 3 args)
+  //   - any number of arguments to be passed to the kernel
+  //
+  // Kernel arguments are passed in the following ways:
+  //
+  // 1. If a ref: pass by value, and the size of its value. Runtime will
+  //    offload that value and create a GPU pointer to the offloaded instance.
+  // 2. If a non-aggregate: pass by reference, and a `0` to signal that this
+  //    shouldn't be offloaded and passed to the kernel function directly.
+  // 3. If aggregate: pass by reference, and the size of its value. The behavior
+  //    will be similar to 1.
+
+  // number of arguments that are not kernel params
+  int nNonKernelParamArgs = is3d ? 7:3;
+  int nKernelParamArgs = call->numActuals() - nNonKernelParamArgs;
+
+  const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
+
+  std::vector<GenRet> args;
+  int curArg = 1;
+  for_actuals(actual, call) {
+    Symbol* actualSym = toSymExpr(actual)->symbol();
+    if (curArg == 1) {  // function name or symbol
+      if (FnSymbol* fn = toFnSymbol(actualSym)) {
+        args.push_back(new_CStringSymbol(fn->cname));
+      }
+      else if (isCStringImmediate(actualSym)) {
+        args.push_back(actual->codegen());
+      }
+      else {
+        INT_FATAL("Unknown argument type in GPU launch primitive");
+      }
+    }
+    else if (curArg <= nNonKernelParamArgs) {  // grid and block size args
+      args.push_back(actual->codegen());
+
+      // if we finished adding non-kernel parameters, add number of kernel
+      // parameters first before the parameters themselves.
+      if (curArg == nNonKernelParamArgs) {
+        GenRet numParams = new_IntSymbol(nKernelParamArgs);
+        args.push_back(numParams);
+      }
+    }
+    else { // kernel args
+      Type* actualValType = actual->typeInfo()->getValType();
+
+      // TODO can we use codegenArgForFormal instead of this logic?
+      if (actualSym->isRef()) {
+        INT_ASSERT(isAggregateType(actualValType));
+        args.push_back(actual->codegen());
+        args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
+      }
+      else if (!isAggregateType(actualValType)) {
+        args.push_back(codegenAddrOf(codegenValuePtr(actual)));
+        args.push_back(new_IntSymbol(0));
+      }
+      else {
+        args.push_back(codegenAddrOf(codegenValuePtr(actual)));
+        args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
+      }
+    }
+    curArg++;
+  }
+
+  return codegenCallExprWithArgs(fn, args);
+}
+
+DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH_FLAT) {
+  ret = codegenGPUKernelLaunch(call, /* is3d= */ false);
+}
+
+DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
+  ret = codegenGPUKernelLaunch(call, /* is3d= */ true);
+}
+
+
+static GenRet codegenCallToPtxTgtIntrinsic(const char *fcnName) {
+  GenRet ret;
+
+#ifdef HAVE_LLVM
+  llvm::Type *llvmReturnType = llvm::Type::getInt32Ty(gGenInfo->llvmContext);
+  Type *chplReturnType = dtInt[INT_SIZE_32];
+
+  llvm::Function* fun = gGenInfo->module->getFunction(fcnName);
+  if(!fun) {
+    llvm::FunctionType *fun_type = llvm::FunctionType::get(llvmReturnType, false);
+    fun = llvm::Function::Create(fun_type, llvm::GlobalValue::ExternalLinkage, fcnName, gGenInfo->module);
+    INT_ASSERT(fun);
+  }
+
+  ret.val = gGenInfo->irBuilder->CreateCall(fun);
+  ret.isLVPtr = GEN_VAL;
+  ret.chplType = chplReturnType;
+#endif
+
+  return ret;
+}
+
+DEFINE_PRIM(PRIM_GPU_THREADIDX_X) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.x"); }
+DEFINE_PRIM(PRIM_GPU_THREADIDX_Y) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.y"); }
+DEFINE_PRIM(PRIM_GPU_THREADIDX_Z) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.z"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKIDX_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.x"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKIDX_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.y"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKIDX_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.z"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKDIM_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.x"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKDIM_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.y"); }
+DEFINE_PRIM(PRIM_GPU_BLOCKDIM_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.z"); }
+DEFINE_PRIM(PRIM_GPU_GRIDDIM_X)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.x"); }
+DEFINE_PRIM(PRIM_GPU_GRIDDIM_Y)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.y"); }
+DEFINE_PRIM(PRIM_GPU_GRIDDIM_Z)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.z"); }
 
 static void codegenPutGet(CallExpr* call, GenRet &ret) {
     // args are:

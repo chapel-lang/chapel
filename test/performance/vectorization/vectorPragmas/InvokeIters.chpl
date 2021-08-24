@@ -25,6 +25,12 @@ module InvokeStandalone {
   }
 }
 
+module InvokeOrderIndependent {
+  use ItersConfig;
+  use iters;
+  foreach a in A do writeln(a);
+}
+
 module InvokeSerial {
   use ItersConfig;
   use iters;
@@ -34,6 +40,7 @@ module InvokeSerial {
 module InvokeIters {
   use InvokeLeaderFollower;
   use InvokeStandalone;
+  use InvokeOrderIndependent;
   use InvokeSerial;
 }
 

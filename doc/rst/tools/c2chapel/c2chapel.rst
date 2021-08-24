@@ -39,8 +39,8 @@ version 0.1.0.
 Building
 --------
 
-``c2chapel`` is built on top of `pycparser <https://github.com/eliben/pycparser>`_.
-Building ``c2chapel`` will install pycparser into a local virtualenv, leaving
+``c2chapel`` is built on top of `pycparser <https://github.com/eliben/pycparser>`_ and `pycparserext <https://github.com/inducer/pycparserext>`_.
+Building ``c2chapel`` will install pycparser and pycparserext into a local virtualenv, leaving
 the user's python environment untouched. A symbolic link will be created in the
 appropriate directory under ``$CHPL_HOME/bin``.
 
@@ -85,7 +85,7 @@ Run ``c2chapel`` with the ``--help`` flag to show more options:
 .. code-block:: text
 
   usage: c2chapel [-h] [--no-typedefs] [--debug] [--no-fake-headers]
-                  [--no-comments] [-V]
+                  [--no-comments] [-V] [--gnu-extensions]
                   file [cppFlags [cppFlags ...]]
 
   Generate C bindings for Chapel
@@ -102,6 +102,7 @@ Run ``c2chapel`` with the ``--help`` flag to show more options:
     --no-fake-headers  do not use fake headers included with c2chapel
     --no-comments      instruct c2chapel to not generate comments
     -V, --version      show program's version number and exit
+    --gnu-extensions   allow GNU extensions in C99 files
 
 
 ``c2chapel`` by default uses the fake standard headers included with pycparser.
@@ -128,4 +129,5 @@ Contributors
 ------------
 | Ben Harshbarger [HPE]
 | Nikhil Padmanabhan [Yale University]
+| Ben McDonald [HPE]
 |

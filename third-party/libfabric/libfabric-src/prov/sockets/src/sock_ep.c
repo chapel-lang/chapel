@@ -680,8 +680,9 @@ static int sock_ep_close(struct fid *fid)
 
 	if (sock_ep->attr->conn_handle.do_listen) {
 		fastlock_acquire(&sock_ep->attr->domain->conn_listener.signal_lock);
-		ofi_epoll_del(sock_ep->attr->domain->conn_listener.emap,
+		ofi_epoll_del(sock_ep->attr->domain->conn_listener.epollfd,
 		             sock_ep->attr->conn_handle.sock);
+		sock_ep->attr->domain->conn_listener.removed_from_epollfd = true;
 		fastlock_release(&sock_ep->attr->domain->conn_listener.signal_lock);
 		ofi_close_socket(sock_ep->attr->conn_handle.sock);
 		sock_ep->attr->conn_handle.do_listen = 0;
@@ -725,7 +726,7 @@ static int sock_ep_close(struct fid *fid)
 		free(sock_ep->attr->dest_addr);
 
 	fastlock_acquire(&sock_ep->attr->domain->pe->lock);
-	ofi_idm_reset(&sock_ep->attr->av_idm);
+	ofi_idm_reset(&sock_ep->attr->av_idm, NULL);
 	sock_conn_map_destroy(sock_ep->attr);
 	fastlock_release(&sock_ep->attr->domain->pe->lock);
 
@@ -1758,8 +1759,7 @@ int sock_alloc_endpoint(struct fid_domain *domain, struct fi_info *info,
 	/* default config */
 	sock_ep->attr->min_multi_recv = SOCK_EP_MIN_MULTI_RECV;
 
-	if (info)
-		memcpy(&sock_ep->attr->info, info, sizeof(struct fi_info));
+	memcpy(&sock_ep->attr->info, info, sizeof(struct fi_info));
 
 	sock_ep->attr->domain = sock_dom;
 	fastlock_init(&sock_ep->attr->cm.lock);
@@ -1786,6 +1786,8 @@ err1:
 
 void sock_ep_remove_conn(struct sock_ep_attr *attr, struct sock_conn *conn)
 {
+	if (attr->cmap.used <= 0 || conn->sock_fd == -1)
+		return;
 	sock_pe_poll_del(attr->domain->pe, conn->sock_fd);
 	sock_conn_release_entry(&attr->cmap, conn);
 }
@@ -1794,14 +1796,27 @@ struct sock_conn *sock_ep_lookup_conn(struct sock_ep_attr *attr, fi_addr_t index
 				      union ofi_sock_ip *addr)
 {
 	int i;
-	uint16_t idx;
+	uint64_t idx;
+	char buf[8];
 	struct sock_conn *conn;
 
 	idx = (attr->ep_type == FI_EP_MSG) ? index : index & attr->av->mask;
 
 	conn = ofi_idm_lookup(&attr->av_idm, idx);
 	if (conn && conn != SOCK_CM_CONN_IN_PROGRESS) {
-		if (conn->av_index == FI_ADDR_NOTAVAIL)
+		/* Verify that the existing connection is still usable, and
+		 * that the peer didn't restart.
+		 */
+		if (conn->connected == 0 ||
+		    (sock_comm_peek(conn, buf, 8) == 0 && conn->connected == 0)) {
+			sock_ep_remove_conn(attr, conn);
+			ofi_straddr_log(&sock_prov, FI_LOG_WARN, FI_LOG_EP_CTRL,
+					"Peer disconnected", &addr->sa);
+			return NULL;
+		}
+		if (conn->av_index != FI_ADDR_NOTAVAIL)
+			assert(conn->av_index == idx);
+		else
 			conn->av_index = idx;
 		return conn;
 	}
@@ -1812,10 +1827,21 @@ struct sock_conn *sock_ep_lookup_conn(struct sock_ep_attr *attr, fi_addr_t index
 
 		if (ofi_equals_sockaddr(&attr->cmap.table[i].addr.sa, &addr->sa)) {
 			conn = &attr->cmap.table[i];
-			if (conn->av_index == FI_ADDR_NOTAVAIL)
-				conn->av_index = idx;
 			break;
 		}
+	}
+	if (conn && conn != SOCK_CM_CONN_IN_PROGRESS) {
+		if (conn->connected == 0 ||
+		    (sock_comm_peek(conn, buf, 8) == 0 && conn->connected == 0)) {
+			sock_ep_remove_conn(attr, conn);
+			ofi_straddr_log(&sock_prov, FI_LOG_WARN, FI_LOG_EP_CTRL,
+					"Peer disconnected", &addr->sa);
+			return NULL;
+		}
+		if (conn->av_index != FI_ADDR_NOTAVAIL)
+			assert(conn->av_index == idx);
+		else
+			conn->av_index = idx;
 	}
 	return conn;
 }
@@ -1850,9 +1876,11 @@ int sock_ep_get_conn(struct sock_ep_attr *attr, struct sock_tx_ctx *tx_ctx,
 		ret = sock_ep_connect(attr, av_index, &conn);
 
 	if (!conn) {
-		SOCK_LOG_ERROR("Undable to find connection entry. "
+		SOCK_LOG_ERROR("Unable to find connection entry. "
 			       "Error in connecting: %s\n",
 			       fi_strerror(-ret));
+		ofi_straddr_log(&sock_prov, FI_LOG_WARN, FI_LOG_EP_CTRL,
+				"Unable to connect to", &addr->sa);
 		return -FI_ENOENT;
 	}
 

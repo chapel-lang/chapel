@@ -25,9 +25,11 @@
 
 #include "convert-uast.h"
 
+#include "CatchStmt.h"
 #include "DoWhileStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
 #include "docsDriver.h"
@@ -150,6 +152,11 @@ struct Converter {
     return nullptr;
   }
 
+  BlockStmt* visit(const uast::Import* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
   CallExpr* visit(const uast::New* node) {
     Expr* newedType = convertAST(node->typeExpression());
     CallExpr* typeCall = new CallExpr(newedType);
@@ -204,12 +211,12 @@ struct Converter {
   }
 
   BlockStmt* convertUsePossibleLimitations(const uast::Use* node) {
-    INT_ASSERT(node->numUseClauses() == 1);
+    INT_ASSERT(node->numVisibilityClauses() == 1);
 
-    auto useClause = node->useClause(0);
+    auto vc = node->visibilityClause(0);
 
-    if (useClause->limitationClauseKind() == uast::UseClause::NONE) {
-      INT_ASSERT(useClause->numLimitations() == 0);
+    if (vc->limitationKind() == uast::VisibilityClause::NONE) {
+      INT_ASSERT(vc->numLimitations() == 0);
       return convertUseNoLimitations(node);
     }
 
@@ -220,21 +227,21 @@ struct Converter {
     bool except = false;
     bool privateUse = node->visibility() != uast::Decl::PUBLIC;
 
-    if (useClause->limitationClauseKind() == uast::UseClause::EXCEPT) {
+    if (vc->limitationKind() == uast::VisibilityClause::EXCEPT) {
       except = true;
     }
 
-    if (auto as = useClause->symbol()->toAs()) {
+    if (auto as = vc->symbol()->toAs()) {
       auto exprs = convertAs(as);
       mod = exprs.first;
       rename = exprs.second;
     } else {
-      mod = toExpr(convertAST(useClause->symbol()));
+      mod = toExpr(convertAST(vc->symbol()));
       rename = new UnresolvedSymExpr("");
     }
 
     // Build the limitations list.
-    for (auto limitation : useClause->limitations()) {
+    for (auto limitation : vc->limitations()) {
       names->push_back(convertRename(limitation));
     }
 
@@ -245,10 +252,10 @@ struct Converter {
     auto args = new std::vector<PotentialRename*>();
     bool privateUse = node->visibility() != uast::Decl::PUBLIC;
 
-    for (auto useClause : node->useClauses()) {
-      INT_ASSERT(useClause->limitationClauseKind() == uast::UseClause::NONE);
-      INT_ASSERT(useClause->numLimitations() == 0);
-      PotentialRename* pr = convertRename(useClause->symbol());
+    for (auto vc : node->visibilityClauses()) {
+      INT_ASSERT(vc->limitationKind() == uast::VisibilityClause::NONE);
+      INT_ASSERT(vc->numLimitations() == 0);
+      PotentialRename* pr = convertRename(vc->symbol());
       args->push_back(pr);
     }
 
@@ -256,16 +263,16 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::Use* node) {
-    INT_ASSERT(node->numUseClauses() > 0);
+    INT_ASSERT(node->numVisibilityClauses() > 0);
 
-    if (node->numUseClauses() == 1) {
+    if (node->numVisibilityClauses() == 1) {
       return convertUsePossibleLimitations(node);
     } else {
       return convertUseNoLimitations(node);
     }
   }
 
-  Expr* visit(const uast::UseClause* node) {
+  Expr* visit(const uast::VisibilityClause* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
   }
@@ -332,6 +339,27 @@ struct Converter {
     return nullptr;
   }
 
+  CatchStmt* visit(const uast::Catch* node) {
+    auto errorVar = node->error();
+    const char* name = errorVar ? errorVar->name().c_str() : nullptr;
+    Expr* type = errorVar ? convertExprOrNull(errorVar->typeExpression())
+                          : nullptr;
+    BlockStmt* body = toBlockStmt(convertAST(node->body()));
+    CatchStmt* ret = nullptr;
+
+    if (name && type) {
+      ret = CatchStmt::build(name, type, body);
+    } else if (name) {
+      ret = CatchStmt::build(name, body);
+    } else {
+      ret = CatchStmt::build(body);
+    }
+
+    assert(ret != nullptr);
+
+    return ret;
+  }
+
   BlockStmt* visit(const uast::Cobegin* node) {
     INT_FATAL("TODO");
     return nullptr;
@@ -362,7 +390,7 @@ struct Converter {
     CallExpr* ret = new CallExpr(PRIM_RETURN);
 
     if (node->value()) {
-      ret->insertAtTail(convertAST(node->value()));
+      ret->insertAtTail(toExpr(convertAST(node->value())));
     }
 
     return ret;
@@ -371,6 +399,37 @@ struct Converter {
   BlockStmt* visit(const uast::Sync* node) {
     INT_FATAL("TODO");
     return nullptr;
+  }
+
+  CallExpr* visit(const uast::Throw* node) {
+    CallExpr* ret = new CallExpr(PRIM_THROW);
+    ret->insertAtTail(toExpr(convertAST(node->errorExpression())));
+    return ret;
+  }
+
+  BlockStmt* visit(const uast::Try* node) {
+    if (node->isExpressionLevel()) {
+
+      assert(node->numStmts() == 1);
+      assert(node->stmt(0)->isExpression() && !node->stmt(0)->isBlock());
+      bool tryBang = node->isTryBang();
+      Expr* expr = convertAST(node->stmt(0));
+      return TryStmt::build(tryBang, expr);
+
+    } else {
+      bool tryBang = node->isTryBang();
+      BlockStmt* body = createBlockWithStmts(node->stmts());
+      BlockStmt* catches = new BlockStmt();
+      bool isSyncTry = false; // TODO: When can this be true?
+
+      for (auto handler : node->handlers()) {
+        assert(handler->isCatch());
+        auto conv = toExpr(convertAST(handler));
+        catches->insertAtTail(conv);
+      }
+
+      return TryStmt::build(tryBang, body, catches, isSyncTry);
+    }
   }
 
   CallExpr* visit(const uast::Yield* node) {
@@ -739,7 +798,7 @@ struct Converter {
   Expr* visit(const uast::Dot* node) {
 
     // These are the arguments that 'buildDotExpr' requires.
-    BaseAST* base = toExpr(convertAST(node->calledExpression()));
+    BaseAST* base = toExpr(convertAST(node->receiver()));
     auto member = node->field();
 
     if (!typeStr.compare(member)) {
@@ -1015,7 +1074,7 @@ struct Converter {
   DefExpr* visit(const uast::Module* node) {
     chpl::UniqueString ustr = node->name();
     const char* name = ustr.c_str();
-    const char* path = context->filePathForID(node->id()).c_str();
+    const char* path = context->filePathForId(node->id()).c_str();
     ModTag tag = MOD_USER; // TODO: distinguish internal/standard/etc
     bool priv = (node->visibility() == uast::Decl::PRIVATE);
     bool prototype = (node->kind() == uast::Module::PROTOTYPE ||

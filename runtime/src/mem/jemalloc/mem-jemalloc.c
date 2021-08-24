@@ -119,6 +119,15 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
     // now that cur_heap_offset is updated, we can unlock
     pthread_mutex_unlock(&heap.alloc_lock);
   } else if (heap.type == DYNAMIC) {
+    // jemalloc 4.5.0 man: "If chunk is not NULL, the returned pointer must be
+    // chunk on success or NULL on error". This is used to grab new chunks in a
+    // specific location so they can be merged with old ones for in-place
+    // reallocation. It's unlikely our allocation will happen to get the right
+    // address so don't waste time allocating/freeing in the common case.
+    if (chunk != NULL) {
+      return NULL;
+    }
+
     //
     // Get a dynamic extension chunk.
     //
@@ -128,6 +137,8 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
     if (cur_chunk_base == NULL) {
       return NULL;
     }
+
+    assert((cur_chunk_base & (alignment-1)) == 0);
 
     //
     // Localize the new memory via first-touch, by storing to each page.

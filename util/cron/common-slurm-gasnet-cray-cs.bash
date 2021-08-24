@@ -22,5 +22,4 @@ nightly_args="${nightly_args} -no-buildcheck"
 export CHPL_TARGET_CPU=native
 export GASNET_PHYSMEM_MAX=16G
 export GASNET_PHYSMEM_NOPROBE=1
-export GASNET_ODP_VERBOSE=0
 export GASNET_QUIET=Y

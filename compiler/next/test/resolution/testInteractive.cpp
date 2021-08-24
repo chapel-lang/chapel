@@ -18,7 +18,11 @@
  */
 
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/queries/query-impl.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/scope-queries.h"
+#include "chpl/uast/Call.h"
+#include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 
 // always check assertions in this test
@@ -33,6 +37,143 @@ using namespace parsing;
 using namespace resolution;
 using namespace uast;
 
+static UniqueString nameForAst(const ASTNode* ast) {
+  if (auto ident = ast->toIdentifier()) {
+    return ident->name();
+  } else if (auto decl = ast->toNamedDecl()) {
+    return decl->name();
+  } else if (auto call = ast->toCall()) {
+    return nameForAst(call->calledExpression());
+  }
+
+  UniqueString empty;
+  return empty;
+}
+
+static void printId(const ASTNode* ast) {
+  printf("%-16s %-8s", ast->id().toString().c_str(), nameForAst(ast).c_str());
+}
+
+static const ResolvedExpression*
+resolvedExpressionForAst(Context* context, const ASTNode* ast,
+                         const ResolvedFunction* inFn) {
+  if (!(ast->isLoop() || ast->isBlock())) {
+    // compute the parent module or function
+    int postorder = ast->id().postOrderId();
+    if (postorder >= 0) {
+      ID parentId = ast->id().parentSymbolId(context);
+      auto parentAst = idToAst(context, parentId);
+      if (parentAst != nullptr) {
+        if (parentAst->isModule()) {
+          const auto& byId = resolveModule(context, parentAst->id());
+          return &byId.byAst(ast);
+        } else if (parentAst->isFunction()) {
+          auto untyped = untypedSignature(context, parentAst->id());
+          // use inFn if it matches
+          if (inFn && inFn->signature->untypedSignature == untyped) {
+            return &inFn->resolutionById.byAst(ast);
+          } else {
+            auto typed = typedSignatureInitial(context, untyped);
+            if (!typed->needsInstantiation) {
+              auto rFn = resolveFunction(context, typed, nullptr);
+              return &rFn->resolutionById.byAst(ast);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return nullptr;
+}
+
+static void
+computeAndPrintStuff(Context* context,
+                     const ASTNode* ast,
+                     const ResolvedFunction* inFn,
+                     std::set<const ResolvedFunction*>& calledFns) {
+
+  for (const ASTNode* child : ast->children()) {
+    computeAndPrintStuff(context, child, inFn, calledFns);
+  }
+
+  /*
+  if (auto ident = ast->toIdentifier()) {
+    const Scope* scope = scopeForId(context, ast->id());
+    assert(scope != nullptr);
+
+    auto name = ident->name();
+    const auto& m = findInnermostDecl(context, scope, name);
+
+    auto status = context->queryStatus(findInnermostDecl,
+                                       std::make_tuple(scope, name));
+
+    printId(ast);
+    printf(" refers to: ");
+
+    if (m.found == InnermostMatch::ZERO) {
+      printf("%-32s ", "no such name found");
+    } else if (m.found == InnermostMatch::ONE && m.id.isEmpty()) {
+      printf("%-32s ", "builtin");
+    } else if (m.found == InnermostMatch::ONE) {
+      printf("%-32s ", m.id.toString().c_str());
+    } else {
+      printf("%-32s ", "ambiguity");
+    }
+
+    if (status == Context::NOT_CHECKED_NOT_CHANGED) {
+      printf("(not checked)");
+    } else if (status == Context::REUSED) {
+      printf("(reused)");
+    } else if (status == Context::CHANGED) {
+      printf("(changed)");
+    }
+
+    printf("\n");
+  }*/
+
+  int beforeCount = context->numQueriesRunThisRevision();
+  const ResolvedExpression* r = resolvedExpressionForAst(context, ast, inFn);
+  int afterCount = context->numQueriesRunThisRevision();
+  if (r != nullptr) {
+    for (const TypedFnSignature* sig : r->mostSpecific) {
+      if (sig != nullptr) {
+        auto fn = resolveFunction(context, sig, r->poiScope);
+        calledFns.insert(fn);
+      }
+    }
+
+    printId(ast);
+    printf("%-35s ", r->toString().c_str());
+    if (afterCount > beforeCount) {
+      printf(" (ran %i queries)", afterCount - beforeCount);
+    }
+    printf("\n");
+  }
+
+  // check the type
+  /*
+  if (!(ast->isLoop() || ast->isBlock())) {
+    const auto& t = typeForModuleLevelSymbol(context, ast->id());
+
+    printId(ast);
+    printf(" has type:  ");
+    printf("%-32s ", t.toString().c_str());
+
+    auto status = context->queryStatus(typeForModuleLevelSymbol,
+                                       std::make_tuple(ast->id()));
+
+    if (status == Context::NOT_CHECKED_NOT_CHANGED) {
+      printf("(not checked)");
+    } else if (status == Context::REUSED) {
+      printf("(reused)");
+    } else if (status == Context::CHANGED) {
+      printf("(changed)");
+    }
+    printf("\n");
+  }*/
+}
+
 int main(int argc, char** argv) {
 
   if (argc == 1) {
@@ -46,51 +187,58 @@ int main(int argc, char** argv) {
 
   while (true) {
     ctx->advanceToNextRevision(gc);
+
+    std::set<const ResolvedFunction*> calledFns;
+
     for (int i = 1; i < argc; i++) {
       auto filepath = UniqueString::build(ctx, argv[i]);
 
       const ModuleVec& mods = parse(ctx, filepath);
-      for (const auto module : mods) {
-        ASTNode::dump(module);
+      for (const auto mod : mods) {
+        ASTNode::dump(mod);
+        printf("\n");
+
+        computeAndPrintStuff(ctx, mod, nullptr, calledFns);
         printf("\n");
       }
+    }
 
-      /*
-      const DefinedTopLevelNamesVec& vec = moduleLevelDeclNames(ctx, filepath);
+    printf("Instantiations:\n");
 
-      for (const auto& elt : vec) {
-        const Module* module = elt.module;
-        const std::vector<UniqueString>& topLevelNames = elt.topLevelNames;
+    std::set<const ResolvedFunction*> printed;
 
-        printf("Module %s:\n", module->name().c_str());
-        ASTNode::dump(module);
+    // Gather all instantiations, transitively
+    while (true) {
 
-        printf("Defines these toplevel names:\n");
-        for (const UniqueString& name : topLevelNames) {
-          printf("%s\n", name.c_str());
-        }
-      }*/
+      std::set<const ResolvedFunction*> iterCalledFns = calledFns;
+      size_t startCount = calledFns.size();
 
-      const ResolvedSymbolVec& rmods = resolveFile(ctx, filepath);
-      for (const auto& elt : rmods) {
-        const Module* module = elt->decl->toModule();
-
-        printf("Module %s:\n", module->name().c_str());
-        ASTNode::dump(module);
-        printf("\n");
-
-        const ResolutionResultByPostorderID& resolution = elt->resolutionById;
-        for (const auto& rr : resolution) {
-          if (rr.expr != nullptr && rr.decl != nullptr) {
-            printf("Resolved:\n");
-            ASTNode::dump(rr.expr, 2);
-            printf("to:\n");
-            ASTNode::dump(rr.decl, 2);
+      for (auto calledFn : iterCalledFns) {
+        const TypedFnSignature* sig = calledFn->signature;
+        if (sig->instantiatedFrom != nullptr) {
+          calledFns.insert(calledFn);
+          auto pair = printed.insert(calledFn);
+          bool added = pair.second;
+          if (added) {
+            auto ast = idToAst(ctx, sig->untypedSignature->functionId);
+            auto uSig = untypedSignature(ctx, ast->id());
+            auto initialType = typedSignatureInitial(ctx, uSig);
+            printf("Instantiation of %s\n", initialType->toString().c_str());
+            printf("Instantiation is %s\n", sig->toString().c_str());
+            computeAndPrintStuff(ctx, ast, calledFn, calledFns);
             printf("\n");
           }
         }
       }
+
+      size_t endCount = calledFns.size();
+
+      if (startCount == endCount) break;
     }
+
+    printf("Ran %i queries to compute the above\n\n",
+           ctx->numQueriesRunThisRevision());
+
     if (gc) {
       ctx->collectGarbage();
       gc = false;

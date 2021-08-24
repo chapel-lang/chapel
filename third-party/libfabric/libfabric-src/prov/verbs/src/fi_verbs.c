@@ -35,6 +35,7 @@
 #include <ofi_mem.h>
 
 #include "fi_verbs.h"
+#include "ofi_hmem.h"
 
 static void vrb_fini(void);
 
@@ -101,13 +102,17 @@ int vrb_sockaddr_len(struct sockaddr *addr)
 		return ofi_sizeofaddr(addr);
 }
 
-int vrb_get_rdma_rai(const char *node, const char *service, uint64_t flags,
-		   const struct fi_info *hints, struct rdma_addrinfo **rai)
+static int
+vrb_get_rdmacm_rai(const char *node, const char *service, uint64_t flags,
+		uint32_t addr_format, void *src_addr, size_t src_addrlen,
+		void *dest_addr, size_t dest_addrlen, struct rdma_addrinfo **rai)
 {
 	struct rdma_addrinfo rai_hints, *_rai;
-	struct rdma_addrinfo **rai_current;
-	int ret = vrb_fi_to_rai(hints, flags, &rai_hints);
+	struct rdma_addrinfo **cur, *next;
+	int ret;
 
+	ret = vrb_set_rai(addr_format, src_addr, src_addrlen, dest_addr,
+				       dest_addrlen, flags, &rai_hints);
 	if (ret)
 		goto out;
 
@@ -117,43 +122,135 @@ int vrb_get_rdma_rai(const char *node, const char *service, uint64_t flags,
 		rai_hints.ai_flags |= RAI_PASSIVE;
 	}
 
-	ret = rdma_getaddrinfo((char *) node, (char *) service,
-				&rai_hints, &_rai);
+	ret = rdma_getaddrinfo(node, service, &rai_hints, &_rai);
 	if (ret) {
 		VERBS_INFO_ERRNO(FI_LOG_FABRIC, "rdma_getaddrinfo", errno);
-		if (errno) {
+		if (errno)
 			ret = -errno;
-		}
 		goto out;
 	}
 
 	/*
-	 * If caller requested rai, remove ib_rai entries added by IBACM to
+	 * Remove ib_rai entries added by IBACM to
 	 * prevent wrong ib_connect_hdr from being sent in connect request.
 	 */
-	if (rai && hints && (hints->addr_format != FI_SOCKADDR_IB)) {
-		for (rai_current = &_rai; *rai_current;) {
-			struct rdma_addrinfo *rai_next;
-			if ((*rai_current)->ai_family == AF_IB) {
-				rai_next = (*rai_current)->ai_next;
-				(*rai_current)->ai_next = NULL;
-				rdma_freeaddrinfo(*rai_current);
-				*rai_current = rai_next;
-				continue;
+	if (addr_format && (addr_format != FI_SOCKADDR_IB)) {
+		for (cur = &_rai; *cur; ) {
+			if ((*cur)->ai_family == AF_IB) {
+				next = (*cur)->ai_next;
+				(*cur)->ai_next = NULL;
+				rdma_freeaddrinfo(*cur);
+				*cur = next;
+			} else {
+				cur = &(*cur)->ai_next;
 			}
-			rai_current = &(*rai_current)->ai_next;
 		}
 	}
 
-	if (rai)
-		*rai = _rai;
-
+	*rai = _rai;
 out:
 	if (rai_hints.ai_src_addr)
 		free(rai_hints.ai_src_addr);
 	if (rai_hints.ai_dst_addr)
 		free(rai_hints.ai_dst_addr);
 	return ret;
+}
+
+static int
+vrb_get_sib_rai(const char *node, const char *service, uint64_t flags,
+		uint32_t addr_format, void *src_addr, size_t src_addrlen,
+		void *dest_addr, size_t dest_addrlen, struct rdma_addrinfo **rai)
+{
+	struct sockaddr_ib *sib;
+	size_t sib_len;
+	char *straddr;
+	uint32_t fmt;
+	int ret;
+	bool has_prefix;
+	const char *prefix = "fi_sockaddr_ib://";
+
+	*rai = calloc(1, sizeof(struct rdma_addrinfo));
+	if (*rai == NULL)
+		return -FI_ENOMEM;
+
+	ret = vrb_set_rai(addr_format, src_addr, src_addrlen, dest_addr,
+						 dest_addrlen, flags, *rai);
+	if (ret)
+		return ret;
+
+	if (node) {
+		fmt = ofi_addr_format(node);
+		if (fmt == FI_SOCKADDR_IB)
+			has_prefix = true;
+		else if (fmt == FI_FORMAT_UNSPEC)
+			has_prefix = false;
+		else
+			return -FI_EINVAL;
+
+		if (service) {
+			ret = asprintf(&straddr, "%s%s:%s", has_prefix ? "" : prefix,
+				       node, service);
+		} else {
+			ret = asprintf(&straddr, "%s%s", has_prefix ? "" : prefix, node);
+		}
+
+		if (ret == -1)
+			return -FI_ENOMEM;
+
+		ret = ofi_str_toaddr(straddr, &fmt, (void **)&sib, &sib_len);
+		free(straddr);
+
+		if (ret || fmt != FI_SOCKADDR_IB) {
+			return -FI_EINVAL;
+		}
+
+		if (flags & FI_SOURCE) {
+			(*rai)->ai_flags |= RAI_PASSIVE;
+			if ((*rai)->ai_src_addr)
+				free((*rai)->ai_src_addr);
+			(*rai)->ai_src_addr = (void *)sib;
+			(*rai)->ai_src_len = sizeof(struct sockaddr_ib);
+		} else {
+			if ((*rai)->ai_dst_addr)
+				free((*rai)->ai_dst_addr);
+			(*rai)->ai_dst_addr = (void *)sib;
+			(*rai)->ai_dst_len = sizeof(struct sockaddr_ib);
+		}
+
+	} else if (service) {
+		if ((flags & FI_SOURCE) && (*rai)->ai_src_addr) {
+			if ((*rai)->ai_src_len < sizeof(struct sockaddr_ib))
+				return -FI_EINVAL;
+
+			(*rai)->ai_src_len = sizeof(struct sockaddr_ib);
+			sib = (struct sockaddr_ib *)(*rai)->ai_src_addr;
+		} else {
+			if ((*rai)->ai_dst_len < sizeof(struct sockaddr_ib))
+				return -FI_EINVAL;
+
+			(*rai)->ai_dst_len = sizeof(struct sockaddr_ib);
+			sib = (struct sockaddr_ib *)(*rai)->ai_dst_addr;
+		}
+
+		sib->sib_sid = htonll(((uint64_t) RDMA_PS_IB << 16) + (uint16_t)atoi(service));
+		sib->sib_sid_mask = htonll(OFI_IB_IP_PS_MASK | OFI_IB_IP_PORT_MASK);
+	}
+
+	return 0;
+}
+
+static int
+vrb_get_rdma_rai(const char *node, const char *service, uint32_t addr_format,
+		void *src_addr, size_t src_addrlen, void *dest_addr,
+		size_t dest_addrlen, uint64_t flags, struct rdma_addrinfo **rai)
+{
+	if (addr_format == FI_SOCKADDR_IB && (node || src_addr || dest_addr)) {
+		return vrb_get_sib_rai(node, service, flags, addr_format, src_addr,
+					src_addrlen, dest_addr, dest_addrlen, rai);
+	}
+
+	return vrb_get_rdmacm_rai(node, service, flags, addr_format, src_addr,
+					src_addrlen, dest_addr, dest_addrlen, rai);
 }
 
 int vrb_get_rai_id(const char *node, const char *service, uint64_t flags,
@@ -163,11 +260,19 @@ int vrb_get_rai_id(const char *node, const char *service, uint64_t flags,
 	int ret;
 
 	// TODO create a similar function that won't require pruning ib_rai
-	ret = vrb_get_rdma_rai(node, service, flags, hints, rai);
+	if (hints) {
+		ret = vrb_get_rdma_rai(node, service, hints->addr_format, hints->src_addr,
+				       hints->src_addrlen, hints->dest_addr,
+				       hints->dest_addrlen, flags, rai);
+	} else {
+		ret = vrb_get_rdma_rai(node, service, FI_FORMAT_UNSPEC, NULL, 0, NULL,
+				       0, flags, rai);
+	}
 	if (ret)
 		return ret;
 
-	ret = rdma_create_id(NULL, id, NULL, RDMA_PS_TCP);
+	ret = rdma_create_id(NULL, id, NULL, vrb_get_port_space(hints ? hints->addr_format:
+					FI_FORMAT_UNSPEC));
 	if (ret) {
 		VERBS_INFO_ERRNO(FI_LOG_FABRIC, "rdma_create_id", errno);
 		ret = -errno;
@@ -206,13 +311,16 @@ err1:
 	return ret;
 }
 
-int vrb_create_ep(const struct fi_info *hints, enum rdma_port_space ps,
+int vrb_create_ep(struct vrb_ep *ep, enum rdma_port_space ps,
 		     struct rdma_cm_id **id)
 {
 	struct rdma_addrinfo *rai = NULL;
 	int ret;
 
-	ret = vrb_get_rdma_rai(NULL, NULL, 0, hints, &rai);
+	ret = vrb_get_rdma_rai(NULL, NULL, ep->info_attr.addr_format,
+				ep->info_attr.src_addr, ep->info_attr.src_addrlen,
+				ep->info_attr.dest_addr, ep->info_attr.dest_addrlen,
+				0, &rai);
 	if (ret) {
 		return ret;
 	}
@@ -243,7 +351,9 @@ int vrb_create_ep(const struct fi_info *hints, enum rdma_port_space ps,
 				"dst addr", rai->ai_dst_addr);
 		goto err2;
 	}
+	rdma_freeaddrinfo(rai);
 	return 0;
+
 err2:
 	rdma_destroy_id(*id);
 err1:
@@ -519,106 +629,93 @@ static int vrb_read_params(void)
 {
 	/* Common parameters */
 	if (vrb_get_param_int("tx_size", "Default maximum tx context size",
-				 &vrb_gl_data.def_tx_size) ||
+			      &vrb_gl_data.def_tx_size) ||
 	    (vrb_gl_data.def_tx_size < 0)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of tx_size\n");
+		VERBS_WARN(FI_LOG_CORE, "Invalid value of tx_size\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("rx_size", "Default maximum rx context size",
-				 &vrb_gl_data.def_rx_size) ||
+			      &vrb_gl_data.def_rx_size) ||
 	    (vrb_gl_data.def_rx_size < 0)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of rx_size\n");
+		VERBS_WARN(FI_LOG_CORE, "Invalid value of rx_size\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("tx_iov_limit", "Default maximum tx iov_limit",
-				 &vrb_gl_data.def_tx_iov_limit) ||
+			      &vrb_gl_data.def_tx_iov_limit) ||
 	    (vrb_gl_data.def_tx_iov_limit < 0)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of tx_iov_limit\n");
+		VERBS_WARN(FI_LOG_CORE, "Invalid value of tx_iov_limit\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("rx_iov_limit", "Default maximum rx iov_limit",
-				 &vrb_gl_data.def_rx_iov_limit) ||
+			      &vrb_gl_data.def_rx_iov_limit) ||
 	    (vrb_gl_data.def_rx_iov_limit < 0)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of rx_iov_limit\n");
+		VERBS_WARN(FI_LOG_CORE, "Invalid value of rx_iov_limit\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("inline_size", "Default maximum inline size. "
-				 "Actual inject size returned in fi_info may be "
-				 "greater", &vrb_gl_data.def_inline_size) ||
+			      "Actual inject size returned in fi_info may be "
+			      "greater", &vrb_gl_data.def_inline_size) ||
 	    (vrb_gl_data.def_inline_size < 0)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of inline_size\n");
+		VERBS_WARN(FI_LOG_CORE, "Invalid value of inline_size\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("min_rnr_timer", "Set min_rnr_timer QP "
-				 "attribute (0 - 31)",
-				 &vrb_gl_data.min_rnr_timer) ||
+			      "attribute (0 - 31)",
+			      &vrb_gl_data.min_rnr_timer) ||
 	    ((vrb_gl_data.min_rnr_timer < 0) ||
 	     (vrb_gl_data.min_rnr_timer > 31))) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of min_rnr_timer\n");
+		VERBS_WARN(FI_LOG_CORE, "Invalid value of min_rnr_timer\n");
 		return -FI_EINVAL;
 	}
 
 	if (vrb_get_param_bool("use_odp", "Enable on-demand paging memory "
-	    "registrations, if supported.  This is currently required to "
-	    "register DAX file system mmapped memory.", &vrb_gl_data.use_odp)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of use_odp\n");
+			       "registrations, if supported.  This is "
+			       "currently required to register DAX file system "
+			       "mmapped memory.", &vrb_gl_data.use_odp)) {
+		VERBS_WARN(FI_LOG_CORE, "Invalid value of use_odp\n");
 		return -FI_EINVAL;
 	}
 
-	if (vrb_get_param_bool("prefer_xrc", "Order XRC transport fi_infos"
-				  "ahead of RC. Default orders RC first.",
-				  &vrb_gl_data.msg.prefer_xrc)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of prefer_xrc\n");
+	if (vrb_get_param_bool("prefer_xrc", "Order XRC transport fi_infos "
+			       "ahead of RC.  Default orders RC first.  This "
+			       "setting must usually be combined with setting "
+			       "FI_OFI_RXM_USE_SRX.  See fi_verbs.7 man page.",
+				&vrb_gl_data.msg.prefer_xrc)) {
+		VERBS_WARN(FI_LOG_CORE, "Invalid value of prefer_xrc\n");
 		return -FI_EINVAL;
 	}
 
 	if (vrb_get_param_str("xrcd_filename", "A file to "
-				 "associate with the XRC domain.",
-				 &vrb_gl_data.msg.xrcd_filename)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of xrcd_filename\n");
+			      "associate with the XRC domain.",
+			      &vrb_gl_data.msg.xrcd_filename)) {
+		VERBS_WARN(FI_LOG_CORE, "Invalid value of xrcd_filename\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("cqread_bunch_size", "The number of entries to "
-				 "be read from the verbs completion queue at a time",
-				 &vrb_gl_data.cqread_bunch_size) ||
+			      "be read from the verbs completion queue at a time",
+			      &vrb_gl_data.cqread_bunch_size) ||
 	    (vrb_gl_data.cqread_bunch_size <= 0)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of cqread_bunch_size\n");
+		VERBS_WARN(FI_LOG_CORE, "Invalid value of cqread_bunch_size\n");
 		return -FI_EINVAL;
 	}
 	if (vrb_get_param_int("gid_idx", "Set which gid index to use "
-				 "attribute (0 - 255)",
-				 &vrb_gl_data.gid_idx) ||
-	    (vrb_gl_data.gid_idx < 0 ||
-	     vrb_gl_data.gid_idx > 255)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of gid index\n");
+			      "attribute (0 - 255)", &vrb_gl_data.gid_idx) ||
+	    (vrb_gl_data.gid_idx < 0 || vrb_gl_data.gid_idx > 255)) {
+		VERBS_WARN(FI_LOG_CORE, "Invalid value of gid index\n");
 		return -FI_EINVAL;
 	}
 
 	if (vrb_get_param_str("device_name", "The prefix or the full name of the "
-			      "verbs device to use",
-			      &vrb_gl_data.device_name)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of device_name\n");
+			      "verbs device to use", &vrb_gl_data.device_name)) {
+		VERBS_WARN(FI_LOG_CORE, "Invalid value of device_name\n");
 		return -FI_EINVAL;
 	}
 
 	/* MSG-specific parameter */
 	if (vrb_get_param_str("iface", "The prefix or the full name of the "
-				 "network interface associated with the verbs device",
-				 &vrb_gl_data.iface)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of iface\n");
+			      "network interface associated with the verbs "
+			      "device", &vrb_gl_data.iface)) {
+		VERBS_WARN(FI_LOG_CORE, "Invalid value of iface\n");
 		return -FI_EINVAL;
 	}
 
@@ -626,21 +723,19 @@ static int vrb_read_params(void)
 	if (getenv("OMPI_COMM_WORLD_RANK") || getenv("PMI_RANK"))
 		vrb_gl_data.dgram.use_name_server = 0;
 	if (vrb_get_param_bool("dgram_use_name_server", "The option that "
-				  "enables/disables OFI Name Server thread that is used "
-				  "to resolve IP-addresses to provider specific "
-				  "addresses. If MPI is used, the NS is disabled "
-				  "by default.", &vrb_gl_data.dgram.use_name_server)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of dgram_use_name_server\n");
+			       "enables/disables OFI Name Server thread used "
+			       "to resolve IP-addresses to provider specific "
+			       "addresses. If MPI is used, the NS is disabled "
+			       "by default.", &vrb_gl_data.dgram.use_name_server)) {
+		VERBS_WARN(FI_LOG_CORE, "Invalid dgram_use_name_server\n");
 		return -FI_EINVAL;
 	}
-	if (vrb_get_param_int("dgram_name_server_port", "The port on which Name Server "
-				 "thread listens incoming connections and requestes.",
-				 &vrb_gl_data.dgram.name_server_port) ||
+	if (vrb_get_param_int("dgram_name_server_port", "The port on which "
+			      "the name server thread listens incoming "
+			      "requests.", &vrb_gl_data.dgram.name_server_port) ||
 	    (vrb_gl_data.dgram.name_server_port < 0 ||
 	     vrb_gl_data.dgram.name_server_port > 65535)) {
-		VERBS_WARN(FI_LOG_CORE,
-			   "Invalid value of dgram_name_server_port\n");
+		VERBS_WARN(FI_LOG_CORE, "Invalid dgram_name_server_port\n");
 		return -FI_EINVAL;
 	}
 
@@ -664,10 +759,33 @@ static void verbs_devs_free(void)
 	}
 }
 
+static void vrb_set_peer_mem_support(void)
+{
+	char *line = NULL;
+	size_t line_size = 0;
+	ssize_t bytes;
+	FILE *kallsyms_fd;
+
+	kallsyms_fd = fopen("/proc/kallsyms", "r");
+	if (!kallsyms_fd)
+		return;
+
+	while ((bytes = getline(&line, &line_size, kallsyms_fd)) != -1) {
+		if (strstr(line, "ib_register_peer_memory_client")) {
+			vrb_gl_data.peer_mem_support = true;
+			break;
+		}
+	}
+
+	free(line);
+	fclose(kallsyms_fd);
+}
+
 static void vrb_fini(void)
 {
 #if HAVE_VERBS_DL
-	ofi_monitor_cleanup();
+	ofi_monitors_cleanup();
+	ofi_hmem_cleanup();
 	ofi_mem_fini();
 #endif
 	fi_freeinfo((void *)vrb_util_prov.info);
@@ -679,8 +797,11 @@ VERBS_INI
 {
 #if HAVE_VERBS_DL
 	ofi_mem_init();
-	ofi_monitor_init();
+	ofi_hmem_init();
+	ofi_monitors_init();
 #endif
+	vrb_set_peer_mem_support();
+
 	if (vrb_read_params()|| vrb_init_info(&vrb_util_prov.info))
 		return NULL;
 	return &vrb_prov;

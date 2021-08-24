@@ -58,6 +58,52 @@
 /**
  *   Utility functions used by both non-tagged and tagged send.
  */
+static inline
+ssize_t rxr_msg_post_cuda_rtm(struct rxr_ep *rxr_ep, struct rxr_tx_entry *tx_entry)
+{
+	int err, tagged;
+	struct rxr_peer *peer;
+	int pkt_type;
+	bool delivery_complete_requested;
+
+	assert(RXR_EAGER_MSGRTM_PKT + 1 == RXR_EAGER_TAGRTM_PKT);
+	assert(RXR_READ_MSGRTM_PKT + 1 == RXR_READ_TAGRTM_PKT);
+	assert(RXR_DC_EAGER_MSGRTM_PKT + 1 == RXR_DC_EAGER_TAGRTM_PKT);
+
+	tagged = (tx_entry->op == ofi_op_tagged);
+	assert(tagged == 0 || tagged == 1);
+
+	delivery_complete_requested = tx_entry->fi_flags & FI_DELIVERY_COMPLETE;
+	if (tx_entry->total_len == 0) {
+		pkt_type = delivery_complete_requested ? RXR_DC_EAGER_MSGRTM_PKT : RXR_EAGER_MSGRTM_PKT;
+		return rxr_pkt_post_ctrl(rxr_ep, RXR_TX_ENTRY, tx_entry,
+					 pkt_type + tagged, 0);
+	}
+
+	/* Currently cuda data must be sent using read message protocol.
+	 * However, because read message protocol is an extra feature, we cannot
+	 * sure if the receiver supports it.
+	 * The only way we can be sure of that is through the handshake packet
+	 * from the receiver, so here we call rxr_pkt_wait_handshake().
+	 */
+	peer = rxr_ep_get_peer(rxr_ep, tx_entry->addr);
+
+	err = rxr_pkt_wait_handshake(rxr_ep, tx_entry->addr, peer);
+	if (OFI_UNLIKELY(err)) {
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL, "waiting for handshake packet failed!\n");
+		return err;
+	}
+
+	assert(peer->flags & RXR_PEER_HANDSHAKE_RECEIVED);
+	if (!efa_peer_support_rdma_read(peer)) {
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL, "Cannot send gpu data because receiver does not support RDMA\n");
+		return -FI_EOPNOTSUPP;
+	}
+
+	return rxr_pkt_post_ctrl(rxr_ep, RXR_TX_ENTRY, tx_entry,
+				 RXR_READ_MSGRTM_PKT + tagged, 0);
+}
+
 ssize_t rxr_msg_post_rtm(struct rxr_ep *rxr_ep, struct rxr_tx_entry *tx_entry)
 {
 	/*
@@ -69,51 +115,130 @@ ssize_t rxr_msg_post_rtm(struct rxr_ep *rxr_ep, struct rxr_tx_entry *tx_entry)
 	assert(RXR_LONG_MSGRTM_PKT + 1 == RXR_LONG_TAGRTM_PKT);
 	assert(RXR_MEDIUM_MSGRTM_PKT + 1 == RXR_MEDIUM_TAGRTM_PKT);
 
+	assert(RXR_DC_EAGER_MSGRTM_PKT + 1 == RXR_DC_EAGER_TAGRTM_PKT);
+	assert(RXR_DC_MEDIUM_MSGRTM_PKT + 1 == RXR_DC_MEDIUM_TAGRTM_PKT);
+	assert(RXR_DC_LONG_MSGRTM_PKT + 1 == RXR_DC_LONG_TAGRTM_PKT);
+
 	int tagged;
 	size_t max_rtm_data_size;
 	ssize_t err;
 	struct rxr_peer *peer;
+	bool delivery_complete_requested;
+	int ctrl_type;
+	struct efa_domain *efa_domain;
+	struct rxr_domain *rxr_domain = rxr_ep_domain(rxr_ep);
+
+	efa_domain = container_of(rxr_domain->rdm_domain, struct efa_domain,
+				  util_domain.domain_fid);
 
 	assert(tx_entry->op == ofi_op_msg || tx_entry->op == ofi_op_tagged);
 	tagged = (tx_entry->op == ofi_op_tagged);
 	assert(tagged == 0 || tagged == 1);
 
-	max_rtm_data_size = rxr_pkt_req_max_data_size(rxr_ep,
-						      tx_entry->addr,
-						      RXR_EAGER_MSGRTM_PKT + tagged);
-
+	delivery_complete_requested = tx_entry->fi_flags & FI_DELIVERY_COMPLETE;
 	peer = rxr_ep_get_peer(rxr_ep, tx_entry->addr);
+
+	if (delivery_complete_requested && !(peer->is_local)) {
+		tx_entry->rxr_flags |= RXR_DELIVERY_COMPLETE_REQUESTED;
+		/*
+		 * Because delivery complete is defined as an extra
+		 * feature, the receiver might not support it.
+		 *
+		 * The sender cannot send with FI_DELIVERY_COMPLETE
+		 * if the peer is not able to handle it.
+		 *
+		 * If the sender does not know whether the peer
+		 * can handle it, it needs to trigger
+		 * a handshake packet from the peer.
+		 *
+		 * The handshake packet contains
+		 * the information whether the peer
+		 * support it or not.
+		 */
+		err = rxr_pkt_trigger_handshake(rxr_ep, tx_entry->addr, peer);
+		if (OFI_UNLIKELY(err))
+			return err;
+
+		if (!(peer->flags & RXR_PEER_HANDSHAKE_RECEIVED))
+			return -FI_EAGAIN;
+
+		else if (!rxr_peer_support_delivery_complete(peer))
+			return -FI_EOPNOTSUPP;
+
+		max_rtm_data_size = rxr_pkt_req_max_data_size(rxr_ep,
+							      tx_entry->addr,
+							      RXR_DC_EAGER_MSGRTM_PKT + tagged);
+	} else {
+		max_rtm_data_size = rxr_pkt_req_max_data_size(rxr_ep,
+							      tx_entry->addr,
+							      RXR_EAGER_MSGRTM_PKT + tagged);
+	}
 
 	if (peer->is_local) {
 		assert(rxr_ep->use_shm);
 		/* intra instance message */
-		int rtm_type = (tx_entry->total_len <= max_rtm_data_size) ? RXR_EAGER_MSGRTM_PKT
-									  : RXR_READ_MSGRTM_PKT;
+		if (tx_entry->total_len > max_rtm_data_size)
+			/*
+			 * Read message support
+			 * FI_DELIVERY_COMPLETE implicitly.
+			 */
+			ctrl_type = RXR_READ_MSGRTM_PKT;
+		else
+			ctrl_type = delivery_complete_requested ? RXR_DC_EAGER_MSGRTM_PKT : RXR_EAGER_MSGRTM_PKT;
 
-		return rxr_pkt_post_ctrl_or_queue(rxr_ep, RXR_TX_ENTRY, tx_entry, rtm_type + tagged, 0);
+		return rxr_pkt_post_ctrl(rxr_ep, RXR_TX_ENTRY, tx_entry, ctrl_type + tagged, 0);
+	}
+
+	if (rxr_ep->use_zcpy_rx) {
+		/*
+		 * The application can not deal with varying packet header sizes
+		 * before and after receiving a handshake. Forcing a handshake
+		 * here so we can always use the smallest eager msg packet
+		 * header size to determine the msg_prefix_size.
+		 */
+		err = rxr_pkt_wait_handshake(rxr_ep, tx_entry->addr, peer);
+		if (OFI_UNLIKELY(err))
+			return err;
+
+		assert(peer->flags & RXR_PEER_HANDSHAKE_RECEIVED);
+	}
+
+	if (efa_ep_is_cuda_mr(tx_entry->desc[0])) {
+		return rxr_msg_post_cuda_rtm(rxr_ep, tx_entry);
 	}
 
 	/* inter instance message */
-	if (tx_entry->total_len <= max_rtm_data_size)
-		return rxr_pkt_post_ctrl_or_queue(rxr_ep, RXR_TX_ENTRY, tx_entry,
-						  RXR_EAGER_MSGRTM_PKT + tagged, 0);
+	if (tx_entry->total_len <= max_rtm_data_size) {
+		ctrl_type = (delivery_complete_requested) ?
+			RXR_DC_EAGER_MSGRTM_PKT : RXR_EAGER_MSGRTM_PKT;
+		return rxr_pkt_post_ctrl(rxr_ep, RXR_TX_ENTRY, tx_entry,
+					 ctrl_type + tagged, 0);
+	}
 
 	if (tx_entry->total_len <= rxr_env.efa_max_medium_msg_size) {
 		/* we do not check the return value of rxr_ep_init_mr_desc()
 		 * because medium message works even if MR registration failed
 		 */
-		if (efa_mr_cache_enable)
-			rxr_ep_tx_init_mr_desc(rxr_ep_domain(rxr_ep),
-					       tx_entry, 0, FI_SEND);
+		if (tx_entry->desc[0] || efa_is_cache_available(efa_domain))
+			rxr_ep_tx_init_mr_desc(rxr_domain, tx_entry, 0, FI_SEND);
+
+		/*
+		 * we have to queue message RTM because data is sent as multiple
+		 * medium RTM packets. It could happend that the first several packets
+		 * were sent successfully, but the following packet encountered -FI_EAGAIN
+		 */
+		ctrl_type = delivery_complete_requested ?
+			RXR_DC_MEDIUM_MSGRTM_PKT : RXR_MEDIUM_MSGRTM_PKT;
 		return rxr_pkt_post_ctrl_or_queue(rxr_ep, RXR_TX_ENTRY, tx_entry,
-						  RXR_MEDIUM_MSGRTM_PKT + tagged, 0);
+						  ctrl_type + tagged, 0);
 	}
 
-	if (efa_both_support_rdma_read(rxr_ep, peer) &&
-	    (tx_entry->desc[0] || efa_mr_cache_enable)) {
-		/* use read message protocol */
-		err = rxr_pkt_post_ctrl_or_queue(rxr_ep, RXR_TX_ENTRY, tx_entry,
-						 RXR_READ_MSGRTM_PKT + tagged, 0);
+	if (tx_entry->total_len >= rxr_env.efa_min_read_msg_size &&
+	    efa_both_support_rdma_read(rxr_ep, peer) &&
+	    (tx_entry->desc[0] || efa_is_cache_available(efa_domain))) {
+		/* Read message support FI_DELIVERY_COMPLETE implicitly. */
+		err = rxr_pkt_post_ctrl(rxr_ep, RXR_TX_ENTRY, tx_entry,
+					RXR_READ_MSGRTM_PKT + tagged, 0);
 
 		if (err != -FI_ENOMEM)
 			return err;
@@ -128,8 +253,10 @@ ssize_t rxr_msg_post_rtm(struct rxr_ep *rxr_ep, struct rxr_tx_entry *tx_entry)
 	if (OFI_UNLIKELY(err))
 		return err;
 
-	return rxr_pkt_post_ctrl_or_queue(rxr_ep, RXR_TX_ENTRY, tx_entry,
-					  RXR_LONG_MSGRTM_PKT + tagged, 0);
+	ctrl_type = delivery_complete_requested ? RXR_DC_LONG_MSGRTM_PKT : RXR_LONG_MSGRTM_PKT;
+	tx_entry->rxr_flags |= RXR_LONGCTS_PROTOCOL;
+	return rxr_pkt_post_ctrl(rxr_ep, RXR_TX_ENTRY, tx_entry,
+				 ctrl_type + tagged, 0);
 }
 
 ssize_t rxr_msg_generic_send(struct fid_ep *ep, const struct fi_msg *msg,
@@ -156,6 +283,13 @@ ssize_t rxr_msg_generic_send(struct fid_ep *ep, const struct fi_msg *msg,
 		goto out;
 	}
 
+	peer = rxr_ep_get_peer(rxr_ep, msg->addr);
+
+	if (peer->flags & RXR_PEER_IN_BACKOFF) {
+		err = -FI_EAGAIN;
+		goto out;
+	}
+
 	tx_entry = rxr_ep_alloc_tx_entry(rxr_ep, msg, op, tag, flags);
 
 	if (OFI_UNLIKELY(!tx_entry)) {
@@ -166,8 +300,6 @@ ssize_t rxr_msg_generic_send(struct fid_ep *ep, const struct fi_msg *msg,
 
 	assert(tx_entry->op == ofi_op_msg || tx_entry->op == ofi_op_tagged);
 
-	peer = rxr_ep_get_peer(rxr_ep, tx_entry->addr);
-	assert(peer);
 	tx_entry->msg_id = peer->next_msg_id++;
 	err = rxr_msg_post_rtm(rxr_ep, tx_entry);
 	if (OFI_UNLIKELY(err)) {
@@ -197,15 +329,9 @@ ssize_t rxr_msg_sendv(struct fid_ep *ep, const struct iovec *iov,
 		      void *context)
 {
 	struct rxr_ep *rxr_ep;
-	struct fi_msg msg;
+	struct fi_msg msg = {0};
 
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_iov = iov;
-	msg.desc = desc;
-	msg.iov_count = count;
-	msg.addr = dest_addr;
-	msg.context = context;
-
+	rxr_setup_msg(&msg, iov, desc, count, dest_addr, context, 0);
 	rxr_ep = container_of(ep, struct rxr_ep, util_ep.ep_fid.fid);
 	return rxr_msg_sendmsg(ep, &msg, rxr_tx_flags(rxr_ep));
 }
@@ -218,7 +344,7 @@ ssize_t rxr_msg_send(struct fid_ep *ep, const void *buf, size_t len,
 
 	iov.iov_base = (void *)buf;
 	iov.iov_len = len;
-	return rxr_msg_sendv(ep, &iov, desc, 1, dest_addr, context);
+	return rxr_msg_sendv(ep, &iov, &desc, 1, dest_addr, context);
 }
 
 static
@@ -226,21 +352,14 @@ ssize_t rxr_msg_senddata(struct fid_ep *ep, const void *buf, size_t len,
 			 void *desc, uint64_t data, fi_addr_t dest_addr,
 			 void *context)
 {
-	struct fi_msg msg;
+	struct fi_msg msg = {0};
 	struct iovec iov;
 	struct rxr_ep *rxr_ep;
 
 	iov.iov_base = (void *)buf;
 	iov.iov_len = len;
 
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_iov = &iov;
-	msg.desc = desc;
-	msg.iov_count = 1;
-	msg.addr = dest_addr;
-	msg.context = context;
-	msg.data = data;
-
+	rxr_setup_msg(&msg, &iov, &desc, 1, dest_addr, context, data);
 	rxr_ep = container_of(ep, struct rxr_ep, util_ep.ep_fid.fid);
 	return rxr_msg_generic_send(ep, &msg, 0, ofi_op_msg,
 				    rxr_tx_flags(rxr_ep) | FI_REMOTE_CQ_DATA);
@@ -251,17 +370,13 @@ ssize_t rxr_msg_inject(struct fid_ep *ep, const void *buf, size_t len,
 		       fi_addr_t dest_addr)
 {
 	struct rxr_ep *rxr_ep;
-	struct fi_msg msg;
+	struct fi_msg msg = {0};
 	struct iovec iov;
 
 	iov.iov_base = (void *)buf;
 	iov.iov_len = len;
 
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_iov = &iov;
-	msg.iov_count = 1;
-	msg.addr = dest_addr;
-
+	rxr_setup_msg(&msg, &iov, NULL, 1, dest_addr, NULL, 0);
 	rxr_ep = container_of(ep, struct rxr_ep, util_ep.ep_fid.fid);
 	assert(len <= rxr_ep->core_inject_size - sizeof(struct rxr_eager_msgrtm_hdr));
 
@@ -281,12 +396,7 @@ ssize_t rxr_msg_injectdata(struct fid_ep *ep, const void *buf,
 	iov.iov_base = (void *)buf;
 	iov.iov_len = len;
 
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_iov = &iov;
-	msg.iov_count = 1;
-	msg.addr = dest_addr;
-	msg.data = data;
-
+	rxr_setup_msg(&msg, &iov, NULL, 1, dest_addr, NULL, data);
 	rxr_ep = container_of(ep, struct rxr_ep, util_ep.ep_fid.fid);
 	/*
 	 * We advertise the largest possible inject size with no cq data or
@@ -306,14 +416,9 @@ static
 ssize_t rxr_msg_tsendmsg(struct fid_ep *ep_fid, const struct fi_msg_tagged *tmsg,
 			 uint64_t flags)
 {
-	struct fi_msg msg;
+	struct fi_msg msg = {0};
 
-	msg.msg_iov = tmsg->msg_iov;
-	msg.desc = tmsg->desc;
-	msg.iov_count = tmsg->iov_count;
-	msg.addr = tmsg->addr;
-	msg.context = tmsg->context;
-	msg.data = tmsg->data;
+	rxr_setup_msg(&msg, tmsg->msg_iov, tmsg->desc, tmsg->iov_count, tmsg->addr, tmsg->context, tmsg->data);
 	return rxr_msg_generic_send(ep_fid, &msg, tmsg->tag, ofi_op_tagged, flags);
 }
 
@@ -323,9 +428,8 @@ ssize_t rxr_msg_tsendv(struct fid_ep *ep_fid, const struct iovec *iov,
 		       uint64_t tag, void *context)
 {
 	struct rxr_ep *rxr_ep;
-	struct fi_msg_tagged msg;
+	struct fi_msg_tagged msg = {0};
 
-	memset(&msg, 0, sizeof(msg));
 	msg.msg_iov = iov;
 	msg.desc = desc;
 	msg.iov_count = count;
@@ -355,20 +459,14 @@ ssize_t rxr_msg_tsenddata(struct fid_ep *ep_fid, const void *buf, size_t len,
 			  void *desc, uint64_t data, fi_addr_t dest_addr,
 			  uint64_t tag, void *context)
 {
-	struct fi_msg msg;
+	struct fi_msg msg = {0};
 	struct iovec iov;
 	struct rxr_ep *rxr_ep;
 
 	iov.iov_base = (void *)buf;
 	iov.iov_len = len;
 
-	msg.msg_iov = &iov;
-	msg.desc = desc;
-	msg.iov_count = 1;
-	msg.addr = dest_addr;
-	msg.context = context;
-	msg.data = data;
-
+	rxr_setup_msg(&msg, &iov, &desc, 1, dest_addr, context, data);
 	rxr_ep = container_of(ep_fid, struct rxr_ep, util_ep.ep_fid.fid);
 	return rxr_msg_generic_send(ep_fid, &msg, tag, ofi_op_tagged,
 				    rxr_tx_flags(rxr_ep) | FI_REMOTE_CQ_DATA);
@@ -379,17 +477,13 @@ ssize_t rxr_msg_tinject(struct fid_ep *ep_fid, const void *buf, size_t len,
 			fi_addr_t dest_addr, uint64_t tag)
 {
 	struct rxr_ep *rxr_ep;
-	struct fi_msg msg;
+	struct fi_msg msg = {0};
 	struct iovec iov;
 
 	iov.iov_base = (void *)buf;
 	iov.iov_len = len;
 
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_iov = &iov;
-	msg.iov_count = 1;
-	msg.addr = dest_addr;
-
+	rxr_setup_msg(&msg, &iov, NULL, 1, dest_addr, NULL, 0);
 	rxr_ep = container_of(ep_fid, struct rxr_ep, util_ep.ep_fid.fid);
 	assert(len <= rxr_ep->core_inject_size - sizeof(struct rxr_eager_tagrtm_hdr));
 
@@ -402,18 +496,13 @@ ssize_t rxr_msg_tinjectdata(struct fid_ep *ep_fid, const void *buf, size_t len,
 			    uint64_t data, fi_addr_t dest_addr, uint64_t tag)
 {
 	struct rxr_ep *rxr_ep;
-	struct fi_msg msg;
+	struct fi_msg msg = {0};
 	struct iovec iov;
 
 	iov.iov_base = (void *)buf;
 	iov.iov_len = len;
 
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_iov = &iov;
-	msg.iov_count = 1;
-	msg.addr = dest_addr;
-	msg.data = data;
-
+	rxr_setup_msg(&msg, &iov, NULL, 1, dest_addr, NULL, data);
 	rxr_ep = container_of(ep_fid, struct rxr_ep, util_ep.ep_fid.fid);
 	/*
 	 * We advertise the largest possible inject size with no cq data or
@@ -768,7 +857,12 @@ ssize_t rxr_msg_generic_recv(struct fid_ep *ep, const struct fi_msg *msg,
 	unexp_list = (op == ofi_op_tagged) ? &rxr_ep->rx_unexp_tagged_list :
 		     &rxr_ep->rx_unexp_list;
 
-	if (!dlist_empty(unexp_list)) {
+	/*
+	 * Attempt to match against stashed unexpected messages. This is not
+	 * applicable to the zero-copy path where unexpected messages are not
+	 * applicable, since there's no tag or address to match against.
+	 */
+	if (!dlist_empty(unexp_list) && !rxr_ep->use_zcpy_rx) {
 		ret = rxr_msg_proc_unexp_msg_list(rxr_ep, msg, tag,
 						  ignore, op, flags, NULL);
 
@@ -790,6 +884,9 @@ ssize_t rxr_msg_generic_recv(struct fid_ep *ep, const struct fi_msg *msg,
 		dlist_insert_tail(&rx_entry->entry, &rxr_ep->rx_tagged_list);
 	else
 		dlist_insert_tail(&rx_entry->entry, &rxr_ep->rx_list);
+
+	if (rxr_ep->use_zcpy_rx)
+		rxr_ep_post_buf(rxr_ep, msg, flags, EFA_EP);
 
 out:
 	fastlock_release(&rxr_ep->util_ep.lock);
@@ -960,20 +1057,13 @@ static
 ssize_t rxr_msg_recv(struct fid_ep *ep, void *buf, size_t len,
 		     void *desc, fi_addr_t src_addr, void *context)
 {
-	struct fi_msg msg;
-	struct iovec msg_iov;
+	struct fi_msg msg = {0};
+	struct iovec iov;
 
-	memset(&msg, 0, sizeof(msg));
-	msg_iov.iov_base = buf;
-	msg_iov.iov_len = len;
+	iov.iov_base = buf;
+	iov.iov_len = len;
 
-	msg.msg_iov = &msg_iov;
-	msg.desc = &desc;
-	msg.iov_count = 1;
-	msg.addr = src_addr;
-	msg.context = context;
-	msg.data = 0;
-
+	rxr_setup_msg(&msg, &iov, &desc, 1, src_addr, context, 0);
 	return rxr_msg_recvmsg(ep, &msg, 0);
 }
 
@@ -982,16 +1072,9 @@ ssize_t rxr_msg_recvv(struct fid_ep *ep, const struct iovec *iov,
 		      void **desc, size_t count, fi_addr_t src_addr,
 		      void *context)
 {
-	struct fi_msg msg;
+	struct fi_msg msg = {0};
 
-	memset(&msg, 0, sizeof(msg));
-	msg.msg_iov = iov;
-	msg.desc = desc;
-	msg.iov_count = count;
-	msg.addr = src_addr;
-	msg.context = context;
-	msg.data = 0;
-
+	rxr_setup_msg(&msg, iov, desc, count, src_addr, context, 0);
 	return rxr_msg_recvmsg(ep, &msg, 0);
 }
 
@@ -1003,18 +1086,13 @@ ssize_t rxr_msg_trecv(struct fid_ep *ep_fid, void *buf, size_t len, void *desc,
 		      fi_addr_t src_addr, uint64_t tag, uint64_t ignore,
 		      void *context)
 {
-	struct fi_msg msg;
-	struct iovec msg_iov;
+	struct fi_msg msg = {0};
+	struct iovec iov;
 
-	msg_iov.iov_base = (void *)buf;
-	msg_iov.iov_len = len;
+	iov.iov_base = (void *)buf;
+	iov.iov_len = len;
 
-	msg.msg_iov = &msg_iov;
-	msg.iov_count = 1;
-	msg.addr = src_addr;
-	msg.context = context;
-	msg.desc = &desc;
-
+	rxr_setup_msg(&msg, &iov, &desc, 1, src_addr, context, 0);
 	return rxr_msg_generic_recv(ep_fid, &msg, tag, ignore, ofi_op_tagged, 0);
 }
 
@@ -1023,39 +1101,29 @@ ssize_t rxr_msg_trecvv(struct fid_ep *ep_fid, const struct iovec *iov,
 		       void **desc, size_t count, fi_addr_t src_addr,
 		       uint64_t tag, uint64_t ignore, void *context)
 {
-	struct fi_msg msg;
+	struct fi_msg msg = {0};
 
-	msg.msg_iov = iov;
-	msg.iov_count = count;
-	msg.addr = src_addr;
-	msg.desc = desc;
-	msg.context = context;
-
+	rxr_setup_msg(&msg, iov, desc, count, src_addr, context, 0);
 	return rxr_msg_generic_recv(ep_fid, &msg, tag, ignore, ofi_op_tagged, 0);
 }
 
 static
-ssize_t rxr_msg_trecvmsg(struct fid_ep *ep_fid, const struct fi_msg_tagged *tagmsg,
+ssize_t rxr_msg_trecvmsg(struct fid_ep *ep_fid, const struct fi_msg_tagged *tmsg,
 			 uint64_t flags)
 {
 	ssize_t ret;
-	struct fi_msg msg;
+	struct fi_msg msg = {0};
 
 	if (flags & FI_PEEK) {
-		ret = rxr_msg_peek_trecv(ep_fid, tagmsg, flags);
+		ret = rxr_msg_peek_trecv(ep_fid, tmsg, flags);
 		goto out;
 	} else if (flags & FI_CLAIM) {
-		ret = rxr_msg_claim_trecv(ep_fid, tagmsg, flags);
+		ret = rxr_msg_claim_trecv(ep_fid, tmsg, flags);
 		goto out;
 	}
 
-	msg.msg_iov = tagmsg->msg_iov;
-	msg.iov_count = tagmsg->iov_count;
-	msg.addr = tagmsg->addr;
-	msg.desc = tagmsg->desc;
-	msg.context = tagmsg->context;
-
-	ret = rxr_msg_generic_recv(ep_fid, &msg, tagmsg->tag, tagmsg->ignore,
+	rxr_setup_msg(&msg, tmsg->msg_iov, tmsg->desc, tmsg->iov_count, tmsg->addr, tmsg->context, tmsg->data);
+	ret = rxr_msg_generic_recv(ep_fid, &msg, tmsg->tag, tmsg->ignore,
 				   ofi_op_tagged, flags);
 
 out:

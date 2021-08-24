@@ -56,7 +56,7 @@ module ChapelTaskTable {
 
   export proc chpldev_taskTable_print()
   {
-    use ChapelIO;
+    use Errors;
     halt("To use task tracking, you must recompile with --task-tracking");
   }
 }

@@ -122,18 +122,34 @@ def check_for_calls(functions, search_dir, exclude_paths=None, rel_paths=True):
 
         found_calls = False
         for func in functions:
-            out = cscope_find_calls(func, cscope_database_name)
-            if out:
-                found_calls = True
-                log_error('found call to "{0}"'.format(func))
-                sys.stdout.write(out.replace(rel_dir, '') + '\n')
+          # If func is a tuple consider the first element to be the function
+          # we're searching for and the second an alternative to suggest
+          # to the user.
+          alternative = None
+          if isinstance(func, tuple):
+            func, alternative = func
+            
+          out = cscope_find_calls(func, cscope_database_name)
+          if out:
+              found_calls = True
+              msg = 'found call to "{0}"'.format(func)
+              if alternative:
+                msg += ' consider using "{0}" instead'.format(alternative)
+              log_error(msg)
+              sys.stdout.write(out.replace(rel_dir, '') + '\n')
 
         return found_calls
 
 
 def get_alloc_funcs():
     """Return a list of the possible C alloc/dealloc routines"""
-    std = ['malloc', 'calloc', 'realloc', 'free']
+    # If list element is a tuple then consider the second element to
+    # be an alternative for the first. If the list element is a
+    # not a tuple then their is no known alternative.
+    std = [('malloc', 'chpl_mem_alloc'),
+           ('calloc', 'chpl_mem_calloc'),
+           ('realloc', 'chpl_mem_realloc'),
+           ('free', 'chpl_mem_free')]
     align = ['aligned_alloc', 'posix_memalign', 'memalign']
     page_align = ['valloc', 'pvalloc']
     string = ['strdup', 'strndup', 'asprintf', 'vasprintf']

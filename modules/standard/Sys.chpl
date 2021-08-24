@@ -376,18 +376,18 @@ module Sys {
   */
   proc sys_sockaddr_t.family:c_int { return sys_getsockaddr_family(this); }
 
-  extern record sys_addrinfo_t {
+  extern "struct addrinfo" record sys_addrinfo_t {
     var ai_flags: c_int;
     var ai_family: c_int;
     var ai_socktype: c_int;
     var ai_protocol: c_int;
+    var ai_addrlen: socklen_t;
+    var ai_next: c_ptr(sys_addrinfo_t);
   }
-  extern type sys_addrinfo_ptr_t; // opaque
-
+  type sys_addrinfo_ptr_t = c_ptr(sys_addrinfo_t);
 
   proc sys_addrinfo_ptr_t.flags:c_int { return sys_getaddrinfo_flags(this); }
   proc sys_addrinfo_ptr_t.family:c_int { return sys_getaddrinfo_family(this); }
-  proc sys_addrinfo_ptr_t.socktype:c_int { return sys_getaddrinfo_socktype(this); }
   proc sys_addrinfo_ptr_t.socktype:c_int { return sys_getaddrinfo_socktype(this); }
   proc sys_addrinfo_ptr_t.addr:sys_sockaddr_t { return sys_getaddrinfo_addr(this); }
   // Not supported yet
@@ -397,8 +397,8 @@ module Sys {
   extern proc sys_init_sys_sockaddr_t(ref addr:sys_sockaddr_t);
   extern proc sys_getsockaddr_family(ref addr: sys_sockaddr_t):c_int;
   extern proc sys_set_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_string, port: c_uint, family: c_int):c_int;
-  extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:c_uint):c_int;
-  extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint):c_int;
+  extern proc sys_set_sys_sockaddr_in_t(ref addr: sys_sockaddr_t, host:sys_in_addr_t, port:c_uint);
+  extern proc sys_set_sys_sockaddr_in6_t(ref addr: sys_sockaddr_t, host:sys_in6_addr_t, port:c_uint);
   extern proc sys_host_sys_sockaddr_t(ref addr: sys_sockaddr_t, host: c_ptr(c_char), hostlen: socklen_t, ref length: c_int) : c_int;
   extern proc sys_port_sys_sockaddr_t(ref addr: sys_sockaddr_t, ref port: c_uint) : c_int;
   extern proc sys_strerror(error:err_t, ref string_out:c_string):err_t;
@@ -437,11 +437,12 @@ module Sys {
   extern proc sys_accept(sockfd:fd_t, ref add_out:sys_sockaddr_t, ref fd_out:fd_t):err_t;
   extern proc sys_bind(sockfd:fd_t, ref addr:sys_sockaddr_t):err_t;
   extern proc sys_connect(sockfd:fd_t, ref addr:sys_sockaddr_t):err_t;
-  extern proc sys_getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):err_t;
+  extern proc getaddrinfo(node:c_string, service:c_string, ref hints:sys_addrinfo_t, ref res_out:sys_addrinfo_ptr_t):err_t;
   extern proc sys_getaddrinfo_flags(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_family(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_socktype(res:sys_addrinfo_ptr_t):c_int;
   extern proc sys_getaddrinfo_protocol(res:sys_addrinfo_ptr_t):c_int;
+  extern proc sys_getaddrinfo_addrlen(res:sys_addrinfo_ptr_t):socklen_t;
   extern proc sys_getaddrinfo_addr(res:sys_addrinfo_ptr_t):sys_sockaddr_t;
   extern proc sys_getaddrinfo_next(res:sys_addrinfo_ptr_t):sys_addrinfo_ptr_t;
   extern proc sys_freeaddrinfo(res:sys_addrinfo_ptr_t);

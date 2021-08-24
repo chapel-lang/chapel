@@ -18,13 +18,22 @@
  */
 
 #include "chpl/types/UnknownType.h"
+#include "chpl/queries/query-impl.h"
 
 namespace chpl {
 namespace types {
 
 
-owned<UnknownType> UnknownType::build() {
-  return toOwned(new UnknownType());
+const owned<UnknownType>& UnknownType::getUnknownType(Context* context) {
+  QUERY_BEGIN(getUnknownType, context);
+
+  auto result = toOwned(new UnknownType());
+
+  return QUERY_END(result);
+}
+
+const UnknownType* UnknownType::get(Context* context) {
+  return getUnknownType(context).get();
 }
 
 

@@ -12,7 +12,7 @@
 #ifndef _GASNET_CORE_FWD_H
 #define _GASNET_CORE_FWD_H
 
-#define GASNET_CORE_VERSION      0.2
+#define GASNET_CORE_VERSION      0.3
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME        UCX
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -100,10 +100,6 @@
    */
 /* #define GASNETC_REQUESTV_POLLS 1 */
 
-  // uncomment if conduit provides a gasnetc-prefixed override
-  // TODO: this should be a hook rather than an override
-#define GASNETC_HAVE_EP_PUBLISHBOUNDSEGMENT 1
-
   /* If your conduit uses conduit-specific extensions to the basic object
      types, then define the corresponding SIZEOF macros below to return
      the total length of the conduit-specific object, including the prefix
@@ -137,6 +133,12 @@
 //#define GASNETC_EP_INIT_HOOK(i_ep) (###)
 //#define GASNETC_EP_FINI_HOOK(i_ep) (###)
 //#define GASNETC_SIZEOF_EP_T() (###)
+
+  // Uncomment the following defines if conduit provides the corresponding hook.
+  // See gasnet_internal.h for prototypes and brief descriptions.
+#define GASNETC_SEGMENT_ATTACH_HOOK 1
+#define GASNETC_SEGMENT_CREATE_HOOK 1
+#define GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK 1
 
 // If conduit supports GASNET_MAXEPS!=1, set default and (optional) max values here.
 // Leaving GASNETC_MAXEPS_DFLT unset will result in GASNET_MAXEPS=1, independent

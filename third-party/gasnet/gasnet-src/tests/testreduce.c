@@ -362,16 +362,65 @@ void do_tests(gex_TM_t tm) {
   //
 }
 
+static gex_TM_t myteam;
+static gex_TM_t subtm = GEX_TM_INVALID;
+static int done = 0;
+
+void *thread_main(void *arg) {
+  int tid = (int)(uintptr_t)arg;
+
+#if GASNET_PAR
+  if (tid) {
+    GASNET_BLOCKUNTIL(done);
+    return NULL;
+  }
+#else
+  assert_always(!tid);
+#endif
+
+  MSG0("Testing over all ranks:");
+  do_tests(myteam);
+
+  MSG0("Testing over odd/even subteams:");
+  do_tests(subtm);
+
+  done = 1;
+
+  return NULL;
+}
+
 int main(int argc, char **argv)
 {
   gex_Client_t      myclient;
   gex_EP_t          myep;
-  gex_TM_t          myteam;
   gex_Segment_t     mysegment;
+  int               pollers = 0;
 
   gex_Client_Init(&myclient, &myep, &myteam, "testreduce", &argc, &argv, 0);
 
   int arg = 1;
+  int help = 0;
+  while (argc > arg) {
+    if (!strcmp(argv[arg], "-p")) {
+#if GASNET_PAR
+      ++arg;
+      if (argc > arg) { pollers = atoi(argv[arg]); arg++; }
+      else help = 1;
+#else
+      if (0 == gex_TM_QueryRank(myteam)) {
+        fprintf(stderr, "testcoll %s\n", GASNET_CONFIG_STRING);
+        fprintf(stderr, "ERROR: The -p option is only available in the PAR configuration.\n");
+        fflush(NULL);
+      }
+      sleep(1);
+      gasnet_exit(1);
+#endif
+    } else if (argv[arg][0] == '-') {
+      help = 1;
+      ++arg;
+    } else break;
+  }
+
   if (argc > arg) { iters = atoi(argv[arg]); ++arg; }
   if (!iters) iters = 1000;
 
@@ -381,7 +430,17 @@ int main(int argc, char **argv)
   unsigned int seed = 0;
   if (argc > arg) { seed = atoi(argv[arg]); ++arg; }
 
-  test_init("testreduce",0,"(iters) (nelem) (seed)");
+#if GASNET_PAR
+  #define USAGE "[options] (iters) (nelem) (seed)\n" \
+                "  The -p option gives the number of polling threads, specified as\n" \
+                "    a non-negative integer argument (default is no polling threads)."
+#else
+  #define USAGE "(iters) (nelem) (seed)"
+#endif
+  test_init("testreduce",0,USAGE);
+
+  TEST_SET_WAITMODE(1 + pollers);
+  if (argc > arg || help) test_usage();
 
   if (seed == 0) {
     seed = (((unsigned int)TIME()) & 0xFFFF);
@@ -394,16 +453,16 @@ int main(int argc, char **argv)
   GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, TEST_SEGSZ_REQUEST));
   BARRIER();
 
-  gex_TM_t subtm = GEX_TM_INVALID;
   int color = gex_TM_QueryRank(myteam) & 1; // odds & evens
   size_t scratch_sz = gex_TM_Split(&subtm, myteam, color, 0, 0, 0, GEX_FLAG_TM_SCRATCH_SIZE_RECOMMENDED);
   gex_TM_Split(&subtm, myteam, color, 0, (void*)TEST_MYSEG(), scratch_sz, 0);
 
-  MSG0("Testing over all ranks:");
-  do_tests(myteam);
-
-  MSG0("Testing over odd/even subteams:");
-  do_tests(subtm);
+#if GASNET_PAR
+  MSG("Forking %d gasnet threads (1 active, %d polling)", pollers+1, pollers);
+  test_createandjoin_pthreads(pollers+1, &thread_main, NULL, 0);
+#else
+  thread_main(NULL);
+#endif
 
   BARRIER();
   MSG0("done.");

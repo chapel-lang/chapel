@@ -563,6 +563,94 @@ void gasneti_free_segment(gasneti_Segment_t segment)
 }
 #endif // _GEX_SEGMENT_T
 
+extern int gex_Segment_Attach(
+                gex_Segment_t          *segment_p,
+                gex_TM_t               e_tm,
+                uintptr_t              length)
+{
+  gasneti_TM_t i_tm = gasneti_import_tm_nonpair(e_tm);
+
+  GASNETI_TRACE_PRINTF(O,("gex_Segment_Attach: segment_p=%p tm="GASNETI_TMSELFFMT" length=%"PRIuPTR,
+                          (void*)segment_p, GASNETI_TMSELFSTR(e_tm), length));
+  GASNETI_CHECK_INJECT();
+
+  if (! segment_p) {
+    gasneti_fatalerror("Invalid call to gex_Segment_Attach with NULL segment_p");
+  }
+
+  if (! e_tm) {
+    gasneti_fatalerror("Invalid call to gex_Segment_Attach with NULL e_tm");
+  }
+
+  // TODO-EX: remove if/when this limitation is removed
+  static int once = 1;
+  if (once) once = 0;
+  else gasneti_fatalerror("gex_Segment_Attach: current implementation can be called at most once");
+
+  #if GASNET_SEGMENT_EVERYTHING
+    *segment_p = GEX_SEGMENT_INVALID;
+    gex_Event_Wait(gex_Coll_BarrierNB(e_tm, 0));
+  #else
+    /* create a segment collectively */
+    // TODO-EX: this implementation only works *once*
+    // TODO-EX: need to pass proper flags (e.g. pshm and bind) instead of 0
+    if (GASNET_OK != gasneti_segmentAttach(segment_p, e_tm, length, 0)) {
+      GASNETI_RETURN_ERRR(RESOURCE,"Error attaching segment");
+    }
+  #endif
+
+  #if GASNETC_SEGMENT_ATTACH_HOOK
+    if (GASNET_OK != gasnetc_segment_attach_hook(*segment_p, e_tm)) {
+      GASNETI_RETURN_ERRR(RESOURCE,"Error attaching segment (conduit hook)");
+    }
+  #endif
+
+  return GASNET_OK;
+}
+
+extern int gex_Segment_Create(
+                gex_Segment_t           *segment_p,
+                gex_Client_t            e_client,
+                gex_Addr_t              address,
+                uintptr_t               length,
+                gex_MK_t                kind,
+                gex_Flags_t             flags)
+{
+  gasneti_Client_t i_client = gasneti_import_client(e_client);
+
+  // TODO: tracing of "kind"
+  GASNETI_TRACE_PRINTF(O,("gex_Segment_Create: client='%s' address=%p length=%"PRIuPTR" flags=%d",
+                          i_client ? i_client->_name : "(NULL)", address, length, flags));
+  GASNETI_CHECK_INJECT();
+
+  if (! segment_p) {
+    gasneti_fatalerror("Invalid call to gex_Segment_Create() with NULL segment_p");
+  }
+  if (! i_client) {
+    gasneti_fatalerror("Invalid call to gex_Segment_Create() with NULL client");
+  }
+  if (flags) {
+    gasneti_fatalerror("Invalid call to gex_Segment_Create() with non-zero flags");
+  }
+  if (! length) {
+    gasneti_fatalerror("Invalid call to gex_Segment_Create() with zero length");
+  }
+  if (kind == GEX_MK_INVALID) {
+    gasneti_fatalerror("Invalid call to gex_Segment_Create() with kind = GEX_MK_INVALID");
+  }
+
+  // Create the Segment object, allocating memory if appropriate
+  int rc = gasneti_segmentCreate(segment_p, i_client, address, length, kind, flags);
+
+  #if GASNETC_SEGMENT_CREATE_HOOK
+    if (rc == GASNET_OK) {
+      rc = gasnetc_segment_create_hook(*segment_p);
+    }
+  #endif
+
+  return rc;
+}
+
 /* ------------------------------------------------------------------------------------ */
 // Endpoint management
 
@@ -641,6 +729,7 @@ extern int gex_EP_Create(
   // TODO: formatted printing for capabilities
   GASNETI_TRACE_PRINTF(O,("gex_EP_Create: client='%s' capabilities=%d flags=%d",
                           client ? client->_name : "(NULL)", caps, flags));
+  GASNETI_CHECK_INJECT();
 
   if (! client) {
     gasneti_fatalerror("Invalid call to gex_EP_Create with NULL client");
@@ -1458,7 +1547,7 @@ static void gasneti_check_architecture(void) { // check for bad build configurat
       : 0;
     #endif
     if (warning && gasneti_mynode == 0) {
-      fprintf(stderr, warning);
+      fputs(warning, stderr);
       fflush(stderr);
     }
   }

@@ -43,6 +43,18 @@ namespace parsing {
       : text(std::move(text)), error() { }
     FileContents(std::string text, ErrorMessage error)
       : text(std::move(text)), error(std::move(error)) { }
+
+    bool operator==(const FileContents& other) const {
+      return text == other.text &&
+             error == other.error;
+    }
+    bool operator!=(const FileContents& other) const {
+      return !(*this == other);
+    }
+    void swap(FileContents& other) {
+      text.swap(other.text);
+      error.swap(other.error);
+    }
   };
 
   /**
@@ -69,16 +81,10 @@ namespace parsing {
    */
   const uast::Builder::Result& parseFile(Context* context, UniqueString path);
 
-  using LocationsMap = std::unordered_map<ID, Location>;
-  /**
-   This query returns a map from ID to Location for the uAST parsed from a
-   particular file.
-   */
-  const LocationsMap& fileLocations(Context* context, UniqueString path);
 
   // These functions can't return the Location for a Comment
   // because Comments don't have IDs. If Locations for Comments are needed,
-  // instead use the locations field from the result of parseFile.
+  // instead use the astToLocation field from the result of parseFile.
 
   /**
    This query returns the Location where a particular ID appeared.
@@ -86,12 +92,12 @@ namespace parsing {
    If Locations for Comments are needed, use the locations field from
    the result of parseFile.
    */
-  const Location& locateID(Context* context, ID id);
+  const Location& locateId(Context* context, ID id);
   /**
-   This function just runs locateID on ast->id(). Similarly to locateID,
+   This function just runs locateId on ast->id(). Similarly to locateID,
    it cannot be used to get a Location for a Comment.
    */
-  const Location& locate(Context* context, const uast::ASTNode* ast);
+  const Location& locateAst(Context* context, const uast::ASTNode* ast);
 
   using ModuleVec = std::vector<const uast::Module*>;
   /**
@@ -99,6 +105,28 @@ namespace parsing {
    */
   const ModuleVec& parse(Context* context, UniqueString path);
 
+  /**
+   This query parses a toplevel module by name. Returns nullptr
+   if no such toplevel module can be found.
+   */
+  const uast::Module* getToplevelModule(Context* context, UniqueString name);
+
+  /**
+   Returns the uast node with the given ID.
+   */
+  const uast::ASTNode* idToAst(Context* context, ID id);
+
+  /**
+   Returns the tag for the node with the given ID.
+   */
+  uast::ASTTag idToTag(Context* context, ID id);
+
+  /**
+   Returns the parent ID given an ID
+   */
+  const ID& idToParentId(Context* context, ID id);
+
+  // TODO: make a wrapper for ID.parentSymbolId
 
 } // end namespace parsing
 } // end namespace chpl

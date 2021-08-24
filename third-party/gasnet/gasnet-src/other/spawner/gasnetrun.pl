@@ -242,7 +242,10 @@ if (($conduit eq 'IBV') && !exists($ENV{'OMPI_MCA_mpi_warn_on_fork'})) {
 	    die "GASNet executable '$file' does not support spawner '$spawn_control'\n";
 	}
     }
-    warn "gasnetrun: unable to locate a GASNet program in '@ARGV'\n" unless ($found);
+    if (!$found) {
+      warn "gasnetrun: unable to locate a GASNet program in '@ARGV'\n";
+      $exeindex = 1;  # hope for the best!
+    }
 
 # Run it which ever way makes sense
     $ENV{"GASNET_VERBOSEENV"} = "1" if ($verbose);

@@ -129,12 +129,12 @@ static int sock_poll_poll(struct fid_poll *pollset, void **context, int count)
 			cq = container_of(list_item->fid, struct sock_cq,
 						cq_fid);
 			sock_cq_progress(cq);
-			fastlock_acquire(&cq->lock);
+			pthread_mutex_lock(&cq->lock);
 			if (ofi_rbfdused(&cq->cq_rbfd) || ofi_rbused(&cq->cqerr_rb)) {
 				*context++ = cq->cq_fid.fid.context;
 				ret_count++;
 			}
-			fastlock_release(&cq->lock);
+			pthread_mutex_unlock(&cq->lock);
 			break;
 
 		case FI_CLASS_CNTR:

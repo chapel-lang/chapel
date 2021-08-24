@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2016 Intel Corporation, Inc.  All rights reserved.
+ * (C) Copyright 2020 Hewlett Packard Enterprise Development LP
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -106,12 +107,26 @@ static int rxm_mr_add_map_entry(struct util_domain *domain,
 	return ret;
 }
 
+struct rxm_mr *rxm_mr_get_map_entry(struct rxm_domain *domain, uint64_t key)
+{
+	struct rxm_mr *mr;
+
+	fastlock_acquire(&domain->util_domain.lock);
+	mr = ofi_mr_map_get(&domain->util_domain.mr_map, key);
+	fastlock_release(&domain->util_domain.lock);
+
+	return mr;
+}
+
 static int rxm_domain_close(fid_t fid)
 {
 	struct rxm_domain *rxm_domain;
 	int ret;
 
 	rxm_domain = container_of(fid, struct rxm_domain, util_domain.domain_fid.fid);
+
+	fastlock_destroy(&rxm_domain->amo_bufpool_lock);
+	ofi_bufpool_destroy(rxm_domain->amo_bufpool);
 
 	ret = fi_close(&rxm_domain->msg_domain->fid);
 	if (ret)
@@ -212,18 +227,22 @@ int rxm_msg_mr_regv(struct rxm_ep *rxm_ep, const struct iovec *iov,
 	}
 	return 0;
 err:
-	rxm_msg_mr_closev(mr, count);
+	rxm_msg_mr_closev(mr, i);
 	return ret;
 }
 
+/* Large send/recv transfers use RMA rendezvous protocol */
 static uint64_t
 rxm_mr_get_msg_access(struct rxm_domain *rxm_domain, uint64_t access)
 {
-	/* Additional flags to use RMA read for large message transfers */
-	access |= FI_READ | FI_REMOTE_READ;
+	if (access & FI_SEND) {
+		access |= rxm_use_write_rndv ? FI_WRITE : FI_REMOTE_READ;
+	}
 
-	if (rxm_domain->mr_local)
-		access |= FI_WRITE;
+	if (access & FI_RECV) {
+		access |= rxm_use_write_rndv ? FI_REMOTE_WRITE : FI_READ;
+	}
+
 	return access;
 }
 
@@ -233,10 +252,7 @@ static void rxm_mr_init(struct rxm_mr *rxm_mr, struct rxm_domain *domain,
 	rxm_mr->mr_fid.fid.fclass = FI_CLASS_MR;
 	rxm_mr->mr_fid.fid.context = context;
 	rxm_mr->mr_fid.fid.ops = &rxm_mr_ops;
-	/* Store msg_mr as rxm_mr descriptor so that we can get its key when
-	 * the app passes msg_mr as the descriptor in fi_send and friends.
-	 * The key would be used in large message transfer protocol and RMA. */
-	rxm_mr->mr_fid.mem_desc = rxm_mr->msg_mr;
+	rxm_mr->mr_fid.mem_desc = rxm_mr;
 	rxm_mr->mr_fid.key = fi_mr_key(rxm_mr->msg_mr);
 	rxm_mr->domain = domain;
 	ofi_atomic_inc32(&domain->util_domain.ref);
@@ -257,6 +273,10 @@ static int rxm_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	if (!rxm_mr)
 		return -FI_ENOMEM;
 
+	ofi_mr_update_attr(rxm_domain->util_domain.fabric->fabric_fid.api_version,
+			   rxm_domain->util_domain.info_domain_caps, attr,
+			   &msg_attr);
+
 	msg_attr.access = rxm_mr_get_msg_access(rxm_domain, attr->access);
 
 	ret = fi_mr_regattr(rxm_domain->msg_domain, &msg_attr,
@@ -266,6 +286,9 @@ static int rxm_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 		goto err;
 	}
 	rxm_mr_init(rxm_mr, rxm_domain, attr->context);
+	fastlock_init(&rxm_mr->amo_lock);
+	rxm_mr->iface = msg_attr.iface;
+	rxm_mr->device = msg_attr.device.reserved;
 	*mr = &rxm_mr->mr_fid;
 
 	if (rxm_domain->util_domain.info_domain_caps & FI_ATOMIC) {
@@ -355,13 +378,146 @@ static struct fi_ops_mr rxm_domain_mr_ops = {
 	.regattr = rxm_mr_regattr,
 };
 
+static ssize_t rxm_send_credits(struct fid_ep *ep, size_t credits)
+{
+	struct rxm_conn *rxm_conn =
+		container_of(ep->fid.context, struct rxm_conn, handle);
+	struct rxm_ep *rxm_ep = rxm_conn->handle.cmap->ep;
+	struct rxm_deferred_tx_entry *def_tx_entry;
+	struct rxm_tx_base_buf *tx_buf;
+	struct iovec iov;
+	struct fi_msg msg;
+	ssize_t ret;
+
+	tx_buf = rxm_tx_buf_alloc(rxm_ep, RXM_BUF_POOL_TX_CREDIT);
+	if (!tx_buf) {
+		FI_WARN(&rxm_prov, FI_LOG_EP_DATA,
+			"Ran out of buffers from TX credit buffer pool.\n");
+		return -FI_ENOMEM;
+	}
+
+	rxm_ep_format_tx_buf_pkt(rxm_conn, 0, rxm_ctrl_credit, 0, 0, FI_SEND,
+				 &tx_buf->pkt);
+	tx_buf->pkt.ctrl_hdr.type = rxm_ctrl_credit;
+	tx_buf->pkt.ctrl_hdr.msg_id = ofi_buf_index(tx_buf);
+	tx_buf->pkt.ctrl_hdr.ctrl_data = credits;
+
+	if (rxm_conn->handle.state != RXM_CMAP_CONNECTED)
+		goto defer;
+
+	iov.iov_base = &tx_buf->pkt;
+	iov.iov_len = sizeof(struct rxm_pkt);
+	msg.msg_iov = &iov;
+	msg.iov_count = 1;
+	msg.context = tx_buf;
+	msg.desc = &tx_buf->hdr.desc;
+
+	ret = fi_sendmsg(ep, &msg, FI_PRIORITY);
+	if (!ret)
+		return FI_SUCCESS;
+
+defer:
+	def_tx_entry = rxm_ep_alloc_deferred_tx_entry(
+		rxm_ep, rxm_conn, RXM_DEFERRED_TX_CREDIT_SEND);
+	if (!def_tx_entry) {
+		FI_WARN(&rxm_prov, FI_LOG_CQ,
+			"unable to allocate TX entry for deferred CREDIT mxg\n");
+		ofi_buf_free(tx_buf);
+		return -FI_ENOMEM;
+	}
+
+	def_tx_entry->credit_msg.tx_buf = tx_buf;
+	rxm_ep_enqueue_deferred_tx_queue_priority(def_tx_entry);
+	return FI_SUCCESS;
+}
+
+static void rxm_no_set_threshold(struct fid_ep *ep_fid, size_t threshold)
+{ }
+
+static void rxm_no_add_credits(struct fid_ep *ep_fid, size_t credits)
+{ }
+
+static void rxm_no_credit_handler(struct fid_domain *domain_fid,
+		ssize_t (*credit_handler)(struct fid_ep *ep, size_t credits))
+{ }
+
+static int rxm_no_enable_flow_ctrl(struct fid_ep *ep_fid)
+{
+	return -FI_ENOSYS;
+}
+
+struct ofi_ops_flow_ctrl rxm_no_ops_flow_ctrl = {
+	.size = sizeof(struct ofi_ops_flow_ctrl),
+	.set_threshold = rxm_no_set_threshold,
+	.add_credits = rxm_no_add_credits,
+	.enable = rxm_no_enable_flow_ctrl,
+	.set_send_handler = rxm_no_credit_handler,
+};
+
+static int rxm_config_flow_ctrl(struct rxm_domain *domain)
+{
+	struct ofi_ops_flow_ctrl *flow_ctrl_ops;
+	int ret;
+
+	ret = fi_open_ops(&domain->msg_domain->fid, OFI_OPS_FLOW_CTRL, 0,
+			  (void **) &flow_ctrl_ops, NULL);
+	if (ret) {
+		if (ret == -FI_ENOSYS) {
+			domain->flow_ctrl_ops = &rxm_no_ops_flow_ctrl;
+			return 0;
+		}
+		return ret;
+	}
+
+	assert(flow_ctrl_ops);
+	domain->flow_ctrl_ops = flow_ctrl_ops;
+	domain->flow_ctrl_ops->set_send_handler(domain->msg_domain,
+						rxm_send_credits);
+	return 0;
+}
+
+struct ofi_ops_dynamic_rbuf rxm_dynamic_rbuf = {
+	.size = sizeof(struct ofi_ops_dynamic_rbuf),
+	.get_rbuf = rxm_get_dyn_rbuf,
+};
+
+static void rxm_config_dyn_rbuf(struct rxm_domain *domain, struct fi_info *info,
+				struct fi_info *msg_info)
+{
+	int ret = 0;
+
+	/* Collective support requires rxm generated and consumed messages.
+	 * Although we could update the code to handle receiving collective
+	 * messages, collective support is mostly for development purposes.
+	 * So, fallback to bounce buffers when enabled.
+	 * We also can't pass through HMEM buffers, unless the lower layer
+	 * can handle them.
+	 */
+	if ((info->caps & FI_COLLECTIVE) ||
+	    ((info->caps & FI_HMEM) && !(msg_info->caps & FI_HMEM)))
+		return;
+
+	fi_param_get_bool(&rxm_prov, "enable_dyn_rbuf", &ret);
+	domain->dyn_rbuf = (ret != 0);
+	if (!domain->dyn_rbuf)
+		return;
+
+	ret = fi_set_ops(&domain->msg_domain->fid, OFI_OPS_DYNAMIC_RBUF, 0,
+			 (void *) &rxm_dynamic_rbuf, NULL);
+	domain->dyn_rbuf = (ret == FI_SUCCESS);
+
+	if (domain->dyn_rbuf) {
+		domain->rx_post_size = sizeof(struct rxm_pkt);
+	}
+}
+
 int rxm_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 		struct fid_domain **domain, void *context)
 {
-	int ret;
 	struct rxm_domain *rxm_domain;
 	struct rxm_fabric *rxm_fabric;
 	struct fi_info *msg_info;
+	int ret;
 
 	rxm_domain = calloc(1, sizeof(*rxm_domain));
 	if (!rxm_domain)
@@ -370,7 +526,7 @@ int rxm_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 	rxm_fabric = container_of(fabric, struct rxm_fabric, util_fabric.fabric_fid);
 
 	ret = ofi_get_core_info(fabric->api_version, NULL, NULL, 0, &rxm_util_prov,
-				info, rxm_info_to_core, &msg_info);
+				info, NULL, rxm_info_to_core, &msg_info);
 	if (ret)
 		goto err1;
 
@@ -391,16 +547,32 @@ int rxm_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 	rxm_domain->util_domain.mr_map.mode &= ~FI_MR_PROV_KEY;
 
 	rxm_domain->max_atomic_size = rxm_ep_max_atomic_size(info);
+	rxm_domain->rx_post_size = rxm_buffer_size;
+
 	*domain = &rxm_domain->util_domain.domain_fid;
 	(*domain)->fid.ops = &rxm_domain_fi_ops;
 	/* Replace MR ops set by ofi_domain_init() */
 	(*domain)->mr = &rxm_domain_mr_ops;
 	(*domain)->ops = &rxm_domain_ops;
 
-	rxm_domain->mr_local = ofi_mr_local(msg_info) && !ofi_mr_local(info);
+	ret = ofi_bufpool_create(&rxm_domain->amo_bufpool,
+				 rxm_domain->max_atomic_size, 64, 0, 0, 0);
+	if (ret)
+		goto err3;
+
+	fastlock_init(&rxm_domain->amo_bufpool_lock);
+
+	ret = rxm_config_flow_ctrl(rxm_domain);
+	if (ret)
+		goto err4;
+
+	rxm_config_dyn_rbuf(rxm_domain, info, msg_info);
 
 	fi_freeinfo(msg_info);
 	return 0;
+err4:
+	fastlock_destroy(&rxm_domain->amo_bufpool_lock);
+	ofi_bufpool_destroy(rxm_domain->amo_bufpool);
 err3:
 	fi_close(&rxm_domain->msg_domain->fid);
 err2:

@@ -1,0 +1,1 @@
+recursive-iter-loop-throwing-function.chpl:3: error: cannot initialize yield value of type 'int(64)' from a '_ir_chpl_promo1_+'

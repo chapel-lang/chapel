@@ -47,7 +47,8 @@ static struct gasneti_pshm_info {
       char _pad[GASNETI_CACHE_LINE_BYTES];
    }                    early_barrier[1]; /* variable length array */
 } *gasneti_pshm_info = NULL;
-#define GASNETI_PSHM_BSB_LIMIT (GASNETI_ATOMIC_MAX - 2)
+#define GASNETI_PSHM_BSB_LIMIT (GASNETI_ATOMIC_MAX - 3) // Limit of natural progression
+#define GASNETI_PSHM_BSB_ABORT (GASNETI_ATOMIC_MAX - 2) // Sentinel to trigger abnormal termination
 
 #define round_up_to_pshmpage(size_or_addr)               \
         GASNETI_ALIGNUP(size_or_addr, GASNETI_PSHMNET_PAGESIZE)
@@ -729,7 +730,11 @@ static void do_pshmnet_barrier(int do_poll)
 
 #if GASNET_DEBUG
   curr = gasneti_atomic_read(&gasneti_pshm_info->bootstrap_barrier_gen, 0);
-  gasneti_assert((curr == generation) || (curr >= GASNETI_PSHM_BSB_LIMIT));
+  // Check that bootstrap_barrier_gen is correct OR we are in an abnormal
+  // termination.  Use of `>=` allows for a race between the termination
+  // request's atomic_set and the atomic_increment below (both in processes
+  // other than the one asserting).
+  gasneti_assert((curr == generation) || (curr >= GASNETI_PSHM_BSB_ABORT));
 #endif
 
   if (gasneti_atomic_decrement_and_test(&gasneti_pshm_info->bootstrap_barrier_cnt, 0)) {
@@ -738,18 +743,20 @@ static void do_pshmnet_barrier(int do_poll)
   }
 
   target = generation + 1;
-  gasneti_assert_always(target < GASNETI_PSHM_BSB_LIMIT); /* Die if we were ever to reach the limit */
+  if_pf (target == GASNETI_PSHM_BSB_LIMIT) {
+    gasneti_fatalerror("PSHM bootstrap barrier exceeded GASNETI_PSHM_BSB_LIMIT");
+  }
 
   if (do_poll) {
     gasneti_pollwhile((curr = gasneti_atomic_read(&gasneti_pshm_info->bootstrap_barrier_gen, 0)) == generation);
   } else {
     gasneti_waitwhile((curr = gasneti_atomic_read(&gasneti_pshm_info->bootstrap_barrier_gen, 0)) == generation);
   }
-  gasneti_assert_uint(curr ,==, target);
-  if_pf (curr >= GASNETI_PSHM_BSB_LIMIT) {
+  if_pf (curr >= GASNETI_PSHM_BSB_ABORT) {
     if (gasnetc_pshm_abort_callback) gasnetc_pshm_abort_callback();
-    gasneti_fatalerror("PSHM bootstrap barrier exceeded GASNETI_PSHM_BSB_LIMIT");
+    gasneti_fatalerror("PSHM bootstrap barrier aborting as requested");
   }
+  gasneti_assert_uint(curr ,==, target);
 
   generation = target;
 
@@ -808,7 +815,7 @@ static void gasneti_pshm_abort_handler(int sig) {
   if (gasnetc_pshm_abort_callback) gasnetc_pshm_abort_callback();
 
   // Force others to exit from barrier:
-  gasneti_atomic_set(&gasneti_pshm_info->bootstrap_barrier_gen, GASNETI_PSHM_BSB_LIMIT, 0);
+  gasneti_atomic_set(&gasneti_pshm_info->bootstrap_barrier_gen, GASNETI_PSHM_BSB_ABORT, 0);
 
   // Best-effort message if this is not due to gasneti_fatalerror()
   if (sig != SIGABRT) {
@@ -1279,19 +1286,27 @@ static void * ampshm_buf_alloc(
        Lock serializes allocation so small messages can't starve large ones */
     gasneti_mutex_t *lock = &vnet->alloc_lock;
 
+    // Like gasneti_pollwhile(), but with a specialized poll and without RMB
+    // If reply, will only poll reply network to avoid deadlock
+    #define gasneti_pshm_pollwhile(cnd) do { \
+      if (cnd) {                             \
+        while (1) {                          \
+          if (isReq) gasnetc_AMPoll(GASNETI_THREAD_PASS_ALONE); /* No progress functions */ \
+          else gasneti_AMPSHMPoll(1 GASNETI_THREAD_PASS); \
+          if (!(cnd)) break;                 \
+          GASNETI_WAITHOOK();                \
+        }                                    \
+      }                                      \
+    } while (0)
+
     void *msg;
     if (flags & GEX_FLAG_IMMEDIATE) {
       if (gasneti_mutex_trylock(lock)) return NULL;
       msg = gasneti_pshmnet_get_send_buffer(vnet, msgsz, target);
       if (!msg) goto out_immediate;
     } else {
-      gasneti_mutex_lock(lock);
-      while (!(msg = gasneti_pshmnet_get_send_buffer(vnet, msgsz, target))) {
-        /* If reply, only poll reply network: avoids deadlock  */
-        if (isReq) gasnetc_AMPoll(GASNETI_THREAD_PASS_ALONE); /* No progress functions */
-        else gasneti_AMPSHMPoll(1 GASNETI_THREAD_PASS);
-        GASNETI_WAITHOOK();
-      }
+      gasneti_pshm_pollwhile(gasneti_mutex_trylock(lock));
+      gasneti_pshm_pollwhile(!(msg = gasneti_pshmnet_get_send_buffer(vnet, msgsz, target)));
     }
 out_immediate:
     gasneti_mutex_unlock(lock);

@@ -894,7 +894,13 @@ private proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
              else {Adom.dim(0)};
 
   var Y: [Ydom] eltType;
-  BLAS.gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
+  
+  if chpl__isArrayView(X) {
+    var temp = X;
+    BLAS.gemv(A, temp, Y, 1:eltType, 0:eltType, opA=op);
+  } else {
+    BLAS.gemv(A, X, Y, 1:eltType, 0:eltType, opA=op);
+  }
   return Y;
 }
 
@@ -2404,25 +2410,35 @@ proc expm(A: [], param useExactOneNorm=true) throws {
 This method finds P Q Matrices, where P = U + V and Q = -U + V
 it then returns X where Q*X = P.
 */
-private proc solvePQ(U: [?D], V: [D]){
+private proc solvePQ(U: [?D], V: [D]) where usingLAPACK {
+  use SysCTypes;
+
   var P = U + V;
   var Q = -U + V;
-  var res : [D] U.eltType;
-  var b : [D.dim(0)] U.eltType;
+  var ipiv : [0..<D.shape(0)] c_int;
 
-  // Need to rewrite solve function
-  // to solve for A*X = B where B
-  // is also a matrix
-  for j in D.dim(1) {
-    for i in D.dim(0) {
-      b[i] = P[i,j];
+  var info = LAPACK.gesv(lapack_memory_order.row_major, Q, ipiv, P);
+
+  return P;
+}
+
+private proc solvePQ(U: [?D], V: [D]) where !usingLAPACK {
+  use SysCTypes;
+
+  var P = U + V;
+  var Q = -U + V;
+
+  // This is a potential performance issue:
+  // The solve method is called N times and
+  // every solve call does an LU factorization on
+  // Matrix Q (which is redundant in this case
+  // since we could get away with a single LU calls
+  // for all the N iterations).
+  forall j in D.dim(1) {
+      P[.., j] = solve(Q, P[.., j]);
     }
-    b = solve(Q, b);
-    for i in D.dim(0) {
-      res[i,j] = b[i];
-    }
-  }
-  return res;
+
+  return P;
 }
 
 /*
@@ -2819,12 +2835,37 @@ module Sparse {
     }
     // matrix-matrix
     else if Adom.rank == 2 && Bdom.rank == 2 {
-      if !isCSArr(A) || !isCSArr(B) then
-        compilerError("Only CSR format is supported for sparse multiplication");
-      return _csrmatmatMult(A, B);
+      if !isCSArr(A) || !isCSArr(B) then {
+        return sparseDenseMatmul(A, B);
+      }
+      else {
+        return _csrmatmatMult(A, B);
+      }
     }
     else {
       compilerError("Ranks are not 1 or 2");
+    }
+  }
+
+  // Method returns the product of a Sparse and a Dense Matrix.
+  private proc sparseDenseMatmul(A: [?ADom], B: [?BDom]) where !isCSArr(A) || !isCSArr(B) {
+    if ADom.dim(1) != BDom.dim(0) then
+        halt("Mismatched shape in sparse-dense matrix multiplication");
+
+    var resDom = {0..<A.domain.shape(0), 0..<B.domain.shape(1)};
+    var C: [resDom] A.eltType;
+
+    if isCSArr(A) && !isCSArr(B) {
+      forall i in 0..<B.domain.shape(1) {
+        C[.., i] = dot(A, B[.., i]);
+      }
+      return C;
+    }
+    else {
+      forall i in 0..<A.domain.shape(0) {
+        C[i, ..] = dot(A[i, ..], B);
+      }
+      return C;
     }
   }
 

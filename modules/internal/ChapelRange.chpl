@@ -2236,7 +2236,7 @@ operator :(r: range(?), type t: range(?)) {
         yield chpl_intToIdx(i);
       }
     } else {
-      for i in this.generalIterator() do yield i;
+      foreach i in this.generalIterator() do yield i;
     }
   }
 
@@ -2262,7 +2262,7 @@ operator :(r: range(?), type t: range(?)) {
         yield chpl_intToIdx(i);
       }
     } else {
-      for i in this.generalIterator() do yield i;
+      foreach i in this.generalIterator() do yield i;
     }
   }
 
@@ -2306,7 +2306,6 @@ operator :(r: range(?), type t: range(?)) {
   //#
 
   pragma "no doc"
-  pragma "order independent yielding loops"
   iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
                                               !localeModelHasSublocales
   {
@@ -2338,12 +2337,12 @@ operator :(r: range(?), type t: range(?)) {
         var low = orderToIndex(lo);
         var high = chpl_intToIdx(chpl__idxToInt(low):strType + stride * (mylen - 1):strType);
         if stride < 0 then low <=> high;
-        for i in low..high by stride {
+        foreach i in low..high by stride {
           yield i;
         }
       } else {
         const (lo, hi) = _computeBlock(len, numChunks, chunk, this._high, this._low, this._low);
-        for i in lo..hi {
+        foreach i in lo..hi {
           yield chpl_intToIdx(i);
         }
       }

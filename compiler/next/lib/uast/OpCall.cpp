@@ -24,24 +24,6 @@
 namespace chpl {
 namespace uast {
 
-bool OpCall::contentsMatchInner(const ASTNode* other) const {
-  const OpCall* lhs = this;
-  const OpCall* rhs = (const OpCall*) other;
-
-  if (lhs->op_ != rhs->op_)
-    return false;
-
-  if (!lhs->callContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-void OpCall::markUniqueStringsInner(Context* context) const {
-
-  callMarkUniqueStringsInner(context);
-
-  op_.mark(context);
-}
 
 owned<OpCall> OpCall::build(Builder* builder,
                             Location loc,

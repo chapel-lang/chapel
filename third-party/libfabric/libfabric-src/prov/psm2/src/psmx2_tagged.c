@@ -535,8 +535,12 @@ ssize_t psmx2_tagged_send_generic(struct fid_ep *ep,
 	assert(av);
 	psm2_epaddr = psmx2_av_translate_addr(av, ep_priv->tx, dest_addr, av->type);
 
-	PSMX2_SET_TAG(psm2_tag, tag, (uint32_t)data,
-		      PSMX2_TYPE_TAGGED | PSMX2_IMM_BIT_SET(have_data));
+	if (have_data)
+		PSMX2_SET_TAG(psm2_tag, tag, (uint32_t)data,
+			      PSMX2_TYPE_TAGGED | PSMX2_IMM_BIT);
+	else
+		PSMX2_SET_TAG(psm2_tag, tag, (uint32_t)ep_priv->sep_id,
+			      PSMX2_TYPE_TAGGED);
 
 	if ((flags & PSMX2_NO_COMPLETION) ||
 	    (ep_priv->send_selective_completion && !(flags & FI_COMPLETION)))
@@ -602,7 +606,7 @@ psmx2_tagged_send_specialized(struct fid_ep *ep, const void *buf,
 			      fi_addr_t dest_addr, uint64_t tag,
 			      void *context,
 			      int enable_completion, int av_map,
-			      int has_data, uint64_t data)
+			      int have_data, uint64_t data)
 {
 	struct psmx2_fid_ep *ep_priv;
 	psm2_epaddr_t psm2_epaddr;
@@ -622,10 +626,10 @@ psmx2_tagged_send_specialized(struct fid_ep *ep, const void *buf,
 		psm2_epaddr = psmx2_av_translate_addr(ep_priv->av, ep_priv->tx, dest_addr, FI_AV_TABLE);
 	}
 
-	if (has_data)
+	if (have_data)
 		PSMX2_SET_TAG(psm2_tag, tag, data, PSMX2_TYPE_TAGGED | PSMX2_IMM_BIT);
 	else
-		PSMX2_SET_TAG(psm2_tag, tag, 0, PSMX2_TYPE_TAGGED);
+		PSMX2_SET_TAG(psm2_tag, tag, ep_priv->sep_id, PSMX2_TYPE_TAGGED);
 
 	if (enable_completion) {
 		fi_context = context;
@@ -734,7 +738,7 @@ static inline ssize_t
 psmx2_tagged_inject_specialized(struct fid_ep *ep, const void *buf,
 				size_t len, fi_addr_t dest_addr,
 				uint64_t tag, int av_map,
-				int has_data, uint64_t data)
+				int have_data, uint64_t data)
 {
 	struct psmx2_fid_ep *ep_priv;
 	psm2_epaddr_t psm2_epaddr;
@@ -755,10 +759,10 @@ psmx2_tagged_inject_specialized(struct fid_ep *ep, const void *buf,
 		psm2_epaddr = psmx2_av_translate_addr(ep_priv->av, ep_priv->tx, dest_addr, FI_AV_TABLE);
 	}
 
-	if (has_data)
+	if (have_data)
 		PSMX2_SET_TAG(psm2_tag, tag, data, PSMX2_TYPE_TAGGED | PSMX2_IMM_BIT);
 	else
-		PSMX2_SET_TAG(psm2_tag, tag, 0, PSMX2_TYPE_TAGGED);
+		PSMX2_SET_TAG(psm2_tag, tag, ep_priv->sep_id, PSMX2_TYPE_TAGGED);
 
 	err = psm2_mq_send2(ep_priv->tx->psm2_mq, psm2_epaddr, 0,
 			    &psm2_tag, buf, len);
@@ -895,9 +899,10 @@ ssize_t psmx2_tagged_sendv_generic(struct fid_ep *ep,
 	assert(av);
 	psm2_epaddr = psmx2_av_translate_addr(av, ep_priv->tx, dest_addr, av->type);
 
-	PSMX2_SET_TAG(psm2_tag, tag, (uint32_t)data,
-		      msg_flags | PSMX2_IMM_BIT_SET(have_data));
-
+	if (have_data)
+		PSMX2_SET_TAG(psm2_tag, tag, (uint32_t)data, msg_flags | PSMX2_IMM_BIT);
+	else
+		PSMX2_SET_TAG(psm2_tag, tag, (uint32_t)ep_priv->sep_id, msg_flags);
 
 	if ((flags & PSMX2_NO_COMPLETION) ||
 	    (ep_priv->send_selective_completion && !(flags & FI_COMPLETION)))

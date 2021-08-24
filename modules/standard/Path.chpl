@@ -818,7 +818,7 @@ proc replaceExt(path: string, newExt: string): string throws {
     if  basename.isEmpty() {
       throw new owned IllegalArgumentError(path, "has an empty basename");
     }
-    // check is extension contains spearator.
+    // check if extension contains separator.
     else if newExt.find(pathSep) != -1 {
       throw new owned IllegalArgumentError(newExt, "extension can't contain path separators");
     }

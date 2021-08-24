@@ -58,8 +58,6 @@ class TaskVar final : public VarLikeDecl {
   };
 
  private:
-  Intent intent_;
-
   TaskVar(ASTList children, UniqueString name,
           TaskVar::Intent intent,
           int8_t typeExpressionChildNum,
@@ -67,12 +65,18 @@ class TaskVar final : public VarLikeDecl {
       : VarLikeDecl(asttags::TaskVar, std::move(children),
                     Decl::DEFAULT_VISIBILITY,
                     name,
+                    (IntentList)((int)intent),
                     typeExpressionChildNum,
-                    initExpressionChildNum),
-        intent_(intent) {}
+                    initExpressionChildNum)
+  { }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const TaskVar* lhs = this;
+    const TaskVar* rhs = (const TaskVar*) other;
 
+    return lhs->varLikeDeclContentsMatchInner(rhs);
+  }
+ 
   void markUniqueStringsInner(Context* context) const override {
     varLikeDeclMarkUniqueStringsInner(context);
   }
@@ -89,7 +93,7 @@ class TaskVar final : public VarLikeDecl {
   /**
     Returns the intent of this task variable.
   */
-  Intent intent() const { return this->intent_; }
+  Intent intent() const { return (Intent)((int)storageKind()); }
 
 };
 

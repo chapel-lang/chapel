@@ -25,19 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Break::contentsMatchInner(const ASTNode* other) const {
-  const Break* lhs = this;
-  const Break* rhs = other->toBreak();
-
-  if (lhs->targetChildNum_ != rhs->targetChildNum_)
-    return false;
-
-  if (!lhs->expressionContentsMatchInner(rhs))
-    return false;
-
-  return true;
-}
-
 owned<Break> Break::build(Builder* builder, Location loc,
                           owned<Identifier> target) {
   ASTList lst;

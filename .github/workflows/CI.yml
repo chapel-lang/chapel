@@ -58,8 +58,8 @@ jobs:
         fetch-depth: 100000
     - name: check annotations
       run: |
-        make test-venv
-        CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
+        CHPL_LLVM=none make test-venv
+        CHPL_LLVM=none CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
 
   bad_rt_calls:
     runs-on: ubuntu-latest

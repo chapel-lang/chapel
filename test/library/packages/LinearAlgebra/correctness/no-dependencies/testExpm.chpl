@@ -65,7 +65,7 @@ use TestUtils;
   // Input Matrices of Format
   // [1.0 10^n 0.0]
   // [0.0 -1.0 0.0]
-  // [0.0  0.0 0.0]
+  // [0.0  0.0 1.0]
   const vec = 0..2;
   var D = {vec,vec};
 

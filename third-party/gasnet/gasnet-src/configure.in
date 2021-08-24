@@ -10,7 +10,7 @@ define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
 define([GASNET_RELEASE_VERSION_MAJOR_D],[2021])
-define([GASNET_RELEASE_VERSION_MINOR_D],[3])
+define([GASNET_RELEASE_VERSION_MINOR_D],[8])
 define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
@@ -330,6 +330,26 @@ AC_DEFUN([GASNET_GET_GNUWARNINGFLAGS],[
         GASNET_TRY_WNO_FLAG([$1],[$3-Wno-strict-aliasing],
                               [[$1]FLAGS="$[$1]FLAGS $3-Wno-strict-aliasing"])
     ;;
+    GNU) # GCC 11 appears to have analysis problems which yield bogus warnings (bugs 4228,4231,4232)
+        dnl We do not use AC_CACHE_CHECK() here since doing so w/o additional changes
+        dnl would conflate CC and MPI_CC (and this is not a terribly expensive check).
+        AC_MSG_CHECKING(whether ifelse([$1],[CXX],[C++ compiler is g++],[C compiler is gcc]) 11 or higher)
+        GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS -I$TOP_SRCDIR/other")
+        GASNET_TRY_COMPILE_WITHWARN(GASNETI_C_OR_CXX([$1]),[
+          #include "gasnet_portable_platform.h"
+          #if PLATFORM_COMPILER_VERSION_LT(11,0,0)
+          #error
+          #endif
+        ],[],[ is_gcc11_or_higher=yes ],[ is_gcc11_or_higher=yes ],[ is_gcc11_or_higher=no ])
+        GASNET_POPVAR(CPPFLAGS)
+        AC_MSG_RESULT($is_gcc11_or_higher)
+        if test "$is_gcc11_or_higher" = yes; then
+          GASNET_TRY_WNO_FLAG([$1],[$3-Wno-array-bounds],
+                              [[$1]FLAGS="$[$1]FLAGS $3-Wno-array-bounds"])
+          GASNET_TRY_WNO_FLAG([$1],[$3-Wno-stringop-overflow],
+                              [[$1]FLAGS="$[$1]FLAGS $3-Wno-stringop-overflow"])
+        fi
+    ;;
   esac
          # disable -Wformat if unsure we can support it for the printf implementation in use
          if test -z "$have_c99_format" ; then
@@ -496,6 +516,8 @@ case "$CC_FAMILY" in
     done
   ;;
   Intel) CCOPTFLAGS="-O3" ;;
+  NVHPC)
+    CCOPTFLAGS="-O1" ;; # TODO: restore -O2 if/when bugs are resolved? (see bug 4158)
   PGI)
     CCOPTFLAGS="-O2"  # Default
     # Work-aroung bug 2842: bad code gen by pgcc 10.5-0 through 10.7-0 at -O2
@@ -762,7 +784,13 @@ case "$CC_FAMILY" in
          GASNET_TRY_CFLAG([-wd1572],
                           [MISC_CFLAGS="$MISC_CFLAGS -wd1572"])
          ;;
-  PGI) MISC_CFLAGS="-Masmkeyword -Msignextend" # get inline assembly and sign-extended narrowing
+  NVHPC)
+       # TODO: are either `-M` options, inherited from PGI, still required?
+       # suppress large number of useless default warnings
+       # get inline assembly and sign-extended widening
+       MISC_CFLAGS="-w -Masmkeyword -Msignextend"
+       ;;
+  PGI) MISC_CFLAGS="-Masmkeyword -Msignextend" # get inline assembly and sign-extended widening
        # The following looks backwards, but is not.
        # PGI 20.1 introduced fine-grained warning control at the same time as
        # default-enabling a large number of useless warnings (on the level of
@@ -825,6 +853,7 @@ case "$CC_FAMILY" in
    Sun) gasnet_c99_flags="-xc99=all";;
   Cray) gasnet_c99_flags="'-h c99'";;
    PGI) gasnet_c99_flags="-c99 -c9x" ;;
+ NVHPC) gasnet_c99_flags="-c99" ;;
   # One of these should work for the rest:
   # std=c99 requests strict C99 conformance from gcc and look-alikes, whereas
   # std=gnu99 additionally requests GNU-specific language extensions.
@@ -1004,13 +1033,70 @@ case "$CC_FAMILY" in
   Pathscale) KEEPTMP_CFLAGS="-keep" ;;
   Open64) KEEPTMP_CFLAGS="-keep" ;;
   XLC) KEEPTMP_CFLAGS="-qlist" ;; # XXX: generates .lst w/ asm.  Can't find a way to preserve .i
-  PGI) KEEPTMP_CFLAGS="-Mkeepasm" ;; # XXX: only keeps .s.  Can't find a way to preserve .i
+  PGI|NVHPC) KEEPTMP_CFLAGS="-Mkeepasm" ;; # XXX: only keeps .s.  Can't find a way to preserve .i
   Intel) KEEPTMP_CFLAGS="-save-temps" ;; # XXX: only keeps .s.  Can't find a way to preserve .i
   Sun) KEEPTMP_CFLAGS="-keeptmp" ;;
   Cray) KEEPTMP_CFLAGS="-hkeepfiles" ;; # XXX: only keeps .s.  Can't find a way to preserve .i
   *) KEEPTMP_CFLAGS="" ;;
 esac
 AC_SUBST(KEEPTMP_CFLAGS)      # flags to preserve intermediate file (,i, .s, etc.)
+
+# Global opt-in to (semi-)automatic RPATH support
+GASNET_IF_ENABLED(rpath,
+  [Build GASNet libraries using RPATH for dependent libraries (disabled by default)],
+  enabled_rpath=yes, enabled_rpath=no)
+warn_missing_rpath=''
+
+# Probe(s) of compiler/linker support for RPATH
+#
+# TODO: warning-sensitive linker probe prior to making this ON-by-default
+#   The logic below current uses `AC_TRY_LINK()` to test for support for
+#   linker flags.  However, this is not capable of rejecting flags which
+#   induce warnings rather than failure.  The most straight-forward approach
+#   to checking for warnings is susceptible to persistent warnings (such as
+#   for impending license expiration).  Therefore, before RPATH support can be
+#   ON by default, this probe should use `GASNET_TRY_LDFLAG()`, which does not
+#   *yet* exist, but would be analogous to `GASNET_TRY_CFLAG()`.
+#   Example scenarios where this would improve our behavior:
+#   + Compilers/linkers which don't recognize flags we attempt, but only warn.
+#     This would fail the probe, possibly allowing a later flag to be chosen.
+#   + Conflicts (such as hypothetically with `-static`) which generate
+#     warnings that an otherwise supported behavior is unavailable.
+#     This would probably fail *all* the probes, resulting in disabling a
+#     "non-feature" that only generates warnings.
+#   + Might check if multiple instances of the same directory generates a warning.
+#     However, we don't have a good solution in mind if this is ever the case.
+#
+pushdef([cache_var],cv_prefix[]cc_rpath_option)
+AC_MSG_CHECKING([for rpath option to \$CC])
+AC_CACHE_VAL(cache_var, [
+  cache_var='unknown'
+  if test "$CC_FAMILY$CC_SUBFAMILY" = 'GNUNVIDIA'; then
+    wl='-Xlinker '
+  else
+    wl='-Wl,'
+  fi
+  for opt in "${wl}-rpath," "${wl}-rpath=" "${wl}-rpath ${wl}"; do
+    GASNET_PUSHVAR(LDFLAGS,"$opt${TMPDIR:-/tmp}")
+    AC_TRY_LINK([ #include <stdio.h> ],
+                [ puts("hello"); ],
+                [ cache_var="$opt" ],
+               )
+    GASNET_POPVAR(LDFLAGS)
+    if test x"$cache_var" != xunknown; then
+      break
+    fi
+  done
+  unset wl
+])
+if test x"$cache_var" = 'xunknown'; then
+  AC_MSG_RESULT(unknown)
+  unset cc_rpath_option
+else
+  AC_MSG_RESULT("${cache_var}DIR") # explicit (visible) quotes are intentional
+  cc_rpath_option="$cache_var"
+fi
+popdef([cache_var])
 
 dnl GASNET_TOOLSONLY_FALSE_BEGIN
 segconfig=""
@@ -1142,7 +1228,7 @@ Sun)
 XLC)
     GASNET_CHECK_GCC_ASM($1, $2)
   ;;
-GNU|Intel|Pathscale|Open64|Clang|PGI|TINY)
+GNU|Intel|Pathscale|Open64|Clang|NVHPC|PGI|TINY)
     # Currently believe all of these support GCC-style inline ASM on all CPUs
     # where we use it.  If that is ever *not* the case then one should split
     # off the case for the relevant compiler and apply banlists or probes.
@@ -1544,7 +1630,8 @@ AC_DEFUN([GASNET_PACKAGE_CFLAGS],[
 
 dnl GASNET_PACKAGE_LDFLAGS(PREFIX, libnames, [extra flags], [noenv])
 dnl   Construct [PREFIX]_LDFLAGS to contain the proper "-L$[PREFIX]_HOME/lib{,32,64}" plus [extra flags]
-dnl   Special cases $[PREFIX]_HOME = "/usr" or "/" to omit the "-L..."
+dnl   Optionally includes an RPATH option, based on --enable-rpath and --(en|dis)able-[PREFIX]-rpath.
+dnl   Special cases $[PREFIX]_HOME = "/usr" or "/" to omit the "-L..." and rpath
 dnl The libnames arg is like AC_CHECK_LIB: just "foo" and "bar", not libfoo.a or libbar.so
 dnl If the optional [noenv] argument is non-empty then GASNET_ENV_DEFAULT in NOT used
 AC_DEFUN([GASNET_PACKAGE_LDFLAGS],[
@@ -1553,22 +1640,63 @@ AC_DEFUN([GASNET_PACKAGE_LDFLAGS],[
   pushdef([the_var],$1[]_LDFLAGS)
   pushdef([the_guess],$1[]_ldflags_guess)
   pushdef([extra_flags],ifelse(len([$3]),[0],[],[ $3]))  dnl prepends space only if non-empty
+  pushdef([rpath_opt],translit($1,'A-Z_','a-z-')-rpath)
+  pushdef([rpath_var],enable_[]translit($1,'A-Z-','a-z_')_rpath)
   dnl TODO - strengthen this if we can determine linker's default search path:
   case "$the_home" in
     /usr|/) the_guess='$3';;
-         *) for the_guess in "$the_home/lib${GASNETI_PTR_BITS}" "$the_home/lib"; do
+         *) for the_guess[]_dir in "$the_home/lib${GASNETI_PTR_BITS}" "$the_home/lib" ''; do
+              test -z "$the_guess[]_dir[]" && break
               for the_guess[]_lib in $2; do
                 for the_guess[]_suff in a so sl dylib la dll; do
-                  if test -r "$the_guess/lib$the_guess[]_lib.$the_guess[]_suff"; then break 3; fi
+                  if test -r "$the_guess[]_dir/lib$the_guess[]_lib.$the_guess[]_suff"; then break 3; fi
                 done
               done
             done
-            the_guess="-L$the_guess[]extra_flags";;
+          if test -n "$the_guess[]_dir[]"; then
+            the_guess="-L$the_guess[]_dir[]"
+            pushdef([GASNET_SUPPRESSHELP],1) # deferred to appear after help for [PREFIX]_LDFLAGS
+            GASNET_IF_ENABLED_WITH_AUTO(rpath_opt, [N/A],
+              [rpath_var="$the_guess[]_dir"],
+              [rpath_var=''],
+              [if test -z "$rpath_var"; then
+                 if test "x$enabled_rpath" = xyes; then
+                   rpath_var="$the_guess[]_dir"
+                 else
+                   rpath_var=''
+                 fi
+               fi])
+            popdef([GASNET_SUPPRESSHELP])
+            if test -n "$rpath_var"; then
+              if test "${cc_rpath_option:+set}" = set; then
+                the_guess="$the_guess $cc_rpath_option$rpath_var"
+              else
+                warn_missing_rpath="$warn_missing_rpath translit($1,'A-Z-','a-z_')"
+              fi
+            fi
+            the_guess="${the_guess}extra_flags"
+          else
+            the_guess='$3'
+          fi
+            ;;
   esac
+  dnl show_rpath_help captures whether with_expanded_[PKG]_LDFLAGS is defined
+  dnl prior to us (optionally) calling GASNET_ENV_DEFAULT, which *will* set it.
+  dnl This allows us to display the help for --enable-[pkg]-rpath immediately
+  dnl following the help (if any) for [PKG]_LDFLAGS, while ensuring that
+  dnl with_expanded_[PKG]_LDFLAGS will suppress both.
+  pushdef([show_rpath_help],ifdef(with_expanded_[]the_var,no,yes))
   ifelse(len([$4]),[0],[GASNET_ENV_DEFAULT(the_var, $the_guess)],[the_var=$the_guess])
+  ifelse(show_rpath_help,[yes],[
+    AC_ARG_ENABLE(rpath_opt,GASNET_OPTION_HELP((en|dis)able-rpath_opt,
+                  [Use RPATH in default the_var if appropriate (enabled by default with --enable-rpath)]))])
+  popdef([show_rpath_help])
   unset the_guess
+  unset the_guess[]_dir
   unset the_guess[]_lib
   unset the_guess[]_suff
+  popdef([rpath_var])
+  popdef([rpath_opt])
   popdef([extra_flags])
   popdef([the_guess])
   popdef([the_var])
@@ -1578,13 +1706,19 @@ AC_DEFUN([GASNET_PACKAGE_LDFLAGS],[
 
 ########################################################################
 ##
-## Modify CRAY_[LIB]_POST_LINK_OPTS envvars to reference the 'default'
+## GASNET_CRAY_FIX_LINK_OPTS(lib [, envvar])
 ##
-AC_DEFUN([GASNET_CRAY_POST_LINK_OPTS],[
-  pushdef([varname],CRAY_[]translit($1,'a-z','A-Z')[]_POST_LINK_OPTS)
+## Modify CRAY_[LIB]_POST_LINK_OPTS envvars to reference the 'default'
+## rather than the versioned directory normally set by environment modules
+##    lib: short name ('foo', not 'libfoo')
+## envvar: defaults to CRAY_[upcase(lib)]_POST_LINK_OPTS
+##
+AC_DEFUN([GASNET_CRAY_FIX_LINK_OPTS],[
+  GASNET_FUN_BEGIN([$0($@)])
+  pushdef([varname],ifelse(len([$2]),[0],[CRAY_[]translit($1,'a-z','A-Z')[]_POST_LINK_OPTS],[$2]))
   if test -n x"$varname"; then
-    cplo_tmp=`$PERL -e "\\\$_='$varname'; s,/$1/[[^/]]*/lib,/$1/default/lib,; print;"`
-    cplo_dir=`$PERL -e "\\\$_='$cplo_tmp'; m,-L(/opt/cray/$1/[[^ ]]*),; print \\\$[]1;"`
+    cplo_tmp=`$PERL -e "\\\$_='$varname'; s,/$1/[[^/]]*/lib,/$1/default/lib,g; print;"`
+    cplo_dir=`$PERL -e "\\\$_='$cplo_tmp'; m,-L([[^ ]]*/$1/[[^ ]]*),; print \\\$[]1;"`
     if test -d "$cplo_dir/."; then
       varname="$cplo_tmp"
     else
@@ -1592,12 +1726,14 @@ AC_DEFUN([GASNET_CRAY_POST_LINK_OPTS],[
     fi
   fi
   popdef([varname])
+  GASNET_FUN_END([$0])
 ])
+# Fix the POST_LINK_OPTS for libs required by aries-conduit
 GASNET_IF_DISABLED_NOHELP(cray-post-link-rewrite,[],[
-  GASNET_CRAY_POST_LINK_OPTS([pmi])
-  GASNET_CRAY_POST_LINK_OPTS([udreg])
-  GASNET_CRAY_POST_LINK_OPTS([ugni])
-  GASNET_CRAY_POST_LINK_OPTS([xpmem])
+  GASNET_CRAY_FIX_LINK_OPTS([pmi])
+  GASNET_CRAY_FIX_LINK_OPTS([udreg])
+  GASNET_CRAY_FIX_LINK_OPTS([ugni])
+  GASNET_CRAY_FIX_LINK_OPTS([xpmem])
 ])
 
 ########################################################################
@@ -2125,7 +2261,8 @@ if test "$cross_compiling" = 'no' -o "$GASNETI_HAVE_X86_CMPXCHG16B" = 'probe' ; 
   #if PLATFORM_ARCH_X86_64
     #if PLATFORM_COMPILER_GNU || PLATFORM_COMPILER_INTEL || \
         PLATFORM_COMPILER_PATHSCALE || PLATFORM_COMPILER_PGI || \
-        PLATFORM_COMPILER_OPEN64 || PLATFORM_COMPILER_CLANG
+        PLATFORM_COMPILER_OPEN64 || PLATFORM_COMPILER_CLANG || \
+        PLATFORM_COMPILER_NVHPC
 
 	unsigned long *array[3];
 	volatile unsigned long *p = (void *)(((unsigned long)array + 15) & ~(unsigned long)15);
@@ -2174,6 +2311,7 @@ GASNET_TRY_CACHE_CHECK(for x86 EBX register, x86_ebx, [
     #if PLATFORM_COMPILER_GNU || PLATFORM_COMPILER_INTEL || \
         PLATFORM_COMPILER_PATHSCALE || PLATFORM_COMPILER_PGI || \
         PLATFORM_COMPILER_OPEN64 || \
+        PLATFORM_COMPILER_NVHPC || \
         PLATFORM_COMPILER_CLANG
       __asm__ __volatile__ ("push %0" : : "b" (0));
     #else
@@ -2781,7 +2919,7 @@ AC_DEFUN([GASNET_FH_CFLAGS],[
                ;;
         Intel) fh_cflags_default="-no-ansi-alias";;
           Sun) fh_cflags_default="-xalias_level=any";;
-          PGI) fh_cflags_default="-alias=traditional";;
+    NVHPC|PGI) fh_cflags_default="-alias=traditional";;
   esac
   GASNET_ENV_DEFAULT(FH_CFLAGS, [$fh_cflags_default], [C flags for building the Firehose memory registration library])
   AC_SUBST(FH_CFLAGS)
@@ -2941,6 +3079,13 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
        CXXDEBUGFLAGS="$CXXFLAGS"
        GASNET_POPVAR(CXXFLAGS)
     ;;
+  NVHPC)
+       # TODO: are either `-M` options, inherited from PGI, still required?
+       # suppress large number of useless default warnings
+       # get inline assembly and sign-extended widening
+       MISC_CXXFLAGS="-w -Masmkeyword -Msignextend"
+       CXXOPTFLAGS="-O1" # TODO: restore -O2 if/when bugs are resolved? (see bug 4158)
+       ;;
     PGI)   MISC_CXXFLAGS="-Masmkeyword -Msignextend"
            case "$GASNETI_PTR_BITS$target_os" in
              64darwin*) # PGI seems to have a different ABI
@@ -3517,7 +3662,7 @@ else
     CONDUIT_HOME([UCX library], [ucx_info], [/opt/mellanox/ucx], [include/ucp/api/ucp.h])
     CONDUIT_CFLAGS
     GASNET_ENV_DEFAULT(UCX_LIBS, -lucp -lucs -luct -lucm)
-    CONDUIT_LDFLAGS(ucx)
+    CONDUIT_LDFLAGS(ucp)
     GASNET_SPLIT_LINKER_OPTS(UCX_LDFLAGS,UCX_LIBS)
 
     # Try to compile and link a basic UCX program
@@ -3669,6 +3814,19 @@ if test "$enabled_ibv" = yes; then
       AC_DEFINE_UNQUOTED(GASNETC_IBV_MAX_HCAS_CONFIGURE, $gasnetc_ibv_max_hcas)
     fi
 
+    ibv_fenced_puts=0
+    GASNET_WITH(ibv-fenced-puts,
+      [Default value of GASNET_USE_FENCED_PUTS environment variable for ibv-conduit (default is 0)],
+      [
+       case $withval in
+         yes) ibv_fenced_puts=1;;
+         0|1) ibv_fenced_puts=$withval;;
+         *) AC_MSG_ERROR([Optional argument to --with-ibv-fenced-puts must be 0 or 1]);;
+       esac],
+      [ibv_fenced_puts=0],
+      [ibv_fenced_puts=1])
+    AC_DEFINE_UNQUOTED(GASNETC_IBV_FENCED_PUTS_CONFIGURE, $ibv_fenced_puts)
+
     # Default GASNET_IBV_PORTS
     GASNET_WITH(ibv-ports,
         [Default value of GASNET_IBV_PORTS environment variable (default is empty)],
@@ -3759,6 +3917,10 @@ if test "$enabled_ibv" = yes; then
         fi
       fi
 
+    GASNET_IF_DISABLED([ibv-serialize-poll-cq],
+                       [Disable serialization of CQ polling in ibv-conduit (enabled by default)],
+                       [:], [AC_DEFINE(GASNETC_IBV_SERIALIZE_POLL_CQ_CONFIGURE)])
+
     GASNET_WITH(ibv-max-medium,
        [Specify gasnet_AMMaxMedium() for ibv-conduit (default 65536)],
        [case "$withval" in
@@ -3817,38 +3979,9 @@ if test "$enabled_aries" = yes; then
   GNI_LDFLAGS=
   GNI_LIBS=
 
-  # Look for pmi_cray.h, allowing for the possibility we are not using the wrapper compiler
-  # Setting $have_pmi_cray squashes a later probe for pmi.h.
-  # Therefore we perform the equivalent (but not quite identical) work here
-  pushdef([with_expanded_PMI_HOME],1)    dnl suppress help here, but permit later
-  pushdef([with_expanded_PMI_LDFLAGS],1)
-  pushdef([with_expanded_PMI_LIBS],1)
-  GASNET_ENV_DEFAULT(PMI_HOME, )
-  if test -n "$PMI_HOME"; then
-    GASNET_PACKAGE_CFLAGS(PMI, [], noenv)
-    GASNET_PACKAGE_LDFLAGS(PMI, pmi, [], noenv)
-  else
-    GASNET_ENV_DEFAULT(PMI_LDFLAGS, "$CRAY_PMI_POST_LINK_OPTS")
-  fi
-  GASNET_ENV_DEFAULT(PMI_LIBS, "-lpmi")
-  popdef([with_expanded_PMI_LIBS])
-  popdef([with_expanded_PMI_LDFLAGS])
-  popdef([with_expanded_PMI_HOME])
-
-  PMI_SPAWNER_CFLAGS=$PMI_CFLAGS;    unset PMI_CFLAGS
-  PMI_SPAWNER_LDFLAGS=$PMI_LDFLAGS;  unset PMI_LDFLAGS
-  PMI_SPAWNER_LIBS=$PMI_LIBS;        unset PMI_LIBS
-  GASNET_SPLIT_LINKER_OPTS(PMI_SPAWNER_LDFLAGS, PMI_SPAWNER_LIBS)
-
-  GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS $PMI_SPAWNER_CFLAGS")
-  GASNET_CHECK_CRAY_HEADER([pmi_cray.h],[CRAY_PMI_INCLUDE_OPTS],[
-      have_pmi_cray_h=yes
-      # Found in header search path (possibly due to PMI_SPAWNER_CFLAGS)
-    ],[
-      have_pmi_cray_h=yes
-      PMI_SPAWNER_CFLAGS="$PMI_SPAWNER_CFLAGS $CRAY_PMI_INCLUDE_OPTS"
-    ])
-  GASNET_POPVAR(CPPFLAGS)
+  # We previously setup PMI spawning here, but now the probe for Cray PMI
+  # support has been unified with the generic pmi-spawner probe.
+  # That logic will still ensure lack of Cray PMI will be fatal.
 
   # Look for gni_pub.h, allowing for the possibility we are not using the wrapper compiler
   GASNET_CHECK_CRAY_HEADER([gni_pub.h],[CRAY_GNI_HEADERS_INCLUDE_OPTS],[:],[
@@ -3880,24 +4013,25 @@ if test "$enabled_aries" = yes; then
 
   if test $have_aries = yes; then
     GASNET_SPLIT_LINKER_OPTS(GNI_LDFLAGS,GNI_LIBS)
-    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS ${GNI_LDFLAGS} $PMI_SPAWNER_LDFLAGS")
-    GASNET_PUSHVAR(LIBS,"$LIBS ${GNI_LIBS} $PMI_SPAWNER_LIBS")
-    GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS $GNI_CFLAGS $PMI_SPAWNER_CFLAGS")
+    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS ${GNI_LDFLAGS}")
+    GASNET_PUSHVAR(LIBS,"$LIBS ${GNI_LIBS}")
+    GASNET_PUSHVAR(CPPFLAGS,"$CPPFLAGS $GNI_CFLAGS")
     GASNET_TRY_CACHE_LINK(for working Aries configuration, aries_works, [
       #include <stddef.h>
       #include <stdint.h>
       #include <gni_pub.h>
-      #include <pmi_cray.h>
     ], [
       gni_cdm_handle_t cdm_hndl;
       gni_return_t rc = GNI_CdmDestroy(cdm_hndl);
-
-      int localranks;
-      int ret = PMI_Get_numpes_on_smp(&localranks); /* Cray extension */
     ], [ : ], [ have_aries=no; GASNET_ERR_SAVE() ] )
     GASNET_POPVAR(LDFLAGS)
     GASNET_POPVAR(LIBS)
     GASNET_POPVAR(CPPFLAGS)
+  fi
+
+  if test $have_aries = yes; then
+    # require PMI spawner probe to find Cray's version
+    force_pmi=yes
   fi
 
   GASNET_IF_ENABLED_WITH_AUTO(aries-udreg,
@@ -4294,60 +4428,110 @@ AM_CONDITIONAL(HAVE_BOOTSTRAP_SSH, test "$have_fork" = yes)
 GASNET_IF_ENABLED_WITH_AUTO(pmi, [Enable/disable PMI support for job spawning],
   [enable_pmi=yes; force_pmi=yes], [enable_pmi=no], [enable_pmi=probe])
 
+# If user specifies a PMI version, then we will not probe for others
+unset using_pmi_version
+GASNET_WITH(pmi-version, [PMI version (x, 1, 2 or cray)] , [
+    case "$withval" in
+      1|2|x|cray) using_pmi_version="$withval";;
+      *) GASNET_MSG_ERROR([Argument to --with-pmi-version must be 'x', '1', '2', or 'cray']);;
+    esac
+], [
+    GASNET_MSG_WARN([Ignoring --without-pmi-version])
+])
+if test "$enabled_aries$have_aries" = yesyes; then
+  if test -n "$using_pmi_version" && test "$using_pmi_version" != 'cray'; then
+    GASNET_MSG_WARN([Ignoring --with-pmi-version=$using_pmi_version in favor of Cray PMI required by aries-conduit])
+  fi
+  using_pmi_version=cray
+fi
+
 # Check for header matching the selected lib
 # TODO: fragile if multiple PMI libs are installed
 AC_DEFUN([GASNET_PMI_SPAWNER_CFLAGS], [
-    for pmi_headers in "$PMI_HOME/include/slurm" "$PMI_HOME/include/portals4" "$PMI_HOME/include" 'no'; do
+    GASNET_FUN_BEGIN([$0($@)])
+    AC_MSG_CHECKING(for location of $1)
+    for pmi_headers in "$PMI_HOME/include/slurm" "$PMI_HOME/include/portals4" "$PMI_HOME/include" ''; do
+      test -z "${pmi_headers}" && break
       test -f "${pmi_headers}/$1" && break
     done
-    if test "${pmi_headers}" = no; then
+    if test -z "${pmi_headers}"; then
       have_pmi=no
+      pmi_headers='not found'
     elif test "${pmi_headers}" != '/usr/include'; then
       PMI_SPAWNER_CFLAGS="-I${pmi_headers}"
     fi
+    AC_MSG_RESULT(${pmi_headers})
+    GASNET_FUN_END([$0])
 ])
 
 have_pmi=no
-if test -n "$have_pmi_cray_h"; then
-  with_pmi='no'
-  have_pmi='yes'
-  pmi_version=' (Cray)'
-elif test "$enable_pmi" != 'no'; then
-  pmi_guess=/usr
+if test "$enable_pmi" != 'no'; then
+  # On a Cray EX the module is named 'cray-pmi', which is sufficiently unique:
+  expr ":${LOADEDMODULES}" : ".*:cray-pmi/" >/dev/null 2>&1
+  loaded_cray_pmi=$?  # 0 is success
+  # On a Cray XC the module is named 'pmi', which is insufficiently unique, so we look for
+  # both 'pmi' and 'craype'.
+  ( expr ":${LOADEDMODULES}" : ".*:pmi/" && \
+    expr ":${LOADEDMODULES}" : ".*:craype/" ) >/dev/null 2>&1
+  loaded_pmi_plus_craype=$?  # 0 is success
+  # Auto-detect Cray PMI prefix if either environment module loaded, *unless* non-Cray version requested
+  if ( test "$loaded_cray_pmi" = 0 || test "$loaded_pmi_plus_craype" = 0 ) && \
+     ( test "$using_pmi_version" = 'cray' || test -z "$using_pmi_version" ); then
+    # Several places to look.
+    for dir in `expr "x${CRAY_PMI_INCLUDE_OPTS}" : 'x-I\([[^ ]]*\)' 2>/dev/null` \
+               `expr "x${CRAY_PMI_POST_LINK_OPTS}" : 'x-L\([[^ ]]*\)' 2>/dev/null` \
+               "$CRAY_PMI_PREFIX/dummy" '/opt/cray/pe/pmi/default/dummy'; do
+      if test -n "$dir"; then
+        pmi_guess=`dirname "$dir" 2>/dev/null`
+        if test -e "$pmi_guess/include/pmi_cray.h"; then
+          break
+        fi
+      fi
+    done
+  else
+    pmi_guess='/usr'
+  fi
   GASNET_ENV_DEFAULT(PMI_HOME, $pmi_guess, [Install prefix of PMI library])
 
-  case "$PMI_HOME" in
-    /usr|/) pmi_ldflags_guess='' ;;
-    *)
-      if test -d "$PMI_HOME/lib${GASNETI_PTR_BITS}"; then
-        pmi_ldflags_guess="-L$PMI_HOME/lib${GASNETI_PTR_BITS}"
-      else
-        pmi_ldflags_guess="-L$PMI_HOME/lib"
-      fi
-    ;;
-  esac
+  GASNET_PACKAGE_LDFLAGS(PMI, [pmi pmi2 pmix])
+  PMI_SPAWNER_LDFLAGS=$PMI_LDFLAGS; unset PMI_LDFLAGS
 
-  GASNET_ENV_DEFAULT(PMI_LDFLAGS, $pmi_ldflags_guess)
-  PMI_SPAWNER_LDFLAGS=$PMI_LDFLAGS
-  unset PMI_LDFLAGS
-
-  # If user specifies one PMI version then disqualify the other
-  GASNET_WITH(pmi-version, [PMI version (x, 1, or 2)] , [
-    case "$withval" in
-      1) use_pmi1=yes;;
-      2) use_pmi2=yes;;
-      x) use_pmix=yes;;
-      *) GASNET_MSG_ERROR([Argument to --with-pmi-version must be 'x', '1' or '2']);;
-    esac
-    with_pmi_version="$withval"
-  ], [
-    GASNET_MSG_WARN([Ignoring --without-pmi-version])
-  ])
-
-  # Check for libs unless disqualifed by --with-pmi-version=
+  # Check for various implementations' libs unless disqualifed by --with-pmi-version=
   GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $PMI_SPAWNER_LDFLAGS")
   GASNET_ENV_DEFAULT(PMI_LIBS, probe)
-  if test -z "${use_pmi1+set}" && test -z "${use_pmi2+set}"; then
+  ## Cray PMI
+  if test "$using_pmi_version" = 'cray' || test -z "$using_pmi_version"; then
+    GASNET_PUSHVAR(LIBS,"")
+    if test "$PMI_LIBS" = 'probe'; then
+      # At the time of writting, XC systems use libpmi and EX systems use libpmi2.
+      # Use of AC_SEARCH_LIBS() will yield a "none required" result when using
+      # Cray's `cc` wrapper, which could then require pmi environment module to
+      # be loaded at application link time.  The following "just works" because,
+      # when using the wrapper, it reduces to checking if the library exists.
+      AC_CHECK_LIB(pmi2, PMI_Get_nidlist_ptr,
+                   [have_pmi=yes; LIBS="-lpmi2"],
+                   [AC_CHECK_LIB(pmi, PMI_Get_nidlist_ptr,
+                                 [have_pmi=yes; LIBS="-lpmi"])])
+    else
+      LIBS="$PMI_LIBS"
+      AC_CHECK_FUNC(PMI_Get_nidlist_ptr, [have_pmi=yes])
+    fi
+    if test "$have_pmi" = 'yes'; then
+      GASNET_PMI_SPAWNER_CFLAGS([pmi_cray.h])
+    fi
+    if test "$have_pmi" = 'yes'; then
+      using_pmi_version=cray
+      pretty_pmi_version=' (Cray)'
+      AC_DEFINE(HAVE_PMI_CRAY_H)
+      PMI_SPAWNER_LIBS="$LIBS"
+      GASNET_IF_DISABLED_NOHELP(cray-post-link-rewrite,[],
+        [GASNET_CRAY_FIX_LINK_OPTS([pmi],[PMI_SPAWNER_LDFLAGS])]
+      )
+    fi
+    GASNET_POPVAR(LIBS)
+  fi
+  ## PMIx
+  if test "$using_pmi_version" = 'x' || test -z "$using_pmi_version"; then
     GASNET_PUSHVAR(LIBS,"")
     if test "$PMI_LIBS" = 'probe'; then
       AC_SEARCH_LIBS(PMIx_Init, [pmix], [have_pmi=yes])
@@ -4383,14 +4567,15 @@ elif test "$enable_pmi" != 'no'; then
       GASNET_POPVAR(CFLAGS)
     fi
     if test "$have_pmi" = 'yes'; then
-      use_pmix=yes
-      pmi_version=' (version=x)'
+      using_pmi_version=x
+      pretty_pmi_version=' (version=x)'
       AC_DEFINE(HAVE_PMIX_H)
       PMI_SPAWNER_LIBS="$LIBS"
     fi
     GASNET_POPVAR(LIBS)
   fi
-  if test -z "${use_pmi1+set}" && test -z "${use_pmix+set}"; then
+  ## PMI2
+  if test "$using_pmi_version" = '2' || test -z "$using_pmi_version"; then
     GASNET_PUSHVAR(LIBS,"")
     if test "$PMI_LIBS" = 'probe'; then
       AC_SEARCH_LIBS(PMI2_Init, [pmi2 mpich], [have_pmi=yes])
@@ -4402,8 +4587,8 @@ elif test "$enable_pmi" != 'no'; then
       GASNET_PMI_SPAWNER_CFLAGS([pmi2.h])
     fi
     if test "$have_pmi" = 'yes'; then
-      use_pmi2=yes
-      pmi_version=' (version=2)'
+      using_pmi_version=2
+      pretty_pmi_version=' (version=2)'
       AC_DEFINE(HAVE_PMI2_H)
       PMI_SPAWNER_LIBS="$LIBS"
       GASNET_IF_ENABLED(pmi2-fast-barrier, Use PMI2_KVS_fence as barrier. This may not work with all PMI2 implementations,
@@ -4411,7 +4596,8 @@ elif test "$enable_pmi" != 'no'; then
     fi
     GASNET_POPVAR(LIBS)
   fi
-  if test -z "${use_pmi2+set}" && test -z "${use_pmix+set}"; then
+  ## PMI (aka PMI1)
+  if test "$using_pmi_version" = '1' || test -z "$using_pmi_version"; then
     GASNET_PUSHVAR(LIBS,"")
     if test "$PMI_LIBS" = 'probe'; then
       AC_SEARCH_LIBS(PMI_Init, [pmi mpich portals_runtime], [have_pmi=yes])
@@ -4423,8 +4609,8 @@ elif test "$enable_pmi" != 'no'; then
       GASNET_PMI_SPAWNER_CFLAGS([pmi.h])
     fi
     if test "$have_pmi" = 'yes'; then
-      use_pmi1=yes
-      pmi_version=' (version=1)'
+      using_pmi_version=1
+      pretty_pmi_version=' (version=1)'
       AC_DEFINE(HAVE_PMI_H)
       PMI_SPAWNER_LIBS="$LIBS"
     fi
@@ -4471,9 +4657,12 @@ elif test -z "$force_pmi"; then
   PMI_SPAWNER_LIBS=""
   PMI_SPAWNER_LDFLAGS=""
   PMI_SPAWNER_CFLAGS=""
-elif test -n "${with_pmi_version+set}"; then
+elif test "$enabled_aries$have_aries" = yesyes; then
   AC_MSG_RESULT(no)
-  GASNET_MSG_ERROR([Requested PMI version $with_pmi_version could not be found])
+  GASNET_MSG_ERROR([Cray PMI could not be found, but is required by aries-conduit])
+elif test -n "${using_pmi_version+set}"; then
+  AC_MSG_RESULT(no)
+  GASNET_MSG_ERROR([Requested PMI version $using_pmi_version could not be found])
 else
   AC_MSG_RESULT(no)
   GASNET_MSG_ERROR([Requested PMI support could not be found])
@@ -5359,6 +5548,12 @@ dnl GASNET_TOOLSONLY_FALSE_END
 ##  Final Output
 ##
 
+# TODO: exclude platforms where RPATH is "not a thing"
+if test -n "$warn_missing_rpath"; then
+  GASNET_MSG_WARN([I do not know how to encode an RPATH for your system.
+Had support been present, the following conduits or packages would have used an RPATH:$warn_missing_rpath.])
+fi
+
 GASNET_FIX_EXEC(mpi-conduit/contrib/gasnetrun_mpi)
 GASNET_FIX_EXEC(ibv-conduit/contrib/gasnetrun_ibv)
 GASNET_FIX_EXEC(aries-conduit/contrib/gasnetrun_aries)
@@ -5380,7 +5575,7 @@ cat >>$CONDUIT_LIST <<EOF
   Segment config:         $segconfig
   PSHM support:           $with_pshm
   Atomics support:        $atomics_config
-  PMI support:            $have_pmi$pmi_version
+  PMI support:            $have_pmi$pretty_pmi_version
 EOF
 else
 cat >>$CONDUIT_LIST <<EOF

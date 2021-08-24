@@ -93,9 +93,6 @@ in aries-conduit/gasnet_aries.c:
 
 int gasnetc_poll_burst = 10;   /* number of rdma completions to get at once */
 
-Sets the number of events for arriving active messages taken at once
-#define AM_BURST 20
-
 Configuring job launch:
 ----------------------
 
@@ -189,10 +186,10 @@ GASNET_NETWORKDEPTH_SPACE - volume of Eager AM Request queue
   AM protocol, even if less than GASNET_NETWORKDEPTH Requests are outstanding.
   Values smaller than two maximum-size Medium AMs, or larger than 64 maximum-
   sized Medium AMs, will be silently adjusted to that range.
-  Additionally, values will be silently rounded down to the product of a power
+  Additionally, values will be silently rounded down to the product of a
   power-of-two times GASNET_NETWORKDEPTH.  When GASNET_GNI_MAX_MEDIUM is set
   to a recommended value, this adjustment results in an exact multiple of the
-  maximum size of a AM medium.  For all other values, however, there will not
+  maximum size of an AM medium.  For all other values, however, there will not
   be such an alignment of sizes and the maximum number of max-size AM Mediums
   in flight simultaneously may be reduced as a result.
   The default value (prior to the adjustment noted above) is four maximum-size

@@ -48,17 +48,26 @@ class While final : public Loop {
  private:
   While(ASTList children, int8_t conditionChildNum,
         BlockStyle blockStyle,
-        int loopBodyChildNum,
-        int numLoopBodyStmts)
+        int loopBodyChildNum)
     : Loop(asttags::While, std::move(children), blockStyle,
-           loopBodyChildNum,
-           numLoopBodyStmts),
+           loopBodyChildNum),
       conditionChildNum_(conditionChildNum) {
     assert(isExpressionASTList(children_));
     assert(condition());
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const While* lhs = this;
+    const While* rhs = (const While*) other;
+
+    if (lhs->conditionChildNum_ != rhs->conditionChildNum_)
+      return false;
+
+    if (!lhs->loopContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
 
   void markUniqueStringsInner(Context* context) const override {
     loopMarkUniqueStringsInner(context);
@@ -75,7 +84,7 @@ class While final : public Loop {
   static owned<While> build(Builder* builder, Location loc,
                             owned<Expression> condition,
                             BlockStyle blockStyle,
-                            ASTList stmts);
+                            owned<Block> stmts);
 
 
   /**

@@ -50,7 +50,6 @@ static void checkCalls();
 static void checkExternProcs();
 static void checkExportedProcs();
 
-
 static void
 checkConstLoops() {
   if (fWarnConstLoops == true) {

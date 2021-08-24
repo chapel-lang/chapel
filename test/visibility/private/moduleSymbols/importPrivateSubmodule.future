@@ -1,0 +1,2 @@
+bug: private submodule able to be imported from outside parent's scope
+#18257

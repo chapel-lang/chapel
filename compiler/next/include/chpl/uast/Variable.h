@@ -69,17 +69,24 @@ class Variable final : public VarLikeDecl {
            int8_t typeExpressionChildNum,
            int8_t initExpressionChildNum)
       : VarLikeDecl(asttags::Variable, std::move(children), vis, name,
+                    (IntentList)((int)kind),
                     typeExpressionChildNum,
                     initExpressionChildNum),
-        kind_(kind),
         isConfig_(isConfig),
         isField_(isField) {
   }
 
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Variable* lhs = this;
+    const Variable* rhs = (const Variable*) other;
+    return lhs->isConfig_ == rhs->isConfig_ &&
+           lhs->isField_ == rhs->isField_ &&
+           lhs->varLikeDeclContentsMatchInner(rhs);
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    varLikeDeclMarkUniqueStringsInner(context);
+  }
 
-  Kind kind_;
   bool isConfig_;
   bool isField_;
 
@@ -97,7 +104,7 @@ class Variable final : public VarLikeDecl {
   /**
     Returns the kind of the variable (`var` / `const` / `param` etc).
    */
-  Kind kind() const { return this->kind_; }
+  Kind kind() const { return (Kind)((int) storageKind()); }
 
   /**
     Returns true if this variable is a config variable.

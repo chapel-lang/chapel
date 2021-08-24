@@ -694,7 +694,6 @@ proc Block.targetLocsIdx(ind: rank*idxType) {
 }
 
 // TODO: This will not trigger the bounded-coforall optimization
-pragma "order independent yielding loops"
 iter Block.activeTargetLocales(const space : domain = boundingBox) {
   const locSpace = {(...space.dims())}; // make a local domain in case 'space' is distributed
   const low = chpl__tuplify(targetLocsIdx(locSpace.first));
@@ -716,7 +715,7 @@ iter Block.activeTargetLocales(const space : domain = boundingBox) {
   //   L3: 9..max(int)
   //
   // The subset {1..10 by 4} will involve locales 0, 1, and 3.
-  for i in {(...dims)} {
+  foreach i in {(...dims)} {
     const chunk = chpl__computeBlock(i, targetLocDom, boundingBox, boundingBox.dims());
     // TODO: Want 'contains' for a domain. Slicing is a workaround.
     if locSpace[(...chunk)].sizeAs(int) > 0 then
@@ -910,12 +909,14 @@ proc BlockDom.dsiBuildArray(type eltType, param initElts:bool) {
   var myLocArrTemp: unmanaged LocBlockArr(eltType, rank, idxType, stridable)?;
 
   // formerly in BlockArr.setup()
-  coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
-    on dom.dist.targetLocales(localeIdx) {
+  coforall (loc, locDomsElt, locArrTempElt)
+           in zip(dom.dist.targetLocales, dom.locDoms, locArrTemp)
+           with (ref myLocArrTemp) {
+    on loc {
       const LBA = new unmanaged LocBlockArr(eltType, rank, idxType, stridable,
-                                            dom.getLocDom(localeIdx),
+                                            locDomsElt,
                                             initElts=initElts);
-      locArrTemp(localeIdx) = LBA;
+      locArrTempElt = LBA;
       if here.id == creationLocale then
         myLocArrTemp = LBA;
     }
@@ -1153,9 +1154,8 @@ proc BlockArr.nonLocalAccess(i: rank*idxType) ref {
 proc BlockArr.dsiAccess(i: idxType...rank) ref
   return dsiAccess(i);
 
-pragma "order independent yielding loops"
 iter BlockArr.these() ref {
-  for i in dom do
+  foreach i in dom do
     yield dsiAccess(i);
 }
 
@@ -1190,7 +1190,6 @@ proc BlockArr.dsiDynamicFastFollowCheck(lead: domain) {
   return lead.dist.dsiEqualDMaps(this.dom.dist) && lead._value.whole == this.dom.whole;
 }
 
-pragma "order independent yielding loops"
 iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) ref where tag == iterKind.follower {
   proc anyStridable(rangeTuple, param i: int = 0) param
       return if i == rangeTuple.size-1 then rangeTuple(i).stridable
@@ -1239,13 +1238,13 @@ iter BlockArr.these(param tag: iterKind, followThis, param fast: bool = false) r
       use CPtr; // Needed to cast from c_void_ptr in the next line
       const narrowArrSection = __primitive("_wide_get_addr", arrSection):arrSection.type?;
       ref myElems = _to_nonnil(narrowArrSection).myElems;
-      for i in myFollowThisDom do yield myElems[i];
+      foreach i in myFollowThisDom do yield myElems[i];
     }
   } else {
     //
     // we don't necessarily own all the elements we're following
     //
-    for i in myFollowThisDom {
+    foreach i in myFollowThisDom {
       yield dsiAccess(i);
     }
   }

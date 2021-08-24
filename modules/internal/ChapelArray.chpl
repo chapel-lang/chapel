@@ -2328,13 +2328,11 @@ module ChapelArray {
                  place (defaults to `here`)
        :type loc: locale
     */
-    pragma "order independent yielding loops"
-    pragma "no redundant order independent pragma warning"
     iter localSubdomains(loc: locale = here) {
       if _value.dsiHasSingleLocalSubdomain() {
         yield localSubdomain(loc);
       } else {
-        for d in _value.dsiLocalSubdomains(loc) do yield d;
+        foreach d in _value.dsiLocalSubdomains(loc) do yield d;
       }
     }
 
@@ -2983,6 +2981,25 @@ module ChapelArray {
       // this doesn't need to lock since we just created the domain d
       rcdom._value.add_arr(a, locking=false);
       return _newArray(a);
+    }
+
+    /*
+       Return a tuple of ranges describing the bounds of a rectangular domain.
+       For a sparse domain, return the bounds of the parent domain.
+     */
+    proc dims() return this.domain.dims();
+
+    /*
+       Return a range representing the boundary of this
+       domain in a particular dimension.
+     */
+    proc dim(d : int) {
+      return this.domain.dim(d);
+    }
+
+    pragma "no doc"
+    proc dim(param d : int) {
+      return this.domain.dim(d); 
     }
 
     pragma "no doc"

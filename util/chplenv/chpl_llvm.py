@@ -5,7 +5,7 @@ import sys
 
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party
-from utils import memoize, error, run_command, try_run_command
+from utils import memoize, error, run_command, try_run_command, warning
 
 # returns a tuple of supported major LLVM versions as strings
 def llvm_versions():
@@ -154,8 +154,7 @@ def get_llvm_config():
         llvm_subdir = get_bundled_llvm_dir()
         bundled_config = os.path.join(llvm_subdir, 'bin', 'llvm-config')
         if llvm_config != 'none' and llvm_config != bundled_config:
-            sys.stderr.write("Warning: CHPL_LLVM_CONFIG is ignored for "
-                             "CHPL_LLVM=bundled\n");
+            warning("CHPL_LLVM_CONFIG is ignored for CHPL_LLVM=bundled");
         llvm_config = bundled_config
 
     elif llvm_config == 'none' and llvm_val == 'system':
@@ -164,11 +163,14 @@ def get_llvm_config():
     return llvm_config
 
 @memoize
-def validate_llvm_config():
+def validate_llvm_config(llvm_config=None):
     llvm_val = get()
-    llvm_config = get_llvm_config()
+    # We pass in llvm_config if has already been computed (so we don't
+    # end up in an infinite loop).
+    if llvm_config is None:
+      llvm_config = get_llvm_config()
     if llvm_val == 'system':
-        if llvm_config == 'none':
+        if llvm_config == '' or llvm_config == 'none':
             error("CHPL_LLVM=system but could not find an installed LLVM"
                   " with one of the supported versions: {0}".format(
                   llvm_versions_string()))
@@ -184,6 +186,7 @@ def validate_llvm_config():
 @memoize
 def get_system_llvm_config_bindir():
     llvm_config = get_llvm_config()
+    validate_llvm_config(llvm_config)
     bindir = run_command([llvm_config, '--bindir']).strip()
 
     if os.path.isdir(bindir):
@@ -212,12 +215,20 @@ def get_llvm_clang(lang):
     llvm_val = get()
     if llvm_val == 'system':
         bindir = get_system_llvm_config_bindir()
-        return os.path.join(bindir, clang_name)
+        clang = os.path.join(bindir, clang_name)
     elif llvm_val == 'bundled':
         llvm_subdir = get_bundled_llvm_dir()
-        return os.path.join(llvm_subdir, 'bin', clang_name)
+        clang = os.path.join(llvm_subdir, 'bin', clang_name)
     else:
         return ''
+    # tack on the contents of configured-clang-sysroot-arguments
+    fname = os.path.join(get_chpl_third_party(), "llvm", "install", get_uniq_cfg_path_for(llvm_val), "configured-clang-sysroot-arguments")
+    if os.path.isfile(fname):
+        with open(fname) as f:
+            for line in f:
+                clang += " " + line.rstrip()
+    return clang
+
 
 def has_compatible_installed_llvm():
     llvm_config = find_system_llvm_config()
@@ -243,15 +254,10 @@ def get():
             # for one reason or another. So default to CHPL_LLVM=none.
             llvm_val = 'none'
 
-    if llvm_val == 'llvm':
-        sys.stderr.write("Warning: CHPL_LLVM=llvm is deprecated. "
-                         "Use CHPL_LLVM=bundled instead\n")
-        llvm_val = 'bundled'
-
     if not compatible_platform_for_llvm():
         if llvm_val != 'none' and llvm_val != 'unset':
-            sys.stderr.write("Warning: CHPL_LLVM={0} is not compatible "
-                             "with this platform".format(llvm_val))
+            warning("CHPL_LLVM={0} is not compatible with this "
+                    "platform".format(llvm_val))
 
     return llvm_val
 

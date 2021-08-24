@@ -1,0 +1,13 @@
+B =
+0.0 5.0 0.0 
+0.0 -9.0 0.0 
+0.0 0.0 5.0 
+
+C34 =
+1.0 1.0 1.0 1.0 
+1.0 1.0 1.0 1.0 
+1.0 1.0 1.0 1.0 
+
+// Product of a Dense matrix (3x4) and a Sparse matrix (3x3), should throw an error. [eltType = real]
+C34B = dot(C34,B) =
+sparse-matmatmult-halt.chpl:50: error: halt reached - Mismatched shape in sparse-dense matrix multiplication

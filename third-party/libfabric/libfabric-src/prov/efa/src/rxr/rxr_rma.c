@@ -43,19 +43,25 @@
 #include "rxr_read.h"
 
 int rxr_rma_verified_copy_iov(struct rxr_ep *ep, struct fi_rma_iov *rma,
-			      size_t count, uint32_t flags, struct iovec *iov)
+			      size_t count, uint32_t flags,
+			      struct iovec *iov, void **desc)
 {
+	void *context;
+	struct efa_mr *efa_mr;
 	struct efa_ep *efa_ep;
 	int i, ret;
 
 	efa_ep = container_of(ep->rdm_ep, struct efa_ep, util_ep.ep_fid);
 
 	for (i = 0; i < count; i++) {
-		ret = ofi_mr_verify(&efa_ep->domain->util_domain.mr_map,
-				    rma[i].len,
-				    (uintptr_t *)(&rma[i].addr),
-				    rma[i].key,
-				    flags);
+		fastlock_acquire(&efa_ep->domain->util_domain.lock);
+		ret = ofi_mr_map_verify(&efa_ep->domain->util_domain.mr_map,
+					(uintptr_t *)(&rma[i].addr),
+					rma[i].len, rma[i].key, flags,
+					&context);
+		efa_mr = context;
+		desc[i] = fi_mr_desc(&efa_mr->mr_fid);
+		fastlock_release(&efa_ep->domain->util_domain.lock);
 		if (ret) {
 			FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
 				"MR verification failed (%s), addr: %lx key: %ld\n",
@@ -92,7 +98,7 @@ rxr_rma_alloc_readrsp_tx_entry(struct rxr_ep *rxr_ep,
 	msg.msg_iov = rx_entry->iov;
 	msg.iov_count = rx_entry->iov_count;
 	msg.addr = rx_entry->addr;
-	msg.desc = NULL;
+	msg.desc = rx_entry->desc;
 	msg.context = NULL;
 	msg.data = 0;
 
@@ -207,7 +213,6 @@ ssize_t rxr_rma_post_efa_emulated_read(struct rxr_ep *ep, struct rxr_tx_entry *t
 	msg.addr = tx_entry->addr;
 	rx_entry = rxr_ep_get_rx_entry(ep, &msg, 0, ~0, ofi_op_msg, 0);
 	if (!rx_entry) {
-		rxr_release_tx_entry(ep, tx_entry);
 		FI_WARN(&rxr_prov, FI_LOG_CQ,
 			"RX entries exhausted for read.\n");
 		rxr_ep_progress_internal(ep);
@@ -236,7 +241,6 @@ ssize_t rxr_rma_post_efa_emulated_read(struct rxr_ep *ep, struct rxr_tx_entry *t
 	 * call rxr_ep_progress_internal() might release some buffer
 	 */
 	if (ep->available_data_bufs == 0) {
-		rxr_release_tx_entry(ep, tx_entry);
 		rxr_release_rx_entry(ep, rx_entry);
 		rxr_ep_progress_internal(ep);
 		return -FI_EAGAIN;
@@ -261,10 +265,10 @@ ssize_t rxr_rma_post_efa_emulated_read(struct rxr_ep *ep, struct rxr_tx_entry *t
 	tx_entry->rma_loc_rx_id = rx_entry->rx_id;
 
 	if (tx_entry->total_len < ep->mtu_size - sizeof(struct rxr_readrsp_hdr)) {
-		err = rxr_pkt_post_ctrl_or_queue(ep, RXR_TX_ENTRY, tx_entry, RXR_SHORT_RTR_PKT, 0);
+		err = rxr_pkt_post_ctrl(ep, RXR_TX_ENTRY, tx_entry, RXR_SHORT_RTR_PKT, 0);
 	} else {
 		peer = rxr_ep_get_peer(ep, tx_entry->addr);
-		assert(peer);
+
 		rxr_pkt_calc_cts_window_credits(ep, peer,
 						tx_entry->total_len,
 						tx_entry->credit_request,
@@ -274,7 +278,15 @@ ssize_t rxr_rma_post_efa_emulated_read(struct rxr_ep *ep, struct rxr_tx_entry *t
 		rx_entry->window = window;
 		rx_entry->credit_cts = credits;
 		tx_entry->rma_window = rx_entry->window;
-		err = rxr_pkt_post_ctrl_or_queue(ep, RXR_TX_ENTRY, tx_entry, RXR_LONG_RTR_PKT, 0);
+		err = rxr_pkt_post_ctrl(ep, RXR_TX_ENTRY, tx_entry, RXR_LONG_RTR_PKT, 0);
+	}
+
+	if (OFI_UNLIKELY(err)) {
+#if ENABLE_DEBUG
+	        dlist_remove(&rx_entry->rx_pending_entry);
+		ep->rx_pending--;
+#endif
+		rxr_release_rx_entry(ep, rx_entry);
 	}
 
 	return err;
@@ -285,7 +297,7 @@ ssize_t rxr_rma_readmsg(struct fid_ep *ep, const struct fi_msg_rma *msg, uint64_
 	ssize_t err;
 	struct rxr_ep *rxr_ep;
 	struct rxr_peer *peer;
-	struct rxr_tx_entry *tx_entry;
+	struct rxr_tx_entry *tx_entry = NULL;
 	bool use_lower_ep_read;
 
 	FI_DBG(&rxr_prov, FI_LOG_EP_DATA,
@@ -299,17 +311,24 @@ ssize_t rxr_rma_readmsg(struct fid_ep *ep, const struct fi_msg_rma *msg, uint64_
 	rxr_perfset_start(rxr_ep, perf_rxr_tx);
 	fastlock_acquire(&rxr_ep->util_ep.lock);
 
-	if (OFI_UNLIKELY(is_tx_res_full(rxr_ep)))
-		return -FI_EAGAIN;
+	if (OFI_UNLIKELY(is_tx_res_full(rxr_ep))) {
+		err = -FI_EAGAIN;
+		goto out;
+	}
+
+	peer = rxr_ep_get_peer(rxr_ep, msg->addr);
+
+	if (peer->flags & RXR_PEER_IN_BACKOFF) {
+		err = -FI_EAGAIN;
+		goto out;
+	}
 
 	tx_entry = rxr_rma_alloc_tx_entry(rxr_ep, msg, ofi_op_read_req, flags);
 	if (OFI_UNLIKELY(!tx_entry)) {
 		rxr_ep_progress_internal(rxr_ep);
-		return -FI_EAGAIN;
+		err = -FI_EAGAIN;
+		goto out;
 	}
-
-	peer = rxr_ep_get_peer(rxr_ep, msg->addr);
-	assert(peer);
 
 	use_lower_ep_read = false;
 	if (peer->is_local) {
@@ -323,24 +342,24 @@ ssize_t rxr_rma_readmsg(struct fid_ep *ep, const struct fi_msg_rma *msg, uint64_
 	}
 
 	if (use_lower_ep_read) {
-		err = rxr_read_post_or_queue(rxr_ep, RXR_TX_ENTRY, tx_entry);
+		err = rxr_read_post_remote_read_or_queue(rxr_ep, RXR_TX_ENTRY, tx_entry);
 		if (OFI_UNLIKELY(err == -FI_ENOBUFS)) {
-			rxr_release_tx_entry(rxr_ep, tx_entry);
 			err = -FI_EAGAIN;
 			rxr_ep_progress_internal(rxr_ep);
 			goto out;
 		}
 	} else {
 		err = rxr_ep_set_tx_credit_request(rxr_ep, tx_entry);
-		if (OFI_UNLIKELY(err)) {
-			rxr_release_tx_entry(rxr_ep, tx_entry);
+		if (OFI_UNLIKELY(err))
 			goto out;
-		}
 
 		err = rxr_rma_post_efa_emulated_read(rxr_ep, tx_entry);
 	}
 
 out:
+	if (OFI_UNLIKELY(err && tx_entry))
+		rxr_release_tx_entry(rxr_ep, tx_entry);
+
 	fastlock_release(&rxr_ep->util_ep.lock);
 	rxr_perfset_end(rxr_ep, perf_rxr_tx);
 	return err;
@@ -385,20 +404,67 @@ ssize_t rxr_rma_post_write(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry)
 {
 	ssize_t err;
 	struct rxr_peer *peer;
+	struct efa_domain *efa_domain;
+	bool delivery_complete_requested;
+	int ctrl_type;
+	size_t max_rtm_data_size;
+	struct rxr_domain *rxr_domain = rxr_ep_domain(ep);
+
+	efa_domain = container_of(rxr_domain->rdm_domain, struct efa_domain,
+				  util_domain.domain_fid);
 
 	peer = rxr_ep_get_peer(ep, tx_entry->addr);
-	assert(peer);
+
 	if (peer->is_local)
 		return rxr_rma_post_shm_write(ep, tx_entry);
 
+	delivery_complete_requested = tx_entry->fi_flags & FI_DELIVERY_COMPLETE;
+	if (delivery_complete_requested) {
+		tx_entry->rxr_flags |= RXR_DELIVERY_COMPLETE_REQUESTED;
+		/*
+		 * Because delivery complete is defined as an extra
+		 * feature, the receiver might not support it.
+		 *
+		 * The sender cannot send with FI_DELIVERY_COMPLETE
+		 * if the peer is not able to handle it.
+		 *
+		 * If the sender does not know whether the peer
+		 * can handle it, it needs to trigger
+		 * a handshake packet from the peer.
+		 *
+		 * The handshake packet contains
+		 * the information whether the peer
+		 * support it or not.
+		 */
+		err = rxr_pkt_trigger_handshake(ep, tx_entry->addr, peer);
+		if (OFI_UNLIKELY(err))
+			return err;
+
+		if (!(peer->flags & RXR_PEER_HANDSHAKE_RECEIVED))
+			return -FI_EAGAIN;
+		else if (!rxr_peer_support_delivery_complete(peer))
+			return -FI_EOPNOTSUPP;
+
+		max_rtm_data_size = rxr_pkt_req_max_data_size(ep,
+							      tx_entry->addr,
+							      RXR_DC_EAGER_RTW_PKT);
+	} else {
+		max_rtm_data_size = rxr_pkt_req_max_data_size(ep,
+							      tx_entry->addr,
+							      RXR_EAGER_RTW_PKT);
+	}
+
 	/* Inter instance */
-	if (tx_entry->total_len < rxr_pkt_req_max_data_size(ep, tx_entry->addr, RXR_EAGER_RTW_PKT))
-		return rxr_pkt_post_ctrl_or_queue(ep, RXR_TX_ENTRY, tx_entry, RXR_EAGER_RTW_PKT, 0);
+	if (tx_entry->total_len < max_rtm_data_size) {
+		ctrl_type = delivery_complete_requested ?
+			RXR_DC_EAGER_RTW_PKT : RXR_EAGER_RTW_PKT;
+		return rxr_pkt_post_ctrl(ep, RXR_TX_ENTRY, tx_entry, ctrl_type, 0);
+	}
 
 	if (tx_entry->total_len >= rxr_env.efa_min_read_write_size &&
 	    efa_both_support_rdma_read(ep, peer) &&
-	    (tx_entry->desc[0] || efa_mr_cache_enable)) {
-		err = rxr_pkt_post_ctrl_or_queue(ep, RXR_TX_ENTRY, tx_entry, RXR_READ_RTW_PKT, 0);
+	    (tx_entry->desc[0] || efa_is_cache_available(efa_domain))) {
+		err = rxr_pkt_post_ctrl(ep, RXR_TX_ENTRY, tx_entry, RXR_READ_RTW_PKT, 0);
 		if (err != -FI_ENOMEM)
 			return err;
 		/*
@@ -411,7 +477,10 @@ ssize_t rxr_rma_post_write(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry)
 	if (OFI_UNLIKELY(err))
 		return err;
 
-	return rxr_pkt_post_ctrl_or_queue(ep, RXR_TX_ENTRY, tx_entry, RXR_LONG_RTW_PKT, 0);
+	ctrl_type = delivery_complete_requested ?
+		RXR_DC_LONG_RTW_PKT : RXR_LONG_RTW_PKT;
+	tx_entry->rxr_flags |= RXR_LONGCTS_PROTOCOL;
+	return rxr_pkt_post_ctrl(ep, RXR_TX_ENTRY, tx_entry, ctrl_type, 0);
 }
 
 ssize_t rxr_rma_writemsg(struct fid_ep *ep,
@@ -419,6 +488,7 @@ ssize_t rxr_rma_writemsg(struct fid_ep *ep,
 			 uint64_t flags)
 {
 	ssize_t err;
+	struct rxr_peer *peer;
 	struct rxr_ep *rxr_ep;
 	struct rxr_tx_entry *tx_entry;
 
@@ -433,6 +503,13 @@ ssize_t rxr_rma_writemsg(struct fid_ep *ep,
 	rxr_perfset_start(rxr_ep, perf_rxr_tx);
 	fastlock_acquire(&rxr_ep->util_ep.lock);
 
+	peer = rxr_ep_get_peer(rxr_ep, msg->addr);
+
+	if (peer->flags & RXR_PEER_IN_BACKOFF) {
+		err = -FI_EAGAIN;
+		goto out;
+	}
+
 	tx_entry = rxr_rma_alloc_tx_entry(rxr_ep, msg, ofi_op_write, flags);
 	if (OFI_UNLIKELY(!tx_entry)) {
 		rxr_ep_progress_internal(rxr_ep);
@@ -441,8 +518,9 @@ ssize_t rxr_rma_writemsg(struct fid_ep *ep,
 	}
 
 	err = rxr_rma_post_write(rxr_ep, tx_entry);
-	if (OFI_UNLIKELY(err))
+	if (OFI_UNLIKELY(err)) {
 		rxr_release_tx_entry(rxr_ep, tx_entry);
+	}
 out:
 	fastlock_release(&rxr_ep->util_ep.lock);
 	rxr_perfset_end(rxr_ep, perf_rxr_tx);
@@ -499,7 +577,7 @@ ssize_t rxr_rma_writedata(struct fid_ep *ep, const void *buf, size_t len,
 
 	memset(&msg, 0, sizeof(msg));
 	msg.msg_iov = &iov;
-	msg.desc = desc;
+	msg.desc = &desc;
 	msg.iov_count = 1;
 	msg.addr = dest_addr;
 	msg.context = context;

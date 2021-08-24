@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2019 Amazon.com, Inc. or its affiliates.
+ * Copyright (c) 2020-2021 Intel Corporation.
  * All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -41,11 +42,16 @@ struct sigaction *old_action;
 static void smr_handle_signal(int signum, siginfo_t *info, void *ucontext)
 {
 	struct smr_ep_name *ep_name;
+	struct smr_sock_name *sock_name;
 	int ret;
 
 	dlist_foreach_container(&ep_name_list, struct smr_ep_name,
 				ep_name, entry) {
 		shm_unlink(ep_name->name);
+	}
+	dlist_foreach_container(&sock_name_list, struct smr_sock_name,
+				sock_name, entry) {
+		unlink(sock_name->name);
 	}
 
 	/* Register the original signum handler, SIG_DFL or otherwise */
@@ -53,8 +59,15 @@ static void smr_handle_signal(int signum, siginfo_t *info, void *ucontext)
 	if (ret)
 		return;
 
-	/* Raise signum to execute the original handler */
-	raise(signum);
+	/* call the original handler */
+	if (old_action[signum].sa_flags & SA_SIGINFO)
+		old_action[signum].sa_sigaction(signum, info, ucontext);
+	else if (old_action[signum].sa_handler == SIG_DFL ||
+		 old_action[signum].sa_handler == SIG_IGN)
+		return;
+	else
+		old_action[signum].sa_handler(signum);
+
 }
 
 static void smr_reg_sig_hander(int signum)
@@ -64,7 +77,7 @@ static void smr_reg_sig_hander(int signum)
 
 	memset(&action, 0, sizeof(action));
 	action.sa_sigaction = smr_handle_signal;
-	action.sa_flags |= SA_SIGINFO;
+	action.sa_flags |= SA_SIGINFO | SA_ONSTACK;
 
 	ret = sigaction(signum, &action, &old_action[signum]);
 	if (ret)

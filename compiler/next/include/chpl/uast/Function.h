@@ -21,6 +21,7 @@
 #define CHPL_UAST_FUNCTION_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/uast/Block.h"
 #include "chpl/uast/Formal.h"
 #include "chpl/uast/IntentList.h"
 #include "chpl/uast/NamedDecl.h"
@@ -76,6 +77,7 @@ class Function final : public NamedDecl {
   ReturnIntent returnIntent_;
   bool throws_;
   bool primaryMethod_;
+  bool parenless_;
 
   // children store
   //   linkageNameExpr
@@ -93,7 +95,6 @@ class Function final : public NamedDecl {
   int lifetimeChildNum_;
   int numLifetimeParts_;
   int bodyChildNum_;
-  int numBodyStmts_;
 
   Function(ASTList children,
            UniqueString name, Decl::Visibility vis,
@@ -104,6 +105,7 @@ class Function final : public NamedDecl {
            ReturnIntent returnIntent,
            bool throws,
            bool primaryMethod,
+           bool parenless,
            int linkageNameExprChildNum,
            int formalsChildNum,
            int thisFormalChildNum,
@@ -112,8 +114,7 @@ class Function final : public NamedDecl {
            int whereChildNum,
            int lifetimeChildNum,
            int numLifetimeParts,
-           int bodyChildNum,
-           int numBodyStmts)
+           int bodyChildNum)
     : NamedDecl(asttags::Function, std::move(children), vis, name),
       linkage_(linkage),
       inline_(inline_),
@@ -122,6 +123,7 @@ class Function final : public NamedDecl {
       returnIntent_(returnIntent),
       throws_(throws),
       primaryMethod_(primaryMethod),
+      parenless_(parenless),
       linkageNameExprChildNum_(linkageNameExprChildNum),
       formalsChildNum_(formalsChildNum),
       thisFormalChildNum_(thisFormalChildNum),
@@ -130,8 +132,7 @@ class Function final : public NamedDecl {
       whereChildNum_(whereChildNum),
       lifetimeChildNum_(lifetimeChildNum),
       numLifetimeParts_(numLifetimeParts),
-      bodyChildNum_(bodyChildNum),
-      numBodyStmts_(numBodyStmts) {
+      bodyChildNum_(bodyChildNum) {
 
     assert(-1 <= linkageNameExprChildNum_ &&
                  linkageNameExprChildNum_ < (ssize_t)children_.size());
@@ -151,14 +152,40 @@ class Function final : public NamedDecl {
                  lifetimeChildNum_ < (ssize_t)children_.size());
     assert(0 <= numLifetimeParts_ &&
                 numLifetimeParts_ <= (ssize_t)children_.size());
-    assert(-1 <= bodyChildNum_ &&
-                 bodyChildNum_ < (ssize_t)children_.size());
-    assert(0 <= numBodyStmts_ &&
-                numBodyStmts_ <= (ssize_t)children_.size());
+
+    if (bodyChildNum_ >= 0) {
+      assert(bodyChildNum_ < (ssize_t)children_.size());
+      assert(children_[bodyChildNum_]->isBlock());
+    } else {
+      assert(bodyChildNum_ == -1);
+    }
     assert(isExpressionASTList(children_));
   }
-  bool contentsMatchInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const Function* lhs = this;
+    const Function* rhs = (const Function*) other;
+    return lhs->namedDeclContentsMatchInner(rhs) &&
+           lhs->linkage_ == rhs->linkage_ &&
+           lhs->kind_ == rhs->kind_ &&
+           lhs->returnIntent_ == rhs->returnIntent_ &&
+           lhs->inline_ == rhs->inline_ &&
+           lhs->override_ == rhs->override_ &&
+           lhs->throws_ == rhs->throws_ &&
+           lhs->primaryMethod_ == rhs->primaryMethod_ &&
+           lhs->parenless_ == rhs->parenless_ &&
+           lhs->linkageNameExprChildNum_ == rhs->linkageNameExprChildNum_ &&
+           lhs->formalsChildNum_ == rhs->formalsChildNum_ &&
+           lhs->thisFormalChildNum_ == rhs->thisFormalChildNum_ &&
+           lhs->numFormals_ == rhs->numFormals_ &&
+           lhs->returnTypeChildNum_ == rhs->returnTypeChildNum_ &&
+           lhs->whereChildNum_ == rhs->whereChildNum_ &&
+           lhs->lifetimeChildNum_ == rhs->lifetimeChildNum_ &&
+           lhs->numLifetimeParts_ == rhs->numLifetimeParts_ &&
+           lhs->bodyChildNum_ == rhs->bodyChildNum_;
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    namedDeclMarkUniqueStringsInner(context);
+  }
 
  public:
   ~Function() override = default;
@@ -174,11 +201,12 @@ class Function final : public NamedDecl {
                                Function::ReturnIntent returnIntent,
                                bool throws,
                                bool primaryMethod,
+                               bool parenless,
                                ASTList formals,
                                owned<Expression> returnType,
                                owned<Expression> where,
                                ASTList lifetime,
-                               ASTList body);
+                               owned<Block> body);
 
   Linkage linkage() const { return this->linkage_; }
   Kind kind() const { return this->kind_; }
@@ -187,6 +215,7 @@ class Function final : public NamedDecl {
   bool isOverride() const { return this->override_; }
   bool throws() const { return this->throws_; }
   bool isPrimaryMethod() const { return primaryMethod_; }
+  bool isParenless() const { return parenless_; }
 
   /**
    Return the linkage name expression, e.g. "f_c_name"
@@ -256,6 +285,13 @@ class Function final : public NamedDecl {
   }
 
   /**
+   Returns 'true' if this Function represents a method.
+   */
+  bool isMethod() const {
+    return thisFormal() != nullptr || isPrimaryMethod();
+  }
+
+  /**
    Returns the expression for the return type or nullptr if there was none.
    */
   const Expression* returnType() const {
@@ -312,33 +348,49 @@ class Function final : public NamedDecl {
   }
 
   /**
+    Return the function's body, or nullptr if there is none.
+   */
+  const Block* body() const {
+    if (bodyChildNum_ < 0)
+      return nullptr;
+
+    auto ret = this->child(bodyChildNum_);
+    return (const Block*) ret;
+  }
+
+  /**
     Return a way to iterate over the statements in the function body.
    */
   ASTListIteratorPair<Expression> stmts() const {
-    if (numBodyStmts_ == 0) {
+    const Block* b = body();
+    if (b == nullptr) {
       return ASTListIteratorPair<Expression>(children_.end(), children_.end());
-    } else {
-      auto start = children_.begin() + bodyChildNum_;
-      return ASTListIteratorPair<Expression>(start, start + numBodyStmts_);
     }
+
+    return b->stmts();
   }
 
   /**
-   Return the number of statements in the function body.
+    Return the number of statements in the function body or 0 if there
+    is no function body.
    */
   int numStmts() const {
-    return numBodyStmts_;
+    const Block* b = body();
+    if (b == nullptr) {
+      return 0;
+    }
+
+    return b->numStmts();
   }
 
   /**
-   Return the i'th statement in the function body.
+    Return the i'th statement in the function body.
+    It is an error to call this function if there isn't one.
    */
   const Expression* stmt(int i) const {
-    assert(numBodyStmts_ > 0 && bodyChildNum_ >= 0);
-    assert(0 <= i && i < numBodyStmts_);
-    const ASTNode* ast = this->child(bodyChildNum_ + i);
-    assert(ast->isExpression());
-    return (const Expression*) ast;
+    const Block* b = body();
+    assert(b != nullptr);
+    return b->stmt(i);
   }
 };
 

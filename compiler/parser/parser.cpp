@@ -304,6 +304,11 @@ static void parseInternalModules() {
     if (sysctypes == NULL && fMinimalModules == false) {
       USR_FATAL("Could not find module 'SysCTypes', which should be defined by '%s/SysCTypes.chpl'", stdGenModulesPath);
     }
+    // ditto Errors
+    ModuleSymbol* errors = parseMod("Errors", false);
+    if (errors == NULL && fMinimalModules == false) {
+      USR_FATAL("Could not find standard module 'Errors'");
+    }
 
     parseDependentModules(true);
 
@@ -361,7 +366,7 @@ static void parseCommandLineFiles() {
       {
         // error message to print placeholders for fileName and maxLength
         const char *errorMessage = "%s, filename is longer than maximum allowed length of %d\n";
-        // throwr error will concatenated messages
+        // throw error with concatenated message
         USR_FATAL(errorMessage, baseName, maxFileName);
       }
 

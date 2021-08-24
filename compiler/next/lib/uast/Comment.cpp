@@ -25,17 +25,6 @@ namespace chpl {
 namespace uast {
 
 
-bool Comment::contentsMatchInner(const ASTNode* other) const {
-  const Comment* lhs = this;
-  const Comment* rhs = (const Comment*) other;
-  return lhs->expressionContentsMatchInner(rhs) &&
-         lhs->comment_ == rhs->comment_ ;
-}
-void Comment::markUniqueStringsInner(Context* context) const {
-  return expressionMarkUniqueStringsInner(context);
-}
-
-
 owned<Comment> Comment::build(Builder* builder, Location loc, std::string c) {
   Comment* ret = new Comment(std::move(c));
   builder->noteLocation(ret, loc);

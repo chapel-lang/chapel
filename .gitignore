@@ -109,6 +109,7 @@ tags
 /test/chpldoc/compflags/folder/save-sphinx/my-sphinx
 /test/chpldoc/compflags/folder/save-sphinx/deep-sphinx
 
+/test/chplvis/hi
 /test/chplvis/TREEvis
 /test/chplvis/benchmarks-hpcc/FFTvis
 /test/chplvis/benchmarks-hpcc/HPLvis
@@ -157,6 +158,7 @@ tags
 /test/compflags/thomasvandoren/chpldoc/*.doc.good
 /test/compflags/thomasvandoren/chpldoc/docs/
 
+/test/compflags/waynew/*.bc
 /test/compflags/waynew/*.c
 /test/compflags/waynew/*.tmp_launcher
 /test/compflags/waynew/Makefile
@@ -259,7 +261,7 @@ tags
 /test/library/standard/Spawn/stdout-stderr_real
 /test/library/standard/Time/stonea/getCurrentDayOfWeek.good
 /test/library/standard/machine/numPUs.good
-/test/library/standard/Memory/countMemory/countMemory.*.good
+/test/library/standard/Memory/Diagnostics/countMemory/countMemory.*.good
 
 /test/localeModels/dmk/locale_name.good
 
@@ -324,9 +326,9 @@ tags
 
 /test/release/examples/primers/tempfile.txt
 
+/test/runtime/configMatters/mem/goodAllocSize.good
 /test/runtime/gbt/numThreadsSymbolicLogical.good
 /test/runtime/gbt/numThreadsSymbolicPhysical.good
-/test/runtime/kbrady/goodAllocSize.good
 /test/runtime/sungeun/chpl-env-gen.h
 /test/runtime/sungeun/chpl-env-gen.test.gen.c
 

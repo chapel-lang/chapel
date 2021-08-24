@@ -1006,6 +1006,20 @@ module ChapelBase {
     return ret;
   }
 
+  inline proc _ddata_supports_reallocate(oldDdata,
+                                         type eltType,
+                                         oldSize: integral,
+                                         newSize: integral) {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_array_supports_realloc(ptr: c_void_ptr,
+                                                oldNmemb: size_t, newNmemb:
+                                                size_t, eltSize: size_t): bool;
+      return chpl_mem_array_supports_realloc(oldDdata: c_void_ptr,
+                                             oldSize.safeCast(size_t),
+                                             newSize.safeCast(size_t),
+                                             _ddata_sizeof_element(oldDdata));
+    }
 
   inline proc _ddata_reallocate(oldDdata,
                                 type eltType,
@@ -1058,12 +1072,16 @@ module ChapelBase {
 
 
   inline proc _ddata_free(data: _ddata, size: integral) {
+    var subloc = chpl_sublocFromLocaleID(__primitive("_wide_get_locale", data));
+
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_free(data: c_void_ptr,
-                                    nmemb: size_t, eltSize: size_t);
+                                    nmemb: size_t, eltSize: size_t,
+                                    subloc: chpl_sublocID_t);
     chpl_mem_array_free(data:c_void_ptr, size:size_t,
-                        _ddata_sizeof_element(data));
+                        _ddata_sizeof_element(data),
+                        subloc);
   }
 
   inline operator ==(a: _ddata, b: _ddata)
@@ -2374,17 +2392,26 @@ module ChapelBase {
     return x;
   }
 
-
-  // This is a helper function that I injected to reduce the
-  // compiler's reliance on 'iterable.size' for coforall loops because
-  // we started generating warnings for the return type of
-  // '[range|domain|array].size' changing.
   //
-  proc chpl_coforallSize(iterable) {
-    if (isRange(iterable) || isDomain(iterable) || isArray(iterable)) then
+  // Support for bounded coforall task counting optimizations
+  //
+
+  proc chpl_supportsBoundedCoforall(iterable, param zippered) param {
+    if zippered && isTuple(iterable) then
+      return chpl_supportsBoundedCoforall(iterable[0], zippered=false);
+    else if isRange(iterable) || isDomain(iterable) || isArray(iterable) then
+      return true;
+    else
+      return false;
+  }
+
+  proc chpl_boundedCoforallSize(iterable, param zippered) {
+    if zippered && isTuple(iterable) then
+      return chpl_boundedCoforallSize(iterable[0], zippered=false);
+    else if isRange(iterable) || isDomain(iterable) || isArray(iterable) then
       return iterable.sizeAs(iterable.intIdxType);
     else
-      return iterable.size;
+      compilerError("Called chpl_boundedCoforallSize on an unsupported type");
   }
 
   /* The following chpl_field_*() overloads support compiler-generated

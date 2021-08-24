@@ -81,6 +81,8 @@ struct ParserContext {
   // note when EOF is reached
   bool atEOF;
 
+  ParserExprList* parenlessMarker;
+
   ParserContext(const char* filename, Builder* builder)
   {
     auto uniqueFilename = UniqueString::build(builder->context(), filename);
@@ -96,6 +98,10 @@ struct ParserContext {
     YYLTYPE emptyLoc = {0};
     this->declStartLocation  = emptyLoc;
     this->atEOF              = false;
+    this->parenlessMarker    = new ParserExprList();
+  }
+  ~ParserContext() {
+    delete this->parenlessMarker;
   }
 
   Context* context() { return builder->context(); }
@@ -182,9 +188,9 @@ struct ParserContext {
   ASTList consumeList(ParserExprList* lst);
   ASTList consume(Expression* e);
 
- void consumeNamedActuals(MaybeNamedActualList* lst,
-                          ASTList& actualsOut,
-                          std::vector<UniqueString>& namesOut);
+  void consumeNamedActuals(MaybeNamedActualList* lst,
+                           ASTList& actualsOut,
+                           std::vector<UniqueString>& namesOut);
 
   std::vector<ParserComment>* gatherCommentsFromList(ParserExprList* lst,
                                                      YYLTYPE location);
@@ -197,6 +203,7 @@ struct ParserContext {
   // to handle things like this
   //     { /* doc comment } proc myproc()
   CommentsAndStmt finishStmt(CommentsAndStmt cs);
+  CommentsAndStmt finishStmt(YYLTYPE location, CommentsAndStmt cs);
   CommentsAndStmt finishStmt(Expression* e);
   CommentsAndStmt finishStmt(owned<Expression> e) {
     return this->finishStmt(e.release());
@@ -251,8 +258,9 @@ struct ParserContext {
                              ParserExprList* domainExprs,
                              Expression* typeExpr);
 
-  // Build a loop index decl from a given expression. May return an erroneous
-  // expression if the index expression is not valid.
+  // Build a loop index decl from a given expression. May return nullptr 
+  // if the index expression is not valid. TODO: Adjust me to return an
+  // Expression instead if possible?
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, const Expression* e);
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, owned<Expression> e);
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, ParserExprList* exprLst);
@@ -264,6 +272,9 @@ struct ParserContext {
   BlockStyle determineBlockStyle(BlockOrDo blockOrDo);
 
   ASTList consumeAndFlattenTopLevelBlocks(ParserExprList* exprLst);
+
+  owned<Block> consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst);
+  owned<Block> consumeToBlock(YYLTYPE blockLoc, Expression* e);
 
   // Lift up top level comments, clear expression level comments, prepare
   // the statement body, and determine the block style.
@@ -303,7 +314,7 @@ struct ParserContext {
                          ParserExprList*& outExprLst,
                          BlockStyle& outBlockStyle,
                          YYLTYPE locStartKeyword,
-                         YYLTYPE locBodyAnchor, 
+                         YYLTYPE locBodyAnchor,
                          BlockOrDo consume);
 
   CommentsAndStmt buildBracketLoopStmt(YYLTYPE locLeftBracket,
@@ -379,11 +390,27 @@ struct ParserContext {
                           owned<Expression> name,
                           owned<Expression> rename);
 
+  Expression*
+  buildVisibilityClause(YYLTYPE location, owned<Expression> symbol);
+
+  Expression*
+  buildVisibilityClause(YYLTYPE location, owned<Expression> symbol,
+                        VisibilityClause::LimitationKind limitationKind,
+                        ASTList limitations);
+
   CommentsAndStmt
-  buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locUseClause,
+  buildImportStmt(YYLTYPE locEverything, Decl::Visibility visibility,
+                  ParserExprList* visibilityClauses);
+
+  CommentsAndStmt
+  buildMultiUseStmt(YYLTYPE locEverything, Decl::Visibility visibility,
+                    ParserExprList* visibilityClauses);
+
+  CommentsAndStmt
+  buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
                      Decl::Visibility visibility,
                      owned<Expression> name,
-                     UseClause::LimitationClauseKind limitationClauseKind,
+                     VisibilityClause::LimitationKind limitationKind,
                      ParserExprList* limitationExprs);
 
   // Given a list of vars, build either a single var or a multi-decl.
@@ -405,4 +432,21 @@ struct ParserContext {
   Expression* buildTypeConstructor(YYLTYPE location,
                                    PODUniqueString baseType,
                                    Expression* subType);
+
+  CommentsAndStmt buildTryExprStmt(YYLTYPE location, Expression* expr,
+                                   bool isTryBang);
+
+  CommentsAndStmt buildTryExprStmt(YYLTYPE location, CommentsAndStmt cs,
+                                   bool isTryBang);
+
+  Expression* buildTryExpr(YYLTYPE location, Expression* expr,
+                           bool isTryBang);
+
+  CommentsAndStmt buildTryCatchStmt(YYLTYPE location, CommentsAndStmt block,
+                                    ParserExprList* handlers,
+                                    bool isTryBang);
+
+  Expression* buildCatch(YYLTYPE location, Expression* error,
+                         CommentsAndStmt block,
+                         bool hasParensAroundError);
 };
