@@ -119,7 +119,8 @@ module Curl {
   require "-lcurl";
 
   extern proc curl_slist_append(csl: c_ptr(curl_slist), char: c_string) : c_ptr(curl_slist);
-
+  extern proc curl_slist_free_all(csl: c_ptr(curl_slist));
+ 
   /* Returns the ``CURL`` handle connected to a channel opened with
      :proc:`URL.openUrlReader` or :proc:`URL.openUrlWriter`.
    */
