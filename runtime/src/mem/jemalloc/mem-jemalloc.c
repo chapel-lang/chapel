@@ -138,7 +138,7 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
       return NULL;
     }
 
-    assert((cur_chunk_base & (alignment-1)) == 0);
+    assert(((uintptr_t)cur_chunk_base & (alignment-1)) == 0);
 
     //
     // Localize the new memory via first-touch, by storing to each page.
