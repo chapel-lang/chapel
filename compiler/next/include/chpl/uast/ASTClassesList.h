@@ -81,6 +81,9 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(WithClause)
   AST_NODE(Yield)                    //
 
+  // TODO: Move me after sync'ing with main...
+  AST_NODE(TypeConstructor)
+
   AST_BEGIN_SUBCLASSES(Loop)         // old AST: LoopExpr / LoopStmt
       AST_NODE(DoWhile)                // old AST: DoWhileStmt
       AST_NODE(While)                  // old AST: WhileStmt
@@ -99,7 +102,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   //AST_NODE(AssociativeArray)           //
   AST_NODE(Domain)                     //
   AST_NODE(Range)                      //
-  //AST_NODE(TupleExpr)                  //
+  AST_NODE(Tuple)                      //
 
   AST_BEGIN_SUBCLASSES(Literal)        // old AST: Immediate
 
@@ -124,8 +127,9 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(Dot)                      //
     AST_NODE(FnCall)
     AST_NODE(OpCall)
-    //AST_NODE(PrimCall)                 // old AST: CallExpr/PrimitiveOp
-    //AST_NODE(Try)                      //
+    //AST_NODE(PrimCall)               // old AST: CallExpr/PrimitiveOp
+    //AST_NODE(Try)                    //
+    AST_NODE(Reduce)                   //
     AST_NODE(Zip)
   AST_END_SUBCLASSES(Call)
 

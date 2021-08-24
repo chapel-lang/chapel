@@ -180,6 +180,7 @@ struct ParserContext {
                              std::vector<ParserComment>* comments);
   ParserExprList* appendList(ParserExprList* dst, CommentsAndStmt cs);
   ASTList consumeList(ParserExprList* lst);
+  ASTList consume(Expression* e);
 
  void consumeNamedActuals(MaybeNamedActualList* lst,
                           ASTList& actualsOut,
@@ -240,9 +241,21 @@ struct ParserContext {
                                   bool isOverride);
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
-  // Build a loop index decl from a given expression. The expression is owned
-  // because it will be consumed. 
+  Expression* buildArrayTypeWithIndex(YYLTYPE location,
+                                      YYLTYPE locIndexExprs,
+                                      ParserExprList* indexExprs,
+                                      Expression* domainExpr,
+                                      Expression* typeExpr);
+
+  Expression* buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
+                             ParserExprList* domainExprs,
+                             Expression* typeExpr);
+
+  // Build a loop index decl from a given expression. May return an erroneous
+  // expression if the index expression is not valid.
+  owned<Decl> buildLoopIndexDecl(YYLTYPE location, const Expression* e);
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, owned<Expression> e);
+  owned<Decl> buildLoopIndexDecl(YYLTYPE location, ParserExprList* exprLst);
 
   FnCall* wrapCalledExpressionInNew(YYLTYPE location,
                                     New::Management management,
@@ -385,4 +398,11 @@ struct ParserContext {
                                          ParserExprList* contents,
                                          YYLTYPE closingBrace);
 
+  Expression* buildCustomReduce(YYLTYPE location, YYLTYPE locIdent,
+                                Expression* lhs,
+                                Expression* rhs);
+
+  Expression* buildTypeConstructor(YYLTYPE location,
+                                   PODUniqueString baseType,
+                                   Expression* subType);
 };

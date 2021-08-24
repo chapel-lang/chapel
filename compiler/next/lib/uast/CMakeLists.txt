@@ -73,6 +73,7 @@ target_sources(libchplcomp-obj
                Range.cpp
                RealLiteral.cpp
                Record.cpp
+               Reduce.cpp
                Return.cpp
                Serial.cpp
                SimpleBlockLike.cpp
@@ -80,7 +81,9 @@ target_sources(libchplcomp-obj
                StringLiteral.cpp
                Sync.cpp
                TaskVar.cpp
+               Tuple.cpp
                TupleDecl.cpp
+               TypeConstructor.cpp
                TypeDecl.cpp
                UintLiteral.cpp
                Use.cpp
