@@ -1,0 +1,6 @@
+Config Var Values:
+
+Arguments Received from CL:
+1 posArg
+2 -o
+strArg1 Not enough values: expected 1..10 got 0

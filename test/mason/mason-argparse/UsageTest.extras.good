@@ -1,5 +1,5 @@
 Config Var Values:
-testVar
+@10
 Arguments Received from CL:
 1 -o
 2 w
@@ -8,24 +8,17 @@ Arguments Received from CL:
 5 d
 6 t
 7 a?
-8 -t=tea
+8 --types=tea
 9 time
-10 --myConfigVar=@10
-11 --flagOn
-12 aValue
-13 subCmd1
-14 bValue
-15 -c
-16 one
-17 -t
-18 two
-19 -f
-20 ++
-21 --extra
-22 stuff
-23 that
-24 is
-25 passed
+10 --flagOn
+11 aValue
+12 subCmd1
+13 bValue
+14 -c
+15 one
+16 --cmdArg2
+17 two
+18 --subFlagOn
 Values received from argparse:
 w
 a
@@ -35,7 +28,6 @@ t
 a?
 tea
 time
-@10
 boolArg: true
 positional value: aValue
 SubCommand1 was called
@@ -44,8 +36,3 @@ one
 two
 subBoolFlag: true
 subcommand positional value: bValue
---extra
-stuff
-that
-is
-passed
