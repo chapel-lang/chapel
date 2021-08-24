@@ -10,6 +10,7 @@
 701 702 703 704 705 706 707 708 709
 801 802 803 804 805 806 807 808 809
 901 902 903 904 905 906 907 908 909
+Caught exception: IllegalArgumentError: Can not perform Chapel write of multidimensional array.
 [
  [101, 102, 103, 104, 105, 106, 107, 108, 109],
  [201, 202, 203, 204, 205, 206, 207, 208, 209],
@@ -32,6 +33,7 @@
 311 312 313
 321 322 323
 331 332 333
+Caught exception: IllegalArgumentError: Can not perform Chapel write of multidimensional array.
 [
  [
   [111, 112, 113],
@@ -61,6 +63,7 @@
 
 2211 2212
 2221 2222
+Caught exception: IllegalArgumentError: Can not perform Chapel write of multidimensional array.
 [
  [
   [

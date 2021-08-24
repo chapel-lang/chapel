@@ -3,6 +3,8 @@
    fields, with one record per line.
  */
 
+use IO;
+
 /* MyRecord contains fields of various types in order to demonstrate
    functionality.
  */
@@ -35,7 +37,7 @@ for (i,j) in B.domain {
 
 writeln(B);
 
-//writef("%ht\n", B);
+try { stdout.writef("%ht\n", B); } catch e { writeln("Caught exception: ", e); }
 writef("%jt\n", B);
 
 var C:[1..3, 1..3, 1..3] int;
@@ -46,7 +48,7 @@ for (i,j,k) in C.domain {
 
 writeln(C);
 
-//writef("%ht\n", C);
+try { stdout.writef("%ht\n", C); } catch e { writeln("Caught exception: ", e); }
 writef("%jt\n", C);
 
 var D:[1..2, 1..2, 1..2, 1..2] int;
@@ -57,7 +59,6 @@ for (i,j,k,l) in D.domain {
 
 writeln(D);
 
-//writef("%ht\n", D);
+try { stdout.writef("%ht\n", D); } catch e { writeln("Caught exception: ", e); }
 writef("%jt\n", D);
-
 

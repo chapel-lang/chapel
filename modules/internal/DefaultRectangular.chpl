@@ -1658,16 +1658,10 @@ this.dsiSerialReadWrite(f); }
 
   proc chpl_serialReadWriteRectangularHelper(f, arr, dom) throws {
     param rank = arr.rank;
-    var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
-    var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f.binary();
     type idxType = arr.idxType;
     type idxSignedType = chpl__signedType(chpl__idxTypeToIntIdxType(idxType));
 
     const isNative = f.styleElement(QIO_STYLE_ELEMENT_IS_NATIVE_BYTE_ORDER): bool;
-
-    if rank > 1 && ischpl {
-      throw new owned IllegalArgumentError("Can not perform Chapel write of multidimensional array.");
-    }
 
     proc writeSpaces(dim:int) throws {
       for i in 1..dim {
