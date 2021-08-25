@@ -23,7 +23,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: make check
       run: |
-        CHPL_LLVM=none ./util/buildRelease/smokeTest
+        ./util/buildRelease/smokeTest
 
   make_doc:
     runs-on: ubuntu-latest
@@ -33,7 +33,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: make check-chpldoc && make docs
       run: |
-        CHPL_LLVM=none ./util/buildRelease/smokeTest
+        ./util/buildRelease/smokeTest
     - name: upload docs
       uses: actions/upload-artifact@v2
       with:
@@ -58,8 +58,8 @@ jobs:
         fetch-depth: 100000
     - name: check annotations
       run: |
-        CHPL_LLVM=none make test-venv
-        CHPL_LLVM=none CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
+        make test-venv
+        CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
 
   bad_rt_calls:
     runs-on: ubuntu-latest
