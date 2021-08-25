@@ -1138,7 +1138,6 @@ module ChapelBase {
   pragma "no default functions"
   class _EndCountBase {
     var errors: chpl_TaskErrors;
-    var taskList: c_void_ptr;
   }
 
   pragma "end count"
@@ -1270,9 +1269,6 @@ module ChapelBase {
     // re-added after the waitFor().
     here.runningTaskCntSub(1);
 
-    // See if we can help with any of the started tasks
-    chpl_taskListExecute(e.taskList);
-
     // Wait for all tasks to finish
     e.i.waitFor(0, memoryOrder.acquire);
 
@@ -1295,9 +1291,6 @@ module ChapelBase {
   pragma "task join impl fn"
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) throws {
-    // See if we can help with any of the started tasks
-    chpl_taskListExecute(e.taskList);
-
     // Wait for all tasks to finish
     e.i.waitFor(0, memoryOrder.acquire);
 

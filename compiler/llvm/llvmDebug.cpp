@@ -191,7 +191,7 @@ llvm::DIType* debug_data::construct_type(Type *type)
           myTypeDescriptors[type] = N;
           return llvm::cast_or_null<llvm::DIType>(N);
         }
-        // handle qio_channel_ptr_t, _task_list, qio_file_ptr_t, syserr, _file
+        // handle qio_channel_ptr_t, qio_file_ptr_t, syserr, _file
         else if(PointeeTy->isStructTy()) {
           llvm::DIType* pteStrDIType; //create the DI-pointeeType
           pteStrDIType = this->dibuilder.createStructType(
