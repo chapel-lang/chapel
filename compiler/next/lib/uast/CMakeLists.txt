@@ -76,6 +76,7 @@ target_sources(libchplcomp-obj
                RealLiteral.cpp
                Record.cpp
                Return.cpp
+               Select.cpp
                Serial.cpp
                SimpleBlockLike.cpp
                StringLikeLiteral.cpp
@@ -92,6 +93,7 @@ target_sources(libchplcomp-obj
                Variable.cpp
                VarLikeDecl.cpp
                VisibilityClause.cpp
+               When.cpp
                While.cpp
                WithClause.cpp
                Yield.cpp
