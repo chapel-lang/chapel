@@ -29,7 +29,15 @@ namespace uast {
 
 
 /**
-  This class represents a reduction.
+  This class represents a tuple literal. For example:
+
+  \rst
+  .. code-block:: chapel
+
+    // Here '(1, 2, 3)' is a tuple literal.
+    var x = (1, 2, 3);
+
+  \endrst
 */
 class Tuple final : public Call {
  private:

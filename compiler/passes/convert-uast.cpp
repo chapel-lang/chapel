@@ -598,13 +598,9 @@ struct Converter {
     // These are the arguments that 'buildCoforallLoopStmt' requires.
     Expr* indices = convertLoopIndexDecl(node->index());
     Expr* iterator = toExpr(convertAST(node->iterand()));
-    CallExpr* byref_vars = nullptr;
+    CallExpr* byref_vars = convertWithClause(node->withClause(), node);
     BlockStmt* body = createBlockWithStmts(node->stmts());
     bool zippered = node->iterand()->isZip();
-
-    Expr* convByRefVars = convertWithClause(node->withClause(), node);
-    byref_vars = toCallExpr(convByRefVars);
-    INT_ASSERT(byref_vars);
 
     return buildCoforallLoopStmt(indices, iterator, byref_vars, body,
                                  zippered);
@@ -659,16 +655,10 @@ struct Converter {
       // These are the arguments that 'ForallStmt::build' requires.
       Expr* indices = convertLoopIndexDecl(node->index());
       Expr* iterator = toExpr(convertAST(node->iterand()));
-      CallExpr* intents = nullptr;
+      CallExpr* intents = convertWithClause(node->withClause(), node);
       BlockStmt* body = createBlockWithStmts(node->stmts());
       bool zippered = node->iterand()->isZip();
       bool serialOK = false;
-
-      if (node->withClause()) {
-        Expr* convIntents = convertWithClause(node->withClause(), node);
-        intents = toCallExpr(convIntents);
-        INT_ASSERT(intents);
-      }
 
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
