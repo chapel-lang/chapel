@@ -2,7 +2,7 @@ config const start = 1;
 config const end = 10;
 
 on here.getChild(1) {
-  var a, b: [start..end] int;
+  var a: [start..end] int;
   var value = 20;
 
   // one array
