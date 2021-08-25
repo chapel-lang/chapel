@@ -1621,8 +1621,7 @@ module DefaultRectangular {
     return str;
   }
 
-  proc DefaultRectangularDom.dsiSerialWrite(f) throws { 
-this.dsiSerialReadWrite(f); }
+  proc DefaultRectangularDom.dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
   proc DefaultRectangularDom.dsiSerialRead(f) throws { this.dsiSerialReadWrite(f); }
 
   proc DefaultRectangularArr.dsiSerialReadWrite(f /*: Reader or Writer*/) throws {
