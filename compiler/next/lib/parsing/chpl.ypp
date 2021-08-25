@@ -586,7 +586,7 @@
 
 %type <exprList> function_body_stmt opt_function_body_stmt
 
-%type <expr> when_stmt
+%type <commentsAndStmt> when_stmt
 %type <exprList> when_stmt_ls
 
 %type <expr> array_type
@@ -1939,23 +1939,37 @@ throw_stmt:
 
 select_stmt:
   TSELECT expr TLCBR when_stmt_ls TRCBR
-    { $$ = TODOSTMT(@$); }
+  {
+    $$ = context->buildSelectStmt(@$, toOwned($2), $4);
+  }
 | TSELECT expr TLCBR error TRCBR
-    { $$ = TODOSTMT(@$); }
+  {
+    auto comments = context->gatherComments(@$);
+    auto node = ErroneousExpression::build(BUILDER, LOC(@4));
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 ;
 
 when_stmt_ls:
                           { $$ = context->makeList(); }
-| when_stmt_ls when_stmt  { context->appendList($1, $2); }
+| when_stmt_ls when_stmt  { $$ = context->appendList($1, $2); }
 ;
 
 when_stmt:
   TWHEN expr_ls do_stmt
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildWhenStmt(@$, $2, $3);
+  }
 | TOTHERWISE stmt
-    { $$ = TODOEXPR(@$); }
+  {
+    BlockOrDo blockOrDo = { .cs=$2, .usesDo=false };
+    $$ = context->buildWhenStmt(@$, nullptr, blockOrDo);
+  }
 | TOTHERWISE TDO stmt
-    { $$ = TODOEXPR(@$); }
+  {
+    BlockOrDo blockOrDo = { .cs=$3, .usesDo=true };
+    $$ = context->buildWhenStmt(@$, nullptr, blockOrDo);
+  }
 ;
 
 /** DECLARATION STATEMENTS ***************************************************/

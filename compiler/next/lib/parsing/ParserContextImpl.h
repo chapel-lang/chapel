@@ -333,6 +333,22 @@ void ParserContext::discardCommentsFromList(ParserExprList* lst,
   }
 }
 
+void ParserContext::discardCommentsFromList(ParserExprList* lst) {
+  if (lst == nullptr) return;
+
+  ParserExprList tmp;
+
+  for (auto ast : *lst) {
+    if (ast->isComment()) {
+      delete ast;
+    } else {
+      tmp.push_back(ast);
+    }
+  }
+
+  lst->swap(tmp);
+}
+
 void ParserContext::appendComments(CommentsAndStmt*cs,
                                    std::vector<ParserComment>* comments) {
   if (comments == nullptr) return;
@@ -1495,4 +1511,68 @@ Expression* ParserContext::buildCatch(YYLTYPE location, Expression* error,
                            hasParensAroundError);
 
   return node.release();
+}
+
+CommentsAndStmt
+ParserContext::buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
+                             BlockOrDo blockOrDo) {
+
+  // No need to gather comments, they'll have been collected here...
+  auto comments = blockOrDo.cs.comments;
+  auto stmt = blockOrDo.cs.stmt;
+
+  BlockStyle blockStyle = blockOrDo.usesDo ? BlockStyle::IMPLICIT
+                                           : BlockStyle::EXPLICIT;
+
+  if (blockOrDo.usesDo && stmt->isBlock()) {
+    blockStyle = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
+  }
+
+  auto caseList = caseExprs ? consumeList(caseExprs) : ASTList();
+
+  auto stmtList = consumeAndFlattenTopLevelBlocks(makeList(stmt));
+
+  auto node = When::build(builder, convertLocation(location),
+                          std::move(caseList),
+                          blockStyle,
+                          std::move(stmtList));
+
+  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+
+  return cs;
+}
+
+CommentsAndStmt
+ParserContext::buildSelectStmt(YYLTYPE location, owned<Expression> expr,
+                               ParserExprList* whenStmts) {
+  auto comments = gatherCommentsFromList(whenStmts, location);
+
+  // Discard all remaining comments.
+  discardCommentsFromList(whenStmts);
+
+  auto stmts = consumeList(whenStmts);
+
+  int numOtherwise = 0;
+
+  // Return an error if there is more than one otherwise.
+  for (auto& ast : stmts) {
+    auto when = ast->toWhen();
+    assert(when != nullptr);
+
+    // TODO: Do we also care about the position of the otherwise?
+    if (when->isOtherwise() && numOtherwise++) {
+      const char* msg = "Select has multiple otherwise clauses";
+      auto error = raiseError(location, msg);
+      CommentsAndStmt cs = { .comments=comments, .stmt=error };
+      return cs;
+    }
+  }
+
+  auto node = Select::build(builder, convertLocation(location),
+                            std::move(expr),
+                            std::move(stmts));
+
+  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+
+  return cs;
 }
