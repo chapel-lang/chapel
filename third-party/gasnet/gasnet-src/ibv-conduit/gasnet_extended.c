@@ -140,10 +140,7 @@ gex_Event_t gasnete_put_nb(
   } else if (lc_opt == GEX_EVENT_DEFER) {
     GASNETC_RDMA_PUT(NULL, NULL);
   } else {
-  // Intel C prior to 2019.0.117 (builddate 20180804) issues a buggy warning here
-  #if !(PLATFORM_COMPILER_INTEL && PLATFORM_COMPILER_VERSION_LT(19,0,20180800))
-    gasneti_assume(gasneti_leaf_is_pointer(lc_opt));
-  #endif
+    gasneti_assume_leaf_is_pointer(lc_opt);
     GASNETE_EOP_LC_START(op);
     gasnetc_atomic_val_t start_cnt = op->initiated_alc;
     GASNETC_RDMA_PUT(&op->initiated_alc, gasnetc_cb_eop_alc);
@@ -341,6 +338,7 @@ static int gasnete_conduit_rdmabarrier(const char *barrier, gasneti_auxseg_reque
 /* IB-specific RDMA-based Dissemination implementation of barrier
  * This is a minor variation on the "rmd" barrier in extended-ref.
  * Key differences:
+ *  + GASNETC_ANY_PAR replaces GASNETI_THREADS to enable cache padding
  *  + no complications due to thread-specific events
  *  + no eop completion latency
  * TODO: factor the common elements
@@ -349,7 +347,20 @@ static int gasnete_conduit_rdmabarrier(const char *barrier, gasneti_auxseg_reque
 /* Reusing gasnete_coll_rmdbarrier_inbox_t from the reference implementation */
 
 typedef struct {
-  GASNETE_RMDBARRIER_LOCK(barrier_lock) /* no semicolon */
+  // Read/write data (note that struct is allocated cache-aligned)
+#if GASNETI_THREADS
+  gasnete_rmdbarrier_lock_t barrier_lock;
+#endif
+#if GASNETC_ANY_PAR
+  char _pad0[GASNETI_CACHE_PAD(sizeof(gasnete_rmdbarrier_lock_t))];
+#endif
+  int volatile barrier_state; /*  (step << 1) | phase, where step is 1-based (0 is pshm notify) */
+  int volatile barrier_value; /*  barrier value (evolves from local value) */
+  int volatile barrier_flags; /*  barrier flags (evolves from local value) */
+#if GASNETC_ANY_PAR
+  char _pad1[GASNETI_CACHE_PAD(3 * sizeof(int))];
+#endif
+  // Read-only data
   struct {
     gex_Rank_t    jobrank;
     uintptr_t     addr;
@@ -360,9 +371,6 @@ typedef struct {
 #endif
   int barrier_size;           /*  ceil(lg(nodes)) */
   int barrier_goal;           /*  (1+ceil(lg(nodes)) << 1) == final barrier_state for phase=0 */
-  int volatile barrier_state; /*  (step << 1) | phase, where step is 1-based (0 is pshm notify) */
-  int volatile barrier_value; /*  barrier value (evolves from local value) */
-  int volatile barrier_flags; /*  barrier flags (evolves from local value) */
   void *barrier_inbox;        /*  in-segment memory to recv notifications */
 } gasnete_coll_ibdbarrier_t;
 
@@ -648,17 +656,12 @@ static int gasnete_ibdbarrier_wait(gasnete_coll_team_t team, int id, int flags) 
   if (barrier_data->barrier_state >= barrier_data->barrier_goal) {
     /* completed asynchronously before wait (via progressfns or try) */
     GASNETI_TRACE_EVENT_TIME(B,BARRIER_ASYNC_COMPLETION,GASNETI_TICKS_NOW_IFENABLED(B)-gasnete_barrier_notifytime);
+    gasneti_sync_reads(); // ensure correct barrier_flags will be read
   } else {
-    /* kick once, and if still necessary, wait for a response */
-    gasnete_ibdbarrier_kick(team);
-    /* cannot BLOCKUNTIL since progess may occur on non-AM events */
-    while (barrier_data->barrier_state < barrier_data->barrier_goal) {
-      GASNETI_WAITHOOK();
-      GASNETI_SAFE(gasneti_AMPoll());
-      gasnete_ibdbarrier_kick(team);
-    }
+    // kick once (eliding AMPoll), and if still necessary, spin poll for progress
+    // IOW: kick, test, (poll, kick, test)*N
+    gasneti_pollwhile((gasnete_ibdbarrier_kick(team), (barrier_data->barrier_state < barrier_data->barrier_goal)));
   }
-  gasneti_sync_reads(); /* ensure correct barrier_flags will be read */
 
   /* determine return value */
   if_pf (barrier_data->barrier_flags & GASNET_BARRIERFLAG_MISMATCH) {

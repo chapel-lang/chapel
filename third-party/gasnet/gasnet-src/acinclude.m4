@@ -911,7 +911,11 @@ AC_DEFUN([GASNET_DISPLAY_VERSION],[
     display_version_info="$display_version_info AC_PACKAGE_VERSION"
   ])
   if test -d "$srcdir/.git" ; then 
-     git_describe=`( cd "$srcdir" && ${GIT=git} describe --long --dirty --always ) 2> /dev/null`
+     if test -f "$srcdir/.gasnet_toolsonly_mode"; then
+       git_describe=`( cd "$srcdir" && ${GIT=git} describe --long --always ) 2> /dev/null`
+     else
+       git_describe=`( cd "$srcdir" && ${GIT=git} describe --long --dirty --always ) 2> /dev/null`
+     fi
      if test -n "$git_describe"; then
        display_version_info="$display_version_info ($git_describe)"
      fi
@@ -2672,6 +2676,8 @@ AC_CACHE_CHECK(for $1 compiler family, $3, [
     GASNET_IFDEF(__clang__, $3=Clang, [], $_force_compile)
     dnl Note __clang__ must precede one or more of those below
     GASNET_IFDEF(__PGI, $3=PGI, [], $_force_compile)
+    dnl Note __PGI must precede __NVCOMPILER
+    GASNET_IFDEF(__NVCOMPILER, $3=NVHPC, [], $_force_compile)
     GASNET_IFDEF(__INTEL_COMPILER, $3=Intel, [], $_force_compile)
     GASNET_IFDEF(__OPENCC__, $3=Open64, [], $_force_compile)
     GASNET_IFDEF(__PCC__, $3=PCC, [], $_force_compile)

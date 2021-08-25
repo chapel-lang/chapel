@@ -28,7 +28,7 @@ test_static_assert_file(GEX_AM_INDEX_BASE <= 128);
 #error Missing GASNET_HIDDEN_AM_CONCURRENCY_LEVEL definition
 #endif
 
-#if PLATFORM_COMPILER_PGI_CXX
+#if PLATFORM_COMPILER_PGI_CXX // Not reproducible with NVHPC compilers
   // suppress warnings on PGI C++ 19.10/macos about intentional constant controlling expressions
   #pragma diag_suppress 236
 #endif
@@ -798,6 +798,14 @@ void doit(int partner, int *partnerseg) {
       assert_always((other | arr[i]) != other);  \
     }                                            \
   } while (0)
+  #define assert_arr_disjointbits(type, arr) do {\
+    size_t const cnt = sizeof(arr)/sizeof(type); \
+    for (size_t i = 0; i < cnt; i++) {           \
+      for (size_t j = i+1; j < cnt; j++) {       \
+        assert_always((arr[i] & arr[j]) == 0);   \
+      }                                          \
+    }                                            \
+  } while (0)
   #define assert_arr_nonzero(type, arr) do {     \
     size_t const cnt = sizeof(arr)/sizeof(type); \
     for (size_t i = 0; i < cnt; i++) {           \
@@ -1197,6 +1205,7 @@ void doit0(int partner, int *partnerseg) {
     GEX_DT_USER
   };
   assert_arr_unaliased(gex_DT_t, datatypes_arr); // verify alias-free
+  assert_arr_disjointbits(gex_DT_t, datatypes_arr); // and disjoint bits
   test_format(gex_DT_t, datatypes_arr, gasnett_format_dt);
 
   assert_inttype(gex_OP_t);
@@ -1217,6 +1226,7 @@ void doit0(int partner, int *partnerseg) {
     GEX_OP_USER, GEX_OP_USER_NC
   };
   assert_arr_unaliased(gex_OP_t, ops_arr); // verify alias-free
+  assert_arr_disjointbits(gex_OP_t, ops_arr); // and disjoint bits
   test_format(gex_OP_t, ops_arr, gasnett_format_op);
   for (size_t i = 0; ; i++) {
     gex_OP_t nfop = ops_arr[i];

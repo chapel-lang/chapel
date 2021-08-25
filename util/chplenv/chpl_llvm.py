@@ -163,11 +163,14 @@ def get_llvm_config():
     return llvm_config
 
 @memoize
-def validate_llvm_config():
+def validate_llvm_config(llvm_config=None):
     llvm_val = get()
-    llvm_config = get_llvm_config()
+    # We pass in llvm_config if has already been computed (so we don't
+    # end up in an infinite loop).
+    if llvm_config is None:
+      llvm_config = get_llvm_config()
     if llvm_val == 'system':
-        if llvm_config == 'none':
+        if llvm_config == '' or llvm_config == 'none':
             error("CHPL_LLVM=system but could not find an installed LLVM"
                   " with one of the supported versions: {0}".format(
                   llvm_versions_string()))
@@ -183,6 +186,7 @@ def validate_llvm_config():
 @memoize
 def get_system_llvm_config_bindir():
     llvm_config = get_llvm_config()
+    validate_llvm_config(llvm_config)
     bindir = run_command([llvm_config, '--bindir']).strip()
 
     if os.path.isdir(bindir):
@@ -249,10 +253,6 @@ def get():
             # This platform doesn't work with the LLVM backend
             # for one reason or another. So default to CHPL_LLVM=none.
             llvm_val = 'none'
-
-    if llvm_val == 'llvm':
-        warning("CHPL_LLVM=llvm is deprecated. Use CHPL_LLVM=bundled instead")
-        llvm_val = 'bundled'
 
     if not compatible_platform_for_llvm():
         if llvm_val != 'none' and llvm_val != 'unset':

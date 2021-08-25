@@ -399,14 +399,17 @@
 
 #ifndef gasneti_spinloop_hint
  #if defined(GASNETI_PAUSE_INSTRUCTION) && GASNETI_ASM_AVAILABLE
-   /* Pentium 4 processors get measurably better performance when a "pause" instruction
-    * is inserted in spin-loops - this instruction is documented as a "spin-loop hint"
-    * which avoids a memory hazard stall on spin loop exit and reduces power consumption
-    * Other Intel CPU's treat this instruction as a no-op
-   */
+   // Modern Intel architectures get measurably better performance when a
+   // "pause" instruction is inserted in spin-loops.  This instruction is
+   // documented as a "spin-loop hint" which avoids a memory hazard stall on
+   // spin loop exit and reduces power consumption.  However, it also adds
+   // a non-trivial delay and disables speculation.  Proper usage is to place
+   // this hint immediately following the branch which exits the spin loop.
+   // For example usage, see comments for GASNETI_WAITHOOK() in gasnet_help.h.
+   // Ancient Intel CPU's treat this instruction as a no-op.
    #define gasneti_spinloop_hint() GASNETI_ASM(GASNETI_PAUSE_INSTRUCTION)
  #else
-   #define gasneti_spinloop_hint() ((void)0)
+   #define gasneti_spinloop_hint() gasneti_compiler_fence()
  #endif
 #endif
 

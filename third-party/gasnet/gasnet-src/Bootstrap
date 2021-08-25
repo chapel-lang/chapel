@@ -133,19 +133,19 @@ set -x
     rm -Rf autom4te*.cache
 set +x
 
-    TOOLSONLYFLAG=$srcdir/.gasnet_toolsonly_mode
-    TOOLSONLYFILES="$srcdir/configure.in $srcdir/Makefile.am $srcdir/other/Makefile.am"
+    TOOLSONLYFLAG=.gasnet_toolsonly_mode
+    TOOLSONLYFILES="configure.in Makefile.am other/Makefile.am"
     if test "$TOOLSONLYMODE" = 1 -a ! -f "$TOOLSONLYFLAG" ; then
       echo "+ Switching source archive to GASNet tools-only mode"
-      eval perl $srcdir/other/tools-toggle.pl -y $TOOLSONLYFILES
+      eval perl other/tools-toggle.pl -y $TOOLSONLYFILES
       touch "$TOOLSONLYFLAG"
     elif test "$TOOLSONLYMODE" = 0 -a -f "$TOOLSONLYFLAG" ; then
-      if test ! -d "$srcdir/smp-conduit" ; then
+      if test ! -d smp-conduit ; then
         echo "+ WARNING: Attempted a conduit-mode Bootstrap, but conduit sources appear to be missing."
         echo "+ WARNING: Assuming you meant to include the -o option for a tools-only distribution."
       else
         echo "+ Switching source archive back from GASNet tools-only mode to regular mode"
-        eval perl $srcdir/other/tools-toggle.pl -n $TOOLSONLYFILES
+        eval perl other/tools-toggle.pl -n $TOOLSONLYFILES
         rm -f "$TOOLSONLYFLAG"
       fi
     fi

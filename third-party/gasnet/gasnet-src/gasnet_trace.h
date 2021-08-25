@@ -837,6 +837,7 @@ extern const char *gasneti_formattm(gex_TM_t _tm);
 extern size_t gasneti_format_dt(char *_buf, gex_DT_t _dt);
 extern size_t gasneti_format_op(char *_buf, gex_OP_t _op);
 extern size_t gasneti_format_ti(char *_buf, gex_TI_t _ti);
+extern size_t gasneti_format_flags_amreg(char *_buf, gex_Flags_t _flags);
 
 // Magic number trace formatting - available even without STATS/TRACE
 #define GASNETI_MAX_MAGICSZ 29 // "0x" + 16 hex digits + "(" + 8 chars + ")\0"

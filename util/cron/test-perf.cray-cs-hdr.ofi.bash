@@ -15,10 +15,6 @@ source $CWD/common-cray-cs.bash y
 source $CWD/common-perf-cray-cs-hdr.bash
 source $CWD/common-ofi.bash
 
-# Stopgap: bump the timeout so all tests pass.  (empty-chpl-remote-taskspawn
-# and miniMD time out with the default limit of 300.)
-export CHPL_TEST_TIMEOUT=1800
-
 if [[ $($CHPL_HOME/util/chplenv/chpl_platform.py --target) != cray-cs ]] || \
    [[ "$CHPL_COMM_OFI_OOB" != pmi2 ]] || \
    [[ "$SLURM_MPI_TYPE" != pmi2 ]] ; then

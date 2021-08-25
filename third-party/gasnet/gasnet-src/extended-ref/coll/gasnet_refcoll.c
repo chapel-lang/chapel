@@ -940,7 +940,7 @@ extern void gasnete_coll_p2p_med_reqh(gex_Token_t token, void *buf, size_t nbyte
   gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get(team_id, sequence);
   int i;
 
-  if (size) {
+  if (nbytes) {
     GASNETE_FAST_UNALIGNED_MEMCPY(p2p->data + offset*size, buf, nbytes);
     gasneti_sync_writes();
   }
@@ -958,7 +958,7 @@ extern void gasnete_coll_p2p_med_counting_reqh(gex_Token_t token, void *buf, siz
                                                gex_AM_Arg_t size) {
   gasnete_coll_p2p_t *p2p = gasnete_coll_p2p_get(team_id, sequence);
   
-  if (size) {
+  if (nbytes) {
     GASNETE_FAST_UNALIGNED_MEMCPY(p2p->data + offset*size, buf, nbytes);
     gasneti_sync_writes();
   }
@@ -2398,7 +2398,6 @@ gasnete_tm_reduce_nb_default(
       (nbytes <= gex_AM_LUBRequestMedium())) {
     alg = &gasnete_tm_reduce_BinomialEager;
   } else {
-    gasnete_coll_team_t team = i_tm->_coll_team;
     const size_t smallest_scratch = team->scratch_size;
     geom = gasnete_coll_local_tree_geom_fetch(gasnetc_tm_reduce_tree_type, root, team);
     const gex_Rank_t max_radix = geom->max_radix;
@@ -2414,18 +2413,14 @@ gasnete_tm_reduce_nb_default(
       gasneti_fatalerror("gex_Coll_ReduceToOneNB: (dt_sz == %"PRIuSZ") is TOO LARGE for this implementation",
                          dt_sz);
     }
-    if ( !(flags & GASNETI_FLAG_COLL_SUBORDINATE)) {
-      GASNETE_COLL_CHECK_NO_SCRATCH(team);
-    }
   }
   
   // TODO-EX: stop abusing implementation_t argument to pass the geom
-  int coll_flags = (flags & GASNETI_FLAG_COLL_SUBORDINATE) ? GASNETE_COLL_SUBORDINATE : 0;
   gex_Event_t result =
          (*alg)(e_tm, root, dst, src,
                 dt, dt_sz, dt_cnt,
                 opcode, user_fnptr, user_cdata,
-                coll_flags, (void*)geom, sequence GASNETI_THREAD_PASS);
+                /*flags*/0, (void*)geom, sequence GASNETI_THREAD_PASS);
 
   gasneti_AMPoll(); // No progress made until now
   return result;
@@ -2540,13 +2535,44 @@ gasnete_tm_reduce_all_nb_default(
     return GEX_EVENT_INVALID;
   }
 
-  // TODO-EX: replace this correct-but-horrible implementation:
-  gex_Event_t result =
-         gasnete_tm_reduce_all_Bcast(e_tm, dst, src, dt, dt_sz, dt_cnt,
-                                     opcode, user_fnptr, user_cdata,
-                                     0, NULL, 0 GASNETI_THREAD_PASS);
+  // Some ReduceToOne algorithms will implement ReduceToAll if passed
+  // (root == GEX_RANK_INVALID).  However, that has a different signature
+  // from implementations which implement only ReduceToAll.  So, the
+  // algorithm selection will set exactly one of the following.
+  gasnete_tm_reduce_fn_ptr_t to_one_alg = NULL;
+  gasnete_tm_reduce_all_fn_ptr_t to_all_alg = NULL;
 
-  GASNETE_COLL_CHECK_NO_SCRATCH((gasnet_team_handle_t)i_tm->_coll_team); // All reduce-to-all calls "count"
+  // TODO-EX: LUB can be relaxed (potentially significantly) for pshm-only teams
+  // TODO-EX: smarter implementations, such as dissemination for idempotent ops
+  gasnete_coll_team_t team = i_tm->_coll_team;
+  const size_t nbytes = dt_sz * dt_cnt;
+  const int binomial_root_radix = 1 + gasnete_coll_log2_rank(i_tm->_size - 1);
+  if ((nbytes * binomial_root_radix <= team->p2p_eager_buffersz) &&
+      (nbytes <= gex_AM_LUBRequestMedium())) {
+    to_one_alg = &gasnete_tm_reduce_BinomialEager;
+  } else if ((dt_sz * binomial_root_radix <= team->p2p_eager_buffersz) &&
+             (dt_sz <= gex_AM_LUBRequestMedium())) {
+    to_one_alg = &gasnete_tm_reduce_BinomialEagerSeg;
+  } else {
+    gasneti_assert(dt == GEX_DT_USER);
+    gasneti_fatalerror("gex_Coll_ReduceToAllNB: (dt_sz == %"PRIuSZ") is TOO LARGE for this implementation",
+                       dt_sz);
+  }
+
+  gasneti_assert(!!to_one_alg ^ !!to_all_alg); // exactly one must be non-NULL
+
+  gex_Event_t result;
+  if (to_one_alg) {
+    result = (*to_one_alg)(e_tm, GEX_RANK_INVALID, dst, src,
+                           dt, dt_sz, dt_cnt,
+                           opcode, user_fnptr, user_cdata,
+                           /*flags*/0, NULL, sequence GASNETI_THREAD_PASS);
+  } else {
+    result = (*to_all_alg)(e_tm, dst, src,
+                           dt, dt_sz, dt_cnt,
+                           opcode, user_fnptr, user_cdata,
+                           /*flags*/0, NULL, sequence GASNETI_THREAD_PASS);
+  }
 
   gasneti_AMPoll(); // No progress made until now
   return result;

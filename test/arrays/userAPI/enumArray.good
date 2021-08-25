@@ -5,6 +5,9 @@ idxType is: color
 rank is: 2
 
 size is: 25
+dims are: (red..blue, yellow..violet)
+dim(0) is: red..blue
+dim(1) is: yellow..violet
 shape is: (5, 5)
 
 X is:
@@ -127,6 +130,9 @@ idxType is: color
 rank is: 2
 
 size is: 16
+dims are: (red..violet by 2, red..violet by 2)
+dim(0) is: red..violet by 2
+dim(1) is: red..violet by 2
 shape is: (4, 4)
 
 X is:

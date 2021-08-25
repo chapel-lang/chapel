@@ -3459,7 +3459,7 @@ static int processToken(yyscan_t scanner, int t) {
       captureString.push_back(' ');
     }
 
-    if (t != TLCBR) {
+    if (t != TLCBR && t != TRETURN) {
       captureString.append(yyget_text(scanner));
     }
 

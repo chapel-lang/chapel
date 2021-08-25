@@ -219,6 +219,8 @@
      * + open64: mimics gcc, but is able to schedule %ebx so no work-around is needed
      * + llvm-gcc: mimics gcc, but is able to schedule %ebx so no work-around is needed
      * + Sun cc: use of specials doesn't encounter the problem
+     * NOT APPLICABLE:
+     * + nvhpc: only generates LP64 ABI (PLATFORM_ARCH_64), not ILP32 (PLATFORM_ARCH_32)
      *
      * Bottom line is that we recommend YOUR_PIC_CFLAGS="-fPIC -DGASNETI_FORCE_PIC",
      * replacing "-fPIC" with your compiler-specific flag(s) as needed.
@@ -613,6 +615,7 @@
         PLATFORM_COMPILER_PATHSCALE || PLATFORM_COMPILER_PGI || \
         PLATFORM_COMPILER_OPEN64 || \
         PLATFORM_COMPILER_CLANG || \
+        PLATFORM_COMPILER_NVHPC || \
         (PLATFORM_COMPILER_SUN && GASNETI_HAVE_GCC_ASM)
      #if PLATFORM_COMPILER_SUN_C
        #pragma error_messages(off, E_ASM_UNUSED_PARAM)

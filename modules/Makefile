@@ -124,7 +124,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
-	packages/Norm.chpl \
 	packages/OrderedMap.chpl \
 	packages/OrderedSet.chpl \
 	packages/PeekPoke.chpl \

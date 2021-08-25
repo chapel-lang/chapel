@@ -1417,19 +1417,18 @@ module DefaultRectangular {
         // the low bounds and strides of the old and new domains
         // match; and when the element type is POD or the array is
         // growing (i.e.,(doesn't require deinit to be called).
+        const oldSize = dom.dsiNumIndices;
+        const newSize = reallocD.sizeAs(oldSize.type);
         if (!disableArrRealloc && rank == 1 &&
             reallocD.low == dom.dsiLow && reallocD.stride == dom.dsiStride &&
-            dom.dsiNumIndices > 0 && reallocD.size > 0) {
+            dom.dsiNumIndices > 0 && reallocD.size > 0 &&
+            _ddata_supports_reallocate(data, eltType, oldSize, newSize)) {
 
           if reportInPlaceRealloc then
             writeln("reallocating in-place");
 
           sizesPerDim(0) = reallocD.dsiDim(0).sizeAs(int);
-          const oldSize = dom.dsiNumIndices;
-          data = _ddata_reallocate(data,
-                                   eltType,
-                                   oldSize,
-                                   newSize=reallocD.sizeAs(oldSize.type));
+          data = _ddata_reallocate(data, eltType, oldSize, newSize);
           initShiftedData();
         } else {
           var copy = new unmanaged DefaultRectangularArr(eltType=eltType,

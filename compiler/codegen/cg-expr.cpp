@@ -4695,21 +4695,37 @@ DEFINE_PRIM(PRIM_SET_DYNAMIC_END_COUNT) {
       ret = rcall->codegen();
 }
 
+static bool isCStringImmediate(Symbol* sym) {
+  if (sym->isImmediate()) {
+    VarSymbol* varSym = toVarSymbol(sym);
+    return varSym->immediate->const_kind == CONST_KIND_STRING &&
+           varSym->immediate->string_kind == STRING_KIND_C_STRING;
+  }
+
+  return false;
+}
+
 static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   // Used to codegen for PRIM_GPU_KERNEL_LAUNCH_FLAT and PRIM_GPU_KERNEL_LAUNCH.
   // They differ in number of arguments only. The first passes 1 integer for
   // grid and block size each, the other passes 3 for each.
   //
-  // Call `chpl_gpu_launch_kernel` runtime function.
+  // Generates a call to the `chpl_gpu_launch_kernel*` runtime functions.
   //
   // The primitive's arguments are
-  //   - function name
+  //   - function name (c_string immediate) or symbol (FnSymbol)
   //   - grid size (1 arg or 3 args)
   //   - block size (1 arg or 3 args)
   //   - any number of arguments to be passed to the kernel
   //
-  // The runtime function needs the kernel parameters to be passed by address.
-  // The other arguments to this primitive are passed along directly.
+  // Kernel arguments are passed in the following ways:
+  //
+  // 1. If a ref: pass by value, and the size of its value. Runtime will
+  //    offload that value and create a GPU pointer to the offloaded instance.
+  // 2. If a non-aggregate: pass by reference, and a `0` to signal that this
+  //    shouldn't be offloaded and passed to the kernel function directly.
+  // 3. If aggregate: pass by reference, and the size of its value. The behavior
+  //    will be similar to 1.
 
   // number of arguments that are not kernel params
   int nNonKernelParamArgs = is3d ? 7:3;
@@ -4720,10 +4736,19 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   std::vector<GenRet> args;
   int curArg = 1;
   for_actuals(actual, call) {
-    if (curArg > nNonKernelParamArgs) {
-      args.push_back(codegenAddrOf(actual));
+    Symbol* actualSym = toSymExpr(actual)->symbol();
+    if (curArg == 1) {  // function name or symbol
+      if (FnSymbol* fn = toFnSymbol(actualSym)) {
+        args.push_back(new_CStringSymbol(fn->cname));
+      }
+      else if (isCStringImmediate(actualSym)) {
+        args.push_back(actual->codegen());
+      }
+      else {
+        INT_FATAL("Unknown argument type in GPU launch primitive");
+      }
     }
-    else {
+    else if (curArg <= nNonKernelParamArgs) {  // grid and block size args
       args.push_back(actual->codegen());
 
       // if we finished adding non-kernel parameters, add number of kernel
@@ -4731,6 +4756,24 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
       if (curArg == nNonKernelParamArgs) {
         GenRet numParams = new_IntSymbol(nKernelParamArgs);
         args.push_back(numParams);
+      }
+    }
+    else { // kernel args
+      Type* actualValType = actual->typeInfo()->getValType();
+
+      // TODO can we use codegenArgForFormal instead of this logic?
+      if (actualSym->isRef()) {
+        INT_ASSERT(isAggregateType(actualValType));
+        args.push_back(actual->codegen());
+        args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
+      }
+      else if (!isAggregateType(actualValType)) {
+        args.push_back(codegenAddrOf(codegenValuePtr(actual)));
+        args.push_back(new_IntSymbol(0));
+      }
+      else {
+        args.push_back(codegenAddrOf(codegenValuePtr(actual)));
+        args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
       }
     }
     curArg++;

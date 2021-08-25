@@ -74,7 +74,9 @@ for f in *.h ; do
   if [ -e $title.execopts ]; then
     otherArgs=`cat $title.execopts`
   fi
-  helper "$title" "$f $otherArgs" "$title.chpl"
+  if [[ $title != "gnu"* ]]; then
+      helper "$title" "$f $otherArgs" "$title.chpl"
+  fi
 done
 
 echo 'Testing using GNU parser... '

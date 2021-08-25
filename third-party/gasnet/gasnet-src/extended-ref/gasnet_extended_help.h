@@ -291,16 +291,19 @@ typedef union {
 #define GASNETI_CHECKZEROSZ_GET(variety,tm,dest,rank,src,nbytes) do { \
     if_pf (nbytes == 0) {                                             \
       GASNETI_TRACE_GET_LOCAL(variety,tm,dest,rank,src,nbytes);       \
+      /*GASNETI_CHECK_INJECT();*/                                     \
       return 0;                                                       \
     } } while(0)
 #define GASNETI_CHECKZEROSZ_PUT(variety,tm,rank,dest,src,nbytes) do { \
     if_pf (nbytes == 0) {                                             \
       GASNETI_TRACE_PUT_LOCAL(variety,tm,rank,dest,src,nbytes);       \
+      /*GASNETI_CHECK_INJECT();*/                                     \
       return 0;                                                       \
     } } while(0)
 #define GASNETI_CHECKZEROSZ_NAMED(tracecall,nbytes) do {           \
     if_pf (nbytes == 0) {                                          \
       tracecall;                                                   \
+      /*GASNETI_CHECK_INJECT();*/                                  \
       return 0;                                                    \
     } } while(0)
 #if GASNET_PSHM

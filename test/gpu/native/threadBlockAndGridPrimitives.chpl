@@ -114,8 +114,6 @@ proc runExample(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ) {
 }
 
 proc main() {
-  chpl_gpu_init();
-
   runExample(1,1,1, 1,1,1);
 
   runExample(1,1,1, 2,2,2);

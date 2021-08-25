@@ -59,6 +59,7 @@
 #include <sys/uio.h> /* for struct iovec */
 #include <time.h>
 #include <unistd.h>
+#include <arpa/inet.h> // for inet_pton
 
 #ifdef CHPL_COMM_DEBUG
 #include <ctype.h>
@@ -1256,11 +1257,44 @@ struct fi_info* findProvInList(struct fi_info* info,
                                chpl_bool accept_ungood_provs,
                                chpl_bool accept_RxD_provs,
                                chpl_bool accept_RxM_provs) {
-  while (info != NULL
-         && (   (!accept_ungood_provs && !isGoodCoreProvider(info))
-             || (!accept_RxD_provs && isInProvider("ofi_rxd", info))
-             || (!accept_RxM_provs && isInProvider("ofi_rxm", info)))) {
-    info = info->next;
+
+#ifndef LIBFABRIC_NO_FIXUP
+  
+  // Ignore any provider for the T2 interface on a mac. As of v1.13.0
+  // libfabric does not filter this interface internally. The T2 interface
+  // is identified by the link local address fe80::aede:48ff:fe00:1122.
+
+  struct sockaddr_in6 t2;
+  chpl_bool darwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
+  if (darwin) {
+    int rc = inet_pton(AF_INET6, "fe80::aede:48ff:fe00:1122", &t2.sin6_addr);
+    if (rc != 1) {
+      INTERNAL_ERROR_V("inet_pton failed: %s", strerror(errno));
+    }
+  }
+#endif
+
+  for (; info != NULL; info = info->next) {
+    // break out of the loop when we find one that meets all of our criteria
+    if (!accept_ungood_provs && !isGoodCoreProvider(info)) {
+      continue;
+    }
+    if (!accept_RxD_provs && isInProvider("ofi_rxd", info)) {
+      continue;
+    }
+    if (!accept_RxM_provs && isInProvider("ofi_rxm", info)) {
+      continue;
+    }
+#ifndef LIBFABRIC_NO_FIXUP
+    if (darwin && (info->addr_format == FI_SOCKADDR_IN6) && 
+        !memcmp(&t2.sin6_addr, &((struct sockaddr_in6 *)info->src_addr)->sin6_addr, 
+                sizeof(t2.sin6_addr))) {
+      DBG_PRINTF_NODE0(DBG_PROV, "skipping T2 interface");
+      continue;
+    }
+#endif
+    // got one
+    break;
   }
   return (info == NULL) ? NULL : fi_dupinfo(info);
 }
@@ -2211,6 +2245,7 @@ void init_ofiExchangeAvInfo(void) {
   size_t my_addr_len = 0;
 
   OFI_CHK_1(fi_getname(&ofi_rxEp->fid, NULL, &my_addr_len), -FI_ETOOSMALL);
+
   CHPL_CALLOC_SZ(my_addr, my_addr_len, 1);
   OFI_CHK(fi_getname(&ofi_rxEp->fid, my_addr, &my_addr_len));
   CHPL_CALLOC_SZ(addrs, chpl_numNodes, my_addr_len);
@@ -2237,9 +2272,8 @@ void init_ofiExchangeAvInfo(void) {
   //
   size_t numAddrs = chpl_numNodes;
   CHPL_CALLOC(ofi_rxAddrs, numAddrs);
-  CHK_TRUE(fi_av_insert(ofi_av, addrs, numAddrs, ofi_rxAddrs, 0, NULL)
-           == numAddrs);
-
+  CHK_TRUE(fi_av_insert(ofi_av, addrs, numAddrs, ofi_rxAddrs, 0, NULL) == 
+           numAddrs);  
   CHPL_FREE(my_addr);
   CHPL_FREE(addrs);
 }

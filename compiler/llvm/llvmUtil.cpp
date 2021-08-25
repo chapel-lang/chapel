@@ -177,7 +177,7 @@ PromotedPair convertValuesToLarger(
       return PromotedPair(value1,
                           irBuilder->CreateFPExt(value2, type1), true);
     } else {
-      return PromotedPair(irBuilder->CreateFPTrunc(value1, type2),
+      return PromotedPair(irBuilder->CreateFPExt(value1, type2),
                           value2, true);
     }
   }

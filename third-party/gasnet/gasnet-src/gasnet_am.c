@@ -133,6 +133,29 @@ extern int gasneti_amregister( gasneti_EP_t i_ep,
     gasneti_assert(! output[newindex].gex_index);
     output[newindex] = input[i];
 
+    #if GASNET_TRACE
+    {
+      const char *name = input[i].gex_name
+                         ? gasneti_dynsprintf(", name='%s'", input[i].gex_name) : "";
+      void *fnptr = *(void**)&input[i].gex_fnptr; // level of indirection avoids -pedantic warning
+      char *flags = gasneti_malloc(gasneti_format_flags_amreg(NULL, input[i].gex_flags));
+      gasneti_format_flags_amreg(flags, input[i].gex_flags);
+      const char *nargs = (input[i].gex_nargs == GASNETI_HANDLER_NARGS_UNK)
+                          ? "" : gasneti_dynsprintf(", nargs=%u", input[i].gex_nargs);
+      if (newindex >= GASNETI_CLIENT_HANDLER_BASE) {
+        GASNETI_TRACE_PRINTF(O,("Registered AM handler %d: client table entry=%d, flags=%s%s, fnptr=%p%s%s",
+                                newindex, i, flags, nargs, fnptr, name,
+                                dontcare ? ", input index was zero" : ""));
+      } else {
+        gasneti_static_assert(GASNETE_HANDLER_BASE > GASNETC_HANDLER_BASE);
+        const char *api = (newindex >= GASNETE_HANDLER_BASE) ? "extended" : "core";
+        GASNETI_TRACE_PRINTF(D,("Registered AM handler %d: %s API, flags=%s%s, fnptr=%p%s",
+                                newindex, api, flags, nargs, fnptr, name));
+      }
+      gasneti_free(flags);
+    }
+    #endif
+
     (*numregistered)++;
   }
   return GASNET_OK;
@@ -268,6 +291,17 @@ extern void gasneti_amtbl_check(const gex_AM_Entry_t *entry, int nargs,
   }
 }
 #endif
+
+/* ------------------------------------------------------------------------------------ */
+extern int gex_EP_RegisterHandlers(
+                gex_EP_t                ep,
+                gex_AM_Entry_t          *table,
+                size_t                  numentries)
+{
+  GASNETI_TRACE_PRINTF(O,("gex_EP_RegisterHandlers: ep=%p table=%p numentries=%"PRIuSZ,
+                          (void*)ep, (void*)table, numentries));
+  return gasneti_amregister_client(gasneti_import_ep(ep), table, numentries);
+}
 
 /* ------------------------------------------------------------------------------------ */
 #if GASNET_DEBUG
@@ -864,3 +898,35 @@ extern gex_TI_t gasnetc_nbrhd_Token_Info(
   gex_TI_t result = GEX_TI_SRCRANK | GEX_TI_EP | GEX_TI_ENTRY | GEX_TI_IS_REQ | GEX_TI_IS_LONG;
   return GASNETI_TOKEN_INFO_RETURN(result, info, mask);
 }
+
+/* ------------------------------------------------------------------------------------ */
+
+size_t gasneti_format_flags_amreg(char *buf, gex_Flags_t flags) {
+  size_t rc = 1;
+  if (buf) buf[0] = '\0';
+  #define APPEND_TOKEN(string) do {    \
+      if (buf) strcat(buf, string); \
+      rc += strlen(string);         \
+    } while (0)
+  #define CHECK_ONE_FLAG(value) \
+    if ((flags & GEX_FLAG_AM_##value) == GEX_FLAG_AM_##value) { APPEND_TOKEN(#value); }
+  if (flags & GASNETI_FLAG_INIT_LEGACY) {
+    APPEND_TOKEN("GASNet-1");
+  } else if ((flags & GASNETI_FLAG_AM_ANY) == GASNETI_FLAG_AM_ANY) {
+    APPEND_TOKEN("WILDCARD");
+  } else {
+    CHECK_ONE_FLAG(MEDLONG) else // must check first in this group
+    CHECK_ONE_FLAG(SHORT)   else
+    CHECK_ONE_FLAG(MEDIUM)  else
+    CHECK_ONE_FLAG(LONG)
+    APPEND_TOKEN("|");
+    CHECK_ONE_FLAG(REQREP)  else // must check first in this group
+    CHECK_ONE_FLAG(REQUEST) else
+    CHECK_ONE_FLAG(REPLY)
+  }
+  #undef CHECK_ONE_FLAG
+  #undef APPEND_TOKEN
+  if (buf) gasneti_assert_uint(rc ,==, 1+strlen(buf));
+  return rc;
+}
+

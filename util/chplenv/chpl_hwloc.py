@@ -14,9 +14,6 @@ def get():
             hwloc_val = 'bundled'
         else:
             hwloc_val = 'none'
-    elif hwloc_val == 'hwloc':
-        warning("CHPL_HWLOC=hwloc is deprecated. Use CHPL_HWLOC=bundled.")
-        hwloc_val = 'bundled'
 
     return hwloc_val
 
