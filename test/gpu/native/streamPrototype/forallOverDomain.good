@@ -8,4 +8,3 @@ warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest suppor
 1920 2040 2160 2280 2400 2520 2640 2760 2880 3000
 2560 2720 2880 3040 3200 3360 3520 3680 3840 4000
 3840 4080 4320 4560 4800 5040 5280 5520 5760 6000
-warning: 2 NUMA domains but only 1 Qthreads shepherds; may get internal errors
