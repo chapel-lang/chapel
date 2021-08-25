@@ -197,8 +197,8 @@ proc type ipAddr.ipv6(host: ipv6Addr, port: uint(16) = 8000): ipAddr throws {
   :return: family type of address
   :rtype: :type:`IPFamily`
 */
-proc ipAddr.family {
-  return try! _addressStorage.family:IPFamily;
+proc ipAddr.family throws {
+  return _addressStorage.family:IPFamily;
 }
 
 /*
@@ -206,8 +206,8 @@ proc ipAddr.family {
   :return: host address
   :rtype: `string`
 */
-proc ipAddr.host {
-  return try! _addressStorage.numericHost();
+proc ipAddr.host throws {
+  return _addressStorage.numericHost();
 }
 
 /*
@@ -215,12 +215,12 @@ proc ipAddr.host {
   :return: Returns numeric port.
   :rtype: `uint(16)`
 */
-proc ipAddr.port {
-  return try! _addressStorage.port();
+proc ipAddr.port throws {
+  return _addressStorage.port();
 }
 
 /* compare ipAddr */
-inline operator !=(in lhs: ipAddr,in rhs: ipAddr) {
+inline operator !=(in lhs: ipAddr,in rhs: ipAddr) throws {
   return lhs.family != rhs.family || lhs.host != rhs.host || lhs.port != rhs.port;
 }
 
@@ -255,8 +255,8 @@ proc tcpConn.socketFd throws {
   :return: Returns remote address.
   :rtype: `ipAddr`
 */
-proc tcpConn.addr {
-  return try! getpeername(this.socketFd);
+proc tcpConn.addr throws {
+  return getpeername(this.socketFd);
 }
 
 inline operator !=(in lhs: tcpConn,in rhs: tcpConn) {
@@ -437,8 +437,8 @@ proc tcpListener.close() {
   :return: bound address
   :rtype: `ipAddr`
 */
-proc tcpListener.addr {
-  return try! getsockname(this.socketFd);
+proc tcpListener.addr throws {
+  return getsockname(this.socketFd);
 }
 
 inline operator !=(in lhs: tcpListener,in rhs: tcpListener) {
@@ -521,7 +521,6 @@ proc connect(in address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws
   if err_out == 0 {
     return openfd(socketFd):tcpConn;
   }
-
   var localSync$: sync int = 0;
   localSync$.readFE();
   var writerEvent = event_new(event_loop_base, socketFd, EV_WRITE | EV_TIMEOUT | EV_ET, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
@@ -538,7 +537,6 @@ proc connect(in address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws
   if err_out != 0 {
     throw new Error("connect() failed");
   }
-
   var retval = localSync$.readFE();
   if retval & EV_TIMEOUT != 0 {
     throw SystemError.fromSyserr(ETIMEDOUT);
@@ -548,7 +546,6 @@ proc connect(in address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws
     sys_close(socketFd);
     throw SystemError.fromSyserr(err_out,"connect() failed");
   }
-
   return openfd(socketFd):tcpConn;
 }
 
@@ -585,7 +582,6 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
   if err != 0 {
     throw new Error("Can't resolve address");
   }
-
   var tempPointer = result;
   var conn:tcpConn;
   while tempPointer != nil {
@@ -599,12 +595,10 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
       continue;
     }
   }
-
   sys_freeaddrinfo(result);
   if tempPointer == nil {
     throw new Error("Can't resolve address");
   }
-
   return conn;
 }
 
@@ -656,8 +650,8 @@ record udpSocket {
 }
 
 /* Get :type:`ipAddr` associated with udp socket */
-proc udpSocket.addr {
-  return try! getsockname(this.socketFd);
+proc udpSocket.addr throws {
+  return getsockname(this.socketFd);
 }
 
 pragma "no doc"
@@ -1011,6 +1005,7 @@ proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int, buflen: uint(16)) t
     var buffer = c_calloc(c_uchar, buflen);
     var err_out = sys_getsockopt(socketFd, level, optname, buffer:c_void_ptr, len);
     if err_out != 0 {
+      c_free(buffer);
       throw SystemError.fromSyserr(err_out, "Failed to get socket option");
     }
     return createBytesWithOwnedBuffer(buffer, len, buflen);

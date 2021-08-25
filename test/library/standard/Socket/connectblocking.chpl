@@ -64,12 +64,12 @@ proc test_fail_ipv4_noserver(test: borrowed Test) throws {
 
   try {
     var conn = connect(address);
-    // making error fail programatically.
+    // making error fail programatically a better API can be fail() function
     test.assertEqual(-1, 0);
     conn.close();
   }
   catch e {
-    test.assertEqual(e.message(), "Connection refused (Berkley Error)");
+    test.assertEqual(e.message(), "Connection refused (connect() failed)");
   }
 }
 
@@ -141,7 +141,7 @@ proc test_fail_ipv6_noserver(test: borrowed Test) throws {
     conn.close();
   }
   catch e {
-    test.assertEqual(e.message(), "Connection refused (Berkley Error)");
+    test.assertEqual(e.message(), "Connection refused (connect() failed)");
   }
 }
 
