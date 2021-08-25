@@ -120,14 +120,14 @@
    fun:_gasneti_malloc
    fun:gasneti_auxseg_dummy
 }
-# gasnetc_attach allocates global data
+# gasneti_attach allocates global data
 {
-   gasnetc_attach-leak
+   gasneti_attach-leak
    Memcheck:Leak
    fun:malloc
    fun:_gasneti_malloc_inner
    fun:_gasneti_malloc
-   fun:gasnetc_attach
+   fun:gasneti_attach
 }
 # gasnete_coll_init allocates global state
 {

@@ -1,1 +1,1 @@
---myConfigVar testVar -o w a y d t a? -- -t=tea time --myConfigVar=@10 --flagOn subCmd1 -c one -t two -f
+--myConfigVar testVar -o w a y d t a? -- -t=tea time --myConfigVar=@10 --flagOn aValue subCmd1 bValue -c one -t two -f ++ --extra stuff that is passed

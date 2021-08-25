@@ -1,2 +1,0 @@
-$CHPL_HOME/modules/packages/Norm.chpl:41: warning: Norm module is deprecated - please use LinearAlgebra instead
-3.74166

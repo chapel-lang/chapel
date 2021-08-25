@@ -33,6 +33,7 @@ enumVar: OK
 fileGlobals: OK
 fnPointers: OK
 fnints: OK
+gnuTest: OK
 intDefines: OK
 invalidC: OK
 miscTypedef: OK

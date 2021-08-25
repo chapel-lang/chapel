@@ -302,7 +302,7 @@ struct gasnete_coll_team_t_ {
   
   /*scratch space management*/
   gasnete_coll_scratch_status_t* scratch_status;
-  gasnete_coll_scratch_req_t* scratch_free_list;
+  gasneti_lifo_head_t scratch_free_list;
   
   /*autotuning info*/
   gasnete_coll_autotune_info_t* autotune_info;

@@ -16,7 +16,6 @@ source $CWD/common-perf-cray-cs-hdr.bash
 
 export GASNET_PHYSMEM_MAX=124G
 export GASNET_IBV_PORTS=mlx5_1
-export GASNET_ODP_VERBOSE=0
 nightly_args="${nightly_args} -no-buildcheck"
 perf_args="-performance-description gn-ibv-large -numtrials 1"
 

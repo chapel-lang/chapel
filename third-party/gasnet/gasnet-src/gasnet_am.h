@@ -15,22 +15,22 @@
 
 #define GASNETI_COMMON_AMREQUESTSHORT(tm,rank,handler,flags,numargs) do {      \
     GASNETI_CHECKATTACH();                                                     \
-    GASNETI_CHECK_INJECT();                                                    \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_CLIENT));              \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_ALLOC));               \
     gasneti_assert_int(numargs ,>=, 0);                                        \
     gasneti_assert_int(numargs ,<=, gex_AM_MaxArgs());                         \
     GASNETI_TRACE_AMREQUESTSHORT(tm,rank,handler,flags,numargs);               \
+    GASNETI_CHECK_INJECT();                                                    \
     GASNETI_CHECK_ERRR((rank >= gasneti_nodes),BAD_ARG,"node index too high"); \
   } while (0)
 #define GASNETI_COMMON_AMREQUESTMEDIUM(tm,rank,handler,source_addr,nbytes,lc_opt,flags,numargs) do { \
     GASNETI_CHECKATTACH();                                                           \
-    GASNETI_CHECK_INJECT();                                                          \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_CLIENT));                    \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_ALLOC));                     \
     gasneti_assert_int(numargs ,>=, 0);                                        \
     gasneti_assert_int(numargs ,<=, gex_AM_MaxArgs());                         \
     GASNETI_TRACE_AMREQUESTMEDIUM(tm,rank,handler,source_addr,nbytes,flags,numargs); \
+    GASNETI_CHECK_INJECT();                                                          \
     GASNETI_CHECK_ERRR((rank >= gasneti_nodes),BAD_ARG,"node index too high");       \
     GASNETI_CHECK_ERRR((nbytes > gex_AM_MaxRequestMedium(tm,rank,lc_opt,flags,numargs)),\
                        BAD_ARG,"nbytes too large");                                  \
@@ -39,12 +39,12 @@
   } while (0)
 #define GASNETI_COMMON_AMREQUESTLONG(tm,rank,handler,source_addr,nbytes,dest_addr,lc_opt,flags,numargs) do { \
     GASNETI_CHECKATTACH();                                                                   \
-    GASNETI_CHECK_INJECT();                                                                  \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_CLIENT));                            \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_ALLOC));                             \
     gasneti_assert_int(numargs ,>=, 0);                                                      \
     gasneti_assert_int(numargs ,<=, gex_AM_MaxArgs());                                       \
     GASNETI_TRACE_AMREQUESTLONG(tm,rank,handler,source_addr,nbytes,dest_addr,flags,numargs); \
+    GASNETI_CHECK_INJECT();                                                                  \
     GASNETI_CHECK_ERRR((rank >= gasneti_nodes),BAD_ARG,"node index too high");               \
     GASNETI_CHECK_ERRR((nbytes > gex_AM_MaxRequestLong(tm,rank,lc_opt,flags,numargs)),       \
                        BAD_ARG,"nbytes too large");                                          \
@@ -52,20 +52,20 @@
     GASNETI_CHECK_ERRR((lc_opt == GEX_EVENT_DEFER),BAD_ARG,"EVENT_DEFER is invalid for Requests"); \
   } while (0)
 #define GASNETI_COMMON_AMREPLYSHORT(token,handler,flags,numargs) do {    \
-    GASNETI_CHECK_INJECT_REPLY();                                  \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_CLIENT));  \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_ALLOC));   \
     gasneti_assert_int(numargs ,>=, 0);                            \
     gasneti_assert_int(numargs ,<=, gex_AM_MaxArgs());             \
     GASNETI_TRACE_AMREPLYSHORT(token,handler,flags,numargs);       \
+    GASNETI_CHECK_INJECT_REPLY();                                  \
   } while (0)
 #define GASNETI_COMMON_AMREPLYMEDIUM(token,handler,source_addr,nbytes,lc_opt,flags,numargs) do { \
-    GASNETI_CHECK_INJECT_REPLY();                                                   \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_CLIENT));                   \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_ALLOC));                    \
     gasneti_assert_int(numargs ,>=, 0);                                             \
     gasneti_assert_int(numargs ,<=, gex_AM_MaxArgs());                              \
     GASNETI_TRACE_AMREPLYMEDIUM(token,handler,source_addr,nbytes,flags,numargs);    \
+    GASNETI_CHECK_INJECT_REPLY();                                                   \
     GASNETI_CHECK_ERRR((nbytes > gasnetc_Token_MaxReplyMedium(token,lc_opt,flags,numargs)),\
                        BAD_ARG,"nbytes too large");                                 \
     GASNETI_CHECK_ERRR((lc_opt == NULL),BAD_ARG,"lc_opt=NULL is invalid");          \
@@ -73,12 +73,12 @@
     GASNETI_CHECK_ERRR((lc_opt == GEX_EVENT_GROUP),BAD_ARG,"EVENT_GROUP is invalid for Replies"); \
   } while (0)
 #define GASNETI_COMMON_AMREPLYLONG(token,handler,source_addr,nbytes,dest_addr,lc_opt,flags,numargs) do { \
-    GASNETI_CHECK_INJECT_REPLY();                                                           \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_CLIENT));                           \
     gasneti_assert(! (flags & GEX_FLAG_AM_PREPARE_LEAST_ALLOC));                            \
     gasneti_assert_int(numargs ,>=, 0);                                                     \
     gasneti_assert_int(numargs ,<=, gex_AM_MaxArgs());                                      \
     GASNETI_TRACE_AMREPLYLONG(token,handler,source_addr,nbytes,dest_addr,flags,numargs);    \
+    GASNETI_CHECK_INJECT_REPLY();                                                           \
     GASNETI_CHECK_ERRR((nbytes > gasnetc_Token_MaxReplyLong(token,lc_opt,flags,numargs)),   \
                        BAD_ARG,"nbytes too large");                                         \
     GASNETI_CHECK_ERRR((lc_opt == NULL),BAD_ARG,"lc_opt=NULL is invalid");                  \
@@ -702,7 +702,7 @@ gex_Token_t gasnetc_nbrhd_token_init(
 {
     gasneti_assert(!((uintptr_t)real_token & 1));
     //gasneti_assert(GASNETI_NBRHD_JOBRANK_IS_LOCAL(src_jobrank)); // allow VIS PC to fake a remote token using this routine
-  #if !PLATFORM_COMPILER_PGI // Bug 3587
+  #if !(PLATFORM_COMPILER_PGI && PLATFORM_COMPILER_VERSION_LT(17,9,0)) // Bug 3587
     // generic msgsource() requires srcrank first
     gasneti_assert(!offsetof(gasnetc_nbrhd_token_t,ti.gex_srcrank));
   #endif

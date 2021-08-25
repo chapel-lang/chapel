@@ -485,7 +485,7 @@ uintptr_t gasneti_segmentLimit(uintptr_t localLimit, uint64_t sharedLimit,
 void gasneti_segmentInit(uintptr_t localSegmentLimit,
                          gasneti_bootstrapExchangefn_t exchangefn,
                          gex_Flags_t flags);
-gasnet_seginfo_t gasneti_segmentAttach(
+int gasneti_segmentAttach(
                 gex_Segment_t                 *segment_p,
                 gex_TM_t                      tm,
                 uintptr_t                     segsize,
@@ -550,6 +550,55 @@ void gasneti_auxseg_attach(gasnet_seginfo_t *auxseg_info);
 
 /* common case use of gasneti_auxseg_{preinit,attach} for conduits using gasneti_segmentAttach() */
 gasnet_seginfo_t gasneti_auxsegAttach(uint64_t maxsize, gasneti_bootstrapExchangefn_t exchangefn);
+
+/* ------------------------------------------------------------------------------------ */
+// Hooks to invoke conduit-specific functionality from common conduit-independent code.
+// Conduits requiring use of one or more of these should define the
+// corresponding preprocessor identifier in their gasnet_core_fwd.h.
+
+#if GASNETC_SEGMENT_CREATE_HOOK
+// Called after all conduit-independent segment creation steps in
+// gex_Segment_Create().  Typical use of this hook includes (purely local)
+// memory registration.
+//
+// All relevant options to the Create call (such as addr, len, and flags) are
+// accessible as fields of the sole argument (of type gex_Segment_t).
+extern int gasnetc_segment_create_hook(gex_Segment_t e_segment);
+#endif
+
+#if GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK
+// Called after all conduit-independent segment creation steps in
+// gex_EP_PublishBoundSegment().  Typical use of this hook includes
+// communication of memory registration keys.
+//
+// All arguments provided to gex_EP_PublishBoundSegment() are also
+// provided to this hook.
+// Calls to this hook are collective over the given team.
+//
+// NOTE: subject to replacement by a pack/unpack pair of hooks when
+// gex_EP_PublishBoundSegment() is enhanced to merge conduit-specific
+// and conduit-independent communications.
+extern int gasnetc_ep_publishboundsegment_hook(
+                gex_TM_t               tm,
+                gex_EP_t               *eps,
+                size_t                 num_eps,
+                gex_Flags_t            flags);
+#endif
+
+#if GASNETC_SEGMENT_ATTACH_HOOK
+// Called after all conduit-independent segment attach steps in
+// gex_Segment_Attach() and gasnet_attach().  Typical use of this hook
+// includes memory registration and propagation of the registration keys.
+//
+// Arguments are the segment and the (currently always primordial) team.
+// Other relevant options (addr, len, flags) are accessible as fields
+// in the argument of type gex_Segment_t.
+// Calls to this hook are collective over the given team.
+//
+// NOTE: subject to removal if/when the "attach" calls are reimplemented
+// in terms of gex_Segment_Create() and gex_EP_PublishBoundSegment().
+extern int gasnetc_segment_attach_hook(gex_Segment_t e_segment, gex_TM_t e_tm);
+#endif
 
 /* ------------------------------------------------------------------------------------ */
 /* GASNET-Internal OP Interface - provides a mechanism for conduit-independent services (like VIS)

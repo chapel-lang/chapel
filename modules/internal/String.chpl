@@ -819,11 +819,6 @@ module String {
     }
   }
 
-  proc cStrAssignmentDeprWarn() {
-    compilerWarning("Assigning to a string from a c_string is deprecated. ",
-                    "Use createStringWith*Buffer functions instead.");
-  }
-
   //
   // String Implementation
   //
@@ -851,15 +846,6 @@ module String {
     proc init=(s: string) {
       this.complete();
       initWithNewBuffer(this, s);
-    }
-
-    proc init=(cs: c_string) {
-      this.complete();
-      cStrAssignmentDeprWarn();
-      try! {
-        this.cachedNumCodepoints = validateEncoding(cs:bufferType, cs.size);
-      }
-      initWithNewBuffer(this, cs:bufferType, length=cs.size, size=cs.size+1);
     }
 
     proc ref deinit() {
@@ -2210,22 +2196,6 @@ module String {
   */
   operator =(ref lhs: string, rhs: string) {
     doAssign(lhs, rhs);
-  }
-
-  /*
-     Copies the c_string `rhs_c` into the string `lhs`.
-
-     Halts if `lhs` is a remote string.
-  */
-  operator =(ref lhs: string, rhs_c: c_string) {
-    cStrAssignmentDeprWarn();
-    // I want to use try! but got tripped over by #14465
-    try {
-      lhs = createStringWithNewBuffer(rhs_c);
-    }
-    catch {
-      halt("Assigning a c_string with non-UTF-8 data");
-    }
   }
 
   //

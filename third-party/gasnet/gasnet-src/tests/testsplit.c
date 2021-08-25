@@ -329,10 +329,10 @@ int main(int argc, char **argv)
   {
     // NO_SCRATCH case must not write to *scratch_p
     gex_Memvec_t scratch_out;
-    scratch_out.gex_addr = (void*)main;
+    scratch_out.gex_addr = (void*)&myclient;
     scratch_out.gex_len  = myrank;
     assert_always(! gex_TM_Destroy(onetm, &scratch_out, 0));
-    assert_always(scratch_out.gex_addr == (void*)main);
+    assert_always(scratch_out.gex_addr == (void*)&myclient);
     assert_always(scratch_out.gex_len  == myrank);
   }
   assert_always(! gex_TM_Destroy(rowtm, NULL, 0));

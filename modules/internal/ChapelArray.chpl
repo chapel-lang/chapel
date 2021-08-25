@@ -2983,6 +2983,25 @@ module ChapelArray {
       return _newArray(a);
     }
 
+    /*
+       Return a tuple of ranges describing the bounds of a rectangular domain.
+       For a sparse domain, return the bounds of the parent domain.
+     */
+    proc dims() return this.domain.dims();
+
+    /*
+       Return a range representing the boundary of this
+       domain in a particular dimension.
+     */
+    proc dim(d : int) {
+      return this.domain.dim(d);
+    }
+
+    pragma "no doc"
+    proc dim(param d : int) {
+      return this.domain.dim(d); 
+    }
+
     pragma "no doc"
     proc checkRankChange(args) {
       for param i in 0..args.size-1 do

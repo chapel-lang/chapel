@@ -402,17 +402,26 @@ GASNETI_INLINE(gasneti_i_tm_rank_to_location)
 gex_EP_Location_t gasneti_i_tm_rank_to_location(gasneti_TM_t _i_tm, gex_Rank_t _rank, gex_Flags_t _flags) {
   gasneti_check_i_tm_rank(_i_tm, _rank);
   gex_EP_Location_t _result;
+#if (GASNET_MAXEPS == 1)
+  _result.gex_ep_index = 0;
+#endif
   if (gasneti_is_tm0(_i_tm)) {
     _result.gex_rank = _rank;
+  #if (GASNET_MAXEPS > 1)
     _result.gex_ep_index = 0;
+  #endif
   } else if (gasneti_i_tm_is_pair(_i_tm)) {
     _result.gex_rank = _rank;
+  #if (GASNET_MAXEPS > 1)
     _result.gex_ep_index = gasneti_tm_pair_rem_idx(gasneti_i_tm_to_pair(_i_tm));
+  #endif
   } else if (!GASNETI_ALLOW_SPARSE_TEAMREP || _i_tm->_rank_map) {
     gasneti_assert(_i_tm->_rank_map);
     _result.gex_rank = _i_tm->_rank_map[_rank];
+  #if (GASNET_MAXEPS > 1)
     // NULL _index_map indicates all members of TM are primordial EPs (idx==0)
     _result.gex_ep_index = _i_tm->_index_map ? _i_tm->_index_map[_rank] : 0;
+  #endif
   } else {
     _result = gasneti_tm_fwd_location(_i_tm, _rank, _flags);
   }
@@ -607,7 +616,22 @@ GASNETI_INLINE(gasneti_leaf_finish)
 void gasneti_leaf_finish(gex_Event_t *_opt_val) {
   if (gasneti_leaf_is_pointer(_opt_val)) *_opt_val = GEX_EVENT_INVALID;
 }
+
+#if (PLATFORM_COMPILER_INTEL && PLATFORM_COMPILER_VERSION_LT(19,0,20180800))
+  // Some Intel C prior to 2019.0.117 (builddate 20180804) issue a buggy warning
+  // about side effects in an __assume(), and these versions predate Intel's
+  // support for __builtin_assume, which avoids the warning.
+  #define gasneti_assume_leaf_is_pointer(lc_opt) do { \
+    GASNETI_PRAGMA(warning push);                     \
+    GASNETI_PRAGMA(warning disable 2261);             \
+    gasneti_assume(gasneti_leaf_is_pointer(lc_opt));  \
+    GASNETI_PRAGMA(warning pop);                      \
+  } while (0)
+#else
+  #define gasneti_assume_leaf_is_pointer(lc_opt) \
+          gasneti_assume(gasneti_leaf_is_pointer(lc_opt))
 #endif
+#endif // _GEX_EVENT_T
 
 /* ------------------------------------------------------------------------------------ */
 /* semi-portable spinlocks using gasneti_atomic_t
@@ -791,6 +815,7 @@ void gasneti_leaf_finish(gex_Event_t *_opt_val) {
    */
   #if PLATFORM_COMPILER_PGI_CXX
     // Add a redundant value use to avoid a 550 set-but-not-used warning 
+    // Not needed with NVHPC-branded releases
     #define _GASNETI_THREAD_POSTED (sizeof(_gasneti_threadinfo_available) > 1 \
                                     && !_gasneti_threadinfo_available)
   #else
@@ -1350,47 +1375,127 @@ typedef void (*gasneti_progressfn_t)(void);
 #define GASNETC_IMMEDIATE_MAYBE_POLL(flag) \
     do { if (GASNETC_IMMEDIATE_WOULD_POLL(flag)) gasneti_AMPoll(); } while (0)
 
-/* Blocking functions
- * Note the _rmb at the end loop of each is required to ensure that subsequent
- * reads will not observe values that were prefeteched or are otherwise out
- * of date.
- */
+/* ------------------------------------------------------------------------------------ */
+// Blocking functions
+
+// In general, an RMB is required on exit from a spinloop to ensure that
+// subsequent reads will not observe values that were prefeteched or are
+// otherwise out of date.  However, such a fence would be redundant in cases
+// where evaluating the loop body and/or termination condition includes such
+// a fence (or stronger).
+// The `gasneti_{poll,wait}*()` macros include an RMB on loop exit.
+// The `GASNETI_SPIN_*()` macros do NOT include any RMB.
+
 extern int gasneti_wait_mode; /* current waitmode hint */
+
+// GASNETI_WAITHOOK is used to improve performance of various spinloop
+// constructs, implementing the policy selected using `gasnet_set_waitmode()`
+// and invoking `gasneti_spinloop_hint()`.  Since one or both of these can
+// result in non-trivial delay, this hook should only be used after the loop
+// termination condition is known to be false.  This is typically ensured by
+// "peeling" the first iteration of the loop.
+// Additionally, since the implementation of `gasneti_spinloop_hint()` via the
+// x86 `pause` instruction disables speculative execution, this hook should
+// immediately follow the conditional which continues the spin.
+//
+// See the `GASNETI_SPIN_*()` family of macros for example uses.
+//
+// Here is another example:
+//
+//   p = pop(&freelist);
+//   if (!p) {
+//     while (1) {
+//       progress(); // Can refill the freelist
+//       p = pop(&freelist);
+//       if (p) break;
+//       GASNETI_WAITHOOK();
+//     }
+//   }
+//
+// In this example note that `GASNETI_WAITHOOK()` is only reached if `pop()`
+// fails a second time with a `progress` between the first and second attempts
+// (the "loop peeling" recommendation.)  Also note that `GASNETI_WAITHOOK()`
+// immediately follows the conditional `break` that eventually terminates the
+// loop.
+//
+// It should be noted that this example assumes that `pop()` includes an RMB in
+// (at least) any multi-threaded execution which returns a non-NULL value.
+//
+// This example can be written more concisely as:
+//   GASNETI_SPIN_UNTIL((p = pop(&freelist)), progress());
+//
 #define GASNETI_WAITHOOK() do {                                       \
-    if (gasneti_wait_mode != GASNET_WAIT_SPIN) gasneti_sched_yield(); \
     /* prevent optimizer from hoisting the condition check out of */  \
     /* the enclosing spin loop - this is our way of telling the */    \
     /* optimizer "the whole world could change here" */               \
-    gasneti_compiler_fence();                                         \
-    gasneti_spinloop_hint();                                          \
+    gasneti_spinloop_hint(); /* pause instruction or compiler fence */\
+    if_pf (gasneti_wait_mode != GASNET_WAIT_SPIN) gasneti_sched_yield(); \
   } while (0)
 
-/* busy-waits, with no implicit polling (cnd should include an embedded poll)
-   differs from GASNET_BLOCKUNTIL because it may be waiting for an event
-     caused by the receipt of a non-AM message
- */
-#ifndef gasneti_waitwhile
-  #define gasneti_waitwhile(cnd) do { \
-    while (cnd) GASNETI_WAITHOOK();   \
+// Approximately `do { body } while (cnd)`, with the addition of `GASNETI_WAITHOOK()`.
+// Will always execute `body` at least once.
+// No RMB or similar on loop exit.
+#define GASNETI_SPIN_DOWHILE(cnd, body) \
+  do {                   \
+     body;               \
+     if (!(cnd)) break;  \
+     GASNETI_WAITHOOK(); \
+  } while (1)
+
+// Approximately `while (cnd) {body}`, with the addition of `GASNETI_WAITHOOK()`.
+// Will not execute `body` if `cnd` is initially false.
+// No RMB or similar on loop exit.
+#define GASNETI_SPIN_WHILE(cnd, body) \
+  do {                                 \
+    if (cnd) {                         \
+      GASNETI_SPIN_DOWHILE(cnd, body); \
+    }                                  \
+  } while (0)
+
+// Variant on `GASNETI_SPIN_WHILE()` which additionally traces a stalled
+// interval if (and only if) `cnd` is initially true.
+// No RMB or similar on loop exit.
+#if GASNETI_STATS_OR_TRACE
+  #define GASNETI_SPIN_WHILE_TRACE(cnd, type, name, body) \
+    do {                                                                    \
+      if (cnd) {                                                            \
+        gasneti_tick_t _waitstart = GASNETI_TICKS_NOW_IFENABLED(type);      \
+        GASNETI_SPIN_DOWHILE(cnd, body);                                    \
+        GASNETI_TRACE_EVENT_TIME(type,name,gasneti_ticks_now()-_waitstart); \
+      }                                                                     \
+    } while (0)
+#else
+  #define GASNETI_SPIN_WHILE_TRACE(cnd, type, name, body) \
+          GASNETI_SPIN_WHILE(cnd, body)
+#endif
+
+// As above, but negating the condition to yield "UNTIL" instead of "WHILE"
+// No RMB or similar on loop exit.
+#define GASNETI_SPIN_DOUNTIL(cnd, body) \
+        GASNETI_SPIN_DOWHILE(!(cnd), body)
+#define GASNETI_SPIN_UNTIL(cnd, body) \
+        GASNETI_SPIN_WHILE(!(cnd), body)
+#define GASNETI_SPIN_UNTIL_TRACE(cnd, type, name, body) \
+        GASNETI_SPIN_WHILE_TRACE(!(cnd), type, name, body)
+
+// busy-waits, *without* implicit polling (thus `cnd` should include any
+// necessary polling for progress)
+// Differs from GASNET_BLOCKUNTIL because it may be waiting for an event caused
+// by the receipt of a non-AM message
+// Differs from use of GASNETI_SPIN_DO{WHILE,UNTIL}() by addition of an RMB on loop exit.
+#define gasneti_waitwhile(cnd) do { \
+    GASNETI_SPIN_DOWHILE((cnd), ((void)0)); \
     gasneti_local_rmb();              \
   } while (0)
-#endif
 #define gasneti_waituntil(cnd) gasneti_waitwhile(!(cnd)) 
 
-/* busy-wait, with implicit polling */
-/* Note no poll if the condition is already satisfied */
-#ifndef gasneti_pollwhile
-  #define gasneti_pollwhile(cnd) do { \
-    if (cnd) {                        \
-      gasneti_AMPoll();               \
-      while (cnd) {                   \
-        GASNETI_WAITHOOK();           \
-        gasneti_AMPoll();             \
-      }                               \
-    }                                 \
+// busy-wait, *with* implicit polling
+// Note no poll if the condition is already satisfied
+// Differs from use of GASNETI_SPIN_{WHILE,UNTIL}() by addition of an RMB on loop exit.
+#define gasneti_pollwhile(cnd) do { \
+    GASNETI_SPIN_WHILE((cnd), gasneti_AMPoll()); \
     gasneti_local_rmb();              \
   } while (0)
-#endif
 #define gasneti_polluntil(cnd) gasneti_pollwhile(!(cnd)) 
 
 /* ------------------------------------------------------------------------------------ */

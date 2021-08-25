@@ -113,6 +113,19 @@ int main(int argc, char **argv)
   MSG0("Running CUDA UVA non-local xfer tests with size %lu, PRNG seed %d, and %s-allocated GPU segment",
        (unsigned long)len, seed, client_segment ? "client" : "GASNet");
 
+  const char *cvd = getenv("CUDA_VISIBLE_DEVICES"); // Intentionally NOT gasnet_getenv()
+  if (cvd) {
+    MSG("CUDA_VISIBLE_DEVICES='%s'", cvd);
+  } else {
+    MSG("CUDA_VISIBLE_DEVICES is unset");
+  }
+  const char *nvd = getenv("NVIDIA_VISIBLE_DEVICES"); // Intentionally NOT gasnet_getenv()
+  if (nvd) {
+    MSG("NVIDIA_VISIBLE_DEVICES='%s'", nvd);
+  } else {
+    MSG("NVIDIA_VISIBLE_DEVICES is unset");
+  }
+
   TEST_BCAST(&seed, 0, &seed, sizeof(seed));
   TEST_SRAND(seed);
   for (size_t i = 0; i < len; ++i) {
@@ -148,6 +161,7 @@ int main(int argc, char **argv)
       GASNET_Safe( gex_EP_PublishBoundSegment(myteam, NULL, 0, 0) );
       for (int i = 0; i < 4; ++i) BARRIER(); // currently exactly one per case
     } else {
+      MSG("cuDeviceGetCount reports %d devices", count);
       CUcontext ctx;
       check_cudacall( cuDevicePrimaryCtxRetain(&ctx, 0) );
       check_cudacall( cuCtxPushCurrent(ctx) );

@@ -100,7 +100,7 @@ platforms.  Therefore, this work currently supports only x86-64 and ppc64le.
 For any configurations that do not meet all of the configure-testable
 requirements outlined above, the memory kinds support in the current prototype
 implementation will be disabled (or `configure` will fail if it was passed
-`--with-kind-cuda-uva`).  Specifically, `GASNET_HAVE_MK_CLASS_CUDA_UVA` will be
+`--enable-kind-cuda-uva`).  Specifically, `GASNET_HAVE_MK_CLASS_CUDA_UVA` will be
 undefined and attempts to create device segments will fail at runtime.  Future
 releases are expected to eventually include a "reference implementation" that
 will allow creation of device segments on a wider range of platforms and

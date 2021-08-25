@@ -400,6 +400,37 @@ void gasnetc_counter_wait(gasnetc_counter_t *counter, int handler_context GASNET
 #define GASNETC_USE_SEND_SIGNALLED GASNETC_USE_FENCED_PUTS
 
 /* ------------------------------------------------------------------------------------ */
+// Optional per-cq serialization of calls to ibv_poll_cq()
+
+
+#if GASNETC_ANY_PAR
+  #ifndef GASNETC_SERIALIZE_POLL_CQ
+    #define GASNETC_SERIALIZE_POLL_CQ GASNETC_IBV_SERIALIZE_POLL_CQ_CONFIGURE
+  #endif
+#else
+  #undef GASNETC_SERIALIZE_POLL_CQ
+#endif
+#if GASNETC_SERIALIZE_POLL_CQ
+  #define GASNETC_POLL_CQ_UP(sema_p) \
+          gasnetc_atomic_set((sema_p),0,0)
+  #define GASNETC_POLL_CQ_TRYDOWN(sema_p) \
+          (gasnetc_atomic_read((sema_p),0) || \
+           !gasnetc_atomic_compare_and_swap((sema_p),0,1,0))
+
+  #if GASNETC_USE_RCV_THREAD
+    extern int gasnetc_rcv_thread_poll_serialize;
+    extern int gasnetc_rcv_thread_poll_exclusive;
+  #endif
+#else
+  #define GASNETC_POLL_CQ_UP(sema_p)        do {} while (0)
+  #define GASNETC_POLL_CQ_TRYDOWN(sema_p)   (0)
+#endif
+#define GASNETC_POLL_CQ_UP_SND(hca)      GASNETC_POLL_CQ_UP(&((hca)->poll_cq_semas.snd))
+#define GASNETC_POLL_CQ_UP_RCV(hca)      GASNETC_POLL_CQ_UP(&((hca)->poll_cq_semas.rcv))
+#define GASNETC_POLL_CQ_TRYDOWN_SND(hca) GASNETC_POLL_CQ_TRYDOWN(&((hca)->poll_cq_semas.snd))
+#define GASNETC_POLL_CQ_TRYDOWN_RCV(hca) GASNETC_POLL_CQ_TRYDOWN(&((hca)->poll_cq_semas.rcv))
+
+/* ------------------------------------------------------------------------------------ */
 
 /* Description of a pre-pinned memory region */
 typedef struct {
@@ -420,6 +451,8 @@ typedef struct {
     /* Initialized by client: */
     void                    (*fn)(struct ibv_wc *, void *);
     void                    *fn_arg;
+    gasnetc_atomic_t        *serialize_poll;
+    gasnetc_atomic_t        *exclusive_poll;
   } gasnetc_progress_thread_t;
 #else
   typedef void gasnetc_progress_thread_t;
@@ -491,52 +524,115 @@ typedef struct {
   gasnet_threadinfo_t       rcv_threadinfo;
  #endif
 #endif
+
+#if GASNETC_SERIALIZE_POLL_CQ
+  struct {
+    char pad0[GASNETI_CACHE_LINE_BYTES];
+    gasnetc_atomic_t snd;
+    char pad1[GASNETI_CACHE_LINE_BYTES - sizeof(gasnetc_atomic_t)];
+    gasnetc_atomic_t rcv;
+    char pad2[GASNETI_CACHE_LINE_BYTES - sizeof(gasnetc_atomic_t)];
+  } poll_cq_semas;
+#endif
 } gasnetc_hca_t;
 
-/* Structure for a cep (connection end-point) */
+// Structure for a cep (connection end-point)
+//
+// WARNING   This structure is carefully cache aligned.                 WARNING
+// WARNING   When adding or removing fields:                            WARNING
+// WARNING   + Add to Read/write or Read-only section as appropriate.   WARNING
+// WARNING   + Sort fields by size to avoid inter-field padding.        WARNING
+// WARNING   + Update _GASNETC_CEP_* macros to accurately track sizes.  WARNING
 struct gasnetc_cep_t_ {
-  /* Read/write fields */
-  int                   used;           /* boolean - true if cep has sent traffic */
-  gasnetc_sema_t	am_rem;		/* control in-flight AM Requests (remote rcv queue slots)*/
-  gasnetc_sema_t	*snd_cq_sema_p;	/* control in-flight ops (send completion queue slots) */
-  gasnetc_sema_t	*sq_sema_p;	/* Pointer to a sq_sema */
-  /* XXX: The atomics in the next 2 structs really should get padded to full cache lines */
-  struct {	/* AM flow control coallescing */
-  	gasnetc_atomic_t    credit;
-  } am_flow;
+  //
+  // Read/write fields
+  //
+  int                   used;           // boolean - true if cep has sent traffic
+  struct { // AM flow control coalescing (use of struct is historical)
+    gasnetc_atomic_t      credit;
+  }                     am_flow;
+  gasnetc_sema_t        am_rem;         // control in-flight AM Requests (remote rcv queue slots)
 
-#if GASNETI_THREADS
-  char			_pad1[GASNETI_CACHE_LINE_BYTES];
-#endif
+  // In a GASNETI_THREADS build, the type gasnetc_sema_t contains internal padding to make
+  // it occupy a full cacheline (or a multiple thereof).
 
-  /* Read-only fields - many duplicated from fields in cep->hca */
-#if GASNETC_PIN_SEGMENT
-  uint32_t      rkey;
-#endif
-#if (GASNETC_IB_MAX_HCAS > 1)
-  uint32_t      rcv_lkey;
-  uint32_t      snd_lkey;
-#endif
-  gasnetc_lifo_head_t	*rbuf_freelist;	/* Source of rcv buffers for AMs */
-  gasnetc_hca_t		*hca;
-  struct ibv_qp *       qp_handle;
-#if (GASNETC_IB_MAX_HCAS > 1)
-  int			hca_index;
-#endif
-  gasnetc_epid_t	epid;		/* == uint32_t */
+  // This is how much data came *before* the semaphore (assuming gasnetc_atomic_t alignment)
+  #define _GASNETC_CEP_RW_EARLY GASNETI_ALIGNUP_NOASSERT(sizeof(int)+sizeof(gasnetc_atomic_t),\
+                                                         sizeof(gasneti_weakatomic_t))
+
+  // This is total size of R/W fields, with possible trailing padding prior to R/O fields,
+  // correct independent of GASNETI_THREADS
+  #define _GASNETC_CEP_RW_BYTES GASNETI_ALIGNUP_NOASSERT(_GASNETC_CEP_RW_EARLY+sizeof(gasnetc_sema_t),\
+                                                         sizeof(void *))
+
+  //
+  // Read-only fields
+  //
+  // Many are duplicated from fields in cep->hca, as noted
+  // These are sorted by size to get dense packing
+
+  // 64-bit fields
+  // None currently
+  // Change _GASNETC_CEP_RW_BYTES's alignment to 8 if any are added
+
+  // Pointer-width fields
+  gasnetc_hca_t         *hca;
+  gasnetc_sema_t        *snd_cq_sema_p; /* Limits in-flight ops (send completion queue slots).
+                                           Copy of hca->snd_cq_sema_p */
+  gasnetc_sema_t        *sq_sema_p;     // Pointer to a sq_sema
+  gasnetc_lifo_head_t   *rbuf_freelist; /* Source of rcv buffers for AMs.
+                                           Copy of &hca->rbuf_freelist */
+  struct ibv_qp         *qp_handle;
+  #define _GASNETC_CEP_PTR_0 5*sizeof(void*)
 #if GASNETC_IBV_SRQ
-  struct ibv_srq        *srq;
-  uint32_t              rcv_qpn;
+  struct ibv_srq        *srq;           // Copy of hca->repl_srq OR hca->rqst_srq
+  #define _GASNETC_CEP_PTR_1 1*sizeof(void*)
+#else
+  #define _GASNETC_CEP_PTR_1 0
 #endif
 #if GASNETC_IBV_XRC_OFED
   struct ibv_qp         *rcv_qp;
-#endif
-#if GASNETC_IBV_XRC
-  uint32_t		xrc_remote_srq_num;
+  #define _GASNETC_CEP_PTR_2 1*sizeof(void*)
+#else
+  #define _GASNETC_CEP_PTR_2 0
 #endif
 
+  // 32-bit fields
+  gasnetc_epid_t        epid;           // == uint32_t
+  #define _GASNETC_CEP_32_0 4
+#if GASNETC_PIN_SEGMENT
+  uint32_t              rkey;           // Copy of hca->rkeys[gasnetc_epid2node(epid)]
+  #define _GASNETC_CEP_32_1 1*4
+#else
+  #define _GASNETC_CEP_32_1 0
+#endif
+#if (GASNETC_IB_MAX_HCAS > 1)
+  uint32_t              rcv_lkey;       // Copy of hca->rcv_reg.handle->lkey
+  uint32_t              snd_lkey;       // Copy of hca->snd_reg.handle->lkey
+  int                   hca_index;      // Copy of hca->hca_index
+  #define _GASNETC_CEP_32_2 3*4
+#else
+  #define _GASNETC_CEP_32_2 0
+#endif
+#if GASNETC_IBV_SRQ
+  uint32_t              rcv_qpn;
+  #define _GASNETC_CEP_32_3 1*4
+#else
+  #define _GASNETC_CEP_32_3 0
+#endif
+#if GASNETC_IBV_XRC
+  uint32_t              xrc_remote_srq_num;
+  #define _GASNETC_CEP_32_4 1*4
+#else
+  #define _GASNETC_CEP_32_4 0
+#endif
+
+#define _GASNETC_CEP_TO_PAD (\
+    _GASNETC_CEP_RW_BYTES + \
+    _GASNETC_CEP_PTR_0+_GASNETC_CEP_PTR_1+_GASNETC_CEP_PTR_2 + \
+    _GASNETC_CEP_32_0+_GASNETC_CEP_32_1+_GASNETC_CEP_32_2+_GASNETC_CEP_32_3+_GASNETC_CEP_32_4)
 #if GASNETI_THREADS
-  char			_pad2[GASNETI_CACHE_LINE_BYTES];
+  char _pad0[GASNETI_CACHE_PAD(_GASNETC_CEP_TO_PAD)];
 #endif
 };
 
@@ -614,7 +710,7 @@ typedef enum {
 #if GASNETC_PIN_SEGMENT && GASNETC_FH_OPTIONAL
 	GASNETC_OP_GET_BOUNCE,
 #endif
-#if GASNETC_IB_MAX_HCAS > 1
+#if GASNETC_HAVE_FENCED_PUTS
 	GASNETC_OP_FENCE,
 #endif
 #if !GASNETC_PIN_SEGMENT
@@ -695,7 +791,7 @@ typedef struct gasnetc_sreq_t_ {
     struct { /* AM buffer */
       gasnetc_buffer_t		*buff;
     } am;
-#if GASNETC_IB_MAX_HCAS > 1
+#if GASNETC_HAVE_FENCED_PUTS
     struct { // Atomic used to fence a multi-rail Put
       struct gasnetc_sreq_t_    *sreq;
     } fence;
@@ -898,20 +994,26 @@ extern int		gasnetc_op_oust_pp;
 extern int		gasnetc_am_oust_limit;
 extern int		gasnetc_am_oust_pp;
 extern int		gasnetc_bbuf_limit;
+extern int              gasnetc_conn_static;
 #if GASNETC_DYNAMIC_CONNECT
+  extern int            gasnetc_conn_dynamic;
   extern int		gasnetc_ud_rcvs;
   extern int		gasnetc_ud_snds;
 #else
   #define		gasnetc_ud_rcvs 0
   #define		gasnetc_ud_snds 0
 #endif
+extern const char *     gasnetc_connectfile_in;
+extern const char *     gasnetc_connectfile_out;
+extern int              gasnetc_connectfile_out_base;
+
 extern int		gasnetc_use_rcv_thread;
 extern int		gasnetc_am_credits_slack;
 extern int		gasnetc_alloc_qps;    /* Number of QPs per node in gasnetc_ceps[] */
 extern int		gasnetc_num_qps;      /* How many QPs to use per peer */
 extern size_t		gasnetc_packedlong_limit;
 extern size_t		gasnetc_inline_limit;
-extern size_t		gasnetc_bounce_limit;
+extern size_t		gasnetc_nonbulk_bounce_limit;
 #if !GASNETC_PIN_SEGMENT
   extern size_t		gasnetc_putinmove_limit;
 #endif

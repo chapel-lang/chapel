@@ -114,6 +114,15 @@ void chpl_mem_array_postAlloc(void* p, size_t nmemb, size_t eltSize,
 
 
 static inline
+chpl_bool chpl_mem_array_supports_realloc(void* p, size_t oldNmemb, size_t newNmemb,
+                                          size_t eltSize, int32_t lineno,
+                                          int32_t filename) {
+  const size_t oldSize = oldNmemb * eltSize;
+  const size_t newSize = newNmemb * eltSize;
+  return chpl_mem_size_justifies_comm_alloc(oldSize) == chpl_mem_size_justifies_comm_alloc(newSize);
+}
+
+static inline
 void* chpl_mem_array_realloc(void* p, size_t oldNmemb, size_t newNmemb,
                              size_t eltSize,
                              c_sublocid_t subloc, chpl_bool* callPostAlloc,

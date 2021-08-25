@@ -26,11 +26,6 @@ def get():
     else:
         libfabric_val = 'none'
 
-    if libfabric_val == 'libfabric':
-        warning("CHPL_LIBFABRIC=libfabric is deprecated. Use "
-                "CHPL_LIBFABRIC=bundled instead.")
-        libfabric_val = 'bundled'
-
     return libfabric_val
 
 

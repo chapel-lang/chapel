@@ -792,6 +792,21 @@ static void stop_polling(chpl_bool wait) {
   }
 }
 
+static void setup_ibv(void) {
+#if defined(GASNET_CONDUIT_IBV)
+  // Quiet warnings about not having enough firehose regions. By default gasnet
+  // sets this to a fraction of how many pinned regions the hardware supports
+  // where that fraction comes from how much memory can be pinned/registered
+  // (GASNET_PHYSMEM_MAX) divided by the amount of physical memory. On systems
+  // with a high amount of memory this can result in artificially lowering the
+  // number of regions, so here we just tell gasnet to give us 95% of them.
+  chpl_env_set("GASNET_PINNED_REGIONS_MAX", "0.95", 0);
+  // Quiet multi-rail warnings until we can address
+  // https://github.com/chapel-lang/chapel/issues/18255
+  chpl_env_set("GASNET_IBV_PORTS_VERBOSE", "0", 0);
+#endif
+}
+
 static void set_max_segsize_env_var(size_t size) {
   chpl_env_set_uint("GASNET_MAX_SEGSIZE", size, 1);
 }
@@ -835,6 +850,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   set_max_segsize();
   set_num_comm_domains();
+  setup_ibv();
   setup_polling();
 
   assert(sizeof(gasnet_handlerarg_t)==sizeof(uint32_t));

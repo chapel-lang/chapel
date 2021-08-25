@@ -420,6 +420,21 @@ gasnete_eop_t *gasnete_eop_new(gasneti_threaddata_t * const thread) {
   return eop;
 }
 
+#if GASNETE_HAVE_LC
+//  get a new op AND "start" local completion
+GASNETI_INLINE(gasnete_eop_new_alc)
+gasnete_eop_t *gasnete_eop_new_alc(gasneti_threaddata_t * const thread) {
+  gasnete_eop_t *eop = _gasnete_eop_new(thread);
+  GASNETE_EOP_LC_START(eop);
+#ifdef GASNETE_EOP_NEW_ALC_EXTRA
+  // Hook for conduit-specific initializations and assertions
+  GASNETE_EOP_NEW_ALC_EXTRA(eop);
+#endif
+  gasneti_assert(! GASNETE_EOP_LC_DONE(eop));
+  return eop;
+}
+#endif // GASNETE_HAVE_LC
+
 #if GASNET_DEBUG
 /*  query an iop for completeness -
  *  this means all catagories (puts, gets, LC, etc.)

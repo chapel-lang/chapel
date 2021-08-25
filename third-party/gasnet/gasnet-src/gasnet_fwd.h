@@ -147,23 +147,23 @@ typedef uint32_t gex_Flags_t;
 
 #define GEX_FLAG_IMMEDIATE              (1U <<  0)
 
-#define GEX_FLAG_SELF_SEG_UNKNOWN       (1U <<  1)
-#define GEX_FLAG_SELF_SEG_SOME          (1U <<  2)
-#define GEX_FLAG_SELF_SEG_BOUND         (1U <<  3)
-#define GEX_FLAG_SELF_SEG_OFFSET        (1U <<  4)
-#define GEX_FLAG_PEER_SEG_UNKNOWN       (1U <<  5)
-#define GEX_FLAG_PEER_SEG_SOME          (1U <<  6)
-#define GEX_FLAG_PEER_SEG_BOUND         (1U <<  7)
-#define GEX_FLAG_PEER_SEG_OFFSET        (1U <<  8)
+#define GEX_FLAG_SELF_SEG_UNKNOWN       (1U <<  3)
+#define GEX_FLAG_SELF_SEG_SOME          (1U <<  4)
+#define GEX_FLAG_SELF_SEG_BOUND         (1U <<  5)
+#define GEX_FLAG_SELF_SEG_OFFSET        (1U <<  6)
+#define GEX_FLAG_PEER_SEG_UNKNOWN       (1U <<  7)
+#define GEX_FLAG_PEER_SEG_SOME          (1U <<  8)
+#define GEX_FLAG_PEER_SEG_BOUND         (1U <<  9)
+#define GEX_FLAG_PEER_SEG_OFFSET        (1U << 10)
 
-#define GEX_FLAG_AM_PREPARE_LEAST_CLIENT (1U <<  9)
-#define GEX_FLAG_AM_PREPARE_LEAST_ALLOC  (1U << 10)
+#define GEX_FLAG_AM_PREPARE_LEAST_CLIENT (1U << 11)
+#define GEX_FLAG_AM_PREPARE_LEAST_ALLOC  (1U << 12)
 
-#define GEX_FLAG_AD_MY_RANK             (1U <<  9)
-#define GEX_FLAG_AD_MY_NBRHD            (1U << 10)
+#define GEX_FLAG_AD_MY_RANK             (1U << 11)
+#define GEX_FLAG_AD_MY_NBRHD            (1U << 12)
 
-#define GEX_FLAG_AD_ACQ                 (1U << 11)
-#define GEX_FLAG_AD_REL                 (1U << 12)
+#define GEX_FLAG_AD_REL                 (1U << 1) // MUST equal GASNETI_ATOMIC_REL
+#define GEX_FLAG_AD_ACQ                 (1U << 2) // MUST equal GASNETI_ATOMIC_ACQ
 
 #define GEX_FLAG_AD_FAVOR_MY_RANK       (1U <<  0)
 #define GEX_FLAG_AD_FAVOR_MY_NBRHD      (1U <<  1)
@@ -178,7 +178,7 @@ typedef uint32_t gex_Flags_t;
 #define GEX_FLAG_AM_REPLY               (1U <<  4)
 #define GEX_FLAG_AM_REQREP              (GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_REPLY)
 
-#define GEX_FLAG_ENABLE_LEAF_LC         (1U <<  9)
+#define GEX_FLAG_ENABLE_LEAF_LC         (1U << 11)
 
 #define GEX_FLAG_USES_GASNET1           (1U <<  0)
 

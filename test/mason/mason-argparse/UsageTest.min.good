@@ -1,0 +1,6 @@
+Config Var Values:
+
+Arguments Received from CL:
+1 thatOneRequiredPositionalArg
+Values received from argparse:
+positional value: thatOneRequiredPositionalArg

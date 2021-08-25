@@ -8,5 +8,3 @@ different-types-in-conditional.chpl:7: error: could not find a copy initializer 
 $CHPL_HOME/modules/internal/String.chpl:nnnn: note: this candidate did not match: string.init=(s: string)
 different-types-in-conditional.chpl:7: note: because actual argument #1 with type 'int(64)'
 $CHPL_HOME/modules/internal/String.chpl:nnnn: note: is passed to formal 's: string'
-different-types-in-conditional.chpl:7: note: other candidates are:
-$CHPL_HOME/modules/internal/String.chpl:nnnn: note:   string.init=(cs: c_string)
