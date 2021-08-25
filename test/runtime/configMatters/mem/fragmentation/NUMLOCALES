@@ -1,0 +1,3 @@
+# most of these test allocate memory on locale 0 only, but some comm layers
+# change memory allocation strategies between 1 and 2 locales.
+2
