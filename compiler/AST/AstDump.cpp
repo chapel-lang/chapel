@@ -24,6 +24,8 @@
 
 #include "AstDump.h"
 
+// comment
+
 #include "expr.h"
 #include "IfExpr.h"
 #include "ImportStmt.h"
