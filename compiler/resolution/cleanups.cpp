@@ -402,12 +402,13 @@ static void removeAggTypeFieldInfo() {
 
 // Remove module level variables if they are not defined or used
 // With the exception of variables that are defined in the rootModule
+// or in the string literals module.
 static void removeUnusedModuleVariables() {
   forv_Vec(DefExpr, def, gDefExprs) {
     if (VarSymbol* var = toVarSymbol(def->sym)) {
       if (ModuleSymbol* module = toModuleSymbol(def->parentSymbol)) {
         if (var->isDefined() == false && var->isUsed() == false) {
-          if (module != rootModule) {
+          if (module != rootModule && module != stringLiteralModule) {
             def->remove();
           }
         }

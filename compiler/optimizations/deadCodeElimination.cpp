@@ -282,7 +282,7 @@ static bool isInCForLoopHeader(Expr* expr) {
 ************************************** | *************************************/
 
 static bool isDeadStringOrBytesLiteral(VarSymbol* string);
-static void removeDeadStringLiteral(DefExpr* defExpr);
+static void removeDeadStringLiteral(DefExpr* def);
 
 static void deadStringLiteralElimination() {
   // Noakes 2017/03/09
@@ -326,7 +326,6 @@ static void deadStringLiteralElimination() {
   }
 }
 
-// Noakes 2017/03/04: All literals have 1 def. Dead literals have 0 uses.
 static bool isDeadStringOrBytesLiteral(VarSymbol* string) {
   bool retval = false;
 
@@ -335,40 +334,15 @@ static bool isDeadStringOrBytesLiteral(VarSymbol* string) {
     int numDefs = string->countDefs();
     int numUses = string->countUses();
 
-    retval = numDefs == 1 && numUses == 0;
+    INT_ASSERT(numDefs == 0);
 
-    INT_ASSERT(numDefs == 1);
+    retval = numUses == 0;
   }
 
   return retval;
 }
 
-// The current pattern to initialize a string literal,
-// a VarSymbol _str_literal_NNN, is approximately
-//
-//   def  new_temp  : string; // defTemp
-//
-//   call createStringWithBorrowedBuffer(new_temp,c"literal",...); //factoryCall
-//
-//   move _str_literal_NNN, new_temp;  // this is 'defn' - the single def
-//
 static void removeDeadStringLiteral(DefExpr* defExpr) {
-  SymExpr*   defn  = toVarSymbol(defExpr->sym)->getSingleDef();
-
-  // Step backwards from 'defn'
-  Expr* lastMove = defn->getStmtExpr();
-  Expr* factoryCall = lastMove->prev;
-  Expr* defTemp = factoryCall->prev;
-
-  // Simple sanity checks
-  INT_ASSERT(isDefExpr(defTemp));
-  INT_ASSERT(isCallExpr(factoryCall));
-  INT_ASSERT(isCallExpr(lastMove));
-
-  lastMove->remove();
-  factoryCall->remove();
-  defTemp->remove();
-
   defExpr->remove();
 }
 
@@ -795,6 +769,14 @@ void deadCodeElimination() {
   if (strcmp(CHPL_LOCALE_MODEL, "gpu") == 0) {
     outlineGPUKernels();
   }
+
+  // Emit string literals. This too could be its own pass but
+  // for now it is convenient to do it here because the dead string
+  // literals still refer to valid memory and just are not in the tree.
+  // (If it is moved elsewhere, the stringLiteralsHash and bytesLiteralsHash
+  //  maps would need to have their values cleared when a string literal
+  //  is deemed dead).
+  createInitStringLiterals();
 }
 
 void deadBlockElimination()
