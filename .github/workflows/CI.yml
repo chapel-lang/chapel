@@ -48,7 +48,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: make mason
       run: |
-        CHPL_LLVM=none ./util/buildRelease/smokeTest
+        ./util/buildRelease/smokeTest
 
   check_annotations:
     runs-on: ubuntu-latest
