@@ -118,6 +118,7 @@ module Curl {
   require "curl/curl.h";
   require "-lcurl";
 
+  # added to enable generation of headers via libcurl slist
   extern proc curl_slist_append(csl: c_ptr(curl_slist), char: c_string) : c_ptr(curl_slist);
   extern proc curl_slist_free_all(csl: c_ptr(curl_slist));
  
