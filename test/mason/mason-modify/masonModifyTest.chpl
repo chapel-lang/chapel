@@ -27,8 +27,15 @@ proc main(args: [] string) {
   here.chdir('tmp/' + basename);
 
   // Add mason dependency
-  var modArgs: [0..#args.size-2] string = args[2..];
-  masonModify(modArgs);;
+  // note that we are passing args from pos 3 because the execopts file
+  // specifies an extra test name argument i.e:
+  // testName mason add dep@1.2.3 # testName
+  // so in this case the value of args would be:
+  // ["./masonModifyTest", "addDep", "mason", "add", "test@1.2.3"]
+  // but our subcommand should only see:
+  // ["add","test@1.2.3"]
+  var modArgs: [0..#args.size-3] string = args[3..];
+  masonModify(modArgs);
 
   // Print manifest for diff against .good file
   showToml('Mason.toml');

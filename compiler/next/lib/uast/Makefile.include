@@ -80,6 +80,7 @@ NEXT_UAST_SRCS =                                 \
   Record.cpp \
   Reduce.cpp \
   Return.cpp \
+  Select.cpp \
   Serial.cpp \
   SimpleBlockLike.cpp \
   StringLikeLiteral.cpp \
@@ -98,6 +99,7 @@ NEXT_UAST_SRCS =                                 \
   Variable.cpp \
   VarLikeDecl.cpp \
   VisibilityClause.cpp \
+  When.cpp \
   While.cpp \
   WithClause.cpp \
   Yield.cpp \

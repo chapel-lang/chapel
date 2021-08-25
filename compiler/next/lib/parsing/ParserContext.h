@@ -196,6 +196,7 @@ struct ParserContext {
                                                      YYLTYPE location);
 
   void discardCommentsFromList(ParserExprList* lst, YYLTYPE location);
+  void discardCommentsFromList(ParserExprList* lst);
 
   void appendComments(CommentsAndStmt*cs, std::vector<ParserComment>* comments);
 
@@ -449,4 +450,10 @@ struct ParserContext {
   Expression* buildCatch(YYLTYPE location, Expression* error,
                          CommentsAndStmt block,
                          bool hasParensAroundError);
+
+  CommentsAndStmt buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
+                                BlockOrDo blockOrDo);
+
+  CommentsAndStmt buildSelectStmt(YYLTYPE location, owned<Expression> expr,
+                                  ParserExprList* whenStmts);
 };

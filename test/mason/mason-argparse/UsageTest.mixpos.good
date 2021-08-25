@@ -1,0 +1,13 @@
+Config Var Values:
+
+Arguments Received from CL:
+1 --no-flagOn
+2 positionalVal
+3 --types
+4 tea
+5 time
+Values received from argparse:
+tea
+time
+boolArg: false
+positional value: positionalVal
