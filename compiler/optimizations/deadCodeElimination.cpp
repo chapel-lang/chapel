@@ -451,11 +451,11 @@ static void deadModuleElimination() {
 }
 
 struct OutlineInfo {
-  CForLoop* loop;
+  CForLoop* loop = NULL;
 
   std::vector<Symbol*> loopIndices;
   std::vector<Symbol*> lowerBounds;
-  Symbol* upperBound;
+  Symbol* upperBound = NULL;
 
   FnSymbol* fn;
   std::vector<Symbol*> kernelIndices;
@@ -482,14 +482,18 @@ static bool isIndexVariable(OutlineInfo& info, Symbol* sym) {
 
 static void extractUpperBoundFromLoop(CForLoop* loop, OutlineInfo& info) {
   if(BlockStmt* bs = toBlockStmt(loop->testBlockGet())) {
-    if(CallExpr *call = toCallExpr(bs->body.head)) {
-      if(call->isPrimitive(PRIM_LESSOREQUAL)) {
-        if(SymExpr *symExpr = toSymExpr(call->get(2))) {
+    for_exprs_postorder (expr, bs) {
+      if(CallExpr *call = toCallExpr(expr)) {
+        if(call->isPrimitive(PRIM_LESSOREQUAL)) {
+          if(SymExpr *symExpr = toSymExpr(call->get(2))) {
 
-          SymExpr* lhsSymExpr = toSymExpr(call->get(1));
-          INT_ASSERT(lhsSymExpr && lhsSymExpr->symbol() == info.loopIndices[0]);
+            SymExpr* lhsSymExpr = toSymExpr(call->get(1));
+            INT_ASSERT(lhsSymExpr && lhsSymExpr->symbol() == info.loopIndices[0]);
 
-          info.upperBound = symExpr->symbol();
+            info.upperBound = symExpr->symbol();
+
+            break;
+          }
         }
       }
     }
@@ -506,7 +510,8 @@ static void extractIndicesAndLowerBounds(CForLoop* loop,
   if(BlockStmt* bs = toBlockStmt(loop->initBlockGet())) {
     for_alist (expr, bs->body) {
       if(CallExpr *call = toCallExpr(expr)) {
-        if(call->isPrimitive(PRIM_ASSIGN)) {
+        if(call->isPrimitive(PRIM_ASSIGN) ||
+           call->isPrimitive(PRIM_MOVE)) {
 
           SymExpr *idxSymExpr = toSymExpr(call->get(1));
           SymExpr *boundSymExpr = toSymExpr(call->get(2));
