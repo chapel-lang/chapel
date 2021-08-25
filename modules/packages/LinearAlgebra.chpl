@@ -2237,6 +2237,200 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   return C;
 }
 
+var _theta = [
+        1 => 2.29e-16,
+        2 => 2.58e-8,
+        3 => 1.39e-5,
+        4 => 3.40e-4,
+        5 => 2.40e-3,
+        6 => 9.07e-3,
+        7 => 2.38e-2,
+        8 => 5.00e-2,
+        9 => 8.96e-2,
+        10 => 1.44e-1,
+        11 => 2.14e-1,
+        12 => 3.00e-1,
+        13 => 4.00e-1,
+        14 => 5.14e-1,
+        15 => 6.41e-1,
+        16 => 7.81e-1,
+        17 => 9.31e-1,
+        18 => 1.09,
+        19 => 1.26,
+        20 => 1.44,
+        21 => 1.62,
+        22 => 1.82,
+        23 => 2.01,
+        24 => 2.22,
+        25 => 2.43,
+        26 => 2.64,
+        27 => 2.86,
+        28 => 3.08,
+        29 => 3.31,
+        30 => 3.54,
+        35 => 4.7,
+        40 => 6.0,
+        45 => 7.2,
+        50 => 8.5,
+        55 => 9.9];
+
+class LazyNormInfo {
+  type matType;
+  var A: matType;
+  var A_norm: real;
+  var ell: int;
+  var pval: domain(int);
+  var d : [pval] real;
+
+  proc init(A, A_norm, ell=2) {
+    this.matType = A.type;
+    this.A = A;
+    this.A_norm = A_norm;
+    this.ell = ell;
+  }
+
+  proc onenorm() {
+    if this.A_norm == 0.0 {
+      this.A_norm = norm(this.A, normType.norm1);
+    }
+    return this.A_norm;
+  }
+
+  proc d(p) {
+    if !this.pval.member(p) {
+      var est = oneNormEst(matPow(this.A, p), this.ell);
+      this.pval += p;
+      this.d[p] = est ** (1.0/ (p: real));
+    }
+    return this.d[p];
+  }
+
+  proc alpha(p) {
+    return max(d(p), d(p+1));
+  }
+}
+
+pragma "no doc"
+
+proc expmv(A: [], B: []) throws {
+
+  if A.rank != 2 || A.domain.dim(0) != A.domain.dim(1) then {
+    throw new LinearAlgebraError('A is expected to be a Square Matrix');
+  }
+
+  if A.domain.dim(1) != B.domain.dim(0) then {
+    throw new LinearAlgebraError('incompatible shapes of A and B');
+  }
+
+  if B.rank > 2 {
+    throw new LinearAlgebraError('B is expected to be a Matrix or a Vector');
+  }
+
+  var ident = eye(A.indices);
+  var n = A.domain.shape(0);
+  var n0 = 1;
+  if B.rank == 2 {
+    n0 = B.domain.shape(1);
+  }
+
+  var mu = trace(A) / (n: real);
+  A = A - (mu * ident);
+  var A_norm = norm(A, normType.norm1);
+  var mStar = 0;
+  var s = 1;
+  var ell = 0;
+  if A_norm != 0 {
+    ell = 2;
+    var normInfo = new LazyNormInfo(A, A_norm, ell);
+    (mStar, s) = _fragment_3_1(normInfo, n0, ell);
+  }
+  return expmv_core(A, B, mu, mStar, s);
+}
+
+proc expmv_core(A, B, mu, mStar, s) {
+  var tol = 2**-53;
+  var eta = exp(mu/ (s: real));
+  var F = B;
+  for i in 0..<s {
+    var c1 = norm(B, normType.normInf);
+    for j in 0..<mStar {
+      var coeff = 1/((s*(j+1)): real);
+      B = coeff * dot(A, B);
+      var c2 = norm(B, normType.normInf);
+      F = F + B;
+      if c1 + c1 <= tol * norm(F, normType.normInf) {
+        break;
+      }
+      c1 = c2;
+    }
+    F = eta * F;
+    B = F;
+  }
+  return F;
+}
+
+pragma "no doc"
+
+proc _fragment_3_1(normInfo, n0, ell=2) {
+  var tol = 2**-53;
+  var m_max = 55;
+  var best_m = 1;
+  var best_s = 999999999;
+  var fg = false;
+  if _condition_3_13(normInfo.onenorm(), n0, m_max, ell) {
+    for m in _theta.domain {
+      var theta = _theta[m];
+      var s = ((ceil(normInfo.onenorm()/theta)): int);
+      if !fg || m*s < best_m*best_s {
+        best_m = m;
+        best_s = s;
+        fg = true;
+      }
+    }
+  }
+  else {
+    for p in 2.._compute_p_max(m_max) {
+      var start = p*(p-1)-1;
+      for m in start..m_max {
+        if _theta.domain.contains(m) {
+          var s = _compute_cost_div_m(m, p, normInfo);
+          if !fg || m*s < best_m*best_s {
+            best_m = m;
+            best_s = s;
+            fg = true;
+          }
+        }
+      }
+    }
+    best_s = max(best_s, 1);
+  }
+  return (best_m, best_s);
+}
+
+proc _compute_cost_div_m(m, p, normInfo){
+  return (ceil(normInfo.alpha(p)/_theta[m]) : int);
+}
+
+proc _condition_3_13(A_norm, n0, m_max, ell) {
+  var p_max = _compute_p_max(m_max);
+  var a = 2 * ell * p_max * (p_max + 3);
+  var b = _theta[m_max] / ((n0 * m_max): real);
+  return A_norm <= a*b;
+}
+
+// Compute largest p such that p*(p-1) <= m_max + 1
+proc _compute_p_max(m_max) {
+  var sqrt_m_max = sqrt(m_max);
+  var p_low = (floor(sqrt_m_max): int);
+  var p_high = (ceil(sqrt_m_max + 1): int);
+  for p in p_low..p_high {
+    if p*(p-1) > (m_max + 1) {
+      return p-1;
+    }
+  }
+  return p_high;
+}
+
 pragma "no doc"
 /* This method accepts both Dense and CSR/CRC arrays. */
 proc expm(A: [],param useExactOneNorm = true) throws where isCSArr(A) {
