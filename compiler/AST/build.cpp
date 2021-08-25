@@ -2205,7 +2205,7 @@ static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
 
   // BUILD: errorCaught = true;
   auto seErrorCaught = new SymExpr(errorCaught);
-  auto seTrue = new SymExpr(new_BoolSymbol(true));
+  auto seTrue = new SymExpr(gTrue);
   auto errorCaughtToTrue = new CallExpr(PRIM_MOVE, seErrorCaught, seTrue);
   catchBlock->insertAtTail(errorCaughtToTrue);
 
@@ -2289,7 +2289,7 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
 
   // BUILD: TEMP var errorCaught = false;
   auto errorCaught = newTemp("errorCaught");
-  ret->insertAtTail(new DefExpr(errorCaught, new_BoolSymbol(false)));
+  ret->insertAtTail(new DefExpr(errorCaught, gFalse));
 
   // Call helper to construct try/catch block.
   auto tryCatch = buildTryCatchForManagerBlock(managerHandle, errorCaught);
@@ -2308,15 +2308,17 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
 }
 
 /*
-  Managers contains a list of blocks that have been prepared for each
-  manager expression. They are threaded into each other from left to
-  right, such that the Nth manager block contains the body of the N+1
-  block, etc. The final block is the user code. This naturally handles
-  resource allocation and cleanup.
+  Each manager block declares some temporary variables, and then calls the
+  'enterThis()' method on the manager before executing the next block.
+  Managers are nested from left to right, and the final innermost scope is
+  the block containing user code.
 
-  TODO: In cleanup, recursively lift up the manager out of its try block
-        if we detect exception handling is not needed (e.g. we're not
-        in a throwing function, and not in a try).
+  Managers call 'leaveThis()' and are deinitialized in the reverse order of
+  their initialization.
+
+  TODO (dlongnecke-cray): In cleanup, recursively lift up the manager out of
+  its try block if we detect exception handling is not needed (e.g. we're
+  not in a throwing function, and not in a try).
 */
 BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block) {
   auto ret = new BlockStmt();
@@ -2332,24 +2334,24 @@ BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block) {
     BlockStmt* managerBlock = toBlockStmt(manager);
     INT_ASSERT(managerBlock);
 
-    bool hasInsertedManagerBlock = false;
+    // Insert the manager block at the appropriate point.
+    managerBlock->remove();
+    insertionPoint->insertAtTail(managerBlock);
 
+    BlockStmt* lastInsertionPoint = insertionPoint;
+
+    // Scroll forward looking for the next insertion point.
     for_alist(stmt, managerBlock->body) {
       if (TryStmt* tryStmt = toTryStmt(stmt)) {
-
-        // Insert this manager block at the appropriate point.
-        managerBlock->remove();
-        insertionPoint->insertAtTail(managerBlock);
-        managerBlock->flattenAndRemove();
-        hasInsertedManagerBlock = true;
-
-        // The manager's try body is empty, insert there next.
         insertionPoint = tryStmt->body();
         break;
       }
     }
 
-    INT_ASSERT(hasInsertedManagerBlock);
+    INT_ASSERT(insertionPoint != lastInsertionPoint);
+
+    // Flatten the manager block once we've found the insertion point.
+    managerBlock->flattenAndRemove();
   }
 
   // Lastly, insert the managed block (containing user code).

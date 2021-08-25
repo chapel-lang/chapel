@@ -461,6 +461,9 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
 }
 
 //
+// TODO (dlongnecke-cray): We would like to remove/simplify this special case
+// and move it into cullOverReferences if possible.
+//
 // Infer the correct storage kind for a context manager resource when no
 // explicit storage is given, e.g.
 //
