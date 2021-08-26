@@ -3620,10 +3620,10 @@ GenRet CallExpr::codegen() {
     codegenInvokeOnFun();
 
   } else if (fn->hasFlag(FLAG_BEGIN_BLOCK)               == true)  {
-    codegenInvokeTaskFun("chpl_taskListAddBegin");
+    codegenInvokeTaskFun("chpl_taskAddBegin");
 
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) == true)  {
-    codegenInvokeTaskFun("chpl_taskListAddCoStmt");
+    codegenInvokeTaskFun("chpl_taskAddCoStmt");
 
   } else if (fn->hasFlag(FLAG_NO_CODEGEN)                == false) {
     std::vector<GenRet> args(numActuals());
@@ -6163,34 +6163,23 @@ void CallExpr::codegenInvokeOnFun() {
 
 void CallExpr::codegenInvokeTaskFun(const char* name) {
   FnSymbol*           fn            = resolvedFunction();
-  GenRet              taskList      = codegenValue(get(1));
-  GenRet              taskListNode;
   GenRet              taskBundle;
   GenRet              bundleSize;
 
-  std::vector<GenRet> args(8);
+  std::vector<GenRet> args(6);
 
-  // get(1) is a ref/wide ref to a task list value
-  // get(2) is the node ID owning the task list
-  // get(3) is a buffer containing bundled arguments
-  // get(4) is the buffer's length
-  // get(5) is a dummy class type for the argument bundle
-  if (get(1)->isWideRef()) {
-    taskList = codegenRaddr(taskList);
-  }
-
-  taskListNode = codegenValue(get(2));
-  taskBundle   = codegenValue(get(3));
-  bundleSize   = codegenValue(get(4));
+  // get(1) is a buffer containing bundled arguments
+  // get(2) is the buffer's length
+  // get(3) is a dummy class type for the argument bundle
+  taskBundle   = codegenValue(get(1));
+  bundleSize   = codegenValue(get(2));
 
   args[0]      = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
   args[1]      = new_IntSymbol(ftableMap[fn], INT_SIZE_64);
   args[2]      = codegenCast("chpl_task_bundle_p", taskBundle);
   args[3]      = bundleSize;
-  args[4]      = taskList;
-  args[5]      = codegenValue(taskListNode);
-  args[6]      = fn->linenum();
-  args[7]      = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
+  args[4]      = fn->linenum();
+  args[5]      = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
 
   genComment(fn->cname, true);
 
