@@ -190,7 +190,9 @@ void chpl_task_callMain(void (*chpl_main)(void));
 // Task creation.  chpl_task_addTask adds a new task to the pool of
 // runnable candidate tasks.  It is called by Chapel tasking support
 // functions in the internal modules, which are in turn called by the
-// compiler-emitted code for all task-parallel constructs.
+// compiler-emitted code for all task-parallel constructs.  Tasking
+// layer implementations distribute tasks among processors as they
+// deem appropriate.
 //
 // Note that the tasking layer must generally copy the arguments
 // as it cannot assume anything about the lifetime of that memory.
