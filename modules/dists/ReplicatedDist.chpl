@@ -19,6 +19,8 @@
  */
 
 
+use ChapelDebugPrint;
+
 // THE REPLICATED DISTRIBUTION IMPLEMENTATION
 //
 // Classes defined:
@@ -129,7 +131,7 @@ proc Replicated.init(targetLocales: [] locale = Locales,
   }
 
   if traceReplicatedDist then
-    writeln("Replicated initializer over ", targetLocales);
+    chpl_debug_writeln("Created Replicated over ", targetLocales.size);
 }
 
 proc Replicated.dsiEqualDMaps(that: Replicated(?)) {
@@ -149,7 +151,7 @@ override proc Replicated.dsiDestroyDist() {
 override proc Replicated.dsiSupportsPrivatization() param return true;
 
 proc Replicated.dsiGetPrivatizeData() {
-  if traceReplicatedDist then writeln("Replicated.dsiGetPrivatizeData");
+  if traceReplicatedDist then chpl_debug_writeln("Replicated.dsiGetPrivatizeData");
 
   // TODO: Returning 'targetLocales' here results in a memory leak. Why?
   // Other distributions seem to do this 'return 0' as well...
@@ -250,13 +252,13 @@ record ReplicatedDomPrvData {
 }
 
 proc ReplicatedDom.dsiGetPrivatizeData() {
-  if traceReplicatedDist then writeln("ReplicatedDom.dsiGetPrivatizeData");
+  if traceReplicatedDist then chpl_debug_writeln("ReplicatedDom.dsiGetPrivatizeData");
 
   return new ReplicatedDomPrvData(dist.pid, domRep, localDoms);
 }
 
 proc ReplicatedDom.dsiPrivatize(privatizeData) {
-  if traceReplicatedDist then writeln("ReplicatedDom.dsiPrivatize on ", here);
+  if traceReplicatedDist then chpl_debug_writeln("ReplicatedDom.dsiPrivatize on ", here);
 
   var privdist = chpl_getPrivatizedCopy(this.dist.type, privatizeData.distpid);
   return new unmanaged ReplicatedDom(rank=rank, idxType=idxType, stridable=stridable,
@@ -279,7 +281,7 @@ proc ReplicatedDom.dsiReprivatize(other, reprivatizeData): void {
 
 
 proc Replicated.dsiClone(): _to_unmanaged(this.type) {
-  if traceReplicatedDist then writeln("Replicated.dsiClone");
+  if traceReplicatedDist then chpl_debug_writeln("Replicated.dsiClone");
   var nonNilWrapper: [0..#targetLocales.sizeAs(int)] locale =
     for loc in targetLocales do loc;
   return new unmanaged Replicated(nonNilWrapper);
@@ -291,7 +293,7 @@ override proc Replicated.dsiNewRectangularDom(param rank: int,
                                          param stridable: bool,
                                          inds)
 {
-  if traceReplicatedDist then writeln("Replicated.dsiNewRectangularDom ",
+  if traceReplicatedDist then chpl_debug_writeln("Replicated.dsiNewRectangularDom ",
                                       (rank, idxType:string, stridable, inds));
 
   // Have to call the default initializer because we need to initialize 'dist'
@@ -319,13 +321,13 @@ proc Replicated.dsiIndexToLocale(indexx): locale {
 // assignments from unstrided domains to strided domains.
 proc ReplicatedDom.dsiSetIndices(x) where isTuple(x) && isRange(x(0)) {
   if traceReplicatedDist then
-    writeln("ReplicatedDom.dsiSetIndices on ", x.type:string, ": ", x);
+    chpl_debug_writeln("ReplicatedDom.dsiSetIndices on ", x.type:string, ": ", x);
   dsiSetIndices({(...x)});
 }
 
 proc ReplicatedDom.dsiSetIndices(domArg: domain): void {
   if traceReplicatedDist then
-    writeln("ReplicatedDom.dsiSetIndices on domain ", domArg);
+    chpl_debug_writeln("ReplicatedDom.dsiSetIndices on domain ", domArg);
   domRep = domArg;
   coforall locDom in localDoms do
     on locDom do
@@ -335,7 +337,7 @@ proc ReplicatedDom.dsiSetIndices(domArg: domain): void {
 proc ReplicatedDom.dsiGetIndices(): rank * range(idxType,
                                                  BoundedRangeType.bounded,
                                                  stridable) {
-  if traceReplicatedDist then writeln("ReplicatedDom.dsiGetIndices");
+  if traceReplicatedDist then chpl_debug_writeln("ReplicatedDom.dsiGetIndices");
   return redirectee().getIndices();
 }
 
@@ -554,13 +556,13 @@ record ReplicatedArrPrvData {
 }
 
 proc ReplicatedArr.dsiGetPrivatizeData() {
-  if traceReplicatedDist then writeln("ReplicatedArr.dsiGetPrivatizeData");
+  if traceReplicatedDist then chpl_debug_writeln("ReplicatedArr.dsiGetPrivatizeData");
 
   return new ReplicatedArrPrvData(dom.pid, localArrs);
 }
 
 proc ReplicatedArr.dsiPrivatize(privatizeData) {
-  if traceReplicatedDist then writeln("ReplicatedArr.dsiPrivatize on ", here);
+  if traceReplicatedDist then chpl_debug_writeln("ReplicatedArr.dsiPrivatize on ", here);
 
   var privdom = chpl_getPrivatizedCopy(this.dom.type, privatizeData.dompid);
   var result = new unmanaged ReplicatedArr(eltType, privdom);
@@ -579,7 +581,7 @@ proc ReplicatedDom.dsiBuildArray(type eltType, param initElts:bool)
     compilerError('cannot initialize replicated array because element ',
                   'type ', eltType:string, ' cannot be copied');
 
-  if traceReplicatedDist then writeln("ReplicatedDom.dsiBuildArray");
+  if traceReplicatedDist then chpl_debug_writeln("ReplicatedDom.dsiBuildArray");
 
   var result = new unmanaged ReplicatedArr(eltType, _to_unmanaged(this));
 
@@ -698,7 +700,7 @@ in this.dom.dsiSetIndices(). In our case, that's nothing.
 /* no longer called
 proc ReplicatedArr.dsiReallocate(d: domain): void {
   if traceReplicatedDist then
-    writeln("ReplicatedArr.dsiReallocate ", dom.domRep, " -> ", d, " (no-op)");
+    chpl_debug_writeln("ReplicatedArr.dsiReallocate ", dom.domRep, " -> ", d, " (no-op)");
 }
 */
 
