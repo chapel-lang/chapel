@@ -1291,6 +1291,13 @@ chpl_bool isUseableProvider(struct fi_info* info) {
      DBG_PRINTF_NODE0(DBG_PROV, "skipping FI_SOCKADDR_IB address");
      result = false;
   }
+
+  // The libfabric v1.12.1 sockets provider has a bug w/ IPv6 addresses
+  if ((info->addr_format == FI_SOCKADDR_IN6) && isInProvider("sockets", info)) {
+     DBG_PRINTF_NODE0(DBG_PROV, "skipping sockets/FI_SOCKADDR_IN6 provider");
+     result = false;
+  }
+
   return result;
 }
 
