@@ -20,6 +20,8 @@
 #ifndef CHPL_UAST_PRIMCALL_H
 #define CHPL_UAST_PRIMCALL_H
 
+#include "chpl/queries/Location.h"
+#include "chpl/queries/UniqueString.h"
 #include "chpl/uast/Call.h"
 
 namespace chpl {
@@ -27,16 +29,46 @@ namespace uast {
 
 
 /**
-  This class represents a primitive call
+  This class represents a call to a primitive.
+
  */
 class PrimCall final : public Call {
  private:
-  bool matchesInner(const ASTNode* other) const override;
-  void markUniqueStringsInner(Context* context) const override;
+  // which primitive
+  UniqueString prim_;
+
+  PrimCall(ASTList children, UniqueString prim)
+    : Call(asttags::PrimCall, std::move(children),
+           /* hasCalledExpression */ false),
+      prim_(prim) {
+  }
+
+  bool contentsMatchInner(const ASTNode* other) const override {
+    const PrimCall* lhs = this;
+    const PrimCall* rhs = (const PrimCall*) other;
+
+    if (lhs->prim_ != rhs->prim_)
+      return false;
+
+    if (!lhs->callContentsMatchInner(rhs))
+      return false;
+
+    return true;
+  }
+  void markUniqueStringsInner(Context* context) const override {
+    callMarkUniqueStringsInner(context);
+    prim_.mark(context);
+  }
+
  public:
   ~PrimCall() override = default;
+  static owned<PrimCall> build(Builder* builder,
+                               Location loc,
+                               UniqueString prim,
+                               ASTList actuals);
 
-  // TODO: which primitive? Store that in child 0, somehow
+  /** Returns the name of the primitive called */
+  UniqueString prim() const { return prim_; }
 };
 
 

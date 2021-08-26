@@ -420,7 +420,7 @@ static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal) {
     USR_FATAL(fn, "extern name expression must be param");
   }
   if (var->type == dtString || var->type == dtStringC) {
-    fn->cname = var->immediate->v_string;
+    fn->cname = astr(var->immediate->v_string.c_str());
   } else {
     USR_FATAL(fn, "extern name expression must be a string");
   }

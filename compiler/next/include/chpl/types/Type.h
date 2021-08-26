@@ -31,7 +31,7 @@ namespace types {
 /**
   This is the base class for classes that represent a type.
 
-  Functions like someType->isRecord() / someAst->toRecord() are available and
+  Functions like someType->isRecord() / someType->toRecord() are available and
   generated for all Type subclasses.
 
  */
@@ -51,8 +51,7 @@ class Type {
   /**
    This function needs to be defined by subclasses.
    It should call the 'mark' method on any UniqueStrings
-   stored as fields. It need not worry about the children nodes
-   or the UniqueStrings stored in the ID.
+   stored as fields.
    */
   virtual void markUniqueStringsInner(Context* context) const = 0;
 
@@ -152,7 +151,7 @@ class Type {
 };
 
 
-} // end namespace uast
+} // end namespace types
 } // end namespace chpl
 
 // TODO: is there a reasonable way to define std::less on Type*?

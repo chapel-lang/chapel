@@ -460,8 +460,16 @@ module ChapelBase {
     }
   }
 
-  operator **(param a: int(?w), param b: int(w)) param return __primitive("**", a, b);
-  operator **(param a: uint(?w), param b: uint(w)) param return __primitive("**", a, b);
+  operator **(param a: int(?w), param b: int(w)) param {
+    if a == 0 && b < 0 then
+      compilerError("0 cannot be raised to a negative power");
+    return __primitive("**", a, b);
+  }
+  operator **(param a: uint(?w), param b: uint(w)) param {
+    if a == 0 && b < 0 then
+      compilerError("0 cannot be raised to a negative power");
+    return __primitive("**", a, b);
+  }
 
   inline proc _expHelp(a, param b: integral) {
     if b == 0 {

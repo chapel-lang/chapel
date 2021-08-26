@@ -337,19 +337,25 @@ class MostSpecificCandidates {
 };
 
 struct CallResolutionResult {
+  // what are the candidates for return-intent overloading?
   MostSpecificCandidates mostSpecific;
+  // what is the type of the call expression?
+  types::QualifiedType exprType;
   // if any of the candidates were instantiated, what point-of-instantiation
   // scopes were used when resolving their signature or body?
   PoiInfo poiInfo;
 
   CallResolutionResult(MostSpecificCandidates mostSpecific,
+                       types::QualifiedType exprType,
                        PoiInfo poiInfo)
     : mostSpecific(std::move(mostSpecific)),
+      exprType(std::move(exprType)),
       poiInfo(std::move(poiInfo)) {
   }
 
   bool operator==(const CallResolutionResult& other) const {
     return mostSpecific == other.mostSpecific &&
+           exprType == other.exprType &&
            PoiInfo::updateEquals(poiInfo, other.poiInfo);
   }
   bool operator!=(const CallResolutionResult& other) const {
@@ -357,6 +363,7 @@ struct CallResolutionResult {
   }
   void swap(CallResolutionResult& other) {
     mostSpecific.swap(other.mostSpecific);
+    exprType.swap(other.exprType);
     poiInfo.swap(other.poiInfo);
   }
 };

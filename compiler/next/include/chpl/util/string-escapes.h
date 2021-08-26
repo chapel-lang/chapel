@@ -24,8 +24,11 @@
 
 namespace chpl {
 
-
+/** escapes characters according to C quoting rules */
 std::string quoteStringForC(const std::string& s);
+
+/** checks for interior null bytes in the string */
+bool stringContainsZeroBytes(const char* s, size_t len);
 
 
 } // end namespace chpl

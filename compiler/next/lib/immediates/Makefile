@@ -16,8 +16,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-IFA_OBJDIR = $(COMPILER_BUILD)/ifa
+ifndef CHPL_MAKE_HOME
+export CHPL_MAKE_HOME=$(shell pwd)/../../../..
+endif
 
-ALL_SRCS += ifa/*.h ifa/*.cpp
+COMPILER_ROOT = ../../..
+COMPILER_SUBDIR = next/lib/immediates
 
-include $(COMPILER_ROOT)/ifa/Makefile.share
+#
+# standard header
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.head
+
+include Makefile.include
+
+TARGETS = $(NEXT_IMMEDIATES_OBJS)
+
+include $(COMPILER_ROOT)/make/Makefile.compiler.subdirrules
+
+FORCE:
+
+#
+# standard footer
+#
+include $(COMPILER_ROOT)/make/Makefile.compiler.foot

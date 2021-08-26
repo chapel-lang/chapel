@@ -21,6 +21,10 @@
 #ifndef _STRINGUTIL_H_
 #define _STRINGUTIL_H_
 
+#include "chpl/queries/UniqueString.h"
+
+using chpl::UniqueString;
+
 #include <stdint.h>
 #include <string>
 #include <vector>
@@ -37,12 +41,11 @@ const char* astr(const char* s1,
 
 const char* astr(const char* s1);
 const char* astr(const std::string& s);
+const char* astr(UniqueString s);
 
 const char* istr(int i);
 
 const char* asubstr(const char* s, const char* e);
-
-void        deleteStrings();
 
 int8_t      str2int8(const char* str, bool userSupplied = false,
                      const char* file = NULL, int line = -1);

@@ -1651,8 +1651,7 @@ int main(int argc, char* argv[]) {
   startCatchingSignals();
 
   // create the compiler context
-  chpl::Context ctx;
-  gContext = &ctx;
+  gContext = new chpl::Context();
 
   {
     astlocMarker markAstLoc(0, "<internal>");

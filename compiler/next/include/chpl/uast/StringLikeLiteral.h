@@ -40,12 +40,10 @@ class StringLikeLiteral : public Literal {
   };
 
  protected:
-  std::string value_;
   QuoteStyle quotes_;
 
-  StringLikeLiteral(ASTTag tag, std::string value, QuoteStyle quotes)
-    : Literal(tag),
-      value_(std::move(value)),
+  StringLikeLiteral(ASTTag tag, const types::Param* value, QuoteStyle quotes)
+    : Literal(tag, value),
       quotes_(quotes)
   { }
 
@@ -53,7 +51,6 @@ class StringLikeLiteral : public Literal {
     const StringLikeLiteral* lhs = this;
     const StringLikeLiteral* rhs = (const StringLikeLiteral*) other;
     return lhs->literalContentsMatchInner(rhs) &&
-           lhs->value_ == rhs->value_ &&
            lhs->quotes_ == rhs->quotes_;
   }
   void markUniqueStringsInner(Context* context) const override {
@@ -62,12 +59,6 @@ class StringLikeLiteral : public Literal {
 
  public:
   virtual ~StringLikeLiteral() = 0; // this is an abstract base class
-
-  /**
-   Returns the value of this string literal as a C++ string,
-   not including the quotes.
-   */
-  const std::string& str() const { return value_; }
 
   /**
    Returns the type of quotes used for this string literal.

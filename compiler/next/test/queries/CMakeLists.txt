@@ -37,3 +37,8 @@ set_tests_properties(testRecursionFails PROPERTIES WILL_FAIL TRUE)
 
 comp_unit_test(testDependencies)
 comp_unit_test(testRecursiveQuery)
+comp_unit_test(testUniqueString)
+
+# Copy the moby.txt to the binary dir for use by testUniqueString
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../../../test/types/string/psahabu/perf/moby.txt
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR})

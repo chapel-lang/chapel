@@ -26,9 +26,14 @@ namespace uast {
 
 
 owned<BytesLiteral> BytesLiteral::build(Builder* builder, Location loc,
-                                        std::string value,
+                                        const std::string& value,
                                         StringLikeLiteral::QuoteStyle quotes) {
-  BytesLiteral* ret = new BytesLiteral(std::move(value), quotes);
+  // Construct the UniqueString
+  auto u = UniqueString::build(builder->context(), value);
+  // Construct the Param
+  auto p = types::StringParam::get(builder->context(), u);
+  // Construct the BytesLiteral
+  BytesLiteral* ret = new BytesLiteral(p, quotes);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

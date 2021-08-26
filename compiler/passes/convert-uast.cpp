@@ -156,6 +156,21 @@ struct Converter {
     return nullptr;
   }
 
+  Expr* visit(const uast::Dot* node) {
+
+    // These are the arguments that 'buildDotExpr' requires.
+    BaseAST* base = toExpr(convertAST(node->receiver()));
+    auto member = node->field();
+
+    if (!typeStr.compare(member)) {
+      return new CallExpr(PRIM_TYPEOF, base);
+    } else if (!domainStr.compare(member)) {
+      return buildDotExpr(base, "_dom");
+    } else {
+      return buildDotExpr(base, member.c_str());
+    }
+  }
+
   BlockStmt* visit(const uast::Import* node) {
     INT_FATAL("TODO");
     return nullptr;
@@ -594,7 +609,7 @@ struct Converter {
 
   /// StringLikeLiterals ///
   Expr* visit(const uast::BytesLiteral* node) {
-    std::string quoted = quoteStringForC(node->str());
+    std::string quoted = quoteStringForC(node->str().toString());
     SymExpr* se = buildBytesLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
@@ -604,7 +619,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::CStringLiteral* node) {
-    std::string quoted = quoteStringForC(node->str());
+    std::string quoted = quoteStringForC(node->str().toString());
     SymExpr* se = buildCStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
@@ -615,7 +630,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::StringLiteral* node) {
-    std::string quoted = quoteStringForC(node->str());
+    std::string quoted = quoteStringForC(node->str().toString());
     SymExpr* se = buildStringLiteral(quoted.c_str());
     VarSymbol* v = toVarSymbol(se->symbol());
     INT_ASSERT(v && v->immediate);
@@ -625,21 +640,6 @@ struct Converter {
   }
 
   /// Calls ///
-
-  Expr* visit(const uast::Dot* node) {
-
-    // These are the arguments that 'buildDotExpr' requires.
-    BaseAST* base = toExpr(convertAST(node->receiver()));
-    auto member = node->field();
-
-    if (!typeStr.compare(member)) {
-      return new CallExpr(PRIM_TYPEOF, base);
-    } else if (!domainStr.compare(member)) {
-      return buildDotExpr(base, "_dom");
-    } else {
-      return buildDotExpr(base, member.c_str());
-    }
-  }
 
   Expr* visit(const uast::FnCall* node) {
     const uast::Expression* calledExpression = node->calledExpression();
@@ -714,10 +714,15 @@ struct Converter {
     }
   }
 
-  /*Expr* visit(const uast::PrimCall* node) {
-    INT_FATAL("TODO");
-    return nullptr;
-  }*/
+  Expr* visit(const uast::PrimCall* node) {
+    CallExpr* call = new CallExpr(PRIM_ACTUALS_LIST);
+    SymExpr* se = buildStringLiteral(node->prim().c_str());
+    call->insertAtTail(se);
+    for (auto actual : node->actuals()) {
+      call->insertAtTail(convertAST(actual));
+    }
+    return buildPrimitiveExpr(call);
+  }
 
   Expr* visit(const uast::Zip* node) {
     INT_FATAL("TODO");

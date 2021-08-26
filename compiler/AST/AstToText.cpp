@@ -793,7 +793,7 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
 
       else if (var->immediate->const_kind == CONST_KIND_STRING)
       {
-        if (strcmp(var->immediate->v_string, "_dom") == 0)
+        if (strcmp(var->immediate->v_string.c_str(), "_dom") == 0)
           strcpy(imm, "domain");
 
         else if (quoteStrings == true)
@@ -805,14 +805,14 @@ void AstToText::appendExpr(SymExpr* expr, bool printingType, bool quoteStrings)
           else if (var->immediate->string_kind == STRING_KIND_BYTES)
             *ptr++ = 'b';
           *ptr++ = '"';
-          strcpy(ptr, var->immediate->v_string);
+          strcpy(ptr, var->immediate->v_string.c_str());
           ptr = strchr(ptr, '\0');
           *ptr++ = '"';
           *ptr++ = '\0';
         }
 
         else
-          strcpy(imm, var->immediate->v_string);
+          strcpy(imm, var->immediate->v_string.c_str());
       }
 
       else
