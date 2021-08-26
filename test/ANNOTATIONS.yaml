@@ -471,6 +471,9 @@ all:
     - Use LLVM by default if LLVM is available either as system or bundled (#17079)
   08/05/21:
     - Extend bounded coforall optimization to zippered loops (#18162)
+  08/19/21:
+    - text: Upgrade to GASNet-EX 2021.8.0 snapshot (#18243)
+      config: 16-node-cs, 16-node-cs-hdr
 
 # End all
 
