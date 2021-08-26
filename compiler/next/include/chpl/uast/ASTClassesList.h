@@ -70,7 +70,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Range)                      //
   //AST_NODE(Require)                  //
   AST_NODE(Return)                     //
-  //AST_NODE(Select)                   //
+  AST_NODE(Select)                     //
   AST_NODE(Sync)                       //
   AST_NODE(Throw)                      //
   AST_NODE(Try)                        // old AST: TryStmt
@@ -87,6 +87,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(Local)                    //
     AST_NODE(On)                       //
     AST_NODE(Serial)                   //
+    AST_NODE(When)                     //
   AST_END_SUBCLASSES(SimpleBlockLike)
 
   AST_BEGIN_SUBCLASSES(Loop)           // old AST: LoopExpr / LoopStmt
