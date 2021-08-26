@@ -4006,51 +4006,33 @@ module ChapelArray {
 
   // This must be a param function
   proc chpl__compatibleForBulkTransfer(a:[], b:[], param kind:_tElt) param {
-    if !useBulkTransfer then return false;
-    if a.eltType != b.eltType then return false;
-    if kind==_tElt.move then return true;
-    if kind==_tElt.initCopy && isConstCopyableOrSyncSingle(a.eltType) then return true;
-    if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
-    return true;
+    if !useBulkTransfer {
+      return false;
+    }
+    if a.eltType != b.eltType {
+      return false;
+    }
+    if kind==_tElt.move {
+      return true;
+    }
+    if kind==_tElt.initCopy && isConstCopyableOrSyncSingle(a.eltType) {
+      return true;
+    }
+    return chpl__supportedDataTypeForBulkTransfer(a.eltType);
   }
 
   // This must be a param function
   proc chpl__supportedDataTypeForBulkTransfer(type t) param {
-    // These types cannot be default initialized
-    if isSubtype(t, borrowed) || isSubtype(t, unmanaged) {
-      return false;
-    } else if isRecordType(t) || isTupleType(t) {
-      // TODO: The current implementations of isPODType and
-      //       supportedDataTypeForBulkTransfer do not completely align. I'm
-      //       leaving it as future work to enable bulk transfer for other
-      //       types that are POD. In the long run it seems like we should be
-      //       able to have only one method for supportedDataType that just
-      //       calls isPODType.
-
-      // We can bulk transfer any record or tuple that is 'Plain Old Data'
-      // ie. a bag of bits
-      return isPODType(t);
-    } else if (isUnionType(t)) {
-      return false;
+    if isDefaultInitializableType(t) && isPODType(t) {
+      return true;
+    } else if isSubtype(t, _distribution) ||
+              isSubtype(t, locale) ||
+              isSubtype(t, chpl_anycomplex){
+      return true;
     } else {
-      pragma "unsafe" var x:t;
-      return chpl__supportedDataTypeForBulkTransfer(x);
+      return false;
     }
   }
-
-  // TODO: should this be returning true for atomic types?
-  proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: bytes) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: single) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: locale) param return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param return true;
-  // TODO -- why is the below line here?
-  proc chpl__supportedDataTypeForBulkTransfer(x: borrowed object) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
 
   pragma "no doc"
   proc checkArrayShapesUponAssignment(a: [], b: [], forSwap = false) {
