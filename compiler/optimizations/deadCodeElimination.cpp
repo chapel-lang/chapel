@@ -468,7 +468,7 @@ static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
                                                 const char *varName,
                                                 PrimitiveTag prim,
                                                 Type *primReturnType);
-static VarSymbol* generateIndexComputation(OutlineInfo& info);
+static void generateIndexComputation(OutlineInfo& info);
 
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
   return LoopStmt::findEnclosingLoop(sym->defPoint) == loop;
@@ -480,7 +480,7 @@ static bool isIndexVariable(OutlineInfo& info, Symbol* sym) {
   return std::find(indices.begin(), indices.end(), sym) != indices.end();
 }
 
-static void extractUpperBoundFromLoop(CForLoop* loop, OutlineInfo& info) {
+static void extractUpperBound(CForLoop* loop, OutlineInfo& info) {
   if(BlockStmt* bs = toBlockStmt(loop->testBlockGet())) {
     for_exprs_postorder (expr, bs) {
       if(CallExpr *call = toCallExpr(expr)) {
@@ -545,7 +545,7 @@ static OutlineInfo collectOutlineInfo(CForLoop* loop) {
   OutlineInfo info;
   info.loop = loop;
   extractIndicesAndLowerBounds(loop, info);
-  extractUpperBoundFromLoop(loop, info);
+  extractUpperBound(loop, info);
 
   info.fn = new FnSymbol("chpl_gpu_kernel");
   info.fn->addFlag(FLAG_RESOLVED);
@@ -559,7 +559,7 @@ static OutlineInfo collectOutlineInfo(CForLoop* loop) {
 
 /**
  * Given a CForLoop with lowerbound lb and upper bound ub
- * (See extractUpperBoundFromLoop\extractLowerBoundFromLoop to
+ * (See extractUpperBound\extractIndicesAndLowerBound to
  * see what we pattern match and extract), generate the
  * following AST and insert it into gpuLaunchBlock:
  * 
@@ -602,6 +602,7 @@ static Symbol* addKernelArgument(OutlineInfo& info, Symbol* symInLoop) {
   info.fn->insertFormalAtTail(newFormal);
 
   info.kernelActuals.push_back(symInLoop);
+  info.copyMap.put(symInLoop, newFormal);
 
   return newFormal;
 }
@@ -619,7 +620,7 @@ static Symbol* addKernelArgument(OutlineInfo& info, Symbol* symInLoop) {
  *
  *  Also adds the loopIndex->index to the copyMap
  **/
-static VarSymbol* generateIndexComputation(OutlineInfo& info) {
+static void generateIndexComputation(OutlineInfo& info) {
 
   FnSymbol* fn = info.fn;
 
@@ -661,7 +662,6 @@ static VarSymbol* generateIndexComputation(OutlineInfo& info) {
   }
 
   INT_ASSERT(info.kernelIndices.size() == info.loopIndices.size());
-  return NULL;
 }
 
 static  CallExpr* generateGPUCall(VarSymbol* varBlockSize, OutlineInfo& info) { 
@@ -697,8 +697,6 @@ static void outlineGPUKernels() {
           BlockStmt* gpuLaunchBlock = new BlockStmt();
           loop->insertBefore(gpuLaunchBlock);
 
-          //Symbol* indexSymbol = NULL;
-          //SymbolMap copyMap;
 
           for_alist(node, loop->body) {
 
@@ -732,7 +730,7 @@ static void outlineGPUKernels() {
                   // nothing to do
                 }
                 else if (isIndexVariable(info, sym)) {
-                  // These are handled already, do nothing special
+                  // These are handled already, nothing to do
                 }
                 else {
                   if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
@@ -741,18 +739,14 @@ static void outlineGPUKernels() {
                         // do nothing
                       }
                       else if (symExpr == parent->get(1)) {
-                        Symbol* newFormal = addKernelArgument(info, sym);
-                        info.copyMap.put(sym, newFormal); // TODO
-                        copyNode = true;
+                        addKernelArgument(info, sym);
                       }
                       else {
                         INT_FATAL("Malformed PRIM_GET_MEMBER_VALUE");
                       }
                     }
                     else if (parent->isPrimitive()) {
-                      Symbol* newFormal = addKernelArgument(info, sym);
-                      info.copyMap.put(sym, newFormal);  // TODO
-                      copyNode = true;
+                      addKernelArgument(info, sym);
                     }
                     else {
                       INT_FATAL("Unexpected call expression");
