@@ -16,12 +16,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-IFA_SRCS = \
-        ifa_vars.cpp \
-	num.cpp \
+NEXT_IMMEDIATES_OBJDIR = $(COMPILER_BUILD)/next/lib/immediates
 
+ALL_SRCS += next/lib/immediates/*.cpp
 
-SRCS = $(IFA_SRCS)
+NEXT_IMMEDIATES_SRCS =                              \
+           ifa_vars.cpp                             \
+           hash_multipliers.cpp                     \
+           num.cpp                                  \
 
-IFA_OBJS = \
-	$(IFA_SRCS:%.cpp=$(IFA_OBJDIR)/%.$(OBJ_SUFFIX))
+SRCS = $(NEXT_IMMEDIATES_SRCS)
+
+NEXT_IMMEDIATES_OBJS = \
+	$(NEXT_IMMEDIATES_SRCS:%.cpp=$(NEXT_IMMEDIATES_OBJDIR)/%.$(OBJ_SUFFIX))

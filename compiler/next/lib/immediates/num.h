@@ -18,16 +18,17 @@
  * limitations under the License.
  */
 
-#ifndef _num_h_
-#define _num_h_
+#ifndef CHPL_IMMEDIATES_NUM_H
+#define CHPL_IMMEDIATES_NUM_H
 
+#include "chpl/queries/Context.h"
+#include "chpl/queries/UniqueString.h"
+
+#include <cassert>
+#include <cstdlib>
 #include <cstring>
 #include <sstream>
 #include <string>
-
-#include "chpltypes.h"
-#include "map.h"
-#include "misc.h"
 
 #ifndef IFA_EXTERN
 #define IFA_EXTERN extern
@@ -36,20 +37,33 @@
 #define IFA_EXTERN_INIT(x)
 #endif
 
+extern unsigned int open_hash_multipliers[256];
+
+struct complex64 {
+  float r;
+  float i;
+};
+struct complex128 {
+  double r;
+  double i;
+};
+
+using ImmString = chpl::detail::PODUniqueString;
+
 //
 // NOTE: NUM_KIND_LAST is used to mark the last entry in this enum. The
 // 'IF1_const_kind' enum below uses it to set values.
 //
-enum IF1_num_kind {
+enum IF1_num_kind : uint8_t {
   NUM_KIND_NONE, NUM_KIND_BOOL, NUM_KIND_UINT, NUM_KIND_INT, NUM_KIND_REAL,
   NUM_KIND_IMAG, NUM_KIND_COMPLEX, NUM_KIND_COMMID, NUM_KIND_LAST
 };
 
-enum IF1_const_kind {
+enum IF1_const_kind : uint8_t {
   CONST_KIND_STRING = NUM_KIND_LAST + 1, CONST_KIND_SYMBOL
 };
 
-enum IF1_string_kind {
+enum IF1_string_kind : uint8_t {
   STRING_KIND_STRING,
   STRING_KIND_BYTES,
   STRING_KIND_C_STRING
@@ -62,24 +76,24 @@ enum IF1_string_kind {
 //
 #define BOOL_SYS_WIDTH 0
 
-enum IF1_bool_type {
+enum IF1_bool_type : uint8_t {
   BOOL_SIZE_SYS, BOOL_SIZE_8, BOOL_SIZE_16, BOOL_SIZE_32,
   BOOL_SIZE_64, BOOL_SIZE_NUM
 };
 
 // when updating these, be sure to also update int_type_precision!
-enum IF1_int_type {
+enum IF1_int_type : uint8_t {
   INT_SIZE_8, INT_SIZE_16, INT_SIZE_32, INT_SIZE_64, INT_SIZE_NUM
 };
 
 // when updating these, be sure to also update float_type_precision!
-enum IF1_float_type {
+enum IF1_float_type : uint8_t {
   FLOAT_SIZE_32, FLOAT_SIZE_64, FLOAT_SIZE_NUM
 };
 
 // these should correspond to double the IF1_float_types.
 // i.e. float_type_precision[i] here should refer to the real size of i
-enum IF1_complex_type {
+enum IF1_complex_type : uint8_t {
   COMPLEX_SIZE_64, COMPLEX_SIZE_128, COMPLEX_SIZE_NUM
 };
 
@@ -95,16 +109,18 @@ enum IF1_complex_type {
 #define FLOAT_SIZE_DEFAULT FLOAT_SIZE_64
 #define COMPLEX_SIZE_DEFAULT COMPLEX_SIZE_128
 
+namespace chpl {
+namespace types {
 
 class Immediate { public:
-  uint32_t const_kind;
+  uint8_t const_kind;
   IF1_string_kind string_kind;
-  uint32_t num_index;
+  uint8_t num_index;
   union {
     // Unions are initialized based off the first element, so we need to have
     // the largest thing first to make sure it is all zero initialized
 
-    // complex values - only used for the type's default value
+    // complex values
     complex128 v_complex128;
     complex64  v_complex64;
 
@@ -130,7 +146,7 @@ class Immediate { public:
     uint64_t   v_bool;
 
     // string value
-    const char *v_string;
+    ImmString v_string;
   };
 
   int64_t  int_value( void)     const;
@@ -151,74 +167,83 @@ class Immediate { public:
     v_bool = b;
     return *this;
   }
-  Immediate& operator=(char *s) {
+  /*Immediate& operator=(ImmString s) {
     const_kind = CONST_KIND_STRING;
     string_kind = STRING_KIND_C_STRING;
     v_string = s;
     return *this;
-  }
+  }*/
 
   explicit
-  Immediate(bool b) :
-    const_kind(NUM_KIND_BOOL),
-    string_kind(STRING_KIND_STRING),
-    num_index(BOOL_SIZE_SYS)
-  {
+  Immediate(bool b) {
+    memset((void*)this, 0, sizeof(*this));
+
+    const_kind = NUM_KIND_BOOL;
+    string_kind = STRING_KIND_STRING;
+    num_index = BOOL_SIZE_SYS;
     v_bool = b;
   }
 
-  Immediate(const char *s, IF1_string_kind kind) :
-    const_kind(CONST_KIND_STRING),
-    string_kind(kind),
-    num_index(0)
-  {
-    v_string = s;
+  Immediate(Context* context,
+            const char* str, size_t len,
+            IF1_string_kind kind) {
+    memset((void*)this, 0, sizeof(*this));
+
+    const_kind = CONST_KIND_STRING;
+    string_kind = kind;
+    num_index = 0;
+    v_string = ImmString::build(context, str, len);
   }
 
   Immediate();
   Immediate(const Immediate &im);
 };
 
+} // end namespace chpl
+} // end namespace types
+
+using Immediate = chpl::types::Immediate;
+
 inline uint64_t
 Immediate::bool_value( void) const {
-  INT_ASSERT(const_kind == NUM_KIND_BOOL);
+  assert(const_kind == NUM_KIND_BOOL);
   return v_bool;
 }
 
 inline int64_t
 Immediate::int_value( void) const {
   int64_t val = 0;
-  INT_ASSERT(const_kind == NUM_KIND_INT);
+  assert(const_kind == NUM_KIND_INT);
   switch (num_index) {
   case INT_SIZE_8 : val = v_int8;  break;
   case INT_SIZE_16: val = v_int16; break;
   case INT_SIZE_32: val = v_int32; break;
   case INT_SIZE_64: val = v_int64; break;
   default:
-    INT_FATAL("unknown int size");
+    assert(false && "unknown int size");
   }
   return val;
 }
 
 inline const char*
 Immediate::string_value( void) const {
-  INT_ASSERT(const_kind == CONST_KIND_STRING);
-  INT_ASSERT(string_kind == STRING_KIND_STRING ||
-             string_kind == STRING_KIND_BYTES ||
-             string_kind == STRING_KIND_C_STRING);
+  assert(const_kind == CONST_KIND_STRING);
+  assert(string_kind == STRING_KIND_STRING ||
+         string_kind == STRING_KIND_BYTES ||
+         string_kind == STRING_KIND_C_STRING);
 
-  return v_string;
+  return v_string.c_str();
 }
 
 inline double
 Immediate::real_value( void) const {
   double val = 0.0;
-  INT_ASSERT(const_kind == NUM_KIND_REAL || const_kind == NUM_KIND_IMAG);
+  assert(const_kind == NUM_KIND_REAL || const_kind == NUM_KIND_IMAG);
   switch (num_index) {
   case FLOAT_SIZE_32: val = v_float32; break;
   case FLOAT_SIZE_64: val = v_float64; break;
   default:
-    INT_FATAL("unknown real size");
+    assert(false && "unknown real size");
   }
   return val;
 }
@@ -226,8 +251,7 @@ Immediate::real_value( void) const {
 
 inline int64_t
 Immediate::commid_value( void) const {
-  INT_ASSERT(const_kind == NUM_KIND_COMMID &&
-             num_index == INT_SIZE_64);
+  assert(const_kind == NUM_KIND_COMMID && num_index == INT_SIZE_64);
   return v_int64;
 }
 
@@ -235,14 +259,14 @@ Immediate::commid_value( void) const {
 inline uint64_t
 Immediate::uint_value( void) const {
   uint64_t val = 0;
-  INT_ASSERT(const_kind == NUM_KIND_UINT);
+  assert(const_kind == NUM_KIND_UINT);
   switch (num_index) {
   case INT_SIZE_8 : val = v_uint8;  break;
   case INT_SIZE_16: val = v_uint16; break;
   case INT_SIZE_32: val = v_uint32; break;
   case INT_SIZE_64: val = v_uint64; break;
   default:
-    INT_FATAL("unknown uint size");
+    assert(false && "unknown uint size");
   }
   return val;
 }
@@ -255,7 +279,7 @@ Immediate::to_int( void) const {
     case NUM_KIND_UINT: val = uint_value(); break;
     case NUM_KIND_BOOL: val = bool_value(); break;
   default:
-    INT_FATAL("kind not handled in to_int");
+    assert(false && "kind not handled in to_int");
   }
   return val;
 }
@@ -269,7 +293,7 @@ Immediate::to_uint( void) const {
     case NUM_KIND_UINT: val = uint_value(); break;
     case NUM_KIND_BOOL: val = bool_value(); break;
   default:
-    INT_FATAL("kind not handled in to_uint");
+    assert(false && "kind not handled in to_uint");
   }
   return val;
 }
@@ -280,14 +304,14 @@ inline std::string Immediate::to_string(void) const {
   case NUM_KIND_INT: ss << int_value(); break;
   case NUM_KIND_BOOL: ss << bool_value(); break;
   case NUM_KIND_UINT: ss << uint_value(); break;
-  case CONST_KIND_STRING: return string_value();
+  case CONST_KIND_STRING: return v_string.toString();
   case NUM_KIND_REAL: {
     if (num_index == FLOAT_SIZE_32) {
       ss << v_float32;
     } else if (num_index == FLOAT_SIZE_64) {
       ss << v_float64;
     } else {
-      INT_FATAL("Unexpected real size");
+      assert(false && "Unexpected real size");
     }
     break;
   }
@@ -299,12 +323,12 @@ inline std::string Immediate::to_string(void) const {
     } else if (num_index == COMPLEX_SIZE_128) {
       ss << v_complex128.r << "+ " << v_complex128.i;
     } else {
-      INT_FATAL("Unexpected complex size");
+      assert(false && "Unexpected complex size");
     }
     ss << "i";
     break;
   }
-  default: INT_FATAL("Unexpected type to convert to string"); break;
+  default: assert(false && "Unexpected type to convert to string"); break;
   } // Closes switch statement
   return ss.str();
 }
@@ -354,15 +378,16 @@ ImmHashFns::equal(Immediate *imm1, Immediate *imm2) {
 
 int fprint_imm(FILE *fp, const Immediate &imm, bool showType = false);
 int snprint_imm(char *s, size_t max, const Immediate &imm);
-void coerce_immediate(Immediate *from, Immediate *to);
+void coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to);
 void fold_result(Immediate *imm1, Immediate *imm2, Immediate *imm);
-void fold_constant(int op, Immediate *im1, Immediate *im2, Immediate *imm);
-void convert_string_to_immediate(const char *str, Immediate *imm);
-const char* istrFromUserUint(long long unsigned int i);
-const char* istrFromUserInt(long long int i);
-const char* istrFromUserDouble(double i);
-const char* istrFromUserImag(double i);
-const char* istrFromUserComplex(double re, double im);
+void fold_constant(chpl::Context* context, int op,
+                   Immediate *im1, Immediate *im2, Immediate *imm);
+ImmString istrFromUserBool(chpl::Context* context, bool b);
+ImmString istrFromUserUint(chpl::Context* context, uint64_t i);
+ImmString istrFromUserInt(chpl::Context* context, int64_t i);
+ImmString istrFromUserDouble(chpl::Context* context, double i);
+ImmString istrFromUserImag(chpl::Context* context, double i);
+ImmString istrFromUserComplex(chpl::Context* context,
+                                       double re, double im);
 
 #endif
-

@@ -40,16 +40,27 @@ class ID;
 
 namespace detail {
 
+/**
+  Helper type that represents a string and a length.
+  An alternative strategy for storing null bytes in unique'd strings
+  would be to store the length before the allocation -- but
+  then we'd have to allocate such a special buffer in order to query it.
+ */
+struct StringAndLength {
+  const char* str;
+  size_t len;
+};
+
 struct UniqueStrEqual final {
-  bool operator()(const char* lhs, const char* rhs) const {
-    // pass the 2 metadata bytes
-    return strcmp(lhs, rhs) == 0;
+  bool operator()(StringAndLength lhs, StringAndLength rhs) const {
+    if (lhs.len != rhs.len) return false;
+    return 0 == memcmp(lhs.str, rhs.str, lhs.len);
   }
 };
 
 struct UniqueStrHash final {
-  size_t operator()(const char* s) const {
-    return chpl::hash(s);
+  size_t operator()(StringAndLength key) const {
+    return chpl::hash(key.str, key.len);
   }
 };
 

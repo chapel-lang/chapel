@@ -1521,10 +1521,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   // Hash the string and return an existing symbol if found.
   // Aka. uniquify all string literals
-  Immediate imm;
-  imm.const_kind = CONST_KIND_STRING;
-  imm.string_kind = STRING_KIND_STRING;
-  imm.v_string = astr(str);
+  size_t len = strlen(str);
+  Immediate imm(gContext, str, len, STRING_KIND_STRING);
   VarSymbol *s = stringLiteralsHash.get(&imm);
   if (s) {
     return s;
@@ -1606,10 +1604,8 @@ VarSymbol *new_StringSymbol(const char *str) {
 }
 
 VarSymbol *new_BytesSymbol(const char *str) {
-  Immediate imm;
-  imm.const_kind = CONST_KIND_STRING;
-  imm.string_kind = STRING_KIND_BYTES;
-  imm.v_string = astr(str);
+  size_t len = strlen(str);
+  Immediate imm(gContext, str, len, STRING_KIND_BYTES);
   VarSymbol *s = bytesLiteralsHash.get(&imm);
   if (s) {
     return s;
@@ -1684,10 +1680,8 @@ VarSymbol *new_StringOrBytesSymbol(const char *str, AggregateType *t) {
 }
 
 VarSymbol *new_CStringSymbol(const char *str) {
-  Immediate imm;
-  imm.const_kind = CONST_KIND_STRING;
-  imm.string_kind = STRING_KIND_C_STRING;
-  imm.v_string = astr(str);
+  size_t len = strlen(str);
+  Immediate imm(gContext, str, len, STRING_KIND_C_STRING);
   VarSymbol *s = uniqueConstantsHash.get(&imm);
   PrimitiveType* dtRetType = dtStringC;
   if (s) {
@@ -1952,11 +1946,13 @@ VarSymbol* new_ImmediateSymbol(Immediate *imm) {
   const size_t bufSize = 512;
   char str[bufSize];
   const char* ss = str;
-  if (imm->const_kind == CONST_KIND_STRING)
-    ss = imm->v_string;
-  else
+  if (imm->const_kind == CONST_KIND_STRING) {
+    ss = astr(imm->v_string.c_str());
+  } else {
     snprint_imm(str, bufSize, *imm);
-  s->cname = astr(ss);
+    ss = astr(ss);
+  }
+  s->cname = ss;
   *s->immediate = *imm;
   uniqueConstantsHash.put(s->immediate, s);
   return s;
@@ -2326,7 +2322,7 @@ const char* toString(VarSymbol* var, bool withType) {
               if (VarSymbol* v = toVarSymbol(sym))
                 if (v->immediate)
                   if (v->immediate->const_kind == CONST_KIND_STRING)
-                    name = astr("field ", v->immediate->v_string);
+                    name = astr("field ", v->immediate->v_string.c_str());
 
               if (name == NULL)
                 name = astr("field ", sym->name);

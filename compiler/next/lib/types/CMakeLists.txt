@@ -21,13 +21,18 @@ target_sources(libchplcomp-obj
                AnyType.cpp
                BoolType.cpp
                BuiltinType.cpp
+               BytesType.cpp
                ComplexType.cpp
+               CStringType.cpp
                ErroneousType.cpp
                ImagType.cpp
                IntType.cpp
+               NothingType.cpp
+               Param.cpp
                PrimitiveType.cpp
                QualifiedType.cpp
                RealType.cpp
+               StringType.cpp
                Type.cpp
                TypeTag.cpp
                UintType.cpp

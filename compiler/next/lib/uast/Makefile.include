@@ -75,6 +75,7 @@ NEXT_UAST_SRCS =                                 \
   NumericLiteral.cpp \
   On.cpp \
   OpCall.cpp \
+  PrimCall.cpp \
   Range.cpp \
   RealLiteral.cpp \
   Record.cpp \

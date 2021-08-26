@@ -20,13 +20,25 @@
 #ifndef CHPL_TYPES_QUALIFIEDTYPE_H
 #define CHPL_TYPES_QUALIFIEDTYPE_H
 
-#include "chpl/types/Type.h"
+#include "chpl/util/hash.h"
+#include "chpl/queries/update-functions.h"
+
+#include <cstddef>
+#include <string>
 
 namespace chpl {
 namespace types {
+class Param;
+class Type;
 
+/**
+  This class represents a combination of 3 things:
+    a Type subclass pointer representing a Chapel type
+    a Kind representing variable kind or intent (e.g. ref, value, const)
+    a param value for when the Kind is PARAM.
 
-// TODO: is this name too weird given that it includes param values?
+  This combination is the type information that the resolver needs.
+ */
 class QualifiedType {
  public:
   typedef enum {
@@ -45,7 +57,7 @@ class QualifiedType {
  private:
   Kind kind_ = UNKNOWN;
   const Type* type_ = nullptr;
-  int64_t param_ = -1; // TODO: replace with Immediates
+  const Param* param_ = nullptr;
 
  public:
   QualifiedType() { }
@@ -54,29 +66,22 @@ class QualifiedType {
     : kind_(kind), type_(type)
   { }
 
-  QualifiedType(Kind kind, const Type* type, int64_t param)
+  QualifiedType(Kind kind, const Type* type, const Param* param)
     : kind_(kind), type_(type), param_(param)
   { }
 
   Kind kind() const { return kind_; }
   const Type* type() const { return type_; }
-  int64_t param() const { return param_; }
+  const Param* param() const { return param_; }
 
   bool hasType() const {
     return type_ != nullptr;
   }
   bool hasParam() const {
-    // TODO: replace param_ != -1 with ptr check with Immediate
-    return kind_ == PARAM && param_ != -1;
+    return kind_ == PARAM && param_ != nullptr;
   }
 
-  bool isGenericOrUnknown() const {
-    bool genericKind = kind_ == UNKNOWN;
-    bool genericParam = kind_ == PARAM && !hasParam();
-    bool genericType = !hasType() || type_->isGeneric() ||
-                       type_->isUnknownType();
-    return genericKind || genericParam || genericType;
-  }
+  bool isGenericOrUnknown() const;
 
   bool operator==(const QualifiedType& other) const {
     return kind_ == other.kind_ &&
@@ -87,17 +92,9 @@ class QualifiedType {
     return !(*this == other);
   }
   void swap(QualifiedType& other) {
-    Kind tmpKind = this->kind_;
-    this->kind_ = other.kind_;
-    other.kind_ = tmpKind;
-
-    const Type* tmpType = this->type_;
-    this->type_ = other.type_;
-    other.type_ = tmpType;
-
-    int tmpParam = this->param_;
-    this->param_ = other.param_;
-    other.param_ = tmpParam;
+    std::swap(this->kind_, other.kind_);
+    std::swap(this->type_, other.type_);
+    std::swap(this->param_, other.param_);
   }
   size_t hash() const {
     size_t h1 = chpl::hash((unsigned) kind_);
@@ -115,7 +112,7 @@ class QualifiedType {
 };
 
 
-} // end namespace resolution
+} // end namespace types
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT

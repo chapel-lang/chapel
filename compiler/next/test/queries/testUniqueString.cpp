@@ -117,6 +117,8 @@ static void test0() {
   const char* h1 = ctx->uniqueCString("hello");
   const char* h2 = ctx->uniqueCString(hello.c_str());
   assert(h1 == h2);
+  assert(0 == strcmp("hello", h1));
+  assert(strlen("hello") == ctx->lengthForUniqueString(h1));
 
   // check that uniqueString(NULL) == uniqueString("")
   assert(ctx->uniqueCString(nullptr) == ctx->uniqueCString(""));
@@ -124,8 +126,71 @@ static void test0() {
   // check that uniqueString(NULL) != nullptr
   assert(ctx->uniqueCString(nullptr) != nullptr);
 
+  // check that zero-length uniqueString is the empty string too
+  assert(ctx->uniqueCString("bab", 0) == ctx->uniqueCString(""));
+
   const char* x = ctx->uniqueCString("aVeryLongIdentifierName");
   assert(x != h1 && x != nullptr);
+  assert(0 == strcmp("aVeryLongIdentifierName", x));
+  assert(strlen("aVeryLongIdentifierName") == ctx->lengthForUniqueString(x));
+
+  // check that strings with null bytes are uniqued differently
+  const char* h_plus = ctx->uniqueCString("hello\0plus", 10);
+  assert(h_plus != h1);
+  assert(ctx->lengthForUniqueString(h_plus) == 10);
+  const char* h_p = ctx->uniqueCString("hello\0p", 7);
+  assert(h_p != h_plus && h_p != h1);
+  assert(ctx->lengthForUniqueString(h_p) == 7);
+
+  // check that truncation works for short strings and long ones
+  assert(h1 == ctx->uniqueCString("hello____", strlen("hello")));
+  assert(x == ctx->uniqueCString("aVeryLongIdentifierName____",
+                                 strlen("aVeryLongIdentifierName")));
+
+  // check concatenation builder
+  const char* ab1 = ctx->uniqueCString("aabbb");
+  const char* ab2 = ctx->uniqueCStringConcatLen("aa", 2, "bbb", 3);
+  assert(ab1 == ab2);
+
+  const char* abcd1 = ctx->uniqueCString("a"
+                                         "bb"
+                                         "ccc"
+                                         "dddd"
+                                         "eeeee"
+                                         "ffffff"
+                                         "ggggggg"
+                                         "hhhhhhhh"
+                                         "iiiiiiiii");
+  const char* abcd2 = ctx->uniqueCStringConcatLen("a", 1,
+                                                  "bb", 2,
+                                                  "ccc", 3,
+                                                  "dddd", 4,
+                                                  "eeeee", 5,
+                                                  "ffffff", 6,
+                                                  "ggggggg", 7,
+                                                  "hhhhhhhh", 8,
+                                                  "iiiiiiiii", 9);
+  const char* abcd3 = ctx->uniqueCStringConcat("a",
+                                               "bb",
+                                               "ccc",
+                                               "dddd",
+                                               "eeeee",
+                                               "ffffff",
+                                               "ggggggg",
+                                               "hhhhhhhh",
+                                               "iiiiiiiii");
+
+  assert(0 == strcmp(abcd1,  "a"
+                             "bb"
+                             "ccc"
+                             "dddd"
+                             "eeeee"
+                             "ffffff"
+                             "ggggggg"
+                             "hhhhhhhh"
+                             "iiiiiiiii"));
+  assert(abcd1 == abcd2);
+  assert(abcd2 == abcd3);
 }
 
 
@@ -142,14 +207,20 @@ static void test1() {
   UniqueString t1 = UniqueString::build(ctx, test1);
   UniqueString t2 = UniqueString::build(ctx, test1Copy);
   UniqueString t3 = UniqueString::build(ctx, TEST1STRING);
+  assert(0 == strcmp(t1.c_str(), test1.c_str()));
   assert(t1.c_str() == t2.c_str());
   assert(t2.c_str() == t3.c_str());
+  assert(t1.astr(ctx) == ctx->uniqueCString(test1.c_str()));
+  assert(t1.length() == strlen(TEST1STRING));
 
   // this string is short enough to be inlined
   std::string hello = "hello";
   UniqueString h1 = UniqueString::build(ctx, "hello");
   UniqueString h2 = UniqueString::build(ctx, hello);
+  assert(0 == strcmp(h1.c_str(), hello.c_str()));
   assert(h1 == h2);
+  assert(h1.astr(ctx) == ctx->uniqueCString(hello.c_str()));
+  assert(h1.length() == strlen("hello"));
 
   // check that uniqueString(NULL) == uniqueString("")
   assert(UniqueString::build(ctx, NULL) == UniqueString::build(ctx, ""));
@@ -157,6 +228,48 @@ static void test1() {
   // check that default-constructed unique string matches one from ""
   UniqueString empty;
   assert(empty == UniqueString::build(ctx, ""));
+
+  // check that truncation works for short strings and long ones
+  assert(h1 == UniqueString::build(ctx, "hello____", strlen("hello")));
+  assert(t1 == UniqueString::build(ctx, TEST1STRING "_____",
+                                   strlen(TEST1STRING)));
+
+  // check concatenation builder
+  UniqueString ab1 = UniqueString::build(ctx, "aabbb");
+  UniqueString ab2 = UniqueString::buildConcat(ctx, "aa", "bbb");
+  assert(ab1 == ab2);
+  assert(0 == strcmp(ab1.c_str(), "aabbb"));
+
+  UniqueString abcd1 = UniqueString::build(ctx,
+                                           "a"
+                                           "bb"
+                                           "ccc"
+                                           "dddd"
+                                           "eeeee"
+                                           "ffffff"
+                                           "ggggggg"
+                                           "hhhhhhhh"
+                                           "iiiiiiiii");
+  UniqueString abcd2 = UniqueString::buildConcat(ctx,
+                                                 "a",
+                                                 "bb",
+                                                 "ccc",
+                                                 "dddd",
+                                                 "eeeee",
+                                                 "ffffff",
+                                                 "ggggggg",
+                                                 "hhhhhhhh",
+                                                 "iiiiiiiii");
+  assert(abcd1 == abcd2);
+  assert(0 == strcmp(abcd1.c_str(), "a"
+                                    "bb"
+                                    "ccc"
+                                    "dddd"
+                                    "eeeee"
+                                    "ffffff"
+                                    "ggggggg"
+                                    "hhhhhhhh"
+                                    "iiiiiiiii"));
 
   // check ==
   assert(t1 == t2);

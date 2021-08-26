@@ -29,7 +29,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 
-#include "../ifa/prim_data.h"
+#include "../next/lib/immediates/prim_data.h"
 
 static Expr* postFoldNormal(CallExpr* call);
 
@@ -50,7 +50,7 @@ static Expr* postFoldSymExpr(SymExpr* symExpr);
     if (Immediate* imm = getSymbolImmediate(sym)) {                     \
       Immediate i3;                                                     \
                                                                         \
-      fold_constant(prim, imm, NULL, &i3);                              \
+      fold_constant(gContext, prim, imm, NULL, &i3);                    \
                                                                         \
       retval = new SymExpr(new_ImmediateSymbol(&i3));                   \
                                                                         \
@@ -80,7 +80,7 @@ static Expr* postFoldSymExpr(SymExpr* symExpr);
           if (Immediate* rhs = getSymbolImmediate(rhsSym)) {            \
             Immediate i3;                                               \
                                                                         \
-            fold_constant(prim, lhs, rhs, &i3);                         \
+            fold_constant(gContext, prim, lhs, rhs, &i3);               \
                                                                         \
             retval = new SymExpr(new_ImmediateSymbol(&i3));             \
                                                                         \

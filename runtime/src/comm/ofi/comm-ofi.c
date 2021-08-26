@@ -1251,28 +1251,54 @@ chpl_bool isGoodCoreProvider(struct fi_info* info) {
           && !isInProvName("tcp", info->fabric_attr->prov_name));
 }
 
+// This function allows us to filter out unusable providers returned by
+// libfabric. libfabric currently has bugs associated with some providers
+// and address types.
+static inline
+chpl_bool isUseableProvider(struct fi_info* info) {
+  chpl_bool result = true;
+  
+  // Ignore any provider for the T2 interface on a mac. As of v1.13.0
+  // libfabric does not filter this interface internally. The T2 interface
+  // is identified by the link local address fe80::aede:48ff:fe00:1122.
+
+  static struct sockaddr_in6 t2;
+  static chpl_bool initialized = false;
+  static chpl_bool darwin = false;
+
+  if (! initialized) {
+    darwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
+    if (darwin) {
+      int rc = inet_pton(AF_INET6, "fe80::aede:48ff:fe00:1122", &t2.sin6_addr);
+      if (rc != 1) {
+        INTERNAL_ERROR_V("inet_pton failed: %s", strerror(errno));
+      }
+    }
+    initialized = true;
+  }
+  if (darwin && (info->addr_format == FI_SOCKADDR_IN6) && 
+      !memcmp(&t2.sin6_addr, 
+              &((struct sockaddr_in6 *)info->src_addr)->sin6_addr, 
+              sizeof(t2.sin6_addr))) {
+    DBG_PRINTF_NODE0(DBG_PROV, "skipping T2 interface");
+    result = false;
+  }
+
+  // The verbs provider currently doesn't handle FI_SOCKADDR_IB addresses
+  // properly. Trying to use one will result in internal errors in fi_domain.
+
+  if ((info->addr_format == FI_SOCKADDR_IB) && isInProvider("verbs", info)) {
+     DBG_PRINTF_NODE0(DBG_PROV, "skipping FI_SOCKADDR_IB address");
+     result = false;
+  }
+  return result;
+}
 
 static inline
 struct fi_info* findProvInList(struct fi_info* info,
                                chpl_bool accept_ungood_provs,
                                chpl_bool accept_RxD_provs,
                                chpl_bool accept_RxM_provs) {
-
-#ifndef LIBFABRIC_NO_FIXUP
-  
-  // Ignore any provider for the T2 interface on a mac. As of v1.13.0
-  // libfabric does not filter this interface internally. The T2 interface
-  // is identified by the link local address fe80::aede:48ff:fe00:1122.
-
-  struct sockaddr_in6 t2;
-  chpl_bool darwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
-  if (darwin) {
-    int rc = inet_pton(AF_INET6, "fe80::aede:48ff:fe00:1122", &t2.sin6_addr);
-    if (rc != 1) {
-      INTERNAL_ERROR_V("inet_pton failed: %s", strerror(errno));
-    }
-  }
-#endif
 
   for (; info != NULL; info = info->next) {
     // break out of the loop when we find one that meets all of our criteria
@@ -1285,14 +1311,9 @@ struct fi_info* findProvInList(struct fi_info* info,
     if (!accept_RxM_provs && isInProvider("ofi_rxm", info)) {
       continue;
     }
-#ifndef LIBFABRIC_NO_FIXUP
-    if (darwin && (info->addr_format == FI_SOCKADDR_IN6) && 
-        !memcmp(&t2.sin6_addr, &((struct sockaddr_in6 *)info->src_addr)->sin6_addr, 
-                sizeof(t2.sin6_addr))) {
-      DBG_PRINTF_NODE0(DBG_PROV, "skipping T2 interface");
+    if (!isUseableProvider(info)) {
       continue;
     }
-#endif
     // got one
     break;
   }

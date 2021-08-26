@@ -31,23 +31,20 @@ namespace uast {
 /**
   This is an abstract parent class for int/real/imag numeric literals.
  */
-template <typename ValueT>
+template <typename ValueT, typename ParamT>
 class NumericLiteral : public Literal {
  protected:
-  ValueT value_;
   UniqueString text_;
 
-  NumericLiteral(ASTTag tag, ValueT value, UniqueString text)
-    : Literal(tag),
-      value_(value),
+  NumericLiteral(ASTTag tag, const ParamT* value, UniqueString text)
+    : Literal(tag, value),
       text_(text)
   { }
 
   bool contentsMatchInner(const ASTNode* other) const override {
-    const NumericLiteral<ValueT>* lhs = this;
-    const NumericLiteral<ValueT>* rhs = (const NumericLiteral<ValueT>*) other;
+    auto lhs = this;
+    auto* rhs = (const NumericLiteral<ValueT, ParamT>*) other;
     return lhs->literalContentsMatchInner(rhs) &&
-           lhs->value_ == rhs->value_ &&
            lhs->text_ == rhs->text_;
   }
   void markUniqueStringsInner(Context* context) const override {
@@ -61,7 +58,10 @@ class NumericLiteral : public Literal {
   /**
    Returns the value of this NumericLiteral.
    */
-  ValueT value() const { return value_; }
+  ValueT value() const {
+    const ParamT* p = (const ParamT*) value_; 
+    return p->value();
+  }
  
   /**
    Returns the number as it was written in the source code (as a string)
@@ -69,8 +69,8 @@ class NumericLiteral : public Literal {
   UniqueString text() const { return text_; }
 };
 
-template <typename ValueT>
-NumericLiteral<ValueT>::~NumericLiteral() {
+template <typename ValueT, typename ParamT>
+NumericLiteral<ValueT, ParamT>::~NumericLiteral() {
 }
 
 } // end namespace uast

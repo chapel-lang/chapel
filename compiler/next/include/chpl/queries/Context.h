@@ -112,6 +112,9 @@ There are some requirements on query argument/key types and on result types:
  * argument/key types must have ``std::equal_to<KeyType>``
  * result types must have ``chpl::update<MyResultType>`` implemented
  * result types must be default constructable
+ * If the result contains or refers to any UniqueString, the result type
+   must have ``chpl::mark<MyResultType>`` implemented to call ``mark``
+   on the UniqueString(s).
 
 .. code-block:: c++
 
@@ -130,7 +133,8 @@ There are some requirements on query argument/key types and on result types:
     }
 
 The process of computing a query and checking to see if it matches a saved
-result requires that the result type implement ``chpl::update``:
+result requires that the result type implement ``chpl::update`` and
+possible ``chpl::mark``:
 
 .. code-block:: c++
 
@@ -139,6 +143,11 @@ result requires that the result type implement ``chpl::update``:
         bool operator()(chpl::MyResultType& keep,
                         chpl::MyResultType& addin) const {
           return doSomethingToCombine...;
+        }
+        template<> struct mark<MyResultType> {
+        void operator()(Context* context,
+                        chpl::MyResultType& keep) const {
+          keep.markUniqueStrings(context);
         }
       };
 
@@ -180,14 +189,20 @@ these AST element pointers, but not owning them. In that event, the
 into the AST element pointers. However it can compare the pointers themselves
 because the ``parse`` query will update the pointer if the contents change.
 
+In some situations, the query framework can reuse a result without running the
+``update`` function for it. That can happen when all dependencies have been
+checked in this revision and the dependencies are all reused. In that event, the
+UniqueStrings that are contianed in or referred to by the result need to be
+marked so that any UniqueStrings not used can be garbage collected. This is
+accomplished by calling the ``mark`` function.
+
 \endrst
 
  */
 class Context {
  private:
   // map that supports uniqueCString / UniqueString
-  // TODO this could be an unordered_set
-  using UniqueStringsTableType = std::unordered_map<const char*, char*, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual>;
+  using UniqueStringsTableType = std::unordered_set<chpl::detail::StringAndLength, chpl::detail::UniqueStrHash, chpl::detail::UniqueStrEqual>;
   UniqueStringsTableType uniqueStringsTable;
 
   // Map from a query function pointer to appropriate QueryMap object.
@@ -215,7 +230,11 @@ class Context {
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
   querydetail::RevisionNumber gcCounter = 1;
 
-  const char* getOrCreateUniqueString(const char* s);
+  char* setupStringMetadata(char* buf, size_t len);
+  const char* getOrCreateUniqueStringWithAllocation(char* buf,
+                                                    const char* str,
+                                                    size_t len);
+  const char* getOrCreateUniqueString(const char* str, size_t len);
 
   // saves the dependency in the parent query, which is assumed
   // to be at queryStack.back().
@@ -321,9 +340,14 @@ class Context {
   }
 
   /**
-    Get or create a unique string for a NULL-terminated C string
-    and return it as a C string. If the passed string is NULL,
-    this function will return an empty string.
+
+    Get or create a unique string and return it as a C string. If the passed
+    string is NULL, this function will return an empty string.
+
+    Unique strings are limited to 2**31 bytes.
+
+    The returned string will store len bytes, even if there are interior
+    NULL bytes. It will be NULL terminated either way.
 
     Strings returned by this function will always be aligned to 2 bytes.
 
@@ -331,14 +355,56 @@ class Context {
     with a wrapper type. It should be preferred for type safety
     and to reduce redundant checks.
    */
+  const char* uniqueCString(const char* s, size_t len);
+  /**
+    Calls uniqueCString with len=strlen(s). This simpler
+    call can be used for C strings that don't contain zero bytes
+    other than the terminator.
+   */
   const char* uniqueCString(const char* s);
+  /**
+    Get or create a unique string by concatenating up to 9 strings
+    with lengths.
+   */
+  const char* uniqueCStringConcatLen(const char* s1, size_t len1,
+                                     const char* s2, size_t len2,
+                                     const char* s3 = nullptr, size_t len3 = 0,
+                                     const char* s4 = nullptr, size_t len4 = 0,
+                                     const char* s5 = nullptr, size_t len5 = 0,
+                                     const char* s6 = nullptr, size_t len6 = 0,
+                                     const char* s7 = nullptr, size_t len7 = 0,
+                                     const char* s8 = nullptr, size_t len8 = 0,
+                                     const char* s9 = nullptr, size_t len9 = 0);
+  /**
+    Get or create a unique string by concatenating up to 9 strings.
+   */
+  const char* uniqueCStringConcat(const char* s1,
+                                  const char* s2,
+                                  const char* s3 = nullptr,
+                                  const char* s4 = nullptr,
+                                  const char* s5 = nullptr,
+                                  const char* s6 = nullptr,
+                                  const char* s7 = nullptr,
+                                  const char* s8 = nullptr,
+                                  const char* s9 = nullptr);
+
+
 
   /**
    When the context is configured to run with garbage collection
    enabled, unique strings that are reused need to be marked.
    This function does that for a C string stored in the map.
+   It will cause program crashes if called on a string that
+   is not the result of one of the uniqueCString calls.
    */
   void markUniqueCString(const char* s);
+
+  /**
+   For a unique string, return the length of the string when it was created.
+   It will cause program crashes if called on a string that
+   is not the result of one of the uniqueCString calls.
+   */
+  static size_t lengthForUniqueString(const char* s);
 
   /**
     Return the file path for the file containing this ID.

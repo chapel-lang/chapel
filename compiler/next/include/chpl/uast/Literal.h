@@ -20,6 +20,7 @@
 #ifndef CHPL_UAST_LITERAL_H
 #define CHPL_UAST_LITERAL_H
 
+#include "chpl/types/Param.h"
 #include "chpl/uast/Expression.h"
 
 namespace chpl {
@@ -32,19 +33,32 @@ namespace uast {
  */
 class Literal : public Expression {
  protected:
-  Literal(ASTTag tag)
-    : Expression(tag) {
+  const types::Param* value_ = nullptr;
+
+  Literal(ASTTag tag, const types::Param* value)
+    : Expression(tag), value_(value) {
+
+    assert(value_ != nullptr);
   }
 
   bool literalContentsMatchInner(const Literal* other) const {
-    return expressionContentsMatchInner(other);
+    return expressionContentsMatchInner(other) &&
+           this->value_ == other->value_;
   }
   void literalMarkUniqueStringsInner(Context* context) const {
     expressionMarkUniqueStringsInner(context);
+    types::Param::markParam(context, value_);
   }
 
  public:
   virtual ~Literal() = 0; // this is an abstract base class
+
+  /**
+    Returns the value stored in this Literal as a types::Param.
+   */
+  const types::Param* param() const {
+    return value_;
+  }
 };
 
 

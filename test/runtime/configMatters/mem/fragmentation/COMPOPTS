@@ -1,0 +1,3 @@
+# These tests are pretty slow already since they touch a lot of memory, so try
+# to speed things up by enabling optimizations and disabling checks
+--fast
