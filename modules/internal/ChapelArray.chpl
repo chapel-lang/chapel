@@ -1690,6 +1690,8 @@ module ChapelArray {
       return _value.dsiAdd(i);
     }
 
+    // TODO: bulkAdd for associative domains
+
     pragma "no doc"
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true, addOn=nilLocale)
@@ -4261,7 +4263,7 @@ module ChapelArray {
   pragma "find user line"
   pragma "ignore transfer errors"
   inline proc chpl__transferArray(ref a: [], const ref b,
-                           param kind=_tElt.assign) lifetime a <= b {
+                                  param kind=_tElt.assign) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
 
