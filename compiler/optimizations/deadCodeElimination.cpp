@@ -672,6 +672,9 @@ static void outlineGPUKernels() {
                 else if (sym->isImmediate()) {
                   // nothing to do
                 }
+                else if (isTypeSymbol(sym)) {
+                  // nothing to do
+                }
                 // TODO: we want to have a better way of recognizing the index
                 // variable. Either we move this "pass" earlier, and we lower
                 // a ForLoop directly into a gpu kernel, or we record
