@@ -113,19 +113,26 @@ when the initializer encounters an error.
 class Replicated : BaseDist {
   var targetLocDom : domain(here.id.type);
 
-  // the desired locales (an array of locales)
+  // the desired locales (an associative array of locales)
   const targetLocales : [targetLocDom] locale;
+
+  // the desired locales as a DefaultRectangular array
+  // (to optimize communication)
+  const targetLocalesArrDom : domain(1);
+  const targetLocalesArr : [targetLocalesArrDom] locale;
 }
 
 
 // initializer: replicate over the given locales
 // (by default, over all locales)
-proc Replicated.init(targetLocales: [] locale = Locales,
+proc Replicated.init(const targetLocales: [] locale = Locales,
                      purposeMessage: string = "used to create a Replicated")
 {
+  this.targetLocalesArrDom = targetLocales.domain;
+  this.targetLocalesArr = targetLocales;
   this.complete();
 
-  for loc in targetLocales {
+  for loc in targetLocalesArr {
     this.targetLocDom.add(loc.id);
     this.targetLocales[loc.id] = loc;
   }
@@ -160,18 +167,12 @@ proc Replicated.dsiGetPrivatizeData() {
 
 proc Replicated.dsiPrivatize(privatizeData)
 {
-  if traceReplicatedDist then writeln("Replicated.dsiPrivatize on ", here);
+  if traceReplicatedDist then
+    chpl_debug_writeln("\nReplicated.dsiPrivatize on ", here.id,
+                       " from ", this.locale.id);
 
-  const otherTargetLocales = this.targetLocales;
-
-  // make private copy of targetLocales and its domain
-  const privDom = otherTargetLocales.domain;
-  const privTargetLocales: [privDom] locale = otherTargetLocales;
- 
-  const nonNilWrapper: [0..#privTargetLocales.sizeAs(int)] locale =
-    for loc in otherTargetLocales do loc; 
-
-  return new unmanaged Replicated(nonNilWrapper, "used during privatization");
+  return new unmanaged Replicated(this.targetLocalesArr,
+                                  "used during privatization");
 }
 
 
