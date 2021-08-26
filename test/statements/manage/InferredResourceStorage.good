@@ -1,0 +1,77 @@
+T1A: inference with ALL overloads and NO mutation
+default-init (ptr = {x = 0})
+proc man1.enterThis() const ref: res
+const action with resource
+leaving
+deinit (ptr = {x = 0})
+
+T1B: inference with ALL overloads and mutation
+default-init (ptr = {x = 1})
+proc man1.enterThis() ref: res
+mutating resource
+leaving
+deinit (ptr = {x = 1})
+
+T2A: inference with REF/CONST-REF overloads and NO mutation
+default-init (ptr = {x = 2})
+proc man2.enterThis() const ref: res
+const action with resource
+leaving
+deinit (ptr = {x = 2})
+
+T2B: inference with REF/CONST-REF overloads and mutation
+default-init (ptr = {x = 3})
+proc man2.enterThis() ref: res
+mutating resource
+leaving
+deinit (ptr = {x = 3})
+
+T3A: inference with VALUE/REF overloads and NO mutation
+default-init (ptr = {x = 4})
+proc man3.enterThis() ref: res
+const action with resource
+leaving
+deinit (ptr = {x = 4})
+
+T3B: inference with VALUE/REF overloads and mutation
+default-init (ptr = {x = 5})
+proc man3.enterThis() ref: res
+mutating resource
+leaving
+deinit (ptr = {x = 5})
+
+T4: inference with VALUE/CONST-REF overloads and NO mutation
+default-init (ptr = {x = 6})
+proc man4.enterThis() const ref: res
+const action with resource
+leaving
+deinit (ptr = {x = 6})
+
+T5A: only VALUE overload with NO mutation
+default-init (ptr = {x = 7})
+proc man5.enterThis(): res
+const action with resource
+leaving
+deinit (ptr = {x = 7})
+
+T5B: only VALUE overload with mutation
+default-init (ptr = {x = 8})
+proc man5.enterThis(): res
+mutating resource
+leaving
+deinit (ptr = {x = 8})
+
+T6: only REF overload with mutation
+default-init (ptr = {x = 9})
+proc man6.enterThis() ref: res
+mutating resource
+leaving
+deinit (ptr = {x = 9})
+
+T7: only CONST-REF overload with NO mutation
+default-init (ptr = {x = 10})
+proc man7.enterThis() const ref: res
+const action with resource
+leaving
+deinit (ptr = {x = 10})
+

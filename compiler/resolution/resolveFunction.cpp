@@ -1382,10 +1382,20 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
         // returning into a user var?
         if (lhsSe != NULL) {
           VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
-          if (lhs != NULL && lhs != v && !lhs->hasFlag(FLAG_TEMP)) {
+          if (lhs != NULL && lhs != v) {
+
             // Used in initializing a user var, so mark end of block
-            makeThemEndOfBlock = true;
-            break;
+            if (!lhs->hasFlag(FLAG_TEMP)) {
+              makeThemEndOfBlock = true;
+              break;
+
+            // For e.g. 'manage new foo() do ...;'
+            // The manager handle is a temp that refers to 'new foo()', so
+            // what it refers to should live until the end of the block.
+            } else if (lhs->hasFlag(FLAG_MANAGER_HANDLE)) {
+              makeThemEndOfBlock = true;
+              break;
+            }
           }
         }
         // out intent setting a user var?

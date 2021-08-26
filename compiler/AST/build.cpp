@@ -2185,6 +2185,182 @@ BlockStmt* buildLocalStmt(Expr* condExpr, Expr *stmt) {
       buildLocalStmt(stmt->copy()), stmt);
 }
 
+/*
+  Builds the try/catch part of the manager block:
+
+  try {
+    // Insertion point for next manager or user block.
+  } catch chpl_tmp_err {
+    errorCaught = true;
+    manager.leaveThis(chpl_tmp_err);
+  }
+
+*/
+static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
+                                             VarSymbol* errorCaught) {
+  const char* errName = "chpl_tmp_err";
+
+  // Build the catch block.
+  auto catchBlock = new BlockStmt();
+
+  // BUILD: errorCaught = true;
+  auto seErrorCaught = new SymExpr(errorCaught);
+  auto seTrue = new SymExpr(gTrue);
+  auto errorCaughtToTrue = new CallExpr(PRIM_MOVE, seErrorCaught, seTrue);
+  catchBlock->insertAtTail(errorCaughtToTrue);
+
+  // BUILD: manager.leaveThis(chpl_tmp_err);
+  auto leave = new CallExpr("leaveThis",
+                            gMethodToken,
+                            new SymExpr(managerHandle),
+                            new UnresolvedSymExpr(errName));
+  catchBlock->insertAtTail(leave);
+
+  // BUILD: catch chpl_tmp_err { ... }
+  auto catchStmt = CatchStmt::build(errName, catchBlock);
+
+  // Build the entire try/catch.
+  auto catchList = new BlockStmt();
+  catchList->insertAtTail(catchStmt);
+
+  auto ret = new TryStmt(false, new BlockStmt(), catchList);
+
+  return ret;
+}
+
+/*
+  The fragment 'myManager() as myResource' is lowered into something like:
+
+  {
+    TEMP ref manager = PRIM_ADDR_OF(myManager());
+    USER [var/ref/const] myResource = manager.enterThis();
+    TEMP errorCaught = false;
+
+    try {
+      // Insertion point for next manager or user block.
+    } catch chpl_temp_err {
+      errorCaught = true;
+      manager.leaveThis(chpl_tmp_err);
+    }
+
+    if !errorCaught then manager.leaveThis(nil);
+  }
+
+*/
+BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
+                             const char* resourceName) {
+
+  // Scopeless because we'll flatten this into place later.
+  auto ret = new BlockStmt(BLOCK_SCOPELESS);
+
+  // BUILD: TEMP ref manager = PRIM_ADDR_OF(myManager());
+  auto managerHandle = newTemp("manager");
+  managerHandle->addFlag(FLAG_MANAGER_HANDLE);
+  ret->insertAtTail(new DefExpr(managerHandle));
+
+  auto addrOfExpr = new CallExpr(PRIM_ADDR_OF, managerExpr);
+  auto moveIntoHandle = new CallExpr(PRIM_MOVE, managerHandle, addrOfExpr);
+  ret->insertAtTail(moveIntoHandle);
+
+  // Build call to 'enterThis()', but don't insert into the tree yet.
+  auto seManager = new SymExpr(managerHandle);
+  auto enterThis = new CallExpr("enterThis", gMethodToken, seManager);
+
+  // BUILD: [var/ref/const ref] myResource = manager.enterThis();
+  if (resourceName != nullptr) {
+    const bool isResourceStorageKindInferred = (flags == nullptr);
+    auto resource = new VarSymbol(resourceName);
+
+    if (isResourceStorageKindInferred) {
+      resource->addFlag(FLAG_MANAGER_RESOURCE_INFER_STORAGE);
+    } else {
+      for (auto f: *flags) resource->addFlag(f);
+      delete flags;
+      flags = nullptr;
+    }
+
+    ret->insertAtTail(new DefExpr(resource, enterThis));
+
+  } else {
+
+    // Otherwise, just make the call to 'enterThis()'.
+    ret->insertAtTail(enterThis);
+  }
+
+  // BUILD: TEMP var errorCaught = false;
+  auto errorCaught = newTemp("errorCaught");
+  ret->insertAtTail(new DefExpr(errorCaught, gFalse));
+
+  // Call helper to construct try/catch block.
+  auto tryCatch = buildTryCatchForManagerBlock(managerHandle, errorCaught);
+  ret->insertAtTail(tryCatch);
+
+  // BUILD: if !errorCaught then manager.leaveThis(nil);
+  auto ifCond = new CallExpr(PRIM_UNARY_LNOT, new SymExpr(errorCaught));
+  auto ifBranch = new CallExpr("leaveThis",
+                               gMethodToken,
+                               new SymExpr(managerHandle),
+                               gNil);
+  auto ifStmt = new CondStmt(ifCond, ifBranch);
+  ret->insertAtTail(ifStmt);
+
+  return ret;
+}
+
+/*
+  Each manager block declares some temporary variables, and then calls the
+  'enterThis()' method on the manager before executing the next block.
+  Managers are nested from left to right, and the final innermost scope is
+  the block containing user code.
+
+  Managers call 'leaveThis()' and are deinitialized in the reverse order of
+  their initialization.
+
+  TODO (dlongnecke-cray): In cleanup, recursively lift up the manager out of
+  its try block if we detect exception handling is not needed (e.g. we're
+  not in a throwing function, and not in a try).
+*/
+BlockStmt* buildManageStmt(BlockStmt* managers, BlockStmt* block) {
+  auto ret = new BlockStmt();
+
+  if (fWarnUnstable) {
+    USR_WARN(managers, "manage statements are not stable and may change");
+  }
+
+  // Used to thread context managers. Start by inserting into outer block.
+  BlockStmt* insertionPoint = ret;
+
+  for_alist(manager, managers->body) {
+    BlockStmt* managerBlock = toBlockStmt(manager);
+    INT_ASSERT(managerBlock);
+
+    // Insert the manager block at the appropriate point.
+    managerBlock->remove();
+    insertionPoint->insertAtTail(managerBlock);
+
+    BlockStmt* lastInsertionPoint = insertionPoint;
+
+    // Scroll forward looking for the next insertion point.
+    for_alist(stmt, managerBlock->body) {
+      if (TryStmt* tryStmt = toTryStmt(stmt)) {
+        insertionPoint = tryStmt->body();
+        break;
+      }
+    }
+
+    INT_ASSERT(insertionPoint != lastInsertionPoint);
+
+    // Flatten the manager block once we've found the insertion point.
+    managerBlock->flattenAndRemove();
+  }
+
+  // Lastly, insert the managed block (containing user code).
+  insertionPoint->insertAtTail(block);
+  block->flattenAndRemove();
+
+  return ret;
+}
+
 // builds an unconditional local statement. Used by the conditional
 // overload and parser
 BlockStmt* buildLocalStmt(Expr* stmt) {

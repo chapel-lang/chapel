@@ -1,0 +1,7 @@
+UseSpinlockGuardBadTaskIntent.chpl:3: In function 'test1':
+UseSpinlockGuardBadTaskIntent.chpl:13: error: const actual is passed to 'ref' formal 'this' of enterThis()
+./SpinlockGuard.chpl:4: note: to formal of type spinlock(int(64))
+UseSpinlockGuardBadTaskIntent.chpl:13: error: const actual is passed to 'ref' formal 'this' of leaveThis()
+./SpinlockGuard.chpl:4: note: to formal of type spinlock(int(64))
+UseSpinlockGuardBadTaskIntent.chpl:13: error: const actual is passed to 'ref' formal 'this' of leaveThis()
+./SpinlockGuard.chpl:4: note: to formal of type spinlock(int(64))

@@ -1,0 +1,139 @@
+T1
+default-init (ptr = {x = 0})
+proc man.enterThis(): res
+doing something
+leaving
+deinit (ptr = {x = 0})
+
+T2
+default-init (ptr = {x = 1})
+proc man.enterThis(): res
+doing something
+leaving
+deinit (ptr = {x = 1})
+
+T3
+default-init (ptr = {x = 2})
+proc man.enterThis(): res
+doing something
+leaving
+deinit (ptr = {x = 2})
+
+T4
+default-init (ptr = {x = 3})
+proc man.enterThis(): res
+default-init (ptr = {x = 4})
+proc man.enterThis(): res
+doing something
+leaving
+deinit (ptr = {x = 4})
+leaving
+deinit (ptr = {x = 3})
+
+T5
+default-init (ptr = {x = 5})
+default-init (ptr = {x = 6})
+proc man.enterThis(): res
+proc man.enterThis(): res
+doing something
+leaving
+leaving
+deinit (ptr = {x = 6})
+deinit (ptr = {x = 5})
+
+T6: resource is explicitly var
+default-init (ptr = {x = 7})
+proc man.enterThis() const ref: res
+doing something with resource
+leaving
+deinit (ptr = {x = 7})
+
+T7: resource is explicitly ref
+default-init (ptr = {x = 8})
+proc man.enterThis() ref: res
+doing something with resource
+leaving
+deinit (ptr = {x = 8})
+
+T8: resource is explicitly const ref
+default-init (ptr = {x = 9})
+proc man.enterThis() const ref: res
+doing something with resource
+leaving
+deinit (ptr = {x = 9})
+
+T9: resource is explicitly var
+default-init (ptr = {x = 10})
+proc man.enterThis() const ref: res
+doing something with resource
+leaving
+deinit (ptr = {x = 10})
+
+T10: resource is explicitly ref
+default-init (ptr = {x = 11})
+proc man.enterThis() ref: res
+doing something with resource
+leaving
+deinit (ptr = {x = 11})
+
+T11: resource is explicitly const ref
+default-init (ptr = {x = 12})
+proc man.enterThis() const ref: res
+doing something with resource
+leaving
+deinit (ptr = {x = 12})
+
+T12: nested managers, mixed resource storage types
+default-init (ptr = {x = 13})
+proc man.enterThis() const ref: res
+default-init (ptr = {x = 14})
+proc man.enterThis() ref: res
+default-init (ptr = {x = 15})
+proc man.enterThis() const ref: res
+doing something with resource
+doing something with resource
+doing something with resource
+leaving
+deinit (ptr = {x = 15})
+leaving
+deinit (ptr = {x = 14})
+leaving
+deinit (ptr = {x = 13})
+
+T13: nested managers, mixed resource storage types
+default-init (ptr = {x = 16})
+default-init (ptr = {x = 17})
+default-init (ptr = {x = 18})
+proc man.enterThis() const ref: res
+proc man.enterThis() ref: res
+proc man.enterThis() const ref: res
+doing something with resource
+doing something with resource
+doing something with resource
+leaving
+leaving
+leaving
+deinit (ptr = {x = 18})
+deinit (ptr = {x = 17})
+deinit (ptr = {x = 16})
+
+T14: same manager nested, mixed resource storage types
+default-init (ptr = {x = 19})
+proc man.enterThis() const ref: res
+proc man.enterThis() ref: res
+proc man.enterThis() const ref: res
+doing something with resource
+doing something with resource
+doing something with resource
+leaving
+leaving
+leaving
+deinit (ptr = {x = 19})
+
+T15: storage kind of resource omitted
+default-init (ptr = {x = 20})
+proc man.enterThis() const ref: res
+doing something with resource
+leaving
+deinit (ptr = {x = 20})
+
