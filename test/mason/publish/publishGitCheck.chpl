@@ -1,12 +1,9 @@
 use FileSystem;
-use MasonPublish;
-use MasonUtils;
-use Spawn;
-use TOML;
 use MasonNew;
+use MasonPublish;
 
 proc main(){
-  masonNew(['mason', 'new', 'publishCheck']);
+  masonNew(['new', 'publishCheck']);
   var pwd = here.cwd();
   here.chdir(pwd + '/publishCheck');
   if doesGitOriginExist() == false {

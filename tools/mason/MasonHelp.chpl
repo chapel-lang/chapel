@@ -392,7 +392,7 @@ proc masonSystemSearchHelp() {
   writeln("Search for packages on system found via pkg-config");
   writeln();
   writeln("Usage:");
-  writeln("    mason search [options]");
+  writeln("    mason system search [options]");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");
@@ -405,7 +405,7 @@ proc masonSystemPcHelp() {
   writeln("Print a package's .pc file (pkg-config file)");
   writeln();
   writeln("Usage:");
-  writeln("    mason pc [options]");
+  writeln("    mason system pc [options]");
   writeln();
   writeln("Options:");
   writeln("    -h, --help                  Display this message");

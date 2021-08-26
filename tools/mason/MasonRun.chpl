@@ -199,6 +199,7 @@ private proc masonBuildRun(args: [?d] string) {
       if release then execopts.append("--release");
       if force then execopts.append("--force");
       if show then execopts.append("--show");
+      execopts.insert(0,"example");
       masonExample(execopts.toArray());
     }
     else {
@@ -210,7 +211,6 @@ private proc masonBuildRun(args: [?d] string) {
       if release then buildArgs.append("--release");
       if force then buildArgs.append("--force");
       if show then buildArgs.append("--show");
-
       masonBuild(buildArgs.toArray());
       runProjectBinary(show, release, execopts);
     }

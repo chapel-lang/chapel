@@ -41,7 +41,6 @@ proc masonBuild(args: [] string) throws {
   var opt = false;
   var example = false;
   var skipUpdate = MASON_OFFLINE;
-
   if args.size > 2 {
 
     // strip off the first two indices
@@ -94,6 +93,7 @@ proc masonBuild(args: [] string) throws {
     if show then compopts.append("--show");
     if release then compopts.append("--release");
     if force then compopts.append("--force");
+    compopts.insert(0,"example");
     masonExample(compopts.toArray());
   }
   else {

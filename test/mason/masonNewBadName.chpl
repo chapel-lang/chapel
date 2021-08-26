@@ -1,10 +1,8 @@
-use MasonUtils;
-use FileSystem;
 use MasonNew;
 
 config const name="";
 
 proc main() {
-  const args = ['mason','new', name];
+  const args = ['new', name];
   masonNew(args);
 }

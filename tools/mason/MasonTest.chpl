@@ -19,19 +19,21 @@
  */
 
 
-private use List;
-private use Map;
-use TOML;
-use Time;
-use Spawn;
-use MasonUtils;
+use FileSystem;
+use List;
+use Map;
+use MasonArgParse;
+use MasonBuild;
 use MasonHelp;
 use MasonUpdate;
-use MasonBuild;
+use MasonUtils;
 use Path;
-use FileSystem;
-use TestResult;
+use Spawn;
 use Sys;
+use TestResult;
+use Time;
+use TOML;
+
 
 var subdir = false;
 var keepExec = false;
@@ -259,7 +261,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         var testPath: string;
         if customTest {
           testPath = "".join(cwd,"/",test);
-        } 
+        }
         else {
           testPath = "".join(projectHome, '/test/', test);
         }
@@ -277,7 +279,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         const moveTo = "-o " + outputLoc;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
         const compilation = runWithStatus(compCommand, show);
-        
+
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
           const errMsg = test +" failed to compile";
@@ -311,7 +313,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
 }
 
 
-private proc runTestBinary(projectHome: string, outputLoc: string, testName: string, 
+private proc runTestBinary(projectHome: string, outputLoc: string, testName: string,
                         ref result, show: bool) {
   const command = outputLoc;
   var testNames: list(string),
@@ -467,7 +469,7 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
       if files.size == 0 && dirs.size == 0 {
         dirs.append(".");
       }
-      
+
       var result =  new TestResult();
       var timeElapsed = new Timer();
       timeElapsed.start();
@@ -496,9 +498,9 @@ proc runUnitTest(ref cmdLineCompopts: list(string), show: bool) {
     else {
       writeln("chpl not found.");
       exit(2);
-    } 
+    }
   }
-  
+
 }
 
 pragma "no doc"
@@ -570,8 +572,8 @@ proc testDirectory(dir, ref result, show: bool) throws {
 pragma "no doc"
 /*Docs: Todo*/
 proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales,
-              ref testsPassed, ref testNames, ref localesCountMap, 
-              ref failedTestNames, ref erroredTestNames, ref skippedTestNames, show: bool): int throws 
+              ref testsPassed, ref testNames, ref localesCountMap,
+              ref failedTestNames, ref erroredTestNames, ref skippedTestNames, show: bool): int throws
 {
   var separator1 = result.separator1,
       separator2 = result.separator2;
@@ -589,7 +591,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
 
   var currentRunningTests: list(string);
   var exitCode: int;
-  
+
   //
   // List has a different `writeThis` format than arrays, since it encloses
   // the collection with brackets "[0, 1, 2, 3, ..., N]". This will cause
@@ -602,10 +604,10 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
   if erroredTestNames.size != 0 then erroredTestNamesStr = erroredTestNames.toArray(): string;
   if testsPassed.size != 0 then passedTestStr = testsPassed.toArray(): string;
   if skippedTestNames.size != 0 then skippedTestNamesStr = skippedTestNames.toArray(): string;
-  var exec = spawn([executable, "-nl", reqNumLocales: string, "--testNames", 
-            testNamesStr,"--failedTestNames", failedTestNamesStr, "--errorTestNames", 
-            erroredTestNamesStr, "--ranTests", passedTestStr, "--skippedTestNames", 
-            skippedTestNamesStr], stdout = PIPE, 
+  var exec = spawn([executable, "-nl", reqNumLocales: string, "--testNames",
+            testNamesStr,"--failedTestNames", failedTestNamesStr, "--errorTestNames",
+            erroredTestNamesStr, "--ranTests", passedTestStr, "--skippedTestNames",
+            skippedTestNamesStr], stdout = PIPE,
             stderr = PIPE); //Executing the file
   //std output pipe
   while exec.stdout.readline(line) {
@@ -614,8 +616,8 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
       var testName = try! currentRunningTests.pop();
       if testNames.count(testName) != 0 then
         try! testNames.remove(testName);
-      addTestResult(result, localesCountMap, testNames, flavour, fileName, 
-                testName, testExecMsg, failedTestNames, erroredTestNames, 
+      addTestResult(result, localesCountMap, testNames, flavour, fileName,
+                testName, testExecMsg, failedTestNames, erroredTestNames,
                 skippedTestNames, testsPassed, show);
       testExecMsg = "";
       sep1Found = false;
@@ -635,11 +637,11 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
             testNames.append(testName);
         }
         testExecMsg = "";
-      }  
+      }
     }
   }
   //this is to check the error
-  if exec.stderr.readline(line) { 
+  if exec.stderr.readline(line) {
     var testErrMsg = line;
     while exec.stderr.readline(line) do testErrMsg += line;
     if !currentRunningTests.isEmpty() {
@@ -675,10 +677,10 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
 
 pragma "no doc"
 /*Docs: Todo*/
-proc addTestResult(ref result, ref localesCountMap, ref testNames, 
-                  flavour, fileName, testName, errMsg, ref failedTestNames, 
+proc addTestResult(ref result, ref localesCountMap, ref testNames,
+                  flavour, fileName, testName, errMsg, ref failedTestNames,
                   ref erroredTestNames, ref skippedTestNames, ref testsPassed,
-                  show: bool) throws 
+                  show: bool) throws
 {
   select flavour {
     when "OK" {
@@ -714,7 +716,7 @@ proc addTestResult(ref result, ref localesCountMap, ref testNames,
       }
       else {
         var locErrMsg = "Not a MultiLocale Environment. $CHPL_COMM = " + comm + "\n";
-        locErrMsg += errMsg; 
+        locErrMsg += errMsg;
         result.addSkip(testName, fileName, locErrMsg);
         skippedTestNames.append(testName);
       }

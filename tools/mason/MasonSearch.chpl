@@ -18,16 +18,17 @@
  * limitations under the License.
  */
 
-private use List;
-use MasonHelp;
+use FileSystem;
+use IO;
+use List;
+use MasonArgParse;
 use MasonEnv;
+use MasonHelp;
 use MasonUpdate;
 use MasonUtils;
-use TOML;
-use Sort;
-use FileSystem;
 use Regex;
-use IO;
+use Sort;
+use TOML;
 
 //
 // TODO:
@@ -46,29 +47,51 @@ proc masonSearch(args: [?d] string) {
 }
 
 proc masonSearch(ref args: list(string)) {
-  if hasOptions(args, "-h", "--help") {
+  var parser = new argumentParser();
+
+  var helpFlag = parser.addFlag("help",
+                                opts=["-h","--help"],
+                                defaultValue=false,
+                                flagInversion=false);
+  // TODO: Is the debug flag supposed to be documented in help or not?
+  var debugFlag = parser.addFlag("debug",
+                                opts=["--debug"],
+                                defaultValue=false,
+                                flagInversion=false);
+  var showFlag = parser.addFlag(name="show",
+                                opts=["--show"],
+                                defaultValue=false,
+                                flagInversion=false);
+  var updateFlag = parser.addFlag(name="update",
+                                  opts=["--update"],
+                                  flagInversion=true);
+  var queryArg = parser.addArgument(name="query",
+                                    numArgs=0..1,
+                                    defaultValue=".*");
+  try! {
+    parser.parseArgs(args.toArray());
+  }
+  catch ex : ArgumentError {
+    stderr.writeln(ex.message());
+    masonSearchHelp();
+    exit(1);
+  }
+  if helpFlag.valueAsBool() {
     masonSearchHelp();
     exit(0);
   }
 
-  const show = hasOptions(args, "--show");
-  const debug = hasOptions(args, "--debug");
+  const show = showFlag.valueAsBool();
+  const debug = debugFlag.valueAsBool();
   var skipUpdate = MASON_OFFLINE;
-  if hasOptions(args, "--update") {
-    skipUpdate = false;
-  }
-
-  if hasOptions(args, "--no-update") {
-    skipUpdate = true;
+  if updateFlag.hasValue() {
+    skipUpdate = !updateFlag.valueAsBool();
   }
 
   updateRegistry(skipUpdate);
 
-  consumeArgs(args);
-
   // If no query is provided, list all packages in registry
-  const query = if args.size > 0 then args[args.size-1].toLower()
-                else ".*";
+  const query = queryArg.value().toLower();
   const pattern = compile(query, ignoreCase=true);
   var results: list(string);
   var packages: list(string);
@@ -180,7 +203,7 @@ proc touch(pathToReg: string) {
 proc getPackageScores(res: [] string) {
   use Map;
   const pathToReg = MASON_HOME + "/mason-registry/cache.toml";
-  var cacheExists: bool = false;
+  var cacheExists = false;
   if isFile(pathToReg) then cacheExists = true;
   if !cacheExists then touch(pathToReg);
   const parse = open(pathToReg, iomode.r);
@@ -255,20 +278,6 @@ proc findLatest(packageDir: string): VersionInfo {
   }
   return ret;
 }
-
-proc consumeArgs(ref args : list(string)) {
-  args.pop(0);
-  const sub = args[0];
-  assert(sub == "search");
-  args.pop(0);
-
-  const options = {"--no-update", "--debug", "--show"};
-
-  while args.size > 0 && options.contains(args[0]) {
-    args.pop(0);
-  }
-}
-
 
 /* Print a TOML file. Expects full path. */
 proc showToml(tomlFile : string) {

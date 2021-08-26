@@ -1,5 +1,5 @@
 
-private use List;
+use List;
 use MasonEnv;
 use MasonSearch;
 use MasonUtils;
@@ -83,10 +83,10 @@ proc main() {
 
   buildFakeRegistry(altRegistry);
 
-  masonEnv(["foo", "env"]);
+  masonEnv(["env"]);
 
   var args1: list(string);
-  for x in ["foo", "search"] do args1.append(x);
+  for x in ["search"] do args1.append(x);
   masonSearch(args1);
 
   assert(isDir(altRegistry));

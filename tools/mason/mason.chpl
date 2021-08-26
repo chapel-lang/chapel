@@ -134,22 +134,22 @@ proc main(args: [] string) throws {
   // while add and rm are taking just the args from the subcommand onward
   try {
     select (usedCmd) {
-      when "new" do masonNew(args);
-      when "init" do masonInit(args);
       when "add" do masonModify(cmdArgs);
-      when "rm" do masonModify(cmdArgs);
       when "build" do masonBuild(args);
-      when "update" do masonUpdate(args);
-      when "run" do masonRun(args);
-      when "search" do masonSearch(args);
-      when "system" do masonSystem(args);
-      when "external" do masonExternal(args);
-      when "test" do masonTest(args);
-      when "env" do masonEnv(args);
-      when "doc" do masonDoc(args);
-      when "publish" do masonPublish(args);
       when "clean" do masonClean(args);
+      when "doc" do masonDoc(cmdArgs);
+      when "env" do masonEnv(cmdArgs);
+      when "external" do masonExternal(cmdArgs);
       when "help" do masonHelp();
+      when "init" do masonInit(cmdArgs);
+      when "new" do masonNew(cmdArgs);
+      when "publish" do masonPublish(cmdArgs);
+      when "rm" do masonModify(cmdArgs);
+      when "run" do masonRun(args);
+      when "search" do masonSearch(cmdArgs);
+      when "system" do masonSystem(cmdArgs);
+      when "test" do masonTest(args);
+      when "update" do masonUpdate(cmdArgs);
       when "version" do printVersion();
       otherwise {
         throw new owned MasonError("No such subcommand \ntry mason --help");
