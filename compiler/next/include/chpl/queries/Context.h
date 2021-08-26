@@ -112,6 +112,9 @@ There are some requirements on query argument/key types and on result types:
  * argument/key types must have ``std::equal_to<KeyType>``
  * result types must have ``chpl::update<MyResultType>`` implemented
  * result types must be default constructable
+ * If the result contains or refers to any UniqueString, the result type
+   must have ``chpl::mark<MyResultType>`` implemented to call ``mark``
+   on the UniqueString(s).
 
 .. code-block:: c++
 
@@ -130,7 +133,8 @@ There are some requirements on query argument/key types and on result types:
     }
 
 The process of computing a query and checking to see if it matches a saved
-result requires that the result type implement ``chpl::update``:
+result requires that the result type implement ``chpl::update`` and
+possible ``chpl::mark``:
 
 .. code-block:: c++
 
@@ -139,6 +143,11 @@ result requires that the result type implement ``chpl::update``:
         bool operator()(chpl::MyResultType& keep,
                         chpl::MyResultType& addin) const {
           return doSomethingToCombine...;
+        }
+        template<> struct mark<MyResultType> {
+        void operator()(Context* context,
+                        chpl::MyResultType& keep) const {
+          keep.markUniqueStrings(context);
         }
       };
 
@@ -179,6 +188,13 @@ these AST element pointers, but not owning them. In that event, the
 ``listSymbols`` query needs to use a ``update`` function that does not look
 into the AST element pointers. However it can compare the pointers themselves
 because the ``parse`` query will update the pointer if the contents change.
+
+In some situations, the query framework can reuse a result without running the
+``update`` function for it. That can happen when all dependencies have been
+checked in this revision and the dependencies are all reused. In that event, the
+UniqueStrings that are contianed in or referred to by the result need to be
+marked so that any UniqueStrings not used can be garbage collected. This is
+accomplished by calling the ``mark`` function.
 
 \endrst
 
