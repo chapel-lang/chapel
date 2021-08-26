@@ -931,6 +931,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   gasnet_set_waitmode(GASNET_WAIT_BLOCK);
 
+  // not supported on this platform
+  chpl_set_num_locales_on_node(1);
 }
 
 void chpl_comm_post_mem_init(void) {

@@ -672,7 +672,7 @@ static void setupWorkStealing(void) {
 
 static void setupSpinWaiting(void) {
   const char *crayPlatform = "cray-x";
-  if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+  if (chpl_get_oversubscribed()) {
     chpl_qt_setenv("SPINCOUNT", "300", 0);
   } else if (strncmp(crayPlatform, CHPL_TARGET_PLATFORM, strlen(crayPlatform)) == 0) {
     chpl_qt_setenv("SPINCOUNT", "3000000", 0);
@@ -680,7 +680,7 @@ static void setupSpinWaiting(void) {
 }
 
 static void setupAffinity(void) {
-  if (chpl_env_rt_get_bool("OVERSUBSCRIBED", false)) {
+  if (chpl_get_oversubscribed()) {
     chpl_qt_setenv("AFFINITY", "no", 0);
   }
 

@@ -135,7 +135,6 @@ static fi_addr_t* ofi_rxAddrs;          // table of remote endpoint addresses
 static chpl_bool envPreferScalableTxEp; // env: prefer scalable tx endpoint?
 static int envCommConcurrency;          // env: communication concurrency
 static ssize_t envMaxHeapSize;          // env: max heap size
-static chpl_bool envOversubscribed;     // env over-subscribed?
 
 static int numTxCtxs;
 static int numRxCtxs;
@@ -940,7 +939,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   time_init();
   chpl_comm_ofi_oob_init();
   DBG_INIT();
-
+  int32_t count = chpl_comm_ofi_oob_locales_on_node();
+  chpl_set_num_locales_on_node(count);
   //
   // Gather run-invariant environment info as early as possible.
   //
@@ -954,8 +954,6 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   }
 
   envMaxHeapSize = chpl_comm_getenvMaxHeapSize();
-
-  envOversubscribed = chpl_env_rt_get_bool("OVERSUBSCRIBED", false);
 
   //
   // The user can specify the provider by setting either the Chapel
@@ -1900,19 +1898,8 @@ struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced) {
                                  | FI_MR_VIRT_ADDR
                                  | FI_MR_PROV_KEY // TODO: avoid pkey bcast?
                                  | FI_MR_ENDPOINT);
-  // 
-  // Consider ourselves oversubscribed if either the environment variable is set or
-  // there is more than one locale on the local node. The call to
-  // chpl_comm_ofi_oob_locales_on_node was added to prevent chapcs from using the
-  // verbs;ofi_rxm provider which currently doesn't work and shouldn't be selected
-  // even if CHPL_RT_OVERSUBSCRIBED isn't set.   The logic for setting
-  // FI_MR_ALLOCATED should be revisited as oversubscription alone isn't a
-  // sufficient reason.
-  //
-  int num_locales_on_node = chpl_comm_ofi_oob_locales_on_node();
-  chpl_bool oversubscribed = envOversubscribed || (num_locales_on_node > 1);
 
-  if (chpl_numNodes > 1 && envMaxHeapSize != 0 && !oversubscribed) {
+  if (chpl_numNodes > 1 && envMaxHeapSize != 0 && !chpl_get_oversubscribed()) {
     hints->domain_attr->mr_mode |= FI_MR_ALLOCATED;
   }
 
@@ -2974,7 +2961,7 @@ void init_fixedHeap(void) {
   //
   uint64_t max_heap_memory = (size_t) (0.85 * total_memory);
 
-  int num_locales_on_node = chpl_comm_ofi_oob_locales_on_node();
+  int num_locales_on_node = chpl_get_num_locales_on_node();
   size_t max_heap_per_locale = (size_t) (max_heap_memory / num_locales_on_node);
 
 
