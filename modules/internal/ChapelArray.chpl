@@ -4193,9 +4193,6 @@ module ChapelArray {
       if chpl__compatibleForBulkTransfer(a, b, kind) {
         done = chpl__bulkTransferArray(a, b);
       }
-      else if chpl__compatibleForWidePtrBulkTransfer(a, b, kind) {
-        done = chpl__bulkTransferPtrArray(a, b);
-      }
       // If we did a bulk transfer, it just bit copied, so need to
       // run copy initializer still
       if done {
@@ -4210,43 +4207,6 @@ module ChapelArray {
     if !done {
       chpl__transferArray(a, b, kind);
     }
-  }
-
-  proc chpl__compatibleForWidePtrBulkTransfer(a, b,
-                                              param kind=_tElt.assign) param {
-    if !useBulkPtrTransfer then return false;
-
-    // TODO: for now we are limiting ourselves to default rectangulars
-    if !(a._value.isDefaultRectangular() &&
-         b._value.isDefaultRectangular()) then return false;
-
-    if a.eltType != b.eltType then return false;
-
-    // only classes have pointer assignment semantics
-    if !isClass(a.eltType) then return false;
-
-    // ownership transfer is complicated
-    if isOwnedClass(a.eltType) then return false;
-
-    // shared array assignment seems to be handled differently, but prevent them
-    // here, too, just in case.
-    if isSharedClass(a.eltType) then return false;
-
-    return true;
-  }
-
-  inline proc chpl__bulkTransferPtrArray(ref a: [], b: []) {
-    // for now assume they are both local arrays, that have the same bounds
-    const aDom = a.domain;
-    const bDom = b.domain;
-    if aDom != bDom then return false;
-
-     // TODO can we omit the following check and bulk transfer narrow
-     // pointers, too
-    if __primitive("is wide pointer", a[aDom.low]) {
-      return chpl__bulkTransferArray(a, aDom, b, bDom);
-    }
-    return false;
   }
 
   inline proc chpl__bulkTransferArray(ref a: [?AD], b : [?BD]) {
