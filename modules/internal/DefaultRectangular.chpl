@@ -1924,6 +1924,7 @@ module DefaultRectangular {
     return true;
   }
 
+  // sets A based on B
   private proc _simpleTransfer(A, aView, B, bView) {
     param rank     = A.rank;
     type idxType   = A.idxType;
