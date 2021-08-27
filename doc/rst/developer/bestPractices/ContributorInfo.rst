@@ -10,7 +10,7 @@ Chapel workflow recommendations.
 Below are instructions for setting up a GitHub account, developing a
 feature, and submitting pull requests.
 
-.. note:: All commits must be signed according to the DCO (see below) in order to be merged.
+.. note:: All commits must be signed according to the DCO (see below) to be merged.
 
 Overview:
 
@@ -634,10 +634,6 @@ non-meaningful commits:
 Note that this can be particularly cumbersome when there has been significant
 conflicting changes made on upstream main, so it is not a hard requirement.
 
-An alternative approach is to use the "squash and merge" option on the GitHub
-merge button which will reduce all commits to a single commit.  Make sure that
-single commit has a DCO signature.
-
 It's not generally possible to completely remove a commit from git by the time
 it makes it in to the main branch. So be very careful not to commit anything
 that you might regret later (e.g., sensitive code, code owned by anyone other
@@ -669,8 +665,8 @@ Reviewer responsibilities
 
 * Care may need to be taken when committing third-party code that
   originates from a different git[hub] repository.  There is a 
-  contributor's agreement that might be needed.  Have a discussion
-  with core developers before doing this.
+  contributor's agreement that might be needed.  We may also need to do a 
+  licensing review.  Have a discussion with core developers before doing this.
  
 .. _Chapel Developers: https://chapel.discourse.group/c/developers
 .. _Chapel Users: https://chapel.discourse.group/c/users
