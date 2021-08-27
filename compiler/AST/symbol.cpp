@@ -1595,9 +1595,6 @@ void createInitStringLiterals() {
     // unescape the string and compute its length
     std::string unescapedString =
       unescapeString(s->immediate->to_string().c_str(), s);
-    int64_t numCodepoints = 0;
-    const bool ret = isValidString(unescapedString, &numCodepoints);
-    INT_ASSERT(ret); // should be checked earlier
     int64_t strLength = unescapedString.length();
     const char* cstr = s->immediate->string_value();
 
@@ -1664,21 +1661,6 @@ VarSymbol *new_StringSymbol(const char *str) {
   // after normalization we need to insert everything in normalized form. We
   // also need to disable parts of normalize from running on literals inserted
   // at parse time.
-  std::string unescapedString = unescapeString(str, nullptr);
-  int64_t numCodepoints = 0;
-  const bool ret = isValidString(unescapedString, &numCodepoints);
-  if (!ret) {
-    USR_FATAL_CONT("Invalid string literal");
-
-    // We want to keep the compilation going here so that we can catch other
-    // invalid string literals without having to compile again. However,
-    // returning `s` (i.e. NULL at this point) does not work well with the rest
-    // of the compilation. At the same time we should avoid adding invalid
-    // sequences to stringLiteralsHash. Therefore, set a flag to note that this
-    // string is invalid and should not be added to stringLiteralsHash.
-    invalid = true;
-  }
-
   s = new VarSymbol(astr("_str_literal_", istr(literal_id++)), dtString);
   s->addFlag(FLAG_NO_AUTO_DESTROY);
   s->addFlag(FLAG_CONST);
@@ -1691,6 +1673,22 @@ VarSymbol *new_StringSymbol(const char *str) {
 
   s->immediate = new Immediate;
   *s->immediate = imm;
+
+  std::string unescapedString = unescapeString(str, s);
+  int64_t numCodepoints = 0;
+  const bool ret = isValidString(unescapedString, &numCodepoints);
+  if (!ret) {
+    USR_FATAL_CONT(s, "Invalid string literal");
+
+    // We want to keep the compilation going here so that we can catch other
+    // invalid string literals without having to compile again. However,
+    // returning `s` (i.e. NULL at this point) does not work well with the rest
+    // of the compilation. At the same time we should avoid adding invalid
+    // sequences to stringLiteralsHash. Therefore, set a flag to note that this
+    // string is invalid and should not be added to stringLiteralsHash.
+    invalid = true;
+  }
+
   if (!invalid) {
     stringLiteralsHash.put(s->immediate, s);
   }
