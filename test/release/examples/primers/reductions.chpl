@@ -41,7 +41,7 @@ writeln();
    and dividing by the number of elements it contains.
 */
 
-var eltAvg = (+ reduce A) / size**2;
+var eltAvg = (+ reduce A) / size;
 writeln("The average element of A has the value ", eltAvg);
 writeln();
 
