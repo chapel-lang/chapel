@@ -152,7 +152,7 @@ module Curl {
 
     var err:syserr = ENOERR;
 
-    if (arg.type == slist) && (slist.home != ch.home) {
+    if (arg.type == slist) && (arg.home != ch.home) {
       throw SystemError.fromSyserr(EINVAL, "in channel.setopt(): slist, and curl handle do not reside on the same locale");
     }
 
@@ -402,6 +402,12 @@ module Curl {
   extern proc curl_multi_remove_handle(curlm:c_ptr(CURLM), curl:c_ptr(CURL)):CURLMcode;
   /* See https://curl.haxx.se/libcurl/c/curl_multi_cleanup.html */
   extern proc curl_multi_cleanup(curlm:c_ptr(CURLM)):CURLcode;
+
+  /* See https://curl.haxx.se/libcurl/c/curl_slist_append.html */
+  extern proc curl_slist_append(csl: c_ptr(curl_slist), char: c_string)
+    : c_ptr(curl_slist);
+  /* See https://curl.haxx.se/libcurl/c/curl_slist_free_all.html */
+  extern proc curl_slist_free_all(csl: c_ptr(curl_slist));
 
   pragma "no doc"
   module CurlQioIntegration {
