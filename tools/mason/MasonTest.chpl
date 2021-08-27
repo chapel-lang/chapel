@@ -48,68 +48,84 @@ var files: list(string);
 */
 proc masonTest(args: [] string) throws {
 
-  var show = false;
-  var run = true;
-  var parallel = false;
+  var parser = new argumentParser();
+
+  var helpFlag = parser.addFlag("help",
+                                opts=["-h","--help"],
+                                defaultValue=false,
+                                flagInversion=false);
+  var showFlag = parser.addFlag(name="show",
+                                opts=["--show"],
+                                defaultValue=false,
+                                flagInversion=false);
+  var runFlag = parser.addFlag(name="run",
+                               opts=["--no-run"],
+                               defaultValue=false,
+                               flagInversion=false);
+  var keepFlag = parser.addFlag(name="keep-binary",
+                                  opts=["--keep-binary"],
+                                  defaultValue=false,
+                                  flagInversion=false);
+  var recursFlag = parser.addFlag(name="recursive",
+                                  opts=["--recursive"],
+                                  defaultValue=false,
+                                  flagInversion=false);
+  var parFlag = parser.addFlag(name="parallel",
+                               opts=["--parallel"],
+                               defaultValue=false,
+                               flagInversion=false);
+  var updateFlag = parser.addFlag(name="update",
+                                  opts=["--update"],
+                                  flagInversion=true);
+  var setCommOpt = parser.addOption(name="setComm",
+                                 opts=["--setComm"],
+                                 defaultValue="none");
+  // TODO: Why doesn't masonTest support a passthrough for values that should
+  // go to the runtime?
+  var otherArgs = parser.addArgument(name="others", numArgs=0..);
+
+  try! {
+    parser.parseArgs(args);
+  }
+  catch ex : ArgumentError {
+    stderr.writeln(ex.message());
+    masonTestHelp();
+    exit(1);
+  }
+  if helpFlag.valueAsBool() {
+    masonTestHelp();
+    exit(0);
+  }
+
   var skipUpdate = MASON_OFFLINE;
+  var show = showFlag.valueAsBool();
+  var run = !runFlag.valueAsBool();
+  var parallel = parFlag.valueAsBool();
+  keepExec = keepFlag.valueAsBool();
+  subdir = recursFlag.valueAsBool();
+  if updateFlag.hasValue() {
+    skipUpdate = !updateFlag.valueAsBool();
+  }
+  if setCommOpt.hasValue() then setComm = setCommOpt.value();
+
+
   var compopts: list(string);
   var searchSubStrings: list(string);
-  var countArgs = args.indices.low+2;
-  for arg in args[args.indices.low+2..args.indices.high] {
-    countArgs += 1;
-    select (arg) {
-      when '-h'{
-        masonTestHelp();
-        exit(0);
-      }
-      when '--help'{
-        masonTestHelp();
-        exit(0);
-      }
-      when '--show'{
-        show = true;
-      }
-      when '--no-run'{
-        run = false;
-      }
-      when '--parallel' {
-        parallel = true;
-      }
-      when '--' {
-        throw new owned MasonError("Testing does not support -- syntax");
-      }
-      when '--keep-binary' {
-        keepExec = true;
-      }
-      when '--recursive' {
-        subdir = true;
-      }
-      when '--update' {
-        skipUpdate = false;
-      }
-      when '--no-update' {
-        skipUpdate = true;
-      }
-      when '--setComm' {
-        setComm = args[countArgs];
-      }
-      otherwise {
-        if arg.startsWith('--setComm='){
-          setComm = arg['--setComm='.size..];
+
+  if otherArgs.hasValue() {
+    for arg in otherArgs.values() {
+      try! {
+        if isFile(arg) && arg.endsWith(".chpl") {
+          files.append(arg);
         }
-        try! {
-          if isFile(arg) && arg.endsWith(".chpl") {
-            files.append(arg);
-          }
-          else if isDir(arg) {
-            dirs.append(arg);
-          }
-          else if arg.startsWith('-') {
-            compopts.append(arg);
-          }
-          else {
-            searchSubStrings.append(arg);
-          }
+        else if isDir(arg) {
+          dirs.append(arg);
+        }
+        else if arg.startsWith('-') {
+          compopts.append(arg);
+        }
+        else {
+          searchSubStrings.append(arg);
         }
       }
     }

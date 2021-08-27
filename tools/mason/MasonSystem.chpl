@@ -126,30 +126,7 @@ proc pkgSearch(args) throws {
     listAllPkgs();
     exit(0);
   }
-  // if args.size < 4 {
-  //   listAllPkgs();
-  //   exit(0);
-  // }
-  // else {
-  //   for arg in args[3..] {
-  //     if arg == '-h' || arg == '--help' {
-  //       masonSystemSearchHelp();
-  //       exit(0);
-  //     }
-  //     else if arg == "--desc" {
-  //       desc=true;
-  //     }
-  //     else if arg == "--no-show-desc" {
-  //       quiet = true;
-  //     }
-  //     else {
-  //       pkgName = arg;
-  //     }
-  //   }
-  // }
-  // if pkgName == "" {
-  //   throw new owned MasonError("Must include a package name");
-  // }
+
   const pattern = compile(pkgName, ignoreCase=true);
   const command = "pkg-config --list-all";
   const cmd = command.split();

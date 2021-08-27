@@ -81,43 +81,7 @@ proc masonExample(args: [] string) {
   if exampleOpts.hasValue() {
     for ex in exampleOpts.values() do examples.append(ex);
   }
-  // for arg in args {
-  //   if arg == '--show' {
-  //     show = true;
-  //   }
-  //   else if arg == '--no-run' {
-  //     run = false;
-  //   }
-  //   else if arg == '--no-build' {
-  //     build = false;
-  //   }
-  //   else if arg == '--release' {
-  //     release = true;
-  //   }
-  //   else if arg == '--force' {
-  //     force = true;
-  //   }
-  //   else if arg == '--no-update' {
-  //     skipUpdate = true;
-  //   }
-  //   else if arg == '--update' {
-  //     skipUpdate = false;
-  //   }
-  //   else if arg.startsWith('--example=') {
-  //     var exampleProgram = arg.split("=");
-  //     examples.append(exampleProgram[1]);
-  //     continue;
-  //   }
-  //   else if arg == '--example' {
-  //     continue;
-  //   }
-  //   else if arg == '--build' {
-  //     continue;
-  //   }
-  //   else {
-  //     examples.append(arg);
-  //   }
-  // }
+
   updateLock(skipUpdate);
   runExamples(show, run, build, release, force, examples);
 }

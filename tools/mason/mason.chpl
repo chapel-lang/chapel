@@ -148,7 +148,7 @@ proc main(args: [] string) throws {
       when "run" do masonRun(args);
       when "search" do masonSearch(cmdArgs);
       when "system" do masonSystem(cmdArgs);
-      when "test" do masonTest(args);
+      when "test" do masonTest(cmdArgs);
       when "update" do masonUpdate(cmdArgs);
       when "version" do printVersion();
       otherwise {

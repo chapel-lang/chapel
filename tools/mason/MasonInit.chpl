@@ -71,44 +71,9 @@ proc masonInit(args: [] string) throws {
     var dirName = '';
     var show = showFlag.valueAsBool();
     var packageName = '';
-    //var countArgs = args.domain.low + 2;
     var defaultBehavior = defaultFlag.valueAsBool();
     if nameOpt.hasValue() then packageName = nameOpt.value();
     if dirArg.hasValue() then dirName = dirArg.value();
-    // for arg in args[args.domain.low+2..] {
-    //   countArgs += 1;
-    //   select (arg) {
-    //     when '-h' {
-    //       masonInitHelp();
-    //       exit();
-    //     }
-    //     when '--help' {
-    //       masonInitHelp();
-    //       exit();
-    //     }
-    //     when '--show' {
-    //       show = true;
-    //     }
-    //     when '-d' {
-    //       defaultBehavior = true;
-    //     }
-    //     when '--default' {
-    //       defaultBehavior = true;
-    //     }
-    //     when '--name' {
-    //       packageName = args[countArgs];
-    //     }
-    //     otherwise {
-    //       if arg.startsWith('--name=') {
-    //         var res = arg.split("=");
-    //         packageName = res[1];
-    //       }
-    //       else {
-    //         if args[countArgs - 2] != "--name" then dirName = arg;
-    //       }
-    //     }
-      // }
-    //}
 
     if dirName == '' {
       if defaultBehavior {
