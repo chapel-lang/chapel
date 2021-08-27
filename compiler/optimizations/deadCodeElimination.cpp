@@ -364,6 +364,10 @@ static bool isDeadModule(ModuleSymbol* mod) {
   if (mod == ModuleSymbol::mainModule())
     return false;
 
+  // Ditto for the string literals module
+  if (mod == stringLiteralModule)
+    return false;
+
   // Ditto for an exported module
   if (mod->hasFlag(FLAG_EXPORT_INIT))
     return false;
