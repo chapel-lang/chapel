@@ -694,9 +694,23 @@ static void outlineGPUKernels() {
 
           fn->defPoint->insertBefore(new DefExpr(outlinedFunction));
 
+          // if (chpl_task_getRequestedSubloc() > 0) {
+          //   call the generated GPU kernel
+          // } else {
+          //   run the existing loop on the CPU
+          // }
+          Expr* condExpr =
+            new CallExpr(PRIM_GREATER,
+                         new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
+                         new_IntSymbol(0));
+          BlockStmt* thenBlock = new BlockStmt();
+          BlockStmt* elseBlock = new BlockStmt();
+          CondStmt* loopCloneCond = new CondStmt(condExpr, thenBlock, elseBlock);
           BlockStmt* gpuLaunchBlock = new BlockStmt();
-          loop->insertBefore(gpuLaunchBlock);
 
+          loop->insertBefore(loopCloneCond);
+          thenBlock->insertAtHead(gpuLaunchBlock);
+          elseBlock->insertAtHead(loop->remove());
 
           for_alist(node, loop->body) {
 
@@ -780,8 +794,6 @@ static void outlineGPUKernels() {
           CallExpr* gpuCall = generateGPUCall(varBlockSize, info);
           gpuLaunchBlock->insertAtTail(gpuCall);
           gpuLaunchBlock->flattenAndRemove();
-
-          loop->remove();
 
           // just repeat the dead code elimination steps for the new function
           cleanupLoopBlocks(outlinedFunction);

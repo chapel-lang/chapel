@@ -279,6 +279,7 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GPU_GRIDDIM_X:
   case PRIM_GPU_GRIDDIM_Y:
   case PRIM_GPU_GRIDDIM_Z:
+  case PRIM_GET_REQUESTED_SUBLOC:
     return FAST_AND_LOCAL;
 
     // Temporarily unclassified (legacy) cases.
