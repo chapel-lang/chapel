@@ -648,7 +648,7 @@ Reviewer responsibilities
 
 * Test the PR you are reviewing.  Follow the instructions next to the
   "Merge pull request" button in the "command-line instructions" link
-  to checkout a local copy of the PR for testing.  They will look something
+  to check out a local copy of the PR for testing.  They will look something
   like the following:
 
 .. code-block:: bash
