@@ -111,15 +111,13 @@ when the initializer encounters an error.
 
 */
 class Replicated : BaseDist {
-  var targetLocDom : domain(here.id.type);
+  const targetLocDom : domain(1);
 
-  // the desired locales (an associative array of locales)
+  // the desired locales, arranged so index is here.id
   const targetLocales : [targetLocDom] locale;
 
-  // the desired locales as a DefaultRectangular array
-  // (to optimize communication)
-  const targetLocalesArrDom : domain(1);
-  const targetLocalesArr : [targetLocalesArrDom] locale;
+  // array indicating if targetLocales has valid data
+  const targetLocaleOk: [targetLocDom] bool;
 }
 
 
@@ -128,14 +126,37 @@ class Replicated : BaseDist {
 proc Replicated.init(const targetLocales: [] locale = Locales,
                      purposeMessage: string = "used to create a Replicated")
 {
-  this.targetLocalesArrDom = targetLocales.domain;
-  this.targetLocalesArr = targetLocales;
-  this.complete();
+  // create a local associative domain & array for the target locales
+  const locTargetLocDom = targetLocales.domain;
+  const locTargetLocalesArr:[locTargetLocDom] locale = targetLocales;
+  var locTargetLocalesDomAssoc : domain(here.id.type);
+  var maxid = here.id;
 
-  for loc in targetLocalesArr {
-    this.targetLocDom.add(loc.id);
-    this.targetLocales[loc.id] = loc;
+  for loc in locTargetLocalesArr {
+    locTargetLocalesDomAssoc += loc.id;
+    maxid = max(maxid, loc.id);
   }
+
+  var locTargetLocalesAssoc: [locTargetLocalesDomAssoc] locale;
+  for loc in locTargetLocalesArr {
+    locTargetLocalesAssoc[loc.id] = loc;
+  }
+
+  this.targetLocDom = {0..maxid};
+
+  // Now create a local DR array for the target locales,
+  // where the index is locale.id.
+  // Any elements not used will be default initialized to locale 0.
+  var locTargetLocales: [this.targetLocDom] locale;
+  var locTargetLocaleOk: [this.targetLocDom] bool;
+  for (id, loc) in zip(locTargetLocalesDomAssoc, locTargetLocalesArr) {
+    locTargetLocales[id] = loc;
+    locTargetLocaleOk[id] = true;
+  }
+
+  this.targetLocales = locTargetLocales;
+  this.targetLocaleOk = locTargetLocaleOk;
+  this.complete();
 
   if traceReplicatedDist then
     chpl_debug_writeln("Created Replicated over ", targetLocales.size);
@@ -171,7 +192,7 @@ proc Replicated.dsiPrivatize(privatizeData)
     chpl_debug_writeln("\nReplicated.dsiPrivatize on ", here.id,
                        " from ", this.locale.id);
 
-  return new unmanaged Replicated(this.targetLocalesArr,
+  return new unmanaged Replicated(this.targetLocales,
                                   "used during privatization");
 }
 
@@ -203,7 +224,7 @@ class ReplicatedDom : BaseRectangularDom {
   pragma "no doc"
   proc chpl_myLocDom() {
     if boundsChecking then
-      if (!dist.targetLocDom.contains(here.id)) then
+      if !dist.targetLocaleOk[here.id] then
         halt("locale ", here.id, " has no local replicand");
     // Force unwrap this reference for ease of use.
     return localDoms[here.id]!;
@@ -247,9 +268,9 @@ override proc ReplicatedDom.dsiMyDist() return dist;
 override proc ReplicatedDom.dsiSupportsPrivatization() param return true;
 
 record ReplicatedDomPrvData {
-  var distpid;
-  var domRep;
-  var localDoms;
+  const distpid;
+  const domRep;
+  const localDoms;
 }
 
 proc ReplicatedDom.dsiGetPrivatizeData() {
@@ -285,7 +306,7 @@ proc Replicated.dsiClone(): _to_unmanaged(this.type) {
   if traceReplicatedDist then chpl_debug_writeln("Replicated.dsiClone");
   var nonNilWrapper: [0..#targetLocales.sizeAs(int)] locale =
     for loc in targetLocales do loc;
-  return new unmanaged Replicated(nonNilWrapper);
+  return new unmanaged Replicated(targetLocales);
 }
 
 // create a new domain mapped with this distribution
@@ -446,7 +467,7 @@ class ReplicatedArr : AbsBaseArr {
   pragma "no doc"
   proc chpl_myLocArr() {
     if boundsChecking then
-      if (!dom.dist.targetLocDom.contains(here.id)) then
+      if !dom.dist.targetLocaleOk[here.id] then
         halt("locale ", here.id, " has no local replicand");
     // Force unwrap this reference for ease of use.
     return localArrs[here.id]!;
@@ -456,6 +477,10 @@ class ReplicatedArr : AbsBaseArr {
   // Access another locale's local array representation
   //
   proc replicand(loc: locale) ref {
+    if boundsChecking then
+      if !dom.dist.targetLocaleOk[loc.id] then
+        halt("locale ", loc.id, " has no local replicand");
+
     return localArrs[loc.id]!.arrLocalRep;
   }
 
@@ -623,7 +648,7 @@ proc ReplicatedArr.dsiAccess(indexx) ref {
 }
 
 proc ReplicatedArr.dsiBoundsCheck(indexx) {
-  return dom.dist.targetLocDom.contains(here.id);
+  return dom.dist.targetLocaleIds.contains(here.id);
 }
 
 // Write the array out to the given Writer serially.
