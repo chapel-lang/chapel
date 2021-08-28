@@ -11,6 +11,7 @@ module CheckHttpSetOpt {
   extern const CURLOPT_VERBOSE: CURLoption;
   extern const CURLOPT_FILETIME: CURLoption;
   extern const CURLOPT_URL: CURLoption;
+  extern const CURLOPT_WRITEFUNCTION: CURLoption;
   extern const CURLINFO_FILETIME: CURLINFO;
 
   proc test1() throws {
@@ -94,6 +95,34 @@ module CheckHttpSetOpt {
     stdout.flush();
   }
 
+  // Test a string-type option, CURLOPT_URL, via the libcurl-based API
+  proc write_callback(ptr: c_ptr(c_char), size: size_t,
+		      nmemb: size_t, userdata: c_void_ptr) {
+    writeln("callback called");
+    var str = try! createStringWithBorrowedBuffer(ptr:c_string,
+                                                  (size * nmemb):int);
+    write(str);
+    return size * nmemb;
+  }
+
+  proc test5() throws {
+    writeln("\ntest5\n");
+    var f = "test.txt";
+    var url = "http://" + host + ":" + port + "/" + f;
+    var curl = curl_easy_init();
+
+    curl_easy_setopt(curl, CURLOPT_VERBOSE, true);
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION,
+		     c_ptrTo(write_callback):c_void_ptr);
+
+    curl_easy_perform(curl);
+    curl_easy_cleanup(curl);
+
+    stderr.flush();
+    stdout.flush();
+  }
+
   proc main() throws {
     startServer();
     defer stopServer();
@@ -101,5 +130,6 @@ module CheckHttpSetOpt {
     test2();
     test3();
     test4();
+    test5();
   }
 }
