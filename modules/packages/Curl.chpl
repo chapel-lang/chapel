@@ -171,9 +171,20 @@ module Curl {
     return true;
   }
 
+  // We can't do a compile-time check that checks the arg type against
+  // the option, since the option isn't presently available as a
+  // param. Here's a compile-time check that t is at least a type that
+  // we accept for some option.
+  private proc check_setopt_argtype(type t) {
+    if !isIntegralType(t) && !isBoolType(t) && !isAnyCPtr(t) && t != slist &&
+       t != string && t != bytes then
+      compilerError("setopt() doesn't accept arguments of type ", t:string);
+  }
+
   // setopt on the curl_easy object, for sharing with easy_setopt below.
   // Returns libcurl-native error codes.
   private proc setopt(curl: c_ptr(CURL), opt:c_int, arg) {
+      check_setopt_argtype(arg.type);
       // Invalid argument type for option if the below conditionals
       // don't handle it.
       var err: CURLcode = CURLE_BAD_FUNCTION_ARGUMENT;

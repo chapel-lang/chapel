@@ -1,0 +1,4 @@
+Curl.chpl:xxx: In function 'setopt':
+Curl.chpl:xxx: error: setopt() doesn't accept arguments of type 1*string
+Curl.chpl:xxx: called as setopt(curl: c_ptr(CURL), opt: int(32), arg: 1*string) from function 'curl_easy_setopt'
+  check-http-setopt-badtype-static.chpl:xxx: called as curl_easy_setopt(handle: c_ptr(CURL), option: int(32), arg: 1*string)
