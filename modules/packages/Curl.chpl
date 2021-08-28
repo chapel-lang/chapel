@@ -361,25 +361,36 @@ module Curl {
 
   /* See https://curl.haxx.se/libcurl/c/curl_easy_getinfo.html */
   extern proc curl_easy_getinfo(handle:c_ptr(CURL), info:CURLINFO, arg):CURLcode;
-  /* See https://curl.haxx.se/libcurl/c/curl_easy_setopt.html */
-  extern proc curl_easy_setopt(handle:c_ptr(CURL), option:CURLoption, arg):CURLcode;
+
+  /* Give libcurl-native curl_easy_setopt a different Chapel name so
+     we can provide a function with that name that handles different
+     types of args. */
+  private extern "curl_easy_setopt" proc c_curl_easy_setopt(handle:c_ptr(CURL), option:CURLoption, arg):CURLcode;
+  /*
+    See https://curl.haxx.se/libcurl/c/curl_easy_setopt.html
+
+    Handles arg values appropriate to each option.
+  */
+  proc curl_easy_setopt(handle:c_ptr(CURL), option:CURLoption, arg):CURLcode {
+    return setopt(handle, option, arg);
+  }
 
   // setopt helpers for specific types
   /* Helper function for ``curl_easy_setopt`` when passing a numeric argument */
   proc curl_easy_setopt_long(curl:c_ptr(CURL), option:CURLoption, arg:c_long):CURLcode {
-    return curl_easy_setopt(curl, option, arg);
+    return c_curl_easy_setopt(curl, option, arg);
   }
 
   /* Helper function for ``curl_easy_setopt`` when passing a pointer argument */
   proc curl_easy_setopt_ptr(curl:c_ptr(CURL), option:CURLoption,
       arg:c_void_ptr):CURLcode {
-    return curl_easy_setopt(curl, option, arg);
+    return c_curl_easy_setopt(curl, option, arg);
   }
 
   /* Helper function for ``curl_easy_setopt`` when passing an offset argument */
   proc curl_easy_setopt_offset(curl:c_ptr(CURL), option:CURLoption, offset:int(64)):CURLcode {
     var tmp:curl_off_t = offset;
-    return curl_easy_setopt(curl, option, tmp);
+    return c_curl_easy_setopt(curl, option, tmp);
   }
 
   /* Helper function for ``curl_easy_getinfo`` when passing a pointer argument.
