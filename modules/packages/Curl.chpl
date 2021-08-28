@@ -150,7 +150,7 @@ module Curl {
   proc setopt(ch:channel, opt:c_int, arg):bool throws {
     use CurlQioIntegration;
 
-    var err:syserr = ENOERR;
+    var err:CURLcode = CURLE_OK;
 
     if (arg.type == slist) && (arg.home != ch.home) {
       throw SystemError.fromSyserr(EINVAL, "in channel.setopt(): slist, and curl handle do not reside on the same locale");
@@ -165,22 +165,24 @@ module Curl {
       err = setopt(curl, opt, arg);
     }
 
-    if err then try ioerror(err, "in Curl.setopt(" + opt:string + ", arg: " +
+    if err then try ioerror(qio_int_to_err(err),
+                            "in Curl.setopt(" + opt:string + ", arg: " +
                             arg.type:string + ")");
     return true;
   }
 
-  // setopt on the curl_easy object, for sharing with easySetopt below.
+  // setopt on the curl_easy object, for sharing with easy_setopt below.
+  // Returns libcurl-native error codes.
   private proc setopt(curl: c_ptr(CURL), opt:c_int, arg) {
       // Invalid argument type for option if the below conditionals
       // don't handle it.
-      var err: syserr = EINVAL;
+      var err: CURLcode = CURLE_BAD_FUNCTION_ARGUMENT;
       // This reasoning is pulled from the libcurl source
       if (opt < CURLOPTTYPE_OBJECTPOINT) {
         // < OBJECTPOINT means CURLOPTTYPE_LONG; libcurl wants a "long" arg.
         if isIntegralType(arg.type) || isBoolType(arg.type) {
           var tmp:c_long = arg:c_long;
-          err = qio_int_to_err(curl_easy_setopt_long(curl, opt:CURLoption, tmp));
+          err = curl_easy_setopt_long(curl, opt:CURLoption, tmp);
         }
       } else if (opt < CURLOPTTYPE_OFF_T) {
           // CURLOPTTYPE_OBJECTPOINT
@@ -191,19 +193,19 @@ module Curl {
           // CURLOPTTYPE_FUNCTIONPOINT is also in this range.
         if isAnyCPtr(arg.type) {
           var tmp:c_void_ptr = arg:c_void_ptr;
-          err = qio_int_to_err(curl_easy_setopt_ptr(curl, opt:CURLoption, tmp));
+          err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
         } else if arg.type == slist {
           var tmp:c_void_ptr = arg.list:c_void_ptr;
-          err = qio_int_to_err(curl_easy_setopt_ptr(curl, opt:CURLoption, tmp));
+          err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
         } else if arg.type == string || arg.type == bytes {
           var tmp = arg.localize().c_str():c_void_ptr;
-          err = qio_int_to_err(curl_easy_setopt_ptr(curl, opt:CURLoption, tmp));
+          err = curl_easy_setopt_ptr(curl, opt:CURLoption, tmp);
         }
       } else {
         // Must be CURLOPTTYPE_OFF_T or CURLOPTTYPE_BLOB
         if isIntegralType(arg.type) {
           var tmp:curl_off_t = arg:curl_off_t;
-          err = qio_int_to_err(curl_easy_setopt_offset(curl, opt:CURLoption, tmp));
+          err = curl_easy_setopt_offset(curl, opt:CURLoption, tmp);
         }
       }
       return err;
@@ -298,6 +300,7 @@ module Curl {
   // Curl Constants
   /* Successful result for CURL easy API calls */
   extern const CURLE_OK: c_int;
+  private extern const CURLE_BAD_FUNCTION_ARGUMENT: c_int;
   /* Successful result for CURL multi API calls */
   extern const CURLM_OK: c_int;
 
