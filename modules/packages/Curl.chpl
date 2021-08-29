@@ -228,12 +228,13 @@ module Curl {
   // setopt on the curl_easy object, for sharing with easy_setopt below.
   // Returns libcurl-native error codes.
   private proc setopt(curl: c_ptr(CURL), opt:c_int, arg) {
-    extern const CURLE_BAD_FUNCTION_ARGUMENT: c_int;
-
     check_setopt_argtype(arg.type);
-    // Invalid argument type for option if the below conditionals
-    // don't handle it.
+
+    // Prepare invalid argument ret in case the below conditionals
+    // don't handle arg.type for this opt.
+    extern const CURLE_BAD_FUNCTION_ARGUMENT: c_int;
     var err: CURLcode = CURLE_BAD_FUNCTION_ARGUMENT;
+
     // This reasoning is pulled from the libcurl source
     if (opt < CURLOPTTYPE_OBJECTPOINT) {
       // < OBJECTPOINT means CURLOPTTYPE_LONG; libcurl wants a "long" arg.
