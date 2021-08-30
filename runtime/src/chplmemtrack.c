@@ -157,7 +157,7 @@ void chpl_setMemFlags(void) {
                                     &memLog,
                                     &memLeaksLog);
 
-  chpl_memTrack = (local_memTrack
+  local_memTrack = (local_memTrack
                    || memStats
                    || memLeaksByType
                    || (memLeaksByDesc && strcmp(memLeaksByDesc, ""))
@@ -179,10 +179,13 @@ void chpl_setMemFlags(void) {
     }
   }
 
-  if (chpl_memTrack) {
+  if (local_memTrack) {
     hashSizeIndex = 0;
     hashSize = hashSizes[hashSizeIndex];
     memTable = sys_calloc(hashSize, sizeof(memTableEntry*));
+    chpl_atomic_thread_fence(memory_order_release);
+    chpl_memTrack = local_memTrack;
+    chpl_atomic_thread_fence(memory_order_release);
   }
 }
 
