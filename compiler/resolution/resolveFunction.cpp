@@ -620,12 +620,6 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
     // arg 1 is the method token
     toType = fn->getFormal(2)->getValType();
     fromType = fn->getFormal(3)->getValType();
-  } else if (fn->name == astr_cast) {
-    int i = 1;
-    if (fn->getFormal(i)->typeInfo() == dtMethodToken) i++;
-    if (fn->getFormal(i)->hasFlag(FLAG_ARG_THIS)) i++;
-    toType = fn->getFormal(i)->getValType(); i++;
-    fromType = fn->getFormal(i)->getValType();
   } else {
     // Nothing to do if it's not one of the above cases.
     return;
@@ -647,8 +641,6 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
       val.assign = fn;
     else if (fn->name == astrInitEquals)
       val.initEq = fn;
-    else if (fn->name == astr_cast)
-      val.cast = fn;
     else
       INT_FATAL("unexpected case");
 

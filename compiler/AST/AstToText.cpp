@@ -904,7 +904,7 @@ static int opToPrecedence(const char *op, bool unary, bool postfix) {
   // new is precedence 19, but doesn't come through this path.
   if (postfix && (strcmp(op, "?") == 0 || strcmp(op, "!") == 0))
     return 18;
-  else if (strcmp(op, ":") == 0 || op == astr_cast)
+  else if (strcmp(op, ":") == 0)
     return 17;
   else if (strcmp(op, "**") == 0)
     return 16;
