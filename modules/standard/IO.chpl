@@ -3448,50 +3448,6 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   }
 
   /*
-     Return any saved error code.
-   */
-  proc channel.error():syserr {
-    compilerWarning("The channel.error method is deprecated. " +
-                    "Catch errors instead.");
-    var ret:syserr;
-    on this.home {
-      var local_error:syserr;
-      try! this.lock();
-      local_error = qio_channel_error(_channel_internal);
-      this.unlock();
-      ret = local_error;
-    }
-    return ret;
-  }
-
-  /*
-     Save an error code.
-   */
-  proc channel.setError(e:syserr) {
-    compilerWarning("The channel.setError method is deprecated. " +
-                    "Throw errors instead.");
-    on this.home {
-      var error = e;
-      try! this.lock();
-      _qio_channel_set_error_unlocked(_channel_internal, error);
-      this.unlock();
-    }
-  }
-
-  /*
-     Clear any saved error code.
-   */
-  proc channel.clearError() {
-    compilerWarning("The channel.clearError method is deprecated. " +
-                    "Throw and catch errors instead.");
-    on this.home {
-      try! this.lock();
-      qio_channel_clear_error(_channel_internal);
-      this.unlock();
-    }
-  }
-
-  /*
      Write a sequence of bytes.
 
      :throws SystemError: Thrown if the byte sequence could not be written.
