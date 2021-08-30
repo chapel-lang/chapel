@@ -775,11 +775,8 @@ void deadCodeElimination() {
   }
 
   // Emit string literals. This too could be its own pass but
-  // for now it is convenient to do it here because the dead string
-  // literals still refer to valid memory and just are not in the tree.
-  // (If it is moved elsewhere, the stringLiteralsHash and bytesLiteralsHash
-  //  maps would need to have their values cleared when a string literal
-  //  is deemed dead).
+  // for now it is convenient to do it here. It could happen any time
+  // after dead string literal elimination and code generation.
   createInitStringLiterals();
 }
 

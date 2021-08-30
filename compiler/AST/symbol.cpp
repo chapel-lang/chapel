@@ -1518,21 +1518,26 @@ void createInitStringLiterals() {
     return;
   }
 
-  // construct sorted vectors
-  std::vector<std::pair<std::string, VarSymbol*>> stringLiterals;
-  form_Map(StringLiteralHashElem, el, stringLiteralsHash) {
-    if (el->value->inTree())
-      stringLiterals.push_back({el->key->to_string(), el->value});
-  }
-  std::sort(stringLiterals.begin(), stringLiterals.end());
+  // accumulate the string/bytes and prepare to sort them
+  std::vector<std::pair<std::string, VarSymbol*>> literals;
 
-  std::vector<std::pair<std::string, VarSymbol*>> bytesLiterals;
-  form_Map(StringLiteralHashElem, el, bytesLiteralsHash) {
-    if (el->value->inTree())
-      bytesLiterals.push_back({el->key->to_string(), el->value});
+  for_alist(expr, stringLiteralModule->block->body) {
+    if (DefExpr* def = toDefExpr(expr)) {
+      if (VarSymbol* s = toVarSymbol(def->sym)) {
+        if (s->hasFlag(FLAG_CHAPEL_STRING_LITERAL) ||
+            s->hasFlag(FLAG_CHAPEL_BYTES_LITERAL)) {
+          Immediate* imm = s->immediate;
+          INT_ASSERT(imm);
+          literals.push_back({imm->to_string(), s});
+        }
+      }
+    }
   }
-  std::sort(bytesLiterals.begin(), bytesLiterals.end());
 
+  // sort the strings/bytes so that they can be stored in a reliable order
+  std::sort(literals.begin(), literals.end());
+
+  // now emit initialization for them
   Expr* insertPt = initStringLiteralsEpilogue->defPoint;
 
   VarSymbol* buffer = new VarSymbol("literalsBuf", dtCVoidPtr);
@@ -1551,15 +1556,20 @@ void createInitStringLiterals() {
   INT_ASSERT(gChplCreateBytesWithLiteral != NULL);
 
   // initialize the strings
-  for (auto pair : stringLiterals) {
+  for (auto pair : literals) {
     VarSymbol* s = pair.second;
 
     // unescape the string and compute its length
     std::string unescapedString =
       unescapeString(s->immediate->to_string().c_str(), s);
     int64_t numCodepoints = 0;
-    const bool ret = isValidString(unescapedString, &numCodepoints);
-    INT_ASSERT(ret); // should be checked earlier
+
+    if (s->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+      // make sure the string is valid UTF-8
+      const bool ok = isValidString(unescapedString, &numCodepoints);
+      INT_ASSERT(ok); // should be checked earlier
+    }
+
     int64_t strLength = unescapedString.length();
     const char* cstr = s->immediate->string_value();
 
@@ -1568,53 +1578,31 @@ void createInitStringLiterals() {
     CallExpr *cstrMove = new CallExpr(PRIM_MOVE, cstrTemp,
                                       new_CStringSymbol(cstr));
 
-    CallExpr *initCall = new CallExpr(gChplCreateStringWithLiteral,
-                                      buffer,
-                                      offset,
-                                      cstrTemp,
-                                      strLenVar,
-                                      new_IntSymbol(numCodepoints));
+    CallExpr *initCall = nullptr;
+
+    // call a function to initialize it appropriately
+    if (s->hasFlag(FLAG_CHAPEL_STRING_LITERAL)) {
+      initCall = new CallExpr(gChplCreateStringWithLiteral,
+                              buffer,
+                              offset,
+                              cstrTemp,
+                              strLenVar,
+                              new_IntSymbol(numCodepoints));
+    } else {
+      INT_ASSERT(s->hasFlag(FLAG_CHAPEL_BYTES_LITERAL));
+      initCall = new CallExpr(gChplCreateBytesWithLiteral,
+                              buffer,
+                              offset,
+                              cstrTemp,
+                              strLenVar);
+    }
 
     CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
-    CallExpr* addCall = new CallExpr(PRIM_ADD_ASSIGN, offset, strLenVar);
-    CallExpr* incCall = new CallExpr(PRIM_ADD_ASSIGN, offset, one);
+    CallExpr* addCall = new CallExpr(PRIM_ADD_ASSIGN, offset, strLenVar);//data
+    CallExpr* incCall = new CallExpr(PRIM_ADD_ASSIGN, offset, one); //null
 
     insertPt->insertBefore(new DefExpr(cstrTemp));
     insertPt->insertBefore(cstrMove);
-    insertPt->insertBefore(moveCall);
-    insertPt->insertBefore(addCall);
-    insertPt->insertBefore(incCall);
-
-    bufferSize += strLength+1; // string data and null
-  }
-
-  // initialize the bytes
-  for (auto pair : bytesLiterals) {
-    VarSymbol* s = pair.second;
-
-    // unescape the string and compute its length
-    std::string unescapedString =
-      unescapeString(s->immediate->to_string().c_str(), s);
-    int64_t strLength = unescapedString.length();
-    const char* cstr = s->immediate->string_value();
-
-    VarSymbol* strLenVar = new_IntSymbol(strLength);
-    VarSymbol* bytesTemp = newTemp("call_tmp", dtStringC);
-    CallExpr *bytesMove = new CallExpr(PRIM_MOVE, bytesTemp,
-                                       new_CStringSymbol(cstr));
-
-    CallExpr *initCall = new CallExpr(gChplCreateBytesWithLiteral,
-                                      buffer,
-                                      offset,
-                                      bytesTemp,
-                                      strLenVar);
-
-    CallExpr* moveCall = new CallExpr(PRIM_MOVE, s, initCall);
-    CallExpr* addCall = new CallExpr(PRIM_ADD_ASSIGN, offset, strLenVar);
-    CallExpr* incCall = new CallExpr(PRIM_ADD_ASSIGN, offset, one);
-
-    insertPt->insertBefore(new DefExpr(bytesTemp));
-    insertPt->insertBefore(bytesMove);
     insertPt->insertBefore(moveCall);
     insertPt->insertBefore(addCall);
     insertPt->insertBefore(incCall);
