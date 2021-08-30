@@ -60,10 +60,6 @@ proc masonSystem(args: [] string) {
         var searchArgs = searchCmd.values();
         pkgSearch(searchArgs);
       }
-      // else {
-      //   masonSystemHelp();
-      //   exit(0);
-      // }
     }
     else {
       masonSystemHelp();
@@ -187,15 +183,6 @@ proc printPkgPc(args) throws {
     masonSystemPcHelp();
     exit(1);
   }
-  // if args.size < 4 {
-  //   masonSystemPcHelp();
-  //   exit(0);
-  // }
-  // else if args[3] == "-h" || args[3] == "--help" {
-  //   masonSystemPcHelp();
-  //   exit(0);
-  // }
-  // else {
   try! {
     const pkgName = pkgNameArg.value();
     if pkgExists(pkgName) {
