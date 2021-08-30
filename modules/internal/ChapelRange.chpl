@@ -700,6 +700,9 @@ module ChapelRange {
 
   pragma "no doc"
   inline proc range.alignedLowAsInt {
+    if isAmbiguous() {
+      halt("Can't query the aligned bounds of an ambiguously aligned range");
+    }
     if !stridable then
       return _low;
     else
@@ -726,6 +729,9 @@ module ChapelRange {
 
   pragma "no doc"
   inline proc range.alignedHighAsInt {
+    if isAmbiguous() {
+      halt("Can't query the aligned bounds of an ambiguously aligned range");
+    }
     if ! stridable then
       return _high;
     else
