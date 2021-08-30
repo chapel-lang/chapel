@@ -3,7 +3,6 @@ config const end = 10;
 
 on here.getChild(1) {
   var a, b: [start..end] int;
-  var value = 20;
 
   forall  (x,i) in zip(b, b.domain) do x = i+12;
 
