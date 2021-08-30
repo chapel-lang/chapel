@@ -1303,7 +1303,8 @@ static inline
 struct fi_info* findProvInList(struct fi_info* info,
                                chpl_bool accept_ungood_provs,
                                chpl_bool accept_RxD_provs,
-                               chpl_bool accept_RxM_provs) {
+                               chpl_bool accept_RxM_provs,
+                               chpl_bool accept_sockets_provs) {
 
   for (; info != NULL; info = info->next) {
     // break out of the loop when we find one that meets all of our criteria
@@ -1316,12 +1317,19 @@ struct fi_info* findProvInList(struct fi_info* info,
     if (!accept_RxM_provs && isInProvider("ofi_rxm", info)) {
       continue;
     }
+    if (!accept_sockets_provs && isInProvider("sockets", info)) {
+      continue;
+    }
     if (!isUseableProvider(info)) {
       continue;
     }
     // got one
     break;
   }
+  if (info && (isInProvider("sockets", info))) {
+    chpl_warning("sockets provider is deprecated", 0, 0);
+  }
+  
   return (info == NULL) ? NULL : fi_dupinfo(info);
 }
 
@@ -1331,6 +1339,7 @@ chpl_bool findProvGivenHints(struct fi_info** p_infoOut,
                              struct fi_info* infoIn,
                              chpl_bool accept_RxD_provs,
                              chpl_bool accept_RxM_provs,
+                             chpl_bool accept_sockets_provs,
                              enum mcmMode_t mcmm) {
   struct fi_info* infoList;
   int ret;
@@ -1340,7 +1349,8 @@ chpl_bool findProvGivenHints(struct fi_info** p_infoOut,
   struct fi_info* info;
   info = findProvInList(infoList,
                         (getProviderName() != NULL) /*accept_ungood_provs*/,
-                        accept_RxD_provs, accept_RxM_provs);
+                        accept_RxD_provs, accept_RxM_provs,
+                        accept_sockets_provs);
 
   DBG_PRINTF_NODE0(DBG_PROV,
                    "** %s desirable provider with %s",
@@ -1362,11 +1372,13 @@ chpl_bool findProvGivenList(struct fi_info** p_infoOut,
                             struct fi_info* infoIn,
                             chpl_bool accept_RxD_provs,
                             chpl_bool accept_RxM_provs,
+                            chpl_bool accept_sockets_provs,
                             enum mcmMode_t mcmm) {
   struct fi_info* info;
   info = findProvInList(infoIn,
                         true /*accept_ungood_provs*/,
-                        accept_RxD_provs, accept_RxM_provs);
+                        accept_RxD_provs, accept_RxM_provs, 
+                        accept_sockets_provs);
 
   DBG_PRINTF_NODE0(DBG_PROV,
                    "** %s less-desirable provider with %s",
@@ -1542,17 +1554,20 @@ chpl_bool findMsgOrderFenceProv(struct fi_info** p_infoOut,
   const char* prov_name = getProviderName();
   const chpl_bool accept_RxD_provs = isInProvName("ofi_rxd", prov_name);
   const chpl_bool accept_RxM_provs = isInProvName("ofi_rxm", prov_name);
+  const chpl_bool accept_sockets_provs = isInProvName("sockets", prov_name);
   enum mcmMode_t mcmm = mcmm_msgOrdFence;
   chpl_bool ret;
 
   if (inputIsHints) {
     struct fi_info* infoAdj = setCheckMsgOrderFenceProv(infoIn, true /*set*/);
     ret = findProvGivenHints(p_infoOut, infoAdj,
-                             accept_RxD_provs, accept_RxM_provs, mcmm);
+                             accept_RxD_provs, accept_RxM_provs, 
+                             accept_sockets_provs, mcmm);
     fi_freeinfo(infoAdj);
   } else {
     ret = findProvGivenList(p_infoOut, infoIn,
-                            accept_RxD_provs, accept_RxM_provs, mcmm);
+                            accept_RxD_provs, accept_RxM_provs, 
+                            accept_sockets_provs, mcmm);
   }
 
   if (ret) {
@@ -1604,17 +1619,20 @@ chpl_bool findMsgOrderProv(struct fi_info** p_infoOut,
   const char* prov_name = getProviderName();
   const chpl_bool accept_RxD_provs = isInProvName("ofi_rxd", prov_name);
   const chpl_bool accept_RxM_provs = true;
+  const chpl_bool accept_sockets_provs = isInProvName("sockets", prov_name);
   enum mcmMode_t mcmm = mcmm_msgOrd;
   chpl_bool ret;
 
   if (inputIsHints) {
     struct fi_info* infoAdj = setCheckMsgOrderProv(infoIn, true /*set*/);
     ret = findProvGivenHints(p_infoOut, infoAdj,
-                             accept_RxD_provs, accept_RxM_provs, mcmm);
+                             accept_RxD_provs, accept_RxM_provs, 
+                             accept_sockets_provs, mcmm);
     fi_freeinfo(infoAdj);
   } else {
     ret = findProvGivenList(p_infoOut, infoIn,
-                            accept_RxD_provs, accept_RxM_provs, mcmm);
+                            accept_RxD_provs, accept_RxM_provs, 
+                            accept_sockets_provs, mcmm);
   }
 
   if (ret) {
@@ -1660,17 +1678,20 @@ chpl_bool findDlvrCmpltProv(struct fi_info** p_infoOut,
   const char* prov_name = getProviderName();
   const chpl_bool accept_RxD_provs = isInProvName("ofi_rxd", prov_name);
   const chpl_bool accept_RxM_provs = isInProvName("ofi_rxm", prov_name);
+  const chpl_bool accept_sockets_provs = isInProvName("sockets", prov_name);
   enum mcmMode_t mcmm = mcmm_dlvrCmplt;
   chpl_bool ret;
 
   if (inputIsHints) {
     struct fi_info* infoAdj = setCheckDlvrCmpltProv(infoIn, true /*set*/);
     ret = findProvGivenHints(p_infoOut, infoAdj,
-                             accept_RxD_provs, accept_RxM_provs, mcmm);
+                             accept_RxD_provs, accept_RxM_provs, 
+                             accept_sockets_provs, mcmm);
     fi_freeinfo(infoAdj);
   } else {
     ret = findProvGivenList(p_infoOut, infoIn,
-                            accept_RxD_provs, accept_RxM_provs, mcmm);
+                            accept_RxD_provs, accept_RxM_provs, 
+                            accept_sockets_provs, mcmm);
   }
 
   if (ret) {
@@ -1735,6 +1756,8 @@ void init_ofiFabricDomain(void) {
   //   bug that can't be fixed without breaking other things:
   //     https://github.com/ofiwg/libfabric/issues/5601
   //   Explicitly including ofi_rxm in FI_PROVIDER overrides this.
+  // - The sockets provider is deprecated. It is only used if it is
+  //   specified via the FI_PROVIDER environment variable.
   //
 
   mcmMode = mcmm_undef;
