@@ -144,7 +144,8 @@ proc verifyResults(A, B, C) {
   //
   // recompute the computation, destructively storing into B to save space
   //
-  forall (b, c) in zip(B, C) do
+  // Originally this was a forall, but I want the validation to be run on CPU.
+  for (b, c) in zip(B, C) do
     b += alpha *c;  
 
   if (printArrays) then writeln("A-hat is: ", B, "\n");  // and A-hat too

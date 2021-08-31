@@ -79,7 +79,7 @@ void chpl_gpu_init() {
   // 
   // CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
   
-  CUDA_CALL(cuCtxCreate(&context, 0, device));
+  CUDA_CALL(cuCtxCreate(&context, CU_CTX_BLOCKING_SYNC, device));
 
   CUcontext cuda_context = NULL;
   cuCtxGetCurrent(&cuda_context);
@@ -281,8 +281,10 @@ void chpl_gpu_launch_kernel(const char* name,
   va_end(args);
 }
 
-void chpl_gpu_launch_kernel_flat(const char* name, int grd_dim, int blk_dim,
+void chpl_gpu_launch_kernel_flat(const char* name, int num_threads, int blk_dim,
                                  int nargs, ...) {
+  int grd_dim = (num_threads+blk_dim-1)/blk_dim;
+
   va_list args;
   va_start(args, nargs);
   chpl_gpu_launch_kernel_help(name,
