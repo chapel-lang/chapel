@@ -135,6 +135,7 @@ static fi_addr_t* ofi_rxAddrs;          // table of remote endpoint addresses
 static chpl_bool envPreferScalableTxEp; // env: prefer scalable tx endpoint?
 static int envCommConcurrency;          // env: communication concurrency
 static ssize_t envMaxHeapSize;          // env: max heap size
+static chpl_bool envOversubscribed;     // env over-subscribed?
 
 static int numTxCtxs;
 static int numRxCtxs;
@@ -954,6 +955,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   }
 
   envMaxHeapSize = chpl_comm_getenvMaxHeapSize();
+
+  envOversubscribed = chpl_env_rt_get_bool("OVERSUBSCRIBED", false);
 
   //
   // The user can specify the provider by setting either the Chapel
@@ -1929,7 +1932,14 @@ struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced) {
                                  | FI_MR_PROV_KEY // TODO: avoid pkey bcast?
                                  | FI_MR_ENDPOINT);
 
-  if (chpl_numNodes > 1 && envMaxHeapSize != 0 && !chpl_get_oversubscribed()) {
+  // Set FI_MR_ALLOCATED if there is more than one node and the maximimum
+  // heap size was specified and the CHPL_RT_OVERSUBSCRIBED environment
+  // variable was not set, otherwise we risk running out of memory when
+  // the heap is allocated. If CHPL_RT_OVERSUBSCRIBED is set then we may
+  // be sharing the node with other processes, in which case we can't size
+  // the fixed heap correctly.
+
+  if (chpl_numNodes > 1 && envMaxHeapSize != 0 && !envOversubscribed) {
     hints->domain_attr->mr_mode |= FI_MR_ALLOCATED;
   }
 
