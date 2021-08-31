@@ -119,6 +119,7 @@ Here is a reference to the ```Chapel Developers`_`` URL later in the .rst file.
   https://chapel-lang.org/contributing.html can only be done by a core contributor.
   Post an inquiry to the `Chapel Developers`_ Discourse forum.
 
+.. _Chapel Developers: https://chapel.discourse.group/c/developers
 
 ============================================
 Organization of Chapel Documentation Sources
@@ -143,54 +144,54 @@ heading the file is under.
    :widths: 100 100 100
    :header-rows: 1
 
-   * - Doc name in Sidebar
+   * - Sidebar subheading
+     - Doc name in Sidebar
      - Source file(s)
-     - Sidebar subheading
-   * - Quickstart Instructions
+   * - COMPILING AND RUNNING CHAPEL
+     - Quickstart Instructions
      - doc/rst/usingchapel/QUICKSTART.rst
-     - COMPILING AND RUNNING CHAPEL
-   * - Using Chapel
+   * - COMPILING AND RUNNING CHAPEL
+     - Using Chapel
      - doc/rst/usingchapel/*
-     - COMPILING AND RUNNING CHAPEL
-   * - Platform-Specific Notes
+   * - COMPILING AND RUNNING CHAPEL
+     - Platform-Specific Notes
      - doc/rst/platforms/*
-     - COMPILING AND RUNNING CHAPEL
-   * - Technical Notes
+   * - COMPILING AND RUNNING CHAPEL
+     - Technical Notes
      - doc/rst/technotes/*
-     - COMPILING AND RUNNING CHAPEL
-   * - Tools
+   * - COMPILING AND RUNNING CHAPEL
+     - Tools
      - doc/rst/tools/*
-     - COMPILING AND RUNNING CHAPEL
-   * - Quick Reference
+   * - WRITING CHAPEL PROGRAMS
+     - Quick Reference
      - doc/rst/language/reference.rst
-     - WRITING CHAPEL PROGRAMS
-   * - Mason Packages
+   * - WRITING CHAPEL PROGRAMS
+     - Mason Packages
      - doc/rst/mason-packages.rst
-     - WRITING CHAPEL PROGRAMS
-   * - Chapel Users Guide (WIP)
+   * - WRITING CHAPEL PROGRAMS
+     - Chapel Users Guide (WIP)
      - doc/rst/users-guide
-     - WRITING CHAPEL PROGRAMS
-   * - Chapel Evolution
+   * - LANGUAGE HISTORY
+     - Chapel Evolution
      - doc/rst/language/evolution.rst
-     - LANGUAGE HISTORY
-   * - Documentation Archives
+   * - LANGUAGE HISTORY
+     - Documentation Archives
      - doc/rst/language/archivedSpecs.rst
-     - LANGUAGE HISTORY
 
 
 .. list-table:: **Use chpl2rst.py on .chpl files and then sphinx to generate html**
    :widths: 100 100 100
    :header-rows: 1
 
-   * - Doc name in Sidebar
+   * - Sidebar subheading
+     - Doc name in Sidebar
      - Source file(s)
-     - Sidebar subheading
-   * - Hello World Variants
+   * - WRITING CHAPEL PROGRAMS
+     - Hello World Variants
      - doc/rst/meta/examples/index.rst + test/release/examples/hello*.chpl
-     - WRITING CHAPEL PROGRAMS
-   * - Primers
+   * - WRITING CHAPEL PROGRAMS
+     - Primers
      - doc/rst/meta/primers/index.rst + test/release/examples/primers/\*.chpl
-     - WRITING CHAPEL PROGRAMS
 
 
 
@@ -198,21 +199,21 @@ heading the file is under.
    :widths: 100 100 100
    :header-rows: 1
 
-   * - Doc name in Sidebar
+   * - Sidebar subheading
+     - Doc name in Sidebar
      - Source file(s)
-     - Sidebar subheading
-   * - Built-in Types and Functions
+   * - WRITING CHAPEL PROGRAMS
+     - Built-in Types and Functions
      - doc/rst/builtins + modules/internal/\*.chpl
-     - WRITING CHAPEL PROGRAMS
-   * - Standard Modules
+   * - WRITING CHAPEL PROGRAMS
+     - Standard Modules
      - doc/rst/modules/standard + modules/standard/\*.chpl
-     - WRITING CHAPEL PROGRAMS
-   * - Package Modules
+   * - WRITING CHAPEL PROGRAMS
+     - Package Modules
      - doc/rst/modules/packages + modules/packages/\*.chpl
-     - WRITING CHAPEL PROGRAMS
-   * - Standard Layouts and Distributions
+   * - WRITING CHAPEL PROGRAMS
+     - Standard Layouts and Distributions
      - doc/rst/modules/layoutdist + modules/layouts/\*.chpl + modules/dists/\*.chpl
-     - WRITING CHAPEL PROGRAMS
 
 
 ===============================================
