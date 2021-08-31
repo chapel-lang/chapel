@@ -919,18 +919,18 @@ module String {
     }
 
 
+    // assumes that 'this' is already localized
     proc _cpIndexLenHelpNoAdjustment(ref start: int) {
-      const localThis: string = this.localize();
       const i = start;
 
-      if localThis.isASCII() {
+      if this.isASCII() {
         start += 1;
         return (this.buff[i]:int(32), i:byteIndex, 1:int);
 
       }
       else {
-        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
-                                                   buffLen=localThis.buffLen,
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=this.buff,
+                                                   buffLen=this.buffLen,
                                                    offset=i,
                                                    allowEsc=true);
         start += nBytes;
