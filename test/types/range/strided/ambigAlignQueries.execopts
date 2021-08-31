@@ -1,0 +1,2 @@
+--case=1  # ambigAlignQueries.good
+--case=2  # ambigAlignQueries-low.good
