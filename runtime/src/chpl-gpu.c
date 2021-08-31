@@ -31,7 +31,7 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
-// #define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
+#define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
 
 static void CHPL_GPU_LOG(const char *str, ...) {
 #ifdef CHPL_GPU_DEBUG
@@ -177,14 +177,6 @@ static void chpl_gpu_launch_kernel_help(const char* name,
                                         va_list args) {
   chpl_gpu_ensure_context();
 
-  int i;
-  void* function = chpl_gpu_getKernel("tmp/chpl__gpu.fatbin", name);
-  // TODO: this should use chpl_mem_alloc
-  void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
-
-  assert(function);
-  assert(kernel_params);
-
   CHPL_GPU_LOG("Kernel launcher called.\
                \n\tKernel: %s\n\tGrid: %d,%d,%d\n\t\
                Block: %d,%d,%d\n\tNumArgs: %d\n",
@@ -192,6 +184,14 @@ static void chpl_gpu_launch_kernel_help(const char* name,
                grd_dim_x, grd_dim_y, grd_dim_z,
                blk_dim_x, blk_dim_y, blk_dim_z,
                nargs);
+
+  int i;
+  void* function = chpl_gpu_getKernel("tmp/chpl__gpu.fatbin", name);
+  // TODO: this should use chpl_mem_alloc
+  void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
+
+  assert(function);
+  assert(kernel_params);
 
   CHPL_GPU_LOG("Creating kernel parameters\n");
 
