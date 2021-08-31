@@ -129,9 +129,8 @@ proc main(args: [] string) throws {
   }
   var cmdArgs = cmdList.toArray();
   // pass the arguments to the appropriate subcommand
-  // currently, only add and rm have the new argument parser implemented,
-  // so that is why other commands take the full, original, input args
-  // while add and rm are taking just the args from the subcommand onward
+  // TODO: once we can override the RT behavior of consuming '--', continue
+  //       work on masonBuild and masonRun
   try {
     select (usedCmd) {
       when "add" do masonModify(cmdArgs);
