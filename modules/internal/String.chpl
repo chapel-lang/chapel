@@ -602,11 +602,27 @@ module String {
   }
 
   pragma "no doc"
-  proc chpl_createStringWithLiteral(x: c_string, length: int, numCodepoints: int) {
+  proc chpl_createLiteralsBuffer(size: int): c_void_ptr {
+    return c_malloc(uint(8), size):c_void_ptr;
+  }
+
+  pragma "no doc"
+  proc chpl_createStringWithLiteral(buffer: c_void_ptr,
+                                    offset: int,
+                                    x: c_string,
+                                    length: int,
+                                    numCodepoints: int) {
+    // copy the string to the combined buffer
+    var buf = buffer:c_ptr(uint(8));
+    buf = buf + offset;
+    c_memcpy(buf:c_void_ptr, x:c_void_ptr, length);
+    // add null byte
+    buf[length] = 0;
+
     // NOTE: This is a "wellknown" function used by the compiler to create
     // string literals. Inlining this creates some bloat in the AST, slowing the
     // compilation.
-    return chpl_createStringWithBorrowedBufferNV(x:c_ptr(uint(8)),
+    return chpl_createStringWithBorrowedBufferNV(buf,
                                                  length=length,
                                                  size=length+1,
                                                  numCodepoints=numCodepoints);

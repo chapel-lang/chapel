@@ -197,7 +197,6 @@ static void resolveDestructors();
 static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
 static void initializeClass(Expr* stmt, Symbol* sym);
-static void ensureAndResolveInitStringLiterals();
 static void handleRuntimeTypes();
 static void buildRuntimeTypeInitFns();
 static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
@@ -9392,10 +9391,6 @@ void resolve() {
 
   handleRuntimeTypes();
 
-  // Resolve the string literal constructors after everything else since new
-  // ones may be created during postFold
-  ensureAndResolveInitStringLiterals();
-
   if (fPrintCallGraph) {
     // This needs to go after resolution is complete, but before
     // pruneResolvedTree() removes unused functions (like the uninstantiated
@@ -10226,15 +10221,6 @@ initializeClass(Expr* stmt, Symbol* sym) {
       }
     }
   }
-}
-
-
-static void ensureAndResolveInitStringLiterals() {
-  if (!initStringLiterals) {
-    INT_ASSERT(fMinimalModules);
-    createInitStringLiterals();
-  }
-  resolveFunction(initStringLiterals);
 }
 
 
