@@ -560,15 +560,13 @@ static OutlineInfo collectOutlineInfo(CForLoop* loop) {
 }
 
 /**
- * TODO update comment
- *
  * Given a CForLoop with lowerbound lb and upper bound ub
  * (See extractUpperBound\extractIndicesAndLowerBound to
  * see what we pattern match and extract), generate the
  * following AST and insert it into gpuLaunchBlock:
  * 
- *   blockDelta = ub - lb
- *   blockSize = blockDelta + 1
+ *   chpl_block_delta = ub - lb
+ *   chpl_gpu_num_threads = chpl_block_delta + 1
  */
 static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
                                      OutlineInfo& info) {
@@ -671,6 +669,16 @@ static void generateIndexComputation(OutlineInfo& info) {
   INT_ASSERT(info.kernelIndices.size() == info.loopIndices.size());
 }
 
+/*
+ * Adds the following AST to a GPU kernel
+ *
+ * def chpl_is_oob;
+ * chpl_is_oob = `calculated thread idx` > upperBound
+ * if (chpl_is_oob) {
+ *   return;
+ * }
+ *
+ */
 static void generateEarlyReturn(OutlineInfo& info) {
   Symbol* localUpperBound = addKernelArgument(info, info.upperBound);
 
@@ -691,8 +699,10 @@ static  CallExpr* generateGPUCall(OutlineInfo& info, VarSymbol* numThreads) {
   CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
   call->insertAtTail(info.fn);
 
-  call->insertAtTail(numThreads);         // total number of threads
-  call->insertAtTail(new_IntSymbol(512)); // block size
+  call->insertAtTail(numThreads);  // total number of GPU threads
+
+  int blockSize = fGPUBlockSize != 0 ? fGPUBlockSize:512;
+  call->insertAtTail(new_IntSymbol(blockSize));
 
 
   for_vector (Symbol, actual, info.kernelActuals) {
