@@ -113,16 +113,26 @@ proc masonTest(args: [] string) throws {
   var searchSubStrings: list(string);
 
   if otherArgs.hasValue() {
+    var flagInArgs = false;
     for arg in otherArgs.values() {
       try! {
-        if isFile(arg) && arg.endsWith(".chpl") {
+        // try to get option values meant for compilation
+        if flagInArgs && !arg.startsWith('-') {
+          compopts.append(arg);
+          flagInArgs=false;
+        }
+        // assume this is an individual test file
+        else if isFile(arg) && arg.endsWith(".chpl") {
           files.append(arg);
         }
+        // assume this is a test directory
         else if isDir(arg) {
           dirs.append(arg);
         }
+        // assume a flag for compiler
         else if arg.startsWith('-') {
           compopts.append(arg);
+          flagInArgs=true;
         }
         else {
           searchSubStrings.append(arg);
