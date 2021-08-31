@@ -6,4 +6,3 @@ Total memory required (GB) = 2.28882e-05
 Number of trials = 10
 
 Validation: SUCCESS
-warning: 2 NUMA domains but only 1 Qthreads shepherds; may get internal errors

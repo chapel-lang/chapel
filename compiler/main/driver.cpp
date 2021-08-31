@@ -106,8 +106,6 @@ const char* CHPL_LAUNCHER_SUBDIR = NULL;
 const char* CHPL_SYS_MODULES_SUBDIR = NULL;
 const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
 
-const char* CHPL_GPU_BLOCK_SIZE = NULL;
-
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static bool fBaseline = false;
