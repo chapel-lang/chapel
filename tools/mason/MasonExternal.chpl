@@ -43,7 +43,7 @@ proc masonExternal(args: [] string) {
   var subCmds = new map(string, shared Argument);
 
   // define all the supported subcommand strings here
-  var cmds = ["search","compiler","install","uninstall","info","find"];
+  var cmds = ["search", "compiler", "install", "uninstall", "info", "find"];
   for cmd in cmds {
     subCmds.add(cmd,parser.addSubCommand(cmd));
   }
@@ -440,16 +440,12 @@ private proc compiler(args: [?d] string) {
     masonCompilerHelp();
     exit(0);
   }
-  // there was a minor bug in the previous code where the default option of
-  // list was not being selected when no arguments were passed because
-  // the pattern given was list but the pattern to match was --list.
-  // Here we have slightly modified the behavior to match what appeared to be
-  // the intent of the original developers.
+
   if findFlag.valueAsBool() {
     findCompilers();
   } else if editFlag.valueAsBool() {
     editCompilers();
-  } else {
+  } else { // handle default when no flags passed or when --list passed
     listCompilers();
   }
 }
@@ -728,7 +724,7 @@ proc uninstallSpkg(args: [?d] string) throws {
   if pkgArg.hasValue() then {
     var pkgArr = pkgArg.values();
     pkgName = "".join(pkgArr);
-  }else {
+  } else {
     masonUninstallHelp();
     exit(1);
   }

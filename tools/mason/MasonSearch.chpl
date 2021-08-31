@@ -65,6 +65,8 @@ proc masonSearch(ref args: list(string)) {
   var updateFlag = parser.addFlag(name="update",
                                   opts=["--update"],
                                   flagInversion=true);
+
+  // If no query is provided, list all packages in registry
   var queryArg = parser.addArgument(name="query",
                                     numArgs=0..1,
                                     defaultValue=".*");
@@ -90,7 +92,6 @@ proc masonSearch(ref args: list(string)) {
 
   updateRegistry(skipUpdate);
 
-  // If no query is provided, list all packages in registry
   const query = queryArg.value().toLower();
   const pattern = compile(query, ignoreCase=true);
   var results: list(string);

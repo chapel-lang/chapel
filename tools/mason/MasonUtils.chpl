@@ -216,36 +216,6 @@ proc runSpackCommand(command) {
   return sub.exit_status;
 }
 
-// TODO: This is no longer used by mason, consider removing it
-proc hasOptions(args: list(string), const opts: string ...) {
-  var ret = false;
-
-  for o in opts {
-    const found = args.count(o) != 0;
-    if found {
-      ret = true;
-      break;
-    }
-  }
-
-  return ret;
-}
-
-// TODO: This is no longer used by mason, consider removing it
-proc hasOptions(args : [] string, const opts : string ...) {
-  var ret = false;
-
-  for o in opts {
-    const (found, idx) = args.find(o);
-    if found {
-      ret = true;
-      break;
-    }
-  }
-
-  return ret;
-}
-
 
 record VersionInfo {
   var major = -1, minor = -1, bug = 0;

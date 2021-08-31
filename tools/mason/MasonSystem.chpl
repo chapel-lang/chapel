@@ -50,23 +50,22 @@ proc masonSystem(args: [] string) {
     exit(0);
   }
   try! {
-
-    if pkgConfigExists() {
-      if pcCmd.hasValue() {
-        var pcArgs = pcCmd.values();
-        printPkgPc(pcArgs);
-      }
-      else if searchCmd.hasValue() {
-        var searchArgs = searchCmd.values();
-        pkgSearch(searchArgs);
-      }
+    if pcCmd.hasValue() {
+      pkgConfigExists();
+      var pcArgs = pcCmd.values();
+      printPkgPc(pcArgs);
     }
-    else {
+    else if searchCmd.hasValue() {
+      pkgConfigExists();
+      var searchArgs = searchCmd.values();
+      pkgSearch(searchArgs);
+    }
+    else { // no valid sub-command given
       masonSystemHelp();
       exit(0);
     }
   }
-  catch e: MasonError {
+  catch e: MasonError { // likely pkg-config wasn't found on system
     stderr.writeln(e.message());
     exit(1);
   }
