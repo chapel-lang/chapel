@@ -31,7 +31,7 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
-#define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
+// #define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
 
 static void CHPL_GPU_LOG(const char *str, ...) {
 #ifdef CHPL_GPU_DEBUG

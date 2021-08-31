@@ -25,7 +25,7 @@ type elemType = real(64);
 // TODO : we use the vector size as the 1D block size. However, maximum block
 // size is a hardware requirement (1024 in our testbed, for example). We need to
 // pass the vector size and add a conditional in the GPU kernel to scale up.
-config const m = 100, /*computeProblemSize(numVectors, elemType),*/
+config const m = 1024, /*computeProblemSize(numVectors, elemType),*/
              alpha = 3.0;
 
 //
