@@ -469,6 +469,7 @@ static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
                                                 PrimitiveTag prim,
                                                 Type *primReturnType);
 static void generateIndexComputation(OutlineInfo& info);
+static void generateEarlyReturn(OutlineInfo& info);
 
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
   return LoopStmt::findEnclosingLoop(sym->defPoint) == loop;
@@ -553,6 +554,7 @@ static OutlineInfo collectOutlineInfo(CForLoop* loop) {
   info.fn->addFlag(FLAG_GPU_CODEGEN);
 
   generateIndexComputation(info);
+  generateEarlyReturn(info);
 
   return info;
 }
@@ -662,6 +664,22 @@ static void generateIndexComputation(OutlineInfo& info) {
   }
 
   INT_ASSERT(info.kernelIndices.size() == info.loopIndices.size());
+}
+
+static void generateEarlyReturn(OutlineInfo& info) {
+  Symbol* localUpperBound = addKernelArgument(info, info.upperBound);
+
+  VarSymbol* isOOB = new VarSymbol("chpl_is_oob", dtBool);
+  info.fn->insertAtTail(new DefExpr(isOOB));
+
+  CallExpr* comparison = new CallExpr(PRIM_GREATEROREQUAL,
+                                      info.kernelIndices[0],
+                                      localUpperBound);
+  info.fn->insertAtTail(new CallExpr(PRIM_MOVE, isOOB, comparison));
+
+  BlockStmt* thenBlock = new BlockStmt();
+  thenBlock->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  info.fn->insertAtTail(new CondStmt(new SymExpr(isOOB), thenBlock));
 }
 
 static  CallExpr* generateGPUCall(VarSymbol* varBlockSize, OutlineInfo& info) { 
