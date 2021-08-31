@@ -51,6 +51,18 @@ chpl_main_argument chpl_gen_main_arg;
 
 char* chpl_executionCommand;
 
+void* chpl_string_literals_buffer;
+
+const char* allocate_string_literals_buf(int64_t s) {
+  chpl_string_literals_buffer = chpl_malloc(s);
+  return chpl_string_literals_buffer;
+}
+
+void deallocate_string_literals_buf(void) {
+  chpl_free((void*)chpl_string_literals_buffer);
+  chpl_string_literals_buffer = NULL;
+}
+
 int handleNonstandardArg(int* argc, char* argv[], int argNum, 
                          int32_t lineno, int32_t filename) {
 

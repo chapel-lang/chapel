@@ -1545,7 +1545,7 @@ void createInitStringLiterals() {
   // now emit initialization for them
   Expr* insertPt = initStringLiteralsEpilogue->defPoint;
 
-  VarSymbol* buffer = new VarSymbol("literalsBuf", dtCVoidPtr);
+  VarSymbol* buffer = new VarSymbol("literalsBuf", dtStringC);
   DefExpr* bufferDef = new DefExpr(buffer);
   insertPt->insertBefore(bufferDef);
 
@@ -1617,7 +1617,7 @@ void createInitStringLiterals() {
 
   // emit the call to chpl_createLiteralsBuffer and put it
   // just after the buffer is defined
-  CallExpr *allocCall = new CallExpr(gChplCreateLiteralsBuffer,
+  CallExpr *allocCall = new CallExpr(gAllocateStringLiteralsBuf,
                                      new_IntSymbol(bufferSize));
   CallExpr *moveBuf = new CallExpr(PRIM_MOVE, buffer, allocCall);
   bufferDef->insertAfter(moveBuf);
