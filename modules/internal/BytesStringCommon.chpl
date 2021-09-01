@@ -471,7 +471,11 @@ module BytesStringCommon {
     if t == string {
       var numCodepoints = numChars;
       if numCodepoints == -1 {
-        numCodepoints = countNumCodepoints(buff, buffLen);
+        if x.isASCII() {
+          numCodepoints = buffLen;
+        } else {
+          numCodepoints = countNumCodepoints(buff, buffLen);
+        }
       }
       return chpl_createStringWithOwnedBufferNV(x=buff, length=buffLen,
           size=buffSize, numCodepoints=numCodepoints);
