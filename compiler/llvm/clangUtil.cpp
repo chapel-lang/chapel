@@ -1546,10 +1546,6 @@ void setupClang(GenInfo* info, std::string mainFile)
 
   clangArgs.push_back("<chapel clang driver invocation>");
 
-  //if (gCodegenGPU) {
-    //clangArgs.push_back("--cuda-gpu-arch=sm_60");
-  //}
-
   for( size_t i = 0; i < clangInfo->clangCCArgs.size(); ++i ) {
     clangArgs.push_back(clangInfo->clangCCArgs[i].c_str());
   }
@@ -3970,11 +3966,6 @@ void makeBinaryLLVM(void) {
   std::vector<std::string> runtimeArgs;
   readArgsFromFile(runtime_libs, runtimeArgs);
 
-  std::cout << "Reading runtime libraries from " << runtime_libs << std::endl;
-  for (size_t i = 0 ; i < runtimeArgs.size() ; i++) {
-    std::cout << "Runtime arg " << runtimeArgs[i] << std::endl;
-  }
-
   std::vector<std::string> clangLDArgs;
 
   if (compilingWithPrgEnv()) {
@@ -4018,11 +4009,9 @@ void makeBinaryLLVM(void) {
         found = true;
         for(size_t j = 0; j < runtimeArgs.size(); ++j) {
           if (runtimeArgs[j] != "-lhugetlbfs")
-            std::cout << "Push back 1 " << runtimeArgs[j] << std::endl;
             clangLDArgs.push_back(runtimeArgs[j]);
         }
       } else {
-        std::cout << "Push back 2 " << gatheredArgs[i] << std::endl;
         clangLDArgs.push_back(gatheredArgs[i]);
       }
     }
@@ -4040,7 +4029,6 @@ void makeBinaryLLVM(void) {
     std::string libs = runCommand(cmd);
     // Erase trailing newline.
     libs.erase(libs.size() - 1);
-    std::cout << "Push back 3 " << libs << std::endl;
     clangLDArgs.push_back(libs);
   }
 
@@ -4358,7 +4346,6 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
   for (size_t i = 0; i < clangLDArgs.size(); ++i) {
     command += " ";
     command += clangLDArgs[i];
-    std::cout << "Adding clang ld arg " << clangLDArgs[i] << std::endl;
   }
 
   // Put user-requested libraries at the end of the compile line,
@@ -4377,7 +4364,6 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
 
   for_vector(const char, libName, libFiles) {
     command += " -l";
-    std::cout << "Adding library " << libName << std::endl;
     command += libName;
   }
 
