@@ -59,17 +59,15 @@ proc main() {
   on here.getChild(1) {
     //
     // ProblemSpace describes the index set for the three vectors.  It
-    // is a 1D domain that is distributed according to a Block
-    // distribution.  In this case, the Block distribution is 1D
-    // distribution computed by blocking the bounding box 1..m across
-    // the set of locales.  The ProblemSpace domain also contains the
-    // indices 1..m.
+    // is a 1D domain that has indices 1 to m.
     //
     const ProblemSpace = {1..m};
 
     //
-    // A, B, and C are the three distributed vectors, declared to store
-    // a variable of type elemType for each index in ProblemSpace.
+    // A, B, and C are the three vectors, declared to store a variable of type
+    // elemType for each index in ProblemSpace. As they are local to the `on`
+    // statement that executes on GPU, the memory for these arrays will be
+    // allocated on GPU-accessible memory.
     //
     var A, B, C: [ProblemSpace] elemType;
 
@@ -85,6 +83,7 @@ proc main() {
       // parallel, zippered manner storing the elements as a, b, and c.
       // Compute the multiply-add on b and c, storing the result to a.
       //
+      // This forall loop will be offloaded onto the GPU.
       forall (a, b, c) in zip(A, B, C) do
         a = b + alpha * c;
 
