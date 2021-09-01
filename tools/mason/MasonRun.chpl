@@ -199,7 +199,8 @@ private proc masonBuildRun(args: [?d] string) {
       if release then execopts.append("--release");
       if force then execopts.append("--force");
       if show then execopts.append("--show");
-      execopts.insert(0,"example");
+      // add expected arguments for masonExample
+      execopts.insert(0,["example", "--example"]);
       masonExample(execopts.toArray());
     }
     else {

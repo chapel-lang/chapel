@@ -67,6 +67,7 @@ proc masonExample(args: [] string) {
   }
   catch ex : ArgumentError {
     stderr.writeln(ex.message());
+    exit(1);
   }
   var show = showFlag.valueAsBool();
   var run = runFlag.valueAsBool();

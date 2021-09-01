@@ -93,7 +93,8 @@ proc masonBuild(args: [] string) throws {
     if show then compopts.append("--show");
     if release then compopts.append("--release");
     if force then compopts.append("--force");
-    compopts.insert(0,"example");
+    // add expected arguments for masonExample
+    compopts.insert(0,["example", "--example"]);
     masonExample(compopts.toArray());
   }
   else {
