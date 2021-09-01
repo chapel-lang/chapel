@@ -114,8 +114,8 @@ class Replicated : BaseDist {
   const targetLocDom : domain(1);
   const targetLocales : [targetLocDom] locale;
 
-  //const localeIdToIndexDom: domain(int);
-  //const localeIdToIndexArr: [localeIdToIndexDom] int;
+  const localeIdToIndexDom: domain(int);
+  const localeIdToIndexArr: [localeIdToIndexDom] int;
 }
 
 
@@ -131,10 +131,13 @@ proc Replicated.init(const targetLocales: [] locale = Locales,
   // remove duplicates in targetLocales in a way that arranges for
   // the last entry with a given id to "win".
   var locTargetLocalesDomAssoc : domain(here.id.type);
+  var localeIdToIndexDom: domain(int);
   for loc in locTargetLocalesArr {
     locTargetLocalesDomAssoc += loc.id;
+    localeIdToIndexDom += loc.id;
   }
   var locTargetLocalesAssoc: [locTargetLocalesDomAssoc] locale;
+  var localeIdToIndexArr: [localeIdToIndexDom] int;
   for loc in locTargetLocalesArr {
     locTargetLocalesAssoc[loc.id] = loc;
   }
@@ -147,6 +150,7 @@ proc Replicated.init(const targetLocales: [] locale = Locales,
     // consider only the unique locales
     if locTargetLocalesAssoc[loc.id] == loc {
       locTargetLocales[idx] = loc;
+      localeIdToIndexArr[loc.id] = idx;
       idx += 1;
     }
   }
@@ -159,12 +163,10 @@ proc Replicated.init(const targetLocales: [] locale = Locales,
 }
 
 proc Replicated.indexForLocale(whichloc: locale) {
-  for (idx, loc) in zip(targetLocDom, targetLocales) {
-    if loc.id == whichloc.id {
-      return idx;
-    }
-  }
-  return -1;
+  if !localeIdToIndexDom.contains(whichloc.id) then
+    return -1;
+
+  return localeIdToIndexArr[whichloc.id];
 }
 
 proc Replicated.dsiEqualDMaps(that: Replicated(?)) {
