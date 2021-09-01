@@ -275,6 +275,7 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_WIDE_GET_LOCALE:
     case PRIM_WIDE_GET_NODE:
     case PRIM_WIDE_GET_ADDR:
+    case PRIM_GET_REQUESTED_SUBLOC:
     case PRIM_IS_WIDE_PTR:
     case PRIM_CAPTURE_FN_FOR_CHPL:
     case PRIM_CAPTURE_FN_FOR_C:

@@ -1,8 +1,13 @@
 config const nSteps = 10;
 config const n = 10;
 
-proc main {
-  on here.getChild(1) {
+writeln("on GPU:");
+jacobi(here.getChild(1));
+writeln("on CPU:");
+jacobi(here);
+
+proc jacobi(loc) {
+  on loc {
     var A, B: [-1..n+1] real;
 
     A[-1] = 1; A[n+1] = 1;

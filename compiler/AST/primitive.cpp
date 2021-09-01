@@ -997,6 +997,9 @@ initPrimitive() {
   // specify a particular localeID for an on clause.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
 
+  // call the 'chpl_task_getRequestedSubloc' runtime function
+  prim_def(PRIM_GET_REQUESTED_SUBLOC, "chpl_task_getRequestedSubloc", returnInfoInt64);
+
   prim_def(PRIM_REGISTER_GLOBAL_VAR, "_register_global_var", returnInfoVoid, true, true);
   prim_def(PRIM_BROADCAST_GLOBAL_VARS, "_broadcast_global_vars", returnInfoVoid, true, true);
   // ('_private_broadcast' sym)

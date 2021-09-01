@@ -4827,6 +4827,7 @@ DEFINE_PRIM(PRIM_GPU_BLOCKDIM_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvv
 DEFINE_PRIM(PRIM_GPU_GRIDDIM_X)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.x"); }
 DEFINE_PRIM(PRIM_GPU_GRIDDIM_Y)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.y"); }
 DEFINE_PRIM(PRIM_GPU_GRIDDIM_Z)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.z"); }
+DEFINE_PRIM(PRIM_GET_REQUESTED_SUBLOC) { ret = codegenCallExpr("chpl_task_getRequestedSubloc"); }
 
 static void codegenPutGet(CallExpr* call, GenRet &ret) {
     // args are:
@@ -6174,7 +6175,14 @@ void CallExpr::codegenInvokeTaskFun(const char* name) {
   taskBundle   = codegenValue(get(1));
   bundleSize   = codegenValue(get(2));
 
-  args[0]      = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
+  // We would like to remove this conditional and always do the true branch,
+  // but wanted to limit the impact of this near the release date.
+  if (localeUsesGPU()) {
+    GenRet outerLocale = codegenCallExpr("chpl_task_getRequestedSubloc");
+    args[0]    = outerLocale;
+  } else {
+    args[0]      = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
+  }
   args[1]      = new_IntSymbol(ftableMap[fn], INT_SIZE_64);
   args[2]      = codegenCast("chpl_task_bundle_p", taskBundle);
   args[3]      = bundleSize;
