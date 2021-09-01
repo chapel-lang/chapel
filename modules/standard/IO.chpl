@@ -6272,7 +6272,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
   var err: syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var save_style = this._style();
+    var save_style = this._style(); defer { this._set_style(save_style); }
     var cur:size_t = 0;
     var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
@@ -6313,8 +6313,6 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
         err = qio_format_error_too_few_args();
       }
     }
-
-    this._set_style(save_style);
   }
 
   if err then try this._ch_ioerror(err, "in channel.writef(fmt:string)");
@@ -6329,7 +6327,7 @@ proc channel.writef(fmtStr:?t): bool throws
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var save_style = this._style();
+    var save_style = this._style(); defer { this._set_style(save_style); }
     var cur:size_t = 0;
     var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;

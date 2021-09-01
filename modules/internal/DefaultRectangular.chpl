@@ -1669,6 +1669,7 @@ module DefaultRectangular {
     }
 
     proc recursiveArrayWriter(in idx: rank*idxType, dim=0, in last=false) throws {
+
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -1724,7 +1725,6 @@ module DefaultRectangular {
         }
         else f <~> new ioLiteral("]");
       }
-
     }
 
     if false && !f.writing && !f.binary() &&
@@ -1822,6 +1822,7 @@ module DefaultRectangular {
     } else if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
               _isSimpleIoType(arr.eltType) && f.binary() &&
               isNative && arr.isDataContiguous(dom) {
+
       // If we can, we would like to read/write the array as a single write op
       // since _ddata is just a pointer to the memory location we just pass
       // that along with the size of the array. This is only possible when the
