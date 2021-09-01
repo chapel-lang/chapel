@@ -114,7 +114,7 @@ class Replicated : BaseDist {
   const targetLocDom : domain(1);
   const targetLocales : [targetLocDom] locale;
 
-  const localeIdToIndexDom: domain(int);
+  const localeIdToIndexDom: domain(here.id.type);
   const localeIdToIndexArr: [localeIdToIndexDom] int;
 }
 
@@ -130,32 +130,29 @@ proc Replicated.init(const targetLocales: [] locale = Locales,
 
   // remove duplicates in targetLocales in a way that arranges for
   // the last entry with a given id to "win".
-  var locTargetLocalesDomAssoc : domain(here.id.type);
-  var localeIdToIndexDom: domain(int);
+  var targetLocaleIds : domain(here.id.type);
   for loc in locTargetLocalesArr {
-    locTargetLocalesDomAssoc += loc.id;
-    localeIdToIndexDom += loc.id;
-  }
-  var locTargetLocalesAssoc: [locTargetLocalesDomAssoc] locale;
-  var localeIdToIndexArr: [localeIdToIndexDom] int;
-  for loc in locTargetLocalesArr {
-    locTargetLocalesAssoc[loc.id] = loc;
+    targetLocaleIds += loc.id;
   }
 
-  this.targetLocDom = {0..#locTargetLocDom.size};
+  this.targetLocDom = {0..#targetLocaleIds.size};
+
+  var localeIdToIndexArr: [targetLocaleIds] int = -1;
+
   // Now create a local DR array for the target locales.
   var locTargetLocales: [this.targetLocDom] locale;
   var idx = 0;
   for loc in locTargetLocalesArr {
-    // consider only the unique locales
-    if locTargetLocalesAssoc[loc.id] == loc {
-      locTargetLocales[idx] = loc;
+    if localeIdToIndexArr[loc.id] == -1 {
       localeIdToIndexArr[loc.id] = idx;
       idx += 1;
     }
+    locTargetLocales[localeIdToIndexArr[loc.id]] = loc;
   }
 
   this.targetLocales = locTargetLocales;
+  this.localeIdToIndexDom = targetLocaleIds;
+  this.localeIdToIndexArr = localeIdToIndexArr;
   this.complete();
 
   if traceReplicatedDist then
@@ -507,7 +504,7 @@ class ReplicatedArr : AbsBaseArr {
   //
   proc replicand(loc: locale) ref {
     if loc.id == here.id then
-      return chpl_myLocArr();
+      return chpl_myLocArr().arrLocalRep;
 
     const idx = dom.dist.indexForLocale(loc);
     if boundsChecking then
