@@ -79,6 +79,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TARGET_CPU_FLAG', INTERNAL),
     ChapelEnv('CHPL_TARGET_BACKEND_CPU', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
+    ChapelEnv('  CHPL_CUDA_PATH', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
@@ -163,6 +164,7 @@ def compute_all_values():
             get_lcd=chpl_home_utils.using_chapel_module()).cpu
 
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
+    ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_cuda_path()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
     ENV_VALS['  CHPL_GASNET_SEGMENT'] = chpl_comm_segment.get()
