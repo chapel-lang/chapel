@@ -433,6 +433,11 @@ bool isDenormalizable(Symbol* sym,
                   ce->isPrimitive(PRIM_GET_MEMBER_VALUE) ||
                   ce->isPrimitive(PRIM_RETURN) ||
                   (ce->isPrimitive(PRIM_ARRAY_SHIFT_BASE_POINTER) && ce->get(1) == se) ||
+
+                  // We want to pass symbols to kernel launches for now. This
+                  // simplifies its codegen.
+                  ce->isPrimitive(PRIM_GPU_KERNEL_LAUNCH_FLAT) ||
+
                   isBadMove(ce) ||
                   isValPassedByRef(ce, se) ||
                   isFloatComparisonPrimitive(ce))) {

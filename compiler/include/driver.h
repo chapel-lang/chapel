@@ -240,6 +240,8 @@ extern bool preserveInlinedLineNumbers;
 extern int breakOnID;
 extern int breakOnRemoveID;
 
+extern int fGPUBlockSize;
+
 extern char stopAfterPass[128];
 
 // code generation strings

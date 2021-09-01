@@ -79,7 +79,7 @@ void chpl_gpu_init() {
   // 
   // CUDA_CALL(cuDevicePrimaryCtxRetain(&context, device));
   
-  CUDA_CALL(cuCtxCreate(&context, 0, device));
+  CUDA_CALL(cuCtxCreate(&context, CU_CTX_BLOCKING_SYNC, device));
 
   CUcontext cuda_context = NULL;
   cuCtxGetCurrent(&cuda_context);
@@ -177,14 +177,6 @@ static void chpl_gpu_launch_kernel_help(const char* name,
                                         va_list args) {
   chpl_gpu_ensure_context();
 
-  int i;
-  void* function = chpl_gpu_getKernel("tmp/chpl__gpu.fatbin", name);
-  // TODO: this should use chpl_mem_alloc
-  void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
-
-  assert(function);
-  assert(kernel_params);
-
   CHPL_GPU_LOG("Kernel launcher called.\
                \n\tKernel: %s\n\tGrid: %d,%d,%d\n\t\
                Block: %d,%d,%d\n\tNumArgs: %d\n",
@@ -192,6 +184,14 @@ static void chpl_gpu_launch_kernel_help(const char* name,
                grd_dim_x, grd_dim_y, grd_dim_z,
                blk_dim_x, blk_dim_y, blk_dim_z,
                nargs);
+
+  int i;
+  void* function = chpl_gpu_getKernel("tmp/chpl__gpu.fatbin", name);
+  // TODO: this should use chpl_mem_alloc
+  void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
+
+  assert(function);
+  assert(kernel_params);
 
   CHPL_GPU_LOG("Creating kernel parameters\n");
 
@@ -281,8 +281,10 @@ void chpl_gpu_launch_kernel(const char* name,
   va_end(args);
 }
 
-void chpl_gpu_launch_kernel_flat(const char* name, int grd_dim, int blk_dim,
+void chpl_gpu_launch_kernel_flat(const char* name, int num_threads, int blk_dim,
                                  int nargs, ...) {
+  int grd_dim = (num_threads+blk_dim-1)/blk_dim;
+
   va_list args;
   va_start(args, nargs);
   chpl_gpu_launch_kernel_help(name,

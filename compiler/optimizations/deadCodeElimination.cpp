@@ -447,6 +447,7 @@ static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
                                                 PrimitiveTag prim,
                                                 Type *primReturnType);
 static void generateIndexComputation(OutlineInfo& info);
+static void generateEarlyReturn(OutlineInfo& info);
 
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
   return LoopStmt::findEnclosingLoop(sym->defPoint) == loop;
@@ -531,6 +532,7 @@ static OutlineInfo collectOutlineInfo(CForLoop* loop) {
   info.fn->addFlag(FLAG_GPU_CODEGEN);
 
   generateIndexComputation(info);
+  generateEarlyReturn(info);
 
   return info;
 }
@@ -541,16 +543,18 @@ static OutlineInfo collectOutlineInfo(CForLoop* loop) {
  * see what we pattern match and extract), generate the
  * following AST and insert it into gpuLaunchBlock:
  * 
- *   blockDelta = ub - lb
- *   blockSize = blockDelta + 1
+ *   chpl_block_delta = ub - lb
+ *   chpl_gpu_num_threads = chpl_block_delta + 1
  */
-static VarSymbol* generateBlockSizeComputation(BlockStmt* gpuLaunchBlock,
-                                               OutlineInfo& info) {
+static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
+                                     OutlineInfo& info) {
 
-  VarSymbol *varBoundDelta = insertNewVarAndDef(
-    gpuLaunchBlock, "blockDelta", dtInt[INT_SIZE_DEFAULT]);
-  VarSymbol *varBlockSize = insertNewVarAndDef(
-    gpuLaunchBlock, "blockSize", dtInt[INT_SIZE_DEFAULT]);
+  VarSymbol *varBoundDelta = insertNewVarAndDef(gpuLaunchBlock,
+                                                "chpl_block_delta",
+                                                dtInt[INT_SIZE_DEFAULT]);
+  VarSymbol *numThreads = insertNewVarAndDef(gpuLaunchBlock,
+                                             "chpl_num_gpu_threads",
+                                             dtInt[INT_SIZE_DEFAULT]);
 
   CallExpr *c1 = new CallExpr(PRIM_ASSIGN, varBoundDelta,
                               new CallExpr(PRIM_SUBTRACT,
@@ -558,11 +562,12 @@ static VarSymbol* generateBlockSizeComputation(BlockStmt* gpuLaunchBlock,
                                            info.lowerBounds[0]));
   gpuLaunchBlock->insertAtTail(c1);
 
-  CallExpr *c2 = new CallExpr(PRIM_ASSIGN, varBlockSize, new CallExpr(
-    PRIM_ADD, varBoundDelta, new_IntSymbol(1)));
+  CallExpr *c2 = new CallExpr(PRIM_ASSIGN, numThreads,
+                              new CallExpr(PRIM_ADD, varBoundDelta,
+                                           new_IntSymbol(1)));
   gpuLaunchBlock->insertAtTail(c2);
 
-  return varBlockSize;
+  return numThreads;
 }
 
 static VarSymbol* generateAssignmentToPrimitive(
@@ -642,12 +647,41 @@ static void generateIndexComputation(OutlineInfo& info) {
   INT_ASSERT(info.kernelIndices.size() == info.loopIndices.size());
 }
 
-static  CallExpr* generateGPUCall(VarSymbol* varBlockSize, OutlineInfo& info) { 
+/*
+ * Adds the following AST to a GPU kernel
+ *
+ * def chpl_is_oob;
+ * chpl_is_oob = `calculated thread idx` > upperBound
+ * if (chpl_is_oob) {
+ *   return;
+ * }
+ *
+ */
+static void generateEarlyReturn(OutlineInfo& info) {
+  Symbol* localUpperBound = addKernelArgument(info, info.upperBound);
+
+  VarSymbol* isOOB = new VarSymbol("chpl_is_oob", dtBool);
+  info.fn->insertAtTail(new DefExpr(isOOB));
+
+  CallExpr* comparison = new CallExpr(PRIM_GREATER,
+                                      info.kernelIndices[0],
+                                      localUpperBound);
+  info.fn->insertAtTail(new CallExpr(PRIM_MOVE, isOOB, comparison));
+
+  BlockStmt* thenBlock = new BlockStmt();
+  thenBlock->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  info.fn->insertAtTail(new CondStmt(new SymExpr(isOOB), thenBlock));
+}
+
+static  CallExpr* generateGPUCall(OutlineInfo& info, VarSymbol* numThreads) { 
   CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
   call->insertAtTail(info.fn);
 
-  call->insertAtTail(new_IntSymbol(1));  // grid size
-  call->insertAtTail(varBlockSize); // block size
+  call->insertAtTail(numThreads);  // total number of GPU threads
+
+  int blockSize = fGPUBlockSize != 0 ? fGPUBlockSize:512;
+  call->insertAtTail(new_IntSymbol(blockSize));
+
 
   for_vector (Symbol, actual, info.kernelActuals) {
     call->insertAtTail(new SymExpr(actual));
@@ -767,9 +801,8 @@ static void outlineGPUKernels() {
           }
 
 
-          VarSymbol *varBlockSize = generateBlockSizeComputation(gpuLaunchBlock,
-                                                                 info);
-          CallExpr* gpuCall = generateGPUCall(varBlockSize, info);
+          VarSymbol *numThreads = generateNumThreads(gpuLaunchBlock, info);
+          CallExpr* gpuCall = generateGPUCall(info, numThreads);
           gpuLaunchBlock->insertAtTail(gpuCall);
           gpuLaunchBlock->flattenAndRemove();
 

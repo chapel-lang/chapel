@@ -35,7 +35,7 @@ void chpl_gpu_launch_kernel(const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
                             int blk_dim_x, int blk_dim_y, int blk_dim_z,
                             int nargs, ...);
-void chpl_gpu_launch_kernel_flat(const char* name, int grid_dim_x, int block_dim_x,
+void chpl_gpu_launch_kernel_flat(const char* name, int num_threads, int blk_dim,
                                  int nargs, ...);
 
 void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
