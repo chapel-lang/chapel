@@ -27,15 +27,16 @@ extern "C" {
 
 #ifdef HAS_GPU_LOCALE
 
-void  chpl_gpu_init(void);
+void chpl_gpu_init(void);
 bool chpl_gpu_has_context(void);
 bool chpl_gpu_running_on_gpu_locale(void);
 
-void chpl_gpu_launch_kernel(const char* name,
+void chpl_gpu_launch_kernel(const char* fatbinPath, const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
                             int blk_dim_x, int blk_dim_y, int blk_dim_z,
                             int nargs, ...);
-void chpl_gpu_launch_kernel_flat(const char* name, int num_threads, int blk_dim,
+void chpl_gpu_launch_kernel_flat(const char* fatbinPath, const char* name,
+                                 int num_threads, int blk_dim,
                                  int nargs, ...);
 
 void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
