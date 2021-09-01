@@ -61,7 +61,7 @@ proc masonExample(args: [] string) {
                                 flagInversion=true);
   var exampleOpts = parser.addOption(name="example",
                                      opts=["--example"],
-                                     numArgs=1..);
+                                     numArgs=0..);
   try! {
     parser.parseArgs(args);
   }
