@@ -11,5 +11,4 @@ proc checkExitStatus(cmd) {
   }
 }
 
-checkExitStatus(['mason', 'test']);
- 
+checkExitStatus(['mason','test']);

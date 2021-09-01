@@ -24,9 +24,9 @@ proc main() {
 
   setEnv("MASON_HOME", here.cwd());
 
-  const args = ["foo", "env"];
-  const debugArgs = ["foo", "env", "--debug"];
-  const helpArgs = ["foo", "env", "--help"];
+  const args = ["env"];
+  const debugArgs = ["env", "--debug"];
+  const helpArgs = ["env", "--help"];
 
   masonEnv(args);
   writeln("----------");
@@ -40,7 +40,7 @@ proc main() {
 	masonEnv(args);
   writeln("---------");
   unsetEnv("MASON_OFFLINE");
-	
+
   masonEnv(debugArgs);
   writeln("----------");
 

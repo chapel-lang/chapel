@@ -19,17 +19,33 @@
  */
 
 
-private use FileSystem;
-private use MasonHelp;
-private use IO;
-private use MasonUtils;
+use FileSystem;
+use IO;
+use MasonArgParse;
+use MasonHelp;
+use MasonUtils;
 
 proc masonDoc(args: [] string) throws {
+  var parser = new argumentParser();
+  var helpFlag = parser.addFlag("help",
+                                opts=["-h","--help"],
+                                defaultValue=false,
+                                flagInversion=false);
+  try {
+    parser.parseArgs(args);
+  }
+  catch ex : ArgumentError {
+    stderr.writeln(ex.message());
+    masonDocHelp();
+    exit(1);
+  }
+
+  if helpFlag.valueAsBool() {
+    masonDocHelp();
+    exit(0);
+  }
+
   try! {
-    if args.size > 2 {
-      masonDocHelp();
-      exit(0);
-    }
     const tomlName = 'Mason.toml';
     const cwd = here.cwd();
 
