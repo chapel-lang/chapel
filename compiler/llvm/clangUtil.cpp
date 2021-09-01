@@ -2281,7 +2281,7 @@ void runClang(const char* just_parse_filename) {
     // activate the GPU target
     clangOtherArgs.push_back("-x");
     clangOtherArgs.push_back("cuda");
-    //clangOtherArgs.push_back("--cuda-gpu-arch=sm_60");
+    clangOtherArgs.push_back("--cuda-gpu-arch=sm_60");
   }
 
   // Always include sys_basic because it might change the
