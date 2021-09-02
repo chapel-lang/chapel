@@ -3507,6 +3507,51 @@ proc testDefaultNameOpts(test: borrowed Test) throws {
   test.assertTrue(myBoolArg.valueAsBool());
 }
 
+// unit test for helper _processNameToOpts
+proc testDefaultNameToOpts(test: borrowed Test) throws {
+
+  var opt1 = _processNameToOpts("show");
+  test.assertEqual(opt1,["--show"]);
+
+  var opt2 = _processNameToOpts("--show");
+  test.assertEqual(opt2,["--show"]);
+
+  var opt3 = _processNameToOpts("-show");
+  test.assertEqual(opt3,["-show"]);
+
+  var opt4 = _processNameToOpts("--show-");
+  test.assertEqual(opt4,["--show-"]);
+
+  var opt5 = _processNameToOpts("show-me");
+  test.assertEqual(opt5,["--show-me"]);
+}
+
+// unit test for helper _prepareRange
+proc testRangeConverter(test: borrowed Test) throws {
+  var range1 = _prepareRange(1..);
+  test.assertEqual(range1, 1..max(int));
+
+  var range2 = _prepareRange(1..20);
+  test.assertEqual(range2, 1..20);
+
+  try {
+    var range3 = _prepareRange(..20);
+  } catch ex : ArgumentError {
+    test.assertTrue(true);
+    stderr.writeln(ex.message());
+
+    try {
+      var range4 = _prepareRange(..);
+    } catch ex : ArgumentError {
+      test.assertTrue(true);
+      stderr.writeln(ex.message());
+      return;
+    }
+  }
+  test.assertTrue(false);
+
+}
+
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
 UnitTest.main();

@@ -27,7 +27,7 @@ proc main(args: []string) throws {
                                 opts=["-t","--types"],
                                 numArgs=1..);
   // add a string option that accepts exactly 1 value
-  var confArg = parser.addOption(name="myConfigVar");
+  var confArg = parser.addOption(name="--myConfigVar");
   // add a bool flag that can be turned on (--flagOn) or off (--no-flagOn)
   // but has no value by default
   var boolArg = parser.addFlag(name="flagOn", flagInversion=true);
