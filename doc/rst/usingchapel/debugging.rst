@@ -74,20 +74,12 @@ support, please let us know so that we can prioritize accordingly.
 Flags for Tracking Tasks
 ------------------------
 
-For certain tasking layers, Chapel supports a few experimental
-capabilities for tracking the status of tasks, primarily designed for
+For certain tasking layers, Chapel supports an experimental
+capability for tracking the status of tasks, primarily designed for
 use in a single-locale execution.  To enable this capability, your
-program must be compiled with the ``--task-tracking`` flag.  These flags
-add a fair amount of runtime overhead to task-parallel programs. The
-flags are as follows:
-
-  -b, --blockreport  When ``<CTRL-C>`` is entered during a program
-                     executing under this flag, it will display a list
-                     of where tasks are blocked on a synchronization
-                     variable.  Running with this flag will also cause
-                     the executable to attempt to automatically detect
-                     deadlock for single-locale executions.  This is
-                     only supported with ``CHPL_TASKS=fifo``.
+program must be compiled with the ``--task-tracking`` flag.  This flag
+adds a fair amount of runtime overhead to task-parallel programs. The
+flag is:
 
   -t, --taskreport   When ``<CTRL-C>`` is entered during a program
                      executing under this flag, a list of pending and

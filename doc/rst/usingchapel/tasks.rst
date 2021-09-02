@@ -298,8 +298,7 @@ CHPL_TASKS == fifo
   with an assumption that some minimum number of tasks are executing
   concurrently, setting ``CHPL_RT_NUM_THREADS_PER_LOCALE`` lower than this
   can result in deadlock if there are not enough threads to implement
-  all of the required tasks.  The ``-b/--blockreport`` flag can help debug
-  programs like this that appear to be deadlocked.
+  all of the required tasks.
 
 CHPL_TASKS == qthreads
 ----------------------
@@ -388,10 +387,7 @@ the program with respect to its tasks.
 
   blockedTasks()
     returns the number of tasks that are blocked because
-    they are waiting on a sync or single variable.  In order to avoid
-    unnecessary overheads, in the implementations this method will not
-    generate meaningful information unless the program was run with the
-    ``-b/--blockreport`` flag.
+    they are waiting on a sync or single variable.
 
   totalThreads()
     returns the number of threads that have been created
