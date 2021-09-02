@@ -466,8 +466,6 @@ module ChapelBase {
     return __primitive("**", a, b);
   }
   operator **(param a: uint(?w), param b: uint(w)) param {
-    if a == 0 && b < 0 then
-      compilerError("0 cannot be raised to a negative power");
     return __primitive("**", a, b);
   }
 
