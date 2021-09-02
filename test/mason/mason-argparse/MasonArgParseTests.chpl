@@ -3492,8 +3492,7 @@ proc testDefaultNameOpts(test: borrowed Test) throws {
   //       Find out why as part of cray/chapel-private#2300, regular use in
   //       MasonArgParseExample.chpl compiles as intended
   var myStrArg = parser.addOption(name="myOpt1",
-                                  opts=["--myOpt1"],
-                                  numArgs=1);
+                                  opts=["--myOpt1"]);
   var myBoolArg = parser.addFlag(name="myFlag",
                                  opts=["--myFlag"]);
   //make sure no value currently exists
