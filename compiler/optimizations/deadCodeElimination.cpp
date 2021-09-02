@@ -40,6 +40,7 @@
 #include <queue>
 #include <set>
 #include <algorithm>
+#include <cstdio>
 
 typedef std::set<BasicBlock*> BasicBlockSet;
 
@@ -675,6 +676,7 @@ static void generateEarlyReturn(OutlineInfo& info) {
 
 static  CallExpr* generateGPUCall(OutlineInfo& info, VarSymbol* numThreads) { 
   CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
+
   call->insertAtTail(info.fn);
 
   call->insertAtTail(numThreads);  // total number of GPU threads
@@ -857,7 +859,7 @@ void deadCodeElimination() {
 
   // For now, we are doing GPU outlining here. In the future, it should probably
   // be its own pass.
-  if (strcmp(CHPL_LOCALE_MODEL, "gpu") == 0) {
+  if (localeUsesGPU()) {
     outlineGPUKernels();
   }
 

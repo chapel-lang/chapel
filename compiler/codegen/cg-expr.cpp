@@ -4736,6 +4736,16 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
 
   std::vector<GenRet> args;
+
+  // The first argument passed to the chpl_gpu_launch_kernel* runtime call is the
+  // fatbin path. The fatbin file contains the ptx code for the kernel function
+  // we wish to launch. 
+  char fatbinPath[FILENAME_MAX+1];
+  int len = snprintf(fatbinPath, FILENAME_MAX+1, "%s/%s", saveCDir, "chpl__gpu.fatbin");
+  INT_ASSERT(len > 0 && len < FILENAME_MAX+1);
+  args.push_back(new_CStringSymbol(fatbinPath));
+
+  // "Copy" arguments from primitive call to runtime library function call.
   int curArg = 1;
   for_actuals(actual, call) {
     Symbol* actualSym = toSymExpr(actual)->symbol();

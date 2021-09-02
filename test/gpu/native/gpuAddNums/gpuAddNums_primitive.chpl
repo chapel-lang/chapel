@@ -49,7 +49,7 @@ proc main() {
 var output: real(64);
 var deviceBuffer = getDeviceBufferPointer();
 
-// arguments are: function name, grid size, block size, arguments
+// arguments are: fatbin path, function name, grid size, block size, arguments
 __primitive("gpu kernel launch flat", c"add_nums", 1, 1, deviceBuffer);
 output = getDataFromDevice(deviceBuffer);
 

@@ -1502,6 +1502,18 @@ static void setPrintCppLineno() {
   if (developer && !userSetCppLineno) printCppLineno = false;
 }
 
+static void setSaveCForGpuCodegen() {
+  bool isGpuCodegen = localeUsesGPU();
+  bool isSaveCDirEmpty = strlen(saveCDir) == 0;
+
+  if(isGpuCodegen && isSaveCDirEmpty) {
+    int len = snprintf(saveCDir, FILENAME_MAX+1, "%s_gpu_files", executableFilename);
+    if(len < 0 || len >= FILENAME_MAX+1) {
+      USR_FATAL("Unable to produce name of savec directory for GPU code generation.");
+    }
+  }
+}
+
 static void checkLLVMCodeGen() {
 #ifdef HAVE_LLVM
   // LLVM does not currently work on 32-bit x86
@@ -1628,6 +1640,8 @@ static void postprocess_args() {
   checkLibraryPythonAndLibmode();
 
   setPrintCppLineno();
+
+  setSaveCForGpuCodegen();
 }
 
 

@@ -180,8 +180,6 @@ void gatherTypesForCodegen(void);
 
 void registerPrimitiveCodegens();
 
-bool localeUsesGPU();
-
 void closeCodegenFiles();
 
 #endif //CODEGEN_H
