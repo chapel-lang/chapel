@@ -31,16 +31,14 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
-// #define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
-
 static void CHPL_GPU_LOG(const char *str, ...) {
-#ifdef CHPL_GPU_DEBUG
-  va_list args;
-  va_start(args, str);
-  vfprintf(stdout, str, args);
-  va_end(args);
-  fflush(stdout);
-#endif
+  if (verbosity >= 2) {
+    va_list args;
+    va_start(args, str);
+    vfprintf(stdout, str, args);
+    va_end(args);
+    fflush(stdout);
+  }
 }
 
 static void chpl_gpu_cuda_check(int err, const char* file, int line) {
