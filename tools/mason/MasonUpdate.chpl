@@ -51,13 +51,14 @@ proc masonUpdate(args: [?d] string) {
   var tf = "Mason.toml";
   var lf = "Mason.lock";
   var skipUpdate = MASON_OFFLINE;
+
   var parser = new argumentParser();
+
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
                                 defaultValue=false);
-  var updateFlag = parser.addFlag(name="update",
-                                  opts=["--update"],
-                                  flagInversion=true);
+
+  var updateFlag = parser.addFlag(name="update", flagInversion=true);
 
   try! {
     parser.parseArgs(args);

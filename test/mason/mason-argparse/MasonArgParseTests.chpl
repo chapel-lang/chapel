@@ -1,7 +1,9 @@
-use UnitTest;
-use MasonArgParse;
-use List;
 use IO;
+use List;
+use MasonArgParse;
+use UnitTest;
+
+
 
 // a short string opt with single value and expected # values supplied
 proc testSingleStringShortOpt(test: borrowed Test) throws {
@@ -3479,6 +3481,31 @@ proc testSubCmdAndPassThruOnMain(test: borrowed Test) throws {
   test.assertFalse(mySubCmd1.hasValue());
   test.assertTrue(passThru.hasValue());
   test.assertEqual(new list(passThru.values()), new list(argList[4..]));
+}
+
+
+// test using name as default long option flag
+proc testDefaultNameOpts(test: borrowed Test) throws {
+  var argList = ["progName","--myOpt1","twenty", "--myFlag"];
+  var parser = new argumentParser();
+  // TODO: Compilation is crashing with UnitTest when opts are not specified
+  //       Find out why as part of cray/chapel-private#2300, regular use in
+  //       MasonArgParseExample.chpl compiles as intended
+  var myStrArg = parser.addOption(name="myOpt1",
+                                  opts=["--myOpt1"],
+                                  numArgs=1);
+  var myBoolArg = parser.addFlag(name="myFlag",
+                                 opts=["--myFlag"]);
+  //make sure no value currently exists
+  test.assertFalse(myStrArg.hasValue());
+  test.assertFalse(myBoolArg.hasValue());
+  //parse the options
+  parser.parseArgs(argList);
+  //make sure we now have a value
+  test.assertTrue(myStrArg.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(myStrArg.value(),"twenty");
+  test.assertTrue(myBoolArg.valueAsBool());
 }
 
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE

@@ -113,15 +113,16 @@ proc MASON_REGISTRY {
 }
 
 proc masonEnv(args) {
+
   var parser = new argumentParser();
+
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
                                 defaultValue=false);
 
   // TODO: When automatic help is generated, make sure this isn't documented
-  var debugFlag = parser.addFlag("debug",
-                                opts=["--debug"],
-                                defaultValue=false);
+  var debugFlag = parser.addFlag("debug", defaultValue=false);
+
   try! {
     parser.parseArgs(args);
   }

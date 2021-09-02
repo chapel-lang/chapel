@@ -36,18 +36,19 @@ use Spawn;
   mason new <projectName/directoryName>
 */
 proc masonNew(args: [] string) throws {
+
   var parser = new argumentParser();
+
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false);
-  var showFlag = parser.addFlag(name="show",
-                                opts=["--show"],
                                 defaultValue=false);
   var vcsFlag = parser.addFlag(name="vcs",
                                opts=["--no-vcs"],
                                defaultValue=false);
   var nameOpt = parser.addOption(name="legalname",
                                  opts=["--name"]);
+
+  var showFlag = parser.addFlag(name="show", defaultValue=false);
   var dirArg = parser.addArgument(name="directory", numArgs=0..1);
 
   try {

@@ -669,7 +669,7 @@ module MasonArgParse {
       return _addHandler(handler);
     }
 
-    proc addFlag(name:string, opts:[?optsD],
+    proc addFlag(name:string, opts:[?optsD]=["--" + name],
                  required=false, defaultValue:?t=none, flagInversion=false,
                  numArgs=0) throws {
       return addFlag(name=name,
@@ -680,7 +680,7 @@ module MasonArgParse {
                      numArgs=numArgs..numArgs);
     }
 
-    proc addFlag(name:string, opts:[?optsD],
+    proc addFlag(name:string, opts:[?optsD]=["--" + name],
                  required=false, defaultValue:?t=none, flagInversion=false,
                  numArgs:range) throws {
 
@@ -759,7 +759,7 @@ module MasonArgParse {
 
     // define a new string option with fixed number of values expected
     proc addOption(name:string,
-                   opts:[?optsD]string,
+                   opts:[?optsD]=["--" + name],
                    numArgs=1,
                    required=false,
                    defaultValue:?t=none) throws {
@@ -772,7 +772,7 @@ module MasonArgParse {
 
     // define a new string option with bounded range of values expected
     proc addOption(name:string,
-                   opts:[?optsD]string,
+                   opts:[?optsD]=["--" + name],
                    numArgs:range(?),
                    required=false,
                    defaultValue:?t=none) throws {

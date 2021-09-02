@@ -27,14 +27,10 @@ proc main(args: []string) throws {
                                 opts=["-t","--types"],
                                 numArgs=1..);
   // add a string option that accepts exactly 1 value
-  var confArg = parser.addOption(name="strArg3",
-                                opts=["--myConfigVar"],
-                                numArgs=1);
+  var confArg = parser.addOption(name="myConfigVar");
   // add a bool flag that can be turned on (--flagOn) or off (--no-flagOn)
   // but has no value by default
-  var boolArg = parser.addFlag(name="boolArg1",
-                                opts=["--flagOn"],
-                                flagInversion=true);
+  var boolArg = parser.addFlag(name="flagOn", flagInversion=true);
 
   // add a positional argument that expects 1 value
   var posArg = parser.addArgument(name="positionalArg");
@@ -86,9 +82,7 @@ proc mySubCmd1(args:[?argsD]string) throws {
                                 flagInversion=true);
 
   // add a positional argument to the subcommand that expects 0 or 1 values
-  var subPosArg = parser.addArgument(name="subItem",
-                                      numArgs=0..1,
-                                      defaultValue=none);
+  var subPosArg = parser.addArgument(name="subItem", numArgs=0..1);
 
   // add a passthrough identifier for collecting remaining args
   // also define a place to read the passed through values
