@@ -33,7 +33,8 @@ proc main(args: []string) throws {
   // add a bool flag that can be turned on (--flagOn) or off (--no-flagOn)
   // but has no value by default
   var boolArg = parser.addFlag(name="boolArg1",
-                                opts=["--flagOn"]);
+                                opts=["--flagOn"],
+                                flagInversion=true);
 
   // add a positional argument that expects 1 value
   var posArg = parser.addArgument(name="positionalArg");
@@ -81,7 +82,8 @@ proc mySubCmd1(args:[?argsD]string) throws {
   // with a default value of false
   var boolArg = parser.addFlag(name="subBoolArg",
                                 opts=["-f","--subFlagOn"],
-                                defaultValue=false);
+                                defaultValue=false,
+                                flagInversion=true);
 
   // add a positional argument to the subcommand that expects 0 or 1 values
   var subPosArg = parser.addArgument(name="subItem",

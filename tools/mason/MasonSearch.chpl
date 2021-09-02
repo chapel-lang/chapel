@@ -51,17 +51,14 @@ proc masonSearch(ref args: list(string)) {
 
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   // TODO: Is the debug flag supposed to be documented in help or not?
   var debugFlag = parser.addFlag("debug",
                                 opts=["--debug"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var showFlag = parser.addFlag(name="show",
                                 opts=["--show"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var updateFlag = parser.addFlag(name="update",
                                   opts=["--update"],
                                   flagInversion=true);

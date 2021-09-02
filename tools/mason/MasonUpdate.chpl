@@ -54,8 +54,7 @@ proc masonUpdate(args: [?d] string) {
   var parser = new argumentParser();
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var updateFlag = parser.addFlag(name="update",
                                   opts=["--update"],
                                   flagInversion=true);

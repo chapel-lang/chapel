@@ -32,16 +32,13 @@ proc masonModify(args: [] string) throws {
   var parser = new argumentParser();
   var extFlag = parser.addFlag("external",
                                opts=["--external"],
-                               defaultValue=false,
-                               flagInversion=false);
+                               defaultValue=false);
   var sysFlag = parser.addFlag("system",
                                opts=["--system"],
-                               defaultValue=false,
-                               flagInversion=false);
+                               defaultValue=false);
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var depArg = parser.addArgument("dep");
   try {
     parser.parseArgs(args);

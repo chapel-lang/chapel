@@ -1689,7 +1689,8 @@ proc testBoolLongNoFlag(test: borrowed Test) throws {
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
-                                 defaultValue=true);
+                                 defaultValue=true,
+                                 flagInversion=true);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1717,7 +1718,8 @@ proc testSubCommandAndBoolLongFlag(test: borrowed Test) throws {
   var subParser = new argumentParser();
   var myBoolArg = subParser.addFlag(name="BoolFlag",
                                     opts=["-n","--boolVal"],
-                                    defaultValue=true);
+                                    defaultValue=true,
+                                    flagInversion=true);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   subParser.parseArgs((new list(mySubCmd1.values())).toArray());
@@ -1748,7 +1750,8 @@ proc testParentCommandSubCommandAndBoolLongFlag(test: borrowed Test) throws {
   var subParser = new argumentParser();
   var myBoolArg = subParser.addFlag(name="BoolFlag",
                                     opts=["-n","--boolVal"],
-                                    defaultValue=true);
+                                    defaultValue=true,
+                                    flagInversion=true);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   subParser.parseArgs((new list(mySubCmd1.values())).toArray());
@@ -1763,7 +1766,6 @@ proc testBoolEqFlag(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=0..1,
-                                 flagInversion=false,
                                  defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
@@ -1782,7 +1784,6 @@ proc testBoolEqForceOneFlag(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 flagInversion=false,
                                  defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
@@ -1801,7 +1802,6 @@ proc testBoolForceOneFlag(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 flagInversion=false,
                                  defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
@@ -1821,7 +1821,6 @@ proc testBoolZeroToOneFlagNoVal(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=0..1,
-                                 flagInversion=false,
                                  defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
@@ -1840,7 +1839,6 @@ proc testBoolForceOneFlagNoVal(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 flagInversion=false,
                                  defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
@@ -1862,7 +1860,6 @@ proc testBoolForceOneFlagExtraGiven(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 flagInversion=false,
                                  defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
@@ -1884,7 +1881,6 @@ proc testBoolRangeFlagExtraGiven(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=0..1,
-                                 flagInversion=false,
                                  defaultValue=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
@@ -1908,6 +1904,7 @@ proc testTryMakeBadFlagRange(test: borrowed Test) throws {
                                   opts=["--name","-n"],
                                   numArgs=0..2,
                                   required=false,
+                                  flagInversion=true,
                                   defaultValue=none);
   }catch ex: ArgumentError {
     test.assertTrue(true);
@@ -1924,7 +1921,6 @@ proc testTryMakeNonSenseFlag(test: borrowed Test) throws {
   try {
     var myNewArg = parser.addFlag(name="BoolOpt",
                                   opts=["--name","-n"],
-                                  flagInversion=false,
                                   required=true,
                                   defaultValue=true);
   }catch ex: ArgumentError {
@@ -1944,7 +1940,8 @@ proc testTryMakeNonSenseFlagRange(test: borrowed Test) throws {
                                   opts=["--name","-n"],
                                   numArgs=0..1,
                                   required=true,
-                                  defaultValue=true);
+                                  defaultValue=true,
+                                  flagInversion=true);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -1962,7 +1959,8 @@ proc testTryMakeNonSenseFlagFixed(test: borrowed Test) throws {
                                   opts=["--name","-n"],
                                   numArgs=1,
                                   required=true,
-                                  defaultValue=true);
+                                  defaultValue=true,
+                                  flagInversion=true);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -1978,7 +1976,6 @@ proc testBoolZeroToOneFlagNoValDefaultTrue(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=0..1,
-                                 flagInversion=false,
                                  defaultValue=true);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
@@ -1997,7 +1994,6 @@ proc testBoolZeroToOneFlagNoValDefaultFalse(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=0..1,
-                                 flagInversion=false,
                                  defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
@@ -2016,7 +2012,6 @@ proc testBoolOneFlagNoValDefaultTrue(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 flagInversion=false,
                                  defaultValue=true);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
@@ -2035,7 +2030,6 @@ proc testBoolOneFlagNoValDefaultFalse(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 flagInversion=false,
                                  defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
@@ -2054,7 +2048,6 @@ proc testBoolZeroFlagNoValDefaultTrue(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 flagInversion=false,
                                  defaultValue=true);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
@@ -2073,7 +2066,6 @@ proc testBoolZeroFlagNoValDefaultFalse(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 flagInversion=false,
                                  defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
@@ -2091,8 +2083,7 @@ proc testBoolMultipleEntryValues(test: borrowed Test) throws {
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
-                                 numArgs=1,
-                                 flagInversion=false);
+                                 numArgs=1);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -2110,8 +2101,7 @@ proc testFlagBadBoolValue(test: borrowed Test) throws {
   var parser = new argumentParser();
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
-                                 numArgs=1,
-                                 flagInversion=false);
+                                 numArgs=1);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -2132,8 +2122,7 @@ proc testFlagBadBoolNumArgs(test: borrowed Test) throws {
   try {
     var myBoolArg = parser.addFlag(name="BoolFlag",
                                    opts=["-n","--boolVal"],
-                                   numArgs=2,
-                                   flagInversion=false);
+                                   numArgs=2);
   } catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -2316,8 +2305,7 @@ proc testMixPosBoolOptWithValues(test: borrowed Test) throws {
 
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-b","--boolVal"],
-                                 numArgs=1,
-                                 flagInversion=false);
+                                 numArgs=1);
   var myPosArg = parser.addArgument(name="FileNames",
                                     numArgs=1..);
   var myStrArg = parser.addOption(name="StringOpt",
@@ -2351,8 +2339,7 @@ proc testMixPosBoolOptWithValuesFixed(test: borrowed Test) throws {
 
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-b","--boolVal"],
-                                 numArgs=1,
-                                 flagInversion=false);
+                                 numArgs=1);
   var myPosArg = parser.addArgument(name="FileNames",
                                     numArgs=3);
   var myStrArg = parser.addOption(name="StringOpt",
@@ -2663,7 +2650,6 @@ proc testMixPosBoolOptWithValuesSubCommand(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-b","--boolVal"],
                                  numArgs=0..1,
-                                 flagInversion=false,
                                  defaultValue=none);
   var myPosArg = parser.addArgument(name="FileNames",
                                     numArgs=1..);
@@ -2678,7 +2664,6 @@ proc testMixPosBoolOptWithValuesSubCommand(test: borrowed Test) throws {
   var subCmdBoolArg = subParser.addFlag(name="BoolFlag",
                                         opts=["-b","--boolVal"],
                                         numArgs=0..1,
-                                        flagInversion=false,
                                         defaultValue=none);
   var subCmdPosArg = subParser.addArgument(name="FileNames",
                                            numArgs=0..,
@@ -2736,7 +2721,6 @@ proc testMixPosBoolOptWithValuesSubCommandLight(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-b","--boolVal"],
                                  numArgs=0..1,
-                                 flagInversion=false,
                                  defaultValue=none);
   var myPosArg = parser.addArgument(name="FileNames",
                                       numArgs=0..);
@@ -2751,7 +2735,6 @@ proc testMixPosBoolOptWithValuesSubCommandLight(test: borrowed Test) throws {
   var subCmdBoolArg = subParser.addFlag(name="BoolFlag",
                                         opts=["-b","--boolVal"],
                                         numArgs=0..1,
-                                        flagInversion=false,
                                         defaultValue=none);
   var subCmdPosArg = subParser.addArgument(name="FileNames",
                                            numArgs=0..,
@@ -2813,12 +2796,10 @@ proc testMockMasonNew(test: borrowed Test) throws {
   var pubCmd = parser.addSubCommand("publish");
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
-                               defaultValue=false,
-                               flagInversion=false);
+                               defaultValue=false);
   // setup the subcommand parsers (normally done in each sub-module)
   var newParser = new argumentParser();
   var initParser = new argumentParser();
@@ -2839,34 +2820,30 @@ proc testMockMasonNew(test: borrowed Test) throws {
   // setup arguments for subcommand 'new'
   var newVCS = newParser.addFlag(name="vcs",
                                  opts=["--vcs"],
-                                 defaultValue=true);
+                                 defaultValue=true,
+                                 flagInversion=true);
   var newShow = newParser.addFlag(name="show",
                                   opts=["--show"],
-                                  defaultValue=false,
-                                  flagInversion=false);
+                                  defaultValue=false);
   var newLegalName = newParser.addOption(name="legalName",
                                     opts=["--name"]);
   var newName = newParser.addArgument(name="name");
 
   var newHelpFlag = newParser.addFlag(name="help",
                                       opts=["-h","--help"],
-                                      defaultValue=false,
-                                      flagInversion=false);
+                                      defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
-                                 defaultValue=false,
-                                 flagInversion=false);
+                                 defaultValue=false);
   var addSys = addParser.addFlag(name="system",
                                  opts=["--system"],
-                                 defaultValue=false,
-                                 flagInversion=false);
+                                 defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
   var addHelpFlag = addParser.addFlag(name="help",
                                       opts=["-h","--help"],
-                                      defaultValue=false,
-                                      flagInversion=false);
+                                      defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -2943,12 +2920,10 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
   var pubCmd = parser.addSubCommand("publish");
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
-                               defaultValue=false,
-                               flagInversion=false);
+                               defaultValue=false);
   // setup the subcommand parsers (normally done in each sub-module)
   var newParser = new argumentParser();
   var initParser = new argumentParser();
@@ -2969,34 +2944,30 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
   // setup arguments for subcommand 'new'
   var newVCS = newParser.addFlag(name="vcs",
                                  opts=["--vcs"],
-                                 defaultValue=true);
+                                 defaultValue=true,
+                                 flagInversion=true);
   var newShow = newParser.addFlag(name="show",
                                   opts=["--show"],
-                                  defaultValue=false,
-                                  flagInversion=false);
+                                  defaultValue=false);
   var newLegalName = newParser.addOption(name="legalName",
                                     opts=["--name"]);
   var newName = newParser.addArgument(name="name");
 
   var newHelpFlag = newParser.addFlag(name="help",
                                       opts=["-h","--help"],
-                                      defaultValue=false,
-                                      flagInversion=false);
+                                      defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
-                                 defaultValue=false,
-                                 flagInversion=false);
+                                 defaultValue=false);
   var addSys = addParser.addFlag(name="system",
                                  opts=["--system"],
-                                 defaultValue=false,
-                                 flagInversion=false);
+                                 defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
   var addHelpFlag = addParser.addFlag(name="help",
                                       opts=["-h","--help"],
-                                      defaultValue=false,
-                                      flagInversion=false);
+                                      defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -3074,12 +3045,10 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
   var pubCmd = parser.addSubCommand("publish");
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
-                               defaultValue=false,
-                               flagInversion=false);
+                               defaultValue=false);
   // setup the subcommand parsers (normally done in each sub-module)
   var newParser = new argumentParser();
   var initParser = new argumentParser();
@@ -3100,34 +3069,30 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
   // setup arguments for subcommand 'new'
   var newVCS = newParser.addFlag(name="vcs",
                                  opts=["--vcs"],
-                                 defaultValue=true);
+                                 defaultValue=true,
+                                 flagInversion=true);
   var newShow = newParser.addFlag(name="show",
                                   opts=["--show"],
-                                  defaultValue=false,
-                                  flagInversion=false);
+                                  defaultValue=false);
   var newLegalName = newParser.addOption(name="legalName",
                                          opts=["--name"]);
   var newName = newParser.addArgument(name="name");
 
   var newHelpFlag = newParser.addFlag(name="help",
                                       opts=["-h","--help"],
-                                      defaultValue=false,
-                                      flagInversion=false);
+                                      defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
-                                 defaultValue=false,
-                                 flagInversion=false);
+                                 defaultValue=false);
   var addSys = addParser.addFlag(name="system",
                                  opts=["--system"],
-                                 defaultValue=false,
-                                 flagInversion=false);
+                                 defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
   var addHelpFlag = addParser.addFlag(name="help",
                                       opts=["-h","--help"],
-                                      defaultValue=false,
-                                      flagInversion=false);
+                                      defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -3204,12 +3169,10 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
   var pubCmd = parser.addSubCommand("publish");
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
-                               defaultValue=false,
-                               flagInversion=false);
+                               defaultValue=false);
   // setup the subcommand parsers (normally done in each sub-module)
   var newParser = new argumentParser();
   var initParser = new argumentParser();
@@ -3230,34 +3193,30 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
   // setup arguments for subcommand 'new'
   var newVCS = newParser.addFlag(name="vcs",
                                  opts=["--vcs"],
-                                 defaultValue=true);
+                                 defaultValue=true,
+                                 flagInversion=true);
   var newShow = newParser.addFlag(name="show",
                                   opts=["--show"],
-                                  defaultValue=false,
-                                  flagInversion=false);
+                                  defaultValue=false);
   var newLegalName = newParser.addOption(name="legalName",
                                          opts=["--name"]);
   var newName = newParser.addArgument(name="name");
 
   var newHelpFlag = newParser.addFlag(name="help",
                                       opts=["-h","--help"],
-                                      defaultValue=false,
-                                      flagInversion=false);
+                                      defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
-                                 defaultValue=false,
-                                 flagInversion=false);
+                                 defaultValue=false);
   var addSys = addParser.addFlag(name="system",
                                  opts=["--system"],
-                                 defaultValue=false,
-                                 flagInversion=false);
+                                 defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
   var addHelpFlag = addParser.addFlag(name="help",
                                       opts=["-h","--help"],
-                                      defaultValue=false,
-                                      flagInversion=false);
+                                      defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -3337,12 +3296,10 @@ proc testMockMasonRun(test: borrowed Test) throws {
   var pubCmd = parser.addSubCommand("publish");
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
-                               defaultValue=false,
-                               flagInversion=false);
+                               defaultValue=false);
   // setup the subcommand parsers (normally done in each sub-module)
   var newParser = new argumentParser();
   var initParser = new argumentParser();
@@ -3363,12 +3320,10 @@ proc testMockMasonRun(test: borrowed Test) throws {
   // setup arguments for subcommand 'run'
   var runBuild = runParser.addFlag(name="build",
                                  opts=["--build"],
-                                 defaultValue=false,
-                                 flagInversion=false);
+                                 defaultValue=false);
   var runShow = runParser.addFlag(name="show",
                                   opts=["--show"],
-                                  defaultValue=false,
-                                  flagInversion=false);
+                                  defaultValue=false);
   var runExample = runParser.addOption(name="example",
                                        opts=["--example"],
                                        numArgs=0..);
@@ -3376,23 +3331,19 @@ proc testMockMasonRun(test: borrowed Test) throws {
 
   var runHelpFlag = runParser.addFlag(name="help",
                                       opts=["-h","--help"],
-                                      defaultValue=false,
-                                      flagInversion=false);
+                                      defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
-                                 defaultValue=false,
-                                 flagInversion=false);
+                                 defaultValue=false);
   var addSys = addParser.addFlag(name="system",
                                  opts=["--system"],
-                                 defaultValue=false,
-                                 flagInversion=false);
+                                 defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
   var addHelpFlag = addParser.addFlag(name="help",
                                       opts=["-h","--help"],
-                                      defaultValue=false,
-                                      flagInversion=false);
+                                      defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());

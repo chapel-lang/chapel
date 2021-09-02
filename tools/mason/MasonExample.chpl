@@ -39,23 +39,22 @@ proc masonExample(args: [] string) {
   var parser = new argumentParser();
   var showFlag = parser.addFlag(name="show",
                                 opts=["--show"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
 
   var runFlag = parser.addFlag(name="run",
                                opts=["--run"],
-                               defaultValue=true);
+                               defaultValue=true,
+                               flagInversion=true);
   var buildFlag = parser.addFlag(name="build",
                                  opts=["--build"],
-                                 defaultValue=true);
+                                 defaultValue=true,
+                                 flagInversion=true);
   var releaseFlag = parser.addFlag(name="release",
                                 opts=["--release"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var forceFlag = parser.addFlag(name="force",
                                 opts=["--force"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var updateFlag = parser.addFlag(name="update",
                                 opts=["--update"],
                                 flagInversion=true);

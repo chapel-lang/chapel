@@ -33,8 +33,7 @@ proc masonSystem(args: [] string) {
 
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var pcCmd = parser.addSubCommand("pc");
   var searchCmd = parser.addSubCommand("search");
   try! {
@@ -87,16 +86,13 @@ proc pkgSearch(args) throws {
 
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var quietFlag = parser.addFlag(name="no-show-desc",
                                 opts=["--no-show-desc"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var descFlag = parser.addFlag(name="desc",
                                 opts=["--desc"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var pkgNameArg = parser.addArgument(name="package", numArgs=0..1);
   try! {
     parser.parseArgs(args);
@@ -163,8 +159,7 @@ proc printPkgPc(args) throws {
   var parser = new argumentParser();
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var pkgNameArg = parser.addArgument(name="package", numArgs=0..1);
   try! {
     parser.parseArgs(args);

@@ -52,28 +52,22 @@ proc masonTest(args: [] string) throws {
 
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var showFlag = parser.addFlag(name="show",
                                 opts=["--show"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var runFlag = parser.addFlag(name="run",
                                opts=["--no-run"],
-                               defaultValue=false,
-                               flagInversion=false);
+                               defaultValue=false);
   var keepFlag = parser.addFlag(name="keep-binary",
                                   opts=["--keep-binary"],
-                                  defaultValue=false,
-                                  flagInversion=false);
+                                  defaultValue=false);
   var recursFlag = parser.addFlag(name="recursive",
                                   opts=["--recursive"],
-                                  defaultValue=false,
-                                  flagInversion=false);
+                                  defaultValue=false);
   var parFlag = parser.addFlag(name="parallel",
                                opts=["--parallel"],
-                               defaultValue=false,
-                               flagInversion=false);
+                               defaultValue=false);
   var updateFlag = parser.addFlag(name="update",
                                   opts=["--update"],
                                   flagInversion=true);

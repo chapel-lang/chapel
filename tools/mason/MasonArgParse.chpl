@@ -670,7 +670,7 @@ module MasonArgParse {
     }
 
     proc addFlag(name:string, opts:[?optsD],
-                 required=false, defaultValue:?t=none, flagInversion=true,
+                 required=false, defaultValue:?t=none, flagInversion=false,
                  numArgs=0) throws {
       return addFlag(name=name,
                      opts=opts,
@@ -681,7 +681,7 @@ module MasonArgParse {
     }
 
     proc addFlag(name:string, opts:[?optsD],
-                 required=false, defaultValue:?t=none, flagInversion=true,
+                 required=false, defaultValue:?t=none, flagInversion=false,
                  numArgs:range) throws {
 
       if (flagInversion && numArgs.high > 0) {
