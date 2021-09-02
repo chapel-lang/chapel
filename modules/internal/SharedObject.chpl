@@ -435,7 +435,7 @@ module SharedObject {
       if _to_nilable(chpl_t) == chpl_t {
         return chpl_p;
       } else {
-        return chpl_p!;
+        return _to_nonnil(chpl_p);
       }
     }
 

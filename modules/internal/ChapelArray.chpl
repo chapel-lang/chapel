@@ -1596,6 +1596,86 @@ module ChapelArray {
     }
 
     pragma "no doc"
+    record unsafeResizeManager {
+      var _lhsInstance;
+      var _lhsPid: int;
+      var _rhsInstance;
+      var _rhsPid: int;
+      var _checks: bool;
+      var _isSuspended: bool; // TODO: Is this racey?
+
+      proc deinit() {
+        _unsuspend();
+      }
+
+      iter _lhsArrays() {
+        for arr in _lhsInstance._arrs do yield arr;
+      }
+
+      proc _unsuspend() {
+        use ChapelDistribution.chpl_ArrayResizePolicy;
+
+        if !_isSuspended then return; else _isSuspended = false;
+
+        for arr in _lhsArrays() {
+          if arr._hasNonNilableElementType() {
+            if _checks then arr._doNonNilableElementChecks();
+            arr._setArrayResizePolicy(chpl_ArrayResizePolicy.Normal);
+          }
+        }
+      }
+
+      proc enterThis() {
+        if _isSuspended then return; else _isSuspended = true;
+
+        for arr in _lhsArrays() {
+          if arr._hasNonNilableElementType() {
+            var policy = if _checks
+              then chpl_ArrayResizePolicy.ClearMem
+              else chpl_ArrayResizePolicy.SkipInit;
+            arr._setArrayResizePolicy(policy);
+          }
+        }
+
+        // Create shells for the LHS and RHS domains.
+        var lhs = new _domain(_lhsPid, _lhsInstance, _unowned=true);
+        var rhs = new _domain(_rhsPid, _rhsInstance, _unowned=true);
+
+        // This performs the resize.
+        lhs = rhs;
+      }
+
+      proc leaveThis(in err: owned Error?) throws {
+        _unsuspend();
+        if err then throw err;
+      }
+    }
+
+    /*
+      Perform an unsafe resize of this domain from within the scope of a
+      manage statement. Within the managed scope, any arrays declared
+      over this domain which have non-nilable element types will not
+      default initialize newly added elements.
+
+      Upon exiting the managed scope, if checks is `true`, this domain will
+      check to make sure that all non-nilable arrays declared over it have
+      initialized newly added elements it. If an uninitialized element is
+      found, a halt is issued.
+
+      This method is intended to provide a low level means of resizing
+      arrays in conjunction with the `Memory.Initialization` module, and
+      should be used with care.
+    */
+    proc ref unsafeResize(const ref d: domain, checks: bool=false) {
+      return new unsafeResizeManager(_lhsInstance=_value,
+                                     _lhsPid=_pid,
+                                     _rhsInstance=d._value,
+                                     _rhsPid=d._pid,
+                                     _checks=checks,
+                                     _isSuspended=false);
+    }
+
+    pragma "no doc"
     pragma "no copy return"
     proc buildArray(type eltType, param initElts:bool) {
       if eltType == void {

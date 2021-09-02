@@ -1083,6 +1083,27 @@ module DefaultRectangular {
       deinitElts = false;
     }
 
+    override proc _doNonNilableElementChecks() {
+      if _arrayResizePolicy != chpl_ArrayResizePolicy.ClearMem then
+        halt("internal error");
+
+      if isNonNilableClassType(eltType) {
+        for idx in dom {
+
+          // Surprised this comparison even works?! I would expect it to
+          // always return false, but I guess not.
+          if dsiAccess(idx) == nil {
+
+            // TODO (dlongnecke-cray): It would be really cool if we could
+            // pinpoint the declaration line/column here.
+            halt('Upon finishing resize, one or more elements of ' +
+                 'a non-nilable array of type \'' + eltType:string +
+                 '\' remain uninitialized');
+          }
+        }
+      }
+    }
+
     override proc dsiDestroyArr(deinitElts:bool) {
       if debugDefaultDist {
         chpl_debug_writeln("*** DR calling dealloc ", eltType:string);
@@ -1401,13 +1422,17 @@ module DefaultRectangular {
         }
       }
 
+      // Nothing to do here.
       if !actuallyResizing then
         return;
 
-      if !isDefaultInitializable(eltType) {
-        halt("Can't resize domains whose arrays' elements don't " +
-             "have default values");
-      } else if this.locale != here {
+      // Cannot do a normal resize with non-default-initializable elements.
+      if _arrayResizePolicy == chpl_ArrayResizePolicy.Normal then
+        if !isDefaultInitializable(eltType) then
+          halt("Can't resize domains whose arrays' elements don't " +
+               "have default values");
+
+      if this.locale != here {
         halt("internal error: dsiReallocate() can only be called " +
              "from an array's home locale");
       } else {
@@ -1428,14 +1453,35 @@ module DefaultRectangular {
             writeln("reallocating in-place");
 
           sizesPerDim(0) = reallocD.dsiDim(0).sizeAs(int);
-          data = _ddata_reallocate(data, eltType, oldSize, newSize);
+
+          if _arrayResizePolicy == chpl_ArrayResizePolicy.Normal {
+            data = _ddata_reallocate(data, eltType, oldSize, newSize);
+          } else {
+            data = _ddata_reallocate(data, eltType, oldSize, newSize,
+                                     initElts=false);
+          }
+
           initShiftedData();
+
+          if _arrayResizePolicy == chpl_ArrayResizePolicy.ClearMem {
+            var old = reallocD((...dom.ranges));
+            for idx in reallocD {
+              if !old.dsiMember((idx,)) {
+                ref slot = dsiAccess(idx);
+                c_memset(c_ptrTo(slot), 0, c_sizeof(slot.type));
+              }
+            }
+          }
+
         } else {
           var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
                                                          rank=rank,
                                                          idxType=idxType,
                                                          stridable=reallocD._value.stridable,
                                                          dom=reallocD._value);
+
+          if _arrayResizePolicy != chpl_ArrayResizePolicy.Normal then
+            halt('case not handled yet');
 
           var keep = reallocD((...dom.ranges));
           // Copy the preserved elements

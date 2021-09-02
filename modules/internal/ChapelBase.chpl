@@ -1033,7 +1033,8 @@ module ChapelBase {
                                 type eltType,
                                 oldSize: integral,
                                 newSize: integral,
-                                subloc = c_sublocid_none) {
+                                subloc = c_sublocid_none,
+                                param initElts: bool=true) {
     pragma "fn synchronization free"
     pragma "insert line file info"
     extern proc chpl_mem_array_realloc(ptr: c_void_ptr,
@@ -1060,8 +1061,8 @@ module ChapelBase {
                                    newSize.safeCast(size_t),
                                    _ddata_sizeof_element(oldDdata),
                                    subloc, callPostAlloc): oldDdata.type;
-
-    init_elts(newDdata, newSize, eltType, lo=oldSize);
+    if initElts then
+      init_elts(newDdata, newSize, eltType, lo=oldSize);
 
     if (callPostAlloc) {
       pragma "fn synchronization free"

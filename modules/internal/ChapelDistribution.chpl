@@ -681,6 +681,9 @@ module ChapelDistribution {
     }
   }
 
+  // Used to set the resize policy in BaseArr.
+  enum chpl_ArrayResizePolicy { Normal, SkipInit, ClearMem };
+
   //
   // Abstract array class
   //
@@ -689,8 +692,10 @@ module ChapelDistribution {
     var prev: unmanaged BaseArr?;
     var next: unmanaged BaseArr?;
 
-    var pid:int = nullPid; // privatized ID, if privatization is supported
-    var _decEltRefCounts : bool = false;
+    var pid: int = nullPid; // privatized ID, if privatization is supported
+
+    var _decEltRefCounts: bool = false;
+    var _arrayResizePolicy = chpl_ArrayResizePolicy.Normal;
 
     proc chpl__rvfMe() param {
       return false;
@@ -741,6 +746,19 @@ module ChapelDistribution {
         ret_dom = dom;
 
       return (ret_arr, ret_dom);
+    }
+
+    proc _hasNonNilableElementType(): bool {
+      halt('_hasNonNilableElementType must be defined');
+      return false;
+    }
+
+    proc _doNonNilableElementChecks() {
+      halt('_doNonNilableElementChecks must be defined');
+    }
+
+    proc _setArrayResizePolicy(policy: chpl_ArrayResizePolicy) {
+      _arrayResizePolicy = policy;
     }
 
     proc dsiElementInitializationComplete() {
@@ -906,6 +924,10 @@ module ChapelDistribution {
         // unlink domain referred to by eltType
         chpl_decRefCountsForDomainsInArrayEltTypes(_to_unmanaged(this), eltType);
       }
+    }
+
+    override proc _hasNonNilableElementType() {
+      return isNonNilableClassType(eltType);
     }
   }
 
