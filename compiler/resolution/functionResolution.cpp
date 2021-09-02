@@ -7161,6 +7161,50 @@ void resolveInitVar(CallExpr* call) {
   } else if (isRecord(targetType->getValType())) {
     AggregateType* at = toAggregateType(targetType->getValType());
 
+    // If the RHS is a temp that is the result of a ContextCallExpr,
+    // make the choice now about which ContextCallExpr to use
+    // (and prefer a value if available, and const ref if not).
+    // Update 'src' and 'srcType' so that the below logic about
+    // whether or not to copy applies.
+    if (src->hasFlag(FLAG_TEMP)) {
+      ContextCallExpr* ccRhs = nullptr;
+      int nLhsDefsFound = 0;
+
+      for_SymbolSymExprs(se, src) {
+        if (CallExpr* inCall = toCallExpr(se->parentExpr)) {
+          if (inCall->isPrimitive(PRIM_MOVE) ||
+              inCall->isPrimitive(PRIM_ASSIGN)) {
+            if (SymExpr* inCallLhs = toSymExpr(inCall->get(1))) {
+              if (inCallLhs->symbol() == src) {
+                nLhsDefsFound++;
+                if (ContextCallExpr* cc = toContextCallExpr(inCall->get(2))) {
+                  ccRhs = cc;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (nLhsDefsFound == 1 && ccRhs != nullptr) {
+        CallExpr* refCall = nullptr;
+        CallExpr* valueCall = nullptr;
+        CallExpr* constRefCall = nullptr;
+        ccRhs->getCalls(refCall, valueCall, constRefCall);
+
+        if (valueCall) {
+          // replace the ContextCallExpr with the valueCall
+          // and adjust the type of src
+          valueCall->remove();
+          ccRhs->replace(valueCall);
+          srcType = valueCall->getValType();
+          src->type = srcType;
+        }
+        // Other situations will be handled later in cullOverReferences.
+      }
+    }
+
+
     // Clear FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW
     // since the result of the 'new' will "move" into
     // the variable we are initializing.

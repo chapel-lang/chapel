@@ -1,8 +1,8 @@
 default-init (ptr = {x = 0})
 
 T1: store in var
-proc makeR() const ref: r
-(ptr = {x = 1}), init= from (ptr = {x = 0})
+proc makeR(): r
+default-init (ptr = {x = 1})
 deinit (ptr = {x = 1})
 
 T2: store in ref
@@ -12,8 +12,8 @@ T3: store in const ref
 proc makeR() const ref: r
 
 T4: store in const
-proc makeR() const ref: r
-(ptr = {x = 2}), init= from (ptr = {x = 0})
+proc makeR(): r
+default-init (ptr = {x = 2})
 deinit (ptr = {x = 2})
 
 T5: call without assignment
