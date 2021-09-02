@@ -102,6 +102,11 @@ bool requireOutlinedOn() {
   return requireWideReferences();
 }
 
+// Return true if the current locale model needs GPU code generation
+bool localeUsesGPU() {
+  return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu");
+}
+
 const char* cleanFilename(const char* name) {
   static int  chplHomeLen = strlen(CHPL_HOME);
   const char* retval      = NULL;

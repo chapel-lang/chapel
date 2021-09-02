@@ -2,7 +2,7 @@ extern {
   #include <cuda.h>
   #include <assert.h>
 
-  #define FATBIN_FILE ".gpuAddNums_files/chpl__gpu.fatbin"
+  #define FATBIN_FILE "gpuAddNums_gpu_files/chpl__gpu.fatbin"
 
   static void checkCudaErrors(CUresult err) {
     assert(err == CUDA_SUCCESS);

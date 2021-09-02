@@ -859,7 +859,7 @@ void deadCodeElimination() {
 
   // For now, we are doing GPU outlining here. In the future, it should probably
   // be its own pass.
-  if (strcmp(CHPL_LOCALE_MODEL, "gpu") == 0) {
+  if (localeUsesGPU()) {
     outlineGPUKernels();
   }
 

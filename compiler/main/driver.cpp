@@ -1503,11 +1503,11 @@ static void setPrintCppLineno() {
 }
 
 static void setSaveCForGpuCodegen() {
-  bool isGpuCodegen = !strcmp(CHPL_LOCALE_MODEL, "gpu");
+  bool isGpuCodegen = localeUsesGPU();
   bool isSaveCDirEmpty = strlen(saveCDir) == 0;
 
   if(isGpuCodegen && isSaveCDirEmpty) {
-    int len = snprintf(saveCDir, FILENAME_MAX+1, ".%s_files", executableFilename);
+    int len = snprintf(saveCDir, FILENAME_MAX+1, "%s_gpu_files", executableFilename);
     if(len < 0 || len >= FILENAME_MAX+1) {
       USR_FATAL("Unable to produce name of savec directory for GPU code generation.");
     }
