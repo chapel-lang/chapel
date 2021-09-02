@@ -47,7 +47,6 @@ class BasicBlock;
 class BlockStmt;
 class DefExpr;
 class FnSymbol;
-class Immediate;
 class IteratorInfo;
 class Stmt;
 class SymExpr;
@@ -766,7 +765,6 @@ extern const char* astrSlt;     // <
 extern const char* astrSlte;    // <=
 extern const char* astrSswap;   // <=>
 extern const char* astrScolon;  // :
-extern const char* astr_cast;
 extern const char* astr_defaultOf;
 extern const char* astrInit;
 extern const char* astrInitEquals;

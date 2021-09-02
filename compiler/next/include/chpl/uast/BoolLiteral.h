@@ -21,6 +21,7 @@
 #define CHPL_UAST_BOOLLITERAL_H
 
 #include "chpl/queries/Location.h"
+#include "chpl/types/Param.h"
 #include "chpl/uast/Literal.h"
 
 namespace chpl {
@@ -32,22 +33,18 @@ namespace uast {
  */
 class BoolLiteral final : public Literal {
  private:
-  BoolLiteral(bool value)
-    : Literal(asttags::BoolLiteral),
-      value_(value) {
+  explicit BoolLiteral(const types::BoolParam* value)
+    : Literal(asttags::BoolLiteral, value) {
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
-    const BoolLiteral* rhs = other->toBoolLiteral();
-    return this->value_ == rhs->value_ &&
-      this->literalContentsMatchInner(rhs);
+    const BoolLiteral* rhs = (const BoolLiteral*) other;
+    return literalContentsMatchInner(rhs);
   }
 
   void markUniqueStringsInner(Context* context) const override {
     literalMarkUniqueStringsInner(context);
   }
-
-  bool value_;
 
  public:
   ~BoolLiteral() override = default;
@@ -62,9 +59,9 @@ class BoolLiteral final : public Literal {
     Returns the value of this bool literal.
   */
   bool value() const {
-    return value_;
+    auto p = (const types::BoolParam*) value_;
+    return p->value() != 0;
   }
-
 };
 
 

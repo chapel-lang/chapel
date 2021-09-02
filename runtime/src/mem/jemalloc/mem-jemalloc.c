@@ -189,11 +189,16 @@ static bool null_decommit(void *chunk, size_t size, size_t offset, size_t length
 static bool null_purge(void *chunk, size_t size, size_t offset, size_t length, unsigned arena_ind) {
   return true;
 }
-static bool null_split(void *chunk, size_t size, size_t size_a, size_t size_b, bool committed, unsigned arena_ind) {
-  return true;
+
+
+// Since we opt-out of dalloc hooks, jemalloc is free to merge/split existing
+// chunks (this is important for fragmentation avoidance.) If we support dalloc
+// we'll have to do more to update how we track backing memory regions.
+static bool chunk_split(void *chunk, size_t size, size_t size_a, size_t size_b, bool committed, unsigned arena_ind) {
+  return false;
 }
-static bool null_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_b, bool committed, unsigned arena_ind) {
-  return true;
+static bool chunk_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_b, bool committed, unsigned arena_ind) {
+  return false;
 }
 
 #endif // ifdef USE_JE_CHUNK_HOOKS
@@ -268,8 +273,8 @@ static void replaceChunkHooks(void) {
     null_commit,
     null_decommit,
     null_purge,
-    null_split,
-    null_merge
+    chunk_split,
+    chunk_merge
   };
 
   // for each arena, change the chunk hooks

@@ -385,7 +385,7 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       // with C escapes - that is newline is 2 chars \ n
       // so we have to convert to a sequence of bytes
       // for LLVM (the C backend can just print it out).
-      std::string newString = unescapeString(i->v_string, NULL);
+      std::string newString = unescapeString(i->v_string.c_str(), NULL);
       ret = info->irBuilder->CreateGlobalString(newString);
       break;
   }
@@ -410,7 +410,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
       ret.isLVPtr = GEN_VAL;
       if (immediate->const_kind == CONST_KIND_STRING) {
         ret.c += '"';
-        ret.c += immediate->v_string;
+        ret.c += immediate->v_string.c_str();
         ret.c += '"';
       } else if (immediate->const_kind == NUM_KIND_BOOL) {
         std::string bstring = (immediate->bool_value())?"true":"false";
@@ -530,8 +530,8 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         Immediate i_imm = getDefaultImmediate(dtImag[flType]);
 
         // get the real and imaginary parts
-        coerce_immediate(immediate, &r_imm);
-        coerce_immediate(immediate, &i_imm);
+        coerce_immediate(gContext, immediate, &r_imm);
+        coerce_immediate(gContext, immediate, &i_imm);
 
         VarSymbol* r = new_ImmediateSymbol(&r_imm);
         VarSymbol* i = new_ImmediateSymbol(&i_imm);
@@ -587,12 +587,12 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
           immediate &&
           ret.chplType == dtString &&
           immediate->const_kind == CONST_KIND_STRING) {
-        if (strstr(immediate->v_string, "/*") ||
-            strstr(immediate->v_string, "*/")) {
+        if (strstr(immediate->v_string.c_str(), "/*") ||
+            strstr(immediate->v_string.c_str(), "*/")) {
           // Don't emit comment b/c string contained comment character.
         } else {
           ret.c += " /* \"";
-          ret.c += immediate->v_string;
+          ret.c += immediate->v_string.c_str();
           ret.c += "\" */";
         }
       }

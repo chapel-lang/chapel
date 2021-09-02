@@ -939,12 +939,12 @@ record regex {
 
     if exprType==string {
       try! {
-        const ret = createStringWithOwnedBuffer(replaced);
+        const ret = createStringWithOwnedBuffer(replaced, replaced_len);
         return (ret, nreplaced);
       }
     }
     else {
-      const ret = createBytesWithOwnedBuffer(replaced);
+      const ret = createBytesWithOwnedBuffer(replaced, replaced_len);
       return (ret, nreplaced);
     }
   }

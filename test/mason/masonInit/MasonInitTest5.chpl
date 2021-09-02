@@ -3,11 +3,11 @@ use MasonInit;
 use MasonUtils;
 use MasonNew;
 
-proc main(){  
+proc main(){
   mkdir("testSrc");
-  const initArgs = ['mason','init','testSrc'];
+  const initArgs = ['init','testSrc'];
   masonInit(initArgs);
-  
+
   remove('testSrc/src/testSrc.chpl');
   masonInit(initArgs);
 

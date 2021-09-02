@@ -112,7 +112,7 @@ bool Type::updateType(owned<Type>& keep, owned<Type>& addin) {
     // no changes are necessary
     return false;
   } else {
-    // swap the AST
+    // swap the Type
     keep.swap(addin);
     return true;
   }

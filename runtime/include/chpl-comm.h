@@ -567,6 +567,18 @@ void* chpl_get_global_serialize_table(int64_t idx);
 void chpl_signal_shutdown(void);
 void chpl_wait_for_shutdown(void);
 
+// Sets the number of locales on the local node and determines if the node is 
+// oversubscribed. 
+void chpl_set_num_locales_on_node(int32_t count);
+
+// Returns the number of locales on the local node.
+
+int32_t chpl_get_num_locales_on_node(void);
+
+// Returns true if node is oversubscribed, false otherwise.
+
+chpl_bool chpl_get_oversubscribed(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1231,7 +1231,7 @@ static void handleCoercion(FnSymbol* fn, CallExpr* call,
           // There also is no cast defined for string->c_string on purpose (you
           // need to use .c_str()) so the common case below does not work.
           VarSymbol*  var       = toVarSymbol(actualSym);
-          const char* str       = var->immediate->v_string;
+          const char* str       = var->immediate->v_string.c_str();
           actual->setSymbol(new_CStringSymbol(str));
         } else {
           addArgCoercion(fn, call, formal, actual, c2);

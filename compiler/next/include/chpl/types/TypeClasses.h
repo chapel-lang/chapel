@@ -30,7 +30,6 @@ namespace types {
 #define TYPE_DECL(NAME) class NAME;
 #define TYPE_NODE(NAME) TYPE_DECL(NAME)
 #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_DECL(NAME)
-#define TYPE_LEAF(NAME) TYPE_DECL(NAME)
 #define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_DECL(NAME)
 #define TYPE_END_SUBCLASSES(NAME)
 /// \endcond
@@ -44,10 +43,10 @@ namespace types {
 #undef TYPE_DECL
 
 // forward declare other classes
-class TypeNode;
+class Type;
 
 
-} // end namespace uast
+} // end namespace types
 } // end namespace chpl
 
 #endif

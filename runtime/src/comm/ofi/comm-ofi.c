@@ -940,7 +940,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   time_init();
   chpl_comm_ofi_oob_init();
   DBG_INIT();
-
+  int32_t count = chpl_comm_ofi_oob_locales_on_node();
+  chpl_set_num_locales_on_node(count);
   //
   // Gather run-invariant environment info as early as possible.
   //
@@ -1251,28 +1252,62 @@ chpl_bool isGoodCoreProvider(struct fi_info* info) {
           && !isInProvName("tcp", info->fabric_attr->prov_name));
 }
 
-
+// This function allows us to filter out unusable providers returned by
+// libfabric. libfabric currently has bugs associated with some providers
+// and address types.
 static inline
-struct fi_info* findProvInList(struct fi_info* info,
-                               chpl_bool accept_ungood_provs,
-                               chpl_bool accept_RxD_provs,
-                               chpl_bool accept_RxM_provs) {
-
-#ifndef LIBFABRIC_NO_FIXUP
+chpl_bool isUseableProvider(struct fi_info* info) {
+  chpl_bool result = true;
   
   // Ignore any provider for the T2 interface on a mac. As of v1.13.0
   // libfabric does not filter this interface internally. The T2 interface
   // is identified by the link local address fe80::aede:48ff:fe00:1122.
 
-  struct sockaddr_in6 t2;
-  chpl_bool darwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
-  if (darwin) {
-    int rc = inet_pton(AF_INET6, "fe80::aede:48ff:fe00:1122", &t2.sin6_addr);
-    if (rc != 1) {
-      INTERNAL_ERROR_V("inet_pton failed: %s", strerror(errno));
+  static struct sockaddr_in6 t2;
+  static chpl_bool initialized = false;
+  static chpl_bool darwin = false;
+
+  if (! initialized) {
+    darwin = !strcmp(CHPL_TARGET_PLATFORM, "darwin");
+    if (darwin) {
+      int rc = inet_pton(AF_INET6, "fe80::aede:48ff:fe00:1122", &t2.sin6_addr);
+      if (rc != 1) {
+        INTERNAL_ERROR_V("inet_pton failed: %s", strerror(errno));
+      }
     }
+    initialized = true;
   }
-#endif
+  if (darwin && (info->addr_format == FI_SOCKADDR_IN6) && 
+      !memcmp(&t2.sin6_addr, 
+              &((struct sockaddr_in6 *)info->src_addr)->sin6_addr, 
+              sizeof(t2.sin6_addr))) {
+    DBG_PRINTF_NODE0(DBG_PROV, "skipping T2 interface");
+    result = false;
+  }
+
+  // The verbs provider currently doesn't handle FI_SOCKADDR_IB addresses
+  // properly. Trying to use one will result in internal errors in fi_domain.
+
+  if ((info->addr_format == FI_SOCKADDR_IB) && isInProvider("verbs", info)) {
+     DBG_PRINTF_NODE0(DBG_PROV, "skipping FI_SOCKADDR_IB address");
+     result = false;
+  }
+
+  // The libfabric v1.12.1 sockets provider has a bug w/ IPv6 addresses
+  if ((info->addr_format == FI_SOCKADDR_IN6) && isInProvider("sockets", info)) {
+     DBG_PRINTF_NODE0(DBG_PROV, "skipping sockets/FI_SOCKADDR_IN6 provider");
+     result = false;
+  }
+
+  return result;
+}
+
+static inline
+struct fi_info* findProvInList(struct fi_info* info,
+                               chpl_bool accept_ungood_provs,
+                               chpl_bool accept_RxD_provs,
+                               chpl_bool accept_RxM_provs,
+                               chpl_bool accept_sockets_provs) {
 
   for (; info != NULL; info = info->next) {
     // break out of the loop when we find one that meets all of our criteria
@@ -1285,17 +1320,19 @@ struct fi_info* findProvInList(struct fi_info* info,
     if (!accept_RxM_provs && isInProvider("ofi_rxm", info)) {
       continue;
     }
-#ifndef LIBFABRIC_NO_FIXUP
-    if (darwin && (info->addr_format == FI_SOCKADDR_IN6) && 
-        !memcmp(&t2.sin6_addr, &((struct sockaddr_in6 *)info->src_addr)->sin6_addr, 
-                sizeof(t2.sin6_addr))) {
-      DBG_PRINTF_NODE0(DBG_PROV, "skipping T2 interface");
+    if (!accept_sockets_provs && isInProvider("sockets", info)) {
       continue;
     }
-#endif
+    if (!isUseableProvider(info)) {
+      continue;
+    }
     // got one
     break;
   }
+  if (info && (isInProvider("sockets", info))) {
+    chpl_warning("sockets provider is deprecated", 0, 0);
+  }
+  
   return (info == NULL) ? NULL : fi_dupinfo(info);
 }
 
@@ -1305,6 +1342,7 @@ chpl_bool findProvGivenHints(struct fi_info** p_infoOut,
                              struct fi_info* infoIn,
                              chpl_bool accept_RxD_provs,
                              chpl_bool accept_RxM_provs,
+                             chpl_bool accept_sockets_provs,
                              enum mcmMode_t mcmm) {
   struct fi_info* infoList;
   int ret;
@@ -1314,7 +1352,8 @@ chpl_bool findProvGivenHints(struct fi_info** p_infoOut,
   struct fi_info* info;
   info = findProvInList(infoList,
                         (getProviderName() != NULL) /*accept_ungood_provs*/,
-                        accept_RxD_provs, accept_RxM_provs);
+                        accept_RxD_provs, accept_RxM_provs,
+                        accept_sockets_provs);
 
   DBG_PRINTF_NODE0(DBG_PROV,
                    "** %s desirable provider with %s",
@@ -1336,11 +1375,13 @@ chpl_bool findProvGivenList(struct fi_info** p_infoOut,
                             struct fi_info* infoIn,
                             chpl_bool accept_RxD_provs,
                             chpl_bool accept_RxM_provs,
+                            chpl_bool accept_sockets_provs,
                             enum mcmMode_t mcmm) {
   struct fi_info* info;
   info = findProvInList(infoIn,
                         true /*accept_ungood_provs*/,
-                        accept_RxD_provs, accept_RxM_provs);
+                        accept_RxD_provs, accept_RxM_provs, 
+                        accept_sockets_provs);
 
   DBG_PRINTF_NODE0(DBG_PROV,
                    "** %s less-desirable provider with %s",
@@ -1516,17 +1557,20 @@ chpl_bool findMsgOrderFenceProv(struct fi_info** p_infoOut,
   const char* prov_name = getProviderName();
   const chpl_bool accept_RxD_provs = isInProvName("ofi_rxd", prov_name);
   const chpl_bool accept_RxM_provs = isInProvName("ofi_rxm", prov_name);
+  const chpl_bool accept_sockets_provs = isInProvName("sockets", prov_name);
   enum mcmMode_t mcmm = mcmm_msgOrdFence;
   chpl_bool ret;
 
   if (inputIsHints) {
     struct fi_info* infoAdj = setCheckMsgOrderFenceProv(infoIn, true /*set*/);
     ret = findProvGivenHints(p_infoOut, infoAdj,
-                             accept_RxD_provs, accept_RxM_provs, mcmm);
+                             accept_RxD_provs, accept_RxM_provs, 
+                             accept_sockets_provs, mcmm);
     fi_freeinfo(infoAdj);
   } else {
     ret = findProvGivenList(p_infoOut, infoIn,
-                            accept_RxD_provs, accept_RxM_provs, mcmm);
+                            accept_RxD_provs, accept_RxM_provs, 
+                            accept_sockets_provs, mcmm);
   }
 
   if (ret) {
@@ -1578,17 +1622,20 @@ chpl_bool findMsgOrderProv(struct fi_info** p_infoOut,
   const char* prov_name = getProviderName();
   const chpl_bool accept_RxD_provs = isInProvName("ofi_rxd", prov_name);
   const chpl_bool accept_RxM_provs = true;
+  const chpl_bool accept_sockets_provs = isInProvName("sockets", prov_name);
   enum mcmMode_t mcmm = mcmm_msgOrd;
   chpl_bool ret;
 
   if (inputIsHints) {
     struct fi_info* infoAdj = setCheckMsgOrderProv(infoIn, true /*set*/);
     ret = findProvGivenHints(p_infoOut, infoAdj,
-                             accept_RxD_provs, accept_RxM_provs, mcmm);
+                             accept_RxD_provs, accept_RxM_provs, 
+                             accept_sockets_provs, mcmm);
     fi_freeinfo(infoAdj);
   } else {
     ret = findProvGivenList(p_infoOut, infoIn,
-                            accept_RxD_provs, accept_RxM_provs, mcmm);
+                            accept_RxD_provs, accept_RxM_provs, 
+                            accept_sockets_provs, mcmm);
   }
 
   if (ret) {
@@ -1634,17 +1681,20 @@ chpl_bool findDlvrCmpltProv(struct fi_info** p_infoOut,
   const char* prov_name = getProviderName();
   const chpl_bool accept_RxD_provs = isInProvName("ofi_rxd", prov_name);
   const chpl_bool accept_RxM_provs = isInProvName("ofi_rxm", prov_name);
+  const chpl_bool accept_sockets_provs = isInProvName("sockets", prov_name);
   enum mcmMode_t mcmm = mcmm_dlvrCmplt;
   chpl_bool ret;
 
   if (inputIsHints) {
     struct fi_info* infoAdj = setCheckDlvrCmpltProv(infoIn, true /*set*/);
     ret = findProvGivenHints(p_infoOut, infoAdj,
-                             accept_RxD_provs, accept_RxM_provs, mcmm);
+                             accept_RxD_provs, accept_RxM_provs, 
+                             accept_sockets_provs, mcmm);
     fi_freeinfo(infoAdj);
   } else {
     ret = findProvGivenList(p_infoOut, infoIn,
-                            accept_RxD_provs, accept_RxM_provs, mcmm);
+                            accept_RxD_provs, accept_RxM_provs, 
+                            accept_sockets_provs, mcmm);
   }
 
   if (ret) {
@@ -1709,6 +1759,8 @@ void init_ofiFabricDomain(void) {
   //   bug that can't be fixed without breaking other things:
   //     https://github.com/ofiwg/libfabric/issues/5601
   //   Explicitly including ofi_rxm in FI_PROVIDER overrides this.
+  // - The sockets provider is deprecated. It is only used if it is
+  //   specified via the FI_PROVIDER environment variable.
   //
 
   mcmMode = mcmm_undef;
@@ -1879,19 +1931,15 @@ struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced) {
                                  | FI_MR_VIRT_ADDR
                                  | FI_MR_PROV_KEY // TODO: avoid pkey bcast?
                                  | FI_MR_ENDPOINT);
-  // 
-  // Consider ourselves oversubscribed if either the environment variable is set or
-  // there is more than one locale on the local node. The call to
-  // chpl_comm_ofi_oob_locales_on_node was added to prevent chapcs from using the
-  // verbs;ofi_rxm provider which currently doesn't work and shouldn't be selected
-  // even if CHPL_RT_OVERSUBSCRIBED isn't set.   The logic for setting
-  // FI_MR_ALLOCATED should be revisited as oversubscription alone isn't a
-  // sufficient reason.
-  //
-  int num_locales_on_node = chpl_comm_ofi_oob_locales_on_node();
-  chpl_bool oversubscribed = envOversubscribed || (num_locales_on_node > 1);
 
-  if (chpl_numNodes > 1 && envMaxHeapSize != 0 && !oversubscribed) {
+  // Set FI_MR_ALLOCATED if there is more than one node and the maximimum
+  // heap size was specified and the CHPL_RT_OVERSUBSCRIBED environment
+  // variable was not set, otherwise we risk running out of memory when
+  // the heap is allocated. If CHPL_RT_OVERSUBSCRIBED is set then we may
+  // be sharing the node with other processes, in which case we can't size
+  // the fixed heap correctly.
+
+  if (chpl_numNodes > 1 && envMaxHeapSize != 0 && !envOversubscribed) {
     hints->domain_attr->mr_mode |= FI_MR_ALLOCATED;
   }
 
@@ -2953,7 +3001,7 @@ void init_fixedHeap(void) {
   //
   uint64_t max_heap_memory = (size_t) (0.85 * total_memory);
 
-  int num_locales_on_node = chpl_comm_ofi_oob_locales_on_node();
+  int num_locales_on_node = chpl_get_num_locales_on_node();
   size_t max_heap_per_locale = (size_t) (max_heap_memory / num_locales_on_node);
 
 

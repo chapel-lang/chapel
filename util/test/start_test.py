@@ -844,10 +844,9 @@ def set_up_general():
             os.environ["CHPL_TEST_VGRND_EXE"] = "off"
 
     if args.valgrind or args.valgrind_exe:
-        # Set a maximum number of threads per locale for valgrind testing.
-        # Without this, several task-heavy tests will fail.
+        # Stay below valgrind's --max-threads option, which defaults to 500
         if not "CHPL_RT_NUM_THREADS_PER_LOCALE" in os.environ:
-            os.environ["CHPL_RT_NUM_THREADS_PER_LOCALE"] = "100";
+            os.environ["CHPL_RT_NUM_THREADS_PER_LOCALE"] = "450";
 
         # Additionally, fail with an error if valgrind testing is running without
         # tasks=fifo, mem=cstdlib, or with re2 built w/o valgrind support

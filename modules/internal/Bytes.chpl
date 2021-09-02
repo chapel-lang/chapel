@@ -142,11 +142,21 @@ module Bytes {
   }
 
   pragma "no doc"
-  proc chpl_createBytesWithLiteral(x: c_string, length: int) {
+  proc chpl_createBytesWithLiteral(buffer: c_void_ptr,
+                                   offset: int,
+                                   x: c_string,
+                                   length: int) {
+    // copy the string to the combined buffer
+    var buf = buffer:c_ptr(uint(8));
+    buf = buf + offset;
+    c_memcpy(buf:c_void_ptr, x:c_void_ptr, length);
+    // add null byte
+    buf[length] = 0;
+
     // NOTE: This is a "wellknown" function used by the compiler to create
     // string literals. Inlining this creates some bloat in the AST, slowing the
     // compilation.
-    return createBytesWithBorrowedBuffer(x, length);
+    return createBytesWithBorrowedBuffer(buf: c_string, length);
   }
 
   /*

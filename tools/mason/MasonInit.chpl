@@ -19,18 +19,18 @@
  */
 
 use FileSystem;
+use List;
+use MasonArgParse;
+use MasonBuild;
+use MasonEnv;
+use MasonExample;
+use MasonHelp;
+use MasonModify;
+use MasonNew;
+use MasonUtils;
 use Path;
 use Spawn;
 use TOML;
-private use List;
-
-use MasonEnv;
-use MasonNew;
-use MasonBuild;
-use MasonHelp;
-use MasonUtils;
-use MasonExample;
-use MasonModify;
 
 /*
 Initialises a library project in a project directory
@@ -38,46 +38,42 @@ Initialises a library project in a project directory
   or mason init (inside project directory)
 */
 proc masonInit(args: [] string) throws {
+  var parser = new argumentParser();
+  var helpFlag = parser.addFlag("help",
+                                opts=["-h","--help"],
+                                defaultValue=false,
+                                flagInversion=false);
+  var showFlag = parser.addFlag(name="show",
+                                opts=["--show"],
+                                defaultValue=false,
+                                flagInversion=false);
+  var defaultFlag = parser.addFlag(name="default",
+                                   opts=["-d","--default"],
+                                   defaultValue=false,
+                                   flagInversion=false);
+  var nameOpt = parser.addOption(name="legalname",
+                                 opts=["--name"]);
+  var dirArg = parser.addArgument(name="directory", numArgs=0..1);
+  try {
+    parser.parseArgs(args);
+  }
+  catch ex : ArgumentError {
+    stderr.writeln(ex.message());
+    masonInitHelp();
+    exit(1);
+  }
+  if helpFlag.valueAsBool() {
+    masonInitHelp();
+    exit(0);
+  }
+
   try! {
     var dirName = '';
-    var show = false;
+    var show = showFlag.valueAsBool();
     var packageName = '';
-    var countArgs = args.domain.low + 2;
-    var defaultBehavior = false;
-    for arg in args[args.domain.low+2..] {
-      countArgs += 1;
-      select (arg) {
-        when '-h' {
-          masonInitHelp();
-          exit();
-        }
-        when '--help' {
-          masonInitHelp();
-          exit();
-        }
-        when '--show' {
-          show = true;
-        }
-        when '-d' {
-          defaultBehavior = true;
-        }
-        when '--default' {
-          defaultBehavior = true;
-        }
-        when '--name' {
-          packageName = args[countArgs];
-        }
-        otherwise {
-          if arg.startsWith('--name=') {
-            var res = arg.split("=");
-            packageName = res[1];
-          }
-          else {
-            if args[countArgs - 2] != "--name" then dirName = arg;
-          }
-        }
-      }
-    }
+    var defaultBehavior = defaultFlag.valueAsBool();
+    if nameOpt.hasValue() then packageName = nameOpt.value();
+    if dirArg.hasValue() then dirName = dirArg.value();
 
     if dirName == '' {
       if defaultBehavior {
@@ -101,21 +97,21 @@ proc masonInit(args: [] string) throws {
         var defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense, moduleName: string;
         if isMasonTomlPresent then
           (defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense) = readPartialManifest();
-        if isSrcPresent then 
+        if isSrcPresent then
           moduleName = readPartialSrc();
        // begin interactive session and get values input by user
-        var result = beginInteractiveSession(defaultPackageName, defaultVersion, 
+        var result = beginInteractiveSession(defaultPackageName, defaultVersion,
                                               defaultChplVersion, defaultLicense);
         const newPackageName = result[0],
               newVersion = result[1],
               newChplVersion = result[2],
               newLicense = result[3];
-        // validate Mason.toml file 
+        // validate Mason.toml file
         validateMasonFile('.', newPackageName, show);
         isMasonTomlPresent = true;
         // overwrite to update existing values in Mason.toml
-        overwriteTomlFileValues(isMasonTomlPresent, newPackageName, 
-          newVersion, newChplVersion, newLicense, defaultPackageName, defaultVersion, 
+        overwriteTomlFileValues(isMasonTomlPresent, newPackageName,
+          newVersion, newChplVersion, newLicense, defaultPackageName, defaultVersion,
           defaultChplVersion, defaultLicense);
         if newPackageName + '.chpl' != moduleName {
           if isFile('./src/' + moduleName) then rename('src/' + moduleName, 'src/' + newPackageName + '.chpl');
@@ -153,8 +149,8 @@ proc masonInit(args: [] string) throws {
 }
 
 // Overwrites values of existing Mason.toml file
-proc overwriteTomlFileValues(isMasonTomlPresent, newPackageName, newVersion, 
-    newChplVersion, newLicense, defaultPackageName, defaultVersion, 
+proc overwriteTomlFileValues(isMasonTomlPresent, newPackageName, newVersion,
+    newChplVersion, newLicense, defaultPackageName, defaultVersion,
     defaultChplVersion, defaultLicense) {
   const tomlPath = "./Mason.toml";
   const toParse = open(tomlPath, iomode.r);
@@ -165,7 +161,7 @@ proc overwriteTomlFileValues(isMasonTomlPresent, newPackageName, newVersion,
     if newVersion != defaultVersion then
       tomlFile["brick"]!.set("version", newVersion);
     if newChplVersion != defaultChplVersion then
-      tomlFile["brick"]!.set("chplVersion", newChplVersion); 
+      tomlFile["brick"]!.set("chplVersion", newChplVersion);
     if newLicense != defaultLicense then
       tomlFile["brick"]!.set("license", newLicense);
   }
@@ -189,7 +185,7 @@ proc readPartialManifest() {
     defaultVersion = tomlFile["brick"]!["version"]!.s;
   if tomlFile.pathExists("brick.chplVersion") then
     defaultChplVersion = tomlFile["brick"]!["chplVersion"]!.s;
-  if tomlFile.pathExists("brick.license") then 
+  if tomlFile.pathExists("brick.license") then
     defaultLicense = tomlFile["brick"]!["license"]!.s;
   return (defaultPackageName, defaultVersion, defaultChplVersion, defaultLicense);
 }

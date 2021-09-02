@@ -946,7 +946,7 @@ static DefExpr* toLocalField(AggregateType* at, CallExpr* expr) {
           var                                    != NULL &&
           var->immediate                         != NULL &&
           var->immediate->const_kind             == CONST_KIND_STRING) {
-        retval = fieldByName(at, var->immediate->v_string);
+        retval = fieldByName(at, var->immediate->v_string.c_str());
       }
     }
   }
@@ -1117,7 +1117,7 @@ static bool isStringLiteral(Expr* expr, const char* name) {
   if (SymExpr* sym = toSymExpr(expr)) {
     if (VarSymbol* var = toVarSymbol(sym->symbol())) {
       if (var->immediate->const_kind == CONST_KIND_STRING) {
-        retval = strcmp(var->immediate->v_string, name) == 0;
+        retval = strcmp(var->immediate->v_string.c_str(), name) == 0;
       }
     }
   }

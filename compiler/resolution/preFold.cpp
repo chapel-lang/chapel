@@ -67,6 +67,8 @@ static std::vector<Expr* >                                 testCaptureVector;
 // lookup table for test function names and their index in testCaptureVector
 static std::map<std::string,int>                           testNameIndex;
 
+static Expr*          preFoldPrimInitVarForManagerResource(CallExpr* call);
+
 static Expr*          preFoldPrimOp(CallExpr* call);
 
 static Expr*          preFoldNamed (CallExpr* call);
@@ -458,6 +460,143 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
   }
 }
 
+//
+// TODO (dlongnecke-cray): We would like to remove/simplify this special case
+// and move it into cullOverReferences if possible.
+//
+// Infer the correct storage kind for a context manager resource when no
+// explicit storage is given, e.g.
+//
+//    manage myManager() as myResource do ...;
+//
+// Look for PRIM_INIT_VAR calls where the LHS is a variable marked with
+// FLAG_MANAGER_RESOURCE_INFER_STORAGE, then chase the call temp on
+// the RHS (it should always be a call temp).
+//
+// If the call temp was initialized by a ContextCall, search through the CC
+// and record if:
+//
+//    - Any ref overload is present (if so, we will prefer them)
+//    - If both ref/const ref overloads are present
+//    - If const ref is present but not ref
+//
+// If any ref overload is present, we replace the PRIM_INIT_VAR with a
+// PRIM_MOVE, and mark the LHS with FLAG_REF_VAR.
+//
+// If both ref/const ref overloads are present, we also mark the LHS with
+// FLAG_REF_IF_MODIFIED, because the overload to select depends on how
+// the resource is used.
+//
+// Lastly, if only the const ref overload is present (but not the ref), we
+// always prefer it over a value overload.
+//
+// If only the value overload exists, leave the PRIM_INIT_VAR call alone.
+// The init= call it gets lowered to will be elided later regardless.
+//
+static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
+  CallExpr* ret = call;
+
+  if (!call->isPrimitive(PRIM_INIT_VAR)) return ret;
+
+  if (SymExpr* se = toSymExpr(call->get(1))) {
+    if (se->symbol()->hasFlag(FLAG_MANAGER_RESOURCE_INFER_STORAGE)) {
+      INT_ASSERT(isSymExpr(call->get(2)));
+
+      if (call->id == breakOnResolveID) {
+        gdbShouldBreakHere();
+      }
+
+      Symbol* lhs = se->symbol();
+      Symbol* rhs = toSymExpr(call->get(2))->symbol();
+
+      INT_ASSERT(rhs->hasFlag(FLAG_TEMP));
+
+      // Locate the move used to initialize the RHS temp.
+      CallExpr* moveIntoTemp = nullptr;
+      for_SymbolSymExprs(se, rhs) {
+        if (CallExpr* move = toCallExpr(se->parentExpr)) {
+          if (move->isPrimitive(PRIM_MOVE) && move->get(1) == se) {
+            moveIntoTemp = move;
+            break;
+          }
+        }
+      }
+
+      INT_ASSERT(moveIntoTemp);
+
+      bool isAnyRefOverloadPresent = false;
+      bool isConstnessUncertain = false;
+      bool isCertainlyConstRef = false;
+
+      if (ContextCallExpr* cc = toContextCallExpr(moveIntoTemp->get(2))) {
+        CallExpr* refCall = nullptr;
+        CallExpr* valueCall = nullptr;
+        CallExpr* constRefCall = nullptr;
+
+        cc->getCalls(refCall, valueCall, constRefCall);
+
+        isAnyRefOverloadPresent = (constRefCall || refCall);
+        isConstnessUncertain = (constRefCall && refCall);
+        isCertainlyConstRef = (constRefCall && !refCall);
+
+        // Replace or remove the CC entirely if a ref option is present.
+        if (isAnyRefOverloadPresent && valueCall) {
+          if (refCall && constRefCall) {
+            auto swp = new ContextCallExpr();
+
+            refCall->remove();
+            constRefCall->remove();
+            swp->setRefValueConstRefOptions(refCall, nullptr, constRefCall);
+            cc->replace(swp);
+
+          // If there is only one ref option, replace the CC with it.
+          } else {
+            CallExpr* callToUse = refCall ? refCall : constRefCall;
+            INT_ASSERT(callToUse);
+
+            if (callToUse == constRefCall) rhs->addFlag(FLAG_CONST);
+
+            callToUse->remove();
+            cc->replace(callToUse);
+          }
+        }
+
+      // There is no context call, so we can respect the RHS call.
+      } else {
+        auto enterThisCall = toCallExpr(moveIntoTemp->get(2));
+
+        INT_ASSERT(enterThisCall);
+
+        // If this doesn't fire, then there was already a resolution error.
+        if (FnSymbol* fn = enterThisCall->resolvedFunction()) {
+          bool isTagConstRef = fn->retTag == RET_CONST_REF;
+          bool isTagRef = fn->retTag == RET_REF;
+
+          isAnyRefOverloadPresent = (isTagConstRef || isTagRef);
+          isCertainlyConstRef = isTagConstRef;
+        }
+      }
+
+      // Make any final adjustments based on what was discovered.
+      if (isAnyRefOverloadPresent) {
+        ret = new CallExpr(PRIM_MOVE, new SymExpr(lhs), new SymExpr(rhs));
+
+        lhs->addFlag(FLAG_REF_VAR);
+
+        if (isConstnessUncertain) {
+          lhs->addFlag(FLAG_REF_IF_MODIFIED);
+          INT_ASSERT(!isCertainlyConstRef);
+        } else if (isCertainlyConstRef) {
+          lhs->addFlag(FLAG_CONST);
+        }
+
+        call->replace(ret);
+      }
+    }
+  }
+
+  return ret;
+}
 
 static Expr* preFoldPrimOp(CallExpr* call) {
   Expr* retval = NULL;
@@ -638,7 +777,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       INT_FATAL(call, "proc name must be a string");
     }
 
-    const char* name = imm->v_string;
+    const char* name = imm->v_string.c_str();
 
     // temporarily add a call to try resolving.
     CallExpr* tryCall = NULL;
@@ -751,7 +890,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
 
-    const char*    fieldName  = imm->v_string;
+    const char*    fieldName  = imm->v_string.c_str();
     int            fieldCount = 0;
     int            num        = 0;
 
@@ -820,7 +959,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     // Check if this immediate is a string
     if (chplEnv->const_kind == CONST_KIND_STRING) {
-      envKey = chplEnv->v_string;
+      envKey = chplEnv->v_string.toString();
 
     } else {
       USR_FATAL(call, "expected immediate of type string");
@@ -871,6 +1010,16 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_INIT_VAR: {
+    if (SymExpr* se = toSymExpr(call->get(1))) {
+      if (se->symbol()->hasFlag(FLAG_MANAGER_RESOURCE_INFER_STORAGE)) {
+        retval = preFoldPrimInitVarForManagerResource(call);
+      }
+    }
+
+    break;
+  }
+
   case PRIM_IS_ATOMIC_TYPE: {
     if (isAtomicType(call->get(1)->typeInfo())) {
       retval = new SymExpr(gTrue);
@@ -893,7 +1042,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     }
 
     Immediate* imm = toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate;
-    Symbol* field = at->getField(imm->v_string);
+    Symbol* field = at->getField(imm->v_string.c_str());
     if (at->symbol->hasFlag(FLAG_GENERIC) &&
         std::find(at->genericFields.begin(), at->genericFields.end(), field) != at->genericFields.end()) {
       retval = new SymExpr(gFalse);
@@ -1824,7 +1973,7 @@ static Symbol* findMatchingEnumSymbol(Immediate* imm, EnumType* typeEnum) {
     fromUint = imm->uint_value();
   } else if (imm->const_kind == CONST_KIND_STRING) {
     haveString = true;
-    fromString = imm->string_value();
+    fromString = astr(imm->string_value());
   }
 
   INT_ASSERT(haveInt || haveUint || haveString);
@@ -2149,8 +2298,6 @@ static Expr* preFoldNamed(CallExpr* call) {
 
           // Handle casting between numeric types
           if (imm != NULL && (fromEnum || fromIntEtc) && toIntEtc) {
-            Immediate coerce = getDefaultImmediate(newType);
-
             if (fWarnUnstable && fromEnum && !toIntUint) {
               if (is_bool_type(newType)) {
                 USR_WARN(call, "enum-to-bool casts are likely to be deprecated in the future");
@@ -2159,7 +2306,8 @@ static Expr* preFoldNamed(CallExpr* call) {
               }
             }
 
-            coerce_immediate(imm, &coerce);
+            Immediate coerce = getDefaultImmediate(newType);
+            coerce_immediate(gContext, imm, &coerce);
 
             retval = new SymExpr(new_ImmediateSymbol(&coerce));
 
@@ -2203,23 +2351,23 @@ static Expr* preFoldNamed(CallExpr* call) {
           } else if (imm != NULL && fromString && toString) {
 
             if (newType == dtStringC)
-              retval = new SymExpr(new_CStringSymbol(imm->v_string));
+              retval = new SymExpr(new_CStringSymbol(imm->v_string.c_str()));
             else
-              retval = new SymExpr(new_StringSymbol(imm->v_string));
+              retval = new SymExpr(new_StringSymbol(imm->v_string.c_str()));
 
             call->replace(retval);
 
           // Handle string:bytes and c_string:bytes casts
           } else if (imm != NULL && fromString && toBytes) {
 
-            retval = new SymExpr(new_BytesSymbol(imm->v_string));
+            retval = new SymExpr(new_BytesSymbol(imm->v_string.c_str()));
 
             call->replace(retval);
 
           // Handle bytes:c_string casts (bytes.c_str()) is used in IO
           } else if (imm != NULL && fromBytes && newType == dtStringC) {
 
-            retval = new SymExpr(new_CStringSymbol(imm->v_string));
+            retval = new SymExpr(new_CStringSymbol(imm->v_string.c_str()));
 
             call->replace(retval);
 
@@ -2232,16 +2380,15 @@ static Expr* preFoldNamed(CallExpr* call) {
             if (newType == dtStringC)
               skind = STRING_KIND_C_STRING;
 
-            Immediate coerce = Immediate("", skind);
-
-            coerce_immediate(imm, &coerce);
+            Immediate coerce = Immediate(gContext, "", 0, skind);
+            coerce_immediate(gContext, imm, &coerce);
 
             if (newType == dtStringC)
-              retval = new SymExpr(new_CStringSymbol(coerce.v_string));
+              retval = new SymExpr(new_CStringSymbol(coerce.v_string.c_str()));
             else if (newType == dtBytes)
-              retval = new SymExpr(new_BytesSymbol(coerce.v_string));
+              retval = new SymExpr(new_BytesSymbol(coerce.v_string.c_str()));
             else
-              retval = new SymExpr(new_StringSymbol(coerce.v_string));
+              retval = new SymExpr(new_StringSymbol(coerce.v_string.c_str()));
 
             call->replace(retval);
 
@@ -2491,7 +2638,7 @@ static Symbol* determineQueriedField(CallExpr* call) {
   Symbol*        retval = NULL;
 
   if (var->immediate->const_kind == CONST_KIND_STRING) {
-    retval = at->getField(var->immediate->v_string, false);
+    retval = at->getField(var->immediate->v_string.c_str(), false);
 
   } else {
     Vec<Symbol*> args;
@@ -2533,8 +2680,8 @@ static Symbol* determineQueriedField(CallExpr* call) {
       INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
 
       for (int j = 0; j < args.n; j++) {
-        if (args.v[j]                                         != NULL &&
-            strcmp(args.v[j]->name, var->immediate->v_string) ==    0) {
+        if (args.v[j] != NULL &&
+            strcmp(args.v[j]->name, var->immediate->v_string.c_str()) == 0) {
           args.v[j] = NULL;
         }
       }

@@ -18,7 +18,8 @@
  * limitations under the License.
  */
 
-private use List;
+use List;
+use MasonArgParse;
 use MasonUtils;
 public use MasonHelp;
 const regUrl: string = "https://github.com/chapel-lang/mason-registry";
@@ -112,12 +113,32 @@ proc MASON_REGISTRY {
 }
 
 proc masonEnv(args) {
-  if hasOptions(args, "-h", "--help") {
+  var parser = new argumentParser();
+  var helpFlag = parser.addFlag("help",
+                                opts=["-h","--help"],
+                                defaultValue=false,
+                                flagInversion=false);
+
+  // TODO: When automatic help is generated, make sure this isn't documented
+  var debugFlag = parser.addFlag("debug",
+                                opts=["--debug"],
+                                defaultValue=false,
+                                flagInversion=false);
+  try! {
+    parser.parseArgs(args);
+  }
+  catch ex : ArgumentError {
+    stderr.writeln(ex.message());
+    masonEnvHelp();
+    exit(1);
+  }
+
+  if helpFlag.valueAsBool() {
     masonEnvHelp();
     exit(0);
   }
 
-  const debug = hasOptions(args, "--debug");
+  const debug = debugFlag.valueAsBool();
 
   proc printVar(name : string, in val : string) {
     if getEnv(name) != "" then

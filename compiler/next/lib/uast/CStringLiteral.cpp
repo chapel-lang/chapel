@@ -27,9 +27,14 @@ namespace uast {
 
 owned<CStringLiteral>
 CStringLiteral::build(Builder* builder, Location loc,
-                      std::string value,
+                      const std::string& value,
                       StringLikeLiteral::QuoteStyle quotes) {
-  CStringLiteral* ret = new CStringLiteral(std::move(value), quotes);
+  // Construct the UniqueString
+  auto u = UniqueString::build(builder->context(), value);
+  // Construct the Param
+  auto p = types::StringParam::get(builder->context(), u);
+  // Construct the CStringLiteral
+  CStringLiteral* ret = new CStringLiteral(p, quotes);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

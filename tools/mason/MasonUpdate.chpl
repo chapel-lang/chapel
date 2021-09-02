@@ -18,16 +18,16 @@
  * limitations under the License.
  */
 
-private use List;
-private use Map;
-
-use TOML;
 use FileSystem;
-use MasonUtils;
+use List;
+use Map;
+use MasonArgParse;
 use MasonEnv;
-use MasonSystem;
 use MasonExternal;
 use MasonHelp;
+use MasonSystem;
+use MasonUtils;
+use TOML;
 
 
 /*
@@ -51,27 +51,32 @@ proc masonUpdate(args: [?d] string) {
   var tf = "Mason.toml";
   var lf = "Mason.lock";
   var skipUpdate = MASON_OFFLINE;
+  var parser = new argumentParser();
+  var helpFlag = parser.addFlag("help",
+                                opts=["-h","--help"],
+                                defaultValue=false,
+                                flagInversion=false);
+  var updateFlag = parser.addFlag(name="update",
+                                  opts=["--update"],
+                                  flagInversion=true);
 
-  var listArgs: list(string);
-  for arg in args {
-    listArgs.append(arg);
-    select (arg) {
-      when '-h' {
-        masonUpdateHelp();
-        exit(0);
-      }
-      when '--help' {
-        masonUpdateHelp();
-        exit(0);
-      }
-      when '--no-update' {
-        skipUpdate = true;
-      }
-      when '--update' {
-        skipUpdate = false;
-      }
-    }
+  try! {
+    parser.parseArgs(args);
   }
+  catch ex : ArgumentError {
+    stderr.writeln(ex.message());
+    masonUpdateHelp();
+    exit(1);
+  }
+  if helpFlag.valueAsBool() {
+    masonUpdateHelp();
+    exit(0);
+  }
+
+  if updateFlag.hasValue() {
+    skipUpdate = !updateFlag.valueAsBool();
+  }
+
   return updateLock(skipUpdate, tf, lf);
 }
 
@@ -168,7 +173,6 @@ proc checkRegistryChanged() {
 
 /* Pulls the mason-registry. Cloning if !exist */
 proc updateRegistry(skipUpdate: bool) {
-
   if skipUpdate then return;
 
   checkRegistryChanged();

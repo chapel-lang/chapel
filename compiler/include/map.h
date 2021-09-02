@@ -218,8 +218,6 @@ template <class K, class C> class Env {
   List<C> *get_bucket(K akey);
 };
 
-extern unsigned int open_hash_multipliers[256];
-
 /* IMPLEMENTATION */
 
 template <class K, class C> inline C 

@@ -192,7 +192,7 @@ returnInfoStaticFieldType(CallExpr* call) {
   VarSymbol* nameSym = toVarSymbol(toSymExpr(call->get(2))->symbol());
   // caller's responsibility
   INT_ASSERT(nameSym->immediate->const_kind == CONST_KIND_STRING);
-  Symbol* field = at->getField(nameSym->immediate->v_string, true);
+  Symbol* field = at->getField(nameSym->immediate->v_string.c_str(), true);
   return field->qualType().toVal();
 }
 
@@ -308,8 +308,7 @@ returnInfoGetMember(CallExpr* call) {
     Symbol* field = NULL;
     if (imm->const_kind == CONST_KIND_STRING)
     {
-      const char* name = var->immediate->v_string;
-      field = ct->getField(name);
+      field = ct->getField(var->immediate->v_string.c_str());
     }
     if (imm->const_kind == NUM_KIND_INT)
     {
@@ -362,8 +361,7 @@ returnInfoGetMemberRef(CallExpr* call) {
     Symbol* field = NULL;
     if (imm->const_kind == CONST_KIND_STRING)
     {
-      const char* name = var->immediate->v_string;
-      field = ct->getField(name);
+      field = ct->getField(var->immediate->v_string.c_str());
     }
     if (imm->const_kind == NUM_KIND_INT)
     {
@@ -998,6 +996,9 @@ initPrimitive() {
 
   // specify a particular localeID for an on clause.
   prim_def(PRIM_ON_LOCALE_NUM, "chpl_on_locale_num", returnInfoLocaleID);
+
+  // call the 'chpl_task_getRequestedSubloc' runtime function
+  prim_def(PRIM_GET_REQUESTED_SUBLOC, "chpl_task_getRequestedSubloc", returnInfoInt64);
 
   prim_def(PRIM_REGISTER_GLOBAL_VAR, "_register_global_var", returnInfoVoid, true, true);
   prim_def(PRIM_BROADCAST_GLOBAL_VARS, "_broadcast_global_vars", returnInfoVoid, true, true);

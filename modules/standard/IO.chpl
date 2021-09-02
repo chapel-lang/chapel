@@ -3448,50 +3448,6 @@ inline proc channel.readwrite(ref x) throws where !this.writing {
   }
 
   /*
-     Return any saved error code.
-   */
-  proc channel.error():syserr {
-    compilerWarning("The channel.error method is deprecated. " +
-                    "Catch errors instead.");
-    var ret:syserr;
-    on this.home {
-      var local_error:syserr;
-      try! this.lock();
-      local_error = qio_channel_error(_channel_internal);
-      this.unlock();
-      ret = local_error;
-    }
-    return ret;
-  }
-
-  /*
-     Save an error code.
-   */
-  proc channel.setError(e:syserr) {
-    compilerWarning("The channel.setError method is deprecated. " +
-                    "Throw errors instead.");
-    on this.home {
-      var error = e;
-      try! this.lock();
-      _qio_channel_set_error_unlocked(_channel_internal, error);
-      this.unlock();
-    }
-  }
-
-  /*
-     Clear any saved error code.
-   */
-  proc channel.clearError() {
-    compilerWarning("The channel.clearError method is deprecated. " +
-                    "Throw and catch errors instead.");
-    on this.home {
-      try! this.lock();
-      qio_channel_clear_error(_channel_internal);
-      this.unlock();
-    }
-  }
-
-  /*
      Write a sequence of bytes.
 
      :throws SystemError: Thrown if the byte sequence could not be written.
@@ -6272,7 +6228,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
   var err: syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var save_style = this._style();
+    var save_style = this._style(); defer { this._set_style(save_style); }
     var cur:size_t = 0;
     var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
@@ -6313,8 +6269,6 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
         err = qio_format_error_too_few_args();
       }
     }
-
-    this._set_style(save_style);
   }
 
   if err then try this._ch_ioerror(err, "in channel.writef(fmt:string)");
@@ -6329,7 +6283,7 @@ proc channel.writef(fmtStr:?t): bool throws
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var save_style = this._style();
+    var save_style = this._style(); defer { this._set_style(save_style); }
     var cur:size_t = 0;
     var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;

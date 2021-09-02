@@ -73,17 +73,17 @@ def strip_preprocessor_lines(lines):
 # Clang, and the Intel compiler, but probably not others.
 #
 @memoize
-def has_std_atomics(compiler_val):
+def has_std_atomics():
     try:
-        compiler_name = chpl_compiler.get_compiler_name_c(compiler_val)
-        if compiler_name == 'unknown-c-compiler':
+        compiler_command = chpl_compiler.get_compiler_command('target', 'c')
+        if compiler_command == '':
             return False
 
         version_key='version'
         atomics_key='atomics'
 
         cmd_input = '{0}=__STDC_VERSION__\n{1}=__STDC_NO_ATOMICS__'.format(version_key, atomics_key)
-        cmd = [compiler_name, '-E', '-x', 'c', '-']
+        cmd = [compiler_command, '-E', '-x', 'c', '-']
         output = run_command(cmd, cmd_input=cmd_input)
         output = strip_preprocessor_lines(output.splitlines())
 

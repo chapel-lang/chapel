@@ -3620,10 +3620,10 @@ GenRet CallExpr::codegen() {
     codegenInvokeOnFun();
 
   } else if (fn->hasFlag(FLAG_BEGIN_BLOCK)               == true)  {
-    codegenInvokeTaskFun("chpl_taskListAddBegin");
+    codegenInvokeTaskFun("chpl_taskAddBegin");
 
   } else if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) == true)  {
-    codegenInvokeTaskFun("chpl_taskListAddCoStmt");
+    codegenInvokeTaskFun("chpl_taskAddCoStmt");
 
   } else if (fn->hasFlag(FLAG_NO_CODEGEN)                == false) {
     std::vector<GenRet> args(numActuals());
@@ -4662,10 +4662,12 @@ DEFINE_PRIM(PRIM_LOCAL_CHECK) {
     // arguments are (wide ptr, error string, line, function/file)
     GenRet lhs = call->get(1);
     Symbol* lhsType = lhs.chplType->symbol;
-    const char* error = toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate->v_string;
+    auto immediate = toVarSymbol(toSymExpr(call->get(2))->symbol())->immediate;
+    const char* errorStr = immediate->v_string.c_str();
 
     if (lhsType->hasEitherFlag(FLAG_WIDE_REF, FLAG_WIDE_CLASS) == true) {
       GenRet filename = GenRet(call->get(4));
+      GenRet error = GenRet(errorStr);
 
       GenRet lhs = call->get(1);
       if (call->get(1)->isRef()) {
@@ -4734,6 +4736,16 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
 
   std::vector<GenRet> args;
+
+  // The first argument passed to the chpl_gpu_launch_kernel* runtime call is the
+  // fatbin path. The fatbin file contains the ptx code for the kernel function
+  // we wish to launch. 
+  char fatbinPath[FILENAME_MAX+1];
+  int len = snprintf(fatbinPath, FILENAME_MAX+1, "%s/%s", saveCDir, "chpl__gpu.fatbin");
+  INT_ASSERT(len > 0 && len < FILENAME_MAX+1);
+  args.push_back(new_CStringSymbol(fatbinPath));
+
+  // "Copy" arguments from primitive call to runtime library function call.
   int curArg = 1;
   for_actuals(actual, call) {
     Symbol* actualSym = toSymExpr(actual)->symbol();
@@ -4825,6 +4837,7 @@ DEFINE_PRIM(PRIM_GPU_BLOCKDIM_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvv
 DEFINE_PRIM(PRIM_GPU_GRIDDIM_X)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.x"); }
 DEFINE_PRIM(PRIM_GPU_GRIDDIM_Y)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.y"); }
 DEFINE_PRIM(PRIM_GPU_GRIDDIM_Z)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.z"); }
+DEFINE_PRIM(PRIM_GET_REQUESTED_SUBLOC) { ret = codegenCallExpr("chpl_task_getRequestedSubloc"); }
 
 static void codegenPutGet(CallExpr* call, GenRet &ret) {
     // args are:
@@ -6161,34 +6174,30 @@ void CallExpr::codegenInvokeOnFun() {
 
 void CallExpr::codegenInvokeTaskFun(const char* name) {
   FnSymbol*           fn            = resolvedFunction();
-  GenRet              taskList      = codegenValue(get(1));
-  GenRet              taskListNode;
   GenRet              taskBundle;
   GenRet              bundleSize;
 
-  std::vector<GenRet> args(8);
+  std::vector<GenRet> args(6);
 
-  // get(1) is a ref/wide ref to a task list value
-  // get(2) is the node ID owning the task list
-  // get(3) is a buffer containing bundled arguments
-  // get(4) is the buffer's length
-  // get(5) is a dummy class type for the argument bundle
-  if (get(1)->isWideRef()) {
-    taskList = codegenRaddr(taskList);
+  // get(1) is a buffer containing bundled arguments
+  // get(2) is the buffer's length
+  // get(3) is a dummy class type for the argument bundle
+  taskBundle   = codegenValue(get(1));
+  bundleSize   = codegenValue(get(2));
+
+  // We would like to remove this conditional and always do the true branch,
+  // but wanted to limit the impact of this near the release date.
+  if (localeUsesGPU()) {
+    GenRet outerLocale = codegenCallExpr("chpl_task_getRequestedSubloc");
+    args[0]    = outerLocale;
+  } else {
+    args[0]      = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
   }
-
-  taskListNode = codegenValue(get(2));
-  taskBundle   = codegenValue(get(3));
-  bundleSize   = codegenValue(get(4));
-
-  args[0]      = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
   args[1]      = new_IntSymbol(ftableMap[fn], INT_SIZE_64);
   args[2]      = codegenCast("chpl_task_bundle_p", taskBundle);
   args[3]      = bundleSize;
-  args[4]      = taskList;
-  args[5]      = codegenValue(taskListNode);
-  args[6]      = fn->linenum();
-  args[7]      = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
+  args[4]      = fn->linenum();
+  args[5]      = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
 
   genComment(fn->cname, true);
 

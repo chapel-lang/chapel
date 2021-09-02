@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#include "chpl/types/Param.h"
+
 #include <cerrno>
 #include <cfloat>
 #include <cinttypes>
@@ -26,6 +28,8 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+
+using chpl::types::Param;
 
 static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
   return (lhs.first_line < rhs.first_line) ||
@@ -413,6 +417,43 @@ Identifier* ParserContext::buildEmptyIdent(YYLTYPE location) {
 }
 Identifier* ParserContext::buildIdent(YYLTYPE location, PODUniqueString name) {
   return Identifier::build(builder, convertLocation(location), name).release();
+}
+
+Expression* ParserContext::buildPrimCall(YYLTYPE location,
+                                         MaybeNamedActualList* lst) {
+  Location loc = convertLocation(location);
+  ASTList actuals;
+  std::vector<UniqueString> actualNames;
+  UniqueString primName;
+
+  consumeNamedActuals(lst, actuals, actualNames);
+
+  bool anyNames = false;
+  for (auto name : actualNames) {
+    if (!name.isEmpty()) {
+      anyNames = true;
+    }
+  }
+  // first argument must be a string literal
+  if (actuals.size() > 0) {
+    if (auto lit = actuals[0]->toStringLiteral()) {
+      primName = lit->str();
+      // and erase that element
+      actuals.erase(actuals.begin());
+    }
+  }
+
+  if (anyNames || primName.isEmpty()) {
+    if (anyNames)
+      noteError(location, "primitive calls cannot use named arguments");
+    else
+      noteError(location, "primitive calls must start with string literal");
+
+    return ErroneousExpression::build(builder, loc).release();
+  }
+
+  auto prim = PrimCall::build(builder, loc, primName, std::move(actuals));
+  return prim.release();
 }
 
 OpCall* ParserContext::buildBinOp(YYLTYPE location,
@@ -1006,217 +1047,6 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   return { .comments=comments, .stmt=node.release() };
 }
 
-uint64_t ParserContext::binStr2uint64(YYLTYPE location,
-                                      const char* str,
-                                      bool& erroneous) {
-  assert(str);
-  assert(str[0] == '0' && (str[1] == 'b' || str[1] == 'B'));
-
-  int len = strlen(str);
-  assert(len >= 3);
-
-  erroneous = false;
-
-  // Remove leading 0s
-  int startPos = 2;
-  while (str[startPos] == '0' && startPos < len-1) {
-    startPos++;
-  }
-  // Check length
-  if (len-startPos > 64) {
-    erroneous = true;
-    std::string msg = "Integer literal overflow: '";
-    msg += str;
-    msg += "' is too big for type uint64";
-    noteError(location, msg);
-  }
-  uint64_t val = 0;
-  for (int i=startPos; i<len; i++) {
-    val <<= 1;
-    switch (str[i]) {
-    case '0':
-      break;
-    case '1':
-      val += 1;
-      break;
-    default:
-      erroneous = true;
-      noteError(location, std::string("illegal character '") +
-                          str[i] + "' in binary literal");
-    }
-  }
-
-  if (erroneous)
-    return 0;
-
-  return val;
-}
-
-uint64_t ParserContext::octStr2uint64(YYLTYPE location,
-                                      const char* str,
-                                      bool& erroneous) {
-  assert(str);
-  assert(str[0] == '0' && (str[1] == 'o' || str[1] == 'O'));
-
-  int len = strlen(str);
-  assert(len >= 3);
-
-  /* Remove leading 0s */
-  int startPos = 2;
-  while (str[startPos] == '0' && startPos < len-1) {
-    startPos++;
-  }
-
-  if (len-startPos > 22 || (len-startPos == 22 && str[startPos] != '1')) {
-    erroneous = true;
-    std::string msg = "Integer literal overflow: '";
-    msg += str;
-    msg += "' is too big for type uint64";
-    noteError(location, msg);
-  }
-
-  for (int i = startPos; i < len; i++) {
-    if ('0' <= str[i] && str[i] <= '8') {
-      // OK
-    } else {
-      erroneous = true;
-      noteError(location, std::string("illegal character '") +
-                          str[i] + "' in octal literal");
-    }
-  }
-
-  if (erroneous == true)
-    return 0;
-
-  uint64_t val;
-  int numitems = sscanf(str+startPos, "%" SCNo64, &val);
-  if (numitems != 1) {
-    erroneous = true;
-    noteError(location, "error converting octal literal");
-  }
-
-  return val;
-}
-
-uint64_t ParserContext::decStr2uint64(YYLTYPE location,
-                                      const char* str,
-                                      bool& erroneous) {
-  assert(str);
-
-  int len = strlen(str);
-  assert(len >= 1);
-
-  /* Remove leading 0s */
-  int startPos = 0;
-  while (str[startPos] == '0' && startPos < len-1) {
-    startPos++;
-  }
-
-  for (int i = startPos; i < len; i++) {
-    if ('0' <= str[i] && str[i] <= '9') {
-      // OK
-    } else {
-      erroneous = true;
-      noteError(location, std::string("illegal character '") +
-                          str[i] + "' in decimal literal");
-    }
-  }
-
-  int64_t val;
-  int numitems = sscanf(str+startPos, "%" SCNu64, &val);
-  if (numitems != 1) {                                          \
-    erroneous = true;
-    noteError(location, "error converting decimal literal");
-  }
-
-  char* checkStr = (char*)malloc(len+1);
-  snprintf(checkStr, len+1, "%" SCNu64, val);
-  if (strcmp(str+startPos, checkStr) != 0) {
-    erroneous = true;
-    std::string msg = "Integer literal overflow: '";
-    msg += str;
-    msg += "' is too big for type uint64";
-    noteError(location, msg);
-  }
-  free(checkStr);
-
-  if (erroneous)
-    return 0;
-
-  return val;
-}
-
-
-
-uint64_t ParserContext::hexStr2uint64(YYLTYPE location,
-                                      const char* str,
-                                      bool& erroneous) {
-  assert(str);
-  assert(str[0] == '0' && (str[1] == 'x' || str[1] == 'X'));
-
-  int len = strlen(str);
-  assert(len >= 3);
-
-  /* Remove leading 0s */
-  int startPos = 2;
-  while (str[startPos] == '0' && startPos < len-1) {
-    startPos++;
-  }
-
-  if (len-startPos > 16) {
-    erroneous = true;
-    std::string msg = "Integer literal overflow: '";
-    msg += str;
-    msg += "' is too big for type uint64";
-    noteError(location, msg);
-  }
-
-  for (int i = startPos; i < len; i++) {
-    if (('0' <= str[i] && str[i] <= '9') ||
-        ('a' <= str[i] && str[i] <= 'f') ||
-        ('A' <= str[i] && str[i] <= 'F')) {
-      // OK
-    } else {
-      erroneous = true;
-      noteError(location, std::string("illegal character '") +
-                          str[i] + "' in hexadecimal literal");
-    }
-  }
-
-  if (erroneous)
-    return 0;
-
-  uint64_t val;
-  int numitems = sscanf(str+2, "%" SCNx64, &val);
-  if (numitems != 1) {
-    erroneous = true;
-    noteError(location, "error converting hexadecimal literal");
-  }
-  return val;
-}
-
-double ParserContext::str2double(YYLTYPE location,
-                                 const char* str,
-                                 bool& erroneous) {
-  char* endptr = nullptr;
-  double num = strtod(str, &endptr);
-  if (std::isnan(num) || std::isinf(num)) {
-    // don't worry about checking magnitude of these
-  } else {
-    double mag = fabs(num);
-    // check strtod result
-    if ((mag == HUGE_VAL || mag == DBL_MIN) && errno == ERANGE) {
-      erroneous = true;
-      noteError(location, "overflow or underflow in floating point literal");
-    } else if (num == 0.0 && endptr == str) {
-      erroneous = true;
-      noteError(location, "error in floating point literal");
-    }
-  }
-
-  return num;
-}
-
 Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
                                                PODUniqueString str,
                                                int type) {
@@ -1235,45 +1065,52 @@ Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
   }
   noUnderscores[noUnderscoresLen] = '\0';
 
-  bool erroneous = false;
+  std::string err;
   Expression* ret = nullptr;
   auto loc = convertLocation(location);
 
   if (type == INTLITERAL) {
     if (!strncmp("0b", pch, 2) || !strncmp("0B", pch, 2)) {
-      ull = binStr2uint64(location, noUnderscores, erroneous);
+      ull = Param::binStr2uint64(noUnderscores, noUnderscoresLen,  err);
     } else if (!strncmp("0o", pch, 2) || !strncmp("0O", pch, 2)) {
       // The second case is difficult to read, but is zero followed by a capital
       // letter 'o'
-      ull = octStr2uint64(location, noUnderscores, erroneous);
+      ull = Param::octStr2uint64(noUnderscores, noUnderscoresLen, err);
     } else if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2)) {
-      ull = hexStr2uint64(location, noUnderscores, erroneous);
+      ull = Param::hexStr2uint64(noUnderscores, noUnderscoresLen, err);
     } else {
-      ull = decStr2uint64(location, noUnderscores, erroneous);
+      ull = Param::decStr2uint64(noUnderscores, noUnderscoresLen, err);
     }
 
-    if (erroneous)
+    if (!err.empty()) {
+      noteError(location, err);
       ret = ErroneousExpression::build(builder, loc).release();
-    else if (ull <= 9223372036854775807ull)
+    } else if (ull <= 9223372036854775807ull) {
       ret = IntLiteral::build(builder, loc, ull, text).release();
-    else
+    } else {
       ret =  UintLiteral::build(builder, loc, ull, text).release();
+    }
   } else if (type == REALLITERAL || type == IMAGLITERAL) {
 
     if (type == IMAGLITERAL) {
       // Remove the trailing `i` from the noUnderscores number
-      assert(noUnderscores[noUnderscoresLen-1] == 'i');
-      noUnderscores[noUnderscoresLen-1] = '\0';
+      if (noUnderscores[noUnderscoresLen-1] != 'i') {
+        err = "invalig imag literal - does not end in i";
+      }
+      noUnderscoresLen--;
+      noUnderscores[noUnderscoresLen] = '\0';
     }
 
-    double num = str2double(location, noUnderscores, erroneous);
+    double num = Param::str2double(noUnderscores, noUnderscoresLen, err);
 
-    if (erroneous)
+    if (!err.empty()) {
+      noteError(location, err);
       ret = ErroneousExpression::build(builder, loc).release();
-    else if (type == IMAGLITERAL)
+    } else if (type == IMAGLITERAL) {
       ret = ImagLiteral::build(builder, loc, num, text).release();
-    else
+    } else {
       ret = RealLiteral::build(builder, loc, num, text).release();
+    }
 
   } else {
     assert(false && "Case note handled in buildNumericLiteral");

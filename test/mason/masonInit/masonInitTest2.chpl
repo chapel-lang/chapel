@@ -4,10 +4,10 @@ use MasonUtils;
 use MasonNew;
 
 proc main(){
-  const newArgs = ['mason','new','testSrc'];
+  const newArgs = ['new','testSrc'];
   masonNew(newArgs);
   rmTree('testSrc/src');
-  const initArgs = ['mason', 'init','testSrc'];
+  const initArgs = ['init','testSrc'];
   masonInit(initArgs);
   //check if src and src/testSrc.chpl was created
   if isFile("./testSrc/src/testSrc.chpl") && isDir("./testSrc/src") {

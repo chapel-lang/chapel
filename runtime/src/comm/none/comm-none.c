@@ -110,6 +110,7 @@ int32_t chpl_comm_getMaxThreads(void) {
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   chpl_numNodes = 1;
   chpl_nodeID = 0;
+  chpl_set_num_locales_on_node(1);
 }
 
 void chpl_comm_post_mem_init(void) { }

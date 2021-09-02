@@ -29,8 +29,9 @@
 */
 module Map {
   import ChapelLocks;
-  private use HaltWrappers;
   private use ChapelHashtable;
+  private use HaltWrappers;
+  private use IO;
 
   // Lock code lifted from modules/standard/List.chpl.
   // Maybe they should be combined into a Locks module.
@@ -50,14 +51,22 @@ module Map {
     }
   }
 
-  private use IO;
-
-  pragma "no doc"
-  inline proc checkForNonNilableClass(type t) type {
-    if isNonNilableClass(t) {
-      return t?;
-    } else {
-      return t;
+  proc _checkKeyAndValType(type K, type V) {
+    if isGenericType(K) {
+      compilerWarning('creating a map with key type ', K:string, 2);
+      if isClassType(K) && !isGenericType(borrowed K) {
+        compilerWarning('which now means class type with generic ',
+                        'management', 2);
+      }
+      compilerError('map key type cannot currently be generic', 2);
+    }
+    if isGenericType(V) {
+      compilerWarning('creating a map with value type ', V:string, 2);
+      if isClassType(V) && !isGenericType(borrowed V) {
+        compilerWarning('which now means class type with generic ',
+                        'management', 2);
+      }
+      compilerError('map value type cannot currently be generic', 2);
     }
   }
 
@@ -88,6 +97,8 @@ module Map {
         _lock$.unlock();
     }
 
+
+
     /*
       Initializes an empty map containing keys and values of given types.
 
@@ -96,24 +107,7 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
     */
     proc init(type keyType, type valType, param parSafe=false) {
-      if isGenericType(keyType) {
-        compilerWarning("creating a map with key type " +
-                        keyType:string);
-        if isClassType(keyType) && !isGenericType(borrowed keyType) {
-          compilerWarning("which now means class type with generic management");
-        }
-        compilerError("map key type cannot currently be generic");
-        // In the future we might support it if the list is not default-inited
-      }
-      if isGenericType(valType) {
-        compilerWarning("creating a map with value type " +
-                        valType:string);
-        if isClassType(valType) && !isGenericType(borrowed valType) {
-          compilerWarning("which now means class type with generic management");
-        }
-        compilerError("map value type cannot currently be generic");
-        // In the future we might support it if the list is not default-inited
-      }
+      _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
@@ -121,25 +115,7 @@ module Map {
 
     proc init(type keyType, type valType, param parSafe=false)
     where isNonNilableClass(valType) {
-      if isGenericType(keyType) {
-        compilerWarning("creating a map with key type " +
-                        keyType:string);
-        if isClassType(keyType) && !isGenericType(borrowed keyType) {
-          compilerWarning("which now means class type with generic management");
-        }
-        compilerError("map key type cannot currently be generic");
-        // In the future we might support it if the list is not default-inited
-      }
-      if isGenericType(valType) {
-        compilerWarning("creating a map with value type " +
-                        valType:string);
-        if isClassType(valType) && !isGenericType(borrowed valType) {
-          compilerWarning("which now means class type with generic management");
-        }
-        compilerError("map value type cannot currently be generic");
-        // In the future we might support it if the list is not default-inited
-      }
-
+      _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
@@ -274,25 +250,6 @@ module Map {
     }
 
     /*
-      Updates this map with the contents of the other, overwriting the values
-      for already-existing keys.
-
-      .. warning::
-
-        Adding to a map using :proc:`update` is deprecated. Please use
-        the :proc:`extend` method instead.
-
-      :arg m: The other map
-      :type m: map(keyType, valType)
-    */
-    proc update(pragma "intent ref maybe const formal"
-                m: map(keyType, valType, parSafe)) {
-      compilerWarning('Adding to a map using `update()` is deprecated - ' +
-                      'use `extend()` instead');
-      extend(m);
-    }
-
-    /*
       Update a value in this map in a parallel safe manner via an updater
       object.
 
@@ -339,8 +296,8 @@ module Map {
     pragma "no doc"
     inline proc _warnForParSafeIndexing() {
       if parSafe then
-        compilerWarning('indexing a map initialized with `parSafe=true` ' +
-                        'has been deprecated, use `update()` instead', 2);
+        compilerError('cannot index into a map initialized with ',
+                      '`parSafe=true`', 2);
     }
 
     /*
@@ -421,9 +378,8 @@ module Map {
      */
     proc getReference(k: keyType) ref {
       if parSafe then
-        compilerWarning('use of `getReference()` on maps initialized ' +
-                        'with `parSafe=true` has been deprecated, ' +
-                        'use `update()` instead');
+        compilerError('cannot call `getReference()` on maps initialized ',
+                      'with `parSafe=true`');
 
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);

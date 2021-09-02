@@ -18,13 +18,13 @@ module Lib {
     writeln(message);
   }
 
-  // these invoke init, init=, =, <, _cast through POI
+  // these invoke init, init=, =, <, cast through POI
   proc libIN(myArg) { var r1 = new MyRecord(0); } // init
   proc libIE(myArg) { var r2 = r1;              } // init=
   proc libAS(myArg) { r1 = r2;                  } // =
   proc libLT(myArg) { var lt = r1 < r2;         } // <
-  proc libCF(myArg) { var castF = r1: int;      } // _cast from
-  proc libCT(myArg) { var castT = 1: MyRecord;  } // _cast to
+  proc libCF(myArg) { var castF = r1: int;      } // cast from
+  proc libCT(myArg) { var castT = 1: MyRecord;  } // cast to
 }
 
 module User {
@@ -63,8 +63,8 @@ module User {
     operator =(ref lhs:MyRecord, rhs:MyRecord) { note("u3.=", 2); }
     operator <(lhs:MyRecord, rhs:MyRecord) { note("u3.<", 2);
                                              return true; }
-    proc _cast(type t:int,   rhs:MyRecord) { note("u3._castF", 2); return 1; }
-    proc _cast(type t:MyRecord,   rhs:int) { note("u3._castT", 2);
+    operator :(rhs:MyRecord, type t:int) { note("u3._castF", 2); return 1; }
+    operator :(rhs:int, type t:MyRecord) { note("u3._castT", 2);
                                              return new MyRecord(0); }
     note("User.u3", 1);
     libIN(1);      // cannot reuse the cache entry -> create a new one
@@ -108,8 +108,8 @@ module More1 {
   operator =(ref lhs:MyRecord, rhs:MyRecord) { note("More1.=", 2); }
   operator <(lhs:MyRecord, rhs:MyRecord) { note("More1.<", 2);
                                            return true; }
-  proc _cast(type t:int,   rhs:MyRecord) { note("More1._castF", 2); return 1; }
-  proc _cast(type t:MyRecord,   rhs:int) { note("More1._castT", 2);
+  operator :(rhs:MyRecord, type t:int) { note("More1._castF", 2); return 1; }
+  operator :(rhs:int, type t:MyRecord) { note("More1._castT", 2);
                                            return new MyRecord(0); }
   proc m1con() {
     note("More1.m1con", 1);
@@ -156,8 +156,8 @@ module Combo1 {
   operator =(ref lhs:MyRecord, rhs:MyRecord) { note("Combo1.=", 2); }
   operator <(lhs:MyRecord, rhs:MyRecord) { note("Combo1.<", 2);
                                            return true; }
-  proc _cast(type t:int,   rhs:MyRecord) { note("Combo1._castF", 2); return 1; }
-  proc _cast(type t:MyRecord,   rhs:int) { note("Combo1._castT", 2);
+  operator :(rhs:MyRecord, type t:int) { note("Combo1._castF", 2); return 1; }
+  operator :(rhs:int, type t:MyRecord) { note("Combo1._castT", 2);
                                            return new MyRecord(0); }
   proc combo1a() {
     use Combo2;

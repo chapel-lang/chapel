@@ -1,0 +1,6 @@
+InferredConstRefResourceMutation.chpl:19: In function 'test1':
+InferredConstRefResourceMutation.chpl:23: error: cannot assign to const variable
+InferredConstRefResourceMutation.chpl:27: In function 'test2':
+InferredConstRefResourceMutation.chpl:31: error: cannot assign to const variable
+InferredConstRefResourceMutation.chpl:36: In function 'test3':
+InferredConstRefResourceMutation.chpl:40: error: cannot assign to const variable

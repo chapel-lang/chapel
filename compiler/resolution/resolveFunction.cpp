@@ -420,7 +420,7 @@ static void handleParamCNameFormal(FnSymbol* fn, ArgSymbol* formal) {
     USR_FATAL(fn, "extern name expression must be param");
   }
   if (var->type == dtString || var->type == dtStringC) {
-    fn->cname = var->immediate->v_string;
+    fn->cname = astr(var->immediate->v_string.c_str());
   } else {
     USR_FATAL(fn, "extern name expression must be a string");
   }
@@ -620,12 +620,6 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
     // arg 1 is the method token
     toType = fn->getFormal(2)->getValType();
     fromType = fn->getFormal(3)->getValType();
-  } else if (fn->name == astr_cast) {
-    int i = 1;
-    if (fn->getFormal(i)->typeInfo() == dtMethodToken) i++;
-    if (fn->getFormal(i)->hasFlag(FLAG_ARG_THIS)) i++;
-    toType = fn->getFormal(i)->getValType(); i++;
-    fromType = fn->getFormal(i)->getValType();
   } else {
     // Nothing to do if it's not one of the above cases.
     return;
@@ -647,8 +641,6 @@ static void resolveAlsoConversions(FnSymbol* fn, CallExpr* forCall) {
       val.assign = fn;
     else if (fn->name == astrInitEquals)
       val.initEq = fn;
-    else if (fn->name == astr_cast)
-      val.cast = fn;
     else
       INT_FATAL("unexpected case");
 
@@ -1382,10 +1374,20 @@ static void markTempsDeadLastMention(std::set<VarSymbol*>& temps) {
         // returning into a user var?
         if (lhsSe != NULL) {
           VarSymbol* lhs = toVarSymbol(lhsSe->symbol());
-          if (lhs != NULL && lhs != v && !lhs->hasFlag(FLAG_TEMP)) {
+          if (lhs != NULL && lhs != v) {
+
             // Used in initializing a user var, so mark end of block
-            makeThemEndOfBlock = true;
-            break;
+            if (!lhs->hasFlag(FLAG_TEMP)) {
+              makeThemEndOfBlock = true;
+              break;
+
+            // For e.g. 'manage new foo() do ...;'
+            // The manager handle is a temp that refers to 'new foo()', so
+            // what it refers to should live until the end of the block.
+            } else if (lhs->hasFlag(FLAG_MANAGER_HANDLE)) {
+              makeThemEndOfBlock = true;
+              break;
+            }
           }
         }
         // out intent setting a user var?

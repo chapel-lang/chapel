@@ -240,6 +240,8 @@ struct ParserContext {
   Identifier* buildEmptyIdent(YYLTYPE location);
   Identifier* buildIdent(YYLTYPE location, PODUniqueString name);
 
+  Expression* buildPrimCall(YYLTYPE location, MaybeNamedActualList* lst);
+
   OpCall* buildBinOp(YYLTYPE location,
                      Expression* lhs, PODUniqueString op, Expression* rhs);
   OpCall* buildUnaryOp(YYLTYPE location,
@@ -375,12 +377,6 @@ struct ParserContext {
                                        Expression* condition,
                                        CommentsAndStmt thenCs,
                                        CommentsAndStmt elseCs);
-
-  uint64_t binStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
-  uint64_t octStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
-  uint64_t decStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
-  uint64_t hexStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
-  double str2double(YYLTYPE location, const char* str, bool& erroroneous);
 
   Expression* buildNumericLiteral(YYLTYPE location,
                                   PODUniqueString str,

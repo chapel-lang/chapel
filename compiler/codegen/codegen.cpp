@@ -34,6 +34,7 @@
 #include "llvmUtil.h"
 #include "LayeredValueTable.h"
 #include "mli.h"
+#include "misc.h"
 #include "mysystem.h"
 #include "passes.h"
 #include "stlUtil.h"
@@ -2371,11 +2372,6 @@ Type* getNamedTypeDuringCodegen(const char* name) {
   return NULL;
 }
 
-
-// Return true if the current locale model needs GPU code generation
-bool localeUsesGPU() {
-  return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu");
-}
 
 // Do this once for CPU and GPU
 static void codegenPartOne() {

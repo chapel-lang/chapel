@@ -1,11 +1,11 @@
-
-use MasonUtils;
-use MasonNew;
 use IO;
+use MasonNew;
+use MasonUtils;
+
 
 proc main() {
-  const args : [0..2] string;
-  args = ['mason','new', 'newTest'];
+  const args : [0..1] string;
+  args = ['new', 'newTest'];
 
   assert(isDir("newTest") == false);
 

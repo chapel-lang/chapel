@@ -91,6 +91,7 @@ extern FnSymbol *gChplSaveTaskError;
 extern FnSymbol *gChplForallError;
 extern FnSymbol *gAtomicFenceFn;
 extern FnSymbol *gChplAfterForallFence;
+extern FnSymbol *gChplCreateLiteralsBuffer;
 extern FnSymbol *gChplCreateStringWithLiteral;
 extern FnSymbol *gChplCreateBytesWithLiteral;
 extern FnSymbol *gChplBuildLocaleId;

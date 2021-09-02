@@ -125,7 +125,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_BEGIN_SUBCLASSES(Call)           // old AST:  CallExpr
     AST_NODE(FnCall)
     AST_NODE(OpCall)
-    //AST_NODE(PrimCall)               // old AST: CallExpr/PrimitiveOp
+    AST_NODE(PrimCall)                 // old AST: CallExpr/PrimitiveOp
     AST_NODE(Reduce)                   //
     AST_NODE(Tuple)                    //
     AST_NODE(TypeConstructor)          //
