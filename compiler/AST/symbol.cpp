@@ -2099,7 +2099,6 @@ const char* astrSlt = NULL;
 const char* astrSlte = NULL;
 const char* astrSswap = NULL;
 const char* astrScolon = NULL;
-const char* astr_cast = NULL;
 const char* astr_defaultOf = NULL;
 const char* astrInit = NULL;
 const char* astrInitEquals = NULL;
@@ -2136,7 +2135,6 @@ void initAstrConsts() {
   astrSlte = astr("<=");
   astrSswap = astr("<=>");
   astrScolon = astr(":");
-  astr_cast   = astr("_cast");
   astr_defaultOf = astr("_defaultOf");
   astrInit    = astr("init");
   astrInitEquals = astr("init=");
