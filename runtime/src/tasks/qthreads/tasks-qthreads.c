@@ -270,12 +270,6 @@ static void SIGINT_handler(int sig)
 {
     signal(sig, SIG_IGN);
 
-    if (blockreport) {
-        fprintf(stderr,
-                "Blockreport is currently unsupported by the qthreads "
-                "tasking layer.\n");
-    }
-
     if (taskreport) {
         fprintf(stderr, "Taskreport is currently unsupported by the qthreads tasking layer.\n");
     }
@@ -710,7 +704,7 @@ void chpl_task_init(void)
     // the number of threads qthreads creates beforehand
     assert(0 == commMaxThreads || qthread_num_workers() < commMaxThreads);
 
-    if (blockreport || taskreport) {
+    if (taskreport) {
         if (signal(SIGINT, SIGINT_handler) == SIG_ERR) {
             perror("Could not register SIGINT handler");
         }

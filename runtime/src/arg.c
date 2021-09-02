@@ -42,7 +42,6 @@
 
 static int gdbFlag = 0;
 static int lldbFlag = 0;
-int32_t blockreport = 0; // report locations of blocked threads on SIGINT
 int32_t taskreport = 0;  // report thread hierarchy on SIGINT
 
 
@@ -62,8 +61,6 @@ static const flagType flagList[] = {
     "(equivalent to setting the numLocales config const)", 'g' },
   { "q", "", "quiet", "run program in quiet mode", 'g' },
   { "v", "", "verbose", "run program in verbose mode", 'g' },
-  { "b", "", "blockreport",
-    "report location of blocked threads on SIGINT", 'g' },
   { "t", "", "taskreport",
     "report list of pending and executing tasks on SIGINT", 'g' },
   { "", "", "gdb", "run program in gdb", 'g' },
@@ -351,10 +348,6 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
             verbosity=2;
             break;
           }
-          if (strcmp(flag, "blockreport") == 0) {
-            blockreport = 1;
-            break;
-          }
           if (strcmp(flag, "taskreport") == 0) {
             taskreport = 1;
             break;
@@ -406,11 +399,7 @@ void parseArgs(chpl_bool isLauncher, chpl_parseArgsMode_t mode,
         break;
 
       case 'b':
-        if (currentArg[2] == '\0') {
-          blockreport = 1;
-        } else {
-          i += handleNonstandardArg(argc, argv, i, lineno, filename);
-        }
+        i += handleNonstandardArg(argc, argv, i, lineno, filename);
         break;
 
       case 'E':

@@ -32,7 +32,6 @@ extern "C" {
 //
 // defined in arg.c
 //
-extern int32_t blockreport;
 extern int32_t taskreport;
 
 typedef enum {
