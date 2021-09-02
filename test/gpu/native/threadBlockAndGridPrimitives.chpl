@@ -105,8 +105,7 @@ proc runExample(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ) {
   writeln("Block size: ", bdimX, " x ", bdimY, " x ", bdimZ);
 
   var deviceBuffer = getDeviceBufferPointer(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ);
-  __primitive("gpu kernel launch",
-              c".threadBlockAndGridPrimitives_files/chpl__gpu.fatbin", c"add_nums",
+  __primitive("gpu kernel launch", c"add_nums",
               gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ,
               deviceBuffer);
   getAndPrintDataFromDevice(deviceBuffer, gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ);

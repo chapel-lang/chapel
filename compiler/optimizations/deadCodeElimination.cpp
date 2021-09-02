@@ -677,11 +677,6 @@ static void generateEarlyReturn(OutlineInfo& info) {
 static  CallExpr* generateGPUCall(OutlineInfo& info, VarSymbol* numThreads) { 
   CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
 
-  char fatbinPath[FILENAME_MAX+1];
-  int len = snprintf(fatbinPath, FILENAME_MAX+1, "%s/%s", saveCDir, "chpl__gpu.fatbin");
-  INT_ASSERT(len > 0 && len < FILENAME_MAX+1);
-
-  call->insertAtTail(new_CStringSymbol(fatbinPath));
   call->insertAtTail(info.fn);
 
   call->insertAtTail(numThreads);  // total number of GPU threads

@@ -4715,7 +4715,6 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   // Generates a call to the `chpl_gpu_launch_kernel*` runtime functions.
   //
   // The primitive's arguments are
-  //   - fatbinPath (path to file containing ptx code for the function)
   //   - function name (c_string immediate) or symbol (FnSymbol)
   //   - grid size (1 arg or 3 args)
   //   - block size (1 arg or 3 args)
@@ -4731,19 +4730,26 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   //    will be similar to 1.
 
   // number of arguments that are not kernel params
-  int nNonKernelParamArgs = is3d ? 8:4;
+  int nNonKernelParamArgs = is3d ? 7:3;
   int nKernelParamArgs = call->numActuals() - nNonKernelParamArgs;
 
   const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
 
   std::vector<GenRet> args;
+
+  // The first argument passed to the chpl_gpu_launch_kernel* runtime call is the
+  // fatbin path. The fatbin file contains the ptx code for the kernel function
+  // we wish to launch. 
+  char fatbinPath[FILENAME_MAX+1];
+  int len = snprintf(fatbinPath, FILENAME_MAX+1, "%s/%s", saveCDir, "chpl__gpu.fatbin");
+  INT_ASSERT(len > 0 && len < FILENAME_MAX+1);
+  args.push_back(new_CStringSymbol(fatbinPath));
+
+  // "Copy" arguments from primitive call to runtime library function call.
   int curArg = 1;
   for_actuals(actual, call) {
     Symbol* actualSym = toSymExpr(actual)->symbol();
-    if (curArg == 1) {  // fatbin path
-        args.push_back(actual->codegen());
-    }
-    else if (curArg == 2) {  // function name or symbol
+    if (curArg == 1) {  // function name or symbol
       if (FnSymbol* fn = toFnSymbol(actualSym)) {
         args.push_back(new_CStringSymbol(fn->cname));
       }

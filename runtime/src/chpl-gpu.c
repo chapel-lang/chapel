@@ -117,6 +117,7 @@ static void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) 
     }
     fclose (f);
   } else {
+    printf("Attempt to open file: %s\n", fatbinFile);
     chpl_internal_error("Unable to open fatbin file.");
   }
 
@@ -192,7 +193,7 @@ static void chpl_gpu_launch_kernel_help(const char* fatbinPath,
                nargs);
 
   int i;
-  void* function = chpl_gpu_getKernel("tmp/chpl__gpu.fatbin", name);
+  void* function = chpl_gpu_getKernel(fatbinPath, name);
   // TODO: this should use chpl_mem_alloc
   void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
 
