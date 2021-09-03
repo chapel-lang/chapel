@@ -548,13 +548,13 @@ module String {
 
   private proc validateEncoding(buf, len): int throws {
     extern proc chpl_enc_validate_buf(buf, len, ref numCodepoints) : c_int;
-    
+
     var numCodepoints: int;
-    
+
     if chpl_enc_validate_buf(buf, len, numCodepoints) != 0 {
       throw new DecodeError();
     }
-    
+
     return numCodepoints;
   }
 
@@ -875,7 +875,7 @@ module String {
         }
       }
     }
-    
+
     proc chpl__serialize() {
       var data : chpl__inPlaceBuffer;
       if buffLen <= CHPL_SHORT_STRING_SIZE {
@@ -884,7 +884,7 @@ module String {
       return new __serializeHelper(buffLen, buff, buffSize, locale_id, data,
                                    cachedNumCodepoints);
     }
-    
+
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.buffLen <= CHPL_SHORT_STRING_SIZE {
@@ -981,7 +981,7 @@ module String {
         i = j;
       }
     }
-    
+
     inline proc substring(i: int) {
       compilerError("substring removed: use string[index]");
     }
@@ -1213,7 +1213,7 @@ module String {
                                                  buffLen=result.buffLen,
                                                  offset=0,
                                                  allowEsc=false);
-      
+
       var upCodepoint = codepoint_toUpper(cp);
       if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
         // Use the MacOS approach everywhere:  only change the case if
@@ -1224,7 +1224,7 @@ module String {
     }
 
   } // end record string
-                                        
+
   /*
     :returns: The number of codepoints in the string.
   */
@@ -1254,7 +1254,7 @@ module String {
     }
     return n;
   }
-  
+
   /*
      Gets a version of the :mod:`string <String>` that is on the currently
      executing locale.
@@ -1298,12 +1298,12 @@ module String {
   inline proc string.c_str(): c_string {
     return getCStr(this);
   }
-  
+
   /*
     Returns a :mod:`bytes <Bytes>` from the given :mod:`string <String>`. If the
     string contains some escaped non-UTF8 bytes, `policy` argument determines
     the action.
-        
+
     :arg policy: `encodePolicy.pass` directly copies the (potentially escaped)
                   data, `encodePolicy.unescape` recovers the escaped bytes
                   back.
@@ -2107,7 +2107,7 @@ module String {
                 lowercase counterpart.
 
       .. note::
-        
+
         The case change operation is not currently performed on characters whose
         cases take different number of bytes to represent in Unicode mapping.
     */
@@ -2131,7 +2131,7 @@ module String {
                 uppercase counterpart.
 
       .. note::
-        
+
         The case change operation is not currently performed on characters whose
         cases take different number of bytes to represent in Unicode mapping.
     */
