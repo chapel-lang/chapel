@@ -89,7 +89,6 @@ target_sources(libchplcomp-obj
                Try.cpp
                Tuple.cpp
                TupleDecl.cpp
-               TypeConstructor.cpp
                TypeDecl.cpp
                UintLiteral.cpp
                Use.cpp

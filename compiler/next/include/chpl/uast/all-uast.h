@@ -78,7 +78,6 @@
 #include "chpl/uast/Try.h"
 #include "chpl/uast/Tuple.h"
 #include "chpl/uast/TupleDecl.h"
-#include "chpl/uast/TypeConstructor.h"
 #include "chpl/uast/UintLiteral.h"
 #include "chpl/uast/Use.h"
 #include "chpl/uast/Union.h"

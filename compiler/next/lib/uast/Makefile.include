@@ -92,7 +92,6 @@ NEXT_UAST_SRCS =                                 \
   Try.cpp \
   Tuple.cpp \
   TupleDecl.cpp \
-  TypeConstructor.cpp \
   TypeDecl.cpp \
   UintLiteral.cpp \
   Use.cpp \

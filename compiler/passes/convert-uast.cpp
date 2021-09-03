@@ -477,31 +477,6 @@ struct Converter {
     return ret;
   }
 
-  Expr* visit(const uast::TypeConstructor* node) {
-    INT_ASSERT(node->numActuals() == 2);
-
-    Expr* subType = convertAST(node->actual(1));
-    Expr* ret = nullptr;
-
-    if (auto ident = node->actual(0)->toIdentifier()) {
-      if (ident->name() == atomicStr) {
-        ret = new CallExpr("chpl__atomicType", subType);
-      } else if (ident->name() == singleStr) {
-        ret = new CallExpr("_singlevar", subType);
-      } else if (ident->name() == syncStr) {
-        ret = new CallExpr("_syncvar", subType);
-      } else {
-        INT_FATAL("Not handled!");
-      }
-    } else {
-      INT_FATAL("Not handled!");
-    }
-
-    assert(ret);
-
-    return ret;
-  }
-
   /// Loops ///
 
   BlockStmt* visit(const uast::DoWhile* node) {
@@ -824,10 +799,31 @@ struct Converter {
 
   /// Calls ///
 
+  Expr* convertCalledExpression(const uast::Expression* node) {
+    Expr* ret = nullptr;
+
+    if (auto ident = node->toIdentifier()) {
+      if (ident->name() == atomicStr) {
+        ret = new UnresolvedSymExpr("chpl__atomicType");
+      } else if (ident->name() == singleStr) {
+        ret = new UnresolvedSymExpr("_singlevar");
+      } else if (ident->name() == syncStr) {
+        ret = new UnresolvedSymExpr("_syncvar");
+      }
+    }
+
+    if (ret == nullptr) {
+      ret = toExpr(convertAST(node));
+      INT_ASSERT(ret);
+    }
+
+    return ret;
+  }
+
   Expr* visit(const uast::FnCall* node) {
     const uast::Expression* calledExpression = node->calledExpression();
     INT_ASSERT(calledExpression);
-    Expr* calledExpr = convertAST(calledExpression);
+    Expr* calledExpr = convertCalledExpression(calledExpression);
     INT_ASSERT(calledExpr);
 
     CallExpr* ret = nullptr;

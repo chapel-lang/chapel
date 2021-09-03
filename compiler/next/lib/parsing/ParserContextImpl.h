@@ -1375,14 +1375,17 @@ Expression* ParserContext::buildCustomReduce(YYLTYPE location,
 Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
                                                 PODUniqueString baseType,
                                                 Expression* subType) {
-  ASTList actuals;
   auto ident = buildIdent(location, baseType);
+  ASTList actuals;
 
-  actuals.push_back(toOwned(ident));
   actuals.push_back(toOwned(subType));
 
-  auto node = TypeConstructor::build(builder, convertLocation(location),
-                                     std::move(actuals));
+  // TODO: Record in node that this call did not use parens.
+  const bool callUsedSquareBrackets = false;
+  auto node = FnCall::build(builder, convertLocation(location),
+                            toOwned(ident),
+                            std::move(actuals),
+                            callUsedSquareBrackets);
 
   return node.release();
 }
