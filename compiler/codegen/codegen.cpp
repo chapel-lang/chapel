@@ -1147,6 +1147,7 @@ static void genConfigGlobalsAndAbout() {
 
   genGlobalInt("CHPL_STACK_CHECKS", !fNoStackChecks, false);
   genGlobalInt("CHPL_CACHE_REMOTE", fCacheRemote, false);
+  genGlobalInt("CHPL_INTERLEAVE_MEM", fEnableMemInterleaving, false);
 
   for (std::map<std::string, const char*>::iterator env=envMap.begin(); env!=envMap.end(); ++env) {
     if (env->first != "CHPL_HOME") {

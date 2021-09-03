@@ -54,6 +54,7 @@ extern bool fNoCastChecks;
 extern bool fNoDivZeroChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
+extern bool fEnableMemInterleaving;
 extern bool fLLVMWideOpt;
 
 extern bool fAutoLocalAccess;
