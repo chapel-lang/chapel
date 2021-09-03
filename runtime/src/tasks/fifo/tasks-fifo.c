@@ -309,10 +309,6 @@ void chpl_task_init(void) {
   //
   setup_main_thread_private_data();
 
-  if (taskreport) {
-    signal(SIGINT, SIGINT_handler);
-  }
-
   initialized = true;
 }
 
@@ -403,18 +399,14 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
 void chpl_task_stdModulesInitialized(void) {
 
   //
-  // The task table is implemented in Chapel code in the modules, so
-  // we can't use it, and thus can't support task reporting on ^C,
-  // until the other modules on which it depends have been
-  // initialized and the supporting code here is set up.  In this
-  // function we're guaranteed that is true, because it is called only
-  // after all the standard module initialization is complete.
+  // The task table is implemented in Chapel code in the modules, so we
+  // can't use it, and thus can't support task reporting on ^C, until
+  // the other modules on which it depends have been initialized.  By
+  // the time this function is called that is true, so now we can set up
+  // our own supporting code.
   //
-
-  //
-  // Register this main task in the task table.
-  //
-  if (taskreport) {
+  do_taskReport = chpl_task_doTaskReport();
+  if (do_taskReport) {
     thread_private_data_t* tp = get_thread_private_data();
 
     chpldev_taskTable_add(tp->ptask->taskBundle->id,
@@ -424,12 +416,9 @@ void chpl_task_stdModulesInitialized(void) {
     chpldev_taskTable_set_active(tp->ptask->taskBundle->id);
 
     chpl_thread_mutexInit(&taskTable_lock);
-  }
 
-  //
-  // Now we can do task reporting if the user requested it.
-  //
-  do_taskReport = taskreport;
+    signal(SIGINT, SIGINT_handler);
+  }
 }
 
 

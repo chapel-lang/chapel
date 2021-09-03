@@ -29,11 +29,6 @@
 extern "C" {
 #endif
 
-//
-// defined in arg.c
-//
-extern int32_t taskreport;
-
 typedef enum {
   parse_normally,
   parse_dash_E
