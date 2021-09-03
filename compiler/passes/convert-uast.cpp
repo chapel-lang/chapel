@@ -55,6 +55,7 @@ struct Converter {
   UniqueString thisStr;
   UniqueString typeStr;
 
+  // TODO: Figure out a better way to do this sort of caching.
   Converter(chpl::Context* context) : context(context) {
     atomicStr = UniqueString::build(context, "atomic");
     dmappedStr = UniqueString::build(context, "dmapped");
@@ -305,6 +306,7 @@ struct Converter {
     return nullptr;
   }
 
+  // TODO: Speed comparison for this vs. using cached unique strings?
   Expr* convertScanReduceOp(UniqueString op) {
     if (op == "+") return new UnresolvedSymExpr("SumReduceScanOp");
     if (op == "*") return new UnresolvedSymExpr("ProductReduceScanOp");
@@ -715,6 +717,7 @@ struct Converter {
     }
   }
 
+  // TODO: Get rid of the PRIM_ACTUALS_LIST here.
   Expr* visit(const uast::Tuple* node) {
     CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
 
