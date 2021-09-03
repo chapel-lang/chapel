@@ -586,6 +586,10 @@ assign.1024:
   05/30/19:
     - Respect "always rvf" for module-scope variables (#13092)
 
+autoAggNegativeImpact.ml-perf:
+  09/02/21:
+    - Bring in aggregation optimizations we used in Arkouda (#18326)
+
 bfs:
   09/25/14:
     - addition of octal to, reformatting of format printing.
@@ -933,6 +937,10 @@ hpl_performance:
   11/30/16:
     - text: Improvements to inferConstRefs (#4904)
       config: 16-node-xc
+
+ig-agg.ml-perf:
+  09/02/21:
+    - Bring in aggregation optimizations we used in Arkouda (#18326)
 
 ig-variants.ml-perf:
   01/30/20:
@@ -2084,12 +2092,16 @@ compilerAndTestingStats: &compiler-perf-base
   02/25/21:
     - Restore timing for makeBinary (#17253)
     - Stop converting PRIM_ZIP to tuples for forall statements (#17212)
+  05/14/21:
+    - Resolve some issues with finding primary and secondary operator methods (#17684)
   05/22/21:
     - Change range.size to return int; add range.sizeAs (#17628)
   06/01/21:
     - Add explicit string casts for common/easy cases (#17855)
   06/16/21:
     - Translate uAST to old AST (#17919)
+  09/01/21:
+    - Heap allocate string literals (#18307)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2151,6 +2163,8 @@ arkouda: &arkouda-base
   04/07/21:
     - Increase the aggregation buffer sizes for non-ugni configurations (mhmerrill/arkouda#732)
     - Revert a recent change in block array creation that caused performance regression (#17531)
+  05/01/21:
+    - Optimize the aggregation copy routines (mhmerrill/arkouda#783)
   05/19/21:
     - Upgrade Arkouda release testing from 1.23.0 to 1.24.1 (#17773)
   06/02/21:
@@ -2170,6 +2184,9 @@ arkouda: &arkouda-base
   08/05/21:
     - Parallelize bytes copies over a certain threshold in ZMQ (#18140)
     - Upgrade to PyZMQ 22.2.0 (includes mutable pyzmq improvement)
+  08/27/21:
+    - text: Allow jemalloc to merge/split chunks to reduce fixed heap fragmentation (#18299)
+      config: 16-node-cs-hdr
 
 arkouda-string:
   <<: *arkouda-base
