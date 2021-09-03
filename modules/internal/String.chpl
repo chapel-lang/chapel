@@ -2516,7 +2516,7 @@ module String {
   //
 
   pragma "no doc"
-  inline proc chpl__defaultHash(x : string): uint {
-    return getHash(x);
+  inline proc string.hashThis(): uint {
+    return getHash(this);
   }
 }
