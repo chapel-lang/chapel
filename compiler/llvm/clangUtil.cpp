@@ -3926,16 +3926,27 @@ void makeBinaryLLVM(void) {
       }
 
 
-      std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") +
-                           std::string("sm_60 --output-file ") + ptxObjectFilename.c_str() +
+      std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + fCUDAArch +
+                           std::string(" --output-file ") +
+                           ptxObjectFilename.c_str() +
                            " " + asmFilename.c_str();
 
       mysystem(ptxCmd.c_str(), "PTX to  object file");
 
+      char computeCap[16];
+      if (fCUDAArch[0] == 's' && fCUDAArch[1] == 'm') {
+        snprintf(computeCap, 16, "compute_%c%c", fCUDAArch[3], fCUDAArch[4]);
+      }
+      else {
+        USR_FATAL("Unrecognized CUDA arch");
+      }
       std::string fatbinaryCmd = std::string("fatbinary -64 ") +
-                                 std::string("--create ") + fatbinFilename.c_str() +
-                                 std::string(" --image=profile=sm_60,file=") + ptxObjectFilename.c_str() +
-                                 std::string(" --image=profile=compute_60,file=") + asmFilename.c_str();
+                                 std::string("--create ") +
+                                 fatbinFilename.c_str() +
+                                 std::string(" --image=profile=") + fCUDAArch +
+                                 ",file=" + ptxObjectFilename.c_str() +
+                                 std::string(" --image=profile=") + computeCap +
+                                 ",file=" + asmFilename.c_str();
 
       mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
 
