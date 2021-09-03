@@ -289,6 +289,7 @@ def filter_overrides(chpl_env):
 def filter_tidy(chpl_env):
     comm = ENV_VALS['CHPL_COMM']
     llvm = ENV_VALS['CHPL_LLVM']
+    locale_model = ENV_VALS['CHPL_LOCALE_MODEL']
     if chpl_env.name == '  CHPL_COMM_SUBSTRATE':
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_GASNET_SEGMENT':
@@ -299,6 +300,8 @@ def filter_tidy(chpl_env):
         return comm != 'none'
     elif chpl_env.name == '  CHPL_LLVM_CONFIG':
         return llvm != 'none'
+    elif chpl_env.name == '  CHPL_CUDA_PATH':
+        return locale_model == 'gpu'
     return True
 
 

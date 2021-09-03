@@ -7,11 +7,11 @@ def get_cuda_path():
     if chpl_cuda_path:
         return chpl_cuda_path
 
-    res = utils.run_command("which nvcc".split())
+    exists, returncode, my_stdout, my_stderr = utils.try_run_command(["which",
+                                                                      "nvcc"])
 
-    chpl_cuda_path = "/".join(res.strip().split("/")[:-2]) + "/lib64"
-
-
-
-    return chpl_cuda_path
-
+    if exists and returncode == 0:
+        chpl_cuda_path = "/".join(res.strip().split("/")[:-2]) + "/lib64"
+        return chpl_cuda_path
+    else:
+        return ""
