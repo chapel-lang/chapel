@@ -261,6 +261,12 @@ ASTList ParserContext::consumeList(ParserExprList* lst) {
   return ret;
 }
 
+ASTList ParserContext::consume(Expression* e) {
+  ASTList ret;
+  ret.push_back(toOwned(e));
+  return ret;
+}
+
 void ParserContext::consumeNamedActuals(MaybeNamedActualList* lst,
                                         ASTList& actualsOut,
                                         std::vector<UniqueString>& namesOut) {
@@ -540,23 +546,107 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   return cs;
 }
 
-// TODO: Need way to clear location of 'e' in the builder.
+// This is the weird one. I can't even parse what is happening here...
+/*
+1920 | TLSBR expr_ls TIN expr TRSBR type_level_expr
+1921     {
+1922       if ($2->argList.length != 1)
+1923         USR_FATAL($4, "invalid index expression");
+1924       $$ = new CallExpr("chpl__buildArrayRuntimeType",
+1925              new CallExpr("chpl__ensureDomainExpr", $4), $6, $2->get(1)->remove(),
+1926              new CallExpr("chpl__ensureDomainExpr", $4->copy()));
+1927     }
+*/
+Expression*
+ParserContext::buildArrayTypeWithIndex(YYLTYPE location,
+                                       YYLTYPE locIndexExprs,
+                                       ParserExprList* indexExprs,
+                                       Expression* domainExpr,
+                                       Expression* typeExpr) {
+  assert(false && "Not handled yet!");
+  return nullptr;
+}
+
+Expression*
+ParserContext::buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
+                              ParserExprList* domainExprs,
+                              Expression* typeExpr) {
+
+  // Build a domain out of the expression list.
+  auto domain = Domain::build(builder, convertLocation(locDomainExprs),
+                              consumeList(domainExprs));
+
+  // TODO: Report a more accurate location.
+  auto block = consumeToBlock(location, typeExpr);
+
+  auto node = BracketLoop::build(builder, convertLocation(location),
+                                 /*index*/ nullptr,
+                                 std::move(domain),
+                                 /*withClause*/ nullptr,
+                                 BlockStyle::IMPLICIT,
+                                 std::move(block),
+                                 /*isExpressionLevel*/ true);
+
+  return node.release();
+}
+
 owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
-                                              owned<Expression> e) {
+                                              const Expression* e) {
+  auto convLoc = convertLocation(location);
+
   if (const Identifier* ident = e->toIdentifier()) {
-    return Variable::build(builder, convertLocation(location),
-                           ident->name(),
+    return Variable::build(builder, convLoc, ident->name(),
                            Decl::DEFAULT_VISIBILITY,
                            Variable::INDEX,
                            /*isConfig*/ false,
                            /*isField*/ false,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
-  } else {
-    noteError(location, "Cannot handle this kind of index var");
-  }
 
-  return nullptr;
+  } else if (const uast::Tuple* tup = e->toTuple()) {
+    ASTList elements;
+    for (auto expr : tup->actuals()) {
+      auto decl = buildLoopIndexDecl(location, expr);
+      if (decl.get() != nullptr) {
+        assert(decl->isDecl());
+        elements.push_back(std::move(decl));
+      } else {
+        auto err = ErroneousExpression::build(builder, convLoc);
+        elements.push_back(std::move(err));
+      }
+    }
+
+    return TupleDecl::build(builder, convLoc, Decl::DEFAULT_VISIBILITY,
+                            Variable::INDEX,
+                            std::move(elements),
+                            /*typeExpression*/ nullptr,
+                            /*initExpression*/ nullptr);
+  } else {
+    const char* msg = "Cannot handle this kind of index var";
+    noteError(location, msg);
+    return nullptr;
+  }
+}
+
+// TODO: Need way to clear location of 'e' in the builder.
+owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
+                                              owned<Expression> e) {
+  return buildLoopIndexDecl(location, e.get());
+}
+
+// TODO: Use me in 'buildBracketLoop' as well.
+owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
+                                              ParserExprList* indexExprs) {
+  if (indexExprs->size() > 1) {
+    const char* msg = "Invalid index expression";
+    noteError(location, msg);
+    return nullptr;
+  } else {
+    auto uncastedIndexExpr = consumeList(indexExprs)[0].release();
+    auto indexExpr = uncastedIndexExpr->toExpression();
+    assert(indexExpr);
+    return buildLoopIndexDecl(location, toOwned(indexExpr));
+  }
 }
 
 FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
@@ -598,6 +688,11 @@ ParserContext::consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst) {
   // if it consists of other non-block statements, create a new block
   return Block::build(builder, convertLocation(blockLoc),
                       consumeList(lst));
+}
+
+owned<Block>
+ParserContext::consumeToBlock(YYLTYPE blockLoc, Expression* e) {
+  return consumeToBlock(blockLoc, makeList(e));
 }
 
 ASTList
@@ -1259,6 +1354,40 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
 
   cs.stmt = decl;
   return cs;
+}
+
+Expression* ParserContext::buildCustomReduce(YYLTYPE location,
+                                             YYLTYPE locIdent,
+                                             Expression* lhs,
+                                             Expression* rhs) {
+  if (!lhs->isIdentifier()) {
+    const char* msg = "Expected identifier for reduction name";
+    return raiseError(locIdent, msg);
+  } else {
+    auto identName = lhs->toIdentifier()->name();
+    auto node = Reduce::build(builder, convertLocation(location),
+                              identName,
+                              toOwned(rhs));
+    return node.release();
+  }
+}
+
+Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
+                                                PODUniqueString baseType,
+                                                Expression* subType) {
+  auto ident = buildIdent(location, baseType);
+  ASTList actuals;
+
+  actuals.push_back(toOwned(subType));
+
+  // TODO: Record in node that this call did not use parens.
+  const bool callUsedSquareBrackets = false;
+  auto node = FnCall::build(builder, convertLocation(location),
+                            toOwned(ident),
+                            std::move(actuals),
+                            callUsedSquareBrackets);
+
+  return node.release();
 }
 
 CommentsAndStmt

@@ -79,6 +79,7 @@ NEXT_UAST_SRCS =                                 \
   Range.cpp \
   RealLiteral.cpp \
   Record.cpp \
+  Reduce.cpp \
   Return.cpp \
   Select.cpp \
   Serial.cpp \
@@ -89,6 +90,7 @@ NEXT_UAST_SRCS =                                 \
   TaskVar.cpp \
   Throw.cpp \
   Try.cpp \
+  Tuple.cpp \
   TupleDecl.cpp \
   TypeDecl.cpp \
   UintLiteral.cpp \

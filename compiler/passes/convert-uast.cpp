@@ -28,6 +28,7 @@
 #include "CatchStmt.h"
 #include "DoWhileStmt.h"
 #include "ForallStmt.h"
+#include "ForLoop.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
@@ -45,16 +46,25 @@ struct Converter {
   bool inTupleDecl = false;
 
   // Cache strings for special identifiers we might compare against.
+  UniqueString atomicStr;
+  UniqueString dmappedStr;
+  UniqueString domainStr;
+  UniqueString reduceAssignStr;
+  UniqueString singleStr;
+  UniqueString syncStr;
   UniqueString thisStr;
   UniqueString typeStr;
-  UniqueString domainStr;
-  UniqueString dmappedStr;
 
+  // TODO: Figure out a better way to do this sort of caching.
   Converter(chpl::Context* context) : context(context) {
+    atomicStr = UniqueString::build(context, "atomic");
+    dmappedStr = UniqueString::build(context, "dmapped");
+    domainStr = UniqueString::build(context, "domain");
+    reduceAssignStr = UniqueString::build(context, "reduce=");
+    singleStr = UniqueString::build(context, "single");
+    syncStr = UniqueString::build(context, "sync");
     thisStr = UniqueString::build(context, "this");
     typeStr = UniqueString::build(context, "type");
-    domainStr = UniqueString::build(context, "domain");
-    dmappedStr = UniqueString::build(context, "dmapped");
   }
 
   Expr* convertAST(const uast::ASTNode* node);
@@ -296,8 +306,61 @@ struct Converter {
     return nullptr;
   }
 
+  // TODO: Speed comparison for this vs. using cached unique strings?
+  Expr* convertScanReduceOp(UniqueString op) {
+    if (op == "+") return new UnresolvedSymExpr("SumReduceScanOp");
+    if (op == "*") return new UnresolvedSymExpr("ProductReduceScanOp");
+    if (op == "&&") return new UnresolvedSymExpr("LogicalAndReduceScanOp");
+    if (op == "||") return new UnresolvedSymExpr("LogicalOrReduceScanOp");
+    if (op == "&") return new UnresolvedSymExpr("BitwiseAndReduceScanOp");
+    if (op == "|") return new UnresolvedSymExpr("BitwiseOrReduceScanOp");
+    if (op == "^") return new UnresolvedSymExpr("BitwiseXorReduceScanOp");
+    return new UnresolvedSymExpr(op.c_str());
+  }
+
+  // Note that there are two ways to translate this. In all cases the
+  // contents get converted to a PRIM_ACTUALS_LIST. However, some of the
+  // loop nodes (Forall/Foreach/BracketLoop) will want to call
+  // 'addForallIntent' when adding converted children to the list, while
+  // everything else will want to call 'addTaskIntent'.
+  CallExpr* convertWithClause(const uast::WithClause* node,
+                              const uast::ASTNode* parent) {
+    if (node == nullptr) return nullptr;
+
+    CallExpr* ret = new CallExpr(PRIM_ACTUALS_LIST);
+
+    for (auto expr : node->exprs()) {
+      ShadowVarSymbol* svs = nullptr;
+
+      // Normal conversion of TaskVar, reduce intents handled below.
+      if (const uast::TaskVar* tv = expr->toTaskVar()) {
+        svs = convertTaskVar(tv);
+        INT_ASSERT(svs);
+
+      // Handle reductions in with clauses explicitly here.
+      } else if (const uast::Reduce* rd = expr->toReduce()) {
+        Expr* ovar = toExpr(convertAST(rd->actual(0)));
+        Expr* riExpr = convertScanReduceOp(rd->op());
+        svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
+      } else {
+        INT_FATAL("Not handled!");
+      }
+
+      INT_ASSERT(svs != nullptr);
+
+      if (parent->isBracketLoop() || parent->isForall() ||
+          parent->isForeach()) {
+        addForallIntent(ret, svs);
+      } else {
+        addTaskIntent(ret, svs);
+      }
+    }
+
+    return ret;
+  }
+
   Expr* visit(const uast::WithClause* node) {
-    INT_FATAL("TODO");
+    INT_FATAL("Should not be called directly!");
     return nullptr;
   }
 
@@ -411,8 +474,9 @@ struct Converter {
   }
 
   CallExpr* visit(const uast::Yield* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    CallExpr* ret = new CallExpr(PRIM_YIELD);
+    ret->insertAtTail(convertAST(node->value()));
+    return ret;
   }
 
   /// Loops ///
@@ -436,17 +500,87 @@ struct Converter {
   Expr* convertLoopIndexDecl(const uast::Decl* index) {
     if (index == nullptr) return nullptr;
 
+    // Simple variables just get reverted to UnresolvedSymExpr.
     if (const uast::Variable* var = index->toVariable()) {
       return new UnresolvedSymExpr(var->name().c_str());
+
+    // For tuples, recursively call 'convertLoopIndexDecl' on each element.
+    } else if (const uast::TupleDecl* td = index->toTupleDecl()) {
+      CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
+      for (auto decl : td->decls()) {
+        Expr* d2e = convertLoopIndexDecl(decl);
+        actualList->insertAtTail(d2e);
+      }
+      return new CallExpr("_build_tuple", actualList);
+
+    // Else it's something that we haven't seen yet.
     } else {
-      INT_FATAL("TODO");
+      INT_FATAL("Not handled yet!");
       return nullptr;
     }
   }
 
-  BlockStmt* visit(const uast::BracketLoop* node) {
+  // TODO: Use for BracketLoop/Forall...
+  BlockStmt* convertCommonIndexableLoop(const uast::IndexableLoop* node) {
     INT_FATAL("TODO");
     return nullptr;
+  }
+
+  Expr* convertBracketLoopExpr(const uast::BracketLoop* node) {
+    assert(node->isExpressionLevel());
+    assert(node->numStmts() == 1);
+
+    // The pieces that we need for 'buildForallLoopExpr'.
+    Expr* indices = convertLoopIndexDecl(node->index());
+    Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
+    Expr* expr = nullptr;
+    Expr* cond = nullptr;
+
+    // Deduced by looking at 'buildForallLoopExpr' calls in for_expr:
+    bool maybeArrayType = !node->iterand()->isZip() && node->index() &&
+                          !node->stmt(0)->isConditional();
+    bool zippered = node->iterand()->isZip();
+
+    // TODO: Assert conditional has no else block, pull out the cond and
+    // expr pieces of the conditional.
+    if (node->stmt(0)->isConditional()) {
+      INT_FATAL("TODO");
+      return nullptr;
+    } else {
+      expr = toExpr(convertAST(node->stmt(0)));
+    }
+
+    assert(expr != nullptr);
+
+    return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
+                               maybeArrayType,
+                               zippered);
+  }
+
+  // Note that block statements in type expressions for variables need to
+  // be handled by a separate builder, as those are array types.
+  Expr* visit(const uast::BracketLoop* node) {
+    if (node->isExpressionLevel()) {
+      return convertBracketLoopExpr(node);
+    } else {
+      INT_ASSERT(node->iterand());
+
+      // These are the arguments that 'ForallStmt::build' requires.
+      Expr* indices = convertLoopIndexDecl(node->index());
+      Expr* iterator = toExpr(convertAST(node->iterand()));
+      CallExpr* intents = nullptr;
+      BlockStmt* body = createBlockWithStmts(node->stmts());
+      bool zippered = node->iterand()->isZip();
+      bool serialOK = true;
+
+      if (node->withClause()) {
+        intents = convertWithClause(node->withClause(), node);
+        INT_ASSERT(intents);
+      }
+
+      return ForallStmt::build(indices, iterator, intents, body, zippered,
+                               serialOK);
+    }
   }
 
   // TODO: Create a common converter for all IndexableLoop if possible?
@@ -454,53 +588,69 @@ struct Converter {
     INT_ASSERT(!node->isExpressionLevel());
 
     // These are the arguments that 'buildCoforallLoopStmt' requires.
-    Expr* indices = nullptr;
+    Expr* indices = convertLoopIndexDecl(node->index());
     Expr* iterator = toExpr(convertAST(node->iterand()));
-    CallExpr* byref_vars = nullptr;
+    CallExpr* byref_vars = convertWithClause(node->withClause(), node);
     BlockStmt* body = createBlockWithStmts(node->stmts());
     bool zippered = node->iterand()->isZip();
-
-    if (node->index()) {
-      indices = convertLoopIndexDecl(node->index());
-    }
-
-    if (node->withClause()) {
-      byref_vars = toCallExpr(convertAST(node->withClause()));
-      INT_ASSERT(byref_vars);
-    }
 
     return buildCoforallLoopStmt(indices, iterator, byref_vars, body,
                                  zippered);
   }
 
   BlockStmt* visit(const uast::For* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    Expr* indices = convertLoopIndexDecl(node->index());
+    Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
+    BlockStmt* body = createBlockWithStmts(node->stmts());
+    bool zippered = node->iterand()->isZip();
+    bool isForExpr = node->isExpressionLevel();
+
+    return ForLoop::buildForLoop(indices, iteratorExpr, body, zippered,
+                                 isForExpr);
   }
 
-  BlockStmt* visit(const uast::Forall* node) {
-    if (node->isExpressionLevel()) {
+  // TODO: Can we reuse this for e.g. For/BracketLoop as well?
+  Expr* convertForallLoopExpr(const uast::Forall* node) {
+    assert(node->isExpressionLevel());
+    assert(node->numStmts() == 1);
+
+    // The pieces that we need for 'buildForallLoopExpr'.
+    Expr* indices = convertLoopIndexDecl(node->index());
+    Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
+    Expr* expr = nullptr;
+    Expr* cond = nullptr;
+
+    // TODO: We might need to see the parent to be able to handle this.
+    bool maybeArrayType = false;
+    bool zippered = node->iterand()->isZip();
+
+    // Assert conditional has no else block, pull out the cond and expr
+    // pieces of the conditional.
+    if (node->stmt(0)->isConditional()) {
       INT_FATAL("TODO");
       return nullptr;
+    } else {
+      expr = toExpr(convertAST(node->stmt(0)));
+    }
+
+    return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
+                               maybeArrayType,
+                               zippered);
+  }
+
+  Expr* visit(const uast::Forall* node) {
+    if (node->isExpressionLevel()) {
+      return convertForallLoopExpr(node);
     } else {
       INT_ASSERT(node->iterand());
 
       // These are the arguments that 'ForallStmt::build' requires.
-      Expr* indices = nullptr;
+      Expr* indices = convertLoopIndexDecl(node->index());
       Expr* iterator = toExpr(convertAST(node->iterand()));
-      CallExpr* intents = nullptr;
+      CallExpr* intents = convertWithClause(node->withClause(), node);
       BlockStmt* body = createBlockWithStmts(node->stmts());
       bool zippered = node->iterand()->isZip();
       bool serialOK = false;
-
-      if (node->index()) {
-        indices = convertLoopIndexDecl(node->index());
-      }
-
-      if (node->withClause()) {
-        intents = toCallExpr(convertAST(node->withClause()));
-        INT_ASSERT(intents);
-      }
 
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
@@ -512,7 +662,7 @@ struct Converter {
     return nullptr;
   }
 
-  /// Array, Domain, Range ///
+  /// Array, Domain, Range, Tuple ///
 
   CallExpr* visit(const uast::Array* node) {
     CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
@@ -565,6 +715,17 @@ struct Converter {
     } else {
       return buildUnboundedRange();
     }
+  }
+
+  // TODO: Get rid of the PRIM_ACTUALS_LIST here.
+  Expr* visit(const uast::Tuple* node) {
+    CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
+
+    for (auto expr : node->actuals()) {
+      actualList->insertAtTail(toExpr(convertAST(expr)));
+    }
+
+    return new CallExpr("_build_tuple", actualList);
   }
 
   /// Literals ///
@@ -641,10 +802,31 @@ struct Converter {
 
   /// Calls ///
 
+  Expr* convertCalledExpression(const uast::Expression* node) {
+    Expr* ret = nullptr;
+
+    if (auto ident = node->toIdentifier()) {
+      if (ident->name() == atomicStr) {
+        ret = new UnresolvedSymExpr("chpl__atomicType");
+      } else if (ident->name() == singleStr) {
+        ret = new UnresolvedSymExpr("_singlevar");
+      } else if (ident->name() == syncStr) {
+        ret = new UnresolvedSymExpr("_syncvar");
+      }
+    }
+
+    if (ret == nullptr) {
+      ret = toExpr(convertAST(node));
+      INT_ASSERT(ret);
+    }
+
+    return ret;
+  }
+
   Expr* visit(const uast::FnCall* node) {
     const uast::Expression* calledExpression = node->calledExpression();
     INT_ASSERT(calledExpression);
-    Expr* calledExpr = convertAST(calledExpression);
+    Expr* calledExpr = convertCalledExpression(calledExpression);
     INT_ASSERT(calledExpr);
 
     CallExpr* ret = nullptr;
@@ -707,8 +889,13 @@ struct Converter {
   }
 
   Expr* visit(const uast::OpCall* node) {
-    if (!dmappedStr.compare(node->op())) {
+    if (node->op() == dmappedStr) {
       return convertDmappedOp(node);
+    } else if (node->op() == reduceAssignStr) {
+      INT_ASSERT(node->numActuals() == 2);
+      Expr* lhs = convertAST(node->actual(0));
+      Expr* rhs = convertAST(node->actual(1));
+      return buildAssignment(lhs, rhs, PRIM_REDUCE_ASSIGN);
     } else {
       return convertRegularBinaryOrUnaryOp(node);
     }
@@ -724,9 +911,21 @@ struct Converter {
     return buildPrimitiveExpr(call);
   }
 
-  Expr* visit(const uast::Zip* node) {
+  // Note that this conversion is for the reduce expression, and not for
+  // the reduce intent (see conversion for 'WithClause').
+  Expr* visit(const uast::Reduce* node) {
     INT_FATAL("TODO");
     return nullptr;
+  }
+
+  Expr* visit(const uast::Zip* node) {
+    CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
+    for (auto actual : node->actuals()) {
+      Expr* conv = toExpr(convertAST(actual));
+      actualList->insertAtTail(conv);
+    }
+
+    return new CallExpr(PRIM_ZIP, actualList);
   }
 
   /// Decls ///
@@ -953,9 +1152,32 @@ struct Converter {
                            typeExpr, initExpr, varargsVariable);
   }
 
+  ShadowVarPrefix convertTaskVarIntent(const uast::TaskVar* node) {
+    switch (node->intent()) {
+      case uast::TaskVar::VAR: return SVP_VAR;
+      case uast::TaskVar::CONST: return SVP_CONST;
+      case uast::TaskVar::CONST_REF: return SVP_CONST_REF;
+      case uast::TaskVar::REF: return SVP_REF;
+      case uast::TaskVar::IN: return SVP_IN;
+      case uast::TaskVar::CONST_IN: return SVP_CONST_IN;
+    }
+
+    INT_FATAL("Should not reach here");
+    return SVP_VAR;
+  }
+
   Expr* visit(const uast::TaskVar* node) {
-    INT_FATAL("TODO");
+    INT_FATAL("Should not be called directly!");
     return nullptr;
+  }
+
+  ShadowVarSymbol* convertTaskVar(const uast::TaskVar* node) {
+    ShadowVarPrefix prefix = convertTaskVarIntent(node);
+    Expr* nameExp = new UnresolvedSymExpr(node->name().c_str());
+    Expr* type = convertExprOrNull(node->typeExpression());
+    Expr* init = convertExprOrNull(node->initExpression());
+
+    return ShadowVarSymbol::buildForPrefix(prefix, nameExp, type, init);
   }
 
   const char* tupleVariableName(const char* name) {
@@ -965,44 +1187,85 @@ struct Converter {
       return name;
   }
 
-  Expr* visit(const uast::Variable* node) {
-    auto stmts = new BlockStmt(BLOCK_SCOPELESS);
-
-    auto varSym = new VarSymbol(tupleVariableName(node->name().c_str()));
-    // Adjust the variable according to its kind
+  void attachVarSymbolStorage(const uast::Variable* node, VarSymbol* vs) {
     switch (node->kind()) {
       case uast::Variable::VAR:
-        varSym->qual = QUAL_VAL;
+        vs->qual = QUAL_VAL;
         break;
       case uast::Variable::CONST:
-        varSym->addFlag(FLAG_CONST);
-        varSym->qual = QUAL_CONST;
+        vs->addFlag(FLAG_CONST);
+        vs->qual = QUAL_CONST;
         break;
       case uast::Variable::CONST_REF:
-        varSym->addFlag(FLAG_CONST);
-        varSym->addFlag(FLAG_REF_VAR);
-        varSym->qual = QUAL_CONST_REF;
+        vs->addFlag(FLAG_CONST);
+        vs->addFlag(FLAG_REF_VAR);
+        vs->qual = QUAL_CONST_REF;
         break;
       case uast::Variable::REF:
-        varSym->addFlag(FLAG_REF_VAR);
-        varSym->qual = QUAL_REF;
+        vs->addFlag(FLAG_REF_VAR);
+        vs->qual = QUAL_REF;
         break;
       case uast::Variable::PARAM:
-        varSym->addFlag(FLAG_PARAM);
-        varSym->qual = QUAL_PARAM;
+        vs->addFlag(FLAG_PARAM);
+        vs->qual = QUAL_PARAM;
         break;
       case uast::Variable::TYPE:
-        varSym->addFlag(FLAG_TYPE_VARIABLE);
+        vs->addFlag(FLAG_TYPE_VARIABLE);
         break;
       case uast::Variable::INDEX:
+        assert(false && "Index variables should be handled elsewhere");
         break;
     }
+  }
+
+  CallExpr* convertArrayType(const uast::BracketLoop* node) {
+    INT_ASSERT(node->isExpressionLevel());
+    INT_ASSERT(node->numStmts() == 1);
+
+    CallExpr* domActuals = new CallExpr(PRIM_ACTUALS_LIST);
+
+    // Convert domain expressions into arguments for a PRIM_ACTUALS_LIST.
+    if (const uast::Domain* dom = node->iterand()->toDomain()) {
+      for (auto expr : dom->exprs()) {
+        domActuals->insertAtTail(convertAST(expr));
+      }
+    } else {
+      INT_FATAL("Not handled!");
+    }
+
+    CallExpr* ensureDomainExpr = new CallExpr("chpl__ensureDomainExpr",
+                                              domActuals);
+    Expr* subType = convertAST(node->stmt(0));
+    CallExpr* ret = new CallExpr("chpl__buildArrayRuntimeType",
+                                 ensureDomainExpr,
+                                 subType);
+
+    return ret;
+  }
+
+  Expr* visit(const uast::Variable* node) {
+    auto stmts = new BlockStmt(BLOCK_SCOPELESS);
+    auto varSym = new VarSymbol(tupleVariableName(node->name().c_str()));
+
+    // Adjust the variable according to its kind
+    attachVarSymbolStorage(node, varSym);
 
     if (node->isConfig()) {
       varSym->addFlag(FLAG_CONFIG);
     }
 
-    Expr* typeExpr = convertExprOrNull(node->typeExpression());
+    Expr* typeExpr = nullptr;
+
+    // If there is a bracket loop it is almost certainly an array type, so
+    // special case it. Otherwise, just use the generic conversion call.
+    if (const uast::Expression* te = node->typeExpression()) {
+      if (const uast::BracketLoop* bkt = te->toBracketLoop()) {
+        typeExpr = convertArrayType(bkt);
+      } else {
+        typeExpr = toExpr(convertAST(te));
+      }
+    }
+
     Expr* initExpr = convertExprOrNull(node->initExpression());
 
     auto defExpr = new DefExpr(varSym, initExpr, typeExpr);

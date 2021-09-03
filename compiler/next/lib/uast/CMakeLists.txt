@@ -76,6 +76,7 @@ target_sources(libchplcomp-obj
                Range.cpp
                RealLiteral.cpp
                Record.cpp
+               Reduce.cpp
                Return.cpp
                Select.cpp
                Serial.cpp
@@ -86,6 +87,7 @@ target_sources(libchplcomp-obj
                TaskVar.cpp
                Throw.cpp
                Try.cpp
+               Tuple.cpp
                TupleDecl.cpp
                TypeDecl.cpp
                UintLiteral.cpp
