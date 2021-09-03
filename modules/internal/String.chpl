@@ -947,9 +947,9 @@ module String {
     */
     iter _cpIndexLen(start = 0:byteIndex) {
       const localThis = this.localize();
-      var i = _findStartOfNextCodepointFromByte(this, start);
+      var i = _findStartOfNextCodepointFromByte(localThis, start);
       while i < localThis.buffLen {
-        yield _cpIndexLenHelpNoAdjustment(i);  // this increments i
+        yield localThis._cpIndexLenHelpNoAdjustment(i);  // this increments i
       }
     }
 
@@ -1423,7 +1423,7 @@ module String {
     const localThis = this.localize();
     var i = 0;
     while i < localThis.buffLen {
-      yield _cpIndexLenHelpNoAdjustment(i)[0];  // this increments i
+      yield localThis._cpIndexLenHelpNoAdjustment(i)[0];  // this increments i
     }
   }
 
