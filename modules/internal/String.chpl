@@ -921,6 +921,12 @@ module String {
 
     // assumes that 'this' is already localized
     proc _cpIndexLenHelpNoAdjustment(ref start: int) {
+      if boundsChecking {
+        if !_local && this.locale_id != chpl_nodeID {
+          halt("internal error -- method requires localized string");
+        }
+      }
+
       const i = start;
 
       if this.isASCII() {
@@ -993,9 +999,16 @@ module String {
       compilerError("not implemented: readThis");
     }
 
-    proc doSplitWSUTF8Help(const ref localThis, maxsplit: int, ref i: int,
+    // assumes that 'this' is already local
+    proc doSplitWSUTF8Help(maxsplit: int, ref i: int,
                            const splitCount: int, const noSplits: bool,
                            const limitSplits: bool, const iEnd: byteIndex) {
+      if boundsChecking {
+        if !_local && this.locale_id != chpl_nodeID {
+          halt("internal error -- method requires localized string");
+        }
+      }
+
       // note: to improve performance, this code collapses several cases into a
       //       single yield statement, which makes it confusing to read
       var done : bool = false;
@@ -1007,16 +1020,16 @@ module String {
 
       i = _findStartOfNextCodepointFromByte(this, i:byteIndex);
 
-      while i < localThis.buffLen {
-        const (decodeRet, c, nBytes) = decodeHelp(buff=localThis.buff,
-                                                  buffLen=localThis.buffLen,
+      while i < this.buffLen {
+        const (decodeRet, c, nBytes) = decodeHelp(buff=this.buff,
+                                                  buffLen=this.buffLen,
                                                   offset=i,
                                                   allowEsc=true);
         // emit whole string, unless all whitespace
         if noSplits {
           done = true;
-          if !localThis.isSpace() then {
-            chunk = localThis;
+          if !this.isSpace() then {
+            chunk = this;
             yieldChunk = true;
           }
         } else {
@@ -1026,7 +1039,7 @@ module String {
             chunkStart = i;
             inChunk = true;
             if i - 1 + nBytes > iEnd {
-              chunk = localThis[chunkStart..];
+              chunk = this[chunkStart..];
               yieldChunk = true;
               done = true;
             }
@@ -1035,18 +1048,18 @@ module String {
             if cSpace {
               // last split under limit
               if limitSplits && splitCount >= maxsplit {
-                chunk = localThis[chunkStart..];
+                chunk = this[chunkStart..];
                 yieldChunk = true;
                 done = true;
               // no limit
               } else {
-                chunk = localThis[chunkStart..(i-1):byteIndex];
+                chunk = this[chunkStart..(i-1):byteIndex];
                 yieldChunk = true;
                 inChunk = false;
               }
             // out of chars
             } else if i - 1 + nBytes > iEnd {
-              chunk = localThis[chunkStart..];
+              chunk = this[chunkStart..];
               yieldChunk = true;
               done = true;
             }
@@ -1054,7 +1067,7 @@ module String {
         }
 
         if done {
-          i = localThis.buffLen;
+          i = this.buffLen;
         }
         else {
           i += nBytes;
@@ -1075,10 +1088,11 @@ module String {
         var i = 0;
 
         while i < localThis.buffLen {
-          const chunk =  doSplitWSUTF8Help(localThis, maxsplit, i, splitCount,
-                                           noSplits=(maxsplit==0),
-                                           limitSplits=(maxsplit>0),
-                                           iEnd=(localThis.buffLen-2):byteIndex);
+          const chunk =  localThis.doSplitWSUTF8Help(
+                                  maxsplit, i, splitCount,
+                                  noSplits=(maxsplit==0),
+                                  limitSplits=(maxsplit>0),
+                                  iEnd=(localThis.buffLen-2):byteIndex);
           if !chunk.isEmpty() {
             yield chunk;
             splitCount += 1;
@@ -1303,7 +1317,7 @@ module String {
       return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
     }
     else {  // see if there is escaped data in the string
-      var (buff, size) = bufferAlloc(this.buffLen+1);
+      var (buff, size) = bufferAlloc(localThis.buffLen+1);
 
       var readIdx = 0;
       var writeIdx = 0;
@@ -1359,7 +1373,7 @@ module String {
     var localThis: string = this.localize();
 
     if localThis.isASCII() {
-      for i in this.byteIndices {
+      for i in localThis.byteIndices {
         var (newBuff, allocSize) = bufferCopyLocal(localThis.buff+i, len=1);
         yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
       }
