@@ -55,7 +55,7 @@ proc doHash(x:int) {
   if useSHA {
     return sha256hash(x:uint);
   } else {
-    return chpl__defaultHash(x);
+    return x.hashThis();
   }
 }
 
@@ -167,7 +167,7 @@ proc runTest() {
     triples[shrink(j), shrink(k), shrink(l)] += 1;
   }
 
-  check("chpl__defaultHash of 1..N", counts0);
+  check("hashThis of 1..N", counts0);
 
   check("hash top " + topBits:string + " bits", topCounts,    true);
   check("hash bottom " + botBits:string + " bits", botCounts, true);
