@@ -1,0 +1,6 @@
+
+--------------------------------
+ChapelTaskTable.chpl:N: error: halt reached - To use task tracking, you must recompile with --task-tracking
+Known tasks:
+Pending tasks:
+Task report
