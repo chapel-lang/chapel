@@ -118,6 +118,16 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
     return isOuterVar(sym, fn, parent->defPoint->parentSymbol);
 }
 
+// is 'sym' a local variable in 'scope' or a module-level symbol?
+static bool isLocalOrModVar(Symbol* sym, FnSymbol* parent) {
+  if (sym->defPoint->parentSymbol == parent)
+    return true;
+
+  if (isModuleSymbol(sym->defPoint->parentSymbol))
+    return true;
+
+  return false;
+}
 
 //
 // finds outer vars directly used in a function
@@ -377,7 +387,7 @@ replaceVarUsesWithFormals(FnSymbol* fn, SymbolMap* vars) {
 
 
 static void
-addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
+addVarsToActuals(CallExpr* call, SymbolMap* vars) {
   for (auto elem: sortedSymbolMapElts(*vars)) {
     if (Symbol* sym = elem.key) {
       SET_LINENO(sym);
@@ -387,12 +397,13 @@ addVarsToActuals(CallExpr* call, SymbolMap* vars, bool outerCall) {
 }
 
 void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
-  Vec<FnSymbol*> outerFunctionSet;
   Vec<FnSymbol*> nestedFunctionSet;
 
   forv_Vec(FnSymbol, fn, nestedFunctions)
     nestedFunctionSet.set_add(fn);
 
+  // args_map is a map from function to an inner "uses" map
+  //   inner "uses" map is from outerVariable -> formal
   Map<FnSymbol*,SymbolMap*> args_map;
 
   forv_Vec(FnSymbol, fn, nestedFunctions) {
@@ -428,7 +439,7 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
 
               if (call_uses) {
                 form_Map(SymbolMapElem, e, *call_uses) {
-                  if (isOuterVar(e->key, fn) && !uses->get(e->key)) {
+                  if (!isLocalOrModVar(e->key, fn) && !uses->get(e->key)) {
                     uses->put(e->key, gNil);
                     change = true;
                   }
@@ -452,8 +463,8 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
         if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {
           if (!nestedFunctionSet.set_in(parent)) {
             form_Map(SymbolMapElem, use, *uses) {
-              if (use->key->defPoint->parentSymbol != parent &&
-                  !isOuterVar(use->key, parent)) {
+              if (use->key->defPoint->parentSymbol != fn &&
+                  !isLocalOrModVar(use->key, parent)) {
                 outerCall = true;
               }
             }
@@ -461,13 +472,14 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
             if (outerCall) {
               SymbolMap* usesCopy = new SymbolMap();
 
-              outerFunctionSet.set_add(parent);
               nestedFunctionSet.set_add(parent);
               nestedFunctions.add(parent);
 
-
               form_Map(SymbolMapElem, use, *uses) {
-                usesCopy->put(use->key, gNil);
+                if (use->key->defPoint->parentSymbol != fn &&
+                    !isLocalOrModVar(use->key, parent)) {
+                  usesCopy->put(use->key, gNil);
+                }
               }
 
               args_map.put(parent, usesCopy);
@@ -488,12 +500,7 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
     SymbolMap* uses = args_map.get(fn);
 
     forv_Vec(CallExpr, call, *fn->calledBy) {
-      bool outerCall = false;
-
-      if (FnSymbol* parent = toFnSymbol(call->parentSymbol))
-        outerCall = outerFunctionSet.set_in(parent);
-
-      addVarsToActuals(call, uses, outerCall);
+      addVarsToActuals(call, uses);
     }
   }
 
@@ -522,5 +529,11 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
     if (FnSymbol* fn = toFnSymbol(ts->defPoint->parentSymbol)) {
       fn->defPoint->insertBefore(ts->defPoint->remove());
     }
+  }
+
+  // clean up
+  forv_Vec(FnSymbol, fn, nestedFunctions) {
+    SymbolMap* uses = args_map.get(fn);
+    delete uses;
   }
 }
