@@ -414,12 +414,16 @@ literal:
       tzset();
       if (strncmp((const char *)bp, gmt, 3) == 0) {
         tm->tm_isdst = 0;
+#ifndef __FreeBSD__
         tm->tm_gmtoff = 0;
+#endif
         tm->tm_zone = gmt;
         bp += 3;
       } else if (strncmp((const char *)bp, utc, 3) == 0) {
         tm->tm_isdst = 0;
+#ifndef __FreeBSD__
         tm->tm_gmtoff = 0;
+#endif
         tm->tm_zone = utc;
         bp += 3;
       } else {
@@ -429,7 +433,9 @@ literal:
         if (ep == NULL)
           return (NULL);
         tm->tm_isdst = i;
+#ifndef __FreeBSD__
         tm->tm_gmtoff = -(timezone);
+#endif
         tm->tm_zone = tzname[i];
         bp = ep;
       }
@@ -462,7 +468,9 @@ literal:
         /*FALLTHROUGH*/
       case 'Z':
         tm->tm_isdst = 0;
+#ifndef __FreeBSD__
         tm->tm_gmtoff = 0;
+#endif
         tm->tm_zone = utc;
         continue;
       case '+':
@@ -475,7 +483,9 @@ literal:
         --bp;
         ep = _find_string(bp, &i, nast, NULL, 4);
         if (ep != NULL) {
+#ifndef __FreeBSD__
           tm->tm_gmtoff = (-5 - i) * SECSPERHOUR;
+#endif
           tm->tm_zone = (char *)nast[i];
           bp = ep;
           continue;
@@ -483,7 +493,9 @@ literal:
         ep = _find_string(bp, &i, nadt, NULL, 4);
         if (ep != NULL) {
           tm->tm_isdst = 1;
+#ifndef __FreeBSD__
           tm->tm_gmtoff = (-4 - i) * SECSPERHOUR;
+#endif
           tm->tm_zone = (char *)nadt[i];
           bp = ep;
           continue;
@@ -505,7 +517,9 @@ literal:
       if (neg)
         offs = -offs;
       tm->tm_isdst = 0;  /* XXX */
+#ifndef __FreeBSD__
       tm->tm_gmtoff = offs;
+#endif
       tm->tm_zone = NULL;  /* XXX */
       continue;
         /*
