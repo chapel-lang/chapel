@@ -31,7 +31,7 @@ proc main(args: [] string) {
     }
   } while more;
 
-  for i in buf.indices by -1 {
+  for i in bufDom by -1 {
     if buf[i] != 0 {
       end = i;
       break;
