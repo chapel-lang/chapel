@@ -220,7 +220,8 @@ module Channel {
 
             if closed && count == 0 {
                 if !selected then unlock();
-                return false;
+                if selected then return true;
+                else return false;
             }
 
             while !sendWaiters.isEmpty() && sendWaiters.front!.isSelect {
@@ -281,12 +282,13 @@ module Channel {
         :throws ChannelError: If ``send`` is called on a closed channel.
         */
 
-        proc send(in val : eltType) throws {
-            send(val, false);
+        proc send(val : eltType) throws {
+            var value = val;
+            send(value, false);
         }
 
         pragma "no doc"
-        proc send(in val : eltType, selected : bool) : bool throws {
+        proc send(ref val : eltType, selected : bool) : bool throws {
             if !selected then lock();
 
             if closed {
@@ -352,11 +354,21 @@ module Channel {
             closed = true;
             var queued = new WaiterQue(eltType);
             while(!recvWaiters.isEmpty()) {
-                queued.enque(recvWaiters.deque());
+                var receiver = recvWaiters.deque();
+                if(receiver.isSelect) {
+                    if receiver.isSelectDone.deref().compareAndSwap(-1, receiver.selectId) then 
+                        queued.enque(receiver);
+                }
+                else queued.enque(receiver);
             }
 
             while(!sendWaiters.isEmpty()) {
-                queued.enque(sendWaiters.deque());
+                var sender = sendWaiters.deque();
+                if(sender.isSelect) {
+                    if sender.isSelectDone.deref().compareAndSwap(-1, sender.selectId) then
+                        queued.enque(sender);
+                }
+                else queued.enque(sender);
             }
             unlock();
 
@@ -396,7 +408,7 @@ module Channel {
     class SelectBaseClass {
         proc lockChannel() { }
         proc unlockChannel() { }
-        proc getID() : int { return 0; }
+        proc getId() : int { return 0; }
         proc sendRecv() : bool { return true; }
         proc getAddr() : c_uintptr { return 0 : c_uintptr; }
         proc enqueWaiter(ref process$ : single bool, ref isDone : atomic int) { }
@@ -416,20 +428,20 @@ module Channel {
         var waiter : unmanaged Waiter(eltType)?;
         var id : int;
 
-        proc init(ref value, ref channel : chan(?), op : selectOperation, caseID : int) {
+        proc init(ref value, ref channel : chan(?), op : selectOperation, caseId : int) {
             this.eltType = value.type;
             this.val = c_ptrTo(value);
             this.channel = channel.borrow();
             this.operation = op;
-            this.id = caseID;
+            this.id = caseId;
         }
 
-        proc setup(ref value : eltType, ref channel : chan(eltType), op : selectOperation, caseID : int) {
+        proc setup(ref value : eltType, ref channel : chan(eltType), op : selectOperation, caseId : int) {
             // this.eltType = value.type;
             this.val = c_ptrTo(value);
             this.channel = channel.borrow();
             this.operation = op;
-            this.id = caseID;
+            this.id = caseId;
         }
 
         override proc lockChannel() {
@@ -440,7 +452,7 @@ module Channel {
             channel.unlock();
         }
 
-        override proc getID() : int {
+        override proc getId() : int {
             return id;
         }
 
@@ -488,13 +500,13 @@ module Channel {
 
     /* Acquire the lock of all involved channels */
     pragma "no doc"
-    proc lockSel(lockOrder : list(shared SelectBaseClass)) {
+    proc lockSelect(lockOrder : list(shared SelectBaseClass)) {
         for channelWrapper in lockOrder do channelWrapper.lockChannel();
     }
 
     /* Release the lock all involved channels */
     pragma "no doc"
-    proc unlockSel(lockOrder : list(shared SelectBaseClass)) {
+    proc unlockSelect(lockOrder : list(shared SelectBaseClass)) {
         for idx in lockOrder.indices by -1 do lockOrder[idx].unlockChannel();
     }
 
@@ -519,7 +531,7 @@ module Channel {
             }
         }
         var done = -1;
-        lockSel(lockOrder);
+        lockSelect(lockOrder);
 
         /*
         Check all the cases in a random order. This is done to prevent
@@ -528,13 +540,13 @@ module Channel {
         shuffle(cases);
         for case in cases {
             if case.sendRecv() {
-                done = case.getID();
+                done = case.getId();
                 break;
             }
         }
 
         if done != -1 || default {
-            unlockSel(lockOrder);
+            unlockSelect(lockOrder);
             return done;
         }
 
@@ -548,16 +560,16 @@ module Channel {
             cases.enqueWaiter(process$, isDone);
         }
 
-        unlockSel(lockOrder);
+        unlockSelect(lockOrder);
         process$.readFF();
 
-        lockSel(lockOrder);
+        lockSelect(lockOrder);
 
         /* Deque the waiters from each involved case */
         for case in cases {
             case.dequeWaiter();
         }
-        unlockSel(lockOrder);
+        unlockSelect(lockOrder);
         return isDone.read();
     }
 }
