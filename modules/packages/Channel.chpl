@@ -437,7 +437,6 @@ module Channel {
         }
 
         proc setup(ref value : eltType, ref channel : chan(eltType), op : selectOperation, caseId : int) {
-            // this.eltType = value.type;
             this.val = c_ptrTo(value);
             this.channel = channel.borrow();
             this.operation = op;
@@ -495,7 +494,7 @@ module Channel {
 
     pragma "no doc"
     proc Comparator.compare(case1, case2) {
-        return case1.getAddr() - case2.getAddr();
+        return (case1.getAddr() - case2.getAddr()) : int;
     }
 
     /* Acquire the lock of all involved channels */
