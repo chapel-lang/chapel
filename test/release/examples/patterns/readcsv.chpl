@@ -16,6 +16,7 @@
  */
 use IO;
 use List; // FIXME: put in a link to the list primer
+use Map;
 
 config const fileName = "metadata-20lines.csv";
 config const debug = true;
@@ -28,18 +29,86 @@ var f = open(fileName, iomode.r);
   var reader = f.reader();
 
   // read the first line to get the column names
-  // assuming the following format, where num is not known ahead of time:
-  //    col_name_1,col_name_2,...,col_name_num\n
-  var num : int;
-  var colNames : list(string);
-  var colName : string;
+  // assuming the following format, where the number of columns (ncol) is not 
+  // known ahead of time:
+  //    col_name_1,col_name_2,...,col_name_ncol\n
+  var line : string;
 
-  while (reader.readf("%S,", colName)) {
-    writeln("colName = ", colName);
-    colNames.append(colName);
-  }
+  if (!reader.readline(line)) then
+    writeln("ERROR: ", fileName, " appears to be empty");
+
+  var colNames : list(string);
+  colNames = createListOfColNames(line);
+
+  writeln("line = ", line);
   writeln("colNames: ", colNames);
 
+  // create a list of maps
+  reader.readline(line);
+  var aRowMap = new map(string, string);
+  var start = 0;
+  var colIdx = 0;
+  while (start<line.size && colIdx<colNames.size) {
+    var nextVal = nextField(line,start);
+    aRowMap.add(colNames[colIdx],nextVal);
+    start = start + nextVal.size + 1; // +1 is to skip comma, FIXME: return tuple from nextField
+    colIdx = colIdx + 1;
+  }
+  writeln("aRowMap = ", aRowMap);
+ /*
+  // use 
+  while (reader.readline(line)) {
+    writeln("line = ", line);
+    var commaIndex : int;
+    for i in line.indices {
+        writeln("i=",i, ", line[i]=", line[i]);
+        if line[i]==',' {
+            break;
+        }
+    }
+    writeln("outside loop, i= ", i);
+
+    //for s in line.split(",") do
+    //    colNames.append(s);
+    //writeln("colNames: ", colNames);
+  }
+*/
   reader.close();
 }
 
+// Returns the index of the next comma or the string length if no
+// next comma is found.  Commas inside quoted strings will be ignored.
+proc findNextCommaNotInQuotes(str : string, currIdx : int) {
+  var inQuotes = false;
+  for i in (currIdx+1)..(str.size-1) {
+    if !inQuotes && str[i]==',' then return i;
+    if str[i]=='"' then inQuotes = !inQuotes;
+  }
+  return str.size;
+}
+
+// Given a line from a csv file and a starting index
+// returns the string starting at the starting index and
+// ending right before the next comma not in a quoted string.
+//      input: "ab,cd,"ef",f"   and start=3
+//      output: "cd"
+//      input: "ab,cd,"ef",f"   and start=6
+//      output: ""ef""
+// Assumes that the starting index given is not within a quoted string.
+proc nextField(line:string, start:int) {
+    var commaIdx = findNextCommaNotInQuotes(line,start);
+    return line[start..(commaIdx-1)];
+}
+
+// Given the string that is the first line of a csv file that has column names
+// returns a list of column names in order.
+proc createListOfColNames(line : string) {
+  var colNames : list(string);
+  var start = 0;
+  while (start<line.size) {
+    var nextVal = nextField(line,start);
+    colNames.append(nextVal);
+    start = start + nextVal.size + 1; // +1 is to skip comma
+  }
+  return colNames;
+} 
