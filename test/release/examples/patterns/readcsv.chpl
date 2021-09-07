@@ -1,9 +1,11 @@
-/* This example demonstrates how to read in a CSV file
-   from Kaggle.
+/* This example demonstrates how to read in a CSV file.
+
+   The example csv file is from Kaggle,
    https://www.kaggle.com/allen-institute-for-ai/CORD-19-research-challenge?select=metadata.csv
    The included metadata-20lines.csv only has 20 lines of data including the
    header row that has the column names.
-   Each line in the file is a row of data.  Columns are separated by commas.
+
+   Each line in csv files is a row of data.  Columns are separated by commas.
    Some of the cells of data have quotes because the data string itself includes
    a comma or commas.
 
@@ -40,39 +42,30 @@ var f = open(fileName, iomode.r);
   var colNames : list(string);
   colNames = createListOfColNames(line);
 
-  writeln("line = ", line);
-  writeln("colNames: ", colNames);
-
-  // create a list of maps
-  reader.readline(line);
-  var aRowMap = new map(string, string);
-  var start = 0;
-  var colIdx = 0;
-  while (start<line.size && colIdx<colNames.size) {
-    var nextVal = nextField(line,start);
-    aRowMap.add(colNames[colIdx],nextVal);
-    start = start + nextVal.size + 1; // +1 is to skip comma, FIXME: return tuple from nextField
-    colIdx = colIdx + 1;
-  }
-  writeln("aRowMap = ", aRowMap);
- /*
-  // use 
-  while (reader.readline(line)) {
+  if debug {
     writeln("line = ", line);
-    var commaIndex : int;
-    for i in line.indices {
-        writeln("i=",i, ", line[i]=", line[i]);
-        if line[i]==',' {
-            break;
-        }
-    }
-    writeln("outside loop, i= ", i);
-
-    //for s in line.split(",") do
-    //    colNames.append(s);
-    //writeln("colNames: ", colNames);
+    writeln("colNames: ", colNames);
   }
-*/
+
+  // Create a list of maps with one map per row of data.
+  var dataRows : list(map(string,string));
+
+  while (reader.readline(line)) {
+    var aRowMap = new map(string, string);
+    var start = 0;
+    var colIdx = 0;
+    while (start<line.size && colIdx<colNames.size) {
+      var (nextVal,nextCommaIdx) = nextField(line,start);
+      aRowMap.add(colNames[colIdx],nextVal);
+      start = nextCommaIdx + 1;
+      colIdx = colIdx + 1;
+    }
+    dataRows.append(aRowMap);
+    if debug then writeln("aRowMap = ", aRowMap);
+  }
+
+  if debug then writeln("dataRows = ", dataRows);
+
   reader.close();
 }
 
@@ -88,8 +81,9 @@ proc findNextCommaNotInQuotes(str : string, start : int) {
 }
 
 // Given a line from a csv file and a starting index
-// returns the string starting at the starting index and
-// ending right before the next comma not in a quoted string.
+// returns a tuple of the string starting at the starting index and
+// ending right before the next comma not in a quoted string, and
+// the index of the next comma.
 //      input: "ab,cd,"ef",f"   and start=3
 //      output: "cd"
 //      input: "ab,cd,"ef",f"   and start=6
@@ -97,7 +91,7 @@ proc findNextCommaNotInQuotes(str : string, start : int) {
 // Assumes that the starting index given is not within a quoted string.
 proc nextField(line:string, start:int) {
     var commaIdx = findNextCommaNotInQuotes(line,start);
-    return line[start..(commaIdx-1)];
+    return (line[start..(commaIdx-1)],commaIdx);
 }
 
 // Given the string that is the first line of a csv file that has column names
@@ -106,9 +100,9 @@ proc createListOfColNames(line : string) {
   var colNames : list(string);
   var start = 0;
   while (start<line.size) {
-    var nextVal = nextField(line,start);
+    var (nextVal,commaIdx) = nextField(line,start);
     colNames.append(nextVal);
-    start = start + nextVal.size + 1; // +1 is to skip comma
+    start = commaIdx+1;
   }
   return colNames;
 } 
