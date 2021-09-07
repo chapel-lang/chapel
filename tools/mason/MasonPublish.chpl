@@ -19,17 +19,18 @@
  */
 
 
-use MasonUtils;
-use Spawn;
 use FileSystem;
-use TOML;
-use MasonEnv;
-use MasonNew;
-use MasonModify;
-use Random;
-use MasonUpdate;
-private use List;
+use List;
+use MasonArgParse;
 use MasonBuild;
+use MasonEnv;
+use MasonModify;
+use MasonNew;
+use MasonUpdate;
+use MasonUtils;
+use Random;
+use Spawn;
+use TOML;
 
 /* Top Level procedure that gets called from mason.chpl that takes in arguments from command line.
    Returns the help output in '-h' or '--help' exits in the arguments.
@@ -43,62 +44,58 @@ proc masonPublish(args: [?d] string) {
 }
 
 proc masonPublish(ref args: list(string)) throws {
-  try! {
-    if hasOptions(args, "-h", "--help") {
-      masonPublishHelp();
-      exit(0);
-    }
 
-    var dry = hasOptions(args, "--dry-run");
-    var checkFlag = hasOptions(args, '--check');
-    var registryPath = '';
+  var parser = new argumentParser();
+
+  var helpFlag = parser.addFlag("help",
+                                opts=["-h","--help"],
+                                defaultValue=false);
+  var dryFlag = parser.addFlag(name="dry-run",
+                               defaultValue=false);
+  var createFlag = parser.addFlag(name="create-registry",
+                                  opts=["-c","--create-registry"],
+                                  defaultValue=false);
+
+  var checkArg = parser.addFlag(name="check", defaultValue=false);
+  var ciFlag = parser.addFlag(name="ci-check", defaultValue=false);
+  var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var registryArg = parser.addArgument(name="registry", numArgs=0..1);
+
+  try {
+    parser.parseArgs(args.toArray());
+  }
+  catch ex : ArgumentError {
+    stderr.writeln(ex.message());
+    masonPublishHelp();
+    exit(1);
+  }
+  if helpFlag.valueAsBool() {
+    masonPublishHelp();
+    exit(0);
+  }
+  try! {
+    var dry = dryFlag.valueAsBool();
+    var checkFlag = checkArg.valueAsBool();
+    var registryPath = "";
+    if registryArg.hasValue() then registryPath = registryArg.value();
     var username = getUsername();
     var isLocal = false;
-    var ci = hasOptions(args, '--ci-check');
-    var update = hasOptions(args, '--update');
-    var noUpdate = hasOptions(args, '--no-update');
+    var ci = ciFlag.valueAsBool();
+    var update = false;
+    var noUpdate = false;
     var skipUpdate = MASON_OFFLINE;
-    var createReg = hasOptions(args, '-c', '--create-registry');
-    if update {
-      skipUpdate = false;
+    if updateFlag.hasValue() {
+      update = updateFlag.valueAsBool();
+      noUpdate = !update;
+      skipUpdate = !update;
     }
-    if noUpdate {
-      skipUpdate = true;
-    }
+    var createReg = createFlag.valueAsBool();
 
     const badSyntaxMessage = 'Arguments does not follow "mason publish [options] <registry>" syntax';
-    if args.size > 5 {
-      throw new owned MasonError(badSyntaxMessage);
-    }
-
-    if args.size > 2 {
-      var potentialPath = args.pop();
-      if (potentialPath != '--dry-run') && (potentialPath != '--no-update') && (potentialPath != '--check') && (potentialPath != '--update') && (potentialPath != '--ci-check') {
-        registryPath = potentialPath;
-      }
-      args.append(potentialPath);
-    }
 
     if createReg {
-      var pathReg: string;
-      for i in 2..<args.size {
-        // Find positional arguments
-        if !args[i].startsWith('-') {
-          if pathReg == '' {
-            pathReg = args[i];
-          } else {
-           // Multiple positional arguments is an error
-            throw new owned MasonError("mason publish --create-registry expects only one path");
-          }
-        }
-      }
-      if pathReg == '' {
-        // No positional arguments is an error
-        throw new owned MasonError("mason publish --create-registry expects a path");
-      }
+      var pathReg = registryPath;
       try! {
-        if pathReg == 'publish' then throw new owned MasonError('Valid path required ' +
-            'with "mason publish --create-registry"');
         if !isDir(pathReg) then mkdir(pathReg);
         else throw new owned MasonError("Registry already exists at %s".format(pathReg));
         if !isDir(pathReg + '/Bricks') then mkdir(pathReg + '/Bricks');
@@ -122,8 +119,7 @@ proc masonPublish(ref args: list(string)) throws {
 
     if registryPath.isEmpty() {
       registryPath = MASON_HOME;
-    }
-    else {
+    } else {
       isLocal = isRegistryPathLocal(registryPath);
     }
 
@@ -133,7 +129,8 @@ proc masonPublish(ref args: list(string)) throws {
         check(username, registryPath, isLocal, ci);
       }
     }
-    if ((MASON_OFFLINE  && !update) || noUpdate == true) && !falseIfRemotePath() {
+
+    if ((MASON_OFFLINE  && !update) || noUpdate) && !falseIfRemotePath() {
       if !isLocal {
         throw new owned MasonError('You cannot publish to a remote repository when MASON_OFFLINE is set to true or "--no-update" is passed, override with --update');
       }
@@ -322,7 +319,7 @@ proc dryRun(username: string, registryPath : string, isLocal : bool) throws {
     var reg = MASON_REGISTRY;
 
     if reg.size == 1 {
-      if reg[0] == ('mason-registry', regUrl) 
+      if reg[0] == ('mason-registry', regUrl)
         then writeln('   In order to use a local registry, ensure that MASON_REGISTRY points to the path.');
     }
 
@@ -524,7 +521,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     }
     else {
       writeln('   Packages with more than one modules cannot be published. (FAILED)');
-      moduleTest = false; 
+      moduleTest = false;
     }
     writeln(spacer);
   }
@@ -554,7 +551,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     }
     writeln(spacer);
   }
-  
+
   if package {
     writeln('Checking for tests:');
     if testCheck(projectCheckHome) {
@@ -582,7 +579,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     }
     writeln(spacer);
   }
-  
+
   if package {
     writeln('Checking for license:');
     var validLicenseCheck = checkLicense(projectCheckHome);
@@ -608,7 +605,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
     }
     writeln(spacer);
   }
-  
+
   writeln(spacer);
   if package && !ci {
     writeln('Attempting to build package using following options:');
@@ -629,7 +626,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln('RESULTS');
   writeln(spacer);
 
-  if packageTest && remoteTest && moduleTest && testTest 
+  if packageTest && remoteTest && moduleTest && testTest
     && licenseTest && gitTagTest && masonFieldsTest {
     writeln('(PASSED) Your package is ready to publish');
   }
@@ -663,7 +660,7 @@ proc check(username : string, path : string, trueIfLocal : bool, ci : bool) thro
   writeln(spacer);
 
   if ci {
-    if package && moduleCheck(projectCheckHome) && testCheck(projectCheckHome) 
+    if package && moduleCheck(projectCheckHome) && testCheck(projectCheckHome)
     && checkLicense(projectCheckHome)[0] && masonTomlFileCheck(projectCheckHome)[0]
     && gitTagVersionCheck(projectCheckHome)[0] {
       attemptToBuild();
@@ -741,7 +738,7 @@ private proc registryPathCheck(path : string, username : string, trueIfLocal : b
       const hasBricks = exists(path + '/Bricks/');
       if !isLocalGit {
         writeln('   Registry with path ' + path + ' is not a git repository. (FAILED)');
-        writeln("   Local registries must be git repositorys in order to publish");
+        writeln("   Local registries must be git repositories in order to publish");
         return false;
       }
       else if !hasBricks {
@@ -808,7 +805,7 @@ proc testCheck(projectHome: string) {
 /* Returns the mason env
  */
 private proc returnMasonEnv() {
-  const fakeArgs = ['mason', 'env'];
+  const fakeArgs = ['env'];
   masonEnv(fakeArgs);
 }
 
@@ -837,7 +834,7 @@ proc gitTagVersionCheck(projectHome: string) throws {
   return (false, allTags, version);
 }
 
-/* make sure directory created is same as that of package 
+/* make sure directory created is same as that of package
    name in manifest file */
 proc namespaceCollisionCheck(projectHome: string) throws {
   var directoryName = basename(projectHome);

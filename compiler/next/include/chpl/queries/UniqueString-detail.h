@@ -25,20 +25,21 @@
 #ifndef CHPL_QUERIES_UNIQUE_STRING_DETAIL_H
 #define CHPL_QUERIES_UNIQUE_STRING_DETAIL_H
 
+#include "chpl/util/memory.h"
+#include "chpl/util/string-escapes.h"
+
 #include <cassert>
 #include <cstring>
 #include <functional>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "chpl/util/memory.h"
 
 /// \cond DO_NOT_DOCUMENT
 namespace chpl {
 class Context;
 
 namespace detail {
-
 
 // We can make it store 6 bytes in line this way:
 // alloc all such strings aligned to 2 bytes
@@ -108,27 +109,31 @@ struct InlinedString {
   }
 
   /**
-    Creates an InlinedString from a pointer.
-    If strlen(s) <= MAX_SIZE_INLINED, it will store the data inline.
-    Otherwise, it will point to s and this code assumes
-    that alignmentIndicatesTag(s)==false.
+    Creates an InlinedString by storing a string inline.
+    The string must not contain nulls and len must be <= MAX_SIZE_INLINED.
    */
-  static inline InlinedString buildFromAligned(const char* s, size_t len) {
+  static inline InlinedString buildInlined(const char* s, size_t len) {
     // Store empty strings as nullptr
     if (s == nullptr || len == 0)
       return {{ nullptr }};
 
-    // Would the tag, null terminator, and data fit?
-    if (len <= MAX_SIZE_INLINED) {
-      uintptr_t val = INLINE_TAG; // store the tag in the low-order bits, 0s
-      char* dst = dataAssumingTag(&val);
-      // store the data (possibly after the tag), not including null byte
-      // (since null byte will come from the zeros in val)
-      memcpy(dst, s, len);
-      // create a struct with the value we created and return it
-      return {{ (const char*) val }};
-    }
+    assert(len <= MAX_SIZE_INLINED);
+    assert(!stringContainsZeroBytes(s, len));
 
+    uintptr_t val = INLINE_TAG; // store the tag in the low-order bits, 0s
+    char* dst = dataAssumingTag(&val);
+    // store the data (possibly after the tag), not including null byte
+    // (since null byte will come from the zeros in val)
+    memcpy(dst, s, len);
+    // create a struct with the value we created and return it
+    return {{ (const char*) val }};
+  }
+
+  /**
+    Creates an InlinedString storing a pointer.
+    The pointer must have the property that alignmentIndicatesTag(s)==false.
+   */
+  static inline InlinedString buildFromAlignedPtr(const char* s, size_t len) {
     assert(!alignmentIndicatesTag(s));
     return {{ s }};
   }
@@ -136,24 +141,42 @@ struct InlinedString {
   static InlinedString buildUsingContextTable(Context* context,
                                               const char* s, size_t len);
 
-  static InlinedString build(Context* context, const char* s, size_t len) {
-    if (len <= MAX_SIZE_INLINED) {
+  // innerNull indicates if the string contains an inner null byte
+  static InlinedString build(Context* context,
+                             const char* s,
+                             size_t len,
+                             bool innerNull) {
+    if (len <= MAX_SIZE_INLINED && !innerNull) {
       // if it fits inline, just return that
-      return InlinedString::buildFromAligned(s, len);
+      return InlinedString::buildInlined(s, len);
     } else {
       // otherwise, use the unique strings table
       // which produces a string with even alignment
       return InlinedString::buildUsingContextTable(context, s, len);
     }
   }
+  static InlinedString build(Context* context, const char* s, size_t len) {
+    bool innerNull = false;
+    if (s != NULL) innerNull = stringContainsZeroBytes(s, len);
+    return InlinedString::build(context, s, len, innerNull);
+  }
   static InlinedString build(Context* context, const char* s) {
     size_t len = 0;
     if (s != NULL) len = strlen(s);
-    return InlinedString::build(context, s, len);
+    return InlinedString::build(context, s, len, /*innerNull*/ false );
   }
   static InlinedString build() {
-    return InlinedString::buildFromAligned("", 0);
+    return InlinedString::buildInlined("", 0);
   }
+  static InlinedString buildConcat(Context* context,
+                                   const char* s1, const char* s2,
+                                   const char* s3 = nullptr,
+                                   const char* s4 = nullptr,
+                                   const char* s5 = nullptr,
+                                   const char* s6 = nullptr,
+                                   const char* s7 = nullptr,
+                                   const char* s8 = nullptr,
+                                   const char* s9 = nullptr);
 
   bool isInline() const {
     return alignmentIndicatesTag(this->v);
@@ -166,6 +189,17 @@ struct InlinedString {
     // otherwise, s is a real pointer
     return this->v;
   }
+  size_t length() const;
+
+  // return a long-lived pointer
+  const char* astr(Context* context) const;
+
+  std::string toString() const {
+    return std::string(c_str(), length());
+  }
+
+  // mark the string as used this revision (so it is not GC'd)
+  void mark(Context* context) const;
 };
 
 // This class is POD and has only the trivial constructor to help the parser
@@ -181,6 +215,22 @@ struct PODUniqueString {
   static PODUniqueString build(Context* context, const char* s) {
     return { InlinedString::build(context, s) };
   }
+  static PODUniqueString buildConcat(Context* context,
+                                     const char* s1, const char* s2,
+                                     const char* s3 = nullptr,
+                                     const char* s4 = nullptr,
+                                     const char* s5 = nullptr,
+                                     const char* s6 = nullptr,
+                                     const char* s7 = nullptr,
+                                     const char* s8 = nullptr,
+                                     const char* s9 = nullptr) {
+    return { InlinedString::buildConcat(context, s1, s2,
+                                        s3, s4,
+                                        s5, s6,
+                                        s7, s8, s9) };
+  }
+
+
   static inline PODUniqueString build() {
     PODUniqueString ret = {InlinedString::build()};
     return ret;
@@ -188,8 +238,34 @@ struct PODUniqueString {
   const char* c_str() const {
     return i.c_str();
   }
+  size_t length() const {
+    return i.length();
+  }
+
+  // return a long-lived pointer
+  const char* astr(Context* context) const {
+    return i.astr(context);
+  }
+
+  std::string toString() const {
+    return std::string(c_str(), length());
+  }
+
   bool isEmpty() const {
     return i.c_str()[0] == '\0';
+  }
+  inline bool operator==(const PODUniqueString other) const {
+    return this->i.v == other.i.v;
+  }
+  inline bool operator!=(const PODUniqueString other) const {
+    return !(*this == other);
+  }
+  size_t hash() const {
+    std::hash<size_t> hasher;
+    return hasher((size_t) i.v);
+  }
+  void mark(Context* context) const {
+    i.mark(context);
   }
 };
 

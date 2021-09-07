@@ -187,7 +187,7 @@ insertLineNumber(CallExpr* call) {
       INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
 
       const char* cmdLineSetting = astr("<command line setting of '",
-                                        var->immediate->v_string,
+                                        var->immediate->v_string.c_str(),
                                         "'>");
 
       int         filenameIdx    = getFilenameLookupPosition(cmdLineSetting);

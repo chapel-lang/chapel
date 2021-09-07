@@ -1,18 +1,12 @@
 use SysCTypes, CPtr;
 
 
-extern proc chpl_gpu_init(): void;
 extern proc chpl_gpu_get_alloc_size(arg): size_t;
 extern proc chpl_gpu_copy_device_to_host(dst: c_void_ptr, src: c_void_ptr, n): void;
 extern proc chpl_gpu_copy_host_to_device(dst: c_void_ptr, src: c_void_ptr, n): void;
 extern proc chpl_gpu_is_device_ptr(ptr): bool;
 
 config const n = 3;
-
-// this doesn't work
-/*coforall 0..#here.maxTaskPar {*/
-  /*chpl_gpu_init();*/
-/*}*/
 
 var ptrHst = chpl_here_alloc(n, 0): c_ptr(c_uchar);
 
@@ -25,7 +19,6 @@ var expandedPtrHst = chpl_here_alloc(n*2, 0): c_ptr(c_uchar);
 
 var s: uint;
 on here.getChild(1) {
-  chpl_gpu_init();
 
   ////////////////////////////////////////////////////
 

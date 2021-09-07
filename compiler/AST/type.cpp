@@ -1883,7 +1883,7 @@ bool needsGenericRecordInitializer(Type* type) {
   return retval;
 }
 
-Immediate getDefaultImmediate(Type* t) {
+const Immediate& getDefaultImmediate(Type* t) {
   VarSymbol* defaultVar = toVarSymbol(t->defaultValue);
   // (or anything handled by coerce_immediate)
   if (defaultVar == NULL || defaultVar->immediate == NULL)
@@ -1893,8 +1893,7 @@ Immediate getDefaultImmediate(Type* t) {
   if (defaultVar->type != t)
     INT_FATAL(t->symbol, "does not have a default of the same type");
 
-  Immediate ret = *defaultVar->immediate;
-  return ret;
+  return *defaultVar->immediate;
 }
 
 // Returns 'true' for types that are the type of numeric literals.

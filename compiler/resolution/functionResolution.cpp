@@ -69,7 +69,7 @@
 #include "WhileStmt.h"
 #include "wrappers.h"
 
-#include "../ifa/prim_data.h"
+#include "../next/lib/immediates/prim_data.h"
 
 #include <algorithm>
 #include <cmath>
@@ -197,7 +197,6 @@ static void resolveDestructors();
 static AggregateType* buildRuntimeTypeInfo(FnSymbol* fn);
 static void insertReturnTemps();
 static void initializeClass(Expr* stmt, Symbol* sym);
-static void ensureAndResolveInitStringLiterals();
 static void handleRuntimeTypes();
 static void buildRuntimeTypeInitFns();
 static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
@@ -6530,7 +6529,7 @@ static Symbol* resolveFieldSymbol(Type* base, Expr* fieldExpr) {
   }
 
   // Get the field name.
-  const char* name = var->immediate->v_string;
+  const char* name = var->immediate->v_string.c_str();
 
   // Special case: An integer field name is actually a tuple member index.
   {
@@ -6649,7 +6648,7 @@ static void resolveInitField(CallExpr* call) {
   VarSymbol* var = toVarSymbol(sym->symbol());
   if (!var || !var->immediate)
     INT_FATAL(call, "bad initializer set field primitive");
-  const char* name = var->immediate->v_string;
+  const char* name = astr(var->immediate->v_string.c_str());
 
   // Get the type
   AggregateType* ct = toAggregateType(call->get(1)->typeInfo()->getValType());
@@ -7161,6 +7160,50 @@ void resolveInitVar(CallExpr* call) {
 
   } else if (isRecord(targetType->getValType())) {
     AggregateType* at = toAggregateType(targetType->getValType());
+
+    // If the RHS is a temp that is the result of a ContextCallExpr,
+    // make the choice now about which ContextCallExpr to use
+    // (and prefer a value if available, and const ref if not).
+    // Update 'src' and 'srcType' so that the below logic about
+    // whether or not to copy applies.
+    if (src->hasFlag(FLAG_TEMP)) {
+      ContextCallExpr* ccRhs = nullptr;
+      int nLhsDefsFound = 0;
+
+      for_SymbolSymExprs(se, src) {
+        if (CallExpr* inCall = toCallExpr(se->parentExpr)) {
+          if (inCall->isPrimitive(PRIM_MOVE) ||
+              inCall->isPrimitive(PRIM_ASSIGN)) {
+            if (SymExpr* inCallLhs = toSymExpr(inCall->get(1))) {
+              if (inCallLhs->symbol() == src) {
+                nLhsDefsFound++;
+                if (ContextCallExpr* cc = toContextCallExpr(inCall->get(2))) {
+                  ccRhs = cc;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (nLhsDefsFound == 1 && ccRhs != nullptr) {
+        CallExpr* refCall = nullptr;
+        CallExpr* valueCall = nullptr;
+        CallExpr* constRefCall = nullptr;
+        ccRhs->getCalls(refCall, valueCall, constRefCall);
+
+        if (valueCall) {
+          // replace the ContextCallExpr with the valueCall
+          // and adjust the type of src
+          valueCall->remove();
+          ccRhs->replace(valueCall);
+          srcType = valueCall->getValType();
+          src->type = srcType;
+        }
+        // Other situations will be handled later in cullOverReferences.
+      }
+    }
+
 
     // Clear FLAG_INSERT_AUTO_DESTROY_FOR_EXPLICIT_NEW
     // since the result of the 'new' will "move" into
@@ -9128,7 +9171,7 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
         USR_FATAL(from, "arguments to compilerWarning() and compilerError(),"
           " except for the optional depth argument, must be cast to string");
        else
-        str = astr(str, var->immediate->v_string);
+        str = astr(str, var->immediate->v_string.c_str());
       }
     }
 
@@ -9391,10 +9434,6 @@ void resolve() {
   insertDynamicDispatchCalls();
 
   handleRuntimeTypes();
-
-  // Resolve the string literal constructors after everything else since new
-  // ones may be created during postFold
-  ensureAndResolveInitStringLiterals();
 
   if (fPrintCallGraph) {
     // This needs to go after resolution is complete, but before
@@ -10229,15 +10268,6 @@ initializeClass(Expr* stmt, Symbol* sym) {
 }
 
 
-static void ensureAndResolveInitStringLiterals() {
-  if (!initStringLiterals) {
-    INT_ASSERT(fMinimalModules);
-    createInitStringLiterals();
-  }
-  resolveFunction(initStringLiterals);
-}
-
-
 static void handleRuntimeTypes()
 {
   // populateRuntimeTypeMap is also called earlier in resolve().  That call
@@ -10486,8 +10516,7 @@ Symbol* getPrimGetRuntimeTypeField_Field(CallExpr* call) {
   Symbol* field = NULL;
   if (Immediate* imm = fieldName->immediate) {
     INT_ASSERT(imm->const_kind == CONST_KIND_STRING);
-    const char* name = imm->v_string;
-    field = rtt->getField(name);
+    field = rtt->getField(imm->v_string.c_str());
   } else {
     field = fieldName;
   }
@@ -10989,7 +11018,7 @@ static Symbol* resolvePrimInitGetField(CallExpr* call) {
 
     if (Immediate* imm = var->immediate) {
       if (imm->const_kind == CONST_KIND_STRING) {
-        retval = ct->getField(var->immediate->v_string);
+        retval = ct->getField(var->immediate->v_string.c_str());
 
       } else if (imm->const_kind == NUM_KIND_INT) {
         int64_t i = imm->int_value();

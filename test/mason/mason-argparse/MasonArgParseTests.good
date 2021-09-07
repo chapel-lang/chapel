@@ -494,6 +494,38 @@ testMockMasonAddExternal()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testMockMasonRun()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPassthrough()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPassthroughWithPositional()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testPassthroughWithPositionalNoVals()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testSubCmdAndPassThruOnMain()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testDefaultNameOpts()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testDefaultNameToOpts()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testRangeConverter()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 Found some unrecognizable arguments: thirty
 Found some unrecognizable arguments: badArg1 --BadFlag
 Use '-' or '--' to indicate option/flag, or use positional arguments.
@@ -542,3 +574,5 @@ Found some unrecognizable arguments: file3 file4
 FileNames Not enough values: expected 5..7 got 4
 FileNames Required value missing
 Positional arguments that allow for range of values must be last relative to other positional arguments
+numArgs must have low bound
+numArgs must have low bound

@@ -186,6 +186,7 @@ struct ParserContext {
                              std::vector<ParserComment>* comments);
   ParserExprList* appendList(ParserExprList* dst, CommentsAndStmt cs);
   ASTList consumeList(ParserExprList* lst);
+  ASTList consume(Expression* e);
 
   void consumeNamedActuals(MaybeNamedActualList* lst,
                            ASTList& actualsOut,
@@ -195,6 +196,7 @@ struct ParserContext {
                                                      YYLTYPE location);
 
   void discardCommentsFromList(ParserExprList* lst, YYLTYPE location);
+  void discardCommentsFromList(ParserExprList* lst);
 
   void appendComments(CommentsAndStmt*cs, std::vector<ParserComment>* comments);
 
@@ -238,6 +240,8 @@ struct ParserContext {
   Identifier* buildEmptyIdent(YYLTYPE location);
   Identifier* buildIdent(YYLTYPE location, PODUniqueString name);
 
+  Expression* buildPrimCall(YYLTYPE location, MaybeNamedActualList* lst);
+
   OpCall* buildBinOp(YYLTYPE location,
                      Expression* lhs, PODUniqueString op, Expression* rhs);
   OpCall* buildUnaryOp(YYLTYPE location,
@@ -247,9 +251,22 @@ struct ParserContext {
                                   bool isOverride);
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
-  // Build a loop index decl from a given expression. The expression is owned
-  // because it will be consumed.
+  Expression* buildArrayTypeWithIndex(YYLTYPE location,
+                                      YYLTYPE locIndexExprs,
+                                      ParserExprList* indexExprs,
+                                      Expression* domainExpr,
+                                      Expression* typeExpr);
+
+  Expression* buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
+                             ParserExprList* domainExprs,
+                             Expression* typeExpr);
+
+  // Build a loop index decl from a given expression. May return nullptr 
+  // if the index expression is not valid. TODO: Adjust me to return an
+  // Expression instead if possible?
+  owned<Decl> buildLoopIndexDecl(YYLTYPE location, const Expression* e);
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, owned<Expression> e);
+  owned<Decl> buildLoopIndexDecl(YYLTYPE location, ParserExprList* exprLst);
 
   FnCall* wrapCalledExpressionInNew(YYLTYPE location,
                                     New::Management management,
@@ -260,6 +277,7 @@ struct ParserContext {
   ASTList consumeAndFlattenTopLevelBlocks(ParserExprList* exprLst);
 
   owned<Block> consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst);
+  owned<Block> consumeToBlock(YYLTYPE blockLoc, Expression* e);
 
   // Lift up top level comments, clear expression level comments, prepare
   // the statement body, and determine the block style.
@@ -360,12 +378,6 @@ struct ParserContext {
                                        CommentsAndStmt thenCs,
                                        CommentsAndStmt elseCs);
 
-  uint64_t binStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
-  uint64_t octStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
-  uint64_t decStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
-  uint64_t hexStr2uint64(YYLTYPE location, const char* str, bool& erroroneous);
-  double str2double(YYLTYPE location, const char* str, bool& erroroneous);
-
   Expression* buildNumericLiteral(YYLTYPE location,
                                   PODUniqueString str,
                                   int type);
@@ -410,6 +422,14 @@ struct ParserContext {
                                          ParserExprList* contents,
                                          YYLTYPE closingBrace);
 
+  Expression* buildCustomReduce(YYLTYPE location, YYLTYPE locIdent,
+                                Expression* lhs,
+                                Expression* rhs);
+
+  Expression* buildTypeConstructor(YYLTYPE location,
+                                   PODUniqueString baseType,
+                                   Expression* subType);
+
   CommentsAndStmt buildTryExprStmt(YYLTYPE location, Expression* expr,
                                    bool isTryBang);
 
@@ -427,4 +447,9 @@ struct ParserContext {
                          CommentsAndStmt block,
                          bool hasParensAroundError);
 
+  CommentsAndStmt buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
+                                BlockOrDo blockOrDo);
+
+  CommentsAndStmt buildSelectStmt(YYLTYPE location, owned<Expression> expr,
+                                  ParserExprList* whenStmts);
 };

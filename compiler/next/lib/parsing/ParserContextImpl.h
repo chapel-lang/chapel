@@ -18,6 +18,8 @@
  * limitations under the License.
  */
 
+#include "chpl/types/Param.h"
+
 #include <cerrno>
 #include <cfloat>
 #include <cinttypes>
@@ -26,6 +28,8 @@
 #include <cstdio>
 #include <string>
 #include <vector>
+
+using chpl::types::Param;
 
 static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
   return (lhs.first_line < rhs.first_line) ||
@@ -257,6 +261,12 @@ ASTList ParserContext::consumeList(ParserExprList* lst) {
   return ret;
 }
 
+ASTList ParserContext::consume(Expression* e) {
+  ASTList ret;
+  ret.push_back(toOwned(e));
+  return ret;
+}
+
 void ParserContext::consumeNamedActuals(MaybeNamedActualList* lst,
                                         ASTList& actualsOut,
                                         std::vector<UniqueString>& namesOut) {
@@ -333,6 +343,22 @@ void ParserContext::discardCommentsFromList(ParserExprList* lst,
   }
 }
 
+void ParserContext::discardCommentsFromList(ParserExprList* lst) {
+  if (lst == nullptr) return;
+
+  ParserExprList tmp;
+
+  for (auto ast : *lst) {
+    if (ast->isComment()) {
+      delete ast;
+    } else {
+      tmp.push_back(ast);
+    }
+  }
+
+  lst->swap(tmp);
+}
+
 void ParserContext::appendComments(CommentsAndStmt*cs,
                                    std::vector<ParserComment>* comments) {
   if (comments == nullptr) return;
@@ -391,6 +417,43 @@ Identifier* ParserContext::buildEmptyIdent(YYLTYPE location) {
 }
 Identifier* ParserContext::buildIdent(YYLTYPE location, PODUniqueString name) {
   return Identifier::build(builder, convertLocation(location), name).release();
+}
+
+Expression* ParserContext::buildPrimCall(YYLTYPE location,
+                                         MaybeNamedActualList* lst) {
+  Location loc = convertLocation(location);
+  ASTList actuals;
+  std::vector<UniqueString> actualNames;
+  UniqueString primName;
+
+  consumeNamedActuals(lst, actuals, actualNames);
+
+  bool anyNames = false;
+  for (auto name : actualNames) {
+    if (!name.isEmpty()) {
+      anyNames = true;
+    }
+  }
+  // first argument must be a string literal
+  if (actuals.size() > 0) {
+    if (auto lit = actuals[0]->toStringLiteral()) {
+      primName = lit->str();
+      // and erase that element
+      actuals.erase(actuals.begin());
+    }
+  }
+
+  if (anyNames || primName.isEmpty()) {
+    if (anyNames)
+      noteError(location, "primitive calls cannot use named arguments");
+    else
+      noteError(location, "primitive calls must start with string literal");
+
+    return ErroneousExpression::build(builder, loc).release();
+  }
+
+  auto prim = PrimCall::build(builder, loc, primName, std::move(actuals));
+  return prim.release();
 }
 
 OpCall* ParserContext::buildBinOp(YYLTYPE location,
@@ -483,23 +546,107 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   return cs;
 }
 
-// TODO: Need way to clear location of 'e' in the builder.
+// This is the weird one. I can't even parse what is happening here...
+/*
+1920 | TLSBR expr_ls TIN expr TRSBR type_level_expr
+1921     {
+1922       if ($2->argList.length != 1)
+1923         USR_FATAL($4, "invalid index expression");
+1924       $$ = new CallExpr("chpl__buildArrayRuntimeType",
+1925              new CallExpr("chpl__ensureDomainExpr", $4), $6, $2->get(1)->remove(),
+1926              new CallExpr("chpl__ensureDomainExpr", $4->copy()));
+1927     }
+*/
+Expression*
+ParserContext::buildArrayTypeWithIndex(YYLTYPE location,
+                                       YYLTYPE locIndexExprs,
+                                       ParserExprList* indexExprs,
+                                       Expression* domainExpr,
+                                       Expression* typeExpr) {
+  assert(false && "Not handled yet!");
+  return nullptr;
+}
+
+Expression*
+ParserContext::buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
+                              ParserExprList* domainExprs,
+                              Expression* typeExpr) {
+
+  // Build a domain out of the expression list.
+  auto domain = Domain::build(builder, convertLocation(locDomainExprs),
+                              consumeList(domainExprs));
+
+  // TODO: Report a more accurate location.
+  auto block = consumeToBlock(location, typeExpr);
+
+  auto node = BracketLoop::build(builder, convertLocation(location),
+                                 /*index*/ nullptr,
+                                 std::move(domain),
+                                 /*withClause*/ nullptr,
+                                 BlockStyle::IMPLICIT,
+                                 std::move(block),
+                                 /*isExpressionLevel*/ true);
+
+  return node.release();
+}
+
 owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
-                                              owned<Expression> e) {
+                                              const Expression* e) {
+  auto convLoc = convertLocation(location);
+
   if (const Identifier* ident = e->toIdentifier()) {
-    return Variable::build(builder, convertLocation(location),
-                           ident->name(),
+    return Variable::build(builder, convLoc, ident->name(),
                            Decl::DEFAULT_VISIBILITY,
                            Variable::INDEX,
                            /*isConfig*/ false,
                            /*isField*/ false,
                            /*typeExpression*/ nullptr,
                            /*initExpression*/ nullptr);
-  } else {
-    noteError(location, "Cannot handle this kind of index var");
-  }
 
-  return nullptr;
+  } else if (const uast::Tuple* tup = e->toTuple()) {
+    ASTList elements;
+    for (auto expr : tup->actuals()) {
+      auto decl = buildLoopIndexDecl(location, expr);
+      if (decl.get() != nullptr) {
+        assert(decl->isDecl());
+        elements.push_back(std::move(decl));
+      } else {
+        auto err = ErroneousExpression::build(builder, convLoc);
+        elements.push_back(std::move(err));
+      }
+    }
+
+    return TupleDecl::build(builder, convLoc, Decl::DEFAULT_VISIBILITY,
+                            Variable::INDEX,
+                            std::move(elements),
+                            /*typeExpression*/ nullptr,
+                            /*initExpression*/ nullptr);
+  } else {
+    const char* msg = "Cannot handle this kind of index var";
+    noteError(location, msg);
+    return nullptr;
+  }
+}
+
+// TODO: Need way to clear location of 'e' in the builder.
+owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
+                                              owned<Expression> e) {
+  return buildLoopIndexDecl(location, e.get());
+}
+
+// TODO: Use me in 'buildBracketLoop' as well.
+owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
+                                              ParserExprList* indexExprs) {
+  if (indexExprs->size() > 1) {
+    const char* msg = "Invalid index expression";
+    noteError(location, msg);
+    return nullptr;
+  } else {
+    auto uncastedIndexExpr = consumeList(indexExprs)[0].release();
+    auto indexExpr = uncastedIndexExpr->toExpression();
+    assert(indexExpr);
+    return buildLoopIndexDecl(location, toOwned(indexExpr));
+  }
 }
 
 FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
@@ -541,6 +688,11 @@ ParserContext::consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst) {
   // if it consists of other non-block statements, create a new block
   return Block::build(builder, convertLocation(blockLoc),
                       consumeList(lst));
+}
+
+owned<Block>
+ParserContext::consumeToBlock(YYLTYPE blockLoc, Expression* e) {
+  return consumeToBlock(blockLoc, makeList(e));
 }
 
 ASTList
@@ -895,217 +1047,6 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   return { .comments=comments, .stmt=node.release() };
 }
 
-uint64_t ParserContext::binStr2uint64(YYLTYPE location,
-                                      const char* str,
-                                      bool& erroneous) {
-  assert(str);
-  assert(str[0] == '0' && (str[1] == 'b' || str[1] == 'B'));
-
-  int len = strlen(str);
-  assert(len >= 3);
-
-  erroneous = false;
-
-  // Remove leading 0s
-  int startPos = 2;
-  while (str[startPos] == '0' && startPos < len-1) {
-    startPos++;
-  }
-  // Check length
-  if (len-startPos > 64) {
-    erroneous = true;
-    std::string msg = "Integer literal overflow: '";
-    msg += str;
-    msg += "' is too big for type uint64";
-    noteError(location, msg);
-  }
-  uint64_t val = 0;
-  for (int i=startPos; i<len; i++) {
-    val <<= 1;
-    switch (str[i]) {
-    case '0':
-      break;
-    case '1':
-      val += 1;
-      break;
-    default:
-      erroneous = true;
-      noteError(location, std::string("illegal character '") +
-                          str[i] + "' in binary literal");
-    }
-  }
-
-  if (erroneous)
-    return 0;
-
-  return val;
-}
-
-uint64_t ParserContext::octStr2uint64(YYLTYPE location,
-                                      const char* str,
-                                      bool& erroneous) {
-  assert(str);
-  assert(str[0] == '0' && (str[1] == 'o' || str[1] == 'O'));
-
-  int len = strlen(str);
-  assert(len >= 3);
-
-  /* Remove leading 0s */
-  int startPos = 2;
-  while (str[startPos] == '0' && startPos < len-1) {
-    startPos++;
-  }
-
-  if (len-startPos > 22 || (len-startPos == 22 && str[startPos] != '1')) {
-    erroneous = true;
-    std::string msg = "Integer literal overflow: '";
-    msg += str;
-    msg += "' is too big for type uint64";
-    noteError(location, msg);
-  }
-
-  for (int i = startPos; i < len; i++) {
-    if ('0' <= str[i] && str[i] <= '8') {
-      // OK
-    } else {
-      erroneous = true;
-      noteError(location, std::string("illegal character '") +
-                          str[i] + "' in octal literal");
-    }
-  }
-
-  if (erroneous == true)
-    return 0;
-
-  uint64_t val;
-  int numitems = sscanf(str+startPos, "%" SCNo64, &val);
-  if (numitems != 1) {
-    erroneous = true;
-    noteError(location, "error converting octal literal");
-  }
-
-  return val;
-}
-
-uint64_t ParserContext::decStr2uint64(YYLTYPE location,
-                                      const char* str,
-                                      bool& erroneous) {
-  assert(str);
-
-  int len = strlen(str);
-  assert(len >= 1);
-
-  /* Remove leading 0s */
-  int startPos = 0;
-  while (str[startPos] == '0' && startPos < len-1) {
-    startPos++;
-  }
-
-  for (int i = startPos; i < len; i++) {
-    if ('0' <= str[i] && str[i] <= '9') {
-      // OK
-    } else {
-      erroneous = true;
-      noteError(location, std::string("illegal character '") +
-                          str[i] + "' in decimal literal");
-    }
-  }
-
-  int64_t val;
-  int numitems = sscanf(str+startPos, "%" SCNu64, &val);
-  if (numitems != 1) {                                          \
-    erroneous = true;
-    noteError(location, "error converting decimal literal");
-  }
-
-  char* checkStr = (char*)malloc(len+1);
-  snprintf(checkStr, len+1, "%" SCNu64, val);
-  if (strcmp(str+startPos, checkStr) != 0) {
-    erroneous = true;
-    std::string msg = "Integer literal overflow: '";
-    msg += str;
-    msg += "' is too big for type uint64";
-    noteError(location, msg);
-  }
-  free(checkStr);
-
-  if (erroneous)
-    return 0;
-
-  return val;
-}
-
-
-
-uint64_t ParserContext::hexStr2uint64(YYLTYPE location,
-                                      const char* str,
-                                      bool& erroneous) {
-  assert(str);
-  assert(str[0] == '0' && (str[1] == 'x' || str[1] == 'X'));
-
-  int len = strlen(str);
-  assert(len >= 3);
-
-  /* Remove leading 0s */
-  int startPos = 2;
-  while (str[startPos] == '0' && startPos < len-1) {
-    startPos++;
-  }
-
-  if (len-startPos > 16) {
-    erroneous = true;
-    std::string msg = "Integer literal overflow: '";
-    msg += str;
-    msg += "' is too big for type uint64";
-    noteError(location, msg);
-  }
-
-  for (int i = startPos; i < len; i++) {
-    if (('0' <= str[i] && str[i] <= '9') ||
-        ('a' <= str[i] && str[i] <= 'f') ||
-        ('A' <= str[i] && str[i] <= 'F')) {
-      // OK
-    } else {
-      erroneous = true;
-      noteError(location, std::string("illegal character '") +
-                          str[i] + "' in hexadecimal literal");
-    }
-  }
-
-  if (erroneous)
-    return 0;
-
-  uint64_t val;
-  int numitems = sscanf(str+2, "%" SCNx64, &val);
-  if (numitems != 1) {
-    erroneous = true;
-    noteError(location, "error converting hexadecimal literal");
-  }
-  return val;
-}
-
-double ParserContext::str2double(YYLTYPE location,
-                                 const char* str,
-                                 bool& erroneous) {
-  char* endptr = nullptr;
-  double num = strtod(str, &endptr);
-  if (std::isnan(num) || std::isinf(num)) {
-    // don't worry about checking magnitude of these
-  } else {
-    double mag = fabs(num);
-    // check strtod result
-    if ((mag == HUGE_VAL || mag == DBL_MIN) && errno == ERANGE) {
-      erroneous = true;
-      noteError(location, "overflow or underflow in floating point literal");
-    } else if (num == 0.0 && endptr == str) {
-      erroneous = true;
-      noteError(location, "error in floating point literal");
-    }
-  }
-
-  return num;
-}
-
 Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
                                                PODUniqueString str,
                                                int type) {
@@ -1124,45 +1065,52 @@ Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
   }
   noUnderscores[noUnderscoresLen] = '\0';
 
-  bool erroneous = false;
+  std::string err;
   Expression* ret = nullptr;
   auto loc = convertLocation(location);
 
   if (type == INTLITERAL) {
     if (!strncmp("0b", pch, 2) || !strncmp("0B", pch, 2)) {
-      ull = binStr2uint64(location, noUnderscores, erroneous);
+      ull = Param::binStr2uint64(noUnderscores, noUnderscoresLen,  err);
     } else if (!strncmp("0o", pch, 2) || !strncmp("0O", pch, 2)) {
       // The second case is difficult to read, but is zero followed by a capital
       // letter 'o'
-      ull = octStr2uint64(location, noUnderscores, erroneous);
+      ull = Param::octStr2uint64(noUnderscores, noUnderscoresLen, err);
     } else if (!strncmp("0x", pch, 2) || !strncmp("0X", pch, 2)) {
-      ull = hexStr2uint64(location, noUnderscores, erroneous);
+      ull = Param::hexStr2uint64(noUnderscores, noUnderscoresLen, err);
     } else {
-      ull = decStr2uint64(location, noUnderscores, erroneous);
+      ull = Param::decStr2uint64(noUnderscores, noUnderscoresLen, err);
     }
 
-    if (erroneous)
+    if (!err.empty()) {
+      noteError(location, err);
       ret = ErroneousExpression::build(builder, loc).release();
-    else if (ull <= 9223372036854775807ull)
+    } else if (ull <= 9223372036854775807ull) {
       ret = IntLiteral::build(builder, loc, ull, text).release();
-    else
+    } else {
       ret =  UintLiteral::build(builder, loc, ull, text).release();
+    }
   } else if (type == REALLITERAL || type == IMAGLITERAL) {
 
     if (type == IMAGLITERAL) {
       // Remove the trailing `i` from the noUnderscores number
-      assert(noUnderscores[noUnderscoresLen-1] == 'i');
-      noUnderscores[noUnderscoresLen-1] = '\0';
+      if (noUnderscores[noUnderscoresLen-1] != 'i') {
+        err = "invalig imag literal - does not end in i";
+      }
+      noUnderscoresLen--;
+      noUnderscores[noUnderscoresLen] = '\0';
     }
 
-    double num = str2double(location, noUnderscores, erroneous);
+    double num = Param::str2double(noUnderscores, noUnderscoresLen, err);
 
-    if (erroneous)
+    if (!err.empty()) {
+      noteError(location, err);
       ret = ErroneousExpression::build(builder, loc).release();
-    else if (type == IMAGLITERAL)
+    } else if (type == IMAGLITERAL) {
       ret = ImagLiteral::build(builder, loc, num, text).release();
-    else
+    } else {
       ret = RealLiteral::build(builder, loc, num, text).release();
+    }
 
   } else {
     assert(false && "Case note handled in buildNumericLiteral");
@@ -1408,6 +1356,40 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   return cs;
 }
 
+Expression* ParserContext::buildCustomReduce(YYLTYPE location,
+                                             YYLTYPE locIdent,
+                                             Expression* lhs,
+                                             Expression* rhs) {
+  if (!lhs->isIdentifier()) {
+    const char* msg = "Expected identifier for reduction name";
+    return raiseError(locIdent, msg);
+  } else {
+    auto identName = lhs->toIdentifier()->name();
+    auto node = Reduce::build(builder, convertLocation(location),
+                              identName,
+                              toOwned(rhs));
+    return node.release();
+  }
+}
+
+Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
+                                                PODUniqueString baseType,
+                                                Expression* subType) {
+  auto ident = buildIdent(location, baseType);
+  ASTList actuals;
+
+  actuals.push_back(toOwned(subType));
+
+  // TODO: Record in node that this call did not use parens.
+  const bool callUsedSquareBrackets = false;
+  auto node = FnCall::build(builder, convertLocation(location),
+                            toOwned(ident),
+                            std::move(actuals),
+                            callUsedSquareBrackets);
+
+  return node.release();
+}
+
 CommentsAndStmt
 ParserContext::buildTryExprStmt(YYLTYPE location, Expression* expr,
                                 bool isTryBang) {
@@ -1495,4 +1477,68 @@ Expression* ParserContext::buildCatch(YYLTYPE location, Expression* error,
                            hasParensAroundError);
 
   return node.release();
+}
+
+CommentsAndStmt
+ParserContext::buildWhenStmt(YYLTYPE location, ParserExprList* caseExprs,
+                             BlockOrDo blockOrDo) {
+
+  // No need to gather comments, they'll have been collected here...
+  auto comments = blockOrDo.cs.comments;
+  auto stmt = blockOrDo.cs.stmt;
+
+  BlockStyle blockStyle = blockOrDo.usesDo ? BlockStyle::IMPLICIT
+                                           : BlockStyle::EXPLICIT;
+
+  if (blockOrDo.usesDo && stmt->isBlock()) {
+    blockStyle = BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK;
+  }
+
+  auto caseList = caseExprs ? consumeList(caseExprs) : ASTList();
+
+  auto stmtList = consumeAndFlattenTopLevelBlocks(makeList(stmt));
+
+  auto node = When::build(builder, convertLocation(location),
+                          std::move(caseList),
+                          blockStyle,
+                          std::move(stmtList));
+
+  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+
+  return cs;
+}
+
+CommentsAndStmt
+ParserContext::buildSelectStmt(YYLTYPE location, owned<Expression> expr,
+                               ParserExprList* whenStmts) {
+  auto comments = gatherCommentsFromList(whenStmts, location);
+
+  // Discard all remaining comments.
+  discardCommentsFromList(whenStmts);
+
+  auto stmts = consumeList(whenStmts);
+
+  int numOtherwise = 0;
+
+  // Return an error if there is more than one otherwise.
+  for (auto& ast : stmts) {
+    auto when = ast->toWhen();
+    assert(when != nullptr);
+
+    // TODO: Do we also care about the position of the otherwise?
+    if (when->isOtherwise() && numOtherwise++) {
+      const char* msg = "Select has multiple otherwise clauses";
+      auto error = raiseError(location, msg);
+      CommentsAndStmt cs = { .comments=comments, .stmt=error };
+      return cs;
+    }
+  }
+
+  auto node = Select::build(builder, convertLocation(location),
+                            std::move(expr),
+                            std::move(stmts));
+
+  CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+
+  return cs;
 }

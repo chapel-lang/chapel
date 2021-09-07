@@ -75,7 +75,7 @@ namespace resolution {
    */
   const TypedFnSignature* instantiateSignature(Context* context,
                                                const TypedFnSignature* sig,
-                                               CallInfo call,
+                                               const CallInfo& call,
                                                const PoiScope* poiScope);
 
   /**
@@ -132,7 +132,7 @@ namespace resolution {
   void
   filterCandidatesInstantiating(Context* context,
                                 std::vector<const TypedFnSignature*> lst,
-                                CallInfo call,
+                                const CallInfo& call,
                                 const Scope* inScope,
                                 const PoiScope* inPoiScope,
                                 std::vector<const TypedFnSignature*>& result);
@@ -156,7 +156,7 @@ namespace resolution {
    */
   CallResolutionResult resolveCall(Context* context,
                                    const uast::Call* call,
-                                   CallInfo ci,
+                                   const CallInfo& ci,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope);
 

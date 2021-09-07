@@ -29,6 +29,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/OpCall.h"
+#include "chpl/uast/PrimCall.h"
 #include "chpl/uast/Variable.h"
 
 // always check assertions in this test
@@ -933,6 +934,43 @@ static void testBoolLiteral1(Parser* parser) {
   assert(b->value() == true);
 }
 
+static void testPrimCall0(Parser* parser) {
+  auto parseResult = parser->parseString("testPrimCall0.chpl",
+                                         "__primitive(\"test prim\");\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(mod->numStmts() == 1);
+
+  auto prim = mod->stmt(0)->toPrimCall();
+  assert(prim);
+
+  assert(prim->numActuals() == 0);
+  assert(prim->calledExpression() == nullptr);
+  assert(prim->prim() == "test prim");
+}
+static void testPrimCall1(Parser* parser) {
+  auto parseResult = parser->parseString("testPrimCall1.chpl",
+                                         "__primitive(\"test prim\", x);\n");
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(mod->numStmts() == 1);
+
+  auto prim = mod->stmt(0)->toPrimCall();
+  assert(prim);
+
+  assert(prim->calledExpression() == nullptr);
+  assert(prim->prim() == "test prim");
+  assert(prim->numActuals() == 1);
+  auto ident = prim->actual(0)->toIdentifier();
+  assert(ident);
+  assert(ident->name() == "x");
+}
+
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -993,6 +1031,9 @@ int main() {
 
   testBoolLiteral0(p);
   testBoolLiteral1(p);
+
+  testPrimCall0(p);
+  testPrimCall1(p);
 
   return 0;
 }

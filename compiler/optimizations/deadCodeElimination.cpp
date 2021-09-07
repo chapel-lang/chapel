@@ -39,6 +39,8 @@
 
 #include <queue>
 #include <set>
+#include <algorithm>
+#include <cstdio>
 
 typedef std::set<BasicBlock*> BasicBlockSet;
 
@@ -49,8 +51,8 @@ static bool         isInCForLoopHeader(Expr* expr);
 static void         cleanupLoopBlocks(FnSymbol* fn);
 
 static void markGPUSuitableLoops();
-static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls);
-static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk,
+static bool shouldOutlineLoop(BlockStmt* blk, bool allowFnCalls);
+static bool shouldOutlineLoopHelp(BlockStmt* blk,
                                            std::set<FnSymbol*>& okFns,
                                            std::set<FnSymbol*> visitedFns,
                                            bool allowFnCalls);
@@ -282,7 +284,7 @@ static bool isInCForLoopHeader(Expr* expr) {
 ************************************** | *************************************/
 
 static bool isDeadStringOrBytesLiteral(VarSymbol* string);
-static void removeDeadStringLiteral(DefExpr* defExpr);
+static void removeDeadStringLiteral(DefExpr* def);
 
 static void deadStringLiteralElimination() {
   // Noakes 2017/03/09
@@ -326,7 +328,6 @@ static void deadStringLiteralElimination() {
   }
 }
 
-// Noakes 2017/03/04: All literals have 1 def. Dead literals have 0 uses.
 static bool isDeadStringOrBytesLiteral(VarSymbol* string) {
   bool retval = false;
 
@@ -335,40 +336,15 @@ static bool isDeadStringOrBytesLiteral(VarSymbol* string) {
     int numDefs = string->countDefs();
     int numUses = string->countUses();
 
-    retval = numDefs == 1 && numUses == 0;
+    INT_ASSERT(numDefs == 0);
 
-    INT_ASSERT(numDefs == 1);
+    retval = numUses == 0;
   }
 
   return retval;
 }
 
-// The current pattern to initialize a string literal,
-// a VarSymbol _str_literal_NNN, is approximately
-//
-//   def  new_temp  : string; // defTemp
-//
-//   call createStringWithBorrowedBuffer(new_temp,c"literal",...); //factoryCall
-//
-//   move _str_literal_NNN, new_temp;  // this is 'defn' - the single def
-//
 static void removeDeadStringLiteral(DefExpr* defExpr) {
-  SymExpr*   defn  = toVarSymbol(defExpr->sym)->getSingleDef();
-
-  // Step backwards from 'defn'
-  Expr* lastMove = defn->getStmtExpr();
-  Expr* factoryCall = lastMove->prev;
-  Expr* defTemp = factoryCall->prev;
-
-  // Simple sanity checks
-  INT_ASSERT(isDefExpr(defTemp));
-  INT_ASSERT(isCallExpr(factoryCall));
-  INT_ASSERT(isCallExpr(lastMove));
-
-  lastMove->remove();
-  factoryCall->remove();
-  defTemp->remove();
-
   defExpr->remove();
 }
 
@@ -388,6 +364,10 @@ static bool isDeadModule(ModuleSymbol* mod) {
   // The main module should never be considered dead; the init function
   // can be explicitly called from the runtime or other c code
   if (mod == ModuleSymbol::mainModule())
+    return false;
+
+  // Ditto for the string literals module
+  if (mod == stringLiteralModule)
     return false;
 
   // Ditto for an exported module
@@ -449,88 +429,88 @@ static void deadModuleElimination() {
   }
 }
 
-static bool shouldOutlineLoop(CForLoop *loop) {
-  // Obvious TODO :)
-  
-  const char* testModuleName = "GPUOutlineTest";
-  bool inTestModule = false;
+struct OutlineInfo {
+  CForLoop* loop = NULL;
 
-  Symbol* cur = loop->parentSymbol;
+  std::vector<Symbol*> loopIndices;
+  std::vector<Symbol*> lowerBounds;
+  Symbol* upperBound = NULL;
 
-  do {
-    if (ModuleSymbol* parentModule = toModuleSymbol(cur)) {
-      if (strcmp(parentModule->name, testModuleName) == 0) {
-        inTestModule = true;
-      }
-    }
+  FnSymbol* fn;
+  std::vector<Symbol*> kernelIndices;
+  std::vector<Symbol*> kernelActuals;
 
-    if (cur->defPoint != NULL)
-      cur = cur->defPoint->parentSymbol;
-    else
-      cur = NULL;
+  SymbolMap copyMap;
+};
 
-  } while (cur != NULL && !inTestModule);
-
-  return inTestModule && loop->isOrderIndependent();
-}
+static VarSymbol* generateAssignmentToPrimitive(FnSymbol* fn,
+                                                const char *varName,
+                                                PrimitiveTag prim,
+                                                Type *primReturnType);
+static void generateIndexComputation(OutlineInfo& info);
+static void generateEarlyReturn(OutlineInfo& info);
 
 static bool isDefinedInTheLoop(Symbol* sym, CForLoop* loop) {
   return LoopStmt::findEnclosingLoop(sym->defPoint) == loop;
 }
 
-static bool isIndexVariable(Symbol* sym, CForLoop* loop) {
+static bool isIndexVariable(OutlineInfo& info, Symbol* sym) {
+  std::vector<Symbol*>& indices = info.loopIndices;
 
-  // This is really a poor check. My hope is that we can achieve this here much
-  // simpler by associating index variable(s) with CForLoops when we create
-  // them. For now, this prototype only checks for an `idx = ` in the initBlock
-  // of the C loop.
-  std::vector<CallExpr*> calls;
-  collectCallExprs(loop->initBlockGet(), calls);
-
-  for_vector (CallExpr, call, calls) {
-    if (call->isPrimitive(PRIM_ASSIGN)) {
-      SymExpr* lhsSE = toSymExpr(call->get(1));
-      INT_ASSERT(lhsSE);
-
-      if (lhsSE->symbol() == sym) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  return std::find(indices.begin(), indices.end(), sym) != indices.end();
 }
 
-static Symbol* extractUpperBoundFromLoop(CForLoop* loop) {
+static void extractUpperBound(CForLoop* loop, OutlineInfo& info) {
   if(BlockStmt* bs = toBlockStmt(loop->testBlockGet())) {
-    if(CallExpr *call = toCallExpr(bs->body.head)) {
-      if(call->isPrimitive(PRIM_LESSOREQUAL)) {
-        if(SymExpr *symExpr = toSymExpr(call->get(2))) {
-          return symExpr->symbol();
-        }
-      }
-    }
-}
+    for_exprs_postorder (expr, bs) {
+      if(CallExpr *call = toCallExpr(expr)) {
+        if(call->isPrimitive(PRIM_LESSOREQUAL)) {
+          if(SymExpr *symExpr = toSymExpr(call->get(2))) {
 
-  INT_FATAL("Unexpected upper bound for loop identified for extraction as "
-    "GPU kernel");
-  return nullptr;
-}
+            SymExpr* lhsSymExpr = toSymExpr(call->get(1));
+            INT_ASSERT(lhsSymExpr && lhsSymExpr->symbol() == info.loopIndices[0]);
 
-static Symbol* extractLowerBoundFromLoop(CForLoop* loop) {
-  if(BlockStmt* bs = toBlockStmt(loop->initBlockGet())) {
-    if(CallExpr *call = toCallExpr(bs->body.head)) {
-      if(call->isPrimitive(PRIM_ASSIGN)) {
-        if(SymExpr *symExpr = toSymExpr(call->get(2))) {
-          return symExpr->symbol();
+            info.upperBound = symExpr->symbol();
+
+            break;
+          }
         }
       }
     }
   }
 
-  INT_FATAL("Unexpected lower bound for loop identified for extraction as GPU "
-    "kernel");
-  return nullptr;
+  if (info.upperBound == NULL) {
+    INT_FATAL("Unexpected upper bound for loop identified for extraction as "
+              "GPU kernel");
+  }
+}
+
+static void extractIndicesAndLowerBounds(CForLoop* loop,
+                                         OutlineInfo& info) {
+  if(BlockStmt* bs = toBlockStmt(loop->initBlockGet())) {
+    for_alist (expr, bs->body) {
+      if(CallExpr *call = toCallExpr(expr)) {
+        if(call->isPrimitive(PRIM_ASSIGN) ||
+           call->isPrimitive(PRIM_MOVE)) {
+
+          SymExpr *idxSymExpr = toSymExpr(call->get(1));
+          SymExpr *boundSymExpr = toSymExpr(call->get(2));
+
+          INT_ASSERT(idxSymExpr);
+          INT_ASSERT(boundSymExpr);
+
+          info.loopIndices.push_back(idxSymExpr->symbol());
+          info.lowerBounds.push_back(boundSymExpr->symbol());
+        }
+      }
+    }
+
+    INT_ASSERT(bs->body.length == (int)info.loopIndices.size());
+    INT_ASSERT(bs->body.length == (int)info.lowerBounds.size());
+  }
+  else {
+    INT_FATAL("Unexpected initBlock in CForLoop");
+  }
 }
 
 static VarSymbol* insertNewVarAndDef(BlockStmt* insertionPoint, const char* name,
@@ -541,35 +521,54 @@ static VarSymbol* insertNewVarAndDef(BlockStmt* insertionPoint, const char* name
   return var;
 }
 
+static OutlineInfo collectOutlineInfo(CForLoop* loop) {
+  OutlineInfo info;
+  info.loop = loop;
+  extractIndicesAndLowerBounds(loop, info);
+  extractUpperBound(loop, info);
+
+  info.fn = new FnSymbol("chpl_gpu_kernel");
+  info.fn->addFlag(FLAG_RESOLVED);
+  info.fn->addFlag(FLAG_ALWAYS_RESOLVE);
+  info.fn->addFlag(FLAG_GPU_CODEGEN);
+
+  generateIndexComputation(info);
+  generateEarlyReturn(info);
+
+  return info;
+}
+
 /**
  * Given a CForLoop with lowerbound lb and upper bound ub
- * (See extractUpperBoundFromLoop\extractLowerBoundFromLoop to
+ * (See extractUpperBound\extractIndicesAndLowerBound to
  * see what we pattern match and extract), generate the
  * following AST and insert it into gpuLaunchBlock:
  * 
- *   blockDelta = ub - lb
- *   blockSize = blockDelta + 1
+ *   chpl_block_delta = ub - lb
+ *   chpl_gpu_num_threads = chpl_block_delta + 1
  */
-static VarSymbol* generateBlockSizeComputation(
-  BlockStmt* gpuLaunchBlock,
-  CForLoop* loop) {
-  Symbol* ub = extractUpperBoundFromLoop(loop);
-  Symbol* lb = extractLowerBoundFromLoop(loop);
+static VarSymbol* generateNumThreads(BlockStmt* gpuLaunchBlock,
+                                     OutlineInfo& info) {
 
-  VarSymbol *varBoundDelta = insertNewVarAndDef(
-    gpuLaunchBlock, "blockDelta", dtInt[INT_SIZE_DEFAULT]);
-  VarSymbol *varBlockSize = insertNewVarAndDef(
-    gpuLaunchBlock, "blockSize", dtInt[INT_SIZE_DEFAULT]);
+  VarSymbol *varBoundDelta = insertNewVarAndDef(gpuLaunchBlock,
+                                                "chpl_block_delta",
+                                                dtInt[INT_SIZE_DEFAULT]);
+  VarSymbol *numThreads = insertNewVarAndDef(gpuLaunchBlock,
+                                             "chpl_num_gpu_threads",
+                                             dtInt[INT_SIZE_DEFAULT]);
 
-  CallExpr *c1 = new CallExpr(PRIM_ASSIGN, varBoundDelta, new CallExpr(
-    PRIM_SUBTRACT, ub, lb));
+  CallExpr *c1 = new CallExpr(PRIM_ASSIGN, varBoundDelta,
+                              new CallExpr(PRIM_SUBTRACT,
+                                           info.upperBound,
+                                           info.lowerBounds[0]));
   gpuLaunchBlock->insertAtTail(c1);
 
-  CallExpr *c2 = new CallExpr(PRIM_ASSIGN, varBlockSize, new CallExpr(
-    PRIM_ADD, varBoundDelta, new_IntSymbol(1)));
+  CallExpr *c2 = new CallExpr(PRIM_ASSIGN, numThreads,
+                              new CallExpr(PRIM_ADD, varBoundDelta,
+                                           new_IntSymbol(1)));
   gpuLaunchBlock->insertAtTail(c2);
 
-  return varBlockSize;
+  return numThreads;
 }
 
 static VarSymbol* generateAssignmentToPrimitive(
@@ -581,62 +580,116 @@ static VarSymbol* generateAssignmentToPrimitive(
   return var;
 }
 
+static Symbol* addKernelArgument(OutlineInfo& info, Symbol* symInLoop) {
+  Type* symType = symInLoop->typeInfo();
+  ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, "data_formal", symType);
+  info.fn->insertFormalAtTail(newFormal);
+
+  info.kernelActuals.push_back(symInLoop);
+  info.copyMap.put(symInLoop, newFormal);
+
+  return newFormal;
+}
+
+
 /**
- *  Generates and inserts the following AST into fn:
+ *  For each loopIndex, generates and inserts the following AST into fn:
  *
  *  blockIdxX  = __primitve('gpu blockIdx x')
  *  blockDimX  = __primitve('gpu blockDim x')
  *  threadIdxX = __primitve('gpu threadIdx x')
  *  t0 = varBlockIdxX * varBlockDimX 
  *  t1 = t0 + threadIdxX
+ *  index = t1 + lowerBound
+ *
+ *  Also adds the loopIndex->index to the copyMap
  **/
-static VarSymbol* generateIndexComputation(FnSymbol* fn, Symbol* sym) {
-  VarSymbol *varBlockIdxX = generateAssignmentToPrimitive(fn, "blockIdxX",
-    PRIM_GPU_BLOCKIDX_X, dtInt[INT_SIZE_32]);
-  VarSymbol *varBlockDimX = generateAssignmentToPrimitive(fn, "blockDimX",
-    PRIM_GPU_BLOCKDIM_X, dtInt[INT_SIZE_32]);
-  VarSymbol *varThreadIdxX = generateAssignmentToPrimitive(fn, "threadIdxX",
-    PRIM_GPU_THREADIDX_X, dtInt[INT_SIZE_32]);
+static void generateIndexComputation(OutlineInfo& info) {
 
-  VarSymbol *tempVar = insertNewVarAndDef(fn->body, "t0", dtInt[INT_SIZE_32]);
-  CallExpr *c1 = new CallExpr(PRIM_MOVE, tempVar, new CallExpr(PRIM_MULT,
-    varBlockIdxX, varBlockDimX));
-  fn->insertAtTail(c1);
+  FnSymbol* fn = info.fn;
 
-  VarSymbol *tempVar1 = insertNewVarAndDef(fn->body, "t1", dtInt[INT_SIZE_32]);
-  CallExpr *c2 = new CallExpr(PRIM_MOVE, tempVar1, new CallExpr(PRIM_ADD, tempVar,
-    varThreadIdxX));
-  fn->insertAtTail(c2);
+  std::vector<Symbol*>::size_type numIndices = info.loopIndices.size();
+  INT_ASSERT(info.lowerBounds.size() == numIndices);
 
-  return tempVar1;
+  for (std::vector<Symbol*>::size_type i=0 ; i<numIndices ; i++) {
+    Symbol* loopIndex  = info.loopIndices[i];
+    Symbol* lowerBound = info.lowerBounds[i];
+
+    VarSymbol *varBlockIdxX = generateAssignmentToPrimitive(fn, "blockIdxX",
+      PRIM_GPU_BLOCKIDX_X, dtInt[INT_SIZE_32]);
+    VarSymbol *varBlockDimX = generateAssignmentToPrimitive(fn, "blockDimX",
+      PRIM_GPU_BLOCKDIM_X, dtInt[INT_SIZE_32]);
+    VarSymbol *varThreadIdxX = generateAssignmentToPrimitive(fn, "threadIdxX",
+      PRIM_GPU_THREADIDX_X, dtInt[INT_SIZE_32]);
+
+    VarSymbol *tempVar = insertNewVarAndDef(fn->body, "t0", dtInt[INT_SIZE_32]);
+    CallExpr *c1 = new CallExpr(PRIM_MOVE, tempVar, new CallExpr(PRIM_MULT,
+                                                                 varBlockIdxX,
+                                                                 varBlockDimX));
+    fn->insertAtTail(c1);
+
+    VarSymbol *tempVar1 = insertNewVarAndDef(fn->body, "t1", dtInt[INT_SIZE_32]);
+    CallExpr *c2 = new CallExpr(PRIM_MOVE, tempVar1, new CallExpr(PRIM_ADD,
+                                                                  tempVar,
+                                                                  varThreadIdxX));
+    fn->insertAtTail(c2);
+
+    Symbol* startOffset = addKernelArgument(info, lowerBound);
+    VarSymbol* index = insertNewVarAndDef(fn->body, "chpl_simt_index",
+                                          dtInt[INT_SIZE_32]);
+    fn->insertAtTail(new CallExpr(PRIM_MOVE, index, new CallExpr(PRIM_ADD,
+                                                                 tempVar1,
+                                                                 startOffset)));
+
+    info.kernelIndices.push_back(index);
+    info.copyMap.put(loopIndex, index);
+  }
+
+  INT_ASSERT(info.kernelIndices.size() == info.loopIndices.size());
 }
 
-static  CallExpr* generateGPUCall(VarSymbol* varBlockSize,
-                                  FnSymbol* kernel,
-                                  std::vector<Symbol*> actuals) {
+/*
+ * Adds the following AST to a GPU kernel
+ *
+ * def chpl_is_oob;
+ * chpl_is_oob = `calculated thread idx` > upperBound
+ * if (chpl_is_oob) {
+ *   return;
+ * }
+ *
+ */
+static void generateEarlyReturn(OutlineInfo& info) {
+  Symbol* localUpperBound = addKernelArgument(info, info.upperBound);
+
+  VarSymbol* isOOB = new VarSymbol("chpl_is_oob", dtBool);
+  info.fn->insertAtTail(new DefExpr(isOOB));
+
+  CallExpr* comparison = new CallExpr(PRIM_GREATER,
+                                      info.kernelIndices[0],
+                                      localUpperBound);
+  info.fn->insertAtTail(new CallExpr(PRIM_MOVE, isOOB, comparison));
+
+  BlockStmt* thenBlock = new BlockStmt();
+  thenBlock->insertAtTail(new CallExpr(PRIM_RETURN, gVoid));
+  info.fn->insertAtTail(new CondStmt(new SymExpr(isOOB), thenBlock));
+}
+
+static  CallExpr* generateGPUCall(OutlineInfo& info, VarSymbol* numThreads) { 
   CallExpr* call = new CallExpr(PRIM_GPU_KERNEL_LAUNCH_FLAT);
-  call->insertAtTail(kernel);
 
-  call->insertAtTail(new_IntSymbol(1));  // grid size
-  call->insertAtTail(varBlockSize); // block size
+  call->insertAtTail(info.fn);
 
-  for_vector (Symbol, actual, actuals) {
+  call->insertAtTail(numThreads);  // total number of GPU threads
+
+  int blockSize = fGPUBlockSize != 0 ? fGPUBlockSize:512;
+  call->insertAtTail(new_IntSymbol(blockSize));
+
+
+  for_vector (Symbol, actual, info.kernelActuals) {
     call->insertAtTail(new SymExpr(actual));
   }
 
   return call;
-}
-
-static void addKernelArgument(FnSymbol* kernel, Symbol* symInLoop,
-                              std::vector<Symbol*>& actuals,
-                              SymbolMap& copyMap) {
-  Type* symType = symInLoop->typeInfo();
-  ArgSymbol* newFormal = new ArgSymbol(INTENT_IN, "data_formal", symType);
-  kernel->insertFormalAtTail(newFormal);
-
-  copyMap.put(symInLoop, newFormal);
-
-  actuals.push_back(symInLoop);
 }
 
 static void outlineGPUKernels() {
@@ -646,29 +699,32 @@ static void outlineGPUKernels() {
 
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
-        if (shouldOutlineLoop(loop) &&
-            blockLooksLikeStreamForGPU(loop, /*allowFnCalls=*/false)) {
+        if (shouldOutlineLoop(loop, /*allowFnCalls=*/false)) {
           SET_LINENO(loop);
-          FnSymbol* outlinedFunction = new FnSymbol("chpl_gpu_kernel");
-          outlinedFunction->addFlag(FLAG_RESOLVED);
-          outlinedFunction->addFlag(FLAG_ALWAYS_RESOLVE);
-          outlinedFunction->addFlag(FLAG_GPU_CODEGEN);
+
+          OutlineInfo info = collectOutlineInfo(loop);
+
+          FnSymbol* outlinedFunction = info.fn;
 
           fn->defPoint->insertBefore(new DefExpr(outlinedFunction));
 
+          // if (chpl_task_getRequestedSubloc() > 0) {
+          //   call the generated GPU kernel
+          // } else {
+          //   run the existing loop on the CPU
+          // }
+          Expr* condExpr =
+            new CallExpr(PRIM_GREATER,
+                         new CallExpr(PRIM_GET_REQUESTED_SUBLOC),
+                         new_IntSymbol(0));
+          BlockStmt* thenBlock = new BlockStmt();
+          BlockStmt* elseBlock = new BlockStmt();
+          CondStmt* loopCloneCond = new CondStmt(condExpr, thenBlock, elseBlock);
           BlockStmt* gpuLaunchBlock = new BlockStmt();
-          loop->insertBefore(gpuLaunchBlock);
 
-          // TODO add a struct or something to store all the information that we
-          // need to keep track of per symbol, and make the following vectors
-          // into a single vector of that type. LoopOutlineInfo or something.
-          std::vector<SymExpr*> maybeArrSymExpr;
-          std::vector<SymExpr*> arraysWhoseDataAccessed;
-          std::vector<CallExpr*> fieldAccessors;
-          std::vector<Symbol*> kernelActuals;
-
-          Symbol* indexSymbol = NULL;
-          SymbolMap copyMap;
+          loop->insertBefore(loopCloneCond);
+          thenBlock->insertAtHead(gpuLaunchBlock);
+          elseBlock->insertAtHead(loop->remove());
 
           for_alist(node, loop->body) {
 
@@ -680,7 +736,7 @@ static void outlineGPUKernels() {
               copyNode = false; // we'll do it here to adjust our symbol map
 
               DefExpr* newDef = def->copy();
-              copyMap.put(def->sym, newDef->sym);
+              info.copyMap.put(def->sym, newDef->sym);
 
               outlinedFunction->insertAtTail(newDef);
             }
@@ -698,19 +754,11 @@ static void outlineGPUKernels() {
                 else if (sym->isImmediate()) {
                   // nothing to do
                 }
-                // TODO: we want to have a better way of recognizing the index
-                // variable. Either we move this "pass" earlier, and we lower
-                // a ForLoop directly into a gpu kernel, or we record
-                // something into the CForLoop. Or, we flag the user's index
-                // with one of the index flags, and check for it here.
-                else if (isIndexVariable(sym, loop)) {
-                  if (indexSymbol == NULL) {
-                      indexSymbol = sym;
-                      VarSymbol* flatIndex = generateIndexComputation(
-                        outlinedFunction, sym);
-                      
-                      copyMap.put(sym, flatIndex);
-                  }
+                else if (isTypeSymbol(sym)) {
+                  // nothing to do
+                }
+                else if (isIndexVariable(info, sym)) {
+                  // These are handled already, nothing to do
                 }
                 else {
                   if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
@@ -719,18 +767,14 @@ static void outlineGPUKernels() {
                         // do nothing
                       }
                       else if (symExpr == parent->get(1)) {
-                        addKernelArgument(outlinedFunction, sym,
-                                          kernelActuals, copyMap);
-                        copyNode = true;
+                        addKernelArgument(info, sym);
                       }
                       else {
                         INT_FATAL("Malformed PRIM_GET_MEMBER_VALUE");
                       }
                     }
                     else if (parent->isPrimitive()) {
-                      addKernelArgument(outlinedFunction, sym,
-                                        kernelActuals, copyMap);
-                      copyNode = true;
+                      addKernelArgument(info, sym);
                     }
                     else {
                       INT_FATAL("Unexpected call expression");
@@ -745,7 +789,7 @@ static void outlineGPUKernels() {
             }
           }
 
-          update_symbols(outlinedFunction->body, &copyMap);
+          update_symbols(outlinedFunction->body, &info.copyMap);
           normalize(outlinedFunction);
 
           // We'll get an end of statement for the index we add. I am not sure
@@ -758,14 +802,11 @@ static void outlineGPUKernels() {
             }
           }
 
-          VarSymbol *varBlockSize = generateBlockSizeComputation(gpuLaunchBlock,
-                                                                 loop);
-          CallExpr* gpuCall = generateGPUCall(varBlockSize, outlinedFunction,
-                                              kernelActuals);
+
+          VarSymbol *numThreads = generateNumThreads(gpuLaunchBlock, info);
+          CallExpr* gpuCall = generateGPUCall(info, numThreads);
           gpuLaunchBlock->insertAtTail(gpuCall);
           gpuLaunchBlock->flattenAndRemove();
-
-          loop->remove();
 
           // just repeat the dead code elimination steps for the new function
           cleanupLoopBlocks(outlinedFunction);
@@ -818,9 +859,14 @@ void deadCodeElimination() {
 
   // For now, we are doing GPU outlining here. In the future, it should probably
   // be its own pass.
-  if (strcmp(CHPL_LOCALE_MODEL, "gpu") == 0) {
+  if (localeUsesGPU()) {
     outlineGPUKernels();
   }
+
+  // Emit string literals. This too could be its own pass but
+  // for now it is convenient to do it here. It could happen any time
+  // after dead string literal elimination and code generation.
+  createInitStringLiterals();
 }
 
 void deadBlockElimination()
@@ -1016,7 +1062,7 @@ static void cleanupLoopBlocks(FnSymbol* fn) {
 extern int classifyPrimitive(CallExpr *call, bool inLocal);
 extern bool inLocalBlock(CallExpr *call);
 
-static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls) {
+static bool shouldOutlineLoop(BlockStmt* blk, bool allowFnCalls) {
   if (!blk->inTree() || blk->getModule()->modTag != MOD_USER)
     return false;
 
@@ -1027,13 +1073,13 @@ static bool blockLooksLikeStreamForGPU(BlockStmt* blk, bool allowFnCalls) {
   std::set<FnSymbol*> okFns;
   std::set<FnSymbol*> visitedFns;
 
-  return blockLooksLikeStreamForGPUHelp(blk, okFns, visitedFns, allowFnCalls);
+  return shouldOutlineLoopHelp(blk, okFns, visitedFns, allowFnCalls);
 }
 
-static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk,
-                                           std::set<FnSymbol*>& okFns,
-                                           std::set<FnSymbol*> visitedFns,
-                                           bool allowFnCalls) {
+static bool shouldOutlineLoopHelp(BlockStmt* blk,
+                                  std::set<FnSymbol*>& okFns,
+                                  std::set<FnSymbol*> visitedFns,
+                                  bool allowFnCalls) {
 
   if (debugPrintGPUChecks) {
     FnSymbol* fn = blk->getFunction();
@@ -1069,8 +1115,8 @@ static bool blockLooksLikeStreamForGPUHelp(BlockStmt* blk,
       FnSymbol* fn = call->resolvedFunction();
       indentGPUChecksLevel += 2;
       if (okFns.count(fn) != 0 ||
-          blockLooksLikeStreamForGPUHelp(fn->body, okFns,
-                                         visitedFns, allowFnCalls)) {
+          shouldOutlineLoopHelp(fn->body, okFns,
+                                visitedFns, allowFnCalls)) {
         indentGPUChecksLevel -= 2;
         okFns.insert(fn);
       } else {
@@ -1086,14 +1132,14 @@ static void markGPUSuitableLoops() {
   forv_Vec(BlockStmt, block, gBlockStmts) {
     if (ForLoop* forLoop = toForLoop(block)) {
       if (forLoop->isOrderIndependent()) {
-        if (blockLooksLikeStreamForGPU(forLoop, allowFnCallsFromGPU)) {
+        if (shouldOutlineLoop(forLoop, allowFnCallsFromGPU)) {
           if (debugPrintGPUChecks)
             printf("Found viable forLoop %s:%d[%d]\n",
                    forLoop->fname(), forLoop->linenum(), forLoop->id);
         }
       }
     } else if (CForLoop* forLoop = toCForLoop(block)) {
-      if (blockLooksLikeStreamForGPU(forLoop, allowFnCallsFromGPU)) {
+      if (shouldOutlineLoop(forLoop, allowFnCallsFromGPU)) {
         if (debugPrintGPUChecks)
           printf("Found viable CForLoop %s:%d[%d]\n",
                  forLoop->fname(), forLoop->linenum(), forLoop->id);

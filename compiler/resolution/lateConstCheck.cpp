@@ -690,6 +690,23 @@ void lateConstCheck(std::map<BaseAST*, BaseAST*> * reasonNotConst) {
           }
         }
 
+        //
+        // TODO (dlongnecke-cray): Tidy up this error and connect it with
+        // forall/task intents down below.
+        //
+        if (SymExpr* se = toSymExpr(actual)) {
+          if (!error) {
+            Symbol* sym = se->symbol();
+            if (sym->hasFlag(FLAG_MANAGER_HANDLE) &&
+                sym->hasFlag(FLAG_REF_TO_CONST)) {
+              if (!formal->qualType().isConst()) {
+                INT_ASSERT(sym->hasFlag(FLAG_TEMP));
+                error = true;
+              }
+            }
+          }
+        }
+
         // check for a build_tuple call containing e.g. Owned
         if (calledFn->hasFlag(FLAG_BUILD_TUPLE) &&
             !calledFn->hasFlag(FLAG_ALLOW_REF)) {

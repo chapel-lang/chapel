@@ -161,7 +161,7 @@ proc SPACK_ROOT : string {
 }
 /*
 This fetches the mason-installed spack registry only.
-Users that define SPACK_ROOT to their own spack installation will use 
+Users that define SPACK_ROOT to their own spack installation will use
 the registry of their spack installation.
 */
 proc getSpackRegistry : string {
@@ -214,36 +214,6 @@ proc runSpackCommand(command) {
   }
 
   return sub.exit_status;
-}
-
-
-proc hasOptions(args: list(string), const opts: string ...) {
-  var ret = false;
-
-  for o in opts {
-    const found = args.count(o) != 0;
-    if found {
-      ret = true;
-      break;
-    }
-  }
-
-  return ret;
-}
-
-
-proc hasOptions(args : [] string, const opts : string ...) {
-  var ret = false;
-
-  for o in opts {
-    const (found, idx) = args.find(o);
-    if found {
-      ret = true;
-      break;
-    }
-  }
-
-  return ret;
 }
 
 

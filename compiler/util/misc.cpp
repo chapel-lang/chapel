@@ -23,6 +23,7 @@
 #include "astlocs.h"
 #include "baseAST.h"
 #include "chpl.h"
+#include "chpl/queries/Context.h"
 #include "codegen.h"
 #include "driver.h"
 #include "expr.h"
@@ -99,6 +100,11 @@ bool requireWideReferences() {
 //
 bool requireOutlinedOn() {
   return requireWideReferences();
+}
+
+// Return true if the current locale model needs GPU code generation
+bool localeUsesGPU() {
+  return 0 == strcmp(CHPL_LOCALE_MODEL, "gpu");
 }
 
 const char* cleanFilename(const char* name) {
@@ -1015,7 +1021,8 @@ void clean_exit(int status) {
 
   cleanup_for_exit();
 
-  deleteStrings();
+  delete gContext;
+  gContext = nullptr;
 
   exit(status);
 }

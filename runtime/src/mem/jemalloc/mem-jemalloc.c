@@ -119,6 +119,15 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
     // now that cur_heap_offset is updated, we can unlock
     pthread_mutex_unlock(&heap.alloc_lock);
   } else if (heap.type == DYNAMIC) {
+    // jemalloc 4.5.0 man: "If chunk is not NULL, the returned pointer must be
+    // chunk on success or NULL on error". This is used to grab new chunks in a
+    // specific location so they can be merged with old ones for in-place
+    // reallocation. It's unlikely our allocation will happen to get the right
+    // address so don't waste time allocating/freeing in the common case.
+    if (chunk != NULL) {
+      return NULL;
+    }
+
     //
     // Get a dynamic extension chunk.
     //
@@ -128,6 +137,8 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
     if (cur_chunk_base == NULL) {
       return NULL;
     }
+
+    assert(((uintptr_t)cur_chunk_base & (alignment-1)) == 0);
 
     //
     // Localize the new memory via first-touch, by storing to each page.
@@ -178,11 +189,16 @@ static bool null_decommit(void *chunk, size_t size, size_t offset, size_t length
 static bool null_purge(void *chunk, size_t size, size_t offset, size_t length, unsigned arena_ind) {
   return true;
 }
-static bool null_split(void *chunk, size_t size, size_t size_a, size_t size_b, bool committed, unsigned arena_ind) {
-  return true;
+
+
+// Since we opt-out of dalloc hooks, jemalloc is free to merge/split existing
+// chunks (this is important for fragmentation avoidance.) If we support dalloc
+// we'll have to do more to update how we track backing memory regions.
+static bool chunk_split(void *chunk, size_t size, size_t size_a, size_t size_b, bool committed, unsigned arena_ind) {
+  return false;
 }
-static bool null_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_b, bool committed, unsigned arena_ind) {
-  return true;
+static bool chunk_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_b, bool committed, unsigned arena_ind) {
+  return false;
 }
 
 #endif // ifdef USE_JE_CHUNK_HOOKS
@@ -257,8 +273,8 @@ static void replaceChunkHooks(void) {
     null_commit,
     null_decommit,
     null_purge,
-    null_split,
-    null_merge
+    chunk_split,
+    chunk_merge
   };
 
   // for each arena, change the chunk hooks

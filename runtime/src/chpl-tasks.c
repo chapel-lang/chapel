@@ -24,6 +24,7 @@
 //
 #include "chplrt.h"
 #include "chpl-comm.h"
+#include "chpl-env.h"
 #include "chpl-tasks.h"
 #include "chpl-topo.h"
 #include "error.h"
@@ -207,4 +208,27 @@ size_t chpl_task_getDefaultCallStackSize(void)
   }
 
   return deflt;
+}
+
+
+//
+// Support for task reporting on ^C.
+//
+static pthread_once_t taskReportOnce = PTHREAD_ONCE_INIT;
+static chpl_bool taskReportIsSet = false;
+static chpl_bool taskReport;
+
+static void init_taskReport(void);
+
+chpl_bool chpl_task_doTaskReport(void) {
+  if (!taskReportIsSet
+      && pthread_once(&taskReportOnce, init_taskReport) != 0) {
+    chpl_internal_error("pthread_once(&taskReportOnce) failed");
+  }
+  return taskReport;
+}
+
+static void init_taskReport(void) {
+  taskReportIsSet = true;
+  taskReport = chpl_env_rt_get_bool("ENABLE_TASK_REPORTING", false);
 }

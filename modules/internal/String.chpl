@@ -548,13 +548,13 @@ module String {
 
   private proc validateEncoding(buf, len): int throws {
     extern proc chpl_enc_validate_buf(buf, len, ref numCodepoints) : c_int;
-    
+
     var numCodepoints: int;
-    
+
     if chpl_enc_validate_buf(buf, len, numCodepoints) != 0 {
       throw new DecodeError();
     }
-    
+
     return numCodepoints;
   }
 
@@ -602,11 +602,27 @@ module String {
   }
 
   pragma "no doc"
-  proc chpl_createStringWithLiteral(x: c_string, length: int, numCodepoints: int) {
+  proc chpl_createLiteralsBuffer(size: int): c_void_ptr {
+    return c_malloc(uint(8), size):c_void_ptr;
+  }
+
+  pragma "no doc"
+  proc chpl_createStringWithLiteral(buffer: c_void_ptr,
+                                    offset: int,
+                                    x: c_string,
+                                    length: int,
+                                    numCodepoints: int) {
+    // copy the string to the combined buffer
+    var buf = buffer:c_ptr(uint(8));
+    buf = buf + offset;
+    c_memcpy(buf:c_void_ptr, x:c_void_ptr, length);
+    // add null byte
+    buf[length] = 0;
+
     // NOTE: This is a "wellknown" function used by the compiler to create
     // string literals. Inlining this creates some bloat in the AST, slowing the
     // compilation.
-    return chpl_createStringWithBorrowedBufferNV(x:c_ptr(uint(8)),
+    return chpl_createStringWithBorrowedBufferNV(buf,
                                                  length=length,
                                                  size=length+1,
                                                  numCodepoints=numCodepoints);
@@ -859,7 +875,7 @@ module String {
         }
       }
     }
-    
+
     proc chpl__serialize() {
       var data : chpl__inPlaceBuffer;
       if buffLen <= CHPL_SHORT_STRING_SIZE {
@@ -868,7 +884,7 @@ module String {
       return new __serializeHelper(buffLen, buff, buffSize, locale_id, data,
                                    cachedNumCodepoints);
     }
-    
+
     proc type chpl__deserialize(data) {
       if data.locale_id != chpl_nodeID {
         if data.buffLen <= CHPL_SHORT_STRING_SIZE {
@@ -903,18 +919,24 @@ module String {
     }
 
 
+    // assumes that 'this' is already localized
     proc _cpIndexLenHelpNoAdjustment(ref start: int) {
-      const localThis: string = this.localize();
+      if boundsChecking {
+        if !_local && this.locale_id != chpl_nodeID {
+          halt("internal error -- method requires localized string");
+        }
+      }
+
       const i = start;
 
-      if localThis.isASCII() {
+      if this.isASCII() {
         start += 1;
         return (this.buff[i]:int(32), i:byteIndex, 1:int);
 
       }
       else {
-        const (decodeRet, cp, nBytes) = decodeHelp(buff=localThis.buff,
-                                                   buffLen=localThis.buffLen,
+        const (decodeRet, cp, nBytes) = decodeHelp(buff=this.buff,
+                                                   buffLen=this.buffLen,
                                                    offset=i,
                                                    allowEsc=true);
         start += nBytes;
@@ -931,9 +953,9 @@ module String {
     */
     iter _cpIndexLen(start = 0:byteIndex) {
       const localThis = this.localize();
-      var i = _findStartOfNextCodepointFromByte(this, start);
+      var i = _findStartOfNextCodepointFromByte(localThis, start);
       while i < localThis.buffLen {
-        yield _cpIndexLenHelpNoAdjustment(i);  // this increments i
+        yield localThis._cpIndexLenHelpNoAdjustment(i);  // this increments i
       }
     }
 
@@ -959,7 +981,7 @@ module String {
         i = j;
       }
     }
-    
+
     inline proc substring(i: int) {
       compilerError("substring removed: use string[index]");
     }
@@ -977,9 +999,16 @@ module String {
       compilerError("not implemented: readThis");
     }
 
-    proc doSplitWSUTF8Help(const ref localThis, maxsplit: int, ref i: int,
+    // assumes that 'this' is already local
+    proc doSplitWSUTF8Help(maxsplit: int, ref i: int,
                            const splitCount: int, const noSplits: bool,
                            const limitSplits: bool, const iEnd: byteIndex) {
+      if boundsChecking {
+        if !_local && this.locale_id != chpl_nodeID {
+          halt("internal error -- method requires localized string");
+        }
+      }
+
       // note: to improve performance, this code collapses several cases into a
       //       single yield statement, which makes it confusing to read
       var done : bool = false;
@@ -991,16 +1020,16 @@ module String {
 
       i = _findStartOfNextCodepointFromByte(this, i:byteIndex);
 
-      while i < localThis.buffLen {
-        const (decodeRet, c, nBytes) = decodeHelp(buff=localThis.buff,
-                                                  buffLen=localThis.buffLen,
+      while i < this.buffLen {
+        const (decodeRet, c, nBytes) = decodeHelp(buff=this.buff,
+                                                  buffLen=this.buffLen,
                                                   offset=i,
                                                   allowEsc=true);
         // emit whole string, unless all whitespace
         if noSplits {
           done = true;
-          if !localThis.isSpace() then {
-            chunk = localThis;
+          if !this.isSpace() then {
+            chunk = this;
             yieldChunk = true;
           }
         } else {
@@ -1010,7 +1039,7 @@ module String {
             chunkStart = i;
             inChunk = true;
             if i - 1 + nBytes > iEnd {
-              chunk = localThis[chunkStart..];
+              chunk = this[chunkStart..];
               yieldChunk = true;
               done = true;
             }
@@ -1019,18 +1048,18 @@ module String {
             if cSpace {
               // last split under limit
               if limitSplits && splitCount >= maxsplit {
-                chunk = localThis[chunkStart..];
+                chunk = this[chunkStart..];
                 yieldChunk = true;
                 done = true;
               // no limit
               } else {
-                chunk = localThis[chunkStart..(i-1):byteIndex];
+                chunk = this[chunkStart..(i-1):byteIndex];
                 yieldChunk = true;
                 inChunk = false;
               }
             // out of chars
             } else if i - 1 + nBytes > iEnd {
-              chunk = localThis[chunkStart..];
+              chunk = this[chunkStart..];
               yieldChunk = true;
               done = true;
             }
@@ -1038,7 +1067,7 @@ module String {
         }
 
         if done {
-          i = localThis.buffLen;
+          i = this.buffLen;
         }
         else {
           i += nBytes;
@@ -1059,10 +1088,11 @@ module String {
         var i = 0;
 
         while i < localThis.buffLen {
-          const chunk =  doSplitWSUTF8Help(localThis, maxsplit, i, splitCount,
-                                           noSplits=(maxsplit==0),
-                                           limitSplits=(maxsplit>0),
-                                           iEnd=(localThis.buffLen-2):byteIndex);
+          const chunk =  localThis.doSplitWSUTF8Help(
+                                  maxsplit, i, splitCount,
+                                  noSplits=(maxsplit==0),
+                                  limitSplits=(maxsplit>0),
+                                  iEnd=(localThis.buffLen-2):byteIndex);
           if !chunk.isEmpty() {
             yield chunk;
             splitCount += 1;
@@ -1183,7 +1213,7 @@ module String {
                                                  buffLen=result.buffLen,
                                                  offset=0,
                                                  allowEsc=false);
-      
+
       var upCodepoint = codepoint_toUpper(cp);
       if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
         // Use the MacOS approach everywhere:  only change the case if
@@ -1194,7 +1224,7 @@ module String {
     }
 
   } // end record string
-                                        
+
   /*
     :returns: The number of codepoints in the string.
   */
@@ -1224,7 +1254,7 @@ module String {
     }
     return n;
   }
-  
+
   /*
      Gets a version of the :mod:`string <String>` that is on the currently
      executing locale.
@@ -1268,12 +1298,12 @@ module String {
   inline proc string.c_str(): c_string {
     return getCStr(this);
   }
-  
+
   /*
     Returns a :mod:`bytes <Bytes>` from the given :mod:`string <String>`. If the
     string contains some escaped non-UTF8 bytes, `policy` argument determines
     the action.
-        
+
     :arg policy: `encodePolicy.pass` directly copies the (potentially escaped)
                   data, `encodePolicy.unescape` recovers the escaped bytes
                   back.
@@ -1287,7 +1317,7 @@ module String {
       return createBytesWithNewBuffer(localThis.buff, localThis.numBytes);
     }
     else {  // see if there is escaped data in the string
-      var (buff, size) = bufferAlloc(this.buffLen+1);
+      var (buff, size) = bufferAlloc(localThis.buffLen+1);
 
       var readIdx = 0;
       var writeIdx = 0;
@@ -1343,7 +1373,7 @@ module String {
     var localThis: string = this.localize();
 
     if localThis.isASCII() {
-      for i in this.byteIndices {
+      for i in localThis.byteIndices {
         var (newBuff, allocSize) = bufferCopyLocal(localThis.buff+i, len=1);
         yield chpl_createStringWithOwnedBufferNV(newBuff, 1, allocSize, 1);
       }
@@ -1407,7 +1437,7 @@ module String {
     const localThis = this.localize();
     var i = 0;
     while i < localThis.buffLen {
-      yield _cpIndexLenHelpNoAdjustment(i)[0];  // this increments i
+      yield localThis._cpIndexLenHelpNoAdjustment(i)[0];  // this increments i
     }
   }
 
@@ -2077,7 +2107,7 @@ module String {
                 lowercase counterpart.
 
       .. note::
-        
+
         The case change operation is not currently performed on characters whose
         cases take different number of bytes to represent in Unicode mapping.
     */
@@ -2101,7 +2131,7 @@ module String {
                 uppercase counterpart.
 
       .. note::
-        
+
         The case change operation is not currently performed on characters whose
         cases take different number of bytes to represent in Unicode mapping.
     */

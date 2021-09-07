@@ -700,6 +700,9 @@ module ChapelRange {
 
   pragma "no doc"
   inline proc range.alignedLowAsInt {
+    if isAmbiguous() {
+      halt("Can't query the aligned bounds of an ambiguously aligned range");
+    }
     if !stridable then
       return _low;
     else
@@ -726,6 +729,9 @@ module ChapelRange {
 
   pragma "no doc"
   inline proc range.alignedHighAsInt {
+    if isAmbiguous() {
+      halt("Can't query the aligned bounds of an ambiguously aligned range");
+    }
     if ! stridable then
       return _high;
     else
@@ -941,7 +947,7 @@ module ChapelRange {
 
     // As a special case, two ambiguous ranges compare equal
     // if their representations are identical.
-    if r1.isAmbiguous() then return ident(r1, r2);
+    if r1.isAmbiguous() then return chpl_ident(r1, r2);
 
     if isBoundedRange(r1) {
 
@@ -971,11 +977,21 @@ module ChapelRange {
 
   operator !=(r1: range(?), r2: range(?))  return !(r1 == r2);
 
-  /* Returns true if the two ranges are the same in every respect: i.e. the
+  /* 
+    .. warning::
+      This procedure is deprecated - please let us know if you were
+      relying on it.
+
+    Returns true if the two ranges are the same in every respect: i.e. the
      two ranges have the same ``idxType``, ``boundedType``, ``stridable``,
      ``low``, ``high``, ``stride`` and ``alignment`` values.
    */
-  proc ident(r1: range(?), r2: range(?))
+  deprecated "ident() on ranges is deprecated; please let us know if this is problematic for you"
+  proc ident(r1: range(?), r2: r1.type) {
+    return chpl_ident(r1, r2);
+  }
+  
+  proc chpl_ident(r1: range(?), r2: range(?))
     where r1.idxType == r2.idxType &&
     r1.boundedType == r2.boundedType &&
     r1.stridable == r2.stridable
@@ -994,10 +1010,16 @@ module ChapelRange {
     return true;
   }
 
+  proc chpl_ident(r1: range(?), r2: range(?)) param {
+    return false;
+  }
+
   // If the parameters don't match, then the two ranges cannot be identical.
   pragma "no doc"
-  proc ident(r1: range(?), r2: range(?)) param
+  deprecated "ident() on ranges is deprecated; please let us know if this is problematic for you"
+  proc ident(r1: range(?), r2: range(?)) param {
     return false;
+  }
 
   //////////////////////////////////////////////////////////////////////////////////
   // Range Casts

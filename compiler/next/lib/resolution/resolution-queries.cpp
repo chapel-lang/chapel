@@ -67,16 +67,39 @@ const QualifiedType& typeForBuiltin(Context* context,
 
 static QualifiedType typeForLiteral(Context* context, const Literal* literal) {
   const Type* typePtr = nullptr;
-  int64_t param = 0; // TODO: replace with Immediate
+  const Param* paramPtr = nullptr;
 
-  if (auto i = literal->toIntLiteral()) {
-    typePtr = IntType::get(context, 0);
-    param = i->value();
-  } else {
-    // TODO: handle the other literals as params
+  switch (literal->tag()) {
+    case asttags::BoolLiteral:
+      typePtr = BoolType::get(context, 0);
+      break;
+    case asttags::ImagLiteral:
+      typePtr = ImagType::get(context, 0);
+      break;
+    case asttags::IntLiteral:
+      typePtr = IntType::get(context, 0);
+      break;
+    case asttags::RealLiteral:
+      typePtr = RealType::get(context, 0);
+      break;
+    case asttags::UintLiteral:
+      typePtr = UintType::get(context, 0);
+      break;
+    case asttags::BytesLiteral:
+      typePtr = BytesType::get(context);
+      break;
+    case asttags::CStringLiteral:
+      typePtr = CStringType::get(context);
+      break;
+    case asttags::StringLiteral:
+      typePtr = StringType::get(context);
+      break;
+    default:
+      assert(false && "case not handled");
   }
+  paramPtr = literal->param();
 
-  return QualifiedType(QualifiedType::PARAM, typePtr, param);
+  return QualifiedType(QualifiedType::PARAM, typePtr, paramPtr);
 }
 
 static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
@@ -355,7 +378,7 @@ struct Resolver {
       const Type* typePtr = nullptr;
 
       // Figure out the param value, if any
-      int64_t param = -1; // TODO: replace with Immediates
+      const Param* paramPtr = nullptr;
 
       if (decl->isFunction()) {
         // TODO: function types
@@ -404,7 +427,7 @@ struct Resolver {
           }
 
           if (initType.kind() == QualifiedType::PARAM) {
-            param = initType.param();
+            paramPtr = initType.param();
           }
           if (typePtr != nullptr) {
             // check that the initExpr type is compatible with declared type
@@ -431,7 +454,7 @@ struct Resolver {
             if (search != substitutions->end()) {
               const QualifiedType& t = search->second;
               typePtr = t.type();
-              param = t.param();
+              paramPtr = t.param();
             }
           }
         }
@@ -458,7 +481,7 @@ struct Resolver {
       }
 
       ResolvedExpression& result = byPostorder.byAst(decl);
-      result.type = QualifiedType(qtKind, typePtr, param);
+      result.type = QualifiedType(qtKind, typePtr, paramPtr);
     }
 
     exitScope(decl);
@@ -498,29 +521,11 @@ struct Resolver {
 
     CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
 
-    const PoiScope* callPoiScope = c.poiInfo.poiScope;
-
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
     r.mostSpecific = c.mostSpecific;
-    r.poiScope = callPoiScope;
-
-    // compute the return types
-    QualifiedType retType;
-    bool retTypeSet = false;
-    for (const TypedFnSignature* candidate : r.mostSpecific) {
-      if (candidate != nullptr) {
-        QualifiedType t = returnType(context, candidate, callPoiScope);
-        if (retTypeSet && retType.type() != t.type()) {
-          context->error(candidate,
-                         nullptr,
-                         "return intent overload type does not match");
-        }
-        retType = t;
-        retTypeSet = true;
-      }
-    }
-    r.type = retType;
+    r.poiScope = c.poiInfo.poiScope;
+    r.type = c.exprType;
 
     // gather the poi scopes used when resolving the call
     poiInfo.accumulate(c.poiInfo);
@@ -771,7 +776,7 @@ typedSignatureInitial(Context* context,
 
 const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
-                                             CallInfo call,
+                                             const CallInfo& call,
                                              const PoiScope* poiScope) {
 
   // Performance: Should this query use a similar approach to
@@ -1037,6 +1042,8 @@ struct ReturnTypeInferer {
       return returnedTypes[0];
     } else {
       assert(false && "TODO");
+      QualifiedType ret;
+      return ret;
     }
   }
 
@@ -1257,7 +1264,7 @@ filterCandidatesInitial(Context* context,
 void
 filterCandidatesInstantiating(Context* context,
                               std::vector<const TypedFnSignature*> lst,
-                              CallInfo call,
+                              const CallInfo& call,
                               const Scope* inScope,
                               const PoiScope* inPoiScope,
                               std::vector<const TypedFnSignature*>& result) {
@@ -1369,11 +1376,12 @@ void accumulatePoisUsedByResolvingBody(Context* context,
   poiInfo.accumulate(r->poiInfo);
 }
 
-CallResolutionResult resolveCall(Context* context,
-                                 const Call* call,
-                                 CallInfo ci,
-                                 const Scope* inScope,
-                                 const PoiScope* inPoiScope) {
+static
+CallResolutionResult resolveFnCall(Context* context,
+                                   const Call* call,
+                                   const CallInfo& ci,
+                                   const Scope* inScope,
+                                   const PoiScope* inPoiScope) {
 
   // search for candidates at each POI until we have found a candidate
   std::vector<const TypedFnSignature*> candidates;
@@ -1471,7 +1479,114 @@ CallResolutionResult resolveCall(Context* context,
     }
   }
 
-  return CallResolutionResult(mostSpecific, std::move(poiInfo));
+  // compute the return types
+  QualifiedType retType;
+  bool retTypeSet = false;
+  for (const TypedFnSignature* candidate : mostSpecific) {
+    if (candidate != nullptr) {
+      QualifiedType t = returnType(context, candidate, instantiationPoiScope);
+      if (retTypeSet && retType.type() != t.type()) {
+        context->error(candidate,
+                       nullptr,
+                       "return intent overload type does not match");
+      }
+      retType = t;
+      retTypeSet = true;
+    }
+  }
+
+  return CallResolutionResult(mostSpecific, retType, std::move(poiInfo));
+}
+
+static
+UniqueString getParamOp(Context* context, const PrimCall* call) {
+  UniqueString prim = call->prim();
+  // TODO: use a map
+  // TODO: have this return an integer identifying a Primitive
+#define USTR(s) UniqueString::build(context, s)
+  if (prim == USTR("") ||
+      prim == USTR("*") ||
+      prim == USTR("/") ||
+      prim == USTR("%") ||
+      prim == USTR("+") ||
+      prim == USTR("-") ||
+      prim == USTR("<<") ||
+      prim == USTR(">>") ||
+      prim == USTR("<") ||
+      prim == USTR("<=") ||
+      prim == USTR(">") ||
+      prim == USTR(">=") ||
+      prim == USTR("==") ||
+      prim == USTR("!=") ||
+      prim == USTR("&") ||
+      prim == USTR("^") ||
+      prim == USTR("|") ||
+      prim == USTR("&&") ||
+      prim == USTR("||") ||
+      prim == USTR("u+") ||
+      prim == USTR("u-") ||
+      prim == USTR("~") ||
+      prim == USTR("!")) {
+    return prim;
+  }
+#undef USTR
+
+  UniqueString empty;
+  return empty;
+}
+
+static
+CallResolutionResult resolvePrimCall(Context* context,
+                                     const PrimCall* call,
+                                     const CallInfo& ci,
+                                     const Scope* inScope,
+                                     const PoiScope* inPoiScope) {
+
+  bool allParam = true;
+  for (const CallInfoActual& actual : ci.actuals) {
+    if (!actual.type.hasParam()) {
+      allParam = false;
+      break;
+    }
+  }
+
+  MostSpecificCandidates candidates;
+  QualifiedType type;
+  PoiInfo poi;
+
+  // start with a non-param result type based on the 1st argument
+  // TODO: do something more intelligent with a table of params
+  if (ci.actuals.size() > 0) {
+    type = QualifiedType(QualifiedType::VALUE, ci.actuals[0].type.type());
+  }
+
+  // handle param folding
+  auto prim = getParamOp(context, call);
+  if (!prim.isEmpty()) {
+    if (allParam && ci.actuals.size() == 2) {
+      type = Param::fold(context, prim, ci.actuals[0].type, ci.actuals[1].type);
+    }
+  }
+
+  return CallResolutionResult(candidates, type, poi);
+}
+
+CallResolutionResult resolveCall(Context* context,
+                                 const Call* call,
+                                 const CallInfo& ci,
+                                 const Scope* inScope,
+                                 const PoiScope* inPoiScope) {
+  if (call->isFnCall() || call->isOpCall()) {
+    return resolveFnCall(context, call, ci, inScope, inPoiScope);
+  } else if (auto prim = call->toPrimCall()) {
+    return resolvePrimCall(context, prim, ci, inScope, inPoiScope);
+  }
+
+  assert(false && "should not be reached");
+  MostSpecificCandidates emptyCandidates;
+  QualifiedType emptyType;
+  PoiInfo emptyPoi;
+  return CallResolutionResult(emptyCandidates, emptyType, emptyPoi);
 }
 
 

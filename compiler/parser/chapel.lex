@@ -171,6 +171,7 @@ let              return processToken(yyscanner, TLET);
 lifetime         return processToken(yyscanner, TLIFETIME);
 local            return processToken(yyscanner, TLOCAL);
 locale           return processToken(yyscanner, TLOCALE);
+manage           return processToken(yyscanner, TMANAGE);
 module           return processToken(yyscanner, TMODULE);
 new              return processToken(yyscanner, TNEW);
 nil              return processToken(yyscanner, TNIL);
@@ -408,7 +409,7 @@ static int processToken(yyscan_t scanner, int t) {
       captureString.push_back(' ');
     }
 
-    if (t != TLCBR) {
+    if (t != TLCBR && t != TRETURN) {
       captureString.append(yyget_text(scanner));
     }
 

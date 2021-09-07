@@ -1,0 +1,2 @@
+# skip cstdlib allocator since fragmentation handling will be system specific
+CHPL_MEM == cstdlib

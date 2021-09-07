@@ -460,8 +460,14 @@ module ChapelBase {
     }
   }
 
-  operator **(param a: int(?w), param b: int(w)) param return __primitive("**", a, b);
-  operator **(param a: uint(?w), param b: uint(w)) param return __primitive("**", a, b);
+  operator **(param a: int(?w), param b: int(w)) param {
+    if a == 0 && b < 0 then
+      compilerError("0 cannot be raised to a negative power");
+    return __primitive("**", a, b);
+  }
+  operator **(param a: uint(?w), param b: uint(w)) param {
+    return __primitive("**", a, b);
+  }
 
   inline proc _expHelp(a, param b: integral) {
     if b == 0 {
@@ -1006,6 +1012,20 @@ module ChapelBase {
     return ret;
   }
 
+  inline proc _ddata_supports_reallocate(oldDdata,
+                                         type eltType,
+                                         oldSize: integral,
+                                         newSize: integral) {
+    pragma "fn synchronization free"
+    pragma "insert line file info"
+    extern proc chpl_mem_array_supports_realloc(ptr: c_void_ptr,
+                                                oldNmemb: size_t, newNmemb:
+                                                size_t, eltSize: size_t): bool;
+      return chpl_mem_array_supports_realloc(oldDdata: c_void_ptr,
+                                             oldSize.safeCast(size_t),
+                                             newSize.safeCast(size_t),
+                                             _ddata_sizeof_element(oldDdata));
+    }
 
   inline proc _ddata_reallocate(oldDdata,
                                 type eltType,
@@ -1138,7 +1158,6 @@ module ChapelBase {
   pragma "no default functions"
   class _EndCountBase {
     var errors: chpl_TaskErrors;
-    var taskList: c_void_ptr;
   }
 
   pragma "end count"
@@ -1270,9 +1289,6 @@ module ChapelBase {
     // re-added after the waitFor().
     here.runningTaskCntSub(1);
 
-    // See if we can help with any of the started tasks
-    chpl_taskListExecute(e.taskList);
-
     // Wait for all tasks to finish
     e.i.waitFor(0, memoryOrder.acquire);
 
@@ -1295,9 +1311,6 @@ module ChapelBase {
   pragma "task join impl fn"
   pragma "unchecked throws"
   proc _waitEndCount(e: _EndCount, param countRunningTasks=true, numTasks) throws {
-    // See if we can help with any of the started tasks
-    chpl_taskListExecute(e.taskList);
-
     // Wait for all tasks to finish
     e.i.waitFor(0, memoryOrder.acquire);
 

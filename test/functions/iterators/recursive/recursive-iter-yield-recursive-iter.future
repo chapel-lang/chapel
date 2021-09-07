@@ -1,0 +1,5 @@
+bug: segfault yielding promotion of "call" to recursive iterator
+#18236
+
+I don't know that the .good file is a good error message, but it matches
+the non-recursive case.

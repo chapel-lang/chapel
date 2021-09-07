@@ -4,11 +4,11 @@ use MasonUtils;
 use MasonNew;
 
 proc main(){
-  const newArgs = ['mason','new','testSrc'];
+  const newArgs = ['new','testSrc'];
   masonNew(newArgs);
-  
-  const initArgs = ['mason','init','testSrc'];
+
+  const initArgs = ['init','testSrc'];
   masonInit(initArgs);
 
-  rmTree('testSrc');  
+  rmTree('testSrc');
 }

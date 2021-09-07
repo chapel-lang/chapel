@@ -20,6 +20,12 @@ Arguments Received from CL:
 17 -t
 18 two
 19 -f
+20 ++
+21 --extra
+22 stuff
+23 that
+24 is
+25 passed
 Values received from argparse:
 w
 a
@@ -38,3 +44,8 @@ one
 two
 subBoolFlag: true
 subcommand positional value: bValue
+--extra
+stuff
+that
+is
+passed

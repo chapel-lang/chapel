@@ -21,6 +21,14 @@
 
 namespace chpl {
 
+bool stringContainsZeroBytes(const char* s, size_t len) {
+  for (size_t i = 0; i < len; i++) {
+    if (s[i] == '\0')
+      return true;
+  }
+  return false;
+}
+
 // Returns the hexadecimal character for 0-16.
 static char toHex(char c) {
   return (0 <= c && c <= 9) ? '0' + c : 'A' + (c - 10);

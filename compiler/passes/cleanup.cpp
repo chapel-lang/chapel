@@ -223,21 +223,8 @@ static void cleanup(ModuleSymbol* module) {
         if (fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION) == true) {
           normalizeNestedFunctionExpressions(fn);
         }
-        if (fn->name == astr_cast) {
-          USR_WARN(fn, "_cast is deprecated syntax for declaring a cast");
-          USR_PRINT("please change to e.g. 'operator : (from: FromType, type t: ToType)'");
-          // change the name to : and swap the first two arguments
-          fn->name = astr(":");
-          DefExpr* type = fn->getFormal(1)->defPoint;
-          DefExpr* val = fn->getFormal(2)->defPoint;
-          Expr* anchor = new CallExpr(PRIM_NOOP);
-          type->insertBefore(anchor);
-          type->remove();
-          val->remove();
-          anchor->insertBefore(val);
-          anchor->insertBefore(type);
-          anchor->remove();
-        } else if (fn->name == astrScolon) {
+
+        if (fn->name == astrScolon) {
           int extraMethodArgs = 2*fn->isMethod(); // 2 extra args: this & _mt
           int numFormals = fn->numFormals() - extraMethodArgs;
           if (numFormals != 2) {
@@ -291,27 +278,6 @@ static void cleanup(ModuleSymbol* module) {
       catchStmt->cleanup();
     } else if (ArgSymbol* arg = toArgSymbol(ast)) {
       addIntentRefMaybeConst(arg);
-    }
-  }
-
-  if (module == stringLiteralModule && !fMinimalModules) {
-    // Fix calls to chpl_createStringWithLiteral to use resolved expression.
-    // For compiler performance reasons, we'd like to have new_StringSymbol
-    // emit calls to a resolved function; however new_StringSymbol might
-    // run before that function is parsed. So fix up any literals created
-    // during parsing here.
-    INT_ASSERT(gChplCreateStringWithLiteral != NULL);
-    const char* name = gChplCreateStringWithLiteral->name;
-
-    for_vector(BaseAST, ast, asts) {
-      if (CallExpr* call = toCallExpr(ast)) {
-        if (UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr)) {
-          if (urse->unresolved == name) {
-            SET_LINENO(urse);
-            urse->replace(new SymExpr(gChplCreateStringWithLiteral));
-          }
-        }
-      }
     }
   }
 }

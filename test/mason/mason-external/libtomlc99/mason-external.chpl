@@ -16,11 +16,11 @@ proc main() {
   setupSpack();
 
   // Update compilers.yaml for this system
-  var compilerFindArgs = ["mason", "external", "compiler", "--find"];
+  var compilerFindArgs = ["external", "compiler", "--find"];
   masonExternal(compilerFindArgs);
 
   // Download and install libtomlc99
-  var args = ["mason", "external", "install", "libtomlc99@0.2019.06.24"];
+  var args = ["external", "install", "libtomlc99@0.2019.06.24"];
   masonExternal(args);
 
   // build library that uses libtomlc99

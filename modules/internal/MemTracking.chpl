@@ -88,7 +88,7 @@ module MemTracking
     ret_memThreshold = cMemThreshold;
 
     if (here.id != 0) {
-      if memLeaksByDesc.size != 0 {
+      if !memLeaksByDesc.isEmpty() {
         var local_memLeaksByDesc = memLeaksByDesc;
         // Intentionally leak the string to persist the underlying buffer
         local_memLeaksByDesc.isOwned = false;
@@ -97,7 +97,7 @@ module MemTracking
         ret_memLeaksByDesc = nil;
       }
 
-      if memLog.size != 0 {
+      if !memLog.isEmpty() {
         var local_memLog = memLog;
         // Intentionally leak the string to persist the underlying buffer
         local_memLog.isOwned = false;
@@ -106,7 +106,7 @@ module MemTracking
         ret_memLog = nil;
       }
 
-      if memLeaksLog.size != 0 {
+      if !memLeaksLog.isEmpty() {
         var local_memLeaksLog = memLeaksLog;
         // Intentionally leak the string to persist the underlying buffer
         local_memLeaksLog.isOwned = false;

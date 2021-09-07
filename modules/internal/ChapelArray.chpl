@@ -2997,6 +2997,25 @@ module ChapelArray {
       return _newArray(a);
     }
 
+    /*
+       Return a tuple of ranges describing the bounds of a rectangular domain.
+       For a sparse domain, return the bounds of the parent domain.
+     */
+    proc dims() return this.domain.dims();
+
+    /*
+       Return a range representing the boundary of this
+       domain in a particular dimension.
+     */
+    proc dim(d : int) {
+      return this.domain.dim(d);
+    }
+
+    pragma "no doc"
+    proc dim(param d : int) {
+      return this.domain.dim(d); 
+    }
+
     pragma "no doc"
     proc checkRankChange(args) {
       for param i in 0..args.size-1 do
@@ -3256,11 +3275,23 @@ module ChapelArray {
 
     pragma "no doc"
     proc writeThis(f) throws {
+      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f.binary();
+      if rank > 1 && ischpl {
+        throw new owned IllegalArgumentError("Cannot perform Chapel write of multidimensional array.");
+      }
+
       _value.dsiSerialWrite(f);
     }
 
     pragma "no doc"
     proc readThis(f) throws {
+      var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
+      var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !f.binary();
+      if rank > 1 && ischpl {
+        throw new owned IllegalArgumentError("Cannot perform Chapel read of multidimensional array.");
+      }
+
       _value.dsiSerialRead(f);
     }
 

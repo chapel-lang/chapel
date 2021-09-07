@@ -2266,7 +2266,7 @@ static void applyGetterTransform(CallExpr* call) {
 
       if (VarSymbol* var = toVarSymbol(symExpr->symbol())) {
         if (var->immediate->const_kind == CONST_KIND_STRING) {
-          const char* str = var->immediate->v_string;
+          const char* str = var->immediate->v_string.c_str();
 
           call->baseExpr->replace(new UnresolvedSymExpr(str));
 

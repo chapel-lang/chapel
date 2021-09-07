@@ -1417,19 +1417,18 @@ module DefaultRectangular {
         // the low bounds and strides of the old and new domains
         // match; and when the element type is POD or the array is
         // growing (i.e.,(doesn't require deinit to be called).
+        const oldSize = dom.dsiNumIndices;
+        const newSize = reallocD.sizeAs(oldSize.type);
         if (!disableArrRealloc && rank == 1 &&
             reallocD.low == dom.dsiLow && reallocD.stride == dom.dsiStride &&
-            dom.dsiNumIndices > 0 && reallocD.size > 0) {
+            dom.dsiNumIndices > 0 && reallocD.size > 0 &&
+            _ddata_supports_reallocate(data, eltType, oldSize, newSize)) {
 
           if reportInPlaceRealloc then
             writeln("reallocating in-place");
 
           sizesPerDim(0) = reallocD.dsiDim(0).sizeAs(int);
-          const oldSize = dom.dsiNumIndices;
-          data = _ddata_reallocate(data,
-                                   eltType,
-                                   oldSize,
-                                   newSize=reallocD.sizeAs(oldSize.type));
+          data = _ddata_reallocate(data, eltType, oldSize, newSize);
           initShiftedData();
         } else {
           var copy = new unmanaged DefaultRectangularArr(eltType=eltType,
@@ -1670,6 +1669,7 @@ module DefaultRectangular {
     }
 
     proc recursiveArrayWriter(in idx: rank*idxType, dim=0, in last=false) throws {
+
       var binary = f.binary();
       var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
       var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
@@ -1725,7 +1725,6 @@ module DefaultRectangular {
         }
         else f <~> new ioLiteral("]");
       }
-
     }
 
     if false && !f.writing && !f.binary() &&
@@ -1823,6 +1822,7 @@ module DefaultRectangular {
     } else if arr.isDefaultRectangular() && !chpl__isArrayView(arr) &&
               _isSimpleIoType(arr.eltType) && f.binary() &&
               isNative && arr.isDataContiguous(dom) {
+
       // If we can, we would like to read/write the array as a single write op
       // since _ddata is just a pointer to the memory location we just pass
       // that along with the size of the array. This is only possible when the

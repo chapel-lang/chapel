@@ -1,0 +1,2 @@
+importPrivateSubmodule.chpl:11: In function 'main':
+importPrivateSubmodule.chpl:15: error: Symbol 'do_my_impl' undeclared in module 'Details'

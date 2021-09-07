@@ -1,0 +1,5 @@
+hi hi
+Caught: IllegalArgumentError: Cannot perform Chapel read of multidimensional array.
+uncaught IllegalArgumentError: Cannot perform Chapel read of multidimensional array.
+  readDifferentRankArrays.chpl:17: thrown here
+  readDifferentRankArrays.chpl:17: uncaught here

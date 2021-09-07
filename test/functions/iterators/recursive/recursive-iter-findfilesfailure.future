@@ -1,0 +1,4 @@
+bug: internal error when loop over findfiles calls a throwing function
+#18218
+
+findfiles() isn't recursive, but does call walkdirs() which is.
