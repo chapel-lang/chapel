@@ -13,7 +13,7 @@ while sub.stdout.readline(line) {
 }
 
 assert(sub.running == false);
-assert(sub.exit_status == 0);
+assert(sub.exitCode == 0);
 
 sub.close();
 

@@ -72,7 +72,7 @@ proc printSystemInfo() {
     var sub = spawn(["uname", cmd], stdout=PIPE);
     sub.wait();
 
-    if sub.exit_status == 0 {
+    if sub.exitCode == 0 {
       var ret, buf : string;
       while sub.stdout.readline(buf) do ret += buf;
       return ret.strip();
