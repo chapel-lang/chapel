@@ -36,7 +36,6 @@ module LocaleModel {
   }
 
   public use LocaleModelHelpGPU;
-  require "-lcudart";
 
   use IO, SysCTypes, CPtr;
 

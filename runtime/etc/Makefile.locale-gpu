@@ -16,4 +16,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GEN_LFLAGS += -L$(CHPL_MAKE_CUDA_PATH)/lib64 -lcuda
+GEN_LFLAGS += -L$(CHPL_MAKE_CUDA_PATH)/lib64 -lcuda -lcudart
