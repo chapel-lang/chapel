@@ -118,10 +118,10 @@ void checkAdjustedDataLayout();
 extern fileinfo gAllExternCode;
 extern std::string ggpuFatbinPath;
 
-void print_clang(clang::Type* d);
-void print_clang(clang::Decl* d);
-void print_clang(clang::TypeDecl* td);
-void print_clang(clang::ValueDecl* vd);
+void print_clang(const clang::Type* d);
+void print_clang(const clang::Decl* d);
+void print_clang(const clang::TypeDecl* td);
+void print_clang(const clang::ValueDecl* vd);
 
 const char* getGeneratedAnonTypeName(const clang::RecordType* structType);
 

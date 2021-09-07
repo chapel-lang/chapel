@@ -2596,8 +2596,12 @@ llvm::Type* codegenCType(const TypeDecl* td)
     qType = ed->getCanonicalDecl()->getIntegerType();
   } else if( const RecordDecl* rd = dyn_cast<RecordDecl>(td) ) {
     RecordDecl *def = rd->getDefinition();
-    INT_ASSERT(def);
-    qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    if (def == nullptr) {
+      // it's an opaque type - definition of fields not available
+      qType=rd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    } else {
+      qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    }
   } else {
     INT_FATAL("Unknown clang type declaration");
   }
@@ -4411,7 +4415,7 @@ static void moveGeneratedLibraryFile(const char* tmpbinname) {
   moveResultFromTmp(outputPath.c_str(), tmpbinname);
 }
 
-void print_clang(clang::Type* t) {
+void print_clang(const clang::Type* t) {
   if (t == NULL)
     fprintf(stderr, "NULL");
   else
@@ -4420,7 +4424,7 @@ void print_clang(clang::Type* t) {
   fprintf(stderr, "\n");
 }
 
-void print_clang(clang::Decl* d) {
+void print_clang(const clang::Decl* d) {
   if (d == NULL)
     fprintf(stderr, "NULL");
   else
@@ -4429,7 +4433,7 @@ void print_clang(clang::Decl* d) {
   fprintf(stderr, "\n");
 }
 
-void print_clang(clang::TypeDecl* d) {
+void print_clang(const clang::TypeDecl* d) {
   if (d == NULL)
     fprintf(stderr, "NULL");
   else
@@ -4437,7 +4441,7 @@ void print_clang(clang::TypeDecl* d) {
 
   fprintf(stderr, "\n");
 }
-void print_clang(clang::ValueDecl* d) {
+void print_clang(const clang::ValueDecl* d) {
   if (d == NULL)
     fprintf(stderr, "NULL");
   else
