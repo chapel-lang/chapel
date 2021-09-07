@@ -1504,14 +1504,23 @@ static void setPrintCppLineno() {
   if (developer && !userSetCppLineno) printCppLineno = false;
 }
 
-static void setSaveCForGpuCodegen() {
+static void setGPUFlags() {
   bool isGpuCodegen = localeUsesGPU();
   bool isSaveCDirEmpty = strlen(saveCDir) == 0;
 
-  if(isGpuCodegen && isSaveCDirEmpty) {
-    int len = snprintf(saveCDir, FILENAME_MAX+1, "%s_gpu_files", executableFilename);
-    if(len < 0 || len >= FILENAME_MAX+1) {
-      USR_FATAL("Unable to produce name of savec directory for GPU code generation.");
+  if(isGpuCodegen) {
+    if (isSaveCDirEmpty) {
+      int len = snprintf(saveCDir, FILENAME_MAX+1, "%s_gpu_files", executableFilename);
+      if(len < 0 || len >= FILENAME_MAX+1) {
+        USR_FATAL("Unable to produce name of savec directory for GPU code generation.");
+      }
+    }
+
+    if (!fNoChecks) {
+      fNoChecks = true;
+      USR_WARN("The prototype support for GPUs imply --no-checks."
+               " This may impact debuggability. To suppress this warning,"
+               " compile with --no-checks explicitly");
     }
   }
 }
@@ -1643,7 +1652,7 @@ static void postprocess_args() {
 
   setPrintCppLineno();
 
-  setSaveCForGpuCodegen();
+  setGPUFlags();
 }
 
 
