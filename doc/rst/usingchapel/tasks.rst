@@ -374,7 +374,7 @@ In order to use this method, you have to specify the locale you wish to
 query, as in here.runningTasks(), where 'here' is the current locale.
 
 The following methods are also available, but these are all deprecated
-and may be expected to be removed in the next release unless a need for
+and we expect to remove them in the next release unless a need for
 them is identified.
 
   queuedTasks()
