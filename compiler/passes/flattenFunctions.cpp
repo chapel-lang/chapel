@@ -75,8 +75,13 @@ static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions) {
 }
 
 
+// returns true if:
+//  * fn is a function implementing a task/on statement
+//  * sym is a module-scope variable
+//  * the type of sym is marked with "always rvf"
 static bool
-isModuleScopeAlwaysRvf(Symbol* sym) {
+shouldAddArgForAlwaysRvf(Symbol* sym, FnSymbol* fn) {
+
   // If the symbol is at module scope and the type should always be
   // RVF'd and the symbol doesn't have the "locale private" flag
   // applied to it then we should RVF it, so add it to the
@@ -93,7 +98,8 @@ isModuleScopeAlwaysRvf(Symbol* sym) {
   // already have special handling to localize them, and RVFing them
   // causes the `Locales` to be RVF'd which caused extra
   // communications to take place (and generally seems confusing).
-  if (isModuleSymbol(sym->defPoint->parentSymbol) &&
+  if (isTaskFun(fn) &&
+      isModuleSymbol(sym->defPoint->parentSymbol) &&
       sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF) &&
       !sym->hasFlag(FLAG_LOCALE_PRIVATE))
     return true;
@@ -110,7 +116,7 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = nullptr) {
   if (!parent) {
     parent = fn->defPoint->parentSymbol;
 
-    if (isTaskFun(fn) && isModuleScopeAlwaysRvf(sym))
+    if (shouldAddArgForAlwaysRvf(sym, fn))
       return true;
   }
 
@@ -139,7 +145,7 @@ shouldPropagateOuterArg(Symbol* sym, FnSymbol* parentFn, FnSymbol* calledFn) {
   if (calledFn && symDefParent == calledFn)
     return false;
 
-  if (isTaskFun(parentFn) && isModuleScopeAlwaysRvf(sym))
+  if (shouldAddArgForAlwaysRvf(sym, parentFn))
     // do propagate RVF'd module-scope variable to task functions
     return true;
 
