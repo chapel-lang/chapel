@@ -1,0 +1,2 @@
+locale.blockedTasks.chpl:2: warning: locale.blockedTasks() is deprecated; please let us know if this is a problem for you
+true
