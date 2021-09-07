@@ -669,8 +669,9 @@ module MasonArgParse {
       return _addHandler(handler);
     }
 
-    proc addFlag(name:string, opts:[?optsD],
-                 required=false, defaultValue:?t=none, flagInversion=true,
+    proc addFlag(name:string,
+                 opts:[?optsD]=_processNameToOpts(name),
+                 required=false, defaultValue:?t=none, flagInversion=false,
                  numArgs=0) throws {
       return addFlag(name=name,
                      opts=opts,
@@ -680,8 +681,9 @@ module MasonArgParse {
                      numArgs=numArgs..numArgs);
     }
 
-    proc addFlag(name:string, opts:[?optsD],
-                 required=false, defaultValue:?t=none, flagInversion=true,
+    proc addFlag(name:string,
+                 opts:[?optsD]=_processNameToOpts(name),
+                 required=false, defaultValue:?t=none, flagInversion=false,
                  numArgs:range) throws {
 
       if (flagInversion && numArgs.high > 0) {
@@ -699,25 +701,26 @@ module MasonArgParse {
       if numArgs.high > 1 {
         throw new ArgumentError("Maximum number of values for a flag is 1");
       }
-
-      _checkAndSaveOpts(opts, name);
+      var argName = name;
+      if name.startsWith("-") then argName = name.strip("-", trailing=false);
+      _checkAndSaveOpts(opts, argName);
 
       var noFlagOpts:[optsD]string;
 
       // if user chooses to automatically create 'no' version of flag
       if flagInversion {
         for i in optsD {
-          var flagStr = opts[i].strip('-',leading=true, trailing=false);
+          var flagStr = opts[i].strip('-', trailing=false);
           if flagStr.size == 1 {
             noFlagOpts[i] = "-no-"+flagStr;
           } else {
             noFlagOpts[i] = "--no-"+flagStr;
           }
-          _options.add(noFlagOpts[i], name);
+          _options.add(noFlagOpts[i], argName);
         }
       }
 
-      var handler = new owned Flag(name=name,
+      var handler = new owned Flag(name=argName,
                                required=required,
                                defaultValue=defaultValue,
                                yesFlags=opts,
@@ -741,8 +744,10 @@ module MasonArgParse {
     proc addArgument(name:string,
                      numArgs:range(?),
                      defaultValue:?t=none) throws {
+      var argName = name;
       var nArgs = _prepareRange(numArgs);
-      var handler = new owned Positional(name, defaultValue, nArgs);
+      if name.startsWith("-") then argName = name.strip("-", trailing=false);
+      var handler = new owned Positional(argName, defaultValue, nArgs);
 
       for arg in _positionals {
         if arg._numArgs.high >= 1 && arg._numArgs.low != arg._numArgs.high {
@@ -759,7 +764,7 @@ module MasonArgParse {
 
     // define a new string option with fixed number of values expected
     proc addOption(name:string,
-                   opts:[?optsD]string,
+                   opts:[]string=_processNameToOpts(name),
                    numArgs=1,
                    required=false,
                    defaultValue:?t=none) throws {
@@ -772,12 +777,14 @@ module MasonArgParse {
 
     // define a new string option with bounded range of values expected
     proc addOption(name:string,
-                   opts:[?optsD]string,
+                   opts:[]string=_processNameToOpts(name),
                    numArgs:range(?),
                    required=false,
                    defaultValue:?t=none) throws {
       var nArgs = _prepareRange(numArgs);
-      _checkAndSaveOpts(opts, name);
+      var argName = name;
+      if name.startsWith("-") then argName = name.strip("-", trailing=false);
+      _checkAndSaveOpts(opts, argName);
       var myDefault = new list(string);
 
       if isStringType(t) {
@@ -790,7 +797,7 @@ module MasonArgParse {
                                 + "as default values at this time");
       }
 
-      var handler = new owned Option(name=name,
+      var handler = new owned Option(name=argName,
                                     numOpts=opts.size,
                                     opts=opts,
                                     numArgs=nArgs,
@@ -804,7 +811,7 @@ module MasonArgParse {
   // helper to prepare numArgs ranges for use
   proc _prepareRange(rIn: range(?)) : range throws {
       var nArgs:range;
-      if !rIn.hasHighBound() {
+      if rIn.hasLowBound() && !rIn.hasHighBound() {
         nArgs = rIn.low..max(int);
       } else if !rIn.hasLowBound() {
         throw new ArgumentError("numArgs must have low bound");
@@ -832,6 +839,17 @@ module MasonArgParse {
       return true;
     }
     return false;
+  }
+
+  // helper to provide a default value for opts, based on the name
+  proc _processNameToOpts(name:string) : []string {
+    var opts:list(string);
+    if name.startsWith("-") {
+      opts.append(name);
+    } else {
+      opts.append("--" + name);
+    }
+    return opts.toArray();
   }
 
   proc debugTrace(msg:string) {

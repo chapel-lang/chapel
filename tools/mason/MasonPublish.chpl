@@ -44,32 +44,22 @@ proc masonPublish(args: [?d] string) {
 }
 
 proc masonPublish(ref args: list(string)) throws {
+
   var parser = new argumentParser();
+
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var dryFlag = parser.addFlag(name="dry-run",
-                               opts=["--dry-run"],
-                               defaultValue=false,
-                               flagInversion=false);
+                               defaultValue=false);
   var createFlag = parser.addFlag(name="create-registry",
                                   opts=["-c","--create-registry"],
-                                  defaultValue=false,
-                                  flagInversion=false);
-  var checkArg = parser.addFlag(name="check",
-                                 opts=["--check"],
-                                 defaultValue=false,
-                                 flagInversion=false);
-  var ciFlag = parser.addFlag(name="ci-check",
-                              opts=["--ci-check"],
-                              defaultValue=false,
-                              flagInversion=false);
-  var updateFlag = parser.addFlag(name="update",
-                                  opts=["--update"],
-                                  flagInversion=true);
-  var registryArg = parser.addArgument(name="registry",
-                                       numArgs=0..1);
+                                  defaultValue=false);
+
+  var checkArg = parser.addFlag(name="check", defaultValue=false);
+  var ciFlag = parser.addFlag(name="ci-check", defaultValue=false);
+  var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var registryArg = parser.addArgument(name="registry", numArgs=0..1);
 
   try {
     parser.parseArgs(args.toArray());

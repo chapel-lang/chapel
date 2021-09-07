@@ -38,6 +38,7 @@ use SpecParser;
 use TOML;
 
 proc masonExternal(args: [] string) {
+
   var parser = new argumentParser();
 
   var subCmds = new map(string, shared Argument);
@@ -50,21 +51,13 @@ proc masonExternal(args: [] string) {
 
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
-
-  var setupFlag = parser.addFlag(name="setup",
-                                 opts=["--setup"],
-                                 defaultValue=false,
-                                 flagInversion=false);
-  var specFlag = parser.addFlag(name="spec",
-                                opts=["--spec"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var versionFlag = parser.addFlag(name="versionFlag",
                                    opts=["-V","--version"],
-                                   flagInversion=false,
                                    defaultValue=false);
+
+  var setupFlag = parser.addFlag(name="setup", defaultValue=false);
+  var specFlag = parser.addFlag(name="spec", defaultValue=false);
 
   try! {
     parser.parseArgs(args);
@@ -276,12 +269,10 @@ private proc searchSpkgs(args: [?d] string) {
   var parser = new argumentParser();
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var descFlag = parser.addFlag(name="description",
                                 opts=["-d","--desc"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var searchArg = parser.addArgument(name="searchString", numArgs=0..1);
   try! {
     parser.parseArgs(args);
@@ -325,10 +316,8 @@ private proc findSpkg(args: [?d] string) {
   var parser = new argumentParser();
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
-  var findArgs = parser.addArgument(name="package",
-                                    numArgs=0..);
+                                defaultValue=false);
+  var findArgs = parser.addArgument(name="package", numArgs=0..);
 
   try! {
     parser.parseArgs(args);
@@ -350,20 +339,21 @@ private proc findSpkg(args: [?d] string) {
 
 /* Entry point into the various info subcommands */
 private proc spkgInfo(args: [?d] string) {
+
   var parser = new argumentParser();
+
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var archFlag = parser.addFlag(name="architecture",
                                 opts=["--arch"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   // TODO: Argument parser may need support for mutually exclusive, or
   // required if other value, or not required if other value setups
   // but doesn't have them yet. As a workaround, look for 0 or 1 args here
   // to allow for processing arguments without a package arg
   var packageArg = parser.addArgument(name="package", numArgs=0..1);
+
   try! {
     parser.parseArgs(args);
   }
@@ -411,23 +401,17 @@ proc spkgInstalled(spec: string) {
 
 /* Entry point into the various compiler functions */
 private proc compiler(args: [?d] string) {
+
   var parser = new argumentParser();
+
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
-  var listFlag = parser.addFlag(name="list",
-                                opts=["--list"],
-                                defaultValue=true,
-                                flagInversion=false);
-  var findFlag = parser.addFlag(name="find",
-                                opts=["--find"],
-                                defaultValue=false,
-                                flagInversion=false);
-  var editFlag = parser.addFlag(name="edit",
-                                opts=["--edit"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
+
+  var listFlag = parser.addFlag(name="list", defaultValue=true);
+  var findFlag = parser.addFlag(name="find", defaultValue=false);
+  var editFlag = parser.addFlag(name="edit", defaultValue=false);
+
   try! {
     parser.parseArgs(args);
   }
@@ -640,8 +624,7 @@ proc installSpkg(args: [?d] string) throws {
   var parser = new argumentParser();
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var specArg = parser.addArgument(name="SpackSpec", numArgs=0..);
 
   try! {
@@ -681,23 +664,16 @@ proc installSpkg(args: [?d] string) throws {
 
 /* Uninstall an external package */
 proc uninstallSpkg(args: [?d] string) throws {
+
   var parser = new argumentParser();
+
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
-  var forceFlag = parser.addFlag(name="force",
-                                opts=["--force"],
-                                defaultValue=false,
-                                flagInversion=false);
-  var allFlag = parser.addFlag(name="all",
-                                opts=["--all"],
-                                defaultValue=false,
-                                flagInversion=false);
-  var depFlag = parser.addFlag(name="dependents",
-                                opts=["--dependents"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
+
+  var forceFlag = parser.addFlag(name="force", defaultValue=false);
+  var allFlag = parser.addFlag(name="all", defaultValue=false);
+  var depFlag = parser.addFlag(name="dependents", defaultValue=false);
   var pkgArg = parser.addArgument(name="package", numArgs=0..);
 
   try! {
