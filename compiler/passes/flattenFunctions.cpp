@@ -143,6 +143,15 @@ shouldPropagateOuterArg(Symbol* sym, FnSymbol* parentFn, FnSymbol* calledFn) {
   if (parentFn->getModule()->initFn == parentFn)
     return false;
 
+  // never propagate to any main function
+  if (parentFn->hasFlag(FLAG_GEN_MAIN_FUNC) || parentFn == chplUserMain)
+    return false;
+
+  // never propagate to any extern/export function
+  if (parentFn->hasFlag(FLAG_EXTERN) ||
+      parentFn->hasFlag(FLAG_EXPORT))
+    return false;
+
   if (isModuleScopeAlwaysRvf(sym))
     // do propagate RVF'd module-scope variable
     return true;
