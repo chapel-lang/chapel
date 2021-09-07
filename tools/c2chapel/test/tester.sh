@@ -34,6 +34,7 @@ if [[ "$1" ]]; then
 
     if [ "$numFailures" -eq "0" ]; then
         printf "${GREEN}SUCCESS${NORMAL}\n"
+        exit 0;
     else
         printf "${RED}$numFailures/$numTotal tests failed${NORMAL}\n"
         exit 1;
