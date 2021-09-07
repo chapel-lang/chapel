@@ -79,6 +79,7 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TARGET_CPU_FLAG', INTERNAL),
     ChapelEnv('CHPL_TARGET_BACKEND_CPU', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
+    ChapelEnv('  CHPL_CUDA_PATH', RUNTIME | NOPATH),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
@@ -163,6 +164,7 @@ def compute_all_values():
             get_lcd=chpl_home_utils.using_chapel_module()).cpu
 
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
+    ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_cuda_path()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
     ENV_VALS['  CHPL_GASNET_SEGMENT'] = chpl_comm_segment.get()
@@ -287,6 +289,7 @@ def filter_overrides(chpl_env):
 def filter_tidy(chpl_env):
     comm = ENV_VALS['CHPL_COMM']
     llvm = ENV_VALS['CHPL_LLVM']
+    locale_model = ENV_VALS['CHPL_LOCALE_MODEL']
     if chpl_env.name == '  CHPL_COMM_SUBSTRATE':
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_GASNET_SEGMENT':
@@ -297,6 +300,8 @@ def filter_tidy(chpl_env):
         return comm != 'none'
     elif chpl_env.name == '  CHPL_LLVM_CONFIG':
         return llvm != 'none'
+    elif chpl_env.name == '  CHPL_CUDA_PATH':
+        return locale_model == 'gpu'
     return True
 
 

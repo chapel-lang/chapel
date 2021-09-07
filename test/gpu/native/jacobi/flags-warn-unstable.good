@@ -1,4 +1,5 @@
 warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
+$CHPL_HOME/modules/internal/localeModels/gpu/LocaleModel.chpl:33: warning: GPU support is a prototype in this version of Chapel. As such, the interface is unstable and expected to change in the forthcoming releases.
 warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
 warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
 on GPU:

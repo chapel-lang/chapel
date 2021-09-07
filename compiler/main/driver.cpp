@@ -294,6 +294,7 @@ bool fPrintChplSettings = false;
 bool fCompilerLibraryParser = false;
 
 int fGPUBlockSize = 0;
+char fCUDAArch[16] = "sm_60";
 
 chpl::Context* gContext = nullptr;
 
@@ -1152,6 +1153,7 @@ static ArgumentDescription arg_desc[] = {
  {"ignore-errors-for-pass", ' ', NULL, "[Don't] attempt to ignore errors until the end of the pass in which they occur", "N", &ignore_errors_for_pass, "CHPL_IGNORE_ERRORS_FOR_PASS", NULL},
  {"infer-const-refs", ' ', NULL, "Enable [disable] inferring const refs", "n", &fNoInferConstRefs, NULL, NULL},
  {"gpu-block-size", ' ', "<block-size>", "Block size for GPU launches", "I", &fGPUBlockSize, "CHPL_GPU_BLOCK_SIZE", NULL},
+ {"gpu-arch", ' ', "<cuda-architecture>", "CUDA architecture to use", "S16", &fCUDAArch, "CHPL_CUDA_ARCH", NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
@@ -1502,14 +1504,34 @@ static void setPrintCppLineno() {
   if (developer && !userSetCppLineno) printCppLineno = false;
 }
 
-static void setSaveCForGpuCodegen() {
+static void setGPUFlags() {
   bool isGpuCodegen = localeUsesGPU();
   bool isSaveCDirEmpty = strlen(saveCDir) == 0;
 
-  if(isGpuCodegen && isSaveCDirEmpty) {
-    int len = snprintf(saveCDir, FILENAME_MAX+1, "%s_gpu_files", executableFilename);
-    if(len < 0 || len >= FILENAME_MAX+1) {
-      USR_FATAL("Unable to produce name of savec directory for GPU code generation.");
+  if(isGpuCodegen) {
+    if (isSaveCDirEmpty) {
+      const char *gpuDir = strlen(executableFilename) != 0 ? 
+            executableFilename:std::to_string(getpid()).c_str();
+
+      int len = snprintf(saveCDir, FILENAME_MAX+1, "%s_gpu_files", gpuDir);
+      if(len < 0 || len >= FILENAME_MAX+1) {
+        USR_FATAL("Unable to produce name of savec directory for GPU code generation.");
+      }
+    }
+
+    if (!fNoChecks) {
+      USR_WARN("The prototype GPU support implies --no-checks."
+               " This may impact debuggability. To suppress this warning,"
+               " compile with --no-checks explicitly");
+
+      fNoChecks = true;
+      fNoNilChecks    = true;
+      fNoBoundsChecks = true;
+      fNoFormalDomainChecks = true;
+      fNoLocalChecks  = true;
+      fNoStackChecks  = true;
+      fNoCastChecks = true;
+      fNoDivZeroChecks = true;
     }
   }
 }
@@ -1641,7 +1663,7 @@ static void postprocess_args() {
 
   setPrintCppLineno();
 
-  setSaveCForGpuCodegen();
+  setGPUFlags();
 }
 
 
