@@ -110,7 +110,7 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = nullptr) {
   if (!parent) {
     parent = fn->defPoint->parentSymbol;
 
-    if (isModuleScopeAlwaysRvf(sym))
+    if (isTaskFun(fn) && isModuleScopeAlwaysRvf(sym))
       return true;
   }
 
@@ -139,21 +139,8 @@ shouldPropagateOuterArg(Symbol* sym, FnSymbol* parentFn, FnSymbol* calledFn) {
   if (calledFn && symDefParent == calledFn)
     return false;
 
-  // never propagate to any module init function
-  if (parentFn->getModule()->initFn == parentFn)
-    return false;
-
-  // never propagate to any main function
-  if (parentFn->hasFlag(FLAG_GEN_MAIN_FUNC) || parentFn == chplUserMain)
-    return false;
-
-  // never propagate to any extern/export function
-  if (parentFn->hasFlag(FLAG_EXTERN) ||
-      parentFn->hasFlag(FLAG_EXPORT))
-    return false;
-
-  if (isModuleScopeAlwaysRvf(sym))
-    // do propagate RVF'd module-scope variable
+  if (isTaskFun(parentFn) && isModuleScopeAlwaysRvf(sym))
+    // do propagate RVF'd module-scope variable to task functions
     return true;
 
   if (isModuleSymbol(symDefParent))
