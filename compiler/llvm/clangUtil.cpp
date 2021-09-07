@@ -2596,8 +2596,12 @@ llvm::Type* codegenCType(const TypeDecl* td)
     qType = ed->getCanonicalDecl()->getIntegerType();
   } else if( const RecordDecl* rd = dyn_cast<RecordDecl>(td) ) {
     RecordDecl *def = rd->getDefinition();
-    INT_ASSERT(def);
-    qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    if (def == nullptr) {
+      // it's an opaque type - definition of fields not available
+      qType=rd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    } else {
+      qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    }
   } else {
     INT_FATAL("Unknown clang type declaration");
   }
