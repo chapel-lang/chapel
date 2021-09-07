@@ -2278,9 +2278,8 @@ void runClang(const char* just_parse_filename) {
     clangOtherArgs.push_back("-x");
     clangOtherArgs.push_back("cuda");
 
-    char cudaGPUArch[32];
-    snprintf(cudaGPUArch, 32, "--cuda-gpu-arch=%s", fCUDAArch);
-    clangOtherArgs.push_back(cudaGPUArch);
+    std::string cudaGPUArch = std::string("--cuda-gpu-arch=") + fCUDAArch;
+    clangOtherArgs.push_back(cudaGPUArch.c_str());
   }
 
   // Always include sys_basic because it might change the
@@ -3933,13 +3932,12 @@ void makeBinaryLLVM(void) {
 
       mysystem(ptxCmd.c_str(), "PTX to  object file");
 
-      char computeCap[16];
-      if (fCUDAArch[0] == 's' && fCUDAArch[1] == 'm') {
-        snprintf(computeCap, 16, "compute_%c%c", fCUDAArch[3], fCUDAArch[4]);
-      }
-      else {
+      if (strncmp(fCUDAArch, "sm_", 3) != 0 || strlen(fCUDAArch) != 5) {
         USR_FATAL("Unrecognized CUDA arch");
       }
+
+      std::string computeCap = std::string("compute_") + fCUDAArch[3] +
+                                                         fCUDAArch[4];
       std::string fatbinaryCmd = std::string("fatbinary -64 ") +
                                  std::string("--create ") +
                                  fatbinFilename.c_str() +
