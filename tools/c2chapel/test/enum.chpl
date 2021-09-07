@@ -27,7 +27,7 @@ extern const FAILED :c_int;
 
 extern proc test_file(e : test_error) : c_int;
 
-extern record test_status {
+extern "struct test_status" record test_status {
   var current_status : test_error;
 }
 
