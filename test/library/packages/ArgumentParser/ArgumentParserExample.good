@@ -8,24 +8,25 @@ Arguments Received from CL:
 5 d
 6 t
 7 a?
-8 -t=tea
-9 time
-10 --myConfigVar=@10
-11 --flagOn
-12 aValue
-13 subCmd1
-14 bValue
-15 -c
-16 one
-17 -t
-18 two
-19 -f
-20 ++
-21 --extra
-22 stuff
-23 that
-24 is
-25 passed
+8 --
+9 -t=tea
+10 time
+11 --myConfigVar=@10
+12 --flagOn
+13 aValue
+14 subCmd1
+15 bValue
+16 -c
+17 one
+18 -t
+19 two
+20 -f
+21 --
+22 --extra
+23 stuff
+24 that
+25 is
+26 passed
 Values received from argparse:
 w
 a

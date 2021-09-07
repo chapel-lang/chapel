@@ -534,7 +534,7 @@ StringOpt Too many values: expected 1..1 got 3
 StringOpt Too many values: expected 1..3 got 6
 Found some unrecognizable arguments: fifty
 StringOpt Required value missing
-unrecognized options/values encountered: -n twenty
+Found some unrecognizable arguments: -n twenty
 StringOpt Not enough values: expected 1..2 got 0
 Found some unrecognizable arguments: two
 Found some unrecognizable arguments: -p thirty

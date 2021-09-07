@@ -651,6 +651,14 @@ static ModuleSymbol* parseFile(const char* path,
 
     chplLineno                    = 1;
 
+    // look for the ArgumentParser and set flag to indicate we should copy
+    // the delimiter -- to the arguments passed to chapel program's main
+    if (modTag == MOD_STANDARD &&
+        strcmp("$CHPL_HOME/modules/packages/ArgumentParser.chpl",
+               cleanFilename(path)) == 0 ) {
+      mainPreserveDelimiter = true;
+    }
+
     if (printModuleFiles && (modTag != MOD_INTERNAL || developer)) {
       if (sFirstFile) {
         fprintf(stderr, "Parsing module files:\n");

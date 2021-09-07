@@ -3,7 +3,7 @@ Config Var Values:
 Arguments Received from CL:
 1 positionalVal
 2 subCmd1
-3 ++
+3 --
 4 -c=some -v other -t=args,to,passAlongExactly
 Values received from argparse:
 positional value: positionalVal

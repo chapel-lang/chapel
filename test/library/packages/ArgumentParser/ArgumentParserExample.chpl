@@ -86,9 +86,7 @@ proc mySubCmd1(args:[?argsD]string) throws {
 
   // add a passthrough identifier for collecting remaining args
   // also define a place to read the passed through values
-  // the pattern `--` is commonly used for this purpose
-  // but the Chapel runtime is set to recognize `--` and consume it
-  // so we are using an alternative `++` (default) for our program.
+  // the pattern `--` is commonly used for this purpose and is the default
   var passedThrough = parser.addPassThrough();
   // try to parse the arguments, catch exceptions
   try {
