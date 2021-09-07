@@ -26,6 +26,7 @@
 #include "chpl_rt_utils_static.h"
 #include "chplcgfns.h"
 #include "chpl-arg-bundle.h"
+#include "chpl-atomics.h"
 #include "chpl-comm.h"
 #include "chplexit.h"
 #include "chpl-locale-model.h"
@@ -68,19 +69,9 @@ typedef struct task_pool_struct {
 } task_pool_t;
 
 
-typedef struct lockReport {
-  int32_t            filename;
-  int                lineno;
-  uint64_t           prev_progress_cnt;
-  chpl_bool          maybeLocked;
-  struct lockReport* next;
-} lockReport_t;
-
-
 // This is the data that is private to each thread.
 typedef struct {
   task_pool_p   ptask;
-  lockReport_t* lockRprt;
 } thread_private_data_t;
 
 
@@ -94,16 +85,10 @@ static volatile task_pool_p
                            task_pool_tail;     // tail of task pool
 
 static int                 queued_task_cnt;    // number of tasks in task pool
-static int                 blocked_thread_cnt; // number of threads that
-                                               //   cannot make progress
+static atomic_uint_least64_t
+                           blocked_task_cnt;   // number of blocked tasks
 static int                 idle_thread_cnt;    // number of threads looking
                                                //   for work
-static uint64_t            progress_cnt;       // number of unblock operations,
-                                               //   as a proxy for progress
-
-static chpl_thread_mutex_t block_report_lock;   // critical section lock
-static lockReport_t* lockReportHead = NULL;
-static lockReport_t* lockReportTail = NULL;
 
 static chpl_bool do_taskReport = false;
 static chpl_thread_mutex_t taskTable_lock;     // critical section lock
@@ -123,13 +108,8 @@ static void                    taskCallBody(chpl_fn_int_t, chpl_fn_p,
 static chpl_taskID_t           get_next_task_id(void);
 static thread_private_data_t*  get_thread_private_data(void);
 static task_pool_p             get_current_ptask(chpl_bool);
-static void                    report_locked_threads(void);
 static void                    report_all_tasks(void);
 static void                    SIGINT_handler(int sig);
-static void                    initializeLockReportForThread(void);
-static chpl_bool               set_block_loc(int, int32_t);
-static void                    unset_block_loc(void);
-static void                    check_for_deadlock(void);
 static void                    thread_begin(void*);
 static void                    thread_end(void);
 static void                    maybe_add_thread(void);
@@ -164,50 +144,28 @@ static void sync_wait_and_lock(chpl_sync_aux_t *s,
   suspend_using_cond = (chpl_thread_getNumThreads() >=
                         chpl_topo_getNumCPUsLogical(true));
 
+  chpl_bool waited = false;
   while (s->is_full != want_full) {
     if (!suspend_using_cond) {
       chpl_thread_mutexUnlock(&s->lock);
     }
-    if (set_block_loc(lineno, filename)) {
-      // all other tasks appear to be blocked
-      struct timeval deadline, now;
-      chpl_bool timed_out = false;
-      // default value so that always allows condition to be true if not
-      // using conditionals
-
-      gettimeofday(&deadline, NULL);
-      deadline.tv_sec += 1;
-      do {
-        if (suspend_using_cond)
-          timed_out = chpl_thread_sync_suspend(s, &deadline);
-        else
-          chpl_thread_yield();
-
-        if (s->is_full != want_full && !timed_out)
-          gettimeofday(&now, NULL);
-      } while (s->is_full != want_full
-               && !timed_out
-               && (now.tv_sec < deadline.tv_sec
-                   || (now.tv_sec == deadline.tv_sec
-                       && now.tv_usec < deadline.tv_usec)));
-      if (s->is_full != want_full)
-        check_for_deadlock();
-    }
-    else {
-      do {
-        if (suspend_using_cond)
-          (void) chpl_thread_sync_suspend(s, NULL);
-        else
-          chpl_thread_yield();
-      } while (s->is_full != want_full);
-    }
-    unset_block_loc();
+    do {
+      if (suspend_using_cond)
+        (void) chpl_thread_sync_suspend(s, NULL);
+      else
+        chpl_thread_yield();
+    } while (s->is_full != want_full);
     if (!suspend_using_cond)
       chpl_thread_mutexLock(&s->lock);
+    if (!waited) {
+      waited = true;
+      (void) atomic_fetch_add_uint_least64_t(&blocked_task_cnt, 1);
+    }
   }
 
-  if (blockreport)
-    progress_cnt++;
+  if (waited) {
+    (void) atomic_fetch_sub_uint_least64_t(&blocked_task_cnt, 1);
+  }
 }
 
 void chpl_sync_lock(chpl_sync_aux_t *s) {
@@ -333,7 +291,7 @@ void chpl_task_init(void) {
   chpl_thread_mutexInit(&threading_lock);
   chpl_thread_mutexInit(&task_id_lock);
   queued_task_cnt = 0;
-  blocked_thread_cnt = 0;
+  atomic_init_uint_least64_t(&blocked_task_cnt, 0);
   idle_thread_cnt = 0;
   task_pool_head = task_pool_tail = NULL;
 
@@ -350,15 +308,6 @@ void chpl_task_init(void) {
   // may use the thread private data.
   //
   setup_main_thread_private_data();
-
-  if (blockreport) {
-    progress_cnt = 0;
-    chpl_thread_mutexInit(&block_report_lock);
-  }
-
-  if (blockreport || taskreport) {
-    signal(SIGINT, SIGINT_handler);
-  }
 
   initialized = true;
 }
@@ -378,10 +327,6 @@ static void* do_callMain(void* arg) {
 
   // make sure this thread has thread-private data.
   setup_main_thread_private_data();
-
-  // make sure that the lock report is set up.
-  if (blockreport)
-    initializeLockReportForThread();
 
   chpl_main();
   return NULL;
@@ -454,18 +399,14 @@ void chpl_task_callMain(void (*chpl_main)(void)) {
 void chpl_task_stdModulesInitialized(void) {
 
   //
-  // The task table is implemented in Chapel code in the modules, so
-  // we can't use it, and thus can't support task reporting on ^C or
-  // deadlock, until the other modules on which it depends have been
-  // initialized and the supporting code here is set up.  In this
-  // function we're guaranteed that is true, because it is called only
-  // after all the standard module initialization is complete.
+  // The task table is implemented in Chapel code in the modules, so we
+  // can't use it, and thus can't support task reporting on ^C, until
+  // the other modules on which it depends have been initialized.  By
+  // the time this function is called that is true, so now we can set up
+  // our own supporting code.
   //
-
-  //
-  // Register this main task in the task table.
-  //
-  if (taskreport) {
+  do_taskReport = chpl_task_doTaskReport();
+  if (do_taskReport) {
     thread_private_data_t* tp = get_thread_private_data();
 
     chpldev_taskTable_add(tp->ptask->taskBundle->id,
@@ -475,12 +416,9 @@ void chpl_task_stdModulesInitialized(void) {
     chpldev_taskTable_set_active(tp->ptask->taskBundle->id);
 
     chpl_thread_mutexInit(&taskTable_lock);
-  }
 
-  //
-  // Now we can do task reporting if the user requested it.
-  //
-  do_taskReport = taskreport;
+    signal(SIGINT, SIGINT_handler);
+  }
 }
 
 
@@ -726,24 +664,7 @@ uint32_t chpl_task_getNumQueuedTasks(void) {
 }
 
 int32_t chpl_task_getNumBlockedTasks(void) {
-  if (blockreport) {
-    int numBlockedTasks;
-
-    // begin critical section
-    chpl_thread_mutexLock(&threading_lock);
-    chpl_thread_mutexLock(&block_report_lock);
-
-    numBlockedTasks = blocked_thread_cnt - idle_thread_cnt;
-
-    // end critical section
-    chpl_thread_mutexUnlock(&block_report_lock);
-    chpl_thread_mutexUnlock(&threading_lock);
-
-    assert(numBlockedTasks >= 0);
-    return numBlockedTasks;
-  }
-  else
-    return 0;
+  return atomic_load_uint_least64_t(&blocked_task_cnt);
 }
 
 
@@ -798,32 +719,6 @@ task_pool_p get_current_ptask(chpl_bool must_be_task) {
 
 
 //
-// Walk over the linked list of thread states and print the ones that
-// are blocked/waiting.  This is used by both the deadlock reporting
-// and the ^C signal handler.
-//
-static void report_locked_threads(void) {
-  lockReport_t* rep;
-
-  fflush(stdout);
-
-  rep = lockReportHead;
-  while (rep != NULL) {
-    if (rep->maybeLocked) {
-      if (rep->lineno > 0 && rep->filename)
-        fprintf(stderr, "Waiting at: %s:%d\n",
-                chpl_lookupFilename(rep->filename), rep->lineno);
-      else if (rep->lineno == 0 && rep->filename == CHPL_FILE_IDX_IDLE_TASK)
-        fprintf(stderr, "Waiting for more work\n");
-    }
-    rep = rep->next;
-  }
-
-  fflush(stdout);
-}
-
-
-//
 // This signal handler prints an overall task report, containing
 // pending tasks and those that are running.
 //
@@ -854,130 +749,6 @@ static void report_all_tasks(void) {
 static void SIGINT_handler(int sig) {
   signal(sig, SIG_IGN);
 
-  if (blockreport)
-    report_locked_threads();
-
-  if (do_taskReport)
-    report_all_tasks();
-
-  chpl_exit_any(1);
-}
-
-
-//
-// This function should be called exactly once per thread (not task!),
-// including the main thread. It should be called before the first task
-// this thread was created to do is started.
-//
-// Our handling of lock report list entries could be improved.  We
-// allocate one each time this function is called, and this is called
-// just before each task wrapper is called.  We never remove these
-// from the list or deallocate them.  If we do traverse the list while
-// reporting a deadlock, we just skip the leaked ones, because they
-// don't say "blocked".
-//
-static void initializeLockReportForThread(void) {
-  lockReport_t* newLockReport;
-
-  newLockReport = (lockReport_t*) chpl_mem_alloc(sizeof(lockReport_t),
-                                                 CHPL_RT_MD_LOCK_REPORT_DATA,
-                                                 0, 0);
-  newLockReport->maybeLocked = false;
-  newLockReport->next = NULL;
-
-  get_thread_private_data()->lockRprt = newLockReport;
-
-  // Begin critical section
-  chpl_thread_mutexLock(&block_report_lock);
-  if (lockReportHead) {
-    lockReportTail->next = newLockReport;
-    lockReportTail = newLockReport;
-  } else {
-    lockReportHead = newLockReport;
-    lockReportTail = newLockReport;
-  }
-  // End critical section
-  chpl_thread_mutexUnlock(&block_report_lock);
-}
-
-
-
-// Deadlock detection
-
-//
-// Inform task management that the thread (task) is about to suspend
-// waiting for a sync or single variable to change state or the task
-// pool to become nonempty.  The return value is true if the program
-// may be deadlocked, indicating that the thread should use a timeout
-// deadline on its suspension if possible, and false otherwise.
-//
-static chpl_bool set_block_loc(int lineno, int32_t filename) {
-  thread_private_data_t* tp;
-  chpl_bool isLastUnblockedThread;
-
-  if (!blockreport)
-    return false;
-
-  isLastUnblockedThread = false;
-
-  tp = get_thread_private_data();
-  tp->lockRprt->filename = filename;
-  tp->lockRprt->lineno = lineno;
-  tp->lockRprt->prev_progress_cnt = progress_cnt;
-  tp->lockRprt->maybeLocked = true;
-
-  // Begin critical section
-  chpl_thread_mutexLock(&block_report_lock);
-
-  blocked_thread_cnt++;
-  if (blocked_thread_cnt >= chpl_thread_getNumThreads()) {
-    isLastUnblockedThread = true;
-  }
-
-  // End critical section
-  chpl_thread_mutexUnlock(&block_report_lock);
-
-  return isLastUnblockedThread;
-}
-
-
-//
-// Inform task management that the thread (task) is no longer suspended.
-//
-static void unset_block_loc(void) {
-  if (!blockreport)
-    return;
-
-  get_thread_private_data()->lockRprt->maybeLocked = false;
-
-  // Begin critical section
-  chpl_thread_mutexLock(&block_report_lock);
-
-  blocked_thread_cnt--;
-
-  // End critical section
-  chpl_thread_mutexUnlock(&block_report_lock);
-}
-
-
-//
-// Check for and report deadlock, when a suspension deadline passes.
-//
-static void check_for_deadlock(void) {
-  // Blockreport should be true here, because this can't be called
-  // unless set_block_loc() returns true, and it can't do that unless
-  // blockreport is true.  So this is just a check for ongoing
-  // internal consistency.
-  assert(blockreport);
-
-  if (get_thread_private_data()->lockRprt->prev_progress_cnt < progress_cnt)
-    return;
-
-  fflush(stdout);
-  fprintf(stderr, "Program is deadlocked!\n");
-
-  report_locked_threads();
-
   if (do_taskReport)
     report_all_tasks();
 
@@ -1000,9 +771,6 @@ thread_begin(void* ptask_void) {
   chpl_thread_setPrivateData(tp);
 
   tp->ptask = NULL;
-  tp->lockRprt = NULL;
-  if (blockreport)
-    initializeLockReportForThread();
 
   while (true) {
     //
@@ -1020,30 +788,9 @@ thread_begin(void* ptask_void) {
     // impact from keeping it as a hybrid as opposed to merely yielding,
     // it was decided that we would return to the simple yield case.
     while (!task_pool_head) {
-      if (set_block_loc(0, CHPL_FILE_IDX_IDLE_TASK)) {
-        // all other tasks appear to be blocked
-        struct timeval deadline, now;
-        gettimeofday(&deadline, NULL);
-        deadline.tv_sec += 1;
-        do {
-          chpl_thread_yield();
-          if (!task_pool_head)
-            gettimeofday(&now, NULL);
-        } while (!task_pool_head
-                 && (now.tv_sec < deadline.tv_sec
-                     || (now.tv_sec == deadline.tv_sec
-                         && now.tv_usec < deadline.tv_usec)));
-        if (!task_pool_head) {
-          check_for_deadlock();
-        }
-      }
-      else {
-        do {
-          chpl_thread_yield();
-        } while (!task_pool_head);
-      }
-
-      unset_block_loc();
+      do {
+        chpl_thread_yield();
+      } while (!task_pool_head);
     }
 
     //
@@ -1059,9 +806,6 @@ thread_begin(void* ptask_void) {
     //
     // We've found a task to run.
     //
-
-    if (blockreport)
-      progress_cnt++;
 
     //
     // start new task; remove task from pool also add to task to task-table
@@ -1132,10 +876,6 @@ static void thread_end(void)
 
   tp = (thread_private_data_t*) chpl_thread_getPrivateData();
   if (tp != NULL) {
-    if (tp->lockRprt != NULL) {
-      chpl_mem_free(tp->lockRprt, 0, 0);
-      tp->lockRprt = NULL;
-    }
     chpl_mem_free(tp, 0, 0);
     chpl_thread_setPrivateData(NULL);
   }

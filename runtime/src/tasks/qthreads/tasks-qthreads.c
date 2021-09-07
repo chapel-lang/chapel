@@ -266,23 +266,6 @@ void chpl_sync_destroyAux(chpl_sync_aux_t *s)
     PROFILE_INCR(profile_sync_destroyAux, 1);
 }
 
-static void SIGINT_handler(int sig)
-{
-    signal(sig, SIG_IGN);
-
-    if (blockreport) {
-        fprintf(stderr,
-                "Blockreport is currently unsupported by the qthreads "
-                "tasking layer.\n");
-    }
-
-    if (taskreport) {
-        fprintf(stderr, "Taskreport is currently unsupported by the qthreads tasking layer.\n");
-    }
-
-    chpl_exit_any(1);
-}
-
 // We call this routine in a separate pthread for 2 main reasons:
 // 1) qthread_initialize() converts the current thread into a shepherd (the
 //    "real mccoy" shepherd) and creates a qthread on top of that. If we called
@@ -709,12 +692,6 @@ void chpl_task_init(void)
     // QT_NUM_WORKERS_PER_SHEPHERD in which case we don't impose any limits on
     // the number of threads qthreads creates beforehand
     assert(0 == commMaxThreads || qthread_num_workers() < commMaxThreads);
-
-    if (blockreport || taskreport) {
-        if (signal(SIGINT, SIGINT_handler) == SIG_ERR) {
-            perror("Could not register SIGINT handler");
-        }
-    }
 }
 
 void chpl_task_exit(void)

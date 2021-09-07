@@ -7,8 +7,6 @@ FLAGS:
                           (equivalent to setting the numLocales config const)
   -q, --quiet           : run program in quiet mode
   -v, --verbose         : run program in verbose mode
-  -b, --blockreport     : report location of blocked threads on SIGINT
-  -t, --taskreport      : report list of pending and executing tasks on SIGINT
   --gdb                 : run program in gdb
   -E<envVar>=<val>      : set the value of an environment variable
 
