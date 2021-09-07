@@ -2037,7 +2037,7 @@ codegen_config() {
     llvm::FunctionType *createConfigType;
     llvm::Function *createConfigFunc;
     genGlobalInt("mainHasArgs", mainHasArgs, false);
-    getGlobalInt("mainPreserveDelimiter", mainPreserveDelimiter, false);
+    genGlobalInt("mainPreserveDelimiter", mainPreserveDelimiter, false);
     if((createConfigFunc = getFunctionLLVM("CreateConfigVarTable"))) {
       createConfigType = createConfigFunc->getFunctionType();
     }
