@@ -1521,7 +1521,7 @@ static void setGPUFlags() {
 
     if (!fNoChecks) {
       fNoChecks = true;
-      USR_WARN("The prototype support for GPUs imply --no-checks."
+      USR_WARN("The prototype GPU support implies --no-checks."
                " This may impact debuggability. To suppress this warning,"
                " compile with --no-checks explicitly");
     }
