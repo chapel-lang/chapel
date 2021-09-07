@@ -75,37 +75,43 @@ static void markTaskFunctionsInIterators(Vec<FnSymbol*>& nestedFunctions) {
 }
 
 
+static bool
+isModuleScopeAlwaysRvf(Symbol* sym) {
+  // If the symbol is at module scope and the type should always be
+  // RVF'd and the symbol doesn't have the "locale private" flag
+  // applied to it then we should RVF it, so add it to the
+  // function's argument list so that it can be considered in the
+  // remoteValueForwarding pass (Otherwise, symbols at module scope
+  // tend not to be RVF'd... but maybe they should be?  A
+  // disadvantage to doing so is that they have to be added as
+  // arguments in the flattenFunctions pass to be considered, but if
+  // they're not going to be RVF'd, this is unnecessary...  And if
+  // they're const, they'll be broadcast proactively at module
+  // initialization time).)
+  //
+  // Why skip "locale private" variables?  Because these variables
+  // already have special handling to localize them, and RVFing them
+  // causes the `Locales` to be RVF'd which caused extra
+  // communications to take place (and generally seems confusing).
+  if (isModuleSymbol(sym->defPoint->parentSymbol) &&
+      sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF) &&
+      !sym->hasFlag(FLAG_LOCALE_PRIVATE))
+    return true;
+
+  return false;
+}
+
 //
-// returns true if the symbol is defined in an outer function to fn
-// third argument not used at call site
+// Returns true if the symbol is defined in an outer function to fn.
+// Third argument not used at call site.
 //
 static bool
-isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
+isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = nullptr) {
   if (!parent) {
     parent = fn->defPoint->parentSymbol;
 
-    // If the symbol is at module scope and the type should always be
-    // RVF'd and the symbol doesn't have the "locale private" flag
-    // applied to it then we should RVF it, so add it to the
-    // function's argument list so that it can be considered in the
-    // remoteValueForwarding pass (Otherwise, symbols at module scope
-    // tend not to be RVF'd... but maybe they should be?  A
-    // disadvantage to doing so is that they have to be added as
-    // arguments in the flattenFunctions pass to be considered, but if
-    // they're not going to be RVF'd, this is unnecessary...  And if
-    // they're const, they'll be broadcast proactively at module
-    // initialization time).)
-    //
-    // Why skip "locale private" variables?  Because these variables
-    // already have special handling to localize them, and RVFing them
-    // causes the `Locales` to be RVF'd which caused extra
-    // communications to take place (and generally seems confusing).
-    //
-    if (isModuleSymbol(sym->defPoint->parentSymbol) &&
-        sym->getValType()->symbol->hasFlag(FLAG_ALWAYS_RVF) &&
-        !sym->hasFlag(FLAG_LOCALE_PRIVATE)) {
+    if (isModuleScopeAlwaysRvf(sym))
       return true;
-    }
   }
 
   if (!isFnSymbol(parent))
@@ -118,15 +124,35 @@ isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = NULL) {
     return isOuterVar(sym, fn, parent->defPoint->parentSymbol);
 }
 
-// is 'sym' a local variable in 'scope' or a module-level symbol?
-static bool isLocalOrModVar(Symbol* sym, FnSymbol* parent) {
-  if (sym->defPoint->parentSymbol == parent)
-    return true;
+// Should parentFn get a formal argument to propagate sym,
+// which was an outer var in some context, somewhere?
+// calledFn can be nullptr.
+static bool
+shouldPropagateOuterArg(Symbol* sym, FnSymbol* parentFn, FnSymbol* calledFn) {
+  Symbol* symDefParent = sym->defPoint->parentSymbol;
 
-  if (isModuleSymbol(sym->defPoint->parentSymbol))
-    return true;
+  // e.g. sym is a local variable or formal
+  if (symDefParent == parentFn)
+    return false;
 
-  return false;
+  // e.g. sym is a formal for the called function
+  if (calledFn && symDefParent == calledFn)
+    return false;
+
+  if (ModuleSymbol* parentMod = toModuleSymbol(symDefParent)) {
+    if (parentMod->initFn == parentFn)
+      // never propagate to module init
+      return false;
+    else if (isModuleScopeAlwaysRvf(sym))
+      // do propagate RVF'd module-scope variable
+      return true;
+    else
+      // don't propagate module-scope symbols in general
+      return false;
+  }
+
+  // otherwise, it comes from some other function
+  return true;
 }
 
 //
@@ -138,11 +164,15 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
   collectLcnSymExprs(fn, SEs);
 
   for_vector(SymExpr, symExpr, SEs) {
-      Symbol* sym = symExpr->symbol();
+    Symbol* sym = symExpr->symbol();
 
-      if (isOuterVar(sym, fn)) {
-        uses->put(sym,gNil);
-      }
+    // Here isOuterVar will only return 'true' for variables
+    // that are outer variables for 'fn'. But 'collectLcnSymExprs'
+    // is also gathering the contents for nested functions.
+    // This pattern could be clearer with an AST visitor.
+    if (isOuterVar(sym, fn)) {
+      uses->put(sym,gNil);
+    }
   }
 }
 
@@ -414,10 +444,6 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
     args_map.put(fn, uses);
   }
 
-  // iterate to get outer vars in a function based on outer vars in
-  // functions it calls
-  // Also handle finding outer functions that are calling an
-  // inner function, since these will also need the new arguments.
   bool change;
 
   do {
@@ -431,6 +457,8 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
 
       SymbolMap* uses = args_map.get(fn);
 
+      // gather outer vars in a function based on outer vars in
+      // functions it calls
       for_vector(BaseAST, ast, asts) {
         if (CallExpr* call = toCallExpr(ast)) {
           if (call->isResolved()) {
@@ -439,7 +467,8 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
 
               if (call_uses) {
                 form_Map(SymbolMapElem, e, *call_uses) {
-                  if (!isLocalOrModVar(e->key, fn) && !uses->get(e->key)) {
+                  if (shouldPropagateOuterArg(e->key, fn, nullptr) &&
+                      !uses->get(e->key)) {
                     uses->put(e->key, gNil);
                     change = true;
                   }
@@ -450,7 +479,10 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
         }
       }
 
-      forv_Vec(CallExpr, call, *fn->calledBy) {
+      // Also handle finding outer functions that are calling an
+      // inner function, since these will also need the new arguments.
+      FnSymbol* calledFn = fn;
+      forv_Vec(CallExpr, call, *calledFn->calledBy) {
         //
         // call not in a nested function; handle the toFollower/toLeader cases
         // Note: outerCall=true implies the 'call' does not see defPoint
@@ -463,8 +495,7 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
         if (FnSymbol* parent = toFnSymbol(call->parentSymbol)) {
           if (!nestedFunctionSet.set_in(parent)) {
             form_Map(SymbolMapElem, use, *uses) {
-              if (use->key->defPoint->parentSymbol != fn &&
-                  !isLocalOrModVar(use->key, parent)) {
+              if (shouldPropagateOuterArg(use->key, parent, calledFn)) {
                 outerCall = true;
               }
             }
@@ -476,8 +507,7 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
               nestedFunctions.add(parent);
 
               form_Map(SymbolMapElem, use, *uses) {
-                if (use->key->defPoint->parentSymbol != fn &&
-                    !isLocalOrModVar(use->key, parent)) {
+                if (shouldPropagateOuterArg(use->key, parent, calledFn)) {
                   usesCopy->put(use->key, gNil);
                 }
               }
