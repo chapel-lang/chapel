@@ -78,9 +78,9 @@ var f = open(fileName, iomode.r);
 
 // Returns the index of the next comma or the string length if no
 // next comma is found.  Commas inside quoted strings will be ignored.
-proc findNextCommaNotInQuotes(str : string, currIdx : int) {
+proc findNextCommaNotInQuotes(str : string, start : int) {
   var inQuotes = false;
-  for i in (currIdx+1)..(str.size-1) {
+  for i in start..(str.size-1) {
     if !inQuotes && str[i]==',' then return i;
     if str[i]=='"' then inQuotes = !inQuotes;
   }
