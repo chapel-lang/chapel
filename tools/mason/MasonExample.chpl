@@ -19,11 +19,10 @@
  */
 
 
-
+use ArgumentParser;
 use FileSystem;
 use List;
 use Map;
-use ArgumentParser;
 use MasonBuild;
 use MasonEnv;
 use MasonHelp;

@@ -18,9 +18,9 @@
  * limitations under the License.
  */
 
+use ArgumentParser;
 use FileSystem;
 use Map;
-use ArgumentParser;
 use MasonUtils;
 use Regex;
 use TOML;

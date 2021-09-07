@@ -19,9 +19,9 @@
  */
 
 
+use ArgumentParser;
 use FileSystem;
 use IO;
-use ArgumentParser;
 use MasonEnv;
 use MasonHelp;
 use MasonModify;

@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-use List;
 use ArgumentParser;
+use List;
 use MasonUtils;
 public use MasonHelp;
 const regUrl: string = "https://github.com/chapel-lang/mason-registry";

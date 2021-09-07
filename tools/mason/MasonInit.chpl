@@ -18,9 +18,9 @@
  * limitations under the License.
  */
 
+use ArgumentParser;
 use FileSystem;
 use List;
-use ArgumentParser;
 use MasonBuild;
 use MasonEnv;
 use MasonExample;
