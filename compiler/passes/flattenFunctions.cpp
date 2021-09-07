@@ -139,17 +139,17 @@ shouldPropagateOuterArg(Symbol* sym, FnSymbol* parentFn, FnSymbol* calledFn) {
   if (calledFn && symDefParent == calledFn)
     return false;
 
-  if (ModuleSymbol* parentMod = toModuleSymbol(symDefParent)) {
-    if (parentMod->initFn == parentFn)
-      // never propagate to module init
-      return false;
-    else if (isModuleScopeAlwaysRvf(sym))
-      // do propagate RVF'd module-scope variable
-      return true;
-    else
-      // don't propagate module-scope symbols in general
-      return false;
-  }
+  // never propagate to any module init function
+  if (parentFn->getModule()->initFn == parentFn)
+    return false;
+
+  if (isModuleScopeAlwaysRvf(sym))
+    // do propagate RVF'd module-scope variable
+    return true;
+
+  if (isModuleSymbol(symDefParent))
+    // don't propagate module-scope symbols in general
+    return false;
 
   // otherwise, it comes from some other function
   return true;
