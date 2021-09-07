@@ -68,6 +68,9 @@ $(FAKES):
 check:
 	cd test && ./tester.sh
 
+check-compilation:
+	cd test && ./tester.sh compile # cd test && ./testCompilation.sh
+
 clean:
 	rm -rf $(INSTALL)
 ifneq ($(wildcard $(link)),)

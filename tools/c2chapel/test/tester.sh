@@ -2,7 +2,6 @@
 
 # This script must be run within c2chapel/test
 
-
 # Only use colors for stdout with a color-supporting terminal
 if test -t 1; then
   nc=$(tput colors)
@@ -13,6 +12,34 @@ if test -t 1; then
     GREEN=$(tput setaf 2)
   fi
 fi
+
+numFailures=0
+numTotal=0
+
+if [[ "$1" ]]; then
+    echo 'Testing that generated files compile...'
+
+    for f in *.chpl ; do
+        printf "compiling $f: "
+        if chpl "$f"; then
+            printf "${GREEN}OK${NORMAL}\n"
+        else
+            printf "compiling $f: ${RED}ERROR${NORMAL}\n"
+            numFailures=$((numFailures+1))
+        fi
+        numTotal=$((numTotal+1))
+        title=`basename $f .chpl`
+        rm "$title"
+    done
+
+    if [ "$numFailures" -eq "0" ]; then
+        printf "${GREEN}SUCCESS${NORMAL}\n"
+    else
+        printf "${RED}$numFailures/$numTotal tests failed${NORMAL}\n"
+        exit 1;
+    fi
+fi
+
 
 C2CHAPEL=c2chapel
 if ! type "c2chapel" > /dev/null 2>&1; then
@@ -25,9 +52,6 @@ if ! type "c2chapel" > /dev/null 2>&1; then
     exit 1;
   fi
 fi
-
-numFailures=0
-numTotal=0
 
 function helper() {
   msg=$1
