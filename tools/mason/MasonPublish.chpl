@@ -21,7 +21,7 @@
 
 use FileSystem;
 use List;
-use MasonArgParse;
+use ArgumentParser;
 use MasonBuild;
 use MasonEnv;
 use MasonModify;

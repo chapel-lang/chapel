@@ -29,7 +29,7 @@ const spackDefaultPath = MASON_HOME + "/spack";
 use FileSystem;
 use List;
 use Map;
-use MasonArgParse;
+use ArgumentParser;
 use MasonEnv;
 use MasonHelp;
 use MasonUtils;
