@@ -16,8 +16,8 @@ def get():
         # Use ofi on hpe-cray-ex
         elif platform_val == 'hpe-cray-ex':
             comm_val = 'ofi'
-        # Use gasnet on cray-cs
-        elif platform_val.startswith('cray-'):
+        # Use gasnet on cray-cs and hpe-apollo
+        elif platform_val in ('cray-cs', 'hpe-apollo'):
             comm_val = 'gasnet'
         else:
             comm_val = 'none'
