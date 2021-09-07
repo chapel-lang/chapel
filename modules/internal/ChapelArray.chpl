@@ -2630,7 +2630,7 @@ module ChapelArray {
     proc rank param return this.domain.rank;
 
     proc indices where arrayIndicesAlwaysLocal == false {
-      compilerWarning("In a forthcoming release, calling '.indices' on an array will return/yield local indices rather than the array's domain.  To preserve the current behavior, use '.domain'.  To update to the new behavior today, re-compile with '-sarrayIndicesAlwaysLocal=true'.");
+      compilerWarning("In a forthcoming release, calling '.indices' on an array will return/yield its indices locally rather than returning a copy of the array's domain as it does today.  See https://github.com/chapel-lang/chapel/issues/17883 for details.  To preserve the current behavior, use '.domain' or a copy thereof.  To update to the proposed new behavior today, re-compile with '-sarrayIndicesAlwaysLocal=true'.");
       return _dom;
     }
     
