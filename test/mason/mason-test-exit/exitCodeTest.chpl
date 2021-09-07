@@ -6,7 +6,7 @@ use Spawn;
 proc checkExitStatus(cmd) {
   var p = spawn(cmd, stdout=PIPE);
   p.wait();
-  if p.exitCodeUNIQUE == 1 {
+  if p.exitCode == 1 {
     writeln("Got exit status 1 as expected");
   }
 }

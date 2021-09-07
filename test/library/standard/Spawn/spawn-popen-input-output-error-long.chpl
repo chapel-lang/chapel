@@ -3,7 +3,7 @@ use Spawn;
 {
   var comp = spawnshell("$CHPL_HOME/bin/`$CHPL_HOME/util/chplenv/chpl_bin_subdir.py --host`/chpl cat-stdout-stderr.chpl -o stdout-stderr");
   comp.wait();
-  assert(comp.exitCodeUNIQUE == 0);
+  assert(comp.exitCode == 0);
 }
 
 var sub = spawn(["./stdout-stderr", "-nl", "1"], stdin=BUFFERED_PIPE, stdout=PIPE, stderr=PIPE);
@@ -34,7 +34,7 @@ while sub.stderr.read(x) {
 
 
 assert(sub.running == false);
-assert(sub.exitCodeUNIQUE == 0);
+assert(sub.exitCode == 0);
 
 sub.close();
 

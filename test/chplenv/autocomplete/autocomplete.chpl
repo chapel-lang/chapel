@@ -23,7 +23,7 @@ for line in runScript.stdout.lines() {
 runScript.wait();
 diff.wait();
 
-if diff.exitCodeUNIQUE != 0 {
+if diff.exitCode != 0 {
   writeln();
   writeln("diff failed. You may need to run ", genScript,
           " to regenerate ", completeScript, ". Try:");

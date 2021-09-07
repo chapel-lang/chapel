@@ -1,2 +1,2 @@
 subprocess-exit-status.chpl:3: In function 'main':
-subprocess-exit-status.chpl:5: warning: subprocess.exit_status is deprecated. Use subprocess.exitCodeUNIQUE instead.
+subprocess-exit-status.chpl:5: warning: subprocess.exit_status is deprecated. Use subprocess.exitCode instead.

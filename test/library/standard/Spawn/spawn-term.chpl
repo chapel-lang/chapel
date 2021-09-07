@@ -6,4 +6,4 @@ sleep(1);
 sub.terminate();
 while sub.running do
   sub.poll();
-assert(sub.exitCodeUNIQUE == -SIGTERM);
+assert(sub.exitCode == -SIGTERM);

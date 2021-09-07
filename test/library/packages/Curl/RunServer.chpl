@@ -14,7 +14,7 @@ proc startServer() {
                      stdin=CLOSE, stdout=PIPE, stderr=PIPE);
   check.communicate();
 
-  if check.exitCodeUNIQUE == 0 {
+  if check.exitCode == 0 {
     // Server already running, so nothing to do.
     return;
   }
@@ -33,7 +33,7 @@ proc startServer() {
                        stdin=CLOSE, stdout=PIPE, stderr=PIPE);
     check.communicate();
 
-    if check.exitCodeUNIQUE == 0 {
+    if check.exitCode == 0 {
       ok = true;
       break;
     }

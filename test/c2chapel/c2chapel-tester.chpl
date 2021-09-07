@@ -4,7 +4,7 @@ var testdir = CHPL_HOME + "/tools/c2chapel/test/";
 var command = "cd %s; ./tester.sh".format(testdir);
 var sub = Spawn.spawnshell(command);
 sub.communicate();
-if sub.exitCodeUNIQUE==0 then
+if sub.exitCode==0 then
   writeln("OK");
 else
   writeln("Test Failure");

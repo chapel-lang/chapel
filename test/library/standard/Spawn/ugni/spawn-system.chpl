@@ -11,4 +11,4 @@ if pipeStdout then stdoutArg=PIPE;
 var sub = spawn(["ls", "../test.txt"], stdout=stdoutArg);
 sub.wait();
 assert(sub.running == false);
-assert(sub.exitCodeUNIQUE == 0);
+assert(sub.exitCode == 0);

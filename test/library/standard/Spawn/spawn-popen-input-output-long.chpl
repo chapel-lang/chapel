@@ -19,7 +19,7 @@ while sub.stdout.read(x) {
 }
 
 assert(sub.running == false);
-assert(sub.exitCodeUNIQUE == 0);
+assert(sub.exitCode == 0);
 
 sub.close();
 
