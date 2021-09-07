@@ -208,7 +208,7 @@ proc checkRegistryPath(registryPath : string, trueIfLocal : bool) throws {
       var command = ('git ls-remote ' + registryPath).split();
       var checkRemote = spawn(command, stdout=PIPE);
       checkRemote.wait();
-      if checkRemote.exit_status == 0 then return true;
+      if checkRemote.exitCodeUNIQUE == 0 then return true;
       else {
         throw new owned MasonError(registryPath + " is not a valid remote path");
         exit(0);
@@ -385,7 +385,7 @@ private proc usernameCheck(username: string) {
 private proc checkIfForkExists(username: string) {
   var getFork = ('git ls-remote https://github.com/' + username + '/mason-registry');
   var p = runWithProcess(getFork, false);
-  return p.exit_status;
+  return p.exitCodeUNIQUE;
 }
 
 /* Gets the GitHub username of the user, by parsing from the remote origin url.
@@ -719,7 +719,7 @@ private proc checkLicense(projectHome: string) throws {
 private proc attemptToBuild() throws {
   var sub = spawn(['mason','build','--force'], stdout=PIPE);
   sub.wait();
-  if sub.exit_status == 1 {
+  if sub.exitCodeUNIQUE == 1 {
   writeln('(FAILED) Please make sure your package builds');
   }
   else {

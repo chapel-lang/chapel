@@ -6,7 +6,7 @@ sub.stdin.writeln("Hello");
 sub.stdin.writeln("World");
 sub.wait();
 assert(sub.running == false);
-assert(sub.exit_status == 0);
+assert(sub.exitCodeUNIQUE == 0);
 
 sub.close();
 

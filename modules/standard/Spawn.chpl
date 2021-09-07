@@ -213,7 +213,7 @@ module Spawn {
     var running:bool;
     /* The exit status from the subprocess, or possibly a value >= 256
        if there was en error when creating the subprocess */
-    var exit_status:int;
+    var exitCodeUNIQUE:int;
 
     // the channels
     // TODO -- these could be private to this module
@@ -259,6 +259,12 @@ module Spawn {
         try ioerror(spawn_error,
                     "encountered when launching subprocess");
       }
+    }
+
+    pragma "no doc"
+    proc exit_status ref {
+      compilerWarning("subprocess.exit_status is deprecated. Use subprocess.exitCodeUNIQUE instead.");
+      return exitCodeUNIQUE;
     }
 
     /*
@@ -523,11 +529,11 @@ module Spawn {
                              inputfd=stdin_fd,
                              outputfd=stdout_fd,
                              errorfd=stderr_fd,
-                             running=true, exit_status=256);
+                             running=true, exitCodeUNIQUE=256);
 
     if err {
       ret.running = false;
-      ret.exit_status = 257;
+      ret.exitCodeUNIQUE = 257;
       ret.spawn_error = err;
       return ret;
     }
@@ -686,7 +692,7 @@ module Spawn {
       err = qio_waitpid(pid, 0, done, exitcode);
       if done {
         this.running = false;
-        this.exit_status = exitcode;
+        this.exitCodeUNIQUE = exitcode;
       }
     }
     if err then try ioerror(err, "in subprocess.poll");
@@ -708,7 +714,7 @@ module Spawn {
   /*
     Wait for a child process to complete. After this function
     returns, :attr:`~subprocess.running` is `false` and
-    :attr:`~subprocess.exit_status` stores the exit code returned
+    :attr:`~subprocess.exitCodeUNIQUE` stores the exit code returned
     by the subprocess.
 
     If `buffer` is `true`, then this call will handle cases in which
@@ -772,7 +778,7 @@ module Spawn {
       wait_err = qio_waitpid(pid, 1, done, exitcode);
       if done {
         this.running = false;
-        this.exit_status = exitcode;
+        this.exitCodeUNIQUE = exitcode;
       }
 
       // If these channels are to stay open, use buffer=true or communicate.
@@ -827,7 +833,7 @@ module Spawn {
 
     Wait for a child process to complete. After this function
     returns, :attr:`~subprocess.running` is `false` and
-    :attr:`~subprocess.exit_status` stores the exit code returned
+    :attr:`~subprocess.exitCodeUNIQUE` stores the exit code returned
     by the subprocess.
 
     This function handles cases in which stdin, stdout, or stderr
@@ -868,7 +874,7 @@ module Spawn {
     err = qio_waitpid(pid, 1, done, exitcode);
     if done {
       this.running = false;
-      this.exit_status = exitcode;
+      this.exitCodeUNIQUE = exitcode;
     }
     if err then try ioerror(err, "in subprocess.communicate");
   }
