@@ -154,24 +154,17 @@ written, its state transitions to full.
 
 ``sync`` and ``single`` are type qualifiers and precede the type of the
 variable’s value in the declaration. Sync and single are supported for
-all Chapel primitive types ( :ref:`Primitive_Types`) except
-complex. They are also supported for enumerated types
-( :ref:`Enumerated_Types`) and variables of class type
-( :ref:`Class_Types`). For sync variables of class type, the
-full/empty state applies to the reference to the class object, not to
-its member fields.
+the primitive types ``nothing``, ``bool``, ``int``, ``uint``, ``real``,
+``imag`` ( :ref:`Primitive_Types`); for enumerated types
+( :ref:`Enumerated_Types`); and for nilable unmanaged or nilable borrowed
+class types ( :ref:`Class_Types`). For sync variables of class type, the
+full/empty state applies to the reference to the class object, not to its
+member fields.
 
-   *Rationale*.
+   *Note*.
 
-   It is only well-formed to apply full-empty semantics to types that
-   have no more than a single logical value. Booleans, integers, real
-   and imaginary numbers, enums, and class references all meet this
-   criteria. Since it is possible to read/write the individual elements
-   of a complex value, it’s not obvious how the full-empty semantics
-   would interact with such operations. While one could argue that
-   record types with a single field could also be included, the user can
-   more directly express such cases by declaring the field itself to be
-   of sync type.
+   In the future, ``sync`` and ``single`` might be extended to support
+   more types, including ``complex`` record types.
 
 If a task attempts to read or write a synchronization variable that is
 not in the correct state, the task is suspended. When the variable
