@@ -2632,21 +2632,23 @@ module ChapelArray {
 
     /* Return the array's indices as a copy of its domain.
 
-       Note that in a forthcoming release, we expect ``.indices`` to
-       change in behavior to return/yield indices using a local
-       representation rather than as a clone of the array's domain.
-       In order to preserve the legacy behavior in your program,
-       please use ``.domain`` instead (or a copy thereof).
+       .. note::
 
-       If you'd like to opt into a prototype of the new behavior,
-       recompile with ``-sarrayIndicesAlwaysLocal=true``.  For dense,
-       rectangular arrays, this will have the effect of returning a
-       local domain representing the array's indices; for a sparse or
-       associative array, it will invoke a serial iterator that yields
-       the array's indices.
+         In a forthcoming release, we expect ``.indices`` to change in
+         behavior to return/yield indices using a local representation
+         rather than as a clone of the array's domain.  In order to
+         preserve the legacy behavior in your program, please use
+         ``.domain`` instead (or a copy thereof).
 
-       See https://github.com/chapel-lang/chapel/issues/17883 for
-       further details.
+         If you'd like to opt into a prototype of the new behavior,
+         recompile with ``-sarrayIndicesAlwaysLocal=true``.  For
+         dense, rectangular arrays, this will have the effect of
+         returning a local domain representing the array's indices;
+         for a sparse or associative array, it will invoke a serial
+         iterator that yields the array's indices.
+
+         See https://github.com/chapel-lang/chapel/issues/17883 for
+         further details.
     */
     deprecated "the current behavior of  '.indices' on arrays is deprecated; see https://chapel-lang.org/docs/1.25/builtins/ChapelArray.html#ChapelArray.indices for details"
     proc indices where arrayIndicesAlwaysLocal == false {
