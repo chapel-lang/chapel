@@ -1,6 +1,1 @@
-#!/usr/bin/env bash
-
-nvccDir=$(which nvcc)
-nvccLib=${nvccDir%/bin/nvcc}/lib64
-
-echo "-M../../../release/examples/benchmarks/hpcc --no-checks --ccflags --cuda-gpu-arch=sm_60 -L$nvccLib -lcuda --savec tmp"
+-M../../../release/examples/benchmarks/hpcc --no-checks

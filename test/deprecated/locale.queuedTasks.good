@@ -1,0 +1,2 @@
+locale.queuedTasks.chpl:2: warning: locale.queuedTasks() is deprecated; please let us know if this is a problem for you
+true

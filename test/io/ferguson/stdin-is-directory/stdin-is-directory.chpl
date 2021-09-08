@@ -4,7 +4,7 @@ proc mysystem(cmd: string): int {
   use Spawn;
   var sub = spawnshell(cmd);
   sub.wait();
-  return sub.exit_status;
+  return sub.exitCode;
 }
 
 var binpath = CHPL_HOST_PLATFORM + "-" + CHPL_HOST_ARCH;

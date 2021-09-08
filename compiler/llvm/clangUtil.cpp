@@ -2277,6 +2277,9 @@ void runClang(const char* just_parse_filename) {
     // activate the GPU target
     clangOtherArgs.push_back("-x");
     clangOtherArgs.push_back("cuda");
+
+    std::string cudaGPUArch = std::string("--cuda-gpu-arch=") + fCUDAArch;
+    clangOtherArgs.push_back(cudaGPUArch.c_str());
   }
 
   // Always include sys_basic because it might change the
@@ -2596,8 +2599,12 @@ llvm::Type* codegenCType(const TypeDecl* td)
     qType = ed->getCanonicalDecl()->getIntegerType();
   } else if( const RecordDecl* rd = dyn_cast<RecordDecl>(td) ) {
     RecordDecl *def = rd->getDefinition();
-    INT_ASSERT(def);
-    qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    if (def == nullptr) {
+      // it's an opaque type - definition of fields not available
+      qType=rd->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    } else {
+      qType=def->getCanonicalDecl()->getTypeForDecl()->getCanonicalTypeInternal();
+    }
   } else {
     INT_FATAL("Unknown clang type declaration");
   }
@@ -3922,16 +3929,26 @@ void makeBinaryLLVM(void) {
       }
 
 
-      std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") +
-                           std::string("sm_60 --output-file ") + ptxObjectFilename.c_str() +
+      std::string ptxCmd = std::string("ptxas -m64 --gpu-name ") + fCUDAArch +
+                           std::string(" --output-file ") +
+                           ptxObjectFilename.c_str() +
                            " " + asmFilename.c_str();
 
       mysystem(ptxCmd.c_str(), "PTX to  object file");
 
+      if (strncmp(fCUDAArch, "sm_", 3) != 0 || strlen(fCUDAArch) != 5) {
+        USR_FATAL("Unrecognized CUDA arch");
+      }
+
+      std::string computeCap = std::string("compute_") + fCUDAArch[3] +
+                                                         fCUDAArch[4];
       std::string fatbinaryCmd = std::string("fatbinary -64 ") +
-                                 std::string("--create ") + fatbinFilename.c_str() +
-                                 std::string(" --image=profile=sm_60,file=") + ptxObjectFilename.c_str() +
-                                 std::string(" --image=profile=compute_60,file=") + asmFilename.c_str();
+                                 std::string("--create ") +
+                                 fatbinFilename.c_str() +
+                                 std::string(" --image=profile=") + fCUDAArch +
+                                 ",file=" + ptxObjectFilename.c_str() +
+                                 std::string(" --image=profile=") + computeCap +
+                                 ",file=" + asmFilename.c_str();
 
       mysystem(fatbinaryCmd.c_str(), "object file to fatbinary");
 
@@ -4411,7 +4428,7 @@ static void moveGeneratedLibraryFile(const char* tmpbinname) {
   moveResultFromTmp(outputPath.c_str(), tmpbinname);
 }
 
-void print_clang(clang::Type* t) {
+void print_clang(const clang::Type* t) {
   if (t == NULL)
     fprintf(stderr, "NULL");
   else
@@ -4420,7 +4437,7 @@ void print_clang(clang::Type* t) {
   fprintf(stderr, "\n");
 }
 
-void print_clang(clang::Decl* d) {
+void print_clang(const clang::Decl* d) {
   if (d == NULL)
     fprintf(stderr, "NULL");
   else
@@ -4429,7 +4446,7 @@ void print_clang(clang::Decl* d) {
   fprintf(stderr, "\n");
 }
 
-void print_clang(clang::TypeDecl* d) {
+void print_clang(const clang::TypeDecl* d) {
   if (d == NULL)
     fprintf(stderr, "NULL");
   else
@@ -4437,7 +4454,7 @@ void print_clang(clang::TypeDecl* d) {
 
   fprintf(stderr, "\n");
 }
-void print_clang(clang::ValueDecl* d) {
+void print_clang(const clang::ValueDecl* d) {
   if (d == NULL)
     fprintf(stderr, "NULL");
   else

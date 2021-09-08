@@ -29,8 +29,13 @@
 //
 module LocaleModel { 
 
+  if chpl_warnUnstable {
+    compilerWarning("GPU support is a prototype in this version of Chapel.",
+                    " As such, the interface is unstable and expected to",
+                    " change in the forthcoming releases.");
+  }
+
   public use LocaleModelHelpGPU;
-  require "-lcudart";
 
   use IO, SysCTypes, CPtr;
 

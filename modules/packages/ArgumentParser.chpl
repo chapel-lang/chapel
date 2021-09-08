@@ -17,11 +17,11 @@
  * limitations under the License.
  */
 
-module MasonArgParse {
-  private use List;
-  private use Map;
-  private use IO;
-  private use Sort;
+module ArgumentParser {
+  use List;
+  use Map;
+  use IO;
+  use Sort;
 
   private config var DEBUG=false;
 

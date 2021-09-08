@@ -71,6 +71,7 @@ _chpl ()
 --gdb \
 --gen-ids \
 --gmp \
+--gpu-arch \
 --gpu-block-size \
 --hdr-search-path \
 --help \

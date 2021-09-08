@@ -357,33 +357,29 @@ CHPL_TASKS == qthreads
   environment variable.  See the qthreads subsection of `Task
   Implementation Layers`_ for more information.
 
-----------------------------------------------
-Task-Related Quantification Methods on Locales
-----------------------------------------------
+----------------------------
+Quantifying Tasks on Locales
+----------------------------
 
-Several methods on the locale type are available to query the state of
-the program with respect to its tasks.
+The locale type has a method available to query the number of tasks that
+are running on a given locale.
+
+  runningTasks()
+    returns the number of tasks that have been created
+    but have not yet finished.  Note that this number can exceed the
+    number of threads because tasking layers may be capable of switching
+    among multiple Chapel tasks running on a single hosting thread.
+
+In order to use this method, you have to specify the locale you wish to
+query, as in here.runningTasks(), where 'here' is the current locale.
+
+The following methods are also available, but these are all deprecated
+and we expect to remove them in the next release unless a need for
+them is identified.
 
   queuedTasks()
     returns the number of tasks that are ready to run, but
     have not yet begun executing.
-
-  runningTasks()
-    returns the number of tasks that have begun executing,
-    but have not yet finished.  Note that this number can exceed the
-    number of non-idle threads because there are cases in which a thread
-    is working on more than one task.  As one example, in fifo tasking,
-    when a parent task creates child tasks to execute the iterations of
-    a coforall construct, the thread the parent is running on may
-    temporarily suspend executing the parent task in order to help with
-    the child tasks, until the construct completes.  When this occurs
-    the count of running tasks can include both the parent task and a
-    child, although strictly speaking only the child is executing
-    instructions.
-
-    As another example, any tasking implementation in which threads can
-    switch from running one task to running another, such as qthreads,
-    can have more tasks running than threads on which to run them.
 
   blockedTasks()
     returns the number of tasks that are blocked because
@@ -397,13 +393,10 @@ the program with respect to its tasks.
   idleThreads()
     returns the number of threads are idle, i.e., not assigned to any task.
 
-In order to use these methods, you have to specify the locale you wish
-to query, as in here.runningTasks(), where 'here' is the current
-locale.
-
-(Note that these methods are available for all tasking options, but
-currently only runningTasks() returns meaningful values for all options.
-The others only return meaningful values for ``CHPL_TASKS=fifo``.)
+(Note that all these methods are available for all tasking options,
+but currently only runningTasks() returns meaningful values in all
+configurations.  The others only return meaningful values for
+``CHPL_TASKS=fifo``, which is partly why they have been deprecated.)
 
 
 -------------------------

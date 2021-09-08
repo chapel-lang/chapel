@@ -19,10 +19,10 @@
  */
 
 
+use ArgumentParser;
 use FileSystem;
 use List;
 use Map;
-use MasonArgParse;
 use MasonBuild;
 use MasonHelp;
 use MasonUpdate;
@@ -666,7 +666,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     }
   }
   exec.wait();//wait till the subprocess is complete
-  exitCode = exec.exit_status;
+  exitCode = exec.exitCode;
   if haltOccured then
     exitCode = runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
               testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
