@@ -264,7 +264,7 @@ class ExpmPadeHelper {
   proc init(A, useExactOneNorm: bool) {
     this.matType = A.type;
     this.A = A;
-    this.ident = eye(A.indices);
+    this.ident = eye(A.domain);
     this.useExactOneNorm = useExactOneNorm;
   }
 
