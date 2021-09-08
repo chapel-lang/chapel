@@ -1,0 +1,2 @@
+test_microsecond()
+strptime.chpl:7: error: halt reached - day is out of the valid range
