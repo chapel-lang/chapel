@@ -1512,10 +1512,10 @@ static void setGPUFlags() {
 
   if(isGpuCodegen) {
     if (isSaveCDirEmpty) {
-      const char *gpuDir = strlen(executableFilename) != 0 ? 
-            executableFilename:std::to_string(getpid()).c_str();
-
-      int len = snprintf(saveCDir, FILENAME_MAX+1, "%s_gpu_files", gpuDir);
+      int len = snprintf(saveCDir, FILENAME_MAX+1, "%s_gpu_files",
+                         (strlen(executableFilename) != 0 ? 
+                          executableFilename :
+                          std::to_string(getpid()).c_str()));
       if(len < 0 || len >= FILENAME_MAX+1) {
         USR_FATAL("Unable to produce name of savec directory for GPU code generation.");
       }
