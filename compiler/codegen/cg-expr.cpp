@@ -19,7 +19,6 @@
  */
 
 #include "expr.h"
-#include "view.h"
 
 #include "alist.h"
 #include "astutil.h"
@@ -4723,12 +4722,15 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   //
   // Kernel arguments are passed in the following ways:
   //
-  // 1. If a ref: pass by value, and the size of its value. Runtime will
+  // 1. If a class: pass by reference. We also pass 0 as size.
+  //    This will cause the runtime to assume that this is a device pointer and
+  //    pass it directly to the kernel. Current semantics with the `on` statements
+  //    guarantees that.
+  // 2. If non-aggregate: same as 1.
+  // 3. If a ref: pass by value, and the size of its value. Runtime will
   //    offload that value and create a GPU pointer to the offloaded instance.
-  // 2. If a non-aggregate: pass by reference, and a `0` to signal that this
-  //    shouldn't be offloaded and passed to the kernel function directly.
-  // 3. If aggregate: pass by reference, and the size of its value. The behavior
-  //    will be similar to 1.
+  // 4. If aggregate: pass by reference, and the size of its value. The behavior
+  //    will be similar to 3.
 
   // number of arguments that are not kernel params
   int nNonKernelParamArgs = is3d ? 7:3;

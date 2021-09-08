@@ -5,14 +5,11 @@ extern {
   #define FATBIN_FILE "gpuAddNums_gpu_files/chpl__gpu.fatbin"
 
   static void checkCudaErrors(CUresult err, int i) {
-    if (err == CUDA_SUCCESS) {
-
-}
-else {
-printf("Error in %d code:%d\n", i, err);
-fflush(stdout);
-assert(false);
-}
+    if (err != CUDA_SUCCESS) {
+      printf("Error in call %d code:%d\n", i, err);
+      fflush(stdout);
+      assert(false);
+    }
   }
 
   static double launchKernel(){
