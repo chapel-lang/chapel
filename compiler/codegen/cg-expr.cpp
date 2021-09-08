@@ -19,6 +19,7 @@
  */
 
 #include "expr.h"
+#include "view.h"
 
 #include "alist.h"
 #include "astutil.h"
@@ -4774,16 +4775,31 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
       Type* actualValType = actual->typeInfo()->getValType();
 
       // TODO can we use codegenArgForFormal instead of this logic?
-      if (actualSym->isRef()) {
+      if (isClass(actualValType)) {
+        args.push_back(codegenAddrOf(codegenValuePtr(actual)));
+        args.push_back(new_IntSymbol(0));
+      }
+      else
+        if (actualSym->isRef()) {
+        
+        //std::cout << "A\n";
+        //nprint_view(actualSym);
+        //nprint_view(actualValType);
         INT_ASSERT(isAggregateType(actualValType));
         args.push_back(actual->codegen());
         args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
       }
       else if (!isAggregateType(actualValType)) {
+        //std::cout << "B\n";
+        //nprint_view(actualSym);
+        //nprint_view(actualValType);
         args.push_back(codegenAddrOf(codegenValuePtr(actual)));
         args.push_back(new_IntSymbol(0));
       }
       else {
+        //std::cout << "C\n";
+        //nprint_view(actualSym);
+        //nprint_view(actualValType);
         args.push_back(codegenAddrOf(codegenValuePtr(actual)));
         args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
       }
