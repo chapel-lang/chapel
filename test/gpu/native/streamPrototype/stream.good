@@ -1,5 +1,3 @@
-warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
-warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
 Problem size = 1024 (2**10)
 Bytes per array = 8192
 Total memory required (GB) = 2.28882e-05

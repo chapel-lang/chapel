@@ -1,5 +1,2 @@
 warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
-warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
-warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
-warning: Unknown CUDA version. version.txt: 11.0.228. Assuming the latest supported version 10.1
 88.0
