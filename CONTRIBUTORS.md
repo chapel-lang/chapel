@@ -234,6 +234,7 @@ implementation.
 [GSoC 2018]: https://summerofcode.withgoogle.com/archive/2018/organizations/4933265605525504/
 [GSoC 2019]: https://summerofcode.withgoogle.com/archive/2019/organizations/5677337046155264/
 [GSoC 2020]: https://summerofcode.withgoogle.com/archive/2020/organizations/6722154118250496/
+[GSoC 2021]: https://summerofcode.withgoogle.com/organizations/6146989856653312/
 [Haverford College]: https://www.haverford.edu/
 [HPE]: https://www.hpe.com/
 [Huazhong University of Science and Technology]: http://english.hust.edu.cn/
