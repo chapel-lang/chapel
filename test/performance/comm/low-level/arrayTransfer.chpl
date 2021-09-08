@@ -67,8 +67,9 @@ proc main() {
 
     while true {
       if nops == nopsAtCheck {
-        if t.elapsed() >= runSecs then break;
-        nopsAtCheck = (nops * (0.75 * runSecs / t.elapsed())):int;
+        const tElapsed = t.elapsed();
+        if tElapsed >= runSecs then break;
+        nopsAtCheck += (0.99 * nops * (runSecs / tElapsed - 1)):int;
         if nopsAtCheck - nops < minOpsPerTimerCheck then
           nopsAtCheck = nops + minOpsPerTimerCheck;
       }
