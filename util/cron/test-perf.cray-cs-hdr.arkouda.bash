@@ -23,5 +23,9 @@ module list
 export GASNET_PHYSMEM_MAX="9/10"
 nightly_args="${nightly_args} -no-buildcheck"
 
+# Try out branch to use --interleave-memory
+export ARKOUDA_URL=https://github.com/ronawho/arkouda.git
+export ARKOUDA_BRANCH=interleave-memory
+
 test_nightly
 sync_graphs
