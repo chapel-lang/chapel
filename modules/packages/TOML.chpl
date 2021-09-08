@@ -354,8 +354,7 @@ module TomlParser {
         }
         // DateTime
         else if dt.match(val) {
-          var date : datetime;
-          date.strptime(getToken(source), "%Y-%m-%dT%H:%M:%S");
+          var date = datetime.strptime(getToken(source), "%Y-%m-%dT%H:%M:%SZ");
           return new unmanaged Toml(date);
         }
         // Date
