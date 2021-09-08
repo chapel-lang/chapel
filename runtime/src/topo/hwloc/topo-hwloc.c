@@ -517,6 +517,27 @@ void alignAddrSize(void* p, size_t size, chpl_bool onlyInside,
 }
 
 
+void chpl_topo_interleaveMemLocality(void* p, size_t size) {
+  int flags;
+
+  if (!haveTopology) {
+    return;
+  }
+
+  if (!topoSupport->membind->set_area_membind) {
+    return;
+  }
+
+  hwloc_bitmap_t set;
+  hwloc_obj_t obj;
+  obj = hwloc_get_root_obj(topology);
+  set = hwloc_bitmap_dup(obj->cpuset);
+
+  flags = HWLOC_MEMBIND_MIGRATE | HWLOC_MEMBIND_STRICT;
+  CHK_ERR_ERRNO(hwloc_set_area_membind(topology, p, size, set, HWLOC_MEMBIND_INTERLEAVE, flags) == 0);
+}
+
+
 //
 // p must be page aligned and the page size must evenly divide size
 //

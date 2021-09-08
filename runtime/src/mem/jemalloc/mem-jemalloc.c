@@ -30,9 +30,15 @@
 #include "chpl-linefile-support.h"
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
+#include "chpl-topo.h"
+#include "chplcgfns.h"
 #include "chplmemtrack.h"
 #include "chpltypes.h"
 #include "error.h"
+
+// The dedicated arena to use for large allocations (this is important to
+// minimize contention for large allocations)
+unsigned CHPL_JE_LG_ARENA;
 
 // Decide whether or not to try to use jemalloc's chunk hooks interface
 //   jemalloc < 4.0 didn't support chunk_hooks_t
@@ -118,6 +124,10 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
 
     // now that cur_heap_offset is updated, we can unlock
     pthread_mutex_unlock(&heap.alloc_lock);
+
+    if (CHPL_INTERLEAVE_MEM && arena_ind == CHPL_JE_LG_ARENA) {
+      chpl_topo_interleaveMemLocality(cur_chunk_base, size);
+    }
   } else if (heap.type == DYNAMIC) {
     // jemalloc 4.5.0 man: "If chunk is not NULL, the returned pointer must be
     // chunk on success or NULL on error". This is used to grab new chunks in a
@@ -382,14 +392,11 @@ static void initializeSharedHeap(void) {
   useUpMemNotInHeap();
 }
 
-
-// The dedicated arena to use for large allocations (this is important to
-// minimize contention for large allocations)
-unsigned CHPL_JE_LG_ARENA;
-
 void chpl_mem_layerInit(void) {
   void* heap_base;
   size_t heap_size;
+
+  CHPL_JE_LG_ARENA = get_num_arenas()-1;
 
   chpl_comm_regMemHeapInfo(&heap_base, &heap_size);
   if (heap_base != NULL && heap_size == 0) {
@@ -423,7 +430,6 @@ void chpl_mem_layerInit(void) {
     }
     CHPL_JE_DALLOCX(p, MALLOCX_NO_FLAGS);
   }
-  CHPL_JE_LG_ARENA = get_num_arenas()-1;
 }
 
 
