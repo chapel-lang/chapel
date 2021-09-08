@@ -2849,15 +2849,27 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
     var err:syserr = ENOERR;
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
     for i in chpl_enumerate(t) {
-      var str = i:string;
-      if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
-      var slen:ssize_t = str.numBytes.safeCast(ssize_t);
-      err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
-      // Do not free str, because enum literals are C string literals
-      if !err {
-        x = i;
-        break;
-      } else if err != EFORMAT then break;
+      { // try to read e.g. red for colorenum.red
+        var str = i:string;
+        if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
+        var slen:ssize_t = str.numBytes.safeCast(ssize_t);
+        err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
+        if !err {
+          x = i;
+          break;
+        } else if err != EFORMAT then break;
+      }
+
+      { // try to read e.g. colorenum.red for colorenum.red
+        var str = t:string + "." + i:string;
+        if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
+        var slen:ssize_t = str.numBytes.safeCast(ssize_t);
+        err = qio_channel_scan_literal(false, _channel_internal, str.c_str(), slen, 1);
+        if !err {
+          x = i;
+          break;
+        } else if err != EFORMAT then break;
+      }
     }
     return err;
   } else {

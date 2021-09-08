@@ -1,0 +1,26 @@
+WRITELN OF ENUM VALS
+red
+green
+blue
+
+JSON WRITE OF ENUM VALS
+"red"
+"green"
+"blue"
+
+READING ENUM VALS WITH READ
+reading red -> red
+reading green -> green
+reading blue -> blue
+reading myenum.red -> red
+reading myenum.green -> green
+reading myenum.blue -> blue
+
+READING ENUM VALS WITH JSON READ
+reading "red" -> red
+reading "green" -> green
+reading "blue" -> blue
+reading "myenum.red" -> red
+reading "myenum.green" -> green
+reading "myenum.blue" -> blue
+
