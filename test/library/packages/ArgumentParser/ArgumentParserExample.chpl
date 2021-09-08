@@ -24,7 +24,7 @@ proc main(args: []string) throws {
                                 numArgs=1..10);
   // add a string option that accepts 1 or more values
   var typArg = parser.addOption(name="strArg2",
-                                opts=["-t","--types"],
+                                opts=["-q","--types"],
                                 numArgs=1..);
   // add a string option that accepts exactly 1 value
   var confArg = parser.addOption(name="--myConfigVar");

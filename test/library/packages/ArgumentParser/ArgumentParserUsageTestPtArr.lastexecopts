@@ -1,1 +1,1 @@
-positionalVal subCmd1 -- -c=some other -t=args,to,passAlong
+positionalVal subCmd1 -- -c=some other -q=args,to,passAlong

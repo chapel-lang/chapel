@@ -6,7 +6,7 @@ Arguments Received from CL:
 3 --
 4 -c=some
 5 other
-6 -t=args,to,passAlong
+6 -q=args,to,passAlong
 Values received from argparse:
 positional value: positionalVal
 SubCommand1 was called
@@ -14,4 +14,4 @@ args parsed in subcommand:
 subBoolFlag: false
 -c=some
 other
--t=args,to,passAlong
+-q=args,to,passAlong
