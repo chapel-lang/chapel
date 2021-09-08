@@ -53,8 +53,3 @@ woke up. initial value is 0.0i of type imag
 value is now 12.0i
 value has changed to 16.0i
 The final value is 12.0i, but it was reset to 0.0i
-going to sleep ... 
-woke up. initial value is  of type string
-value is now Hello,
-value has changed to world!
-The final value is Hello,, but it was reset to 
