@@ -6,7 +6,9 @@ extern {
 
   static void checkCudaErrors(CUresult err, int i) {
     if (err != CUDA_SUCCESS) {
-      printf("Error in call %d code:%d\n", i, err);
+      const char* name;
+      cuGetErrorName(err, &name);
+      printf("Error in call %d code:%d error name:%s\n", i, err, name);
       fflush(stdout);
       assert(false);
     }
