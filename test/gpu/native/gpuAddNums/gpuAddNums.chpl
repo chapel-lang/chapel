@@ -4,27 +4,37 @@ extern {
 
   #define FATBIN_FILE "gpuAddNums_gpu_files/chpl__gpu.fatbin"
 
-  static void checkCudaErrors(CUresult err) {
-    assert(err == CUDA_SUCCESS);
+  static void checkCudaErrors(CUresult err, int i) {
+    if (err != CUDA_SUCCESS) {
+      const char* name;
+      cuGetErrorName(err, &name);
+      printf("Error in call %d code:%d error name:%s\n", i, err, name);
+      fflush(stdout);
+      assert(false);
+    }
   }
 
   static double launchKernel(){
     CUdevice    device;
     CUmodule    cudaModule;
-    CUcontext   context;
     CUfunction  function;
     int         devCount;
+    CUcontext   context = NULL;;
 
     double X;
 
-    checkCudaErrors(cuInit(0));
-    checkCudaErrors(cuDeviceGetCount(&devCount));
-    checkCudaErrors(cuDeviceGet(&device, 0));
+    cuCtxGetCurrent(&context);
 
-    char name[128];
-    checkCudaErrors(cuDeviceGetName(name, 128, device));
+    if (context == NULL) {
+      checkCudaErrors(cuInit(0), 1);
+      checkCudaErrors(cuDeviceGetCount(&devCount), 2);
+      checkCudaErrors(cuDeviceGet(&device, 0), 3);
 
-    checkCudaErrors(cuCtxCreate(&context, 0, device));
+      char name[128];
+      checkCudaErrors(cuDeviceGetName(name, 128, device), 4);
+
+      checkCudaErrors(cuCtxCreate(&context, CU_CTX_BLOCKING_SYNC, device), 5);
+    }
 
     char * buffer = 0;
     long length;
@@ -44,18 +54,18 @@ extern {
     }
 
 
-    checkCudaErrors(cuModuleLoadData(&cudaModule, buffer));
+    checkCudaErrors(cuModuleLoadData(&cudaModule, buffer), 6);
 
-    checkCudaErrors(cuModuleGetFunction(&function, cudaModule, "add_nums"));
+    checkCudaErrors(cuModuleGetFunction(&function, cudaModule, "add_nums"), 7);
 
     CUdeviceptr devBufferX;
 
-    checkCudaErrors(cuMemAlloc(&devBufferX, sizeof(double)));
+    checkCudaErrors(cuMemAlloc(&devBufferX, sizeof(double)), 8);
 
     srand(0);
     X = rand() % 100;
 
-    checkCudaErrors(cuMemcpyHtoD(devBufferX, &X, sizeof(double)));
+    checkCudaErrors(cuMemcpyHtoD(devBufferX, &X, sizeof(double)), 9);
 
     unsigned blockSizeX = 1;
     unsigned blockSizeY = 1;
@@ -68,9 +78,9 @@ extern {
 
     checkCudaErrors(cuLaunchKernel(function, gridSizeX, gridSizeY, gridSizeZ,
                                    blockSizeX, blockSizeY, blockSizeZ,
-                                   0, NULL, KernelParams, NULL));
+                                   0, NULL, KernelParams, NULL), 10);
 
-    checkCudaErrors(cuMemcpyDtoH(&X, devBufferX, sizeof(double)));
+    checkCudaErrors(cuMemcpyDtoH(&X, devBufferX, sizeof(double)), 11);
 
     return X;
 
