@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/usr/bin/env bash
 if [[ $CHPL_TARGET_PLATFORM =~ linux \
       && $CHPL_COMM == none \
       && $CHPL_TASKS == fifo ]] ; then
