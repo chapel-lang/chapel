@@ -2,5 +2,5 @@ Config Var Values:
 configVal
 Arguments Received from CL:
 1 posArg
-Values received from argparse:
-positional value: posArg
+2 tVal
+Found some unrecognizable arguments: tVal

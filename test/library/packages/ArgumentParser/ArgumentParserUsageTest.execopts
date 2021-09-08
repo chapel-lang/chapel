@@ -3,5 +3,3 @@
  --no-flagOn positionalVal --types tea time # UsageTest.mixpos
 positionalVal subCmd1 subCmdArg # UsageTest.min.sub.opt
 positionalVal subCmd1 # UsageTest.min.sub
-positionalVal subCmd1 ++ -c=some other -t=args,to,passAlong # UsageTest.pt.arr
-positionalVal subCmd1 ++ "-c=some -v other -t=args,to,passAlongExactly" # UsageTest.pt.str

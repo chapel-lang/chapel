@@ -437,6 +437,18 @@ module ArgumentParser {
     // store subcommand names
     var _subcommands: list(string);
 
+
+    proc init() {
+      _result = new map(string, shared Argument);
+      _handlers = new map(string, owned ArgumentHandler);
+      _options = new map(string, string);
+      _positionals = new list(borrowed Positional);
+      _subcommands = new list(string);
+      this.complete();
+      // configure to allow consuming of -- if passed from runtime
+      try!{addOption(name="dummyDashHandler", opts=["--"], numArgs=0);}
+    }
+
     proc _parsePositionals(arguments:[?argsD] string, endIdx:int) throws {
       var endPos = argsD.low;
       var idx = argsD.low;
@@ -658,11 +670,11 @@ module ArgumentParser {
       return arg;
     }
 
-    // convention would dictate this default to `--`, however since the
-    // chapel runtime currently recognizes and consumes the first `--`
-    // in any command string, we are using `++` as a workaround.
+    // convention dictates that this defaults to `--`
     // this can be overridden by the developer if they prefer something else
-    proc addPassThrough(delimiter="++") throws {
+    proc addPassThrough(delimiter="--") throws {
+      // remove the dummyHandler first
+      if delimiter == "--" then _removeHandler("dummyDashHandler", ["--"]);
       var handler = new owned PassThrough(delimiter);
       _subcommands.append(delimiter);
       _options.add(delimiter, delimiter);
@@ -805,6 +817,14 @@ module ArgumentParser {
                                     defaultValue=myDefault
                                     );
       return _addHandler(handler);
+    }
+
+    // remove a handler for an option or flag
+    proc _removeHandler(name:string, opts:[?optsD]string) {
+      if _result.remove(name) {
+        _handlers.remove(name);
+        for opt in opts do _options.remove(opt);
+      }
     }
   }
 

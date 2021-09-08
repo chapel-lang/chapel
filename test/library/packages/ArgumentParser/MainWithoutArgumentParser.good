@@ -1,0 +1,7 @@
+Test for when main has args but argument parser not used
+--some
+--opts
+that
+--should
+--be=seen
+Processed all arguments

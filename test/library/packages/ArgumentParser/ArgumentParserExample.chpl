@@ -24,7 +24,7 @@ proc main(args: []string) throws {
                                 numArgs=1..10);
   // add a string option that accepts 1 or more values
   var typArg = parser.addOption(name="strArg2",
-                                opts=["-t","--types"],
+                                opts=["-q","--types"],
                                 numArgs=1..);
   // add a string option that accepts exactly 1 value
   var confArg = parser.addOption(name="--myConfigVar");
@@ -86,9 +86,7 @@ proc mySubCmd1(args:[?argsD]string) throws {
 
   // add a passthrough identifier for collecting remaining args
   // also define a place to read the passed through values
-  // the pattern `--` is commonly used for this purpose
-  // but the Chapel runtime is set to recognize `--` and consume it
-  // so we are using an alternative `++` (default) for our program.
+  // the pattern `--` is commonly used for this purpose and is the default
   var passedThrough = parser.addPassThrough();
   // try to parse the arguments, catch exceptions
   try {
