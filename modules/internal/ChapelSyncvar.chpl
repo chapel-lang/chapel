@@ -74,9 +74,12 @@ module ChapelSyncvar {
            isIntegralType(t)      ||
            isRealType(t)          ||
            isImagType(t)          ||
+           isComplexType(t)       ||
            isEnumType(t)          ||
            isClassType(t)         ||
            isStringType(t)        ||
+           isBytesType(t)         ||
+           isRecordType(t)        ||
            t == chpl_taskID_t;
 
   private proc ensureFEType(type t) {
@@ -85,19 +88,6 @@ module ChapelSyncvar {
 
     if isGenericType(t) then
       compilerError("sync/single types cannot contain generic types");
-
-    if isNonNilableClass(t) then
-      compilerError("sync/single types cannot yet contain non-nilable classes");
-
-    if isOwnedClassType(t) then
-      compilerError("sync/single types cannot yet contain owned class types");
-
-    if !isDefaultInitializableType(t) then
-      compilerError("sync/single types cannot yet contain a type that cannot be default initialized");
-
-    if !isConstCopyableType(t) then
-      compilerError("sync/single types cannot yet contain a type is not const-copyable");
-
   }
 
   pragma "no doc"
@@ -110,6 +100,39 @@ module ChapelSyncvar {
     } else {
       return unmanaged _synccls(valType);
     }
+  }
+
+  // This could be replaced with Memory.Initialization but I didn't
+  // want to compile it by default at this time.
+  pragma "no doc"
+  pragma "unsafe"
+  private inline proc _moveset(ref src: ?t, ref dst: t) lifetime src == dst {
+    __primitive("=", dst, src);
+  }
+
+  pragma "no doc"
+  pragma "unsafe"
+  private inline proc _emptyval(ref dst: ?t) {
+    if isDefaultInitializableType(t) {
+      // It is OK to read the empty value with e.g. readXX
+      // so we set it to a default-initialized value
+      pragma "no auto destroy"
+      var defaultValue : t;
+      _moveset(dst, defaultValue);
+    } else {
+      // It will be an error to read the empty value
+      // but we zero it just in case
+      c_memset(c_ptrTo(dst), 0, c_sizeof(t));
+    }
+  }
+  pragma "no doc"
+  pragma "unsafe"
+  private inline proc _retemptyval(type t) {
+    pragma "no init"
+    pragma "no auto destroy"
+    var ret: t;
+    _emptyval(ret);
+    return ret;
   }
 
   pragma "no doc"
@@ -135,6 +158,13 @@ module ChapelSyncvar {
       ensureFEType(valType);
       this.valType = valType;
       this.wrapped = new (getSyncClassType(valType))();
+    }
+
+    pragma "dont disable remote value forwarding"
+    proc init(in value) {
+      ensureFEType(value.type);
+      this.valType = value.type;
+      this.wrapped = new (getSyncClassType(valType))(value);
     }
 
     //
@@ -170,10 +200,8 @@ module ChapelSyncvar {
     }
 
     pragma "dont disable remote value forwarding"
-    proc init=(const other : this.valType) {
-      this.init(other.type);
-      // TODO: initialize the sync class impl with 'other'
-      this.writeEF(other);
+    proc init=(in other : this.type.valType) {
+      this.init(other);
     }
 
     pragma "dont disable remote value forwarding"
@@ -248,7 +276,7 @@ module ChapelSyncvar {
 
     :arg val: New value of the sync variable.
   */
-  proc _syncvar.writeEF(x : valType) {
+  proc _syncvar.writeEF(in x : valType) {
     wrapped.writeEF(x);
   }
 
@@ -258,7 +286,7 @@ module ChapelSyncvar {
 
     :arg val: New value of the sync variable.
   */
-  proc _syncvar.writeFF(x : valType) {
+  proc _syncvar.writeFF(in x : valType) {
     wrapped.writeFF(x);
   }
 
@@ -267,7 +295,7 @@ module ChapelSyncvar {
 
     :arg val: New value of the sync variable.
   */
-  proc _syncvar.writeXF(x : valType) {
+  proc _syncvar.writeXF(in x : valType) {
     wrapped.writeXF(x);
   }
 
@@ -297,10 +325,13 @@ module ChapelSyncvar {
 
   inline operator :(from, type t:_syncvar)
   where from.type == t.valType {
+    compilerWarning("Casting from a value to a sync variable is deprecated");
     return new _syncvar(from);
   }
 
   inline operator :(from: _syncvar, type toType:_syncvar) {
+    compilerWarning("Casting sync variables is deprecated");
+    // TODO: this doesn't seem right - it doesn't use toType
     return new _syncvar(from);
   }
 
@@ -431,9 +462,25 @@ module ChapelSyncvar {
     var  value   : valType;
     var  syncAux : chpl_sync_aux_t;      // Locking, signaling, ...
 
+    // If the sync variable is empty
+    //   if valType can be default initialized, value is a
+    //     default-initialized value
+    //   if valType cannot be default initialized, value is
+    //     zero'd memory, and calls that could access it should
+    //     result in compilation error.
+
     pragma "dont disable remote value forwarding"
     proc init(type valType) {
       this.valType = valType;
+      this.value = _retemptyval(valType);
+      this.complete();
+      chpl_sync_initAux(syncAux);
+    }
+
+    pragma "dont disable remote value forwarding"
+    proc init(in value) {
+      this.valType = value.type;
+      this.value = value;
       this.complete();
       chpl_sync_initAux(syncAux);
     }
@@ -446,78 +493,110 @@ module ChapelSyncvar {
     }
 
     proc readFE() {
+      pragma "no init"
+      pragma "no auto destroy"
       var ret : valType;
 
       on this {
+        pragma "no init"
+        pragma "no auto destroy"
         var localRet : valType;
 
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
 
-        localRet = value;
+        _moveset(localRet, value);
+        _emptyval(value);
 
         chpl_sync_markAndSignalEmpty(syncAux);
         chpl_rmem_consist_acquire();
 
-        ret = localRet;
+        _moveset(ret, localRet);
       }
 
       return ret;
     }
 
-    proc readFF() {
+    proc const readFF() {
+      if !isConstCopyableType(valType) ||
+         !isConstAssignableType(valType) {
+        compilerError("readFF requires that the type contained in the sync variable be const-copyable and const-assignable");
+      }
+
       var ret : valType;
-
       on this {
-        var localRet : valType;
-
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
 
-        localRet = value;
+        // const-copy from value
+        var localRet: valType = value;
 
         chpl_sync_markAndSignalFull(syncAux);
         chpl_rmem_consist_acquire();
 
+        // assign back to the original locale
         ret = localRet;
       }
 
       return ret;
     }
 
-    proc readXX() {
+    proc const readXX() {
+      if !isDefaultInitializableType(valType) ||
+         !isConstCopyableType(valType) ||
+         !isConstAssignableType(valType) {
+        compilerError("readXX requires that the type contained in the sync variable be default-initializeable, const-copyable, and const-assignable");
+      }
+
       var ret : valType;
-
       on this {
-        var localRet : valType;
-
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
-        localRet = value;
+        // const-copy from value
+        var localRet : valType = value;
 
         chpl_sync_unlock(syncAux);
         chpl_rmem_consist_acquire();
 
+        // assign back to the original locale
         ret = localRet;
       }
 
       return ret;
     }
 
-    proc writeEF(val : valType) lifetime this < val {
+    proc writeEF(pragma "no auto destroy" in val : valType) lifetime this < val {
       on this {
+        // if the value type is default initializeable, then
+        // the empty state has a value that needs to be destroyed.
+        pragma "no init"
+        pragma "no auto destroy"
+        var toDestroy: valType;
+
         chpl_rmem_consist_release();
         chpl_sync_waitEmptyAndLock(syncAux);
 
-        value = val;
+        if !isDefaultInitializableType(valType) {
+          _moveset(toDestroy, value);
+        }
+        _moveset(value, val);
 
         chpl_sync_markAndSignalFull(syncAux);
         chpl_rmem_consist_acquire();
+
+        if !isDefaultInitializableType(valType) {
+          chpl__autoDestroy(toDestroy);
+        }
       }
     }
 
     proc writeFF(val : valType) lifetime this < val {
+      if !isConstCopyableType(valType) ||
+         !isConstAssignableType(valType) {
+        compilerError("writeFF requires that the type contained in the sync variable be const-copyable, and const-assignable");
+      }
+
       on this {
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
@@ -530,6 +609,12 @@ module ChapelSyncvar {
     }
 
     proc writeXF(val : valType) lifetime this < val {
+      if !isDefaultInitializableType(valType) ||
+         !isConstCopyableType(valType) ||
+         !isConstAssignableType(valType) {
+        compilerError("writeXF requires that the type contained in the sync variable be default-initializeable, const-copyable, and const-assignable");
+      }
+
       on this {
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
@@ -542,13 +627,23 @@ module ChapelSyncvar {
     }
 
     proc reset() {
+      if !isDefaultInitializableType(valType) ||
+         !isConstCopyableType(valType) ||
+         !isConstAssignableType(valType) {
+        compilerError("reset requires that the type contained in the sync variable be default-initializeable, const-copyable, and const-assignable");
+      }
+
       on this {
         const defaultValue : valType;
+
+        pragma "no init"
+        var toDestroy: valType;
 
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
-        value = defaultValue;
+        _move(toDestroy, value);
+        _emptyval(value);
 
         chpl_sync_markAndSignalEmpty(syncAux);
         chpl_rmem_consist_acquire();
@@ -578,6 +673,8 @@ module ChapelSyncvar {
     proc init(type valType) {
       this.valType = valType;
       this.complete();
+      // MPF: I think we can just call qthread_purge here
+      // because all of the types supperted here have a default of 0
       qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
     }
 
@@ -713,6 +810,11 @@ module ChapelSyncvar {
       this.valType = valType;
       wrapped = new unmanaged _singlecls(valType);
     }
+    proc init(in value) {
+      ensureFEType(value.type);
+      this.valType = value.type;
+      wrapped = new unmanaged _singlecls(value);
+    }
 
     //
     // This is technically a copy-initializer, but it's only called through
@@ -747,9 +849,8 @@ module ChapelSyncvar {
     }
 
     pragma "dont disable remote value forwarding"
-    proc init=(const other : this.type.valType) {
-      this.init(other.type);
-      this.writeEF(other);
+    proc init=(in other : this.type.valType) {
+      this.init(other);
     }
 
     pragma "dont disable remote value forwarding"
@@ -814,7 +915,7 @@ module ChapelSyncvar {
 
     :arg val: New value of the single variable.
   */
-  proc _singlevar.writeEF(x : valType) {
+  proc _singlevar.writeEF(in x : valType) {
     wrapped.writeEF(x);
   }
 
@@ -835,9 +936,12 @@ module ChapelSyncvar {
 
   inline operator :(from, type t:_singlevar)
   where from.type == t.valType {
+    compilerWarning("Casting from a value to a single variable is deprecated");
     return new _singlevar(from);
   }
   inline operator :(from: _singlevar, type toType:_singlevar) {
+    compilerWarning("Casting single variables is deprecated");
+    // TODO: this doesn't seem right - it doesn't use toType
     return new _singlevar(from);
   }
 
@@ -892,6 +996,14 @@ module ChapelSyncvar {
 
     proc init(type valType) {
       this.valType = valType;
+      this.value = _retemptyval(valType);
+      this.complete();
+      chpl_single_initAux(singleAux);
+    }
+
+    proc init(in value) {
+      this.valType = value.type;
+      this.value = value;
       this.complete();
       chpl_single_initAux(singleAux);
     }
@@ -903,6 +1015,11 @@ module ChapelSyncvar {
     }
 
     proc readFF() {
+      if !isConstCopyableType(valType) ||
+         !isConstAssignableType(valType) {
+        compilerError("readFF requires that the type contained in the single variable be const-copyable and const-assignable");
+      }
+
       var ret : valType;
 
       on this {
@@ -927,6 +1044,12 @@ module ChapelSyncvar {
     }
 
     proc readXX() {
+      if !isDefaultInitializableType(valType) ||
+         !isConstCopyableType(valType) ||
+         !isConstAssignableType(valType) {
+        compilerError("readXX requires that the type contained in the single variable be default-initializeable, const-copyable, and const-assignable");
+      }
+
       var ret : valType;
 
       on this {
@@ -949,18 +1072,31 @@ module ChapelSyncvar {
       return ret;
     }
 
-    proc writeEF(val : valType) lifetime this < val {
+    proc writeEF(pragma "no auto destroy" in val : valType) lifetime this < val {
       on this {
+        // if the value type is default initializeable, then
+        // the empty state has a value that needs to be destroyed.
+        pragma "no init"
+        pragma "no auto destroy"
+        var toDestroy: valType;
+
         chpl_rmem_consist_release();
         chpl_single_lock(singleAux);
 
         if this.isFull then
           halt("single var already defined");
 
-        value = val;
+        if !isDefaultInitializableType(valType) {
+          _moveset(toDestroy, value);
+        }
+        _moveset(value, val);
 
         chpl_single_markAndSignalFull(singleAux);
         chpl_rmem_consist_acquire();
+
+        if !isDefaultInitializableType(valType) {
+          chpl__autoDestroy(toDestroy);
+        }
       }
     }
 
