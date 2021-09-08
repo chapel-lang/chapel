@@ -1,5 +1,5 @@
-private use MasonArgParse;
-private use List;
+use ArgumentParser;
+use List;
 
 config var myConfigVar:string;
 

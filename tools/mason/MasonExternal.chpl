@@ -26,10 +26,10 @@ const minor = v[1];
 const spackBranch = 'releases/v' + '.'.join(major, minor);
 const spackDefaultPath = MASON_HOME + "/spack";
 
+use ArgumentParser;
 use FileSystem;
 use List;
 use Map;
-use MasonArgParse;
 use MasonEnv;
 use MasonHelp;
 use MasonUtils;
