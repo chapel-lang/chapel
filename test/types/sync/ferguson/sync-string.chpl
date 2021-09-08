@@ -1,2 +1,5 @@
 var x: sync string;
-x.writeEF("hello");
+
+x.writeEF("hi "*23);
+
+writeln(x.readFE());

@@ -75,19 +75,29 @@ module ChapelSyncvar {
            isRealType(t)          ||
            isImagType(t)          ||
            isEnumType(t)          ||
-           isUnmanagedClassType(t) ||
-           isBorrowedClassType(t)  ||
+           isClassType(t)         ||
+           isStringType(t)        ||
            t == chpl_taskID_t;
 
   private proc ensureFEType(type t) {
     if isSupported(t) == false then
       compilerError("sync/single types cannot contain type '", t : string, "'");
 
-    if isNonNilableClass(t) then
-      compilerError("sync/single types cannot contain non-nilable classes");
-
     if isGenericType(t) then
       compilerError("sync/single types cannot contain generic types");
+
+    if isNonNilableClass(t) then
+      compilerError("sync/single types cannot yet contain non-nilable classes");
+
+    if isOwnedClassType(t) then
+      compilerError("sync/single types cannot yet contain owned class types");
+
+    if !isDefaultInitializableType(t) then
+      compilerError("sync/single types cannot yet contain a type that cannot be default initialized");
+
+    if !isConstCopyableType(t) then
+      compilerError("sync/single types cannot yet contain a type is not const-copyable");
+
   }
 
   pragma "no doc"

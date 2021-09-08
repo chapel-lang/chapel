@@ -155,16 +155,17 @@ written, its state transitions to full.
 ``sync`` and ``single`` are type qualifiers and precede the type of the
 variable’s value in the declaration. Sync and single are supported for
 the primitive types ``nothing``, ``bool``, ``int``, ``uint``, ``real``,
-``imag`` ( :ref:`Primitive_Types`); for enumerated types
-( :ref:`Enumerated_Types`); and for nilable unmanaged or nilable borrowed
-class types ( :ref:`Class_Types`). For sync variables of class type, the
-full/empty state applies to the reference to the class object, not to its
-member fields.
+``imag``, ``string`` ( :ref:`Primitive_Types`); for enumerated types
+( :ref:`Enumerated_Types`); and for nilable class types that have
+``unmanaged``, ``borrowed``, or ``shared`` memory management strategy
+( :ref:`Class_Types`). For sync variables of class type, the full/empty
+state applies to the reference to the class object, not to its member
+fields.
 
    *Note*.
 
    In the future, ``sync`` and ``single`` might be extended to support
-   more types, including ``complex`` record types.
+   more types, including ``complex``, ``owned`` classes, and record types.
 
 If a task attempts to read or write a synchronization variable that is
 not in the correct state, the task is suspended. When the variable
