@@ -1,2 +1,2 @@
-arrayIndices.chpl:2: warning: In a forthcoming release, calling '.indices' on an array will return/yield its indices locally rather than returning a copy of the array's domain as it does today.  See https://github.com/chapel-lang/chapel/issues/17883 for details.  To preserve the current behavior, use '.domain' or a copy thereof.  To update to the proposed new behavior today, re-compile with '-sarrayIndicesAlwaysLocal=true'.
+arrayIndices.chpl:2: warning: the current behavior of  '.indices' on arrays is deprecated; see https://chapel-lang.org/docs/1.25/builtins/ChapelArray.html#ChapelArray.indices for details
 {1..10}

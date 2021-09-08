@@ -181,8 +181,9 @@ module ChapelArray {
 
   // This permits a user to opt into upcoming behavior to always have
   // .indices return local indices for an array
+  pragma "no doc"
   config param arrayIndicesAlwaysLocal = false;
-  
+
   pragma "no doc"
   config param debugBulkTransfer = false;
   pragma "no doc"
@@ -2629,17 +2630,38 @@ module ChapelArray {
     /* The number of dimensions in the array */
     proc rank param return this.domain.rank;
 
+    /* Return the array's indices as a copy of its domain.
+
+       Note that in a forthcoming release, we expect ``.indices`` to
+       change in behavior to return/yield indices using a local
+       representation rather than as a clone of the array's domain.
+       In order to preserve the legacy behavior in your program,
+       please use ``.domain`` instead (or a copy thereof).
+
+       If you'd like to opt into a prototype of the new behavior,
+       recompile with ``-sarrayIndicesAlwaysLocal=true``.  For dense,
+       rectangular arrays, this will have the effect of returning a
+       local domain representing the array's indices; for a sparse or
+       associative array, it will invoke a serial iterator that yields
+       the array's indices.
+
+       See https://github.com/chapel-lang/chapel/issues/17883 for
+       further details.
+    */
+    deprecated "the current behavior of  '.indices' on arrays is deprecated; see https://chapel-lang.org/docs/1.25/builtins/ChapelArray.html#ChapelArray.indices for details"
     proc indices where arrayIndicesAlwaysLocal == false {
-      compilerWarning("In a forthcoming release, calling '.indices' on an array will return/yield its indices locally rather than returning a copy of the array's domain as it does today.  See https://github.com/chapel-lang/chapel/issues/17883 for details.  To preserve the current behavior, use '.domain' or a copy thereof.  To update to the proposed new behavior today, re-compile with '-sarrayIndicesAlwaysLocal=true'.");
       return _dom;
     }
-    
-    /* return the array's indices as its domain */
-    proc indices where arrayIndicesAlwaysLocal == true && !isSparseArr(this) && !isAssociativeArr(this) {
+
+    pragma "no doc"
+    proc indices where arrayIndicesAlwaysLocal == true &&
+                       !isSparseArr(this) && !isAssociativeArr(this) {
       return {(..._dom.getIndices())};
     }
 
-    iter indices where arrayIndicesAlwaysLocal == true && (isSparseArr(this) || isAssociativeArr(this)) {
+    pragma "no doc"
+    iter indices where arrayIndicesAlwaysLocal == true &&
+                       (isSparseArr(this) || isAssociativeArr(this)) {
       for i in _dom do
         yield i;
     }
