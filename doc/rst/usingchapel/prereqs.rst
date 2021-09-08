@@ -35,7 +35,7 @@ about your environment for using Chapel:
 
   * Building LLVM requires cmake version 3.13.4 or later.
 
-  * If you wish to use chpldoc or Chapel's test system, Python 3.6 or
+  * If you wish to use chpldoc or Chapel's test system, Python 3.7 or
     newer is required and the ``python3`` and ``pip3`` commands must be
     available. The ``venv`` Python package must be available (note that
     it is often included by default in a Python 3 installation).
