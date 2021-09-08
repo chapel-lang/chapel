@@ -20,6 +20,11 @@ The deprecation message uses the following format:
 
     foo is deprecated - please use bar
 
+   For compile-time messaging you can use ``compilerWarning()`` to do
+   this, but when deprecating symbols the ``deprecated`` keyword often
+   works best.  Look in the test/deprecated and test/deprecated-keyword
+   directories for many examples.
+
 2. Update the deprecated feature documentation to state that it is deprecated
    and point to the preferred feature.
 
