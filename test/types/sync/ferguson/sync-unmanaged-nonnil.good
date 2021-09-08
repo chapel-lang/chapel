@@ -1,0 +1,14 @@
+sync-unmanaged-nonnil.chpl:3: warning: true
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: In initializer:
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: error: cannot default-initialize field value: unmanaged C
+note: non-nilable class type 'unmanaged C' does not support default initialization
+note: Consider using the type unmanaged C? instead
+  $CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: called as _synccls.init(type valType = unmanaged C)
+  within internal functions (use --print-callstack-on-error to see)
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: In method 'readFE':
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: error: cannot default-initialize ret: unmanaged C
+$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: error: use here prevents split-init
+note: non-nilable class type 'unmanaged C' does not support default initialization
+note: Consider using the type unmanaged C? instead
+  $CHPL_HOME/modules/internal/ChapelSyncvar.chpl:nnnn: called as (_synccls(unmanaged C)).readFE()
+  within internal functions (use --print-callstack-on-error to see)

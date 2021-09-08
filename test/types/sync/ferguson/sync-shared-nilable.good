@@ -1,0 +1,1 @@
+sync-shared-nilable.chpl:3: error: sync/single types cannot contain type 'shared C?'

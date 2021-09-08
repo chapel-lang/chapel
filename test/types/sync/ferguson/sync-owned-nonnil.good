@@ -1,0 +1,1 @@
+sync-owned-nonnil.chpl:3: error: sync/single types cannot contain type 'owned C'
