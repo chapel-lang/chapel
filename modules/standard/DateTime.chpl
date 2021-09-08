@@ -1164,11 +1164,10 @@ module DateTime {
     return strftime(year + "-%m-%d" + sep + "%H:%M:%S" + micro + offset);
   }
 
-  /* Create a `datetime` as described by the `date_string` and `format`
-     string.  Note that this routine is currently untested, and to the
-     extent that it works, only supports the format strings of C's
-     strptime().
-      */
+  /* Create a `datetime` as described by the `date_string` and
+     `format` string.  Note that this routine currently only supports
+     the format strings of C's strptime().
+  */
   proc type datetime.strptime(date_string: string, format: string) {
     extern proc strptime(buf: c_string, format: c_string, ref ts: tm);
     var timeStruct: tm;

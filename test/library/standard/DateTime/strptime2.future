@@ -3,5 +3,8 @@ unimplemented feature: strptime() doesn't support '%f' flag
 #16922
 
 This version of the test uses a variant signature which was
-implemented in #17453, though I was unable to find any design
-discussion about the tradeoffs between the two approaches.
+implemented in #17453 but then later backed out, in which strptime()
+is defined as a method on 'datetime' values rather than as a type
+method on 'datetime' itself.  This seems potentially appealing, though
+I was unable to find any design discussion about the tradeoffs between
+the two approaches.
