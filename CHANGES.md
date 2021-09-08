@@ -1,6 +1,123 @@
 Release Changes List
 ====================
 
+version 1.25.0
+==============
+
+Twenty-eigth public release of Chapel, September 23, 2021
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+Packaging / Configuration Changes
+---------------------------------
+
+Syntactic / Naming Changes
+--------------------------
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+
+Namespace Changes
+-----------------
+
+New Features
+------------
+
+Feature Improvements
+--------------------
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+
+Deprecated / Removed Library Features
+-------------------------------------
+
+Standard Library Modules
+------------------------
+
+Package Modules
+---------------
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+
+Performance Optimizations / Improvements
+----------------------------------------
+
+Compilation-Time / Generated Code Improvements
+----------------------------------------------
+
+Memory Improvements
+-------------------
+
+Documentation
+-------------
+
+Syntax Highlighting
+-------------------
+
+Example Codes
+-------------
+
+Portability
+-----------
+
+Compiler Flags
+--------------
+
+Runtime Library Changes
+-----------------------
+
+Launchers
+---------
+
+Error Messages / Semantic Checks
+--------------------------------
+
+Bug Fixes
+---------
+
+Bug Fixes for Libraries
+-----------------------
+
+Bug Fixes for Tools
+-------------------
+
+Platform-specific bug fixes
+---------------------------
+
+Third-Party Software Changes
+----------------------------
+
+Developer-oriented changes: Process
+-----------------------------------
+
+Developer-oriented changes: Documentation
+-----------------------------------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Makefiles
+-------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+
+Developer-oriented changes: Performance improvements
+----------------------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Testing System
+------------------------------------------
+
+
 version 1.24.1
 ==============
 
