@@ -12,7 +12,7 @@ Contributors to the Chapel 1.25.0 release
 * Paul Cassella, [HPE]
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
-* Krishna Kumar Dey, [GSoC 2021] mentor, [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Information Technology, Sri City]
+* Krishna Kumar Dey, [GSoC 2021] and [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Information Technology, Sri City]
 * Lydia Duncan, [HPE]
 * Prashanth Duvvuri, [GSoC 2021] student from [Northeastern University] (former individual contributor)
 * Michael Ferguson, [HPE]
