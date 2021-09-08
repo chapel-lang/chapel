@@ -203,32 +203,17 @@ static void chpl_gpu_launch_kernel_help(const char* fatbinPath,
   for (i=0 ; i<nargs ; i++) {
     void* cur_arg = va_arg(args, void*);
     size_t cur_arg_size = va_arg(args, size_t);
-    CHPL_GPU_LOG("Arg passed to launcher %p, %zu\n", cur_arg, cur_arg_size);
 
     if (cur_arg_size > 0) {
-      // compiler will pass array._instance by reference along with an address,
-      // as it doesn't know how to tell a device pointer from a host pointer.
-      // Here we check whether the address we're passed is actually of a device
-      // pointer, and if so, we pass it to the kernel directly.
-      /*if (chpl_gpu_is_device_ptr(*((void**)cur_arg))) {*/
-        /*printf("kp1\n");*/
-        /*kernel_params[i] = cur_arg;*/
-      /*}*/
-      /*else {*/
-        /*printf("kp2\n");*/
-        // TODO this allocation needs to use `chpl_mem_alloc` with a proper desc
-        kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
+      // TODO this allocation needs to use `chpl_mem_alloc` with a proper desc
+      kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
 
-        // TODO pass the location info to this function and use a proper mem
-        // desc
-        *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, 0, 0, 0);
+      // TODO pass the location info to this function and use a proper mem
+      // desc
+      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, 0, 0, 0);
 
-        chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
-      /*}*/
+      chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
 
-      CHPL_GPU_LOG("\tpointer as checked: %p\n", *((void**)cur_arg));
-      CHPL_GPU_LOG("\tKernel parameter %d: %p (device ptr)\n",
-                   i, kernel_params[i]);
       CHPL_GPU_LOG("\tKernel parameter %d: %p (device ptr)\n",
                    i, *kernel_params[i]);
     }
