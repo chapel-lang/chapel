@@ -1,3 +1,3 @@
 
-var i : sync int = 100;
-var s : sync string = i;
+var r : sync real = 100.0;
+var i : sync int = r;

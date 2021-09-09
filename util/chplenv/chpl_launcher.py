@@ -6,8 +6,8 @@ import chpl_comm, chpl_comm_substrate, chpl_platform, overrides
 from utils import error, memoize, warning
 
 def slurm_prefix(base_launcher, platform_val):
-    """ If salloc is available and we're on a cray-cs, prefix with slurm-"""
-    if platform_val == 'cray-cs' and find_executable('salloc'):
+    """ If salloc is available and we're on a cray-cs/hpe-apollo, prefix with slurm-"""
+    if platform_val in ('cray-cs', 'hpe-apollo') and find_executable('salloc'):
         return 'slurm-{}'.format(base_launcher)
     return base_launcher
 
@@ -60,7 +60,7 @@ def get():
             elif substrate_val == 'ofi':
                 launcher_val = slurm_prefix('gasnetrun_ofi', platform_val)
         else:
-            if platform_val == 'cray-cs' and find_executable('srun'):
+            if platform_val in ('cray-cs', 'hpe-apollo') and find_executable('srun'):
                 launcher_val = 'slurm-srun'
             else:
                 launcher_val = 'none'

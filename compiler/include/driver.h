@@ -54,6 +54,7 @@ extern bool fNoCastChecks;
 extern bool fNoDivZeroChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
+extern bool fEnableMemInterleaving;
 extern bool fLLVMWideOpt;
 
 extern bool fAutoLocalAccess;
@@ -241,6 +242,7 @@ extern int breakOnID;
 extern int breakOnRemoveID;
 
 extern int fGPUBlockSize;
+extern char fCUDAArch[16];
 
 extern char stopAfterPass[128];
 

@@ -131,7 +131,7 @@ proc runWithStatus(command, show=true): int {
       while sub.stderr.readline(line) do write(line);
     }
     sub.wait();
-    return sub.exit_status;
+    return sub.exitCode;
   }
   catch {
     return -1;
@@ -213,7 +213,7 @@ proc runSpackCommand(command) {
     write(line);
   }
 
-  return sub.exit_status;
+  return sub.exitCode;
 }
 
 
@@ -318,7 +318,7 @@ proc getChapelVersionInfo(): VersionInfo {
 
       var process = spawn(["chpl", "--version"], stdout=PIPE);
       process.wait();
-      if process.exit_status != 0 {
+      if process.exitCode != 0 {
         throw new owned MasonError("Failed to run 'chpl --version'");
       }
 

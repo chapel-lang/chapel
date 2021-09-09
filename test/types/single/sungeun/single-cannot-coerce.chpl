@@ -1,3 +1,3 @@
 
-var i : single int = 100;
-var s : single string = i;
+var r : single real = 100;
+var i : single int = r;

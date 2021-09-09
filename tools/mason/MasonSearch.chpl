@@ -18,10 +18,10 @@
  * limitations under the License.
  */
 
+use ArgumentParser;
 use FileSystem;
 use IO;
 use List;
-use MasonArgParse;
 use MasonEnv;
 use MasonHelp;
 use MasonUpdate;
@@ -47,29 +47,22 @@ proc masonSearch(args: [?d] string) {
 }
 
 proc masonSearch(ref args: list(string)) {
+
   var parser = new argumentParser();
 
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
-  // TODO: Is the debug flag supposed to be documented in help or not?
-  var debugFlag = parser.addFlag("debug",
-                                opts=["--debug"],
-                                defaultValue=false,
-                                flagInversion=false);
-  var showFlag = parser.addFlag(name="show",
-                                opts=["--show"],
-                                defaultValue=false,
-                                flagInversion=false);
-  var updateFlag = parser.addFlag(name="update",
-                                  opts=["--update"],
-                                  flagInversion=true);
-
+                                defaultValue=false);
   // If no query is provided, list all packages in registry
   var queryArg = parser.addArgument(name="query",
                                     numArgs=0..1,
                                     defaultValue=".*");
+
+  // TODO: Is the debug flag supposed to be documented in help or not?
+  var debugFlag = parser.addFlag("debug", defaultValue=false);
+  var showFlag = parser.addFlag(name="show", defaultValue=false);
+  var updateFlag = parser.addFlag(name="update", flagInversion=true);
+
   try! {
     parser.parseArgs(args.toArray());
   }

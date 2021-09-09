@@ -75,10 +75,3 @@
 2: value has changed to 16.0i and it is full
 2: after sleeping, value is still 16.0i
 2: value has been reset to 12.0i
-1: going to sleep ... 
-2: initial value is  of type string
-1: woke up. writing Hello,
-2: value is now Hello, and it is empty
-2: value has changed to world! and it is full
-2: after sleeping, value is still world!
-2: value has been reset to Hello,

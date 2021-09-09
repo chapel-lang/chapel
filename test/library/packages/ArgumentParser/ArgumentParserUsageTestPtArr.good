@@ -1,0 +1,17 @@
+Config Var Values:
+
+Arguments Received from CL:
+1 positionalVal
+2 subCmd1
+3 --
+4 -c=some
+5 other
+6 -q=args,to,passAlong
+Values received from argparse:
+positional value: positionalVal
+SubCommand1 was called
+args parsed in subcommand:
+subBoolFlag: false
+-c=some
+other
+-q=args,to,passAlong

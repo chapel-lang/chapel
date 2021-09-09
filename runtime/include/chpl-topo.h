@@ -66,6 +66,13 @@ void chpl_topo_setThreadLocality(c_sublocid_t);
 c_sublocid_t chpl_topo_getThreadLocality(void);
 
 //
+// Set the locality of a block of memory to interleave (round-robin) between
+// NUMA domains. This may only set the policy and does not necessarily fault
+// memory in
+//
+void chpl_topo_interleaveMemLocality (void*, size_t);
+
+//
 // set the locality of a block of memory, to a specific NUMA domain
 //
 // args:

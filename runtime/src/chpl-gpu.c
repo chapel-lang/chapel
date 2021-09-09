@@ -31,16 +31,14 @@
 #include <cuda_runtime.h>
 #include <assert.h>
 
-// #define CHPL_GPU_DEBUG  // TODO: adjust Makefile for this
-
 static void CHPL_GPU_LOG(const char *str, ...) {
-#ifdef CHPL_GPU_DEBUG
-  va_list args;
-  va_start(args, str);
-  vfprintf(stdout, str, args);
-  va_end(args);
-  fflush(stdout);
-#endif
+  if (verbosity >= 2) {
+    va_list args;
+    va_start(args, str);
+    vfprintf(stdout, str, args);
+    va_end(args);
+    fflush(stdout);
+  }
 }
 
 static void chpl_gpu_cuda_check(int err, const char* file, int line) {
@@ -207,23 +205,14 @@ static void chpl_gpu_launch_kernel_help(const char* fatbinPath,
     size_t cur_arg_size = va_arg(args, size_t);
 
     if (cur_arg_size > 0) {
-      // compiler will pass array._instance by reference along with an address,
-      // as it doesn't know how to tell a device pointer from a host pointer.
-      // Here we check whether the address we're passed is actually of a device
-      // pointer, and if so, we pass it to the kernel directly.
-      if (chpl_gpu_is_device_ptr(*((void**)cur_arg))) {
-        kernel_params[i] = cur_arg;
-      }
-      else {
-        // TODO this allocation needs to use `chpl_mem_alloc` with a proper desc
-        kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
+      // TODO this allocation needs to use `chpl_mem_alloc` with a proper desc
+      kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
 
-        // TODO pass the location info to this function and use a proper mem
-        // desc
-        *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, 0, 0, 0);
+      // TODO pass the location info to this function and use a proper mem
+      // desc
+      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size, 0, 0, 0);
 
-        chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
-      }
+      chpl_gpu_copy_host_to_device(*kernel_params[i], cur_arg, cur_arg_size);
 
       CHPL_GPU_LOG("\tKernel parameter %d: %p (device ptr)\n",
                    i, *kernel_params[i]);

@@ -71,6 +71,7 @@ _chpl ()
 --gdb \
 --gen-ids \
 --gmp \
+--gpu-arch \
 --gpu-block-size \
 --hdr-search-path \
 --help \
@@ -97,6 +98,7 @@ _chpl ()
 --inline-iterators \
 --inline-iterators-yield-limit \
 --instantiate-max \
+--interleave-memory \
 --interprocedural-alias-analysis \
 --launcher \
 --ldflags \
@@ -185,6 +187,7 @@ _chpl ()
 --no-infer-local-fields \
 --no-inline \
 --no-inline-iterators \
+--no-interleave-memory \
 --no-interprocedural-alias-analysis \
 --no-library-ml-debug \
 --no-lifetime-checking \

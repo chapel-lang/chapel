@@ -1,0 +1,2 @@
+arrayIndices.chpl:2: warning: the current behavior of  '.indices' on arrays is deprecated; see https://chapel-lang.org/docs/1.25/builtins/ChapelArray.html#ChapelArray.indices for details
+{1..10}

@@ -19,9 +19,9 @@
  */
 
 
+use ArgumentParser;
 use FileSystem;
 use List;
-use MasonArgParse;
 use MasonBuild;
 use MasonEnv;
 use MasonModify;
@@ -44,32 +44,22 @@ proc masonPublish(args: [?d] string) {
 }
 
 proc masonPublish(ref args: list(string)) throws {
+
   var parser = new argumentParser();
+
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var dryFlag = parser.addFlag(name="dry-run",
-                               opts=["--dry-run"],
-                               defaultValue=false,
-                               flagInversion=false);
+                               defaultValue=false);
   var createFlag = parser.addFlag(name="create-registry",
                                   opts=["-c","--create-registry"],
-                                  defaultValue=false,
-                                  flagInversion=false);
-  var checkArg = parser.addFlag(name="check",
-                                 opts=["--check"],
-                                 defaultValue=false,
-                                 flagInversion=false);
-  var ciFlag = parser.addFlag(name="ci-check",
-                              opts=["--ci-check"],
-                              defaultValue=false,
-                              flagInversion=false);
-  var updateFlag = parser.addFlag(name="update",
-                                  opts=["--update"],
-                                  flagInversion=true);
-  var registryArg = parser.addArgument(name="registry",
-                                       numArgs=0..1);
+                                  defaultValue=false);
+
+  var checkArg = parser.addFlag(name="check", defaultValue=false);
+  var ciFlag = parser.addFlag(name="ci-check", defaultValue=false);
+  var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var registryArg = parser.addArgument(name="registry", numArgs=0..1);
 
   try {
     parser.parseArgs(args.toArray());
@@ -208,7 +198,7 @@ proc checkRegistryPath(registryPath : string, trueIfLocal : bool) throws {
       var command = ('git ls-remote ' + registryPath).split();
       var checkRemote = spawn(command, stdout=PIPE);
       checkRemote.wait();
-      if checkRemote.exit_status == 0 then return true;
+      if checkRemote.exitCode == 0 then return true;
       else {
         throw new owned MasonError(registryPath + " is not a valid remote path");
         exit(0);
@@ -385,7 +375,7 @@ private proc usernameCheck(username: string) {
 private proc checkIfForkExists(username: string) {
   var getFork = ('git ls-remote https://github.com/' + username + '/mason-registry');
   var p = runWithProcess(getFork, false);
-  return p.exit_status;
+  return p.exitCode;
 }
 
 /* Gets the GitHub username of the user, by parsing from the remote origin url.
@@ -719,7 +709,7 @@ private proc checkLicense(projectHome: string) throws {
 private proc attemptToBuild() throws {
   var sub = spawn(['mason','build','--force'], stdout=PIPE);
   sub.wait();
-  if sub.exit_status == 1 {
+  if sub.exitCode == 1 {
   writeln('(FAILED) Please make sure your package builds');
   }
   else {

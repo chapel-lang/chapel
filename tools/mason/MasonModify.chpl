@@ -18,9 +18,9 @@
  * limitations under the License.
  */
 
+use ArgumentParser;
 use FileSystem;
 use Map;
-use MasonArgParse;
 use MasonUtils;
 use Regex;
 use TOML;
@@ -28,21 +28,17 @@ use TOML;
 
 /* Modify manifest file */
 proc masonModify(args: [] string) throws {
-  var add = false;
+
   var parser = new argumentParser();
-  var extFlag = parser.addFlag("external",
-                               opts=["--external"],
-                               defaultValue=false,
-                               flagInversion=false);
-  var sysFlag = parser.addFlag("system",
-                               opts=["--system"],
-                               defaultValue=false,
-                               flagInversion=false);
+
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
+
+  var extFlag = parser.addFlag("external", defaultValue=false);
+  var sysFlag = parser.addFlag("system", defaultValue=false);
   var depArg = parser.addArgument("dep");
+
   try {
     parser.parseArgs(args);
   }
@@ -56,7 +52,7 @@ proc masonModify(args: [] string) throws {
     masonModifyHelp();
     exit(0);
   }
-
+  var add = false;
   if args[0] == "add" then add = true;
   // TODO: remove this once argument parser supports mutual exclusivity
   if extFlag.valueAsBool() && sysFlag.valueAsBool() {
@@ -71,7 +67,6 @@ proc masonModify(args: [] string) throws {
                             sysFlag.valueAsBool(), projectHome);
   generateToml(result[0], result[1]);
   delete result[0];
-
 }
 
 proc modifyToml(add: bool, spec: string, external: bool, system: bool,

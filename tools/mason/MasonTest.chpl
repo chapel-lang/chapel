@@ -19,10 +19,10 @@
  */
 
 
+use ArgumentParser;
 use FileSystem;
 use List;
 use Map;
-use MasonArgParse;
 use MasonBuild;
 use MasonHelp;
 use MasonUpdate;
@@ -52,34 +52,18 @@ proc masonTest(args: [] string) throws {
 
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
-  var showFlag = parser.addFlag(name="show",
-                                opts=["--show"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   var runFlag = parser.addFlag(name="run",
                                opts=["--no-run"],
-                               defaultValue=false,
-                               flagInversion=false);
-  var keepFlag = parser.addFlag(name="keep-binary",
-                                  opts=["--keep-binary"],
-                                  defaultValue=false,
-                                  flagInversion=false);
-  var recursFlag = parser.addFlag(name="recursive",
-                                  opts=["--recursive"],
-                                  defaultValue=false,
-                                  flagInversion=false);
-  var parFlag = parser.addFlag(name="parallel",
-                               opts=["--parallel"],
-                               defaultValue=false,
-                               flagInversion=false);
-  var updateFlag = parser.addFlag(name="update",
-                                  opts=["--update"],
-                                  flagInversion=true);
-  var setCommOpt = parser.addOption(name="setComm",
-                                 opts=["--setComm"],
-                                 defaultValue="none");
+                               defaultValue=false);
+
+  var showFlag = parser.addFlag(name="show", defaultValue=false);
+  var keepFlag = parser.addFlag(name="keep-binary", defaultValue=false);
+  var recursFlag = parser.addFlag(name="recursive", defaultValue=false);
+  var parFlag = parser.addFlag(name="parallel", defaultValue=false);
+  var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var setCommOpt = parser.addOption(name="setComm", defaultValue="none");
+
   // TODO: Why doesn't masonTest support a passthrough for values that should
   // go to the runtime?
   var otherArgs = parser.addArgument(name="others", numArgs=0..);
@@ -682,7 +666,7 @@ proc runAndLog(executable, fileName, ref result, reqNumLocales: int = numLocales
     }
   }
   exec.wait();//wait till the subprocess is complete
-  exitCode = exec.exit_status;
+  exitCode = exec.exitCode;
   if haltOccured then
     exitCode = runAndLog(executable, fileName, result, reqNumLocales, testsPassed,
               testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);

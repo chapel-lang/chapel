@@ -19,11 +19,10 @@
  */
 
 
-
+use ArgumentParser;
 use FileSystem;
 use List;
 use Map;
-use MasonArgParse;
 use MasonBuild;
 use MasonEnv;
 use MasonHelp;
@@ -36,32 +35,22 @@ use TOML;
 
 /* Runs the .chpl files found within the /example directory */
 proc masonExample(args: [] string) {
+
   var parser = new argumentParser();
-  var showFlag = parser.addFlag(name="show",
-                                opts=["--show"],
-                                defaultValue=false,
-                                flagInversion=false);
 
   var runFlag = parser.addFlag(name="run",
-                               opts=["--run"],
-                               defaultValue=true);
+                               defaultValue=true,
+                               flagInversion=true);
   var buildFlag = parser.addFlag(name="build",
-                                 opts=["--build"],
-                                 defaultValue=true);
-  var releaseFlag = parser.addFlag(name="release",
-                                opts=["--release"],
-                                defaultValue=false,
-                                flagInversion=false);
-  var forceFlag = parser.addFlag(name="force",
-                                opts=["--force"],
-                                defaultValue=false,
-                                flagInversion=false);
-  var updateFlag = parser.addFlag(name="update",
-                                opts=["--update"],
-                                flagInversion=true);
-  var exampleOpts = parser.addOption(name="example",
-                                     opts=["--example"],
-                                     numArgs=0..);
+                                 defaultValue=true,
+                                 flagInversion=true);
+
+  var showFlag = parser.addFlag(name="show", defaultValue=false);
+  var releaseFlag = parser.addFlag(name="release", defaultValue=false);
+  var forceFlag = parser.addFlag(name="force", defaultValue=false);
+  var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var exampleOpts = parser.addOption(name="example", numArgs=0..);
+
   try! {
     parser.parseArgs(args);
   }

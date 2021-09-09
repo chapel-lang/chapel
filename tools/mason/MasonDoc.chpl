@@ -18,19 +18,19 @@
  * limitations under the License.
  */
 
-
+use ArgumentParser;
 use FileSystem;
 use IO;
-use MasonArgParse;
 use MasonHelp;
 use MasonUtils;
 
 proc masonDoc(args: [] string) throws {
+
   var parser = new argumentParser();
+
   var helpFlag = parser.addFlag("help",
                                 opts=["-h","--help"],
-                                defaultValue=false,
-                                flagInversion=false);
+                                defaultValue=false);
   try {
     parser.parseArgs(args);
   }

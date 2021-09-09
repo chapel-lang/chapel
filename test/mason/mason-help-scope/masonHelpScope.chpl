@@ -6,7 +6,7 @@ proc checkCommand(cmd: string) {
   var splitCmd = cmd.split();
   var p = spawn(splitCmd,stdout=PIPE);
   p.wait();
-  if p.exit_status != 0 {
+  if p.exitCode != 0 {
     writeln("Failed to run cmd: '%s'".format(cmd));
   }
 }

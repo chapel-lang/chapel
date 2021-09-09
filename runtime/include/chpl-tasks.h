@@ -448,6 +448,14 @@ size_t chpl_task_getEnvCallStackSize(void);
 size_t chpl_task_getDefaultCallStackSize(void);
 
 //
+// This returns whether or not to do a report of all known tasks,
+// running, blocked, queued, or otherwise, when a SIGINT (^C) is
+// received.  It should be common to all tasking implementations
+// but is currently only implemented when using tasks=fifo.
+//
+chpl_bool chpl_task_doTaskReport(void);
+
+//
 // These are service functions provided to the runtime by the module
 // code.
 //

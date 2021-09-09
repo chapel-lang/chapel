@@ -1,0 +1,11 @@
+Config Var Values:
+configVarValue
+Arguments Received from CL:
+1 posArg
+2 subCmd1
+3 pos1
+4 pos2
+Values received from argparse:
+positional value: posArg
+SubCommand1 was called
+Found some unrecognizable arguments: pos2

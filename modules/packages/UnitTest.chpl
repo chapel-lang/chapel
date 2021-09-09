@@ -397,9 +397,7 @@ module UnitTest {
         }
         tmpString = seq_type_name+"s differ: ";
         tmpString += "'"+stringify(seq1)+"' != '"+stringify(seq2)+"'" ;
-        for i in seq1.indices.low..min(len1,len2) {
-          var item1 = seq1[i],
-              item2 = seq2[i];
+        for (item1, item2, i) in zip(seq1, seq2, 0..) {
           if item1 != item2 {
             tmpString += "\nFirst differing element at index "+i:string +":\n'"+item1:string+"'\n'"+item2:string+"'\n";
             break;
@@ -612,7 +610,7 @@ module UnitTest {
       seq2: The second sequence to compare.
       seq_type_name: The name of datatype of the sequences
     */
-    proc assertSequenceGreater(seq1, seq2, seq_type_name) throws {
+    proc assertSequenceGreater(seq1, seq2, param seq_type_name) throws {
       var checkgreater: bool = false,
           checkequal: bool = false;
       const len1 = seq1.size,
@@ -630,9 +628,7 @@ module UnitTest {
         }
       }
       if tmpString == "" {
-        for i in seq1.indices {
-          var item1 = seq1[i],
-              item2 = seq2[i];
+        for (item1, item2, i) in zip(seq1, seq2, 0..) {
           if item1 == item2 then checkequal = true;
           else if item1 < item2 {
             tmpString += "First "+seq_type_name+" < Second "+seq_type_name+" :\n";
@@ -654,11 +650,11 @@ module UnitTest {
         }
         if seq_type_name == "Array" {
           tmpString += "'[";
-          for i in seq1.indices {
+          for i in seq1.domain {
             if i != seq1.size-1 then tmpString+= seq1[i]:string+", ";
             else tmpString += seq1[i]:string+"]'"+symbol+ "'[";
           }
-          for i in seq2.indices {
+          for i in seq2.domain {
             if i != seq2.size-1 then tmpString+= seq2[i]:string+", ";
             else tmpString += seq2[i]:string+"]'";
           }
@@ -816,7 +812,7 @@ module UnitTest {
       seq2: The second sequence to compare.
       seq_type_name: The name of datatype of the sequences
     */
-    proc assertSequenceLess(seq1, seq2, seq_type_name) throws {
+    proc assertSequenceLess(seq1, seq2, param seq_type_name) throws {
       var checkless: bool = false,
           checkequal: bool = false;
       const len1 = seq1.size,
@@ -834,9 +830,7 @@ module UnitTest {
         }
       }
       if tmpString == "" {
-        for i in seq1.indices {
-          var item1 = seq1[i],
-              item2 = seq2[i];
+        for (item1, item2, i) in zip(seq1, seq2, 0..) {
           if item1 == item2 then checkequal = true;
           else if item1 > item2 {
             tmpString += "First "+seq_type_name+" > Second "+seq_type_name+" :\n";
@@ -858,11 +852,11 @@ module UnitTest {
         }
         if seq_type_name == "Array" {
           tmpString += "'[";
-          for i in seq1.indices {
+          for i in seq1.domain {
             if i != seq1.size-1 then tmpString+= seq1[i]:string+", ";
             else tmpString += seq1[i]:string+"]'"+symbol+ "'[";
           }
-          for i in seq2.indices {
+          for i in seq2.domain {
             if i != seq2.size-1 then tmpString+= seq2[i]:string+", ";
             else tmpString += seq2[i]:string+"]'";
           }
