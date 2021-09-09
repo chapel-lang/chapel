@@ -1056,6 +1056,8 @@ knucleotide: &knucleotide-base
     - Optimize the method map.this(k) (#14065)
   07/29/20:
     - Optimize ASCII strings (#16092)
+  09/03/21:
+    - Two little string optimizations (#18323)
 knucleotide-submitted:
   <<: *knucleotide-base
 
