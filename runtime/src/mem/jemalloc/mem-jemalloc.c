@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include "chpl-comm.h"
+#include "chpl-env.h"
 #include "chpl-linefile-support.h"
 #include "chpl-mem.h"
 #include "chpl-mem-desc.h"
@@ -35,6 +36,9 @@
 #include "chplmemtrack.h"
 #include "chpltypes.h"
 #include "error.h"
+
+static chpl_bool interleave_mem = false;
+static chpl_bool merge_split_chunks = false;
 
 // The dedicated arena to use for large allocations (this is important to
 // minimize contention for large allocations)
@@ -125,7 +129,7 @@ static void* chunk_alloc(void *chunk, size_t size, size_t alignment, bool *zero,
     // now that cur_heap_offset is updated, we can unlock
     pthread_mutex_unlock(&heap.alloc_lock);
 
-    if (CHPL_INTERLEAVE_MEM && arena_ind == CHPL_JE_LG_ARENA) {
+    if (interleave_mem && arena_ind == CHPL_JE_LG_ARENA) {
       chpl_topo_interleaveMemLocality(cur_chunk_base, size);
     }
   } else if (heap.type == DYNAMIC) {
@@ -203,12 +207,13 @@ static bool null_purge(void *chunk, size_t size, size_t offset, size_t length, u
 
 // Since we opt-out of dalloc hooks, jemalloc is free to merge/split existing
 // chunks (this is important for fragmentation avoidance.) If we support dalloc
-// we'll have to do more to update how we track backing memory regions.
+// we'll have to do more to update how we track backing memory regions. Note
+// that returning false means splitting/merging is allowed.
 static bool chunk_split(void *chunk, size_t size, size_t size_a, size_t size_b, bool committed, unsigned arena_ind) {
-  return false;
+  return !merge_split_chunks;
 }
 static bool chunk_merge(void *chunk_a, size_t size_a, void *chunk_b, size_t size_b, bool committed, unsigned arena_ind) {
-  return false;
+  return !merge_split_chunks;
 }
 
 #endif // ifdef USE_JE_CHUNK_HOOKS
@@ -396,6 +401,8 @@ void chpl_mem_layerInit(void) {
   void* heap_base;
   size_t heap_size;
 
+  interleave_mem = chpl_env_rt_get_bool("INTERLEAVE_MEMORY", CHPL_INTERLEAVE_MEM);
+  merge_split_chunks = chpl_env_rt_get_bool("MERGE_SPLIT_CHUNKS", true);
   CHPL_JE_LG_ARENA = get_num_arenas()-1;
 
   chpl_comm_regMemHeapInfo(&heap_base, &heap_size);
