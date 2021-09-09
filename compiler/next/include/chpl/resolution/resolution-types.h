@@ -208,6 +208,9 @@ struct PoiInfo {
 };
 
 // TODO: should this actually be types::FunctionType?
+/**
+  This represents a typed function signature.
+*/
 struct TypedFnSignature {
   typedef enum {
     WHERE_NONE,  // no where clause
@@ -256,6 +259,9 @@ struct TypedFnSignature {
   }
 };
 
+/**
+  Stores the most specific candidates when resolving a function call.
+*/
 class MostSpecificCandidates {
  public:
   typedef enum {
@@ -368,6 +374,9 @@ struct CallResolutionResult {
   }
 };
 
+/**
+  This type represents a resolved expression.
+*/
 struct ResolvedExpression {
   // What is its type and param value?
   types::QualifiedType type;
@@ -471,7 +480,9 @@ class ResolutionResultByPostorderID {
                      ResolutionResultByPostorderID& addin);
 };
 
-// A resolution result for a Function
+/**
+  This type represents a resolved function.
+*/
 struct ResolvedFunction {
   const TypedFnSignature* signature = nullptr;
 
@@ -542,6 +553,7 @@ struct FormalActualMap {
 } // end namespace resolution
 
 
+/// \cond DO_NOT_DOCUMENT
 template<> struct update<resolution::ResolvedExpression> {
   bool operator()(resolution::ResolvedExpression& keep,
                   resolution::ResolvedExpression& addin) const {
@@ -570,7 +582,7 @@ template<> struct update<owned<resolution::ResolvedFunction>> {
     return defaultUpdateOwned(keep, addin);
   }
 };
-
+/// \endcond
 
 } // end namespace chpl
 

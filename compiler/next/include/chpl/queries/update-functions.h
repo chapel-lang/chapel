@@ -90,6 +90,7 @@ static inline bool defaultUpdateOwned(owned<T>& keep, owned<T>& addin) {
     return true;
   }
 }
+
 template<typename A, typename B>
 static inline bool defaultUpdatePair(std::pair<A,B>& keep,
                                      std::pair<A,B>& addin)
@@ -103,48 +104,57 @@ static inline bool defaultUpdatePair(std::pair<A,B>& keep,
   return anyUpdated;
 }
 
+/// \cond DO_NOT_DOCUMENT
 template<> struct update<std::string> {
   bool operator()(std::string& keep, std::string& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
+
 template<typename T> struct update<T*> {
   bool operator()(T*& keep, T*& addin) const {
     return defaultUpdateBasic(keep, addin);
   }
 };
+
 template<typename T> struct update<owned<T>> {
   bool operator()(owned<T>& keep, owned<T>& addin) const {
     return defaultUpdateOwned(keep, addin);
   }
 };
+
 template<> struct update<int> {
   bool operator()(int& keep, int& addin) const {
     return defaultUpdateBasic(keep, addin);
   }
 };
+
 template<> struct update<bool> {
   bool operator()(bool& keep, bool& addin) const {
     return defaultUpdateBasic(keep, addin);
   }
 };
+
 template<typename T> struct update<std::vector<T>> {
   bool operator()(std::vector<T>& keep, std::vector<T>& addin) const {
     return defaultUpdateVec(keep, addin);
   }
 };
+
 template<typename K, typename V> struct update<std::unordered_map<K,V>> {
   bool operator()(std::unordered_map<K,V>& keep,
                   std::unordered_map<K,V>& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
+
 template<typename A, typename B> struct update<std::pair<A,B>> {
   bool operator()(std::pair<A,B>& keep,
                   std::pair<A,B>& addin) const {
     return defaultUpdatePair(keep, addin);
   }
 };
+/// \endcond
 
 
 } // end namespace chpl
