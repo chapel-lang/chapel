@@ -2189,15 +2189,18 @@ void FnSymbol::codegenPrototype() {
       return;
     }
 
+    bool generatingGPUKernel = (gCodegenGPU && hasFlag(FLAG_GPU_CODEGEN));
+
     llvm::Function::LinkageTypes linkage = llvm::Function::InternalLinkage;
-    if (hasFlag(FLAG_EXPORT))
+    if (hasFlag(FLAG_EXPORT) || generatingGPUKernel) {
       linkage = llvm::Function::ExternalLinkage;
+    }
 
     // No other function with the same name exists.
     llvm::Function *func = llvm::Function::Create(fTy, linkage, cname,
                                                   info->module);
 
-    if (gCodegenGPU && hasFlag(FLAG_GPU_CODEGEN)) {
+    if (generatingGPUKernel) {
       func->setConvergent();
       func->setCallingConv(llvm::CallingConv::PTX_Kernel);
     }
