@@ -44,10 +44,7 @@ testDefaultInitSyncWriteEFReadFF
 init
 init 1
 deinit 0
-init
 init= 1
-= 0 1
-deinit 1
 (x = 1, ptr = {})
 deinit 1
 deinit 1
@@ -111,10 +108,7 @@ testDefaultInitSingleWriteEFReadFF
 init
 init 1
 deinit 0
-init
 init= 1
-= 0 1
-deinit 1
 (x = 1, ptr = {})
 deinit 1
 deinit 1
@@ -134,10 +128,7 @@ init 1
 deinit 1
 testValInitSingleReadFF
 init 1
-init
 init= 1
-= 0 1
-deinit 1
 (x = 1, ptr = {})
 deinit 1
 deinit 1

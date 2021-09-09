@@ -534,19 +534,22 @@ module ChapelSyncvar {
         compilerError("readFF requires that the type contained in the sync variable be const-copyable and const-assignable");
       }
 
+      pragma "no init"
+      pragma "no auto destroy"
       var ret : valType;
       on this {
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
 
         // const-copy from value
+        pragma "no auto destroy"
         var localRet: valType = value;
 
         chpl_sync_markAndSignalFull(syncAux);
         chpl_rmem_consist_acquire();
 
         // assign back to the original locale
-        ret = localRet;
+        _moveset(ret, localRet);
       }
 
       return ret;
@@ -1034,10 +1037,12 @@ module ChapelSyncvar {
         compilerError("readFF requires that the type contained in the single variable be const-copyable and const-assignable");
       }
 
+      pragma "no init"
+      pragma "no auto destroy"
       var ret : valType;
-
       on this {
-        var localRet : valType;
+        pragma "no auto destroy"
+        var localRet : valType; // split init
 
         chpl_rmem_consist_release();
 
@@ -1051,7 +1056,8 @@ module ChapelSyncvar {
 
         chpl_rmem_consist_acquire();
 
-        ret = localRet;
+        // assign back to the original locale
+        _moveset(ret, localRet);
       }
 
       return ret;
