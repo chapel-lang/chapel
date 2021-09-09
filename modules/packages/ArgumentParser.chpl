@@ -17,6 +17,35 @@
  * limitations under the License.
  */
 
+/*
+  A module to be used for parsing command line arguments
+
+  Quick Start Example:
+
+  .. code-block:: chapel
+
+    module M {
+      use ArgumentParser;
+      proc main(args:[]string) throws {
+        var parser = new argumentParser();
+        var simpleArg = parser.addArgument(name="positional");
+        var optionArg = parser.addOption(name="optional");
+        var flagArg = parser.addFlag(name="debug",defaultValue=false);
+        try!{
+          parser.parseArgs(args);
+        } catch ex : ArgumentError {
+          writeln(ex.message());
+          // print a usage message
+          exit(1);
+        }
+        var debug = flagArg.valueAsBool()
+        // we are assured a value here or else the parser would have thrown
+        var foo = simpleArg.value()
+        var bar:string;
+        if optionArg.hasValue() then bar = optionArg.value();
+      }
+    }
+*/
 module ArgumentParser {
   use List;
   use Map;
@@ -36,6 +65,7 @@ module ArgumentParser {
     compilerWarning("ArgumentParser is unstable.");
 
   // A generic argument parser error
+  pragma "no doc"
   class ArgumentError : Error {
     var _msg:string;
 
@@ -48,30 +78,81 @@ module ArgumentParser {
     }
   }
 
-  // indicates a result of argument parsing
+  /*
+  Stores the result of argument parsing
+  */
   class Argument {
 
     //indicates if an argument was entered on the command line
+    pragma "no doc"
     var _present: bool=false;
     // hold the values of the argument from the command line
+    pragma "no doc"
     var _values: list(string);
 
-    proc value(){
+    /*
+      Return the single value collected from the command line, if any.
+      If no value was collected, then program will halt as result of
+      calling list.first() on an empty list.
+
+      .. warning::
+        This can only be called safely if you are sure a value was collected
+        because the argument was required or there was a default value set.
+        Calling value when no argument was collected will cause the program
+        to halt.
+        To be safe, check the return of hasValue() before calling value().
+
+      :returns: The string value for this argument as parsed from the command line
+
+      .. code-block:: chapel
+
+          var argVal:string;
+          if myArg.hasValue() then argVal = myArg.value();
+    */
+    proc value() : string {
       return this._values.first();
     }
 
-    iter values(){
+    /*
+      Return an iterator over the values collected from the command line, if any.
+      Typically collect these into a new list or var them into an array.
+
+      .. code-block:: chapel
+
+          // to get an array of strings
+          var argValues = myArg.values();
+          // create a list of strings
+          var argList = new list(myArg.values());
+
+      :returns: An iterator over the parsed values
+
+    */
+    iter values() : string {
       for val in _values {
         yield val;
       }
     }
 
-    proc hasValue(){
+    /*
+      Check to see if a value was collected from the command line
+
+      :returns: * `true` -- when at least one value was parsed
+                * `false` -- when the argument wasn't provided and no
+                             default was defined
+    */
+    proc hasValue() : bool {
       return !this._values.isEmpty() && this._present;
     }
 
-    // get the value back as a boolean, if possible
-    proc valueAsBool() throws {
+    /*
+      Interpret the value collected from the command line as a bool
+
+      :returns: * `true` -- for true, 1, yes, y
+                * `false` -- for false, 0, no, n
+
+      :throws: `ArgumentError` if value cannot be interpreted as a bool
+    */
+    proc valueAsBool() : bool throws {
       var rtn:bool;
 
       if !this.hasValue() {
@@ -88,6 +169,7 @@ module ArgumentParser {
 
 
   // stores an argument definition
+  pragma "no doc"
   class ArgumentHandler {
     // friendly name for this argument
     var _name:string;
@@ -115,6 +197,7 @@ module ArgumentParser {
   }
 
   // stores a passthrough delimiter definition
+  pragma "no doc"
   class PassThrough : SubCommand {
 
     proc init(delimiter:string) {
@@ -145,6 +228,7 @@ module ArgumentParser {
   }
 
   // stores a subcommand definition
+  pragma "no doc"
   class SubCommand : ArgumentHandler {
 
     proc init(cmd:string) {
@@ -176,6 +260,7 @@ module ArgumentParser {
 
   }
 
+  pragma "no doc"
   class Positional : ArgumentHandler {
     // indicates if this argument is required to be entered by the user
     var _required:bool;
@@ -255,6 +340,7 @@ module ArgumentParser {
   }
 
   // stores the definition of a Flag (bool) argument
+  pragma "no doc"
   class Flag : ArgumentHandler {
     // indicates if this flag is required to be entered by the user
     var _required:bool;
@@ -342,6 +428,7 @@ module ArgumentParser {
   }
 
   // stores an option definition
+  pragma "no doc"
   class Option : ArgumentHandler {
     // number of option flags that can indicate this argument
     var _numOpts:int;
@@ -425,19 +512,89 @@ module ArgumentParser {
     }
  }
 
+  /*
+  A parser that performs the following functions:
+   1. Stores definitions of valid arguments/flags/options
+   2. Parses an array of arguments as passed from the command line
+      (where args[0] is typically the name of the executable)
+   3. Throws an ArgumentError if invalid or unrecognized arguments are encountered
+
+    Some Terminology:
+
+    Arguments:
+    These are positional values which do not have any identifiers
+    aside from the relative order and count of values entered.
+
+    Example:
+
+    .. code-block:: shell
+
+      $ myExecutable filename1 filename2 filename3
+
+
+    Options:
+    These are values that follow some indicator, typically --option is
+    used as a long option and -o might be the short indicator. Typically
+    0 or more arguments may follow.
+
+    Examples:
+
+    .. code-block:: shell
+
+      $ myExecutable --foo value1
+      $ myExecutable -f value1
+
+    Flags:
+    These are boolean indicators whose presence alone can be used to
+    derive a true/false value.
+
+    Example:
+
+    .. code-block:: shell
+
+      $ myExecutable --debug
+      $ myExecutable -d
+
+    Subcommands: These are values that can be used to trigger execution of
+                 other methods which take their own arguments. A subcommand
+                 typically consumes the remainder of values from the command line.
+
+    Example:
+
+    .. code-block:: shell
+
+      $ myExecutable build --force otherProgram
+
+    PassThrough: This is a delimiter value which designates that all the values
+                 which follow should be collected for later use by the developer.
+                 Typically this value is a `--`.
+
+    Example:
+
+    .. code-block:: shell
+
+      $ myExecutable build --force otherProgram -- --flags --to use for --compiling otherProgram
+
+
+  */
   record argumentParser {
     // store the arguments by their familiar names
+    pragma "no doc"
     var _result: map(string, shared Argument);
     // store the argument handlers by their familiar names
+    pragma "no doc"
     var _handlers: map(string, owned ArgumentHandler);
     // map an option string to its familiar name
+    pragma "no doc"
     var _options: map(string, string);
     // store positional definitions
+    pragma "no doc"
     var _positionals: list(borrowed Positional);
     // store subcommand names
+    pragma "no doc"
     var _subcommands: list(string);
 
-
+    pragma "no doc"
     proc init() {
       _result = new map(string, shared Argument);
       _handlers = new map(string, owned ArgumentHandler);
@@ -449,6 +606,7 @@ module ArgumentParser {
       try!{addOption(name="dummyDashHandler", opts=["--"], numArgs=0);}
     }
 
+    pragma "no doc"
     proc _parsePositionals(arguments:[?argsD] string, endIdx:int) throws {
       var endPos = argsD.low;
       var idx = argsD.low;
@@ -471,8 +629,16 @@ module ArgumentParser {
       return endPos;
     }
 
-    // TODO: Find out why the in intent is breaking here
+    /*
+    Parses an array of arguments as collected from the command line
+
+    :arg arguments: The array of values passed from the command line to `main(args:[]string)`
+    :type [] string:
+
+    :throws: ArgumentError if invalid or undefined command line arguments found in `arguments`
+    */
     proc parseArgs(arguments:[?argsD] string) throws {
+      // TODO: Find out why the in intent is breaking here
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
       debugTrace("Begin parsing args...");
       var k = 0;
@@ -595,6 +761,7 @@ module ArgumentParser {
       return 0;
     }
 
+    pragma "no doc"
     proc _checkTrailingPositionals(remainingArgs:[?argsD]string, stopPos:int,
                                    argLen:int) throws {
       // check if unidentified value is a positional or an error
@@ -608,6 +775,7 @@ module ArgumentParser {
       }
     }
 
+    pragma "no doc"
     proc _assignDefaultsToMissingOpts() {
       // set any default values as needed
       for name in this._handlers.keys() {
@@ -621,6 +789,7 @@ module ArgumentParser {
       }
     }
 
+    pragma "no doc"
     proc _checkSatisfiedOptions() throws {
       // make sure we satisfied options that require a value
       for name in this._handlers.keys() {
@@ -633,6 +802,7 @@ module ArgumentParser {
       }
     }
 
+    pragma "no doc"
     proc _checkAndSaveOpts(opts:[?optsD], name:string) throws {
       // validate supplied opt vals have valid prefix and don't conflict
       // then collect them
@@ -651,7 +821,7 @@ module ArgumentParser {
       }
     }
 
-
+    pragma "no doc"
     proc _addHandler(in handler : ArgumentHandler) throws {
 
       // ensure option names are unique
@@ -670,9 +840,18 @@ module ArgumentParser {
       return arg;
     }
 
-    // convention dictates that this defaults to `--`
-    // this can be overridden by the developer if they prefer something else
-    proc addPassThrough(delimiter="--") throws {
+    /*
+    Add a delimiter to indicate all following values should not be parsed, but
+    collected for later use by the developer. Convention dictates this is a
+    double-dash `--`, but the developer may choose to use something else
+
+    :returns: a shared `Argument` where collected values will be placed for use
+              by the developer
+
+    :throws: ArgumentError if `delimiter` is already defined for this parser
+
+    */
+    proc addPassThrough(delimiter="--") : shared Argument throws {
       // remove the dummyHandler first
       if delimiter == "--" then _removeHandler("dummyDashHandler", ["--"]);
       var handler = new owned PassThrough(delimiter);
@@ -684,7 +863,7 @@ module ArgumentParser {
     proc addFlag(name:string,
                  opts:[?optsD]=_processNameToOpts(name),
                  required=false, defaultValue:?t=none, flagInversion=false,
-                 numArgs=0) throws {
+                 numArgs=0) : shared Argument throws {
       return addFlag(name=name,
                      opts=opts,
                      required=required,
@@ -696,7 +875,7 @@ module ArgumentParser {
     proc addFlag(name:string,
                  opts:[?optsD]=_processNameToOpts(name),
                  required=false, defaultValue:?t=none, flagInversion=false,
-                 numArgs:range) throws {
+                 numArgs:range) : shared Argument throws {
 
       if (flagInversion && numArgs.high > 0) {
         throw new ArgumentError("Creating 'no' flag options prevents " +
@@ -742,20 +921,22 @@ module ArgumentParser {
       return _addHandler(handler);
     }
 
-    proc addSubCommand(cmd:string) throws {
+    proc addSubCommand(cmd:string) : shared Argument throws {
       var handler = new owned SubCommand(cmd);
       _subcommands.append(cmd);
       _options.add(cmd, cmd);
       return _addHandler(handler);
     }
 
-    proc addArgument(name:string, numArgs=1, defaultValue:?t=none) throws {
+    proc addArgument(name:string,
+                     numArgs=1,
+                     defaultValue:?t=none) : shared Argument throws {
       return addArgument(name, numArgs..numArgs, defaultValue);
     }
 
     proc addArgument(name:string,
                      numArgs:range(?),
-                     defaultValue:?t=none) throws {
+                     defaultValue:?t=none) : shared Argument throws {
       var argName = name;
       var nArgs = _prepareRange(numArgs);
       if name.startsWith("-") then argName = name.strip("-", trailing=false);
@@ -779,7 +960,7 @@ module ArgumentParser {
                    opts:[]string=_processNameToOpts(name),
                    numArgs=1,
                    required=false,
-                   defaultValue:?t=none) throws {
+                   defaultValue:?t=none) : shared Argument throws {
       return addOption(name=name,
                        opts=opts,
                        numArgs=numArgs..numArgs,
@@ -792,7 +973,7 @@ module ArgumentParser {
                    opts:[]string=_processNameToOpts(name),
                    numArgs:range(?),
                    required=false,
-                   defaultValue:?t=none) throws {
+                   defaultValue:?t=none) : shared Argument throws {
       var nArgs = _prepareRange(numArgs);
       var argName = name;
       if name.startsWith("-") then argName = name.strip("-", trailing=false);
@@ -820,6 +1001,7 @@ module ArgumentParser {
     }
 
     // remove a handler for an option or flag
+    pragma "no doc"
     proc _removeHandler(name:string, opts:[?optsD]string) {
       if _result.remove(name) {
         _handlers.remove(name);
@@ -829,19 +1011,21 @@ module ArgumentParser {
   }
 
   // helper to prepare numArgs ranges for use
+  pragma "no doc"
   proc _prepareRange(rIn: range(?)) : range throws {
-      var nArgs:range;
-      if rIn.hasLowBound() && !rIn.hasHighBound() {
-        nArgs = rIn.low..max(int);
-      } else if !rIn.hasLowBound() {
-        throw new ArgumentError("numArgs must have low bound");
-      } else {
-        nArgs = rIn;
-      }
-      return nArgs;
+    var nArgs:range;
+    if rIn.hasLowBound() && !rIn.hasHighBound() {
+      nArgs = rIn.low..max(int);
+    } else if !rIn.hasLowBound() {
+      throw new ArgumentError("numArgs must have low bound");
+    } else {
+      nArgs = rIn;
+    }
+    return nArgs;
   }
 
   // helper to convert string values to booleans
+  pragma "no doc"
   proc _convertStringToBool(strVal:string, inout boolVal:bool) : bool {
     var strippedVal = strVal.strip(" ").toLower();
 
@@ -862,6 +1046,7 @@ module ArgumentParser {
   }
 
   // helper to provide a default value for opts, based on the name
+  pragma "no doc"
   proc _processNameToOpts(name:string) : []string {
     var opts:list(string);
     if name.startsWith("-") {
@@ -872,6 +1057,7 @@ module ArgumentParser {
     return opts.toArray();
   }
 
+  pragma "no doc"
   proc debugTrace(msg:string) {
     if DEBUG then try! {stderr.writeln(msg);}
   }
