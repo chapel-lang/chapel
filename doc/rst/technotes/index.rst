@@ -47,6 +47,7 @@ Parallel Language Features
    Querying a Local Subdomain <subquery>
    Reduce Intents <reduceIntents>
    Runtime Support for Atomics <atomics>
+   GPU targeted code <gpu>
 
 Interoperability
 ----------------
