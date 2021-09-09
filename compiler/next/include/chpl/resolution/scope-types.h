@@ -222,6 +222,7 @@ enum {
   LOOKUP_TOPLEVEL = 8,
   LOOKUP_INNERMOST = 16,
 };
+
 using LookupConfig = unsigned int;
 
 // When resolving a traditional generic, we also need to consider
@@ -279,6 +280,7 @@ struct InnermostMatch {
 
 } // end namespace resolution
 
+/// \cond DO_NOT_DOCUMENT
 template<> struct update<resolution::InnermostMatch> {
   bool operator()(resolution::InnermostMatch& keep,
                   resolution::InnermostMatch& addin) const {
@@ -291,18 +293,20 @@ template<> struct update<resolution::InnermostMatch> {
     }
   }
 };
-
+/// \endcond
 
 } // end namespace chpl
 
 namespace std {
 
+/// \cond DO_NOT_DOCUMENT
 template<> struct hash<chpl::resolution::BorrowedIdsWithName>
 {
   size_t operator()(const chpl::resolution::BorrowedIdsWithName& key) const {
     return key.hash();
   }
 };
+/// \endcond
 
 } // end namespace std
 
