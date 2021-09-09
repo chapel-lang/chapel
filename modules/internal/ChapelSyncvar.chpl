@@ -106,14 +106,18 @@ module ChapelSyncvar {
   // want to compile it by default at this time.
   pragma "no doc"
   pragma "unsafe"
-  private inline proc _moveset(ref src: ?t, ref dst: t) lifetime src == dst {
+  private inline proc _moveset(ref dst: ?t, ref src: t) lifetime src == dst {
     __primitive("=", dst, src);
+  }
+
+  private proc _emptyStoresValue(type t) param {
+    return isDefaultInitializableType(t);
   }
 
   pragma "no doc"
   pragma "unsafe"
   private inline proc _emptyval(ref dst: ?t) {
-    if isDefaultInitializableType(t) {
+    if _emptyStoresValue(t) {
       // It is OK to read the empty value with e.g. readXX
       // so we set it to a default-initialized value
       pragma "no auto destroy"
@@ -161,9 +165,9 @@ module ChapelSyncvar {
     }
 
     pragma "dont disable remote value forwarding"
-    proc init(in value) {
-      ensureFEType(value.type);
-      this.valType = value.type;
+    proc init(type valType, in value: valType) {
+      ensureFEType(valType);
+      this.valType = valType;
       this.wrapped = new (getSyncClassType(valType))(value);
     }
 
@@ -201,7 +205,7 @@ module ChapelSyncvar {
 
     pragma "dont disable remote value forwarding"
     proc init=(in other : this.type.valType) {
-      this.init(other);
+      this.init(this.type.valType, other);
     }
 
     pragma "dont disable remote value forwarding"
@@ -459,7 +463,9 @@ module ChapelSyncvar {
   class _synccls {
     type valType;
 
+    pragma "no auto destroy"
     var  value   : valType;
+
     var  syncAux : chpl_sync_aux_t;      // Locking, signaling, ...
 
     // If the sync variable is empty
@@ -478,16 +484,21 @@ module ChapelSyncvar {
     }
 
     pragma "dont disable remote value forwarding"
-    proc init(in value) {
-      this.valType = value.type;
+    proc init(type valType, in value: valType) {
+      this.valType = valType;
       this.value = value;
       this.complete();
       chpl_sync_initAux(syncAux);
+      chpl_sync_lock(syncAux);
+      chpl_sync_markAndSignalFull(syncAux);
     }
 
     pragma "dont disable remote value forwarding"
     proc deinit() {
       on this {
+        if _emptyStoresValue(valType) || this.isFull {
+          chpl__autoDestroy(value);
+        }
         chpl_sync_destroyAux(syncAux);
       }
     }
@@ -577,7 +588,7 @@ module ChapelSyncvar {
         chpl_rmem_consist_release();
         chpl_sync_waitEmptyAndLock(syncAux);
 
-        if !isDefaultInitializableType(valType) {
+        if _emptyStoresValue(valType) {
           _moveset(toDestroy, value);
         }
         _moveset(value, val);
@@ -585,7 +596,7 @@ module ChapelSyncvar {
         chpl_sync_markAndSignalFull(syncAux);
         chpl_rmem_consist_acquire();
 
-        if !isDefaultInitializableType(valType) {
+        if _emptyStoresValue(valType) {
           chpl__autoDestroy(toDestroy);
         }
       }
@@ -636,14 +647,10 @@ module ChapelSyncvar {
       on this {
         const defaultValue : valType;
 
-        pragma "no init"
-        var toDestroy: valType;
-
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
-        _move(toDestroy, value);
-        _emptyval(value);
+        value = defaultValue;
 
         chpl_sync_markAndSignalEmpty(syncAux);
         chpl_rmem_consist_acquire();
@@ -808,12 +815,12 @@ module ChapelSyncvar {
     proc init(type valType) {
       ensureFEType(valType);
       this.valType = valType;
-      wrapped = new unmanaged _singlecls(valType);
+      this.wrapped = new unmanaged _singlecls(valType);
     }
-    proc init(in value) {
-      ensureFEType(value.type);
-      this.valType = value.type;
-      wrapped = new unmanaged _singlecls(value);
+    proc init(type valType, in value: valType) {
+      ensureFEType(valType);
+      this.valType = valType;
+      this.wrapped = new unmanaged _singlecls(valType, value);
     }
 
     //
@@ -850,7 +857,7 @@ module ChapelSyncvar {
 
     pragma "dont disable remote value forwarding"
     proc init=(in other : this.type.valType) {
-      this.init(other);
+      this.init(this.type.valType, other);
     }
 
     pragma "dont disable remote value forwarding"
@@ -991,7 +998,9 @@ module ChapelSyncvar {
   class _singlecls {
     type valType;
 
+    pragma "no auto destroy"
     var  value     : valType;
+
     var  singleAux : chpl_single_aux_t;      // Locking, signaling, ...
 
     proc init(type valType) {
@@ -1001,15 +1010,20 @@ module ChapelSyncvar {
       chpl_single_initAux(singleAux);
     }
 
-    proc init(in value) {
-      this.valType = value.type;
+    proc init(type valType, in value: valType) {
+      this.valType = valType;
       this.value = value;
       this.complete();
       chpl_single_initAux(singleAux);
+      chpl_single_lock(singleAux);
+      chpl_single_markAndSignalFull(singleAux);
     }
 
     proc deinit() {
       on this {
+        if _emptyStoresValue(valType) || this.isFull {
+          chpl__autoDestroy(value);
+        }
         chpl_single_destroyAux(singleAux);
       }
     }
@@ -1086,7 +1100,7 @@ module ChapelSyncvar {
         if this.isFull then
           halt("single var already defined");
 
-        if !isDefaultInitializableType(valType) {
+        if _emptyStoresValue(valType) {
           _moveset(toDestroy, value);
         }
         _moveset(value, val);
@@ -1094,7 +1108,7 @@ module ChapelSyncvar {
         chpl_single_markAndSignalFull(singleAux);
         chpl_rmem_consist_acquire();
 
-        if !isDefaultInitializableType(valType) {
+        if _emptyStoresValue(valType) {
           chpl__autoDestroy(toDestroy);
         }
       }

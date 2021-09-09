@@ -1,0 +1,143 @@
+testDefaultInitSync
+init
+deinit 0
+testDefaultInitSyncReadXX
+init
+init
+init= 0
+= 0 0
+deinit 0
+(x = 0, ptr = {})
+deinit 0
+deinit 0
+testDefaultInitSyncWriteXF
+init
+init 1
+= 0 1
+deinit 1
+deinit 1
+testDefaultInitSyncWriteEF
+init
+init 1
+deinit 0
+deinit 1
+testDefaultInitSyncWriteEFReadXX
+init
+init 1
+deinit 0
+init
+init= 1
+= 0 1
+deinit 1
+(x = 1, ptr = {})
+deinit 1
+deinit 1
+testDefaultInitSyncWriteEFReadFE
+init
+init 1
+deinit 0
+init
+(x = 1, ptr = {})
+deinit 1
+deinit 0
+testDefaultInitSyncWriteEFReadFF
+init
+init 1
+deinit 0
+init
+init= 1
+= 0 1
+deinit 1
+(x = 1, ptr = {})
+deinit 1
+deinit 1
+testDefaultInitSyncWriteEFWriteFF
+init
+init 1
+deinit 0
+init 2
+= 1 2
+deinit 2
+deinit 2
+testDefaultInitSyncWriteEFWriteXF
+init
+init 1
+deinit 0
+init 2
+= 1 2
+deinit 2
+deinit 2
+testDefaultInitSyncReset
+init
+init
+= 0 0
+deinit 0
+deinit 0
+testDefaultInitSyncWriteEFReset
+init
+init 1
+deinit 0
+init
+= 1 0
+deinit 0
+deinit 0
+testValInitSync
+init 1
+deinit 1
+testValInitSyncReadFE
+init 1
+init
+(x = 1, ptr = {})
+deinit 1
+deinit 0
+testDefaultInitSingle
+init
+deinit 0
+testDefaultInitSingleReadXX
+init
+init
+init= 0
+= 0 0
+deinit 0
+(x = 0, ptr = {})
+deinit 0
+deinit 0
+testDefaultInitSingleWriteEF
+init
+init 1
+deinit 0
+deinit 1
+testDefaultInitSingleWriteEFReadFF
+init
+init 1
+deinit 0
+init
+init= 1
+= 0 1
+deinit 1
+(x = 1, ptr = {})
+deinit 1
+deinit 1
+testDefaultInitSingleWriteEFReadXX
+init
+init 1
+deinit 0
+init
+init= 1
+= 0 1
+deinit 1
+(x = 1, ptr = {})
+deinit 1
+deinit 1
+testValInitSingle
+init 1
+deinit 1
+testValInitSingleReadFF
+init 1
+init
+init= 1
+= 0 1
+deinit 1
+(x = 1, ptr = {})
+deinit 1
+deinit 1
