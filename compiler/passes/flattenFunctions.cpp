@@ -107,32 +107,8 @@ shouldAddArgForAlwaysRvf(Symbol* sym, FnSymbol* fn) {
   return false;
 }
 
-//
-// Returns true if the symbol is defined in an outer function to fn.
-// Third argument not used at call site.
-//
-static bool
-isOuterVar(Symbol* sym, FnSymbol* fn, Symbol* parent = nullptr) {
-  if (!parent) {
-    parent = fn->defPoint->parentSymbol;
-
-    if (shouldAddArgForAlwaysRvf(sym, fn))
-      return true;
-  }
-
-  if (!isFnSymbol(parent))
-    return false;
-
-  else if (sym->defPoint->parentSymbol == parent)
-    return true;
-
-  else
-    return isOuterVar(sym, fn, parent->defPoint->parentSymbol);
-}
-
-// Should parentFn get a formal argument to propagate sym,
-// which was an outer var in some context, somewhere?
-// calledFn can be nullptr.
+// Should parentFn get a formal argument to propagate sym?
+// calledFn can be nullptr if it is not currently relevant.
 static bool
 shouldPropagateOuterArg(Symbol* sym, FnSymbol* parentFn, FnSymbol* calledFn) {
   Symbol* symDefParent = sym->defPoint->parentSymbol;
@@ -153,8 +129,8 @@ shouldPropagateOuterArg(Symbol* sym, FnSymbol* parentFn, FnSymbol* calledFn) {
     // don't propagate module-scope symbols in general
     return false;
 
-  // otherwise, it comes from some other function
-  return true;
+  // otherwise, return true if it comes from some other function
+  return isFnSymbol(symDefParent);
 }
 
 //
@@ -168,11 +144,12 @@ findOuterVars(FnSymbol* fn, SymbolMap* uses) {
   for_vector(SymExpr, symExpr, SEs) {
     Symbol* sym = symExpr->symbol();
 
-    // Here isOuterVar will only return 'true' for variables
-    // that are outer variables for 'fn'. But 'collectLcnSymExprs'
-    // is also gathering the contents for nested functions.
+    // This code should only gather outer variables used in 'fn',
+    // but 'collectLcnSymExprs' is also gathering the contents for nested
+    // functions.
     // This pattern could be clearer with an AST visitor.
-    if (isOuterVar(sym, fn)) {
+    if (symExpr->getFunction() == fn &&
+        shouldPropagateOuterArg(sym, fn, nullptr)) {
       uses->put(sym,gNil);
     }
   }
