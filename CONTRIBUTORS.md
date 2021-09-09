@@ -14,7 +14,7 @@ Contributors to the Chapel 1.25.0 release
 * Soohoon Choi, [HPE]
 * Krishna Kumar Dey, [GSoC 2021] and [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Information Technology, Sri City]
 * Lydia Duncan, [HPE]
-* Prashanth Duvvuri, [GSoC 2021] student from [Northeastern University] (former individual contributor)
+* Prasanth Duvvuri, [GSoC 2021] student from [Northeastern University] (former individual contributor)
 * Michael Ferguson, [HPE]
 * Piyush Gupta, individual contributor
 * John Hartman, [HPE]
@@ -26,12 +26,15 @@ Contributors to the Chapel 1.25.0 release
 * Shubham Kumar, individual contributor
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
+* Mohaned Mashaly, individual contributor
 * Aniket Mathur, [GSoC 2021] mentor, [GSoC 2020] student from [Indian Institute of Technology Roorkee]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
 * Divye Nayyar, [GSoC 2021] student from [Indian Institute of Technology Roorkee] (former individual contributor)
 * Sarah Nguyen, [HPE]
 * Nikhil Padmanabhan, [Yale University]
 * Gurudatta Patil, individual contributor
+* Yujia Qiao, individual contributor and [GSoC 2020] student from [Huazhong University of Science and Technology]
+* Venkatavaradan Raghuraman, individual contributor
 * Ahmad Rezaii, [HPE]
 * Elliot Ronaghan, [HPE]
 * Lakshya Singh, [GSoC 2021] student from [Indian Institute of Technology (BHU)]
@@ -143,7 +146,6 @@ Contributors to previous releases
 * Surya Priy, individual contributor
 * Lee Prokowich, [Cray Inc.]
 * David Qian, individual contributor
-* Yujia Qiao, [GSoC 2020] student from [Huazhong University of Science and Technology]
 * Brandon Ross, [University at Buffalo]
 * Preston Sahabu, [Cray Inc.]
 * Sara Salem, [Cairo University]
