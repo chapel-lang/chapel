@@ -723,10 +723,7 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
 
   if (this->hasFlag(FLAG_DEPRECATED)) {
     this->printDocsDeprecation(this->doc, file, tabs + 1,
-                               this->getDeprecationMsg());
-    if (!fDocsTextOnly) {
-      *file << std::endl;
-    }
+                               this->getDeprecationMsg(), !fDocsTextOnly);
   }
 }
 

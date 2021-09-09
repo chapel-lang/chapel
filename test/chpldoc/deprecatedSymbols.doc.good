@@ -49,3 +49,13 @@ or
 
 .. data:: var c: string
 
+.. data:: var d: real
+
+   This symbol is deprecated 
+
+.. data:: var e: real
+
+   This symbol is also deprecated, please use f instead 
+
+.. data:: var f: real
+

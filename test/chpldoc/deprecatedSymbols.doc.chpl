@@ -9,3 +9,10 @@ deprecated var a: string;
 /* This symbol also was documented */
 deprecated "b is deprecated, use c instead" var b: string;
 var c: string;
+
+// Checks interaction when documentation mentions deprecation in some form
+/* This symbol is deprecated */
+deprecated var d: real;
+/* This symbol is also deprecated, please use f instead */
+deprecated "e is deprecated, use f instead" var e: real;
+var f: real;

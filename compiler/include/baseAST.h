@@ -283,7 +283,8 @@ public:
   void              printDocsDescription(const char *doc, std::ostream *file, unsigned int tabs);
   void              printDocsDeprecation(const char *doc, std::ostream *file,
                                          unsigned int tabs,
-                                         const char* deprecationMsg);
+                                         const char* deprecationMsg,
+                                         bool extraLine);
 
   static  const     std::string tabText;
 

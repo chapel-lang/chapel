@@ -562,7 +562,7 @@ void BaseAST::printDocsDescription(const char *doc, std::ostream *file, unsigned
 // already checked that the symbol is deprecated.
 void BaseAST::printDocsDeprecation(const char *doc, std::ostream *file,
                                    unsigned int tabs,
-                                   const char* deprecationMsg) {
+                                   const char* deprecationMsg, bool extraLine) {
   // The current documentation may already mention deprecation
   if (doc != NULL) {
     // If the documentation already mentions deprecation in some form, no need
@@ -576,6 +576,11 @@ void BaseAST::printDocsDeprecation(const char *doc, std::ostream *file,
   *file << std::endl;
   this->printTabs(file, tabs+1); // Indent further for the deprecation message
   *file << deprecationMsg << std::endl;
+
+  // Only add this extra line if we added lines for the deprecation warning
+  if (extraLine) {
+    *file << std::endl;
+  }
 }
 
 void registerModule(ModuleSymbol* mod) {
