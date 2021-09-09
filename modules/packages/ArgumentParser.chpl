@@ -22,7 +22,7 @@
 
   .. note::
 
-    This module is in its initial stages of development and should be expected
+    This module is in the initial stages of development and should be expected
     to change in future releases.
 
 
@@ -92,7 +92,7 @@
 
       $ myExecutable build --force otherProgram -- --flags --for --compiling otherProgram
 
-  Quick Start Example
+  Quickstart Example
   -------------------
 
   .. code-block:: chapel
@@ -103,7 +103,7 @@
         var parser = new argumentParser();
         var simpleArg = parser.addArgument(name="positional");
         var optionArg = parser.addOption(name="optional");
-        var flagArg = parser.addFlag(name="debug",defaultValue=false);
+        var flagArg = parser.addFlag(name="debug", defaultValue=false);
         try!{
           parser.parseArgs(args);
         } catch ex : ArgumentError {
@@ -111,13 +111,37 @@
           // print a usage message
           exit(1);
         }
-        var debug = flagArg.valueAsBool()
+        var debug = flagArg.valueAsBool();
         // we are assured a value here or else the parser would have thrown
-        var foo = simpleArg.value()
+        var foo = simpleArg.value();
         var bar:string;
         if optionArg.hasValue() then bar = optionArg.value();
       }
     }
+
+  This program would accept any of the following command line arguments (and other combinations):
+
+  .. code-block:: shell
+
+    $ quickStart myFile
+    $ quickStart myFile --optional valueA
+    $ quickStart myFile --debug
+    $ quickStart myFile --optional valueA --debug
+    $ quickStart --optional val1 --debug myFile
+
+  And will not accept any of the following (reason given below):
+
+  .. code-block:: shell
+
+    $ quickStart --debug
+    positional argument is missing
+
+    $ quickStart myFile --debug=true
+    debug flag does not accept values
+
+    $ quickStart myFile --debug --optional
+    optional expects 1 value
+
  */
 
 module ArgumentParser {
@@ -137,110 +161,6 @@ module ArgumentParser {
 
   if chpl_warnUnstable then
     compilerWarning("ArgumentParser is unstable.");
-
-  // A generic argument parser error
-  pragma "no doc"
-  class ArgumentError : Error {
-    var _msg:string;
-
-    proc init(msg:string) {
-      this._msg = msg;
-    }
-
-    override proc message() {
-      return _msg;
-    }
-  }
-
-  /*
-  Stores the result of argument parsing
-  */
-  class Argument {
-
-    //indicates if an argument was entered on the command line
-    pragma "no doc"
-    var _present: bool=false;
-    // hold the values of the argument from the command line
-    pragma "no doc"
-    var _values: list(string);
-
-    /*
-      Return the single value collected from the command line, if any.
-      If no value was collected, then program will halt as result of
-      calling list.first() on an empty list.
-
-      .. warning::
-        This can only be called safely if you are sure a value was collected
-        because the argument was required or there was a default value set.
-        Calling value when no argument was collected will cause the program
-        to halt.
-        To be safe, check the return of hasValue() before calling value().
-
-      :returns: The string value for this argument as parsed from the command line
-
-      .. code-block:: chapel
-
-          var argVal:string;
-          if myArg.hasValue() then argVal = myArg.value();
-    */
-    proc value() : string {
-      return this._values.first();
-    }
-
-    /*
-      Return an iterator over the values collected from the command line, if any.
-      Typically collect these into a new list or var them into an array.
-
-      .. code-block:: chapel
-
-          // to get an array of strings
-          var argValues = myArg.values();
-          // create a list of strings
-          var argList = new list(myArg.values());
-
-      :returns: An iterator over the parsed values
-
-    */
-    iter values() : string {
-      for val in _values {
-        yield val;
-      }
-    }
-
-    /*
-      Check to see if a value was collected from the command line
-
-      :returns: * `true` -- when at least one value was parsed
-                * `false` -- when the argument wasn't provided and no
-                             default was defined
-    */
-    proc hasValue() : bool {
-      return !this._values.isEmpty() && this._present;
-    }
-
-    /*
-      Interpret the value collected from the command line as a bool
-
-      :returns: * `true` -- for true, 1, yes, y
-                * `false` -- for false, 0, no, n
-
-      :throws: `ArgumentError` if value cannot be interpreted as a bool
-    */
-    proc valueAsBool() : bool throws {
-      var rtn:bool;
-
-      if !this.hasValue() {
-        throw new ArgumentError("No value in this argument to convert");
-      } else if _convertStringToBool(this._values.first(), rtn) {
-        return rtn;
-      }
-      else {
-        throw new ArgumentError("Boolean requested but could not convert " +
-                                this._values.first():string + " to bool");
-      }
-    }
-  }
-
 
   // stores an argument definition
   pragma "no doc"
@@ -542,6 +462,7 @@ module ArgumentParser {
     override proc _hasDefault():bool {
       return !_defaultValue.isEmpty();
     }
+
     // TODO: Decouple the argument from the argument handler
     // maybe pass a list to fill by reference and have the handler populate
     // the argument values directly instead?
@@ -588,10 +509,47 @@ module ArgumentParser {
 
   /*
   A parser that performs the following functions:
-   1. Stores definitions of valid arguments/flags/options
-   2. Parses an array of arguments as passed from the command line
-      (where args[0] is typically the name of the executable)
-   3. Throws an ArgumentError if invalid or unrecognized arguments are encountered
+
+    1. Stores definitions of valid arguments/flags/options
+    2. Parses an array of arguments as passed from the command line
+       (where args[0] is typically the name of the executable)
+    3. Throws an ArgumentError if invalid or unrecognized arguments are encountered
+
+  The parser can process command line arguments that include or omit an equals
+  sign ``=``, with short ``-`` or long ``--`` indicators.
+
+  We can declare a new argumentParser like so:
+
+  .. code-block:: chapel
+
+    var parser = new argumentParser();
+
+  **Limitations**
+
+   * Cannot place short flags together. That is, if a parser has defined short
+     flags ``-c``, ``-a`` and ``-t``, we cannot handle ``-cat``.
+
+   * Short options must be separated from their values with an equals sign or
+     spaces. That is, ``-cValue`` is not supported and should be entered as either
+     ``-c Value`` or ``-c=Value``.
+
+   * Numeric types are not supported and will be passed as strings.
+
+   * Negative numbers on the command line may cause issues.
+
+   * Shadowing config vars or Chapel arguments can be accomplished by placing
+     those values after a ``--`` on the command line. If a passthrough is also
+     specified as ``--``, there will be ambiguity and your shadowed arguments
+     will be captured by the passthrough. As a workaround, specify a custom
+     delimiter for passthrough.
+
+   * Help and usage are not automatically generated or handled internally. This
+     is planned for future development.
+
+   * Counting the number of times a flag is found on the command line is not
+     supported.
+
+   * Mutual exclusion or conditionally required arguments are not supported.
 
   */
   record argumentParser {
@@ -623,6 +581,487 @@ module ArgumentParser {
       try!{addOption(name="dummyDashHandler", opts=["--"], numArgs=0);}
     }
 
+    /*
+    Add an argument type to the parser. Argument types are also known as
+    "positional arguments" and are not indicated by anything other than a value.
+
+    For example, defining an argument like this:
+
+    .. code-block:: chapel
+
+        var fileArg = parser.addArgument(name="filename");
+
+    we would expect command line arguments like this:
+
+    .. code-block:: shell
+
+        $ programName myFile.ext
+
+    :arg name: a friendly name to give this argument. This would typically be
+               displayed in the `help` or `usage` message.
+
+    :arg defaultValue: a value to assign the argument when it is not provided
+                       on the command line. If `numArgs` is greater than 1,
+                       an array or list may be passed. Defaults to `none`.
+
+    :arg numArgs: an exact number of values expected from the command line.
+                  An ArgumentError will be thrown if more or fewer values are entered.
+
+    :returns: a shared `Argument` where parsed values will be placed
+
+    :throws: ArgumentError in any of the following conditions:
+
+             * `name` is already defined for this parser
+             * `defaultValue` is something other than a string, array or list
+               of strings.
+
+    */
+    proc addArgument(name:string,
+                     numArgs=1,
+                     defaultValue:?t=none) : shared Argument throws {
+      return addArgument(name, numArgs..numArgs, defaultValue);
+    }
+
+    /*
+    An overload of ``addArgument``, described above, that accepts a range for
+    `numArgs`.
+
+    For example, defining an argument like this:
+
+    .. code-block:: chapel
+
+        var filesArg = parser.addArgument(name="filenames", numArgs=1..);
+
+    we would expect command line arguments like either of these:
+
+    .. code-block:: shell
+
+        $ programName myFile1.ext myFile2.ext myFile3.ext ...
+        $ programName myFile1.ext
+
+    :arg name: a friendly name to give this argument. This would typically be
+               displayed in the `help` or `usage` message.
+
+    :arg defaultValue: a value to assign the argument when it is not provided
+                       on the command line. If `numArgs` is greater than 1,
+                       an array or list may be passed. Defaults to `none`.
+
+    :arg numArgs: a range of values expected from the command line. If using a
+                  range, the argument must be the only positional that accepts a range,
+                  and must be specified last relative to other positional arguments
+                  to avoid ambiguity.
+                  An ArgumentError will be thrown if more or fewer values are entered.
+
+    :returns: a shared `Argument` where parsed values will be placed
+
+    :throws: ArgumentError in any of the following conditions:
+
+             * `name` is already defined for this parser
+             * `defaultValue` is something other than a string, array or list
+               of strings.
+             * `numArgs` is neither low-bound nor fully-bound
+
+    */
+    proc addArgument(name:string,
+                     numArgs:range(?),
+                     defaultValue:?t=none) : shared Argument throws {
+      var argName = name;
+      var nArgs = _prepareRange(numArgs);
+      if name.startsWith("-") then argName = name.strip("-", trailing=false);
+      var handler = new owned Positional(argName, defaultValue, nArgs);
+
+      for arg in _positionals {
+        if arg._numArgs.high >= 1 && arg._numArgs.low != arg._numArgs.high {
+          throw new ArgumentError("Positional arguments that allow for range " +
+                                  "of values must be last relative to other " +
+                                  "positional arguments");
+        }
+      }
+
+      _positionals.append(handler.borrow());
+      //create, add, and return the shared argument
+      return _addHandler(handler);
+    }
+
+    /*
+    Add an option type argument to the parser. Options are typically indicated
+    by one or two leading dashes ``-`` and may be followed by 0 or more values.
+
+    For example, defining an option like this:
+
+    .. code-block:: chapel
+
+      var fileArg = parser.addOption(name="filename");
+
+    we would expect command line arguments like either of these:
+
+    .. code-block:: shell
+
+      $ programName --filename=myFile1.ext
+      $ programName --filename myFile1.ext
+
+
+
+    :arg name: a friendly name to give this option, or a pattern to use to indicate
+                this option from the command line. If providing a pattern, use a
+                leading single dash ``-`` or double dash ``--``.
+
+    :arg opts: an array of string values that can be used to indicate this option.
+                Defaults to a long version of the `name` field with leading double
+                dashes ``--``.
+
+    :arg required: a bool to set this option as a required command line argument.
+                    If set to `true`, an ArgumentError will be thrown if the user
+                    fails to enter the option on the command line. Defaults to `false`.
+
+    :arg defaultValue: a value to assign the argument when an option is not required,
+                        and a is not entered on the command line. If `numArgs` is
+                        greater than 1, an array or list may be passed. Defaults to `none`.
+
+    :arg numArgs: the exact number of values expected to follow the option on the
+                  command line. An ArgumentError will be thrown if more or fewer
+                  values are entered.
+
+    :returns: a shared `Argument` where parsed values will be placed
+
+    :throws: ArgumentError in any of the following conditions:
+
+             * `name` or `opts` are already defined for this parser
+             * values in `opts` do not begin with a dash ``-``
+             * `defaultValue` is something other than a string, array or list
+               of strings.
+
+    */
+    proc addOption(name:string,
+                   opts:[]string=_processNameToOpts(name),
+                   numArgs=1,
+                   required=false,
+                   defaultValue:?t=none) : shared Argument throws {
+      return addOption(name=name,
+                       opts=opts,
+                       numArgs=numArgs..numArgs,
+                       required=required,
+                       defaultValue=defaultValue);
+    }
+
+    /*
+    An overload of ``addOption`` described above that accepts a range of expected
+    values for `numArgs`.
+
+    For example, defining an option like this:
+
+    .. code-block:: chapel
+
+      var filesArg = parser.addOption(name="filenames", numArgs=1..);
+
+    we would expect command line arguments like any of these:
+
+    .. code-block:: shell
+
+      $ programName --filenames myFile1.ext myFile2.ext myFile3.ext ...
+      $ programName --filenames=myFile1.ext
+      $ programName --filenames myFile1.ext --filenames myFile2.ext ...
+
+    :arg name: a friendly name to give this option, or a pattern to use to indicate
+                this option from the command line. If providing a pattern, use a
+                leading single dash ``-`` or double dash ``--``.
+
+    :arg opts: an array of string values that can be used to indicate this option.
+                Defaults to a long version of the `name` field with leading double
+                dashes ``--``.
+
+    :arg required: a bool to set this option as a required command line argument.
+                    If set to `true`, an ArgumentError will be thrown if the user
+                    fails to enter the option on the command line. Defaults to `false`.
+
+    :arg defaultValue: a value to assign the argument when an option is not required,
+                        and a is not entered on the command line. If `numArgs` is
+                        greater than 1, an array or list may be passed. Defaults to `none`.
+
+    :arg numArgs: a range of values expected to follow the option on the
+                  command line. This may be a fully-bound range like ``1..10``
+                  or a lower-bound range like ``1..``. An ArgumentError will be
+                  thrown if more or fewer values are entered.
+
+    :returns: a shared `Argument` where parsed values will be placed
+
+    :throws: ArgumentError in any of the following conditions:
+
+             * `name` or `opts` are already defined for this parser
+             * values in `opts` do not begin with a dash ``-``
+             * `defaultValue` is something other than a string, array or list
+               of strings.
+             * `numArgs` does not have a low-bound
+
+    */
+    proc addOption(name:string,
+                   opts:[]string=_processNameToOpts(name),
+                   numArgs:range(?),
+                   required=false,
+                   defaultValue:?t=none) : shared Argument throws {
+      var nArgs = _prepareRange(numArgs);
+      var argName = name;
+      if name.startsWith("-") then argName = name.strip("-", trailing=false);
+      _checkAndSaveOpts(opts, argName);
+      var myDefault = new list(string);
+
+      if isStringType(t) {
+        myDefault.append(defaultValue);
+      } else if t==list(string) ||
+                (isArray(t) && isString(defaultValue[0])) {
+        myDefault.extend(defaultValue);
+      } else if !isNothingType(t) {
+        throw new ArgumentError("Only string and list of strings are supported "
+                                + "as default values at this time");
+      }
+
+      var handler = new owned Option(name=argName,
+                                    numOpts=opts.size,
+                                    opts=opts,
+                                    numArgs=nArgs,
+                                    required=required,
+                                    defaultValue=myDefault
+                                    );
+      return _addHandler(handler);
+    }
+
+    /*
+    Add a flag type argument to the parser. Flags may be setup in several ways
+    depending on the user's needs.
+
+    For example, defining a flag like this:
+
+    .. code-block:: chapel
+
+      var debugArg = parser.addFlag(name="debug");
+
+    we would expect command line arguments like this:
+
+    .. code-block:: shell
+
+      $ programName --debug
+
+    :arg name: a friendly name to give this flag, or a pattern to use to indicate
+                this flag from the command line. If providing a pattern, use a
+                leading single dash ``-`` or double dash ``--``.
+
+    :arg opts: an array of string values that can be used to indicate this flag.
+                Defaults to a long version of the `name` field with leading double
+                dashes ``--``.
+
+    :arg required: a bool to set this flag as a required command line argument.
+                    If set to `true`, an ArgumentError will be thrown if the user
+                    fails to enter the flag on the command line. Defaults to `false`.
+
+    :arg defaultValue: a value to assign the argument when a flag is not required,
+                        and a is not entered on the command line. Defaults to `none`.
+
+    :arg flagInversion: a bool to indicate if the parser should automatically
+                          create a ``--no-`` version of this flag to mean `false`
+                          when entered from the command line. i.e. ``--[no-]build``
+
+    :arg numArgs: the number of values expected to follow the flag on the command
+                    line. Defaults to 0 and has a max value of 1.
+                    when 0, then ``--flag`` is accepted while ``--flag=true`` is rejected
+                    when 1, then ``--flag`` is rejected while ``--flag=true`` is accepted
+
+    :returns: a shared `Argument` where parsed values will be placed
+
+    :throws: ArgumentError in any of the following conditions:
+
+              * `name` or `opts` are already defined for this parser
+              * `numArgs` > 1
+              * `flagInversion` is true and `numArgs` > 0
+              * `flagInversion` is false and `defaultValue` is true and flag
+                is required and `numArgs` < 1 (in this case the flag is meaningless
+                because it will always be true)
+              * values in `opts` do not begin with a dash ``-``
+
+    */
+    proc addFlag(name:string,
+                 opts:[?optsD]=_processNameToOpts(name),
+                 required=false, defaultValue:?t=none, flagInversion=false,
+                 numArgs=0) : shared Argument throws {
+      return addFlag(name=name,
+                     opts=opts,
+                     required=required,
+                     defaultValue=defaultValue,
+                     flagInversion=flagInversion,
+                     numArgs=numArgs..numArgs);
+    }
+
+    /*
+    An overload of ``addFlag`` described above, which accepts a range for `numArgs`.
+    If a range of ``0..1`` is used, then either ``--flag true`` or ``--flag`` is
+    acceptable from the command line.
+
+    For example, defining a flag like this:
+
+    .. code-block:: chapel
+
+      var debugArg = parser.addFlag(name="debug",
+                                    numArgs=0..1,
+                                    defaultValue=false);
+
+    we would expect command line arguments like either of these:
+
+    .. code-block:: shell
+
+      $ programName --debug
+      $ programName --debug=true
+
+    :arg name: a friendly name to give this flag, or a pattern to use to indicate
+                this flag from the command line. If providing a pattern, use a
+                leading single dash ``-`` or double dash ``--``.
+
+    :arg opts: an array of string values that can be used to indicate this flag.
+                Defaults to a long version of the `name` field with leading double
+                dashes ``--``.
+
+    :arg required: a bool to set this flag as a required command line argument.
+                    If set to `true`, an ArgumentError will be thrown if the user
+                    fails to enter the flag on the command line. Defaults to `false`.
+
+    :arg defaultValue: a value to assign the argument when a flag is not required,
+                        and a is not entered on the command line. Defaults to `none`.
+
+    :arg flagInversion: a bool to indicate if the parser should automatically
+                         create a `--no-` version of this flag to mean `false`
+                         when entered from the command line. i.e. (--[no-]build)
+
+    :arg numArgs: the range of values expected to follow the flag on the command
+                   line.
+                   when 0..1, then ``--flag`` or ``--flag=true`` are accepted
+
+    :returns: a shared `Argument` where parsed values will be placed
+
+    :throws: ArgumentError in any of the following conditions:
+
+             * `name` or `opts` are already defined for this parser
+             * `numArgs` high-bound > 1
+             * `flagInversion` is true and `numArgs` > 0
+             * `flagInversion` is false and `defaultValue` is true and flag
+               is required and `numArgs` < 1 (in this case the flag is meaningless
+               because it will always be true)
+             * `numArgs` does not have a lower-bound or lower-bound < 0
+             * values in `opts` do not begin with a dash ``-``
+
+    */
+    proc addFlag(name:string,
+                 opts:[?optsD]=_processNameToOpts(name),
+                 required=false, defaultValue:?t=none, flagInversion=false,
+                 numArgs:range) : shared Argument throws {
+
+      if (flagInversion && numArgs.high > 0) {
+        throw new ArgumentError("Creating 'no' flag options prevents " +
+                                "using value to set flag");
+      }
+
+      if isBoolType(t) {
+        if !flagInversion && defaultValue && numArgs.high < 1 && required {
+          throw new ArgumentError("Setting up a required flag that defaults " +
+                                  "to true with no way for user to set false");
+        }
+      }
+
+      if numArgs.high > 1 {
+        throw new ArgumentError("Maximum number of values for a flag is 1");
+      }
+      var argName = name;
+      if name.startsWith("-") then argName = name.strip("-", trailing=false);
+      _checkAndSaveOpts(opts, argName);
+
+      var noFlagOpts:[optsD]string;
+
+      // if user chooses to automatically create 'no' version of flag
+      if flagInversion {
+        for i in optsD {
+          var flagStr = opts[i].strip('-', trailing=false);
+          if flagStr.size == 1 {
+            noFlagOpts[i] = "-no-"+flagStr;
+          } else {
+            noFlagOpts[i] = "--no-"+flagStr;
+          }
+          _options.add(noFlagOpts[i], argName);
+        }
+      }
+
+      var handler = new owned Flag(name=argName,
+                               required=required,
+                               defaultValue=defaultValue,
+                               yesFlags=opts,
+                               noFlags=noFlagOpts,
+                               numArgs=numArgs);
+
+      return _addHandler(handler);
+    }
+
+    /*
+    Add a subcommand to the parser. A subcommand is typically indicated with an
+    action word, like `commit` in `git commit`. The subcommand name and all values
+    after the subcommand are collected in the returned shared `Argument` object.
+
+    For example, a defining a subcommand like this:
+
+    .. code-block:: chapel
+
+      var subCmdRun = parser.addSubcommand("run");
+
+    we would expect command line arguments like this:
+
+    .. code-block:: shell
+
+      $ programName <any args for progName> run <any args for run>
+
+    :arg cmd: a keyword that is recognized as indicating the subcommand from the
+              command line. For example, `commit` in `git commit`.
+
+    :returns: a shared `Argument` where parsed values will be placed
+
+    :throws: ArgumentError if `cmd` is already defined for this parser
+
+    */
+    proc addSubCommand(cmd:string) : shared Argument throws {
+      var handler = new owned SubCommand(cmd);
+      _subcommands.append(cmd);
+      _options.add(cmd, cmd);
+      return _addHandler(handler);
+    }
+
+    /*
+    Add a delimiter to indicate all following values should not be parsed, but
+    collected for later use by the developer. Convention dictates this is a
+    double-dash ``--``, but the developer may choose to use something else.
+
+    For example, defining a passthrough delimiter like this:
+
+    .. code-block:: chapel
+
+      var passedArgs = parser.addPassThrough();
+
+    we would expect command line arguments like this:
+
+    .. code-block:: shell
+
+      $ programName <any args for progName> -- --preserved-flags --options etc
+
+    :args delimiter: the pattern to use as the passthrough indicator
+
+    :returns: a shared `Argument` where collected values will be placed for use
+              by the developer
+
+    :throws: ArgumentError if `delimiter` is already defined for this parser
+
+    */
+    proc addPassThrough(delimiter="--") : shared Argument throws {
+      // remove the dummyHandler first
+      if delimiter == "--" then _removeHandler("dummyDashHandler", ["--"]);
+      var handler = new owned PassThrough(delimiter);
+      _subcommands.append(delimiter);
+      _options.add(delimiter, delimiter);
+      return _addHandler(handler);
+    }
+
     pragma "no doc"
     proc _parsePositionals(arguments:[?argsD] string, endIdx:int) throws {
       var endPos = argsD.low;
@@ -649,8 +1088,21 @@ module ArgumentParser {
     /*
     Parses an array of arguments as collected from the command line
 
+    Example usage:
+
+    .. code-block:: chapel
+
+      proc main(args:[]string) throws {
+        // parser and arguments defined
+        try!{
+          parser.parseArgs(args);
+        } catch ex : ArgumentError {
+          // display usage message
+          writeln(ex.message());
+        }
+      }
+
     :arg arguments: The array of values passed from the command line to `main(args:[]string)`
-    :type [] string:
 
     :throws: ArgumentError if invalid or undefined command line arguments found in `arguments`
     */
@@ -857,388 +1309,122 @@ module ArgumentParser {
       return arg;
     }
 
-    /*
-    Add a delimiter to indicate all following values should not be parsed, but
-    collected for later use by the developer. Convention dictates this is a
-    double-dash ``--``, but the developer may choose to use something else
-
-    :args delimiter: the pattern to use as the passthrough indicator
-
-    :returns: a shared `Argument` where collected values will be placed for use
-              by the developer
-
-    :throws: ArgumentError if `delimiter` is already defined for this parser
-
-    */
-    proc addPassThrough(delimiter="--") : shared Argument throws {
-      // remove the dummyHandler first
-      if delimiter == "--" then _removeHandler("dummyDashHandler", ["--"]);
-      var handler = new owned PassThrough(delimiter);
-      _subcommands.append(delimiter);
-      _options.add(delimiter, delimiter);
-      return _addHandler(handler);
-    }
-
-    /*
-    Add a flag type argument to the parser. Flags may be setup in several ways
-    depending on the users needs.
-
-    :arg name: a friendly name to give this flag, or a pattern to use to indicate
-                this flag from the command line. If providing a pattern, use a
-                leading single dash ``-`` or double dash ``--``.
-
-    :arg opts: an array of string values that can be used to indicate this flag.
-                Defaults to a long version of the `name` field with leading double
-                dashes ``--``.
-
-    :arg required: a bool to set this flag as a required command line argument.
-                    If set to `true`, an ArgumentError will be thrown if the user
-                    fails to enter the flag on the command line. Defaults to `false`.
-
-    :arg defaultValue: a value to assign the argument when a flag is not required,
-                        and a is not entered on the command line. Defaults to `none`.
-
-    :arg flagInversion: a bool to indicate if the parser should automatically
-                         create a ``--no-`` version of this flag to mean `false`
-                         when entered from the command line. i.e. ``--[no-]build``
-
-    :arg numArgs: the number of values expected to follow the flag on the command
-                   line. Defaults to 0 and has a max value of 1.
-                   when 0, then ``--flag`` is accepted while ``--flag=true`` is rejected
-                   when 1, then ``--flag`` is rejected while ``--flag=true`` is accepted
-
-    :returns: a shared `Argument` where parsed values will be placed
-
-    :throws: ArgumentError in any of the following conditions:
-
-             * `name` or `opts` are already defined for this parser
-             * `numArgs` > 1
-             * `flagInversion` is true and `numArgs` > 0
-             * `flagInversion` is false and `defaultValue` is true and flag
-               is required and `numArgs` < 1 (in this case the flag is meaningless
-               because it will always be true)
-             * values in `opts` do not begin with a dash ``-``
-
-    */
-    proc addFlag(name:string,
-                 opts:[?optsD]=_processNameToOpts(name),
-                 required=false, defaultValue:?t=none, flagInversion=false,
-                 numArgs=0) : shared Argument throws {
-      return addFlag(name=name,
-                     opts=opts,
-                     required=required,
-                     defaultValue=defaultValue,
-                     flagInversion=flagInversion,
-                     numArgs=numArgs..numArgs);
-    }
-
-    /*
-    An overload of ``addFlag`` described above, which accepts a range for `numArgs`.
-    If a range of ``0..1`` is used, then either ``--flag true`` or ``--flag`` is
-    acceptable from the command line.
-
-    :arg name: a friendly name to give this flag, or a pattern to use to indicate
-                this flag from the command line. If providing a pattern, use a
-                leading single dash ``-`` or double dash ``--``.
-
-    :arg opts: an array of string values that can be used to indicate this flag.
-                Defaults to a long version of the `name` field with leading double
-                dashes ``--``.
-
-    :arg required: a bool to set this flag as a required command line argument.
-                    If set to `true`, an ArgumentError will be thrown if the user
-                    fails to enter the flag on the command line. Defaults to `false`.
-
-    :arg defaultValue: a value to assign the argument when a flag is not required,
-                        and a is not entered on the command line. Defaults to `none`.
-
-    :arg flagInversion: a bool to indicate if the parser should automatically
-                         create a `--no-` version of this flag to mean `false`
-                         when entered from the command line. i.e. (--[no-]build)
-
-    :arg numArgs: the range of values expected to follow the flag on the command
-                   line.
-                   when 0..1, then ``--flag`` or ``--flag=true`` are accepted
-
-    :returns: a shared `Argument` where parsed values will be placed
-
-    :throws: ArgumentError in any of the following conditions:
-
-             * `name` or `opts` are already defined for this parser
-             * `numArgs` high-bound > 1
-             * `flagInversion` is true and `numArgs` > 0
-             * `flagInversion` is false and `defaultValue` is true and flag
-               is required and `numArgs` < 1 (in this case the flag is meaningless
-               because it will always be true)
-             * `numArgs` does not have a lower-bound or lower-bound < 0
-             * values in `opts` do not begin with a dash ``-``
-
-    */
-    proc addFlag(name:string,
-                 opts:[?optsD]=_processNameToOpts(name),
-                 required=false, defaultValue:?t=none, flagInversion=false,
-                 numArgs:range) : shared Argument throws {
-
-      if (flagInversion && numArgs.high > 0) {
-        throw new ArgumentError("Creating 'no' flag options prevents " +
-                                "using value to set flag");
-      }
-
-      if isBoolType(t) {
-        if !flagInversion && defaultValue && numArgs.high < 1 && required {
-          throw new ArgumentError("Setting up a required flag that defaults " +
-                                  "to true with no way for user to set false");
-        }
-      }
-
-      if numArgs.high > 1 {
-        throw new ArgumentError("Maximum number of values for a flag is 1");
-      }
-      var argName = name;
-      if name.startsWith("-") then argName = name.strip("-", trailing=false);
-      _checkAndSaveOpts(opts, argName);
-
-      var noFlagOpts:[optsD]string;
-
-      // if user chooses to automatically create 'no' version of flag
-      if flagInversion {
-        for i in optsD {
-          var flagStr = opts[i].strip('-', trailing=false);
-          if flagStr.size == 1 {
-            noFlagOpts[i] = "-no-"+flagStr;
-          } else {
-            noFlagOpts[i] = "--no-"+flagStr;
-          }
-          _options.add(noFlagOpts[i], argName);
-        }
-      }
-
-      var handler = new owned Flag(name=argName,
-                               required=required,
-                               defaultValue=defaultValue,
-                               yesFlags=opts,
-                               noFlags=noFlagOpts,
-                               numArgs=numArgs);
-
-      return _addHandler(handler);
-    }
-
-    /*
-    Add a subcommand to the parser. A subcommand is typically indicated with an
-    action word, like `commit` in `git commit`. The subcommand name and all values
-    after the subcommand are collected in the returned shared `Argument` object.
-
-    :arg cmd: a keyword that is recognized as indicating the subcommand from the
-              command line. For example, `commit` in `git commit`.
-
-    :returns: a shared `Argument` where parsed values will be placed
-
-    :throws: ArgumentError if `cmd` is already defined for this parser
-
-    */
-    proc addSubCommand(cmd:string) : shared Argument throws {
-      var handler = new owned SubCommand(cmd);
-      _subcommands.append(cmd);
-      _options.add(cmd, cmd);
-      return _addHandler(handler);
-    }
-
-    /*
-    Add an argument type to the parser. Argument types are also known as
-    "positional arguments" and are not indicated by anything other than a value.
-
-    :arg name: a friendly name to give this argument. This would typically be
-               displayed in the `help` or `usage` message.
-
-    :arg defaultValue: a value to assign the argument when it is not provided
-                       on the command line. If `numArgs` is greater than 1,
-                       an array or list may be passed. Defaults to `none`.
-
-    :arg numArgs: an exact number of values expected from the command line.
-                  An ArgumentError will be thrown if more or fewer values are entered.
-
-    :returns: a shared `Argument` where parsed values will be placed
-
-    :throws: ArgumentError in any of the following conditions:
-
-             * `name` is already defined for this parser
-             * 'defaultValue' is something other than a string, array or list
-               of strings.
-
-    */
-    proc addArgument(name:string,
-                     numArgs=1,
-                     defaultValue:?t=none) : shared Argument throws {
-      return addArgument(name, numArgs..numArgs, defaultValue);
-    }
-
-    /*
-    An overload of ``addArgument``, described above, that accepts a range for
-    `numArgs`.
-
-    :arg name: a friendly name to give this argument. This would typically be
-               displayed in the `help` or `usage` message.
-
-    :arg defaultValue: a value to assign the argument when it is not provided
-                       on the command line. If `numArgs` is greater than 1,
-                       an array or list may be passed. Defaults to `none`.
-
-    :arg numArgs: a range of values expected from the command line. If using a
-                  range, the argument must be the only positional that accepts a range,
-                  and must be specified last relative to other positional arguments
-                  to avoid ambiguity.
-                  An ArgumentError will be thrown if more or fewer values are entered.
-
-    :returns: a shared `Argument` where parsed values will be placed
-
-    :throws: ArgumentError in any of the following conditions:
-
-             * `name` is already defined for this parser
-             * 'defaultValue' is something other than a string, array or list
-               of strings.
-             * `numArgs` is neither low-bound nor fully-bound
-
-    */
-    proc addArgument(name:string,
-                     numArgs:range(?),
-                     defaultValue:?t=none) : shared Argument throws {
-      var argName = name;
-      var nArgs = _prepareRange(numArgs);
-      if name.startsWith("-") then argName = name.strip("-", trailing=false);
-      var handler = new owned Positional(argName, defaultValue, nArgs);
-
-      for arg in _positionals {
-        if arg._numArgs.high >= 1 && arg._numArgs.low != arg._numArgs.high {
-          throw new ArgumentError("Positional arguments that allow for range " +
-                                  "of values must be last relative to other " +
-                                  "positional arguments");
-        }
-      }
-
-      _positionals.append(handler.borrow());
-      //create, add, and return the shared argument
-      return _addHandler(handler);
-    }
-
-    /*
-    Add an option type argument to the parser. Options are typically indicated
-    by one or two leading dashes ``-`` and may be followed by 0 or more values.
-
-    :arg name: a friendly name to give this option, or a pattern to use to indicate
-                this option from the command line. If providing a pattern, use a
-                leading single dash ``-`` or double dash ``--``.
-
-    :arg opts: an array of string values that can be used to indicate this option.
-                Defaults to a long version of the `name` field with leading double
-                dashes ``--``.
-
-    :arg required: a bool to set this option as a required command line argument.
-                    If set to `true`, an ArgumentError will be thrown if the user
-                    fails to enter the option on the command line. Defaults to `false`.
-
-    :arg defaultValue: a value to assign the argument when an option is not required,
-                        and a is not entered on the command line. If `numArgs` is
-                        greater than 1, an array or list may be passed. Defaults to `none`.
-
-    :arg numArgs: the exact number of values expected to follow the option on the
-                  command line. An ArgumentError will be thrown if more or fewer
-                  values are entered.
-
-    :returns: a shared `Argument` where parsed values will be placed
-
-    :throws: ArgumentError in any of the following conditions:
-
-             * `name` or `opts` are already defined for this parser
-             * values in `opts` do not begin with a dash ``-``
-             * 'defaultValue' is something other than a string, array or list
-               of strings.
-
-    */
-    proc addOption(name:string,
-                   opts:[]string=_processNameToOpts(name),
-                   numArgs=1,
-                   required=false,
-                   defaultValue:?t=none) : shared Argument throws {
-      return addOption(name=name,
-                       opts=opts,
-                       numArgs=numArgs..numArgs,
-                       required=required,
-                       defaultValue=defaultValue);
-    }
-
-    /*
-    An overload of ``addOption`` described above that accepts a range of expected
-    values for `numArgs`.
-
-    :arg name: a friendly name to give this option, or a pattern to use to indicate
-                this option from the command line. If providing a pattern, use a
-                leading single dash ``-`` or double dash ``--``.
-
-    :arg opts: an array of string values that can be used to indicate this option.
-                Defaults to a long version of the `name` field with leading double
-                dashes ``--``.
-
-    :arg required: a bool to set this option as a required command line argument.
-                    If set to `true`, an ArgumentError will be thrown if the user
-                    fails to enter the option on the command line. Defaults to `false`.
-
-    :arg defaultValue: a value to assign the argument when an option is not required,
-                        and a is not entered on the command line. If `numArgs` is
-                        greater than 1, an array or list may be passed. Defaults to `none`.
-
-    :arg numArgs: a range of values expected to follow the option on the
-                  command line. This may be a fully-bound range like ``1..10``
-                  or a lower-bound range like ``1..``. An ArgumentError will be
-                  thrown if more or fewer values are entered.
-
-    :returns: a shared `Argument` where parsed values will be placed
-
-    :throws: ArgumentError in any of the following conditions:
-
-             * `name` or `opts` are already defined for this parser
-             * values in `opts` do not begin with a dash ``-``
-             * 'defaultValue' is something other than a string, array or list
-               of strings.
-             * `numArgs` does not have a low-bound
-
-    */
-    proc addOption(name:string,
-                   opts:[]string=_processNameToOpts(name),
-                   numArgs:range(?),
-                   required=false,
-                   defaultValue:?t=none) : shared Argument throws {
-      var nArgs = _prepareRange(numArgs);
-      var argName = name;
-      if name.startsWith("-") then argName = name.strip("-", trailing=false);
-      _checkAndSaveOpts(opts, argName);
-      var myDefault = new list(string);
-
-      if isStringType(t) {
-        myDefault.append(defaultValue);
-      } else if t==list(string) ||
-                (isArray(t) && isString(defaultValue[0])) {
-        myDefault.extend(defaultValue);
-      } else if !isNothingType(t) {
-        throw new ArgumentError("Only string and list of strings are supported "
-                                + "as default values at this time");
-      }
-
-      var handler = new owned Option(name=argName,
-                                    numOpts=opts.size,
-                                    opts=opts,
-                                    numArgs=nArgs,
-                                    required=required,
-                                    defaultValue=myDefault
-                                    );
-      return _addHandler(handler);
-    }
-
     // remove a handler for an option or flag
     pragma "no doc"
     proc _removeHandler(name:string, opts:[?optsD]string) {
       if _result.remove(name) {
         _handlers.remove(name);
         for opt in opts do _options.remove(opt);
+      }
+    }
+  }
+
+  // A generic argument parser error
+  pragma "no doc"
+  class ArgumentError : Error {
+    var _msg:string;
+
+    proc init(msg:string) {
+      this._msg = msg;
+    }
+
+    override proc message() {
+      return _msg;
+    }
+  }
+
+  /*
+  Stores the result of argument parsing.
+  */
+  class Argument {
+
+    //indicates if an argument was entered on the command line
+    pragma "no doc"
+    var _present: bool=false;
+    // hold the values of the argument from the command line
+    pragma "no doc"
+    var _values: list(string);
+
+    /*
+    Return the single value collected from the command line, if any.
+    If no value was collected, the program will halt as result of
+    calling ``list.first()`` on an empty list.
+
+    .. warning::
+      This can only be called safely if you are sure a value was collected,
+      either because the argument was required or there was a default value set.
+      Calling `value()` when no argument was collected will cause the program
+      to halt.
+      To be safe, check the return of `hasValue()` before calling `value()`.
+
+    Example usage:
+
+    .. code-block:: chapel
+
+      var argVal:string;
+      if myArg.hasValue() then argVal = myArg.value();
+
+    :returns: The string value for this argument as parsed from the command line
+
+    */
+    proc value() : string {
+      return this._values.first();
+    }
+
+    /*
+    Return an iterator over the values collected from the command line, if any.
+    Typically collect these into a new list or var them into an array.
+
+    Example usage:
+
+    .. code-block:: chapel
+
+      // to get an array of strings
+      var argValues = myArg.values();
+      // create a list of strings
+      var argList = new list(myArg.values());
+
+    :returns: An iterator over the parsed values
+
+    */
+    iter values() : string {
+      for val in _values {
+        yield val;
+      }
+    }
+
+    /*
+    Check to see if a value was collected from the command line
+
+    :returns:
+              * `true` -- when at least one value was parsed
+              * `false` -- when the argument wasn't provided and no
+                default was defined
+    */
+    proc hasValue() : bool {
+      return !this._values.isEmpty() && this._present;
+    }
+
+    /*
+    Interpret the value collected from the command line as a bool
+
+    :returns:
+              * `true` -- for true, 1, yes, y
+              * `false` -- for false, 0, no, n
+
+    :throws: `ArgumentError` if value cannot be interpreted as a bool
+    */
+    proc valueAsBool() : bool throws {
+      var rtn:bool;
+
+      if !this.hasValue() {
+        throw new ArgumentError("No value in this argument to convert");
+      } else if _convertStringToBool(this._values.first(), rtn) {
+        return rtn;
+      }
+      else {
+        throw new ArgumentError("Boolean requested but could not convert " +
+                                this._values.first():string + " to bool");
       }
     }
   }
