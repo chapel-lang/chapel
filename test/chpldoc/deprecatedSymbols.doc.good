@@ -1,0 +1,51 @@
+.. default-domain:: chpl
+
+.. module:: deprecatedSymbols.doc
+
+deprecatedSymbols.doc
+=====================
+**Usage**
+
+.. code-block:: chapel
+
+   use deprecatedSymbols.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import deprecatedSymbols.doc;
+
+.. data:: var x: int
+
+   .. warning::
+
+      x is deprecated
+
+.. data:: var y: int
+
+   .. warning::
+
+      y is deprecated, use z instead
+
+.. data:: var z: int
+
+.. data:: var a: string
+
+   There was documentation of this symbol 
+
+   .. warning::
+
+      a is deprecated
+
+.. data:: var b: string
+
+   This symbol also was documented 
+
+   .. warning::
+
+      b is deprecated, use c instead
+
+.. data:: var c: string
+
