@@ -524,7 +524,8 @@ void chpl_topo_interleaveMemLocality(void* p, size_t size) {
     return;
   }
 
-  if (!topoSupport->membind->set_area_membind) {
+  if (!topoSupport->membind->set_area_membind ||
+      !topoSupport->membind->interleave_membind) {
     return;
   }
 
@@ -533,7 +534,7 @@ void chpl_topo_interleaveMemLocality(void* p, size_t size) {
   obj = hwloc_get_root_obj(topology);
   set = hwloc_bitmap_dup(obj->cpuset);
 
-  flags = HWLOC_MEMBIND_MIGRATE | HWLOC_MEMBIND_STRICT;
+  flags = 0;
   CHK_ERR_ERRNO(hwloc_set_area_membind(topology, p, size, set, HWLOC_MEMBIND_INTERLEAVE, flags) == 0);
 }
 
