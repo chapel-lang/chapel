@@ -1,4 +1,4 @@
-.. _readme-atomics:
+.. _readme-gpu:
 
 .. default-domain:: chpl
 
