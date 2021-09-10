@@ -481,7 +481,7 @@ module ArgumentParser {
       var next = pos+1;
       debugTrace("starting at pos: " + pos:string);
       debugTrace("searching from: " + pos:string + " to " + endPos:string);
-      while matched < high && next <= endPos && !args[next].startsWith("-")
+      while matched < high && next <= endPos
       {
         pos=next;
         next+=1;

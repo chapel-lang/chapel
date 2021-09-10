@@ -1625,7 +1625,10 @@ proc testFromArgParseExample(test: borrowed Test) throws {
 }
 
 // short option interrupted with bad flag value
-proc testOptRangeInterruptBadFlag(test: borrowed Test) throws {
+// upon review this shouldn't be an error, we would just consume the -f
+// and it would be on the user/dev to sort out the bad value, if it truly
+// is a bad value.
+proc testOptRangeMixedWithLeadingDash(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","-f","-p","thirty","-t","two"];
   var parser = new argumentParser();
   var myStrArg1 = parser.addOption(name="StringOpt1",
@@ -1643,14 +1646,15 @@ proc testOptRangeInterruptBadFlag(test: borrowed Test) throws {
   test.assertFalse(myStrArg2.hasValue());
   test.assertFalse(myStrArg3.hasValue());
   //parse the options
-  try {
-    parser.parseArgs(argList);
-  }catch ex: ArgumentError {
-    test.assertTrue(true);
-    stderr.writeln(ex.message());
-    return;
-  }
-  test.assertTrue(false);
+  parser.parseArgs(argList);
+  test.assertTrue(myStrArg1.hasValue());
+  test.assertTrue(myStrArg2.hasValue());
+  test.assertTrue(myStrArg3.hasValue());
+
+  test.assertEqual(new list(myStrArg1.values()), new list(argList[2..3]));
+  test.assertEqual(myStrArg2.value(), argList[5]);
+  test.assertEqual(myStrArg3.value(), argList[7]);
+
 }
 
 // a short bool flag test
@@ -3549,8 +3553,59 @@ proc testRangeConverter(test: borrowed Test) throws {
     }
   }
   test.assertTrue(false);
-
 }
+
+// test for negative integers with arguments
+proc testSimpleNegativeIntegerArguments(test: borrowed Test) throws {
+  var argList = ["progName","-1","-100"];
+  var parser = new argumentParser();
+  var myIntArgs = parser.addArgument(name="StringOpt", numArgs=1..);
+
+  //make sure no value currently exists
+  test.assertFalse(myIntArgs.hasValue());
+  //parse the options
+  parser.parseArgs(argList);
+  //make sure we now have a value
+  test.assertTrue(myIntArgs.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(new list(myIntArgs.values()), new list(argList[1..]));
+}
+
+// test for negative integers with options
+proc testSimpleNegativeIntegerOptions(test: borrowed Test) throws {
+  var argList = ["progName","-n","-1","-100"];
+  var parser = new argumentParser();
+  var myIntArgs = parser.addOption(name="-n", opts=["-n"], numArgs=1..);
+
+  //make sure no value currently exists
+  test.assertFalse(myIntArgs.hasValue());
+  //parse the options
+  parser.parseArgs(argList);
+  //make sure we now have a value
+  test.assertTrue(myIntArgs.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(new list(myIntArgs.values()), new list(argList[2..]));
+}
+
+// test for negative integers mixed in arguments and options
+proc testMixedNegativeIntegerArgsOptions(test: borrowed Test) throws {
+  var argList = ["progName","-200","-999.98i","-n","-1","-100"];
+  var parser = new argumentParser();
+  var myIntOpts = parser.addOption(name="-n", opts=["-n"], numArgs=1..);
+  var myIntArgs = parser.addArgument(name="StringArg", numArgs=1..);
+  //make sure no value currently exists
+  test.assertFalse(myIntArgs.hasValue());
+  test.assertFalse(myIntOpts.hasValue());
+  //parse the options
+  parser.parseArgs(argList);
+  //make sure we now have a value
+  test.assertTrue(myIntArgs.hasValue());
+  test.assertTrue(myIntOpts.hasValue());
+  //ensure the value passed is correct
+  test.assertEqual(new list(myIntArgs.values()), new list(argList[1..2]));
+  test.assertEqual(new list(myIntOpts.values()), new list(argList[4..5]));
+}
+
 
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
