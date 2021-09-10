@@ -112,6 +112,7 @@ Bug Fixes
 * fixed a bug in which simple paren-less functions were misformatted in errors
 * fixed a bug in which aligned bound queries didn't halt() for unaligned ranges
   (e.g., `(..10 by 2).alignedLow` returned a value rather than erroring)
+* fixed a bug when using C header files with the GPU locale model
 
 Bug Fixes for Libraries
 -----------------------
