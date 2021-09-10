@@ -416,20 +416,26 @@ void ModuleSymbol::printDocs(std::ostream* file,
     this->printTableOfContents(file);
   }
 
-  if (this->doc != NULL) {
-    // Only print tabs for text only mode. The .rst prefers not to have the
-    // tabs for module level comments and leading whitespace removed.
-    unsigned int t = tabs;
+  // Only print tabs for text only mode. The .rst prefers not to have the
+  // tabs for module level comments and leading whitespace removed.
+  unsigned int t = tabs;
 
-    if (fDocsTextOnly == true) {
-      t += 1;
-    }
+  if (fDocsTextOnly == true) {
+    t += 1;
+  }
+
+  if (this->doc != NULL) {
 
     this->printDocsDescription(this->doc, file, t);
 
     if (fDocsTextOnly == false) {
       *file << std::endl;
     }
+  }
+
+  if (this->hasFlag(FLAG_DEPRECATED)) {
+    this->printDocsDeprecation(this->doc, file, t, this->getDeprecationMsg(),
+                               !fDocsTextOnly);
   }
 }
 
