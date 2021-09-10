@@ -24,7 +24,7 @@
        source util/quickstart/setchplenv.bash
    in the Chapel home directory, and then compiling and running this file 
    as follows:
-       cd $CHPL_HOME
+       cd $CHPL_HOME/test/release/examples/patterns/
        chpl --fast readcsv.chpl
        ./readcsv
 
