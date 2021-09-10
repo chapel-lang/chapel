@@ -46,7 +46,7 @@
   **Options**
 
     These are values that follow some indicator, typically ``--option`` is
-    used as a long option and ``-o`` might be the short indicator. Typically
+    used as a long option and ``-o`` might be the short indicator. Typically,
     0 or more arguments may follow.
 
     Examples:
@@ -112,7 +112,7 @@
           exit(1);
         }
         var debug = flagArg.valueAsBool();
-        // we are assured a value here or else the parser would have thrown
+        // we are assured a value here or else the parser would have thrown an error
         var foo = simpleArg.value();
         var bar:string;
         if optionArg.hasValue() then bar = optionArg.value();
@@ -535,13 +535,12 @@ module ArgumentParser {
 
    * Numeric types are not supported and will be passed as strings.
 
-   * Negative numbers on the command line may cause issues.
-
-   * Shadowing config vars or Chapel arguments can be accomplished by placing
-     those values after a ``--`` on the command line. If a passthrough is also
-     specified as ``--``, there will be ambiguity and your shadowed arguments
-     will be captured by the passthrough. As a workaround, specify a custom
-     delimiter for passthrough.
+   * Chapel programs currently do config variable processing on the arguments.
+     If you have arguments that conflict with config variables, you can place
+     them after ``--`` on the command line in order to skip the config variable
+     processing. If a passthrough is also specified as ``--``, then these
+     arguments will also be captured by the passthrough. If that is not desired,
+     you can create a different passthrough delimiter, e.g. ``++``.
 
    * Help and usage are not automatically generated or handled internally. This
      is planned for future development.
@@ -549,7 +548,9 @@ module ArgumentParser {
    * Counting the number of times a flag is found on the command line is not
      supported.
 
-   * Mutual exclusion or conditionally required arguments are not supported.
+   * The argument parser doesn't support checking for mutually exclusive
+     arguments or arguments that are conditionally required. Instead, you can
+     check after parsing the arguments that the provided arguments are acceptable.
 
   */
   record argumentParser {
@@ -582,7 +583,7 @@ module ArgumentParser {
     }
 
     /*
-    Add an argument type to the parser. Argument types are also known as
+    Add an argument to the parser. Arguments are also commonly known as
     "positional arguments" and are not indicated by anything other than a value.
 
     For example, defining an argument like this:
@@ -684,8 +685,8 @@ module ArgumentParser {
     }
 
     /*
-    Add an option type argument to the parser. Options are typically indicated
-    by one or two leading dashes ``-`` and may be followed by 0 or more values.
+    Add an option to the parser. Options are typically indicated by one or two
+    leading dashes ``-`` and may be followed by 0 or more values.
 
     For example, defining an option like this:
 
@@ -826,8 +827,8 @@ module ArgumentParser {
     }
 
     /*
-    Add a flag type argument to the parser. Flags may be setup in several ways
-    depending on the user's needs.
+    Add a flag to the parser. Flags may be setup in several ways depending on
+    the user's needs.
 
     For example, defining a flag like this:
 
@@ -1011,7 +1012,7 @@ module ArgumentParser {
 
     .. code-block:: shell
 
-      $ programName <any args for progName> run <any args for run>
+      $ programName <any args for programName> run <any args for run>
 
     :arg cmd: a keyword that is recognized as indicating the subcommand from the
               command line. For example, `commit` in `git commit`.
