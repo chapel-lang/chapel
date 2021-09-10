@@ -4,7 +4,7 @@ Release Changes List
 version 1.25.0
 ==============
 
-Twenty-eigth public release of Chapel, September 23, 2021
+Twenty-eighth public release of Chapel, September 23, 2021
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
@@ -17,24 +17,37 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
+* started changing `.size` on ranges/domains/arrays to return `int` by default
+  (see https://chapel-lang.org/docs/1.25/builtins/ChapelRange.html#ChapelRange.range.size)
+* started changing `.indices` queries on arrays to differentiate from `.domain`
+  (see https://chapel-lang.org/docs/1.25/builtins/ChapelArray.html#ChapelArray.indices)
 
 Namespace Changes
 -----------------
 
 New Features
 ------------
+* added `.sizeAs()` to query range/domain/array sizes using a specific type
+  (see https://chapel-lang.org/docs/1.25/builtins/ChapelRange.html#ChapelRange.range.sizeAs)
 
 Feature Improvements
 --------------------
+* added support for slicing an associative array by an associative domain
+* added support for ranges, domains, and arrays over 1-element enumerations
+* added support for operators on scalar/tuple pairs in which coercion occurs
+  (e.g., `2 * (1.0, 2.0, 3.0)` now works, resulting in `(2.0, 4.0, 6.0)`)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated the `ident()` comparison routine on ranges
 
 Deprecated / Removed Library Features
 -------------------------------------
 
 Standard Library Modules
 ------------------------
+* added an `isNothingValue()` routine to the 'Types' module
+  (see https://chapel-lang.org/docs/1.25/modules/standard/Types.html#Types.isNothingValue)
 
 Package Modules
 ---------------
@@ -53,6 +66,12 @@ Memory Improvements
 
 Documentation
 -------------
+* fixed formatting of double-dash arguments for online `chpl` man page
+  (see https://chapel-lang.org/docs/usingchapel/man.html)
+* improved the language specification's formatting of reserved keywords
+  (see https://chapel-lang.org/docs/usingchapel/man.html)
+* improved the docs for various library routines to reflect return types
+* fixed various typos in the documentation
 
 Syntax Highlighting
 -------------------
@@ -62,6 +81,8 @@ Example Codes
 
 Portability
 -----------
+* improved the portability of the LLVM back-end for Mac OS X Mojave users
+* improved the portability of the squashing of some conservative gcc warnings
 
 Compiler Flags
 --------------
@@ -74,15 +95,30 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* added errors for zippered foralls in which the first expression is larger
+* improved error messages when zippering between rank-mismatched ranges/arrays
+* improved the error message for applying `dmapped` to an illegal expression
+* added an error for filenames that are longer than the compiler can handle
 
 Bug Fixes
 ---------
+* fixed a bug w.r.t. compiler-generated comparisons of records w/ array fields
+* fixed a bug regarding default arguments in dynamically dispatched methods
+* fixed a bug in which non-`bool` conditionals were fragile w.r.t. `import`s
+* fixed bugs related to slicing local arrays with distributed domains
+* fixed a bug in which `c_fn_ptr` operations weren't automatically supported
+* fixed a bug in which declared types were ignored when initializing via tuples
+  (e.g., in `var x: t = (e1, e2);`, `t` had been getting ignored)
+* fixed a bug in which simple paren-less functions were misformatted in errors
+* fixed a bug in which aligned bound queries didn't halt() for unaligned ranges
+  (e.g., `(..10 by 2).alignedLow` returned a value rather than erroring)
 
 Bug Fixes for Libraries
 -----------------------
 
 Bug Fixes for Tools
 -------------------
+* fixed a bug w.r.t. how `c2chapel` handled `__extension__` in C header files
 
 Platform-specific bug fixes
 ---------------------------
@@ -116,6 +152,10 @@ Developer-oriented changes: Runtime improvements
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+
+Developer-oriented changes: Utilities
+-------------------------------------
+* added `util/devel/updateGITLOG` to create a `GITLOG` file of PR merges
 
 
 version 1.24.1
