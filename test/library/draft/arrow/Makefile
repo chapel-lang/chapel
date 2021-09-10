@@ -12,7 +12,7 @@ FUNC_FILES = Arrow.chpl
 .PHONY: default all
 default : all
 
-all: ArrowDemo
+all: IntParquet
 
 %: %.chpl $(FUNC_FILES)
 	+$(CHPL) $(GLIB_INCLUDES) $(GLIB_LINKS) -o $@ $<
@@ -20,3 +20,10 @@ all: ArrowDemo
 .PHONY: clean
 clean:
 	rm -rf *.o ArrowDemo
+
+test:
+	echo "asd"
+	for f in ./test
+	do
+		echo "hello"
+	done
