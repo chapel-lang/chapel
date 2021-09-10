@@ -23,34 +23,40 @@
        ./readcsv
  */
 use IO;
-use List; // FIXME: put in a link to the list primer
+use List;
 use Map;
 
-config const fileName = "metadata-20lines.csv";
+config const inFileName = "metadata-20lines.csv";
+config const approach1FileName = "readcsv-out1.csv";
+config const approach2FileName = "readcsv-out2.csv";
 config const debug = true;
 
 // Open up a file to work with.
-var f = open(fileName, iomode.r);
+var f = open(inFileName, iomode.r);
 
-// Now read the in the csv data. Approach 1: formatted input into a list of maps
+// Now read the in the csv data. 
+// Approach 1: formatted input into a list of maps
 {
+  writeln();
+  writeln();
+  writeln("Approach 1: formatted input into a list of maps");
+
   var reader = f.reader();
 
-  // read the first line to get the column names
-  // assuming the following format, where the number of columns (ncol) is not 
+  // Read the first line to get the column names.
+  // Assuming the following format, where the number of columns (ncol) is not 
   // known ahead of time:
   //    col_name_1,col_name_2,...,col_name_ncol\n
   var line : string;
 
   if (!reader.readline(line)) then
-    writeln("ERROR: ", fileName, " appears to be empty");
+    writeln("ERROR: ", inFileName, " appears to be empty");
 
   var colNames : list(string);
   colNames = createListOfColNames(line);
 
   if debug {
-    writeln("line = ", line);
-    writeln("colNames: ", colNames);
+    writeln("\ncolNames: ", colNames);
   }
 
   // Create a list of maps with one map per row of data.
@@ -67,42 +73,70 @@ var f = open(fileName, iomode.r);
       colIdx = colIdx + 1;
     }
     dataRows.append(aRowMap);
-    if debug then writeln("aRowMap = ", aRowMap);
   }
-
-  if debug then writeln("dataRows = ", dataRows);
-
   reader.close();
+
+  // Print out the last data row.
+  if debug then writeln("\ndataRows[dataRows.size-1] = ", dataRows[dataRows.size-1]);
+ 
+  //-----------------------------------------------------------------------
+  // To see how the data is accessed and for testing, let's generate a 
+  // temporary csv file from the stored data.  It should be the same as the 
+  // input csv file.
+  // Reference: https://chapel-lang.org/docs/main/modules/standard/IO.html#i-o-overview
+  if debug {
+    var outfile = open(approach1FileName, iomode.cw);
+    var writer = outfile.writer();
+
+    // First write to the output file the column names separated by commas.
+    for colIdx in 0..colNames.size-2 {
+      writer.write(colNames[colIdx],",");
+    }
+    writer.writeln(colNames[colNames.size-1]);  // last column should not be followed by comma
+
+    // Then write to the file each row of data.
+    for row in dataRows {
+      for colIdx in 0..colNames.size-2 do
+        writer.write(row[colNames[colIdx]],",");
+      writer.writeln(row[colNames[colNames.size-1]]);
+    }
+
+    // Compare the file generated from the associative array with the original input csv file.
+    if diffFiles(inFileName,approach1FileName) then
+      writeln("\nError: The approach 1 output file differs from the original csv file.");
+    else
+      writeln("\nTest Passed: The approach 1 output file matches the original csv file.");
+  }
 }
 
+// Approach 2: chapeltastic -- create an associative array with the key being the 
+//             column name and the value being an array of strings
 {
-  // Approach 2: chapeltastic -- create an associative array with the key being the 
-  //             column name and the value being an array of strings
+  writeln();
+  writeln();
+  writeln("Approach 2: associative array keyed of column name with array of vals per column"); 
+
+  // Create another reader of the input csv file
   var reader = f.reader();
 
-  // read the first line to get the column names
-  // assuming the following format, where the number of columns (ncol) is not 
-  // known ahead of time:
-  //    col_name_1,col_name_2,...,col_name_ncol\n
-  // Note: this portion is the same as in approach (1)
+  // Read the first line to get the column names.
+  // Note: this portion is the same as in Approach 1
   var line : string;
 
   if (!reader.readline(line)) then
-    writeln("ERROR: ", fileName, " appears to be empty");
+    writeln("ERROR: ", inFileName, " appears to be empty");
 
   var colNames : list(string);
   colNames = createListOfColNames(line);
 
   if debug {
-    writeln("line = ", line);
-    writeln("colNames: ", colNames);
+    writeln("\ncolNames: ", colNames);
   }
 
   // Create a list of lines from the file, so we know how many lines of data there are.
   // Then create an associative array with an entry per column of data, with the
   // associative key being the column name.  The value will be an array of strings
   // with the column's value for each row in the data set.
-  // FIXME: should show an example in these comments
   var dataRows : list(string);
 
   // Reading all of the lines of the file into a list.
@@ -112,11 +146,10 @@ var f = open(fileName, iomode.r);
 
   // Declaring an associative array, where the value type is an array large enough
   // to store one column value per row of data.
-  var valDomain = {0..dataRows.size};
+  var valDomain = {0..dataRows.size-1};
   var colNameDomain: domain(string);
   for colName in colNames do
     colNameDomain += colName;
-  if debug then writeln("colNameDomain = ", colNameDomain);
   var colData: [colNameDomain] [valDomain] string;
 
   // Processing each row to put the column values into the associative array.
@@ -133,27 +166,37 @@ var f = open(fileName, iomode.r);
   }
   reader.close();
 
-  // For testing, let's generate a temporary csv file from the stored data.  It should
-  // be the same as the input csv file.
+  // Print out all of the data values for the first column of data.
+  if debug then writeln("\ncolData[colNames[0]]=",colData[colNames[0]]);
+
+  //-----------------------------------------------------------------------
+  // To see how the data is accessed and for testing, let's generate a 
+  // temporary csv file from the stored data.  It should be the same as the 
+  // input csv file.
   // Reference: https://chapel-lang.org/docs/main/modules/standard/IO.html#i-o-overview
   if debug {
-    var outfile = open("readcsv-outfile.csv", iomode.cw);
+    var outfile = open(approach2FileName, iomode.cw);
     var writer = outfile.writer();
 
-    // First write to the output file the column names separated by commas
+    // First write to the output file the column names separated by commas.
     for colIdx in 0..colNames.size-2 {
       writer.write(colNames[colIdx],",");
     }
-    writer.write(colNames[colNames.size-1]);  // last column should not be followed by comma
+    writer.writeln(colNames[colNames.size-1]);  // last column should not be followed by comma
 
     // Then write to the file each row of data.
     for rowIdx in 0..colData[colNames[0]].size-1 {
       for colIdx in 0..colNames.size-2 do
         writer.write(colData[colNames[colIdx]][rowIdx],",");
-      writer.write(colData[colNames[colNames.size-1]][rowIdx]);
+      writer.writeln(colData[colNames[colNames.size-1]][rowIdx]);
     }
-  }
 
+    // Compare the file generated from the associative array with the original input csv file.
+    if diffFiles(inFileName,approach2FileName) then
+      writeln("\nError: The approach 2 output file differs from the original csv file.");
+    else
+      writeln("\nTest Passed: The approach 2 output file matches the original csv file.");
+  }
 }
 
 // Returns the index of the next comma or the string length if no
@@ -173,12 +216,14 @@ proc findNextCommaNotInQuotes(str : string, start : int) {
 // the index of the next comma.
 //      input: "ab,cd,"ef",f"   and start=3
 //      output: "cd"
+//
 //      input: "ab,cd,"ef",f"   and start=6
 //      output: ""ef""
 // Assumes that the starting index given is not within a quoted string.
 proc nextField(line:string, start:int) {
     var commaIdx = findNextCommaNotInQuotes(line,start);
-    return (line[start..(commaIdx-1)],commaIdx);
+    var fieldVal = line[start..(commaIdx-1)];
+    return (fieldVal.strip(),commaIdx);
 }
 
 // Given the string that is the first line of a csv file that has column names
@@ -193,3 +238,23 @@ proc createListOfColNames(line : string) {
   }
   return colNames;
 } 
+
+// A function that checks the differences between files.
+// Returns true if the files differ and false if they don't.
+proc diffFiles(file1 : string, file2 : string) {
+
+  use IO;
+
+  var f1 = open(file1, iomode.r);
+  var f2 = open(file2, iomode.r);
+
+  var same = true;
+  for (l1, l2) in zip(f1.lines(), f2.lines()) {
+    if l1 != l2 {
+      same = false;
+      break;
+    }
+  }
+  return !same;
+}
+
