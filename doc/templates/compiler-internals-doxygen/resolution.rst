@@ -1,6 +1,6 @@
 .. default-domain:: cpp
 
-.. _Chapter-Resolution:
+.. _Chapter-next-chpl-resolution:
 
 Resolution
 ==========
