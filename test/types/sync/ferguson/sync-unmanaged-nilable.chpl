@@ -6,4 +6,5 @@ proc main() {
   v.writeEF(x);
   var y = v.readFE();
   assert(y == x);
+  delete x;
 }
