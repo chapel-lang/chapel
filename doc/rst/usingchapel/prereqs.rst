@@ -4,6 +4,9 @@
 Chapel Prerequisites
 ====================
 
+Chapel is designed to be portable to a variety of systems and depends on
+tools that are common on UNIX systems.
+
 The following are prerequisites and assumptions about your environment
 for using Chapel:
 
