@@ -6,10 +6,9 @@ The `foreach` Loop
 
 A ``foreach`` loop signifies that loop iterations are order-independent. This
 enables the compiler to vectorize the loop or to offload its execution to the
-GPU. In contrast, a ``for`` loop is order-dependent, and a ``forall`` loop can
-create parallel tasks and distribute iterations based on the iterator. The tasks
-created by ``forall`` can execute loop iterations in order-independent manner
-*if* the iterator uses ``foreach``.
+GPU. In contrast, a ``for`` loop is order-dependent; and a ``forall`` loop can
+create parallel tasks and distribute iterations based on the iterator, as well
+as being order-independent.
 
 The syntax of the ``foreach`` loop is similar to the other ``for``-like loops:
 
