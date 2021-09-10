@@ -578,8 +578,12 @@ module ArgumentParser {
       _positionals = new list(borrowed Positional);
       _subcommands = new list(string);
       this.complete();
-      // configure to allow consuming of -- if passed from runtime
-      try!{addOption(name="dummyDashHandler", opts=["--"], numArgs=0);}
+      try! {
+        // configure to allow consuming of -- if passed from runtime
+
+        // storing into variable to avoid memory leak due to compiler bug #18391
+        var tmp = addOption(name="dummyDashHandler", opts=["--"], numArgs=0);
+      }
     }
 
     /*
