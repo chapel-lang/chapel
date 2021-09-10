@@ -1,0 +1,544 @@
+.. default-domain:: chpl
+
+.. module:: A
+
+A
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use A;
+
+
+or
+
+.. code-block:: chapel
+
+   import A;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   A/*
+
+.. warning::
+
+   A is deprecated
+
+.. default-domain:: chpl
+
+.. module:: InnerA
+
+InnerA
+======
+**Usage**
+
+.. code-block:: chapel
+
+   use A.InnerA;
+
+
+or
+
+.. code-block:: chapel
+
+   import A.InnerA;
+
+.. warning::
+
+   InnerA is deprecated
+
+.. default-domain:: chpl
+
+.. module:: B
+
+B
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use B;
+
+
+or
+
+.. code-block:: chapel
+
+   import B;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   B/*
+
+.. warning::
+
+   B is deprecated, use C instead
+
+.. default-domain:: chpl
+
+.. module:: InnerB
+
+InnerB
+======
+**Usage**
+
+.. code-block:: chapel
+
+   use B.InnerB;
+
+
+or
+
+.. code-block:: chapel
+
+   import B.InnerB;
+
+.. warning::
+
+   InnerB is deprecated, use C.InnerC2 instead
+
+.. default-domain:: chpl
+
+.. module:: C
+
+C
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use C;
+
+
+or
+
+.. code-block:: chapel
+
+   import C;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   C/*
+
+.. default-domain:: chpl
+
+.. module:: InnerC
+
+InnerC
+======
+**Usage**
+
+.. code-block:: chapel
+
+   use C.InnerC;
+
+
+or
+
+.. code-block:: chapel
+
+   import C.InnerC;
+
+.. warning::
+
+   InnerC is deprecated
+
+.. default-domain:: chpl
+
+.. module:: InnerC2
+
+InnerC2
+=======
+**Usage**
+
+.. code-block:: chapel
+
+   use C.InnerC2;
+
+
+or
+
+.. code-block:: chapel
+
+   import C.InnerC2;
+
+.. default-domain:: chpl
+
+.. module:: D
+   :synopsis: There was documentation of this symbol 
+
+D
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use D;
+
+
+or
+
+.. code-block:: chapel
+
+   import D;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   D/*
+
+There was documentation of this symbol 
+
+.. warning::
+
+   D is deprecated
+
+.. default-domain:: chpl
+
+.. module:: InnerD
+   :synopsis: There was documentation of this symbol 
+
+InnerD
+======
+**Usage**
+
+.. code-block:: chapel
+
+   use D.InnerD;
+
+
+or
+
+.. code-block:: chapel
+
+   import D.InnerD;
+
+There was documentation of this symbol 
+
+.. warning::
+
+   InnerD is deprecated
+
+.. default-domain:: chpl
+
+.. module:: E
+   :synopsis: This symbol also was documented 
+
+E
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use E;
+
+
+or
+
+.. code-block:: chapel
+
+   import E;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   E/*
+
+This symbol also was documented 
+
+.. warning::
+
+   E is deprecated, use F instead
+
+.. default-domain:: chpl
+
+.. module:: InnerE
+   :synopsis: This symbol also was documented 
+
+InnerE
+======
+**Usage**
+
+.. code-block:: chapel
+
+   use E.InnerE;
+
+
+or
+
+.. code-block:: chapel
+
+   import E.InnerE;
+
+This symbol also was documented 
+
+.. warning::
+
+   InnerE is deprecated, use F.InnerF2 instead
+
+.. default-domain:: chpl
+
+.. module:: F
+
+F
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use F;
+
+
+or
+
+.. code-block:: chapel
+
+   import F;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   F/*
+
+.. default-domain:: chpl
+
+.. module:: InnerF
+   :synopsis: This symbol also was documented 
+
+InnerF
+======
+**Usage**
+
+.. code-block:: chapel
+
+   use F.InnerF;
+
+
+or
+
+.. code-block:: chapel
+
+   import F.InnerF;
+
+This symbol also was documented 
+
+.. warning::
+
+   InnerF is deprecated, use InnerF2 instead
+
+.. default-domain:: chpl
+
+.. module:: InnerF2
+
+InnerF2
+=======
+**Usage**
+
+.. code-block:: chapel
+
+   use F.InnerF2;
+
+
+or
+
+.. code-block:: chapel
+
+   import F.InnerF2;
+
+.. default-domain:: chpl
+
+.. module:: G
+   :synopsis: This symbol is deprecated 
+
+G
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use G;
+
+
+or
+
+.. code-block:: chapel
+
+   import G;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   G/*
+
+This symbol is deprecated 
+
+.. default-domain:: chpl
+
+.. module:: InnerG
+   :synopsis: This symbol is deprecated 
+
+InnerG
+======
+**Usage**
+
+.. code-block:: chapel
+
+   use G.InnerG;
+
+
+or
+
+.. code-block:: chapel
+
+   import G.InnerG;
+
+This symbol is deprecated 
+
+.. default-domain:: chpl
+
+.. module:: H
+   :synopsis: This symbol is also deprecated, please use I instead 
+
+H
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use H;
+
+
+or
+
+.. code-block:: chapel
+
+   import H;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   H/*
+
+This symbol is also deprecated, please use I instead 
+
+.. default-domain:: chpl
+
+.. module:: InnerH
+   :synopsis: This symbol is also deprecated, please use I.InnerI2 instead 
+
+InnerH
+======
+**Usage**
+
+.. code-block:: chapel
+
+   use H.InnerH;
+
+
+or
+
+.. code-block:: chapel
+
+   import H.InnerH;
+
+This symbol is also deprecated, please use I.InnerI2 instead 
+
+.. default-domain:: chpl
+
+.. module:: I
+   :synopsis: Replaces the deprecated H 
+
+I
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use I;
+
+
+or
+
+.. code-block:: chapel
+
+   import I;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   I/*
+
+Replaces the deprecated H 
+
+.. default-domain:: chpl
+
+.. module:: InnerI
+   :synopsis: This symbol is also deprecated, please use I.InnerI2 instead 
+
+InnerI
+======
+**Usage**
+
+.. code-block:: chapel
+
+   use I.InnerI;
+
+
+or
+
+.. code-block:: chapel
+
+   import I.InnerI;
+
+This symbol is also deprecated, please use I.InnerI2 instead 
+
+.. default-domain:: chpl
+
+.. module:: InnerI2
+
+InnerI2
+=======
+**Usage**
+
+.. code-block:: chapel
+
+   use I.InnerI2;
+
+
+or
+
+.. code-block:: chapel
+
+   import I.InnerI2;
+
