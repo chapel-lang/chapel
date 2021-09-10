@@ -624,6 +624,12 @@ void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
       *file << std::endl;
     }
   }
+
+  if (this->symbol->hasFlag(FLAG_DEPRECATED)) {
+    this->printDocsDeprecation(this->doc, file, tabs + 1,
+                               this->symbol->getDeprecationMsg(),
+                               !fDocsTextOnly);
+  }
 }
 
 
