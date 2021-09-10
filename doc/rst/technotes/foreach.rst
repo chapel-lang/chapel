@@ -5,9 +5,11 @@ The `foreach` Loop
 ====================
 
 A ``foreach`` loop signifies that loop iterations are order-independent. This
-enables the compiler to vectorize the loop. In contrast, a ``for`` loop is
-order-dependent, and a ``forall`` loop can create parallel tasks and distribute
-iterations based on the iterator.
+enables the compiler to vectorize the loop or to offload its execution to the
+GPU. In contrast, a ``for`` loop is order-dependent, and a ``forall`` loop can
+create parallel tasks and distribute iterations based on the iterator. The tasks
+created by ``forall`` can execute loop iterations in order-independent manner
+*if* the iterator uses ``foreach``.
 
 The syntax of the ``foreach`` loop is similar to the other ``for``-like loops:
 
@@ -36,3 +38,12 @@ The ``forall`` above will distribute the execution to all the locales and all
 the tasks within them. As the default parallel iterators for ``A.domain`` is
 implemented using ``foreach``, tasks executing parts of this loop will benefit
 from vectorization.
+
+Status and Future Work
+----------------------
+
+- The current implementation does not make full use of vectorization hinting.
+  We hope to expand the coverage especially to vectorize outer loops.
+
+- We intend to add ``with`` clauses to ``foreach`` loops to support
+  vector-lane-private variables.
