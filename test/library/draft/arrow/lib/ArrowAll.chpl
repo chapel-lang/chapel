@@ -8934,6 +8934,23 @@ module ArrowAll {
         }
     }
   }
+
+  proc writeDistArray(A, filename) {
+    var filenames: [0..#A.targetLocales().size] string;
+    for i in 0..#A.targetLocales().size {
+      var suffix = i: string;
+      filenames[i] = filename + "_LOCALE" + suffix + ".parquet";
+    }
+
+    coforall (loc, idx) in zip(A.targetLocales(), filenames.domain) do on loc {
+        const myFilename = filenames[idx];
+
+        var writer = new parquetFileWriter(myFilename);
+        var locDom = A.localSubdomain();
+        writer.addColumn(A[locDom], 0, "col");
+        writer.finish();
+      }
+  }
   
   // Record that stores a reader for the file and can serve columns
   // as requested. Also stores schema

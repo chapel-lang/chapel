@@ -33,6 +33,7 @@ proc main() {
   readFiles(A, filenames, sizes);
   writeln(A);
 
+  writeDistArray(A, "dist-file");
 
   var B = newBlockArr(0..#10, int);
   readFileColumnToDist(B, "test.parquet", 0);
