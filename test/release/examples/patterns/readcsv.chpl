@@ -16,11 +16,28 @@
        (2) chapeltastic -- associative array with the key being the column name
                and the value being an array of strings
 
-   You can compile and run this example by doing a
+   You can compile and run this example by on the command line doing a
        source util/quickstart/setchplenv.bash
    in the chapel home directory, and then compiling and running this file as follows:
        chpl --fast readcsv.chpl
        ./readcsv
+
+  You can check that the output files for both approaches end up the same as the input
+  file by doing the following on the command line:
+      diff metadata-20lines.csv readcsv-out1.csv
+      diff metadata-20lines.csv readcsv-out2.csv
+  If you do not get any output then the files are the same and don't have any differences.
+
+  References:
+    file readers and writers
+      https://chapel-lang.org/docs/main/modules/standard/IO.html#i-o-overview
+      https://chapel-lang.org/docs/primers/fileIO.html
+
+    lists
+      https://chapel-lang.org/docs/primers/listOps.html
+
+    maps
+      https://chapel-lang.org/docs/main/modules/standard/Map.html
  */
 use IO;
 use List;
@@ -61,29 +78,30 @@ var f = open(inFileName, iomode.r);
 
   // Create a list of maps with one map per row of data.
   var dataRows : list(map(string,string));
-
+  // Read individual lines from the file until the end of the file.
   while (reader.readline(line)) {
+    // Create a new map per line.
     var aRowMap = new map(string, string);
-    var start = 0;
-    var colIdx = 0;
+    var start = 0;      // index into the line string
+    var colIdx = 0;     // the first column is indexed as zero
+    // Process each line by finding the next field value from the start index to the next comma.
     while (start<line.size && colIdx<colNames.size) {
       var (nextVal,nextCommaIdx) = nextField(line,start);
       aRowMap.add(colNames[colIdx],nextVal);
-      start = nextCommaIdx + 1;
-      colIdx = colIdx + 1;
+      start = nextCommaIdx + 1;         // The next column of data will start after the comma.
+      colIdx = colIdx + 1;              // Increment the column index.
     }
     dataRows.append(aRowMap);
   }
   reader.close();
 
-  // Print out the last data row.
+  // Print out the last data row to illustrate what one of the row maps contains.
   if debug then writeln("\ndataRows[dataRows.size-1] = ", dataRows[dataRows.size-1]);
  
   //-----------------------------------------------------------------------
   // To see how the data is accessed and for testing, let's generate a 
   // temporary csv file from the stored data.  It should be the same as the 
   // input csv file.
-  // Reference: https://chapel-lang.org/docs/main/modules/standard/IO.html#i-o-overview
   if debug {
     var outfile = open(approach1FileName, iomode.cw);
     var writer = outfile.writer();
@@ -92,20 +110,21 @@ var f = open(inFileName, iomode.r);
     for colIdx in 0..colNames.size-2 {
       writer.write(colNames[colIdx],",");
     }
-    writer.writeln(colNames[colNames.size-1]);  // last column should not be followed by comma
+    // The last column name should not be followed by comma.
+    writer.writeln(colNames[colNames.size-1]);
 
     // Then write to the file each row of data.
     for row in dataRows {
-      for colIdx in 0..colNames.size-2 do
+      for colIdx in 0..colNames.size-2 {
         writer.write(row[colNames[colIdx]],",");
+      }
+      // The last column value should not be followed by comma.
       writer.writeln(row[colNames[colNames.size-1]]);
     }
+    writer.close();
 
-    // Compare the file generated from the associative array with the original input csv file.
-    if diffFiles(inFileName,approach1FileName) then
-      writeln("\nError: The approach 1 output file differs from the original csv file.");
-    else
-      writeln("\nTest Passed: The approach 1 output file matches the original csv file.");
+    // Compare the file generated from the list of maps with the original input csv file.
+    checkThatFilesMatch(inFileName,approach1FileName);
   }
 }
 
@@ -144,24 +163,28 @@ var f = open(inFileName, iomode.r);
     dataRows.append(line);
   }
 
-  // Declaring an associative array, where the value type is an array large enough
+  // Declaring an associative array, where the value type is a 1D array large enough
   // to store one column value per row of data.
-  var valDomain = {0..dataRows.size-1};
-  var colNameDomain: domain(string);
-  for colName in colNames do
+  var valDomain = {0..dataRows.size-1}; // Domain indicating how many values per column.
+  var colNameDomain: domain(string);    // An associative domain of strings.
+  for colName in colNames do            // Put each column name into the column name domain.
     colNameDomain += colName;
+  // colData is an associative array indexed by the column name domain with array values.
+  // Each array value will have number of rows string elements.
   var colData: [colNameDomain] [valDomain] string;
 
   // Processing each row to put the column values into the associative array.
   for rowIdx in 0..dataRows.size-1 {
+    // Pull the line out from the list of dataRows.
     line = dataRows[rowIdx];
-    var start = 0;
-    var colIdx = 0;
+    var start = 0;      // index into the line string
+    var colIdx = 0;     // the first column is indexed as zero
+    // Process each line by finding the next field value from the start index to the next comma.
     while (start<line.size && colIdx<colNames.size) {
       var (nextVal,nextCommaIdx) = nextField(line,start);
       colData[colNames[colIdx]][rowIdx] = nextVal;
-      start = nextCommaIdx + 1;
-      colIdx = colIdx + 1;
+      start = nextCommaIdx + 1;         // The next column of data will start after the comma.
+      colIdx = colIdx + 1;              // Increment the column index.
     }
   }
   reader.close();
@@ -173,7 +196,6 @@ var f = open(inFileName, iomode.r);
   // To see how the data is accessed and for testing, let's generate a 
   // temporary csv file from the stored data.  It should be the same as the 
   // input csv file.
-  // Reference: https://chapel-lang.org/docs/main/modules/standard/IO.html#i-o-overview
   if debug {
     var outfile = open(approach2FileName, iomode.cw);
     var writer = outfile.writer();
@@ -182,20 +204,21 @@ var f = open(inFileName, iomode.r);
     for colIdx in 0..colNames.size-2 {
       writer.write(colNames[colIdx],",");
     }
-    writer.writeln(colNames[colNames.size-1]);  // last column should not be followed by comma
+    // The last column name should not be followed by comma.
+    writer.writeln(colNames[colNames.size-1]);  
 
     // Then write to the file each row of data.
     for rowIdx in 0..colData[colNames[0]].size-1 {
-      for colIdx in 0..colNames.size-2 do
+      for colIdx in 0..colNames.size-2 {
         writer.write(colData[colNames[colIdx]][rowIdx],",");
+      }
+      // The last column value should not be followed by comma.
       writer.writeln(colData[colNames[colNames.size-1]][rowIdx]);
     }
+    writer.close();
 
     // Compare the file generated from the associative array with the original input csv file.
-    if diffFiles(inFileName,approach2FileName) then
-      writeln("\nError: The approach 2 output file differs from the original csv file.");
-    else
-      writeln("\nTest Passed: The approach 2 output file matches the original csv file.");
+    checkThatFilesMatch(inFileName,approach2FileName);
   }
 }
 
@@ -240,21 +263,24 @@ proc createListOfColNames(line : string) {
 } 
 
 // A function that checks the differences between files.
-// Returns true if the files differ and false if they don't.
-proc diffFiles(file1 : string, file2 : string) {
-
+// Prints out an Error message if the files don't match and "Test Passed" 
+// if the files do match.
+proc checkThatFilesMatch(file1 : string, file2 : string) {
   use IO;
 
+  // Open the files.
   var f1 = open(file1, iomode.r);
   var f2 = open(file2, iomode.r);
 
-  var same = true;
-  for (l1, l2) in zip(f1.lines(), f2.lines()) {
-    if l1 != l2 {
-      same = false;
-      break;
-    }
-  }
-  return !same;
+  // read in all of the bytes from each file into a string
+  var file1data : string;
+  f1.reader().readstring(file1data);
+  var file2data : string;
+  f2.reader().readstring(file2data);
+
+  if file1data==file2data then
+    writeln("\nTest Passed: files ", file1, " and ", file2, " do match.");
+  else
+    writeln("\nError: files ", file1, " and ", file2, " do not match.");
 }
 
