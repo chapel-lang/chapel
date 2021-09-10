@@ -1,0 +1,227 @@
+.. default-domain:: chpl
+
+.. module:: deprecatedClasses.doc
+
+deprecatedClasses.doc
+=====================
+**Usage**
+
+.. code-block:: chapel
+
+   use deprecatedClasses.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import deprecatedClasses.doc;
+
+.. class:: X
+
+   .. warning::
+
+      X is deprecated
+
+   .. attribute:: var a: int
+
+      .. warning::
+
+         a is deprecated
+
+   .. method:: proc foo()
+
+      .. warning::
+
+         foo is deprecated
+
+   .. method:: proc type bar()
+
+      .. warning::
+
+         bar is deprecated
+
+.. class:: Y
+
+   .. warning::
+
+      Y is deprecated, use Z instead
+
+   .. attribute:: var a: int
+
+      .. warning::
+
+         field a is deprecated
+
+   .. method:: proc foo()
+
+      .. warning::
+
+         method foo is deprecated
+
+   .. method:: proc type bar()
+
+      .. warning::
+
+         type method bar is deprecated
+
+.. class:: Z
+
+   .. attribute:: var a: int
+
+      .. warning::
+
+         a is deprecated
+
+   .. method:: proc foo()
+
+      .. warning::
+
+         method foo is deprecated
+
+   .. method:: proc type bar()
+
+      .. warning::
+
+         bar is deprecated
+
+.. class:: A
+
+   There was documentation of this symbol 
+
+
+   .. warning::
+
+      A is deprecated
+
+   .. attribute:: var a: int
+
+      There was documentation of this field 
+
+      .. warning::
+
+         a is deprecated
+
+   .. method:: proc foo()
+
+      There was documentation of this method 
+
+      .. warning::
+
+         foo is deprecated
+
+   .. method:: proc type bar()
+
+      There was documentation of this type method 
+
+      .. warning::
+
+         bar is deprecated
+
+.. class:: B
+
+   This symbol also was documented 
+
+
+   .. warning::
+
+      B is deprecated, use C instead
+
+   .. attribute:: var a: int
+
+      There was documentation of this field 
+
+      .. warning::
+
+         field a is deprecated
+
+   .. method:: proc foo()
+
+      There was documentation of this method 
+
+      .. warning::
+
+         method foo is deprecated
+
+   .. method:: proc type bar()
+
+      There was documentation of this type method 
+
+      .. warning::
+
+         type method bar is deprecated
+
+.. class:: C
+
+   .. attribute:: var a: int
+
+      There was documentation of this field 
+
+      .. warning::
+
+         a is deprecated
+
+   .. method:: proc foo()
+
+      There was documentation of this method 
+
+      .. warning::
+
+         method foo is deprecated
+
+   .. method:: proc type bar()
+
+      There was documentation of this type method 
+
+      .. warning::
+
+         bar is deprecated
+
+.. class:: D
+
+   This symbol is deprecated 
+
+
+   .. attribute:: var a: int
+
+      This symbol is deprecated 
+
+   .. method:: proc foo()
+
+      This symbol is deprecated 
+
+   .. method:: proc type bar()
+
+      This symbol is deprecated 
+
+.. class:: E
+
+   This symbol is also deprecated, please use F instead 
+
+
+   .. attribute:: var a: int
+
+      This symbol is also deprecated, unfortunately 
+
+   .. method:: proc foo()
+
+      This symbol is also deprecated, unfortunately 
+
+   .. method:: proc type bar()
+
+      This symbol is also deprecated, unfortunately 
+
+.. class:: F
+
+   .. attribute:: var a: int
+
+      This symbol is also deprecated, unfortunately 
+
+   .. method:: proc foo()
+
+      This symbol is deprecated 
+
+   .. method:: proc type bar()
+
+      This symbol is deprecated 
+
