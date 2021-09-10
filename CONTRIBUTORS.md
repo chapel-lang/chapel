@@ -37,7 +37,7 @@ Contributors to the Chapel 1.25.0 release
 * Venkatavaradan Raghuraman, individual contributor
 * Ahmad Rezaii, [HPE]
 * Elliot Ronaghan, [HPE]
-* Lakshya Singh, [GSoC 2021] student from [Indian Institute of Technology (BHU)]
+* Lakshya Singh, [GSoC 2021] student from [Indian Institute of Technology (BHU) Varanasi]
 * Jenna Hoole Starkey, [HPE]
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
@@ -244,7 +244,7 @@ implementation.
 [Indian Institute of Technology, Hyderabad]: https://www.iith.ac.in/
 [Indian Institute of Technology Roorkee]: https://www.iitr.ac.in/
 [Indiana University]: http://www.cs.indiana.edu/
-[Indian Institute of Technology (BHU)]: https://www.iitbhu.ac.in/
+[Indian Institute of Technology (BHU) Varanasi]: https://www.iitbhu.ac.in/
 [Indraprastha Institute of Information Technology, Delhi]: https://iiitd.ac.in/
 [International Institute of Information Technology, Hyderabad]: https://www.iiit.ac.in/
 [Københavns Universitet (University of Copenhagen)]: http://diku.dk/english/
