@@ -9,7 +9,7 @@ dataRows[dataRows.size-1] = {abstract: "BACKGROUND: Oxygen toxicity is a major c
 Test Passed: files metadata-20lines.csv and readcsv-out1.csv do match.
 
 
-Approach 2: associative array keyed of column name with array of vals per column
+Approach 2: associative array where keys are column names, and values are arrays of row values
 
 colNames: [cord_uid, sha, source_x, title, doi, pmcid, pubmed_id, license, abstract, publish_time, authors, journal, mag_id, who_covidence_id, arxiv_id, pdf_json_files, pmc_json_files, url, s2_id]
 

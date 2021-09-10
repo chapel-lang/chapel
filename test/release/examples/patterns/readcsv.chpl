@@ -6,8 +6,8 @@
    header row that has the column names.
 
    Each line in csv files is a row of data.  Columns are separated by commas.
-   Some of the cells of data have quotes because the data string itself includes
-   a comma or commas.
+   Some of the cells of data have quotes because the data string itself 
+   includes a comma or commas.
 
    There are many options in terms of data structures that such data could be
    read into.  Here are the two approaches illustrated here.
@@ -16,17 +16,24 @@
        (2) chapeltastic -- associative array with the key being the column name
                and the value being an array of strings
 
-   You can compile and run this example by on the command line doing a
+   To run this example, first make sure you have an installation of the
+   Chapel compiler. For instructions on how to do that see
+   https://chapel-lang.org/docs/master/usingchapel/building.html
+
+   You can compile and run this example on the command line by doing a
        source util/quickstart/setchplenv.bash
-   in the chapel home directory, and then compiling and running this file as follows:
+   in the Chapel home directory, and then compiling and running this file 
+   as follows:
+       cd $CHPL_HOME
        chpl --fast readcsv.chpl
        ./readcsv
 
-  You can check that the output files for both approaches end up the same as the input
-  file by doing the following on the command line:
+  You can check that the output files for both approaches end up the same 
+  as the input file by doing the following on the command line:
       diff metadata-20lines.csv readcsv-out1.csv
       diff metadata-20lines.csv readcsv-out2.csv
-  If you do not get any output then the files are the same and don't have any differences.
+  If you do not get any output then the files are the same and don't have 
+  any differences.
 
   References:
     file readers and writers
@@ -35,6 +42,7 @@
 
     lists
       https://chapel-lang.org/docs/primers/listOps.html
+      https://chapel-lang.org/docs/master/modules/standard/List.html
 
     maps
       https://chapel-lang.org/docs/main/modules/standard/Map.html
@@ -67,36 +75,37 @@ var f = open(inFileName, iomode.r);
   var line : string;
 
   if (!reader.readline(line)) then
-    writeln("ERROR: ", inFileName, " appears to be empty");
+    halt("ERROR: ", inFileName, " appears to be empty");
 
-  var colNames : list(string);
-  colNames = createListOfColNames(line);
+  var colNames = createListOfColNames(line);
 
   if debug {
     writeln("\ncolNames: ", colNames);
   }
 
   // Create a list of maps with one map per row of data.
-  var dataRows : list(map(string,string));
+  var dataRows : list(map(string, string));
   // Read individual lines from the file until the end of the file.
   while (reader.readline(line)) {
     // Create a new map per line.
     var aRowMap = new map(string, string);
     var start = 0;      // index into the line string
     var colIdx = 0;     // the first column is indexed as zero
-    // Process each line by finding the next field value from the start index to the next comma.
-    while (start<line.size && colIdx<colNames.size) {
-      var (nextVal,nextCommaIdx) = nextField(line,start);
-      aRowMap.add(colNames[colIdx],nextVal);
-      start = nextCommaIdx + 1;         // The next column of data will start after the comma.
-      colIdx = colIdx + 1;              // Increment the column index.
+    // Process each line by finding the next field value from the 
+    // start index to the next comma.
+    for colName in colNames {
+      var (nextVal, nextCommaIdx) = nextField(line, start);
+      aRowMap.add(colName, nextVal);
+      // Next field of data will start after the comma.
+      start = nextCommaIdx + 1; 
     }
     dataRows.append(aRowMap);
   }
   reader.close();
 
-  // Print out the last data row to illustrate what one of the row maps contains.
-  if debug then writeln("\ndataRows[dataRows.size-1] = ", dataRows[dataRows.size-1]);
+  // Print the last data row to illustrate what one of the row maps contains.
+  if debug then
+    writeln("\ndataRows[dataRows.size-1] = ", dataRows[dataRows.size-1]);
  
   //-----------------------------------------------------------------------
   // To see how the data is accessed and for testing, let's generate a 
@@ -108,7 +117,7 @@ var f = open(inFileName, iomode.r);
 
     // First write to the output file the column names separated by commas.
     for colIdx in 0..colNames.size-2 {
-      writer.write(colNames[colIdx],",");
+      writer.write(colNames[colIdx], ",");
     }
     // The last column name should not be followed by comma.
     writer.writeln(colNames[colNames.size-1]);
@@ -116,24 +125,27 @@ var f = open(inFileName, iomode.r);
     // Then write to the file each row of data.
     for row in dataRows {
       for colIdx in 0..colNames.size-2 {
-        writer.write(row[colNames[colIdx]],",");
+        writer.write(row[colNames[colIdx]], ",");
       }
       // The last column value should not be followed by comma.
       writer.writeln(row[colNames[colNames.size-1]]);
     }
     writer.close();
+    outfile.close();
 
-    // Compare the file generated from the list of maps with the original input csv file.
+    // Compare the file generated from the list of maps with the original 
+    // input csv file.
     checkThatFilesMatch(inFileName,approach1FileName);
   }
 }
 
-// Approach 2: chapeltastic -- create an associative array with the key being the 
-//             column name and the value being an array of strings
+// Approach 2: chapeltastic -- create an associative array with the key being 
+//             the column name and the value being an array of strings
 {
   writeln();
   writeln();
-  writeln("Approach 2: associative array keyed of column name with array of vals per column"); 
+  write("Approach 2: associative array where keys are column names, ");
+  writeln("and values are arrays of row values"); 
 
   // Create another reader of the input csv file
   var reader = f.reader();
@@ -145,17 +157,17 @@ var f = open(inFileName, iomode.r);
   if (!reader.readline(line)) then
     writeln("ERROR: ", inFileName, " appears to be empty");
 
-  var colNames : list(string);
-  colNames = createListOfColNames(line);
+  var colNames = createListOfColNames(line);
 
   if debug {
     writeln("\ncolNames: ", colNames);
   }
 
-  // Create a list of lines from the file, so we know how many lines of data there are.
-  // Then create an associative array with an entry per column of data, with the
-  // associative key being the column name.  The value will be an array of strings
-  // with the column's value for each row in the data set.
+  // Create a list of lines from the file, so we know how many lines of 
+  // data there are.  Then create an associative array with an entry per 
+  // column of data, with the associative key being the column name.  
+  // The value will be an array of strings with the column's value for 
+  // each row in the data set.
   var dataRows : list(string);
 
   // Reading all of the lines of the file into a list.
@@ -163,31 +175,33 @@ var f = open(inFileName, iomode.r);
     dataRows.append(line);
   }
 
-  // Declaring an associative array, where the value type is a 1D array large enough
-  // to store one column value per row of data.
-  var valDomain = {0..dataRows.size-1}; // Domain indicating how many values per column.
-  var colNameDomain: domain(string);    // An associative domain of strings.
-  for colName in colNames do            // Put each column name into the column name domain.
-    colNameDomain += colName;
-  // colData is an associative array indexed by the column name domain with array values.
-  // Each array value will have number of rows string elements.
+  // Declaring an associative array, where the value type is a 1D array 
+  // large enough to store one column value per row of data.
+  var valDomain = {0..dataRows.size-1}; // Domain for values per column
+  // An associative domain of strings
+  var colNameDomain: domain(string) = colNames;
+
+  // colData is an associative array indexed by the column name domain with 
+  // array values.  Each array value will have number of rows string elements.
   var colData: [colNameDomain] [valDomain] string;
 
   // Processing each row to put the column values into the associative array.
-  for rowIdx in 0..dataRows.size-1 {
-    // Pull the line out from the list of dataRows.
-    line = dataRows[rowIdx];
+  // See https://chapel-lang.org/docs/main/users-guide/base/zip.html for
+  // information about zippered iteration.
+  for (line, rowIdx) in zip(dataRows, valDomain) {
     var start = 0;      // index into the line string
     var colIdx = 0;     // the first column is indexed as zero
-    // Process each line by finding the next field value from the start index to the next comma.
-    while (start<line.size && colIdx<colNames.size) {
-      var (nextVal,nextCommaIdx) = nextField(line,start);
-      colData[colNames[colIdx]][rowIdx] = nextVal;
-      start = nextCommaIdx + 1;         // The next column of data will start after the comma.
-      colIdx = colIdx + 1;              // Increment the column index.
+    // Process each line by finding the next field value from the start 
+    // index to the next comma.
+    // Doing work quite similar to what is done in Approach 1, but using
+    // a Chapel iterator (see fieldsInRow() definition below) and storing
+    // the field values in the associative array instead of a list of maps.
+    for (colName, field) in zip(colNames, fieldsInRow(line)) {
+      colData[colName][rowIdx] = field;
     }
   }
   reader.close();
+  f.close();
 
   // Print out all of the data values for the first column of data.
   if debug then writeln("\ncolData[colNames[0]]=",colData[colNames[0]]);
@@ -216,19 +230,34 @@ var f = open(inFileName, iomode.r);
       writer.writeln(colData[colNames[colNames.size-1]][rowIdx]);
     }
     writer.close();
-
-    // Compare the file generated from the associative array with the original input csv file.
+    outfile.close();
+    
+    // Compare the file generated from the associative array with the 
+    // original input csv file.
     checkThatFilesMatch(inFileName,approach2FileName);
   }
 }
 
+// fieldsInRow is an example of a user-defined iterator.  When called on
+// a line from a csv file, it will yield the next column value each time
+// it is called in a loop.
+// See https://chapel-lang.org/docs/primers/iterators.html for some examples.
+iter fieldsInRow(line) {
+  var start = 0;
+  while start<line.size {
+    var (nextVal, nextCommaIdx) = nextField(line, start);
+    start = nextCommaIdx + 1; // The next field will start after the comma.
+    yield nextVal;
+  }
+}
+
 // Returns the index of the next comma or the string length if no
-// next comma is found.  Commas inside quoted strings will be ignored.
+// next comma is found.  Commas inside double quoted strings will be ignored.
 proc findNextCommaNotInQuotes(str : string, start : int) {
-  var inQuotes = false;
+  var inDoubleQuotes = false;
   for i in start..(str.size-1) {
-    if !inQuotes && str[i]==',' then return i;
-    if str[i]=='"' then inQuotes = !inQuotes;
+    if !inDoubleQuotes && str[i]==',' then return i;
+    if str[i]=='"' then inDoubleQuotes = !inDoubleQuotes;
   }
   return str.size;
 }
@@ -262,7 +291,6 @@ proc createListOfColNames(line : string) {
   return colNames;
 } 
 
-// A function that checks the differences between files.
 // Prints out an Error message if the files don't match and "Test Passed" 
 // if the files do match.
 proc checkThatFilesMatch(file1 : string, file2 : string) {
@@ -273,12 +301,12 @@ proc checkThatFilesMatch(file1 : string, file2 : string) {
   var f2 = open(file2, iomode.r);
 
   // read in all of the bytes from each file into a string
-  var file1data : string;
-  f1.reader().readstring(file1data);
-  var file2data : string;
-  f2.reader().readstring(file2data);
+  var file1Data : string;
+  f1.reader().readstring(file1Data);
+  var file2Data : string;
+  f2.reader().readstring(file2Data);
 
-  if file1data==file2data then
+  if file1Data==file2Data then
     writeln("\nTest Passed: files ", file1, " and ", file2, " do match.");
   else
     writeln("\nError: files ", file1, " and ", file2, " do not match.");
