@@ -1044,7 +1044,7 @@ module ArgumentParser {
 
     .. code-block:: shell
 
-      $ programName <any args for progName> -- --preserved-flags --options etc
+      $ programName <any args for programName> -- --preserved-flags --options etc
 
     :args delimiter: the pattern to use as the passthrough indicator
 
