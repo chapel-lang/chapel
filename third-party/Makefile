@@ -129,7 +129,9 @@ $(LIBUNWIND_INSTALL_DIR): $(LIBUNWIND_DEPEND)
 	rm -rf $(LIBUNWIND_INSTALL_DIR) && rm -rf $(LIBUNWIND_BUILD_DIR)
 	cd libunwind && $(MAKE)
 
-llvm: $(LLVM_INSTALL_DIR)
+llvm: $(LLVM_INSTALL_DIR) FORCE
+	cd llvm && $(MAKE)
+
 $(LLVM_INSTALL_DIR): $(LLVM_DEPEND)
 	rm -rf $(LLVM_INSTALL_DIR)
 	cd llvm && $(MAKE)
