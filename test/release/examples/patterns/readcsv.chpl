@@ -132,10 +132,6 @@ var f = open(inFileName, iomode.r);
     }
     writer.close();
     outfile.close();
-
-    // Compare the file generated from the list of maps with the original 
-    // input csv file.
-    checkThatFilesMatch(inFileName,approach1FileName);
   }
 }
 
@@ -231,10 +227,6 @@ var f = open(inFileName, iomode.r);
     }
     writer.close();
     outfile.close();
-    
-    // Compare the file generated from the associative array with the 
-    // original input csv file.
-    checkThatFilesMatch(inFileName,approach2FileName);
   }
 }
 
@@ -290,25 +282,4 @@ proc createListOfColNames(line : string) {
   }
   return colNames;
 } 
-
-// Prints out an Error message if the files don't match and "Test Passed" 
-// if the files do match.
-proc checkThatFilesMatch(file1 : string, file2 : string) {
-  use IO;
-
-  // Open the files.
-  var f1 = open(file1, iomode.r);
-  var f2 = open(file2, iomode.r);
-
-  // read in all of the bytes from each file into a string
-  var file1Data : string;
-  f1.reader().readstring(file1Data);
-  var file2Data : string;
-  f2.reader().readstring(file2Data);
-
-  if file1Data==file2Data then
-    writeln("\nTest Passed: files ", file1, " and ", file2, " do match.");
-  else
-    writeln("\nError: files ", file1, " and ", file2, " do not match.");
-}
 
