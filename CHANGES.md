@@ -146,6 +146,8 @@ Performance Optimizations / Improvements
 * reduced communication during `Block` array creation
 * parallelized assignments of large `bytes` copies in the 'ZMQ' module
 * optimized the performance of the 'Sort' module's quicksort, used in `sort()`
+* improved fabric selection in `ofi` by defaulting to a large fixed heap
+* added data segment, heap, and stack memory to standard `ofi` registrations
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
@@ -319,9 +321,11 @@ Developer-oriented changes: Documentation
 Developer-oriented changes: Module changes
 ------------------------------------------
 * improved the string implementation to avoid redundant localize calls
+* deprecated undocumented routines for counting tasks and threads per locale
 
 Developer-oriented changes: Makefiles
 -------------------------------------
+* fixed a bug where the `config` toolchain discarded `stderr` then printed it
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -345,12 +349,21 @@ Developer-oriented changes: Performance improvements
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added internal oversubscription detection for `ofi` and `ugni` communication
+* refactored and significantly simplified the task creation interface
+* regularized how `ofi` matches fabrics to Chapel's memory consistency model
+* simplified and improved PMI-based out-of-band support in `ofi` communication
+* allowed for `ofi` to connect endpoints early instead of dynamically
+* reduced network endpoint and resource requirements in `ofi` communication
+* removed the limited support for `sync`/`single` deadlock detection
+* changed from command-line to environment, to enable CTRL-C task reporting
 * added ability to get a file descriptor from a `qio_file_t*`
 * fixed a problem with spurious assertion failures from `--cache-remote`
 
 Developer-oriented changes: Testing System
 ------------------------------------------
 * enabled `start_test` to run C++ tests
+* improved filtering out Slurm system-oriented messages in testing
+* removed overheads in lighweight communication-oriented micro-benchmarks
 * updated Python packages used for `start_test` to their latest version
 
 Developer-oriented changes: Tools and Utilities
