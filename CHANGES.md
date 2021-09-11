@@ -11,9 +11,12 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
+* replaced `CHPL_REGEXP=re2|none` with `CHPL_RE2=bundled|none`
+  (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#chpl-re2)
 
 Syntactic / Naming Changes
 --------------------------
+* renamed regular expression features from `Regexp`/`regexp` to `Regex`/`regex`
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -52,9 +55,14 @@ Deprecated / Unstable / Removed Language Features
 
 Deprecated / Removed Library Features
 -------------------------------------
+* deprecated the `Regexp` module in favor of `Regex`
+* deprecated the `reMatch` type in favor of `regexMatch`
+  (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regexMatch)
 
 Standard Library Modules
 ------------------------
+* added a `regex.fullMatch()` method for matches anchored at beginning and end
+  (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regex.fullMatch)
 * added an `isNothingValue()` routine to the 'Types' module
   (see https://chapel-lang.org/docs/1.25/modules/standard/Types.html#Types.isNothingValue)
 
@@ -63,6 +71,10 @@ Package Modules
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
+
+Tool Improvements
+-----------------
+* Added support for handling C unions to `c2chapel`
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -80,6 +92,9 @@ Documentation
 * improved the language specification's formatting of reserved keywords
   (see https://chapel-lang.org/docs/usingchapel/man.html)
 * added 'try...catch' and open-interval ranges to the Quick Reference document
+* modestly improved the documentation for the IO module
+* documented `locale.runningTasks()`
+  (see https://chapel-lang.org/docs/main/builtins/ChapelLocale.html#ChapelLocale.locale.runningTasks)
 * improved the docs for various library routines to reflect return types
 * fixed various typos in the documentation
 
