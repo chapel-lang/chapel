@@ -15,6 +15,13 @@ Packaging / Configuration Changes
   (see https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-llvm)
 * added a new default value of `unset` for the `CHPL_LLVM` environment variable
   (see https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-llvm)
+* `CHPL_TARGET_COMPILER` can now be used to choose the LLVM or C-based back-end
+  (see https://chapel-lang.org/docs/main/technotes/llvm.html
+   and https://chapel-lang.org/docs/main/usingchapel/chplenv.html#chpl-compiler)
+* New variables `CC`/`CXX` support specifying the path to the C/C++ compilers
+  (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#chpl-compiler)
+* a C++14 compiler is now required to build the Chapel compiler
+  (see https://chapel-lang.org/docs/main/usingchapel/prereqs.html)
 * replaced `CHPL_REGEXP=re2|none` with `CHPL_RE2=bundled|none`
   (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#chpl-re2)
 * removed previously deprecated environment settings that `bundled` replaced
@@ -54,6 +61,8 @@ Namespace Changes
 
 New Features
 ------------
+* added support for `extern union` to refer to external unions in C
+  (see https://chapel-lang.org/docs/main/language/spec/interoperability.html#referring-to-external-c-structs-and-unions)
 * added `.sizeAs()` to query range/domain/array sizes using a specific type
   (see https://chapel-lang.org/docs/1.25/builtins/ChapelRange.html#ChapelRange.range.sizeAs)
 
@@ -91,13 +100,22 @@ Deprecated / Removed Library Features
 
 Standard Library Modules
 ------------------------
+* added a new 'Errors' standard module combining a few automatic modules
+  (see https://chapel-lang.org/docs/main/modules/standard/Errors.html)
+* enabled reading of enumerated values to include the `enum` type name in 'IO'
+  (e.g., `mycolor.red` can now be read in addition to just `red`)
+* added support for JSON input and output for `list` and `map` in 'IO'
+  (see https://chapel-lang.org/docs/main/modules/standard/IO/FormattedIO.html#general-conversions)
 * added a `datetime.timeSinceEpoch()` method to the 'DateTime' module
   (see https://chapel-lang.org/docs/main/modules/standard/DateTime.html#DateTime.datetime.timeSinceEpoch)
 * added a `-` operator between `datetime` and `date` values to 'DateTime'
 * added a `regex.fullMatch()` method for regex matches anchored at both ends
   (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regex.fullMatch)
-* added an `isNothingValue()` routine to the 'Types' module
-  (see https://chapel-lang.org/docs/1.25/modules/standard/Types.html#Types.isNothingValue)
+* added `isNothing()` and `isNothingValue()` routines to the 'Types' module
+  (see https://chapel-lang.org/docs/main/modules/standard/Types.html#Types.isNothing
+   and https://chapel-lang.org/docs/1.25/modules/standard/Types.html#Types.isNothingValue)
+* improved support for socket programming in the 'Sys' module
+  (see https://chapel-lang.org/docs/main/modules/standard/Sys.html)
 * updated many standalone operator declarations to be operator methods
 
 Package Modules
@@ -122,6 +140,8 @@ Tool Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* reduced communication during `Block` array creation
+* optimized the performance of the 'Sort' module's quicksort, used in `sort()`
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
@@ -136,6 +156,10 @@ Documentation
   (see https://chapel-lang.org/docs/1.25/primers/interopWithC.html)
 * added documentation for how to define operator methods for inheritance
   (see https://chapel-lang.org/docs/1.25/technotes/operatorMethods.html#operator-methods-and-classes)
+* documented the 'CommDiagnostics' fields related to `--cache-remote`
+  (see https://chapel-lang.org/docs/main/modules/standard/CommDiagnostics.html#CommDiagnostics.chpl_commDiagnostics.cache_get_hits)
+* improved the documentation for which types can be used with `sync`/`single`
+  (see https://chapel-lang.org/docs/main/language/spec/task-parallelism-and-synchronization.html#synchronization-variables)
 * fixed formatting of double-dash arguments for online `chpl` man page
   (see https://chapel-lang.org/docs/usingchapel/man.html)
 * improved the language specification's formatting of reserved keywords
@@ -162,8 +186,14 @@ Example Codes
 
 Portability
 -----------
+* improved the detection of pre-installed LLVMs to check for required headers
 * improved the portability of the LLVM back-end for Mac OS X Mojave users
+* improved the portability of the LLVM back-end for multi-locale ARM systems
 * improved the portability of the LLVM back-end for various other platforms
+* improved `make install` to better handle Python support scripts
+  (see https://chapel-lang.org/docs/main/usingchapel/building.html#installing-chapel)
+* fixed a problem compiling the 'AtomicObjects' package with some C compilers
+* adjusted the 'Crypto' module to require at leasst OpenSSL 1.1
 * improved the portability of the squashing of some conservative gcc warnings
 
 GPU Computing
@@ -174,6 +204,8 @@ GPU Computing
 
 Compiler Flags
 --------------
+* deprecated `--[no]-llvm` in favor of `--target-compiler`
+  (e.g. `chpl --target-compiler=gnu` selects the C back-end using `gcc`)
 
 Runtime Library Changes
 -----------------------
@@ -189,14 +221,23 @@ Error Messages / Semantic Checks
 * improved error messages when zippering between rank-mismatched ranges/arrays
 * improved the error message for applying `dmapped` to an illegal expression
 * enabled `In module M:` annotations for errors when `M` is not the filename
+* added a syntax error for formal argument lists starting with a comma
+  (e.g., `proc foo(, x: int) { ... }`)
 * added an error for filenames that are longer than the compiler can handle
+* added a temporary error for overridden methods with `param` defaults
 
 Bug Fixes
 ---------
-* improved handling of basic macros in the LLVM back-end
-* fixed a bug in which the LLVM back-end resulted in internal compiler errors
+* LLVM back-end bug fixes:
+  - improved handling of basic macros
+  - fixed a bug with `nothing`/`void` fields
+  - fixed an error that occurred when disabling inlining
+  - fixed a problem cleaning up the temporary directory
+  - fixed a bug when using opaque C structs
+  - fixed an internal compiler error
 * fixed a bug w.r.t. compiler-generated comparisons of records w/ array fields
 * fixed a bug regarding default arguments in dynamically dispatched methods
+* fixed a problem with overridden methods using a different default argument
 * fixed an inconsistency with inherited type methods depending on call scopes
 * fixed a bug with respecting the privacy of standalone operator definitions
 * fixed a bug in which non-`bool` conditionals were fragile w.r.t. `import`s
@@ -211,6 +252,10 @@ Bug Fixes
 * fixed a bug where some `nil` assignment checks to records were thwarted
 * fixed a bug where some `param` multiple assignment checks were thwarted
 * fixed a bug with conversions error messages and operator methods
+* improved support for extern records that contain C anonymous unions
+* fixed a problem with variable initialization from a return intent overload
+* fixed a compiler crash with certain recursive types
+* fixed problems with nested classes used with `cobegin`
 * fixed a bug in which `c_fn_ptr` operations weren't automatically supported
 * fixed a compiler segfault relating to array fields and task intents
 * fixed a compiler crash when parsing standalone `[]` expressions
@@ -229,6 +274,7 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
+* stopped `SystemError.fromSyserr` from halting when passed a negative argument
 * fixed a bug w.r.t. how `c2chapel` handled `__extension__` in C header files
 * fixed a bug with the display of some strings in `chpldoc`
 * fixed a bug with displaying types in `type`/`var` declarations in `chpldoc`
@@ -252,6 +298,8 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* added a draft style guide for standard modules
+  (https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/StandardModuleStyle.rst)
 * added notes about how Chapel web documentation is built
   (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/buildingdocs.rst)
 * added information about how to test PRs in the contributor guidelines
@@ -264,18 +312,26 @@ Developer-oriented changes: Documentation
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* improved the string implementation to avoid redundant localize calls
 
 Developer-oriented changes: Makefiles
 -------------------------------------
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added experimental `--compiler-library-parser` to use new parser
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* added a new front-end (disabled by default) supporting incremental compiling
 * added prototypical deprecation of any symbol using `deprecated` syntax
 * cleaned up the printing of arg intents in `list_view()` output
 * replaced homegrown temporary directory creation with standard solution
+* removed a non-deterministic behavior during compilation
+* changed C++ compiler sources to include `cmath` instead of `math.h`
+* renamed source files to avoid the same filename in different directories
+* adjusted the compiler to generate heap allocation for string literals
+* improved the representation of unique strings in the compiler
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
@@ -283,10 +339,13 @@ Developer-oriented changes: Performance improvements
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added internal oversubscription detection for `ofi` and `ugni` communication
+* added ability to get a file descriptor from a `qio_file_t*`
+* fixed a problem with spurious assertion failures from `--cache-remote`
 
 Developer-oriented changes: Testing System
 ------------------------------------------
-* added prototypical deprecation of any symbol using `deprecated` syntax
+* enabled `start_test` to run C++ tests
+* updated Python packages used for `start_test` to their latest version
 
 Developer-oriented changes: Tools and Utilities
 -----------------------------------------------
