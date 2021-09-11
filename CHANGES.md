@@ -21,6 +21,23 @@ Packaging / Configuration Changes
 
 Syntactic / Naming Changes
 --------------------------
+* naming changes in the 'BigInteger' module:
+  - renamed `enum` `Round` in favor of `round`
+    (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html#BigInteger.round)
+  - renamed `bigint.div_q()` in favor of `bigint.divQ()`
+     (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html#BigInteger.bigint.divQ)
+  - renamed `bigint.div_r()` in favor of `bigint.divR()`
+     (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html#BigInteger.bigint.divR)
+  - renamed `bigint.div_qr()` in favor of `bigint.divQR()`
+      (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html#BigInteger.bigint.divQR)
+  - renamed `bigint.div_q_2exp()` in favor of `bigint.divQ2Exp()`
+  (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html#BigInteger.bigint.divQ2Exp)
+  - renamed `bigint.div_r_2exp()` in favor of `bigint.divR2Exp()`
+    (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html#BigInteger.bigint.divR2Exp)
+  - renamed `bigint.powm()` in favor of `bigint.powMod()`
+    (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html#BigInteger.bigint.powMod)
+  - renamed `bigint.sizeinbase()` in favor of `bigint.sizeInBase()`
+    (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html#BigInteger.bigint.sizeInBase)
 * renamed regular expression features from `Regexp`/`regexp` to `Regex`/`regex`
 * replaced `subprocess.exit_status` with `subprocess.exitCode`
   (see https://chapel-lang.org/docs/main/modules/standard/Spawn.html#Spawn.subprocess.exitCode)
@@ -55,9 +72,14 @@ Feature Improvements
   - added support for passing arguments of associated types
   - added support for calling functions defined within a constrained formal
   - added support for late checking of generic `implements` statements
+* adjusted default operators to be generated as operator methods
+  (see https://chapel-lang.org/docs/1.25/technotes/operatorMethods.html)
+  TODO: Is this in the right place?
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* deprecated declaring operators without the `operator` keyword
+* deprecated support for `use Mod except *;`
 * deprecated the `ident()` comparison routine on ranges
 
 Deprecated / Removed Library Features
@@ -65,6 +87,7 @@ Deprecated / Removed Library Features
 * deprecated the `Regexp` module in favor of `Regex`
 * deprecated the `reMatch` type in favor of `regexMatch`
   (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regexMatch)
+* deprecated the `bigint.size()` method in the 'BigInteger' module
 
 Standard Library Modules
 ------------------------
@@ -75,9 +98,20 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regex.fullMatch)
 * added an `isNothingValue()` routine to the 'Types' module
   (see https://chapel-lang.org/docs/1.25/modules/standard/Types.html#Types.isNothingValue)
+* updated many standalone operator declarations to be operator methods
 
 Package Modules
 ---------------
+* improved the 'LinearAlgebra' module:
+  - added `sinm`, `cosm`, `sincos` to compute sines/cosines of square matrices
+    (see https://chapel-lang.org/docs/1.25/modules/packages/LinearAlgebra.html#LinearAlgebra.sinm,
+     https://chapel-lang.org/docs/1.25/modules/packages/LinearAlgebra.html#LinearAlgebra.cosm,
+     and https://chapel-lang.org/docs/1.25/modules/packages/LinearAlgebra.html#LinearAlgebra.sincos)
+  - added `expm` to compute exponential of square matrices
+    (see https://chapel-lang.org/docs/1.25/modules/packages/LinearAlgebra.html#LinearAlgebra.expm)
+  - extended `dot` to support sparse-dense matrix products
+    (see https://chapel-lang.org/docs/1.25/modules/packages/LinearAlgebra.html#LinearAlgebra.dot)
+* updated many standalone operator declarations to be operator methods
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -98,15 +132,22 @@ Memory Improvements
 
 Documentation
 -------------
+* added documentation for how to define operator methods for inheritance
+  (see https://chapel-lang.org/docs/1.25/technotes/operatorMethods.html#operator-methods-and-classes)
 * fixed formatting of double-dash arguments for online `chpl` man page
   (see https://chapel-lang.org/docs/usingchapel/man.html)
 * improved the language specification's formatting of reserved keywords
   (see https://chapel-lang.org/docs/usingchapel/man.html)
 * added 'try...catch' and open-interval ranges to the Quick Reference document
+* added new documentation for several symbols in the 'BigInteger' module
+  (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html)
+* added `throws` documentation to the `compile()` routine in the 'Regex' module
+  (see https://chapel-lang.org/docs/1.25/modules/standard/Regex.html#Regex.compile)
 * modestly improved the documentation for the IO module
 * documented `locale.runningTasks()`
   (see https://chapel-lang.org/docs/main/builtins/ChapelLocale.html#ChapelLocale.locale.runningTasks)
 * improved the docs for various library routines to reflect return types
+* fixed the formatting of a list in the classes primer
 * fixed various typos in the documentation
 
 Syntax Highlighting
@@ -153,8 +194,20 @@ Bug Fixes
 * fixed a bug in which the LLVM back-end resulted in internal compiler errors
 * fixed a bug w.r.t. compiler-generated comparisons of records w/ array fields
 * fixed a bug regarding default arguments in dynamically dispatched methods
+* fixed an inconsistency with inherited type methods depending on call scopes
+* fixed a bug with respecting the privacy of standalone operator definitions
 * fixed a bug in which non-`bool` conditionals were fragile w.r.t. `import`s
 * fixed bugs related to slicing local arrays with distributed domains
+* fixed a bug with primary and secondary operator method visibility
+* fixed a bug with searching for binary operator methods
+* fixed a bug with promotion and types that define operator methods
+* fixed a bug with cast operator method calls in initializers
+* fixed a bug with visibility of tertiary operators methods with `use`/`import`
+* fixed a bug where assignment operator methods resulted in extra assignments
+* fixed a bug where `where` clauses were skipped if an argument was too generic
+* fixed a bug where some `nil` assignment checks to records were thwarted
+* fixed a bug where some `param` multiple assignment checks were thwarted
+* fixed a bug with conversions error messages and operator methods
 * fixed a bug in which `c_fn_ptr` operations weren't automatically supported
 * fixed a compiler segfault relating to array fields and task intents
 * fixed a compiler crash when parsing standalone `[]` expressions
@@ -167,16 +220,22 @@ Bug Fixes
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a bug with `isSubtype()` and equally generic child/parent types
+* fixed a bug with assignment operator methods and `isConstAssignable`
 
 Bug Fixes for Tools
 -------------------
 * fixed a bug w.r.t. how `c2chapel` handled `__extension__` in C header files
+* fixed a bug with the display of some strings in `chpldoc`
+* fixed a bug with displaying types in `type`/`var` declarations in `chpldoc`
+* fixed a bug with leaving stray temporary files in `chpldoc` error cases
 
 Platform-specific bug fixes
 ---------------------------
 
 Third-Party Software Changes
 ----------------------------
+* updated Python packages used for `chpldoc` to their latest versions
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -204,7 +263,9 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* added prototypical deprecation of any symbol using `deprecated` syntax
 * cleaned up the printing of arg intents in `list_view()` output
+* replaced homegrown temporary directory creation with standard solution
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
@@ -214,6 +275,7 @@ Developer-oriented changes: Runtime improvements
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* added prototypical deprecation of any symbol using `deprecated` syntax
 
 Developer-oriented changes: Utilities
 -------------------------------------
@@ -863,6 +925,8 @@ New Tools / Tool Changes
   (see https://chapel-lang.org/docs/1.23/tools/protoc-gen-chpl/protoc-gen-chpl.html)
 * updated `c2chapel` to use the `in` intent by default for struct arguments  
   (see https://chapel-lang.org/docs/1.23/tools/c2chapel/c2chapel.html)
+* improved `chpldoc` formatting of binary operators with respect to spacing
+* made `chpldoc` rely upon Python 3.6 or later (TODO: Is this right?)
 
 Interoperability Improvements
 -----------------------------
