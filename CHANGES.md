@@ -22,6 +22,8 @@ Packaging / Configuration Changes
   (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#chpl-compiler)
 * a C++14 compiler is now required to build the Chapel compiler
   (see https://chapel-lang.org/docs/main/usingchapel/prereqs.html)
+* Python 3.7 is now required by tools like `c2chapel`, `chapeldoc`, etc.
+  (see https://chapel-lang.org/docs/main/usingchapel/prereqs.html)
 * replaced `CHPL_REGEXP=re2|none` with `CHPL_RE2=bundled|none`
   (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#chpl-re2)
 * removed previously deprecated environment settings that `bundled` replaced
@@ -136,11 +138,13 @@ Standard Domain Maps (Layouts and Distributions)
 
 Tool Improvements
 -----------------
-* Added support for handling C unions to `c2chapel`
+* added a `--gnu-extensions` flag to `c2chapel` to handle GNU-specific features
+* improved `c2chapel` support for C unions, named structs, and other types
 
 Performance Optimizations / Improvements
 ----------------------------------------
 * reduced communication during `Block` array creation
+* parallelized assignments of large `bytes` copies in the 'ZMQ' module
 * optimized the performance of the 'Sort' module's quicksort, used in `sort()`
 
 Compilation-Time / Generated Code Improvements
@@ -271,10 +275,12 @@ Bug Fixes for Libraries
 * fixed a bug when passing a column slice to `BLAS.gemv()` in 'LinearAlgebra'
 * fixed a bug with `isSubtype()` and equally generic child/parent types
 * fixed a bug with assignment operator methods and `isConstAssignable`
+* fixed a bug when `SystemError.fromSyserr` was passed a negative argument
 
 Bug Fixes for Tools
 -------------------
-* stopped `SystemError.fromSyserr` from halting when passed a negative argument
+* fixed a bug in which `c2chapel` failed to `use` appropriate standard modules
+* fixed a bug in `c2chapel` with respect to `void` type declarations
 * fixed a bug w.r.t. how `c2chapel` handled `__extension__` in C header files
 * fixed a bug with the display of some strings in `chpldoc`
 * fixed a bug with displaying types in `type`/`var` declarations in `chpldoc`
