@@ -11,12 +11,19 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
+* LLVM is now the preferred compiler back-end when available, replacing C
+  (see https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-llvm)
+* added a new default value of `unset` for the `CHPL_LLVM` environment variable
+  (see https://chapel-lang.org/docs/latest/usingchapel/chplenv.html#chpl-llvm)
 * replaced `CHPL_REGEXP=re2|none` with `CHPL_RE2=bundled|none`
   (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#chpl-re2)
+* removed previously deprecated environment settings that `bundled` replaced
 
 Syntactic / Naming Changes
 --------------------------
 * renamed regular expression features from `Regexp`/`regexp` to `Regex`/`regex`
+* replaced `subprocess.exit_status` with `subprocess.exitCode`
+  (see https://chapel-lang.org/docs/main/modules/standard/Spawn.html#Spawn.subprocess.exitCode)
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
@@ -61,7 +68,10 @@ Deprecated / Removed Library Features
 
 Standard Library Modules
 ------------------------
-* added a `regex.fullMatch()` method for matches anchored at beginning and end
+* added a `datetime.timeSinceEpoch()` method to the 'DateTime' module
+  (see https://chapel-lang.org/docs/main/modules/standard/DateTime.html#DateTime.datetime.timeSinceEpoch)
+* added a `-` operator between `datetime` and `date` values to 'DateTime'
+* added a `regex.fullMatch()` method for regex matches anchored at both ends
   (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regex.fullMatch)
 * added an `isNothingValue()` routine to the 'Types' module
   (see https://chapel-lang.org/docs/1.25/modules/standard/Types.html#Types.isNothingValue)
@@ -81,6 +91,7 @@ Performance Optimizations / Improvements
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
+* generally speaking, compilation times improved due to the default use of LLVM
 
 Memory Improvements
 -------------------
@@ -109,7 +120,14 @@ Example Codes
 Portability
 -----------
 * improved the portability of the LLVM back-end for Mac OS X Mojave users
+* improved the portability of the LLVM back-end for various other platforms
 * improved the portability of the squashing of some conservative gcc warnings
+
+GPU Computing
+-------------
+* added a new compiler analysis to determine eligible loops for running on GPUs
+* added loop cloning to enable loops to run on both CPUs and GPUs
+* added runtime GPU diagnostics enabled with the `--verbose` flag
 
 Compiler Flags
 --------------
@@ -122,6 +140,7 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* added a new build-time error if `CHPL_LLVM` is detected to be `unset`
 * added errors for zippered foralls in which the first expression is larger
 * improved error messages when zippering between rank-mismatched ranges/arrays
 * improved the error message for applying `dmapped` to an illegal expression
@@ -130,6 +149,8 @@ Error Messages / Semantic Checks
 
 Bug Fixes
 ---------
+* improved handling of basic macros in the LLVM back-end
+* fixed a bug in which the LLVM back-end resulted in internal compiler errors
 * fixed a bug w.r.t. compiler-generated comparisons of records w/ array fields
 * fixed a bug regarding default arguments in dynamically dispatched methods
 * fixed a bug in which non-`bool` conditionals were fragile w.r.t. `import`s
