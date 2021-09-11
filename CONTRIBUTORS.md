@@ -37,6 +37,7 @@ Contributors to the Chapel 1.25.0 release
 * Venkatavaradan Raghuraman, individual contributor
 * Ahmad Rezaii, [HPE]
 * Elliot Ronaghan, [HPE]
+* Vaibhav Sethia, individual contributor
 * Lakshya Singh, [GSoC 2021] student from [Indian Institute of Technology (BHU) Varanasi]
 * Jenna Hoole Starkey, [HPE]
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
