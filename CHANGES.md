@@ -371,6 +371,7 @@ Third-Party Software Changes
 
 Developer-oriented changes: Process
 -----------------------------------
+* renamed GitHub development branch from `master` to `main`
 
 Developer-oriented changes: Documentation
 -----------------------------------------
@@ -439,6 +440,7 @@ Developer-oriented changes: Testing System
 ------------------------------------------
 * enabled `start_test` to run C++ tests
 * made memory leak testing report leaks as failures
+* added ability to respect skipif files via `-respect-skipifs`
 * improved filtering out Slurm system-oriented messages in testing
 * removed overheads in lighweight communication-oriented micro-benchmarks
 * updated Python packages used for `start_test` to their latest version
@@ -450,6 +452,8 @@ Developer-oriented changes: Tool Improvements
 Developer-oriented changes: Utilities
 -------------------------------------
 * added `util/devel/updateGITLOG` to create a `GITLOG` file of PR merges
+* extended `greptest` to search through test helper files
+* added new scripts to `util/buildRelease` to help with version number updates
 * improved `lookForBadRTCalls` script to suggest preferred functions
 * specialized `doc/util/chpl2rst.py` in support of `learnChapelInYMinutes.chpl`
 
