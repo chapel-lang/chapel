@@ -175,6 +175,7 @@ Compiler Flags
 
 Runtime Library Changes
 -----------------------
+* improved default runtime behavior when running in an oversubscribed manner
 
 Launchers
 ---------
@@ -232,9 +233,15 @@ Bug Fixes for Tools
 
 Platform-specific bug fixes
 ---------------------------
+* portability improvements for the `ofi` communication layer:
+  - ignored unusable T2 coprocessor provider on Mac OS X
+  - ignored broken sockets/IPv6 provider
+  - ignored broken verbs/IB provider
 
 Third-Party Software Changes
 ----------------------------
+* updated bundled version of 'libfabric' to version 1.12.1
+* added prefix to bundled 'hwloc' to prevent use by third-party libraries
 * updated Python packages used for `chpldoc` to their latest versions
 
 Developer-oriented changes: Process
@@ -272,6 +279,7 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* added internal oversubscription detection for `ofi` and `ugni` communication
 
 Developer-oriented changes: Testing System
 ------------------------------------------
