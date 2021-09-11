@@ -122,6 +122,8 @@ Standard Library Modules
 
 Package Modules
 ---------------
+* added a new 'ArgumentParsing' module to aid with processing command-line args
+  (see https://chapel-lang.org/docs/1.25/modules/packages/ArgumentParser.html)
 * improved the 'LinearAlgebra' module:
   - added `sinm`, `cosm`, `sincos` to compute sines/cosines of square matrices
     (see https://chapel-lang.org/docs/1.25/modules/packages/LinearAlgebra.html#LinearAlgebra.sinm,
@@ -366,8 +368,12 @@ Developer-oriented changes: Testing System
 * removed overheads in lighweight communication-oriented micro-benchmarks
 * updated Python packages used for `start_test` to their latest version
 
-Developer-oriented changes: Tools and Utilities
------------------------------------------------
+Developer-oriented changes: Tool Improvements
+---------------------------------------------
+* refactored `mason` to make use of the new 'ArgumentParser' module
+
+Developer-oriented changes: Utilities
+-------------------------------------
 * added `util/devel/updateGITLOG` to create a `GITLOG` file of PR merges
 * specialized `doc/util/chpl2rst.py` in support of `learnChapelInYMinutes.chpl`
 
