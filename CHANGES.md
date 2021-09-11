@@ -103,6 +103,8 @@ Syntax Highlighting
 
 Example Codes
 -------------
+* added an example program demonstrating how to read CSV files in Chapel
+  (see `$CHPL_HOME/examples/patterns/readcsv.chpl`)
 
 Portability
 -----------
@@ -160,9 +162,15 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* added notes about how Chapel web documentation is built
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/buildingdocs.rst)
+* added information about how to test PRs in the contributor guidelines
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/ContributorInfo.rst)
+* generally cleaned up and streamlined the contributor guidelines
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/ContributorInfo.rst)
 * documented the implementation of interfaces and a proposed new approach
-  (see `$CHPL_HOME/doc/rst/developer/implementation/Interfaces.md`
-   and `$CHPL_HOME/doc/rst/developer/implementation/Interfaces-new.md`)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/implementation/Interfaces.md
+   and https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/implementation/Interfaces-new.md)
 
 Developer-oriented changes: Module changes
 ------------------------------------------
