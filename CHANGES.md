@@ -73,6 +73,8 @@ Namespace Changes
 
 New Features
 ------------
+* added a prototypical new `manage` statement for context management
+  (see TODO)
 * added a `foreach` loop for single-task parallel loops
   (see TODO)
 * added support for `extern union` to refer to external unions in C
@@ -118,6 +120,9 @@ Deprecated / Removed Library Features
 * deprecated tertiary methods on the `file` type in the 'Path' module
 * removed previously deprecated 'Path' module functions
 * removed the deprecated 'Norm' module
+* removed the deprecated version of `map.update()`
+* removed deprecated functions and types from the `Memory` module
+* removed deprecated methods on channels used to get and set error codes
 
 Standard Library Modules
 ------------------------
@@ -136,6 +141,7 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.25/modules/standard/Path.html)
 * added a `regex.fullMatch()` method for regex matches anchored at both ends
   (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regex.fullMatch)
+* added `const` and `const ref` overloads of `list.first()` and `list.last()`
 * made `is*Value` functions in the 'Types' module user-facing
   (see https://chapel-lang.org/docs/1.25/modules/standard/Types.html)
 * added `isNothing()` and `isNothingValue()` routines to the 'Types' module
@@ -164,6 +170,10 @@ Package Modules
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
+
+Compiler Improvements
+---------------------
+* added support for compiling multi-locale libraries using the LLVM back-end
 
 Tool Improvements
 -----------------
@@ -222,6 +232,7 @@ Documentation
 
 Syntax Highlighting
 -------------------
+* added `manage` to `vim` highlighting as a statement-level keyword
 
 Example Codes
 -------------
@@ -272,6 +283,9 @@ Error Messages / Semantic Checks
 * enabled `In module M:` annotations for errors when `M` is not the filename
 * made 'IO' error when reading/writing a multidim array in Chapel syntax style
   (e.g., `var A:[1..2, 1..2] string = "hi"; writef("%ht\n", A);`)
+* added an error when exporting a symbol that contains illegal characters
+* added an error when the LLVM back-end fails to find a record field
+* improved the error message emitted when `moveInitialize()` would copy
 * added a syntax error for formal argument lists starting with a comma
   (e.g., `proc foo(, x: int) { ... }`)
 * added an error for filenames that are longer than the compiler can handle
@@ -286,6 +300,7 @@ Bug Fixes
   - fixed a problem cleaning up the temporary directory
   - fixed a bug when using opaque C structs
   - fixed an internal compiler error
+  - fixed a bug with ABI support when first formal is used to return a record
 * fixed a bug w.r.t. compiler-generated comparisons of records w/ array fields
 * fixed a bug regarding default arguments in dynamically dispatched methods
 * fixed a problem with overridden methods using a different default argument
@@ -321,6 +336,8 @@ Bug Fixes
 Bug Fixes for Libraries
 -----------------------
 * fixed a bug in `regex.subn()` caused by null bytes
+* fixed several bugs for `map` binary operators when `parSafe=true`
+* fixed a leak/crash when calling `set.add()` remotely on serializable types
 * fixed a bug when passing a column slice to `BLAS.gemv()` in 'LinearAlgebra'
 * fixed a bug with `isSubtype()` and equally generic child/parent types
 * fixed a bug with assignment operator methods and `isConstAssignable`
@@ -365,6 +382,7 @@ Developer-oriented changes: Documentation
   (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/ContributorInfo.rst)
 * generally cleaned up and streamlined the contributor guidelines
   (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/ContributorInfo.rst)
+* improved the layout of documentation generated for the new compiler
 * moved documents in `compilerOverview` to `implementation/compilerOverview`
   (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/implementation/compilerOverview/)
 * documented the implementation of interfaces and a proposed new approach
@@ -393,6 +411,7 @@ Developer-oriented changes: Compiler improvements/changes
 * added a new front-end (disabled by default) supporting incremental compiling
 * added prototypical deprecation of any symbol using `deprecated` syntax
 * cleaned up the printing of arg intents in `list_view()` output
+* removed support for old-style `_cast` operators from the compiler
 * replaced homegrown temporary directory creation with standard solution
 * removed a non-deterministic behavior during compilation
 * changed C++ compiler sources to include `cmath` instead of `math.h`
