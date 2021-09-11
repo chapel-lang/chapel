@@ -83,6 +83,8 @@ Feature Improvements
   - added support for passing arguments of associated types
   - added support for calling functions defined within a constrained formal
   - added support for late checking of generic `implements` statements
+* added support for new `.dim()` and `.dims()` queries to arrays
+  (see https://chapel-lang.org/docs/main/builtins/ChapelArray.html#ChapelArray.array)
 * adjusted default operators to be generated as operator methods
   (see https://chapel-lang.org/docs/1.25/technotes/operatorMethods.html)
   TODO: Is this in the right place?
@@ -206,6 +208,8 @@ Portability
 
 GPU Computing
 -------------
+* dramatically improved prototypical support for targeting GPUs with Chapel
+  (see https://chapel-lang.org/docs/main/technotes/gpu.html)
 * added a new compiler analysis to determine eligible loops for running on GPUs
 * added loop cloning to enable loops to run on both CPUs and GPUs
 * added runtime GPU diagnostics enabled with the `--verbose` flag
@@ -229,6 +233,8 @@ Error Messages / Semantic Checks
 * improved error messages when zippering between rank-mismatched ranges/arrays
 * improved the error message for applying `dmapped` to an illegal expression
 * enabled `In module M:` annotations for errors when `M` is not the filename
+* made 'IO' error when reading/writing a multidim array in Chapel syntax style
+  (e.g., `var A:[1..2, 1..2] string = "hi"; writef("%ht\n", A);`)
 * added a syntax error for formal argument lists starting with a comma
   (e.g., `proc foo(, x: int) { ... }`)
 * added an error for filenames that are longer than the compiler can handle
@@ -289,6 +295,7 @@ Bug Fixes for Tools
 * fixed a bug with the display of some strings in `chpldoc`
 * fixed a bug with displaying types in `type`/`var` declarations in `chpldoc`
 * fixed a bug with leaving stray temporary files in `chpldoc` error cases
+* fixed a bug in `printchplenv` when a system LLVM was not in the user's path
 
 Platform-specific bug fixes
 ---------------------------
@@ -316,6 +323,8 @@ Developer-oriented changes: Documentation
   (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/ContributorInfo.rst)
 * generally cleaned up and streamlined the contributor guidelines
   (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/ContributorInfo.rst)
+* moved documents in `compilerOverview` to `implementation/compilerOverview`
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/implementation/compilerOverview/)
 * documented the implementation of interfaces and a proposed new approach
   (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/implementation/Interfaces.md
    and https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/implementation/Interfaces-new.md)
@@ -364,6 +373,7 @@ Developer-oriented changes: Runtime improvements
 Developer-oriented changes: Testing System
 ------------------------------------------
 * enabled `start_test` to run C++ tests
+* improved `lookForBadRTCalls` script to suggest preferred functions
 * improved filtering out Slurm system-oriented messages in testing
 * removed overheads in lighweight communication-oriented micro-benchmarks
 * updated Python packages used for `start_test` to their latest version
