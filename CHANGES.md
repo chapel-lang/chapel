@@ -132,6 +132,8 @@ Memory Improvements
 
 Documentation
 -------------
+* added a primer example on C interoperability
+  (see https://chapel-lang.org/docs/1.25/primers/interopWithC.html)
 * added documentation for how to define operator methods for inheritance
   (see https://chapel-lang.org/docs/1.25/technotes/operatorMethods.html#operator-methods-and-classes)
 * fixed formatting of double-dash arguments for online `chpl` man page
@@ -221,6 +223,7 @@ Bug Fixes
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a bug when passing a column slice to `BLAS.gemv()` in 'LinearAlgebra'
 * fixed a bug with `isSubtype()` and equally generic child/parent types
 * fixed a bug with assignment operator methods and `isConstAssignable`
 
@@ -285,9 +288,10 @@ Developer-oriented changes: Testing System
 ------------------------------------------
 * added prototypical deprecation of any symbol using `deprecated` syntax
 
-Developer-oriented changes: Utilities
--------------------------------------
+Developer-oriented changes: Tools and Utilities
+-----------------------------------------------
 * added `util/devel/updateGITLOG` to create a `GITLOG` file of PR merges
+* specialized `doc/util/chpl2rst.py` in support of `learnChapelInYMinutes.chpl`
 
 
 version 1.24.1
