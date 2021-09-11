@@ -36,6 +36,15 @@ Feature Improvements
 * added support for ranges, domains, and arrays over 1-element enumerations
 * added support for operators on scalar/tuple pairs in which coercion occurs
   (e.g., `2 * (1.0, 2.0, 3.0)` now works, resulting in `(2.0, 4.0, 6.0)`)
+* various improvements to interfaces:
+  - added support for interface methods
+  - added support for required functions to be interface-constrained
+  - added support for required functions that rely upon promotion
+  - added support for invoking required functions via associated constraints
+  - permitted compiler-introduced wrapper routines to satisfy requirements
+  - added support for passing arguments of associated types
+  - added support for calling functions defined within a constrained formal
+  - added support for late checking of generic `implements` statements
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -70,6 +79,7 @@ Documentation
   (see https://chapel-lang.org/docs/usingchapel/man.html)
 * improved the language specification's formatting of reserved keywords
   (see https://chapel-lang.org/docs/usingchapel/man.html)
+* added 'try...catch' and open-interval ranges to the Quick Reference document
 * improved the docs for various library routines to reflect return types
 * fixed various typos in the documentation
 
@@ -98,6 +108,7 @@ Error Messages / Semantic Checks
 * added errors for zippered foralls in which the first expression is larger
 * improved error messages when zippering between rank-mismatched ranges/arrays
 * improved the error message for applying `dmapped` to an illegal expression
+* enabled `In module M:` annotations for errors when `M` is not the filename
 * added an error for filenames that are longer than the compiler can handle
 
 Bug Fixes
@@ -107,6 +118,8 @@ Bug Fixes
 * fixed a bug in which non-`bool` conditionals were fragile w.r.t. `import`s
 * fixed bugs related to slicing local arrays with distributed domains
 * fixed a bug in which `c_fn_ptr` operations weren't automatically supported
+* fixed a compiler segfault relating to array fields and task intents
+* fixed a compiler crash when parsing standalone `[]` expressions
 * fixed a bug in which declared types were ignored when initializing via tuples
   (e.g., in `var x: t = (e1, e2);`, `t` had been getting ignored)
 * fixed a bug in which simple paren-less functions were misformatted in errors
@@ -132,6 +145,9 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* documented the implementation of interfaces and a proposed new approach
+  (see `$CHPL_HOME/doc/rst/developer/implementation/Interfaces.md`
+   and `$CHPL_HOME/doc/rst/developer/implementation/Interfaces-new.md`)
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -144,6 +160,7 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* cleaned up the printing of arg intents in `list_view()` output
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
