@@ -132,7 +132,7 @@ proc main(args: [] string) throws {
   try {
     select (usedCmd) {
       when "add" do masonModify(cmdArgs);
-      when "build" do masonBuild(args);
+      when "build" do masonBuild(cmdArgs);
       when "clean" do masonClean(args);
       when "doc" do masonDoc(cmdArgs);
       when "env" do masonEnv(cmdArgs);
@@ -142,7 +142,7 @@ proc main(args: [] string) throws {
       when "new" do masonNew(cmdArgs);
       when "publish" do masonPublish(cmdArgs);
       when "rm" do masonModify(cmdArgs);
-      when "run" do masonRun(args);
+      when "run" do masonRun(cmdArgs);
       when "search" do masonSearch(cmdArgs);
       when "system" do masonSystem(cmdArgs);
       when "test" do masonTest(cmdArgs);
