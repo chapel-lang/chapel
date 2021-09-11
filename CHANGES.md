@@ -1,6 +1,13 @@
 Release Changes List
 ====================
 
+TODO:
+- [ ] linebreaks before parentheticals
+- [ ] point docs links to 1.25 uniformly
+- [ ] spellcheck
+- [ ] check compiler flags deltas
+- [ ] check examples deltas
+
 version 1.25.0
 ==============
 
@@ -18,12 +25,15 @@ Packaging / Configuration Changes
 * `CHPL_TARGET_COMPILER` can now be used to choose the LLVM or C-based back-end
   (see https://chapel-lang.org/docs/main/technotes/llvm.html
    and https://chapel-lang.org/docs/main/usingchapel/chplenv.html#chpl-compiler)
-* New variables `CC`/`CXX` support specifying the path to the C/C++ compilers
+* new variables `CC`/`CXX` support specifying the path to the C/C++ compilers
   (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#chpl-compiler)
 * a C++14 compiler is now required to build the Chapel compiler
   (see https://chapel-lang.org/docs/main/usingchapel/prereqs.html)
 * Python 3.7 is now required by tools like `c2chapel`, `chapeldoc`, etc.
   (see https://chapel-lang.org/docs/main/usingchapel/prereqs.html)
+* added support for a new platform setting for HPE Apollo systems
+  (see TODO)
+* default to `fifo` tasking on arm-based Macs
 * replaced `CHPL_REGEXP=re2|none` with `CHPL_RE2=bundled|none`
   (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#chpl-re2)
 * removed previously deprecated environment settings that `bundled` replaced
@@ -63,6 +73,8 @@ Namespace Changes
 
 New Features
 ------------
+* added a `foreach` loop for single-task parallel loops
+  (see TODO)
 * added support for `extern union` to refer to external unions in C
   (see https://chapel-lang.org/docs/main/language/spec/interoperability.html#referring-to-external-c-structs-and-unions)
 * added `.sizeAs()` to query range/domain/array sizes using a specific type
@@ -83,6 +95,7 @@ Feature Improvements
   - added support for passing arguments of associated types
   - added support for calling functions defined within a constrained formal
   - added support for late checking of generic `implements` statements
+* applying `*` between integers and `string`/`bytes` is now commutative
 * added support for new `.dim()` and `.dims()` queries to arrays
   (see https://chapel-lang.org/docs/main/builtins/ChapelArray.html#ChapelArray.array)
 * adjusted default operators to be generated as operator methods
@@ -94,6 +107,7 @@ Deprecated / Unstable / Removed Language Features
 * deprecated declaring operators without the `operator` keyword
 * deprecated support for `use Mod except *;`
 * deprecated the `ident()` comparison routine on ranges
+* removed the deprecated assignment from `c_string` to `string`
 
 Deprecated / Removed Library Features
 -------------------------------------
@@ -101,6 +115,9 @@ Deprecated / Removed Library Features
 * deprecated the `reMatch` type in favor of `regexMatch`
   (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regexMatch)
 * deprecated the `bigint.size()` method in the 'BigInteger' module
+* deprecated tertiary methods on the `file` type in the 'Path' module
+* removed previously deprecated 'Path' module functions
+* removed the deprecated 'Norm' module
 
 Standard Library Modules
 ------------------------
@@ -113,8 +130,14 @@ Standard Library Modules
 * added a `datetime.timeSinceEpoch()` method to the 'DateTime' module
   (see https://chapel-lang.org/docs/main/modules/standard/DateTime.html#DateTime.datetime.timeSinceEpoch)
 * added a `-` operator between `datetime` and `date` values to 'DateTime'
+* added new overloads with `file` arguments in some 'Path' module functions
+  (see https://chapel-lang.org/docs/1.25/modules/standard/Path.html)
+* added functions for replacing parts of a path in the 'Path' module
+  (see https://chapel-lang.org/docs/1.25/modules/standard/Path.html)
 * added a `regex.fullMatch()` method for regex matches anchored at both ends
   (see https://chapel-lang.org/docs/main/modules/standard/Regex.html#Regex.regex.fullMatch)
+* made `is*Value` functions in the 'Types' module user-facing
+  (see https://chapel-lang.org/docs/1.25/modules/standard/Types.html)
 * added `isNothing()` and `isNothingValue()` routines to the 'Types' module
   (see https://chapel-lang.org/docs/main/modules/standard/Types.html#Types.isNothing
    and https://chapel-lang.org/docs/1.25/modules/standard/Types.html#Types.isNothingValue)
@@ -126,6 +149,8 @@ Package Modules
 ---------------
 * added a new 'ArgumentParsing' module to aid with processing command-line args
   (see https://chapel-lang.org/docs/1.25/modules/packages/ArgumentParser.html)
+* added a new 'OrderedMap' module for maps that maintain ordering
+  (see https://chapel-lang.org/docs/master/modules/packages/OrderedMap.html)
 * improved the 'LinearAlgebra' module:
   - added `sinm`, `cosm`, `sincos` to compute sines/cosines of square matrices
     (see https://chapel-lang.org/docs/1.25/modules/packages/LinearAlgebra.html#LinearAlgebra.sinm,
@@ -147,7 +172,12 @@ Tool Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* improved performance on InifiBand systems by upgrading GASNet-EX versions
 * reduced communication during `Block` array creation
+* reduced task creation overheads for zippered `coforall`s with known sizes
+* enabled '--auto-aggregation' to make decisions based on `localAccess` calls
+* enabled '--auto-aggregation' to leverage accesses to non-distributed arrays
+* optimized `allLocalesBarrier()`, particularly for InfiniBand systems
 * parallelized assignments of large `bytes` copies in the 'ZMQ' module
 * optimized the performance of the 'Sort' module's quicksort, used in `sort()`
 * improved fabric selection in `ofi` by defaulting to a large fixed heap
@@ -156,14 +186,18 @@ Performance Optimizations / Improvements
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
 * generally speaking, compilation times improved due to the default use of LLVM
+* reduced the amount of code generated for `forall` loops due to fast-followers
 
 Memory Improvements
 -------------------
+* reduced memory fragmentation for configurations that require a fixed heap
 
 Documentation
 -------------
 * added a primer example on C interoperability
   (see https://chapel-lang.org/docs/1.25/primers/interopWithC.html)
+* described the `make check` target in the 'Building Chapel' documentation
+  (see https://chapel-lang.org/docs/master/usingchapel/building.html)
 * added documentation for how to define operator methods for inheritance
   (see https://chapel-lang.org/docs/1.25/technotes/operatorMethods.html#operator-methods-and-classes)
 * documented the 'CommDiagnostics' fields related to `--cache-remote`
@@ -210,7 +244,9 @@ GPU Computing
 -------------
 * dramatically improved prototypical support for targeting GPUs with Chapel
   (see https://chapel-lang.org/docs/main/technotes/gpu.html)
+* added the ability to convert `forall` loops into GPU kernels
 * added a new compiler analysis to determine eligible loops for running on GPUs
+* enabled support for allocating data using CUDA's unified memory
 * added loop cloning to enable loops to run on both CPUs and GPUs
 * added runtime GPU diagnostics enabled with the `--verbose` flag
 
@@ -225,6 +261,7 @@ Runtime Library Changes
 
 Launchers
 ---------
+* added support for a `--nodelist` option for slurm-gasnetrun launchers
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -253,6 +290,7 @@ Bug Fixes
 * fixed a bug regarding default arguments in dynamically dispatched methods
 * fixed a problem with overridden methods using a different default argument
 * fixed an inconsistency with inherited type methods depending on call scopes
+* fixed a race condition in initializing memory tracking
 * fixed a bug with respecting the privacy of standalone operator definitions
 * fixed a bug in which non-`bool` conditionals were fragile w.r.t. `import`s
 * fixed bugs related to slicing local arrays with distributed domains
@@ -282,6 +320,7 @@ Bug Fixes
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a bug in `regex.subn()` caused by null bytes
 * fixed a bug when passing a column slice to `BLAS.gemv()` in 'LinearAlgebra'
 * fixed a bug with `isSubtype()` and equally generic child/parent types
 * fixed a bug with assignment operator methods and `isConstAssignable`
@@ -303,9 +342,12 @@ Platform-specific bug fixes
   - ignored unusable T2 coprocessor provider on Mac OS X
   - ignored broken sockets/IPv6 provider
   - ignored broken verbs/IB provider
+* fixed memory reallocation bugs for the `ugni` communication layer
+* fixed a `--cache-remote` read-ahead bug for the `ugni` communication layer
 
 Third-Party Software Changes
 ----------------------------
+* updated GASNet-EX to its version 2021.8.0 snapshot
 * updated bundled version of 'libfabric' to version 1.12.1
 * added prefix to bundled 'hwloc' to prevent use by third-party libraries
 * updated Python packages used for `chpldoc` to their latest versions
@@ -336,11 +378,15 @@ Developer-oriented changes: Module changes
 
 Developer-oriented changes: Makefiles
 -------------------------------------
+* fixed a Makefile bug that caused errors when `gcc`/`g++` versions differed
 * fixed a bug where the `config` toolchain discarded `stderr` then printed it
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added `--interleave-memory` to reduce performance hit of poor NUMA affinity
 * added experimental `--compiler-library-parser` to use new parser
+* added `--gpu-block-size` to control the block size for GPU kernel launches
+* added `--gpu-arch` to control the CUDA architecture for GPU compilation
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
@@ -373,7 +419,7 @@ Developer-oriented changes: Runtime improvements
 Developer-oriented changes: Testing System
 ------------------------------------------
 * enabled `start_test` to run C++ tests
-* improved `lookForBadRTCalls` script to suggest preferred functions
+* made memory leak testing report leaks as failures
 * improved filtering out Slurm system-oriented messages in testing
 * removed overheads in lighweight communication-oriented micro-benchmarks
 * updated Python packages used for `start_test` to their latest version
@@ -385,6 +431,7 @@ Developer-oriented changes: Tool Improvements
 Developer-oriented changes: Utilities
 -------------------------------------
 * added `util/devel/updateGITLOG` to create a `GITLOG` file of PR merges
+* improved `lookForBadRTCalls` script to suggest preferred functions
 * specialized `doc/util/chpl2rst.py` in support of `learnChapelInYMinutes.chpl`
 
 
