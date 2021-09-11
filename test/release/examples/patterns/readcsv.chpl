@@ -185,8 +185,6 @@ var f = open(inFileName, iomode.r);
   // See https://chapel-lang.org/docs/main/users-guide/base/zip.html for
   // information about zippered iteration.
   for (line, rowIdx) in zip(dataRows, valDomain) {
-    var start = 0;      // index into the line string
-    var colIdx = 0;     // the first column is indexed as zero
     // Process each line by finding the next field value from the start 
     // index to the next comma.
     // Doing work quite similar to what is done in Approach 1, but using
