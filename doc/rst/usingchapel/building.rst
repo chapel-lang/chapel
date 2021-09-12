@@ -5,11 +5,10 @@ Building Chapel
 ===============
 
 To build the Chapel compiler, set up your environment as described in
-:ref:`chapelhome-quickstart` or :ref:`readme-chplenv`, cd to
-``$CHPL_HOME`` (the root directory of your unpacked Chapel release),
-and run GNU make.  This will build the compiler and runtime libraries
-for your current environment as indicated by running
-``$CHPL_HOME/util/printchplenv --all``.
+:ref:`readme-chplenv`, cd to ``$CHPL_HOME`` (the root directory of
+your unpacked Chapel release), and run GNU make.  This will build the
+compiler and runtime libraries for your current environment as
+indicated by running ``$CHPL_HOME/util/printchplenv --all``.
 
 On many systems, GNU make is available simply as ``make``. On others,
 it is called ``gmake``.  To check whether ``make`` refers to GNU make
@@ -98,6 +97,8 @@ Typically, this is accomplished in one of the following ways:
 * by installing Chapel to a specific location—perhaps one that is
   already in your path—using the instructions in the next section.
 
+
+.. _readme-installing:
 
 -----------------
 Installing Chapel
@@ -200,5 +201,4 @@ are described below. Set the value to 1 to enable the feature.
   ========  ================================================================
 
 
-.. _readme-installing:
 

@@ -114,10 +114,9 @@ CHPL_HOST_PLATFORM
    The Chapel Makefiles and sources are designed to work for any UNIX-compatible
    environment that supports a GNU-compatible make utility.  The list above
    represents the set of platforms that we have access to and can test easily.
-   We are interested in making our code framework portable to other platforms --
-   if you are using Chapel on a platform other than the ones listed above,
-   please refer to :ref:`platform-specific-settings` for ways to set up a
-   Makefile for this platform.
+   We are interested in making our code framework portable to other
+   platforms—if you are using Chapel on a platform other than the ones
+   listed above, please contact us for help with the effort.
 
 
 .. _readme-chplenv.CHPL_TARGET_PLATFORM:
