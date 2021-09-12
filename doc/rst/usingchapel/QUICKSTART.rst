@@ -3,35 +3,36 @@
 Chapel Quickstart Instructions
 ==============================
 
-These instructions are designed to help you get started with
-a source distribution of the latest Chapel release.
+These instructions are designed to help users get started with a
+source distribution of Chapel as quickly as possible.  If you are
+interested in taking the time to understand Chapel's configuration
+options, build process, and installation more thoroughly, please refer
+to :ref:`readme-chplenv` and :ref:`readme-building` instead.
 
-In the following instructions, note that building and using Chapel as
-described in steps 2-5 disables optional and advanced features in the
-interest of getting you a clean build as quickly as possible. Later
-sections explain how to re-build in the preferred configuration and how to
-enable more features, such as distributed memory execution.
+These instructions first have you build a minimal, stripped-down
+version of Chapel to reduce build times and the potential for
+confusion.  Once you are interested in a full-featured version of
+Chapel, refer to :ref:`using-a-more-full-featured-chapel` below.
 
 
-0) See :ref:`prereqs.rst <readme-prereqs>` for more information about system
-   tools and packages you may need to have installed to build and run Chapel.
+0) See :ref:`readme-prereqs` for information about system tools and
+   packages you should have available to build and run Chapel.
 
-1) If you don't already have Chapel 1.25, see
-   https://chapel-lang.org/download.html .
 
-2) If you are using a source release, build Chapel in a *quickstart*
-   configuration. The *quickstart* script used below is designed to help you
-   get started with Chapel. After that, you may want to switch to a more
-   full-featured configuration. See using-a-more-full-featured-chapel_ below.
+1) If you don't already have the Chapel 1.25 source release, see
+   https://chapel-lang.org/download.html.
 
-   a. Expand the source release if you haven't already:
+
+2) Build Chapel in its 'Quickstart' configuration:
+
+   a. Unpack the source release if you haven't already:
 
       .. code-block:: bash
 
          tar xzf chapel-1.25.0.tar.gz
 
-   b. Make sure that you are in the directory you just created by expanding the
-      source release, for example:
+   b. Make sure that you are in the directory that was created when
+      unpacking the source release, for example:
 
       .. code-block:: bash
 
@@ -39,39 +40,33 @@ enable more features, such as distributed memory execution.
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than bash,
-      see quickstart-with-other-shells_ below.
+      see :ref:`quickstart-with-other-shells` below.
 
       .. code-block:: bash
 
          source util/quickstart/setchplenv.bash
 
-   d. Use GNU make to build Chapel.
-      On some systems, you will have to use gmake.
-      See :ref:`building.rst <readme-building>` for more information about
-      building Chapel.
+   d. Use GNU make to build Chapel.  On some systems, you may have to
+      use ``gmake`` if ``make`` is not a GNU version.
 
       .. code-block:: bash
 
          make
-
-   e. Optionally, check that your Chapel build is working correctly
-
-      .. code-block:: bash
-
-         make check
 
 
 3) Compile an example program:
 
    .. code-block:: bash
 
-      chpl -o hello examples/hello.chpl
+      chpl examples/hello3-datapar.chpl
+
 
 4) Run the resulting executable:
 
    .. code-block:: bash
 
-      ./hello
+      ./hello3-datapar
+
 
 5) Experiment with Chapel in this Quickstart mode to your heart's
    content.  Once you are comfortable with Chapel and interested in
@@ -81,33 +76,37 @@ enable more features, such as distributed memory execution.
 
 .. _using-a-more-full-featured-chapel:
 
-Using a More Full-Featured Chapel
----------------------------------
+Using Chapel in its Preferred Configuration
+-------------------------------------------
 
-To use Chapel in a more full-featured and preferred configuration,
-you will need to rebuild Chapel from source in a different configuration.
+To use Chapel in its preferred, full-featured mode, you will need to
+rebuild Chapel from source in a different configuration:
 
 *  Open up a new shell to avoid inheriting the previous environment
    settings.
 
-*  The quickstart configuration described above sets ``CHPL_LLVM=none``
-   but this is not the preferred configuration of Chapel. As of 1.25,
-   LLVM is the default compiler backend and it needs to be available
-   for full functionality. So make sure you have a compatible system LLVM
-   installed in a standard location or set the environment variable
-   ``CHPL_LLVM`` to ``bundled`` or ``none`` as described in
-   :ref:`chplenv.rst <readme-chplenv.CHPL_LLVM>`.  If desired, you must
-   explicitly opt-out of using it by setting
-   ``CHPL_LLVM=none``. The ``CHPL_LLVM=bundled`` build takes a long
-   time, so to avoid surprises you need to explicitly opt-in to using it.
+* The Quickstart configuration described above sets ``CHPL_LLVM=none``
+  for simplicity and to save time.  This causes the Chapel compiler to
+  use its C back-end, which is not the preferred option.  As of Chapel
+  1.25, LLVM is the default back-end, which needs to be available for
+  full functionality.  There are a few ways to use LLVM:
 
-*  Repeat steps 2-5 above, but in Step 2, source ``util/setchplenv.bash``
+  - ensure that you have a version of LLVM 11 installed on your system
+    and set ``CHPL_LLVM=system`` (or leave it unset and Chapel should
+    find it if it's in your path)
+
+  - set ``CHPL_LLVM=bundled`` to have Chapel build and use the bundled
+    version of LLVM (note that this can take a *long* time)
+
+  - set ``CHPL_LLVM=none`` to continue using the C back-end rather
+    than LLVM
+
+*  Repeat steps 2-5 above, but in step 2, source ``util/setchplenv.bash``
    instead of ``util/quickstart/setchplenv.bash``.
    This will set up your environment to use Chapel in the preferred
-   configuration.  Building this configuration involves compiling
-   third-party packages, which will increase the overall build time.
-   If you run into any portability issues, please let us know via
-   :ref:`bugs.rst <readme-bugs>`.
+   configuration.  Note that building this configuration involves
+   compiling third-party packages, which will increase the overall
+   build time.
 
    .. code-block:: bash
 
@@ -117,40 +116,42 @@ you will need to rebuild Chapel from source in a different configuration.
       # re-build Chapel
       make
 
-      # make check is available but optional
-      make check
-
       # compile a sample program
-      chpl -o hello examples/hello.chpl
+      chpl -examples/hello3-datapar.chpl
 
       # run the sample program
-      ./hello
+      ./hello3-datapar
 
-   Note that the environment settings from ``util/setchplenv.bash`` will not persist beyond this terminal session.
-   You can choose to source ``setchplenv.bash`` whenever you want to use relevant commands.
-   If you want these environment settings to persist for future terminal sessions,
-   copy the commands from the Recommended Settings in :ref:`chplenv.rst <readme-chplenv.recommended_settings>` into your ``~/.bashrc`` file.
-   You can also store Chapel configuration settings in a :ref:`chplconfig <readme-chplenv.chplconfig>` file instead of your ``~/.bashrc``.
+   If you run into any portability issues, please see
+   :ref:`readme-bugs`:
 
-   See :ref:`chplenv.rst <readme-chplenv>` for a complete description of
-   Chapel's configuration variables, what they mean, and how they
-   can be set.
+
+Using Chapel in a Different Shell / Session
+-------------------------------------------
+
+Note that in both the Quickstart and preferred modes above, any
+environment settings made by ``setchplenv.bash`` will not persist
+beyond your current shell / terminal session.  To use Chapel from a
+different shell or terminal, you will need to either re-``source`` the
+``setchplenv.bash`` script that you used when building Chapel or set
+up your environment to support additional shells automatically.  See
+:ref:`using-chapel-in-other-sessions` for details.
 
 
 Using Chapel in Multi-Locale Mode
 ---------------------------------
 
-All of the instructions above describe how to run Chapel programs
-in a single-locale (shared-memory) mode. To run using multiple
-locales (distributed memory), please refer to
-:ref:`multilocale.rst <readme-multilocale>`.
+All of the instructions above describe how to run Chapel programs in a
+single-locale (shared-memory) mode. To run using multiple locales
+(distributed memory), please refer to :ref:`readme-multilocale`.
 
-Performance
------------
 
-If you plan to do performance studies of Chapel programs, be sure to use the
-full-featured version from using-a-more-full-featured-chapel_ above and see
-https://chapel-lang.org/performance.html for performance tips.
+Notes on Performance
+--------------------
+
+If you plan to do performance studies of Chapel programs, be sure to
+use the full-featured version above and see
+https://chapel-lang.org/perf-tips.html for valuable tips.
 
 
 .. _quickstart-with-other-shells:
@@ -166,6 +167,9 @@ a csh-compatible shell (csh/tcsh)    ``source util/quickstart/setchplenv.csh``
 the fish shell (fish)                ``. util/quickstart/setchplenv.fish``
 the Bourne shell (sh)                ``. util/quickstart/setchplenv.sh``
 ==================================== ==========================================
+
+For the full-featured builds using these shells, simply remove
+``quickstart/`` from the path.
 
 
 What's next?
