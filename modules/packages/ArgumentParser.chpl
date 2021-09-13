@@ -32,9 +32,9 @@
 
     Chapel programs can make use of :ref:`configuration constants and variables <ug-configs>`.
     The ArgumentParser module can be used in place of, or in addition to,
-    configuration variables and constants. However, many programs may not need
-    the added complexity of the ArgumentParser, relying solely on the
-    functionality provided by configuration variables.
+    configuration variables and constants. In particular, it is common for Chapel
+    programs to rely solely upon configuration variables and for such programs
+    the ArgumentParser is not needed.
 
   .. note::
 
