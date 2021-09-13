@@ -74,8 +74,8 @@ proc masonRunHelp() {
   writeln();
   writeln('Runtime arguments can be included after mason arguments.');
   writeln('To ensure that runtime arguments and mason arguments do not conflict, separate them');
-  writeln('with a single dash(`-`). For example');
-  writeln('   e.g. mason run --build - --runtimeArg=true');
+  writeln('with a double dash(`--`). For example');
+  writeln('   e.g. mason run --build -- --runtimeArg=true');
 }
 
 proc masonBuildHelp() {
@@ -98,8 +98,8 @@ proc masonBuildHelp() {
   writeln();
   writeln('Compilation flags and arguments can be included after mason arguments.');
   writeln('To ensure compilation flags and mason arguments to not conflict, separate them with a');
-  writeln('single dash(`-`). For example');
-  writeln('   e.g. mason build --force - --savec tmpdir');
+  writeln('double dash(`--`). For example');
+  writeln('   e.g. mason build --force -- --savec tmpdir');
 }
 
 proc masonNewHelp() {
