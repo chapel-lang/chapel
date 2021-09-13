@@ -103,7 +103,6 @@ Feature Improvements
   (see https://chapel-lang.org/docs/main/builtins/ChapelArray.html#ChapelArray.array)
 * adjusted default operators to be generated as operator methods
   (see https://chapel-lang.org/docs/1.25/technotes/operatorMethods.html)
-  TODO: Is this in the right place?
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -178,9 +177,11 @@ Compiler Improvements
 
 Tool Improvements
 -----------------
+* tools like `chpldoc` and `c2chapel` now require Python 3.7
 * added a `--gnu-extensions` flag to `c2chapel` to handle GNU-specific features
 * improved `c2chapel` support for C unions, named structs, and other types
 * improved error-checking for `mason` command-line arguments
+* improved `chpldoc` formatting of binary operators with respect to spacing
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -1104,8 +1105,6 @@ New Tools / Tool Changes
   (see https://chapel-lang.org/docs/1.23/tools/protoc-gen-chpl/protoc-gen-chpl.html)
 * updated `c2chapel` to use the `in` intent by default for struct arguments  
   (see https://chapel-lang.org/docs/1.23/tools/c2chapel/c2chapel.html)
-* improved `chpldoc` formatting of binary operators with respect to spacing
-* made `chpldoc` rely upon Python 3.6 or later (TODO: Is this right?)
 
 Interoperability Improvements
 -----------------------------
