@@ -22,6 +22,22 @@
 
   .. note::
 
+    You must declare your main method to take an array of string arguments in
+    order to get values from the command line.
+    See the :ref:`quickstart example<argumentParser-quickstart>` below or the
+    technote about :ref:`getting arguments from main()<technote-mainWithArgs>`.
+
+
+  .. note::
+
+    Chapel programs can make use of :ref:`configuration constants and variables <ug-configs>`.
+    The ArgumentParser module can be used in place of, or in addition to,
+    configuration variables and constants. In particular, it is common for Chapel
+    programs to rely solely upon configuration variables and for such programs
+    the ArgumentParser is not needed.
+
+  .. note::
+
     This module is in the initial stages of development and should be expected
     to change in future releases.
 
@@ -91,6 +107,8 @@
     .. code-block:: shell
 
       $ myExecutable build --force otherProgram -- --flags --for --compiling otherProgram
+
+  .. _argumentParser-quickstart:
 
   Quickstart Example
   -------------------
