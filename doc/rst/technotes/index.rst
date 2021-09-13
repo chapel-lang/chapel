@@ -22,6 +22,7 @@ Base Language Features
    main() Functions <main>
    Module Search Paths <module_search>
    Operator Methods <operatorMethods>
+   The 'manage' Statement <manage>
 
 
 Initializers and Generic Programming
