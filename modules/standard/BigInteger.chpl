@@ -2677,24 +2677,29 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
     } else {
       if _local {
-        const exp_ = new bigint(exp);
-
-        mpz_powm(this.mpz, base.mpz, exp_.mpz, base.mpz);
+        if (base == 1 || base == -1) {
+          this = base;
+        } else {
+          this = 0;
+        }
 
       } else if this.localeId == chpl_nodeID &&
                 base.localeId == chpl_nodeID {
-        const exp_ = new bigint(exp);
-
-        mpz_powm(this.mpz, base.mpz, exp_.mpz, base.mpz);
+        if (base == 1 || base == -1) {
+          this = base;
+        } else {
+          this = 0;
+        }
 
       } else {
         const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
-          const base_ = base;
-          const exp_  = new bigint(exp);
-
-          mpz_powm(this.mpz, base_.mpz, exp_.mpz, base_.mpz);
+          if (base == 1 || base == -1) {
+            this = base;
+          } else {
+            this = 0;
+          }
         }
       }
     }
