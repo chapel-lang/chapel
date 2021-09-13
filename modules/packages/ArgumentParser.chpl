@@ -24,8 +24,8 @@
 
     You must declare your main method to take an array of string arguments in
     order to get values from the command line.
-    See the Quickstart example below or the technote about
-    :ref:`getting arguments from main()<technote-mainWithArgs>`.
+    See the :ref:`quickstart example<argumentParser-quickstart>` below or the
+    technote about :ref:`getting arguments from main()<technote-mainWithArgs>`.
 
 
   .. note::
@@ -99,6 +99,8 @@
     .. code-block:: shell
 
       $ myExecutable build --force otherProgram -- --flags --for --compiling otherProgram
+
+  .. _argumentParser-quickstart:
 
   Quickstart Example
   -------------------
