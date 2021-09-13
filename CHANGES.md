@@ -5,12 +5,12 @@ TODO:
 - [x] sort within categories
 - [x] highlights
 - [x] sort across categories
+- [x] check compiler flags deltas
+- [x] check examples deltas
+- [x] point docs links to 1.25 uniformly
 - [.] spellcheck
 - [.] search for * [A-Z]
-- [.] point docs links to 1.25 uniformly
-- [ ] linebreaks before parentheticals
-- [ ] check compiler flags deltas
-- [ ] check examples deltas
+- [.] linebreaks before parentheticals
 - [ ] check that URLs work
 - [ ] resolve TODOs below
 
@@ -253,12 +253,12 @@ Documentation
 Syntax Highlighting
 -------------------
 * added `manage` to `vim` highlighting as a statement-level keyword
-* TODO: others?
 
 Example Codes
 -------------
 * added an example program demonstrating how to read CSV files in Chapel  
   (see `$CHPL_HOME/examples/patterns/readcsv.chpl`)
+* updated example programs w.r.t. renamings and deprecated features
 
 Portability
 -----------
@@ -288,6 +288,7 @@ Compiler Improvements
 
 Compiler Flags
 --------------
+* renamed the `--regexp` flag to `--re2`
 * deprecated `--[no]-llvm` in favor of `--target-compiler`  
   (e.g. `chpl --target-compiler=gnu` selects the C back-end using `gcc`)
 
