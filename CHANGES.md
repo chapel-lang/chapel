@@ -7,6 +7,7 @@ TODO:
 - [ ] spellcheck
 - [ ] check compiler flags deltas
 - [ ] check examples deltas
+- [ ] check that URLs work
 
 version 1.25.0
 ==============
@@ -179,6 +180,7 @@ Tool Improvements
 -----------------
 * added a `--gnu-extensions` flag to `c2chapel` to handle GNU-specific features
 * improved `c2chapel` support for C unions, named structs, and other types
+* improved error-checking for `mason` command-line arguments
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -214,6 +216,7 @@ Documentation
   (see https://chapel-lang.org/docs/main/modules/standard/CommDiagnostics.html#CommDiagnostics.chpl_commDiagnostics.cache_get_hits)
 * improved the documentation for which types can be used with `sync`/`single`
   (see https://chapel-lang.org/docs/main/language/spec/task-parallelism-and-synchronization.html#synchronization-variables)
+* fixed `mason` docs to indicate that `--` rather than `-` passes args through
 * fixed formatting of double-dash arguments for online `chpl` man page
   (see https://chapel-lang.org/docs/usingchapel/man.html)
 * improved the language specification's formatting of reserved keywords
@@ -447,7 +450,7 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
-* refactored `mason` to make use of the new 'ArgumentParser' module
+* refactored most of `mason` to make use of the new 'ArgumentParser' module
 
 Developer-oriented changes: Utilities
 -------------------------------------
