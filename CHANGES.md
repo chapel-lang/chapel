@@ -226,7 +226,6 @@ Documentation
   (see https://chapel-lang.org/docs/main/language/spec/task-parallelism-and-synchronization.html#synchronization-variables)
 * added `throws` documentation to the `compile()` routine in the 'Regex' module
   (see https://chapel-lang.org/docs/1.25/modules/standard/Regex.html#Regex.compile)
-* fixed `mason` docs to indicate that `--` rather than `-` passes args through
 * fixed the formatting of double-dash arguments for the online `chpl` man page
   (see https://chapel-lang.org/docs/usingchapel/man.html)
 * described the `make check` target in the 'Building Chapel' documentation
@@ -363,6 +362,7 @@ Bug Fixes for Tools
 * fixed a bug with the display of some strings in `chpldoc`
 * fixed a bug with displaying types in `type`/`var` declarations in `chpldoc`
 * fixed a bug with leaving stray temporary files in `chpldoc` error cases
+* fixed `mason` help to indicate that `--` rather than `-` passes args through
 * fixed a bug in `printchplenv` when a system LLVM was not in the user's path
 
 Platform-specific bug fixes
