@@ -88,15 +88,13 @@ Feature Improvements
   (e.g., `enum color { red }; var r: range(idxType=color);` now works)
 * added support for operators on scalar/tuple pairs in which coercion occurs
   (e.g., `2 * (1.0, 2.0, 3.0)` now works, resulting in `(2.0, 4.0, 6.0)`)
-* various improvements to interfaces:
+* improved the current prototype support for interfaces:
+  - disabled automatic inference of `implements` statements
   - added support for interface methods
+  - added support for calling functions defined within an interface
   - added support for required functions to be interface-constrained
-  - added support for required functions that rely upon promotion
   - added support for invoking required functions via associated constraints
-  - permitted compiler-introduced wrapper routines to satisfy requirements
   - added support for passing arguments of associated types
-  - added support for calling functions defined within a constrained formal
-  - added support for late checking of generic `implements` statements
 * applying `*` between integers and `string`/`bytes` is now commutative
 * added support for new `.dim()` and `.dims()` queries to arrays
   (see https://chapel-lang.org/docs/1.25/builtins/ChapelArray.html#ChapelArray.array)
@@ -210,6 +208,7 @@ Performance Optimizations / Improvements
 * improved `--auto-aggregation` to leverage accesses to non-distributed arrays
 * optimized `allLocalesBarrier()`, particularly for InfiniBand systems
 * parallelized assignments of large `bytes` copies in the 'ZMQ' module
+* optimized performance of `string` operations when `--checks` are not enabled
 * optimized the performance of the 'Sort' module's quicksort, used by `sort()`
 * improved fabric selection in `ofi` by defaulting to a large fixed heap
 * added data segment, heap, and stack memory to standard `ofi` registrations
@@ -362,6 +361,7 @@ Bug Fixes
 * fixed a bug in which aligned bounds queries didn't halt for unaligned ranges
   (e.g., `(..10 by 2).alignedLow` returned a value rather than erroring)
 * fixed a bug when using C header files with the GPU locale model
+* fixed several problems when mixing interfaces with other language features
 
 Bug Fixes for Libraries
 -----------------------
