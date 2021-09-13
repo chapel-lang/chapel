@@ -189,7 +189,7 @@ Tool Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
-* improved performance on InifiBand systems by upgrading GASNet-EX versions
+* improved performance on InfiniBand systems by upgrading GASNet-EX versions
 * reduced communication during `Block` array creation
 * reduced task creation overheads for zippered `coforall`s with known sizes
 * improved '--auto-aggregation' to make decisions based on `localAccess` calls
@@ -290,7 +290,7 @@ Launchers
 Error Messages / Semantic Checks
 --------------------------------
 * added a new build-time error if `CHPL_LLVM` is detected to be `unset`
-* added errors for zippered foralls in which the first expression is larger
+* added errors for zippered `forall`s in which the first expression is larger
 * improved error messages when zippering between rank-mismatched ranges/arrays
 * improved the error message for applying `dmapped` to an illegal expression
 * enabled `In module M:` annotations for errors when `M` is not the filename
@@ -449,7 +449,7 @@ Developer-oriented changes: Testing System
 * made memory leak testing report leaks as failures
 * added the ability to respect `.skipif`/`SKIPIF` files via `-respect-skipifs`
 * improved filtering out Slurm system-oriented messages in testing
-* removed overheads in lighweight communication-oriented micro-benchmarks
+* removed overheads in lightweight communication-oriented micro-benchmarks
 * updated Python packages used for `start_test` to their latest version
 
 Developer-oriented changes: Tool Improvements
