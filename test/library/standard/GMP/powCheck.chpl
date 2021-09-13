@@ -2,7 +2,6 @@ use BigInteger;
 
 var a = new bigint(2);
 var b = new bigint(4);
-var c = new bigint(10);
 var d = new bigint();
 
 d.pow(a, -1); // d = a^-1

@@ -2677,16 +2677,20 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
     } else {
       if _local {
-        if (base == 1 || base == -1) {
+        if (base == 1 || (base == -1 && Math.abs(exp) % 2 == 1)) {
           this = base;
+        } else if (base == -1 && Math.abs(exp) % 2 == 0) {
+          this = 1;
         } else {
           this = 0;
         }
 
       } else if this.localeId == chpl_nodeID &&
                 base.localeId == chpl_nodeID {
-        if (base == 1 || base == -1) {
+        if (base == 1 || (base == -1 && Math.abs(exp) % 2 == 1)) {
           this = base;
+        } else if (base == -1 && Math.abs(exp) % 2 == 0) {
+          this = 1;
         } else {
           this = 0;
         }
@@ -2695,8 +2699,10 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
         const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
-          if (base == 1 || base == -1) {
+          if (base == 1 || (base == -1 && Math.abs(exp) % 2 == 1)) {
             this = base;
+          } else if (base == -1 && Math.abs(exp) % 2 == 0) {
+            this = 1;
           } else {
             this = 0;
           }
