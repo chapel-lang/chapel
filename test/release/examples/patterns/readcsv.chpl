@@ -5,14 +5,14 @@
    The included metadata-20lines.csv only has 20 lines of data including the
    header row that has the column names.
 
-   Each line in csv files is a row of data.  Columns are separated by commas.
+   Each line in a csv file is a row of data.  Columns are separated by commas.
    Some of the cells of data have quotes because the data string itself 
    includes a comma or commas.
 
    There are many options in terms of data structures that such data could be
    read into.  Here are the two approaches illustrated here.
-       (1) pythonic -- list of Map instances where there is an entry in the Map
-               per column (key=column name, value=column value for that row)
+       (1) python-like -- list of Map instances where there is an entry in the
+               Map per column (key=column name, value=column value for that row)
        (2) chapeltastic -- associative array with the key being the column name
                and the value being an array of strings
 
@@ -25,7 +25,7 @@
    in the Chapel home directory, and then compiling and running this file 
    as follows:
        cd $CHPL_HOME/test/release/examples/patterns/
-       chpl --fast readcsv.chpl
+       chpl readcsv.chpl
        ./readcsv
 
   You can check that the output files for both approaches end up the same 
