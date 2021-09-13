@@ -68,7 +68,6 @@ proc masonBuild(args: [] string) throws {
   var release = releaseFlag.valueAsBool();
   var force = forceFlag.valueAsBool();
   var compopts: list(string);
-  //var opt = false;
   var example = false;
   var skipUpdate = MASON_OFFLINE;
   if (exampleOpts.hasValue() && exampleOpts.value() != NOEXAMPLES)
@@ -79,52 +78,6 @@ proc masonBuild(args: [] string) throws {
     if updateFlag.valueAsBool() then skipUpdate = false;
     else skipUpdate = true;
   }
-
-
-  // if args.size > 2 {
-
-  //   // strip off the first two indices
-  //   for i in args.domain#-(args.size-2) {
-  //     var arg = args[i];
-  //     if opt == true {
-  //       compopts.append(arg);
-  //     }
-  //     else if arg == '-h' || arg == '--help' {
-  //       masonBuildHelp();
-  //       exit(0);
-  //     }
-  //     else if arg == '--' {
-  //       if example then
-  //         throw new owned MasonError("Examples do not support `--` syntax");
-  //       opt = true;
-  //     }
-  //     else if arg == '--release' {
-  //       release = true;
-  //     }
-  //     else if arg == '--force' {
-  //       force = true;
-  //     }
-  //     else if arg == '--show' {
-  //       show = true;
-  //     }
-  //     else if arg.startsWith('--example=') {
-  //       example = true;
-  //       compopts.append(arg);
-  //     }
-  //     else if arg == '--example' {
-  //       example = true;
-  //     }
-  //     else if arg == '--update' {
-  //       skipUpdate = false;
-  //     }
-  //     else if arg == '--no-update' {
-  //       skipUpdate = true;
-  //     }
-  //     else {
-  //       compopts.append(arg);
-  //     }
-  //   }
-  // }
 
   if example {
     // compopts become test names. Build never runs examples
@@ -164,7 +117,6 @@ private proc checkChplVersion(lockFile : borrowed Toml) throws {
 
 proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: list(string),
                   tomlName="Mason.toml", lockName="Mason.lock") throws {
-
 
   try! {
 
