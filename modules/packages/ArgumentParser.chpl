@@ -22,6 +22,14 @@
 
   .. note::
 
+    You must declare your main method to take an array of string arguments in
+    order to get values from the command line.
+    See the Quickstart example below or the technote about
+    :ref:`getting arguments from main()<technote-mainWithArgs>`.
+
+
+  .. note::
+
     This module is in the initial stages of development and should be expected
     to change in future releases.
 

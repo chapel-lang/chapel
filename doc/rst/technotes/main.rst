@@ -21,6 +21,7 @@ declared to return an integer in which case the value returned serves
 as the status value.
 
 
+.. _technote-mainWithArgs:
 
 Having main() accept command-line arguments
 ===========================================
