@@ -249,6 +249,9 @@ module String {
   private config param debugStrings = false;
 
   pragma "no doc"
+  config param useCachedNumCodepoints = true;
+
+  pragma "no doc"
   record __serializeHelper {
     var buffLen: int;
     var buff: bufferType;
@@ -1246,13 +1249,12 @@ module String {
               string is correctly-encoded UTF-8.
   */
   inline proc const string.numCodepoints {
-    const n = this.cachedNumCodepoints;
-    if boundsChecking {
-      if n != countNumCodepoints(this) {
-        halt("Encountered corrupt string metadata");
-      }
+    if useCachedNumCodepoints {
+      return this.cachedNumCodepoints;
     }
-    return n;
+    else {
+      return countNumCodepoints(this);
+    }
   }
 
   /*
