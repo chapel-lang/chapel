@@ -171,6 +171,11 @@ module BigInteger {
   use SysError;
   use SysBasic;
 
+  /*
+    .. warning::
+
+       The enum Round is deprecated, please use the enum round instead
+  */
   deprecated "The enum Round is deprecated, please use the enum round instead"
   enum Round {
     DOWN = -1,
@@ -291,6 +296,11 @@ module BigInteger {
       }
     }
 
+    /*
+      .. warning::
+
+         bigint.size() is deprecated
+    */
     deprecated "bigint.size() is deprecated"
     proc size() : size_t {
       var ret: size_t;
@@ -312,6 +322,11 @@ module BigInteger {
       return ret;
     }
 
+    /*
+      .. warning::
+
+         bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead
+    */
     deprecated
     "bigint.sizeinbase() is deprecated, use bigint.sizeInBase() instead"
     proc sizeinbase(base: int) : uint {
@@ -2523,7 +2538,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   }
 
 
+  /*
+    .. warning::
 
+       bigint.powm is deprecated, use bigint.powMod instead
+  */
   deprecated
   "bigint.powm is deprecated, use bigint.powMod instead"
   proc bigint.powm(const ref base: bigint,
@@ -2532,6 +2551,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     this.powMod(base, exp, mod);
   }
 
+  /*
+    .. warning::
+
+       bigint.powm is deprecated, use bigint.powMod instead
+  */
   deprecated
   "bigint.powm is deprecated, use bigint.powMod instead"
   proc bigint.powm(const ref base: bigint,
@@ -2540,6 +2564,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     this.powMod(base, exp, mod);
   }
 
+  /*
+    .. warning::
+
+       bigint.powm is deprecated, use bigint.powMod instead
+  */
   deprecated
   "bigint.powm is deprecated, use bigint.powMod instead"
   proc bigint.powm(const ref base: bigint,
@@ -4096,6 +4125,12 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
+  /*
+    .. warning::
+
+       bigint.div_q using Round is deprecated, use bigint.divQ with round
+       instead
+  */
   deprecated
   "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
   proc bigint.div_q(const ref n: bigint,
@@ -4111,6 +4146,12 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
+  /*
+    .. warning::
+
+       bigint.div_q using Round is deprecated, use bigint.divQ with round
+       instead
+  */
   deprecated
   "bigint.div_q using Round is deprecated, use bigint.divQ with round instead"
   proc bigint.div_q(const ref n: bigint,
@@ -4187,6 +4228,12 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     this.divQ(numer, new bigint(denom), rounding);
   }
 
+  /*
+    .. warning::
+
+       bigint.div_r using Round is deprecated, use bigint.divR with round
+       instead
+  */
   deprecated
   "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
   proc bigint.div_r(const ref n: bigint,
@@ -4203,6 +4250,12 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
   }
 
+  /*
+    .. warning::
+
+       bigint.div_r using Round is deprecated, use bigint.divR with round
+       instead
+  */
   deprecated
   "bigint.div_r using Round is deprecated, use bigint.divR with round instead"
   proc bigint.div_r(const ref n: bigint,
@@ -4278,6 +4331,12 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     this.divR(numer, new bigint(denom), rounding);
   }
 
+  /*
+    .. warning::
+
+       bigint.div_qr using Round is deprecated, use bigint.divQR with round
+       instead
+  */
   deprecated
   "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
   proc bigint.div_qr(ref       r:        bigint,
@@ -4294,6 +4353,12 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
+  /*
+    .. warning::
+
+       bigint.div_qr using Round is deprecated, use bigint.divQR with round
+       instead
+  */
   deprecated
   "bigint.div_qr using Round is deprecated, use bigint.divQR with round instead"
   proc bigint.div_qr(ref       r: bigint,
@@ -4395,6 +4460,12 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     this.divQR(remain, numer, new bigint(denom), rounding);
   }
 
+  /*
+    .. warning::
+
+       bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with
+       round instead
+  */
   deprecated
   "bigint.div_q_2exp using Round is deprecated, use bigint.divQ2Exp with round instead"
   proc bigint.div_q_2exp(const ref n: bigint,
@@ -4460,6 +4531,12 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
+  /*
+    .. warning::
+
+       bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with
+       round instead
+  */
   deprecated
   "bigint.div_r_2exp using Round is deprecated, use bigint.divR2Exp with round instead"
   proc bigint.div_r_2exp(const ref n: bigint,
