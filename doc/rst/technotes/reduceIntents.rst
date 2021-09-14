@@ -72,6 +72,8 @@ For a user-defined reduction, there is a task-private instance
 of the reduction class for each task created for the forall
 or coforall loop. Here is an example of such a class:
 
+.. _readme-reduceIntents-interface:
+
  .. code-block:: chapel
 
   /* Implements + reduction over numeric data. */
