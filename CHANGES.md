@@ -2,16 +2,6 @@ Release Changes List
 ====================
 
 TODO:
-- [x] sort within categories
-- [x] highlights
-- [x] sort across categories
-- [x] check compiler flags deltas
-- [x] check examples deltas
-- [x] point docs links to 1.25 uniformly
-- [.] spellcheck
-- [.] search for * [A-Z]
-- [.] linebreaks before parentheticals
-- [ ] check that URLs work
 - [ ] resolve TODOs below
 
 version 1.25.0
@@ -153,7 +143,7 @@ Standard Library Modules
 * added a new 'Errors' standard module combining a few automatic modules  
   (see https://chapel-lang.org/docs/1.25/modules/standard/Errors.html)
 * enabled enumerated value 'IO' reads that include the `enum` type name  
-  (e.g., `mycolor.red` can now be read in addition to simply `red`)
+  (e.g., `color.red` can now be read in addition to simply `red`)
 * added support for JSON input and output for `list` and `map` in 'IO'  
   (see https://chapel-lang.org/docs/1.25/modules/standard/IO/FormattedIO.html#general-conversions)
 * added a `datetime.timeSinceEpoch()` method to the 'DateTime' module  
@@ -161,7 +151,7 @@ Standard Library Modules
 * added a `-` operator between `datetime` and `date` values to 'DateTime'
 * added new overloads with `file` arguments in some 'Path' module functions  
 * added functions for replacing parts of a path in the 'Path' module  
-  (see https://chapel-lang.org/docs/master/modules/standard/Path.html#Path.replaceBasename)
+  (see https://chapel-lang.org/docs/1.25/modules/standard/Path.html#Path.replaceBasename)
 * added a `regex.fullMatch()` method for regex matches anchored at both ends  
   (see https://chapel-lang.org/docs/1.25/modules/standard/Regex.html#Regex.regex.fullMatch)
 * added `const` and `const ref` overloads of `list.first()` and `list.last()`
