@@ -41,7 +41,7 @@ full-featured version of Chapel, refer to
          cd chapel-1.25.0
 
    c. Set up your environment for Chapel's Quickstart mode.
-      If you are using a shell other than bash,
+      If you are using a shell other than ``bash``,
       see :ref:`quickstart-with-other-shells` below.
 
       .. code-block:: bash
@@ -71,8 +71,8 @@ full-featured version of Chapel, refer to
 
 
 5) Experiment with Chapel in this Quickstart mode to your heart's
-   content.  If you'd like to use this Chapel build in additional
-   shell / terminal sessions, see :ref:`using-chapel-in-another-shell`
+   content.  If you'd like to use this build of Chapel in a different
+   shell / terminal session, see :ref:`using-chapel-in-another-shell`
    below.  Once you are comfortable with Chapel and interested in
    using a full-featured version in the preferred configuration, see
    the next section.
@@ -91,9 +91,9 @@ rebuild Chapel from source in a different configuration:
 
 * The Quickstart configuration described above sets ``CHPL_LLVM=none``
   for simplicity and to save time.  This causes the Chapel compiler to
-  use its C back-end, which is not the preferred option.  As of Chapel
+  use its C back-end, which is not the preferred option; as of Chapel
   1.25, LLVM is the default back-end, which needs to be available for
-  full functionality.  There are a few ways to use LLVM:
+  full functionality.  There are a few options for using LLVM:
 
   - ensure that you have a version of LLVM 11 installed on your system
     and set ``CHPL_LLVM=system`` (or leave it unset and Chapel should
@@ -126,18 +126,18 @@ rebuild Chapel from source in a different configuration:
      make
 
      # compile a sample program
-     chpl -examples/hello3-datapar.chpl
+     chpl examples/hello3-datapar.chpl
 
      # run the sample program
      ./hello3-datapar
 
   If you run into any portability issues, please see
-  :ref:`readme-bugs`:
+  :ref:`readme-bugs`.
 
 .. _using-chapel-in-another-shell:
 
-Using Chapel in a Different Shell / Session
--------------------------------------------
+Using Chapel in a Different Shell or Terminal
+---------------------------------------------
 
 Note that in both the Quickstart and preferred modes above, any
 environment settings made by ``setchplenv.bash`` will not persist
@@ -153,7 +153,8 @@ Using Chapel in Multi-Locale Mode
 
 All of the instructions above describe how to run Chapel programs in a
 single-locale (shared-memory) mode. To run using multiple locales
-(distributed memory), please refer to :ref:`readme-multilocale`.
+(multiple compute nodes with distributed memory), please refer to
+:ref:`readme-multilocale`.
 
 
 Notes on Performance
@@ -169,6 +170,10 @@ https://chapel-lang.org/perf-tips.html for valuable tips.
 Quickstart with Other Shells
 ----------------------------
 
+If you use a shell other than ``bash``, see the table below to
+identify the location of an appropriate Quickstart ``setchplenv``
+script.
+
 ==================================== ==========================================
 **If you use:**                       **then type:**
 ------------------------------------ ------------------------------------------
@@ -178,14 +183,14 @@ the fish shell (fish)                ``. util/quickstart/setchplenv.fish``
 the Bourne shell (sh)                ``. util/quickstart/setchplenv.sh``
 ==================================== ==========================================
 
-For the versions of the scripts that set the preferred environment for
-each of these shells, remove ``quickstart/`` from the paths above.
+Scripts that set the preferred environment for each of these shells
+can be found by removing ``quickstart/`` from the paths.
 
 
 What's next?
 ------------
 
-For more information about Chapel, refer to the following resources:
+For further information about Chapel, refer to the following resources:
 
 ============================ ==================================================
 Online documentation:        :ref:`chapel-lang.org/docs <chapel-documentation>`
