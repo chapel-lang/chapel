@@ -30,7 +30,7 @@ Highlights (see subsequent sections for further details)
 * language and library highlights:
   - added a prototypical new `manage` statement for context management
   - added a new `foreach` loop to indicate task-less parallel loops
-  - added new prototypical 'ArgumentParsing' and 'OrderedMap' package modules
+  - added new prototypical 'ArgumentParser' and 'OrderedMap' package modules
   - improved support for the `operator` feature and deprecated `proc`-based ops
 * performance highlights:
   - improved performance on InfiniBand systems
@@ -65,7 +65,8 @@ Packaging / Configuration Changes
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * began changing `.size` on ranges/domains/arrays to return `int` by default  
-  (see https://chapel-lang.org/docs/1.25/builtins/ChapelRange.html#ChapelRange.range.size)
+  (see https://chapel-lang.org/docs/1.25/builtins/ChapelRange.html#ChapelRange.range.size  
+   and https://chapel-lang.org/docs/1.25/builtins/ChapelArray.html#ChapelArray.size)
 * began changing `.indices` queries on arrays to differentiate from `.domain`  
   (see https://chapel-lang.org/docs/1.25/builtins/ChapelArray.html#ChapelArray.indices)
 
@@ -97,7 +98,7 @@ Feature Improvements
   - added support for passing arguments of associated types
 * applying `*` between integers and `string`/`bytes` is now commutative
 * added support for new `.dim()` and `.dims()` queries to arrays  
-  (see https://chapel-lang.org/docs/1.25/builtins/ChapelArray.html#ChapelArray.array)
+  (see https://chapel-lang.org/docs/1.25/builtins/ChapelArray.html#ChapelArray.dims)
 * adjusted default operators to be generated as operator methods  
   (see https://chapel-lang.org/docs/1.25/technotes/operatorMethods.html)
 
@@ -159,24 +160,21 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.25/modules/standard/DateTime.html#DateTime.datetime.timeSinceEpoch)
 * added a `-` operator between `datetime` and `date` values to 'DateTime'
 * added new overloads with `file` arguments in some 'Path' module functions  
-  (see https://chapel-lang.org/docs/1.25/modules/standard/Path.html)
 * added functions for replacing parts of a path in the 'Path' module  
-  (see https://chapel-lang.org/docs/1.25/modules/standard/Path.html)
+  (see https://chapel-lang.org/docs/master/modules/standard/Path.html#Path.replaceBasename)
 * added a `regex.fullMatch()` method for regex matches anchored at both ends  
   (see https://chapel-lang.org/docs/1.25/modules/standard/Regex.html#Regex.regex.fullMatch)
 * added `const` and `const ref` overloads of `list.first()` and `list.last()`
+* added `isNothing()` to the 'Types' module  
+  (see https://chapel-lang.org/docs/1.25/modules/standard/Types.html#Types.isNothing)
 * made `is*Value` functions in the 'Types' module user-facing  
-  (see https://chapel-lang.org/docs/1.25/modules/standard/Types.html)
-* added `isNothing()` and `isNothingValue()` routines to the 'Types' module  
-  (see https://chapel-lang.org/docs/1.25/modules/standard/Types.html#Types.isNothing  
-   and https://chapel-lang.org/docs/1.25/modules/standard/Types.html#Types.isNothingValue)
+  (see https://chapel-lang.org/docs/1.25/modules/standard/Types.html#Types.isBoolValue)
 * improved support for socket programming in the 'Sys' module  
-  (see https://chapel-lang.org/docs/1.25/modules/standard/Sys.html)
 * updated many standalone operator declarations to be operator methods
 
 Package Modules
 ---------------
-* added a new 'ArgumentParsing' module to aid with processing args to main()  
+* added a new 'ArgumentParser' module to aid with processing args to main()  
   (see https://chapel-lang.org/docs/1.25/modules/packages/ArgumentParser.html)
 * added a new 'OrderedMap' module for maps that maintain ordering  
   (see https://chapel-lang.org/docs/1.25/modules/packages/OrderedMap.html)
@@ -240,9 +238,9 @@ Documentation
 * added `throws` documentation to `compile()` in the 'Regex' module  
   (see https://chapel-lang.org/docs/1.25/modules/standard/Regex.html#Regex.compile)
 * fixed the formatting of double-dash arguments on the online `chpl` man page  
-  (see https://chapel-lang.org/docs/usingchapel/man.html)
+  (see https://chapel-lang.org/docs/1.25/usingchapel/man.html)
 * described the `make check` target in the 'Building Chapel' documentation  
-  (see https://chapel-lang.org/docs/1.25/usingchapel/building.html)
+  (see https://chapel-lang.org/docs/1.25/usingchapel/building.html#makefile-targets)
 * improved the language specification's formatting of reserved keywords  
   (see https://chapel-lang.org/docs/1.25/language/spec/lexical-structure.html#keywords)
 * modestly improved the documentation for the 'IO' module
@@ -412,7 +410,7 @@ Developer-oriented changes: Documentation
 * added notes about how Chapel web documentation is built  
   (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/buildingdocs.rst)
 * added information about how to test PRs in the contributor guidelines  
-  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/ContributorInfo.rst)
+  (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/ContributorInfo.rst#reviewer-responsibilities)
 * generally cleaned up and streamlined the contributor guidelines  
   (see https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/ContributorInfo.rst)
 * improved the layout of documentation generated for the new compiler
