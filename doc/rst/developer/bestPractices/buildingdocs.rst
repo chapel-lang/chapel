@@ -75,7 +75,7 @@ Files that live in a repository
 ===============================
 Some of the documentation files are not converted into html files.  Instead
 they are raw html files in the chapel-www repository (currently only accessible
-by core developers) or raw .rst files that live in the public Github respository.
+by core developers) or raw .rst files that live in the public Github repository.
 
 Examples include:
  - https://chapel-lang.org/contributing.html
