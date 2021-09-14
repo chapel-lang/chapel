@@ -6,8 +6,7 @@ Using Chapel on Cray Systems
 
 The following information is assembled to help Chapel users get up and running
 on HPE Cray\ |reg| systems including the Cray XC\ |trade| and
-HPE Cray EX\ |trade|
-series systems.
+HPE Cray EX series systems.
 
 .. contents::
 
