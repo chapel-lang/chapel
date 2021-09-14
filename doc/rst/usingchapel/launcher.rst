@@ -213,6 +213,14 @@ Common Slurm Settings
 
     export CHPL_LAUNCHER_CONSTRAINT=cal
 
+* Optionally, you can specify a slurm account by setting the environment
+  variable ``CHPL_LAUNCHER_ACCOUNT``. For example, to use the account 'acct',
+  set:
+
+  .. code-block:: bash
+
+    export CHPL_LAUNCHER_ACCOUNT=acct
+
 * If the environment variable ``CHPL_LAUNCHER_USE_SBATCH`` is defined then
   sbatch is used to launch the job to the queue system, rather than
   running it interactively as usual. In this mode, the output will be
