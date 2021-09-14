@@ -4,10 +4,9 @@
 Using Chapel on Cray Systems
 ============================
 
-The following information is assembled to help Chapel users get up and running
-on HPE Cray\ |reg| systems including the Cray XC\ |trade| and
-HPE Cray EX\ |trade|
-series systems.
+The following information is assembled to help Chapel users get up
+and running on HPE Cray systems including the Cray XC and HPE Cray
+EX series systems.
 
 .. contents::
 
@@ -666,6 +665,3 @@ Known Constraints and Bugs
   above and/or the discussion of ``GASNET_MAX_SEGSIZE`` here::
 
      $CHPL_HOME/third-party/gasnet/gasnet-src/README
-
-.. |reg|    unicode:: U+000AE .. REGISTERED SIGN
-.. |trade|  unicode:: U+02122 .. TRADE MARK SIGN

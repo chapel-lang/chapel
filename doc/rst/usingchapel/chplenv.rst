@@ -87,8 +87,8 @@ CHPL_HOST_PLATFORM
         export CHPL_HOST_PLATFORM=`$CHPL_HOME/util/chplenv/chpl_platform.py`
 
    For other platforms that appear very similar to a UNIX workstation from the
-   shell prompt (e.g., a Cray CS\ |trade|), the value may need to be set
-   explicitly.  The strings for our currently-supported host platforms are as
+   shell prompt (e.g., a Cray CS, the value may need to be set explicitly.  The
+   strings for our currently-supported host platforms are as
    follows:
 
         ===========  ==================================
@@ -103,9 +103,10 @@ CHPL_HOST_PLATFORM
         netbsd64     64-bit NetBSD platforms
         pwr6         IBM Power6 SMP cluster
         sunos        SunOS platforms
-        cray-cs      Cray CS\ |trade|
-        cray-xc      Cray XC\ |trade|
-        hpe-cray-ex  HPE Cray EX\ |trade|
+        cray-cs      Cray CS
+        cray-xc      Cray XC
+        hpe-cray-ex  HPE Cray EX
+        hpe-apollo   HPE Apollo
         ===========  ==================================
 
    Platform-specific documentation is available for most of these platforms in
@@ -902,6 +903,3 @@ Variable precedence goes in the following order:
 2. Environment variables: ``CHPL_ENV=value``
 3. Chapel configuration file: ``~/.chplconfig``
 4. Inferred environment variables: ``printchplenv``
-
-
-.. |trade|  unicode:: U+02122 .. TRADE MARK SIGN
