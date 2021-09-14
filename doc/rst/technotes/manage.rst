@@ -24,7 +24,7 @@ block.
 The manager may optionally return a `resource`. If a developer wants
 to make use of the resource, they may capture it after the manager
 expression (the `myResource` declaration in the above example).
-The resource may be any type, and is the value returned by the
+The resource may be of any type, and is the value returned by the
 special method called ``enterThis()``.
 
 Any aggregate type may be used as a manager as long as it defines
