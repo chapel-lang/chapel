@@ -265,7 +265,7 @@ module ChapelHashtable {
       this.valType = valType;
       this.tableNumFullSlots = 0;
       this.tableNumDeletedSlots = 0;
-      this.tableSize = 0; // start at 32 to avoid too small of table sizes
+      this.tableSize = 32; // start at 32 to avoid too small of table sizes
       this.rehashHelpers = rehashHelpers;
       this.postponeResize = false;
       this.complete();
@@ -372,10 +372,10 @@ module ChapelHashtable {
     }
 
     iter _lookForSlots(key: keyType, numSlots = tableSize) {
+      if numSlots == 0 then return;
       var currentSlot = chpl__defaultHashWrapper(key):uint;
       const mask = numSlots-1;
 
-      if numSlots == 0 then return;
       foreach probe in 0..numSlots {
         var uprobe = probe:uint;
 
