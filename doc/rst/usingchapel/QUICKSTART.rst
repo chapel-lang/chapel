@@ -5,10 +5,10 @@ Chapel Quickstart Instructions
 
 These instructions are designed to help users get started with a
 single-locale (shared-memory) implementation of Chapel from the source
-distribution of the release as quickly as possible.  If you are
-interested in taking the time to understand Chapel's configuration
-options, build process, and installation more thoroughly, please refer
-to :ref:`readme-chplenv` and :ref:`readme-building` instead.
+distribution of the release as quickly as possible.  If you want to
+understand Chapel's configuration options, build process, and
+installation more thoroughly, please refer to :ref:`readme-chplenv`
+and :ref:`readme-building` instead.
 
 These instructions first have you build a minimal, stripped-down
 version of Chapel to reduce build times and the potential for
@@ -41,7 +41,7 @@ full-featured version of Chapel, refer to
          cd chapel-1.25.0
 
    c. Set up your environment for Chapel's Quickstart mode.
-      If you are using a shell other than ``bash``,
+      If you are using a shell other than ``bash`` or ``zsh``,
       see :ref:`quickstart-with-other-shells` below.
 
       .. code-block:: bash
@@ -101,7 +101,7 @@ rebuild Chapel from source in a different configuration:
 
   - set ``CHPL_LLVM=bundled`` to have Chapel build and use the bundled
     version of LLVM (note that building the bundled version of LLVM
-    can take a *long* time)
+    can take a long time)
 
   - set ``CHPL_LLVM=none`` to continue using the C back-end rather
     than LLVM
@@ -141,10 +141,11 @@ Using Chapel in a Different Shell or Terminal
 
 Note that in both the Quickstart and preferred modes above, any
 environment settings made by ``setchplenv.bash`` will not persist
-beyond your current shell / terminal session.  To use Chapel from a
-different shell or terminal, you will need to either re-``source`` the
-``setchplenv.bash`` script that you used when building Chapel or set
-up your environment to support additional shells automatically.  See
+beyond your current shell/terminal session.  One easy way to use
+Chapel from a different shell or terminal is to re-``source`` the
+``setchplenv.bash`` script that you used when building Chapel.
+However since this can quickly become annoying, other strategies are
+available including a ``./configure`` + ``make install`` option.  See
 :ref:`using-chapel-in-other-sessions` for details.
 
 
@@ -161,8 +162,9 @@ Notes on Performance
 --------------------
 
 If you plan to do performance studies of Chapel programs, be sure to
-use the full-featured version above and see
-https://chapel-lang.org/perf-tips.html for valuable tips.
+use the full-featured version above, to compile with ``--fast`` once
+your program is correct, and to refer to
+https://chapel-lang.org/perf-tips.html for other tips.
 
 
 .. _quickstart-with-other-shells:
@@ -170,9 +172,8 @@ https://chapel-lang.org/perf-tips.html for valuable tips.
 Quickstart with Other Shells
 ----------------------------
 
-If you use a shell other than ``bash``, see the table below to
-identify the location of an appropriate Quickstart ``setchplenv``
-script.
+Use the table below to identify the location of an appropriate
+Quickstart ``setchplenv`` script, based on the shell you use.
 
 ==================================== ==========================================
 **If you use:**                       **then type:**
@@ -183,8 +184,8 @@ the fish shell (fish)                ``. util/quickstart/setchplenv.fish``
 the Bourne shell (sh)                ``. util/quickstart/setchplenv.sh``
 ==================================== ==========================================
 
-Scripts that set the preferred environment for each of these shells
-can be found by removing ``quickstart/`` from the paths.
+Scripts that set the preferred environment for each shell can be
+located by removing ``quickstart/`` from the paths above.
 
 
 What's next?

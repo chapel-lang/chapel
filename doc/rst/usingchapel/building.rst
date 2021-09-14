@@ -94,8 +94,8 @@ Typically, this is accomplished in one of the following ways:
   standard technique is still required to ensure that ``chpl`` is in
   your path.
 
-* by installing Chapel to a specific location—perhaps one that is
-  already in your path—using the instructions in the next section.
+* by installing Chapel to a specific location that is in your path
+  using the instructions in the next section.
 
 
 .. _readme-installing:
@@ -193,9 +193,11 @@ Each target processes all subdirectories, then the current directory.
 Makefile Options
 ----------------
 
-The Chapel makefiles have a few options that enable or disable optimization,
-debugging support, profiling, and back-end C compiler warnings. The variables
-are described below. Set the value to 1 to enable the feature.
+The Chapel makefiles have a few options that enable or disable
+optimization, debugging support, profiling, and back-end C compiler
+warnings. The variables are described below. Set the value to 1 to
+enable the feature or 0 to disable it (e.g., ``make DEBUG=1 OPTIMIZE=1
+WARNINGS=0``).
 
   ========  ================================================================
   Option    Effect
