@@ -302,6 +302,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
       len += sprintf(iCom+len, "--partition=%s ", partition);
     if(exclude)
       len += sprintf(iCom+len, "--exclude=%s ", exclude);
+    if(projectString && strlen(projectString) > 0)
+      len += sprintf(iCom+len, "--account=%s ", projectString);
     if (constraint)
       len += sprintf(iCom+len, " -C %s", constraint);
     len += sprintf(iCom+len, " %s/%s/%s -n %d -N %d -c 0",
