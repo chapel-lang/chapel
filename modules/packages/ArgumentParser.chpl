@@ -236,7 +236,7 @@ module ArgumentParser {
         myArg._values.extend(args[pos..endPos]);
         return endPos + 1;
       } else {
-        // failed to match the cmd, this should happen
+        // failed to match the cmd, this should not happen
         return pos;
       }
     }
