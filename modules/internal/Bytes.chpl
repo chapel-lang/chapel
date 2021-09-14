@@ -1191,7 +1191,7 @@ module Bytes {
   //
 
   pragma "no doc"
-  inline proc bytes.hashThis(): uint {
+  inline proc bytes.hash(): uint {
     return getHash(this);
   }
 

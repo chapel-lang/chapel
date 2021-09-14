@@ -2516,7 +2516,7 @@ module String {
   //
 
   pragma "no doc"
-  inline proc string.hashThis(): uint {
+  inline proc string.hash(): uint {
     return getHash(this);
   }
 }

@@ -1596,10 +1596,10 @@ static void checkNotPod(AggregateType* at) {
 ************************************** | *************************************/
 
 static void buildRecordHashFunction(AggregateType *ct) {
-  if (functionExists("hashThis", dtMethodToken, ct))
+  if (functionExists("hash", dtMethodToken, ct))
     return;
 
-  FnSymbol *fn = new FnSymbol("hashThis");
+  FnSymbol *fn = new FnSymbol("hash");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
   ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "this", ct);
@@ -1625,11 +1625,11 @@ static void buildRecordHashFunction(AggregateType *ct) {
             field->hasFlag(FLAG_PARAM))) {
         CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg);
         if (first) {
-          call = new CallExpr("hashThis", gMethodToken, field_access);
+          call = new CallExpr("hash", gMethodToken, field_access);
           first = false;
         } else {
           call = new CallExpr("chpl__defaultHashCombine",
-                              new CallExpr("hashThis", gMethodToken, field_access),
+                              new CallExpr("hash", gMethodToken, field_access),
                               call,
                               new_IntSymbol(i));
         }

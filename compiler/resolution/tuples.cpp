@@ -470,11 +470,11 @@ instantiate_tuple_hash( FnSymbol* fn) {
   for (int i=0; i<ct->fields.length-1; i++) {
     CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i));
     if (first) {
-      call =  new CallExpr( "hashThis", gMethodToken, field_access);
+      call =  new CallExpr( "hash", gMethodToken, field_access);
       first = false;
     } else {
       call = new CallExpr( "chpl__defaultHashCombine",
-                           new CallExpr( "hashThis", gMethodToken, field_access),
+                           new CallExpr( "hash", gMethodToken, field_access),
                            call,
                            new_IntSymbol(i) );
     }
@@ -1077,7 +1077,7 @@ fixupTupleFunctions(FnSymbol* fn,
     return true;
   }
 
-  if (strcmp(fn->name, "hashThis") == 0 &&
+  if (strcmp(fn->name, "hash") == 0 &&
       fn->_this != nullptr &&
       fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_hash(newFn);

@@ -20,13 +20,13 @@
 
 // ChapelHashing.chpl
 //
-// hashThis and related functions
+// hash and related functions
 module ChapelHashing {
 
   use ChapelBase;
 
   proc chpl__defaultHashWrapper(x): int {
-    const hash = x.hashThis();
+    const hash = x.hash();
     return (hash & max(int)): int;
   }
 
@@ -58,65 +58,65 @@ module ChapelHashing {
     return _gen_key(a ^ chpl_bitops_rotl_64(b, n));
   }
 
-  inline proc bool.hashThis(): uint {
+  inline proc bool.hash(): uint {
     if (this) then
       return 0;
     else
       return 1;
   }
 
-  inline proc int.hashThis(): uint {
+  inline proc int.hash(): uint {
     return _gen_key(this);
   }
 
-  inline proc uint.hashThis(): uint {
+  inline proc uint.hash(): uint {
     return _gen_key(this);
   }
 
-  inline proc enum.hashThis(): uint {
+  inline proc enum.hash(): uint {
     return _gen_key(chpl__enumToOrder(this));
   }
 
-  inline proc real.hashThis(): uint {
+  inline proc real.hash(): uint {
     return _gen_key(__primitive( "real2int", this));
   }
 
-  inline proc complex.hashThis(): uint {
+  inline proc complex.hash(): uint {
     return _gen_key(__primitive("real2int", this.re) ^ __primitive("real2int", this.im));
   }
 
-  inline proc imag.hashThis(): uint {
+  inline proc imag.hash(): uint {
     return _gen_key(__primitive( "real2int", _i2r(this)));
   }
 
-  inline proc chpl_taskID_t.hashThis(): uint {
+  inline proc chpl_taskID_t.hash(): uint {
     return _gen_key(this:int);
   }
 
-  inline proc _array.hashThis(): uint {
+  inline proc _array.hash(): uint {
     var hash : uint = 0;
     var i = 1;
     for obj in this {
-      hash = chpl__defaultHashCombine(obj.hashThis(), hash, i);
+      hash = chpl__defaultHashCombine(obj.hash(), hash, i);
       i += 1;
     }
     return hash;
   }
 
   // Nilable and non-nilable classes will coerce to this.
-  inline proc (borrowed object?).hashThis(): uint {
+  inline proc (borrowed object?).hash(): uint {
     return _gen_key(__primitive( "object2int", this));
   }
 
-  inline proc locale.hashThis(): uint {
+  inline proc locale.hash(): uint {
     return _gen_key(__primitive( "object2int", this._value));
   }
 
   //
-  // Implementation of hashThis for ranges, in case the 'keyType'
+  // Implementation of hash for ranges, in case the 'keyType'
   // contains a range in some way (e.g. tuple of ranges).
   //
-  inline proc range.hashThis(): uint {
+  inline proc range.hash(): uint {
     use Reflection;
     var ret : uint;
     for param i in 1..numImplementationFields(this.type) {
@@ -124,7 +124,7 @@ module ChapelHashing {
          isType(getImplementationField(this, i)) == false &&
          isNothingType(getImplementationField(this, i).type) == false {
         const ref field = getImplementationField(this, i);
-        const fieldHash = field.hashThis();
+        const fieldHash = field.hash();
         if i == 1 then
           ret = fieldHash;
         else
@@ -135,13 +135,13 @@ module ChapelHashing {
   }
 
   // Is 'idxType' legal to create a default associative domain with?
-  // Currently based on the availability of hashThis().
+  // Currently based on the availability of hash().
   // Enumerated and sparse domains are handled separately.
   // Tuples and records also work, somehow.
   proc chpl__validDefaultAssocDomIdxType(type idxType) param return false;
 
   proc chpl__validDefaultAssocDomIdxType(type idxType) param where
-      // one check per an implementation of hashThis() above
+      // one check per an implementation of hash() above
       isBoolType(idxType)     ||
       isIntType(idxType)      ||
       isUintType(idxType)    ||

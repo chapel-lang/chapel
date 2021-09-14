@@ -13,8 +13,8 @@ record r {
 // There isn't a public interface for this yet, but we need to override the
 // hash function for 'r' in order to avoid hashing on the address contained
 // in 'c', which will vary from instance to instance.
-proc r.hashThis() {
-  return this.c.x.hashThis();
+proc r.hash() {
+  return this.c.x.hash();
 }
 
 operator r.==(lhs: r, rhs: r) {
