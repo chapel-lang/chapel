@@ -201,7 +201,30 @@ Using Chapel on a Cray System
         source util/setchplenv.bash
 
 
-2) Compile your Chapel program.  For example:
+2) On HPE Cray EX systems with ``CHPL_COMM=ofi``, optionally, load the
+   Cray PMI modules::
+
+      module load cray-pmi{,-lib}
+
+   Often this is not required.  Usually the default PMI support has
+   sufficient capabilities to support Chapel program startup.  But under
+   certain circumstances it does not, and when you run a Chapel program
+   that was built without these loaded you will see messages like this
+   one:
+
+   .. code-block:: sh
+
+      [PE_0]:_pmi2_add_kvs:ERROR: The KVS data segment of <num> entries
+      is not large enough.  Increase the number of KVS entries by
+      setting env variable PMI_MAX_KVS_ENTRIES to a higher value.
+
+   Having the Cray PMI modules loaded when the program is compiled will
+   prevent this problem.  We expect that eventually these modules will
+   be loaded by default on EX systems, but so far this has not been the
+   case.
+
+
+3) Compile your Chapel program.  For example:
 
    .. code-block:: sh
 
@@ -210,7 +233,7 @@ Using Chapel on a Cray System
    See :ref:`readme-compiling` or  ``man chpl`` for further details.
 
 
-3) If ``CHPL_LAUNCHER`` is set to anything other than ``none``, when you
+4) If ``CHPL_LAUNCHER`` is set to anything other than ``none``, when you
    compile a Chapel program for your Cray system, you will see two
    binaries (e.g., ``hello6-taskpar-dist`` and ``hello6-taskpar-dist_real``).
    The first binary contains code to launch the Chapel program onto
@@ -249,7 +272,7 @@ Using Chapel on a Cray System
    :ref:`readme-launcher`.
 
 
-4) Execute your Chapel program.  Multi-locale executions require the
+5) Execute your Chapel program.  Multi-locale executions require the
    number of locales (compute nodes) to be specified on the command
    line.  For example::
 
@@ -258,7 +281,7 @@ Using Chapel on a Cray System
    Requests the program to be executed using two locales.
 
 
-5) If your Cray system has compute nodes with varying numbers of
+6) If your Cray system has compute nodes with varying numbers of
    cores, you can request nodes with at least a certain number of
    cores using the variable ``CHPL_LAUNCHER_CORES_PER_LOCALE``.  For
    example, on a Cray system in which some compute nodes have 24 or
@@ -287,7 +310,7 @@ Using Chapel on a Cray System
    between Chapel launchers and workload managers.
 
 
-6) If your Cray system has compute nodes with varying numbers of CPUs
+7) If your Cray system has compute nodes with varying numbers of CPUs
    per compute unit, you can request nodes with a certain number of
    CPUs per compute unit using the variable ``CHPL_LAUNCHER_CPUS_PER_CU``.
    For example, on a Cray XC series system with some nodes having at
@@ -326,6 +349,19 @@ will make it impossible to launch onto the compute nodes.  In other
 cases, the launch will succeed, but any files read or written by the
 Chapel program will be opened relative to the compute node's file
 system rather than the login node's.
+
+
+-------------------------------------
+Special Notes for HPE Cray EX Systems
+-------------------------------------
+
+The gasnet communication layer has not yet been built or tested on EX
+systems, although we expect to add support in the future.
+
+The new PALS launcher for EX systems is supported by Chapel 1.24.0, but
+it has to be selected manually, by setting ``CHPL_LAUNCHER=pals``.  The
+default launcher selection does not pick it by default.  We expect to
+add that support in the future.
 
 
 ----------------------------------------------------
@@ -607,19 +643,6 @@ having enough memory.
 Note that for ``CHPL_COMM=gasnet``, ``CHPL_RT_MAX_HEAP_SIZE`` is
 synonymous with ``GASNET_MAX_SEGSIZE``, and the former overrides the
 latter if both are set.
-
-
--------------------------------------
-Special Notes for HPE Cray EX Systems
--------------------------------------
-
-The gasnet communication layer has not yet been built or tested on EX
-systems, although we expect to add support in the future.
-
-The new PALS launcher for EX systems is supported by Chapel 1.24.0, but
-it has to be selected manually, by setting ``CHPL_LAUNCHER=pals``.  The
-default launcher selection does not pick it by default.  We expect to
-add that support in the future.
 
 
 .. _readme-cray-constraints:
