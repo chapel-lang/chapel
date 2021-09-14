@@ -17,12 +17,12 @@ var r6 = new R(1, 0, 1);
 writeln( r6);
 
 
-var h1 = r1.hashThis();
-var h2 = r2.hashThis();
-var h3 = r3.hashThis();
-var h4 = r4.hashThis();
-var h5 = r5.hashThis();
-var h6 = r6.hashThis();
+var h1 = r1.hash();
+var h2 = r2.hash();
+var h3 = r3.hash();
+var h4 = r4.hash();
+var h5 = r5.hash();
+var h6 = r6.hash();
 
 
 if (h1==h2 || h1==h3 || h1==h4 || h1==h5 || h1==h6 ||
