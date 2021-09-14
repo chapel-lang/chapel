@@ -2,7 +2,7 @@ Chapel Contributors
 ===================
 
 The following people have contributed to the implementation of the
-most recent Chapel releases:
+most recent Chapel release:
 
 Contributors to the Chapel 1.25.0 release
 -----------------------------------------
