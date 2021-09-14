@@ -42,7 +42,7 @@ Packaging / Configuration Changes
 * new variables `CC`/`CXX` support specifying the paths to C/C++ compilers  
   (see https://chapel-lang.org/docs/1.25/usingchapel/chplenv.html#chpl-compiler)
 * added support for a new platform setting for HPE Apollo systems  
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.25/platforms/infiniband.html)
 * a C++14 compiler is now required to build the Chapel compiler  
   (see https://chapel-lang.org/docs/1.25/usingchapel/prereqs.html)
 * Python 3.7 is now required by tools like `c2chapel`, `chapeldoc`, etc.  
@@ -63,7 +63,7 @@ Semantic Changes / Changes to Chapel Language
 New Features
 ------------
 * added a prototypical new `manage` statement for context management  
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.25/technotes/manage.html)
 * added a `foreach` loop for task-less parallel loops  
   (see https://chapel-lang.org/docs/1.25/technotes/foreach.html)
 * added support for `extern union` to refer to external unions in C  
@@ -214,6 +214,9 @@ Documentation
 -------------
 * added a primer example on C interoperability  
   (see https://chapel-lang.org/docs/1.25/primers/interopWithC.html)
+* refreshed the Quickstart and 'Building Chapel' documents for clarity  
+  (see https://chapel-lang.org/docs/1.25/usingchapel/QUICKSTART.html  
+   and https://chapel-lang.org/docs/1.25/usingchapel/building.html)
 * added documentation for how to define operator methods for inheritance  
   (see https://chapel-lang.org/docs/1.25/technotes/operatorMethods.html#operator-methods-and-classes)
 * added `try...catch` and open-interval ranges to the Quick Reference document
@@ -296,7 +299,8 @@ Runtime Library Changes
 
 Launchers
 ---------
-* added support for a `--nodelist` option to the `slurm-gasnetrun` launchers
+* added support for a `--nodelist` option to the `slurm-gasnetrun` launchers  
+  (see https://chapel-lang.org/docs/1.25/usingchapel/launcher.html#using-slurm)
 
 Error Messages / Semantic Checks
 --------------------------------
