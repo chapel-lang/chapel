@@ -19,6 +19,10 @@ proc main() {
   parquetWriter.addColumn(strArr, 1, "str-col");
   parquetWriter.finish();
 
+  parquetWriter = new parquetFileWriter("str-file.parquet");
+  parquetWriter.addColumn(strArr, 0, "str-col");
+  parquetWriter.finish();
+
   pqReader = new parquetFileReader("test2.parquet");
   fromParquet = pqReader.readColumn(0);
   writeln(fromParquet);

@@ -8935,7 +8935,7 @@ module ArrowAll {
     }
   }
 
-  proc writeDistArray(A, filename) {
+  proc writeDistArrayParquet(A, filename) {
     var filenames: [0..#A.targetLocales().size] string;
     for i in 0..#A.targetLocales().size {
       var suffix = i: string;
