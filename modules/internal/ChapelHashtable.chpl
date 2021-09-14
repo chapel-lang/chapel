@@ -385,12 +385,15 @@ module ChapelHashtable {
     }
 
     iter _lookForSlots(key: keyType, numSlots = tableSize) {
-      const baseSlot = chpl__defaultHashWrapper(key):uint;
+      var currentSlot = chpl__defaultHashWrapper(key):uint;
+      const mask = numSlots-1;
+
       if numSlots == 0 then return;
-      foreach probe in 0..numSlots/2 {
+      foreach probe in 0..numSlots {
         var uprobe = probe:uint;
-        var n = numSlots:uint;
-        yield ((baseSlot + uprobe**2)%n):int;
+
+        yield ((baseSlot)&mask):int;
+        currentSlot+=uprobe;
       }
     }
 
