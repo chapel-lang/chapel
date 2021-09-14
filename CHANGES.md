@@ -79,7 +79,7 @@ Feature Improvements
   (e.g., `enum color { red }; var r: range(idxType=color);` now works)
 * added support for operators on scalar/tuple pairs in which coercion occurs  
   (e.g., `2 * (1.0, 2.0, 3.0)` now works, resulting in `(2.0, 4.0, 6.0)`)
-* improved the current prototype support for interfaces:
+* improved the current prototypical support for interfaces:
   - disabled automatic inference of `implements` statements
   - added support for interface methods
   - added support for calling functions defined within an interface
@@ -108,7 +108,7 @@ Name Changes in Libraries
 * renamed regular expression features from `Regexp`/`regexp` to `Regex`/`regex`
 * renamed the `reMatch` type in favor of `regexMatch` in the 'Regex' module  
   (see https://chapel-lang.org/docs/1.25/modules/standard/Regex.html#Regex.regexMatch)
-* naming changes in the 'BigInteger' module:
+* name changes in the 'BigInteger' module:
   - renamed enumerated type `Round` in favor of `round`  
     (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html#BigInteger.round)
   - renamed `bigint.div_q()` in favor of `bigint.divQ()`  
@@ -229,10 +229,14 @@ Documentation
   (see https://chapel-lang.org/docs/1.25/modules/standard/Regex.html#Regex.compile)
 * fixed the formatting of double-dash arguments on the online `chpl` man page  
   (see https://chapel-lang.org/docs/1.25/usingchapel/man.html)
+* clarified our requirements for using the LLVM back-end  
+  (see https://chapel-lang.org/docs/main/usingchapel/prereqs.html#readme-prereqs)
 * described the `make check` target in the 'Building Chapel' documentation  
   (see https://chapel-lang.org/docs/1.25/usingchapel/building.html#makefile-targets)
 * improved the language specification's formatting of reserved keywords  
   (see https://chapel-lang.org/docs/1.25/language/spec/lexical-structure.html#keywords)
+* updated the language spec to refer to a user-defined reduction example
+  (https://chapel-lang.org/docs/main/language/spec/user-defined-reductions-and-scans.html)
 * modestly improved the documentation for the 'IO' module
 * fixed the formatting of a list in the 'classes' primer
 * improved the docs for various library routines to reflect return types
