@@ -235,7 +235,7 @@ Documentation
   (see https://chapel-lang.org/docs/1.25/usingchapel/building.html#makefile-targets)
 * improved the language specification's formatting of reserved keywords  
   (see https://chapel-lang.org/docs/1.25/language/spec/lexical-structure.html#keywords)
-* updated the language spec to refer to a user-defined reduction example
+* updated the language spec to refer to a user-defined reduction example  
   (https://chapel-lang.org/docs/main/language/spec/user-defined-reductions-and-scans.html)
 * modestly improved the documentation for the 'IO' module
 * fixed the formatting of a list in the 'classes' primer
