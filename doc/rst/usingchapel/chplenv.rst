@@ -686,6 +686,9 @@ CHPL_LLVM
        system         find a compatible LLVM in system libraries;
                       note: the LLVM must be a version supported by Chapel
        none           do not support llvm/clang-related features
+       unset          indicates that no reasonable default has been
+                      inferred, requiring the user to intentionally select
+                      another option
        ============== ======================================================
 
    If unset, ``CHPL_LLVM`` defaults to:
@@ -772,8 +775,8 @@ value selects that flag.
 
 .. _readme-chplenv.chplconfig:
 
-Chapel Configuration File
--------------------------
+Chapel Configuration Files
+--------------------------
 
 The Chapel configuration file is a file named either ``chplconfig`` or
 ``.chplconfig`` that can store overrides of the inferred environment variables

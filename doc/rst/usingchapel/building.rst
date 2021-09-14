@@ -89,10 +89,10 @@ Typically, this is accomplished in one of the following ways:
   appropriate ``setchplenv.*`` script.
 
 * by creating a ``chplconfig`` file to store your preferred ``$CHPL_``
-  settings (see :ref:`chplconfig <readme-chplenv.chplconfig>` for
-  further details on creating a chplconfig file).  Note, however, that
-  some other technique would still be required to ensure that ``chpl``
-  is in your path.
+  settings (see :ref:`readme-chplenv.chplconfig` for further details
+  on creating a chplconfig file).  Note, however, that some other
+  standard technique is still required to ensure that ``chpl`` is in
+  your path.
 
 * by installing Chapel to a specific location—perhaps one that is
   already in your path—using the instructions in the next section.
@@ -114,8 +114,8 @@ Chapel can be built and installed to a specific location as follows:
 
 Running ``./configure`` will save your current configuration of
 ``$CHPL_`` settings into a ``chplconfig`` file.  Running it with the
-``--prefix`` or ``chpl-home`` options permits you to specify where and
-how Chapel should be installed during the ``make install`` step.
+``--prefix`` or ``--chpl-home`` options permits you to specify where
+and how Chapel should be installed during the ``make install`` step.
 Specifically:
 
 * ``--prefix=/dir/for/install/`` causes the Chapel compiler,
@@ -127,7 +127,7 @@ Specifically:
 
   This technique is designed to install Chapel using a standard
   directory structure for the purposes of integrating it into a
-  standard location that is already be in your path, such as
+  standard location that is already in your path, such as
   ``/usr/local/`` or ``~/``.  Note that elevated privileges are likely
   to be required for any system-wide installation locations.
 
@@ -149,6 +149,13 @@ the current set of ``CHPL_`` environment variables defined by—and
 inferred for—your environment.  To build support for additional
 configurations, you will need to modify your ``CHPL_`` environment
 variables and re-make.
+
+Once you have built multiple configurations, you can switch between
+them either by setting your ``CHPL_`` environment variables to the
+same values as when the configuration was built, or using the ``chpl``
+compiler's command-line options that correspond to the environment
+variables (see the 'Compiler Configuration Options' section of the
+:ref:`man-chpl` man page for details).
 
 
 ----------------
