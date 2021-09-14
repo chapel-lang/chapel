@@ -265,7 +265,7 @@ module ChapelHashtable {
       this.valType = valType;
       this.tableNumFullSlots = 0;
       this.tableNumDeletedSlots = 0;
-      this.tableSize = 32; // start at 32 to avoid too small of table sizes
+      this.tableSize = 0; // start at 32 to avoid too small of table sizes
       this.rehashHelpers = rehashHelpers;
       this.postponeResize = false;
       this.complete();
@@ -609,17 +609,19 @@ module ChapelHashtable {
 
     proc requestCapacity(numKeys:int) {
       if tableNumFullSlots < numKeys {
-        var pow2 = _findPowerOf2(numKeys);
-
-        rehash(pow2);
+        rehash(_findPowerOf2(numKeys));
       }
     }
 
     proc resize(grow:bool) {
       if postponeResize then return;
 
+      if tableSize == 0 {
+        rehash(2);
+        return;
+      }
       // double if you are growing, half if you are shrinking
-      var newSize = if grow then tableSize >> 1 else tableSize << 1;
+      var newSize = if grow then tableSize << 1 else tableSize >> 1;
 
       if grow==false && 2*tableNumFullSlots > newSize {
         // don't shrink if the number of elements would not
