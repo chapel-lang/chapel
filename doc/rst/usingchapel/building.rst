@@ -108,7 +108,7 @@ Chapel can be built and installed to a specific location as follows:
 
 .. code-block:: bash
 
-  ./configure  # use ``./configure --help`` for specific options
+  ./configure  # use './configure --help' for specific options
   make
   make install
 
