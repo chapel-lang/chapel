@@ -105,7 +105,7 @@ CHPL_HOST_PLATFORM
         sunos        SunOS platforms
         cray-cs      Cray CS\ |trade|
         cray-xc      Cray XC\ |trade|
-        hpe-cray-ex  HPE Cray EX\ |trade|
+        hpe-cray-ex  HPE Cray EX
         hpe-apollo   HPE Apollo
         ===========  ==================================
 
