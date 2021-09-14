@@ -206,10 +206,11 @@ Using Chapel on a Cray System
 
       module load cray-pmi{,-lib}
 
-   This is often not required.  Usually the default PMI modules have
-   sufficient capability to support Chapel program startup.  But under
-   certain circumstances, they do not and you will see messages of the
-   following form when you run a Chapel program:
+   Often this is not required.  Usually the default PMI support has
+   sufficient capabilities to support Chapel program startup.  But under
+   certain circumstances it does not, and when you run a Chapel program
+   that was built without these loaded you will see messages like this
+   one:
 
    .. code-block:: sh
 
@@ -217,10 +218,10 @@ Using Chapel on a Cray System
       is not large enough.  Increase the number of KVS entries by
       setting env variable PMI_MAX_KVS_ENTRIES to a higher value.
 
-   Having the Cray PMI modules loaded when the program is compiled and
-   run will prevent this problem.  We expect that eventually these
-   modules will be loaded by default on EX systems, but so far this has
-   not been the case.
+   Having the Cray PMI modules loaded when the program is compiled will
+   prevent this problem.  We expect that eventually these modules will
+   be loaded by default on EX systems, but so far this has not been the
+   case.
 
 
 3) Compile your Chapel program.  For example:
