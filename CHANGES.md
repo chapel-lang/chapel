@@ -1,9 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-- [ ] resolve TODOs below
-
 version 1.25.0
 ==============
 
