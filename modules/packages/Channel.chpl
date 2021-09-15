@@ -107,13 +107,13 @@ module Channel {
     and sending tasks.
     */
     pragma "no doc"
-    class WaiterQue {
+    class WaiterQueue {
         type eltType;
         var front : unmanaged Waiter(eltType)?;
         var back : unmanaged Waiter(eltType)?;
 
         /* Push the `waiter` into the queue */
-        proc enque(waiter : unmanaged Waiter(eltType)) {
+        proc enqueue(waiter : unmanaged Waiter(eltType)) {
             if front == nil {
                 front = waiter;
                 back = waiter;
@@ -130,7 +130,7 @@ module Channel {
         }
 
         /* Pop the first value from the queue */
-        proc deque() : unmanaged Waiter(eltType) {
+        proc dequeue() : unmanaged Waiter(eltType) {
             var waiter : unmanaged Waiter(eltType)?;
             if front == back {
                 waiter = front;
@@ -147,9 +147,9 @@ module Channel {
         }
 
         /* Remove the specified entry from the queue */
-        proc deque(waiter : unmanaged Waiter(eltType)) {
+        proc dequeue(waiter : unmanaged Waiter(eltType)) {
             if waiter == front {
-                deque();
+                dequeue();
             }
             else if waiter == back {
                 back = back!.prev;
@@ -181,9 +181,9 @@ module Channel {
         pragma "no doc"
         var closed = false;
         pragma "no doc"
-        var sendWaiters : WaiterQue;
+        var sendWaiters : WaiterQueue;
         pragma "no doc"
-        var recvWaiters : WaiterQue;
+        var recvWaiters : WaiterQueue;
         pragma "no doc"
         var lock$ = new _LockWrapper();
 
@@ -199,8 +199,8 @@ module Channel {
         proc init(type elt, size = 0) {
             eltType = elt;
             bufferSize = size;
-            sendWaiters = new WaiterQue(elt);
-            recvWaiters = new WaiterQue(elt);
+            sendWaiters = new WaiterQueue(elt);
+            recvWaiters = new WaiterQueue(elt);
         }
 
         pragma "no doc"
@@ -227,16 +227,16 @@ module Channel {
         */
 
         proc recv(out val : eltType) : bool {
-            return recv(val, false);
+            return recv(val, true);
         }
 
         pragma "no doc"
-        proc recv(out val : eltType, selected : bool) : bool {
-            if !selected then lock();
+        proc recv(out val : eltType, blocking : bool) : bool {
+            if blocking then lock();
 
             if closed && count == 0 {
-                if !selected then unlock();
-                if selected then return true;
+                if blocking then unlock();
+                if !blocking then return true;
                 else return false;
             }
 
@@ -244,14 +244,14 @@ module Channel {
                 if sendWaiters.front!.isSelectDone.deref().compareAndSwap(-1, sendWaiters.front!.selectId) {
                     break;
                 }
-                else sendWaiters.deque();
+                else sendWaiters.dequeue();
             }
 
             if count == 0 && sendWaiters.isEmpty() {
-                if selected then return false;
+                if !blocking then return false;
                 var process$ : single bool;
                 var processing = new unmanaged Waiter(val, process$);
-                recvWaiters.enque(processing);
+                recvWaiters.enqueue(processing);
                 unlock();
                 var status = processing.suspend();
                 delete processing;
@@ -263,7 +263,7 @@ module Channel {
             }
 
             if !sendWaiters.isEmpty() {
-                var sender = sendWaiters.deque();
+                var sender = sendWaiters.dequeue();
                 if bufferSize > 0 {
                     buffer[recvIdx] = sender.val.deref();
 
@@ -280,7 +280,7 @@ module Channel {
                 count -= 1;
 
             }
-            if !selected then unlock();
+            if blocking then unlock();
 
             return true;
 
@@ -300,15 +300,15 @@ module Channel {
 
         proc send(val : eltType) throws {
             var value = val;
-            send(value, false);
+            send(value, true);
         }
 
         pragma "no doc"
-        proc send(ref val : eltType, selected : bool) : bool throws {
-            if !selected then lock();
+        proc send(ref val : eltType, blocking : bool) : bool throws {
+            if blocking then lock();
 
             if closed {
-                if !selected then unlock();
+                if blocking then unlock();
                 throw new owned ChannelError("Trying to send on a closed channel");
             }
 
@@ -316,15 +316,15 @@ module Channel {
                 if recvWaiters.front!.isSelectDone.deref().compareAndSwap(-1, recvWaiters.front!.selectId) {
                     break;
                 }
-                else recvWaiters.deque();
+                else recvWaiters.dequeue();
             }
 
             if count == bufferSize && recvWaiters.isEmpty() {
-                if selected then return false;
+                if !blocking then return false;
                 var process$ : single bool;
                 var processing = new unmanaged Waiter(val, process$);
 
-                sendWaiters.enque(processing);
+                sendWaiters.enqueue(processing);
                 unlock();
                 var status = processing.suspend();
                 delete processing;
@@ -336,7 +336,7 @@ module Channel {
             }
             else {
                 if !recvWaiters.isEmpty() {
-                    var receiver = recvWaiters.deque();
+                    var receiver = recvWaiters.dequeue();
                     receiver.val.deref() = val;
 
                     receiver.release(true);
@@ -348,7 +348,7 @@ module Channel {
                     count += 1;
                 }
 
-                if !selected then unlock();
+                if blocking then unlock();
                 return true;
             }
         }
@@ -368,28 +368,28 @@ module Channel {
                 throw new owned ChannelError("Trying to close a closed channel");
             }
             closed = true;
-            var queued = new WaiterQue(eltType);
+            var queued = new WaiterQueue(eltType);
             while(!recvWaiters.isEmpty()) {
-                var receiver = recvWaiters.deque();
+                var receiver = recvWaiters.dequeue();
                 if(receiver.isSelect) {
                     if receiver.isSelectDone.deref().compareAndSwap(-1, receiver.selectId) then 
-                        queued.enque(receiver);
+                        queued.enqueue(receiver);
                 }
-                else queued.enque(receiver);
+                else queued.enqueue(receiver);
             }
 
             while(!sendWaiters.isEmpty()) {
-                var sender = sendWaiters.deque();
+                var sender = sendWaiters.dequeue();
                 if(sender.isSelect) {
                     if sender.isSelectDone.deref().compareAndSwap(-1, sender.selectId) then
-                        queued.enque(sender);
+                        queued.enqueue(sender);
                 }
-                else queued.enque(sender);
+                else queued.enqueue(sender);
             }
             unlock();
 
             while(!queued.isEmpty()) {
-                var waiter = queued.deque();
+                var waiter = queued.dequeue();
                 waiter.release(false);
             }
         }
@@ -427,8 +427,8 @@ module Channel {
         proc getId() : int { return 0; }
         proc sendRecv() : bool { return true; }
         proc getAddr() : c_uintptr { return 0 : c_uintptr; }
-        proc enqueWaiter(ref process$ : single bool, ref isDone : atomic int) { }
-        proc dequeWaiter() { }
+        proc enqueueWaiter(ref process$ : single bool, ref isDone : atomic int) { }
+        proc dequeueWaiter() { }
     }
 
     /* Enum to specify the operation in a select-case */
@@ -474,30 +474,30 @@ module Channel {
         /* Carry out the case operation and return the status */
         override proc sendRecv() : bool {
             if operation == selectOperation.recv {
-                return channel.recv(val.deref(),true);
+                return channel.recv(val.deref(), false);
             }
-            else return (try! channel.send(val.deref(), true));
+            else return (try! channel.send(val.deref(), false));
         }
         /* Retreive the address of the involved channel */
         override proc getAddr() : c_uintptr {
             return ((channel : c_void_ptr) : c_uintptr);
         }
 
-        override proc enqueWaiter(ref process$ : single bool, ref isDone : atomic int) {
+        override proc enqueueWaiter(ref process$ : single bool, ref isDone : atomic int) {
             waiter = new unmanaged Waiter(val, process$, isDone, id);
             if operation == selectOperation.recv {
-                channel.recvWaiters.enque(waiter!);
+                channel.recvWaiters.enqueue(waiter!);
             }
             else {
-                channel.sendWaiters.enque(waiter!);
+                channel.sendWaiters.enqueue(waiter!);
             }
         }
 
-        override proc dequeWaiter() {
+        override proc dequeueWaiter() {
             if operation == selectOperation.recv {
-                channel.recvWaiters.deque(waiter!);
+                channel.recvWaiters.dequeue(waiter!);
             }
-            else channel.sendWaiters.deque(waiter!);
+            else channel.sendWaiters.dequeue(waiter!);
             delete waiter;
         }
     }
@@ -565,14 +565,14 @@ module Channel {
             return done;
         }
 
-        /* If none of the channel was ready, enque the select task to each
+        /* If none of the channel was ready, enqueueue the select task to each
         channel's waiting queue and wait for other task to awaken us.
         */
         var isDone : atomic int = -1;
         var process$ : single bool;
 
         for case in cases {
-            cases.enqueWaiter(process$, isDone);
+            cases.enqueueWaiter(process$, isDone);
         }
 
         unlockSelect(lockOrder);
@@ -580,9 +580,9 @@ module Channel {
 
         lockSelect(lockOrder);
 
-        /* Deque the waiters from each involved case */
+        /* Dequeue the waiters from each involved case */
         for case in cases {
-            case.dequeWaiter();
+            case.dequeueWaiter();
         }
         unlockSelect(lockOrder);
         return isDone.read();
