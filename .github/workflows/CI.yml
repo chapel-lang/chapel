@@ -13,6 +13,8 @@ env:
   CHPL_SMOKE_SKIP_MAKE_CHECK: true
   CHPL_SMOKE_SKIP_MAKE_MASON: true
   CHPL_SMOKE_SKIP_DOC: true
+  # store the dependencies in one place
+  CHPL_APT_DEPS: gcc g++ m4 perl python3 python3-pip python3-venv python3-dev bash make mawk git pkg-config cmake llvm-11-dev llvm-11 llvm-11-tools clang-11 libclang-11-dev libedit-dev
 
 jobs:
   make_check:
@@ -21,19 +23,34 @@ jobs:
       CHPL_SMOKE_SKIP_MAKE_CHECK: false
     steps:
     - uses: actions/checkout@v2
+    - name: install deps
+      run: sudo apt-get install $CHPL_APT_DEPS
     - name: make check
       run: |
-        CHPL_LLVM=none ./util/buildRelease/smokeTest
+        ./util/buildRelease/smokeTest
 
   make_doc:
     runs-on: ubuntu-latest
     env:
+      # To try to keep this config from running the longest,
+      # use a simpler configuration
+      CHPL_TASKS: fifo
+      CHPL_MEM: cstdlib
+      CHPL_GMP: none
+      CHPL_RE2: bundled
+      CHPL_LLVM: none
+      # check that the docs build
       CHPL_SMOKE_SKIP_DOC: false
     steps:
     - uses: actions/checkout@v2
+    - name: install deps
+      run: sudo apt-get install cmake doxygen
+    - name: make libchplcomp-docs
+      run: |
+        make libchplcomp-docs
     - name: make check-chpldoc && make docs
       run: |
-        CHPL_LLVM=none ./util/buildRelease/smokeTest
+        ./util/buildRelease/smokeTest
     - name: upload docs
       uses: actions/upload-artifact@v2
       with:
@@ -43,30 +60,49 @@ jobs:
   make_mason:
     runs-on: ubuntu-latest
     env:
+      # To try to keep this config from running the longest,
+      # use a simpler configuration
+      CHPL_TASKS: fifo
+      CHPL_MEM: cstdlib
+      CHPL_GMP: none
+      CHPL_RE2: bundled
+      CHPL_LLVM: none
+      # check that mason builds
       CHPL_SMOKE_SKIP_MAKE_MASON: false
+      # run make check in this config too
+      # to get more coverage for quickstart and because it's
+      # not the slowest config
+      CHPL_SMOKE_SKIP_MAKE_CHECK: false
     steps:
     - uses: actions/checkout@v2
+      #    - name: install deps
+      #run: sudo apt-get install $CHPL_APT_DEPS
     - name: make mason
       run: |
-        CHPL_LLVM=none ./util/buildRelease/smokeTest
+        ./util/buildRelease/smokeTest
 
-  check_annotations:
+  check_compiler_tests:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: install deps
+      run: sudo apt-get install $CHPL_APT_DEPS
+    - name: make test-libchplcomp
+      run: |
+        make test-libchplcomp -j`util/buildRelease/chpl-make-cpu_count`
+
+  check_annotations_rt_calls:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 100000
-    - name: check annotations
-      run: |
-        CHPL_LLVM=none make test-venv
-        CHPL_LLVM=none CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
-
-  bad_rt_calls:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v2
     - name: install deps
       run: sudo apt-get install cscope
     - name: find bad runtime calls
       run: |
         ./util/devel/lookForBadRTCalls
+    - name: check annotations
+      run: |
+        CHPL_LLVM=none make test-venv
+        CHPL_LLVM=none CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
