@@ -38,12 +38,28 @@ mechanism, i.e., the first value sent to the channel will be received first.
 */
 
 module Channel {
-
+    import ChapelLocks;
     use CPtr;
     use Sort;
     use SysCTypes;
     use List;
     use Random;
+
+    pragma "no doc"
+    type _lockType = ChapelLocks.chpl_LocalSpinlock;
+
+    pragma "no doc"
+    class _LockWrapper {
+        var lock$ = new _lockType();
+
+        inline proc lock() {
+            lock$.lock();
+        }
+
+        inline proc unlock() {
+            lock$.unlock();
+        }
+    }
 
     pragma "no doc"
     class Waiter {
@@ -169,7 +185,7 @@ module Channel {
         pragma "no doc"
         var recvWaiters : WaiterQue;
         pragma "no doc"
-        var lock$ : sync bool;
+        var lock$ = new _LockWrapper();
 
         /*
         Initialize a channel
@@ -189,12 +205,12 @@ module Channel {
 
         pragma "no doc"
         proc lock() {
-            lock$.writeEF(true);
+            lock$.lock();
         }
 
         pragma "no doc"
         proc unlock() {
-            lock$.readFE();
+            lock$.unlock();
         }
 
         /*
