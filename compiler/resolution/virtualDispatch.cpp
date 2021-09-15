@@ -243,6 +243,7 @@ static void addToVirtualMaps(FnSymbol*      pfn,
                              FnSymbol*      cfn) {
 
   FnSymbol* fn = getInstantiatedFunction(pfn, ct, cfn);
+
   resolveOverride(pfn, fn);
 }
 
@@ -292,19 +293,6 @@ static void collectMethods(FnSymbol*               pfn,
                            "are not yet supported.");
           } else {
             methods.push_back(cfn);
-          }
-
-          // check to see if we are using defaulted actual fns
-          // for any of the formals in pfn. If so, make sure the
-          // corresponding ones exist for the child.
-          int nUserFormals = getNumUserFormals(pfn);
-          for (int i = 1; i <= nUserFormals; i++) {
-            ArgSymbol* pformal = getUserFormal(pfn, i);
-            ArgSymbol* cformal = getUserFormal(cfn, i);
-            FnSymbol* pDefFn = findExistingDefaultedActualFn(pfn, pformal);
-            if (pDefFn) {
-              getOrCreateDefaultedActualFn(cfn, cformal);
-            }
           }
         }
       }
@@ -468,6 +456,19 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
       evaluateWhereClause(pfn)) {
 
     resolveFunction(cfn);
+
+    // check to see if we are using defaulted actual fns
+    // for any of the formals in pfn. If so, make sure the
+    // corresponding ones exist for the child.
+    int nUserFormals = getNumUserFormals(pfn);
+    for (int i = 1; i <= nUserFormals; i++) {
+      ArgSymbol* pformal = getUserFormal(pfn, i);
+      ArgSymbol* cformal = getUserFormal(cfn, i);
+      FnSymbol* pDefFn = findExistingDefaultedActualFn(pfn, pformal);
+      if (pDefFn) {
+        getOrCreateDefaultedActualFn(cfn, cformal);
+      }
+    }
 
     if (checkOverrides(cfn) &&
         !ignoreOverrides(cfn) &&
