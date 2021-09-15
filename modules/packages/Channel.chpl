@@ -97,7 +97,7 @@ module Channel {
             return processPtr.deref().readFF();
         }
 
-        proc release(status : bool) {
+        proc notify(status : bool) {
             processPtr.deref().writeEF(status);
         }
     }
@@ -272,7 +272,7 @@ module Channel {
                 }
                 else val = sender.val.deref();
 
-                sender.release(true);
+                sender.notify(true);
             }
             else {
 
@@ -339,7 +339,7 @@ module Channel {
                     var receiver = recvWaiters.dequeue();
                     receiver.val.deref() = val;
 
-                    receiver.release(true);
+                    receiver.notify(true);
                 }
                 else {
                     buffer[sendIdx] = val;
@@ -390,7 +390,7 @@ module Channel {
 
             while(!queued.isEmpty()) {
                 var waiter = queued.dequeue();
-                waiter.release(false);
+                waiter.notify(false);
             }
         }
 
@@ -439,7 +439,7 @@ module Channel {
     class SelectCase : SelectBaseClass {
         type eltType;
         var val : c_ptr(eltType);
-        var channel : chan(eltType);
+        var channel : borrowed chan(eltType);
         var operation : selectOperation;
         var waiter : unmanaged Waiter(eltType)?;
         var id : int;
