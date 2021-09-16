@@ -1,0 +1,3 @@
+in Child.method arg=real(64)
+in Child.method arg=real(64)
+in Parent.method arg=int(64)

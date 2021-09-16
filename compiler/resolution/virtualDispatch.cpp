@@ -466,6 +466,11 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
             USR_FATAL_CONT(cfn, "param default arguments in overridden methods"
                                 " are not yet supported.");
           }
+          if (pFormal->hasFlag(FLAG_TYPE_VARIABLE) &&
+              cFormal->hasFlag(FLAG_TYPE_VARIABLE)) {
+            USR_FATAL_CONT(cfn, "type default arguments in overridden methods"
+                                " are not yet supported.");
+          }
         }
       }
     }
