@@ -69,7 +69,7 @@ check:
 	cd test && ./tester.sh
 
 check-compilation:
-	cd test && ./tester.sh compile # cd test && ./testCompilation.sh
+	cd test && ./tester.sh compile
 
 clean:
 	rm -rf $(INSTALL)
