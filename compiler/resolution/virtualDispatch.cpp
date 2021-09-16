@@ -286,14 +286,7 @@ static void collectMethods(FnSymbol*               pfn,
           }
         }
         if (possibleSignatureMatch(pfn, cfn) == true) {
-          if (cfn->retTag == RET_PARAM ||
-              cfn->retTag == RET_TYPE) {
-            USR_FATAL_CONT(cfn,
-                           "param default arguments in overridden methods "
-                           "are not yet supported.");
-          } else {
-            methods.push_back(cfn);
-          }
+          methods.push_back(cfn);
         }
       }
     }
@@ -462,11 +455,23 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
     // corresponding ones exist for the child.
     int nUserFormals = getNumUserFormals(pfn);
     for (int i = 1; i <= nUserFormals; i++) {
-      ArgSymbol* pformal = getUserFormal(pfn, i);
-      ArgSymbol* cformal = getUserFormal(cfn, i);
-      FnSymbol* pDefFn = findExistingDefaultedActualFn(pfn, pformal);
+      ArgSymbol* pFormal = getUserFormal(pfn, i);
+      ArgSymbol* cFormal = getUserFormal(cfn, i);
+      FnSymbol* pDefFn = findExistingDefaultedActualFn(pfn, pFormal);
       if (pDefFn) {
-        getOrCreateDefaultedActualFn(cfn, cformal);
+        FnSymbol* cDefFn = getOrCreateDefaultedActualFn(cfn, cFormal);
+        if (cDefFn) {
+          if (pFormal->hasFlag(FLAG_INSTANTIATED_PARAM) &&
+              cFormal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+            USR_FATAL_CONT(cfn, "param default arguments in overridden methods"
+                                " are not yet supported.");
+          }
+          if (pFormal->hasFlag(FLAG_TYPE_VARIABLE) &&
+              cFormal->hasFlag(FLAG_TYPE_VARIABLE)) {
+            USR_FATAL_CONT(cfn, "type default arguments in overridden methods"
+                                " are not yet supported.");
+          }
+        }
       }
     }
 
