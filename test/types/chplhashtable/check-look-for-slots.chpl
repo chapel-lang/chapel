@@ -10,7 +10,7 @@ var ht: chpl__hashtable(int, nothing);
 // It should always returns a value in 0..#numSlots
 
 for hash in (max(int)-3, max(int)-2, max(int)-1, max(int), 0, 1, 2, 3) {
-  for numSlots in (3, 7, 11, 19, 23, 31, 47, 83, 191, 383) {
+  for numSlots in (2, 4, 8, 16, 32, 64, 128, 256, 512, 1024) {
     var hits:[0..#numSlots] int;
     for i in ht._lookForSlots(hash, numSlots) {
       if verbose then
