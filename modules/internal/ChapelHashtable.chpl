@@ -265,7 +265,7 @@ module ChapelHashtable {
       this.valType = valType;
       this.tableNumFullSlots = 0;
       this.tableNumDeletedSlots = 0;
-      this.tableSize = 32; // start at 32 to avoid too small of table sizes
+      this.tableSize = 0;
       this.rehashHelpers = rehashHelpers;
       this.postponeResize = false;
       this.complete();
@@ -376,7 +376,7 @@ module ChapelHashtable {
       var currentSlot = chpl__defaultHashWrapper(key):uint;
       const mask = numSlots-1;
 
-      foreach probe in 0..numSlots {
+      foreach probe in 1..numSlots {
         var uprobe = probe:uint;
 
         yield ((currentSlot)&mask):int;
@@ -615,13 +615,9 @@ module ChapelHashtable {
 
     proc resize(grow:bool) {
       if postponeResize then return;
-
-      if tableSize == 0 {
-        rehash(2);
-        return;
-      }
+      
       // double if you are growing, half if you are shrinking
-      var newSize = if grow then tableSize << 1 else tableSize >> 1;
+      var newSize = if tableSize == 0 then 32 else if grow then tableSize << 1 else tableSize >> 1;
 
       if grow==false && 2*tableNumFullSlots > newSize {
         // don't shrink if the number of elements would not
