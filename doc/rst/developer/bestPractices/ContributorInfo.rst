@@ -112,7 +112,9 @@ decisions. Here are some strategies to make a good design issue:
   * Use a prefix of ``[Design]`` in the subject header.
   * Include a short summary of the topic, potentially including motivation
     and/or an example.
+
       - This should not be a copy/paste of the issue contents.
+
   * Include a link to your issue.
   * Ask for people to volunteer to be involved in design discussions.
 
@@ -259,8 +261,7 @@ pass testing for ``start_test -performance``).
 
 .. _Creating a Simple Test: https://github.com/chapel-lang/chapel/blob/main/doc/rst/developer/bestPractices/TestSystem.rst#creating-a-simple-test
 
-
-.. _Contributing changes
+.. _Contributing changes:
 
 Contributing changes
 --------------------
@@ -655,7 +656,7 @@ Reviewer responsibilities
 
   git checkout -b contribusername-prbranchname main
   git pull https://github.com/contribusername/chapel.git prbranchname
-  // don't forget to recompile before you test
+  # don't forget to recompile before you test
 
 
 * If you're reviewing a commit from a developer outside the Chapel core

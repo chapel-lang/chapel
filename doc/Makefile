@@ -38,9 +38,9 @@ SPEC_BUILD_DIR = ../build/doc/language/spec
 SPEC_RST_DIR = $(SOURCEDIR)/language/spec
 
 COMPILER_INTERNALS_DOXYGEN = ../build/doc/doxygen
-COMPILER_INTERNALS_SRC_DOXYGEN = $(SOURCEDIR)/../templates/compiler-internals-doxygen
-COMPILER_INTERNALS_SRC_NO_DOXYGEN = $(SOURCEDIR)/../templates/compiler-internals-no-doxygen
-COMPILER_INTERNALS = $(SOURCEDIR)/compiler-internals
+COMPILER_INTERNALS_SRC_DOXYGEN = $(SOURCEDIR)/meta/compiler-internals-doxygen
+COMPILER_INTERNALS_SRC_NO_DOXYGEN = $(SOURCEDIR)/meta/compiler-internals-no-doxygen
+COMPILER_INTERNALS = $(SOURCEDIR)/developer/compiler-internals
 
 help: help-sphinx help-source
 
