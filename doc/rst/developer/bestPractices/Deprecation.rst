@@ -1,3 +1,5 @@
+.. _best-practices-deprecation:
+
 Chapel's Deprecation Policy
 ===========================
 
@@ -16,7 +18,7 @@ This is the deprecation process:
 
 The deprecation message uses the following format:
 
-..code-block::
+.. code-block::
 
     foo is deprecated - please use bar
 
@@ -34,7 +36,7 @@ The deprecation message uses the following format:
 
 For example:
 
-..code-block:: rst
+.. code-block:: rst
 
     Foo module short description.
 

@@ -1,3 +1,5 @@
+.. _best-practices-test-annotations-locally:
+
 How to test ANNOTATIONS.yaml changes locally
 ============================================
 

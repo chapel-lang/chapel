@@ -1,3 +1,5 @@
+.. _best-practices-runtime-library:
+
 ==========================
 The Chapel Runtime Library
 ==========================

@@ -1,3 +1,5 @@
+.. _best-practices-standard-module-style:
+
 Standard Module Style
 =====================
 

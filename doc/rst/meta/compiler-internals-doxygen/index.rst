@@ -1,7 +1,7 @@
 .. _compiler-internals-index:
 
-Compiler Internals
-||||||||||||||||||
+Compiler Library API Docs
+=========================
 
 This section documents the various functions and types of the
 new compiler.

@@ -1,3 +1,5 @@
+.. _best-practices-git:
+
 Git tips for Chapel developers
 ==============================
 
@@ -444,7 +446,7 @@ Other logging commands
 To view commits grouped by author (for example, show me commits by author from
 1.9.0.1 tag to now):
 
-.. code-block:: bash
+.. code-block::
 
     git shortlog --numbered --no-merges
 

@@ -1,3 +1,5 @@
+.. _best-practices-contributor-info:
+
 Contributor Info
 ================
 
