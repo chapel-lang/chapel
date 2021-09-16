@@ -251,7 +251,6 @@ module ChapelHashtable {
     var tableNumFullSlots: int;
     var tableNumDeletedSlots: int;
 
-    var tableSizeNum: int;
     var tableSize: int;
     var table: _ddata(chpl_TableEntry(keyType, valType)); // 0..<tableSize
 
@@ -492,7 +491,7 @@ module ChapelHashtable {
     }
 
     proc maybeShrinkAfterRemove() {
-      if (tableNumFullSlots*8 < tableSize && tableSizeNum > 0) {
+      if (tableNumFullSlots*8 < tableSize) {
         resize(grow=false);
       }
     }
