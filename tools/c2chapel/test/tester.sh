@@ -20,16 +20,20 @@ if [[ "$1" ]]; then
     echo 'Testing that generated files compile...'
 
     for f in *.chpl ; do
-        printf "compiling $f: "
-        if chpl "$f"; then
-            printf "${GREEN}OK${NORMAL}\n"
+        if [ -f "$f.no_compile" ]; then
+            echo "not compiling $f"
         else
-            printf "compiling $f: ${RED}ERROR${NORMAL}\n"
-            numFailures=$((numFailures+1))
+            printf "compiling $f: "
+            if chpl "$f"; then
+                printf "${GREEN}OK${NORMAL}\n"
+                title=`basename $f .chpl`
+                rm "$title"
+            else
+                printf "compiling $f: ${RED}ERROR${NORMAL}\n"
+                numFailures=$((numFailures+1))
+            fi
+            numTotal=$((numTotal+1))
         fi
-        numTotal=$((numTotal+1))
-        title=`basename $f .chpl`
-        rm "$title"
     done
 
     if [ "$numFailures" -eq "0" ]; then
