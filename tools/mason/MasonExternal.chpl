@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-/* Version as of Chapel 1.22 - to be updated each release */
-const spackVersion = '0.15.0';
+/* Version as of Chapel 1.25 - to be updated each release */
+const spackVersion = '0.16.2';
 const v = spackVersion.split('.');
 const major = v[0];
 const minor = v[1];
