@@ -72,8 +72,14 @@ proc masonExternal(args: [] string) {
     exit(0);
   }
 
-  if versionFlag.valueAsBool() then printSpackVersion();
-  if specFlag.valueAsBool() then specHelp();
+  if versionFlag.valueAsBool() {
+    printSpackVersion();
+    exit(0);
+  }
+  if specFlag.valueAsBool() {
+    specHelp();
+    exit(0);
+  }
 
   try! {
     if setupFlag.valueAsBool() {
@@ -143,7 +149,7 @@ proc masonExternal(args: [] string) {
         when "info" do spkgInfo(cmdArgs);
         when "find" do findSpkg(cmdArgs);
         otherwise {
-          writeln('error: no such subcommand');
+          writeln('error: no such subcommand %s'.format(usedCmd));
           writeln('try mason external --help');
           exit(1);
         }
