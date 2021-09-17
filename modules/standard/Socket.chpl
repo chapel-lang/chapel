@@ -337,26 +337,6 @@ proc deinit() {
   libevent_global_shutdown();
 }
 
-class EventHelper {
-  var localSync$: sync c_short;
-  var internalEvent:c_ptr(event) = nil;
-
-  pragma "no doc"
-  proc init(socketFd: c_int, events: c_short) {
-    this.localSync$ = 0;
-    this.localSync$.readFE();
-    this.internalEvent = event_new(event_loop_base, socketFd, events, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
-  }
-
-  proc deinit() {
-    event_free(this.internalEvent);
-  }
-}
-
-override proc EventHelper.writeThis(f) throws {
-  f.write("(","localSync$:",this.localSync$.readXX(),")");
-}
-
 /*
   A record holding reference to a tcp socket
   bound and listening for connections.
@@ -366,12 +346,10 @@ record tcpListener {
     File Descriptor Associated with instance
   */
   var socketFd: int(32) = -1;
-  var listenerHelper: shared EventHelper;
 
   pragma "no doc"
   proc init(socketFd: c_int) {
     this.socketFd = socketFd;
-    this.listenerHelper = new shared EventHelper(this.socketFd, EV_READ | EV_TIMEOUT);
   }
 }
 
@@ -391,7 +369,7 @@ record tcpListener {
   :throws Error: Upon timeout completion without
                   any new connection
 */
-proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)) throws {
+proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws {
   var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
   var fdOut:fd_t;
   var err_out:err_t = 0;
@@ -402,23 +380,40 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)) throws {
   if err_out == 0 {
     return openfd(fdOut):tcpConn;
   }
+  var localSync$: sync c_short;
+  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  defer {
+    event_free(internalEvent);
+  }
+  var t: Timer;
+  t.start();
   if timeout.tv_sec == -1 {
-    event_remove_timer(this.listenerHelper.internalEvent);
-    err_out = event_add(this.listenerHelper.internalEvent, nil);
+    err_out = event_add(internalEvent, nil);
   }
   else {
-    err_out = event_add(this.listenerHelper.internalEvent, c_ptrTo(timeout));
+    err_out = event_add(internalEvent, c_ptrTo(timeout));
   }
   if err_out != 0 {
     throw new Error("accept() failed");
   }
-  var retval = this.listenerHelper.localSync$.readFE();
+  var retval = localSync$.readFE();
+  t.stop();
   if retval & EV_TIMEOUT != 0 {
     throw SystemError.fromSyserr(ETIMEDOUT, "accept() timed out");
   }
+  var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
   err_out = sys_accept(socketFd, client_addr, fdOut);
   if err_out != 0 {
-    throw SystemError.fromSyserr(err_out, "accept() failed");
+    if timeout.tv_sec == -1 {
+      var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
+      if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
+        const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
+        const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
+        return this.accept(new timeval(remainingSeconds, remainingMicroSeconds));
+      }
+      throw SystemError.fromSyserr(err_out, "accept() failed");
+    }
+    return this.accept();
   }
   return openfd(fdOut):tcpConn;
 }
@@ -639,13 +634,10 @@ record udpSocket {
     File Descriptor Associated with instance
   */
   var socketFd: int(32);
-  var readHelper, writeHelper: shared EventHelper;
   /* Create a UDP socket of provided Family. */
   proc init(family: IPFamily = IPFamily.IPv4) {
     this.socketFd = -1;
     try! this.socketFd = socket(family, SOCK_DGRAM);
-    this.readHelper = new shared EventHelper(this.socketFd, EV_READ | EV_TIMEOUT);
-    this.writeHelper = new shared EventHelper(this.socketFd, EV_WRITE | EV_TIMEOUT);
   }
 }
 
@@ -677,7 +669,7 @@ private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:size_t, flags
   :throws SystemError: Upon failure to receive any data
                     within given `timeout`.
 */
-proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0), flags:c_int = 0) throws {
+proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0), flags:c_int = 0):(bytes, ipAddr) throws {
   var err_out:err_t = 0;
   var buffer = c_calloc(c_uchar, bufferLen);
   var length:ssize_t;
@@ -690,26 +682,43 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0), flags:c_
     c_free(buffer);
     throw SystemError.fromSyserr(err_out,"recv failed");
   }
+  var localSync$: sync c_short;
+  var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  defer {
+    event_free(internalEvent);
+  }
+  var t: Timer;
+  t.start();
   if timeout.tv_sec == -1 {
-    event_remove_timer(this.readHelper.internalEvent);
-    err_out = event_add(this.readHelper.internalEvent, nil);
+    err_out = event_add(internalEvent, nil);
   }
   else {
-    err_out = event_add(this.readHelper.internalEvent, c_ptrTo(timeout));
+    err_out = event_add(internalEvent, c_ptrTo(timeout));
   }
   if err_out != 0 {
     c_free(buffer);
     throw new Error("recv failed");
   }
-  var retval = this.readHelper.localSync$.readFE();
+  var retval = localSync$.readFE();
+  t.stop();
   if retval & EV_TIMEOUT != 0 {
     c_free(buffer);
     throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
   }
+  var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
   err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:size_t, 0, addressStorage, length);
   if err_out != 0 {
-    c_free(buffer);
-    throw SystemError.fromSyserr(err_out, "recv failed");
+    if timeout.tv_sec == -1 {
+      var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
+      if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
+        const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
+        const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
+        return this.recvfrom(bufferLen, new timeval(remainingSeconds, remainingMicroSeconds), flags);
+      }
+      c_free(buffer);
+      throw SystemError.fromSyserr(err_out, "recv failed");
+    }
+    return this.recvfrom(bufferLen, timeout, flags);
   }
   return (createBytesWithOwnedBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
 }
@@ -763,7 +772,7 @@ private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c
   :throws SystemError: Upon failure to send any data
                         within given `timeout`.
 */
-proc udpSocket.send(data: bytes, in address: ipAddr, in timeout = new timeval(-1,0)) throws {
+proc udpSocket.send(data: bytes, in address: ipAddr, in timeout = new timeval(-1,0)):ssize_t throws {
   var err_out:err_t = 0;
   var length:ssize_t;
   err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
@@ -773,23 +782,40 @@ proc udpSocket.send(data: bytes, in address: ipAddr, in timeout = new timeval(-1
   if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
     throw SystemError.fromSyserr(err_out, "send failed");
   }
+  var localSync$: sync c_short;
+  var internalEvent = event_new(event_loop_base, this.socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  defer {
+    event_free(internalEvent);
+  }
+  var t: Timer;
+  t.start();
   if timeout.tv_sec == -1 {
-    event_remove_timer(this.writeHelper.internalEvent);
-    err_out = event_add(this.writeHelper.internalEvent, nil);
+    err_out = event_add(internalEvent, nil);
   }
   else {
-    err_out = event_add(this.writeHelper.internalEvent, c_ptrTo(timeout));
+    err_out = event_add(internalEvent, c_ptrTo(timeout));
   }
   if err_out != 0 {
     throw SystemError.fromSyserr(err_out, "send failed");
   }
-  var retval = this.readHelper.localSync$.readFE();
+  var retval = localSync$.readFE();
+  t.stop();
   if retval & EV_TIMEOUT != 0 {
     throw SystemError.fromSyserr(ETIMEDOUT, "send timed out");
   }
+  var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
   err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
   if err_out != 0 {
-    throw SystemError.fromSyserr(err_out, "send failed");
+    if timeout.tv_sec == -1 {
+      var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
+      if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
+        const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
+        const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
+        return this.send(data, address, new timeval(remainingSeconds, remainingMicroSeconds));
+      }
+      throw SystemError.fromSyserr(err_out, "send failed");
+    }
+    return this.send(data, address, timeout);
   }
   return length;
 }
