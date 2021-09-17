@@ -373,20 +373,26 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws 
   var client_addr:sys_sockaddr_t = new sys_sockaddr_t();
   var fdOut:fd_t;
   var err_out:err_t = 0;
+  // try accept
   err_out = sys_accept(socketFd, client_addr, fdOut);
+  // if error is not about blocking throw error
   if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
     throw SystemError.fromSyserr(err_out, "accept() failed");
   }
+  // successfully return file
   if err_out == 0 {
     return openfd(fdOut):tcpConn;
   }
   var localSync$: sync c_short;
+  // create event pending state
   var internalEvent = event_new(event_loop_base, this.socketFd, EV_READ | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
   defer {
+    // cleanup
     event_free(internalEvent);
   }
   var t: Timer;
   t.start();
+  // make event active
   if timeout.tv_sec == -1 {
     err_out = event_add(internalEvent, nil);
   }
@@ -396,17 +402,27 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws 
   if err_out != 0 {
     throw new Error("accept() failed");
   }
+  // return value
   var retval = localSync$.readFE();
+  // stop timer
   t.stop();
+  // if error was timeout throw error
   if retval & EV_TIMEOUT != 0 {
     throw SystemError.fromSyserr(ETIMEDOUT, "accept() timed out");
   }
   var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
+  // try accept again
   err_out = sys_accept(socketFd, client_addr, fdOut);
   if err_out != 0 {
+    // error was not about blocking wait so throw it
+    if err_out != EAGAIN && err_out != EWOULDBLOCK {
+      throw SystemError.fromSyserr(err_out, "accept() failed");
+    }
+    // no indefinitely blocking wait
     if timeout.tv_sec == -1 {
       var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
-      if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
+      // timer didn't elapsed
+      if totalTimeout > t.elapsed(TimeUnits.microseconds) {
         const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
         const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
         return this.accept(new timeval(remainingSeconds, remainingMicroSeconds));
@@ -708,6 +724,10 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0), flags:c_
   var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
   err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:size_t, 0, addressStorage, length);
   if err_out != 0 {
+    if err_out != EAGAIN && err_out != EWOULDBLOCK {
+      c_free(buffer);
+      throw SystemError.fromSyserr(err_out,"recv failed");
+    }
     if timeout.tv_sec == -1 {
       var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
       if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
@@ -806,6 +826,9 @@ proc udpSocket.send(data: bytes, in address: ipAddr, in timeout = new timeval(-1
   var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
   err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
   if err_out != 0 {
+    if err_out != EAGAIN && err_out != EWOULDBLOCK {
+      throw SystemError.fromSyserr(err_out, "send failed");
+    }
     if timeout.tv_sec == -1 {
       var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
       if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
