@@ -122,6 +122,13 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   formalIdx = 0;
   actualIdx = 0;
   for (const CallInfoActual& actual : call.actuals) {
+    if (formalIdx >= byFormalIdx.size()) {
+      // too many actuals
+      mappingIsValid = false;
+      failingActualIdx = actualIdx;
+      return false;
+    }
+
     if (actual.byName.isEmpty()) {
       // Skip any formals already matched to named arguments
       while (byFormalIdx[formalIdx].actualIdx >= 0) {
