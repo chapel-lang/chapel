@@ -243,6 +243,7 @@ static void addToVirtualMaps(FnSymbol*      pfn,
                              FnSymbol*      cfn) {
 
   FnSymbol* fn = getInstantiatedFunction(pfn, ct, cfn);
+
   resolveOverride(pfn, fn);
 }
 
@@ -285,27 +286,7 @@ static void collectMethods(FnSymbol*               pfn,
           }
         }
         if (possibleSignatureMatch(pfn, cfn) == true) {
-          if (cfn->retTag == RET_PARAM ||
-              cfn->retTag == RET_TYPE) {
-            USR_FATAL_CONT(cfn,
-                           "param default arguments in overridden methods "
-                           "are not yet supported.");
-          } else {
-            methods.push_back(cfn);
-          }
-
-          // check to see if we are using defaulted actual fns
-          // for any of the formals in pfn. If so, make sure the
-          // corresponding ones exist for the child.
-          int nUserFormals = getNumUserFormals(pfn);
-          for (int i = 1; i <= nUserFormals; i++) {
-            ArgSymbol* pformal = getUserFormal(pfn, i);
-            ArgSymbol* cformal = getUserFormal(cfn, i);
-            FnSymbol* pDefFn = findExistingDefaultedActualFn(pfn, pformal);
-            if (pDefFn) {
-              getOrCreateDefaultedActualFn(cfn, cformal);
-            }
-          }
+          methods.push_back(cfn);
         }
       }
     }
@@ -468,6 +449,31 @@ static void resolveOverride(FnSymbol* pfn, FnSymbol* cfn) {
       evaluateWhereClause(pfn)) {
 
     resolveFunction(cfn);
+
+    // check to see if we are using defaulted actual fns
+    // for any of the formals in pfn. If so, make sure the
+    // corresponding ones exist for the child.
+    int nUserFormals = getNumUserFormals(pfn);
+    for (int i = 1; i <= nUserFormals; i++) {
+      ArgSymbol* pFormal = getUserFormal(pfn, i);
+      ArgSymbol* cFormal = getUserFormal(cfn, i);
+      FnSymbol* pDefFn = findExistingDefaultedActualFn(pfn, pFormal);
+      if (pDefFn) {
+        FnSymbol* cDefFn = getOrCreateDefaultedActualFn(cfn, cFormal);
+        if (cDefFn) {
+          if (pFormal->hasFlag(FLAG_INSTANTIATED_PARAM) &&
+              cFormal->hasFlag(FLAG_INSTANTIATED_PARAM)) {
+            USR_FATAL_CONT(cfn, "param default arguments in overridden methods"
+                                " are not yet supported.");
+          }
+          if (pFormal->hasFlag(FLAG_TYPE_VARIABLE) &&
+              cFormal->hasFlag(FLAG_TYPE_VARIABLE)) {
+            USR_FATAL_CONT(cfn, "type default arguments in overridden methods"
+                                " are not yet supported.");
+          }
+        }
+      }
+    }
 
     if (checkOverrides(cfn) &&
         !ignoreOverrides(cfn) &&
