@@ -30,4 +30,6 @@ proc main() {
   writeln(pqReader.readColumn(2));
 
   pqReader.writeSchema();
+
+  writeln(pqReader.readColumnByName("first-int-col"));
 }

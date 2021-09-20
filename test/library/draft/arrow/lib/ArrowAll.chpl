@@ -8984,6 +8984,20 @@ module ArrowAll {
       }
       return ret;
     }
+
+    proc readColumnByName(colName: string) {
+      var col = garrow_schema_get_field_index(schema, colName.buff: c_ptr(gchar)):int;
+      if col == -1 then writeln("error: column not found");
+      var error: GErrorPtr;
+      var chunk = gparquet_arrow_file_reader_read_column_data(pqFileReader, col: gint, c_ptrTo(error));
+      var len = garrow_chunked_array_get_n_rows(chunk);
+      var ret: [0..#len] int;
+      var loc = garrow_chunked_array_get_chunk(chunk, 0:guint):c_ptr(GArrowInt64Array);
+      forall i in 0..#len {
+        ret[i] = garrow_int64_array_get_value(loc, i);
+      }
+      return ret;
+    }
     
     proc readColumnStr(col: int) {
       var error: GErrorPtr;
