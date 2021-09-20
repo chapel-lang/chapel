@@ -684,6 +684,44 @@ static void test13() {
   assert(match.found == InnermostMatch::ONE);
 }
 
+// test import of an ambiguous function name
+static void test14() {
+  printf("test14\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::build(context, "test14.chpl");
+  std::string contents = "module M {\n"
+                         "  import N.f;\n"
+                         "  f;\n"
+                         "}\n"
+                         "module N {\n"
+                         "  proc f(arg: int) { }\n"
+                         "  proc f(arg: string) { }\n"
+                         "}\n";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 2);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 2);
+  const Module* n = vec[1]->toModule();
+  assert(n);
+  assert(n->numStmts() == 2);
+
+  const Identifier* fIdent = m->stmt(1)->toIdentifier();
+  assert(fIdent);
+
+  const Scope* scopeForIdent = scopeForId(context, fIdent->id());
+  assert(scopeForIdent);
+
+  const auto& match = findInnermostDecl(context, scopeForIdent, fIdent->name());
+  assert(match.found == InnermostMatch::MANY);
+}
+
+
 int main() {
   test1();
   test2();
@@ -698,6 +736,7 @@ int main() {
   test11();
   test12();
   test13();
+  test14();
 
   return 0;
 }
