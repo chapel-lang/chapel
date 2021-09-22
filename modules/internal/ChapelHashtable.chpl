@@ -378,7 +378,7 @@ module ChapelHashtable {
       foreach probe in 1..numSlots {
         var uprobe = probe:uint;
 
-        yield ((currentSlot)&mask):int;
+        yield (currentSlot&mask):int;
         currentSlot+=uprobe;
       }
     }
