@@ -401,184 +401,22 @@ otherwise. This method is non-blocking and the state of the sync or
 single variable is unchanged when this method completes.
 
 .. _Atomic_Variables:
+.. _Functions_on_Atomic_Variables:
 
 Atomic Variables
 ----------------
 
-Atomic variables are variables that support atomic operations. Chapel
-currently supports atomic operations for bools, all supported sizes of
-signed and unsigned integers, as well as all supported sizes of reals.
-
-   *Rationale*.
-
-   The choice of supported atomic variable types as well as the atomic
-   operations was strongly influenced by the C11 standard.
-
-Atomic is a type qualifier that precedes the variable’s type in the
-declaration. Atomic operations are supported for bools, and all sizes of
-ints, uints, and reals.
-
-An atomic variable is specified with an atomic type given by the
-following syntax:
-
-
+``atomic`` is a type qualifier that precedes the variable’s type in the
+declaration.  An atomic variable is specified with an atomic type given
+by the following syntax:
 
 .. code-block:: syntax
 
    atomic-type:
      'atomic' type-expression
 
-.. _Functions_on_Atomic_Variables:
 
-Predefined Atomic Methods
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The following methods are defined for variables of atomic type. Note
-that not all operations are supported for all atomic types. The
-supported types are listed for each method.
-
-Most of the predefined atomic methods accept an optional argument named
-``order`` of type memoryOrder. The ``order`` argument is used to specify
-the ordering constraints of atomic operations. The supported memoryOrder
-values are:
-
--  memoryOrder.relaxed
-
--  memoryOrder.acquire
-
--  memoryOrder.release
-
--  memoryOrder.acqRel
-
--  memoryOrder.seqCst
-
-See also :ref:`Chapter-Memory_Consistency_Model` and in particular
-:ref:`non_sc_atomics` for more information on the meaning of these memory
-orders.
-
-Unless specified, the default for the memoryOrder parameter is
-memoryOrder.seqCst.
-
-   *Implementors’ note*.
-
-   Not all architectures or implementations may support all memoryOrder
-   values. In these cases, the implementation should default to a more
-   conservative ordering than specified.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).read(param order:memoryOrder = memoryOrder.seqCst): T
-
-Reads and returns the stored value. Defined for all atomic types.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).write(v: T, param order:memoryOrder = memoryOrder.seqCst)
-
-Stores ``v`` as the new value. Defined for all atomic types.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).exchange(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-
-Stores ``v`` as the new value and returns the original value. Defined
-for all atomic types.
-
-   .. code-block:: chapel
-
-      proc (atomic T).compareExchange(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
-      proc (atomic T).compareExchange(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
-      proc (atomic T).compareExchangeWeak(ref e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
-      proc (atomic T).compareExchangeWeak(ref e: T, v: T, param failure:memoryOrder, param success:memoryOrder): bool
-
-Stores ``v`` as the new value, if and only if the original value is
-equal to ``e``. Returns ``true`` if ``v`` was stored, otherwise
-returns ``false`` and updates ``e`` to the old value.  The weak
-version is allowed to spuriously fail, but when using
-``compareExchange`` in a loop anyways, it can can offer better
-performance on some platforms. Defined for all atomic types.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).compareAndSwap(e: T, v: T, param order:memoryOrder = memoryOrder.seqCst): bool
-
-Stores ``v`` as the new value, if and only if the original value is
-equal to ``e``. Returns ``true`` if ``v`` was stored, ``false``
-otherwise. Defined for all atomic types.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).add(v: T, param order:memoryOrder = memoryOrder.seqCst)
-      proc (atomic T).sub(v: T, param order:memoryOrder = memoryOrder.seqCst)
-      proc (atomic T).or(v: T, param order:memoryOrder = memoryOrder.seqCst)
-      proc (atomic T).and(v: T, param order:memoryOrder = memoryOrder.seqCst)
-      proc (atomic T).xor(v: T, param order:memoryOrder = memoryOrder.seqCst)
-
-Applies the appropriate operator (``+``, ``-``, ``|``, ``&``, ``^``) to
-the original value and ``v`` and stores the result. All of the methods
-are defined for integral atomic types. Only add and sub (``+``, ``-``)
-are defined for ``real`` atomic types. None of the methods are defined
-for the ``bool`` atomic type.
-
-   .. note::
-   
-      *Future*.
-
-      In the future we may overload certain operations such as ``+=`` to call
-      the above methods automatically for atomic variables.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).fetchAdd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-      proc (atomic T).fetchSub(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-      proc (atomic T).fetchOr(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-      proc (atomic T).fetchAnd(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-      proc (atomic T).fetchXor(v: T, param order:memoryOrder = memoryOrder.seqCst): T
-
-Applies the appropriate operator (``+``, ``-``, ``|``, ``&``, ``^``) to
-the original value and ``v``, stores the result, and returns the original
-value. All of the methods are defined for integral atomic types. Only add
-and sub (``+``, ``-``) are defined for ``real`` atomic types. None of the
-methods are defined for the ``bool`` atomic type.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic bool).testAndSet(param order:memoryOrder = memoryOrder.seqCst): bool
-
-Stores ``true`` as the new value and returns the old value. Equivalent
-to ``exchange(true)``. Only defined for the ``bool`` atomic type.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic bool).clear(param order:memoryOrder = memoryOrder.seqCst)
-
-Stores ``false`` as the new value. Equivalent to ``write(false)``. Only
-defined for the ``bool`` atomic type.
-
-
-
-   .. code-block:: chapel
-
-      proc (atomic T).waitFor(v: T)
-
-Waits until the stored value is equal to ``v``. The implementation may
-yield the running task while waiting. Defined for all atomic types.
+.. include:: /builtins/Atomics.rst
 
 .. _Cobegin:
 

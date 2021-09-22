@@ -188,7 +188,7 @@ removePrefixFunctions $file
 replace "record:: AtomicBool" "type:: atomic \(bool\)" $file
 replace "record:: AtomicT"    "type:: atomic \(T\)" $file
 
-fixTitle "Atomics" $file
+removeTitle $file
 removeUsage $file
 
 ## End Atomics ##
