@@ -68,6 +68,7 @@
 
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <fstream>
 
 // function prototypes
 static bool compareSymbol(const void* v1, const void* v2);
@@ -222,8 +223,9 @@ genGlobalDefClassId(const char* cname, int id, bool isHeader) {
 #endif
   }
 }
+
 static void
-genGlobalString(const char* cname, const char* value) {
+genGlobalString(const char *cname, const char *value) {
   GenInfo* info = gGenInfo;
   if( info->cfile ) {
     fprintf(info->cfile, "const char* %s = \"%s\";\n", cname, value);
@@ -241,6 +243,28 @@ genGlobalString(const char* cname, const char* value) {
 #endif
   }
 }
+
+static void genGlobalRawString(const char *cname, const char *value, size_t len) {
+  GenInfo* info = gGenInfo;
+  if( info->cfile ) {
+    // TODO: Currently we don't have this codepath. Maybe one day we will. If so we should
+    // scan through value and escape null characters.
+    INT_FATAL("Do not expect to see this codepath");
+  } else {
+#ifdef HAVE_LLVM
+    if(gCodegenGPU == false) {
+      llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
+              info->module->getOrInsertGlobal(
+                      cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
+      globalString->setInitializer(llvm::cast<llvm::GlobalVariable>(
+              new_RawStringSymbol(value, len)->codegen().val)->getInitializer());
+      globalString->setConstant(true);
+      info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true);
+    }
+#endif
+  }
+}
+
 static void
 genGlobalInt(const char* cname, int value, bool isHeader) {
   GenInfo* info = gGenInfo;
@@ -2425,9 +2449,29 @@ static fileinfo strconfig  = { NULL, NULL, NULL };
 static fileinfo modulefile = { NULL, NULL, NULL };
 
 
+static void embedGpuCode() {
+  // Codegen forks a thread to generate a .fatbin file that packages assembled GPU kernel code.
+  // This function (embedGpuCode) is called by the main thread after the forked thread rejoins and
+  // reads this .fatbin file and dumps its contents into a global variable in the generated code.
+  // The compiled chapel program then calls into the runtime library, which reads this variable,
+  // sends the code off to the GPU, and launches kernels as needed.
+
+  astlocT prevloc = currentAstLoc;
+  currentAstLoc = astlocT(0, astr("<internal>"));
+
+  std::string fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
+  std::ifstream fatbinFile(fatbinFilename);
+  if(fatbinFile.fail()) {
+    USR_FATAL("Could not open GPU kernel fatbin file %s", fatbinFilename.c_str());
+  }
+  std::string buffer = std::string((std::istreambuf_iterator<char>(fatbinFile)), std::istreambuf_iterator<char>());
+  genGlobalRawString("chpl_gpuBinary", buffer.c_str(), buffer.length());
+
+  currentAstLoc = prevloc;
+}
+
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
-
   // Initialize the global gGenInfo for C code generation.
   gGenInfo = new GenInfo();
 
@@ -2495,6 +2539,14 @@ static void codegenPartTwo() {
           break;
         }
       }
+    }
+
+    // When doing codegen for programs that have GPU kernels we launch two
+    // threads: in one gCodegenGPU is true and we generate a .fatbin file,
+    // in the other gCodegenGpu is false and we'll consume the fatbin file
+    // and embed its contents into the generated code.
+    if (localeUsesGPU() && !gCodegenGPU) {
+      embedGpuCode();
     }
 
     prepareCodegenLLVM();
@@ -2649,7 +2701,7 @@ void makeBinary(void) {
 
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
-    makeBinaryLLVM();
+   makeBinaryLLVM();
 #endif
   } else {
     const char* makeflags = printSystemCommands ? "-f " : "-s -f ";

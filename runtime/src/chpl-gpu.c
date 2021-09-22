@@ -24,6 +24,7 @@
 #include "chpl-gpu.h"
 #include "chpl-tasks.h"
 #include "error.h"
+#include "chplcgfns.h"
 
 #ifdef HAS_GPU_LOCALE
 
@@ -98,29 +99,8 @@ static void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) 
   CUmodule    cudaModule;
   CUfunction  function;
 
-  //read in fatbin and store in buffer
-  char * buffer = 0;
-  long length;
-  FILE * f = fopen (fatbinFile, "rb");
-
-  if (f)
-  {
-    fseek (f, 0, SEEK_END);
-    length = ftell (f);
-    fseek (f, 0, SEEK_SET);
-    buffer = (char* )chpl_malloc (length);
-    if (buffer)
-    {
-      fread (buffer, 1, length, f);
-    }
-    fclose (f);
-  } else {
-    printf("Attempt to open file: %s\n", fatbinFile);
-    chpl_internal_error("Unable to open fatbin file.");
-  }
-
   // Create module for object
-  CUDA_CALL(cuModuleLoadData(&cudaModule, buffer));
+  CUDA_CALL(cuModuleLoadData(&cudaModule, chpl_gpuBinary));
 
   // Get kernel function
   CUDA_CALL(cuModuleGetFunction(&function, cudaModule, kernelName));
