@@ -12,7 +12,6 @@ amenable to being documented using **chpldoc**:
 .. toctree::
    :maxdepth: 1
 
-   ChapelLocale
    OwnedObject
    Bytes
    ChapelRange

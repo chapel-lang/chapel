@@ -143,7 +143,7 @@ removeUsage $file
 ## ChapelLocale ##
 
 file="./ChapelLocale.rst"
-fixTitle "Locales" $file
+removeTitle $file
 replace "LocaleSpace = chpl__buildDomainExpr(0..numLocales-1)" \
         "LocaleSpace = {0..numLocales-1}" $file
 removeUsage $file
