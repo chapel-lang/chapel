@@ -71,8 +71,8 @@ Quickstart
 6. Show and compare result files (optional):
 
    ```bash
-   # Make sure pandas is installed. Prepend `sudo` if necessary.
-   % pip install pandas
+   # Make sure pandas and scipy are installed. Prepend `sudo` if necessary.
+   % pip install pandas scipy
    # Show a single result file:
    % test-suite/utils/compare.py results.json
    # Compare two result files:
@@ -185,7 +185,7 @@ benchmarks. CMake can print a list of them:
 
 - `TEST_SUITE_COLLECT_STATS`
 
-  Collect internal LLVM statistics. Appends `-save-stats=obj` when invocing the
+  Collect internal LLVM statistics. Appends `-save-stats=obj` when invoking the
   compiler and makes the lit runner collect and merge the statistic files.
 
 - `TEST_SUITE_RUN_BENCHMARKS`

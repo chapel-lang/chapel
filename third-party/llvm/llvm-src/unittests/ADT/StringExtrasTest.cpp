@@ -89,6 +89,10 @@ TEST(StringExtrasTest, ToAndFromHex) {
   EXPECT_EQ(EvenStr, toHex(EvenData));
   EXPECT_EQ(EvenData, fromHex(EvenStr));
   EXPECT_EQ(StringRef(EvenStr).lower(), toHex(EvenData, true));
+
+  std::string InvalidStr = "A5ZX";
+  std::string IgnoredOutput;
+  EXPECT_FALSE(tryGetFromHex(InvalidStr, IgnoredOutput));
 }
 
 TEST(StringExtrasTest, to_float) {
@@ -210,4 +214,18 @@ TEST(StringExtras, IToStr) {
   EXPECT_EQ("-1", itostr(-1));
   EXPECT_EQ(std::to_string(MinInt64), itostr(MinInt64));
   EXPECT_EQ(std::to_string(MaxInt64), itostr(MaxInt64));
+}
+
+TEST(StringExtras, ListSeparator) {
+  ListSeparator LS;
+  StringRef S = LS;
+  EXPECT_EQ(S, "");
+  S = LS;
+  EXPECT_EQ(S, ", ");
+
+  ListSeparator LS2(" ");
+  S = LS2;
+  EXPECT_EQ(S, "");
+  S = LS2;
+  EXPECT_EQ(S, " ");
 }

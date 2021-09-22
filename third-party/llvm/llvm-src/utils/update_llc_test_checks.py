@@ -28,8 +28,13 @@ def main():
       '--extra_scrub', action='store_true',
       help='Always use additional regex to further reduce diffs between various subtargets')
   parser.add_argument(
+      '--x86_scrub_sp', action='store_true', default=True,
+      help='Use regex for x86 sp matching to reduce diffs between various subtargets')
+  parser.add_argument(
+      '--no_x86_scrub_sp', action='store_false', dest='x86_scrub_sp')
+  parser.add_argument(
       '--x86_scrub_rip', action='store_true', default=True,
-      help='Use more regex for x86 matching to reduce diffs between various subtargets')
+      help='Use more regex for x86 rip matching to reduce diffs between various subtargets')
   parser.add_argument(
       '--no_x86_scrub_rip', action='store_false', dest='x86_scrub_rip')
   parser.add_argument(
@@ -99,22 +104,28 @@ def main():
     else:
       check_indent = ''
 
-    func_dict = {}
-    for p in run_list:
-      prefixes = p[0]
-      for prefix in prefixes:
-        func_dict.update({prefix: dict()})
+    builder = common.FunctionTestBuilder(
+        run_list=run_list, 
+        flags=type('', (object,), {
+            'verbose': ti.args.verbose,
+            'function_signature': False,
+            'check_attributes': False}),
+        scrubber_args=[ti.args])
+
     for prefixes, llc_args, triple_in_cmd, march_in_cmd in run_list:
       common.debug('Extracted LLC cmd:', llc_tool, llc_args)
       common.debug('Extracted FileCheck prefixes:', str(prefixes))
 
-      raw_tool_output = common.invoke_tool(ti.args.llc_binary or llc_tool, llc_args, ti.path)
+      raw_tool_output = common.invoke_tool(ti.args.llc_binary or llc_tool,
+                                           llc_args, ti.path)
       triple = triple_in_cmd or triple_in_ir
       if not triple:
         triple = asm.get_triple_from_march(march_in_cmd)
 
-      asm.build_function_body_dictionary_for_triple(ti.args, raw_tool_output,
-          triple, prefixes, func_dict)
+      scrubber, function_re = asm.get_run_handler(triple)
+      builder.process_run_line(function_re, scrubber, raw_tool_output, prefixes)
+
+    func_dict = builder.finish_and_get_func_dict()
 
     is_in_function = False
     is_in_function_start = False
@@ -122,43 +133,67 @@ def main():
     prefix_set = set([prefix for p in run_list for prefix in p[0]])
     common.debug('Rewriting FileCheck prefixes:', str(prefix_set))
     output_lines = []
-    for input_info in ti.iterlines(output_lines):
-      input_line = input_info.line
-      args = input_info.args
-      if is_in_function_start:
-        if input_line == '':
-          continue
-        if input_line.lstrip().startswith(';'):
-          m = common.CHECK_RE.match(input_line)
-          if not m or m.group(1) not in prefix_set:
-            output_lines.append(input_line)
+
+    include_generated_funcs = common.find_arg_in_test(ti,
+                                                      lambda args: ti.args.include_generated_funcs,
+                                                      '--include-generated-funcs',
+                                                      True)
+
+    if include_generated_funcs:
+      # Generate the appropriate checks for each function.  We need to emit
+      # these in the order according to the generated output so that CHECK-LABEL
+      # works properly.  func_order provides that.
+
+      # We can't predict where various passes might insert functions so we can't
+      # be sure the input function order is maintained.  Therefore, first spit
+      # out all the source lines.
+      common.dump_input_lines(output_lines, ti, prefix_set, ';')
+
+      # Now generate all the checks.
+      common.add_checks_at_end(output_lines, run_list, builder.func_order(),
+                               check_indent + ';',
+                               lambda my_output_lines, prefixes, func:
+                               asm.add_asm_checks(my_output_lines,
+                                                  check_indent + ';',
+                                                  prefixes, func_dict, func))
+    else:
+      for input_info in ti.iterlines(output_lines):
+        input_line = input_info.line
+        args = input_info.args
+        if is_in_function_start:
+          if input_line == '':
             continue
+          if input_line.lstrip().startswith(';'):
+            m = common.CHECK_RE.match(input_line)
+            if not m or m.group(1) not in prefix_set:
+              output_lines.append(input_line)
+              continue
 
-        # Print out the various check lines here.
-        asm.add_asm_checks(output_lines, check_indent + ';', run_list, func_dict, func_name)
-        is_in_function_start = False
+          # Print out the various check lines here.
+          asm.add_asm_checks(output_lines, check_indent + ';', run_list, func_dict, func_name)
+          is_in_function_start = False
 
-      if is_in_function:
-        if common.should_add_line_to_output(input_line, prefix_set):
-          # This input line of the function body will go as-is into the output.
-          output_lines.append(input_line)
-        else:
+        if is_in_function:
+          if common.should_add_line_to_output(input_line, prefix_set):
+            # This input line of the function body will go as-is into the output.
+            output_lines.append(input_line)
+          else:
+            continue
+          if input_line.strip() == '}':
+            is_in_function = False
           continue
-        if input_line.strip() == '}':
-          is_in_function = False
-        continue
 
-      # If it's outside a function, it just gets copied to the output.
-      output_lines.append(input_line)
+        # If it's outside a function, it just gets copied to the output.
+        output_lines.append(input_line)
 
-      m = common.IR_FUNCTION_RE.match(input_line)
-      if not m:
-        continue
-      func_name = m.group(1)
-      if args.function is not None and func_name != args.function:
-        # When filtering on a specific function, skip all others.
-        continue
-      is_in_function = is_in_function_start = True
+        m = common.IR_FUNCTION_RE.match(input_line)
+        if not m:
+          continue
+        func_name = m.group(1)
+        if args.function is not None and func_name != args.function:
+          # When filtering on a specific function, skip all others.
+          continue
+        is_in_function = is_in_function_start = True
 
     common.debug('Writing %d lines to %s...' % (len(output_lines), ti.path))
 

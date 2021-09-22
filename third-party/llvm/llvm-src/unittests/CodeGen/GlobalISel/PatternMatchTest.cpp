@@ -47,6 +47,7 @@ TEST_F(AArch64GISelMITest, MatchBinaryOp) {
     return;
   LLT s32 = LLT::scalar(32);
   LLT s64 = LLT::scalar(64);
+  LLT p0 = LLT::pointer(0, 64);
   auto MIBAdd = B.buildAdd(s64, Copies[0], Copies[1]);
   // Test case for no bind.
   bool match =
@@ -145,6 +146,13 @@ TEST_F(AArch64GISelMITest, MatchBinaryOp) {
   EXPECT_TRUE(match);
   EXPECT_EQ(Src0, Copies[0]);
   EXPECT_EQ(Src1, TruncCopy1.getReg(0));
+
+  // Build a G_PTR_ADD and check that we can match it.
+  auto PtrAdd = B.buildPtrAdd(p0, {B.buildUndef(p0)}, Copies[0]);
+  match = mi_match(PtrAdd.getReg(0), *MRI, m_GPtrAdd(m_Reg(Src0), m_Reg(Src1)));
+  EXPECT_TRUE(match);
+  EXPECT_EQ(Src0, PtrAdd->getOperand(1).getReg());
+  EXPECT_EQ(Src1, Copies[0]);
 }
 
 TEST_F(AArch64GISelMITest, MatchICmp) {
@@ -384,13 +392,133 @@ TEST_F(AArch64GISelMITest, MatchMiscellaneous) {
 
   LLT s64 = LLT::scalar(64);
   auto MIBAdd = B.buildAdd(s64, Copies[0], Copies[1]);
-  // Make multiple uses of this add.
+  Register Reg = MIBAdd.getReg(0);
+
+  // Only one use of Reg.
   B.buildCast(LLT::pointer(0, 32), MIBAdd);
+  EXPECT_TRUE(mi_match(Reg, *MRI, m_OneUse(m_GAdd(m_Reg(), m_Reg()))));
+  EXPECT_TRUE(mi_match(Reg, *MRI, m_OneNonDBGUse(m_GAdd(m_Reg(), m_Reg()))));
+
+  // Add multiple debug uses of Reg.
+  B.buildInstr(TargetOpcode::DBG_VALUE, {}, {Reg})->getOperand(0).setIsDebug();
+  B.buildInstr(TargetOpcode::DBG_VALUE, {}, {Reg})->getOperand(0).setIsDebug();
+
+  EXPECT_FALSE(mi_match(Reg, *MRI, m_OneUse(m_GAdd(m_Reg(), m_Reg()))));
+  EXPECT_TRUE(mi_match(Reg, *MRI, m_OneNonDBGUse(m_GAdd(m_Reg(), m_Reg()))));
+
+  // Multiple non-debug uses of Reg.
   B.buildCast(LLT::pointer(1, 32), MIBAdd);
-  bool match = mi_match(MIBAdd.getReg(0), *MRI, m_GAdd(m_Reg(), m_Reg()));
-  EXPECT_TRUE(match);
-  match = mi_match(MIBAdd.getReg(0), *MRI, m_OneUse(m_GAdd(m_Reg(), m_Reg())));
-  EXPECT_FALSE(match);
+  EXPECT_FALSE(mi_match(Reg, *MRI, m_OneUse(m_GAdd(m_Reg(), m_Reg()))));
+  EXPECT_FALSE(mi_match(Reg, *MRI, m_OneNonDBGUse(m_GAdd(m_Reg(), m_Reg()))));
+}
+
+TEST_F(AArch64GISelMITest, MatchSpecificConstant) {
+  setUp();
+  if (!TM)
+    return;
+
+  // Basic case: Can we match a G_CONSTANT with a specific value?
+  auto FortyTwo = B.buildConstant(LLT::scalar(64), 42);
+  EXPECT_TRUE(mi_match(FortyTwo.getReg(0), *MRI, m_SpecificICst(42)));
+  EXPECT_FALSE(mi_match(FortyTwo.getReg(0), *MRI, m_SpecificICst(123)));
+
+  // Test that this works inside of a more complex pattern.
+  LLT s64 = LLT::scalar(64);
+  auto MIBAdd = B.buildAdd(s64, Copies[0], FortyTwo);
+  EXPECT_TRUE(mi_match(MIBAdd.getReg(2), *MRI, m_SpecificICst(42)));
+
+  // Wrong constant.
+  EXPECT_FALSE(mi_match(MIBAdd.getReg(2), *MRI, m_SpecificICst(123)));
+
+  // No constant on the LHS.
+  EXPECT_FALSE(mi_match(MIBAdd.getReg(1), *MRI, m_SpecificICst(42)));
+}
+
+TEST_F(AArch64GISelMITest, MatchZeroInt) {
+  setUp();
+  if (!TM)
+    return;
+  auto Zero = B.buildConstant(LLT::scalar(64), 0);
+  EXPECT_TRUE(mi_match(Zero.getReg(0), *MRI, m_ZeroInt()));
+
+  auto FortyTwo = B.buildConstant(LLT::scalar(64), 42);
+  EXPECT_FALSE(mi_match(FortyTwo.getReg(0), *MRI, m_ZeroInt()));
+}
+
+TEST_F(AArch64GISelMITest, MatchAllOnesInt) {
+  setUp();
+  if (!TM)
+    return;
+  auto AllOnes = B.buildConstant(LLT::scalar(64), -1);
+  EXPECT_TRUE(mi_match(AllOnes.getReg(0), *MRI, m_AllOnesInt()));
+
+  auto FortyTwo = B.buildConstant(LLT::scalar(64), 42);
+  EXPECT_FALSE(mi_match(FortyTwo.getReg(0), *MRI, m_AllOnesInt()));
+}
+
+TEST_F(AArch64GISelMITest, MatchNeg) {
+  setUp();
+  if (!TM)
+    return;
+
+  LLT s64 = LLT::scalar(64);
+  auto Zero = B.buildConstant(LLT::scalar(64), 0);
+  auto NegInst = B.buildSub(s64, Zero, Copies[0]);
+  Register NegatedReg;
+
+  // Match: G_SUB = 0, %Reg
+  EXPECT_TRUE(mi_match(NegInst.getReg(0), *MRI, m_Neg(m_Reg(NegatedReg))));
+  EXPECT_EQ(NegatedReg, Copies[0]);
+
+  // Don't match: G_SUB = %Reg, 0
+  auto NotNegInst1 = B.buildSub(s64, Copies[0], Zero);
+  EXPECT_FALSE(mi_match(NotNegInst1.getReg(0), *MRI, m_Neg(m_Reg(NegatedReg))));
+
+  // Don't match: G_SUB = 42, %Reg
+  auto FortyTwo = B.buildConstant(LLT::scalar(64), 42);
+  auto NotNegInst2 = B.buildSub(s64, FortyTwo, Copies[0]);
+  EXPECT_FALSE(mi_match(NotNegInst2.getReg(0), *MRI, m_Neg(m_Reg(NegatedReg))));
+
+  // Complex testcase.
+  // %sub = G_SUB = 0, %negated_reg
+  // %add = G_ADD = %x, %sub
+  auto AddInst = B.buildAdd(s64, Copies[1], NegInst);
+  NegatedReg = Register();
+  EXPECT_TRUE(mi_match(AddInst.getReg(2), *MRI, m_Neg(m_Reg(NegatedReg))));
+  EXPECT_EQ(NegatedReg, Copies[0]);
+}
+
+TEST_F(AArch64GISelMITest, MatchNot) {
+  setUp();
+  if (!TM)
+    return;
+
+  LLT s64 = LLT::scalar(64);
+  auto AllOnes = B.buildConstant(LLT::scalar(64), -1);
+  auto NotInst1 = B.buildXor(s64, Copies[0], AllOnes);
+  Register NotReg;
+
+  // Match: G_XOR %NotReg, -1
+  EXPECT_TRUE(mi_match(NotInst1.getReg(0), *MRI, m_Not(m_Reg(NotReg))));
+  EXPECT_EQ(NotReg, Copies[0]);
+
+  // Match: G_XOR -1, %NotReg
+  auto NotInst2 = B.buildXor(s64, AllOnes, Copies[1]);
+  EXPECT_TRUE(mi_match(NotInst2.getReg(0), *MRI, m_Not(m_Reg(NotReg))));
+  EXPECT_EQ(NotReg, Copies[1]);
+
+  // Don't match: G_XOR %NotReg, 42
+  auto FortyTwo = B.buildConstant(LLT::scalar(64), 42);
+  auto WrongCst = B.buildXor(s64, Copies[0], FortyTwo);
+  EXPECT_FALSE(mi_match(WrongCst.getReg(0), *MRI, m_Not(m_Reg(NotReg))));
+
+  // Complex testcase.
+  // %xor = G_XOR %NotReg, -1
+  // %add = G_ADD %x, %xor
+  auto AddInst = B.buildAdd(s64, Copies[1], NotInst1);
+  NotReg = Register();
+  EXPECT_TRUE(mi_match(AddInst.getReg(2), *MRI, m_Not(m_Reg(NotReg))));
+  EXPECT_EQ(NotReg, Copies[0]);
 }
 } // namespace
 

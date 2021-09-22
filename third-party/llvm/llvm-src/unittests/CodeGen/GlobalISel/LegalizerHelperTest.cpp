@@ -589,9 +589,9 @@ TEST_F(AArch64GISelMITest, WidenUADDO) {
   CHECK: [[LHS:%[0-9]+]]:_(s16) = G_ZEXT [[Trunc]]
   CHECK: [[RHS:%[0-9]+]]:_(s16) = G_ZEXT [[Trunc]]
   CHECK: [[ADD:%[0-9]+]]:_(s16) = G_ADD [[LHS]]:_, [[RHS]]:_
-  CHECK: [[CST:%[0-9]+]]:_(s16) = G_CONSTANT i16 255
-  CHECK: [[AND:%[0-9]+]]:_(s16) = G_AND [[ADD]]:_, [[CST]]:_
-  CHECK: G_ICMP intpred(ne), [[ADD]]:_(s16), [[AND]]:_
+  CHECK: [[TRUNC1:%[0-9]+]]:_(s8) = G_TRUNC [[ADD]]
+  CHECK: [[ZEXT:%[0-9]+]]:_(s16) = G_ZEXT [[TRUNC1]]
+  CHECK: G_ICMP intpred(ne), [[ADD]]:_(s16), [[ZEXT]]:_
   CHECK: G_TRUNC [[ADD]]
   )";
 
@@ -628,9 +628,87 @@ TEST_F(AArch64GISelMITest, WidenUSUBO) {
   CHECK: [[LHS:%[0-9]+]]:_(s16) = G_ZEXT [[Trunc]]
   CHECK: [[RHS:%[0-9]+]]:_(s16) = G_ZEXT [[Trunc]]
   CHECK: [[SUB:%[0-9]+]]:_(s16) = G_SUB [[LHS]]:_, [[RHS]]:_
-  CHECK: [[CST:%[0-9]+]]:_(s16) = G_CONSTANT i16 255
-  CHECK: [[AND:%[0-9]+]]:_(s16) = G_AND [[SUB]]:_, [[CST]]:_
-  CHECK: G_ICMP intpred(ne), [[SUB]]:_(s16), [[AND]]:_
+  CHECK: [[TRUNC1:%[0-9]+]]:_(s8) = G_TRUNC [[SUB]]
+  CHECK: [[ZEXT:%[0-9]+]]:_(s16) = G_ZEXT [[TRUNC1]]
+  CHECK: G_ICMP intpred(ne), [[SUB]]:_(s16), [[ZEXT]]:_
+  CHECK: G_TRUNC [[SUB]]
+  )";
+
+  // Check
+  EXPECT_TRUE(CheckMachineFunction(*MF, CheckStr)) << *MF;
+}
+
+// SADDO widening.
+TEST_F(AArch64GISelMITest, WidenSADDO) {
+  setUp();
+  if (!TM)
+    return;
+
+  // Declare your legalization info
+  DefineLegalizerInfo(A, {
+    getActionDefinitionsBuilder(G_ADD).legalFor({{s16, s16}});
+  });
+  // Build
+  // Trunc it to s8.
+  LLT s8{LLT::scalar(8)};
+  LLT s16{LLT::scalar(16)};
+  auto MIBTrunc = B.buildTrunc(s8, Copies[0]);
+  unsigned CarryReg = MRI->createGenericVirtualRegister(LLT::scalar(1));
+  auto MIBSAddO =
+      B.buildInstr(TargetOpcode::G_SADDO, {s8, CarryReg}, {MIBTrunc, MIBTrunc});
+  AInfo Info(MF->getSubtarget());
+  DummyGISelObserver Observer;
+  LegalizerHelper Helper(*MF, Info, Observer, B);
+  EXPECT_TRUE(Helper.widenScalar(*MIBSAddO, 0, s16) ==
+              LegalizerHelper::LegalizeResult::Legalized);
+
+  auto CheckStr = R"(
+  CHECK: [[Trunc:%[0-9]+]]:_(s8) = G_TRUNC
+  CHECK: [[LHS:%[0-9]+]]:_(s16) = G_SEXT [[Trunc]]
+  CHECK: [[RHS:%[0-9]+]]:_(s16) = G_SEXT [[Trunc]]
+  CHECK: [[ADD:%[0-9]+]]:_(s16) = G_ADD [[LHS]]:_, [[RHS]]:_
+  CHECK: [[TRUNC1:%[0-9]+]]:_(s8) = G_TRUNC [[ADD]]
+  CHECK: [[SEXT:%[0-9]+]]:_(s16) = G_SEXT [[TRUNC1]]
+  CHECK: G_ICMP intpred(ne), [[ADD]]:_(s16), [[SEXT]]:_
+  CHECK: G_TRUNC [[ADD]]
+  )";
+
+  // Check
+  EXPECT_TRUE(CheckMachineFunction(*MF, CheckStr)) << *MF;
+}
+
+// SSUBO widening.
+TEST_F(AArch64GISelMITest, WidenSSUBO) {
+  setUp();
+  if (!TM)
+    return;
+
+  // Declare your legalization info
+  DefineLegalizerInfo(A, {
+    getActionDefinitionsBuilder(G_SUB).legalFor({{s16, s16}});
+  });
+  // Build
+  // Trunc it to s8.
+  LLT s8{LLT::scalar(8)};
+  LLT s16{LLT::scalar(16)};
+  auto MIBTrunc = B.buildTrunc(s8, Copies[0]);
+  unsigned CarryReg = MRI->createGenericVirtualRegister(LLT::scalar(1));
+  auto MIBSSUBO =
+      B.buildInstr(TargetOpcode::G_SSUBO, {s8, CarryReg}, {MIBTrunc, MIBTrunc});
+  AInfo Info(MF->getSubtarget());
+  DummyGISelObserver Observer;
+  LegalizerHelper Helper(*MF, Info, Observer, B);
+  EXPECT_TRUE(Helper.widenScalar(*MIBSSUBO, 0, s16) ==
+              LegalizerHelper::LegalizeResult::Legalized);
+
+  auto CheckStr = R"(
+  CHECK: [[Trunc:%[0-9]+]]:_(s8) = G_TRUNC
+  CHECK: [[LHS:%[0-9]+]]:_(s16) = G_SEXT [[Trunc]]
+  CHECK: [[RHS:%[0-9]+]]:_(s16) = G_SEXT [[Trunc]]
+  CHECK: [[SUB:%[0-9]+]]:_(s16) = G_SUB [[LHS]]:_, [[RHS]]:_
+  CHECK: [[TRUNC1:%[0-9]+]]:_(s8) = G_TRUNC [[SUB]]
+  CHECK: [[SEXT:%[0-9]+]]:_(s16) = G_SEXT [[TRUNC1]]
+  CHECK: G_ICMP intpred(ne), [[SUB]]:_(s16), [[SEXT]]:_
   CHECK: G_TRUNC [[SUB]]
   )";
 
@@ -3041,11 +3119,138 @@ TEST_F(AArch64GISelMITest, MoreElementsFreeze) {
   const auto *CheckStr = R"(
   CHECK: [[COPY:%[0-9]+]]:_(s64) = COPY
   CHECK: [[BITCAST:%[0-9]+]]:_(<2 x s32>) = G_BITCAST [[COPY]]
-
   CHECK: [[UNDEF:%[0-9]+]]:_(<2 x s32>) = G_IMPLICIT_DEF
   CHECK: [[CV:%[0-9]+]]:_(<4 x s32>) = G_CONCAT_VECTORS [[BITCAST]]:_(<2 x s32>), [[UNDEF]]
   CHECK: [[FREEZE:%[0-9]+]]:_(<4 x s32>) = G_FREEZE [[CV]]
-  CHECK: [[EXTR:%[0-9]+]]:_(<2 x s32>) = G_EXTRACT [[FREEZE]]:_(<4 x s32>), 0
+  CHECK: [[EXTR0:%[0-9]+]]:_(<2 x s32>), [[EXTR1:%[0-9]+]]:_(<2 x s32>) = G_UNMERGE_VALUES [[FREEZE]]:_(<4 x s32>)
+  )";
+
+  // Check
+  EXPECT_TRUE(CheckMachineFunction(*MF, CheckStr)) << *MF;
+}
+
+// Test fewer elements of G_INSERT_VECTOR_ELEMENT
+TEST_F(AArch64GISelMITest, FewerElementsInsertVectorElt) {
+  setUp();
+  if (!TM)
+    return;
+
+  DefineLegalizerInfo(A, {});
+
+  LLT P0{LLT::pointer(0, 64)};
+  LLT S64{LLT::scalar(64)};
+  LLT S16{LLT::scalar(16)};
+  LLT V2S16{LLT::vector(2, 16)};
+  LLT V3S16{LLT::vector(3, 16)};
+  LLT V8S16{LLT::vector(8, 16)};
+
+  auto Ptr0 = B.buildIntToPtr(P0, Copies[0]);
+  auto VectorV8 = B.buildLoad(V8S16, Ptr0, MachinePointerInfo(), Align(8));
+  auto Value = B.buildTrunc(S16, Copies[1]);
+
+  auto Seven = B.buildConstant(S64, 7);
+  auto InsertV8Constant7_0 =
+      B.buildInsertVectorElement(V8S16, VectorV8, Value, Seven);
+  auto InsertV8Constant7_1 =
+      B.buildInsertVectorElement(V8S16, VectorV8, Value, Seven);
+
+  B.buildStore(InsertV8Constant7_0, Ptr0, MachinePointerInfo(), Align(8),
+               MachineMemOperand::MOVolatile);
+  B.buildStore(InsertV8Constant7_1, Ptr0, MachinePointerInfo(), Align(8),
+               MachineMemOperand::MOVolatile);
+
+  AInfo Info(MF->getSubtarget());
+  DummyGISelObserver Observer;
+  LegalizerHelper Helper(*MF, Info, Observer, B);
+
+  // Perform Legalization
+  B.setInsertPt(*EntryMBB, InsertV8Constant7_0->getIterator());
+
+  // This should index the high element of the 4th piece of an unmerge.
+  EXPECT_EQ(LegalizerHelper::LegalizeResult::Legalized,
+            Helper.fewerElementsVector(*InsertV8Constant7_0, 0, V2S16));
+
+  // This case requires extracting an intermediate vector type into the target
+  // v4s16.
+  B.setInsertPt(*EntryMBB, InsertV8Constant7_1->getIterator());
+  EXPECT_EQ(LegalizerHelper::LegalizeResult::Legalized,
+            Helper.fewerElementsVector(*InsertV8Constant7_1, 0, V3S16));
+
+  const auto *CheckStr = R"(
+  CHECK: [[COPY0:%[0-9]+]]:_(s64) = COPY
+  CHECK: [[COPY1:%[0-9]+]]:_(s64) = COPY
+  CHECK: [[COPY2:%[0-9]+]]:_(s64) = COPY
+  CHECK: [[PTR0:%[0-9]+]]:_(p0) = G_INTTOPTR [[COPY0]]
+  CHECK: [[VEC8:%[0-9]+]]:_(<8 x s16>) = G_LOAD [[PTR0]]:_(p0) :: (load 16, align 8)
+  CHECK: [[INSERT_VAL:%[0-9]+]]:_(s16) = G_TRUNC [[COPY1]]
+
+
+  CHECK: [[UNMERGE0:%[0-9]+]]:_(<2 x s16>), [[UNMERGE1:%[0-9]+]]:_(<2 x s16>), [[UNMERGE2:%[0-9]+]]:_(<2 x s16>), [[UNMERGE3:%[0-9]+]]:_(<2 x s16>) = G_UNMERGE_VALUES [[VEC8]]
+  CHECK: [[ONE:%[0-9]+]]:_(s64) = G_CONSTANT i64 1
+  CHECK: [[SUB_INSERT_7:%[0-9]+]]:_(<2 x s16>) = G_INSERT_VECTOR_ELT [[UNMERGE3]]:_, [[INSERT_VAL]]:_(s16), [[ONE]]
+  CHECK: [[INSERT_V8_7_0:%[0-9]+]]:_(<8 x s16>) = G_CONCAT_VECTORS [[UNMERGE0]]:_(<2 x s16>), [[UNMERGE1]]:_(<2 x s16>), [[UNMERGE2]]:_(<2 x s16>), [[SUB_INSERT_7]]:_(<2 x s16>)
+
+
+  CHECK: [[UNMERGE1_0:%[0-9]+]]:_(s16), [[UNMERGE1_1:%[0-9]+]]:_(s16), [[UNMERGE1_2:%[0-9]+]]:_(s16), [[UNMERGE1_3:%[0-9]+]]:_(s16), [[UNMERGE1_4:%[0-9]+]]:_(s16), [[UNMERGE1_5:%[0-9]+]]:_(s16), [[UNMERGE1_6:%[0-9]+]]:_(s16), [[UNMERGE1_7:%[0-9]+]]:_(s16) = G_UNMERGE_VALUES [[VEC8]]:_(<8 x s16>)
+  CHECK: [[IMPDEF_S16:%[0-9]+]]:_(s16) = G_IMPLICIT_DEF
+  CHECK: [[BUILD0:%[0-9]+]]:_(<3 x s16>) = G_BUILD_VECTOR [[UNMERGE1_0]]:_(s16), [[UNMERGE1_1]]:_(s16), [[UNMERGE1_2]]:_(s16)
+  CHECK: [[BUILD1:%[0-9]+]]:_(<3 x s16>) = G_BUILD_VECTOR [[UNMERGE1_3]]:_(s16), [[UNMERGE1_4]]:_(s16), [[UNMERGE1_5]]:_(s16)
+  CHECK: [[BUILD2:%[0-9]+]]:_(<3 x s16>) = G_BUILD_VECTOR [[UNMERGE1_6]]:_(s16), [[UNMERGE1_7]]:_(s16), [[IMPDEF_S16]]:_(s16)
+  CHECK: [[IMPDEF_V3S16:%[0-9]+]]:_(<3 x s16>) = G_IMPLICIT_DEF
+  CHECK: [[ONE_1:%[0-9]+]]:_(s64) = G_CONSTANT i64 1
+  CHECK: [[SUB_INSERT_7_V3S16:%[0-9]+]]:_(<3 x s16>) = G_INSERT_VECTOR_ELT [[BUILD2]]:_, [[INSERT_VAL]]:_(s16), [[ONE_1]]
+
+  CHECK: [[WIDE_CONCAT_DEAD:%[0-9]+]]:_(<24 x s16>) = G_CONCAT_VECTORS [[BUILD0]]:_(<3 x s16>), [[BUILD1]]:_(<3 x s16>), [[SUB_INSERT_7_V3S16]]:_(<3 x s16>), [[IMPDEF_V3S16]]:_(<3 x s16>), [[IMPDEF_V3S16]]:_(<3 x s16>), [[IMPDEF_V3S16]]:_(<3 x s16>), [[IMPDEF_V3S16]]:_(<3 x s16>), [[IMPDEF_V3S16]]:_(<3 x s16>)
+  CHECK: [[WIDE_CONCAT:%[0-9]+]]:_(<24 x s16>) = G_CONCAT_VECTORS [[BUILD0]]:_(<3 x s16>), [[BUILD1]]:_(<3 x s16>), [[SUB_INSERT_7_V3S16]]:_(<3 x s16>), [[IMPDEF_V3S16]]:_(<3 x s16>), [[IMPDEF_V3S16]]:_(<3 x s16>), [[IMPDEF_V3S16]]:_(<3 x s16>), [[IMPDEF_V3S16]]:_(<3 x s16>), [[IMPDEF_V3S16]]:_(<3 x s16>)
+  CHECK: [[INSERT_V8_7_1:%[0-9]+]]:_(<8 x s16>), %{{[0-9]+}}:_(<8 x s16>), %{{[0-9]+}}:_(<8 x s16>) = G_UNMERGE_VALUES [[WIDE_CONCAT]]:_(<24 x s16>)
+
+
+  CHECK: G_STORE [[INSERT_V8_7_0]]
+  CHECK: G_STORE [[INSERT_V8_7_1]]
+  )";
+
+  // Check
+  EXPECT_TRUE(CheckMachineFunction(*MF, CheckStr)) << *MF;
+}
+
+// Test widen scalar of G_UNMERGE_VALUES
+TEST_F(AArch64GISelMITest, widenScalarUnmerge) {
+  setUp();
+  if (!TM)
+    return;
+
+  DefineLegalizerInfo(A, {});
+
+  LLT S96{LLT::scalar(96)};
+  LLT S64{LLT::scalar(64)};
+  LLT S48{LLT::scalar(48)};
+
+  auto Src = B.buildAnyExt(S96, Copies[0]);
+  auto Unmerge = B.buildUnmerge(S48, Src);
+
+  AInfo Info(MF->getSubtarget());
+  DummyGISelObserver Observer;
+  LegalizerHelper Helper(*MF, Info, Observer, B);
+
+  // Perform Legalization
+  B.setInsertPt(*EntryMBB, Unmerge->getIterator());
+
+  // This should create unmerges to a GCD type (S16), then remerge to S48
+  EXPECT_EQ(LegalizerHelper::LegalizeResult::Legalized,
+            Helper.widenScalar(*Unmerge, 0, S64));
+
+  const auto *CheckStr = R"(
+  CHECK: [[COPY0:%[0-9]+]]:_(s64) = COPY
+  CHECK: [[COPY1:%[0-9]+]]:_(s64) = COPY
+  CHECK: [[COPY2:%[0-9]+]]:_(s64) = COPY
+  CHECK: [[ANYEXT:%[0-9]+]]:_(s96) = G_ANYEXT [[COPY0]]
+  CHECK: [[ANYEXT1:%[0-9]+]]:_(s192) = G_ANYEXT [[ANYEXT]]
+  CHECK: [[UNMERGE:%[0-9]+]]:_(s64), [[UNMERGE1:%[0-9]+]]:_(s64), [[UNMERGE2:%[0-9]+]]:_(s64) = G_UNMERGE_VALUES [[ANYEXT1]]
+  CHECK: [[UNMERGE3:%[0-9]+]]:_(s16), [[UNMERGE4:%[0-9]+]]:_(s16), [[UNMERGE5:%[0-9]+]]:_(s16), [[UNMERGE6:%[0-9]+]]:_(s16) = G_UNMERGE_VALUES [[UNMERGE]]
+  CHECK: [[UNMERGE7:%[0-9]+]]:_(s16), [[UNMERGE8:%[0-9]+]]:_(s16), [[UNMERGE9:%[0-9]+]]:_(s16), [[UNMERGE10:%[0-9]+]]:_(s16) = G_UNMERGE_VALUES [[UNMERGE1]]
+  CHECK: [[UNMERGE11:%[0-9]+]]:_(s16), [[UNMERGE12:%[0-9]+]]:_(s16), [[UNMERGE13:%[0-9]+]]:_(s16), [[UNMERGE14:%[0-9]+]]:_(s16) = G_UNMERGE_VALUES [[UNMERGE2]]
+  CHECK: [[MERGE:%[0-9]+]]:_(s48) = G_MERGE_VALUES [[UNMERGE3]]:_(s16), [[UNMERGE4]]:_(s16), [[UNMERGE5]]:_(s16)
+  CHECK: [[MERGE1:%[0-9]+]]:_(s48) = G_MERGE_VALUES [[UNMERGE6]]:_(s16), [[UNMERGE7]]:_(s16), [[UNMERGE8]]:_(s16)
   )";
 
   // Check

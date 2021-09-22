@@ -41,12 +41,11 @@ for using Chapel:
     * The ``mason system`` subcommands additionally require ``pkg-config``.
 
   * The LLVM backend is now the default and it is easiest to use it with
-    a system-wide installation of LLVM. Only LLVM 11 is currently
-    supported. If a system-wide installation of LLVM 11 is not available,
+    a system-wide installation of LLVM. Only LLVM 12 is currently
+    supported. If a system-wide installation of LLVM 12 is not available,
     you can use the bundled LLVM or disable LLVM support (see
     :ref:`readme-chplenv.CHPL_LLVM`). Please note that building the
-    bundled LLVM requires cmake version 3.4.3 or later (and upcoming
-    versions will require 3.13.4);
+    bundled LLVM requires cmake version 3.13.4 or later.
 
 
 .. _readme-prereqs-installation:

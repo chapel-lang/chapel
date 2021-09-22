@@ -63,6 +63,11 @@ protected:
                                                    const SCEV *RHS) {
     return SE.computeConstantDifference(LHS, RHS);
   }
+
+  static bool matchURem(ScalarEvolution &SE, const SCEV *Expr, const SCEV *&LHS,
+                        const SCEV *&RHS) {
+    return SE.matchURem(Expr, LHS, RHS);
+  }
 };
 
 TEST_F(ScalarEvolutionsTest, SCEVUnknownRAUW) {
@@ -149,6 +154,12 @@ static Instruction *getInstructionByName(Function &F, StringRef Name) {
   llvm_unreachable("Expected to find instruction!");
 }
 
+static Value *getArgByName(Function &F, StringRef Name) {
+  for (auto &Arg : F.args())
+    if (Arg.getName() == Name)
+      return &Arg;
+  llvm_unreachable("Expected to find instruction!");
+}
 TEST_F(ScalarEvolutionsTest, CommutativeExprOperandOrder) {
   LLVMContext C;
   SMDiagnostic Err;
@@ -1117,6 +1128,296 @@ TEST_F(ScalarEvolutionsTest, SCEVComputeConstantDifference) {
     EXPECT_EQ(diff(ScevV0, ScevIV), None);
     EXPECT_EQ(diff(ScevIVNext, ScevV3), None);
     EXPECT_EQ(diff(ScevYY, ScevV3), None);
+  });
+}
+
+TEST_F(ScalarEvolutionsTest, SCEVrewriteUnknowns) {
+  LLVMContext C;
+  SMDiagnostic Err;
+  std::unique_ptr<Module> M = parseAssemblyString(
+      "define void @foo(i32 %i) { "
+      "entry: "
+      "  %cmp3 = icmp ult i32 %i, 16 "
+      "  br i1 %cmp3, label %loop.body, label %exit "
+      "loop.body: "
+      "  %iv = phi i32 [ %iv.next, %loop.body ], [ %i, %entry ] "
+      "  %iv.next = add nsw i32 %iv, 1 "
+      "  %cmp = icmp eq i32 %iv.next, 16 "
+      "  br i1 %cmp, label %exit, label %loop.body "
+      "exit: "
+      "  ret void "
+      "} ",
+      Err, C);
+
+  ASSERT_TRUE(M && "Could not parse module?");
+  ASSERT_TRUE(!verifyModule(*M) && "Must have been well formed!");
+
+  runWithSE(*M, "foo", [](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+    auto *ScevIV = SE.getSCEV(getInstructionByName(F, "iv")); // {0,+,1}
+    auto *ScevI = SE.getSCEV(getArgByName(F, "i"));           // {0,+,1}
+
+    ValueToSCEVMapTy RewriteMap;
+    RewriteMap[cast<SCEVUnknown>(ScevI)->getValue()] =
+        SE.getUMinExpr(ScevI, SE.getConstant(ScevI->getType(), 17));
+    auto *WithUMin = SCEVParameterRewriter::rewrite(ScevIV, SE, RewriteMap);
+
+    EXPECT_NE(WithUMin, ScevIV);
+    auto *AR = dyn_cast<SCEVAddRecExpr>(WithUMin);
+    EXPECT_TRUE(AR);
+    EXPECT_EQ(AR->getStart(),
+              SE.getUMinExpr(ScevI, SE.getConstant(ScevI->getType(), 17)));
+    EXPECT_EQ(AR->getStepRecurrence(SE),
+              cast<SCEVAddRecExpr>(ScevIV)->getStepRecurrence(SE));
+  });
+}
+
+TEST_F(ScalarEvolutionsTest, SCEVAddNUW) {
+  LLVMContext C;
+  SMDiagnostic Err;
+  std::unique_ptr<Module> M = parseAssemblyString("define void @foo(i32 %x) { "
+                                                  "  ret void "
+                                                  "} ",
+                                                  Err, C);
+
+  ASSERT_TRUE(M && "Could not parse module?");
+  ASSERT_TRUE(!verifyModule(*M) && "Must have been well formed!");
+
+  runWithSE(*M, "foo", [](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+    auto *X = SE.getSCEV(getArgByName(F, "x"));
+    auto *One = SE.getOne(X->getType());
+    auto *Sum = SE.getAddExpr(X, One, SCEV::FlagNUW);
+    EXPECT_TRUE(SE.isKnownPredicate(ICmpInst::ICMP_UGE, Sum, X));
+    EXPECT_TRUE(SE.isKnownPredicate(ICmpInst::ICMP_UGT, Sum, X));
+  });
+}
+
+TEST_F(ScalarEvolutionsTest, SCEVgetRanges) {
+  LLVMContext C;
+  SMDiagnostic Err;
+  std::unique_ptr<Module> M = parseAssemblyString(
+      "define void @foo(i32 %i) { "
+      "entry: "
+      "  br label %loop.body "
+      "loop.body: "
+      "  %iv = phi i32 [ %iv.next, %loop.body ], [ 0, %entry ] "
+      "  %iv.next = add nsw i32 %iv, 1 "
+      "  %cmp = icmp eq i32 %iv.next, 16 "
+      "  br i1 %cmp, label %exit, label %loop.body "
+      "exit: "
+      "  ret void "
+      "} ",
+      Err, C);
+
+  runWithSE(*M, "foo", [](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+    auto *ScevIV = SE.getSCEV(getInstructionByName(F, "iv")); // {0,+,1}
+    auto *ScevI = SE.getSCEV(getArgByName(F, "i"));
+    EXPECT_EQ(SE.getUnsignedRange(ScevIV).getLower(), 0);
+    EXPECT_EQ(SE.getUnsignedRange(ScevIV).getUpper(), 16);
+
+    auto *Add = SE.getAddExpr(ScevI, ScevIV);
+    ValueToSCEVMapTy RewriteMap;
+    RewriteMap[cast<SCEVUnknown>(ScevI)->getValue()] =
+        SE.getUMinExpr(ScevI, SE.getConstant(ScevI->getType(), 17));
+    auto *AddWithUMin = SCEVParameterRewriter::rewrite(Add, SE, RewriteMap);
+    EXPECT_EQ(SE.getUnsignedRange(AddWithUMin).getLower(), 0);
+    EXPECT_EQ(SE.getUnsignedRange(AddWithUMin).getUpper(), 33);
+  });
+}
+
+TEST_F(ScalarEvolutionsTest, SCEVgetExitLimitForGuardedLoop) {
+  LLVMContext C;
+  SMDiagnostic Err;
+  std::unique_ptr<Module> M = parseAssemblyString(
+      "define void @foo(i32 %i) { "
+      "entry: "
+      "  %cmp3 = icmp ult i32 %i, 16 "
+      "  br i1 %cmp3, label %loop.body, label %exit "
+      "loop.body: "
+      "  %iv = phi i32 [ %iv.next, %loop.body ], [ %i, %entry ] "
+      "  %iv.next = add nsw i32 %iv, 1 "
+      "  %cmp = icmp eq i32 %iv.next, 16 "
+      "  br i1 %cmp, label %exit, label %loop.body "
+      "exit: "
+      "  ret void "
+      "} ",
+      Err, C);
+
+  ASSERT_TRUE(M && "Could not parse module?");
+  ASSERT_TRUE(!verifyModule(*M) && "Must have been well formed!");
+
+  runWithSE(*M, "foo", [](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+    auto *ScevIV = SE.getSCEV(getInstructionByName(F, "iv")); // {0,+,1}
+    const Loop *L = cast<SCEVAddRecExpr>(ScevIV)->getLoop();
+
+    const SCEV *BTC = SE.getBackedgeTakenCount(L);
+    EXPECT_FALSE(isa<SCEVConstant>(BTC));
+    const SCEV *MaxBTC = SE.getConstantMaxBackedgeTakenCount(L);
+    EXPECT_EQ(cast<SCEVConstant>(MaxBTC)->getAPInt(), 15);
+  });
+}
+
+TEST_F(ScalarEvolutionsTest, ImpliedViaAddRecStart) {
+  LLVMContext C;
+  SMDiagnostic Err;
+  std::unique_ptr<Module> M = parseAssemblyString(
+      "define void @foo(i32* %p) { "
+      "entry: "
+      "  %x = load i32, i32* %p, !range !0 "
+      "  br label %loop "
+      "loop: "
+      "  %iv = phi i32 [ %x, %entry], [%iv.next, %backedge] "
+      "  %ne.check = icmp ne i32 %iv, 0 "
+      "  br i1 %ne.check, label %backedge, label %exit "
+      "backedge: "
+      "  %iv.next = add i32 %iv, -1 "
+      "  br label %loop "
+      "exit:"
+      "  ret void "
+      "} "
+      "!0 = !{i32 0, i32 2147483647}",
+      Err, C);
+
+  ASSERT_TRUE(M && "Could not parse module?");
+  ASSERT_TRUE(!verifyModule(*M) && "Must have been well formed!");
+
+  runWithSE(*M, "foo", [](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+    auto *X = SE.getSCEV(getInstructionByName(F, "x"));
+    auto *Context = getInstructionByName(F, "iv.next");
+    EXPECT_TRUE(SE.isKnownPredicateAt(ICmpInst::ICMP_NE, X,
+                                      SE.getZero(X->getType()), Context));
+  });
+}
+
+TEST_F(ScalarEvolutionsTest, UnsignedIsImpliedViaOperations) {
+  LLVMContext C;
+  SMDiagnostic Err;
+  std::unique_ptr<Module> M =
+      parseAssemblyString("define void @foo(i32* %p1, i32* %p2) { "
+                          "entry: "
+                          "  %x = load i32, i32* %p1, !range !0 "
+                          "  %cond = icmp ne i32 %x, 0 "
+                          "  br i1 %cond, label %guarded, label %exit "
+                          "guarded: "
+                          "  %y = add i32 %x, -1 "
+                          "  ret void "
+                          "exit: "
+                          "  ret void "
+                          "} "
+                          "!0 = !{i32 0, i32 2147483647}",
+                          Err, C);
+
+  ASSERT_TRUE(M && "Could not parse module?");
+  ASSERT_TRUE(!verifyModule(*M) && "Must have been well formed!");
+
+  runWithSE(*M, "foo", [](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+    auto *X = SE.getSCEV(getInstructionByName(F, "x"));
+    auto *Y = SE.getSCEV(getInstructionByName(F, "y"));
+    auto *Guarded = getInstructionByName(F, "y")->getParent();
+    ASSERT_TRUE(Guarded);
+    EXPECT_TRUE(
+        SE.isBasicBlockEntryGuardedByCond(Guarded, ICmpInst::ICMP_ULT, Y, X));
+    EXPECT_TRUE(
+        SE.isBasicBlockEntryGuardedByCond(Guarded, ICmpInst::ICMP_UGT, X, Y));
+  });
+}
+
+TEST_F(ScalarEvolutionsTest, ProveImplicationViaNarrowing) {
+  LLVMContext C;
+  SMDiagnostic Err;
+  std::unique_ptr<Module> M = parseAssemblyString(
+      "define i32 @foo(i32 %start, i32* %q) { "
+      "entry: "
+      "  %wide.start = zext i32 %start to i64 "
+      "  br label %loop "
+      "loop: "
+      "  %wide.iv = phi i64 [%wide.start, %entry], [%wide.iv.next, %backedge] "
+      "  %iv = phi i32 [%start, %entry], [%iv.next, %backedge] "
+      "  %cond = icmp eq i64 %wide.iv, 0 "
+      "  br i1 %cond, label %exit, label %backedge "
+      "backedge: "
+      "  %iv.next = add i32 %iv, -1 "
+      "  %index = zext i32 %iv.next to i64 "
+      "  %load.addr = getelementptr i32, i32* %q, i64 %index "
+      "  %stop = load i32, i32* %load.addr "
+      "  %loop.cond = icmp eq i32 %stop, 0 "
+      "  %wide.iv.next = add nsw i64 %wide.iv, -1 "
+      "  br i1 %loop.cond, label %loop, label %failure "
+      "exit: "
+      "  ret i32 0 "
+      "failure: "
+      "  unreachable "
+      "} ",
+      Err, C);
+
+  ASSERT_TRUE(M && "Could not parse module?");
+  ASSERT_TRUE(!verifyModule(*M) && "Must have been well formed!");
+
+  runWithSE(*M, "foo", [](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+    auto *IV = SE.getSCEV(getInstructionByName(F, "iv"));
+    auto *Zero = SE.getZero(IV->getType());
+    auto *Backedge = getInstructionByName(F, "iv.next")->getParent();
+    ASSERT_TRUE(Backedge);
+    (void)IV;
+    (void)Zero;
+    // FIXME: This can only be proved with turned on option
+    // scalar-evolution-use-expensive-range-sharpening which is currently off.
+    // Enable the check once it's switched true by default.
+    // EXPECT_TRUE(SE.isBasicBlockEntryGuardedByCond(Backedge,
+    //                                               ICmpInst::ICMP_UGT,
+    //                                               IV, Zero));
+  });
+}
+
+TEST_F(ScalarEvolutionsTest, MatchURem) {
+  LLVMContext C;
+  SMDiagnostic Err;
+  std::unique_ptr<Module> M = parseAssemblyString(
+      "target datalayout = \"e-m:e-p:32:32-f64:32:64-f80:32-n8:16:32-S128\" "
+      " "
+      "define void @test(i32 %a, i32 %b, i16 %c, i64 %d) {"
+      "entry: "
+      "  %rem1 = urem i32 %a, 2"
+      "  %rem2 = urem i32 %a, 5"
+      "  %rem3 = urem i32 %a, %b"
+      "  %c.ext = zext i16 %c to i32"
+      "  %rem4 = urem i32 %c.ext, 2"
+      "  %ext = zext i32 %rem4 to i64"
+      "  %rem5 = urem i64 %d, 17179869184"
+      "  ret void "
+      "} ",
+      Err, C);
+
+  assert(M && "Could not parse module?");
+  assert(!verifyModule(*M) && "Must have been well formed!");
+
+  runWithSE(*M, "test", [&](Function &F, LoopInfo &LI, ScalarEvolution &SE) {
+    for (auto *N : {"rem1", "rem2", "rem3", "rem5"}) {
+      auto *URemI = getInstructionByName(F, N);
+      auto *S = SE.getSCEV(URemI);
+      const SCEV *LHS, *RHS;
+      EXPECT_TRUE(matchURem(SE, S, LHS, RHS));
+      EXPECT_EQ(LHS, SE.getSCEV(URemI->getOperand(0)));
+      EXPECT_EQ(RHS, SE.getSCEV(URemI->getOperand(1)));
+      EXPECT_EQ(LHS->getType(), S->getType());
+      EXPECT_EQ(RHS->getType(), S->getType());
+    }
+
+    // Check the case where the urem operand is zero-extended. Make sure the
+    // match results are extended to the size of the input expression.
+    auto *Ext = getInstructionByName(F, "ext");
+    auto *URem1 = getInstructionByName(F, "rem4");
+    auto *S = SE.getSCEV(Ext);
+    const SCEV *LHS, *RHS;
+    EXPECT_TRUE(matchURem(SE, S, LHS, RHS));
+    EXPECT_NE(LHS, SE.getSCEV(URem1->getOperand(0)));
+    // RHS and URem1->getOperand(1) have different widths, so compare the
+    // integer values.
+    EXPECT_EQ(cast<SCEVConstant>(RHS)->getValue()->getZExtValue(),
+              cast<SCEVConstant>(SE.getSCEV(URem1->getOperand(1)))
+                  ->getValue()
+                  ->getZExtValue());
+    EXPECT_EQ(LHS->getType(), S->getType());
+    EXPECT_EQ(RHS->getType(), S->getType());
   });
 }
 
