@@ -1,5 +1,6 @@
 .. _chapel-spec:
 
+|||||||||||||||||||||||||||||
 Chapel Language Specification
 |||||||||||||||||||||||||||||
 

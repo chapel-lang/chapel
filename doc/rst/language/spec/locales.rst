@@ -2,6 +2,7 @@
 
 .. _Chapter-Locales_Chapter:
 
+=======
 Locales
 =======
 
