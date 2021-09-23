@@ -12,6 +12,8 @@ To those familiar with the Unix socket API, the method names will feel familiar,
 
 To initialize an `ipAddr` there are several available overloads and defaults.
 
+>Note we will use type methods for now but expect to add initializers (and possibly deprecate these ones) once [#8692](https://github.com/chapel-lang/chapel/issues/8692) is resolved
+
 **Method**
 ```python
 proc type ipAddr.create(host:string = "127.0.0.1", port:uint(16) = 8000, family:IPFamily = IPFamily.IPv4)
