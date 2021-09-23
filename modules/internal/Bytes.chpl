@@ -102,7 +102,7 @@ module Bytes {
   public use BytesStringCommon only decodePolicy;  // expose decodePolicy
 
   pragma "no doc"
-  type idxType = int; 
+  type idxType = int;
 
   //
   // createBytes* functions
@@ -419,6 +419,8 @@ module Bytes {
     :returns: A `c_string`
    */
   inline proc bytes.c_str(): c_string {
+    if chpl_warnUnstable then
+      compilerWarning("bytes.c_str() is unstable and may be deprecated in future releases.");
     return getCStr(this);
   }
 
@@ -427,7 +429,7 @@ module Bytes {
 
     :arg i: The index
 
-    :returns: A 1-length :mod:`bytes <Bytes>` 
+    :returns: A 1-length :mod:`bytes <Bytes>`
    */
   proc bytes.item(i: int): bytes {
     if boundsChecking && (i < 0 || i >= this.buffLen)
@@ -516,7 +518,7 @@ module Bytes {
   inline proc bytes.this(r: range(?)) : bytes {
     return getSlice(this, r);
   }
-  
+
   /*
     Checks if the :mod:`bytes <Bytes>` is empty.
 
@@ -632,7 +634,7 @@ module Bytes {
     :arg ignoreEmpty: * `true`-- Empty :mod:`bytes <Bytes>` will not be yielded,
                       * `false`-- Empty :mod:`bytes <Bytes>` will be yielded
 
-    :yields: :mod:`bytes <Bytes>` 
+    :yields: :mod:`bytes <Bytes>`
    */
   iter bytes.split(sep: bytes, maxsplit: int = -1,
              ignoreEmpty: bool = false): bytes {
@@ -645,7 +647,7 @@ module Bytes {
     :arg maxsplit: The maximum number of times to split the :mod:`bytes <Bytes>`,
                    negative values indicate no limit.
 
-    :yields: :mod:`bytes <Bytes>` 
+    :yields: :mod:`bytes <Bytes>`
    */
   iter bytes.split(maxsplit: int = -1) : bytes {
     for s in doSplitWSNoEnc(this, maxsplit) do yield s;
@@ -761,14 +763,14 @@ module Bytes {
     /*
       Returns a UTF-8 string from the given :mod:`bytes <Bytes>`. If the data is
       malformed for UTF-8, `policy` argument determines the action.
-      
+
       :arg policy: - `decodePolicy.strict` raises an error
                    - `decodePolicy.replace` replaces the malformed character
                      with UTF-8 replacement character
                    - `decodePolicy.drop` drops the data silently
                    - `decodePolicy.escape` escapes each illegal byte with
                      private use codepoints
-      
+
       :throws: `DecodeError` if `decodePolicy.strict` is passed to the `policy`
                argument and the :mod:`bytes <Bytes>` contains non-UTF-8 characters.
 
@@ -1104,19 +1106,19 @@ module Bytes {
      :returns: A new :mod:`bytes <Bytes>` which is the result of repeating `s`
                `n` times.  If `n` is less than or equal to 0, an empty bytes is
                returned.
-          
+
      The operation is commutative.
      For example:
 
      .. code-block:: chapel
-        
+
         writeln(b"Hello! "*3);
         or
         writeln(3*b"Hello! ");
 
      Results in::
 
-        Hello! Hello! Hello!         
+        Hello! Hello! Hello!
   */
   operator *(s: bytes, n: integral) {
     return doMultiply(s, n);

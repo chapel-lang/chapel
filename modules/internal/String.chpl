@@ -1298,6 +1298,8 @@ module String {
         on the same locale as the string.
    */
   inline proc string.c_str(): c_string {
+    if chpl_warnUnstable then
+      compilerWarning("string.c_str() is unstable and may be deprecated in future releases.");
     return getCStr(this);
   }
 
