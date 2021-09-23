@@ -502,7 +502,8 @@ module ChapelHashtable {
       var n = (numKeys - 1): uint;
 
       var k = 2;
-  
+
+      // TODO: change to `clz()` from BitOps module to avoid while loop
       while n >> 1 > 0 {
         n = n >> 1;
         k = k << 1;
