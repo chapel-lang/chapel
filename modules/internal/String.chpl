@@ -575,7 +575,7 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(x: string) {
+  inline proc createStringWithBorrowedBuffer(x: string) : string {
     // we don't validate here because `x` must have been validated already
     var ret: string;
     ret.cachedNumCodepoints = x.cachedNumCodepoints;
@@ -599,13 +599,14 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithBorrowedBuffer(x: c_string, length=x.size) throws {
+  inline proc createStringWithBorrowedBuffer(x: c_string,
+                                             length=x.size) : string throws {
     return createStringWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
                                                             size=length+1);
   }
 
   pragma "no doc"
-  proc chpl_createLiteralsBuffer(size: int): c_void_ptr {
+  proc chpl_createLiteralsBuffer(size: int) : c_void_ptr {
     return c_malloc(uint(8), size):c_void_ptr;
   }
 
@@ -614,7 +615,7 @@ module String {
                                     offset: int,
                                     x: c_string,
                                     length: int,
-                                    numCodepoints: int) {
+                                    numCodepoints: int) : string {
     // copy the string to the combined buffer
     var buf = buffer:c_ptr(uint(8));
     buf = buf + offset;
@@ -651,7 +652,8 @@ module String {
      :returns: A new `string`
   */
   inline proc createStringWithBorrowedBuffer(x: c_ptr(?t),
-                                             length: int, size: int) throws {
+                                             length: int,
+                                             size: int) : string throws {
     if t != byteType && t != c_char {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
@@ -662,7 +664,7 @@ module String {
   }
 
   pragma "no doc"
-  inline proc createStringWithOwnedBuffer(x: string) {
+  inline proc createStringWithOwnedBuffer(x: string) : string {
     // should we allow stealing ownership?
     compilerError("A Chapel string cannot be passed to createStringWithOwnedBuffer");
   }
@@ -682,7 +684,8 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithOwnedBuffer(x: c_string, length=x.size) throws {
+  inline proc createStringWithOwnedBuffer(x: c_string,
+                                          length=x.size) : string throws {
     return createStringWithOwnedBuffer(x: bufferType, length=length,
                                                       size=length+1);
   }
@@ -706,7 +709,8 @@ module String {
      :returns: A new `string`
   */
   inline proc createStringWithOwnedBuffer(x: c_ptr(?t),
-                                          length: int, size: int) throws {
+                                          length: int,
+                                          size: int) : string throws {
     if t != byteType && t != c_char {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
@@ -724,7 +728,7 @@ module String {
 
     :returns: A new `string`
   */
-  inline proc createStringWithNewBuffer(x: string) {
+  inline proc createStringWithNewBuffer(x: string) : string {
     // we don't validate here because `x` must have been validated already
     var ret: string;
     ret.cachedNumCodepoints = x.numCodepoints;
@@ -755,7 +759,7 @@ module String {
     :returns: A new `string`
   */
   inline proc createStringWithNewBuffer(x: c_string, length=x.size,
-                                        policy=decodePolicy.strict) throws {
+                                        policy=decodePolicy.strict) : string throws {
     return createStringWithNewBuffer(x: bufferType, length=length,
                                      size=length+1, policy);
   }
@@ -786,7 +790,7 @@ module String {
   */
   inline proc createStringWithNewBuffer(x: c_ptr(?t),
                                         length: int, size=length+1,
-                                        policy=decodePolicy.strict) throws {
+                                        policy=decodePolicy.strict) : string throws {
     if t != byteType && t != c_char {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
@@ -1231,24 +1235,24 @@ module String {
   /*
     :returns: The number of codepoints in the string.
   */
-  inline proc const string.size return numCodepoints;
+  inline proc const string.size : int return numCodepoints;
 
   /*
     :returns: The indices that can be used to index into the string
               (i.e., the range ``0..<this.size``)
   */
-  inline proc string.indices return 0..<size;
+  inline proc string.indices : range return 0..<size;
 
   /*
     :returns: The number of bytes in the string.
   */
-  inline proc string.numBytes return buffLen;
+  inline proc string.numBytes : int return buffLen;
 
   /*
     :returns: The number of codepoints in the string, assuming the
               string is correctly-encoded UTF-8.
   */
-  inline proc const string.numCodepoints {
+  inline proc const string.numCodepoints : int {
     if useCachedNumCodepoints {
       return this.cachedNumCodepoints;
     }
@@ -1287,17 +1291,17 @@ module String {
 
     .. code-block:: chapel
 
-        var my_string = "Hello!";
-        on different_locale {
-          printf("%s", my_string.localize().c_str());
-        }
+      var my_string = "Hello!";
+      on different_locale {
+        printf("%s", my_string.localize().c_str());
+      }
 
     :returns:
         A `c_string` that points to the underlying buffer used by this
         :mod:`string <String>`. The returned `c_string` is only valid when used
         on the same locale as the string.
    */
-  inline proc string.c_str(): c_string {
+  inline proc string.c_str() : c_string {
     if chpl_warnUnstable then
       compilerWarning("string.c_str() is unstable and may be deprecated in future releases.");
     return getCStr(this);
@@ -1314,7 +1318,7 @@ module String {
 
     :returns: :mod:`bytes <Bytes>`
   */
-  proc string.encode(policy=encodePolicy.pass): bytes {
+  proc string.encode(policy=encodePolicy.pass) : bytes {
     var localThis: string = this.localize();
 
     if policy == encodePolicy.pass || this.isASCII() {  // just copy
@@ -1426,7 +1430,7 @@ module String {
   /*
     Iterates over the string byte by byte.
   */
-  iter string.chpl_bytes(): byteType {
+  iter string.chpl_bytes() : uint(8) {
     var localThis: string = this.localize();
 
     foreach i in 0..#localThis.buffLen {
@@ -1437,7 +1441,7 @@ module String {
   /*
     Iterates over the string Unicode character by Unicode character.
   */
-  iter string.codepoints(): int(32) {
+  iter string.codepoints() : int(32) {
     const localThis = this.localize();
     var i = 0;
     while i < localThis.buffLen {
@@ -1448,7 +1452,7 @@ module String {
   /*
     :returns: The value of a single-byte string as an integer.
   */
-  proc string.toByte(): uint(8) {
+  proc string.toByte() : uint(8) {
     if this.buffLen != 1 then
       halt("string.toByte() only accepts single-byte strings");
     return bufferGetByte(buf=this.buff, off=0, loc=this.locale_id);
@@ -1457,7 +1461,7 @@ module String {
   /*
     :returns: The value of the `i` th byte as an integer.
   */
-  proc string.byte(i: int): uint(8) {
+  proc string.byte(i: int) : uint(8) {
     if boundsChecking && (i < 0 || i >= this.buffLen)
       then halt("index ", i, " out of bounds for string with ", this.numBytes, " bytes");
     return bufferGetByte(buf=this.buff, off=i, loc=this.locale_id);
@@ -1466,7 +1470,7 @@ module String {
   /*
     :returns: The value of a single-codepoint string as an integer.
    */
-  proc string.toCodepoint(): int(32) {
+  proc string.toCodepoint() : int(32) {
     // TODO: Engin: at least we can check whether the length is less than 4
     // bytes before localizing?
     var localThis: string = this.localize();
@@ -1495,7 +1499,7 @@ module String {
   /*
     :returns: The value of the `i` th multibyte character as an integer.
    */
-  proc string.codepoint(i: int): int(32) {
+  proc string.codepoint(i: int) : int(32) {
     // TODO: Engin we may need localize here
     const idx = i: int;
     if boundsChecking && idx < 0 then
@@ -1738,7 +1742,7 @@ module String {
                                         `sep` occurs multiple times in a row.
    */
   iter string.split(sep: string, maxsplit: int = -1,
-                    ignoreEmpty: bool = false) /* : string */ {
+                    ignoreEmpty: bool = false) : string {
     // TODO: specifying return type leads to un-inited string?
     for s in doSplit(this, sep, maxsplit, ignoreEmpty) do yield s;
   }
@@ -1749,7 +1753,7 @@ module String {
     :arg maxsplit: The number of times to split the string, negative values
                    indicate no limit.
    */
-  iter string.split(maxsplit: int = -1) /* : string */ {
+  iter string.split(maxsplit: int = -1) : string {
     // TODO: specifying return type leads to un-inited string?
     if this.isASCII() {
       for s in doSplitWSNoEnc(this, maxsplit) do yield s;
@@ -1764,8 +1768,8 @@ module String {
 
     .. code-block:: chapel
 
-        var x = "|".join("a","10","d");
-        writeln(x); // prints: "a|10|d"
+        var myString = "|".join("a","10","d");
+        writeln(myString); // prints: "a|10|d"
    */
   inline proc string.join(const ref x: string ...) : string {
     return _join(x);
@@ -1776,8 +1780,9 @@ module String {
 
     .. code-block:: chapel
 
-        var x = "|".join("a","10","d");
-        writeln(x); // prints: "a|10|d"
+        var tup = ("a","10","d");
+        var myString = "|".join(tup);
+        writeln(myString); // prints: "a|10|d"
    */
   inline proc string.join(const ref x) : string where isTuple(x) {
     if !isHomogeneousTuple(x) || !isString(x[1]) then
@@ -1790,11 +1795,11 @@ module String {
 
     .. code-block:: chapel
 
-        var x = "|".join(["a","10","d"]);
-        writeln(x); // prints: "a|10|d"
+        var myString = "|".join(["a","10","d"]);
+        writeln(myString); // prints: "a|10|d"
    */
-  inline proc string.join(const ref S: [] string) : string {
-    return _join(S);
+  inline proc string.join(const ref x: [] string) : string {
+    return _join(x);
   }
 
     /*
@@ -1808,7 +1813,8 @@ module String {
       :returns: A new string with `leading` and/or `trailing` occurrences of
                 characters in `chars` removed as appropriate.
     */
-    proc string.strip(chars: string = " \t\r\n", leading=true, trailing=true) : string {
+    proc string.strip(chars: string = " \t\r\n", leading=true,
+                      trailing=true) : string {
       if this.isASCII() {
         return doStripNoEnc(this, chars, leading, trailing);
       } else {
@@ -1893,7 +1899,7 @@ module String {
           ``string.dedent`` is not considered stable and is subject to change in
           future Chapel releases.
     */
-    proc string.dedent(columns=0, ignoreFirst=true): string {
+    proc string.dedent(columns=0, ignoreFirst=true) : string {
       if chpl_warnUnstable then
         compilerWarning("string.dedent is subject to change in the future.");
       return doDedent(this, columns, ignoreFirst);
@@ -2228,7 +2234,7 @@ module String {
   /*
      Copies the string `rhs` into the string `lhs`.
   */
-  operator =(ref lhs: string, rhs: string) {
+  operator =(ref lhs: string, rhs: string) : void {
     doAssign(lhs, rhs);
   }
 
@@ -2238,7 +2244,7 @@ module String {
   /*
      :returns: A new string which is the result of concatenating `s0` and `s1`
   */
-  operator string.+(s0: string, s1: string) {
+  operator string.+(s0: string, s1: string) : string {
     return doConcat(s0, s1);
   }
 
@@ -2259,7 +2265,7 @@ module String {
 
        Hello! Hello! Hello!
   */
-  operator *(s: string, n: integral) {
+  operator *(s: string, n: integral) : string {
     return doMultiply(s, n);
   }
 
@@ -2471,7 +2477,7 @@ module String {
      :returns: A string storing the complete multibyte character sequence
                that corresponds to the codepoint value `i`.
   */
-  inline proc codepointToString(i: int(32)) {
+  inline proc codepointToString(i: int(32)) : string {
     const mblength = qio_nbytes_char(i): int;
     var (buffer, mbsize) = bufferAlloc(mblength+1);
     qio_encode_char_buf(buffer, i);

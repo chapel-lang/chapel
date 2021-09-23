@@ -47,16 +47,16 @@ bytes and needs to be decoded to be converted to string.
 
 .. code-block:: chapel
 
-   var s = "my string";
-   var b = s:bytes;  // this is legal
+  var s = "my string";
+  var b = s:bytes;  // this is legal
 
-   /*
-    The reverse is not. The following is a compiler error:
+  /*
+   The reverse is not. The following is a compiler error:
 
-    var s2 = b:string;
-   */
+   var s2 = b:string;
+  */
 
-   var s2 = b.decode(); // you need to decode a bytes to convert it to a string
+  var s2 = b.decode(); // you need to decode a bytes to convert it to a string
 
 See the documentation for the :proc:`~bytes.decode` method for details.
 
@@ -117,7 +117,7 @@ module Bytes {
 
     :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithBorrowedBuffer(x: bytes) {
+  inline proc createBytesWithBorrowedBuffer(x: bytes) : bytes {
     var ret: bytes;
     initWithBorrowedBuffer(ret, x);
     return ret;
@@ -136,7 +136,8 @@ module Bytes {
 
     :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithBorrowedBuffer(x: c_string, length=x.size) {
+  inline proc createBytesWithBorrowedBuffer(x: c_string,
+                                            length=x.size) : bytes {
     return createBytesWithBorrowedBuffer(x:c_ptr(uint(8)), length=length,
                                                            size=length+1);
   }
@@ -173,7 +174,8 @@ module Bytes {
 
      :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithBorrowedBuffer(x: c_ptr(?t), length: int, size: int) {
+  inline proc createBytesWithBorrowedBuffer(x: c_ptr(?t), length: int,
+                                            size: int) : bytes {
     if t != byteType && t != c_char {
       compilerError("Cannot create a bytes with a buffer of ", t:string);
     }
@@ -200,7 +202,7 @@ module Bytes {
 
     :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithOwnedBuffer(x: c_string, length=x.size) {
+  inline proc createBytesWithOwnedBuffer(x: c_string, length=x.size) : bytes {
     return createBytesWithOwnedBuffer(x: bufferType, length=length,
                                                       size=length+1);
   }
@@ -219,7 +221,8 @@ module Bytes {
 
      :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithOwnedBuffer(x: c_ptr(?t), length: int, size: int) {
+  inline proc createBytesWithOwnedBuffer(x: c_ptr(?t), length: int,
+                                         size: int) : bytes {
     if t != byteType && t != c_char {
       compilerError("Cannot create a bytes with a buffer of ", t:string);
     }
@@ -236,7 +239,7 @@ module Bytes {
 
     :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithNewBuffer(x: bytes) {
+  inline proc createBytesWithNewBuffer(x: bytes) : bytes {
     var ret: bytes;
     initWithNewBuffer(ret, x);
     return ret;
@@ -253,7 +256,7 @@ module Bytes {
 
     :returns: A new :mod:`bytes <Bytes>`
   */
-  inline proc createBytesWithNewBuffer(x: c_string, length=x.size) {
+  inline proc createBytesWithNewBuffer(x: c_string, length=x.size) : bytes {
     return createBytesWithNewBuffer(x: bufferType, length=length,
                                                     size=length+1);
   }
@@ -271,7 +274,7 @@ module Bytes {
      :returns: A new :mod:`bytes <Bytes>`
   */
   inline proc createBytesWithNewBuffer(x: c_ptr(?t), length: int,
-                                       size=length+1) {
+                                       size=length+1) : bytes {
     if t != byteType && t != c_char {
       compilerError("Cannot create a bytes with a buffer of ", t:string);
     }
@@ -346,7 +349,7 @@ module Bytes {
 
     // byteIndex overload provides a nicer interface for string/bytes
     // generic programming
-    proc this(i: byteIndex): byteType {
+    proc this(i: byteIndex): uint(8) {
       return this.byte(i:int);
     }
 
@@ -382,18 +385,18 @@ module Bytes {
   /*
     :returns: The number of bytes in the :mod:`bytes <Bytes>`.
     */
-  inline proc bytes.size: int return buffLen;
+  inline proc bytes.size : int return buffLen;
 
   /*
     :returns: The indices that can be used to index into the bytes
               (i.e., the range ``0..<this.size``)
   */
-  proc bytes.indices return 0..<size;
+  proc bytes.indices : range return 0..<size;
 
   /*
     :returns: The number of bytes in the :mod:`bytes <Bytes>`.
     */
-  inline proc bytes.numBytes return buffLen;
+  inline proc bytes.numBytes : int return buffLen;
 
   /*
      Gets a version of the :mod:`bytes <Bytes>` that is on the currently
@@ -416,11 +419,30 @@ module Bytes {
     Gets a `c_string` from a :mod:`bytes <Bytes>`. The returned `c_string`
     shares the buffer with the :mod:`bytes <Bytes>`.
 
-    :returns: A `c_string`
+    .. warning::
+
+      This can only be called safely on a :mod:`bytes <Bytes>` whose home is
+      the current locale.  This property can be enforced by calling
+      :proc:`bytes.localize()` before :proc:`~bytes.c_str()`. If the
+      bytes is remote, the program will halt.
+
+    For example:
+
+    .. code-block:: chapel
+
+        var myBytes = b"Hello!";
+        on different_locale {
+          printf("%s", myBytes.localize().c_str());
+        }
+
+    :returns: A `c_string` that points to the underlying buffer used by this
+        :mod:`bytes <Bytes>`. The returned `c_string` is only valid when used
+        on the same locale as the bytes.
    */
   inline proc bytes.c_str(): c_string {
     if chpl_warnUnstable then
-      compilerWarning("bytes.c_str() is unstable and may be deprecated in future releases.");
+      compilerWarning("bytes.c_str() is unstable and may be deprecated in \
+                       future releases.");
     return getCStr(this);
   }
 
@@ -446,7 +468,7 @@ module Bytes {
 
     :returns: uint(8)
    */
-  proc bytes.this(i: int): byteType {
+  proc bytes.this(i: int): uint(8) {
     return this.byte(i);
   }
 
@@ -467,7 +489,7 @@ module Bytes {
 
     :returns: The value of the `i` th byte as an integer.
   */
-  proc bytes.byte(i: int): byteType {
+  proc bytes.byte(i: int): uint(8) {
     if boundsChecking && (i < 0 || i >= this.buffLen)
       then halt("index ", i, " out of bounds for bytes with length ", this.buffLen);
     return bufferGetByte(buf=this.buff, off=i, loc=this.locale_id);
@@ -488,7 +510,7 @@ module Bytes {
 
     :yields: uint(8)
    */
-  iter bytes.these(): byteType {
+  iter bytes.these(): uint(8) {
     for i in this.bytes() do
       yield i;
   }
@@ -498,7 +520,7 @@ module Bytes {
 
     :yields: uint(8)
   */
-  iter bytes.chpl_bytes(): byteType {
+  iter bytes.chpl_bytes(): uint(8) {
     foreach i in this.indices do
       yield this.byte(i);
   }
@@ -568,7 +590,8 @@ module Bytes {
               within the :mod:`bytes <Bytes>`, or -1 if the `needle` is not in the
               :mod:`bytes <Bytes>`.
    */
-  inline proc bytes.find(needle: bytes, region: range(?) = this.indices) : idxType {
+  inline proc bytes.find(needle: bytes,
+                         region: range(?) = this.indices) : idxType {
     return doSearchNoEnc(this, needle, region, count=false): idxType;
   }
 
@@ -585,7 +608,8 @@ module Bytes {
               within the :mod:`bytes <Bytes>`, or -1 if the `needle` is not in the
               :mod:`bytes <Bytes>`.
    */
-  inline proc bytes.rfind(needle: bytes, region: range(?) = this.indices) : idxType {
+  inline proc bytes.rfind(needle: bytes,
+                          region: range(?) = this.indices) : idxType {
     return doSearchNoEnc(this, needle, region, count=false,
                          fromLeft=false): idxType;
   }
@@ -601,7 +625,8 @@ module Bytes {
 
     :returns: the number of times `needle` occurs in the :mod:`bytes <Bytes>`
    */
-  inline proc bytes.count(needle: bytes, region: range(?) = this.indices) : int {
+  inline proc bytes.count(needle: bytes,
+                          region: range(?) = this.indices) : int {
     return doSearchNoEnc(this, needle, region, count=true);
   }
 
@@ -618,7 +643,9 @@ module Bytes {
     :returns: a copy of the :mod:`bytes <Bytes>` where `replacement` replaces
               `needle` up to `count` times
    */
-  inline proc bytes.replace(needle: bytes, replacement: bytes, count: int = -1) : bytes {
+  inline proc bytes.replace(needle: bytes,
+                            replacement: bytes,
+                            count: int = -1) : bytes {
     return doReplace(this, needle, replacement, count);
   }
 
@@ -660,15 +687,15 @@ module Bytes {
 
       .. code-block:: chapel
 
-          var x = b"|".join(b"a",b"10",b"d");
-          writeln(x); // prints: "a|10|d"
+          var myBytes = b"|".join(b"a",b"10",b"d");
+          writeln(myBytes); // prints: "a|10|d"
 
-      :arg S: :mod:`bytes <Bytes>` values to be joined
+      :arg x: :mod:`bytes <Bytes>` values to be joined
 
       :returns: A :mod:`bytes <Bytes>`
     */
-    inline proc bytes.join(const ref S: bytes ...) : bytes {
-      return _join(S);
+    inline proc bytes.join(const ref x: bytes ...) : bytes {
+      return _join(x);
     }
 
     /*
@@ -679,11 +706,11 @@ module Bytes {
       .. code-block:: chapel
 
           var tup = (b"a",b"10",b"d");
-          var x = b"|".join(tup);
-          writeln(x); // prints: "a|10|d"
+          var myBytes = b"|".join(tup);
+          writeln(myBytes); // prints: "a|10|d"
 
-      :arg S: :mod:`bytes <Bytes>` values to be joined
-      :type S: tuple or array of :mod:`bytes <Bytes>`
+      :arg x: :mod:`bytes <Bytes>` values to be joined
+      :type x: tuple or array of :mod:`bytes <Bytes>`
 
       :returns: A :mod:`bytes <Bytes>`
     */
@@ -747,7 +774,7 @@ module Bytes {
                          common leading whitespace, and make no changes to the
                          first line.
 
-       :returns: A new `bytes` with indentation removed.
+       :returns: A new :mod:`bytes <Bytes>` with indentation removed.
 
        .. warning::
 
@@ -776,7 +803,7 @@ module Bytes {
 
       :returns: A UTF-8 string.
     */
-    proc bytes.decode(policy=decodePolicy.strict): string throws {
+    proc bytes.decode(policy=decodePolicy.strict) : string throws {
       // NOTE: In the future this method could support more encodings.
       var localThis: bytes = this.localize();
       return decodeByteBuffer(localThis.buff, localThis.buffLen, policy);
@@ -1074,7 +1101,7 @@ module Bytes {
   /*
      Copies the :mod:`bytes <Bytes>` `rhs` into the :mod:`bytes <Bytes>` `lhs`.
   */
-  operator bytes.=(ref lhs: bytes, rhs: bytes) {
+  operator bytes.=(ref lhs: bytes, rhs: bytes) : void {
     doAssign(lhs, rhs);
   }
 
@@ -1083,7 +1110,7 @@ module Bytes {
 
      Halts if `lhs` is a remote bytes.
   */
-  operator bytes.=(ref lhs: bytes, rhs_c: c_string) {
+  operator bytes.=(ref lhs: bytes, rhs_c: c_string) : void {
     lhs = createBytesWithNewBuffer(rhs_c);
   }
 
@@ -1094,7 +1121,7 @@ module Bytes {
      :returns: A new :mod:`bytes <Bytes>` which is the result of concatenating
                `s0` and `s1`
   */
-  operator bytes.+(s0: bytes, s1: bytes) {
+  operator bytes.+(s0: bytes, s1: bytes) : bytes {
     return doConcat(s0, s1);
   }
 
@@ -1120,7 +1147,7 @@ module Bytes {
 
         Hello! Hello! Hello!
   */
-  operator *(s: bytes, n: integral) {
+  operator *(s: bytes, n: integral) : bytes {
     return doMultiply(s, n);
   }
 
