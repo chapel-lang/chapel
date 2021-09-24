@@ -142,16 +142,21 @@ prunedocs: FORCE
 	fi
 
 
-clean: clean-source clean-build clean-build-dir
+clean: clean-source clean-build clean-build-dir FORCE
 
-cleanall: clean-source clean-build clean-build-dir
+cleanall: clean-source clean-build clean-build-dir FORCE
 
-clobber: clean-source clean-build clean-build-dir
+clobber: clean-source clean-build clean-build-dir FORCE
 
-clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax
+clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax clean-compiler-internals FORCE
 
 clean-build-dir: FORCE
 	rm -rf ../build/doc
+
+clean-compiler-internals: FORCE
+	@echo
+	@echo "Removing compiler-internals .rst files"
+	rm -rf "$(COMPILER_INTERNALS)"
 
 clean-collect-syntax: FORCE
 	@echo
