@@ -16,8 +16,8 @@ var elapsed = t.elapsed();
 if performanceTest then writeln("Time per operation : ", elapsed * 1000 / n, " ms");
 
 proc test() {
-    var myc1 = new chan(int, 1);
-    var myc2 = new chan(int, 1);
+    var myc1 = new channel(int, 1);
+    var myc2 = new channel(int, 1);
     myc1.send(0);
     for i in 0..#cnt {
         var x1 : int;

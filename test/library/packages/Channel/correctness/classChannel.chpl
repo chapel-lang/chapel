@@ -3,7 +3,7 @@ use Channel;
 class C {
     var x : int;
 }
-var chan1 = new chan(unmanaged C?, 1);
+var chan1 = new channel(unmanaged C?, 1);
 
 var b = new unmanaged C(2);
 

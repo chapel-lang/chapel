@@ -1,7 +1,7 @@
 use Channel;
 config const n = 100;
 
-var chan1 = new chan(int, 5);
+var chan1 = new channel(int, 5);
 
 var total1, total2 : atomic int;
 coforall i in 1..n {

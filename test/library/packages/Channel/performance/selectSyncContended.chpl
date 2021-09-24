@@ -6,10 +6,10 @@ const numTasksPerLocale = if dataParTasksPerLocale > 0 then dataParTasksPerLocal
 config const performanceTest = false;
 var t : Timer;
 t.start();
-var myc1 = new chan(int);
-var myc2 = new chan(int);
-var myc3 = new chan(int);
-var done = new chan(int);
+var myc1 = new channel(int);
+var myc2 = new channel(int);
+var myc3 = new channel(int);
+var done = new channel(int);
 sync {
     for tid in 0..#numTasksPerLocale {
         begin with (ref myc1, ref myc2, ref myc3, ref done) {

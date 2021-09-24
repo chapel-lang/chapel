@@ -163,29 +163,9 @@ module Channel {
         }
     }
 
-    class chan {
-
-        /* The type of elements that can be sent to the channel. */
+    record channel {
         type eltType;
-
-        /* Maximum number of elements that the channel can hold at a time. */
-        var bufferSize : int;
-        pragma "no doc"
-        var buffer : [0..#bufferSize] eltType;
-        pragma "no doc"
-        var sendIdx = 0;
-        pragma "no doc"
-        var recvIdx = 0;
-        pragma "no doc"
-        var count = 0;
-        pragma "no doc"
-        var closed = false;
-        pragma "no doc"
-        var sendWaiters : WaiterQueue;
-        pragma "no doc"
-        var recvWaiters : WaiterQueue;
-        pragma "no doc"
-        var lock$ = new _LockWrapper();
+        var channelObj : shared chan(eltType);
 
         /*
         Initialize a channel
@@ -196,21 +176,17 @@ module Channel {
         :arg size: Specify the maximum capacity for the channel ``bufferSize``.
         :type size: `int`
         */
-        proc init(type elt, size = 0) {
-            eltType = elt;
-            bufferSize = size;
-            sendWaiters = new WaiterQueue(elt);
-            recvWaiters = new WaiterQueue(elt);
+        proc init(type eltType, size = 0) {
+            this.eltType = eltType;
+            channelObj = new shared chan(eltType, size);
         }
 
-        pragma "no doc"
         proc lock() {
-            lock$.lock();
+            this.channelObj.lock();
         }
 
-        pragma "no doc"
         proc unlock() {
-            lock$.unlock();
+            this.channelObj.unlock();
         }
 
         /*
@@ -231,6 +207,87 @@ module Channel {
         }
 
         pragma "no doc"
+        proc recv(out val : eltType, blocking : bool) : bool {
+            return this.channelObj.recv(val, blocking);
+        }
+
+        /*
+        Send a value to the channel buffer. If the buffer is at maximum
+        capacity it will suspend the waiting task, until there is space in the
+        buffer or a receiving task awakes it. If a channel is closed no more
+        data can be sent to it.
+
+        :arg val: Data to be sent to the channel
+        :type val: `eltType`
+
+        :throws ChannelError: If ``send`` is called on a closed channel.
+        */
+
+        proc send(val : eltType) throws {
+            var value = val;
+            send(value, true);
+        }
+
+        pragma "no doc"
+        proc send(ref val : eltType, blocking : bool) : bool throws {
+            return this.channelObj.send(val, blocking);
+        }
+
+        /*
+        This function is used to close a channel indicating that no more data
+        can be sent to it.
+
+        :throws ChannelError: If called on a closed channel.
+        */
+
+        proc close() throws {
+            this.channelObj.close();
+        }
+
+        /* Iterator to receive data from the channel until it is closed. */
+        iter these() {
+            while(true) {
+                var received : eltType;
+                var status = recv(received);
+                if !status then break;
+                yield received;
+            }
+        }
+
+    }
+
+    pragma "no doc"
+    class chan {
+
+        /* The type of elements that can be sent to the channel. */
+        type eltType;
+
+        /* Maximum number of elements that the channel can hold at a time. */
+        var bufferSize : int;
+        var buffer : [0..#bufferSize] eltType;
+        var sendIdx = 0;
+        var recvIdx = 0;
+        var count = 0;
+        var closed = false;
+        var sendWaiters : WaiterQueue;
+        var recvWaiters : WaiterQueue;
+        var lock$ = new _LockWrapper();
+
+        proc init(type elt, size = 0) {
+            eltType = elt;
+            bufferSize = size;
+            sendWaiters = new WaiterQueue(elt);
+            recvWaiters = new WaiterQueue(elt);
+        }
+
+        proc lock() {
+            lock$.lock();
+        }
+
+        proc unlock() {
+            lock$.unlock();
+        }
+
         proc recv(out val : eltType, blocking : bool) : bool {
             if blocking then lock();
 
@@ -286,24 +343,6 @@ module Channel {
 
         }
 
-        /*
-        Send a value to the channel buffer. If the buffer is at maximum
-        capacity it will suspend the waiting task, until there is space in the
-        buffer or a receiving task awakes it. If a channel is closed no more
-        data can be sent to it.
-
-        :arg val: Data to be sent to the channel
-        :type val: `eltType`
-
-        :throws ChannelError: If ``send`` is called on a closed channel.
-        */
-
-        proc send(val : eltType) throws {
-            var value = val;
-            send(value, true);
-        }
-
-        pragma "no doc"
         proc send(ref val : eltType, blocking : bool) : bool throws {
             if blocking then lock();
 
@@ -353,13 +392,6 @@ module Channel {
             }
         }
 
-        /*
-        This function is used to close a channel indicating that no more data
-        can be sent to it.
-
-        :throws ChannelError: If called on a closed channel.
-        */
-
         proc close() throws {
 
             lock();
@@ -394,15 +426,6 @@ module Channel {
             }
         }
 
-        /* Iterator to receive data from the channel until it is closed. */
-        iter these() {
-            while(true) {
-                var received : eltType;
-                var status = recv(received);
-                if !status then break;
-                yield received;
-            }
-        }
     }
 
     /* Error class for Channel */
@@ -439,32 +462,25 @@ module Channel {
     class SelectCase : SelectBaseClass {
         type eltType;
         var val : c_ptr(eltType);
-        var channel : borrowed chan(eltType);
+        var selectChannel : channel(eltType);
         var operation : selectOperation;
         var waiter : unmanaged Waiter(eltType)?;
         var id : int;
 
-        proc init(ref value, ref channel : chan(?), op : selectOperation, caseId : int) {
+        proc init(ref value, ref selectChannel : channel(?), op : selectOperation, caseId : int) {
             this.eltType = value.type;
             this.val = c_ptrTo(value);
-            this.channel = channel.borrow();
-            this.operation = op;
-            this.id = caseId;
-        }
-
-        proc setup(ref value : eltType, ref channel : chan(eltType), op : selectOperation, caseId : int) {
-            this.val = c_ptrTo(value);
-            this.channel = channel.borrow();
+            this.selectChannel = selectChannel;
             this.operation = op;
             this.id = caseId;
         }
 
         override proc lockChannel() {
-            channel.lock();
+            selectChannel.lock();
         }
 
         override proc unlockChannel() {
-            channel.unlock();
+            selectChannel.unlock();
         }
 
         override proc getId() : int {
@@ -474,30 +490,30 @@ module Channel {
         /* Carry out the case operation and return the status */
         override proc sendRecv() : bool {
             if operation == selectOperation.recv {
-                return channel.recv(val.deref(), false);
+                return selectChannel.recv(val.deref(), false);
             }
-            else return (try! channel.send(val.deref(), false));
+            else return (try! selectChannel.send(val.deref(), false));
         }
         /* Retreive the address of the involved channel */
         override proc getAddr() : c_uintptr {
-            return ((channel : c_void_ptr) : c_uintptr);
+            return ((selectChannel.channelObj : c_void_ptr) : c_uintptr);
         }
 
         override proc enqueueWaiter(ref process$ : single bool, ref isDone : atomic int) {
             waiter = new unmanaged Waiter(val, process$, isDone, id);
             if operation == selectOperation.recv {
-                channel.recvWaiters.enqueue(waiter!);
+                selectChannel.channelObj.recvWaiters.enqueue(waiter!);
             }
             else {
-                channel.sendWaiters.enqueue(waiter!);
+                selectChannel.channelObj.sendWaiters.enqueue(waiter!);
             }
         }
 
         override proc dequeueWaiter() {
             if operation == selectOperation.recv {
-                channel.recvWaiters.dequeue(waiter!);
+                selectChannel.channelObj.recvWaiters.dequeue(waiter!);
             }
-            else channel.sendWaiters.dequeue(waiter!);
+            else selectChannel.channelObj.sendWaiters.dequeue(waiter!);
             delete waiter;
         }
     }

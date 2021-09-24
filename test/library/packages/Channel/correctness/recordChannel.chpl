@@ -4,7 +4,7 @@ record r1 {
     var x, y : int;
 }
 
-var chan1 = new chan(r1);
+var chan1 = new channel(r1);
 
 begin {
     chan1.send(new r1(1, 2));

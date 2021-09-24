@@ -1,7 +1,7 @@
 use Channel;
 
-var chan1 = new chan(int, 1);
-var chan2 = new chan(int, 1);
+var chan1 = new channel(int, 1);
+var chan2 = new channel(int, 1);
 
 var x1, x2 : int;
 

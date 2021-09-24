@@ -8,7 +8,7 @@ config const performanceTest = false;
 var t : Timer;
 t.start();
 
-coforall i in 0..#n {
+forall i in 0..#n {
     test();
 }
 t.stop();
@@ -17,7 +17,7 @@ var elapsed = t.elapsed();
 if performanceTest then writeln("Time per operation : ", elapsed * 1000 / n, " ms");
 
 proc test() {
-    var myc = new chan(int, C);
+    var myc = new channel(int, C);
     for i in 0..#C {
         myc.send(0);
     }

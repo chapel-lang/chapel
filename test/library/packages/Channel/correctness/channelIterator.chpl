@@ -1,6 +1,6 @@
 use Channel;
 
-var chan1 = new chan(int);
+var chan1 = new channel(int);
 
 begin {
     {

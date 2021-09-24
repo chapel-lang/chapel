@@ -4,8 +4,8 @@ config const n = 4000;
 config const size = 3;
 var a, b, c, d : atomic int;
 
-var chan1 = new chan(int, size);
-var chan2 = new chan(int, size);
+var chan1 = new channel(int, size);
+var chan2 = new channel(int, size);
 
 coforall i in 1..n with (ref chan1, ref chan2) {
     if i % 2 == 0 {

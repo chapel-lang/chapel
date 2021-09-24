@@ -6,7 +6,7 @@ const numTasksPerLocale = if dataParTasksPerLocale > 0 then dataParTasksPerLocal
 config const C = 100;
 config const performanceTest = false;
 var t : Timer;
-var myc = new chan(int, C * numTasksPerLocale);
+var myc = new channel(int, C * numTasksPerLocale);
 t.start();
 
 

@@ -1,7 +1,7 @@
 use Channel;
 
 const debug = false;
-var chan1 = new chan(int);
+var chan1 = new channel(int);
 begin {
     try {
         chan1.send(5);
