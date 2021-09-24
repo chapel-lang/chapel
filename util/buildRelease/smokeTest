@@ -104,6 +104,7 @@ echo ""
 
 if [ $LINT -eq 1 ]; then
     # Check for tabs.
+    echo "Checking for tabs"
     num_tabs=$($CHPL_HOME/util/devel/lookForTabs | wc -l)
     if (( $num_tabs > 0 )) ; then
         echo "Found tabs :-("
@@ -121,6 +122,7 @@ if [ $LINT -eq 1 ]; then
     #fi
 
     # Check for standard C headers.
+    echo "Checking standard C headers"
     standard_c_headers=$($CHPL_HOME/util/devel/grepstdchdrs || :)
     if [ -n "${standard_c_headers}" ] ; then
         echo "Standard C headers found in the following file(s):"
@@ -130,16 +132,19 @@ if [ $LINT -eq 1 ]; then
     fi
 
     # Ensure nightly does not have syntax errors.
+    echo "Checking nightly scripts"
     perl -c $CHPL_HOME/util/buildRelease/gen_release
     perl -c $CHPL_HOME/util/cron/nightly
     perl -c $CHPL_HOME/util/tokencount/tokctnightly
 
 
     # Check copyrights in source files.
+    echo "Checking copyrights"
     $CHPL_HOME/util/test/checkCopyrights.bash
 
     # Check that test script names match their registered config names
     # (for consistency).
+    echo "Checking test script names"
     config_name_errors=$(grep CHPL_NIGHTLY_TEST_CONFIG_NAME $CHPL_HOME/util/cron/test-*.ba{t,sh} | \
         $CHPL_HOME/util/cron/verify_config_names.py)
     if [ -n "${config_name_errors}" ] ; then
