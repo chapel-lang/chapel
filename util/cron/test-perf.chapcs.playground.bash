@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of cacheline aligning allocations
+# Test different mechanism for finding keys in computePerfStats
 GITHUB_USER=ronawho
-GITHUB_BRANCH=cacheline-align-allocs
-SHORT_NAME=align-allocs
-START_DATE=05/22/21
+GITHUB_BRANCH=better-computePerfstats
+SHORT_NAME=better-computePerfstats
+START_DATE=09/24/21
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
