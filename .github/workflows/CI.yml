@@ -7,40 +7,22 @@ on:
 
 env:
   NIGHTLY_TEST_SETTINGS: true
-  # By default `smokeTest` will run `make check`, `make mason`, and `make
-  # docs`. We split those into 3 separate jobs to speed up CI times, so
-  # disable all options here, and selectively enable below
-  CHPL_SMOKE_SKIP_MAKE_CHECK: true
-  CHPL_SMOKE_SKIP_MAKE_MASON: true
-  CHPL_SMOKE_SKIP_DOC: true
   # store the dependencies in one place
   CHPL_APT_DEPS: gcc g++ m4 perl python3 python3-pip python3-venv python3-dev bash make mawk git pkg-config cmake llvm-11-dev llvm-11 llvm-11-tools clang-11 libclang-11-dev libedit-dev
 
 jobs:
   make_check:
     runs-on: ubuntu-latest
-    env:
-      CHPL_SMOKE_SKIP_MAKE_CHECK: false
     steps:
     - uses: actions/checkout@v2
     - name: install deps
       run: sudo apt-get install $CHPL_APT_DEPS
     - name: make check
       run: |
-        ./util/buildRelease/smokeTest
+        ./util/buildRelease/smokeTest hello
 
   make_doc:
     runs-on: ubuntu-latest
-    env:
-      # To try to keep this config from running the longest,
-      # use a simpler configuration
-      CHPL_TASKS: fifo
-      CHPL_MEM: cstdlib
-      CHPL_GMP: none
-      CHPL_RE2: bundled
-      CHPL_LLVM: none
-      # check that the docs build
-      CHPL_SMOKE_SKIP_DOC: false
     steps:
     - uses: actions/checkout@v2
     - name: install deps
@@ -49,8 +31,9 @@ jobs:
       run: |
         make libchplcomp-docs
     - name: make check-chpldoc && make docs
+      # Uses a quickstart config to keep it from running too long
       run: |
-        ./util/buildRelease/smokeTest
+        ./util/buildRelease/smokeTest quickstart docs
     - name: upload docs
       uses: actions/upload-artifact@v2
       with:
@@ -59,29 +42,15 @@ jobs:
 
   make_mason:
     runs-on: ubuntu-latest
-    env:
-      # To try to keep this config from running the longest,
-      # use a simpler configuration
-      CHPL_TASKS: fifo
-      CHPL_MEM: cstdlib
-      CHPL_GMP: none
-      CHPL_RE2: bundled
-      CHPL_LLVM: none
-      # check that mason builds
-      CHPL_SMOKE_SKIP_MAKE_MASON: false
-      # run make check in this config too
-      # to get more coverage for quickstart and because it's
-      # not the slowest config
-      CHPL_SMOKE_SKIP_MAKE_CHECK: false
     steps:
     - uses: actions/checkout@v2
-      #    - name: install deps
-      #run: sudo apt-get install $CHPL_APT_DEPS
     - name: make mason
+      # Use a quickstart config to keep it from running to long
+      # While there, run a make check in that config for more coverage
       run: |
-        ./util/buildRelease/smokeTest
+        ./util/buildRelease/smokeTest quickstart mason hello
 
-  check_compiler_tests:
+  check_compiler_next_tests:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -106,3 +75,6 @@ jobs:
       run: |
         CHPL_LLVM=none make test-venv
         CHPL_LLVM=none CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
+    - name: check misc
+      run: |
+        ./util/buildRelease/smokeTest misc
