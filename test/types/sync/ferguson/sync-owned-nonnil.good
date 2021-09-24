@@ -1,7 +1,3 @@
-$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:508: In method 'writeEF':
-$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:513: error: cannot assign to const variable
-  $CHPL_HOME/modules/internal/ChapelSyncvar.chpl:252: called as (_synccls(owned C)).writeEF(val: owned C)
-  within internal functions (use --print-callstack-on-error to see)
 $CHPL_HOME/modules/internal/ChapelSyncvar.chpl:448: In method 'readFE':
 $CHPL_HOME/modules/internal/ChapelSyncvar.chpl:449: error: cannot default-initialize ret: owned C
 $CHPL_HOME/modules/internal/ChapelSyncvar.chpl:462: error: use here prevents split-init

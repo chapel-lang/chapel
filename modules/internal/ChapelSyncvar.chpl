@@ -258,7 +258,7 @@ module ChapelSyncvar {
 
     :arg val: New value of the sync variable.
   */
-  proc _syncvar.writeFF(x : valType) {
+  proc _syncvar.writeFF(in x : valType) {
     wrapped.writeFF(x);
   }
 
@@ -267,7 +267,7 @@ module ChapelSyncvar {
 
     :arg val: New value of the sync variable.
   */
-  proc _syncvar.writeXF(x : valType) {
+  proc _syncvar.writeXF(in x : valType) {
     wrapped.writeXF(x);
   }
 
@@ -517,7 +517,7 @@ module ChapelSyncvar {
       }
     }
 
-    proc writeFF(val : valType) lifetime this < val {
+    proc writeFF(in val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
@@ -529,7 +529,7 @@ module ChapelSyncvar {
       }
     }
 
-    proc writeXF(val : valType) lifetime this < val {
+    proc writeXF(in val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
@@ -646,7 +646,7 @@ module ChapelSyncvar {
       }
     }
 
-    proc writeFF(val : valType) lifetime this < val {
+    proc writeFF(in val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         qthread_writeFF(alignedValue, val : aligned_t);
@@ -654,7 +654,7 @@ module ChapelSyncvar {
       }
     }
 
-    proc writeXF(val : valType) lifetime this < val {
+    proc writeXF(in val : valType) lifetime this < val {
       on this {
         chpl_rmem_consist_release();
         qthread_writeF(alignedValue, val : aligned_t);
