@@ -16,3 +16,10 @@ deprecated var d: real;
 /* This symbol is also deprecated, please use f instead */
 deprecated "e is deprecated, use f instead" var e: real;
 var f: real;
+
+// Ensures deprecation doesn't cause "no doc" symbols to turn up in
+// documentation
+pragma "no doc"
+deprecated var g: int;
+pragma "no doc"
+deprecated "h is deprecated, use z instead" var h: int;

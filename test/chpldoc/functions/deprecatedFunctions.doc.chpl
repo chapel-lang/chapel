@@ -18,3 +18,11 @@ deprecated proc fee() { }
 deprecated "fie is deprecated, use foe instead" proc fie() { }
 /* This symbol is not deprecated, but it shouldn't affect anything */
 proc foe() { }
+
+// Ensures deprecation doesn't cause "no doc" symbols to turn up in
+// documentation
+pragma "no doc"
+deprecated proc uno() { }
+pragma "no doc"
+deprecated "Two can be as bad as one, it's the loneliest number since the #1"
+proc dos() { }

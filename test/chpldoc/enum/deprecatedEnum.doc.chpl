@@ -21,3 +21,11 @@ deprecated "bodyParts is deprecated, use bones instead"
 enum bodyParts {head, shoulders, knees, toes};
 /* Replaces the deprecated bodyParts */
 enum bones {tibia, fibia, skull, rib, kneecap};
+
+// Ensures deprecation doesn't cause "no doc" symbols to turn up in
+// documentation
+pragma "no doc"
+deprecated enum spiceGirls {posh, baby, scary, sporty, ginger};
+pragma "no doc"
+deprecated "nsync is so early 2000s"
+enum nsync {justin, lance, jc, joey, chris};

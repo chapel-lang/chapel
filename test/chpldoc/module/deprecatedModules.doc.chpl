@@ -52,3 +52,23 @@ module I {
   deprecated module InnerI { }
   module InnerI2 { }
 }
+// Ensures deprecation doesn't cause "no doc" symbols to turn up in
+// documentation
+pragma "no doc"
+deprecated module J {
+  pragma "no doc"
+  deprecated module InnerJ { }
+}
+
+pragma "no doc"
+deprecated "K is deprecated, use L instead" module K {
+  pragma "no doc"
+  deprecated "InnerK is deprecated, use L.InnerL2 instead" module InnerK { }
+}
+
+module L {
+  // Checks deprecated nested module in undeprecated outer module
+  pragma "no doc"
+  deprecated module InnerL { }
+  module InnerL2 { }
+}

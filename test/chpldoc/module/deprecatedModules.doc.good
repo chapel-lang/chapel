@@ -542,3 +542,54 @@ or
 
    import I.InnerI2;
 
+cat: docs/source/modules/J.rst: No such file or directory
+cat: docs/source/modules/J/InnerJ.rst: No such file or directory
+cat: docs/source/modules/K.rst: No such file or directory
+cat: docs/source/modules/K/InnerK.rst: No such file or directory
+.. default-domain:: chpl
+
+.. module:: L
+
+L
+=
+**Usage**
+
+.. code-block:: chapel
+
+   use L;
+
+
+or
+
+.. code-block:: chapel
+
+   import L;
+
+**Submodules**
+
+.. toctree::
+   :maxdepth: 1
+   :glob:
+
+   L/*
+
+cat: docs/source/modules/L/InnerL.rst: No such file or directory
+.. default-domain:: chpl
+
+.. module:: InnerL2
+
+InnerL2
+=======
+**Usage**
+
+.. code-block:: chapel
+
+   use L.InnerL2;
+
+
+or
+
+.. code-block:: chapel
+
+   import L.InnerL2;
+

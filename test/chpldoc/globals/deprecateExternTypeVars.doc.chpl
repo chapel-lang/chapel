@@ -16,3 +16,10 @@ deprecated extern type Blah7;
 /* This symbol is also deprecated, please use f instead */
 deprecated "Blah8 is deprecated, use Blah9 instead" extern type Blah8;
 extern type Blah9;
+
+// Ensures deprecation doesn't cause "no doc" symbols to turn up in
+// documentation
+pragma "no doc"
+deprecated extern type Blah10;
+pragma "no doc"
+deprecated "Blah11 is deprecated" extern type Blah11;

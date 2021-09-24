@@ -94,3 +94,37 @@ class F {
   /* This symbol is deprecated */
   deprecated proc type bar() { }
 }
+
+// Ensures deprecation doesn't cause "no doc" symbols to turn up in
+// documentation
+pragma "no doc"
+deprecated class G {
+  // Also fields, methods, and type methods
+  pragma "no doc"
+  deprecated var a: int;
+  pragma "no doc"
+  deprecated proc foo() { }
+  pragma "no doc"
+  deprecated proc type bar() {}
+}
+
+pragma "no doc"
+deprecated "H is deprecated, use I instead" class H {
+  // Also fields, methods, and type methods
+  pragma "no doc"
+  deprecated "field a is deprecated" var a: int;
+  pragma "no doc"
+  deprecated "method foo is deprecated" proc foo() { }
+  pragma "no doc"
+  deprecated "type method bar is deprecated" proc type bar() {}
+}
+
+class I {
+  // Checks deprecated fields, methods and type methods in an undeprecated class
+  pragma "no doc"
+  deprecated var a: int;
+  pragma "no doc"
+  deprecated "method foo is deprecated" proc foo() { }
+  pragma "no doc"
+  deprecated proc type bar() { }
+}
