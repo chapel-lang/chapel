@@ -11,8 +11,8 @@ CWD=$(cd $(dirname $0) ; pwd)
 
 MASON=0
 DOCS=0
-HELLO=0
-MISC=0
+CHPL=0
+LINT=0
 QUICKSTART=0
 TARGETS_SET=0
 
@@ -32,15 +32,15 @@ while [[ $# -gt 0 ]]; do
             TARGETS_SET=1
             shift
             ;;
-        hello)
+        chpl)
             # run make check
-            HELLO=1
+            CHPL=1
             TARGETS_SET=1
             shift
             ;;
-        misc)
+        lint)
             # run scripts to check various properties
-            MISC=1
+            LINT=1
             TARGETS_SET=1
             shift
             ;;
@@ -49,7 +49,7 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         *)
-            echo "Usage: smokeTest [mason] [docs] [hello] [misc] [quickstart]"
+            echo "Usage: smokeTest [mason] [docs] [chpl] [lint] [quickstart]"
             exit 1
             ;;
         esac
@@ -66,10 +66,12 @@ if [ $TARGETS_SET -eq 0 ]; then
         DOCS=1
     fi
     if [ "${CHPL_SMOKE_SKIP_MAKE_CHECK}" != "true" ] ; then
-        HELLO=1
+        CHPL=1
     fi
-    MISC=1
+    LINT=1
 fi
+
+echo "Running with MASON=$MASON DOCS=$DOCS CHPL=$CHPL LINT=$LINT QUICKSTART=$QUICKSTART"
 
 # Ensure CC is respected, since it is typically ignored by chplenv/.
 if [ -n "${CC}" ] ; then
@@ -100,8 +102,8 @@ fi
 # Add some space between env setup output and test output.
 echo ""
 
-# Check for tabs.
-if [ $MISC -eq 1 ]; then
+if [ $LINT -eq 1 ]; then
+    # Check for tabs.
     num_tabs=$($CHPL_HOME/util/devel/lookForTabs | wc -l)
     if (( $num_tabs > 0 )) ; then
         echo "Found tabs :-("
@@ -147,7 +149,7 @@ if [ $MISC -eq 1 ]; then
         exit 1
     fi
 
-# done with misc checks
+    # done with lint checks
 fi
 
 # Source common.bash, which sets up a bunch of environment variables that are
@@ -202,7 +204,7 @@ num_procs=$($CHPL_HOME/util/buildRelease/chpl-make-cpu_count)
 # in $CHPL_HOME where the hello*.chpl tests are copied and run.
 export CHPL_CHECK_INSTALL_DIR=$CHPL_HOME
 
-if [ $HELLO -eq 1 ]; then
+if [ $CHPL -eq 1 ]; then
     # Compile chapel and make sure `make check` works.
     # Compile first with parallel execution, but call `make check` without it.
     make -j${num_procs} $chpl_make_args && \

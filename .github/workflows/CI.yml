@@ -19,7 +19,7 @@ jobs:
       run: sudo apt-get install $CHPL_APT_DEPS
     - name: make check
       run: |
-        ./util/buildRelease/smokeTest hello
+        ./util/buildRelease/smokeTest chpl
 
   make_doc:
     runs-on: ubuntu-latest
@@ -48,7 +48,7 @@ jobs:
       # Use a quickstart config to keep it from running to long
       # While there, run a make check in that config for more coverage
       run: |
-        ./util/buildRelease/smokeTest quickstart mason hello
+        ./util/buildRelease/smokeTest quickstart mason chpl
 
   check_compiler_next_tests:
     runs-on: ubuntu-latest
@@ -75,6 +75,6 @@ jobs:
       run: |
         CHPL_LLVM=none make test-venv
         CHPL_LLVM=none CHPL_HOME=$PWD ./util/test/run-in-test-venv.bash ./util/test/check_annotations.py
-    - name: check misc
+    - name: smokeTest lint
       run: |
-        ./util/buildRelease/smokeTest misc
+        ./util/buildRelease/smokeTest lint
