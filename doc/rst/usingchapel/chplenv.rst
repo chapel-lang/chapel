@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.24.0
+        export CHPL_HOME=~/chapel-1.25.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -105,7 +105,8 @@ CHPL_HOST_PLATFORM
         sunos        SunOS platforms
         cray-cs      Cray CS\ |trade|
         cray-xc      Cray XC\ |trade|
-        hpe-cray-ex  HPE Cray EX\ |trade|
+        hpe-cray-ex  HPE Cray EX
+        hpe-apollo   HPE Apollo
         ===========  ==================================
 
    Platform-specific documentation is available for most of these platforms in
@@ -114,10 +115,9 @@ CHPL_HOST_PLATFORM
    The Chapel Makefiles and sources are designed to work for any UNIX-compatible
    environment that supports a GNU-compatible make utility.  The list above
    represents the set of platforms that we have access to and can test easily.
-   We are interested in making our code framework portable to other platforms --
-   if you are using Chapel on a platform other than the ones listed above,
-   please refer to :ref:`platform-specific-settings` for ways to set up a
-   Makefile for this platform.
+   We are interested in making our code framework portable to other
+   platforms—if you are using Chapel on a platform other than the ones
+   listed above, please contact us for help with the effort.
 
 
 .. _readme-chplenv.CHPL_TARGET_PLATFORM:
@@ -514,7 +514,6 @@ CHPL_GMP
                 (#include gmp.h, -lgmp)
        none     do not build GMP support into the Chapel runtime
        bundled  use the GMP distribution bundled with Chapel in third-party
-       gmp      deprecated - use bundled instead
        =======  ============================================================
 
    If unset, Chapel will attempt to build GMP using
@@ -549,7 +548,6 @@ CHPL_HWLOC
        ======== ==============================================================
        none     do not build hwloc support into the Chapel runtime
        bundled  use the hwloc distribution bundled with Chapel in third-party
-       hwloc    deprecated - use bundled instead
        ======== ==============================================================
 
    If unset, ``CHPL_HWLOC`` defaults to ``bundled`` if
@@ -583,7 +581,6 @@ CHPL_HWLOC
           ======== ==============================================================
           none     do not build or use jemalloc
           bundled  use the jemalloc distribution bundled with Chapel in third-party
-          jemalloc deprecated - use bundled instead
           ======== ==============================================================
 
       If unset, ``CHPL_JEMALLOC`` defaults to ``bundled`` if
@@ -613,7 +610,6 @@ CHPL_HWLOC
           ========= ==============================================================
           none      do not build or use libfabric
           bundled   use the libfabric distribution bundled with Chapel in third-party
-          libfabric deprecated - use bundled instead
           ========= ==============================================================
 
       If unset, ``CHPL_LIBFABRIC`` defaults to ``bundled`` if
@@ -688,10 +684,12 @@ CHPL_LLVM
        Value          Description
        ============== ======================================================
        bundled        use the llvm/clang distribution in third-party
-       llvm           deprecated - use bundled instead
        system         find a compatible LLVM in system libraries;
                       note: the LLVM must be a version supported by Chapel
        none           do not support llvm/clang-related features
+       unset          indicates that no reasonable default has been
+                      inferred, requiring the user to intentionally select
+                      another option
        ============== ======================================================
 
    If unset, ``CHPL_LLVM`` defaults to:
@@ -700,10 +698,10 @@ CHPL_LLVM
      * ``bundled`` if you've already built the bundled llvm in
        `third-party/llvm`
      *  ``system`` if a compatible system-wide installation of LLVM is detected
+     * ``unset`` otherwise
 
-   If none of the above cases apply then you will need to either add a
-   system-wide installation of LLVM or set ``CHPL_LLVM`` to ``bundled``
-   or ``none``.
+   If CHPL_LLVM is ``unset`` you will need to either add a system-wide
+   installation of LLVM or set ``CHPL_LLVM`` to ``bundled`` or ``none``.
 
    See :ref:`readme-prereqs` for more information about currently
    supported LLVM versions.
@@ -725,7 +723,6 @@ CHPL_UNWIND
        Value     Description
        ========= =======================================================
        bundled   use the libunwind bundled with Chapel in third-party
-       libunwind deprecated - use bundled instead
        system    assume libunwind is already installed on the system
        none      don't use an unwind library, disabling stack tracing
        ========= =======================================================
@@ -779,8 +776,8 @@ value selects that flag.
 
 .. _readme-chplenv.chplconfig:
 
-Chapel Configuration File
--------------------------
+Chapel Configuration Files
+--------------------------
 
 The Chapel configuration file is a file named either ``chplconfig`` or
 ``.chplconfig`` that can store overrides of the inferred environment variables

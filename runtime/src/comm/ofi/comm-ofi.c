@@ -1932,7 +1932,7 @@ struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced) {
                                  | FI_MR_PROV_KEY // TODO: avoid pkey bcast?
                                  | FI_MR_ENDPOINT);
 
-  // Set FI_MR_ALLOCATED if there is more than one node and the maximimum
+  // Set FI_MR_ALLOCATED if there is more than one node and the maximum
   // heap size was specified and the CHPL_RT_OVERSUBSCRIBED environment
   // variable was not set, otherwise we risk running out of memory when
   // the heap is allocated. If CHPL_RT_OVERSUBSCRIBED is set then we may

@@ -105,6 +105,7 @@ MODULES_TO_DOCUMENT = \
 	$(SYS_CTYPES_MODULE_DOC)
 
 PACKAGES_TO_DOCUMENT = \
+	packages/ArgumentParser.chpl \
 	packages/AllLocalesBarriers.chpl \
 	packages/AtomicObjects.chpl \
 	packages/BLAS.chpl \

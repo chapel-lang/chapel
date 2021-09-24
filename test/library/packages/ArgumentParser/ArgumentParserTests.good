@@ -298,7 +298,7 @@ testFromArgParseExample()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
-testOptRangeInterruptBadFlag()
+testOptRangeMixedWithLeadingDash()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
@@ -526,6 +526,18 @@ testRangeConverter()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testSimpleNegativeIntegerArguments()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testSimpleNegativeIntegerOptions()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testMixedNegativeIntegerArgsOptions()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 Found some unrecognizable arguments: thirty
 Found some unrecognizable arguments: badArg1 --BadFlag
 Use '-' or '--' to indicate option/flag, or use positional arguments.
@@ -560,7 +572,6 @@ Option/flag --strArg is previously defined
 Found some unrecognizable arguments: subCommandNone
 Found some unrecognizable arguments: subCommandNone
 Found some unrecognizable arguments: -x
-Found some unrecognizable arguments: -f
 BoolFlag Not enough values: expected 1..1 got 0
 Found some unrecognizable arguments: false
 Found some unrecognizable arguments: false
