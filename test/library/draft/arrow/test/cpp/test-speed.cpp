@@ -5,15 +5,13 @@
 #include <parquet/arrow/writer.h>
 #include <parquet/exception.h>
 #include <chrono>
-#include<ctime>
+#include <ctime>
+
 using namespace std;
 
 const int NUMVALS = 100000;
 const int ROWGROUPSIZE = 1000;
 
-// #0 Build dummy data to pass around
-// To have some input data, we first create an Arrow Table that holds
-// some data.
 std::shared_ptr<arrow::Table> generate_table() {
   arrow::Int64Builder i64builder;
   for(int i = 0; i < NUMVALS; i++)
@@ -27,21 +25,17 @@ std::shared_ptr<arrow::Table> generate_table() {
   return arrow::Table::Make(schema, {i64array});
 }
 
-// #1 Write out the data as a Parquet file
 void write_parquet_file(const arrow::Table& table) {
   std::shared_ptr<arrow::io::FileOutputStream> outfile;
   PARQUET_ASSIGN_OR_THROW(
       outfile,
       arrow::io::FileOutputStream::Open("test-cpp-file.parquet"));
-  // The last argument to the function call is the size of the RowGroup in
-  // the parquet file. Normally you would choose this to be rather large but
-  // for the example, we use a small value to have multiple RowGroups.
+
   PARQUET_THROW_NOT_OK(
       parquet::arrow::WriteTable(table, arrow::default_memory_pool(), outfile, ROWGROUPSIZE));
 }
 
-// #4: Read only a single column of the whole parquet file
-void read_single_column() {
+std::shared_ptr<arrow::ChunkedArray> read_single_column() {
   std::cout << "Reading first column of test-cpp-file.parquet" << std::endl;
   std::shared_ptr<arrow::io::ReadableFile> infile;
   PARQUET_ASSIGN_OR_THROW(
@@ -56,12 +50,35 @@ void read_single_column() {
   PARQUET_THROW_NOT_OK(reader->ReadColumn(0, &array));
   PARQUET_THROW_NOT_OK(arrow::PrettyPrint(*array, 4, &std::cout));
   std::cout << std::endl;
+  
+  return array;
+}
+
+int64_t get_value(std::shared_ptr<arrow::Array> arrow_arr, int i) {
+  auto asd = std::static_pointer_cast<arrow::Int64Array>(arrow_arr);
+  return asd->Value(i);
+}
+
+int64_t* copy_arrow_array(std::shared_ptr<arrow::ChunkedArray> arrow_arr) {
+  int64_t cpp_arr[NUMVALS];
+
+  std::shared_ptr<arrow::Array> regular = arrow_arr->chunk(0);
+  auto int_arr = std::static_pointer_cast<arrow::Int64Array>(regular);
+  
+  for(int i = 0; i < NUMVALS; i++)
+    cpp_arr[i] = int_arr->Value(i);
+  return cpp_arr;
 }
 
 int main(int argc, char** argv) {
   std::shared_ptr<arrow::Table> table = generate_table();
   write_parquet_file(*table);
+  
   auto start = std::chrono::system_clock::now();
-  read_single_column();
+  auto arrow_arr = read_single_column();
   cout << "read column took: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()-start).count()/1000.0 << endl;
+  
+  start = std::chrono::system_clock::now();
+  auto cpp_arr = copy_arrow_array(arrow_arr);
+  cout << "copy array to C++ array took: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()-start).count()/1000.0 << endl;
 }
