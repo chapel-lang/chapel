@@ -11,10 +11,6 @@
 
 using namespace std;
 
-int foo() {
-  return 5;
-}
-
 void doWrite(void) {
   arrow::Int64Builder i64builder;
   for(int i = 0; i < NUMVALS; i++)
@@ -37,10 +33,6 @@ void doWrite(void) {
 }
 
 extern "C" {
-  int callFoo(int i) {
-    return foo();;
-  }
-
   void writeParquet(void) {
     doWrite();
   }
