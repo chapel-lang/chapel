@@ -1,14 +1,25 @@
 module ArrowCpp {
-  use SysCTypes, CPtr;
+  use SysCTypes, CPtr, Time;
   require "cpp-arrow.h";
   require "cpp-arrow.o";
 
-  extern proc writeParquet();
-  extern proc readParquet(a);
+  config const NUMELEMS = 100_000;
+  
+  extern proc writeParquet(a);
+  extern proc readParquet(a, b);
   
   proc main() {
-    writeParquet();
-    var A: [0..#100000] int;
-    readParquet(c_ptrTo(A));
+    var t: Timer;
+    t.start();
+    writeParquet(NUMELEMS);
+    var doneWrite = t.elapsed();
+    
+    var A: [0..#NUMELEMS] int;
+    readParquet(c_ptrTo(A), NUMELEMS);
+    var doneRead = t.elapsed();
+
+    writeln("write took: ", doneWrite);
+
+    writeln("read took: ", doneRead-doneWrite);
   }
 }

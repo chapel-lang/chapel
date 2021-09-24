@@ -11,9 +11,9 @@
 
 using namespace std;
 
-void doWrite(void) {
+void doWrite(int numElems) {
   arrow::Int64Builder i64builder;
-  for(int i = 0; i < NUMVALS; i++)
+  for(int i = 0; i < numElems; i++)
     PARQUET_THROW_NOT_OK(i64builder.AppendValues({i}));
   std::shared_ptr<arrow::Array> i64array;
   PARQUET_THROW_NOT_OK(i64builder.Finish(&i64array));
@@ -32,7 +32,7 @@ void doWrite(void) {
       parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), outfile, ROWGROUPSIZE));
 }
 
-void doRead(void* chpl_arr) {
+void doRead(void* chpl_arr, int numElems) {
   auto chpl_ptr = (int64_t*)chpl_arr;
   
   std::shared_ptr<arrow::io::ReadableFile> infile;
@@ -50,17 +50,17 @@ void doRead(void* chpl_arr) {
   std::shared_ptr<arrow::Array> regular = array->chunk(0);
   auto int_arr = std::static_pointer_cast<arrow::Int64Array>(regular);
 
-  for(int i = 0; i < NUMVALS; i++) {
+  for(int i = 0; i < numElems; i++) {
     chpl_ptr[i] = int_arr->Value(i);
   }
 }
 
 extern "C" {
-  void writeParquet(void) {
-    doWrite();
+  void writeParquet(int numElems) {
+    doWrite(numElems);
   }
 
-  void readParquet(void* chpl_arr) {
-    doRead(chpl_arr);
+  void readParquet(void* chpl_arr, int numElems) {
+    doRead(chpl_arr, numElems);
   }
 }

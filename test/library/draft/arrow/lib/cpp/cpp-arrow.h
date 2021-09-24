@@ -1,17 +1,16 @@
-const int NUMVALS = 100000;
-const int ROWGROUPSIZE = 1000;
+const int ROWGROUPSIZE = 1024*1024*512;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
   
-  void doWrite(void);
+  void doWrite(int);
   
-  void writeParquet(void);
+  void writeParquet(int);
 
-  void doRead(void* chpl_arr);
+  void doRead(void*, int);
 
-  void readParquet(void* chpl_arr);
+  void readParquet(void*, int);
 
 #ifdef __cplusplus
 }
