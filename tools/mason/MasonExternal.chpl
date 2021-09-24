@@ -81,12 +81,11 @@ proc masonExternal(args: [] string) {
       // if MASON_OFFLINE is set, then cannot install spack
       if MASON_OFFLINE {
         throw new owned MasonError('Cannot setup Spack when MASON_OFFLINE is set to true');
-        exit(0);
       }
       // If spack and spack registry is present with latest version, print message
       if isDir(SPACK_ROOT) &&
       isDir(MASON_HOME+'/spack-registry') &&
-      getSpackVersion == spackVersion &&
+      compareSpackVersion(getSpackVersion) == 0 &&
       SPACK_ROOT == spackDefaultPath {
         throw new owned MasonError("Spack backend is already installed");
       }
@@ -99,10 +98,11 @@ proc masonExternal(args: [] string) {
         const dest = MASON_HOME + '/spack-registry';
         const branch = ' --branch releases/latest ';
         const status = cloneSpackRepository(branch, dest);
-        if status != 0 then throw new owned MasonError("Spack registry installation failed.");
+        if status != 0 then
+          throw new owned MasonError("Spack registry installation failed.");
       }
       // If spack is installed and version is outdated, update it
-      if isDir(SPACK_ROOT) && getSpackVersion != spackVersion {
+      if isDir(SPACK_ROOT) && compareSpackVersion(getSpackVersion) != 0 {
         writeln("Updating Spack backend ... ");
         const status = updateSpackCommandLine();
         if isDir(MASON_HOME + '/spack-registry') then generateYAML();
@@ -114,8 +114,14 @@ proc masonExternal(args: [] string) {
         const spackLatestBranch = ' --branch ' + spackBranch + ' ';
         const status = cloneSpackRepository(spackLatestBranch, SPACK_ROOT);
         if isDir(MASON_HOME + '/spack-registry') then generateYAML();
-        if status != 0 then throw new owned MasonError("Spack installation failed.");
+        if status != 0 then
+          throw new owned MasonError("Spack installation failed.");
       }
+      // check that after all this, the version of spack is as we expect it
+      if compareSpackVersion(getSpackVersion) != 0 then
+        throw new owned MasonError("Spack update or installation failed. \
+                                    Expected v%s, got v%s".format(spackVersion,
+                                                                  getSpackVersion));
       exit(0);
     }
     if spackInstalled() {
@@ -163,12 +169,19 @@ proc spackInstalled() throws {
     throw new owned MasonError("To use mason external, call: mason external --setup");
   }
   if !isDir(getSpackRegistry) {
-    throw new owned MasonError("Mason has been updated. To use mason external, "+
-                                "call: mason external --setup");
+    throw new owned MasonError("Mason has been updated. To use mason external, "
+                               + "call: mason external --setup");
   }
-  if getSpackVersion != spackVersion && SPACK_ROOT == spackDefaultPath {
-    throw new owned MasonError("Mason has been updated and requires a newer" +
-          " version of Spack.\nTo use mason external, call: mason external --setup");
+  if compareSpackVersion(getSpackVersion) < 0 && SPACK_ROOT == spackDefaultPath {
+    throw new owned MasonError("Mason has been updated and requires a newer " +
+          "version of Spack (%s).".format(spackVersion) +
+          "\nTo use mason external, call: mason external --setup");
+  }
+  if compareSpackVersion(getSpackVersion) > 0 {
+    writeln("Your version of Spack (v%s) is newer ".format(getSpackVersion) +
+            "than that supported by Mason " +
+            "(v%s).\nThis may lead to unexpected ".format(spackVersion) +
+            "behavior");
   }
   return true;
 }
@@ -716,4 +729,23 @@ proc uninstallSpkg(args: [?d] string) throws {
   if status != 0 {
     throw new owned MasonError("Package could not be uninstalled");
   }
+}
+
+// compare two spack version strings in format `major.minor.patch`
+// expects matching number of elements, separated by a `.`
+// e.g 0.15.0 or 0.16.2
+// returns -1 if foundVersion < expectedVersion
+// return 0 if versions are the same
+// return 1 if foundVersion > expectedVersion (not likely)
+proc compareSpackVersion(foundVersion:string,
+                          expectedVersion=spackVersion) : int throws {
+  const aFound = foundVersion.split(".");
+  const aExpected = expectedVersion.split(".");
+  if aFound.size != aExpected.size || aFound.size != 3 then
+    throw new owned MasonError("Cannot compare spack versions of different lengths");
+  // create new version objects and return the result of their comparison
+  const vFound = new VersionInfo(aFound[0]:int, aFound[1]:int, aFound[2]:int);
+  const vExpected = new VersionInfo(aExpected[0]:int, aExpected[1]:int,
+                                   aExpected[2]:int);
+  return vFound.cmp(vExpected);
 }
