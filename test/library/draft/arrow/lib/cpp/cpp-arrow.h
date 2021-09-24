@@ -9,6 +9,10 @@ extern "C" {
   
   void writeParquet(void);
 
+  void doRead(void* chpl_arr);
+
+  void readParquet(void* chpl_arr);
+
 #ifdef __cplusplus
 }
 #endif
