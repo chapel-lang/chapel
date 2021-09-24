@@ -59,15 +59,12 @@ int64_t get_value(std::shared_ptr<arrow::Array> arrow_arr, int i) {
   return asd->Value(i);
 }
 
-int64_t* copy_arrow_array(std::shared_ptr<arrow::ChunkedArray> arrow_arr) {
-  int64_t cpp_arr[NUMVALS];
-
+void copy_arrow_array(std::shared_ptr<arrow::ChunkedArray> arrow_arr, int64_t* cpp_arr) {
   std::shared_ptr<arrow::Array> regular = arrow_arr->chunk(0);
   auto int_arr = std::static_pointer_cast<arrow::Int64Array>(regular);
   
   for(int i = 0; i < NUMVALS; i++)
     cpp_arr[i] = int_arr->Value(i);
-  return cpp_arr;
 }
 
 int main(int argc, char** argv) {
@@ -79,6 +76,7 @@ int main(int argc, char** argv) {
   cout << "read column took: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()-start).count()/1000.0 << endl;
   
   start = std::chrono::system_clock::now();
-  auto cpp_arr = copy_arrow_array(arrow_arr);
+  int64_t* cpp_arr = new int64_t[NUMVALS];
+  copy_arrow_array(arrow_arr, cpp_arr);
   cout << "copy array to C++ array took: " << std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now()-start).count()/1000.0 << endl;
 }
