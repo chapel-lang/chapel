@@ -44,12 +44,10 @@
   -----------------
   :proc:`bind`
   :proc:`connect`
-  :proc:`delayAck`
   :proc:`getpeername`
   :proc:`getSockOpt`
   :proc:`getsockname`
   :proc:`listen`
-  :proc:`naggle`
   :proc:`setSockOpt`
 
   Records, Types and Function Definitions
@@ -58,6 +56,7 @@
 module Socket {
 
 // TODO: replace with mason config
+//
 require "/usr/include/event2/event.h";
 require "/usr/include/event2/thread.h";
 require "-levent";
@@ -110,7 +109,8 @@ proc sys_sockaddr_t.init(in other: sys_sockaddr_t) {
 
 /*
   Abstract supertype for network addresses. Contains data
-  about :type:`IPFamily`, `host` and `port`.
+  about :type:`IPFamily`, `host` and `port`. It supports both
+  IPv4 and IPv6 addresses.
 */
 record ipAddr {
   pragma "no doc"
@@ -141,6 +141,7 @@ proc ipAddr.init(in address: sys_sockaddr_t) {
   :throws SystemError: Upon incompatible `host`, `port` or `family`
 */
 proc type ipAddr.create(host: string = "127.0.0.1", port: uint(16) = 8000, family: IPFamily = IPFamily.IPv4): ipAddr throws {
+  // We will use type methods for now but expect to add initializers (and possibly deprecate these ones) once [#8692](https://github.com/chapel-lang/chapel/issues/8692) is resolved
   var addressStorage = new sys_sockaddr_t();
   addressStorage.set(host.c_str(), port, family:c_int);
   return new ipAddr(addressStorage);
@@ -240,13 +241,15 @@ type tcpConn = file;
   :return: Returns file descriptor.
   :rtype: `int(32)`
 */
-proc tcpConn.socketFd throws {
+proc ref tcpConn.socketFd throws {
   var tempfd:c_int;
   var err:syserr = ENOERR;
   on this.home {
-    err = qio_get_fd(this._file_internal, tempfd);
+    var localtempfd = tempfd;
+    err = qio_get_fd(this._file_internal, localtempfd);
+    if err then try ioerror(err, "in tcpConn.socketFd");
+    tempfd = localtempfd;
   }
-  if err then try ioerror(err, "in tcpConn.socketFd");
   return tempfd;
 }
 
@@ -259,8 +262,12 @@ proc tcpConn.addr throws {
   return getpeername(this.socketFd);
 }
 
-inline operator !=(in lhs: tcpConn,in rhs: tcpConn) {
+inline operator !=(const ref lhs: tcpConn,const ref rhs: tcpConn) {
   return lhs.socketFd != rhs.socketFd;
+}
+
+inline operator ==(const ref lhs: tcpConn,const ref rhs: tcpConn) {
+  return lhs.socketFd == rhs.socketFd;
 }
 
 proc tcpConn.writeThis(f) throws {
@@ -297,11 +304,10 @@ private extern proc event_remove_timer(ev: c_ptr(event)):c_int;
 private extern proc evutil_make_socket_nonblocking(fd: c_int):c_int;
 private extern proc libevent_global_shutdown();
 
-extern type pthread_t = c_ulong;
+extern type pthread_t;
 extern type pthread_attr_t;
 private extern proc pthread_create(thread: c_ptr(pthread_t), const attr: c_ptr(pthread_attr_t), start_routine: c_fn_ptr, arg: c_void_ptr): c_int;
 private extern proc pthread_join(thread: pthread_t, retval: c_ptr(c_void_ptr)): c_int;
-private extern proc pthread_exit(retval: c_void_ptr);
 private extern proc evthread_use_pthreads();
 
 evthread_use_pthreads();
@@ -311,15 +317,14 @@ proc dispatchLoop():c_void_ptr throws {
   if event_loop_base == nil {
     throw new Error("event loop wasn't initialized");
   }
-  var ret_val = 0;
   if event_base_got_break(event_loop_base) == 1 {
-    pthread_exit(c_ptrTo(ret_val):c_void_ptr);
+    return nil;
   }
   var x = event_base_loop(event_loop_base, EVLOOP_NO_EXIT_ON_EMPTY);
   if x != 0 {
     throw new Error("event loop wasn't initialized");
   }
-  pthread_exit(c_ptrTo(ret_val):c_void_ptr);
+  return nil;
 }
 
 var event_loop_thread:pthread_t;
@@ -375,7 +380,7 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws 
   var err_out:err_t = 0;
   // try accept
   err_out = sys_accept(socketFd, client_addr, fdOut);
-  // if error is not about blocking throw error
+  // if error is not about blocking, throw error
   if err_out != 0 && err_out != EAGAIN && err_out != EWOULDBLOCK {
     throw SystemError.fromSyserr(err_out, "accept() failed");
   }
@@ -452,8 +457,12 @@ proc tcpListener.addr throws {
   return getsockname(this.socketFd);
 }
 
-inline operator !=(in lhs: tcpListener,in rhs: tcpListener) {
+inline operator !=(const ref lhs: tcpListener,const ref rhs: tcpListener) {
   return lhs.socketFd != rhs.socketFd;
+}
+
+inline operator ==(const ref lhs: tcpListener,const ref rhs: tcpListener) {
+  return !(lhs.socketFd != rhs.socketFd);
 }
 
 proc tcpListener.writeThis(f) throws {
@@ -464,17 +473,17 @@ pragma "no doc"
 extern const SOMAXCONN: int;
 /*
   Default `backlog` value used in :proc:`listen`
+  It is calulated as min(`SOMAXCONN`, 128) where `SOMAXCONN` is
+  the maximum number of allowed pending connections in the system.
 */
-var BACKLOG_DEFAULT:uint(16);
-
-BACKLOG_DEFAULT = (if SOMAXCONN <= 128 then SOMAXCONN else 128):uint(16);
+var backlogDefault:uint(16) = (if SOMAXCONN <= 128 then SOMAXCONN else 128):uint(16);
 
 /*
   Convenience procedure which creates a new :type:`tcpListener` bound
   to and listening on `address` for new connections. `backlog`
   determines how many connections can be pending (not having called
   accept) before the socket will begin to reject them. The default
-  value of backlog is `BACKLOG_DEFAULT`.
+  value of backlog is `backlogDefault`.
 
   .. code-block:: Chapel
 
@@ -489,7 +498,7 @@ BACKLOG_DEFAULT = (if SOMAXCONN <= 128 then SOMAXCONN else 128):uint(16);
   :rtype: `tcpConn`
   :throws SystemError: On failure to bind or listen on `address`
 */
-proc listen(in address: ipAddr, reuseAddr: bool = true, backlog: uint(16) = BACKLOG_DEFAULT): tcpListener throws {
+proc listen(in address: ipAddr, reuseAddr: bool = true, backlog: uint(16) = backlogDefault): tcpListener throws {
   var family = address.family;
   var socketFd = socket(family, SOCK_STREAM);
   bind(socketFd, address, reuseAddr);
@@ -563,13 +572,13 @@ proc connect(in address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws
 /*
   This overload of `connect` not only returns a :type:`tcpConn`
   but also does DNS resolution for the provided `host`.
-  The `timeout` is tired for all resolved addresses and the first
+  The `timeout` is tried for all resolved addresses and the first
   successful one is returned back.
 
   .. code-block:: Chapel
 
     const timeout = new timeval(4,0);
-    const connectedClient = connect("google.com", "tcp", IPFamily.IPv4, timeout);
+    const connectedClient = connect("google.com", "http", IPFamily.IPv4, timeout);
 
   :arg host: host to connect to or resolve if not in standard ip notation
   :type host: `string`
@@ -666,7 +675,7 @@ pragma "no doc"
 private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:size_t, flags:c_int, ref src_addr_out:sys_sockaddr_t, ref num_recvd_out:ssize_t):err_t;
 
 /*
-  Reads incoming `bufferLen` number of bytes on socket, and
+  Reads upto `bufferLen` bytes from the socket, and
   return a tuple of (data, address), where address will be a
   :type:`ipAddr` pointing to address of the socket from where data was received.
 
@@ -843,8 +852,12 @@ proc udpSocket.send(data: bytes, in address: ipAddr, in timeout = new timeval(-1
   return length;
 }
 
-inline operator !=(in lhs: udpSocket,in rhs: udpSocket) {
+inline operator !=(const ref lhs: udpSocket,const ref rhs: udpSocket) {
   return lhs.socketFd != rhs.socketFd;
+}
+
+inline operator ==(const ref lhs: udpSocket,const ref rhs: udpSocket) {
+  return lhs.socketFd == rhs.socketFd;
 }
 
 proc udpSocket.writeThis(f) throws {
@@ -1237,46 +1250,76 @@ proc bind(ref socket: tcpConn, ref address: ipAddr, reuseAddr = true) throws {
 }
 
 pragma "no doc"
-proc naggle(socketFd:fd_t, enable:bool = true) throws {
+proc nagle(socketFd:fd_t, enable:bool) throws {
   var c_enable = (if enable then 0 else 1):c_int;
   setSockOpt(socketFd, IPPROTO_TCP, TCP_NODELAY, c_enable);
 }
 
+pragma "no doc"
+proc nagle(socketFd:fd_t):bool throws {
+  return if getSockOpt(socketFd, IPPROTO_TCP, TCP_NODELAY) == 0 then true else false;
+}
+
 /*
   Enables or disables Nagle's algorithm on a given TCP Listener.
+
+  :arg enable: whether to enable or disable Nagle's algorithm
+  :type enable: `bool`
+
+  :throws SystemError: if not able to set `TCP_NODELAY` option properly.
 */
-proc naggle(ref socket: tcpListener, enable:bool = true) throws {
-  var socketFd = socket.socketFd;
-  naggle(socketFd, enable);
+proc ref tcpListener.setNagle(enable:bool) throws {
+  var socketFd = this.socketFd;
+  nagle(socketFd, enable);
 }
 
 /*
   Enables or disables Nagle's algorithm on a given TCP Connection.
+
+  :arg enable: whether to enable or disable Nagle's algorithm
+  :type enable: `bool`
+
+  :throws SystemError: if not able to set `TCP_NODELAY` flag properly.
 */
-proc naggle(ref socket: tcpConn, enable:bool = true) throws {
-  var socketFd = socket.socketFd;
-  naggle(socketFd, enable);
+proc ref tcpConn.setNagle(enable:bool) throws {
+  var socketFd = this.socketFd;
+  nagle(socketFd, enable);
 }
 
 pragma "no doc"
-proc delayAck(socketFd:fd_t, enable:bool = true) throws {
+proc delayAck(socketFd:fd_t, enable:bool) throws {
   var c_enable = (if enable then 0 else 1):c_int;
   setSockOpt(socketFd, IPPROTO_TCP, TCP_QUICKACK, c_enable);
 }
 
+pragma "no doc"
+proc delayAck(socketFd:fd_t):bool throws {
+  return if getSockOpt(socketFd, IPPROTO_TCP, TCP_QUICKACK) == 0 then true else false;
+}
+
 /*
   Enables or disables Delayed Ack optimization on a given TCP Listener.
+
+  :arg enable: whether to enable or disable Nagle's algorithm
+  :type enable: `bool`
+
+  :throws SystemError: if not able to set `TCP_QUICKACK` flag properly.
 */
-proc delayAck(ref socket: tcpListener, enable:bool = true) throws {
-  var socketFd = socket.socketFd;
+proc ref tcpListener.setDelayAck(enable:bool) throws {
+  var socketFd = this.socketFd;
   delayAck(socketFd, enable);
 }
 
 /*
   Enables or disables Delayed Ack optimization on a given TCP Connection.
+
+  :arg enable: whether to enable or disable Nagle's algorithm
+  :type enable: `bool`
+
+  :throws SystemError: if not able to set `TCP_QUICKACK` flag properly.
 */
-proc delayAck(ref socket: tcpConn, enable:bool = true) throws {
-  var socketFd = socket.socketFd;
+proc tcpConn.setDelayAck(enable:bool) throws {
+  var socketFd = this.socketFd;
   delayAck(socketFd, enable);
 }
 }
