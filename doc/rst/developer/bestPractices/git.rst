@@ -314,11 +314,11 @@ How to open a PR:
   Alternatively, navigate to your feature branch, and click the green icon next
   to the branch dropdown to "Compare, review, create a pull request".
 
-  Next, put in a message to your reviewer about the purpose of your pull request
-  and give the pull request a useful title.  Your PR message will introduce the
-  changes to reviewers and form the basis for the merge message.  See
-  `Final merge message`_ for recommendations on what that commit message should
-  look like.
+  Next, put in a message to your reviewer about the purpose of your pull
+  request and give the pull request a useful title.  Your PR message will
+  introduce the changes to reviewers and form the basis for the merge
+  message.  See :ref:`Final merge message` for recommendations on what
+  that commit message should look like.
 
   You will have to add "signed-off-by" in your commits to accept `Developer Certificate of Origin`_ (DCO)
 
@@ -337,9 +337,8 @@ How to open a PR:
 How to merge a PR:
 ++++++++++++++++++
 
-If you have commit privileges (see
-`Who has or needs commit access to the main repository?`_), navigate to the
-pull request:
+If you have commit privileges (see :ref:`Who has or needs commit access
+to the main repository?`), navigate to the pull request:
 
 go to
 
@@ -349,11 +348,12 @@ or
 
 ``https://github.com/chapel-lang/chapel/pull/<number>``
 
-and click the friendly green button "Merge pull request" (it is possible to
-merge the pull request from the command line also and the pull request page has
-details). When you click "Merge pull request", you will need to enter a commit
-message. See `Final merge message`_ for a reminder on what that commit message
-should entail (generally, this will closely resemble the PR message).
+and click the friendly green button "Merge pull request" (it is possible
+to merge the pull request from the command line also and the pull request
+page has details). When you click "Merge pull request", you will need to
+enter a commit message. See :ref:`Final merge message` for a reminder on
+what that commit message should entail (generally, this will closely
+resemble the PR message).
 
 .. _Who has or needs commit access to the main repository?: ContributorInfo.rst#who-has-or-needs-commit-access-to-the-main-repository
 .. _Final merge message: ContributorInfo.rst#final-merge-message
@@ -423,8 +423,9 @@ commands:
     # main.
     git checkout -b main
 
-At this point, a `git push origin main` should work as expected.  Remember, do
-not try this with a main branch that has been corrupted on your remote fork.
+At this point, a ``git push origin main`` should work as expected.
+Remember, do not try this with a main branch that has been corrupted on
+your remote fork.
 
 An alternate method, if you know or can easily find out the last commit that
 should be kept:

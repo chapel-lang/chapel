@@ -24,7 +24,6 @@ Best Practices for Contributors
    CHPL_DEVELOPER
    TestSystem
    SpellChecking
-   Potpourri
    Valgrind
    Sanitizers
    Deprecation
@@ -32,6 +31,7 @@ Best Practices for Contributors
    StandardModuleStyle
    TestAnnotationsLocally
    buildingdocs
+   Potpourri
 
 This directory contains rough notes intended to be helpful in pointing
 out features/quirks of the Chapel development experience for new
@@ -83,9 +83,6 @@ developers.  A possible reading order is roughly as follows:
 :ref:`best-practices-spell-checking`:
   How to use chplspell to spellcheck the Chapel project.
 
-:ref:`best-practices-potpourri`:
-  Notes not in any of the above categories.
-
 :ref:`best-practices-valgrind`:
   Building the Chapel compiler so that compiled programs work with valgrind.
 
@@ -106,3 +103,6 @@ developers.  A possible reading order is roughly as follows:
 
 :ref:`readme-buildingdocs`:
   Information about building and updating the Chapel documentation
+
+:ref:`best-practices-potpourri`:
+  Notes not in any of the above categories.

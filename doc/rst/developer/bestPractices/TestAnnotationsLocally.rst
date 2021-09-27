@@ -3,8 +3,8 @@
 How to test ANNOTATIONS.yaml changes locally
 ============================================
 
-Annotations are automatically checked as part of the pre-merge Travis smoke
-test, but you can check them locally with::
+Annotations are automatically checked as part of the pre-merge GitHub CI
+tests, but you can check them locally with::
 
     $CHPL_HOME/util/test/check_annotations.py
 

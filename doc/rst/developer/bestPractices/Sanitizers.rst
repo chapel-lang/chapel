@@ -7,10 +7,10 @@ Sanitizers are a compiler feature that support instrumenting programs to do
 dynamic analysis to catch many classes of bugs at runtime.
 
 AddressSanitizer (ASan) is a fast memory error detector. It consists of a
-compiler instrumentation module and a run-time library. ASan is similar to
-valgrind (`valgrind.rst`) in that it can help identify memory errors. ASan is
-much faster than valgrind, but does require recompilation. Note that only GCC
-and Clang support sanitizers.
+compiler instrumentation module and a run-time library. ASan is similar
+to valgrind (:ref:`best-practices-valgrind`) in that it can help
+identify memory errors. ASan is much faster than valgrind, but does
+require recompilation. Note that only GCC and Clang support sanitizers.
 
 How-to
 ------
@@ -83,12 +83,13 @@ sanitizers. In particular:
 
 - Sanitizers hook into the system allocator, so using ``jemalloc`` is not
   supported
-- ``qthreads`` performs task-switching in user-space, which throws off stack
-  frame tracking. We expect to be able to resolve this in the future.
-- By default the gcc address sanitizer will enable leak checking, but Chapel
-  intentionally leaks some memory in the runtime, so we disable that tracking
-  for now. See `debugging.rst` for more info about debugging memory leaks in
-  Chapel.
+- ``qthreads`` performs task-switching in user-space, which throws off
+  stack frame tracking. We expect to be able to resolve this in the
+  future.
+- By default the gcc address sanitizer will enable leak checking, but
+  Chapel intentionally leaks some memory in the runtime, so we disable
+  that tracking for now. See :ref:`readme-debugging` for more info about
+  debugging memory leaks in Chapel.
 
 
 Other Sanitizers
