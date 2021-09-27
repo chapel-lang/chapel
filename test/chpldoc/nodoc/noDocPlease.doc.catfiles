@@ -1,2 +1,3 @@
 docs/source/modules/Foo.rst
+docs/source/modules/Foo/invisible.rst
 docs/source/modules/toBeIgnored.rst
