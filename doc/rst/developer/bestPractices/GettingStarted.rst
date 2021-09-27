@@ -1,3 +1,5 @@
+.. _best-practices-getting-started:
+
 ===============
 Getting Started
 ===============

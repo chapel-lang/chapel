@@ -105,9 +105,10 @@ copyright = u'2021, {0}'.format(author_text)
 # directories to ignore when looking for source files.
 exclude_patterns = ['Makefile',
                     'Makefile.sphinx',
+                    'developer/chips',
+                    'developer/implementation',
                     'util',
                     'meta',
-                    'developer',
                    ]
 
 # The reST default role (used for this markup: `text`) to use for all

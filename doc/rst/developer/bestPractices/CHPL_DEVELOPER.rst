@@ -1,3 +1,5 @@
+.. _best-practices-chpl-developer:
+
 =======================================
 The CHPL_DEVELOPER environment variable
 =======================================
