@@ -23,15 +23,13 @@ running on another locale.
 Locales
 -------
 
-A *locale* is a Chapel abstraction for a piece of a target
-architecture that has processing and storage capabilities.
-Generally speaking, the tasks running within a locale have
-roughly uniform access to values stored in the locale's local
-memory and longer latencies for accessing the memories of other
-locales.  As examples, a single shared memory machine would be
-defined as a single locale, while in a system consisting of a
-group of network-connected multicore nodes or SMPs each node
-would be defined as a locale.
+A *locale* is a Chapel abstraction for a piece of a target architecture
+that has processing and storage capabilities.  Generally speaking, the
+tasks running within a locale have roughly uniform access to values
+stored in the locale's local memory and longer latencies for accessing
+the memories of other locales.  As an example, a single shared memory
+machine would be defined as a single locale. In contrast, a cluster of
+network-connected multicore nodes would have a locale for each node.
 
 .. _The_Locale_Type:
 
