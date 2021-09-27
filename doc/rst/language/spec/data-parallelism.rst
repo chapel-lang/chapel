@@ -2,6 +2,7 @@
 
 .. _Chapter-Data_Parallelism:
 
+================
 Data Parallelism
 ================
 

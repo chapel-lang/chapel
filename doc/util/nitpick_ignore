@@ -49,3 +49,5 @@ cpp:identifier ZERO
 cpp:identifier SYMBOL_ONLY
 cpp:identifier uast::asttags::NUM_AST_TAGS
 cpp:identifier uast::Function::DEFAULT_RETURN_INTENT
+# Common symbols used as template typenames.
+cpp:identifier T

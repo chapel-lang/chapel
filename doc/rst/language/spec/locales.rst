@@ -2,6 +2,7 @@
 
 .. _Chapter-Locales_Chapter:
 
+=======
 Locales
 =======
 
@@ -22,14 +23,13 @@ running on another locale.
 Locales
 -------
 
-A *locale* is a portion of the target parallel architecture that has
-processing and storage capabilities. Chapel implementations should
-typically define locales for a target architecture such that tasks
-running within a locale have roughly uniform access to values stored in
-the locale’s local memory and longer latencies for accessing the
-memories of other locales. As an example, a cluster of multicore nodes
-or SMPs would typically define each node to be a locale. In contrast a
-pure shared memory machine would be defined as a single locale.
+A *locale* is a Chapel abstraction for a piece of a target architecture
+that has processing and storage capabilities.  Generally speaking, the
+tasks running within a locale have roughly uniform access to values
+stored in the locale's local memory and longer latencies for accessing
+the memories of other locales.  As an example, a single shared memory
+machine would be defined as a single locale. In contrast, a cluster of
+network-connected multicore nodes would have a locale for each node.
 
 .. _The_Locale_Type:
 
@@ -39,6 +39,8 @@ Locale Types
 The identifier ``locale`` is a type that abstracts a locale as described above.
 Both data and tasks can be associated with a value of locale type.
 
+The default value for a variable with ``locale`` type is ``Locales[0]``.
+
 .. _Locale_Methods:
 
 Locale Methods
@@ -46,57 +48,7 @@ Locale Methods
 
 The locale type supports the following methods:
 
-
-
-.. function:: proc locale.callStackSize: uint(64);
-
-   Returns the per-task call stack size used when creating tasks on the
-   locale in question. A value of 0 indicates that the call stack size is
-   determined by the system.
-
-
-
-.. function:: proc locale.id: int;
-
-   Returns a unique integer for each locale, from 0 to the number of
-   locales less one.
-
-
-
-.. function:: proc locale.maxTaskPar: int(32);
-
-   Returns an estimate of the maximum parallelism available for tasks on a
-   given locale.
-
-
-
-.. function:: proc locale.name: string;
-
-   Returns the name of the locale.
-
-
-
-.. function:: proc locale.numPUs(logical: bool = false, accessible: bool = true);
-
-   Returns the number of processing unit instances available on a given
-   locale. Basically these are the things that execute instructions. If
-   ``logical`` is ``false`` then the count reflects physical instances,
-   often referred to as *cores*. Otherwise it reflects logical instances,
-   such as hardware threads on multithreaded CPU architectures. If
-   ``accessible`` is ``true`` then the count includes only those processors
-   the OS has made available to the program. Otherwise it includes all
-   processors that seem to be present.
-
-
-
-.. code-block:: chapel
-
-   use Memory;
-   proc locale.physicalMemory(unit: MemUnits=MemUnits.Bytes, type retType=int(64)): retType;
-
-Returns the amount of physical memory available on a given locale in
-terms of the specified memory units (Bytes, KB, MB, or GB) using a value
-of the specified return type.
+.. include:: /builtins/ChapelLocale.rst
 
 .. _Predefined_Locales_Array:
 
@@ -107,7 +59,7 @@ Chapel provides a predefined environment that stores information about
 the locales used during program execution. This *execution environment*
 contains definitions for the array of locales on which the program is
 executing (``Locales``), a domain for that array (``LocaleSpace``), and
-the number of locales (``numLocales``). 
+the number of locales (``numLocales``).
 
 .. code-block:: chapel
 
@@ -278,6 +230,14 @@ Return statements may not be lexically enclosed in on statements. Yield
 statements may only be lexically enclosed in on statements in parallel
 iterators :ref:`Parallel_Iterators`.
 
+One common code idiom in Chapel is the following, which spreads parallel
+tasks across the network-connected locales upon which the program is running:
+
+  .. code-block:: chapel
+
+    coforall loc in Locales { on loc { ... } }
+
+
 .. _remote_variable_declarations:
 
 Remote Variable Declarations
@@ -294,3 +254,7 @@ keyword and braces. The syntax is given by:
 
    remote-variable-declaration-statement:
      'on' expression variable-declaration-statement
+
+.. note::
+
+  Support for this syntax is not yet implemented.

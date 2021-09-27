@@ -1,3 +1,5 @@
+.. _best-practices-compiler-ir-tricks:
+
 ===============================
 Examining/Debugging Compiler IR
 ===============================

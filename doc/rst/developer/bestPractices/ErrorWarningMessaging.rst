@@ -1,3 +1,5 @@
+.. _best-practices-error-warning-messaging:
+
 ===========================================
 How To Generate Warnings And Error Messages
 ===========================================

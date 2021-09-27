@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.24.0
+        export CHPL_HOME=~/chapel-1.25.0
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -105,7 +105,8 @@ CHPL_HOST_PLATFORM
         sunos        SunOS platforms
         cray-cs      Cray CS\ |trade|
         cray-xc      Cray XC\ |trade|
-        hpe-cray-ex  HPE Cray EX\ |trade|
+        hpe-cray-ex  HPE Cray EX
+        hpe-apollo   HPE Apollo
         ===========  ==================================
 
    Platform-specific documentation is available for most of these platforms in
@@ -114,10 +115,9 @@ CHPL_HOST_PLATFORM
    The Chapel Makefiles and sources are designed to work for any UNIX-compatible
    environment that supports a GNU-compatible make utility.  The list above
    represents the set of platforms that we have access to and can test easily.
-   We are interested in making our code framework portable to other platforms --
-   if you are using Chapel on a platform other than the ones listed above,
-   please refer to :ref:`platform-specific-settings` for ways to set up a
-   Makefile for this platform.
+   We are interested in making our code framework portable to other
+   platforms—if you are using Chapel on a platform other than the ones
+   listed above, please contact us for help with the effort.
 
 
 .. _readme-chplenv.CHPL_TARGET_PLATFORM:
@@ -687,6 +687,9 @@ CHPL_LLVM
        system         find a compatible LLVM in system libraries;
                       note: the LLVM must be a version supported by Chapel
        none           do not support llvm/clang-related features
+       unset          indicates that no reasonable default has been
+                      inferred, requiring the user to intentionally select
+                      another option
        ============== ======================================================
 
    If unset, ``CHPL_LLVM`` defaults to:
@@ -773,8 +776,8 @@ value selects that flag.
 
 .. _readme-chplenv.chplconfig:
 
-Chapel Configuration File
--------------------------
+Chapel Configuration Files
+--------------------------
 
 The Chapel configuration file is a file named either ``chplconfig`` or
 ``.chplconfig`` that can store overrides of the inferred environment variables

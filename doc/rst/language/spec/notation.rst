@@ -2,6 +2,7 @@
 
 .. _Chapter-Notation:
 
+========
 Notation
 ========
 

@@ -15,6 +15,7 @@ TAGS
 tags
 *.DS_Store
 *.vagrant
+.vscode/
 
 
 # Top level ignores.

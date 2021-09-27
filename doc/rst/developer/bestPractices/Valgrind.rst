@@ -1,5 +1,10 @@
+.. _best-practices-valgrind:
+
 Valgrind
 ========
+
+``valgrind`` is a tool that can help to check for memory errors.  See
+also :ref:`best-practices-sanitizers` for an alternative strategy.
 
 How-to 
 ------
@@ -36,7 +41,7 @@ The above options are needed because not all third-party libraries support
 - ``qthreads`` performs task-switching in user-space, so ``valgrind`` is not
   able to keep track of the stack frame correctly
 - ``fifo`` needs to limit the number of threads to stay below valgrind's
-  `--max-threads` default of 500.
+  ``--max-threads`` default of 500.
 - ``re2`` intentionally leaves some memory uninitialized for performance
   reasons, unless ``CHPL_RE2_VALGRIND_SUPPORT=true`` is set at build time
 - GASNet support for ``valgrind`` is experimental at this time -- see 

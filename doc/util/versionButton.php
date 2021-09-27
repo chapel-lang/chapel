@@ -87,9 +87,9 @@ if (pagePath == "") {
   pagePath = "index";
 }
 function dropSetup() {
-  var currentRelease = "1.24"; // what does the public have?
-  var stagedRelease = "1.25";  // is there a release staged but not yet public?
-  var nextRelease = "1.25";    // what's the next release? (on docs/main)
+  var currentRelease = "1.25"; // what does the public have?
+  var stagedRelease = "1.26";  // is there a release staged but not yet public?
+  var nextRelease = "1.26";    // what's the next release? (on docs/main)
   var button = document.getElementById("versionButton");
   // Uses unicode down-pointing triangle
   var arrow = " &#9660;";

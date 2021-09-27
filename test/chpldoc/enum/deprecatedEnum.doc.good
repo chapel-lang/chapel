@@ -1,0 +1,71 @@
+.. default-domain:: chpl
+
+.. module:: deprecatedEnum.doc
+
+deprecatedEnum.doc
+==================
+**Usage**
+
+.. code-block:: chapel
+
+   use deprecatedEnum.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import deprecatedEnum.doc;
+
+.. enum:: enum colors { red, green, blue }
+
+   .. warning::
+
+      colors is deprecated
+
+.. enum:: enum stooges { curly, moe, larry }
+
+   .. warning::
+
+      stooges is deprecated, use marx instead
+
+.. enum:: enum marx { harpo, groucho, chico, zeppo }
+
+.. enum:: enum atomicSymbols { proton, electron, neutron }
+
+   There was documentation of this symbol 
+
+
+   .. warning::
+
+      atomicSymbols is deprecated
+
+.. enum:: enum monsters { vampire, werewolf, ghost }
+
+   This symbol also was documented 
+
+
+   .. warning::
+
+      monsters is deprecated, use monsterMash instead
+
+.. enum:: enum monsterMash { Frankenstein, Wolfman, Dracula, Casper }
+
+   Truncated Frankenstein's monster 
+
+
+.. enum:: enum directions { north, south, east, west }
+
+   This symbol is deprecated 
+
+
+.. enum:: enum bodyParts { head, shoulders, knees, toes }
+
+   This symbol is also deprecated, please use bones instead 
+
+
+.. enum:: enum bones { tibia, fibia, skull, rib, kneecap }
+
+   Replaces the deprecated bodyParts 
+
+

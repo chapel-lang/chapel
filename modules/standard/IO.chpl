@@ -250,9 +250,10 @@ more details on the situation in which this kind of data race can occur.
    * concurrent operations on multiple channels that operate on overlapping
      regions of a file
    * where at least one of the overlapping channels is a writing channel
-   * and where data could be stored more than one of the overlapping channel's
-     buffers at the same time (ie, write and read ordering are not enforced
-     through :proc:`channel.flush` and other mean such as sync variables).
+   * and where data could be stored in more than one of the overlapping 
+     channel's buffers at the same time (i.e., write and read ordering are 
+     not enforced through :proc:`channel.flush` and other means such as 
+     sync variables).
 
   Note that it is possible in some cases to create a :record:`file` that does
   not allow multiple channels at different offsets. Channels created on such
