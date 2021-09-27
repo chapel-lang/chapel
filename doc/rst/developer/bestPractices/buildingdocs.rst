@@ -88,7 +88,7 @@ Linking between files
 ---------------------
 
 Linking between files when both files are in https://chapel-lang.org/docs/.
- - RST files in the `docs/rst/` or `chapel/test/release/examples/primers/`
+ - RST files in the ``docs/rst/`` or ``test/release/examples/primers/``
    subdirectory trees can refer to each other and
    when they are converted to html, those are converted to links.
  - The file being linked to has a ``.. _file-tag-name:`` at the top of it.
