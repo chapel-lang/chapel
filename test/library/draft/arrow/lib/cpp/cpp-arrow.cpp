@@ -55,6 +55,20 @@ void doRead(void* chpl_arr, int numElems) {
   }
 }
 
+int cpp_getSize(char* filename) {
+  std::shared_ptr<arrow::io::ReadableFile> infile;
+  PARQUET_ASSIGN_OR_THROW(
+      infile,
+      arrow::io::ReadableFile::Open(filename,
+                                    arrow::default_memory_pool()));
+
+  std::unique_ptr<parquet::arrow::FileReader> reader;
+  PARQUET_THROW_NOT_OK(
+      parquet::arrow::OpenFile(infile, arrow::default_memory_pool(), &reader));
+  
+  return reader -> parquet_reader() -> metadata() -> num_rows();
+}
+
 extern "C" {
   void writeParquet(int numElems) {
     doWrite(numElems);
@@ -62,5 +76,9 @@ extern "C" {
 
   void readParquet(void* chpl_arr, int numElems) {
     doRead(chpl_arr, numElems);
+  }
+
+  int c_doSize(char* chpl_str) {
+    return cpp_getSize(chpl_str);
   }
 }
