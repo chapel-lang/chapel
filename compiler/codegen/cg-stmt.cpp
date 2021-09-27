@@ -29,6 +29,7 @@
 #include "ImportStmt.h"
 #include "LayeredValueTable.h"
 #include "llvmDebug.h"
+#include "llvmVer.h"
 #include "misc.h"
 #include "passes.h"
 #include "stlUtil.h"

@@ -351,8 +351,8 @@ int64_t arrayVecN(llvm::Type *t)
     if (llvm::FixedVectorType *vt = llvm::dyn_cast<llvm::FixedVectorType>(t)) {
       n = vt->getNumElements();
     } else {
-      assert(0 && "Scalable vector type not handled");
-      n = 0;
+      // Scalable vector type not handled here
+      return -1;
     }
 #else
     llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
