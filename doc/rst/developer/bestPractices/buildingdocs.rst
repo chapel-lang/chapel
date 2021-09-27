@@ -3,6 +3,7 @@
 =============================
 Building Chapel Documentation
 =============================
+
 The live Chapel web documentation lives at https://chapel-lang.org/docs/.
 All of the source for the documentation is in the chapel source repository, and
 this note talks about how those are organized and built into the html documentation
@@ -32,7 +33,7 @@ release.
 
 
 How the HTML is Generated
-=========================
+-------------------------
 
 The Chapel documentation shown at https://chapel-lang.org/docs/ is generated
 in three different ways:
@@ -45,7 +46,6 @@ in three different ways:
 #.  Comments and code from Chapel source files are converted into .rst files
     using ``chapel/doc/util/chpl2rst.py``.
 
-========================================
 Contributing to the Chapel Documentation
 ========================================
 
@@ -58,7 +58,7 @@ ref:develop-and-test-contributions-locally.
 
 
 Editing the Source .rst and .chpl files
-=======================================
+---------------------------------------
 
 The .chpl files are text files that can be edited with any text editor.
 See ``$CHPL_HOME/highlight/README.md`` for information about some available
@@ -72,10 +72,11 @@ are created is to do the ``make docs`` that is described above.
 
 
 Files that live in a repository
-===============================
+-------------------------------
+
 Some of the documentation files are not converted into html files.  Instead
 they are raw html files in the chapel-www repository (currently only accessible
-by core developers) or raw .rst files that live in the public Github respository.
+by core developers) or raw .rst files that live in the public Github repository.
 
 Examples include:
  - https://chapel-lang.org/contributing.html
@@ -84,10 +85,10 @@ Examples include:
 
 
 Linking between files
-=======================================
+---------------------
 
 Linking between files when both files are in https://chapel-lang.org/docs/.
- - RST files in the `docs/rst/` or `chapel/test/release/examples/primers/`
+ - RST files in the ``docs/rst/`` or ``test/release/examples/primers/``
    subdirectory trees can refer to each other and
    when they are converted to html, those are converted to links.
  - The file being linked to has a ``.. _file-tag-name:`` at the top of it.
@@ -121,7 +122,6 @@ Here is a reference to the ```Chapel Developers`_`` URL later in the .rst file.
 
 .. _Chapel Developers: https://chapel.discourse.group/c/developers
 
-============================================
 Organization of Chapel Documentation Sources
 ============================================
 
@@ -216,7 +216,6 @@ heading the file is under.
      - doc/rst/modules/layoutdist + modules/layouts/\*.chpl + modules/dists/\*.chpl
 
 
-===============================================
 Files that have information about documentation
 ===============================================
 

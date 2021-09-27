@@ -2,6 +2,7 @@
 
 .. _Chapter-Memory_Consistency_Model:
 
+========================
 Memory Consistency Model
 ========================
 

@@ -1190,6 +1190,11 @@ void FnSymbol::printDocs(std::ostream* file, unsigned int tabs) {
       this->printDocsDescription(this->doc, file, tabs + 1);
       *file << std::endl;
     }
+
+    if (this->hasFlag(FLAG_DEPRECATED)) {
+      this->printDocsDeprecation(this->doc, file, tabs + 1,
+                                 this->getDeprecationMsg(), true);
+    }
   }
 }
 

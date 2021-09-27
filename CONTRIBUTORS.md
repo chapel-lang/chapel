@@ -2,38 +2,50 @@ Chapel Contributors
 ===================
 
 The following people have contributed to the implementation of the
-most recent Chapel releases:
+most recent Chapel release:
 
-Contributors to the Chapel 1.24.x releases
-------------------------------------------
-* Souris Ash, individual contributor
+Contributors to the Chapel 1.25.0 release
+-----------------------------------------
 * Ben Albrecht, [HPE]
+* Souris Ash, individual contributor
+* Ankush Bhardwaj, [GSoC 2021] mentor, [GSoC 2020] student from [Royal Global University]
 * Paul Cassella, [HPE]
 * [Brad Chamberlain], [HPE]
-* R Chinmay, individual contributor
 * Soohoon Choi, [HPE]
-* Garvit Dewan, [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Technology Roorkee]
-* Nelson Luís Dias, individual contributor
+* Krishna Kumar Dey, [GSoC 2021] and [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Information Technology, Sri City]
 * Lydia Duncan, [HPE]
-* Prashanth Duvvuri, individual contributor
+* Prasanth Duvvuri, [GSoC 2021] student from [Northeastern University] (former individual contributor)
 * Michael Ferguson, [HPE]
 * Piyush Gupta, individual contributor
+* John Hartman, [HPE]
 * David Iten, [HPE]
+* Aryamaan Jain, individual contributor
 * Engin Kayraklioglu, [HPE] (former [GSoC 2017] mentor, [Cray Inc.] intern from [George Washington University])
+* Shreyas Khandekar, [HPE] intern from [University of Arizona]
 * Lee Killough, [HPE]
+* Shubham Kumar, individual contributor
 * Vassily Litvinov, [HPE]
 * David Longnecker, [HPE]
-* Aniket Mathur, [GSoC 2020] student from [Indian Institute of Technology Roorkee]
-* Divye Nayyar, individual contributor
+* Mohaned Mashaly, individual contributor
+* Aniket Mathur, [GSoC 2021] mentor, [GSoC 2020] student from [Indian Institute of Technology Roorkee]
+* Ben McDonald, [HPE] (former intern from [Gonzaga University])
+* Divye Nayyar, [GSoC 2021] student from [Indian Institute of Technology Roorkee] (former individual contributor)
 * Sarah Nguyen, [HPE]
-* Yujia Qiao, [GSoC 2020] student from [Huazhong University of Science and Technology]
+* Nikhil Padmanabhan, [Yale University]
+* Gurudatta Patil, individual contributor
+* Yujia Qiao, individual contributor and [GSoC 2020] student from [Huazhong University of Science and Technology]
+* Venkatavaradan Raghuraman, individual contributor
+* Ahmad Rezaii, [HPE]
 * Elliot Ronaghan, [HPE]
-* Mohammed Sharfuddin, individual contributor
+* Vaibhav Sethia, individual contributor
+* Lakshya Singh, [GSoC 2021] student from [Indian Institute of Technology (BHU) Varanasi]
 * Jenna Hoole Starkey, [HPE]
+* Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
 * Greg Titus, [HPE]
-* Joe Tursi, [HPE]
+* Max Tursi, [HPE]
 * Karlon West, [HPE]
+* Tong Xu, individual contributor
 
 Contributors to previous releases
 ---------------------------------
@@ -47,7 +59,6 @@ Contributors to previous releases
 * Ian Bertolacci, [Cray Inc.] intern from [University of Arizona] / [Colorado State University]
 * Himanshu Bhadani, individual contributor
 * Akshansh Bhanjana, individual contributor
-* Ankush Bhardwaj, [GSoC 2020] student from [Royal Global University]
 * Nimit Bhardwaj, individual contributor
 * Sean Billig, individual contributor
 * Robert Bocchino, [Cray Inc.] intern from [University of Illinois, Urbana-Champaign]
@@ -58,6 +69,7 @@ Contributors to previous releases
 * David Callahan, [Cray Inc.]
 * Sanket Chaudhari, individual contributor
 * Naman Chikara, individual contributor
+* R Chinmay, individual contributor
 * Sung-Eun Choi, [Cray Inc.]
 * Mike Chu, [Advanced Micro Devices, Inc.]
 * Cristian-loan Condruz, individual contributor
@@ -65,8 +77,9 @@ Contributors to previous releases
 * Steve Deitz, [Cray Inc.]
 * Laura Delaney, [Cray Inc.] intern from [Whitworth University]
 * Joel Denny, [ETI]
-* Krishna Kumar Dey, [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Information Technology, Sri City]
+* Garvit Dewan, [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Technology Roorkee]
 * Roxana Diaconescu, [CalTech]
+* Nelson Luís Dias, individual contributor
 * James Dinan, [Cray Inc.] intern from [The Ohio State University]
 * Martha Dumler, [Cray Inc.]
 * Saliya Ekanayake, [Indiana University]
@@ -108,7 +121,6 @@ Contributors to previous releases
 * Deepak Majeti, individual contributor
 * Prabhanjan Mannari, individual contributor
 * Cory McCartan, [Cray Inc.] intern from Sammamish High School
-* Ben McDonald, [HPE] intern from [Gonzaga University]
 * Damian McGuckin, [Pacific Engineering Systems International]
 * Erin Melia, individual contributor
 * Barry Moore, [University of Pittsburgh]
@@ -121,7 +133,6 @@ Contributors to previous releases
 * [Phil Nelson], [Western Washington University] / [Cray Inc.] contractor
 * Michael Noakes, [Cray Inc.]
 * Joshua Olson, individual contributor
-* Nikhil Padmanabhan, [Yale University]
 * Konstantina Panagiotopoulou, individual contributor
 * Unnati Parekh, individual contributor
 * Nicholas Park, [DOD]
@@ -143,13 +154,13 @@ Contributors to previous releases
 * Raj Shekhar, individual contributor
 * Albert Sidelnik, [Cray Inc.] intern from [University of Illinois, Urbana-Champaign]
 * Marcos Cleison Silva Santana, individual contributor
+* Mohammed Sharfuddin, individual contributor
 * Kushal Singh, [GSoC 2016] student from [International Institute of Information Technology, Hyderabad]
 * Darren Smith, [University of Maryland]
 * Rachel Sobel, [Cray Inc.] intern from [University of Washington]
 * Francisco Souza, individual contributor
 * Srinivas Sridharan, [University of Notre Dame] / [ORNL]
 * George Stelle, [Sandia National Laboratories]
-* Andy Stone, [Cray Inc.] intern from [Colorado State University]
 * Chris Swenson, individual contributor
 * [Kenjiro Taura], [University of Tokyo]
 * Chris Taylor, [DOD]
@@ -226,6 +237,7 @@ implementation.
 [GSoC 2018]: https://summerofcode.withgoogle.com/archive/2018/organizations/4933265605525504/
 [GSoC 2019]: https://summerofcode.withgoogle.com/archive/2019/organizations/5677337046155264/
 [GSoC 2020]: https://summerofcode.withgoogle.com/archive/2020/organizations/6722154118250496/
+[GSoC 2021]: https://summerofcode.withgoogle.com/organizations/6146989856653312/
 [Haverford College]: https://www.haverford.edu/
 [HPE]: https://www.hpe.com/
 [Huazhong University of Science and Technology]: http://english.hust.edu.cn/
@@ -233,12 +245,14 @@ implementation.
 [Indian Institute of Technology, Hyderabad]: https://www.iith.ac.in/
 [Indian Institute of Technology Roorkee]: https://www.iitr.ac.in/
 [Indiana University]: http://www.cs.indiana.edu/
+[Indian Institute of Technology (BHU) Varanasi]: https://www.iitbhu.ac.in/
 [Indraprastha Institute of Information Technology, Delhi]: https://iiitd.ac.in/
 [International Institute of Information Technology, Hyderabad]: https://www.iiit.ac.in/
 [Københavns Universitet (University of Copenhagen)]: http://diku.dk/english/
 [Lawrence Berkeley National Laboratory]: http://crd.lbl.gov/
 [LTS]: https://www.ltsnet.net/
 [MITRE]: http://www.mitre.org/
+[Northeastern University]: https://www.khoury.northeastern.edu/
 [The Ohio State University]: https://cse.osu.edu/
 [ORNL]: https://www.ornl.gov/
 [Pacific Engineering Systems International]: http://www.esi.com.au/

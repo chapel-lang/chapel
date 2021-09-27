@@ -4,16 +4,11 @@
 Chapel Prerequisites
 ====================
 
-If you have a standard UNIX environment, a C/C++ compiler, some basic
-scripting languages, a GNU-compatible make, and awk installed you should
-have no problems getting started with Chapel.
+Chapel is designed to be portable to a variety of systems and only
+requires software that is common on UNIX systems.
 
-
-Prerequisites
--------------
-
-In slightly more detail, the following are prerequisites and assumptions
-about your environment for using Chapel:
+The following are prerequisites and assumptions about your environment
+for using Chapel:
 
   * You are using an environment that supports standard UNIX commands
     such as: ``cd, mkdir, rm, echo``

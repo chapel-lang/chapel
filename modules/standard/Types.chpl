@@ -238,7 +238,7 @@ proc isNumericValue(e)   param  return isNumericType(e.type);
 proc isPrimitiveValue(e) param  return isPrimitiveType(e.type);
 /* Returns `true` if the argument is a `enum` value. */
 proc isEnumValue(e)      param  return isEnumType(e.type);
-pragma "no doc"
+/* Returns `true` if the argument is a `nothing` value (i.e., `none`) */
 proc isNothingValue(e)   param return isNothingType(e.type);
 //Defined elsewhere:
 // isTupleValue

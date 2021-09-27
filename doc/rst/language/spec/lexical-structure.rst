@@ -2,6 +2,7 @@
 
 .. _Chapter-Lexical_Structure:
 
+=================
 Lexical Structure
 =================
 
@@ -179,6 +180,7 @@ The following identifiers are reserved as keywords:
    lifetime
    local
    locale
+   manage
    module
    new
    nil

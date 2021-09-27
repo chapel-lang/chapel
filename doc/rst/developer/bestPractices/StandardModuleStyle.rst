@@ -1,3 +1,5 @@
+.. _best-practices-standard-module-style:
+
 Standard Module Style
 =====================
 
@@ -55,7 +57,7 @@ the operation.
 Use parentheses-less methods only for returning properties that could be
 reasonably implemented as fields. However, if such a method is named
 isXYZ or hasXYZ it should use parentheses (so, use
-`proc isReal() { ...  }` rather than `proc isReal { ... }`).
+``proc isReal() { ...  }`` rather than ``proc isReal { ... }``).
 Parentheses-less functions that aren't methods should be avoided.
 
 Many paren-ful methods take some notable action. Try to make these

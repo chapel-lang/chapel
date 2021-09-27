@@ -2,6 +2,7 @@
 
 .. _Chapter-Types:
 
+=====
 Types
 =====
 

@@ -68,9 +68,17 @@ Set ``x`` in the loop -- counts the number of tasks:
   }
   writeln("The number of tasks is: ", x);
 
-For a user-defined reduction, there is a task-private instance
-of the reduction class for each task created for the forall
-or coforall loop. Here is an example of such a class:
+For a user-defined reduction, there is a task-private instance of the
+reduction class for each task created for the forall or coforall loop.
+The below section shows how to define and use a user-defined reduction.
+
+.. _readme-reduceIntents-interface:
+
+------------------------------
+User-Defined Reduction Example
+------------------------------
+
+Here is an example that defines and uses a user-defined reduction.
 
  .. code-block:: chapel
 
