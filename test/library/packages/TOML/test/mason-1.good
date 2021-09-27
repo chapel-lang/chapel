@@ -1,9 +1,9 @@
 
 [brick]
 name = "MapReduce"
+chplVersion = "1.17.0"
 compopts = "--set configParam=2 -sverbose=true"
 version = "0.1.0"
-chplVersion = "1.17.0"
 
 [dependencies]
 

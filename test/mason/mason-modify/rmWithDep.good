@@ -2,8 +2,8 @@ Removing Mason dependency test
 
 [brick]
 name = "Tester"
-version = "0.1.0"
 author = "Sam Partee"
+version = "0.1.0"
 
 [dependencies]
 _MasonTest1 = "0.2.0"
