@@ -325,7 +325,7 @@ module Atomics {
        may happen if the value could not be updated atomically.
 
        This weak version is allowed to spuriously fail, but when
-       is used compareExchange in a loop anyways, it can can offer better
+       compareExchange is already in a loop, it can offer better
        performance on some platforms.
     */
     inline proc compareExchangeWeak(ref expected:bool, desired:bool, param order: memoryOrder = memoryOrder.seqCst): bool {
@@ -519,9 +519,8 @@ module Atomics {
        may happen if the value could not be updated atomically.
 
        This weak version is allowed to spuriously fail, but when
-       is used compareExchange in a loop anyways, it can can offer better
+       compareExchange is already in a loop, it can offer better
        performance on some platforms.
-
     */
     inline proc compareExchangeWeak(ref expected:T, desired:T, param order: memoryOrder = memoryOrder.seqCst): bool {
       return this.compareExchangeWeak(expected, desired, order, readableOrder(order));
