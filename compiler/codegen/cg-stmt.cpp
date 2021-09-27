@@ -66,8 +66,14 @@ void codegenStmt(Expr* stmt) {
         scope = info->irBuilder->getCurrentDebugLocation().getScope();
       }
 
+#if HAVE_LLVM_VER >= 120
+      info->irBuilder->SetCurrentDebugLocation(
+                  llvm::DILocation::get(scope->getContext(), stmt->linenum(),
+                                        /*col=*/ 0, scope, nullptr, false));
+#else
       info->irBuilder->SetCurrentDebugLocation(
                   llvm::DebugLoc::get(stmt->linenum(),0 /*col*/,scope));
+#endif
     }
 #endif
   }

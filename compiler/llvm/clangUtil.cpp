@@ -2572,7 +2572,13 @@ clang::FunctionDecl* getFunctionDeclClang(const char* name)
 llvm::Type* getTypeLLVM(const char* name)
 {
   GenInfo* info = gGenInfo;
+#if HAVE_LLVM_VER >= 120
+  llvm::MDNode* scope = info->irBuilder->getCurrentDebugLocation().getScope();
+  llvm::Type* t = llvm::StructType::getTypeByName(scope->getContext(), name);
+#else
   llvm::Type* t = info->module->getTypeByName(name);
+#endif
+
   if( t ) return t;
 
   t = info->lvt->getType(name);

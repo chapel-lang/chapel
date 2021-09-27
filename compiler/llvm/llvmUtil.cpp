@@ -346,8 +346,18 @@ int64_t arrayVecN(llvm::Type *t)
     unsigned n = at->getNumElements();
     return n;
   } else if( t->isVectorTy() ) {
+#if HAVE_LLVM_VER >= 120
+    unsigned n;
+    if (llvm::FixedVectorType *vt = llvm::dyn_cast<llvm::FixedVectorType>(t)) {
+      n = vt->getNumElements();
+    } else {
+      assert(0 && "Scalable vector type not handled");
+      n = 0;
+    }
+#else
     llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
     unsigned n = vt->getNumElements();
+#endif
     return n;
   } else {
     return -1;
