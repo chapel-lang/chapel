@@ -18,52 +18,10 @@
  * limitations under the License.
  */
 
+// NOTE: the docs below are intended to be included
+// in the relevant spec section
+
 /*
-  A *locale* is a Chapel abstraction for a piece of a target
-  architecture that has processing and storage capabilities.
-  Generally speaking, the tasks running within a locale have
-  roughly uniform access to values stored in the locale's local
-  memory and longer latencies for accessing the memories of other
-  locales.  As examples, a single shared memory machine would be
-  defined as a single locale, while in a system consisting of a
-  group of network-connected multicore nodes or SMPs each node
-  would be defined as a locale.
-
-  Chapel provides several predefined methods on locales, as well as
-  a few variables that describe the locales upon which a program is
-  running.
-
-  In addition to what is documented below, ``numLocales``, ``LocaleSpace``,
-  and ``Locales`` are available as global variables.
-
-  ``numLocales`` is the number of top-level (network connected) locales.
-
-  .. code-block:: chapel
-
-    config const numLocales: int;
-
-  ``LocaleSpace`` is the domain over which the global ``Locales`` array is
-  defined.
-
-  .. code-block:: chapel
-
-    const LocaleSpace = {0..numLocales-1};
-
-  The global ``Locales`` array contains an entry for each top-level locale.
-
-  .. code-block:: chapel
-
-    const Locales: [LocaleSpace] locale;
-
-
-  One common code idiom in Chapel is the following, which spreads parallel
-  tasks across the network-connected locales upon which the program is running:
-
-    .. code-block:: chapel
-
-      coforall loc in Locales { on loc { ... } }
-
-  The default value for a ``locale`` variable is ``Locales[0]``
 
  */
 module ChapelLocale {
@@ -211,6 +169,7 @@ module ChapelLocale {
     :return: current locale
     :rtype: locale
   */
+  pragma "no doc" // because the spec covers it in a different section
   inline proc here {
     return chpl_localeID_to_locale(here_id);
   }
@@ -240,7 +199,7 @@ module ChapelLocale {
   }
 
   /*
-    Get the integer identifier for this locale.
+    Get the unique integer identifier for this locale.
 
     :returns: locale number, in the range ``0..numLocales-1``
     :rtype: int
