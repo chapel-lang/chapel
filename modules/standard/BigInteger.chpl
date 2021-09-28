@@ -2696,9 +2696,19 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
-
-
-
+  // This helper is intended for use only when the exponent argument
+  // is negative.  Negative exponents result in integers that are between -1
+  // and 1 (but usually 0 unless the base is -1 or 1)
+  pragma "no doc"
+  proc bigint.powNegativeExpHelper(const ref base: bigint, exp: int) {
+    if (base == 1 || (base == -1 && Math.abs(exp) % 2 == 1)) {
+      this = base;
+    } else if (base == -1 && Math.abs(exp) % 2 == 0) {
+      this = 1;
+    } else {
+      this = 0;
+    }
+  }
 
   proc bigint.pow(const ref base: bigint, exp: int) {
     if exp >= 0 {
@@ -2706,24 +2716,17 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
     } else {
       if _local {
-        const exp_ = new bigint(exp);
-
-        mpz_powm(this.mpz, base.mpz, exp_.mpz, base.mpz);
+        this.powNegativeExpHelper(base, exp);
 
       } else if this.localeId == chpl_nodeID &&
                 base.localeId == chpl_nodeID {
-        const exp_ = new bigint(exp);
-
-        mpz_powm(this.mpz, base.mpz, exp_.mpz, base.mpz);
+        this.powNegativeExpHelper(base, exp);
 
       } else {
         const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
         on __primitive("chpl_on_locale_num", thisLoc) {
-          const base_ = base;
-          const exp_  = new bigint(exp);
-
-          mpz_powm(this.mpz, base_.mpz, exp_.mpz, base_.mpz);
+          this.powNegativeExpHelper(base, exp);
         }
       }
     }
