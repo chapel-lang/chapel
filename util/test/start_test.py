@@ -367,6 +367,7 @@ def summarize():
     passing_futures_marker = "{0}.*{1}".format(future_marker, success_marker)
     success_marker = "^" + success_marker
     skip_stdin_redirect_marker = r"^\[Skipping test with .stdin input"
+    skip_skipif_marker = r"^\[Skipping test based on .skipif"
 
     # setup counts and blank strings to hold summaries
     global failures # for exit codes later
@@ -377,6 +378,7 @@ def summarize():
     passing_suppressions = 0
     passing_futures = 0
     skip_stdin_redirects = 0
+    skip_skipif = 0
     failure_summary = ""
     suppression_summary = ""
     future_summary = ""
@@ -405,6 +407,8 @@ def summarize():
                 passing_futures += 1
             elif re.search(skip_stdin_redirect_marker, line, flags=re.M):
                 skip_stdin_redirects += 1
+            elif re.search(skip_skipif_marker, line, flags=re.M):
+                skip_skipif +=1
 
     # compile summary
     summary += failure_summary
@@ -415,6 +419,10 @@ def summarize():
     if skip_stdin_redirects > 0:
         logger.write("[Skipped {0} tests with .stdin input]"
                 .format(skip_stdin_redirects))
+
+    if skip_skipif > 0:
+        logger.write("[Skipped {0} tests based on evaluation of .skipif file]"
+                .format(skip_skipif))
 
     summary += ("[Summary: #Successes = {0} | #Failures = {1} | #Futures = {2} "
             "| #Warnings = {3} ]\n"
