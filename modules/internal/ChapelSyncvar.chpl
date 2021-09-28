@@ -690,6 +690,7 @@ module ChapelSyncvar {
 
     pragma "dont disable remote value forwarding"
     proc init(type valType, in value: valType) {
+      // MPF: Should this call qthread_writeF_const ?
       this.init(valType);
       qthread_writeEF(alignedValue, value : aligned_t);
     }
