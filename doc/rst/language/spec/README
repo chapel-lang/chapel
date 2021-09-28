@@ -1,3 +1,22 @@
+Here is the RST section title hierarchy
+
+|||||||||||||||||||||||||||||
+Chapel Language Specification
+|||||||||||||||||||||||||||||
+
+=======
+Chapter
+=======
+
+Section
+-------
+
+Subsection
+~~~~~~~~~~
+
+Subsubsection
+^^^^^^^^^^^^^
+
 [The following was developed back when spec was written in Latex / .tex
 however the principles still hold for the rst-formatted spec.]
 

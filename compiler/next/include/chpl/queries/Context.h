@@ -453,7 +453,10 @@ class Context {
   void setFilePathForModuleID(ID moduleID, UniqueString path);
 
   /**
-    Note an error for the currently running query.
+    Note an error for the currently running query and report it
+    with the error handler set by setErrorHandler.
+
+    If no query is currently running, it just reports the error.
    */
   void error(ErrorMessage error);
   /**

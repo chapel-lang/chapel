@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of cacheline aligning allocations
-GITHUB_USER=ronawho
-GITHUB_BRANCH=cacheline-align-allocs
-SHORT_NAME=align-allocs
-START_DATE=05/22/21
+# Test performance of different llvm optimization order 
+GITHUB_USER=mppf
+GITHUB_BRANCH=llvm-config-clang
+SHORT_NAME=llvm-config-clang
+START_DATE=09/28/21
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

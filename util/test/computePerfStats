@@ -53,18 +53,13 @@ def find_keys(keys, date):
         for key in keys:
             sys.stdout.write("Looking for {0}...".format(key))
             file.write("\t")
-            found = False
             regex = r"(\s|\S)*" + re.escape(key) + r"\s*(\S*)"
             # scan through output, looking for key
-            for line in test_output:
-                m = re.match(regex, line)
-                if m and not found:
-                    print("found it: {0}".format(m.group(2)))
-                    file.write(m.group(2))
-                    found = True
-                    break
-
-            if not found:
+            m = re.match(regex, test_output_raw, re.MULTILINE)
+            if m:
+                print("found it: {0}".format(m.group(2)))
+                file.write(m.group(2))
+            else:
                 file.write("-")
                 print("didn't find it")
                 found_everything = False

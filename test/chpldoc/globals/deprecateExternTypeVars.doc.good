@@ -1,0 +1,61 @@
+.. default-domain:: chpl
+
+.. module:: deprecateExternTypeVars.doc
+
+deprecateExternTypeVars.doc
+===========================
+**Usage**
+
+.. code-block:: chapel
+
+   use deprecateExternTypeVars.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import deprecateExternTypeVars.doc;
+
+.. type:: type Blah1
+
+   .. warning::
+
+      Blah1 is deprecated
+
+.. type:: type Blah2
+
+   .. warning::
+
+      Blah2 is deprecated, use Blah3 instead
+
+.. type:: type Blah3
+
+.. type:: type Blah4
+
+   There was documentation of this symbol 
+
+   .. warning::
+
+      Blah4 is deprecated
+
+.. type:: type Blah5
+
+   This symbol also was documented 
+
+   .. warning::
+
+      Blah5 is deprecated, use Blah6 instead
+
+.. type:: type Blah6
+
+.. type:: type Blah7
+
+   This symbol is deprecated 
+
+.. type:: type Blah8
+
+   This symbol is also deprecated, please use f instead 
+
+.. type:: type Blah9
+

@@ -39,6 +39,7 @@ function test_release() {
   git checkout $currentSha -- $CHPL_HOME/test/
   git checkout $currentSha -- $CHPL_HOME/util/cron/
   git checkout $currentSha -- $CHPL_HOME/util/test/perf/
+  git checkout $currentSha -- $CHPL_HOME/util/test/computePerfStats
   $CWD/nightly -cron ${nightly_args}
 }
 

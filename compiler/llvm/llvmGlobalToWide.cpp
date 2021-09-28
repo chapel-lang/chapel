@@ -1218,7 +1218,12 @@ namespace {
         info->globalSpace = 100;
         info->wideSpace = 101;
         info->globalPtrBits = 128;
+#if HAVE_LLVM_VER >= 120
+        info->localeIdType = StructType::getTypeByName(M.getContext(),
+                                                       "struct.c_localeid_t");
+#else
         info->localeIdType = M.getTypeByName("struct.c_localeid_t");
+#endif
         if( ! info->localeIdType ) {
           StructType* t = StructType::create(M.getContext(), "struct.c_localeid_t");
           t->setBody(Type::getInt32Ty(M.getContext()),

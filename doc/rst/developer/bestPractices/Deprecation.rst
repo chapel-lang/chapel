@@ -1,3 +1,5 @@
+.. _best-practices-deprecation:
+
 Chapel's Deprecation Policy
 ===========================
 
@@ -16,25 +18,23 @@ This is the deprecation process:
 
 The deprecation message uses the following format:
 
-..code-block::
+``foo is deprecated - please use bar``
 
-    foo is deprecated - please use bar
-
-   For compile-time messaging you can use ``compilerWarning()`` to do
-   this, but when deprecating symbols the ``deprecated`` keyword often
-   works better because it can be applied to any symbol in a uniform
-   way.  Look in the test/deprecated and test/deprecated-keyword
-   directories for many examples.  Note that the ``deprecated`` keyword
-   itself is likely to be replaced by different syntax in the future,
-   though this may not affect its use in practice since deprecations
-   typically only last for one release anyway.
+For compile-time messaging you can use ``compilerWarning()`` to do
+this, but when deprecating symbols the ``deprecated`` keyword often
+works better because it can be applied to any symbol in a uniform
+way.  Look in the test/deprecated and test/deprecated-keyword
+directories for many examples.  Note that the ``deprecated`` keyword
+itself is likely to be replaced by different syntax in the future,
+though this may not affect its use in practice since deprecations
+typically only last for one release anyway.
 
 2. Update the deprecated feature documentation to state that it is deprecated
    and point to the preferred feature.
 
 For example:
 
-..code-block:: rst
+.. code-block:: rst
 
     Foo module short description.
 

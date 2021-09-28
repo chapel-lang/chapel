@@ -2478,6 +2478,12 @@ GenRet codegenCallExprInner(GenRet function,
             INT_FATAL("inalloca arguments not yet implemented");
             break;
 
+#if HAVE_LLVM_VER >= 120
+          case clang::CodeGen::ABIArgInfo::Kind::IndirectAliased:
+            INT_FATAL("IndirectAliased not yet implemented");
+            break;
+#endif
+
           case clang::CodeGen::ABIArgInfo::Kind::Indirect:
           {
             // clang's CodeGenFunction::EmitCall contains many
@@ -3943,7 +3949,13 @@ DEFINE_PRIM(PRIM_RETURN) {
           }
           break;
         }
-
+#if HAVE_LLVM_VER >= 120
+        case clang::CodeGen::ABIArgInfo::Kind::IndirectAliased:
+        {
+          INT_FATAL("IndirectAliased not implemented yet");
+          break;
+        }
+#endif
         case clang::CodeGen::ABIArgInfo::Kind::Indirect:
         {
           auto ii = curFn->arg_begin();
