@@ -685,7 +685,9 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
 
 
 void chpl_track_free(void* memAlloc, int32_t lineno, int32_t filename) {
-  if (chpl_mem_real_alloc_size(memAlloc, lineno, filename) > memThreshold) {
+  // actual size of allocation, 0 if NULL or implementation doesn't support
+  size_t real_size = chpl_mem_real_alloc_size(memAlloc, lineno, filename);
+  if ((memAlloc != NULL && real_size == 0) || real_size > memThreshold) {
     memTableEntry* memEntry = NULL;
     if (chpl_memTrack) {
       memTrack_lock();
