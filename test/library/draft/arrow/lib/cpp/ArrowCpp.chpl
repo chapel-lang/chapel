@@ -4,15 +4,16 @@ module ArrowCpp {
   require "cpp-arrow.o";
 
   config const NUMELEMS = 100_000;
+  config const ROWGROUPS = 512*1024*128; // 512 mb
   
-  extern proc writeParquet(a);
+  extern proc writeParquet(a, b);
   extern proc readParquet(a, b);
   extern proc c_doSize(a): int;
   
   proc main() {
     var t: Timer;
     t.start();
-    writeParquet(NUMELEMS);
+    writeParquet(NUMELEMS, ROWGROUPS);
     var doneWrite = t.elapsed();
     
     var A: [0..#NUMELEMS] int;

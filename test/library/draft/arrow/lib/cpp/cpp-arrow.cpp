@@ -11,7 +11,7 @@
 
 using namespace std;
 
-void doWrite(int numElems) {
+void doWrite(int numElems, int rowGroupSize) {
   arrow::Int64Builder i64builder;
   for(int i = 0; i < numElems; i++)
     PARQUET_THROW_NOT_OK(i64builder.AppendValues({i}));
@@ -29,7 +29,7 @@ void doWrite(int numElems) {
       arrow::io::FileOutputStream::Open("test-cpp-file.parquet"));
 
   PARQUET_THROW_NOT_OK(
-      parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), outfile, ROWGROUPSIZE));
+      parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), outfile, rowGroupSize));
 }
 
 void doRead(void* chpl_arr, int numElems) {
@@ -70,8 +70,8 @@ int cpp_getSize(char* filename) {
 }
 
 extern "C" {
-  void writeParquet(int numElems) {
-    doWrite(numElems);
+  void writeParquet(int numElems, int rowGroupSize) {
+    doWrite(numElems, rowGroupSize);
   }
 
   void readParquet(void* chpl_arr, int numElems) {
