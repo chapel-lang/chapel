@@ -482,7 +482,7 @@ def GetTimer(f):
     lines = ReadFileWithComments(f)
     if len(lines) != 1:
         sys.stdout.write('[Error "%s" must contain exactly one non-comment line '
-            'with the name of the timer located in %s to use. Using default ' 
+            'with the name of the timer located in %s to use. Using default '
             'timer %s.]\n' %(f, timersdir, defaultTimer))
         timer = defaultTimer
     else:
@@ -499,9 +499,9 @@ def GetTimer(f):
 # options are one of the below configuration specific parameters that are
 # checked for. E.G the current comm layer. commExecNums are the optional
 # compopt and execopt number to enable different .good files for different
-# compopts/execopts with explicitly specifying name. 
+# compopts/execopts with explicitly specifying name.
 def FindGoodFile(basename, commExecNums=['']):
-    
+
     goodfile = ''
     for commExecNum in commExecNums:
         # Try the machine specific .good
@@ -545,7 +545,12 @@ def get_exec_log_name(execname, comp_opts_count=None, exec_opts_count=None):
 # Use testEnv to process skipif files, it works for executable and
 # non-executable versions
 def runSkipIf(skipifName):
-    p = py3_compat.Popen([utildir+'/test/testEnv', './'+skipifName], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    testenv = {}
+    for var, val in [env.split('=', 1) for env in globalExecenv]:
+        testenv[var.strip()] = val.strip()
+    p = py3_compat.Popen([utildir+'/test/testEnv', './'+skipifName],
+                         env=dict(list(os.environ.items()) + list(testenv.items())),
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     (stdout, stderr) = p.communicate()
     status = p.returncode
 
@@ -1021,9 +1026,9 @@ if os.getenv('CHPL_TEST_COMP_PERF')!=None:
     if os.getenv('CHPL_TEST_COMP_PERF_DIR')!=None:
         compperfdir=os.getenv('CHPL_TEST_COMP_PERF_DIR')
     else:
-        compperfdir=chpl_home+'/test/compperfdat/' 
+        compperfdir=chpl_home+'/test/compperfdat/'
 
-    # The env var CHPL_PRINT_PASSES_FILE will cause the 
+    # The env var CHPL_PRINT_PASSES_FILE will cause the
     # compiler to save the pass timings to specified file.
     if os.getenv('CHPL_PRINT_PASSES_FILE')!=None:
         printpassesfile=os.getenv('CHPL_PRINT_PASSES_FILE')
@@ -1766,8 +1771,8 @@ for testname in testsrc:
             # .good file can be of the form testname.<configuration>.good or
             # explicitname.<configuration>.good. It's not currently setup to
             # handle testname.<configuration>.<compoptsnum>.good, but that
-            # would be easy to add. 
-            basename = test_filename 
+            # would be easy to add.
+            basename = test_filename
             if len(clist) != 0:
                 explicitcompgoodfile = clist[0].split('#')[1].strip()
                 basename = explicitcompgoodfile.replace('.good', '')
@@ -1872,11 +1877,11 @@ for testname in testsrc:
         #
         sys.stdout.write('[Success compiling %s/%s]\n'%(localdir, test_filename))
 
-        # Note that compiler performance only times successful compilations. 
-        # Tests that are designed to fail before compilation is complete will 
-        # not get timed, so the total time compiling might be off slightly.   
+        # Note that compiler performance only times successful compilations.
+        # Tests that are designed to fail before compilation is complete will
+        # not get timed, so the total time compiling might be off slightly.
         if compperftest and not is_c_or_cpp_test:
-            # make the compiler performance directories if they don't exist 
+            # make the compiler performance directories if they don't exist
             timePasses = True
             if not os.path.isdir(compperfdir) and not os.path.isfile(compperfdir):
                 py3_compat.makedirs(compperfdir, exist_ok=True)
@@ -1890,8 +1895,8 @@ for testname in testsrc:
                 sys.stdout.write('[Error creating compiler performance temp dat file test directory %s]\n'%(tempDatFilesDir))
                 timePasses = False
 
-            # so long as we have to the directories 
-            if timePasses: 
+            # so long as we have to the directories
+            if timePasses:
                 # We need to name the files differently for each compiler
                 # option. 0 is the default compoptsnum if there are no options
                 # listed so we don't need to clutter the names with that
@@ -1924,7 +1929,7 @@ for testname in testsrc:
                         if os.path.isfile(datFile):
                             os.unlink(datFile)
 
-            #delete the timing file     
+            #delete the timing file
             cleanup(printpassesfile)
 
 
@@ -2276,19 +2281,19 @@ for testname in testsrc:
                         sys.stdout.write(p.communicate()[0])
 
                     if not perftest:
-                        # find the good file 
+                        # find the good file
 
                         basename = test_filename
                         commExecNum = ['']
 
                         # if there were multiple compopts/execopts find the
-                        # .good file that corresponds to that run 
+                        # .good file that corresponds to that run
                         if not onlyone:
                             commExecNum.insert(0,'.'+str(compoptsnum)+'-'+str(execoptsnum))
 
                         # if the .good file was explicitly specified, look for
                         # that version instead of the multiple
-                        # compopts/execopts or just the base .good file 
+                        # compopts/execopts or just the base .good file
                         if explicitexecgoodfile != None:
                             basename  = explicitexecgoodfile.replace('.good', '')
                             commExecNum = ['']
