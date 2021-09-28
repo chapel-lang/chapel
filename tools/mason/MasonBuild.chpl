@@ -34,7 +34,6 @@ use Spawn;
 use TOML;
 
 proc masonBuild(args: [] string) throws {
-  const NOEXAMPLES = "**NO EXAMPLES**";
 
   var parser = new argumentParser();
 
@@ -42,8 +41,7 @@ proc masonBuild(args: [] string) throws {
   var releaseFlag = parser.addFlag(name="release", defaultValue=false);
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
   var exampleOpts = parser.addOption(name="example",
-                                     numArgs=0..,
-                                     defaultValue=NOEXAMPLES);
+                                     numArgs=0..);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
@@ -64,15 +62,19 @@ proc masonBuild(args: [] string) throws {
     exit(0);
   }
 
+  if passArgs.hasValue() && exampleOpts._present {
+    throw new owned MasonError("Examples do not support `--` syntax");
+  }
+
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
   var force = forceFlag.valueAsBool();
   var compopts: list(string);
   var example = false;
   var skipUpdate = MASON_OFFLINE;
-  if (exampleOpts.hasValue() && exampleOpts.value() != NOEXAMPLES)
-      || !exampleOpts.hasValue() then example = true;
 
+  // when --example provided with or without a value
+  if exampleOpts._present then example = true;
 
   if updateFlag.hasValue() {
     if updateFlag.valueAsBool() then skipUpdate = false;
@@ -96,8 +98,6 @@ proc masonBuild(args: [] string) throws {
     if passArgs.hasValue() {
       for val in passArgs.values() do compopts.append(val);
     }
-    // var argsList = new list(string);
-    // for x in args do argsList.append(x);
     const configNames = updateLock(skipUpdate);
     const tomlName = configNames[0];
     const lockName = configNames[1];

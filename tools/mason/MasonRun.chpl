@@ -27,7 +27,6 @@ use MasonHelp;
 use MasonUtils;
 use TOML;
 
-const NOEXAMPLES = "**NO EXAMPLES**";
 
 proc masonRun(args: [] string) throws {
 
@@ -41,8 +40,7 @@ proc masonRun(args: [] string) throws {
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
 
   var exampleOpts = parser.addOption(name="example",
-                                     numArgs=0..,
-                                     defaultValue=NOEXAMPLES);
+                                     numArgs=0..);
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
                                 defaultValue=false);
@@ -66,16 +64,16 @@ proc masonRun(args: [] string) throws {
   var release = releaseFlag.valueAsBool();
   var execopts = new list(passArgs.values());
 
-  if !exampleOpts.hasValue() && args.size == 2 {
+
+  if exampleOpts._present && args.size == 2 {
+    // when mason run --example called
     printAvailableExamples();
     exit(0);
-  } else if !exampleOpts.hasValue() ||
-            (exampleOpts.hasValue() && exampleOpts.value() != NOEXAMPLES) ||
-            buildFlag.valueAsBool() {
+  } else if exampleOpts._present || buildFlag.valueAsBool() {
+    // --example with value or build flag
     masonBuildRun(args);
     exit(0);
   }
-
   runProjectBinary(show, release, execopts);
 }
 
@@ -155,8 +153,7 @@ private proc masonBuildRun(args: [?d] string) {
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
 
   var exampleOpts = parser.addOption(name="example",
-                                     numArgs=0..,
-                                     defaultValue=NOEXAMPLES);
+                                     numArgs=0..);
   var helpFlag = parser.addFlag(name="help",
                                 opts=["-h","--help"],
                                 defaultValue=false);
@@ -182,9 +179,11 @@ private proc masonBuildRun(args: [?d] string) {
     var execopts: list(string);
     var exampleProgram='';
 
-    if (exampleOpts.hasValue() && exampleOpts.value() != NOEXAMPLES)
-        || !exampleOpts.hasValue() then example = true;
+    if exampleOpts._present then example = true;
 
+    if passArgs.hasValue() && example {
+      throw new owned MasonError("Examples do not support `--` syntax");
+    }
 
     if updateFlag.hasValue() {
       if updateFlag.valueAsBool() then skipUpdate = false;
