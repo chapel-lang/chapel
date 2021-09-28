@@ -689,6 +689,12 @@ module ChapelSyncvar {
     }
 
     pragma "dont disable remote value forwarding"
+    proc init(type valType, in value: valType) {
+      this.init(valType);
+      qthread_writeEF(alignedValue, value : aligned_t);
+    }
+
+    pragma "dont disable remote value forwarding"
     proc deinit() {
       // There's no explicit destroy function, but qthreads reclaims memory
       // for full variables that have no pending operations
