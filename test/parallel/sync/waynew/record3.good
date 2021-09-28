@@ -1,10 +1,36 @@
 record3.chpl:12: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:12: error: in call to 'x', cannot pass result of coercion by reference
+record3.chpl:12: note: implicit coercion from 'sync R' to 'R'
+record3.chpl:5: note: when passing to 'ref' intent formal 'this'
 record3.chpl:13: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:13: error: in call to 'x', cannot pass result of coercion by reference
+record3.chpl:13: note: implicit coercion from 'sync R' to 'R'
+record3.chpl:5: note: when passing to 'ref' intent formal 'this'
 record3.chpl:14: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:14: error: in call to 'y', cannot pass result of coercion by reference
+record3.chpl:14: note: implicit coercion from 'sync R' to 'R'
+record3.chpl:6: note: when passing to 'ref' intent formal 'this'
 record3.chpl:15: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:15: error: in call to 'y', cannot pass result of coercion by reference
+record3.chpl:15: note: implicit coercion from 'sync R' to 'R'
+record3.chpl:6: note: when passing to 'ref' intent formal 'this'
 record3.chpl:16: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:16: error: in call to 'z', cannot pass result of coercion by reference
+record3.chpl:16: note: implicit coercion from 'sync R' to 'R'
+record3.chpl:7: note: when passing to 'ref' intent formal 'this'
 record3.chpl:17: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:17: error: in call to 'z', cannot pass result of coercion by reference
+record3.chpl:17: note: implicit coercion from 'sync R' to 'R'
+record3.chpl:7: note: when passing to 'ref' intent formal 'this'
 record3.chpl:18: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:18: error: in call to 'x', cannot pass result of coercion by reference
+record3.chpl:18: note: implicit coercion from 'sync R' to 'R'
+record3.chpl:5: note: when passing to 'ref' intent formal 'this'
 record3.chpl:18: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
+record3.chpl:18: error: in call to 'y', cannot pass result of coercion by reference
+record3.chpl:18: note: implicit coercion from 'sync R' to 'R'
+record3.chpl:6: note: when passing to 'ref' intent formal 'this'
 record3.chpl:18: warning: implicitly reading from a sync is deprecated; apply a 'read??()' method to the actual
-record3.chpl:10: error: sync/single types cannot contain type 'R'
+record3.chpl:18: error: in call to 'z', cannot pass result of coercion by reference
+record3.chpl:18: note: implicit coercion from 'sync R' to 'R'
+record3.chpl:7: note: when passing to 'ref' intent formal 'this'
