@@ -222,17 +222,12 @@ module ArgumentParser {
                          endPos:int) throws {
       var pos = startPos;
       var next = pos + 1;
-      debugTrace("starting at pos: " + pos:string);
-      debugTrace("Searching positions from: " + pos:string + " to "
-                 + endPos:string);
 
       if args[pos] == this._name {
         myArg._values.extend(args[pos+1..endPos]);
-        debugTrace("matched delim.: " + args[pos] + " at pos: " + pos:string);
         return endPos + 1;
       } else {
-        debugTrace("Tried to match delimiter " + _name + " at position "
-                    + pos:string + " and failed...this shouldn't happen");
+        // failed to match the delimiter at this index, which shouldn't happen
         return pos;
       }
     }
@@ -255,17 +250,11 @@ module ArgumentParser {
                          endPos:int) throws {
       var pos = startPos;
       var next = pos + 1;
-      debugTrace("starting at pos: " + pos:string);
-      debugTrace("Searching positions from: " + pos:string + " to "
-                 + endPos:string);
-
       if args[pos] == this._name {
         myArg._values.extend(args[pos..endPos]);
-        debugTrace("matched cmd: " + args[pos] + " at pos: " + pos:string);
         return endPos + 1;
       } else {
-        debugTrace("Tried to match cmd " + _name + " at position "
-                    + pos:string + " and failed...this shouldn't happen");
+        // failed to match the cmd, this should not happen
         return pos;
       }
     }
@@ -292,8 +281,6 @@ module ArgumentParser {
       } else if t == list(string) || isArray(t) {
         this._defaultValue.extend(defaultValue);
       }
-      debugTrace("positional arg: " + name + " has default value of "
-                 + _defaultValue:string);
       this._numArgs = numArgs;
     }
 
@@ -317,17 +304,11 @@ module ArgumentParser {
       var matched = 0;
       var pos = startPos;
       var next = pos+1;
-      debugTrace("expecting between " +
-                 _numArgs.low:string + " and " + _numArgs.high:string);
-      debugTrace("searching from: " + pos:string + " to " + endPos:string);
-      debugTrace("currently have " + myArg._values.size:string + " values");
-      debugTrace("current values are: " + myArg._values:string);
       // make sure we didn't already satisfy this positional
       if myArg._present && myArg._values.size == high then return startPos;
       do {
         myArg._values.append(args[pos]);
         myArg._present = true;
-        debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
         pos=next;
         next+=1;
         matched+=1;
@@ -338,8 +319,6 @@ module ArgumentParser {
     }
 
     override proc _validate(present:bool, valueCount:int):string {
-      debugTrace("expected " + _numArgs:string + " got " + valueCount:string);
-      debugTrace("present="+present:string + " required="+_required:string);
       if !present && _required {
         return "Required value missing";
       } else if valueCount < _numArgs.low {
@@ -394,21 +373,15 @@ module ArgumentParser {
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
                          endPos:int) throws {
       var high = _numArgs.high;
-      debugTrace("expecting between " +
-                 _numArgs.low:string + " and " + _numArgs.high:string);
       var matched = 0;
       var pos = startPos;
       var next = pos+1;
-      debugTrace("starting at pos: " + pos:string);
-      debugTrace("searching from: " + pos:string + " to " + endPos:string);
       if _yesFlags.contains(args[pos]) && _numArgs.low == 0 {
         myArg._values.clear();
         myArg._values.append("true");
-        debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
       } else if _noFlags.contains(args[pos]) && _numArgs.low == 0 {
         myArg._values.clear();
         myArg._values.append("false");
-        debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
       }
       if high > 0 && next <= endPos {
         var flagVal:bool;
@@ -426,8 +399,6 @@ module ArgumentParser {
     }
 
     override proc _validate(present:bool, valueCount:int):string {
-      debugTrace("expected " + _numArgs:string + " got " + valueCount:string);
-      debugTrace("present="+present:string + " required="+_required:string);
       if !present && _required {
         return "Required value missing";
       } else if valueCount < _numArgs.low && present {
@@ -492,20 +463,15 @@ module ArgumentParser {
     override proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
                          endPos:int) throws {
       var high = _numArgs.high;
-      debugTrace("expecting between " +
-                 _numArgs.low:string + " and " + _numArgs.high:string);
       var matched = 0;
       var pos = startPos;
       var next = pos+1;
-      debugTrace("starting at pos: " + pos:string);
-      debugTrace("searching from: " + pos:string + " to " + endPos:string);
       while matched < high && next <= endPos
       {
         pos=next;
         next+=1;
         matched+=1;
         myArg._values.append(args[pos]);
-        debugTrace("matched val: " + args[pos] + " at pos: " + pos:string);
       }
       return next;
     }
@@ -1089,14 +1055,10 @@ module ArgumentParser {
     proc _parsePositionals(arguments:[?argsD] string, endIdx:int) throws {
       var endPos = argsD.low;
       var idx = argsD.low;
-      debugTrace("Parsing Positionals...");
-      debugTrace(arguments:string + " " + endIdx:string);
       for handler in _positionals {
         var arg = _result.getReference(handler._name);
-        debugTrace("begin matching " + handler._name);
         endPos = handler._match(arguments, idx, arg, endIdx);
         idx = endPos;
-        debugTrace("got endPos " + endPos:string);
         if idx == endIdx then break;
       }
 
@@ -1132,7 +1094,6 @@ module ArgumentParser {
     proc parseArgs(arguments:[?argsD] string) throws {
       // TODO: Find out why the in intent is breaking here
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
-      debugTrace("Begin parsing args...");
       var k = 0;
       // identify optionIndices where opts start
       var optionIndices : map(int, string);
@@ -1164,7 +1125,6 @@ module ArgumentParser {
         if _options.contains(argElt) {
           var optName = _options.getValue(argElt);
           var argRslt = _result.getValue(optName);
-          debugTrace("found option " + argElt);
           // create an entry for this index and the argument name
           optionIndices.add(i, optName);
           argRslt._present = true;
@@ -1196,7 +1156,6 @@ module ArgumentParser {
         var name = arrayOptionIndices[i][1];
         // get a ref to the argument
         var arg = _result.getReference(name);
-        debugTrace("got reference to argument " + name);
         // get the argument handler to match
         const handler = _handlers.getBorrowed(name);
         // try to match values in argstring, get the last value position
@@ -1204,22 +1163,14 @@ module ArgumentParser {
         if arrayOptionIndices.size > i + 1 {
           stopPos = arrayOptionIndices[i+1][0] - 1;
         }
-        debugTrace("set stopPos = " + stopPos:string);
+        // try to consume the values in the handler
         endPos = handler._match(argsList.toArray(), idx, arg, stopPos);
-        debugTrace("got end position " + endPos:string);
         k+=1;
-        debugTrace("k val = " + k:string);
-        debugTrace("arrayOptionIndices.size is "
-                 + arrayOptionIndices.size:string);
-        debugTrace("argsList.size = " + argsList.size:string);
-        debugTrace("argsD.high = " + argsD.high:string);
         //check if we consumed the rest of the arguments
         if endPos == argsList.size {
           // stop processing more arguments, let subcommand eat the rest
           // needed when a subcommand defines same flag as parent command
           // or else the parent command will try to match on the subcommand arg
-          debugTrace("Subcommand " + handler._name +
-                     " consumes rest of arguments");
           break;
         }
 
@@ -1227,9 +1178,6 @@ module ArgumentParser {
         // then check that we don't have extra values
         if k < arrayOptionIndices.size {
           if endPos != arrayOptionIndices[k][0] {
-            debugTrace("endpos != arrayOptionIndices[k][0]:"+endPos:string+"!="
-                     + arrayOptionIndices[k][0]:string);
-            debugTrace("arrayOptionIndices " + arrayOptionIndices:string);
             // check for undefined argument provided or possible positional args
             // intermixed in command string
             _checkTrailingPositionals(argsList.toArray()[endPos..],
@@ -1274,7 +1222,6 @@ module ArgumentParser {
         const handler = this._handlers.getBorrowed(name);
         const arg = this._result.getReference(name);
         if !arg._present && handler._hasDefault() {
-          debugTrace("Assigning default value to " + name);
           arg._values.extend(handler._getDefaultValue());
           arg._present = true;
         }
@@ -1326,7 +1273,6 @@ module ArgumentParser {
       var arg = new shared Argument();
       this._result.add(handler._name, arg);
       // store the handler
-      debugTrace("added handler: " + handler._name);
       _handlers.add(handler._name, handler);
 
       return arg;
