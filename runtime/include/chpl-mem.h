@@ -176,6 +176,14 @@ static inline size_t chpl_mem_good_alloc_size(size_t minSize, int32_t lineno, in
   return chpl_good_alloc_size(minSize);
 }
 
+// Query the allocator to ask for the size of an existing allocation.
+//
+// If an allocator does not have the ability to get this information, 0 will be
+// returned.
+static inline size_t chpl_mem_real_alloc_size(void* ptr, int32_t lineno, int32_t filename) {
+  return chpl_real_alloc_size(ptr);
+}
+
 // free a c_string, no error checking.
 // The argument type is explicitly c_string, since only an "owned" string
 // should be freed.
