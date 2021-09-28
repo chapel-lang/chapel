@@ -80,6 +80,7 @@ module ChapelSyncvar {
            isStringType(t)        ||
            isBytesType(t)         ||
            isRecordType(t)        ||
+           isRangeType(t)         ||
            t == chpl_taskID_t;
 
   private proc ensureFEType(type t) {
