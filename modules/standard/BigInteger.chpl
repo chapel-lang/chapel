@@ -2657,7 +2657,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
   /* Set ``this`` to the result of (``base`` raised to ``exp``) modulo ``mod``.
 
-     :arg base: The value to be raised to the power of ``exp`` before performin
+     :arg base: The value to be raised to the power of ``exp`` before performing
                 a modulo operation on.
      :type base: ``bigint``
 
