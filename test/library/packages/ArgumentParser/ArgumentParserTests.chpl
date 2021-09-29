@@ -3606,6 +3606,30 @@ proc testMixedNegativeIntegerArgsOptions(test: borrowed Test) throws {
   test.assertEqual(new list(myIntOpts.values()), new list(argList[4..5]));
 }
 
+// test for presence of option without values
+proc testOptionZeroValueDetection(test: borrowed Test) throws {
+  var argList = ["progName","--example"];
+  var parser = new argumentParser();
+  var myOption = parser.addOption(name="example",
+                                  opts=["--example"],
+                                  numArgs=0..);
+  var myOtherOption = parser.addOption(name="other",
+                                       opts=["--other"],
+                                       numArgs=0..);
+
+  //make sure no value currently exists
+  test.assertFalse(myOption.hasValue());
+  test.assertFalse(myOtherOption.hasValue());
+  //parse the options
+  parser.parseArgs(argList);
+  //make sure we found the option
+  test.assertTrue(myOption._present);
+  test.assertFalse(myOtherOption._present);
+  //ensure there is no value
+  test.assertFalse(myOption.hasValue());
+  test.assertFalse(myOtherOption.hasValue());
+  test.assertEqual(new list(myOption.values()), new list(string));
+}
 
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
