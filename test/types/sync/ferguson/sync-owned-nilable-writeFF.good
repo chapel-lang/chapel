@@ -1,1 +1,0 @@
-sync-owned-nilable-writeFF.chpl:7: error: writeFF requires that the type contained in the sync variable be const-copyable, and const-assignable

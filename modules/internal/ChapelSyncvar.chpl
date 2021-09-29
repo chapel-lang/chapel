@@ -570,45 +570,55 @@ module ChapelSyncvar {
 
     proc writeEF(pragma "no auto destroy" in val : valType) lifetime this < val {
       on this {
+        pragma "no init"
+        pragma "no auto destroy"
+        var localVal : valType;
+        _moveset(localVal, val);
+
         chpl_rmem_consist_release();
         chpl_sync_waitEmptyAndLock(syncAux);
 
-        _moveset(value, val);
+        _moveset(value, localVal);
 
         chpl_sync_markAndSignalFull(syncAux);
         chpl_rmem_consist_acquire();
       }
     }
 
-    proc writeFF(val : valType) lifetime this < val {
-      if !isConstCopyableType(valType) ||
-         !isConstAssignableType(valType) {
-        compilerError("writeFF requires that the type contained in the sync variable be const-copyable, and const-assignable");
-      }
-
+    proc writeFF(pragma "no auto destroy" in val : valType) lifetime this < val {
       on this {
+        pragma "no init"
+        pragma "no auto destroy"
+        var localVal : valType;
+        _moveset(localVal, val);
+
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
 
-        value = val;
+        if chpl_sync_isFull(c_ptrTo(value), syncAux) {
+          chpl__autoDestroy(value);
+        }
+        _moveset(value, localVal);
 
         chpl_sync_markAndSignalFull(syncAux);
         chpl_rmem_consist_acquire();
       }
     }
 
-    proc writeXF(val : valType) lifetime this < val {
-      if !isDefaultInitializableType(valType) ||
-         !isConstCopyableType(valType) ||
-         !isConstAssignableType(valType) {
-        compilerError("writeXF requires that the type contained in the sync variable be default-initializeable, const-copyable, and const-assignable");
-      }
-
+    proc writeXF(pragma "no auto destroy" in val : valType) lifetime this < val {
       on this {
+        pragma "no init"
+        pragma "no auto destroy"
+        var localVal : valType;
+        _moveset(localVal, val);
+
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
-        value = val;
+        if chpl_sync_isFull(c_ptrTo(value), syncAux) {
+          chpl__autoDestroy(value);
+        }
+        _moveset(value, localVal);
 
         chpl_sync_markAndSignalFull(syncAux);
         chpl_rmem_consist_acquire();
@@ -1082,13 +1092,18 @@ module ChapelSyncvar {
 
     proc writeEF(pragma "no auto destroy" in val : valType) lifetime this < val {
       on this {
+        pragma "no init"
+        pragma "no auto destroy"
+        var localVal : valType;
+        _moveset(localVal, val);
+
         chpl_rmem_consist_release();
         chpl_single_lock(singleAux);
 
         if this.isFull then
           halt("single var already defined");
 
-        _moveset(value, val);
+        _moveset(value, localVal);
 
         chpl_single_markAndSignalFull(singleAux);
         chpl_rmem_consist_acquire();

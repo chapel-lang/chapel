@@ -15,8 +15,7 @@ deinit 1
 testDefaultInitSyncWriteEFWriteFF
 init 1
 init 2
-= 1 2
-deinit 2
+deinit 1
 deinit 2
 testValInitSync
 init 1
