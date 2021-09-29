@@ -14,7 +14,7 @@ extern proc foo(a : myFunctionPointer, b : c_int) : c_int;
 
 // ==== c2chapel typedefs ====
 
-extern "struct io_methods" record io_methods {
+extern record io_methods {
   var close : c_fn_ptr;
   var open : c_fn_ptr;
 }

@@ -20,7 +20,7 @@ extern proc sized(x : c_ptr(c_int), ref y : c_int) : void;
 
 extern proc sized(x : c_ptr(c_int), y : c_ptr(c_int)) : void;
 
-extern "struct foobar" record foobar {
+extern record foobar {
   var x : c_int;
   var y : c_ptr(c_int);
   var z : c_ptr(c_ptr(c_int));
