@@ -2710,6 +2710,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
+  // Documented in uint, uint version
   proc bigint.pow(const ref base: bigint, exp: int) {
     if exp >= 0 {
       this.pow(base, exp : uint);
@@ -2732,6 +2733,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
+  // Documented in uint, uint version
   proc bigint.pow(const ref base: bigint, exp: uint) {
     const exp_ = exp.safeCast(c_ulong);
 
@@ -2753,6 +2755,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
+  // Documented in uint, uint version
   proc bigint.pow(base: int, exp: int) {
     if base >= 0 && exp >= 0 {
       this.pow(base : uint, exp : uint);
@@ -2769,6 +2772,14 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
+  /* Set ``this`` to the result of ``base`` raised to ``exp``.
+
+     :arg base: The value to be raised to the power of ``exp``.
+     :type base: ``bigint``, ``int`` or ``uint``
+
+     :arg exp: The exponent to raise ``base`` to the power of.
+     :type exp: ``int`` or ``uint``
+   */
   proc bigint.pow(base: uint, exp: uint) {
     const base_ = base.safeCast(c_ulong);
     const exp_  = exp.safeCast(c_ulong);
