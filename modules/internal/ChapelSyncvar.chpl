@@ -628,7 +628,9 @@ module ChapelSyncvar {
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
-        value = defaultValue;
+        if chpl_sync_isFull(c_ptrTo(value), syncAux) {
+          chpl__autoDestroy(value);
+        }
 
         chpl_sync_markAndSignalEmpty(syncAux);
         chpl_rmem_consist_acquire();
