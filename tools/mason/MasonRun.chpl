@@ -65,7 +65,8 @@ proc masonRun(args: [] string) throws {
   var execopts = new list(passArgs.values());
 
 
-  if exampleOpts._present && args.size == 2 {
+  if exampleOpts._present && !exampleOpts.hasValue()
+    && args.size == 2 {
     // when mason run --example called
     printAvailableExamples();
     exit(0);

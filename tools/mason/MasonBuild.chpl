@@ -82,7 +82,7 @@ proc masonBuild(args: [] string) throws {
   }
 
   if example {
-    // compopts become test names. Build never runs examples
+    // compopts become example names. Build never runs examples
     for val in exampleOpts.values() do compopts.append(val);
     compopts.append("--no-run");
     if skipUpdate then compopts.append('--no-update');
