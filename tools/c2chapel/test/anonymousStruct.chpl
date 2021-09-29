@@ -1,7 +1,7 @@
 // Generated with c2chapel version 0.1.0
 
 // Header given to c2chapel:
-require "opaqueStruct.h";
+require "anonymousStruct.h";
 
 // Note: Generated with fake std headers
 
@@ -16,6 +16,7 @@ extern "struct foobar" record foobar {
 
 // ==== c2chapel typedefs ====
 
-// Opaque struct?
-extern record myOpaque {};
+extern record sports {
+  var a : c_int;
+}
 
