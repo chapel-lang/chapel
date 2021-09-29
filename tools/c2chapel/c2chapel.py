@@ -354,7 +354,7 @@ def getStructOrUnionDef(decl):
         return None
 
 
-def genStructOrUnion(structOrUnion, name=""):
+def genStructOrUnion(structOrUnion, name="", isAnon=False):
     if name == "":
         if structOrUnion.name is not None:
             name = structOrUnion.name
@@ -370,7 +370,11 @@ def genStructOrUnion(structOrUnion, name=""):
         print()
         return
 
-    ret = "extern union " if isUnion else "extern record ";
+    ret = ""
+    if isAnon:
+        ret = "extern union " if isUnion else "extern record "
+    else:
+        ret = "extern union " if isUnion else "extern \"struct " + name + "\" record "
     ret += name + " {"
     foundTypes.add(name)
 
@@ -385,7 +389,7 @@ def genStructOrUnion(structOrUnion, name=""):
     for decl in structOrUnion.decls:
         innerStructOrUnion = getStructOrUnionDef(decl)
         if innerStructOrUnion is not None:
-            genStructOrUnion(innerStructOrUnion)
+            genStructOrUnion(innerStructOrUnion, isAnon=False)
 
         if type(decl) == c_ast.Pragma:
             break
@@ -442,7 +446,7 @@ def genTypeEnum(decl):
 class ChapelVisitor(c_ast.NodeVisitor):
     def visit_StructOrUnion(self, node):
         typeDefs[node.name] = None
-        genStructOrUnion(node)
+        genStructOrUnion(node, isAnon=False)
 
     def visit_Typedef(self, node):
         if node.name not in typeDefs:
@@ -511,7 +515,7 @@ def genTypedefs(defs):
             if type(node.type.type) == c_ast.Struct or type(node.type.type) == c_ast.Union:
                 sn = node.type.type
                 if sn.decls is not None:
-                    genStructOrUnion(sn, name=node.name)
+                    genStructOrUnion(sn, name=node.name, isAnon=True)
                 elif sn.name not in foundTypes:
                     isUnion = isinstance(node.type.type, c_ast.Union)
                     structOrUnion = "union" if isUnion else "struct"
