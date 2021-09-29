@@ -2532,7 +2532,7 @@ module String {
   //
 
   pragma "no doc"
-  inline proc chpl__defaultHash(x : string): uint {
-    return getHash(x);
+  inline proc string.hash(): uint {
+    return getHash(this);
   }
 }

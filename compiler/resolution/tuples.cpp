@@ -441,13 +441,17 @@ getTupleArgAndType(FnSymbol* fn, ArgSymbol*& arg, AggregateType*& ct) {
   // Adjust any formals for blank-intent tuple behavior now
   resolveSignature(fn);
 
+  int methodToken = 0;
+  if (fn->getFormal(1)->type == dtMethodToken)
+    methodToken = 1;
+  
   if (fn->name == astr_initCopy || fn->name == astr_autoCopy) {
     INT_ASSERT(fn->numFormals() == 2); // expected of the original function
   }
   else {
-    INT_ASSERT(fn->numFormals() == 1); // expected of the original function
+    INT_ASSERT(fn->numFormals() - methodToken == 1); // expected of the original function
   }
-  arg = fn->getFormal(1);
+  arg = fn->getFormal(1 + methodToken);
   ct = toAggregateType(arg->type);
   if (isReferenceType(ct))
     ct = toAggregateType(ct->getValType());
@@ -466,11 +470,11 @@ instantiate_tuple_hash( FnSymbol* fn) {
   for (int i=0; i<ct->fields.length-1; i++) {
     CallExpr *field_access = new CallExpr( arg, new_IntSymbol(i));
     if (first) {
-      call =  new CallExpr( "chpl__defaultHash", field_access);
+      call =  new CallExpr( "hash", gMethodToken, field_access);
       first = false;
     } else {
       call = new CallExpr( "chpl__defaultHashCombine",
-                           new CallExpr( "chpl__defaultHash", field_access),
+                           new CallExpr( "hash", gMethodToken, field_access),
                            call,
                            new_IntSymbol(i) );
     }
@@ -1073,8 +1077,9 @@ fixupTupleFunctions(FnSymbol* fn,
     return true;
   }
 
-  if (strcmp(fn->name, "chpl__defaultHash") == 0 &&
-      fn->getFormal(1)->type->symbol->hasFlag(FLAG_TUPLE)) {
+  if (strcmp(fn->name, "hash") == 0 &&
+      fn->_this != nullptr &&
+      fn->_this->type->symbol->hasFlag(FLAG_TUPLE)) {
     instantiate_tuple_hash(newFn);
     return true;
   }

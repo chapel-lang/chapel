@@ -1191,8 +1191,8 @@ module Bytes {
   //
 
   pragma "no doc"
-  inline proc chpl__defaultHash(x : bytes): uint {
-    return getHash(x);
+  inline proc bytes.hash(): uint {
+    return getHash(this);
   }
 
 } // end of module Bytes
