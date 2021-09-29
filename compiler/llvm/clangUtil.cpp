@@ -4005,17 +4005,21 @@ void makeBinaryLLVM(void) {
     if (fLinkStyle == LS_DEFAULT) {
       // check for indication that the PrgEnv defaults to dynamic linking
       bool defaultDynamic = false;
-      for(size_t i = 0; i < gatheredArgs.size(); i++)
-        if (gatheredArgs[i].find("-Wl,-Bdynamic") != std::string::npos)
+      for(size_t i = 0; i < gatheredArgs.size(); i++) {
+        if (gatheredArgs[i] == "-Wl,-Bdynamic"   // when PE links with gcc
+            || gatheredArgs[i] == "-dynamic") {  // when PE links with clang
           defaultDynamic = true;
+        }
+      }
 
       // Older Cray PrgEnv defaults to static linking.  If we are asking for
       // the default link type, and we don't find an explicit dynamic
       // flag in the gathered PrgEnv arguments, then force static linking
       // because LLVM's default (dynamic) is different from the PrgEnv
       // default (static).
-      if (defaultDynamic == false)
+      if (defaultDynamic == false) {
         fLinkStyle = LS_STATIC;
+      }
     }
 
     // Replace -lchpl_lib_token with the runtime arguments
