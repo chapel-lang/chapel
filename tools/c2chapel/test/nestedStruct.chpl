@@ -8,17 +8,17 @@ require "nestedStruct.h";
 use CPtr;
 use SysCTypes;
 use SysBasic;
-extern "struct first" record first {
+extern record first {
   var a : c_int;
   var b : c_string;
 }
 
-extern "struct second" record second {
+extern record second {
   var a : c_ptr(c_int);
   var b : c_ptr(c_int);
 }
 
-extern "struct Outer" record Outer {
+extern record Outer {
   var structField : first;
   var fieldPtr : c_ptr(second);
 }

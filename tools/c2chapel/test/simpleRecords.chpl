@@ -8,20 +8,20 @@ require "simpleRecords.h";
 use CPtr;
 use SysCTypes;
 use SysBasic;
-extern "struct allInts" record allInts {
+extern record allInts {
   var a : c_int;
   var b : c_uint;
   var c : c_longlong;
 }
 
-extern "struct misc" record misc {
+extern record misc {
   var a : c_char;
   var b : c_string;
   var c : c_void_ptr;
   var d : c_ptr(c_int);
 }
 
-extern "struct composition" record composition {
+extern record composition {
   var m : misc;
   var i : c_ptr(allInts);
 }

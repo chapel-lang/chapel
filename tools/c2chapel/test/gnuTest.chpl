@@ -9,7 +9,7 @@ use CPtr;
 use SysCTypes;
 use SysBasic;
 // Anonymous union or struct was encountered within and skipped.
-extern "struct _GValue" record _GValue {
+extern record _GValue {
   var g_type : GType;
 }
 
