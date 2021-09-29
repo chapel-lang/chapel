@@ -111,32 +111,15 @@ module ChapelSyncvar {
     __primitive("=", dst, src);
   }
 
-  private proc _emptyStoresValue(type t) param {
-    return isDefaultInitializableType(t);
-  }
-
-  pragma "no doc"
-  pragma "unsafe"
-  private inline proc _emptyval(ref dst: ?t) {
-    if _emptyStoresValue(t) {
-      // It is OK to read the empty value with e.g. readXX
-      // so we set it to a default-initialized value
-      pragma "no auto destroy"
-      var defaultValue : t;
-      _moveset(dst, defaultValue);
-    } else {
-      // It will be an error to read the empty value
-      // but we zero it just in case
-      c_memset(c_ptrTo(dst), 0, c_sizeof(t));
-    }
-  }
   pragma "no doc"
   pragma "unsafe"
   private inline proc _retemptyval(type t) {
     pragma "no init"
     pragma "no auto destroy"
     var ret: t;
-    _emptyval(ret);
+    // It will be an error to read the empty value
+    // but we zero it just in case
+    c_memset(c_ptrTo(ret), 0, c_sizeof(t));
     return ret;
   }
 
@@ -497,7 +480,7 @@ module ChapelSyncvar {
     pragma "dont disable remote value forwarding"
     proc deinit() {
       on this {
-        if _emptyStoresValue(valType) || this.isFull {
+        if this.isFull {
           chpl__autoDestroy(value);
         }
         chpl_sync_destroyAux(syncAux);
@@ -518,7 +501,6 @@ module ChapelSyncvar {
         chpl_sync_waitFullAndLock(syncAux);
 
         _moveset(localRet, value);
-        _emptyval(value);
 
         chpl_sync_markAndSignalEmpty(syncAux);
         chpl_rmem_consist_acquire();
@@ -568,8 +550,13 @@ module ChapelSyncvar {
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
-        // const-copy from value
-        var localRet : valType = value;
+        var localRet : valType;
+
+        if isPODType(valType) {
+          localRet = value;
+        } else {
+          // otherwise, just use the default value
+        }
 
         chpl_sync_unlock(syncAux);
         chpl_rmem_consist_acquire();
@@ -583,26 +570,13 @@ module ChapelSyncvar {
 
     proc writeEF(pragma "no auto destroy" in val : valType) lifetime this < val {
       on this {
-        // if the value type is default initializeable, then
-        // the empty state has a value that needs to be destroyed.
-        pragma "no init"
-        pragma "no auto destroy"
-        var toDestroy: valType;
-
         chpl_rmem_consist_release();
         chpl_sync_waitEmptyAndLock(syncAux);
 
-        if _emptyStoresValue(valType) {
-          _moveset(toDestroy, value);
-        }
         _moveset(value, val);
 
         chpl_sync_markAndSignalFull(syncAux);
         chpl_rmem_consist_acquire();
-
-        if _emptyStoresValue(valType) {
-          chpl__autoDestroy(toDestroy);
-        }
       }
     }
 
@@ -1032,7 +1006,7 @@ module ChapelSyncvar {
 
     proc deinit() {
       on this {
-        if _emptyStoresValue(valType) || this.isFull {
+        if this.isFull {
           chpl__autoDestroy(value);
         }
         chpl_single_destroyAux(singleAux);
@@ -1089,7 +1063,11 @@ module ChapelSyncvar {
           localRet = value;
         else {
           chpl_single_lock(singleAux);
-          localRet = value;
+          if isPODType(valType) {
+            localRet = value;
+          } else {
+            // just use the default-initialized localRet
+          }
           chpl_single_unlock(singleAux);
         }
 
@@ -1102,29 +1080,16 @@ module ChapelSyncvar {
 
     proc writeEF(pragma "no auto destroy" in val : valType) lifetime this < val {
       on this {
-        // if the value type is default initializeable, then
-        // the empty state has a value that needs to be destroyed.
-        pragma "no init"
-        pragma "no auto destroy"
-        var toDestroy: valType;
-
         chpl_rmem_consist_release();
         chpl_single_lock(singleAux);
 
         if this.isFull then
           halt("single var already defined");
 
-        if _emptyStoresValue(valType) {
-          _moveset(toDestroy, value);
-        }
         _moveset(value, val);
 
         chpl_single_markAndSignalFull(singleAux);
         chpl_rmem_consist_acquire();
-
-        if _emptyStoresValue(valType) {
-          chpl__autoDestroy(toDestroy);
-        }
       }
     }
 
