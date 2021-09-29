@@ -107,8 +107,8 @@ def get(flag='host'):
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
-    # If compiler_val was not set, look at CC/CXX
-    if not compiler_val:
+    # If compiler_val was not set, look at CC/CXX for 'host'
+    if flag == 'host' and not compiler_val:
         compiler_val = get_compiler_from_cc_cxx()
 
     if compiler_val:
