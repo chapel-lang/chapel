@@ -44,6 +44,11 @@ For example:
 
     Foo module long description.
 
+.. note::
+
+   This step is not necessary when using the ``deprecated`` keyword, though
+   it can be useful in cases where the documentation could explicitly link to
+   the new symbol to use instead.
 
 3. Add a deprecation test to ``test/deprecated/`` to:
 
