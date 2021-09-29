@@ -95,6 +95,20 @@ def get_compiler_from_cc_cxx():
 
     return compiler_val
 
+# Returns True if the compiler defaults to LLVM
+def default_to_llvm(flag):
+    ret = False
+
+    if flag == 'target':
+        import chpl_llvm
+        has_llvm = chpl_llvm.get()
+
+    if flag == 'target' and (has_llvm == 'bundled' or has_llvm  == 'system'):
+        # Default to CHPL_TARGET_COMPILER=llvm when CHPL_LLVM!=none
+        ret = True
+
+    return ret
+
 @memoize
 def get(flag='host'):
 
@@ -107,23 +121,21 @@ def get(flag='host'):
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
 
-    # If compiler_val was not set, look at CC/CXX for 'host'
-    if flag == 'host' and not compiler_val:
-        compiler_val = get_compiler_from_cc_cxx()
+    default_llvm = False
+    if not compiler_val:
+        default_llvm = default_to_llvm(flag)
+
+        # If we aren't defaulting to LLVM, look at CC/CXX
+        if not default_llvm:
+            compiler_val = get_compiler_from_cc_cxx()
 
     if compiler_val:
         validate(compiler_val)
         return compiler_val
 
     prgenv_compiler = get_prgenv_compiler()
-    has_llvm = 'unset'
 
-    if flag == 'target':
-        import chpl_llvm
-        has_llvm = chpl_llvm.get()
-
-    if flag == 'target' and (has_llvm == 'bundled' or has_llvm  == 'system'):
-        # Default to CHPL_TARGET_COMPILER=llvm when CHPL_LLVM!=none
+    if default_llvm:
         compiler_val = 'llvm'
 
     elif prgenv_compiler != 'none':
@@ -272,12 +284,13 @@ def get_compiler_command(flag, lang):
     if command:
         return command
 
-    # If CHPL_HOST_CC etc was not set, look at CC/CXX
-    cc_cxx_val = overrides.get(lang_upper, '')
-    if cc_cxx_val:
-        return cc_cxx_val
-
     compiler_val = get(flag=flag)
+
+    # If we are not using LLVM, look also at CC/CXX.
+    if compiler_val != 'llvm':
+        cc_cxx_val = overrides.get(lang_upper, '')
+        if cc_cxx_val:
+            return cc_cxx_val
 
     if lang_upper == 'CC':
         command = get_compiler_name_c(compiler_val)
