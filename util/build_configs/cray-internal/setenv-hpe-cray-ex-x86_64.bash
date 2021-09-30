@@ -328,7 +328,7 @@ else
 
     gen_version_gcc=10.3.0
     #[TODO] gen_version_intel=16.0.3.210
-    gen_version_cce=10.0.2
+    gen_version_cce=12.0.2
 
     target_cpu_module=craype-x86-rome
 
