@@ -17,6 +17,9 @@ extern "C" {
   void c_readColumnByName(char* filename, void* chpl_arr, char* colname, int numElems);
   void cpp_readColumnByName(char* filename, void* chpl_arr, char* colname, int numElems);
 
+  const char* c_getType(char* filename, char* colname);
+  const char* cpp_getType(char* filename, char* colname);
+  
 #ifdef __cplusplus
 }
 #endif

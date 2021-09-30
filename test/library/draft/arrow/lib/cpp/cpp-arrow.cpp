@@ -69,6 +69,27 @@ int cpp_getSize(char* filename) {
   return reader -> parquet_reader() -> metadata() -> num_rows();
 }
 
+const char* cpp_getType(char* filename, char* colname) {
+  std::shared_ptr<arrow::io::ReadableFile> infile;
+  PARQUET_ASSIGN_OR_THROW(
+      infile,
+      arrow::io::ReadableFile::Open(filename,
+                                    arrow::default_memory_pool()));
+
+  std::unique_ptr<parquet::arrow::FileReader> reader;
+  PARQUET_THROW_NOT_OK(
+      parquet::arrow::OpenFile(infile, arrow::default_memory_pool(), &reader));
+  
+  std::shared_ptr<arrow::Schema> sc;
+  std::shared_ptr<arrow::Schema>* out = &sc;
+  PARQUET_THROW_NOT_OK(reader->GetSchema(out));
+
+  auto ty = sc -> GetFieldByName(colname) -> type() -> name();
+  auto ret = ty.c_str();
+  return ret;
+  
+}
+
 void cpp_readColumnByIndex(char* filename, void* chpl_arr, int colNum, int numElems) {
   auto chpl_ptr = (int64_t*)chpl_arr;
   
@@ -147,5 +168,9 @@ extern "C" {
   // :) turn me up
   void c_readColumnByName(char* filename, void* chpl_arr, char* colname, int numElems) {
     cpp_readColumnByName(filename, chpl_arr, colname, numElems);
+  }
+
+  const char* c_getType(char* filename, char* colname) {
+    return cpp_getType(filename, colname);
   }
 }

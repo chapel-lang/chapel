@@ -11,6 +11,7 @@ module ArrowCpp {
   extern proc c_doSize(a): int;
   extern proc c_readColumnByIndex(a,b,c,d);
   extern proc c_readColumnByName(a,b,c,d);
+  extern proc c_getType(a,b): c_string;
   
   proc main() {
     var t: Timer;
@@ -39,8 +40,10 @@ module ArrowCpp {
 
     writeln(B[534..#12]);
 
+    var g = c_getType(asd.c_str(), colName.c_str()):string;
+    writeln(g);
+    
     // TODO: Get size and type
-    // TODO: get column that takes a filename
     // TODO: research that chunked array whatever
   }
 }
