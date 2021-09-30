@@ -374,7 +374,7 @@ def genStructOrUnion(structOrUnion, name="", isAnon=False):
     if isAnon:
         ret = "extern union " if isUnion else "extern record "
     else:
-        ret = "extern union " if isUnion else "extern \"struct " + name + "\" record "
+        ret = "extern \"union " + name + "\" union " if isUnion else "extern \"struct " + name + "\" record "
     ret += name + " {"
     foundTypes.add(name)
 
