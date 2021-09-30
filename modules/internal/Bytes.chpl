@@ -440,9 +440,6 @@ module Bytes {
         on the same locale as the bytes.
    */
   inline proc bytes.c_str(): c_string {
-    if chpl_warnUnstable then
-      compilerWarning("bytes.c_str() is unstable and may be deprecated in \
-                       future releases.");
     return getCStr(this);
   }
 
