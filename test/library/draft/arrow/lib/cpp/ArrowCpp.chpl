@@ -30,11 +30,12 @@ module ArrowCpp {
 
     writeln(B[534..#12]);
 
-    var g = c_getType(asd.c_str(), colName.c_str()):string;
+    // why did this break?
+    var g = c_getType(asd.c_str(), colName.c_str()): string;
     writeln(g);
-
-    var C: [0..#20] int;
-    readFilesByNameNew(C, [asd, asd], [10,10], colName);
+      
+    var C: [0..#15] int;
+    readFilesByNameNew(C, [asd, asd], [10,5], colName);
     writeln(C);
 
     writeln(getArrSizeAndType([asd, asd]));

@@ -19,6 +19,16 @@ extern "C" {
 
   const char* c_getType(char* filename, char* colname);
   const char* cpp_getType(char* filename, char* colname);
+
+  void cpp_writeColumnToParquet(char* filename, void* chpl_arr,
+                                int colnum, char* dsetname, int numelems,
+                                int rowGroupSize);
+  void c_writeColumnToParquet(char* filename, void* chpl_arr,
+                              int colnum, char* dsetname, int numelems,
+                              int rowGroupSize);
+ 
+    
+ 
   
 #ifdef __cplusplus
 }

@@ -141,6 +141,33 @@ void cpp_readColumnByName(char* filename, void* chpl_arr, char* colname, int num
   }
 }
 
+void cpp_writeColumnToParquet(char* filename, void* chpl_arr,
+                              int colnum, char* dsetname, int numelems,
+                              int rowGroupSize) {
+  auto chpl_ptr = (int64_t*)chpl_arr;
+  arrow::Int64Builder i64builder;
+  for(int i = 0; i < numelems; i++) {
+    cout << chpl_ptr[i] << endl;
+    PARQUET_THROW_NOT_OK(i64builder.AppendValues({chpl_ptr[i]}));
+  }
+  std::shared_ptr<arrow::Array> i64array;
+  PARQUET_THROW_NOT_OK(i64builder.Finish(&i64array));
+
+  std::shared_ptr<arrow::Schema> schema = arrow::schema(
+                 {arrow::field(dsetname, arrow::int64())});
+
+  auto table = arrow::Table::Make(schema, {i64array});
+
+  std::shared_ptr<arrow::io::FileOutputStream> outfile;
+  PARQUET_ASSIGN_OR_THROW(
+      outfile,
+      arrow::io::FileOutputStream::Open(filename));
+
+  PARQUET_THROW_NOT_OK(
+      parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), outfile, rowGroupSize));
+
+}
+
 extern "C" {
   // test function, writes 0..#numElems to file
   // can't write your own array yet
@@ -172,5 +199,12 @@ extern "C" {
 
   const char* c_getType(char* filename, char* colname) {
     return cpp_getType(filename, colname);
+  }
+
+  void c_writeColumnToParquet(char* filename, void* chpl_arr,
+                              int colnum, char* dsetname, int numelems,
+                              int rowGroupSize) {
+    cpp_writeColumnToParquet(filename, chpl_arr, colnum, dsetname,
+                             numelems, rowGroupSize);
   }
 }
