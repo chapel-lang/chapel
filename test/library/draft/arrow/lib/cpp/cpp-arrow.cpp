@@ -146,10 +146,8 @@ void cpp_writeColumnToParquet(char* filename, void* chpl_arr,
                               int rowGroupSize) {
   auto chpl_ptr = (int64_t*)chpl_arr;
   arrow::Int64Builder i64builder;
-  for(int i = 0; i < numelems; i++) {
-    cout << chpl_ptr[i] << endl;
+  for(int i = 0; i < numelems; i++)
     PARQUET_THROW_NOT_OK(i64builder.AppendValues({chpl_ptr[i]}));
-  }
   std::shared_ptr<arrow::Array> i64array;
   PARQUET_THROW_NOT_OK(i64builder.Finish(&i64array));
 
