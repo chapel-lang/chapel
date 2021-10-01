@@ -2672,7 +2672,7 @@ GenInfo::GenInfo()
              functionCNameAstrToSymbol()
 #ifdef HAVE_LLVM
              ,
-             lvt(NULL), module(NULL), irBuilder(NULL), mdBuilder(NULL),
+             lvt(nullptr), module(NULL), irBuilder(NULL), mdBuilder(NULL),
              loopStack(), currentStackVariables(),
              currentFunctionABI(NULL),
              llvmContext(),

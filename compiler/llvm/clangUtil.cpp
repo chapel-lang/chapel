@@ -265,7 +265,7 @@ static
 void addMinMax(const char* prefix, int nbits, bool isSigned)
 {
   GenInfo* info = gGenInfo;
-  LayeredValueTable *lvt = info->lvt;
+  LayeredValueTable *lvt = info->lvt.get();
 
   astlocT prevloc = currentAstLoc;
 
@@ -1223,7 +1223,7 @@ void readMacrosClang(void) {
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
-  LayeredValueTable *lvt = info->lvt;
+  LayeredValueTable *lvt = info->lvt.get();
 
   SET_LINENO(rootModule);
 
@@ -2388,7 +2388,7 @@ void runClang(const char* just_parse_filename) {
     INT_ASSERT(gGenInfo != NULL);
   }
 
-  gGenInfo->lvt = new LayeredValueTable();
+  gGenInfo->lvt = std::make_unique<LayeredValueTable>();
 
 
   ClangInfo* clangInfo = NULL;

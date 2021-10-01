@@ -22,6 +22,7 @@
 #define CODEGEN_H
 
 #include "baseAST.h"
+#include "LayeredValueTable.h"
 
 #include <list>
 #include <map>
@@ -50,7 +51,6 @@ namespace clang {
 #include "llvm/Target/TargetMachine.h"
 
 struct ClangInfo;
-class LayeredValueTable;
 #include "llvmGlobalToWide.h"
 
 #endif
@@ -103,7 +103,7 @@ struct GenInfo {
 
 #ifdef HAVE_LLVM
   // stores parsed C stuff for extern blocks
-  LayeredValueTable *lvt;
+  std::unique_ptr<LayeredValueTable> lvt;
 
   // Once we get to code generation....
   llvm::Module *module;
