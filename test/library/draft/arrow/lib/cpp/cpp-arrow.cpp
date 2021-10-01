@@ -162,8 +162,7 @@ void cpp_writeColumnToParquet(char* filename, void* chpl_arr,
       arrow::io::FileOutputStream::Open(filename));
 
   PARQUET_THROW_NOT_OK(
-      parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), outfile, rowGroupSize));
-
+  parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), outfile, rowGroupSize));
 }
 
 extern "C" {
