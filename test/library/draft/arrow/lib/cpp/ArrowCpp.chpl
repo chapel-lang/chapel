@@ -1,17 +1,7 @@
 module ArrowCpp {
+  require 'ArrowInclude.chpl';
   use SysCTypes, CPtr, Time;
-  require "cpp-arrow.h";
-  require "cpp-arrow.o";
-
-  config const NUMELEMS = 100_000;
-  config const ROWGROUPS = 512*1024*128; // 512 mb
-  
-  extern proc writeParquet(a, b);
-  extern proc readParquet(a, b);
-  extern proc c_doSize(a): int;
-  extern proc c_readColumnByIndex(a,b,c,d);
-  extern proc c_readColumnByName(a,b,c,d);
-  extern proc c_getType(a,b): c_string;
+  use ArrowInclude;
   
   proc main() {
     var t: Timer;
@@ -42,6 +32,12 @@ module ArrowCpp {
 
     var g = c_getType(asd.c_str(), colName.c_str()):string;
     writeln(g);
+
+    var C: [0..#20] int;
+    readFilesByNameNew(C, [asd, asd], [10,10], colName);
+    writeln(C);
+
+    writeln(getArrSizeAndType([asd, asd]));
     
     // TODO: Get size and type
     // TODO: research that chunked array whatever
