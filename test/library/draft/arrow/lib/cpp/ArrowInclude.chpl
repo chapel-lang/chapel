@@ -76,7 +76,7 @@ module ArrowInclude {
 
         var locDom = A.localSubdomain();
         var locArr = A[locDom];
-        c_writeColumnToParquet(filename.c_str(), c_ptrTo(locArr), 0, dsetname.c_str(), locDom.size, rowGroupSize);
+        c_writeColumnToParquet(myFilename.c_str(), c_ptrTo(locArr), 0, dsetname.c_str(), locDom.size, rowGroupSize);
       }
   }
 }
