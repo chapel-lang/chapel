@@ -19,7 +19,7 @@
  */
 
 /* Version as of Chapel 1.25 - to be updated each release */
-const spackVersion = new VersionInfo('0.16.3');
+const spackVersion = new VersionInfo('0.15.4');
 const major = spackVersion.major:string;
 const minor = spackVersion.minor:string;
 const spackBranch = 'releases/v' + '.'.join(major, minor);
