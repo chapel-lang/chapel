@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test performance of different llvm optimization order 
-GITHUB_USER=mppf
-GITHUB_BRANCH=llvm-config-clang
-SHORT_NAME=llvm-config-clang
-START_DATE=09/28/21
+# Test faster mechanism for finding keys in computePerfStats
+GITHUB_USER=ronawho
+GITHUB_BRANCH=improve-perfStats-regex
+SHORT_NAME=improve-perfStats-regex
+START_DATE=10/02/21
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
