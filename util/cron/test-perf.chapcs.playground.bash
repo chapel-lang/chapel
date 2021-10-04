@@ -14,6 +14,10 @@ CWD=$(cd $(dirname $0) ; pwd)
 export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 
 source $CWD/common-perf.bash
+source $CWD/common-llvm.bash
+
+# common-llvm restricts to just extern/ferguson. Enable all perf tests
+unset CHPL_NIGHTLY_TEST_DIRS
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 
@@ -25,16 +29,16 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test faster mechanism for finding keys in computePerfStats
-GITHUB_USER=ronawho
-GITHUB_BRANCH=improve-perfStats-regex
-SHORT_NAME=improve-perfStats-regex
-START_DATE=10/02/21
+# Test performance of llvm-12
+GITHUB_USER=daviditen
+GITHUB_BRANCH=upgrade-llvm-12
+SHORT_NAME=llvm12
+START_DATE=10/04/21
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
 git pull https://github.com/$GITHUB_USER/chapel.git $GITHUB_BRANCH
 
-perf_args="-performance-description $SHORT_NAME -performance-configs default:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
+perf_args="-performance-description $SHORT_NAME -performance-configs llvm:v,$SHORT_NAME:v -sync-dir-suffix $SHORT_NAME"
 perf_args="${perf_args} -numtrials 1 -startdate $START_DATE"
 $CWD/nightly -cron ${perf_args} ${nightly_args} -compopts -senablePostfixBangChecks
