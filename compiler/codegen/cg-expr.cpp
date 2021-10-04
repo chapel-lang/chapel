@@ -372,7 +372,9 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   GenInfo* info = gGenInfo;
   Type* wideRefType = NULL; // either a wide class or a wide ref
 
-  if( locale.chplType ) INT_ASSERT(locale.chplType == dtLocaleID->typeInfo());
+  if( locale.chplType ) {
+    INT_ASSERT(locale.chplType->getValType() == dtLocaleID);
+  }
 
   if( raddr.chplType && !wideType ) {
     INT_ASSERT(raddr.isLVPtr != GEN_WIDE_PTR);
@@ -396,6 +398,9 @@ GenRet codegenWideAddr(GenRet locale, GenRet raddr, Type* wideType = NULL)
   INT_ASSERT(wideRefType);
 
   locale = codegenValue(locale);
+  if (locale.chplType && locale.chplType->isRef()) {
+    locale = codegenValue(codegenDeref(locale));
+  }
   if( !fLLVMWideOpt ) {
     // Create a stack-local stored wide pointer
     // of the appropriate type.
