@@ -428,6 +428,12 @@ Sort the elements in a 1D rectangular array.  The choice of sorting
 algorithm used is made by the implementation.
 
 .. note::
+
+  This function does not run a stable sort. Elements that compare
+  the same can be rearranged by this call.
+
+.. note::
+
   This function currently either uses a parallel radix sort or a serial
   quickSort. The algorithms used will change over time.
 
@@ -1241,7 +1247,7 @@ module QuickSort {
         var mid = lo + (hi - lo + 1) / 2;
         var piv = mid;
 
-        if hi - lo < 0 { // minlen {
+        if hi - lo < minlen {
           // base case -- use insertion sort
           InsertionSort.insertionSortMoveElts(Data, comparator=comparator, lo, hi);
           return;
