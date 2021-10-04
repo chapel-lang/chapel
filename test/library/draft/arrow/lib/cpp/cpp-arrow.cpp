@@ -130,8 +130,14 @@ void cpp_readColumnByName(char* filename, void* chpl_arr, char* colname, int num
   std::shared_ptr<arrow::Schema> sc;
   std::shared_ptr<arrow::Schema>* out = &sc;
   PARQUET_THROW_NOT_OK(reader->GetSchema(out));
+
+  auto idx = sc -> GetFieldIndex(colname);
+
+  // TODO: give some kind of indication that it wasn't found
+  if(idx == -1)
+    idx = 0;
   
-  PARQUET_THROW_NOT_OK(reader->ReadColumn(sc -> GetFieldIndex(colname), &array));
+  PARQUET_THROW_NOT_OK(reader->ReadColumn(idx, &array));
 
   std::shared_ptr<arrow::Array> regular = array->chunk(0);
   auto int_arr = std::static_pointer_cast<arrow::Int64Array>(regular);
