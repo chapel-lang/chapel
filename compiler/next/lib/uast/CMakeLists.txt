@@ -30,6 +30,7 @@ target_sources(libchplcomp-obj
                BracketLoop.cpp
                Break.cpp
                Builder.cpp
+               BuilderResult.cpp
                BytesLiteral.cpp
                Call.cpp
                Catch.cpp

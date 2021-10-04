@@ -25,6 +25,7 @@
 #include "chpl/queries/mark-functions.h"
 #include "chpl/queries/update-functions.h"
 #include "chpl/uast/ASTNode.h"
+#include "chpl/uast/BuilderResult.h"
 
 #include <vector>
 #include <unordered_map>
@@ -95,40 +96,11 @@ class Builder final {
   void noteLocation(ASTNode* ast, Location loc);
 
   /**
-    This struct records the result of building some AST.
-   */
-  struct Result final {
-    UniqueString filePath;
-    ASTList topLevelExpressions;
-    std::vector<ErrorMessage> errors;
-
-    // Given an ID, what is the ASTNode?
-    std::unordered_map<ID, const ASTNode*> idToAst;
-
-    // Given an ID, what is the parent ID?
-    std::unordered_map<ID, ID> idToParentId;
-
-    // Goes from ASTNode* to Location because Comments don't have AST IDs
-    std::unordered_map<const ASTNode*, Location> astToLocation;
-
-    Result();
-    Result(Result&&) = default; // move-constructable
-    Result(const Result&) = delete; // not copy-constructable
-    Result& operator=(const Result&) = delete; // not assignable
-
-    void swap(Result& other);
-
-    static bool update(Result& keep, Result& addin);
-    static void mark(Context* context, const Result& keep);
-    static void updateFilePaths(Context* context, const Result& keep);
-  };
-
-  /**
     Assign IDs to all of the AST elements added as toplevel expressions
     to this builder and return the result. This function clears
     these elements from the builder and it becomes empty.
    */
-  Builder::Result result();
+  BuilderResult result();
 
   /**
     Certain uAST nodes, - Function, Module, Class, Record, Union, Enum -
@@ -164,23 +136,6 @@ class Builder final {
 };
 
 } // end namespace uast
-
-// docs are turned off for this as a workaround for breathe errors
-/// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::uast::Builder::Result> {
-  bool operator()(chpl::uast::Builder::Result& keep,
-                  chpl::uast::Builder::Result& addin) const {
-    return chpl::uast::Builder::Result::update(keep, addin);
-  }
-};
-template<> struct mark<chpl::uast::Builder::Result> {
-  void operator()(Context* context,
-                  const chpl::uast::Builder::Result& keep) const {
-    chpl::uast::Builder::Result::mark(context, keep);
-  }
-};
-/// \endcond
-
 } // end namespace chpl
 
 
