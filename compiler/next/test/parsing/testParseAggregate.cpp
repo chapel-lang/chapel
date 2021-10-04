@@ -39,19 +39,18 @@ using namespace chpl;
 using namespace uast;
 using namespace parsing;
 
-static Builder::Result parseAggregate(Parser* parser,
-                                      const AggregateDecl*& agg,
-                                      const char* testname,
-                                      const char* prog) {
+static BuilderResult parseAggregate(Parser* parser,
+                                    const AggregateDecl*& agg,
+                                    const char* testname,
+                                    const char* prog) {
   auto parseResult = parser->parseString(testname, prog);
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
 
   // find the first AggregateDecl statement
   const AggregateDecl* decl = nullptr;
-  for (auto stmt : module->stmts()) {
+  for (auto stmt : mod->stmts()) {
     if (stmt->isAggregateDecl()) {
       decl = stmt->toAggregateDecl();
       break;
@@ -204,12 +203,13 @@ static void test8(Parser* parser) {
                             "  /*F*/\n"
                             "}\n"
                             "/*G*/\n");
-
-  auto module = res.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 3);
-  assert(module->stmt(0)->isComment());
-  assert(module->stmt(1)->isClass());
-  assert(module->stmt(2)->isComment());
+  assert(!res.numErrors());
+  auto mod = res.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isClass());
+  assert(mod->stmt(2)->isComment());
 
   auto cls = agg->toClass();
   assert(cls);
@@ -317,23 +317,23 @@ static void test9(Parser* parser) {
     assert(tp->numFormals() == 2);
   }
 
-  auto module = res.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 7);
-  assert(module->stmt(0)->isRecord());
-  assert(module->stmt(1)->isFunction());
-  assert(module->stmt(2)->isFunction());
-  assert(module->stmt(3)->isFunction());
-  assert(module->stmt(4)->isFunction());
-  assert(module->stmt(5)->isFunction());
-  assert(module->stmt(6)->isFunction());
+  auto mod = res.singleModule();
+  assert(mod);
+  assert(mod->stmt(0)->isRecord());
+  assert(mod->stmt(1)->isFunction());
+  assert(mod->stmt(2)->isFunction());
+  assert(mod->stmt(3)->isFunction());
+  assert(mod->stmt(4)->isFunction());
+  assert(mod->stmt(5)->isFunction());
+  assert(mod->stmt(6)->isFunction());
 
   {
-    auto df2 = module->stmt(1)->toFunction();
-    auto cnst2 = module->stmt(2)->toFunction();
-    auto cnstrf2 = module->stmt(3)->toFunction();
-    auto rf2 = module->stmt(4)->toFunction();
-    auto prm2 = module->stmt(5)->toFunction();
-    auto tp2 = module->stmt(6)->toFunction();
+    auto df2 = mod->stmt(1)->toFunction();
+    auto cnst2 = mod->stmt(2)->toFunction();
+    auto cnstrf2 = mod->stmt(3)->toFunction();
+    auto rf2 = mod->stmt(4)->toFunction();
+    auto prm2 = mod->stmt(5)->toFunction();
+    auto tp2 = mod->stmt(6)->toFunction();
 
     assert(df2->name() == "df2");
     assert(df2->returnIntent() == Function::DEFAULT_RETURN_INTENT);
@@ -396,11 +396,8 @@ static void test10(Parser* parser) {
                                          "  /*5cc*/ var cc;\n"
                                          "}\n"
                                          "/*6*/ union U6 { }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
-
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 12);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isClass());

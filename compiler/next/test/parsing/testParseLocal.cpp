@@ -44,10 +44,9 @@ static void test0(Parser* parser) {
       "  /* comment 3 */\n"
       "  var a;\n"
       "/* comment 4 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isLocal());
@@ -68,10 +67,9 @@ static void test1(Parser* parser) {
       "local /* comment 2 */ foo /* comment 3 */ do\n"
       "  var a;\n"
       "/* comment 4 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isLocal());
@@ -94,10 +92,9 @@ static void test2(Parser* parser) {
       "  /* comment 4 */\n"
       "}\n"
       "/* comment 5 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isLocal());
@@ -121,10 +118,9 @@ static void test3(Parser* parser) {
       "  /* comment 5 */\n"
       "}\n"
       "/* comment 6 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isLocal());
@@ -144,10 +140,9 @@ static void test4(Parser* parser) {
   auto parseResult = parser->parseString("test4.chpl",
       "/* comment 1 */\n"
       "local do { var a; }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isLocal());
@@ -163,10 +158,9 @@ static void test5(Parser* parser) {
   auto parseResult = parser->parseString("test5.chpl",
       "/* comment 1 */\n"
       "local foo do { var a; }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isLocal());
