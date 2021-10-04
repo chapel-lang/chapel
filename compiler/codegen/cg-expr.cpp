@@ -3821,6 +3821,9 @@ DEFINE_PRIM(PRIM_WIDE_MAKE) {
     GenRet locale = call->get(2)->codegen();
     GenRet raddr = codegenValue(call->get(3)->codegen());
 
+    if (raddr.chplType && raddr.chplType->isRef() && !narrowType->isRef()) {
+      raddr = codegenValue(codegenDeref(raddr));
+    }
 
     ret = codegenCast(narrowType, raddr, true);
 
