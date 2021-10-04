@@ -1,1 +1,1 @@
-../../COMPOPTS
+-M ${CHPL_HOME}/tools/mason/ -M ../../
