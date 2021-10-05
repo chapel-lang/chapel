@@ -68,7 +68,7 @@ docs: FORCE
 	  then \
 	  echo ; \
 	  echo " This docs build does not include compiler library API docs" ; \
-	  echo " Please try 'make libchplcomp-docs' to see the error" ; \
+	  echo " Try 'make clobber-libchplcomp && make libchplcomp-docs'" ; \
 	fi
 
 
