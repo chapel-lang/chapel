@@ -22,7 +22,7 @@ develall:
 	@$(MAKE) always-build-man
 	@$(MAKE) always-build-chplspell-venv
 
-docs: chpldoc man-chpl man-chpldoc try-libchplcomp-docs
+docs: chpldoc man-chpl man-chpldoc
 	cd doc && $(MAKE) docs
 
 checkdocs: FORCE
@@ -60,9 +60,6 @@ always-build-chplspell-venv: FORCE
 
 test: spectests FORCE
 	cd examples && start_test
-
-try-libchplcomp-docs: FORCE
-	-@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp-docs
 
 libchplcomp-docs: FORCE
 	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp-docs
