@@ -1024,5 +1024,10 @@ void clean_exit(int status) {
   delete gContext;
   gContext = nullptr;
 
+  if (gGenInfo) {
+    delete gGenInfo;
+    gGenInfo = nullptr;
+  }
+
   exit(status);
 }
