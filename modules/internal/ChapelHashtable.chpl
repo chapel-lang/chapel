@@ -385,7 +385,7 @@ module ChapelHashtable {
         currentSlot+=uprobe;
       }
     }
-    
+
     // add pattern:
     //  findAvailableSlot
     //  fillSlot
