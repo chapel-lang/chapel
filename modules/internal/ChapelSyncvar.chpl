@@ -626,15 +626,7 @@ module ChapelSyncvar {
     }
 
     proc reset() {
-      if !isDefaultInitializableType(valType) ||
-         !isConstCopyableType(valType) ||
-         !isConstAssignableType(valType) {
-        compilerError("reset requires that the type contained in the sync variable be default-initializeable, const-copyable, and const-assignable");
-      }
-
       on this {
-        var defaultValue : valType;
-
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
@@ -642,6 +634,8 @@ module ChapelSyncvar {
           chpl__autoDestroy(value);
         }
         if isPODType(valType) {
+          // assuming POD types are default initializeable
+          var defaultValue : valType;
           _moveset(value, defaultValue);
         }
 
