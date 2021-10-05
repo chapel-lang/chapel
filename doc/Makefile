@@ -61,6 +61,10 @@ help-source:
 
 docs: FORCE
 	@$(MAKE) html-release || $(MAKE) error_docs
+	@if [ ! -d $(COMPILER_INTERNALS_DOXYGEN) ]; then \
+	  echo "This docs build does not include compiler library API docs" ; \
+	  echo "Please try 'make libchplcomp-docs' to see the error" ; \
+	fi
 
 
 man-chapel: FORCE
