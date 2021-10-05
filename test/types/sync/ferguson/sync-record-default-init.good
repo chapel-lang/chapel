@@ -42,13 +42,9 @@ init 2
 deinit 1
 deinit 2
 testDefaultInitSyncReset
-init
-deinit 0
 testDefaultInitSyncWriteEFReset
 init 1
-init
 deinit 1
-deinit 0
 testValInitSync
 init 1
 deinit 1
