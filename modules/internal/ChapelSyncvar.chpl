@@ -633,13 +633,16 @@ module ChapelSyncvar {
       }
 
       on this {
-        const defaultValue : valType;
+        var defaultValue : valType;
 
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
 
         if chpl_sync_isFull(c_ptrTo(value), syncAux) {
           chpl__autoDestroy(value);
+        }
+        if isPODType(valType) {
+          _moveset(value, defaultValue);
         }
 
         chpl_sync_markAndSignalEmpty(syncAux);
