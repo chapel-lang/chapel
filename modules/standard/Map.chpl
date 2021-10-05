@@ -106,7 +106,7 @@ module Map {
       :arg valType: The type of the values of this map.
       :arg parSafe: If `true`, this map will use parallel safe operations.
     */
-    proc init(type keyType, type valType, param parSafe=false) {
+    proc init(type keyType, type valType,  param parSafe=false) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
@@ -291,6 +291,10 @@ module Map {
                       key.type:string + ', ' + val.type:string + ')');
 
       return updater(key, val);
+    }
+
+    proc setMaxCapacity(maxCapacity: real) {
+      this.table.maxCapacity = maxCapacity;
     }
 
     pragma "no doc"
