@@ -95,6 +95,7 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
     uast::BuilderResult tmpResult = parser->parseString(pathc, textc);
     result.swap(tmpResult);
     // raise any errors encountered
+    // TODO: add something to BuilderResult to iterate over the errors
     for (const ErrorMessage& e : result.errors_) {
       context->error(e);
     }

@@ -120,6 +120,9 @@ class BuilderResult final {
     return errors_[i];
   }
 
+  // TODO: add something to iterate over the errors e.g.
+  // ErrorListIteratorPair errors() const
+
   /* Find the ASTNode* corresponding to a particular ID, or return
      nullptr if there is not one in this result. */
   const ASTNode* idToAst(ID id) const;
