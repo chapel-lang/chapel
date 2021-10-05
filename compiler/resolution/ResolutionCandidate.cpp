@@ -212,13 +212,8 @@ bool ResolutionCandidate::computeAlignment(CallInfo& info) {
   formalIdxToActual.clear();
   actualIdxToFormal.clear();
 
-  for (int i = 0; i < fn->numFormals(); i++) {
-    formalIdxToActual.push_back(NULL);
-  }
-
-  for (int i = 0; i < info.actuals.n; i++) {
-    actualIdxToFormal.push_back(NULL);
-  }
+  formalIdxToActual.resize(fn->numFormals(), nullptr);
+  actualIdxToFormal.resize(info.actuals.n, nullptr);
 
   // Match named actuals against formal names in the function signature.
   // Record successful matches.
