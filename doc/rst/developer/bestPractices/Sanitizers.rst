@@ -21,6 +21,7 @@ To use AddressSanitizer with Chapel (compiler and executables):
 
      export CHPL_MEM=cstdlib
      export CHPL_TASKS=fifo
+     export CHPL_LLVM=none
      export CHPL_SANITIZE=address
      export ASAN_OPTIONS=detect_leaks=0
 
@@ -42,6 +43,12 @@ To get better stack traces when optimizations are enabled:
 
      export DEBUG=1
 
+
+.. note::
+
+     ``export ASAN_OPTIONS=detect_leaks=0`` is not propagated to the test
+     nodes when running paratest. A workaround is to add this setting to
+     .bashrc or the equivalent.
 
 Limitations
 -----------
@@ -81,6 +88,8 @@ Configuration Limitations
 The above options are needed because not all third-party libraries support
 sanitizers. In particular:
 
+- Sanitizer instrumentation is added by the C compiler, so LLVM
+  compilations don't currently work
 - Sanitizers hook into the system allocator, so using ``jemalloc`` is not
   supported
 - ``qthreads`` performs task-switching in user-space, which throws off
