@@ -71,6 +71,9 @@ libchplcomp-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
 	  $(COPY_IF_DIFFERENT) $(LIBCOMPILER_BUILD_DIR)/doc/doxygen $(CHPL_MAKE_HOME)/build/doc/doxygen ; \
 	fi
 
+clean-libchplcomp-docs: FORCE
+	rm -rf $(CHPL_MAKE_HOME)/build/doc/doxygen
+
 test-libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making and running the tests..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
