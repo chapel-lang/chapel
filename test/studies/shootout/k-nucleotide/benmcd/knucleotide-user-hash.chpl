@@ -3,6 +3,18 @@ use IO, Map, Sort;
 config param tableSize = 2**16,
              columns = 61;
 
+record intWrapper {
+  var val: int;
+  proc init() {
+    val = 0;
+  }
+  proc init(i: int) {
+    val = i;
+  }
+  proc hash() {
+    return val;
+  }
+}
 
 proc main(args: [] string) {
   // Open stdin and a binary reader channel
@@ -25,7 +37,7 @@ proc main(args: [] string) {
 
   while stdinNoLock.readline(data, lineSize, idx) do
     idx += lineSize - 1;
-
+  
   // Resize our array to the amount actually read
   dataDom = {1..idx};
 
@@ -46,41 +58,44 @@ proc main(args: [] string) {
 proc writeFreqs(data, param nclSize) {
   const freqs = calculate(data, nclSize);
 
-  // create an array of (frequency, sequence) tuples
-  var arr = for (s,f) in freqs.items() do (f,s);
+  var arr = for (s,f) in freqs.items() do (f,s.val);
 
-  // print the array, sorted by decreasing frequency
-  for (f, s) in arr.sorted(reverseComparator) do
-   writef("%s %.3dr\n", decode(s, nclSize),
+  // sort by frequencies
+
+  for (f, s) in arr.sorted(comparator=reverseComparator) do
+   writef("%s %.3dr\n", decode(s, nclSize), 
            (100.0 * f) / (data.size - nclSize));
   writeln();
 }
 
 
 proc writeCount(data, param str) {
-  const strBytes = str.bytes(),
-        freqs = calculate(data, str.numBytes),
-        d = hash(strBytes, strBytes.domain.low, str.numBytes);
+  const freqs = calculate(data, str.numBytes),
+        d = hash(str.toBytes(), 0, str.numBytes);
 
-  writeln(freqs[d], "\t", decode(d, str.numBytes));
+  var a = new intWrapper(d);
+  writeln(freqs[a], "\t", decode(d, str.numBytes));
 }
 
 
 proc calculate(data, param nclSize) {
-  var freqs = new map(int, int);
+  var freqs = new map(intWrapper, int);
 
-  var lock: sync bool = true;
+  var lock$: sync bool = true;
   const numTasks = here.maxTaskPar;
   coforall tid in 1..numTasks with (ref freqs) {
-    var myFreqs = new map(int, int);
+    var myArr = new map(intWrapper, int);
 
-    for i in tid..(data.size-nclSize) by numTasks do
-      myFreqs[hash(data, i, nclSize)] += 1;
+    for i in tid..(data.size-nclSize) by numTasks {
+      var a = new intWrapper(hash(data, i, nclSize));
+      myArr[a] += 1;
+    }
 
-    lock.readFE();      // acquire lock
-    for (k,v) in myFreqs.items() do
+    lock$.readFE();        // acquire lock
+    for (k,v) in myArr.items() {
       freqs[k] += v;
-    lock.writeEF(true); // release lock
+    }
+    lock$.writeEF(true); // release lock
   }
 
   return freqs;
@@ -115,6 +130,14 @@ inline proc hash(str, beg, param size) {
   }
 
   return data;
+}
+
+
+proc string.toBytes() {
+  var byteArr: [0..#this.numBytes] uint(8);
+  for (b, i) in zip(byteArr, 0..) do
+    b = this.byte(i);
+  return byteArr;
 }
 
 
