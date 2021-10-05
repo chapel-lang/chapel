@@ -1,16 +1,11 @@
 #!/bin/bash
 
-command -v mason > /dev/null
+command -v $CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR/mason > /dev/null
 status=$?
 
 if [ $status -eq  0 ];  then
     echo "False"
-    exit 0
 else
     echo "True"
-    exit 0
 fi
-
-
-
-
+exit 0
