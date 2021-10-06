@@ -87,42 +87,81 @@ class OwnedIdsWithName {
   Contains IDs with a particular name. This class is a lightweight
   reference to a collection stored in OwnedIdsWithName.
  */
-struct BorrowedIdsWithName {
+class BorrowedIdsWithName {
+ private:
   // TODO: consider storing a variant of ID here
   // with symbolPath, postOrderId, and tag
-  ID id;
-  const std::vector<ID>* moreIds = nullptr;
+  ID id_;
+  const std::vector<ID>* moreIds_ = nullptr;
+ public:
+  /** Construct an empty BorrowedIdsWithName */
   BorrowedIdsWithName() { }
-  BorrowedIdsWithName(ID id) : id(std::move(id)) { }
+  /** Construct a BorrowedIdsWithName referring to one ID */
+  BorrowedIdsWithName(ID id) : id_(std::move(id)) { }
+  /** Construct a BorrowedIdsWithName referring to the same IDs
+      as the passed OwnedIdsWithName.
+      This BorrowedIdsWithName assumes that the OwnedIdsWithName
+      will continue to exist. */
   BorrowedIdsWithName(const OwnedIdsWithName& o)
-    : id(o.id_), moreIds(o.moreIds_.get())
+    : id_(o.id_), moreIds_(o.moreIds_.get())
   { }
+
+  /** Return the number of IDs stored here */
+  int numIds() const {
+    if (moreIds_ == nullptr) {
+      return 1;
+    }
+    return moreIds_->size();
+  }
+
+  /** Returns the i'th ID. id(0) is always available. */
+  const ID& id(int i) const {
+    if (i == 0) {
+      return id_;
+    }
+    assert(moreIds_ && 0 <= i && (size_t) i < moreIds_->size());
+    return (*moreIds_)[i];
+  }
+
+  /** Returns an iterator referring to the first element stored. */
+  const ID* begin() const {
+    if (moreIds_ == nullptr) {
+      return &id_;
+    }
+    return &(*moreIds_)[0];
+  }
+  /** Returns an iterator referring just past the last element stored. */
+  const ID* end() const {
+    const ID* last = nullptr;
+    if (moreIds_ == nullptr) {
+      last = &id_;
+    } else {
+      last = &moreIds_->back();
+    }
+    // return the element just past the last element
+    return last+1;
+  }
+
   bool operator==(const BorrowedIdsWithName& other) const {
-    return id == other.id &&
-           moreIds == other.moreIds;
+    return id_ == other.id_ &&
+           moreIds_ == other.moreIds_;
   }
   bool operator!=(const BorrowedIdsWithName& other) const {
     return !(*this == other);
   }
+
   size_t hash() const {
     size_t ret = 0;
-    if (moreIds == nullptr) {
-      ret = hash_combine(ret, chpl::hash(id));
+    if (moreIds_ == nullptr) {
+      ret = hash_combine(ret, chpl::hash(id_));
     } else {
-      for (const ID& x : *moreIds) {
+      for (const ID& x : *moreIds_) {
         ret = hash_combine(ret, chpl::hash(x));
       }
     }
     return ret;
   }
 
-  const ID& firstId() const {
-    if (moreIds == nullptr) {
-      return id;
-    } else {
-      return (*moreIds)[0];
-    }
-  }
 };
 
 // DeclMap: key - string name,  value - vector of ID of a NamedDecl

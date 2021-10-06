@@ -295,12 +295,12 @@ struct Resolver {
     auto vec = lookupInScope(context, scope, ident, config);
     if (vec.size() == 0) {
       result.type = QualifiedType(QualifiedType::UNKNOWN, nullptr);
-    } else if (vec.size() > 1) {
+    } else if (vec.size() > 1 || vec[0].numIds() > 1) {
       // can't establish the type. If this is in a function
       // call, we'll establish it later anyway.
     } else {
-      // vec.size() == 1
-      ID id = vec[0].firstId();
+      // vec.size() == 1 and vec[0].numIds() <= 1
+      const ID& id = vec[0].id(0);
       QualifiedType type;
       if (id.isEmpty()) {
         // empty IDs from the scope resolution process are builtins
@@ -337,20 +337,18 @@ struct Resolver {
 
       if (vec.size() > 0) {
         const BorrowedIdsWithName& m = vec[0];
-        if (m.firstId() == decl->id()) {
-          if (m.moreIds != nullptr) {
-            Location loc = parsing::locateId(context, decl->id());
-            auto error =
-              ErrorMessage::build(loc, "'%s' has multiple definitions",
-                                  decl->name().c_str());
-            for (const ID& id: *m.moreIds) {
-              if (id != decl->id()) {
-                Location curLoc = parsing::locateId(context, id);
-                error.addDetail(ErrorMessage::build(curLoc, "redefined here"));
-              }
+        if (m.id(0) == decl->id() && m.numIds() > 1) {
+          Location loc = parsing::locateId(context, decl->id());
+          auto error =
+            ErrorMessage::build(loc, "'%s' has multiple definitions",
+                                decl->name().c_str());
+          for (const ID& id : m) {
+            if (id != decl->id()) {
+              Location curLoc = parsing::locateId(context, id);
+              error.addDetail(ErrorMessage::build(curLoc, "redefined here"));
             }
-            context->error(error);
           }
+          context->error(error);
         }
       }
     }
@@ -1241,19 +1239,11 @@ filterCandidatesInitial(Context* context,
   std::vector<const TypedFnSignature*> result;
 
   for (const BorrowedIdsWithName& ids : lst) {
-    if (ids.moreIds == nullptr) {
+    for (const ID& id : ids) {
       const TypedFnSignature* s =
-        isCandidateApplicableInitialQuery(context, ids.id, call);
+        isCandidateApplicableInitialQuery(context, id, call);
       if (s != nullptr) {
         result.push_back(s);
-      }
-    } else {
-      for (const ID& id : *ids.moreIds) {
-        const TypedFnSignature* s =
-          isCandidateApplicableInitialQuery(context, id, call);
-        if (s != nullptr) {
-          result.push_back(s);
-        }
       }
     }
   }

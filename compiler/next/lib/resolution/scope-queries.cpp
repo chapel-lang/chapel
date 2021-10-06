@@ -442,10 +442,10 @@ static bool doLookupExprInScope(Context* context,
       return false;
     }
 
-    if (rcvResult.size() > 1 || rcvResult[0].moreIds != nullptr) {
+    if (rcvResult.size() > 1 || rcvResult[0].numIds() > 1) {
       context->error(expr, "ambiguity in resolving dot receiver");
     }
-    rcvId = rcvResult[0].id;
+    rcvId = rcvResult[0].id(0);
 
     // find the fieldName in the scope of rcvId
     const Scope* rcvScope = scopeForId(context, rcvId);
@@ -684,12 +684,12 @@ struct ImportsResolver {
       if (got == false || vec.size() == 0) {
         context->error(expr, "could not find target of 'use'");
         continue; // move on to the next visibility clause
-      } else if (vec.size() > 1 || vec[0].moreIds != nullptr) {
+      } else if (vec.size() > 1 || vec[0].numIds() > 1) {
         context->error(expr, "ambiguity in finding target of 'use'");
         continue; // move on to the next visibility clause
       }
 
-      ID id = vec[0].id; // id of the 'use'd module/enum
+      ID id = vec[0].id(0); // id of the 'use'd module/enum
 
       // First, add the entry for the symbol itself
       resolvedVisibilityScope->visibilityClauses.push_back(
@@ -743,12 +743,12 @@ struct ImportsResolver {
       if (expr->isIdentifier()) {
         // 'import M' must refer to a top-level module.
         // In this case, the import target needs to be unambiguous.
-        if (vec.size() > 1 || vec[0].moreIds != nullptr) {
+        if (vec.size() > 1 || vec[0].numIds() > 1) {
           context->error(expr, "ambiguity in finding target of 'import'");
           continue; // move on to the next visibility clause
         }
 
-        id = vec[0].id;
+        id = vec[0].id(0);
 
       } else if (expr->isDot()) {
         // It's a Dot expression
@@ -930,12 +930,12 @@ const InnermostMatch& findInnermostDecl(Context* context,
 
   if (vec.size() > 0) {
     const BorrowedIdsWithName& r = vec[0];
-    if (r.moreIds != nullptr)
+    if (r.numIds() > 1)
       count = InnermostMatch::MANY;
     else
       count = InnermostMatch::ONE;
 
-    id = r.id;
+    id = r.id(0);
   }
 
   auto result = InnermostMatch(id, count);
