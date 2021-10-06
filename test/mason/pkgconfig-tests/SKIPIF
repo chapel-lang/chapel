@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 has_zlib="False"
 has_ssl="False"
 correct_config="False"
