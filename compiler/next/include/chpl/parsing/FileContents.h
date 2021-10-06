@@ -70,12 +70,14 @@ class FileContents {
 
 } // end namespace parsing
 
+/// \cond DO_NOT_DOCUMENT
 template<> struct update<parsing::FileContents> {
   bool operator()(parsing::FileContents& keep,
                   parsing::FileContents& addin) const {
     return defaultUpdate(keep, addin);
   }
 };
+/// \endcond
 
 } // end namespace chpl
 #endif
