@@ -30,53 +30,63 @@
 namespace chpl {
 namespace resolution {
 
-// TODO: Should some/all of these structs be classes
-// with getters etc? That would be appropriate for
-// use as part of the library API.
+class BorrowedIdsWithName;
 
 /**
-  Collects IDs with a particular name.
+  Collects IDs with a particular name. These can be referred to
+  by a BorrowedIdsWithName in a way that avoids copies.
  */
-struct OwnedIdsWithName {
+class OwnedIdsWithName {
+ friend class BorrowedIdsWithName;
+
+ private:
   // If there is just one ID with this name, it is stored here,
   // and moreIds == nullptr.
-  ID id;
+  ID id_;
   // If there is more than one, all are stored in here,
   // and id redundantly stores the first one.
   // This field is 'owned' in order to allow reuse of pointers to it.
-  owned<std::vector<ID>> moreIds;
+  owned<std::vector<ID>> moreIds_;
 
+ public:
+  /** Construct an OwnedIdsWithName containing one ID. */
   OwnedIdsWithName(ID id)
-    : id(std::move(id)), moreIds(nullptr)
+    : id_(std::move(id)), moreIds_(nullptr)
   { }
 
+  /** Append an ID to an OwnedIdsWithName. */
   void appendId(ID newId) {
-    if (moreIds.get() == nullptr) {
+    if (moreIds_.get() == nullptr) {
       // create the vector and add the single existing id to it
-      moreIds = toOwned(new std::vector<ID>());
-      moreIds->push_back(id);
+      moreIds_ = toOwned(new std::vector<ID>());
+      moreIds_->push_back(id_);
     }
     // add the id passed
-    moreIds->push_back(std::move(newId));
+    moreIds_->push_back(std::move(newId));
   }
 
   bool operator==(const OwnedIdsWithName& other) const {
-    if (id != other.id)
+    if (id_ != other.id_)
       return false;
 
-    if ((moreIds.get()==nullptr) != (other.moreIds.get()==nullptr))
+    if ((moreIds_.get()==nullptr) != (other.moreIds_.get()==nullptr))
       return false;
 
-    if (moreIds.get()==nullptr && other.moreIds.get()==nullptr)
+    if (moreIds_.get()==nullptr && other.moreIds_.get()==nullptr)
       return true;
 
     // otherwise check the vector elements
-    return *moreIds.get() == *other.moreIds.get();
+    return *moreIds_.get() == *other.moreIds_.get();
   }
   bool operator!=(const OwnedIdsWithName& other) const {
     return !(*this == other);
   }
 };
+
+/**
+  Contains IDs with a particular name. This class is a lightweight
+  reference to a collection stored in OwnedIdsWithName.
+ */
 struct BorrowedIdsWithName {
   // TODO: consider storing a variant of ID here
   // with symbolPath, postOrderId, and tag
@@ -85,7 +95,7 @@ struct BorrowedIdsWithName {
   BorrowedIdsWithName() { }
   BorrowedIdsWithName(ID id) : id(std::move(id)) { }
   BorrowedIdsWithName(const OwnedIdsWithName& o)
-    : id(o.id), moreIds(o.moreIds.get())
+    : id(o.id_), moreIds(o.moreIds_.get())
   { }
   bool operator==(const BorrowedIdsWithName& other) const {
     return id == other.id &&
