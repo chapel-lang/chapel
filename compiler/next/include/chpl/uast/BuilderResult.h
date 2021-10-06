@@ -116,7 +116,7 @@ class BuilderResult final {
   }
 
   /** return the i'th error */
-  ErrorMessage error(int i) const {
+  const ErrorMessage& error(int i) const {
     return errors_[i];
   }
 
