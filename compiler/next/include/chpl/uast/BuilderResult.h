@@ -72,34 +72,34 @@ class BuilderResult final {
   static void updateFilePaths(Context* context, const BuilderResult& keep);
 
  public:
-  /* Construct an empty BuilderResult */
+  /** Construct an empty BuilderResult */
   BuilderResult();
-  /* Construct a BuilderResult that records a particular file path. */
+  /** Construct a BuilderResult that records a particular file path. */
   BuilderResult(UniqueString filePath);
 
-  /* Return the file path this result refers to */
+  /** Return the file path this result refers to */
   UniqueString filePath() const {
     return filePath_;
   }
 
-  /* return the number of top-level expressions */
+  /** return the number of top-level expressions */
   int numTopLevelExpressions() const {
     return topLevelExpressions_.size();
   }
 
-  /* return the i'th top-level expression */
+  /** return the i'th top-level expression */
   const ASTNode* topLevelExpression(int i) const {
     assert(0 <= i && (size_t) i < topLevelExpressions_.size());
     return topLevelExpressions_[i].get();
   }
 
-  /* iterate over the parsed top-level expressions */
+  /** iterate over the parsed top-level expressions */
   ASTListIteratorPair<ASTNode> topLevelExpressions() const {
     return ASTListIteratorPair<ASTNode>(topLevelExpressions_.begin(),
                                         topLevelExpressions_.end());
   }
 
-  /* If the top-level expressions contain only a single Module,
+  /** If the top-level expressions contain only a single Module,
      return it. Otherwise, return nullptr. */
   const Module* singleModule() {
     if (topLevelExpressions_.size() == 1) {
@@ -110,12 +110,12 @@ class BuilderResult final {
   }
 
 
-  /* return the number of errors */
+  /** return the number of errors */
   int numErrors() const {
     return errors_.size();
   }
 
-  /* return the i'th error */
+  /** return the i'th error */
   ErrorMessage error(int i) const {
     return errors_[i];
   }
@@ -123,14 +123,14 @@ class BuilderResult final {
   // TODO: add something to iterate over the errors e.g.
   // ErrorListIteratorPair errors() const
 
-  /* Find the ASTNode* corresponding to a particular ID, or return
-     nullptr if there is not one in this result. */
+  /** Find the ASTNode* corresponding to a particular ID, or return
+      nullptr if there is not one in this result. */
   const ASTNode* idToAst(ID id) const;
-  /* Find the Location for a particular ID.
-     Returns a location just to path if none is found. */
+  /** Find the Location for a particular ID.
+      Returns a location just to path if none is found. */
   Location idToLocation(ID id, UniqueString path) const;
-  /* Find the ID for a parent given an ID.
-     Returns the empty ID if none is found */
+  /** Find the ID for a parent given an ID.
+      Returns the empty ID if none is found */
   ID idToParentId(ID id) const;
 
   BuilderResult(BuilderResult&&) = default; // move-constructable
