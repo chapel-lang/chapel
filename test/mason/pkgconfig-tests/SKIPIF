@@ -4,6 +4,13 @@ has_zlib="False"
 has_ssl="False"
 correct_config="False"
 
+# skip the test if pkg-config is not found
+if ! command -v pkg-config &> /dev/null
+then
+    echo "True"
+    exit
+fi
+
 # Check for zlib via pkg-config
 # Skip test if not found
 zlibcall= $(pkg-config zlib --exists)
