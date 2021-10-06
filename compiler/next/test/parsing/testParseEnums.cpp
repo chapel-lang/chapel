@@ -38,12 +38,11 @@ using namespace parsing;
 static void test1(Parser* parser) {
   auto parseResult = parser->parseString("test1.chpl",
                                          "enum myEnum { a }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto enumDecl = module->stmt(0)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 1);
   auto a = enumDecl->declOrComment(0)->toEnumElement();
@@ -55,12 +54,11 @@ static void test1(Parser* parser) {
 static void test2(Parser* parser) {
   auto parseResult = parser->parseString("test2.chpl",
                                          "enum myEnum { a=ii }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto enumDecl = module->stmt(0)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 1);
   auto a = enumDecl->declOrComment(0)->toEnumElement();
@@ -74,12 +72,11 @@ static void test2(Parser* parser) {
 static void test3(Parser* parser) {
   auto parseResult = parser->parseString("test3.chpl",
                                          "enum myEnum { a=ii, b=jj }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto enumDecl = module->stmt(0)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElement();
@@ -102,12 +99,11 @@ static void checkTest4(const Enum* enumDecl,
 static void test4(Parser* parser) {
   auto parseResult = parser->parseString("test4.chpl",
                                          "enum myEnum { a=ii, b }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto enumDecl = module->stmt(0)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElement();
@@ -140,13 +136,12 @@ static void checkTest4(const Enum* enumDecl,
 static void test4a(Parser* parser) {
   auto parseResult = parser->parseString("test4a.chpl",
                                          "/* c */ enum myEnum { a=ii, b }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 2);
-  assert(module->stmt(0)->isComment());
-  auto enumDecl = module->stmt(1)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 2);
+  assert(mod->stmt(0)->isComment());
+  auto enumDecl = mod->stmt(1)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElement();
@@ -157,12 +152,11 @@ static void test4a(Parser* parser) {
 static void test4b(Parser* parser) {
   auto parseResult = parser->parseString("test4b.chpl",
                                          "enum /* c */ myEnum { a=ii, b }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto enumDecl = module->stmt(0)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElement();
@@ -173,12 +167,11 @@ static void test4b(Parser* parser) {
 static void test4c(Parser* parser) {
   auto parseResult = parser->parseString("test4c.chpl",
                                          "enum myEnum /* c */ { a=ii, b }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto enumDecl = module->stmt(0)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElement();
@@ -189,12 +182,11 @@ static void test4c(Parser* parser) {
 static void test4d(Parser* parser) {
   auto parseResult = parser->parseString("test4d.chpl",
                                          "enum myEnum { /* c */ a=ii, b }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto enumDecl = module->stmt(0)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 3);
   assert(enumDecl->declOrComment(0)->isComment());
@@ -206,12 +198,11 @@ static void test4d(Parser* parser) {
 static void test4e(Parser* parser) {
   auto parseResult = parser->parseString("test4e.chpl",
                                          "enum myEnum { a /* c */ =ii, b }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto enumDecl = module->stmt(0)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElement();
@@ -222,12 +213,11 @@ static void test4e(Parser* parser) {
 static void test4f(Parser* parser) {
   auto parseResult = parser->parseString("test4f.chpl",
                                          "enum myEnum { a = /* c */ ii, b }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto enumDecl = module->stmt(0)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElement();
@@ -238,12 +228,11 @@ static void test4f(Parser* parser) {
 static void test4g(Parser* parser) {
   auto parseResult = parser->parseString("test4g.chpl",
                                          "enum myEnum { a = ii /* c */, b }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto enumDecl = module->stmt(0)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 2);
   auto a = enumDecl->declOrComment(0)->toEnumElement();
@@ -254,12 +243,11 @@ static void test4g(Parser* parser) {
 static void test4h(Parser* parser) {
   auto parseResult = parser->parseString("test4h.chpl",
                                          "enum myEnum { a = ii, /* c */ b }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto enumDecl = module->stmt(0)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 3);
   auto a = enumDecl->declOrComment(0)->toEnumElement();
@@ -271,12 +259,11 @@ static void test4h(Parser* parser) {
 static void test4i(Parser* parser) {
   auto parseResult = parser->parseString("test4i.chpl",
                                          "enum myEnum { a = ii, b /* c */ }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto enumDecl = module->stmt(0)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 3);
   auto a = enumDecl->declOrComment(0)->toEnumElement();
@@ -288,12 +275,11 @@ static void test4i(Parser* parser) {
 static void test4j(Parser* parser) {
   auto parseResult = parser->parseString("test4i.chpl",
                                          "enum myEnum { a = ii, b, /*c*/ }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto enumDecl = module->stmt(0)->toEnum();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto enumDecl = mod->stmt(0)->toEnum();
   assert(enumDecl);
   assert(enumDecl->numDeclOrComments() == 3);
   auto a = enumDecl->declOrComment(0)->toEnumElement();

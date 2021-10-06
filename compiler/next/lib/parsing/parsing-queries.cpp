@@ -78,32 +78,32 @@ void setFileText(Context* context, UniqueString path, std::string text) {
   setFileText(context, path, FileContents(std::move(text)));
 }
 
-const uast::Builder::Result& parseFile(Context* context, UniqueString path) {
+const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
   QUERY_BEGIN(parseFile, context, path);
 
   // Run the fileText query to get the file contents
   const FileContents& contents = fileText(context, path);
   const std::string& text = contents.text;
   const ErrorMessage& error = contents.error;
-  uast::Builder::Result result;
-  result.filePath = path;
+  uast::BuilderResult result(path);
 
   if (error.isEmpty()) {
     // if there was no error reading the file, proceed to parse
     auto parser = Parser::build(context);
     const char* pathc = path.c_str();
     const char* textc = text.c_str();
-    uast::Builder::Result tmpResult = parser->parseString(pathc, textc);
+    uast::BuilderResult tmpResult = parser->parseString(pathc, textc);
     result.swap(tmpResult);
     // raise any errors encountered
-    for (const ErrorMessage& e : result.errors) {
+    // TODO: add something to BuilderResult to iterate over the errors
+    for (const ErrorMessage& e : result.errors_) {
       context->error(e);
     }
-    Builder::Result::updateFilePaths(context, result);
+    BuilderResult::updateFilePaths(context, result);
   } else {
     // Error should have already been reported in the fileText query
     // just record an error here as well so follow-ons are clear
-    result.errors.push_back(error);
+    result.errors_.push_back(error);
   }
 
   return QUERY_END(result);
@@ -116,27 +116,9 @@ const Location& locateId(Context* context, ID id) {
   UniqueString path = context->filePathForId(id);
 
   // Get the result of parsing
-  const uast::Builder::Result& p = parseFile(context, path);
+  const uast::BuilderResult& p = parseFile(context, path);
 
-  Location result(path);
-
-  const uast::ASTNode* ast = nullptr;
-
-  // Look in idToAST
-  {
-    auto search = p.idToAst.find(id);
-    if (search != p.idToAst.end()) {
-      ast = search->second;
-    }
-  }
-
-  if (ast != nullptr) {
-    // Look in astToLocation
-    auto search = p.astToLocation.find(ast);
-    if (search != p.astToLocation.end()) {
-      result = search->second;
-    }
-  }
+  Location result = p.idToLocation(id, path);
 
   return QUERY_END(result);
 }
@@ -150,10 +132,10 @@ const ModuleVec& parse(Context* context, UniqueString path) {
   QUERY_BEGIN(parse, context, path);
 
   // Get the result of parsing
-  const uast::Builder::Result& p = parseFile(context, path);
+  const uast::BuilderResult& p = parseFile(context, path);
   // Compute a vector of Modules
   ModuleVec result;
-  for (auto & topLevelExpression : p.topLevelExpressions) {
+  for (auto topLevelExpression : p.topLevelExpressions()) {
     if (const uast::Module* mod = topLevelExpression->toModule()) {
       result.push_back(mod);
     }
@@ -203,15 +185,9 @@ static const ASTNode* const& astForIDQuery(Context* context, ID id) {
   UniqueString path = context->filePathForId(id);
 
   // Get the result of parsing
-  const uast::Builder::Result& p = parseFile(context, path);
+  const uast::BuilderResult& p = parseFile(context, path);
 
-  const uast::ASTNode* result = nullptr;
-
-  // Look in idToAST
-  auto search = p.idToAst.find(id);
-  if (search != p.idToAst.end()) {
-    result = search->second;
-  }
+  const uast::ASTNode* result = p.idToAst(id);
 
   return QUERY_END(result);
 }
@@ -248,15 +224,9 @@ const ID& idToParentId(Context* context, ID id) {
   UniqueString path = context->filePathForId(id);
 
   // Get the result of parsing
-  const uast::Builder::Result& p = parseFile(context, path);
+  const uast::BuilderResult& p = parseFile(context, path);
 
-  ID result;
-
-  // Look in idToAST
-  auto search = p.idToParentId.find(id);
-  if (search != p.idToParentId.end()) {
-    result = search->second;
-  }
+  ID result = p.idToParentId(id);
 
   return QUERY_END(result);
 }

@@ -79,7 +79,7 @@ namespace parsing {
   /**
    This query reads a file (with the fileText query) and then parses it.
    */
-  const uast::Builder::Result& parseFile(Context* context, UniqueString path);
+  const uast::BuilderResult& parseFile(Context* context, UniqueString path);
 
 
   // These functions can't return the Location for a Comment
