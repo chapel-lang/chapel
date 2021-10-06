@@ -134,5 +134,5 @@ other task is consuming it.
 
 deprecated "The Spawn module is deprecated. Please use Subprocess instead."
 module Spawn {
-  use Subprocess;
+  public use Subprocess;
 }
