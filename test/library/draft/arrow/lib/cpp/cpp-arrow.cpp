@@ -6,6 +6,7 @@
 #include <parquet/arrow/reader.h>
 #include <parquet/arrow/writer.h>
 #include <parquet/exception.h>
+#include <parquet/api/reader.h>
 #include <chrono>
 #include <ctime>
 
@@ -171,6 +172,64 @@ void cpp_writeColumnToParquet(char* filename, void* chpl_arr,
   parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), outfile, rowGroupSize));
 }
 
+int cpp_lowLevelRead(char* filename, void* chpl_arr, int numElems) {
+  auto chpl_ptr = (int64_t*)chpl_arr;
+  try {
+    // Create a ParquetReader instance
+    std::unique_ptr<parquet::ParquetFileReader> parquet_reader =
+        parquet::ParquetFileReader::OpenFile(filename, false);
+
+    // Get the File MetaData
+    std::shared_ptr<parquet::FileMetaData> file_metadata = parquet_reader->metadata();
+
+    // Get the number of RowGroups
+    int num_row_groups = file_metadata->num_row_groups();
+
+    // Get the number of Columns
+    int num_columns = file_metadata->num_columns();
+
+    // Iterate over all the RowGroups in the file
+    for (int r = 0; r < num_row_groups; ++r) {
+      // Get the RowGroup Reader
+      std::shared_ptr<parquet::RowGroupReader> row_group_reader =
+        parquet_reader->RowGroup(r);
+
+      int64_t values_read = 0;
+      int64_t rows_read = 0;
+      int16_t definition_level;
+      int16_t repetition_level;
+      int i;
+      std::shared_ptr<parquet::ColumnReader> column_reader;
+
+      ARROW_UNUSED(rows_read); // prevent warning in release build
+
+      // Get the Column Reader
+      column_reader = row_group_reader->Column(0);
+      parquet::Int64Reader* int64_reader =
+        static_cast<parquet::Int64Reader*>(column_reader.get());
+      
+      // Read all the rows in the column
+      i = 0;
+      while (int64_reader->HasNext()) {
+        // Read one value at a time. The number of rows read is returned. values_read
+        // contains the number of non-null rows
+        rows_read = int64_reader->ReadBatch(1, nullptr, nullptr, &chpl_ptr[i], &values_read);
+        // Ensure only one value is read
+        assert(rows_read == 1);
+        // There are no NULL values in the rows written
+        assert(values_read == 1);
+        // Verify the value written
+        assert(chpl_ptr[i] == i);
+        i++;
+      }
+    }
+    return 0;
+  } catch (const std::exception& e) {
+    std::cerr << "Parquet write error: " << e.what() << std::endl;
+    return -1;
+  }
+}
+
 extern "C" {
   // test function, writes 0..#numElems to file
   // can't write your own array yet
@@ -209,5 +268,9 @@ extern "C" {
                               int rowGroupSize) {
     cpp_writeColumnToParquet(filename, chpl_arr, colnum, dsetname,
                              numelems, rowGroupSize);
+  }
+
+  void c_lowLevelRead(char* filename, void* chpl_arr, int numElems) {
+    cpp_lowLevelRead(filename, chpl_arr, numElems);
   }
 }

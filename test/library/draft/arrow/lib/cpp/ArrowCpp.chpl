@@ -39,6 +39,10 @@ module ArrowCpp {
     writeln(C);
 
     writeln(getArrSizeAndType([asd, asd]));
+
+    var sports: [0..#NUMELEMS] int;
+    c_lowLevelRead("test-cpp-file.parquet", c_ptrTo(sports), 0);
+    writeln(sports[0..10]);
     
     // TODO: Get size and type
     // TODO: research that chunked array whatever

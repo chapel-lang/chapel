@@ -13,6 +13,7 @@ module ArrowInclude {
   extern proc c_readColumnByName(a,b,c,d);
   extern proc c_getType(a,b): c_string;
   extern proc c_writeColumnToParquet(a, b, c, d, e, f);
+  extern proc c_lowLevelRead(a, b, c);
 
   proc getSubdomains(lengths: [?FD] int) {
     var subdoms: [FD] domain(1);

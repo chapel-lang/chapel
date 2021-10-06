@@ -26,7 +26,10 @@ extern "C" {
   void c_writeColumnToParquet(char* filename, void* chpl_arr,
                               int colnum, char* dsetname, int numelems,
                               int rowGroupSize);
- 
+  
+  void c_lowLevelRead(char* filename, void* chpl_arr, int numElems);
+  int cpp_lowLevelRead(char* filename, void* chpl_arr, int numElems);
+    
     
  
   
