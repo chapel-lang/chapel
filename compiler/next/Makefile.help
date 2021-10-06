@@ -74,7 +74,7 @@ libchplcomp-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
 clean-libchplcomp-docs: FORCE
 	rm -rf $(CHPL_MAKE_HOME)/build/doc/doxygen
 
-clobber-libchplcomp: FORCE
+clobber-libchplcomp: clean-libchplcomp-docs FORCE
 	rm -rf $(LIBCOMPILER_BUILD_DIR)
 
 test-libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
