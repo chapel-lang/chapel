@@ -719,9 +719,9 @@ static TypedFnSignature::WhereClauseResult whereClauseResult(
 static ID parentFunctionId(Context* context, ID functionId) {
   ID parentSymId = functionId.parentSymbolId(context);
   const Scope* parentScope = scopeForId(context, parentSymId);
-  for (const Scope* cur = parentScope; cur != nullptr; cur = cur->parentScope) {
-    if (cur->tag == asttags::Function) {
-      return cur->id;
+  for (const Scope* s = parentScope; s != nullptr; s = s->parentScope()) {
+    if (s->tag() == asttags::Function) {
+      return s->id();
     }
   }
 

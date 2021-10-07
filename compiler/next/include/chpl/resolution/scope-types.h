@@ -173,28 +173,75 @@ using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
   A scope roughly corresponds to a `{ }` block. Anywhere a new symbol could be
   defined / is defined is a scope.
 
+  The scope contains a mapping from name to ID for symbols defined within.
+  For the root scope, it can also contain empty IDs for builtin types and
+  symbols.
+
   While generic instantiations generate something scope-like, the
   point-of-instantiation reasoning will need to be handled with a different
   type.
  */
-struct Scope {
-  const Scope* parentScope = nullptr;
-  uast::asttags::ASTTag tag = uast::asttags::NUM_AST_TAGS;
-  bool containsUseImport = false;
-  bool containsFunctionDecls = false;
-  ID id;
-  UniqueString name;
-  DeclMap declared;
+class Scope {
+ private:
+  const Scope* parentScope_ = nullptr;
+  uast::asttags::ASTTag tag_ = uast::asttags::NUM_AST_TAGS;
+  bool containsUseImport_ = false;
+  bool containsFunctionDecls_ = false;
+  ID id_;
+  UniqueString name_;
+  DeclMap declared_;
 
+ public:
+  /** Construct an empty scope.
+      This scope will not yet store any defined symbols. */
   Scope() { }
 
+  /** Construct a Scope for a particular AST node
+      and with a particular parent. */
+  Scope(const uast::ASTNode* ast, const Scope* parentScope);
+
+  /** Add a builtin type with the provided name. This needs to
+      be called to populate the root scope with builtins. */
+  void addBuiltin(UniqueString name);
+
+  /** Return the parent scope for this scope. */
+  const Scope* parentScope() const { return parentScope_; }
+
+  /** Returns the AST tag of the construct that this Scope represents. */
+  uast::asttags::ASTTag tag() const { return tag_; }
+
+  /** Return the ID of the Block or other AST node construct that this Scope
+      represents. An empty ID indicates that this Scope is the root scope. */
+  const ID& id() const { return id_; }
+
+  /** Returns 'true' if this Scope directly contains use or import statements */
+  bool containsUseImport() const { return containsUseImport_; }
+
+  /** Returns 'true' if this Scope directly contains any Functions */
+  bool containsFunctionDecls() const { return containsFunctionDecls_; }
+
+  int numDeclared() const { return declared_.size(); }
+
+  /** If the scope contains IDs with the provided name,
+      append the relevant BorrowedIdsToName the the vector.
+      Returns true if something was appended. */
+  bool lookupInScope(UniqueString name,
+                     std::vector<BorrowedIdsWithName>& result) const {
+    auto search = declared_.find(name);
+    if (search != declared_.end()) {
+      result.push_back(BorrowedIdsWithName(search->second));
+      return true;
+    }
+    return false;
+  }
+
   bool operator==(const Scope& other) const {
-    return parentScope == other.parentScope &&
-           tag == other.tag &&
-           containsUseImport == other.containsUseImport &&
-           containsFunctionDecls == other.containsFunctionDecls &&
-           id == other.id &&
-           declared == other.declared;
+    return parentScope_ == other.parentScope_ &&
+           tag_ == other.tag_ &&
+           containsUseImport_ == other.containsUseImport_ &&
+           containsFunctionDecls_ == other.containsFunctionDecls_ &&
+           id_ == other.id_ &&
+           declared_ == other.declared_;
   }
   bool operator!=(const Scope& other) const {
     return !(*this == other);

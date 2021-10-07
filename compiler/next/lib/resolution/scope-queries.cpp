@@ -24,6 +24,8 @@
 #include "chpl/queries/query-impl.h"
 #include "chpl/uast/all-uast.h"
 
+#include "scope-help.h"
+
 #include <cstdio>
 #include <set>
 #include <string>
@@ -100,10 +102,10 @@ struct GatherDecls {
   void exit(const ASTNode* ast) { }
 };
 
-static void gatherDeclsWithin(const uast::ASTNode* ast,
-                              DeclMap& declared,
-                              bool& containsUseImport,
-                              bool& containsFunctionDecls) {
+void gatherDeclsWithin(const uast::ASTNode* ast,
+                       DeclMap& declared,
+                       bool& containsUseImport,
+                       bool& containsFunctionDecls) {
   GatherDecls visitor;
 
   // Visit child nodes to e.g. look inside a Function
@@ -130,19 +132,12 @@ bool createsScope(asttags::ASTTag tag) {
 
 static const Scope* const& scopeForIdQuery(Context* context, ID id);
 
-static void addBuiltinType(Scope* scope, UniqueString name) {
-  // Just refer to empty ID since their declarations don't
-  // actually exist in the AST.
-  // The resolver knows that the empty ID means a builtin thing.
-  scope->declared.emplace(name, ID());
-}
-
 static void populateScopeWithBuiltins(Context* context, Scope* scope) {
   std::unordered_map<UniqueString,const Type*> map;
   Type::gatherBuiltins(context, map);
 
   for (const auto& pair : map) {
-    addBuiltinType(scope, pair.first);
+    scope->addBuiltin(pair.first);
   }
 }
 
@@ -151,9 +146,10 @@ static void populateScopeWithBuiltins(Context* context, Scope* scope) {
 static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
   QUERY_BEGIN(constructScopeQuery, context, id);
 
-  Scope* result = new Scope();
+  Scope* result = nullptr;
 
   if (id.isEmpty()) {
+    result = new Scope();
     // empty ID indicates to make the root scope
     // populate it with builtins
     populateScopeWithBuiltins(context, result);
@@ -161,17 +157,12 @@ static const owned<Scope>& constructScopeQuery(Context* context, ID id) {
     const uast::ASTNode* ast = parsing::idToAst(context, id);
     if (ast == nullptr) {
       assert(false && "could not find ast for id");
+      result = new Scope();
     } else {
       ID parentId = parsing::idToParentId(context, id);
-      result->parentScope = scopeForIdQuery(context, parentId);
-      result->tag = ast->tag();
-      result->id = id;
-      if (auto decl = ast->toNamedDecl()) {
-        result->name = decl->name();
-      }
-      gatherDeclsWithin(ast, result->declared,
-                        result->containsUseImport,
-                        result->containsFunctionDecls);
+      const Scope* parentScope = scopeForIdQuery(context, parentId);
+
+      result = new Scope(ast, parentScope);
     }
   }
 
@@ -247,18 +238,6 @@ static bool doLookupExprInScope(Context* context,
 static const ResolvedVisibilityScope*
   partiallyResolvedVisibilityScope(Context* context, const Scope* scope);
 
-static bool doLookupInScopeDecls(Context* context,
-                                 const Scope* scope,
-                                 UniqueString name,
-                                 std::vector<BorrowedIdsWithName>& result) {
-  auto search = scope->declared.find(name);
-  if (search != scope->declared.end()) {
-    result.push_back(BorrowedIdsWithName(search->second));
-    return true;
-  }
-  return false;
-}
-
 static bool doLookupInImports(Context* context,
                               const Scope* scope,
                               UniqueString name,
@@ -267,7 +246,7 @@ static bool doLookupInImports(Context* context,
                               std::vector<BorrowedIdsWithName>& result) {
   // Look in the (potentially partial) imported symbol data
   const ResolvedVisibilityScope* r = nullptr;
-  if (scope->containsUseImport) {
+  if (scope->containsUseImport()) {
     r = partiallyResolvedVisibilityScope(context, scope);
     assert(r);
   }
@@ -293,7 +272,7 @@ static bool doLookupInImports(Context* context,
         // find it in the contents
         const Scope* symScope = scopeForId(context, is.symbolId);
         // this symbol should be a module/enum etc which has a scope
-        assert(symScope->id == is.symbolId);
+        assert(symScope->id() == is.symbolId);
 
         LookupConfig newConfig = LOOKUP_DECLS |
                                  LOOKUP_IMPORT_AND_USE;
@@ -355,7 +334,8 @@ static bool doLookupInScope(Context* context,
   }
 
   if (checkDecls) {
-    bool got = doLookupInScopeDecls(context, scope, name, result);
+    bool got = scope->lookupInScope(name, result);
+//    bool got = doLookupInScopeDecls(context, scope, name, result);
     if (onlyInnermost && got) return true;
   }
 
@@ -375,20 +355,20 @@ static bool doLookupInScope(Context* context,
     }
 
     const Scope* cur = nullptr;
-    for (cur = scope->parentScope; cur != nullptr; cur = cur->parentScope) {
+    for (cur = scope->parentScope(); cur != nullptr; cur = cur->parentScope()) {
       bool got = doLookupInScope(context, cur, name, newConfig,
                                  checkedScopes, result);
       if (onlyInnermost && got) return true;
 
       // stop if we reach a Module scope
-      if (asttags::isModule(cur->tag))
+      if (asttags::isModule(cur->tag()))
         break;
     }
 
     // check also in the root scope if this isn't already the root scope
     const Scope* rootScope = nullptr;
-    for (cur = scope->parentScope; cur != nullptr; cur = cur->parentScope) {
-      if (cur->parentScope == nullptr)
+    for (cur = scope->parentScope(); cur != nullptr; cur = cur->parentScope()) {
+      if (cur->parentScope() == nullptr)
         rootScope = cur;
     }
     if (rootScope != nullptr) {
@@ -582,12 +562,12 @@ bool doIsWholeScopeVisibleFromScope(Context* context,
   }
 
   // go through parent scopes checking for a match
-  for (const Scope* cur = fromScope; cur != nullptr; cur = cur->parentScope) {
+  for (const Scope* cur = fromScope; cur != nullptr; cur = cur->parentScope()) {
     if (checkScope == cur) {
       return true;
     }
 
-    if (cur->containsUseImport) {
+    if (cur->containsUseImport()) {
       const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, cur);
 
       for (const VisibilitySymbols& is: r->visibilityClauses) {
@@ -754,7 +734,7 @@ struct ImportsResolver {
         // It's a Dot expression
         // In this case, the id of the module containing the
         // imported stuff is available from resultScope.
-        id = resultScope->id;
+        id = resultScope->id();
       }
 
       switch (clause->limitationKind()) {
@@ -805,7 +785,7 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
   // Walk through the use/imports statements in this scope.
   ImportsResolver visitor(context, scope, partialResult.get());
 
-  const ASTNode* ast = parsing::idToAst(context, scope->id);
+  const ASTNode* ast = parsing::idToAst(context, scope->id());
   assert(ast != nullptr);
   if (ast != nullptr) {
     // Visit child nodes to e.g. look inside a Module
@@ -823,7 +803,7 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
 
 const ResolvedVisibilityScope* resolveVisibilityStmts(Context* context,
                                                       const Scope* scope) {
-  if (scope->containsUseImport) {
+  if (scope->containsUseImport()) {
     const owned<ResolvedVisibilityScope>& r =
       resolveVisibilityStmtsQuery(context, scope);
     return r.get();
@@ -878,8 +858,8 @@ pointOfInstantiationScopeQuery(Context* context,
   // thereof can be collapsed away.
   for (useScope = scope;
        useScope != nullptr;
-       useScope = useScope->parentScope) {
-    if (useScope->containsUseImport || useScope->containsFunctionDecls) {
+       useScope = useScope->parentScope()) {
+    if (useScope->containsUseImport() || useScope->containsFunctionDecls()) {
       break;
     }
   }
