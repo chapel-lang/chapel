@@ -16,7 +16,7 @@ from utils import error, memoize, warning
 # and CXX to compile things, for better or worse.
 #
 @memoize
-def validate(compiler_val):
+def validate_compiler(compiler_val):
     if compiler_val != 'llvm':
         import chpl_home_utils
         chpl_home = chpl_home_utils.get_chpl_home()
@@ -38,6 +38,36 @@ def get_prgenv_compiler():
             warning("Compiling on {0} without a PrgEnv loaded".format(platform_val))
 
     return 'none'
+
+# Don't use CC / CXX to set other variables if any of
+#  CHPL_HOST_COMPILER
+#  CHPL_HOST_CC
+#  CHPL_HOST_CXX
+#  CHPL_TARGET_COMPILER
+#  CHPL_TARGET_CC
+#  CHPL_TARGET_CXX
+# are overridden by the user (in config file or env vars).
+#
+# Additionally, for the target compiler, don't use CC / CXX
+# if we would like to default to LLVM.
+@memoize
+def should_consider_cc_cxx(flag):
+    host_compiler = overrides.get('CHPL_HOST_COMPILER')
+    if (overrides.get('CHPL_HOST_COMPILER') != None or
+        overrides.get('CHPL_HOST_CC') != None or
+        overrides.get('CHPL_HOST_CXX') != None or
+        overrides.get('CHPL_TARGET_COMPILER') != None or
+        overrides.get('CHPL_TARGET_CC') != None or
+        overrides.get('CHPL_TARGET_CXX') != None):
+
+        return False
+
+    default_llvm = default_to_llvm(flag)
+    if default_llvm:
+        return False
+
+    return True
+
 
 # Figures out the compiler family (e.g. gnu) from the CC/CXX enviro vars
 # Returns '' if CC / CXX are not set and 'unknown' if they are set
@@ -103,9 +133,9 @@ def default_to_llvm(flag):
         import chpl_llvm
         has_llvm = chpl_llvm.get()
 
-    if flag == 'target' and (has_llvm == 'bundled' or has_llvm  == 'system'):
-        # Default to CHPL_TARGET_COMPILER=llvm when CHPL_LLVM!=none
-        ret = True
+        if has_llvm == 'bundled' or has_llvm  == 'system':
+            # Default to CHPL_TARGET_COMPILER=llvm when CHPL_LLVM!=none
+            ret = True
 
     return ret
 
@@ -125,12 +155,12 @@ def get(flag='host'):
     if not compiler_val:
         default_llvm = default_to_llvm(flag)
 
-        # If we aren't defaulting to LLVM, look at CC/CXX
-        if not default_llvm:
+        # If allowable, look at CC/CXX
+        if should_consider_cc_cxx(flag):
             compiler_val = get_compiler_from_cc_cxx()
 
     if compiler_val:
-        validate(compiler_val)
+        validate_compiler(compiler_val)
         return compiler_val
 
     prgenv_compiler = get_prgenv_compiler()
@@ -165,7 +195,7 @@ def get(flag='host'):
         else:
             compiler_val = 'gnu'
 
-    validate(compiler_val)
+    validate_compiler(compiler_val)
     return compiler_val
 
 @memoize
@@ -286,8 +316,8 @@ def get_compiler_command(flag, lang):
 
     compiler_val = get(flag=flag)
 
-    # If we are not using LLVM, look also at CC/CXX.
-    if compiler_val != 'llvm':
+    # If other settings allow it, look also at CC/CXX.
+    if should_consider_cc_cxx(flag):
         cc_cxx_val = overrides.get(lang_upper, '')
         if cc_cxx_val:
             return cc_cxx_val
@@ -315,6 +345,39 @@ def get_compiler_command(flag, lang):
                 command = chpl_llvm.get_llvm_clang(lang_upper)
 
     return command
+
+def validate_inference_matches(flag, lang):
+    flag_upper = flag.upper()
+    lang_upper = lang.upper()
+
+    if lang_upper == 'C++':
+        lang_upper = 'CXX'
+    elif lang_upper == 'C':
+        lang_upper = 'CC'
+
+    compiler = get(flag)
+    cmd = get_compiler_command(flag, lang)
+    inferred = get_compiler_from_command(cmd)
+
+    if (inferred != 'unknown' and
+        inferred != compiler and
+        not (compiler == 'llvm' and inferred == 'clang')):
+        error("Conflicting compiler families: "
+              "CHPL_{0}_COMPILER={1} but CHPL_{0}_{2}={3} but has family {4}"
+              .format(flag_upper, compiler, lang_upper, cmd, inferred))
+        return False
+
+    return True
+
+# Issue an error if, after all the various inferences are done,
+# CHPL_HOST_CC / CXX is inconsintent with CHPL_HOST_COMPILER
+# and similarly for TARGET variants.
+@memoize
+def validate_compiler_settings():
+    validate_inference_matches('host', 'c')
+    validate_inference_matches('host', 'c++')
+    validate_inference_matches('target', 'c')
+    validate_inference_matches('target', 'c++')
 
 def _main():
     parser = optparse.OptionParser(usage='usage: %prog [--host|target])')
