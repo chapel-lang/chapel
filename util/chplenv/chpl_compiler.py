@@ -52,18 +52,23 @@ def get_prgenv_compiler():
 # if we would like to default to LLVM.
 @memoize
 def should_consider_cc_cxx(flag):
-    host_compiler = overrides.get('CHPL_HOST_COMPILER')
+    default_llvm = default_to_llvm(flag)
+    if default_llvm:
+        return False
+
     if (overrides.get('CHPL_HOST_COMPILER') != None or
         overrides.get('CHPL_HOST_CC') != None or
         overrides.get('CHPL_HOST_CXX') != None or
         overrides.get('CHPL_TARGET_COMPILER') != None or
         overrides.get('CHPL_TARGET_CC') != None or
         overrides.get('CHPL_TARGET_CXX') != None):
-
+        # A compilation configuration setting was adjusted,
+        # so require CHPL_HOST_CC etc rather than using CC
         return False
 
-    default_llvm = default_to_llvm(flag)
-    if default_llvm:
+    if flag == 'target' and get_prgenv_compiler() != 'none':
+        # On an XC etc with a PrgEnv compiler,
+        # setting CC/CXX should only impact the host compiler.
         return False
 
     return True
