@@ -1,0 +1,21 @@
+Config Var Values:
+
+Arguments Received from CL:
+1 -h
+Argument Parser Example
+
+Demonstrating some of the ArgumentParser functionality
+
+USAGE:
+  ArgumentParserExample <PositionalArg> [options] [[--] [passed values] | [subcommand]]
+
+ARGUMENTS:
+  positionalArg  A value specified by position
+
+OPTIONS:
+  -o,--option    strArg1 1-10 values
+  -q,--types     strArg2 1 or more values
+  --[no-]flagon  boolean flag argument
+
+SUBCOMMANDS:
+  subCmd1        A subcommand to try

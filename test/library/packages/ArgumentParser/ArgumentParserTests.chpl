@@ -44,7 +44,7 @@ proc testSingleStringShortOptEquals(test: borrowed Test) throws {
 // a short string opt with single value with = and extra # values supplied
 proc testSingleStringShortOptEqualsExtra(test: borrowed Test) throws {
   var argList = ["progName","-n=twenty","thirty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1);
@@ -65,7 +65,7 @@ proc testSingleStringShortOptEqualsExtra(test: borrowed Test) throws {
 // test to catch undefined args entered at beginning of cmd string
 proc testBadArgsAtFront(test: borrowed Test) throws {
   var argList = ["progName","badArg1","--BadFlag","-n=twenty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1);
@@ -182,7 +182,7 @@ proc testTryMakeBadOptID(test: borrowed Test) throws {
 // a short string opt with single value, expressed multiple times
 proc testSingleStringShortOptRepeated(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","-n","thirty","-n","forty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1);
@@ -205,7 +205,7 @@ proc testSingleStringShortOptRepeated(test: borrowed Test) throws {
 proc testRangeStringShortOptRepeated(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","two","hundred","-n",
                  "thirty","five","-n","forty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
@@ -230,7 +230,7 @@ proc testRangeStringShortOptRepeated(test: borrowed Test) throws {
 proc testRangeStringShortOptRepeatedTooManyFirst(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","two","hundred","fifty","-n",
                  "thirty","five","-n","forty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
@@ -270,7 +270,7 @@ proc testOptSingleStringShortOptNoOpts(test: borrowed Test) throws {
 // required value not supplied
 proc testOptSingleStringShortReqOptNoOpts(test: borrowed Test) throws {
   var argList = ["progName"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1,
@@ -320,7 +320,7 @@ proc testNoOptsDefined(test: borrowed Test) throws {
 // a parser with no arguments defined, gets 1 argument
 proc testNoOptsDefinedUnknownOptGiven(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   //parse the options
   try {
     parser.parseArgs(argList);
@@ -370,7 +370,7 @@ proc testOptRangeStringShortOptOptNoVal(test: borrowed Test) throws {
 // a short string opt with 1..2 range and opt, but no value supplied
 proc testOptRangeStringShortOptPresentNoVal(test: borrowed Test) throws {
   var argList = ["progName","-n"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1..2,
@@ -393,7 +393,7 @@ proc testOptRangeStringShortOptPresentNoVal(test: borrowed Test) throws {
 // a short string opt with 0..1 range and extra values supplied
 proc testOptRangeStringShortOptExtraVal(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","two"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=0..1,
@@ -418,7 +418,7 @@ proc testOptRangeStringShortOptExtraVal(test: borrowed Test) throws {
 // with an additional, undefined argument
 proc testOptRangeStringShortOptOkValBadArg(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","-p","thirty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=0..1,
@@ -575,7 +575,7 @@ proc testMultiStringShortOptVarLess(test: borrowed Test) throws {
 // fewer than min # supplied
 proc testMultiStringShortOptVarLessThanMin(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","thirty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=3..5,
@@ -600,7 +600,7 @@ proc testMultiStringShortOptVarLessThanMin(test: borrowed Test) throws {
 // max # supplied
 proc testMultiStringShortOptVarMore(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","thirty","forty","fifty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
@@ -626,7 +626,7 @@ proc testMultiStringShortOptVarMore(test: borrowed Test) throws {
 // min # supplied
 proc testMultiStringShortOptVarNoVal(test: borrowed Test) throws {
   var argList = ["progName","-n"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
@@ -649,7 +649,7 @@ proc testMultiStringShortOptVarNoVal(test: borrowed Test) throws {
 // a short string opt with single value and no values supplied
 proc testSingleStringShortOptNoVal(test: borrowed Test) throws {
   var argList = ["progName","-n"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1);
@@ -741,7 +741,7 @@ proc testThreeStringShortOpt(test: borrowed Test) throws {
 // three short string opts with single value and missing value first var
 proc testThreeStringShortOptMissingFirst(test: borrowed Test) throws {
   var argList = ["progName","-n","-p","thirty","-t","forty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],
                                    numArgs=1);
@@ -770,7 +770,7 @@ proc testThreeStringShortOptMissingFirst(test: borrowed Test) throws {
 // three short string opts with single value and missing value middle var
 proc testThreeStringShortOptMissingMiddle(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","-p","-t","forty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],
                                    numArgs=1);
@@ -799,7 +799,7 @@ proc testThreeStringShortOptMissingMiddle(test: borrowed Test) throws {
 // three short string opts with single value and missing value last var
 proc testThreeStringShortOptMissingLast(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","-p","thirty","-t"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],
                                    numArgs=1);
@@ -828,7 +828,7 @@ proc testThreeStringShortOptMissingLast(test: borrowed Test) throws {
 // three short string opts with single value and extra value first var
 proc testThreeStringShortOptExtraFirst(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","five","-p","thirty","-t","forty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],
                                    numArgs=1);
@@ -857,7 +857,7 @@ proc testThreeStringShortOptExtraFirst(test: borrowed Test) throws {
 // three short string opts with single value and extra value middle var
 proc testThreeStringShortOptExtraMiddle(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","-p","thirty","five","-t","forty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],
                                    numArgs=1);
@@ -886,7 +886,7 @@ proc testThreeStringShortOptExtraMiddle(test: borrowed Test) throws {
 // three short string opts with single value and extra value last var
 proc testThreeStringShortOptExtraLast(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","-p","thirty","-t","forty","five"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],
                                    numArgs=1);
@@ -916,7 +916,7 @@ proc testThreeStringShortOptExtraLast(test: borrowed Test) throws {
 // and missing last value
 proc testThreeStringShortOptExtraMidMissingLast(test: borrowed Test) throws {
   var argList = ["progName","-n","twenty","-p","thirty","five","-t"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],
                                    numArgs=1);
@@ -1174,7 +1174,7 @@ proc testMultStringShortOptDefMultiValReqVal(test: borrowed Test) throws {
 // required value not supplied, optional values not supplied
 proc testMultStringShortOptDefMultiValReqNoVal(test: borrowed Test) throws {
   var argList=["progName"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],
                                    defaultValue=new list(["one","two"]),
@@ -1456,7 +1456,7 @@ proc testAddTwoSubCommandUseNone(test: borrowed Test) throws {
 // add two subcommands and use an undefined command
 proc testAddTwoSubCommandUseUndefined(test: borrowed Test) throws {
   var argList = ["progName","subCommandNone"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
   var mySubCmd2 = parser.addSubCommand(cmd="subCommand2");
   try {
@@ -1472,7 +1472,7 @@ proc testAddTwoSubCommandUseUndefined(test: borrowed Test) throws {
 // add two subcommands and use an undefined command with good command
 proc testAddTwoSubCommandUseUndefinedWithGood(test: borrowed Test) throws {
   var argList = ["progName","subCommandNone", "subCommand1"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
   var mySubCmd2 = parser.addSubCommand(cmd="subCommand2");
   try {
@@ -1488,7 +1488,7 @@ proc testAddTwoSubCommandUseUndefinedWithGood(test: borrowed Test) throws {
 // test a short string option with bad option first
 proc testStringShortOptVarBadVarNoVal(test: borrowed Test) throws {
   var argList = ["progName","-x","-n","twenty"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
@@ -1841,7 +1841,7 @@ proc testBoolZeroToOneFlagNoVal(test: borrowed Test) throws {
 // a short bool flag test with value required but none provided
 proc testBoolForceOneFlagNoVal(test: borrowed Test) throws {
   var argList = ["progName","-n"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
@@ -1862,7 +1862,7 @@ proc testBoolForceOneFlagNoVal(test: borrowed Test) throws {
 // a short bool flag test with too many values
 proc testBoolForceOneFlagExtraGiven(test: borrowed Test) throws {
   var argList = ["progName","-n","true","false"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
@@ -1883,7 +1883,7 @@ proc testBoolForceOneFlagExtraGiven(test: borrowed Test) throws {
 // a short bool flag test with too many values
 proc testBoolRangeFlagExtraGiven(test: borrowed Test) throws {
   var argList = ["progName","-n","true","false"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=0..1,
@@ -2104,7 +2104,7 @@ proc testBoolMultipleEntryValues(test: borrowed Test) throws {
 // a short bool flag with an unrecognized value
 proc testFlagBadBoolValue(test: borrowed Test) throws {
   var argList = ["progName","-n","tru"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1);
@@ -2231,7 +2231,7 @@ proc testPositionalArgumentRangeOneOrMore(test: borrowed Test) throws {
 // too many values for positional argument
 proc testPositionalArgumentTooManyVals(test: borrowed Test) throws {
   var argList = ["progName","file1","file2","file3","file4"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myPosArg = parser.addArgument(name="FileNames",
                                     numArgs=1..2,
                                     defaultValue=none);
@@ -2251,7 +2251,7 @@ proc testPositionalArgumentTooManyVals(test: borrowed Test) throws {
 // not enough values for positional argument
 proc testPositionalArgumentNotEnoughVals(test: borrowed Test) throws {
   var argList = ["progName","file1","file2","file3","file4"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myPosArg = parser.addArgument(name="FileNames",
                                     numArgs=5..7,
                                     defaultValue=none);
@@ -2271,7 +2271,7 @@ proc testPositionalArgumentNotEnoughVals(test: borrowed Test) throws {
 // no values for positional argument
 proc testPositionalArgumentNoVals(test: borrowed Test) throws {
   var argList = ["progName"];
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
   var myPosArg = parser.addArgument(name="FileNames",
                                     numArgs=1..);
   //make sure no value currently exists
@@ -2800,9 +2800,9 @@ proc testMockMasonNew(test: borrowed Test) throws {
   var sysCmd = parser.addSubCommand("system");
   var extCmd = parser.addSubCommand("external");
   var pubCmd = parser.addSubCommand("publish");
-  var helpFlag = parser.addFlag(name="help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
+  // var helpFlag = parser.addFlag(name="help",
+  //                               opts=["-h","--help"],
+  //                               defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
                                defaultValue=false);
@@ -2835,9 +2835,9 @@ proc testMockMasonNew(test: borrowed Test) throws {
                                     opts=["--name"]);
   var newName = newParser.addArgument(name="name");
 
-  var newHelpFlag = newParser.addFlag(name="help",
-                                      opts=["-h","--help"],
-                                      defaultValue=false);
+  // var newHelpFlag = newParser.addFlag(name="help",
+  //                                     opts=["-h","--help"],
+  //                                     defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
@@ -2847,9 +2847,9 @@ proc testMockMasonNew(test: borrowed Test) throws {
                                  defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
-  var addHelpFlag = addParser.addFlag(name="help",
-                                      opts=["-h","--help"],
-                                      defaultValue=false);
+  // var addHelpFlag = addParser.addFlag(name="help",
+  //                                     opts=["-h","--help"],
+  //                                     defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -2866,7 +2866,7 @@ proc testMockMasonNew(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  test.assertFalse(helpFlag.hasValue());
+  // test.assertFalse(helpFlag.hasValue());
   test.assertFalse(verFlag.hasValue());
   //parse the options
   parser.parseArgs(argList);
@@ -2886,9 +2886,9 @@ proc testMockMasonNew(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  test.assertTrue(helpFlag.hasValue());
+  // test.assertTrue(helpFlag.hasValue());
   test.assertTrue(verFlag.hasValue());
-  test.assertFalse(helpFlag.valueAsBool());
+  // test.assertFalse(helpFlag.valueAsBool());
   test.assertFalse(verFlag.valueAsBool());
   test.assertFalse(newLegalName.hasValue());
   //parse the remaining args
@@ -2896,8 +2896,8 @@ proc testMockMasonNew(test: borrowed Test) throws {
   //make sure we now have a value
   test.assertTrue(newVCS.hasValue());
   test.assertTrue(newName.hasValue());
-  test.assertTrue(newHelpFlag.hasValue());
-  test.assertFalse(newHelpFlag.valueAsBool());
+  // test.assertTrue(newHelpFlag.hasValue());
+  // test.assertFalse(newHelpFlag.valueAsBool());
   //ensure the value passed is correct
   test.assertFalse(newVCS.valueAsBool());
   test.assertEqual(newName.value(), "myPackage");
@@ -2924,9 +2924,9 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
   var sysCmd = parser.addSubCommand("system");
   var extCmd = parser.addSubCommand("external");
   var pubCmd = parser.addSubCommand("publish");
-  var helpFlag = parser.addFlag(name="help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
+  // var helpFlag = parser.addFlag(name="help",
+  //                               opts=["-h","--help"],
+  //                               defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
                                defaultValue=false);
@@ -2959,9 +2959,9 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
                                     opts=["--name"]);
   var newName = newParser.addArgument(name="name");
 
-  var newHelpFlag = newParser.addFlag(name="help",
-                                      opts=["-h","--help"],
-                                      defaultValue=false);
+  // var newHelpFlag = newParser.addFlag(name="help",
+  //                                     opts=["-h","--help"],
+  //                                     defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
@@ -2971,9 +2971,9 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
                                  defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
-  var addHelpFlag = addParser.addFlag(name="help",
-                                      opts=["-h","--help"],
-                                      defaultValue=false);
+  // var addHelpFlag = addParser.addFlag(name="help",
+  //                                     opts=["-h","--help"],
+  //                                     defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -2990,7 +2990,7 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  test.assertFalse(helpFlag.hasValue());
+  // test.assertFalse(helpFlag.hasValue());
   test.assertFalse(verFlag.hasValue());
   //parse the options
   parser.parseArgs(argList);
@@ -3010,9 +3010,9 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  test.assertTrue(helpFlag.hasValue());
+  // test.assertTrue(helpFlag.hasValue());
   test.assertTrue(verFlag.hasValue());
-  test.assertFalse(helpFlag.valueAsBool());
+  // test.assertFalse(helpFlag.valueAsBool());
   test.assertFalse(verFlag.valueAsBool());
   test.assertFalse(newLegalName.hasValue());
   //parse the remaining args
@@ -3021,8 +3021,8 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
   test.assertTrue(newVCS.hasValue());
   test.assertTrue(newName.hasValue());
   test.assertTrue(newLegalName.hasValue());
-  test.assertTrue(newHelpFlag.hasValue());
-  test.assertFalse(newHelpFlag.valueAsBool());
+  // test.assertTrue(newHelpFlag.hasValue());
+  // test.assertFalse(newHelpFlag.valueAsBool());
   //ensure the value passed is correct
   test.assertFalse(newVCS.valueAsBool());
   test.assertEqual(newLegalName.value(),"notMyPackage");
@@ -3049,9 +3049,9 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
   var sysCmd = parser.addSubCommand("system");
   var extCmd = parser.addSubCommand("external");
   var pubCmd = parser.addSubCommand("publish");
-  var helpFlag = parser.addFlag(name="help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
+  // var helpFlag = parser.addFlag(name="help",
+  //                               opts=["-h","--help"],
+  //                               defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
                                defaultValue=false);
@@ -3084,9 +3084,9 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
                                          opts=["--name"]);
   var newName = newParser.addArgument(name="name");
 
-  var newHelpFlag = newParser.addFlag(name="help",
-                                      opts=["-h","--help"],
-                                      defaultValue=false);
+  // var newHelpFlag = newParser.addFlag(name="help",
+  //                                     opts=["-h","--help"],
+  //                                     defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
@@ -3096,9 +3096,9 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
                                  defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
-  var addHelpFlag = addParser.addFlag(name="help",
-                                      opts=["-h","--help"],
-                                      defaultValue=false);
+  // var addHelpFlag = addParser.addFlag(name="help",
+  //                                     opts=["-h","--help"],
+  //                                     defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -3115,7 +3115,7 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  test.assertFalse(helpFlag.hasValue());
+  // test.assertFalse(helpFlag.hasValue());
   test.assertFalse(verFlag.hasValue());
   //parse the options
   parser.parseArgs(argList);
@@ -3135,9 +3135,9 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  test.assertTrue(helpFlag.hasValue());
+  // test.assertTrue(helpFlag.hasValue());
   test.assertTrue(verFlag.hasValue());
-  test.assertFalse(helpFlag.valueAsBool());
+  // test.assertFalse(helpFlag.valueAsBool());
   test.assertFalse(verFlag.valueAsBool());
   test.assertFalse(newLegalName.hasValue());
   //parse the remaining args
@@ -3146,8 +3146,8 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
   test.assertTrue(newVCS.hasValue());
   test.assertTrue(newName.hasValue());
   test.assertFalse(newLegalName.hasValue());
-  test.assertTrue(newHelpFlag.hasValue());
-  test.assertFalse(newHelpFlag.valueAsBool());
+  // test.assertTrue(newHelpFlag.hasValue());
+  // test.assertFalse(newHelpFlag.valueAsBool());
   //ensure the value passed is correct
   test.assertTrue(newVCS.valueAsBool());
   test.assertEqual(newName.value(), "myPackage");
@@ -3173,9 +3173,9 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
   var sysCmd = parser.addSubCommand("system");
   var extCmd = parser.addSubCommand("external");
   var pubCmd = parser.addSubCommand("publish");
-  var helpFlag = parser.addFlag(name="help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
+  // var helpFlag = parser.addFlag(name="help",
+  //                               opts=["-h","--help"],
+  //                               defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
                                defaultValue=false);
@@ -3208,9 +3208,9 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
                                          opts=["--name"]);
   var newName = newParser.addArgument(name="name");
 
-  var newHelpFlag = newParser.addFlag(name="help",
-                                      opts=["-h","--help"],
-                                      defaultValue=false);
+  // var newHelpFlag = newParser.addFlag(name="help",
+  //                                     opts=["-h","--help"],
+  //                                     defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
@@ -3220,9 +3220,9 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
                                  defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
-  var addHelpFlag = addParser.addFlag(name="help",
-                                      opts=["-h","--help"],
-                                      defaultValue=false);
+  // var addHelpFlag = addParser.addFlag(name="help",
+  //                                     opts=["-h","--help"],
+  //                                     defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -3239,7 +3239,7 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  test.assertFalse(helpFlag.hasValue());
+  // test.assertFalse(helpFlag.hasValue());
   test.assertFalse(verFlag.hasValue());
   //parse the options
   parser.parseArgs(argList);
@@ -3259,9 +3259,9 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  test.assertTrue(helpFlag.hasValue());
+  // test.assertTrue(helpFlag.hasValue());
   test.assertTrue(verFlag.hasValue());
-  test.assertFalse(helpFlag.valueAsBool());
+  // test.assertFalse(helpFlag.valueAsBool());
   test.assertFalse(verFlag.valueAsBool());
   test.assertFalse(addPkg.hasValue());
   test.assertFalse(addExt.hasValue());
@@ -3272,8 +3272,8 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
   test.assertTrue(addExt.hasValue());
   test.assertTrue(addPkg.hasValue());
   test.assertTrue(addSys.hasValue());
-  test.assertTrue(addHelpFlag.hasValue());
-  test.assertFalse(addHelpFlag.valueAsBool());
+  // test.assertTrue(addHelpFlag.hasValue());
+  // test.assertFalse(addHelpFlag.valueAsBool());
   //ensure the value passed is correct
   test.assertFalse(addSys.valueAsBool());
   test.assertTrue(addExt.valueAsBool());
@@ -3300,9 +3300,9 @@ proc testMockMasonRun(test: borrowed Test) throws {
   var sysCmd = parser.addSubCommand("system");
   var extCmd = parser.addSubCommand("external");
   var pubCmd = parser.addSubCommand("publish");
-  var helpFlag = parser.addFlag(name="help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
+  // var helpFlag = parser.addFlag(name="help",
+  //                               opts=["-h","--help"],
+  //                               defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
                                defaultValue=false);
@@ -3335,9 +3335,9 @@ proc testMockMasonRun(test: borrowed Test) throws {
                                        numArgs=0..);
   var runPassThrough = runParser.addPassThrough();
 
-  var runHelpFlag = runParser.addFlag(name="help",
-                                      opts=["-h","--help"],
-                                      defaultValue=false);
+  // var runHelpFlag = runParser.addFlag(name="help",
+  //                                     opts=["-h","--help"],
+  //                                     defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
@@ -3347,9 +3347,9 @@ proc testMockMasonRun(test: borrowed Test) throws {
                                  defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
-  var addHelpFlag = addParser.addFlag(name="help",
-                                      opts=["-h","--help"],
-                                      defaultValue=false);
+  // var addHelpFlag = addParser.addFlag(name="help",
+  //                                     opts=["-h","--help"],
+  //                                     defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -3366,7 +3366,7 @@ proc testMockMasonRun(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  test.assertFalse(helpFlag.hasValue());
+  // test.assertFalse(helpFlag.hasValue());
   test.assertFalse(verFlag.hasValue());
   //parse the options
   parser.parseArgs(argList);
@@ -3386,9 +3386,9 @@ proc testMockMasonRun(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  test.assertTrue(helpFlag.hasValue());
+  // test.assertTrue(helpFlag.hasValue());
   test.assertTrue(verFlag.hasValue());
-  test.assertFalse(helpFlag.valueAsBool());
+  // test.assertFalse(helpFlag.valueAsBool());
   test.assertFalse(verFlag.valueAsBool());
   test.assertFalse(runBuild.hasValue());
   test.assertFalse(runShow.hasValue());
@@ -3401,8 +3401,8 @@ proc testMockMasonRun(test: borrowed Test) throws {
   test.assertTrue(runShow.hasValue());
   test.assertFalse(runExample.hasValue());
   test.assertTrue(runPassThrough.hasValue());
-  test.assertTrue(runHelpFlag.hasValue());
-  test.assertFalse(runHelpFlag.valueAsBool());
+  // test.assertTrue(runHelpFlag.hasValue());
+  // test.assertFalse(runHelpFlag.valueAsBool());
   //ensure the value passed is correct
   test.assertFalse(runShow.valueAsBool());
   test.assertTrue(runBuild.valueAsBool());

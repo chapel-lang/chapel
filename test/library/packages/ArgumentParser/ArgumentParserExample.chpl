@@ -16,7 +16,7 @@ proc main(args: []string) throws {
       writeln(i:string + " " + args[i]);
   }
   // create a parser for the main entry point
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
 
   // add a string option that accepts between 1 and 10 values
   var strArg = parser.addOption(name="strArg1",
@@ -37,6 +37,8 @@ proc main(args: []string) throws {
 
   // add a subcommand that has its own parser (defined later)
   var subCmd1 = parser.addSubCommand(cmd="subCmd1");
+
+  parser.setHelpMessage(new CustomHelpMessage());
   try {
     // parse the args
     parser.parseArgs(args);
@@ -63,7 +65,7 @@ proc main(args: []string) throws {
 proc mySubCmd1(args:[?argsD]string) throws {
   writeln("SubCommand1 was called");
   // create a parser object for this subcommand
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitOnError=false);
 
   // add a subcommand option that takes exactly 1 value
   var subCmdArg1 = parser.addOption(name="subCmdArg1",
@@ -88,6 +90,8 @@ proc mySubCmd1(args:[?argsD]string) throws {
   // also define a place to read the passed through values
   // the pattern `--` is commonly used for this purpose and is the default
   var passedThrough = parser.addPassThrough();
+
+  parser.setHelpString(subCmdHelp());
   // try to parse the arguments, catch exceptions
   try {
     parser.parseArgs(args);
@@ -105,4 +109,39 @@ proc mySubCmd1(args:[?argsD]string) throws {
   for passed in passedThrough.values() do writeln(passed);
 }
 
+proc helpMessage() {
+  writeln("Argument Parser Example");
+  writeln();
+  writeln("Demonstrating some of the ArgumentParser functionality");
+  writeln();
+  writeln("USAGE:");
+  writeln("  ArgumentParserExample <PositionalArg> [options] [[--] [passed values] | [subcommand]]");
+  writeln();
+  writeln("ARGUMENTS:");
+  writeln("  positionalArg  A value specified by position");
+  writeln();
+  writeln("OPTIONS:");
+  writeln("  -o,--option    strArg1 1-10 values");
+  writeln("  -q,--types     strArg2 1 or more values");
+  writeln("  --[no-]flagon  boolean flag argument");
+  writeln();
+  writeln("SUBCOMMANDS:");
+  writeln("  subCmd1        A subcommand to try");
+}
 
+proc subCmdHelp() {
+  var msg: string;
+  msg += "Incomplete help for subcommand\n";
+  msg += "OPTIONS:\n";
+  msg += "  -c,--cmdArg1   subCmdArg1 An optional value\n";
+  msg += "  -t,--cmdArg2   subCmdArg2 An optional value";
+  return msg;
+}
+
+
+class CustomHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    helpMessage();
+    exit(exitCode);
+  }
+}

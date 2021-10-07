@@ -491,6 +491,54 @@ module ArgumentParser {
     }
  }
 
+  class HelpMessage {
+    var msg:string;
+
+    proc setMsg(message:string) {
+      msg = message;
+    }
+
+    proc help(exitCode=0) {
+      writeln(msg);
+      exit(exitCode);
+    }
+  }
+
+  record Help {
+    var _usage:string;
+    // keep track of the method used to print the help message
+    var _helpMsg = new HelpMessage();
+
+    proc init () {
+      this.complete();
+      this.genHelp();
+    }
+
+    proc setCustomHelpString(msg:string) {
+      this._helpMsg.setMsg(msg);
+    }
+
+    proc setHelpMessage(in help: HelpMessage) {
+      this._helpMsg = help;
+    }
+
+    proc printHelp(exitCode=0) {
+      _helpMsg.help(exitCode);
+    }
+
+    proc genHelp() {
+      _helpMsg.setMsg("internal generated message");
+    }
+
+    proc setUsageMessage(msg: string) {
+      _usage = msg;
+    }
+
+    proc getUsage() : string {
+      return _usage;
+    }
+  }
+
   /*
   A parser that performs the following functions:
 
@@ -507,6 +555,9 @@ module ArgumentParser {
   .. code-block:: chapel
 
     var parser = new argumentParser();
+
+  :arg exitOnError: Determines if ArgumentParser exits with error info when
+                    an error occurs. Defaults to `true`.
 
   **Limitations**
 
@@ -553,21 +604,53 @@ module ArgumentParser {
     // store subcommand names
     pragma "no doc"
     var _subcommands: list(string);
+    // recognize help flags
+    pragma "no doc"
+    var _helpFlags: list(string);
+    // Help message
+    pragma "no doc"
+    var _help : Help;
+    // exit if error in arguments
+    var _exitOnError: bool;
 
     pragma "no doc"
-    proc init() {
+    proc init(exitOnError=true) {
       _result = new map(string, shared Argument);
       _handlers = new map(string, owned ArgumentHandler);
       _options = new map(string, string);
       _positionals = new list(borrowed Positional);
       _subcommands = new list(string);
+      _help = new Help();
+      _exitOnError = exitOnError;
       this.complete();
       try! {
         // configure to allow consuming of -- if passed from runtime
-
         // storing into variable to avoid memory leak due to compiler bug #18391
         var tmp = addOption(name="dummyDashHandler", opts=["--"], numArgs=0);
+
+        // handle help flag automatically
+        // storing into variable to avoid memory leak due to compiler bug #18391
+        var _tmp = addHelpFlag();
       }
+    }
+
+    pragma "no doc"
+    proc addHelpFlag(name="ArgumentParserAddedHelp",
+                     opts:[?optsD]=["-h","--help"]) throws {
+      _helpFlags.extend(opts);
+      return addFlag(name, opts, defaultValue=false);
+    }
+
+    proc setHelpMessage(in help: HelpMessage) {
+      _help.setHelpMessage(help);
+    }
+
+    proc setHelpString(message: string) {
+      _help.setCustomHelpString(message);
+    }
+
+    proc setUsageMsg(usage: string) {
+      _help.setUsageMessage(usage);
     }
 
     /*
@@ -1063,7 +1146,7 @@ module ArgumentParser {
       }
 
       // check that we consumed everything we expected to
-      if endPos < endIdx then{
+      if endPos < endIdx then {
         throw new ArgumentError("Found some unrecognizable arguments: " +
                                 " ".join(arguments[endPos..<endIdx]));
       }
@@ -1089,9 +1172,26 @@ module ArgumentParser {
 
     :arg arguments: The array of values passed from the command line to `main(args:[]string)`
 
-    :throws: ArgumentError if invalid or undefined command line arguments found in `arguments`
+    :throws: If argumentParser initialized with exitOnError=false, then an ArgumentError is raised if invalid or undefined command line arguments found in `arguments`
     */
     proc parseArgs(arguments:[?argsD] string) throws {
+      // normal operation is to catch parsing error, write help message,
+      // and exit. User may choose to handle errors themselves though.
+      if _exitOnError {
+        try {
+          _tryParseArgs(arguments);
+        } catch ex: Error {
+          writeln(ex.message());
+          _help.printHelp(exitCode=1);
+        }
+      } else {
+        _tryParseArgs(arguments);
+      }
+
+    }
+
+    pragma "no doc"
+    proc _tryParseArgs(arguments:[?argsD] string) throws {
       // TODO: Find out why the in intent is breaking here
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
       var k = 0;
@@ -1130,6 +1230,7 @@ module ArgumentParser {
           argRslt._present = true;
           // if subcommand found, stop processing more args, save for subcmd
           if _subcommands.contains(argElt) then break;
+          if _helpFlags.contains(argElt) then _help.printHelp();
         }
       }
 
@@ -1398,6 +1499,7 @@ module ArgumentParser {
     }
   }
 
+
   // helper to prepare numArgs ranges for use
   pragma "no doc"
   proc _prepareRange(rIn: range(?)) : range throws {
@@ -1448,5 +1550,9 @@ module ArgumentParser {
   pragma "no doc"
   proc debugTrace(msg:string) {
     if DEBUG then try! {stderr.writeln(msg);}
+  }
+
+  proc defaultHelpMessage() {
+    writeln("This is a default help message");
   }
 }
