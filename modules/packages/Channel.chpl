@@ -587,7 +587,7 @@ module Channel {
         var process$ : single bool;
 
         for case in cases {
-            cases.enqueueWaiter(process$, isDone);
+            case.enqueueWaiter(process$, isDone);
         }
 
         unlockSelect(lockOrder);
