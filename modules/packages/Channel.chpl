@@ -223,13 +223,12 @@ module Channel {
         :throws ChannelError: If ``send`` is called on a closed channel.
         */
 
-        proc send(val : eltType) throws {
-            var value = val;
-            send(value, true);
+        proc send(in val : eltType) throws {
+            send(val, true);
         }
 
         pragma "no doc"
-        proc send(ref val : eltType, blocking : bool) : bool throws {
+        proc send(in val : eltType, blocking : bool) : bool throws {
             return this.channelObj.send(val, blocking);
         }
 
@@ -343,7 +342,7 @@ module Channel {
 
         }
 
-        proc send(ref val : eltType, blocking : bool) : bool throws {
+        proc send(in val : eltType, blocking : bool) : bool throws {
             if blocking then lock();
 
             if closed {
