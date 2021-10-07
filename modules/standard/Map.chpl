@@ -293,8 +293,8 @@ module Map {
       return updater(key, val);
     }
 
-    proc setMaxCapacity(maxCapacity: real) {
-      this.table.maxCapacity = maxCapacity;
+    proc setMaxLoadFactor(maxLoadFactor: real) {
+      this.table.maxLoadFactor = maxLoadFactor;
     }
 
     pragma "no doc"
