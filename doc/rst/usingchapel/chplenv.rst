@@ -250,10 +250,12 @@ CHPL_*_COMPILER
      If the ``CC`` and ``CXX`` variables are set, the other variables in
      the above table can be inferred. When these variables are used, the
      following variables can be inferred from them:
+
        * ``CHPL_HOST_COMPILER``, ``CHPL_HOST_CC``, ``CHPL_HOST_CXX``
        * ``CHPL_TARGET_COMPILER``, ``CHPL_TARGET_CC``, ``CHPL_TARGET_CXX``
 
      However:
+
        * Setting any of these inferred variables will disable the
          inference for all of them
        * The ``*TARGET*`` variables above are not inferred from ``CC`` /
