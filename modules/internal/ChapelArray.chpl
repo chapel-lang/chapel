@@ -3448,8 +3448,7 @@ module ChapelArray {
       return this(this.domain.high);
     }
 
-    /* This function is deprecated use .last instead */
-    deprecated "Array back() method is deprecated; use .last instead"
+    deprecated "Array back() method is deprecated; use :proc:`last` instead"
     proc back() {
       return this.last;
     }
@@ -3467,8 +3466,7 @@ module ChapelArray {
       return this(this.domain.low);
     }
 
-    /* This function is deprecated use .first instead */
-    deprecated "Array front() method is deprecated; use .front instead"
+    deprecated "Array front() method is deprecated; use :proc:`first` instead"
     proc front() {
       return this.first;
     }
