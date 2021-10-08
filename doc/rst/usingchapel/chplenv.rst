@@ -231,15 +231,35 @@ CHPL_*_COMPILER
    ``CHPL_TARGET_COMPILER=cray-prgenv-gnu``.
 
    It is sometimes important to be able to provide a particular command
-   to run for C or C++ compilation. In that event, you can set ``CC`` to
-   the command to run for C compilation and ``CXX`` to the command to run
-   for C++ compilation. If the Chapel configuration support cannot detect
-   the compiler family from your setting of ``CC`` / ``CXX`` you will
-   have to explicitly set ``CHPL_*_COMPILER`` as well.  Note that setting
-   ``CC`` and ``CXX`` will impact both the host and target compiler. If
-   you would need different host and target compilers, you can instead
-   set ``CHPL_HOST_CC``, ``CHPL_HOST_CXX``, ``CHPL_TARGET_CC``, and
-   ``CHPL_TARGET_CXX``.
+   to run for C or C++ compilation. The following variables are available
+   to help with that:
+
+        =============== =======================================================
+        Variable        Description
+        =============== =======================================================
+        CC              indicates the C compiler to use (but see note below)
+        CXX             indicates the CXX compiler to use (but see note below)
+        CHPL_HOST_CC    indicates the C compiler for building ``chpl`` itself
+        CHPL_HOST_CXX   indicates the C++ compiler for building ``chpl`` itself
+        CHPL_TARGET_CC  indicates the C compiler used by ``chpl``
+        CHPL_TARGET_CXX indicates the C++ compiler used by ``chpl``
+        =============== =======================================================
+
+   .. note::
+
+     If the ``CC`` and ``CXX`` variables are set, the other variables in
+     the above table can be inferred. When these variables are used, the
+     following variables can be inferred from them:
+       * ``CHPL_HOST_COMPILER``, ``CHPL_HOST_CC``, ``CHPL_HOST_CXX``
+       * ``CHPL_TARGET_COMPILER``, ``CHPL_TARGET_CC``, ``CHPL_TARGET_CXX``
+
+     However:
+       * Setting any of these inferred variables will disable the
+         inference for all of them
+       * The ``*TARGET*`` variables above are not inferred from ``CC`` /
+         ``CXX`` when ``CHPL_TARGET_COMPILER=llvm`` or when working with
+         a PrgEnv compiler.
+
 
 .. _readme-chplenv.CHPL_TARGET_CPU:
 
