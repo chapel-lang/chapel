@@ -489,22 +489,29 @@ module ArgumentParser {
         return "";
       }
     }
- }
+  }
 
+  // this class is made to be extensible so the user can implement their own
+  // help message generation if they choose
   class HelpMessage {
+    // the help message to display on ./progName --help
     var msg:string;
 
     proc setMsg(message:string) {
       msg = message;
     }
 
+    // help method which can be overridden to customize handling
     proc help(exitCode=0) {
       writeln(msg);
       exit(exitCode);
     }
   }
 
-  record Help {
+  // the Help record does the help text generation and is the entry point
+  // for the argumentParser to handle help message requests
+  record HelpHandler {
+    // a usage message, may be part of help or independent
     var _usage:string;
     // keep track of the method used to print the help message
     var _helpMsg = new HelpMessage();
@@ -514,26 +521,34 @@ module ArgumentParser {
       this.genHelp();
     }
 
+    // allow for custom help message to be substituted instead of generated text
     proc setCustomHelpString(msg:string) {
       this._helpMsg.setMsg(msg);
     }
 
+    // set a HelpMessage that will be used to print and handle exiting
     proc setHelpMessage(in help: HelpMessage) {
       this._helpMsg = help;
     }
 
+    // print the help message and exit with given exit code, unless the user
+    // has overridden the HelpMessage.help method to not exit
     proc printHelp(exitCode=0) {
       _helpMsg.help(exitCode);
     }
 
+    // TODO: Implement automatic help message generation based on flags/opts etc
     proc genHelp() {
       _helpMsg.setMsg("internal generated message");
     }
 
+    // set a custom usage message, if desired
+    // TODO: Implement automatic usage message generation
     proc setUsageMessage(msg: string) {
       _usage = msg;
     }
 
+    // return the usage message by itself
     proc getUsage() : string {
       return _usage;
     }
@@ -607,9 +622,9 @@ module ArgumentParser {
     // recognize help flags
     pragma "no doc"
     var _helpFlags: list(string);
-    // Help message
+    // store a Help handler
     pragma "no doc"
-    var _help : Help;
+    var _help : HelpHandler;
     // exit if error in arguments
     var _exitOnError: bool;
 
@@ -620,7 +635,7 @@ module ArgumentParser {
       _options = new map(string, string);
       _positionals = new list(borrowed Positional);
       _subcommands = new list(string);
-      _help = new Help();
+      _help = new HelpHandler();
       _exitOnError = exitOnError;
       this.complete();
       try! {
@@ -634,6 +649,7 @@ module ArgumentParser {
       }
     }
 
+    // setup automatic help handling on -h or --help
     pragma "no doc"
     proc addHelpFlag(name="ArgumentParserAddedHelp",
                      opts:[?optsD]=["-h","--help"]) throws {
@@ -641,14 +657,17 @@ module ArgumentParser {
       return addFlag(name, opts, defaultValue=false);
     }
 
+    // entry point for user to set a custom HelpMessage object
     proc setHelpMessage(in help: HelpMessage) {
       _help.setHelpMessage(help);
     }
 
+    // entry point for user to set a custom help message string
     proc setHelpString(message: string) {
       _help.setCustomHelpString(message);
     }
 
+    // entry point for user to set a custom usage message
     proc setUsageMsg(usage: string) {
       _help.setUsageMessage(usage);
     }
@@ -1550,9 +1569,5 @@ module ArgumentParser {
   pragma "no doc"
   proc debugTrace(msg:string) {
     if DEBUG then try! {stderr.writeln(msg);}
-  }
-
-  proc defaultHelpMessage() {
-    writeln("This is a default help message");
   }
 }

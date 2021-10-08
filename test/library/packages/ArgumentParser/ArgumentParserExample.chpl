@@ -38,7 +38,9 @@ proc main(args: []string) throws {
   // add a subcommand that has its own parser (defined later)
   var subCmd1 = parser.addSubCommand(cmd="subCmd1");
 
+  // set a custom help message handler
   parser.setHelpMessage(new CustomHelpMessage());
+
   try {
     // parse the args
     parser.parseArgs(args);
@@ -91,6 +93,7 @@ proc mySubCmd1(args:[?argsD]string) throws {
   // the pattern `--` is commonly used for this purpose and is the default
   var passedThrough = parser.addPassThrough();
 
+  // set a custom help string
   parser.setHelpString(subCmdHelp());
   // try to parse the arguments, catch exceptions
   try {
@@ -109,6 +112,7 @@ proc mySubCmd1(args:[?argsD]string) throws {
   for passed in passedThrough.values() do writeln(passed);
 }
 
+// define a custom help message writer
 proc helpMessage() {
   writeln("Argument Parser Example");
   writeln();
@@ -129,6 +133,7 @@ proc helpMessage() {
   writeln("  subCmd1        A subcommand to try");
 }
 
+// define a custom help string for the subcommand argument parser help
 proc subCmdHelp() {
   var msg: string;
   msg += "Incomplete help for subcommand\n";
@@ -138,7 +143,7 @@ proc subCmdHelp() {
   return msg;
 }
 
-
+// define a custom help handler to use for main argument parsing help
 class CustomHelpMessage : HelpMessage {
   override proc help(exitCode=0) {
     helpMessage();
