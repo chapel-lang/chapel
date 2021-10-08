@@ -237,6 +237,14 @@ public:
   std::string deprecationMsg;
 
   const char* getDeprecationMsg() const;
+
+  // When printing the deprecation message to the console we typically
+  // want to filter out inline markup used for Sphinx (which is useful
+  // for when generating the docs). See:
+  // https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+  // for information on the markup.
+  const char* getSanitizedDeprecationMsg() const;
+
   void generateDeprecationWarning(Expr* context);
 
 protected:

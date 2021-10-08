@@ -38,6 +38,7 @@
 #include "wellknown.h"
 
 #include <algorithm>
+#include <regex>
 
 //
 // The function that represents the compiler-generated entry point
@@ -493,6 +494,12 @@ const char* Symbol::getDeprecationMsg() const {
   }
 }
 
+const char* Symbol::getSanitizedDeprecationMsg() const {
+  std::string msg = getDeprecationMsg();
+  msg = regex_replace(msg, std::regex("\\:\\w+\\:(`(\\w+)`)?"), "$2");
+  return astr(msg.c_str());
+}
+
 void Symbol::generateDeprecationWarning(Expr* context) {
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
@@ -511,7 +518,7 @@ void Symbol::generateDeprecationWarning(Expr* context) {
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
   if (!compilerGenerated && !parentDeprecated) {
-    USR_WARN(context, "%s", getDeprecationMsg());
+    USR_WARN(context, "%s", getSanitizedDeprecationMsg());
   }
 }
 
