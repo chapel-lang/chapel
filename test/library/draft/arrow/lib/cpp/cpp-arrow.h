@@ -8,27 +8,27 @@ extern "C" {
   void doRead(void*, int);
   void readParquet(void*, int);
 
-  int c_doSize(char*);
-  int cpp_getSize(char*);
+  int c_doSize(const char*);
+  int cpp_getSize(const char*);
 
-  void c_readColumnByIndex(char* filename, void* chpl_arr, int colNum, int numElems);
-  void cpp_readColumnByIndex(char* filename, void* chpl_arr, int colNum, int numElems);
+  void c_readColumnByIndex(const char* filename, void* chpl_arr, int colNum, int numElems);
+  void cpp_readColumnByIndex(const char* filename, void* chpl_arr, int colNum, int numElems);
 
-  void c_readColumnByName(char* filename, void* chpl_arr, char* colname, int numElems);
-  void cpp_readColumnByName(char* filename, void* chpl_arr, char* colname, int numElems);
+  void c_readColumnByName(const char* filename, void* chpl_arr, const char* colname, int numElems);
+  void cpp_readColumnByName(const char* filename, void* chpl_arr, const char* colname, int numElems);
 
-  const char* c_getType(char* filename, char* colname);
-  const char* cpp_getType(char* filename, char* colname);
+  const char* c_getType(const char* filename, const char* colname);
+  const char* cpp_getType(const char* filename, const char* colname);
 
-  void cpp_writeColumnToParquet(char* filename, void* chpl_arr,
-                                int colnum, char* dsetname, int numelems,
+  void cpp_writeColumnToParquet(const char* filename, void* chpl_arr,
+                                int colnum, const char* dsetname, int numelems,
                                 int rowGroupSize);
-  void c_writeColumnToParquet(char* filename, void* chpl_arr,
-                              int colnum, char* dsetname, int numelems,
+  void c_writeColumnToParquet(const char* filename, void* chpl_arr,
+                              int colnum, const char* dsetname, int numelems,
                               int rowGroupSize);
   
-  void c_lowLevelRead(char* filename, void* chpl_arr, int numElems);
-  int cpp_lowLevelRead(char* filename, void* chpl_arr, int numElems);
+  void c_lowLevelRead(const char* filename, void* chpl_arr, int numElems);
+  int cpp_lowLevelRead(const char* filename, void* chpl_arr, int numElems);
     
     
  
