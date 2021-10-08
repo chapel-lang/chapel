@@ -1,5 +1,5 @@
    use Path;
-   use Spawn;
+   use Subprocess;
 
    writeln(isAbsPath("/foo/bar"));
 

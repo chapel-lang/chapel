@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 use Time;
 
 var sub = spawn(["sleep", "60"]);

@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 proc main {
   var sub: subprocess(iokind.dynamic, false);

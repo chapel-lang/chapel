@@ -1,6 +1,6 @@
 use MasonTest;
 use MasonUtils;
-use Spawn;
+use Subprocess;
 
 
 proc checkExitStatus(cmd) {

@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 var sub = spawnshell("echo moo");
 sub.wait();
