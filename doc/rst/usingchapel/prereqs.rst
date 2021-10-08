@@ -37,8 +37,8 @@ In addition, several optional components have additional requirements:
 
   * Python 3.7 or newer is required if you want to use chpldoc, c2chapel,
     or Chapel's test system. These additionally require ``python3-devel``
-    or equivalent package; ``python3`` and ``pip3`` commands; and the
-    ``venv`` Pyton package.
+    or the equivalent package; ``python3`` and ``pip3`` commands; and the
+    ``venv`` Python package.
 
   * ``cmake`` 3.13.4 or later is required to build the bundled LLVM or
     to build the complete documentation
