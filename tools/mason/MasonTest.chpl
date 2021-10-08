@@ -49,10 +49,8 @@ var files: list(string);
 proc masonTest(args: [] string) throws {
 
   var parser = new argumentParser();
+  parser.setHelpMessage(new MasonTestHelpMessage());
 
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
   var runFlag = parser.addFlag(name="run",
                                opts=["--no-run"],
                                defaultValue=false);
@@ -68,18 +66,7 @@ proc masonTest(args: [] string) throws {
   // go to the runtime?
   var otherArgs = parser.addArgument(name="others", numArgs=0..);
 
-  try! {
-    parser.parseArgs(args);
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonTestHelp();
-    exit(1);
-  }
-  if helpFlag.valueAsBool() {
-    masonTestHelp();
-    exit(0);
-  }
+  parser.parseArgs(args);
 
   var skipUpdate = MASON_OFFLINE;
   var show = showFlag.valueAsBool();

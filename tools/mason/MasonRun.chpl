@@ -31,6 +31,8 @@ use TOML;
 proc masonRun(args: [] string) throws {
 
   var parser = new argumentParser();
+  parser.setHelpMessage(new MasonRunHelpMessage());
+
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var releaseFlag = parser.addFlag(name="release", defaultValue=false);
   var buildFlag = parser.addFlag(name="build", defaultValue=false);
@@ -41,24 +43,10 @@ proc masonRun(args: [] string) throws {
 
   var exampleOpts = parser.addOption(name="example",
                                      numArgs=0..);
-  var helpFlag = parser.addFlag(name="help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
 
   var passArgs = parser.addPassThrough();
 
-  try {
-    parser.parseArgs(args);
-  } catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonRunHelp();
-    exit(1);
-  }
-
-  if helpFlag.valueAsBool() {
-    masonRunHelp();
-    exit(0);
-  }
+  parser.parseArgs(args);
 
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
@@ -145,6 +133,8 @@ proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws 
 private proc masonBuildRun(args: [?d] string) {
 
   var parser = new argumentParser();
+  parser.setHelpMessage(new MasonRunHelpMessage());
+
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var releaseFlag = parser.addFlag(name="release", defaultValue=false);
   var buildFlag = parser.addFlag(name="build", defaultValue=false);
@@ -155,19 +145,10 @@ private proc masonBuildRun(args: [?d] string) {
 
   var exampleOpts = parser.addOption(name="example",
                                      numArgs=0..);
-  var helpFlag = parser.addFlag(name="help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
 
   var passArgs = parser.addPassThrough();
 
-  try! {
-    parser.parseArgs(args);
-  } catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonRunHelp();
-    exit(1);
-  }
+  parser.parseArgs(args);
 
   try! {
     var example = false;

@@ -40,10 +40,8 @@ Initialises a library project in a project directory
 proc masonInit(args: [] string) throws {
 
   var parser = new argumentParser();
+  parser.setHelpMessage(new MasonInitHelpMessage());
 
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
   var defaultFlag = parser.addFlag(name="default",
                                    opts=["-d","--default"],
                                    defaultValue=false);
@@ -53,18 +51,8 @@ proc masonInit(args: [] string) throws {
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var dirArg = parser.addArgument(name="directory", numArgs=0..1);
 
-  try {
-    parser.parseArgs(args);
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonInitHelp();
-    exit(1);
-  }
-  if helpFlag.valueAsBool() {
-    masonInitHelp();
-    exit(0);
-  }
+
+  parser.parseArgs(args);
 
   try! {
     var dirName = '';

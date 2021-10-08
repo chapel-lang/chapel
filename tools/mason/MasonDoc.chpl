@@ -27,23 +27,9 @@ use MasonUtils;
 proc masonDoc(args: [] string) throws {
 
   var parser = new argumentParser();
+  parser.setHelpMessage(new MasonDocHelpMessage());
 
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
-  try {
-    parser.parseArgs(args);
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonDocHelp();
-    exit(1);
-  }
-
-  if helpFlag.valueAsBool() {
-    masonDocHelp();
-    exit(0);
-  }
+  parser.parseArgs(args);
 
   try! {
     const tomlName = 'Mason.toml';

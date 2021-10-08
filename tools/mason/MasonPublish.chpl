@@ -46,10 +46,8 @@ proc masonPublish(args: [?d] string) {
 proc masonPublish(ref args: list(string)) throws {
 
   var parser = new argumentParser();
+  parser.setHelpMessage(new MasonPublishHelpMessage());
 
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
   var dryFlag = parser.addFlag(name="dry-run",
                                defaultValue=false);
   var createFlag = parser.addFlag(name="create-registry",
@@ -61,18 +59,8 @@ proc masonPublish(ref args: list(string)) throws {
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var registryArg = parser.addArgument(name="registry", numArgs=0..1);
 
-  try {
-    parser.parseArgs(args.toArray());
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonPublishHelp();
-    exit(1);
-  }
-  if helpFlag.valueAsBool() {
-    masonPublishHelp();
-    exit(0);
-  }
+  parser.parseArgs(args.toArray());
+
   try! {
     var dry = dryFlag.valueAsBool();
     var checkFlag = checkArg.valueAsBool();

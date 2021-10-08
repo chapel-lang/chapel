@@ -21,8 +21,171 @@
 
 /* A help module for the mason package manager */
 
+use ArgumentParser;
 use Help;
 use MasonUtils;
+
+
+class MasonHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonRunHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonRunHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonBuildHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonBuildHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonNewHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonNewHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonInitHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonInitHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonSearchHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonSearchHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonModifyHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonModifyHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonUpdateHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonUpdateHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonEnvHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonEnvHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonExternalHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonExternalHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonExternalFindHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonExternalFindHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonExternalInfoHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonExternalInfoHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonExternalSearchHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonExternalSearchHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonInstallHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonInstallHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonUninstallHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonUninstallHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonCompilerHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonCompilerHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonTestHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonTestHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonSystemHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonSystemHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonSystemSearchHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonSystemSearchHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonSystemPcHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonSystemPcHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonCleanHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonCleanHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonPublishHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonPublishHelp();
+    exit(exitCode);
+  }
+}
+
+class MasonDocHelpMessage : HelpMessage {
+  override proc help(exitCode=0) {
+    masonDocHelp();
+    exit(exitCode);
+  }
+}
 
 
 proc masonHelp() {

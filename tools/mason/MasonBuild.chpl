@@ -43,24 +43,12 @@ proc masonBuild(args: [] string) throws {
   var exampleOpts = parser.addOption(name="example",
                                      numArgs=0..);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
-  var helpFlag = parser.addFlag(name="help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
 
+  parser.setHelpMessage(new MasonBuildHelpMessage());
   var passArgs = parser.addPassThrough();
 
-  try {
-    parser.parseArgs(args);
-  } catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonBuildHelp();
-    exit(1);
-  }
 
-  if helpFlag.valueAsBool() {
-    masonBuildHelp();
-    exit(0);
-  }
+  parser.parseArgs(args);
 
   if passArgs.hasValue() && exampleOpts._present {
     throw new owned MasonError("Examples do not support `--` syntax");

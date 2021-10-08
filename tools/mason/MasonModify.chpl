@@ -30,28 +30,13 @@ use TOML;
 proc masonModify(args: [] string) throws {
 
   var parser = new argumentParser();
-
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
+  parser.setHelpMessage(new MasonModifyHelpMessage());
 
   var extFlag = parser.addFlag("external", defaultValue=false);
   var sysFlag = parser.addFlag("system", defaultValue=false);
   var depArg = parser.addArgument("dep", numArgs=0..1);
 
-  try {
-    parser.parseArgs(args);
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonModifyHelp();
-    exit(1);
-  }
-
-  if helpFlag.valueAsBool() {
-    masonModifyHelp();
-    exit(0);
-  }
+  parser.parseArgs(args);
 
   if !depArg.hasValue() {
     stderr.writeln("package name missing value");

@@ -115,27 +115,12 @@ proc MASON_REGISTRY {
 proc masonEnv(args) {
 
   var parser = new argumentParser();
-
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
+  parser.setHelpMessage(new MasonEnvHelpMessage());
 
   // TODO: When automatic help is generated, make sure this isn't documented
   var debugFlag = parser.addFlag("debug", defaultValue=false);
 
-  try! {
-    parser.parseArgs(args);
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonEnvHelp();
-    exit(1);
-  }
-
-  if helpFlag.valueAsBool() {
-    masonEnvHelp();
-    exit(0);
-  }
+  parser.parseArgs(args);
 
   const debug = debugFlag.valueAsBool();
 
