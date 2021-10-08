@@ -61,8 +61,8 @@ help-source:
 
 docs: FORCE
 	@COMP_DOCS_ERROR=0 ; \
-	(cd ../compiler/next && \
-	 ($(MAKE) -f Makefile.help libchplcomp-docs || COMP_DOCS_ERROR=1)) ; \
+	(cd ../compiler/next && $(MAKE) -f Makefile.help libchplcomp-docs) || \
+	 COMP_DOCS_ERROR=1 ; \
 	$(MAKE) html-release || $(MAKE) error_docs ; \
 	if [ $$COMP_DOCS_ERROR -ne 0 -o ! -d $(COMPILER_INTERNALS_DOXYGEN) ] ; \
 	  then \
