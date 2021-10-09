@@ -19,7 +19,7 @@
  */
 
 /* Version as of Chapel 1.25 - to be updated each release */
-const spackVersion = new VersionInfo('0.16.3');
+const spackVersion = new VersionInfo('0.15.4');
 const major = spackVersion.major:string;
 const minor = spackVersion.minor:string;
 const spackBranch = 'releases/v' + '.'.join(major, minor);
@@ -72,8 +72,14 @@ proc masonExternal(args: [] string) {
     exit(0);
   }
 
-  if versionFlag.valueAsBool() then printSpackVersion();
-  if specFlag.valueAsBool() then specHelp();
+  if versionFlag.valueAsBool() {
+    printSpackVersion();
+    exit(0);
+  }
+  if specFlag.valueAsBool() {
+    specHelp();
+    exit(0);
+  }
 
   try! {
     if setupFlag.valueAsBool() {
@@ -143,7 +149,7 @@ proc masonExternal(args: [] string) {
         when "info" do spkgInfo(cmdArgs);
         when "find" do findSpkg(cmdArgs);
         otherwise {
-          writeln('error: no such subcommand');
+          writeln('error: no such subcommand %s'.format(usedCmd));
           writeln('try mason external --help');
           exit(1);
         }
@@ -268,8 +274,13 @@ private proc printSpackVersion() {
 /* Returns spack version */
 proc getSpackVersion : VersionInfo {
   const command = "spack --version";
-  const version = getSpackResult(command,true).strip();
-  return new VersionInfo(version);
+  const tmpVersion = getSpackResult(command,true).strip();
+  // on systems with their own spack, spack --version can provide
+  // a version string like x.x.x-xxxx-hash
+  // partitioning the string allows us to separate the major.minor.bug
+  // from the remaining values
+  const version = tmpVersion.partition("-");
+  return new VersionInfo(version[0]);
 }
 
 /* Lists available spack packages */

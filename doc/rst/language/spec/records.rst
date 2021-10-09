@@ -558,7 +558,7 @@ the signature:
 
 .. code-block:: chapel
 
-   proc =(ref lhs:R, rhs:R) : void where lhs.type == rhs.type;
+   operator =(ref lhs:R, rhs:R) : void where lhs.type == rhs.type;
 
 In it, the value of each field of the record on the right-hand side is
 assigned to the corresponding field of the record on the left-hand side.

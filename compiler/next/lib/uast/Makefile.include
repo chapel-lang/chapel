@@ -33,6 +33,7 @@ NEXT_UAST_SRCS =                                 \
   BracketLoop.cpp \
   Break.cpp \
   Builder.cpp \
+  BuilderResult.cpp \
   BytesLiteral.cpp \
   Call.cpp \
   Catch.cpp \

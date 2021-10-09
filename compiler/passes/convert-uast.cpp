@@ -186,6 +186,11 @@ struct Converter {
     return nullptr;
   }
 
+  Expr* visit(const uast::Require* node) {
+    INT_FATAL("TODO");
+    return nullptr;
+  }
+
   BlockStmt* visit(const uast::Import* node) {
     INT_FATAL("TODO");
     return nullptr;

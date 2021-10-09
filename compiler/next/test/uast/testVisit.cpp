@@ -31,7 +31,7 @@
 using namespace chpl;
 using namespace uast;
 
-static Builder::Result makeAST(Context* ctx, const uast::Module*& modOut) {
+static BuilderResult makeAST(Context* ctx, const uast::Module*& modOut) {
   auto builder = Builder::build(ctx, "path/to/test.chpl");
   Builder* b   = builder.get();
   Location dummyLoc(UniqueString::build(ctx, "path/to/test.chpl"));
@@ -50,22 +50,21 @@ static Builder::Result makeAST(Context* ctx, const uast::Module*& modOut) {
     b->addToplevelExpression(std::move(block));
   }
 
-  Builder::Result r = b->result();
-  assert(r.errors.size() == 0);
-  assert(r.topLevelExpressions.size() == 1);
-  assert(r.topLevelExpressions[0]->isModule());
-  auto module = r.topLevelExpressions[0]->toModule();
-  assert(0 == module->name().compare("test"));
-  assert(r.astToLocation.size() == 5); // +1 module
-  assert(module->stmt(0)->isBlock());
-  const Block* block = module->stmt(0)->toBlock();
+  BuilderResult r = b->result();
+  assert(!r.numErrors());
+  auto mod = r.singleModule();
+  assert(mod);
+  assert(0 == mod->name().compare("test"));
+  //assert(r.astToLocation.size() == 5); // +1 module
+  assert(mod->stmt(0)->isBlock());
+  const Block* block = mod->stmt(0)->toBlock();
   assert(block);
   assert(block->numStmts() == 3);
   assert(block->stmt(0)->isIdentifier());
   assert(block->stmt(1)->isIdentifier());
   assert(block->stmt(2)->isIdentifier());
 
-  modOut = module;
+  modOut = mod;
   return r;
 }
 
