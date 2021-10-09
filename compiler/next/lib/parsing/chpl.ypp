@@ -179,12 +179,6 @@
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
-  // for extern_export_decl_stmt_start
-  struct CommentsAndLinkage {
-    std::vector<ParserComment>* comments;
-    LinkageTag linkage;
-  };
-
   // A struct for storing a partially constructed function prototype
   // during parsing for linkage_spec/fn_decl_stmt/etc
   // It is just saving some components of a function to be used
@@ -193,7 +187,7 @@
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
     Decl::Visibility visibility;
-    Function::Linkage linkage;
+    Decl::Linkage linkage;
     Expression* linkageNameExpr;
     bool isInline;
     bool isOverride;
@@ -210,7 +204,7 @@
     ParserExprList* body;
   };
 
-  // a struct to store the values in module_decl_start
+  // A struct to thread along some pieces of a module before it is built.
   struct ModuleParts {
     std::vector<ParserComment>* comments;
     Decl::Visibility visibility;
@@ -218,10 +212,12 @@
     PODUniqueString name;
   };
 
-  // a struct to store the values in enum_header_lcbr
+  // A struct to thread along some pieces of a type before it is built.
   struct TypeDeclParts {
     std::vector<ParserComment>* comments;
     Decl::Visibility visibility;
+    Decl::Linkage linkage;
+    Expression* linkageName;
     PODUniqueString name;
     asttags::ASTTag tag;
   };
@@ -276,7 +272,7 @@
     Formal::Intent intentTag;
     Function::Kind functionKind;
     Function::ReturnIntent returnTag;
-    LinkageTag linkageTag;
+    Decl::Linkage linkageTag;
     Module::Kind moduleKind;
     New::Management newManagement;
     TaskVar::Intent taskIntent;
@@ -293,7 +289,6 @@
 
     // values that are temporary groupings
     BlockOrDo blockOrDo;
-    CommentsAndLinkage commentsAndLinkage;
     CommentsAndStmt commentsAndStmt;
     TypeDeclParts typeDeclParts;
     FunctionParts functionParts;
@@ -561,7 +556,6 @@
 %type <commentsAndStmt> inner_class_level_stmt
 %type <commentsAndStmt> forwarding_decl_stmt forwarding_decl_start
 %type <commentsAndStmt> extern_export_decl_stmt
-%type <commentsAndLinkage> extern_export_decl_stmt_start
 %type <commentsAndStmt> extern_block_stmt
 %type <commentsAndStmt> return_stmt
 %type <commentsAndStmt> try_stmt
@@ -572,8 +566,11 @@
 
 %type <variableKind> var_decl_type
 
-%type <commentsAndStmt> type_alias_decl_stmt type_alias_decl_stmt_start
-%type <expr> type_alias_decl_stmt_inner
+%type <commentsAndStmt> type_alias_decl_stmt
+%type <variableKind> type_alias_decl_stmt_start
+%type <exprList> type_alias_decl_stmt_inner_ls
+%type <commentsAndStmt> type_alias_decl_stmt_inner
+
 %type <functionParts> fn_decl_stmt
 %type <commentsAndStmt> fn_decl_stmt_complete
 %type <commentsAndStmt> class_decl_stmt
@@ -629,7 +626,7 @@
 %type <expr> fn_decl_receiver_expr
 %type <functionKind> proc_iter_or_op
 %type <functionParts> linkage_spec
-%type <linkageTag> extern_or_export
+%type <linkageTag> extern_or_export extern_export_decl_stmt_start
 %type <expr> intent_expr
 %type <taskIntent> task_var_prefix
 
@@ -1194,9 +1191,11 @@ import_ls:
 
 require_stmt:
   TREQUIRE expr_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Require::build(BUILDER, LOC(@$), context->consumeList($2));
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 ;
 
 assignment_stmt:
@@ -1421,88 +1420,95 @@ forwarding_decl_start:
 ;
 
 extern_or_export:
-  TEXTERN { $$ = LinkageTag_EXTERN; }
-| TEXPORT { $$ = LinkageTag_EXPORT; }
+  TEXTERN { $$ = Decl::EXTERN; }
+| TEXPORT { $$ = Decl::EXPORT; }
 ;
 
 extern_export_decl_stmt_start:
   extern_or_export
-    {
-      CommentsAndLinkage cl = {context->gatherComments(@1), $1};
-      $$ = cl;
-    }
+  {
+    // Sets the start location only if it is still unset.
+    context->noteDeclStartLoc(@1);
+    $$ = context->noteLinkage($1);
+  }
 ;
 
+/*
+  Hold onto these in case the current way breaks.
+
+  extern_export_decl_stmt_start TRECORD ident_def opt_inherit
+  TLCBR class_level_stmt_ls TRCBR
+  {
+    auto loc = context->declStartL
+  }
+| extern_export_decl_stmt_start STRINGLITERAL TRECORD ident_def opt_inherit
+  TLCBR class_level_stmt_ls TRCBR
+  {
+  }
+| extern_export_decl_stmt_start TUNION ident_def opt_inherit
+  TLCBR class_level_stmt_ls TRCBR
+  {
+  }
+| extern_export_decl_stmt_start STRINGLITERAL TUNION ident_def opt_inherit
+  TLCBR class_level_stmt_ls TRCBR
+  {
+  }
+
+*/
+
 extern_export_decl_stmt:
-  extern_export_decl_stmt_start TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      CommentsAndLinkage cl = $1;
-      //auto comments = context->gatherComments(@7);
-      // TODO: store comments into the generated list
-      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
-      $$ = cs;
-    }
-| extern_export_decl_stmt_start STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      CommentsAndLinkage cl = $1;
-      //auto comments = context->gatherComments(@8);
-      // TODO: store comments into the generated list
-      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
-      $$ = cs;
-    }
-
-| extern_export_decl_stmt_start TUNION ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      CommentsAndLinkage cl = $1;
-      //auto comments = context->gatherComments(@7);
-      // TODO: store comments into the generated list
-      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
-      $$ = cs;
-    }
-| extern_export_decl_stmt_start STRINGLITERAL TUNION ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      CommentsAndLinkage cl = $1;
-      //auto comments = context->gatherComments(@8);
-      // TODO: store comments into the generated list
-      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
-      $$ = cs;
-    }
-
+  extern_export_decl_stmt_start class_start opt_inherit
+  TLCBR class_level_stmt_ls TRCBR
+  {
+    $$ = context->buildAggregateTypeDecl(@1, $2, @3, $3, @4, $5, @6);
+    context->exitScope($2.tag, $2.name);
+  }
+| extern_export_decl_stmt_start STRINGLITERAL class_start opt_inherit
+  TLCBR class_level_stmt_ls TRCBR
+  {
+    // Set the linkage name since it will be nullptr otherwise.
+    $3.linkageName = $2;
+    $$ = context->buildAggregateTypeDecl(@1, $3, @4, $4, @5, $6, @7);
+    context->exitScope($3.tag, $3.name);
+  }
 | extern_export_decl_stmt_start opt_expr fn_decl_stmt
-    {
-      CommentsAndLinkage cl = $1;
-      Expression* optExpr = $2;
-      FunctionParts fp = $3;
-      LinkageTag tag = cl.linkage;
-      if (tag == LinkageTag_EXTERN)
-        fp.linkage = Function::EXTERN;
-      else if (tag == LinkageTag_EXPORT)
-        fp.linkage = Function::EXPORT;
-      else
-        assert(false && "extern_export returned invalid linkage");
+  {
+    auto loc = context->declStartLoc(@1);
 
-      if (fp.comments)
-        delete fp.comments;
-      fp.comments = cl.comments;
-      fp.linkageNameExpr = optExpr;
+    Expression* optExpr = $2;
+    FunctionParts fp = $3;
 
-      $$ = context->buildFunctionDecl(@$, fp);
+    auto commentList = context->appendList(context->makeList(),
+                                           fp.comments);
+    if (fp.comments) {
+      delete fp.comments;
     }
 
-| extern_export_decl_stmt_start opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
-    {
-      CommentsAndLinkage cl = $1;
-      context->clearComments();
-      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
-      $$ = cs;
-    }
+    auto comments = context->gatherCommentsFromList(commentList, loc);
+
+    fp.linkage = $1;
+    fp.comments = comments;
+    fp.linkageNameExpr = optExpr;
+
+    $$ = context->buildFunctionDecl(@$, fp);
+  }
+| extern_export_decl_stmt_start opt_expr
+  {
+    // This will be consumed when building the first variable in the list.
+    context->storeVarDeclLinkageName($2);
+  }
+  var_decl_type var_decl_stmt_inner_ls TSEMI
+  {
+    $$ = context->buildVarOrMultiDecl(@$, $5);
+    context->resetDeclState();
+  }
 ;
 
 extern_block_stmt:
   TEXTERN EXTERNCODE
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    $$ = context->buildExternBlockStmt(@1, $2);
+  }
 ;
 
 loop_stmt:
@@ -1765,6 +1771,8 @@ ifvar:
   {
     auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
                                    Decl::DEFAULT_VISIBILITY,
+                                   Decl::DEFAULT_LINKAGE,
+                                   /*linkageName*/ nullptr,
                                    Variable::VAR,
                                    /*isConfig*/ false,
                                    context->currentScopeIsAggregate(),
@@ -1776,6 +1784,8 @@ ifvar:
   {
     auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
                                    Decl::DEFAULT_VISIBILITY,
+                                   Decl::DEFAULT_LINKAGE,
+                                   /*linkageName*/ nullptr,
                                    Variable::CONST,
                                    /*isConfig*/ false,
                                    context->currentScopeIsAggregate(),
@@ -1913,6 +1923,8 @@ catch_expr_inner:
   ident_def
   {
     $$ = Variable::build(BUILDER, LOC(@$), $1, Decl::DEFAULT_VISIBILITY,
+                         Decl::DEFAULT_LINKAGE,
+                         /*linkageName*/ nullptr,
                          Variable::VAR,
                          /*isConfig*/ false,
                          /*isField*/ false,
@@ -1922,6 +1934,8 @@ catch_expr_inner:
 | ident_def TCOLON expr
   {
     $$ = Variable::build(BUILDER, LOC(@$), $1, Decl::DEFAULT_VISIBILITY,
+                         Decl::DEFAULT_LINKAGE,
+                         /*linkageName*/ nullptr,
                          Variable::VAR,
                          /*isConfig*/ false,
                          /*isField*/ false,
@@ -1993,19 +2007,9 @@ class_decl_stmt:
 
 class_start:
   class_tag ident_def
-    {
-      // take into account location of public/private, if any
-      auto loc = context->declStartLoc(@1);
-      context->enterScope($1, $2);
-
-      TypeDeclParts parts = {context->gatherComments(loc),
-                             context->visibility,
-                             $2,
-                             $1};
-      $$ = parts;
-
-      context->clearComments();
-    }
+  {
+    $$ = context->enterScopeAndBuildTypeDeclParts(@1, $2, $1);
+  }
 ;
 
 class_tag:
@@ -2059,19 +2063,9 @@ enum_decl_stmt:
 
 enum_header_lcbr:
   TENUM ident_def TLCBR
-    {
-      // take into account location of public/private, if any
-      auto loc = context->declStartLoc(@1);
-      context->enterScope(asttags::Enum, $2);
-
-      TypeDeclParts parts = {context->gatherComments(loc),
-                             context->visibility,
-                             $2,
-                             asttags::Enum};
-      $$ = parts;
-
-      context->clearComments();
-    }
+  {
+    $$ = context->enterScopeAndBuildTypeDeclParts(@1, $2, asttags::Enum);
+  }
 ;
 
 enum_ls:
@@ -2422,49 +2416,69 @@ lifetime_ident:
 ;
 
 type_alias_decl_stmt:
-  type_alias_decl_stmt_start type_alias_decl_stmt_inner TSEMI
-    {
-      $$ = context->finishStmt($1); // TODO
-    }
+  type_alias_decl_stmt_start type_alias_decl_stmt_inner_ls TSEMI
+  {
+    $$ = context->buildVarOrMultiDecl(@$, $2);
+    context->resetDeclState();
+  }
 ;
 
 type_alias_decl_stmt_start:
   TTYPE
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    $$ = context->noteVarDeclKind(Variable::TYPE);
+  }
 | TCONFIG TTYPE
-    {
-      $$ = TODOSTMT(@$);
-    }
-
+  {
+    $$ = context->noteVarDeclKind(Variable::TYPE);
+    context->noteIsVarDeclConfig(true);
+  }
 | TEXTERN TTYPE
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    $$ = context->noteVarDeclKind(Variable::TYPE);
+    context->noteLinkage(Decl::EXTERN);
+  }
 ;
 
+type_alias_decl_stmt_inner_ls:
+  type_alias_decl_stmt_inner
+  {
+    $$ = context->makeList($1);
+  }
+| type_alias_decl_stmt_inner TCOMMA type_alias_decl_stmt_inner_ls
+  {
+    $$ = context->appendList($3, $1);
+  }
+;
 
 type_alias_decl_stmt_inner:
   ident_def opt_init_type
-    {
-      // set name to $1
-      $$ = TODOEXPR(@$);
-    }
-| ident_def opt_init_type TCOMMA type_alias_decl_stmt_inner
-    {
-      // set name to $1
-      // add new var to multivar
-      $$ = TODOEXPR(@$);
-    }
+  {
+    // TODO (dlongnecke-cray): Add a helper to build this and var_decl_stmt.
+    auto node = Variable::build(BUILDER, LOC(@$), $1,
+                                context->visibility,
+                                context->linkage,
+                                context->consumeVarDeclLinkageName(),
+                                context->varDeclKind,
+                                context->isVarDeclConfig,
+                                context->currentScopeIsAggregate(),
+                                /*typeExpression*/ nullptr,
+                                toOwned($2));
+      // Gather the comments like a statement does.
+      $$ = STMT(@1, node.release());
+      context->clearComments();
+  }
 ;
 
 opt_init_type:
-    { $$ = nullptr; }
+  { $$ = nullptr; }
 | TASSIGN type_level_expr
-    { $$ = $2; }
+  { $$ = $2; }
 | TASSIGN array_type
-    { $$ = TODOEXPR(@$); } // Cannot be a type_level_expr as expr inherits from type_level_expr.
+  {
+    // Cannot be a type_level_expr as expr inherits from type_level_expr.
+    $$ = $2;
+  }
 ;
 
 var_decl_type:
@@ -2506,8 +2520,10 @@ var_decl_stmt_inner_ls:
 var_decl_stmt_inner:
   ident_def opt_type opt_init_expr
     {
-      auto varDecl = Variable::build(BUILDER, LOC(@$),
-                                     $1, context->visibility,
+      auto varDecl = Variable::build(BUILDER, LOC(@$), $1,
+                                     context->visibility,
+                                     context->linkage,
+                                     context->consumeVarDeclLinkageName(),
                                      context->varDeclKind,
                                      context->isVarDeclConfig,
                                      context->currentScopeIsAggregate(),
@@ -2520,6 +2536,7 @@ var_decl_stmt_inner:
     {
       auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
                                         context->visibility,
+                                        context->linkage,
                                         context->varDeclKind,
                                         context->consumeList($2),
                                         toOwned($4), toOwned($5));
@@ -2531,23 +2548,29 @@ var_decl_stmt_inner:
 tuple_var_decl_component:
   TUNDERSCORE
     {
-      auto varDecl = Variable::build(BUILDER, LOC(@$),
-                                     $1, context->visibility,
+      auto varDecl = Variable::build(BUILDER, LOC(@$), $1,
+                                     context->visibility,
+                                     context->linkage,
+                                     context->consumeVarDeclLinkageName(),
                                      context->varDeclKind,
                                      context->isVarDeclConfig,
                                      context->currentScopeIsAggregate(),
-                                     nullptr, nullptr);
+                                     /*typeExpression*/ nullptr,
+                                     /*typeExpression*/ nullptr);
       $$ = varDecl.release();
     }
 
 | ident_def
     {
-      auto varDecl = Variable::build(BUILDER, LOC(@$),
-                                     $1, context->visibility,
+      auto varDecl = Variable::build(BUILDER, LOC(@$), $1,
+                                     context->visibility,
+                                     context->linkage,
+                                     context->consumeVarDeclLinkageName(),
                                      context->varDeclKind,
                                      context->isVarDeclConfig,
                                      context->currentScopeIsAggregate(),
-                                     nullptr, nullptr);
+                                     /*typeExpression*/ nullptr,
+                                     /*initExpression*/ nullptr);
       $$ = varDecl.release();
     }
 
@@ -2555,9 +2578,11 @@ tuple_var_decl_component:
     {
       auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
                                         context->visibility,
+                                        context->linkage,
                                         context->varDeclKind,
                                         context->consumeList($2),
-                                        nullptr, nullptr);
+                                        /*typeExpression*/ nullptr,
+                                        /*initExpression*/ nullptr);
       $$ = tupleDecl.release();
     }
 ;

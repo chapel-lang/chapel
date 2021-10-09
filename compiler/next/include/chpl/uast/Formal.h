@@ -62,17 +62,20 @@ class Formal final : public VarLikeDecl {
          int8_t initExpressionChildNum)
     : VarLikeDecl(asttags::Formal, std::move(children),
                   Decl::DEFAULT_VISIBILITY,
+                  Decl::DEFAULT_LINKAGE,
+                  /*linkageNameChildNum*/ -1,
                   name,
                   (IntentList)((int)intent),
                   typeExpressionChildNum,
-                  initExpressionChildNum)
-  { }
+                  initExpressionChildNum) {
+  }
 
   bool contentsMatchInner(const ASTNode* other) const override {
     const Formal* lhs = this;
     const Formal* rhs = (const Formal*) other;
     return lhs->varLikeDeclContentsMatchInner(rhs);
   }
+
   void markUniqueStringsInner(Context* context) const override {
     varLikeDeclMarkUniqueStringsInner(context);
   }

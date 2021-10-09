@@ -28,24 +28,38 @@ namespace uast {
 owned<Variable>
 Variable::build(Builder* builder, Location loc, UniqueString name,
                 Decl::Visibility vis,
+                Decl::Linkage linkage,
+                owned<Expression> linkageName,
                 Variable::Kind kind,
                 bool isConfig,
                 bool isField,
                 owned<Expression> typeExpression,
                 owned<Expression> initExpression) {
   ASTList lst;
+  int linkageNameChildNum = -1;
   int8_t typeExpressionChildNum = -1;
   int8_t initExpressionChildNum = -1;
+
+  if (linkageName.get() != nullptr) {
+    linkageNameChildNum = lst.size();
+    lst.push_back(std::move(linkageName));
+  }
+
   if (typeExpression.get() != nullptr) {
     typeExpressionChildNum = lst.size();
     lst.push_back(std::move(typeExpression));
   }
+
   if (initExpression.get() != nullptr) {
     initExpressionChildNum = lst.size();
     lst.push_back(std::move(initExpression));
   }
 
-  Variable* ret = new Variable(std::move(lst), vis, name, kind, isConfig,
+  Variable* ret = new Variable(std::move(lst), vis, linkage,
+                               linkageNameChildNum,
+                               name,
+                               kind,
+                               isConfig,
                                isField,
                                typeExpressionChildNum,
                                initExpressionChildNum);

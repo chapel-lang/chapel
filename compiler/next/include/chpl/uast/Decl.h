@@ -39,21 +39,49 @@ class Decl : public Expression {
     PRIVATE,
   };
 
+  enum Linkage {
+    DEFAULT_LINKAGE,
+    EXTERN,
+    EXPORT
+  };
+
  private:
   Visibility visibility_;
+  Linkage linkage_;
+  int linkageNameChildNum_;
 
  protected:
-  Decl(ASTTag tag, Visibility visibility)
-    : Expression(tag), visibility_(visibility) {
+  Decl(ASTTag tag, Visibility visibility, Linkage linkage)
+    : Expression(tag),
+      visibility_(visibility),
+      linkage_(linkage),
+      linkageNameChildNum_(-1) {
   }
-  Decl(ASTTag tag, ASTList children, Visibility visibility)
-    : Expression(tag, std::move(children)), visibility_(visibility) {
+
+  Decl(ASTTag tag, ASTList children, Visibility visibility, Linkage linkage,
+       int linkageNameChildNum)
+    : Expression(tag, std::move(children)),
+      visibility_(visibility),
+      linkage_(linkage),
+      linkageNameChildNum_(linkageNameChildNum) {
+
+    if (linkageNameChildNum_ >= 0) {
+      assert(linkage_ != DEFAULT_LINKAGE);
+    }
+
+    assert(-1 <= linkageNameChildNum_ &&
+                 linkageNameChildNum_ < (ssize_t)children_.size());
+    assert(-1 <= linkageNameChildNum_ &&
+                 linkageNameChildNum_ < (ssize_t)children_.size());
   }
 
   bool declContentsMatchInner(const Decl* other) const {
     return this->visibility_ == other->visibility_ &&
+           this->linkage_ == other->linkage_ &&
+           this->linkageNameChildNum_ == other->linkageNameChildNum_ &&
            expressionContentsMatchInner(other);
   }
+
   void declMarkUniqueStringsInner(Context* context) const {
     expressionMarkUniqueStringsInner(context);
   }
@@ -64,6 +92,28 @@ class Decl : public Expression {
   Visibility visibility() const {
     return visibility_;
   }
+
+  Linkage linkage() const {
+    return linkage_;
+  }
+
+  /**
+   Return the linkage name expression, e.g. "f_c_name"
+   in the below, or nullptr if there is none.
+
+   \rst
+    .. code-block:: chapel
+
+        extern "f_c_name" proc f(arg) { }
+    \endrst
+   */
+  const Expression* linkageName() const {
+    if (linkageNameChildNum_ < 0) return nullptr;
+    auto ret = child(linkageNameChildNum_);
+    assert(ret->isExpression());
+    return (Expression*)ret;
+  }
+
 };
 
 

@@ -44,6 +44,7 @@ static Builder::Result parseAggregate(Parser* parser,
                                       const char* testname,
                                       const char* prog) {
   auto parseResult = parser->parseString(testname, prog);
+
   assert(parseResult.errors.size() == 0);
   assert(parseResult.topLevelExpressions.size() == 1);
   assert(parseResult.topLevelExpressions[0]->isModule());
@@ -84,6 +85,8 @@ static void test0(Parser* parser) {
   assert(cls->name() == "C");
   assert(cls->parentClass() == nullptr);
   assert(cls->numDeclOrComments() == 0);
+  assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!cls->linkageName());
 }
 
 static void test1(Parser* parser) {
@@ -98,6 +101,8 @@ static void test1(Parser* parser) {
   assert(parentId);
   assert(parentId->name() == "P");
   assert(cls->numDeclOrComments() == 0);
+  assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!cls->linkageName());
 }
 
 static void test2(Parser* parser) {
@@ -109,6 +114,8 @@ static void test2(Parser* parser) {
   assert(cls->name() == "C");
   assert(cls->parentClass() == nullptr);
   assert(cls->numDeclOrComments() == 1);
+  assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!cls->linkageName());
   auto var = cls->declOrComment(0)->toVariable();
   assert(var);
   assert(var->name() == "x");
@@ -124,6 +131,8 @@ static void test3(Parser* parser) {
   assert(cls->name() == "C");
   assert(cls->parentClass() == nullptr);
   assert(cls->numDeclOrComments() == 1);
+  assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!cls->linkageName());
   auto mtd = cls->declOrComment(0)->toFunction();
   assert(mtd);
   assert(mtd->name() == "method");
@@ -140,6 +149,8 @@ static void test4(Parser* parser) {
   assert(rec);
   assert(rec->name() == "R");
   assert(rec->numDeclOrComments() == 0);
+  assert(rec->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!rec->linkageName());
 }
 
 static void test5(Parser* parser) {
@@ -150,6 +161,8 @@ static void test5(Parser* parser) {
   assert(uni);
   assert(uni->name() == "U");
   assert(uni->numDeclOrComments() == 0);
+  assert(uni->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!uni->linkageName());
 }
 
 static void test6(Parser* parser) {
@@ -160,6 +173,8 @@ static void test6(Parser* parser) {
   assert(rec);
   assert(rec->name() == "R");
   assert(rec->numDeclOrComments() == 2);
+  assert(rec->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!rec->linkageName());
   auto var = rec->declOrComment(0)->toVariable();
   assert(var);
   assert(var->name() == "x");
@@ -180,6 +195,8 @@ static void test7(Parser* parser) {
   assert(uni);
   assert(uni->name() == "U");
   assert(uni->numDeclOrComments() == 2);
+  assert(uni->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!uni->linkageName());
   auto var = uni->declOrComment(0)->toVariable();
   assert(var);
   assert(var->name() == "x");
@@ -223,6 +240,8 @@ static void test8(Parser* parser) {
   assert(cls->declOrComment(2)->isComment());
   assert(cls->declOrComment(3)->isFunction());
   assert(cls->declOrComment(4)->isComment());
+  assert(cls->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!cls->linkageName());
 
   auto var = cls->declOrComment(1)->toVariable();
   assert(var);
@@ -259,6 +278,8 @@ static void test9(Parser* parser) {
   assert(rec);
   assert(rec->name() == "R");
   assert(rec->numDeclOrComments() == 6);
+  assert(rec->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!rec->linkageName());
   assert(rec->declOrComment(0)->isFunction());
   assert(rec->declOrComment(1)->isFunction());
   assert(rec->declOrComment(2)->isFunction());
@@ -422,9 +443,13 @@ static void test10(Parser* parser) {
   assert(c1->declOrComment(1)->isVariable());
   assert(c1->declOrComment(2)->isComment());
   assert(c1->declOrComment(3)->isVariable());
+  assert(c1->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!c1->linkageName());
 
   auto c2 = mod->stmt(3)->toClass();
   assert(c2->numDeclOrComments() == 0);
+  assert(c2->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!c2->linkageName());
 
   auto r3 = mod->stmt(5)->toRecord();
   assert(r3->numDeclOrComments() == 4);
@@ -432,9 +457,13 @@ static void test10(Parser* parser) {
   assert(r3->declOrComment(1)->isVariable());
   assert(r3->declOrComment(2)->isComment());
   assert(r3->declOrComment(3)->isVariable());
+  assert(r3->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!r3->linkageName());
 
   auto r4 = mod->stmt(7)->toRecord();
   assert(r4->numDeclOrComments() == 0);
+  assert(r4->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!r4->linkageName());
 
   auto u5 = mod->stmt(9)->toUnion();
   assert(u5->numDeclOrComments() == 4);
@@ -442,9 +471,37 @@ static void test10(Parser* parser) {
   assert(u5->declOrComment(1)->isVariable());
   assert(u5->declOrComment(2)->isComment());
   assert(u5->declOrComment(3)->isVariable());
+  assert(u5->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!u5->linkageName());
 
   auto u6 = mod->stmt(11)->toUnion();
   assert(u6->numDeclOrComments() == 0);
+  assert(u6->linkage() == Decl::DEFAULT_LINKAGE);
+  assert(!u6->linkageName());
+}
+
+static void test11(Parser* parser) {
+  auto parseResult = parser->parseString("test10.chpl",
+        "extern record foo {};\n"
+        "extern \"struct bar\" record bar {};\n"
+        "export record dog { var x = 0; }\n"
+        "export \"meow\" record cat { var x = 0; }\n");
+
+  /*
+  if (parseResult.errors.size()) {
+    for (auto& err : parseResult.errors) {
+      printf("%s:%d:%d: %s\n", err.path().c_str(), err.firstLine(),
+             err.firstColumn(),
+             err.message().c_str());
+    }
+  }
+  */
+
+  assert(parseResult.errors.size() == 0);
+  assert(parseResult.topLevelExpressions.size() == 1);
+  assert(parseResult.topLevelExpressions[0]->isModule());
+  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  (void) mod;
 }
 
 int main() {
@@ -465,6 +522,7 @@ int main() {
   test8(p);
   test9(p);
   test10(p);
+  test11(p);
 
   return 0;
 }

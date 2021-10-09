@@ -66,6 +66,8 @@ struct ParserContext {
   // Tracking a current state for these makes it easier to write
   // the parser rules.
   Decl::Visibility visibility;
+  Decl::Linkage linkage;
+  Expression* varDeclLinkageName;
   Variable::Kind varDeclKind;
   bool isVarDeclConfig;
   YYLTYPE declStartLocation;
@@ -93,6 +95,8 @@ struct ParserContext {
     this->topLevelStatements = nullptr;
     this->comments           = nullptr;
     this->visibility         = Decl::DEFAULT_VISIBILITY;
+    this->linkage            = Decl::DEFAULT_LINKAGE;
+    this->varDeclLinkageName = nullptr;
     this->varDeclKind        = Variable::VAR;
     this->isVarDeclConfig    = false;
     YYLTYPE emptyLoc = {0};
@@ -108,7 +112,13 @@ struct ParserContext {
 
   void noteDeclStartLoc(YYLTYPE loc);
   Decl::Visibility noteVisibility(Decl::Visibility visibility);
+  Decl::Linkage noteLinkage(Decl::Linkage linkage);
   Variable::Kind noteVarDeclKind(Variable::Kind varDeclKind);
+
+  // Use these kind of like a sync variable - avoid multiple parents.
+  void storeVarDeclLinkageName(Expression* linkageName);
+  owned<Expression> consumeVarDeclLinkageName(void);
+
   bool noteIsVarDeclConfig(bool isConfig);
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
@@ -378,6 +388,9 @@ struct ParserContext {
                                        CommentsAndStmt thenCs,
                                        CommentsAndStmt elseCs);
 
+  CommentsAndStmt buildExternBlockStmt(YYLTYPE locEverything,
+                                       SizedStr sizedStr);
+
   Expression* buildNumericLiteral(YYLTYPE location,
                                   PODUniqueString str,
                                   int type);
@@ -413,6 +426,17 @@ struct ParserContext {
   // Given a list of vars, build either a single var or a multi-decl.
   CommentsAndStmt
   buildVarOrMultiDecl(YYLTYPE locEverything, ParserExprList* vars);
+
+  // Given a list of vars, build either a single var or a multi-decl.
+  CommentsAndStmt
+  buildExternVarOrMultiDecl(YYLTYPE locEverything, Expression* linkageName,
+                            ParserExprList* vars);
+
+  TypeDeclParts enterScopeAndBuildTypeDeclParts(YYLTYPE locStart,
+                                                PODUniqueString name,
+                                                asttags::ASTTag tag);
+
+  void validateExternTypeDeclParts(YYLTYPE locStart, TypeDeclParts& parts);
 
   CommentsAndStmt buildAggregateTypeDecl(YYLTYPE location,
                                          TypeDeclParts parts,
