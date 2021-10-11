@@ -383,11 +383,12 @@ private proc compiler(args: [?d] string) {
   var listFlag = parser.addFlag(name="list", defaultValue=true);
   var findFlag = parser.addFlag(name="find", defaultValue=false);
   var editFlag = parser.addFlag(name="edit", defaultValue=false);
+  var quietFlag = parser.addFlag(name="quiet", defaultValue=false);
 
   parser.parseArgs(args);
 
   if findFlag.valueAsBool() {
-    findCompilers();
+    findCompilers(quietFlag.valueAsBool());
   } else if editFlag.valueAsBool() {
     editCompilers();
   } else { // handle default when no flags passed or when --list passed
@@ -402,9 +403,9 @@ private proc listCompilers() {
  }
 
 /* Finds available compilers */
-private proc findCompilers() {
+private proc findCompilers(quiet=false) {
   const command = "spack compiler find";
-  const status = runSpackCommand(command);
+  const status = runSpackCommand(command, quiet);
 }
 
 /* Opens the compiler configuration file in $EDITOR */
@@ -585,6 +586,7 @@ proc installSpkg(args: [?d] string) throws {
   var parser = new argumentParser();
   parser.setHelpMessage(new MasonInstallHelpMessage());
 
+  var quietFlag = parser.addFlag(name="quiet", defaultValue=false);
   var specArg = parser.addArgument(name="SpackSpec", numArgs=0..);
 
   parser.parseArgs(args);
@@ -605,7 +607,7 @@ proc installSpkg(args: [?d] string) throws {
     exit(1);
   }
 
-  const status = runSpackCommand(" ".join(command, spec));
+  const status = runSpackCommand(" ".join(command, spec), quietFlag.valueAsBool());
   if status != 0 {
     throw new owned MasonError("Package could not be installed");
   }

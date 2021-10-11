@@ -148,6 +148,7 @@ proc main(args: [] string) throws {
 proc masonClean(args) {
   var parser = new argumentParser();
   parser.setHelpMessage(new MasonCleanHelpMessage());
+  parser.parseArgs(args);
   try! {
     const cwd = here.cwd();
 

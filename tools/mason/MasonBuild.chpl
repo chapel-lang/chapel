@@ -40,13 +40,11 @@ proc masonBuild(args: [] string) throws {
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var releaseFlag = parser.addFlag(name="release", defaultValue=false);
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
-  var exampleOpts = parser.addOption(name="example",
-                                     numArgs=0..);
+  var exampleOpts = parser.addOption(name="example", numArgs=0..);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
 
   parser.setHelpMessage(new MasonBuildHelpMessage());
   var passArgs = parser.addPassThrough();
-
 
   parser.parseArgs(args);
 

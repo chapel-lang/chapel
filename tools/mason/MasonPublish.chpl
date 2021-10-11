@@ -354,7 +354,7 @@ proc doesGitOriginExist() {
  */
 private proc usernameCheck(username: string) {
   const gitRemote = 'git ls-remote https://github.com/';
-  var usernameCheck = runWithStatus(gitRemote + username + '/mason-registry', false);
+  var usernameCheck = runWithStatus(gitRemote + username + '/mason-registry', true);
   return usernameCheck;
 }
 

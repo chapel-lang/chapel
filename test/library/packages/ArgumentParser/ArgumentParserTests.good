@@ -542,6 +542,11 @@ testOptionZeroValueDetection()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testMinimalHelp()
+This is a custom help message for testing
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 Found some unrecognizable arguments: thirty
 Found some unrecognizable arguments: badArg1 --BadFlag
 Use '-' or '--' to indicate option/flag, or use positional arguments.

@@ -3631,6 +3631,20 @@ proc testOptionZeroValueDetection(test: borrowed Test) throws {
   test.assertEqual(new list(myOption.values()), new list(string));
 }
 
+// minimal help usage test, overrides help to omit exit() during UnitTest
+proc testMinimalHelp(test: borrowed Test) throws {
+  class MyHelpMessage : HelpMessage {
+    override proc help(exitCode=0) {
+      writeln("This is a custom help message for testing");
+    }
+  }
+
+  var argList = ["progName","--help"];
+  var parser = new argumentParser();
+  parser.setHelpMessage(new MyHelpMessage());
+  parser.parseArgs(argList);
+}
+
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
 
 UnitTest.main();

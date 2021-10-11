@@ -438,7 +438,7 @@ proc masonInstallHelp() {
   writeln("Install external packages onto your system");
   writeln();
   writeln("Usage:");
-  writeln("    mason external install [options] <package> ");
+  writeln("    mason external install [options] <package>");
   writeln();
   writeln("    <package>: a Spack spec expression indicating the package to install");
   writeln();
@@ -483,7 +483,7 @@ proc masonUninstallHelp() {
   writeln("Uninstall external packages on your system");
   writeln();
   writeln("Usage:");
-  writeln("    mason external uninstall [options] <package> ");
+  writeln("    mason external uninstall [options] <package>");
   writeln();
   writeln("    <package>: a Spack spec expression indicating the package to install");
   writeln();
@@ -546,7 +546,7 @@ proc masonSystemHelp() {
   writeln("    search                      Search all packages available on the system");
   writeln("    -h, --help                  Display this message");
   writeln();
-  writeln("The pc command sometimes has trouble finding a .pc file if the file is named ");
+  writeln("The pc command sometimes has trouble finding a .pc file if the file is named");
   writeln("something other than <package name>.pc  Use -i to ensure package exists");
   writeln("For more information on using system dependencies see Mason documentation");
 }

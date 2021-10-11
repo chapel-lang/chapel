@@ -63,7 +63,7 @@ proc masonSystem(args: [] string) {
 
 /* Checks to see that pkg-config is installed */
 proc pkgConfigExists() throws {
-  var status = runWithStatus("pkg-config --version", false);
+  var status = runWithStatus("pkg-config --version", true);
   if status != 0 {
     throw new owned MasonError("pkg-config is not installed");
   }
