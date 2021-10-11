@@ -29,8 +29,8 @@ var x2003 = 2003;
 deprecated ":proc:`abc` Lorem :proc:`def` ipsum dolor sit amet :proc:`ghi`"
 var x2004 = 2004;
 
-// Test different text in ::s (all should resolve)
-deprecated "--- Test different text in ::s (all should resolve) ---"
+// Test different text in ::s (all should filter)
+deprecated "--- Test different text in ::s (all should filter) ---"
 var x3000 = 3000;
 deprecated "Lorem ipsum :mod:`test` dolor sit amet"
 var x3001 = 3001;
@@ -61,8 +61,8 @@ var x3013 = 3013;
 deprecated "Lorem :class:`abc` ipsum :record:`def` dolor :attr:`ghi` sit amet"
 var x3014 = 3014;
 
-// Test different text in ::s (all should not resolve)
-deprecated "--- Test different text in ::s (all should not resolve) ---"
+// Test different text in ::s (all should not filter)
+deprecated "--- Test different text in ::s (all should not filter) ---"
 var x4000 = 4000;
 deprecated "Lorem ipsum ::`abc` dolor sit amet"
 var x4001 = 4001;
@@ -115,8 +115,8 @@ var x6005 = 6005;
 deprecated "Instead of using foo(proc:int):proc use :proc:`bar`."
 var x6006 = 6006;
 
-// Word boundaries (should resolve)
-deprecated "--- Word boundaries (should resolve) ---"
+// Word boundaries (should filter)
+deprecated "--- Word boundaries (should filter) ---"
 var x7000 = 7000;
 deprecated "First (:proc:`middle`) end"
 var x7001 = 7001;
@@ -125,8 +125,8 @@ var x7002 = 7002;
 deprecated "First,:proc:`middle`,end"
 var x7003 = 7003;
 
-// Word boundaries (should not resolve)
-deprecated "--- Word boundaries (should not resolve) ---"
+// Word boundaries (should not filter)
+deprecated "--- Word boundaries (should not filter) ---"
 var x8000 = 8000;
 deprecated "First:proc:`middle` end"
 var x8001 = 8001;
@@ -137,8 +137,8 @@ var x8003 = 8003;
 deprecated "First:proc:`middle`:end"
 var x8004 = 8004;
 
-// Dollars in identifier (should resolve)
-deprecated "--- Dollars in identifier (should resolve) ---"
+// Dollars in identifier (should filter)
+deprecated "--- Dollars in identifier (should filter) ---"
 var x9000 = 9000;
 deprecated "Lorem ipsum :proc:`abc$` dolor sit amet"
 var x9001 = 9001;

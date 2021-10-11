@@ -10,7 +10,7 @@ messageFiltering.chpl:164: warning: abc Lorem ipsum dolor sit amet
 messageFiltering.chpl:165: warning: Lorem ipsum abc dolor sit amet
 messageFiltering.chpl:166: warning: Lorem ipsum dolor sit amet abc
 messageFiltering.chpl:167: warning: abc Lorem def ipsum dolor sit amet ghi
-messageFiltering.chpl:169: warning: --- Test different text in ::s (all should resolve) ---
+messageFiltering.chpl:169: warning: --- Test different text in ::s (all should filter) ---
 messageFiltering.chpl:170: warning: Lorem ipsum test dolor sit amet
 messageFiltering.chpl:171: warning: Lorem ipsum test dolor sit amet
 messageFiltering.chpl:172: warning: Lorem ipsum test dolor sit amet
@@ -25,7 +25,7 @@ messageFiltering.chpl:180: warning: Lorem ipsum test dolor sit amet
 messageFiltering.chpl:181: warning: Lorem abc ipsum def dolor ghi sit jkl amet
 messageFiltering.chpl:182: warning: Lorem abc ipsum def dolor ghi sit jkl amet
 messageFiltering.chpl:183: warning: Lorem abc ipsum def dolor ghi sit amet
-messageFiltering.chpl:185: warning: --- Test different text in ::s (all should not resolve) ---
+messageFiltering.chpl:185: warning: --- Test different text in ::s (all should not filter) ---
 messageFiltering.chpl:186: warning: Lorem ipsum ::`abc` dolor sit amet
 messageFiltering.chpl:187: warning: Lorem ipsum :a:`abc` dolor sit amet
 messageFiltering.chpl:188: warning: Lorem ipsum :abc123def:`abc` dolor sit amet
@@ -49,16 +49,16 @@ messageFiltering.chpl:207: warning: Instead of using foo(a:int):int use bar.
 messageFiltering.chpl:208: warning: Instead of using foo(proc: int, proc: string) use bar.
 messageFiltering.chpl:209: warning: Instead of using foo(proc:int,proc:string) use bar.
 messageFiltering.chpl:210: warning: Instead of using foo(proc:int):proc use bar.
-messageFiltering.chpl:212: warning: --- Word boundaries (should resolve) ---
+messageFiltering.chpl:212: warning: --- Word boundaries (should filter) ---
 messageFiltering.chpl:213: warning: First (middle) end
 messageFiltering.chpl:214: warning: First, middle, end
 messageFiltering.chpl:215: warning: First,middle,end
-messageFiltering.chpl:217: warning: --- Word boundaries (should not resolve) ---
+messageFiltering.chpl:217: warning: --- Word boundaries (should not filter) ---
 messageFiltering.chpl:218: warning: First:proc:`middle` end
 messageFiltering.chpl:219: warning: First :proc:`middle`end
 messageFiltering.chpl:220: warning: First:proc:`middle`end
 messageFiltering.chpl:221: warning: First:proc:`middle`:end
-messageFiltering.chpl:223: warning: --- Dollars in identifier (should resolve) ---
+messageFiltering.chpl:223: warning: --- Dollars in identifier (should filter) ---
 messageFiltering.chpl:224: warning: Lorem ipsum abc$ dolor sit amet
 messageFiltering.chpl:225: warning: Lorem ipsum abc$def dolor sit amet
 messageFiltering.chpl:226: warning: Lorem ipsum abc$def$ dolor sit amet
