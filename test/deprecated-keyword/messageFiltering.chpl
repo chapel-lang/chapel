@@ -167,7 +167,7 @@ var x9003 = 9003;
 deprecated "Lorem ipsum :proc:`abc$def$ghi` dolor sit amet"
 var x9004 = 9004;
 
-// I purposefully access each variable on a seperate line so the produced warning messages
+// I purposefully access each variable on a separate line so the produced warning messages
 // will also have unique lines:
 
 writeln(x1000);
