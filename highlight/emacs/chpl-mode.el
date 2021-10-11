@@ -89,7 +89,7 @@ not the type face."
          "except" "export" "extern"
          "import" "inline" "iter"
          "module"
-         "only" "override"
+         "only" "operator" "override"
          "param" "private" "proc" "public"
          "require"
          "type"
@@ -141,7 +141,7 @@ will be handled."
   ;; Default to `c-class-decl-kwds' and `c-brace-list-decl-kwds'
   ;; (since e.g. "Foo" is the identifier being defined in "class Foo
   ;; {...}").
-  chpl '("const" "iter" "module" "param" "proc" "type" "var"))
+  chpl '("const" "iter" "module" "operator" "param" "proc" "type" "var"))
 
 (c-lang-defconst c-ref-list-kwds
   "Keywords that may be followed by a comma separated list of
