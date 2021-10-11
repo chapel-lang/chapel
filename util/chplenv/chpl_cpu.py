@@ -10,15 +10,8 @@ import chpl_comm, chpl_compiler, chpl_platform, overrides
 from compiler_utils import CompVersion, target_compiler_is_prgenv, get_compiler_version
 from utils import memoize, run_command, warning
 
-
-#
-# Intel architectures are accessed with the -march= flag.
-# ARM architectures are accessed with the -mcpu= flag, except that some
-# compilers can handle -march=native for ARM (and some cannot).
-# Therefore, our translations need to specify which flag is used.
-
 # This map has a key as a synonym and the value as the LLVM arch/cpu
-# It is indented to map from PrgEnv target cpus (e.g. craype-sandybridge)
+# It is intended to map from PrgEnv target cpus (e.g. craype-sandybridge)
 # when these names differ from the LLVM ones.
 cpu_llvm_synonyms = {
   'knc':           'none',
