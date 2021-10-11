@@ -636,6 +636,10 @@ the two arguments are pair-wise equal or not.  The fields are compared in the
 order they are declared in the record definition.
 
 .. _Hashing_a_Record:
+
+Hashing a Record
+~~~~~~~~~~~~~~~~
+
 When a record is the key for a hashtable, including when using it as the index
 type for an associative domain, the compiler will generate a default hash
 function to use. This behavior can be overridden if more control of the
