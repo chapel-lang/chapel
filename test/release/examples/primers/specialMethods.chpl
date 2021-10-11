@@ -110,6 +110,26 @@ writeln(r.vals);
 // more information on parallel iterators, see the :doc:`parIters` primer.
 
 /*
+  Custom Hashing
+  --------------
+*/
+
+use Map;
+
+proc R.hash() {
+  writeln("In custom hash function");
+  return vals[0];
+}
+
+// Now that the record R has a ``hash`` method defined, Chapel's map
+// will call this custom ``hash`` instead of the compiler generated
+// method for ``hash``. Note that this only works for records and
+// will not apply to defining a ``int.hash`` for example.
+var m2 = new map(R, int);
+var myR = new R();
+m2[myR] = 5;
+
+/*
   IO Methods
   ----------
 */
