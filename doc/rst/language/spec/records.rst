@@ -636,10 +636,11 @@ the two arguments are pair-wise equal or not.  The fields are compared in the
 order they are declared in the record definition.
 
 .. _Hashing_a_Record:
-When using a record to index into a Chapel ``map``, the compiler will generate
-a default hash function to use. This behavior can be overridden if more
-control of the hashing used is desired. This can be done by defining a ``hash``
-method on a record.
+When a record is the key for a hashtable, including when using it as the index
+type for an associative domain, the compiler will generate a default hash
+function to use. This behavior can be overridden if more control of the
+hashing used is desired. This can be done by defining a ``hash`` method on
+a record.
 
 .. code-block:: chapel
 
@@ -652,6 +653,14 @@ method on a record.
    var myR = new R();
    // Indexing the map using an instance of R using the R.hash() method
    m[myR] = 5;
+
+   var myD = domain(R);
+   myD += myR;
+
+Note that the compiler generated ``hash`` can only be overriden on records
+that have been defined in user code, and will not override the compiler hash
+for ``int.hash``, for example.
+
 
 
 .. _Class_and_Record_Differences:

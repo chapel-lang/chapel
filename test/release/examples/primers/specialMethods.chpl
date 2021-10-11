@@ -122,12 +122,15 @@ proc R.hash() {
 }
 
 // Now that the record R has a ``hash`` method defined, Chapel's map
-// will call this custom ``hash`` instead of the compiler generated
-// method for ``hash``. Note that this only works for records and
-// will not apply to defining a ``int.hash`` for example.
-var m2 = new map(R, int);
+// and associative domain will call this custom ``hash`` instead of
+// the compiler generated method for ``hash``. Note that this only works
+// for records and will not apply to defining a ``int.hash`` for example.
+var myMap = new map(R, int);
+var myD: domain(R);
 var myR = new R();
-m2[myR] = 5;
+
+myMap[myR] = 5;
+myD += myR;
 
 /*
   IO Methods
