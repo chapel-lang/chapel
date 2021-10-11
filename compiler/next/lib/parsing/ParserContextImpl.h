@@ -592,11 +592,13 @@ ParserContext::buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
                               ParserExprList* domainExprs,
                               Expression* typeExpr) {
 
-  // Build a domain out of the expression list.
-  auto domain = Domain::build(builder, convertLocation(locDomainExprs),
-                              consumeList(domainExprs));
+  // In some cases the 'domainExprs' may not exist (think array formal).
+  auto domainBody = domainExprs ? consumeList(domainExprs) : ASTList();
 
-  // TODO: Report a more accurate location.
+  auto domain = Domain::build(builder, convertLocation(locDomainExprs),
+                              std::move(domainBody));
+
+  // If 'typeExpr' is null, then the resulting block is empty.
   auto block = consumeToBlock(location, typeExpr);
 
   auto node = BracketLoop::build(builder, convertLocation(location),
@@ -700,6 +702,7 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
 
 owned<Block>
 ParserContext::consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst) {
+
   // if it consists of only a block, return that block
   if (lst != nullptr && lst->size() == 1) {
     if (Block* b = (*lst)[0]->toBlock()) {
@@ -708,14 +711,17 @@ ParserContext::consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst) {
     }
   }
 
+  auto stmts = (!lst || !lst->size()) ? ASTList() : consumeList(lst);
+
   // if it consists of other non-block statements, create a new block
   return Block::build(builder, convertLocation(blockLoc),
-                      consumeList(lst));
+                      std::move(stmts));
 }
 
 owned<Block>
 ParserContext::consumeToBlock(YYLTYPE blockLoc, Expression* e) {
-  return consumeToBlock(blockLoc, makeList(e));
+  auto list = e ? makeList(e) : nullptr;
+  return consumeToBlock(blockLoc, list);
 }
 
 ASTList
@@ -1352,6 +1358,9 @@ ParserContext::enterScopeAndBuildTypeDeclParts(YYLTYPE locStart,
   };
 
   clearComments();
+
+  // Important stuff has been recorded, so reset.
+  resetDeclState();
 
   return ret;
 }

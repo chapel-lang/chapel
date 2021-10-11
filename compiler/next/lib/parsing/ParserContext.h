@@ -427,11 +427,6 @@ struct ParserContext {
   CommentsAndStmt
   buildVarOrMultiDecl(YYLTYPE locEverything, ParserExprList* vars);
 
-  // Given a list of vars, build either a single var or a multi-decl.
-  CommentsAndStmt
-  buildExternVarOrMultiDecl(YYLTYPE locEverything, Expression* linkageName,
-                            ParserExprList* vars);
-
   TypeDeclParts enterScopeAndBuildTypeDeclParts(YYLTYPE locStart,
                                                 PODUniqueString name,
                                                 asttags::ASTTag tag);

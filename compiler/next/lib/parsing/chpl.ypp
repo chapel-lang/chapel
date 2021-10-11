@@ -1433,29 +1433,6 @@ extern_export_decl_stmt_start:
   }
 ;
 
-/*
-  Hold onto these in case the current way breaks.
-
-  extern_export_decl_stmt_start TRECORD ident_def opt_inherit
-  TLCBR class_level_stmt_ls TRCBR
-  {
-    auto loc = context->declStartL
-  }
-| extern_export_decl_stmt_start STRINGLITERAL TRECORD ident_def opt_inherit
-  TLCBR class_level_stmt_ls TRCBR
-  {
-  }
-| extern_export_decl_stmt_start TUNION ident_def opt_inherit
-  TLCBR class_level_stmt_ls TRCBR
-  {
-  }
-| extern_export_decl_stmt_start STRINGLITERAL TUNION ident_def opt_inherit
-  TLCBR class_level_stmt_ls TRCBR
-  {
-  }
-
-*/
-
 extern_export_decl_stmt:
   extern_export_decl_stmt_start class_start opt_inherit
   TLCBR class_level_stmt_ls TRCBR
@@ -1480,11 +1457,9 @@ extern_export_decl_stmt:
 
     auto commentList = context->appendList(context->makeList(),
                                            fp.comments);
-    if (fp.comments) {
-      delete fp.comments;
-    }
 
     auto comments = context->gatherCommentsFromList(commentList, loc);
+    delete commentList;
 
     fp.linkage = $1;
     fp.comments = comments;
@@ -2137,6 +2112,7 @@ fn_decl_stmt:
   opt_throws_error opt_lifetime_where
     {
       context->clearComments();
+      context->resetDeclState();
       context->enterScope(asttags::Function, $1.name);
     }
   opt_function_body_stmt
@@ -2696,19 +2672,31 @@ opt_formal_array_elt_type:
 
 formal_array_type:
   TLSBR TRSBR opt_formal_array_elt_type
-    { $$ = TODOEXPR(@$); }
+  {
+    auto domainLoc = context->makeSpannedLocation(@1, @2);
+    $$ = context->buildArrayType(@$, domainLoc, /*domainExprs*/ nullptr, $3);
+  }
 | TLSBR expr_ls TRSBR opt_formal_array_elt_type
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildArrayType(@$, @2, $2, $4);
+  }
 
 // Johnk: Unclear to me what the type should be when [<range>][] <type> is encountered.
 //        At present buildArrayRuntimeType is undefined when gNil is passed and
 //        the second argument is a formal_array_type.
 | TLSBR TRSBR formal_array_type
-    { $$ = TODOEXPR(@$); }
+  {
+    auto domainLoc = context->makeSpannedLocation(@1, @2);
+    $$ = context->buildArrayType(@$, domainLoc, /*domainExprs*/ nullptr, $3);
+  }
 | TLSBR expr_ls TRSBR formal_array_type
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildArrayType(@$, @2, $2, $4);
+  }
 | TLSBR expr_ls TIN expr TRSBR opt_formal_array_elt_type
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildArrayTypeWithIndex(@$, @2, $2, $4, $6);
+  }
 ;
 
 opt_formal_type:
