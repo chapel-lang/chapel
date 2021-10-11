@@ -17,7 +17,7 @@ var x1005 = 1005;
 deprecated ":param type:`jkl` :class record:`mno`"
 var x1006 = 1006;
 
-// Test filtering at start, middle, and end of msg (with and without content):
+// Test filtering at start, middle, and end of msg
 deprecated "--- Test filtering at start, middle, and end of msg (with and without content): ---"
 var x2000 = 2000;
 deprecated ":proc:`abc` Lorem ipsum dolor sit amet"
@@ -82,7 +82,7 @@ var x4007 = 4007;
 // Test different text in ``s
 deprecated "--- Test different text in ``s ---"
 var x5000 = 5000;
-deprecated "Lorem ipsum :proc:`` dolor sit amet"
+deprecated "Lorem ipsum :proc:`` dolor sit amet (should not filter)"
 var x5001 = 5001;
 deprecated "Lorem ipsum :proc:`a` dolor sit amet"
 var x5002 = 5002;
@@ -98,6 +98,14 @@ deprecated "Lorem ipsum :proc:`123abc_123_def123` dolor sit amet"
 var x5007 = 5007;
 deprecated "Lorem ipsum :proc:`_abc_123_def_` dolor sit amet"
 var x5008 = 5008;
+deprecated "Lorem ipsum :proc:`abc:def` dolor sit amet (should not filter)"
+var x5009 = 5009;
+deprecated "Lorem ipsum :proc:`proc` dolor sit amet"
+var x5010 = 5010;
+deprecated "Lorem ipsum :proc:`:proc:` dolor sit amet (should not filter)"
+var x5011 = 5011;
+deprecated "Lorem ipsum :proc:`:proc:abc` dolor sit amet (should not filter)"
+var x5012 = 5012;
 
 // Other :s in message:
 deprecated "--- Other :s in message: ---"
@@ -114,6 +122,8 @@ deprecated "Instead of using foo(proc:int,proc:string) use :proc:`bar`."
 var x6005 = 6005;
 deprecated "Instead of using foo(proc:int):proc use :proc:`bar`."
 var x6006 = 6006;
+deprecated "proc foo(x: int) is deprecated, use proc foo(x: real) instead"
+var x6007 = 6007;
 
 // Word boundaries (should filter)
 deprecated "--- Word boundaries (should filter) ---"
@@ -200,6 +210,10 @@ writeln(x5005);
 writeln(x5006);
 writeln(x5007);
 writeln(x5008);
+writeln(x5009);
+writeln(x5010);
+writeln(x5011);
+writeln(x5012);
 
 writeln(x6000);
 writeln(x6001);
@@ -208,6 +222,7 @@ writeln(x6003);
 writeln(x6004);
 writeln(x6005);
 writeln(x6006);
+writeln(x6007);
 
 writeln(x7000);
 writeln(x7001);

@@ -1,68 +1,73 @@
-messageFiltering.chpl:155: warning: --- No filtering should be applied: ---
-messageFiltering.chpl:156: warning: sample_message
-messageFiltering.chpl:157: warning: Lorem ipsum dolor sit amet
-messageFiltering.chpl:158: warning: Lorem_ipsum_dolor_sit_amet
-messageFiltering.chpl:159: warning: mod proc iter data const var param type class record
-messageFiltering.chpl:160: warning: :mod proc:`abc` :iter data:`def` :const var:`ghi`
-messageFiltering.chpl:161: warning: :param type:`jkl` :class record:`mno`
-messageFiltering.chpl:163: warning: --- Test filtering at start, middle, and end of msg (with and without content): ---
-messageFiltering.chpl:164: warning: abc Lorem ipsum dolor sit amet
-messageFiltering.chpl:165: warning: Lorem ipsum abc dolor sit amet
-messageFiltering.chpl:166: warning: Lorem ipsum dolor sit amet abc
-messageFiltering.chpl:167: warning: abc Lorem def ipsum dolor sit amet ghi
-messageFiltering.chpl:169: warning: --- Test different text in ::s (all should filter) ---
-messageFiltering.chpl:170: warning: Lorem ipsum test dolor sit amet
-messageFiltering.chpl:171: warning: Lorem ipsum test dolor sit amet
-messageFiltering.chpl:172: warning: Lorem ipsum test dolor sit amet
-messageFiltering.chpl:173: warning: Lorem ipsum test dolor sit amet
-messageFiltering.chpl:174: warning: Lorem ipsum test dolor sit amet
-messageFiltering.chpl:175: warning: Lorem ipsum test dolor sit amet
-messageFiltering.chpl:176: warning: Lorem ipsum test dolor sit amet
-messageFiltering.chpl:177: warning: Lorem ipsum test dolor sit amet
-messageFiltering.chpl:178: warning: Lorem ipsum test dolor sit amet
-messageFiltering.chpl:179: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:165: warning: --- No filtering should be applied: ---
+messageFiltering.chpl:166: warning: sample_message
+messageFiltering.chpl:167: warning: Lorem ipsum dolor sit amet
+messageFiltering.chpl:168: warning: Lorem_ipsum_dolor_sit_amet
+messageFiltering.chpl:169: warning: mod proc iter data const var param type class record
+messageFiltering.chpl:170: warning: :mod proc:`abc` :iter data:`def` :const var:`ghi`
+messageFiltering.chpl:171: warning: :param type:`jkl` :class record:`mno`
+messageFiltering.chpl:173: warning: --- Test filtering at start, middle, and end of msg (with and without content): ---
+messageFiltering.chpl:174: warning: abc Lorem ipsum dolor sit amet
+messageFiltering.chpl:175: warning: Lorem ipsum abc dolor sit amet
+messageFiltering.chpl:176: warning: Lorem ipsum dolor sit amet abc
+messageFiltering.chpl:177: warning: abc Lorem def ipsum dolor sit amet ghi
+messageFiltering.chpl:179: warning: --- Test different text in ::s (all should filter) ---
 messageFiltering.chpl:180: warning: Lorem ipsum test dolor sit amet
-messageFiltering.chpl:181: warning: Lorem abc ipsum def dolor ghi sit jkl amet
-messageFiltering.chpl:182: warning: Lorem abc ipsum def dolor ghi sit jkl amet
-messageFiltering.chpl:183: warning: Lorem abc ipsum def dolor ghi sit amet
-messageFiltering.chpl:185: warning: --- Test different text in ::s (all should not filter) ---
-messageFiltering.chpl:186: warning: Lorem ipsum ::`abc` dolor sit amet
-messageFiltering.chpl:187: warning: Lorem ipsum :a:`abc` dolor sit amet
-messageFiltering.chpl:188: warning: Lorem ipsum :abc123def:`abc` dolor sit amet
-messageFiltering.chpl:189: warning: Lorem ipsum :123abc123def:`abc` dolor sit amet
-messageFiltering.chpl:190: warning: Lorem ipsum :abc123def123:`abc` dolor sit amet
-messageFiltering.chpl:191: warning: Lorem ipsum :123abc123def123:`abc` dolor sit amet
-messageFiltering.chpl:192: warning: Lorem ipsum :abc_123_def:`abc` dolor sit amet
-messageFiltering.chpl:194: warning: --- Test different text in ``s ---
-messageFiltering.chpl:195: warning: Lorem ipsum :proc:`` dolor sit amet
-messageFiltering.chpl:196: warning: Lorem ipsum a dolor sit amet
-messageFiltering.chpl:197: warning: Lorem ipsum abc123def dolor sit amet
-messageFiltering.chpl:198: warning: Lorem ipsum abc_123_def dolor sit amet
-messageFiltering.chpl:199: warning: Lorem ipsum 123abc_123_def dolor sit amet
-messageFiltering.chpl:200: warning: Lorem ipsum abc_123_def123 dolor sit amet
-messageFiltering.chpl:201: warning: Lorem ipsum 123abc_123_def123 dolor sit amet
-messageFiltering.chpl:202: warning: Lorem ipsum _abc_123_def_ dolor sit amet
-messageFiltering.chpl:204: warning: --- Other :s in message: ---
-messageFiltering.chpl:205: warning: Instead of using foo(a: int, b: string) use bar.
-messageFiltering.chpl:206: warning: Instead of using foo(a:int,b:string) use bar.
-messageFiltering.chpl:207: warning: Instead of using foo(a:int):int use bar.
-messageFiltering.chpl:208: warning: Instead of using foo(proc: int, proc: string) use bar.
-messageFiltering.chpl:209: warning: Instead of using foo(proc:int,proc:string) use bar.
-messageFiltering.chpl:210: warning: Instead of using foo(proc:int):proc use bar.
-messageFiltering.chpl:212: warning: --- Word boundaries (should filter) ---
-messageFiltering.chpl:213: warning: First (middle) end
-messageFiltering.chpl:214: warning: First, middle, end
-messageFiltering.chpl:215: warning: First,middle,end
-messageFiltering.chpl:217: warning: --- Word boundaries (should not filter) ---
-messageFiltering.chpl:218: warning: First:proc:`middle` end
-messageFiltering.chpl:219: warning: First :proc:`middle`end
-messageFiltering.chpl:220: warning: First:proc:`middle`end
-messageFiltering.chpl:221: warning: First:proc:`middle`:end
-messageFiltering.chpl:223: warning: --- Dollars in identifier (should filter) ---
-messageFiltering.chpl:224: warning: Lorem ipsum abc$ dolor sit amet
-messageFiltering.chpl:225: warning: Lorem ipsum abc$def dolor sit amet
-messageFiltering.chpl:226: warning: Lorem ipsum abc$def$ dolor sit amet
-messageFiltering.chpl:227: warning: Lorem ipsum abc$def$ghi dolor sit amet
+messageFiltering.chpl:181: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:182: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:183: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:184: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:185: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:186: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:187: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:188: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:189: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:190: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:191: warning: Lorem abc ipsum def dolor ghi sit jkl amet
+messageFiltering.chpl:192: warning: Lorem abc ipsum def dolor ghi sit jkl amet
+messageFiltering.chpl:193: warning: Lorem abc ipsum def dolor ghi sit amet
+messageFiltering.chpl:195: warning: --- Test different text in ::s (all should not filter) ---
+messageFiltering.chpl:196: warning: Lorem ipsum ::`abc` dolor sit amet
+messageFiltering.chpl:197: warning: Lorem ipsum :a:`abc` dolor sit amet
+messageFiltering.chpl:198: warning: Lorem ipsum :abc123def:`abc` dolor sit amet
+messageFiltering.chpl:199: warning: Lorem ipsum :123abc123def:`abc` dolor sit amet
+messageFiltering.chpl:200: warning: Lorem ipsum :abc123def123:`abc` dolor sit amet
+messageFiltering.chpl:201: warning: Lorem ipsum :123abc123def123:`abc` dolor sit amet
+messageFiltering.chpl:202: warning: Lorem ipsum :abc_123_def:`abc` dolor sit amet
+messageFiltering.chpl:204: warning: --- Test different text in ``s ---
+messageFiltering.chpl:205: warning: Lorem ipsum :proc:`` dolor sit amet (should not filter)
+messageFiltering.chpl:206: warning: Lorem ipsum a dolor sit amet
+messageFiltering.chpl:207: warning: Lorem ipsum abc123def dolor sit amet
+messageFiltering.chpl:208: warning: Lorem ipsum abc_123_def dolor sit amet
+messageFiltering.chpl:209: warning: Lorem ipsum 123abc_123_def dolor sit amet
+messageFiltering.chpl:210: warning: Lorem ipsum abc_123_def123 dolor sit amet
+messageFiltering.chpl:211: warning: Lorem ipsum 123abc_123_def123 dolor sit amet
+messageFiltering.chpl:212: warning: Lorem ipsum _abc_123_def_ dolor sit amet
+messageFiltering.chpl:213: warning: Lorem ipsum :proc:`abc:def` dolor sit amet (should not filter)
+messageFiltering.chpl:214: warning: Lorem ipsum proc dolor sit amet
+messageFiltering.chpl:215: warning: Lorem ipsum :proc:`:proc:` dolor sit amet (should not filter)
+messageFiltering.chpl:216: warning: Lorem ipsum :proc:`:proc:abc` dolor sit amet (should not filter)
+messageFiltering.chpl:218: warning: --- Other :s in message: ---
+messageFiltering.chpl:219: warning: Instead of using foo(a: int, b: string) use bar.
+messageFiltering.chpl:220: warning: Instead of using foo(a:int,b:string) use bar.
+messageFiltering.chpl:221: warning: Instead of using foo(a:int):int use bar.
+messageFiltering.chpl:222: warning: Instead of using foo(proc: int, proc: string) use bar.
+messageFiltering.chpl:223: warning: Instead of using foo(proc:int,proc:string) use bar.
+messageFiltering.chpl:224: warning: Instead of using foo(proc:int):proc use bar.
+messageFiltering.chpl:225: warning: proc foo(x: int) is deprecated, use proc foo(x: real) instead
+messageFiltering.chpl:227: warning: --- Word boundaries (should filter) ---
+messageFiltering.chpl:228: warning: First (middle) end
+messageFiltering.chpl:229: warning: First, middle, end
+messageFiltering.chpl:230: warning: First,middle,end
+messageFiltering.chpl:232: warning: --- Word boundaries (should not filter) ---
+messageFiltering.chpl:233: warning: First:proc:`middle` end
+messageFiltering.chpl:234: warning: First :proc:`middle`end
+messageFiltering.chpl:235: warning: First:proc:`middle`end
+messageFiltering.chpl:236: warning: First:proc:`middle`:end
+messageFiltering.chpl:238: warning: --- Dollars in identifier (should filter) ---
+messageFiltering.chpl:239: warning: Lorem ipsum abc$ dolor sit amet
+messageFiltering.chpl:240: warning: Lorem ipsum abc$def dolor sit amet
+messageFiltering.chpl:241: warning: Lorem ipsum abc$def$ dolor sit amet
+messageFiltering.chpl:242: warning: Lorem ipsum abc$def$ghi dolor sit amet
 1000
 1001
 1002
@@ -107,6 +112,10 @@ messageFiltering.chpl:227: warning: Lorem ipsum abc$def$ghi dolor sit amet
 5006
 5007
 5008
+5009
+5010
+5011
+5012
 6000
 6001
 6002
@@ -114,6 +123,7 @@ messageFiltering.chpl:227: warning: Lorem ipsum abc$def$ghi dolor sit amet
 6004
 6005
 6006
+6007
 7000
 7001
 7002
