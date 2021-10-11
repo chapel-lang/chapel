@@ -17,33 +17,25 @@
  * limitations under the License.
  */
 
+#ifndef SCOPE_HELP_H
+#define SCOPE_HELP_H
+
 #include "chpl/resolution/scope-types.h"
 
-#include "chpl/uast/NamedDecl.h"
-
-#include "scope-help.h"
-
 namespace chpl {
+namespace uast {
+  class ASTNode;
+}
 namespace resolution {
 
 
-Scope::Scope(const uast::ASTNode* ast, const Scope* parentScope) {
-  parentScope_ = parentScope;
-  tag_ = ast->tag();
-  id_ = ast->id();
-  if (auto decl = ast->toNamedDecl()) {
-    name_ = decl->name();
-  }
-  gatherDeclsWithin(ast, declared_, containsUseImport_, containsFunctionDecls_);
+void gatherDeclsWithin(const uast::ASTNode* ast,
+                       DeclMap& declared,
+                       bool& containsUseImport,
+                       bool& containsFunctionDecls);
+
+
+}
 }
 
-void Scope::addBuiltin(UniqueString name) {
-  // Just refer to empty ID since builtin type declarations don't
-  // actually exist in the AST.
-  // The resolver knows that the empty ID means a builtin thing.
-  declared_.emplace(name, ID());
-}
-
-
-} // end namespace resolution
-} // end namespace chpl
+#endif
