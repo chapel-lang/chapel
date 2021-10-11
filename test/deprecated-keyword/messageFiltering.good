@@ -1,0 +1,130 @@
+messageFiltering.chpl:155: warning: --- No filtering should be applied: ---
+messageFiltering.chpl:156: warning: sample_message
+messageFiltering.chpl:157: warning: Lorem ipsum dolor sit amet
+messageFiltering.chpl:158: warning: Lorem_ipsum_dolor_sit_amet
+messageFiltering.chpl:159: warning: mod proc iter data const var param type class record
+messageFiltering.chpl:160: warning: :mod proc:`abc` :iter data:`def` :const var:`ghi`
+messageFiltering.chpl:161: warning: :param type:`jkl` :class record:`mno`
+messageFiltering.chpl:163: warning: --- Test filtering at start, middle, and end of msg (with and without content): ---
+messageFiltering.chpl:164: warning: abc Lorem ipsum dolor sit amet
+messageFiltering.chpl:165: warning: Lorem ipsum abc dolor sit amet
+messageFiltering.chpl:166: warning: Lorem ipsum dolor sit amet abc
+messageFiltering.chpl:167: warning: abc Lorem def ipsum dolor sit amet ghi
+messageFiltering.chpl:169: warning: --- Test different text in ::s (all should resolve) ---
+messageFiltering.chpl:170: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:171: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:172: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:173: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:174: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:175: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:176: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:177: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:178: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:179: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:180: warning: Lorem ipsum test dolor sit amet
+messageFiltering.chpl:181: warning: Lorem abc ipsum def dolor ghi sit jkl amet
+messageFiltering.chpl:182: warning: Lorem abc ipsum def dolor ghi sit jkl amet
+messageFiltering.chpl:183: warning: Lorem abc ipsum def dolor ghi sit amet
+messageFiltering.chpl:185: warning: --- Test different text in ::s (all should not resolve) ---
+messageFiltering.chpl:186: warning: Lorem ipsum ::`abc` dolor sit amet
+messageFiltering.chpl:187: warning: Lorem ipsum :a:`abc` dolor sit amet
+messageFiltering.chpl:188: warning: Lorem ipsum :abc123def:`abc` dolor sit amet
+messageFiltering.chpl:189: warning: Lorem ipsum :123abc123def:`abc` dolor sit amet
+messageFiltering.chpl:190: warning: Lorem ipsum :abc123def123:`abc` dolor sit amet
+messageFiltering.chpl:191: warning: Lorem ipsum :123abc123def123:`abc` dolor sit amet
+messageFiltering.chpl:192: warning: Lorem ipsum :abc_123_def:`abc` dolor sit amet
+messageFiltering.chpl:194: warning: --- Test different text in ``s ---
+messageFiltering.chpl:195: warning: Lorem ipsum :proc:`` dolor sit amet
+messageFiltering.chpl:196: warning: Lorem ipsum a dolor sit amet
+messageFiltering.chpl:197: warning: Lorem ipsum abc123def dolor sit amet
+messageFiltering.chpl:198: warning: Lorem ipsum abc_123_def dolor sit amet
+messageFiltering.chpl:199: warning: Lorem ipsum 123abc_123_def dolor sit amet
+messageFiltering.chpl:200: warning: Lorem ipsum abc_123_def123 dolor sit amet
+messageFiltering.chpl:201: warning: Lorem ipsum 123abc_123_def123 dolor sit amet
+messageFiltering.chpl:202: warning: Lorem ipsum _abc_123_def_ dolor sit amet
+messageFiltering.chpl:204: warning: --- Other :s in message: ---
+messageFiltering.chpl:205: warning: Instead of using foo(a: int, b: string) use bar.
+messageFiltering.chpl:206: warning: Instead of using foo(a:int,b:string) use bar.
+messageFiltering.chpl:207: warning: Instead of using foo(a:int):int use bar.
+messageFiltering.chpl:208: warning: Instead of using foo(proc: int, proc: string) use bar.
+messageFiltering.chpl:209: warning: Instead of using foo(proc:int,proc:string) use bar.
+messageFiltering.chpl:210: warning: Instead of using foo(proc:int):proc use bar.
+messageFiltering.chpl:212: warning: --- Word boundaries (should resolve) ---
+messageFiltering.chpl:213: warning: First (middle) end
+messageFiltering.chpl:214: warning: First, middle, end
+messageFiltering.chpl:215: warning: First,middle,end
+messageFiltering.chpl:217: warning: --- Word boundaries (should not resolve) ---
+messageFiltering.chpl:218: warning: First:proc:`middle` end
+messageFiltering.chpl:219: warning: First :proc:`middle`end
+messageFiltering.chpl:220: warning: First:proc:`middle`end
+messageFiltering.chpl:221: warning: First:proc:`middle`:end
+messageFiltering.chpl:223: warning: --- Dollars in identifier (should resolve) ---
+messageFiltering.chpl:224: warning: Lorem ipsum abc$ dolor sit amet
+messageFiltering.chpl:225: warning: Lorem ipsum abc$def dolor sit amet
+messageFiltering.chpl:226: warning: Lorem ipsum abc$def$ dolor sit amet
+messageFiltering.chpl:227: warning: Lorem ipsum abc$def$ghi dolor sit amet
+1000
+1001
+1002
+1003
+1004
+1005
+1006
+2000
+2001
+2002
+2003
+2004
+3000
+3001
+3002
+3003
+3004
+3005
+3006
+3007
+3008
+3009
+3010
+3011
+3012
+3013
+3014
+4000
+4001
+4002
+4003
+4004
+4005
+4006
+4007
+5000
+5001
+5002
+5003
+5004
+5005
+5006
+5007
+5008
+6000
+6001
+6002
+6003
+6004
+6005
+6006
+7000
+7001
+7002
+7003
+8000
+8001
+8002
+8003
+8004
+9000
+9001
+9002
+9003
+9004
