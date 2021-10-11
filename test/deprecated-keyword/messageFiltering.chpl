@@ -106,6 +106,14 @@ deprecated "Lorem ipsum :proc:`:proc:` dolor sit amet (should not filter)"
 var x5011 = 5011;
 deprecated "Lorem ipsum :proc:`:proc:abc` dolor sit amet (should not filter)"
 var x5012 = 5012;
+deprecated "Lorem ipsum :proc:`title target` dolor sit amet (should not filter)"
+var x5013 = 5013;
+deprecated "Lorem ipsum :proc:`abc.def` dolor sit amet"
+var x5014 = 5014;
+deprecated "Lorem ipsum :proc:`~abc.def` dolor sit amet (should not filter)"
+var x5015 = 5015;
+deprecated "Lorem ipsum :proc:`!abc` dolor sit amet (should not filter)"
+var x5016 = 5016;
 
 // Other :s in message:
 deprecated "--- Other :s in message: ---"
@@ -214,6 +222,10 @@ writeln(x5009);
 writeln(x5010);
 writeln(x5011);
 writeln(x5012);
+writeln(x5013);
+writeln(x5014);
+writeln(x5015);
+writeln(x5016);
 
 writeln(x6000);
 writeln(x6001);

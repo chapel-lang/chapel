@@ -501,7 +501,11 @@ const char* Symbol::getDeprecationMsg() const {
 // for information on the markup.
 const char* Symbol::getSanitizedDeprecationMsg() const {
   std::string msg = getDeprecationMsg();
-  static const auto reStr = R"(\B\:(mod|proc|iter|data|const|var|param|type|class|record|attr)\:`([\w\$]+)`\B)";
+  // TODO: Support explicit title and refernce targets like in reST direct hyperlinks (and having only target
+  //       show up in sanitized message).
+  // TODO: Allow prefixing content with ! (and filtering it out in the sanitized message)
+  // TODO: Allow prefixing content with ~ (and having it only display last component of target)
+  static const auto reStr = R"(\B\:(mod|proc|iter|data|const|var|param|type|class|record|attr)\:`([\w\$\.]+)`\B)";
   msg = std::regex_replace(msg, std::regex(reStr), "$2");
   return astr(msg.c_str());
 }
