@@ -46,9 +46,10 @@ To get better stack traces when optimizations are enabled:
 
 .. note::
 
-     ``export ASAN_OPTIONS=detect_leaks=0`` is not propagated to the test
-     nodes when running paratest. A workaround is to add this setting to
-     .bashrc or the equivalent.
+     Non-chplenv environment variables aren't propagated by paratest. So,
+     to turn off leak checking, it is necessary to either pass
+     ``-env ASAN_OPTIONS=detect_leaks=0`` or to include
+     ``export ASAN_OPTIONS=detect_leaks=0`` in .bashrc or the equivalent.
 
 Limitations
 -----------
