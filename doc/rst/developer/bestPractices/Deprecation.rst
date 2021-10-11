@@ -36,7 +36,7 @@ warning we filter it to remove any inline markup.
 
 This means if your deprecation message points to the preferred feature using
 syntax like this: ``foo is deprecated - please use :proc:`bar```, then in the
-generated documentation "bar" link to the documentation for the "bar"
+generated documentation "bar" links to the documentation for the "bar"
 procedure, and when producing the compiler warning the ":proc:" syntax and
 backticks will be filtered out.
 
