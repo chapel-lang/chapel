@@ -258,9 +258,9 @@ module ChapelHashtable {
 
     var postponeResize: bool;
 
-    var maxLoadFactor: real;
+    const resizeThreshold: real;
 
-    proc init(type keyType, type valType,
+    proc init(type keyType, type valType, resizeThreshold = 0.5,
               in rehashHelpers: owned chpl__rehashHelpers? = nil) {
       this.keyType = keyType;
       this.valType = valType;
@@ -269,7 +269,7 @@ module ChapelHashtable {
       this.tableSize = 0;
       this.rehashHelpers = rehashHelpers;
       this.postponeResize = false;
-      this.maxLoadFactor = 0.5;
+      this.resizeThreshold = resizeThreshold;
       this.complete();
 
       // allocates a _ddata(chpl_TableEntry(keyType,valType)) storing the table
@@ -398,7 +398,7 @@ module ChapelHashtable {
       var slotNum = -1;
       var foundSlot = false;
 
-      if ((tableNumFullSlots+tableNumDeletedSlots+1)*(1/maxLoadFactor)):int > tableSize {
+      if ((tableNumFullSlots+tableNumDeletedSlots+1)*(1/resizeThreshold)):int > tableSize {
         resize(grow=true);
       }
 

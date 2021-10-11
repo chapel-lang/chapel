@@ -79,6 +79,8 @@ module Map {
     /* If `true`, this map will perform parallel safe operations. */
     param parSafe = false;
 
+    const resizeThreshold: real;
+
     pragma "no doc"
     var table: chpl__hashtable(keyType, valType);
 
@@ -106,19 +108,23 @@ module Map {
       :arg valType: The type of the values of this map.
       :arg parSafe: If `true`, this map will use parallel safe operations.
     */
-    proc init(type keyType, type valType, param parSafe=false) {
+    proc init(type keyType, type valType, param parSafe=false,
+              resizeThreshold=0.5) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
+      table = new chpl__hashtable(keyType, valType, resizeThreshold);
     }
 
-    proc init(type keyType, type valType, param parSafe=false)
+    proc init(type keyType, type valType, param parSafe=false,
+              resizeThreshold=0.5)
     where isNonNilableClass(valType) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
+      table = new chpl__hashtable(keyType, valType, resizeThreshold);
     }
 
     /*
@@ -143,6 +149,8 @@ module Map {
                         this.type.valType else vt;
       this.parSafe = if this.type.parSafe != ? then
                         this.type.parSafe else ps;
+      this.table = new chpl__hashtable(keyType, valType,
+                                       other.resizeThreshold);
       this.complete();
 
       if keyType != kt {
@@ -291,10 +299,6 @@ module Map {
                       key.type:string + ', ' + val.type:string + ')');
 
       return updater(key, val);
-    }
-
-    proc setMaxLoadFactor(maxLoadFactor: real) {
-      this.table.maxLoadFactor = maxLoadFactor;
     }
 
     pragma "no doc"

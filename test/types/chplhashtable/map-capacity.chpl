@@ -2,10 +2,7 @@ use Map;
 
 var m1 = new map(int, int);
 
-var m2 = new map(int, int);
-
-// Map can be up to 75% full
-m2.setMaxLoadFactor(.75);
+var m2 = new map(int, int, resizeThreshold=0.75);
 
 // Fill tables to 50% capacity
 for i in 0..15 {
