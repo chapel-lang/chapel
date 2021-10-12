@@ -1,4 +1,0 @@
-usage: c2chapel [-h] [--no-typedefs] [--debug] [--no-fake-headers]
-                [--no-comments] [-V] [--gnu-extensions]
-                file [cppFlags [cppFlags ...]]
-c2chapel: error: too few arguments

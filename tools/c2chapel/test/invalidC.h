@@ -1,2 +1,0 @@
-
-proc foo(x : int);

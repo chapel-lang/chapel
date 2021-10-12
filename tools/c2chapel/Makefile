@@ -66,7 +66,7 @@ $(FAKES):
 	./utils/fixFakes.sh $(FAKES) $(PWD)/utils/custom.h
 
 check:
-	cd test && ./tester.sh
+	start_test $(CHPL_HOME)/test/c2chapel
 
 clean:
 	rm -rf $(INSTALL)
