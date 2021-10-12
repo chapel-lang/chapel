@@ -52,13 +52,14 @@ class VarLikeDecl : public NamedDecl {
       typeExpressionChildNum_(typeExpressionChildNum),
       initExpressionChildNum_(initExpressionChildNum) {
 
-    assert(numChildren() <= 2);
+    // Linkage name can be a child num.
+    assert(numChildren() <= 3);
     if (typeExpressionChildNum >= 0) {
-      assert(typeExpressionChildNum <= 2);
+      assert(typeExpressionChildNum <= 3);
       assert(child(typeExpressionChildNum)->isExpression());
     }
     if (initExpressionChildNum >= 0) {
-      assert(initExpressionChildNum <= 2);
+      assert(initExpressionChildNum <= 3);
       assert(child(initExpressionChildNum)->isExpression());
     }
   }

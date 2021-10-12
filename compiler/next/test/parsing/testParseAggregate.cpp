@@ -25,6 +25,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Record.h"
+#include "chpl/uast/StringLiteral.h"
 #include "chpl/uast/Union.h"
 #include "chpl/uast/Variable.h"
 
@@ -478,26 +479,76 @@ static void test10(Parser* parser) {
 }
 
 static void test11(Parser* parser) {
-  auto parseResult = parser->parseString("test10.chpl",
+  auto parseResult = parser->parseString("test11.chpl",
         "extern record foo {};\n"
         "extern \"struct bar\" record bar {};\n"
         "export record dog { var x = 0; }\n"
-        "export \"meow\" record cat { var x = 0; }\n");
-
-  /*
-  if (parseResult.errors.size()) {
-    for (auto& err : parseResult.errors) {
-      printf("%s:%d:%d: %s\n", err.path().c_str(), err.firstLine(),
-             err.firstColumn(),
-             err.message().c_str());
-    }
-  }
-  */
+        "export \"meow\" record cat { var x = 0; }\n"
+        "extern union baz {}\n"
+        "extern \"union thing\" union thing {}\n");
 
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
-  (void) mod;
+  assert(mod->numStmts() == 6);
+
+  auto rec1 = mod->stmt(0)->toRecord();
+  assert(rec1);
+  assert(rec1->linkage() == Decl::Linkage::EXTERN);
+  assert(!rec1->linkageName());
+  assert(rec1->numDeclOrComments() == 0);
+
+  auto rec2 = mod->stmt(1)->toRecord();
+  assert(rec2);
+  assert(rec2->linkage() == Decl::Linkage::EXTERN);
+  assert(rec2->linkageName());
+  assert(rec2->linkageName()->isStringLiteral());
+  assert(rec2->linkageName()->toStringLiteral()->str() == "struct bar");
+  assert(rec2->numDeclOrComments() == 0);
+
+  auto rec3 = mod->stmt(2)->toRecord();
+  assert(rec3);
+  assert(rec3->linkage() == Decl::Linkage::EXPORT);
+  assert(!rec3->linkageName());
+  assert(rec3->numDeclOrComments() == 1);
+
+  auto rec4 = mod->stmt(3)->toRecord();
+  assert(rec4);
+  assert(rec4->linkage() == Decl::Linkage::EXPORT);
+  assert(rec4->linkageName());
+  assert(rec4->linkageName()->isStringLiteral());
+  assert(rec4->linkageName()->toStringLiteral()->str() == "meow");
+  assert(rec4->numDeclOrComments() == 1);
+
+  auto uni5 = mod->stmt(4)->toUnion();
+  assert(uni5);
+  assert(uni5->linkage() == Decl::Linkage::EXTERN);
+  assert(!uni5->linkageName());
+  assert(uni5->numDeclOrComments() == 0);
+
+  auto uni6 = mod->stmt(5)->toUnion();
+  assert(uni6);
+  assert(uni6->linkage() == Decl::Linkage::EXTERN);
+  assert(uni6->linkageName());
+  assert(uni6->linkageName()->isStringLiteral());
+  assert(uni6->linkageName()->toStringLiteral()->str() == "union thing");
+  assert(uni6->numDeclOrComments() == 0);
+}
+
+// Test failure for exporting or externing a class.
+// Test failure for exporting a union.
+static void test12(Parser* parser) {
+  auto parseResult = parser->parseString("test12.chpl",
+        "extern class foo {};\n"
+        "extern \"foo\" class foo {};\n"
+        "export class bar { var x = 0; }\n"
+        "export \"bar\" class bar { var x = 0; }\n"
+        "export union baz {}\n"
+        "export \"baz\" union baz {}\n");
+
+  assert(parseResult.numErrors() == 6);
+  auto mod = parseResult.singleModule();
+  assert(mod);
 }
 
 int main() {
@@ -519,6 +570,7 @@ int main() {
   test9(p);
   test10(p);
   test11(p);
+  test12(p);
 
   return 0;
 }
