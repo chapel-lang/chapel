@@ -7562,8 +7562,12 @@ void chpl_comm_ofi_dbg_init(void) {
   }
 
   if ((ev = chpl_env_rt_get("COMM_OFI_DEBUG_FNAME", NULL)) == NULL) {
+    chpl_comm_ofi_dbg_file = stderr;
+  } else if (!strcmp(ev, "STDOUT")) {
     chpl_comm_ofi_dbg_file = stdout;
-  } else {
+  } else if (!strcmp(ev, "STDERR")) {
+    chpl_comm_ofi_dbg_file = stderr;
+  } else {  
     char fname[strlen(ev) + 6 + 1];
     int fnameLen;
     fnameLen = snprintf(fname, sizeof(fname), "%s.%d", ev, (int) chpl_nodeID);
