@@ -79,7 +79,7 @@ FnSymbol *gChplSaveTaskError;
 FnSymbol *gChplForallError;
 FnSymbol *gAtomicFenceFn;
 FnSymbol *gChplAfterForallFence;
-FnSymbol *gChplCreateLiteralsBuffer;
+FnSymbol *gAllocateStringLiteralsBuf;
 FnSymbol *gChplCreateStringWithLiteral;
 FnSymbol *gChplCreateBytesWithLiteral;
 FnSymbol *gChplBuildLocaleId;
@@ -492,8 +492,8 @@ static WellKnownFn sWellKnownFns[] = {
   },
 
   {
-    "chpl_createLiteralsBuffer",
-    &gChplCreateLiteralsBuffer,
+    "allocate_string_literals_buf",
+    &gAllocateStringLiteralsBuf,
     FLAG_UNKNOWN
   },
 

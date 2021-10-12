@@ -10087,9 +10087,14 @@ static void resolveOther() {
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
   for_vector(FnSymbol, fn, fns) {
+    // resolve the argument types
     resolveSignature(fn);
     fn->tagIfGeneric();
-    if (! fn->isGeneric())
+    // resolve the return type if specified
+    if (fn->retExprType)
+      resolveSpecifiedReturnType(fn);
+    // resolve the function body if it is not generic
+    if (!fn->isGeneric())
       resolveFunction(fn);
   }
 }

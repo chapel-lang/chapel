@@ -40,7 +40,7 @@
 #include "chpltypes.h"
 #include "error.h"
 
-// Uses the system allocator.  Should not be used to create user-visible data
+// Uses the Chapel allocator.  Should not be used to create user-visible data
 // (error messages are OK).
 char* chpl_glom_strings(int numstrings, ...) {
   va_list ap;
