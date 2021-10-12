@@ -1615,7 +1615,7 @@ void createInitStringLiterals() {
     bufferSize += strLength+1; // string data and null
   }
 
-  // emit the call to chpl_createLiteralsBuffer and put it
+  // emit the call to allocate_string_literals_buf and put it
   // just after the buffer is defined
   CallExpr *allocCall = new CallExpr(gAllocateStringLiteralsBuf,
                                      new_IntSymbol(bufferSize));

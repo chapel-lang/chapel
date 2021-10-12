@@ -606,11 +606,6 @@ module String {
   }
 
   pragma "no doc"
-  proc chpl_createLiteralsBuffer(size: int) : c_void_ptr {
-    return c_malloc(uint(8), size):c_void_ptr;
-  }
-
-  pragma "no doc"
   proc chpl_createStringWithLiteral(buffer: c_string,
                                     offset: int,
                                     x: c_string,
