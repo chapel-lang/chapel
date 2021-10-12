@@ -43,7 +43,7 @@ Outline
        - `Test Not Applicable In All Settings`_
        - `Testing Different Behavior in Different Settings`_
 
-     - `Using precomp and prediff files`
+     - `Using precomp and prediff files`_
 
    - `A Performance Test`_
 
