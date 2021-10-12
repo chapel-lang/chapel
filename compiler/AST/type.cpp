@@ -1803,8 +1803,7 @@ bool isNonGenericRecord(Type* type) {
 
   if (AggregateType* at = toAggregateType(type)) {
     if (at->isRecord()                   == true  &&
-        at->isGeneric()                  == false &&
-        at->symbol->hasFlag(FLAG_EXTERN) == false) {
+        at->isGeneric()                  == false) {
       retval = true;
     }
   }
