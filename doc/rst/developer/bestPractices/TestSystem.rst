@@ -43,6 +43,8 @@ Outline
        - `Test Not Applicable In All Settings`_
        - `Testing Different Behavior in Different Settings`_
 
+     - `Using precomp and prediff files`_
+
    - `A Performance Test`_
 
      - `Identifying Performance Keys`_
@@ -366,6 +368,14 @@ will compare test output to ``foo.true.good`` for the first execution and
 Any line that is unlabeled will use the default ``.good`` for that test.
 Undefined behavior will occur when both the ``.compopts`` and ``.execopts``
 files specify a ``.good`` file in this way.
+
+Using precomp and prediff files
++++++++++++++++++++++++++++++++
+
+When creating a ``.precomp`` or ``.prediff`` file, the file must be an
+executable. You can turn your script into an executable by running:
+``chmod +x foo.precomp``. 
+
 
 A Performance Test
 ------------------
