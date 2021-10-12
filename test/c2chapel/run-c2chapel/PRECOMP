@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import subprocess
+
+cfile = sys.argv[1] + '.h'
+filename = sys.argv[1] + '.chpl' # this is the file name with no suffix
+
+c2chapelbin = os.path.dirname(sys.argv[3]) + '/c2chapel'
+
+# remove file to ensure that it is the output from c2chapel
+os.remove(filename)
+
+# execute c2chapel on the header file and write results to .chpl file
+subprocess.Popen([c2chapelbin, cfile, " > " + filename], stdout=subprocess.PIPE)
+#supro(c2chapelbin + ' ' + cfile + ' > ' + filename)
+
+# execute c2chapel with gnu extensions as well
+os.system(c2chapelbin + ' --gnu-extensions ' + cfile + ' > ' + filename)
