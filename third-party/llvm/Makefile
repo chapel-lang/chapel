@@ -175,7 +175,7 @@ llvm-install: FORCE
 	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-clang ; \
 	fi
 
-llvm: $(LLVM_CLANG_CONFIG_FILE) llvm-config llvm-build llvm-install
+llvm: llvm-config llvm-build llvm-install $(LLVM_CLANG_CONFIG_FILE)
 
 llvm-clang: llvm
 
