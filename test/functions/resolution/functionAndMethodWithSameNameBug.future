@@ -1,0 +1,3 @@
+bug: Calling a module-scope function foo from a method where this.foo exists
+
+See issue #13674

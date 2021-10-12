@@ -1,0 +1,4 @@
+promotionBug.chpl:10: error: unresolved call '[domain(1,int(64),false)] Forwarder.get10()'
+promotionBug.chpl:5: note: this candidate did not match: Forwardee.get10()
+promotionBug.chpl:10: note: because method call receiver with type '[domain(1,int(64),false)] Forwarder'
+promotionBug.chpl:4: note: is passed to formal 'this: Forwardee'
