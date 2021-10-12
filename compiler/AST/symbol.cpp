@@ -501,7 +501,7 @@ const char* Symbol::getDeprecationMsg() const {
 // for information on the markup.
 const char* Symbol::getSanitizedDeprecationMsg() const {
   std::string msg = getDeprecationMsg();
-  // TODO: Support explicit title and refernce targets like in reST direct hyperlinks (and having only target
+  // TODO: Support explicit title and reference targets like in reST direct hyperlinks (and having only target
   //       show up in sanitized message).
   // TODO: Allow prefixing content with ! (and filtering it out in the sanitized message)
   // TODO: Allow prefixing content with ~ (and having it only display last component of target)

@@ -110,10 +110,6 @@ deprecated "Lorem ipsum :proc:`title target` dolor sit amet (should not filter)"
 var x5013 = 5013;
 deprecated "Lorem ipsum :proc:`abc.def` dolor sit amet"
 var x5014 = 5014;
-deprecated "Lorem ipsum :proc:`~abc.def` dolor sit amet (should not filter)"
-var x5015 = 5015;
-deprecated "Lorem ipsum :proc:`!abc` dolor sit amet (should not filter)"
-var x5016 = 5016;
 
 // Other :s in message:
 deprecated "--- Other :s in message: ---"
@@ -166,6 +162,13 @@ deprecated "Lorem ipsum :proc:`abc$def$` dolor sit amet"
 var x9003 = 9003;
 deprecated "Lorem ipsum :proc:`abc$def$ghi` dolor sit amet"
 var x9004 = 9004;
+
+// Currently filters, but ideally wouldn't (see #18549):
+deprecated "Lorem ipsum :proc:`~abc.def` dolor sit amet (should not filter)"
+var x1101 = 1101;
+deprecated "Lorem ipsum :proc:`!abc` dolor sit amet (should not filter)"
+var x1102 = 1102;
+
 
 // I purposefully access each variable on a separate line so the produced warning messages
 // will also have unique lines:
@@ -224,8 +227,6 @@ writeln(x5011);
 writeln(x5012);
 writeln(x5013);
 writeln(x5014);
-writeln(x5015);
-writeln(x5016);
 
 writeln(x6000);
 writeln(x6001);
@@ -252,4 +253,7 @@ writeln(x9001);
 writeln(x9002);
 writeln(x9003);
 writeln(x9004);
+
+writeln(x1101);
+writeln(x1102);
 
