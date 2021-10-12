@@ -237,6 +237,8 @@ public:
   std::string deprecationMsg;
 
   const char* getDeprecationMsg() const;
+  const char* getSanitizedDeprecationMsg() const;
+
   void generateDeprecationWarning(Expr* context);
 
 protected:

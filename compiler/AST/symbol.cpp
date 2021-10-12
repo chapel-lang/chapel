@@ -38,6 +38,7 @@
 #include "wellknown.h"
 
 #include <algorithm>
+#include <regex>
 
 //
 // The function that represents the compiler-generated entry point
@@ -493,6 +494,22 @@ const char* Symbol::getDeprecationMsg() const {
   }
 }
 
+// When printing the deprecation message to the console we typically
+// want to filter out inline markup used for Sphinx (which is useful
+// for when generating the docs). See:
+// https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+// for information on the markup.
+const char* Symbol::getSanitizedDeprecationMsg() const {
+  std::string msg = getDeprecationMsg();
+  // TODO: Support explicit title and reference targets like in reST direct hyperlinks (and having only target
+  //       show up in sanitized message).
+  // TODO: Allow prefixing content with ! (and filtering it out in the sanitized message)
+  // TODO: Allow prefixing content with ~ (and having it only display last component of target)
+  static const auto reStr = R"(\B\:(mod|proc|iter|data|const|var|param|type|class|record|attr)\:`([\w\$\.]+)`\B)";
+  msg = std::regex_replace(msg, std::regex(reStr), "$2");
+  return astr(msg.c_str());
+}
+
 void Symbol::generateDeprecationWarning(Expr* context) {
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
@@ -511,7 +528,7 @@ void Symbol::generateDeprecationWarning(Expr* context) {
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
   if (!compilerGenerated && !parentDeprecated) {
-    USR_WARN(context, "%s", getDeprecationMsg());
+    USR_WARN(context, "%s", getSanitizedDeprecationMsg());
   }
 }
 
