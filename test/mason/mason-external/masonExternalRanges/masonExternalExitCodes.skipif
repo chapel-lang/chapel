@@ -1,11 +1,1 @@
-#!/bin/bash
-
-command -v $CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR/mason > /dev/null
-status=$?
-
-if [ $status -eq  0 ];  then
-    echo "False"
-else
-    echo "True"
-fi
-exit 0
+../../masonBinaryFound
