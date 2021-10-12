@@ -54,12 +54,14 @@ char* chpl_executionCommand;
 void* chpl_string_literals_buffer;
 
 const char* allocate_string_literals_buf(int64_t s) {
-  chpl_string_literals_buffer = chpl_malloc(s);
+  chpl_string_literals_buffer = chpl_mem_alloc(s,
+                                               CHPL_RT_MD_STRING_LITERALS_BUF,
+                                               0, 0);
   return chpl_string_literals_buffer;
 }
 
 void deallocate_string_literals_buf(void) {
-  chpl_free((void*)chpl_string_literals_buffer);
+  chpl_mem_free((void*)chpl_string_literals_buffer, 0, 0);
   chpl_string_literals_buffer = NULL;
 }
 
