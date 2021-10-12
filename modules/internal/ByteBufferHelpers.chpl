@@ -72,12 +72,6 @@ module ByteBufferHelpers {
     return (buf, allocSize);
   }
 
-  proc bufferAllocExact(requestedSize: int) {
-    var buf = chpl_here_alloc(requestedSize,
-                              offset_STR_COPY_DATA): bufferType;
-    return buf;
-  }
-
   proc bufferRealloc(buf: bufferType, requestedSize: int) {
     const allocSize = getGoodAllocSize(requestedSize+1);
     var newBuff = chpl_here_realloc(buf, allocSize,
