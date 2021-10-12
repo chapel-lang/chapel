@@ -164,10 +164,12 @@ deprecated "Lorem ipsum :proc:`abc$def$ghi` dolor sit amet"
 var x9004 = 9004;
 
 // Currently filters, but ideally wouldn't (see #18549):
-deprecated "Lorem ipsum :proc:`~abc.def` dolor sit amet (should not filter)"
+deprecated "--- Currently filters, but ideally wouldn't (see #18549) ---"
 var x1101 = 1101;
-deprecated "Lorem ipsum :proc:`!abc` dolor sit amet (should not filter)"
+deprecated "Lorem ipsum :proc:`~abc.def` dolor sit amet"
 var x1102 = 1102;
+deprecated "Lorem ipsum :proc:`!abc` dolor sit amet"
+var x1103 = 1103;
 
 
 // I purposefully access each variable on a separate line so the produced warning messages
@@ -256,4 +258,5 @@ writeln(x9004);
 
 writeln(x1101);
 writeln(x1102);
+writeln(x1103);
 
