@@ -680,6 +680,12 @@ module Spawn {
      Check to see if a child process has terminated.
      If the child process has terminated, after this
      call, :attr:`~subprocess.running` will be `false`.
+
+     :throws InterruptedError: when the poll was interrupted by
+                               a signal.
+
+     :throws SystemError: if a mistake has been made in the implementation of
+                          this function or type.
    */
   proc subprocess.poll() throws {
     try _throw_on_launch_error();
@@ -695,6 +701,9 @@ module Spawn {
         this.exitCode = exitcode;
       }
     }
+    // Note: `err` can be ECHILD or EINVAL, in which case we've made a mistake
+    // in our implementation.  But if it is EINTR, the user should be able to
+    // catch an InterruptedError and respond to it.
     if err then try ioerror(err, "in subprocess.poll");
   }
 
