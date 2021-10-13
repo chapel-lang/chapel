@@ -434,46 +434,49 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws 
     // cleanup
     event_free(internalEvent);
   }
-  var t: Timer;
-  t.start();
-  // make event active
-  if timeout.tv_sec == -1 {
-    err_out = event_add(internalEvent, nil);
-  }
-  else {
-    err_out = event_add(internalEvent, c_ptrTo(timeout));
-  }
-  if err_out != 0 {
-    throw new Error("accept() failed");
-  }
-  // return value
-  var retval = localSync$.readFE();
-  // stop timer
-  t.stop();
-  // if error was timeout throw error
-  if retval & EV_TIMEOUT != 0 {
-    throw SystemError.fromSyserr(ETIMEDOUT, "accept() timed out");
-  }
-  var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
-  // try accept again
-  err_out = sys_accept(socketFd, client_addr, fdOut);
-  if err_out != 0 {
-    // error was not about blocking wait so throw it
-    if err_out != EAGAIN && err_out != EWOULDBLOCK {
-      throw SystemError.fromSyserr(err_out, "accept() failed");
+
+  while err_out != 0 {
+    var t: Timer;
+    t.start();
+    // make event active
+    if timeout.tv_sec == -1 {
+      err_out = event_add(internalEvent, nil);
     }
-    // no indefinitely blocking wait
-    if timeout.tv_sec != -1 {
-      var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
-      // timer didn't elapsed
-      if totalTimeout > t.elapsed(TimeUnits.microseconds) {
-        const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
-        const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
-        return this.accept(new timeval(remainingSeconds, remainingMicroSeconds));
+    else {
+      err_out = event_add(internalEvent, c_ptrTo(timeout));
+    }
+    if err_out != 0 {
+      throw new Error("accept() failed");
+    }
+    // return value
+    var retval = localSync$.readFE();
+    // stop timer
+    t.stop();
+    // if error was timeout throw error
+    if retval & EV_TIMEOUT != 0 {
+      throw SystemError.fromSyserr(ETIMEDOUT, "accept() timed out");
+    }
+    var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
+    // try accept again
+    err_out = sys_accept(socketFd, client_addr, fdOut);
+    if err_out != 0 {
+      // error was not about blocking wait so throw it
+      if err_out != EAGAIN && err_out != EWOULDBLOCK {
+        throw SystemError.fromSyserr(err_out, "accept() failed");
       }
-      throw SystemError.fromSyserr(err_out, "accept() failed");
+      // no indefinitely blocking wait
+      if timeout.tv_sec != -1 {
+        var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
+        // timer didn't elapsed
+        if totalTimeout > t.elapsed(TimeUnits.microseconds) {
+          const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
+          const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
+          timeout.tv_sec = remainingSeconds;
+          timeout.tv_usec = remainingMicroSeconds;
+        }
+        throw SystemError.fromSyserr(ETIMEDOUT, "accept() timed out");
+      }
     }
-    return this.accept();
   }
   return openfd(fdOut):tcpConn;
 }
@@ -773,42 +776,45 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0), flags:c_
   defer {
     event_free(internalEvent);
   }
-  var t: Timer;
-  t.start();
-  if timeout.tv_sec == -1 {
-    err_out = event_add(internalEvent, nil);
-  }
-  else {
-    err_out = event_add(internalEvent, c_ptrTo(timeout));
-  }
-  if err_out != 0 {
-    c_free(buffer);
-    throw new Error("recv failed");
-  }
-  var retval = localSync$.readFE();
-  t.stop();
-  if retval & EV_TIMEOUT != 0 {
-    c_free(buffer);
-    throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
-  }
-  var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
-  err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:size_t, 0, addressStorage, length);
-  if err_out != 0 {
-    if err_out != EAGAIN && err_out != EWOULDBLOCK {
-      c_free(buffer);
-      throw SystemError.fromSyserr(err_out,"recv failed");
-    }
+
+  while err_out != 0 {
+    var t: Timer;
+    t.start();
     if timeout.tv_sec == -1 {
-      var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
-      if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
-        const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
-        const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
-        return this.recvfrom(bufferLen, new timeval(remainingSeconds, remainingMicroSeconds), flags);
-      }
-      c_free(buffer);
-      throw SystemError.fromSyserr(err_out, "recv failed");
+      err_out = event_add(internalEvent, nil);
     }
-    return this.recvfrom(bufferLen, timeout, flags);
+    else {
+      err_out = event_add(internalEvent, c_ptrTo(timeout));
+    }
+    if err_out != 0 {
+      c_free(buffer);
+      throw new Error("recv failed");
+    }
+    var retval = localSync$.readFE();
+    t.stop();
+    if retval & EV_TIMEOUT != 0 {
+      c_free(buffer);
+      throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
+    }
+    var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
+    err_out = sys_recvfrom(this.socketFd, buffer, bufferLen:size_t, 0, addressStorage, length);
+    if err_out != 0 {
+      if err_out != EAGAIN && err_out != EWOULDBLOCK {
+        c_free(buffer);
+        throw SystemError.fromSyserr(err_out,"recv failed");
+      }
+      if timeout.tv_sec == -1 {
+        var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
+        if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
+          const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
+          const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
+          timeout.tv_sec = remainingSeconds;
+          timeout.tv_usec = remainingMicroSeconds;
+        }
+        c_free(buffer);
+        throw SystemError.fromSyserr(ETIMEDOUT, "recv timed out");
+      }
+    }
   }
   return (createBytesWithOwnedBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
 }
@@ -877,38 +883,40 @@ proc udpSocket.send(data: bytes, in address: ipAddr, in timeout = new timeval(-1
   defer {
     event_free(internalEvent);
   }
-  var t: Timer;
-  t.start();
-  if timeout.tv_sec == -1 {
-    err_out = event_add(internalEvent, nil);
-  }
-  else {
-    err_out = event_add(internalEvent, c_ptrTo(timeout));
-  }
-  if err_out != 0 {
-    throw SystemError.fromSyserr(err_out, "send failed");
-  }
-  var retval = localSync$.readFE();
-  t.stop();
-  if retval & EV_TIMEOUT != 0 {
-    throw SystemError.fromSyserr(ETIMEDOUT, "send timed out");
-  }
-  var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
-  err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
-  if err_out != 0 {
-    if err_out != EAGAIN && err_out != EWOULDBLOCK {
-      throw SystemError.fromSyserr(err_out, "send failed");
-    }
+  while err_out != 0 {
+    var t: Timer;
+    t.start();
     if timeout.tv_sec == -1 {
-      var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
-      if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
-        const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
-        const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
-        return this.send(data, address, new timeval(remainingSeconds, remainingMicroSeconds));
-      }
+      err_out = event_add(internalEvent, nil);
+    }
+    else {
+      err_out = event_add(internalEvent, c_ptrTo(timeout));
+    }
+    if err_out != 0 {
       throw SystemError.fromSyserr(err_out, "send failed");
     }
-    return this.send(data, address, timeout);
+    var retval = localSync$.readFE();
+    t.stop();
+    if retval & EV_TIMEOUT != 0 {
+      throw SystemError.fromSyserr(ETIMEDOUT, "send timed out");
+    }
+    var elapsedTime = t.elapsed(TimeUnits.microseconds):c_long;
+    err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
+    if err_out != 0 {
+      if err_out != EAGAIN && err_out != EWOULDBLOCK {
+        throw SystemError.fromSyserr(err_out, "send failed");
+      }
+      if timeout.tv_sec == -1 {
+        var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
+        if totalTimeout >= t.elapsed(TimeUnits.microseconds) {
+          const remainingMicroSeconds = ((totalTimeout - elapsedTime)%1000000);
+          const remainingSeconds = ((totalTimeout - elapsedTime)/1000000);
+          timeout.tv_sec = remainingSeconds;
+          timeout.tv_usec = remainingMicroSeconds;
+        }
+        throw SystemError.fromSyserr(ETIMEDOUT, "send timed out");
+      }
+    }
   }
   return length;
 }
