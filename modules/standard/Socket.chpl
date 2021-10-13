@@ -56,7 +56,14 @@
 module Socket {
 
 // TODO: replace with mason config
-//
+// Socket module uses -levent for creating a event loop
+// and -levent_pthreads to allow for multi-threaded event loop
+// access. Each function that has to wait for I/O adds its event
+// onto the event loop which then waits for the event to occur
+// as soon as the event occurs, a callback function is called
+// which writes back to a sync variable passed on to it my the
+// caller. The caller then reads the sync variable to determine
+// event type and processes things further.
 require "/usr/include/event2/event.h";
 require "/usr/include/event2/thread.h";
 require "-levent";
@@ -115,12 +122,49 @@ proc sys_sockaddr_t.init(in other: sys_sockaddr_t) {
 record ipAddr {
   pragma "no doc"
   var _addressStorage:sys_sockaddr_t;
+
+  pragma "no doc"
+  proc init(in address: sys_sockaddr_t) {
+    this._addressStorage = new sys_sockaddr_t(address);
+  }
+
+  pragma "no doc"
+  proc init() {
+    try! this._addressStorage = new sys_sockaddr_t(ipAddr.create()._addressStorage);
+  }
+
+  /*
+    Returns the family type of address.
+    :return: family type of address
+    :rtype: :type:`IPFamily`
+  */
+  proc const ref family {
+    return try! _addressStorage.family:IPFamily;
+  }
+
+  /*
+    Returns the host address.
+    :return: host address
+    :rtype: `string`
+  */
+  proc const ref host {
+    return try! _addressStorage.numericHost();
+  }
+
+  /*
+    Returns the `port` stored in record.
+    :return: Returns numeric port.
+    :rtype: `uint(16)`
+  */
+  proc const ref port {
+    return try! _addressStorage.port();
+  }
+
+  proc =(in other: ipAddr) {
+    this._addressStorage = new sys_sockaddr_t(other._addressStorage);
+  }
 }
 
-pragma "no doc"
-proc ipAddr.init(in address: sys_sockaddr_t) {
-  this._addressStorage = new sys_sockaddr_t(address);
-}
 
 /*
   Returns a new record of type :type:`ipAddr` prvoided `host`, `port`
@@ -193,36 +237,14 @@ proc type ipAddr.ipv6(host: ipv6Addr, port: uint(16) = 8000): ipAddr throws {
   return new ipAddr(addressStorage);
 }
 
-/*
-  Returns the family type of address.
-  :return: family type of address
-  :rtype: :type:`IPFamily`
-*/
-proc ipAddr.family throws {
-  return _addressStorage.family:IPFamily;
-}
-
-/*
-  Returns the host address.
-  :return: host address
-  :rtype: `string`
-*/
-proc ipAddr.host throws {
-  return _addressStorage.numericHost();
-}
-
-/*
-  Returns the `port` stored in record.
-  :return: Returns numeric port.
-  :rtype: `uint(16)`
-*/
-proc ipAddr.port throws {
-  return _addressStorage.port();
+/* compare ipAddr */
+inline operator !=(const ref lhs: ipAddr, const ref rhs: ipAddr) {
+  return try! lhs.family != rhs.family || lhs.host != rhs.host || lhs.port != rhs.port;
 }
 
 /* compare ipAddr */
-inline operator !=(in lhs: ipAddr,in rhs: ipAddr) throws {
-  return lhs.family != rhs.family || lhs.host != rhs.host || lhs.port != rhs.port;
+inline operator ==(const ref lhs: ipAddr, const ref rhs: ipAddr) {
+  return !(lhs != rhs);
 }
 
 /* write ipAddr */
@@ -259,7 +281,11 @@ proc ref tcpConn.socketFd throws {
   :rtype: `ipAddr`
 */
 proc tcpConn.addr throws {
-  return getpeername(this.socketFd);
+  var address:ipAddr;
+  on this.home {
+    address = getpeername(this.socketFd);
+  }
+  return address;
 }
 
 inline operator !=(const ref lhs: tcpConn,const ref rhs: tcpConn) {
@@ -353,8 +379,21 @@ record tcpListener {
   var socketFd: int(32) = -1;
 
   pragma "no doc"
+  proc init() {
+    try! this.socketFd = socket();
+    try! bind(this.socketFd, ipAddr.ipv4(port = 0), true);
+  }
+
+  pragma "no doc"
   proc init(socketFd: c_int) {
     this.socketFd = socketFd;
+    try! toggleBlocking(this.socketFd, false);
+  }
+
+  proc deinit() {
+    if this.socketFd != -1 {
+      sys_close(this.socketFd);
+    }
   }
 }
 
@@ -424,7 +463,7 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws 
       throw SystemError.fromSyserr(err_out, "accept() failed");
     }
     // no indefinitely blocking wait
-    if timeout.tv_sec == -1 {
+    if timeout.tv_sec != -1 {
       var totalTimeout = timeout.tv_sec*1000000 + timeout.tv_usec;
       // timer didn't elapsed
       if totalTimeout > t.elapsed(TimeUnits.microseconds) {
@@ -442,8 +481,12 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws 
 /*
   Close the file descriptor
 */
-proc tcpListener.close() {
-  sys_close(this.socketFd);
+proc ref tcpListener.close() throws {
+  var err_out = sys_close(this.socketFd);
+  if err_out != 0 {
+    throw SystemError.fromSyserr(err_out, "Failed to close tcpListener");
+  }
+  this.socketFd = -1;
 }
 
 /*
@@ -530,7 +573,7 @@ proc listen(in address: ipAddr, reuseAddr: bool = true, backlog: uint(16) = back
   :rtype: `tcpConn`
   :throws SystemError: Upon failure to connect.
 */
-proc connect(in address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws {
+proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws {
   var family = address.family;
   var socketFd = socket(family, SOCK_STREAM);
   var err_out = sys_connect(socketFd, address._addressStorage);
@@ -543,7 +586,8 @@ proc connect(in address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws
   }
   var localSync$: sync int = 0;
   localSync$.readFE();
-  var writerEvent = event_new(event_loop_base, socketFd, EV_WRITE | EV_TIMEOUT | EV_ET, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
+  toggleBlocking(socketFd, false);
+  var writerEvent = event_new(event_loop_base, socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
   defer {
     event_del(writerEvent);
     event_free(writerEvent);
@@ -558,6 +602,7 @@ proc connect(in address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws
     throw new Error("connect() failed");
   }
   var retval = localSync$.readFE();
+  toggleBlocking(socketFd, true);
   if retval & EV_TIMEOUT != 0 {
     throw SystemError.fromSyserr(ETIMEDOUT);
   }
@@ -663,12 +708,26 @@ record udpSocket {
   proc init(family: IPFamily = IPFamily.IPv4) {
     this.socketFd = -1;
     try! this.socketFd = socket(family, SOCK_DGRAM);
+    try! toggleBlocking(this.socketFd, false);
+  }
+
+  proc deinit() {
+    if this.socketFd != -1 {
+      sys_close(this.socketFd);
+    }
   }
 }
 
 /* Get :type:`ipAddr` associated with udp socket */
 proc udpSocket.addr throws {
   return getsockname(this.socketFd);
+}
+
+proc udpSocket.close throws {
+  var err_out = sys_close(this.socketFd);
+  if err_out != 0 {
+    throw SystemError.fromSyserr(err_out, "Failed to close udpSocket");
+  }
 }
 
 pragma "no doc"
@@ -1186,16 +1245,26 @@ proc socket(family:IPFamily = IPFamily.IPv4, sockType:c_int = SOCK_STREAM, proto
   if err != 0 {
     throw SystemError.fromSyserr(err, "Failed to create socket");
   }
+  return socketFd;
+}
+
+pragma "no doc"
+proc toggleBlocking(socketFd: fd_t, blocking: bool) throws {
   var flags:c_int;
-  err = sys_fcntl(socketFd, F_GETFL, flags);
+  var err = sys_fcntl(socketFd, F_GETFL, flags);
   if err != 0 {
     throw SystemError.fromSyserr(err, "Failed to get socket flags");
   }
-  err = sys_fcntl_long(socketFd, F_SETFL, flags | O_NONBLOCK, flags);
+  if blocking {
+    flags &= ~O_NONBLOCK;
+  }
+  else {
+    flags |= O_NONBLOCK;
+  }
+  err = sys_fcntl_long(socketFd, F_SETFL, flags, flags);
   if err != 0 {
     throw SystemError.fromSyserr(err, "Failed to make socket non blocking");
   }
-  return socketFd;
 }
 
 pragma "no doc"

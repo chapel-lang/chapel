@@ -6,26 +6,12 @@ proc test_connection_ipv4_dns(test: borrowed Test) throws {
   var host = "127.0.0.1";
   var address = ipAddr.ipv4(IPv4Localhost, port);
   var server = listen(address);
-  begin {
-    try {
+  sync {
+    begin {
       var conn = server.accept();
-      conn.close();
     }
-    catch e {
-      writeln(e);
-    }
-    server.close();
-  }
-
-  try {
     var conn = connect(host, port);
-    test.assertEqual(conn.addr.host, address.host);
-    test.assertEqual(conn.addr.port, address.port);
-    test.assertEqual(conn.addr.family, address.family);
-    conn.close();
-  }
-  catch e {
-    writeln(e);
+    test.assertEqual(conn.addr, address);
   }
 }
 
@@ -34,26 +20,12 @@ proc test_connection_ipv4_ipaddr(test: borrowed Test) throws {
   var host = "127.0.0.1";
   var address = ipAddr.ipv4(IPv4Localhost, port);
   var server = listen(address);
-  begin {
-    try {
+  sync {
+    begin {
       var conn = server.accept();
-      conn.close();
     }
-    catch e {
-      writeln(e);
-    }
-    server.close();
-  }
-
-  try {
-    var conn = connect(address);
-    test.assertEqual(conn.addr.host, address.host);
-    test.assertEqual(conn.addr.port, address.port);
-    test.assertEqual(conn.addr.family, address.family);
-    conn.close();
-  }
-  catch e {
-    writeln(e);
+    var conn = connect(host, port);
+    test.assertEqual(conn.addr, address);
   }
 }
 
@@ -78,26 +50,12 @@ proc test_connection_ipv6_dns(test: borrowed Test) throws {
   var host = "::1";
   var address = ipAddr.ipv6(IPv6Localhost, port);
   var server = listen(address);
-  begin {
-    try {
+  sync {
+    begin {
       var conn = server.accept();
-      conn.close();
     }
-    catch e {
-      writeln(e);
-    }
-    server.close();
-  }
-
-  try {
     var conn = connect(host, port);
-    test.assertEqual(conn.addr.host, address.host);
-    test.assertEqual(conn.addr.port, address.port);
-    test.assertEqual(conn.addr.family, address.family);
-    conn.close();
-  }
-  catch e {
-    writeln(e);
+    test.assertEqual(conn.addr, address);
   }
 }
 
@@ -106,26 +64,12 @@ proc test_connection_ipv6_ipaddr(test: borrowed Test) throws {
   var host = "::1";
   var address = ipAddr.ipv6(IPv6Localhost, port);
   var server = listen(address);
-  begin {
-    try {
+  sync {
+    begin {
       var conn = server.accept();
-      conn.close();
     }
-    catch e {
-      writeln(e);
-    }
-    server.close();
-  }
-
-  try {
-    var conn = connect(address);
-    test.assertEqual(conn.addr.host, address.host);
-    test.assertEqual(conn.addr.port, address.port);
-    test.assertEqual(conn.addr.family, address.family);
-    conn.close();
-  }
-  catch e {
-    writeln(e);
+    var conn = connect(host, port);
+    test.assertEqual(conn.addr, address);
   }
 }
 
