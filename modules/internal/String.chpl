@@ -1199,9 +1199,9 @@ module String {
     }
 
     // TODO: we don't need this
-    inline proc _join(const ref S) : string where isTuple(S) || isArray(S) {
-      return doJoin(this, S);
-    }
+    // inline proc _join(const ref S) : string where isTuple(S) || isArray(S) {
+    //   return doJoin(this, S);
+    // }
 
     /*
       :returns: A new string with the first character in uppercase (if it is a
@@ -1765,7 +1765,7 @@ module String {
         writeln(myString); // prints: "a|10|d"
    */
   inline proc string.join(const ref x: string ...) : string {
-    return _join(x);
+    return doJoin(this, x);
   }
 
   /*
@@ -1780,7 +1780,7 @@ module String {
   inline proc string.join(const ref x) : string where isTuple(x) {
     if !isHomogeneousTuple(x) || !isString(x[1]) then
       compilerError("join() on tuples only handles homogeneous tuples of strings");
-    return _join(x);
+    return doJoin(this, x);
   }
 
   /*
@@ -1792,7 +1792,7 @@ module String {
         writeln(myString); // prints: "a|10|d"
    */
   inline proc string.join(const ref x: [] string) : string {
-    return _join(x);
+    return doJoin(this, x);
   }
 
     /*

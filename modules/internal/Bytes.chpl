@@ -369,7 +369,7 @@ module Bytes {
     }
 
     inline proc join(const ref x: [] bytes) : bytes {
-      return _join(x);
+      return doJoin(this, x);
     }
 
     inline proc join(ir: _iteratorRecord): bytes {
@@ -377,9 +377,9 @@ module Bytes {
     }
 
     // TODO: we don't need this
-    inline proc _join(const ref S) : bytes where isTuple(S) || isArray(S) {
-      return doJoin(this, S);
-    }
+    // inline proc _join(const ref S) : bytes where isTuple(S) || isArray(S) {
+    //   return doJoin(this, S);
+    // }
   } // end of record bytes
 
   /*
@@ -692,7 +692,7 @@ module Bytes {
       :returns: A :mod:`bytes <Bytes>`
     */
     inline proc bytes.join(const ref x: bytes ...) : bytes {
-      return _join(x);
+      return doJoin(this, x);
     }
 
     /*
@@ -714,7 +714,7 @@ module Bytes {
     inline proc bytes.join(const ref x) : bytes where isTuple(x) {
       if !isHomogeneousTuple(x) || !isBytes(x[1]) then
         compilerError("join() on tuples only handles homogeneous tuples of bytes");
-      return _join(x);
+      return doJoin(this, x);
     }
 
     /*
