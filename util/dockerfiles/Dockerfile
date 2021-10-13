@@ -1,29 +1,41 @@
-FROM debian:10
+FROM debian:11
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
+    bash \
     ca-certificates \
+    clang-11 \
+    cmake \
     curl \
+    file \
     gcc \
+    git \
     g++ \
-    perl \
-    python \
-    python-dev \
-    python-setuptools \
+    libclang-11-dev \
+    libedit-dev \
     libgmp10 \
     libgmp-dev \
+    llvm-11-dev \
+    llvm-11 \
+    llvm-11-tools \
     locales \
-    bash \
     make \
     mawk \
-    file \
+    m4 \
+    perl \
     pkg-config \
-    git \
+    protobuf-compiler \
+    python-setuptools \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
 ENV CHPL_VERSION main
 ENV CHPL_HOME    /opt/chapel/$CHPL_VERSION
 ENV CHPL_GMP     system
+ENV CHPL_LLVM    system
 
 RUN mkdir -p /opt/chapel \
     && wget -q -O - https://github.com/chapel-lang/chapel/archive/$CHPL_VERSION.tar.gz | tar -xzC /opt/chapel --transform 's/chapel-//' \
