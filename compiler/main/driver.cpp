@@ -1686,7 +1686,38 @@ static void validateSettings() {
   checkUnsupportedConfigs();
 }
 
+static void maybeRelaunchInPrgEnv(int argc, char* argv[]) {
+  const char* CHPL_SKIP_PE_ENV_CHECK = getenv("CHPL_SKIP_PE_ENV_CHECK");
+  const char* PE_ENV = getenv("PE_ENV");
+  // Could also check for /etc/opt/cray/release/cle-release here
+  if (CHPL_SKIP_PE_ENV_CHECK == nullptr &&
+      PE_ENV != nullptr && PE_ENV[0] != '\0') {
+    if (0 == strcmp(PE_ENV, "gnu")) {
+      // OK, in a PrgEnv environment with PrgEnv-gnu
+    } else {
+      // Need to run ourselves again with PrgEnv-gnu
+      setupChplHome(argv[0]);
+      std::string exe = std::string(CHPL_HOME) +
+                        "/util/config/run-in-prgenv-gnu.bash";
+      std::vector<const char*> args;
+      args.push_back(exe.c_str());
+      for (int i = 0; i < argc; i++) {
+        args.push_back(argv[i]);
+      }
+      args.push_back(nullptr);
+
+      setenv("CHPL_SKIP_PE_ENV_CHECK", "1", 1);
+
+      execv(exe.c_str(), (char* const*) &args[0]);
+      // If that failed for some reason, continue not in PrgEnv-gnu
+    }
+  }
+}
+
 int main(int argc, char* argv[]) {
+
+  maybeRelaunchInPrgEnv(argc, argv);
+
   PhaseTracker tracker;
 
   startCatchingSignals();
