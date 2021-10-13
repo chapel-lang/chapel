@@ -6,8 +6,7 @@ import sys
 from distutils.spawn import find_executable
 
 import chpl_platform, overrides
-from utils import error, memoize, warning
-
+from utils import error, memoize, warning, run_command
 
 #
 # If we can't find a file $CHPL_HOME/make/Makefile.<compiler_val>,
@@ -383,6 +382,53 @@ def validate_compiler_settings():
     validate_inference_matches('host', 'c++')
     validate_inference_matches('target', 'c')
     validate_inference_matches('target', 'c++')
+
+@memoize
+def compute_gcc_prefix():
+    gcc_prefix = overrides.get('CHPL_GCC_PREFIX', '')
+
+    if not gcc_prefix:
+        # When 'gcc' is a command other than '/usr/bin/gcc',
+        # compute the 'gcc' prefix that LLVM should use.
+        gcc_path = find_executable('gcc')
+        if gcc_path == '/usr/bin/gcc' :
+            # In this common case, nothing else needs to be done,
+            # because we can assume that clang can find this gcc.
+            pass
+        elif gcc_path == None:
+            # Nothing else we can do here
+            pass
+        else:
+            # Try to figure out the GCC prefix by running gcc
+            out, err = run_command(['gcc', '-v'], stdout=True, stderr=True)
+            out = out + err
+
+            # look for the --prefix= specified when GCC was configured
+            words = out.split()
+            for word in words:
+                if word.startswith('--prefix='):
+                    gcc_prefix = word[len('--prefix='):]
+                    print ("Found --prefix ", gcc_prefix)
+                    break
+            # check that directory exists.
+            if gcc_prefix and os.path.isdir(gcc_prefix):
+                # if so, we are done.
+                pass
+            else:
+                # We didn't find a --prefix= flag, so fall back on a heuristic.
+                # try removing bin/gcc from the end
+                mydir = os.path.dirname(os.path.dirname(gcc_path))
+                if mydir and os.path.isdir(mydir):
+                    # then check for mydir/include
+                    inc = os.path.join(mydir, "include")
+                    if os.path.isdir(inc):
+                        gcc_prefix = mydir
+                    else:
+                        inc = os.path.join(mydir, "snos", "include")
+                        if os.path.isdir(inc):
+                            gcc_prefix = mydir
+
+    return gcc_prefix
 
 def _main():
     parser = optparse.OptionParser(usage='usage: %prog [--host|target])')
