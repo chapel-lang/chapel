@@ -173,8 +173,6 @@ module SharedObject {
       this.chpl_p = _to_borrowed(p);
       this.chpl_pn = rc;
 
-      this.complete();
-
       // Boost includes a mechanism for classes inheriting from
       // enable_shared_from_this to record a weak pointer back to the
       // shared pointer. That would need to be handled in a Phase 2
