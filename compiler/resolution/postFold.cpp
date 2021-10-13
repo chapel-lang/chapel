@@ -407,15 +407,18 @@ static Expr* postFoldPrimop(CallExpr* call) {
     INT_ASSERT(lhs && rhs);
 
     if (lhs->symbol()->isParameter() && rhs->symbol()->isParameter()) {
-      const char* lstr = get_string(lhs);
-      const char* rstr = get_string(rhs);
+      std::string lstr = unescapeString(get_string(lhs), lhs);
+      std::string rstr = unescapeString(get_string(rhs), rhs);
+
+      std::string concat = (lstr+rstr).c_str();
+      const char* concatCStr = concat.c_str();
 
       if (lhs->symbol()->type == dtString) {
-        retval = new SymExpr(new_StringSymbol(astr(lstr, rstr)));
+        retval = new SymExpr(new_StringSymbol(astr(concatCStr)));
       } else if (lhs->symbol()->type == dtBytes) {
-        retval = new SymExpr(new_BytesSymbol(astr(lstr, rstr)));
+        retval = new SymExpr(new_BytesSymbol(astr(concatCStr)));
       } else {
-        retval = new SymExpr(new_CStringSymbol(astr(lstr, rstr)));
+        retval = new SymExpr(new_CStringSymbol(astr(concatCStr)));
       }
 
       call->replace(retval);
