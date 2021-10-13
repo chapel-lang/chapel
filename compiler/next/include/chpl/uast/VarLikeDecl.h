@@ -39,22 +39,27 @@ class VarLikeDecl : public NamedDecl {
   int8_t initExpressionChildNum_;
 
   VarLikeDecl(ASTTag tag, ASTList children, Decl::Visibility vis,
+              Decl::Linkage linkage,
+              int linkageNameChildNum,
               UniqueString name,
               IntentList storageKind,
               int8_t typeExpressionChildNum,
               int8_t initExpressionChildNum)
-    : NamedDecl(tag, std::move(children), vis, name),
+    : NamedDecl(tag, std::move(children), vis, linkage,
+                linkageNameChildNum,
+                name),
       storageKind_(storageKind),
       typeExpressionChildNum_(typeExpressionChildNum),
       initExpressionChildNum_(initExpressionChildNum) {
 
-    assert(numChildren() <= 2);
+    // Linkage name can be a child num.
+    assert(numChildren() <= 3);
     if (typeExpressionChildNum >= 0) {
-      assert(typeExpressionChildNum <= 2);
+      assert(typeExpressionChildNum <= 3);
       assert(child(typeExpressionChildNum)->isExpression());
     }
     if (initExpressionChildNum >= 0) {
-      assert(initExpressionChildNum <= 2);
+      assert(initExpressionChildNum <= 3);
       assert(child(initExpressionChildNum)->isExpression());
     }
   }

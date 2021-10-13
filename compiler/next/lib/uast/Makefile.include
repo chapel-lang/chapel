@@ -54,6 +54,7 @@ NEXT_UAST_SRCS =                                 \
   EnumElement.cpp \
   ErroneousExpression.cpp \
   Expression.cpp \
+  ExternBlock.cpp \
   FnCall.cpp \
   For.cpp \
   Forall.cpp \
@@ -81,6 +82,7 @@ NEXT_UAST_SRCS =                                 \
   RealLiteral.cpp \
   Record.cpp \
   Reduce.cpp \
+  Require.cpp \
   Return.cpp \
   Select.cpp \
   Serial.cpp \

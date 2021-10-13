@@ -50,13 +50,13 @@ static void test1(Parser* parser) {
   auto functionDecl = mod->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->name().compare("f") == 0);
-  assert(functionDecl->linkage() == Function::DEFAULT_LINKAGE);
+  assert(functionDecl->linkage() == Decl::DEFAULT_LINKAGE);
   assert(functionDecl->kind() == Function::PROC);
   assert(functionDecl->returnIntent() == Function::DEFAULT_RETURN_INTENT);
   assert(functionDecl->isInline() == false);
   assert(functionDecl->isOverride() == false);
   assert(functionDecl->throws() == false);
-  assert(functionDecl->linkageNameExpression() == nullptr);
+  assert(functionDecl->linkageName() == nullptr);
   assert(functionDecl->numFormals() == 0);
   assert(functionDecl->thisFormal() == nullptr);
   assert(functionDecl->returnType() == nullptr);
@@ -290,13 +290,13 @@ static void test2(Parser* parser) {
       "inline proc f(a: int) ref { x; }");
 
   assert(function->name().compare("f") == 0);
-  assert(function->linkage() == Function::DEFAULT_LINKAGE);
+  assert(function->linkage() == Decl::DEFAULT_LINKAGE);
   assert(function->kind() == Function::PROC);
   assert(function->returnIntent() == Function::REF);
   assert(function->isInline() == true);
   assert(function->isOverride() == false);
   assert(function->throws() == false);
-  assert(function->linkageNameExpression() == nullptr);
+  assert(function->linkageName() == nullptr);
   assert(function->numFormals() == 1);
   auto formal = function->formal(0);
   assert(formal);
@@ -325,13 +325,13 @@ static void test3(Parser* parser) {
       function,
       "override proc const R.f(ref a: int = b) const ref { }");
   assert(function->name().compare("f") == 0);
-  assert(function->linkage() == Function::DEFAULT_LINKAGE);
+  assert(function->linkage() == Decl::DEFAULT_LINKAGE);
   assert(function->kind() == Function::PROC);
   assert(function->returnIntent() == Function::CONST_REF);
   assert(function->isInline() == false);
   assert(function->isOverride() == true);
   assert(function->throws() == false);
-  assert(function->linkageNameExpression() == nullptr);
+  assert(function->linkageName() == nullptr);
   assert(function->numFormals() == 2); // 'this' and 'a'
 
   auto thisFormal = function->formal(0);

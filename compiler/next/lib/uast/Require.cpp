@@ -17,30 +17,17 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/MultiDecl.h"
+#include "chpl/uast/Require.h"
 
 #include "chpl/uast/Builder.h"
 
 namespace chpl {
 namespace uast {
 
-bool MultiDecl::isAcceptableMultiDecl() {
-  for (const auto& elt: children_) {
-    if (elt->isVariable() || elt->isComment() || elt->isTupleDecl()) {
-      // OK
-    } else {
-      return false;
-    }
-  }
-  return true;
-}
 
-owned<MultiDecl> MultiDecl::build(Builder* builder,
-                                  Location loc,
-                                  Decl::Visibility vis,
-                                  Decl::Linkage linkage,
-                                  ASTList varDecls) {
-  MultiDecl* ret = new MultiDecl(std::move(varDecls), vis, linkage);
+owned<Require> Require::build(Builder* builder, Location loc,
+                              ASTList actuals) {
+  Require* ret = new Require(std::move(actuals));
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

@@ -59,11 +59,13 @@ class TupleDecl final : public Decl {
   int typeExpressionChildNum_;
   int initExpressionChildNum_;
 
-  TupleDecl(ASTList children, Decl::Visibility vis, Variable::Kind kind,
+  TupleDecl(ASTList children, Decl::Visibility vis, Decl::Linkage linkage,
+            Variable::Kind kind,
             int numElements,       
             int typeExpressionChildNum,
             int initExpressionChildNum)
-    : Decl(asttags::TupleDecl, std::move(children), vis),
+    : Decl(asttags::TupleDecl, std::move(children), vis, linkage,
+           /*linkageNameChildNum*/ -1),
       kind_(kind),
       numElements_(numElements),
       typeExpressionChildNum_(typeExpressionChildNum),
@@ -71,6 +73,7 @@ class TupleDecl final : public Decl {
 
     assert(assertAcceptableTupleDecl());
   }
+
   bool assertAcceptableTupleDecl();
 
   bool contentsMatchInner(const ASTNode* other) const override {
@@ -82,6 +85,7 @@ class TupleDecl final : public Decl {
            lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
            lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
   }
+
   void markUniqueStringsInner(Context* context) const override {
     declMarkUniqueStringsInner(context);
   }
@@ -90,6 +94,7 @@ class TupleDecl final : public Decl {
   ~TupleDecl() override = default;
   static owned<TupleDecl> build(Builder* builder, Location loc,
                                 Decl::Visibility vis,
+                                Decl::Linkage linkage,
                                 Variable::Kind kind,
                                 ASTList elements,
                                 owned<Expression> typeExpression,
