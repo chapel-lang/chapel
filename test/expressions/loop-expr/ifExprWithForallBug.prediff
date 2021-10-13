@@ -1,4 +1,0 @@
-#!/bin/sh
-
-sed -i .bak "s/\(.*RES-RES-ION\).*/\1/" $2
-rm $2.bak
