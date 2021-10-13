@@ -5037,4 +5037,12 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       }
     }
   }
+
+  pragma "no doc"
+  inline proc bigint.hash(): uint {
+    // floor(pi/4 * 2^64)
+    var piSizeT = 0xc90fdaa22168c234;
+    var hashValue = this^(piSizeT + (this << 6) + (this >> 2));
+    return hashValue: uint;
+  }
 }
