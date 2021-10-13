@@ -40,18 +40,6 @@ endif
 
 LLVM_CLANG_CONFIG_FILE := $(LLVM_INSTALL_DIR)/configured-clang-sysroot-arguments
 
-# Sometimes one is using a custom version of GCC. In that event,
-# we'd like the built clang to use that version's std C++ headers, rather
-# than only finding the versions in /usr/include. To do that, pass
-# GCC_INSTALL_PREFIX for GCC builds.
-CHPL_LLVM_GCC_PREFIX := ""
-ifneq (, $(findstring gnu,$(CHPL_MAKE_HOST_COMPILER)))
-  CHPL_LLVM_GCC_PREFIX_DIR := $(shell ./find-gcc-prefix.sh $(CC))
-  ifneq ($(CHPL_LLVM_GCC_PREFIX_DIR),)
-    CHPL_LLVM_GCC_PREFIX := -DGCC_INSTALL_PREFIX=$(CHPL_LLVM_GCC_PREFIX_DIR)
-  endif
-endif
-
 # Decide if we want to dynamically link or not
 # This sets the default - it could be overridden during the make
 CHPL_LLVM_DYNAMIC := 1
@@ -120,7 +108,6 @@ llvm-config: FORCE
 	    -DCMAKE_EXE_LINKER_FLAGS='$(LDFLAGS)' \
 	    -DCMAKE_MODULE_LINKER_FLAGS='$(LDFLAGS)' \
 	    $(CHPL_LLVM_DEBUG) \
-	    $(CHPL_LLVM_GCC_PREFIX) \
 	    -DLLVM_ENABLE_WARNINGS=0 \
 	    -DLLVM_ENABLE_PEDANTIC=0 \
 	    -DCLANG_ENABLE_ARCMT=0 \
