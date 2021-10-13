@@ -12,9 +12,12 @@ c2chapelbin = os.path.dirname(sys.argv[3]) + '/c2chapel'
 # remove file to ensure that it is the output from c2chapel
 os.remove(filename)
 
-# execute c2chapel on the header file and write results to .chpl file
-subprocess.Popen([c2chapelbin, cfile, " > " + filename], stdout=subprocess.PIPE)
-#supro(c2chapelbin + ' ' + cfile + ' > ' + filename)
+regular_output = subprocess.check_output([c2chapelbin, cfile])
+gnu_output = subprocess.check_output([c2chapelbin, '--gnu-extensions', cfile])
 
-# execute c2chapel with gnu extensions as well
-os.system(c2chapelbin + ' --gnu-extensions ' + cfile + ' > ' + filename)
+if regular_output == gnu_output:
+    print("REGULAR OUTPUT: ", regular_output)
+    f = open(filename, "w")
+    # save output to file to ensure that it compiles
+    subprocess.Popen([c2chapelbin, "--gnu-extensions", cfile], stdout=f)
+
