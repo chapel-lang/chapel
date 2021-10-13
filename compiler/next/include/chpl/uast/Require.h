@@ -20,7 +20,7 @@
 #ifndef CHPL_UAST_REQUIRE_H
 #define CHPL_UAST_REQUIRE_H
 
-#include "chpl/uast/Call.h"
+#include "chpl/uast/Expression.h"
 #include "chpl/queries/Location.h"
 
 namespace chpl {
@@ -29,20 +29,27 @@ namespace uast {
 
 /**
   This class represents a require statement.
+
+  \rst
+  .. code-block:: chapel
+
+    // 'Require' tells the compiler where to look for C functions:
+    require "foo.h", "foo.c";
+
+  /endrst
 */
-class Require final : public Call {
+class Require final : public Expression {
  private:
   Require(ASTList children)
-    : Call(asttags::Require, std::move(children),
-           /*hasCalledExpression*/ false) {
+    : Expression(asttags::Require, std::move(children)) {
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
-    return callContentsMatchInner(other->toCall());
+    return expressionContentsMatchInner(other->toExpression());
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    callMarkUniqueStringsInner(context);
+    expressionMarkUniqueStringsInner(context);
   }
 
  public:
@@ -53,6 +60,30 @@ class Require final : public Call {
   */
   static owned<Require> build(Builder* builder, Location loc,
                               ASTList exprs);
+
+  /**
+    Return a way to iterate over the expressions of this require statement.
+  */
+  ASTListIteratorPair<Expression> exprs() const {
+    return ASTListIteratorPair<Expression>(children_.begin(),
+                                           children_.end());
+  }
+
+  /**
+    Return the number of expressions in this require statement.
+  */
+  int numExprs() const {
+    return this->numChildren();
+  }
+
+  /**
+    Return the i'th expression in this require statement.
+  */
+  const Expression* expr(int i) const {
+    const ASTNode* ast = this->child(i);
+    assert(ast->isExpression());
+    return (const Expression*)ast;
+  }
 
 };
 

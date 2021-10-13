@@ -2532,7 +2532,7 @@ tuple_var_decl_component:
                                      context->isVarDeclConfig,
                                      context->currentScopeIsAggregate(),
                                      /*typeExpression*/ nullptr,
-                                     /*typeExpression*/ nullptr);
+                                     /*initExpression*/ nullptr);
       $$ = varDecl.release();
     }
 

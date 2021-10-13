@@ -208,7 +208,7 @@ struct Converter {
 
   Expr* visit(const uast::Require* node) {
     CallExpr* actuals = new CallExpr(PRIM_ACTUALS_LIST);
-    for (auto expr : node->actuals()) {
+    for (auto expr : node->exprs()) {
       Expr* conv = convertAST(expr);
       assert(conv);
       actuals->insertAtTail(conv);

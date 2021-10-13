@@ -40,6 +40,7 @@ namespace uast {
       }
 
       writeln(cAdd(2, 2));
+    }
 
   \endrst
 
@@ -50,12 +51,14 @@ class ExternBlock final : public Expression {
 
   ExternBlock(std::string code)
     : Expression(asttags::ExternBlock),
-      code_(code) {
+      code_(std::move(code)) {
     assert(numChildren() == 0);
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
-    return expressionContentsMatchInner(other->toExpression());
+    ExternBlock* rhs = (ExternBlock*)other;
+    return this->code_ == rhs->code_ &&
+        expressionContentsMatchInner(other->toExpression());
   }
 
   void markUniqueStringsInner(Context* context) const override {

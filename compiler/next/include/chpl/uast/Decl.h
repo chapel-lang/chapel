@@ -48,6 +48,8 @@ class Decl : public Expression {
  private:
   Visibility visibility_;
   Linkage linkage_;
+
+  // Use -1 to indicate that there is no such child.
   int linkageNameChildNum_;
 
  protected:

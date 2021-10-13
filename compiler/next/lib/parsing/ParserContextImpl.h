@@ -1380,7 +1380,7 @@ void ParserContext::validateExternTypeDeclParts(YYLTYPE location,
     auto msg = "Cannot declare class types as export or extern";
     noteError(location, msg);
 
-    // Tell a white lie to keep the AST builder happy.
+    // Clear the linkage state for this so that parsing can continue.
     clearTypeDeclPartsLinkage(parts);
   }
 
@@ -1388,7 +1388,7 @@ void ParserContext::validateExternTypeDeclParts(YYLTYPE location,
     auto msg = "Cannot export union types";
     noteError(location, msg);
 
-    // Tell a white lie to keep the AST builder happy.
+    // Clear the linkage state for this so that parsing can continue.
     clearTypeDeclPartsLinkage(parts);
   }
 }

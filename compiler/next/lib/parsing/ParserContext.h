@@ -115,7 +115,11 @@ struct ParserContext {
   Decl::Linkage noteLinkage(Decl::Linkage linkage);
   Variable::Kind noteVarDeclKind(Variable::Kind varDeclKind);
 
-  // Use these kind of like a sync variable - avoid multiple parents.
+  // When 'store' is called the value of 'this->linkageName' must be empty
+  // or an assert will fire. When 'consume' is called 'this->linkageName'
+  // will be returned, and the new value will be nullptr. This is done
+  // to ensure that only one UAST node is a parent of the returned linkage
+  // name expression.
   void storeVarDeclLinkageName(Expression* linkageName);
   owned<Expression> consumeVarDeclLinkageName(void);
 
