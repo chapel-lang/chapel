@@ -1513,7 +1513,7 @@ static void setGPUFlags() {
   if(isGpuCodegen) {
     if (isSaveCDirEmpty) {
       int len = snprintf(saveCDir, FILENAME_MAX+1, "%s_gpu_files",
-                         (strlen(executableFilename) != 0 ? 
+                         (strlen(executableFilename) != 0 ?
                           executableFilename :
                           std::to_string(getpid()).c_str()));
       if(len < 0 || len >= FILENAME_MAX+1) {
@@ -1687,16 +1687,25 @@ static void validateSettings() {
 }
 
 static void maybeRelaunchInPrgEnv(int argc, char* argv[]) {
-  const char* CHPL_SKIP_PE_ENV_CHECK = getenv("CHPL_SKIP_PE_ENV_CHECK");
-  const char* PE_ENV = getenv("PE_ENV");
-  // Could also check for /etc/opt/cray/release/cle-release here
-  if (CHPL_SKIP_PE_ENV_CHECK == nullptr &&
-      PE_ENV != nullptr && PE_ENV[0] != '\0') {
-    if (0 == strcmp(PE_ENV, "gnu")) {
-      // OK, in a PrgEnv environment with PrgEnv-gnu
-    } else {
+  // Relaunch in PrgEnv-gnu if:
+  //  * platform is cray-x* or cray-ex
+  //  * CHPL_TARGET_COMPILER is llvm
+  //  * PE_ENV does not indicate PrgEnv-gnu is loaded
+
+  bool prgEnvPlatform = startsWith(CHPL_TARGET_PLATFORM, "cray-x") ||
+                        0 == strcmp(CHPL_TARGET_PLATFORM, "cray-ex");
+  bool targetLlvm = 0 == strcmp(CHPL_TARGET_COMPILER, "llvm");
+  if (prgEnvPlatform && targetLlvm) {
+    // Exit early if we have already tried relaunching
+    if (getenv("CHPL_SKIP_PE_ENV_CHECK") != nullptr)
+      return;
+
+    // check if PrgEnv-gnu is loaded
+    const char* PE_ENV = getenv("PE_ENV");
+    bool prgEnvGnu = PE_ENV != nullptr && 0 == strcmp(PE_ENV, "gnu");
+
+    if (!prgEnvGnu) {
       // Need to run ourselves again with PrgEnv-gnu
-      setupChplHome(argv[0]);
       std::string exe = std::string(CHPL_HOME) +
                         "/util/config/run-in-prgenv-gnu.bash";
       std::vector<const char*> args;
@@ -1708,16 +1717,23 @@ static void maybeRelaunchInPrgEnv(int argc, char* argv[]) {
 
       setenv("CHPL_SKIP_PE_ENV_CHECK", "1", 1);
 
+      if (printSystemCommands) {
+        printf("# relaunching under PrgEnv-gnu\n");
+        for (auto arg : args) {
+          if (arg != nullptr) {
+            printf("\"%s\" ", arg);
+          }
+        }
+        printf("\n");
+      }
       execv(exe.c_str(), (char* const*) &args[0]);
       // If that failed for some reason, continue not in PrgEnv-gnu
+      USR_WARN("Relaunching in PrgEnv-gnu failed");
     }
   }
 }
 
 int main(int argc, char* argv[]) {
-
-  maybeRelaunchInPrgEnv(argc, argv);
-
   PhaseTracker tracker;
 
   startCatchingSignals();
@@ -1757,6 +1773,8 @@ int main(int argc, char* argv[]) {
     process_args(&sArgState, argc, argv);
 
     setupChplGlobals(argv[0]);
+
+    maybeRelaunchInPrgEnv(argc, argv);
 
     postprocess_args();
 
