@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 # If building LLVM and Clang with GCC, the built
 # LLVM should use C++ headers from the selected GCC.
