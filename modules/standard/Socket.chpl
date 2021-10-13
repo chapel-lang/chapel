@@ -387,7 +387,7 @@ record tcpListener {
   pragma "no doc"
   proc init(socketFd: c_int) {
     this.socketFd = socketFd;
-    try! toggleBlocking(this.socketFd, false);
+    try! setBlocking(this.socketFd, false);
   }
 
   proc deinit() {
@@ -576,17 +576,19 @@ proc listen(in address: ipAddr, reuseAddr: bool = true, backlog: uint(16) = back
 proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws {
   var family = address.family;
   var socketFd = socket(family, SOCK_STREAM);
+  setBlocking(socketFd, false);
   var err_out = sys_connect(socketFd, address._addressStorage);
   if err_out != 0 && err_out != EINPROGRESS {
     sys_close(socketFd);
     throw SystemError.fromSyserr(err_out,"connect() failed");
   }
   if err_out == 0 {
+    setBlocking(socketFd, true);
     return openfd(socketFd):tcpConn;
   }
   var localSync$: sync int = 0;
   localSync$.readFE();
-  toggleBlocking(socketFd, false);
+  setBlocking(socketFd, false);
   var writerEvent = event_new(event_loop_base, socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
   defer {
     event_del(writerEvent);
@@ -602,7 +604,6 @@ proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn
     throw new Error("connect() failed");
   }
   var retval = localSync$.readFE();
-  toggleBlocking(socketFd, true);
   if retval & EV_TIMEOUT != 0 {
     throw SystemError.fromSyserr(ETIMEDOUT);
   }
@@ -611,6 +612,7 @@ proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn
     sys_close(socketFd);
     throw SystemError.fromSyserr(err_out,"connect() failed");
   }
+  setBlocking(socketFd, true);
   return openfd(socketFd):tcpConn;
 }
 
@@ -708,7 +710,7 @@ record udpSocket {
   proc init(family: IPFamily = IPFamily.IPv4) {
     this.socketFd = -1;
     try! this.socketFd = socket(family, SOCK_DGRAM);
-    try! toggleBlocking(this.socketFd, false);
+    try! setBlocking(this.socketFd, false);
   }
 
   proc deinit() {
@@ -1249,7 +1251,7 @@ proc socket(family:IPFamily = IPFamily.IPv4, sockType:c_int = SOCK_STREAM, proto
 }
 
 pragma "no doc"
-proc toggleBlocking(socketFd: fd_t, blocking: bool) throws {
+proc setBlocking(socketFd: fd_t, blocking: bool) throws {
   var flags:c_int;
   var err = sys_fcntl(socketFd, F_GETFL, flags);
   if err != 0 {
