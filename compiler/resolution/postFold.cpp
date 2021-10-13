@@ -410,7 +410,7 @@ static Expr* postFoldPrimop(CallExpr* call) {
       std::string lstr = unescapeString(get_string(lhs), lhs);
       std::string rstr = unescapeString(get_string(rhs), rhs);
 
-      std::string concat = (lstr+rstr).c_str();
+      std::string concat = lstr+rstr;
       const char* concatCStr = concat.c_str();
 
       if (lhs->symbol()->type == dtString) {
