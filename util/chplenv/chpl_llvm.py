@@ -399,7 +399,7 @@ def gather_pe_chpl_pkgconfig_libs():
     substrate = chpl_comm_substrate.get()
     auxfs = chpl_aux_filesys.get()
 
-    ret = os.environ['PE_CHAPEL_PKGCONFIG_LIBS']
+    ret = os.environ.get('PE_CHAPEL_PKGCONFIG_LIBS', '')
     if comm != 'none':
         if platform != 'hpe-cray-ex':
             # Adding -lhugetlbfs gets the PrgEnv driver to add the appropriate
@@ -420,7 +420,7 @@ def gather_pe_chpl_pkgconfig_libs():
 
         # on login/compute nodes, lustre requires the devel api to make
         # lustre/lustreapi.h available (it's implicitly available on esl nodes)
-        if lustre in auxfs:
+        if 'lustre' in auxfs:
           exists, returncode, out, err = try_run_command(
               ['pkg-config', '--exists', 'cray-lustre-api-devel'])
           if exists and returncode == 0:
@@ -444,7 +444,7 @@ def get_clang_prgenv_args():
         # Set up the environment to make the proper libraries and include
         # files available.
         os.environ['PE_PKGCONFIG_PRODUCTS'] = (
-            'PE_CHAPEL:' + os.environ['PE_PKGCONFIG_PRODUCTS']);
+            'PE_CHAPEL:' + os.environ.get('PE_PKGCONFIG_PRODUCTS',''));
 
         os.environ['PE_CHAPEL_MODULE_NAME'] = 'chapel'
         os.environ['PE_CHAPEL_PKGCONFIG_LIBS'] = gather_pe_chpl_pkgconfig_libs()
@@ -457,13 +457,13 @@ def get_clang_prgenv_args():
             arg = arg.strip()
             if (arg.startswith('-I') or
                 arg.startswith('-D')):
-                comp_args.add(arg)
+                comp_args.append(arg)
             elif (arg.startswith('-Wl') or
                   arg.startswith('-L') or
                   arg.startswith('-l') or
                   arg == '-dynamic' or
                   arg == '-static'):
-                link_args.add(arg)
+                link_args.append(arg)
 
     return (comp_args, link_args)
 
