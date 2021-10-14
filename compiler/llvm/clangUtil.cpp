@@ -4120,7 +4120,13 @@ void makeBinaryLLVM(void) {
   std::vector<std::string> linkArgs;
   splitStringWhitespace(CHPL_LLVM_CLANG_LINK_ARGS, linkArgs);
 
-  if (compilingWithPrgEnv()) {
+  // This might still be needed on CLE 6 systems.
+  // However, it is not currently working on CLE 7 systems
+  // (leading to an error about not being able to find libnuma)
+  // Perhaps we can use CRAYPE_LINK_TYPE=dynamic to opt in to dynamic linking
+  // on CLE 6. Or, make this logic check for CLE 6
+  // with /etc/opt/cray/release/cle-release.
+  /*if (compilingWithPrgEnv()) {
     if (fLinkStyle == LS_DEFAULT) {
       // check for indication that the PrgEnv defaults to dynamic linking
       bool defaultDynamic = false;
@@ -4140,7 +4146,7 @@ void makeBinaryLLVM(void) {
         fLinkStyle = LS_STATIC;
       }
     }
-  }
+  }*/
 
   std::vector<std::string> clangLDArgs;
   for (auto & arg : runtimeArgs) {
