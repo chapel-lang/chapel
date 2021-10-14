@@ -348,13 +348,17 @@ def get_clang_additional_args():
     comp_args = [ ]
     link_args = [ ]
     basic_args = get_clang_basic_args()
+    has_sysroot = False
     for arg in basic_args:
         if arg == '-isysroot':
-            # Work around a bug in some versions of Clang that forget to
-            # search /usr/local/include and /usr/local/lib
-            # if there is a -isysroot argument.
-            comp_args.append('-I/usr/local/include')
-            link_args.append('-L/usr/local/lib')
+            has_sysroot = True
+
+    if has_sysroot:
+        # Work around a bug in some versions of Clang that forget to
+        # search /usr/local/include and /usr/local/lib
+        # if there is a -isysroot argument.
+        comp_args.append('-I/usr/local/include')
+        link_args.append('-L/usr/local/lib')
 
     return (comp_args, link_args)
 
