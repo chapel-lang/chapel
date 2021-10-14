@@ -27,4 +27,10 @@ void get_version(char * buf);
 void get_major_minor_version(char * buf);
 const char* get_configured_prefix();
 
+int get_major_version();
+int get_minor_version();
+int get_update_version();
+const char* get_build_version();
+bool get_is_official_release();
+
 #endif

@@ -48,3 +48,19 @@ const char*
 get_configured_prefix() {
   return CONFIGURED_PREFIX;
 }
+
+int get_major_version() {
+  return MAJOR_VERSION;
+}
+int get_minor_version() {
+  return MINOR_VERSION;
+}
+int get_update_version() {
+  return UPDATE_VERSION;
+}
+const char* get_build_version() {
+  return BUILD_VERSION;
+}
+bool get_is_official_release() {
+  return officialRelease;
+}
