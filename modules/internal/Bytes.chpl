@@ -708,8 +708,7 @@ module Bytes {
         var myJoinedArray = b"|".join([b"a",b"10",b"d"]);
         writeln(myJoinedArray); // prints: "a|10|d"
 
-    :arg x: values to be joined
-    :type x: array or tuple of :mod:`bytes <Bytes>`
+    :arg x: An array or tuple of :mod:`bytes <Bytes>` values to be joined
 
     :returns: A :mod:`bytes <Bytes>`
   */

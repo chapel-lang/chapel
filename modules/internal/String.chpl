@@ -1792,8 +1792,7 @@ module String {
         var myJoinedArray = "|".join(["a","10","d"]);
         writeln(myJoinedArray); // prints: "a|10|d"
 
-    :arg x: values to be joined
-    :type x: array or tuple of :mod:`string <String>`
+    :arg x: An array or tuple of :mod:`string <String>` values to be joined
 
     :returns: A :mod:`string <String>`
   */
