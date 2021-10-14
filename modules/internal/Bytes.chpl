@@ -370,7 +370,7 @@ module Bytes {
     }
 
     inline proc join(const ref x) where isTuple(x) {
-      if !isHomogeneousTuple(x) || !isBytes(x[1]) then
+      if !isHomogeneousTuple(x) || !isBytes(x[0]) then
         compilerError("join() on tuples only handles homogeneous tuples of bytes");
       return doJoin(this, x);
     }

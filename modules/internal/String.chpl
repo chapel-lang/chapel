@@ -1199,7 +1199,7 @@ module String {
     }
 
     inline proc join(const ref x) where isTuple(x) {
-      if !isHomogeneousTuple(x) || !isString(x[1]) then
+      if !isHomogeneousTuple(x) || !isString(x[0]) then
         compilerError("join() on tuples only handles homogeneous tuples of strings");
       return doJoin(this, x);
     }
