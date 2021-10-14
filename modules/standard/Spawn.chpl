@@ -745,6 +745,28 @@ module Spawn {
         (and not consuming its output).
 
     :arg buffer: if `true`, buffer input and output pipes (see above).
+
+    :throws BlockingIOError: when there weren't sufficient resources to perform
+                             one of the required actions
+
+    TODO: errors from subprocess.communicate()
+
+    :throws InterruptedError: when the call was interrupted in some way.
+    :throws SystemError: when invalid values were passed to the subprocess's
+                         stdin, or some other implementation issue occurred when
+                         shutting down the subprocess.
+    :throws PermissionError: when an implementation issue occurred with shutting
+                             down the subprocess
+    :throws FileNotFoundError: when an implementation issue occurred with
+                               shutting down the subprocess
+    :throws NotADirectoryError: when an implementation issue occurred with
+                                shutting down the subprocess
+    :throws IOError: when an implementation issue occurred with shutting down
+                     the subprocess
+    :throws IsADirectoryError: when an implementation issue occurred with
+                               shutting down the subprocess
+    :throws EOFError: when an implementation issue occurred with shutting down
+                      the subprocess
    */
   proc subprocess.wait(buffer=true) throws {
     try _throw_on_launch_error();
@@ -773,6 +795,12 @@ module Spawn {
         // send data to stdin
         _stop_stdin_buffering();
         try {
+          // Can return EACCES, EAGAIN, EBADF, EDEADLK, EFAULT, EFBIG, EINTR,
+          // EINVAL, EIO, EISDIR, ELOOP, EMSGSIZE, ENAMETOOLONG, ENOENT, ENOMEM,
+          // ENOSYS, ENOTDIR, ENOTRECOVERABLE, EOF, EOVERFLOW, EOWNERDEAD,
+          // EPERM, EROFS, ETXTBSY.  Of these, only EAGAIN, EINTR and EINVAL are
+          // something the user could respond to, the rest would likely only
+          // occur as a result of bugs in the implementation.
           this.stdin_channel.close();
         } catch e: SystemError {
           stdin_err = e.err;
@@ -784,6 +812,9 @@ module Spawn {
       // wait for child process to terminate
       var done:c_int = 0;
       var exitcode:c_int = 0;
+      // Can return ECHILD, EINTR, or EINVAL.  Of these, only EINTR is something
+      // the user should respond to, the rest would likely only occur as a
+      // result of bugs in the implementation.
       wait_err = qio_waitpid(pid, 1, done, exitcode);
       if done {
         this.running = false;
@@ -794,6 +825,12 @@ module Spawn {
       // Close stdout channel.
       if this.stdout_pipe {
         try {
+          // Can return EACCES, EAGAIN, EBADF, EDEADLK, EFAULT, EFBIG, EINTR,
+          // EINVAL, EIO, EISDIR, ELOOP, EMSGSIZE, ENAMETOOLONG, ENOENT, ENOMEM,
+          // ENOSYS, ENOTDIR, ENOTRECOVERABLE, EOF, EOVERFLOW, EOWNERDEAD,
+          // EPERM, EROFS, ETXTBSY.  Of these, only EAGAIN and EINTR are
+          // something the user could respond to, the rest would likely only
+          // occur as a result of bugs in the implementation.
           this.stdout_channel.close();
         } catch e: SystemError {
           stdout_err = e.err;
@@ -805,6 +842,12 @@ module Spawn {
       // Close stderr channel.
       if this.stderr_pipe {
         try {
+          // Can return EACCES, EAGAIN, EBADF, EDEADLK, EFAULT, EFBIG, EINTR,
+          // EINVAL, EIO, EISDIR, ELOOP, EMSGSIZE, ENAMETOOLONG, ENOENT, ENOMEM,
+          // ENOSYS, ENOTDIR, ENOTRECOVERABLE, EOF, EOVERFLOW, EOWNERDEAD,
+          // EPERM, EROFS, ETXTBSY.  Of these, only EAGAIN and EINTR are
+          // something the user could respond to, the rest would likely only
+          // occur as a result of bugs in the implementation.
           this.stderr_channel.close();
         } catch e: SystemError {
           stderr_err = e.err;
