@@ -3,9 +3,10 @@ import optparse
 import os
 import sys
 from distutils.spawn import find_executable
+import re
 
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
-from chpl_home_utils import get_chpl_third_party
+from chpl_home_utils import get_chpl_third_party, get_chpl_home
 from utils import memoize, error, run_command, try_run_command, warning
 
 # returns a tuple of supported major LLVM versions as strings
@@ -315,6 +316,33 @@ def get_gcc_prefix():
 
     return gcc_prefix
 
+@memoize
+def get_sysroot_resource_dir_args():
+    args = ''
+    target_platform = chpl_platform.get('target')
+    llvm_val = get()
+    if target_platform == "darwin" and llvm_val == "bundled":
+        # Add -isysroot and -resourcedir based upon what 'clang' uses
+        cfile = get_chpl_home() + "/runtime/include/sys_basic.h"
+        (out,err) = run_command(['clang', '-###', cfile],
+                                stdout=True, stderr=True)
+        out += err
+
+        found = re.search('"-isysroot" "([^"]+)"', out)
+        if found:
+            args += ' -isysroot ' + found.group(1)
+
+        found = re.search('"-resource-dir" "([^"]+)"', out)
+        if found:
+            args += ' -resource-dir ' + found.group(1)
+
+        if args:
+            # add -L/usr/local/lib
+            # since some versions of clang forget to search it with -isysroot
+            args += ' -L/usr/local/lib'
+
+    return args.strip()
+
 # On some systems, we need to give clang some arguments for it to
 # find the correct system headers.
 #  * when PrgEnv-gnu is loaded on an XC, we should provide
@@ -325,20 +353,23 @@ def get_gcc_prefix():
 @memoize
 def get_clang_args():
     clang_args = ''
+
     gcc_prefix = get_gcc_prefix()
     if gcc_prefix:
         clang_args += ' --gcc-toolchain=' + gcc_prefix
 
+    sysroot_args = get_sysroot_resource_dir_args()
+    if sysroot_args:
+        clang_args += ' ' + sysroot_args
+
+    # This is a workaround for problems with Homebrew llvm@11 on 10.14
+    # which avoids errors like
+    #  ld: unknown option: -platform_version
     target_platform = chpl_platform.get('target')
     if target_platform == "darwin":
         os_ver = run_command(['sw_vers', '-productVersion'])
         if os_ver.startswith('10.14'):
             clang_args += ' -mlinker-version=450'
-
-    # if we want to add -isysroot and -resource-dir:
-    #  * see gather-clang-sysroot-arguments (removed) for how
-    #  * need also to add -L/usr/local/lib
-    #    since some versions of clang forget to search it with -isysroot
 
     return clang_args.strip()
 
