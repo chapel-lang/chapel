@@ -684,8 +684,8 @@ module Spawn {
      :throws InterruptedError: when the poll was interrupted by
                                a signal.
 
-     :throws SystemError: if a mistake has been made in the implementation of
-                          this function or type.
+     :throws SystemError: if something else has gone wrong when polling the
+                          subprocess.
    */
   proc subprocess.poll() throws {
     try _throw_on_launch_error();
@@ -753,20 +753,8 @@ module Spawn {
 
     :throws InterruptedError: when the call was interrupted in some way.
     :throws SystemError: when invalid values were passed to the subprocess's
-                         stdin, or some other implementation issue occurred when
+                         stdin, or something else went wrong when
                          shutting down the subprocess.
-    :throws PermissionError: when an implementation issue occurred with shutting
-                             down the subprocess
-    :throws FileNotFoundError: when an implementation issue occurred with
-                               shutting down the subprocess
-    :throws NotADirectoryError: when an implementation issue occurred with
-                                shutting down the subprocess
-    :throws IOError: when an implementation issue occurred with shutting down
-                     the subprocess
-    :throws IsADirectoryError: when an implementation issue occurred with
-                               shutting down the subprocess
-    :throws EOFError: when an implementation issue occurred with shutting down
-                      the subprocess
    */
   proc subprocess.wait(buffer=true) throws {
     try _throw_on_launch_error();
