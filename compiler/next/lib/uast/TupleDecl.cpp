@@ -48,6 +48,7 @@ bool TupleDecl::assertAcceptableTupleDecl() {
 
 owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
                                   Decl::Visibility vis,
+                                  Decl::Linkage linkage,
                                   Variable::Kind kind,
                                   ASTList elements,
                                   owned<Expression> typeExpression,
@@ -73,8 +74,7 @@ owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
     list.push_back(std::move(initExpression));
   }
 
-  TupleDecl* ret = new TupleDecl(std::move(list), vis,
-                                 kind,
+  TupleDecl* ret = new TupleDecl(std::move(list), vis, linkage, kind,
                                  numElements,
                                  typeExpressionChildNum,
                                  initExpressionChildNum);

@@ -19,7 +19,6 @@ amenable to being documented using **chpldoc**:
    ChapelArray
    ChapelSyncvar
    String
-   ChapelComplex_forDocs
    ChapelTuple
 
 

@@ -50,7 +50,11 @@ class Module final : public NamedDecl {
   Kind kind_;
 
   Module(ASTList children, Decl::Visibility vis, UniqueString name, Kind kind)
-    : NamedDecl(asttags::Module, std::move(children), vis, name), kind_(kind) {
+    : NamedDecl(asttags::Module, std::move(children), vis,
+                Decl::DEFAULT_LINKAGE,
+                /*linkageNameChildNum*/ -1,
+                name),
+                kind_(kind) {
 
     assert(isExpressionASTList(children_));
   }

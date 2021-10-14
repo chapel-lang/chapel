@@ -1,6 +1,6 @@
 use MasonRun;
 
 proc main() {
-  const args: [0..3] string = ["mason", "run", "--build", "--force"];
+  const args: [0..2] string = ["run", "--build", "--force"];
   masonRun(args);
 }

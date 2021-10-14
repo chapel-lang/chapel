@@ -853,13 +853,6 @@ static void checkNumArgsErrors(AggregateType* at, CallExpr* call, const char* ca
     USR_STOP();
   }
 
-  unsigned int numWithoutDefaults = 0;
-  for_vector(Symbol, sym, genericFields) {
-    if (sym->defPoint->init == NULL) {
-      numWithoutDefaults += 1;
-    }
-  }
-
   unsigned int numArgs = call->numActuals();
   if (numArgs > genericFields.size()) {
     USR_FATAL_CONT(call, "invalid type specifier '%s'", callString);

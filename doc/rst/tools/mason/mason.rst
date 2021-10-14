@@ -35,7 +35,7 @@ Basic Usage
 Starting a New Package
 ~~~~~~~~~~~~~~~~~~~~~~
 
-To initialize a new mason package, run ``mason new``. The same can also be done using ``mason init`` as follows: 
+To initialize a new mason package, run ``mason new``. The same can also be done using ``mason init`` as follows:
 
   .. code-block:: sh
 
@@ -53,19 +53,19 @@ A more advanced user may use the ``mason new [ options ] <project name>`` comman
 This creates a git repository by default, unless ``--no-vcs`` is included.
 
 Mason packages can also be initialized using the ``mason init [options] [directory path]``.
-To avoid the interactive session while initializing the project, run ``mason init -d | --default``. 
+To avoid the interactive session while initializing the project, run ``mason init -d | --default``.
 
 
-For example, for an existing directory named MyPackage, 
-    
+For example, for an existing directory named MyPackage,
+
   .. code-block:: sh
-    
-    mason init MyPackage 
 
-    # OR 
+    mason init MyPackage
+
+    # OR
 
     cd MyPackage
-    mason init -d  
+    mason init -d
 
 
 The package will have the following hierarchy::
@@ -91,10 +91,10 @@ additional functionality that comes with these folders later.
 Mason enforces that the main file be named after the package to enforce namespacing.
 ``MyPackage.chpl`` will be the first file listed in ``src/``.
 
-You can create a package in a directory that differs from the mason 
+You can create a package in a directory that differs from the mason
 package name with the `mason {new,init} --name` flag.
-This may be useful when creating a package in a directory that 
-is an illegal Mason package name, such as names with dashes. For example, 
+This may be useful when creating a package in a directory that
+is an illegal Mason package name, such as names with dashes. For example,
 
   .. code-block:: sh
 
@@ -224,16 +224,17 @@ For an example of forwarding arguments in a call to ``mason run``, a chapel prog
 mason might have a ``config const number`` that corresponds to a value used in ``MyPackage.chpl``.
 To try out different values at runtime, pass the values for ``number`` to ``mason run`` as follows::
 
-      mason run --number=100
-      mason run --number=1000
+      mason run -- --number=100
+      mason run -- --number=1000
 
 
 .. note::
 
-   For the case when a flag intended for the ``chpl`` compiler or executable is recognized by
-   ``mason build`` or ``mason run``, respectively, the flag can be thrown after ``--``
-   to override this conflict. For example, ``mason run -- -nl 4``. Instead of mason recognizing
-   this argument, this command will run the executable over 4 locales.
+   Previous releases allowed flags meant for the compiler or chapel program to be mixed with
+   those meant for ``mason build`` or ``mason run``, respectively. As of Chapel 1.25 and
+   mason 0.2.0, flags not intended for ``mason`` must follow a double dash ``--`` regardless
+   of if they conflict or not.
+
 
 
 Testing your Package

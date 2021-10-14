@@ -271,7 +271,7 @@ syn keyword chplType            owned shared borrowed unmanaged
 syn keyword chplType            nothing void
 syn keyword chplOperator	on reduce scan by align
 syn keyword chplStructure	class record union enum
-syn keyword chplStructure	proc iter cobegin begin local sync let select where
+syn keyword chplStructure	proc iter cobegin begin local sync let select where operator
 syn keyword chplStructure	pragma inline with private public forwarding
 syn keyword chplStructure	prototype override lifetime
 syn keyword chplBoolean		true false

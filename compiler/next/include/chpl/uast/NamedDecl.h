@@ -36,19 +36,25 @@ class NamedDecl : public Decl {
   UniqueString name_;
 
  protected:
-  NamedDecl(ASTTag tag, Decl::Visibility visibility, UniqueString name)
-    : Decl(tag, visibility), name_(name) {
+  NamedDecl(ASTTag tag, Decl::Visibility visibility, Decl::Linkage linkage,
+            UniqueString name)
+    : Decl(tag, visibility, linkage), name_(name) {
   }
 
   NamedDecl(ASTTag tag, ASTList children, Decl::Visibility visibility,
+            Decl::Linkage linkage,
+            int linkageNameChildNum,
             UniqueString name)
-    : Decl(tag, std::move(children), visibility), name_(name) {
+    : Decl(tag, std::move(children), visibility, linkage,
+           linkageNameChildNum),
+      name_(name) {
   }
 
   bool namedDeclContentsMatchInner(const NamedDecl* other) const {
     return this->name_ == other->name_ &&
            declContentsMatchInner(other);
   }
+
   void namedDeclMarkUniqueStringsInner(Context* context) const {
     name_.mark(context);
   }

@@ -61,14 +61,14 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Domain)                     //
   AST_NODE(Dot)                        //
   AST_LEAF(ErroneousExpression)        //
-  //AST_NODE(ExternBlock)              // old AST: ExternBlockStmt
+  AST_LEAF(ExternBlock)                // old AST: ExternBlockStmt
   AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
   //AST_NODE(Implements)               // old AST: ImplementsStmt
   AST_NODE(Import)                     // old AST: ImportStmt
   AST_NODE(Label)                      //
   AST_NODE(New)                        //
   AST_NODE(Range)                      //
-  //AST_NODE(Require)                  //
+  AST_NODE(Require)                    //
   AST_NODE(Return)                     //
   AST_NODE(Select)                     //
   AST_NODE(Sync)                       //

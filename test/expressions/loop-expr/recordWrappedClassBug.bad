@@ -1,0 +1,7 @@
+recordWrappedClassBug.chpl:15: error: const actual is passed to a 'ref' formal of chpl__initCopy()
+$CHPL_HOME/modules/internal/ChapelBase.chpl:880: In function 'init_elts':
+$CHPL_HOME/modules/internal/ChapelBase.chpl:897: error: default initialization with type 'R(owned C?)' is not yet supported
+recordWrappedClassBug.chpl:6: note: field 'c' is a generic value
+recordWrappedClassBug.chpl:6: note: consider separately declaring a type field for it or using a 'new' call
+  $CHPL_HOME/modules/internal/DefaultRectangular.chpl:1258: called as init_elts(x: _ddata(R(owned C?)), s: int(64), type t = R(owned C?), lo: int(64))
+  within internal functions (use --print-callstack-on-error to see)

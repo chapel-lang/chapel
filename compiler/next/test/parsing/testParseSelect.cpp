@@ -49,10 +49,9 @@ static void test0(Parser* parser) {
       "  otherwise /* c10 */ { f5(); }\n"
       "}\n"
       "/* c11 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isSelect());
@@ -121,14 +120,13 @@ static void test1(Parser* parser) {
       "  otherwise do { f4(); }\n"
       "}\n"
       "/* c2 */\n");
-  assert(parseResult.errors.size() == 1);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(parseResult.numErrors() == 1);
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isErroneousExpression());
   assert(mod->stmt(2)->isComment());
-  auto error = parseResult.errors[0];
+  auto error = parseResult.error(0);
   const char* expected = "Select has multiple otherwise clauses";
   auto actual = error.message();
   assert(actual == expected);
@@ -142,10 +140,9 @@ static void test2(Parser* parser) {
       "  otherwise do f2();\n"
       "}\n"
       "/* c2 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isSelect());
@@ -169,10 +166,9 @@ static void test3(Parser* parser) {
       "  otherwise do { f1(); }\n"
       "}\n"
       "/* c2 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isSelect());

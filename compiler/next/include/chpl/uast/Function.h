@@ -49,16 +49,12 @@ namespace uast {
  */
 class Function final : public NamedDecl {
  public:
-  enum Linkage {
-    DEFAULT_LINKAGE,
-    EXTERN,
-    EXPORT
-  };
   enum Kind {
     PROC,
     ITER,
     OPERATOR,
   };
+
   enum ReturnIntent {
     // Use IntentList here for consistent enum values.
     DEFAULT_RETURN_INTENT   = (int) IntentList::DEFAULT,
@@ -70,7 +66,6 @@ class Function final : public NamedDecl {
   };
 
  private:
-  Linkage linkage_;
   bool inline_;
   bool override_;
   Kind kind_;
@@ -80,13 +75,11 @@ class Function final : public NamedDecl {
   bool parenless_;
 
   // children store
-  //   linkageNameExpr
   //   formals (starting with 'this' formal for methods)
   //   return type
   //   where
   //   lifetime
   //   body
-  int linkageNameExprChildNum_;
   int formalsChildNum_;
   int thisFormalChildNum_;
   int numFormals_; // includes 'this' formal for methods
@@ -97,8 +90,9 @@ class Function final : public NamedDecl {
   int bodyChildNum_;
 
   Function(ASTList children,
-           UniqueString name, Decl::Visibility vis,
-           Linkage linkage,
+           UniqueString name,
+           Decl::Visibility vis,
+           Decl::Linkage linkage,
            bool inline_,
            bool override_,
            Kind kind,
@@ -106,7 +100,7 @@ class Function final : public NamedDecl {
            bool throws,
            bool primaryMethod,
            bool parenless,
-           int linkageNameExprChildNum,
+           int linkageNameChildNum,
            int formalsChildNum,
            int thisFormalChildNum,
            int numFormals,
@@ -115,8 +109,9 @@ class Function final : public NamedDecl {
            int lifetimeChildNum,
            int numLifetimeParts,
            int bodyChildNum)
-    : NamedDecl(asttags::Function, std::move(children), vis, name),
-      linkage_(linkage),
+    : NamedDecl(asttags::Function, std::move(children), vis, linkage,
+                linkageNameChildNum,
+                name),
       inline_(inline_),
       override_(override_),
       kind_(kind),
@@ -124,7 +119,6 @@ class Function final : public NamedDecl {
       throws_(throws),
       primaryMethod_(primaryMethod),
       parenless_(parenless),
-      linkageNameExprChildNum_(linkageNameExprChildNum),
       formalsChildNum_(formalsChildNum),
       thisFormalChildNum_(thisFormalChildNum),
       numFormals_(numFormals),
@@ -134,10 +128,6 @@ class Function final : public NamedDecl {
       numLifetimeParts_(numLifetimeParts),
       bodyChildNum_(bodyChildNum) {
 
-    assert(-1 <= linkageNameExprChildNum_ &&
-                 linkageNameExprChildNum_ < (ssize_t)children_.size());
-    assert(-1 <= linkageNameExprChildNum_ &&
-                 linkageNameExprChildNum_ < (ssize_t)children_.size());
     assert(-1 <= formalsChildNum_ &&
                  formalsChildNum_ < (ssize_t)children_.size());
     assert(-1 <= thisFormalChildNum_ &&
@@ -161,11 +151,11 @@ class Function final : public NamedDecl {
     }
     assert(isExpressionASTList(children_));
   }
+
   bool contentsMatchInner(const ASTNode* other) const override {
     const Function* lhs = this;
     const Function* rhs = (const Function*) other;
     return lhs->namedDeclContentsMatchInner(rhs) &&
-           lhs->linkage_ == rhs->linkage_ &&
            lhs->kind_ == rhs->kind_ &&
            lhs->returnIntent_ == rhs->returnIntent_ &&
            lhs->inline_ == rhs->inline_ &&
@@ -173,7 +163,6 @@ class Function final : public NamedDecl {
            lhs->throws_ == rhs->throws_ &&
            lhs->primaryMethod_ == rhs->primaryMethod_ &&
            lhs->parenless_ == rhs->parenless_ &&
-           lhs->linkageNameExprChildNum_ == rhs->linkageNameExprChildNum_ &&
            lhs->formalsChildNum_ == rhs->formalsChildNum_ &&
            lhs->thisFormalChildNum_ == rhs->thisFormalChildNum_ &&
            lhs->numFormals_ == rhs->numFormals_ &&
@@ -183,6 +172,7 @@ class Function final : public NamedDecl {
            lhs->numLifetimeParts_ == rhs->numLifetimeParts_ &&
            lhs->bodyChildNum_ == rhs->bodyChildNum_;
   }
+
   void markUniqueStringsInner(Context* context) const override {
     namedDeclMarkUniqueStringsInner(context);
   }
@@ -191,9 +181,10 @@ class Function final : public NamedDecl {
   ~Function() override = default;
 
   static owned<Function> build(Builder* builder, Location loc,
-                               UniqueString name, Decl::Visibility vis,
-                               Function::Linkage linkage,
-                               owned<Expression> linkageNameExpr,
+                               UniqueString name,
+                               Decl::Visibility vis,
+                               Decl::Linkage linkage,
+                               owned<Expression> linkageName,
                                bool inline_,
                                bool override_,
                                Function::Kind kind,
@@ -208,7 +199,6 @@ class Function final : public NamedDecl {
                                ASTList lifetime,
                                owned<Block> body);
 
-  Linkage linkage() const { return this->linkage_; }
   Kind kind() const { return this->kind_; }
   ReturnIntent returnIntent() const { return this->returnIntent_; }
   bool isInline() const { return this->inline_; }
@@ -216,26 +206,6 @@ class Function final : public NamedDecl {
   bool throws() const { return this->throws_; }
   bool isPrimaryMethod() const { return primaryMethod_; }
   bool isParenless() const { return parenless_; }
-
-  /**
-   Return the linkage name expression, e.g. "f_c_name"
-   in the below, or nullptr if there is none.
- 
-   \rst
-    .. code-block:: chapel
-
-        extern "f_c_name" proc f(arg) { }
-    \endrst
-   */
-  const Expression* linkageNameExpression() const {
-    if (linkageNameExprChildNum_ >= 0) {
-      const ASTNode* ast = child(linkageNameExprChildNum_);
-      assert(ast->isExpression());
-      return (const Expression*) ast;
-    } else {
-      return nullptr;
-    }
-  }
 
   /**
    Return a way to iterate over the formals, including the method

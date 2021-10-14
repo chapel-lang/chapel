@@ -1,0 +1,2 @@
+design: super should be private, only accessible on `this` within the class
+#8069

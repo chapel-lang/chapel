@@ -78,6 +78,27 @@ struct Converter {
     return ret;
   }
 
+  Flag convertFlagForDeclLinkage(const uast::ASTNode* node) {
+    if (auto decl = node->toDecl()) {
+      switch (decl->linkage()) {
+        case uast::Decl::EXTERN: return FLAG_EXTERN;
+        case uast::Decl::EXPORT: return FLAG_EXPORT;
+        default: return FLAG_UNKNOWN;
+      }
+    }
+
+    return FLAG_UNKNOWN;
+  }
+
+  const char* astrFromStringLiteral(const uast::ASTNode* node) {
+    if (auto strLit = node->toStringLiteral()) {
+      const char* ret = astr(strLit->str().c_str());
+      return ret;
+    }
+
+    return nullptr;
+  }
+
   Expr* visit(const uast::Comment* node) {
     // old ast does not represent comments
     return nullptr;
@@ -179,6 +200,21 @@ struct Converter {
     } else {
       return buildDotExpr(base, member.c_str());
     }
+  }
+
+  Expr* visit(const uast::ExternBlock* node) {
+    return buildExternBlockStmt(astr(node->code().c_str()));
+  }
+
+  Expr* visit(const uast::Require* node) {
+    CallExpr* actuals = new CallExpr(PRIM_ACTUALS_LIST);
+    for (auto expr : node->exprs()) {
+      Expr* conv = convertAST(expr);
+      assert(conv);
+      actuals->insertAtTail(conv);
+    }
+
+    return buildRequireStmt(actuals);
   }
 
   BlockStmt* visit(const uast::Import* node) {
@@ -1008,12 +1044,15 @@ struct Converter {
 
   Expr* visit(const uast::Function* node) {
     FnSymbol* fn = new FnSymbol("_");
+
     if (node->isInline()) {
       fn->addFlag(FLAG_INLINE);
     }
+
     if (node->isOverride()) {
       fn->addFlag(FLAG_OVERRIDE);
     }
+
     // TODO: add FLAG_NO_PARENS for parenless functions
 
     IntentTag thisTag = INTENT_BLANK;
@@ -1042,7 +1081,6 @@ struct Converter {
     }
 
     RetTag retTag = convertRetTag(node->returnIntent());
-
 
     // TODO: handle specified cname for extern/export functions
 
@@ -1079,14 +1117,31 @@ struct Converter {
       INT_ASSERT(lifetimeConstraints);
     }
 
-    BlockStmt* body = createBlockWithStmts(node->stmts());
-    BlockStmt* decl = buildFunctionDecl(fn, retTag, retType,
-                                        node->throws(), whereClause,
-                                        lifetimeConstraints,
-                                        body,
-                                        /* docs */ nullptr);
+    BlockStmt* body = nullptr;
 
-    return decl;
+    if (node->linkage() != uast::Decl::EXTERN) {
+      body = createBlockWithStmts(node->stmts());
+
+    // Clear the block statement for the body if function is extern.
+    } else {
+      if (node->numStmts()) {
+        USR_FATAL_CONT("Extern functions cannot have a body");
+      }
+    }
+
+    BlockStmt* ret = buildFunctionDecl(fn, retTag, retType, node->throws(),
+                                       whereClause,
+                                       lifetimeConstraints,
+                                       body,
+                                       /* docs */ nullptr);
+
+    if (node->linkage() != uast::Decl::DEFAULT_LINKAGE) {
+      Flag linkageFlag = convertFlagForDeclLinkage(node);
+      Expr* linkageName = convertExprOrNull(node->linkageName());
+      ret = buildExternExportFunctionDecl(linkageFlag, linkageName, ret);
+    }
+
+    return ret;
   }
 
   DefExpr* visit(const uast::Module* node) {
@@ -1143,8 +1198,16 @@ struct Converter {
   DefExpr* visit(const uast::Formal* node) {
     IntentTag intentTag = convertFormalIntent(node->intent());
 
-    Expr* typeExpr = convertExprOrNull(node->typeExpression());
+    Expr* typeExpr = nullptr;
     Expr* initExpr = convertExprOrNull(node->initExpression());
+
+    if (node->typeExpression()) {
+      if (auto bkt = node->typeExpression()->toBracketLoop()) {
+        typeExpr = convertArrayType(bkt);
+      } else {
+        typeExpr = convertAST(node->typeExpression());
+      }
+    }
 
     Expr* varargsVariable = nullptr; // TODO: handle varargs
 
@@ -1220,24 +1283,28 @@ struct Converter {
 
   CallExpr* convertArrayType(const uast::BracketLoop* node) {
     INT_ASSERT(node->isExpressionLevel());
-    INT_ASSERT(node->numStmts() == 1);
 
-    CallExpr* domActuals = new CallExpr(PRIM_ACTUALS_LIST);
+    Expr* domActuals = new SymExpr(gNil);
 
     // Convert domain expressions into arguments for a PRIM_ACTUALS_LIST.
     if (const uast::Domain* dom = node->iterand()->toDomain()) {
-      for (auto expr : dom->exprs()) {
-        domActuals->insertAtTail(convertAST(expr));
+      if (dom->numExprs()) {
+        CallExpr* actualsList = new CallExpr(PRIM_ACTUALS_LIST);
+        domActuals = actualsList;
+
+        for (auto expr : dom->exprs()) {
+          actualsList->insertAtTail(convertAST(expr));
+        }
+
+        domActuals = new CallExpr("chpl__ensureDomainExpr", actualsList);
       }
-    } else {
-      INT_FATAL("Not handled!");
     }
 
-    CallExpr* ensureDomainExpr = new CallExpr("chpl__ensureDomainExpr",
-                                              domActuals);
-    Expr* subType = convertAST(node->stmt(0));
+    Expr* subType = node->numStmts() ? convertAST(node->stmt(0))
+                                     : nullptr;
+
     CallExpr* ret = new CallExpr("chpl__buildArrayRuntimeType",
-                                 ensureDomainExpr,
+                                 domActuals,
                                  subType);
 
     return ret;
@@ -1252,6 +1319,11 @@ struct Converter {
 
     if (node->isConfig()) {
       varSym->addFlag(FLAG_CONFIG);
+    }
+
+    Flag linkageFlag = convertFlagForDeclLinkage(node);
+    if (linkageFlag != FLAG_UNKNOWN) {
+      varSym->addFlag(linkageFlag);
     }
 
     Expr* typeExpr = nullptr;
@@ -1302,24 +1374,38 @@ struct Converter {
 
   Expr* visit(const uast::Record* node) {
     const char* name = node->name().c_str();
-    const char* cname = name; // TODO: cname could be set for extern record
+    const char* cname = name;
     Expr* inherit = nullptr;
     BlockStmt* decls = createBlockWithStmts(node->declOrComments());
-    Flag externFlag = FLAG_UNKNOWN; // TODO: add extern record support
+    Flag linkageFlag = convertFlagForDeclLinkage(node);
+
+    // TODO (dlongnecke): This should be sanitized by the new parser.
+    if (node->linkageName()) {
+      cname = astrFromStringLiteral(node->linkageName());
+      assert(cname);
+    }
 
     return buildClassDefExpr(name, cname, AGGREGATE_RECORD, inherit, decls,
-                             externFlag, /* docs */ nullptr);
+                             linkageFlag,
+                             /*docs*/ nullptr);
   }
 
   Expr* visit(const uast::Union* node) {
     const char* name = node->name().c_str();
-    const char* cname = name; // TODO: cname could be set for extern union
+    const char* cname = name;
     Expr* inherit = nullptr;
     BlockStmt* decls = createBlockWithStmts(node->declOrComments());
-    Flag externFlag = FLAG_UNKNOWN; // TODO: add extern union support
+    Flag linkageFlag = convertFlagForDeclLinkage(node);
+
+    // TODO (dlongnecke): This should be sanitized by the new parser.
+    if (node->linkageName()) {
+      cname = astrFromStringLiteral(node->linkageName());
+      assert(cname);
+    }
 
     return buildClassDefExpr(name, cname, AGGREGATE_UNION, inherit, decls,
-                             externFlag, /* docs */ nullptr);
+                             linkageFlag,
+                             /* docs */ nullptr);
   }
 };
 

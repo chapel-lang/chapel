@@ -196,6 +196,7 @@ def compute_all_values():
     chpl_arch.validate('host')
     chpl_arch.validate('target')
     chpl_llvm.validate_llvm_config()
+    chpl_compiler.validate_compiler_settings()
 
 """Compute '--internal' env var values and populate global dict, ENV_VALS"""
 def compute_internal_values():

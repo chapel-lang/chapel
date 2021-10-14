@@ -64,11 +64,13 @@ class TaskVar final : public VarLikeDecl {
           int8_t initExpressionChildNum)
       : VarLikeDecl(asttags::TaskVar, std::move(children),
                     Decl::DEFAULT_VISIBILITY,
+                    Decl::DEFAULT_LINKAGE,
+                    /*linkageNameChildNum*/ -1,
                     name,
                     (IntentList)((int)intent),
                     typeExpressionChildNum,
-                    initExpressionChildNum)
-  { }
+                    initExpressionChildNum) {
+  }
 
   bool contentsMatchInner(const ASTNode* other) const override {
     const TaskVar* lhs = this;

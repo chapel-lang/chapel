@@ -117,6 +117,9 @@ do
   elif [[ $arg == -l* && $LINK == 1 ]]
   then
     echo $arg
+  elif [[ $arg == -dynamic && $LINK == 1 ]]
+  then
+    echo $arg
   fi
 done
 

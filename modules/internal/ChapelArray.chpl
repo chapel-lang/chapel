@@ -3438,7 +3438,7 @@ module ChapelArray {
     /* Return the last element in the array. The array must be a
        rectangular 1-D array.
      */
-    proc back() {
+    proc last {
       if !isRectangularArr(this) || this.rank != 1 then
         compilerError("back() is only supported on 1D rectangular arrays");
 
@@ -3448,10 +3448,15 @@ module ChapelArray {
       return this(this.domain.high);
     }
 
+    deprecated "Array back() method is deprecated; use :proc:`last` instead"
+    proc back() {
+      return this.last;
+    }
+    
     /* Return the first element in the array. The array must be a
        rectangular 1-D array.
      */
-    proc front() {
+    proc first {
       if !isRectangularArr(this) || this.rank != 1 then
         compilerError("front() is only supported on 1D rectangular arrays");
 
@@ -3459,6 +3464,11 @@ module ChapelArray {
         halt("front called on an empty array");
 
       return this(this.domain.low);
+    }
+
+    deprecated "Array front() method is deprecated; use :proc:`first` instead"
+    proc front() {
+      return this.first;
     }
 
     /* Reverse the order of the values in the array. */

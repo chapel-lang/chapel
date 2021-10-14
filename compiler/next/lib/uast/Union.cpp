@@ -26,12 +26,31 @@ namespace uast {
 
 
 owned<Union> Union::build(Builder* builder, Location loc,
-                          Decl::Visibility vis, UniqueString name,
+                          Decl::Visibility vis,
+                          Decl::Linkage linkage,
+                          owned<Expression> linkageName,
+                          UniqueString name,
                           ASTList contents) {
   ASTList lst;
-  int numElements = 0;
-  numElements = contents.size();
-  Union* ret = new Union(std::move(contents), vis, name, numElements);
+  int elementsChildNum = -1;
+  int numElements = contents.size();
+  int linkageNameChildNum = -1;
+
+  if (linkageName.get()) {
+    linkageNameChildNum = lst.size();
+    lst.push_back(std::move(linkageName));
+  }
+
+  elementsChildNum = lst.size();
+  for (auto& ast : contents) {
+    lst.push_back(std::move(ast));
+  }
+
+  Union* ret = new Union(std::move(lst), vis, linkage,
+                         linkageNameChildNum,
+                         name,
+                         elementsChildNum,
+                         numElements);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

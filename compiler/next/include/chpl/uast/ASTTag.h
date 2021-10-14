@@ -20,6 +20,8 @@
 #ifndef CHPL_UAST_ASTTAG_H
 #define CHPL_UAST_ASTTAG_H
 
+#include "chpl/queries/update-functions.h"
+
 namespace chpl {
 namespace uast {
 namespace asttags {
@@ -98,6 +100,16 @@ const char* tagToString(ASTTag tag);
 using chpl::uast::asttags::ASTTag;
 
 } // end namespace uast
+
+/// \cond DO_NOT_DOCUMENT
+template<> struct update<uast::ASTTag> {
+  bool operator()(uast::ASTTag& keep,
+                  uast::ASTTag& addin) const {
+    return defaultUpdateBasic(keep, addin);
+  }
+};
+/// \endcond
+
 } // end namespace chpl
 
 #endif

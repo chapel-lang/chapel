@@ -58,10 +58,9 @@ static void testRange(Parser* parser, const char* testName,
 
   auto parseResult = parser->parseString(testName, test.c_str());
 
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 1);
   assert(mod->stmt(0)->isVariable());
   const Variable* var = mod->stmt(0)->toVariable();
@@ -115,10 +114,9 @@ static void testArrayDomain(Parser* parser, const char* testName,
 
   auto parseResult = parser->parseString(testName, test.c_str());
 
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 1);
   assert(mod->stmt(0)->isVariable());
   const Variable* var = mod->stmt(0)->toVariable();

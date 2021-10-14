@@ -17,7 +17,7 @@ extern proc foo2(lambda_arg : c_double) : c_int;
 // ==== c2chapel typedefs ====
 
 // Fields omitted because one or more of the identifiers is a Chapel keyword
-extern "struct bar" record bar {}
+extern record bar {}
 
 // Unable to generate struct 'record' because its name is a Chapel keyword
 

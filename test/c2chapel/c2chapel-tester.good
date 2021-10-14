@@ -2,6 +2,7 @@ Testing c2chapel...
 No arguments: OK
 --help: OK
 File not found: OK
+anonymousStruct: OK
 arrayDecl: OK
 chapelKeywords: OK
 chapelVarargs: OK
@@ -23,6 +24,7 @@ opaqueUnion: OK
 simpleRecords: OK
 sysCTypes: OK
 Testing using GNU parser... 
+anonymousStruct: OK
 arrayDecl: OK
 chapelKeywords: OK
 chapelVarargs: OK

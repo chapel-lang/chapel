@@ -5,14 +5,14 @@ module FileHashing {
    */
   record SHA256Hash {
     /* The actual hash value */
-    var hash: 8*uint(32);
+    var hashVal: 8*uint(32);
 
     /* Help `writeln` and other calls output SHA256Hash value
        in a good format.
        */
 
     proc writeThis(f) throws {
-      for component in hash {
+      for component in hashVal {
         var s = try! "%08xu".format(component);
         f <~> s;
       }
@@ -24,17 +24,17 @@ module FileHashing {
     }
     /* How to initialize a SHA256Hash from another SHA256Hash */
     proc init=(from: SHA256Hash) {
-      this.hash = from.hash;
+      this.hashVal = from.hashVal;
     }
     /* How to initialize a SHA256Hash from a hash tuple */
-    proc init(hash: 8*uint(32)) {
-      this.hash = hash;
+    proc init(hashVal: 8*uint(32)) {
+      this.hashVal = hashVal;
     }
   }
 
   /* Called when assigning between SHA256Hash values */
   operator SHA256Hash.=(ref lhs: SHA256Hash, rhs: SHA256Hash) {
-    lhs.hash = rhs.hash;
+    lhs.hashVal = rhs.hashVal;
   }
 
   /* Helps to implement comparisons between SHA256Hash values.
@@ -43,8 +43,8 @@ module FileHashing {
   proc compare(a: SHA256Hash, b: SHA256Hash): int {
 
     for i in 0..7 {
-      var aa = a.hash[i];
-      var bb = b.hash[i];
+      var aa = a.hashVal[i];
+      var bb = b.hashVal[i];
       if aa < bb {
         return -1;
       }
@@ -139,9 +139,9 @@ module FileHashing {
       msg[msgi] = lastword;
     }
 
-    var hash:8*uint(32) = state.lastblock(msg, nbits);
+    var hashVal:8*uint(32) = state.lastblock(msg, nbits);
 
-    return new SHA256Hash(hash);
+    return new SHA256Hash(hashVal);
   }
 
   /*

@@ -38,13 +38,6 @@ ifneq ($(LLVM_SUBDIR),llvm-src)
   endif
 endif
 
-LLVM_SRC_FILE := $(LLVM_SRC_DIR)/CMakeLists.txt
-LLVM_CMAKE_FILE := $(LLVM_BUILD_DIR)/CMakeCache.txt
-LLVM_CONFIGURED_HEADER_FILE := $(LLVM_BUILD_DIR)/include/llvm/Config/llvm-config.h
-LLVM_HEADER_FILE := $(LLVM_INSTALL_DIR)/include/llvm/PassSupport.h
-LLVM_SUPPORT_FILE := $(LLVM_INSTALL_DIR)/lib/libLLVMSupport.a
-LLVM_CONFIG_FILE := $(LLVM_INSTALL_DIR)/bin/llvm-config
-LLVM_CLANG_FILE := $(LLVM_INSTALL_DIR)/bin/clang
 LLVM_CLANG_CONFIG_FILE := $(LLVM_INSTALL_DIR)/configured-clang-sysroot-arguments
 
 # Sometimes one is using a custom version of GCC. In that event,
@@ -103,12 +96,12 @@ clobber: FORCE
 # -DPOLLY_ENABLE_GPGPU_CODEGEN=ON
 # to the flags supplied below.
 
-$(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
+llvm-config: FORCE
 	mkdir -p $(LLVM_BUILD_DIR)
 	@if ./cmake-ok.sh $(CMAKE); then \
 	  echo ; \
 	else \
-	  echo Error: LLVM requires cmake 3.4.3 or later to build; \
+	  echo Error: LLVM requires cmake 3 to build; \
 	  exit 1; \
 	fi
 	
@@ -143,45 +136,15 @@ $(LLVM_CONFIGURED_HEADER_FILE): $(LLVM_SRC_FILE)
 	    $(LLVM_SRC_DIR) ; \
 
 
-$(LLVM_HEADER_FILE):
-	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
-	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-llvm-headers ; \
-	else \
-	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-headers ; \
-	fi
-
 # note: the conditional below allows parallel make to continue
 # if cmake us also using Make.
-$(LLVM_SUPPORT_FILE):
+llvm-build: FORCE
 	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
-	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-cmake-exports ; \
 	  cd $(LLVM_BUILD_DIR) && $(MAKE) LLVMSupport ; \
-	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-LLVMSupport ; \
-	else \
-	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-cmake-exports ; \
-	  cd $(LLVM_BUILD_DIR) && cmake --build . --target LLVMSupport ; \
-	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-LLVMSupport ; \
-	fi
-
-$(LLVM_CONFIG_FILE):
-	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
-	  cd $(LLVM_BUILD_DIR) && $(MAKE) llvm-config ; \
-	else \
-	  cd $(LLVM_BUILD_DIR) && cmake --build . --target llvm-config ; \
-	fi
-	mkdir -p $(LLVM_INSTALL_DIR)/bin
-	cp $(LLVM_BUILD_DIR)/bin/llvm-config $(LLVM_INSTALL_DIR)/bin/llvm-config
-
-# note: install target for config doesn't seem to exist
-#cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-config
-
-$(LLVM_CLANG_FILE):
-	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
 	  cd $(LLVM_BUILD_DIR) && $(MAKE) ; \
-	  cd $(LLVM_BUILD_DIR) && $(MAKE) install ; \
 	else \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target LLVMSupport ; \
 	  cd $(LLVM_BUILD_DIR) && cmake --build . --target clang ; \
-	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-clang ; \
 	fi
 
 # Create a file containing extra arguments for clang
@@ -197,11 +160,22 @@ $(LLVM_CLANG_CONFIG_FILE): FORCE
         fi
 	@$(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --update $(LLVM_CLANG_CONFIG_FILE) $(LLVM_CLANG_CONFIG_FILE).incoming
 
-configure-llvm: $(LLVM_CONFIGURED_HEADER_FILE)
+llvm-install: FORCE
+	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
+	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-cmake-exports ; \
+	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-LLVMSupport ; \
+	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-llvm-headers ; \
+	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-llvm-config ; \
+	  cd $(LLVM_BUILD_DIR) && $(MAKE) install ; \
+	else \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-cmake-exports ; \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-LLVMSupport ; \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-headers ; \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-llvm-config ; \
+	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-clang ; \
+	fi
 
-llvm: $(LLVM_CONFIGURED_HEADER_FILE) $(LLVM_HEADER_FILE) $(LLVM_SUPPORT_FILE) $(LLVM_CLANG_FILE) $(LLVM_CONFIG_FILE) $(LLVM_CLANG_CONFIG_FILE)
-
-llvm-minimal: $(LLVM_CONFIGURED_HEADER_FILE) $(LLVM_HEADER_FILE) $(LLVM_SUPPORT_FILE) $(LLVM_CONFIG_FILE)
+llvm: $(LLVM_CLANG_CONFIG_FILE) llvm-config llvm-build llvm-install
 
 llvm-clang: llvm
 

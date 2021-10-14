@@ -38,8 +38,9 @@ bool MultiDecl::isAcceptableMultiDecl() {
 owned<MultiDecl> MultiDecl::build(Builder* builder,
                                   Location loc,
                                   Decl::Visibility vis,
+                                  Decl::Linkage linkage,
                                   ASTList varDecls) {
-  MultiDecl* ret = new MultiDecl(std::move(varDecls), vis);
+  MultiDecl* ret = new MultiDecl(std::move(varDecls), vis, linkage);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

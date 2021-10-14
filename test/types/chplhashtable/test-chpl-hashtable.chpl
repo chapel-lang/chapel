@@ -86,9 +86,9 @@ operator R.=(ref lhs:R, rhs:R) {
 operator R.==(const ref lhs: R, const ref rhs: R) {
   return lhs.x == rhs.x && lhs.ptr.xx == rhs.ptr.xx;
 }
-proc chpl__defaultHash(o: R) {
-  return chpl__defaultHashCombine(chpl__defaultHash(o.x),
-                                  chpl__defaultHash(o.ptr.xx),
+proc R.hash() {
+  return chpl__defaultHashCombine(this.x.hash(),
+                                  this.ptr.xx.hash(),
                                   1);
 }
 

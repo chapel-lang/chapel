@@ -8,7 +8,7 @@ require "miscTypedefUnion.h";
 use CPtr;
 use SysCTypes;
 use SysBasic;
-extern union simpleUnion {
+extern "union simpleUnion" union simpleUnion {
   var a : c_int;
   var b : c_char;
   var c : c_void_ptr;
@@ -24,7 +24,7 @@ extern proc tdPointer(a : c_ptr(fancyUnion), b : c_ptr(c_ptr(renamedUnion))) : v
 
 
 
-extern union forwardUnion {
+extern "union forwardUnion" union forwardUnion {
   var a : c_int;
   var b : c_int;
 }
