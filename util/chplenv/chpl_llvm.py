@@ -226,7 +226,7 @@ def get_llvm_clang(lang):
     # tack on arguments that control clang's function
     clang_args = get_clang_args()
     if clang_args:
-        clang += clang_args
+        clang += " " + clang_args
 
     return clang
 
@@ -294,7 +294,6 @@ def get_gcc_prefix():
             for word in words:
                 if word.startswith('--prefix='):
                     gcc_prefix = word[len('--prefix='):]
-                    print ("Found --prefix ", gcc_prefix)
                     break
             # check that directory exists.
             if gcc_prefix and os.path.isdir(gcc_prefix):
@@ -341,7 +340,7 @@ def get_clang_args():
     #  * need also to add -L/usr/local/lib
     #    since some versions of clang forget to search it with -isysroot
 
-    return clang_args
+    return clang_args.strip()
 
 def _main():
     llvm_val = get()
