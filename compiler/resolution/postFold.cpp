@@ -410,15 +410,14 @@ static Expr* postFoldPrimop(CallExpr* call) {
       std::string lstr = unescapeString(get_string(lhs), lhs);
       std::string rstr = unescapeString(get_string(rhs), rhs);
 
-      std::string concat = lstr+rstr;
-      const char* concatCStr = concat.c_str();
+      std::string concat = chpl::quoteStringForC(lstr+rstr);
 
       if (lhs->symbol()->type == dtString) {
-        retval = new SymExpr(new_StringSymbol(astr(concatCStr)));
+        retval = new SymExpr(new_StringSymbol(astr(concat)));
       } else if (lhs->symbol()->type == dtBytes) {
-        retval = new SymExpr(new_BytesSymbol(astr(concatCStr)));
+        retval = new SymExpr(new_BytesSymbol(astr(concat)));
       } else {
-        retval = new SymExpr(new_CStringSymbol(astr(concatCStr)));
+        retval = new SymExpr(new_CStringSymbol(astr(concat)));
       }
 
       call->replace(retval);
