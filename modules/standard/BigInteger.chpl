@@ -5037,4 +5037,38 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       }
     }
   }
+
+  pragma "no doc"
+  inline proc bigint.hash(): uint {
+    var ret: uint = 0;
+    if _local {
+      for i in 0..#numLimbs do
+        ret = chpl__defaultHashCombine(chpl_gmp_mpz_getlimbn(this.mpz, i).hash(),
+                                       ret, (i+1));
+      if this < 0 then
+        ret = chpl__defaultHashCombine((-(mpz_size(this.mpz):int)).hash(),
+                                       ret, (numLimbs+1):int);
+      
+    } else if this.localeId == chpl_nodeID {
+      for i in 0..#numLimbs do
+        ret = chpl__defaultHashCombine(chpl_gmp_mpz_getlimbn(this.mpz, i).hash(),
+                                       ret, (i+1));
+      if this < 0 then
+        ret = chpl__defaultHashCombine((-(mpz_size(this.mpz):int)).hash(),
+                                       ret, (numLimbs+1):int);
+      
+    } else {
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", thisLoc) {
+        for i in 0..#numLimbs do
+          ret = chpl__defaultHashCombine(chpl_gmp_mpz_getlimbn(this.mpz, i).hash(),
+                                         ret, (i+1));
+        if this < 0 then
+          ret = chpl__defaultHashCombine((-(mpz_size(this.mpz):int)).hash(),
+                                         ret, (numLimbs+1):int);
+      }
+    }
+    return ret;
+  }
 }
