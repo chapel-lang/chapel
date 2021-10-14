@@ -2372,22 +2372,14 @@ void runClang(const char* just_parse_filename) {
 
   // Note that these CC arguments will be saved in info->clangCCArgs
   // and will be used when compiling C files as well.
-  bool saw_sysroot = false;
   for( size_t i = 0; i < args.size(); ++i ) {
     clangCCArgs.push_back(args[i]);
-    if (args[i] == "-isysroot")
-      saw_sysroot = true;
   }
 
   for_vector(const char, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
   clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
-  if (saw_sysroot) {
-    // Work around a bug in some versions of Clang that forget to
-    // search /usr/local/include if there is a -isysroot argument.
-    clangCCArgs.push_back(std::string("-I/usr/local/include"));
-  }
 
   //split ccflags by spaces
   splitStringWhitespace(ccflags, clangCCArgs);
@@ -4479,13 +4471,6 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
   for_vector(const char, dirName, libDirs) {
     command += " -L";
     command += dirName;
-  }
-
-  bool sawSysroot = command.find("-isysroot") != std::string::npos;
-  if (sawSysroot) {
-    // Work around a bug in some versions of Clang that forget to
-    // search /usr/local/lib if there is a -isysroot argument.
-    command += " -L/usr/local/lib";
   }
 
   for_vector(const char, libName, libFiles) {
