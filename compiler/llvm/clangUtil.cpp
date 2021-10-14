@@ -2256,6 +2256,11 @@ void runClang(const char* just_parse_filename) {
   clangCC = CHPL_LLVM_CLANG_C;
   clangCXX = CHPL_LLVM_CLANG_CXX;
 
+  // get any args passed to clangCC and add them to the builtin clang invocation
+  splitStringWhitespace(clangCC, clangCCArgs);
+  // but remove the first argument which is path/to/clang
+  clangCCArgs.erase(clangCCArgs.begin(), clangCCArgs.begin()+1);
+
   std::string runtime_includes(CHPL_RUNTIME_LIB);
   runtime_includes += "/";
   runtime_includes += CHPL_RUNTIME_SUBDIR;
@@ -4474,6 +4479,13 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
   for_vector(const char, dirName, libDirs) {
     command += " -L";
     command += dirName;
+  }
+
+  bool sawSysroot = command.find("-isysroot") != std::string::npos;
+  if (sawSysroot) {
+    // Work around a bug in some versions of Clang that forget to
+    // search /usr/local/lib if there is a -isysroot argument.
+    command += " -L/usr/local/lib";
   }
 
   for_vector(const char, libName, libFiles) {

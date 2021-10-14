@@ -336,10 +336,9 @@ def get_sysroot_resource_dir_args():
         if found:
             args += ' -resource-dir ' + found.group(1)
 
-        if args:
-            # add -L/usr/local/lib
-            # since some versions of clang forget to search it with -isysroot
-            args += ' -L/usr/local/lib'
+        # Some versions of clang also need -L/usr/local/lib
+        # if -isysroot is provided. This is added directly
+        # in the compiler to distinguish between compile and link.
 
     return args.strip()
 
