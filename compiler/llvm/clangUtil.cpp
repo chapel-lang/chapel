@@ -2261,6 +2261,7 @@ void runClang(const char* just_parse_filename) {
   // but remove the first argument which is path/to/clang
   clangCCArgs.erase(clangCCArgs.begin(), clangCCArgs.begin()+1);
 
+  // TODO: move this to printchplenv
   std::string runtime_includes(CHPL_RUNTIME_LIB);
   runtime_includes += "/";
   runtime_includes += CHPL_RUNTIME_SUBDIR;
@@ -2312,22 +2313,11 @@ void runClang(const char* just_parse_filename) {
   args.push_back(dashImodules + "/standard");
   args.push_back(dashImodules + "/packages");
 
+  // add arguments from CHPL_LLVM_CLANG_COMPILE_ARGS
+  splitStringWhitespace(CHPL_LLVM_CLANG_COMPILE_ARGS, args);
+
   // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
   expandInstallationPaths(args);
-
-  if (compilingWithPrgEnv()) {
-    std::string gather_prgenv(CHPL_HOME);
-    gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash compile '";
-    gather_prgenv += CHPL_TARGET_PLATFORM;
-    gather_prgenv += "' '";
-    gather_prgenv += CHPL_COMM;
-    gather_prgenv += "' '";
-    gather_prgenv += CHPL_COMM_SUBSTRATE;
-    gather_prgenv += "' '";
-    gather_prgenv += CHPL_AUX_FILESYS;
-    gather_prgenv += "'";
-    readArgsFromCommand(gather_prgenv, args);
-  }
 
   if (ccwarnings) {
     for (int i = 0; clang_warn[i]; i++) {
@@ -4097,6 +4087,7 @@ void makeBinaryLLVM(void) {
   maino += CHPL_RUNTIME_SUBDIR;
   maino += "/main.o";
 
+  // TODO: move this to printchplenv
   std::string runtime_libs(CHPL_RUNTIME_LIB);
   runtime_libs += "/";
   runtime_libs += CHPL_RUNTIME_SUBDIR;
@@ -4105,30 +4096,16 @@ void makeBinaryLLVM(void) {
   std::vector<std::string> runtimeArgs;
   readArgsFromFile(runtime_libs, runtimeArgs);
 
-  std::vector<std::string> clangLDArgs;
+  std::vector<std::string> linkArgs;
+  splitStringWhitespace(CHPL_LLVM_CLANG_LINK_ARGS, linkArgs);
 
   if (compilingWithPrgEnv()) {
-    std::string gather_prgenv(CHPL_HOME);
-    gather_prgenv += "/util/config/gather-cray-prgenv-arguments.bash link '";
-
-    gather_prgenv += CHPL_TARGET_PLATFORM;
-    gather_prgenv += "' '";
-    gather_prgenv += CHPL_COMM;
-    gather_prgenv += "' '";
-    gather_prgenv += CHPL_COMM_SUBSTRATE;
-    gather_prgenv += "' '";
-    gather_prgenv += CHPL_AUX_FILESYS;
-    gather_prgenv += "'";
-
-    std::vector<std::string> gatheredArgs;
-    readArgsFromCommand(gather_prgenv, gatheredArgs);
-
     if (fLinkStyle == LS_DEFAULT) {
       // check for indication that the PrgEnv defaults to dynamic linking
       bool defaultDynamic = false;
-      for(size_t i = 0; i < gatheredArgs.size(); i++) {
-        if (gatheredArgs[i] == "-Wl,-Bdynamic"   // when PE links with gcc
-            || gatheredArgs[i] == "-dynamic") {  // when PE links with clang
+      for (auto & arg : linkArgs) {
+        if (arg == "-Wl,-Bdynamic"   // when PE links with gcc
+            || arg == "-dynamic") {  // when PE links with clang
           defaultDynamic = true;
         }
       }
@@ -4142,27 +4119,14 @@ void makeBinaryLLVM(void) {
         fLinkStyle = LS_STATIC;
       }
     }
+  }
 
-    // Replace -lchpl_lib_token with the runtime arguments
-    // but don't add a redundant -lhugetlbfs because that
-    // library is already included
-    bool found = false;
-    for(size_t i = 0; i < gatheredArgs.size(); ++i) {
-      if (gatheredArgs[i] == "-lchpl_lib_token") {
-        found = true;
-        for(size_t j = 0; j < runtimeArgs.size(); ++j) {
-          if (runtimeArgs[j] != "-lhugetlbfs")
-            clangLDArgs.push_back(runtimeArgs[j]);
-        }
-      } else {
-        clangLDArgs.push_back(gatheredArgs[i]);
-      }
-    }
-
-    if (!found) INT_FATAL("could not find -lchpl_lib_token in gathered arguments");
-
-  } else {
-    clangLDArgs = runtimeArgs;
+  std::vector<std::string> clangLDArgs;
+  for (auto & arg : runtimeArgs) {
+    clangLDArgs.push_back(arg);
+  }
+  for (auto & arg : linkArgs) {
+    clangLDArgs.push_back(arg);
   }
 
   // Grab extra dependencies for multilocale libraries if needed.
