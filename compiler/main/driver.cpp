@@ -1710,7 +1710,7 @@ static void maybeRelaunchInPrgEnv(int argc, char* argv[]) {
 
     // check if PrgEnv-gnu is loaded
     const char* PE_ENV = getenv("PE_ENV");
-    bool prgEnvGnu = PE_ENV != nullptr && 0 == strcmp(PE_ENV, "gnu");
+    bool prgEnvGnu = PE_ENV != nullptr && 0 == strcmp(PE_ENV, "GNU");
 
     if (!prgEnvGnu) {
       // Need to run ourselves again with PrgEnv-gnu
