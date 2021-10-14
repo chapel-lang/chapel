@@ -29,9 +29,6 @@
 // this include sets CONFIGURED_PREFIX
 #include "configured_prefix.h"
 
-// this include sets CLANG_SETTINGS
-#include "clang_settings.h"
-
 void
 get_version(char *v) {
   v += sprintf(v, "%d.%d.%d", MAJOR_VERSION, MINOR_VERSION, UPDATE_VERSION);
@@ -50,25 +47,4 @@ get_major_minor_version(char *v) {
 const char*
 get_configured_prefix() {
   return CONFIGURED_PREFIX;
-}
-
-std::string
-get_clang_cc() {
-  std::string ret = CLANG_SETTINGS[0];
-  expandInstallationPaths(ret);
-  return ret;
-}
-
-std::string
-get_clang_cxx() {
-  std::string ret = CLANG_SETTINGS[1];
-  expandInstallationPaths(ret);
-  return ret;
-}
-
-std::string
-get_clang_sysroot_args() {
-  std::string ret = CLANG_SETTINGS[2];
-  expandInstallationPaths(ret);
-  return ret;
 }

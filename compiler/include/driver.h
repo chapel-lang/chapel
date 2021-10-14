@@ -134,6 +134,8 @@ extern const char* CHPL_RUNTIME_SUBDIR;
 extern const char* CHPL_LAUNCHER_SUBDIR;
 extern const char* CHPL_SYS_MODULES_SUBDIR;
 extern const char* CHPL_LLVM_UNIQ_CFG_PATH;
+extern const char* CHPL_LLVM_CLANG_C;
+extern const char* CHPL_LLVM_CLANG_CXX;
 
 extern bool  printPasses;
 extern FILE* printPassesFile;

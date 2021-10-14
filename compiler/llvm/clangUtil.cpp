@@ -2251,35 +2251,10 @@ void runClang(const char* just_parse_filename) {
   std::vector<std::string> clangOtherArgs;
 
   // find the path to clang and clang++
-  std::string llvm_install, clangCC, clangCXX;
+  std::string clangCC, clangCXX;
 
-  if (0 == strcmp(CHPL_LLVM, "system")) {
-    clangCC = get_clang_cc();
-    clangCXX = get_clang_cxx();
-  } else if (0 == strcmp(CHPL_LLVM, "llvm") ||
-             0 == strcmp(CHPL_LLVM, "bundled")) {
-    llvm_install += CHPL_THIRD_PARTY;
-    llvm_install += "/llvm/install/";
-    llvm_install += CHPL_LLVM_UNIQ_CFG_PATH;
-    llvm_install += "/bin/";
-    clangCC = llvm_install + "clang";
-    clangCXX = llvm_install + "clang++";
-  } else {
-    USR_FATAL("Unsupported CHPL_LLVM setting %s", CHPL_LLVM);
-  }
-
-  // read clang-sysroot-arguments
-  std::string sysroot_arguments(CHPL_THIRD_PARTY);
-  sysroot_arguments += "/llvm/install/";
-  sysroot_arguments += CHPL_LLVM_UNIQ_CFG_PATH;
-  sysroot_arguments += "/configured-clang-sysroot-arguments";
-
-  // read arguments from configured-clang-sysroot-arguments
-  // these might include a key -isysroot argument on Mac OS X
-  readArgsFromFile(sysroot_arguments, args);
-
-  // read arguments that we captured at compile time
-  splitStringWhitespace(get_clang_sysroot_args(), args);
+  clangCC = CHPL_LLVM_CLANG_C;
+  clangCXX = CHPL_LLVM_CLANG_CXX;
 
   std::string runtime_includes(CHPL_RUNTIME_LIB);
   runtime_includes += "/";
@@ -3777,22 +3752,19 @@ static void makeLLVMStaticLibrary(std::string moduleFilename,
 static void makeLLVMDynamicLibrary(std::string useLinkCXX, std::string options,
                             std::string moduleFilename, const char* tmpbinname,
                             std::vector<std::string> dotOFiles,
-                            std::vector<std::string> clangLDArgs,
-                            bool sawSysroot);
+                            std::vector<std::string> clangLDArgs);
 static std::string buildLLVMLinkCommand(std::string useLinkCXX,
                                         std::string options,
                                         std::string moduleFilename,
                                         std::string maino,
                                         const char* tmpbinname,
                                         std::vector<std::string> dotOFiles,
-                                        std::vector<std::string> clangLDArgs,
-                                        bool sawSysroot);
+                                        std::vector<std::string> clangLDArgs);
 static void runLLVMLinking(std::string useLinkCXX, std::string options,
                            std::string moduleFilename, std::string maino,
                            const char* tmpbinname,
                            std::vector<std::string> dotOFiles,
-                           std::vector<std::string> clangLDArgs,
-                           bool sawSysroot);
+                           std::vector<std::string> clangLDArgs);
 static std::string getLibraryOutputPath();
 static void moveGeneratedLibraryFile(const char* tmpbinname);
 static void moveResultFromTmp(const char* resultName, const char* tmpbinname);
@@ -4210,6 +4182,7 @@ void makeBinaryLLVM(void) {
   expandInstallationPaths(clangLDArgs);
 
 
+  // TODO: move this logic to printchplenv
   std::string runtime_ld_override(CHPL_RUNTIME_LIB);
   runtime_ld_override += "/";
   runtime_ld_override += CHPL_RUNTIME_SUBDIR;
@@ -4258,30 +4231,6 @@ void makeBinaryLLVM(void) {
   // If we decide to put it back, we might also need to
   // pass -Qunused-arguments or -Wno-error=unused-command-line-argument
   // to avoid unused argument errors for optimization flags.
-
-  std::vector<std::string> sysroot_args;
-  std::string sysroot_arguments(CHPL_THIRD_PARTY);
-  sysroot_arguments += "/llvm/install/";
-  sysroot_arguments += CHPL_LLVM_UNIQ_CFG_PATH;
-  sysroot_arguments += "/configured-clang-sysroot-arguments";
-
-  readArgsFromFile(sysroot_arguments, sysroot_args);
-
-  // add arguments from configured-clang-sysroot-arguments
-  bool sawSysroot = false;
-  for (auto &s : sysroot_args) {
-    options += " ";
-    options += s;
-    if (s == "-isysroot")
-      sawSysroot = true;
-  }
-
-  // only use clang sysroot args if we haven't overridden the linker
-  if (clangCXX == useLinkCXX) {
-    // add arguments that we captured at compile time
-    options += " ";
-    options += get_clang_sysroot_args();
-  }
 
   if(debugCCode) {
     options += " -g";
@@ -4333,7 +4282,7 @@ void makeBinaryLLVM(void) {
       break;
     case LS_DYNAMIC:
       makeLLVMDynamicLibrary(useLinkCXX, options, moduleFilename, tmpbinname,
-                             dotOFiles, clangLDArgs, sawSysroot);
+                             dotOFiles, clangLDArgs);
       break;
     default:
       INT_FATAL("Unsupported library link mode");
@@ -4344,7 +4293,7 @@ void makeBinaryLLVM(void) {
 
     // Runs the LLVM link command for executables.
     runLLVMLinking(useLinkCXX, options, moduleFilename, maino, outbin,
-                   dotOFiles, clangLDArgs, sawSysroot);
+                   dotOFiles, clangLDArgs);
   }
 
   // If we're not using a launcher, copy the program here
@@ -4391,8 +4340,7 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
                                    std::string moduleFilename,
                                    const char* tmpbinname,
                                    std::vector<std::string> dotOFiles,
-                                   std::vector<std::string> clangLDArgs,
-                                   bool sawSysroot) {
+                                   std::vector<std::string> clangLDArgs) {
 
   INT_ASSERT(fLibraryCompile && fLinkStyle == LS_DYNAMIC);
 
@@ -4417,8 +4365,7 @@ static void makeLLVMDynamicLibrary(std::string useLinkCXX,
   // No main object file for this call, since we're building a library.
   std::string command = buildLLVMLinkCommand(useLinkCXX, options,
                                              moduleFilename, "", tmpbinname,
-                                             dotOFiles, clangLDArgs,
-                                             sawSysroot);
+                                             dotOFiles, clangLDArgs);
 
   mysystem(command.c_str(), "Make Dynamic Library - Linking");
 }
@@ -4490,8 +4437,7 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
                                         std::string maino,
                                         const char* tmpbinname,
                                         std::vector<std::string> dotOFiles,
-                                        std::vector<std::string> clangLDArgs,
-                                        bool sawSysroot) {
+                                        std::vector<std::string> clangLDArgs) {
   // Run the linker. We always use a C++ compiler because some third-party
   // libraries are written in C++. Here we use clang++ or possibly a
   // linker override specified by the Makefiles (e.g. setting it to mpicxx)
@@ -4530,12 +4476,6 @@ static std::string buildLLVMLinkCommand(std::string useLinkCXX,
     command += dirName;
   }
 
-  if (sawSysroot) {
-    // Work around a bug in some versions of Clang that forget to
-    // search /usr/local/lib if there is a -isysroot argument.
-    command += " -L/usr/local/lib";
-  }
-
   for_vector(const char, libName, libFiles) {
     command += " -l";
     command += libName;
@@ -4548,8 +4488,7 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
                            std::string moduleFilename, std::string maino,
                            const char* tmpbinname,
                            std::vector<std::string> dotOFiles,
-                           std::vector<std::string> clangLDArgs,
-                           bool sawSysroot) {
+                           std::vector<std::string> clangLDArgs) {
 
   // This code is general enough to use elsewhere, thus the move.
   std::string command = buildLLVMLinkCommand(useLinkCXX,
@@ -4558,8 +4497,7 @@ static void runLLVMLinking(std::string useLinkCXX, std::string options,
                                              maino,
                                              tmpbinname,
                                              dotOFiles,
-                                             clangLDArgs,
-                                             sawSysroot);
+                                             clangLDArgs);
 
   mysystem(command.c_str(), "Make Binary - Linking");
 }

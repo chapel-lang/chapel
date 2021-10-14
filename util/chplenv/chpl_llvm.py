@@ -2,6 +2,7 @@
 import optparse
 import os
 import sys
+from distutils.spawn import find_executable
 
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party
@@ -221,12 +222,12 @@ def get_llvm_clang(lang):
         clang = os.path.join(llvm_subdir, 'bin', clang_name)
     else:
         return ''
-    # tack on the contents of configured-clang-sysroot-arguments
-    fname = os.path.join(get_chpl_third_party(), "llvm", "install", get_uniq_cfg_path_for(llvm_val), "configured-clang-sysroot-arguments")
-    if os.path.isfile(fname):
-        with open(fname) as f:
-            for line in f:
-                clang += " " + line.rstrip()
+
+    # tack on arguments that control clang's function
+    clang_args = get_clang_args()
+    if clang_args:
+        clang += clang_args
+
     return clang
 
 
@@ -267,6 +268,80 @@ def llvm_enabled():
         return True
 
     return False
+
+@memoize
+def get_gcc_prefix():
+    gcc_prefix = overrides.get('CHPL_LLVM_GCC_PREFIX', '')
+
+    if not gcc_prefix:
+        # When 'gcc' is a command other than '/usr/bin/gcc',
+        # compute the 'gcc' prefix that LLVM should use.
+        gcc_path = find_executable('gcc')
+        if gcc_path == '/usr/bin/gcc' :
+            # In this common case, nothing else needs to be done,
+            # because we can assume that clang can find this gcc.
+            pass
+        elif gcc_path == None:
+            # Nothing else we can do here
+            pass
+        else:
+            # Try to figure out the GCC prefix by running gcc
+            out, err = run_command(['gcc', '-v'], stdout=True, stderr=True)
+            out = out + err
+
+            # look for the --prefix= specified when GCC was configured
+            words = out.split()
+            for word in words:
+                if word.startswith('--prefix='):
+                    gcc_prefix = word[len('--prefix='):]
+                    print ("Found --prefix ", gcc_prefix)
+                    break
+            # check that directory exists.
+            if gcc_prefix and os.path.isdir(gcc_prefix):
+                # if so, we are done.
+                pass
+            else:
+                # We didn't find a --prefix= flag, so fall back on a heuristic.
+                # try removing bin/gcc from the end
+                mydir = os.path.dirname(os.path.dirname(gcc_path))
+                if mydir and os.path.isdir(mydir):
+                    # then check for mydir/include
+                    inc = os.path.join(mydir, "include")
+                    if os.path.isdir(inc):
+                        gcc_prefix = mydir
+                    else:
+                        inc = os.path.join(mydir, "snos", "include")
+                        if os.path.isdir(inc):
+                            gcc_prefix = mydir
+
+    return gcc_prefix
+
+# On some systems, we need to give clang some arguments for it to
+# find the correct system headers.
+#  * when PrgEnv-gnu is loaded on an XC, we should provide
+#    a --gcc-toolchain argument indicating the prefix of that GCC installation.
+#
+#  * on Mac OS X, we might need to provide -mlinker-version=450
+#    on 10.14 and in some cases -isysroot and -resource-dir.
+@memoize
+def get_clang_args():
+    clang_args = ''
+    gcc_prefix = get_gcc_prefix()
+    if gcc_prefix:
+        clang_args += ' --gcc-toolchain=' + gcc_prefix
+
+    target_platform = chpl_platform.get('target')
+    if target_platform == "darwin":
+        os_ver = run_command(['sw_vers', '-productVersion'])
+        if os_ver.startswith('10.14'):
+            clang_args += ' -mlinker-version=450'
+
+    # if we want to add -isysroot and -resource-dir:
+    #  * see gather-clang-sysroot-arguments (removed) for how
+    #  * need also to add -L/usr/local/lib
+    #    since some versions of clang forget to search it with -isysroot
+
+    return clang_args
 
 def _main():
     llvm_val = get()
