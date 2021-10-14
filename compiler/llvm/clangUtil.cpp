@@ -155,6 +155,12 @@ struct ClangInfo {
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangOtherArgs;
 
+  // the following 3 are here to make sure of no memory errors
+  // when clang has const char* pointers to these strings
+  std::string clangexe;
+  std::vector<std::string> driverArgs;
+  std::vector<const char*> driverArgsCStrings;
+
   clang::CodeGenOptions codegenOptions;
   llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions> diagOptions;
   clang::TextDiagnosticPrinter* DiagClient;
@@ -1542,27 +1548,28 @@ void setupClang(GenInfo* info, std::string mainFile)
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
 
-  std::string clangexe = clangInfo->clangCC;
-  std::vector<const char*> clangArgs;
+  clangInfo->clangexe = clangInfo->clangCC;
+  clangInfo->driverArgs.clear();
 
-  clangArgs.push_back("<chapel clang driver invocation>");
+  clangInfo->driverArgs.push_back("<chapel clang driver invocation>");
 
   for( size_t i = 0; i < clangInfo->clangCCArgs.size(); ++i ) {
-    clangArgs.push_back(clangInfo->clangCCArgs[i].c_str());
+    clangInfo->driverArgs.push_back(clangInfo->clangCCArgs[i]);
   }
   for( size_t i = 0; i < clangInfo->clangOtherArgs.size(); ++i ) {
-    clangArgs.push_back(clangInfo->clangOtherArgs[i].c_str());
+    clangInfo->driverArgs.push_back(clangInfo->clangOtherArgs[i]);
   }
 
-  clangArgs.push_back("-c");
-  clangArgs.push_back(mainFile.c_str()); // chpl - always compile rt file
+  clangInfo->driverArgs.push_back("-c");
+  // chpl - always compile rt file
+  clangInfo->driverArgs.push_back(mainFile.c_str());
 
   if (!fLlvmCodegen)
-    clangArgs.push_back("-fsyntax-only");
+    clangInfo->driverArgs.push_back("-fsyntax-only");
 
   if( printSystemCommands && developer ) {
-    for( size_t i = 0; i < clangArgs.size(); i++ ) {
-      printf("%s ", clangArgs[i]);
+    for( size_t i = 0; i < clangInfo->driverArgs.size(); i++ ) {
+      printf("%s ", clangInfo->driverArgs[i].c_str());
     }
     printf("\n");
   }
@@ -1590,11 +1597,16 @@ void setupClang(GenInfo* info, std::string mainFile)
   clangInfo->Diags = Diags;
   clangInfo->Clang = Clang;
 
-  clang::driver::Driver TheDriver(clangexe, llvm::sys::getDefaultTargetTriple(), *Diags);
+  clang::driver::Driver TheDriver(clangInfo->clangexe, llvm::sys::getDefaultTargetTriple(), *Diags);
 
   //   SetInstallDir(argv, TheDriver);
 
-  std::unique_ptr<clang::driver::Compilation> C(TheDriver.BuildCompilation(clangArgs));
+  for (auto & arg : clangInfo->driverArgs) {
+    clangInfo->driverArgsCStrings.push_back(arg.c_str());
+  }
+
+  std::unique_ptr<clang::driver::Compilation> C(
+      TheDriver.BuildCompilation(clangInfo->driverArgsCStrings));
 
   clang::driver::Command* job = NULL;
 
@@ -1673,7 +1685,7 @@ void setupClang(GenInfo* info, std::string mainFile)
     SmallString<128> P;
     SmallString<128> P2; // avoids a valgrind overlapping memcpy
 
-    P = clangexe;
+    P = clangInfo->clangexe;
     // Remove /clang from foo/bin/clang
     P2 = sys::path::parent_path(P);
     // Remove /bin   from foo/bin
@@ -2247,19 +2259,28 @@ void runClang(const char* just_parse_filename) {
   const char* clang_ieee_float = "-fno-fast-math";
 
   std::vector<std::string> args;
+  std::vector<std::string> split;
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangOtherArgs;
 
   // find the path to clang and clang++
   std::string clangCC, clangCXX;
 
-  clangCC = CHPL_LLVM_CLANG_C;
-  clangCXX = CHPL_LLVM_CLANG_CXX;
-
   // get any args passed to clangCC and add them to the builtin clang invocation
-  splitStringWhitespace(clangCC, clangCCArgs);
-  // but remove the first argument which is path/to/clang
-  clangCCArgs.erase(clangCCArgs.begin(), clangCCArgs.begin()+1);
+  split.clear();
+  splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
+  // set clangCC / clangCXX to just the first argument
+  for (size_t i = 0; i < split.size(); i++) {
+    if (i == 0)
+      clangCC = split[i];
+    else
+      clangCCArgs.push_back(split[i]);
+  }
+  split.clear();
+  splitStringWhitespace(CHPL_LLVM_CLANG_CXX, split);
+  if (split.size() > 0) {
+    clangCXX = split[0];
+  }
 
   // TODO: move this to printchplenv
   std::string runtime_includes(CHPL_RUNTIME_LIB);
