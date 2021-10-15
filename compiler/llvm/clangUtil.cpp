@@ -2401,8 +2401,13 @@ void runClang(const char* just_parse_filename) {
     // Check that the requested CPU is valid
     bool targetCpuValid = isTargetCpuValid(CHPL_TARGET_BACKEND_CPU);
     if (!targetCpuValid) {
-      USR_WARN("Unknown target CPU %s -- not specializing\n",
+      USR_WARN("Unknown target CPU %s -- not specializing",
                CHPL_TARGET_BACKEND_CPU);
+      std::string triple = getConfiguredTargetTriple();
+      USR_PRINT("To see available CPU types, run "
+                "%s --target=%s --print-supported-cpus",
+                clangCC.c_str(), triple.c_str());
+
     } else {
       std::string march = "-m";
       march += CHPL_TARGET_CPU_FLAG;
