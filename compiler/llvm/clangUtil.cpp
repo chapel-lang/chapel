@@ -34,14 +34,9 @@
 #ifdef HAVE_LLVM
 #include "clang/AST/GlobalDecl.h"
 
-// rely on CodeGenOptions.h being included from CompilerInstance.h
-// if we need to change that, LLVM 6 named it
-//   clang/Frontend/CodeGenOptions.h
-// but LLVM 8 named it
-//   clang/Basic/CodeGenOptions.h
-
-#include "clang/Basic/Version.h"
+#include "clang/Basic/CodeGenOptions.h"
 #include "clang/Basic/TargetInfo.h"
+#include "clang/Basic/Version.h"
 #include "clang/CodeGen/BackendUtil.h"
 #include "clang/CodeGen/CodeGenABITypes.h"
 #include "clang/CodeGen/ModuleBuilder.h"
