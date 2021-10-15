@@ -90,9 +90,6 @@ def adjust_cpu_for_compiler(cpu, flag, get_lcd):
     if isprgenv:
         cray_cpu = os.environ.get('CRAY_CPU_TARGET', 'none')
         if cpu and (cpu != 'none' and cpu != 'unknown' and cpu != cray_cpu):
-            if compiler_val == 'llvm':
-                if not cpu:
-                    cpu = cray_cpu
             if compiler_val != 'llvm':
                 warning("Setting the processor type through environment variables "
                         "is not supported for cray-prgenv-*. Please use the "
@@ -102,6 +99,9 @@ def adjust_cpu_for_compiler(cpu, flag, get_lcd):
             warning("No craype-* processor type module was detected, please "
                     "load the appropriate one if you want any specialization "
                     "to occur.")
+        if compiler_val == 'llvm':
+            if not cpu:
+                cpu = cray_cpu
         if get_lcd:
             cpu = get_module_lcd_cpu(platform_val, cpu)
             if cpu == 'none':
