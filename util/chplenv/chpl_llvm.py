@@ -453,21 +453,15 @@ def get_clang_prgenv_args():
         os.environ['PE_CHAPEL_MODULE_NAME'] = 'chapel'
         os.environ['PE_CHAPEL_PKGCONFIG_LIBS'] = gather_pe_chpl_pkgconfig_libs()
 
-        # Run cc --cray-print-opts=all to get the arguments the
-        # compiler driver wants to use
-        opts = run_command(['cc', '--cray-print-opts=all']).strip()
-        args = opts.split()
-        for arg in args:
-            arg = arg.strip()
-            if (arg.startswith('-I') or
-                arg.startswith('-D')):
-                comp_args.append(arg)
-            elif (arg.startswith('-Wl') or
-                  arg.startswith('-L') or
-                  arg.startswith('-l') or
-                  arg == '-dynamic' or
-                  arg == '-static'):
-                link_args.append(arg)
+        # Use cc --cray-print-opts=... to get arguments from compiler driver
+
+        # Get compilation arguments
+        opts = run_command(['cc', '--cray-print-opts=cflags'])
+        comp_args.extend(opts.split())
+
+        # Get link arguments
+        opts = run_command(['cc', '--cray-print-opts=libs'])
+        link_args.extend(opts.split())
 
     return (comp_args, link_args)
 
