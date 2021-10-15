@@ -748,10 +748,8 @@ module Spawn {
 
     :throws BlockingIOError: when there weren't sufficient resources to perform
                              one of the required actions
-
-    TODO: errors from subprocess.communicate()
-
     :throws InterruptedError: when the call was interrupted in some way.
+    :throws BrokenPipeError: when a pipe for the subprocess closed early.
     :throws SystemError: when invalid values were passed to the subprocess's
                          stdin, or something else went wrong when
                          shutting down the subprocess.
@@ -881,6 +879,14 @@ module Spawn {
     input to the child process and buffering up the output
     of the child process as necessary while waiting for
     it to terminate.
+
+    :throws BlockingIOError: when there weren't sufficient resources to perform
+                             one of the required actions
+    :throws InterruptedError: when the call was interrupted in some way.
+    :throws BrokenPipeError: when a pipe for the subprocess closed early.
+    :throws SystemError: when something went wrong when shutting down the
+                         subprocess
+
    */
   proc subprocess.communicate() throws {
     try _throw_on_launch_error();
