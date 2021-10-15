@@ -1704,6 +1704,11 @@ static void maybeRelaunchInPrgEnv(int argc, char* argv[]) {
                         0 == strcmp(CHPL_TARGET_PLATFORM, "cray-ex");
   bool targetLlvm = 0 == strcmp(CHPL_TARGET_COMPILER, "llvm");
   if (prgEnvPlatform && targetLlvm) {
+    // Default to not doing this.
+    // Keeping this code in for now for testing purposes.
+    if (getenv("CHPL_DO_PE_ENV_CHECK") == nullptr)
+      return;
+
     // Exit early if we have already tried relaunching
     if (getenv("CHPL_SKIP_PE_ENV_CHECK") != nullptr)
       return;
