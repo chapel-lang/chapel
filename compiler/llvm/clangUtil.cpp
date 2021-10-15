@@ -54,6 +54,7 @@
 #include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Verifier.h"
+#include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/SubtargetFeature.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Host.h"
@@ -1538,6 +1539,28 @@ static void cleanupClang(ClangInfo* clangInfo)
   deleteClang(clangInfo);
 }
 
+// Initialize LLVM targets if needed
+static void initializeLlvmTargets() {
+  static bool targetsInited = false;
+  if (targetsInited == false) {
+    llvm::InitializeAllTargets();
+    llvm::InitializeAllTargetMCs();
+    llvm::InitializeAllAsmPrinters();
+    llvm::InitializeAllAsmParsers();
+
+    targetsInited = true;
+  }
+}
+
+// Get a string corresponding to the LLVM target triple
+// for the current configuration
+static std::string getConfiguredTargetTriple() {
+  // TODO: use a different triple when cross compiling
+  // TODO: look at CHPL_TARGET_ARCH
+  return llvm::sys::getDefaultTargetTriple();
+}
+
+
 void setupClang(GenInfo* info, std::string mainFile)
 {
   ClangInfo* clangInfo = info->clangInfo;
@@ -1572,12 +1595,8 @@ void setupClang(GenInfo* info, std::string mainFile)
   // Initialize LLVM targets so that the clang commands can know if the
   // target CPU supports vectorization, avx, etc, etc
   // Also important for generating assembly from this program.
-  if (fLlvmCodegen) {
-    llvm::InitializeAllTargets();
-    llvm::InitializeAllTargetMCs();
-    llvm::InitializeAllAsmPrinters();
-    llvm::InitializeAllAsmParsers();
-  }
+  initializeLlvmTargets();
+  std::string triple = getConfiguredTargetTriple();
 
   // Create a compiler instance to handle the actual work.
   CompilerInstance* Clang = new CompilerInstance();
@@ -1592,7 +1611,7 @@ void setupClang(GenInfo* info, std::string mainFile)
   clangInfo->Diags = Diags;
   clangInfo->Clang = Clang;
 
-  clang::driver::Driver TheDriver(clangInfo->clangexe, llvm::sys::getDefaultTargetTriple(), *Diags);
+  clang::driver::Driver TheDriver(clangInfo->clangexe, triple, *Diags);
 
   //   SetInstallDir(argv, TheDriver);
 
@@ -2236,6 +2255,25 @@ bool setAlreadyConvertedExtern(ModuleSymbol* module, const char* name)
   return module->extern_info->gen_info->lvt->markAddedToChapelAST(name);
 }
 
+static bool isTargetCpuValid(const char* targetCpu) {
+  if (0 == strcmp(targetCpu, "native")) {
+    return true;
+  } else {
+    initializeLlvmTargets();
+    std::string triple = getConfiguredTargetTriple();
+    std::string err;
+    const llvm::Target* tgt = llvm::TargetRegistry::lookupTarget(triple, err);
+    if (tgt == nullptr || !err.empty()) {
+      return false;
+    }
+    bool targetCpuValid = false;
+    auto ptr = tgt->createMCSubtargetInfo(triple, "", "");
+    targetCpuValid = ptr->isCPUStringValid(CHPL_TARGET_BACKEND_CPU);
+    delete ptr;
+
+    return targetCpuValid;
+  }
+}
 
 void runClang(const char* just_parse_filename) {
   static bool is_installed_fatal_error_handler = false;
@@ -2359,11 +2397,19 @@ void runClang(const char* just_parse_filename) {
       0 != strcmp(CHPL_TARGET_CPU_FLAG, "none") &&
       0 != strcmp(CHPL_TARGET_BACKEND_CPU, "none") &&
       0 != strcmp(CHPL_TARGET_BACKEND_CPU, "unknown")) {
-    std::string march = "-m";
-    march += CHPL_TARGET_CPU_FLAG;
-    march += "=";
-    march += CHPL_TARGET_BACKEND_CPU;
-    args.push_back(march);
+
+    // Check that the requested CPU is valid
+    bool targetCpuValid = isTargetCpuValid(CHPL_TARGET_BACKEND_CPU);
+    if (!targetCpuValid) {
+      USR_WARN("Unknown target CPU %s -- not specializing\n",
+               CHPL_TARGET_BACKEND_CPU);
+    } else {
+      std::string march = "-m";
+      march += CHPL_TARGET_CPU_FLAG;
+      march += "=";
+      march += CHPL_TARGET_BACKEND_CPU;
+      args.push_back(march);
+    }
   }
 
   // Passing -ffast-math is important to get approximate versions
