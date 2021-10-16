@@ -71,8 +71,8 @@ require "-levent_pthreads";
 
 public use Sys;
 public use SysError;
+public use SysCTypes;
 use Time;
-use SysCTypes;
 use SysBasic;
 use CPtr;
 use IO;
@@ -591,7 +591,6 @@ proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn
   }
   var localSync$: sync int = 0;
   localSync$.readFE();
-  setBlocking(socketFd, false);
   var writerEvent = event_new(event_loop_base, socketFd, EV_WRITE | EV_TIMEOUT, c_ptrTo(syncRWTCallback), c_ptrTo(localSync$):c_void_ptr);
   defer {
     event_del(writerEvent);
@@ -608,7 +607,7 @@ proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn
   }
   var retval = localSync$.readFE();
   if retval & EV_TIMEOUT != 0 {
-    throw SystemError.fromSyserr(ETIMEDOUT);
+    throw SystemError.fromSyserr(ETIMEDOUT, "connect() timed out");
   }
   err_out = sys_connect(socketFd, address._addressStorage);
   if err_out != 0 {
