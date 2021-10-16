@@ -4,7 +4,6 @@ use IO;
 
 proc recv_string(test: borrowed Test) throws {
   var port:uint(16) = 8811;
-  var host = "127.0.0.1";
   var address = ipAddr.ipv4(IPv4Localhost, port);
   var server = listen(address);
   sync {
@@ -14,7 +13,7 @@ proc recv_string(test: borrowed Test) throws {
       writer.write("hello world\n");
     }
 
-    var conn = connect(host, port);
+    var conn = connect(address);
     var reader = conn.reader();
     var x:bytes;
     reader.readline(x);
@@ -22,10 +21,27 @@ proc recv_string(test: borrowed Test) throws {
   }
 }
 
-proc send_string(test: borrowed Test) throws {
-  var port:uint(16) = 8811;
-  var host = "127.0.0.1";
+proc recv_number(test: borrowed Test) throws {
+  var port:uint(16) = 8810;
   var address = ipAddr.ipv4(IPv4Localhost, port);
+  var server = listen(address);
+  sync {
+    begin {
+      var conn = server.accept();
+      var writer = conn.writer();
+      writer.write(42, " ");
+    }
+
+    var conn = connect(address);
+    var reader = conn.reader();
+    var y:int = reader.read(int);
+    test.assertEqual(y, 42);
+  }
+}
+
+proc send_string(test: borrowed Test) throws {
+  var port:uint(16) = 6000;
+  var address = ipAddr.ipv6(IPv6Localhost, port);
   var server = listen(address);
   sync {
     begin {
@@ -36,15 +52,14 @@ proc send_string(test: borrowed Test) throws {
       test.assertEqual(x, b"hello world\n");
     }
 
-    var conn = connect(host, port);
+    var conn = connect(address);
     var writer = conn.writer();
     writer.write("hello world\n");
   }
 }
 
 proc send_number(test: borrowed Test) throws {
-  var port:uint(16) = 8810;
-  var host = "127.0.0.1";
+  var port:uint(16) = 6000;
   var address = ipAddr.ipv4(IPv4Localhost, port);
   var server = listen(address);
   sync {
@@ -55,9 +70,9 @@ proc send_number(test: borrowed Test) throws {
       test.assertEqual(y, 42);
     }
 
-    var conn = connect(host, port);
+    var conn = connect(address);
     var writer = conn.writer();
-    writer.writeln(42);
+    writer.write(42, " ");
   }
 }
 
