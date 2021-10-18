@@ -34,6 +34,36 @@
 
 bool printSystemCommands = false;
 
+int myshell(const char* command,
+             const char* description,
+             bool        ignoreStatus,
+             bool        quiet) {
+
+  int status = 0;
+
+  if (printSystemCommands && !quiet) {
+    printf("\n# %s\n", description);
+    printf("%s\n", command);
+    fflush(stdout);
+    fflush(stderr);
+  }
+
+  // Treat a '#' at the start of a line as a comment
+  if (command[0] == '#')
+    return 0;
+
+  status = system(command);
+
+  if (status == -1) {
+    USR_FATAL("system() fork failed: %s", strerror(errno));
+
+  } else if (status != 0 && ignoreStatus == false) {
+    USR_FATAL("%s", description);
+  }
+
+  return status;
+}
+
 int mysystem(const char* command,
              const char* description,
              bool        ignoreStatus,
@@ -71,7 +101,6 @@ int mysystem(const std::vector<std::string> commandVec,
   if (printSystemCommands && !quiet) {
     printf("\n# %s\n", description);
     printf("%s\n", commandStr.c_str());
-    printf("%s", execArgs[0]);
     fflush(stdout);
     fflush(stderr);
   }
@@ -79,8 +108,6 @@ int mysystem(const std::vector<std::string> commandVec,
   // Treat a '#' at the start of a line as a comment
   if (commandStr.c_str()[0] == '#')
     return 0;
-
-
 
   pid_t childPid;
 
@@ -100,16 +127,3 @@ int mysystem(const std::vector<std::string> commandVec,
   }
   return WEXITSTATUS(status);
 }
-  //status = exec(execArgs.data());
-
-  //status = system(commandStr.c_str());
-
-  // if (status == -1) {
-  //   USR_FATAL("system() fork failed: %s", strerror(errno));
-
-  // } else if (status != 0 && ignoreStatus == false) {
-  //   USR_FATAL("%s", description);
-  // }
-
-  // return status;
-// }

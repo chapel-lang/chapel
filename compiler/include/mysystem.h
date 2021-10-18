@@ -26,6 +26,11 @@
 
 extern bool printSystemCommands;
 
+int myshell(const char* command,
+             const char* description,
+             bool        ignoreStatus = false,
+             bool        quiet = false);
+
 int mysystem(const std::vector<std::string> commandVec,
              const char* description,
              bool        ignorestatus = false,
