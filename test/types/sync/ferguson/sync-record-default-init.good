@@ -16,10 +16,11 @@ testDefaultInitSyncWriteEFReadXX
 init 1
 init
 init
-= 0 0
-deinit 0
-(x = 0, ptr = {})
-deinit 0
+= 0 1
+= 0 1
+deinit 1
+(x = 1, ptr = {})
+deinit 1
 deinit 1
 testDefaultInitSyncWriteEFReadFE
 init 1

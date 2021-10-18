@@ -552,10 +552,12 @@ module ChapelSyncvar {
 
         var localRet : valType;
 
-        if isPODType(valType) {
+        if isPODType(valType) ||
+           chpl_sync_isFull(c_ptrTo(value), syncAux) {
           localRet = value;
         } else {
-          // otherwise, just use the default value
+          // otherwise, just use the default value:
+          // localRet already stores the default.
         }
 
         chpl_sync_unlock(syncAux);
