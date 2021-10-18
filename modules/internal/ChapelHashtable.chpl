@@ -398,7 +398,8 @@ module ChapelHashtable {
       var slotNum = -1;
       var foundSlot = false;
 
-      if ((tableNumFullSlots+tableNumDeletedSlots+1)*(1/resizeThreshold)):int > tableSize {
+      if ((tableNumFullSlots + tableNumDeletedSlots + 1) *
+          (1 / resizeThreshold)):int > tableSize {
         resize(grow=true);
       }
 

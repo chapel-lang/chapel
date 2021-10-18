@@ -81,11 +81,12 @@ module Map {
 
     /* 
        Fractional value that specifies how full this map can be 
-       before requesting additiotional memory. Default value is 0.5,
-       which means that the map will not resize until the map is more
-       than 50% full.
+       before requesting additiotional memory. The default value of 
+       0.5 means that the map will not resize until the map is more
+       than 50% full. The acceptable values for this argument are
+       between 0 and 1, exclusive, meaning (0,1).
     */
-    const resizeThreshold: real;
+    const resizeThreshold = 0.5;
 
     pragma "no doc"
     var table: chpl__hashtable(keyType, valType);
@@ -117,7 +118,7 @@ module Map {
                             can be before requesting additional memory.
     */
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold: real = 0.5) {
+              resizeThreshold = 0.5) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
@@ -129,14 +130,15 @@ module Map {
     }
 
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold: real = 0.5)
+              resizeThreshold = 0.5)
     where isNonNilableClass(valType) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
-      assert((resizeThreshold > 0 && resizeThreshold < 1),
-             "'resizeThreshold' must be between 0 and 1");
+      if boundsChecking then
+        if resizeThreshold <= 0 || resizeThreshold >= 1 then
+          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
       this.resizeThreshold = resizeThreshold;
       table = new chpl__hashtable(keyType, valType, resizeThreshold);
     }

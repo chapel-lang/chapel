@@ -1,0 +1,1 @@
+resize-threshold-oob2.chpl:3: error: assert failed - 'resizeThreshold' must be between 0 and 1
