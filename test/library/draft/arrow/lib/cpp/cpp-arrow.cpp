@@ -230,6 +230,10 @@ int cpp_lowLevelRead(const char* filename, void* chpl_arr, int numElems) {
   }
 }
 
+const char* cpp_getVersionInfo(void) {
+  return arrow::GetBuildInfo().version_string.c_str();
+}
+
 extern "C" {
   // test function, writes 0..#numElems to file
   // can't write your own array yet
@@ -272,5 +276,9 @@ extern "C" {
 
   void c_lowLevelRead(const char* filename, void* chpl_arr, int numElems) {
     cpp_lowLevelRead(filename, chpl_arr, numElems);
+  }
+
+  const char* c_getVersionInfo(void) {
+    return cpp_getVersionInfo();
   }
 }

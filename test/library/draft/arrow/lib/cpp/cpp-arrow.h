@@ -30,7 +30,8 @@ extern "C" {
   void c_lowLevelRead(const char* filename, void* chpl_arr, int numElems);
   int cpp_lowLevelRead(const char* filename, void* chpl_arr, int numElems);
     
-    
+  const char* c_getVersionInfo(void);
+  const char* cpp_getVersionInfo(void);
  
   
 #ifdef __cplusplus

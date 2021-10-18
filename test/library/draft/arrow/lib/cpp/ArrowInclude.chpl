@@ -14,7 +14,17 @@ module ArrowInclude {
   extern proc c_getType(a,b): c_string;
   extern proc c_writeColumnToParquet(a, b, c, d, e, f);
   extern proc c_lowLevelRead(a, b, c);
+  extern proc c_getVersionInfo(): c_string;
 
+  proc getVersionInfo() {
+    extern proc strlen(str): c_int;
+    var cVersionString = c_getVersionInfo();
+    var ret;
+    try! ret = createStringWithNewBuffer(cVersionString,
+                                         strlen(cVersionString));
+    return ret;
+  }
+  
   proc getSubdomains(lengths: [?FD] int) {
     var subdoms: [FD] domain(1);
     var offset = 0;
