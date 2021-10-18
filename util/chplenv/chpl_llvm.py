@@ -389,8 +389,12 @@ def get_clang_basic_args():
     #  ld: unknown option: -platform_version
     target_platform = chpl_platform.get('target')
     if target_platform == "darwin":
-        os_ver = run_command(['sw_vers', '-productVersion'])
-        if os_ver.startswith('10.14'):
+        exists, returncode, my_stdout, my_stderr = try_run_command(
+                                                           ['sw_vers',
+                                                            '-productVersion'])
+        if (not exists) or (returncode != 0):
+            warning("Could not run sw_vers to detect OS version")
+        elif my_stdout.startswith('10.14'):
             clang_args.append('-mlinker-version=450')
 
     return clang_args
