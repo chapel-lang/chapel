@@ -247,8 +247,11 @@ module ChapelSyncvar {
   }
 
   /*
-    1) Read the value of the sync variable
-    2) Do not inspect or change the full/empty state
+    1) Read the value of the ``sync`` variable. For a full ``sync``, returns a
+       copy of the value stored. For an empty ``sync``, the implementation will
+       return either a new default-initialzed value of the value type or the
+       last value stored.
+    2) Does not change the full/empty state
 
     :returns: The value of the sync variable.
   */
@@ -901,10 +904,15 @@ module ChapelSyncvar {
   }
 
   /*
-    1) Read the value of the single variable
-    2) Do not inspect or change the full/empty state
 
-    :returns: The value of the single variable.
+    1) Read the value of the ``single`` variable. For a full ``single``, returns
+       a copy of the value stored. For an empty ``single``, the implementation
+       will return either a new default-initialzed value of the value type or
+       the last value stored.
+
+    2) Does not change the full/empty state
+
+    :returns: The value of the ``single`` variable.
   */
   proc _singlevar.readXX() {
     // Yield to allow readXX in a loop to make progress
