@@ -950,7 +950,7 @@ void readArgsFromCommand(std::string cmd, std::vector<std::string>& args) {
       // First argument is the clang install directory...
       args.push_back(arg);
     }
-    fclose(fd);
+    pclose(fd);
   }
 }
 
