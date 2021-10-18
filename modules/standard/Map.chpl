@@ -79,6 +79,12 @@ module Map {
     /* If `true`, this map will perform parallel safe operations. */
     param parSafe = false;
 
+    /* 
+       Fractional value that specifies how full this map can be 
+       before requesting additiotional memory. Default value is 0.5,
+       which means that the map will not resize until the map is more
+       than 50% full.
+    */
     const resizeThreshold: real;
 
     pragma "no doc"
@@ -107,23 +113,31 @@ module Map {
       :arg keyType: The type of the keys of this map.
       :arg valType: The type of the values of this map.
       :arg parSafe: If `true`, this map will use parallel safe operations.
+      :arg resizeThreshold: Fractional value that specifies how full this map
+                            can be before requesting additional memory.
     */
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold=0.5) {
+              resizeThreshold: real = 0.5) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
+      assert((resizeThreshold > 0 && resizeThreshold < 1),
+             "'resizeThreshold' must be between 0 and 1");
+      this.resizeThreshold = resizeThreshold;
       table = new chpl__hashtable(keyType, valType, resizeThreshold);
     }
 
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold=0.5)
+              resizeThreshold: real = 0.5)
     where isNonNilableClass(valType) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
+      assert((resizeThreshold > 0 && resizeThreshold < 1),
+             "'resizeThreshold' must be between 0 and 1");
+      this.resizeThreshold = resizeThreshold;
       table = new chpl__hashtable(keyType, valType, resizeThreshold);
     }
 
