@@ -146,38 +146,31 @@ reads of a synchronization variable cannot proceed until the variable’s
 state is full. Normal writes of a synchronization variable cannot
 proceed until the variable’s state is empty.
 
-Chapel supports two types of synchronization variables: sync and single.
-Both types behave similarly, except that a single variable may only be
-written once. Consequently, when a sync variable is read, its state
-transitions to empty, whereas when a single variable is read, its state
+Chapel supports two types of synchronization variables: ``sync`` and ``single``.
+Both types behave similarly, except that a ``single`` variable may only be
+written once. Consequently, when a ``sync`` variable is read, its state
+transitions to empty, whereas when a ``single`` variable is read, its state
 does not change. When either type of synchronization variable is
 written, its state transitions to full.
 
 ``sync`` and ``single`` are type qualifiers and precede the type of the
-variable’s value in the declaration. Sync and single are supported for
+variable’s value in the declaration. ``sync`` and ``single`` are supported for
 the primitive types ``nothing``, ``bool``, ``int``, ``uint``, ``real``,
-``imag``, and ``string`` ( :ref:`Primitive_Types`); for enumerated types
-( :ref:`Enumerated_Types`); and for nilable class types that have
-``unmanaged``, ``borrowed``, or ``shared`` memory management strategy
-( :ref:`Class_Types`). For sync variables of class type, the full/empty
-state applies to the reference to the class object, not to its member
-fields.
-
-   *Note*.
-
-   In the future, ``sync`` and ``single`` might be extended to support
-   more types, including ``complex``, ``owned`` classes, and record types.
+``imag``, ``complex``, ``bytes``, and ``string`` ( :ref:`Primitive_Types`);
+for enumerated types ( :ref:`Enumerated_Types`); and for class types
+(:ref:`Class_Types`) and record types (:ref:`Record_Types`).
 
 If a task attempts to read or write a synchronization variable that is
 not in the correct state, the task is suspended. When the variable
 transitions to the correct state, the task is resumed. If there are
-multiple tasks blocked waiting for the state transition, one is
-non-deterministically selected to proceed and the others continue to
-wait if it is a sync variable; all tasks are selected to proceed if it
-is a single variable.
+multiple tasks blocked waiting for the state transition:
 
-A synchronization variable is specified with a sync or single type given
-by the following syntax: 
+ * for a ``sync`` variable, one task is non-deterministically selected to
+   proceed and the others continue to wait
+ * for a ``single`` variable, all tasks are selected to proceed.
+
+A synchronization variable is specified with a ``sync`` or ``single``
+type given by the following syntax:
 
 .. code-block:: syntax
 
@@ -331,7 +324,7 @@ when this method completes. This method implements the normal read of a
       proc (sync t).readFF(): t
       proc (single t).readFF(): t
 
-Returns the value of the sync or single variable. This method blocks
+Returns a copy of the value of the sync or single variable. This method blocks
 until the sync or single variable is full. The state of the sync or
 single variable remains full when this method completes. This method
 implements the normal read of a ``single`` variable.
@@ -343,10 +336,15 @@ implements the normal read of a ``single`` variable.
       proc (sync t).readXX(): t
       proc (single t).readXX(): t
 
-Returns the value of the sync or single variable. This method is
-non-blocking and the state of the sync or single variable is unchanged
-when this method completes.
+This method does not block and the state of the sync or single variable
+is unchanged when this method completes.
 
+This function returns:
+
+  * for a full ``sync`` or ``single``, a copy of the value stored
+  * for an empty ``sync`` or ``single``, the implementation will return
+    either a new default-initialzed value of type ``t`` or the last value
+    stored.
 
 
    .. code-block:: chapel
