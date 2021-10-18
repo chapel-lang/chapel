@@ -1,0 +1,12 @@
+test1
+init 1
+(x = 1)
+deinit
+test2
+default init
+(x = 0)
+deinit
+test3
+default init
+(x = 0)
+deinit
