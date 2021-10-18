@@ -5042,27 +5042,26 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   inline proc bigint.hash(): uint {
     var ret: uint = this > 0;
     if _local {
-      for i in 0..#numLimbs {
-        var limb = chpl_gmp_mpz_getlimbn(this.mpz, i);
-        ret = chpl__defaultHashCombine(limb.hash(), ret, i + 1);
-      }
+      hashHelper();
       
     } else if this.localeId == chpl_nodeID {
-      for i in 0..#numLimbs {
-        var limb = chpl_gmp_mpz_getlimbn(this.mpz, i);
-        ret = chpl__defaultHashCombine(limb.hash(), ret, i + 1);
-      }
+      hashHelper();
       
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        for i in 0..#numLimbs {
-          var limb = chpl_gmp_mpz_getlimbn(this.mpz, i);
-          ret = chpl__defaultHashCombine(limb.hash(), ret, i + 1);
-        }
+        hashHelper();
       }
     }
+
     return ret;
+    
+    inline proc hashHelper() {
+      for i in 0..#numLimbs {
+        var limb = chpl_gmp_mpz_getlimbn(this.mpz, i);
+        ret = chpl__defaultHashCombine(limb.hash(), ret, i + 1);
+      }      
+    }
   }
 }
