@@ -3736,7 +3736,7 @@ module HDF5 {
   iter hdf5ReadChunks(filename: string, dset: string,
                       chunkShape: domain, type eltType,
                       preprocessor: borrowed HDF5Preprocessor? = nil)
-    where isRectangularDom(chunkShape) {
+    where chunkShape.isRectangular() {
 
     param outRank = chunkShape.rank;
     var file_id = C_HDF5.H5Fopen(filename.c_str(),

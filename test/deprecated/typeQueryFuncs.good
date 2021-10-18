@@ -1,0 +1,66 @@
+typeQueryFuncs.chpl:1: In function 'runQueries':
+typeQueryFuncs.chpl:4: warning: isRectangularDom is deprecated - please use isRectangular method on domain
+typeQueryFuncs.chpl:5: warning: isIrregularDom is deprecated - please use isIrregular method on domain
+typeQueryFuncs.chpl:6: warning: isAssociativeDom is deprecated - please use isAssociative method on domain
+typeQueryFuncs.chpl:7: warning: isSparseDom is deprecated - please use isSparse method on domain
+  typeQueryFuncs.chpl:28: called as runQueries(description: string, A: domain(2,int(64),false))
+typeQueryFuncs.chpl:1: In function 'runQueries':
+typeQueryFuncs.chpl:10: warning: isRectangularArr is deprecated - please use isRectangular method on array
+typeQueryFuncs.chpl:11: warning: isIrregularArr is deprecated - please use isIrregular method on array
+typeQueryFuncs.chpl:12: warning: isAssociativeArr is deprecated - please use isAssociative method on array
+typeQueryFuncs.chpl:13: warning: isSparseArr is deprecated - please use isSparse method on array
+  typeQueryFuncs.chpl:29: called as runQueries(description: string, A: [domain(2,int(64),false)] int(64))
+typeQueryFuncs.chpl:1: In function 'runQueries':
+typeQueryFuncs.chpl:4: warning: isRectangularDom is deprecated - please use isRectangular method on domain
+typeQueryFuncs.chpl:5: warning: isIrregularDom is deprecated - please use isIrregular method on domain
+typeQueryFuncs.chpl:6: warning: isAssociativeDom is deprecated - please use isAssociative method on domain
+typeQueryFuncs.chpl:7: warning: isSparseDom is deprecated - please use isSparse method on domain
+  typeQueryFuncs.chpl:30: called as runQueries(description: string, A: DefaultAssociativeDom(string,true))
+typeQueryFuncs.chpl:1: In function 'runQueries':
+typeQueryFuncs.chpl:10: warning: isRectangularArr is deprecated - please use isRectangular method on array
+typeQueryFuncs.chpl:11: warning: isIrregularArr is deprecated - please use isIrregular method on array
+typeQueryFuncs.chpl:12: warning: isAssociativeArr is deprecated - please use isAssociative method on array
+typeQueryFuncs.chpl:13: warning: isSparseArr is deprecated - please use isSparse method on array
+  typeQueryFuncs.chpl:31: called as runQueries(description: string, A: [DefaultAssociativeDom(string,true)] int(64))
+typeQueryFuncs.chpl:1: In function 'runQueries':
+typeQueryFuncs.chpl:4: warning: isRectangularDom is deprecated - please use isRectangular method on domain
+typeQueryFuncs.chpl:5: warning: isIrregularDom is deprecated - please use isIrregular method on domain
+typeQueryFuncs.chpl:6: warning: isAssociativeDom is deprecated - please use isAssociative method on domain
+typeQueryFuncs.chpl:7: warning: isSparseDom is deprecated - please use isSparse method on domain
+  typeQueryFuncs.chpl:32: called as runQueries(description: string, A: DefaultSparseDom(2,int(64),domain(2,int(64),false)))
+typeQueryFuncs.chpl:1: In function 'runQueries':
+typeQueryFuncs.chpl:10: warning: isRectangularArr is deprecated - please use isRectangular method on array
+typeQueryFuncs.chpl:11: warning: isIrregularArr is deprecated - please use isIrregular method on array
+typeQueryFuncs.chpl:12: warning: isAssociativeArr is deprecated - please use isAssociative method on array
+typeQueryFuncs.chpl:13: warning: isSparseArr is deprecated - please use isSparse method on array
+  typeQueryFuncs.chpl:33: called as runQueries(description: string, A: [DefaultSparseDom(2,int(64),domain(2,int(64),false))] int(64))
+Given a rectangular domain: 
+  isRectangularDom() = true
+  isIrregularDom()   = false
+  isAssociativeDom() = false
+  isSparseDom()      = false
+Given a rectangular array: 
+  isRectangularArr() = true
+  isIrregularArr()   = false
+  isAssociativeArr() = false
+  isSparseArr()      = false
+Given a associative domain: 
+  isRectangularDom() = false
+  isIrregularDom()   = true
+  isAssociativeDom() = true
+  isSparseDom()      = false
+Given a associative array: 
+  isRectangularArr() = false
+  isIrregularArr()   = true
+  isAssociativeArr() = true
+  isSparseArr()      = false
+Given a sparse domain: 
+  isRectangularDom() = false
+  isIrregularDom()   = true
+  isAssociativeDom() = false
+  isSparseDom()      = true
+Given a sparse array: 
+  isRectangularArr() = false
+  isIrregularArr()   = true
+  isAssociativeArr() = false
+  isSparseArr()      = true

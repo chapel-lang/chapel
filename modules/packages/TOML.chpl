@@ -531,12 +531,12 @@ pragma "no doc"
 
  pragma "no doc"
  operator Toml.=(ref t: unmanaged Toml,
-                 A: [?D] unmanaged Toml) where isAssociativeDom(D) {
+                 A: [?D] unmanaged Toml) where D.isAssociative() {
    compilerWarning("= overloads for Toml are deprecated");
    setupToml(t, A);
  }
  pragma "no doc"
- proc setupToml(ref t: unmanaged Toml, A: [?D] unmanaged Toml) where isAssociativeDom(D) {
+ proc setupToml(ref t: unmanaged Toml, A: [?D] unmanaged Toml) where D.isAssociative() {
    if t == nil {
      t = new unmanaged Toml(A);
    } else {
@@ -547,7 +547,7 @@ pragma "no doc"
  }
 
  pragma "no doc"
- proc setupToml(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom){
+ proc setupToml(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !dom.isAssociative(){
    if t == nil {
      t = new unmanaged Toml(arr);
    } else {
@@ -559,7 +559,7 @@ pragma "no doc"
 
 
  pragma "no doc"
- operator Toml.=(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !isAssociativeDom(dom){
+ operator Toml.=(ref t: unmanaged Toml, arr: [?dom] unmanaged Toml) where !dom.isAssociative(){
    compilerWarning("= overloads for Toml are deprecated");
    setupToml(t, arr);
  }
@@ -596,14 +596,14 @@ used to recursively hold tables and respective values
     }
 
     // Toml
-    proc init(A: [?D] unmanaged Toml) where isAssociativeDom(D) {
+    proc init(A: [?D] unmanaged Toml) where D.isAssociative() {
       this.complete();
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
 
     pragma "no doc"
-    proc init(A: [?D] unmanaged Toml?) where isAssociativeDom(D) {
+    proc init(A: [?D] unmanaged Toml?) where D.isAssociative() {
       this.complete();
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
@@ -646,14 +646,14 @@ used to recursively hold tables and respective values
     }
 
     // Array
-    proc init(arr: [?dom] unmanaged Toml) where isAssociativeDom(dom) == false  {
+    proc init(arr: [?dom] unmanaged Toml) where dom.isAssociative() == false  {
       this.dom = dom;
       this.arr = arr;
       this.tag = fieldArr;
     }
 
     pragma "no doc"
-    proc init(arr: [?dom] unmanaged Toml?) where isAssociativeDom(dom) == false  {
+    proc init(arr: [?dom] unmanaged Toml?) where dom.isAssociative() == false  {
       this.dom = dom;
       this.arr = arr;
       this.tag = fieldArr;
@@ -815,7 +815,7 @@ used to recursively hold tables and respective values
         t!.dt = dt;
       }
     }
-    proc set(tbl: string, A: [?D] unmanaged Toml?) where isAssociativeDom(D) {
+    proc set(tbl: string, A: [?D] unmanaged Toml?) where D.isAssociative() {
       ref t = this(tbl);
       if t == nil {
         t = new unmanaged Toml(A);
@@ -824,7 +824,7 @@ used to recursively hold tables and respective values
         for i in D do t!.A[i] = A[i];
       }
     }
-    proc set(tbl: string, arr: [?dom] unmanaged Toml?) where !isAssociativeDom(dom) {
+    proc set(tbl: string, arr: [?dom] unmanaged Toml?) where !dom.isAssociative() {
       ref t = this(tbl);
       if t == nil {
         t = new unmanaged Toml(arr);
