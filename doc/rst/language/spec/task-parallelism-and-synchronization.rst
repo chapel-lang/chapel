@@ -84,7 +84,7 @@ The Begin Statement
 -------------------
 
 The begin statement creates a task to execute a statement. The syntax
-for the begin statement is given by 
+for the begin statement is given by
 
 .. code-block:: syntax
 
@@ -96,14 +96,14 @@ statement.
 
    *Example (beginUnordered.chpl)*.
 
-   The code 
+   The code
 
    .. code-block:: chapel
 
       begin writeln("output from spawned task");
       writeln("output from main task");
 
-   
+
 
    .. BLOCK-test-chapelprediff
 
@@ -113,7 +113,7 @@ statement.
       sort $outfile > $outfile.2
       mv $outfile.2 $outfile
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -186,7 +186,7 @@ full and store the value from that expression.
 
    *Example (beginWithSyncVar.chpl)*.
 
-   The code 
+   The code
 
    .. code-block:: chapel
 
@@ -206,7 +206,7 @@ full and store the value from that expression.
         }
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -222,7 +222,7 @@ full and store the value from that expression.
       }
       delete tree;
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -240,7 +240,7 @@ full and store the value from that expression.
    *Example (singleVar.chpl)*.
 
    The following code implements a simple split-phase barrier using a
-   single variable. 
+   single variable.
 
    .. BLOCK-test-chapelpre
 
@@ -249,7 +249,7 @@ full and store the value from that expression.
         // do nothing
       }
 
-   
+
 
    .. code-block:: chapel
 
@@ -270,7 +270,7 @@ full and store the value from that expression.
         }
       }
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -422,7 +422,7 @@ The Cobegin Statement
 ---------------------
 
 The cobegin statement is used to introduce concurrency within a block.
-The ``cobegin`` statement syntax is 
+The ``cobegin`` statement syntax is
 
 .. code-block:: syntax
 
@@ -442,7 +442,7 @@ statements may not be used to exit a cobegin block.
 
    *Example (cobeginAndEquivalent.chpl)*.
 
-   The cobegin statement 
+   The cobegin statement
 
    .. BLOCK-test-chapelpre
 
@@ -451,7 +451,7 @@ statements may not be used to exit a cobegin block.
       proc stmt2() { s2.readFE(); s1.writeEF(1); }
       proc stmt3() { s2.writeEF(1); }
 
-   
+
 
    .. code-block:: chapel
 
@@ -463,7 +463,7 @@ statements may not be used to exit a cobegin block.
 
    is equivalent to the following code that uses only begin statements
    and single variables to introduce concurrency and synchronize:
-   
+
 
    .. code-block:: chapel
 
@@ -483,7 +483,7 @@ The Coforall Loop
 -----------------
 
 The coforall loop is a variant of the cobegin statement in loop form.
-The syntax for the coforall loop is given by 
+The syntax for the coforall loop is given by
 
 .. code-block:: syntax
 
@@ -510,14 +510,14 @@ statements may not be used to exit a coforall block.
 
    *Example (coforallAndEquivalent.chpl)*.
 
-   The coforall statement 
+   The coforall statement
 
    .. BLOCK-test-chapelpre
 
       iter iterator() { for i in 1..3 do yield i; }
       proc body() { }
 
-   
+
 
    .. code-block:: chapel
 
@@ -527,7 +527,7 @@ statements may not be used to exit a coforall block.
 
    is equivalent to the following code that uses only begin statements
    and sync and single variables to introduce concurrency and
-   synchronize: 
+   synchronize:
 
    .. code-block:: chapel
 
@@ -649,7 +649,7 @@ subject to such treatment within nested task constructs, if any.
    example, it would be easy to introduce and overlook a bug illustrated
    by this simplified example:
 
-   
+
 
    .. code-block:: chapel
 
@@ -741,7 +741,7 @@ continue statements may not be used to exit a sync statement block.
    *Example (syncStmt1.chpl)*.
 
    The sync statement can be used to wait for many dynamically created
-   tasks. 
+   tasks.
 
    .. BLOCK-test-chapelpre
 
@@ -750,19 +750,19 @@ continue statements may not be used to exit a sync statement block.
         write(".");
       }
 
-   
+
 
    .. code-block:: chapel
 
       sync for i in 1..n do begin work();
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln("done");
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -776,14 +776,14 @@ continue statements may not be used to exit a sync statement block.
 
    *Example (syncStmt2.chpl)*.
 
-   The sync statement 
+   The sync statement
 
    .. BLOCK-test-chapelpre
 
       proc stmt1() { }
       proc stmt2() { }
 
-   
+
 
    .. code-block:: chapel
 
@@ -792,7 +792,7 @@ continue statements may not be used to exit a sync statement block.
         begin stmt2();
       }
 
-   is similar to the following cobegin statement 
+   is similar to the following cobegin statement
 
    .. code-block:: chapel
 
@@ -812,7 +812,7 @@ The Serial Statement
 --------------------
 
 The ``serial`` statement can be used to dynamically disable parallelism.
-The syntax is: 
+The syntax is:
 
 .. code-block:: syntax
 
@@ -831,7 +831,7 @@ generates task according to normal Chapel rules.
 
    *Example (serialStmt1.chpl)*.
 
-   In the code 
+   In the code
 
    .. BLOCK-test-chapelpre
 
@@ -842,7 +842,7 @@ generates task according to normal Chapel rules.
           writeln("serial ", i);
       }
 
-   
+
 
    .. code-block:: chapel
 
@@ -859,7 +859,7 @@ generates task according to normal Chapel rules.
         f(i);
       }
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -879,7 +879,7 @@ generates task according to normal Chapel rules.
 
    *Example (serialStmt2.chpl)*.
 
-   The code 
+   The code
 
    .. BLOCK-test-chapelpre
 
@@ -889,7 +889,7 @@ generates task according to normal Chapel rules.
       proc stmt4() { write(4); }
       var n = 3;
 
-   
+
 
    .. code-block:: chapel
 
@@ -902,7 +902,7 @@ generates task according to normal Chapel rules.
         coforall i in 1..n do stmt4();
       }
 
-   is equivalent to 
+   is equivalent to
 
    .. code-block:: chapel
 
@@ -913,13 +913,13 @@ generates task according to normal Chapel rules.
       }
       for i in 1..n do stmt4();
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln();
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -954,7 +954,7 @@ statement had begun executing but had not yet completed.
    data that should be accessed atomically inside or outside an atomic
    section.
 
-The syntax for the atomic statement is given by: 
+The syntax for the atomic statement is given by:
 
 .. code-block:: syntax
 
@@ -968,7 +968,7 @@ The syntax for the atomic statement is given by:
    The following code illustrates the use of an atomic statement to
    perform an insertion into a doubly-linked list:
 
-   
+
 
    .. BLOCK-test-chapelpre
 
@@ -984,7 +984,7 @@ The syntax for the atomic statement is given by:
       var obj = new Node(3);
       head.next.insertAfter(obj);
 
-   
+
 
    .. code-block:: chapel
 
@@ -997,7 +997,7 @@ The syntax for the atomic statement is given by:
         }
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -1013,7 +1013,7 @@ The syntax for the atomic statement is given by:
         head = next;
       }
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
