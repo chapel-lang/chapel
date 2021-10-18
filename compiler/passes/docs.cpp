@@ -286,7 +286,7 @@ std::string generateSphinxProject(std::string dirpath) {
   if( printSystemCommands ) {
     printf("%s\n", cmd);
   }
-  mysystem(cmd, "copying chpldoc sphinx template");
+  myshell(cmd, "copying chpldoc sphinx template");
 
   const char * moddir = astr(sphinxDir, "/source/modules");
   return std::string(moddir);
