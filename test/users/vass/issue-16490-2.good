@@ -1,0 +1,5 @@
+issue-16490-2.chpl:4: In function 'myFun':
+issue-16490-2.chpl:6: error: cannot transfer ownership from a const variable
+  issue-16490-2.chpl:9: called as myFun(myArg: owned MyClass)
+issue-16490-2.chpl:8: In function 'main':
+issue-16490-2.chpl:12: error: cannot transfer ownership from a const variable
