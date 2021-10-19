@@ -1,7 +1,7 @@
 use ConcurrentMap;
 use utilFunctions;
 
-var m = new ConcurrentMap(string, string);
+var m = new shared ConcurrentMap(string, string);
 
 var tok = m.getToken();
 for i in 1..99 by 3 {

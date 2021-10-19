@@ -1,7 +1,7 @@
 use ConcurrentMap;
 
-var m1 = new ConcurrentMap(int, int);
-var m2 = new ConcurrentMap(int, int);
+var m1 = new shared ConcurrentMap(int, int);
+var m2 = new shared ConcurrentMap(int, int);
 
 var atok = m1.getToken();
 var btok = m2.getToken();

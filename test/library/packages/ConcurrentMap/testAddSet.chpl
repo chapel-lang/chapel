@@ -1,6 +1,6 @@
 use ConcurrentMap;
 
-var m = new ConcurrentMap(int, int);
+var m = new shared ConcurrentMap(int, int);
 
 var ret:bool = m.add(1, -1);
 assert(ret);

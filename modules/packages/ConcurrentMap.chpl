@@ -17,7 +17,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-prototype module ConcurrentMap {
+
+/*
+  This module provides a fast concurrent map.
+*/
+module ConcurrentMap {
   private use AtomicObjects;
   private use LockFreeStack;
   private use LockFreeQueue;
@@ -25,9 +29,15 @@ prototype module ConcurrentMap {
   private use Random;
   private use IO;
 
+  pragma "no doc"
   param BUCKET_UNLOCKED = 0;
+
+  pragma "no doc"
   param BUCKET_LOCKED = 1;
+
+  pragma "no doc"
   param BUCKET_DESTROYED = 2;
+
   config param BUCKET_NUM_ELEMS = 8;
   config const DEFAULT_NUM_BUCKETS = 1024;
   config param MULTIPLIER_NUM_BUCKETS : real = 2;
@@ -44,6 +54,7 @@ prototype module ConcurrentMap {
   const P_LOCK = 5;
   const GARBAGE = 6;
 
+  pragma "no doc"
   class DeferredNode {
     type eltType;
     var val : eltType;
@@ -74,6 +85,7 @@ prototype module ConcurrentMap {
     }
   }
 
+  pragma "no doc"
   class StackNode {
     type eltType;
     var val : eltType;
@@ -89,6 +101,7 @@ prototype module ConcurrentMap {
     }
   }
 
+  pragma "no doc"
   class Stack {
     type eltType;
     var top : unmanaged StackNode(eltType)?;
@@ -124,6 +137,7 @@ prototype module ConcurrentMap {
     }
   }
 
+  pragma "no doc"
   // Can be either a singular 'Bucket' or a plural 'Buckets'
   class Base {
     type keyType;
@@ -143,6 +157,7 @@ prototype module ConcurrentMap {
     }
   }
 
+  pragma "no doc"
   // Stores keys and values in the hash table. The lock is used to
   // determine both the 'lock'/'unlock' state of the bucket, and if
   // the bucket is going to be destroyed, meaning that the task should 
@@ -172,6 +187,7 @@ prototype module ConcurrentMap {
     }
   }
 
+  pragma "no doc"
   class Buckets : Base {
     var seed : uint(64);
     var size : int;
@@ -199,7 +215,7 @@ prototype module ConcurrentMap {
     // _gen_key will generate the hash on the combined seed and hash of original key
     // which ensures a better distribution of keys from varying seeds.
     proc hash(key : keyType) {
-      return _gen_key(chpl__defaultHashCombine(chpl__defaultHash(key), seed, 1));
+      return _gen_key(chpl__defaultHashCombine(key.hash(), seed, 1));
     }
 
     proc _hash(key) {
@@ -214,11 +230,22 @@ prototype module ConcurrentMap {
   }
 
   class ConcurrentMap : Base {
+    pragma "no doc"
     var root : unmanaged Buckets(keyType, valType);
+  
+    pragma "no doc"
     var _manager = new owned LocalEpochManager();
+
+    pragma "no doc"
     var iterRNG = new owned RandomStream(uint(64), parSafe=true);
+
+    pragma "no doc"
     type stackType = (unmanaged Buckets(keyType, valType)?, int, int);
+
+    pragma "no doc"
     type deferredType = (unmanaged Buckets(keyType, valType)?, int);
+
+    pragma "no doc"
     type PEListType = (unmanaged Bucket(keyType, valType)?, unmanaged Buckets(keyType, valType)?, int);
 
     proc init(type keyType, type valType) {
@@ -231,11 +258,11 @@ prototype module ConcurrentMap {
       return _manager.register();
     }
 
-    proc getEList(key : keyType, isInsertion : bool, tok : owned TokenWrapper) : unmanaged Bucket(keyType, valType)? {
+    proc getEList(key : keyType, isInsertion : bool, tok : owned TokenWrapper) : unmanaged Bucket(keyType, valType)? throws {
       var found : unmanaged Bucket(keyType, valType)?;
       var curr = root;
       var shouldYield = false;
-      const defaultHash = chpl__defaultHash(key);
+      const defaultHash = key.hash();
       var idx = (curr._hash(defaultHash) % (curr.buckets.size):uint):int;
       while (true) {
         var next = curr.buckets[idx].read();
@@ -278,7 +305,6 @@ prototype module ConcurrentMap {
               }
             }
 
-            // writeln(bucket.count);
             // Rehash into new Buckets
             var newBuckets = new unmanaged Buckets(curr);
             for (k,v) in zip(bucket!.keys, bucket!.values) {
@@ -308,12 +334,12 @@ prototype module ConcurrentMap {
     }
 
     // temporary function to facilitate deletion of EList
-    proc getPEList(key : keyType, isInsertion : bool, tok : owned TokenWrapper) : PEListType {
+    proc getPEList(key : keyType, isInsertion : bool, tok : owned TokenWrapper) : PEListType throws {
       var found : unmanaged Bucket(keyType, valType)?;
       var retNil : PEListType;
       var curr = root;
       var shouldYield = false;
-      const defaultHash = chpl__defaultHash(key);
+      const defaultHash = key.hash();
       var idx = (curr._hash(defaultHash) % (curr.buckets.size):uint):int;
       while (true) {
         var next = curr.buckets[idx].read();
@@ -426,8 +452,10 @@ prototype module ConcurrentMap {
             } else {
               var deferredElem = (curr, idx);
               var deferredNode = new unmanaged DeferredNode(deferredElem);
-              deferredNode.next = deferred;
-              deferred!.prev = deferredNode;
+              if (deferred != nil) {
+                deferredNode.next = deferred;
+                deferred!.prev = deferredNode;
+              }
               deferred = deferredNode;
             }
           }
@@ -647,7 +675,7 @@ prototype module ConcurrentMap {
                `false` otherwise.
      :rtype: bool
     */
-    proc add(key : keyType, val : valType, tok : owned TokenWrapper = getToken()) : bool {
+    proc add(key : keyType, val : valType, tok : owned TokenWrapper = getToken()) : bool throws {
       tok.pin();
       var elist = getEList(key, true, tok);
       for i in 0..#elist!.count {
@@ -681,7 +709,7 @@ prototype module ConcurrentMap {
                `false` otherwise.
      :rtype: bool
     */
-    proc set(key: keyType, in val: valType, tok : owned TokenWrapper = getToken()): bool {
+    proc set(key: keyType, in val: valType, tok : owned TokenWrapper = getToken()): bool throws {
       tok.pin();
       var elist = getEList(key, false, tok);
       var res : valType;
@@ -704,7 +732,7 @@ prototype module ConcurrentMap {
 
     /* Get a copy of the element stored at position `key`.
      */
-    proc getValue(key : keyType, tok : owned TokenWrapper = getToken()) : (bool, valType) {
+    proc getValue(key : keyType, tok : owned TokenWrapper = getToken()) : (bool, valType) throws {
       tok.pin();
       var elist = getEList(key, false, tok);
       var res : valType;
@@ -734,7 +762,7 @@ prototype module ConcurrentMap {
       :returns: Whether or not the given key is a member of this map.
       :rtype: `bool`
     */
-    proc const contains(const key : keyType, tok : owned TokenWrapper = getToken()) : bool {
+    proc const contains(const key : keyType, tok : owned TokenWrapper = getToken()) : bool throws {
       var (found, res) = getValue(key, tok);
       return found;
     }
@@ -743,7 +771,7 @@ prototype module ConcurrentMap {
        set it to `v`. If the map already contains a value at position
        `k`, update it to the value `v`.
      */
-    proc addOrSet(key: keyType, val: valType, tok : owned TokenWrapper = getToken()) {
+    proc addOrSet(key: keyType, val: valType, tok : owned TokenWrapper = getToken()) throws {
       tok.pin();
       var elist = getEList(key, true, tok);
       for i in 0..#elist!.count {
@@ -767,7 +795,7 @@ prototype module ConcurrentMap {
 
       :arg m: The other map
     */
-    proc extend(m : ConcurrentMap(keyType, valType)) {
+    proc extend(m : ConcurrentMap(keyType, valType)) throws {
       forall (key, value) in m with (var tok = getToken()) {
         addOrSet(key, value, tok);
       }
@@ -775,7 +803,7 @@ prototype module ConcurrentMap {
 
     /* Remove the element at position `key` from the map and return its value
      */
-    proc getAndRemove(key: keyType, tok : owned TokenWrapper = getToken()) {
+    proc getAndRemove(key: keyType, tok : owned TokenWrapper = getToken()) throws {
       tok.pin();
       var (elist, pList, idx) = getPEList(key, false, tok);
       if (elist == nil) then halt("map index " + key:string + " out of bounds");
@@ -813,7 +841,7 @@ prototype module ConcurrentMap {
      :returns: `false` if `key` was not in the map.  `true` if it was and removed.
      :rtype: bool
     */
-    proc remove(key : keyType, tok : owned TokenWrapper = getToken()) : bool {
+    proc remove(key : keyType, tok : owned TokenWrapper = getToken()) : bool throws {
       tok.pin();
       var (elist, pList, idx) = getPEList(key, false, tok);
       if (elist == nil) {
@@ -840,7 +868,7 @@ prototype module ConcurrentMap {
       return res;
     }
 
-    proc clearHelper(curr : unmanaged Buckets(keyType, valType)?, tok : owned TokenWrapper) {
+    proc clearHelper(curr : unmanaged Buckets(keyType, valType)?, tok : owned TokenWrapper) throws {
       var shouldYield = false;
       var idx = 0;
 
@@ -873,15 +901,7 @@ prototype module ConcurrentMap {
     /*
       Clears the contents of this map.
     */
-
-    // Getting following error on naming the function 'clear'
-    // call_map.chpl:230: In function 'main':
-    // call_map.chpl:239: error: Illegal use of dead value
-    // call_map.chpl:235: note: 'map' is dead due to ownership transfer here
-    // call_map.chpl:242: error: Illegal use of dead value
-    // call_map.chpl:235: note: 'map' is dead due to ownership transfer here
-    // call_map.chpl:239: error: mention of non-nilable variable after ownership is transferred out of it
-    proc Clear(tok : owned TokenWrapper = getToken()) {
+    proc clearMap(tok : owned TokenWrapper = getToken()) throws {
       // var curr : unmanaged Buckets(keyType, valType)? = root;
       tok.pin();
       clearHelper(root, tok);
@@ -895,7 +915,7 @@ prototype module ConcurrentMap {
       :return: A new DefaultRectangular array.
       :rtype: [] (keyType, valType)
     */
-    proc toArray(): [] (keyType, valType) {
+    proc toArray(): [] (keyType, valType) throws {
       type stackType = (keyType, valType);
       var stack = new Stack(stackType);
       for i in this {
@@ -923,7 +943,7 @@ prototype module ConcurrentMap {
       :return: A new DefaultRectangular array.
       :rtype: [] keyType
     */
-    proc keysToArray(): [] keyType {
+    proc keysToArray(): [] keyType throws {
       var stack = new Stack(keyType);
       for (key, val) in this {
         stack.push(key);
@@ -946,7 +966,7 @@ prototype module ConcurrentMap {
       :return: A new DefaultRectangular array.
       :rtype: [] valType
     */
-    proc valuesToArray(): [] valType {
+    proc valuesToArray(): [] valType throws {
       var stack = new Stack(valType);
       for (key, val) in this {
         stack.push(val);
@@ -992,9 +1012,9 @@ prototype module ConcurrentMap {
     :arg lhs: The map to assign to.
     :arg rhs: The map to assign from.
   */
-  proc =(ref lhs: ConcurrentMap, const ref rhs: ConcurrentMap) {
+  operator =(ref lhs: ConcurrentMap, const ref rhs: ConcurrentMap) {
     var tok = lhs.getToken();
-    lhs.Clear(tok);
+    lhs.clearMap(tok);
     for (key, val) in rhs { // Can also feature a parallel addition
       lhs.add(key, val, tok);
     }
@@ -1012,20 +1032,23 @@ prototype module ConcurrentMap {
     :return: `true` if the contents of two maps are equal.
     :rtype: `bool`
   */
-  proc ==(const ref a: ConcurrentMap, const ref b: ConcurrentMap): bool {
+  operator ==(const ref a: ConcurrentMap, const ref b: ConcurrentMap): bool throws {
     var atok = a.getToken();
     var btok = b.getToken();
+    var result = true;
     for (key, val) in a {                   // Can also be done parallely
       var (found, Val) = b.getValue(key, btok);
       if !found || val != Val then
-        return false;
+        result = false;
     }
+    if (!result) then return false;
+
     for (key, val) in b {
       var (found, Val) = a.getValue(key, atok);
       if !found || val != Val then
-        return false;
+        result = false;
     }
-    return true;
+    return result;
   }
 
     /*
@@ -1040,7 +1063,7 @@ prototype module ConcurrentMap {
     :return: `true` if the contents of two maps are not equal.
     :rtype: `bool`
   */
-  proc !=(const ref a: ConcurrentMap, const ref b: ConcurrentMap): bool {
+  operator !=(const ref a: ConcurrentMap, const ref b: ConcurrentMap): bool throws {
     return !(a == b);
   }
 }
