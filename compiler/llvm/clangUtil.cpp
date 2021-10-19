@@ -149,7 +149,8 @@ struct ClangInfo {
   std::string clangCC;
   std::string clangCXX;
   std::vector<std::string> clangCCArgs;
-  std::vector<std::string> clangOtherArgs;
+  std::vector<std::string> clangOtherArgs; // other compile-time args
+  std::vector<std::string> clangLDArgs;
 
   // the following 3 are here to make sure of no memory errors
   // when clang has const char* pointers to these strings
@@ -190,6 +191,7 @@ struct ClangInfo {
     std::string clangCxxIn,
     std::vector<std::string> clangCCArgsIn,
     std::vector<std::string> clangOtherArgsIn,
+    std::vector<std::string> clangLDArgsIn,
     bool parseOnlyIn);
 };
 
@@ -198,19 +200,21 @@ ClangInfo::ClangInfo(
     std::string clangCxxIn,
     std::vector<std::string> clangCCArgsIn,
     std::vector<std::string> clangOtherArgsIn,
+    std::vector<std::string> clangLDArgsIn,
     bool parseOnlyIn)
        : parseOnly(parseOnlyIn),
-         clangCC(clangCcIn),
-         clangCXX(clangCxxIn),
-         clangCCArgs(clangCCArgsIn),
-         clangOtherArgs(clangOtherArgsIn),
-         codegenOptions(), diagOptions(NULL),
-         DiagClient(NULL),
-         DiagID(NULL),
-         Diags(NULL),
-         Clang(NULL),
-         Ctx(NULL),
-         cCodeGen(NULL), cCodeGenAction(NULL),
+         clangCC(std::move(clangCcIn)),
+         clangCXX(std::move(clangCxxIn)),
+         clangCCArgs(std::move(clangCCArgsIn)),
+         clangOtherArgs(std::move(clangOtherArgsIn)),
+         clangLDArgs(std::move(clangLDArgsIn)),
+         codegenOptions(), diagOptions(nullptr),
+         DiagClient(nullptr),
+         DiagID(nullptr),
+         Diags(nullptr),
+         Clang(nullptr),
+         Ctx(nullptr),
+         cCodeGen(nullptr), cCodeGenAction(nullptr),
          asmTargetLayoutStr(),
          intSizeInBits(0),
          longSizeInBits(0),
@@ -2295,19 +2299,22 @@ void runClang(const char* just_parse_filename) {
   std::vector<std::string> split;
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangOtherArgs;
+  std::vector<std::string> clangLDArgs;
 
   // find the path to clang and clang++
   std::string clangCC, clangCXX;
 
   // get any args passed to clangCC and add them to the builtin clang invocation
-  split.clear();
   splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
   // set clangCC / clangCXX to just the first argument
   for (size_t i = 0; i < split.size(); i++) {
-    if (i == 0)
+    if (i == 0) {
       clangCC = split[i];
-    else
+    } else {
+      // arguments from CHPL_LLVM_CLANG_C to both CC args and LD args.
       clangCCArgs.push_back(split[i]);
+      clangLDArgs.push_back(split[i]);
+    }
   }
   split.clear();
   splitStringWhitespace(CHPL_LLVM_CLANG_CXX, split);
@@ -2574,7 +2581,7 @@ void runClang(const char* just_parse_filename) {
 
   ClangInfo* clangInfo = NULL;
   clangInfo = new ClangInfo(clangCC, clangCXX,
-                            clangCCArgs, clangOtherArgs,
+                            clangCCArgs, clangOtherArgs, clangLDArgs,
                             parseOnly);
 
   gGenInfo->clangInfo = clangInfo;
@@ -4194,7 +4201,8 @@ void makeBinaryLLVM(void) {
     }
   }*/
 
-  std::vector<std::string> clangLDArgs;
+  // start with arguments from CHPL_LLVM_CLANG_C
+  std::vector<std::string> clangLDArgs = clangInfo->clangLDArgs;
   for (auto & arg : runtimeArgs) {
     clangLDArgs.push_back(arg);
   }
