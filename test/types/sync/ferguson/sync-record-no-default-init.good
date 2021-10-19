@@ -1,3 +1,7 @@
+sync-record-no-default-init.chpl:85: In function 'testValInitSync':
+sync-record-no-default-init.chpl:87: warning: Casting from a value to a sync variable is deprecated
+sync-record-no-default-init.chpl:121: In function 'testValInitSingle':
+sync-record-no-default-init.chpl:123: warning: Casting from a value to a single variable is deprecated
 testDefaultInitSync
 testDefaultInitSyncWriteEF
 init 1
@@ -17,6 +21,15 @@ init 1
 init 2
 deinit 1
 deinit 2
+testDefaultInitSyncWriteEFWriteXF
+init 1
+init 2
+deinit 1
+deinit 2
+testDefaultInitSyncReset
+testDefaultInitSyncWriteEFReset
+init 1
+deinit 1
 testValInitSync
 init 1
 deinit 1

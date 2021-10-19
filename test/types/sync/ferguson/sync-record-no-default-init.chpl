@@ -59,8 +59,6 @@ proc testDefaultInitSyncWriteEFWriteFF() {
 }
 testDefaultInitSyncWriteEFWriteFF();
 
-// TODO: could get these cases working
-/*
 proc testDefaultInitSyncWriteEFWriteXF() {
   writeln("testDefaultInitSyncWriteEFWriteXF");
   var x: sync R;
@@ -83,7 +81,6 @@ proc testDefaultInitSyncWriteEFReset() {
   x.reset();
 }
 testDefaultInitSyncWriteEFReset();
-*/
 
 proc testValInitSync() {
   writeln("testValInitSync");
