@@ -314,7 +314,6 @@ module ChapelSyncvar {
     lhs.wrapped.writeEF(rhs);
   }
 
-  deprecated "Casting from a value to a sync variable is deprecated"
   inline operator :(from, type t:_syncvar)
   where from.type == t.valType {
     return new _syncvar(from);
@@ -945,7 +944,6 @@ module ChapelSyncvar {
     lhs.wrapped.writeEF(rhs);
   }
 
-  deprecated "Casting from a value to a single variable is deprecated"
   inline operator :(from, type t:_singlevar)
   where from.type == t.valType {
     return new _singlevar(from);
