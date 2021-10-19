@@ -93,6 +93,7 @@ class MultiDecl final : public Decl {
   int numDeclOrComments() const {
     return this->numChildren();
   }
+
   /**
    Return the i'th contained VariableDecl or Comment.
    */

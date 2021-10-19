@@ -93,6 +93,7 @@ target_sources(libchplcomp-obj
                Tuple.cpp
                TupleDecl.cpp
                TypeDecl.cpp
+               TypeQuery.cpp
                UintLiteral.cpp
                Use.cpp
                Union.cpp

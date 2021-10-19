@@ -74,6 +74,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Sync)                       //
   AST_NODE(Throw)                      //
   AST_NODE(Try)                        // old AST: TryStmt
+  AST_NODE(TypeQuery)                  //
   AST_NODE(Use)                        // old AST: UseStmt
   AST_NODE(VisibilityClause)           //
   AST_NODE(WithClause)                 //

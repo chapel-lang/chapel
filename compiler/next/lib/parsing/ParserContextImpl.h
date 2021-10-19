@@ -1495,17 +1495,37 @@ Expression* ParserContext::buildCustomReduce(YYLTYPE location,
 
 Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
                                                 PODUniqueString baseType,
+                                                MaybeNamedActual actual) {
+  auto maybeNamedActuals = new MaybeNamedActualList();
+  maybeNamedActuals->push_back(actual);
+  return buildTypeConstructor(location, baseType, maybeNamedActuals);
+}
+
+Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
+                                                PODUniqueString baseType,
                                                 Expression* subType) {
+  auto maybeNamedActuals = new MaybeNamedActualList();
+  MaybeNamedActual actual = { .expr=subType, .name=baseType };
+  maybeNamedActuals->push_back(actual);
+  return buildTypeConstructor(location, baseType, maybeNamedActuals);
+}
+
+Expression* ParserContext::
+buildTypeConstructor(YYLTYPE location, PODUniqueString baseType,
+                     MaybeNamedActualList* maybeNamedActuals) {
   auto ident = buildIdent(location, baseType);
+  std::vector<UniqueString> actualNames;
   ASTList actuals;
 
-  actuals.push_back(toOwned(subType));
+  consumeNamedActuals(maybeNamedActuals, actuals, actualNames);
 
   // TODO: Record in node that this call did not use parens.
   const bool callUsedSquareBrackets = false;
+
   auto node = FnCall::build(builder, convertLocation(location),
                             toOwned(ident),
                             std::move(actuals),
+                            std::move(actualNames),
                             callUsedSquareBrackets);
 
   return node.release();

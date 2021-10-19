@@ -2341,7 +2341,10 @@ function_body_stmt:
 ;
 
 query_expr:
-  TQUERIEDIDENT       { $$ = TODOEXPR(@$); }
+  TQUERIEDIDENT
+  {
+    $$ = TypeQuery::build(BUILDER, LOC(@$), $1).release();
+  }
 ;
 
 var_arg_expr:
@@ -2795,13 +2798,17 @@ sub_type_level_expr:
 | TSINGLE expr
   { $$ = context->buildTypeConstructor(@$, $1, $2); }
 | TINDEX TLP opt_actual_ls TRP
-  { $$ = TODOEXPR(@$); }
+  { $$ = context->buildTypeConstructor(@$, $1, $3); }
 | TDOMAIN TLP opt_actual_ls TRP
-  { $$ = TODOEXPR(@$); }
+  { $$ = context->buildTypeConstructor(@$, $1, $3); }
 | TSUBDOMAIN TLP opt_actual_ls TRP
-  { $$ = TODOEXPR(@$); }
+  { $$ = context->buildTypeConstructor(@$, $1, $3); }
 | TSPARSE TSUBDOMAIN TLP actual_expr TRP
-  { $$ = TODOEXPR(@$); }
+  {
+    auto locInner = context->makeSpannedLocation(@2, @5);
+    auto inner = context->buildTypeConstructor(locInner, $2, $4);
+    $$ = context->buildTypeConstructor(@$, $1, inner);
+  }
 | TATOMIC expr
   { $$ = context->buildTypeConstructor(@$, $1, $2); }
 | TSYNC expr

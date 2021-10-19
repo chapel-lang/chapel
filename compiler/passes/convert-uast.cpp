@@ -509,6 +509,11 @@ struct Converter {
     }
   }
 
+  DefExpr* visit(const uast::TypeQuery* node) {
+    const char* name = node->name().c_str();
+    return new DefExpr(new VarSymbol(&(name[1])));
+  }
+
   CallExpr* visit(const uast::Yield* node) {
     CallExpr* ret = new CallExpr(PRIM_YIELD);
     ret->insertAtTail(convertAST(node->value()));
@@ -838,7 +843,7 @@ struct Converter {
 
   /// Calls ///
 
-  Expr* convertCalledExpression(const uast::Expression* node) {
+  Expr* convertCalledKeyword(const uast::Expression* node) {
     Expr* ret = nullptr;
 
     if (auto ident = node->toIdentifier()) {
@@ -848,12 +853,11 @@ struct Converter {
         ret = new UnresolvedSymExpr("_singlevar");
       } else if (ident->name() == syncStr) {
         ret = new UnresolvedSymExpr("_syncvar");
+      } else if (ident->name() == domainStr) {
+        auto base = "chpl__buildDomainRuntimeType";
+        auto dist = new UnresolvedSymExpr("defaultDist");
+        ret = new CallExpr(base, dist);
       }
-    }
-
-    if (ret == nullptr) {
-      ret = toExpr(convertAST(node));
-      INT_ASSERT(ret);
     }
 
     return ret;
@@ -862,22 +866,32 @@ struct Converter {
   Expr* visit(const uast::FnCall* node) {
     const uast::Expression* calledExpression = node->calledExpression();
     INT_ASSERT(calledExpression);
-    Expr* calledExpr = convertCalledExpression(calledExpression);
-    INT_ASSERT(calledExpr);
 
     CallExpr* ret = nullptr;
     CallExpr* addArgsTo = nullptr;
+
     if (calledExpression->isNew()) {
+      Expr* calledExpr = convertCalledKeyword(calledExpression);
+      if (!calledExpr) {
+        calledExpr = convertAST(calledExpression);
+      }
+
       // we have (call PRIM_NEW (call C) mgmt)
       // and need to add the arguments to the (call C)
       CallExpr* primNew = toCallExpr(calledExpr);
       INT_ASSERT(primNew->isPrimitive(PRIM_NEW));
       CallExpr* typeCall = toCallExpr(primNew->get(1));
       INT_ASSERT(typeCall);
+
       ret = primNew;
       addArgsTo = typeCall;
+
+    // Some keywords can be converted to calls.
+    } else if (Expr* expr = convertCalledKeyword(calledExpression)) {
+      ret = isCallExpr(expr) ? toCallExpr(expr) : new CallExpr(expr);
+      addArgsTo = ret;
     } else {
-      ret = new CallExpr(calledExpr);
+      ret = new CallExpr(convertAST(calledExpression));
       addArgsTo = ret;
     }
 
@@ -967,8 +981,38 @@ struct Converter {
   /// Decls ///
 
   Expr* visit(const uast::MultiDecl* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
+
+    // Ignore linkage name, the new parser should have emitted an error
+    // about renaming.
+    (void) node->linkageName();
+
+    for (auto decl : node->decls()) {
+      assert(decl->linkage() == node->linkage());
+
+      Expr* conv = nullptr;
+      if (auto var = decl->toVariable()) {
+
+        // Do not use the linkage name since multi-decls cannot be renamed.
+        const bool useLinkageName = false;
+        conv = convertVariable(var, useLinkageName);
+
+      // Otherwise convert in a generic fashion.
+      } else {
+        conv = convertAST(decl);
+      }
+
+      assert(conv);
+      ret->insertAtTail(conv);
+    }
+
+    if (!fDocs) {
+      assert(!inTupleDecl);
+      CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+      ret->insertAtTail(end);
+    }
+
+    return ret;
   }
 
   Expr* visit(const uast::TupleDecl* node) {
@@ -1286,22 +1330,48 @@ struct Converter {
 
     Expr* domActuals = new SymExpr(gNil);
 
-    // Convert domain expressions into arguments for a PRIM_ACTUALS_LIST.
-    if (const uast::Domain* dom = node->iterand()->toDomain()) {
-      if (dom->numExprs()) {
-        CallExpr* actualsList = new CallExpr(PRIM_ACTUALS_LIST);
-        domActuals = actualsList;
+    auto dom = node->iterand()->toDomain();
+    INT_ASSERT(dom);
 
-        for (auto expr : dom->exprs()) {
-          actualsList->insertAtTail(convertAST(expr));
-        }
+    // If there are no domain expressions, use 'nil'.
+    if (!dom->numExprs()) {
+      domActuals = new SymExpr(gNil);
 
-        domActuals = new CallExpr("chpl__ensureDomainExpr", actualsList);
+    // Convert multiple domain expressions into a PRIM_ACTUALS_LIST.
+    } else if (dom->numExprs() > 1) {
+      CallExpr* actualsList = new CallExpr(PRIM_ACTUALS_LIST);
+      domActuals = actualsList;
+
+      for (auto expr : dom->exprs()) {
+        actualsList->insertAtTail(convertAST(expr));
+      }
+
+      domActuals = new CallExpr("chpl__ensureDomainExpr", actualsList);
+
+    // Use a single argument directly.
+    } else {
+      domActuals = convertAST(dom->expr(0));
+
+      // But wrap it if it is not a type query.
+      if (!dom->expr(0)->isTypeQuery()) {
+        domActuals = new CallExpr("chpl__ensureDomainExpr", domActuals);
       }
     }
 
-    Expr* subType = node->numStmts() ? convertAST(node->stmt(0))
-                                     : nullptr;
+    INT_ASSERT(domActuals);
+
+    Expr* subType = nullptr;
+    if (node->numStmts()) {
+
+      // Handle the possibility of nested array types.
+      if (auto bkt = node->stmt(0)->toBracketLoop()) {
+        subType = convertArrayType(bkt);
+      } else {
+        subType = convertAST(node->stmt(0));
+      }
+
+      INT_ASSERT(subType);
+    }
 
     CallExpr* ret = new CallExpr("chpl__buildArrayRuntimeType",
                                  domActuals,
@@ -1310,8 +1380,9 @@ struct Converter {
     return ret;
   }
 
-  Expr* visit(const uast::Variable* node) {
-    auto stmts = new BlockStmt(BLOCK_SCOPELESS);
+  // Returns a DefExpr that has not yet been inserted into the tree.
+  DefExpr* convertVariable(const uast::Variable* node,
+                                      bool useLinkageName) {
     auto varSym = new VarSymbol(tupleVariableName(node->name().c_str()));
 
     // Adjust the variable according to its kind
@@ -1324,6 +1395,16 @@ struct Converter {
     Flag linkageFlag = convertFlagForDeclLinkage(node);
     if (linkageFlag != FLAG_UNKNOWN) {
       varSym->addFlag(linkageFlag);
+    }
+
+    // TODO (dlongnecke): Should be sanitized by the new parser.
+    if (useLinkageName) {
+      if (auto linkageName = node->linkageName()) {
+        assert(linkageFlag != FLAG_UNKNOWN);
+        auto strLit = linkageName->toStringLiteral();
+        assert(strLit);
+        varSym->cname = astr(strLit->str().c_str());
+      }
     }
 
     Expr* typeExpr = nullptr;
@@ -1340,7 +1421,25 @@ struct Converter {
 
     Expr* initExpr = convertExprOrNull(node->initExpression());
 
-    auto defExpr = new DefExpr(varSym, initExpr, typeExpr);
+    auto ret = new DefExpr(varSym, initExpr, typeExpr);
+
+    // Replace init expressions for config variables with values passed
+    // in on the command-line, if necessary. 
+    if (node->isConfig()) {
+      if (Expr* commandLineInit = lookupConfigVal(varSym)) {
+        ret->init = commandLineInit;
+      }
+    }
+
+    return ret;
+  }
+
+  Expr* visit(const uast::Variable* node) {
+    auto stmts = new BlockStmt(BLOCK_SCOPELESS);
+
+    auto defExpr = convertVariable(node, true);
+    assert(defExpr);
+
     stmts->insertAtTail(defExpr);
 
     // Add a PRIM_END_OF_STATEMENT.

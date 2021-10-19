@@ -453,6 +453,14 @@ struct ParserContext {
                                    PODUniqueString baseType,
                                    Expression* subType);
 
+  Expression* buildTypeConstructor(YYLTYPE location,
+                                   PODUniqueString baseType,
+                                   MaybeNamedActual actual);
+
+  Expression* buildTypeConstructor(YYLTYPE location,
+                                   PODUniqueString baseType,
+                                   MaybeNamedActualList* actuals);
+
   CommentsAndStmt buildTryExprStmt(YYLTYPE location, Expression* expr,
                                    bool isTryBang);
 

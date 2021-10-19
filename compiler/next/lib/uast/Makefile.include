@@ -96,6 +96,7 @@ NEXT_UAST_SRCS =                                 \
   Tuple.cpp \
   TupleDecl.cpp \
   TypeDecl.cpp \
+  TypeQuery.cpp \
   UintLiteral.cpp \
   Use.cpp \
   Union.cpp \
