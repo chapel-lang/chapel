@@ -107,13 +107,13 @@ module ChapelSyncvar {
   // want to compile it by default at this time.
   pragma "no doc"
   pragma "unsafe"
-  private inline proc _moveset(ref dst: ?t, ref src: t) lifetime src == dst {
+  private inline proc _moveSet(ref dst: ?t, ref src: t) lifetime src == dst {
     __primitive("=", dst, src);
   }
 
   pragma "no doc"
   pragma "unsafe"
-  private inline proc _retemptyval(type t) {
+  private inline proc _retEmptyVal(type t) {
     pragma "no init"
     pragma "no auto destroy"
     var ret: t;
@@ -465,7 +465,7 @@ module ChapelSyncvar {
     pragma "dont disable remote value forwarding"
     proc init(type valType) {
       this.valType = valType;
-      this.value = _retemptyval(valType);
+      this.value = _retEmptyVal(valType);
       this.complete();
       chpl_sync_initAux(syncAux);
     }
@@ -503,12 +503,12 @@ module ChapelSyncvar {
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
 
-        _moveset(localRet, value);
+        _moveSet(localRet, value);
 
         chpl_sync_markAndSignalEmpty(syncAux);
         chpl_rmem_consist_acquire();
 
-        _moveset(ret, localRet);
+        _moveSet(ret, localRet);
       }
 
       return ret;
@@ -535,7 +535,7 @@ module ChapelSyncvar {
         chpl_rmem_consist_acquire();
 
         // assign back to the original locale
-        _moveset(ret, localRet);
+        _moveSet(ret, localRet);
       }
 
       return ret;
@@ -578,12 +578,12 @@ module ChapelSyncvar {
         pragma "no init"
         pragma "no auto destroy"
         var localVal : valType;
-        _moveset(localVal, val);
+        _moveSet(localVal, val);
 
         chpl_rmem_consist_release();
         chpl_sync_waitEmptyAndLock(syncAux);
 
-        _moveset(value, localVal);
+        _moveSet(value, localVal);
 
         chpl_sync_markAndSignalFull(syncAux);
         chpl_rmem_consist_acquire();
@@ -595,7 +595,7 @@ module ChapelSyncvar {
         pragma "no init"
         pragma "no auto destroy"
         var localVal : valType;
-        _moveset(localVal, val);
+        _moveSet(localVal, val);
 
         chpl_rmem_consist_release();
         chpl_sync_waitFullAndLock(syncAux);
@@ -603,7 +603,7 @@ module ChapelSyncvar {
         if chpl_sync_isFull(c_ptrTo(value), syncAux) {
           chpl__autoDestroy(value);
         }
-        _moveset(value, localVal);
+        _moveSet(value, localVal);
 
         chpl_sync_markAndSignalFull(syncAux);
         chpl_rmem_consist_acquire();
@@ -615,7 +615,7 @@ module ChapelSyncvar {
         pragma "no init"
         pragma "no auto destroy"
         var localVal : valType;
-        _moveset(localVal, val);
+        _moveSet(localVal, val);
 
         chpl_rmem_consist_release();
         chpl_sync_lock(syncAux);
@@ -623,7 +623,7 @@ module ChapelSyncvar {
         if chpl_sync_isFull(c_ptrTo(value), syncAux) {
           chpl__autoDestroy(value);
         }
-        _moveset(value, localVal);
+        _moveSet(value, localVal);
 
         chpl_sync_markAndSignalFull(syncAux);
         chpl_rmem_consist_acquire();
@@ -641,7 +641,7 @@ module ChapelSyncvar {
         if isPODType(valType) {
           // assuming POD types are default initializeable
           var defaultValue : valType;
-          _moveset(value, defaultValue);
+          _moveSet(value, defaultValue);
         }
 
         chpl_sync_markAndSignalEmpty(syncAux);
@@ -1009,7 +1009,7 @@ module ChapelSyncvar {
 
     proc init(type valType) {
       this.valType = valType;
-      this.value = _retemptyval(valType);
+      this.value = _retEmptyVal(valType);
       this.complete();
       chpl_single_initAux(singleAux);
     }
@@ -1058,7 +1058,7 @@ module ChapelSyncvar {
         chpl_rmem_consist_acquire();
 
         // assign back to the original locale
-        _moveset(ret, localRet);
+        _moveSet(ret, localRet);
       }
 
       return ret;
@@ -1102,7 +1102,7 @@ module ChapelSyncvar {
         pragma "no init"
         pragma "no auto destroy"
         var localVal : valType;
-        _moveset(localVal, val);
+        _moveSet(localVal, val);
 
         chpl_rmem_consist_release();
         chpl_single_lock(singleAux);
@@ -1110,7 +1110,7 @@ module ChapelSyncvar {
         if this.isFull then
           halt("single var already defined");
 
-        _moveset(value, localVal);
+        _moveSet(value, localVal);
 
         chpl_single_markAndSignalFull(singleAux);
         chpl_rmem_consist_acquire();
