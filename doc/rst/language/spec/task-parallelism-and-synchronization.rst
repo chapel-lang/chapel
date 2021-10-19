@@ -154,11 +154,14 @@ does not change. When either type of synchronization variable is
 written, its state transitions to full.
 
 ``sync`` and ``single`` are type qualifiers and precede the type of the
-variable’s value in the declaration. ``sync`` and ``single`` are supported for
-the primitive types ``nothing``, ``bool``, ``int``, ``uint``, ``real``,
-``imag``, ``complex``, ``bytes``, and ``string`` ( :ref:`Primitive_Types`);
-for enumerated types ( :ref:`Enumerated_Types`); and for class types
-(:ref:`Class_Types`) and record types (:ref:`Record_Types`).
+variable’s value in the declaration. ``sync`` and ``single`` are
+supported for the primitive types ``nothing``, ``bool``, ``int``,
+``uint``, ``real``, ``imag``, ``complex``, ``range``, ``bytes``, and
+``string`` ( :ref:`Primitive_Types`); for enumerated types
+( :ref:`Enumerated_Types`); and for class types (:ref:`Class_Types`) and
+record types (:ref:`Record_Types`). For sync variables of class type, the
+full/empty state applies to the reference to the class object, not to its
+member fields.
 
 If a task attempts to read or write a synchronization variable that is
 not in the correct state, the task is suspended. When the variable
@@ -304,8 +307,8 @@ the call is made, and the read value is passed to the formal.
 Predefined Single and Sync Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following methods are defined for variables of sync and single type.
-
+The following methods are defined for variables of ``sync`` and
+``single`` type.
 
 
    .. code-block:: chapel
@@ -324,20 +327,19 @@ when this method completes. This method implements the normal read of a
       proc (sync t).readFF(): t
       proc (single t).readFF(): t
 
-Returns a copy of the value of the sync or single variable. This method blocks
-until the sync or single variable is full. The state of the sync or
-single variable remains full when this method completes. This method
-implements the normal read of a ``single`` variable.
-
-
+Returns a copy of the value of the ``sync`` or ``single`` variable. This
+method blocks until the ``sync`` or ``single`` variable is full. The
+state of the ``sync`` or ``single`` variable remains full when this
+method completes. This method implements the normal read of a ``single``
+variable.
 
    .. code-block:: chapel
 
       proc (sync t).readXX(): t
       proc (single t).readXX(): t
 
-This method does not block and the state of the sync or single variable
-is unchanged when this method completes.
+This method does not block and the state of the ``sync`` or ``single``
+variable is unchanged when this method completes.
 
 This function returns:
 
