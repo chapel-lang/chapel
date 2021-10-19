@@ -543,7 +543,7 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
 
   fprintf(dbgfile, "\n");
   closefile(dbgfile);
-  mysystem(astr("cat ", CHPL_HOME, "/compiler/etc/", debugger, ".commands >> ",
+  myshell(astr("cat ", CHPL_HOME, "/compiler/etc/", debugger, ".commands >> ",
                 dbgfilename),
            astr("appending ", debugger, " commands"),
            false);
