@@ -106,7 +106,7 @@ proc denseMultiply(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 
 // TODO: Optimize & Parallelize
 /* Sparse CSR-CSC multiplication */
-proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where isSparseArr(A) && isSparseArr(B) {
+proc multiply(A: [?ADom] ?eltType, B: [?BDom] eltType) where A.isSparse() && B.isSparse() {
   use List;
 
   if !(ADom._value.compressRows && !BDom._value.compressRows) then

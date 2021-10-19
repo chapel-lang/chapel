@@ -89,7 +89,7 @@ module ChapelReduce {
       var d: eltType;
       // + preserves the type for associative domains.
       // Todo: any other easy-to-compute cases?
-      return isAssociativeDom(d);
+      return d.isAssociative();
 
     } else if isArray(eltType) {
       // Follow the lead of chpl_buildStandInRTT. Thankfully, this code

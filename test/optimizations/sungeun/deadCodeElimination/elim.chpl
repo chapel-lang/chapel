@@ -1,4 +1,4 @@
-proc shift(A, offset) where isRectangularArr(A) && A.rank==1 {
+proc shift(A, offset) where A.isRectangular() && A.rank==1 {
   const numElems = A.size;
   const ao = abs(offset);
   var sA = A;
