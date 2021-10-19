@@ -314,14 +314,14 @@ module ChapelSyncvar {
     lhs.wrapped.writeEF(rhs);
   }
 
+  deprecated "Casting from a value to a sync variable is deprecated"
   inline operator :(from, type t:_syncvar)
   where from.type == t.valType {
-    compilerWarning("Casting from a value to a sync variable is deprecated");
     return new _syncvar(from);
   }
 
+  deprecated "Casting sync variables is deprecated"
   inline operator :(from: _syncvar, type toType:_syncvar) {
-    compilerWarning("Casting sync variables is deprecated");
     // TODO: this doesn't seem right - it doesn't use toType
     return new _syncvar(from);
   }
@@ -945,13 +945,13 @@ module ChapelSyncvar {
     lhs.wrapped.writeEF(rhs);
   }
 
+  deprecated "Casting from a value to a single variable is deprecated"
   inline operator :(from, type t:_singlevar)
   where from.type == t.valType {
-    compilerWarning("Casting from a value to a single variable is deprecated");
     return new _singlevar(from);
   }
+  deprecated "Casting single variables is deprecated"
   inline operator :(from: _singlevar, type toType:_singlevar) {
-    compilerWarning("Casting single variables is deprecated");
     // TODO: this doesn't seem right - it doesn't use toType
     return new _singlevar(from);
   }
