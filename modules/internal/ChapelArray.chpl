@@ -3447,7 +3447,7 @@ module ChapelArray {
        rectangular 1-D array.
      */
     proc last {
-      if !this.isRectangular(this) || this.rank != 1 then
+      if !this.isRectangular() || this.rank != 1 then
         compilerError("back() is only supported on 1D rectangular arrays");
 
       if boundsChecking && isEmpty() then
