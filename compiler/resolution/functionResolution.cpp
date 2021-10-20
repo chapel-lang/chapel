@@ -10914,7 +10914,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     // than in lowerPrimInit.
 
     // note: error for bad param initialization checked for in resolving move
-    if ((val->hasFlag(FLAG_MAYBE_PARAM) || val->isParameter())) {
+    if (val->hasFlag(FLAG_MAYBE_PARAM) || val->isParameter()) {
       if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
         Expr* defaultExpr = NULL;
         SymExpr* typeSe = NULL;
@@ -10948,8 +10948,32 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     // These will be handled in lowerPrimInit.
     errorInvalidParamInit(call, val, at);
 
-    if (call->numActuals() >= 2)
-      call->get(2)->replace(new SymExpr(type->symbol));
+    if ((type == dtStringC || type == dtString || type == dtBytes) &&
+        (val->hasFlag(FLAG_MAYBE_PARAM) || val->isParameter())) {
+      // Initialize a param string
+      if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+        VarSymbol* empty = nullptr;
+        if (type == dtStringC) {
+          empty = new_CStringSymbol("");
+        } else if (type == dtString) {
+          empty = new_StringSymbol("");
+        } else if (type == dtBytes) {
+          empty = new_BytesSymbol("");
+        } else {
+          INT_FATAL("case not handled");
+        }
+        CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, empty);
+        call->insertBefore(moveDefault);
+        resolveExpr(moveDefault);
+        call->convertToNoop();
+
+      } else {
+        call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
+      }
+    } else {
+      if (call->numActuals() >= 2)
+        call->get(2)->replace(new SymExpr(type->symbol));
+    }
   }
 }
 
