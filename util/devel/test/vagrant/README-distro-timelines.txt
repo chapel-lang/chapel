@@ -79,7 +79,7 @@ x 12.04 "Precise Pangolin"  LTS until Apr 2017
 x 14.04 "Trusty Tahir"      LTS until Apr 2019
 x 16.04 "Xenial Xerus"      LTS until Apr 2021
   18.04 "Bionic Beaver"     LTS until April 2023
-  20.04 "Foral Fossa"       LTS until April 2030
+  20.04 "Focal Fossa"       LTS until April 2030
 
 non-LTS:
 x 14.10 "Utopic Unicorn"    EOL July 2015
