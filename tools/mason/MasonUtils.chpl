@@ -277,6 +277,15 @@ record VersionInfo {
   proc containsMax() {
     return this.major == max(int) || this.minor == max(int) || this.bug == max(int);
   }
+
+  proc isCompatible(other:VersionInfo) : bool {
+    // checks that a version is compatible with this version
+    // versions are assumed compatible if major and minor versions match
+    // and patch/bug level is the same or greater
+    return this.major == other.major
+           && this.minor == other.minor
+           && this.bug <= other.bug;
+  }
 }
 
 operator VersionInfo.=(ref lhs:VersionInfo, const ref rhs:VersionInfo) {

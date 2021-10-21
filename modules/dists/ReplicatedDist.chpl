@@ -223,7 +223,7 @@ class LocReplicatedDom {
 
 
 // No explicit ReplicatedDom initializer - use the default one.
-// proc ReplicatedDom.ReplicatedDom(...){...}
+// proc ReplicatedDom.init(...){...}
 
 // Since we piggy-back on (default-mapped) Chapel domains, we can redirect
 // a few operations to those. This function returns a Chapel domain

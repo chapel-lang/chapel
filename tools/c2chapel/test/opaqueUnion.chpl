@@ -8,7 +8,7 @@ require "opaqueUnion.h";
 use CPtr;
 use SysCTypes;
 use SysBasic;
-extern union foobar {
+extern "union foobar" union foobar {
   var a : c_int;
   var b : c_int;
   var c : c_int;

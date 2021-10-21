@@ -30,89 +30,138 @@
 namespace chpl {
 namespace resolution {
 
-// TODO: Should some/all of these structs be classes
-// with getters etc? That would be appropriate for
-// use as part of the library API.
+class BorrowedIdsWithName;
 
 /**
-  Collects IDs with a particular name.
+  Collects IDs with a particular name. These can be referred to
+  by a BorrowedIdsWithName in a way that avoids copies.
  */
-struct OwnedIdsWithName {
+class OwnedIdsWithName {
+ friend class BorrowedIdsWithName;
+
+ private:
   // If there is just one ID with this name, it is stored here,
   // and moreIds == nullptr.
-  ID id;
+  ID id_;
   // If there is more than one, all are stored in here,
   // and id redundantly stores the first one.
   // This field is 'owned' in order to allow reuse of pointers to it.
-  owned<std::vector<ID>> moreIds;
+  owned<std::vector<ID>> moreIds_;
 
+ public:
+  /** Construct an OwnedIdsWithName containing one ID. */
   OwnedIdsWithName(ID id)
-    : id(std::move(id)), moreIds(nullptr)
+    : id_(std::move(id)), moreIds_(nullptr)
   { }
 
+  /** Append an ID to an OwnedIdsWithName. */
   void appendId(ID newId) {
-    if (moreIds.get() == nullptr) {
+    if (moreIds_.get() == nullptr) {
       // create the vector and add the single existing id to it
-      moreIds = toOwned(new std::vector<ID>());
-      moreIds->push_back(id);
+      moreIds_ = toOwned(new std::vector<ID>());
+      moreIds_->push_back(id_);
     }
     // add the id passed
-    moreIds->push_back(std::move(newId));
+    moreIds_->push_back(std::move(newId));
   }
 
   bool operator==(const OwnedIdsWithName& other) const {
-    if (id != other.id)
+    if (id_ != other.id_)
       return false;
 
-    if ((moreIds.get()==nullptr) != (other.moreIds.get()==nullptr))
+    if ((moreIds_.get()==nullptr) != (other.moreIds_.get()==nullptr))
       return false;
 
-    if (moreIds.get()==nullptr && other.moreIds.get()==nullptr)
+    if (moreIds_.get()==nullptr && other.moreIds_.get()==nullptr)
       return true;
 
     // otherwise check the vector elements
-    return *moreIds.get() == *other.moreIds.get();
+    return *moreIds_.get() == *other.moreIds_.get();
   }
   bool operator!=(const OwnedIdsWithName& other) const {
     return !(*this == other);
   }
 };
-struct BorrowedIdsWithName {
+
+/**
+  Contains IDs with a particular name. This class is a lightweight
+  reference to a collection stored in OwnedIdsWithName.
+ */
+class BorrowedIdsWithName {
+ private:
   // TODO: consider storing a variant of ID here
   // with symbolPath, postOrderId, and tag
-  ID id;
-  const std::vector<ID>* moreIds = nullptr;
+  ID id_;
+  const std::vector<ID>* moreIds_ = nullptr;
+ public:
+  /** Construct an empty BorrowedIdsWithName */
   BorrowedIdsWithName() { }
-  BorrowedIdsWithName(ID id) : id(std::move(id)) { }
+  /** Construct a BorrowedIdsWithName referring to one ID */
+  BorrowedIdsWithName(ID id) : id_(std::move(id)) { }
+  /** Construct a BorrowedIdsWithName referring to the same IDs
+      as the passed OwnedIdsWithName.
+      This BorrowedIdsWithName assumes that the OwnedIdsWithName
+      will continue to exist. */
   BorrowedIdsWithName(const OwnedIdsWithName& o)
-    : id(o.id), moreIds(o.moreIds.get())
+    : id_(o.id_), moreIds_(o.moreIds_.get())
   { }
+
+  /** Return the number of IDs stored here */
+  int numIds() const {
+    if (moreIds_ == nullptr) {
+      return 1;
+    }
+    return moreIds_->size();
+  }
+
+  /** Returns the i'th ID. id(0) is always available. */
+  const ID& id(int i) const {
+    if (i == 0) {
+      return id_;
+    }
+    assert(moreIds_ && 0 <= i && (size_t) i < moreIds_->size());
+    return (*moreIds_)[i];
+  }
+
+  /** Returns an iterator referring to the first element stored. */
+  const ID* begin() const {
+    if (moreIds_ == nullptr) {
+      return &id_;
+    }
+    return &(*moreIds_)[0];
+  }
+  /** Returns an iterator referring just past the last element stored. */
+  const ID* end() const {
+    const ID* last = nullptr;
+    if (moreIds_ == nullptr) {
+      last = &id_;
+    } else {
+      last = &moreIds_->back();
+    }
+    // return the element just past the last element
+    return last+1;
+  }
+
   bool operator==(const BorrowedIdsWithName& other) const {
-    return id == other.id &&
-           moreIds == other.moreIds;
+    return id_ == other.id_ &&
+           moreIds_ == other.moreIds_;
   }
   bool operator!=(const BorrowedIdsWithName& other) const {
     return !(*this == other);
   }
+
   size_t hash() const {
     size_t ret = 0;
-    if (moreIds == nullptr) {
-      ret = hash_combine(ret, chpl::hash(id));
+    if (moreIds_ == nullptr) {
+      ret = hash_combine(ret, chpl::hash(id_));
     } else {
-      for (const ID& x : *moreIds) {
+      for (const ID& x : *moreIds_) {
         ret = hash_combine(ret, chpl::hash(x));
       }
     }
     return ret;
   }
 
-  const ID& firstId() const {
-    if (moreIds == nullptr) {
-      return id;
-    } else {
-      return (*moreIds)[0];
-    }
-  }
 };
 
 // DeclMap: key - string name,  value - vector of ID of a NamedDecl
@@ -124,28 +173,75 @@ using DeclMap = std::unordered_map<UniqueString, OwnedIdsWithName>;
   A scope roughly corresponds to a `{ }` block. Anywhere a new symbol could be
   defined / is defined is a scope.
 
+  The scope contains a mapping from name to ID for symbols defined within.
+  For the root scope, it can also contain empty IDs for builtin types and
+  symbols.
+
   While generic instantiations generate something scope-like, the
   point-of-instantiation reasoning will need to be handled with a different
   type.
  */
-struct Scope {
-  const Scope* parentScope = nullptr;
-  uast::asttags::ASTTag tag = uast::asttags::NUM_AST_TAGS;
-  bool containsUseImport = false;
-  bool containsFunctionDecls = false;
-  ID id;
-  UniqueString name;
-  DeclMap declared;
+class Scope {
+ private:
+  const Scope* parentScope_ = nullptr;
+  uast::asttags::ASTTag tag_ = uast::asttags::NUM_AST_TAGS;
+  bool containsUseImport_ = false;
+  bool containsFunctionDecls_ = false;
+  ID id_;
+  UniqueString name_;
+  DeclMap declared_;
 
+ public:
+  /** Construct an empty scope.
+      This scope will not yet store any defined symbols. */
   Scope() { }
 
+  /** Construct a Scope for a particular AST node
+      and with a particular parent. */
+  Scope(const uast::ASTNode* ast, const Scope* parentScope);
+
+  /** Add a builtin type with the provided name. This needs to
+      be called to populate the root scope with builtins. */
+  void addBuiltin(UniqueString name);
+
+  /** Return the parent scope for this scope. */
+  const Scope* parentScope() const { return parentScope_; }
+
+  /** Returns the AST tag of the construct that this Scope represents. */
+  uast::asttags::ASTTag tag() const { return tag_; }
+
+  /** Return the ID of the Block or other AST node construct that this Scope
+      represents. An empty ID indicates that this Scope is the root scope. */
+  const ID& id() const { return id_; }
+
+  /** Returns 'true' if this Scope directly contains use or import statements */
+  bool containsUseImport() const { return containsUseImport_; }
+
+  /** Returns 'true' if this Scope directly contains any Functions */
+  bool containsFunctionDecls() const { return containsFunctionDecls_; }
+
+  int numDeclared() const { return declared_.size(); }
+
+  /** If the scope contains IDs with the provided name,
+      append the relevant BorrowedIdsToName the the vector.
+      Returns true if something was appended. */
+  bool lookupInScope(UniqueString name,
+                     std::vector<BorrowedIdsWithName>& result) const {
+    auto search = declared_.find(name);
+    if (search != declared_.end()) {
+      result.push_back(BorrowedIdsWithName(search->second));
+      return true;
+    }
+    return false;
+  }
+
   bool operator==(const Scope& other) const {
-    return parentScope == other.parentScope &&
-           tag == other.tag &&
-           containsUseImport == other.containsUseImport &&
-           containsFunctionDecls == other.containsFunctionDecls &&
-           id == other.id &&
-           declared == other.declared;
+    return parentScope_ == other.parentScope_ &&
+           tag_ == other.tag_ &&
+           containsUseImport_ == other.containsUseImport_ &&
+           containsFunctionDecls_ == other.containsFunctionDecls_ &&
+           id_ == other.id_ &&
+           declared_ == other.declared_;
   }
   bool operator!=(const Scope& other) const {
     return !(*this == other);

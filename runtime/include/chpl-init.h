@@ -25,10 +25,14 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 #ifndef LAUNCHER
 
 void chpl_rt_preUserCodeHook(void);
 void chpl_rt_postUserCodeHook(void);
+const char* allocate_string_literals_buf(int64_t s);
+void deallocate_string_literals_buf(void);
 
 #endif // ifndef LAUNCHER
 

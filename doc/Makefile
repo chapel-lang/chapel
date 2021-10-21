@@ -60,7 +60,16 @@ help-source:
 
 
 docs: FORCE
-	@$(MAKE) html-release || $(MAKE) error_docs
+	@COMP_DOCS_ERROR=0 ; \
+	(cd ../compiler/next && $(MAKE) -f Makefile.help libchplcomp-docs) || \
+	 COMP_DOCS_ERROR=1 ; \
+	$(MAKE) html-release || $(MAKE) error_docs ; \
+	if [ $$COMP_DOCS_ERROR -ne 0 -o ! -d $(COMPILER_INTERNALS_DOXYGEN) ] ; \
+	  then \
+	  echo ; \
+	  echo " This docs build does not include compiler library API docs" ; \
+	  echo " Try 'make clobber-libchplcomp && make libchplcomp-docs'" ; \
+	fi
 
 
 man-chapel: FORCE
@@ -142,11 +151,11 @@ prunedocs: FORCE
 	fi
 
 
-clean: clean-source clean-build clean-build-dir FORCE
+clean: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
-cleanall: clean-source clean-build clean-build-dir FORCE
+cleanall: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
-clobber: clean-source clean-build clean-build-dir FORCE
+clobber: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
 clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax clean-compiler-internals FORCE
 
@@ -183,6 +192,9 @@ clean-symlinks: FORCE
 	@echo
 	@echo "Removing all symbolic links"
 	find $(SOURCEDIR) -type l -delete
+
+clean-doxygen: FORCE
+	cd ../compiler/next && $(MAKE) -f Makefile.help clean-libchplcomp-docs
 
 error_docs: FORCE
 	@exit 1 # Note that 'make' will return exit code of 2, despite exit 1

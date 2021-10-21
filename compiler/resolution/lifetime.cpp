@@ -1695,10 +1695,10 @@ static void addToDeinitOrderTree(DeinitOrderNode* dst, DeinitOrderNode* src) {
 
   // create new nodes for any sub-nodes if they are not present already.
   if (src->nestedOrder != NULL && dst->nestedOrder == NULL) {
-    dst->nestedOrder = new DeinitOrderNode();
+    dst->nestedOrder = new DeinitOrderNode(); // TODO this LEAK is unaccounted for
   }
   if (src->elseOrder != NULL && dst->elseOrder == NULL) {
-    dst->elseOrder = new DeinitOrderNode();
+    dst->elseOrder = new DeinitOrderNode(); // TODO this LEAK is unaccounted for
   }
 
   // copy the sub-nodes, recursively
@@ -1749,6 +1749,7 @@ void DeinitOrderVisitor::exitScope(Expr* block) {
     nextDeinitOrderNode(orderStack.back(), NULL);
   } else {
     INT_ASSERT(block->parentExpr == NULL);
+    delete last;  // Frees the node allocated in enterScope when orderStack is empty
   }
 }
 

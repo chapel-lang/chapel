@@ -68,6 +68,7 @@
 #include "llvm/Support/ToolOutputFile.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/IPO.h"
+#include "llvm/Transforms/IPO/AlwaysInliner.h"
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
 
 #if HAVE_LLVM_VER >= 90
@@ -265,7 +266,7 @@ static
 void addMinMax(const char* prefix, int nbits, bool isSigned)
 {
   GenInfo* info = gGenInfo;
-  LayeredValueTable *lvt = info->lvt;
+  LayeredValueTable *lvt = info->lvt.get();
 
   astlocT prevloc = currentAstLoc;
 
@@ -1223,7 +1224,7 @@ void readMacrosClang(void) {
   INT_ASSERT(info);
   ClangInfo* clangInfo = info->clangInfo;
   INT_ASSERT(clangInfo);
-  LayeredValueTable *lvt = info->lvt;
+  LayeredValueTable *lvt = info->lvt.get();
 
   SET_LINENO(rootModule);
 
@@ -1735,6 +1736,166 @@ void setupClang(GenInfo* info, std::string mainFile)
   }
 }
 
+
+// copied from clang's BackendUtil.cpp
+static Optional<llvm::CodeModel::Model>
+getCodeModel(const CodeGenOptions &CodeGenOpts) {
+  unsigned CodeModel = llvm::StringSwitch<unsigned>(CodeGenOpts.CodeModel)
+                           .Case("tiny", llvm::CodeModel::Tiny)
+                           .Case("small", llvm::CodeModel::Small)
+                           .Case("kernel", llvm::CodeModel::Kernel)
+                           .Case("medium", llvm::CodeModel::Medium)
+                           .Case("large", llvm::CodeModel::Large)
+                           .Case("default", ~1u)
+                           .Default(~0u);
+  assert(CodeModel != ~0u && "invalid code model!");
+  if (CodeModel == ~1u)
+    return None;
+  return static_cast<llvm::CodeModel::Model>(CodeModel);
+}
+
+// this function is substantially similar to clang's
+// initTargetOptions from BackendUtil.cpp
+static llvm::TargetOptions getTargetOptions(
+    const clang::CodeGenOptions& CodeGenOpts,
+    const clang::TargetOptions& TargetOpts) {
+
+  llvm::TargetOptions Options;
+
+  // Chapel is always multithreaded
+  Options.ThreadModel = llvm::ThreadModel::POSIX;
+
+  // Set float ABI type.
+  assert((CodeGenOpts.FloatABI == "soft" || CodeGenOpts.FloatABI == "softfp" ||
+          CodeGenOpts.FloatABI == "hard" || CodeGenOpts.FloatABI.empty()) &&
+         "Invalid Floating Point ABI!");
+  Options.FloatABIType =
+      llvm::StringSwitch<llvm::FloatABI::ABIType>(CodeGenOpts.FloatABI)
+          .Case("soft", llvm::FloatABI::Soft)
+          .Case("softfp", llvm::FloatABI::Soft)
+          .Case("hard", llvm::FloatABI::Hard)
+          .Default(llvm::FloatABI::Default);
+
+
+  // Set the floating point optimization level
+  // see also code setting FastMathFlags
+  // This uses ffloatOpt rather than using clang's LangOpts.
+  if (ffloatOpt == 1) {
+    // --no-ieee-float
+    // Allow unsafe fast floating point optimization
+    Options.UnsafeFPMath = 1; // e.g. FSIN instruction
+    Options.NoInfsFPMath = 1;
+    Options.NoNaNsFPMath = 1;
+    Options.NoTrappingFPMath = 1;
+    Options.NoSignedZerosFPMath = 1;
+    Options.AllowFPOpFusion = llvm::FPOpFusion::Fast;
+  } else if (ffloatOpt == 0) {
+    // Target default floating point optimization
+    Options.AllowFPOpFusion = llvm::FPOpFusion::Standard;
+  } else if (ffloatOpt == -1) {
+    // --ieee-float
+    // Should this set targetOptions.HonorSignDependentRoundingFPMathOption ?
+    // Allow fused multiply-adds
+    Options.AllowFPOpFusion = llvm::FPOpFusion::Standard;
+  }
+
+#if HAVE_LLVM_VER >= 120
+  Options.BinutilsVersion =
+      llvm::TargetMachine::parseBinutilsVersion(CodeGenOpts.BinutilsVersion);
+#endif
+
+  Options.UseInitArray = CodeGenOpts.UseInitArray;
+  Options.DisableIntegratedAS = CodeGenOpts.DisableIntegratedAS;
+  Options.CompressDebugSections = CodeGenOpts.getCompressDebugSections();
+  Options.RelaxELFRelocations = CodeGenOpts.RelaxELFRelocations;
+
+  // Set EABI version.
+  Options.EABIVersion = TargetOpts.EABIVersion;
+
+  Options.ExceptionModel = llvm::ExceptionHandling::None;
+
+  //Options.NoInfsFPMath = LangOpts.NoHonorInfs; -- set above
+  //Options.NoNaNsFPMath = LangOpts.NoHonorNaNs; -- set above
+  Options.NoZerosInBSS = CodeGenOpts.NoZeroInitializedInBSS;
+  //Options.UnsafeFPMath = LangOpts.UnsafeFPMath; -- set above
+#if HAVE_LLVM_VER <= 110
+  Options.StackAlignmentOverride = CodeGenOpts.StackAlignment;
+#endif
+
+  Options.BBSections =
+    llvm::StringSwitch<llvm::BasicBlockSection>(CodeGenOpts.BBSections)
+        .Case("all", llvm::BasicBlockSection::All)
+        .Case("labels", llvm::BasicBlockSection::Labels)
+        .StartsWith("list=", llvm::BasicBlockSection::List)
+        .Case("none", llvm::BasicBlockSection::None)
+        .Default(llvm::BasicBlockSection::None);
+
+  if (Options.BBSections == llvm::BasicBlockSection::List) {
+    INT_FATAL("this clang configuration not supported");
+  }
+
+#if HAVE_LLVM_VER >= 120
+  Options.EnableMachineFunctionSplitter = CodeGenOpts.SplitMachineFunctions;
+#endif
+
+  Options.FunctionSections = CodeGenOpts.FunctionSections;
+  Options.DataSections = CodeGenOpts.DataSections;
+#if HAVE_LLVM_VER >= 120
+  Options.IgnoreXCOFFVisibility = LangOpts.IgnoreXCOFFVisibility;
+#endif
+  Options.UniqueSectionNames = CodeGenOpts.UniqueSectionNames;
+  Options.UniqueBasicBlockSectionNames =
+      CodeGenOpts.UniqueBasicBlockSectionNames;
+  Options.TLSSize = CodeGenOpts.TLSSize;
+  Options.EmulatedTLS = CodeGenOpts.EmulatedTLS;
+  Options.ExplicitEmulatedTLS = CodeGenOpts.ExplicitEmulatedTLS;
+  Options.DebuggerTuning = CodeGenOpts.getDebuggerTuning();
+  Options.EmitStackSizeSection = CodeGenOpts.StackSizeSection;
+#if HAVE_LLVM_VER >= 120
+  Options.StackUsageOutput = CodeGenOpts.StackUsageOutput;
+#endif
+  Options.EmitAddrsig = CodeGenOpts.Addrsig;
+  Options.ForceDwarfFrameSection = CodeGenOpts.ForceDwarfFrameSection;
+  Options.EmitCallSiteInfo = CodeGenOpts.EmitCallSiteInfo;
+#if HAVE_LLVM_VER >= 120
+  Options.EnableAIXExtendedAltivecABI = CodeGenOpts.EnableAIXExtendedAltivecABI;
+  Options.PseudoProbeForProfiling = CodeGenOpts.PseudoProbeForProfiling;
+  Options.ValueTrackingVariableLocations =
+      CodeGenOpts.ValueTrackingVariableLocations;
+#endif
+  Options.XRayOmitFunctionIndex = CodeGenOpts.XRayOmitFunctionIndex;
+#if HAVE_LLVM_VER >= 120
+  Options.LoopAlignment = CodeGenOpts.LoopAlignment;
+#endif
+
+  Options.MCOptions.SplitDwarfFile = CodeGenOpts.SplitDwarfFile;
+  Options.MCOptions.MCRelaxAll = CodeGenOpts.RelaxAll;
+  Options.MCOptions.MCSaveTempLabels = CodeGenOpts.SaveTempLabels;
+  Options.MCOptions.MCUseDwarfDirectory = !CodeGenOpts.NoDwarfDirectoryAsm;
+  Options.MCOptions.MCNoExecStack = CodeGenOpts.NoExecStack;
+  Options.MCOptions.MCIncrementalLinkerCompatible =
+      CodeGenOpts.IncrementalLinkerCompatible;
+  Options.MCOptions.MCFatalWarnings = CodeGenOpts.FatalWarnings;
+  Options.MCOptions.MCNoWarn = CodeGenOpts.NoWarn;
+  Options.MCOptions.AsmVerbose = CodeGenOpts.AsmVerbose;
+#if HAVE_LLVM_VER >= 120
+  Options.MCOptions.Dwarf64 = CodeGenOpts.Dwarf64;
+#endif
+  Options.MCOptions.PreserveAsmComments = CodeGenOpts.PreserveAsmComments;
+  Options.MCOptions.ABIName = TargetOpts.ABI;
+
+  // consider setting Options.MCOptions.IASSearchPaths
+  // if .include directives with integrated assembler are needed
+
+  Options.MCOptions.Argv0 = CodeGenOpts.Argv0;
+  Options.MCOptions.CommandLineArgs = CodeGenOpts.CommandLineArgs;
+#if HAVE_LLVM_VER >= 120
+  Options.DebugStrictDwarf = CodeGenOpts.DebugStrictDwarf;
+#endif
+
+  return Options;
+}
+
 static void setupModule()
 {
   GenInfo* info = gGenInfo;
@@ -1770,6 +1931,7 @@ static void setupModule()
 
 
   const clang::TargetOptions & ClangOpts = clangInfo->Clang->getTargetOpts();
+  const clang::CodeGenOptions& ClangCodeGenOpts = clangInfo->codegenOptions;
 
   std::string cpu = ClangOpts.CPU;
   std::vector<std::string> clangFeatures = ClangOpts.Features;
@@ -1786,32 +1948,10 @@ static void setupModule()
   }
 
   // Set up the TargetOptions
-  llvm::TargetOptions targetOptions;
-  targetOptions.ThreadModel = llvm::ThreadModel::POSIX;
-
-  // Set the floating point optimization level
-  // see also code setting FastMathFlags
-  if (ffloatOpt == 1) {
-    // --no-ieee-float
-    // Allow unsafe fast floating point optimization
-    targetOptions.UnsafeFPMath = 1; // e.g. FSIN instruction
-    targetOptions.NoInfsFPMath = 1;
-    targetOptions.NoNaNsFPMath = 1;
-    targetOptions.NoTrappingFPMath = 1;
-    targetOptions.NoSignedZerosFPMath = 1;
-    targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Fast;
-  } else if (ffloatOpt == 0) {
-    // Target default floating point optimization
-    targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Standard;
-  } else if (ffloatOpt == -1) {
-    // --ieee-float
-    // Should this set targetOptions.HonorSignDependentRoundingFPMathOption ?
-    // Allow fused multiply-adds
-    targetOptions.AllowFPOpFusion = llvm::FPOpFusion::Standard;
-  }
+  llvm::TargetOptions Options = getTargetOptions(ClangCodeGenOpts, ClangOpts);
 
   if (!fFastFlag)
-    targetOptions.EnableFastISel = 1;
+    Options.EnableFastISel = 1;
   else {
     // things to consider:
     // EnableIPRA  -- InterProcedural Register Allocation (IPRA).
@@ -1819,13 +1959,15 @@ static void setupModule()
   }
 
   llvm::Reloc::Model relocModel = llvm::Reloc::Model::Static;
+  // a reasonable alternative would be
+  // llvm::Reloc::Model RM = CodeGenOpts.RelocationModel;
 
   if (strcmp(CHPL_LIB_PIC, "pic") == 0) {
     relocModel = llvm::Reloc::Model::PIC_;
   }
 
   // Choose the code model
-  llvm::Optional<CodeModel::Model> codeModel = None;
+  llvm::Optional<CodeModel::Model> codeModel = getCodeModel(ClangCodeGenOpts);
 
   llvm::CodeGenOpt::Level optLevel =
     fFastFlag ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;
@@ -1834,7 +1976,7 @@ static void setupModule()
   info->targetMachine = Target->createTargetMachine(Triple.str(),
                                                     cpu,
                                                     featuresString,
-                                                    targetOptions,
+                                                    Options,
                                                     relocModel,
                                                     codeModel,
                                                     optLevel);
@@ -1936,43 +2078,53 @@ static void registerRVPasses(const llvm::PassManagerBuilder &Builder,
 }
 #endif
 
+// This has code based on clang's EmitAssemblyHelper::CreatePasses
+// in BackendUtil.cpp.
 static
 void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, int optLevel=-1) {
   ClangInfo* clangInfo = gGenInfo->clangInfo;
   INT_ASSERT(clangInfo);
-  clang::CodeGenOptions &opts = clangInfo->codegenOptions;
+  clang::CodeGenOptions &CodeGenOpts = clangInfo->codegenOptions;
 
   if (optLevel < 0)
-    optLevel = opts.OptimizationLevel;
+    optLevel = CodeGenOpts.OptimizationLevel;
 
   if( fFastFlag ) {
     // TODO -- remove this assert
-    INT_ASSERT(opts.OptimizationLevel >= 2);
+    INT_ASSERT(CodeGenOpts.OptimizationLevel >= 2);
   }
 
-  if (optLevel >= 1)
-    PMBuilder.Inliner = createFunctionInliningPass(optLevel,
-                                                   opts.OptimizeSize,
-                                                   /*DisableInlineHotCallsite*/
-                                                   false
-                                                  );
+  if (optLevel <= 1) {
+      bool InsertLifetimeIntrinsics = (CodeGenOpts.OptimizationLevel != 0 &&
+                                       !CodeGenOpts.DisableLifetimeMarkers);
+      // TODO: insert lifetime intrinics if Coroutines are used
+    PMBuilder.Inliner = createAlwaysInlinerLegacyPass(InsertLifetimeIntrinsics);
+  } else {
+    PMBuilder.Inliner = createFunctionInliningPass(
+        CodeGenOpts.OptimizationLevel, CodeGenOpts.OptimizeSize,
+        (!CodeGenOpts.SampleProfileFile.empty() &&
+         CodeGenOpts.PrepareForThinLTO));
+  }
 
   PMBuilder.OptLevel = optLevel;
-  PMBuilder.SizeLevel = opts.OptimizeSize;
-  PMBuilder.SLPVectorize = opts.VectorizeSLP;
-  PMBuilder.LoopVectorize = opts.VectorizeLoop;
+  PMBuilder.SizeLevel = CodeGenOpts.OptimizeSize;
+  PMBuilder.SLPVectorize = CodeGenOpts.VectorizeSLP;
+  PMBuilder.LoopVectorize = CodeGenOpts.VectorizeLoop;
+  PMBuilder.CallGraphProfile = !CodeGenOpts.DisableIntegratedAS;
 
-  PMBuilder.DisableUnrollLoops = !opts.UnrollLoops;
-  PMBuilder.MergeFunctions = opts.MergeFunctions;
+  PMBuilder.DisableUnrollLoops = !CodeGenOpts.UnrollLoops;
+  PMBuilder.LoopsInterleaved = CodeGenOpts.UnrollLoops;
+  PMBuilder.MergeFunctions = CodeGenOpts.MergeFunctions;
 #if HAVE_LLVM_VER > 60
-  PMBuilder.PrepareForThinLTO = opts.PrepareForThinLTO;
+  PMBuilder.PrepareForThinLTO = CodeGenOpts.PrepareForThinLTO;
 #else
-  PMBuilder.PrepareForThinLTO = opts.EmitSummaryIndex;
+  PMBuilder.PrepareForThinLTO = CodeGenOpts.EmitSummaryIndex;
 #endif
+  PMBuilder.PrepareForLTO = CodeGenOpts.PrepareForLTO;
+  PMBuilder.RerollLoops = CodeGenOpts.RerollLoops;
 
-  PMBuilder.PrepareForLTO = opts.PrepareForLTO;
-  PMBuilder.RerollLoops = opts.RerollLoops;
-
+  if (gGenInfo->targetMachine)
+    gGenInfo->targetMachine->adjustPassManager(PMBuilder);
 
   // Enable Region Vectorizer aka Outer Loop Vectorizer
 #ifdef HAVE_LLVM_RV
@@ -2388,7 +2540,7 @@ void runClang(const char* just_parse_filename) {
     INT_ASSERT(gGenInfo != NULL);
   }
 
-  gGenInfo->lvt = new LayeredValueTable();
+  gGenInfo->lvt = std::make_unique<LayeredValueTable>();
 
 
   ClangInfo* clangInfo = NULL;
@@ -3925,11 +4077,11 @@ void makeBinaryLLVM(void) {
 
       outputASMfile.close();
 
-      if (mysystem("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
+      if (myshell("which ptxas > /dev/null 2>&1", "Check to see if ptxas command can be found", true)) {
         USR_FATAL("Command 'ptxas' not found\n");
       }
 
-      if (mysystem("which fatbinary > /dev/null 2>&1", "Check to see if fatbinary command can be found", true)) {
+      if (myshell("which fatbinary > /dev/null 2>&1", "Check to see if fatbinary command can be found", true)) {
         USR_FATAL("Command 'fatbinary' not found\n");
       }
 
@@ -4005,17 +4157,21 @@ void makeBinaryLLVM(void) {
     if (fLinkStyle == LS_DEFAULT) {
       // check for indication that the PrgEnv defaults to dynamic linking
       bool defaultDynamic = false;
-      for(size_t i = 0; i < gatheredArgs.size(); i++)
-        if (gatheredArgs[i].find("-Wl,-Bdynamic") != std::string::npos)
+      for(size_t i = 0; i < gatheredArgs.size(); i++) {
+        if (gatheredArgs[i] == "-Wl,-Bdynamic"   // when PE links with gcc
+            || gatheredArgs[i] == "-dynamic") {  // when PE links with clang
           defaultDynamic = true;
+        }
+      }
 
       // Older Cray PrgEnv defaults to static linking.  If we are asking for
       // the default link type, and we don't find an explicit dynamic
       // flag in the gathered PrgEnv arguments, then force static linking
       // because LLVM's default (dynamic) is different from the PrgEnv
       // default (static).
-      if (defaultDynamic == false)
+      if (defaultDynamic == false) {
         fLinkStyle = LS_STATIC;
+      }
     }
 
     // Replace -lchpl_lib_token with the runtime arguments

@@ -1596,16 +1596,20 @@ static void checkNotPod(AggregateType* at) {
 ************************************** | *************************************/
 
 static void buildRecordHashFunction(AggregateType *ct) {
-  if (functionExists("chpl__defaultHash", ct))
+  if (functionExists("hash", dtMethodToken, ct))
     return;
 
-  FnSymbol *fn = new FnSymbol("chpl__defaultHash");
+  FnSymbol *fn = new FnSymbol("hash");
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_LAST_RESORT);
-  ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "r", ct);
+  ArgSymbol *arg = new ArgSymbol(INTENT_BLANK, "this", ct);
+  arg->addFlag(FLAG_ARG_THIS);
   arg->addFlag(FLAG_MARKED_GENERIC);
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
   fn->insertFormalAtTail(arg);
-
+  fn->_this = arg;
+  fn->setMethod(true);
+  
   if (ct->fields.length == 0) {
     fn->insertAtTail(new CallExpr(PRIM_RETURN, new_UIntSymbol(0)));
     fn->addFlag(FLAG_INLINE);
@@ -1621,11 +1625,11 @@ static void buildRecordHashFunction(AggregateType *ct) {
             field->hasFlag(FLAG_PARAM))) {
         CallExpr *field_access = new CallExpr(field->name, gMethodToken, arg);
         if (first) {
-          call = new CallExpr("chpl__defaultHash", field_access);
+          call = new CallExpr("hash", gMethodToken, field_access);
           first = false;
         } else {
           call = new CallExpr("chpl__defaultHashCombine",
-                              new CallExpr("chpl__defaultHash", field_access),
+                              new CallExpr("hash", gMethodToken, field_access),
                               call,
                               new_IntSymbol(i));
         }

@@ -42,22 +42,21 @@ using namespace parsing;
 static void test1(Parser* parser) {
   auto parseResult = parser->parseString("test1.chpl",
                                          "proc f() { }");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->name().compare("test1") == 0);
-  assert(module->numStmts() == 1);
-  auto functionDecl = module->stmt(0)->toFunction();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->name().compare("test1") == 0);
+  assert(mod->numStmts() == 1);
+  auto functionDecl = mod->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->name().compare("f") == 0);
-  assert(functionDecl->linkage() == Function::DEFAULT_LINKAGE);
+  assert(functionDecl->linkage() == Decl::DEFAULT_LINKAGE);
   assert(functionDecl->kind() == Function::PROC);
   assert(functionDecl->returnIntent() == Function::DEFAULT_RETURN_INTENT);
   assert(functionDecl->isInline() == false);
   assert(functionDecl->isOverride() == false);
   assert(functionDecl->throws() == false);
-  assert(functionDecl->linkageNameExpression() == nullptr);
+  assert(functionDecl->linkageName() == nullptr);
   assert(functionDecl->numFormals() == 0);
   assert(functionDecl->thisFormal() == nullptr);
   assert(functionDecl->returnType() == nullptr);
@@ -71,16 +70,15 @@ static void test1a(Parser* parser) {
                                          "  /* comment 2 */\n"
                                          "}\n"
                                          "/* comment 3 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->name().compare("test1a") == 0);
-  assert(module->numStmts() == 3);
-  assert(module->stmt(0)->isComment());
-  assert(module->stmt(1)->isFunction());
-  assert(module->stmt(2)->isComment());
-  auto functionDecl = module->stmt(1)->toFunction();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->name().compare("test1a") == 0);
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isFunction());
+  assert(mod->stmt(2)->isComment());
+  auto functionDecl = mod->stmt(1)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isComment());
@@ -94,16 +92,15 @@ static void test1b(Parser* parser) {
                                          "  /* comment 3 */\n"
                                          "}\n"
                                          "/* comment 4 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->name().compare("test1a") == 0);
-  assert(module->numStmts() == 3);
-  assert(module->stmt(0)->isComment());
-  assert(module->stmt(1)->isFunction());
-  assert(module->stmt(2)->isComment());
-  auto functionDecl = module->stmt(1)->toFunction();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->name().compare("test1a") == 0);
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isFunction());
+  assert(mod->stmt(2)->isComment());
+  auto functionDecl = mod->stmt(1)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 3);
   assert(functionDecl->stmt(0)->isComment());
@@ -118,15 +115,14 @@ static void test1c(Parser* parser) {
                                          "proc f() {\n"
                                          "  x;\n"
                                          "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->name().compare("test1c") == 0);
-  assert(module->numStmts() == 2);
-  assert(module->stmt(0)->isComment());
-  assert(module->stmt(1)->isFunction());
-  auto functionDecl = module->stmt(1)->toFunction();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->name().compare("test1c") == 0);
+  assert(mod->numStmts() == 2);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isFunction());
+  auto functionDecl = mod->stmt(1)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -140,14 +136,13 @@ static void test1d(Parser* parser) {
                                          "proc f() {\n"
                                          "  x;\n"
                                          "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->name().compare("test1d") == 0);
-  assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunction());
-  auto functionDecl = module->stmt(0)->toFunction();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->name().compare("test1d") == 0);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isFunction());
+  auto functionDecl = mod->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -161,14 +156,13 @@ static void test1e(Parser* parser) {
                                          "proc f() {\n"
                                          "  x;\n"
                                          "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->name().compare("test1e") == 0);
-  assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunction());
-  auto functionDecl = module->stmt(0)->toFunction();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->name().compare("test1e") == 0);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isFunction());
+  auto functionDecl = mod->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -179,14 +173,13 @@ static void test1f(Parser* parser) {
                                          "proc f(/* comment 1 */) {\n"
                                          "  x;\n"
                                          "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->name().compare("test1f") == 0);
-  assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunction());
-  auto functionDecl = module->stmt(0)->toFunction();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->name().compare("test1f") == 0);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isFunction());
+  auto functionDecl = mod->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -199,14 +192,13 @@ static void test1g(Parser* parser) {
                                          "{\n"
                                          "  x;\n"
                                          "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->name().compare("test1g") == 0);
-  assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunction());
-  auto functionDecl = module->stmt(0)->toFunction();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->name().compare("test1g") == 0);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isFunction());
+  auto functionDecl = mod->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -219,14 +211,13 @@ static void test1h(Parser* parser) {
                                          "{\n"
                                          "  x;\n"
                                          "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->name().compare("test1h") == 0);
-  assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunction());
-  auto functionDecl = module->stmt(0)->toFunction();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->name().compare("test1h") == 0);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isFunction());
+  auto functionDecl = mod->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -239,14 +230,13 @@ static void test1i(Parser* parser) {
                                          "{\n"
                                          "  x;\n"
                                          "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->name().compare("test1i") == 0);
-  assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunction());
-  auto functionDecl = module->stmt(0)->toFunction();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->name().compare("test1i") == 0);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isFunction());
+  auto functionDecl = mod->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -259,14 +249,13 @@ static void test1j(Parser* parser) {
                                          "{\n"
                                          "  x;\n"
                                          "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->name().compare("test1j") == 0);
-  assert(module->numStmts() == 1);
-  assert(module->stmt(0)->isFunction());
-  auto functionDecl = module->stmt(0)->toFunction();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->name().compare("test1j") == 0);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isFunction());
+  auto functionDecl = mod->stmt(0)->toFunction();
   assert(functionDecl);
   assert(functionDecl->numStmts() == 1);
   assert(functionDecl->stmt(0)->isIdentifier());
@@ -277,17 +266,16 @@ static void test1j(Parser* parser) {
 
 
 
-static Builder::Result parseFunction(Parser* parser,
-                                     const char* filename,
-                                     const Function*& f,
-                                     const char* contents) {
+static BuilderResult parseFunction(Parser* parser,
+                                   const char* filename,
+                                   const Function*& f,
+                                   const char* contents) {
   auto parseResult = parser->parseString(filename, contents);
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto functionDecl = module->stmt(0)->toFunction();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto functionDecl = mod->stmt(0)->toFunction();
   assert(functionDecl);
   f = functionDecl;
   return parseResult;
@@ -302,13 +290,13 @@ static void test2(Parser* parser) {
       "inline proc f(a: int) ref { x; }");
 
   assert(function->name().compare("f") == 0);
-  assert(function->linkage() == Function::DEFAULT_LINKAGE);
+  assert(function->linkage() == Decl::DEFAULT_LINKAGE);
   assert(function->kind() == Function::PROC);
   assert(function->returnIntent() == Function::REF);
   assert(function->isInline() == true);
   assert(function->isOverride() == false);
   assert(function->throws() == false);
-  assert(function->linkageNameExpression() == nullptr);
+  assert(function->linkageName() == nullptr);
   assert(function->numFormals() == 1);
   auto formal = function->formal(0);
   assert(formal);
@@ -337,13 +325,13 @@ static void test3(Parser* parser) {
       function,
       "override proc const R.f(ref a: int = b) const ref { }");
   assert(function->name().compare("f") == 0);
-  assert(function->linkage() == Function::DEFAULT_LINKAGE);
+  assert(function->linkage() == Decl::DEFAULT_LINKAGE);
   assert(function->kind() == Function::PROC);
   assert(function->returnIntent() == Function::CONST_REF);
   assert(function->isInline() == false);
   assert(function->isOverride() == true);
   assert(function->throws() == false);
-  assert(function->linkageNameExpression() == nullptr);
+  assert(function->linkageName() == nullptr);
   assert(function->numFormals() == 2); // 'this' and 'a'
 
   auto thisFormal = function->formal(0);

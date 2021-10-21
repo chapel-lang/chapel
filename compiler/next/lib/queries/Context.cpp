@@ -225,6 +225,7 @@ const char* Context::uniqueCStringConcatLen(const char* s1, size_t len1,
     const char* ret = search->str;
     // update the GC mark
     this->markUniqueCString(ret);
+    free(buf);
     return ret;
   }
 

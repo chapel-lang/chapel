@@ -53,10 +53,9 @@ static void test0(Parser* parser) {
     "  /*c3*/\n"
     "}\n"
     "/*c12*/\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 4);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isVariable());
@@ -94,10 +93,9 @@ static void test1(Parser* parser) {
     "  /*c5*/\n"
     "}\n"
     "/*c6*/\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isLabel());

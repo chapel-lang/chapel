@@ -307,7 +307,7 @@ else
 
     gen_version_gcc=8.3.0
     gen_version_intel=16.0.3.210
-    gen_version_cce=10.0.2
+    gen_version_cce=10.0.3
 
     target_cpu_module=craype-sandybridge
 

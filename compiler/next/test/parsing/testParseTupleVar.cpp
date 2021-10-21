@@ -38,12 +38,11 @@ using namespace parsing;
 
 static void test1(Parser* parser) {
   auto parseResult = parser->parseString("test1.chpl", "var (x, y);");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto tup = module->stmt(0)->toTupleDecl();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto tup = mod->stmt(0)->toTupleDecl();
   assert(tup->kind() == Variable::VAR);
 
   assert(tup->numDecls() == 2);
@@ -66,12 +65,11 @@ static void test1(Parser* parser) {
 
 static void test2(Parser* parser) {
   auto parseResult = parser->parseString("test2.chpl", "const (x, y);");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto tup = module->stmt(0)->toTupleDecl();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto tup = mod->stmt(0)->toTupleDecl();
   assert(tup->kind() == Variable::CONST);
 
   assert(tup->numDecls() == 2);
@@ -92,12 +90,11 @@ static void test2(Parser* parser) {
 
 static void test3(Parser* parser) {
   auto parseResult = parser->parseString("test3.chpl", "var (x, y): typ;");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto tup = module->stmt(0)->toTupleDecl();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto tup = mod->stmt(0)->toTupleDecl();
   assert(tup->kind() == Variable::VAR);
 
   assert(tup->numDecls() == 2);
@@ -118,12 +115,11 @@ static void test3(Parser* parser) {
 
 static void test4(Parser* parser) {
   auto parseResult = parser->parseString("test4.chpl", "var (x, y) = tup;");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto tup = module->stmt(0)->toTupleDecl();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto tup = mod->stmt(0)->toTupleDecl();
   assert(tup->kind() == Variable::VAR);
 
   assert(tup->numDecls() == 2);
@@ -145,12 +141,11 @@ static void test4(Parser* parser) {
 static void test5(Parser* parser) {
   auto parseResult = parser->parseString("test5.chpl",
                                          "var (x, y):typ = tup;");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto tup = module->stmt(0)->toTupleDecl();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto tup = mod->stmt(0)->toTupleDecl();
   assert(tup->kind() == Variable::VAR);
 
   assert(tup->numDecls() == 2);
@@ -171,12 +166,11 @@ static void test5(Parser* parser) {
 
 static void check6(Parser* parser, const char* path, const char* str) {
   auto parseResult = parser->parseString(path, str);
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto tup = module->stmt(0)->toTupleDecl();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto tup = mod->stmt(0)->toTupleDecl();
   assert(tup->kind() == Variable::VAR);
 
   // some variation on "var (x, (y, z)):typ = tup;"
@@ -253,13 +247,12 @@ static void test6(Parser* parser) {
 static void test7(Parser* parser) {
   auto parseResult = parser->parseString("test7.chpl",
                                          "var (x, y), z;");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
 
-  auto multi = module->stmt(0)->toMultiDecl();
+  auto multi = mod->stmt(0)->toMultiDecl();
 
   auto tup = multi->declOrComment(0)->toTupleDecl();
   assert(tup->kind() == Variable::VAR);

@@ -25,7 +25,7 @@
 //
 // chpl_TableEntry is the type for each hashtable slot
 // chpl__hashtable is the record implementing a hashtable
-// chpl__defaultHash is the default hash function for most types
+// hash is the default hash method for most types
 pragma "unsafe"
 module ChapelHashtable {
 

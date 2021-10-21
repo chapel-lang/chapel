@@ -44,10 +44,9 @@ static void test0(Parser* parser) {
   auto parseResult = parser->parseString("test0.chpl",
       "/* comment 1 */\n"
       "x = new r();\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isOpCall());
@@ -67,10 +66,9 @@ static void test1(Parser* parser) {
   auto parseResult = parser->parseString("test1.chpl",
       "/* comment 1 */\n"
       "x = new r(a=b, c);\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isOpCall());
@@ -92,10 +90,9 @@ static void test2(Parser* parser) {
   auto parseResult = parser->parseString("test2.chpl",
       "/* comment 1 */\n"
       "x = new owned C(a=b, c);\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isOpCall());
@@ -117,10 +114,9 @@ static void test3(Parser* parser) {
   auto parseResult = parser->parseString("test3.chpl",
       "/* comment 1 */\n"
       "x = new shared C(a=b, c);\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isOpCall());
@@ -142,10 +138,9 @@ static void test4(Parser* parser) {
   auto parseResult = parser->parseString("test4.chpl",
       "/* comment 1 */\n"
       "x = new borrowed C(a=b, c);\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isOpCall());
@@ -167,10 +162,9 @@ static void test5(Parser* parser) {
   auto parseResult = parser->parseString("test5.chpl",
       "/* comment 1 */\n"
       "x = new unmanaged C(a=b, c);\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isOpCall());

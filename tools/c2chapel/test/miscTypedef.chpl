@@ -31,7 +31,7 @@ extern "struct forwardStruct" record forwardStruct {
 
 // ==== c2chapel typedefs ====
 
-extern "struct fancyStruct" record fancyStruct {
+extern record fancyStruct {
   var a : c_int;
   var b : c_int;
   var c : renamedStruct;

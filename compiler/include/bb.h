@@ -21,6 +21,7 @@
 #ifndef _BB_H_
 #define _BB_H_
 
+class BaseAST;
 class BitVec;
 class Expr;
 class FnSymbol;
@@ -122,6 +123,8 @@ private:
   static bool        verifyBasicBlocks(FnSymbol* fn);
 
   static int         nextID;
+
+  static std::vector<BaseAST*> asts;
 
   //
   // Instance methods/variables

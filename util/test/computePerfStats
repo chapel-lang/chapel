@@ -48,23 +48,26 @@ def main():
 
 def find_keys(keys, date):
     found_everything = True
-    with open(data_file, "a") as file:
-        file.write("{0} ".format(date))
-        for key in keys:
-            sys.stdout.write("Looking for {0}...".format(key))
-            file.write("\t")
-            regex = r"(\s|\S)*" + re.escape(key) + r"\s*(\S*)"
-            # scan through output, looking for key
-            m = re.match(regex, test_output_raw, re.MULTILINE)
-            if m:
-                print("found it: {0}".format(m.group(2)))
-                file.write(m.group(2))
-            else:
-                file.write("-")
-                print("didn't find it")
-                found_everything = False
+    values = ["{0}".format(date)]
+    for key in keys:
+        regex = re.escape(key) + r"\s*(\S*)"
+        # scan through output, looking the key. prefer start of line or after
+        # whitespace matches for when keys are substrings of each other
+        m = re.search(r"^" + regex, test_output_raw, re.MULTILINE)
+        if not m:
+            m = re.search(r"\s+" + regex, test_output_raw)
+        if not m:
+            m = re.search(regex, test_output_raw)
+        if m:
+            print("Looking for {0}...found it: {1}".format(key, m.group(1)))
+            values.append(m.group(1))
+        else:
+            values.append("-")
+            print("Looking for {0}...didn't find it".format(key))
+            found_everything = False
         
-        file.write("\n")
+    with open(data_file, "a") as f:
+        f.write("{0}\n".format('\t'.join(values)))
 
     return found_everything
 

@@ -2667,24 +2667,24 @@ void makeBinary(void) {
 }
 
 GenInfo::GenInfo()
-         :   cfile(NULL), cLocalDecls(), cStatements(),
-             lineno(-1), filename(NULL),
+         :   cfile(nullptr), cLocalDecls(), cStatements(),
+             lineno(-1), filename(nullptr),
              functionCNameAstrToSymbol()
 #ifdef HAVE_LLVM
              ,
-             lvt(NULL), module(NULL), irBuilder(NULL), mdBuilder(NULL),
+             lvt(nullptr), module(nullptr), irBuilder(nullptr), mdBuilder(nullptr),
              loopStack(), currentStackVariables(),
-             currentFunctionABI(NULL),
+             currentFunctionABI(nullptr),
              llvmContext(),
-             tbaaRootNode(NULL),
-             tbaaUnionsNode(NULL),
-             noAliasDomain(NULL),
+             tbaaRootNode(nullptr),
+             tbaaUnionsNode(nullptr),
+             noAliasDomain(nullptr),
              noAliasScopes(),
              noAliasScopeLists(),
              noAliasLists(),
              globalToWideInfo(),
-             FPM_postgen(NULL),
-             clangInfo(NULL)
+             FPM_postgen(nullptr),
+             clangInfo(nullptr)
 #endif
 {
 }

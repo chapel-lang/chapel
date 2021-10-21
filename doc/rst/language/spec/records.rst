@@ -558,7 +558,7 @@ the signature:
 
 .. code-block:: chapel
 
-   proc =(ref lhs:R, rhs:R) : void where lhs.type == rhs.type;
+   operator =(ref lhs:R, rhs:R) : void where lhs.type == rhs.type;
 
 In it, the value of each field of the record on the right-hand side is
 assigned to the corresponding field of the record on the left-hand side.
@@ -634,6 +634,38 @@ check the corresponding lexicographical order based on pair-wise comparisons
 between the arguments' fields.  The operators ``==`` and ``!=`` check whether
 the two arguments are pair-wise equal or not.  The fields are compared in the
 order they are declared in the record definition.
+
+.. _Hashing_a_Record:
+
+Hashing a Record
+~~~~~~~~~~~~~~~~
+
+When a record is the key for a hashtable, including when using it as the index
+type for an associative domain, the compiler will generate a default hash
+function to use. This behavior can be overridden if more control of the
+hashing used is desired. This can be done by defining a ``hash`` method on
+a record.
+
+.. code-block:: chapel
+
+   use Map;
+   var m = new map(R, int);
+   proc R.hash() {
+     writeln("In custom hash function");
+     return i;
+   }
+   var myR = new R();
+   // Indexing the map using an instance of R using the R.hash() method
+   m[myR] = 5;
+
+   var myD = domain(R);
+   myD += myR;
+
+Note that the compiler generated ``hash`` can only be overriden on records
+that have been defined in user code, and will not override the compiler hash
+for ``int.hash``, for example.
+
+
 
 .. _Class_and_Record_Differences:
 

@@ -56,21 +56,27 @@ class AggregateDecl : public TypeDecl {
            lhs->elementsChildNum_ == rhs->elementsChildNum_ &&
            lhs->numElements_ == rhs->numElements_;
   }
+
   void aggregateDeclMarkUniqueStringsInner(Context* context) const {
     typeDeclMarkUniqueStringsInner(context);
   }
 
  public:
-  AggregateDecl(ASTTag tag, ASTList children,
-                Decl::Visibility vis, UniqueString name,
+  AggregateDecl(ASTTag tag, ASTList children, Decl::Visibility vis,
+                Decl::Linkage linkage,
+                int linkageNameChildNum,
+                UniqueString name,
                 int elementsChildNum,
                 int numElements)
-    : TypeDecl(tag, std::move(children), vis, name),
+    : TypeDecl(tag, std::move(children), vis, linkage,
+               linkageNameChildNum,
+               name),
       elementsChildNum_(elementsChildNum),
       numElements_(numElements) {
 
     assert(validAggregateChildren(declOrComments()));
   }
+
   ~AggregateDecl() = 0; // this is an abstract base class
 
   /**
@@ -91,6 +97,7 @@ class AggregateDecl : public TypeDecl {
   int numDeclOrComments() const {
     return numElements_;
   }
+
   /**
    Return the i'th Decl in this AggregateDecl.
    */

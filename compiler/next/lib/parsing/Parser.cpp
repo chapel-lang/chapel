@@ -76,7 +76,7 @@ static void updateParseResult(ParserContext* parserContext) {
 }
 
 
-Builder::Result Parser::parseFile(const char* path) {
+BuilderResult Parser::parseFile(const char* path) {
   auto builder = Builder::build(this->context(), path);
   ErrorMessage fileError;
 
@@ -163,7 +163,7 @@ Builder::Result Parser::parseFile(const char* path) {
 }
 
 
-Builder::Result Parser::parseString(const char* path, const char* str) {
+BuilderResult Parser::parseString(const char* path, const char* str) {
   auto builder = Builder::build(this->context(), path);
 
   // Set the (global) parser debug state
