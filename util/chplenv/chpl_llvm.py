@@ -482,12 +482,12 @@ def get_clang_compile_link_args():
 
 @memoize
 def get_clang_compile_args():
-    (comp_args, link_args) = get_clang_compile_link_args()
+    (comp_args, _) = get_clang_compile_link_args()
     return " ".join(comp_args)
 
 @memoize
 def get_clang_link_args():
-    (comp_args, link_args) = get_clang_compile_link_args()
+    (_, link_args) = get_clang_compile_link_args()
     return " ".join(link_args)
 
 def _main():
