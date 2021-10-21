@@ -1694,8 +1694,11 @@ static void validateSettings() {
   checkUnsupportedConfigs();
 }
 
+// This code is off by default - opt in with CHPL_DO_PE_ENV_CHECK
+// It is just here to make it easier to debug problems with the compiler
+// and can be removed in the future.
 static void maybeRelaunchInPrgEnv(int argc, char* argv[]) {
-  // Relaunch in PrgEnv-gnu if:
+  // Relaunch in PrgEnv-gnu if CHPL_DO_PE_ENV_CHECK is set and:
   //  * platform is cray-x* or cray-ex
   //  * CHPL_TARGET_COMPILER is llvm
   //  * PE_ENV does not indicate PrgEnv-gnu is loaded
