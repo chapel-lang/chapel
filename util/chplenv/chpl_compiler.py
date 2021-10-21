@@ -6,7 +6,8 @@ import sys
 from distutils.spawn import find_executable
 
 import chpl_platform, overrides
-from utils import error, memoize, warning, run_command
+from utils import error, memoize, warning
+
 
 #
 # If we can't find a file $CHPL_HOME/make/Makefile.<compiler_val>,
@@ -382,8 +383,6 @@ def validate_compiler_settings():
     validate_inference_matches('host', 'c++')
     validate_inference_matches('target', 'c')
     validate_inference_matches('target', 'c++')
-
-
 
 def _main():
     parser = optparse.OptionParser(usage='usage: %prog [--host|target])')
