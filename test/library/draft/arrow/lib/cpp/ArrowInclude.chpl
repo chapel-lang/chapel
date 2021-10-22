@@ -13,7 +13,7 @@ module ArrowInclude {
   extern proc c_readColumnByName(a,b,c,d);
   extern proc c_getType(a,b): c_string;
   extern proc c_writeColumnToParquet(a, b, c, d, e, f);
-  extern proc c_lowLevelRead(a, b, c);
+  extern proc c_lowLevelRead(a, b, c, d);
   extern proc c_getVersionInfo(): c_string;
 
   proc getVersionInfo() {

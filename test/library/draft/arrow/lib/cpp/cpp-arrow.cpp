@@ -13,14 +13,14 @@
 using namespace std;
 
 void doWrite(int numElems, int rowGroupSize) {
-  arrow::Int64Builder i64builder;
+  arrow::Int32Builder i32builder;
   for(int i = 0; i < numElems; i++)
-    PARQUET_THROW_NOT_OK(i64builder.AppendValues({i}));
+    PARQUET_THROW_NOT_OK(i32builder.AppendValues({i}));
   std::shared_ptr<arrow::Array> i64array;
-  PARQUET_THROW_NOT_OK(i64builder.Finish(&i64array));
+  PARQUET_THROW_NOT_OK(i32builder.Finish(&i64array));
 
   std::shared_ptr<arrow::Schema> schema = arrow::schema(
-                 {arrow::field("int-col", arrow::int64())});
+                 {arrow::field("int-col", arrow::int32())});
 
   auto table = arrow::Table::Make(schema, {i64array});
 
@@ -172,8 +172,25 @@ void cpp_writeColumnToParquet(const char* filename, void* chpl_arr,
   parquet::arrow::WriteTable(*table, arrow::default_memory_pool(), outfile, rowGroupSize));
 }
 
-int cpp_lowLevelRead(const char* filename, void* chpl_arr, int numElems) {
+int cpp_lowLevelRead(const char* filename, void* chpl_arr, const char* colname, int numElems) {
   auto chpl_ptr = (int64_t*)chpl_arr;
+  std::shared_ptr<arrow::io::ReadableFile> infile;
+  PARQUET_ASSIGN_OR_THROW(
+      infile,
+      arrow::io::ReadableFile::Open(filename,
+                                    arrow::default_memory_pool()));
+
+  std::unique_ptr<parquet::arrow::FileReader> reader;
+  PARQUET_THROW_NOT_OK(
+      parquet::arrow::OpenFile(infile, arrow::default_memory_pool(), &reader));
+
+  std::shared_ptr<arrow::Schema> sc;
+  std::shared_ptr<arrow::Schema>* out = &sc;
+  PARQUET_THROW_NOT_OK(reader->GetSchema(out));
+
+  auto idx = sc -> GetFieldIndex(colname);
+  if(idx == -1) idx = 0;
+  
   try {
     // Create a ParquetReader instance
     std::unique_ptr<parquet::ParquetFileReader> parquet_reader =
@@ -204,7 +221,7 @@ int cpp_lowLevelRead(const char* filename, void* chpl_arr, int numElems) {
       ARROW_UNUSED(rows_read); // prevent warning in release build
 
       // Get the Column Reader
-      column_reader = row_group_reader->Column(0);
+      column_reader = row_group_reader->Column(idx);
       parquet::Int64Reader* int64_reader =
         static_cast<parquet::Int64Reader*>(column_reader.get());
       
@@ -213,14 +230,8 @@ int cpp_lowLevelRead(const char* filename, void* chpl_arr, int numElems) {
       while (int64_reader->HasNext()) {
         // Read one value at a time. The number of rows read is returned. values_read
         // contains the number of non-null rows
-        rows_read = int64_reader->ReadBatch(1, nullptr, nullptr, &chpl_ptr[i], &values_read);
-        // Ensure only one value is read
-        assert(rows_read == 1);
-        // There are no NULL values in the rows written
-        assert(values_read == 1);
-        // Verify the value written
-        assert(chpl_ptr[i] == i);
-        i++;
+        rows_read = int64_reader->ReadBatch(10, nullptr, nullptr, &chpl_ptr[i], &values_read);
+        i+=10;
       }
     }
     return 0;
@@ -274,8 +285,8 @@ extern "C" {
                              numelems, rowGroupSize);
   }
 
-  void c_lowLevelRead(const char* filename, void* chpl_arr, int numElems) {
-    cpp_lowLevelRead(filename, chpl_arr, numElems);
+  void c_lowLevelRead(const char* filename, void* chpl_arr, const char* colname, int numElems) {
+    cpp_lowLevelRead(filename, chpl_arr, colname, numElems);
   }
 
   const char* c_getVersionInfo(void) {
