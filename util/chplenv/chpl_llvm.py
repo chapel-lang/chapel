@@ -326,7 +326,11 @@ def get_sysroot_resource_dir_args():
     llvm_val = get()
     if target_platform == "darwin" and llvm_val == "bundled":
         # Add -isysroot and -resourcedir based upon what 'clang' uses
-        cfile = get_chpl_home() + "/runtime/include/sys_basic.h"
+        cfile = os.path.join(get_chpl_home(),
+                             "runtime", "include", "sys_basic.h")
+        if not os.path.isfile(cfile):
+            error("error computing isysroot -- sys_basic.h is missing")
+
         (out,err) = run_command(['clang', '-###', cfile],
                                 stdout=True, stderr=True)
         out += err
