@@ -35,6 +35,10 @@
 #include "TryStmt.h"
 #include "wellknown.h"
 
+#include <unordered_map>
+#include <array>
+#include <vector>
+
 FnSymbol* chplUserMain = NULL;
 static bool mainReturnsSomething;
 
@@ -76,8 +80,55 @@ static void buildDefaultReadWriteFunctions(AggregateType* type);
 
 static void buildFieldAccessorFunctions(AggregateType* at);
 
+// FnSymbolIndex is a cache of function name -> vector<FnSymbol>
+// We incrementally update it in functionExists because in the duration
+// of this pass, FnSymbol's are only added to gFnSymbols.
+// We (ugly) manage its lifetime with the pointer sFnSymbolIndex
+// so that the pass can easily cleanup after itself after the entry point
+// buildDefaultFunctions. Thus it is used as a singleton class
+// There are other calls into this translation unit that are not part of the
+// pass, so we revert to not using the cache in those circumstances because
+// we can no longer guarantee that gFnSymbols hasn't changed
+class FnSymbolIndex;
+FnSymbolIndex *sFnSymbolIndex = nullptr;
+
+class FnSymbolIndex {
+  const std::vector<FnSymbol*> empty_;
+  std::unordered_map<const char *, std::vector<FnSymbol*>> map_;
+  size_t fnSymbolsSize_ = 0;
+
+public:
+  FnSymbolIndex() {sFnSymbolIndex = this;}
+  ~FnSymbolIndex() {sFnSymbolIndex = nullptr;}
+
+  const std::vector<FnSymbol*> &get(const char *astrName) {
+    auto it = map_.find(astrName);
+    if (it == map_.end()) return empty_;
+    return it->second;
+  }
+
+  void update() {
+    size_t n = gFnSymbols.size();
+    if (n > fnSymbolsSize_) {
+      for (size_t i = fnSymbolsSize_; i < n; i++) {
+        FnSymbol *fn = gFnSymbols.v[i];
+        auto it = map_.find(fn->name);
+        if (it == map_.end()) {
+          map_.insert({fn->name, {fn}});
+        } else {
+          it->second.push_back(fn);
+        }
+      }
+    }
+    fnSymbolsSize_ = n;
+  }
+};
+
+
 
 void buildDefaultFunctions() {
+  FnSymbolIndex fsi;
+
   buildChplEntryPoints();
 
   SET_LINENO(rootModule); // todo - remove reset_ast_loc() calls below?
@@ -189,59 +240,25 @@ typedef enum {
   FIND_NOT_REF
 } functionExistsKind;
 
-
 // functionExists returns true iff
 //  function's name matches name
 //  function's number of formals matches numFormals
-//  function's first formal's type matches formalType1 if not NULL
-//  function's second formal's type matches formalType2 if not NULL
-//  function's third formal's type matches formalType3 if not NULL
-static FnSymbol* functionExists(const char* name,
-                                 int numFormals,
-                                 Type* formalType1,
-                                 Type* formalType2,
-                                 Type* formalType3,
-                                 Type* formalType4,
-                                 functionExistsKind kind)
-{
-  switch(numFormals)
-  {
-   default:
-    INT_FATAL("functionExists checks at most 4 argument types.  Add more if needed.");
-    break;
-   case 4:  if (!formalType4)   INT_FATAL("Missing argument formalType4");  break;
-   case 3:  if (!formalType3)   INT_FATAL("Missing argument formalType3");  break;
-   case 2:  if (!formalType2)   INT_FATAL("Missing argument formalType2");  break;
-   case 1:  if (!formalType1)   INT_FATAL("Missing argument formalType1");  break;
-   case 0:  break;
-  }
+//  function's ith formal type matches formalType[i]
+// We have to template over the vector type here because the cache uses std::vector
+// and gTypeSymbols is a Vec
+template<bool useCache, typename V, size_t numFormals>
+static FnSymbol* functionExists(const char *nameAstr,
+                                const V &fns,
+                                std::array<Type*, numFormals> formalTypes,
+                                functionExistsKind kind) {
+  for (FnSymbol *fn : fns) {
+    if (!useCache) {
+      if (fn->name != nameAstr)
+        continue;
+    }
 
-  const char* nameAstr = astr(name);
-
-  forv_Vec(FnSymbol, fn, gFnSymbols)
-  {
-    if (fn->name != nameAstr)
-      continue;
-
-    // numFormals must match exactly.
     if (numFormals != fn->numFormals())
-        continue;
-
-    if (formalType1)
-      if (!typeMatch(formalType1, fn->getFormal(1)))
-        continue;
-
-    if (formalType2)
-      if (!typeMatch(formalType2, fn->getFormal(2)))
-        continue;
-
-    if (formalType3)
-      if (!typeMatch(formalType3, fn->getFormal(3)))
-        continue;
-
-    if (formalType4)
-      if (!typeMatch(formalType4, fn->getFormal(4)))
-        continue;
+      continue;
 
     if (kind == FIND_REF && fn->retTag != RET_REF)
       continue;
@@ -249,28 +266,51 @@ static FnSymbol* functionExists(const char* name,
     if (kind == FIND_NOT_REF && fn->retTag == RET_REF)
       continue;
 
-    return fn;
+    bool matched = true;
+    size_t i = 0;
+    for_formals(formal, fn) {
+      if (!typeMatch(formalTypes[i], formal)) {
+        matched = false;
+        break;
+      }
+      i += 1;
+    }
+
+    if (matched) {
+      return fn;
+    }
   }
 
-  // No matching function found.
-  return NULL;
+  return nullptr;
+}
+
+template<size_t numFormals>
+static FnSymbol* functionExists(const char* name,
+                                std::array<Type*, numFormals> formalTypes,
+                                functionExistsKind kind) {
+  const char *nameAstr = astr(name);
+  if (sFnSymbolIndex) {
+    sFnSymbolIndex->update();
+    return functionExists<true>(
+        name, sFnSymbolIndex->get(nameAstr), formalTypes, kind);
+  } else {
+    return functionExists<false>(nameAstr, gFnSymbols, formalTypes, kind);
+  }
 }
 
 static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
                                  functionExistsKind kind=FIND_EITHER)
 {
-  return functionExists(name, 1, formalType1, NULL, NULL, NULL, kind);
+  return functionExists<1>(name, {formalType1}, kind);
 }
-
-
 
 static FnSymbol* functionExists(const char* name,
                                  Type* formalType1,
                                  Type* formalType2,
                                  functionExistsKind kind=FIND_EITHER)
 {
-  return functionExists(name, 2, formalType1, formalType2, NULL, NULL, kind);
+  return functionExists<2>(name, {formalType1, formalType2}, kind);
 }
 
 static FnSymbol* functionExists(const char* name,
@@ -279,8 +319,7 @@ static FnSymbol* functionExists(const char* name,
                                  Type* formalType3,
                                  functionExistsKind kind=FIND_EITHER)
 {
-  return functionExists(name, 3,
-                         formalType1, formalType2, formalType3, NULL, kind);
+  return functionExists<3>(name, {formalType1, formalType2, formalType3}, kind);
 }
 
 static FnSymbol* functionExists(const char* name,
@@ -289,8 +328,7 @@ static FnSymbol* functionExists(const char* name,
                                 Type* formalType3,
                                 Type* formalType4,
                                 functionExistsKind kind=FIND_EITHER) {
-  return functionExists(name, 4, formalType1, formalType2, formalType3,
-                        formalType4, kind);
+  return functionExists<4>(name, {formalType1, formalType2, formalType3, formalType4}, kind);
 }
 
 static void fixupAccessor(AggregateType* ct, Symbol *field,
