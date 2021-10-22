@@ -285,7 +285,7 @@ module OrderedMap {
 
     pragma "no doc"
     proc const this(k: keyType) const ref
-    where shouldReturnRvalueByConstRef(valType) && !isNonNilableClass(valType) {
+    where !isNonNilableClass(valType) {
       _enter(); defer _leave();
 
       // Could halt
