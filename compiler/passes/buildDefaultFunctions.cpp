@@ -607,8 +607,10 @@ static FnSymbol* chplGenMainExists() {
   FnSymbol*     matchFn  = NULL;
   ModuleSymbol* matchMod = NULL;
 
+  const char *mainAstr = astr("main");
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (strcmp("main", fn->name) == 0) {
+    if (mainAstr == fn->name) {
       if (fn->numFormals() == 0 ||
           (fn->numFormals() == 1 &&
            fn->getFormal(1)->typeInfo() == dtArray) ) {
