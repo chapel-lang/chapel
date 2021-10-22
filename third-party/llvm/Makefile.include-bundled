@@ -20,27 +20,15 @@ endif
 ifdef HAVE_LLVM_CONFIG
 ifndef LLVM_LLVM_LIBS
 
-ifeq ($(LLVM_MAJOR_VERSION),10)
-  # frontendopenmp seems to be required to link clang in llvm 10
-  # but not in earlier or later versions
-  export LLVM_LLVM_LIBS=$(shell $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter frontendopenmp ipo instrumentation option objcarcopts profiledata all-targets coverage coroutines lto)
-else
-  export LLVM_LLVM_LIBS_TMP=$(shell $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets coverage coroutines lto)
-  # remove -llibxml2.tbd which seems to appear on some Mac OS X versions
-  # with LLVM 11.
-  export LLVM_LLVM_LIBS=$(subst -llibxml2.tbd,,$(LLVM_LLVM_LIBS_TMP))
-endif
+export LLVM_LLVM_LIBS_TMP=$(shell $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets coverage coroutines lto)
+# remove -llibxml2.tbd which seems to appear on some Mac OS X versions
+# with LLVM 11.
+export LLVM_LLVM_LIBS=$(subst -llibxml2.tbd,,$(LLVM_LLVM_LIBS_TMP))
 
 endif
 endif
 
-ifeq ($(LLVM_MAJOR_VERSION_9PLUS),9)
-  # -lclangASTMatchers needed for LLVM 9 but not earlier
-  LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangASTMatchers -lclangAST -lclangLex -lclangBasic
-else
-  LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic
-endif
-
+LLVM_CLANG_LIBS=-lclang-cpp
 
 ifdef CHPL_RV
   LLVM_RV_CFLAGS=-DHAVE_LLVM_RV=1
