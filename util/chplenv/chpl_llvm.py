@@ -401,6 +401,10 @@ def get_clang_basic_args():
 
 @memoize
 def gather_pe_chpl_pkgconfig_libs():
+    # Don't do anything if we aren't using a PrgEnv compiler
+    if chpl_compiler.get_prgenv_compiler() == 'none':
+        return ""
+
     import chpl_comm, chpl_comm_substrate, chpl_aux_filesys, chpl_libfabric
     platform = chpl_platform.get('target')
     comm = chpl_comm.get()
