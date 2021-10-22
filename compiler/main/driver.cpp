@@ -105,6 +105,10 @@ const char* CHPL_RUNTIME_SUBDIR = NULL;
 const char* CHPL_LAUNCHER_SUBDIR = NULL;
 const char* CHPL_SYS_MODULES_SUBDIR = NULL;
 const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
+const char* CHPL_LLVM_CLANG_C = NULL;
+const char* CHPL_LLVM_CLANG_CXX = NULL;
+const char* CHPL_LLVM_CLANG_COMPILE_ARGS = NULL;
+const char* CHPL_LLVM_CLANG_LINK_ARGS = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -1407,6 +1411,10 @@ static void setChapelEnvs() {
   CHPL_LAUNCHER_SUBDIR = envMap["CHPL_LAUNCHER_SUBDIR"];
   CHPL_SYS_MODULES_SUBDIR = envMap["CHPL_SYS_MODULES_SUBDIR"];
   CHPL_LLVM_UNIQ_CFG_PATH = envMap["CHPL_LLVM_UNIQ_CFG_PATH"];
+  CHPL_LLVM_CLANG_C = envMap["CHPL_LLVM_CLANG_C"];
+  CHPL_LLVM_CLANG_CXX = envMap["CHPL_LLVM_CLANG_CXX"];
+  CHPL_LLVM_CLANG_COMPILE_ARGS = envMap["CHPL_LLVM_CLANG_COMPILE_ARGS"];
+  CHPL_LLVM_CLANG_LINK_ARGS = envMap["CHPL_LLVM_CLANG_LINK_ARGS"];
 
   // Make sure there are no NULLs in envMap
   // a NULL in envMap might mean that one of the variables
@@ -1513,7 +1521,7 @@ static void setGPUFlags() {
   if(isGpuCodegen) {
     if (isSaveCDirEmpty) {
       int len = snprintf(saveCDir, FILENAME_MAX+1, "%s_gpu_files",
-                         (strlen(executableFilename) != 0 ? 
+                         (strlen(executableFilename) != 0 ?
                           executableFilename :
                           std::to_string(getpid()).c_str()));
       if(len < 0 || len >= FILENAME_MAX+1) {
@@ -1686,6 +1694,61 @@ static void validateSettings() {
   checkUnsupportedConfigs();
 }
 
+// This code is off by default - opt in with CHPL_DO_PE_ENV_CHECK
+// It is just here to make it easier to debug problems with the compiler
+// and can be removed in the future.
+static void maybeRelaunchInPrgEnv(int argc, char* argv[]) {
+  // Relaunch in PrgEnv-gnu if CHPL_DO_PE_ENV_CHECK is set and:
+  //  * platform is cray-x* or cray-ex
+  //  * CHPL_TARGET_COMPILER is llvm
+  //  * PE_ENV does not indicate PrgEnv-gnu is loaded
+
+  bool prgEnvPlatform = startsWith(CHPL_TARGET_PLATFORM, "cray-x") ||
+                        0 == strcmp(CHPL_TARGET_PLATFORM, "cray-ex");
+  bool targetLlvm = 0 == strcmp(CHPL_TARGET_COMPILER, "llvm");
+  if (prgEnvPlatform && targetLlvm) {
+    // Default to not doing this.
+    // Keeping this code in for now for testing purposes.
+    if (getenv("CHPL_DO_PE_ENV_CHECK") == nullptr)
+      return;
+
+    // Exit early if we have already tried relaunching
+    if (getenv("CHPL_SKIP_PE_ENV_CHECK") != nullptr)
+      return;
+
+    // check if PrgEnv-gnu is loaded
+    const char* PE_ENV = getenv("PE_ENV");
+    bool prgEnvGnu = PE_ENV != nullptr && 0 == strcmp(PE_ENV, "GNU");
+
+    if (!prgEnvGnu) {
+      // Need to run ourselves again with PrgEnv-gnu
+      std::string exe = std::string(CHPL_HOME) +
+                        "/util/config/run-in-prgenv-gnu.bash";
+      std::vector<const char*> args;
+      args.push_back(exe.c_str());
+      for (int i = 0; i < argc; i++) {
+        args.push_back(argv[i]);
+      }
+      args.push_back(nullptr);
+
+      setenv("CHPL_SKIP_PE_ENV_CHECK", "1", 1);
+
+      if (printSystemCommands) {
+        printf("# relaunching under PrgEnv-gnu\n");
+        for (auto arg : args) {
+          if (arg != nullptr) {
+            printf("\"%s\" ", arg);
+          }
+        }
+        printf("\n");
+      }
+      execv(exe.c_str(), (char* const*) &args[0]);
+      // If that failed for some reason, continue not in PrgEnv-gnu
+      USR_WARN("Relaunching in PrgEnv-gnu failed");
+    }
+  }
+}
+
 int main(int argc, char* argv[]) {
   PhaseTracker tracker;
 
@@ -1726,6 +1789,8 @@ int main(int argc, char* argv[]) {
     process_args(&sArgState, argc, argv);
 
     setupChplGlobals(argv[0]);
+
+    maybeRelaunchInPrgEnv(argc, argv);
 
     postprocess_args();
 
