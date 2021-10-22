@@ -239,8 +239,7 @@ module ArrayViewSlice {
       return dsiAccess(i);
     }
 
-    inline proc dsiAccess(i: idxType ...rank) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i: idxType ...rank) const ref {
       return dsiAccess(i);
     }
 
@@ -263,8 +262,7 @@ module ArrayViewSlice {
       }
     }
 
-    inline proc dsiAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i) const ref {
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);

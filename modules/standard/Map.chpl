@@ -337,7 +337,7 @@ module Map {
 
     pragma "no doc"
     proc const this(k: keyType) const ref
-    where shouldReturnRvalueByConstRef(valType) && !isNonNilableClass(valType) {
+    where !isNonNilableClass(valType) {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();

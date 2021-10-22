@@ -2564,10 +2564,6 @@ module ChapelArray {
   }
 
   pragma "no doc"
-  proc shouldReturnRvalueByConstRef(type t) param {
-    return true;
-  }
-  pragma "no doc"
   proc shouldReturnRvalueByValue(type t) param {
     if !PODValAccess then return false;
     if isPODType(t) then return true;
@@ -2811,7 +2807,6 @@ module ChapelArray {
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
     inline proc const this(i: rank*_value.dom.idxType) const ref
-    where shouldReturnRvalueByConstRef(_value.eltType)
     {
       const value = _value;
       if boundsChecking then
@@ -2839,7 +2834,6 @@ module ChapelArray {
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
     inline proc const this(i: _value.dom.idxType ...rank) const ref
-    where shouldReturnRvalueByConstRef(_value.eltType)
       return this(i);
 
 
@@ -2880,7 +2874,6 @@ module ChapelArray {
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
     inline proc const localAccess(i: rank*_value.dom.idxType) const ref
-    where shouldReturnRvalueByConstRef(_value.eltType)
     {
       const value = _value;
       if boundsChecking then
@@ -2910,7 +2903,6 @@ module ChapelArray {
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
     inline proc const localAccess(i: _value.dom.idxType ...rank) const ref
-    where shouldReturnRvalueByConstRef(_value.eltType)
       return localAccess(i);
 
 
