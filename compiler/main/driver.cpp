@@ -1694,6 +1694,8 @@ static void validateSettings() {
   checkUnsupportedConfigs();
 }
 
+// TODO -- try removing this code in this PR
+
 // This code is off by default - opt in with CHPL_DO_PE_ENV_CHECK
 // It is just here to make it easier to debug problems with the compiler
 // and can be removed in the future.
