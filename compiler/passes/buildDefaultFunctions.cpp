@@ -297,18 +297,15 @@ static void fixupAccessor(AggregateType* ct, Symbol *field,
                            bool fieldIsConst, bool recordLike,
                            FnSymbol* fn)
 {
-  std::vector<BaseAST*> asts;
-  collect_asts(fn, asts);
-  for_vector(BaseAST, ast, asts) {
-    if (CallExpr* call = toCallExpr(ast)) {
-      if (call->isNamedAstr(field->name) && call->numActuals() == 2) {
-        if (call->get(1)->typeInfo() == dtMethodToken &&
-            call->get(2)->typeInfo() == ct) {
-          Expr* arg2 = call->get(2);
-          call->replace(new CallExpr(PRIM_GET_MEMBER,
-                                     arg2->remove(),
-                                     new_CStringSymbol(field->name)));
-        }
+  std::vector<CallExpr*> calls;
+  collectCallExprs(fn, calls);
+  for_vector(CallExpr, call, calls) {
+    if (call->isNamedAstr(field->name) && call->numActuals() == 2) {
+      if (call->get(1)->typeInfo() == dtMethodToken &&
+          call->get(2)->typeInfo() == ct) {
+        Expr *arg2 = call->get(2);
+        call->replace(new CallExpr(PRIM_GET_MEMBER, arg2->remove(),
+                                   new_CStringSymbol(field->name)));
       }
     }
   }
