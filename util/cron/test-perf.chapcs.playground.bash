@@ -15,6 +15,7 @@ export CHPL_TEST_PERF_CONFIG_NAME='chapcs'
 
 source $CWD/common-perf.bash
 source $CWD/common-llvm.bash
+export CHPL_LLVM=bundled
 
 # common-llvm restricts to just extern/ferguson. Enable all perf tests
 unset CHPL_NIGHTLY_TEST_DIRS
