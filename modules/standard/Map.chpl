@@ -81,7 +81,7 @@ module Map {
 
     /* 
        Fractional value that specifies how full this map can be 
-       before requesting additiotional memory. The default value of 
+       before requesting additional memory. The default value of 
        0.5 means that the map will not resize until the map is more
        than 50% full. The acceptable values for this argument are
        between 0 and 1, exclusive, meaning (0,1).
