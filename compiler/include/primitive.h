@@ -22,6 +22,11 @@
 #define _PRIMITIVE_H_
 
 #include "chpl.h"
+#include "chpl/uast/PrimOp.h"
+
+// make the PRIM_MOVE etc values available without scoping
+// as well as PrimitiveTag
+using namespace chpl::uast::primtags;
 
 class CallExpr;
 class Expr;
@@ -54,15 +59,6 @@ enum {
   FAST_AND_LOCAL
 };
 
-
-#define PRIMITIVE_G(NAME, str) PRIM_ ## NAME ,
-#define PRIMITIVE_R(NAME, str) PRIM_ ## NAME ,
-enum PrimitiveTag {
-#include "chpl/uast/PrimOpsList.h"
-  NUM_KNOWN_PRIMS
-};
-#undef PRIMITIVE_G
-#undef PRIMITIVE_R
 
 class PrimitiveOp { public:
   PrimitiveTag  tag;

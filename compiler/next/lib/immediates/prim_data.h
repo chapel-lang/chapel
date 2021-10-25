@@ -21,28 +21,30 @@
 #ifndef CHPL_IMMEDIATES_PRIM_DATA_H
 #define CHPL_IMMEDIATES_PRIM_DATA_H
 
-#define P_prim_pow 3
-#define P_prim_mult 4
-#define P_prim_div 5
-#define P_prim_mod 6
-#define P_prim_add 7
-#define P_prim_subtract 8
-#define P_prim_lsh 9
-#define P_prim_rsh 10
-#define P_prim_less 11
-#define P_prim_lessorequal 12
-#define P_prim_greater 13
-#define P_prim_greaterorequal 14
-#define P_prim_equal 15
-#define P_prim_notequal 16
-#define P_prim_and 17
-#define P_prim_xor 18
-#define P_prim_or 19
-#define P_prim_land 20
-#define P_prim_lor 21
-#define P_prim_plus 26
-#define P_prim_minus 27
-#define P_prim_not 28
-#define P_prim_lnot 29
+#include "chpl/uast/PrimOp.h"
+
+#define P_prim_pow            chpl::uast::primtags::PRIM_POW
+#define P_prim_mult           chpl::uast::primtags::PRIM_MULT
+#define P_prim_div            chpl::uast::primtags::PRIM_DIV
+#define P_prim_mod            chpl::uast::primtags::PRIM_MOD
+#define P_prim_add            chpl::uast::primtags::PRIM_ADD
+#define P_prim_subtract       chpl::uast::primtags::PRIM_SUBTRACT
+#define P_prim_lsh            chpl::uast::primtags::PRIM_LSH
+#define P_prim_rsh            chpl::uast::primtags::PRIM_RSH
+#define P_prim_less           chpl::uast::primtags::PRIM_LESS
+#define P_prim_lessorequal    chpl::uast::primtags::PRIM_LESSOREQUAL
+#define P_prim_greater        chpl::uast::primtags::PRIM_GREATER
+#define P_prim_greaterorequal chpl::uast::primtags::PRIM_GREATEROREQUAL
+#define P_prim_equal          chpl::uast::primtags::PRIM_EQUAL
+#define P_prim_notequal       chpl::uast::primtags::PRIM_NOTEQUAL
+#define P_prim_and            chpl::uast::primtags::PRIM_AND
+#define P_prim_xor            chpl::uast::primtags::PRIM_XOR
+#define P_prim_or             chpl::uast::primtags::PRIM_OR
+#define P_prim_land           chpl::uast::primtags::PRIM_LOGICAL_AND
+#define P_prim_lor            chpl::uast::primtags::PRIM_LOGICAL_OR
+#define P_prim_plus           chpl::uast::primtags::PRIM_UNARY_PLUS
+#define P_prim_minus          chpl::uast::primtags::PRIM_UNARY_MINUS
+#define P_prim_not            chpl::uast::primtags::PRIM_UNARY_NOT
+#define P_prim_lnot           chpl::uast::primtags::PRIM_UNARY_LNOT
 
 #endif
