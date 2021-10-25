@@ -143,12 +143,12 @@ module Bytes {
   }
 
   pragma "no doc"
-  proc chpl_createBytesWithLiteral(buffer: c_void_ptr,
+  proc chpl_createBytesWithLiteral(buffer: c_string,
                                    offset: int,
                                    x: c_string,
                                    length: int) {
     // copy the string to the combined buffer
-    var buf = buffer:c_ptr(uint(8));
+    var buf = buffer:c_void_ptr:c_ptr(uint(8));
     buf = buf + offset;
     c_memcpy(buf:c_void_ptr, x:c_void_ptr, length);
     // add null byte

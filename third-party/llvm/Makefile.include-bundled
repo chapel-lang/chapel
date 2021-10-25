@@ -25,7 +25,10 @@ ifeq ($(LLVM_MAJOR_VERSION),10)
   # but not in earlier or later versions
   export LLVM_LLVM_LIBS=$(shell $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter frontendopenmp ipo instrumentation option objcarcopts profiledata all-targets coverage coroutines lto)
 else
-  export LLVM_LLVM_LIBS=$(shell $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets coverage coroutines lto)
+  export LLVM_LLVM_LIBS_TMP=$(shell $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets coverage coroutines lto)
+  # remove -llibxml2.tbd which seems to appear on some Mac OS X versions
+  # with LLVM 11.
+  export LLVM_LLVM_LIBS=$(subst -llibxml2.tbd,,$(LLVM_LLVM_LIBS_TMP))
 endif
 
 endif

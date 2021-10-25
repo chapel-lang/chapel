@@ -1,3 +1,0 @@
-bug: arbitrary operator names are permitted (and generate confusing errors for methods)
-
-#17853

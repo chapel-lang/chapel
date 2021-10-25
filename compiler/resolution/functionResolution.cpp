@@ -60,6 +60,7 @@
 #include "splitInit.h"
 #include "stlUtil.h"
 #include "stringutil.h"
+#include "symbol.h"
 #include "TryStmt.h"
 #include "typeSpecifier.h"
 #include "view.h"
@@ -9899,7 +9900,7 @@ static void resolveAutoCopyEtc(AggregateType* at) {
 
   // resolve autoDestroy
   if (autoDestroyMap.get(at) == NULL) {
-    FnSymbol* fn = autoMemoryFunction(at, "chpl__autoDestroy");
+    FnSymbol* fn = autoMemoryFunction(at, astr_autoDestroy);
     // If --minimal-modules is used, `chpl_autoDestroy` won't be defined
     if (fn)
       fn->addFlag(FLAG_AUTO_DESTROY_FN);
@@ -10087,9 +10088,14 @@ static void resolveOther() {
   std::vector<FnSymbol*> fns = getWellKnownFunctions();
 
   for_vector(FnSymbol, fn, fns) {
+    // resolve the argument types
     resolveSignature(fn);
     fn->tagIfGeneric();
-    if (! fn->isGeneric())
+    // resolve the return type if specified
+    if (fn->retExprType)
+      resolveSpecifiedReturnType(fn);
+    // resolve the function body if it is not generic
+    if (!fn->isGeneric())
       resolveFunction(fn);
   }
 }

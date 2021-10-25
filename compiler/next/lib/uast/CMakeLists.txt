@@ -51,6 +51,7 @@ target_sources(libchplcomp-obj
                EnumElement.cpp
                ErroneousExpression.cpp
                Expression.cpp
+               ExternBlock.cpp
                FnCall.cpp
                For.cpp
                Forall.cpp
@@ -78,6 +79,7 @@ target_sources(libchplcomp-obj
                RealLiteral.cpp
                Record.cpp
                Reduce.cpp
+               Require.cpp
                Return.cpp
                Select.cpp
                Serial.cpp

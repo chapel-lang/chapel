@@ -1,0 +1,14 @@
+test4
+default init
+init 1
+assign
+deinit
+(x = 0)
+deinit
+test5
+default init
+init 1
+assign
+deinit
+(x = 0)
+deinit

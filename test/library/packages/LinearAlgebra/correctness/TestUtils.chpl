@@ -33,7 +33,7 @@ proc assertEqual(X: [], Y: [], msg) {
   }
 }
 
-proc assertEqual(X: [], Y: [], msg) where isSparseArr(X) && isSparseArr(Y) {
+proc assertEqual(X: [], Y: [], msg) where X.isSparse() && Y.isSparse() {
   if !correctness then writeln(msg);
   if X.shape != Y.shape {
     writeFailure(X.shape, Y.shape, msg);
@@ -48,7 +48,7 @@ proc assertEqual(X: [], Y: [], msg) where isSparseArr(X) && isSparseArr(Y) {
 }
 
 /* array.equals(array) overload for CS sparse arrays with different domains */
-proc _array.equals(that: _array) where isSparseArr(that) && isSparseArr(this) {
+proc _array.equals(that: _array) where that.isSparse() && this.isSparse() {
   // First assert that domains share the same indices
   if this.domain != that.domain {
     return false;
@@ -131,7 +131,7 @@ proc almostEquals(A: [], B: []): bool {
   //
   // check B size/shape are the same to permit legal zippering
   //
-  if isRectangularDom(A.domain) && isRectangularDom(B.domain) {
+  if A.domain.isRectangular() && B.domain.isRectangular() {
     for d in 0..#A.rank do
       if A.domain.dim(d).size != B.domain.dim(d).size then
         return false;

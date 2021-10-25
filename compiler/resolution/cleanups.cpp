@@ -755,6 +755,7 @@ static void cleanupNothingVarsAndFields() {
      if (call->isPrimitive())
       switch (call->primitive->tag) {
       case PRIM_MOVE:
+      case PRIM_ASSIGN:
         if (isNothingType(call->get(2)->typeInfo()) ||
             call->get(2)->typeInfo() == dtNothing->refType) {
           INT_ASSERT(call->get(1)->typeInfo() == call->get(2)->typeInfo());

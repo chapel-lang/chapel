@@ -94,14 +94,33 @@ void ParserContext::noteDeclStartLoc(YYLTYPE loc) {
     this->declStartLocation = loc;
   }
 }
+
 Decl::Visibility ParserContext::noteVisibility(Decl::Visibility visibility) {
   this->visibility = visibility;
   return this->visibility;
 }
+
+Decl::Linkage ParserContext::noteLinkage(Decl::Linkage linkage) {
+  this->linkage = linkage;
+  return this->linkage;
+}
+
 Variable::Kind ParserContext::noteVarDeclKind(Variable::Kind varDeclKind) {
   this->varDeclKind = varDeclKind;
   return this->varDeclKind;
 }
+
+void ParserContext::storeVarDeclLinkageName(Expression* linkageName) {
+  assert(this->varDeclLinkageName == nullptr);
+  this->varDeclLinkageName = linkageName;
+}
+
+owned<Expression> ParserContext::consumeVarDeclLinkageName(void) {
+  auto ret = this->varDeclLinkageName;
+  this->varDeclLinkageName = nullptr;
+  return toOwned(ret);
+}
+
 bool ParserContext::noteIsVarDeclConfig(bool isConfig) {
   this->isVarDeclConfig = isConfig;
   return this->isVarDeclConfig;
@@ -115,6 +134,7 @@ YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
 void ParserContext::resetDeclState() {
   this->varDeclKind = Variable::VAR;
   this->visibility = Decl::DEFAULT_VISIBILITY;
+  this->linkage = Decl::DEFAULT_LINKAGE;
   this->isVarDeclConfig = false;
   YYLTYPE emptyLoc = {0};
   this->declStartLocation = emptyLoc;
@@ -475,7 +495,7 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
   FunctionParts fp = {nullptr,
                       nullptr,
                       this->visibility,
-                      Function::DEFAULT_LINKAGE,
+                      Decl::DEFAULT_LINKAGE,
                       nullptr,
                       isInline,
                       isOverride,
@@ -572,11 +592,13 @@ ParserContext::buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
                               ParserExprList* domainExprs,
                               Expression* typeExpr) {
 
-  // Build a domain out of the expression list.
-  auto domain = Domain::build(builder, convertLocation(locDomainExprs),
-                              consumeList(domainExprs));
+  // In some cases the 'domainExprs' may not exist (think array formal).
+  auto domainBody = domainExprs ? consumeList(domainExprs) : ASTList();
 
-  // TODO: Report a more accurate location.
+  auto domain = Domain::build(builder, convertLocation(locDomainExprs),
+                              std::move(domainBody));
+
+  // If 'typeExpr' is null, then the resulting block is empty.
   auto block = consumeToBlock(location, typeExpr);
 
   auto node = BracketLoop::build(builder, convertLocation(location),
@@ -597,6 +619,8 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
   if (const Identifier* ident = e->toIdentifier()) {
     return Variable::build(builder, convLoc, ident->name(),
                            Decl::DEFAULT_VISIBILITY,
+                           Decl::DEFAULT_LINKAGE,
+                           /*linkageName*/ nullptr,
                            Variable::INDEX,
                            /*isConfig*/ false,
                            /*isField*/ false,
@@ -617,6 +641,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
     }
 
     return TupleDecl::build(builder, convLoc, Decl::DEFAULT_VISIBILITY,
+                            Decl::DEFAULT_LINKAGE,
                             Variable::INDEX,
                             std::move(elements),
                             /*typeExpression*/ nullptr,
@@ -677,6 +702,7 @@ FnCall* ParserContext::wrapCalledExpressionInNew(YYLTYPE location,
 
 owned<Block>
 ParserContext::consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst) {
+
   // if it consists of only a block, return that block
   if (lst != nullptr && lst->size() == 1) {
     if (Block* b = (*lst)[0]->toBlock()) {
@@ -685,14 +711,17 @@ ParserContext::consumeToBlock(YYLTYPE blockLoc, ParserExprList* lst) {
     }
   }
 
+  auto stmts = (!lst || !lst->size()) ? ASTList() : consumeList(lst);
+
   // if it consists of other non-block statements, create a new block
   return Block::build(builder, convertLocation(blockLoc),
-                      consumeList(lst));
+                      std::move(stmts));
 }
 
 owned<Block>
 ParserContext::consumeToBlock(YYLTYPE blockLoc, Expression* e) {
-  return consumeToBlock(blockLoc, makeList(e));
+  auto list = e ? makeList(e) : nullptr;
+  return consumeToBlock(blockLoc, list);
 }
 
 ASTList
@@ -1047,6 +1076,19 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   return { .comments=comments, .stmt=node.release() };
 }
 
+CommentsAndStmt ParserContext::buildExternBlockStmt(YYLTYPE locEverything,
+                                                    SizedStr sizedStr) {
+  auto comments = gatherComments(locEverything);
+  auto code = std::string(sizedStr.allocatedData, sizedStr.size);
+  auto node = ExternBlock::build(builder, convertLocation(locEverything),
+                                 std::move(code));
+
+  // This was allocated in 'eatExternCode', see 'lexer-help.h'.
+  free((void*) sizedStr.allocatedData);
+
+  return { .comments=comments, .stmt=node.release() };
+}
+
 Expression* ParserContext::buildNumericLiteral(YYLTYPE location,
                                                PODUniqueString str,
                                                int type) {
@@ -1285,6 +1327,7 @@ CommentsAndStmt ParserContext::buildVarOrMultiDecl(YYLTYPE locEverything,
   } else {
     auto multi = MultiDecl::build(builder, convertLocation(locEverything),
                                   visibility,
+                                  linkage,
                                   consumeList(vars));
     cs.stmt = multi.release();
   }
@@ -1296,6 +1339,60 @@ CommentsAndStmt ParserContext::buildVarOrMultiDecl(YYLTYPE locEverything,
   return cs;
 }
 
+TypeDeclParts
+ParserContext::enterScopeAndBuildTypeDeclParts(YYLTYPE locStart,
+                                               PODUniqueString name,
+                                               asttags::ASTTag tag) {
+  auto loc = declStartLoc(locStart);
+
+  enterScope(tag, name);
+
+  TypeDeclParts ret = {
+    .comments=this->gatherComments(loc),
+    .visibility=this->visibility,
+    .linkage=this->linkage,
+    /* The linkage name must be set by the rule that uses these parts. */
+    .linkageName=nullptr,
+    .name=name,
+    .tag=tag
+  };
+
+  clearComments();
+
+  // Important stuff has been recorded, so reset.
+  resetDeclState();
+
+  return ret;
+}
+
+static void clearTypeDeclPartsLinkage(TypeDeclParts& parts) {
+  parts.linkage = Decl::DEFAULT_LINKAGE;
+  if (parts.linkageName) {
+    delete parts.linkageName;
+    parts.linkageName = nullptr;
+  }
+}
+
+void ParserContext::validateExternTypeDeclParts(YYLTYPE location,
+                                                TypeDeclParts& parts) {
+  if (parts.tag == asttags::Class) {
+    assert(parts.linkage != Decl::DEFAULT_LINKAGE);
+    auto msg = "Cannot declare class types as export or extern";
+    noteError(location, msg);
+
+    // Clear the linkage state for this so that parsing can continue.
+    clearTypeDeclPartsLinkage(parts);
+  }
+
+  if (parts.tag == asttags::Union && parts.linkage == Decl::EXPORT) {
+    auto msg = "Cannot export union types";
+    noteError(location, msg);
+
+    // Clear the linkage state for this so that parsing can continue.
+    clearTypeDeclPartsLinkage(parts);
+  }
+}
+
 CommentsAndStmt
 ParserContext::buildAggregateTypeDecl(YYLTYPE location,
                                       TypeDeclParts parts,
@@ -1304,6 +1401,12 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
                                       YYLTYPE openingBrace,
                                       ParserExprList* contents,
                                       YYLTYPE closingBrace) {
+
+  if (parts.linkage != Decl::DEFAULT_LINKAGE) {
+    validateExternTypeDeclParts(location, parts);
+  } else {
+    assert(parts.linkageName == nullptr);
+  }
 
   CommentsAndStmt cs = {parts.comments, nullptr};
   // adjust the contents list to have the right comments
@@ -1336,17 +1439,35 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
 
   Expression* decl = nullptr;
   if (parts.tag == asttags::Class) {
+
+    // These should have been cleared when validated above (the Class node
+    // constructor and builder function would have to change if we ever
+    // wanted to permit export/extern classes.
+    assert(parts.linkage == Decl::DEFAULT_LINKAGE);
+    assert(!parts.linkageName);
+
     decl = Class::build(builder, convertLocation(location),
-                        parts.visibility, parts.name,
+                        parts.visibility,
+                        parts.name,
                         std::move(inheritIdentifier),
                         std::move(contentsList)).release();
   } else if (parts.tag == asttags::Record) {
     decl = Record::build(builder, convertLocation(location),
-                         parts.visibility, parts.name,
+                         parts.visibility,
+                         parts.linkage,
+                         toOwned(parts.linkageName),
+                         parts.name,
                          std::move(contentsList)).release();
   } else if (parts.tag == asttags::Union) {
+
+    // Should have been cleared because this is not possible right now.
+    assert(parts.linkage != Decl::EXPORT);
+
     decl = Union::build(builder, convertLocation(location),
-                        parts.visibility, parts.name,
+                        parts.visibility,
+                        parts.linkage,
+                        toOwned(parts.linkageName),
+                        parts.name,
                         std::move(contentsList)).release();
   } else {
     assert(false && "case not handled");

@@ -8,6 +8,8 @@
 # $4 = CHPL_COMM_SUBSTRATE
 # $5 = CHPL_AUXFS
 
+CWD=$(cd $(dirname $0) ; pwd)
+
 COMPILE=0
 LINK=0
 case $1 in
@@ -26,6 +28,11 @@ if [[ $FAIL == 1 || -z $2 || -z $3 || -z $4 || -z $5 ]]; then
     echo " <compile> returns key flags provided to PrgEnv C compilers"
     echo " <link> returns key flags provided to PrgEnv C compilers during linking"
     exit 1
+fi
+
+if [ ! -d "$CHPL_HOME" ]
+then
+  export CHPL_HOME=$(cd "$CWD/../.." ; pwd)
 fi
 
 #

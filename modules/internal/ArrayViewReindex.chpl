@@ -515,8 +515,7 @@ module ArrayViewReindex {
       return dsiAccess(i);
     }
 
-    inline proc dsiAccess(i: idxType ...rank) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i: idxType ...rank) const ref {
       return dsiAccess(i);
     }
 
@@ -539,8 +538,7 @@ module ArrayViewReindex {
       }
     }
 
-    inline proc dsiAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(i) const ref {
       if shouldUseIndexCache() {
         const dataIdx = indexCache.getDataIndex(i);
         return indexCache.getDataElem(dataIdx);
@@ -557,7 +555,6 @@ module ArrayViewReindex {
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
     inline proc dsiLocalAccess(i) const ref
-      where shouldReturnRvalueByConstRef(eltType)
       return arr.dsiLocalAccess(chpl_reindexConvertIdx(i, privDom, downdom));
 
     inline proc dsiBoundsCheck(i) {

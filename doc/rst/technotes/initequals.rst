@@ -23,7 +23,7 @@ operator:
     var A : [D] int;
   }
 
-  proc =(ref lhs : IntList, rhs : []) {
+  operator =(ref lhs : IntList, rhs : []) {
     lhs.D = rhs.domain;
     lhs.A = rhs;
   }

@@ -1,0 +1,1 @@
+superAccessibility2.chpl:16: error: Cannot access 'super', 'super' is private to 'Child'

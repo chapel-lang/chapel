@@ -279,7 +279,7 @@ static void test7() {
     assert(vec.size() == 1);
     m = vec[0];
     mScope = scopeForId(context, m->id());
-    assert(mScope && mScope->id == m->id());
+    assert(mScope && mScope->id() == m->id());
 
     oldM = m;
     oldMScope = mScope;
@@ -309,8 +309,8 @@ static void test7() {
     // lookup scope
     mScope = scopeForId(context, m->id());
     assert(mScope);
-    assert(mScope->id == m->id() && mScope->declared.size() == 1);
-    assert(mScope->containsUseImport == false);
+    assert(mScope->id() == m->id() && mScope->numDeclared() == 1);
+    assert(mScope->containsUseImport() == false);
     // scope contents changed so Scope pointer should change
     assert(mScope != oldMScope);
 
@@ -350,8 +350,8 @@ static void test7() {
     // lookup scope
     mScope = scopeForId(context, m->id());
     assert(mScope);
-    assert(mScope->id == m->id() && mScope->declared.size() == 1);
-    assert(mScope->containsUseImport == false);
+    assert(mScope->id() == m->id() && mScope->numDeclared() == 1);
+    assert(mScope->containsUseImport() == false);
     // scope contents did not change so Scope pointer should be the same
     assert(mScope == oldMScope);
 
@@ -393,8 +393,8 @@ static void test7() {
     // lookup scope
     mScope = scopeForId(context, m->id());
     assert(mScope);
-    assert(mScope->id == m->id() && mScope->declared.size() == 1);
-    assert(mScope->containsUseImport == true);
+    assert(mScope->id() == m->id() && mScope->numDeclared() == 1);
+    assert(mScope->containsUseImport() == true);
     // scope contents did change so Scope pointer should differ
     assert(mScope != oldMScope);
 

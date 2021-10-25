@@ -37,22 +37,6 @@
 #include <vector>
 
 namespace chpl {
-
-template<> struct update<parsing::FileContents> {
-  bool operator()(parsing::FileContents& keep,
-                  parsing::FileContents& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
-
-template<> struct update<uast::ASTTag> {
-  bool operator()(uast::ASTTag& keep,
-                  uast::ASTTag& addin) const {
-    return defaultUpdateBasic(keep, addin);
-  }
-};
-
-
 namespace parsing {
 
 
@@ -83,8 +67,8 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
 
   // Run the fileText query to get the file contents
   const FileContents& contents = fileText(context, path);
-  const std::string& text = contents.text;
-  const ErrorMessage& error = contents.error;
+  const std::string& text = contents.text();
+  const ErrorMessage& error = contents.error();
   uast::BuilderResult result(path);
 
   if (error.isEmpty()) {
@@ -96,13 +80,18 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
     result.swap(tmpResult);
     // raise any errors encountered
     // TODO: add something to BuilderResult to iterate over the errors
-    for (const ErrorMessage& e : result.errors_) {
-      context->error(e);
+    int nErrors = result.numErrors();
+    for (int i = 0; i < nErrors; i++) {
+      const ErrorMessage& e = result.error(i);
+      if (!e.isEmpty()) {
+        // report the error and save it for this query
+        context->error(e);
+      }
     }
     BuilderResult::updateFilePaths(context, result);
   } else {
-    // Error should have already been reported in the fileText query
-    // just record an error here as well so follow-ons are clear
+    // Error should have already been reported in the fileText query.
+    // Just record an error here as well so follow-ons are clear
     result.errors_.push_back(error);
   }
 
