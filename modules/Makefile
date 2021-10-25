@@ -95,6 +95,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Regex.chpl \
 	standard/Set.chpl \
 	standard/Spawn.chpl \
+	standard/Subprocess.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
 	standard/SysError.chpl \

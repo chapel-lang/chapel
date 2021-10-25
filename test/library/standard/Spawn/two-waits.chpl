@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 config const poll=false;
 config const pipes=true;

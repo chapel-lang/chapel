@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 proc checkExitStatus(cmd: [] string, exitStatus: int) {
   var p = spawn(cmd, stdout=PIPE);

@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 proc f(s: string) {
   var p = spawnshell(s, stdout=PIPE, stderr=PIPE);

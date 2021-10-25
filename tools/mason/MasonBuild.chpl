@@ -30,7 +30,7 @@ use MasonUpdate;
 use MasonSystem;
 use MasonExternal;
 use MasonExample;
-use Spawn;
+use Subprocess;
 use TOML;
 
 proc masonBuild(args: [] string) throws {
