@@ -1,5 +1,5 @@
 use MasonExternal;
-use Spawn;
+use Subprocess;
 
 // Test the output of all mason [cmd] -h
 

@@ -33,7 +33,6 @@ use Subprocess;
 use TOML;
 
 /* Top Level procedure that gets called from mason.chpl that takes in arguments from command line.
-   Returns the help output in '-h' or '--help' exits in the arguments.
    If --dry-run is passed  then it checks to see if the package is able to be published.
    Takes in the username of the package owner as an argument
  */
@@ -91,11 +90,11 @@ proc masonPublish(ref args: list(string)) throws {
         if !isDir(pathReg + '/.git') {
           gitC(pathReg, 'git init -q');
           gitC(pathReg, 'git add .');
-          commitSubProcess(pathReg, ['git','commit', '-q', '-m',' "initialised registry"']);
+          commitSubProcess(pathReg, ['git','commit', '-q', '-m',' "initialized registry"']);
         }
         const absPathReg = Path.absPath(pathReg);
-        writeln("Initialised local registry at %s".format(pathReg));
-        writeln("Add this registry to MASON_REGISTRY environment variable to include it in search path: ");
+        writeln("Initialized local registry at %s".format(pathReg));
+        writeln("Add this registry to MASON_REGISTRY environment variable to include it in search path:");
         writeln('   export MASON_REGISTRY="%s|%s,%s|%s"'.format("mason-registry",regUrl, basename(pathReg), absPathReg));
         exit(0);
       }

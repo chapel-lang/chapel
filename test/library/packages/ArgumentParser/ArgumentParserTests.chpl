@@ -2800,9 +2800,6 @@ proc testMockMasonNew(test: borrowed Test) throws {
   var sysCmd = parser.addSubCommand("system");
   var extCmd = parser.addSubCommand("external");
   var pubCmd = parser.addSubCommand("publish");
-  // var helpFlag = parser.addFlag(name="help",
-  //                               opts=["-h","--help"],
-  //                               defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
                                defaultValue=false);
@@ -2835,9 +2832,6 @@ proc testMockMasonNew(test: borrowed Test) throws {
                                     opts=["--name"]);
   var newName = newParser.addArgument(name="name");
 
-  // var newHelpFlag = newParser.addFlag(name="help",
-  //                                     opts=["-h","--help"],
-  //                                     defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
@@ -2847,9 +2841,6 @@ proc testMockMasonNew(test: borrowed Test) throws {
                                  defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
-  // var addHelpFlag = addParser.addFlag(name="help",
-  //                                     opts=["-h","--help"],
-  //                                     defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -2866,7 +2857,6 @@ proc testMockMasonNew(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  // test.assertFalse(helpFlag.hasValue());
   test.assertFalse(verFlag.hasValue());
   //parse the options
   parser.parseArgs(argList);
@@ -2886,9 +2876,7 @@ proc testMockMasonNew(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  // test.assertTrue(helpFlag.hasValue());
   test.assertTrue(verFlag.hasValue());
-  // test.assertFalse(helpFlag.valueAsBool());
   test.assertFalse(verFlag.valueAsBool());
   test.assertFalse(newLegalName.hasValue());
   //parse the remaining args
@@ -2896,8 +2884,7 @@ proc testMockMasonNew(test: borrowed Test) throws {
   //make sure we now have a value
   test.assertTrue(newVCS.hasValue());
   test.assertTrue(newName.hasValue());
-  // test.assertTrue(newHelpFlag.hasValue());
-  // test.assertFalse(newHelpFlag.valueAsBool());
+
   //ensure the value passed is correct
   test.assertFalse(newVCS.valueAsBool());
   test.assertEqual(newName.value(), "myPackage");
@@ -2924,9 +2911,6 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
   var sysCmd = parser.addSubCommand("system");
   var extCmd = parser.addSubCommand("external");
   var pubCmd = parser.addSubCommand("publish");
-  // var helpFlag = parser.addFlag(name="help",
-  //                               opts=["-h","--help"],
-  //                               defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
                                defaultValue=false);
@@ -2959,9 +2943,6 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
                                     opts=["--name"]);
   var newName = newParser.addArgument(name="name");
 
-  // var newHelpFlag = newParser.addFlag(name="help",
-  //                                     opts=["-h","--help"],
-  //                                     defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
@@ -2971,9 +2952,6 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
                                  defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
-  // var addHelpFlag = addParser.addFlag(name="help",
-  //                                     opts=["-h","--help"],
-  //                                     defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -2990,7 +2968,6 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  // test.assertFalse(helpFlag.hasValue());
   test.assertFalse(verFlag.hasValue());
   //parse the options
   parser.parseArgs(argList);
@@ -3010,9 +2987,7 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  // test.assertTrue(helpFlag.hasValue());
   test.assertTrue(verFlag.hasValue());
-  // test.assertFalse(helpFlag.valueAsBool());
   test.assertFalse(verFlag.valueAsBool());
   test.assertFalse(newLegalName.hasValue());
   //parse the remaining args
@@ -3021,8 +2996,7 @@ proc testMockMasonNewDiffName(test: borrowed Test) throws {
   test.assertTrue(newVCS.hasValue());
   test.assertTrue(newName.hasValue());
   test.assertTrue(newLegalName.hasValue());
-  // test.assertTrue(newHelpFlag.hasValue());
-  // test.assertFalse(newHelpFlag.valueAsBool());
+
   //ensure the value passed is correct
   test.assertFalse(newVCS.valueAsBool());
   test.assertEqual(newLegalName.value(),"notMyPackage");
@@ -3049,9 +3023,6 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
   var sysCmd = parser.addSubCommand("system");
   var extCmd = parser.addSubCommand("external");
   var pubCmd = parser.addSubCommand("publish");
-  // var helpFlag = parser.addFlag(name="help",
-  //                               opts=["-h","--help"],
-  //                               defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
                                defaultValue=false);
@@ -3084,9 +3055,6 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
                                          opts=["--name"]);
   var newName = newParser.addArgument(name="name");
 
-  // var newHelpFlag = newParser.addFlag(name="help",
-  //                                     opts=["-h","--help"],
-  //                                     defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
@@ -3096,9 +3064,6 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
                                  defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
-  // var addHelpFlag = addParser.addFlag(name="help",
-  //                                     opts=["-h","--help"],
-  //                                     defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -3115,7 +3080,6 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  // test.assertFalse(helpFlag.hasValue());
   test.assertFalse(verFlag.hasValue());
   //parse the options
   parser.parseArgs(argList);
@@ -3135,9 +3099,7 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  // test.assertTrue(helpFlag.hasValue());
   test.assertTrue(verFlag.hasValue());
-  // test.assertFalse(helpFlag.valueAsBool());
   test.assertFalse(verFlag.valueAsBool());
   test.assertFalse(newLegalName.hasValue());
   //parse the remaining args
@@ -3146,8 +3108,6 @@ proc testMockMasonNewTypical(test: borrowed Test) throws {
   test.assertTrue(newVCS.hasValue());
   test.assertTrue(newName.hasValue());
   test.assertFalse(newLegalName.hasValue());
-  // test.assertTrue(newHelpFlag.hasValue());
-  // test.assertFalse(newHelpFlag.valueAsBool());
   //ensure the value passed is correct
   test.assertTrue(newVCS.valueAsBool());
   test.assertEqual(newName.value(), "myPackage");
@@ -3173,9 +3133,6 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
   var sysCmd = parser.addSubCommand("system");
   var extCmd = parser.addSubCommand("external");
   var pubCmd = parser.addSubCommand("publish");
-  // var helpFlag = parser.addFlag(name="help",
-  //                               opts=["-h","--help"],
-  //                               defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
                                defaultValue=false);
@@ -3208,9 +3165,6 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
                                          opts=["--name"]);
   var newName = newParser.addArgument(name="name");
 
-  // var newHelpFlag = newParser.addFlag(name="help",
-  //                                     opts=["-h","--help"],
-  //                                     defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
@@ -3220,9 +3174,6 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
                                  defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
-  // var addHelpFlag = addParser.addFlag(name="help",
-  //                                     opts=["-h","--help"],
-  //                                     defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -3239,7 +3190,6 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  // test.assertFalse(helpFlag.hasValue());
   test.assertFalse(verFlag.hasValue());
   //parse the options
   parser.parseArgs(argList);
@@ -3259,9 +3209,7 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  // test.assertTrue(helpFlag.hasValue());
   test.assertTrue(verFlag.hasValue());
-  // test.assertFalse(helpFlag.valueAsBool());
   test.assertFalse(verFlag.valueAsBool());
   test.assertFalse(addPkg.hasValue());
   test.assertFalse(addExt.hasValue());
@@ -3272,8 +3220,6 @@ proc testMockMasonAddExternal(test: borrowed Test) throws {
   test.assertTrue(addExt.hasValue());
   test.assertTrue(addPkg.hasValue());
   test.assertTrue(addSys.hasValue());
-  // test.assertTrue(addHelpFlag.hasValue());
-  // test.assertFalse(addHelpFlag.valueAsBool());
   //ensure the value passed is correct
   test.assertFalse(addSys.valueAsBool());
   test.assertTrue(addExt.valueAsBool());
@@ -3300,9 +3246,6 @@ proc testMockMasonRun(test: borrowed Test) throws {
   var sysCmd = parser.addSubCommand("system");
   var extCmd = parser.addSubCommand("external");
   var pubCmd = parser.addSubCommand("publish");
-  // var helpFlag = parser.addFlag(name="help",
-  //                               opts=["-h","--help"],
-  //                               defaultValue=false);
   var verFlag = parser.addFlag(name="version",
                                opts=["-V","--version"],
                                defaultValue=false);
@@ -3335,9 +3278,6 @@ proc testMockMasonRun(test: borrowed Test) throws {
                                        numArgs=0..);
   var runPassThrough = runParser.addPassThrough();
 
-  // var runHelpFlag = runParser.addFlag(name="help",
-  //                                     opts=["-h","--help"],
-  //                                     defaultValue=false);
   // setup arguments for subcommand 'add'
   var addExt = addParser.addFlag(name="external",
                                  opts=["--external"],
@@ -3347,9 +3287,6 @@ proc testMockMasonRun(test: borrowed Test) throws {
                                  defaultValue=false);
   var addPkg = addParser.addArgument(name="package");
 
-  // var addHelpFlag = addParser.addFlag(name="help",
-  //                                     opts=["-h","--help"],
-  //                                     defaultValue=false);
   //make sure no value currently exists
   test.assertFalse(newCmd.hasValue());
   test.assertFalse(initCmd.hasValue());
@@ -3366,7 +3303,6 @@ proc testMockMasonRun(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  // test.assertFalse(helpFlag.hasValue());
   test.assertFalse(verFlag.hasValue());
   //parse the options
   parser.parseArgs(argList);
@@ -3386,9 +3322,7 @@ proc testMockMasonRun(test: borrowed Test) throws {
   test.assertFalse(sysCmd.hasValue());
   test.assertFalse(extCmd.hasValue());
   test.assertFalse(pubCmd.hasValue());
-  // test.assertTrue(helpFlag.hasValue());
   test.assertTrue(verFlag.hasValue());
-  // test.assertFalse(helpFlag.valueAsBool());
   test.assertFalse(verFlag.valueAsBool());
   test.assertFalse(runBuild.hasValue());
   test.assertFalse(runShow.hasValue());
@@ -3401,8 +3335,6 @@ proc testMockMasonRun(test: borrowed Test) throws {
   test.assertTrue(runShow.hasValue());
   test.assertFalse(runExample.hasValue());
   test.assertTrue(runPassThrough.hasValue());
-  // test.assertTrue(runHelpFlag.hasValue());
-  // test.assertFalse(runHelpFlag.valueAsBool());
   //ensure the value passed is correct
   test.assertFalse(runShow.valueAsBool());
   test.assertTrue(runBuild.valueAsBool());
