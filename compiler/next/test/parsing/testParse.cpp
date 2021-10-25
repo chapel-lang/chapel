@@ -667,7 +667,7 @@ static void testBoolLiteral1(Parser* parser) {
 
 static void testPrimCall0(Parser* parser) {
   auto parseResult = parser->parseString("testPrimCall0.chpl",
-                                         "__primitive(\"test prim\");\n");
+                                         "__primitive(\"u-\");\n");
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -678,11 +678,11 @@ static void testPrimCall0(Parser* parser) {
 
   assert(prim->numActuals() == 0);
   assert(prim->calledExpression() == nullptr);
-  assert(prim->prim() == "test prim");
+  assert(prim->prim() == PRIM_UNARY_MINUS);
 }
 static void testPrimCall1(Parser* parser) {
   auto parseResult = parser->parseString("testPrimCall1.chpl",
-                                         "__primitive(\"test prim\", x);\n");
+                                         "__primitive(\"u-\", x);\n");
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
@@ -692,7 +692,7 @@ static void testPrimCall1(Parser* parser) {
   assert(prim);
 
   assert(prim->calledExpression() == nullptr);
-  assert(prim->prim() == "test prim");
+  assert(prim->prim() == PRIM_UNARY_MINUS);
   assert(prim->numActuals() == 1);
   auto ident = prim->actual(0)->toIdentifier();
   assert(ident);
