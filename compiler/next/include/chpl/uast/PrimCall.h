@@ -29,7 +29,16 @@ namespace uast {
 
 
 /**
-  This class represents a call to a primitive.
+  This class represents a call to a primitive
+  (which only appears in low-level code).
+
+  \rst
+  .. code-block:: chapel
+
+      __primitive("=", x, y)
+
+  \endrst
+
 
  */
 class PrimCall final : public Call {

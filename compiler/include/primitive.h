@@ -55,10 +55,10 @@ enum {
 };
 
 
-#define PRIMITIVE_G(NAME) NAME,
-#define PRIMITIVE_R(NAME) NAME,
+#define PRIMITIVE_G(NAME, str) PRIM_ ## NAME ,
+#define PRIMITIVE_R(NAME, str) PRIM_ ## NAME ,
 enum PrimitiveTag {
-#include "primitive_list.h"
+#include "chpl/uast/PrimOpsList.h"
   NUM_KNOWN_PRIMS
 };
 #undef PRIMITIVE_G
