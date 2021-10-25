@@ -23,6 +23,7 @@
 #include "chpl/queries/Location.h"
 #include "chpl/queries/UniqueString.h"
 #include "chpl/uast/Call.h"
+#include "chpl/uast/PrimOp.h"
 
 namespace chpl {
 namespace uast {
@@ -44,9 +45,9 @@ namespace uast {
 class PrimCall final : public Call {
  private:
   // which primitive
-  UniqueString prim_;
+  PrimitiveTag prim_;
 
-  PrimCall(ASTList children, UniqueString prim)
+  PrimCall(ASTList children, PrimitiveTag prim)
     : Call(asttags::PrimCall, std::move(children),
            /* hasCalledExpression */ false),
       prim_(prim) {
@@ -66,18 +67,17 @@ class PrimCall final : public Call {
   }
   void markUniqueStringsInner(Context* context) const override {
     callMarkUniqueStringsInner(context);
-    prim_.mark(context);
   }
 
  public:
   ~PrimCall() override = default;
   static owned<PrimCall> build(Builder* builder,
                                Location loc,
-                               UniqueString prim,
+                               PrimitiveTag prim,
                                ASTList actuals);
 
-  /** Returns the name of the primitive called */
-  UniqueString prim() const { return prim_; }
+  /** Returns the enum value of the primitive called */
+  PrimitiveTag prim() const { return prim_; }
 };
 
 

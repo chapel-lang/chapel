@@ -17,36 +17,50 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_PRIM_OP_H
-#define CHPL_UAST_PRIM_OP_H
+#include "chpl/uast/PrimOp.h"
+
+#include <cstring>
 
 namespace chpl {
 namespace uast {
 namespace primtags {
 
 
-/** An enum containing the various PrimOp values e.g. PRIM_MOVE. */
-enum PrimitiveTag {
-#define PRIMITIVE_G(NAME, str) PRIM_ ## NAME ,
-#define PRIMITIVE_R(NAME, str) PRIM_ ## NAME ,
+const char* primTagToName(PrimitiveTag tag) {
+  switch (tag) {
+#define PRIMITIVE(NAME, str) \
+    case PRIM_ ## NAME : \
+      return str;
+
+#define PRIMITIVE_G(NAME, str) PRIMITIVE(NAME, str)
+#define PRIMITIVE_R(NAME, str) PRIMITIVE(NAME, str)
 #include "chpl/uast/PrimOpsList.h"
-  NUM_KNOWN_PRIMS
+    case NUM_KNOWN_PRIMS:
+      return "";
 #undef PRIMITIVE_G
 #undef PRIMITIVE_R
-};
+#undef PRIMITIVE
+  }
 
-/** Return the string name associated with a PrimitiveTag */
-const char* primTagToName(PrimitiveTag tag);
+  return "";
+}
 
-/** Return the PrimitiveTag associated with a const char* */
-PrimitiveTag primNameToTag(const char* name);
+PrimitiveTag primNameToTag(const char* name) {
+#define PRIMITIVE(NAME, str) \
+  if (0 == strcmp(str, name)) \
+    return PRIM_ ## NAME;
 
-} // end namespace primtags
+#define PRIMITIVE_G(NAME, str) PRIMITIVE(NAME, str)
+#define PRIMITIVE_R(NAME, str) PRIMITIVE(NAME, str)
+#include "chpl/uast/PrimOpsList.h"
 
-// make PRIM_MOVE etc values available as uast::PRIM_MOVE e.g.
-using namespace primtags;
+#undef PRIMITIVE_G
+#undef PRIMITIVE_R
+#undef PRIMITIVE
+  return PRIM_UNKNOWN;
+}
 
-} // end namespace uast
-} // end namespace chpl
 
-#endif
+} // namespace primtags
+} // namespace uast
+} // namespace chpl

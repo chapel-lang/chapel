@@ -472,7 +472,13 @@ Expression* ParserContext::buildPrimCall(YYLTYPE location,
     return ErroneousExpression::build(builder, loc).release();
   }
 
-  auto prim = PrimCall::build(builder, loc, primName, std::move(actuals));
+  PrimitiveTag tag = primNameToTag(primName.c_str());
+  if (tag == PRIM_UNKNOWN) {
+    noteError(location, "unknown primitive");
+    return ErroneousExpression::build(builder, loc).release();
+  }
+
+  auto prim = PrimCall::build(builder, loc, tag, std::move(actuals));
   return prim.release();
 }
 

@@ -78,6 +78,7 @@ NEXT_UAST_SRCS =                                 \
   On.cpp \
   OpCall.cpp \
   PrimCall.cpp \
+  PrimOp.cpp \
   Range.cpp \
   RealLiteral.cpp \
   Record.cpp \

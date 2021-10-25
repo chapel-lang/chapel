@@ -72,6 +72,37 @@ void Param::markParam(Context* context, const Param* keep) {
   keep->markUniqueStringsInner(context);
 }
 
+bool Param::isParamOpFoldable(chpl::uast::PrimitiveTag op) {
+  switch (op) {
+    case P_prim_pow:
+    case P_prim_mult:
+    case P_prim_div:
+    case P_prim_mod:
+    case P_prim_add:
+    case P_prim_subtract:
+    case P_prim_lsh:
+    case P_prim_rsh:
+    case P_prim_less:
+    case P_prim_lessorequal:
+    case P_prim_greater:
+    case P_prim_greaterorequal:
+    case P_prim_equal:
+    case P_prim_notequal:
+    case P_prim_and:
+    case P_prim_xor:
+    case P_prim_or:
+    case P_prim_land:
+    case P_prim_lor:
+    case P_prim_plus:
+    case P_prim_minus:
+    case P_prim_not:
+    case P_prim_lnot:
+      return true;
+    default:
+      return false;
+  }
+}
+
 static
 Immediate paramToImmediate(const Param* p, const Type* t) {
   Immediate ret;
@@ -303,7 +334,7 @@ std::pair<const Param*, const Type*> immediateToParam(Context* context,
 }
 
 QualifiedType Param::fold(Context* context,
-                          UniqueString op,
+                          chpl::uast::PrimitiveTag op,
                           QualifiedType a,
                           QualifiedType b) {
   assert(a.hasType() && a.hasParam());
@@ -315,35 +346,11 @@ QualifiedType Param::fold(Context* context,
   Immediate result;
 
   // fold
-  int immOp = 0;
+  int immOp = op;
 
-#define USTR(s) UniqueString::build(context, s)
-  // TODO: use an integer identifying a Primitive here
-  if      (op == USTR("**")) immOp = P_prim_pow;
-  else if (op == USTR("*"))  immOp = P_prim_mult;
-  else if (op == USTR("/"))  immOp = P_prim_div;
-  else if (op == USTR("%"))  immOp = P_prim_mod;
-  else if (op == USTR("+"))  immOp = P_prim_add;
-  else if (op == USTR("-"))  immOp = P_prim_subtract;
-  else if (op == USTR("<<")) immOp = P_prim_lsh;
-  else if (op == USTR(">>")) immOp = P_prim_rsh;
-  else if (op == USTR("<"))  immOp = P_prim_less;
-  else if (op == USTR("<=")) immOp = P_prim_lessorequal;
-  else if (op == USTR(">"))  immOp = P_prim_greater;
-  else if (op == USTR(">=")) immOp = P_prim_greaterorequal;
-  else if (op == USTR("==")) immOp = P_prim_equal;
-  else if (op == USTR("!=")) immOp = P_prim_notequal;
-  else if (op == USTR("&"))  immOp = P_prim_and;
-  else if (op == USTR("^"))  immOp = P_prim_xor;
-  else if (op == USTR("|"))  immOp = P_prim_or;
-  else if (op == USTR("&&")) immOp = P_prim_land;
-  else if (op == USTR("||")) immOp = P_prim_lor;
-  else if (op == USTR("u+")) immOp = P_prim_plus;
-  else if (op == USTR("u-")) immOp = P_prim_minus;
-  else if (op == USTR("~"))  immOp = P_prim_not;
-  else if (op == USTR("!"))  immOp = P_prim_lnot;
-  else assert(false && "case not handled");
-#undef USTR
+  if (!Param::isParamOpFoldable(op)) {
+    assert(false && "param primitive op not foldable");
+  }
 
   fold_constant(context, immOp, &aImm, &bImm, &result);
 
