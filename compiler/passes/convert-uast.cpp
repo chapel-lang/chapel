@@ -29,6 +29,7 @@
 #include "DoWhileStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
+#include "IfExpr.h"
 #include "TryStmt.h"
 #include "WhileDoStmt.h"
 #include "build.h"
@@ -47,23 +48,27 @@ struct Converter {
 
   // Cache strings for special identifiers we might compare against.
   UniqueString atomicStr;
+  UniqueString byStr;
   UniqueString dmappedStr;
   UniqueString domainStr;
   UniqueString reduceAssignStr;
   UniqueString singleStr;
   UniqueString syncStr;
   UniqueString thisStr;
+  UniqueString tripleDotStr;
   UniqueString typeStr;
 
   // TODO: Figure out a better way to do this sort of caching.
   Converter(chpl::Context* context) : context(context) {
     atomicStr = UniqueString::build(context, "atomic");
+    byStr = UniqueString::build(context, "by");
     dmappedStr = UniqueString::build(context, "dmapped");
     domainStr = UniqueString::build(context, "domain");
     reduceAssignStr = UniqueString::build(context, "reduce=");
     singleStr = UniqueString::build(context, "single");
     syncStr = UniqueString::build(context, "sync");
     thisStr = UniqueString::build(context, "this");
+    tripleDotStr = UniqueString::build(context, "...");
     typeStr = UniqueString::build(context, "type");
   }
 
@@ -114,8 +119,8 @@ struct Converter {
 
   /// SimpleBlockLikes ///
 
-  BlockStmt* createBlockWithStmts(
-      uast::ASTListIteratorPair<uast::Expression> stmts) {
+  BlockStmt*
+  createBlockWithStmts(uast::ASTListIteratorPair<uast::Expression> stmts) {
     BlockStmt* block = new BlockStmt();
     for (auto stmt: stmts) {
       Expr* e = convertAST(stmt);
@@ -124,6 +129,20 @@ struct Converter {
       }
     }
     return block;
+  }
+
+  Expr*
+  singleExprFromBlock(uast::ASTListIteratorPair<uast::Expression> stmts) {
+    Expr* ret = nullptr;
+
+    for (auto stmt: stmts) {
+      if (ret != nullptr) return nullptr;
+      ret = convertAST(stmt);
+    }
+
+    assert(ret != nullptr);
+
+    return ret;
   }
 
   BlockStmt* visit(const uast::Begin* node) {
@@ -400,9 +419,10 @@ struct Converter {
     return nullptr;
   }
 
-  GotoStmt* visit(const uast::Break* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  BlockStmt* visit(const uast::Break* node) {
+    const char* name = node->target() ? node->target()->name().c_str()
+                                      : nullptr;
+    return buildGotoStmt(GOTO_BREAK, name);
   }
 
   CatchStmt* visit(const uast::Catch* node) {
@@ -432,19 +452,37 @@ struct Converter {
   }
 
   Expr* visit(const uast::Conditional* node) {
-    Expr* condExpr = toExpr(convertAST(node->condition()));
-    BlockStmt* thenBlock = createBlockWithStmts(node->thenStmts());
-    BlockStmt* elseBlock = nullptr;
+    Expr* ret = nullptr;
 
-    if (node->hasElseBlock())
-      elseBlock = createBlockWithStmts(node->elseStmts());
+    auto cond = toExpr(convertAST(node->condition()));
+    assert(cond);
 
-    return buildIfStmt(condExpr, thenBlock, elseBlock);
+    if (node->isExpressionLevel()) {
+      auto thenExpr = singleExprFromBlock(node->thenStmts());
+      assert(thenExpr);
+      auto elseExpr = singleExprFromBlock(node->elseStmts());
+      assert(elseExpr);
+      ret = new IfExpr(cond, thenExpr, elseExpr);
+
+    } else {
+      auto thenBlock = createBlockWithStmts(node->thenStmts());
+      assert(thenBlock);
+      auto elseBlock = node->hasElseBlock()
+            ? createBlockWithStmts(node->elseStmts())
+            : nullptr;
+
+      ret = buildIfStmt(cond, thenBlock, elseBlock);
+    }
+
+    assert(ret != nullptr);
+
+    return ret;
   }
 
-  GotoStmt* visit(const uast::Continue* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  BlockStmt* visit(const uast::Continue* node) {
+    const char* name = node->target() ? node->target()->name().c_str()
+                                      : nullptr;
+    return buildGotoStmt(GOTO_CONTINUE, name);
   }
 
   DefExpr* visit(const uast::Label* node) {
@@ -925,9 +963,11 @@ struct Converter {
     return ret;
   }
 
-  CallExpr* convertRegularBinaryOrUnaryOp(const uast::OpCall* node) {
-    CallExpr* ret = new CallExpr(node->op().c_str());
+  CallExpr* convertRegularBinaryOrUnaryOp(const uast::OpCall* node,
+                                          const char* name=nullptr) {
+    const char* opName = name ? name : node->op().c_str();
     int nActuals = node->numActuals();
+    CallExpr* ret = new CallExpr(opName);
 
     for (int i = 0; i < nActuals; i++) {
       Expr* actual = convertAST(node->actual(i));
@@ -941,11 +981,17 @@ struct Converter {
   Expr* visit(const uast::OpCall* node) {
     if (node->op() == dmappedStr) {
       return convertDmappedOp(node);
+    } else if (node->op() == tripleDotStr) {
+      INT_ASSERT(node->numActuals() == 1);
+      Expr* expr = convertAST(node->actual(0));
+      return new CallExpr(PRIM_TUPLE_EXPAND, expr);
     } else if (node->op() == reduceAssignStr) {
       INT_ASSERT(node->numActuals() == 2);
       Expr* lhs = convertAST(node->actual(0));
       Expr* rhs = convertAST(node->actual(1));
       return buildAssignment(lhs, rhs, PRIM_REDUCE_ASSIGN);
+    } else if (node->op() == byStr) {
+      return convertRegularBinaryOrUnaryOp(node, "chpl_by");
     } else {
       return convertRegularBinaryOrUnaryOp(node);
     }
@@ -984,7 +1030,7 @@ struct Converter {
     BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
 
     // Ignore linkage name, the new parser should have emitted an error
-    // about renaming.
+    // because multi-decls cannot be renamed.
     (void) node->linkageName();
 
     for (auto decl : node->decls()) {
@@ -1015,37 +1061,83 @@ struct Converter {
     return ret;
   }
 
-  Expr* visit(const uast::TupleDecl* node) {
-    BlockStmt* block = new BlockStmt(BLOCK_SCOPELESS);
+  // Right now components are one of: Variable, Formal, TupleDecl.
+  BlockStmt* convertTupleDeclComponents(const uast::TupleDecl* node) {
+    BlockStmt* ret = new BlockStmt(BLOCK_SCOPELESS);
 
-    bool saveInTupleDecl = inTupleDecl;
+    const bool saveInTupleDecl = inTupleDecl;
     inTupleDecl = true;
 
     for (auto decl : node->decls()) {
-      Expr* d = convertAST(decl);
-      INT_ASSERT(d);
-      if (DefExpr* def = toDefExpr(d)) {
+      Expr* conv = nullptr;
+
+      // Formals are converted into variables.
+      if (auto formal = decl->toFormal()) {
+        assert(formal->intent() == uast::Formal::DEFAULT_INTENT);
+        assert(!formal->initExpression());
+        assert(!formal->typeExpression());
+        conv = new DefExpr(new VarSymbol(formal->name().c_str()));
+
+      // Do not use the visitor because it produces a block statement.
+      } else if (auto var = decl->toVariable()) {
+        const bool useLinkageName = false;
+        conv = convertVariable(var, useLinkageName);
+
+      // It must be a tuple.
+      } else {
+        assert(decl->isTupleDecl());
+        conv = convertAST(decl);
+      }
+
+      INT_ASSERT(conv);
+
+      if (DefExpr* def = toDefExpr(conv)) {
         if (VarSymbol* var = toVarSymbol(def->sym)) {
           if (var->name[0] == '_' && var->name[1] == '\0') {
-            var->name = astr("chpl_tuple_blank");
-            var->cname = astr("chpl_tuple_blank");
+
+            // Old AST depends on this name to represent blank tuples.
+            const char* blank = astr("chpl__tuple_blank");
+            var->name = blank;
+            var->cname = blank;
           }
         }
       }
-      block->insertAtTail(d);
+
+      ret->insertAtTail(conv);
     }
 
-    Expr* typeExpr = convertExprOrNull(node->typeExpression());
-    Expr* initExpr = convertExprOrNull(node->initExpression());
-
-    BlockStmt* ret = buildTupleVarDeclStmt(block, typeExpr, initExpr);
-
     inTupleDecl = saveInTupleDecl;
+
+    return ret;
+  }
+
+  // This builds a statement. Arguments use 'convertTupleDeclComponents'.
+  BlockStmt* visit(const uast::TupleDecl* node) {
+    auto tuple = convertTupleDeclComponents(node);
+    auto typeExpr = convertExprOrNull(node->typeExpression());
+    auto initExpr = convertExprOrNull(node->initExpression());
+
+    BlockStmt* ret = buildTupleVarDeclStmt(tuple, typeExpr, initExpr);
+
+    // Move the block info around like in 'buildVarDecls'.
+    if (auto info = ret->blockInfoGet()) {
+      INT_ASSERT(info->isNamed("_check_tuple_var_decl"));
+      SymExpr* tuple = toSymExpr(info->get(1));
+      tuple->symbol()->defPoint->insertAfter(info);
+      ret->blockInfoSet(NULL);
+    }
+
+    // Add a PRIM_END_OF_STATEMENT.
+    if (!fDocs) {
+      assert(!inTupleDecl);
+      CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+      ret->insertAtTail(end);
+    }
+
     return ret;
   }
 
   /// NamedDecls ///
-
   Expr* visit(const uast::EnumElement* node) {
     INT_FATAL("TODO");
     return nullptr;
@@ -1104,14 +1196,46 @@ struct Converter {
 
     // Add the formals
     if (node->numFormals() > 0) {
-      for (auto formal : node->formals()) {
-        DefExpr* def = visit(formal);
-        INT_ASSERT(def);
-        if (formal->name() != thisStr) {
-          buildFunctionFormal(fn, def); // adds it to the list
-        } else if (!node->isPrimaryMethod()) {
-          thisTag = convertFormalIntent(formal->intent());
-          receiverType = convertExprOrNull(formal->typeExpression());
+      for (auto decl : node->formals()) {
+        DefExpr* conv = nullptr;
+
+        // A "normal" formal.
+        if (auto formal = decl->toFormal()) {
+          if (formal->name() != thisStr) {
+            conv = toDefExpr(convertAST(formal));
+            assert(conv);
+          } else if (!node->isPrimaryMethod()) {
+            thisTag = convertFormalIntent(formal->intent());
+            receiverType = convertExprOrNull(formal->typeExpression());
+          }
+
+        // A varargs formal.
+        } else if (auto formal = decl->toVarArgFormal()) {
+          assert(formal->name() != thisStr);
+          conv = toDefExpr(convertAST(formal));
+          assert(conv);
+
+        // A tuple decl, where compontents are formals or tuple decls.
+        } else if (auto formal = decl->toTupleDecl()) {
+          auto castIntent = (uast::Formal::Intent)formal->intentOrKind();
+          IntentTag tag = convertFormalIntent(castIntent);
+          BlockStmt* tuple = convertTupleDeclComponents(formal);
+          assert(tuple);
+
+          Expr* type = convertExprOrNull(formal->typeExpression());
+          Expr* init = convertExprOrNull(formal->initExpression());
+
+          // TODO: Move this specialization into visitor? We can just
+          // detect if components are formals.
+          conv = buildTupleArgDefExpr(tag, tuple, type, init);
+          assert(conv);
+        } else {
+          assert(0 == "Not handled yet!");
+        }
+
+        // Attaches def to function's formal list.
+        if (conv) {
+          buildFunctionFormal(fn, conv);
         }
       }
     }
@@ -1125,8 +1249,6 @@ struct Converter {
     }
 
     RetTag retTag = convertRetTag(node->returnIntent());
-
-    // TODO: handle specified cname for extern/export functions
 
     if (node->kind() == uast::Function::ITER) {
       if (fn->hasFlag(FLAG_EXTERN))
@@ -1253,10 +1375,10 @@ struct Converter {
       }
     }
 
-    Expr* varargsVariable = nullptr; // TODO: handle varargs
-
     return buildArgDefExpr(intentTag, node->name().c_str(),
-                           typeExpr, initExpr, varargsVariable);
+                           typeExpr,
+                           initExpr,
+                           /*varargsVariable*/ nullptr);
   }
 
   ShadowVarPrefix convertTaskVarIntent(const uast::TaskVar* node) {
@@ -1276,6 +1398,37 @@ struct Converter {
   Expr* visit(const uast::TaskVar* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
+  }
+
+  Expr* visit(const uast::VarArgFormal* node) {
+    IntentTag intentTag = convertFormalIntent(node->intent());
+
+    Expr* typeExpr = nullptr;
+    Expr* initExpr = nullptr;
+
+    INT_ASSERT(!node->initExpression());
+
+    if (node->typeExpression()) {
+      if (auto bkt = node->typeExpression()->toBracketLoop()) {
+        typeExpr = convertArrayType(bkt);
+      } else {
+        typeExpr = convertAST(node->typeExpression());
+      }
+    }
+
+    Expr* varargsVariable = convertExprOrNull(node->count());
+    if (!varargsVariable) {
+      varargsVariable = new SymExpr(gUninstantiated);
+    }
+
+    if (DefExpr* def = toDefExpr(varargsVariable)) {
+      def->sym->addFlag(FLAG_PARAM);
+    }
+
+    return buildArgDefExpr(intentTag, node->name().c_str(),
+                           typeExpr,
+                           initExpr,
+                           varargsVariable);
   }
 
   ShadowVarSymbol* convertTaskVar(const uast::TaskVar* node) {
@@ -1382,7 +1535,7 @@ struct Converter {
 
   // Returns a DefExpr that has not yet been inserted into the tree.
   DefExpr* convertVariable(const uast::Variable* node,
-                                      bool useLinkageName) {
+                           bool useLinkageName) {
     auto varSym = new VarSymbol(tupleVariableName(node->name().c_str()));
 
     // Adjust the variable according to its kind

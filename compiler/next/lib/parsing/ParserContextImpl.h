@@ -121,10 +121,16 @@ owned<Expression> ParserContext::consumeVarDeclLinkageName(void) {
   return toOwned(ret);
 }
 
+bool ParserContext::noteIsBuildingFormal(bool isBuildingFormal) {
+  this->isBuildingFormal = isBuildingFormal;
+  return this->isBuildingFormal;
+}
+
 bool ParserContext::noteIsVarDeclConfig(bool isConfig) {
   this->isVarDeclConfig = isConfig;
   return this->isVarDeclConfig;
 }
+
 YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
   if (this->declStartLocation.first_line == 0)
     return curLoc;
@@ -138,6 +144,7 @@ void ParserContext::resetDeclState() {
   this->isVarDeclConfig = false;
   YYLTYPE emptyLoc = {0};
   this->declStartLocation = emptyLoc;
+  this->isBuildingFormal = false;
 }
 
 void ParserContext::enterScope(asttags::ASTTag tag, UniqueString name) {
@@ -612,6 +619,46 @@ ParserContext::buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
   return node.release();
 }
 
+Expression* ParserContext::
+buildTupleComponent(YYLTYPE location, PODUniqueString name) {
+  Expression* ret = nullptr;
+
+  if (isBuildingFormal) {
+    auto node = Formal::build(builder, convertLocation(location), name,
+                              Formal::DEFAULT_INTENT,
+                              /*typeExpression*/ nullptr,
+                              /*initExpression*/ nullptr);
+    ret = node.release();
+  } else {
+    auto node = Variable::build(builder, convertLocation(location), name,
+                                visibility,
+                                linkage,
+                                consumeVarDeclLinkageName(),
+                                varDeclKind,
+                                isVarDeclConfig,
+                                currentScopeIsAggregate(),
+                                /*typeExpression*/ nullptr,
+                                /*initExpression*/ nullptr);
+    ret = node.release();
+  }
+
+  assert(ret != nullptr);
+
+  return ret;
+}
+
+Expression* ParserContext::
+buildTupleComponent(YYLTYPE location, ParserExprList* exprs) {
+  auto node = TupleDecl::build(builder, convertLocation(location),
+                               this->visibility,
+                               this->linkage,
+                               (TupleDecl::IntentOrKind) this->varDeclKind,
+                               this->consumeList(exprs),
+                               /*typeExpression*/ nullptr,
+                               /*initExpression*/ nullptr);
+  return node.release();
+}
+
 owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                                               const Expression* e) {
   auto convLoc = convertLocation(location);
@@ -642,7 +689,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
 
     return TupleDecl::build(builder, convLoc, Decl::DEFAULT_VISIBILITY,
                             Decl::DEFAULT_LINKAGE,
-                            Variable::INDEX,
+                            (TupleDecl::IntentOrKind) Variable::INDEX,
                             std::move(elements),
                             /*typeExpression*/ nullptr,
                             /*initExpression*/ nullptr);

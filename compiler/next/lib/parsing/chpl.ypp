@@ -607,7 +607,7 @@
 %type <expr> let_expr ifvar
 %type <uniqueStr> reduce_scan_op_expr
 %type <expr> reduce_expr scan_expr opt_init_expr
-%type <expr> opt_init_type var_arg_expr
+%type <expr> opt_init_type formal_var_arg_expr
 %type <expr> opt_try_expr opt_expr
 %type <expr> tuple_component tuple_var_decl_component
 %type <expr> formal
@@ -1084,7 +1084,6 @@ use_renames_ls:
     $$ = context->appendList($1, node);
   }
 ;
-
 
 opt_only_ls:
   /* nothing */   { $$ = nullptr; }
@@ -2083,9 +2082,11 @@ enum_item:
 
 lambda_decl_expr:
   TLAMBDA req_formal_ls opt_ret_tag opt_type opt_lifetime_where function_body_stmt
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    // TODO (dlongnecke): Leave this unimplemented for now? Since we will
+    // be addressing FCFs in 1.26...
+    $$ = TODOEXPR(@$);
+  }
 ;
 
 linkage_spec_empty:
@@ -2248,6 +2249,12 @@ assignop_ident:
 | TASSIGNSL
 ;
 
+formal_var_arg_expr:
+  TDOTDOTDOT             { $$ = nullptr; }
+| TDOTDOTDOT expr        { $$ = $2; }
+| TDOTDOTDOT query_expr  { $$ = $2; }
+;
+
 opt_formal_ls:
                      { $$ = context->parenlessMarker; }
 | TLP formal_ls TRP  { $$ = $2; }
@@ -2269,25 +2276,57 @@ formal_ls:
 
 formal:
   opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = Formal::build(BUILDER, LOC(@$), $2, $1,
-                         toOwned($3), toOwned($4)).release(); }
+  {
+    $$ = Formal::build(BUILDER, LOC(@$), $2, $1,
+                       toOwned($3),
+                       toOwned($4)).release();
+    context->noteIsBuildingFormal(false);
+  }
 | pragma_ls opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = TODOEXPR(@$); }
-| opt_intent_tag ident_def opt_formal_type var_arg_expr
-    { $$ = TODOEXPR(@$); }
-| pragma_ls opt_intent_tag ident_def opt_formal_type var_arg_expr
-    { $$ = TODOEXPR(@$); }
-| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
-    { $$ = TODOEXPR(@$); }
-| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr
-    {
-      $$ = ERROR(@$, "variable-length argument may not be grouped in a tuple");
-    }
+  {
+    $$ = TODOEXPR(@$);
+  }
+| opt_intent_tag ident_def opt_formal_type formal_var_arg_expr
+  {
+    auto node = VarArgFormal::build(BUILDER, LOC(@$), $2, $1,
+                                    toOwned($3),
+                                    toOwned($4));
+    context->noteIsBuildingFormal(false);
+    $$ = node.release();
+  }
+| pragma_ls opt_intent_tag ident_def opt_formal_type formal_var_arg_expr
+  {
+    $$ = TODOEXPR(@$);
+  }
+| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type
+  opt_init_expr
+  {
+    auto node = TupleDecl::build(BUILDER, LOC(@$), context->visibility,
+                                 context->linkage,
+                                 ((TupleDecl::IntentOrKind) $1),
+                                 context->consumeList($3),
+                                 toOwned($5),
+                                 toOwned($6));
+    context->noteIsBuildingFormal(false);
+    $$ = node.release();
+  }
+| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type
+  formal_var_arg_expr
+  {
+    $$ = ERROR(@$, "variable-length argument may not be grouped in a tuple");
+  }
 ;
 
 opt_intent_tag:
-                      { $$ = Formal::DEFAULT_INTENT; }
-| required_intent_tag { $$ = $1; }
+  {
+    context->noteIsBuildingFormal(true);
+    $$ = Formal::DEFAULT_INTENT;
+  }
+| required_intent_tag
+  {
+    context->noteIsBuildingFormal(true);
+    $$ = $1;
+  }
 ;
 
 required_intent_tag:
@@ -2347,11 +2386,6 @@ query_expr:
   }
 ;
 
-var_arg_expr:
-  TDOTDOTDOT             { $$ = TODOEXPR(@$); }
-| TDOTDOTDOT expr        { $$ = $2; }
-| TDOTDOTDOT query_expr  { $$ = TODOEXPR(@$); }
-;
 
 opt_lifetime_where:
   { $$ = makeWhereAndLifetime(nullptr, nullptr); }
@@ -2513,10 +2547,11 @@ var_decl_stmt_inner:
     }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     {
+      auto intentOrKind = (TupleDecl::IntentOrKind) context->varDeclKind;
       auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
                                         context->visibility,
                                         context->linkage,
-                                        context->varDeclKind,
+                                        intentOrKind,
                                         context->consumeList($2),
                                         toOwned($4), toOwned($5));
       $$ = STMT(@1, tupleDecl.release());
@@ -2526,44 +2561,17 @@ var_decl_stmt_inner:
 
 tuple_var_decl_component:
   TUNDERSCORE
-    {
-      auto varDecl = Variable::build(BUILDER, LOC(@$), $1,
-                                     context->visibility,
-                                     context->linkage,
-                                     context->consumeVarDeclLinkageName(),
-                                     context->varDeclKind,
-                                     context->isVarDeclConfig,
-                                     context->currentScopeIsAggregate(),
-                                     /*typeExpression*/ nullptr,
-                                     /*initExpression*/ nullptr);
-      $$ = varDecl.release();
-    }
-
+  {
+    $$ = context->buildTupleComponent(@$, $1);
+  }
 | ident_def
-    {
-      auto varDecl = Variable::build(BUILDER, LOC(@$), $1,
-                                     context->visibility,
-                                     context->linkage,
-                                     context->consumeVarDeclLinkageName(),
-                                     context->varDeclKind,
-                                     context->isVarDeclConfig,
-                                     context->currentScopeIsAggregate(),
-                                     /*typeExpression*/ nullptr,
-                                     /*initExpression*/ nullptr);
-      $$ = varDecl.release();
-    }
-
+  {
+    $$ = context->buildTupleComponent(@$, $1);
+  }
 | TLP tuple_var_decl_stmt_inner_ls TRP
-    {
-      auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
-                                        context->visibility,
-                                        context->linkage,
-                                        context->varDeclKind,
-                                        context->consumeList($2),
-                                        /*typeExpression*/ nullptr,
-                                        /*initExpression*/ nullptr);
-      $$ = tupleDecl.release();
-    }
+  {
+    $$ = context->buildTupleComponent(@$, $2);
+  }
 ;
 
 tuple_var_decl_stmt_inner_ls:
@@ -2944,7 +2952,15 @@ for_expr:
 
 cond_expr:
   TIF expr TTHEN expr TELSE expr
-    { $$ = TODOEXPR(@$); }
+  {
+    auto node  = Conditional::build(BUILDER, LOC(@$), toOwned($2),
+                                    BlockStyle::IMPLICIT,
+                                    context->consumeToBlock(@4, $4),
+                                    BlockStyle::IMPLICIT,
+                                    context->consumeToBlock(@6, $6),
+                                    /*isExpressionLevel*/ true);
+    $$ = node.release();
+  }
 /* MPF: it would be nice to match TIF expr TTHEN expr but
    the attempt below leads to reduce-reduce conflicts:
       TIF expr TTHEN expr %prec TNOELSE
@@ -3113,7 +3129,9 @@ expr:
 | let_expr
 | ifc_constraint
 | TLP TDOTDOTDOT expr TRP
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildUnaryOp(@$, $2, $3);
+  }
 | expr TCOLON expr
   {
     $$ = context->buildBinOp(@$, $1, $2, $3);

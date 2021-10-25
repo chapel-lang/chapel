@@ -97,6 +97,7 @@ target_sources(libchplcomp-obj
                UintLiteral.cpp
                Use.cpp
                Union.cpp
+               VarArgFormal.cpp
                Variable.cpp
                VarLikeDecl.cpp
                VisibilityClause.cpp

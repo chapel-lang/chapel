@@ -194,6 +194,8 @@ class Conditional final : public Expression {
       return nullptr;
 
     auto ret = child(elseBodyChildNum_);
+    assert(ret->isBlock());
+
     return (const Block*) ret;
   }
 
@@ -204,7 +206,8 @@ class Conditional final : public Expression {
     const Block* elseB = elseBlock();
 
     if (elseB == nullptr) {
-      return ASTListIteratorPair<Expression>(children_.end(), children_.end());
+      return ASTListIteratorPair<Expression>(children_.end(),
+                                             children_.end());
     }
 
     return elseB->stmts();

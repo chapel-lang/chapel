@@ -43,7 +43,7 @@ static void test1(Parser* parser) {
   assert(mod);
   assert(mod->numStmts() == 1);
   auto tup = mod->stmt(0)->toTupleDecl();
-  assert(tup->kind() == Variable::VAR);
+  assert(tup->intentOrKind() == TupleDecl::VAR);
 
   assert(tup->numDecls() == 2);
   auto x = tup->decl(0)->toVariable();
@@ -70,7 +70,7 @@ static void test2(Parser* parser) {
   assert(mod);
   assert(mod->numStmts() == 1);
   auto tup = mod->stmt(0)->toTupleDecl();
-  assert(tup->kind() == Variable::CONST);
+  assert(tup->intentOrKind() == TupleDecl::CONST);
 
   assert(tup->numDecls() == 2);
   auto x = tup->decl(0)->toVariable();
@@ -95,7 +95,7 @@ static void test3(Parser* parser) {
   assert(mod);
   assert(mod->numStmts() == 1);
   auto tup = mod->stmt(0)->toTupleDecl();
-  assert(tup->kind() == Variable::VAR);
+  assert(tup->intentOrKind() == TupleDecl::VAR);
 
   assert(tup->numDecls() == 2);
   auto x = tup->decl(0)->toVariable();
@@ -120,7 +120,7 @@ static void test4(Parser* parser) {
   assert(mod);
   assert(mod->numStmts() == 1);
   auto tup = mod->stmt(0)->toTupleDecl();
-  assert(tup->kind() == Variable::VAR);
+  assert(tup->intentOrKind() == TupleDecl::VAR);
 
   assert(tup->numDecls() == 2);
   auto x = tup->decl(0)->toVariable();
@@ -146,7 +146,7 @@ static void test5(Parser* parser) {
   assert(mod);
   assert(mod->numStmts() == 1);
   auto tup = mod->stmt(0)->toTupleDecl();
-  assert(tup->kind() == Variable::VAR);
+  assert(tup->intentOrKind() == TupleDecl::VAR);
 
   assert(tup->numDecls() == 2);
   auto x = tup->decl(0)->toVariable();
@@ -171,7 +171,7 @@ static void check6(Parser* parser, const char* path, const char* str) {
   assert(mod);
   assert(mod->numStmts() == 1);
   auto tup = mod->stmt(0)->toTupleDecl();
-  assert(tup->kind() == Variable::VAR);
+  assert(tup->intentOrKind() == TupleDecl::VAR);
 
   // some variation on "var (x, (y, z)):typ = tup;"
   assert(tup->numDecls() == 2);
@@ -255,7 +255,7 @@ static void test7(Parser* parser) {
   auto multi = mod->stmt(0)->toMultiDecl();
 
   auto tup = multi->declOrComment(0)->toTupleDecl();
-  assert(tup->kind() == Variable::VAR);
+  assert(tup->intentOrKind() == TupleDecl::VAR);
 
   assert(tup->numDecls() == 2);
   auto x = tup->decl(0)->toVariable();

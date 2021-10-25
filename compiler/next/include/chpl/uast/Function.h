@@ -209,14 +209,15 @@ class Function final : public NamedDecl {
 
   /**
    Return a way to iterate over the formals, including the method
-   receiver, if present, as the first formal.
+   receiver, if present, as the first formal. This iterator may yield
+   nodes of type Formal, TupleDecl, or VarArgFormal.
    */
-  ASTListIteratorPair<Formal> formals() const {
+  ASTListIteratorPair<Decl> formals() const {
     if (numFormals() == 0) {
-      return ASTListIteratorPair<Formal>(children_.end(), children_.end());
+      return ASTListIteratorPair<Decl>(children_.end(), children_.end());
     } else {
       auto start = children_.begin() + formalsChildNum_;
-      return ASTListIteratorPair<Formal>(start, start + numFormals_);
+      return ASTListIteratorPair<Decl>(start, start + numFormals_);
     }
   }
 
@@ -230,13 +231,12 @@ class Function final : public NamedDecl {
   /**
    Return the i'th formal
    */
-  const Formal* formal(int i) const {
+  const Decl* formal(int i) const {
     assert(numFormals_ > 0 && formalsChildNum_ >= 0);
     assert(0 <= i && i < numFormals_);
-    const ASTNode* ast = this->child(formalsChildNum_ + i);
-    assert(ast->isFormal());
-    const Formal* f = (const Formal*) ast;
-    return f;
+    auto ret = this->child(formalsChildNum_ + i);
+    assert(ret->isFormal() || ret->isVarArgFormal() || ret->isTupleDecl());
+    return (const Decl*)ret;
   }
 
   /**

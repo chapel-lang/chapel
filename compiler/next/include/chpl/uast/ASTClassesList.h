@@ -148,6 +148,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       AST_BEGIN_SUBCLASSES(VarLikeDecl)
         AST_NODE(Formal)                   // old AST: ArgSymbol
         AST_NODE(TaskVar)                  // old AST: ShadowVarSymbol
+        AST_NODE(VarArgFormal)             // old AST: ArgSymbol
         AST_NODE(Variable)                 // old AST: VarSymbol
       AST_END_SUBCLASSES(VarLikeDecl)
 

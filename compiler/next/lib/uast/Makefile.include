@@ -100,6 +100,7 @@ NEXT_UAST_SRCS =                                 \
   UintLiteral.cpp \
   Use.cpp \
   Union.cpp \
+  VarArgFormal.cpp \
   Variable.cpp \
   VarLikeDecl.cpp \
   VisibilityClause.cpp \

@@ -84,6 +84,7 @@
 #include "chpl/uast/UintLiteral.h"
 #include "chpl/uast/Use.h"
 #include "chpl/uast/Union.h"
+#include "chpl/uast/VarArgFormal.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/uast/VisibilityClause.h"
 #include "chpl/uast/When.h"
