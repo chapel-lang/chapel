@@ -34,37 +34,6 @@
 // individual primitives are not documented in this file
 // but rather in AST/primitive.cpp
 
-
-
-// operators -- TODO -- have thing refer to this thing
-/*
-PRIM(POW,
-PRIM(MULT,
-PRIM(DIV,
-PRIM(MOD,
-PRIM(ADD,
-PRIM(SUBTRACT,
-PRIM(LSH,
-PRIM(RSH,
-PRIM(LESS,
-PRIM(LESS_EQUAL,
-PRIM(GREATER,
-PRIM(GREATER_EQUAL,
-PRIM(EQUAL,
-PRIM(NOT_EQUAL,
-PRIM(AND,
-PRIM(XOR,
-PRIM(OR,
-PRIM(LOGICAL_AND,
-PRIM(LOGICAL_OR,
-PRIM(PLUS,
-PRIM(UNARY_MINUS,
-PRIM(UNARY_MINUS,
-PRIM(NOT,
-PRIM(LOGICAL_NOT
-*/
-
-
 // behavior for individual primitives are not documented in this file
 // but rather in AST/primitive.cpp
 
