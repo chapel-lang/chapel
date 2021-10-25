@@ -612,7 +612,7 @@ PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
 /* Primitive names appear both in PrimOpsList as well as
    here. This routine checks that the name matches in both.
  */
-void checkPrimName(PrimitiveTag tag, const char* name) {
+static void checkPrimName(PrimitiveTag tag, const char* name) {
   // Check name matches the string in PrimOpsList.h
   switch (tag) {
 #define PRIMITIVE(macroTag, macroName) \
