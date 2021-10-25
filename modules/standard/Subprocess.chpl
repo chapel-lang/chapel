@@ -261,12 +261,6 @@ module Subprocess {
       }
     }
 
-    pragma "no doc"
-    proc exit_status ref {
-      compilerWarning("subprocess.exit_status is deprecated. Use subprocess.exitCode instead.");
-      return exitCode;
-    }
-
     /*
        Access the stdin pipe for the subprocess. The parent process
        can write to the subprocess through this pipe if the subprocess
@@ -706,19 +700,6 @@ module Subprocess {
     if err then try ioerror(err, "in subprocess.poll");
   }
 
-  // documented in the throws version
-  pragma "no doc"
-  proc subprocess.poll(out error:syserr) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-    try {
-      this.poll();
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-  }
-
   /*
     Wait for a child process to complete. After this function
     returns, :attr:`~subprocess.running` is `false` and
@@ -853,19 +834,6 @@ module Subprocess {
     }
   }
 
-  // documented in the throws version
-  pragma "no doc"
-  proc subprocess.wait(out error:syserr, buffer=true) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-    try {
-      this.wait(buffer);
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-  }
-
   /*
 
     Wait for a child process to complete. After this function
@@ -923,19 +891,6 @@ module Subprocess {
     if err then try ioerror(err, "in subprocess.communicate");
   }
 
-  // documented in the throws version
-  pragma "no doc"
-  proc subprocess.communicate(out error:syserr) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-    try {
-      this.communicate();
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-  }
-
   /*
     Close any open channels and pipes for interacting with a subprocess.  This
     function does not wait for the subprocess to complete.  Note that it is
@@ -979,19 +934,6 @@ module Subprocess {
       }
     }
     if err then try ioerror(err, "in subprocess.close");
-  }
-
-  // documented in the throws version
-  pragma "no doc"
-  proc subprocess.close(out error:syserr) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-    try {
-      this.close();
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
   }
 
   // Signals as required by POSIX.1-2008, 2013 edition
@@ -1090,19 +1032,6 @@ module Subprocess {
     if err then try ioerror(err, "in subprocess.send_signal, with signal " + signal:string);
   }
 
-  // documented in the throws version
-  pragma "no doc"
-  proc subprocess.send_signal(out error:syserr, signal: int) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-    try {
-      this.send_signal(signal);
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-  }
-
   /*
     Unconditionally kill the child process.  The associated signal,
     `SIGKILL`, cannot be caught by the child process. See
@@ -1113,19 +1042,6 @@ module Subprocess {
     try this.send_signal(SIGKILL);
   }
 
-  // documented in the out error version
-  pragma "no doc"
-  proc subprocess.kill(out error:syserr) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-    try {
-      this.kill();
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
-  }
-
   /*
     Request termination of the child process.  The associated signal,
     `SIGTERM`, may be caught and handled by the child process. See
@@ -1134,18 +1050,5 @@ module Subprocess {
   proc subprocess.terminate() throws {
     try _throw_on_launch_error();
     try this.send_signal(SIGTERM);
-  }
-
-  // documented in the out error version
-  pragma "no doc"
-  proc subprocess.terminate(out error:syserr) {
-    compilerWarning("'out error: syserr' pattern has been deprecated, use 'throws' function instead");
-    try {
-      this.terminate();
-    } catch e: SystemError {
-      error = e.err;
-    } catch {
-      error = EINVAL;
-    }
   }
 }
