@@ -1552,7 +1552,12 @@ Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
                                                 PODUniqueString baseType,
                                                 Expression* subType) {
   auto maybeNamedActuals = new MaybeNamedActualList();
-  MaybeNamedActual actual = { .expr=subType, .name=baseType };
+
+  MaybeNamedActual actual = {
+    .expr=subType,
+    .name=PODUniqueString::build()
+  };
+
   maybeNamedActuals->push_back(actual);
   return buildTypeConstructor(location, baseType, maybeNamedActuals);
 }

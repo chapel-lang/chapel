@@ -48,28 +48,42 @@ struct Converter {
 
   // Cache strings for special identifiers we might compare against.
   UniqueString atomicStr;
+  UniqueString borrowedStr;
   UniqueString byStr;
   UniqueString dmappedStr;
   UniqueString domainStr;
+  UniqueString ownedStr;
+  UniqueString questionStr;
   UniqueString reduceAssignStr;
+  UniqueString sharedStr;
   UniqueString singleStr;
   UniqueString syncStr;
   UniqueString thisStr;
   UniqueString tripleDotStr;
   UniqueString typeStr;
+  UniqueString unmanagedStr;
+
+  UniqueString intern(const char* str) {
+    return UniqueString::build(context, str);
+  }
 
   // TODO: Figure out a better way to do this sort of caching.
   Converter(chpl::Context* context) : context(context) {
-    atomicStr = UniqueString::build(context, "atomic");
-    byStr = UniqueString::build(context, "by");
-    dmappedStr = UniqueString::build(context, "dmapped");
-    domainStr = UniqueString::build(context, "domain");
-    reduceAssignStr = UniqueString::build(context, "reduce=");
-    singleStr = UniqueString::build(context, "single");
-    syncStr = UniqueString::build(context, "sync");
-    thisStr = UniqueString::build(context, "this");
-    tripleDotStr = UniqueString::build(context, "...");
-    typeStr = UniqueString::build(context, "type");
+    atomicStr         = intern("atomic");
+    borrowedStr       = intern("borrowed");
+    byStr             = intern("by");
+    dmappedStr        = intern("dmapped");
+    domainStr         = intern("domain");
+    ownedStr          = intern("owned");
+    questionStr       = intern("?");
+    reduceAssignStr   = intern("reduce=");
+    sharedStr         = intern("shared");
+    singleStr         = intern("single");
+    syncStr           = intern("sync");
+    thisStr           = intern("this");
+    tripleDotStr      = intern("...");
+    typeStr           = intern("type");
+    unmanagedStr      = intern("unmanaged");
   }
 
   Expr* convertAST(const uast::ASTNode* node);
@@ -113,7 +127,19 @@ struct Converter {
     return new CallExpr(PRIM_ERROR);
   }
 
-  UnresolvedSymExpr* visit(const uast::Identifier* node) {
+  Expr* visit(const uast::Identifier* node) {
+    auto name = node->name();
+
+    if (name == questionStr) {
+      return new SymExpr(gUninstantiated);
+    } else if (name == unmanagedStr) {
+      return new SymExpr(dtUnmanaged->symbol);
+    } else if (name == ownedStr) {
+      return new UnresolvedSymExpr("_owned");
+    } else if (name == sharedStr) {
+      return new UnresolvedSymExpr("_shared");
+    }
+
     return new UnresolvedSymExpr(node->name().c_str());
   }
 
@@ -201,9 +227,18 @@ struct Converter {
 
   /// Expressions ///
 
-  CallExpr* visit(const uast::Delete* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  BlockStmt* visit(const uast::Delete* node) {
+    auto actuals = new CallExpr(PRIM_ACTUALS_LIST);
+
+    for (auto expr : node->exprs()) {
+      actuals->insertAtTail(convertAST(expr));
+    }
+
+    auto del = new CallExpr("chpl__delete", actuals);
+    auto ret = new BlockStmt(BLOCK_SCOPELESS);
+    ret->insertAtTail(del);
+
+    return ret;
   }
 
   Expr* visit(const uast::Dot* node) {
@@ -242,31 +277,40 @@ struct Converter {
   }
 
   CallExpr* visit(const uast::New* node) {
-    Expr* newedType = convertAST(node->typeExpression());
-    CallExpr* typeCall = new CallExpr(newedType);
-
-    switch (node->management()) {
-      case uast::New::DEFAULT_MANAGEMENT:
-        return new CallExpr(PRIM_NEW, typeCall);
-      case uast::New::OWNED:
-        return new CallExpr(PRIM_NEW, typeCall,
-                            new NamedExpr(astr_chpl_manager,
-                                          new SymExpr(dtOwned->symbol)));
-      case uast::New::SHARED:
-        return new CallExpr(PRIM_NEW, typeCall,
-                            new NamedExpr(astr_chpl_manager,
-                                          new SymExpr(dtShared->symbol)));
-      case uast::New::UNMANAGED:
-        return new CallExpr(PRIM_NEW, typeCall,
-                            new NamedExpr(astr_chpl_manager,
-                                          new SymExpr(dtUnmanaged->symbol)));
-      case uast::New::BORROWED:
-        return new CallExpr(PRIM_NEW, typeCall,
-                            new NamedExpr(astr_chpl_manager,
-                                          new SymExpr(dtBorrowed->symbol)));
-    }
-    INT_FATAL("case not handled");
+    INT_FATAL("Should not be called directly!");
     return nullptr;
+  }
+
+  CallExpr* convertNewManagement(const uast::New* node) {
+    auto ret = new CallExpr(PRIM_NEW);
+
+    if (node->management() == uast::New::DEFAULT_MANAGEMENT) {
+      return ret;
+    }
+
+    Symbol* symManager = nullptr;
+    switch (node->management()) {
+      case uast::New::OWNED: symManager = dtOwned->symbol; break;
+      case uast::New::SHARED: symManager = dtShared->symbol; break;
+      case uast::New::UNMANAGED: symManager = dtUnmanaged->symbol; break;
+      case uast::New::BORROWED: symManager = dtBorrowed->symbol; break;
+      default: assert(0 == "Not handled!"); break;
+    }
+
+    assert(symManager);
+
+    /*
+    2238 | TNEW TUNMANAGED
+    2239     { $$ = new CallExpr(PRIM_NEW,
+    2240              new NamedExpr(astr_chpl_manager,
+    2241                            new SymExpr(dtUnmanaged->symbol))); }
+    */
+
+    auto seManager = new SymExpr(symManager);
+    auto managerExpr = new NamedExpr(astr_chpl_manager, seManager);
+    ret->insertAtTail(managerExpr);
+
+    return ret;
   }
 
   std::pair<Expr*, Expr*> convertAs(const uast::As* node) {
@@ -547,6 +591,7 @@ struct Converter {
     }
   }
 
+  // TODO (dlongnecke): Just replace these with Identifier?
   DefExpr* visit(const uast::TypeQuery* node) {
     const char* name = node->name().c_str();
     return new DefExpr(new VarSymbol(&(name[1])));
@@ -885,16 +930,22 @@ struct Converter {
     Expr* ret = nullptr;
 
     if (auto ident = node->toIdentifier()) {
-      if (ident->name() == atomicStr) {
+      auto name = ident->name();
+
+      if (name == atomicStr) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
-      } else if (ident->name() == singleStr) {
+      } else if (name == singleStr) {
         ret = new UnresolvedSymExpr("_singlevar");
-      } else if (ident->name() == syncStr) {
+      } else if (name == syncStr) {
         ret = new UnresolvedSymExpr("_syncvar");
-      } else if (ident->name() == domainStr) {
+      } else if (name == domainStr) {
         auto base = "chpl__buildDomainRuntimeType";
         auto dist = new UnresolvedSymExpr("defaultDist");
         ret = new CallExpr(base, dist);
+      } else if (name == unmanagedStr) {
+        ret = new CallExpr(PRIM_TO_UNMANAGED_CLASS_CHECKED);
+      } else if (name == borrowedStr) {
+        ret = new CallExpr(PRIM_TO_BORROWED_CLASS_CHECKED);
       }
     }
 
@@ -908,23 +959,25 @@ struct Converter {
     CallExpr* ret = nullptr;
     CallExpr* addArgsTo = nullptr;
 
-    if (calledExpression->isNew()) {
-      Expr* calledExpr = convertCalledKeyword(calledExpression);
-      if (!calledExpr) {
-        calledExpr = convertAST(calledExpression);
+    if (auto newExpression = calledExpression->toNew()) {
+      CallExpr* newExprStart = convertNewManagement(newExpression);
+      assert(newExprStart);
+
+      // TODO: Need to check for special identifiers?
+      Expr* typeExpr = convertAST(newExpression->typeExpression());
+
+      // Should only generate these for now.
+      if (!isSymExpr(typeExpr) && !isUnresolvedSymExpr(typeExpr)) {
+        assert(0 == "Not handled yet!");
       }
 
-      // we have (call PRIM_NEW (call C) mgmt)
-      // and need to add the arguments to the (call C)
-      CallExpr* primNew = toCallExpr(calledExpr);
-      INT_ASSERT(primNew->isPrimitive(PRIM_NEW));
-      CallExpr* typeCall = toCallExpr(primNew->get(1));
-      INT_ASSERT(typeCall);
+      auto initializerCall = new CallExpr(typeExpr);
+      newExprStart->insertAtTail(initializerCall);
 
-      ret = primNew;
-      addArgsTo = typeCall;
+      ret = newExprStart;
+      addArgsTo = initializerCall;
 
-    // Some keywords can be converted to calls.
+    // If a keyword produces a call, just use that instead of making one.
     } else if (Expr* expr = convertCalledKeyword(calledExpression)) {
       ret = isCallExpr(expr) ? toCallExpr(expr) : new CallExpr(expr);
       addArgsTo = ret;
@@ -933,7 +986,7 @@ struct Converter {
       addArgsTo = ret;
     }
 
-    int nActuals = node->numActuals();
+    const int nActuals = node->numActuals();
     for (int i = 0; i < nActuals; i++) {
       Expr* actual = convertAST(node->actual(i));
       INT_ASSERT(actual);
@@ -979,22 +1032,32 @@ struct Converter {
   }
 
   Expr* visit(const uast::OpCall* node) {
+    Expr* ret = nullptr;
+
     if (node->op() == dmappedStr) {
-      return convertDmappedOp(node);
+      ret = convertDmappedOp(node);
     } else if (node->op() == tripleDotStr) {
       INT_ASSERT(node->numActuals() == 1);
       Expr* expr = convertAST(node->actual(0));
-      return new CallExpr(PRIM_TUPLE_EXPAND, expr);
+      ret = new CallExpr(PRIM_TUPLE_EXPAND, expr);
     } else if (node->op() == reduceAssignStr) {
       INT_ASSERT(node->numActuals() == 2);
       Expr* lhs = convertAST(node->actual(0));
       Expr* rhs = convertAST(node->actual(1));
-      return buildAssignment(lhs, rhs, PRIM_REDUCE_ASSIGN);
+      ret = buildAssignment(lhs, rhs, PRIM_REDUCE_ASSIGN);
     } else if (node->op() == byStr) {
-      return convertRegularBinaryOrUnaryOp(node, "chpl_by");
+      ret = convertRegularBinaryOrUnaryOp(node, "chpl_by");
+    } else if (node->op() == questionStr) {
+      INT_ASSERT(node->numActuals() == 1);
+      Expr* expr = convertAST(node->actual(0));
+      ret = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, expr);
     } else {
-      return convertRegularBinaryOrUnaryOp(node);
+      ret = convertRegularBinaryOrUnaryOp(node);
     }
+
+    assert(ret != nullptr);
+
+    return ret;
   }
 
   Expr* visit(const uast::PrimCall* node) {

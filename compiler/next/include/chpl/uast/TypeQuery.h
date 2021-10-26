@@ -73,7 +73,7 @@ class TypeQuery final : public Expression {
   }
 
   bool hasName() const {
-    return !name_.isEmpty();
+    return name_ != "?";
   }
 };
 

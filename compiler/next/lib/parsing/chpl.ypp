@@ -2789,11 +2789,11 @@ ident_expr:
    parameters and variables. */
 type_level_expr:
   sub_type_level_expr %prec TNOELSE
-    { $$ = $1; }
+  { $$ = $1; }
 | sub_type_level_expr TQUESTION %prec TQUESTION
-    { $$ = TODOEXPR(@$); }
+  { $$ = context->buildUnaryOp(@$, $2, $1); }
 | TQUESTION
-    { $$ = TODOEXPR(@$); }
+  { $$ = context->buildIdent(@$, $1); }
 ;
 
 // TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?' would not work.
