@@ -57,6 +57,8 @@ struct Converter {
   UniqueString reduceAssignStr;
   UniqueString sharedStr;
   UniqueString singleStr;
+  UniqueString sparseStr;;
+  UniqueString subdomainStr;
   UniqueString syncStr;
   UniqueString thisStr;
   UniqueString tripleDotStr;
@@ -79,6 +81,8 @@ struct Converter {
     reduceAssignStr   = intern("reduce=");
     sharedStr         = intern("shared");
     singleStr         = intern("single");
+    sparseStr         = intern("sparse");
+    subdomainStr      = intern("subdomain");
     syncStr           = intern("sync");
     thisStr           = intern("this");
     tripleDotStr      = intern("...");
@@ -960,11 +964,12 @@ struct Converter {
 
     if (auto ident = node->toIdentifier()) {
       auto name = ident->name();
-
       if (name == atomicStr) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
       } else if (name == singleStr) {
         ret = new UnresolvedSymExpr("_singlevar");
+      } else if (name == subdomainStr) {
+        ret = new CallExpr("chpl__buildSubDomainType");
       } else if (name == syncStr) {
         ret = new UnresolvedSymExpr("_syncvar");
       } else if (name == domainStr) {
@@ -975,6 +980,43 @@ struct Converter {
         ret = new CallExpr(PRIM_TO_UNMANAGED_CLASS_CHECKED);
       } else if (name == borrowedStr) {
         ret = new CallExpr(PRIM_TO_BORROWED_CLASS_CHECKED);
+      }
+    }
+
+    return ret;
+  }
+
+  /*
+  2056 | TSPARSE TSUBDOMAIN TLP actual_expr TRP
+  2057     { $$ = new CallExpr("chpl__buildSparseDomainRuntimeType",
+                               buildDotExpr($4->copy(),"defaultSparseDist"),
+                               $4); }
+  */
+  Expr* convertSparseKeyword(const uast::FnCall* node) {
+    auto calledExpression = node->calledExpression();
+    assert(calledExpression);
+    CallExpr* ret = nullptr;
+
+    if (auto kwSparse = calledExpression->toIdentifier()) {
+      if (kwSparse->name() == sparseStr) {
+        assert(node->numActuals() == 1);
+
+        if (auto innerCall = node->actual(0)->toFnCall()) {
+          auto innerCalledExpression = innerCall->calledExpression();
+          assert(innerCalledExpression);
+
+          if (auto kwSubdomain = innerCalledExpression->toIdentifier()) {
+            if (kwSubdomain->name() == subdomainStr) {
+              assert(innerCall->numActuals() == 1);
+
+              ret = new CallExpr("chpl__buildSparseDomainRuntimeType");
+              Expr* expr = convertAST(innerCall->actual(0));
+              auto dot = buildDotExpr(expr->copy(), "defaultSparseDist");
+              ret->insertAtTail(dot);
+              ret->insertAtTail(expr);
+            }
+          }
+        }
       }
     }
 
@@ -1005,6 +1047,10 @@ struct Converter {
 
       ret = newExprStart;
       addArgsTo = initializerCall;
+
+    // Special case 'sparse' since it's weird and can only appear one way.
+    } else if (Expr* expr = convertSparseKeyword(node)) {
+      return expr;
 
     // If a keyword produces a call, just use that instead of making one.
     } else if (Expr* expr = convertCalledKeyword(calledExpression)) {
