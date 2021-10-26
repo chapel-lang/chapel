@@ -1818,7 +1818,9 @@ bool isNonGenericRecordWithInitializers(Type* type) {
     if (AggregateType* at = toAggregateType(type)) {
       if (at->hasUserDefinedInit == true) {
         retval = true;
-      } else if (at->wantsDefaultInitializer()) {
+      } else if (at->wantsDefaultInitializer() &&
+                 // don't count compiler-generated init for extern records
+                 !at->symbol->hasFlag(FLAG_EXTERN)) {
         retval = true;
       }
     }
