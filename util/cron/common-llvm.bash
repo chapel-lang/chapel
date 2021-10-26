@@ -48,7 +48,7 @@ if test "$CHPL_LLVM" = bundled; then
         source ${cmake_setup}
     else
         # This is the path to look for on CS systems we have
-        cmake_setup=/cray/css/users/chapelu/setup_cmake321.bash
+        cmake_setup=/cray/css/users/chapelu/setup_cmake_nightly.bash
         if [ -f "${cmake_setup}" ] ; then
             source ${cmake_setup}
         else
