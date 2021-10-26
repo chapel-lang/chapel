@@ -1384,6 +1384,9 @@ void ResolveScope::buildBreadthFirstUseImportList(UseImportList& useImportList) 
   buildBreadthFirstUseImportList(useImportList, useImportList, visited);
 }
 
+// Alternative version of the single argument buildBreadthFirstUseImportList, to
+// be called when already in a use or import chain (so private uses and imports
+// in useImportList itself should not be followed)
 void ResolveScope::buildBfsUseImportRespectPrivate(UseImportList& useImportList) const {
   UseImportList current;
   for (size_t i = 0; i < useImportList.size(); i++) {
