@@ -88,10 +88,11 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_LAUNCHER', LAUNCHER | DEFAULT, 'launch'),
     ChapelEnv('CHPL_TIMERS', RUNTIME | LAUNCHER | DEFAULT, 'tmr'),
     ChapelEnv('CHPL_UNWIND', RUNTIME | LAUNCHER | DEFAULT, 'unwind'),
-    ChapelEnv('CHPL_HOST_MEM', INTERNAL, 'hostmem'),
-    ChapelEnv('CHPL_TARGET_MEM', INTERNAL, 'tgtmem'),
+    ChapelEnv('CHPL_HOST_MEM', COMPILER, 'hostmem'),
+    ChapelEnv('CHPL_TARGET_MEM', INTERNAL, 'mem'),
     ChapelEnv('CHPL_MEM', RUNTIME | LAUNCHER | DEFAULT, 'mem'),
-    ChapelEnv('  CHPL_JEMALLOC', INTERNAL, 'jemalloc'),
+    ChapelEnv('  CHPL_HOST_JEMALLOC', INTERNAL, 'jemalloc'),
+    ChapelEnv('  CHPL_TARGET_JEMALLOC', INTERNAL, 'jemalloc'),
     ChapelEnv('CHPL_MAKE', INTERNAL, 'make'),
     ChapelEnv('CHPL_ATOMICS', RUNTIME | LAUNCHER | DEFAULT, 'atomics'),
     ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
@@ -176,8 +177,10 @@ def compute_all_values():
     ENV_VALS['CHPL_LAUNCHER'] = chpl_launcher.get()
     ENV_VALS['CHPL_TIMERS'] = chpl_timers.get()
     ENV_VALS['CHPL_UNWIND'] = chpl_unwind.get()
+    ENV_VALS['CHPL_HOST_MEM'] = chpl_mem.get('host')
     ENV_VALS['CHPL_MEM'] = chpl_mem.get('target')
-    ENV_VALS['  CHPL_JEMALLOC'] = chpl_jemalloc.get()
+    ENV_VALS['  CHPL_HOST_JEMALLOC'] = chpl_jemalloc.get('host')
+    ENV_VALS['  CHPL_TARGET_JEMALLOC'] = chpl_jemalloc.get('target')
     ENV_VALS['CHPL_MAKE'] = chpl_make.get()
     ENV_VALS['CHPL_ATOMICS'] = chpl_atomics.get()
     ENV_VALS['  CHPL_NETWORK_ATOMICS'] = chpl_atomics.get('network')
@@ -213,7 +216,6 @@ def compute_internal_values():
     ENV_VALS['CHPL_TARGET_CPU_FLAG'] = backend_info.flag
     ENV_VALS['CHPL_TARGET_BACKEND_CPU'] = backend_info.cpu
 
-    ENV_VALS['CHPL_HOST_MEM'] = chpl_mem.get('host')
     ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
     ENV_VALS['CHPL_RUNTIME_SUBDIR'] = printchplenv(set(['runtime']), print_format='path').rstrip('\n')
     ENV_VALS['CHPL_LAUNCHER_SUBDIR'] = printchplenv(set(['launcher']), print_format='path').rstrip('\n')

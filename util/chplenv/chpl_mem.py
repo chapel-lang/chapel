@@ -3,23 +3,35 @@ import optparse
 import sys
 
 import chpl_platform, overrides
-from utils import error, memoize
-
+from utils import error, memoize, warning
 
 @memoize
 def get(flag='host'):
-    if flag == 'host':
-        mem_val = 'cstdlib'
-    elif flag == 'target':
-        mem_val = overrides.get('CHPL_MEM')
-        if not mem_val:
-            platform_val = chpl_platform.get('target')
-            cygwin = platform_val.startswith('cygwin')
+    platform_val = chpl_platform.get('target')
+    cygwin = platform_val.startswith('cygwin')
+    chpl_host_mem = overrides.get('CHPL_HOST_MEM')
+    chpl_target_mem = overrides.get('CHPL_TARGET_MEM')
+    chpl_mem = overrides.get('CHPL_MEM')
 
-            if cygwin:
-                mem_val = 'cstdlib'
-            else:
-                mem_val = 'jemalloc'
+    if flag == 'target':
+        if cygwin:
+            mem_val = 'cstdlib'
+        elif chpl_target_mem:
+            mem_val = chpl_target_mem
+            if chpl_mem:
+                warning("CHPL_MEM and CHPL_TARGET_MEM are both set, "
+                        "taking value from CHPL_TARGET_MEM")
+        elif chpl_mem:
+            mem_val = chpl_mem
+        else:
+            mem_val = 'jemalloc'
+    elif flag == 'host':
+        if cygwin:
+            mem_val = 'cstdlib'
+        elif chpl_host_mem:
+            mem_val = chpl_host_mem
+        else:
+            mem_val = 'cstdlib'
     else:
         error("Invalid flag: '{0}'".format(flag), ValueError)
     return mem_val
