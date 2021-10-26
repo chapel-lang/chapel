@@ -1694,63 +1694,6 @@ static void validateSettings() {
   checkUnsupportedConfigs();
 }
 
-// TODO -- try removing this code in this PR
-
-// This code is off by default - opt in with CHPL_DO_PE_ENV_CHECK
-// It is just here to make it easier to debug problems with the compiler
-// and can be removed in the future.
-static void maybeRelaunchInPrgEnv(int argc, char* argv[]) {
-  // Relaunch in PrgEnv-gnu if CHPL_DO_PE_ENV_CHECK is set and:
-  //  * platform is cray-x* or cray-ex
-  //  * CHPL_TARGET_COMPILER is llvm
-  //  * PE_ENV does not indicate PrgEnv-gnu is loaded
-
-  bool prgEnvPlatform = startsWith(CHPL_TARGET_PLATFORM, "cray-x") ||
-                        0 == strcmp(CHPL_TARGET_PLATFORM, "cray-ex");
-  bool targetLlvm = 0 == strcmp(CHPL_TARGET_COMPILER, "llvm");
-  if (prgEnvPlatform && targetLlvm) {
-    // Default to not doing this.
-    // Keeping this code in for now for testing purposes.
-    if (getenv("CHPL_DO_PE_ENV_CHECK") == nullptr)
-      return;
-
-    // Exit early if we have already tried relaunching
-    if (getenv("CHPL_SKIP_PE_ENV_CHECK") != nullptr)
-      return;
-
-    // check if PrgEnv-gnu is loaded
-    const char* PE_ENV = getenv("PE_ENV");
-    bool prgEnvGnu = PE_ENV != nullptr && 0 == strcmp(PE_ENV, "GNU");
-
-    if (!prgEnvGnu) {
-      // Need to run ourselves again with PrgEnv-gnu
-      std::string exe = std::string(CHPL_HOME) +
-                        "/util/config/run-in-prgenv-gnu.bash";
-      std::vector<const char*> args;
-      args.push_back(exe.c_str());
-      for (int i = 0; i < argc; i++) {
-        args.push_back(argv[i]);
-      }
-      args.push_back(nullptr);
-
-      setenv("CHPL_SKIP_PE_ENV_CHECK", "1", 1);
-
-      if (printSystemCommands) {
-        printf("# relaunching under PrgEnv-gnu\n");
-        for (auto arg : args) {
-          if (arg != nullptr) {
-            printf("\"%s\" ", arg);
-          }
-        }
-        printf("\n");
-      }
-      execv(exe.c_str(), (char* const*) &args[0]);
-      // If that failed for some reason, continue not in PrgEnv-gnu
-      USR_WARN("Relaunching in PrgEnv-gnu failed");
-    }
-  }
-}
-
 int main(int argc, char* argv[]) {
   PhaseTracker tracker;
 
@@ -1791,8 +1734,6 @@ int main(int argc, char* argv[]) {
     process_args(&sArgState, argc, argv);
 
     setupChplGlobals(argv[0]);
-
-    maybeRelaunchInPrgEnv(argc, argv);
 
     postprocess_args();
 
