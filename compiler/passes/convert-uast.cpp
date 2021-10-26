@@ -48,6 +48,7 @@ struct Converter {
 
   // Cache strings for special identifiers we might compare against.
   UniqueString atomicStr;
+  UniqueString alignStr;
   UniqueString borrowedStr;
   UniqueString byStr;
   UniqueString dmappedStr;
@@ -71,6 +72,7 @@ struct Converter {
 
   // TODO: Figure out a better way to do this sort of caching.
   Converter(chpl::Context* context) : context(context) {
+    alignStr          = intern("align");
     atomicStr         = intern("atomic");
     borrowedStr       = intern("borrowed");
     byStr             = intern("by");
@@ -727,14 +729,30 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::For* node) {
-    Expr* indices = convertLoopIndexDecl(node->index());
+    BlockStmt* ret = nullptr;
+
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
     BlockStmt* body = createBlockWithStmts(node->stmts());
     bool zippered = node->iterand()->isZip();
     bool isForExpr = node->isExpressionLevel();
 
-    return ForLoop::buildForLoop(indices, iteratorExpr, body, zippered,
-                                 isForExpr);
+    // TODO: Do we attach 'param' to the index variable or the loop?
+    if (node->isParam()) {
+      assert(node->index() && node->index()->isVariable());
+      auto index = node->index()->toVariable();
+      const char* indexStr = index->name().c_str();
+      Expr* range = iteratorExpr;
+      BlockStmt* stmts = body;
+      ret = buildParamForLoopStmt(indexStr, range, stmts);
+    } else {
+      Expr* indices = convertLoopIndexDecl(node->index());
+      ret = ForLoop::buildForLoop(indices, iteratorExpr, body, zippered,
+                                  isForExpr);
+    }
+
+    assert(ret != nullptr);
+
+    return ret;
   }
 
   // TODO: Can we reuse this for e.g. For/BracketLoop as well?
@@ -1120,6 +1138,8 @@ struct Converter {
       Expr* lhs = convertAST(node->actual(0));
       Expr* rhs = convertAST(node->actual(1));
       ret = buildAssignment(lhs, rhs, PRIM_REDUCE_ASSIGN);
+    } else if (node->op() == alignStr) {
+      return convertRegularBinaryOrUnaryOp(node, "chpl_align");
     } else if (node->op() == byStr) {
       ret = convertRegularBinaryOrUnaryOp(node, "chpl_by");
     } else if (node->op() == questionStr) {
