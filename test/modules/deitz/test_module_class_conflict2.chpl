@@ -5,7 +5,7 @@ module MC {
 }
 
 module M2 {
-  use MC;
+  public use MC;
 }
 
 module M1 {

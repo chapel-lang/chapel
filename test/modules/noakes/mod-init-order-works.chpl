@@ -1,5 +1,5 @@
 module M2 {
-  use M3;
+  public use M3;
 
   module M3 {
     module M4 {

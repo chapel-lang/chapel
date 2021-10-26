@@ -12,10 +12,7 @@ module Foo {
 }
 
 module M {
-  use Foo only bar as bleep, _defaultOf;
-  // Ideally, I wouldn't have to name _defaultOf here, but since our new
-  // constructor story is heading towards implementation, this seems fine for
-  // now.
+  use Foo only bar as bleep;
 
   proc main() {
     var instance: bleep;

@@ -4,7 +4,7 @@ module M1 {
 }
 
 module M2 {
-  use M1;
+  public use M1;
 }
 
 module M3 {

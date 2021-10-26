@@ -9,7 +9,7 @@ module definesType {
   }
 }
 module definesTertiary {
-  use definesType;
+  public use definesType;
 
   proc OtherType.tertiaryMethod() {
     writeln("In forwarded tertiary method");
