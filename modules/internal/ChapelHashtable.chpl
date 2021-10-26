@@ -495,7 +495,9 @@ module ChapelHashtable {
     }
 
     proc maybeShrinkAfterRemove() {
-      if (tableNumFullSlots*8 < tableSize) {
+      // TODO: Change 32 to initialCapacity
+      if (tableSize > 32 &&
+          tableNumFullSlots/tableSize:real < resizeThreshold/4) {
         resize(grow=false);
       }
     }
