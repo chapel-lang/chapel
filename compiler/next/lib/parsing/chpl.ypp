@@ -3335,18 +3335,28 @@ literal_expr:
   }
 | TLSBR assoc_expr_ls TRSBR
   {
-    $$ = TODOEXPR(@$);
+    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
   }
 | TLSBR assoc_expr_ls TCOMMA TRSBR
   {
-    $$ = TODOEXPR(@$);
+    // TODO (dlongnecke): Record trailing comma?
+    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
   }
 
 ;
 
 assoc_expr_ls:
-  expr TALIAS expr                      { $$ = TODOLIST(@$); }
-| assoc_expr_ls TCOMMA expr TALIAS expr { $1->push_back(TODOEXPR(@$)); }
+  expr TALIAS expr
+  {
+    auto node = context->buildBinOp(@$, $1, $2, $3);
+    $$ = context->makeList(node);
+  }
+| assoc_expr_ls TCOMMA expr TALIAS expr
+  {
+    auto loc = context->makeSpannedLocation(@3, @5);
+    auto node = context->buildBinOp(loc, $3, $4, $5);
+    $$ = context->appendList($1, node);
+  }
 ;
 
 binary_op_expr:

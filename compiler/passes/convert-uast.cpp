@@ -798,15 +798,44 @@ struct Converter {
     return new CallExpr("chpl__buildArrayExpr", actualList);
   }
 
-  CallExpr* visit(const uast::Domain* node) {
+  Expr* visit(const uast::Domain* node) {
     CallExpr* actualList = new CallExpr(PRIM_ACTUALS_LIST);
+    bool isAssociativeList = false;
 
     for (auto expr : node->exprs()) {
-      actualList->insertAtTail(toExpr(convertAST(expr)));
+      bool hasConvertedThisIter = false;
+
+      if (auto opCall = expr->toOpCall()) {
+        if (opCall->op() == "=>") {
+          isAssociativeList = true;
+          assert(opCall->numActuals() == 2);
+          Expr* lhs = convertAST(opCall->actual(0));
+          Expr* rhs = convertAST(opCall->actual(1));
+          actualList->insertAtTail(lhs);
+          actualList->insertAtTail(rhs);
+          hasConvertedThisIter = true;
+        } else {
+          if (isAssociativeList) assert(0 == "Not possible!");
+        }
+      }
+
+      if (!hasConvertedThisIter) {
+        actualList->insertAtTail(convertAST(expr));
+      }
     }
 
-    return new CallExpr("chpl__buildDomainExpr", actualList,
-                        new SymExpr(gTrue));
+    Expr* ret = nullptr;
+
+    if (isAssociativeList) {
+      ret = new CallExpr("chpl__buildAssociativeArrayExpr", actualList);
+    } else {
+      ret = new CallExpr("chpl__buildDomainExpr", actualList,
+                         new SymExpr(gTrue));
+    }
+
+    assert(ret != nullptr);
+
+    return ret;
   }
 
   CallExpr* visit(const uast::Range* node) {
@@ -1073,8 +1102,11 @@ struct Converter {
   // Note that this conversion is for the reduce expression, and not for
   // the reduce intent (see conversion for 'WithClause').
   Expr* visit(const uast::Reduce* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    assert(node->numActuals() == 1);
+    Expr* opExpr = convertScanReduceOp(node->op());
+    Expr* dataExpr = convertAST(node->actual(0));
+    bool zippered = node->actual(0)->isZip();;
+    return buildReduceExpr(opExpr, dataExpr, zippered);
   }
 
   Expr* visit(const uast::Zip* node) {
