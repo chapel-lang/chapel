@@ -69,4 +69,4 @@ We have used the following commands to install the above prerequisites:
 
   * FreeBSD::
 
-     sudo pkg install gcc m4 perl5 python3 py37-pip bash gmake gawk git pkgconf cmake llvm11
+     sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake llvm11
