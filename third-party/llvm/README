@@ -2,7 +2,7 @@
 LLVM for Chapel release
 =======================
 
-This copy of LLVM 11.0.1 is being released with Chapel for
+This copy of LLVM 12.0.1 is being released with Chapel for
 convenience and was obtained from
 
 https://www.llvm.org/

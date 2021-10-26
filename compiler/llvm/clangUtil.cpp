@@ -1871,7 +1871,7 @@ static llvm::TargetOptions getTargetOptions(
   Options.FunctionSections = CodeGenOpts.FunctionSections;
   Options.DataSections = CodeGenOpts.DataSections;
 #if HAVE_LLVM_VER >= 120
-  Options.IgnoreXCOFFVisibility = LangOpts.IgnoreXCOFFVisibility;
+  Options.IgnoreXCOFFVisibility = CodeGenOpts.IgnoreXCOFFVisibility;
 #endif
   Options.UniqueSectionNames = CodeGenOpts.UniqueSectionNames;
   Options.UniqueBasicBlockSectionNames =
@@ -1881,7 +1881,7 @@ static llvm::TargetOptions getTargetOptions(
   Options.ExplicitEmulatedTLS = CodeGenOpts.ExplicitEmulatedTLS;
   Options.DebuggerTuning = CodeGenOpts.getDebuggerTuning();
   Options.EmitStackSizeSection = CodeGenOpts.StackSizeSection;
-#if HAVE_LLVM_VER >= 120
+#if HAVE_LLVM_VER >= 130
   Options.StackUsageOutput = CodeGenOpts.StackUsageOutput;
 #endif
   Options.EmitAddrsig = CodeGenOpts.Addrsig;
@@ -1894,7 +1894,7 @@ static llvm::TargetOptions getTargetOptions(
       CodeGenOpts.ValueTrackingVariableLocations;
 #endif
   Options.XRayOmitFunctionIndex = CodeGenOpts.XRayOmitFunctionIndex;
-#if HAVE_LLVM_VER >= 120
+#if HAVE_LLVM_VER >= 130
   Options.LoopAlignment = CodeGenOpts.LoopAlignment;
 #endif
 
@@ -1919,7 +1919,7 @@ static llvm::TargetOptions getTargetOptions(
 
   Options.MCOptions.Argv0 = CodeGenOpts.Argv0;
   Options.MCOptions.CommandLineArgs = CodeGenOpts.CommandLineArgs;
-#if HAVE_LLVM_VER >= 120
+#if HAVE_LLVM_VER >= 130
   Options.DebugStrictDwarf = CodeGenOpts.DebugStrictDwarf;
 #endif
 
