@@ -76,6 +76,7 @@ libchplcomp: FORCE
 compiler: FORCE
 	@echo "Making the compiler..."
 	@cd third-party && $(MAKE) llvm
+	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
 	@cd compiler && $(MAKE)
 
 parser: FORCE
