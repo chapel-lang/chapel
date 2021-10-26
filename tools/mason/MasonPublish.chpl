@@ -29,7 +29,7 @@ use MasonNew;
 use MasonUpdate;
 use MasonUtils;
 use Random;
-use Spawn;
+use Subprocess;
 use TOML;
 
 /* Top Level procedure that gets called from mason.chpl that takes in arguments from command line.

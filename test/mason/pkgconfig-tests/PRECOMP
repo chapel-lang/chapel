@@ -1,0 +1,34 @@
+#!/bin/bash
+
+testprefix=$1 # openssl or zlib
+outputfile=$2
+compiler=$3
+good="$testprefix".good
+
+chplver=`$compiler --version | head -1 | sed 's/chpl version \([0-9]\.[0-9][0-9]*\.[0-9][0-9]*\).*/\1/'`
+
+pkg=$testprefix
+pkgver=`pkg-config $pkg --modversion`
+pkglibs=`pkg-config $pkg --libs`
+pkglibs="$(echo -e "${pkglibs}" | sed -e 's/[[:space:]]*$//')"
+pkgincs=`pkg-config $pkg --variable=includedir`
+pkgincs="$(echo -e "${pkgincs}" | sed -e 's/[[:space:]]*$//')"
+
+# output the expected output to goodfile
+
+echo Skipping registry update since no dependency found in manifest file. >$good
+echo>>$good
+echo [root]>>$good
+echo name = \"$pkg\">>$good
+echo chplVersion = \"$chplver..$chplver\">>$good
+echo version = \"0.1.0\">>$good
+echo>>$good
+echo [system]>>$good
+echo>>$good
+echo [system.$pkg]>>$good
+echo name = \"$pkg\">>$good
+echo libs = \"$pkglibs\">>$good
+echo include = \"$pkgincs\">>$good
+echo version = \"$pkgver\">>$good
+echo>>$good
+echo>>$good

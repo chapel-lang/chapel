@@ -76,6 +76,11 @@ def get(flag='host'):
     return platform_val
 
 
+@memoize
+def get_mac_os_version():
+    release, version, machine = platform.mac_ver()
+    return release
+
 def _main():
     parser = optparse.OptionParser(usage='usage: %prog [--host|target])')
     parser.add_option('--host', dest='flag', action='store_const',

@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 var sub = spawn(["cat", "test.txt"], stdout=PIPE);
 

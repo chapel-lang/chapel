@@ -1824,7 +1824,7 @@ static void checkForErroneousInitCopies() {
             if (CallExpr* useCall = toCallExpr(se->parentExpr)) {
               // TODO: May have to expand this to cover more cases...
               if (!useCall->isPrimitive(PRIM_END_OF_STATEMENT) &&
-                  !useCall->isNamedAstr("chpl__autoDestroy")) {
+                  !useCall->isNamedAstr(astr_autoDestroy)) {
                 nextUse = se;
                 break;
               }

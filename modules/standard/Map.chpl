@@ -79,6 +79,15 @@ module Map {
     /* If `true`, this map will perform parallel safe operations. */
     param parSafe = false;
 
+    /* 
+       Fractional value that specifies how full this map can be 
+       before requesting additional memory. The default value of 
+       0.5 means that the map will not resize until the map is more
+       than 50% full. The acceptable values for this argument are
+       between 0 and 1, exclusive, meaning (0,1).
+    */
+    const resizeThreshold = 0.5;
+
     pragma "no doc"
     var table: chpl__hashtable(keyType, valType);
 
@@ -105,20 +114,33 @@ module Map {
       :arg keyType: The type of the keys of this map.
       :arg valType: The type of the values of this map.
       :arg parSafe: If `true`, this map will use parallel safe operations.
+      :arg resizeThreshold: Fractional value that specifies how full this map
+                            can be before requesting additional memory.
     */
-    proc init(type keyType, type valType, param parSafe=false) {
+    proc init(type keyType, type valType, param parSafe=false,
+              resizeThreshold = 0.5) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
+      assert((resizeThreshold > 0 && resizeThreshold < 1),
+             "'resizeThreshold' must be between 0 and 1");
+      this.resizeThreshold = resizeThreshold;
+      table = new chpl__hashtable(keyType, valType, resizeThreshold);
     }
 
-    proc init(type keyType, type valType, param parSafe=false)
+    proc init(type keyType, type valType, param parSafe=false,
+              resizeThreshold = 0.5)
     where isNonNilableClass(valType) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
+      if boundsChecking then
+        if resizeThreshold <= 0 || resizeThreshold >= 1 then
+          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
+      this.resizeThreshold = resizeThreshold;
+      table = new chpl__hashtable(keyType, valType, resizeThreshold);
     }
 
     /*
@@ -143,6 +165,8 @@ module Map {
                         this.type.valType else vt;
       this.parSafe = if this.type.parSafe != ? then
                         this.type.parSafe else ps;
+      this.table = new chpl__hashtable(keyType, valType,
+                                       other.resizeThreshold);
       this.complete();
 
       if keyType != kt {
@@ -337,7 +361,7 @@ module Map {
 
     pragma "no doc"
     proc const this(k: keyType) const ref
-    where shouldReturnRvalueByConstRef(valType) && !isNonNilableClass(valType) {
+    where !isNonNilableClass(valType) {
       _warnForParSafeIndexing();
 
       _enter(); defer _leave();

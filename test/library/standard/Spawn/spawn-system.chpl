@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 var sub = spawn(["ls", "test.txt"]);
 sub.wait();

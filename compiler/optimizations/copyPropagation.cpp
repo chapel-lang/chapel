@@ -216,6 +216,34 @@ static bool needsKilling(SymExpr* se, std::set<Symbol*>& liveRefs)
 
     return false;
   }
+  else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+  {
+    // skip the "base" symbol
+    if (se == call->get(1))
+      return false;
+
+    // skip the "_virtual_method_tmp_" argument
+    if (se == call->get(2))
+      return false;
+
+    ArgSymbol* arg = actual_to_formal(se);
+
+    if (arg->intent == INTENT_OUT   ||
+        arg->intent == INTENT_INOUT ||
+        arg->intent == INTENT_REF   ||
+        arg->hasFlag(FLAG_ARG_THIS)) // Todo: replace with arg intent check?
+    {
+      liveRefs.insert(se->symbol());
+      return true;
+    }
+
+    if (isRecordWrappedType(arg->type))
+    {
+      return true;
+    }
+
+    return false;
+  }
   else
   {
     const bool isFirstActual = call->get(1) == se;
@@ -319,7 +347,23 @@ static bool isUse(SymExpr* se)
         (arg->intent & INTENT_FLAG_REF))
       return false;
   }
+  else if (call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL))
+  {
+    // skip the "base" symbol
+    if (se == call->get(1))
+      return false;
 
+    // skip the "_virtual_method_tmp_" argument
+    if (se == call->get(2))
+      return false;
+
+    ArgSymbol* arg = actual_to_formal(se);
+
+    if (arg->intent == INTENT_OUT ||
+        (arg->intent & INTENT_FLAG_REF))
+      return false;
+
+  }
   else
   {
     INT_ASSERT(call->primitive);

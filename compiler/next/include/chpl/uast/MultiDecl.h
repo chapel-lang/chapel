@@ -53,11 +53,13 @@ namespace uast {
  */
 class MultiDecl final : public Decl {
  private:
-  MultiDecl(ASTList children, Decl::Visibility vis)
-    : Decl(asttags::MultiDecl, std::move(children), vis) {
+  MultiDecl(ASTList children, Decl::Visibility vis, Decl::Linkage linkage)
+    : Decl(asttags::MultiDecl, std::move(children), vis, linkage,
+           /*linkageNameChildNum*/ -1) {
 
     assert(isAcceptableMultiDecl());
   }
+
   bool isAcceptableMultiDecl();
 
   bool contentsMatchInner(const ASTNode* other) const override {
@@ -65,14 +67,17 @@ class MultiDecl final : public Decl {
     const MultiDecl* rhs = (const MultiDecl*) other;
     return lhs->declContentsMatchInner(rhs);
   }
+
   void markUniqueStringsInner(Context* context) const override {
     declMarkUniqueStringsInner(context);
   }
  
  public:
   ~MultiDecl() override = default;
+
   static owned<MultiDecl> build(Builder* builder, Location loc,
                                 Decl::Visibility vis, 
+                                Decl::Linkage linkage,
                                 ASTList varDecls);
 
   /**

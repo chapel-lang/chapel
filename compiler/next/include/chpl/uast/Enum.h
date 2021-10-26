@@ -45,7 +45,10 @@ namespace uast {
 class Enum final : public TypeDecl {
  private:
   Enum(ASTList children, Decl::Visibility vis, UniqueString name)
-    : TypeDecl(asttags::Enum, std::move(children), vis, name) {
+    : TypeDecl(asttags::Enum, std::move(children), vis,
+               Decl::DEFAULT_LINKAGE,
+               /*linkageNameChildNum*/ -1,
+               name) {
 
     assert(isEnumElementAndCommentList(children_));
   }
@@ -56,6 +59,7 @@ class Enum final : public TypeDecl {
     const Enum* rhs = (const Enum*) other;
     return lhs->typeDeclContentsMatchInner(rhs);
   }
+
   void markUniqueStringsInner(Context* context) const override {
     typeDeclMarkUniqueStringsInner(context);
   }

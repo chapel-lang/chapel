@@ -37,7 +37,7 @@ proc masonModify(args: [] string) throws {
 
   var extFlag = parser.addFlag("external", defaultValue=false);
   var sysFlag = parser.addFlag("system", defaultValue=false);
-  var depArg = parser.addArgument("dep");
+  var depArg = parser.addArgument("dep", numArgs=0..1);
 
   try {
     parser.parseArgs(args);
@@ -51,6 +51,12 @@ proc masonModify(args: [] string) throws {
   if helpFlag.valueAsBool() {
     masonModifyHelp();
     exit(0);
+  }
+
+  if !depArg.hasValue() {
+    stderr.writeln("package name missing value");
+    masonModifyHelp();
+    exit(1);
   }
   var add = false;
   if args[0] == "add" then add = true;

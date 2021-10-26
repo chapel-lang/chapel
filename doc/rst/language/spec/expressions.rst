@@ -566,24 +566,24 @@ The unary plus operators are predefined as follows:
 
 .. code-block:: chapel
 
-   proc +(a: int(8)): int(8)
-   proc +(a: int(16)): int(16)
-   proc +(a: int(32)): int(32)
-   proc +(a: int(64)): int(64)
+   operator +(a: int(8)): int(8)
+   operator +(a: int(16)): int(16)
+   operator +(a: int(32)): int(32)
+   operator +(a: int(64)): int(64)
 
-   proc +(a: uint(8)): uint(8)
-   proc +(a: uint(16)): uint(16)
-   proc +(a: uint(32)): uint(32)
-   proc +(a: uint(64)): uint(64)
+   operator +(a: uint(8)): uint(8)
+   operator +(a: uint(16)): uint(16)
+   operator +(a: uint(32)): uint(32)
+   operator +(a: uint(64)): uint(64)
 
-   proc +(a: real(32)): real(32)
-   proc +(a: real(64)): real(64)
+   operator +(a: real(32)): real(32)
+   operator +(a: real(64)): real(64)
 
-   proc +(a: imag(32)): imag(32)
-   proc +(a: imag(64)): imag(64)
+   operator +(a: imag(32)): imag(32)
+   operator +(a: imag(64)): imag(64)
 
-   proc +(a: complex(64)): complex(64)
-   proc +(a: complex(128)): complex(128)
+   operator +(a: complex(64)): complex(64)
+   operator +(a: complex(128)): complex(128)
 
 For each of these definitions, the result is the value of the operand.
 
@@ -596,19 +596,19 @@ The unary minus operators are predefined as follows:
 
 .. code-block:: chapel
 
-   proc -(a: int(8)): int(8)
-   proc -(a: int(16)): int(16)
-   proc -(a: int(32)): int(32)
-   proc -(a: int(64)): int(64)
+   operator -(a: int(8)): int(8)
+   operator -(a: int(16)): int(16)
+   operator -(a: int(32)): int(32)
+   operator -(a: int(64)): int(64)
 
-   proc -(a: real(32)): real(32)
-   proc -(a: real(64)): real(64)
+   operator -(a: real(32)): real(32)
+   operator -(a: real(64)): real(64)
 
-   proc -(a: imag(32)): imag(32)
-   proc -(a: imag(64)): imag(64)
+   operator -(a: imag(32)): imag(32)
+   operator -(a: imag(64)): imag(64)
 
-   proc -(a: complex(64)): complex(64)
-   proc -(a: complex(128)): complex(128)
+   operator -(a: complex(64)): complex(64)
+   operator -(a: complex(128)): complex(128)
 
 For each of these definitions that return a value, the result is the
 negation of the value of the operand. For integral types, this
@@ -629,39 +629,39 @@ The addition operators are predefined as follows:
 
 .. code-block:: chapel
 
-   proc +(a: int(8), b: int(8)): int(8)
-   proc +(a: int(16), b: int(16)): int(16)
-   proc +(a: int(32), b: int(32)): int(32)
-   proc +(a: int(64), b: int(64)): int(64)
+   operator +(a: int(8), b: int(8)): int(8)
+   operator +(a: int(16), b: int(16)): int(16)
+   operator +(a: int(32), b: int(32)): int(32)
+   operator +(a: int(64), b: int(64)): int(64)
 
-   proc +(a: uint(8), b: uint(8)): uint(8)
-   proc +(a: uint(16), b: uint(16)): uint(16)
-   proc +(a: uint(32), b: uint(32)): uint(32)
-   proc +(a: uint(64), b: uint(64)): uint(64)
+   operator +(a: uint(8), b: uint(8)): uint(8)
+   operator +(a: uint(16), b: uint(16)): uint(16)
+   operator +(a: uint(32), b: uint(32)): uint(32)
+   operator +(a: uint(64), b: uint(64)): uint(64)
 
-   proc +(a: real(32), b: real(32)): real(32)
-   proc +(a: real(64), b: real(64)): real(64)
+   operator +(a: real(32), b: real(32)): real(32)
+   operator +(a: real(64), b: real(64)): real(64)
 
-   proc +(a: imag(32), b: imag(32)): imag(32)
-   proc +(a: imag(64), b: imag(64)): imag(64)
+   operator +(a: imag(32), b: imag(32)): imag(32)
+   operator +(a: imag(64), b: imag(64)): imag(64)
 
-   proc +(a: complex(64), b: complex(64)): complex(64)
-   proc +(a: complex(128), b: complex(128)): complex(128)
+   operator +(a: complex(64), b: complex(64)): complex(64)
+   operator +(a: complex(128), b: complex(128)): complex(128)
 
-   proc +(a: real(32), b: imag(32)): complex(64)
-   proc +(a: imag(32), b: real(32)): complex(64)
-   proc +(a: real(64), b: imag(64)): complex(128)
-   proc +(a: imag(64), b: real(64)): complex(128)
+   operator +(a: real(32), b: imag(32)): complex(64)
+   operator +(a: imag(32), b: real(32)): complex(64)
+   operator +(a: real(64), b: imag(64)): complex(128)
+   operator +(a: imag(64), b: real(64)): complex(128)
 
-   proc +(a: real(32), b: complex(64)): complex(64)
-   proc +(a: complex(64), b: real(32)): complex(64)
-   proc +(a: real(64), b: complex(128)): complex(128)
-   proc +(a: complex(128), b: real(64)): complex(128)
+   operator +(a: real(32), b: complex(64)): complex(64)
+   operator +(a: complex(64), b: real(32)): complex(64)
+   operator +(a: real(64), b: complex(128)): complex(128)
+   operator +(a: complex(128), b: real(64)): complex(128)
 
-   proc +(a: imag(32), b: complex(64)): complex(64)
-   proc +(a: complex(64), b: imag(32)): complex(64)
-   proc +(a: imag(64), b: complex(128)): complex(128)
-   proc +(a: complex(128), b: imag(64)): complex(128)
+   operator +(a: imag(32), b: complex(64)): complex(64)
+   operator +(a: complex(64), b: imag(32)): complex(64)
+   operator +(a: imag(64), b: complex(128)): complex(128)
+   operator +(a: complex(128), b: imag(64)): complex(128)
 
 For each of these definitions that return a value, the result is the sum
 of the two operands.
@@ -682,39 +682,39 @@ The subtraction operators are predefined as follows:
 
 .. code-block:: chapel
 
-   proc -(a: int(8), b: int(8)): int(8)
-   proc -(a: int(16), b: int(16)): int(16)
-   proc -(a: int(32), b: int(32)): int(32)
-   proc -(a: int(64), b: int(64)): int(64)
+   operator -(a: int(8), b: int(8)): int(8)
+   operator -(a: int(16), b: int(16)): int(16)
+   operator -(a: int(32), b: int(32)): int(32)
+   operator -(a: int(64), b: int(64)): int(64)
 
-   proc -(a: uint(8), b: uint(8)): uint(8)
-   proc -(a: uint(16), b: uint(16)): uint(16)
-   proc -(a: uint(32), b: uint(32)): uint(32)
-   proc -(a: uint(64), b: uint(64)): uint(64)
+   operator -(a: uint(8), b: uint(8)): uint(8)
+   operator -(a: uint(16), b: uint(16)): uint(16)
+   operator -(a: uint(32), b: uint(32)): uint(32)
+   operator -(a: uint(64), b: uint(64)): uint(64)
 
-   proc -(a: real(32), b: real(32)): real(32)
-   proc -(a: real(64), b: real(64)): real(64)
+   operator -(a: real(32), b: real(32)): real(32)
+   operator -(a: real(64), b: real(64)): real(64)
 
-   proc -(a: imag(32), b: imag(32)): imag(32)
-   proc -(a: imag(64), b: imag(64)): imag(64)
+   operator -(a: imag(32), b: imag(32)): imag(32)
+   operator -(a: imag(64), b: imag(64)): imag(64)
 
-   proc -(a: complex(64), b: complex(64)): complex(64)
-   proc -(a: complex(128), b: complex(128)): complex(128)
+   operator -(a: complex(64), b: complex(64)): complex(64)
+   operator -(a: complex(128), b: complex(128)): complex(128)
 
-   proc -(a: real(32), b: imag(32)): complex(64)
-   proc -(a: imag(32), b: real(32)): complex(64)
-   proc -(a: real(64), b: imag(64)): complex(128)
-   proc -(a: imag(64), b: real(64)): complex(128)
+   operator -(a: real(32), b: imag(32)): complex(64)
+   operator -(a: imag(32), b: real(32)): complex(64)
+   operator -(a: real(64), b: imag(64)): complex(128)
+   operator -(a: imag(64), b: real(64)): complex(128)
 
-   proc -(a: real(32), b: complex(64)): complex(64)
-   proc -(a: complex(64), b: real(32)): complex(64)
-   proc -(a: real(64), b: complex(128)): complex(128)
-   proc -(a: complex(128), b: real(64)): complex(128)
+   operator -(a: real(32), b: complex(64)): complex(64)
+   operator -(a: complex(64), b: real(32)): complex(64)
+   operator -(a: real(64), b: complex(128)): complex(128)
+   operator -(a: complex(128), b: real(64)): complex(128)
 
-   proc -(a: imag(32), b: complex(64)): complex(64)
-   proc -(a: complex(64), b: imag(32)): complex(64)
-   proc -(a: imag(64), b: complex(128)): complex(128)
-   proc -(a: complex(128), b: imag(64)): complex(128)
+   operator -(a: imag(32), b: complex(64)): complex(64)
+   operator -(a: complex(64), b: imag(32)): complex(64)
+   operator -(a: imag(64), b: complex(128)): complex(128)
+   operator -(a: complex(128), b: imag(64)): complex(128)
 
 For each of these definitions that return a value, the result is the
 value obtained by subtracting the second operand from the first operand.
@@ -736,39 +736,39 @@ The multiplication operators are predefined as follows:
 
 .. code-block:: chapel
 
-   proc *(a: int(8), b: int(8)): int(8)
-   proc *(a: int(16), b: int(16)): int(16)
-   proc *(a: int(32), b: int(32)): int(32)
-   proc *(a: int(64), b: int(64)): int(64)
+   operator *(a: int(8), b: int(8)): int(8)
+   operator *(a: int(16), b: int(16)): int(16)
+   operator *(a: int(32), b: int(32)): int(32)
+   operator *(a: int(64), b: int(64)): int(64)
 
-   proc *(a: uint(8), b: uint(8)): uint(8)
-   proc *(a: uint(16), b: uint(16)): uint(16)
-   proc *(a: uint(32), b: uint(32)): uint(32)
-   proc *(a: uint(64), b: uint(64)): uint(64)
+   operator *(a: uint(8), b: uint(8)): uint(8)
+   operator *(a: uint(16), b: uint(16)): uint(16)
+   operator *(a: uint(32), b: uint(32)): uint(32)
+   operator *(a: uint(64), b: uint(64)): uint(64)
 
-   proc *(a: real(32), b: real(32)): real(32)
-   proc *(a: real(64), b: real(64)): real(64)
+   operator *(a: real(32), b: real(32)): real(32)
+   operator *(a: real(64), b: real(64)): real(64)
 
-   proc *(a: imag(32), b: imag(32)): real(32)
-   proc *(a: imag(64), b: imag(64)): real(64)
+   operator *(a: imag(32), b: imag(32)): real(32)
+   operator *(a: imag(64), b: imag(64)): real(64)
 
-   proc *(a: complex(64), b: complex(64)): complex(64)
-   proc *(a: complex(128), b: complex(128)): complex(128)
+   operator *(a: complex(64), b: complex(64)): complex(64)
+   operator *(a: complex(128), b: complex(128)): complex(128)
 
-   proc *(a: real(32), b: imag(32)): imag(32)
-   proc *(a: imag(32), b: real(32)): imag(32)
-   proc *(a: real(64), b: imag(64)): imag(64)
-   proc *(a: imag(64), b: real(64)): imag(64)
+   operator *(a: real(32), b: imag(32)): imag(32)
+   operator *(a: imag(32), b: real(32)): imag(32)
+   operator *(a: real(64), b: imag(64)): imag(64)
+   operator *(a: imag(64), b: real(64)): imag(64)
 
-   proc *(a: real(32), b: complex(64)): complex(64)
-   proc *(a: complex(64), b: real(32)): complex(64)
-   proc *(a: real(64), b: complex(128)): complex(128)
-   proc *(a: complex(128), b: real(64)): complex(128)
+   operator *(a: real(32), b: complex(64)): complex(64)
+   operator *(a: complex(64), b: real(32)): complex(64)
+   operator *(a: real(64), b: complex(128)): complex(128)
+   operator *(a: complex(128), b: real(64)): complex(128)
 
-   proc *(a: imag(32), b: complex(64)): complex(64)
-   proc *(a: complex(64), b: imag(32)): complex(64)
-   proc *(a: imag(64), b: complex(128)): complex(128)
-   proc *(a: complex(128), b: imag(64)): complex(128)
+   operator *(a: imag(32), b: complex(64)): complex(64)
+   operator *(a: complex(64), b: imag(32)): complex(64)
+   operator *(a: imag(64), b: complex(128)): complex(128)
+   operator *(a: complex(128), b: imag(64)): complex(128)
 
 For each of these definitions that return a value, the result is the
 product of the two operands.
@@ -791,39 +791,39 @@ The division operators are predefined as follows:
 
 .. code-block:: chapel
 
-   proc /(a: int(8), b: int(8)): int(8)
-   proc /(a: int(16), b: int(16)): int(16)
-   proc /(a: int(32), b: int(32)): int(32)
-   proc /(a: int(64), b: int(64)): int(64)
+   operator /(a: int(8), b: int(8)): int(8)
+   operator /(a: int(16), b: int(16)): int(16)
+   operator /(a: int(32), b: int(32)): int(32)
+   operator /(a: int(64), b: int(64)): int(64)
 
-   proc /(a: uint(8), b: uint(8)): uint(8)
-   proc /(a: uint(16), b: uint(16)): uint(16)
-   proc /(a: uint(32), b: uint(32)): uint(32)
-   proc /(a: uint(64), b: uint(64)): uint(64)
+   operator /(a: uint(8), b: uint(8)): uint(8)
+   operator /(a: uint(16), b: uint(16)): uint(16)
+   operator /(a: uint(32), b: uint(32)): uint(32)
+   operator /(a: uint(64), b: uint(64)): uint(64)
 
-   proc /(a: real(32), b: real(32)): real(32)
-   proc /(a: real(64), b: real(64)): real(64)
+   operator /(a: real(32), b: real(32)): real(32)
+   operator /(a: real(64), b: real(64)): real(64)
 
-   proc /(a: imag(32), b: imag(32)): real(32)
-   proc /(a: imag(64), b: imag(64)): real(64)
+   operator /(a: imag(32), b: imag(32)): real(32)
+   operator /(a: imag(64), b: imag(64)): real(64)
 
-   proc /(a: complex(64), b: complex(64)): complex(64)
-   proc /(a: complex(128), b: complex(128)): complex(128)
+   operator /(a: complex(64), b: complex(64)): complex(64)
+   operator /(a: complex(128), b: complex(128)): complex(128)
 
-   proc /(a: real(32), b: imag(32)): imag(32)
-   proc /(a: imag(32), b: real(32)): imag(32)
-   proc /(a: real(64), b: imag(64)): imag(64)
-   proc /(a: imag(64), b: real(64)): imag(64)
+   operator /(a: real(32), b: imag(32)): imag(32)
+   operator /(a: imag(32), b: real(32)): imag(32)
+   operator /(a: real(64), b: imag(64)): imag(64)
+   operator /(a: imag(64), b: real(64)): imag(64)
 
-   proc /(a: real(32), b: complex(64)): complex(64)
-   proc /(a: complex(64), b: real(32)): complex(64)
-   proc /(a: real(64), b: complex(128)): complex(128)
-   proc /(a: complex(128), b: real(64)): complex(128)
+   operator /(a: real(32), b: complex(64)): complex(64)
+   operator /(a: complex(64), b: real(32)): complex(64)
+   operator /(a: real(64), b: complex(128)): complex(128)
+   operator /(a: complex(128), b: real(64)): complex(128)
 
-   proc /(a: imag(32), b: complex(64)): complex(64)
-   proc /(a: complex(64), b: imag(32)): complex(64)
-   proc /(a: imag(64), b: complex(128)): complex(128)
-   proc /(a: complex(128), b: imag(64)): complex(128)
+   operator /(a: imag(32), b: complex(64)): complex(64)
+   operator /(a: complex(64), b: imag(32)): complex(64)
+   operator /(a: imag(64), b: complex(128)): complex(128)
+   operator /(a: complex(128), b: imag(64)): complex(128)
 
 For each of these definitions that return a value, the result is the
 quotient of the two operands.
@@ -852,15 +852,15 @@ The modulus operators are predefined as follows:
 
 .. code-block:: chapel
 
-   proc %(a: int(8), b: int(8)): int(8)
-   proc %(a: int(16), b: int(16)): int(16)
-   proc %(a: int(32), b: int(32)): int(32)
-   proc %(a: int(64), b: int(64)): int(64)
+   operator %(a: int(8), b: int(8)): int(8)
+   operator %(a: int(16), b: int(16)): int(16)
+   operator %(a: int(32), b: int(32)): int(32)
+   operator %(a: int(64), b: int(64)): int(64)
 
-   proc %(a: uint(8), b: uint(8)): uint(8)
-   proc %(a: uint(16), b: uint(16)): uint(16)
-   proc %(a: uint(32), b: uint(32)): uint(32)
-   proc %(a: uint(64), b: uint(64)): uint(64)
+   operator %(a: uint(8), b: uint(8)): uint(8)
+   operator %(a: uint(16), b: uint(16)): uint(16)
+   operator %(a: uint(32), b: uint(32)): uint(32)
+   operator %(a: uint(64), b: uint(64)): uint(64)
 
 For each of these definitions that return a value, the result is the
 remainder when the first operand is divided by the second operand.
@@ -891,18 +891,18 @@ The exponentiation operators are predefined as follows:
 
 .. code-block:: chapel
 
-   proc **(a: int(8), b: int(8)): int(8)
-   proc **(a: int(16), b: int(16)): int(16)
-   proc **(a: int(32), b: int(32)): int(32)
-   proc **(a: int(64), b: int(64)): int(64)
+   operator **(a: int(8), b: int(8)): int(8)
+   operator **(a: int(16), b: int(16)): int(16)
+   operator **(a: int(32), b: int(32)): int(32)
+   operator **(a: int(64), b: int(64)): int(64)
 
-   proc **(a: uint(8), b: uint(8)): uint(8)
-   proc **(a: uint(16), b: uint(16)): uint(16)
-   proc **(a: uint(32), b: uint(32)): uint(32)
-   proc **(a: uint(64), b: uint(64)): uint(64)
+   operator **(a: uint(8), b: uint(8)): uint(8)
+   operator **(a: uint(16), b: uint(16)): uint(16)
+   operator **(a: uint(32), b: uint(32)): uint(32)
+   operator **(a: uint(64), b: uint(64)): uint(64)
 
-   proc **(a: real(32), b: real(32)): real(32)
-   proc **(a: real(64), b: real(64)): real(64)
+   operator **(a: real(32), b: real(32)): real(32)
+   operator **(a: real(64), b: real(64)): real(64)
 
 For each of these definitions that return a value, the result is the
 value of the first operand raised to the power of the second operand.
@@ -931,15 +931,15 @@ The bitwise complement operators are predefined as follows:
 
 .. code-block:: chapel
 
-   proc ~(a: int(8)): int(8)
-   proc ~(a: int(16)): int(16)
-   proc ~(a: int(32)): int(32)
-   proc ~(a: int(64)): int(64)
+   operator ~(a: int(8)): int(8)
+   operator ~(a: int(16)): int(16)
+   operator ~(a: int(32)): int(32)
+   operator ~(a: int(64)): int(64)
 
-   proc ~(a: uint(8)): uint(8)
-   proc ~(a: uint(16)): uint(16)
-   proc ~(a: uint(32)): uint(32)
-   proc ~(a: uint(64)): uint(64)
+   operator ~(a: uint(8)): uint(8)
+   operator ~(a: uint(16)): uint(16)
+   operator ~(a: uint(32)): uint(32)
+   operator ~(a: uint(64)): uint(64)
 
 For each of these definitions, the result is the bitwise complement of
 the operand.
@@ -953,13 +953,13 @@ The bitwise and operators are predefined as follows:
 
 .. code-block:: chapel
 
-   proc &(a: bool, b: bool): bool
+   operator &(a: bool, b: bool): bool
 
-   proc &(a: int(?w), b: int(w)): int(w)
-   proc &(a: uint(?w), b: uint(w)): uint(w)
+   operator &(a: int(?w), b: int(w)): int(w)
+   operator &(a: uint(?w), b: uint(w)): uint(w)
 
-   proc &(a: int(?w), b: uint(w)): uint(w)
-   proc &(a: uint(?w), b: int(w)): uint(w)
+   operator &(a: int(?w), b: uint(w)): uint(w)
+   operator &(a: uint(?w), b: int(w)): uint(w)
 
 For each of these definitions, the result is computed by applying the
 logical and operation to the bits of the operands.
@@ -988,13 +988,13 @@ The bitwise or operators are predefined as follows:
 
 .. code-block:: chapel
 
-   proc |(a: bool, b: bool): bool
+   operator |(a: bool, b: bool): bool
 
-   proc |(a: int(?w), b: int(w)): int(w)
-   proc |(a: uint(?w), b: uint(w)): uint(w)
+   operator |(a: int(?w), b: int(w)): int(w)
+   operator |(a: uint(?w), b: uint(w)): uint(w)
 
-   proc |(a: int(?w), b: uint(w)): uint(w)
-   proc |(a: uint(?w), b: int(w)): uint(w)
+   operator |(a: int(?w), b: uint(w)): uint(w)
+   operator |(a: uint(?w), b: int(w)): uint(w)
 
 For each of these definitions, the result is computed by applying the
 logical or operation to the bits of the operands. Chapel allows mixing
@@ -1015,13 +1015,13 @@ The bitwise xor operators are predefined as follows:
 
 .. code-block:: chapel
 
-   proc ^(a: bool, b: bool): bool
+   operator ^(a: bool, b: bool): bool
 
-   proc ^(a: int(?w), b: int(w)): int(w)
-   proc ^(a: uint(?w), b: uint(w)): uint(w)
+   operator ^(a: int(?w), b: int(w)): int(w)
+   operator ^(a: uint(?w), b: uint(w)): uint(w)
 
-   proc ^(a: int(?w), b: uint(w)): uint(w)
-   proc ^(a: uint(?w), b: int(w)): uint(w)
+   operator ^(a: int(?w), b: uint(w)): uint(w)
+   operator ^(a: uint(?w), b: int(w)): uint(w)
 
 For each of these definitions, the result is computed by applying the
 XOR operation to the bits of the operands. Chapel allows mixing signed
@@ -1046,25 +1046,25 @@ The shift operators are predefined as follows:
 
 .. code-block:: chapel
 
-   proc <<(a: int(8), b): int(8)
-   proc <<(a: int(16), b): int(16)
-   proc <<(a: int(32), b): int(32)
-   proc <<(a: int(64), b): int(64)
+   operator <<(a: int(8), b): int(8)
+   operator <<(a: int(16), b): int(16)
+   operator <<(a: int(32), b): int(32)
+   operator <<(a: int(64), b): int(64)
 
-   proc <<(a: uint(8), b): uint(8)
-   proc <<(a: uint(16), b): uint(16)
-   proc <<(a: uint(32), b): uint(32)
-   proc <<(a: uint(64), b): uint(64)
+   operator <<(a: uint(8), b): uint(8)
+   operator <<(a: uint(16), b): uint(16)
+   operator <<(a: uint(32), b): uint(32)
+   operator <<(a: uint(64), b): uint(64)
 
-   proc >>(a: int(8), b): int(8)
-   proc >>(a: int(16), b): int(16)
-   proc >>(a: int(32), b): int(32)
-   proc >>(a: int(64), b): int(64)
+   operator >>(a: int(8), b): int(8)
+   operator >>(a: int(16), b): int(16)
+   operator >>(a: int(32), b): int(32)
+   operator >>(a: int(64), b): int(64)
 
-   proc >>(a: uint(8), b): uint(8)
-   proc >>(a: uint(16), b): uint(16)
-   proc >>(a: uint(32), b): uint(32)
-   proc >>(a: uint(64), b): uint(64)
+   operator >>(a: uint(8), b): uint(8)
+   operator >>(a: uint(16), b): uint(16)
+   operator >>(a: uint(32), b): uint(32)
+   operator >>(a: uint(64), b): uint(64)
 
 The type of the second actual argument must be any integral type.
 
@@ -1100,9 +1100,9 @@ follows:
 
 .. code-block:: chapel
 
-   proc !(a: bool): bool
-   proc !(a: int(?w)): bool
-   proc !(a: uint(?w)): bool
+   operator !(a: bool): bool
+   operator !(a: int(?w)): bool
+   operator !(a: uint(?w)): bool
 
 For the boolean form, the result is the logical negation of the operand.
 For the integer forms, the result is true if the operand is zero and
@@ -1188,21 +1188,21 @@ as follows:
 
 .. code-block:: chapel
 
-   proc <(a: int(8), b: int(8)): bool
-   proc <(a: int(16), b: int(16)): bool
-   proc <(a: int(32), b: int(32)): bool
-   proc <(a: int(64), b: int(64)): bool
+   operator <(a: int(8), b: int(8)): bool
+   operator <(a: int(16), b: int(16)): bool
+   operator <(a: int(32), b: int(32)): bool
+   operator <(a: int(64), b: int(64)): bool
 
-   proc <(a: uint(8), b: uint(8)): bool
-   proc <(a: uint(16), b: uint(16)): bool
-   proc <(a: uint(32), b: uint(32)): bool
-   proc <(a: uint(64), b: uint(64)): bool
+   operator <(a: uint(8), b: uint(8)): bool
+   operator <(a: uint(16), b: uint(16)): bool
+   operator <(a: uint(32), b: uint(32)): bool
+   operator <(a: uint(64), b: uint(64)): bool
 
-   proc <(a: int(64), b: uint(64)): bool
-   proc <(a: uint(64), b: int(64)): bool
+   operator <(a: int(64), b: uint(64)): bool
+   operator <(a: uint(64), b: int(64)): bool
 
-   proc <(a: real(32), b: real(32)): bool
-   proc <(a: real(64), b: real(64)): bool
+   operator <(a: real(32), b: real(32)): bool
+   operator <(a: real(64), b: real(64)): bool
 
 The result of ``a < b`` is true if ``a`` is less than ``b``; otherwise
 the result is false.
@@ -1212,21 +1212,21 @@ types as follows:
 
 .. code-block:: chapel
 
-   proc >(a: int(8), b: int(8)): bool
-   proc >(a: int(16), b: int(16)): bool
-   proc >(a: int(32), b: int(32)): bool
-   proc >(a: int(64), b: int(64)): bool
+   operator >(a: int(8), b: int(8)): bool
+   operator >(a: int(16), b: int(16)): bool
+   operator >(a: int(32), b: int(32)): bool
+   operator >(a: int(64), b: int(64)): bool
 
-   proc >(a: uint(8), b: uint(8)): bool
-   proc >(a: uint(16), b: uint(16)): bool
-   proc >(a: uint(32), b: uint(32)): bool
-   proc >(a: uint(64), b: uint(64)): bool
+   operator >(a: uint(8), b: uint(8)): bool
+   operator >(a: uint(16), b: uint(16)): bool
+   operator >(a: uint(32), b: uint(32)): bool
+   operator >(a: uint(64), b: uint(64)): bool
 
-   proc >(a: int(64), b: uint(64)): bool
-   proc >(a: uint(64), b: int(64)): bool
+   operator >(a: int(64), b: uint(64)): bool
+   operator >(a: uint(64), b: int(64)): bool
 
-   proc >(a: real(32), b: real(32)): bool
-   proc >(a: real(64), b: real(64)): bool
+   operator >(a: real(32), b: real(32)): bool
+   operator >(a: real(64), b: real(64)): bool
 
 The result of ``a > b`` is true if ``a`` is greater than ``b``;
 otherwise the result is false.
@@ -1236,21 +1236,21 @@ numeric types as follows:
 
 .. code-block:: chapel
 
-   proc <=(a: int(8), b: int(8)): bool
-   proc <=(a: int(16), b: int(16)): bool
-   proc <=(a: int(32), b: int(32)): bool
-   proc <=(a: int(64), b: int(64)): bool
+   operator <=(a: int(8), b: int(8)): bool
+   operator <=(a: int(16), b: int(16)): bool
+   operator <=(a: int(32), b: int(32)): bool
+   operator <=(a: int(64), b: int(64)): bool
 
-   proc <=(a: uint(8), b: uint(8)): bool
-   proc <=(a: uint(16), b: uint(16)): bool
-   proc <=(a: uint(32), b: uint(32)): bool
-   proc <=(a: uint(64), b: uint(64)): bool
+   operator <=(a: uint(8), b: uint(8)): bool
+   operator <=(a: uint(16), b: uint(16)): bool
+   operator <=(a: uint(32), b: uint(32)): bool
+   operator <=(a: uint(64), b: uint(64)): bool
 
-   proc <=(a: int(64), b: uint(64)): bool
-   proc <=(a: uint(64), b: int(64)): bool
+   operator <=(a: int(64), b: uint(64)): bool
+   operator <=(a: uint(64), b: int(64)): bool
 
-   proc <=(a: real(32), b: real(32)): bool
-   proc <=(a: real(64), b: real(64)): bool
+   operator <=(a: real(32), b: real(32)): bool
+   operator <=(a: real(64), b: real(64)): bool
 
 The result of ``a <= b`` is true if ``a`` is less than or equal to
 ``b``; otherwise the result is false.
@@ -1260,21 +1260,21 @@ numeric types as follows:
 
 .. code-block:: chapel
 
-   proc >=(a: int(8), b: int(8)): bool
-   proc >=(a: int(16), b: int(16)): bool
-   proc >=(a: int(32), b: int(32)): bool
-   proc >=(a: int(64), b: int(64)): bool
+   operator >=(a: int(8), b: int(8)): bool
+   operator >=(a: int(16), b: int(16)): bool
+   operator >=(a: int(32), b: int(32)): bool
+   operator >=(a: int(64), b: int(64)): bool
 
-   proc >=(a: uint(8), b: uint(8)): bool
-   proc >=(a: uint(16), b: uint(16)): bool
-   proc >=(a: uint(32), b: uint(32)): bool
-   proc >=(a: uint(64), b: uint(64)): bool
+   operator >=(a: uint(8), b: uint(8)): bool
+   operator >=(a: uint(16), b: uint(16)): bool
+   operator >=(a: uint(32), b: uint(32)): bool
+   operator >=(a: uint(64), b: uint(64)): bool
 
-   proc >=(a: int(64), b: uint(64)): bool
-   proc >=(a: uint(64), b: int(64)): bool
+   operator >=(a: int(64), b: uint(64)): bool
+   operator >=(a: uint(64), b: int(64)): bool
 
-   proc >=(a: real(32), b: real(32)): bool
-   proc >=(a: real(64), b: real(64)): bool
+   operator >=(a: real(32), b: real(32)): bool
+   operator >=(a: real(64), b: real(64)): bool
 
 The result of ``a >= b`` is true if ``a`` is greater than or equal to
 ``b``; otherwise the result is false.
@@ -1284,10 +1284,10 @@ The ordered comparison operators are predefined over strings as follows:
 
 .. code-block:: chapel
 
-   proc <(a: string, b: string): bool
-   proc >(a: string, b: string): bool
-   proc <=(a: string, b: string): bool
-   proc >=(a: string, b: string): bool
+   operator <(a: string, b: string): bool
+   operator >(a: string, b: string): bool
+   operator <=(a: string, b: string): bool
+   operator >=(a: string, b: string): bool
 
 Comparisons between strings are defined based on the ordering of the
 character set used to represent the string, which is applied elementwise
@@ -1303,49 +1303,49 @@ over bool and the numeric types as follows:
 
 .. code-block:: chapel
 
-   proc ==(a: int(8), b: int(8)): bool
-   proc ==(a: int(16), b: int(16)): bool
-   proc ==(a: int(32), b: int(32)): bool
-   proc ==(a: int(64), b: int(64)): bool
+   operator ==(a: int(8), b: int(8)): bool
+   operator ==(a: int(16), b: int(16)): bool
+   operator ==(a: int(32), b: int(32)): bool
+   operator ==(a: int(64), b: int(64)): bool
 
-   proc ==(a: uint(8), b: uint(8)): bool
-   proc ==(a: uint(16), b: uint(16)): bool
-   proc ==(a: uint(32), b: uint(32)): bool
-   proc ==(a: uint(64), b: uint(64)): bool
+   operator ==(a: uint(8), b: uint(8)): bool
+   operator ==(a: uint(16), b: uint(16)): bool
+   operator ==(a: uint(32), b: uint(32)): bool
+   operator ==(a: uint(64), b: uint(64)): bool
 
-   proc ==(a: int(64), b: uint(64)): bool
-   proc ==(a: uint(64), b: int(64)): bool
+   operator ==(a: int(64), b: uint(64)): bool
+   operator ==(a: uint(64), b: int(64)): bool
 
-   proc ==(a: real(32), b: real(32)): bool
-   proc ==(a: real(64), b: real(64)): bool
+   operator ==(a: real(32), b: real(32)): bool
+   operator ==(a: real(64), b: real(64)): bool
 
-   proc ==(a: imag(32), b: imag(32)): bool
-   proc ==(a: imag(64), b: imag(64)): bool
+   operator ==(a: imag(32), b: imag(32)): bool
+   operator ==(a: imag(64), b: imag(64)): bool
 
-   proc ==(a: complex(64), b: complex(64)): bool
-   proc ==(a: complex(128), b: complex(128)): bool
+   operator ==(a: complex(64), b: complex(64)): bool
+   operator ==(a: complex(128), b: complex(128)): bool
 
-   proc !=(a: int(8), b: int(8)): bool
-   proc !=(a: int(16), b: int(16)): bool
-   proc !=(a: int(32), b: int(32)): bool
-   proc !=(a: int(64), b: int(64)): bool
+   operator !=(a: int(8), b: int(8)): bool
+   operator !=(a: int(16), b: int(16)): bool
+   operator !=(a: int(32), b: int(32)): bool
+   operator !=(a: int(64), b: int(64)): bool
 
-   proc !=(a: uint(8), b: uint(8)): bool
-   proc !=(a: uint(16), b: uint(16)): bool
-   proc !=(a: uint(32), b: uint(32)): bool
-   proc !=(a: uint(64), b: uint(64)): bool
+   operator !=(a: uint(8), b: uint(8)): bool
+   operator !=(a: uint(16), b: uint(16)): bool
+   operator !=(a: uint(32), b: uint(32)): bool
+   operator !=(a: uint(64), b: uint(64)): bool
 
-   proc !=(a: int(64), b: uint(64)): bool
-   proc !=(a: uint(64), b: int(64)): bool
+   operator !=(a: int(64), b: uint(64)): bool
+   operator !=(a: uint(64), b: int(64)): bool
 
-   proc !=(a: real(32), b: real(32)): bool
-   proc !=(a: real(64), b: real(64)): bool
+   operator !=(a: real(32), b: real(32)): bool
+   operator !=(a: real(64), b: real(64)): bool
 
-   proc !=(a: imag(32), b: imag(32)): bool
-   proc !=(a: imag(64), b: imag(64)): bool
+   operator !=(a: imag(32), b: imag(32)): bool
+   operator !=(a: imag(64), b: imag(64)): bool
 
-   proc !=(a: complex(64), b: complex(64)): bool
-   proc !=(a: complex(128), b: complex(128)): bool
+   operator !=(a: complex(64), b: complex(64)): bool
+   operator !=(a: complex(128), b: complex(128)): bool
 
 The result of ``a == b`` is true if ``a`` and ``b`` contain the same
 value; otherwise the result is false. The result of ``a != b`` is
@@ -1356,8 +1356,8 @@ follows:
 
 .. code-block:: chapel
 
-   proc ==(a: object, b: object): bool
-   proc !=(a: object, b: object): bool
+   operator ==(a: object, b: object): bool
+   operator !=(a: object, b: object): bool
 
 The result of ``a == b`` is true if ``a`` and ``b`` reference the same
 storage location; otherwise the result is false. The result of
@@ -1372,8 +1372,8 @@ follows:
 
 .. code-block:: chapel
 
-   proc ==(a: string, b: string): bool
-   proc !=(a: string, b: string): bool
+   operator ==(a: string, b: string): bool
+   operator !=(a: string, b: string): bool
 
 The result of ``a == b`` is true if the sequence of characters in ``a``
 matches exactly the sequence of characters in ``b``; otherwise the
@@ -1417,7 +1417,7 @@ arguments:
 
 .. code-block:: chapel
 
-   proc +(s0: string, s1: string): string 
+   operator +(s0: string, s1: string): string
 
 ..
 

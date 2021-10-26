@@ -5,7 +5,7 @@ use MasonSearch;
 use MasonUtils;
 
 use FileSystem;
-use Spawn;
+use Subprocess;
 use SysCTypes;
 
 proc setEnv(name : string, val : string) {

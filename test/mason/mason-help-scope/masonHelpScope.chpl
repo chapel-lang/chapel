@@ -1,6 +1,6 @@
 use MasonUtils;
 use MasonHelp;
-use Spawn;
+use Subprocess;
 
 proc checkCommand(cmd: string) {
   var splitCmd = cmd.split();

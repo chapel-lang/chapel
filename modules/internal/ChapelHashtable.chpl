@@ -25,7 +25,7 @@
 //
 // chpl_TableEntry is the type for each hashtable slot
 // chpl__hashtable is the record implementing a hashtable
-// chpl__defaultHash is the default hash function for most types
+// hash is the default hash method for most types
 pragma "unsafe"
 module ChapelHashtable {
 
@@ -258,7 +258,9 @@ module ChapelHashtable {
 
     var postponeResize: bool;
 
-    proc init(type keyType, type valType,
+    const resizeThreshold: real;
+
+    proc init(type keyType, type valType, resizeThreshold = 0.5,
               in rehashHelpers: owned chpl__rehashHelpers? = nil) {
       this.keyType = keyType;
       this.valType = valType;
@@ -267,6 +269,7 @@ module ChapelHashtable {
       this.tableSize = 0;
       this.rehashHelpers = rehashHelpers;
       this.postponeResize = false;
+      this.resizeThreshold = resizeThreshold;
       this.complete();
 
       // allocates a _ddata(chpl_TableEntry(keyType,valType)) storing the table
@@ -395,7 +398,8 @@ module ChapelHashtable {
       var slotNum = -1;
       var foundSlot = false;
 
-      if (tableNumFullSlots+tableNumDeletedSlots+1)*2 > tableSize {
+      if ((tableNumFullSlots + tableNumDeletedSlots + 1) *
+          (1 / resizeThreshold)):int > tableSize {
         resize(grow=true);
       }
 

@@ -1,6 +1,6 @@
 // Simple test to check that the updateDatFiles.py script is still working
 
-use Spawn;
+use Subprocess;
 use FileSystem;
 use IO;
 

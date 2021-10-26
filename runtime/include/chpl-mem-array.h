@@ -200,9 +200,9 @@ void chpl_mem_array_free(void* p,
   // comm layer says it didn't come from there, free it in the memory
   // layer.
   //
-  chpl_memhook_free_pre(p, lineno, filename);
-
   const size_t size = nmemb * eltSize;
+  chpl_memhook_free_pre(p, size, lineno, filename);
+
   if (chpl_mem_size_justifies_comm_alloc(size)
       && chpl_comm_regMemFree(p, size)) {
     return;

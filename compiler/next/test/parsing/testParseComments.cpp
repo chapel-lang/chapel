@@ -42,10 +42,9 @@ static void test0(Parser* parser) {
   auto parseResult = parser->parseString("test0.chpl",
       "foo();\n"
       "//c2");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->stmt(0)->isFnCall());
   assert(mod->stmt(1)->isComment());
   assert(mod->stmt(1)->toComment()->str() == "//c2");

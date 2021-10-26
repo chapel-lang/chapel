@@ -454,6 +454,10 @@ static void checkOperator(FnSymbol* fn) {
                "Operators declared without the operator keyword are deprecated");
       fn->addFlag(FLAG_OPERATOR);
     }
+  } else if (fn->hasFlag(FLAG_OPERATOR)) {
+    if (!isAstrOpName(fn->name)) {
+      USR_FATAL_CONT(fn, "'%s' is not a legal operator name", fn->name);
+    }
   }
 }
 

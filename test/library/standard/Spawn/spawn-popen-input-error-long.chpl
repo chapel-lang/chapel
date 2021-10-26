@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 var sub = spawnshell("cat 1>&2", stdin=BUFFERED_PIPE, stdout=FORWARD, stderr=PIPE);
 

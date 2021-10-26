@@ -684,8 +684,18 @@ void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
 }
 
 
-void chpl_track_free(void* memAlloc, int32_t lineno, int32_t filename) {
-  if (chpl_mem_real_alloc_size(memAlloc, lineno, filename) > memThreshold) {
+
+// Since it's subtle -- approximateSize is used as an optimization to skip the
+// table lock when an allocation is below the tracking threshold. However, we
+// don't always know the exact size since we don't store the size of all
+// allocations. Since we can't always know the exact size, it can be 0 if the
+// size is unknown and otherwise it must be at least as large as the initial
+// allocation size. This allows us to pass the initial size if we have it, but
+// otherwise we can ask the allocator for the size of a pointer if it supports
+// that query, which isn't free but is much cheaper than grabbing a lock.
+void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
+                     int32_t filename) {
+  if (approximateSize == 0 || approximateSize > memThreshold) {
     memTableEntry* memEntry = NULL;
     if (chpl_memTrack) {
       memTrack_lock();

@@ -36,20 +36,19 @@ using namespace chpl;
 using namespace uast;
 using namespace parsing;
 
-static uast::Builder::Result parseExprAsVarInit(Parser* parser,
-                                                const std::string& testname,
-                                                const std::string& init,
-                                                const Expression*& exprOut) {
+static uast::BuilderResult parseExprAsVarInit(Parser* parser,
+                                              const std::string& testname,
+                                              const std::string& init,
+                                              const Expression*& exprOut) {
   std::string toparse = "var x = ";
   toparse += init;
   toparse += ";\n";
   auto parseResult = parser->parseString(testname.c_str(), toparse.c_str());
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto variable = module->stmt(0)->toVariable();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto variable = mod->stmt(0)->toVariable();
   assert(variable);
   exprOut = variable->initExpression();
   return parseResult;
@@ -155,12 +154,11 @@ static void testBadLiteral(Parser* parser,
   toparse += str;
   toparse += ";\n";
   auto parseResult = parser->parseString(testname, toparse.c_str());
-  assert(parseResult.errors.size() > 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->numStmts() == 1);
-  auto variable = module->stmt(0)->toVariable();
+  assert(parseResult.numErrors() > 0);
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  auto variable = mod->stmt(0)->toVariable();
   assert(variable);
   assert(variable->initExpression()->isErroneousExpression());
 }

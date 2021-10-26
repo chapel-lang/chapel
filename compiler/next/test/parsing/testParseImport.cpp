@@ -47,10 +47,9 @@ static void test0(Parser* parser) {
       "/*c1*/\n"
       "import /*c2*/ Foo as X /*c3*/;\n"
       "/*c4*/\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isImport());
@@ -74,10 +73,9 @@ static void test1(Parser* parser) {
       "/*c1*/\n"
       "public import /*c2*/ A as X, /*c3*/ B.SM1 as Y, /*c4*/ C as Z;\n"
       "/*c5*/\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isImport());
@@ -142,10 +140,9 @@ static void test2(Parser* parser) {
       "/*c1*/\n"
       "private import /*c2*/ A as X, B.{Y, Z};\n"
       "/*c7*/\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isImport());
@@ -199,10 +196,9 @@ static void test3(Parser* parser) {
       "/*c1*/\n"
       "private import /*c2*/ B.{Y};\n"
       "/*c7*/\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  const Module* mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isImport());
@@ -221,10 +217,9 @@ static void test4(Parser* parser) {
       "/*c1*/\n"
       "import /*c2*/ B.{Y as Z};\n"
       "/*c7*/\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isImport());
@@ -247,10 +242,9 @@ static void test5(Parser* parser) {
       "/*c1*/\n"
       "import /*c2*/ 1+1;\n"
       "/*c7*/\n");
-  assert(parseResult.errors.size() == 1);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(parseResult.numErrors() >= 1);
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isErroneousExpression());

@@ -40,11 +40,12 @@ void chpl_comm_preLaunch(int32_t numLocales) {
   // during comm layer initialization.  At this point we cannot tell
   // whether we'll do so, but it won't hurt anything to set it anyway.
   //
-  // Based on limited experimentation, it looks like the actual value we
-  // need is ((numLocales * 5) + 3).  (numLocales * 7) is a ceiling.
-  //
+  // Based on limited experimentation, numLocales * 10 works with
+  // small-scale runs. The cray-pmi{,-lib} modules are likely to be
+  // loaded for large-scale runs in which case KVS isn't even used. 
+  
   {
-    int32_t newVal = numLocales * 7;
+    int32_t newVal = numLocales * 10;
 
     const char* evName = "PMI_MAX_KVS_ENTRIES";
     char* evStr;

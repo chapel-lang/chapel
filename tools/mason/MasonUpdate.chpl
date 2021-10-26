@@ -104,7 +104,7 @@ proc updateLock(skipUpdate: bool, tf="Mason.toml", lf="Mason.lock") {
       }
     }
     if isDir(SPACK_ROOT) && TomlFile.pathExists('external') {
-      if getSpackVersion != spackVersion then
+      if getSpackVersion < spackVersion then
       throw new owned MasonError("Mason has been updated. " +
                   "To install Spack, call: mason external --setup.");
     }

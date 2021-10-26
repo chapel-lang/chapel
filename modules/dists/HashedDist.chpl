@@ -792,8 +792,7 @@ class UserMapAssocArr: AbsBaseArr {
     return dsiAccess(i(0));
   }
 
-  proc dsiAccess(i: idxType) const ref
-  where shouldReturnRvalueByConstRef(eltType) {
+  proc dsiAccess(i: idxType) const ref {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
     const locArr = locArrs[localeIndex]!;
     if locArr.locale == here {
@@ -804,8 +803,7 @@ class UserMapAssocArr: AbsBaseArr {
     return locArr[i];
   }
 
-  proc dsiAccess(i: 1*idxType) const ref
-  where shouldReturnRvalueByConstRef(eltType) {
+  proc dsiAccess(i: 1*idxType) const ref {
     return dsiAccess(i(0));
   }
 
@@ -822,8 +820,7 @@ class UserMapAssocArr: AbsBaseArr {
     return locArr[i];
   }
 
-  inline proc dsiLocalAccess(i) const ref
-  where shouldReturnRvalueByConstRef(eltType) {
+  inline proc dsiLocalAccess(i) const ref {
     const localeIndex = dom.dist.indexToLocaleIndex(i);
     const locArr = locArrs[localeIndex]!;
     return locArr[i];
@@ -988,8 +985,7 @@ class LocUserMapAssocArr {
   where shouldReturnRvalueByValue(eltType) {
     return myElems(i);
   }
-  proc this(i: idxType) const ref
-  where shouldReturnRvalueByConstRef(eltType) {
+  proc this(i: idxType) const ref {
     return myElems(i);
   }
 

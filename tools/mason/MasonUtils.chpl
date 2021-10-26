@@ -24,7 +24,7 @@
 private use List;
 private use Map;
 
-public use Spawn;
+public use Subprocess;
 public use FileSystem;
 public use TOML;
 public use Path;
@@ -95,7 +95,7 @@ proc stripExt(toStrip: string, ext: string) : string {
 }
 
 
-/* Uses the Spawn module to create a subprocess */
+/* Uses the Subprocess module to create a subprocess */
 proc runCommand(cmd, quiet=false) : string throws {
   var ret : string;
   try {
@@ -171,7 +171,7 @@ proc getSpackRegistry : string {
 /* uses spawnshell and the prefix to setup Spack before
    calling the spack command. This also returns the stdout
    of the spack call.
-   TODO: get to work with Spawn */
+   TODO: get to work with Subprocess */
 proc getSpackResult(cmd, quiet=false) : string throws {
   var ret : string;
   try {
@@ -198,7 +198,7 @@ proc getSpackResult(cmd, quiet=false) : string throws {
 
 /* Sets up spack by prefixing command with spack env vars
    Only returns the exit status of the command
-   TODO: get to work with Spawn */
+   TODO: get to work with Subprocess */
 proc runSpackCommand(command) {
 
   var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
@@ -276,6 +276,15 @@ record VersionInfo {
 
   proc containsMax() {
     return this.major == max(int) || this.minor == max(int) || this.bug == max(int);
+  }
+
+  proc isCompatible(other:VersionInfo) : bool {
+    // checks that a version is compatible with this version
+    // versions are assumed compatible if major and minor versions match
+    // and patch/bug level is the same or greater
+    return this.major == other.major
+           && this.minor == other.minor
+           && this.bug <= other.bug;
   }
 }
 

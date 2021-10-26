@@ -121,7 +121,7 @@ void* chpl_mem_realloc(void* memAlloc, size_t size,
   chpl_memhook_realloc_pre(memAlloc, size, description,
                            lineno, filename);
   if (size == 0) {
-    chpl_memhook_free_pre(memAlloc, lineno, filename);
+    chpl_memhook_free_pre(memAlloc, 0, lineno, filename);
     chpl_free(memAlloc);
     return NULL;
   }
@@ -148,7 +148,10 @@ void* chpl_mem_memalign(size_t boundary, size_t size,
 
 static inline
 void chpl_mem_free(void* memAlloc, int32_t lineno, int32_t filename) {
-  chpl_memhook_free_pre(memAlloc, lineno, filename);
+  // Use the real size of an allocation as the approximate size for memory
+  // tracking so it can avoid grabbing a lock for allocations below a threshold
+  size_t approximateSize = CHPL_MEMHOOKS_ACTIVE ? chpl_real_alloc_size(memAlloc) : 0;
+  chpl_memhook_free_pre(memAlloc, approximateSize, lineno, filename);
   chpl_free(memAlloc);
 }
 

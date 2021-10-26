@@ -573,6 +573,8 @@ arr-forall:
 array_iter:
   06/19/17:
     - Reduce amount of locking in associative array dsiAccess (#6244)
+  09/28/21:
+    - Change ChapelHashtable to use power-of-2 table size (#18427)
 
 arguments:
   03/10/17:
@@ -643,6 +645,8 @@ build-associative:
     - Extend parallel array initialization to POD arrays (#6675)
   06/03/20:
     - Factor hashtable used by DefaultAssociative out of it (#15739)
+  09/28/21:
+    - Change ChapelHashtable to use power-of-2 table size (#18427)
 
 cast-from-string:
   12/14/18:
@@ -1058,6 +1062,8 @@ knucleotide: &knucleotide-base
     - Optimize ASCII strings (#16092)
   09/03/21:
     - Two little string optimizations (#18323)
+  09/28/21:
+    - Change ChapelHashtable to use power-of-2 table size (#18427)
 knucleotide-submitted:
   <<: *knucleotide-base
 
@@ -1568,6 +1574,8 @@ pidigits-submitted:
 primes:
   07/01/20:
     - Optimize repeated insertions/deletions from chpl__hashtable (#15982)
+  09/28/21:
+    - Change ChapelHashtable to use power-of-2 table size (#18427)
 
 prk-stencil:
   02/14/16:
@@ -2189,6 +2197,12 @@ arkouda: &arkouda-base
   08/27/21:
     - text: Allow jemalloc to merge/split chunks to reduce fixed heap fragmentation (#18299)
       config: 16-node-cs-hdr
+  10/01/21:
+    - Avoid tracking small allocations by setting memThreshold (mhmerrill/arkouda#935)
+    - Optimize memory tracking with a memThreshold (#18465)
+  10/05/21:
+    - Optimize how segmented array slices are interpreted as strings/bytes (mhmerrill/arkouda#931)
+
 
 arkouda-string:
   <<: *arkouda-base

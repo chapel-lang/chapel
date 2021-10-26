@@ -44,10 +44,16 @@ namespace uast {
  */
 class Record final : public AggregateDecl {
  private:
-  Record(ASTList children, Decl::Visibility vis,
-         UniqueString name, int numChildren)
-    : AggregateDecl(asttags::Record, std::move(children), vis, name,
-                    (numChildren>0)?0:-1, numChildren) {
+  Record(ASTList children, Decl::Visibility vis, Decl::Linkage linkage,
+         int linkageNameChildNum,
+         UniqueString name,
+         int elementsChildNum,
+         int numElements)
+    : AggregateDecl(asttags::Record, std::move(children), vis, linkage,
+                    linkageNameChildNum,
+                    name,
+                    elementsChildNum,
+                    numElements) {
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
@@ -55,6 +61,7 @@ class Record final : public AggregateDecl {
     const Record* rhs = (const Record*) other;
     return lhs->aggregateDeclContentsMatchInner(rhs);
   }
+
   void markUniqueStringsInner(Context* context) const override {
     aggregateDeclMarkUniqueStringsInner(context);
   }
@@ -63,7 +70,10 @@ class Record final : public AggregateDecl {
   ~Record() override = default;
 
   static owned<Record> build(Builder* builder, Location loc,
-                             Decl::Visibility vis, UniqueString name,
+                             Decl::Visibility vis,
+                             Decl::Linkage linkage,
+                             owned<Expression> linkageName,
+                             UniqueString name,
                              ASTList contents);
 };
 
