@@ -895,7 +895,7 @@ record regex {
 
     var nfound = 0;
     var cur = pos;
-    while nfound < maxmatches && cur < endpos {
+    while nfound < maxmatches && cur <= endpos {
       var got:bool;
       on this.home {
         got = qio_regex_match(_regex, text.localize().c_str(), textLength, cur:int, endpos:int, QIO_REGEX_ANCHOR_UNANCHORED, matches, nmatches);
@@ -907,7 +907,7 @@ record regex {
         ret[i] = new regexMatch(got, matches[i].offset:byteIndex, matches[i].len);
       }
       yield ret;
-      cur = matches[0].offset + matches[0].len;
+      cur = matches[0].offset + max(1, matches[0].len);
     }
     on this.home {
       _ddata_free(matches, nmatches);
