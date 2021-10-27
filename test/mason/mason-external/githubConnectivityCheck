@@ -6,15 +6,7 @@ ping -c 1 github.com &> /dev/null
 status=$?
 if ! [ $status -eq 0 ]; then
   echo "True"
-  exit 0
-fi
-
-command -v $CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR/mason > /dev/null
-status=$?
-
-if [ $status -eq  0 ];  then
-    echo "False"
 else
-    echo "True"
+  echo "False"
 fi
 exit 0
