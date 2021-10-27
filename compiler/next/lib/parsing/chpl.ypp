@@ -2985,7 +2985,7 @@ stmt_level_expr:
 | new_expr
 | let_expr
 | io_expr TIO expr
-    { $$ = TODOEXPR(@$); }
+  { $$ = context->buildBinOp(@$, $1, $2, $3); }
 ;
 
 opt_task_intent_ls:
@@ -3057,7 +3057,7 @@ task_var_prefix:
 io_expr:
   lhs_expr
 | io_expr TIO expr
-    { $$ = TODOEXPR(@$); }
+  { $$ = context->buildBinOp(@$, $1, $2, $3); }
 ;
 
 new_maybe_decorated:

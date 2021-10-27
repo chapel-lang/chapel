@@ -164,7 +164,7 @@ struct Converter {
   }
 
   Expr*
-  singleExprFromBlock(uast::ASTListIteratorPair<uast::Expression> stmts) {
+  singleExprFromStmts(uast::ASTListIteratorPair<uast::Expression> stmts) {
     Expr* ret = nullptr;
 
     for (auto stmt: stmts) {
@@ -177,9 +177,11 @@ struct Converter {
     return ret;
   }
 
-  BlockStmt* visit(const uast::Begin* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  Expr* visit(const uast::Begin* node) {
+    CallExpr* byrefVars = convertWithClause(node->withClause(), node);
+    Expr* stmt = createBlockWithStmts(node->stmts());
+    assert(stmt);
+    return buildBeginStmt(byrefVars, stmt);
   }
 
   BlockStmt* visit(const uast::Block* node) {
@@ -277,9 +279,55 @@ struct Converter {
     return buildRequireStmt(actuals);
   }
 
-  BlockStmt* visit(const uast::Import* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  Expr* visit(const uast::Import* node) {
+    const bool isPrivate = node->visibility() != uast::Decl::PUBLIC;
+    auto ret = new BlockStmt(BLOCK_SCOPELESS);
+
+    for (auto vc : node->visibilityClauses()) {
+      ImportStmt* conv = nullptr;
+
+      switch (vc->limitationKind()) {
+        case uast::VisibilityClause::NONE: {
+          assert(vc->numLimitations() == 0);
+
+          // Handles case: 'import foo as bar'
+          if (auto as = vc->symbol()->toAs()) {
+            Expr* mod = convertAST(as->symbol());
+            const char* rename = as->rename()->name().c_str();
+            conv = buildImportStmt(mod, rename);
+
+          // Handles: 'import foo'
+          } else {
+            Expr* mod = convertAST(vc->symbol());
+            conv = buildImportStmt(mod);
+          }
+        } break;
+
+        // Handles: 'import foo.{a, b, c}'
+        case uast::VisibilityClause::BRACES: {
+          auto names = new std::vector<PotentialRename*>();
+          Expr* mod = convertAST(vc->symbol());
+
+          for (auto lmt : vc->limitations()) {
+            auto rename = convertRename(lmt);
+            names->push_back(rename);
+          }
+
+          conv = buildImportStmt(mod, names);
+        } break;
+        default:
+          assert(0 == "Not possible!");
+          break;
+      }
+
+      assert(conv != nullptr);
+
+      ret->insertAtTail(conv);
+    }
+
+    setImportPrivacy(ret, isPrivate);
+
+    return ret;
   }
 
   CallExpr* visit(const uast::New* node) {
@@ -496,9 +544,10 @@ struct Converter {
     return ret;
   }
 
-  BlockStmt* visit(const uast::Cobegin* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  Expr* visit(const uast::Cobegin* node) {
+    CallExpr* byrefVars = convertWithClause(node->withClause(), node);
+    BlockStmt* block = createBlockWithStmts(node->taskBodies());
+    return buildCobeginStmt(byrefVars, block);
   }
 
   Expr* visit(const uast::Conditional* node) {
@@ -508,9 +557,9 @@ struct Converter {
     assert(cond);
 
     if (node->isExpressionLevel()) {
-      auto thenExpr = singleExprFromBlock(node->thenStmts());
+      auto thenExpr = singleExprFromStmts(node->thenStmts());
       assert(thenExpr);
-      auto elseExpr = singleExprFromBlock(node->elseStmts());
+      auto elseExpr = singleExprFromStmts(node->elseStmts());
       assert(elseExpr);
       ret = new IfExpr(cond, thenExpr, elseExpr);
 
@@ -650,6 +699,13 @@ struct Converter {
     }
   }
 
+  // Deduced by looking at 'buildForallLoopExpr' calls in for_expr:
+  bool isLoopMaybeArrayType(const uast::IndexableLoop* node) {
+    return node->isBracketLoop() && node->index() &&
+        !node->iterand()->isZip() &&
+        !node->stmt(0)->isConditional();
+  }
+
   // TODO: Use for BracketLoop/Forall...
   BlockStmt* convertCommonIndexableLoop(const uast::IndexableLoop* node) {
     INT_FATAL("TODO");
@@ -664,11 +720,11 @@ struct Converter {
     Expr* indices = convertLoopIndexDecl(node->index());
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
     Expr* expr = nullptr;
+
+    // TODO (dlongnecke): Parse and wire this up.
     Expr* cond = nullptr;
 
-    // Deduced by looking at 'buildForallLoopExpr' calls in for_expr:
-    bool maybeArrayType = !node->iterand()->isZip() && node->index() &&
-                          !node->stmt(0)->isConditional();
+    bool maybeArrayType = isLoopMaybeArrayType(node);
     bool zippered = node->iterand()->isZip();
 
     // TODO: Assert conditional has no else block, pull out the cond and
@@ -728,22 +784,41 @@ struct Converter {
                                  zippered);
   }
 
-  BlockStmt* visit(const uast::For* node) {
-    BlockStmt* ret = nullptr;
+  Expr* visit(const uast::For* node) {
+    Expr* ret = nullptr;
 
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
     BlockStmt* body = createBlockWithStmts(node->stmts());
     bool zippered = node->iterand()->isZip();
     bool isForExpr = node->isExpressionLevel();
 
-    // TODO: Do we attach 'param' to the index variable or the loop?
-    if (node->isParam()) {
+    if (node->isExpressionLevel()) {
+      assert(node->numStmts() == 1);
+
+      Expr* index = convertLoopIndexDecl(node->index());
+      Expr* expr = singleExprFromStmts(node->stmts());
+      assert(expr);
+
+      // TODO (dlongnecke): Parse loop rules that have conditional bodies.
+      Expr* cond = nullptr;
+      bool maybeArrayType = isLoopMaybeArrayType(node);
+
+      ret = buildForLoopExpr(index, iteratorExpr, expr, cond,
+                             maybeArrayType,
+                             zippered);
+
+    // Param loops use the index variable name as 'const char*'.
+    } else if (node->isParam()) {
       assert(node->index() && node->index()->isVariable());
+
+      // TODO: Do we attach 'param' to the index variable or the loop?
       auto index = node->index()->toVariable();
       const char* indexStr = index->name().c_str();
       Expr* range = iteratorExpr;
       BlockStmt* stmts = body;
+
       ret = buildParamForLoopStmt(indexStr, range, stmts);
+
     } else {
       Expr* indices = convertLoopIndexDecl(node->index());
       ret = ForLoop::buildForLoop(indices, iteratorExpr, body, zippered,
@@ -766,8 +841,7 @@ struct Converter {
     Expr* expr = nullptr;
     Expr* cond = nullptr;
 
-    // TODO: We might need to see the parent to be able to handle this.
-    bool maybeArrayType = false;
+    bool maybeArrayType = isLoopMaybeArrayType(node);
     bool zippered = node->iterand()->isZip();
 
     // Assert conditional has no else block, pull out the cond and expr
@@ -1055,11 +1129,6 @@ struct Converter {
       // TODO: Need to check for special identifiers?
       Expr* typeExpr = convertAST(newExpression->typeExpression());
 
-      // Should only generate these for now.
-      if (!isSymExpr(typeExpr) && !isUnresolvedSymExpr(typeExpr)) {
-        assert(0 == "Not handled yet!");
-      }
-
       auto initializerCall = new CallExpr(typeExpr);
       newExprStart->insertAtTail(initializerCall);
 
@@ -1299,8 +1368,9 @@ struct Converter {
   }
 
   /// NamedDecls ///
+
   Expr* visit(const uast::EnumElement* node) {
-    INT_FATAL("TODO");
+    INT_FATAL("Should not be called directly!");
     return nullptr;
   }
 
@@ -1767,9 +1837,34 @@ struct Converter {
 
   /// TypeDecls
 
+  // Does not attach parent type.
+  DefExpr* convertEnumElement(const uast::EnumElement* node) {
+    const char* name = node->name().c_str();
+    Expr* initExpr = convertExprOrNull(node->initExpression());
+    auto ret = new DefExpr(new EnumSymbol(name), initExpr);
+    return ret;
+  }
+
   Expr* visit(const uast::Enum* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    auto enumType = new EnumType();
+
+    for (auto elem : node->enumElements()) {
+      DefExpr* convElem = convertEnumElement(elem);
+      convElem->sym->type = enumType;
+      enumType->constants.insertAtTail(convElem);
+
+      if (enumType->defaultValue == nullptr) {
+        enumType->defaultValue = convElem->sym;
+      }
+    }
+
+    auto enumTypeSym = new TypeSymbol(node->name().c_str(), enumType);
+    enumType->symbol = enumTypeSym;
+
+    auto ret = new BlockStmt(BLOCK_SCOPELESS);
+    ret->insertAtTail(new DefExpr(enumTypeSym));
+
+    return ret;
   }
 
   /// AggregateDecls
