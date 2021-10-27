@@ -88,6 +88,13 @@ module Map {
     */
     const resizeThreshold = 0.5;
 
+    /*
+      Integer value that sets the number of elements that the map
+      can hold before resizing. The map will be greater than or
+      equal to this value upon initialization and will never resize
+      below this initialCapacity. This is useful when you know in
+      advance how many elements your map will hold.
+    */
     const initialCapacity = 32;
 
     pragma "no doc"
@@ -117,7 +124,9 @@ module Map {
       :arg valType: The type of the values of this map.
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :arg resizeThreshold: Fractional value that specifies how full this map
-                            can be before requesting additional memory.
+                            can be before requesting additional memory
+      :arg initialCapacity: Integer value that specifies starting map size. The
+                            map will never shrink below this value.
     */
     proc init(type keyType, type valType, param parSafe=false,
               resizeThreshold = 0.5, initialCapacity = 32) {
