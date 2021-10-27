@@ -44,8 +44,7 @@ proc masonPublish(args: [?d] string) {
 
 proc masonPublish(ref args: list(string)) throws {
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonPublishHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonPublishHelpHandler());
 
   var dryFlag = parser.addFlag(name="dry-run",
                                defaultValue=false);

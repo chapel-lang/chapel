@@ -29,8 +29,7 @@ use TOML;
 /* Modify manifest file */
 proc masonModify(args: [] string) throws {
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonModifyHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonModifyHelpHandler());
 
   var extFlag = parser.addFlag("external", defaultValue=false);
   var sysFlag = parser.addFlag("system", defaultValue=false);

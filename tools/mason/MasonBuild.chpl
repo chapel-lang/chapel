@@ -35,7 +35,7 @@ use TOML;
 
 proc masonBuild(args: [] string) throws {
 
-  var parser = new argumentParser();
+  var parser = new argumentParser(helpHandler=new MasonBuildHelpHandler());
 
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var releaseFlag = parser.addFlag(name="release", defaultValue=false);
@@ -43,7 +43,6 @@ proc masonBuild(args: [] string) throws {
   var exampleOpts = parser.addOption(name="example", numArgs=0..);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
 
-  parser.setHelpMessage(new MasonBuildHelpMessage());
   var passArgs = parser.addPassThrough();
 
   parser.parseArgs(args);

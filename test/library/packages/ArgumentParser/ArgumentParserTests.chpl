@@ -3563,18 +3563,57 @@ proc testOptionZeroValueDetection(test: borrowed Test) throws {
   test.assertEqual(new list(myOption.values()), new list(string));
 }
 
-// minimal help usage test, overrides help to omit exit() during UnitTest
+// minimal help usage test, overrides help to do some custom stuff
 proc testMinimalHelp(test: borrowed Test) throws {
-  class MyHelpMessage : HelpMessage {
-    override proc help(exitCode=0) {
+  class MyHelpHandler : HelpHandler {
+    override proc printHelp() {
       writeln("This is a custom help message for testing");
     }
   }
 
   var argList = ["progName","--help"];
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MyHelpMessage());
+  var parser = new argumentParser(helpHandler=new MyHelpHandler(),
+                                  exitAfterHelp=false);
   parser.parseArgs(argList);
+  test.assertTrue(parser.helpFlagPresent()[0]);
+  test.assertEqual(parser.helpFlagPresent()[1],"--help");
+}
+
+// user opts out of help handling, then help flag is unrecognized
+proc testNoHelp(test: borrowed Test) throws {
+
+  var argList = ["progName","--help"];
+  var parser = new argumentParser(addHelp=false);
+  parser.parseArgs(argList);
+  test.assertFalse(parser.helpFlagPresent()[0]);
+  test.assertEqual(parser.helpFlagPresent()[1], "");
+}
+
+// set custom help message
+proc testCustomHelpString(test: borrowed Test) throws {
+
+  var argList = ["progName","--help"];
+  var parser = new argumentParser(helpMessage="Custom Message",
+                                  exitAfterHelp=false);
+  parser.parseArgs(argList);
+  test.assertTrue(parser.helpFlagPresent()[0]);
+  test.assertEqual(parser.helpFlagPresent()[1], "--help");
+}
+
+// minimal help usage test, overrides help to do some custom stuff
+proc testCustomHandlerNoHelp(test: borrowed Test) throws {
+  class MyHelpHandler : HelpHandler {
+    override proc printHelp() {
+      writeln("This is a custom help message for testing");
+    }
+  }
+
+  var argList = ["progName","--help"];
+  var parser = new argumentParser(helpHandler=new MyHelpHandler(),
+                                  exitAfterHelp=false,
+                                  addHelp=false);
+  parser.parseArgs(argList);
+  test.assertFalse(parser.helpFlagPresent()[0]);
 }
 
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE

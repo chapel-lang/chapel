@@ -26,8 +26,7 @@ use MasonUtils;
 
 proc masonDoc(args: [] string) throws {
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonDocHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonDocHelpHandler());
 
   parser.parseArgs(args);
 

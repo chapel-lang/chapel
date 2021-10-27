@@ -30,8 +30,7 @@ use TOML;
 
 proc masonRun(args: [] string) throws {
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonRunHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonRunHelpHandler());
 
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var releaseFlag = parser.addFlag(name="release", defaultValue=false);
@@ -132,8 +131,7 @@ proc runProjectBinary(show: bool, release: bool, execopts: list(string)) throws 
 /* Builds program before running. */
 private proc masonBuildRun(args: [?d] string) {
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonRunHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonRunHelpHandler());
 
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var releaseFlag = parser.addFlag(name="release", defaultValue=false);

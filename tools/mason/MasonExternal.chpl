@@ -38,7 +38,7 @@ use TOML;
 
 proc masonExternal(args: [] string) {
 
-  var parser = new argumentParser();
+  var parser = new argumentParser(helpHandler=new MasonExternalHelpHandler());
 
   var subCmds = new map(string, shared Argument);
 
@@ -47,7 +47,6 @@ proc masonExternal(args: [] string) {
   for cmd in cmds {
     subCmds.add(cmd,parser.addSubCommand(cmd));
   }
-  parser.setHelpMessage(new MasonExternalHelpMessage());
 
   var versionFlag = parser.addFlag(name="versionFlag",
                                    opts=["-V","--version"],
@@ -277,8 +276,7 @@ private proc listSpkgs() {
 
 /* Queries spack for package existence */
 private proc searchSpkgs(args: [?d] string) {
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonExternalSearchHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonExternalSearchHelpHandler());
 
   var descFlag = parser.addFlag(name="description",
                                 opts=["-d","--desc"],
@@ -313,8 +311,7 @@ private proc listInstalled() {
 /* User facing function to show packages installed on
    system. Takes all spack arguments ex. -df <package> */
 private proc findSpkg(args: [?d] string) {
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonExternalFindHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonExternalFindHelpHandler());
 
   var findArgs = parser.addArgument(name="package", numArgs=0..);
 
@@ -329,8 +326,7 @@ private proc findSpkg(args: [?d] string) {
 /* Entry point into the various info subcommands */
 private proc spkgInfo(args: [?d] string) {
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonExternalInfoHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonExternalInfoHelpHandler());
 
   var archFlag = parser.addFlag(name="architecture",
                                 opts=["--arch"],
@@ -377,8 +373,7 @@ proc spkgInstalled(spec: string) {
 /* Entry point into the various compiler functions */
 private proc compiler(args: [?d] string) {
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonCompilerHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonCompilerHelpHandler());
 
   var listFlag = parser.addFlag(name="list", defaultValue=true);
   var findFlag = parser.addFlag(name="find", defaultValue=false);
@@ -583,8 +578,7 @@ private proc resolveSpec(spec: string): string throws {
 
 /* Install an external package */
 proc installSpkg(args: [?d] string) throws {
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonInstallHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonInstallHelpHandler());
 
   var quietFlag = parser.addFlag(name="quiet", defaultValue=false);
   var specArg = parser.addArgument(name="SpackSpec", numArgs=0..);
@@ -617,8 +611,7 @@ proc installSpkg(args: [?d] string) throws {
 /* Uninstall an external package */
 proc uninstallSpkg(args: [?d] string) throws {
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonUninstallHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonUninstallHelpHandler());
 
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
   var allFlag = parser.addFlag(name="all", defaultValue=false);

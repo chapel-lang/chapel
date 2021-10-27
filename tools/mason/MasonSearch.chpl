@@ -48,8 +48,7 @@ proc masonSearch(args: [?d] string) {
 
 proc masonSearch(ref args: list(string)) {
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonSearchHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonSearchHelpHandler());
 
   // If no query is provided, list all packages in registry
   var queryArg = parser.addArgument(name="query",

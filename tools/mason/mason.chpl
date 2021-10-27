@@ -76,7 +76,7 @@ Full documentation is located in the chapel release in $CHPL_HOME/doc/rst/tools/
 
 proc main(args: [] string) throws {
 
-  var parser = new argumentParser();
+  var parser = new argumentParser(helpHandler = new MasonHelpHandler());
 
   var subCmds = new map(string, shared Argument);
 
@@ -88,7 +88,6 @@ proc main(args: [] string) throws {
     subCmds.add(cmd,parser.addSubCommand(cmd));
   }
 
-  parser.setHelpMessage(new MasonHelpMessage());
   var versionFlag = parser.addFlag(name="versionFlag",
                                    opts=["-V","--version"],
                                    defaultValue=false);
@@ -146,8 +145,8 @@ proc main(args: [] string) throws {
 
 
 proc masonClean(args) {
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonCleanHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonCleanHelpHandler());
+
   parser.parseArgs(args);
   try! {
     const cwd = here.cwd();

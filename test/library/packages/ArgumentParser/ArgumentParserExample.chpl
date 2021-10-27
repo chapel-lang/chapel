@@ -16,7 +16,8 @@ proc main(args: []string) throws {
       writeln(i:string + " " + args[i]);
   }
   // create a parser for the main entry point
-  var parser = new argumentParser(exitOnError=false);
+  var parser = new argumentParser(exitOnError=false,
+                                  helpHandler=new CustomHelpHandler());
 
   // add a string option that accepts between 1 and 10 values
   var strArg = parser.addOption(name="strArg1",
@@ -37,9 +38,6 @@ proc main(args: []string) throws {
 
   // add a subcommand that has its own parser (defined later)
   var subCmd1 = parser.addSubCommand(cmd="subCmd1");
-
-  // set a custom help message handler
-  parser.setHelpMessage(new CustomHelpMessage());
 
   try {
     // parse the args
@@ -67,7 +65,7 @@ proc main(args: []string) throws {
 proc mySubCmd1(args:[?argsD]string) throws {
   writeln("SubCommand1 was called");
   // create a parser object for this subcommand
-  var parser = new argumentParser(exitOnError=false);
+  var parser = new argumentParser(exitOnError=false, helpMessage=subCmdHelp());
 
   // add a subcommand option that takes exactly 1 value
   var subCmdArg1 = parser.addOption(name="subCmdArg1",
@@ -93,8 +91,6 @@ proc mySubCmd1(args:[?argsD]string) throws {
   // the pattern `--` is commonly used for this purpose and is the default
   var passedThrough = parser.addPassThrough();
 
-  // set a custom help string
-  parser.setHelpString(subCmdHelp());
   // try to parse the arguments, catch exceptions
   try {
     parser.parseArgs(args);
@@ -144,9 +140,8 @@ proc subCmdHelp() {
 }
 
 // define a custom help handler to use for main argument parsing help
-class CustomHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class CustomHelpHandler : HelpHandler {
+  override proc printHelp() {
     helpMessage();
-    exit(exitCode);
   }
 }

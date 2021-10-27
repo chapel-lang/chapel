@@ -26,164 +26,141 @@ use Help;
 use MasonUtils;
 
 
-class MasonHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonHelp();
-    exit(exitCode);
   }
 }
 
-class MasonRunHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonRunHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonRunHelp();
-    exit(exitCode);
   }
 }
 
-class MasonBuildHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonBuildHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonBuildHelp();
-    exit(exitCode);
   }
 }
 
-class MasonNewHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonNewHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonNewHelp();
-    exit(exitCode);
   }
 }
 
-class MasonInitHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonInitHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonInitHelp();
-    exit(exitCode);
   }
 }
 
-class MasonSearchHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonSearchHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonSearchHelp();
-    exit(exitCode);
   }
 }
 
-class MasonModifyHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonModifyHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonModifyHelp();
-    exit(exitCode);
   }
 }
 
-class MasonUpdateHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonUpdateHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonUpdateHelp();
-    exit(exitCode);
   }
 }
 
-class MasonEnvHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonEnvHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonEnvHelp();
-    exit(exitCode);
   }
 }
 
-class MasonExternalHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonExternalHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonExternalHelp();
-    exit(exitCode);
   }
 }
 
-class MasonExternalFindHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonExternalFindHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonExternalFindHelp();
-    exit(exitCode);
   }
 }
 
-class MasonExternalInfoHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonExternalInfoHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonExternalInfoHelp();
-    exit(exitCode);
   }
 }
 
-class MasonExternalSearchHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonExternalSearchHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonExternalSearchHelp();
-    exit(exitCode);
   }
 }
 
-class MasonInstallHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonInstallHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonInstallHelp();
-    exit(exitCode);
   }
 }
 
-class MasonUninstallHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonUninstallHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonUninstallHelp();
-    exit(exitCode);
   }
 }
 
-class MasonCompilerHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonCompilerHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonCompilerHelp();
-    exit(exitCode);
   }
 }
 
-class MasonTestHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonTestHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonTestHelp();
-    exit(exitCode);
   }
 }
 
-class MasonSystemHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonSystemHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonSystemHelp();
-    exit(exitCode);
   }
 }
 
-class MasonSystemSearchHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonSystemSearchHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonSystemSearchHelp();
-    exit(exitCode);
   }
 }
 
-class MasonSystemPcHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonSystemPcHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonSystemPcHelp();
-    exit(exitCode);
   }
 }
 
-class MasonCleanHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonCleanHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonCleanHelp();
-    exit(exitCode);
   }
 }
 
-class MasonPublishHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonPublishHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonPublishHelp();
-    exit(exitCode);
   }
 }
 
-class MasonDocHelpMessage : HelpMessage {
-  override proc help(exitCode=0) {
+class MasonDocHelpHandler : HelpHandler {
+  override proc printHelp() {
     masonDocHelp();
-    exit(exitCode);
   }
 }
 

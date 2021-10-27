@@ -114,8 +114,7 @@ proc MASON_REGISTRY {
 
 proc masonEnv(args) {
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonEnvHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonEnvHelpHandler());
 
   // TODO: When automatic help is generated, make sure this isn't documented
   var debugFlag = parser.addFlag("debug", defaultValue=false);

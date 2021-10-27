@@ -37,8 +37,7 @@ use Subprocess;
 */
 proc masonNew(args: [] string) throws {
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonNewHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonNewHelpHandler());
 
   var vcsFlag = parser.addFlag(name="vcs",
                                opts=["--no-vcs"],

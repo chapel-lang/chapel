@@ -33,14 +33,13 @@ use Subprocess;
 use TOML;
 
 /*
-Initialises a library project in a project directory
+Initializes a library project in a project directory
   mason init <dirName/path>
   or mason init (inside project directory)
 */
 proc masonInit(args: [] string) throws {
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonInitHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonInitHelpHandler());
 
   var defaultFlag = parser.addFlag(name="default",
                                    opts=["-d","--default"],
@@ -108,7 +107,7 @@ proc masonInit(args: [] string) throws {
       }
     }
     else {
-      // if the target directory in path doesnt exist, throw error
+      // if the target directory in path doesn't exist, throw error
       // if target directory exists, check for files && validate
       // create folders and toml file without overwriting anything
       // if TOML file exists, check for values in it and validate

@@ -122,13 +122,8 @@
         var simpleArg = parser.addArgument(name="positional");
         var optionArg = parser.addOption(name="optional");
         var flagArg = parser.addFlag(name="debug", defaultValue=false);
-        try!{
-          parser.parseArgs(args);
-        } catch ex : ArgumentError {
-          writeln(ex.message());
-          // print a usage message
-          exit(1);
-        }
+        parser.parseArgs(args);
+
         var debug = flagArg.valueAsBool();
         // we are assured a value here or else the parser would have thrown an error
         var foo = simpleArg.value();
@@ -171,7 +166,6 @@ module ArgumentParser {
   private config var DEBUG=false;
 
   // TODO: Add int opts
-  // TODO: Add automatic -h, --help flag generation
   // TODO: Add program metadata when setting up parser
   // TODO: Implement Help message and formatting
   // TODO: Move logic splitting '=' into '_match'
@@ -491,66 +485,29 @@ module ArgumentParser {
     }
   }
 
-  // this class is made to be extensible so the user can implement their own
-  // help message generation if they choose
-  class HelpMessage {
-    // the help message to display on ./progName --help
-    var msg:string;
-
-    proc setMsg(message:string) {
-      msg = message;
-    }
-
-    // help method which can be overridden to customize handling
-    proc help(exitCode=0) {
-      writeln(msg);
-      exit(exitCode);
-    }
-  }
-
-  // the Help record does the help text generation and is the entry point
+  // the helpWrapper record does the help text generation and is the entry point
   // for the argumentParser to handle help message requests
-  record HelpHandler {
-    // a usage message, may be part of help or independent
-    var _usage:string;
-    // keep track of the method used to print the help message
-    var _helpMsg = new HelpMessage();
+  pragma "no doc"
+  record helpWrapper {
+    // a help message handler to control what happens when help is called
+    var _helpHandler : shared HelpHandler;
 
-    proc init () {
+    proc init (helpHandler=new shared HelpHandler()) {
+      _helpHandler=helpHandler;
       this.complete();
-      this.genHelp();
+      if _helpHandler._helpMessage.isEmpty() then
+        this.genHelp();
     }
 
-    // allow for custom help message to be substituted instead of generated text
-    proc setCustomHelpString(msg:string) {
-      this._helpMsg.setMsg(msg);
-    }
-
-    // set a HelpMessage that will be used to print and handle exiting
-    proc setHelpMessage(in help: HelpMessage) {
-      this._helpMsg = help;
-    }
-
-    // print the help message and exit with given exit code, unless the user
-    // has overridden the HelpMessage.help method to not exit
-    proc printHelp(exitCode=0) {
-      _helpMsg.help(exitCode);
+    // print the help message unless the user
+    // has overridden the HelpHandler.printHelp method to do other things
+    proc printHelp() {
+      _helpHandler.printHelp();
     }
 
     // TODO: Implement automatic help message generation based on flags/opts etc
     proc genHelp() {
-      _helpMsg.setMsg("internal generated message");
-    }
-
-    // set a custom usage message, if desired
-    // TODO: Implement automatic usage message generation
-    proc setUsageMessage(msg: string) {
-      _usage = msg;
-    }
-
-    // return the usage message by itself
-    proc getUsage() : string {
-      return _usage;
+      _helpHandler._helpMessage = "internal generated message";
     }
   }
 
@@ -571,8 +528,6 @@ module ArgumentParser {
 
     var parser = new argumentParser();
 
-  :arg exitOnError: Determines if ArgumentParser exits with error info when
-                    an error occurs. Defaults to `true`.
 
   **Limitations**
 
@@ -591,9 +546,6 @@ module ArgumentParser {
      processing. If a passthrough is also specified as ``--``, then these
      arguments will also be captured by the passthrough. If that is not desired,
      you can create a different passthrough delimiter, e.g. ``++``.
-
-   * Help and usage are not automatically generated or handled internally. This
-     is planned for future development.
 
    * Counting the number of times a flag is found on the command line is not
      supported.
@@ -622,22 +574,73 @@ module ArgumentParser {
     // recognize help flags
     pragma "no doc"
     var _helpFlags: list(string);
-    // store a Help handler
-    pragma "no doc"
-    var _help : HelpHandler;
     // exit if error in arguments
-    var _exitOnError: bool;
-
     pragma "no doc"
-    proc init(exitOnError=true) {
+    var _exitOnError: bool;
+    // automatically add and handle help flag (-h/--help)
+    pragma "no doc"
+    var _addHelp: bool;
+    // keep track of which help flag was used so a dev can check it later
+    pragma "no doc"
+    var _helpUsed=(false,"");
+    // should the parser exit after printing the help message
+    pragma "no doc"
+    var _exitAfterHelp: bool;
+    // define a handler for help message processing
+    pragma "no doc"
+    var _helpHandler: shared HelpHandler;
+    // store a help wrapper
+    pragma "no doc"
+    var _help : helpWrapper;
+
+
+    /*
+      Initialize an instance of argumentParser.
+
+      :arg addHelp: Determines if the ArgumentParser adds help flags and handles
+                their presence in the command line arguments. Flag values are
+                set to -h and --help. Defaults to `true`.
+
+      :arg exitOnError: Determines if ArgumentParser exits with error info when
+                    an error occurs. Defaults to `true`.
+
+      :arg exitAfterHelp: Determinse if ArgumentParser exits after it finds a help
+                      flag and prints the help message. Defaults to `true`.
+
+      :arg helpHandler: Allows a user to define a custom HelpHandler to perform
+                    printing of the help message and additional operations.
+                    Defaults to a new instance of HelpHandler.
+                    Cannot be set in conjunction with `helpMessage`.
+
+      :arg helpMessage: Allows a user to set a customized message to display as
+                        help output. Defaults to a help message generated by
+                        the argumentParser.
+                        Cannot be used in conjunction with `helpHandler`.
+    */
+    proc init(addHelp=true, exitOnError=true, exitAfterHelp=true,
+              in helpHandler:?h=none, helpMessage:?t=none) {
+
+      assert(!(!isNothingType(h) && !isNothingType(t)),
+             "Cannot set help message and help handler, choose one.");
       _result = new map(string, shared Argument);
       _handlers = new map(string, owned ArgumentHandler);
       _options = new map(string, string);
       _positionals = new list(borrowed Positional);
       _subcommands = new list(string);
-      _help = new HelpHandler();
+
       _exitOnError = exitOnError;
+      _addHelp = addHelp;
+      _exitAfterHelp = exitAfterHelp;
+      if isNothingType(h) then
+        _helpHandler = new HelpHandler();
+      else
+        _helpHandler = helpHandler;
+
+      if isStringType(t) then
+        _helpHandler._helpMessage=helpMessage;
+      _help = new helpWrapper(_helpHandler);
       this.complete();
+
       try! {
         // configure to allow consuming of -- if passed from runtime
         // storing into variable to avoid memory leak due to compiler bug #18391
@@ -645,7 +648,7 @@ module ArgumentParser {
 
         // handle help flag automatically
         // storing into variable to avoid memory leak due to compiler bug #18391
-        var _tmp = addHelpFlag();
+        if _addHelp then var _tmp = addHelpFlag();
       }
     }
 
@@ -655,21 +658,6 @@ module ArgumentParser {
                      opts:[?optsD]=["-h","--help"]) throws {
       _helpFlags.extend(opts);
       return addFlag(name, opts, defaultValue=false);
-    }
-
-    // entry point for user to set a custom HelpMessage object
-    proc setHelpMessage(in help: HelpMessage) {
-      _help.setHelpMessage(help);
-    }
-
-    // entry point for user to set a custom help message string
-    proc setHelpString(message: string) {
-      _help.setCustomHelpString(message);
-    }
-
-    // entry point for user to set a custom usage message
-    proc setUsageMsg(usage: string) {
-      _help.setUsageMessage(usage);
     }
 
     /*
@@ -1136,7 +1124,7 @@ module ArgumentParser {
 
       $ programName <any args for programName> -- --preserved-flags --options etc
 
-    :args delimiter: the pattern to use as the passthrough indicator
+    :arg delimiter: the pattern to use as the passthrough indicator
 
     :returns: a shared `Argument` where collected values will be placed for use
               by the developer
@@ -1180,18 +1168,15 @@ module ArgumentParser {
     .. code-block:: chapel
 
       proc main(args:[]string) throws {
-        // parser and arguments defined
-        try!{
-          parser.parseArgs(args);
-        } catch ex : ArgumentError {
-          // display usage message
-          writeln(ex.message());
-        }
+        // after parser and arguments defined
+        parser.parseArgs(args);
       }
 
     :arg arguments: The array of values passed from the command line to `main(args:[]string)`
 
-    :throws: If argumentParser initialized with exitOnError=false, then an ArgumentError is raised if invalid or undefined command line arguments found in `arguments`
+    :throws: If argumentParser initialized with exitOnError=false,
+             then an ArgumentError is raised if invalid or undefined command
+             line arguments found in `arguments`
     */
     proc parseArgs(arguments:[?argsD] string) throws {
       // normal operation is to catch parsing error, write help message,
@@ -1200,13 +1185,15 @@ module ArgumentParser {
         try {
           _tryParseArgs(arguments);
         } catch ex: Error {
-          writeln(ex.message());
-          _help.printHelp(exitCode=1);
+          stderr.writeln(ex.message());
+          if _addHelp {
+            _help.printHelp();
+            exit(1);
+          }
         }
       } else {
         _tryParseArgs(arguments);
       }
-
     }
 
     pragma "no doc"
@@ -1249,7 +1236,15 @@ module ArgumentParser {
           argRslt._present = true;
           // if subcommand found, stop processing more args, save for subcmd
           if _subcommands.contains(argElt) then break;
-          if _helpFlags.contains(argElt) then _help.printHelp();
+          // check for the presence of a help flag and handle it or quit parsing
+          if _helpFlags.contains(argElt) {
+            _helpUsed = (true, argElt);
+            if _addHelp {
+              _help.printHelp();
+              if _exitAfterHelp then exit(0);
+            }
+            return 0;
+          }
         }
       }
 
@@ -1319,6 +1314,17 @@ module ArgumentParser {
       _assignDefaultsToMissingOpts();
 
       return 0;
+    }
+
+    /*
+    Check if the parser identified a help flag from the command line
+
+    :returns: a tuple with the first component being a boolean indicating if a
+              help flag was found and the second element being the flag found.
+              Second element will be the empty string if no help flag was found.
+    */
+    proc helpFlagPresent() : (bool, string) {
+      return _helpUsed;
     }
 
     pragma "no doc"
@@ -1518,6 +1524,26 @@ module ArgumentParser {
     }
   }
 
+
+  /*
+  The HelpHandler class is meant to be inheritable so a user can implement their
+  own behavior when the help flag is recognized by the parser. Typically, there
+  is no need to make a custom version of HelpHandler, as a default is supplied.
+
+  */
+  class HelpHandler {
+    // the help message to display on ./progName --help
+    pragma "no doc"
+    var _helpMessage:string;
+
+    /*
+    Prints the help message by default.
+    Inherit this class and override this method to customize the operations.
+    */
+    proc printHelp() {
+      writeln(_helpMessage);
+    }
+  }
 
   // helper to prepare numArgs ranges for use
   pragma "no doc"

@@ -52,8 +52,7 @@ proc masonUpdate(args: [?d] string) {
   var lf = "Mason.lock";
   var skipUpdate = MASON_OFFLINE;
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonUpdateHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonUpdateHelpHandler());
 
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
 

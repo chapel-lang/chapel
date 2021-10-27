@@ -48,8 +48,7 @@ var files: list(string);
 */
 proc masonTest(args: [] string) throws {
 
-  var parser = new argumentParser();
-  parser.setHelpMessage(new MasonTestHelpMessage());
+  var parser = new argumentParser(helpHandler=new MasonTestHelpHandler());
 
   var runFlag = parser.addFlag(name="run",
                                opts=["--no-run"],
