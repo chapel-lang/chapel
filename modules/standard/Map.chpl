@@ -88,6 +88,8 @@ module Map {
     */
     const resizeThreshold = 0.5;
 
+    const initialCapacity = 32;
+
     pragma "no doc"
     var table: chpl__hashtable(keyType, valType);
 
@@ -118,7 +120,7 @@ module Map {
                             can be before requesting additional memory.
     */
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold = 0.5) {
+              resizeThreshold = 0.5, initialCapacity = 32) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
@@ -130,7 +132,7 @@ module Map {
     }
 
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold = 0.5)
+              resizeThreshold = 0.5, initialCapacity = 32)
     where isNonNilableClass(valType) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
@@ -165,8 +167,11 @@ module Map {
                         this.type.valType else vt;
       this.parSafe = if this.type.parSafe != ? then
                         this.type.parSafe else ps;
+      this.resizeThreshold = other.resizeThreshold;
+      this.initialCapacity = other.initialCapacity;
       this.table = new chpl__hashtable(keyType, valType,
-                                       other.resizeThreshold);
+                                       resizeThreshold,
+                                       initialCapacity);
       this.complete();
 
       if keyType != kt {
