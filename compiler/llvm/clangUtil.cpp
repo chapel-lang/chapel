@@ -4167,42 +4167,36 @@ void makeBinaryLLVM(void) {
   runtime_libs += CHPL_RUNTIME_SUBDIR;
   runtime_libs += "/list-libraries";
 
+  // TODO: move this logic to printchplenv
+  std::string runtime_ld_override(CHPL_RUNTIME_LIB);
+  runtime_ld_override += "/";
+  runtime_ld_override += CHPL_RUNTIME_SUBDIR;
+  runtime_ld_override += "/override-ld";
+
+  std::vector<std::string> ldOverride;
+  readArgsFromFile(runtime_ld_override, ldOverride);
+  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
+  expandInstallationPaths(ldOverride);
+
+  std::string clangCC = clangInfo->clangCC;
+  std::string clangCXX = clangInfo->clangCXX;
+  std::string useLinkCXX = clangCXX;
+
+  if (ldOverride.size() > 0)
+    useLinkCXX = ldOverride[0];
+
   std::vector<std::string> runtimeArgs;
   readArgsFromFile(runtime_libs, runtimeArgs);
 
   std::vector<std::string> linkArgs;
   splitStringWhitespace(CHPL_LLVM_CLANG_LINK_ARGS, linkArgs);
 
-  // This might still be needed on CLE 6 systems.
-  // However, it is not currently working on CLE 7 systems
-  // (leading to an error about not being able to find libnuma)
-  // Perhaps we can use CRAYPE_LINK_TYPE=dynamic to opt in to dynamic linking
-  // on CLE 6. Or, make this logic check for CLE 6
-  // with /etc/opt/cray/release/cle-release.
-  /*if (compilingWithPrgEnv()) {
-    if (fLinkStyle == LS_DEFAULT) {
-      // check for indication that the PrgEnv defaults to dynamic linking
-      bool defaultDynamic = false;
-      for (auto & arg : linkArgs) {
-        if (arg == "-Wl,-Bdynamic"   // when PE links with gcc
-            || arg == "-dynamic") {  // when PE links with clang
-          defaultDynamic = true;
-        }
-      }
-
-      // Older Cray PrgEnv defaults to static linking.  If we are asking for
-      // the default link type, and we don't find an explicit dynamic
-      // flag in the gathered PrgEnv arguments, then force static linking
-      // because LLVM's default (dynamic) is different from the PrgEnv
-      // default (static).
-      if (defaultDynamic == false) {
-        fLinkStyle = LS_STATIC;
-      }
-    }
-  }*/
-
-  // start with arguments from CHPL_LLVM_CLANG_C
+  // start with arguments from CHPL_LLVM_CLANG_C unless
+  // using a non-clang compiler to link
   std::vector<std::string> clangLDArgs = clangInfo->clangLDArgs;
+  if (useLinkCXX != clangCXX)
+    clangLDArgs.clear();
+
   for (auto & arg : runtimeArgs) {
     clangLDArgs.push_back(arg);
   }
@@ -4223,24 +4217,6 @@ void makeBinaryLLVM(void) {
   // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
   expandInstallationPaths(clangLDArgs);
 
-
-  // TODO: move this logic to printchplenv
-  std::string runtime_ld_override(CHPL_RUNTIME_LIB);
-  runtime_ld_override += "/";
-  runtime_ld_override += CHPL_RUNTIME_SUBDIR;
-  runtime_ld_override += "/override-ld";
-
-  std::vector<std::string> ldOverride;
-  readArgsFromFile(runtime_ld_override, ldOverride);
-  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
-  expandInstallationPaths(ldOverride);
-
-  std::string clangCC = clangInfo->clangCC;
-  std::string clangCXX = clangInfo->clangCXX;
-  std::string useLinkCXX = clangCXX;
-
-  if (ldOverride.size() > 0)
-    useLinkCXX = ldOverride[0];
 
 
   std::vector<std::string> dotOFiles;
