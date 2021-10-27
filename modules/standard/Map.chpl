@@ -123,8 +123,9 @@ module Map {
       this.keyType = keyType;
       this.valType = valType;
       this.parSafe = parSafe;
-      assert((resizeThreshold > 0 && resizeThreshold < 1),
-             "'resizeThreshold' must be between 0 and 1");
+      if boundsChecking then
+        if resizeThreshold <= 0 || resizeThreshold >= 1 then
+          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
       this.resizeThreshold = resizeThreshold;
       table = new chpl__hashtable(keyType, valType, resizeThreshold);
     }
