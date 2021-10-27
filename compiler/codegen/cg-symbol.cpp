@@ -381,14 +381,11 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
       }
       break;
     case CONST_KIND_STRING:
-      std::string newString = i->v_string.toString();
-      if (i->string_kind == STRING_KIND_C_STRING) {
-        // Note that string immediate values are stored
-        // with C escapes - that is newline is 2 chars \ n
-        // so we have to convert to a sequence of bytes
-        // for LLVM (the C backend can just print it out).
-        newString = unescapeString(i->v_string.c_str(), NULL);
-      }
+      // Note that string immediate values are stored
+      // with C escapes - that is newline is 2 chars \ n
+      // so we have to convert to a sequence of bytes
+      // for LLVM (the C backend can just print it out).
+      std::string newString = unescapeString(i->v_string.c_str(), NULL);
       ret = info->irBuilder->CreateGlobalString(newString);
       break;
   }

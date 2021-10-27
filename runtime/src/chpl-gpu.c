@@ -93,14 +93,14 @@ inline static void chpl_gpu_ensure_context() {
   }
 }
 
-static void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) {
+static void* chpl_gpu_getKernel(const char* fatbinData, const char* kernelName) {
   chpl_gpu_ensure_context();
 
   CUmodule    cudaModule;
   CUfunction  function;
 
   // Create module for object
-  CUDA_CALL(cuModuleLoadData(&cudaModule, chpl_gpuBinary));
+  CUDA_CALL(cuModuleLoadData(&cudaModule, fatbinData));
 
   // Get kernel function
   CUDA_CALL(cuModuleGetFunction(&function, cudaModule, kernelName));

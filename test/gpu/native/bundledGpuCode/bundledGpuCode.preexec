@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-rm -fr ./bundledGpuCode_gpu_files

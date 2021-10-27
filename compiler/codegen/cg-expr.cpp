@@ -4760,13 +4760,13 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
 
   std::vector<GenRet> args;
 
-  // The first argument passed to the chpl_gpu_launch_kernel* runtime call is the
-  // fatbin path. The fatbin file contains the ptx code for the kernel function
-  // we wish to launch. 
-  char fatbinPath[FILENAME_MAX+1];
-  int len = snprintf(fatbinPath, FILENAME_MAX+1, "%s/%s", saveCDir, "chpl__gpu.fatbin");
-  INT_ASSERT(len > 0 && len < FILENAME_MAX+1);
-  args.push_back(new_CStringSymbol(fatbinPath));
+  // We will emit the gpu code into a global variable named chpl_gpuBinary. Pass
+  // this variable to the launch call.
+  INT_ASSERT(HAVE_LLVM);
+  #ifdef HAVE_LLVM  // Needed to suppress warning; should always be true in code path for GPU codegen
+  GenInfo* info = gGenInfo;
+  args.push_back(info->lvt->getValue("chpl_gpuBinary"));
+  #endif
 
   // "Copy" arguments from primitive call to runtime library function call.
   int curArg = 1;

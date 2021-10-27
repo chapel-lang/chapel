@@ -1776,21 +1776,6 @@ VarSymbol *new_CStringSymbol(const char *str) {
   return s;
 }
 
-VarSymbol *new_RawStringSymbol(const char *str, size_t len) {
-  Immediate imm(gContext, str, len, STRING_KIND_BYTES);
-  VarSymbol *s = uniqueConstantsHash.get(&imm);
-  PrimitiveType* dtRetType = dtStringC;
-  if (s) {
-    return s;
-  }
-  s = new VarSymbol(astr("_rawstring_literal_", istr(literal_id++)), dtRetType);
-  rootModule->block->insertAtTail(new DefExpr(s));
-  s->immediate = new Immediate;
-  *s->immediate = imm;
-  uniqueConstantsHash.put(s->immediate, s);
-  return s;
-}
-
 VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
   Immediate imm;
   switch (size) {
