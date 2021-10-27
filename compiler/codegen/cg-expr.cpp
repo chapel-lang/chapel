@@ -3755,6 +3755,12 @@ GenRet CallExpr::codegen() {
 #define DEFINE_PRIM(NAME) \
   void CallExpr::codegen ## NAME (CallExpr* call, GenRet &ret)
 
+// ditto but where it just calls codegenBasicPrimitiveExpr
+#define DEFINE_BASIC_PRIM(NAME) \
+  void CallExpr::codegen ## NAME (CallExpr* call, GenRet &ret) { \
+    ret = call->codegenBasicPrimitiveExpr(); \
+  }
+
 // to call a primitive's code generation method
 #define CODEGEN_PRIM(NAME, call, ret) \
   codegen ## NAME (call, ret);
@@ -3763,12 +3769,12 @@ GenRet CallExpr::codegen() {
 #define FORWARD_PRIM(NAME) \
   CODEGEN_PRIM(NAME, call, ret);
 
-DEFINE_PRIM(PRIM_UNKNOWN) {
+DEFINE_PRIM(UNKNOWN) {
     // This is handled separately
     INT_ASSERT(false);
 }
 
-DEFINE_PRIM(PRIM_ARRAY_SET) {
+DEFINE_PRIM(ARRAY_SET) {
     // get(1): (wide?) base pointer
     // get(2): index
     // get(3): value
@@ -3779,10 +3785,10 @@ DEFINE_PRIM(PRIM_ARRAY_SET) {
     GenRet elementPtr = codegenElementPtr(call->get(1), call->get(2));
     codegenAssign(elementPtr, call->get(3));
 }
-DEFINE_PRIM(PRIM_ARRAY_SET_FIRST) {
-    FORWARD_PRIM(PRIM_ARRAY_SET);
+DEFINE_PRIM(ARRAY_SET_FIRST) {
+    FORWARD_PRIM(ARRAY_SET);
 }
-DEFINE_PRIM(PRIM_ARRAY_SHIFT_BASE_POINTER) {
+DEFINE_PRIM(ARRAY_SHIFT_BASE_POINTER) {
     // get(1): local return value
     // get(2): _ddata instance
     // get(3): integral amount to shift by
@@ -3797,21 +3803,21 @@ DEFINE_PRIM(PRIM_ARRAY_SHIFT_BASE_POINTER) {
     }
 }
 
-DEFINE_PRIM(PRIM_NOOP) {
+DEFINE_PRIM(NOOP) {
 }
-DEFINE_PRIM(PRIM_MOVE) {
+DEFINE_PRIM(MOVE) {
     INT_FATAL("Handled in switch");
 }
 
-DEFINE_PRIM(PRIM_DEREF) { codegenIsSpecialPrimitive(NULL, call, ret); }
-DEFINE_PRIM(PRIM_GET_SVEC_MEMBER_VALUE) { codegenIsSpecialPrimitive(NULL, call, ret); }
-DEFINE_PRIM(PRIM_GET_MEMBER_VALUE) { codegenIsSpecialPrimitive(NULL, call, ret); }
-DEFINE_PRIM(PRIM_ARRAY_GET) { codegenIsSpecialPrimitive(NULL, call, ret); }
-DEFINE_PRIM(PRIM_ON_LOCALE_NUM) { codegenIsSpecialPrimitive(NULL, call, ret); }
-DEFINE_PRIM(PRIM_GET_REAL) { codegenIsSpecialPrimitive(NULL, call, ret); }
-DEFINE_PRIM(PRIM_GET_IMAG) { codegenIsSpecialPrimitive(NULL, call, ret); }
+DEFINE_PRIM(DEREF) { codegenIsSpecialPrimitive(NULL, call, ret); }
+DEFINE_PRIM(GET_SVEC_MEMBER_VALUE) { codegenIsSpecialPrimitive(NULL, call, ret); }
+DEFINE_PRIM(GET_MEMBER_VALUE) { codegenIsSpecialPrimitive(NULL, call, ret); }
+DEFINE_PRIM(ARRAY_GET) { codegenIsSpecialPrimitive(NULL, call, ret); }
+DEFINE_PRIM(ON_LOCALE_NUM) { codegenIsSpecialPrimitive(NULL, call, ret); }
+DEFINE_PRIM(GET_REAL) { codegenIsSpecialPrimitive(NULL, call, ret); }
+DEFINE_PRIM(GET_IMAG) { codegenIsSpecialPrimitive(NULL, call, ret); }
 
-DEFINE_PRIM(PRIM_WIDE_MAKE) {
+DEFINE_PRIM(WIDE_MAKE) {
     // (type, localeID, addr)
     Type* narrowType = call->get(1)->typeInfo();
     if (narrowType->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -3831,7 +3837,7 @@ DEFINE_PRIM(PRIM_WIDE_MAKE) {
       ret = codegenWideAddr(locale, ret);
     }
 }
-DEFINE_PRIM(PRIM_WIDE_GET_LOCALE) {
+DEFINE_PRIM(WIDE_GET_LOCALE) {
     if (call->get(1)->isWideRef() ||
         call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       ret = codegenRlocale(call->get(1));
@@ -3839,7 +3845,7 @@ DEFINE_PRIM(PRIM_WIDE_GET_LOCALE) {
       ret = codegenGetLocaleID();
     }
 }
-DEFINE_PRIM(PRIM_WIDE_GET_NODE) {
+DEFINE_PRIM(WIDE_GET_NODE) {
     if (call->get(1)->isWideRef() ||
         call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       ret = codegenRnode(call->get(1));
@@ -3848,7 +3854,7 @@ DEFINE_PRIM(PRIM_WIDE_GET_NODE) {
     }
 }
 
-DEFINE_PRIM(PRIM_WIDE_GET_ADDR) {
+DEFINE_PRIM(WIDE_GET_ADDR) {
     if (call->get(1)->isWideRef() ||
         call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       ret = codegenRaddr(call->get(1));
@@ -3861,7 +3867,7 @@ DEFINE_PRIM(PRIM_WIDE_GET_ADDR) {
     ret.isUnsigned = true;
 }
 
-DEFINE_PRIM(PRIM_SET_REFERENCE) {
+DEFINE_PRIM(SET_REFERENCE) {
     // Special handling for reference variables
     // These variables have value type so PRIM_ADDR_OF
     // should just return the reference.
@@ -3872,11 +3878,11 @@ DEFINE_PRIM(PRIM_SET_REFERENCE) {
     }
 }
 
-DEFINE_PRIM(PRIM_ADDR_OF) {
-    FORWARD_PRIM(PRIM_SET_REFERENCE);
+DEFINE_PRIM(ADDR_OF) {
+    FORWARD_PRIM(SET_REFERENCE);
 }
 
-DEFINE_PRIM(PRIM_REF_TO_STRING) {
+DEFINE_PRIM(REF_TO_STRING) {
     if (call->get(1)->isWideRef() ||
         call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       GenRet wide = call->get(1);
@@ -3889,12 +3895,12 @@ DEFINE_PRIM(PRIM_REF_TO_STRING) {
     }
 }
 
-DEFINE_PRIM(PRIM_CLASS_NAME_BY_ID) {
+DEFINE_PRIM(CLASS_NAME_BY_ID) {
     GenRet cid = codegenValue(call->get(1));
     ret = codegenGlobalArrayElement("chpl_classNames", cid);
 }
 
-DEFINE_PRIM(PRIM_RETURN) {
+DEFINE_PRIM(RETURN) {
   bool returnVoid = call->typeInfo() == dtVoid || call->typeInfo() == dtNothing;
   if (!returnVoid) {
     GenRet retExpr = call->get(1);
@@ -4066,10 +4072,10 @@ DEFINE_PRIM(PRIM_RETURN) {
 #endif
   }
 }
-DEFINE_PRIM(PRIM_UNARY_MINUS) {
+DEFINE_PRIM(UNARY_MINUS) {
   ret = codegenNeg(call->get(1));
 }
-DEFINE_PRIM(PRIM_UNARY_PLUS) {
+DEFINE_PRIM(UNARY_PLUS) {
     GenRet tmp = codegenValue(call->get(1));
 
     if (gGenInfo->cfile)
@@ -4077,7 +4083,7 @@ DEFINE_PRIM(PRIM_UNARY_PLUS) {
     else
       ret = tmp; // nothing is necessary.
   }
-  DEFINE_PRIM(PRIM_UNARY_NOT) {
+  DEFINE_PRIM(UNARY_NOT) {
     GenRet tmp = codegenValue(call->get(1));
 
     if (gGenInfo->cfile) {
@@ -4088,34 +4094,34 @@ DEFINE_PRIM(PRIM_UNARY_PLUS) {
 #endif
     }
 }
-DEFINE_PRIM(PRIM_UNARY_LNOT) {
+DEFINE_PRIM(UNARY_LNOT) {
   ret = codegenIsZero(call->get(1));
 }
-DEFINE_PRIM(PRIM_ADD) {
+DEFINE_PRIM(ADD) {
     ret = codegenAdd(call->get(1), call->get(2));
 }
-DEFINE_PRIM(PRIM_SUBTRACT) {
+DEFINE_PRIM(SUBTRACT) {
     ret = codegenSub(call->get(1), call->get(2));
 }
-DEFINE_PRIM(PRIM_MULT) {
+DEFINE_PRIM(MULT) {
     ret = codegenMul(call->get(1), call->get(2));
 }
-DEFINE_PRIM(PRIM_DIV) {
+DEFINE_PRIM(DIV) {
     ret = codegenDiv(call->get(1), call->get(2));
 }
-DEFINE_PRIM(PRIM_MOD) {
+DEFINE_PRIM(MOD) {
     ret = codegenMod(call->get(1), call->get(2));
 }
-DEFINE_PRIM(PRIM_LSH) {
+DEFINE_PRIM(LSH) {
     ret = codegenLsh(call->get(1), call->get(2));
 }
-DEFINE_PRIM(PRIM_RSH) {
+DEFINE_PRIM(RSH) {
     ret = codegenRsh(call->get(1), call->get(2));
 }
-DEFINE_PRIM(PRIM_PTR_EQUAL) {
-    FORWARD_PRIM(PRIM_EQUAL);
+DEFINE_PRIM(PTR_EQUAL) {
+    FORWARD_PRIM(EQUAL);
 }
-DEFINE_PRIM(PRIM_EQUAL) {
+DEFINE_PRIM(EQUAL) {
     if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
         call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       // TODO: The locale model will eventually have to provide a function
@@ -4142,10 +4148,10 @@ DEFINE_PRIM(PRIM_EQUAL) {
       ret = codegenEquals(call->get(1), call->get(2));
     }
 }
-DEFINE_PRIM(PRIM_PTR_NOTEQUAL) {
-    FORWARD_PRIM(PRIM_NOTEQUAL);
+DEFINE_PRIM(PTR_NOTEQUAL) {
+    FORWARD_PRIM(NOTEQUAL);
 }
-DEFINE_PRIM(PRIM_NOTEQUAL) {
+DEFINE_PRIM(NOTEQUAL) {
     if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) &&
         call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
       // TODO: The locale model will eventually have to provide a function
@@ -4171,7 +4177,7 @@ DEFINE_PRIM(PRIM_NOTEQUAL) {
       ret = codegenNotEquals(call->get(1), call->get(2));
     }
 }
-DEFINE_PRIM(PRIM_LESSOREQUAL) {
+DEFINE_PRIM(LESSOREQUAL) {
     GenRet a = call->get(1);
     GenRet b = call->get(2);
 
@@ -4203,7 +4209,7 @@ DEFINE_PRIM(PRIM_LESSOREQUAL) {
 #endif
     }
 }
-DEFINE_PRIM(PRIM_GREATEROREQUAL) {
+DEFINE_PRIM(GREATEROREQUAL) {
     GenRet a = call->get(1);
     GenRet b = call->get(2);
 
@@ -4235,7 +4241,7 @@ DEFINE_PRIM(PRIM_GREATEROREQUAL) {
 #endif
     }
 }
-DEFINE_PRIM(PRIM_LESS) {
+DEFINE_PRIM(LESS) {
     GenRet a = call->get(1);
     GenRet b = call->get(2);
 
@@ -4267,7 +4273,7 @@ DEFINE_PRIM(PRIM_LESS) {
 #endif
     }
 }
-DEFINE_PRIM(PRIM_GREATER) {
+DEFINE_PRIM(GREATER) {
     GenRet a = call->get(1);
     GenRet b = call->get(2);
 
@@ -4300,17 +4306,17 @@ DEFINE_PRIM(PRIM_GREATER) {
     }
 }
 
-DEFINE_PRIM(PRIM_AND) {
+DEFINE_PRIM(AND) {
     ret = codegenAnd(call->get(1), call->get(2));
 }
-DEFINE_PRIM(PRIM_OR) {
+DEFINE_PRIM(OR) {
     ret = codegenOr(call->get(1), call->get(2));
 }
-DEFINE_PRIM(PRIM_XOR) {
+DEFINE_PRIM(XOR) {
     ret = codegenXor(call->get(1), call->get(2));
 }
 
-DEFINE_PRIM(PRIM_ASSIGN) {
+DEFINE_PRIM(ASSIGN) {
   Expr*       lhs        = call->get(1);
   Expr*       rhs        = call->get(2);
   TypeSymbol* lhsTypeSym = lhs->typeInfo()->symbol;
@@ -4359,7 +4365,7 @@ DEFINE_PRIM(PRIM_ASSIGN) {
   codegenAssign(lg, rg);
 }
 
-DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
+DEFINE_PRIM(UNORDERED_ASSIGN) {
 
   Expr* lhsExpr = call->get(1);
   Expr* rhsExpr = call->get(2);
@@ -4368,7 +4374,7 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
 
   // Both sides are narrow, do a normal assign
   if (!lhsWide && !rhsWide) {
-    FORWARD_PRIM(PRIM_ASSIGN);
+    FORWARD_PRIM(ASSIGN);
     return;
   }
 
@@ -4434,41 +4440,41 @@ DEFINE_PRIM(PRIM_UNORDERED_ASSIGN) {
                 ln, fn);
   }
 }
-DEFINE_PRIM(PRIM_ADD_ASSIGN) {
+DEFINE_PRIM(ADD_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " += ", codegenAdd);
 }
-DEFINE_PRIM(PRIM_SUBTRACT_ASSIGN) {
+DEFINE_PRIM(SUBTRACT_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " -= ", codegenSub);
 }
-DEFINE_PRIM(PRIM_MULT_ASSIGN) {
+DEFINE_PRIM(MULT_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " *= ", codegenMul);
 }
-DEFINE_PRIM(PRIM_DIV_ASSIGN) {
+DEFINE_PRIM(DIV_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " /= ", codegenDiv);
 }
-DEFINE_PRIM(PRIM_MOD_ASSIGN) {
+DEFINE_PRIM(MOD_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " %= ", codegenMod);
 }
-DEFINE_PRIM(PRIM_LSH_ASSIGN) {
+DEFINE_PRIM(LSH_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " <<= ", codegenLsh);
 }
-DEFINE_PRIM(PRIM_RSH_ASSIGN) {
+DEFINE_PRIM(RSH_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " >>= ", codegenRsh);
 }
-DEFINE_PRIM(PRIM_AND_ASSIGN) {
+DEFINE_PRIM(AND_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " &= ", codegenAnd);
 }
-DEFINE_PRIM(PRIM_OR_ASSIGN) {
+DEFINE_PRIM(OR_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " |= ", codegenOr);
 }
-DEFINE_PRIM(PRIM_XOR_ASSIGN) {
+DEFINE_PRIM(XOR_ASSIGN) {
     codegenOpAssign(call->get(1), call->get(2), " ^= ", codegenXor);
 }
-DEFINE_PRIM(PRIM_POW) {
+DEFINE_PRIM(POW) {
     ret = codegenCallExpr("pow", call->get(1), call->get(2));
 }
 
-DEFINE_PRIM(PRIM_MIN) {
+DEFINE_PRIM(MIN) {
     Type* t = call->get(1)->typeInfo();
 
     if (is_arithmetic_type( t)) {
@@ -4507,7 +4513,7 @@ DEFINE_PRIM(PRIM_MIN) {
       INT_FATAL( t, "not arithmetic type");
     }
 }
-DEFINE_PRIM(PRIM_MAX) {
+DEFINE_PRIM(MAX) {
     Type* t = call->get(1)->typeInfo();
 
     if (is_arithmetic_type( t)) {
@@ -4544,7 +4550,7 @@ DEFINE_PRIM(PRIM_MAX) {
     }
 }
 
-DEFINE_PRIM(PRIM_SETCID) {
+DEFINE_PRIM(SETCID) {
     // get(1) is the object
     // (type=chpl__class_id,
     //  wide=get(1),
@@ -4571,7 +4577,7 @@ DEFINE_PRIM(PRIM_SETCID) {
       codegenAssign(ref, codegenUseCid(classType));
     }
 }
-DEFINE_PRIM(PRIM_GETCID) {
+DEFINE_PRIM(GETCID) {
     INT_ASSERT(call->get(1)->typeInfo() != dtNil);
 
     if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_NO_OBJECT)   == true &&
@@ -4583,7 +4589,7 @@ DEFINE_PRIM(PRIM_GETCID) {
 
     ret = codegenValue(ref);
 }
-DEFINE_PRIM(PRIM_TESTCID) {
+DEFINE_PRIM(TESTCID) {
     // get(1) is an object to test, get(2) we just use the type of it.
     INT_ASSERT(call->get(1)->typeInfo() != dtNil);
 
@@ -4597,20 +4603,20 @@ DEFINE_PRIM(PRIM_TESTCID) {
     ret = codegenEquals(ref, codegenUseCid(call->get(2)->typeInfo()));
 }
 
-DEFINE_PRIM(PRIM_SET_UNION_ID) {
+DEFINE_PRIM(SET_UNION_ID) {
     // get(1)->_uid = get(2)
     GenRet ref = codegenFieldUidPtr(call->get(1));
 
     codegenAssign(ref, call->get(2));
 }
-DEFINE_PRIM(PRIM_GET_UNION_ID) {
+DEFINE_PRIM(GET_UNION_ID) {
     // returns uid from get(1)
     GenRet ref = codegenFieldUidPtr(call->get(1));
 
     ret = codegenValue(ref);
 }
 
-DEFINE_PRIM(PRIM_SET_SVEC_MEMBER) {
+DEFINE_PRIM(SET_SVEC_MEMBER) {
     // set tuple base=get(1) at index=get(2) to value=get(3)
     GenRet ptr = codegenElementPtr(call->get(1), call->get(2));
     GenRet val = call->get(3);
@@ -4621,7 +4627,7 @@ DEFINE_PRIM(PRIM_SET_SVEC_MEMBER) {
 
     codegenAssign(ptr, val);
 }
-DEFINE_PRIM(PRIM_GET_MEMBER) {
+DEFINE_PRIM(GET_MEMBER) {
     // base=get(1), field symbol=get(2)
 
     // Invalid AST to use PRIM_GET_MEMBER with a ref field
@@ -4634,7 +4640,7 @@ DEFINE_PRIM(PRIM_GET_MEMBER) {
     // but that unnaturally depends on the type of the field.
     ret = codegenAddrOf(ret);
 }
-DEFINE_PRIM(PRIM_GET_SVEC_MEMBER) {
+DEFINE_PRIM(GET_SVEC_MEMBER) {
     // get tuple base=get(1) at index=get(2)
     Type* tupleType = call->get(1)->getValType();
 
@@ -4643,7 +4649,7 @@ DEFINE_PRIM(PRIM_GET_SVEC_MEMBER) {
     if (tupleType->getField("x0")->type->symbol->hasFlag(FLAG_REF) == false)
       ret = codegenAddrOf(ret);
 }
-DEFINE_PRIM(PRIM_SET_MEMBER) {
+DEFINE_PRIM(SET_MEMBER) {
     // base=get(1), field=get(2), value=get(3)
 
     // if the field is a ref, and the value is a not ref, invalid AST
@@ -4667,7 +4673,7 @@ DEFINE_PRIM(PRIM_SET_MEMBER) {
     codegenAssign(ptr, val);
 }
 
-DEFINE_PRIM(PRIM_CHECK_NIL) {
+DEFINE_PRIM(CHECK_NIL) {
     GenRet ptr = call->get(1);
 
     if (ptr.chplType->symbol->hasFlag(FLAG_WIDE_CLASS))
@@ -4678,7 +4684,7 @@ DEFINE_PRIM(PRIM_CHECK_NIL) {
                 call->get(2),
                 call->get(3));
 }
-DEFINE_PRIM(PRIM_LOCAL_CHECK) {
+DEFINE_PRIM(LOCAL_CHECK) {
     // arguments are (wide ptr, error string, line, function/file)
     GenRet lhs = call->get(1);
     Symbol* lhsType = lhs.chplType->symbol;
@@ -4702,17 +4708,17 @@ DEFINE_PRIM(PRIM_LOCAL_CHECK) {
     }
 }
 
-DEFINE_PRIM(PRIM_GET_SERIAL) {
+DEFINE_PRIM(GET_SERIAL) {
     ret = codegenCallExpr("chpl_task_getSerial");
 }
-DEFINE_PRIM(PRIM_SET_SERIAL) {
+DEFINE_PRIM(SET_SERIAL) {
     codegenCall("chpl_task_setSerial", codegenValue(call->get(1)));
 }
-DEFINE_PRIM(PRIM_GET_DYNAMIC_END_COUNT) {
+DEFINE_PRIM(GET_DYNAMIC_END_COUNT) {
       CallExpr* rcall = new CallExpr(gGetDynamicEndCount);
       ret = rcall->codegen();
 }
-DEFINE_PRIM(PRIM_SET_DYNAMIC_END_COUNT) {
+DEFINE_PRIM(SET_DYNAMIC_END_COUNT) {
       CallExpr* rcall = new CallExpr(gSetDynamicEndCount, call->get(1)->copy());
       ret = rcall->codegen();
 }
@@ -4817,11 +4823,11 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
   return codegenCallExprWithArgs(fn, args);
 }
 
-DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH_FLAT) {
+DEFINE_PRIM(GPU_KERNEL_LAUNCH_FLAT) {
   ret = codegenGPUKernelLaunch(call, /* is3d= */ false);
 }
 
-DEFINE_PRIM(PRIM_GPU_KERNEL_LAUNCH) {
+DEFINE_PRIM(GPU_KERNEL_LAUNCH) {
   ret = codegenGPUKernelLaunch(call, /* is3d= */ true);
 }
 
@@ -4848,19 +4854,19 @@ static GenRet codegenCallToPtxTgtIntrinsic(const char *fcnName) {
   return ret;
 }
 
-DEFINE_PRIM(PRIM_GPU_THREADIDX_X) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.x"); }
-DEFINE_PRIM(PRIM_GPU_THREADIDX_Y) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.y"); }
-DEFINE_PRIM(PRIM_GPU_THREADIDX_Z) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.z"); }
-DEFINE_PRIM(PRIM_GPU_BLOCKIDX_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.x"); }
-DEFINE_PRIM(PRIM_GPU_BLOCKIDX_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.y"); }
-DEFINE_PRIM(PRIM_GPU_BLOCKIDX_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.z"); }
-DEFINE_PRIM(PRIM_GPU_BLOCKDIM_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.x"); }
-DEFINE_PRIM(PRIM_GPU_BLOCKDIM_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.y"); }
-DEFINE_PRIM(PRIM_GPU_BLOCKDIM_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.z"); }
-DEFINE_PRIM(PRIM_GPU_GRIDDIM_X)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.x"); }
-DEFINE_PRIM(PRIM_GPU_GRIDDIM_Y)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.y"); }
-DEFINE_PRIM(PRIM_GPU_GRIDDIM_Z)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.z"); }
-DEFINE_PRIM(PRIM_GET_REQUESTED_SUBLOC) { ret = codegenCallExpr("chpl_task_getRequestedSubloc"); }
+DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.x"); }
+DEFINE_PRIM(GPU_THREADIDX_Y) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.y"); }
+DEFINE_PRIM(GPU_THREADIDX_Z) { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.tid.z"); }
+DEFINE_PRIM(GPU_BLOCKIDX_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.x"); }
+DEFINE_PRIM(GPU_BLOCKIDX_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.y"); }
+DEFINE_PRIM(GPU_BLOCKIDX_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ctaid.z"); }
+DEFINE_PRIM(GPU_BLOCKDIM_X)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.x"); }
+DEFINE_PRIM(GPU_BLOCKDIM_Y)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.y"); }
+DEFINE_PRIM(GPU_BLOCKDIM_Z)  { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.ntid.z"); }
+DEFINE_PRIM(GPU_GRIDDIM_X)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.x"); }
+DEFINE_PRIM(GPU_GRIDDIM_Y)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.y"); }
+DEFINE_PRIM(GPU_GRIDDIM_Z)   { ret = codegenCallToPtxTgtIntrinsic("llvm.nvvm.read.ptx.sreg.nctaid.z"); }
+DEFINE_PRIM(GET_REQUESTED_SUBLOC) { ret = codegenCallExpr("chpl_task_getRequestedSubloc"); }
 
 static void codegenPutGet(CallExpr* call, GenRet &ret) {
     // args are:
@@ -4981,19 +4987,19 @@ static void codegenPutGet(CallExpr* call, GenRet &ret) {
       }
     }
 }
-DEFINE_PRIM(PRIM_CHPL_COMM_GET) {
+DEFINE_PRIM(CHPL_COMM_GET) {
   codegenPutGet(call, ret);
 }
-DEFINE_PRIM(PRIM_CHPL_COMM_PUT) {
+DEFINE_PRIM(CHPL_COMM_PUT) {
   codegenPutGet(call, ret);
 }
-DEFINE_PRIM(PRIM_CHPL_COMM_ARRAY_GET) {
+DEFINE_PRIM(CHPL_COMM_ARRAY_GET) {
   codegenPutGet(call, ret);
 }
-DEFINE_PRIM(PRIM_CHPL_COMM_ARRAY_PUT) {
+DEFINE_PRIM(CHPL_COMM_ARRAY_PUT) {
   codegenPutGet(call, ret);
 }
-DEFINE_PRIM(PRIM_CHPL_COMM_REMOTE_PREFETCH) {
+DEFINE_PRIM(CHPL_COMM_REMOTE_PREFETCH) {
     // args are:
     //   locale, remote addr, get(3)==size, line, file
 
@@ -5150,14 +5156,14 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
                 call->get(8),
                 call->get(9));
 }
-DEFINE_PRIM(PRIM_CHPL_COMM_PUT_STRD) {
+DEFINE_PRIM(CHPL_COMM_PUT_STRD) {
   codegenPutGetStrd(call, ret);
 }
-DEFINE_PRIM(PRIM_CHPL_COMM_GET_STRD) {
+DEFINE_PRIM(CHPL_COMM_GET_STRD) {
   codegenPutGetStrd(call, ret);
 }
 
-DEFINE_PRIM(PRIM_SIZEOF_BUNDLE) {
+DEFINE_PRIM(SIZEOF_BUNDLE) {
     Type*  type = call->get(1)->typeInfo();
     GenRet size;
 
@@ -5177,7 +5183,7 @@ DEFINE_PRIM(PRIM_SIZEOF_BUNDLE) {
     ret = size;
 }
 
-DEFINE_PRIM(PRIM_SIZEOF_DDATA_ELEMENT) {
+DEFINE_PRIM(SIZEOF_DDATA_ELEMENT) {
     Type*  type = call->get(1)->typeInfo();
     GenRet size;
     if (type->symbol->hasFlag(FLAG_WIDE_CLASS) == true) {
@@ -5189,7 +5195,7 @@ DEFINE_PRIM(PRIM_SIZEOF_DDATA_ELEMENT) {
     ret = size;
 }
 
-DEFINE_PRIM(PRIM_CAST) {
+DEFINE_PRIM(CAST) {
     if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS) ||
         call->isWideRef()) {
 
@@ -5251,7 +5257,7 @@ DEFINE_PRIM(PRIM_CAST) {
       }
     }
 }
-DEFINE_PRIM(PRIM_DYNAMIC_CAST) {
+DEFINE_PRIM(DYNAMIC_CAST) {
     if (call->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS))
       INT_FATAL(call, "wide class dynamic cast is not normal");
 
@@ -5264,7 +5270,7 @@ DEFINE_PRIM(PRIM_DYNAMIC_CAST) {
     ret = codegenTernary(ok, cast, nul);
 }
 
-DEFINE_PRIM(PRIM_STACK_ALLOCATE_CLASS) {
+DEFINE_PRIM(STACK_ALLOCATE_CLASS) {
     AggregateType* at = toAggregateType(call->get(1)->typeInfo());
     const char* struct_name = at->classStructName(true);
     GenRet tmp = createTempVar(struct_name);
@@ -5272,7 +5278,7 @@ DEFINE_PRIM(PRIM_STACK_ALLOCATE_CLASS) {
     ret = codegenCast(at, codegenAddrOf(tmp));
 }
 
-DEFINE_PRIM(PRIM_REGISTER_GLOBAL_VAR) {
+DEFINE_PRIM(REGISTER_GLOBAL_VAR) {
     GenRet idx          = codegenValue(call->get(1));
     GenRet var          = call->get(2);
     GenRet ptr_wide_ptr = codegenAddrOf(var);
@@ -5303,20 +5309,20 @@ DEFINE_PRIM(PRIM_REGISTER_GLOBAL_VAR) {
                 idx,
                 codegenCast("ptr_wide_ptr_t", ptr_wide_ptr));
 }
-DEFINE_PRIM(PRIM_BROADCAST_GLOBAL_VARS) {
+DEFINE_PRIM(BROADCAST_GLOBAL_VARS) {
     codegenCall("chpl_comm_broadcast_global_vars", call->get(1));
 }
-DEFINE_PRIM(PRIM_PRIVATE_BROADCAST) {
+DEFINE_PRIM(PRIVATE_BROADCAST) {
     codegenCall("chpl_comm_broadcast_private",
                 call->get(1),
                 codegenSizeof(call->get(2)->typeInfo()));
 }
 
-DEFINE_PRIM(PRIM_INT_ERROR) {
+DEFINE_PRIM(INT_ERROR) {
     codegenCall("chpl_internal_error",
                 new_CStringSymbol("compiler generated error"));
 }
-DEFINE_PRIM(PRIM_STRING_COPY) {
+DEFINE_PRIM(STRING_COPY) {
     GenRet cpyFrom = call->get(1)->codegen();
 
     if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
@@ -5329,7 +5335,7 @@ DEFINE_PRIM(PRIM_STRING_COPY) {
       ret = call->codegenBasicPrimitiveExpr();
 }
 
-DEFINE_PRIM(PRIM_CAST_TO_VOID_STAR) {
+DEFINE_PRIM(CAST_TO_VOID_STAR) {
     GenRet act = call->get(1);
     GenRet ptr;
 
@@ -5351,21 +5357,12 @@ DEFINE_PRIM(PRIM_CAST_TO_VOID_STAR) {
     ret = codegenCastToVoidStar(ptr);
 }
 
-DEFINE_PRIM(PRIM_RT_ERROR) {
-    ret = call->codegenBasicPrimitiveExpr();
-}
-DEFINE_PRIM(PRIM_RT_WARNING) {
-    ret = call->codegenBasicPrimitiveExpr();
-}
+DEFINE_BASIC_PRIM(RT_ERROR)
+DEFINE_BASIC_PRIM(RT_WARNING)
+DEFINE_BASIC_PRIM(START_RMEM_FENCE)
+DEFINE_BASIC_PRIM(FINISH_RMEM_FENCE)
 
-DEFINE_PRIM(PRIM_START_RMEM_FENCE) {
-    ret = call->codegenBasicPrimitiveExpr();
-}
-DEFINE_PRIM(PRIM_FINISH_RMEM_FENCE) {
-    ret = call->codegenBasicPrimitiveExpr();
-}
-
-DEFINE_PRIM(PRIM_NEW_PRIV_CLASS) {
+DEFINE_PRIM(NEW_PRIV_CLASS) {
     GenRet arg = call->get(1);
     GenRet pid = codegenValue(call->get(2));
 
@@ -5375,7 +5372,7 @@ DEFINE_PRIM(PRIM_NEW_PRIV_CLASS) {
     codegenCall("chpl_newPrivatizedClass", arg, pid);
 }
 
-DEFINE_PRIM(PRIM_FTABLE_CALL) {
+DEFINE_PRIM(FTABLE_CALL) {
     //
     // indirect function call via a function pointer
     //
@@ -5465,7 +5462,7 @@ DEFINE_PRIM(PRIM_FTABLE_CALL) {
 
     ret = codegenCallExprInner(fngen, args, nullptr, nullptr, true);
 }
-DEFINE_PRIM(PRIM_VIRTUAL_METHOD_CALL) {
+DEFINE_PRIM(VIRTUAL_METHOD_CALL) {
     GenRet    fnPtr;
     GenRet    index;
     FnSymbol* fn        = NULL;
@@ -5516,11 +5513,9 @@ DEFINE_PRIM(PRIM_VIRTUAL_METHOD_CALL) {
     ret = codegenCallExprInner(fngen, args, fn, nullptr, true);
 }
 
-DEFINE_PRIM(PRIM_LOOKUP_FILENAME) {
-    ret = call->codegenBasicPrimitiveExpr();
-}
+DEFINE_BASIC_PRIM(LOOKUP_FILENAME)
 
-DEFINE_PRIM(PRIM_INVARIANT_START) {
+DEFINE_PRIM(INVARIANT_START) {
 
   GenInfo* info = gGenInfo;
   if (info->cfile) {
@@ -5552,7 +5547,7 @@ llvm::MDNode* createMetadataScope(llvm::LLVMContext& ctx,
 
 #endif
 
-DEFINE_PRIM(PRIM_NO_ALIAS_SET) {
+DEFINE_PRIM(NO_ALIAS_SET) {
 
   GenInfo* info = gGenInfo;
   if (info->cfile) {
@@ -5605,7 +5600,7 @@ DEFINE_PRIM(PRIM_NO_ALIAS_SET) {
   }
 }
 
-DEFINE_PRIM(PRIM_COPIES_NO_ALIAS_SET) {
+DEFINE_PRIM(COPIES_NO_ALIAS_SET) {
   GenInfo* info = gGenInfo;
   if (info->cfile) {
     // do nothing for the C backend
@@ -5627,18 +5622,32 @@ DEFINE_PRIM(PRIM_COPIES_NO_ALIAS_SET) {
   }
 }
 
-DEFINE_PRIM(PRIM_OPTIMIZATION_INFO) {
+DEFINE_PRIM(OPTIMIZATION_INFO) {
   // No action required here
 }
+
+DEFINE_BASIC_PRIM(ASCII)
+DEFINE_BASIC_PRIM(SLEEP)
+DEFINE_BASIC_PRIM(REAL_TO_INT)
+DEFINE_BASIC_PRIM(STRING_INDEX)
+DEFINE_BASIC_PRIM(CHPL_EXIT_ANY)
+DEFINE_BASIC_PRIM(OBJECT_TO_INT)
+DEFINE_BASIC_PRIM(STRING_CONCAT)
+DEFINE_BASIC_PRIM(STRING_SELECT)
+DEFINE_BASIC_PRIM(STRING_COMPARE)
+DEFINE_BASIC_PRIM(STRING_CONTAINS)
+DEFINE_BASIC_PRIM(STRING_LENGTH_BYTES)
+DEFINE_BASIC_PRIM(STRING_LENGTH_CODEPOINTS)
 
 void CallExpr::registerPrimitivesForCodegen() {
   // The following macros call registerPrimitiveCodegen for
   // the DEFINE_PRIM routines above for each primitive labelled
   // as PRIMITIVE_G (i.e. as needing code generation)
-#define PRIMITIVE_G(NAME) \
-if (NAME!=PRIM_UNKNOWN) registerPrimitiveCodegen(NAME, codegen ## NAME );
-#define PRIMITIVE_R(NAME)
-#include "primitive_list.h"
+#define PRIMITIVE_G(NAME, str) \
+  if (PRIM_ ## NAME != PRIM_UNKNOWN) \
+    registerPrimitiveCodegen(PRIM_ ## NAME, codegen ## NAME );
+#define PRIMITIVE_R(NAME, str)
+#include "chpl/uast/PrimOpsList.h"
 
 #undef PRIMITIVE_G
 #undef PRIMITIVE_R

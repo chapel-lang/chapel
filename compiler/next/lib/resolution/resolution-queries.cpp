@@ -1489,43 +1489,6 @@ CallResolutionResult resolveFnCall(Context* context,
 }
 
 static
-UniqueString getParamOp(Context* context, const PrimCall* call) {
-  UniqueString prim = call->prim();
-  // TODO: use a map
-  // TODO: have this return an integer identifying a Primitive
-#define USTR(s) UniqueString::build(context, s)
-  if (prim == USTR("") ||
-      prim == USTR("*") ||
-      prim == USTR("/") ||
-      prim == USTR("%") ||
-      prim == USTR("+") ||
-      prim == USTR("-") ||
-      prim == USTR("<<") ||
-      prim == USTR(">>") ||
-      prim == USTR("<") ||
-      prim == USTR("<=") ||
-      prim == USTR(">") ||
-      prim == USTR(">=") ||
-      prim == USTR("==") ||
-      prim == USTR("!=") ||
-      prim == USTR("&") ||
-      prim == USTR("^") ||
-      prim == USTR("|") ||
-      prim == USTR("&&") ||
-      prim == USTR("||") ||
-      prim == USTR("u+") ||
-      prim == USTR("u-") ||
-      prim == USTR("~") ||
-      prim == USTR("!")) {
-    return prim;
-  }
-#undef USTR
-
-  UniqueString empty;
-  return empty;
-}
-
-static
 CallResolutionResult resolvePrimCall(Context* context,
                                      const PrimCall* call,
                                      const CallInfo& ci,
@@ -1551,8 +1514,8 @@ CallResolutionResult resolvePrimCall(Context* context,
   }
 
   // handle param folding
-  auto prim = getParamOp(context, call);
-  if (!prim.isEmpty()) {
+  auto prim = call->prim();
+  if (Param::isParamOpFoldable(prim)) {
     if (allParam && ci.actuals.size() == 2) {
       type = Param::fold(context, prim, ci.actuals[0].type, ci.actuals[1].type);
     }

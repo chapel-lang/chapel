@@ -17,23 +17,36 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/PrimCall.h"
-
-#include "chpl/uast/Builder.h"
+#ifndef CHPL_UAST_PRIM_OP_H
+#define CHPL_UAST_PRIM_OP_H
 
 namespace chpl {
 namespace uast {
+namespace primtags {
 
 
-owned<PrimCall> PrimCall::build(Builder* builder,
-                                Location loc,
-                                PrimitiveTag prim,
-                                ASTList actuals) {
-  PrimCall* ret = new PrimCall(std::move(actuals), prim);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
-}
+/** An enum containing the various PrimOp values e.g. PRIM_MOVE. */
+enum PrimitiveTag {
+#define PRIMITIVE_G(NAME, str) PRIM_ ## NAME ,
+#define PRIMITIVE_R(NAME, str) PRIM_ ## NAME ,
+#include "chpl/uast/PrimOpsList.h"
+  NUM_KNOWN_PRIMS
+#undef PRIMITIVE_G
+#undef PRIMITIVE_R
+};
 
+/** Return the string name associated with a PrimitiveTag */
+const char* primTagToName(PrimitiveTag tag);
 
-} // namespace uast
-} // namespace chpl
+/** Return the PrimitiveTag associated with a const char* */
+PrimitiveTag primNameToTag(const char* name);
+
+} // end namespace primtags
+
+// make PRIM_MOVE etc values available as uast::PRIM_MOVE e.g.
+using namespace primtags;
+
+} // end namespace uast
+} // end namespace chpl
+
+#endif

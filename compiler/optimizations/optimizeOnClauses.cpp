@@ -56,9 +56,9 @@ classifyPrimitive(CallExpr *call) {
   //
   // case PRIM_NEW:
   // ...
-  #define PRIMITIVE_G(NAME)
-  #define PRIMITIVE_R(NAME) case NAME:
-  #include "primitive_list.h"
+  #define PRIMITIVE_G(NAME, str)
+  #define PRIMITIVE_R(NAME, str) case PRIM_ ## NAME:
+  #include "chpl/uast/PrimOpsList.h"
   #undef PRIMITIVE_R
   #undef PRIMITIVE_G
     switch (call->primitive->tag) {
@@ -80,7 +80,19 @@ classifyPrimitive(CallExpr *call) {
     break;
 
   case PRIM_UNKNOWN:
-    // TODO: Return FAST_AND_LOCAL for PRIM_UNKNOWNs that are side-effect free
+  case PRIM_STRING_COMPARE:
+  case PRIM_STRING_CONTAINS:
+  case PRIM_STRING_CONCAT:
+  case PRIM_STRING_LENGTH_BYTES:
+  case PRIM_STRING_LENGTH_CODEPOINTS:
+  case PRIM_ASCII:
+  case PRIM_STRING_INDEX:
+  case PRIM_STRING_SELECT:
+  case PRIM_SLEEP:
+  case PRIM_REAL_TO_INT:
+  case PRIM_OBJECT_TO_INT:
+  case PRIM_CHPL_EXIT_ANY:
+    // TODO: Return FAST_AND_LOCAL for these that are side-effect free
     return NOT_FAST_NOT_LOCAL;
 
   case PRIM_NOOP:
