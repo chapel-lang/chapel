@@ -1516,19 +1516,8 @@ static void setPrintCppLineno() {
 
 static void setGPUFlags() {
   bool isGpuCodegen = localeUsesGPU();
-  bool isSaveCDirEmpty = strlen(saveCDir) == 0;
 
   if(isGpuCodegen) {
-    if (isSaveCDirEmpty) {
-      int len = snprintf(saveCDir, FILENAME_MAX+1, "%s_gpu_files",
-                         (strlen(executableFilename) != 0 ?
-                          executableFilename :
-                          std::to_string(getpid()).c_str()));
-      if(len < 0 || len >= FILENAME_MAX+1) {
-        USR_FATAL("Unable to produce name of savec directory for GPU code generation.");
-      }
-    }
-
     if (!fNoChecks) {
       USR_WARN("The prototype GPU support implies --no-checks."
                " This may impact debuggability. To suppress this warning,"

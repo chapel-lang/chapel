@@ -31,7 +31,7 @@ void chpl_gpu_init(void);
 bool chpl_gpu_has_context(void);
 bool chpl_gpu_running_on_gpu_locale(void);
 
-void chpl_gpu_launch_kernel(const char* fatbinPath, const char* name,
+void chpl_gpu_launch_kernel(const char* fatbinData, const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
                             int blk_dim_x, int blk_dim_y, int blk_dim_z,
                             int nargs, ...);
