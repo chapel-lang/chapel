@@ -620,8 +620,8 @@ module ArgumentParser {
     proc init(addHelp=true, exitOnError=true, exitAfterHelp=true,
               in helpHandler:?h=none, helpMessage:?t=none) {
 
-      assert(!(!isNothingType(h) && !isNothingType(t)),
-             "Cannot set help message and help handler, choose one.");
+      if (!isNothingType(h) && !isNothingType(t)) then
+        compilerError("Cannot set help message and help handler, choose one.");
       _result = new map(string, shared Argument);
       _handlers = new map(string, owned ArgumentHandler);
       _options = new map(string, string);
