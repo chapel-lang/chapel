@@ -486,9 +486,11 @@ bool isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
   //  unmanaged class types can have borrow/canonical class type used
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
-      for (int i = 0; i < NUM_DECORATED_CLASS_TYPES; i++) {
-        ClassTypeDecorator decorator = (ClassTypeDecorator)i;
-        if (Type* dt = at->getDecoratedClass(decorator))
+      for (int i = 0;
+           i < chpl::types::ClassTypeDecorator::NUM_DECORATORS;
+           i++) {
+        ClassTypeDecoratorEnum d = chpl::types::ClassTypeDecorator::getIthDecorator(i);
+        if (Type* dt = at->getDecoratedClass(d))
           retval &= do_isUnusedClass(dt, wellknown);
       }
     }
@@ -616,9 +618,9 @@ static void removeTypedefParts() {
       bool removeIt = true;
       if (TypeSymbol* ts = toTypeSymbol(def->sym)) {
         if (DecoratedClassType* dt = toDecoratedClassType(ts->type)) {
-          ClassTypeDecorator d = dt->getDecorator();
+          ClassTypeDecoratorEnum d = dt->getDecorator();
           if ((isDecoratorUnknownNilability(d) ||
-              isDecoratorUnknownManagement(d)) &&
+               isDecoratorUnknownManagement(d)) &&
               dt->getCanonicalClass()->inTree()) {
             // After resolution, can't consider it generic anymore...
             // The generic-ness will be moot though because later

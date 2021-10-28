@@ -1442,10 +1442,10 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
   if (borrowType == NULL)
     INT_FATAL("Could not determine borrow type");
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
+  ClassTypeDecoratorEnum decorator = chpl::types::ClassTypeDecorator::BORROWED_NONNIL;
 
   if (isNilableClassType(borrowType))
-    decorator = CLASS_TYPE_BORROWED_NILABLE;
+    decorator = chpl::types::ClassTypeDecorator::BORROWED_NILABLE;
 
   borrowType = canonicalDecoratedClassType(borrowType);
 

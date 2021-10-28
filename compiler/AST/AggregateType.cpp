@@ -236,13 +236,13 @@ int AggregateType::numFields() const {
 }
 
 struct DecoratorTypePair {
-  ClassTypeDecorator d;
+  ClassTypeDecoratorEnum d;
   Type* t;
-  DecoratorTypePair(ClassTypeDecorator d, Type* t) : d(d), t(t) { }
+  DecoratorTypePair(ClassTypeDecoratorEnum d, Type* t) : d(d), t(t) { }
 };
 
 // Inspects a type expression and returns (class decorator, class type).
-// For non-class types, returns (CLASS_TYPE_UNMANAGED_NILABLE, NULL)
+// For non-class types, returns (ClassTypeDecorator::UNMANAGED_NILABLE, NULL)
 static DecoratorTypePair getTypeExprDecorator(Expr* e) {
   if (SymExpr* se = toSymExpr(e))
     if (TypeSymbol* ts = toTypeSymbol(se->symbol()))
@@ -253,23 +253,23 @@ static DecoratorTypePair getTypeExprDecorator(Expr* e) {
   if (CallExpr* call = toCallExpr(e)) {
     if (isClassDecoratorPrimitive(call) && call->numActuals() >= 1) {
       DecoratorTypePair p = getTypeExprDecorator(call->get(1));
-      ClassTypeDecorator d = p.d;
+      ClassTypeDecoratorEnum d = p.d;
       if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
           call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
         if (isDecoratorNonNilable(d))
-          d = CLASS_TYPE_UNMANAGED_NONNIL;
+          d = chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL;
         else if (isDecoratorNilable(d))
-          d = CLASS_TYPE_UNMANAGED_NILABLE;
+          d = chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE;
         else
-          d = CLASS_TYPE_UNMANAGED;
+          d = chpl::types::ClassTypeDecorator::UNMANAGED;
       } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
                  call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
         if (isDecoratorNonNilable(d))
-          d = CLASS_TYPE_BORROWED_NONNIL;
+          d = chpl::types::ClassTypeDecorator::BORROWED_NONNIL;
         else if (isDecoratorNilable(d))
-          d = CLASS_TYPE_BORROWED_NILABLE;
+          d = chpl::types::ClassTypeDecorator::BORROWED_NILABLE;
         else
-          d = CLASS_TYPE_BORROWED;
+          d = chpl::types::ClassTypeDecorator::BORROWED;
       } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
                  call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
         d = addNilableToDecorator(d);
@@ -283,7 +283,8 @@ static DecoratorTypePair getTypeExprDecorator(Expr* e) {
     }
   }
 
-  return DecoratorTypePair(CLASS_TYPE_UNMANAGED_NILABLE, NULL);
+  return DecoratorTypePair(chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE,
+                           nullptr);
 }
 
 static bool doFieldIsGeneric(Symbol* field,
@@ -1650,9 +1651,9 @@ AggregateType* AggregateType::getInstantiation(Symbol* sym, int index, Expr* ins
   // Normalize `_owned(anymanaged-MyClass)` to `_owned(borrowed MyClass)`
   if (isManagedPtrType(this)) {
     if (isClassLikeOrManaged(symType)) {
-      ClassTypeDecorator d = CLASS_TYPE_BORROWED_NONNIL;
+      ClassTypeDecoratorEnum d = chpl::types::ClassTypeDecorator::BORROWED_NONNIL;
       if (isNilableClassType(symType))
-        d = CLASS_TYPE_BORROWED_NILABLE;
+        d = chpl::types::ClassTypeDecorator::BORROWED_NILABLE;
 
       if (isManagedPtrType(symType))
         checkDuplicateDecorators(this, symType, insnPoint);
@@ -2912,7 +2913,7 @@ Symbol* AggregateType::getSubstitution(const char* name) const {
   return retval;
 }
 
-Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
+Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
 
   int packedDecorator = -1;
   // -1 -> just use the canonical type (e.g. MyClass == borrowed MyClass!)
@@ -2923,18 +2924,18 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
   //  4 -> generic-management MyClass!
   //  5 -> generic-management MyClass?
   switch (d) {
-    case CLASS_TYPE_BORROWED:          packedDecorator = -1; break;
-    case CLASS_TYPE_BORROWED_NONNIL:   packedDecorator = -1; break;
-    case CLASS_TYPE_BORROWED_NILABLE:  packedDecorator =  0; break;
-    case CLASS_TYPE_UNMANAGED:         packedDecorator =  1; break;
-    case CLASS_TYPE_UNMANAGED_NONNIL:  packedDecorator =  1; break;
-    case CLASS_TYPE_UNMANAGED_NILABLE: packedDecorator =  2; break;
-    case CLASS_TYPE_MANAGED:           packedDecorator = -1; break;
-    case CLASS_TYPE_MANAGED_NONNIL:    packedDecorator =  1; break;
-    case CLASS_TYPE_MANAGED_NILABLE:   packedDecorator =  2; break;
-    case CLASS_TYPE_GENERIC:           packedDecorator =  3; break;
-    case CLASS_TYPE_GENERIC_NONNIL:    packedDecorator =  4; break;
-    case CLASS_TYPE_GENERIC_NILABLE:   packedDecorator =  5; break;
+    case chpl::types::ClassTypeDecorator::BORROWED:          packedDecorator = -1; break;
+    case chpl::types::ClassTypeDecorator::BORROWED_NONNIL:   packedDecorator = -1; break;
+    case chpl::types::ClassTypeDecorator::BORROWED_NILABLE:  packedDecorator =  0; break;
+    case chpl::types::ClassTypeDecorator::UNMANAGED:         packedDecorator =  1; break;
+    case chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL:  packedDecorator =  1; break;
+    case chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE: packedDecorator =  2; break;
+    case chpl::types::ClassTypeDecorator::MANAGED:           packedDecorator = -1; break;
+    case chpl::types::ClassTypeDecorator::MANAGED_NONNIL:    packedDecorator =  1; break;
+    case chpl::types::ClassTypeDecorator::MANAGED_NILABLE:   packedDecorator =  2; break;
+    case chpl::types::ClassTypeDecorator::GENERIC:           packedDecorator =  3; break;
+    case chpl::types::ClassTypeDecorator::GENERIC_NONNIL:    packedDecorator =  4; break;
+    case chpl::types::ClassTypeDecorator::GENERIC_NILABLE:   packedDecorator =  5; break;
       // intentionally no default
   }
 
@@ -2947,8 +2948,8 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
   AggregateType* at = this;
 
   if (isManagedPtrType(this)) {
-    if (d != CLASS_TYPE_MANAGED_NONNIL &&
-        d != CLASS_TYPE_MANAGED_NILABLE) {
+    if (d != chpl::types::ClassTypeDecorator::MANAGED_NONNIL &&
+        d != chpl::types::ClassTypeDecorator::MANAGED_NILABLE) {
       // Get the class type underneath
       Type* bt = getManagedPtrBorrowType(this);
       if (bt && bt != dtUnknown && isAggregateType(bt))
@@ -2960,7 +2961,7 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecorator d) {
     return at;
 
   // borrowed == canonical class type
-  if (d == CLASS_TYPE_BORROWED) {
+  if (d == chpl::types::ClassTypeDecorator::BORROWED) {
     if (aggregateTag == AGGREGATE_CLASS)
       return at;
     else
