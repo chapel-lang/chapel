@@ -2594,33 +2594,33 @@ opt_init_expr:
 
 ret_array_type:
   TLSBR TRSBR type_level_expr
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @1, /*domainExprs*/ nullptr, $3);
+  }
 | TLSBR TRSBR
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @1, nullptr, nullptr);
+  }
 | TLSBR expr_ls TRSBR type_level_expr
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @2, $2, $4);
+  }
 | TLSBR expr_ls TRSBR
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @2, $2, /*typeExpr*/ nullptr);
+  }
 | TLSBR TRSBR ret_array_type
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @1, /*domainExprs*/ nullptr, $3);
+  }
 | TLSBR expr_ls TRSBR ret_array_type
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @2, $2, $4);
+  }
 | TLSBR error TRSBR
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = ERROR(@$, "invalid expression for domain of array return type");
+  }
 ;
 
 opt_ret_type:
@@ -2873,11 +2873,47 @@ for_expr:
                     /*isParam*/ false).release();
   }
 | TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = For::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
+                    BlockStyle::IMPLICIT,
+                    context->consumeToBlock(ifLoc, ifExpr.release()),
+                    /*isExpressionLevel*/ true,
+                    /*isParam*/ false).release();
+  }
 | TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = For::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
+                    BlockStyle::IMPLICIT,
+                    context->consumeToBlock(ifLoc, ifExpr.release()),
+                    /*isExpressionLevel*/ true,
+                    /*isParam*/ false).release();
+  }
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@4, @7), toOwned($5),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@7, $7),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@4, @7);
+    $$ = For::build(BUILDER, LOC(@$), /*index*/ nullptr,
+                    toOwned($2),
+                    BlockStyle::IMPLICIT,
+                    context->consumeToBlock(ifLoc, ifExpr.release()),
+                    /*isExpressionLevel*/ true,
+                    /*isParam*/ false).release();
+  }
 | TFORALL expr TIN expr TDO expr %prec TFOR
   {
     auto index = context->buildLoopIndexDecl(@2, toOwned($2));
@@ -2905,11 +2941,47 @@ for_expr:
                        /*isExpressionLevel*/ true).release();
   }
 | TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = Forall::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
+                       /*withClause*/ nullptr,
+                       BlockStyle::IMPLICIT,
+                       context->consumeToBlock(ifLoc, ifExpr.release()),
+                       /*isExpressionLevel*/ true).release();
+  }
 | TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$= Forall::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
+                      /*withClause*/ nullptr,
+                      BlockStyle::IMPLICIT,
+                      context->consumeToBlock(ifLoc, ifExpr.release()),
+                      /*isExpressionLevel*/ true).release();
+  }
 | TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@4, @7), toOwned($5),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@7, $7),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@4, @7);
+    $$ = Forall::build(BUILDER, LOC(@$), /*index*/ nullptr,
+                       toOwned($2),
+                       /*withClause*/ nullptr,
+                       BlockStyle::IMPLICIT,
+                       context->consumeToBlock(ifLoc, ifExpr.release()),
+                       /*isExpressionLevel*/ true).release();
+  }
 | TLSBR expr_ls TRSBR expr %prec TFOR
   {
     if ($2->size() > 1) {
@@ -2945,9 +3017,35 @@ for_expr:
                             /*isExpressionLevel*/ true).release();
   }
 | TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = BracketLoop::build(BUILDER, LOC(@$), std::move(index),
+                            toOwned($4),
+                            /*withClause*/ nullptr,
+                            BlockStyle::IMPLICIT,
+                            context->consumeToBlock(ifLoc, ifExpr.release()),
+                            /*isExpressionLevel*/ true).release();
+  }
 | TLSBR expr_ls TIN zippered_iterator TRSBR TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = BracketLoop::build(BUILDER, LOC(@$), std::move(index),
+                            toOwned($4),
+                            /*withClause*/ nullptr,
+                            BlockStyle::IMPLICIT,
+                            context->consumeToBlock(ifLoc, ifExpr.release()),
+                            /*isExpressionLevel*/ true).release();
+  }
 ;
 
 cond_expr:
@@ -3417,10 +3515,22 @@ reduce_expr:
 ;
 
 scan_expr:
-  expr TSCAN expr                              { $$ = TODOEXPR(@$); }
-| expr TSCAN zippered_iterator                 { $$ = TODOEXPR(@$); }
-| reduce_scan_op_expr TSCAN expr               { $$ = TODOEXPR(@$); }
-| reduce_scan_op_expr TSCAN zippered_iterator  { $$ = TODOEXPR(@$); }
+  expr TSCAN expr
+  {
+    $$ = context->buildCustomScan(@$, @1, $1, $3);
+  }
+| expr TSCAN zippered_iterator
+  {
+    $$ = context->buildCustomScan(@$, @1, $1, $3);
+  }
+| reduce_scan_op_expr TSCAN expr
+  {
+    $$ = Scan::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+  }
+| reduce_scan_op_expr TSCAN zippered_iterator
+  {
+    $$ = Scan::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+  }
 ;
 
 

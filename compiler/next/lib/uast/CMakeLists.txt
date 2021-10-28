@@ -81,6 +81,7 @@ target_sources(libchplcomp-obj
                Reduce.cpp
                Require.cpp
                Return.cpp
+               Scan.cpp
                Select.cpp
                Serial.cpp
                SimpleBlockLike.cpp

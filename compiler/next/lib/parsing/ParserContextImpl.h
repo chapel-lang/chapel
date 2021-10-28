@@ -1067,7 +1067,8 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   auto node = Conditional::build(builder, convertLocation(locIf),
                                  toOwned(condition),
                                  thenBlockStyle,
-                                 std::move(thenBlock));
+                                 std::move(thenBlock),
+                                 /*isExpressionLevel*/ false);
 
   // Do NOT clear comments here! Due to lookahead we might clear a valid
   // comment that has already been stored.
@@ -1536,6 +1537,22 @@ Expression* ParserContext::buildCustomReduce(YYLTYPE location,
     auto node = Reduce::build(builder, convertLocation(location),
                               identName,
                               toOwned(rhs));
+    return node.release();
+  }
+}
+
+Expression* ParserContext::buildCustomScan(YYLTYPE location,
+                                           YYLTYPE locIdent,
+                                           Expression* lhs,
+                                           Expression* rhs) {
+  if (!lhs->isIdentifier()) {
+    const char* msg = "Expected identifier for scan name";
+    return raiseError(locIdent, msg);
+  } else {
+    auto identName = lhs->toIdentifier()->name();
+    auto node = Scan::build(builder, convertLocation(location),
+                            identName,
+                            toOwned(rhs));
     return node.release();
   }
 }

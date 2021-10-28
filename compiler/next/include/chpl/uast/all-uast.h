@@ -71,6 +71,7 @@
 #include "chpl/uast/Reduce.h"
 #include "chpl/uast/Require.h"
 #include "chpl/uast/Return.h"
+#include "chpl/uast/Scan.h"
 #include "chpl/uast/Select.h"
 #include "chpl/uast/Serial.h"
 #include "chpl/uast/StringLiteral.h"

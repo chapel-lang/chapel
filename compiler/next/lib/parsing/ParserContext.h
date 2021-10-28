@@ -455,6 +455,10 @@ struct ParserContext {
                                 Expression* lhs,
                                 Expression* rhs);
 
+  Expression* buildCustomScan(YYLTYPE location, YYLTYPE locIdent,
+                              Expression* lhs,
+                              Expression* rhs);
+
   Expression* buildTypeConstructor(YYLTYPE location,
                                    PODUniqueString baseType,
                                    Expression* subType);

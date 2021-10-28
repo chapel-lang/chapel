@@ -53,6 +53,9 @@ struct Converter {
   UniqueString byStr;
   UniqueString dmappedStr;
   UniqueString domainStr;
+  UniqueString logicAndAssignStr;
+  UniqueString logicOrAssignStr;
+  UniqueString noinitStr;
   UniqueString ownedStr;
   UniqueString questionStr;
   UniqueString reduceAssignStr;
@@ -78,6 +81,9 @@ struct Converter {
     byStr             = intern("by");
     dmappedStr        = intern("dmapped");
     domainStr         = intern("domain");
+    logicAndAssignStr = intern("&&=");
+    logicOrAssignStr  = intern("||=");
+    noinitStr         = intern("noinit");
     ownedStr          = intern("owned");
     questionStr       = intern("?");
     reduceAssignStr   = intern("reduce=");
@@ -144,6 +150,8 @@ struct Converter {
       return new UnresolvedSymExpr("_owned");
     } else if (name == sharedStr) {
       return new UnresolvedSymExpr("_shared");
+    } else if (name == noinitStr) {
+      return new SymExpr(gNoInit);
     }
 
     return new UnresolvedSymExpr(node->name().c_str());
@@ -611,8 +619,8 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::Sync* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+    BlockStmt* block = createBlockWithStmts(node->stmts());
+    return buildSyncStmt(block);
   }
 
   CallExpr* visit(const uast::Throw* node) {
@@ -720,21 +728,20 @@ struct Converter {
     Expr* indices = convertLoopIndexDecl(node->index());
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
     Expr* expr = nullptr;
-
-    // TODO (dlongnecke): Parse and wire this up.
     Expr* cond = nullptr;
-
     bool maybeArrayType = isLoopMaybeArrayType(node);
     bool zippered = node->iterand()->isZip();
 
-    // TODO: Assert conditional has no else block, pull out the cond and
-    // expr pieces of the conditional.
-    if (node->stmt(0)->isConditional()) {
-      INT_FATAL("TODO");
-      return nullptr;
-    } else {
-      expr = toExpr(convertAST(node->stmt(0)));
-    }
+      // Unpack things differently if body is a conditional.
+      if (auto origCond = node->stmt(0)->toConditional()) {
+        assert(origCond->numThenStmts() == 1);
+        assert(!origCond->hasElseBlock());
+        expr = singleExprFromStmts(origCond->thenStmts());
+        cond = convertAST(origCond->condition());
+        assert(cond);
+      } else {
+        expr = singleExprFromStmts(node->stmts());
+      }
 
     assert(expr != nullptr);
 
@@ -787,23 +794,30 @@ struct Converter {
   Expr* visit(const uast::For* node) {
     Expr* ret = nullptr;
 
+    Expr* index = convertLoopIndexDecl(node->index());
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
-    BlockStmt* body = createBlockWithStmts(node->stmts());
+    Expr* body = nullptr;
+    Expr* cond = nullptr;
+    bool maybeArrayType = isLoopMaybeArrayType(node);
     bool zippered = node->iterand()->isZip();
     bool isForExpr = node->isExpressionLevel();
 
     if (node->isExpressionLevel()) {
       assert(node->numStmts() == 1);
 
-      Expr* index = convertLoopIndexDecl(node->index());
-      Expr* expr = singleExprFromStmts(node->stmts());
-      assert(expr);
+      // Unpack things differently if body is a conditional.
+      if (auto origCond = node->stmt(0)->toConditional()) {
+        assert(origCond->numThenStmts() == 1);
+        assert(!origCond->hasElseBlock());
+        body = singleExprFromStmts(origCond->thenStmts());
+        cond = toExpr(convertAST(origCond->condition()));
+      } else {
+        body = singleExprFromStmts(node->stmts());
+      }
 
-      // TODO (dlongnecke): Parse loop rules that have conditional bodies.
-      Expr* cond = nullptr;
-      bool maybeArrayType = isLoopMaybeArrayType(node);
+      assert(body);
 
-      ret = buildForLoopExpr(index, iteratorExpr, expr, cond,
+      ret = buildForLoopExpr(index, iteratorExpr, body, cond,
                              maybeArrayType,
                              zippered);
 
@@ -811,17 +825,19 @@ struct Converter {
     } else if (node->isParam()) {
       assert(node->index() && node->index()->isVariable());
 
-      // TODO: Do we attach 'param' to the index variable or the loop?
-      auto index = node->index()->toVariable();
-      const char* indexStr = index->name().c_str();
-      Expr* range = iteratorExpr;
-      BlockStmt* stmts = body;
+      const char* indexStr = node->index()->toVariable()->name().c_str();
+      body = createBlockWithStmts(node->stmts());
+      BlockStmt* block = toBlockStmt(body);
+      assert(block);
 
-      ret = buildParamForLoopStmt(indexStr, range, stmts);
+      ret = buildParamForLoopStmt(indexStr, iteratorExpr, block);
 
     } else {
-      Expr* indices = convertLoopIndexDecl(node->index());
-      ret = ForLoop::buildForLoop(indices, iteratorExpr, body, zippered,
+      body = createBlockWithStmts(node->stmts());
+      BlockStmt* block = toBlockStmt(body);
+      assert(block);
+
+      ret = ForLoop::buildForLoop(index, iteratorExpr, block, zippered,
                                   isForExpr);
     }
 
@@ -840,18 +856,21 @@ struct Converter {
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
     Expr* expr = nullptr;
     Expr* cond = nullptr;
-
     bool maybeArrayType = isLoopMaybeArrayType(node);
     bool zippered = node->iterand()->isZip();
 
-    // Assert conditional has no else block, pull out the cond and expr
-    // pieces of the conditional.
-    if (node->stmt(0)->isConditional()) {
-      INT_FATAL("TODO");
-      return nullptr;
-    } else {
-      expr = toExpr(convertAST(node->stmt(0)));
-    }
+      // Unpack things differently if body is a conditional.
+      if (auto origCond = node->stmt(0)->toConditional()) {
+        assert(origCond->numThenStmts() == 1);
+        assert(!origCond->hasElseBlock());
+        expr = singleExprFromStmts(origCond->thenStmts());
+        cond = toExpr(convertAST(origCond->condition()));
+        assert(cond);
+      } else {
+        expr = singleExprFromStmts(node->stmts());
+      }
+
+    assert(expr != nullptr);
 
     return buildForallLoopExpr(indices, iteratorExpr, expr, cond,
                                maybeArrayType,
@@ -1148,8 +1167,8 @@ struct Converter {
       addArgsTo = ret;
     }
 
-    const int nActuals = node->numActuals();
-    for (int i = 0; i < nActuals; i++) {
+    // Convert and add the actual arguments.
+    for (int i = 0; i < node->numActuals(); i++) {
       Expr* actual = convertAST(node->actual(i));
       INT_ASSERT(actual);
       if (node->isNamedActual(i)) {
@@ -1161,7 +1180,9 @@ struct Converter {
     return ret;
   }
 
-  CallExpr* convertDmappedOp(const uast::OpCall* node) {
+  Expr* convertDmappedOp(const uast::OpCall* node) {
+    if (node->op() != dmappedStr) return nullptr;
+
     INT_ASSERT(node->numActuals() == 2);
 
     CallExpr* ret = new CallExpr("chpl__distributed");
@@ -1178,8 +1199,46 @@ struct Converter {
     return ret;
   }
 
-  CallExpr* convertRegularBinaryOrUnaryOp(const uast::OpCall* node,
-                                          const char* name=nullptr) {
+  Expr* convertTupleExpand(const uast::OpCall* node) {
+    if (node->op() != tripleDotStr) return nullptr;
+    INT_ASSERT(node->numActuals() == 1);
+    Expr* expr = convertAST(node->actual(0));
+    return new CallExpr(PRIM_TUPLE_EXPAND, expr);
+  }
+
+  Expr* convertReduceAssign(const uast::OpCall* node) {
+    if (node->op() != reduceAssignStr) return nullptr;
+    INT_ASSERT(node->numActuals() == 2);
+    Expr* lhs = convertAST(node->actual(0));
+    Expr* rhs = convertAST(node->actual(1));
+    return buildAssignment(lhs, rhs, PRIM_REDUCE_ASSIGN);
+  }
+
+  Expr* convertToNilableChecked(const uast::OpCall* node) {
+    if (node->op() != questionStr) return nullptr;
+    INT_ASSERT(node->numActuals() == 1);
+    Expr* expr = convertAST(node->actual(0));
+    return new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, expr);
+  }
+
+  Expr* convertLogicalAndAssign(const uast::OpCall* node) {
+    if (node->op() != logicAndAssignStr) return nullptr;
+    INT_ASSERT(node->numActuals() == 2);
+    Expr* lhs = convertAST(node->actual(0));
+    Expr* rhs = convertAST(node->actual(1));
+    return buildLAndAssignment(lhs, rhs);
+  }
+
+  Expr* convertLogicalOrAssign(const uast::OpCall* node) {
+    if (node->op() != logicOrAssignStr) return nullptr;
+    INT_ASSERT(node->numActuals() == 2);
+    Expr* lhs = convertAST(node->actual(0));
+    Expr* rhs = convertAST(node->actual(1));
+    return buildLOrAssignment(lhs, rhs);
+  }
+
+  Expr* convertRegularBinaryOrUnaryOp(const uast::OpCall* node,
+                                      const char* name=nullptr) {
     const char* opName = name ? name : node->op().c_str();
     int nActuals = node->numActuals();
     CallExpr* ret = new CallExpr(opName);
@@ -1196,25 +1255,22 @@ struct Converter {
   Expr* visit(const uast::OpCall* node) {
     Expr* ret = nullptr;
 
-    if (node->op() == dmappedStr) {
-      ret = convertDmappedOp(node);
-    } else if (node->op() == tripleDotStr) {
-      INT_ASSERT(node->numActuals() == 1);
-      Expr* expr = convertAST(node->actual(0));
-      ret = new CallExpr(PRIM_TUPLE_EXPAND, expr);
-    } else if (node->op() == reduceAssignStr) {
-      INT_ASSERT(node->numActuals() == 2);
-      Expr* lhs = convertAST(node->actual(0));
-      Expr* rhs = convertAST(node->actual(1));
-      ret = buildAssignment(lhs, rhs, PRIM_REDUCE_ASSIGN);
+    if (auto conv = convertDmappedOp(node)) {
+      ret = conv;
+    } else if (auto conv = convertTupleExpand(node)) {
+      ret = conv;
+    } else if (auto conv = convertReduceAssign(node)) {
+      ret = conv;
+    } else if (auto conv = convertToNilableChecked(node)) {
+      ret = conv;
+    } else if (auto conv = convertLogicalAndAssign(node)) {
+      ret = conv;
+    } else if (auto conv = convertLogicalOrAssign(node)) {
+      ret = conv;
     } else if (node->op() == alignStr) {
-      return convertRegularBinaryOrUnaryOp(node, "chpl_align");
+      ret = convertRegularBinaryOrUnaryOp(node, "chpl_align");
     } else if (node->op() == byStr) {
       ret = convertRegularBinaryOrUnaryOp(node, "chpl_by");
-    } else if (node->op() == questionStr) {
-      INT_ASSERT(node->numActuals() == 1);
-      Expr* expr = convertAST(node->actual(0));
-      ret = new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, expr);
     } else {
       ret = convertRegularBinaryOrUnaryOp(node);
     }
@@ -1242,6 +1298,14 @@ struct Converter {
     Expr* dataExpr = convertAST(node->actual(0));
     bool zippered = node->actual(0)->isZip();;
     return buildReduceExpr(opExpr, dataExpr, zippered);
+  }
+
+  Expr* visit(const uast::Scan* node) {
+    assert(node->numActuals() == 1);
+    Expr* opExpr = convertScanReduceOp(node->op());
+    Expr* dataExpr = convertAST(node->actual(0));
+    bool zippered = node->actual(0)->isZip();;
+    return buildScanExpr(opExpr, dataExpr, zippered);
   }
 
   Expr* visit(const uast::Zip* node) {
@@ -1495,7 +1559,13 @@ struct Converter {
       }
     }
 
-    Expr* retType = convertExprOrNull(node->returnType());
+    Expr* retType = nullptr;
+    if (node->returnType() && node->returnType()->isBracketLoop()) {
+      retType = convertArrayType(node->returnType()->toBracketLoop());
+    } else {
+      retType = convertExprOrNull(node->returnType());
+    }
+
     Expr* whereClause = convertExprOrNull(node->whereClause());
 
     Expr* lifetimeConstraints = nullptr;

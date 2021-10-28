@@ -84,6 +84,7 @@ NEXT_UAST_SRCS =                                 \
   Reduce.cpp \
   Require.cpp \
   Return.cpp \
+  Scan.cpp \
   Select.cpp \
   Serial.cpp \
   SimpleBlockLike.cpp \

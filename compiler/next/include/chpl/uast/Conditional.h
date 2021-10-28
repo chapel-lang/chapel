@@ -62,16 +62,19 @@ class Conditional final : public Expression {
       assert(children_[elseBodyChildNum_]->isBlock());
     } else {
       assert(elseBlockStyle_ == BlockStyle::IMPLICIT);
+      assert(numElseStmts() == 0);
     }
 
     assert(elseBlockStyle_ != BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
 
+
     if (isExpressionLevel_) {
-      assert(hasElseBlock());
       assert(thenBlockStyle_ == BlockStyle::IMPLICIT);
       assert(elseBlockStyle_ == BlockStyle::IMPLICIT);
       assert(numThenStmts() == 1);
-      assert(numElseStmts() == 1);
+
+      // May not have an else block if it's used in a filter expression.
+      assert(numElseStmts() <= 1);
     }
 
     assert(conditionChildNum_ < (int) children_.size());
@@ -132,7 +135,8 @@ class Conditional final : public Expression {
   static owned<Conditional> build(Builder* builder, Location loc,
                                   owned<Expression> condition,
                                   BlockStyle thenBlockStyle,
-                                  owned<Block> thenBlock);
+                                  owned<Block> thenBlock,
+                                  bool isExpressionLevel);
 
   /**
     Get the condition of this conditional.
