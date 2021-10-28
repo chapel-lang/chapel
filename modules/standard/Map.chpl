@@ -84,16 +84,18 @@ module Map {
        before requesting additional memory. The default value of 
        0.5 means that the map will not resize until the map is more
        than 50% full. The acceptable values for this argument are
-       between 0 and 1, exclusive, meaning (0,1).
+       between 0 and 1, exclusive, meaning (0,1). This is useful
+       when you would like to reduce memory impact or potentially
+       speed up how fast the map finds a slot.
     */
     const resizeThreshold = 0.5;
 
     /*
       Integer value that sets the number of elements that the map
-      can hold before resizing. The map will be greater than or
-      equal to this value upon initialization and will never resize
-      below this initialCapacity. This is useful when you know in
-      advance how many elements your map will hold.
+      can hold before resizing. The size of themap will be greater 
+      than or equal to this value upon initialization and will 
+      never resize below this initialCapacity. This is useful when 
+      you know in advance how many elements your map will hold.
     */
     const initialCapacity = 32;
 
@@ -137,7 +139,9 @@ module Map {
       assert((resizeThreshold > 0 && resizeThreshold < 1),
              "'resizeThreshold' must be between 0 and 1");
       this.resizeThreshold = resizeThreshold;
-      table = new chpl__hashtable(keyType, valType, resizeThreshold);
+      this.initialCapacity = initialCapacity;
+      table = new chpl__hashtable(keyType, valType, resizeThreshold,
+                                  initialCapacity);
     }
 
     proc init(type keyType, type valType, param parSafe=false,
@@ -151,7 +155,9 @@ module Map {
         if resizeThreshold <= 0 || resizeThreshold >= 1 then
           boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
       this.resizeThreshold = resizeThreshold;
-      table = new chpl__hashtable(keyType, valType, resizeThreshold);
+      this.initialCapacity = initialCapacity;
+      table = new chpl__hashtable(keyType, valType, resizeThreshold,
+                                  initialCapacity);
     }
 
     /*

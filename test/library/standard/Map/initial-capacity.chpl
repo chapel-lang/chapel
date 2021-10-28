@@ -8,7 +8,7 @@ for i in 0..5 do
 
 assert(m.table.tableSize >= m.initialCapacity);
 
-// ensure that removing the elemnts does not shrink the table
+// ensure that removing the elements does not shrink the table
 for i in 0..5 do
   m.remove(i);
 
