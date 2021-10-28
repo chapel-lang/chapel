@@ -542,6 +542,24 @@ testOptionZeroValueDetection()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testMinimalHelp()
+This is a custom help message for testing
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testNoHelp()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testCustomHelpString()
+Custom Message
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testCustomHandlerNoHelp()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 Found some unrecognizable arguments: thirty
 Found some unrecognizable arguments: badArg1 --BadFlag
 Use '-' or '--' to indicate option/flag, or use positional arguments.
@@ -591,3 +609,5 @@ FileNames Required value missing
 Positional arguments that allow for range of values must be last relative to other positional arguments
 numArgs must have low bound
 numArgs must have low bound
+Found some unrecognizable arguments: --help
+Found some unrecognizable arguments: --help

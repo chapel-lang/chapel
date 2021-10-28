@@ -85,7 +85,7 @@ module ChapelAutoAggregation {
   module CopyAggregation {
     use SysCTypes;
     use CPtr;
-    use AggregationPrimitives;
+    use super.AggregationPrimitives;
 
     param defaultBuffSize = if CHPL_COMM == "ugni" then 4096 else 8096;
     private const yieldFrequency = getEnvInt("CHPL_AGGREGATION_YIELD_FREQUENCY", 1024);

@@ -127,9 +127,9 @@ private:
 
 
   // Declare CallExpr::codegenPRIM_UNKNOWN() etc
-#define PRIMITIVE_G(NAME) static void codegen ## NAME (CallExpr*, GenRet&);
-#define PRIMITIVE_R(NAME)
-#include "primitive_list.h"
+#define PRIMITIVE_G(NAME, str) static void codegen ## NAME (CallExpr*, GenRet&);
+#define PRIMITIVE_R(NAME, str)
+#include "chpl/uast/PrimOpsList.h"
 #undef PRIMITIVE_G
 #undef PRIMITIVE_R
 

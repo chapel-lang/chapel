@@ -89,15 +89,27 @@ def adjust_cpu_for_compiler(cpu, flag, get_lcd):
 
     if isprgenv:
         cray_cpu = os.environ.get('CRAY_CPU_TARGET', 'none')
-        if cpu and (cpu != 'none' and cpu != 'unknown' and cpu != cray_cpu):
-            warning("Setting the processor type through environment variables "
-                    "is not supported for cray-prgenv-*. Please use the "
-                    "appropriate craype-* module for your processor type.")
-        cpu = cray_cpu
-        if cpu == 'none':
-            warning("No craype-* processor type module was detected, please "
-                    "load the appropriate one if you want any specialization "
-                    "to occur.")
+        has_cpu = cpu and cpu != 'none' and cpu != 'unknown'
+        has_cray_cpu = cray_cpu and cray_cpu != 'none' and cray_cpu != 'unknown'
+        if compiler_val == 'llvm':
+            # if the CPU type is not set, use the cray_cpu,
+            # but allow overriding it with CHPL_TARGET_CPU.
+            if has_cray_cpu and not has_cpu:
+                cpu = cray_cpu
+        else:
+            # for C compilation, CPU needs to be set by cray-prgenv-*
+            # and not by e.g. CHPL_TARGET_CPU.
+            cpu = cray_cpu
+            if has_cpu:
+                warning("Setting the processor type through environment "
+                        "variables is not supported for cray-prgenv-*. "
+                        "Please use the appropriate craype-* module for your "
+                        "processor type.")
+            if not has_cray_cpu:
+                warning("No craype-* processor type module was detected, "
+                        "please load the appropriate one if you want any "
+                        "specialization to occur.")
+
         if get_lcd:
             cpu = get_module_lcd_cpu(platform_val, cpu)
             if cpu == 'none':
@@ -125,18 +137,7 @@ def default_cpu(flag):
     if comm_val == 'none' and ('linux' in platform_val or
                                platform_val == 'darwin' or
                                platform_val.startswith('cygwin')):
-      # Clang cannot detect the architecture for aarch64.  Otherwise,
-      # let the backend compiler do the actual feature set detection. We
-      # could be more aggressive in setting a precise architecture using
-      # the double checking code above, but it seems like a waste of time
-      # to not use the work the backend compilers have already done
-      if compiler_val in ['clang', 'llvm']:
-          if get_native_machine() == 'aarch64':
-              cpu = 'unknown'
-          else:
-              cpu = 'native'
-      else:
-            cpu = 'native'
+        cpu = 'native'
 
     return cpu
 

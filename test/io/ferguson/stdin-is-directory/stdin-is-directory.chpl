@@ -1,7 +1,7 @@
 const filename = "hello.chpl";
 
 proc mysystem(cmd: string): int {
-  use Spawn;
+  use Subprocess;
   var sub = spawnshell(cmd);
   sub.wait();
   return sub.exitCode;

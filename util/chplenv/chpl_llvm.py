@@ -2,9 +2,11 @@
 import optparse
 import os
 import sys
+from distutils.spawn import find_executable
+import re
 
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
-from chpl_home_utils import get_chpl_third_party
+from chpl_home_utils import get_chpl_third_party, get_chpl_home
 from utils import memoize, error, run_command, try_run_command, warning
 
 # returns a tuple of supported major LLVM versions as strings
@@ -221,12 +223,14 @@ def get_llvm_clang(lang):
         clang = os.path.join(llvm_subdir, 'bin', clang_name)
     else:
         return ''
-    # tack on the contents of configured-clang-sysroot-arguments
-    fname = os.path.join(get_chpl_third_party(), "llvm", "install", get_uniq_cfg_path_for(llvm_val), "configured-clang-sysroot-arguments")
-    if os.path.isfile(fname):
-        with open(fname) as f:
-            for line in f:
-                clang += " " + line.rstrip()
+
+    # tack on arguments that control clang's function
+    clang_args = get_clang_basic_args()
+    if clang_args:
+        args = ' '.join(clang_args)
+        if args:
+            clang += ' ' + args
+
     return clang
 
 
@@ -267,6 +271,232 @@ def llvm_enabled():
         return True
 
     return False
+
+@memoize
+def get_gcc_prefix():
+    gcc_prefix = overrides.get('CHPL_LLVM_GCC_PREFIX', '')
+
+    if not gcc_prefix:
+        # When 'gcc' is a command other than '/usr/bin/gcc',
+        # compute the 'gcc' prefix that LLVM should use.
+        gcc_path = find_executable('gcc')
+        if gcc_path == '/usr/bin/gcc' :
+            # In this common case, nothing else needs to be done,
+            # because we can assume that clang can find this gcc.
+            pass
+        elif gcc_path == None:
+            # Nothing else we can do here
+            pass
+        else:
+            # Try to figure out the GCC prefix by running gcc
+            out, err = run_command(['gcc', '-v'], stdout=True, stderr=True)
+            out = out + err
+
+            # look for the --prefix= specified when GCC was configured
+            words = out.split()
+            for word in words:
+                if word.startswith('--prefix='):
+                    gcc_prefix = word[len('--prefix='):]
+                    break
+            # check that directory exists.
+            if gcc_prefix and os.path.isdir(gcc_prefix):
+                # if so, we are done.
+                pass
+            else:
+                # We didn't find a --prefix= flag, so fall back on a heuristic.
+                # try removing bin/gcc from the end
+                mydir = os.path.dirname(os.path.dirname(gcc_path))
+                if mydir and os.path.isdir(mydir):
+                    # then check for mydir/include
+                    inc = os.path.join(mydir, "include")
+                    if os.path.isdir(inc):
+                        gcc_prefix = mydir
+                    else:
+                        inc = os.path.join(mydir, "snos", "include")
+                        if os.path.isdir(inc):
+                            gcc_prefix = mydir
+
+    return gcc_prefix.strip()
+
+# Returns a [ ] list of args
+@memoize
+def get_sysroot_resource_dir_args():
+    args = [ ]
+    target_platform = chpl_platform.get('target')
+    llvm_val = get()
+    if target_platform == "darwin" and llvm_val == "bundled":
+        # Add -isysroot and -resourcedir based upon what 'clang' uses
+        cfile = os.path.join(get_chpl_home(),
+                             "runtime", "include", "sys_basic.h")
+        if not os.path.isfile(cfile):
+            error("error computing isysroot -- sys_basic.h is missing")
+
+        (out,err) = run_command(['clang', '-###', cfile],
+                                stdout=True, stderr=True)
+        out += err
+
+        found = re.search('"-isysroot" "([^"]+)"', out)
+        if found:
+            args.append('-isysroot')
+            args.append(found.group(1).strip())
+
+        found = re.search('"-resource-dir" "([^"]+)"', out)
+        if found:
+            args.append('-resource-dir')
+            args.append(found.group(1).strip())
+
+    return args
+
+@memoize
+def get_clang_additional_args():
+    comp_args = [ ]
+    link_args = [ ]
+    basic_args = get_clang_basic_args()
+    has_sysroot = False
+    for arg in basic_args:
+        if arg == '-isysroot':
+            has_sysroot = True
+
+    if has_sysroot:
+        # Work around a bug in some versions of Clang that forget to
+        # search /usr/local/include and /usr/local/lib
+        # if there is a -isysroot argument.
+        comp_args.append('-I/usr/local/include')
+        link_args.append('-L/usr/local/lib')
+
+    return (comp_args, link_args)
+
+
+# On some systems, we need to give clang some arguments for it to
+# find the correct system headers.
+#  * when PrgEnv-gnu is loaded on an XC, we should provide
+#    a --gcc-toolchain argument indicating the prefix of that GCC installation.
+#
+#  * on Mac OS X, we might need to provide -mlinker-version=450
+#    on 10.14 and in some cases -isysroot and -resource-dir.
+#
+# Returns a [ ] list of args
+@memoize
+def get_clang_basic_args():
+    clang_args = [ ]
+
+    gcc_prefix = get_gcc_prefix()
+    if gcc_prefix:
+        clang_args.append('--gcc-toolchain=' + gcc_prefix)
+
+    sysroot_args = get_sysroot_resource_dir_args()
+    if sysroot_args:
+        clang_args.extend(sysroot_args)
+
+    # This is a workaround for problems with Homebrew llvm@11 on 10.14
+    # which avoids errors like
+    #  ld: unknown option: -platform_version
+    target_platform = chpl_platform.get('target')
+    if target_platform == "darwin":
+        os_ver = chpl_platform.get_mac_os_version()
+        if os_ver.startswith('10.14'):
+            clang_args.append('-mlinker-version=450')
+
+    return clang_args
+
+@memoize
+def gather_pe_chpl_pkgconfig_libs():
+    # Don't do anything if we aren't using a PrgEnv compiler
+    if chpl_compiler.get_prgenv_compiler() == 'none':
+        return ""
+
+    import chpl_comm, chpl_comm_substrate, chpl_aux_filesys, chpl_libfabric
+    platform = chpl_platform.get('target')
+    comm = chpl_comm.get()
+    substrate = chpl_comm_substrate.get()
+    auxfs = chpl_aux_filesys.get()
+
+    ret = os.environ.get('PE_CHAPEL_PKGCONFIG_LIBS', '')
+    if comm != 'none':
+        if platform != 'hpe-cray-ex':
+            # Adding -lhugetlbfs gets the PrgEnv driver to add the appropriate
+            # linker option for static linking with it. While it's not always
+            # used with Chapel programs, it is expected to be the common case
+            # when running on a Cray X*, so just always linking it is ok.
+            # (We don't add it for HPE Cray EX systems, where it's not needed.)
+            ret = 'craype-hugetlbfs:cray-pmi:' + ret
+
+        if platform.startswith('cray-x'):
+            ret = 'cray-ugni:' + ret
+
+        if comm == 'gasnet' and substrate == 'aries':
+            ret = 'cray-udreg:' + ret
+
+        if comm == 'ofi' and chpl_libfabric.get() == 'system':
+            ret = 'libfabric:' + ret
+
+        # on login/compute nodes, lustre requires the devel api to make
+        # lustre/lustreapi.h available (it's implicitly available on esl nodes)
+        if 'lustre' in auxfs:
+          exists, returncode, out, err = try_run_command(
+              ['pkg-config', '--exists', 'cray-lustre-api-devel'])
+          if exists and returncode == 0:
+            ret = 'cray-lustre-api-devel:' + ret
+
+    return ret
+
+# Gather the compiler arguments that are automatically provided
+# to a PrgEnv compiler.
+# Returns (compileArgsList, linkArgsList)
+@memoize
+def get_clang_prgenv_args():
+
+    platform = chpl_platform.get('target')
+    comp_args = [ ]
+    link_args = [ ]
+
+    if chpl_compiler.get_prgenv_compiler() != 'none':
+        # When running on a PrgEnv system, gather the PrgEnv arguments
+
+        # Set up the environment to make the proper libraries and include
+        # files available.
+        os.environ['PE_PKGCONFIG_PRODUCTS'] = (
+            'PE_CHAPEL:' + os.environ.get('PE_PKGCONFIG_PRODUCTS',''));
+
+        os.environ['PE_CHAPEL_MODULE_NAME'] = 'chapel'
+        os.environ['PE_CHAPEL_PKGCONFIG_LIBS'] = gather_pe_chpl_pkgconfig_libs()
+
+        # Use cc --cray-print-opts=... to get arguments from compiler driver
+
+        # Get compilation arguments
+        opts = run_command(['cc', '--cray-print-opts=cflags'])
+        comp_args.extend(opts.split())
+
+        # Get link arguments
+        opts = run_command(['cc', '--cray-print-opts=libs'])
+        link_args.extend(opts.split())
+
+    return (comp_args, link_args)
+
+# returns (compArgsList, linkArgsList)
+@memoize
+def get_clang_compile_link_args():
+    comp_args = [ ]
+    link_args = [ ]
+    (tmp_comp, tmp_link) = get_clang_additional_args()
+    comp_args.extend(tmp_comp)
+    link_args.extend(tmp_link)
+
+    (tmp_comp, tmp_link) = get_clang_prgenv_args()
+    comp_args.extend(tmp_comp)
+    link_args.extend(tmp_link)
+
+    return (comp_args, link_args)
+
+@memoize
+def get_clang_compile_args():
+    (comp_args, _) = get_clang_compile_link_args()
+    return " ".join(comp_args)
+
+@memoize
+def get_clang_link_args():
+    (_, link_args) = get_clang_compile_link_args()
+    return " ".join(link_args)
 
 def _main():
     llvm_val = get()

@@ -14,7 +14,7 @@ module definesClass {
 }
 
 module definesTertiary {
-  use definesClass;
+  public use definesClass;
 
   proc Parent.tertiaryMethod() {
     writeln("In inherited tertiary method");

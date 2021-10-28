@@ -455,7 +455,7 @@ class LocBlockCyclic {
   const myStarts: rank*range(idxType, BoundedRangeType.boundedLow, stridable=true);
 
   //
-  // Constructor computes what chunk of index(0) is owned by the
+  // Initializer computes what chunk of index(0) is owned by the
   // current locale
   //
   proc init(param rank: int,

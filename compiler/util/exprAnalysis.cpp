@@ -287,15 +287,13 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_NO_ALIAS_SET:
     case PRIM_COPIES_NO_ALIAS_SET:
       return true;
-    case PRIM_UNKNOWN:
-      if(strcmp(prim->name, "string_length_bytes") == 0 ||
-          strcmp(prim->name, "string_length_codepoints") == 0 ||
-          strcmp(prim->name, "object2int") == 0 ||
-          strcmp(prim->name, "real2int") == 0) {
-        return true;
-      }
-      //else fall through
+    case PRIM_STRING_LENGTH_BYTES:
+    case PRIM_STRING_LENGTH_CODEPOINTS:
+    case PRIM_OBJECT_TO_INT:
+    case PRIM_REAL_TO_INT:
+      return true;
     default:
+      // handle all primitives not handled here, including PRIM_UNKNOWN
       std::cout << "Unknown primitive : " << prim->name << std::endl;
       INT_ASSERT(false); // should not be getting those
       // that are !isEssential and not listed above

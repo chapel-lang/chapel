@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 /* This test runs a script to generate a bash autocomplete script from
    the output of `chpl --help --devel`.  It diffs the generated script

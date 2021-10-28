@@ -38,30 +38,9 @@ ifneq ($(LLVM_SUBDIR),llvm-src)
   endif
 endif
 
-LLVM_CLANG_CONFIG_FILE := $(LLVM_INSTALL_DIR)/configured-clang-sysroot-arguments
-
-# Sometimes one is using a custom version of GCC. In that event,
-# we'd like the built clang to use that version's std C++ headers, rather
-# than only finding the versions in /usr/include. To do that, pass
-# GCC_INSTALL_PREFIX for GCC builds.
-CHPL_LLVM_GCC_PREFIX := ""
-ifneq (, $(findstring gnu,$(CHPL_MAKE_HOST_COMPILER)))
-  CHPL_LLVM_GCC_PREFIX_DIR := $(shell ./find-gcc-prefix.sh $(CC))
-  ifneq ($(CHPL_LLVM_GCC_PREFIX_DIR),)
-    CHPL_LLVM_GCC_PREFIX := -DGCC_INSTALL_PREFIX=$(CHPL_LLVM_GCC_PREFIX_DIR)
-  endif
-endif
-
-# Decide if we want to dynamically link or not
-# This sets the default - it could be overridden during the make
-CHPL_LLVM_DYNAMIC := 1
-ifneq (, $(findstring cray,$(CHPL_MAKE_HOST_PLATFORM)))
-  CHPL_LLVM_DYNAMIC := 0
-endif
-
 CHPL_LLVM_DYNAMIC_OPTS:=""
 ifeq ($(CHPL_LLVM_DYNAMIC),1)
-  CHPL_LLVM_DYNAMIC_OPTS:="-DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON"
+  CHPL_LLVM_DYNAMIC_OPTS:=-DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON
 endif
 
 CMAKE ?= cmake
@@ -81,9 +60,6 @@ clobber: FORCE
 
 # -enable-debug-runtime --enable-debug-symbols creates huge binaries
 #  so we by default do not include LLVM debugging information.
-# Note that the configured-clang-sysroot-arguments could possibly be added
-# to LLVM as cmake options (--with-clang-resource-dir,
-# --with-c-include-dirs, --with-default-sysroot)
 #
 # used to have equivalent of -DLLVM_ENABLE_ZLIB=0
 # could include
@@ -120,7 +96,6 @@ llvm-config: FORCE
 	    -DCMAKE_EXE_LINKER_FLAGS='$(LDFLAGS)' \
 	    -DCMAKE_MODULE_LINKER_FLAGS='$(LDFLAGS)' \
 	    $(CHPL_LLVM_DEBUG) \
-	    $(CHPL_LLVM_GCC_PREFIX) \
 	    -DLLVM_ENABLE_WARNINGS=0 \
 	    -DLLVM_ENABLE_PEDANTIC=0 \
 	    -DCLANG_ENABLE_ARCMT=0 \
@@ -147,19 +122,6 @@ llvm-build: FORCE
 	  cd $(LLVM_BUILD_DIR) && cmake --build . --target clang ; \
 	fi
 
-# Create a file containing extra arguments for clang
-# This file is necessary on darwin where important headers are
-# not in /usr/include. This causes a problem when building another clang
-# because the new clang can't find the appropriate headers.
-$(LLVM_CLANG_CONFIG_FILE): FORCE
-	@mkdir -p $(LLVM_INSTALL_DIR)
-	@if [ "clang" = "$(CHPL_MAKE_HOST_COMPILER)" ]; then \
-	  $(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments clang > $(LLVM_CLANG_CONFIG_FILE).incoming ; \
-        else \
-          touch $(LLVM_CLANG_CONFIG_FILE).incoming ; \
-        fi
-	@$(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --update $(LLVM_CLANG_CONFIG_FILE) $(LLVM_CLANG_CONFIG_FILE).incoming
-
 llvm-install: FORCE
 	if [ -f $(LLVM_BUILD_DIR)/Makefile ]; then \
 	  cd $(LLVM_BUILD_DIR) && $(MAKE) install-cmake-exports ; \
@@ -175,15 +137,13 @@ llvm-install: FORCE
 	  cd $(LLVM_BUILD_DIR) && cmake --build . --target install-clang ; \
 	fi
 
-llvm: $(LLVM_CLANG_CONFIG_FILE) llvm-config llvm-build llvm-install
+llvm: llvm-config llvm-build llvm-install
 
 llvm-clang: llvm
 
 bundled: llvm
 
-system: $(LLVM_CLANG_CONFIG_FILE)
-
-system-minimal:
+system:
 
 none:
 

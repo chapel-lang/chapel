@@ -75,6 +75,7 @@ target_sources(libchplcomp-obj
                On.cpp
                OpCall.cpp
                PrimCall.cpp
+               PrimOp.cpp
                Range.cpp
                RealLiteral.cpp
                Record.cpp

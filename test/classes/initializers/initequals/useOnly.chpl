@@ -1,4 +1,4 @@
-use Spawn only spawnshell, PIPE, subprocess;
+use Subprocess only spawnshell, PIPE, subprocess;
 use IO;
 
 proc main() throws {

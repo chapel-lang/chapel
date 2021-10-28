@@ -1275,7 +1275,7 @@ struct Converter {
 
   Expr* visit(const uast::PrimCall* node) {
     CallExpr* call = new CallExpr(PRIM_ACTUALS_LIST);
-    SymExpr* se = buildStringLiteral(node->prim().c_str());
+    SymExpr* se = buildStringLiteral(primTagToName(node->prim()));
     call->insertAtTail(se);
     for (auto actual : node->actuals()) {
       call->insertAtTail(convertAST(actual));

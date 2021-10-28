@@ -1318,42 +1318,46 @@ bool ResolveScope::getFieldsWithUses(const char* fieldName,
     if (mUseImportList.size() > 0) {
       std::vector<VisibilityStmt*> useImportList = mUseImportList;
 
-      buildBreadthFirstUseImportList(useImportList);
+      buildBfsUseImportRespectPrivate(useImportList);
 
       // Do not use for_vector(); it terminates on a NULL
       for (size_t i = 0; i < useImportList.size(); i++) {
         if (UseStmt* use = toUseStmt(useImportList[i])) {
-          if (use->skipSymbolSearch(fieldName) == false) {
-            BaseAST*    scopeToUse = use->getSearchScope();
-            const char* nameToUse  = NULL;
+          if (!use->isPrivate) {
+            if (use->skipSymbolSearch(fieldName) == false) {
+              BaseAST*    scopeToUse = use->getSearchScope();
+              const char* nameToUse  = NULL;
 
-            if (use->isARenamedSym(fieldName) == true) {
-              nameToUse = use->getRenamedSym(fieldName);
-            } else {
-              nameToUse = fieldName;
-            }
+              if (use->isARenamedSym(fieldName) == true) {
+                nameToUse = use->getRenamedSym(fieldName);
+              } else {
+                nameToUse = fieldName;
+              }
 
-            if (ResolveScope* next = getScopeFor(scopeToUse)) {
-              if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
-                symbols.push_back(sym);
+              if (ResolveScope* next = getScopeFor(scopeToUse)) {
+                if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
+                  symbols.push_back(sym);
+                }
               }
             }
           }
 
         } else if (ImportStmt* import = toImportStmt(useImportList[i])) {
-          if (import->skipSymbolSearch(fieldName) == false) {
-            BaseAST*    scopeToUse = import->getSearchScope();
-            const char* nameToUse  = NULL;
+          if (!import->isPrivate) {
+            if (import->skipSymbolSearch(fieldName) == false) {
+              BaseAST*    scopeToUse = import->getSearchScope();
+              const char* nameToUse  = NULL;
 
-            if (import->isARenamedSym(fieldName) == true) {
-              nameToUse = import->getRenamedSym(fieldName);
-            } else {
-              nameToUse = fieldName;
-            }
+              if (import->isARenamedSym(fieldName) == true) {
+                nameToUse = import->getRenamedSym(fieldName);
+              } else {
+                nameToUse = fieldName;
+              }
 
-            if (ResolveScope* next = getScopeFor(scopeToUse)) {
-              if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
-                symbols.push_back(sym);
+              if (ResolveScope* next = getScopeFor(scopeToUse)) {
+                if (Symbol* sym = next->lookupNameLocally(nameToUse)) {
+                  symbols.push_back(sym);
+                }
               }
             }
           }
@@ -1380,6 +1384,26 @@ void ResolveScope::buildBreadthFirstUseImportList(UseImportList& useImportList) 
   buildBreadthFirstUseImportList(useImportList, useImportList, visited);
 }
 
+// Alternative version of the single argument buildBreadthFirstUseImportList, to
+// be called when already in a use or import chain (so private uses and imports
+// in useImportList itself should not be followed)
+void ResolveScope::buildBfsUseImportRespectPrivate(UseImportList& useImportList) const {
+  UseImportList current;
+  for (size_t i = 0; i < useImportList.size(); i++) {
+    // Don't look at uses and imports found through immediately provided private
+    // uses or imports.
+    if (!useImportList[i]->isPrivate) {
+      current.push_back(useImportList[i]);
+    }
+  }
+
+  if (current.size() > 0) {
+    UseImportMap visited;
+
+    buildBreadthFirstUseImportList(useImportList, current, visited);
+  }
+}
+
 void
 ResolveScope::buildBreadthFirstUseImportList(UseImportList& useImportList,
                                              UseImportList& current,
@@ -1404,32 +1428,34 @@ ResolveScope::buildBreadthFirstUseImportList(UseImportList& useImportList,
         if (mod->block->useList != NULL) {
           for_actuals(expr, mod->block->useList) {
             if (UseStmt* use = toUseStmt(expr)) {
-              SymExpr* useSE    = toSymExpr(use->src);
-              UseStmt* useToAdd = NULL;
+              if (!use->isPrivate) {
+                SymExpr* useSE    = toSymExpr(use->src);
+                UseStmt* useToAdd = NULL;
 
-              if (useSE->symbol()->hasFlag(FLAG_PRIVATE) == false) {
-                // Uses of private modules are not transitive -
-                // the symbols in the private modules are only visible to
-                // itself and its immediate parent.  Therefore, if the symbol
-                // is private, we will not traverse it further and will merely
-                // add it to the alreadySeen map.
-                useToAdd = use->applyOuterUse(source);
+                if (useSE->symbol()->hasFlag(FLAG_PRIVATE) == false) {
+                  // Uses of private modules are not transitive -
+                  // the symbols in the private modules are only visible to
+                  // itself and its immediate parent.  Therefore, if the symbol
+                  // is private, we will not traverse it further and will merely
+                  // add it to the alreadySeen map.
+                  useToAdd = use->applyOuterUse(source);
 
-                if (useToAdd                   != NULL &&
-                    skipUse(visited, useToAdd) == false) {
-                  next.push_back(useToAdd);
-                  useImportList.push_back(useToAdd);
+                  if (useToAdd                   != NULL &&
+                      skipUse(visited, useToAdd) == false) {
+                    next.push_back(useToAdd);
+                    useImportList.push_back(useToAdd);
+                  }
+
+                  // If applyOuterUse returned NULL, the number of symbols
+                  // that could be provided from this use was 0,
+                  // so it didn't need to be added to the alreadySeen map.
+                  if (useToAdd != NULL) {
+                    visited[useSE->symbol()].push_back(useToAdd);
+                  }
+
+                } else {
+                  visited[useSE->symbol()].push_back(use);
                 }
-
-                // If applyOuterUse returned NULL, the number of symbols
-                // that could be provided from this use was 0,
-                // so it didn't need to be added to the alreadySeen map.
-                if (useToAdd != NULL) {
-                  visited[useSE->symbol()].push_back(useToAdd);
-                }
-
-              } else {
-                visited[useSE->symbol()].push_back(use);
               }
             } else if (isImportStmt(expr)) {
               // Don't do anything, imports only apply to qualified access

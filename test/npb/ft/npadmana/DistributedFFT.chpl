@@ -141,7 +141,7 @@ prototype module DistributedFFT {
 
       :returns: Returns a slab-distributed domain.
   */
-  proc newSlabDom(dom: domain) where isRectangularDom(dom) {
+  proc newSlabDom(dom: domain) where dom.isRectangular() {
     if dom.rank != 3 then compilerError("The domain must be 3D");
     const targetLocales = reshape(Locales, {0.. #numLocales, 0..0, 0..0});
     return dom dmapped Block(boundingBox=dom, targetLocales=targetLocales);

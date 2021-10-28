@@ -565,8 +565,7 @@ module DefaultAssociative {
     }
 
     // const ref version for strings, records with copy ctor
-    proc dsiAccess(idx : idxType) const ref
-    where shouldReturnRvalueByConstRef(eltType) {
+    proc dsiAccess(idx : idxType) const ref {
       // no lock needed
       var (found, slotNum) = dom.table.findFullSlot(idx);
       if found {
@@ -577,8 +576,7 @@ module DefaultAssociative {
       }
     }
 
-    proc dsiAccess(idx : 1*idxType) const ref
-    where shouldReturnRvalueByConstRef(eltType) {
+    proc dsiAccess(idx : 1*idxType) const ref {
       return dsiAccess(idx(0));
     }
 
@@ -590,7 +588,6 @@ module DefaultAssociative {
       return dsiAccess(i);
 
     inline proc dsiLocalAccess(i) const ref
-    where shouldReturnRvalueByConstRef(eltType)
       return dsiAccess(i);
 
 

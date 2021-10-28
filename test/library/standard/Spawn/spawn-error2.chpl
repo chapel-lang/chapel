@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 {
   var sub = spawn(["./some-command-that-does-not-exist"], stdout=PIPE);

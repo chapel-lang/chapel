@@ -30,37 +30,22 @@ use MasonUpdate;
 use MasonSystem;
 use MasonExternal;
 use MasonExample;
-use Spawn;
+use Subprocess;
 use TOML;
 
 proc masonBuild(args: [] string) throws {
 
-  var parser = new argumentParser();
+  var parser = new argumentParser(helpHandler=new MasonBuildHelpHandler());
 
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var releaseFlag = parser.addFlag(name="release", defaultValue=false);
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
-  var exampleOpts = parser.addOption(name="example",
-                                     numArgs=0..);
+  var exampleOpts = parser.addOption(name="example", numArgs=0..);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
-  var helpFlag = parser.addFlag(name="help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
 
   var passArgs = parser.addPassThrough();
 
-  try {
-    parser.parseArgs(args);
-  } catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonBuildHelp();
-    exit(1);
-  }
-
-  if helpFlag.valueAsBool() {
-    masonBuildHelp();
-    exit(0);
-  }
+  parser.parseArgs(args);
 
   if passArgs.hasValue() && exampleOpts._present {
     throw new owned MasonError("Examples do not support `--` syntax");

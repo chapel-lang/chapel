@@ -725,7 +725,7 @@ module ChapelArray {
   proc chpl__distributed(d: _distribution, dom: domain,
                          definedConst: bool) {
     if definedConst {
-      if isRectangularDom(dom) {
+      if dom.isRectangular() {
         const distDom: domain(dom.rank,
                               dom._value.idxType,
                               dom._value.stridable) dmapped d = dom;
@@ -736,7 +736,7 @@ module ChapelArray {
       }
     }
     else {
-      if isRectangularDom(dom) {
+      if dom.isRectangular() {
         var distDom: domain(dom.rank, dom._value.idxType, dom._value.stridable) dmapped d = dom;
         return distDom;
       } else {
@@ -829,12 +829,12 @@ module ChapelArray {
 
   proc chpl__isRectangularDomType(type domainType) param {
     var dom: domainType;
-    return isDomainType(domainType) && isRectangularDom(dom);
+    return isDomainType(domainType) && dom.isRectangular();
   }
 
   proc chpl__isSparseDomType(type domainType) param {
     var dom: domainType;
-    return isSparseDom(dom);
+    return dom.isSparse();
   }
 
   pragma "no copy return"
@@ -927,48 +927,32 @@ module ChapelArray {
   proc chpl__buildIndexType(d: domain) type
     return chpl__buildIndexType(d.rank, d._value.idxType);
 
-  /* Return true if the argument ``d`` is a rectangular domain.
-     Otherwise return false.  */
-  proc isRectangularDom(d: domain) param {
-    return isSubtype(_to_borrowed(d._value.type), BaseRectangularDom);
-  }
+  deprecated "isRectangularDom is deprecated - please use isRectangular method on domain"
+  proc isRectangularDom(d: domain) param return d.isRectangular();
 
-  /* Return true if the argument ``a`` is an array with a rectangular
-     domain.  Otherwise return false. */
-  proc isRectangularArr(a: []) param return isRectangularDom(a.domain);
+  deprecated "isRectangularArr is deprecated - please use isRectangular method on array"
+  proc isRectangularArr(a: []) param return a.isRectangular();
 
-  /* Return true if ``d`` is an irregular domain; e.g. is not rectangular.
-     Otherwise return false. */
-  proc isIrregularDom(d: domain) param {
-    return isSparseDom(d) || isAssociativeDom(d);
-  }
+  deprecated "isIrregularDom is deprecated - please use isIrregular method on domain"
+  proc isIrregularDom(d: domain) param return d.isIrregular();
 
-  /* Return true if ``a`` is an array with an irregular domain; e.g. not
-     rectangular. Otherwise return false. */
-  proc isIrregularArr(a: []) param return isIrregularDom(a.domain);
+  deprecated "isIrregularArr is deprecated - please use isIrregular method on array"
+  proc isIrregularArr(a: []) param return a.isIrregular();
 
-  /* Return true if ``d`` is an associative domain. Otherwise return false. */
-  proc isAssociativeDom(d: domain) param {
-    return chpl_isAssociativeDomClass(_to_borrowed(d._value));
-  }
+  deprecated "isAssociativeDom is deprecated - please use isAssociative method on domain"
+  proc isAssociativeDom(d: domain) param return d.isAssociative();
 
   proc chpl_isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
   proc chpl_isAssociativeDomClass(dc) param return false;
 
-  /* Return true if ``a`` is an array with an associative domain. Otherwise
-     return false. */
-  proc isAssociativeArr(a: []) param return isAssociativeDom(a.domain);
+  deprecated "isAssociativeArr is deprecated - please use isAssociative method on array"
+  proc isAssociativeArr(a: []) param return a.isAssociative();
 
-  /* Return true if ``d`` is a sparse domain. Otherwise return false. */
-  proc isSparseDom(d: domain) param {
-    proc isSparseDomClass(dc: BaseSparseDom) param return true;
-    proc isSparseDomClass(dc) param return false;
-    return isSparseDomClass(d._value);
-  }
+  deprecated "isSparseDom is deprecated - please use isSparse method on domain"
+  proc isSparseDom(d: domain) param return d.isSparse();
 
-  /* Return true if ``a`` is an array with a sparse domain. Otherwise
-     return false. */
-  proc isSparseArr(a: []) param return isSparseDom(a.domain);
+  deprecated "isSparseArr is deprecated - please use isSparse method on array"
+  proc isSparseArr(a: []) param return a.isSparse();
 
   // Helper function used to ensure a returned array matches the declared
   // return type when the declared return type specifies a particular domain
@@ -1279,14 +1263,14 @@ module ChapelArray {
     // Note: init= does not handle the case where the type of 'this' does not
     // handle the type of 'other'. That case is currently managed by the
     // compiler and various helper functions involving runtime types.
-    proc init=(const ref other : domain) where isRectangularDom(other) {
+    proc init=(const ref other : domain) where other.isRectangular() {
       this.init(other.dist, other.rank, other.idxType, other.stridable, other.dims());
     }
 
     proc init=(const ref other : domain) {
-      if isAssociativeDom(other) {
+      if other.isAssociative() {
         this.init(other.dist, other.idxType, other.parSafe);
-      } else if isSparseDom(other) {
+      } else if other.isSparse() {
         this.init(other.dist, other.parentDom);
       } else {
         compilerError("cannot initialize '", this.type:string, "' from '", other.type:string, "'");
@@ -1361,7 +1345,7 @@ module ChapelArray {
 
     /* Return the number of dimensions in this domain */
     proc rank param {
-      if isRectangularDom(this) || isSparseDom(this) then
+      if this.isRectangular() || this.isSparse() then
         return _value.rank;
       else
         return 1;
@@ -1380,17 +1364,17 @@ module ChapelArray {
     }
 
     /* Return true if this is a stridable domain */
-    proc stridable param where isRectangularDom(this) {
+    proc stridable param where this.isRectangular() {
       return _value.stridable;
     }
 
     pragma "no doc"
-    proc stridable param where isSparseDom(this) {
+    proc stridable param where this.isSparse() {
       return _value.parentDom.stridable;
     }
 
     pragma "no doc"
-    proc stridable param where isAssociativeDom(this) {
+    proc stridable param where this.isAssociative() {
       compilerError("associative domains do not support .stridable");
     }
 
@@ -1564,7 +1548,7 @@ module ChapelArray {
 
       For a sparse domain, this returns the shape of the parent domain.
     */
-    proc shape where isRectangularDom(this) || isSparseDom(this) {
+    proc shape where this.isRectangular() || this.isSparse() {
       use ChapelRange;
       if (chpl_idxTypeSizeChange(idxType) && sizeReturnsInt == false) {
         compilerWarning("'.shape' queries for domains and arrays with 'idxType = " +
@@ -1588,7 +1572,7 @@ module ChapelArray {
 
     pragma "no doc"
     /* Associative domains assumed to be 1-D. */
-    proc shape where isAssociativeDom(this) {
+    proc shape where this.isAssociative() {
       var s: (size.type,);
       s[0] = size;
       return s;
@@ -1614,7 +1598,7 @@ module ChapelArray {
         }
         compilerError("array element type cannot currently be generic");
         // In the future we might support it if the array is not default-inited
-      } else if isSparseDom(this) && !isDefaultInitializable(eltType) {
+      } else if this.isSparse() && !isDefaultInitializable(eltType) {
         if isNonNilableClass(eltType) {
           compilerError("sparse arrays of non-nilable classes are not currently supported");
         } else {
@@ -1623,7 +1607,7 @@ module ChapelArray {
       }
 
       if chpl_warnUnstable then
-        if isRectangularDom(this) && this.stridable then
+        if this.isRectangular() && this.stridable then
           if rank == 1 {
             if this.stride < 0 then
               warning("arrays with negatively strided dimensions are not particularly stable");
@@ -1665,7 +1649,7 @@ module ChapelArray {
     }
 
     /* Remove all indices from this domain, leaving it empty */
-    proc ref clear() where isRectangularDom(this) {
+    proc ref clear() where this.isRectangular() {
       // For rectangular domains, create an empty domain and assign it to this
       // one to make sure that we leverage all of the array's normal resizing
       // machinery.
@@ -1693,7 +1677,7 @@ module ChapelArray {
     pragma "no doc"
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true, addOn=nilLocale)
-        where isSparseDom(this) && _value.rank==1 {
+        where this.isSparse() && _value.rank==1 {
 
         if inds.sizeAs(uint) == 0 then return 0;
 
@@ -1782,7 +1766,7 @@ module ChapelArray {
     */
     proc ref bulkAdd(inds: [] _value.rank*_value.idxType,
         dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
-        where isSparseDom(this) && _value.rank>1 {
+        where this.isSparse() && _value.rank>1 {
 
         if inds.sizeAs(uint) == 0 then return 0;
 
@@ -1805,7 +1789,7 @@ module ChapelArray {
         halt("domain.requestCapacity can only be invoked on sizes >= 0");
       }
 
-      if !isAssociativeDom(this) then
+      if !this.isAssociative() then
         compilerError("domain.requestCapacity only applies to associative domains");
 
       _value.dsiRequestCapacity(i);
@@ -1836,7 +1820,7 @@ module ChapelArray {
       const size = _value.dsiNumIndices;
       if boundsChecking && size > max(t) {
         var error = ".size query exceeds max(" + t:string + ")";
-        if isRectangularDom(this) {
+        if this.isRectangular() {
           error += " for: '" + this:string + "'";
         }
         HaltWrappers.boundsCheckHalt(error);
@@ -1872,7 +1856,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc contains(i: rank*_value.idxType) {
-      if isRectangularDom(this) || isSparseDom(this) then
+      if this.isRectangular() || this.isSparse() then
         return _value.dsiMember(_makeIndexTuple(rank, i));
       else
         return _value.dsiMember(i(0));
@@ -1889,14 +1873,14 @@ module ChapelArray {
     /* Return true if this domain is a subset of ``super``. Otherwise
        returns false. */
     proc isSubset(super : domain) {
-      if !(isAssociativeDom(this) || isRectangularDom(this)) {
-        if isSparseDom(this) then
+      if !(this.isAssociative() || this.isRectangular()) {
+        if this.isSparse() then
           compilerError("isSubset not supported on sparse domains");
         else
           compilerError("isSubset not supported on this domain type");
       }
       if super.type != this.type then
-        if isRectangularDom(this) {
+        if this.isRectangular() {
           if super.rank != this.rank then
             compilerError("rank mismatch in domain.isSubset()");
           else if super.low.type != this.low.type then
@@ -1904,7 +1888,7 @@ module ChapelArray {
         } else
           compilerError("isSubset called with different associative domain types");
 
-      if isRectangularDom(this) {
+      if this.isRectangular() {
         var contains = true;
         for i in 0..this.dims().size-1 {
           contains &&= super.dims()[i].contains(this.dims()[i]);
@@ -1919,14 +1903,14 @@ module ChapelArray {
     /* Return true if this domain is a superset of ``sub``. Otherwise
        returns false. */
     proc isSuper(sub : domain) {
-      if !(isAssociativeDom(this) || isRectangularDom(this)) {
-        if isSparseDom(this) then
+      if !(this.isAssociative() || this.isRectangular()) {
+        if this.isSparse() then
           compilerError("isSuper not supported on sparse domains");
         else
           compilerError("isSuper not supported on the domain type ", this.type);
       }
       if sub.type != this.type then
-        if isRectangularDom(this) {
+        if this.isRectangular() {
           if sub.rank != this.rank then
             compilerError("rank mismatch in domain.isSuper()");
           else if sub.low.type != this.low.type then
@@ -1934,7 +1918,7 @@ module ChapelArray {
         } else
           compilerError("isSuper called with different associative domain types");
 
-      if isRectangularDom(this) {
+      if this.isRectangular() {
         var contains = true;
         for i in 0..this.dims().size-1 {
           contains &&= this.dims()[i].contains(sub.dims()[i]);
@@ -1967,7 +1951,7 @@ module ChapelArray {
 
       :returns: Domain index for a given order in the domain.
     */
-    proc orderToIndex(order: int) where (isRectangularDom(this) && isNumericType(this.idxType)){
+    proc orderToIndex(order: int) where (this.isRectangular() && isNumericType(this.idxType)){
 
       if boundsChecking then
         checkOrderBounds(order);
@@ -2012,10 +1996,10 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc expand(off: rank*intIdxType) where !isRectangularDom(this) {
-      if isAssociativeDom(this) then
+    proc expand(off: rank*intIdxType) where !this.isRectangular() {
+      if this.isAssociative() then
         compilerError("expand not supported on associative domains");
-      else if isSparseDom(this) then
+      else if this.isSparse() then
         compilerError("expand not supported on sparse domains");
       else
         compilerError("expand not supported on this domain type");
@@ -2051,10 +2035,10 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc exterior(off: rank*intIdxType) where !isRectangularDom(this) {
-      if isAssociativeDom(this) then
+    proc exterior(off: rank*intIdxType) where !this.isRectangular() {
+      if this.isAssociative() then
         compilerError("exterior not supported on associative domains");
-      else if isSparseDom(this) then
+      else if this.isSparse() then
         compilerError("exterior not supported on sparse domains");
       else
         compilerError("exterior not supported on this domain type");
@@ -2088,10 +2072,10 @@ module ChapelArray {
     }
 
     pragma "no doc"
-    proc interior(off: rank*intIdxType) where !isRectangularDom(this) {
-      if isAssociativeDom(this) then
+    proc interior(off: rank*intIdxType) where !this.isRectangular() {
+      if this.isAssociative() then
         compilerError("interior not supported on associative domains");
-      else if isSparseDom(this) then
+      else if this.isSparse() then
         compilerError("interior not supported on sparse domains");
       else
         compilerError("interior not supported on this domain type");
@@ -2133,10 +2117,10 @@ module ChapelArray {
     // NOTE: We eventually want to support translate on other domain types
     //
     pragma "no doc"
-    proc translate(off) where !isRectangularDom(this) {
-      if isAssociativeDom(this) then
+    proc translate(off) where !this.isRectangular() {
+      if this.isAssociative() then
         compilerError("translate not supported on associative domains");
-      else if isSparseDom(this) then
+      else if this.isSparse() then
         compilerError("translate not supported on sparse domains");
       else
         compilerError("translate not supported on this domain type");
@@ -2273,7 +2257,7 @@ module ChapelArray {
        ensure that the stride was 1.
      */
     proc safeCast(type t:_domain)
-      where chpl__isRectangularDomType(t) && isRectangularDom(this) {
+      where chpl__isRectangularDomType(t) && this.isRectangular() {
       var tmpD: t;
       if tmpD.rank != this.rank then
         compilerError("rank mismatch in cast");
@@ -2361,6 +2345,30 @@ module ChapelArray {
         return stringify(val);
       }
     }
+
+    /* Return true if this domain is a rectangular.
+       Otherwise return false.  */
+    proc isRectangular() param {
+      return isSubtype(_to_borrowed(_value.type), BaseRectangularDom);
+    }
+
+    /* Return true if ``d`` is an irregular domain; e.g. is not rectangular.
+       Otherwise return false. */
+    proc isIrregular() param {
+      return this.isSparse() || this.isAssociative();
+    }
+
+    /* Return true if ``d`` is an associative domain. Otherwise return false. */
+    proc isAssociative() param {
+      return chpl_isAssociativeDomClass(_to_borrowed(this._value));
+    }
+
+    /* Return true if ``d`` is a sparse domain. Otherwise return false. */
+    proc isSparse() param {
+      proc isSparseDomClass(dc: BaseSparseDom) param return true;
+      proc isSparseDomClass(dc) param return false;
+      return isSparseDomClass(this._value);
+    }
   }  // record _domain
 
   /* Cast a rectangular domain to a new rectangular domain type.  If the old
@@ -2373,7 +2381,7 @@ module ChapelArray {
      results in the domain '{1..10}'
    */
   pragma "no doc"
-  operator :(d: _domain, type t:_domain) where chpl__isRectangularDomType(t) && isRectangularDom(d) {
+  operator :(d: _domain, type t:_domain) where chpl__isRectangularDomType(t) && d.isRectangular() {
     var tmpD: t;
     if tmpD.rank != d.rank then
       compilerError("rank mismatch in cast");
@@ -2404,12 +2412,12 @@ module ChapelArray {
     return dom[(...ranges)];
   }
 
-  operator #(dom: domain, counts: integral) where isRectangularDom(dom) &&
+  operator #(dom: domain, counts: integral) where dom.isRectangular() &&
     dom.rank == 1 {
     return chpl_countDomHelp(dom, (counts,));
   }
 
-  operator #(dom: domain, counts) where isRectangularDom(dom) &&
+  operator #(dom: domain, counts) where dom.isRectangular() &&
     isTuple(counts) {
     if (counts.size != dom.rank) then
       compilerError("the domain and tuple arguments of # must have the same rank");
@@ -2417,87 +2425,87 @@ module ChapelArray {
   }
 
   pragma "fn returns aliasing array"
-  operator #(arr: [], counts: integral) where isRectangularArr(arr) &&
+  operator #(arr: [], counts: integral) where arr.isRectangular() &&
     arr.rank == 1 {
     return arr[arr.domain#counts];
   }
 
   pragma "fn returns aliasing array"
-  operator #(arr: [], counts) where isRectangularArr(arr) && isTuple(counts) {
+  operator #(arr: [], counts) where arr.isRectangular() && isTuple(counts) {
     if (counts.size != arr.rank) then
       compilerError("the domain and array arguments of # must have the same rank");
     return arr[arr.domain#counts];
   }
 
   operator +(d: domain, i: index(d)) {
-    if isRectangularDom(d) then
+    if d.isRectangular() then
       compilerError("Cannot add indices to a rectangular domain");
     else
       compilerError("Cannot add indices to this domain type");
   }
 
-  operator +(i, d: domain) where isSubtype(i.type, index(d)) && !isIrregularDom(d) {
-    if isRectangularDom(d) then
+  operator +(i, d: domain) where isSubtype(i.type, index(d)) && !d.isIrregular() {
+    if d.isRectangular() then
       compilerError("Cannot add indices to a rectangular domain");
     else
       compilerError("Cannot add indices to this domain type");
   }
 
-  operator +(in d: domain, i: index(d)) where isIrregularDom(d) {
+  operator +(in d: domain, i: index(d)) where d.isIrregular() {
     d.add(i);
     return d;
   }
 
-  operator +(i, in d: domain) where isSubtype(i.type,index(d)) && isIrregularDom(d) {
+  operator +(i, in d: domain) where isSubtype(i.type,index(d)) && d.isIrregular() {
     d.add(i);
     return d;
   }
 
   operator +(in d1: domain, d2: domain) where
                                     d1.type == d2.type &&
-                                    isIrregularDom(d1) &&
-                                    isIrregularDom(d2) {
+                                    d1.isIrregular() &&
+                                    d2.isIrregular() {
     // This should eventually become a forall loop
     for e in d2 do d1.add(e);
     return d1;
   }
 
   operator +(d1: domain, d2: domain) {
-    if (isRectangularDom(d1) || isRectangularDom(d2)) then
+    if (d1.isRectangular() || d2.isRectangular()) then
       compilerError("Cannot add indices to a rectangular domain");
     else
       compilerError("Cannot add indices to this domain type");
   }
 
   operator -(d: domain, i: index(d)) {
-    if isRectangularDom(d) then
+    if d.isRectangular() then
       compilerError("Cannot remove indices from a rectangular domain");
     else
       compilerError("Cannot remove indices from this domain type");
   }
 
-  operator -(in d: domain, i: index(d)) where isIrregularDom(d) {
+  operator -(in d: domain, i: index(d)) where d.isIrregular() {
     d.remove(i);
     return d;
   }
 
   operator -(in d1: domain, d2: domain) where
                                     d1.type == d2.type &&
-                                    isSparseDom(d1) {
+                                    d1.isSparse() {
     // This should eventually become a forall loop
     for e in d2 do d1.remove(e);
     return d1;
   }
 
   operator -(d1: domain, d2: domain) {
-    if (isRectangularDom(d1) || isRectangularDom(d2)) then
+    if (d1.isRectangular() || d2.isRectangular()) then
       compilerError("Cannot remove indices from a rectangular domain");
     else
       compilerError("Cannot remove indices from this domain type");
   }
 
-  inline operator ==(d1: domain, d2: domain) where isRectangularDom(d1) &&
-                                                   isRectangularDom(d2) {
+  inline operator ==(d1: domain, d2: domain) where d1.isRectangular() &&
+                                                   d2.isRectangular() {
     if d1._value.rank != d2._value.rank {
       return false;
     } else if d1._value == d2._value {
@@ -2509,13 +2517,13 @@ module ChapelArray {
     }
   }
 
-  inline operator !=(d1: domain, d2: domain) where isRectangularDom(d1) &&
-                                                   isRectangularDom(d2) {
+  inline operator !=(d1: domain, d2: domain) where d1.isRectangular() &&
+                                                   d2.isRectangular() {
     return !(d1 == d2);
   }
 
-  inline operator ==(d1: domain, d2: domain) where isAssociativeDom(d1) &&
-                                                   isAssociativeDom(d2) {
+  inline operator ==(d1: domain, d2: domain) where d1.isAssociative() &&
+                                                   d2.isAssociative() {
     if d1._value == d2._value then return true;
     if d1.sizeAs(uint) != d2.sizeAs(uint) then return false;
     // Should eventually be a forall+reduction
@@ -2524,13 +2532,13 @@ module ChapelArray {
     return true;
   }
 
-  inline operator !=(d1: domain, d2: domain) where isAssociativeDom(d1) &&
-                                                   isAssociativeDom(d2) {
+  inline operator !=(d1: domain, d2: domain) where d1.isAssociative() &&
+                                                   d2.isAssociative() {
     return !(d1 == d2);
   }
 
-  inline operator ==(d1: domain, d2: domain) where isSparseDom(d1) &&
-                                                   isSparseDom(d2) {
+  inline operator ==(d1: domain, d2: domain) where d1.isSparse() &&
+                                                   d2.isSparse() {
     if d1._value == d2._value then return true;
     if d1.sizeAs(uint) != d2.sizeAs(uint) then return false;
     if d1._value.parentDom != d2._value.parentDom then return false;
@@ -2540,8 +2548,8 @@ module ChapelArray {
     return true;
   }
 
-  inline operator !=(d1: domain, d2: domain) where isSparseDom(d1) &&
-                                                   isSparseDom(d2) {
+  inline operator !=(d1: domain, d2: domain) where d1.isSparse() &&
+                                                   d2.isSparse() {
     return !(d1 == d2);
   }
 
@@ -2555,10 +2563,6 @@ module ChapelArray {
     return true;
   }
 
-  pragma "no doc"
-  proc shouldReturnRvalueByConstRef(type t) param {
-    return true;
-  }
   pragma "no doc"
   proc shouldReturnRvalueByValue(type t) param {
     if !PODValAccess then return false;
@@ -2657,13 +2661,13 @@ module ChapelArray {
 
     pragma "no doc"
     proc indices where arrayIndicesAlwaysLocal == true &&
-                       !isSparseArr(this) && !isAssociativeArr(this) {
+                       !this.isSparse() && !this.isAssociative() {
       return {(..._dom.getIndices())};
     }
 
     pragma "no doc"
     iter indices where arrayIndicesAlwaysLocal == true &&
-                       (isSparseArr(this) || isAssociativeArr(this)) {
+                       (this.isSparse() || this.isAssociative()) {
       for i in _dom do
         yield i;
     }
@@ -2673,7 +2677,7 @@ module ChapelArray {
     pragma "always propagate line file info"
     pragma "no doc"
     proc checkAccess(indices, value) {
-      if isRectangularArr(this) {
+      if this.isRectangular() {
         if !value.dsiBoundsCheck(indices) {
           if rank == 1 {
             halt("array index out of bounds\n",
@@ -2713,9 +2717,9 @@ module ChapelArray {
     pragma "always propagate line file info"
     pragma "no doc"
     proc checkSlice(d: domain, value) {
-      if (isRectangularDom(d) || isSparseDom(d)) {
+      if (d.isRectangular() || d.isSparse()) {
         checkSlice((...d.dsiDims()), value=value);
-      } else if (isAssociativeDom(d)) {
+      } else if (d.isAssociative()) {
         use HaltWrappers;
         forall i in d do
           if !this.domain.dsiMember(i) then
@@ -2729,7 +2733,7 @@ module ChapelArray {
     pragma "always propagate line file info"
     pragma "no doc"
     proc checkSlice(ranges...rank, value) where chpl__isTupleOfRanges(ranges) {
-      if isRectangularArr(this) {
+      if this.isRectangular() {
         var ok = true;
         for param i in 0..rank-1 {
           ok &&= value.dom.dsiDim(i).boundsCheck(ranges(i));
@@ -2781,7 +2785,7 @@ module ChapelArray {
       if boundsChecking then
         checkAccess(i, value=value);
 
-      if isRectangularArr(this) || isSparseArr(this) then
+      if this.isRectangular() || this.isSparse() then
         return value.dsiAccess(i);
       else
         return value.dsiAccess(i(0));
@@ -2795,7 +2799,7 @@ module ChapelArray {
       if boundsChecking then
         checkAccess(i, value=value);
 
-      if isRectangularArr(this) || isSparseArr(this) then
+      if this.isRectangular() || this.isSparse() then
         return value.dsiAccess(i);
       else
         return value.dsiAccess(i(0));
@@ -2803,13 +2807,12 @@ module ChapelArray {
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
     inline proc const this(i: rank*_value.dom.idxType) const ref
-    where shouldReturnRvalueByConstRef(_value.eltType)
     {
       const value = _value;
       if boundsChecking then
         checkAccess(i, value=value);
 
-      if isRectangularArr(this) || isSparseArr(this) then
+      if this.isRectangular() || this.isSparse() then
         return value.dsiAccess(i);
       else
         return value.dsiAccess(i(0));
@@ -2831,7 +2834,6 @@ module ChapelArray {
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
     inline proc const this(i: _value.dom.idxType ...rank) const ref
-    where shouldReturnRvalueByConstRef(_value.eltType)
       return this(i);
 
 
@@ -2847,7 +2849,7 @@ module ChapelArray {
       if chpl_isNonDistributedArray() then
         return this(i);
       else
-        if isRectangularArr(this) || isSparseArr(this) then
+        if this.isRectangular() || this.isSparse() then
           return value.dsiLocalAccess(i);
         else
           return value.dsiLocalAccess(i(0));
@@ -2864,7 +2866,7 @@ module ChapelArray {
       if chpl_isNonDistributedArray() then
         return this(i);
       else
-        if isRectangularArr(this) || isSparseArr(this) then
+        if this.isRectangular() || this.isSparse() then
           return value.dsiLocalAccess(i);
         else
           return value.dsiLocalAccess(i(0));
@@ -2872,7 +2874,6 @@ module ChapelArray {
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
     inline proc const localAccess(i: rank*_value.dom.idxType) const ref
-    where shouldReturnRvalueByConstRef(_value.eltType)
     {
       const value = _value;
       if boundsChecking then
@@ -2881,7 +2882,7 @@ module ChapelArray {
       if chpl_isNonDistributedArray() then
         return this(i);
       else
-        if isRectangularArr(this) || isSparseArr(this) then
+        if this.isRectangular() || this.isSparse() then
           return value.dsiLocalAccess(i);
         else
           return value.dsiLocalAccess(i(0));
@@ -2902,7 +2903,6 @@ module ChapelArray {
     pragma "no doc" // const ref version, for not-POD types
     pragma "alias scope from this"
     inline proc const localAccess(i: _value.dom.idxType ...rank) const ref
-    where shouldReturnRvalueByConstRef(_value.eltType)
       return localAccess(i);
 
 
@@ -3215,7 +3215,7 @@ module ChapelArray {
     */
     pragma "fn returns aliasing array"
     inline proc reindex(newDomain: domain)
-      where isRectangularDom(this.domain) && isRectangularDom(newDomain)
+      where this.domain.isRectangular() && newDomain.isRectangular()
     return reindex((...newDomain.dims()));
 
     // The reason `newDims` arg is untyped is that it needs to allow
@@ -3237,7 +3237,7 @@ module ChapelArray {
     */
     pragma "fn returns aliasing array"
     proc reindex(newDims...)
-      where isRectangularDom(this.domain)
+      where this.domain.isRectangular()
     {
       for param i in 0..newDims.size-1 do
         if !isRange(newDims(i)) then
@@ -3321,12 +3321,12 @@ module ChapelArray {
 
     // sparse array interface
     /* Return the Implicitly Represented Value for sparse arrays */
-    proc IRV where !isSparseArr(this) {
+    proc IRV where !this.isSparse() {
       compilerError("only sparse arrays have an IRV");
     }
 
     pragma "no doc"
-    proc IRV ref where isSparseArr(this) {
+    proc IRV ref where this.isSparse() {
       return _value.IRV;
     }
 
@@ -3399,7 +3399,7 @@ module ChapelArray {
     }
 
     proc chpl__isDense1DArray() param {
-      return isRectangularArr(this) &&
+      return this.isRectangular() &&
              this.rank == 1 &&
              !this._value.stridable;
     }
@@ -3439,7 +3439,7 @@ module ChapelArray {
        rectangular 1-D array.
      */
     proc last {
-      if !isRectangularArr(this) || this.rank != 1 then
+      if !this.isRectangular() || this.rank != 1 then
         compilerError("back() is only supported on 1D rectangular arrays");
 
       if boundsChecking && isEmpty() then
@@ -3457,7 +3457,7 @@ module ChapelArray {
        rectangular 1-D array.
      */
     proc first {
-      if !isRectangularArr(this) || this.rank != 1 then
+      if !this.isRectangular() || this.rank != 1 then
         compilerError("front() is only supported on 1D rectangular arrays");
 
       if boundsChecking && isEmpty() then
@@ -3520,6 +3520,21 @@ module ChapelArray {
       return domainDistIsLayout(_getDomain(chpl__getActualArray(_value).dom));
     }
 
+    /* Return true if the argument ``a`` is an array with a rectangular
+       domain.  Otherwise return false. */
+    proc isRectangular() param return this.domain.isRectangular();
+
+    /* Return true if ``a`` is an array with an irregular domain; e.g. not
+       rectangular. Otherwise return false. */
+    proc isIrregular() param return this.domain.isIrregular();
+
+    /* Return true if ``a`` is an array with an associative domain. Otherwise
+       return false. */
+    proc isAssociative() param return this.domain.isAssociative();
+
+    /* Return true if ``a`` is an array with a sparse domain. Otherwise
+       return false. */
+    proc isSparse() param return this.domain.isSparse();
   }  // record _array
 
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from
@@ -3619,7 +3634,7 @@ module ChapelArray {
     //
     // check that size/shape are the same to permit legal zippering
     //
-    if isRectangularDom(this.domain) && isRectangularDom(that.domain) {
+    if this.domain.isRectangular() && that.domain.isRectangular() {
       for d in 0..#this.rank do
         if this.domain.dim(d).sizeAs(uint) != that.domain.dim(d).sizeAs(uint) then
           return false;
@@ -3692,7 +3707,7 @@ module ChapelArray {
   proc isArrayValue(e)     param  return false;
 
   operator -(a :domain, b :domain) where (a.type == b.type) &&
-    isAssociativeDom(a) {
+    a.isAssociative() {
     var newDom : a.type;
     serial !newDom._value.parSafe do
       forall e in a with(ref newDom) do
@@ -3706,25 +3721,25 @@ module ChapelArray {
      occurs.
   */
   operator -=(ref a :domain, b :domain) where (a.type == b.type) &&
-    isAssociativeDom(a) {
+    a.isAssociative() {
     for e in b do
       if a.contains(e) then
         a.remove(e);
   }
 
   operator |(a :domain, b: domain) where (a.type == b.type) &&
-    isAssociativeDom(a) {
+    a.isAssociative() {
     return a + b;
   }
 
   operator |=(ref a :domain, b: domain) where (a.type == b.type) &&
-    isAssociativeDom(a) {
+    a.isAssociative() {
     for e in b do
       a.add(e);
   }
 
   operator +=(ref a :domain, b: domain) where (a.type == b.type) &&
-    isAssociativeDom(a) {
+    a.isAssociative() {
     a |= b;
   }
 
@@ -3734,7 +3749,7 @@ module ChapelArray {
      occurs.
   */
   operator &(a :domain, b: domain) where (a.type == b.type) &&
-    isAssociativeDom(a) {
+    a.isAssociative() {
     var newDom : a.type;
 
     serial !newDom._value.parSafe do
@@ -3744,7 +3759,7 @@ module ChapelArray {
   }
 
   operator &=(ref a :domain, b: domain) where (a.type == b.type) &&
-    isAssociativeDom(a) {
+    a.isAssociative() {
     var removeSet: domain(a.idxType);
     for e in a do
       if !b.contains(e) then
@@ -3754,7 +3769,7 @@ module ChapelArray {
   }
 
   operator ^(a :domain, b: domain) where (a.type == b.type) &&
-    isAssociativeDom(a) {
+    a.isAssociative() {
     var newDom : a.type;
 
     serial !newDom._value.parSafe {
@@ -3773,7 +3788,7 @@ module ChapelArray {
      added to the LHS.
   */
   operator ^=(ref a :domain, b: domain) where (a.type == b.type) &&
-    isAssociativeDom(a) {
+    a.isAssociative() {
     for e in b do
       if a.contains(e) then
         a.remove(e);
@@ -3784,7 +3799,7 @@ module ChapelArray {
   //
   // BaseSparseDom operator overloads
   //
-  operator +=(ref sd: domain, inds: [] index(sd)) where isSparseDom(sd) {
+  operator +=(ref sd: domain, inds: [] index(sd)) where sd.isSparse() {
     if inds.sizeAs(int) == 0 then return;
 
     sd._value.dsiBulkAdd(inds);
@@ -3793,7 +3808,7 @@ module ChapelArray {
 
   // TODO: Currently not optimized
   operator +=(ref sd: domain, d: domain)
-  where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
+  where sd.isSparse() && d.rank==sd.rank && sd.idxType==d.idxType {
     if d.sizeAs(int) == 0 then return;
 
     const indCount = d.sizeAs(int);
@@ -3810,13 +3825,13 @@ module ChapelArray {
   }
 
   // TODO: Implement bulkRemove
-  operator -=(ref sd: domain, inds: [] index(sd)) where isSparseDom(sd) {
+  operator -=(ref sd: domain, inds: [] index(sd)) where sd.isSparse() {
     for ind in inds do
       sd -= ind;
   }
 
   operator -=(ref sd: domain, d: domain)
-  where isSparseDom(sd) && d.rank==sd.rank && sd.idxType==d.idxType {
+  where sd.isSparse() && d.rank==sd.rank && sd.idxType==d.idxType {
     for ind in d do
       sd -= ind;
   }
@@ -3929,7 +3944,7 @@ module ChapelArray {
     if a.idxType != b.idxType then
       compilerError("index type mismatch in domain assignment");
 
-    if isRectangularDom(a) && isRectangularDom(b) then
+    if a.isRectangular() && b.isRectangular() then
       if !a.stridable && b.stridable then
         compilerError("cannot assign from a stridable domain to an unstridable domain without an explicit cast");
 
@@ -3982,7 +3997,7 @@ module ChapelArray {
   }
 
   operator =(ref a: domain, b) {  // b is iteratable
-    if isRectangularDom(a) then
+    if a.isRectangular() then
       compilerError("Illegal assignment to a rectangular domain");
     a.clear();
     for ind in b {
@@ -3998,9 +4013,9 @@ module ChapelArray {
     // could let them fall through, but then we get multiple warnings for a
     // single assignment statement which feels like overkill
     //
-    if ((!isRectangularArr(a) && !isAssociativeArr(a) && !isSparseArr(a)) ||
+    if ((!a.isRectangular() && !a.isAssociative() && !a.isSparse()) ||
         (isArray(b) &&
-         !isRectangularArr(b) && !isAssociativeArr(b) && !isSparseArr(b))) then
+         !b.isRectangular() && !b.isAssociative() && !b.isSparse())) then
       return true;
     return false;
   }
@@ -4064,7 +4079,7 @@ module ChapelArray {
 
   pragma "no doc"
   proc checkArrayShapesUponAssignment(a: [], b: [], forSwap = false) {
-    if isRectangularArr(a) && isRectangularArr(b) {
+    if a.isRectangular() && b.isRectangular() {
       const aDims = a._value.dom.dsiDims(),
             bDims = b._value.dom.dsiDims();
       compilerAssert(aDims.size == bDims.size);
@@ -4460,7 +4475,7 @@ module ChapelArray {
   inline operator =(ref a: [], b:domain) {
     if a.rank != b.rank then
       compilerError("rank mismatch in array assignment");
-    if isAssociativeDom(b) && isRectangularArr(a) then
+    if b.isAssociative() && a.isRectangular() then
       compilerError("cannot assign to rectangular arrays from associative domains");
     chpl__transferArray(a, b);
   }
@@ -4528,7 +4543,7 @@ module ChapelArray {
     helpInitArrFromTuple(j, a.rank, a, b, kind);
   }
 
-  operator =(ref a: [], b: _tuple) where isRectangularArr(a) {
+  operator =(ref a: [], b: _tuple) where a.isRectangular() {
     initArrFromTuple(a, b, _tElt.assign);
   }
 
@@ -4700,7 +4715,7 @@ module ChapelArray {
      elements of ``A`` are copied into the new array using the
      default iteration orders over ``D`` and ``A``.  */
   proc reshape(A: [], D: domain) {
-    if !isRectangularDom(D) then
+    if !D.isRectangular() then
       compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);
     if A.sizeAs(int) != D.sizeAs(int) then
       halt("reshape(A,D) is invoked when A has ", A.sizeAs(int),
@@ -4711,7 +4726,7 @@ module ChapelArray {
 
   pragma "no doc"
   proc reshape(A: _iteratorRecord, D: domain) {
-    if !isRectangularDom(D) then
+    if !D.isRectangular() then
       compilerError("reshape(A,D) is meaningful only when D is a rectangular domain; got D: ", D.type:string);
     var B = for (i,a) in zip(D, A) do a;
     return B;
@@ -4724,7 +4739,7 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
-      where isRectangularDom(rhs) {
+      where rhs.isRectangular() {
 
     var lhs = new _domain(rhs.dist, rhs.rank, rhs.idxType, rhs.stridable,
                           rhs.dims(), definedConst=definedConst);
@@ -4733,7 +4748,7 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
-      where isAssociativeDom(rhs) {
+      where rhs.isAssociative() {
 
     var lhs = new _domain(rhs.dist, rhs.idxType, rhs.parSafe,
                           definedConst=definedConst);
@@ -4745,7 +4760,7 @@ module ChapelArray {
 
   pragma "init copy fn"
   proc chpl__initCopy(const ref rhs: domain, definedConst: bool)
-      where isSparseDom(rhs) {
+      where rhs.isSparse() {
 
     var lhs = new _domain(rhs.dist, rhs.parentDom, definedConst=definedConst);
     // No need to lock this domain since it's not exposed anywhere yet.
@@ -4890,7 +4905,7 @@ module ChapelArray {
     // assumes rhs is iterable
     pragma "no copy"
     var lhs = chpl__coerceHelp(dstType, definedConst);
-    if isRectangularDom(lhs) then
+    if lhs.isRectangular() then
       compilerError("Illegal assignment to a rectangular domain");
     lhs.clear();
     for ind in rhs {
@@ -4904,7 +4919,7 @@ module ChapelArray {
     // assumes rhs is iterable
     pragma "no copy"
     var lhs = chpl__coerceHelp(dstType, definedConst);
-    if isRectangularDom(lhs) then
+    if lhs.isRectangular() then
       compilerError("Illegal assignment to a rectangular domain");
     lhs.clear();
     for ind in rhs {
@@ -4919,7 +4934,7 @@ module ChapelArray {
     // assumes rhs is iterable (e.g. list)
     pragma "no copy"
     var lhs = chpl__coerceHelp(dstType, definedConst);
-    if isRectangularDom(lhs) then
+    if lhs.isRectangular() then
       compilerError("Illegal assignment to a rectangular domain");
     lhs.clear();
     for ind in rhs {
@@ -4933,7 +4948,7 @@ module ChapelArray {
     // assumes rhs is iterable (e.g. list)
     pragma "no copy"
     var lhs = chpl__coerceHelp(dstType, definedConst);
-    if isRectangularDom(lhs) then
+    if lhs.isRectangular() then
       compilerError("Illegal assignment to a rectangular domain");
     lhs.clear();
     for ind in rhs {
@@ -5043,7 +5058,7 @@ module ChapelArray {
 
     if lhs.rank != rhs.rank then
       compilerError("rank mismatch in array assignment");
-    if isAssociativeDom(rhs) && isRectangularArr(lhs) then
+    if rhs.isAssociative() && lhs.isRectangular() then
       compilerError("cannot assign to rectangular arrays from associative domains");
     if !isPODType(eltType) then
       compilerError("cannot assign to array from domain of non-POD indices");
@@ -5065,7 +5080,7 @@ module ChapelArray {
 
     if lhs.rank != rhs.rank then
       compilerError("rank mismatch in array assignment");
-    if isAssociativeDom(rhs) && isRectangularArr(lhs) then
+    if rhs.isAssociative() && lhs.isRectangular() then
       compilerError("cannot assign to rectangular arrays from associative domains");
     if !isPODType(eltType) then
       compilerError("cannot assign to array from domain of non-POD indices");
@@ -5125,7 +5140,7 @@ module ChapelArray {
     pragma "unsafe" // when eltType is non-nilable
     var lhs = dom.buildArray(eltType, initElts=false);
 
-    if !isRectangularArr(lhs) then
+    if !lhs.isRectangular() then
       compilerError("Cannot assign from tuple to non-rectangular array");
 
     initArrFromTuple(lhs, rhs, _tElt.initCopy);
@@ -5147,7 +5162,7 @@ module ChapelArray {
     pragma "unsafe" // when eltType is non-nilable
     var lhs = dom.buildArray(eltType, initElts=false);
 
-    if !isRectangularArr(lhs) then
+    if !lhs.isRectangular() then
       compilerError("Cannot assign from tuple to non-rectangular array");
 
     initArrFromTuple(lhs, rhs, _tElt.move);
@@ -5547,7 +5562,7 @@ module ChapelArray {
   // 'castToVoidStar' says whether we should cast the result to c_void_ptr
   pragma "no doc"
   proc chpl_arrayToPtr(arr: [], param castToVoidStar: bool = false) {
-    if (!isRectangularArr(arr) || !domainDistIsLayout(arr.domain)) then
+    if (!arr.isRectangular() || !domainDistIsLayout(arr.domain)) then
       compilerError("Only single-locale rectangular arrays can be passed to an external routine argument with array type", errorDepth=2);
 
     if (arr._value.locale != here) then

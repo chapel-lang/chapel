@@ -50,7 +50,7 @@ config const parallel = true;
 config param distributed = false; // NOTE - could default to CHPL_COMM != none
 
 use FileSystem;
-use Spawn;
+use Subprocess;
 use Time;
 use IO;
 use Graph;

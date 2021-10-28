@@ -105,6 +105,10 @@ const char* CHPL_RUNTIME_SUBDIR = NULL;
 const char* CHPL_LAUNCHER_SUBDIR = NULL;
 const char* CHPL_SYS_MODULES_SUBDIR = NULL;
 const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
+const char* CHPL_LLVM_CLANG_C = NULL;
+const char* CHPL_LLVM_CLANG_CXX = NULL;
+const char* CHPL_LLVM_CLANG_COMPILE_ARGS = NULL;
+const char* CHPL_LLVM_CLANG_LINK_ARGS = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -1407,6 +1411,10 @@ static void setChapelEnvs() {
   CHPL_LAUNCHER_SUBDIR = envMap["CHPL_LAUNCHER_SUBDIR"];
   CHPL_SYS_MODULES_SUBDIR = envMap["CHPL_SYS_MODULES_SUBDIR"];
   CHPL_LLVM_UNIQ_CFG_PATH = envMap["CHPL_LLVM_UNIQ_CFG_PATH"];
+  CHPL_LLVM_CLANG_C = envMap["CHPL_LLVM_CLANG_C"];
+  CHPL_LLVM_CLANG_CXX = envMap["CHPL_LLVM_CLANG_CXX"];
+  CHPL_LLVM_CLANG_COMPILE_ARGS = envMap["CHPL_LLVM_CLANG_COMPILE_ARGS"];
+  CHPL_LLVM_CLANG_LINK_ARGS = envMap["CHPL_LLVM_CLANG_LINK_ARGS"];
 
   // Make sure there are no NULLs in envMap
   // a NULL in envMap might mean that one of the variables
@@ -1513,7 +1521,7 @@ static void setGPUFlags() {
   if(isGpuCodegen) {
     if (isSaveCDirEmpty) {
       int len = snprintf(saveCDir, FILENAME_MAX+1, "%s_gpu_files",
-                         (strlen(executableFilename) != 0 ? 
+                         (strlen(executableFilename) != 0 ?
                           executableFilename :
                           std::to_string(getpid()).c_str()));
       if(len < 0 || len >= FILENAME_MAX+1) {

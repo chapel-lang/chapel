@@ -1251,8 +1251,7 @@ where shouldReturnRvalueByValue(eltType) {
   return do_dsiAccess(false, i);
 }
 // const ref version for types with copy-ctor
-inline proc StencilArr.dsiAccess(i: rank*idxType) const ref
-where shouldReturnRvalueByConstRef(eltType) {
+inline proc StencilArr.dsiAccess(i: rank*idxType) const ref {
   return do_dsiAccess(false, i);
 }
 
@@ -1266,7 +1265,6 @@ where shouldReturnRvalueByValue(eltType)
   return dsiAccess(i);
 // const ref version for types with copy-ctor
 inline proc StencilArr.dsiAccess(i: idxType...rank) const ref
-where shouldReturnRvalueByConstRef(eltType)
   return dsiAccess(i);
 
 inline proc StencilArr.dsiBoundsCheck(i: rank*idxType) {

@@ -9,16 +9,8 @@ then
 fi
 
 echo Installing LLVM and clang to $LLVM_INSTALL_DIR using gcc in PATH
-CHPL_LLVM_GCC_PREFIX=""
-CHPL_LLVM_GCC_PREFIX_DIR=`./find-gcc-prefix.sh gcc`
-if [ ! -z "$CHPL_LLVM_GCC_PREFIX_DIR" ]
-then
-  CHPL_LLVM_GCC_PREFIX="-DGCC_INSTALL_PREFIX=$CHPL_LLVM_GCC_PREFIX_DIR"
-fi
 
 CHPL_LLVM_DYNAMIC_OPTS="-DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON"
-
-echo GCC prefix option is $CHPL_LLVM_GCC_PREFIX
 
 echo Configuring LLVM with $CMAKE_OPTS using build directory
 
@@ -50,7 +42,6 @@ cmake ../llvm-src \
   -DCMAKE_INSTALL_PREFIX="$LLVM_INSTALL_DIR" \
   -DCMAKE_C_COMPILER=gcc \
   -DCMAKE_CXX_COMPILER=g++ \
-  $CHPL_LLVM_GCC_PREFIX \
   -DLLVM_ENABLE_WARNINGS=0 \
   -DLLVM_ENABLE_PEDANTIC=0 \
   -DCLANG_ENABLE_ARCMT=0 \

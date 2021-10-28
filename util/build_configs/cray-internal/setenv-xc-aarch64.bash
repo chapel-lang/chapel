@@ -267,7 +267,7 @@ else
     fi
 
     gen_version_gcc=9.3.0
-    gen_version_cce=10.0.2
+    gen_version_cce=10.0.3
 
     target_cpu_module=craype-arm-thunderx2
 

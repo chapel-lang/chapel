@@ -1327,7 +1327,7 @@ module DefaultRectangular {
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind: idxType ...1) const ref
-    where rank == 1 && shouldReturnRvalueByConstRef(eltType)
+    where rank == 1
       return dsiAccess(ind);
 
     inline proc dsiAccess(ind : rank*idxType) ref {
@@ -1343,8 +1343,7 @@ module DefaultRectangular {
       return theData(dataInd);
     }
 
-    inline proc dsiAccess(ind : rank*idxType) const ref
-    where shouldReturnRvalueByConstRef(eltType) {
+    inline proc dsiAccess(ind : rank*idxType) const ref {
       // Note: bounds checking occurs in ChapelArray for this type.
       var dataInd = getDataIndex(ind);
       return theData(dataInd);

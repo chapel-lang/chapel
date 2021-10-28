@@ -1,1 +1,20 @@
-../masonBinaryFound
+#!/bin/bash
+
+# Skip this test if we cannot connect to github, which is required to
+# run the test
+ping -c 1 github.com &> /dev/null
+status=$?
+if ! [ $status -eq 0 ]; then
+  echo "True"
+  exit 0
+fi
+
+command -v $CHPL_HOME/bin/$CHPL_HOST_BIN_SUBDIR/mason > /dev/null
+status=$?
+
+if [ $status -eq  0 ];  then
+    echo "False"
+else
+    echo "True"
+fi
+exit 0

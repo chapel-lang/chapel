@@ -102,6 +102,8 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_LLVM_CONFIG', COMPILER | NOPATH),
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
     ChapelEnv('  CHPL_LLVM_CLANG_CXX', INTERNAL),
+    ChapelEnv('  CHPL_LLVM_CLANG_COMPILE_ARGS', INTERNAL),
+    ChapelEnv('  CHPL_LLVM_CLANG_LINK_ARGS', INTERNAL),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
     ChapelEnv('CHPL_SANITIZE', COMPILER | LAUNCHER),
@@ -123,6 +125,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_RE2_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_THIRD_PARTY_COMPILE_ARGS', INTERNAL),
     ChapelEnv('  CHPL_THIRD_PARTY_LINK_ARGS', INTERNAL),
+    ChapelEnv('  CHPL_PE_CHPL_PKGCONFIG_LIBS', INTERNAL)
 ]
 
 # Global map of environment variable names to values
@@ -185,6 +188,8 @@ def compute_all_values():
     ENV_VALS['  CHPL_LLVM_CONFIG'] = chpl_llvm.get_llvm_config()
     ENV_VALS['  CHPL_LLVM_CLANG_C'] = chpl_llvm.get_llvm_clang('c')
     ENV_VALS['  CHPL_LLVM_CLANG_CXX'] = chpl_llvm.get_llvm_clang('c++')
+    ENV_VALS['  CHPL_LLVM_CLANG_COMPILE_ARGS'] = chpl_llvm.get_clang_compile_args()
+    ENV_VALS['  CHPL_LLVM_CLANG_LINK_ARGS'] = chpl_llvm.get_clang_link_args()
     aux_filesys = chpl_aux_filesys.get()
     ENV_VALS['CHPL_AUX_FILESYS'] = '_'.join(sorted(aux_filesys.split(' ')))
     ENV_VALS['CHPL_LIB_PIC'] = chpl_lib_pic.get()
@@ -265,6 +270,7 @@ def compute_internal_values():
                           if not (arg in seen or seen.add(arg))]
     ENV_VALS['  CHPL_THIRD_PARTY_LINK_ARGS'] = ' '.join(reversed(link_args_3p_dedup))
 
+    ENV_VALS['  CHPL_PE_CHPL_PKGCONFIG_LIBS'] = chpl_llvm.gather_pe_chpl_pkgconfig_libs()
 
 """Return non-empty string if var is set via environment or chplconfig"""
 def user_set(env):
