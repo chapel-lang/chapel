@@ -29,7 +29,7 @@ namespace types {
 /**
   This class represents the bytes type.
  */
-class BytesType : public Type {
+class BytesType final : public Type {
  private:
   BytesType() : Type(typetags::BytesType) { }
 

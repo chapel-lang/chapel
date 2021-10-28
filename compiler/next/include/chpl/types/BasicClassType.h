@@ -17,39 +17,37 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_CSTRINGTYPE_H
-#define CHPL_TYPES_CSTRINGTYPE_H
+#ifndef CHPL_TYPES_BASIC_CLASS_TYPE_H
+#define CHPL_TYPES_BASIC_CLASS_TYPE_H
 
-#include "chpl/types/Type.h"
+#include "chpl/types/AggregateType.h"
 
 namespace chpl {
 namespace types {
 
 
 /**
-  This class represents the string type.
+  This class represents an class type (e.g. `class C`)
+  without considering decorators.
  */
-class CStringType final : public Type {
+class BasicClassType final : public AggregateType {
  private:
-  CStringType() : Type(typetags::CStringType) { }
+  BasicClassType(/* todo args */)
+    : AggregateType(typetags::BasicClassType)
+  { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return true;
+    return aggregateTypeContentsMatchInner((const AggregateType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
+    aggregateTypeMarkUniqueStringsInner(context);
   }
-
-  bool isGeneric() const override {
-    return false;
-  }
-
-  static const owned<CStringType>& getCStringType(Context* context);
 
  public:
-  ~CStringType() = default;
+  ~BasicClassType() = default;
 
-  static const CStringType* get(Context* context);
+  static const BasicClassType* get(Context* context /* todo args */);
 };
 
 

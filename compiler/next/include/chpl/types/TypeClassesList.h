@@ -89,7 +89,8 @@ TYPE_BEGIN_SUBCLASSES(DeclaredType)
   TYPE_NODE(TupleType)
 
   TYPE_BEGIN_SUBCLASSES(AggregateType)
-    TYPE_NODE(ClassType) // has field for management / generic management
+    TYPE_NODE(BasicClassType)
+    TYPE_NODE(ClassType)
     TYPE_NODE(RecordType)
     TYPE_NODE(UnionType)
   TYPE_END_SUBCLASSES(AggregateType)

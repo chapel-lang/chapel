@@ -30,7 +30,7 @@ namespace types {
   This class represents an erroneous type - that is, a type used as an error
   sentinel type. Errors with this type should be ignored.
  */
-class ErroneousType : public Type {
+class ErroneousType final : public Type {
  private:
   ErroneousType() : Type(typetags::ErroneousType) { }
 

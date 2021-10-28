@@ -17,43 +17,11 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_CSTRINGTYPE_H
-#define CHPL_TYPES_CSTRINGTYPE_H
-
-#include "chpl/types/Type.h"
+#include "chpl/types/UnionType.h"
 
 namespace chpl {
 namespace types {
 
 
-/**
-  This class represents the string type.
- */
-class CStringType final : public Type {
- private:
-  CStringType() : Type(typetags::CStringType) { }
-
-  bool contentsMatchInner(const Type* other) const override {
-    return true;
-  }
-
-  void markUniqueStringsInner(Context* context) const override {
-  }
-
-  bool isGeneric() const override {
-    return false;
-  }
-
-  static const owned<CStringType>& getCStringType(Context* context);
-
- public:
-  ~CStringType() = default;
-
-  static const CStringType* get(Context* context);
-};
-
-
-} // end namespace uast
+} // end namespace types
 } // end namespace chpl
-
-#endif
