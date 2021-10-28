@@ -13,7 +13,7 @@ unset CHPL_NIGHTLY_TEST_DIRS
 
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.c-backend"
 
-perf_args="-performance-description llvm -performance-configs default:v,llvm:v -sync-dir-suffix llvm"
+perf_args="-performance-description c-backend -performance-configs default:v -sync-dir-suffix c-backend"
 perf_args="${perf_args} -performance -numtrials 1 -startdate 11/24/15"
 
 $CWD/nightly -cron ${nightly_args} ${perf_args}
