@@ -21,14 +21,13 @@
 
 
 /* A helper file of utilities for Mason */
+public use FileSystem;
 private use List;
 private use Map;
-
 public use Subprocess;
-public use FileSystem;
-public use TOML;
-public use Path;
 public use MasonEnv;
+public use Path;
+public use TOML;
 
 
 /* Gets environment variables for spawn commands */
@@ -105,7 +104,7 @@ proc runCommand(cmd, quiet=false) : string throws {
 
     for line in process.stdout.lines() {
       ret += line;
-      if quiet == false {
+      if !quiet {
         write(line);
       }
     }
@@ -119,14 +118,14 @@ proc runCommand(cmd, quiet=false) : string throws {
 
 /* Same as runCommand but for situations where an
    exit status is needed */
-proc runWithStatus(command, show=true): int {
+proc runWithStatus(command, quiet=false): int {
 
   try {
     var cmd = command.split();
     var sub = spawn(cmd, stdout=PIPE, stderr=PIPE);
 
     var line:string;
-    if show {
+    if !quiet {
       while sub.stdout.readline(line) do write(line);
       while sub.stderr.readline(line) do write(line);
     }
@@ -199,14 +198,22 @@ proc getSpackResult(cmd, quiet=false) : string throws {
 /* Sets up spack by prefixing command with spack env vars
    Only returns the exit status of the command
    TODO: get to work with Subprocess */
-proc runSpackCommand(command) {
+proc runSpackCommand(command, quiet=false) {
 
   var prefix = "export SPACK_ROOT=" + SPACK_ROOT +
     " && export PATH=\"$SPACK_ROOT/bin:$PATH\"" +
     " && . $SPACK_ROOT/share/spack/setup-env.sh && ";
 
   var cmd = (prefix + command);
-  var sub = spawnshell(cmd, stderr=PIPE, executable="bash");
+  var sub = spawnshell(cmd, stdout=PIPE, stderr=PIPE, executable="bash");
+
+  // quiet flag necessary for tests to be portable
+  if !quiet {
+    var line:string;
+    while sub.stdout.readline(line) {
+      write(line);
+    }
+  }
   sub.wait();
 
   for line in sub.stderr.lines() {
@@ -216,7 +223,7 @@ proc runSpackCommand(command) {
   return sub.exitCode;
 }
 
-
+// TODO: Can we get away with the Chapel Version object instead?
 record VersionInfo {
   var major = -1, minor = -1, bug = 0;
 

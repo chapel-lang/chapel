@@ -48,11 +48,8 @@ proc masonSearch(args: [?d] string) {
 
 proc masonSearch(ref args: list(string)) {
 
-  var parser = new argumentParser();
+  var parser = new argumentParser(helpHandler=new MasonSearchHelpHandler());
 
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
   // If no query is provided, list all packages in registry
   var queryArg = parser.addArgument(name="query",
                                     numArgs=0..1,
@@ -63,18 +60,7 @@ proc masonSearch(ref args: list(string)) {
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
 
-  try! {
-    parser.parseArgs(args.toArray());
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonSearchHelp();
-    exit(1);
-  }
-  if helpFlag.valueAsBool() {
-    masonSearchHelp();
-    exit(0);
-  }
+  parser.parseArgs(args.toArray());
 
   const show = showFlag.valueAsBool();
   const debug = debugFlag.valueAsBool();
