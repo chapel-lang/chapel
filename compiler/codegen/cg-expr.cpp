@@ -4766,7 +4766,7 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
     GenInfo* info = gGenInfo;
     args.push_back(info->lvt->getValue("chpl_gpuBinary"));
   #else
-    INT_FATAL("Unexpected code path: gpu code generation without LLVM as target")
+    INT_FATAL("Unexpected code path: gpu code generation without LLVM as target");
   #endif
 
   // "Copy" arguments from primitive call to runtime library function call.
