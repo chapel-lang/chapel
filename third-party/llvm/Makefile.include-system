@@ -1,16 +1,19 @@
 include $(THIRD_PARTY_DIR)/llvm/Makefile.share-system
 
+# Always link dynamically when using a system LLVM.
+# Future work: consider using 'llvm-config --shared-mode'
+# to make this choice.
+CHPL_LLVM_DYNAMIC := 1
+
 ifndef LLVM_LLVM_LIBS
   export LLVM_LLVM_LIBS=$(shell $(LLVM_CONFIG) --ldflags --system-libs --libs bitreader bitwriter ipo instrumentation option objcarcopts profiledata all-targets coverage coroutines lto)
 endif
 
-ifeq ($(LLVM_MAJOR_VERSION_9PLUS),9)
-  # -lclangASTMatchers needed for LLVM 9 but not earlier
-  LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangASTMatchers -lclangAST -lclangLex -lclangBasic
+ifeq ($(CHPL_LLVM_DYNAMIC),1)
+  LLVM_CLANG_LIBS=-lclang-cpp
 else
-  LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangAST -lclangLex -lclangBasic
+  LLVM_CLANG_LIBS=-lclangFrontend -lclangSerialization -lclangDriver -lclangCodeGen -lclangParse -lclangSema -lclangAnalysis -lclangEdit -lclangASTMatchers -lclangAST -lclangLex -lclangBasic
 endif
-
 
 # Ubuntu 16.04 needed -fno-rtti for LLVM 3.7
 # tested on that system after installing
@@ -22,3 +25,4 @@ LLVM_CFLAGS=$(LLVM_CONFIG_CFLAGS) -DHAVE_LLVM
 
 LLVM_INCLUDES=-I$(LLVM_CONFIG_INCLUDE_DIR)
 LLVM_LIBS=-L$(LLVM_CONFIG_LIB_DIR) $(LLVM_CLANG_LIBS) $(LLVM_LLVM_LIBS)
+

@@ -125,6 +125,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_RE2_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_THIRD_PARTY_COMPILE_ARGS', INTERNAL),
     ChapelEnv('  CHPL_THIRD_PARTY_LINK_ARGS', INTERNAL),
+    ChapelEnv('  CHPL_PE_CHPL_PKGCONFIG_LIBS', INTERNAL)
 ]
 
 # Global map of environment variable names to values
@@ -269,6 +270,7 @@ def compute_internal_values():
                           if not (arg in seen or seen.add(arg))]
     ENV_VALS['  CHPL_THIRD_PARTY_LINK_ARGS'] = ' '.join(reversed(link_args_3p_dedup))
 
+    ENV_VALS['  CHPL_PE_CHPL_PKGCONFIG_LIBS'] = chpl_llvm.gather_pe_chpl_pkgconfig_libs()
 
 """Return non-empty string if var is set via environment or chplconfig"""
 def user_set(env):
