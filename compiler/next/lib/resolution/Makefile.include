@@ -22,6 +22,7 @@ ALL_SRCS += next/lib/resolution/*.cpp
 
 NEXT_RESOLUTION_SRCS =                              \
            resolution-queries.cpp                   \
+           resolution-rules.cpp                     \
            resolution-types.cpp                     \
            scope-queries.cpp                        \
            scope-types.cpp                          \
