@@ -1557,6 +1557,16 @@ Expression* ParserContext::buildCustomScan(YYLTYPE location,
   }
 }
 
+Expression* ParserContext::buildTypeQuery(YYLTYPE location,
+                                          PODUniqueString queriedIdent) {
+  assert(!queriedIdent.isEmpty() && queriedIdent.c_str()[0] == '?');
+  assert(queriedIdent.length() >= 2);
+  const char* adjust = queriedIdent.c_str() + 1;
+  auto name = UniqueString::build(context(), adjust);
+  auto node = TypeQuery::build(builder, convertLocation(location), name);
+  return node.release();
+}
+
 Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
                                                 PODUniqueString baseType,
                                                 MaybeNamedActual actual) {

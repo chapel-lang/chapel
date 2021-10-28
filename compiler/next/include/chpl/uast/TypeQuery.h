@@ -48,6 +48,7 @@ class TypeQuery final : public Expression {
 
   TypeQuery(UniqueString name)
     : Expression(asttags::TypeQuery), name_(name) {
+    assert(!name.isEmpty() && name.c_str()[0] != '?');
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
@@ -68,12 +69,12 @@ class TypeQuery final : public Expression {
   static owned<TypeQuery> build(Builder* builder, Location loc,
                                 UniqueString name);
 
+  /**
+    Returns the name of this type query, e.g. in `proc foo(?x)`, this
+    method would return the `x` portion of the type query `?x`.
+  */
   UniqueString name() const {
     return name_;
-  }
-
-  bool hasName() const {
-    return name_ != "?";
   }
 };
 

@@ -150,6 +150,12 @@ class Function final : public NamedDecl {
       assert(bodyChildNum_ == -1);
     }
     assert(isExpressionASTList(children_));
+
+    for (auto decl : formals()) {
+      bool isAcceptableDecl = decl->isFormal() || decl->isVarArgFormal() ||
+                              decl->isTupleDecl();
+      assert(isAcceptableDecl);
+    }
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {

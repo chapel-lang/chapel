@@ -2380,10 +2380,7 @@ function_body_stmt:
 ;
 
 query_expr:
-  TQUERIEDIDENT
-  {
-    $$ = TypeQuery::build(BUILDER, LOC(@$), $1).release();
-  }
+  TQUERIEDIDENT   { $$ = context->buildTypeQuery(@$, $1); }
 ;
 
 

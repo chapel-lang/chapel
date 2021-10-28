@@ -83,7 +83,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       entry.hasActual = false;
       entry.actualIdx = -1;
     } else {
-      assert(0 == "Not handled yet!");
+      assert(false && "Not handled yet!");
     }
 
     formalIdx++;
@@ -109,7 +109,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
             break;
           }
         } else {
-          assert(0 == "Not handled yet!");
+          assert(false && "Not handled yet!");
         }
 
         formalIdx++;
@@ -173,6 +173,8 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
           failingFormalIdx = formalIdx;
           return false;
         }
+      } else {
+        assert(false && "Not handled yet!");
       }
     }
     formalIdx++;
@@ -207,7 +209,7 @@ static const char* getFormalDeclName(const Decl* decl) {
   if (auto namedDecl = decl->toNamedDecl()) {
     return namedDecl->name().c_str();
   } else {
-    assert(0 == "Not handled yet");
+    assert(false && "Not handled yet");
   }
   return nullptr;
 }

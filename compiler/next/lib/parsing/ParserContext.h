@@ -459,6 +459,9 @@ struct ParserContext {
                               Expression* lhs,
                               Expression* rhs);
 
+  Expression* buildTypeQuery(YYLTYPE location,
+                             PODUniqueString queriedIdent);
+
   Expression* buildTypeConstructor(YYLTYPE location,
                                    PODUniqueString baseType,
                                    Expression* subType);

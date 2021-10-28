@@ -656,8 +656,7 @@ struct Converter {
 
   // TODO (dlongnecke): Just replace these with Identifier?
   DefExpr* visit(const uast::TypeQuery* node) {
-    const char* name = node->name().c_str();
-    return new DefExpr(new VarSymbol(&(name[1])));
+    return new DefExpr(new VarSymbol(node->name().c_str()));
   }
 
   CallExpr* visit(const uast::Yield* node) {
@@ -1097,12 +1096,6 @@ struct Converter {
     return ret;
   }
 
-  /*
-  2056 | TSPARSE TSUBDOMAIN TLP actual_expr TRP
-  2057     { $$ = new CallExpr("chpl__buildSparseDomainRuntimeType",
-                               buildDotExpr($4->copy(),"defaultSparseDist"),
-                               $4); }
-  */
   Expr* convertSparseKeyword(const uast::FnCall* node) {
     auto calledExpression = node->calledExpression();
     assert(calledExpression);
@@ -1880,6 +1873,9 @@ struct Converter {
     // Replace init expressions for config variables with values passed
     // in on the command-line, if necessary. 
     if (node->isConfig()) {
+
+      // TODO (dlongnecke): This call should be replaced by an equivalent
+      // one from the new frontend.
       if (Expr* commandLineInit = lookupConfigVal(varSym)) {
         ret->init = commandLineInit;
       }
