@@ -7,9 +7,9 @@
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/common-slurm-gasnet-cray-cs.bash
-source $CWD/common-c.bash
+source $CWD/common-c-backend.bash
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="slurm-gasnet-ibv.c"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="slurm-gasnet-ibv.c-backend"
 
 export CHPL_COMM_SUBSTRATE=ibv
 

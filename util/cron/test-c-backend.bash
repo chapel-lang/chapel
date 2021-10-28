@@ -7,7 +7,7 @@
 
 CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common.bash
-source $CWD/common-c.bash
+source $CWD/common-c-backend.bash
 source $CWD/common-localnode-paratest.bash
 
 # common-llvm restricts us to extern/ferguson, but we want all the tests
@@ -15,7 +15,7 @@ unset CHPL_NIGHTLY_TEST_DIRS
 
 nightly_args="${nightly_args} $(set +x ; get_nightly_paratest_args) -asserts"
 
-export CHPL_NIGHTLY_TEST_CONFIG_NAME="c"
+export CHPL_NIGHTLY_TEST_CONFIG_NAME="c-backend"
 
 log_info START nightly -cron ${nightly_args}
 $CWD/nightly -cron ${nightly_args}
