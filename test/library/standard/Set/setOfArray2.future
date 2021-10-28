@@ -1,0 +1,8 @@
+bug: sets of arrays don't work
+
+Sets of arrays don't currently work because the 'in key: keyType'
+arguments result in bad code, seemingly because we don't support
+generic records instantiated with array types well today.  See
+test/types/records/generic/genericRecordOfArr*.chpl for simpler
+motivating cases in a similar vein (although those don't generate
+valgrind errors while this test does for some reason).
