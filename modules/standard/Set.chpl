@@ -148,6 +148,7 @@ module Set {
       _checkElementType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
+      this._htb = new chpl__hashtable(eltType, nothing);
     }
 
     // Do things the slow/copy way if the element is serializable.
@@ -212,6 +213,7 @@ module Set {
 
       this.eltType = eltType;
       this.parSafe = parSafe;
+      this._htb = new chpl__hashtable(eltType, nothing);
       this.complete();
 
       for elem in iterable do _addElem(elem);
@@ -229,6 +231,7 @@ module Set {
                         this.type.eltType else t;
       this.parSafe = if this.type.parSafe != ? then
                         this.type.parSafe else p;
+      this._htb = new chpl__hashtable(eltType, nothing);
       this.complete();
 
       // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
