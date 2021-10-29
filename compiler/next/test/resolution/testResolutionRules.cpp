@@ -33,18 +33,26 @@ using namespace types;
 using namespace uast;
 
 static bool passesAsIs(CanPassResult r) {
-  return r.passes() && 
+  return r.passes() &&
          !r.instantiates() &&
          !r.promotes() &&
          !r.converts();
 }
 
-static bool passesWithParamConversion(CanPassResult r) {
-  return r.passes() && 
+static bool passesParam(CanPassResult r) {
+  return r.passes() &&
          !r.instantiates() &&
          !r.promotes() &&
          r.converts() &&
          r.conversionKind() == CanPassResult::PARAM;
+}
+
+static bool passesParamNarrowing(CanPassResult r) {
+  return r.passes() &&
+         !r.instantiates() &&
+         !r.promotes() &&
+         r.converts() &&
+         r.conversionKind() == CanPassResult::PARAM_NARROWING;
 }
 
 static bool doesNotPass(CanPassResult r) {
@@ -71,20 +79,20 @@ static void test1() {
   r = canPass(int64, int64); assert(passesAsIs(r));
   r = canPass(int0, int64); assert(passesAsIs(r));
 
-  r = canPass(int8, int0); assert(passesWithParamConversion(r));
-  r = canPass(int8, int16); assert(passesWithParamConversion(r));
-  r = canPass(int8, int32); assert(passesWithParamConversion(r));
-  r = canPass(int8, int64); assert(passesWithParamConversion(r));
+  r = canPass(int8, int0); assert(passesParam(r));
+  r = canPass(int8, int16); assert(passesParam(r));
+  r = canPass(int8, int32); assert(passesParam(r));
+  r = canPass(int8, int64); assert(passesParam(r));
 
-  r = canPass(int16, int0); assert(passesWithParamConversion(r));
+  r = canPass(int16, int0); assert(passesParam(r));
   r = canPass(int16, int8); assert(doesNotPass(r));
-  r = canPass(int16, int32); assert(passesWithParamConversion(r));
-  r = canPass(int16, int64); assert(passesWithParamConversion(r));
+  r = canPass(int16, int32); assert(passesParam(r));
+  r = canPass(int16, int64); assert(passesParam(r));
 
-  r = canPass(int32, int0); assert(passesWithParamConversion(r));
+  r = canPass(int32, int0); assert(passesParam(r));
   r = canPass(int32, int8); assert(doesNotPass(r));
   r = canPass(int32, int16); assert(doesNotPass(r));
-  r = canPass(int32, int64); assert(passesWithParamConversion(r));
+  r = canPass(int32, int64); assert(passesParam(r));
 
   r = canPass(int64, int0); assert(passesAsIs(r));
   r = canPass(int64, int8); assert(doesNotPass(r));
@@ -110,11 +118,11 @@ static void test2() {
   QualifiedType real0(QualifiedType::VALUE, RealType::get(context, 0));
 
   CanPassResult r;
-  r = canPass(int0, real0); assert(passesWithParamConversion(r));
-  r = canPass(int8, real0); assert(passesWithParamConversion(r));
-  r = canPass(int16, real0); assert(passesWithParamConversion(r));
-  r = canPass(int32, real0); assert(passesWithParamConversion(r));
-  r = canPass(int64, real0); assert(passesWithParamConversion(r));
+  r = canPass(int0, real0); assert(passesParam(r));
+  r = canPass(int8, real0); assert(passesParam(r));
+  r = canPass(int16, real0); assert(passesParam(r));
+  r = canPass(int32, real0); assert(passesParam(r));
+  r = canPass(int64, real0); assert(passesParam(r));
 }
 
 static void test3() {
@@ -135,38 +143,135 @@ static void test3() {
   r = canPass(bool32, bool32); assert(passesAsIs(r));
   r = canPass(bool64, bool64); assert(passesAsIs(r));
 
-  r = canPass(bool0, bool8); assert(passesWithParamConversion(r));
-  r = canPass(bool0, bool16); assert(passesWithParamConversion(r));
-  r = canPass(bool0, bool32); assert(passesWithParamConversion(r));
-  r = canPass(bool0, bool64); assert(passesWithParamConversion(r));
+  r = canPass(bool0, bool8); assert(passesParam(r));
+  r = canPass(bool0, bool16); assert(passesParam(r));
+  r = canPass(bool0, bool32); assert(passesParam(r));
+  r = canPass(bool0, bool64); assert(passesParam(r));
 
-  r = canPass(bool8, bool0); assert(passesWithParamConversion(r));
-  r = canPass(bool8, bool16); assert(passesWithParamConversion(r));
-  r = canPass(bool8, bool32); assert(passesWithParamConversion(r));
-  r = canPass(bool8, bool64); assert(passesWithParamConversion(r));
+  r = canPass(bool8, bool0); assert(passesParam(r));
+  r = canPass(bool8, bool16); assert(passesParam(r));
+  r = canPass(bool8, bool32); assert(passesParam(r));
+  r = canPass(bool8, bool64); assert(passesParam(r));
 
-  r = canPass(bool16, bool0); assert(passesWithParamConversion(r));
-  r = canPass(bool16, bool8); assert(passesWithParamConversion(r));
-  r = canPass(bool16, bool32); assert(passesWithParamConversion(r));
-  r = canPass(bool16, bool64); assert(passesWithParamConversion(r));
+  r = canPass(bool16, bool0); assert(passesParam(r));
+  r = canPass(bool16, bool8); assert(passesParam(r));
+  r = canPass(bool16, bool32); assert(passesParam(r));
+  r = canPass(bool16, bool64); assert(passesParam(r));
 
-  r = canPass(bool32, bool0); assert(passesWithParamConversion(r));
-  r = canPass(bool32, bool8); assert(passesWithParamConversion(r));
-  r = canPass(bool32, bool16); assert(passesWithParamConversion(r));
-  r = canPass(bool32, bool64); assert(passesWithParamConversion(r));
+  r = canPass(bool32, bool0); assert(passesParam(r));
+  r = canPass(bool32, bool8); assert(passesParam(r));
+  r = canPass(bool32, bool16); assert(passesParam(r));
+  r = canPass(bool32, bool64); assert(passesParam(r));
 
-  r = canPass(bool64, bool0); assert(passesWithParamConversion(r));
-  r = canPass(bool64, bool8); assert(passesWithParamConversion(r));
-  r = canPass(bool64, bool16); assert(passesWithParamConversion(r));
-  r = canPass(bool64, bool32); assert(passesWithParamConversion(r));
+  r = canPass(bool64, bool0); assert(passesParam(r));
+  r = canPass(bool64, bool8); assert(passesParam(r));
+  r = canPass(bool64, bool16); assert(passesParam(r));
+  r = canPass(bool64, bool32); assert(passesParam(r));
 }
 
+static void test4() {
+  printf("test4\n");
+  Context ctx;
+  Context* context = &ctx;
 
+  auto oneParam = IntParam::get(context, 1);
+  auto negParam = IntParam::get(context, -1);
+
+  QualifiedType oneInt0(QualifiedType::PARAM,
+                        IntType::get(context, 0),
+                        oneParam);
+  QualifiedType oneInt8(QualifiedType::PARAM,
+                        IntType::get(context, 8),
+                        oneParam);
+  QualifiedType oneInt16(QualifiedType::PARAM,
+                         IntType::get(context, 16),
+                         oneParam);
+  QualifiedType oneInt32(QualifiedType::PARAM,
+                         IntType::get(context, 32),
+                         oneParam);
+  QualifiedType oneInt64(QualifiedType::PARAM,
+                         IntType::get(context, 64),
+                         oneParam);
+
+  QualifiedType negInt0(QualifiedType::PARAM,
+                        IntType::get(context, 0),
+                        negParam);
+  QualifiedType negInt8(QualifiedType::PARAM,
+                        IntType::get(context, 8),
+                        negParam);
+  QualifiedType negInt16(QualifiedType::PARAM,
+                         IntType::get(context, 16),
+                         negParam);
+  QualifiedType negInt32(QualifiedType::PARAM,
+                         IntType::get(context, 32),
+                         negParam);
+  QualifiedType negInt64(QualifiedType::PARAM,
+                         IntType::get(context, 64),
+                         negParam);
+
+  QualifiedType oneUint0(QualifiedType::PARAM,
+                         UintType::get(context, 0),
+                         oneParam);
+  QualifiedType oneUint8(QualifiedType::PARAM,
+                         UintType::get(context, 8),
+                         oneParam);
+  QualifiedType oneUint16(QualifiedType::PARAM,
+                          UintType::get(context, 16),
+                          oneParam);
+  QualifiedType oneUint32(QualifiedType::PARAM,
+                          UintType::get(context, 32),
+                          oneParam);
+  QualifiedType oneUint64(QualifiedType::PARAM,
+                          UintType::get(context, 64),
+                          oneParam);
+
+  QualifiedType int8(QualifiedType::VALUE, IntType::get(context, 8));
+  QualifiedType uint8(QualifiedType::VALUE, UintType::get(context, 8));
+
+
+  CanPassResult r;
+  r = canPass(oneInt0,  int8); assert(passesParamNarrowing(r));
+  r = canPass(oneInt8,  int8); assert(passesParamNarrowing(r));
+  r = canPass(oneInt16, int8); assert(passesParamNarrowing(r));
+  r = canPass(oneInt32, int8); assert(passesParamNarrowing(r));
+  r = canPass(oneInt64, int8); assert(passesParamNarrowing(r));
+
+  r = canPass(oneUint0,  int8); assert(passesParamNarrowing(r));
+  r = canPass(oneUint8,  int8); assert(passesParamNarrowing(r));
+  r = canPass(oneUint16, int8); assert(passesParamNarrowing(r));
+  r = canPass(oneUint32, int8); assert(passesParamNarrowing(r));
+  r = canPass(oneUint64, int8); assert(passesParamNarrowing(r));
+
+  r = canPass(oneInt0,  uint8); assert(passesParamNarrowing(r));
+  r = canPass(oneInt8,  uint8); assert(passesParamNarrowing(r));
+  r = canPass(oneInt16, uint8); assert(passesParamNarrowing(r));
+  r = canPass(oneInt32, uint8); assert(passesParamNarrowing(r));
+  r = canPass(oneInt64, uint8); assert(passesParamNarrowing(r));
+
+  r = canPass(oneUint0,  uint8); assert(passesParamNarrowing(r));
+  r = canPass(oneUint8,  uint8); assert(passesParamNarrowing(r));
+  r = canPass(oneUint16, uint8); assert(passesParamNarrowing(r));
+  r = canPass(oneUint32, uint8); assert(passesParamNarrowing(r));
+  r = canPass(oneUint64, uint8); assert(passesParamNarrowing(r));
+
+  r = canPass(negInt0,  int8); assert(passesParamNarrowing(r));
+  r = canPass(negInt8,  int8); assert(passesParamNarrowing(r));
+  r = canPass(negInt16, int8); assert(passesParamNarrowing(r));
+  r = canPass(negInt32, int8); assert(passesParamNarrowing(r));
+  r = canPass(negInt64, int8); assert(passesParamNarrowing(r));
+
+  r = canPass(negInt0,  uint8); assert(doesNotPass(r));
+  r = canPass(negInt8,  uint8); assert(doesNotPass(r));
+  r = canPass(negInt16, uint8); assert(doesNotPass(r));
+  r = canPass(negInt32, uint8); assert(doesNotPass(r));
+  r = canPass(negInt64, uint8); assert(doesNotPass(r));
+}
 
 int main() {
   test1();
   test2();
   test3();
+  test4();
 
   return 0;
 }
