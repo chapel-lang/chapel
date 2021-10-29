@@ -59,7 +59,6 @@ class CanPassResult {
   bool promotes_ = false;
   ConversionKind conversionKind_ = NONE;
 
-  CanPassResult() { }
   CanPassResult(bool passes, bool instantiates, bool promotes,
                 ConversionKind kind)
     : passes_(passes), instantiates_(instantiates), promotes_(promotes),
@@ -95,6 +94,7 @@ class CanPassResult {
                                  const types::QualifiedType& formalType);
 
  public:
+  CanPassResult() { }
   ~CanPassResult() = default;
 
   /** Returns true if the argument is passable */
@@ -105,6 +105,9 @@ class CanPassResult {
 
   /** Returns true if passing the argument will require promotion */
   bool promotes() { return promotes_; }
+
+  /** Returns true if implicit conversion is required */
+  bool converts() { return conversionKind_ != NONE; }
 
   /** What type of implicit conversion, if any, is needed? */
   ConversionKind conversionKind() { return conversionKind_; }
