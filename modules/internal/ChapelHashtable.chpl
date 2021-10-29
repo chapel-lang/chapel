@@ -63,15 +63,11 @@ module ChapelHashtable {
   }
   // sets lhs to rhs using a move initialization
   // only makes sense if lhs is currently uninitialized
+  private proc _moveInit(ref lhs: nothing, pragma "no auto destroy" in rhs) {
+    // then do nothing
+  }
   private proc _moveInit(ref lhs, pragma "no auto destroy" in rhs) {
-    if lhs.type != rhs.type {
-      compilerError("type mismatch in _moveInit");
-    }
-    if lhs.type == nothing {
-      // then do nothing
-    } else {
-      __primitive("=", lhs, rhs);
-    }
+    __primitive("=", lhs, rhs);
   }
 
   // Leaves the elements 0 initialized
