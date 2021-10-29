@@ -41,7 +41,7 @@ class Type;
  */
 class QualifiedType final {
  public:
-  typedef enum {
+  enum Kind {
     UNKNOWN,
     CONST,
     REF,
@@ -52,7 +52,7 @@ class QualifiedType final {
     PARAM,
     FUNCTION,
     MODULE,
-  } Kind;
+  };
 
  private:
   Kind kind_ = UNKNOWN;
