@@ -435,7 +435,7 @@ proc main() {
   }
 
   {
-    use DefinesOp only |;
+    use DefinesOp only |=;
 
     var a = new Foo2(true);
     var b = new Foo2(false);
