@@ -352,7 +352,8 @@ proc main() {
   }
 
   {
-    use IO only ioNewline, stdout, <~>;
+    use IO only ioNewline, stdout;
+    use IO only <~>;
     use DefinesOp only <~>;
 
     var foo = new Foo(3);
