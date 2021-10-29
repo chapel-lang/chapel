@@ -814,6 +814,7 @@ record regex {
     var nmatches = 1 + ncaptures;
     var pos:byteIndex;
     var endpos:byteIndex;
+    var last:byteIndex;
 
     on this.home {
       matches = _ddata_allocate(qio_regex_string_piece_t, nmatches);
@@ -821,49 +822,43 @@ record regex {
 
     pos = 0;
     endpos = pos + text.numBytes;
+    last = 0;
 
     var splits = 0;
     var maxsplits = maxsplit;
     if maxsplit == 0 then maxsplits = max(int);
 
-    while true {
-      var splitstart:byteIndex = 0;
-      var splitend:byteIndex = 0;
+    while splits < maxsplits && pos <= endpos {
       var got:bool;
       on this.home {
         got = qio_regex_match(_regex, text.localize().c_str(), text.numBytes, pos:int, endpos:int, QIO_REGEX_ANCHOR_UNANCHORED, matches, nmatches);
       }
 
+      if !got then break;
+
       splits += 1;
-      if got && splits <= maxsplits {
-        splitstart = matches[0].offset;
-        splitend = matches[0].offset + matches[0].len;
-      } else {
-        splitstart = endpos;
-        splitend = endpos;
-      }
 
-      if pos < splitstart {
-        // Yield splitted value
-        yield text[pos..splitstart-1];
-      } else {
-        yield "":exprType;
-      }
+      var splitstart:byteIndex = matches[0].offset;
+      yield text[last..<splitstart];
+      last = splitstart + matches[0].len;
 
-      if got {
-        // Yield capture groups
-        for i in 1..ncaptures {
+      // Yield capture groups
+      for i in 1..ncaptures {
           yield text[new regexMatch(
-                !qio_regex_string_piece_isnull(matches[i]),
-                matches[i].offset:byteIndex,
-                matches[i].len)];
-        }
+              !qio_regex_string_piece_isnull(matches[i]),
+              matches[i].offset:byteIndex,
+              matches[i].len)];
       }
 
-      // Advance to splitend.
-      pos = splitend;
+      pos = matches[0].offset + max(1, matches[0].len);
+    }
 
-      if splits > maxsplits || !got then break;
+    if last <= endpos {
+      if last >= text.numBytes {
+        yield "":exprType;
+      } else {
+        yield text[last..<endpos];
+      }
     }
     on this.home {
       _ddata_free(matches, nmatches);
