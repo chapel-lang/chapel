@@ -267,11 +267,80 @@ static void test4() {
   r = canPass(negInt64, uint8); assert(doesNotPass(r));
 }
 
+static QualifiedType getint(Context* context, int val) {
+  auto p = IntParam::get(context, val);
+  return QualifiedType(QualifiedType::PARAM,
+                       IntType::get(context, 0),
+                       p);
+}
+
+// integers can implicitly convert to default-sized real,
+// but integers can only convert to real(32) if there is no loss
+// of precision.
+static void test5() {
+  printf("test5\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto m5 = getint(context, (1<<24) - 5);
+  auto m4 = getint(context, (1<<24) - 4);
+  auto m3 = getint(context, (1<<24) - 3);
+  auto m2 = getint(context, (1<<24) - 2);
+  auto m1 = getint(context, (1<<24) - 1);
+  auto p0 = getint(context, (1<<24) + 0);
+  auto p1 = getint(context, (1<<24) + 1);
+  auto p2 = getint(context, (1<<24) + 2);
+  auto p3 = getint(context, (1<<24) + 3);
+  auto p4 = getint(context, (1<<24) + 4);
+  auto p5 = getint(context, (1<<24) + 5);
+
+  auto n_m5 = getint(context, -(1<<24) - 5);
+  auto n_m4 = getint(context, -(1<<24) - 4);
+  auto n_m3 = getint(context, -(1<<24) - 3);
+  auto n_m2 = getint(context, -(1<<24) - 2);
+  auto n_m1 = getint(context, -(1<<24) - 1);
+  auto n_p0 = getint(context, -(1<<24) + 0);
+  auto n_p1 = getint(context, -(1<<24) + 1);
+  auto n_p2 = getint(context, -(1<<24) + 2);
+  auto n_p3 = getint(context, -(1<<24) + 3);
+  auto n_p4 = getint(context, -(1<<24) + 4);
+  auto n_p5 = getint(context, -(1<<24) + 5);
+
+  QualifiedType real32(QualifiedType::VALUE, RealType::get(context, 32));
+
+  CanPassResult r;
+  r = canPass(m5,  real32); assert(passesParamNarrowing(r));
+  r = canPass(m4,  real32); assert(passesParamNarrowing(r));
+  r = canPass(m3,  real32); assert(passesParamNarrowing(r));
+  r = canPass(m2,  real32); assert(passesParamNarrowing(r));
+  r = canPass(m1,  real32); assert(passesParamNarrowing(r));
+  r = canPass(p0,  real32); assert(passesParamNarrowing(r));
+  r = canPass(p1,  real32); assert(doesNotPass(r));
+  r = canPass(p2,  real32); assert(doesNotPass(r));
+  r = canPass(p3,  real32); assert(doesNotPass(r));
+  r = canPass(p4,  real32); assert(doesNotPass(r));
+  r = canPass(p5,  real32); assert(doesNotPass(r));
+
+  r = canPass(n_m5,  real32); assert(doesNotPass(r));
+  r = canPass(n_m4,  real32); assert(doesNotPass(r));
+  r = canPass(n_m3,  real32); assert(doesNotPass(r));
+  r = canPass(n_m2,  real32); assert(doesNotPass(r));
+  r = canPass(n_m1,  real32); assert(doesNotPass(r));
+  r = canPass(n_p0,  real32); assert(passesParamNarrowing(r));
+  r = canPass(n_p1,  real32); assert(passesParamNarrowing(r));
+  r = canPass(n_p2,  real32); assert(passesParamNarrowing(r));
+  r = canPass(n_p3,  real32); assert(passesParamNarrowing(r));
+  r = canPass(n_p4,  real32); assert(passesParamNarrowing(r));
+  r = canPass(n_p5,  real32); assert(passesParamNarrowing(r));
+}
+
+
 int main() {
   test1();
   test2();
   test3();
   test4();
+  test5();
 
   return 0;
 }

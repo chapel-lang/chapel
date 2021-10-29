@@ -95,9 +95,9 @@ static void getMantissaExponentWidth(const Type *t,
                                      int& exponent) {
   // a 16 bit float would have 11 bits of precision
   // a 16 bit float would have 5 bits of exponent
-  const int mantissa_64 = 52; // mantissa for 64-bit float
+  const int mantissa_64 = 53; // mantissa for 64-bit float
   const int exponent_64 = 15; // exponent bits for 64-bit float
-  const int mantissa_32 = 23; // mantissa for 32-bit float
+  const int mantissa_32 = 24; // mantissa for 32-bit float
   const int exponent_32 = 8; // exponent bits for 32-bit float
 
   if (auto rt = t->toRealType()) {
