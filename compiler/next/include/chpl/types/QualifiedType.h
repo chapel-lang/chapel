@@ -68,7 +68,10 @@ class QualifiedType final {
 
   QualifiedType(Kind kind, const Type* type, const Param* param)
     : kind_(kind), type_(type), param_(param)
-  { }
+  {
+    // should only set param_ for kind_ == PARAM
+    assert(param_ == nullptr || kind_ == PARAM);
+  }
 
   Kind kind() const { return kind_; }
   const Type* type() const { return type_; }
@@ -78,7 +81,7 @@ class QualifiedType final {
     return type_ != nullptr;
   }
   bool hasParam() const {
-    return kind_ == PARAM && param_ != nullptr;
+    return param_ != nullptr;
   }
 
   bool isGenericOrUnknown() const;

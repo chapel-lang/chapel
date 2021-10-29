@@ -1,0 +1,116 @@
+/*
+ * Copyright 2021 Hewlett Packard Enterprise Development LP
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef RESOLUTION_RULES_H
+#define RESOLUTION_RULES_H
+
+#include "chpl/resolution/resolution-types.h"
+
+namespace chpl {
+namespace uast {
+  class ASTNode;
+}
+namespace types {
+  class QualifiedType;
+}
+namespace resolution {
+
+
+class CanPassResult {
+ public:
+  enum ConversionKind {
+    /** No implicit conversion is needed */
+    NONE,
+    /** A narrowing param conversion is needed.
+        These are only applicable to the particular param
+        value -- e.g. 1:int converting to int(8) because 1 fits in int(8).
+        The result of such a conversion is always a param. */
+    PARAM_NARROWING,
+    /** A non-narrowing param conversion. This is a kind of conversion
+        that can be applied to params but the tested argument isn't
+        necessarily params. If applied to a param, such a conversion
+        will result in a param. */
+    PARAM,
+    /** A conversion that implements subtyping */
+    SUBTYPE,
+    /** Non-subtype conversion that doesn't produce a param */
+    OTHER,
+  };
+
+ private:
+  bool passes_ = false;
+  bool instantiates_ = false;
+  ConversionKind conversionKind_ = NONE;
+
+  CanPassResult() { }
+  CanPassResult(bool passes, bool instantiates, ConversionKind kind)
+    : passes_(passes), instantiates_(instantiates), conversionKind_(kind) { }
+
+  // these builders make it easier to implement canPass
+  static CanPassResult fail() {
+    return CanPassResult(false, false, NONE);
+  }
+  static CanPassResult passAsIs() {
+    return CanPassResult(true, false, NONE);
+  }
+  static CanPassResult convert(ConversionKind e) {
+    return CanPassResult(true, false, e);
+  }
+  static CanPassResult instantiate() {
+    return CanPassResult(true, true, NONE);
+  }
+  static CanPassResult convertAndInstantiate(ConversionKind e) {
+    return CanPassResult(true, true, e);
+  }
+
+  static CanPassResult canParamCoerce(const types::QualifiedType& actualType,
+                                      const types::QualifiedType& formalType);
+
+ public:
+  ~CanPassResult() = default;
+
+  /** Returns true if the argument is passable */
+  bool passes() { return passes_; }
+
+  /** Returns true if passing the argument will require instantiation */
+  bool instantiates() { return instantiates_; }
+
+  /** What type of implicit conversion, if any, is needed? */
+  ConversionKind conversionKind() { return conversionKind_; }
+
+  // implementation of canPass to make it easier to access private fields
+  static CanPassResult canPass(const types::QualifiedType& actualType,
+                               const types::QualifiedType& formalType);
+};
+
+/**
+  Given an argument with QualifiedType actualType,
+  can that argument be passed to a formal with QualifiedType formalType?
+ */
+static inline
+CanPassResult canPass(const types::QualifiedType& actualType,
+                      const types::QualifiedType& formalType) {
+  return CanPassResult::canPass(actualType, formalType);
+}
+
+
+} // end namespace resolution
+} // end namespace chpl
+
+#endif
