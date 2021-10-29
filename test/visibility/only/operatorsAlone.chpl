@@ -350,18 +350,16 @@ proc main() {
     var b = new Foo(3);
     writeln(a != b);
   }
-  /* Currently fails with an overload sets error I can't seem to squash
+
   {
-    use IO only ioNewline, stdout;
+    use IO only ioNewline, stdout, <~>;
     use DefinesOp only <~>;
 
     var foo = new Foo(3);
-    stdout <~> foo <~> new ioNewline();
+    stdout <~> foo;
+    stdout <~> new ioNewline();
   }
-  // Expects:
-  // In DefinesOp.<~>
-  // {x = 3}
-  */
+
   {
     use DefinesOp only <;
 

@@ -31,6 +31,8 @@ In DefinesOp.>=
 true
 In DefinesOp.!=
 true
+In DefinesOp.<~>
+3
 In DefinesOp.<
 true
 In DefinesOp.<=
