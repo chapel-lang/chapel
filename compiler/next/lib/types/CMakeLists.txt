@@ -30,6 +30,7 @@ target_sources(libchplcomp-obj
                ErroneousType.cpp
                ImagType.cpp
                IntType.cpp
+               NilType.cpp
                NothingType.cpp
                Param.cpp
                PrimitiveType.cpp
