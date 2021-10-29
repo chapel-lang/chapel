@@ -56,31 +56,43 @@ class CanPassResult {
  private:
   bool passes_ = false;
   bool instantiates_ = false;
+  bool promotes_ = false;
   ConversionKind conversionKind_ = NONE;
 
   CanPassResult() { }
-  CanPassResult(bool passes, bool instantiates, ConversionKind kind)
-    : passes_(passes), instantiates_(instantiates), conversionKind_(kind) { }
+  CanPassResult(bool passes, bool instantiates, bool promotes,
+                ConversionKind kind)
+    : passes_(passes), instantiates_(instantiates), promotes_(promotes),
+      conversionKind_(kind) { }
 
   // these builders make it easier to implement canPass
   static CanPassResult fail() {
-    return CanPassResult(false, false, NONE);
+    return CanPassResult(false, false, false, NONE);
   }
   static CanPassResult passAsIs() {
-    return CanPassResult(true, false, NONE);
+    return CanPassResult(true, false, false, NONE);
   }
   static CanPassResult convert(ConversionKind e) {
-    return CanPassResult(true, false, e);
+    return CanPassResult(true, false, false, e);
   }
   static CanPassResult instantiate() {
-    return CanPassResult(true, true, NONE);
+    return CanPassResult(true, true, false, NONE);
   }
   static CanPassResult convertAndInstantiate(ConversionKind e) {
-    return CanPassResult(true, true, e);
+    return CanPassResult(true, true, false, e);
+  }
+  static CanPassResult promote(CanPassResult r) {
+    CanPassResult ret = r;
+    ret.promotes_ = true;
+    return ret;
   }
 
   static CanPassResult canParamCoerce(const types::QualifiedType& actualType,
                                       const types::QualifiedType& formalType);
+  static CanPassResult canSubtypeCoerce(const types::QualifiedType& actualType,
+                                        const types::QualifiedType& formalType);
+  static CanPassResult canCoerce(const types::QualifiedType& actualType,
+                                 const types::QualifiedType& formalType);
 
  public:
   ~CanPassResult() = default;
@@ -90,6 +102,9 @@ class CanPassResult {
 
   /** Returns true if passing the argument will require instantiation */
   bool instantiates() { return instantiates_; }
+
+  /** Returns true if passing the argument will require promotion */
+  bool promotes() { return promotes_; }
 
   /** What type of implicit conversion, if any, is needed? */
   ConversionKind conversionKind() { return conversionKind_; }

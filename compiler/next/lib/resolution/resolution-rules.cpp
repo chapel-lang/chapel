@@ -88,17 +88,6 @@ static bool paramFitsInUint(int width, const Param* p) {
   return false;
 }
 
-static bool isStringyType(const Type* t) {
-  return t->isStringType() ||
-         t->isBytesType() ||
-         t->isCStringType();
-}
-
-static bool isIntUintType(const Type* t) {
-  return t->isIntType() ||
-         t->isUintType();
-}
-
 // numbers between -2**mantissa .. 2**mantissa
 // will fit exactly in a floating-point representation.
 static void getMantissaExponentWidth(const Type *t,
@@ -270,7 +259,7 @@ CanPassResult CanPassResult::canParamCoerce(const QualifiedType& actualQT,
 
   // param strings can coerce between string and c_string
   if (actualQT.hasParam())
-    if (isStringyType(formalT) && isStringyType(actualT))
+    if (formalT->isStringLikeType() && actualT->isStringLikeType())
       return convert(PARAM);
 
   // coerce fully representable integers into real / real part of complex
@@ -282,7 +271,7 @@ CanPassResult CanPassResult::canParamCoerce(const QualifiedType& actualQT,
     // don't coerce bools to reals (per spec: "unintended by programmer")
 
     // coerce any integer type to maximum width real
-    if (isIntUintType(actualT) && formalRealT->bitwidth() == 64)
+    if (actualT->isIntegralType() && formalRealT->bitwidth() == 64)
       return convert(PARAM);
 
     // coerce integer types that are exactly representable
@@ -301,7 +290,7 @@ CanPassResult CanPassResult::canParamCoerce(const QualifiedType& actualQT,
 
     // coerce literal/param ints that are exactly representable
     if (auto actualP = actualQT.param()) {
-      if (isIntUintType(actualT))
+      if (actualT->isIntegralType())
         if (fitsInMantissa(mantissaW, actualP))
           return convert(PARAM_NARROWING);
 
@@ -331,7 +320,7 @@ CanPassResult CanPassResult::canParamCoerce(const QualifiedType& actualQT,
     // don't coerce bools to complexes (per spec: "unintended by programmer")
 
     // coerce any integer type to maximum width complex
-    if (isIntUintType(actualT) && formalComplexT->bitwidth() == 128)
+    if (actualT->isIntegralType() && formalComplexT->bitwidth() == 128)
       return convert(PARAM);
 
     // coerce integer types that are exactly representable
@@ -357,7 +346,7 @@ CanPassResult CanPassResult::canParamCoerce(const QualifiedType& actualQT,
 
     // coerce literal/param complexes that are exactly representable
     if (auto actualP = actualQT.param()) {
-      if (isIntUintType(actualT))
+      if (actualT->isIntegralType())
         if (fitsInMantissa(mantissaW, actualP))
           return convert(PARAM_NARROWING);
       if (actualT->isRealType())
@@ -377,6 +366,62 @@ CanPassResult CanPassResult::canParamCoerce(const QualifiedType& actualQT,
   return fail();
 }
 
+// The compiler considers many patterns of "subtyping" as things
+// that require coercions (they often require coercions in the generated C).
+// However not all coercions are created equal. Some of them are implementing
+// subtyping.
+// Here we consider a coercion to be implementing "subtyping" and return
+// true for this call if, in an ideal implementation, the actual could
+// be passed to a `const ref` argument of the formal type.
+CanPassResult CanPassResult::canSubtypeCoerce(const QualifiedType& actualQT,
+                                              const QualifiedType& formalQT) {
+  const Type* actualT = actualQT.type();
+  const Type* formalT = formalQT.type();
+
+  if (actualT->isNilType() && formalT->isAnyPtrType())
+    return convert(SUBTYPE);
+
+
+  if (actualT->isClassType() || formalT->isClassType()) {
+    // see canCoerceAsSubtype
+    assert(false && "not implemented yet");
+  }
+
+  // TODO: implement c_ptr, c_array conversions
+
+  return fail();
+}
+
+CanPassResult CanPassResult::canCoerce(const QualifiedType& actualQT,
+                                       const QualifiedType& formalQT) {
+  CanPassResult ret;
+
+  // can we "param coerce" ?
+  ret = canParamCoerce(actualQT, formalQT);
+  if (ret.passes())
+    return ret;
+
+  // can we "subtype coerce" ?
+  ret = canSubtypeCoerce(actualQT, formalQT);
+  if (ret.passes())
+    return ret;
+
+  // can we coerce tuples?
+  if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
+    assert(false && "not implemented yet");
+    // see canCoerceTuples
+  }
+
+  // Check for other class subtyping
+  // Class subtyping needs coercions in order to generate C code.
+
+  // TODO: check for coercion to copy type
+  // (relevant for array slices and iterator records)
+  // see canCoerceToCopyType
+
+  return fail();
+}
+
 CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
                                      const QualifiedType& formalQT) {
 
@@ -388,11 +433,13 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
 
   CanPassResult ret;
 
-  // can we "param coerce" ?
-  ret = canParamCoerce(actualQT, formalQT);
+  // can we "param coerce" "subtype coerce" or other "coerce" ?
+  ret = canCoerce(actualQT, formalQT);
   if (ret.passes())
     return ret;
 
+  // can we promote?
+  // TODO: implement promotion check
   return fail();
 }
 

@@ -124,6 +124,22 @@ class Type {
   #undef TYPE_END_SUBCLASSES
   #undef TYPE_IS
 
+  // Additional helper functions
+
+  /** returns true if it's string, bytes, or c_string type */
+  bool isStringLikeType() const {
+    return isStringType() || isBytesType() || isCStringType();
+  }
+  /** returns true if it's an int or uint type of any width */
+  bool isIntegralType() const {
+    return isIntType() || isUintType();
+  }
+
+  /** returns true for a type that is a kind of pointer */
+  bool isAnyPtrType() const {
+    return isClassType() || isCFnPtrType() || isCVoidPtrType();
+  }
+
   // define to__ methods for the various Type subclasses
   // using macros and TypeClassesList.h
   // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
