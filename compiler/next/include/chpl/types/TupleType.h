@@ -20,7 +20,7 @@
 #ifndef CHPL_TYPES_TUPLE_TYPE_H
 #define CHPL_TYPES_TUPLE_TYPE_H
 
-#include "chpl/types/AggregateType.h"
+#include "chpl/types/CompositeType.h"
 
 namespace chpl {
 namespace types {
@@ -29,18 +29,18 @@ namespace types {
 /**
   This class represents a tuple type e.g. `(int, real)`.
  */
-class TupleType final : public AggregateType {
+class TupleType final : public CompositeType {
  private:
   TupleType(/* args todo */)
-    : AggregateType(typetags::TupleType)
+    : CompositeType(typetags::TupleType)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return aggregateTypeContentsMatchInner((const AggregateType*) other);
+    return compositeTypeContentsMatchInner((const CompositeType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    aggregateTypeMarkUniqueStringsInner(context);
+    compositeTypeMarkUniqueStringsInner(context);
   }
 
  public:

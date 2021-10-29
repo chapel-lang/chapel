@@ -20,7 +20,7 @@
 #ifndef CHPL_TYPES_CLASS_TYPE_H
 #define CHPL_TYPES_CLASS_TYPE_H
 
-#include "chpl/types/AggregateType.h"
+#include "chpl/types/CompositeType.h"
 #include "chpl/types/ClassTypeDecorator.h"
 
 namespace chpl {
@@ -31,7 +31,7 @@ namespace types {
   This class represents an class type including a decorator.
   E.g. if we have `class C`, then `borrowed C?` or `shared C` are ClassTypes.
  */
-class ClassType final : public AggregateType {
+class ClassType final : public CompositeType {
  private:
   const BasicClassType* basicType_;
   const RecordType* manager_;
@@ -40,18 +40,18 @@ class ClassType final : public AggregateType {
   ClassType(const BasicClassType* basicType,
             const RecordType* manager,
             ClassTypeDecorator decorator)
-    : AggregateType(typetags::ClassType),
+    : CompositeType(typetags::ClassType),
       basicType_(basicType),
       manager_(manager),
       decorator_(decorator)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return aggregateTypeContentsMatchInner((const AggregateType*) other);
+    return compositeTypeContentsMatchInner((const CompositeType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    aggregateTypeMarkUniqueStringsInner(context);
+    compositeTypeMarkUniqueStringsInner(context);
   }
 
  public:

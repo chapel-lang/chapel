@@ -20,7 +20,7 @@
 #ifndef CHPL_TYPES_UNION_TYPE_H
 #define CHPL_TYPES_UNION_TYPE_H
 
-#include "chpl/types/AggregateType.h"
+#include "chpl/types/CompositeType.h"
 
 namespace chpl {
 namespace types {
@@ -30,18 +30,18 @@ namespace types {
   This class represents a union type, e.g., if we have `union U`,
   then `U` refers to a UnionType.
  */
-class UnionType final : public AggregateType {
+class UnionType final : public CompositeType {
  private:
   UnionType(/* args todo */)
-    : AggregateType(typetags::UnionType)
+    : CompositeType(typetags::UnionType)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return aggregateTypeContentsMatchInner((const AggregateType*) other);
+    return compositeTypeContentsMatchInner((const CompositeType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    aggregateTypeMarkUniqueStringsInner(context);
+    compositeTypeMarkUniqueStringsInner(context);
   }
 
  public:

@@ -20,7 +20,7 @@
 #ifndef CHPL_TYPES_RECORD_TYPE_H
 #define CHPL_TYPES_RECORD_TYPE_H
 
-#include "chpl/types/AggregateType.h"
+#include "chpl/types/CompositeType.h"
 
 namespace chpl {
 namespace types {
@@ -30,18 +30,18 @@ namespace types {
   This class represents a record type, e.g., if we have `record R`,
   then `R` refers to a RecordType.
  */
-class RecordType final : public AggregateType {
+class RecordType final : public CompositeType {
  private:
   RecordType(/* args todo */)
-    : AggregateType(typetags::RecordType)
+    : CompositeType(typetags::RecordType)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return aggregateTypeContentsMatchInner((const AggregateType*) other);
+    return compositeTypeContentsMatchInner((const CompositeType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    aggregateTypeMarkUniqueStringsInner(context);
+    compositeTypeMarkUniqueStringsInner(context);
   }
 
  public:

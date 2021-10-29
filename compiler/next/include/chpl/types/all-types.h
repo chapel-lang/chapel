@@ -20,7 +20,6 @@
 #ifndef CHPL_TYPES_ALL_TYPES_H
 #define CHPL_TYPES_ALL_TYPES_H
 
-#include "chpl/types/AggregateType.h"
 #include "chpl/types/AnyType.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/BuiltinType.h"
@@ -28,6 +27,7 @@
 #include "chpl/types/CStringType.h"
 #include "chpl/types/ClassType.h"
 #include "chpl/types/ComplexType.h"
+#include "chpl/types/CompositeType.h"
 #include "chpl/types/ErroneousType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"

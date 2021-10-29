@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_AGGREGATE_TYPE_H
-#define CHPL_TYPES_AGGREGATE_TYPE_H
+#ifndef CHPL_TYPES_COMPOSITE_TYPE_H
+#define CHPL_TYPES_COMPOSITE_TYPE_H
 
 #include "chpl/types/Type.h"
 
@@ -31,21 +31,21 @@ namespace types {
   elements - Class, Record, Union, and Tuple types.
 
  */
-class AggregateType : public Type {
+class CompositeType : public Type {
  protected:
-  AggregateType(typetags::TypeTag tag)
+  CompositeType(typetags::TypeTag tag)
     : Type(tag) {
   }
 
-  bool aggregateTypeContentsMatchInner(const AggregateType* other) const {
+  bool compositeTypeContentsMatchInner(const CompositeType* other) const {
     return true;
   }
 
-  void aggregateTypeMarkUniqueStringsInner(Context* context) const {
+  void compositeTypeMarkUniqueStringsInner(Context* context) const {
   }
 
  public:
-  virtual ~AggregateType() = 0; // this is an abstract base class
+  virtual ~CompositeType() = 0; // this is an abstract base class
 };
 
 

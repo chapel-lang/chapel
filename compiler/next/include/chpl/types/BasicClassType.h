@@ -20,7 +20,7 @@
 #ifndef CHPL_TYPES_BASIC_CLASS_TYPE_H
 #define CHPL_TYPES_BASIC_CLASS_TYPE_H
 
-#include "chpl/types/AggregateType.h"
+#include "chpl/types/CompositeType.h"
 
 namespace chpl {
 namespace types {
@@ -30,18 +30,18 @@ namespace types {
   This class represents an class type (e.g. `class C`)
   without considering decorators.
  */
-class BasicClassType final : public AggregateType {
+class BasicClassType final : public CompositeType {
  private:
   BasicClassType(/* todo args */)
-    : AggregateType(typetags::BasicClassType)
+    : CompositeType(typetags::BasicClassType)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return aggregateTypeContentsMatchInner((const AggregateType*) other);
+    return compositeTypeContentsMatchInner((const CompositeType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
-    aggregateTypeMarkUniqueStringsInner(context);
+    compositeTypeMarkUniqueStringsInner(context);
   }
 
  public:

@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/types/AggregateType.h"
+#include "chpl/types/CompositeType.h"
 
 namespace chpl {
 namespace types {
