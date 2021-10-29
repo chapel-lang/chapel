@@ -33,6 +33,8 @@ namespace types {
  */
 class CompositeType : public Type {
  protected:
+  // TODO: add fields and accessors for a QualifiedType per field
+
   CompositeType(typetags::TypeTag tag)
     : Type(tag) {
   }
