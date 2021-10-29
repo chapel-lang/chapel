@@ -446,7 +446,16 @@ module OrderedSet {
   */
   operator orderedSet.&(const ref a: orderedSet(?t),
                         const ref b: orderedSet(t)): orderedSet(t) {
-    var result: orderedSet(t, (a.parSafe || b.parSafe));
+
+    // TODO: what should the comparator of the result be? See also &= operator
+    const ref resultComparator = if a.instance.type == b.instance.type
+                                 then a.instance.comparator
+                                 else defaultComparator;
+                      
+    // Note we need the full type here. In other operators (e.g., |), there's a
+    // clear initialization point and split-init works fine. Here there's no
+    // initialization point, so we have to initialize the result explicitly
+    var result = new orderedSet(t, (a.parSafe || b.parSafe), resultComparator);
 
     /* Iterate over the smaller orderedSet */
     if a.size <= b.size {
@@ -476,9 +485,19 @@ module OrderedSet {
   */
   operator orderedSet.&=(ref lhs: orderedSet(?t, ?),
                          const ref rhs: orderedSet(t, ?)) {
-    /* We can't remove things from lhs while iterating over it, so
-     * use a temporary. */
-    var result: orderedSet(t, (lhs.parSafe || rhs.parSafe));
+
+    // TODO: what should the comparator of the result be? See also & operator.
+    const ref resultComparator = if lhs.instance.type == rhs.instance.type
+                                 then lhs.instance.comparator
+                                 else defaultComparator;
+                      
+    // Note we need the full type here. In other operators (e.g., |), there's a
+    // clear initialization point and split-init works fine. Here there's no
+    // initialization point, so we have to initialize the result explicitly
+    // Note 2: We can't remove things from lhs while iterating over it, so
+    // use a temporary. 
+    var result = new orderedSet(t, (lhs.parSafe || rhs.parSafe),
+                                resultComparator);
 
     for x in lhs do
       if rhs.contains(x) then
