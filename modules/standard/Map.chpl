@@ -90,15 +90,6 @@ module Map {
     */
     const resizeThreshold = 0.5;
 
-    /*
-      Integer value that sets the number of elements that the map
-      can hold before resizing. The size of themap will be greater 
-      than or equal to this value upon initialization and will 
-      never resize below this initialCapacity. This is useful when 
-      you know in advance how many elements your map will hold.
-    */
-    const initialCapacity = 32;
-
     pragma "no doc"
     var table: chpl__hashtable(keyType, valType);
 
@@ -126,9 +117,10 @@ module Map {
       :arg valType: The type of the values of this map.
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :arg resizeThreshold: Fractional value that specifies how full this map
-                            can be before requesting additional memory
+                            can be before requesting additional memory.
       :arg initialCapacity: Integer value that specifies starting map size. The
-                            map will never shrink below this value.
+                            map can hold at least this many values before
+                            attempting to resize.
     */
     proc init(type keyType, type valType, param parSafe=false,
               resizeThreshold = 0.5, initialCapacity = 32) {
@@ -139,7 +131,6 @@ module Map {
       assert((resizeThreshold > 0 && resizeThreshold < 1),
              "'resizeThreshold' must be between 0 and 1");
       this.resizeThreshold = resizeThreshold;
-      this.initialCapacity = initialCapacity;
       table = new chpl__hashtable(keyType, valType, resizeThreshold,
                                   initialCapacity);
     }
@@ -155,7 +146,6 @@ module Map {
         if resizeThreshold <= 0 || resizeThreshold >= 1 then
           boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
       this.resizeThreshold = resizeThreshold;
-      this.initialCapacity = initialCapacity;
       table = new chpl__hashtable(keyType, valType, resizeThreshold,
                                   initialCapacity);
     }
@@ -183,10 +173,8 @@ module Map {
       this.parSafe = if this.type.parSafe != ? then
                         this.type.parSafe else ps;
       this.resizeThreshold = other.resizeThreshold;
-      this.initialCapacity = other.initialCapacity;
       this.table = new chpl__hashtable(keyType, valType,
-                                       resizeThreshold,
-                                       initialCapacity);
+                                       resizeThreshold);
       this.complete();
 
       if keyType != kt {
