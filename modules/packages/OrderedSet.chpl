@@ -52,7 +52,7 @@ module OrderedSet {
 
     /* The underlying implementation */
     pragma "no doc"
-    var instance: treap(eltType, parSafe);
+    var instance: treap(eltType, parSafe, ?);
 
     /*
       Initializes an empty orderedSet containing elements of the given type.
