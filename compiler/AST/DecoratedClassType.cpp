@@ -35,53 +35,53 @@ static const char* nameForUser(const char* className) {
 
 const char* decoratedTypeAstr(ClassTypeDecoratorEnum d, const char* className) {
   switch (d) {
-    case chpl::types::ClassTypeDecorator::BORROWED:
+    case ClassTypeDecorator::BORROWED:
       if (developer)
         return astr("borrowed anynil ", className);
       else
         return astr("borrowed ", className);
-    case chpl::types::ClassTypeDecorator::BORROWED_NONNIL:
+    case ClassTypeDecorator::BORROWED_NONNIL:
       return astr("borrowed ", className);
-    case chpl::types::ClassTypeDecorator::BORROWED_NILABLE:
+    case ClassTypeDecorator::BORROWED_NILABLE:
       return astr("borrowed ", className, "?");
 
-    case chpl::types::ClassTypeDecorator::UNMANAGED:
+    case ClassTypeDecorator::UNMANAGED:
       if (developer)
         return astr("unmanaged anynil ", className);
       else
         return astr("unmanaged ", className);
-    case chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL:
+    case ClassTypeDecorator::UNMANAGED_NONNIL:
       return astr("unmanaged ", className);
-    case chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE:
+    case ClassTypeDecorator::UNMANAGED_NILABLE:
       return astr("unmanaged ", className, "?");
 
-    case chpl::types::ClassTypeDecorator::MANAGED:
+    case ClassTypeDecorator::MANAGED:
       if (developer)
         return astr("managed anynil ", className);
       else
         return astr(nameForUser(className));
-    case chpl::types::ClassTypeDecorator::MANAGED_NONNIL:
+    case ClassTypeDecorator::MANAGED_NONNIL:
       if (developer)
         return astr("managed ", className);
       else
         return astr(nameForUser(className));
-    case chpl::types::ClassTypeDecorator::MANAGED_NILABLE:
+    case ClassTypeDecorator::MANAGED_NILABLE:
       if (developer)
         return astr("managed ", className, "?");
       else
         return astr(nameForUser(className), "?");
 
-    case chpl::types::ClassTypeDecorator::GENERIC:
+    case ClassTypeDecorator::GENERIC:
       if (developer)
         return astr("anymanaged anynil ", className);
       else
         return astr(className);
-    case chpl::types::ClassTypeDecorator::GENERIC_NONNIL:
+    case ClassTypeDecorator::GENERIC_NONNIL:
       if (developer)
         return astr("anymanaged ", className);
       else
         return astr(className);
-    case chpl::types::ClassTypeDecorator::GENERIC_NILABLE:
+    case ClassTypeDecorator::GENERIC_NILABLE:
       if (developer)
         return astr("anymanaged ", className, "?");
       else
@@ -249,9 +249,9 @@ Type* getDecoratedClass(Type* t, ClassTypeDecoratorEnum d) {
     AggregateType* at = toAggregateType(t);
     return at->getDecoratedClass(d);
   } else if (isManagedPtrType(t)) {
-    if (d != chpl::types::ClassTypeDecorator::MANAGED &&
-        d != chpl::types::ClassTypeDecorator::MANAGED_NONNIL &&
-        d != chpl::types::ClassTypeDecorator::MANAGED_NILABLE) {
+    if (d != ClassTypeDecorator::MANAGED &&
+        d != ClassTypeDecorator::MANAGED_NONNIL &&
+        d != ClassTypeDecorator::MANAGED_NILABLE) {
       Type* bt = getManagedPtrBorrowType(t);
       if (bt && bt != dtUnknown) {
         AggregateType* a = toAggregateType(canonicalClassType(bt));
@@ -272,27 +272,27 @@ Type* getDecoratedClass(Type* t, ClassTypeDecoratorEnum d) {
 
   // Otherwise, it is e.g. generic dtOwned / generic dtBorrowed
   switch (d) {
-    case chpl::types::ClassTypeDecorator::BORROWED:
+    case ClassTypeDecorator::BORROWED:
       return dtBorrowed;
-    case chpl::types::ClassTypeDecorator::BORROWED_NONNIL:
+    case ClassTypeDecorator::BORROWED_NONNIL:
       return dtBorrowedNonNilable;
-    case chpl::types::ClassTypeDecorator::BORROWED_NILABLE:
+    case ClassTypeDecorator::BORROWED_NILABLE:
       return dtBorrowedNilable;
-    case chpl::types::ClassTypeDecorator::UNMANAGED:
+    case ClassTypeDecorator::UNMANAGED:
       return dtUnmanaged;
-    case chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL:
+    case ClassTypeDecorator::UNMANAGED_NONNIL:
       return dtUnmanagedNonNilable;
-    case chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE:
+    case ClassTypeDecorator::UNMANAGED_NILABLE:
       return dtUnmanagedNilable;
-    case chpl::types::ClassTypeDecorator::MANAGED:
-    case chpl::types::ClassTypeDecorator::MANAGED_NONNIL:
-    case chpl::types::ClassTypeDecorator::MANAGED_NILABLE:
+    case ClassTypeDecorator::MANAGED:
+    case ClassTypeDecorator::MANAGED_NONNIL:
+    case ClassTypeDecorator::MANAGED_NILABLE:
       INT_FATAL("should be handled above");
-    case chpl::types::ClassTypeDecorator::GENERIC:
+    case ClassTypeDecorator::GENERIC:
       return dtAnyManagementAnyNilable;
-    case chpl::types::ClassTypeDecorator::GENERIC_NONNIL:
+    case ClassTypeDecorator::GENERIC_NONNIL:
       return dtAnyManagementNonNilable;
-    case chpl::types::ClassTypeDecorator::GENERIC_NILABLE:
+    case ClassTypeDecorator::GENERIC_NILABLE:
       return dtAnyManagementNilable;
     // intentionally no default
   }
@@ -309,63 +309,63 @@ ClassTypeDecoratorEnum classTypeDecorator(Type* t) {
     Type* bt = getManagedPtrBorrowType(t);
     if (bt && bt != dtUnknown) {
       if (isAggregateType(bt)) {
-        return chpl::types::ClassTypeDecorator::MANAGED_NONNIL;
+        return ClassTypeDecorator::MANAGED_NONNIL;
       } else if (DecoratedClassType* dt = toDecoratedClassType(bt)) {
         ClassTypeDecoratorEnum dec = dt->getDecorator();
         if (isDecoratorNonNilable(dec))
-          return chpl::types::ClassTypeDecorator::MANAGED_NONNIL;
+          return ClassTypeDecorator::MANAGED_NONNIL;
         else if (isDecoratorNilable(dec))
-          return chpl::types::ClassTypeDecorator::MANAGED_NILABLE;
+          return ClassTypeDecorator::MANAGED_NILABLE;
         else
-          return chpl::types::ClassTypeDecorator::MANAGED;
+          return ClassTypeDecorator::MANAGED;
       }
     } else {
-      return chpl::types::ClassTypeDecorator::MANAGED;
+      return ClassTypeDecorator::MANAGED;
     }
   }
 
   if (isAggregateType(t))
-    return chpl::types::ClassTypeDecorator::BORROWED_NONNIL; // default meaning of AggregateType class
+    return ClassTypeDecorator::BORROWED_NONNIL; // default meaning of AggregateType class
 
   if (DecoratedClassType* dt = toDecoratedClassType(t)) {
     ClassTypeDecoratorEnum d = dt->getDecorator();
-    if (d == chpl::types::ClassTypeDecorator::BORROWED)
-      return chpl::types::ClassTypeDecorator::BORROWED_NONNIL;
-    else if (d == chpl::types::ClassTypeDecorator::UNMANAGED)
-      return chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL;
+    if (d == ClassTypeDecorator::BORROWED)
+      return ClassTypeDecorator::BORROWED_NONNIL;
+    else if (d == ClassTypeDecorator::UNMANAGED)
+      return ClassTypeDecorator::UNMANAGED_NONNIL;
     else
       return d;
   }
 
   if (t == dtBorrowed)
-    return chpl::types::ClassTypeDecorator::BORROWED;
+    return ClassTypeDecorator::BORROWED;
   if (t == dtBorrowedNonNilable)
-    return chpl::types::ClassTypeDecorator::BORROWED_NONNIL;
+    return ClassTypeDecorator::BORROWED_NONNIL;
   if (t == dtBorrowedNilable)
-    return chpl::types::ClassTypeDecorator::BORROWED_NILABLE;
+    return ClassTypeDecorator::BORROWED_NILABLE;
   if (t == dtUnmanaged)
-    return chpl::types::ClassTypeDecorator::UNMANAGED;
+    return ClassTypeDecorator::UNMANAGED;
   if (t == dtUnmanagedNonNilable)
-    return chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL;
+    return ClassTypeDecorator::UNMANAGED_NONNIL;
   if (t == dtUnmanagedNilable)
-    return chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE;
+    return ClassTypeDecorator::UNMANAGED_NILABLE;
   if (t == dtAnyManagementAnyNilable)
-    return chpl::types::ClassTypeDecorator::GENERIC;
+    return ClassTypeDecorator::GENERIC;
   if (t == dtAnyManagementNonNilable)
-    return chpl::types::ClassTypeDecorator::GENERIC_NONNIL;
+    return ClassTypeDecorator::GENERIC_NONNIL;
   if (t == dtAnyManagementNilable)
-    return chpl::types::ClassTypeDecorator::GENERIC_NILABLE;
+    return ClassTypeDecorator::GENERIC_NILABLE;
 
   if (t->symbol->hasFlag(FLAG_C_PTR_CLASS) ||
       t->symbol->hasFlag(FLAG_DATA_CLASS) ||
       t == dtStringC ||
       t == dtCFnPtr ||
       t == dtCVoidPtr) {
-    return chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE;
+    return ClassTypeDecorator::UNMANAGED_NILABLE;
   }
 
   INT_FATAL("case not handled");
-  return chpl::types::ClassTypeDecorator::BORROWED;
+  return ClassTypeDecorator::BORROWED;
 }
 
 bool isNonNilableClassType(Type* t) {
@@ -374,8 +374,8 @@ bool isNonNilableClassType(Type* t) {
 
   ClassTypeDecoratorEnum decorator = classTypeDecorator(t);
   return isDecoratorNonNilable(decorator) ||
-         decorator == chpl::types::ClassTypeDecorator::BORROWED ||
-         decorator == chpl::types::ClassTypeDecorator::UNMANAGED;
+         decorator == ClassTypeDecorator::BORROWED ||
+         decorator == ClassTypeDecorator::UNMANAGED;
 }
 
 bool isNilableClassType(Type* t) {

@@ -418,7 +418,7 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
 
   Type* thisType = ct;
   if (chapelClass && (typeMethod || typeOrParam))
-    thisType = ct->getDecoratedClass(chpl::types::ClassTypeDecorator::GENERIC);
+    thisType = ct->getDecoratedClass(ClassTypeDecorator::GENERIC);
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisType);
 
   if (typeMethod) {

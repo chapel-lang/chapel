@@ -154,7 +154,7 @@ static bool isCompilerGeneratedFunction(FnSymbol* fn);
 static bool isUncheckedThrowsFunction(FnSymbol* fn);
 
 static Type* dtErrorNilable() {
-  return getDecoratedClass(dtError, chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE);
+  return getDecoratedClass(dtError, ClassTypeDecorator::UNMANAGED_NILABLE);
 }
 
 namespace {

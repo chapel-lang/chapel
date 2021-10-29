@@ -1262,20 +1262,20 @@ bool canCoerceTuples(Type*     actualType,
 static
 ClassTypeDecoratorEnum removeGenericNilability(ClassTypeDecoratorEnum actual) {
   // Normalize actuals to remove generic-ness
-  if (actual == chpl::types::ClassTypeDecorator::BORROWED)
-    actual = chpl::types::ClassTypeDecorator::BORROWED_NONNIL;
-  if (actual == chpl::types::ClassTypeDecorator::UNMANAGED)
-    actual = chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL;
-  if (actual == chpl::types::ClassTypeDecorator::MANAGED)
-    actual = chpl::types::ClassTypeDecorator::MANAGED_NONNIL;
+  if (actual == ClassTypeDecorator::BORROWED)
+    actual = ClassTypeDecorator::BORROWED_NONNIL;
+  if (actual == ClassTypeDecorator::UNMANAGED)
+    actual = ClassTypeDecorator::UNMANAGED_NONNIL;
+  if (actual == ClassTypeDecorator::MANAGED)
+    actual = ClassTypeDecorator::MANAGED_NONNIL;
 
   return actual;
 }
 
-/* chpl::types::ClassTypeDecorator::BORROWED e.g. can represent any nilability,
+/* ClassTypeDecorator::BORROWED e.g. can represent any nilability,
    but this function assumes that an actual with type
-   chpl::types::ClassTypeDecorator::BORROWED
-   is actually the same as chpl::types::ClassTypeDecorator::BORROWED_NONNIL.
+   ClassTypeDecorator::BORROWED
+   is actually the same as ClassTypeDecorator::BORROWED_NONNIL.
  */
 bool canCoerceDecorators(ClassTypeDecoratorEnum actual,
                          ClassTypeDecoratorEnum formal,
@@ -1296,49 +1296,49 @@ bool canCoerceDecorators(ClassTypeDecoratorEnum actual,
     implicitBang = false;
 
   switch (formal) {
-    case chpl::types::ClassTypeDecorator::BORROWED:
+    case ClassTypeDecorator::BORROWED:
       // borrowed but generic nilability
       // This would be instantiation
       return false;
-    case chpl::types::ClassTypeDecorator::BORROWED_NONNIL:
+    case ClassTypeDecorator::BORROWED_NONNIL:
       // Can't coerce away nilable
       return isDecoratorNonNilable(actual) || implicitBang;
-    case chpl::types::ClassTypeDecorator::BORROWED_NILABLE:
+    case ClassTypeDecorator::BORROWED_NILABLE:
       // Everything can coerce to a nilable borrowed
       // but only subtypes if the actual is already nilable.
       return allowNonSubtypes || isDecoratorNilable(actual);
-    case chpl::types::ClassTypeDecorator::UNMANAGED:
+    case ClassTypeDecorator::UNMANAGED:
       // unmanaged but generic nilability
       // This would be instantiation
       return false;
-    case chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL:
+    case ClassTypeDecorator::UNMANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to unmanaged
-      return (implicitBang && actual == chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE);
-    case chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE:
+      return (implicitBang && actual == ClassTypeDecorator::UNMANAGED_NILABLE);
+    case ClassTypeDecorator::UNMANAGED_NILABLE:
       // Can't coerce borrowed to unmanaged
-      return (allowNonSubtypes && actual == chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL);
+      return (allowNonSubtypes && actual == ClassTypeDecorator::UNMANAGED_NONNIL);
 
-    case chpl::types::ClassTypeDecorator::MANAGED:
+    case ClassTypeDecorator::MANAGED:
       // managed but generic nilability
       // this would be instantiation
       return false;
-    case chpl::types::ClassTypeDecorator::MANAGED_NONNIL:
+    case ClassTypeDecorator::MANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to managed
-      return (implicitBang && actual == chpl::types::ClassTypeDecorator::MANAGED_NILABLE);
-    case chpl::types::ClassTypeDecorator::MANAGED_NILABLE:
+      return (implicitBang && actual == ClassTypeDecorator::MANAGED_NILABLE);
+    case ClassTypeDecorator::MANAGED_NILABLE:
       // Can't coerce borrowed to managed
-      return (allowNonSubtypes && actual == chpl::types::ClassTypeDecorator::MANAGED_NONNIL);
+      return (allowNonSubtypes && actual == ClassTypeDecorator::MANAGED_NONNIL);
 
-    case chpl::types::ClassTypeDecorator::GENERIC:
+    case ClassTypeDecorator::GENERIC:
       return false; // instantiation not coercion
-    case chpl::types::ClassTypeDecorator::GENERIC_NONNIL:
+    case ClassTypeDecorator::GENERIC_NONNIL:
       // generally instantiation
-      return implicitBang && actual == chpl::types::ClassTypeDecorator::GENERIC_NILABLE;
-    case chpl::types::ClassTypeDecorator::GENERIC_NILABLE:
+      return implicitBang && actual == ClassTypeDecorator::GENERIC_NILABLE;
+    case ClassTypeDecorator::GENERIC_NILABLE:
       // generally instantiation
-      return allowNonSubtypes && actual == chpl::types::ClassTypeDecorator::GENERIC_NONNIL;
+      return allowNonSubtypes && actual == ClassTypeDecorator::GENERIC_NONNIL;
 
     // no default for compiler warnings to know when to update it
   }
@@ -1361,39 +1361,39 @@ bool canInstantiateDecorators(ClassTypeDecoratorEnum actual,
     return true;
 
   switch (formal) {
-    case chpl::types::ClassTypeDecorator::BORROWED:
-      return actual == chpl::types::ClassTypeDecorator::BORROWED_NONNIL ||
-             actual == chpl::types::ClassTypeDecorator::BORROWED_NILABLE;
-    case chpl::types::ClassTypeDecorator::BORROWED_NONNIL:
-    case chpl::types::ClassTypeDecorator::BORROWED_NILABLE:
+    case ClassTypeDecorator::BORROWED:
+      return actual == ClassTypeDecorator::BORROWED_NONNIL ||
+             actual == ClassTypeDecorator::BORROWED_NILABLE;
+    case ClassTypeDecorator::BORROWED_NONNIL:
+    case ClassTypeDecorator::BORROWED_NILABLE:
       return false;
 
-    case chpl::types::ClassTypeDecorator::UNMANAGED:
-      return actual == chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL ||
-             actual == chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE;
-    case chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL:
-    case chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE:
+    case ClassTypeDecorator::UNMANAGED:
+      return actual == ClassTypeDecorator::UNMANAGED_NONNIL ||
+             actual == ClassTypeDecorator::UNMANAGED_NILABLE;
+    case ClassTypeDecorator::UNMANAGED_NONNIL:
+    case ClassTypeDecorator::UNMANAGED_NILABLE:
       return false;
 
-    case chpl::types::ClassTypeDecorator::MANAGED:
-      return actual == chpl::types::ClassTypeDecorator::MANAGED_NONNIL ||
-             actual == chpl::types::ClassTypeDecorator::MANAGED_NILABLE;
-    case chpl::types::ClassTypeDecorator::MANAGED_NONNIL:
-    case chpl::types::ClassTypeDecorator::MANAGED_NILABLE:
+    case ClassTypeDecorator::MANAGED:
+      return actual == ClassTypeDecorator::MANAGED_NONNIL ||
+             actual == ClassTypeDecorator::MANAGED_NILABLE;
+    case ClassTypeDecorator::MANAGED_NONNIL:
+    case ClassTypeDecorator::MANAGED_NILABLE:
       return false;
 
-    case chpl::types::ClassTypeDecorator::GENERIC:
+    case ClassTypeDecorator::GENERIC:
       return true;
-    case chpl::types::ClassTypeDecorator::GENERIC_NONNIL:
-      return actual == chpl::types::ClassTypeDecorator::GENERIC_NONNIL ||
-             actual == chpl::types::ClassTypeDecorator::BORROWED_NONNIL ||
-             actual == chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL ||
-             actual == chpl::types::ClassTypeDecorator::MANAGED_NONNIL;
-    case chpl::types::ClassTypeDecorator::GENERIC_NILABLE:
-      return actual == chpl::types::ClassTypeDecorator::GENERIC_NILABLE ||
-             actual == chpl::types::ClassTypeDecorator::BORROWED_NILABLE||
-             actual == chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE||
-             actual == chpl::types::ClassTypeDecorator::MANAGED_NILABLE;
+    case ClassTypeDecorator::GENERIC_NONNIL:
+      return actual == ClassTypeDecorator::GENERIC_NONNIL ||
+             actual == ClassTypeDecorator::BORROWED_NONNIL ||
+             actual == ClassTypeDecorator::UNMANAGED_NONNIL ||
+             actual == ClassTypeDecorator::MANAGED_NONNIL;
+    case ClassTypeDecorator::GENERIC_NILABLE:
+      return actual == ClassTypeDecorator::GENERIC_NILABLE ||
+             actual == ClassTypeDecorator::BORROWED_NILABLE||
+             actual == ClassTypeDecorator::UNMANAGED_NILABLE||
+             actual == ClassTypeDecorator::MANAGED_NILABLE;
 
     // no default for compiler warnings to know when to update it
   }
@@ -1420,40 +1420,40 @@ bool canInstantiateOrCoerceDecorators(ClassTypeDecoratorEnum actual,
     implicitBang = false;
 
   switch (formal) {
-    case chpl::types::ClassTypeDecorator::BORROWED:
+    case ClassTypeDecorator::BORROWED:
       // can borrow from anything, could instantiate as borrowed?
       return true;
-    case chpl::types::ClassTypeDecorator::BORROWED_NONNIL:
+    case ClassTypeDecorator::BORROWED_NONNIL:
       // can borrow from anything, but can't coerce away nilability
       return isDecoratorNonNilable(actual) || implicitBang;
-    case chpl::types::ClassTypeDecorator::BORROWED_NILABLE:
+    case ClassTypeDecorator::BORROWED_NILABLE:
       // can borrow from anything, can always coerce to nilable
       return allowNonSubtypes || isDecoratorNilable(actual);;
 
-    case chpl::types::ClassTypeDecorator::UNMANAGED:
+    case ClassTypeDecorator::UNMANAGED:
       // no coercions to unmanaged
-      return actual == chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL ||
-             actual == chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE;
-    case chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL:
-      return (implicitBang && actual == chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE);
-    case chpl::types::ClassTypeDecorator::UNMANAGED_NILABLE:
-      return (allowNonSubtypes && actual == chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL);
+      return actual == ClassTypeDecorator::UNMANAGED_NONNIL ||
+             actual == ClassTypeDecorator::UNMANAGED_NILABLE;
+    case ClassTypeDecorator::UNMANAGED_NONNIL:
+      return (implicitBang && actual == ClassTypeDecorator::UNMANAGED_NILABLE);
+    case ClassTypeDecorator::UNMANAGED_NILABLE:
+      return (allowNonSubtypes && actual == ClassTypeDecorator::UNMANAGED_NONNIL);
 
-    case chpl::types::ClassTypeDecorator::MANAGED:
-      return actual == chpl::types::ClassTypeDecorator::MANAGED_NONNIL ||
-             actual == chpl::types::ClassTypeDecorator::MANAGED_NILABLE;
-    case chpl::types::ClassTypeDecorator::MANAGED_NONNIL:
-      return (implicitBang && actual == chpl::types::ClassTypeDecorator::MANAGED_NILABLE);
-    case chpl::types::ClassTypeDecorator::MANAGED_NILABLE:
-      return (allowNonSubtypes && actual == chpl::types::ClassTypeDecorator::MANAGED_NONNIL);
+    case ClassTypeDecorator::MANAGED:
+      return actual == ClassTypeDecorator::MANAGED_NONNIL ||
+             actual == ClassTypeDecorator::MANAGED_NILABLE;
+    case ClassTypeDecorator::MANAGED_NONNIL:
+      return (implicitBang && actual == ClassTypeDecorator::MANAGED_NILABLE);
+    case ClassTypeDecorator::MANAGED_NILABLE:
+      return (allowNonSubtypes && actual == ClassTypeDecorator::MANAGED_NONNIL);
 
-    case chpl::types::ClassTypeDecorator::GENERIC:
+    case ClassTypeDecorator::GENERIC:
       // accepts anything
       return true;
-    case chpl::types::ClassTypeDecorator::GENERIC_NONNIL:
+    case ClassTypeDecorator::GENERIC_NONNIL:
       // accepts anything nonnil
       return isDecoratorNonNilable(actual) || implicitBang;
-    case chpl::types::ClassTypeDecorator::GENERIC_NILABLE:
+    case ClassTypeDecorator::GENERIC_NILABLE:
       return allowNonSubtypes || isDecoratorNilable(actual);
 
     // no default for compiler warnings to know when to update it
@@ -2762,7 +2762,7 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
   INT_ASSERT(isClass(canonicalClassType));
 
   // Now type-construct it with appropriate nilability
-  ClassTypeDecoratorEnum d = combineDecorators(chpl::types::ClassTypeDecorator::BORROWED, useDec);
+  ClassTypeDecoratorEnum d = combineDecorators(ClassTypeDecorator::BORROWED, useDec);
   Type* borrowType = canonicalClassType->getDecoratedClass(d);
 
   CallExpr* typeCall = new CallExpr(manager->symbol, borrowType->symbol);
@@ -3012,9 +3012,9 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
           INT_ASSERT(call->methodTag && pe && pe->baseExpr == call);
 
           // if the class is nilable the borrow should be too
-          ClassTypeDecoratorEnum d = chpl::types::ClassTypeDecorator::BORROWED_NONNIL;
+          ClassTypeDecoratorEnum d = ClassTypeDecorator::BORROWED_NONNIL;
           if (isDecoratorNilable(classTypeDecorator(t))) {
-            d = chpl::types::ClassTypeDecorator::BORROWED_NILABLE;
+            d = ClassTypeDecorator::BORROWED_NILABLE;
           }
 
           // this works around a compiler bug
@@ -3177,7 +3177,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
   SymExpr* ts = toSymExpr(call->baseExpr);
   Type* tsType = ts->typeInfo();
   AggregateType* at = toAggregateType(canonicalClassType(tsType));
-  ClassTypeDecoratorEnum decorator = chpl::types::ClassTypeDecorator::BORROWED_NONNIL;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
   bool decorated = false;
   if (DecoratedClassType* dt = toDecoratedClassType(ts->typeInfo())) {
     decorated = true;
@@ -3186,11 +3186,11 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
     // type will be wrapped with 'owned' e.g. after borrowed type is computed.
     if (isDecoratorManaged(decorator)) {
       if (isDecoratorNonNilable(decorator))
-        decorator = chpl::types::ClassTypeDecorator::GENERIC_NONNIL;
+        decorator = ClassTypeDecorator::GENERIC_NONNIL;
       else if (isDecoratorNilable(decorator))
-        decorator = chpl::types::ClassTypeDecorator::GENERIC_NILABLE;
+        decorator = ClassTypeDecorator::GENERIC_NILABLE;
       else
-        decorator = chpl::types::ClassTypeDecorator::GENERIC;
+        decorator = ClassTypeDecorator::GENERIC;
     }
   }
 
@@ -8155,8 +8155,8 @@ static void checkManagerType(Type* t) {
 
   if (isManagedPtrType(t)) {
     ClassTypeDecoratorEnum d = classTypeDecorator(t);
-    INT_ASSERT(d == chpl::types::ClassTypeDecorator::MANAGED || d ==
-        chpl::types::ClassTypeDecorator::MANAGED_NILABLE);
+    INT_ASSERT(d == ClassTypeDecorator::MANAGED || d ==
+        ClassTypeDecorator::MANAGED_NILABLE);
     // check that it's not an instantiation
     INT_ASSERT(getDecoratedClass(t, d) == t);
   }
@@ -8216,7 +8216,7 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         if (makeNilable) {
           if (isManagedPtrType(manager))
             manager = getDecoratedClass(manager,
-                chpl::types::ClassTypeDecorator::MANAGED_NILABLE);
+                ClassTypeDecorator::MANAGED_NILABLE);
           else if (manager == dtUnmanaged)
             manager = dtUnmanagedNilable;
           else if (manager == dtBorrowed)
@@ -8450,7 +8450,7 @@ static Type* resolveGenericActual(SymExpr* se, bool resolvePartials) {
 static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
-  ClassTypeDecoratorEnum decorator = chpl::types::ClassTypeDecorator::BORROWED_NONNIL;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
   bool isDecoratedGeneric = false;
   if (DecoratedClassType* dt = toDecoratedClassType(type)) {
     type = dt->getCanonicalClass();
@@ -8469,8 +8469,8 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
 
       Type* retType = cc->typeInfo();
 
-      if (decorator != chpl::types::ClassTypeDecorator::BORROWED &&
-          decorator != chpl::types::ClassTypeDecorator::BORROWED_NONNIL) {
+      if (decorator != ClassTypeDecorator::BORROWED &&
+          decorator != ClassTypeDecorator::BORROWED_NONNIL) {
         AggregateType* gotAt = toAggregateType(retType);
         INT_ASSERT(gotAt);
         retType = gotAt->getDecoratedClass(decorator);

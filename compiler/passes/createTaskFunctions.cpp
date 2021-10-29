@@ -326,7 +326,7 @@ static void addReduceIntentSupport(FnSymbol* fn, CallExpr* call,
   headAnchor->insertBefore(new DefExpr(globalOp));
 
   Type* newT = getDecoratedClass(reduceType->type,
-                                 chpl::types::ClassTypeDecorator::GENERIC_NONNIL);
+                                 ClassTypeDecorator::GENERIC_NONNIL);
 
   CallExpr* newOp = new CallExpr(PRIM_NEW,
                                  newT->symbol,

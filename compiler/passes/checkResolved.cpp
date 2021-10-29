@@ -549,7 +549,7 @@ static bool isExternType(Type* t) {
   if (t->isWideRef())
     return false;
 
-  ClassTypeDecoratorEnum d = chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL;
+  ClassTypeDecoratorEnum d = ClassTypeDecorator::UNMANAGED_NONNIL;
   // unmanaged or borrowed classes are OK
   if (isClassLikeOrManaged(t) || isClassLikeOrPtr(t))
     d = removeNilableFromDecorator(classTypeDecorator(t));
@@ -559,8 +559,8 @@ static bool isExternType(Type* t) {
   EnumType* et = toEnumType(t);
 
   return t->isRef() ||
-         d == chpl::types::ClassTypeDecorator::BORROWED ||
-         d == chpl::types::ClassTypeDecorator::UNMANAGED ||
+         d == ClassTypeDecorator::BORROWED ||
+         d == ClassTypeDecorator::UNMANAGED ||
          (et && et->isConcrete()) ||
          (ts->hasFlag(FLAG_TUPLE) && ts->hasFlag(FLAG_STAR_TUPLE)) ||
          ts->hasFlag(FLAG_GLOBAL_TYPE_SYMBOL) ||

@@ -1203,7 +1203,7 @@ static void processManagedNew(CallExpr* newCall) {
       INT_ASSERT(ts);
       Type* t = ts->type;
       if (isManagedPtrType(t))
-        t = getDecoratedClass(t, chpl::types::ClassTypeDecorator::MANAGED_NILABLE);
+        t = getDecoratedClass(t, ClassTypeDecorator::MANAGED_NILABLE);
       else if (t == dtBorrowed)
         t = dtBorrowedNilable;
       else if (t == dtUnmanaged)
@@ -4362,9 +4362,9 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
             if (SymExpr* se2 = toSymExpr(call->get(1))) {
               if (TypeSymbol* ts2 = toTypeSymbol(se2->symbol())) {
                 // e.g. owned MyGenericClass
-                ClassTypeDecoratorEnum d = chpl::types::ClassTypeDecorator::GENERIC_NONNIL;
+                ClassTypeDecoratorEnum d = ClassTypeDecorator::GENERIC_NONNIL;
                 if (isNilableClassType(ts2->type))
-                  d = chpl::types::ClassTypeDecorator::GENERIC_NILABLE;
+                  d = ClassTypeDecorator::GENERIC_NILABLE;
                 Type* genericMgmt = getDecoratedClass(ts2->type, d);
                 CallExpr* c = new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
                                            genericMgmt->symbol, queried);

@@ -2946,7 +2946,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   BlockStmt* block = new BlockStmt();
   wrapper->insertAtTail(block);
 
-  Type* undecorated = getDecoratedClass(ct, chpl::types::ClassTypeDecorator::GENERIC_NONNIL);
+  Type* undecorated = getDecoratedClass(ct, ClassTypeDecorator::GENERIC_NONNIL);
 
   NamedExpr* usym = new NamedExpr(astr_chpl_manager,
                                   new SymExpr(dtUnmanaged->symbol));
@@ -2957,7 +2957,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
 
   // Cast to "unmanaged parent".
   Type* parUnmanaged = getDecoratedClass(parent,
-      chpl::types::ClassTypeDecorator::UNMANAGED_NONNIL);
+      ClassTypeDecorator::UNMANAGED_NONNIL);
   CallExpr* parCast = new CallExpr(PRIM_CAST, parUnmanaged->symbol,
                                    init);
 

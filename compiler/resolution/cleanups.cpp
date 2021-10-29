@@ -487,9 +487,9 @@ bool isUnusedClass(Type* t, const std::set<Type*>& wellknown) {
   if (AggregateType* at = toAggregateType(t)) {
     if (isClass(at)) {
       for (int i = 0;
-           i < chpl::types::ClassTypeDecorator::NUM_DECORATORS;
+           i < ClassTypeDecorator::NUM_DECORATORS;
            i++) {
-        ClassTypeDecoratorEnum d = chpl::types::ClassTypeDecorator::getIthDecorator(i);
+        ClassTypeDecoratorEnum d = ClassTypeDecorator::getIthDecorator(i);
         if (Type* dt = at->getDecoratedClass(d))
           retval &= do_isUnusedClass(dt, wellknown);
       }
