@@ -17,15 +17,15 @@
  * limitations under the License.
  */
 
-
-// Using _PUBLICH header guard to distinguish between compiler/next/include/chpl/util/filesystem.h
-#ifndef CHPL_UTIL_FILESYSTEM_PUBLICH
-#define CHPL_UTIL_FILESYSTEM_PUBLICH
+#ifndef CHPL_UTIL_FILESYSTEM_H
+#define CHPL_UTIL_FILESYSTEM_H
 
 #include "chpl/queries/ErrorMessage.h"
+
 #include <string>
 
 namespace chpl {
+
 
 /**
   Reads the contents of a file into a string.
@@ -33,7 +33,7 @@ namespace chpl {
  */
 bool readfile(const char* path, std::string& strOut, ErrorMessage& errorOut);
 
+
 } // end namespace chpl
 
 #endif
-

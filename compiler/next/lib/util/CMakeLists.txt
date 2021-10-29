@@ -18,7 +18,7 @@
 target_sources(libchplcomp-obj
                PRIVATE
 
-               filesystem.h
+               filesystem_help.h
                filesystem.cpp
 
                my_aligned_alloc.h

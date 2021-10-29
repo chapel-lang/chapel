@@ -17,15 +17,20 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UTIL_FILESYSTEM_H
-#define CHPL_UTIL_FILESYSTEM_H
+#ifndef FILESYSTEM_HELP_H
+#define FILESYSTEM_HELP_H
+
+// this header includes some filesystem.cpp functions
+// that are not part of the public API
 
 #include "chpl/queries/ErrorMessage.h"
+#include "chpl/util/filesystem.h"
 
 #include <cstdio>
 #include <string>
 
 namespace chpl {
+
 
 /**
   Open a file. If the open failed, return nullptr and set errorOut.
@@ -37,11 +42,6 @@ FILE* openfile(const char* path, const char* mode, ErrorMessage& errorOut);
  */
 bool closefile(FILE* fp, const char* path, ErrorMessage& errorOut);
 
-/**
-  Reads the contents of a file into a string.
-  If something failed, returns false and sets errorOut.
- */
-bool readfile(const char* path, std::string& strOut, ErrorMessage& errorOut);
 
 } // end namespace chpl
 
