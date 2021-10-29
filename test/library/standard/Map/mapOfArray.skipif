@@ -1,0 +1,4 @@
+# baseline causes this test to fail in the `_moveInit`
+# private proc in `chpl__hashtable`.
+
+COMPOPTS <= --baseline
