@@ -22,9 +22,9 @@
   Socket Module library, specifically related to IP Sockets.
 
   The Socket module focuses on connecting, accepting sockets and providing interface for
-  communication between the sockets. Also provided are some constant values representing
+  communication between them. Also provided are some constant values representing
   common idioms in socket programming, such as standard Addresses, Families and Flags.
-  For more constants that can used alongside refer :mod:`Sys`.
+  For more constants that can used alongside refer to :mod:`Sys`.
 
   To those familiar with the Unix socket API, the method names will feel familiar,
   though their usage will be somewhat simpler than the raw Unix socket API.
@@ -61,7 +61,7 @@ module Socket {
 // access. Each function that has to wait for I/O adds its event
 // onto the event loop which then waits for the event to occur
 // as soon as the event occurs, a callback function is called
-// which writes back to a sync variable passed on to it my the
+// which writes back to a sync variable passed on to it by the
 // caller. The caller then reads the sync variable to determine
 // event type and processes things further.
 require "/usr/include/event2/event.h";
@@ -117,7 +117,8 @@ proc sys_sockaddr_t.init(in other: sys_sockaddr_t) {
 /*
   Abstract supertype for network addresses. Contains data
   about :type:`IPFamily`, `host` and `port`. It supports both
-  IPv4 and IPv6 addresses.
+  IPv4 and IPv6 addresses. ipAddr can be compared using
+  `==` and `!=` operators.
 */
 record ipAddr {
   pragma "no doc"
@@ -170,10 +171,6 @@ record ipAddr {
   Returns a new record of type :type:`ipAddr` prvoided `host`, `port`
   and `family`. this function is equivalent to the following code:
 
-  .. code-block:: Chapel
-
-    ipAddr.create("127.0.0.1", 8111, IPFamily.IPv4)
-
   :arg host: address string in dot-dash or colon notation depending on family.
   :type host: `string`
   :arg port: network address's port.
@@ -184,7 +181,8 @@ record ipAddr {
   :rtype: `ipAddr`
   :throws SystemError: Upon incompatible `host`, `port` or `family`
 */
-proc type ipAddr.create(host: string = "127.0.0.1", port: uint(16) = 8000, family: IPFamily = IPFamily.IPv4): ipAddr throws {
+proc type ipAddr.create(host: string = "127.0.0.1", port: uint(16) = 8000,
+          family: IPFamily = IPFamily.IPv4): ipAddr throws {
   // We will use type methods for now but expect to add initializers (and possibly deprecate these ones) once [#8692](https://github.com/chapel-lang/chapel/issues/8692) is resolved
   var addressStorage = new sys_sockaddr_t();
   addressStorage.set(host.c_str(), port, family:c_int);
@@ -195,10 +193,6 @@ proc type ipAddr.create(host: string = "127.0.0.1", port: uint(16) = 8000, famil
   Returns a new record of type `ipAddr` prvoided `host` and `port`.
   The family type is assumed based on `host` which is a standard address.
   this function is equivalent to the following code:
-
-  .. code-block:: Chapel
-
-    ipAddr.ipv4(IPv4LocalHost, 8111)
 
   :arg host: standard ipv4 address.
   :type host: `ipv4Addr`
@@ -215,13 +209,9 @@ proc type ipAddr.ipv4(host: ipv4Addr, port: uint(16) = 8000): ipAddr throws {
 }
 
 /*
-  Returns a new record of type `ipAddr` prvoided `host` and `port`.
+  Returns a new record of type `ipAddr` provided `host` and `port`.
   The family type is assumed based on `host` which is a standard address.
   this function is equivalent to the following code:
-
-  .. code-block:: Chapel
-
-    ipAddr.ipv6(IPv6LocalHost, 8111)
 
   :arg host: standard ipv6 address.
   :type host: `ipv6Addr`
@@ -237,17 +227,17 @@ proc type ipAddr.ipv6(host: ipv6Addr, port: uint(16) = 8000): ipAddr throws {
   return new ipAddr(addressStorage);
 }
 
-/* compare ipAddr */
+pragma "no doc"
 inline operator !=(const ref lhs: ipAddr, const ref rhs: ipAddr) {
   return try! lhs.family != rhs.family || lhs.host != rhs.host || lhs.port != rhs.port;
 }
 
-/* compare ipAddr */
+pragma "no doc"
 inline operator ==(const ref lhs: ipAddr, const ref rhs: ipAddr) {
   return !(lhs != rhs);
 }
 
-/* write ipAddr */
+pragma "no doc"
 proc ipAddr.writeThis(f) throws {
   f.write("(","family:",this.family,",host:",this.host,",port:",this.port,")");
 }
@@ -255,12 +245,12 @@ proc ipAddr.writeThis(f) throws {
 pragma "no doc"
 private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:c_int):syserr;
 
-/* Type TCPConn returned from :proc:`connect` */
+/* The type returned from :proc:`connect` */
 type tcpConn = file;
 
 /*
   Returns the file descriptor associated with socket
-  :return: Returns file descriptor.
+  :return: file descriptor
   :rtype: `int(32)`
 */
 proc const ref tcpConn.socketFd throws {
@@ -277,7 +267,7 @@ proc const ref tcpConn.socketFd throws {
 
 /*
   Returns the address of remote socket connection
-  :return: Returns remote address.
+  :return: Returns remote address
   :rtype: `ipAddr`
 */
 proc const ref tcpConn.addr throws {
@@ -288,14 +278,17 @@ proc const ref tcpConn.addr throws {
   return address;
 }
 
+pragma "no doc"
 inline operator !=(const ref lhs: tcpConn,const ref rhs: tcpConn) {
   return lhs.socketFd != rhs.socketFd;
 }
 
+pragma "no doc"
 inline operator ==(const ref lhs: tcpConn,const ref rhs: tcpConn) {
   return lhs.socketFd == rhs.socketFd;
 }
 
+pragma "no doc"
 proc tcpConn.writeThis(f) throws {
   f.write("(","addr:",this.addr,",fd:",this.socketFd,")");
 }
@@ -404,11 +397,12 @@ record tcpListener {
 
   .. code-block:: Chapel
 
+    const server = listen(ipAddr.create());
     const client = server.accept()
 
   :arg timeout: time to wait for new connection.
   :type timeval: :type:`~Sys.timeval`
-  :return: accepted connection.
+  :return: accepted connection
   :rtype: `tcpConn`
   :throws Error: Upon timeout completion without
                   any new connection
@@ -503,14 +497,17 @@ proc tcpListener.addr throws {
   return getsockname(this.socketFd);
 }
 
+pragma "no doc"
 inline operator !=(const ref lhs: tcpListener,const ref rhs: tcpListener) {
   return lhs.socketFd != rhs.socketFd;
 }
 
+pragma "no doc"
 inline operator ==(const ref lhs: tcpListener,const ref rhs: tcpListener) {
   return !(lhs.socketFd != rhs.socketFd);
 }
 
+pragma "no doc"
 proc tcpListener.writeThis(f) throws {
   f.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
@@ -519,7 +516,7 @@ pragma "no doc"
 extern const SOMAXCONN: int;
 /*
   Default `backlog` value used in :proc:`listen`
-  It is calulated as min(`SOMAXCONN`, 128) where `SOMAXCONN` is
+  It is calculated as min(`SOMAXCONN`, 128) where `SOMAXCONN` is
   the maximum number of allowed pending connections in the system.
 */
 var backlogDefault:uint(16) = (if SOMAXCONN <= 128 then SOMAXCONN else 128):uint(16);
@@ -540,7 +537,7 @@ var backlogDefault:uint(16) = (if SOMAXCONN <= 128 then SOMAXCONN else 128):uint
   :type address: :type:`ipAddr`
   :arg timeout: standard ipv6 address.
   :type timeval: :type:`~Sys.timeval`
-  :return: connected socket.
+  :return: connected socket
   :rtype: `tcpConn`
   :throws SystemError: On failure to bind or listen on `address`
 */
@@ -572,9 +569,9 @@ proc listen(in address: ipAddr, reuseAddr: bool = true, backlog: uint(16) = back
   :type address: :type:`ipAddr`
   :arg timeout: time to wait for connection establishment.
   :type timeval: :type:`~Sys.timeval`
-  :return: connected socket.
+  :return: connected socket
   :rtype: `tcpConn`
-  :throws SystemError: Upon failure to connect.
+  :throws SystemError: Upon failure to connect
 */
 proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn throws {
   var family = address.family;
@@ -637,7 +634,7 @@ proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn
   :type family: :type:`IPFamily`
   :arg timeout: time to wait for each possible connection.
   :type timeval: :type:`~Sys.timeval`
-  :return: connected socket.
+  :return: connected socket
   :rtype: `tcpConn`
   :throws SystemError: Upon failure to resolve address or connect
                         to any of the resolved address in given `timeout`.
@@ -690,7 +687,7 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
   :type family: :type:`IPFamily`
   :arg timeout: time to wait for each possible connection.
   :type timeval: :type:`~Sys.timeval`
-  :return: connected socket.
+  :return: connected socket
   :rtype: `tcpConn`
   :throws SystemError: Upon failure to resolve address or connect
                     to any of the resolved address in given `timeout`.
@@ -867,7 +864,8 @@ private extern proc sys_sendto(sockfd:fd_t, buff:c_void_ptr, len:c_long, flags:c
   :throws SystemError: Upon failure to send any data
                         within given `timeout`.
 */
-proc udpSocket.send(data: bytes, in address: ipAddr, in timeout = new timeval(-1,0)):ssize_t throws {
+proc udpSocket.send(data: bytes, in address: ipAddr,
+                    in timeout = new timeval(-1,0)):ssize_t throws {
   var err_out:err_t = 0;
   var length:ssize_t;
   err_out = sys_sendto(this.socketFd, data.c_str():c_void_ptr, data.size:c_long, 0, address._addressStorage, length);
@@ -920,14 +918,17 @@ proc udpSocket.send(data: bytes, in address: ipAddr, in timeout = new timeval(-1
   return length;
 }
 
+pragma "no doc"
 inline operator !=(const ref lhs: udpSocket,const ref rhs: udpSocket) {
   return lhs.socketFd != rhs.socketFd;
 }
 
+pragma "no doc"
 inline operator ==(const ref lhs: udpSocket,const ref rhs: udpSocket) {
   return lhs.socketFd == rhs.socketFd;
 }
 
+pragma "no doc"
 proc udpSocket.writeThis(f) throws {
   f.write("(","addr:",this.addr,",fd:",this.socketFd);
 }
@@ -995,8 +996,10 @@ proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, ref value: bytes) t
 
 /*
   Overload for :proc:`setSockOpt` that allows setting a :mod:`bytes <Bytes>` value
-  on socket option. It is up to the caller to ensure that the
-  `value` which is a :type::mod:`bytes <Bytes>` parameter contains the proper bits.
+  on socket option. This is useful for `setsockopt` calls that work with a C struct,
+  including `SO_LINGER`, `SO_RCVTIMEO`, and `SO_SNDTIMEO`. It is up to the caller to
+  ensure that the `value` which is a :type::mod:`bytes <Bytes>` parameter contains
+  the proper bits.
 
   :arg socket: socket to set option on
   :type socket: `tcpConn`
@@ -1224,7 +1227,7 @@ proc getsockname(socketFD: fd_t) throws {
 
   :return: remote address
   :rtype: `ipAddr`
-  :throws SystemError: If socket is closed.
+  :throws SystemError: If socket is closed
 */
 proc getsockname(ref socket: tcpConn): ipAddr throws {
   var socketFd = socket.socketFd;
@@ -1304,7 +1307,7 @@ proc bind(socketFd:fd_t, ref address: ipAddr, reuseAddr = true) throws {
   :arg reuseAddr: whether to reuse address if already in use
   :type address: `boolean`
 
-  :throws SystemError: If socket is closed or already bound.
+  :throws SystemError: If socket is closed or already bound
 */
 proc bind(ref socket: udpSocket, ref address: ipAddr, reuseAddr = true) throws {
   var socketFd = socket.socketFd;
@@ -1344,7 +1347,7 @@ proc nagle(socketFd:fd_t):bool throws {
   :arg enable: whether to enable or disable Nagle's algorithm
   :type enable: `bool`
 
-  :throws SystemError: if not able to set `TCP_NODELAY` option properly.
+  :throws SystemError: if not able to set `TCP_NODELAY` option properly
 */
 proc ref tcpListener.setNagle(enable:bool) throws {
   var socketFd = this.socketFd;
@@ -1357,7 +1360,7 @@ proc ref tcpListener.setNagle(enable:bool) throws {
   :arg enable: whether to enable or disable Nagle's algorithm
   :type enable: `bool`
 
-  :throws SystemError: if not able to set `TCP_NODELAY` flag properly.
+  :throws SystemError: if not able to set `TCP_NODELAY` flag properly
 */
 proc ref tcpConn.setNagle(enable:bool) throws {
   var socketFd = this.socketFd;
@@ -1381,7 +1384,7 @@ proc delayAck(socketFd:fd_t):bool throws {
   :arg enable: whether to enable or disable Nagle's algorithm
   :type enable: `bool`
 
-  :throws SystemError: if not able to set `TCP_QUICKACK` flag properly.
+  :throws SystemError: if not able to set `TCP_QUICKACK` flag properly
 */
 proc ref tcpListener.setDelayAck(enable:bool) throws {
   var socketFd = this.socketFd;
@@ -1394,7 +1397,7 @@ proc ref tcpListener.setDelayAck(enable:bool) throws {
   :arg enable: whether to enable or disable Nagle's algorithm
   :type enable: `bool`
 
-  :throws SystemError: if not able to set `TCP_QUICKACK` flag properly.
+  :throws SystemError: if not able to set `TCP_QUICKACK` flag properly
 */
 proc tcpConn.setDelayAck(enable:bool) throws {
   var socketFd = this.socketFd;
