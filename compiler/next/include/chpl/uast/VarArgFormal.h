@@ -34,7 +34,10 @@ namespace uast {
 
   \rst
   .. code-block:: chapel
-      proc f(x: int ...?k) { writeln(x); }
+
+    proc f(x: int ...?k) {
+      writeln(x);
+    }
   \endrst
 
   Here `x` is a formal that may take a variable number of actual arguments,
