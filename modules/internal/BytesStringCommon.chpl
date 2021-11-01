@@ -34,7 +34,6 @@ module BytesStringCommon {
   extern proc chpl__getInPlaceBufferData(const ref data : chpl__inPlaceBuffer) : bufferType;
 
   pragma "fn synchronization free"
-  pragma "no doc"
   extern proc chpl__getInPlaceBufferDataForWrite(ref data : chpl__inPlaceBuffer) : bufferType;
 
   record __serializeHelper {
