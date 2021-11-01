@@ -501,6 +501,11 @@ module ChapelHashtable {
     }
 
     proc maybeShrinkAfterRemove() {
+      // The magic number of 4 was chosen here due to our power of 2
+      // table sizes, where shrinking the table means halving the table
+      // size, so if your table originally was 1/4 of `resizeThreshold`
+      // full, it will be 1/2 of `resizeThreshold` full after the shrink,
+      // which seems like a reasonable time to resize
       if (tableSize > startingSize &&
           tableNumFullSlots/tableSize:real < resizeThreshold/4) {
         resize(grow=false);
