@@ -38,24 +38,6 @@ extern {
       checkCudaErrors(cuCtxCreate(&context, CU_CTX_BLOCKING_SYNC, device), 5);
     }
 
-    /*char * buffer = 0;
-    long length;
-    FILE * f = fopen (FATBIN_FILE, "rb");
-
-    if (f)
-    {
-      fseek (f, 0, SEEK_END);
-      length = ftell (f);
-      fseek (f, 0, SEEK_SET);
-      buffer = (char* )malloc (length);
-      if (buffer)
-      {
-        fread (buffer, 1, length, f);
-      }
-      fclose (f);
-    }*/
-
-
     checkCudaErrors(cuModuleLoadData(&cudaModule, chpl_gpuBinary), 6);
 
     checkCudaErrors(cuModuleGetFunction(&function, cudaModule, "add_nums"), 7);
