@@ -47,21 +47,6 @@ module ChapelHashtable {
 
   // ### allocation helpers ###
 
-  // returns the value referred to by arg
-  // arg should be considered uninitialized after this point
-  private proc _moveToReturn(const ref arg) {
-    if arg.type == nothing {
-      return none;
-    } else {
-      pragma "no init"
-      pragma "no copy"
-      pragma "no auto destroy"
-      var moved: arg.type;
-      __primitive("=", moved, arg);
-      return moved;
-    }
-  }
-
   // Leaves the elements 0 initialized
   private proc _allocateData(size:int, type tableEltType) {
 
@@ -476,9 +461,11 @@ module ChapelHashtable {
     // Returns the key and value that were removed in the out arguments
     proc clearSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
                    out key: keyType, out val: valType) {
+      use Memory.Initialization;
+
       // move the table entry into the key/val variables to be returned
-      key = _moveToReturn(tableEntry.key);
-      val = _moveToReturn(tableEntry.val);
+      key = moveToValue(tableEntry.key);
+      val = moveToValue(tableEntry.val);
 
       // set the slot status to deleted
       tableEntry.status = chpl__hash_status.deleted;
@@ -580,8 +567,8 @@ module ChapelHashtable {
             // move the key and value from the old entry into the new one
             ref dstSlot = table[newslot];
             dstSlot.status = chpl__hash_status.full;
-            moveInitialize(dstSlot.key, _moveToReturn(oldEntry.key));
-            moveInitialize(dstSlot.val, _moveToReturn(oldEntry.val));
+            moveInitialize(dstSlot.key, moveToValue(oldEntry.key));
+            moveInitialize(dstSlot.val, moveToValue(oldEntry.val));
 
             // move array elements to the new location
             if rehashHelpers != nil then
