@@ -259,7 +259,8 @@ CanPassResult CanPassResult::canParamCoerce(const QualifiedType& actualQT,
 
   // param strings can coerce between string and c_string
   if (actualQT.hasParam())
-    if (formalT->isStringLikeType() && actualT->isStringLikeType())
+    if ((formalT->isStringType() || formalT->isCStringType()) &&
+        (actualT->isStringType() || actualT->isCStringType()))
       return convert(PARAM);
 
   // coerce fully representable integers into real / real part of complex

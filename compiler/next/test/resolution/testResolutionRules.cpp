@@ -334,6 +334,33 @@ static void test5() {
   r = canPass(n_p5,  real32); assert(passesParamNarrowing(r));
 }
 
+static void test6() {
+  printf("test6\n");
+  Context ctx;
+  Context* context = &ctx;
+
+
+  // test that we can pass param string c_string
+  // but we can't pass param string to bytes
+
+  auto s = UniqueString::build(context, "hello");
+  auto p = StringParam::get(context, s);
+  auto paramString = QualifiedType(QualifiedType::PARAM,
+                                   StringType::get(context),
+                                   p);
+
+  auto stringQT = QualifiedType(QualifiedType::VALUE,
+                                StringType::get(context));
+  auto cStringQT = QualifiedType(QualifiedType::VALUE,
+                                 CStringType::get(context));
+  auto bytesQT = QualifiedType(QualifiedType::VALUE,
+                               BytesType::get(context));
+  CanPassResult r;
+  r = canPass(paramString, stringQT); assert(passesAsIs(r));
+  r = canPass(paramString, cStringQT); assert(passesParam(r));
+  r = canPass(paramString, bytesQT); assert(doesNotPass(r));
+}
+
 
 int main() {
   test1();
@@ -341,6 +368,7 @@ int main() {
   test3();
   test4();
   test5();
+  test6();
 
   return 0;
 }
