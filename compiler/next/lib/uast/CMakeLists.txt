@@ -82,6 +82,7 @@ target_sources(libchplcomp-obj
                Reduce.cpp
                Require.cpp
                Return.cpp
+               Scan.cpp
                Select.cpp
                Serial.cpp
                SimpleBlockLike.cpp
@@ -94,9 +95,11 @@ target_sources(libchplcomp-obj
                Tuple.cpp
                TupleDecl.cpp
                TypeDecl.cpp
+               TypeQuery.cpp
                UintLiteral.cpp
                Use.cpp
                Union.cpp
+               VarArgFormal.cpp
                Variable.cpp
                VarLikeDecl.cpp
                VisibilityClause.cpp

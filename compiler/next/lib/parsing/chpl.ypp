@@ -607,7 +607,7 @@
 %type <expr> let_expr ifvar
 %type <uniqueStr> reduce_scan_op_expr
 %type <expr> reduce_expr scan_expr opt_init_expr
-%type <expr> opt_init_type var_arg_expr
+%type <expr> opt_init_type formal_var_arg_expr
 %type <expr> opt_try_expr opt_expr
 %type <expr> tuple_component tuple_var_decl_component
 %type <expr> formal
@@ -1084,7 +1084,6 @@ use_renames_ls:
     $$ = context->appendList($1, node);
   }
 ;
-
 
 opt_only_ls:
   /* nothing */   { $$ = nullptr; }
@@ -2083,9 +2082,11 @@ enum_item:
 
 lambda_decl_expr:
   TLAMBDA req_formal_ls opt_ret_tag opt_type opt_lifetime_where function_body_stmt
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    // TODO (dlongnecke): Leave this unimplemented for now? Since we will
+    // be addressing FCFs in 1.26...
+    $$ = TODOEXPR(@$);
+  }
 ;
 
 linkage_spec_empty:
@@ -2248,6 +2249,12 @@ assignop_ident:
 | TASSIGNSL
 ;
 
+formal_var_arg_expr:
+  TDOTDOTDOT             { $$ = nullptr; }
+| TDOTDOTDOT expr        { $$ = $2; }
+| TDOTDOTDOT query_expr  { $$ = $2; }
+;
+
 opt_formal_ls:
                      { $$ = context->parenlessMarker; }
 | TLP formal_ls TRP  { $$ = $2; }
@@ -2269,25 +2276,57 @@ formal_ls:
 
 formal:
   opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = Formal::build(BUILDER, LOC(@$), $2, $1,
-                         toOwned($3), toOwned($4)).release(); }
+  {
+    $$ = Formal::build(BUILDER, LOC(@$), $2, $1,
+                       toOwned($3),
+                       toOwned($4)).release();
+    context->noteIsBuildingFormal(false);
+  }
 | pragma_ls opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = TODOEXPR(@$); }
-| opt_intent_tag ident_def opt_formal_type var_arg_expr
-    { $$ = TODOEXPR(@$); }
-| pragma_ls opt_intent_tag ident_def opt_formal_type var_arg_expr
-    { $$ = TODOEXPR(@$); }
-| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
-    { $$ = TODOEXPR(@$); }
-| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr
-    {
-      $$ = ERROR(@$, "variable-length argument may not be grouped in a tuple");
-    }
+  {
+    $$ = TODOEXPR(@$);
+  }
+| opt_intent_tag ident_def opt_formal_type formal_var_arg_expr
+  {
+    auto node = VarArgFormal::build(BUILDER, LOC(@$), $2, $1,
+                                    toOwned($3),
+                                    toOwned($4));
+    context->noteIsBuildingFormal(false);
+    $$ = node.release();
+  }
+| pragma_ls opt_intent_tag ident_def opt_formal_type formal_var_arg_expr
+  {
+    $$ = TODOEXPR(@$);
+  }
+| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type
+  opt_init_expr
+  {
+    auto node = TupleDecl::build(BUILDER, LOC(@$), context->visibility,
+                                 context->linkage,
+                                 ((TupleDecl::IntentOrKind) $1),
+                                 context->consumeList($3),
+                                 toOwned($5),
+                                 toOwned($6));
+    context->noteIsBuildingFormal(false);
+    $$ = node.release();
+  }
+| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type
+  formal_var_arg_expr
+  {
+    $$ = ERROR(@$, "variable-length argument may not be grouped in a tuple");
+  }
 ;
 
 opt_intent_tag:
-                      { $$ = Formal::DEFAULT_INTENT; }
-| required_intent_tag { $$ = $1; }
+  {
+    context->noteIsBuildingFormal(true);
+    $$ = Formal::DEFAULT_INTENT;
+  }
+| required_intent_tag
+  {
+    context->noteIsBuildingFormal(true);
+    $$ = $1;
+  }
 ;
 
 required_intent_tag:
@@ -2341,14 +2380,9 @@ function_body_stmt:
 ;
 
 query_expr:
-  TQUERIEDIDENT       { $$ = TODOEXPR(@$); }
+  TQUERIEDIDENT   { $$ = context->buildTypeQuery(@$, $1); }
 ;
 
-var_arg_expr:
-  TDOTDOTDOT             { $$ = TODOEXPR(@$); }
-| TDOTDOTDOT expr        { $$ = $2; }
-| TDOTDOTDOT query_expr  { $$ = TODOEXPR(@$); }
-;
 
 opt_lifetime_where:
   { $$ = makeWhereAndLifetime(nullptr, nullptr); }
@@ -2510,10 +2544,11 @@ var_decl_stmt_inner:
     }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     {
+      auto intentOrKind = (TupleDecl::IntentOrKind) context->varDeclKind;
       auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
                                         context->visibility,
                                         context->linkage,
-                                        context->varDeclKind,
+                                        intentOrKind,
                                         context->consumeList($2),
                                         toOwned($4), toOwned($5));
       $$ = STMT(@1, tupleDecl.release());
@@ -2523,44 +2558,17 @@ var_decl_stmt_inner:
 
 tuple_var_decl_component:
   TUNDERSCORE
-    {
-      auto varDecl = Variable::build(BUILDER, LOC(@$), $1,
-                                     context->visibility,
-                                     context->linkage,
-                                     context->consumeVarDeclLinkageName(),
-                                     context->varDeclKind,
-                                     context->isVarDeclConfig,
-                                     context->currentScopeIsAggregate(),
-                                     /*typeExpression*/ nullptr,
-                                     /*initExpression*/ nullptr);
-      $$ = varDecl.release();
-    }
-
+  {
+    $$ = context->buildTupleComponent(@$, $1);
+  }
 | ident_def
-    {
-      auto varDecl = Variable::build(BUILDER, LOC(@$), $1,
-                                     context->visibility,
-                                     context->linkage,
-                                     context->consumeVarDeclLinkageName(),
-                                     context->varDeclKind,
-                                     context->isVarDeclConfig,
-                                     context->currentScopeIsAggregate(),
-                                     /*typeExpression*/ nullptr,
-                                     /*initExpression*/ nullptr);
-      $$ = varDecl.release();
-    }
-
+  {
+    $$ = context->buildTupleComponent(@$, $1);
+  }
 | TLP tuple_var_decl_stmt_inner_ls TRP
-    {
-      auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
-                                        context->visibility,
-                                        context->linkage,
-                                        context->varDeclKind,
-                                        context->consumeList($2),
-                                        /*typeExpression*/ nullptr,
-                                        /*initExpression*/ nullptr);
-      $$ = tupleDecl.release();
-    }
+  {
+    $$ = context->buildTupleComponent(@$, $2);
+  }
 ;
 
 tuple_var_decl_stmt_inner_ls:
@@ -2583,33 +2591,33 @@ opt_init_expr:
 
 ret_array_type:
   TLSBR TRSBR type_level_expr
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @1, /*domainExprs*/ nullptr, $3);
+  }
 | TLSBR TRSBR
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @1, nullptr, nullptr);
+  }
 | TLSBR expr_ls TRSBR type_level_expr
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @2, $2, $4);
+  }
 | TLSBR expr_ls TRSBR
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @2, $2, /*typeExpr*/ nullptr);
+  }
 | TLSBR TRSBR ret_array_type
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @1, /*domainExprs*/ nullptr, $3);
+  }
 | TLSBR expr_ls TRSBR ret_array_type
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @2, $2, $4);
+  }
 | TLSBR error TRSBR
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = ERROR(@$, "invalid expression for domain of array return type");
+  }
 ;
 
 opt_ret_type:
@@ -2778,11 +2786,11 @@ ident_expr:
    parameters and variables. */
 type_level_expr:
   sub_type_level_expr %prec TNOELSE
-    { $$ = $1; }
+  { $$ = $1; }
 | sub_type_level_expr TQUESTION %prec TQUESTION
-    { $$ = TODOEXPR(@$); }
+  { $$ = context->buildUnaryOp(@$, $2, $1); }
 | TQUESTION
-    { $$ = TODOEXPR(@$); }
+  { $$ = context->buildIdent(@$, $1); }
 ;
 
 // TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?' would not work.
@@ -2795,13 +2803,17 @@ sub_type_level_expr:
 | TSINGLE expr
   { $$ = context->buildTypeConstructor(@$, $1, $2); }
 | TINDEX TLP opt_actual_ls TRP
-  { $$ = TODOEXPR(@$); }
+  { $$ = context->buildTypeConstructor(@$, $1, $3); }
 | TDOMAIN TLP opt_actual_ls TRP
-  { $$ = TODOEXPR(@$); }
+  { $$ = context->buildTypeConstructor(@$, $1, $3); }
 | TSUBDOMAIN TLP opt_actual_ls TRP
-  { $$ = TODOEXPR(@$); }
+  { $$ = context->buildTypeConstructor(@$, $1, $3); }
 | TSPARSE TSUBDOMAIN TLP actual_expr TRP
-  { $$ = TODOEXPR(@$); }
+  {
+    auto locInner = context->makeSpannedLocation(@2, @5);
+    auto inner = context->buildTypeConstructor(locInner, $2, $4);
+    $$ = context->buildTypeConstructor(@$, $1, inner);
+  }
 | TATOMIC expr
   { $$ = context->buildTypeConstructor(@$, $1, $2); }
 | TSYNC expr
@@ -2858,11 +2870,47 @@ for_expr:
                     /*isParam*/ false).release();
   }
 | TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = For::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
+                    BlockStyle::IMPLICIT,
+                    context->consumeToBlock(ifLoc, ifExpr.release()),
+                    /*isExpressionLevel*/ true,
+                    /*isParam*/ false).release();
+  }
 | TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = For::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
+                    BlockStyle::IMPLICIT,
+                    context->consumeToBlock(ifLoc, ifExpr.release()),
+                    /*isExpressionLevel*/ true,
+                    /*isParam*/ false).release();
+  }
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@4, @7), toOwned($5),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@7, $7),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@4, @7);
+    $$ = For::build(BUILDER, LOC(@$), /*index*/ nullptr,
+                    toOwned($2),
+                    BlockStyle::IMPLICIT,
+                    context->consumeToBlock(ifLoc, ifExpr.release()),
+                    /*isExpressionLevel*/ true,
+                    /*isParam*/ false).release();
+  }
 | TFORALL expr TIN expr TDO expr %prec TFOR
   {
     auto index = context->buildLoopIndexDecl(@2, toOwned($2));
@@ -2890,11 +2938,47 @@ for_expr:
                        /*isExpressionLevel*/ true).release();
   }
 | TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = Forall::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
+                       /*withClause*/ nullptr,
+                       BlockStyle::IMPLICIT,
+                       context->consumeToBlock(ifLoc, ifExpr.release()),
+                       /*isExpressionLevel*/ true).release();
+  }
 | TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$= Forall::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
+                      /*withClause*/ nullptr,
+                      BlockStyle::IMPLICIT,
+                      context->consumeToBlock(ifLoc, ifExpr.release()),
+                      /*isExpressionLevel*/ true).release();
+  }
 | TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@4, @7), toOwned($5),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@7, $7),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@4, @7);
+    $$ = Forall::build(BUILDER, LOC(@$), /*index*/ nullptr,
+                       toOwned($2),
+                       /*withClause*/ nullptr,
+                       BlockStyle::IMPLICIT,
+                       context->consumeToBlock(ifLoc, ifExpr.release()),
+                       /*isExpressionLevel*/ true).release();
+  }
 | TLSBR expr_ls TRSBR expr %prec TFOR
   {
     if ($2->size() > 1) {
@@ -2930,14 +3014,48 @@ for_expr:
                             /*isExpressionLevel*/ true).release();
   }
 | TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = BracketLoop::build(BUILDER, LOC(@$), std::move(index),
+                            toOwned($4),
+                            /*withClause*/ nullptr,
+                            BlockStyle::IMPLICIT,
+                            context->consumeToBlock(ifLoc, ifExpr.release()),
+                            /*isExpressionLevel*/ true).release();
+  }
 | TLSBR expr_ls TIN zippered_iterator TRSBR TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = BracketLoop::build(BUILDER, LOC(@$), std::move(index),
+                            toOwned($4),
+                            /*withClause*/ nullptr,
+                            BlockStyle::IMPLICIT,
+                            context->consumeToBlock(ifLoc, ifExpr.release()),
+                            /*isExpressionLevel*/ true).release();
+  }
 ;
 
 cond_expr:
   TIF expr TTHEN expr TELSE expr
-    { $$ = TODOEXPR(@$); }
+  {
+    auto node  = Conditional::build(BUILDER, LOC(@$), toOwned($2),
+                                    BlockStyle::IMPLICIT,
+                                    context->consumeToBlock(@4, $4),
+                                    BlockStyle::IMPLICIT,
+                                    context->consumeToBlock(@6, $6),
+                                    /*isExpressionLevel*/ true);
+    $$ = node.release();
+  }
 /* MPF: it would be nice to match TIF expr TTHEN expr but
    the attempt below leads to reduce-reduce conflicts:
       TIF expr TTHEN expr %prec TNOELSE
@@ -2962,7 +3080,7 @@ stmt_level_expr:
 | new_expr
 | let_expr
 | io_expr TIO expr
-    { $$ = TODOEXPR(@$); }
+  { $$ = context->buildBinOp(@$, $1, $2, $3); }
 ;
 
 opt_task_intent_ls:
@@ -3034,7 +3152,7 @@ task_var_prefix:
 io_expr:
   lhs_expr
 | io_expr TIO expr
-    { $$ = TODOEXPR(@$); }
+  { $$ = context->buildBinOp(@$, $1, $2, $3); }
 ;
 
 new_maybe_decorated:
@@ -3106,7 +3224,9 @@ expr:
 | let_expr
 | ifc_constraint
 | TLP TDOTDOTDOT expr TRP
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildUnaryOp(@$, $2, $3);
+  }
 | expr TCOLON expr
   {
     $$ = context->buildBinOp(@$, $1, $2, $3);
@@ -3310,18 +3430,28 @@ literal_expr:
   }
 | TLSBR assoc_expr_ls TRSBR
   {
-    $$ = TODOEXPR(@$);
+    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
   }
 | TLSBR assoc_expr_ls TCOMMA TRSBR
   {
-    $$ = TODOEXPR(@$);
+    // TODO (dlongnecke): Record trailing comma?
+    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
   }
 
 ;
 
 assoc_expr_ls:
-  expr TALIAS expr                      { $$ = TODOLIST(@$); }
-| assoc_expr_ls TCOMMA expr TALIAS expr { $1->push_back(TODOEXPR(@$)); }
+  expr TALIAS expr
+  {
+    auto node = context->buildBinOp(@$, $1, $2, $3);
+    $$ = context->makeList(node);
+  }
+| assoc_expr_ls TCOMMA expr TALIAS expr
+  {
+    auto loc = context->makeSpannedLocation(@3, @5);
+    auto node = context->buildBinOp(loc, $3, $4, $5);
+    $$ = context->appendList($1, node);
+  }
 ;
 
 binary_op_expr:
@@ -3382,10 +3512,22 @@ reduce_expr:
 ;
 
 scan_expr:
-  expr TSCAN expr                              { $$ = TODOEXPR(@$); }
-| expr TSCAN zippered_iterator                 { $$ = TODOEXPR(@$); }
-| reduce_scan_op_expr TSCAN expr               { $$ = TODOEXPR(@$); }
-| reduce_scan_op_expr TSCAN zippered_iterator  { $$ = TODOEXPR(@$); }
+  expr TSCAN expr
+  {
+    $$ = context->buildCustomScan(@$, @1, $1, $3);
+  }
+| expr TSCAN zippered_iterator
+  {
+    $$ = context->buildCustomScan(@$, @1, $1, $3);
+  }
+| reduce_scan_op_expr TSCAN expr
+  {
+    $$ = Scan::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+  }
+| reduce_scan_op_expr TSCAN zippered_iterator
+  {
+    $$ = Scan::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+  }
 ;
 
 

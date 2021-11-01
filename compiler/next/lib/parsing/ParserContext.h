@@ -70,6 +70,7 @@ struct ParserContext {
   Expression* varDeclLinkageName;
   Variable::Kind varDeclKind;
   bool isVarDeclConfig;
+  bool isBuildingFormal;
   YYLTYPE declStartLocation;
 
   // this type and stack helps the parser know if a function
@@ -98,6 +99,7 @@ struct ParserContext {
     this->linkage            = Decl::DEFAULT_LINKAGE;
     this->varDeclLinkageName = nullptr;
     this->varDeclKind        = Variable::VAR;
+    this->isBuildingFormal   = false;
     this->isVarDeclConfig    = false;
     YYLTYPE emptyLoc = {0};
     this->declStartLocation  = emptyLoc;
@@ -123,6 +125,7 @@ struct ParserContext {
   void storeVarDeclLinkageName(Expression* linkageName);
   owned<Expression> consumeVarDeclLinkageName(void);
 
+  bool noteIsBuildingFormal(bool isBuildingFormal);
   bool noteIsVarDeclConfig(bool isConfig);
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
@@ -274,6 +277,9 @@ struct ParserContext {
   Expression* buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
                              ParserExprList* domainExprs,
                              Expression* typeExpr);
+
+  Expression* buildTupleComponent(YYLTYPE location, PODUniqueString name);
+  Expression* buildTupleComponent(YYLTYPE location, ParserExprList* exprs);
 
   // Build a loop index decl from a given expression. May return nullptr 
   // if the index expression is not valid. TODO: Adjust me to return an
@@ -449,9 +455,24 @@ struct ParserContext {
                                 Expression* lhs,
                                 Expression* rhs);
 
+  Expression* buildCustomScan(YYLTYPE location, YYLTYPE locIdent,
+                              Expression* lhs,
+                              Expression* rhs);
+
+  Expression* buildTypeQuery(YYLTYPE location,
+                             PODUniqueString queriedIdent);
+
   Expression* buildTypeConstructor(YYLTYPE location,
                                    PODUniqueString baseType,
                                    Expression* subType);
+
+  Expression* buildTypeConstructor(YYLTYPE location,
+                                   PODUniqueString baseType,
+                                   MaybeNamedActual actual);
+
+  Expression* buildTypeConstructor(YYLTYPE location,
+                                   PODUniqueString baseType,
+                                   MaybeNamedActualList* actuals);
 
   CommentsAndStmt buildTryExprStmt(YYLTYPE location, Expression* expr,
                                    bool isTryBang);

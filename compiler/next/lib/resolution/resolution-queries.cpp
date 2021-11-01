@@ -238,7 +238,7 @@ struct Resolver {
     assert(typedFnSignature->formalTypes.size() == uSig->formals.size());
     size_t nFormals = uSig->formals.size();
     for (size_t i = 0; i < nFormals; i++) {
-      const Formal* formal = uSig->formals[i];
+      const Decl* formal = uSig->formals[i];
       const auto& qt = typedFnSignature->formalTypes[i];
 
       ResolvedExpression& r = byPostorder.byAst(formal);

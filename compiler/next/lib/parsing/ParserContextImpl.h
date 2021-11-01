@@ -121,10 +121,16 @@ owned<Expression> ParserContext::consumeVarDeclLinkageName(void) {
   return toOwned(ret);
 }
 
+bool ParserContext::noteIsBuildingFormal(bool isBuildingFormal) {
+  this->isBuildingFormal = isBuildingFormal;
+  return this->isBuildingFormal;
+}
+
 bool ParserContext::noteIsVarDeclConfig(bool isConfig) {
   this->isVarDeclConfig = isConfig;
   return this->isVarDeclConfig;
 }
+
 YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
   if (this->declStartLocation.first_line == 0)
     return curLoc;
@@ -138,6 +144,7 @@ void ParserContext::resetDeclState() {
   this->isVarDeclConfig = false;
   YYLTYPE emptyLoc = {0};
   this->declStartLocation = emptyLoc;
+  this->isBuildingFormal = false;
 }
 
 void ParserContext::enterScope(asttags::ASTTag tag, UniqueString name) {
@@ -618,6 +625,46 @@ ParserContext::buildArrayType(YYLTYPE location, YYLTYPE locDomainExprs,
   return node.release();
 }
 
+Expression* ParserContext::
+buildTupleComponent(YYLTYPE location, PODUniqueString name) {
+  Expression* ret = nullptr;
+
+  if (isBuildingFormal) {
+    auto node = Formal::build(builder, convertLocation(location), name,
+                              Formal::DEFAULT_INTENT,
+                              /*typeExpression*/ nullptr,
+                              /*initExpression*/ nullptr);
+    ret = node.release();
+  } else {
+    auto node = Variable::build(builder, convertLocation(location), name,
+                                visibility,
+                                linkage,
+                                consumeVarDeclLinkageName(),
+                                varDeclKind,
+                                isVarDeclConfig,
+                                currentScopeIsAggregate(),
+                                /*typeExpression*/ nullptr,
+                                /*initExpression*/ nullptr);
+    ret = node.release();
+  }
+
+  assert(ret != nullptr);
+
+  return ret;
+}
+
+Expression* ParserContext::
+buildTupleComponent(YYLTYPE location, ParserExprList* exprs) {
+  auto node = TupleDecl::build(builder, convertLocation(location),
+                               this->visibility,
+                               this->linkage,
+                               (TupleDecl::IntentOrKind) this->varDeclKind,
+                               this->consumeList(exprs),
+                               /*typeExpression*/ nullptr,
+                               /*initExpression*/ nullptr);
+  return node.release();
+}
+
 owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
                                               const Expression* e) {
   auto convLoc = convertLocation(location);
@@ -648,7 +695,7 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
 
     return TupleDecl::build(builder, convLoc, Decl::DEFAULT_VISIBILITY,
                             Decl::DEFAULT_LINKAGE,
-                            Variable::INDEX,
+                            (TupleDecl::IntentOrKind) Variable::INDEX,
                             std::move(elements),
                             /*typeExpression*/ nullptr,
                             /*initExpression*/ nullptr);
@@ -1026,7 +1073,8 @@ ParserContext::buildConditionalStmt(bool usesThenKeyword, YYLTYPE locIf,
   auto node = Conditional::build(builder, convertLocation(locIf),
                                  toOwned(condition),
                                  thenBlockStyle,
-                                 std::move(thenBlock));
+                                 std::move(thenBlock),
+                                 /*isExpressionLevel*/ false);
 
   // Do NOT clear comments here! Due to lookahead we might clear a valid
   // comment that has already been stored.
@@ -1499,19 +1547,70 @@ Expression* ParserContext::buildCustomReduce(YYLTYPE location,
   }
 }
 
+Expression* ParserContext::buildCustomScan(YYLTYPE location,
+                                           YYLTYPE locIdent,
+                                           Expression* lhs,
+                                           Expression* rhs) {
+  if (!lhs->isIdentifier()) {
+    const char* msg = "Expected identifier for scan name";
+    return raiseError(locIdent, msg);
+  } else {
+    auto identName = lhs->toIdentifier()->name();
+    auto node = Scan::build(builder, convertLocation(location),
+                            identName,
+                            toOwned(rhs));
+    return node.release();
+  }
+}
+
+Expression* ParserContext::buildTypeQuery(YYLTYPE location,
+                                          PODUniqueString queriedIdent) {
+  assert(!queriedIdent.isEmpty() && queriedIdent.c_str()[0] == '?');
+  assert(queriedIdent.length() >= 2);
+  const char* adjust = queriedIdent.c_str() + 1;
+  auto name = UniqueString::build(context(), adjust);
+  auto node = TypeQuery::build(builder, convertLocation(location), name);
+  return node.release();
+}
+
+Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
+                                                PODUniqueString baseType,
+                                                MaybeNamedActual actual) {
+  auto maybeNamedActuals = new MaybeNamedActualList();
+  maybeNamedActuals->push_back(actual);
+  return buildTypeConstructor(location, baseType, maybeNamedActuals);
+}
+
 Expression* ParserContext::buildTypeConstructor(YYLTYPE location,
                                                 PODUniqueString baseType,
                                                 Expression* subType) {
+  auto maybeNamedActuals = new MaybeNamedActualList();
+
+  MaybeNamedActual actual = {
+    .expr=subType,
+    .name=PODUniqueString::build()
+  };
+
+  maybeNamedActuals->push_back(actual);
+  return buildTypeConstructor(location, baseType, maybeNamedActuals);
+}
+
+Expression* ParserContext::
+buildTypeConstructor(YYLTYPE location, PODUniqueString baseType,
+                     MaybeNamedActualList* maybeNamedActuals) {
   auto ident = buildIdent(location, baseType);
+  std::vector<UniqueString> actualNames;
   ASTList actuals;
 
-  actuals.push_back(toOwned(subType));
+  consumeNamedActuals(maybeNamedActuals, actuals, actualNames);
 
   // TODO: Record in node that this call did not use parens.
   const bool callUsedSquareBrackets = false;
+
   auto node = FnCall::build(builder, convertLocation(location),
                             toOwned(ident),
                             std::move(actuals),
+                            std::move(actualNames),
                             callUsedSquareBrackets);
 
   return node.release();

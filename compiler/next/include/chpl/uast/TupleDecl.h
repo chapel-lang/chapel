@@ -21,6 +21,7 @@
 #define CHPL_UAST_TUPLEDECL_H
 
 #include "chpl/uast/Decl.h"
+#include "chpl/uast/IntentList.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/queries/Location.h"
 
@@ -53,20 +54,36 @@ namespace uast {
 
  */
 class TupleDecl final : public Decl {
+ public:
+  enum IntentOrKind {
+    DEFAULT       = (int) IntentList::DEFAULT,
+    VAR           = (int) IntentList::VAR,
+    CONST         = (int) IntentList::CONST,
+    CONST_REF     = (int) IntentList::CONST_REF,
+    REF           = (int) IntentList::REF,
+    IN            = (int) IntentList::IN,
+    CONST_IN      = (int) IntentList::CONST_IN,
+    OUT           = (int) IntentList::OUT,
+    INOUT         = (int) IntentList::INOUT,
+    INDEX         = (int) IntentList::INDEX,
+    PARAM         = (int) IntentList::PARAM,
+    TYPE          = (int) IntentList::TYPE
+  };
+
  private:
-  Variable::Kind kind_;
+  TupleDecl::IntentOrKind intentOrKind_;
   int numElements_; 
   int typeExpressionChildNum_;
   int initExpressionChildNum_;
 
   TupleDecl(ASTList children, Decl::Visibility vis, Decl::Linkage linkage,
-            Variable::Kind kind,
+            IntentOrKind intentOrKind,
             int numElements,       
             int typeExpressionChildNum,
             int initExpressionChildNum)
     : Decl(asttags::TupleDecl, std::move(children), vis, linkage,
            /*linkageNameChildNum*/ -1),
-      kind_(kind),
+      intentOrKind_(intentOrKind),
       numElements_(numElements),
       typeExpressionChildNum_(typeExpressionChildNum),
       initExpressionChildNum_(initExpressionChildNum) {
@@ -80,7 +97,7 @@ class TupleDecl final : public Decl {
     const TupleDecl* lhs = this;
     const TupleDecl* rhs = (const TupleDecl*) other;
     return lhs->declContentsMatchInner(rhs) &&
-           lhs->kind_ == rhs->kind_ &&
+           lhs->intentOrKind_ == rhs->intentOrKind_ &&
            lhs->numElements_ == rhs->numElements_ &&
            lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
            lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
@@ -92,18 +109,19 @@ class TupleDecl final : public Decl {
 
  public:
   ~TupleDecl() override = default;
+
   static owned<TupleDecl> build(Builder* builder, Location loc,
                                 Decl::Visibility vis,
                                 Decl::Linkage linkage,
-                                Variable::Kind kind,
+                                IntentOrKind intentOrKind,
                                 ASTList elements,
                                 owned<Expression> typeExpression,
                                 owned<Expression> initExpression);
 
   /**
-    Returns the kind of the tuple (`var` / `const` / `param` etc).
+    Returns the intent or kind of the tuple (`var` / `in` / `param` etc).
    */
-  Variable::Kind kind() const { return this->kind_; }
+  IntentOrKind intentOrKind() const { return this->intentOrKind_; }
 
   /**
     Return a way to iterate over the contained Decls
