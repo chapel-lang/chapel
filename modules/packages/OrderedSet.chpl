@@ -447,15 +447,11 @@ module OrderedSet {
   operator orderedSet.&(const ref a: orderedSet(?t),
                         const ref b: orderedSet(t)): orderedSet(t) {
 
-    // TODO: what should the comparator of the result be? See also &= operator
-    const ref resultComparator = if a.instance.type == b.instance.type
-                                 then a.instance.comparator
-                                 else defaultComparator;
-                      
     // Note we need the full type here. In other operators (e.g., |), there's a
     // clear initialization point and split-init works fine. Here there's no
     // initialization point, so we have to initialize the result explicitly
-    var result = new orderedSet(t, (a.parSafe || b.parSafe), resultComparator);
+    var result = new orderedSet(t, (a.parSafe || b.parSafe),
+                                a.instance.comparator);
 
     /* Iterate over the smaller orderedSet */
     if a.size <= b.size {
