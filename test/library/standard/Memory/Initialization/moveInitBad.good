@@ -1,5 +1,5 @@
 moveInitBad.chpl:10: error: type mismatch move-initializing an expression of type 'nothing' from one of type 'int(64)'
-moveInitBad.chpl:11: error: type mismatch move-initializing an array expression from a non-array
-moveInitBad.chpl:12: error: type mismatch move-initializing a domain expression from a non-domain
-moveInitBad.chpl:13: error: type mismatch move-initializing a domain map expression from a non-domain map
+moveInitBad.chpl:11: error: type mismatch move-initializing an expression of type '[domain(1,int(64),false)] real(64)' from one of type 'int(64)'
+moveInitBad.chpl:12: error: type mismatch move-initializing an expression of type 'domain(1,int(64),false)' from one of type 'int(64)'
+moveInitBad.chpl:13: error: type mismatch move-initializing an expression of type 'DefaultDist' from one of type 'int(64)'
 moveInitBad.chpl:14: error: type mismatch move-initializing an expression of type 'int(64)' from one of type 'real(64)'
