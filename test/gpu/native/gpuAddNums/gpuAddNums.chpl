@@ -14,6 +14,8 @@ extern {
     }
   }
 
+  extern char* chpl_gpuBinary;
+
   static double launchKernel(){
     CUdevice    device;
     CUmodule    cudaModule;
@@ -36,7 +38,7 @@ extern {
       checkCudaErrors(cuCtxCreate(&context, CU_CTX_BLOCKING_SYNC, device), 5);
     }
 
-    char * buffer = 0;
+    /*char * buffer = 0;
     long length;
     FILE * f = fopen (FATBIN_FILE, "rb");
 
@@ -51,10 +53,10 @@ extern {
         fread (buffer, 1, length, f);
       }
       fclose (f);
-    }
+    }*/
 
 
-    checkCudaErrors(cuModuleLoadData(&cudaModule, buffer), 6);
+    checkCudaErrors(cuModuleLoadData(&cudaModule, chpl_gpuBinary), 6);
 
     checkCudaErrors(cuModuleGetFunction(&function, cudaModule, "add_nums"), 7);
 
