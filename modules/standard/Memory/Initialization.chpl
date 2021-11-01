@@ -83,7 +83,7 @@ module Initialization {
       first. Call :proc:`explicitDeinit()` to deinitialize ``lhs`` if
       necessary.
 
-    :arg lhs: A variable to move-initialize
+    :arg lhs: A variable to move-initialize, whose type matches ``rhs``
 
     :arg rhs: A value to move-initialize from
   */
@@ -92,8 +92,9 @@ module Initialization {
                       pragma "error on copy" in rhs) {
     if (lhs.type != rhs.type) {
       compilerError("type mismatch move-initializing an expression of type '"+lhs.type:string+"' from one of type '"+rhs.type:string+"'");
+    } else {
+      _move(lhs, rhs);
     }
-    _move(lhs, rhs);
   }
 
   // This helper routine and the following moveInitialize() overload
@@ -120,24 +121,57 @@ module Initialization {
   }
 
   pragma "no doc"
-  proc moveInitialize(ref lhs,
+  proc moveInitialize(ref lhs: [],
                       pragma "no auto destroy"
-                      pragma "error on copy" in rhs) where hasRuntimeType(lhs){
+                      pragma "error on copy" in rhs: []) {
+    // We can't do a 'lhs.type' check because it results in a runtime
+    // check for '--baseline' compilations, but if 'lhs' isn't
+    // initialized, we can't access its runtime type information.
+    // So we're currently trusting that lhs.type == rhs.type.
     _move(lhs, rhs);
   }
 
   pragma "no doc"
-  proc moveInitialize(ref lhs: nothing,
+  proc moveInitialize(ref lhs: [],
                       pragma "no auto destroy"
-                      pragma "error on copy" in rhs: nothing) {
-    // no-op
+                      pragma "error on copy" in rhs) {
+    compilerError("type mismatch move-initializing an array expression from a non-array");
   }
 
   pragma "no doc"
-  proc moveInitialize(ref lhs: nothing,
+  proc moveInitialize(ref lhs: domain,
+                      pragma "no auto destroy"
+                      pragma "error on copy" in rhs: domain) {
+    // We can't do a 'lhs.type' check because it results in a runtime
+    // check for '--baseline' compilations, but if 'lhs' isn't
+    // initialized, we can't access its runtime type information.
+    // So we're currently trusting that lhs.type == rhs.type.
+    _move(lhs, rhs);
+  }
+
+  pragma "no doc"
+  proc moveInitialize(ref lhs: domain,
                       pragma "no auto destroy"
                       pragma "error on copy" in rhs) {
-    compilerError("type mismatch move-initializing an expression of type 'nothing' from one of type '"+rhs.type:string+"'");
+    compilerError("type mismatch move-initializing a domain expression from a non-domain");
+  }
+
+  pragma "no doc"
+  proc moveInitialize(ref lhs: _distribution(?),
+                      pragma "no auto destroy"
+                      pragma "error on copy" in rhs: _distribution(?)) {
+    // We can't do a 'lhs.type' check because it results in a runtime
+    // check for '--baseline' compilations, but if 'lhs' isn't
+    // initialized, we can't access its runtime type information.
+    // So we're currently trusting that lhs.type == rhs.type.
+    _move(lhs, rhs);
+  }
+
+  pragma "no doc"
+  proc moveInitialize(ref lhs: _distribution(?),
+                      pragma "no auto destroy"
+                      pragma "error on copy" in rhs) {
+    compilerError("type mismatch move-initializing a domain map expression from a non-domain map");
   }
 
   /*
