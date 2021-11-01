@@ -260,7 +260,10 @@ module ChapelHashtable {
 
     const resizeThreshold: real;
 
+    const startingSize: int;
+
     proc init(type keyType, type valType, resizeThreshold = 0.5,
+              initialCapacity = 32,
               in rehashHelpers: owned chpl__rehashHelpers? = nil) {
       this.keyType = keyType;
       this.valType = valType;
@@ -270,6 +273,9 @@ module ChapelHashtable {
       this.rehashHelpers = rehashHelpers;
       this.postponeResize = false;
       this.resizeThreshold = resizeThreshold;
+      // Round initial capacity up to nearest power of 2
+      this.startingSize = 2 << log2((initialCapacity/
+                                     resizeThreshold):int-1);
       this.complete();
 
       // allocates a _ddata(chpl_TableEntry(keyType,valType)) storing the table
@@ -504,7 +510,13 @@ module ChapelHashtable {
     }
 
     proc maybeShrinkAfterRemove() {
-      if (tableNumFullSlots*8 < tableSize) {
+      // The magic number of 4 was chosen here due to our power of 2
+      // table sizes, where shrinking the table means halving the table
+      // size, so if your table originally was 1/4 of `resizeThreshold`
+      // full, it will be 1/2 of `resizeThreshold` full after the shrink,
+      // which seems like a reasonable time to resize
+      if (tableSize > startingSize &&
+          tableNumFullSlots/tableSize:real < resizeThreshold/4) {
         resize(grow=false);
       }
     }
@@ -630,7 +642,7 @@ module ChapelHashtable {
       if postponeResize then return;
       
       // double if you are growing, half if you are shrinking
-      var newSize = if tableSize == 0 then 32 else if grow then tableSize << 1 else tableSize >> 1;
+      var newSize = if tableSize == 0 then startingSize else if grow then tableSize << 1 else tableSize >> 1;
 
       if grow==false && 2*tableNumFullSlots > newSize {
         // don't shrink if the number of elements would not
