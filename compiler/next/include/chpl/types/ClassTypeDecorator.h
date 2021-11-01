@@ -21,6 +21,7 @@
 #define CHPL_TYPES_CLASS_TYPE_DECORATOR_H
 
 #include <cassert>
+#include <utility>
 
 namespace chpl {
 namespace types {
@@ -178,6 +179,16 @@ class ClassTypeDecorator final {
       and the passed decorator is an actual */
   ClassTypeDecorator combine(ClassTypeDecorator actual) const {
     return ClassTypeDecorator(combineDecorators(val_, actual.val_));
+  }
+
+  bool operator==(ClassTypeDecorator other) const {
+    return this->val_ == other.val_;
+  }
+  bool operator!=(ClassTypeDecorator other) const {
+    return !(*this == other);
+  }
+  void swap(ClassTypeDecorator other) {
+    std::swap(this->val_, other.val_);
   }
 };
 

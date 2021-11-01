@@ -47,7 +47,12 @@ class ClassType final : public CompositeType {
   { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return compositeTypeContentsMatchInner((const CompositeType*) other);
+    const ClassType* lhs = this;
+    const ClassType* rhs = (const ClassType*) other;
+    return lhs->compositeTypeContentsMatchInner(rhs) &&
+           lhs->basicType_ == rhs->basicType_ &&
+           lhs->manager_ == rhs->manager_ &&
+           lhs->decorator_ == rhs->decorator_;
   }
 
   void markUniqueStringsInner(Context* context) const override {

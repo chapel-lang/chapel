@@ -35,12 +35,14 @@ class CompositeType : public Type {
  protected:
   // TODO: add fields and accessors for a QualifiedType per field
 
+  bool isGeneric_ = false;
+
   CompositeType(typetags::TypeTag tag)
     : Type(tag) {
   }
 
   bool compositeTypeContentsMatchInner(const CompositeType* other) const {
-    return true;
+    return isGeneric_ == other->isGeneric_;
   }
 
   void compositeTypeMarkUniqueStringsInner(Context* context) const {
@@ -48,6 +50,8 @@ class CompositeType : public Type {
 
  public:
   virtual ~CompositeType() = 0; // this is an abstract base class
+
+  bool isGeneric() const override { return isGeneric_; }
 };
 
 
