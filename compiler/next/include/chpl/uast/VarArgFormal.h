@@ -50,6 +50,7 @@ class VarArgFormal final : public VarLikeDecl {
     : VarLikeDecl(asttags::VarArgFormal, std::move(children),
                   Decl::DEFAULT_VISIBILITY,
                   Decl::DEFAULT_LINKAGE,
+                  // Use -1 to indicate so such child exists.
                   /*linkageNameChildNum*/ -1,
                   name,
                   (IntentList)((int)intent),

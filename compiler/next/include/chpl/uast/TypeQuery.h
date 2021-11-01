@@ -46,6 +46,7 @@ class TypeQuery final : public Expression {
  private:
   UniqueString name_;
 
+  // TODO: Intercept TQUESTION productions so that TypeQuery can be empty?
   TypeQuery(UniqueString name)
     : Expression(asttags::TypeQuery), name_(name) {
     assert(!name.isEmpty() && name.c_str()[0] != '?');

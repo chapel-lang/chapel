@@ -29,7 +29,16 @@ namespace uast {
 
 
 /**
-  This class represents a scan.
+  This class represents a scan expression. For example:
+
+  \rst
+  ..code-block :: chapel
+    var A: [1..3] int = 1;
+    // Prints '1 2 3'
+    writeln(+ scan A);
+  \endrst
+
+  The scan expression is '+ scan A'.
 */
 class Scan final : public Call {
  private:
