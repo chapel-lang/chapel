@@ -765,6 +765,12 @@ import_stmt:
 
 import_expr:
   expr { $$ = buildImportStmt($1); }
+| expr TDOT all_op_name { std::vector<PotentialRename*>* renames = new std::vector<PotentialRename*>();
+                          PotentialRename* nameInMod = new PotentialRename();
+                          nameInMod->tag = PotentialRename::SINGLE;
+                          nameInMod->elem = new UnresolvedSymExpr($3);
+                          renames->push_back(nameInMod);
+                          $$ = buildImportStmt($1, renames); }
 | expr TAS ident_use { $$ = buildImportStmt($1, $3); }
 | expr TDOT TLCBR renames_ls TRCBR { $$ = buildImportStmt($1, $4); }
 ;
