@@ -96,8 +96,15 @@ module Initialization {
   pragma "no doc"
   proc moveInitialize(ref lhs: nothing,
                       pragma "no auto destroy"
-                      pragma "error on copy" in rhs) {
+                      pragma "error on copy" in rhs: nothing) {
     // no-op
+  }
+
+  pragma "no doc"
+  proc moveInitialize(ref lhs: nothing,
+                      pragma "no auto destroy"
+                      pragma "error on copy" in rhs) {
+    compilerError("type mismatch move-initializing an expression of type 'nothing' from one of type '"+rhs.type:string+"'");
   }
 
   /*

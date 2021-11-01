@@ -1,0 +1,2 @@
+moveNothing.chpl:8: error: type mismatch move-initializing an expression of type 'nothing' from one of type 'int(64)'
+Got to end
