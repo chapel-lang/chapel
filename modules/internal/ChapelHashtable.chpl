@@ -61,14 +61,6 @@ module ChapelHashtable {
       return moved;
     }
   }
-  // sets lhs to rhs using a move initialization
-  // only makes sense if lhs is currently uninitialized
-  private proc _moveInit(ref lhs: nothing, pragma "no auto destroy" in rhs) {
-    // then do nothing
-  }
-  private proc _moveInit(ref lhs, pragma "no auto destroy" in rhs) {
-    __primitive("=", lhs, rhs);
-  }
 
   // Leaves the elements 0 initialized
   private proc _allocateData(size:int, type tableEltType) {
@@ -439,6 +431,8 @@ module ChapelHashtable {
     proc fillSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
                   in key: keyType,
                   in val: valType) {
+      use Memory.Initialization;
+
       if tableEntry.status == chpl__hash_status.full {
         _deinitSlot(tableEntry);
       } else {
@@ -450,8 +444,8 @@ module ChapelHashtable {
 
       tableEntry.status = chpl__hash_status.full;
       // move the key/val into the table
-      _moveInit(tableEntry.key, key);
-      _moveInit(tableEntry.val, val);
+      moveInitialize(tableEntry.key, key);
+      moveInitialize(tableEntry.val, val);
     }
     proc fillSlot(slotNum: int,
                   in key: keyType,
@@ -539,6 +533,8 @@ module ChapelHashtable {
     // newSizeNum is an index into chpl__primes == newSize
     // assumes the array is already locked
     proc rehash(newSize:int) {
+      use Memory.Initialization;
+
       // save the old table
       var oldSize = tableSize;
       var oldTable = table;
@@ -584,8 +580,8 @@ module ChapelHashtable {
             // move the key and value from the old entry into the new one
             ref dstSlot = table[newslot];
             dstSlot.status = chpl__hash_status.full;
-            _moveInit(dstSlot.key, _moveToReturn(oldEntry.key));
-            _moveInit(dstSlot.val, _moveToReturn(oldEntry.val));
+            moveInitialize(dstSlot.key, _moveToReturn(oldEntry.key));
+            moveInitialize(dstSlot.val, _moveToReturn(oldEntry.val));
 
             // move array elements to the new location
             if rehashHelpers != nil then

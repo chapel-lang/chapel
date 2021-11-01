@@ -37,7 +37,7 @@ module Initialization {
 
   // Mark as "unsafe" to silence lifetime errors.
   pragma "unsafe"
-  private inline proc _move(ref dst: ?t, const ref src: t) {
+  private inline proc _move(ref dst, const ref src) {
     __primitive("=", dst, src);
   }
 
@@ -87,11 +87,17 @@ module Initialization {
 
     :arg rhs: A value to move-initialize from
   */
-  proc moveInitialize(ref lhs: ?t,
+  proc moveInitialize(ref lhs,
                       pragma "no auto destroy"
-                      pragma "error on copy" in rhs: t) {
-    if lhs.type != nothing then
-      _move(lhs, rhs);
+                      pragma "error on copy" in rhs) {
+    _move(lhs, rhs);
+  }
+
+  pragma "no doc"
+  proc moveInitialize(ref lhs: nothing,
+                      pragma "no auto destroy"
+                      pragma "error on copy" in rhs) {
+    // no-op
   }
 
   /*
