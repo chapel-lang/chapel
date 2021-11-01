@@ -427,7 +427,24 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
 
   assert(actualQT.type() && formalQT.type());
 
-  if (actualQT == formalQT) {
+  // check params
+  if (formalQT.hasParam()) {
+    const Param* actualParam = actualQT.param();
+    const Param* formalParam = formalQT.param();
+    if (actualParam && formalParam) {
+      if (actualParam != formalParam) {
+        // passing different param values won't do
+        return fail();
+      } // otherwise continue with type information
+    } else if (formalParam && !actualParam) {
+      // this case doesn't make sense
+      assert(false && "case not expected");
+      return fail();
+    }
+    // otherwise the param passing is OK
+  }
+
+  if (actualQT.type() == formalQT.type()) {
     return passAsIs();
   }
 

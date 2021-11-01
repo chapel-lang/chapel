@@ -73,8 +73,17 @@ class QualifiedType final {
     assert(param_ == nullptr || kind_ == PARAM);
   }
 
+  /** Returns the kind of the expression this QualifiedType represents */
   Kind kind() const { return kind_; }
+  /**
+    Returns the type pointer that represents the type part
+    of this QualifiedType
+   */
   const Type* type() const { return type_; }
+  /**
+    Returns the param value for this QualifiedType. Note that
+    an uninstantiated param formal will have kind() == PARAM but won't
+    yet have a param value. */
   const Param* param() const { return param_; }
 
   bool hasType() const {

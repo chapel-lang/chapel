@@ -231,7 +231,7 @@ static void test4() {
 
   CanPassResult r;
   r = canPass(oneInt0,  int8); assert(passesParamNarrowing(r));
-  r = canPass(oneInt8,  int8); assert(passesParamNarrowing(r));
+  r = canPass(oneInt8,  int8); assert(passesAsIs(r));
   r = canPass(oneInt16, int8); assert(passesParamNarrowing(r));
   r = canPass(oneInt32, int8); assert(passesParamNarrowing(r));
   r = canPass(oneInt64, int8); assert(passesParamNarrowing(r));
@@ -249,13 +249,13 @@ static void test4() {
   r = canPass(oneInt64, uint8); assert(passesParamNarrowing(r));
 
   r = canPass(oneUint0,  uint8); assert(passesParamNarrowing(r));
-  r = canPass(oneUint8,  uint8); assert(passesParamNarrowing(r));
+  r = canPass(oneUint8,  uint8); assert(passesAsIs(r));
   r = canPass(oneUint16, uint8); assert(passesParamNarrowing(r));
   r = canPass(oneUint32, uint8); assert(passesParamNarrowing(r));
   r = canPass(oneUint64, uint8); assert(passesParamNarrowing(r));
 
   r = canPass(negInt0,  int8); assert(passesParamNarrowing(r));
-  r = canPass(negInt8,  int8); assert(passesParamNarrowing(r));
+  r = canPass(negInt8,  int8); assert(passesAsIs(r));
   r = canPass(negInt16, int8); assert(passesParamNarrowing(r));
   r = canPass(negInt32, int8); assert(passesParamNarrowing(r));
   r = canPass(negInt64, int8); assert(passesParamNarrowing(r));
