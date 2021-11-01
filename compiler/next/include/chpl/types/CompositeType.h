@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_CSTRINGTYPE_H
-#define CHPL_TYPES_CSTRINGTYPE_H
+#ifndef CHPL_TYPES_COMPOSITE_TYPE_H
+#define CHPL_TYPES_COMPOSITE_TYPE_H
 
 #include "chpl/types/Type.h"
 
@@ -27,29 +27,31 @@ namespace types {
 
 
 /**
-  This class represents the string type.
+  This class represents an aggregate type which is a type that contains other
+  elements - Class, Record, Union, and Tuple types.
+
  */
-class CStringType final : public Type {
- private:
-  CStringType() : Type(typetags::CStringType) { }
+class CompositeType : public Type {
+ protected:
+  // TODO: add fields and accessors for a QualifiedType per field
 
-  bool contentsMatchInner(const Type* other) const override {
-    return true;
+  bool isGeneric_ = false;
+
+  CompositeType(typetags::TypeTag tag)
+    : Type(tag) {
   }
 
-  void markUniqueStringsInner(Context* context) const override {
+  bool compositeTypeContentsMatchInner(const CompositeType* other) const {
+    return isGeneric_ == other->isGeneric_;
   }
 
-  bool isGeneric() const override {
-    return false;
+  void compositeTypeMarkUniqueStringsInner(Context* context) const {
   }
-
-  static const owned<CStringType>& getCStringType(Context* context);
 
  public:
-  ~CStringType() = default;
+  virtual ~CompositeType() = 0; // this is an abstract base class
 
-  static const CStringType* get(Context* context);
+  bool isGeneric() const override { return isGeneric_; }
 };
 
 

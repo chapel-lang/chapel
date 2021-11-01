@@ -86,13 +86,14 @@ TYPE_END_SUBCLASSES(BuiltinType)
 TYPE_BEGIN_SUBCLASSES(DeclaredType)
   TYPE_NODE(EnumType)
   TYPE_NODE(FunctionType)
-  TYPE_NODE(TupleType)
 
-  TYPE_BEGIN_SUBCLASSES(AggregateType)
-    TYPE_NODE(ClassType) // has field for management / generic management
+  TYPE_BEGIN_SUBCLASSES(CompositeType)
+    TYPE_NODE(BasicClassType)
+    TYPE_NODE(ClassType)
     TYPE_NODE(RecordType)
+    TYPE_NODE(TupleType)
     TYPE_NODE(UnionType)
-  TYPE_END_SUBCLASSES(AggregateType)
+  TYPE_END_SUBCLASSES(CompositeType)
 
 TYPE_END_SUBCLASSES(DeclaredType)
 

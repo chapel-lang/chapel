@@ -17,43 +17,23 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_CSTRINGTYPE_H
-#define CHPL_TYPES_CSTRINGTYPE_H
+#include "resolution-rules.h"
 
-#include "chpl/types/Type.h"
+#include "chpl/types/QualifiedType.h"
 
 namespace chpl {
-namespace types {
+namespace resolution {
+
+using namespace uast;
+using namespace types;
+
+CanPassResult canPass(const QualifiedType& actualType, 
+                      const QualifiedType& formalType) {
+  CanPassResult ret;
+
+  return ret;
+}
 
 
-/**
-  This class represents the string type.
- */
-class CStringType final : public Type {
- private:
-  CStringType() : Type(typetags::CStringType) { }
-
-  bool contentsMatchInner(const Type* other) const override {
-    return true;
-  }
-
-  void markUniqueStringsInner(Context* context) const override {
-  }
-
-  bool isGeneric() const override {
-    return false;
-  }
-
-  static const owned<CStringType>& getCStringType(Context* context);
-
- public:
-  ~CStringType() = default;
-
-  static const CStringType* get(Context* context);
-};
-
-
-} // end namespace uast
+} // end namespace resolution
 } // end namespace chpl
-
-#endif

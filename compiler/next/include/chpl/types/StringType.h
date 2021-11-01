@@ -29,7 +29,7 @@ namespace types {
 /**
   This class represents the string type.
  */
-class StringType : public Type {
+class StringType final : public Type {
  private:
   StringType() : Type(typetags::StringType) { }
 

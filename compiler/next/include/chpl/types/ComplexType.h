@@ -29,7 +29,7 @@ namespace types {
 /**
   This class represents a complex type, e.g. `complex` or `complex(64)`.
  */
-class ComplexType : public PrimitiveType {
+class ComplexType final : public PrimitiveType {
  private:
   ComplexType(int bitwidth)
     : PrimitiveType(typetags::ComplexType, bitwidth)

@@ -29,7 +29,7 @@ namespace types {
 /**
   This class represents an int type, e.g. `int` or `int(32)`.
  */
-class IntType : public PrimitiveType {
+class IntType final : public PrimitiveType {
  private:
   IntType(int bitwidth)
     : PrimitiveType(typetags::IntType, bitwidth)

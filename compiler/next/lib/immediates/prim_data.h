@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_IMMEDIATES_PRIM_DATA_H
-#define CHPL_IMMEDIATES_PRIM_DATA_H
+#ifndef PRIM_DATA_H
+#define PRIM_DATA_H
 
 #include "chpl/uast/PrimOp.h"
 

@@ -17,39 +17,36 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_CSTRINGTYPE_H
-#define CHPL_TYPES_CSTRINGTYPE_H
+#ifndef CHPL_TYPES_TUPLE_TYPE_H
+#define CHPL_TYPES_TUPLE_TYPE_H
 
-#include "chpl/types/Type.h"
+#include "chpl/types/CompositeType.h"
 
 namespace chpl {
 namespace types {
 
 
 /**
-  This class represents the string type.
+  This class represents a tuple type e.g. `(int, real)`.
  */
-class CStringType final : public Type {
+class TupleType final : public CompositeType {
  private:
-  CStringType() : Type(typetags::CStringType) { }
+  TupleType(/* args todo */)
+    : CompositeType(typetags::TupleType)
+  { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return true;
+    return compositeTypeContentsMatchInner((const CompositeType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
+    compositeTypeMarkUniqueStringsInner(context);
   }
-
-  bool isGeneric() const override {
-    return false;
-  }
-
-  static const owned<CStringType>& getCStringType(Context* context);
 
  public:
-  ~CStringType() = default;
+  ~TupleType() = default;
 
-  static const CStringType* get(Context* context);
+  static const TupleType* get(Context* context /* args todo */);
 };
 
 

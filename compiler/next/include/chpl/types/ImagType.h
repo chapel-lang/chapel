@@ -29,7 +29,7 @@ namespace types {
 /**
   This class represents a imag type, e.g. `imag` or `imag(32)`.
  */
-class ImagType : public PrimitiveType {
+class ImagType final : public PrimitiveType {
  private:
   ImagType(int bitwidth)
     : PrimitiveType(typetags::ImagType, bitwidth)

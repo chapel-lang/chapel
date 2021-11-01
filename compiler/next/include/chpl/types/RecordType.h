@@ -17,39 +17,37 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_CSTRINGTYPE_H
-#define CHPL_TYPES_CSTRINGTYPE_H
+#ifndef CHPL_TYPES_RECORD_TYPE_H
+#define CHPL_TYPES_RECORD_TYPE_H
 
-#include "chpl/types/Type.h"
+#include "chpl/types/CompositeType.h"
 
 namespace chpl {
 namespace types {
 
 
 /**
-  This class represents the string type.
+  This class represents a record type, e.g., if we have `record R`,
+  then `R` refers to a RecordType.
  */
-class CStringType final : public Type {
+class RecordType final : public CompositeType {
  private:
-  CStringType() : Type(typetags::CStringType) { }
+  RecordType(/* args todo */)
+    : CompositeType(typetags::RecordType)
+  { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return true;
+    return compositeTypeContentsMatchInner((const CompositeType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
+    compositeTypeMarkUniqueStringsInner(context);
   }
-
-  bool isGeneric() const override {
-    return false;
-  }
-
-  static const owned<CStringType>& getCStringType(Context* context);
 
  public:
-  ~CStringType() = default;
+  ~RecordType() = default;
 
-  static const CStringType* get(Context* context);
+  static const RecordType* get(Context* context /* args todo */);
 };
 
 

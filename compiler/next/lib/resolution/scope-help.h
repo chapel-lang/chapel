@@ -35,7 +35,7 @@ void gatherDeclsWithin(const uast::ASTNode* ast,
                        bool& containsFunctionDecls);
 
 
-}
-}
+} // end namespace resolution
+} // end namespace chpl
 
 #endif

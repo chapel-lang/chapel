@@ -17,39 +17,37 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_TYPES_CSTRINGTYPE_H
-#define CHPL_TYPES_CSTRINGTYPE_H
+#ifndef CHPL_TYPES_UNION_TYPE_H
+#define CHPL_TYPES_UNION_TYPE_H
 
-#include "chpl/types/Type.h"
+#include "chpl/types/CompositeType.h"
 
 namespace chpl {
 namespace types {
 
 
 /**
-  This class represents the string type.
+  This class represents a union type, e.g., if we have `union U`,
+  then `U` refers to a UnionType.
  */
-class CStringType final : public Type {
+class UnionType final : public CompositeType {
  private:
-  CStringType() : Type(typetags::CStringType) { }
+  UnionType(/* args todo */)
+    : CompositeType(typetags::UnionType)
+  { }
 
   bool contentsMatchInner(const Type* other) const override {
-    return true;
+    return compositeTypeContentsMatchInner((const CompositeType*) other);
   }
 
   void markUniqueStringsInner(Context* context) const override {
+    compositeTypeMarkUniqueStringsInner(context);
   }
-
-  bool isGeneric() const override {
-    return false;
-  }
-
-  static const owned<CStringType>& getCStringType(Context* context);
 
  public:
-  ~CStringType() = default;
+  ~UnionType() = default;
 
-  static const CStringType* get(Context* context);
+  static const UnionType* get(Context* context /* args todo */);
 };
 
 

@@ -39,7 +39,7 @@ class Type;
 
   This combination is the type information that the resolver needs.
  */
-class QualifiedType {
+class QualifiedType final {
  public:
   typedef enum {
     UNKNOWN,

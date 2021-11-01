@@ -26,7 +26,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 
-#include "../util/filesystem.h"
+#include "../util/filesystem_help.h"
 
 #include <cstdio>
 #include <set>
