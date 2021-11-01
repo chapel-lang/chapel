@@ -339,6 +339,15 @@ module ChapelHashtable {
 
     // #### add & remove helpers ####
 
+    // a utility to check for key equality
+    proc keysMatch(key1: ?t, key2: t) {
+      if isArrayType(key2.type) {
+        return (key1.equals(key2));
+      } else {
+        return key1 == key2;
+      }
+    }
+
     // Searches for 'key' in a filled slot.
     //
     // Returns (filledSlotFound, slot)
@@ -359,7 +368,7 @@ module ChapelHashtable {
           if firstOpen == -1 then firstOpen = slotNum;
           return (false, firstOpen);
         } else if (slotStatus == chpl__hash_status.full) {
-          if (table[slotNum].key == key) {
+          if keysMatch(table[slotNum].key, key) {
             return (true, slotNum);
           }
         } else { // this entry was removed, but is the first slot we could use
