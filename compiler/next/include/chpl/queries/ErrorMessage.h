@@ -22,6 +22,7 @@
 
 #include "chpl/queries/Location.h"
 
+#include <cstdarg>
 #include <string>
 #include <utility>
 #include <vector>
