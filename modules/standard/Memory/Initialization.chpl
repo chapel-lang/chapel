@@ -90,6 +90,39 @@ module Initialization {
   proc moveInitialize(ref lhs,
                       pragma "no auto destroy"
                       pragma "error on copy" in rhs) {
+    if (lhs.type != rhs.type) {
+      compilerError("type mismatch move-initializing an expression of type '"+lhs.type:string+"' from one of type '"+rhs.type:string+"'");
+    }
+    _move(lhs, rhs);
+  }
+
+  // This helper routine and the following moveInitialize() overload
+  // exist because in a `--baseline` compilation, attempts to reason
+  // about 'lhs.type' in code or via an argument query (e.g., 'lhs:
+  // ?t') result in execution-time code to query the runtime type of
+  // the 'lhs'.  Yet, for an uninitialized 'lhs' this query can't be
+  // made, resulting in uninitialized memory being read.
+  
+  private proc hasRuntimeType(x: []) param {
+    return true;
+  }
+
+  private proc hasRuntimeType(x: domain) param {
+    return true;
+  }
+
+  private proc hasRuntimeType(x: _distribution(?)) param {
+    return true;
+  }
+
+  private proc hasRuntimeType(x) param {
+    return false;
+  }
+
+  pragma "no doc"
+  proc moveInitialize(ref lhs,
+                      pragma "no auto destroy"
+                      pragma "error on copy" in rhs) where hasRuntimeType(lhs){
     _move(lhs, rhs);
   }
 
