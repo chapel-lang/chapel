@@ -1024,22 +1024,6 @@ static bool canParamCoerce(Type*   actualType,
         }
       }
     }
-
-    //
-    // For smaller integer types, if the argument is a param, does it
-    // store a value that's small enough that it could dispatch to
-    // this argument?
-    //
-    if (get_width(formalType) < 64) {
-      if (VarSymbol* var = toVarSymbol(actualSym)) {
-        if (var->immediate) {
-          if (fits_in_uint(get_width(formalType), var->immediate)) {
-            *paramNarrows = true;
-            return true;
-          }
-        }
-      }
-    }
   }
 
   // param strings can coerce between string and c_string
