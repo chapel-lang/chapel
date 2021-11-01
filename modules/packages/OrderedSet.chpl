@@ -52,7 +52,7 @@ module OrderedSet {
 
     /* The underlying implementation */
     pragma "no doc"
-    var instance: treap(eltType, parSafe);
+    var instance: treap(eltType, parSafe, ?);
 
     /*
       Initializes an empty orderedSet containing elements of the given type.
@@ -446,7 +446,12 @@ module OrderedSet {
   */
   operator orderedSet.&(const ref a: orderedSet(?t),
                         const ref b: orderedSet(t)): orderedSet(t) {
-    var result: orderedSet(t, (a.parSafe || b.parSafe));
+
+    // Note we need the full type here. In other operators (e.g., |), there's a
+    // clear initialization point and split-init works fine. Here there's no
+    // initialization point, so we have to initialize the result explicitly
+    var result = new orderedSet(t, (a.parSafe || b.parSafe),
+                                a.instance.comparator);
 
     /* Iterate over the smaller orderedSet */
     if a.size <= b.size {
@@ -476,9 +481,11 @@ module OrderedSet {
   */
   operator orderedSet.&=(ref lhs: orderedSet(?t, ?),
                          const ref rhs: orderedSet(t, ?)) {
-    /* We can't remove things from lhs while iterating over it, so
-     * use a temporary. */
-    var result: orderedSet(t, (lhs.parSafe || rhs.parSafe));
+
+    // We can't remove things from lhs while iterating over it, so
+    // use a temporary. 
+    var result = new orderedSet(t, (lhs.parSafe || rhs.parSafe),
+                                lhs.instance.comparator);
 
     for x in lhs do
       if rhs.contains(x) then
