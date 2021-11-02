@@ -122,8 +122,8 @@ class Vec {
   void remove(int index);
   void insert(int index, C a);
   void reverse();
-  C* begin() { return v; }
-  C* end() { return v + n; }
+  C* begin() const { return v; }
+  C* end() const { return v + n; }
   Vec<C,S>& operator=(Vec<C,S> &v) { this->copy(v); return *this; }
   int length () { return n; }
   int size() { return n; }
