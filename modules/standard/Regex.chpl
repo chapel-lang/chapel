@@ -585,6 +585,14 @@ proc bytes.this(m:regexMatch) {
   else return b"";
 }
 
+
+pragma "no doc"
+record __serializeHelper {
+   type exprType;
+   var pattern:exprType;
+   var options:qio_regex_options_t;
+}
+
  private use IO;
 
 /*  This record represents a compiled regular expression. Regular expressions
@@ -611,12 +619,57 @@ record regex {
 
   proc init=(x: regex(?)) {
     this.exprType = x.exprType;
-    this.home = x.home;
-    this._regex = x._regex;
-    this.complete();
-    on home {
-      qio_regex_retain(_regex);
+    /* always bring the regex local */
+    this.home = here;
+    /* if it's local, retain and avoid the recompile (thread safe) */
+    if (x.home == here) {
+      this._regex = x._regex;
+      this.complete();
+      qio_regex_retain(x._regex);
+    } else {
+      /* otherwise recompile locally */
+      this.complete();
+      var serialized = x.chpl__serialize();
+      this.initFromSerializedData(serialized);
     }
+  }
+
+  pragma "no doc"
+  proc chpl__serialize() {
+    var pattern: exprType;
+    var options: qio_regex_options_t;
+
+    on this.home {
+      var patternTemp: c_string;
+      qio_regex_get_pattern(this._regex, patternTemp);
+      if exprType == string then {
+        try! pattern = createStringWithNewBuffer(patternTemp);
+      }
+      else {
+        pattern = createBytesWithNewBuffer(patternTemp);
+      }
+
+      var localOptions: qio_regex_options_t;
+      qio_regex_get_options(this._regex, localOptions);
+      options = localOptions;
+    }
+    return new __serializeHelper(exprType, pattern, options);
+  }
+
+  pragma "no doc"
+  proc type chpl__deserialize(data) {
+    var ret:regex(exprType);
+    ret.initFromSerializedData(data);
+    return ret;
+  }
+
+  pragma "no doc"
+  proc initFromSerializedData(in data) {
+    qio_regex_create_compile(data.pattern.c_str(),
+                             data.pattern.numBytes,
+                             data.options,
+                             this._regex);
+
   }
 
   /* did this regular expression compile ? */
@@ -927,24 +980,20 @@ record regex {
     pos = 0;
     endpos = pos + text.numBytes;
 
-    var replaced:c_string;
+    var ret: exprType;
     var nreplaced:int;
-    var replaced_len:int(64);
-    nreplaced = qio_regex_replace(_regex, repl.localize().c_str(),
-                                   repl.numBytes, text.localize().c_str(),
-                                   text.numBytes, pos:int, endpos:int, global,
-                                   replaced, replaced_len);
 
-    if exprType==string {
-      try! {
-        const ret = createStringWithOwnedBuffer(replaced, replaced_len);
-        return (ret, nreplaced);
-      }
+    on this.home {
+      var replaced:c_string;
+      var replaced_len:int(64);
+      nreplaced = qio_regex_replace(_regex, repl.localize().c_str(),
+                                    repl.numBytes, text.localize().c_str(),
+                                    text.numBytes, pos:int, endpos:int, global,
+                                    replaced, replaced_len);
+      ret = replaced:exprType;
     }
-    else {
-      const ret = createBytesWithOwnedBuffer(replaced, replaced_len);
-      return (ret, nreplaced);
-    }
+
+    return (ret, nreplaced);
   }
 
   /*
@@ -963,6 +1012,7 @@ record regex {
     return str;
   }
 
+  // TODO this could use chpl__serialize to get the pattern and options
   pragma "no doc"
   proc writeThis(f) throws {
     var pattern:exprType;
@@ -1023,18 +1073,11 @@ operator regex.=(ref ret:regex(?t), x:regex(t))
     }
     ret._regex = x._regex;
   } else {
-    var pattern:c_string;
-    var options:qio_regex_options_t;
-
     on ret.home {
       qio_regex_release(ret._regex);
+      var serialized = x.chpl__serialize();
+      ret.initFromSerializedData(serialized);
     }
-    on x.home {
-      qio_regex_get_pattern(x._regex, pattern);
-      qio_regex_get_options(x._regex, options);
-    }
-
-    qio_regex_create_compile(pattern, pattern.size, options, ret._regex);
   }
 }
 
