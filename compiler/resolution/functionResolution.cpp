@@ -3194,7 +3194,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
     }
   }
 
-  if (isPrimitiveType(tsType)) {
+  if (isPrimitiveType(tsType) || at == NULL) {
     USR_FATAL_CONT(info.call, "illegal type index expression '%s'", info.toString());
     USR_PRINT(info.call, "primitive type '%s' cannot be used in an index expression", tsType->symbol->name);
     USR_STOP();
