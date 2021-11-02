@@ -368,6 +368,7 @@ module BigInteger {
       return ret.safeCast(int);
     }
 
+    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_nlimbs` on the :var:`mpz` field instead"
     proc numLimbs : uint {
       return chpl_gmp_mpz_nlimbs(this.mpz);
     }

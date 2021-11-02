@@ -1,0 +1,3 @@
+bigint_getlimbs.chpl:13: warning: This method is deprecated, please use GMP.chpl_gmp_mpz_nlimbs on the mpz field instead
+bigint_getlimbs.chpl:33: warning: This method is deprecated, please use GMP.chpl_gmp_mpz_nlimbs on the mpz field instead
+bigint_getlimbs.chpl:49: warning: This method is deprecated, please use GMP.chpl_gmp_mpz_nlimbs on the mpz field instead
