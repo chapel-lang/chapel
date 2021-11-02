@@ -4,9 +4,9 @@ class C {
   var i: int;
 }
 
-var m = new shared ConcurrentMap(string, shared C);
-var a = new C(1);
-var b = new C(2);
+var m = new shared ConcurrentMap(string, int);
+var a = 1;
+var b = 2;
 m.add("one", a);
 m.add("two", b);
 

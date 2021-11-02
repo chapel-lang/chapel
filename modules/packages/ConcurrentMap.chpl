@@ -19,7 +19,15 @@
  */
 
 /*
-  This module provides a fast concurrent map.
+  This module provides a fast, scalable, fine-grained concurrent map. It was
+  inspired by the Interlocked Hash Table [#]_. It allows large critical
+  sections that access a single table element, and can easily support multikey
+  atomic operations. ConcurrentMap is upto 200x faster than Chapel's built-in
+  map at 44 threads.
+
+  .. [#] L. Jenkins, T. Zhou and M. Spear, "Redesigning Go’s Built-In Map to
+    Support Concurrent Operations," 2017 26th International Conference on
+    Parallel Architectures and Compilation Techniques (PACT), 2017.
 */
 module ConcurrentMap {
   private use AtomicObjects;
@@ -38,20 +46,42 @@ module ConcurrentMap {
   pragma "no doc"
   param BUCKET_DESTROYED = 2;
 
+  /*
+    Maximum number of key-value pairs stored in each leaf bucket.
+  */
   config param BUCKET_NUM_ELEMS = 8;
+
+  /*
+    Maximum number of child buckets for the root bucket.
+  */
   config const DEFAULT_NUM_BUCKETS = 1024;
+
+  /*
+    Multiplier for child bucket size.
+    childBucketSize = MULTIPLIER_NUM_BUCKETS * parentBucketSize
+  */
   config param MULTIPLIER_NUM_BUCKETS : real = 2;
-  config param DEPTH = 2;
-  config param EMAX = 4;
 
   // Note: Once this becomes distributed, we have to make it per-locale
+  pragma "no doc"
   var seedRNG = new owned RandomStream(uint(64), parSafe=true);
 
+  pragma "no doc"
   const E_AVAIL = 1;
+
+  pragma "no doc"
   const E_LOCK = 2;
+
+  pragma "no doc"
   const P_INNER = 3;
+
+  pragma "no doc"
   const P_TERM = 4;
+
+  pragma "no doc"
   const P_LOCK = 5;
+
+  pragma "no doc"
   const GARBAGE = 6;
 
   pragma "no doc"
@@ -254,10 +284,14 @@ module ConcurrentMap {
       root.lock.write(P_INNER);
     }
 
+    /*
+      Register the task to epoch manager.
+    */
     proc getToken() : owned TokenWrapper {
       return _manager.register();
     }
 
+    pragma "no doc"
     proc getEList(key : keyType, isInsertion : bool, tok : owned TokenWrapper) : unmanaged Bucket(keyType, valType)? throws {
       var found : unmanaged Bucket(keyType, valType)?;
       var curr = root;
@@ -333,7 +367,8 @@ module ConcurrentMap {
       return nil;
     }
 
-    // temporary function to facilitate deletion of EList
+    // helper function to facilitate deletion of EList
+    pragma "no doc"
     proc getPEList(key : keyType, isInsertion : bool, tok : owned TokenWrapper) : PEListType throws {
       var found : unmanaged Bucket(keyType, valType)?;
       var retNil : PEListType;
@@ -419,6 +454,10 @@ module ConcurrentMap {
 
       :yields: A tuple whose elements are a copy of one of the key-value
                pairs contained in this map.
+
+      .. note::
+        While iterating the map, pre-maturely breaking the iteration loop may
+        permanently lock the map.
     */
     iter these() : (keyType, valType) {
       var tok = getToken();
@@ -868,6 +907,7 @@ module ConcurrentMap {
       return res;
     }
 
+    pragma "no doc"
     proc clearHelper(curr : unmanaged Buckets(keyType, valType)?, tok : owned TokenWrapper) throws {
       var shouldYield = false;
       var idx = 0;
@@ -932,6 +972,9 @@ module ConcurrentMap {
       return A;
     }
 
+    /*
+      Trigger EpochManager to reclaim any reclaimable memory.
+    */
     proc tryReclaim() {
       _manager.tryReclaim();
     }
