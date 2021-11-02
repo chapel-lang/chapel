@@ -1,2 +1,0 @@
-exceptEverything.chpl:11: warning: 'use <mod> except *;' is deprecated, use 'use <mod> only;' or 'import <mod>;' instead
-In foo
