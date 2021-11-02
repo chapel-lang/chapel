@@ -373,6 +373,7 @@ module BigInteger {
       return chpl_gmp_mpz_nlimbs(this.mpz);
     }
 
+    deprecated "This method is deprecated, please use :proc:`GMP.chpl_gmp_mpz_getlimbn` on the :var:`mpz` field instead"
     proc get_limbn(n: integral) : uint {
       var   ret: uint;
 
