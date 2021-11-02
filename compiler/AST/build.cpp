@@ -486,19 +486,6 @@ BlockStmt* buildUseStmt(Expr* mod, const char * rename,
   std::vector<const char*> namesList;
   std::map<const char*, const char*> renameMap;
 
-  // Catch the 'except *' case and turn it into 'only <nothing>'.  This
-  // case will have a single UnresolvedSymExpr named "".
-  if (except && names->size() == 1) {
-    PotentialRename* listElem = (*names)[0];
-    if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
-      if (name->unresolved[0] == '\0') {
-        USR_WARN(mod, "'use <mod> except *;' is deprecated, use 'use <mod>"
-                 " only;' or 'import <mod>;' instead");
-        except = false;
-      }
-    }
-  }
-
   // Iterate through the list of names to exclude when using mod
   for_vector(PotentialRename, listElem, *names) {
     switch (listElem->tag) {
@@ -2079,17 +2066,6 @@ BlockStmt* buildForwardingStmt(Expr* expr) {
 BlockStmt* buildForwardingStmt(Expr* expr, std::vector<PotentialRename*>* names, bool except) {
   std::set<const char*> namesSet;
   std::map<const char*, const char*> renameMap;
-
-  // Catch the 'except *' case and turn it into 'only <nothing>'.  This
-  // case will have a single UnresolvedSymExpr named "".
-  if (except && names->size() == 1) {
-    PotentialRename* listElem = (*names)[0];
-    if (UnresolvedSymExpr* name = toUnresolvedSymExpr(listElem->elem)) {
-      if (name->unresolved[0] == '\0') {
-        except = false;
-      }
-    }
-  }
 
   // Iterate through the list of names to exclude when using mod
   for_vector(PotentialRename, listElem, *names) {
