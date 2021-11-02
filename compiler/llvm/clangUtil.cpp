@@ -2467,7 +2467,7 @@ void runClang(const char* just_parse_filename) {
     clangOtherArgs.push_back("cuda");
 
     std::string cudaGPUArch = std::string("--cuda-gpu-arch=") + fCUDAArch;
-    clangOtherArgs.push_back(cudaGPUArch.c_str());
+    clangOtherArgs.push_back(cudaGPUArch);
   }
 
   // Always include sys_basic because it might change the
@@ -2502,7 +2502,7 @@ void runClang(const char* just_parse_filename) {
       fprintf(fp, "%s", ifdefStrEnd);
       closefile(fp);
       clangOtherArgs.push_back("-include");
-      clangOtherArgs.push_back(genHeaderFilename.c_str());
+      clangOtherArgs.push_back(genHeaderFilename);
     }
 
     // Running clang to compile all runtime and extern blocks
