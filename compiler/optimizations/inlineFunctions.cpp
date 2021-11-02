@@ -72,7 +72,11 @@ static void inlineFunctionsImpl() {
     forv_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->hasFlag(FLAG_INLINE) == true &&
           inlinedSet.find(fn)      == inlinedSet.end()) {
-        inlineFunction(fn, inlinedSet);
+        if (fn->hasFlag(FLAG_EXTERN)) {
+          USR_WARN(fn, "inline keyword has no effect an 'extern proc'");
+        } else {
+          inlineFunction(fn, inlinedSet);
+        }
       }
     }
   }
@@ -350,6 +354,8 @@ static void inlineCleanup() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fNoInline                 == false &&
         fn->hasFlag(FLAG_INLINE)  ==  true &&
+        fn->hasFlag(FLAG_EXTERN)  ==  false &&
+        fn->hasFlag(FLAG_EXPORT)  ==  false &&
         fn->hasFlag(FLAG_VIRTUAL) == false) {
       fn->defPoint->remove();
     } else {

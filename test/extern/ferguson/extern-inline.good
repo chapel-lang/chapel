@@ -1,0 +1,3 @@
+extern-inline.chpl:6: warning: inline keyword has no effect an 'extern proc'
+26
+12
