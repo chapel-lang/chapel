@@ -61,7 +61,7 @@ static unsigned int deadBlockCount;
 static unsigned int deadModuleCount;
 
 bool debugPrintGPUChecks = false;
-bool allowFnCallsFromGPU = false;
+bool allowFnCallsFromGPU = true;
 int indentGPUChecksLevel = 0;
 
 
@@ -699,7 +699,7 @@ static void outlineGPUKernels() {
 
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
-        if (shouldOutlineLoop(loop, /*allowFnCalls=*/false)) {
+        if (shouldOutlineLoop(loop, /*allowFnCalls=*/allowFnCallsFromGPU)) {
           SET_LINENO(loop);
 
           OutlineInfo info = collectOutlineInfo(loop);
@@ -776,6 +776,16 @@ static void outlineGPUKernels() {
                     else if (parent->isPrimitive()) {
                       addKernelArgument(info, sym);
                     }
+                    else if (FnSymbol* calledFn = parent->resolvedFunction()) {
+                      if (!toFnSymbol(sym)) {
+                        addKernelArgument(info, sym);
+		      }
+		      
+                      if (!calledFn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
+                         calledFn->addFlag(FLAG_GPU_AND_CPU_CODEGEN);
+                         calledFn->addFlag(FLAG_GPU_CODEGEN);
+                      }
+		    }
                     else {
                       INT_FATAL("Unexpected call expression");
                     }
