@@ -17,23 +17,25 @@
  * limitations under the License.
  */
 
-#include "resolution-rules.h"
-
-#include "chpl/types/QualifiedType.h"
+#include "chpl/types/NilType.h"
+#include "chpl/queries/query-impl.h"
 
 namespace chpl {
-namespace resolution {
+namespace types {
 
-using namespace uast;
-using namespace types;
 
-CanPassResult canPass(const QualifiedType& actualType, 
-                      const QualifiedType& formalType) {
-  CanPassResult ret;
+const owned<NilType>& NilType::getNilType(Context* context) {
+  QUERY_BEGIN(getNilType, context);
 
-  return ret;
+  auto result = toOwned(new NilType());
+
+  return QUERY_END(result);
+}
+
+const NilType* NilType::get(Context* context) {
+  return getNilType(context).get();
 }
 
 
-} // end namespace resolution
+} // end namespace types
 } // end namespace chpl

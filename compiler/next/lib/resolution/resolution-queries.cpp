@@ -22,6 +22,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/query-impl.h"
+#include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
@@ -1119,27 +1120,20 @@ static QualifiedType::Kind resolveIntent(const QualifiedType& t) {
 
 static bool canPassInitial(const QualifiedType& actualType,
                            const QualifiedType& formalType) {
-  // TODO: pull logic from canDispatch
-  if (actualType.type() == formalType.type()) return true;
-
-  if (actualType.type()->isIntType() &&
-      formalType.type()->isRealType()) return true;
-
+  // TODO: use Any type vs. Unknown for formals without a type?
   if (formalType.kind() == QualifiedType::UNKNOWN) return true;
 
-  return false;
+  auto result = canPass(actualType, formalType);
+  return result.passes();
 }
 
-static bool canPass(const QualifiedType& actualType,
-                    const QualifiedType& formalType) {
-  // TODO: pull logic from canDispatch
-  if (actualType.type() == formalType.type()) return true;
+static bool canPassAfterInstantiating(const QualifiedType& actualType,
+                                      const QualifiedType& formalType) {
+  // TODO: Any type handling should be in canPass
   if (formalType.type()->isAnyType()) return true;
 
-  if (actualType.type()->isIntType() &&
-      formalType.type()->isRealType()) return true;
-
-  return false;
+  auto result = canPass(actualType, formalType);
+  return result.passes();
 }
 
 // returns nullptr if the candidate is not applicable,
@@ -1205,7 +1199,7 @@ doIsCandidateApplicableInstantiating(Context* context,
   for (size_t i = 0; i < nActuals; i++) {
     const QualifiedType& actualType = call.actuals[i].type;
     const QualifiedType& formalType = instantiated->formalTypes[i];
-    bool ok = canPass(actualType, formalType);
+    bool ok = canPassAfterInstantiating(actualType, formalType);
     if (!ok)
       return nullptr;
   }

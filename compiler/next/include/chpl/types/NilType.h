@@ -17,24 +17,43 @@
  * limitations under the License.
  */
 
-// This file lists the Param subclasses to help with macros generating code
-// for each.
-//
-// The arguments are (name of field and tag, type of field, type expr)
-//
-// the following comment disables doxygen for these
-/// \cond DO_NOT_DOCUMENT
+#ifndef CHPL_TYPES_NIL_TYPE_H
+#define CHPL_TYPES_NIL_TYPE_H
 
-PARAM_NODE(BoolParam, bool)
-PARAM_NODE(ComplexParam, ComplexDouble)
-PARAM_NODE(IntParam, int64_t)
-PARAM_NODE(NoneParam, NoneValue)
-PARAM_NODE(RealParam, double)
-PARAM_NODE(StringParam, UniqueString)
-PARAM_NODE(UintParam, uint64_t)
-// ImagParam doesn't exist (use RealParam with type ImagType)
-// CStringParam, BytesParam don't exist (use StringParam with appropriate type)
+#include "chpl/types/Type.h"
 
-/// \endcond
+namespace chpl {
+namespace types {
 
-// this comment seems to be necessary for doxygen xml output to be well-formed
+
+/**
+  This class represents the type of `nil`.
+ */
+class NilType final : public Type {
+ private:
+  NilType() : Type(typetags::NilType) { }
+
+  bool contentsMatchInner(const Type* other) const override {
+    return true;
+  }
+
+  void markUniqueStringsInner(Context* context) const override {
+  }
+
+  bool isGeneric() const override {
+    return false;
+  }
+
+  static const owned<NilType>& getNilType(Context* context);
+
+ public:
+  ~NilType() = default;
+
+  static const NilType* get(Context* context);
+};
+
+
+} // end namespace uast
+} // end namespace chpl
+
+#endif
