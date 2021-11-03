@@ -629,19 +629,22 @@ record regex {
     } else {
       /* otherwise recompile locally */
       this.complete();
-      var serialized = x.chpl__serialize();
-      this.initFromSerializedData(serialized);
+      var serialized = x._serialize();
+      this._deserialize(serialized);
     }
   }
 
   pragma "no doc"
-  proc chpl__serialize() {
+  proc _serialize() {
     var pattern: exprType;
     var options: qio_regex_options_t;
+    var _regexCopy = _regex;
 
     on this.home {
+      /* NOTE we can't reference `this` inside this on block because
+       * it can cause a recursive chpl__serialize loop */
       var patternTemp: c_string;
-      qio_regex_get_pattern(this._regex, patternTemp);
+      qio_regex_get_pattern(_regexCopy, patternTemp);
       if exprType == string then {
         try! pattern = createStringWithNewBuffer(patternTemp);
       }
@@ -650,26 +653,31 @@ record regex {
       }
 
       var localOptions: qio_regex_options_t;
-      qio_regex_get_options(this._regex, localOptions);
+      qio_regex_get_options(_regexCopy, localOptions);
       options = localOptions;
     }
     return new __serializeHelper(exprType, pattern, options);
   }
 
   pragma "no doc"
-  proc type chpl__deserialize(data) {
-    var ret:regex(exprType);
-    ret.initFromSerializedData(data);
-    return ret;
-  }
-
-  pragma "no doc"
-  proc initFromSerializedData(in data) {
+  proc _deserialize(in data) {
     qio_regex_create_compile(data.pattern.c_str(),
                              data.pattern.numBytes,
                              data.options,
                              this._regex);
 
+  }
+
+  pragma "no doc"
+  proc chpl__serialize() {
+    return _serialize();
+  }
+
+  pragma "no doc"
+  proc type chpl__deserialize(data) {
+    var ret:regex(exprType);
+    ret._deserialize(data);
+    return ret;
   }
 
   /* did this regular expression compile ? */
@@ -1075,8 +1083,8 @@ operator regex.=(ref ret:regex(?t), x:regex(t))
   } else {
     on ret.home {
       qio_regex_release(ret._regex);
-      var serialized = x.chpl__serialize();
-      ret.initFromSerializedData(serialized);
+      var serialized = x._serialize();
+      ret._deserialize(serialized);
     }
   }
 }
