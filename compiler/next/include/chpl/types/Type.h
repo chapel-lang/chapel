@@ -134,6 +134,19 @@ class Type {
   bool isIntegralType() const {
     return isIntType() || isUintType();
   }
+  /** returns true if it's a numeric type of any width; that includes
+      int, uint, real, imag, complex */
+  bool isNumericType() const {
+    return isIntType() || isUintType() ||
+           isRealType() || isImagType() ||
+           isComplexType();
+  }
+
+  /** returns true if it's a numeric type or bool type
+      of any width */
+  bool isNumericOrBoolType() const {
+    return isNumericType() || isBoolType();
+  }
 
   /** returns true for a type that is a kind of pointer */
   bool isAnyPtrType() const {

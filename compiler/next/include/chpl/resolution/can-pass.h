@@ -40,13 +40,11 @@ class CanPassResult {
     /** A narrowing param conversion is needed.
         These are only applicable to the particular param
         value -- e.g. 1:int converting to int(8) because 1 fits in int(8).
-        The result of such a conversion is always a param. */
+        The input of such a conversion must be param and the result
+        is always a param. */
     PARAM_NARROWING,
-    /** A non-narrowing param conversion. This is a kind of conversion
-        that can be applied to params but the tested argument isn't
-        necessarily params. If applied to a param, such a conversion
-        will result in a param. */
-    PARAM,
+    /** A numeric or bool conversion. */
+    NUMERIC,
     /** A conversion that implements subtyping */
     SUBTYPE,
     /** Non-subtype conversion that doesn't produce a param */
@@ -86,12 +84,15 @@ class CanPassResult {
     return ret;
   }
 
-  static CanPassResult canParamCoerce(const types::QualifiedType& actualType,
-                                      const types::QualifiedType& formalType);
-  static CanPassResult canSubtypeCoerce(const types::QualifiedType& actualType,
-                                        const types::QualifiedType& formalType);
-  static CanPassResult canCoerce(const types::QualifiedType& actualType,
-                                 const types::QualifiedType& formalType);
+  static bool
+  canConvertNumeric(const types::Type* actualT,
+                    const types::Type* formalT);
+  static bool
+  canConvertParamNarrowing(const types::QualifiedType& actualType,
+                           const types::QualifiedType& formalType);
+  static CanPassResult
+  canConvertClassesOrPtrs(const types::QualifiedType& actualType,
+                          const types::QualifiedType& formalType);
 
  public:
   CanPassResult() { }

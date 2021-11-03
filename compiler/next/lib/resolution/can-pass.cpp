@@ -213,92 +213,166 @@ static bool fitsInMantissaExponent(int mantissaWidth,
   return false;
 }
 
-CanPassResult CanPassResult::canParamCoerce(const QualifiedType& actualQT,
-                                            const QualifiedType& formalQT) {
-  const Type* actualT = actualQT.type();
-  const Type* formalT = formalQT.type();
+// can we do an implicit numeric conversion?
+// does not check for param narrowing conversions
+bool CanPassResult::canConvertNumeric(const types::Type* actualT,
+                                      const types::Type* formalT) {
+  // Return early if the types involved are not numeric/bool
+  if (!actualT->isNumericOrBoolType() || !formalT->isNumericOrBoolType())
+    return false;
 
+  // any bool type can convert to any other bool type
   if (actualT->isBoolType() && formalT->isBoolType())
-    return convert(PARAM);
+    return true;
 
   if (auto formalIntT = formalT->toIntType()) {
+    // convert any bool to int
     if (actualT->isBoolType())
-      return convert(PARAM);
+      return true;
 
+    // convert from int/uint of smaller size
     if (auto actualIntT = actualT->toIntType())
       if (actualIntT->bitwidth() < formalIntT->bitwidth())
-        return convert(PARAM);
+        return true;
 
     if (auto actualUintT = actualT->toUintType())
       if (actualUintT->bitwidth() < formalIntT->bitwidth())
-        return convert(PARAM);
+        return true;
+  }
 
+  if (auto formalUintT = formalT->toUintType()) {
+    // convert any bool to uint
+    if (actualT->isBoolType())
+      return true;
+
+    // convert from uint of smaller size
+    if (auto actualUintT = actualT->toUintType())
+      if (actualUintT->bitwidth() < formalUintT->bitwidth())
+        return true;
+  }
+
+  if (auto formalRealT = formalT->toRealType()) {
+    // don't convert bools to reals (per spec: "unintended by programmer")
+
+    // convert real from smaller size
+    if (auto actualRealT = actualT->toRealType())
+      if (actualRealT->bitwidth() < formalRealT->bitwidth())
+        return true;
+
+    if (actualT->isIntegralType()) {
+      // convert any integer type to maximum width real
+      if (formalRealT->bitwidth() == 64)
+        return true;
+
+      int mantissaW = 0;
+      int exponentW = 0;
+      getMantissaExponentWidth(formalRealT, mantissaW, exponentW);
+
+      // convert integer types that are exactly representable
+      if (auto actualIntT = actualT->toIntType())
+        if (actualIntT->bitwidth() < mantissaW)
+          return true;
+
+      if (auto actualUintT = actualT->toUintType())
+        if (actualUintT->bitwidth() < mantissaW)
+          return true;
+    }
+  }
+
+  if (auto formalImagT = formalT->toImagType()) {
+    // convert imag from smaller size
+    if (auto actualImagT = actualT->toImagType())
+      if (actualImagT->bitwidth() < formalImagT->bitwidth())
+        return true;
+  }
+
+  if (auto formalComplexT = formalT->toComplexType()) {
+    // don't convert bools to complexes (per spec: "unintended by programmer")
+
+    // convert smaller complex types
+    if (auto actualComplexT = actualT->toComplexType())
+      if (actualComplexT->bitwidth() < formalComplexT->bitwidth())
+        return true;
+
+    // convert real/imag from smaller size
+    if (auto actualRealT = actualT->toRealType())
+      if (actualRealT->bitwidth() <= formalComplexT->bitwidth()/2)
+        return true;
+    if (auto actualImagT = actualT->toImagType())
+      if (actualImagT->bitwidth() <= formalComplexT->bitwidth()/2)
+        return true;
+
+    if (actualT->isIntegralType()) {
+      // convert any integer type to maximum width complex
+      if (formalComplexT->bitwidth() == 128)
+        return true;
+
+      int mantissaW = 0;
+      int exponentW = 0;
+      getMantissaExponentWidth(formalComplexT, mantissaW, exponentW);
+
+      // convert integer types that are exactly representable
+      if (auto actualIntT = actualT->toIntType())
+        if (actualIntT->bitwidth() < mantissaW)
+          return true;
+      if (auto actualUintT = actualT->toUintType())
+        if (actualUintT->bitwidth() < mantissaW)
+          return true;
+    }
+  }
+
+  return false;
+}
+
+bool
+CanPassResult::canConvertParamNarrowing(const QualifiedType& actualQT,
+                                        const QualifiedType& formalQT) {
+  const Type* actualT = actualQT.type();
+  const Param* actualP = actualQT.param();
+  const Type* formalT = formalQT.type();
+
+  // return early if actual is not a param
+  if (actualP == nullptr)
+    return false;
+
+  // return early if formal is not numeric or stringlike
+  if (!formalT->isNumericType() && !formalT->isStringLikeType())
+    return false;
+
+  if (auto formalIntT = formalT->toIntType()) {
     //
     // For smaller integer types, if the argument is a param, does it
     // store a value that's small enough that it could dispatch to
     // this argument?
     //
     if (formalIntT->bitwidth() < 64)
-      if (auto actualP = actualQT.param())
-        if (paramFitsInInt(formalIntT->bitwidth(), actualP))
-          return convert(PARAM_NARROWING);
+      if (paramFitsInInt(formalIntT->bitwidth(), actualP))
+        return true;
   }
 
   if (auto formalUintT = formalT->toUintType()) {
-    if (actualT->isBoolType())
-      return convert(PARAM);
-
-    if (auto actualUintT = actualT->toUintType())
-      if (actualUintT->bitwidth() < formalUintT->bitwidth())
-        return convert(PARAM);
-
-    if (auto actualP = actualQT.param())
-      if (paramFitsInUint(formalUintT->bitwidth(), actualP))
-        return convert(PARAM_NARROWING);
+    if (paramFitsInUint(formalUintT->bitwidth(), actualP))
+      return true;
   }
 
-  // param strings can coerce between string and c_string
-  if (actualQT.hasParam())
-    if ((formalT->isStringType() || formalT->isCStringType()) &&
-        (actualT->isStringType() || actualT->isCStringType()))
-      return convert(PARAM);
+  // param strings can convert between string and c_string
+  if ((formalT->isStringType() || formalT->isCStringType()) &&
+      (actualT->isStringType() || actualT->isCStringType()))
+    return true;
 
-  // coerce fully representable integers into real / real part of complex
   if (auto formalRealT = formalT->toRealType()) {
     int mantissaW = 0;
     int exponentW = 0;
     getMantissaExponentWidth(formalRealT, mantissaW, exponentW);
 
-    // don't coerce bools to reals (per spec: "unintended by programmer")
+    // convert literal/param ints that are exactly representable
+    if (actualT->isIntegralType())
+      if (fitsInMantissa(mantissaW, actualP))
+        return true;
 
-    // coerce any integer type to maximum width real
-    if (actualT->isIntegralType() && formalRealT->bitwidth() == 64)
-      return convert(PARAM);
-
-    // coerce integer types that are exactly representable
-    if (auto actualIntT = actualT->toIntType())
-      if (actualIntT->bitwidth() < mantissaW)
-        return convert(PARAM);
-
-    if (auto actualUintT = actualT->toUintType())
-      if (actualUintT->bitwidth() < mantissaW)
-        return convert(PARAM);
-
-    // coerce real from smaller size
-    if (auto actualRealT = actualT->toRealType())
-      if (actualRealT->bitwidth() < formalRealT->bitwidth())
-        return convert(PARAM);
-
-    // coerce literal/param ints that are exactly representable
-    if (auto actualP = actualQT.param()) {
-      if (actualT->isIntegralType())
-        if (fitsInMantissa(mantissaW, actualP))
-          return convert(PARAM_NARROWING);
-
-      if (actualT->isRealType())
-        if (fitsInMantissaExponent(mantissaW, exponentW, actualP, true))
-          return convert(PARAM_NARROWING);
-    }
+    if (actualT->isRealType())
+      if (fitsInMantissaExponent(mantissaW, exponentW, actualP, true))
+        return true;
   }
 
   if (auto formalImagT = formalT->toImagType()) {
@@ -306,11 +380,10 @@ CanPassResult CanPassResult::canParamCoerce(const QualifiedType& actualQT,
     int exponentW = 0;
     getMantissaExponentWidth(formalImagT, mantissaW, exponentW);
 
-    // coerce literal/param imag that are exactly representable
-    if (auto actualP = actualQT.param())
-      if (actualT->isImagType())
-        if (fitsInMantissaExponent(mantissaW, exponentW, actualP, false))
-          return convert(PARAM_NARROWING);
+    // convert literal/param imag that are exactly representable
+    if (actualT->isImagType())
+      if (fitsInMantissaExponent(mantissaW, exponentW, actualP, false))
+        return true;
   }
 
   if (auto formalComplexT = formalT->toComplexType()) {
@@ -318,107 +391,54 @@ CanPassResult CanPassResult::canParamCoerce(const QualifiedType& actualQT,
     int exponentW = 0;
     getMantissaExponentWidth(formalComplexT, mantissaW, exponentW);
 
-    // don't coerce bools to complexes (per spec: "unintended by programmer")
-
-    // coerce any integer type to maximum width complex
-    if (actualT->isIntegralType() && formalComplexT->bitwidth() == 128)
-      return convert(PARAM);
-
-    // coerce integer types that are exactly representable
-    if (auto actualIntT = actualT->toIntType())
-      if (actualIntT->bitwidth() < mantissaW)
-        return convert(PARAM);
-    if (auto actualUintT = actualT->toUintType())
-      if (actualUintT->bitwidth() < mantissaW)
-        return convert(PARAM);
-
-    // coerce real/imag from smaller size
-    if (auto actualRealT = actualT->toRealType())
-      if (actualRealT->bitwidth() <= formalComplexT->bitwidth()/2)
-        return convert(PARAM);
-    if (auto actualImagT = actualT->toImagType())
-      if (actualImagT->bitwidth() <= formalComplexT->bitwidth()/2)
-        return convert(PARAM);
-
-    // coerce smaller complex types
-    if (auto actualComplexT = actualT->toComplexType())
-      if (actualComplexT->bitwidth() < formalComplexT->bitwidth())
-        return convert(PARAM);
-
-    // coerce literal/param complexes that are exactly representable
+    // convert literal/param complexes that are exactly representable
     if (auto actualP = actualQT.param()) {
       if (actualT->isIntegralType())
         if (fitsInMantissa(mantissaW, actualP))
-          return convert(PARAM_NARROWING);
+          return true;
       if (actualT->isRealType())
         if (fitsInMantissaExponent(mantissaW, exponentW, actualP, true))
-          return convert(PARAM_NARROWING);
+          return true;
       if (actualT->isImagType())
         if (fitsInMantissaExponent(mantissaW, exponentW, actualP, false))
-          return convert(PARAM_NARROWING);
+          return true;
       if (actualT->isComplexType()) {
         if (fitsInMantissaExponent(mantissaW, exponentW, actualP, true) &&
             fitsInMantissaExponent(mantissaW, exponentW, actualP, false))
-          return convert(PARAM_NARROWING);
+          return true;
       }
     }
   }
 
-  return fail();
+  return false;
 }
 
-// The compiler considers many patterns of "subtyping" as things
-// that require coercions (they often require coercions in the generated C).
-// However not all coercions are created equal. Some of them are implementing
-// subtyping.
-// Here we consider a coercion to be implementing "subtyping" and return
-// true for this call if, in an ideal implementation, the actual could
-// be passed to a `const ref` argument of the formal type.
-CanPassResult CanPassResult::canSubtypeCoerce(const QualifiedType& actualQT,
-                                              const QualifiedType& formalQT) {
+CanPassResult
+CanPassResult::canConvertClassesOrPtrs(const QualifiedType& actualQT,
+                                       const QualifiedType& formalQT) {
   const Type* actualT = actualQT.type();
   const Type* formalT = formalQT.type();
+
+  // The compiler considers many patterns of "subtyping" as things that require
+  // implicit conversions (they often require implicit conversions in the
+  // generated C).  However not all implicit conversions are created equal. Some
+  // of them are implementing subtyping.  Here we consider an implicit
+  // conversion to be implementing "subtyping" if, in an ideal implementation,
+  // the actual could be passed to a `const ref` argument of the formal type.
 
   if (actualT->isNilType() && formalT->isAnyPtrType())
     return convert(SUBTYPE);
 
 
   if (actualT->isClassType() || formalT->isClassType()) {
-    // see canCoerceAsSubtype
+    // TODO: port canCoerceAsSubtype
     assert(false && "not implemented yet");
   }
 
   // TODO: implement c_ptr, c_array conversions
 
-  return fail();
-}
-
-CanPassResult CanPassResult::canCoerce(const QualifiedType& actualQT,
-                                       const QualifiedType& formalQT) {
-  CanPassResult ret;
-
-  // can we "param coerce" ?
-  ret = canParamCoerce(actualQT, formalQT);
-  if (ret.passes())
-    return ret;
-
-  // can we "subtype coerce" ?
-  ret = canSubtypeCoerce(actualQT, formalQT);
-  if (ret.passes())
-    return ret;
-
-  // can we coerce tuples?
-  if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
-    assert(false && "not implemented yet");
-    // see canCoerceTuples
-  }
-
   // Check for other class subtyping
-  // Class subtyping needs coercions in order to generate C code.
-
-  // TODO: check for coercion to copy type
-  // (relevant for array slices and iterator records)
-  // see canCoerceToCopyType
+  // Class subtyping needs conversions in order to generate C code.
 
   return fail();
 }
@@ -426,7 +446,11 @@ CanPassResult CanPassResult::canCoerce(const QualifiedType& actualQT,
 CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
                                      const QualifiedType& formalQT) {
 
-  assert(actualQT.type() && formalQT.type());
+  const Type* actualT = actualQT.type();
+  const Type* formalT = formalQT.type();
+  assert(actualT && formalT);
+
+  // TODO: check that kinds are compatible
 
   // check params
   if (formalQT.hasParam()) {
@@ -445,19 +469,37 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
     // otherwise the param passing is OK
   }
 
-  if (actualQT.type() == formalQT.type()) {
+  if (actualT == formalT) {
     return passAsIs();
   }
 
-  CanPassResult ret;
+  // can we convert with a numeric conversion?
+  if (canConvertNumeric(actualT, formalT))
+    return convert(NUMERIC);
 
-  // can we "param coerce" "subtype coerce" or other "coerce" ?
-  ret = canCoerce(actualQT, formalQT);
-  if (ret.passes())
-    return ret;
+  // can we convert with param narrowing?
+  if (canConvertParamNarrowing(actualQT, formalQT))
+    return convert(PARAM_NARROWING);
+
+  {
+    CanPassResult ret = canConvertClassesOrPtrs(actualQT, formalQT);
+    if (ret.passes())
+      return ret;
+  }
+
+  // can we convert tuples?
+  if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
+    assert(false && "not implemented yet");
+    // TODO: port canCoerceTuples from production compiler
+  }
+
+  // TODO: check for conversion to copy type
+  // (relevant for array slices and iterator records)
+  // TODO: port canCoerceToCopyType
 
   // can we promote?
   // TODO: implement promotion check
+
   return fail();
 }
 
