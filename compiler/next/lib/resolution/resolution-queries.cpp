@@ -630,8 +630,7 @@ const owned<UntypedFnSignature>& untypedSignatureQuery(Context* context, ID id)
 }
 
 const UntypedFnSignature* untypedSignature(Context* context, ID id) {
-  const owned<UntypedFnSignature>& r = untypedSignatureQuery(context, id);
-  return r.get();
+  return untypedSignatureQuery(context, id).get();
 }
 
 static const owned<TypedFnSignature>&
@@ -769,6 +768,34 @@ typedSignatureInitial(Context* context,
                                            /* instantiatedFrom */ nullptr,
                                            /* parentFn */ parentFnTyped);
   return result.get();
+}
+
+static const owned<TypedFnSignature>&
+typeConstructorInitialQuery(Context* context, const Type* t)
+{
+  QUERY_BEGIN(typeConstructorInitialQuery, context, t);
+
+  owned<TypedFnSignature> result;
+
+  const UntypedFnSignature* untyped = nullptr;
+  std::vector<QualifiedType> formalTypes;
+  // TODO: fixme fill in untyped, formalTypes
+
+  auto sig = new TypedFnSignature(untyped,
+                                  std::move(formalTypes),
+                                  TypedFnSignature::WHERE_NONE,
+                                  /* needsInstantiation */ true,
+                                  /* instantiatedFrom */ nullptr,
+                                  /* parentFn */ nullptr);
+  result = toOwned(sig);
+
+  return QUERY_END(result);
+}
+
+
+const TypedFnSignature* typeConstructorInitial(Context* context,
+                                               const types::Type* t) {
+  return typeConstructorInitialQuery(context, t).get();
 }
 
 const TypedFnSignature* instantiateSignature(Context* context,
