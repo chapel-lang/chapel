@@ -1030,6 +1030,7 @@ static bool canParamCoerce(Type*   actualType,
   if ((formalType == dtString || formalType == dtStringC) &&
       (actualType == dtString || actualType == dtStringC)) {
     if (actualSym && actualSym->isImmediate()) {
+      *paramNarrows = true;
       return true;
     }
   }
