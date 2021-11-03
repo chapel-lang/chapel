@@ -86,7 +86,7 @@ static void test1() {
     resolveOnlyCandidate(context, rr.byAst(genericCall));
   assert(rfunc);
   assert(rfunc->id() == mGeneric->id());
-  assert(rfunc->signature->instantiatedFrom != nullptr);
+  assert(rfunc->signature->instantiatedFrom() != nullptr);
 
   const ResolvedFunction* rhelp =
     resolveOnlyCandidate(context, rfunc->resolutionById.byAst(helperCall));
@@ -148,7 +148,7 @@ static void test1n() {
     resolveOnlyCandidate(context, rr.byAst(genericCall));
   assert(rfunc);
   assert(rfunc->id() == mGeneric->id());
-  assert(rfunc->signature->instantiatedFrom != nullptr);
+  assert(rfunc->signature->instantiatedFrom() != nullptr);
 
   const ResolvedExpression& rhelp = rfunc->resolutionById.byAst(helperCall);
   for (auto candidate : rhelp.mostSpecific) {
@@ -695,10 +695,10 @@ static void test6() {
   auto rACallGeneric = resolveOnlyCandidate(context, rA.byAst(aCall));
   assert(rACallGeneric);
   assert(rACallGeneric->signature);
-  assert(rACallGeneric->signature->untypedSignature);
+  assert(rACallGeneric->signature->untyped());
   auto rBCallGeneric = resolveOnlyCandidate(context, rB.byAst(bCall));
   assert(rBCallGeneric);
-  assert(rBCallGeneric->signature->untypedSignature);
+  assert(rBCallGeneric->signature->untyped());
 
   // check that these two have the same signature
   assert(rACallGeneric->signature == rBCallGeneric->signature);

@@ -226,7 +226,7 @@ struct Resolver {
       byPostorder(byPostorder) {
 
     assert(typedFnSignature);
-    assert(typedFnSignature->untypedSignature);
+    assert(typedFnSignature->untyped());
 
     poiInfo.poiScope = poiScope;
 
@@ -235,14 +235,13 @@ struct Resolver {
 
     // set the resolution results for the formals according to
     // the typedFnSignature
-    const UntypedFnSignature* uSig = typedFnSignature->untypedSignature;
-    assert(typedFnSignature->numFormals() == uSig->numFormals());
-    int nFormals = uSig->numFormals();
+    const UntypedFnSignature* uSig = typedFnSignature->untyped();
+    int nFormals = typedFnSignature->numFormals();
     for (int i = 0; i < nFormals; i++) {
-      const Decl* formal = uSig->formal(i);
+      const Decl* decl = uSig->formalDecl(i);
       const auto& qt = typedFnSignature->formalType(i);
 
-      ResolvedExpression& r = byPostorder.byAst(formal);
+      ResolvedExpression& r = byPostorder.byAst(decl);
       r.type = qt;
     }
   }
@@ -647,13 +646,12 @@ typedSignatureQuery(Context* context,
               untypedSignature, formalTypes, whereClauseResult,
               needsInstantiation, instantiatedFrom, parentFn);
 
-  auto result = toOwned(new TypedFnSignature());
-  result->untypedSignature = untypedSignature;
-  result->formalTypes = formalTypes;
-  result->whereClauseResult = whereClauseResult;
-  result->needsInstantiation = needsInstantiation;
-  result->instantiatedFrom = instantiatedFrom;
-  result->parentFn = parentFn;
+  auto result = toOwned(new TypedFnSignature(untypedSignature,
+                                             std::move(formalTypes),
+                                             whereClauseResult,
+                                             needsInstantiation,
+                                             instantiatedFrom,
+                                             parentFn));
 
   return QUERY_END(result);
 }
@@ -786,9 +784,9 @@ const TypedFnSignature* instantiateSignature(Context* context,
   // will arrange to construct a unique TypedFnSignature by
   // its contents.
 
-  assert(sig->needsInstantiation);
+  assert(sig->needsInstantiation());
 
-  const UntypedFnSignature* untypedSignature = sig->untypedSignature;
+  const UntypedFnSignature* untypedSignature = sig->untyped();
   const ASTNode* ast = parsing::idToAst(context, untypedSignature->id());
   const Function* fn = ast->toFunction();
 
@@ -797,7 +795,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
   }
 
   const TypedFnSignature* parentFnTyped = nullptr;
-  if (sig->parentFn) {
+  if (sig->parentFn()) {
     assert(false && "generic child functions not yet supported");
     // TODO: how to compute parentFn for the instantiation?
     // Does the parent function need to be instantiated in some case?
@@ -860,7 +858,7 @@ resolveFunctionByInfoQuery(Context* context,
                             PoiInfo poiInfo) {
   QUERY_BEGIN(resolveFunctionByInfoQuery, context, sig, poiInfo);
 
-  const UntypedFnSignature* untypedSignature = sig->untypedSignature;
+  const UntypedFnSignature* untypedSignature = sig->untyped();
   const ASTNode* ast = parsing::idToAst(context, untypedSignature->id());
   const Function* fn = ast->toFunction();
 
@@ -911,7 +909,7 @@ const ResolvedFunction* resolveFunction(Context* context,
                                          const TypedFnSignature* sig,
                                          const PoiScope* poiScope) {
   // this should only be applied to concrete fns or instantiations
-  assert(!sig->needsInstantiation);
+  assert(!sig->needsInstantiation());
 
   // construct the PoiInfo for this case
   auto poiInfo = PoiInfo(poiScope);
@@ -927,7 +925,7 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
 
   const UntypedFnSignature* uSig = untypedSignature(context, func->id());
   const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
-  if (sig->needsInstantiation)
+  if (sig->needsInstantiation())
     return nullptr;
 
   const ResolvedFunction* ret = resolveFunction(context, sig, nullptr);
@@ -1077,9 +1075,9 @@ const QualifiedType& returnType(Context* context,
   QUERY_BEGIN(returnType, context, sig, poiScope);
 
   // this should only be applied to concrete fns or instantiations
-  assert(!sig->needsInstantiation);
+  assert(!sig->needsInstantiation());
 
-  const UntypedFnSignature* untypedSignature = sig->untypedSignature;
+  const UntypedFnSignature* untypedSignature = sig->untyped();
   const ASTNode* ast = parsing::idToAst(context, untypedSignature->id());
   const Function* fn = ast->toFunction();
 
@@ -1160,10 +1158,10 @@ doIsCandidateApplicableInitial(Context* context,
 
   auto initialTypedSignature = typedSignatureInitial(context, uSig);
   // Next, check that the types are compatible
-  size_t formalIdx = 0;
+  int formalIdx = 0;
   for (const FormalActual& entry : faMap.byFormalIdx) {
     const auto& actualType = entry.actualType;
-    const auto& formalType = initialTypedSignature->formalTypes[formalIdx];
+    const auto& formalType = initialTypedSignature->formalType(formalIdx);
     bool ok = canPassInitial(actualType, formalType);
     if (!ok) {
       return nullptr;
@@ -1173,7 +1171,8 @@ doIsCandidateApplicableInitial(Context* context,
   }
 
   // check that the where clause applies
-  if (initialTypedSignature->whereClauseResult==TypedFnSignature::WHERE_FALSE) {
+  auto whereResult = initialTypedSignature->whereClauseResult();
+  if (whereResult == TypedFnSignature::WHERE_FALSE) {
     return nullptr;
   }
 
@@ -1198,14 +1197,14 @@ doIsCandidateApplicableInstantiating(Context* context,
   size_t nActuals = call.actuals.size();
   for (size_t i = 0; i < nActuals; i++) {
     const QualifiedType& actualType = call.actuals[i].type;
-    const QualifiedType& formalType = instantiated->formalTypes[i];
+    const QualifiedType& formalType = instantiated->formalType(i);
     bool ok = canPassAfterInstantiating(actualType, formalType);
     if (!ok)
       return nullptr;
   }
 
   // check that the where clause applies
-  if (instantiated->whereClauseResult == TypedFnSignature::WHERE_FALSE)
+  if (instantiated->whereClauseResult() == TypedFnSignature::WHERE_FALSE)
     return nullptr;
 
   return instantiated;
@@ -1259,7 +1258,7 @@ filterCandidatesInstantiating(Context* context,
   const PoiScope* instantiationPoiScope = nullptr;
 
   for (const TypedFnSignature* typedSignature : lst) {
-    if (typedSignature->needsInstantiation) {
+    if (typedSignature->needsInstantiation()) {
       if (instantiationPoiScope == nullptr) {
         instantiationPoiScope =
           pointOfInstantiationScope(context, inScope, inPoiScope);
@@ -1346,9 +1345,9 @@ void accumulatePoisUsedByResolvingBody(Context* context,
     return;
   }
 
-  assert(!signature->needsInstantiation);
+  assert(!signature->needsInstantiation());
 
-  if (signature->instantiatedFrom == nullptr) {
+  if (signature->instantiatedFrom() == nullptr) {
     // if it's not an instantiation, no need to gather POIs
     return;
   }
@@ -1430,7 +1429,7 @@ CallResolutionResult resolveFnCall(Context* context,
       for (const TypedFnSignature* candidate : mostSpecific) {
         if (candidate != nullptr) {
           poiInfo.poiFnIdsUsed.insert(
-              std::make_pair(call->id(), candidate->untypedSignature->id()));
+              std::make_pair(call->id(), candidate->id()));
         }
       }
     }
@@ -1443,7 +1442,7 @@ CallResolutionResult resolveFnCall(Context* context,
   bool anyInstantiated = false;
 
   for (const TypedFnSignature* candidate : mostSpecific) {
-    if (candidate != nullptr && candidate->instantiatedFrom != nullptr) {
+    if (candidate != nullptr && candidate->instantiatedFrom() != nullptr) {
       anyInstantiated = true;
       break;
     }

@@ -75,18 +75,17 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   int formalIdx = 0;
   int numFormals = untyped->numFormals();
   for (int i = 0; i < numFormals; i++) {
-    const Decl* formal = untyped->formal(i);
-    if (formal->isFormal()) {
-      FormalActual& entry = byFormalIdx[formalIdx];
-      entry.formal = formal;
-      if (typed) {
-        entry.formalType = typed->formalTypes[formalIdx];
-      }
-      entry.hasActual = false;
-      entry.actualIdx = -1;
-    } else {
+    const Decl* decl = untyped->formalDecl(i);
+    if (decl && !decl->isFormal())
       assert(false && "Not handled yet!");
+
+    FormalActual& entry = byFormalIdx[formalIdx];
+    entry.formal = decl->toFormal();
+    if (typed) {
+      entry.formalType = typed->formalType(formalIdx);
     }
+    entry.hasActual = false;
+    entry.actualIdx = -1;
 
     formalIdx++;
   }
@@ -99,19 +98,18 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     if (!actual.byName.isEmpty()) {
       bool match = false;
       for (int i = 0; i < numFormals; i++) {
-        const Decl* decl = untyped->formal(i);
-        if (const Formal* formal = decl->toFormal()) {
-          if (actual.byName == formal->name()) {
-            match = true;
-            FormalActual& entry = byFormalIdx[i];
-            entry.hasActual = true;
-            entry.actualIdx = actualIdx;
-            entry.actualType = actual.type;
-            actualIdxToFormalIdx[actualIdx] = formalIdx;
-            break;
-          }
-        } else {
+        const Decl* decl = untyped->formalDecl(i);
+        if (decl && !decl->isFormal())
           assert(false && "Not handled yet!");
+
+        if (actual.byName == untyped->formalName(i)) {
+          match = true;
+          FormalActual& entry = byFormalIdx[i];
+          entry.hasActual = true;
+          entry.actualIdx = actualIdx;
+          entry.actualType = actual.type;
+          actualIdxToFormalIdx[actualIdx] = formalIdx;
+          break;
         }
 
         formalIdx++;
@@ -168,15 +166,15 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   // or have a default value.
   while (formalIdx < (int) byFormalIdx.size()) {
     if (byFormalIdx[formalIdx].actualIdx < 0) {
-      if (const Formal* formal = untyped->formal(formalIdx)->toFormal()) {
-        if (!formal->initExpression()) {
-          // formal was not provided and there is no default value
-          mappingIsValid = false;
-          failingFormalIdx = formalIdx;
-          return false;
-        }
-      } else {
+      const Decl* decl = untyped->formalDecl(formalIdx);
+      if (decl && !decl->isFormal())
         assert(false && "Not handled yet!");
+
+      if (!untyped->formalHasDefault(formalIdx)) {
+        // formal was not provided and there is no default value
+        mappingIsValid = false;
+        failingFormalIdx = formalIdx;
+        return false;
       }
     }
     formalIdx++;
@@ -200,33 +198,24 @@ FormalActualMap FormalActualMap::build(const UntypedFnSignature* sig,
 FormalActualMap FormalActualMap::build(const TypedFnSignature* sig,
                                        const CallInfo& call) {
   FormalActualMap ret;
-  bool ok = ret.computeAlignment(sig->untypedSignature, sig, call);
+  bool ok = ret.computeAlignment(sig->untyped(), sig, call);
   if (!ok) {
     ret.mappingIsValid = false;
   }
   return ret;
 }
 
-static const char* getFormalDeclName(const Decl* decl) {
-  if (auto namedDecl = decl->toNamedDecl()) {
-    return namedDecl->name().c_str();
-  } else {
-    assert(false && "Not handled yet");
-  }
-  return nullptr;
-}
-
 std::string TypedFnSignature::toString() const {
-  std::string ret = untypedSignature->id().toString();
+  std::string ret = id().toString();
   ret += "(";
-  int numFormals = untypedSignature->numFormals();
-  for (int i = 0; i < numFormals; i++) {
+  int nFormals = numFormals();
+  for (int i = 0; i < nFormals; i++) {
     if (i != 0) {
       ret += ", ";
     }
-    ret += getFormalDeclName(untypedSignature->formal(i));
+    ret += formalName(i).toString();
     ret += " : ";
-    ret += formalTypes[i].toString();
+    ret += formalType(i).toString();
   }
   ret += ")";
 

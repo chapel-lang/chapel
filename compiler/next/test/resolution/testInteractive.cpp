@@ -73,11 +73,11 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast,
         } else if (parentAst->isFunction()) {
           auto untyped = untypedSignature(context, parentAst->id());
           // use inFn if it matches
-          if (inFn && inFn->signature->untypedSignature == untyped) {
+          if (inFn && inFn->signature->untyped() == untyped) {
             return &inFn->resolutionById.byAst(ast);
           } else {
             auto typed = typedSignatureInitial(context, untyped);
-            if (!typed->needsInstantiation) {
+            if (!typed->needsInstantiation()) {
               auto rFn = resolveFunction(context, typed, nullptr);
               return &rFn->resolutionById.byAst(ast);
             }
@@ -218,12 +218,12 @@ int main(int argc, char** argv) {
 
       for (auto calledFn : iterCalledFns) {
         const TypedFnSignature* sig = calledFn->signature;
-        if (sig->instantiatedFrom != nullptr) {
+        if (sig->instantiatedFrom() != nullptr) {
           calledFns.insert(calledFn);
           auto pair = printed.insert(calledFn);
           bool added = pair.second;
           if (added) {
-            auto ast = idToAst(ctx, sig->untypedSignature->id());
+            auto ast = idToAst(ctx, sig->id());
             auto uSig = untypedSignature(ctx, ast->id());
             auto initialType = typedSignatureInitial(ctx, uSig);
             printf("Instantiation of %s\n", initialType->toString().c_str());
