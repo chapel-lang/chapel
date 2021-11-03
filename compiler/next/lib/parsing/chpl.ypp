@@ -510,7 +510,7 @@
 
 %type <uniqueStr> ident_use ident_def ident_fn_def
 %type <uniqueStr> internal_type_ident_def reserved_type_ident_use
-%type <uniqueStr> fn_ident assignop_ident opt_label_ident
+%type <uniqueStr> fn_ident assignop_ident op_ident all_op_name opt_label_ident
 %type <uniqueStr> implements_type_ident implements_type_error_ident
 
 %type <uniqueStrList>       pragma_ls
@@ -536,7 +536,7 @@
 %type <expr> import_expr
 %type <commentsAndStmt> use_stmt import_stmt require_stmt
 %type <exprList> import_ls
-%type <exprList> except_ls renames_ls use_renames_ls opt_only_ls
+%type <exprList> renames_ls use_renames_ls opt_only_ls
 
 // These are exprList so that they can include preceeding comments
 %type <commentsAndStmt> implements_stmt interface_stmt
@@ -1026,6 +1026,10 @@ renames_ls:
   {
     $$ = context->makeList($1);
   }
+| all_op_name
+  {
+    $$ = context->makeList(context->buildIdent(@1, $1));
+  }
 | expr TAS expr
   {
     auto as = context->buildAsExpr(@1, @3, toOwned($1), toOwned($3));
@@ -1034,6 +1038,10 @@ renames_ls:
 | renames_ls TCOMMA expr
   {
     $$ = context->appendList($1, $3);
+  }
+| renames_ls TCOMMA all_op_name
+  {
+    $$ = context->appendList($1, context->buildIdent(@3, $3));
   }
 | renames_ls TCOMMA expr TAS expr
   {
@@ -1091,31 +1099,19 @@ opt_only_ls:
 | renames_ls      { $$ = $1; }
 ;
 
-except_ls:
-  TSTAR
-  {
-    auto ident = context->buildIdent(@1, $1);
-    $$ = context->makeList(ident);
-  }
-| renames_ls
-  {
-    $$ = $1;
-  }
-;
-
 use_stmt:
   access_control TUSE use_renames_ls TSEMI
   {
     $$ = context->buildMultiUseStmt(@$, $1, $3);
   }
-| access_control TUSE expr TEXCEPT except_ls TSEMI
+| access_control TUSE expr TEXCEPT renames_ls TSEMI
   {
     auto locVisibilityClause = context->makeSpannedLocation(@3, @5);
     $$ = context->buildSingleUseStmt(@$, locVisibilityClause, $1, toOwned($3),
                                      VisibilityClause::EXCEPT,
                                      $5);
   }
-| access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI
+| access_control TUSE expr TAS expr TEXCEPT renames_ls TSEMI
   {
     auto as = context->buildAsExpr(@3, @5, toOwned($3), toOwned($5));
     auto locVisibilityClause = context->makeSpannedLocation(@3, @7);
@@ -1123,7 +1119,7 @@ use_stmt:
                                      VisibilityClause::EXCEPT,
                                      $7);
   }
-| access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI
+| access_control TUSE expr TAS TUNDERSCORE TEXCEPT renames_ls TSEMI
   {
     auto ident = toOwned(context->buildIdent(@5, $5));
     auto as = context->buildAsExpr(@3, @5, toOwned($3), std::move(ident));
@@ -1169,6 +1165,13 @@ import_expr:
   expr
   {
     $$ = context->buildVisibilityClause(@$, toOwned($1));
+  }
+| expr TDOT all_op_name
+  {
+    auto ident = context->buildIdent(@3, $3);
+    $$ = context->buildVisibilityClause(@$, toOwned($1),
+                                        VisibilityClause::NONE,
+                                        context->consume(ident));
   }
 | expr TAS ident_use
   {
@@ -1389,11 +1392,11 @@ forwarding_decl_stmt:
       // TODO: save expr
       $$ = cs;
     }
-| forwarding_decl_start expr TEXCEPT except_ls TSEMI
+| forwarding_decl_start expr TEXCEPT renames_ls TSEMI
     {
       CommentsAndStmt cs = $1;
       //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
-      // TODO: save expr and except_ls
+      // TODO: save expr and renames_ls
       $$ = cs;
     }
 | forwarding_decl_start expr TONLY opt_only_ls TSEMI
@@ -2199,7 +2202,17 @@ fn_decl_receiver_expr:
 
 fn_ident:
   ident_fn_def
-| TBAND
+| op_ident
+| ident_def TBANG
+  {
+    std::string s = $1.c_str();
+    s += "!";
+    $$ = STR(s.c_str());
+  }
+;
+
+op_ident:
+  TBAND
 | TBOR
 | TBXOR
 | TBNOT
@@ -2225,12 +2238,6 @@ fn_ident:
 | TIO
 | TINITEQUALS
 | TCOLON
-| ident_def TBANG
-  {
-    std::string s = $1.c_str();
-    s += "!";
-    $$ = STR(s.c_str());
-  }
 ;
 
 assignop_ident:
@@ -2246,6 +2253,11 @@ assignop_ident:
 | TASSIGNBXOR
 | TASSIGNSR
 | TASSIGNSL
+;
+
+all_op_name:
+  op_ident
+| assignop_ident
 ;
 
 opt_formal_ls:
