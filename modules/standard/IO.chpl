@@ -4167,19 +4167,6 @@ proc channel.readBytes(x, len:ssize_t) throws {
   if err then try this._ch_ioerror(err, "in channel.readBytes");
 }
 
-/*
-proc channel.modifyStyle(f:func(iostyle, iostyle))
-{
-  on this.home {
-    this.lock();
-    var style = this._style();
-    style = f(style);
-    this._set_style(style);
-    this.unlock();
-  }
-}
-*/
-
 /* Wrapper class on a channel to make it only read values
    of a single type. Also supports an iterator yielding
    the read values.
