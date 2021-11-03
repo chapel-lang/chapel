@@ -32,9 +32,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+comp_unit_test(testCanPass)
 comp_unit_test(testInteractive)
 comp_unit_test(testParams)
 comp_unit_test(testPoi)
-comp_unit_test(testResolutionRules)
 comp_unit_test(testResolve)
 comp_unit_test(testScopeResolve)

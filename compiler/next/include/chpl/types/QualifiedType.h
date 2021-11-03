@@ -76,7 +76,7 @@ class QualifiedType final {
   /** Returns the kind of the expression this QualifiedType represents */
   Kind kind() const { return kind_; }
   /**
-    Returns the type pointer that represents the type part
+    Returns the Type subclass that represents the type part
     of this QualifiedType
    */
   const Type* type() const { return type_; }

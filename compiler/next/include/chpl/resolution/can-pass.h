@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef RESOLUTION_RULES_H
-#define RESOLUTION_RULES_H
+#ifndef CHPL_RESOLUTION_CAN_PASS_H
+#define CHPL_RESOLUTION_CAN_PASS_H
 
 #include "chpl/resolution/resolution-types.h"
 

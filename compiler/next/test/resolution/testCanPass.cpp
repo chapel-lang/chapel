@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/resolution/resolution-rules.h"
+#include "chpl/resolution/can-pass.h"
 #include "chpl/types/all-types.h"
 
 // always check assertions in this test

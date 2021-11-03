@@ -18,8 +18,8 @@
 target_sources(libchplcomp-obj
                PRIVATE
 
+               can-pass.cpp
                resolution-queries.cpp
-               resolution-rules.cpp
                resolution-types.cpp
                scope-queries.cpp
                scope-types.cpp

@@ -22,7 +22,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/query-impl.h"
-#include "chpl/resolution/resolution-rules.h"
+#include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
