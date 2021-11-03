@@ -140,6 +140,29 @@ forall s in ys do
 coforall taskId in 1..#ys.size do
   assert(r6.match(ys[taskId]).matched);
 
+var r7 = compile("a+":t, ignoreCase=true);
+on locales1 {
+  assert(r7.match("aaa":t).matched);
+  assert(r7.match("AAA":t).matched);
+  var r8 = r7;
+  assert(r8.match("AAA":t).matched);
+}
+
+var r8 = compile("a+":t);
+on locales1 {
+  var r5 = compile("b+":t, ignoreCase=true);
+  on locales2 {
+    assert(r8.match("aaa":t).matched);
+    r8 = r5;
+    assert(r8.match("bbb":t).matched);
+    assert(r8.match("BBB":t).matched);
+  }
+  assert(r8.match("bbb":t).matched);
+  assert(r8.match("BBB":t).matched);
+}
+assert(r8.match("bbb":t).matched);
+assert(r8.match("BBB":t).matched);
+
 /* ---- LOCAL ---- */
 /* Second copy of this test case where things are in a function
  * We've seen different results on RVF vs global broadcast and
@@ -274,6 +297,29 @@ proc inafunction() {
 
   coforall taskId in 1..#ys.size do
     assert(r6.match(ys[taskId]).matched);
+
+  var r7 = compile("a+":t, ignoreCase=true);
+  on locales1 {
+    assert(r7.match("aaa":t).matched);
+    assert(r7.match("AAA":t).matched);
+    var r8 = r7;
+    assert(r8.match("AAA":t).matched);
+  }
+
+  var r8 = compile("a+":t);
+  on locales1 {
+    var r5 = compile("b+":t, ignoreCase=true);
+    on locales2 {
+      assert(r8.match("aaa":t).matched);
+      r8 = r5;
+      assert(r8.match("bbb":t).matched);
+      assert(r8.match("BBB":t).matched);
+    }
+    assert(r8.match("bbb":t).matched);
+    assert(r8.match("BBB":t).matched);
+  }
+  assert(r8.match("bbb":t).matched);
+  assert(r8.match("BBB":t).matched);
 }
 
 inafunction();
