@@ -68,12 +68,14 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   failingActualIdx = -1;
 
   // allocate space in the arrays
-  byFormalIdx.resize(untyped->formals.size());
+  byFormalIdx.resize(untyped->numFormals());
   actualIdxToFormalIdx.resize(call.actuals.size());
 
   // initialize the FormalActual parts from the Formals
-  size_t formalIdx = 0;
-  for (const Decl* formal : untyped->formals) {
+  int formalIdx = 0;
+  int numFormals = untyped->numFormals();
+  for (int i = 0; i < numFormals; i++) {
+    const Decl* formal = untyped->formal(i);
     if (formal->isFormal()) {
       FormalActual& entry = byFormalIdx[formalIdx];
       entry.formal = formal;
@@ -92,16 +94,16 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   // Match named actuals against formal names in the function signature.
   // Record successful matches in actualIdxToFormalIdx.
 
-  size_t actualIdx = 0;
+  int actualIdx = 0;
   for (const CallInfoActual& actual : call.actuals) {
     if (!actual.byName.isEmpty()) {
       bool match = false;
-      int formalIdx = 0;
-      for (const Decl* decl : untyped->formals) {
+      for (int i = 0; i < numFormals; i++) {
+        const Decl* decl = untyped->formal(i);
         if (const Formal* formal = decl->toFormal()) {
           if (actual.byName == formal->name()) {
             match = true;
-            FormalActual& entry = byFormalIdx[formalIdx];
+            FormalActual& entry = byFormalIdx[i];
             entry.hasActual = true;
             entry.actualIdx = actualIdx;
             entry.actualType = actual.type;
@@ -131,7 +133,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   formalIdx = 0;
   actualIdx = 0;
   for (const CallInfoActual& actual : call.actuals) {
-    if (formalIdx >= byFormalIdx.size()) {
+    if (formalIdx >= (int) byFormalIdx.size()) {
       // too many actuals
       mappingIsValid = false;
       failingActualIdx = actualIdx;
@@ -141,7 +143,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     if (actual.byName.isEmpty()) {
       // Skip any formals already matched to named arguments
       while (byFormalIdx[formalIdx].actualIdx >= 0) {
-        if (formalIdx + 1 >= byFormalIdx.size()) {
+        if (formalIdx + 1 >= (int) byFormalIdx.size()) {
           // too many actuals
           mappingIsValid = false;
           failingActualIdx = actualIdx;
@@ -149,7 +151,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
         }
         formalIdx++;
       }
-      assert(formalIdx < byFormalIdx.size());
+      assert(formalIdx < (int) byFormalIdx.size());
 
       // TODO: special handling for operators
 
@@ -164,9 +166,9 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
 
   // Make sure that any remaining formals are matched by name
   // or have a default value.
-  while (formalIdx < byFormalIdx.size()) {
+  while (formalIdx < (int) byFormalIdx.size()) {
     if (byFormalIdx[formalIdx].actualIdx < 0) {
-      if (const Formal* formal = untyped->formals[formalIdx]->toFormal()) {
+      if (const Formal* formal = untyped->formal(formalIdx)->toFormal()) {
         if (!formal->initExpression()) {
           // formal was not provided and there is no default value
           mappingIsValid = false;
@@ -215,13 +217,14 @@ static const char* getFormalDeclName(const Decl* decl) {
 }
 
 std::string TypedFnSignature::toString() const {
-  std::string ret = untypedSignature->functionId.toString();
+  std::string ret = untypedSignature->id().toString();
   ret += "(";
-  for (size_t i = 0; i < untypedSignature->formals.size(); i++) {
+  int numFormals = untypedSignature->numFormals();
+  for (int i = 0; i < numFormals; i++) {
     if (i != 0) {
       ret += ", ";
     }
-    ret += getFormalDeclName(untypedSignature->formals[i]);
+    ret += getFormalDeclName(untypedSignature->formal(i));
     ret += " : ";
     ret += formalTypes[i].toString();
   }

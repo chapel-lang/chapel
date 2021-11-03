@@ -236,11 +236,11 @@ struct Resolver {
     // set the resolution results for the formals according to
     // the typedFnSignature
     const UntypedFnSignature* uSig = typedFnSignature->untypedSignature;
-    assert(typedFnSignature->formalTypes.size() == uSig->formals.size());
-    size_t nFormals = uSig->formals.size();
-    for (size_t i = 0; i < nFormals; i++) {
-      const Decl* formal = uSig->formals[i];
-      const auto& qt = typedFnSignature->formalTypes[i];
+    assert(typedFnSignature->numFormals() == uSig->numFormals());
+    int nFormals = uSig->numFormals();
+    for (int i = 0; i < nFormals; i++) {
+      const Decl* formal = uSig->formal(i);
+      const auto& qt = typedFnSignature->formalType(i);
 
       ResolvedExpression& r = byPostorder.byAst(formal);
       r.type = qt;
@@ -733,7 +733,7 @@ const TypedFnSignature*
 typedSignatureInitial(Context* context,
                       const UntypedFnSignature* untypedSig) {
 
-  const ASTNode* ast = parsing::idToAst(context, untypedSig->functionId);
+  const ASTNode* ast = parsing::idToAst(context, untypedSig->id());
   const Function* fn = ast->toFunction();
 
   if (fn == nullptr) {
@@ -789,7 +789,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
   assert(sig->needsInstantiation);
 
   const UntypedFnSignature* untypedSignature = sig->untypedSignature;
-  const ASTNode* ast = parsing::idToAst(context, untypedSignature->functionId);
+  const ASTNode* ast = parsing::idToAst(context, untypedSignature->id());
   const Function* fn = ast->toFunction();
 
   if (fn == nullptr) {
@@ -861,7 +861,7 @@ resolveFunctionByInfoQuery(Context* context,
   QUERY_BEGIN(resolveFunctionByInfoQuery, context, sig, poiInfo);
 
   const UntypedFnSignature* untypedSignature = sig->untypedSignature;
-  const ASTNode* ast = parsing::idToAst(context, untypedSignature->functionId);
+  const ASTNode* ast = parsing::idToAst(context, untypedSignature->id());
   const Function* fn = ast->toFunction();
 
   const PoiScope* poiScope = poiInfo.poiScope;
@@ -1080,7 +1080,7 @@ const QualifiedType& returnType(Context* context,
   assert(!sig->needsInstantiation);
 
   const UntypedFnSignature* untypedSignature = sig->untypedSignature;
-  const ASTNode* ast = parsing::idToAst(context, untypedSignature->functionId);
+  const ASTNode* ast = parsing::idToAst(context, untypedSignature->id());
   const Function* fn = ast->toFunction();
 
   QualifiedType result;
@@ -1430,8 +1430,7 @@ CallResolutionResult resolveFnCall(Context* context,
       for (const TypedFnSignature* candidate : mostSpecific) {
         if (candidate != nullptr) {
           poiInfo.poiFnIdsUsed.insert(
-              std::make_pair(call->id(),
-                             candidate->untypedSignature->functionId));
+              std::make_pair(call->id(), candidate->untypedSignature->id()));
         }
       }
     }

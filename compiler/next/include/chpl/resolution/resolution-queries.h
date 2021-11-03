@@ -47,19 +47,22 @@ namespace resolution {
   /////// function resolution
 
   /**
-    Compute an UntypedFnSignature for a Function, or return
-    nullptr if the passed ID is not a Function.
-    The pointer result is unique'd and safe to use as a query argument.
+    Compute an UntypedFnSignature for a Function.
+
+    Returns nullptr if the passed ID is not a Function.
    */
   const UntypedFnSignature* untypedSignature(Context* context, ID id);
 
+  /**
+    Compute an UntypedFnSignature for a type constructor for a particular type.
+   */
+  const UntypedFnSignature*
+  untypedSignatureForTypeConstructor(Context* context, const types::Type* t);
 
   /**
     Compute a TypedFnSignature from an UntypedFnSignature.
     The TypedFnSignature will represent generic and potentially unknown
     types if the function is generic.
-
-    The pointer result is unique'd and safe to use as a query argument.
    */
   const TypedFnSignature*
   typedSignatureInitial(Context* context,

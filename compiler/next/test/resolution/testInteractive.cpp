@@ -223,7 +223,7 @@ int main(int argc, char** argv) {
           auto pair = printed.insert(calledFn);
           bool added = pair.second;
           if (added) {
-            auto ast = idToAst(ctx, sig->untypedSignature->functionId);
+            auto ast = idToAst(ctx, sig->untypedSignature->id());
             auto uSig = untypedSignature(ctx, ast->id());
             auto initialType = typedSignatureInitial(ctx, uSig);
             printf("Instantiation of %s\n", initialType->toString().c_str());

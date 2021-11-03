@@ -43,35 +43,52 @@ namespace resolution {
   candidates does not need to depend on the bodies of the function
   (in terms of incremental recomputation).
  */
-struct UntypedFnSignature {
-  ID functionId;
-  UniqueString name;
-  bool isMethod; // in that case, formals[0] is the receiver
-  uast::Function::Kind kind;
-  std::vector<const uast::Decl*> formals;
-  const uast::Expression* whereClause;
+class UntypedFnSignature {
+ private:
+  ID functionId_;
+  UniqueString name_;
+  bool isMethod_; // in that case, formals[0] is the receiver
+  uast::Function::Kind kind_;
+  std::vector<const uast::Decl*> formals_;
+  const uast::Expression* whereClause_;
 
+ public:
   UntypedFnSignature(const uast::Function* fn)
-    : functionId(fn->id()),
-      name(fn->name()),
-      isMethod(fn->isMethod()),
-      kind(fn->kind()),
-      whereClause(fn->whereClause()) {
+    : functionId_(fn->id()),
+      name_(fn->name()),
+      isMethod_(fn->isMethod()),
+      kind_(fn->kind()),
+      whereClause_(fn->whereClause()) {
     for (auto formal : fn->formals()) {
-      formals.push_back(formal);
+      formals_.push_back(formal);
     }
   }
 
   bool operator==(const UntypedFnSignature& other) const {
-    return functionId == other.functionId &&
-           name == other.name &&
-           isMethod == other.isMethod &&
-           kind == other.kind &&
-           formals == other.formals &&
-           whereClause == other.whereClause;
+    return functionId_ == other.functionId_ &&
+           name_ == other.name_ &&
+           isMethod_ == other.isMethod_ &&
+           kind_ == other.kind_ &&
+           formals_ == other.formals_ &&
+           whereClause_ == other.whereClause_;
   }
   bool operator!=(const UntypedFnSignature& other) const {
     return !(*this == other);
+  }
+
+  /** Returns the id of the Function */ 
+  const ID& id() const {
+    return functionId_;
+  }
+
+  /** Returns the number of formals */
+  int numFormals() const {
+    return formals_.size();
+  }
+  /** Returns the i'th formal */
+  const uast::Decl* formal(int i) const {
+    assert(0 <= i && (size_t) i < formals_.size());
+    return formals_[i];
   }
 };
 
@@ -207,6 +224,14 @@ struct PoiInfo {
   }
 };
 
+class GeneratedFnSignature {
+  ID typeId_; // the ID for the type that this is generated on behalf of
+  UniqueString name_;
+  bool isMethod_;
+  uast::Function::Kind kind_;
+  std::vector<UniqueString> formalNames_;
+};
+
 // TODO: should this actually be types::FunctionType?
 /**
   This represents a typed function signature.
@@ -254,8 +279,16 @@ struct TypedFnSignature {
 
   std::string toString() const;
 
-  const ID& functionId() const {
-    return untypedSignature->functionId;
+  const ID& id() const {
+    return untypedSignature->id();
+  }
+
+  int numFormals() const {
+    return formalTypes.size();
+  }
+  const types::QualifiedType& formalType(int i) const {
+    assert(0 <= i && (size_t) i < formalTypes.size());
+    return formalTypes[i];
   }
 };
 
@@ -518,8 +551,8 @@ struct ResolvedFunction {
     return resolutionById.byAst(ast);
   }
 
-  const ID& functionId() const {
-    return signature->functionId();
+  const ID& id() const {
+    return signature->id();
   }
 };
 
