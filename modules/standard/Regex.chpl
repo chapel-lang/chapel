@@ -646,10 +646,10 @@ record regex {
       var patternTemp: c_string;
       qio_regex_get_pattern(_regexCopy, patternTemp);
       if exprType == string then {
-        try! pattern = createStringWithNewBuffer(patternTemp);
+        try! pattern = createStringWithOwnedBuffer(patternTemp);
       }
       else {
-        pattern = createBytesWithNewBuffer(patternTemp);
+        pattern = createBytesWithOwnedBuffer(patternTemp);
       }
 
       var localOptions: qio_regex_options_t;
@@ -1036,11 +1036,11 @@ record regex {
       qio_regex_get_pattern(this._regex, patternTemp);
       if exprType == string then {
         try! {
-          pattern = createStringWithNewBuffer(patternTemp);
+          pattern = createStringWithOwnedBuffer(patternTemp);
         }
       }
       else {
-        pattern = createBytesWithNewBuffer(patternTemp);
+        pattern = createBytesWithOwnedBuffer(patternTemp);
       }
     }
     // Note -- this is wrong because we didn't quote
