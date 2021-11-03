@@ -998,7 +998,14 @@ record regex {
                                     repl.numBytes, text.localize().c_str(),
                                     text.numBytes, pos:int, endpos:int, global,
                                     replaced, replaced_len);
-      ret = replaced:exprType;
+      if exprType==string {
+        try! {
+          ret = createStringWithOwnedBuffer(replaced, replaced_len);
+        }
+      }
+      else {
+        ret = createBytesWithOwnedBuffer(replaced, replaced_len);
+      }
     }
 
     return (ret, nreplaced);
