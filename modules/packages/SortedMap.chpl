@@ -19,20 +19,20 @@
  */
 
 /*
-  This module contains the implementation of the orderedMap type 
+  This module contains the implementation of the sortedMap type 
   which is a container that stores key-value associations. 
 
-  orderedMaps are not parallel safe by default, but can be made parallel safe by
-  setting the param formal `parSafe` to true in any orderedMap constructor. When
-  constructed from another orderedMap, the new orderedMap will inherit 
-  the parallel safety mode of its originating orderedMap.
+  sortedMaps are not parallel safe by default, but can be made parallel safe by
+  setting the param formal `parSafe` to true in any sortedMap constructor. When
+  constructed from another sortedMap, the new sortedMap will inherit 
+  the parallel safety mode of its originating sortedMap.
 
-  OrderedSet supports searching for a certain key, insertion and deletion in O(logN).
+  SortedSet supports searching for a certain key, insertion and deletion in O(logN).
 */
-module OrderedMap {
+module SortedMap {
   import ChapelLocks;
   private use HaltWrappers;
-  private use OrderedSet;
+  private use SortedSet;
   private use IO;
   public use Sort only defaultComparator;
 
@@ -56,24 +56,24 @@ module OrderedMap {
   pragma "no doc"
   proc _checkKeyType(type keyType) {
     if isGenericType(keyType) {
-      compilerWarning("creating a orderedMap with key type " +
+      compilerWarning("creating a sortedMap with key type " +
                       keyType:string);
       if isClassType(keyType) && !isGenericType(borrowed keyType) {
         compilerWarning("which now means class type with generic management");
       }
-      compilerError("orderedMap key type cannot currently be generic");
+      compilerError("sortedMap key type cannot currently be generic");
     }
   }
 
   pragma "no doc"
   proc _checkValType(type valType) {
     if isGenericType(valType) {
-      compilerWarning("creating a orderedMap with value type " +
+      compilerWarning("creating a sortedMap with value type " +
                       valType:string);
       if isClassType(valType) && !isGenericType(borrowed valType) {
         compilerWarning("which now means class type with generic management");
       }
-      compilerError("orderedMap value type cannot currently be generic");
+      compilerError("sortedMap value type cannot currently be generic");
     }
   }
 
@@ -88,13 +88,13 @@ module OrderedMap {
     var val;
   }
 
-  record orderedMap {
-    /* Type of orderedMap keys. */
+  record sortedMap {
+    /* Type of sortedMap keys. */
     type keyType;
-    /* Type of orderedMap values. */
+    /* Type of sortedMap values. */
     type valType;
 
-    /* If `true`, this orderedMap will perform parallel safe operations. */
+    /* If `true`, this sortedMap will perform parallel safe operations. */
     param parSafe = false;
 
     /* The comparator used to compare keys */
@@ -106,7 +106,7 @@ module OrderedMap {
 
     /* The underlying implementation */
     pragma "no doc"
-    var _set: orderedSet;
+    var _set: sortedSet;
 
 
     //TODO: Maybe we should use the lock from the underlying implementation
@@ -134,11 +134,11 @@ module OrderedMap {
     }
 
     /*
-      Initializes an empty orderedMap containing keys and values of given types.
+      Initializes an empty sortedMap containing keys and values of given types.
 
-      :arg keyType: The type of the keys of this orderedMap.
-      :arg valType: The type of the values of this orderedMap.
-      :arg parSafe: If `true`, this orderedMap will use parallel safe operations.
+      :arg keyType: The type of the keys of this sortedMap.
+      :arg valType: The type of the values of this sortedMap.
+      :arg parSafe: If `true`, this sortedMap will use parallel safe operations.
       :type parSafe: bool
       :arg comparator: The comparator used to compare keys.
     */
@@ -153,19 +153,19 @@ module OrderedMap {
       this.comparator = comparator;
       this._eltType = (keyType, shared _valueWrapper(valType)?);
 
-      this._set = new orderedSet(_eltType, false, new _keyComparator(comparator)); 
+      this._set = new sortedSet(_eltType, false, new _keyComparator(comparator)); 
     }
 
     /*
-      Initialize this orderedMap with a copy of each of the elements contained in
-      the orderedMap `other`. This orderedMap will inherit the `parSafe` value of 
-      the orderedMap `other`.
+      Initialize this sortedMap with a copy of each of the elements contained in
+      the sortedMap `other`. This sortedMap will inherit the `parSafe` value of 
+      the sortedMap `other`.
 
-      :arg other: An orderedMap to initialize this orderedMap with.
+      :arg other: An sortedMap to initialize this sortedMap with.
     */
-    proc init=(const ref other: orderedMap(?kt, ?vt)) lifetime this < other {
+    proc init=(const ref other: sortedMap(?kt, ?vt)) lifetime this < other {
       if !isCopyableType(kt) || !isCopyableType(vt) then
-        compilerError("initializing orderedMap with non-copyable type");
+        compilerError("initializing sortedMap with non-copyable type");
 
       this.keyType = kt;
       this.valType = vt;
@@ -179,12 +179,12 @@ module OrderedMap {
     }
 
     /*
-      Clears the contents of this orderedMap.
+      Clears the contents of this sortedMap.
 
       .. warning::
 
-        Clearing the contents of this orderedMap will invalidate all existing
-        references to the elements contained in this orderedMap.
+        Clearing the contents of this sortedMap will invalidate all existing
+        references to the elements contained in this sortedMap.
     */
     proc clear() {
       _enter(); defer _leave();
@@ -192,7 +192,7 @@ module OrderedMap {
     }
 
     /*
-      The current number of keys contained in this orderedMap.
+      The current number of keys contained in this sortedMap.
     */
     inline proc const size {
       _enter(); defer _leave();
@@ -206,9 +206,9 @@ module OrderedMap {
     }
 
     /*
-      Returns `true` if this orderedMap contains zero keys.
+      Returns `true` if this sortedMap contains zero keys.
 
-      :returns: `true` if this orderedMap is empty.
+      :returns: `true` if this sortedMap is empty.
       :rtype: `bool`
     */
     inline proc const isEmpty(): bool {
@@ -216,13 +216,13 @@ module OrderedMap {
     }
 
     /*
-      Returns `true` if the given key is a member of this orderedMap, and `false`
+      Returns `true` if the given key is a member of this sortedMap, and `false`
       otherwise.
 
       :arg k: The key to test for membership.
       :type k: keyType
 
-      :returns: Whether or not the given key is a member of this orderedMap.
+      :returns: Whether or not the given key is a member of this sortedMap.
       :rtype: `bool`
     */
     proc const contains(const k: keyType): bool {
@@ -231,12 +231,12 @@ module OrderedMap {
     }
 
     /*
-      Updates this orderedMap with the contents of the other, overwriting the values
+      Updates this sortedMap with the contents of the other, overwriting the values
       for already-existing keys.
 
-      :arg other: The other orderedMap
+      :arg other: The other sortedMap
     */
-    proc update(other: orderedMap(keyType, valType, ?p)) {
+    proc update(other: sortedMap(keyType, valType, ?p)) {
       _enter(); defer _leave();
 
       if !isCopyableType(keyType) || !isCopyableType(valType) then
@@ -332,11 +332,11 @@ module OrderedMap {
 
     /*
       Get a copy of the element stored at position `k`. This method is only
-      available when a orderedMap's `valType` is a non-nilable class.
+      available when a sortedMap's `valType` is a non-nilable class.
     */
     proc getValue(k: keyType) const {
       if isOwnedClass(valType) then
-        compilerError('getValue cannot be called when a orderedMap value type ',
+        compilerError('getValue cannot be called when a sortedMap value type ',
                       'is an owned class, use getBorrowed instead');
 
       _enter(); defer _leave();
@@ -345,11 +345,11 @@ module OrderedMap {
       var found: bool;
       (found, result) = _set.lowerBound((k, nil));
       if !found || comparator.compare(result[0], k) != 0 then
-        boundsCheckHalt("orderedMap index " + k:string + " out of bounds");
+        boundsCheckHalt("sortedMap index " + k:string + " out of bounds");
       return result[1]!.val;
     }
     /*
-      Remove the element at position `k` from the orderedMap and return its value
+      Remove the element at position `k` from the sortedMap and return its value
     */
     proc getAndRemove(k: keyType) {
       _enter(); defer _leave();
@@ -358,7 +358,7 @@ module OrderedMap {
       var found: bool;
       (found, result) = _set.lowerBound((k, nil));
       if !found || comparator.compare(result[0], k) != 0 then
-        boundsCheckHalt("orderedMap index " + k:string + " out of bounds");
+        boundsCheckHalt("sortedMap index " + k:string + " out of bounds");
 
       _set.remove((k, nil));
 
@@ -366,9 +366,9 @@ module OrderedMap {
     }
 
     /*
-      Iterates over the keys of this orderedMap. This is a shortcut for :iter:`keys`.
+      Iterates over the keys of this sortedMap. This is a shortcut for :iter:`keys`.
 
-      :yields: A reference to one of the keys contained in this orderedMap.
+      :yields: A reference to one of the keys contained in this sortedMap.
     */
     iter these() const ref {
       for key in this.keys() {
@@ -377,9 +377,9 @@ module OrderedMap {
     }
 
     /*
-      Iterates over the keys of this orderedMap.
+      Iterates over the keys of this sortedMap.
 
-      :yields: A reference to one of the keys contained in this orderedMap.
+      :yields: A reference to one of the keys contained in this sortedMap.
     */
     iter keys() const ref {
       foreach kv in _set {
@@ -388,10 +388,10 @@ module OrderedMap {
     }
 
     /*
-      Iterates over the key-value pairs of this orderedMap.
+      Iterates over the key-value pairs of this sortedMap.
 
       :yields: A tuple of references to one of the key-value pairs contained in
-               this orderedMap.
+               this sortedMap.
     */
     iter items() const ref {
       foreach kv in _set {
@@ -400,9 +400,9 @@ module OrderedMap {
     }
 
     /*
-      Iterates over the values of this orderedMap.
+      Iterates over the values of this sortedMap.
 
-      :yields: A reference to one of the values contained in this orderedMap.
+      :yields: A reference to one of the values contained in this sortedMap.
     */
     iter values() ref {
       foreach kv in _set {
@@ -411,7 +411,7 @@ module OrderedMap {
     }
 
     /*
-      Writes the contents of this orderedMap to a channel. The format looks like:
+      Writes the contents of this sortedMap to a channel. The format looks like:
 
         .. code-block:: chapel
     
@@ -435,16 +435,16 @@ module OrderedMap {
     }
 
     /*
-      Adds a key-value pair to the orderedMap. Method returns `false` if the key
-      already exists in the orderedMap.
+      Adds a key-value pair to the sortedMap. Method returns `false` if the key
+      already exists in the sortedMap.
 
-     :arg k: The key to add to the orderedMap
+     :arg k: The key to add to the sortedMap
      :type k: keyType
 
      :arg v: The value that maps to ``k``
      :type v: valueType
 
-     :returns: `true` if `k` was not in the orderedMap and added with value `v`.
+     :returns: `true` if `k` was not in the sortedMap and added with value `v`.
                `false` otherwise.
      :rtype: bool
     */
@@ -462,7 +462,7 @@ module OrderedMap {
 
     /*
       Sets the value associated with a key. Method returns `false` if the key
-      does not exist in the orderedMap.
+      does not exist in the sortedMap.
 
      :arg k: The key whose value needs to change
      :type k: keyType
@@ -470,7 +470,7 @@ module OrderedMap {
      :arg v: The desired value to the key ``k``
      :type v: valueType
 
-     :returns: `true` if `k` was in the orderedMap and its value is updated with `v`.
+     :returns: `true` if `k` was in the sortedMap and its value is updated with `v`.
                `false` otherwise.
      :rtype: bool
     */
@@ -487,8 +487,8 @@ module OrderedMap {
       return true;
     }
 
-    /* If the orderedMap doesn't contain a value at position `k` add one and
-       set it to `v`. If the orderedMap already contains a value at position
+    /* If the sortedMap doesn't contain a value at position `k` add one and
+       set it to `v`. If the sortedMap already contains a value at position
        `k`, update it to the value `v`.
      */
     proc addOrSet(in k: keyType, in v: valType) {
@@ -498,11 +498,11 @@ module OrderedMap {
     }
 
     /*
-      Removes a key-value pair from the orderedMap, with the given key.
+      Removes a key-value pair from the sortedMap, with the given key.
       
-     :arg k: The key to remove from the orderedMap
+     :arg k: The key to remove from the sortedMap
 
-     :returns: `false` if `k` was not in the orderedMap.  `true` if it was and removed.
+     :returns: `false` if `k` was not in the sortedMap.  `true` if it was and removed.
      :rtype: bool
     */
     proc remove(k: keyType): bool {
@@ -571,24 +571,24 @@ module OrderedMap {
       }
       return A;
     }
-  } // end record orderedMap
+  } // end record sortedMap
 
   /*
-    Replace the content of this orderedMap with the other's.
+    Replace the content of this sortedMap with the other's.
 
     .. warning::
 
       This will invalidate any references to elements previously contained in
       `lhs`.
 
-    :arg lhs: The orderedMap to assign to.
-    :arg rhs: The orderedMap to assign from. 
+    :arg lhs: The sortedMap to assign to.
+    :arg rhs: The sortedMap to assign from. 
   */
-  operator orderedMap.=(ref lhs: orderedMap(?kt, ?vt, ?ps),
-                        const ref rhs: orderedMap(kt, vt, ps)) {
+  operator sortedMap.=(ref lhs: sortedMap(?kt, ?vt, ?ps),
+                        const ref rhs: sortedMap(kt, vt, ps)) {
 
     if !isCopyableType(kt) || !isCopyableType(vt) then
-      compilerError("assigning orderedMap with non-copyable type");
+      compilerError("assigning sortedMap with non-copyable type");
 
     lhs.clear();
     for key in rhs.keys() {
@@ -598,17 +598,17 @@ module OrderedMap {
 
 
   /*
-    Returns `true` if the contents of two orderedMaps are the same.
+    Returns `true` if the contents of two sortedMaps are the same.
 
-    :arg a: A orderedMap to compare.
+    :arg a: A sortedMap to compare.
 
-    :arg b: A orderedMap to compare.
+    :arg b: A sortedMap to compare.
 
-    :return: `true` if the contents of two orderedMaps are equal.
+    :return: `true` if the contents of two sortedMaps are equal.
     :rtype: `bool`
   */
-  operator orderedMap.==(const ref a: orderedMap(?kt, ?vt, ?ps),
-                         const ref b: orderedMap(kt, vt, ps)): bool {
+  operator sortedMap.==(const ref a: sortedMap(?kt, ?vt, ?ps),
+                         const ref b: sortedMap(kt, vt, ps)): bool {
     if a.size != b.size then return false;
     for (e1, e2) in zip(a.items(), b.items()) {
       if e1 != e2 then return false;
@@ -617,43 +617,43 @@ module OrderedMap {
   }
 
   /*
-    Returns `true` if the contents of two orderedMaps are not the same.
+    Returns `true` if the contents of two sortedMaps are not the same.
 
-    :arg a: A orderedMap to compare.
+    :arg a: A sortedMap to compare.
 
-    :arg b: A orderedMap to compare.
+    :arg b: A sortedMap to compare.
 
-    :return: `true` if the contents of two orderedMaps are not equal.
+    :return: `true` if the contents of two sortedMaps are not equal.
     :rtype: `bool`
   */
-  operator orderedMap.!=(const ref a: orderedMap(?kt, ?vt, ?ps),
-                         const ref b: orderedMap(kt, vt, ps)): bool {
+  operator sortedMap.!=(const ref a: sortedMap(?kt, ?vt, ?ps),
+                         const ref b: sortedMap(kt, vt, ps)): bool {
     return !(a == b);
   }
 
   /*
-    Returns a new orderedMap containing the keys and values in either a or b.
+    Returns a new sortedMap containing the keys and values in either a or b.
   */
-  operator orderedMap.+(a: orderedMap(?keyType, ?valueType, ?parSafe),
-                        b: orderedMap(keyType, valueType, parSafe)) {
+  operator sortedMap.+(a: sortedMap(?keyType, ?valueType, ?parSafe),
+                        b: sortedMap(keyType, valueType, parSafe)) {
     return a | b;
   }
 
   /*
-    Sets the left-hand side orderedMap to contain the keys and values in either
+    Sets the left-hand side sortedMap to contain the keys and values in either
     a or b.
    */
-  operator orderedMap.+=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-                         b: orderedMap(keyType, valueType, parSafe)) {
+  operator sortedMap.+=(ref a: sortedMap(?keyType, ?valueType, ?parSafe),
+                         b: sortedMap(keyType, valueType, parSafe)) {
     a |= b;
   }
 
   /*
-    Returns a new orderedMap containing the keys and values in either a or b.
+    Returns a new sortedMap containing the keys and values in either a or b.
   */
-  operator orderedMap.|(a: orderedMap(?keyType, ?valueType, ?parSafe),
-                        b: orderedMap(keyType, valueType, parSafe)) {
-    var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
+  operator sortedMap.|(a: sortedMap(?keyType, ?valueType, ?parSafe),
+                        b: sortedMap(keyType, valueType, parSafe)) {
+    var newMap = new sortedMap(keyType, valueType, parSafe, a.comparator);
 
     newMap |= a;
     newMap |= b;
@@ -664,18 +664,18 @@ module OrderedMap {
   /* Sets the left-hand side map to contain the keys and values in either
      a or b.
    */
-  operator orderedMap.|=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-                         b: orderedMap(keyType, valueType, parSafe)) {
+  operator sortedMap.|=(ref a: sortedMap(?keyType, ?valueType, ?parSafe),
+                         b: sortedMap(keyType, valueType, parSafe)) {
     // add keys/values from b to a if they weren't already in a
     for e in b.items() do a.add(e[0], e[1]);
   }
 
   /*
-    Returns a new orderedMap containing the keys that are in both a and b.
+    Returns a new sortedMap containing the keys that are in both a and b.
   */
-  operator orderedMap.&(a: orderedMap(?keyType, ?valueType, ?parSafe),
-                        b: orderedMap(keyType, valueType, parSafe)) {
-    var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
+  operator sortedMap.&(a: sortedMap(?keyType, ?valueType, ?parSafe),
+                        b: sortedMap(keyType, valueType, parSafe)) {
+    var newMap = new sortedMap(keyType, valueType, parSafe, a.comparator);
     for (k, v) in a.items() {
       if b.contains(k) then
         newMap.add(k, v);
@@ -683,7 +683,7 @@ module OrderedMap {
     return newMap;
   }
 
-  /* Sets the left-hand side orderedMap to contain the keys that are in both a and b.
+  /* Sets the left-hand side sortedMap to contain the keys that are in both a and b.
 
     .. warning::
 
@@ -691,17 +691,17 @@ module OrderedMap {
       `lhs`.
 
    */
-  operator orderedMap.&=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-                         b: orderedMap(keyType, valueType, parSafe)) {
+  operator sortedMap.&=(ref a: sortedMap(?keyType, ?valueType, ?parSafe),
+                         b: sortedMap(keyType, valueType, parSafe)) {
     a = a & b;
   }
 
   /*
-    Returns a new orderedMap containing the keys that are only in a, but not b.
+    Returns a new sortedMap containing the keys that are only in a, but not b.
   */
-  operator orderedMap.-(a: orderedMap(?keyType, ?valueType, ?parSafe),
-                        b: orderedMap(keyType, valueType, parSafe)) {
-    var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
+  operator sortedMap.-(a: sortedMap(?keyType, ?valueType, ?parSafe),
+                        b: sortedMap(keyType, valueType, parSafe)) {
+    var newMap = new sortedMap(keyType, valueType, parSafe, a.comparator);
 
     for (k, v) in a.items() {
       if !b.contains(k) then
@@ -711,23 +711,23 @@ module OrderedMap {
     return newMap;
   }
 
-  /* Sets the left-hand side orderedMap to contain the keys that are in the
-     left-hand orderedMap, but not the right-hand orderedMap. */
-  operator orderedMap.-=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-                         b: orderedMap(keyType, valueType, parSafe)) {
+  /* Sets the left-hand side sortedMap to contain the keys that are in the
+     left-hand sortedMap, but not the right-hand sortedMap. */
+  operator sortedMap.-=(ref a: sortedMap(?keyType, ?valueType, ?parSafe),
+                         b: sortedMap(keyType, valueType, parSafe)) {
     for k in b.keys() {
       a.remove(k);
     }
   }
 
   /*
-    Returns a new orderedMap containing the keys that are in either a or b, but
+    Returns a new sortedMap containing the keys that are in either a or b, but
     not both.
 
   */
-  operator orderedMap.^(a: orderedMap(?keyType, ?valueType, ?parSafe),
-                        b: orderedMap(keyType, valueType, parSafe)) {
-    var newMap = new orderedMap(keyType, valueType, parSafe, a.comparator);
+  operator sortedMap.^(a: sortedMap(?keyType, ?valueType, ?parSafe),
+                        b: sortedMap(keyType, valueType, parSafe)) {
+    var newMap = new sortedMap(keyType, valueType, parSafe, a.comparator);
 
     for k in a.keys() do
       if !b.contains(k) then newMap[k] = a[k];
@@ -736,10 +736,10 @@ module OrderedMap {
     return newMap;
   }
 
-  /* Sets the left-hand side orderedMap to contain the keys that are in either the
-     left-hand orderedMap or the right-hand orderedMap, but not both. */
-  operator orderedMap.^=(ref a: orderedMap(?keyType, ?valueType, ?parSafe),
-                         b: orderedMap(keyType, valueType, parSafe)) {
+  /* Sets the left-hand side sortedMap to contain the keys that are in either the
+     left-hand sortedMap or the right-hand sortedMap, but not both. */
+  operator sortedMap.^=(ref a: sortedMap(?keyType, ?valueType, ?parSafe),
+                         b: sortedMap(keyType, valueType, parSafe)) {
     for k in b.keys() {
       if a.contains(k) then a.remove(k);
       else a[k] = b[k];

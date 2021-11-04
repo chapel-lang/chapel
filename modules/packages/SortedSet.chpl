@@ -18,36 +18,36 @@
  */
 
 /*
-  This module contains the implementation of the ``orderedSet`` type.
+  This module contains the implementation of the ``sortedSet`` type.
 
-  An ``orderedSet`` is a collection of unique and ordered elements. The
-  ``orderedSet`` accepts a :ref:`comparator <comparators>` to determine how
+  An ``sortedSet`` is a collection of unique and sorted elements. The
+  ``sortedSet`` accepts a :ref:`comparator <comparators>` to determine how
   elements are compared.  The default comparator is `defaultComparator`. In this
   case, elements are stored and considered in ascending order. For example,
   ``these`` will yield elements in ascending order.
 
-  All references to ``orderedSet`` elements are invalidated when the ``orderedSet`` is 
+  All references to ``sortedSet`` elements are invalidated when the ``sortedSet`` is 
   cleared or deinitialized.
 
-  ``orderedSet`` is not parallel safe by default, but can be made parallel safe
-  by setting the param formal `parSafe` to true in any ``orderedSet``
-  constructor. When constructed from another ``orderedSet``, the new
-  ``orderedSet`` will inherit the parallel safety mode of its originating
-  ``orderedSet``.
+  ``sortedSet`` is not parallel safe by default, but can be made parallel safe
+  by setting the param formal `parSafe` to true in any ``sortedSet``
+  constructor. When constructed from another ``sortedSet``, the new
+  ``sortedSet`` will inherit the parallel safety mode of its originating
+  ``sortedSet``.
 
 */
-module OrderedSet {
+module SortedSet {
   include module Treap;
   private use Treap;
   private use Reflection;
   private use IO;
   public use Sort only defaultComparator;
 
-  record orderedSet {
-    /* The type of the elements contained in this orderedSet. */
+  record sortedSet {
+    /* The type of the elements contained in this sortedSet. */
     type eltType;
 
-    /* If `true`, this orderedSet will perform parallel safe operations. */
+    /* If `true`, this sortedSet will perform parallel safe operations. */
     param parSafe = false;
 
     /* The underlying implementation */
@@ -55,10 +55,10 @@ module OrderedSet {
     var instance: treap(eltType, parSafe, ?);
 
     /*
-      Initializes an empty orderedSet containing elements of the given type.
+      Initializes an empty sortedSet containing elements of the given type.
 
-      :arg eltType: The type of the elements of this orderedSet.
-      :arg parSafe: If `true`, this orderedSet will use parallel safe operations.
+      :arg eltType: The type of the elements of this sortedSet.
+      :arg parSafe: If `true`, this sortedSet will use parallel safe operations.
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, param parSafe = false,
@@ -70,13 +70,13 @@ module OrderedSet {
     }
 
     /*
-      Initialize this orderedSet with a unique copy of each element contained in
+      Initialize this sortedSet with a unique copy of each element contained in
       `iterable`. If an element from `iterable` is already contained in this
-      orderedSet, it will not be added again. The formal `iterable` must be a type
+      sortedSet, it will not be added again. The formal `iterable` must be a type
       with an iterator named "these" defined for it.
 
-      :arg iterable: A collection of elements to add to this orderedSet.
-      :arg parSafe: If `true`, this orderedSet will use parallel safe operations.
+      :arg iterable: A collection of elements to add to this sortedSet.
+      :arg parSafe: If `true`, this sortedSet will use parallel safe operations.
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, iterable, param parSafe=false,
@@ -89,13 +89,13 @@ module OrderedSet {
     }
 
     /*
-      Initialize this orderedSet with a copy of each of the elements contained in
-      the orderedSet `other`. This orderedSet will inherit the `parSafe` value of 
-      the orderedSet `other`.
+      Initialize this sortedSet with a copy of each of the elements contained in
+      the sortedSet `other`. This sortedSet will inherit the `parSafe` value of 
+      the sortedSet `other`.
 
-      :arg other: An orderedSet to initialize this orderedSet with.
+      :arg other: An sortedSet to initialize this sortedSet with.
     */
-    proc init=(const ref other: orderedSet(?t)) lifetime this < other {
+    proc init=(const ref other: sortedSet(?t)) lifetime this < other {
       this.eltType = t;
       this.parSafe = other.parSafe;
       this.instance = new treap(this.eltType, this.parSafe,
@@ -113,7 +113,7 @@ module OrderedSet {
     }
 
     /*
-      Write the contents of this orderedSet to a channel.
+      Write the contents of this sortedSet to a channel.
 
       :arg ch: A channel to write to.
     */
@@ -122,28 +122,28 @@ module OrderedSet {
     }
 
     /*
-      The current number of elements contained in this orderedSet.
+      The current number of elements contained in this sortedSet.
     */
     inline proc const size {
       return instance.size;
     }
 
     /*
-      Add a copy of the element `x` to this orderedSet. Does nothing if this orderedSet
+      Add a copy of the element `x` to this sortedSet. Does nothing if this sortedSet
       already contains an element equal to the value of `x`.
 
-      :arg x: The element to add to this orderedSet.
+      :arg x: The element to add to this sortedSet.
     */
     inline proc ref add(in x: eltType) lifetime this < x {
       instance.add(x);
     }
 
     /*
-      Returns `true` if the given element is a member of this orderedSet, and `false`
+      Returns `true` if the given element is a member of this sortedSet, and `false`
       otherwise.
 
       :arg x: The element to test for membership.
-      :return: Whether or not the given element is a member of this orderedSet.
+      :return: Whether or not the given element is a member of this sortedSet.
       :rtype: `bool`
     */
     inline proc const contains(const ref x: eltType): bool {
@@ -151,8 +151,8 @@ module OrderedSet {
     }
 
     /*
-      Attempt to remove the item from this orderedSet with a value equal to `x`. If
-      an element equal to `x` was removed from this orderedSet, return `true`, else
+      Attempt to remove the item from this sortedSet with a value equal to `x`. If
+      an element equal to `x` was removed from this sortedSet, return `true`, else
       return `false` if no such value was found.
 
       :arg x: The element to remove.
@@ -164,24 +164,24 @@ module OrderedSet {
     }
 
     /*
-      Clear the contents of this orderedSet.
+      Clear the contents of this sortedSet.
 
       .. warning::
 
-        Clearing the contents of this orderedSet will invalidate all existing
-        references to the elements contained in this orderedSet.
+        Clearing the contents of this sortedSet will invalidate all existing
+        references to the elements contained in this sortedSet.
     */
     inline proc ref clear() {
       instance.clear();
     }
 
     /*
-      Find the first element in the orderedSet
+      Find the first element in the sortedSet
       which is not less than e.
 
       Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurrence in the orderedSet, if there's any.
+      The second element is the occurrence in the sortedSet, if there's any.
 
       :returns: a tuple containing result
       :rtype: `(bool, eltType)`
@@ -191,12 +191,12 @@ module OrderedSet {
     }
 
     /*
-      Find the first element in the orderedSet
+      Find the first element in the sortedSet
       which is greater than e.
 
       Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurrence in the orderedSet, if there's any.
+      The second element is the occurrence in the sortedSet, if there's any.
 
       :returns: a tuple containing result
       :rtype: `(bool, eltType)`
@@ -206,11 +206,11 @@ module OrderedSet {
     }
 
     /*
-      Find the predecessor of one element in the orderedSet.
+      Find the predecessor of one element in the sortedSet.
 
       Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurrence in the orderedSet, if there's any.
+      The second element is the occurrence in the sortedSet, if there's any.
 
       :arg e: The element to base
       :type e: `eltType`
@@ -223,11 +223,11 @@ module OrderedSet {
     }
 
     /*
-      Find the successor of one element in the orderedSet.
+      Find the successor of one element in the sortedSet.
 
       Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurrence in the orderedSet, if there's any.
+      The second element is the occurrence in the sortedSet, if there's any.
 
       :arg e: The element to base
       :type e: `eltType`
@@ -240,11 +240,11 @@ module OrderedSet {
     }
 
     /*
-      Find the k-th element in the orderedSet. k starts from 1.
+      Find the k-th element in the sortedSet. k starts from 1.
 
       Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurrence in the orderedSet, if there's any.
+      The second element is the occurrence in the sortedSet, if there's any.
 
       :arg k: To find k-th element
       :type k: `int`
@@ -257,16 +257,16 @@ module OrderedSet {
     }
 
     /*
-      Iterate over the elements of this orderedSet. Yields constant references
+      Iterate over the elements of this sortedSet. Yields constant references
       that cannot be modified.
 
       .. warning::
 
-        Modifying this orderedSet while iterating over it may invalidate the
+        Modifying this sortedSet while iterating over it may invalidate the
         references returned by an iterator and is considered undefined
         behavior.
       
-      :yields: A constant reference to an element in this orderedSet.
+      :yields: A constant reference to an element in this sortedSet.
     */
     iter const these() {
       for x in instance do
@@ -274,31 +274,31 @@ module OrderedSet {
     }
 
     /*
-      Returns `true` if this orderedSet shares no elements in common with the orderedSet
+      Returns `true` if this sortedSet shares no elements in common with the sortedSet
       `other`, and `false` otherwise.
 
-      :arg other: The orderedSet to compare against.
-      :return: Whether or not this orderedSet and `other` are disjoint.
+      :arg other: The sortedSet to compare against.
+      :return: Whether or not this sortedSet and `other` are disjoint.
       :rtype: `bool`
     */
-    inline proc const isDisjoint(const ref other: orderedSet(eltType, ?)): bool {
+    inline proc const isDisjoint(const ref other: sortedSet(eltType, ?)): bool {
       return instance.isDisjoint(other);
     }
 
     /*
-      Returns `true` if this orderedSet and `other` have at least one element in
+      Returns `true` if this sortedSet and `other` have at least one element in
       common, and `false` otherwise.
 
-      :arg other: The orderedSet to compare against.
-      :return: Whether or not this orderedSet and `other` intersect.
+      :arg other: The sortedSet to compare against.
+      :return: Whether or not this sortedSet and `other` intersect.
       :rtype: `bool`
     */
-    inline proc const isIntersecting(const ref other: orderedSet(eltType, ?)): bool {
+    inline proc const isIntersecting(const ref other: sortedSet(eltType, ?)): bool {
       return instance.isIntersecting(other);
     }
 
     /*
-      Returns `true` if this orderedSet is empty (size == 0).
+      Returns `true` if this sortedSet is empty (size == 0).
 
       :rtype: `bool`
     */
@@ -308,9 +308,9 @@ module OrderedSet {
 
     /*
       Returns a new array containing a copy of each of the
-      elements contained in this orderedSet. The array will be in order.
+      elements contained in this sortedSet. The array will be in order.
 
-      :return: An array containing a copy of each of the elements in this orderedSet.
+      :return: An array containing a copy of each of the elements in this sortedSet.
       :rtype: `[] eltType`
     */
     inline proc const toArray(): [] eltType {
@@ -323,18 +323,18 @@ module OrderedSet {
   */
 
   /*
-    Clear the contents of this orderedSet, then extend this now empty orderedSet 
-    with the elements contained in another orderedSet.
+    Clear the contents of this sortedSet, then extend this now empty sortedSet 
+    with the elements contained in another sortedSet.
 
     .. warning::
 
       This will invalidate any references to elements previously contained in
       `lhs`.
 
-    :arg lhs: The orderedSet to assign to.
-    :arg rhs: The orderedSet to assign from. 
+    :arg lhs: The sortedSet to assign to.
+    :arg rhs: The sortedSet to assign from. 
   */
-  operator orderedSet.=(ref lhs: orderedSet(?t), rhs: orderedSet(t)) {
+  operator sortedSet.=(ref lhs: sortedSet(?t), rhs: sortedSet(t)) {
     lhs.clear();
     for x in rhs {
       lhs.add(x);
@@ -342,17 +342,17 @@ module OrderedSet {
   }
 
   /*
-    Return a new orderedSet that contains the union of two sets.
+    Return a new sortedSet that contains the union of two sets.
 
-    :arg a: An orderedSet to take the union of.
-    :arg b: An orderedSet to take the union of.
+    :arg a: An sortedSet to take the union of.
+    :arg b: An sortedSet to take the union of.
 
-    :return: A new orderedSet containing the union between `a` and `b`.
-    :rtype: `orderedSet(?t)`
+    :return: A new sortedSet containing the union between `a` and `b`.
+    :rtype: `sortedSet(?t)`
   */
-  operator orderedSet.|(const ref a: orderedSet(?t),
-                        const ref b: orderedSet(t)): orderedSet(t) {
-    var result: orderedSet(t, (a.parSafe || b.parSafe));
+  operator sortedSet.|(const ref a: sortedSet(?t),
+                        const ref b: sortedSet(t)): sortedSet(t) {
+    var result: sortedSet(t, (a.parSafe || b.parSafe));
 
     result = a;
     result |= b;
@@ -361,55 +361,55 @@ module OrderedSet {
   }
 
   /*
-    Add to the orderedSet `lhs` all the elements of `rhs`.
+    Add to the sortedSet `lhs` all the elements of `rhs`.
 
-    :arg lhs: An orderedSet to take the union of and then assign to.
-    :arg rhs: An orderedSet to take the union of.
+    :arg lhs: An sortedSet to take the union of and then assign to.
+    :arg rhs: An sortedSet to take the union of.
   */
-  operator orderedSet.|=(ref lhs: orderedSet(?t),
-                         const ref rhs: orderedSet(t)) {
+  operator sortedSet.|=(ref lhs: sortedSet(?t),
+                         const ref rhs: sortedSet(t)) {
     for x in rhs do
       lhs.add(x);
   }
 
   /*
-    Return a new orderedSet that contains the union of two sets. Alias for the `|`
+    Return a new sortedSet that contains the union of two sets. Alias for the `|`
     operator.
 
-    :arg a: An orderedSet to take the union of.
-    :arg b: An orderedSet to take the union of.
+    :arg a: An sortedSet to take the union of.
+    :arg b: An sortedSet to take the union of.
 
-    :return: A new orderedSet containing the union between `a` and `b`.
-    :rtype: `orderedSet(?t)`
+    :return: A new sortedSet containing the union between `a` and `b`.
+    :rtype: `sortedSet(?t)`
   */
-  operator orderedSet.+(const ref a: orderedSet(?t),
-                        const ref b: orderedSet(t)): orderedSet(t) {
+  operator sortedSet.+(const ref a: sortedSet(?t),
+                        const ref b: sortedSet(t)): sortedSet(t) {
     return a | b;
   }
 
   /*
-    Add to the orderedSet `lhs` all the elements of `rhs`.
+    Add to the sortedSet `lhs` all the elements of `rhs`.
 
-    :arg lhs: An orderedSet to take the union of and then assign to.
-    :arg rhs: An orderedSet to take the union of.
+    :arg lhs: An sortedSet to take the union of and then assign to.
+    :arg rhs: An sortedSet to take the union of.
   */
-  operator orderedSet.+=(ref lhs: orderedSet(?t),
-                         const ref rhs: orderedSet(t)) {
+  operator sortedSet.+=(ref lhs: sortedSet(?t),
+                         const ref rhs: sortedSet(t)) {
     lhs |= rhs;
   }
 
   /*
-    Return a new orderedSet that contains the difference of two sets.
+    Return a new sortedSet that contains the difference of two sets.
 
-    :arg a: An orderedSet to take the difference of.
-    :arg b: An orderedSet to take the difference of.
+    :arg a: An sortedSet to take the difference of.
+    :arg b: An sortedSet to take the difference of.
 
-    :return: A new orderedSet containing the difference between `a` and `b`.
-    :rtype: `orderedSet(t)`
+    :return: A new sortedSet containing the difference between `a` and `b`.
+    :rtype: `sortedSet(t)`
   */
-  operator orderedSet.-(const ref a: orderedSet(?t),
-                        const ref b: orderedSet(t)): orderedSet(t) {
-    var result = new orderedSet(t, (a.parSafe || b.parSafe));
+  operator sortedSet.-(const ref a: sortedSet(?t),
+                        const ref b: sortedSet(t)): sortedSet(t) {
+    var result = new sortedSet(t, (a.parSafe || b.parSafe));
 
     for x in a do
       if !b.contains(x) then
@@ -419,41 +419,41 @@ module OrderedSet {
   }
 
   /*
-    Remove from the orderedSet `lhs` the elements of `rhs`.
+    Remove from the sortedSet `lhs` the elements of `rhs`.
 
     .. warning::
 
       This will invalidate any references to elements previously contained in
-      the orderedSet `lhs`.
+      the sortedSet `lhs`.
 
-    :arg lhs: An orderedSet to take the difference of and then assign to.
-    :arg rhs: An orderedSet to take the difference of.
+    :arg lhs: An sortedSet to take the difference of and then assign to.
+    :arg rhs: An sortedSet to take the difference of.
   */
-  operator orderedSet.-=(ref lhs: orderedSet(?t),
-                         const ref rhs: orderedSet(t)) {
+  operator sortedSet.-=(ref lhs: sortedSet(?t),
+                         const ref rhs: sortedSet(t)) {
     for x in rhs do
       lhs.remove(x);
   }
 
   /*
-    Return a new orderedSet that contains the intersection of two sets.
+    Return a new sortedSet that contains the intersection of two sets.
 
-    :arg a: An orderedSet to take the intersection of.
-    :arg b: An orderedSet to take the intersection of.
+    :arg a: An sortedSet to take the intersection of.
+    :arg b: An sortedSet to take the intersection of.
 
-    :return: A new orderedSet containing the intersection of `a` and `b`.
-    :rtype: `orderedSet(t)`
+    :return: A new sortedSet containing the intersection of `a` and `b`.
+    :rtype: `sortedSet(t)`
   */
-  operator orderedSet.&(const ref a: orderedSet(?t),
-                        const ref b: orderedSet(t)): orderedSet(t) {
+  operator sortedSet.&(const ref a: sortedSet(?t),
+                        const ref b: sortedSet(t)): sortedSet(t) {
 
     // Note we need the full type here. In other operators (e.g., |), there's a
     // clear initialization point and split-init works fine. Here there's no
     // initialization point, so we have to initialize the result explicitly
-    var result = new orderedSet(t, (a.parSafe || b.parSafe),
+    var result = new sortedSet(t, (a.parSafe || b.parSafe),
                                 a.instance.comparator);
 
-    /* Iterate over the smaller orderedSet */
+    /* Iterate over the smaller sortedSet */
     if a.size <= b.size {
       for x in a do
         if b.contains(x) then
@@ -468,23 +468,23 @@ module OrderedSet {
   }
 
   /*
-    Assign to the orderedSet `lhs` the orderedSet that is the intersection of `lhs` 
+    Assign to the sortedSet `lhs` the sortedSet that is the intersection of `lhs` 
     and `rhs`.
 
     .. warning::
 
       This will invalidate any references to elements previously contained in
-      the orderedSet `lhs`.
+      the sortedSet `lhs`.
 
-    :arg lhs: An orderedSet to take the intersection of and then assign to.
-    :arg rhs: An orderedSet to take the intersection of.
+    :arg lhs: An sortedSet to take the intersection of and then assign to.
+    :arg rhs: An sortedSet to take the intersection of.
   */
-  operator orderedSet.&=(ref lhs: orderedSet(?t, ?),
-                         const ref rhs: orderedSet(t, ?)) {
+  operator sortedSet.&=(ref lhs: sortedSet(?t, ?),
+                         const ref rhs: sortedSet(t, ?)) {
 
     // We can't remove things from lhs while iterating over it, so
     // use a temporary. 
-    var result = new orderedSet(t, (lhs.parSafe || rhs.parSafe),
+    var result = new sortedSet(t, (lhs.parSafe || rhs.parSafe),
                                 lhs.instance.comparator);
 
     for x in lhs do
@@ -497,18 +497,18 @@ module OrderedSet {
   /*
     Return the symmetric difference of two sets.
 
-    :arg a: An orderedSet to take the symmetric difference of.
-    :arg b: An orderedSet to take the symmetric difference of.
+    :arg a: An sortedSet to take the symmetric difference of.
+    :arg b: An sortedSet to take the symmetric difference of.
 
-    :return: A new orderedSet containing the symmetric difference of `a` and `b`.
-    :rtype: `orderedSet(?t)`
+    :return: A new sortedSet containing the symmetric difference of `a` and `b`.
+    :rtype: `sortedSet(?t)`
   */
-  operator orderedSet.^(const ref a: orderedSet(?t),
-                        const ref b: orderedSet(t)): orderedSet(t) {
-    var result: orderedSet(t, (a.parSafe || b.parSafe));
+  operator sortedSet.^(const ref a: sortedSet(?t),
+                        const ref b: sortedSet(t)): sortedSet(t) {
+    var result: sortedSet(t, (a.parSafe || b.parSafe));
 
     /* Expect the loop in ^= to be more expensive than the loop in =,
-       so arrange for the rhs of the ^= to be the smaller orderedSet. */
+       so arrange for the rhs of the ^= to be the smaller sortedSet. */
     if a.size <= b.size {
       result = b;
       result ^= a;
@@ -521,19 +521,19 @@ module OrderedSet {
   }
 
   /*
-    Assign to the orderedSet `lhs` the orderedSet that is the symmetric difference
+    Assign to the sortedSet `lhs` the sortedSet that is the symmetric difference
     of `lhs` and `rhs`.
 
     .. warning::
 
       This will invalidate any references to elements previously contained in
-      the orderedSet `lhs`.
+      the sortedSet `lhs`.
 
-    :arg lhs: An orderedSet to take the symmetric difference of and then assign to.
-    :arg rhs: An orderedSet to take the symmetric difference of.
+    :arg lhs: An sortedSet to take the symmetric difference of and then assign to.
+    :arg rhs: An sortedSet to take the symmetric difference of.
   */
-  operator orderedSet.^=(ref lhs: orderedSet(?t),
-                         const ref rhs: orderedSet(t)) {
+  operator sortedSet.^=(ref lhs: sortedSet(?t),
+                         const ref rhs: sortedSet(t)) {
     for x in rhs {
       if lhs.contains(x) {
         lhs.remove(x);
@@ -547,14 +547,14 @@ module OrderedSet {
     Return `true` if the sets `a` and `b` are equal. That is, they are the
     same size and contain the same elements.
 
-    :arg a: An orderedSet to compare.
-    :arg b: An orderedSet to compare.
+    :arg a: An sortedSet to compare.
+    :arg b: An sortedSet to compare.
 
     :return: `true` if two sets are equal.
     :rtype: `bool`
   */
-  operator orderedSet.==(const ref a: orderedSet(?t),
-                         const ref b: orderedSet(t)): bool {
+  operator sortedSet.==(const ref a: sortedSet(?t),
+                         const ref b: sortedSet(t)): bool {
     if a.size != b.size then
       return false;
 
@@ -568,28 +568,28 @@ module OrderedSet {
   /*
     Return `true` if the sets `a` and `b` are not equal.
 
-    :arg a: An orderedSet to compare.
-    :arg b: An orderedSet to compare.
+    :arg a: An sortedSet to compare.
+    :arg b: An sortedSet to compare.
 
     :return: `true` if two sets are not equal.
     :rtype: `bool`
   */
-  operator orderedSet.!=(const ref a: orderedSet(?t),
-                         const ref b: orderedSet(t)): bool {
+  operator sortedSet.!=(const ref a: sortedSet(?t),
+                         const ref b: sortedSet(t)): bool {
     return !(a == b);
   }
 
   /*
     Return `true` if `a` is a proper subset of `b`.
 
-    :arg a: An orderedSet to compare.
-    :arg b: An orderedSet to compare.
+    :arg a: An sortedSet to compare.
+    :arg b: An sortedSet to compare.
 
     :return: `true` if `a` is a proper subset of `b`.
     :rtype: `bool`
   */
-  operator orderedSet.<(const ref a: orderedSet(?t),
-                        const ref b: orderedSet(t)): bool {
+  operator sortedSet.<(const ref a: sortedSet(?t),
+                        const ref b: sortedSet(t)): bool {
     if a.size >= b.size then
       return false;
     return a <= b;
@@ -598,14 +598,14 @@ module OrderedSet {
   /*
     Return `true` if `a` is a subset of `b`.
 
-    :arg a: An orderedSet to compare.
-    :arg b: An orderedSet to compare.
+    :arg a: An sortedSet to compare.
+    :arg b: An sortedSet to compare.
 
     :return: `true` if `a` is a subset of `b`.
     :rtype: `bool`
   */
-  operator orderedSet.<=(const ref a: orderedSet(?t),
-                         const ref b: orderedSet(t)): bool {
+  operator sortedSet.<=(const ref a: sortedSet(?t),
+                         const ref b: sortedSet(t)): bool {
     if a.size > b.size then
       return false;
 
@@ -619,14 +619,14 @@ module OrderedSet {
   /*
     Return `true` if `a` is a proper superset of `b`.
 
-    :arg a: An orderedSet to compare.
-    :arg b: An orderedSet to compare.
+    :arg a: An sortedSet to compare.
+    :arg b: An sortedSet to compare.
 
     :return: `true` if `a` is a proper superset of `b`.
     :rtype: `bool`
   */
-  operator orderedSet.>(const ref a: orderedSet(?t),
-                        const ref b: orderedSet(t)): bool {
+  operator sortedSet.>(const ref a: sortedSet(?t),
+                        const ref b: sortedSet(t)): bool {
     if a.size <= b.size then
       return false;
     return a >= b;
@@ -635,14 +635,14 @@ module OrderedSet {
   /*
     Return `true` if `a` is a superset of `b`.
 
-    :arg a: An orderedSet to compare.
-    :arg b: An orderedSet to compare.
+    :arg a: An sortedSet to compare.
+    :arg b: An sortedSet to compare.
 
     :return: `true` if `a` is a superset of `b`.
     :rtype: `bool`
   */
-  operator orderedSet.>=(const ref a: orderedSet(?t),
-                         const ref b: orderedSet(t)): bool {
+  operator sortedSet.>=(const ref a: sortedSet(?t),
+                         const ref b: sortedSet(t)): bool {
     if a.size < b.size then
       return false;
 

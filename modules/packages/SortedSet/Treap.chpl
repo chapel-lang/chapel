@@ -19,12 +19,12 @@
 
 /*
   This module contains an implementation of Treap,
-  which provides the functionality of OrderedSet.
+  which provides the functionality of SortedSet.
   Treap supports insertion, deletion, query in O(lgN).
 
   .. note::
     Generally, users don't have to directly use this module. The methods of a treap 
-    are available for an orderedSet. This page is for reference.
+    are available for an sortedSet. This page is for reference.
 */
 pragma "no doc"
 module Treap {
@@ -34,7 +34,7 @@ module Treap {
   private use Random;
   private use IO;
   private use Reflection;
-  private use OrderedSet only orderedSet;
+  private use SortedSet only sortedSet;
 
   pragma "no doc"
   private param _sanityChecks = false;
@@ -48,7 +48,7 @@ module Treap {
 
   //
   // Use a wrapper class to let heap methods have a const ref receiver even
-  // when `parSafe` is `true` and the orderedSet lock is used.
+  // when `parSafe` is `true` and the sortedSet lock is used.
   //
   pragma "no doc"
   class _LockWrapper {
@@ -130,10 +130,10 @@ module Treap {
   }
 
   record treap {
-    /* The type of the elements contained in this orderedSet.*/
+    /* The type of the elements contained in this sortedSet.*/
     type eltType;
 
-    /* If `true`, this orderedSet will perform parallel safe operations. */
+    /* If `true`, this sortedSet will perform parallel safe operations. */
     param parSafe = false;
 
     /* The comparator to use for comparing elements */
@@ -171,7 +171,7 @@ module Treap {
     }
 
     /*
-      The current number of elements contained in this orderedSet.
+      The current number of elements contained in this sortedSet.
     */
     inline proc const size {
       var result = 0;
@@ -187,10 +187,10 @@ module Treap {
     }
 
     /*
-      Initializes an empty orderedSet containing elements of the given type.
+      Initializes an empty sortedSet containing elements of the given type.
 
-      :arg eltType: The type of the elements of this orderedSet.
-      :arg parSafe: If `true`, this orderedSet will use parallel safe operations.
+      :arg eltType: The type of the elements of this sortedSet.
+      :arg parSafe: If `true`, this sortedSet will use parallel safe operations.
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, param parSafe = false, comparator: record = defaultComparator) {
@@ -201,13 +201,13 @@ module Treap {
     }
 
     /*
-      Initialize this orderedSet with a unique copy of each element contained in
+      Initialize this sortedSet with a unique copy of each element contained in
       `iterable`. If an element from `iterable` is already contained in this
-      orderedSet, it will not be added again. The formal `iterable` must be a type
+      sortedSet, it will not be added again. The formal `iterable` must be a type
       with an iterator named "these" defined for it.
 
-      :arg iterable: A collection of elements to add to this orderedSet.
-      :arg parSafe: If `true`, this orderedSet will use parallel safe operations.
+      :arg iterable: A collection of elements to add to this sortedSet.
+      :arg parSafe: If `true`, this sortedSet will use parallel safe operations.
       :arg comparator: The comparator used to compare elements.
     */
     proc init(type eltType, iterable, param parSafe = false, comparator: record = defaultComparator)
@@ -254,10 +254,10 @@ module Treap {
     }
 
     /*
-      Add a copy of the element `x` to this orderedSet. Does nothing if this orderedSet
+      Add a copy of the element `x` to this sortedSet. Does nothing if this sortedSet
       already contains an element equal to the value of `x`.
 
-      :arg x: The element to add to this orderedSet.
+      :arg x: The element to add to this sortedSet.
     */
     proc ref add(in x: eltType) lifetime this < x {
 
@@ -274,11 +274,11 @@ module Treap {
     }
 
     /*
-      Returns `true` if the given element is a member of this orderedSet, and `false`
+      Returns `true` if the given element is a member of this sortedSet, and `false`
       otherwise.
 
       :arg x: The element to test for membership.
-      :return: Whether or not the given element is a member of this orderedSet.
+      :return: Whether or not the given element is a member of this sortedSet.
       :rtype: `bool`
     */
     proc const contains(const ref x: eltType): bool {
@@ -357,12 +357,12 @@ module Treap {
       else return _findRef(node!.children[1], element);
     }
 
-    /* Given one element, return the reference to the element in the orderedSet, 
+    /* Given one element, return the reference to the element in the sortedSet, 
        which equals to the former in the perspective of the comparator.
 
        This procedure could halt when there is no hit.
 
-       Used by orderedMap
+       Used by sortedMap
      */
     pragma "no doc"
     proc _getReference(element: eltType) ref {
@@ -373,12 +373,12 @@ module Treap {
       return result;
     }
 
-    /* Given one element, return the element in the orderedSet, which equals to the 
+    /* Given one element, return the element in the sortedSet, which equals to the 
        former in the perspective of the comparator.
 
        This procedure could halt when there is no hit.
 
-       Used by orderedMap
+       Used by sortedMap
      */
     pragma "no doc"
     proc const _getValue(element: eltType) const {
@@ -462,8 +462,8 @@ module Treap {
     }
 
     /*
-      Attempt to remove the item from this orderedSet with a value equal to `x`. If
-      an element equal to `x` was removed from this orderedSet, return `true`, else
+      Attempt to remove the item from this sortedSet with a value equal to `x`. If
+      an element equal to `x` was removed from this sortedSet, return `true`, else
       return `false` if no such value was found.
 
       :arg x: The element to remove.
@@ -483,12 +483,12 @@ module Treap {
     }
 
     /*
-      Clear the contents of this orderedSet.
+      Clear the contents of this sortedSet.
 
       .. warning::
 
-        Clearing the contents of this orderedSet will invalidate all existing
-        references to the elements contained in this orderedSet.
+        Clearing the contents of this sortedSet will invalidate all existing
+        references to the elements contained in this sortedSet.
     */
     proc ref clear() {
       on this {
@@ -558,12 +558,12 @@ module Treap {
     }
 
     /*
-      Find the first element in the orderedSet
+      Find the first element in the sortedSet
       which is not less than e.
 
       Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurrence in the orderedSet, if there's any.
+      The second element is the occurrence in the sortedSet, if there's any.
 
       :returns: a tuple containing result
       :rtype: `(bool, eltType)`
@@ -584,12 +584,12 @@ module Treap {
     }
 
     /*
-      Find the first element in the orderedSet
+      Find the first element in the sortedSet
       which is greater than e.
 
       Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurrence in the orderedSet, if there's any.
+      The second element is the occurrence in the sortedSet, if there's any.
 
       :returns: a tuple containing result
       :rtype: `(bool, eltType)`
@@ -610,11 +610,11 @@ module Treap {
     }
 
     /*
-      Find the predecessor of one element in the orderedSet.
+      Find the predecessor of one element in the sortedSet.
 
       Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurrence in the orderedSet, if there's any.
+      The second element is the occurrence in the sortedSet, if there's any.
 
       :arg e: The element to base
       :type e: `eltType`
@@ -645,11 +645,11 @@ module Treap {
     }
     
     /*
-      Find the successor of one element in the orderedSet.
+      Find the successor of one element in the sortedSet.
 
       Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurrence in the orderedSet, if there's any.
+      The second element is the occurrence in the sortedSet, if there's any.
 
       :arg e: The element to base
       :type e: `eltType`
@@ -712,11 +712,11 @@ module Treap {
     }
 
     /*
-      Find the k-th element in the orderedSet. k starts from 1.
+      Find the k-th element in the sortedSet. k starts from 1.
 
       Returns a tuple containing two elements:
       The first element is a `bool` that indicates whether there is such an element.
-      The second element is the occurrence in the orderedSet, if there's any.
+      The second element is the occurrence in the sortedSet, if there's any.
 
       :arg k: To find k-th element
       :type k: `int`
@@ -753,16 +753,16 @@ module Treap {
     }
 
     /*
-      Iterate over the elements of this orderedSet. Yields constant references
+      Iterate over the elements of this sortedSet. Yields constant references
       that cannot be modified.
 
       .. warning::
 
-        Modifying this orderedSet while iterating over it may invalidate the
+        Modifying this sortedSet while iterating over it may invalidate the
         references returned by an iterator and is considered undefined
         behavior.
       
-      :yields: A constant reference to an element in this orderedSet.
+      :yields: A constant reference to an element in this sortedSet.
     */
     iter const these() {
       var node = _first();
@@ -773,14 +773,14 @@ module Treap {
     }
 
     /*
-      Returns `true` if this orderedSet shares no elements in common with the orderedSet
+      Returns `true` if this sortedSet shares no elements in common with the sortedSet
       `other`, and `false` otherwise.
 
-      :arg other: The orderedSet to compare against.
-      :return: Whether or not this orderedSet and `other` are disjoint.
+      :arg other: The sortedSet to compare against.
+      :return: Whether or not this sortedSet and `other` are disjoint.
       :rtype: `bool`
     */
-    proc const isDisjoint(const ref other: orderedSet(eltType, ?)): bool {
+    proc const isDisjoint(const ref other: sortedSet(eltType, ?)): bool {
       var result = true;
 
       on this {
@@ -801,19 +801,19 @@ module Treap {
     }
     
     /*
-      Returns `true` if this orderedSet and `other` have at least one element in
+      Returns `true` if this sortedSet and `other` have at least one element in
       common, and `false` otherwise.
 
-      :arg other: The orderedSet to compare against.
-      :return: Whether or not this orderedSet and `other` intersect.
+      :arg other: The sortedSet to compare against.
+      :return: Whether or not this sortedSet and `other` intersect.
       :rtype: `bool`
     */
-    proc const isIntersecting(const ref other: orderedSet(eltType, ?)): bool {
+    proc const isIntersecting(const ref other: sortedSet(eltType, ?)): bool {
       return !isDisjoint(other);
     }
 
     /*
-      Write the contents of this orderedSet to a channel.
+      Write the contents of this sortedSet to a channel.
 
       :arg ch: A channel to write to.
     */
@@ -824,7 +824,7 @@ module Treap {
     }
 
     /*
-      Returns `true` if this orderedSet is empty (size == 0).
+      Returns `true` if this sortedSet is empty (size == 0).
 
       :rtype: `bool`
     */
@@ -842,9 +842,9 @@ module Treap {
 
     /*
       Returns a new array containing a copy of each of the
-      elements contained in this orderedSet. The array will be in order.
+      elements contained in this sortedSet. The array will be in order.
 
-      :return: An array containing a copy of each of the elements in this orderedSet.
+      :return: An array containing a copy of each of the elements in this sortedSet.
       :rtype: `[] eltType`
     */
     proc const toArray(): [] eltType {
@@ -857,7 +857,7 @@ module Treap {
       var result: [0..#treapSize] eltType;
 
       if !isCopyableType(eltType) then
-        compilerError('Cannot create array because orderedSet element type ' +
+        compilerError('Cannot create array because sortedSet element type ' +
                       eltType:string + ' is not copyable');
 
       on this {
