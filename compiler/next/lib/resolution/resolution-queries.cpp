@@ -611,28 +611,6 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
 
 /////// function resolution
 
-static
-const owned<UntypedFnSignature>& untypedSignatureQuery(Context* context, ID id)
-{
-  QUERY_BEGIN(untypedSignatureQuery, context, id);
-
-  auto ast = parsing::idToAst(context, id);
-  auto fn = ast->toFunction();
-
-  owned<UntypedFnSignature> result;
-
-  if (fn != nullptr) {
-    auto sig = new UntypedFnSignature(fn);
-    result = toOwned(sig);
-  }
-
-  return QUERY_END(result);
-}
-
-const UntypedFnSignature* untypedSignature(Context* context, ID id) {
-  return untypedSignatureQuery(context, id).get();
-}
-
 static const owned<TypedFnSignature>&
 typedSignatureQuery(Context* context,
                     const UntypedFnSignature* untypedSignature,
@@ -742,7 +720,7 @@ typedSignatureInitial(Context* context,
   const TypedFnSignature* parentFnTyped = nullptr;
   ID parentFnId = parentFunctionId(context, fn->id());
   if (!parentFnId.isEmpty()) {
-    parentFnUntyped = untypedSignature(context, parentFnId);
+    parentFnUntyped = UntypedFnSignature::get(context, parentFnId);
     parentFnTyped = typedSignatureInitial(context, parentFnUntyped);
   }
 
@@ -950,7 +928,7 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   if (func == nullptr)
     return nullptr;
 
-  const UntypedFnSignature* uSig = untypedSignature(context, func->id());
+  const UntypedFnSignature* uSig = UntypedFnSignature::get(context, func->id());
   const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
   if (sig->needsInstantiation())
     return nullptr;
@@ -1168,7 +1146,7 @@ doIsCandidateApplicableInitial(Context* context,
                                const ID& candidateId,
                                const CallInfo& call) {
 
-  auto uSig = untypedSignature(context, candidateId);
+  auto uSig = UntypedFnSignature::get(context, candidateId);
   // First, check that the untyped properties allow a match:
   //  * number of arguments
   //  * names of arguments

@@ -17,8 +17,11 @@
  * limitations under the License.
  */
 
-#include "chpl/queries/update-functions.h"
 #include "chpl/resolution/resolution-types.h"
+
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/queries/query-impl.h"
+#include "chpl/queries/update-functions.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/Formal.h"
 
@@ -26,6 +29,65 @@ namespace chpl {
 namespace resolution {
 
 using namespace uast;
+
+const owned<UntypedFnSignature>&
+UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
+                                          UniqueString name,
+                                          bool isMethod,
+                                          uast::Function::Kind kind,
+                                          std::vector<FormalDetail> formals,
+                                          const Expression* whereClause) {
+  QUERY_BEGIN(getUntypedFnSignature, context,
+              id, name, isMethod, kind, formals, whereClause);
+
+  owned<UntypedFnSignature> result =
+    toOwned(new UntypedFnSignature(id, name, isMethod, kind,
+                                   std::move(formals), whereClause));
+
+  return QUERY_END(result);
+}
+
+const UntypedFnSignature*
+UntypedFnSignature::get(Context* context, ID id,
+                        UniqueString name,
+                        bool isMethod,
+                        uast::Function::Kind kind,
+                        std::vector<FormalDetail> formals,
+                        const uast::Expression* whereClause) {
+  return getUntypedFnSignature(context, id, name, isMethod, kind,
+                               std::move(formals), whereClause).get();
+}
+
+const UntypedFnSignature*
+UntypedFnSignature::get(Context* context, ID functionId) {
+  auto ast = parsing::idToAst(context, functionId);
+  auto fn = ast->toFunction();
+
+  const UntypedFnSignature* result = nullptr;
+
+  if (fn != nullptr) {
+    // compute the FormalDetails
+    std::vector<FormalDetail> formals;
+    for (auto decl : fn->formals()) {
+      UniqueString name;
+      bool hasDefault = false;
+      if (auto formal = decl->toFormal()) {
+        name = formal->name();
+        hasDefault = formal->initExpression() != nullptr;
+      }
+
+      formals.push_back(FormalDetail(name, hasDefault, decl));
+    }
+
+    // find the unique-ified untyped signature
+    result = get(context, fn->id(),
+                 fn->name(), fn->isMethod(), fn->kind(),
+                 std::move(formals), fn->whereClause());
+  }
+
+  return result;
+}
+
 
 void ResolutionResultByPostorderID::setupForSymbol(const ASTNode* ast) {
   assert(Builder::astTagIndicatesNewIdScope(ast->tag()));

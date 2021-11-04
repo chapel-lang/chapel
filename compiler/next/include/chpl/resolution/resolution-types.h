@@ -58,6 +58,10 @@ class UntypedFnSignature {
     bool operator!=(const FormalDetail& other) const {
       return !(*this == other);
     }
+
+    size_t hash() const {
+      return chpl::hash(name, hasDefaultValue, decl);
+    }
   };
 
  private:
@@ -73,38 +77,42 @@ class UntypedFnSignature {
   // this will not be present for compiler-generated functions
   const uast::Expression* whereClause_;
 
- public:
-  /** Construct an UntypedFnSignature for a uast::Function */
-  UntypedFnSignature(const uast::Function* fn)
-    : id_(fn->id()),
-      name_(fn->name()),
-      isMethod_(fn->isMethod()),
-      kind_(fn->kind()),
-      whereClause_(fn->whereClause()) {
-    for (auto decl : fn->formals()) {
-      UniqueString name;
-      bool hasDefault = false;
-      if (auto formal = decl->toFormal()) {
-        name = formal->name();
-        hasDefault = formal->initExpression() != nullptr;
-      }
-
-      formals_.push_back(FormalDetail(name, hasDefault, decl));
-    }
-  }
-  /** Construct an UntypedFnSignature for a compiler-generated function */
   UntypedFnSignature(ID id,
                      UniqueString name,
                      bool isMethod,
                      uast::Function::Kind kind,
-                     std::vector<FormalDetail> formals)
+                     std::vector<FormalDetail> formals,
+                     const uast::Expression* whereClause)
     : id_(id),
       name_(name),
       isMethod_(isMethod),
       kind_(kind),
       formals_(std::move(formals)),
-      whereClause_(nullptr) {
+      whereClause_(whereClause) {
   }
+
+  static const owned<UntypedFnSignature>&
+  getUntypedFnSignature(Context* context, ID id,
+                        UniqueString name,
+                        bool isMethod,
+                        uast::Function::Kind kind,
+                        std::vector<FormalDetail> formals,
+                        const uast::Expression* whereClause);
+
+ public:
+  /** Get the unique UntypedFnSignature containing these components */
+  static const UntypedFnSignature* get(Context* context, ID id,
+                                       UniqueString name,
+                                       bool isMethod,
+                                       uast::Function::Kind kind,
+                                       std::vector<FormalDetail> formals,
+                                       const uast::Expression* whereClause);
+
+  /** Get the unique UntypedFnSignature representing a function with ID
+      functionId.
+      If functionId does not represent a Function, returns nullptr. */
+  static const UntypedFnSignature* get(Context* context, ID functionId);
+
 
   bool operator==(const UntypedFnSignature& other) const {
     return id_ == other.id_ &&
@@ -162,12 +170,7 @@ struct CallInfoActual {
     return !(*this == other);
   }
   size_t hash() const {
-    size_t h1 = chpl::hash(type);
-    size_t h2 = chpl::hash(byName);
-    size_t ret = 0;
-    ret = hash_combine(ret, h1);
-    ret = hash_combine(ret, h2);
-    return ret;
+    return chpl::hash(type, byName);
   }
 };
 
@@ -185,14 +188,7 @@ struct CallInfo {
     return !(*this == other);
   }
   size_t hash() const {
-    size_t h1 = chpl::hash(name);
-    size_t h2 = isMethod;
-    size_t h3 = chpl::hash(actuals);
-    size_t ret = 0;
-    ret = hash_combine(ret, h1);
-    ret = hash_combine(ret, h2);
-    ret = hash_combine(ret, h3);
-    return ret;
+    return chpl::hash(name, isMethod, actuals);
   }
 };
 
@@ -726,6 +722,13 @@ template<> struct update<owned<resolution::ResolvedFunction>> {
 
 
 namespace std {
+
+template<> struct hash<chpl::resolution::UntypedFnSignature::FormalDetail>
+{
+  size_t operator()(const chpl::resolution::UntypedFnSignature::FormalDetail& key) const {
+    return key.hash();
+  }
+};
 
 template<> struct hash<chpl::resolution::CallInfoActual>
 {
