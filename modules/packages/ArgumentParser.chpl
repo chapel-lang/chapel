@@ -203,11 +203,11 @@ module ArgumentParser {
     var _numArgs=1..1;
 
     proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
-                endPos:int):int throws {
+                endPos:int) : int throws {
       return 0;
     }
 
-    proc _hasDefault():bool{
+    proc _hasDefault() : bool{
       return false;
     }
 
@@ -219,7 +219,7 @@ module ArgumentParser {
       return false;
     }
 
-    proc _validate(present:bool, valueCount:int):string {
+    proc _validate(present:bool, valueCount:int) : string {
         return "";
     }
     // get a string representing how this argument should be displayed in help
@@ -338,7 +338,7 @@ module ArgumentParser {
       this._kind=argKind.positional;
     }
 
-    override proc _hasDefault():bool{
+    override proc _hasDefault() : bool{
       return !this._defaultValue.isEmpty();
     }
 
@@ -372,7 +372,7 @@ module ArgumentParser {
       return pos;
     }
 
-    override proc _validate(present:bool, valueCount:int):string {
+    override proc _validate(present:bool, valueCount:int) : string {
       if !present && _required {
         return "Required value missing";
       } else if valueCount < _numArgs.low {
@@ -413,7 +413,7 @@ module ArgumentParser {
       this._kind=argKind.flag;
     }
 
-    override proc _hasDefault():bool{
+    override proc _hasDefault() : bool{
       return !this._defaultValue.isEmpty();
     }
 
@@ -453,7 +453,7 @@ module ArgumentParser {
       return next;
     }
 
-    override proc _validate(present:bool, valueCount:int):string {
+    override proc _validate(present:bool, valueCount:int) : string {
       if !present && _required {
         return "Required value missing";
       } else if valueCount < _numArgs.low && present {
@@ -527,7 +527,7 @@ module ArgumentParser {
       return _defaultValue;
     }
 
-    override proc _hasDefault():bool {
+    override proc _hasDefault() : bool {
       return !_defaultValue.isEmpty();
     }
 
@@ -555,7 +555,7 @@ module ArgumentParser {
       return next;
     }
 
-    override proc _validate(present:bool, valueCount:int):string {
+    override proc _validate(present:bool, valueCount:int) : string {
         if !present && _required {
         return "Required value missing";
       } else if valueCount > _numArgs.high {
