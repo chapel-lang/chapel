@@ -2852,7 +2852,7 @@ proc testMixPosBoolOptWithValuesSubCommandLight(test: borrowed Test) throws {
 proc testMockMasonNew(test: borrowed Test) throws {
   var argList = ["mason","new","--no-vcs","myPackage"];
 
-  var parser = new argumentParser();
+  var parser = new argumentParser(exitAfterHelp=false);
   var newCmd = parser.addSubCommand("new");
   var initCmd = parser.addSubCommand("init");
   var addCmd = parser.addSubCommand("add");
@@ -2872,7 +2872,7 @@ proc testMockMasonNew(test: borrowed Test) throws {
                                opts=["-V","--version"],
                                defaultValue=false);
   // setup the subcommand parsers (normally done in each sub-module)
-  var newParser = new argumentParser();
+  var newParser = new argumentParser(exitAfterHelp=false);
   var initParser = new argumentParser();
   var addParser = new argumentParser();
   var rmParser = new argumentParser();
@@ -2956,6 +2956,15 @@ proc testMockMasonNew(test: borrowed Test) throws {
   //ensure the value passed is correct
   test.assertFalse(newVCS.valueAsBool());
   test.assertEqual(newName.value(), "myPackage");
+
+  parser.parseArgs(["mason","-h"]);
+
+  test.assertTrue(parser.helpFlagPresent()[0]);
+  test.assertEqual(parser.helpFlagPresent()[1],"-h");
+
+  newParser.parseArgs(["new","--help"]);
+  test.assertTrue(newParser.helpFlagPresent()[0]);
+  test.assertEqual(newParser.helpFlagPresent()[1],"--help");
 }
 
 
