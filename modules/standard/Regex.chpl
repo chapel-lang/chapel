@@ -587,10 +587,10 @@ proc bytes.this(m:regexMatch) {
 
 
 pragma "no doc"
-record __serializeHelper {
-   type exprType;
-   var pattern:exprType;
-   var options:qio_regex_options_t;
+record chpl_serializeHelper {
+  type exprType;
+  var pattern:exprType;
+  var options:qio_regex_options_t;
 }
 
  private use IO;
@@ -656,7 +656,7 @@ record regex {
       qio_regex_get_options(_regexCopy, localOptions);
       options = localOptions;
     }
-    return new __serializeHelper(exprType, pattern, options);
+    return new chpl_serializeHelper(exprType, pattern, options);
   }
 
   pragma "no doc"
@@ -1027,7 +1027,7 @@ record regex {
     return str;
   }
 
-  // TODO this could use chpl__serialize to get the pattern and options
+  // TODO this could use _serialize to get the pattern and options
   pragma "no doc"
   proc writeThis(f) throws {
     var pattern:exprType;
