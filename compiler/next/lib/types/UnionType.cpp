@@ -26,19 +26,19 @@ namespace types {
 
 
 const owned<UnionType>&
-UnionType::getUnionType(Context* context, ID id,
+UnionType::getUnionType(Context* context, ID id, UniqueString name,
                         std::vector<CompositeType::FieldDetail> fields) {
-  QUERY_BEGIN(getUnionType, context, id, fields);
+  QUERY_BEGIN(getUnionType, context, id, name, fields);
 
-  auto result = toOwned(new UnionType(id, std::move(fields)));
+  auto result = toOwned(new UnionType(id, name, std::move(fields)));
 
   return QUERY_END(result);
 }
 
 const UnionType*
-UnionType::get(Context* context, ID id,
+UnionType::get(Context* context, ID id, UniqueString name,
                std::vector<CompositeType::FieldDetail> fields) {
-  return getUnionType(context, id, std::move(fields)).get();
+  return getUnionType(context, id, name, std::move(fields)).get();
 }
 
 

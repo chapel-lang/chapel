@@ -26,9 +26,9 @@ namespace types {
 
 const owned<ClassType>&
 ClassType::getClassType(Context* context,
-             const BasicClassType* basicType,
-             const RecordType* manager,
-             ClassTypeDecorator decorator) {
+                        const BasicClassType* basicType,
+                        const RecordType* manager,
+                        ClassTypeDecorator decorator) {
   QUERY_BEGIN(getClassType, context, basicType, manager, decorator);
 
   auto result = toOwned(new ClassType(basicType, manager, decorator));

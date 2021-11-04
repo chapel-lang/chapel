@@ -26,19 +26,19 @@ namespace types {
 
 
 const owned<TupleType>&
-TupleType::getTupleType(Context* context, ID id,
+TupleType::getTupleType(Context* context, ID id, UniqueString name,
                         std::vector<CompositeType::FieldDetail> fields) {
-  QUERY_BEGIN(getTupleType, context, id, fields);
+  QUERY_BEGIN(getTupleType, context, id, name, fields);
 
-  auto result = toOwned(new TupleType(id, std::move(fields)));
+  auto result = toOwned(new TupleType(id, name, std::move(fields)));
 
   return QUERY_END(result);
 }
 
 const TupleType*
-TupleType::get(Context* context, ID id,
+TupleType::get(Context* context, ID id, UniqueString name,
                std::vector<CompositeType::FieldDetail> fields) {
-  return getTupleType(context, id, std::move(fields)).get();
+  return getTupleType(context, id, name, std::move(fields)).get();
 }
 
 

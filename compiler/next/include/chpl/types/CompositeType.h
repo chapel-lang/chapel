@@ -68,6 +68,7 @@ class CompositeType : public Type {
   // TODO: add fields and accessors for a QualifiedType per field
 
   ID id_;
+  UniqueString name_;
   std::vector<FieldDetail> fields_;
   bool isGeneric_ = false;
   bool allGenericFieldsHaveDefaultValues_ = false;
@@ -75,8 +76,8 @@ class CompositeType : public Type {
   void computeSummaryInformation();
 
   CompositeType(typetags::TypeTag tag,
-                ID id, std::vector<FieldDetail> fields)
-    : Type(tag), id_(id), fields_(std::move(fields)) {
+                ID id, UniqueString name, std::vector<FieldDetail> fields)
+    : Type(tag), id_(id), name_(name), fields_(std::move(fields)) {
     computeSummaryInformation();
   }
 
@@ -106,6 +107,9 @@ class CompositeType : public Type {
 
   /** Return the uAST ID associated with this CompositeType */
   const ID& id() const { return id_; }
+
+  /** Returns the name of the uAST associated with this CompositeType */
+  UniqueString name() const { return name_; }
 
   /** Return the number of fields */
   int numFields() const {

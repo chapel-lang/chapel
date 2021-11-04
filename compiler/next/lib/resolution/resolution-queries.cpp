@@ -755,9 +755,61 @@ typeConstructorInitialQuery(Context* context, const Type* t)
 
   owned<TypedFnSignature> result;
 
-  const UntypedFnSignature* untyped = nullptr;
-  std::vector<QualifiedType> formalTypes;
-  // TODO: fixme fill in untyped, formalTypes
+  ID id;
+  UniqueString name;
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  std::vector<types::QualifiedType> formalTypes;
+
+
+  if (t->isNumericOrBoolType()) {
+    UniqueString bitwidth = UniqueString::build(context, "_bitwidth");
+    auto detail = UntypedFnSignature::FormalDetail(bitwidth, false, nullptr);
+    QualifiedType paramBitWidth = QualifiedType(QualifiedType::PARAM,
+                                                IntType::get(context, 0));
+    formals.push_back(detail);
+    formalTypes.push_back(paramBitWidth);
+
+    if (t->isIntType()) {
+      name = UniqueString::build(context, "int");
+    } else if (t->isUintType()) {
+      name = UniqueString::build(context, "uint");
+    } else if (t->isBoolType()) {
+      name = UniqueString::build(context, "bool");
+    } else if (t->isRealType()) {
+      name = UniqueString::build(context, "real");
+    } else if (t->isImagType()) {
+      name = UniqueString::build(context, "imag");
+    } else if (t->isComplexType()) {
+      name = UniqueString::build(context, "complex");
+    } else {
+      assert(false && "case not handled");
+    }
+
+  } else if (auto ct = t->toCompositeType()) {
+    id = ct->id();
+    name = ct->name();
+
+    // find the generic fields from the type and add
+    // these as type constructor arguments.
+    int nFields = ct->numFields();
+    for (int i = 0; i < nFields; i++) {
+      auto type = ct->fieldType(i);
+      if (type.isGenericOrUnknown()) {
+        auto d = UntypedFnSignature::FormalDetail(ct->fieldName(i),
+                                                  ct->fieldHasDefaultValue(i),
+                                                  nullptr);
+        formals.push_back(d);
+        formalTypes.push_back(ct->fieldType(i));
+      }
+    }
+  }
+
+  auto untyped = UntypedFnSignature::get(context,
+                                         id, name,
+                                         /* isMethod */ false,
+                                         Function::PROC,
+                                         std::move(formals),
+                                         /* whereClause */ nullptr);
 
   auto sig = new TypedFnSignature(untyped,
                                   std::move(formalTypes),
