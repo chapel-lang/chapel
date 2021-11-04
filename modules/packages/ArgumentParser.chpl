@@ -243,12 +243,27 @@ module ArgumentParser {
     }
   }
 
+  /*
+   argumentHelp record stores the information related only to the help
+   message printout for the argument
+  */
+  pragma "no doc"
+  record argumentHelp {
+    // the message to display for the argument
+    var help="";
+    // controls visibility in the printed help output
+    var visible=true;
+    // offers alternative display name to use for the value of flags, options,
+    // and arguments
+    var valueName="";
+  }
+
   // stores a passthrough delimiter definition
   pragma "no doc"
   class PassThrough : SubCommand {
 
-    proc init(delimiter:string) {
-      super.init(delimiter);
+    proc init(delimiter:string, help:argumentHelp) {
+      super.init(delimiter, help);
       _kind=argKind.passthrough;
     }
     // for passthrough, _match attempts to identify values at the index of the
@@ -274,7 +289,7 @@ module ArgumentParser {
   pragma "no doc"
   class SubCommand : ArgumentHandler {
 
-    proc init(cmd:string, help=new argumentHelp()) {
+    proc init(cmd:string, help:argumentHelp) {
       super.init();
       this._name=cmd;
       this._help=help;
@@ -307,7 +322,7 @@ module ArgumentParser {
     var _defaultValue:list(string);
 
 
-    proc init(name:string, defaultValue:?t=none, numArgs=1..1, in help=new argumentHelp()) {
+    proc init(name:string, defaultValue:?t=none, numArgs=1..1, help:argumentHelp) {
       super.init();
       this._name=name;
       this._required = numArgs.low > 0;
@@ -385,7 +400,7 @@ module ArgumentParser {
     var _noFlags:list(string);
 
     proc init(name:string, defaultValue:?t=none, required:bool=false,
-              yesFlags:[]string, noFlags:[]string, numArgs=0..0, in help:argumentHelp) {
+              yesFlags:[]string, noFlags:[]string, numArgs=0..0, help:argumentHelp) {
       super.init();
       this._name=name;
       this._required = required;
@@ -489,7 +504,7 @@ module ArgumentParser {
     var _defaultValue:list(string);
 
     proc init(name:string, numOpts:int, opts:[?argsD] string, numArgs:range,
-              required=false, defaultValue=new list(string), help=new argumentHelp()) {
+              required=false, defaultValue=new list(string), help:argumentHelp) {
       super.init();
       _name=name;
       _numOpts=numOpts;
@@ -573,17 +588,16 @@ module ArgumentParser {
   pragma "no doc"
   record helpWrapper {
     // a help message handler to control what happens when help is called
-    var _helpHandler : shared HelpHandler;
-    // a short message about the program
-    var _about:string;
+    var _helpHandler: shared HelpHandler;
     // the name of the binary for the USAGE message
-    var _binaryName:string;
+    var _binaryName: string;
+    // use the generator to build help and usage messages
+    var _helpGenerator: HelpGenerator;
 
-
-    proc init (helpHandler=new shared HelpHandler(), about="", binaryName="") {
+    proc init(helpHandler=new shared HelpHandler(), binaryName="") {
       _helpHandler=helpHandler;
-      _about=about;
       _binaryName=binaryName;
+      _helpGenerator=new HelpGenerator();
     }
 
     // print the help message unless the user
@@ -592,13 +606,186 @@ module ArgumentParser {
       _helpHandler.printHelp();
     }
 
-    // sets the helpHandler's help message to generated message from
-    // the helpGenerator
-    proc generateHelp(argStack :map(string, ArgumentHandler)) {
-      if _helpHandler._helpMessage.isEmpty() {
-        var helpGen = new helpGenerator(_about, _binaryName, argStack);
-        _helpHandler._helpMessage = helpGen.generateHelp();
+    // sets the helpHandler's empty help message to generated message from
+    // the helpGenerator, or overwrites the help message if `message` is a string.
+    proc setHelp(message:?t=none) {
+      if isNothingType(t) && _helpHandler._helpMessage.isEmpty() {
+        var msg = _helpGenerator.generateHelp(binaryName=_binaryName);
+        _helpHandler._helpMessage = msg;
+      } else if isString(t) {
+        _helpHandler._helpMessage = message;
+      } else if !isNothingType(t) {
+          compilerError("Error setting help message: Expected string, received " + t:string);
       }
+    }
+
+    // Notify the generator about the arguments defined in this parser
+    proc setArguments(argStack: map(string, ArgumentHandler)) {
+      _helpGenerator._setArguments(argStack);
+    }
+  }
+
+
+  pragma "no doc"
+  class HelpGenerator {
+
+    // create some sections to store the help text per section
+    var argsSection:section;
+    var optsSection:section;
+    var subSection:section;
+    // we need to know what argument handlers are defined in the parser
+    var _argStack: map(string, borrowed ArgumentHandler);
+
+    proc init() {
+      argsSection = new section();
+      optsSection = new section();
+      subSection = new section();
+    }
+
+    // represents two columns for argument, the name/flag and value, plus the
+    // help text
+    record element {
+      var command:string;
+      var help:string;
+
+      proc render(separator="\t") : string {
+        var message = command;
+        if !help.isEmpty() then
+          message += separator + help;
+        return message;
+      }
+    }
+
+    // represents a help message section, such as flags, subcommands, arguments
+    record section {
+      // store the rows that make up this section
+      var rows:list(element);
+
+      proc size {
+        return rows.size;
+      }
+
+      proc append(item) {
+        rows.append(item);
+      }
+
+      proc render(inset=1, separator="\t") : string {
+        var elemList:list(string);
+        for elt in rows.these() {
+          elemList.append(separator * inset + elt.render(separator));
+        }
+        return "\n".join(elemList.toArray());
+      }
+    }
+
+    // represent a USAGE message as a list of string values
+    record usageMessage {
+      var components:list(string);
+
+      proc render(separator=" ") : string {
+        return separator.join(components.toArray());
+      }
+    }
+
+    // needs to be called before generating usage or help
+    proc _setArguments(argStack: map(string, ArgumentHandler)) {
+      _argStack = new map(string, borrowed ArgumentHandler);
+      for k in argStack.these() {
+        _argStack.addOrSet(k,argStack.getBorrowed(k) );
+      }
+      generateSections();
+    }
+
+    // generate a usage message. This needs to be done just before displaying
+    // the help because we might not know the binary name until we see
+    // the arguments passed to main().
+    proc generateUsage(binaryName:string) : usageMessage {
+      // define an order for the usage message parts
+      var usageOrder = [argKind.positional, argKind.flag,
+                        argKind.option, argKind.subcommand];
+
+      var usage = new usageMessage();
+      usage.components.append(binaryName);
+      var hasSubcommands = false;
+      for kindOfArg in usageOrder {
+        for name in _argStack.keys() {
+          const handler = _argStack.getBorrowed(name);
+          if !handler._help.visible then continue;
+          var elem = handler._getUsageCommand();
+          if handler._kind == kindOfArg {
+            select handler._kind {
+              when argKind.positional {
+                usage.components.append(elem);
+              }
+              when argKind.option {
+                usage.components.append(elem);
+              }
+              when argKind.subcommand {
+                hasSubcommands = true;
+              }
+              when argKind.flag {
+                usage.components.append(elem);
+              }
+            }
+          }
+        }
+      }
+      if hasSubcommands then
+        usage.components.append("[SUBCOMMAND]");
+      return usage;
+    }
+
+    // generate all the data for each section. Needs to be done AFTER all
+    // the arguments have been added to the argumentParser.
+    proc generateSections() {
+      for name in _argStack.keys() {
+        const handler = _argStack.getBorrowed(name);
+        if !handler._help.visible then continue;
+        var elem = new element(handler._getHelpCommand(),
+                               handler._getHelpMessage());
+        select handler._kind {
+          when argKind.positional {
+            argsSection.append(elem);
+          }
+          when argKind.option {
+            optsSection.append(elem);
+          }
+          when argKind.subcommand {
+            subSection.append(elem);
+          }
+          when argKind.flag {
+            optsSection.append(elem);
+          }
+        }
+      }
+    }
+
+    // build the help message from the components of the usage string and the
+    // elements contained in each section
+    proc generateHelp(separator="\t", binaryName:string) : string {
+      var helpMessage:string;
+
+      helpMessage += "USAGE: "
+                         + generateUsage(binaryName).render()
+                         + "\n";
+
+      if argsSection.size > 0 {
+        helpMessage += "ARGUMENTS:\n"
+                        + argsSection.render(separator=separator)
+                        + "\n";
+      }
+      if optsSection.size > 0 {
+        helpMessage += "OPTIONS:\n"
+                        + optsSection.render(separator=separator)
+                        + "\n";
+      }
+      if subSection.size > 0 {
+        helpMessage += "SUBCOMMANDS:\n"
+                        + subSection.render(separator=separator)
+                        + "\n";
+      }
+
+      return helpMessage;
     }
   }
 
@@ -677,9 +864,6 @@ module ArgumentParser {
     // should the parser exit after printing the help message
     pragma "no doc"
     var _exitAfterHelp: bool;
-    // define a handler for help message processing
-    pragma "no doc"
-    var _helpHandler: shared HelpHandler;
     // store a help wrapper
     pragma "no doc"
     var _help : helpWrapper;
@@ -695,7 +879,7 @@ module ArgumentParser {
       :arg exitOnError: Determines if ArgumentParser exits with error info when
                     an error occurs. Defaults to `true`.
 
-      :arg exitAfterHelp: Determinse if ArgumentParser exits after it finds a help
+      :arg exitAfterHelp: Determines if ArgumentParser exits after it finds a help
                       flag and prints the help message. Defaults to `true`.
 
       :arg helpHandler: Allows a user to define a custom HelpHandler to perform
@@ -718,18 +902,19 @@ module ArgumentParser {
       _options = new map(string, string);
       _positionals = new list(borrowed Positional);
       _subcommands = new list(string);
-
       _exitOnError = exitOnError;
       _addHelp = addHelp;
       _exitAfterHelp = exitAfterHelp;
-      if isNothingType(h) then
-        _helpHandler = new HelpHandler();
-      else
+
+      var _helpHandler = new shared HelpHandler();
+      if !isNothingType(h) then
         _helpHandler = helpHandler;
 
-      if isStringType(t) then
-        _helpHandler._helpMessage=helpMessage;
       _help = new helpWrapper(_helpHandler);
+      if isStringType(t) then
+        _help.setHelp(helpMessage);
+
+
       this.complete();
 
       try! {
@@ -1326,7 +1511,10 @@ module ArgumentParser {
     proc addPassThrough(delimiter="--") : shared Argument throws {
       // remove the dummyHandler first
       if delimiter == "--" then _removeHandler("dummyDashHandler", ["--"]);
-      var handler = new owned PassThrough(delimiter);
+      var argHelp = new argumentHelp(visible=false,
+                                     help="pass all following arguments without parsing",
+                                     valueName=delimiter);
+      var handler = new owned PassThrough(delimiter, argHelp);
       _subcommands.append(delimiter);
       _options.add(delimiter, delimiter);
       return _addHandler(handler);
@@ -1375,7 +1563,8 @@ module ArgumentParser {
       if _addHelp {
         if _help._binaryName.isEmpty() then
           _help._binaryName = basename(arguments[argsD.low]);
-        _help.generateHelp(this._handlers);
+        _help.setArguments(this._handlers);
+        _help.setHelp();
       }
 
       if _exitOnError {
@@ -1625,6 +1814,7 @@ module ArgumentParser {
     }
   }
 
+
   /*
   Stores the result of argument parsing.
   */
@@ -1721,183 +1911,6 @@ module ArgumentParser {
     }
   }
 
-  // record to build and render help messages when requested
-  pragma "no doc"
-  record helpGenerator {
-
-    // represents two columns for argument, the name/flag and value, plus the
-    // help text
-    record element {
-      var command:string;
-      var help:string;
-
-      proc render(separator="\t") : string {
-        var message = command;
-        if !help.isEmpty() then
-          message += separator + help;
-        return message;
-      }
-    }
-
-    // represents a help message section, such as flags, subcommands, arguments
-    record section {
-      // store the rows that make up this section
-      var rows:list(element);
-
-      proc size {
-        return rows.size;
-      }
-
-      proc append(item) {
-        rows.append(item);
-      }
-
-      proc render(inset=1, separator="\t") : string {
-        var elemList:list(string);
-        for elt in rows.these() {
-          elemList.append(separator * inset + elt.render(separator));
-        }
-        return "\n".join(elemList.toArray());
-      }
-    }
-
-    // represent a USAGE message as a list of string values
-    record usageMessage {
-      var components:list(string);
-
-      proc render(separator=" ") : string {
-        return separator.join(components.toArray());
-      }
-    }
-
-    var _about:string;
-    var _binaryName:string;
-    var argsSection:section;
-    var optsSection:section;
-    var subSection:section;
-    var _argStack: map(string, borrowed ArgumentHandler);
-
-    proc init(about="", binaryName="", argStack: map(string, ArgumentHandler)) {
-      this._about=about;
-      this._binaryName = binaryName;
-      this.argsSection = new section();
-      this.optsSection = new section();
-      this.subSection = new section();
-      this._argStack = new map(string, borrowed ArgumentHandler);
-      this.complete();
-      for k in argStack.these() {
-        _argStack.addOrSet(k,argStack.getBorrowed(k) );
-      }
-      _generateSections();
-    }
-
-    // generate a usage message. This needs to be done just before displaying
-    // the help because we might not know the binary name except by
-    // the first position of the arguments passed to main().
-    proc _generateUsage() : usageMessage {
-      var usageOrder = [argKind.positional, argKind.flag,
-                        argKind.option, argKind.subcommand];
-      var usage = new usageMessage();
-      usage.components.append(_binaryName);
-      var hasSubcommands = false;
-      for kindOfArg in usageOrder {
-        for name in _argStack.keys() {
-          const handler = _argStack.getBorrowed(name);
-          if !handler._help.visible then continue;
-          var elem = handler._getUsageCommand();
-          if handler._kind == kindOfArg {
-            select handler._kind {
-              when argKind.positional {
-                usage.components.append(elem);
-              }
-              when argKind.option {
-                usage.components.append(elem);
-              }
-              when argKind.subcommand {
-                hasSubcommands = true;
-              }
-              when argKind.flag {
-                usage.components.append(elem);
-              }
-            }
-          }
-        }
-      }
-      if hasSubcommands then
-        usage.components.append("[SUBCOMMAND]");
-      return usage;
-    }
-
-    // generate all the data for each section. Needs to be done AFTER all
-    // the arguments have been added to the argumentParser.
-    proc _generateSections() {
-      for name in _argStack.keys() {
-        const handler = _argStack.getBorrowed(name);
-        if !handler._help.visible then continue;
-        var elem = new element(handler._getHelpCommand(),
-                               handler._getHelpMessage());
-        select handler._kind {
-          when argKind.positional {
-            argsSection.append(elem);
-          }
-          when argKind.option {
-            optsSection.append(elem);
-          }
-          when argKind.subcommand {
-            subSection.append(elem);
-          }
-          when argKind.flag {
-            optsSection.append(elem);
-          }
-        }
-      }
-    }
-
-    // build the help message from the components of the usage string and the
-    // elements contained in each section
-    proc generateHelp(separator="\t") : string {
-      var helpMessage:string;
-      if !_about.isEmpty() then
-        helpMessage += "ABOUT: " + _about;
-
-      helpMessage += "USAGE: "
-                         + _generateUsage().render()
-                         + "\n";
-
-      if argsSection.size > 0 {
-        helpMessage += "ARGUMENTS:\n"
-                        + argsSection.render(separator=separator)
-                        + "\n";
-      }
-      if optsSection.size > 0 {
-        helpMessage += "OPTIONS:\n"
-                        + optsSection.render(separator=separator)
-                        + "\n";
-      }
-      if subSection.size > 0 {
-        helpMessage += "SUBCOMMANDS:\n"
-                        + subSection.render(separator=separator)
-                        + "\n";
-      }
-
-      return helpMessage;
-    }
-  }
-
-  /*
-   argumentHelp record stores the information related only to the help
-   message printout for the argument
-  */
-  pragma "no doc"
-  record argumentHelp {
-    // the message to display for the argument
-    var help="";
-    // controls visibility in the printed help output
-    var visible=true;
-    // offers alternative display name to use for the value of flags, options,
-    // and arguments
-    var valueName="";
-  }
 
   /*
   The HelpHandler class is meant to be inheritable so a user can implement their

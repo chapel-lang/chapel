@@ -479,6 +479,36 @@ Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
 testMockMasonNew()
+USAGE: mason [-h, --help] [-V, --version] [SUBCOMMAND]
+OPTIONS:
+	-h, --help	Display this message and exit
+	-V, --version
+SUBCOMMANDS:
+	add
+	env
+	external
+	rm
+	publish
+	init
+	clean
+	system
+	run
+	doc
+	search
+	test
+	update
+	build
+	new
+
+USAGE: new <NAME> [-h, --help] [--[no]-vcs] [--show] [--name <LEGALNAME>]
+ARGUMENTS:
+	NAME
+OPTIONS:
+	-h, --help	Display this message and exit
+	--name <LEGALNAME>
+	--[no]-vcs
+	--show
+
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
