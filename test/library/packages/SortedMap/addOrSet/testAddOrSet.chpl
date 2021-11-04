@@ -1,8 +1,8 @@
-use OrderedMap;
+use SortedMap;
 
 
 
-var m = new orderedMap(int, int, false, defaultComparator);
+var m = new sortedMap(int, int, false, defaultComparator);
 for i in 1..10 {
   m.addOrSet(i, i);
 }

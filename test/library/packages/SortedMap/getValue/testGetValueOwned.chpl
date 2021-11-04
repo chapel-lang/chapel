@@ -1,4 +1,4 @@
-use OrderedMap;
+use SortedMap;
 
 
 
@@ -7,7 +7,7 @@ class C {
 }
 
 proc test() {
-  var m = new orderedMap(string, owned C, false, defaultComparator);
+  var m = new sortedMap(string, owned C, false, defaultComparator);
 
   m.add("one", new owned C(1));
   m.add("two", new owned C(2));

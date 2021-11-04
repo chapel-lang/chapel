@@ -1,4 +1,4 @@
-use OrderedMap;
+use SortedMap;
 
 
 
@@ -6,7 +6,7 @@ class C {
   var i: int;
 }
 
-var m = new orderedMap(string, shared C?, false, defaultComparator);
+var m = new sortedMap(string, shared C?, false, defaultComparator);
 
 m.add("one", new shared C?(1));
 m.add("two", new shared C?(2));

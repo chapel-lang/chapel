@@ -1,9 +1,9 @@
-use OrderedMap;
+use SortedMap;
 use utilFunctions;
 
 
 
-var m = new orderedMap(string, real, false, defaultComparator);
+var m = new sortedMap(string, real, false, defaultComparator);
 
 writeln(m.isEmpty());
 writeln(m.size);

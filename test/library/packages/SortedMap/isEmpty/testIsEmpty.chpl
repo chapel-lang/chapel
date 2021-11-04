@@ -1,8 +1,8 @@
-use OrderedMap;
+use SortedMap;
 
 
 
-var m = new orderedMap(int, int, false, defaultComparator);
+var m = new sortedMap(int, int, false, defaultComparator);
 assert(m.isEmpty());
 
 for i in 1..3 do

@@ -1,9 +1,9 @@
-use OrderedMap;
+use SortedMap;
 
 
 
 {
-  var m = new orderedMap(string, int, false, defaultComparator);
+  var m = new sortedMap(string, int, false, defaultComparator);
   m["one"] = 1;
   writeln(m);
 }
@@ -12,7 +12,7 @@ use OrderedMap;
   record R {
     var a: int;
   }
-  var m = new orderedMap(R, real);
+  var m = new sortedMap(R, real);
   m[new R(1)] = 1.1;
 
   var m2 = m;
@@ -20,7 +20,7 @@ use OrderedMap;
 }
 
 {
-  var m = new orderedMap(int, string);
+  var m = new sortedMap(int, string);
   m[1] = "hello";
   m[4] = "world";
 

@@ -1,9 +1,9 @@
-use OrderedMap;
+use SortedMap;
 use utilFunctions;
 
 
 
-var m = new orderedMap(string, string, false, defaultComparator);
+var m = new sortedMap(string, string, false, defaultComparator);
 
 for i in 1..99 by 3 {
   var number = intToEnglish(i);

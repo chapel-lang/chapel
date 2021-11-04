@@ -1,9 +1,9 @@
-use OrderedMap;
+use SortedMap;
 use utilFunctions;
 
 
 
-var m = new orderedMap(string, int, false, defaultComparator);
+var m = new sortedMap(string, int, false, defaultComparator);
 
 for i in 1..10 {
   m[intToEnglish(i)] = i;

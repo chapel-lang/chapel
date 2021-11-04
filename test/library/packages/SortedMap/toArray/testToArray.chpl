@@ -1,8 +1,8 @@
-use OrderedMap;
+use SortedMap;
 
 
 
-var m = new orderedMap(int, int, false, defaultComparator);
+var m = new sortedMap(int, int, false, defaultComparator);
 
 for i in -10..10 do
   m[i] = -i + 100;

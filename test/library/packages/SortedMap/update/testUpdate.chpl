@@ -1,10 +1,10 @@
-use OrderedMap;
+use SortedMap;
 use utilFunctions;
 
 
 
-var m1 = new orderedMap(string, int, true, defaultComparator);
-var m2 = new orderedMap(string, int, true, defaultComparator);
+var m1 = new sortedMap(string, int, true, defaultComparator);
+var m2 = new sortedMap(string, int, true, defaultComparator);
 
 forall i in 1..20 with (ref m1) do
   m1[intToEnglish(i)] = i;

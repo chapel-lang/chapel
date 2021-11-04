@@ -1,4 +1,4 @@
-use OrderedMap;
+use SortedMap;
 
 
 
@@ -6,7 +6,7 @@ class T {
   var value = 0;
 }
 
-var m = new orderedMap(int, borrowed T?, false, defaultComparator);
+var m = new sortedMap(int, borrowed T?, false, defaultComparator);
 
 var a = new T(1);
 var b: borrowed T? = a.borrow();

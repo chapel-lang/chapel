@@ -1,4 +1,4 @@
-use OrderedMap;
+use SortedMap;
 
 
 
@@ -6,5 +6,5 @@ class C {
   var x = 10;
 }
 
-var l = new orderedMap(int, C);  // C has generic management
+var l = new sortedMap(int, C);  // C has generic management
 writeln(l);

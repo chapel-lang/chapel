@@ -1,8 +1,8 @@
-use OrderedMap;
+use SortedMap;
 
 
 
-var m = new orderedMap(int, int, false, defaultComparator);
+var m = new sortedMap(int, int, false, defaultComparator);
 
 var ret:bool = m.add(1, -1);
 assert(ret);

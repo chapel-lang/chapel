@@ -1,9 +1,9 @@
-use OrderedMap;
+use SortedMap;
 
 
 
-var m1 = new orderedMap(int, int, false, defaultComparator);
-var m2 = new orderedMap(int, int, false, defaultComparator);
+var m1 = new sortedMap(int, int, false, defaultComparator);
+var m2 = new sortedMap(int, int, false, defaultComparator);
 
 m1[1] = 1;
 m1[2] = 2;
