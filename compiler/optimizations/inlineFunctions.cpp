@@ -73,7 +73,7 @@ static void inlineFunctionsImpl() {
       if (fn->hasFlag(FLAG_INLINE) == true &&
           inlinedSet.find(fn)      == inlinedSet.end()) {
         if (fn->hasFlag(FLAG_EXTERN)) {
-          USR_WARN(fn, "inline keyword has no effect an 'extern proc'");
+          USR_WARN(fn, "inline keyword has no effect on an 'extern proc'");
         } else {
           inlineFunction(fn, inlinedSet);
         }
