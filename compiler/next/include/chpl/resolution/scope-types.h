@@ -248,46 +248,80 @@ class Scope {
   }
 };
 
-// This class supports both use and import
-// It stores a normalized form of the symbols made available
-// by a use/import clause.
-struct VisibilitySymbols {
-  ID symbolId;       // ID of the imported symbol, e.g. ID of a Module
+/**
+ This class supports both `use` and `import`.
+ It stores a normalized form of the symbols made available
+ by a use/import clause.
+*/
+class VisibilitySymbols {
+public:
+  /** The kind of import symbol */
   enum Kind {
-    SYMBOL_ONLY,     // the named symbol itself only (one name in names)
-    ALL_CONTENTS,    // (and names is empty)
-    ONLY_CONTENTS,   // only the contents named in names
-    CONTENTS_EXCEPT, // except the contents named in names (no renaming)
+    /** the named symbol itself only (one name in names) */
+    SYMBOL_ONLY,
+    /** (and names is empty) */
+    ALL_CONTENTS,
+    /** only the contents named in names */
+    ONLY_CONTENTS,
+    /** except the contents named in names (no renaming) */
+    CONTENTS_EXCEPT,
   };
-  Kind kind = SYMBOL_ONLY;
-  bool isPrivate = true;
+
+private:
+  ID symbolId_;      // ID of the imported symbol, e.g. ID of a Module
+  Kind kind_ = SYMBOL_ONLY;
+  bool isPrivate_ = true;
 
   // the names/renames:
   //  pair.first is the name as declared
   //  pair.second is the name here
-  std::vector<std::pair<UniqueString,UniqueString>> names;
+  std::vector<std::pair<UniqueString,UniqueString>> names_;
 
+public:
   VisibilitySymbols() { }
   VisibilitySymbols(ID symbolId, Kind kind, bool isPrivate,
                     std::vector<std::pair<UniqueString,UniqueString>> names)
-    : symbolId(symbolId), kind(kind), isPrivate(isPrivate),
-      names(std::move(names))
+    : symbolId_(symbolId), kind_(kind), isPrivate_(isPrivate),
+      names_(std::move(names))
   { }
 
+  /** Return the ID of the imported symbol, e.g. ID of a Module */
+  const ID &symbolId() const { return symbolId_; }
 
-  bool operator==(const VisibilitySymbols& other) const {
-    return symbolId == other.symbolId &&
-           kind == other.kind &&
-           names == other.names;
+  /** Return the kind of the imported symbol */
+  Kind kind() const { return kind_; }
+
+  /** Return whether or not the imported symbol is private */
+  bool isPrivate() const { return isPrivate_; }
+
+  /** Lookup the declared name for a given name
+      Returns true if `name` is found in the list of renamed names and
+      stores the declared name in `declared`
+      Returns false if `name` is not found
+  */
+  bool lookupName(const UniqueString &name, UniqueString &declared) const {
+    for (const auto &p : names_) {
+      if (p.second == name) {
+        declared = p.first;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool operator==(const VisibilitySymbols &other) const {
+    return symbolId_ == other.symbolId_ &&
+           kind_ == other.kind_ &&
+           names_ == other.names_;
   }
   bool operator!=(const VisibilitySymbols& other) const {
     return !(*this == other);
   }
 
   void swap(VisibilitySymbols& other) {
-    symbolId.swap(other.symbolId);
-    std::swap(kind, other.kind);
-    names.swap(other.names);
+    symbolId_.swap(other.symbolId_);
+    std::swap(kind_, other.kind_);
+    names_.swap(other.names_);
   }
 };
 

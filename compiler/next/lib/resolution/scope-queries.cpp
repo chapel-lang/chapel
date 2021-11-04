@@ -255,24 +255,17 @@ static bool doLookupInImports(Context* context,
     // check to see if it's mentioned in names/renames
     for (const VisibilitySymbols& is: r->visibilityClauses) {
       UniqueString from = name;
-      bool named = false;
-      for (const auto& p : is.names) {
-        if (p.second == name) {
-          from = p.first;
-          named = true;
-          break;
-        }
-      }
-      if (named && is.kind == VisibilitySymbols::SYMBOL_ONLY) {
-        result.push_back(BorrowedIdsWithName(is.symbolId));
+      bool named = is.lookupName(name, from);
+      if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
+        result.push_back(BorrowedIdsWithName(is.symbolId()));
         return true;
-      } else if (named && is.kind == VisibilitySymbols::CONTENTS_EXCEPT) {
+      } else if (named && is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
         // mentioned in an except clause, so don't return it
-      } else if (named || is.kind == VisibilitySymbols::ALL_CONTENTS) {
+      } else if (named || is.kind() == VisibilitySymbols::ALL_CONTENTS) {
         // find it in the contents
-        const Scope* symScope = scopeForId(context, is.symbolId);
+        const Scope* symScope = scopeForId(context, is.symbolId());
         // this symbol should be a module/enum etc which has a scope
-        assert(symScope->id() == is.symbolId);
+        assert(symScope->id() == is.symbolId());
 
         LookupConfig newConfig = LOOKUP_DECLS |
                                  LOOKUP_IMPORT_AND_USE;
@@ -571,9 +564,9 @@ bool doIsWholeScopeVisibleFromScope(Context* context,
       const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, cur);
 
       for (const VisibilitySymbols& is: r->visibilityClauses) {
-        if (is.kind == VisibilitySymbols::ALL_CONTENTS) {
+        if (is.kind() == VisibilitySymbols::ALL_CONTENTS) {
           // find it in the contents
-          const Scope* usedScope = scopeForId(context, is.symbolId);
+          const Scope* usedScope = scopeForId(context, is.symbolId());
           // check it recursively
           bool found = doIsWholeScopeVisibleFromScope(context,
                                                       checkScope,
