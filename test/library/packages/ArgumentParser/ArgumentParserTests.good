@@ -560,6 +560,34 @@ testCustomHandlerNoHelp()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testGenerateHelp()
+USAGE: progName <files ...> [-h, --help] [--flagOne] [--optionOne <OPTIONONE>] [SUBCOMMAND]
+ARGUMENTS:
+	files	some files to process
+OPTIONS:
+	-h, --help	Display this message and exit
+	--optionOne <OPTIONONE>	release 1000 doves upon thine enemies
+	--flagOne	sets cool factor to 100
+SUBCOMMANDS:
+	subcommand	do related but different stuff
+
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testGenerateEmptyHelp()
+USAGE: progName <files ...> [-h, --help] [--flagOne] [--optionOne <OPTIONONE>] [SUBCOMMAND]
+ARGUMENTS:
+	files
+OPTIONS:
+	-h, --help	Display this message and exit
+	--optionOne <OPTIONONE>
+	--flagOne
+SUBCOMMANDS:
+	subcommand
+
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 Found some unrecognizable arguments: thirty
 Found some unrecognizable arguments: badArg1 --BadFlag
 Use '-' or '--' to indicate option/flag, or use positional arguments.

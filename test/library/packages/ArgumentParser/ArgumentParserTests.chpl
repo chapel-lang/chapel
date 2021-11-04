@@ -91,7 +91,8 @@ proc testMultiStringShortOptEqualsOK(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..10,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -115,7 +116,8 @@ proc testTryMakeEmptyOpts(test: borrowed Test) throws {
                                     opts=optList,
                                     numArgs=1..10,
                                     required=false,
-                                    defaultValue=none);
+                                    defaultValue=none,
+                                    valueName=none);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -133,17 +135,20 @@ proc testThreeMultiStringShortOptPartValEquals(test: borrowed Test) throws {
                                    opts=["-n","--stringVal1"],
                                    numArgs=1..3,
                                    required=false,
-                                   defaultValue=none);
+                                   defaultValue=none,
+                                   valueName=none);
   var myStrArg2 = parser.addOption(name="StringOpt2",
                                    opts=["-p","--stringVal2"],
                                    numArgs=1..4,
                                    required=false,
-                                   defaultValue=none);
+                                   defaultValue=none,
+                                   valueName=none);
   var myStrArg3 = parser.addOption(name="StringOpt3",
                                    opts=["-t","--stringVal3"],
                                    numArgs=1..2,
                                    required=false,
-                                   defaultValue=none);
+                                   defaultValue=none,
+                                   valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg1.hasValue());
@@ -170,7 +175,8 @@ proc testTryMakeBadOptID(test: borrowed Test) throws {
                                     opts=["name","-n"],
                                     numArgs=1..10,
                                     required=false,
-                                    defaultValue=none);
+                                    defaultValue=none,
+                                    valueName=none);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -210,7 +216,8 @@ proc testRangeStringShortOptRepeated(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -235,7 +242,8 @@ proc testRangeStringShortOptRepeatedTooManyFirst(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
   //parse the options
@@ -341,7 +349,8 @@ proc testOptRangeStringShortOpt1Val(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=0..1,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -358,7 +367,8 @@ proc testOptRangeStringShortOptOptNoVal(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=0..1,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -375,7 +385,8 @@ proc testOptRangeStringShortOptPresentNoVal(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..2,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -398,7 +409,8 @@ proc testOptRangeStringShortOptExtraVal(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=0..1,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -423,7 +435,8 @@ proc testOptRangeStringShortOptOkValBadArg(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=0..1,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -446,7 +459,8 @@ proc testSingleStringShortOptNoOpts(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=0..1,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -518,7 +532,8 @@ proc testMultiStringShortOptVar(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -538,7 +553,8 @@ proc testMultiStringLongOptVar(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -559,7 +575,8 @@ proc testMultiStringShortOptVarLess(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -580,7 +597,8 @@ proc testMultiStringShortOptVarLessThanMin(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=3..5,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -605,7 +623,8 @@ proc testMultiStringShortOptVarMore(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -631,7 +650,8 @@ proc testMultiStringShortOptVarNoVal(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -958,7 +978,8 @@ proc testThreeMixedStringShortOptAllValues(test: borrowed Test) throws {
                                    opts=["-t","--stringVal3"],
                                    numArgs=1..2,
                                    required=false,
-                                   defaultValue=none);
+                                   defaultValue=none,
+                                   valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg1.hasValue());
@@ -986,17 +1007,20 @@ proc testThreeMultiStringShortOptPartialValues(test: borrowed Test) throws {
                                    opts=["-n","--stringVal1"],
                                    numArgs=1..3,
                                    required=false,
-                                   defaultValue=none);
+                                   defaultValue=none,
+                                   valueName=none);
   var myStrArg2 = parser.addOption(name="StringOpt2",
                                    opts=["-p","--stringVal2"],
                                    numArgs=1..4,
                                    required=false,
-                                   defaultValue=none);
+                                   defaultValue=none,
+                                   valueName=none);
   var myStrArg3 = parser.addOption(name="StringOpt3",
                                    opts=["-t","--stringVal3"],
                                    numArgs=1..2,
                                    required=false,
-                                   defaultValue=none);
+                                   defaultValue=none,
+                                   valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg1.hasValue());
@@ -1067,17 +1091,20 @@ proc testMultStringShortOptDefMultiVal(test: borrowed Test) throws {
                                    opts=["-n","--stringVal1"],
                                    defaultValue=new list(["one","two"]),
                                    numArgs=1..3,
-                                   required=false);
+                                   required=false,
+                                   valueName=none);
   var myStrArg2 = parser.addOption(name="StringOpt2",
                                    opts=["-p","--stringVal2"],
                                    numArgs=1..4,
                                    required=false,
-                                   defaultValue=none);
+                                   defaultValue=none,
+                                   valueName=none);
   var myStrArg3 = parser.addOption(name="StringOpt3",
                                    opts=["-t","--stringVal3"],
                                    defaultValue=["1","2"],
                                    numArgs=1..2,
-                                   required=false);
+                                   required=false,
+                                   valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg1.hasValue());
@@ -1104,17 +1131,20 @@ proc testMultStringShortOptDefMultiValNoVal(test: borrowed Test) throws {
                                    opts=["-n","--stringVal1"],
                                    defaultValue=["one","two"],
                                    numArgs=1..3,
-                                   required=false);
+                                   required=false,
+                                   valueName=none);
   var myStrArg2 = parser.addOption(name="StringOpt2",
                                    opts=["-p","--stringVal2"],
                                    numArgs=1..4,
                                    required=false,
-                                   defaultValue=none);
+                                   defaultValue=none,
+                                   valueName=none);
   var myStrArg3 = parser.addOption(name="StringOpt3",
                                    opts=["-t","--stringVal3"],
                                    defaultValue=new list(["1","2"]),
                                    numArgs=1..2,
-                                   required=false);
+                                   required=false,
+                                   valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg1.hasValue());
@@ -1141,17 +1171,20 @@ proc testMultStringShortOptDefMultiValReqVal(test: borrowed Test) throws {
                                    opts=["-n","--stringVal1"],
                                    defaultValue=new list(["one","two"]),
                                    numArgs=1..3,
-                                   required=false);
+                                   required=false,
+                                   valueName=none);
   var myStrArg2 = parser.addOption(name="StringOpt2",
                                    opts=["-p","--stringVal2"],
                                    required=true,
                                    numArgs=1..4,
-                                   defaultValue=none);
+                                   defaultValue=none,
+                                   valueName=none);
   var myStrArg3 = parser.addOption(name="StringOpt3",
                                    opts=["-t","--stringVal3"],
                                    defaultValue=new list(["1","2"]),
                                    numArgs=1..2,
-                                   required=false);
+                                   required=false,
+                                   valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg1.hasValue());
@@ -1179,17 +1212,20 @@ proc testMultStringShortOptDefMultiValReqNoVal(test: borrowed Test) throws {
                                    opts=["-n","--stringVal1"],
                                    defaultValue=new list(["one","two"]),
                                    numArgs=1..3,
-                                   required=false);
+                                   required=false,
+                                   valueName=none);
   var myStrArg2 = parser.addOption(name="StringOpt2",
                                    opts=["-p","--stringVal2"],
                                    required=true,
                                    numArgs=1..4,
-                                   defaultValue=none);
+                                   defaultValue=none,
+                                   valueName=none);
   var myStrArg3 = parser.addOption(name="StringOpt3",
                                    opts=["-t","--stringVal3"],
                                    defaultValue=new list(["1","2"]),
                                    numArgs=1..2,
-                                   required=false);
+                                   required=false,
+                                   valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg1.hasValue());
@@ -1286,7 +1322,8 @@ proc testEmptyListDefaultVal(test: borrowed Test) throws {
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1..,
-                                  defaultValue=new list(string));
+                                  defaultValue=new list(string),
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -1493,7 +1530,8 @@ proc testStringShortOptVarBadVarNoVal(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
 
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
@@ -1517,7 +1555,8 @@ proc testRangeStringShortOptRepeatedAllowableCount(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
   //make sure no value currently exists
   test.assertFalse(myStrArg.hasValue());
   //parse the options
@@ -1550,7 +1589,8 @@ proc testOptionsRangeWithSubCommandSubOptions(test: borrowed Test) throws {
                                   opts=["-x","--stringVal"],
                                   numArgs=1..2,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
   var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
   parser.parseArgs(argList);
   test.assertTrue(myStrArg.hasValue());
@@ -1567,7 +1607,8 @@ proc testOptionsRangeWithSubCommandSameSubOptions(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..2,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
   var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
   parser.parseArgs(argList);
   test.assertTrue(myStrArg.hasValue());
@@ -1585,7 +1626,8 @@ proc testOptsRangeWithSubCommandSameSubOptionsLow(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
   var mySubCmd1 = parser.addSubCommand(cmd="subCommand1");
   parser.parseArgs(argList);
   test.assertTrue(myStrArg.hasValue());
@@ -1605,10 +1647,13 @@ proc testFromArgParseExample(test: borrowed Test) throws {
                                 opts=["-o","--option"],
                                 numArgs=1..10,
                                 required=false,
-                                defaultValue=none);
+                                defaultValue=none,
+                                valueName=none);
   var typArg = parser.addOption(name="strArg2",
                                 opts=["-t","--types"],
-                                numArgs=1..);
+                                numArgs=1..,
+                                defaultValue=none,
+                                valueName=none);
   var confArg = parser.addOption(name="strArg3",
                                  opts=["--myConfigVar"],
                                  numArgs=1);
@@ -1633,7 +1678,9 @@ proc testOptRangeMixedWithLeadingDash(test: borrowed Test) throws {
   var parser = new argumentParser();
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],
-                                   numArgs=1..);
+                                   numArgs=1..,
+                                   defaultValue=none,
+                                   valueName=none);
   var myStrArg2 = parser.addOption(name="StringOpt2",
                                    opts=["-p","--stringVal2"],
                                    numArgs=1);
@@ -1739,7 +1786,9 @@ proc testParentCommandSubCommandAndBoolLongFlag(test: borrowed Test) throws {
   var parser = new argumentParser();
   var myStrArg1 = parser.addOption(name="StringOpt1",
                                    opts=["-n","--stringVal1"],
-                                   numArgs=1..);
+                                   numArgs=1..,
+                                   defaultValue=none,
+                                   valueName=none);
   var mySubCmd1 = parser.addSubCommand(cmd="subCmd");
   //make sure no value currently exists
   test.assertFalse(mySubCmd1.hasValue());
@@ -1772,7 +1821,8 @@ proc testBoolEqFlag(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=0..1,
-                                 defaultValue=none);
+                                 defaultValue=none,
+                                 valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1790,7 +1840,8 @@ proc testBoolEqForceOneFlag(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 defaultValue=none);
+                                 defaultValue=none,
+                                 valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1808,7 +1859,8 @@ proc testBoolForceOneFlag(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 defaultValue=none);
+                                 defaultValue=none,
+                                 valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1827,7 +1879,8 @@ proc testBoolZeroToOneFlagNoVal(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=0..1,
-                                 defaultValue=none);
+                                 defaultValue=none,
+                                 valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1845,7 +1898,8 @@ proc testBoolForceOneFlagNoVal(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 defaultValue=none);
+                                 defaultValue=none,
+                                 valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1866,7 +1920,8 @@ proc testBoolForceOneFlagExtraGiven(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 defaultValue=none);
+                                 defaultValue=none,
+                                 valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1887,7 +1942,8 @@ proc testBoolRangeFlagExtraGiven(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=0..1,
-                                 defaultValue=none);
+                                 defaultValue=none,
+                                 valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -1911,7 +1967,8 @@ proc testTryMakeBadFlagRange(test: borrowed Test) throws {
                                   numArgs=0..2,
                                   required=false,
                                   flagInversion=true,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -1947,7 +2004,8 @@ proc testTryMakeNonSenseFlagRange(test: borrowed Test) throws {
                                   numArgs=0..1,
                                   required=true,
                                   defaultValue=true,
-                                  flagInversion=true);
+                                  flagInversion=true,
+                                  valueName=none);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -1966,7 +2024,8 @@ proc testTryMakeNonSenseFlagFixed(test: borrowed Test) throws {
                                   numArgs=1,
                                   required=true,
                                   defaultValue=true,
-                                  flagInversion=true);
+                                  flagInversion=true,
+                                  valueName=none);
   }catch ex: ArgumentError {
     test.assertTrue(true);
     stderr.writeln(ex.message());
@@ -1982,7 +2041,8 @@ proc testBoolZeroToOneFlagNoValDefaultTrue(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=0..1,
-                                 defaultValue=true);
+                                 defaultValue=true,
+                                 valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -2000,7 +2060,8 @@ proc testBoolZeroToOneFlagNoValDefaultFalse(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=0..1,
-                                 defaultValue=false);
+                                 defaultValue=false,
+                                 valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -2018,7 +2079,8 @@ proc testBoolOneFlagNoValDefaultTrue(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 defaultValue=true);
+                                 defaultValue=true,
+                                 valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -2036,7 +2098,8 @@ proc testBoolOneFlagNoValDefaultFalse(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 defaultValue=false);
+                                 defaultValue=false,
+                                 valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -2054,7 +2117,8 @@ proc testBoolZeroFlagNoValDefaultTrue(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 defaultValue=true);
+                                 defaultValue=true,
+                                 valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -2072,7 +2136,8 @@ proc testBoolZeroFlagNoValDefaultFalse(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-n","--boolVal"],
                                  numArgs=1,
-                                 defaultValue=false);
+                                 defaultValue=false,
+                                 valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   //parse the options
@@ -2183,7 +2248,8 @@ proc testPositionalArgumentDefault(test: borrowed Test) throws {
   var parser = new argumentParser();
   var myPosArg = parser.addArgument(name="FileName",
                                     defaultValue=".",
-                                    numArgs=0..1);
+                                    numArgs=0..1,
+                                    valueName=none);
   //make sure no value currently exists
   test.assertFalse(myPosArg.hasValue());
   //parse the options
@@ -2201,7 +2267,8 @@ proc testPositionalArgumentOptionalMissing(test: borrowed Test) throws {
   var parser = new argumentParser();
   var myPosArg = parser.addArgument(name="FileName",
                                     defaultValue=none,
-                                    numArgs=0..1);
+                                    numArgs=0..1,
+                                    valueName=none);
   //make sure no value currently exists
   test.assertFalse(myPosArg.hasValue());
   //parse the options
@@ -2234,7 +2301,8 @@ proc testPositionalArgumentTooManyVals(test: borrowed Test) throws {
   var parser = new argumentParser(exitOnError=false);
   var myPosArg = parser.addArgument(name="FileNames",
                                     numArgs=1..2,
-                                    defaultValue=none);
+                                    defaultValue=none,
+                                    valueName=none);
   //make sure no value currently exists
   test.assertFalse(myPosArg.hasValue());
   //parse the options
@@ -2254,7 +2322,8 @@ proc testPositionalArgumentNotEnoughVals(test: borrowed Test) throws {
   var parser = new argumentParser(exitOnError=false);
   var myPosArg = parser.addArgument(name="FileNames",
                                     numArgs=5..7,
-                                    defaultValue=none);
+                                    defaultValue=none,
+                                    valueName=none);
   //make sure no value currently exists
   test.assertFalse(myPosArg.hasValue());
   //parse the options
@@ -2318,7 +2387,8 @@ proc testMixPosBoolOptWithValues(test: borrowed Test) throws {
                                   opts=["-n","--stringVal"],
                                   numArgs=1..3,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   test.assertFalse(myPosArg.hasValue());
@@ -2350,9 +2420,7 @@ proc testMixPosBoolOptWithValuesFixed(test: borrowed Test) throws {
                                     numArgs=3);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
-                                  numArgs=3,
-                                  required=false,
-                                  defaultValue=none);
+                                  numArgs=3);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   test.assertFalse(myPosArg.hasValue());
@@ -2383,9 +2451,7 @@ proc testMixPosBoolOptWithValuesFixedPosAfterBool(test: borrowed Test) throws {
   var myPosArg = parser.addArgument(name="FileNames");
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
-                                  numArgs=3,
-                                  required=false,
-                                  defaultValue=none);
+                                  numArgs=3);
   var subCmd1 = parser.addSubCommand(cmd="subCmd1");
 
   //make sure no value currently exists
@@ -2422,9 +2488,7 @@ proc testMixPosBoolOptWithValuesFixedPosInterMixed(test: borrowed Test) throws {
   var myPosArg2 = parser.addArgument(name="FileName");
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
-                                  numArgs=3,
-                                  required=false,
-                                  defaultValue=none);
+                                  numArgs=3);
   var subCmd1 = parser.addSubCommand(cmd="subCmd1");
 
   //make sure no value currently exists
@@ -2466,12 +2530,11 @@ proc testMixPosBoolOptWithValuesPosInterMixedRange(test: borrowed Test) throws {
   var myPosArg1 = parser.addArgument(name="pos1");
   var myPosArg2 = parser.addArgument(name="FileName",
                                      numArgs=0..1,
-                                     defaultValue=none);
+                                     defaultValue=none,
+                                     valueName=none);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
-                                  numArgs=3,
-                                  required=false,
-                                  defaultValue=none);
+                                  numArgs=3);
   var subCmd1 = parser.addSubCommand(cmd="subCmd1");
 
   //make sure no value currently exists
@@ -2512,13 +2575,10 @@ proc testMixPosBoolOptPosInterMixedRangeWithVals(test: borrowed Test) throws {
   var myPosArg0 = parser.addArgument(name="pos0");
   var myPosArg1 = parser.addArgument(name="pos1");
   var myPosArg2 = parser.addArgument(name="FileName",
-                                     numArgs=0..,
-                                     defaultValue=none);
+                                     numArgs=0..);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
-                                  numArgs=3,
-                                  required=false,
-                                  defaultValue=none);
+                                  numArgs=3);
   var subCmd1 = parser.addSubCommand(cmd="subCmd1");
 
   //make sure no value currently exists
@@ -2562,12 +2622,11 @@ proc testMixPosBoolOptPosInterMixedRangeDefVals(test: borrowed Test) throws {
   var myPosArg1 = parser.addArgument(name="pos1");
   var myPosArg2 = parser.addArgument(name="FileName",
                                      numArgs=0..,
-                                     defaultValue=["1","2","3"]);
+                                     defaultValue=["1","2","3"],
+                                     valueName=none);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
-                                  numArgs=3,
-                                  required=false,
-                                  defaultValue=none);
+                                  numArgs=3);
   var subCmd1 = parser.addSubCommand(cmd="subCmd1");
 
   //make sure no value currently exists
@@ -2611,12 +2670,11 @@ proc testMixPosBoolOptPosInterMixedRangeNoVals(test: borrowed Test) throws {
   var myPosArg1 = parser.addArgument(name="pos1");
   var myPosArg2 = parser.addArgument(name="FileName",
                                      numArgs=0..,
-                                     defaultValue=none);
+                                     defaultValue=none,
+                                     valueName=none);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
-                                  numArgs=3,
-                                  required=false,
-                                  defaultValue=none);
+                                  numArgs=3);
   var subCmd1 = parser.addSubCommand(cmd="subCmd1");
 
   //make sure no value currently exists
@@ -2656,29 +2714,34 @@ proc testMixPosBoolOptWithValuesSubCommand(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-b","--boolVal"],
                                  numArgs=0..1,
-                                 defaultValue=none);
+                                 defaultValue=none,
+                                 valueName=none);
   var myPosArg = parser.addArgument(name="FileNames",
                                     numArgs=1..);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1..10,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
   var subCmd1 = parser.addSubCommand("subCmd1");
   // setup the subcommand parser
   var subParser = new argumentParser();
   var subCmdBoolArg = subParser.addFlag(name="BoolFlag",
                                         opts=["-b","--boolVal"],
                                         numArgs=0..1,
-                                        defaultValue=none);
+                                        defaultValue=none,
+                                        valueName=none);
   var subCmdPosArg = subParser.addArgument(name="FileNames",
                                            numArgs=0..,
-                                           defaultValue=(["f1","f2"]));
+                                           defaultValue=["f1","f2"],
+                                           valueName=none);
   var subCmdStrArg = subParser.addOption(name="StringOpt",
                                          opts=["-n","--stringVal"],
                                          numArgs=1..10,
                                          required=false,
-                                         defaultValue=none);
+                                         defaultValue=none,
+                                         valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   test.assertFalse(myPosArg.hasValue());
@@ -2727,29 +2790,34 @@ proc testMixPosBoolOptWithValuesSubCommandLight(test: borrowed Test) throws {
   var myBoolArg = parser.addFlag(name="BoolFlag",
                                  opts=["-b","--boolVal"],
                                  numArgs=0..1,
-                                 defaultValue=none);
+                                 defaultValue=none,
+                                 valueName=none);
   var myPosArg = parser.addArgument(name="FileNames",
                                       numArgs=0..);
   var myStrArg = parser.addOption(name="StringOpt",
                                   opts=["-n","--stringVal"],
                                   numArgs=1..10,
                                   required=false,
-                                  defaultValue=none);
+                                  defaultValue=none,
+                                  valueName=none);
   var subCmd1 = parser.addSubCommand("subCmd1");
   // setup the subcommand parser
   var subParser = new argumentParser();
   var subCmdBoolArg = subParser.addFlag(name="BoolFlag",
                                         opts=["-b","--boolVal"],
                                         numArgs=0..1,
-                                        defaultValue=none);
+                                        defaultValue=none,
+                                        valueName=none);
   var subCmdPosArg = subParser.addArgument(name="FileNames",
                                            numArgs=0..,
-                                           defaultValue=(["f1","f2"]));
+                                           defaultValue=["f1","f2"],
+                                           valueName=none);
   var subCmdStrArg = subParser.addOption(name="StringOpt",
                                          opts=["-n","--stringVal"],
                                          numArgs=1..10,
                                          required=false,
-                                         defaultValue=none);
+                                         defaultValue=none,
+                                         valueName=none);
   //make sure no value currently exists
   test.assertFalse(myBoolArg.hasValue());
   test.assertFalse(myPosArg.hasValue());
@@ -3347,7 +3415,8 @@ proc testPassthrough(test: borrowed Test) throws {
   var parser = new argumentParser();
   var myPosArg = parser.addArgument(name="FileName",
                                     defaultValue=none,
-                                    numArgs=0..1);
+                                    numArgs=0..1,
+                                    valueName=none);
   var passThrough = parser.addPassThrough();
   //make sure no value currently exists
   test.assertFalse(myPosArg.hasValue());
@@ -3366,7 +3435,8 @@ proc testPassthroughWithPositional(test: borrowed Test) throws {
   var parser = new argumentParser();
   var myPosArg = parser.addArgument(name="FileName",
                                     defaultValue=none,
-                                    numArgs=0..1);
+                                    numArgs=0..1,
+                                    valueName=none);
   var passThrough = parser.addPassThrough();
   //make sure no value currently exists
   test.assertFalse(myPosArg.hasValue());
@@ -3386,7 +3456,8 @@ proc testPassthroughWithPositionalNoVals(test: borrowed Test) throws {
   var parser = new argumentParser();
   var myPosArg = parser.addArgument(name="FileName",
                                     defaultValue=none,
-                                    numArgs=0..1);
+                                    numArgs=0..1,
+                                    valueName=none);
   var passThrough = parser.addPassThrough();
   //make sure no value currently exists
   test.assertFalse(myPosArg.hasValue());
@@ -3544,10 +3615,14 @@ proc testOptionZeroValueDetection(test: borrowed Test) throws {
   var parser = new argumentParser();
   var myOption = parser.addOption(name="example",
                                   opts=["--example"],
-                                  numArgs=0..);
+                                  numArgs=0..,
+                                  valueName=none,
+                                  defaultValue=none);
   var myOtherOption = parser.addOption(name="other",
                                        opts=["--other"],
-                                       numArgs=0..);
+                                       numArgs=0..,
+                                       valueName=none,
+                                       defaultValue=none);
 
   //make sure no value currently exists
   test.assertFalse(myOption.hasValue());
@@ -3614,6 +3689,56 @@ proc testCustomHandlerNoHelp(test: borrowed Test) throws {
                                   addHelp=false);
   parser.parseArgs(argList);
   test.assertFalse(parser.helpFlagPresent()[0]);
+}
+
+
+// minimal help test to check generated help message with help data
+proc testGenerateHelp(test: borrowed Test) throws {
+
+  var argList = ["progName","--help"];
+  var parser = new argumentParser(exitAfterHelp=false);
+  parser.addFlag(name="flagOne",
+                 opts=["--flagOne"],
+                 help="sets cool factor to 100",
+                 valueName=none,
+                 defaultValue=none);
+  parser.addOption(name="optionOne",
+                   opts=["--optionOne"],
+                   help="release 1000 doves upon thine enemies",
+                   numArgs=1,
+                   valueName=none,
+                   defaultValue=none);
+  parser.addArgument(name="files",
+                     valueName="MYFILES",
+                     numArgs=1..,
+                     help="some files to process");
+  parser.addSubCommand("subcommand", help="do related but different stuff");
+  parser.parseArgs(argList);
+  test.assertTrue(parser.helpFlagPresent()[0]);
+  test.assertEqual(parser.helpFlagPresent()[1],"--help");
+}
+
+// minimal help test to check generated help message
+proc testGenerateEmptyHelp(test: borrowed Test) throws {
+
+  var argList = ["/home/user/progName","--help"];
+  var parser = new argumentParser(exitAfterHelp=false);
+  parser.addFlag(name="flagOne",
+                 opts=["--flagOne"],
+                 valueName=none,
+                 defaultValue=none);
+  parser.addOption(name="optionOne",
+                   opts=["--optionOne"],
+                   numArgs=1,
+                   valueName=none,
+                   defaultValue=none);
+  parser.addArgument(name="files",
+                     valueName="MYFILES",
+                     numArgs=1..);
+  parser.addSubCommand("subcommand");
+  parser.parseArgs(argList);
+  test.assertTrue(parser.helpFlagPresent()[0]);
+  test.assertEqual(parser.helpFlagPresent()[1],"--help");
 }
 
 // TODO: SPLIT THIS INTO MULTIPLE FILES BY FEATURE
