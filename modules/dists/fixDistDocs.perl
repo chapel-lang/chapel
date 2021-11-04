@@ -80,9 +80,9 @@ sub process {
       }
    }
 
-   # Skip everything until "class::", edit that line and print.
+   # Skip everything until "class::" or "record::", edit that line and print.
    while (<RST>) {
-      if (/^.. class::/) {
+      if (/^.. (class|record)::/) {
          s/ : Base.*//;
          print MOD;
          last;
