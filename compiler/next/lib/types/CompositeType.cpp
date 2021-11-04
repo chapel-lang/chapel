@@ -23,5 +23,22 @@ namespace chpl {
 namespace types {
 
 
+CompositeType::~CompositeType() {
+}
+
+void CompositeType::computeSummaryInformation() {
+  isGeneric_ = false;
+  allGenericFieldsHaveDefaultValues_ = true;
+  for (auto field : fields_) {
+    if (field.type.isGenericOrUnknown()) {
+      if (!field.hasDefaultValue) {
+        allGenericFieldsHaveDefaultValues_ = false;
+      }
+      isGeneric_ = true;
+    }
+  }
+}
+
+
 } // end namespace types
 } // end namespace chpl
