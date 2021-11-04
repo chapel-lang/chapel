@@ -160,7 +160,8 @@
 
   .. code-block:: shell
 
-    USAGE: ArgumentParserQuickstart <POSITIONAL> [-h, --help] [--debug] [--optional <OPTIONAL>]
+    $ quickStart -h
+    USAGE: quickStart <POSITIONAL> [-h, --help] [--debug] [--optional <OPTIONAL>]
     ARGUMENTS:
             POSITIONAL
     OPTIONS:
