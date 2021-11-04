@@ -32,8 +32,8 @@ namespace types {
  */
 class UnionType final : public CompositeType {
  private:
-  UnionType(/* args todo */)
-    : CompositeType(typetags::UnionType)
+  UnionType(ID id, std::vector<CompositeType::FieldDetail> fields)
+    : CompositeType(typetags::UnionType, id, std::move(fields))
   { }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -44,10 +44,15 @@ class UnionType final : public CompositeType {
     compositeTypeMarkUniqueStringsInner(context);
   }
 
+  static const owned<UnionType>&
+  getUnionType(Context* context, ID id,
+               std::vector<CompositeType::FieldDetail> fields);
+
  public:
   ~UnionType() = default;
 
-  static const UnionType* get(Context* context /* args todo */);
+  static const UnionType* get(Context* context, ID id,
+                        std::vector<CompositeType::FieldDetail> fields);
 };
 
 

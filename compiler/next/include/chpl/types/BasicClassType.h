@@ -32,8 +32,8 @@ namespace types {
  */
 class BasicClassType final : public CompositeType {
  private:
-  BasicClassType(/* todo args */)
-    : CompositeType(typetags::BasicClassType)
+  BasicClassType(ID id, std::vector<CompositeType::FieldDetail> fields)
+    : CompositeType(typetags::BasicClassType, id, std::move(fields))
   { }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -44,10 +44,14 @@ class BasicClassType final : public CompositeType {
     compositeTypeMarkUniqueStringsInner(context);
   }
 
+  static const owned<BasicClassType>&
+  getBasicClassType(Context* context, ID id,
+                    std::vector<CompositeType::FieldDetail> fields);
  public:
   ~BasicClassType() = default;
 
-  static const BasicClassType* get(Context* context /* todo args */);
+  static const BasicClassType*
+  get(Context* context, ID id, std::vector<CompositeType::FieldDetail> fields);
 };
 
 
