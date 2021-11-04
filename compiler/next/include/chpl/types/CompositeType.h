@@ -31,8 +31,10 @@ namespace types {
 
 
 /**
+
   This class represents an aggregate type which is a type that contains other
-  elements - Class, Record, Union, and Tuple types.
+  elements as fields. Subclasses include BasicClass, Record, Union, and Tuple
+  types.
 
  */
 class CompositeType : public Type {
@@ -71,8 +73,6 @@ class CompositeType : public Type {
   bool allGenericFieldsHaveDefaultValues_ = false;
 
   void computeSummaryInformation();
-
-  CompositeType(typetags::TypeTag tag) : Type(tag) { } // TODO: remove me
 
   CompositeType(typetags::TypeTag tag,
                 ID id, std::vector<FieldDetail> fields)
@@ -151,6 +151,6 @@ template<> struct hash<chpl::types::CompositeType::FieldDetail>
   }
 };
 
-}
+} // end namespace std
 
 #endif

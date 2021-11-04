@@ -43,6 +43,5 @@ BasicClassType::get(Context* context, ID id,
 }
 
 
-
 } // end namespace types
 } // end namespace chpl

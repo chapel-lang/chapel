@@ -19,8 +19,29 @@
 
 #include "chpl/types/ClassType.h"
 
+#include "chpl/queries/query-impl.h"
+
 namespace chpl {
 namespace types {
+
+const owned<ClassType>&
+ClassType::getClassType(Context* context,
+             const BasicClassType* basicType,
+             const RecordType* manager,
+             ClassTypeDecorator decorator) {
+  QUERY_BEGIN(getClassType, context, basicType, manager, decorator);
+
+  auto result = toOwned(new ClassType(basicType, manager, decorator));
+
+  return QUERY_END(result);
+}
+
+const ClassType* ClassType::get(Context* context,
+                                const BasicClassType* basicType,
+                                const RecordType* manager,
+                                ClassTypeDecorator decorator) {
+  return getClassType(context, basicType, manager, decorator).get();
+}
 
 
 } // end namespace types

@@ -187,6 +187,9 @@ class ClassTypeDecorator final {
   bool operator!=(ClassTypeDecorator other) const {
     return !(*this == other);
   }
+  size_t hash() const {
+    return chpl::hash(val_);
+  }
   void swap(ClassTypeDecorator other) {
     std::swap(this->val_, other.val_);
   }
@@ -195,5 +198,16 @@ class ClassTypeDecorator final {
 
 } // end namespace uast
 } // end namespace chpl
+
+namespace std {
+
+template<> struct hash<chpl::types::ClassTypeDecorator>
+{
+  size_t operator()(const chpl::types::ClassTypeDecorator& key) const {
+    return key.hash();
+  }
+};
+
+} // end namespace std
 
 #endif
