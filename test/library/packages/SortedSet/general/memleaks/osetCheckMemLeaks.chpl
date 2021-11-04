@@ -1,4 +1,4 @@
-use OrderedSet;
+use SortedSet;
 use OsetTest;
 
 
@@ -15,7 +15,7 @@ const hi = 128;
 
 proc test() {
   var arr: [0..#hi] shared C?;
-  var s = new orderedSet(shared C?, false, defaultComparator);
+  var s = new sortedSet(shared C?, false, defaultComparator);
 
   for i in 0..#hi do arr[i] = new shared C(i);
   for x in arr do s.add(x);

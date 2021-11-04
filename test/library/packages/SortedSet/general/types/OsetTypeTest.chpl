@@ -1,9 +1,9 @@
-use OrderedSet;
+use SortedSet;
 
 
 
 proc testSet(type t) where isTuple(t) {
-  var s = new orderedSet(t, false, defaultComparator);
+  var s = new sortedSet(t, false, defaultComparator);
 
   var x = (new t[0](1), new t[1](2));
 
@@ -19,7 +19,7 @@ proc testSet(type t) where isTuple(t) {
 }
 
 proc testSet(type t) {
-  var s = new orderedSet(t, false, defaultComparator);
+  var s = new sortedSet(t, false, defaultComparator);
 
   var x = new t(1);
 

@@ -1,11 +1,11 @@
-use OrderedSet;
+use SortedSet;
 use OsetTest;
 
 
 config const testIters = 8;
 
 proc doTest(type eltType) {
-  var s1 = new orderedSet(eltType, false, defaultComparator);
+  var s1 = new sortedSet(eltType, false, defaultComparator);
 
   var count = 0;
 

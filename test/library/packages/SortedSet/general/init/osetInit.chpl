@@ -1,12 +1,12 @@
-use OrderedSet;
+use SortedSet;
 use OsetTest;
 
 
 
-var s1 = new orderedSet(int, false, defaultComparator);
-var s2 = new orderedSet(testRecord, false, defaultComparator);
-var s3 = new orderedSet(borrowed testClass, false, defaultComparator);
-var s4 = new orderedSet(int, 1..10, false, defaultComparator);
+var s1 = new sortedSet(int, false, defaultComparator);
+var s2 = new sortedSet(testRecord, false, defaultComparator);
+var s3 = new sortedSet(borrowed testClass, false, defaultComparator);
+var s4 = new sortedSet(int, 1..10, false, defaultComparator);
 
 assert(s1.size == 0);
 assert(s2.size == 0);

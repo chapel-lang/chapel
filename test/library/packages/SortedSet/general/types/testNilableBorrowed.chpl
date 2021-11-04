@@ -1,4 +1,4 @@
-use OrderedSet;
+use SortedSet;
 use OsetTest;
 
 
@@ -12,7 +12,7 @@ operator T.<(lhs: borrowed T?, rhs: borrowed T?) {
   return lhs!.dummy < rhs!.dummy;
 }
 
-var s = new orderedSet(borrowed T?, false, defaultComparator);
+var s = new sortedSet(borrowed T?, false, defaultComparator);
 
 var a = new T();
 var b: borrowed T? = a.borrow();

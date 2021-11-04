@@ -1,4 +1,4 @@
-use OrderedSet;
+use SortedSet;
 use Random;
 use Sort;
 
@@ -16,7 +16,7 @@ proc lowerBound(arr: [?d] int, target: int, out result:int ): bool {
 }
 
 proc doTest(arr: [?d] int) {
-  var s1 = new orderedSet(int, false, defaultComparator);
+  var s1 = new sortedSet(int, false, defaultComparator);
 
   for x in arr {
     s1.add(x);

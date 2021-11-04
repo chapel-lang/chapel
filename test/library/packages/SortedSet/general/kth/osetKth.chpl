@@ -1,4 +1,4 @@
-use OrderedSet;
+use SortedSet;
 use Random;
 use Sort;
 
@@ -6,7 +6,7 @@ use Sort;
 config const testIters = 128;
 
 proc doTest(arr: [?d] int) {
-  var s1 = new orderedSet(int, false, defaultComparator);
+  var s1 = new sortedSet(int, false, defaultComparator);
 
   for x in arr {
     s1.add(x);

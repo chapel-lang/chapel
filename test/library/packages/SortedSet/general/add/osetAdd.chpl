@@ -1,9 +1,9 @@
-use OrderedSet;
+use SortedSet;
 use Random;
 use Sort;
 
 config param testIters = 137;
-var oset = new orderedSet(int, false, defaultComparator);
+var oset = new sortedSet(int, false, defaultComparator);
 var a: [0..#testIters] int;
 fillRandom(a);
 for x in a {

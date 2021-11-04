@@ -1,12 +1,12 @@
-use OrderedSet;
+use SortedSet;
 use OsetTest;
 
 
 config const testIters = 8;
 
 proc doTest(type eltType) {
-  var s1 = new orderedSet(eltType, false, defaultComparator);
-  var s2 = new orderedSet(eltType, false, defaultComparator);
+  var s1 = new sortedSet(eltType, false, defaultComparator);
+  var s2 = new sortedSet(eltType, false, defaultComparator);
 
   assert(s1.isDisjoint(s2));
   assert(s2.isDisjoint(s1));

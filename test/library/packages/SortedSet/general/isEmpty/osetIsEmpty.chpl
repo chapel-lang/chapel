@@ -1,6 +1,6 @@
-use OrderedSet;
+use SortedSet;
 
-var oset = new orderedSet(int, false, defaultComparator);
+var oset = new sortedSet(int, false, defaultComparator);
 writeln(oset.isEmpty());
 oset.add(1);
 writeln(oset.isEmpty());
