@@ -2,10 +2,7 @@
 #define QTHREAD_DEBUG_H
 
 #include <stdlib.h> /* for malloc() and friends */
-#include <sys/types.h>
-
 #include "qt_alloc.h"
-
 #ifndef EXTERNAL_ALLOCATOR
 #ifdef QTHREAD_MEMORY_SCRIBBLING
 #include <string.h> /* for memset(), per C90 */

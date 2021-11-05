@@ -7,7 +7,6 @@
 
 /* System Headers */
 #include <stdlib.h> /* for random(), according to P2001 */
-#include <sys/types.h>
 
 /* Internal Headers */
 #include "qt_visibility.h"

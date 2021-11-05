@@ -4,7 +4,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>                    /* for malloc */
-#include <sys/types.h>
 
 #include <qthread/qthread.h>
 #include <qthread/qdqueue.h>
