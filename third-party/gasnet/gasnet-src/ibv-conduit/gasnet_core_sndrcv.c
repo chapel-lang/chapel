@@ -792,8 +792,7 @@ static int gasnetc_snd_reap(int limit) {
 	    break;
 
 	  case GASNETC_OP_AM:		/* AM send */
-	    gasneti_assert((comp.opcode == IBV_WC_SEND) ||
-			   (comp.opcode == IBV_WC_RDMA_WRITE));
+	    gasneti_assert(comp.opcode == IBV_WC_SEND);
 	    if (sreq->comp.cb != NULL) {
               sreq->comp.cb(sreq->comp.data);
 	    }
@@ -3174,8 +3173,18 @@ extern int gasnetc_rdma_put(
     gasneti_assert(gasnetc_in_bound_segment(ep, (uintptr_t)src_ptr, nbytes));
     const int bias_local_cnt = (local_cb == gasnetc_cb_eop_alc);
     if (bias_local_cnt) ++(*local_cnt);
+
+    // IB reports only a single completion, which is for RC.
+    // PutBlocking and Put{NB,NBI} with GEX_EVENT_DEFER use *only* an RC counter, so we
+    // must report IB-level completion there.
+    // Otherwise, we report to the LC counter which also blocks RC (either at injection for
+    // GEX_EVENT_NOW, or else at Test/Wait on the event due to the root/leaf relationship).
+    gasnetc_atomic_val_t *cnt = local_cnt ? local_cnt : remote_cnt;
+    gasnetc_cb_t           cb = local_cnt ? local_cb  : remote_cb;
+    gasneti_assert(cb); // Currently never "fire-and-forget" to device memory
+
     size_t unsent = gasnetc_do_put_zerocp(ep, jobrank, rem_epidx, sr_desc, nbytes,
-                                          local_cnt, local_cb GASNETI_THREAD_PASS);
+                                          cnt, cb GASNETI_THREAD_PASS);
     gasneti_assert_uint(unsent ,==, 0);
     if (bias_local_cnt) local_cb(local_cnt);
   } else if (local_cb) {

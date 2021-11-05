@@ -37,6 +37,7 @@ pkgconfig_files = $(pkgconfig_files_seq) $(pkgconfig_files_par) $(pkgconfig_file
 
 # All configured-in memory kinds objects, and conduit's supported subset
 @HAVE_MK_CLASS_CUDA_UVA_TRUE@kinds_cuda_uva_obj = $(builddir)/gasnet_cuda_uva-$(THREAD_MODEL).o
+@HAVE_MK_CLASS_HIP_TRUE@kinds_hip_obj = $(builddir)/gasnet_hip-$(THREAD_MODEL).o
 KINDS_SPECIAL_OBJS = $(foreach kind, $(CONDUIT_KINDS), $(kinds_$(kind)_obj))
 
 include $(top_builddir)/other/Makefile-libgasnet.mak
@@ -376,4 +377,7 @@ do-pkgconfig-conduit: force
 
 # Memory kinds for CUDA UVA devices
 $(builddir)/gasnet_cuda_uva-$(THREAD_MODEL).o: force
-	$(CC) @CUDA_UVA_CFLAGS@ $(LIBCFLAGS) -o $@ -c $(top_srcdir)/other/kinds/gasnet_cuda_uva.c
+	$(CC) $(LIBCFLAGS) @CUDA_UVA_CFLAGS@ -o $@ -c $(top_srcdir)/other/kinds/gasnet_cuda_uva.c
+# Memory kinds for HIP devices
+$(builddir)/gasnet_hip-$(THREAD_MODEL).o: force
+	$(CC) $(LIBCFLAGS) @HIP_CFLAGS@ -o $@ -c $(top_srcdir)/other/kinds/gasnet_hip.c

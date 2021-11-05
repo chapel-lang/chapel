@@ -123,7 +123,7 @@ CONDUIT_SPECIAL_OBJS = $(mpi_special_objs) $(fh_special_objs)
 
 # memory kinds supported by this conduit (space separated)
 # to be included in libgasnet if support was enabled at configure time
-CONDUIT_KINDS = cuda_uva
+CONDUIT_KINDS = cuda_uva hip
 
 # the default job spawn command to be used for "make run-tests"
 # The following substitutions are performed:
