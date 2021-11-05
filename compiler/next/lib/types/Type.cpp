@@ -91,7 +91,13 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "imag", ImagType::get(context, 0));
 
   gatherType(context, map, "_any", AnyType::get(context));
+  gatherType(context, map, "_nilType", NilType::get(context));
   gatherType(context, map, "_unknown", UnknownType::get(context));
+  gatherType(context, map, "bytes", BytesType::get(context));
+  gatherType(context, map, "c_string", CStringType::get(context));
+  gatherType(context, map, "nothing", NothingType::get(context));
+  gatherType(context, map, "string", StringType::get(context));
+  gatherType(context, map, "void", VoidType::get(context));
 
   BuiltinType::gatherBuiltins(context, map);
 }
