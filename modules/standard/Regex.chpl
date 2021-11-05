@@ -361,7 +361,7 @@ extern record qio_regex_options_t {
 pragma "no doc"
 extern proc qio_regex_null():qio_regex_t;
 private extern proc qio_regex_init_default_options(ref options:qio_regex_options_t);
-private extern proc qio_regex_create_compile(str:c_string, strlen:int(64), ref options:qio_regex_options_t, ref compiled:qio_regex_t);
+private extern proc qio_regex_create_compile(str:c_string, strlen:int(64), const ref options:qio_regex_options_t, ref compiled:qio_regex_t);
 private extern proc qio_regex_create_compile_flags(str:c_string, strlen:int(64), flags:c_string, flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
 pragma "no doc"
 extern proc qio_regex_create_compile_flags_2(str:c_void_ptr, strlen:int(64), flags:c_void_ptr, flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
@@ -660,12 +660,11 @@ record regex {
   }
 
   pragma "no doc"
-  proc _deserialize(in data) {
-    qio_regex_create_compile(data.pattern.c_str(),
+  proc _deserialize(data) {
+    qio_regex_create_compile(data.pattern.localize().c_str(),
                              data.pattern.numBytes,
                              data.options,
                              this._regex);
-
   }
 
   pragma "no doc"
