@@ -20,6 +20,8 @@
 #ifndef CHPL_TYPES_CLASS_TYPE_DECORATOR_H
 #define CHPL_TYPES_CLASS_TYPE_DECORATOR_H
 
+#include "chpl/util/hash.h"
+
 #include <cassert>
 #include <utility>
 

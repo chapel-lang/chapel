@@ -40,7 +40,7 @@ namespace uast {
 }
 
 namespace resolution {
-  struct TypedFnSignature;
+  class TypedFnSignature;
 }
 
 
