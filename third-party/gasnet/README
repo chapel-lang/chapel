@@ -11,6 +11,15 @@ Any Chapel issues that seem to be related to GASNet should be directed
 to the Chapel team at https://chapel-lang.org/bugs.html.
 
 
+Chapel modifications to GASNet
+==============================
+The modifications that we have made to the official GASNet release are
+as follows:
+
+* Pulled in an upstream fix for linker errors on Aries with newer GCC
+   - https://bitbucket.org/berkeleylab/gasnet/commits/a04a94a5a
+
+
 Upgrading GASNet versions
 =========================
 
