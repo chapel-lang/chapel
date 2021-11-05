@@ -94,7 +94,7 @@ void Type::gatherBuiltins(Context* context,
   gatherPrimitiveType(context, map, ComplexType::get(context, 64));
   gatherPrimitiveType(context, map, ComplexType::get(context, 128));
   // and 'complex' as an alias for 'complex(128)'
-  gatherType(context, map, "imag", ImagType::get(context, 0));
+  gatherType(context, map, "complex", ComplexType::get(context, 0));
 
   gatherType(context, map, "_any", AnyType::get(context));
   gatherType(context, map, "_nilType", NilType::get(context));
