@@ -47,14 +47,6 @@ const types::QualifiedType& typeForBuiltin(Context* context, UniqueString name);
 /////// function resolution
 
 /**
-  Compute an UntypedFnSignature for a Function.
-
-  Returns nullptr if the passed ID is not a Function.
- */
-const UntypedFnSignature*
-untypedSignatureForFunction(Context* context, ID id);
-
-/**
   Compute a TypedFnSignature from an UntypedFnSignature.
   The TypedFnSignature will represent generic and potentially unknown
   types if the function is generic.
@@ -64,12 +56,25 @@ typedSignatureInitial(Context* context,
                       const UntypedFnSignature* untypedSig);
 
 /**
+ Returns a Type that represents the initial type provided by a TypeDecl
+ (e.g. Class, Record, etc). This can have unknown or generic fields.
+ */
+const types::Type* typeForTypeDecl(Context* context, const uast::TypeDecl* d);
+
+/**
   Compute an initial TypedFnSignature for a type constructor for a
   particular type. If some fields of t are still generic,
   it will be necessary to call instantiateSignature on it.
  */
 const TypedFnSignature* typeConstructorInitial(Context* context,
                                                const types::Type* t);
+
+/**
+ Compute an initial TypedFnSignature for a  type constructor
+ for a builtin type with the provided name.
+ */
+const TypedFnSignature* typeConstructorInitialBuiltin(Context* context,
+                                                      UniqueString name);
 
 /**
   Instantiate a TypedFnSignature from
@@ -165,6 +170,12 @@ CallResolutionResult resolveCall(Context* context,
                                  const CallInfo& ci,
                                  const Scope* inScope,
                                  const PoiScope* inPoiScope);
+
+// AggregateDecl resolution
+
+/** Given an ID for an AggregateDecl, do initial resolution of the fields */
+const ResolutionResultByPostorderID& resolveFields(Context* context, ID id);
+
 
 } // end namespace resolution
 } // end namespace chpl

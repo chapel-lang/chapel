@@ -22,13 +22,19 @@
 #include "chpl/types/AnyType.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/BuiltinType.h"
+#include "chpl/types/BytesType.h"
+#include "chpl/types/CStringType.h"
 #include "chpl/types/ComplexType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
+#include "chpl/types/NilType.h"
+#include "chpl/types/NothingType.h"
 #include "chpl/types/PrimitiveType.h"
 #include "chpl/types/RealType.h"
+#include "chpl/types/StringType.h"
 #include "chpl/types/UintType.h"
 #include "chpl/types/UnknownType.h"
+#include "chpl/types/VoidType.h"
 
 namespace chpl {
 namespace types {

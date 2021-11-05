@@ -70,8 +70,8 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast,
         if (parentAst->isModule()) {
           const auto& byId = resolveModule(context, parentAst->id());
           return &byId.byAst(ast);
-        } else if (parentAst->isFunction()) {
-          auto untyped = UntypedFnSignature::get(context, parentAst->id());
+        } else if (auto parentFn = parentAst->toFunction()) {
+          auto untyped = UntypedFnSignature::get(context, parentFn);
           // use inFn if it matches
           if (inFn && inFn->signature->untyped() == untyped) {
             return &inFn->resolutionById.byAst(ast);
@@ -141,8 +141,10 @@ computeAndPrintStuff(Context* context,
   if (r != nullptr) {
     for (const TypedFnSignature* sig : r->mostSpecific) {
       if (sig != nullptr) {
-        auto fn = resolveFunction(context, sig, r->poiScope);
-        calledFns.insert(fn);
+        if (sig->untyped()->idIsFunction()) {
+          auto fn = resolveFunction(context, sig, r->poiScope);
+          calledFns.insert(fn);
+        }
       }
     }
 
@@ -224,7 +226,8 @@ int main(int argc, char** argv) {
           bool added = pair.second;
           if (added) {
             auto ast = idToAst(ctx, sig->id());
-            auto uSig = UntypedFnSignature::get(ctx, ast->id());
+            auto fn = ast->toFunction();
+            auto uSig = UntypedFnSignature::get(ctx, fn);
             auto initialType = typedSignatureInitial(ctx, uSig);
             printf("Instantiation of %s\n", initialType->toString().c_str());
             printf("Instantiation is %s\n", sig->toString().c_str());

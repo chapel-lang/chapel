@@ -59,7 +59,7 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(TaskIdType, "chpl_nullTaskID")
 
   // generic builtin types. AnyBoolType must be the first of these
-  // (or else BuiltinType::isGeneric and this comment)
+  // (or else adjust BuiltinType::isGeneric and this comment)
   BUILTIN_TYPE_NODE(AnyBoolType, "chpl_anybool")
   BUILTIN_TYPE_NODE(AnyComplexType, "chpl_anycomplex")
   BUILTIN_TYPE_NODE(AnyImagType, "chpl_anyimag")

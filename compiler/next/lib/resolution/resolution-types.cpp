@@ -19,7 +19,6 @@
 
 #include "chpl/resolution/resolution-types.h"
 
-#include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/query-impl.h"
 #include "chpl/queries/update-functions.h"
 #include "chpl/uast/Builder.h"
@@ -34,15 +33,19 @@ const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
                                           UniqueString name,
                                           bool isMethod,
+                                          bool idIsFunction,
+                                          bool isTypeConstructor,
                                           uast::Function::Kind kind,
                                           std::vector<FormalDetail> formals,
                                           const Expression* whereClause) {
   QUERY_BEGIN(getUntypedFnSignature, context,
-              id, name, isMethod, kind, formals, whereClause);
+              id, name, isMethod, idIsFunction, isTypeConstructor,
+              kind, formals, whereClause);
 
   owned<UntypedFnSignature> result =
-    toOwned(new UntypedFnSignature(id, name, isMethod, kind,
-                                   std::move(formals), whereClause));
+    toOwned(new UntypedFnSignature(id, name, isMethod,
+                                   idIsFunction, isTypeConstructor,
+                                   kind, std::move(formals), whereClause));
 
   return QUERY_END(result);
 }
@@ -51,18 +54,18 @@ const UntypedFnSignature*
 UntypedFnSignature::get(Context* context, ID id,
                         UniqueString name,
                         bool isMethod,
+                        bool idIsFunction,
+                        bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
                         const uast::Expression* whereClause) {
-  return getUntypedFnSignature(context, id, name, isMethod, kind,
+  return getUntypedFnSignature(context, id, name, isMethod,
+                               idIsFunction, isTypeConstructor, kind,
                                std::move(formals), whereClause).get();
 }
 
 const UntypedFnSignature*
-UntypedFnSignature::get(Context* context, ID functionId) {
-  auto ast = parsing::idToAst(context, functionId);
-  auto fn = ast->toFunction();
-
+UntypedFnSignature::get(Context* context, const uast::Function* fn) {
   const UntypedFnSignature* result = nullptr;
 
   if (fn != nullptr) {
@@ -81,7 +84,10 @@ UntypedFnSignature::get(Context* context, ID functionId) {
 
     // find the unique-ified untyped signature
     result = get(context, fn->id(),
-                 fn->name(), fn->isMethod(), fn->kind(),
+                 fn->name(), fn->isMethod(),
+                 /* idIsFunction */ true,
+                 /* isTypeConstructor */ false,
+                 fn->kind(),
                  std::move(formals), fn->whereClause());
   }
 
@@ -137,12 +143,10 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   int formalIdx = 0;
   int numFormals = untyped->numFormals();
   for (int i = 0; i < numFormals; i++) {
-    const Decl* decl = untyped->formalDecl(i);
-    if (decl && !decl->isFormal())
-      assert(false && "Not handled yet!");
-
     FormalActual& entry = byFormalIdx[formalIdx];
-    entry.formal = decl->toFormal();
+    if (const Decl* decl = untyped->formalDecl(i)) {
+      entry.formal = decl;
+    }
     if (typed) {
       entry.formalType = typed->formalType(formalIdx);
     }
@@ -160,10 +164,6 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     if (!actual.byName.isEmpty()) {
       bool match = false;
       for (int i = 0; i < numFormals; i++) {
-        const Decl* decl = untyped->formalDecl(i);
-        if (decl && !decl->isFormal())
-          assert(false && "Not handled yet!");
-
         if (actual.byName == untyped->formalName(i)) {
           match = true;
           FormalActual& entry = byFormalIdx[i];
@@ -228,10 +228,6 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   // or have a default value.
   while (formalIdx < (int) byFormalIdx.size()) {
     if (byFormalIdx[formalIdx].actualIdx < 0) {
-      const Decl* decl = untyped->formalDecl(formalIdx);
-      if (decl && !decl->isFormal())
-        assert(false && "Not handled yet!");
-
       if (!untyped->formalHasDefault(formalIdx)) {
         // formal was not provided and there is no default value
         mappingIsValid = false;

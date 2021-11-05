@@ -44,7 +44,6 @@ class UntypedFnSignature {
   struct FormalDetail {
     UniqueString name;
     bool hasDefaultValue = false;
-    // this will not be present for compiler-generated functions
     const uast::Decl* decl = nullptr;
 
     FormalDetail(UniqueString name, bool hasDefault, const uast::Decl* decl)
@@ -71,6 +70,8 @@ class UntypedFnSignature {
   ID id_;
   UniqueString name_;
   bool isMethod_; // in that case, formals[0] is the receiver
+  bool idIsFunction_; // whether the ID is of a function
+  bool isTypeConstructor_;
   uast::Function::Kind kind_;
   std::vector<FormalDetail> formals_;
 
@@ -80,12 +81,16 @@ class UntypedFnSignature {
   UntypedFnSignature(ID id,
                      UniqueString name,
                      bool isMethod,
+                     bool idIsFunction,
+                     bool isTypeConstructor,
                      uast::Function::Kind kind,
                      std::vector<FormalDetail> formals,
                      const uast::Expression* whereClause)
     : id_(id),
       name_(name),
       isMethod_(isMethod),
+      idIsFunction_(idIsFunction),
+      isTypeConstructor_(isTypeConstructor),
       kind_(kind),
       formals_(std::move(formals)),
       whereClause_(whereClause) {
@@ -95,6 +100,8 @@ class UntypedFnSignature {
   getUntypedFnSignature(Context* context, ID id,
                         UniqueString name,
                         bool isMethod,
+                        bool idIsFunction,
+                        bool isTypeConstructor,
                         uast::Function::Kind kind,
                         std::vector<FormalDetail> formals,
                         const uast::Expression* whereClause);
@@ -104,20 +111,24 @@ class UntypedFnSignature {
   static const UntypedFnSignature* get(Context* context, ID id,
                                        UniqueString name,
                                        bool isMethod,
+                                       bool idIsFunction,
+                                       bool isTypeConstructor,
                                        uast::Function::Kind kind,
                                        std::vector<FormalDetail> formals,
                                        const uast::Expression* whereClause);
 
-  /** Get the unique UntypedFnSignature representing a function with ID
-      functionId.
-      If functionId does not represent a Function, returns nullptr. */
-  static const UntypedFnSignature* get(Context* context, ID functionId);
+  /** Get the unique UntypedFnSignature representing a Function's
+      signature. */
+  static const UntypedFnSignature* get(Context* context,
+                                       const uast::Function* function);
 
 
   bool operator==(const UntypedFnSignature& other) const {
     return id_ == other.id_ &&
            name_ == other.name_ &&
            isMethod_ == other.isMethod_ &&
+           idIsFunction_ == other.idIsFunction_ &&
+           isTypeConstructor_ == other.isTypeConstructor_ &&
            kind_ == other.kind_ &&
            formals_ == other.formals_ &&
            whereClause_ == other.whereClause_;
@@ -130,6 +141,21 @@ class UntypedFnSignature {
       but it can be a Record or Class for compiler-generated functions) */
   const ID& id() const {
     return id_;
+  }
+
+  /** Returns the name of the function this signature represents */
+  UniqueString name() const {
+    return name_;
+  }
+
+  /** Returns true if id() refers to a Function */
+  bool idIsFunction() const {
+    return idIsFunction_;
+  }
+
+  /** Returns true if this is a type constructor */
+  bool isTypeConstructor() const {
+    return isTypeConstructor_;
   }
 
   /** Returns the number of formals */

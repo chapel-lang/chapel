@@ -25,6 +25,9 @@
 #include "chpl/types/TypeTag.h"
 
 namespace chpl {
+namespace uast {
+  class Decl;
+}
 namespace types {
 
 

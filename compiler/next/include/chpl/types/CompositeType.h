@@ -96,6 +96,8 @@ class CompositeType : public Type {
  public:
   virtual ~CompositeType() = 0; // this is an abstract base class
 
+  virtual std::string toString() const override;
+
   /** Returns true if this is a generic type */
   bool isGeneric() const override { return isGeneric_; }
 
@@ -129,7 +131,7 @@ class CompositeType : public Type {
   }
 
   /** Return the Decl associated with the i'th field, or nullptr if none */
-  bool fieldDecl(int i) const {
+  const uast::Decl* fieldDecl(int i) const {
     assert(0 <= i && (size_t) i < fields_.size());
     return fields_[i].decl;
   }

@@ -39,6 +39,21 @@ void CompositeType::computeSummaryInformation() {
   }
 }
 
+std::string CompositeType::toString() const {
+  std::string ret = typetags::tagToString(tag());
+  int nFields = numFields();
+  ret += "(";
+  for (int i = 0; i < nFields; i++) {
+    if (i != 0) ret += ", ";
+    ret += fieldName(i).toString();
+    ret += ":";
+    ret += fieldType(i).toString();
+  }
+  ret += ")";
+  return ret;
+}
+
+
 
 } // end namespace types
 } // end namespace chpl
