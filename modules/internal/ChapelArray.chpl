@@ -3540,7 +3540,7 @@ module ChapelArray {
   // _instance is a subclass of BaseArr.  LYDIA NOTE: moved this from
   // being a method on _array so that it could be called on unwrapped
   // _instance fields
-  inline proc _do_destroy_arr(_unowned: bool, _instance, deinitElts=true) {
+  inline proc _do_destroy_arr(_unowned: bool, _instance: BaseArr, deinitElts=true) {
     if ! _unowned {
       on _instance {
         param arrIsInList = !_instance.isSliceArrayView();
@@ -3583,7 +3583,7 @@ module ChapelArray {
     }
   }
   inline proc _do_destroy_array(array: _array, deinitElts=true) {
-    _do_destroy_arr(array._unowned, array._instance, deinitElts);
+    _do_destroy_arr(array._unowned, array._instance:BaseArr, deinitElts);
   }
 
   proc _deinitElementsIsParallel(type eltType) param {
@@ -5040,7 +5040,7 @@ module ChapelArray {
     // we might have already moved the elements out
     // and so should not try to deinit them.
     // We still need to free any array memory.
-    _do_destroy_arr(rhs._unowned, rhs._instance, deinitElts=!moveElts);
+    _do_destroy_arr(rhs._unowned, rhs._instance:BaseArr, deinitElts=!moveElts);
 
     lhs._value.dsiElementInitializationComplete();
 

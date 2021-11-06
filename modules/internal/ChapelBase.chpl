@@ -1752,10 +1752,16 @@ module ChapelBase {
     if (arg != nil) {
       arg!.deinit();
 
-      on arg do
-        chpl_here_free(__primitive("_wide_get_addr", arg));
+      var addr = __primitive("_wide_get_addr", arg):c_void_ptr;
+      delete_helper(addr, arg.locale);
     }
   }
+
+  inline proc delete_helper(addr: c_void_ptr, loc: locale) {
+    on loc do
+      chpl_here_free(addr);
+  }
+
 
   proc chpl__delete(arr: []) {
     forall a in arr do
