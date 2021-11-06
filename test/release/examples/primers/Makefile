@@ -68,7 +68,7 @@ default: all
 all: $(TARGETS)
 
 clean: FORCE
-	rm -f $(TARGETS) $(REALS)
+	rm -rf $(TARGETS) $(REALS) lib/
 
 %: %.chpl
 	+$(CHPL) -o $@ $<
@@ -84,15 +84,8 @@ INTEROP_LIB_OPTS =  --library --library-makefile --savec ccode
 INTEROP_DEPS = interopWithC.chpl cHelper.h cHelper.c fact.h fact.c
 
 interopWithC: $(INTEROP_DEPS)
+	+$(CHPL) $(INTEROP_DEPS) $(INTEROP_LIB_OPTS)
 	+$(CHPL) -o $@ $^
 
-
-lib/Makefile.interopWithC:
-	+$(CHPL) $(INTEROP_DEPS) $(INTEROP_LIB_OPTS)
-
--include lib/Makefile.interopWithC
-
-cClient: cClient.test.c interopWithC.chpl
-	+$(CHPL_COMPILER) $(CHPL_CFLAGS) -o $@ $< $(CHPL_LDFLAGS)
 
 FORCE:

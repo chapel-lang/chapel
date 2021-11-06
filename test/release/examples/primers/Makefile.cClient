@@ -1,0 +1,21 @@
+TARGETS = cClient
+
+default: all
+
+all: $(TARGETS)
+
+clean: FORCE
+	rm -f $(TARGETS)
+
+ifneq ($(MAKECMDGOALS),clean)
+  ifeq (,$(wildcard lib/Makefile.interopWithC))
+    $(error Helper Makefile not found, run "make interopWithC" first)
+  endif
+endif
+
+-include lib/Makefile.interopWithC
+
+cClient: cClient.test.c interopWithC.chpl
+	+$(CHPL_COMPILER) $(CHPL_CFLAGS) -o $@ $< $(CHPL_LDFLAGS)
+
+FORCE:
