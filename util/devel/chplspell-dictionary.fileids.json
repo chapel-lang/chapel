@@ -158,6 +158,9 @@
   "8e2d4094-e581-11e8-954d-10ddb1d4c3d5": [
     "compiler/include/misc.h"
   ],
+  "0eb4f01e-3f83-11ec-81f0-3de99c714400": [
+    "compiler/include/mysystem.h"
+  ],
   "ed3f86d6-1d7f-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/include/parser.h"
   ],
@@ -204,6 +207,9 @@
   ],
   "4171383e-1d81-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/optimizations/copyPropagation.cpp"
+  ],
+  "40c25074-3f83-11ec-81f0-3de99c714400": [
+    "compiler/optimizations/deadCodeElimination.cpp"
   ],
   "7356b18e-62e2-11eb-a43d-6f93f4244f4b": [
     "compiler/optimizations/forallOptimizations.cpp"
@@ -343,6 +349,9 @@
   "61835ab6-5f64-11ea-b972-843835579daa": [
     "compiler/util/misc.cpp"
   ],
+  "f2f5a59e-3f82-11ec-81f0-3de99c714400": [
+    "compiler/util/mysystem.cpp"
+  ],
   "9627af8c-e581-11e8-954d-10ddb1d4c3d5": [
     "compiler/util/stringutil.cpp"
   ],
@@ -361,9 +370,6 @@
   "b1eb2c32-1e44-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/Potpourri.rst"
   ],
-  "7b9a1e46-8ab8-11e6-b915-843835579daa": [
-    "doc/rst/developer/bestPractices/README.rst"
-  ],
   "53b60e8e-d6dc-11ea-8acb-843835579daa": [
     "doc/rst/developer/bestPractices/Sanitizers.rst"
   ],
@@ -373,8 +379,14 @@
   "a0e68d14-3a21-11e8-af7e-10ddb1d4c3d5": [
     "doc/rst/developer/bestPractices/TestSystem.rst"
   ],
+  "6f3fc5b8-3f87-11ec-81f0-3de99c714400": [
+    "doc/rst/developer/bestPractices/buildingdocs.rst"
+  ],
   "c05642c4-62e2-11eb-a43d-6f93f4244f4b": [
     "doc/rst/developer/bestPractices/git.rst"
+  ],
+  "7b9a1e46-8ab8-11e6-b915-843835579daa": [
+    "doc/rst/developer/bestPractices/index.rst"
   ],
   "72774460-69c5-11e6-90f0-10ddb1d4c3d5": [
     "doc/rst/developer/chips/15.rst"
@@ -522,6 +534,9 @@
   "55c3384c-1e48-11e6-a3a6-10ddb1d4c3d5": [
     "doc/rst/usingchapel/executing.rst"
   ],
+  "f235c39e-3f89-11ec-81f0-3de99c714400": [
+    "doc/rst/usingchapel/launcher.rst"
+  ],
   "c32754ea-8068-11e6-ab60-00a0cc3ee663": [
     "doc/rst/usingchapel/multilocale.rst"
   ],
@@ -643,6 +658,9 @@
   "d635d1bc-4aae-11e8-af7e-10ddb1d4c3d5": [
     "modules/internal/tasktable/on/ChapelTaskTable.chpl"
   ],
+  "d954a0c6-3f88-11ec-81f0-3de99c714400": [
+    "modules/packages/ArgumentParser.chpl"
+  ],
   "a6c246da-cac9-11e9-8464-10ddb1d4c3d5": [
     "modules/packages/AtomicObjects.chpl"
   ],
@@ -761,6 +779,9 @@
   ],
   "f8d11ee0-1f2f-11e6-a3a6-10ddb1d4c3d5": [
     "modules/standard/Regex.chpl"
+  ],
+  "796d72aa-3f88-11ec-81f0-3de99c714400": [
+    "modules/standard/Subprocess.chpl"
   ],
   "83e8f86a-f561-11eb-bb15-35b7469d4b43": [
     "modules/standard/Sys.chpl"
@@ -1081,6 +1102,9 @@
   ],
   "d86303d0-4d88-11e6-907f-843835579daa": [
     "test/release/examples/hello4-datapar-dist.chpl"
+  ],
+  "04789d34-3f89-11ec-81f0-3de99c714400": [
+    "test/release/examples/patterns/readcsv.chpl"
   ],
   "8c00fe52-31db-11e6-a3a6-10ddb1d4c3d5": [
     "test/release/examples/primers/LAPACKlib.chpl"
