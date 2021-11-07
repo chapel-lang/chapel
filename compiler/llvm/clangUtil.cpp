@@ -2146,7 +2146,7 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
   if (optLevel <= 1) {
       bool InsertLifetimeIntrinsics = (CodeGenOpts.OptimizationLevel != 0 &&
                                        !CodeGenOpts.DisableLifetimeMarkers);
-      // TODO: insert lifetime intrinics if Coroutines are used
+      // TODO: insert lifetime intrinsics if Coroutines are used
     PMBuilder.Inliner = createAlwaysInlinerLegacyPass(InsertLifetimeIntrinsics);
   } else {
     PMBuilder.Inliner = createFunctionInliningPass(
