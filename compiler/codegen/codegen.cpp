@@ -2708,7 +2708,7 @@ void codegen() {
   codegenPartOne();
 
   if (localeUsesGPU()) {
-    // We use the temp dir to output a fatbin file and read it between the forked and main proccess.
+    // We use the temp dir to output a fatbin file and read it between the forked and main process.
     // We need to generate the name for the temp directory before we do the fork (since this
     // name uses the PID).
     ensureTmpDirExists();
