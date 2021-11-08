@@ -325,20 +325,41 @@ public:
   }
 };
 
-// Stores the result of in-order resolution of use/import
-// statements. This would not be separate from resolving variables
+/**
+ Stores the result of in-order resolution of use/import
+ statements.
+*/
+// This would not be separate from resolving variables
 // if the language design was that symbols available due to use/import
 // are only available after that statement (and in that case this analysis
 // could fold into the logic about variable declarations).
-struct ResolvedVisibilityScope {
-  const Scope* scope;
-  std::vector<VisibilitySymbols> visibilityClauses;
+class ResolvedVisibilityScope {
+private:
+  const Scope* scope_;
+  std::vector<VisibilitySymbols> visibilityClauses_;
+
+public:
   ResolvedVisibilityScope(const Scope* scope)
-    : scope(scope)
+    : scope_(scope)
   { }
+
+  /** Return the scope */
+  const Scope *scope() const { return scope_; }
+
+  /** Return the visibility clauses */
+  const std::vector<VisibilitySymbols> &visibilityClauses() const {
+    return visibilityClauses_;
+  }
+
+  /** Add a visibility clause */
+  void addVisibilityClause(const VisibilitySymbols &clause) {
+    // TODO are we missing the whole point of emplace_back here (see callsites)
+    visibilityClauses_.push_back(clause);
+  }
+
   bool operator==(const ResolvedVisibilityScope& other) const {
-    return scope == other.scope &&
-           visibilityClauses == other.visibilityClauses;
+    return scope_ == other.scope_ &&
+           visibilityClauses_ == other.visibilityClauses_;
   }
   bool operator!=(const ResolvedVisibilityScope& other) const {
     return !(*this == other);

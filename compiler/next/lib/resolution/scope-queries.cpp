@@ -253,7 +253,7 @@ static bool doLookupInImports(Context* context,
 
   if (r != nullptr) {
     // check to see if it's mentioned in names/renames
-    for (const VisibilitySymbols& is: r->visibilityClauses) {
+    for (const VisibilitySymbols& is: r->visibilityClauses()) {
       UniqueString from = name;
       bool named = is.lookupName(name, from);
       if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
@@ -563,7 +563,7 @@ bool doIsWholeScopeVisibleFromScope(Context* context,
     if (cur->containsUseImport()) {
       const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, cur);
 
-      for (const VisibilitySymbols& is: r->visibilityClauses) {
+      for (const VisibilitySymbols& is: r->visibilityClauses()) {
         if (is.kind() == VisibilitySymbols::ALL_CONTENTS) {
           // find it in the contents
           const Scope* usedScope = scopeForId(context, is.symbolId());
@@ -665,7 +665,7 @@ struct ImportsResolver {
       ID id = vec[0].id(0); // id of the 'use'd module/enum
 
       // First, add the entry for the symbol itself
-      resolvedVisibilityScope->visibilityClauses.push_back(
+      resolvedVisibilityScope->addVisibilityClause(
           VisibilitySymbols(id, VisibilitySymbols::SYMBOL_ONLY,
                             isPrivate, convertOneName(n)));
 
@@ -685,7 +685,7 @@ struct ImportsResolver {
           assert(false && "Should not be possible");
           break;
       }
-      resolvedVisibilityScope->visibilityClauses.push_back(
+      resolvedVisibilityScope->addVisibilityClause(
           VisibilitySymbols(id, kind, isPrivate,
                             convertLimitations(clause)));
     }
@@ -739,12 +739,12 @@ struct ImportsResolver {
           if (expr->isIdentifier()) {
             kind = VisibilitySymbols::SYMBOL_ONLY;
             // Add an entry for the imported thing
-            resolvedVisibilityScope->visibilityClauses.push_back(
+            resolvedVisibilityScope->addVisibilityClause(
                 VisibilitySymbols(id, kind, isPrivate,
                                   convertOneName(n)));
           } else if (expr->isDot()) {
             kind = VisibilitySymbols::ONLY_CONTENTS;
-            resolvedVisibilityScope->visibilityClauses.push_back(
+            resolvedVisibilityScope->addVisibilityClause(
                 VisibilitySymbols(id, kind, isPrivate,
                                   convertOneName(n)));
           }
@@ -752,7 +752,7 @@ struct ImportsResolver {
         case VisibilityClause::BRACES:
           kind = VisibilitySymbols::ONLY_CONTENTS;
           // Add an entry for the imported things
-          resolvedVisibilityScope->visibilityClauses.push_back(
+          resolvedVisibilityScope->addVisibilityClause(
               VisibilitySymbols(id, kind, isPrivate,
                                 convertLimitations(clause)));
           break;
