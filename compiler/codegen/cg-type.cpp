@@ -103,11 +103,7 @@ void EnumType::codegenDef() {
         //llvm::Constant *initConstant;
 
         VarSymbol* s;
-        if (constant->init) {
-          s = toVarSymbol(toSymExpr(constant->init)->symbol());
-        } else {
-          s = new_IntSymbol(order, INT_SIZE_64);
-        }
+        s = new_IntSymbol(order, INT_SIZE_64);
         INT_ASSERT(s);
         INT_ASSERT(s->immediate);
 
