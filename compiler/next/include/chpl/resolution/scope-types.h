@@ -421,30 +421,43 @@ public:
   }
 };
 
-struct InnermostMatch {
+/**
+ InnermostMatch
+ */
+class InnermostMatch {
+public:
   typedef enum {
     ZERO = 0,
     ONE = 1,
     MANY = 2,
   } MatchesFound;
 
-  ID id;
-  MatchesFound found = ZERO;
+private:
+  ID id_;
+  MatchesFound found_ = ZERO;
 
+public:
   InnermostMatch() { }
   InnermostMatch(ID id, MatchesFound found)
-    : id(id), found(found)
+    : id_(id), found_(found)
   { }
+
+  /** Return the id */
+  ID id() const { return id_;}
+
+  /** Return the matches found */
+  MatchesFound found() const { return found_;}
+
   bool operator==(const InnermostMatch& other) const {
-    return id == other.id &&
-           found == other.found;
+    return id_ == other.id_ &&
+           found_ == other.found_;
   }
   bool operator!=(const InnermostMatch& other) const {
     return !(*this == other);
   }
   void swap(InnermostMatch& other) {
-    id.swap(other.id);
-    std::swap(found, other.found);
+    id_.swap(other.id_);
+    std::swap(found_, other.found_);
   }
 };
 
