@@ -74,21 +74,14 @@ void EnumType::codegenDef() {
 
 
   if( outfile ) {
-    fprintf(outfile, "typedef enum {");
-    bool first = true;
-    for_enums(constant, this) {
-      if (!first) {
-        fprintf(outfile, ", ");
-      }
-      fprintf(outfile, "%s", constant->sym->codegen().c.c_str());
-      if (constant->init) {
-        fprintf(outfile, " = %s", constant->init->codegen().c.c_str());
-      }
-      first = false;
-    }
-    fprintf(outfile, "} ");
+    fprintf(outfile, "typedef int64_t ");
     fprintf(outfile, "%s", symbol->codegen().c.c_str());
     fprintf(outfile, ";\n");
+    int i = 0;
+    for_enums(constant, this) {
+      fprintf(outfile, "const int64_t %s = %d;\n", constant->sym->codegen().c.c_str(), i);
+      i++;
+    }
   } else {
 #ifdef HAVE_LLVM
     // Make sure that we've computed all of the enum values..
