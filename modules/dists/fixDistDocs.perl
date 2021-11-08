@@ -63,19 +63,13 @@ sub process {
          my $usageFirstLine = <RST>;
          $usageFirstLine =~ /^\*\*Usage\*\*/ or die "Expected usage information, got $usageFirstLine";
          print MOD $usageFirstLine;
-         # the next five lines are anticipated to be a continuation of the
+         # the next eleven lines are anticipated to be a continuation of the
          # usage output.  We don't really need to validate that, that's what our
          # testing system is for.
-         my $usageNextLine = <RST>;
-         print MOD $usageNextLine;
-         $usageNextLine = <RST>;
-         print MOD $usageNextLine;
-         $usageNextLine = <RST>;
-         print MOD $usageNextLine;
-         $usageNextLine = <RST>;
-         print MOD $usageNextLine;
-         $usageNextLine = <RST>;
-         print MOD $usageNextLine;
+         for (1..11) {
+             my $usageNextLine = <RST>;
+             print MOD $usageNextLine;
+         }
          last;
       }
    }
