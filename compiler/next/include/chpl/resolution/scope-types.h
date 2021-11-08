@@ -23,12 +23,15 @@
 #include "chpl/types/Type.h"
 #include "chpl/uast/ASTNode.h"
 #include "chpl/util/memory.h"
+#include "chpl/util/iteration.h"
 
 #include <unordered_map>
 #include <utility>
 
 namespace chpl {
 namespace resolution {
+
+using chpl::util::Iterable;
 
 class BorrowedIdsWithName;
 
@@ -339,6 +342,8 @@ private:
   std::vector<VisibilitySymbols> visibilityClauses_;
 
 public:
+  using VisibilitySymbolsIterable = Iterable<decltype(visibilityClauses_)>;
+
   ResolvedVisibilityScope(const Scope* scope)
     : scope_(scope)
   { }
@@ -346,9 +351,9 @@ public:
   /** Return the scope */
   const Scope *scope() const { return scope_; }
 
-  /** Return the visibility clauses */
-  const std::vector<VisibilitySymbols> &visibilityClauses() const {
-    return visibilityClauses_;
+  /** Return an iterator over the visibility clauses */
+  VisibilitySymbolsIterable visibilityClauses() const {
+    return VisibilitySymbolsIterable(visibilityClauses_);
   }
 
   /** Add a visibility clause */
