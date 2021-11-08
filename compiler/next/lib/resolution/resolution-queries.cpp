@@ -1402,7 +1402,7 @@ CallResolutionResult resolveFnCall(Context* context,
   // next, look for candidates using POI
   for (const PoiScope* curPoi = inPoiScope;
        curPoi != nullptr;
-       curPoi = curPoi->inFnPoi) {
+       curPoi = curPoi->inFnPoi()) {
 
     // stop if any candidate has been found.
     if (candidates.empty() == false) {
@@ -1410,7 +1410,7 @@ CallResolutionResult resolveFnCall(Context* context,
     }
 
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, curPoi->inScope, call, visited);
+    auto v = lookupCalledExpr(context, curPoi->inScope(), call, visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);

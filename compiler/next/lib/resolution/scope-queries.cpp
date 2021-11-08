@@ -830,9 +830,7 @@ const owned<PoiScope>& constructPoiScopeQuery(Context* context,
                                               const PoiScope* parentPoiScope) {
   QUERY_BEGIN(constructPoiScopeQuery, context, scope, parentPoiScope);
 
-  owned<PoiScope> result = toOwned(new PoiScope());
-  result->inScope = scope;
-  result->inFnPoi = parentPoiScope;
+  owned<PoiScope> result = toOwned(new PoiScope(scope, parentPoiScope));
 
   return QUERY_END(result);
 }
@@ -861,10 +859,10 @@ pointOfInstantiationScopeQuery(Context* context,
   // the call site itself. These can be collapsed away.
   for (usePoi = parentPoiScope;
        usePoi != nullptr;
-       usePoi = usePoi->inFnPoi) {
+       usePoi = usePoi->inFnPoi()) {
 
     bool collapse = isWholeScopeVisibleFromScope(context,
-                                                 usePoi->inScope,
+                                                 usePoi->inScope(),
                                                  scope);
     if (collapse == false) {
       break;

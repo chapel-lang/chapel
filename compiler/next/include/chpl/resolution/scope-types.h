@@ -381,6 +381,9 @@ enum {
 
 using LookupConfig = unsigned int;
 
+/**
+ PoiScope is a point-of-instantiation scope
+ */
 // When resolving a traditional generic, we also need to consider
 // the point-of-instantiation scope as a place to find visible functions.
 // This type tracks such a scope.
@@ -394,13 +397,24 @@ using LookupConfig = unsigned int;
 // visible. Which is better?
 // If we want to make PoiScope not depend on the contents it might be nice
 // to make Scope itself not depend on the contents, too.
-struct PoiScope {
-  const Scope* inScope = nullptr;         // parent Scope for the Call
-  const PoiScope* inFnPoi = nullptr;      // what is the POI of this POI?
+class PoiScope {
+private:
+  const Scope* inScope_ = nullptr;         // parent Scope for the Call
+  const PoiScope* inFnPoi_ = nullptr;      // what is the POI of this POI?
+
+public:
+  PoiScope(const Scope *scope, const PoiScope *poiScope)
+      : inScope_(scope), inFnPoi_(poiScope) {}
+
+  /** return the parent scope for the call */
+  const Scope *inScope() const { return inScope_; }
+
+  /** return the POI of this POI */
+  const PoiScope *inFnPoi() const { return inFnPoi_; }
 
   bool operator==(const PoiScope& other) const {
-    return inScope == other.inScope &&
-           inFnPoi == other.inFnPoi;
+    return inScope_ == other.inScope_ &&
+           inFnPoi_ == other.inFnPoi_;
   }
   bool operator!=(const PoiScope& other) const {
     return !(*this == other);
