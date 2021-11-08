@@ -555,7 +555,9 @@ struct Resolver {
     // Generate a CallInfo for the call
     CallInfo ci;
 
-    if (auto called = call->calledExpression()) {
+    if (auto op = call->toOpCall()) {
+      ci.name = op->op();
+    } else if (auto called = call->calledExpression()) {
       if (auto calledIdent = called->toIdentifier()) {
         ci.name = calledIdent->name();
       } else {
@@ -905,8 +907,10 @@ typeForTypeDeclQuery(Context* context,
                                  std::move(fields));
       }
       if (auto cls = ad->toClass()) {
-        result = BasicClassType::get(context, cls->id(), cls->name(),
+        auto t = BasicClassType::get(context, cls->id(), cls->name(),
                                      std::move(fields));
+        auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+        result = ClassType::get(context, t, nullptr, d);
       }
       if (auto uni = ad->toUnion()) {
         result = UnionType::get(context, uni->id(), uni->name(),
@@ -1469,8 +1473,10 @@ const QualifiedType& returnType(Context* context,
                             std::move(fields));
       }
       if (auto cls = ad->toClass()) {
-        t = BasicClassType::get(context, cls->id(), cls->name(),
-                                std::move(fields));
+        auto bct = BasicClassType::get(context, cls->id(), cls->name(),
+                                       std::move(fields));
+        auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+        t = ClassType::get(context, bct, nullptr, d);
       }
       if (auto uni = ad->toUnion()) {
         t = UnionType::get(context, uni->id(), uni->name(),
@@ -1502,12 +1508,22 @@ const QualifiedType& returnType(Context* context,
           assert(false && "case not handled");
         }
 
-        if (formalQt.type() == nullptr ||
-            !formalQt.type()->isBasicClassType()) {
-          // erroneous -- will raise error at call site
+        const Type* ft = formalQt.type();
+        if (ft != nullptr && (ft->isBasicClassType() || ft->isClassType())) {
+          const BasicClassType* bct = nullptr;
+          if (auto ct = ft->toClassType()) {
+            bct = ct->basicClassType();
+            // get nilability from ct
+            if (ct->decorator().isNilable())
+              d = d.addNilable();
+          } else {
+            bct = ft->toBasicClassType();
+          }
+
+          assert(bct);
+          t = ClassType::get(context, bct, manager, d);
         } else {
-          auto ct = formalQt.type()->toBasicClassType();
-          t = ClassType::get(context, ct, manager, d);
+          // erroneous -- will raise error at call site
         }
       } else {
         assert(name == "int" || name == "uint" || name == "bool" ||
@@ -1814,13 +1830,76 @@ void accumulatePoisUsedByResolvingBody(Context* context,
   poiInfo.accumulate(r->poiInfo);
 }
 
+// Resolving compiler-supported type-returning patterns
+static const Type* resolveFnCallSpecialType(Context* context,
+                                            const CallInfo& ci) {
+  if (ci.name == "?") {
+    if (ci.actuals.size() > 0) {
+      if (const Type* t = ci.actuals[0].type.type()) {
+        const ClassType* ct = nullptr;
+
+        if (auto bct = t->toBasicClassType()) {
+          auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+          ct = ClassType::get(context, bct, nullptr, d);
+        } else {
+          ct = t->toClassType();
+        }
+
+        if (ct) {
+          // get the nilable version of the class type
+          ClassTypeDecorator d = ct->decorator().addNilable();
+          auto nilable = ct->withDecorator(context, d);
+          return nilable;
+        }
+      }
+    }
+  }
+
+  if (ci.hasQuestionArg && ci.actuals.size() == 0) {
+    if (ci.name == "int") {
+      return AnyIntType::get(context);
+    } else if (ci.name == "uint") {
+      return AnyUintType::get(context);
+    } else if (ci.name == "bool") {
+      return AnyBoolType::get(context);
+    } else if (ci.name == "real") {
+      return AnyRealType::get(context);
+    } else if (ci.name == "imag") {
+      return AnyImagType::get(context);
+    } else if (ci.name == "complex") {
+      return AnyComplexType::get(context);
+    }
+  }
+
+  return nullptr;
+}
+
+
+// Resolving calls for certain compiler-supported patterns
+// without requiring module implementations exist at all
+static bool resolveFnCallSpecial(Context* context,
+                                 const CallInfo& ci,
+                                 QualifiedType& exprTypeOut) {
+  // TODO: type comparisons
+  // TODO: cast
+  // TODO: .borrow()
+  // TODO: chpl__coerceCopy
+
+  if (const Type* t = resolveFnCallSpecialType(context, ci)) {
+    exprTypeOut = QualifiedType(QualifiedType::TYPE, t);
+    return true;
+  }
+
+  return false;
+}
+
+
 static
 CallResolutionResult resolveFnCall(Context* context,
                                    const Call* call,
                                    const CallInfo& ci,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope) {
-
   // search for candidates at each POI until we have found a candidate
   std::vector<const TypedFnSignature*> candidates;
   size_t firstPoiCandidate = 0;
@@ -1979,6 +2058,12 @@ CallResolutionResult resolveCall(Context* context,
                                  const Scope* inScope,
                                  const PoiScope* inPoiScope) {
   if (call->isFnCall() || call->isOpCall()) {
+    // see if the call is handled directly by the compiler
+    QualifiedType tmpRetType;
+    if (resolveFnCallSpecial(context, ci, tmpRetType)) {
+      return CallResolutionResult(std::move(tmpRetType));
+    }
+    // otherwise do regular call resolution
     return resolveFnCall(context, call, ci, inScope, inPoiScope);
   } else if (auto prim = call->toPrimCall()) {
     return resolvePrimCall(context, prim, ci, inScope, inPoiScope);

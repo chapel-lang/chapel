@@ -224,18 +224,22 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     actualIdx++;
   }
 
-  // Make sure that any remaining formals are matched by name
-  // or have a default value.
-  while (formalIdx < (int) byFormalIdx.size()) {
-    if (byFormalIdx[formalIdx].actualIdx < 0) {
-      if (!untyped->formalHasDefault(formalIdx)) {
-        // formal was not provided and there is no default value
-        mappingIsValid = false;
-        failingFormalIdx = formalIdx;
-        return false;
+  if (!untyped->isTypeConstructor()) {
+    // Make sure that any remaining formals are matched by name
+    // or have a default value.
+    // This is left out for type constructors because presently
+    // a partial instantiation is provided by simply leaving out arguments.
+    while (formalIdx < (int) byFormalIdx.size()) {
+      if (byFormalIdx[formalIdx].actualIdx < 0) {
+        if (!untyped->formalHasDefault(formalIdx)) {
+          // formal was not provided and there is no default value
+          mappingIsValid = false;
+          failingFormalIdx = formalIdx;
+          return false;
+        }
       }
+      formalIdx++;
     }
-    formalIdx++;
   }
 
   mappingIsValid = true;

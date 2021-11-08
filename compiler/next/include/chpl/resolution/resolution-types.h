@@ -513,6 +513,11 @@ struct CallResolutionResult {
   // scopes were used when resolving their signature or body?
   PoiInfo poiInfo;
 
+  // for simple cases where mostSpecific and poiInfo are irrelevant
+  CallResolutionResult(types::QualifiedType exprType)
+    : exprType(std::move(exprType)) {
+  }
+
   CallResolutionResult(MostSpecificCandidates mostSpecific,
                        types::QualifiedType exprType,
                        PoiInfo poiInfo)

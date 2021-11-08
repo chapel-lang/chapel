@@ -96,6 +96,10 @@ class ClassType final : public Type {
     return decorator_.isUnknownManagement() ||
            basicType_->isGeneric();
   }
+
+  /** Returns the verison this ClassType with the passed decorator */
+  const ClassType* withDecorator(Context* context,
+                                 ClassTypeDecorator decorator) const;
 };
 
 

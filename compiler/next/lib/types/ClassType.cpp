@@ -76,5 +76,11 @@ const ClassType* ClassType::get(Context* context,
 }
 
 
+const ClassType* ClassType::withDecorator(Context* context,
+                                          ClassTypeDecorator decorator) const {
+  return ClassType::get(context, basicClassType(), manager(), decorator);
+}
+
+
 } // end namespace types
 } // end namespace chpl
