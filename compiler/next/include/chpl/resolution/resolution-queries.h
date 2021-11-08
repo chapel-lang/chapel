@@ -56,10 +56,15 @@ typedSignatureInitial(Context* context,
                       const UntypedFnSignature* untypedSig);
 
 /**
- Returns a Type that represents the initial type provided by a TypeDecl
- (e.g. Class, Record, etc). This can have unknown or generic fields.
+  Returns a Type that represents the initial type provided by a TypeDecl
+  (e.g. Class, Record, etc). This can have unknown or generic fields.
+  The useGenericFormalDefaults argument indicates if the type should be
+  non-generic if all generic fields have default values. This is the
+  case in many uses of a type name but not the case when calling a type
+  constructor or when inheriting.
  */
-const types::Type* typeForTypeDecl(Context* context, const uast::TypeDecl* d);
+const types::Type* typeForTypeDecl(Context* context, const uast::TypeDecl* d,
+                                   bool useGenericFormalDefaults);
 
 /**
   Compute an initial TypedFnSignature for a type constructor for a
@@ -142,7 +147,7 @@ filterCandidatesInitial(Context* context,
  */
 void
 filterCandidatesInstantiating(Context* context,
-                              std::vector<const TypedFnSignature*> lst,
+                              const std::vector<const TypedFnSignature*>& lst,
                               const CallInfo& call,
                               const Scope* inScope,
                               const PoiScope* inPoiScope,
@@ -170,11 +175,6 @@ CallResolutionResult resolveCall(Context* context,
                                  const CallInfo& ci,
                                  const Scope* inScope,
                                  const PoiScope* inPoiScope);
-
-// AggregateDecl resolution
-
-/** Given an ID for an AggregateDecl, do initial resolution of the fields */
-const ResolutionResultByPostorderID& resolveFields(Context* context, ID id);
 
 
 } // end namespace resolution

@@ -277,45 +277,112 @@ static void test7() {
   Context* context = &ctx;
 
   auto m = parseModule(context, "record R { type t = int; }\n"
-                                "var x: R;\n"
-                                "var y: R(real);\n");
-  assert(m->numStmts() == 3);
+                                "var x: R(real);\n");
+  assert(m->numStmts() == 2);
   const Record* r = m->stmt(0)->toRecord();
   assert(r);
   const Variable* x = m->stmt(1)->toVariable();
   assert(x);
-  const Variable* y = m->stmt(2)->toVariable();
-  assert(y);
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  {
-    auto qt = rr.byAst(x).type;
-    assert(qt.type());
+  auto qt = rr.byAst(x).type;
+  assert(qt.type());
 
-    auto rt = qt.type()->toRecordType();
-    assert(rt);
+  auto rt = qt.type()->toRecordType();
+  assert(rt);
 
-    assert(rt->numFields() == 1);
-    assert(rt->fieldName(0) == "t");
-    assert(rt->fieldHasDefaultValue(0) == true);
-    assert(rt->fieldType(0).kind() == QualifiedType::TYPE);
-    assert(rt->fieldType(0).type() == IntType::get(context, 0));
-  }
+  assert(rt->numFields() == 1);
+  assert(rt->fieldName(0) == "t");
+  assert(rt->fieldHasDefaultValue(0) == true);
+  assert(rt->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(rt->fieldType(0).type() == RealType::get(context, 0));
+}
 
-  {
-    auto qt = rr.byAst(y).type;
-    assert(qt.type());
+static void test8() {
+  printf("test8\n");
+  Context ctx;
+  Context* context = &ctx;
 
-    auto rt = qt.type()->toRecordType();
-    assert(rt);
+  auto m = parseModule(context, "record R { type t = int; }\n"
+                                "var x: R;\n");
+  assert(m->numStmts() == 2);
+  const Record* r = m->stmt(0)->toRecord();
+  assert(r);
+  const Variable* x = m->stmt(1)->toVariable();
+  assert(x);
 
-    assert(rt->numFields() == 1);
-    assert(rt->fieldName(0) == "t");
-    assert(rt->fieldHasDefaultValue(0) == true);
-    assert(rt->fieldType(0).kind() == QualifiedType::TYPE);
-    assert(rt->fieldType(0).type() == RealType::get(context, 0));
-  }
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  auto qt = rr.byAst(x).type;
+  assert(qt.type());
+
+  auto rt = qt.type()->toRecordType();
+  assert(rt);
+
+  assert(rt->numFields() == 1);
+  assert(rt->fieldName(0) == "t");
+  assert(rt->fieldHasDefaultValue(0) == true);
+  assert(rt->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(rt->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test9() {
+  printf("test9\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto m = parseModule(context, "record R { param p = 1; }\n"
+                                "var x: R(2);\n");
+  assert(m->numStmts() == 2);
+  const Record* r = m->stmt(0)->toRecord();
+  assert(r);
+  const Variable* x = m->stmt(1)->toVariable();
+  assert(x);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  auto qt = rr.byAst(x).type;
+  assert(qt.type());
+
+  auto rt = qt.type()->toRecordType();
+  assert(rt);
+
+  assert(rt->numFields() == 1);
+  assert(rt->fieldName(0) == "p");
+  assert(rt->fieldHasDefaultValue(0) == true);
+  assert(rt->fieldType(0).kind() == QualifiedType::PARAM);
+  assert(rt->fieldType(0).type() == IntType::get(context, 0));
+  assert(rt->fieldType(0).param() == IntParam::get(context, 2));
+}
+
+static void test10() {
+  printf("test10\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto m = parseModule(context, "record R { param p = 1; }\n"
+                                "var x: R;\n");
+  assert(m->numStmts() == 2);
+  const Record* r = m->stmt(0)->toRecord();
+  assert(r);
+  const Variable* x = m->stmt(1)->toVariable();
+  assert(x);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  auto qt = rr.byAst(x).type;
+  assert(qt.type());
+
+  auto rt = qt.type()->toRecordType();
+  assert(rt);
+
+  assert(rt->numFields() == 1);
+  assert(rt->fieldName(0) == "p");
+  assert(rt->fieldHasDefaultValue(0) == true);
+  assert(rt->fieldType(0).kind() == QualifiedType::PARAM);
+  assert(rt->fieldType(0).type() == IntType::get(context, 0));
+  assert(rt->fieldType(0).param() == IntParam::get(context, 1));
 }
 
 int main() {
@@ -326,6 +393,9 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
+  test9();
+  test10();
 
   return 0;
 }

@@ -250,9 +250,11 @@ struct Resolver {
   // set up Resolver to initially resolve field declaration types
   Resolver(Context* context,
            const AggregateDecl* decl,
-           ResolutionResultByPostorderID& byPostorder)
+           ResolutionResultByPostorderID& byPostorder,
+           bool useGenericFormalDefaults)
     : context(context),
       symbol(decl),
+      useGenericFormalDefaults(useGenericFormalDefaults),
       byPostorder(byPostorder) {
 
     byPostorder.setupForSymbol(decl);
@@ -470,14 +472,17 @@ struct Resolver {
               // TODO: implicit conversions and instantiations
             }
           } else {
-            // Infer the type of the variable from its initialization expr
-            typePtr = initType.type();
+            bool isGenericField = isField &&
+                                  (qtKind == QualifiedType::TYPE ||
+                                   qtKind == QualifiedType::PARAM);
 
-            // a type or param field with initExpr is still generic, e.g.
-            // record R { type t = int; }
-            if (isField && useGenericFormalDefaults &&
-                (qtKind == QualifiedType::TYPE ||
-                 qtKind == QualifiedType::PARAM)) {
+            if (useGenericFormalDefaults || !isGenericField) {
+              // Infer the type of the variable from its initialization expr
+              typePtr = initType.type();
+            } else {
+              // a type or param field with initExpr is still generic, e.g.
+              // record R { type t = int; }
+              // if that behavior is requested with useGenericFormalDefaults
               typePtr = AnyType::get(context);
             }
           }
@@ -589,14 +594,18 @@ struct Resolver {
 };
 
 // Given an AggregateDecl, do initial resolution of the fields
-const ResolutionResultByPostorderID& resolveFields(Context* context, ID id) {
-  QUERY_BEGIN(resolveFields, context, id);
+// Note that useGenericFormalDefaults is moot for most types
+// and so code calling this query can optimize by calling with 'false'
+// first and then adjusting if it is not moot.
+static const ResolutionResultByPostorderID&
+resolveFields(Context* context, ID id, bool useGenericFormalDefaults) {
+  QUERY_BEGIN(resolveFields, context, id, useGenericFormalDefaults);
 
   ResolutionResultByPostorderID& partialResult = QUERY_CURRENT_RESULT;
 
   auto ast = parsing::idToAst(context, id);
   if (const AggregateDecl* ad = ast->toAggregateDecl()) {
-    Resolver visitor(context, ad, partialResult);
+    Resolver visitor(context, ad, partialResult, useGenericFormalDefaults);
     // visit the field declarations
     for (auto child: ad->children()) {
       if (auto var = child->toVariable()) {
@@ -614,6 +623,7 @@ const ResolutionResultByPostorderID& resolveFields(Context* context, ID id) {
   result.swap(partialResult);
   return QUERY_END(result);
 }
+
 
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
@@ -674,8 +684,10 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
     if (auto* decl = ast->toNamedDecl()) {
       kind = qualifiedTypeKindForDecl(decl);
       if (auto td = decl->toTypeDecl()) {
-        t = typeForTypeDecl(context, td);
+        t = typeForTypeDecl(context, td, /* useGenericFormalDefaults */ true);
         assert(kind == QualifiedType::TYPE);
+      } else if (decl->isModule() || decl->isFunction()) {
+        // OK, don't try to establish the types of these right now
       } else {
         assert(false && "case not handled");
       }
@@ -832,8 +844,11 @@ typedSignatureInitial(Context* context,
 }
 
 
-static const Type* const& typeForTypeDeclQuery(Context* context, ID declId) {
-  QUERY_BEGIN(typeForTypeDeclQuery, context, declId);
+static const Type* const&
+typeForTypeDeclQuery(Context* context,
+                     ID declId,
+                     bool useGenericFormalDefaults) {
+  QUERY_BEGIN(typeForTypeDeclQuery, context, declId, useGenericFormalDefaults);
 
   const Type* result = nullptr;
 
@@ -843,7 +858,8 @@ static const Type* const& typeForTypeDeclQuery(Context* context, ID declId) {
       assert(false && "case not handled");
     if (auto ad = td->toAggregateDecl()) {
       // do 1st pass resolution of the field types
-      const ResolutionResultByPostorderID& r = resolveFields(context, declId);
+      const ResolutionResultByPostorderID& r =
+        resolveFields(context, declId, useGenericFormalDefaults);
 
       // now pull out the field types
       std::vector<CompositeType::FieldDetail> fields;
@@ -878,9 +894,28 @@ static const Type* const& typeForTypeDeclQuery(Context* context, ID declId) {
   return QUERY_END(result);
 }
 
-const Type* typeForTypeDecl(Context* context, const TypeDecl* d) {
+const Type* typeForTypeDecl(Context* context,
+                            const TypeDecl* d,
+                            bool useGenericFormalDefaults) {
   assert(d);
-  return typeForTypeDeclQuery(context, d->id());
+  const Type* t = typeForTypeDeclQuery(context, d->id(),
+                                       /* useGenericFormalDefaults */ false);
+
+  // If useGenericFormalDefaults was requested and the type
+  // is generic with defaults, compute the type again.
+  // We do it this way so that we are more likely to be able to reuse the
+  // result of the above query in most cases since most types
+  // are not generic record/class types defaults.
+  if (useGenericFormalDefaults) {
+    if (auto ct = t->toCompositeType()) {
+      if (ct->isGenericWithDefaults()) {
+        t = typeForTypeDeclQuery(context, d->id(),
+                                 /* useGenericFormalDefaults */ true);
+      }
+    }
+  }
+
+  return t;
 }
 
 
@@ -1479,7 +1514,8 @@ doIsCandidateApplicableInitial(Context* context,
       td = ast->toTypeDecl();
 
     if (td != nullptr) {
-      const Type* t = typeForTypeDecl(context, td);
+      const Type* t = typeForTypeDecl(context, td,
+                                      /* useGenericFormalDefaults */ false);
       return typeConstructorInitial(context, t);
     } else {
       return typeConstructorInitialBuiltin(context, call.name);
@@ -1592,7 +1628,7 @@ filterCandidatesInitial(Context* context,
 
 void
 filterCandidatesInstantiating(Context* context,
-                              std::vector<const TypedFnSignature*> lst,
+                              const std::vector<const TypedFnSignature*>& lst,
                               const CallInfo& call,
                               const Scope* inScope,
                               const PoiScope* inPoiScope,
