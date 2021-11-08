@@ -430,7 +430,26 @@ struct Resolver {
 
         bool isFieldOrFormal = isField || decl->isFormal();;
 
-        if (typeExpr) {
+        bool foundSubstitution = false;
+        bool foundSubstitutionDefaultHint = false;
+
+        if (isFieldOrFormal) {
+          // use substitutions computed for fields and formals
+          if (substitutions != nullptr) {
+            auto search = substitutions->find(decl);
+            if (search != substitutions->end()) {
+              const QualifiedType& t = search->second;
+              typePtr = t.type();
+              paramPtr = t.param();
+              if (typePtr == nullptr && t.kind() == QualifiedType::UNKNOWN)
+                foundSubstitutionDefaultHint = true;
+              else
+                foundSubstitution = true;
+            }
+          }
+        }
+
+        if (typeExpr && !foundSubstitution) {
           // get the type we should have already computed postorder
           ResolvedExpression& r = byPostorder.byAst(typeExpr);
           // check that the resolution of that expression is a type
@@ -444,7 +463,7 @@ struct Resolver {
           // otherwise, typePtr can remain nullptr.
         }
 
-        if (initExpr) {
+        if (initExpr && !foundSubstitution) {
           // compute the type based upon the init expression
           ResolvedExpression& r = byPostorder.byAst(initExpr);
           const QualifiedType& initType = r.type;
@@ -460,48 +479,41 @@ struct Resolver {
                      initType.kind() != QualifiedType::PARAM) {
             context->error(initExpr, "Cannot initialize param with non-param");
           }
-
-          if (initType.kind() == QualifiedType::PARAM) {
-            paramPtr = initType.param();
+          // check that the initExpr type is compatible with declared type
+          if (typePtr != nullptr && initType.type() != typePtr) {
+            context->error(typeExpr, "Cannot initialize this type with that");
+            // TODO: better error
+            // TODO: implicit conversions and instantiations
           }
-          if (typePtr != nullptr) {
-            // check that the initExpr type is compatible with declared type
-            if (initType.type() != typePtr) {
-              context->error(typeExpr, "Cannot initialize this type with that");
-              // TODO: better error
-              // TODO: implicit conversions and instantiations
-            }
-          } else {
-            bool isGenericField = isField &&
-                                  (qtKind == QualifiedType::TYPE ||
-                                   qtKind == QualifiedType::PARAM);
 
-            if (useGenericFormalDefaults || !isGenericField) {
-              // Infer the type of the variable from its initialization expr
-              typePtr = initType.type();
-            } else {
-              // a type or param field with initExpr is still generic, e.g.
-              // record R { type t = int; }
-              // if that behavior is requested with useGenericFormalDefaults
-              typePtr = AnyType::get(context);
+          bool isGenericField = isField &&
+                                (qtKind == QualifiedType::TYPE ||
+                                 qtKind == QualifiedType::PARAM);
+
+          // infer the type of the variable from its initialization expr?
+          bool inferFromInit = !isGenericField ||
+                                useGenericFormalDefaults ||
+                                foundSubstitutionDefaultHint;
+
+          if (inferFromInit) {
+            // Infer the param value from the initialization expr
+            if (initType.kind() == QualifiedType::PARAM) {
+              paramPtr = initType.param();
             }
+            // Infer the type from the initialization expr
+            typePtr = initType.type();
+          } else if (isGenericField) {
+            // a type or param field with initExpr is still generic, e.g.
+            // record R { type t = int; }
+            // if that behavior is requested with useGenericFormalDefaults
+            typePtr = AnyType::get(context);
           }
         }
 
-        if (isFieldOrFormal) {
+        if (isFieldOrFormal && !foundSubstitution) {
           // Lack of initializer for a formal means the Any type
           if (typeExpr == nullptr && initExpr == nullptr) {
             typePtr = AnyType::get(context);
-          }
-
-          // use substitutions computed for fields and formals
-          if (substitutions != nullptr) {
-            auto search = substitutions->find(decl);
-            if (search != substitutions->end()) {
-              const QualifiedType& t = search->second;
-              typePtr = t.type();
-              paramPtr = t.param();
-            }
           }
         }
 
@@ -555,14 +567,26 @@ struct Resolver {
 
     int i = 0;
     for (auto actual : call->actuals()) {
-      CallInfoActual ciActual;
-      ResolvedExpression& r = byPostorder.byAst(actual);
-      ciActual.type = r.type;
-      if (fnCall && fnCall->isNamedActual(i)) {
-        ciActual.byName = fnCall->actualName(i);
+      bool isQuestionMark = false;
+      if (auto id = actual->toIdentifier())
+        if (id->name() == "?")
+          isQuestionMark = true;
+
+      if (isQuestionMark) {
+        if (ci.hasQuestionArg) {
+          context->error(actual, "Cannot have ? more than once in a call");
+        }
+        ci.hasQuestionArg = true;
+      } else {
+        CallInfoActual ciActual;
+        ResolvedExpression& r = byPostorder.byAst(actual);
+        ciActual.type = r.type;
+        if (fnCall && fnCall->isNamedActual(i)) {
+          ciActual.byName = fnCall->actualName(i);
+        }
+        ci.actuals.push_back(ciActual);
+        i++;
       }
-      ci.actuals.push_back(ciActual);
-      i++;
     }
 
     CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
@@ -1066,7 +1090,16 @@ const TypedFnSignature* instantiateSignature(Context* context,
   // compute the substitutions
   SubstitutionsMap substitutions;
   for (const FormalActual& entry : faMap.byFormalIdx) {
-    if (entry.formalType.isGenericOrUnknown()) {
+    // note: entry.actualType can have type()==nullptr and UNKNOWN.
+    // in that case, resolver code should treat it as a hint to
+    // use the default value. Unless the call used a ? argument.
+    if (call.hasQuestionArg &&
+        entry.actualType.kind() == QualifiedType::UNKNOWN &&
+        entry.actualType.type() == nullptr) {
+      // don't add any substitution
+    } else {
+      // add a substitution that is either valid or a
+      // "use the default" hint.
       substitutions.insert({entry.formal, entry.actualType});
     }
   }
@@ -1372,14 +1405,15 @@ const QualifiedType& returnType(Context* context,
                                 const PoiScope* poiScope) {
   QUERY_BEGIN(returnType, context, sig, poiScope);
 
-  // this should only be applied to concrete fns or instantiations
-  assert(!sig->needsInstantiation());
 
   const UntypedFnSignature* untyped = sig->untyped();
 
   QualifiedType result;
 
   if (untyped->idIsFunction()) {
+    // this should only be applied to concrete fns or instantiations
+    assert(!sig->needsInstantiation());
+
     const ASTNode* ast = parsing::idToAst(context, untyped->id());
     const Function* fn = ast->toFunction();
     assert(fn);

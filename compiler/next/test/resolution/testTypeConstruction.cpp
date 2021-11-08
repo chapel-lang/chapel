@@ -20,6 +20,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/types/AnyType.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/ComplexType.h"
 #include "chpl/types/ImagType.h"
@@ -385,6 +386,120 @@ static void test10() {
   assert(rt->fieldType(0).param() == IntParam::get(context, 1));
 }
 
+static void test11() {
+  printf("test11\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto m = parseModule(context, "record R { type t = int; }\n"
+                                "var x: R();\n");
+  assert(m->numStmts() == 2);
+  const Record* r = m->stmt(0)->toRecord();
+  assert(r);
+  const Variable* x = m->stmt(1)->toVariable();
+  assert(x);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  auto qt = rr.byAst(x).type;
+  assert(qt.type());
+
+  auto rt = qt.type()->toRecordType();
+  assert(rt);
+
+  assert(rt->numFields() == 1);
+  assert(rt->fieldName(0) == "t");
+  assert(rt->fieldHasDefaultValue(0) == true);
+  assert(rt->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(rt->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test12() {
+  printf("test12\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto m = parseModule(context, "record R { type t = int; }\n"
+                                "var x: R(?);\n");
+  assert(m->numStmts() == 2);
+  const Record* r = m->stmt(0)->toRecord();
+  assert(r);
+  const Variable* x = m->stmt(1)->toVariable();
+  assert(x);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  auto qt = rr.byAst(x).type;
+  assert(qt.type());
+
+  auto rt = qt.type()->toRecordType();
+  assert(rt);
+
+  assert(rt->numFields() == 1);
+  assert(rt->fieldName(0) == "t");
+  assert(rt->fieldHasDefaultValue(0) == true);
+  assert(rt->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(rt->fieldType(0).type() == AnyType::get(context));
+}
+
+static void test13() {
+  printf("test13\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto m = parseModule(context, "record R { param p = 1; }\n"
+                                "var x: R();\n");
+  assert(m->numStmts() == 2);
+  const Record* r = m->stmt(0)->toRecord();
+  assert(r);
+  const Variable* x = m->stmt(1)->toVariable();
+  assert(x);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  auto qt = rr.byAst(x).type;
+  assert(qt.type());
+
+  auto rt = qt.type()->toRecordType();
+  assert(rt);
+
+  assert(rt->numFields() == 1);
+  assert(rt->fieldName(0) == "p");
+  assert(rt->fieldHasDefaultValue(0) == true);
+  assert(rt->fieldType(0).kind() == QualifiedType::PARAM);
+  assert(rt->fieldType(0).type() == IntType::get(context, 0));
+  assert(rt->fieldType(0).param() == IntParam::get(context, 1));
+}
+
+static void test14() {
+  printf("test14\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto m = parseModule(context, "record R { param p = 1; }\n"
+                                "var x: R(?);\n");
+  assert(m->numStmts() == 2);
+  const Record* r = m->stmt(0)->toRecord();
+  assert(r);
+  const Variable* x = m->stmt(1)->toVariable();
+  assert(x);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  auto qt = rr.byAst(x).type;
+  assert(qt.type());
+
+  auto rt = qt.type()->toRecordType();
+  assert(rt);
+
+  assert(rt->numFields() == 1);
+  assert(rt->fieldName(0) == "p");
+  assert(rt->fieldHasDefaultValue(0) == true);
+  assert(rt->fieldType(0).kind() == QualifiedType::PARAM);
+  assert(rt->fieldType(0).type() == AnyType::get(context));
+  assert(rt->fieldType(0).param() == nullptr);
+}
+
 int main() {
   test1();
   test2();
@@ -396,6 +511,10 @@ int main() {
   test8();
   test9();
   test10();
+  test11();
+  test12();
+  test13();
+  test14();
 
   return 0;
 }

@@ -203,18 +203,20 @@ struct CallInfoActual {
 struct CallInfo {
   UniqueString name;                   // the name of the called thing
   bool isMethod = false;               // in that case, actuals[0] is receiver
+  bool hasQuestionArg = false;         // includes ? arg for type constructor
   std::vector<CallInfoActual> actuals; // types/params/names of actuals
 
   bool operator==(const CallInfo& other) const {
     return name == other.name &&
            isMethod == other.isMethod &&
+           hasQuestionArg == other.hasQuestionArg &&
            actuals == other.actuals;
   }
   bool operator!=(const CallInfo& other) const {
     return !(*this == other);
   }
   size_t hash() const {
-    return chpl::hash(name, isMethod, actuals);
+    return chpl::hash(name, isMethod, hasQuestionArg, actuals);
   }
 };
 
