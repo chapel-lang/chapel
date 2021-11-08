@@ -151,6 +151,7 @@ struct Resolver {
   const ASTNode* symbol = nullptr;
   const PoiScope* poiScope = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
+  bool useGenericFormalDefaults = false;
 
   // internal variables
   std::vector<const Scope*> scopeStack;
@@ -263,11 +264,13 @@ struct Resolver {
            const AggregateDecl* decl,
            const SubstitutionsMap& substitutions,
            const PoiScope* poiScope,
-           ResolutionResultByPostorderID& byPostorder)
+           ResolutionResultByPostorderID& byPostorder,
+           bool useGenericFormalDefaults)
     : context(context),
       symbol(decl),
       poiScope(poiScope),
       substitutions(&substitutions),
+      useGenericFormalDefaults(useGenericFormalDefaults),
       byPostorder(byPostorder) {
 
     poiInfo.poiScope = poiScope;
@@ -409,13 +412,7 @@ struct Resolver {
       // Figure out the param value, if any
       const Param* paramPtr = nullptr;
 
-      if (decl->isFunction()) {
-        // TODO: function types
-        typePtr = nullptr;
-      } else if (decl->isTypeDecl()) {
-        // TODO: class/record/union/enum types
-        typePtr = nullptr;
-      } else if (auto var = decl->toVarLikeDecl()) {
+      if (auto var = decl->toVarLikeDecl()) {
         // Figure out variable type based upon:
         //  * the type in the variable declaration
         //  * the initialization expression in the variable declaration
@@ -423,6 +420,13 @@ struct Resolver {
 
         auto typeExpr = var->typeExpression();
         auto initExpr = var->initExpression();
+
+        bool isField = false;
+        if (auto var = decl->toVariable())
+          if (var->isField())
+            isField = true;
+
+        bool isFieldOrFormal = isField || decl->isFormal();;
 
         if (typeExpr) {
           // get the type we should have already computed postorder
@@ -468,15 +472,16 @@ struct Resolver {
           } else {
             // Infer the type of the variable from its initialization expr
             typePtr = initType.type();
+
+            // a type or param field with initExpr is still generic, e.g.
+            // record R { type t = int; }
+            if (isField && useGenericFormalDefaults &&
+                (qtKind == QualifiedType::TYPE ||
+                 qtKind == QualifiedType::PARAM)) {
+              typePtr = AnyType::get(context);
+            }
           }
         }
-
-        bool isFieldOrFormal = false;
-        if (auto var = decl->toVariable())
-          if (var->isField())
-            isFieldOrFormal = true;
-        if (decl->isFormal())
-          isFieldOrFormal = true;
 
         if (isFieldOrFormal) {
           // Lack of initializer for a formal means the Any type
@@ -663,16 +668,22 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
     }
   } else {
     QualifiedType::Kind kind = QualifiedType::UNKNOWN;
+    const Type* t = nullptr;
 
     auto ast = parsing::idToAst(context, id);
     if (auto* decl = ast->toNamedDecl()) {
       kind = qualifiedTypeKindForDecl(decl);
-      // TODO -- compute type
+      if (auto td = decl->toTypeDecl()) {
+        t = typeForTypeDecl(context, td);
+        assert(kind == QualifiedType::TYPE);
+      } else {
+        assert(false && "case not handled");
+      }
     } else {
       assert(false && "case not handled");
     }
 
-    result = QualifiedType(kind, nullptr);
+    result = QualifiedType(kind, t);
   }
 
   return QUERY_END(result);
@@ -1044,7 +1055,8 @@ const TypedFnSignature* instantiateSignature(Context* context,
   } else if (ad != nullptr) {
     // visit the fields
     ResolutionResultByPostorderID r;
-    Resolver visitor(context, ad, substitutions, poiScope, r);
+    Resolver visitor(context, ad, substitutions, poiScope, r,
+                     /* useGenericFormalDefaults */ false);
     // visit the formals, return type, where clause
     for (auto child: ad->children()) {
       if (auto var = child->toVariable()) {
