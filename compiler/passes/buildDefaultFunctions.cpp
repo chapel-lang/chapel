@@ -1296,73 +1296,74 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
     fn->insertFormalAtTail(from);
     fn->insertFormalAtTail(toType);
 
-    if (et->isConcrete()) {
-      // If this enum is concrete, rely on the C cast and inline
-      fn->insertAtTail(new CallExpr(PRIM_RETURN,
-                                    new CallExpr(PRIM_CAST, toType, from)));
-      fn->addFlag(FLAG_INLINE);
-    } else {
-      // Otherwise, it's semi-concrete, so we need errors for some
-      // cases.  Generate a select statement with when clauses for
-      // each of the enumeration constants, where the action is to
-      // call chpl_enum_cast_error_no_int() for enums without an
-      // associated integer value.  This routine throws an error.
+    // If the enum is semi-concrete, we need errors for some
+    // cases.  Generate a select statement with when clauses for
+    // each of the enumeration constants, where the action is to
+    // call chpl_enum_cast_error_no_int() for enums without an
+    // associated integer value.  This routine throws an error.
+
+    bool throws = !et->isConcrete();
+    if (throws) {
       fn->throwsErrorInit();
-
-      if (fWarnUnstable) {
-        USR_WARN(et->symbol, "it has been suggested that support for "
-                 "semi-concrete enums like this (in which initial members "
-                 "have no integer values, but later ones do) should be "
-                 "deprecated, so this enum could be considered unstable; "
-                 "if you value such enums, please let the Chapel team know.");
-      }
-
-      count = 0;
-      whenstmts = buildChapelStmt();
-      lastInit = NULL;
-      for_enums(constant, et) {
-        if (constant->init) {
-          lastInit = constant->init;
-          count = 0;
-        } else {
-          if (lastInit != NULL) {
-            count++;
-          }
+      if (!et->isAbstract()) {
+        if (fWarnUnstable) {
+          USR_WARN(et->symbol, "it has been suggested that support for "
+                   "semi-concrete enums like this (in which initial members "
+                   "have no integer values, but later ones do) should be "
+                   "deprecated, so this enum could be considered unstable; "
+                   "if you value such enums, please let the Chapel team know.");
         }
-        CallExpr* result;
-        if (lastInit) {
-          result = new CallExpr(PRIM_RETURN,
-                                new CallExpr(PRIM_CAST, toType,
-                                             new CallExpr("+", lastInit->copy(),
-                                                          new SymExpr(new_IntSymbol(count)))));
-        } else {
-          result = new CallExpr("chpl_enum_cast_error_no_int",
-                                new_StringSymbol(et->symbol->name),
-                                new_StringSymbol(constant->sym->name));
-        }
-        CondStmt* when =
-          new CondStmt(new CallExpr(PRIM_WHEN, new SymExpr(constant->sym)),
-                       result);
-
-        whenstmts->insertAtTail(when);
       }
-
-      // We should never get to the otherwise clause because it would
-      // imply that the enum expression was storing a constant that
-      // isn't part of the enum.
-      CondStmt* otherwise =
-        new CondStmt(new CallExpr(PRIM_WHEN),
-                     new BlockStmt(new CallExpr("halt",
-                                                new_StringSymbol("should never get here"))));
-      whenstmts->insertAtTail(otherwise);
-
-      // wrap a try statement around the select statement and insert a
-      // bogus return to help the compiler know that all paths return.
-      fn->insertAtTail(new TryStmt(false,
-                                   buildSelectStmt(new SymExpr(from), whenstmts),
-                                   NULL));
-      fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(0)));
     }
+
+    count = 0;
+    whenstmts = buildChapelStmt();
+    lastInit = NULL;
+    for_enums(constant, et) {
+      if (constant->init) {
+        lastInit = constant->init;
+        count = 0;
+      } else {
+        if (lastInit != NULL) {
+          count++;
+        }
+      }
+      CallExpr* result;
+      if (lastInit) {
+        result = new CallExpr(PRIM_RETURN,
+                              new CallExpr(PRIM_CAST, toType,
+                                           new CallExpr("+", lastInit->copy(),
+                                                        new SymExpr(new_IntSymbol(count)))));
+      } else {
+        result = new CallExpr("chpl_enum_cast_error_no_int",
+                              new_StringSymbol(et->symbol->name),
+                              new_StringSymbol(constant->sym->name));
+      }
+      CondStmt* when =
+        new CondStmt(new CallExpr(PRIM_WHEN, new SymExpr(constant->sym)),
+                     result);
+
+      whenstmts->insertAtTail(when);
+    }
+
+    // We should never get to the otherwise clause because it would
+    // imply that the enum expression was storing a constant that
+    // isn't part of the enum.
+    CondStmt* otherwise =
+      new CondStmt(new CallExpr(PRIM_WHEN),
+                   new BlockStmt(new CallExpr("halt",
+                                              new_StringSymbol("should never get here"))));
+    whenstmts->insertAtTail(otherwise);
+
+    // wrap a try statement around the select statement and insert a
+    // bogus return to help the compiler know that all paths return.
+    BlockStmt* select = buildSelectStmt(new SymExpr(from), whenstmts);
+    if (throws) {
+      fn->insertAtTail(new TryStmt(false, select, NULL));
+    } else {
+      fn->insertAtTail(select);
+    }
+    fn->insertAtTail(new CallExpr(PRIM_RETURN, new_IntSymbol(0)));
 
     def = new DefExpr(fn);
     //
