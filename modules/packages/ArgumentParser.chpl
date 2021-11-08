@@ -768,22 +768,22 @@ module ArgumentParser {
 
       helpMessage += "USAGE: "
                          + generateUsage(binaryName).render()
-                         + "\n";
+                         + "\n\n";
 
       if argsSection.size > 0 {
         helpMessage += "ARGUMENTS:\n"
                         + argsSection.render(separator=separator)
-                        + "\n";
+                        + "\n\n";
       }
       if optsSection.size > 0 {
         helpMessage += "OPTIONS:\n"
                         + optsSection.render(separator=separator)
-                        + "\n";
+                        + "\n\n";
       }
       if subSection.size > 0 {
         helpMessage += "SUBCOMMANDS:\n"
                         + subSection.render(separator=separator)
-                        + "\n";
+                        + "\n\n";
       }
 
       return helpMessage;
