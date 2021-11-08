@@ -1011,16 +1011,27 @@ typeConstructorInitialBuiltinQuery(Context* context, UniqueString name) {
   std::vector<UntypedFnSignature::FormalDetail> formals;
   std::vector<types::QualifiedType> formalTypes;
 
-  UniqueString bitwidth = UniqueString::build(context, "_bitwidth");
-  auto detail = UntypedFnSignature::FormalDetail(bitwidth, false, nullptr);
-  QualifiedType paramBitWidth = QualifiedType(QualifiedType::PARAM,
-                                              IntType::get(context, 0));
-  formals.push_back(detail);
-  formalTypes.push_back(paramBitWidth);
+  if (name == "owned" || name == "shared" ||
+      name == "borrowed" || name == "unmanaged") {
+    UniqueString t = UniqueString::build(context, "t");
+    auto detail = UntypedFnSignature::FormalDetail(t, false, nullptr);
+    QualifiedType qt = QualifiedType(QualifiedType::TYPE,
+                                     AnyType::get(context));
+    formals.push_back(detail);
+    formalTypes.push_back(qt);
 
-  // TODO: generate a user-facing error if this is not the case
-  assert(name == "int" || name == "uint" || name == "bool" ||
-         name == "real" || name == "imag" || name == "complex");
+  } else {
+    UniqueString bitwidth = UniqueString::build(context, "_bitwidth");
+    auto detail = UntypedFnSignature::FormalDetail(bitwidth, false, nullptr);
+    QualifiedType paramBitWidth = QualifiedType(QualifiedType::PARAM,
+                                                IntType::get(context, 0));
+    formals.push_back(detail);
+    formalTypes.push_back(paramBitWidth);
+
+    // TODO: generate a user-facing error if this is not the case
+    assert(name == "int" || name == "uint" || name == "bool" ||
+           name == "real" || name == "imag" || name == "complex");
+  }
 
   auto untyped = UntypedFnSignature::get(context,
                                          id, name,
@@ -1147,7 +1158,9 @@ const TypedFnSignature* instantiateSignature(Context* context,
   } else {
     UniqueString name = untypedSignature->name();
 
-    assert(name == "int" || name == "uint" || name == "bool" ||
+    assert(name == "owned" || name == "shared" ||
+           name == "unmanaged" || name == "borrowed" ||
+           name == "int" || name == "uint" || name == "bool" ||
            name == "real" || name == "imag" || name == "complex");
 
     assert(substitutions.size() == 1);
@@ -1469,20 +1482,46 @@ const QualifiedType& returnType(Context* context,
       // construct built-in type
       auto name = untyped->name();
       assert(sig->numFormals() == 1);
-      assert(name == "int" || name == "uint" || name == "bool" ||
-             name == "real" || name == "imag" || name == "complex");
-
-      QualifiedType qt = sig->formalType(0);
+      QualifiedType formalQt = sig->formalType(0);
       const Type* t = nullptr;
 
-      if (qt.type() == nullptr || !qt.type()->isIntType() ||
-          qt.param() == nullptr || !qt.param()->isIntParam()) {
-        // erroneous -- will raise error below
+      if (name == "owned" || name == "shared" ||
+          name == "unmanaged" || name == "borrowed") {
+        // construct an owned or shared class type
+        const Type* manager = nullptr;
+        auto d = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
+        if (name == "owned") {
+          manager = AnyOwnedType::get(context);
+        } else if (name == "shared") {
+          manager = AnySharedType::get(context);
+        } else if (name == "unmanaged") {
+          d = ClassTypeDecorator(ClassTypeDecorator::UNMANAGED_NONNIL);
+        } else if (name == "borrowed") {
+          d = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+        } else {
+          assert(false && "case not handled");
+        }
+
+        if (formalQt.type() == nullptr ||
+            !formalQt.type()->isBasicClassType()) {
+          // erroneous -- will raise error at call site
+        } else {
+          auto ct = formalQt.type()->toBasicClassType();
+          t = ClassType::get(context, ct, manager, d);
+        }
       } else {
-        auto ip = qt.param()->toIntParam();
-        auto value = ip->value();
-        if (0 <= value && value <= 128) {
-          t = PrimitiveType::getWithNameAndWidth(context, name, value);
+        assert(name == "int" || name == "uint" || name == "bool" ||
+               name == "real" || name == "imag" || name == "complex");
+
+        if (formalQt.type() == nullptr || !formalQt.type()->isIntType() ||
+            formalQt.param() == nullptr || !formalQt.param()->isIntParam()) {
+          // erroneous -- will raise error at call site
+        } else {
+          auto ip = formalQt.param()->toIntParam();
+          auto value = ip->value();
+          if (0 <= value && value <= 128) {
+            t = PrimitiveType::getWithNameAndWidth(context, name, value);
+          }
         }
       }
 

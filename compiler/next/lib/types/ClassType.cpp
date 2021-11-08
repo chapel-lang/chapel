@@ -24,10 +24,42 @@
 namespace chpl {
 namespace types {
 
+std::string ClassType::toString() const {
+  std::string ret;
+  if (decorator_.isManaged()) {
+    assert(manager_);
+    if (manager_->isAnyOwnedType())
+      ret += "owned";
+    else if (manager_->isAnySharedType())
+      ret += "shared";
+    else
+      ret += manager_->toString();
+  } else if (decorator_.isBorrowed()) {
+    ret += "borrowed";
+  } else if (decorator_.isUnmanaged()) {
+    ret += "unmanaged";
+  }
+
+  if (!ret.empty()) {
+    ret += " ";
+  }
+
+  assert(basicType_);
+  ret += basicType_->toString();
+
+  if (decorator_.isNilable()) {
+    ret += "?";
+  } else if (decorator_.isUnknownNilability()) {
+    ret += " <unknown-nilablity>";
+  }
+
+  return ret;
+}
+
 const owned<ClassType>&
 ClassType::getClassType(Context* context,
                         const BasicClassType* basicType,
-                        const RecordType* manager,
+                        const Type* manager,
                         ClassTypeDecorator decorator) {
   QUERY_BEGIN(getClassType, context, basicType, manager, decorator);
 
@@ -38,7 +70,7 @@ ClassType::getClassType(Context* context,
 
 const ClassType* ClassType::get(Context* context,
                                 const BasicClassType* basicType,
-                                const RecordType* manager,
+                                const Type* manager,
                                 ClassTypeDecorator decorator) {
   return getClassType(context, basicType, manager, decorator).get();
 }

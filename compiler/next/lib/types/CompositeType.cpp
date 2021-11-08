@@ -40,7 +40,8 @@ void CompositeType::computeSummaryInformation() {
 }
 
 std::string CompositeType::toString() const {
-  std::string ret = typetags::tagToString(tag());
+  //std::string ret = typetags::tagToString(tag());
+  std::string ret = name().toString();
   int nFields = numFields();
   ret += "(";
   for (int i = 0; i < nFields; i++) {

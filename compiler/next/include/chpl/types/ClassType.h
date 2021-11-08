@@ -35,11 +35,11 @@ namespace types {
 class ClassType final : public Type {
  private:
   const BasicClassType* basicType_;
-  const RecordType* manager_;
+  const Type* manager_;
   ClassTypeDecorator decorator_;
 
   ClassType(const BasicClassType* basicType,
-            const RecordType* manager,
+            const Type* manager,
             ClassTypeDecorator decorator)
     : Type(typetags::ClassType),
       basicType_(basicType),
@@ -62,23 +62,25 @@ class ClassType final : public Type {
   static const owned<ClassType>&
   getClassType(Context* context,
                const BasicClassType* basicType,
-               const RecordType* manager,
+               const Type* manager,
                ClassTypeDecorator decorator);
 
  public:
   ~ClassType() = default;
+  std::string toString() const override;
 
   static const ClassType* get(Context* context,
                               const BasicClassType* basicType,
-                              const RecordType* manager,
+                              const Type* manager,
                               ClassTypeDecorator decorator);
 
   /** Returns the ClassTypeDecorator for this ClassType */
   ClassTypeDecorator decorator() const { return decorator_; } 
 
   /** Returns the manager for this ClassType, or nullptr
-      if the decorator does not indicate a managed type. */
-  const RecordType* manager() const {
+      if the decorator does not indicate a managed type.
+      This can return a record type or AnyOwnedType / AnySharedType. */
+  const Type* manager() const {
     if (!decorator_.isManaged())
       return nullptr;
     return manager_;
