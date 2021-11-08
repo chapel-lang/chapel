@@ -49,8 +49,11 @@ class Module final : public NamedDecl {
  private:
   Kind kind_;
 
-  Module(ASTList children, Decl::Visibility vis, UniqueString name, Kind kind)
-    : NamedDecl(asttags::Module, std::move(children), vis,
+  Module(ASTList children, int attributesChildNum, Decl::Visibility vis,
+         UniqueString name,
+         Kind kind)
+    : NamedDecl(asttags::Module, std::move(children), attributesChildNum,
+                vis,
                 Decl::DEFAULT_LINKAGE,
                 /*linkageNameChildNum*/ -1,
                 name),
@@ -75,8 +78,11 @@ class Module final : public NamedDecl {
 
 
   static owned<Module> build(Builder* builder, Location loc,
-                             UniqueString name, Decl::Visibility vis,
-                             Module::Kind kind, ASTList stmts);
+                             owned<Attributes> attributes,
+                             Decl::Visibility vis,
+                             UniqueString name,
+                             Module::Kind kind,
+                             ASTList stmts);
 
   Kind kind() const { return this->kind_; }
 

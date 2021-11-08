@@ -43,6 +43,7 @@ class EnumElement final : public NamedDecl {
  private:
   EnumElement(ASTList children, UniqueString name)
     : NamedDecl(asttags::EnumElement, std::move(children),
+                /*attributesChildNum*/ -1,
                 Decl::DEFAULT_VISIBILITY,
                 Decl::DEFAULT_LINKAGE,
                 /*linkageNameChildNum*/ -1,

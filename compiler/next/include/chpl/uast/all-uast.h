@@ -18,8 +18,9 @@
  */
 
 #include "chpl/uast/ASTNode.h"
-#include "chpl/uast/As.h"
 #include "chpl/uast/Array.h"
+#include "chpl/uast/As.h"
+#include "chpl/uast/Attributes.h"
 #include "chpl/uast/Begin.h"
 #include "chpl/uast/Block.h"
 #include "chpl/uast/BoolLiteral.h"

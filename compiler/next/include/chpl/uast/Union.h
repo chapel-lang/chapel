@@ -44,12 +44,16 @@ namespace uast {
  */
 class Union final : public AggregateDecl {
  private:
-  Union(ASTList children, Decl::Visibility vis, Decl::Linkage linkage,
+  Union(ASTList children, int attributesChildNum, Decl::Visibility vis,
+        Decl::Linkage linkage,
         int linkageNameChildNum,
         UniqueString name,
         int elementsChildNum,
         int numElements)
-    : AggregateDecl(asttags::Union, std::move(children), vis, linkage,
+    : AggregateDecl(asttags::Union, std::move(children),
+                    attributesChildNum,
+                    vis,
+                    linkage,
                     linkageNameChildNum,
                     name,
                     elementsChildNum,
@@ -73,6 +77,7 @@ class Union final : public AggregateDecl {
   ~Union() override = default;
 
   static owned<Union> build(Builder* builder, Location loc,
+                            owned<Attributes> attributes,
                             Decl::Visibility vis,
                             Decl::Linkage linkage,
                             owned<Expression> linkageName,

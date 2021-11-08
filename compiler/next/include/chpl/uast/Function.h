@@ -90,9 +90,10 @@ class Function final : public NamedDecl {
   int bodyChildNum_;
 
   Function(ASTList children,
-           UniqueString name,
+           int attributesChildNum,
            Decl::Visibility vis,
            Decl::Linkage linkage,
+           UniqueString name,
            bool inline_,
            bool override_,
            Kind kind,
@@ -109,7 +110,10 @@ class Function final : public NamedDecl {
            int lifetimeChildNum,
            int numLifetimeParts,
            int bodyChildNum)
-    : NamedDecl(asttags::Function, std::move(children), vis, linkage,
+    : NamedDecl(asttags::Function, std::move(children),
+                attributesChildNum,
+                vis,
+                linkage,
                 linkageNameChildNum,
                 name),
       inline_(inline_),
@@ -187,10 +191,11 @@ class Function final : public NamedDecl {
   ~Function() override = default;
 
   static owned<Function> build(Builder* builder, Location loc,
-                               UniqueString name,
+                               owned<Attributes> attributes,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
                                owned<Expression> linkageName,
+                               UniqueString name,
                                bool inline_,
                                bool override_,
                                Function::Kind kind,

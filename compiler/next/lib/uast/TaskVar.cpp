@@ -26,14 +26,21 @@ namespace uast {
 
 
 owned<TaskVar> TaskVar::build(Builder* builder, Location loc,
+                              owned<Attributes> attributes,
                               UniqueString name, 
                               TaskVar::Intent intent,
                               owned<Expression> typeExpression,
                               owned<Expression> initExpression) {
   ASTList lst;
+  int attributesChildNum = -1;
   int8_t typeExpressionChildNum = -1;
   int8_t initExpressionChildNum = -1;
 
+  if (attributes.get() != nullptr) {
+    attributesChildNum = lst.size();
+    lst.push_back(std::move(attributes));
+  }
+    
   if (typeExpression.get() != nullptr) {
     typeExpressionChildNum = lst.size();
     lst.push_back(std::move(typeExpression));
@@ -44,7 +51,9 @@ owned<TaskVar> TaskVar::build(Builder* builder, Location loc,
     lst.push_back(std::move(initExpression));
   }
 
-  TaskVar* ret = new TaskVar(std::move(lst), name, intent,
+  TaskVar* ret = new TaskVar(std::move(lst), attributesChildNum,
+                             name,
+                             intent,
                              typeExpressionChildNum,
                              initExpressionChildNum);
   builder->noteLocation(ret, loc);

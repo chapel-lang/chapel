@@ -17,35 +17,36 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Module.h"
-
-#include "chpl/uast/Builder.h"
+#ifndef CHPL_UAST_PRAGMA_H
+#define CHPL_UAST_PRAGMA_H
 
 namespace chpl {
 namespace uast {
+namespace pragmatags {
 
 
-owned<Module>
-Module::build(Builder* builder, Location loc,
-              owned<Attributes> attributes,
-              Decl::Visibility vis,
-              UniqueString name,
-              Module::Kind kind, ASTList stmts) {
-  ASTList lst;
-  int attributesChildNum = -1;
+enum PragmaTag {
+  PRAGMA_UNKNOWN,
+// Discard everything but the name when building enum values.
+#define PRAGMA(name__, canParse__, parseStr__, desc__) \
+  PRAGMA_ ## name__,
+#include "chpl/uast/PragmaList.h"
+#undef PRAGMA 
+  NUM_KNOWN_PRAGMAS
+};
 
-  if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
-    lst.push_back(std::move(attributes));
-  }
+/** Return the string name associated with a PragmaTag */
+const char* pragmaTagToName(PragmaTag tag);
 
-  Module* ret = new Module(std::move(stmts), attributesChildNum, vis,
-                           name,
-                           kind);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
-}
+/** Return the PragmaTag associated with a const char* */
+PragmaTag pragmaNameToTag(const char* name);
 
+} // end namespace pragmatags 
 
-} // namespace uast
-} // namespace chpl
+// Make pragmas available in `uast` namespace, e.g. uast::PRAGMA_REF
+using namespace pragmatags;
+
+} // end namespace uast
+} // end namespace chpl
+
+#endif

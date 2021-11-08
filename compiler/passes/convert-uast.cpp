@@ -135,6 +135,11 @@ struct Converter {
     return nullptr;
   }
 
+  Expr* visit(const uast::Attributes* node) {
+    INT_FATAL("Should not be called directly!");
+    return nullptr;
+  }
+
   Expr* visit(const uast::ErroneousExpression* node) {
     return new CallExpr(PRIM_ERROR);
   }

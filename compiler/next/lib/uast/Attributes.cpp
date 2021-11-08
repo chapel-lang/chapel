@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Module.h"
+#include "chpl/uast/Attributes.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,23 +25,16 @@ namespace chpl {
 namespace uast {
 
 
-owned<Module>
-Module::build(Builder* builder, Location loc,
-              owned<Attributes> attributes,
-              Decl::Visibility vis,
-              UniqueString name,
-              Module::Kind kind, ASTList stmts) {
-  ASTList lst;
-  int attributesChildNum = -1;
-
-  if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
-    lst.push_back(std::move(attributes));
+owned<Attributes> Attributes::build(Builder* builder, Location loc,
+                                    std::set<PragmaTag> pragmas,
+                                    bool isDeprecated,
+                                    UniqueString deprecationMessage) {
+  for (auto tag : pragmas) {
+    assert(tag >= 0 && tag < NUM_KNOWN_PRAGMAS);
   }
 
-  Module* ret = new Module(std::move(stmts), attributesChildNum, vis,
-                           name,
-                           kind);
+  Attributes* ret = new Attributes(std::move(pragmas), isDeprecated,
+                                   deprecationMessage);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

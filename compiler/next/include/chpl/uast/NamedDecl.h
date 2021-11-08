@@ -37,15 +37,19 @@ class NamedDecl : public Decl {
 
  protected:
   NamedDecl(ASTTag tag, Decl::Visibility visibility, Decl::Linkage linkage,
+            int attributesChildNum,
             UniqueString name)
-    : Decl(tag, visibility, linkage), name_(name) {
+    : Decl(tag, attributesChildNum, visibility, linkage),
+      name_(name) {
   }
 
-  NamedDecl(ASTTag tag, ASTList children, Decl::Visibility visibility,
+  NamedDecl(ASTTag tag, ASTList children, int attributesChildNum,
+            Decl::Visibility visibility,
             Decl::Linkage linkage,
             int linkageNameChildNum,
             UniqueString name)
-    : Decl(tag, std::move(children), visibility, linkage,
+    : Decl(tag, std::move(children), attributesChildNum, visibility,
+           linkage,
            linkageNameChildNum),
       name_(name) {
   }

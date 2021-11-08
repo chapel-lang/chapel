@@ -76,12 +76,15 @@ class TupleDecl final : public Decl {
   int typeExpressionChildNum_;
   int initExpressionChildNum_;
 
-  TupleDecl(ASTList children, Decl::Visibility vis, Decl::Linkage linkage,
+  TupleDecl(ASTList children, int attributesChildNum, Decl::Visibility vis,
+            Decl::Linkage linkage,
             IntentOrKind intentOrKind,
             int numElements,       
             int typeExpressionChildNum,
             int initExpressionChildNum)
-    : Decl(asttags::TupleDecl, std::move(children), vis, linkage,
+    : Decl(asttags::TupleDecl, std::move(children), attributesChildNum,
+           vis,
+           linkage,
            /*linkageNameChildNum*/ -1),
       intentOrKind_(intentOrKind),
       numElements_(numElements),
@@ -107,10 +110,15 @@ class TupleDecl final : public Decl {
     declMarkUniqueStringsInner(context);
   }
 
+  int declChildNum() const {
+    return attributes() ? 1 : 0;
+  }
+
  public:
   ~TupleDecl() override = default;
 
   static owned<TupleDecl> build(Builder* builder, Location loc,
+                                owned<Attributes> attributes,
                                 Decl::Visibility vis,
                                 Decl::Linkage linkage,
                                 IntentOrKind intentOrKind,
@@ -128,8 +136,11 @@ class TupleDecl final : public Decl {
     (which are each Variables or TupleDecls).
    */
   ASTListIteratorPair<Decl> decls() const {
-    return ASTListIteratorPair<Decl>(children_.begin(),
-                                     children_.begin() + numElements_);
+    auto begin = numDecls()
+        ? children_.begin() + declChildNum()
+        : children_.end();
+    auto end = begin + numDecls();
+    return ASTListIteratorPair<Decl>(begin, end);
   }
 
   /**
@@ -142,7 +153,8 @@ class TupleDecl final : public Decl {
    Return the i'th contained Decl.
    */
   const Decl* decl(int i) const {
-    const ASTNode* ast = this->child(i);
+    assert(i >= 0 && i < numDecls());
+    const ASTNode* ast = this->child(i + declChildNum());
     assert(ast->isVariable() || ast->isTupleDecl());
     assert(ast->isDecl());
     return (const Decl*)ast;

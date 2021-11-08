@@ -26,13 +26,20 @@ namespace uast {
 
 
 owned<VarArgFormal> VarArgFormal::build(Builder* builder, Location loc,
+                                        owned<Attributes> attributes,
                                         UniqueString name,
                                         Formal::Intent intent,
                                         owned<Expression> typeExpression,
                                         owned<Expression> count) {
   ASTList lst;
+  int attributesChildNum = -1;
   int8_t typeExpressionChildNum = -1;
   int8_t countChildNum = -1;
+
+  if (attributes.get() != nullptr) {
+    attributesChildNum = lst.size();
+    lst.push_back(std::move(attributes));
+  }
 
   if (typeExpression.get() != nullptr) {
     typeExpressionChildNum = lst.size();
@@ -44,7 +51,9 @@ owned<VarArgFormal> VarArgFormal::build(Builder* builder, Location loc,
     lst.push_back(std::move(count));
   }
 
-  VarArgFormal* ret = new VarArgFormal(std::move(lst), name, intent,
+  VarArgFormal* ret = new VarArgFormal(std::move(lst), attributesChildNum,
+                                       name,
+                                       intent,
                                        typeExpressionChildNum,
                                        countChildNum);
   builder->noteLocation(ret, loc);
