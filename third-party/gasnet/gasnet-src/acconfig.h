@@ -223,6 +223,11 @@
 
 /* memory kinds support */
 #undef GASNETI_MK_CLASS_CUDA_UVA_ENABLED
+#undef GASNETI_MK_CLASS_HIP_ENABLED
+
+/* HIP platform */
+#undef GASNETI_HIP_PLATFORM_AMD
+#undef GASNETI_HIP_PLATFORM_NVIDIA
 
 /* has clock_gettime() */
 #undef HAVE_CLOCK_GETTIME

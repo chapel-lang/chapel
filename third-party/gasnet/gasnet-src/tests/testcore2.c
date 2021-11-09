@@ -545,6 +545,7 @@ void *doit(void *id) {
                 if (lc_opt == GEX_EVENT_GROUP) {
                   gex_NBI_Wait(GEX_EC_AM,0);
                 } else if (lc_opt != GEX_EVENT_NOW) {
+                  (void)gex_Event_QueryLeaf(lc, GEX_EC_LC); // should fail if not a root event
                   gex_Event_Wait(lc);
                 }
                 break;
@@ -623,6 +624,7 @@ void *doit(void *id) {
                 if (lc_opt == GEX_EVENT_GROUP) {
                   gex_NBI_Wait(GEX_EC_AM,0);
                 } else if (lc_opt != GEX_EVENT_NOW) {
+                  (void)gex_Event_QueryLeaf(lc, GEX_EC_LC); // should fail if not a root event
                   gex_Event_Wait(lc);
                 }
                 break;

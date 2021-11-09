@@ -168,17 +168,28 @@ int gasnetc_segment_create_hook(gex_Segment_t e_segment)
 {
   // Register the segment
   gasnetc_Segment_t segment = (gasnetc_Segment_t) gasneti_import_segment(e_segment);
+  // TODO: non-fatal error handling:
+  // When gasnetc_segment_register() returns non-zero, either it or this hook
+  // must cleanup the conduit-specific state prior to returning any value other
+  // than GASNET_OK.
+  // Currently there is a leak of the registration created by `fi_mr_reg()`, which
+  // is inconsequential in practice until multi-EP support is added.
   return gasnetc_segment_register(segment);
 }
 
 int gasnetc_segment_attach_hook(gex_Segment_t e_segment, gex_TM_t e_tm)
 {
+#if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
   // Register the segment
-  gasneti_assert_zeroret( gasnetc_segment_create_hook(e_segment) );
+  int rc = gasnetc_segment_create_hook(e_segment);
+  if (rc) return rc;
 
   // Exchange memory keys
   gex_EP_t e_ep = gex_TM_QueryEP(e_tm);
   gasnetc_segment_exchange(e_tm, &e_ep, 1);
+#else
+  // Everything was completed in gasnetc_attach_primary()
+#endif
 
   return GASNET_OK;
 }

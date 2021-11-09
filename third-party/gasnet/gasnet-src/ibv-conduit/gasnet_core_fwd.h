@@ -15,7 +15,7 @@
   #error "VAPI-conduit is no longer supported"
 #endif
 
-#define GASNET_CORE_VERSION      2.8
+#define GASNET_CORE_VERSION      2.10
 #define GASNET_CORE_VERSION_STR  _STRINGIFY(GASNET_CORE_VERSION)
 #define GASNET_CORE_NAME         IBV
 #define GASNET_CORE_NAME_STR     _STRINGIFY(GASNET_CORE_NAME)
@@ -72,9 +72,10 @@
 
   // uncomment for each MK_CLASS which the conduit supports. leave commented otherwise
 #define GASNET_HAVE_MK_CLASS_CUDA_UVA (GASNETI_MK_CLASS_CUDA_UVA_ENABLED && GASNET_SEGMENT_FAST)
+#define GASNET_HAVE_MK_CLASS_HIP (GASNETI_MK_CLASS_HIP_ENABLED && GASNET_SEGMENT_FAST)
 
-  /* conduits should define GASNETI_CONDUIT_THREADS to 1 if they have one or more 
-     "private" threads which may be used to run AM handlers, even under GASNET_SEQ
+  /* uncomment if your conduit has "private" threads which might run conduit
+     code and/or the client's AM handlers, even under GASNET_SEQ.
      this ensures locking is still done correctly, etc
    */
 #ifndef GASNETC_DYNAMIC_CONNECT
@@ -82,6 +83,12 @@
 #endif
 #if GASNETC_IBV_RCV_THREAD || (GASNETC_DYNAMIC_CONNECT && GASNETC_IBV_CONN_THREAD)
   #define GASNETI_CONDUIT_THREADS 1
+#endif
+
+#if GASNETC_IBV_RCV_THREAD
+  #define GASNET_HIDDEN_AM_CONCURRENCY_LEVEL 1
+#else
+  #define GASNET_HIDDEN_AM_CONCURRENCY_LEVEL 0
 #endif
 
   /* define these to 1 if your conduit needs to augment the implementation
@@ -177,6 +184,7 @@
   // See gasnet_internal.h for prototypes and brief descriptions.
 #define GASNETC_SEGMENT_ATTACH_HOOK 1
 #define GASNETC_SEGMENT_CREATE_HOOK 1
+//#define GASNETC_SEGMENT_DESTROY_HOOK 1
 #define GASNETC_EP_PUBLISHBOUNDSEGMENT_HOOK 1
 
 #if GASNETC_PIN_SEGMENT // multi-EP NOT supported with remote firehose
