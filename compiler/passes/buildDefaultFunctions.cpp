@@ -1257,9 +1257,7 @@ static void buildEnumIntegerCastFunctions(EnumType* et) {
           new CondStmt(new CallExpr(PRIM_WHEN,
                                     new CallExpr("+", lastInit->copy(),
                                                  new SymExpr(new_IntSymbol(count)))),
-                       new CallExpr(PRIM_RETURN,
-                                    new CallExpr(PRIM_CAST,
-                                                  et->symbol, from)));
+                       new CallExpr(PRIM_RETURN, new SymExpr(constant->sym)));
         whenstmts->insertAtTail(when);
       }
     }
