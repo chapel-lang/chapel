@@ -243,6 +243,12 @@ proc ipAddr.writeThis(f) throws {
 }
 
 pragma "no doc"
+proc timeval.=(other: real) {
+  this.tv_sec = other:c_long;
+  this.tv_usec = (other - this.tv_sec) * 1000000;
+}
+
+pragma "no doc"
 private extern proc qio_get_fd(fl:qio_file_ptr_t, ref fd:c_int):syserr;
 
 /* The type returned from :proc:`connect` */
@@ -321,7 +327,8 @@ private extern proc event_base_loop(base: c_ptr(event_base), flags: c_int):c_int
 private extern proc event_base_free(base: c_ptr(event_base));
 private extern proc event_base_got_break(base: c_ptr(event_base)):c_int;
 private extern proc event_base_loopbreak(base: c_ptr(event_base)):c_int;
-private extern proc event_new(base: c_ptr(event_base), fd: c_int, events: c_short, callback: c_fn_ptr, callback_arg: c_void_ptr): c_ptr(event);
+private extern proc event_new(base: c_ptr(event_base), fd: c_int, events: c_short,
+                              callback: c_fn_ptr, callback_arg: c_void_ptr): c_ptr(event);
 private extern proc event_add(ev: c_ptr(event), timeout: c_ptr(timeval)):c_int;
 private extern proc event_del(ev: c_ptr(event)):c_int;
 private extern proc event_free(ev: c_ptr(event)):c_int;
@@ -329,7 +336,8 @@ private extern proc event_remove_timer(ev: c_ptr(event)):c_int;
 private extern proc evutil_make_socket_nonblocking(fd: c_int):c_int;
 private extern proc libevent_global_shutdown();
 private extern proc evthread_use_pthreads();
-private extern proc pthread_create(thread: c_ptr(pthread_t), const attr: c_ptr(pthread_attr_t), start_routine: c_fn_ptr, arg: c_void_ptr): c_int;
+private extern proc pthread_create(thread: c_ptr(pthread_t), const attr: c_ptr(pthread_attr_t),
+                                   start_routine: c_fn_ptr, arg: c_void_ptr): c_int;
 private extern proc pthread_join(thread: pthread_t, retval: c_ptr(c_void_ptr)): c_int;
 
 pragma "no doc"
@@ -444,6 +452,10 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws 
   return openfd(fdOut):tcpConn;
 }
 
+proc tcpListener.accept(timeout: real): tcpConn throws {
+  return this.accept(timeout:timeval);
+}
+
 /*
   Close the file descriptor
 */
@@ -510,7 +522,8 @@ const backlogDefault:uint(16) = (if SOMAXCONN <= 128 then SOMAXCONN else 128):ui
   :rtype: `tcpConn`
   :throws SystemError: On failure to bind or listen on `address`
 */
-proc listen(in address: ipAddr, reuseAddr: bool = true, backlog: uint(16) = backlogDefault): tcpListener throws {
+proc listen(in address: ipAddr, reuseAddr: bool = true,
+            backlog: uint(16) = backlogDefault): tcpListener throws {
   var family = address.family;
   var socketFd = socket(family, SOCK_STREAM);
   bind(socketFd, address, reuseAddr);
@@ -579,6 +592,10 @@ proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn
   return openfd(socketFd):tcpConn;
 }
 
+proc connect(const ref address: ipAddr, in timeout:real): tcpConn throws {
+  return connect(address, timeout:timeval);
+}
+
 /*
   This overload of `connect` not only returns a :type:`tcpConn`
   but also does DNS resolution for the provided `host`.
@@ -603,7 +620,8 @@ proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn
   :throws SystemError: Upon failure to resolve address or connect
                         to any of the resolved address in given `timeout`.
 */
-proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IPUnspec, in timeout = new timeval(-1,0)): tcpConn throws {
+proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IPUnspec,
+             in timeout = new timeval(-1,0)): tcpConn throws {
   var result:sys_addrinfo_ptr_t;
   var hints = new sys_addrinfo_t();
   hints.ai_family = family:c_int;
@@ -632,6 +650,11 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
   return conn;
 }
 
+proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IPUnspec,
+             timeout:real): tcpConn throws {
+  return connect(host, service, family, timeout:timeval);
+}
+
 /*
   This overload of `connect` not only returns a :type:`tcpConn`
   but also does DNS resolution for the provided `host`.
@@ -656,8 +679,14 @@ proc connect(in host: string, in service: string, family: IPFamily = IPFamily.IP
   :throws SystemError: Upon failure to resolve address or connect
                     to any of the resolved address in given `timeout`.
 */
-proc connect(in host: string, in port: uint(16), family: IPFamily = IPFamily.IPUnspec, in timeout = new timeval(-1,0)): tcpConn throws {
+proc connect(in host: string, in port: uint(16), family: IPFamily = IPFamily.IPUnspec,
+             timeout = new timeval(-1,0)): tcpConn throws {
   return connect(host, port:string, family, timeout);
+}
+
+proc connect(in host: string, in port: uint(16), family: IPFamily = IPFamily.IPUnspec,
+             timeout:real): tcpConn throws {
+  return connect(host, port, family, timeout:timeval);
 }
 
 /*
@@ -718,7 +747,8 @@ private extern proc sys_recvfrom(sockfd:fd_t, buff:c_void_ptr, len:size_t, flags
   :throws SystemError: Upon failure to receive any data
                     within given `timeout`.
 */
-proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0), flags:c_int = 0):(bytes, ipAddr) throws {
+proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0),
+                        flags:c_int = 0):(bytes, ipAddr) throws {
   var err_out:err_t = 0;
   var buffer = c_calloc(c_uchar, bufferLen);
   var length:ssize_t;
@@ -774,6 +804,10 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0), flags:c_
   return (createBytesWithOwnedBuffer(buffer, length, bufferLen), new ipAddr(addressStorage));
 }
 
+proc udpSocket.recvfrom(bufferLen: int, timeout: real, flags:c_int = 0):(bytes, ipAddr) throws {
+  return this.recvfrom(bufferLen, timeout:timeval, flags);
+}
+
 /*
   Reads incoming `bufferLen` number of bytes on socket, and
   return a tuple of read bytes, which can have size smaller than asked and if
@@ -797,6 +831,10 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0), flags:c_
 proc udpSocket.recv(bufferLen: int, in timeout = new timeval(-1,0)) throws {
   var (data, _) = this.recvfrom(bufferLen, timeout);
   return data;
+}
+
+proc udpSocket.recv(bufferLen: int, timeout: real) throws {
+  return this.recv(bufferLen, timeout:timeval);
 }
 
 pragma "no doc"
@@ -870,6 +908,10 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
     }
   }
   return length;
+}
+
+proc udpSocket.send(data: bytes, in address: ipAddr, timeout: real) throws {
+  return this.send(data, address, timeout:timeval);
 }
 
 pragma "no doc"
