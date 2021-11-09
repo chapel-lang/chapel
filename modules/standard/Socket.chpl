@@ -296,18 +296,24 @@ proc tcpConn.writeThis(f) throws {
 pragma "no doc"
 private extern proc sizeof(e): size_t;
 
+pragma "no doc"
 extern "struct event_base" record event_base {};
+pragma "no doc"
 extern "struct event" record event {};
+pragma "no doc"
+extern type pthread_t;
+pragma "no doc"
+extern type pthread_attr_t;
 
-extern const EV_TIMEOUT:c_short;
-extern const EV_READ:c_short;
-extern const EV_WRITE:c_short;
-extern const EV_SIGNAL:c_short;
-extern const EV_PERSIST:c_short;
-extern const EV_ET:c_short;
-extern const EV_FINALIZE:c_short;
-extern const EV_CLOSED:c_short;
-extern const EVLOOP_NO_EXIT_ON_EMPTY:c_int;
+private extern const EV_TIMEOUT:c_short;
+private extern const EV_READ:c_short;
+private extern const EV_WRITE:c_short;
+private extern const EV_SIGNAL:c_short;
+private extern const EV_PERSIST:c_short;
+private extern const EV_ET:c_short;
+private extern const EV_FINALIZE:c_short;
+private extern const EV_CLOSED:c_short;
+private extern const EVLOOP_NO_EXIT_ON_EMPTY:c_int;
 
 private extern proc event_base_new():c_ptr(event_base);
 private extern proc event_base_dispatch(base: c_ptr(event_base)):c_int;
@@ -322,44 +328,12 @@ private extern proc event_free(ev: c_ptr(event)):c_int;
 private extern proc event_remove_timer(ev: c_ptr(event)):c_int;
 private extern proc evutil_make_socket_nonblocking(fd: c_int):c_int;
 private extern proc libevent_global_shutdown();
-
-extern type pthread_t;
-extern type pthread_attr_t;
+private extern proc evthread_use_pthreads();
 private extern proc pthread_create(thread: c_ptr(pthread_t), const attr: c_ptr(pthread_attr_t), start_routine: c_fn_ptr, arg: c_void_ptr): c_int;
 private extern proc pthread_join(thread: pthread_t, retval: c_ptr(c_void_ptr)): c_int;
-private extern proc evthread_use_pthreads();
 
-evthread_use_pthreads();
-var event_loop_base = event_base_new();
-
-proc dispatchLoop():c_void_ptr throws {
-  if event_loop_base == nil {
-    throw new Error("event loop wasn't initialized");
-  }
-  if event_base_got_break(event_loop_base) == 1 {
-    return nil;
-  }
-  var x = event_base_loop(event_loop_base, EVLOOP_NO_EXIT_ON_EMPTY);
-  if x != 0 {
-    throw new Error("event loop wasn't initialized");
-  }
-  return nil;
-}
-
-var event_loop_thread:pthread_t;
-pthread_create(c_ptrTo(event_loop_thread), nil:c_ptr(pthread_attr_t), c_ptrTo(dispatchLoop), nil);
-
-proc syncRWTCallback(fd: c_int, event: c_short, arg: c_void_ptr) {
-  var syncVariablePtr = arg: c_ptr(sync int);
-  syncVariablePtr.deref().writeEF(event);
-}
-
-proc deinit() {
-  event_base_loopbreak(event_loop_base);
-  pthread_join(event_loop_thread, nil:c_ptr(c_void_ptr));
-  event_base_free(event_loop_base);
-  libevent_global_shutdown();
-}
+pragma "no doc"
+var event_loop_base:c_ptr(event_base);
 
 /*
   A record holding reference to a tcp socket
@@ -1382,5 +1356,41 @@ proc ref tcpListener.setDelayAck(enable:bool) throws {
 proc tcpConn.setDelayAck(enable:bool) throws {
   var socketFd = this.socketFd;
   delayAck(socketFd, enable);
+}
+
+evthread_use_pthreads();
+event_loop_base = event_base_new();
+pragma "no doc"
+var event_loop_thread:pthread_t;
+
+pragma "no doc"
+proc dispatchLoop():c_void_ptr throws {
+  if event_loop_base == nil {
+    throw new Error("event loop wasn't initialized");
+  }
+  if event_base_got_break(event_loop_base) == 1 {
+    return nil;
+  }
+  var x = event_base_loop(event_loop_base, EVLOOP_NO_EXIT_ON_EMPTY);
+  if x != 0 {
+    throw new Error("event loop wasn't initialized");
+  }
+  return nil;
+}
+
+pthread_create(c_ptrTo(event_loop_thread), nil:c_ptr(pthread_attr_t), c_ptrTo(dispatchLoop), nil);
+
+pragma "no doc"
+proc syncRWTCallback(fd: c_int, event: c_short, arg: c_void_ptr) {
+  var syncVariablePtr = arg: c_ptr(sync int);
+  syncVariablePtr.deref().writeEF(event);
+}
+
+pragma "no doc"
+proc deinit() {
+  event_base_loopbreak(event_loop_base);
+  pthread_join(event_loop_thread, nil:c_ptr(c_void_ptr));
+  event_base_free(event_loop_base);
+  libevent_global_shutdown();
 }
 }
