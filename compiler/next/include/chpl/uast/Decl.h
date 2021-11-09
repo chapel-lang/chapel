@@ -107,10 +107,16 @@ class Decl : public Expression {
  public:
   virtual ~Decl() = 0; // this is an abstract base class
 
+  /**
+    Return the visibility of this declaration, e.g. "PUBLIC" or "PRIVATE".
+  */
   Visibility visibility() const {
     return visibility_;
   }
 
+  /**
+    Return the linkage of this declaration, e.g. "EXTERN" or "EXPORT".
+  */
   Linkage linkage() const {
     return linkage_;
   }
@@ -132,6 +138,10 @@ class Decl : public Expression {
     return (const Expression*)ret;
   }
 
+  /**
+    Return the attributes associated with this declaration, or nullptr
+    if none exist.
+  */
   const Attributes* attributes() const {
     if (attributesChildNum_ < 0) return nullptr;
     auto ret = child(attributesChildNum_);

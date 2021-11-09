@@ -26,6 +26,7 @@
 #include "convert-uast.h"
 
 #include "CatchStmt.h"
+#include "DeferStmt.h"
 #include "DoWhileStmt.h"
 #include "ForallStmt.h"
 #include "ForLoop.h"
@@ -140,6 +141,44 @@ struct Converter {
     return nullptr;
   }
 
+  Flag convertPragmaToFlag(chpl::uast::PragmaTag pragma) {
+    Flag ret = FLAG_UNKNOWN;
+    switch (pragma) {
+#define PRAGMA(name__, canParse__, parseStr__, desc__) \
+      case chpl::uast::PRAGMA_ ## name__ : ret = FLAG_ ## name__; break;
+#include "chpl/uast/PragmaList.h"
+#undef PRAGMA
+      default: break;
+    }
+
+    return ret;
+  }
+
+  void attachSymbolAttributes(const uast::Attributes* node, Symbol* sym) {
+    if (node == nullptr) return;
+
+    if (!node->isDeprecated()) {
+      assert(node->deprecationMessage().isEmpty());
+    }
+
+    if (node->isDeprecated()) {
+      assert(!sym->hasFlag(FLAG_DEPRECATED));
+      sym->addFlag(FLAG_DEPRECATED);
+
+      auto msg = node->deprecationMessage();
+      if (!msg.isEmpty()) {
+        sym->deprecationMsg = astr(msg.c_str());
+      }
+    }
+
+    for (auto pragma : node->pragmas()) {
+      Flag flag = convertPragmaToFlag(pragma);
+      if (flag != FLAG_UNKNOWN) {
+        sym->addFlag(flag);
+      }
+    }
+  }
+
   Expr* visit(const uast::ErroneousExpression* node) {
     return new CallExpr(PRIM_ERROR);
   }
@@ -201,9 +240,9 @@ struct Converter {
     return createBlockWithStmts(node->stmts());
   }
 
-  BlockStmt* visit(const uast::Defer* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  Expr* visit(const uast::Defer* node) {
+    auto stmts = createBlockWithStmts(node->stmts());
+    return DeferStmt::build(stmts);
   }
 
   BlockStmt* visit(const uast::Local* node) {
@@ -1474,6 +1513,8 @@ struct Converter {
   Expr* visit(const uast::Function* node) {
     FnSymbol* fn = new FnSymbol("_");
 
+    attachSymbolAttributes(node->attributes(), fn);
+
     if (node->isInline()) {
       fn->addFlag(FLAG_INLINE);
     }
@@ -1627,6 +1668,8 @@ struct Converter {
                                     prototype,
                                     /* docs */ nullptr);
 
+    attachSymbolAttributes(node->attributes(), mod);
+
     return new DefExpr(mod);
   }
 
@@ -1674,10 +1717,15 @@ struct Converter {
       }
     }
 
-    return buildArgDefExpr(intentTag, node->name().c_str(),
-                           typeExpr,
-                           initExpr,
-                           /*varargsVariable*/ nullptr);
+    auto ret =  buildArgDefExpr(intentTag, node->name().c_str(),
+                                typeExpr,
+                                initExpr,
+                                /*varargsVariable*/ nullptr);
+    assert(ret->sym);
+
+    attachSymbolAttributes(node->attributes(), ret->sym);
+
+    return ret;
   }
 
   ShadowVarPrefix convertTaskVarIntent(const uast::TaskVar* node) {
@@ -1724,10 +1772,15 @@ struct Converter {
       def->sym->addFlag(FLAG_PARAM);
     }
 
-    return buildArgDefExpr(intentTag, node->name().c_str(),
-                           typeExpr,
-                           initExpr,
-                           varargsVariable);
+    auto ret = buildArgDefExpr(intentTag, node->name().c_str(),
+                               typeExpr,
+                               initExpr,
+                               varargsVariable);
+    assert(ret->sym);
+
+    attachSymbolAttributes(node->attributes(), ret->sym);
+
+    return ret;
   }
 
   ShadowVarSymbol* convertTaskVar(const uast::TaskVar* node) {
@@ -1736,7 +1789,13 @@ struct Converter {
     Expr* type = convertExprOrNull(node->typeExpression());
     Expr* init = convertExprOrNull(node->initExpression());
 
-    return ShadowVarSymbol::buildForPrefix(prefix, nameExp, type, init);
+    auto ret = ShadowVarSymbol::buildForPrefix(prefix, nameExp, type, init);
+
+    assert(ret != nullptr);
+
+    attachSymbolAttributes(node->attributes(), ret);
+
+    return ret;
   }
 
   const char* tupleVariableName(const char* name) {
@@ -1840,6 +1899,8 @@ struct Converter {
     // Adjust the variable according to its kind
     attachVarSymbolStorage(node, varSym);
 
+    attachSymbolAttributes(node->attributes(), varSym);
+
     if (node->isConfig()) {
       varSym->addFlag(FLAG_CONFIG);
     }
@@ -1930,6 +1991,9 @@ struct Converter {
     }
 
     auto enumTypeSym = new TypeSymbol(node->name().c_str(), enumType);
+
+    attachSymbolAttributes(node->attributes(), enumTypeSym);
+
     enumType->symbol = enumTypeSym;
 
     auto ret = new BlockStmt(BLOCK_SCOPELESS);
@@ -1947,8 +2011,15 @@ struct Converter {
     BlockStmt* decls = createBlockWithStmts(node->declOrComments());
     Flag externFlag = FLAG_UNKNOWN;
 
-    return buildClassDefExpr(name, cname, AGGREGATE_CLASS, inherit, decls,
-                             externFlag, /* docs */ nullptr);
+    auto ret = buildClassDefExpr(name, cname, AGGREGATE_CLASS, inherit,
+                                 decls,
+                                 externFlag,
+                                 /*docs*/ nullptr);
+    assert(ret->sym);
+
+    attachSymbolAttributes(node->attributes(), ret->sym);
+
+    return ret;
   }
 
   Expr* visit(const uast::Record* node) {
@@ -1964,9 +2035,15 @@ struct Converter {
       assert(cname);
     }
 
-    return buildClassDefExpr(name, cname, AGGREGATE_RECORD, inherit, decls,
-                             linkageFlag,
-                             /*docs*/ nullptr);
+    auto ret = buildClassDefExpr(name, cname, AGGREGATE_RECORD, inherit,
+                                 decls,
+                                 linkageFlag,
+                                 /*docs*/ nullptr);
+    assert(ret->sym);
+
+    attachSymbolAttributes(node->attributes(), ret->sym);
+
+    return ret;
   }
 
   Expr* visit(const uast::Union* node) {
@@ -1982,9 +2059,15 @@ struct Converter {
       assert(cname);
     }
 
-    return buildClassDefExpr(name, cname, AGGREGATE_UNION, inherit, decls,
-                             linkageFlag,
-                             /* docs */ nullptr);
+    auto ret = buildClassDefExpr(name, cname, AGGREGATE_UNION, inherit,
+                                 decls,
+                                 linkageFlag,
+                                 /*docs*/ nullptr);
+    assert(ret->sym);
+
+    attachSymbolAttributes(node->attributes(), ret->sym);
+
+    return ret;
   }
 };
 

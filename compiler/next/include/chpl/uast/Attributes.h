@@ -87,15 +87,15 @@ class Attributes final : public Expression {
   }
 
   /// \cond DO_NOT_DOCUMENT
-  class PragmaIter {
+  class PragmaIterable {
     using PragmaGroup = std::set<PragmaTag>;
     PragmaGroup::const_iterator begin_;
     PragmaGroup::const_iterator end_;
 
   public:
-    ~PragmaIter() = default;
-    PragmaIter(PragmaGroup::const_iterator begin,
-               PragmaGroup::const_iterator end)
+    ~PragmaIterable() = default;
+    PragmaIterable(PragmaGroup::const_iterator begin,
+                   PragmaGroup::const_iterator end)
       : begin_(std::move(begin)),
         end_(std::move(end)) {
     }
@@ -108,8 +108,8 @@ class Attributes final : public Expression {
   /**
     Iterate over the pragmas stored in this attributes.
   */
-  PragmaIter pragmas() const {
-    return PragmaIter(pragmas_.begin(), pragmas_.end());
+  PragmaIterable pragmas() const {
+    return PragmaIterable(pragmas_.begin(), pragmas_.end());
   }
 
   /**

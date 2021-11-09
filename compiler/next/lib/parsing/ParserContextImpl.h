@@ -197,17 +197,6 @@ void ParserContext::noteDeprecation(YYLTYPE loc, Expression* messageStr) {
 }
 
 void ParserContext::resetAttributePartsState() {
-
-  // If we are building a variable (where 'varDeclKind' can be set) or a
-  // tuple, then we may build the attributes for each component. In all
-  // other cases the attribute parts should only have been consumed once
-  // before they are reset (almost always stored in the parser stack by
-  // the first non-terminal in the declaration's rule).
-  // 
-  if (!hasNotedVarDeclKind && !isBuildingFormal) {
-    assert(numAttributesBuilt <= 1);
-  }
-
   if (hasAttributeParts) {
     assert(numAttributesBuilt >= 1);
     auto& pragmas = attributeParts.pragmas;
