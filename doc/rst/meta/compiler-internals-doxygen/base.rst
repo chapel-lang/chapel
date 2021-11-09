@@ -31,5 +31,8 @@ namespace. The entries may not be exhaustive.
    :members:
    :undoc-members:
 
-.. doxygentypedef:: chpl::owned
+.. doxygenclass:: chpl::Iterable
+   :members:
+   :undoc-members:
 
+.. doxygentypedef:: chpl::owned
