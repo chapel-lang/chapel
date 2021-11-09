@@ -31,8 +31,6 @@
 namespace chpl {
 namespace resolution {
 
-using chpl::util::Iterable;
-
 class BorrowedIdsWithName;
 
 /**
@@ -342,7 +340,7 @@ class ResolvedVisibilityScope {
   std::vector<VisibilitySymbols> visibilityClauses_;
 
  public:
-  using VisibilitySymbolsIterable = Iterable<decltype(visibilityClauses_)>;
+  using VisibilitySymbolsIterable = Iterable<std::vector<VisibilitySymbols>>;
 
   ResolvedVisibilityScope(const Scope* scope)
     : scope_(scope)

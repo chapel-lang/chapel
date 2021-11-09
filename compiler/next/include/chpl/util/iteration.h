@@ -21,25 +21,22 @@
 #define CHPL_UTIL_ITERATION_H
 
 namespace chpl {
-namespace util {
 
 /**
- Defines a read-only iterator over elements of T
+ Defines a read-only iterator over elements of a container type C
  */
 template <typename C> class Iterable {
  private:
-  using It = typename C::const_iterator;
-  It begin_;
-  It end_;
+  typename C::const_iterator begin_;
+  typename C::const_iterator end_;
 
  public:
   Iterable(const C &c) : begin_(c.cbegin()), end_(c.cend()) {}
 
-  It begin() const { return begin_; }
-  It end() const { return end_; }
+  typename C::const_iterator begin() const { return begin_; }
+  typename C::const_iterator end() const { return end_; }
 };
 
-} // namespace util
 } // namespace chpl
 
 #endif
