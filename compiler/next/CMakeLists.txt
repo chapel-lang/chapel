@@ -48,6 +48,8 @@ add_subdirectory(include/chpl)
 # Support for documentation of AST header
 add_subdirectory(doc)
 
+add_subdirectory(tools)
+
 # Support for C++ compiler unit tests
 # Needs to happen in this file for ctest to work in this dir
 enable_testing()

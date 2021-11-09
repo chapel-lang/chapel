@@ -180,7 +180,7 @@ const char* makeTempDir(const char* dirPrefix) {
   return dirRes;
 }
 
-static void ensureTmpDirExists() {
+void ensureTmpDirExists() {
   if (saveCDir[0] == '\0') {
     if (tmpdirname == NULL) {
       tmpdirname = makeTempDir("chpl-");

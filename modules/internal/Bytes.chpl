@@ -306,6 +306,34 @@ module Bytes {
       }
     }
 
+    proc chpl__serialize() {
+      var data : chpl__inPlaceBuffer;
+      if buffLen <= CHPL_SHORT_STRING_SIZE {
+        chpl_string_comm_get(chpl__getInPlaceBufferDataForWrite(data),
+                             locale_id, buff, buffLen);
+      }
+      return new __serializeHelper(buffLen, buff, buffSize, locale_id, data,
+                                   buffLen);
+    }
+
+    proc type chpl__deserialize(data) {
+      if data.locale_id != chpl_nodeID {
+        if data.buffLen <= CHPL_SHORT_STRING_SIZE {
+          return createBytesWithNewBuffer(
+                      chpl__getInPlaceBufferData(data.shortData),
+                      data.buffLen,
+                      data.size);
+        } else {
+          var localBuff = bufferCopyRemote(data.locale_id, data.buff,
+                                           data.buffLen);
+          return createBytesWithOwnedBuffer(localBuff, data.buffLen, data.size);
+        }
+      } else {
+        return createBytesWithBorrowedBuffer(data.buff, data.buffLen,
+                                             data.size);
+      }
+    }
+
     proc writeThis(f) throws {
       compilerError("not implemented: writeThis");
     }

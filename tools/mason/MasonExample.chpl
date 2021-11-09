@@ -275,7 +275,7 @@ private proc runExampleBinary(projectHome: string, exampleName: string,
     else writeln("Executing [debug] target: " + command);
   }
 
-  const exampleResult = runWithStatus(command, true);
+  const exampleResult = runWithStatus(command);
   if exampleResult != 0 {
     throw new owned MasonError("Example has not been compiled: " + exampleName + ".chpl\n" +
     "Try running: mason build --example " + exampleName + ".chpl\n" +

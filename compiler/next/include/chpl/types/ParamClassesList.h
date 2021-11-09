@@ -32,6 +32,8 @@ PARAM_NODE(NoneParam, NoneValue)
 PARAM_NODE(RealParam, double)
 PARAM_NODE(StringParam, UniqueString)
 PARAM_NODE(UintParam, uint64_t)
+// ImagParam doesn't exist (use RealParam with type ImagType)
+// CStringParam, BytesParam don't exist (use StringParam with appropriate type)
 
 /// \endcond
 

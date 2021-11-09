@@ -414,7 +414,7 @@ returnInfoError(CallExpr* call) {
   AggregateType* at = toAggregateType(dtError);
   INT_ASSERT(isClass(at));
   Type* unmanaged =
-    at->getDecoratedClass(CLASS_TYPE_UNMANAGED); // TODO: nilable
+    at->getDecoratedClass(ClassTypeDecorator::UNMANAGED); // TODO: nilable
   INT_ASSERT(unmanaged);
   return QualifiedType(unmanaged, QUAL_VAL);
 }
@@ -454,11 +454,11 @@ static QualifiedType
 returnInfoToUnmanaged(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_UNMANAGED;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::UNMANAGED;
   if (isNilableClassType(t))
-    decorator = CLASS_TYPE_UNMANAGED_NILABLE;
+    decorator = ClassTypeDecorator::UNMANAGED_NILABLE;
   else if (isNonNilableClassType(t))
-    decorator = CLASS_TYPE_UNMANAGED_NONNIL;
+    decorator = ClassTypeDecorator::UNMANAGED_NONNIL;
 
   if (AggregateType* at = toAggregateType(canonicalClassType(t))) {
     if (isClass(at)) {
@@ -472,11 +472,11 @@ static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED;
   if (isNilableClassType(t))
-    decorator = CLASS_TYPE_BORROWED_NILABLE;
+    decorator = ClassTypeDecorator::BORROWED_NILABLE;
   else if (isNonNilableClassType(t))
-    decorator = CLASS_TYPE_BORROWED_NONNIL;
+    decorator = ClassTypeDecorator::BORROWED_NONNIL;
 
   if (AggregateType* at = toAggregateType(canonicalClassType(t)))
     if (isClass(at))
@@ -489,11 +489,11 @@ static QualifiedType
 returnInfoToUndecorated(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_GENERIC;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::GENERIC;
   if (isNilableClassType(t))
-    decorator = CLASS_TYPE_GENERIC_NILABLE;
+    decorator = ClassTypeDecorator::GENERIC_NILABLE;
   else if (isNonNilableClassType(t))
-    decorator = CLASS_TYPE_GENERIC_NONNIL;
+    decorator = ClassTypeDecorator::GENERIC_NONNIL;
 
   if (AggregateType* at = toAggregateType(canonicalClassType(t)))
     if (isClass(at))
@@ -508,7 +508,7 @@ returnInfoToNilable(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
   if (isClassLikeOrManaged(t)) {
-    ClassTypeDecorator decorator = classTypeDecorator(t);
+    ClassTypeDecoratorEnum decorator = classTypeDecorator(t);
     decorator = addNilableToDecorator(decorator);
 
     if (isManagedPtrType(t)) {
@@ -536,7 +536,7 @@ returnInfoToNonNilable(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
   if (isClassLikeOrManaged(t)) {
-    ClassTypeDecorator decorator = classTypeDecorator(t);
+    ClassTypeDecoratorEnum decorator = classTypeDecorator(t);
     decorator = addNonNilToDecorator(decorator);
 
     if (isManagedPtrType(t)) {
@@ -609,22 +609,39 @@ PrimitiveOp::PrimitiveOp(PrimitiveTag atag,
   primitives_map.put(name, this);
 }
 
+/* Primitive names appear both in PrimOpsList as well as
+   here. This routine checks that the name matches in both.
+ */
+static void checkPrimName(PrimitiveTag tag, const char* name) {
+  // Check name matches the string in PrimOpsList.h
+  switch (tag) {
+#define PRIMITIVE(macroTag, macroName) \
+    case PRIM_ ## macroTag: \
+      INT_ASSERT(0 == strcmp(name, macroName)); \
+      break;
+
+#define PRIMITIVE_R(macroTag, macroName) PRIMITIVE(macroTag, macroName)
+#define PRIMITIVE_G(macroTag, macroName) PRIMITIVE(macroTag, macroName)
+
+#include "chpl/uast/PrimOpsList.h"
+#undef PRIMITIVE
+#undef PRIMITIVE_R
+#undef PRIMITIVE_G
+
+    default:
+      INT_FATAL("case not handled");
+  }
+}
+
+
 static void
 prim_def(PrimitiveTag tag, const char* name, QualifiedType (*returnInfo)(CallExpr*),
          bool isEssential = false, bool passLineno = false) {
+  checkPrimName(tag, name);
   primitives[tag] = new PrimitiveOp(tag, name, returnInfo);
   primitives[tag]->isEssential = isEssential;
   primitives[tag]->passLineno = passLineno;
 }
-
-static void
-prim_def(const char* name, QualifiedType (*returnInfo)(CallExpr*),
-         bool isEssential = false, bool passLineno = false) {
-  PrimitiveOp* prim = new PrimitiveOp(PRIM_UNKNOWN, name, returnInfo);
-  prim->isEssential = isEssential;
-  prim->passLineno = passLineno;
-}
-
 
 /*
  * The routine below, using the routines just above, define primitives
@@ -693,7 +710,7 @@ initPrimitive() {
   prim_def(PRIM_UNARY_MINUS, "u-", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_PLUS, "u+", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_NOT, "u~", returnInfoFirstDeref);
-  prim_def(PRIM_UNARY_LNOT, "!", returnInfoBool);
+  prim_def(PRIM_UNARY_LNOT, "u!", returnInfoBool);
   prim_def(PRIM_ADD, "+", returnInfoNumericUp);
   prim_def(PRIM_SUBTRACT, "-", returnInfoNumericUp);
   prim_def(PRIM_MULT, "*", returnInfoNumericUp);
@@ -1014,21 +1031,21 @@ initPrimitive() {
   prim_def(PRIM_CAPTURE_FN_FOR_C, "capture fn for C", returnInfoVoid);
   prim_def(PRIM_CREATE_FN_TYPE, "create fn type", returnInfoVoid);
 
-  prim_def("string_compare", returnInfoDefaultInt, true);
-  prim_def("string_contains", returnInfoBool, true);
-  prim_def("string_concat", returnInfoStringC, true, true);
-  prim_def("string_length_bytes", returnInfoDefaultInt);
-  prim_def("string_length_codepoints", returnInfoDefaultInt);
-  prim_def("ascii", returnInfoUInt8);
-  prim_def("string_index", returnInfoStringC, true, true);
+  prim_def(PRIM_STRING_COMPARE, "string_compare", returnInfoDefaultInt, true);
+  prim_def(PRIM_STRING_CONTAINS, "string_contains", returnInfoBool, true);
+  prim_def(PRIM_STRING_CONCAT, "string_concat", returnInfoStringC, true, true);
+  prim_def(PRIM_STRING_LENGTH_BYTES, "string_length_bytes", returnInfoDefaultInt);
+  prim_def(PRIM_STRING_LENGTH_CODEPOINTS, "string_length_codepoints", returnInfoDefaultInt);
+  prim_def(PRIM_ASCII, "ascii", returnInfoUInt8);
+  prim_def(PRIM_STRING_INDEX, "string_index", returnInfoStringC, true, true);
   prim_def(PRIM_STRING_COPY, "string_copy", returnInfoStringC, false, true);
   // Cast the object argument to void*.
   prim_def(PRIM_CAST_TO_VOID_STAR, "cast_to_void_star", returnInfoCVoidPtr, true, false);
-  prim_def("string_select", returnInfoStringC, true, true);
-  prim_def("sleep", returnInfoVoid, true);
-  prim_def("real2int", returnInfoDefaultInt);
-  prim_def("object2int", returnInfoDefaultInt);
-  prim_def("chpl_exit_any", returnInfoVoid, true);
+  prim_def(PRIM_STRING_SELECT, "string_select", returnInfoStringC, true, true);
+  prim_def(PRIM_SLEEP, "sleep", returnInfoVoid, true);
+  prim_def(PRIM_REAL_TO_INT, "real2int", returnInfoDefaultInt);
+  prim_def(PRIM_OBJECT_TO_INT, "object2int", returnInfoDefaultInt);
+  prim_def(PRIM_CHPL_EXIT_ANY, "chpl_exit_any", returnInfoVoid, true);
 
   prim_def(PRIM_RT_ERROR, "chpl_error", returnInfoVoid, true, true);
   prim_def(PRIM_RT_WARNING, "chpl_warning", returnInfoVoid, true, true);

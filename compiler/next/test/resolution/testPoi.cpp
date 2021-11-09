@@ -156,6 +156,53 @@ static void test1n() {
   }
 }
 
+// testing a simplified version of a pattern that comes up in test2
+static void test2a() {
+  printf("test2a\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::build(context, "input.chpl");
+  std::string contents = R""""(
+    module M {
+      proc foo(param arg:int, val:int) { }
+      proc foo(param arg:int, val:real) { }
+      proc runM1() {
+        var x: int;
+        foo(1, x);
+      }
+    }
+  )"""";
+
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parse(context, path);
+  assert(vec.size() == 1);
+  const Module* M = vec[0]->toModule();
+  assert(M);
+  assert(M->numStmts() == 3);
+
+  const Function* fooA = M->stmt(0)->toFunction();
+  assert(fooA);
+  const Function* fooB = M->stmt(1)->toFunction();
+  assert(fooB);
+  const Function* runM1 = M->stmt(2)->toFunction();
+  assert(runM1);
+  const Call* runM1FooCall = runM1->stmt(1)->toCall();
+  assert(runM1FooCall);
+
+  // resolve runM1
+  const ResolvedFunction* rRunM1 =
+    resolveConcreteFunction(context, runM1->id());
+  assert(rRunM1);
+
+  // find the resolved call to foo in runM1
+  const ResolvedFunction* m1foo =
+    resolveOnlyCandidate(context, rRunM1->byAst(runM1FooCall));
+  assert(m1foo);
+  assert(m1foo->functionId() == fooA->id());
+}
 
 // testing the challenging program from issue 18081
 static void test2() {
@@ -664,6 +711,7 @@ static void test6() {
 int main() {
   test1();
   test1n();
+  test2a();
   test2();
   test3();
   test4();

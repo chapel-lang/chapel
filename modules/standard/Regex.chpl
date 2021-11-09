@@ -361,7 +361,7 @@ extern record qio_regex_options_t {
 pragma "no doc"
 extern proc qio_regex_null():qio_regex_t;
 private extern proc qio_regex_init_default_options(ref options:qio_regex_options_t);
-private extern proc qio_regex_create_compile(str:c_string, strlen:int(64), ref options:qio_regex_options_t, ref compiled:qio_regex_t);
+private extern proc qio_regex_create_compile(str:c_string, strlen:int(64), const ref options:qio_regex_options_t, ref compiled:qio_regex_t);
 private extern proc qio_regex_create_compile_flags(str:c_string, strlen:int(64), flags:c_string, flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
 pragma "no doc"
 extern proc qio_regex_create_compile_flags_2(str:c_void_ptr, strlen:int(64), flags:c_void_ptr, flagslen:int(64), isUtf8:bool, ref compiled:qio_regex_t);
@@ -585,6 +585,14 @@ proc bytes.this(m:regexMatch) {
   else return b"";
 }
 
+
+pragma "no doc"
+record chpl_serializeHelper {
+  type exprType;
+  var pattern:exprType;
+  var options:qio_regex_options_t;
+}
+
  private use IO;
 
 /*  This record represents a compiled regular expression. Regular expressions
@@ -611,12 +619,64 @@ record regex {
 
   proc init=(x: regex(?)) {
     this.exprType = x.exprType;
-    this.home = x.home;
-    this._regex = x._regex;
-    this.complete();
-    on home {
-      qio_regex_retain(_regex);
+    /* always bring the regex local */
+    this.home = here;
+    /* if it's local, retain and avoid the recompile (thread safe) */
+    if (x.home == here) {
+      this._regex = x._regex;
+      this.complete();
+      qio_regex_retain(x._regex);
+    } else {
+      /* otherwise recompile locally */
+      this.complete();
+      var serialized = x._serialize();
+      this._deserialize(serialized);
     }
+  }
+
+  pragma "no doc"
+  proc _serialize() {
+    var pattern: exprType;
+    var options: qio_regex_options_t;
+    var _regexCopy = _regex;
+
+    on this.home {
+      /* NOTE we can't reference `this` inside this on block because
+       * it can cause a recursive chpl__serialize loop */
+      var patternTemp: c_string;
+      qio_regex_get_pattern(_regexCopy, patternTemp);
+      if exprType == string then {
+        try! pattern = createStringWithOwnedBuffer(patternTemp);
+      }
+      else {
+        pattern = createBytesWithOwnedBuffer(patternTemp);
+      }
+
+      var localOptions: qio_regex_options_t;
+      qio_regex_get_options(_regexCopy, localOptions);
+      options = localOptions;
+    }
+    return new chpl_serializeHelper(exprType, pattern, options);
+  }
+
+  pragma "no doc"
+  proc _deserialize(data) {
+    qio_regex_create_compile(data.pattern.localize().c_str(),
+                             data.pattern.numBytes,
+                             data.options,
+                             this._regex);
+  }
+
+  pragma "no doc"
+  proc chpl__serialize() {
+    return _serialize();
+  }
+
+  pragma "no doc"
+  proc type chpl__deserialize(data) {
+    var ret:regex(exprType);
+    ret._deserialize(data);
+    return ret;
   }
 
   /* did this regular expression compile ? */
@@ -814,6 +874,7 @@ record regex {
     var nmatches = 1 + ncaptures;
     var pos:byteIndex;
     var endpos:byteIndex;
+    var last:byteIndex;
 
     on this.home {
       matches = _ddata_allocate(qio_regex_string_piece_t, nmatches);
@@ -821,49 +882,43 @@ record regex {
 
     pos = 0;
     endpos = pos + text.numBytes;
+    last = 0;
 
     var splits = 0;
     var maxsplits = maxsplit;
     if maxsplit == 0 then maxsplits = max(int);
 
-    while true {
-      var splitstart:byteIndex = 0;
-      var splitend:byteIndex = 0;
+    while splits < maxsplits && pos <= endpos {
       var got:bool;
       on this.home {
         got = qio_regex_match(_regex, text.localize().c_str(), text.numBytes, pos:int, endpos:int, QIO_REGEX_ANCHOR_UNANCHORED, matches, nmatches);
       }
 
+      if !got then break;
+
       splits += 1;
-      if got && splits <= maxsplits {
-        splitstart = matches[0].offset;
-        splitend = matches[0].offset + matches[0].len;
-      } else {
-        splitstart = endpos;
-        splitend = endpos;
-      }
 
-      if pos < splitstart {
-        // Yield splitted value
-        yield text[pos..splitstart-1];
-      } else {
-        yield "":exprType;
-      }
+      var splitstart:byteIndex = matches[0].offset;
+      yield text[last..<splitstart];
+      last = splitstart + matches[0].len;
 
-      if got {
-        // Yield capture groups
-        for i in 1..ncaptures {
+      // Yield capture groups
+      for i in 1..ncaptures {
           yield text[new regexMatch(
-                !qio_regex_string_piece_isnull(matches[i]),
-                matches[i].offset:byteIndex,
-                matches[i].len)];
-        }
+              !qio_regex_string_piece_isnull(matches[i]),
+              matches[i].offset:byteIndex,
+              matches[i].len)];
       }
 
-      // Advance to splitend.
-      pos = splitend;
+      pos = matches[0].offset + max(1, matches[0].len);
+    }
 
-      if splits > maxsplits || !got then break;
+    if last <= endpos {
+      if last >= text.numBytes {
+        yield "":exprType;
+      } else {
+        yield text[last..<endpos];
+      }
     }
     on this.home {
       _ddata_free(matches, nmatches);
@@ -895,7 +950,7 @@ record regex {
 
     var nfound = 0;
     var cur = pos;
-    while nfound < maxmatches && cur < endpos {
+    while nfound < maxmatches && cur <= endpos {
       var got:bool;
       on this.home {
         got = qio_regex_match(_regex, text.localize().c_str(), textLength, cur:int, endpos:int, QIO_REGEX_ANCHOR_UNANCHORED, matches, nmatches);
@@ -907,7 +962,7 @@ record regex {
         ret[i] = new regexMatch(got, matches[i].offset:byteIndex, matches[i].len);
       }
       yield ret;
-      cur = matches[0].offset + matches[0].len;
+      cur = matches[0].offset + max(1, matches[0].len);
     }
     on this.home {
       _ddata_free(matches, nmatches);
@@ -932,24 +987,27 @@ record regex {
     pos = 0;
     endpos = pos + text.numBytes;
 
-    var replaced:c_string;
+    var ret: exprType;
     var nreplaced:int;
-    var replaced_len:int(64);
-    nreplaced = qio_regex_replace(_regex, repl.localize().c_str(),
-                                   repl.numBytes, text.localize().c_str(),
-                                   text.numBytes, pos:int, endpos:int, global,
-                                   replaced, replaced_len);
 
-    if exprType==string {
-      try! {
-        const ret = createStringWithOwnedBuffer(replaced, replaced_len);
-        return (ret, nreplaced);
+    on this.home {
+      var replaced:c_string;
+      var replaced_len:int(64);
+      nreplaced = qio_regex_replace(_regex, repl.localize().c_str(),
+                                    repl.numBytes, text.localize().c_str(),
+                                    text.numBytes, pos:int, endpos:int, global,
+                                    replaced, replaced_len);
+      if exprType==string {
+        try! {
+          ret = createStringWithOwnedBuffer(replaced, replaced_len);
+        }
+      }
+      else {
+        ret = createBytesWithOwnedBuffer(replaced, replaced_len);
       }
     }
-    else {
-      const ret = createBytesWithOwnedBuffer(replaced, replaced_len);
-      return (ret, nreplaced);
-    }
+
+    return (ret, nreplaced);
   }
 
   /*
@@ -968,6 +1026,7 @@ record regex {
     return str;
   }
 
+  // TODO this could use _serialize to get the pattern and options
   pragma "no doc"
   proc writeThis(f) throws {
     var pattern:exprType;
@@ -976,11 +1035,11 @@ record regex {
       qio_regex_get_pattern(this._regex, patternTemp);
       if exprType == string then {
         try! {
-          pattern = createStringWithNewBuffer(patternTemp);
+          pattern = createStringWithOwnedBuffer(patternTemp);
         }
       }
       else {
-        pattern = createBytesWithNewBuffer(patternTemp);
+        pattern = createBytesWithOwnedBuffer(patternTemp);
       }
     }
     // Note -- this is wrong because we didn't quote
@@ -1028,18 +1087,11 @@ operator regex.=(ref ret:regex(?t), x:regex(t))
     }
     ret._regex = x._regex;
   } else {
-    var pattern:c_string;
-    var options:qio_regex_options_t;
-
     on ret.home {
       qio_regex_release(ret._regex);
+      var serialized = x._serialize();
+      ret._deserialize(serialized);
     }
-    on x.home {
-      qio_regex_get_pattern(x._regex, pattern);
-      qio_regex_get_options(x._regex, options);
-    }
-
-    qio_regex_create_compile(pattern, pattern.size, options, ret._regex);
   }
 }
 

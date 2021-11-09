@@ -39,9 +39,9 @@ class Type;
 
   This combination is the type information that the resolver needs.
  */
-class QualifiedType {
+class QualifiedType final {
  public:
-  typedef enum {
+  enum Kind {
     UNKNOWN,
     CONST,
     REF,
@@ -52,7 +52,7 @@ class QualifiedType {
     PARAM,
     FUNCTION,
     MODULE,
-  } Kind;
+  };
 
  private:
   Kind kind_ = UNKNOWN;
@@ -68,17 +68,29 @@ class QualifiedType {
 
   QualifiedType(Kind kind, const Type* type, const Param* param)
     : kind_(kind), type_(type), param_(param)
-  { }
+  {
+    // should only set param_ for kind_ == PARAM
+    assert(param_ == nullptr || kind_ == PARAM);
+  }
 
+  /** Returns the kind of the expression this QualifiedType represents */
   Kind kind() const { return kind_; }
+  /**
+    Returns the Type subclass that represents the type part
+    of this QualifiedType
+   */
   const Type* type() const { return type_; }
+  /**
+    Returns the param value for this QualifiedType. Note that
+    an uninstantiated param formal will have kind() == PARAM but won't
+    yet have a param value. */
   const Param* param() const { return param_; }
 
   bool hasType() const {
     return type_ != nullptr;
   }
   bool hasParam() const {
-    return kind_ == PARAM && param_ != nullptr;
+    return param_ != nullptr;
   }
 
   bool isGenericOrUnknown() const;

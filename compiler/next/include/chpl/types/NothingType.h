@@ -29,7 +29,7 @@ namespace types {
 /**
   This class represents the nothing type.
  */
-class NothingType : public Type {
+class NothingType final : public Type {
  private:
   NothingType() : Type(typetags::NothingType) { }
 

@@ -296,9 +296,11 @@ qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len,
       submatch[i].len = 0;
     } else {
       intptr_t diff = 0;
-      if( ! spPtr[i].empty() ) {
+      if( spPtr[i].empty() ) {
+        diff = startpos;
+      } else {
         diff = qio_ptr_diff((void*) spPtr[i].data(), (void*) textp.data());
-        assert( diff >= 0 && diff <= endpos );
+        assert( diff >= startpos && diff <= endpos );
       }
       submatch[i].offset = diff;
       submatch[i].len = spPtr[i].length();

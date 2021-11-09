@@ -22,14 +22,19 @@ ALL_SRCS += next/lib/types/*.cpp
 
 NEXT_TYPES_SRCS =                                 \
   AnyType.cpp \
+  BasicClassType.cpp \
   BoolType.cpp \
   BuiltinType.cpp \
   BytesType.cpp \
-  ComplexType.cpp \
   CStringType.cpp \
+  ClassType.cpp \
+  ClassTypeDecorator.cpp \
+  ComplexType.cpp \
+  CompositeType.cpp \
   ErroneousType.cpp \
   ImagType.cpp \
   IntType.cpp \
+  NilType.cpp \
   NothingType.cpp \
   Param.cpp \
   PrimitiveType.cpp \

@@ -37,11 +37,8 @@ use Subprocess;
 */
 proc masonNew(args: [] string) throws {
 
-  var parser = new argumentParser();
+  var parser = new argumentParser(helpHandler=new MasonNewHelpHandler());
 
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
   var vcsFlag = parser.addFlag(name="vcs",
                                opts=["--no-vcs"],
                                defaultValue=false);
@@ -51,18 +48,8 @@ proc masonNew(args: [] string) throws {
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var dirArg = parser.addArgument(name="directory", numArgs=0..1);
 
-  try {
-    parser.parseArgs(args);
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonNewHelp();
-    exit(1);
-  }
-  if helpFlag.valueAsBool() {
-    masonNewHelp();
-    exit(0);
-  }
+  parser.parseArgs(args);
+
   var vcs = !vcsFlag.valueAsBool();
   var show = showFlag.valueAsBool();
   var packageName = '';

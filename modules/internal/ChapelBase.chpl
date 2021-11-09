@@ -527,7 +527,7 @@ module ChapelBase {
   //
   // logical operations on primitive types
   //
-  inline operator !(a: bool) return __primitive("!", a);
+  inline operator !(a: bool) return __primitive("u!", a);
   inline operator !(a: int(?w)) return (a == 0);
   inline operator !(a: uint(?w)) return (a == 0);
 
@@ -536,7 +536,7 @@ module ChapelBase {
 
   proc isTrue(a: integral) { compilerError("short-circuiting logical operators not supported on integers"); }
 
-  inline operator !(param a: bool) param return __primitive("!", a);
+  inline operator !(param a: bool) param return __primitive("u!", a);
   inline operator !(param a: int(?w)) param return (a == 0);
   inline operator !(param a: uint(?w)) param return (a == 0);
 

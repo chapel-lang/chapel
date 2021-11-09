@@ -1,0 +1,2 @@
+bug: problem with hashtable initializer workaround
+#15929 and #15960

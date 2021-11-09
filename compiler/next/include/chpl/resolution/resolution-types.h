@@ -48,7 +48,7 @@ struct UntypedFnSignature {
   UniqueString name;
   bool isMethod; // in that case, formals[0] is the receiver
   uast::Function::Kind kind;
-  std::vector<const uast::Formal*> formals;
+  std::vector<const uast::Decl*> formals;
   const uast::Expression* whereClause;
 
   UntypedFnSignature(const uast::Function* fn)
@@ -75,7 +75,7 @@ struct UntypedFnSignature {
   }
 };
 
-using SubstitutionsMap = std::unordered_map<const uast::Formal*, types::QualifiedType>;
+using SubstitutionsMap = std::unordered_map<const uast::Decl*, types::QualifiedType>;
 
 struct CallInfoActual {
   types::QualifiedType type;
@@ -524,7 +524,7 @@ struct ResolvedFunction {
 };
 
 struct FormalActual {
-  const uast::Formal* formal = nullptr;
+  const uast::Decl* formal = nullptr;
   types::QualifiedType formalType;
   bool hasActual = false; // == false means uses formal default value
   int actualIdx = -1;

@@ -21,8 +21,148 @@
 
 /* A help module for the mason package manager */
 
+use ArgumentParser;
 use Help;
 use MasonUtils;
+
+
+class MasonHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonHelp();
+  }
+}
+
+class MasonRunHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonRunHelp();
+  }
+}
+
+class MasonBuildHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonBuildHelp();
+  }
+}
+
+class MasonNewHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonNewHelp();
+  }
+}
+
+class MasonInitHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonInitHelp();
+  }
+}
+
+class MasonSearchHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonSearchHelp();
+  }
+}
+
+class MasonModifyHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonModifyHelp();
+  }
+}
+
+class MasonUpdateHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonUpdateHelp();
+  }
+}
+
+class MasonEnvHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonEnvHelp();
+  }
+}
+
+class MasonExternalHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonExternalHelp();
+  }
+}
+
+class MasonExternalFindHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonExternalFindHelp();
+  }
+}
+
+class MasonExternalInfoHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonExternalInfoHelp();
+  }
+}
+
+class MasonExternalSearchHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonExternalSearchHelp();
+  }
+}
+
+class MasonInstallHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonInstallHelp();
+  }
+}
+
+class MasonUninstallHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonUninstallHelp();
+  }
+}
+
+class MasonCompilerHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonCompilerHelp();
+  }
+}
+
+class MasonTestHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonTestHelp();
+  }
+}
+
+class MasonSystemHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonSystemHelp();
+  }
+}
+
+class MasonSystemSearchHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonSystemSearchHelp();
+  }
+}
+
+class MasonSystemPcHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonSystemPcHelp();
+  }
+}
+
+class MasonCleanHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonCleanHelp();
+  }
+}
+
+class MasonPublishHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonPublishHelp();
+  }
+}
+
+class MasonDocHelpHandler : HelpHandler {
+  override proc printHelp() {
+    masonDocHelp();
+  }
+}
 
 
 proc masonHelp() {
@@ -124,7 +264,7 @@ proc masonInitHelp(){
   writeln('    -h, --help                   Display this message');
   writeln('        --show                   Increase verbosity');
   writeln('    --name <legalName>           Specify package name different from directory name');
-  writeln('    -d, --default                Override interactive session and initialise project');
+  writeln('    -d, --default                Override interactive session and initialize project');
 }
 
 proc masonSearchHelp() {
@@ -275,7 +415,7 @@ proc masonInstallHelp() {
   writeln("Install external packages onto your system");
   writeln();
   writeln("Usage:");
-  writeln("    mason external install [options] <package> ");
+  writeln("    mason external install [options] <package>");
   writeln();
   writeln("    <package>: a Spack spec expression indicating the package to install");
   writeln();
@@ -320,7 +460,7 @@ proc masonUninstallHelp() {
   writeln("Uninstall external packages on your system");
   writeln();
   writeln("Usage:");
-  writeln("    mason external uninstall [options] <package> ");
+  writeln("    mason external uninstall [options] <package>");
   writeln();
   writeln("    <package>: a Spack spec expression indicating the package to install");
   writeln();
@@ -383,7 +523,7 @@ proc masonSystemHelp() {
   writeln("    search                      Search all packages available on the system");
   writeln("    -h, --help                  Display this message");
   writeln();
-  writeln("The pc command sometimes has trouble finding a .pc file if the file is named ");
+  writeln("The pc command sometimes has trouble finding a .pc file if the file is named");
   writeln("something other than <package name>.pc  Use -i to ensure package exists");
   writeln("For more information on using system dependencies see Mason documentation");
 }

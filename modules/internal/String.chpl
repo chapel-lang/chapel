@@ -231,35 +231,10 @@ module String {
   pragma "fn synchronization free"
   private extern proc qio_nbytes_char(chr:int(32)):c_int;
 
-  pragma "no doc"
-  extern const CHPL_SHORT_STRING_SIZE : c_int;
-
-  pragma "no doc"
-  extern record chpl__inPlaceBuffer {};
-
-  pragma "fn synchronization free"
-  pragma "no doc"
-  extern proc chpl__getInPlaceBufferData(const ref data : chpl__inPlaceBuffer) : bufferType;
-
-  // Signal to the Chapel compiler that the actual argument may be modified.
-  pragma "fn synchronization free"
-  pragma "no doc"
-  extern proc chpl__getInPlaceBufferDataForWrite(ref data : chpl__inPlaceBuffer) : bufferType;
-
   private config param debugStrings = false;
 
   pragma "no doc"
   config param useCachedNumCodepoints = true;
-
-  pragma "no doc"
-  record __serializeHelper {
-    var buffLen: int;
-    var buff: bufferType;
-    var size: int;
-    var locale_id: chpl_nodeID.type;
-    var shortData: chpl__inPlaceBuffer;
-    var cachedNumCodepoints: int;
-  }
 
   pragma "plain old data"
   pragma "no doc"

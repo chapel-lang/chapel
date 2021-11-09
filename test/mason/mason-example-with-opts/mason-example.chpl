@@ -8,7 +8,7 @@ proc main() {
 
   // run each example
   // over 3 arguments runs all examples
-  var runArgs: [0..2] string = ["run", "--example", "--force"];
+  var runArgs = ["run", "--example", "--force"];
   masonRun(runArgs);
 
 }

@@ -25,7 +25,10 @@ namespace chpl {
 namespace uast {
 
 bool TupleDecl::assertAcceptableTupleDecl() {
+  const auto unsetSentinel = asttags::NUM_AST_TAGS;
+  asttags::ASTTag firstNonTupleTag = unsetSentinel;
   int i = 0;
+
   for (const auto& elt: children_) {
     if (i == typeExpressionChildNum_) {
       if (!elt->isExpression()) {
@@ -37,9 +40,22 @@ bool TupleDecl::assertAcceptableTupleDecl() {
         assert(false && "init expression child is not expression"); 
         return false;
       }
-    } else if (!elt->isVariable() && !elt->isTupleDecl()) {
-      assert(false && "other child is not variable or tuple decl");
-      return false;
+    } else if (!elt->isTupleDecl()) {
+      if (elt->isFormal() || elt->isVariable()) {
+        if (firstNonTupleTag == unsetSentinel) {
+          firstNonTupleTag = elt->tag();
+        }
+
+        if (elt->tag() != firstNonTupleTag) {
+          assert(0 == "cannot mix formal and variable components");
+          return false;
+        }
+      } else {
+        assert(0 == "variable, formal, or tuple decl components only");
+        return false;
+      }
+    } else {
+      assert(elt->isTupleDecl());
     }
     i++;
   }
@@ -49,7 +65,7 @@ bool TupleDecl::assertAcceptableTupleDecl() {
 owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
                                   Decl::Visibility vis,
                                   Decl::Linkage linkage,
-                                  Variable::Kind kind,
+                                  TupleDecl::IntentOrKind intentOrKind,
                                   ASTList elements,
                                   owned<Expression> typeExpression,
                                   owned<Expression> initExpression) {
@@ -74,7 +90,8 @@ owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
     list.push_back(std::move(initExpression));
   }
 
-  TupleDecl* ret = new TupleDecl(std::move(list), vis, linkage, kind,
+  TupleDecl* ret = new TupleDecl(std::move(list), vis, linkage,
+                                 intentOrKind,
                                  numElements,
                                  typeExpressionChildNum,
                                  initExpressionChildNum);

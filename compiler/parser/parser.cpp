@@ -807,6 +807,13 @@ static void uASTParseFile(const char* fileName,
 
     ModuleSymbol* got = convertToplevelModule(gContext, mod);
 
+    // Use this temporarily to check the contents of the implicit module.
+    // TODO (dlongnecke): Emit this in parse query instead when we have
+    // introduced warnings (e.g. 'noteWarning').
+    if (mod->kind() == chpl::uast::Module::IMPLICIT) {
+      containsOnlyModules(got->block, path.c_str());
+    }
+
     got->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST

@@ -1,5 +1,1 @@
-$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:508: In method 'writeEF':
-$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:513: error: cannot assign to const variable
-  $CHPL_HOME/modules/internal/ChapelSyncvar.chpl:252: called as (_synccls(owned C?)).writeEF(val: owned C?)
-  within internal functions (use --print-callstack-on-error to see)
-sync-owned-nilable.chpl:3: error: sync/single types cannot yet contain owned class types
+{x = 1}
