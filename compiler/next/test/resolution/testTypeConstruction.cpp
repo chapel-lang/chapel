@@ -849,6 +849,55 @@ static void test34() {
   assert(bct->fieldType(0).type() == RealType::get(context, 0));
 }
 
+// test a challenging case
+static void testTypeAndFnSameName() {
+  printf("testTypeAndFnSameName\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto m = parseModule(context, R""""(
+                                  record R {
+                                    type t;
+                                  }
+
+                                  {
+                                    proc R(arg: int) {
+                                      return arg;
+                                    }
+
+                                    var x = R(arg=1);
+                                    var y:R(t=real);
+                                  }
+                                )"""");
+
+  assert(m->numStmts() == 2);
+  const Record* r = m->stmt(0)->toRecord();
+  assert(r);
+  const Block* b = m->stmt(1)->toBlock();
+  assert(b);
+  assert(b->numStmts() == 3);
+  const Function* f = b->stmt(0)->toFunction();
+  assert(f);
+  const Variable* x = b->stmt(1)->toVariable();
+  assert(x);
+  const Variable* y = b->stmt(2)->toVariable();
+  assert(y);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  const Type* xt = rr.byAst(x).type.type();
+  assert(xt);
+  assert(xt == IntType::get(context, 0));
+  const Type* yt = rr.byAst(y).type.type();
+  assert(yt);
+  auto yrt = yt->toRecordType();
+  assert(yrt);
+  assert(yrt->numFields() == 1);
+  assert(yrt->fieldName(0) == "t");
+  assert(yrt->fieldHasDefaultValue(0) == false);
+  assert(yrt->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(yrt->fieldType(0).type() == RealType::get(context, 0));
+}
 
 
 int main() {
@@ -887,6 +936,7 @@ int main() {
   test32();
   test33();
   test34();
+  testTypeAndFnSameName();
 
   return 0;
 }
