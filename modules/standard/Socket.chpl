@@ -253,7 +253,7 @@ type tcpConn = file;
   :return: file descriptor
   :rtype: `int(32)`
 */
-proc const ref tcpConn.socketFd throws {
+proc tcpConn.socketFd throws {
   var tempfd:c_int;
   var err:syserr = ENOERR;
   on this.home {
@@ -270,7 +270,7 @@ proc const ref tcpConn.socketFd throws {
   :return: Returns remote address
   :rtype: `ipAddr`
 */
-proc const ref tcpConn.addr throws {
+proc tcpConn.addr throws {
   var address:ipAddr;
   on this.home {
     address = getPeerName(this.socketFd);
