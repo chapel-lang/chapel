@@ -257,7 +257,7 @@ class Scope {
  by a use/import clause.
 */
 class VisibilitySymbols {
-public:
+ public:
   /** The kind of import symbol */
   enum Kind {
     /** the named symbol itself only (one name in names) */
@@ -270,7 +270,7 @@ public:
     CONTENTS_EXCEPT,
   };
 
-private:
+ private:
   ID symbolId_;      // ID of the imported symbol, e.g. ID of a Module
   Kind kind_ = SYMBOL_ONLY;
   bool isPrivate_ = true;
@@ -280,7 +280,7 @@ private:
   //  pair.second is the name here
   std::vector<std::pair<UniqueString,UniqueString>> names_;
 
-public:
+ public:
   VisibilitySymbols() { }
   VisibilitySymbols(ID symbolId, Kind kind, bool isPrivate,
                     std::vector<std::pair<UniqueString,UniqueString>> names)
@@ -337,11 +337,11 @@ public:
 // are only available after that statement (and in that case this analysis
 // could fold into the logic about variable declarations).
 class ResolvedVisibilityScope {
-private:
+ private:
   const Scope* scope_;
   std::vector<VisibilitySymbols> visibilityClauses_;
 
-public:
+ public:
   using VisibilitySymbolsIterable = Iterable<decltype(visibilityClauses_)>;
 
   ResolvedVisibilityScope(const Scope* scope)
@@ -398,11 +398,11 @@ using LookupConfig = unsigned int;
 // If we want to make PoiScope not depend on the contents it might be nice
 // to make Scope itself not depend on the contents, too.
 class PoiScope {
-private:
+ private:
   const Scope* inScope_ = nullptr;         // parent Scope for the Call
   const PoiScope* inFnPoi_ = nullptr;      // what is the POI of this POI?
 
-public:
+ public:
   PoiScope(const Scope *scope, const PoiScope *poiScope)
       : inScope_(scope), inFnPoi_(poiScope) {}
 
@@ -425,18 +425,18 @@ public:
  InnermostMatch
  */
 class InnermostMatch {
-public:
+ public:
   typedef enum {
     ZERO = 0,
     ONE = 1,
     MANY = 2,
   } MatchesFound;
 
-private:
+ private:
   ID id_;
   MatchesFound found_ = ZERO;
 
-public:
+ public:
   InnermostMatch() { }
   InnermostMatch(ID id, MatchesFound found)
     : id_(id), found_(found)

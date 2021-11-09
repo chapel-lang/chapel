@@ -27,12 +27,12 @@ namespace util {
  Defines a read-only iterator over elements of T
  */
 template <typename C> class Iterable {
-private:
+ private:
   using It = typename C::const_iterator;
   It begin_;
   It end_;
 
-public:
+ public:
   Iterable(const C &c) : begin_(c.cbegin()), end_(c.cend()) {}
 
   It begin() const { return begin_; }
