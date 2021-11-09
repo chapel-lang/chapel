@@ -24,17 +24,20 @@ include $(CHPL_MAKE_HOME)/runtime/etc/Makefile.include
 
 all: $(TMPBINNAME)
 
-blank :=
-define newline
+# We need to put a newline between the backend launches. Otherwise, the
+# `foreach` below will generate a huge one-liner that will be longer than some
+# systems could handle.
+BLANK :=
+define NEWLINE
 
-$(blank)
+$(BLANK)
 endef
 
 $(TMPBINNAME): $(CHPL_CL_OBJS) checkRtLibDir FORCE
 	$(TAGS_COMMAND)
 ifneq ($(SKIP_COMPILE_LINK),skip)
 	$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(TMPBINNAME).o $(CHPL_RT_INC_DIR) $(CHPLSRC)
-	$(foreach srcFile, $(CHPLUSEROBJ),$(newline)$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c ;)
+	$(foreach srcFile, $(CHPLUSEROBJ),$(NEWLINE)$(CC) $(CHPL_MAKE_BASE_CFLAGS) $(GEN_CFLAGS) $(COMP_GEN_CFLAGS) -c -o $(srcFile) $(CHPL_RT_INC_DIR) $(srcFile).c ;)
 	$(LD) $(CHPL_MAKE_BASE_LFLAGS) \
               $(COMP_GEN_USER_LDFLAGS) $(GEN_LFLAGS) $(COMP_GEN_LFLAGS) \
               -o $(TMPBINNAME) $(TMPBINNAME).o $(CHPLUSEROBJ) \
