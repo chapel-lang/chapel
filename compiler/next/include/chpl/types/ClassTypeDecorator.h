@@ -29,6 +29,12 @@ namespace chpl {
 namespace types {
 
 
+/** This class stores a class type decorator that describes a memory
+    management strategy.
+
+    It wraps a ClassTypeDecoratorEnum value
+    so that it is easy to call methods on it.
+ */
 class ClassTypeDecorator final {
  public:
   typedef enum {

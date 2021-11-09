@@ -88,12 +88,12 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
 TYPE_END_SUBCLASSES(BuiltinType)
 
 TYPE_BEGIN_SUBCLASSES(DeclaredType)
+  TYPE_NODE(ClassType)
   TYPE_NODE(EnumType)
   TYPE_NODE(FunctionType)
 
   TYPE_BEGIN_SUBCLASSES(CompositeType)
     TYPE_NODE(BasicClassType)
-    TYPE_NODE(ClassType)
     TYPE_NODE(RecordType)
     TYPE_NODE(TupleType)
     TYPE_NODE(UnionType)

@@ -29,7 +29,7 @@ namespace types {
 
 
 /**
-  This class represents an class type including a decorator.
+  This class represents an class type including a memory management decorator.
   E.g. if we have `class C`, then `borrowed C?` or `shared C` are ClassTypes.
  */
 class ClassType final : public Type {
@@ -74,7 +74,8 @@ class ClassType final : public Type {
                               const Type* manager,
                               ClassTypeDecorator decorator);
 
-  /** Returns the ClassTypeDecorator for this ClassType */
+  /** Returns the ClassTypeDecorator for this ClassType.
+      This decorator indicates the memory management strategy. */
   ClassTypeDecorator decorator() const { return decorator_; } 
 
   /** Returns the manager for this ClassType, or nullptr

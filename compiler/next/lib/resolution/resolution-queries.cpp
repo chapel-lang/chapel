@@ -935,7 +935,7 @@ const Type* typeForTypeDecl(Context* context,
   // result of the above query in most cases since most types
   // are not generic record/class types defaults.
   if (useGenericFormalDefaults) {
-    if (auto ct = t->toCompositeType()) {
+    if (auto ct = t->getCompositeType()) {
       if (ct->isGenericWithDefaults()) {
         t = typeForTypeDeclQuery(context, d->id(),
                                  /* useGenericFormalDefaults */ true);
@@ -959,7 +959,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
   std::vector<UntypedFnSignature::FormalDetail> formals;
   std::vector<types::QualifiedType> formalTypes;
 
-  if (auto ct = t->toCompositeType()) {
+  if (auto ct = t->getCompositeType()) {
     id = ct->id();
     name = ct->name();
 

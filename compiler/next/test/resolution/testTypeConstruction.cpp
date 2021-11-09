@@ -20,15 +20,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
-#include "chpl/types/AnyType.h"
-#include "chpl/types/BoolType.h"
-#include "chpl/types/ComplexType.h"
-#include "chpl/types/ImagType.h"
-#include "chpl/types/IntType.h"
-#include "chpl/types/Param.h"
-#include "chpl/types/RealType.h"
-#include "chpl/types/RecordType.h"
-#include "chpl/types/UintType.h"
+#include "chpl/types/all-types.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
@@ -67,12 +59,14 @@ static void test1() {
                                 "var i16: int(16);\n"
                                 "var i32: int(32);\n"
                                 "var i64: int(64);\n"
+                                "var iq: int(?);\n"
                                 "var u: uint;\n"
                                 "var u8: uint(8);\n"
                                 "var u16: uint(16);\n"
                                 "var u32: uint(32);\n"
-                                "var u64: uint(64);\n");
-  assert(m->numStmts() == 10);
+                                "var u64: uint(64);\n"
+                                "var uq: uint(?);\n");
+  assert(m->numStmts() == 12);
   const Variable* i = m->stmt(0)->toVariable();
   assert(i);
   const Variable* i8 = m->stmt(1)->toVariable();
@@ -83,16 +77,20 @@ static void test1() {
   assert(i32);
   const Variable* i64 = m->stmt(4)->toVariable();
   assert(i64);
-  const Variable* u = m->stmt(5)->toVariable();
+  const Variable* iq = m->stmt(5)->toVariable();
+  assert(iq);
+  const Variable* u = m->stmt(6)->toVariable();
   assert(u);
-  const Variable* u8 = m->stmt(6)->toVariable();
+  const Variable* u8 = m->stmt(7)->toVariable();
   assert(u8);
-  const Variable* u16 = m->stmt(7)->toVariable();
+  const Variable* u16 = m->stmt(8)->toVariable();
   assert(u16);
-  const Variable* u32 = m->stmt(8)->toVariable();
+  const Variable* u32 = m->stmt(9)->toVariable();
   assert(u32);
-  const Variable* u64 = m->stmt(9)->toVariable();
+  const Variable* u64 = m->stmt(10)->toVariable();
   assert(u64);
+  const Variable* uq = m->stmt(11)->toVariable();
+  assert(uq);
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
@@ -101,12 +99,14 @@ static void test1() {
   assert(rr.byAst(i16).type.type() == IntType::get(context, 16));
   assert(rr.byAst(i32).type.type() == IntType::get(context, 32));
   assert(rr.byAst(i64).type.type() == IntType::get(context, 64));
+  assert(rr.byAst(iq).type.type()  == AnyIntType::get(context));
 
   assert(rr.byAst(u).type.type()   == UintType::get(context, 0));
   assert(rr.byAst(u8).type.type()  == UintType::get(context, 8));
   assert(rr.byAst(u16).type.type() == UintType::get(context, 16));
   assert(rr.byAst(u32).type.type() == UintType::get(context, 32));
   assert(rr.byAst(u64).type.type() == UintType::get(context, 64));
+  assert(rr.byAst(uq).type.type()  == AnyUintType::get(context));
 }
 
 static void test2() {
@@ -118,8 +118,9 @@ static void test2() {
                                 "var b8: bool(8);\n"
                                 "var b16: bool(16);\n"
                                 "var b32: bool(32);\n"
-                                "var b64: bool(64);\n");
-  assert(m->numStmts() == 5);
+                                "var b64: bool(64);\n"
+                                "var bq: bool(?);\n");
+  assert(m->numStmts() == 6);
   const Variable* b = m->stmt(0)->toVariable();
   assert(b);
   const Variable* b8 = m->stmt(1)->toVariable();
@@ -130,6 +131,8 @@ static void test2() {
   assert(b32);
   const Variable* b64 = m->stmt(4)->toVariable();
   assert(b64);
+  const Variable* bq = m->stmt(5)->toVariable();
+  assert(bq);
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
@@ -138,6 +141,7 @@ static void test2() {
   assert(rr.byAst(b16).type.type() == BoolType::get(context, 16));
   assert(rr.byAst(b32).type.type() == BoolType::get(context, 32));
   assert(rr.byAst(b64).type.type() == BoolType::get(context, 64));
+  assert(rr.byAst(bq).type.type()  == AnyBoolType::get(context));
 }
 
 static void test3() {
@@ -148,43 +152,76 @@ static void test3() {
   auto m = parseModule(context, "var r: real;\n"
                                 "var r32: real(32);\n"
                                 "var r64: real(64);\n"
+                                "var rq: real(?);\n"
                                 "var i: imag;\n"
                                 "var i32: imag(32);\n"
                                 "var i64: imag(64);\n"
+                                "var iq: imag(?);\n"
                                 "var c: complex;\n"
                                 "var c64: complex(64);\n"
-                                "var c128: complex(128);\n");
-  assert(m->numStmts() == 9);
+                                "var c128: complex(128);\n"
+                                "var cq: complex(?);\n");
+  assert(m->numStmts() == 12);
   const Variable* r = m->stmt(0)->toVariable();
   assert(r);
   const Variable* r32 = m->stmt(1)->toVariable();
   assert(r32);
   const Variable* r64 = m->stmt(2)->toVariable();
   assert(r64);
-  const Variable* i = m->stmt(3)->toVariable();
+  const Variable* rq = m->stmt(3)->toVariable();
+  assert(rq);
+  const Variable* i = m->stmt(4)->toVariable();
   assert(i);
-  const Variable* i32 = m->stmt(4)->toVariable();
+  const Variable* i32 = m->stmt(5)->toVariable();
   assert(i32);
-  const Variable* i64 = m->stmt(5)->toVariable();
+  const Variable* i64 = m->stmt(6)->toVariable();
   assert(i64);
-  const Variable* c = m->stmt(6)->toVariable();
+  const Variable* iq = m->stmt(7)->toVariable();
+  assert(iq);
+  const Variable* c = m->stmt(8)->toVariable();
   assert(c);
-  const Variable* c64 = m->stmt(7)->toVariable();
+  const Variable* c64 = m->stmt(9)->toVariable();
   assert(c64);
-  const Variable* c128 = m->stmt(8)->toVariable();
+  const Variable* c128 = m->stmt(10)->toVariable();
   assert(c128);
+  const Variable* cq = m->stmt(11)->toVariable();
+  assert(cq);
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
   assert(rr.byAst(r).type.type()    == RealType::get(context, 0));
   assert(rr.byAst(r32).type.type()  == RealType::get(context, 32));
   assert(rr.byAst(r64).type.type()  == RealType::get(context, 64));
+  assert(rr.byAst(rq).type.type()   == AnyRealType::get(context));
   assert(rr.byAst(i).type.type()    == ImagType::get(context, 0));
   assert(rr.byAst(i32).type.type()  == ImagType::get(context, 32));
   assert(rr.byAst(i64).type.type()  == ImagType::get(context, 64));
+  assert(rr.byAst(iq).type.type()   == AnyImagType::get(context));
   assert(rr.byAst(c).type.type()    == ComplexType::get(context, 0));
   assert(rr.byAst(c64).type.type()  == ComplexType::get(context, 64));
   assert(rr.byAst(c128).type.type() == ComplexType::get(context, 128));
+  assert(rr.byAst(cq).type.type()   == AnyComplexType::get(context));
+}
+
+// assumes 2nd statement is a variable declaration for x.
+// returns the type of that.
+static const Type* parseTypeOfX(Context* context,
+                                const char* program) {
+  auto m = parseModule(context, program);
+  assert(m->numStmts() == 2);
+  const TypeDecl* td = m->stmt(0)->toTypeDecl();
+  assert(td);
+  const Variable* x = m->stmt(1)->toVariable();
+  assert(x);
+  assert(x->name() == "x");
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  auto qt = rr.byAst(x).type;
+  assert(qt.kind() == QualifiedType::VALUE);
+  assert(qt.type());
+
+  return qt.type();
 }
 
 static void test4() {
@@ -192,22 +229,10 @@ static void test4() {
   Context ctx;
   Context* context = &ctx;
 
-  auto m = parseModule(context, "record R { var field; }\n"
-                                "var x: R(int);\n");
-  assert(m->numStmts() == 2);
-  const Record* r = m->stmt(0)->toRecord();
-  assert(r);
-  const Variable* x = m->stmt(1)->toVariable();
-  assert(x);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type;
-  assert(qt.type());
-
-  auto rt = qt.type()->toRecordType();
+  auto t = parseTypeOfX(context, "record R { var field; }\n"
+                                 "var x: R(int);\n");
+  auto rt = t->toRecordType();
   assert(rt);
-
   assert(rt->numFields() == 1);
   assert(rt->fieldName(0) == "field");
   assert(rt->fieldHasDefaultValue(0) == false);
@@ -220,22 +245,10 @@ static void test5() {
   Context ctx;
   Context* context = &ctx;
 
-  auto m = parseModule(context, "record R { type t; }\n"
-                                "var x: R(int);\n");
-  assert(m->numStmts() == 2);
-  const Record* r = m->stmt(0)->toRecord();
-  assert(r);
-  const Variable* x = m->stmt(1)->toVariable();
-  assert(x);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type;
-  assert(qt.type());
-
-  auto rt = qt.type()->toRecordType();
+  auto t = parseTypeOfX(context, "record R { type t; }\n"
+                                 "var x: R(int);\n");
+  auto rt = t->toRecordType();
   assert(rt);
-
   assert(rt->numFields() == 1);
   assert(rt->fieldName(0) == "t");
   assert(rt->fieldHasDefaultValue(0) == false);
@@ -248,22 +261,10 @@ static void test6() {
   Context ctx;
   Context* context = &ctx;
 
-  auto m = parseModule(context, "record R { param p; }\n"
-                                "var x: R(1);\n");
-  assert(m->numStmts() == 2);
-  const Record* r = m->stmt(0)->toRecord();
-  assert(r);
-  const Variable* x = m->stmt(1)->toVariable();
-  assert(x);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type;
-  assert(qt.type());
-
-  auto rt = qt.type()->toRecordType();
+  auto t = parseTypeOfX(context, "record R { param p; }\n"
+                                 "var x: R(1);\n");
+  auto rt = t->toRecordType();
   assert(rt);
-
   assert(rt->numFields() == 1);
   assert(rt->fieldName(0) == "p");
   assert(rt->fieldHasDefaultValue(0) == false);
@@ -277,22 +278,10 @@ static void test7() {
   Context ctx;
   Context* context = &ctx;
 
-  auto m = parseModule(context, "record R { type t = int; }\n"
-                                "var x: R(real);\n");
-  assert(m->numStmts() == 2);
-  const Record* r = m->stmt(0)->toRecord();
-  assert(r);
-  const Variable* x = m->stmt(1)->toVariable();
-  assert(x);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type;
-  assert(qt.type());
-
-  auto rt = qt.type()->toRecordType();
+  auto t = parseTypeOfX(context, "record R { type t = int; }\n"
+                                 "var x: R(real);\n");
+  auto rt = t->toRecordType();
   assert(rt);
-
   assert(rt->numFields() == 1);
   assert(rt->fieldName(0) == "t");
   assert(rt->fieldHasDefaultValue(0) == true);
@@ -305,22 +294,10 @@ static void test8() {
   Context ctx;
   Context* context = &ctx;
 
-  auto m = parseModule(context, "record R { type t = int; }\n"
-                                "var x: R;\n");
-  assert(m->numStmts() == 2);
-  const Record* r = m->stmt(0)->toRecord();
-  assert(r);
-  const Variable* x = m->stmt(1)->toVariable();
-  assert(x);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type;
-  assert(qt.type());
-
-  auto rt = qt.type()->toRecordType();
+  auto t = parseTypeOfX(context, "record R { type t = int; }\n"
+                                 "var x: R;\n");
+  auto rt = t->toRecordType();
   assert(rt);
-
   assert(rt->numFields() == 1);
   assert(rt->fieldName(0) == "t");
   assert(rt->fieldHasDefaultValue(0) == true);
@@ -333,22 +310,10 @@ static void test9() {
   Context ctx;
   Context* context = &ctx;
 
-  auto m = parseModule(context, "record R { param p = 1; }\n"
-                                "var x: R(2);\n");
-  assert(m->numStmts() == 2);
-  const Record* r = m->stmt(0)->toRecord();
-  assert(r);
-  const Variable* x = m->stmt(1)->toVariable();
-  assert(x);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type;
-  assert(qt.type());
-
-  auto rt = qt.type()->toRecordType();
+  auto t = parseTypeOfX(context, "record R { param p = 1; }\n"
+                                 "var x: R(2);\n");
+  auto rt = t->toRecordType();
   assert(rt);
-
   assert(rt->numFields() == 1);
   assert(rt->fieldName(0) == "p");
   assert(rt->fieldHasDefaultValue(0) == true);
@@ -362,22 +327,10 @@ static void test10() {
   Context ctx;
   Context* context = &ctx;
 
-  auto m = parseModule(context, "record R { param p = 1; }\n"
-                                "var x: R;\n");
-  assert(m->numStmts() == 2);
-  const Record* r = m->stmt(0)->toRecord();
-  assert(r);
-  const Variable* x = m->stmt(1)->toVariable();
-  assert(x);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type;
-  assert(qt.type());
-
-  auto rt = qt.type()->toRecordType();
+  auto t = parseTypeOfX(context, "record R { param p = 1; }\n"
+                                 "var x: R;\n");
+  auto rt = t->toRecordType();
   assert(rt);
-
   assert(rt->numFields() == 1);
   assert(rt->fieldName(0) == "p");
   assert(rt->fieldHasDefaultValue(0) == true);
@@ -391,22 +344,10 @@ static void test11() {
   Context ctx;
   Context* context = &ctx;
 
-  auto m = parseModule(context, "record R { type t = int; }\n"
-                                "var x: R();\n");
-  assert(m->numStmts() == 2);
-  const Record* r = m->stmt(0)->toRecord();
-  assert(r);
-  const Variable* x = m->stmt(1)->toVariable();
-  assert(x);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type;
-  assert(qt.type());
-
-  auto rt = qt.type()->toRecordType();
+  auto t = parseTypeOfX(context, "record R { type t = int; }\n"
+                                 "var x: R();\n");
+  auto rt = t->toRecordType();
   assert(rt);
-
   assert(rt->numFields() == 1);
   assert(rt->fieldName(0) == "t");
   assert(rt->fieldHasDefaultValue(0) == true);
@@ -419,22 +360,10 @@ static void test12() {
   Context ctx;
   Context* context = &ctx;
 
-  auto m = parseModule(context, "record R { type t = int; }\n"
-                                "var x: R(?);\n");
-  assert(m->numStmts() == 2);
-  const Record* r = m->stmt(0)->toRecord();
-  assert(r);
-  const Variable* x = m->stmt(1)->toVariable();
-  assert(x);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type;
-  assert(qt.type());
-
-  auto rt = qt.type()->toRecordType();
+  auto t = parseTypeOfX(context, "record R { type t = int; }\n"
+                                 "var x: R(?);\n");
+  auto rt = t->toRecordType();
   assert(rt);
-
   assert(rt->numFields() == 1);
   assert(rt->fieldName(0) == "t");
   assert(rt->fieldHasDefaultValue(0) == true);
@@ -447,22 +376,10 @@ static void test13() {
   Context ctx;
   Context* context = &ctx;
 
-  auto m = parseModule(context, "record R { param p = 1; }\n"
-                                "var x: R();\n");
-  assert(m->numStmts() == 2);
-  const Record* r = m->stmt(0)->toRecord();
-  assert(r);
-  const Variable* x = m->stmt(1)->toVariable();
-  assert(x);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type;
-  assert(qt.type());
-
-  auto rt = qt.type()->toRecordType();
+  auto t = parseTypeOfX(context, "record R { param p = 1; }\n"
+                                 "var x: R();\n");
+  auto rt = t->toRecordType();
   assert(rt);
-
   assert(rt->numFields() == 1);
   assert(rt->fieldName(0) == "p");
   assert(rt->fieldHasDefaultValue(0) == true);
@@ -476,22 +393,10 @@ static void test14() {
   Context ctx;
   Context* context = &ctx;
 
-  auto m = parseModule(context, "record R { param p = 1; }\n"
-                                "var x: R(?);\n");
-  assert(m->numStmts() == 2);
-  const Record* r = m->stmt(0)->toRecord();
-  assert(r);
-  const Variable* x = m->stmt(1)->toVariable();
-  assert(x);
-
-  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-
-  auto qt = rr.byAst(x).type;
-  assert(qt.type());
-
-  auto rt = qt.type()->toRecordType();
+  auto t = parseTypeOfX(context, "record R { param p = 1; }\n"
+                                 "var x: R(?);\n");
+  auto rt = t->toRecordType();
   assert(rt);
-
   assert(rt->numFields() == 1);
   assert(rt->fieldName(0) == "p");
   assert(rt->fieldHasDefaultValue(0) == true);
@@ -499,6 +404,452 @@ static void test14() {
   assert(rt->fieldType(0).type() == AnyType::get(context));
   assert(rt->fieldType(0).param() == nullptr);
 }
+
+static void test15() {
+  printf("test15\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { var field: int; }\n"
+                                 "var x: C;\n");
+
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::GENERIC_NONNIL);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test16() {
+  printf("test16\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { var field: int; }\n"
+                                 "var x: C?;\n");
+
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::GENERIC_NILABLE);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+
+static void test17() {
+  printf("test17\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { var field: int; }\n"
+                                 "var x: borrowed C;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::BORROWED_NONNIL);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test18() {
+  printf("test18\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { var field: int; }\n"
+                                 "var x: borrowed C?;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::BORROWED_NILABLE);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test19() {
+  printf("test19\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { var field: int; }\n"
+                                 "var x: unmanaged C;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::UNMANAGED_NONNIL);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test20() {
+  printf("test20\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { var field: int; }\n"
+                                 "var x: unmanaged C?;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::UNMANAGED_NILABLE);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test21() {
+  printf("test21\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { var field: int; }\n"
+                                 "var x: owned C;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::MANAGED_NONNIL);
+  assert(ct->manager() == AnyOwnedType::get(context));
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test22() {
+  printf("test22\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { var field: int; }\n"
+                                 "var x: owned C?;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::MANAGED_NILABLE);
+  assert(ct->manager() == AnyOwnedType::get(context));
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test23() {
+  printf("test23\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { var field: int; }\n"
+                                 "var x: shared C;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::MANAGED_NONNIL);
+  assert(ct->manager() == AnySharedType::get(context));
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test23q() {
+  printf("test23q\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { var field: int; }\n"
+                                 "var x: shared C?;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::MANAGED_NILABLE);
+  assert(ct->manager() == AnySharedType::get(context));
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test24() {
+  printf("test24\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { var field; }\n"
+                                 "var x: C(int);\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::GENERIC_NONNIL);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test25() {
+  printf("test25\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { var field; }\n"
+                                 "var x: C(int)?;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::GENERIC_NILABLE);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test26() {
+  printf("test26\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { var field; }\n"
+                                 "var x: borrowed C(int)?;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::BORROWED_NILABLE);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test27() {
+  printf("test27\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { type t; }\n"
+                                 "var x: owned C(int)?;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::MANAGED_NILABLE);
+  assert(ct->manager() == AnyOwnedType::get(context));
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "t");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test28() {
+  printf("test28\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { type t = int; }\n"
+                                 "var x: C;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::GENERIC_NONNIL);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "t");
+  assert(bct->fieldHasDefaultValue(0) == true);
+  assert(bct->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test29() {
+  printf("test29\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { type t = int; }\n"
+                                 "var x: C();\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::GENERIC_NONNIL);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "t");
+  assert(bct->fieldHasDefaultValue(0) == true);
+  assert(bct->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test30() {
+  printf("test30\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { type t = int; }\n"
+                                 "var x: borrowed C?;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::BORROWED_NILABLE);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "t");
+  assert(bct->fieldHasDefaultValue(0) == true);
+  assert(bct->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test31() {
+  printf("test31\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { type t = int; }\n"
+                                 "var x: borrowed C()?;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::BORROWED_NILABLE);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "t");
+  assert(bct->fieldHasDefaultValue(0) == true);
+  assert(bct->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(bct->fieldType(0).type() == IntType::get(context, 0));
+}
+
+static void test32() {
+  printf("test32\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { type t = int; }\n"
+                                 "var x: shared C(real)?;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::MANAGED_NILABLE);
+  assert(ct->manager() == AnySharedType::get(context));
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "t");
+  assert(bct->fieldHasDefaultValue(0) == true);
+  assert(bct->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(bct->fieldType(0).type() == RealType::get(context, 0));
+}
+
+static void test33() {
+  printf("test33\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { type t = int; }\n"
+                                 "var x: C(real)?;\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::GENERIC_NILABLE);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "t");
+  assert(bct->fieldHasDefaultValue(0) == true);
+  assert(bct->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(bct->fieldType(0).type() == RealType::get(context, 0));
+}
+
+static void test34() {
+  printf("test34\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context, "class C { type t = int; }\n"
+                                 "var x: unmanaged C(real);\n");
+  auto ct = t->toClassType();
+  assert(ct);
+  assert(ct->decorator().val() == ClassTypeDecorator::UNMANAGED_NONNIL);
+  assert(ct->manager() == nullptr);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "t");
+  assert(bct->fieldHasDefaultValue(0) == true);
+  assert(bct->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(bct->fieldType(0).type() == RealType::get(context, 0));
+}
+
+
 
 int main() {
   test1();
@@ -515,6 +866,27 @@ int main() {
   test12();
   test13();
   test14();
+  test15();
+  test16();
+  test17();
+  test18();
+  test19();
+  test20();
+  test21();
+  test22();
+  test23();
+  test23q();
+  test24();
+  test25();
+  test26();
+  test27();
+  test28();
+  test29();
+  test30();
+  test31();
+  test32();
+  test33();
+  test34();
 
   return 0;
 }

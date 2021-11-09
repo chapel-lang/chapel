@@ -156,6 +156,12 @@ class Type {
     return isClassType() || isCFnPtrType() || isCVoidPtrType();
   }
 
+  /** If 'this' is a CompositeType, return it.
+      If 'this' is a ClassType, return the basicClassType.
+      Otherwise, returns nullptr.
+   */
+  const CompositeType* getCompositeType() const;
+
   // define to__ methods for the various Type subclasses
   // using macros and TypeClassesList.h
   // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>

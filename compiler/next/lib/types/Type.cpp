@@ -24,6 +24,7 @@
 #include "chpl/types/BuiltinType.h"
 #include "chpl/types/BytesType.h"
 #include "chpl/types/CStringType.h"
+#include "chpl/types/ClassType.h"
 #include "chpl/types/ComplexType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
@@ -147,6 +148,16 @@ void Type::dump(const Type* type, int leadingSpaces) {
 std::string Type::toString() const {
   std::string ret = typetags::tagToString(tag());
   return ret;
+}
+
+const CompositeType* Type::getCompositeType() const {
+  if (auto at = toCompositeType())
+    return at;
+
+  if (auto ct = toClassType())
+    return ct->basicClassType();
+
+  return nullptr;
 }
 
 
