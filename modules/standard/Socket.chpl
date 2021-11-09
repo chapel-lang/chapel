@@ -44,9 +44,9 @@
   -----------------
   :proc:`bind`
   :proc:`connect`
-  :proc:`getpeername`
+  :proc:`getPeerName`
   :proc:`getSockOpt`
-  :proc:`getsockname`
+  :proc:`getSockName`
   :proc:`listen`
   :proc:`setSockOpt`
 
@@ -273,7 +273,7 @@ proc const ref tcpConn.socketFd throws {
 proc const ref tcpConn.addr throws {
   var address:ipAddr;
   on this.home {
-    address = getpeername(this.socketFd);
+    address = getPeerName(this.socketFd);
   }
   return address;
 }
@@ -433,12 +433,7 @@ proc tcpListener.accept(in timeout: timeval = new timeval(-1,0)):tcpConn throws 
     var t: Timer;
     t.start();
     // make event active
-    if timeout.tv_sec == -1 {
-      err_out = event_add(internalEvent, nil);
-    }
-    else {
-      err_out = event_add(internalEvent, c_ptrTo(timeout));
-    }
+    err_out = event_add(internalEvent, if timeout.tv_sec == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
       throw new Error("accept() failed");
     }
@@ -494,7 +489,7 @@ proc ref tcpListener.close() throws {
   :rtype: `ipAddr`
 */
 proc tcpListener.addr throws {
-  return getsockname(this.socketFd);
+  return getSockName(this.socketFd);
 }
 
 pragma "no doc"
@@ -519,7 +514,7 @@ extern const SOMAXCONN: int;
   It is calculated as min(`SOMAXCONN`, 128) where `SOMAXCONN` is
   the maximum number of allowed pending connections in the system.
 */
-var backlogDefault:uint(16) = (if SOMAXCONN <= 128 then SOMAXCONN else 128):uint(16);
+const backlogDefault:uint(16) = (if SOMAXCONN <= 128 then SOMAXCONN else 128):uint(16);
 
 /*
   Convenience procedure which creates a new :type:`tcpListener` bound
@@ -593,12 +588,7 @@ proc connect(const ref address: ipAddr, in timeout = new timeval(-1,0)): tcpConn
     event_del(writerEvent);
     event_free(writerEvent);
   }
-  if timeout.tv_sec == -1 {
-    err_out = event_add(writerEvent, nil);
-  }
-  else {
-    err_out = event_add(writerEvent, c_ptrTo(timeout));
-  }
+  err_out = event_add(writerEvent, if timeout.tv_sec == -1 then nil else c_ptrTo(timeout));
   if err_out != 0 {
     throw new Error("connect() failed");
   }
@@ -721,7 +711,7 @@ record udpSocket {
 
 /* Get :type:`ipAddr` associated with udp socket */
 proc udpSocket.addr throws {
-  return getsockname(this.socketFd);
+  return getSockName(this.socketFd);
 }
 
 proc udpSocket.close throws {
@@ -776,12 +766,7 @@ proc udpSocket.recvfrom(bufferLen: int, in timeout = new timeval(-1,0), flags:c_
   while err_out != 0 {
     var t: Timer;
     t.start();
-    if timeout.tv_sec == -1 {
-      err_out = event_add(internalEvent, nil);
-    }
-    else {
-      err_out = event_add(internalEvent, c_ptrTo(timeout));
-    }
+    err_out = event_add(internalEvent, if timeout.tv_sec == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
       c_free(buffer);
       throw new Error("recv failed");
@@ -883,12 +868,7 @@ proc udpSocket.send(data: bytes, in address: ipAddr,
   while err_out != 0 {
     var t: Timer;
     t.start();
-    if timeout.tv_sec == -1 {
-      err_out = event_add(internalEvent, nil);
-    }
-    else {
-      err_out = event_add(internalEvent, c_ptrTo(timeout));
-    }
+    err_out = event_add(internalEvent, if timeout.tv_sec == -1 then nil else c_ptrTo(timeout));
     if err_out != 0 {
       throw SystemError.fromSyserr(err_out, "send failed");
     }
@@ -1183,7 +1163,7 @@ proc getSockOpt(ref socket: udpSocket, level: c_int, optname: c_int, buflen): by
 }
 
 pragma "no doc"
-proc getpeername(socketFD: fd_t) throws {
+proc getPeerName(socketFD: fd_t) throws {
   var addressStorage = new sys_sockaddr_t();
   var err = sys_getpeername(socketFD, addressStorage);
   if err != 0 {
@@ -1203,13 +1183,13 @@ proc getpeername(socketFD: fd_t) throws {
   :rtype: `ipAddr`
   :throws SystemError: If socket is not connected
 */
-proc getpeername(ref socket: tcpConn): ipAddr throws {
+proc getPeerName(ref socket: tcpConn): ipAddr throws {
   var socketFd = socket.socketFd;
-  return getpeername(socketFd);
+  return getPeerName(socketFd);
 }
 
 pragma "no doc"
-proc getsockname(socketFD: fd_t) throws {
+proc getSockName(socketFD: fd_t) throws {
   var addressStorage = new sys_sockaddr_t();
   var err = sys_getsockname(socketFD, addressStorage);
   if err != 0 {
@@ -1229,25 +1209,25 @@ proc getsockname(socketFD: fd_t) throws {
   :rtype: `ipAddr`
   :throws SystemError: If socket is closed
 */
-proc getsockname(ref socket: tcpConn): ipAddr throws {
+proc getSockName(ref socket: tcpConn): ipAddr throws {
   var socketFd = socket.socketFd;
-  return getsockname(socketFd);
+  return getSockName(socketFd);
 }
 
 /*
   See Above
 */
-proc getsockname(ref socket: tcpListener): ipAddr throws {
+proc getSockName(ref socket: tcpListener): ipAddr throws {
   var socketFd = socket.socketFd;
-  return getsockname(socketFd);
+  return getSockName(socketFd);
 }
 
 /*
   See Above
 */
-proc getsockname(ref socket: udpSocket): ipAddr throws {
+proc getSockName(ref socket: udpSocket): ipAddr throws {
   var socketFd = socket.socketFd;
-  return getsockname(socketFd);
+  return getSockName(socketFd);
 }
 
 pragma "no doc"
