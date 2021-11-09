@@ -127,13 +127,25 @@ static void test2(Parser* parser) {
 }
 
 static void test3(Parser* parser) {
-  auto parseResult = parser->parseString("test2.chpl",
+
+  auto parseResult = parser->parseString("test3.chpl",
       "pragma \"no doc\"\n"
-      "var a, b, c = 0;\n");
+      "deprecated \"Thingy is deprecated\"\n"
+      "var x = 0;\n");
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 1);
+
+  auto var = mod->stmt(0)->toVariable();
+  assert(var);
+
+  auto varAttr = var->attributes();
+  assert(varAttr);
+
+  assert(varAttr->hasPragma(PRAGMA_NO_DOC));
+  assert(varAttr->isDeprecated());
+  assert(varAttr->deprecationMessage() == "Thingy is deprecated");
 }
 
 int main() {

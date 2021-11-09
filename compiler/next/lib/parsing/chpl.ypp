@@ -637,7 +637,6 @@ program:
   toplevel_stmt_ls                    { context->topLevelStatements = $1; }
 ;
 
-// 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
 toplevel_stmt_ls:
                                       { $$ = context->makeList(); }
 | toplevel_stmt_ls toplevel_stmt      { $$ = context->appendList($1, $2); }
@@ -648,7 +647,7 @@ toplevel_stmt:
    stmt
 |  pragma_ls stmt
   {
-    $$ = context->buildPragmaStmt(@$, $2);
+    $$ = context->buildPragmaStmt(@2, $2);
   }
 ;
 
@@ -2021,15 +2020,17 @@ opt_inherit:
 ;
 
 class_level_stmt_ls:
-  /* nothing */
-    { $$ = context->makeList(); }
+  {
+    /* nothing */
+    $$ = context->makeList();
+  }
 | class_level_stmt_ls deprecated_class_level_stmt
   {
     context->appendList($1, $2);
   }
 | class_level_stmt_ls pragma_ls deprecated_class_level_stmt
   {
-    context->appendList($1, TODOEXPR(@$));
+    context->appendList($1, context->buildPragmaStmt(@3, $3));
   }
 ;
 

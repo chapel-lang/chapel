@@ -133,7 +133,9 @@ owned<Attributes> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
   }
 
   // Have to copy construct.
-  auto pragmaCopy = *(attributeParts.pragmas);
+  auto pragmaCopy = attributeParts.pragmas
+      ? *(attributeParts.pragmas)
+      : std::set<PragmaTag>();
 
   auto node = Attributes::build(builder, convertLocation(locationOfDecl),
                                 std::move(pragmaCopy),
@@ -176,8 +178,22 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
 }
 
 void ParserContext::noteDeprecation(YYLTYPE loc, Expression* messageStr) {
-  assert(0 == "Not implemented yet!");
-  return;
+  if (!hasAttributeParts) {
+    hasAttributeParts = true;
+  } else {
+    assert(!attributeParts.isDeprecated);
+    assert(attributeParts.deprecationMessage.isEmpty());
+  }
+
+  attributeParts.isDeprecated = true;
+
+  if (messageStr) {
+    if (auto strLit = messageStr->toStringLiteral()) {
+      attributeParts.deprecationMessage = strLit->str();
+    }
+
+    delete messageStr;
+  }
 }
 
 void ParserContext::resetAttributePartsState() {
