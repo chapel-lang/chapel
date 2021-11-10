@@ -72,7 +72,7 @@ void qio_regex_release(qio_regex_t* regex);
 
 void qio_regex_get_options(const qio_regex_t* regex, qio_regex_options_t* options);
 
-void qio_regex_get_pattern(const qio_regex_t* regex, const char** pattern);
+void qio_regex_get_pattern(const qio_regex_t* regex, const char** pattern, int64_t* len_out);
 
 int64_t qio_regex_get_ncaptures(const qio_regex_t* regex);
 qio_bool qio_regex_ok(const qio_regex_t* regex);
