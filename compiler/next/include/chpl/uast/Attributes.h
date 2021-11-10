@@ -23,6 +23,7 @@
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Pragma.h"
+#include "chpl/util/iteration.h"
 #include <set>
 
 namespace chpl {
@@ -87,29 +88,15 @@ class Attributes final : public Expression {
   }
 
   /// \cond DO_NOT_DOCUMENT
-  class PragmaIterable {
-    using PragmaGroup = std::set<PragmaTag>;
-    PragmaGroup::const_iterator begin_;
-    PragmaGroup::const_iterator end_;
-
-  public:
-    ~PragmaIterable() = default;
-    PragmaIterable(PragmaGroup::const_iterator begin,
-                   PragmaGroup::const_iterator end)
-      : begin_(std::move(begin)),
-        end_(std::move(end)) {
-    }
-
-    PragmaGroup::const_iterator begin() const { return begin_; }
-    PragmaGroup::const_iterator end() const { return end_; }
-  };
+  using PragmaGroup = std::set<PragmaTag>;
+  using PragmaIterable = Iterable<PragmaGroup>;
   /// \endcond
 
   /**
     Iterate over the pragmas stored in this attributes.
   */
   PragmaIterable pragmas() const {
-    return PragmaIterable(pragmas_.begin(), pragmas_.end());
+    return PragmaIterable(pragmas_);
   }
 
   /**
