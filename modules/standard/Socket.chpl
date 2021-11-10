@@ -284,6 +284,32 @@ proc tcpConn.addr throws {
   return address;
 }
 
+/*
+  Enables or disables Nagle's algorithm on a given TCP Connection.
+
+  :arg enable: whether to enable or disable Nagle's algorithm
+  :type enable: `bool`
+
+  :throws SystemError: if not able to set `TCP_NODELAY` flag properly
+*/
+proc ref tcpConn.setNagle(enable:bool) throws {
+  var socketFd = this.socketFd;
+  nagle(socketFd, enable);
+}
+
+/*
+  Enables or disables Delayed Ack optimization on a given TCP Connection.
+
+  :arg enable: whether to enable or disable Nagle's algorithm
+  :type enable: `bool`
+
+  :throws SystemError: if not able to set `TCP_QUICKACK` flag properly
+*/
+proc tcpConn.setDelayAck(enable:bool) throws {
+  var socketFd = this.socketFd;
+  delayAck(socketFd, enable);
+}
+
 pragma "no doc"
 inline operator !=(const ref lhs: tcpConn,const ref rhs: tcpConn) {
   return lhs.socketFd != rhs.socketFd;
@@ -476,6 +502,32 @@ proc ref tcpListener.close() throws {
 */
 proc tcpListener.addr throws {
   return getSockName(this.socketFd);
+}
+
+/*
+  Enables or disables Nagle's algorithm on a given TCP Listener.
+
+  :arg enable: whether to enable or disable Nagle's algorithm
+  :type enable: `bool`
+
+  :throws SystemError: if not able to set `TCP_NODELAY` option properly
+*/
+proc ref tcpListener.setNagle(enable:bool) throws {
+  var socketFd = this.socketFd;
+  nagle(socketFd, enable);
+}
+
+/*
+  Enables or disables Delayed Ack optimization on a given TCP Listener.
+
+  :arg enable: whether to enable or disable Nagle's algorithm
+  :type enable: `bool`
+
+  :throws SystemError: if not able to set `TCP_QUICKACK` flag properly
+*/
+proc ref tcpListener.setDelayAck(enable:bool) throws {
+  var socketFd = this.socketFd;
+  delayAck(socketFd, enable);
 }
 
 pragma "no doc"
