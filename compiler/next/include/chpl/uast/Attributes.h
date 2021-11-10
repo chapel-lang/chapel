@@ -23,7 +23,7 @@
 #include "chpl/queries/Location.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Pragma.h"
-#include <bitset>
+#include <set>
 
 namespace chpl {
 namespace uast {

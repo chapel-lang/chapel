@@ -39,7 +39,11 @@ Module::build(Builder* builder, Location loc,
     lst.push_back(std::move(attributes));
   }
 
-  Module* ret = new Module(std::move(stmts), attributesChildNum, vis,
+  for (auto& ast : stmts) {
+    lst.push_back(std::move(ast));
+  }
+
+  Module* ret = new Module(std::move(lst), attributesChildNum, vis,
                            name,
                            kind);
   builder->noteLocation(ret, loc);

@@ -2073,18 +2073,26 @@ enum_header_lcbr:
 
 enum_ls:
   deprecated_enum_item
-    {
-      $$ = context->makeList($1);
-    }
+  {
+    $$ = context->makeList($1);
+    context->resetAttributePartsState();
+  }
 | enum_ls TCOMMA
-    {
-      $$ = $1;
-      context->clearCommentsBefore(@2);
-    }
-| enum_ls TCOMMA {context->clearCommentsBefore(@2);} deprecated_enum_item
-    {
-      context->appendList($1, $4);
-    }
+  {
+    $$ = $1;
+    context->clearCommentsBefore(@2);
+    context->resetAttributePartsState();
+  }
+| enum_ls TCOMMA
+  {
+    context->clearCommentsBefore(@2);
+    context->resetAttributePartsState();
+  }
+  deprecated_enum_item
+  {
+    context->appendList($1, $4);
+    context->resetAttributePartsState();
+  }
 ;
 
 deprecated_enum_item:
@@ -2110,12 +2118,17 @@ deprecated_enum_item:
 enum_item:
   ident_def
     {
-      auto decl = EnumElement::build(BUILDER, LOC(@$), $1);
+      auto decl = EnumElement::build(BUILDER, LOC(@$),
+                                     context->buildAttributes(@$),
+                                     $1);
       $$ = STMT(@$, decl.release());
     }
 | ident_def TASSIGN expr
     {
-      auto decl = EnumElement::build(BUILDER, LOC(@$), $1, toOwned($3));
+      auto decl = EnumElement::build(BUILDER, LOC(@$),
+                                     context->buildAttributes(@$),
+                                     $1,
+                                     toOwned($3));
       $$ = STMT(@$, decl.release());
       context->clearCommentsBefore(@3);
     }
@@ -2230,6 +2243,7 @@ fn_decl_stmt_start:
       auto loc = context->declStartLoc(@2);
       fp.comments = context->gatherComments(loc);
       fp.attributes = context->buildAttributes(@$).release();
+      context->resetAttributePartsState();
       fp.kind = $2;
       $$ = fp;
     }

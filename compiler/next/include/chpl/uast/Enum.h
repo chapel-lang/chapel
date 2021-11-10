@@ -105,7 +105,7 @@ class Enum final : public TypeDecl {
    Return the i'th EnumElement or Comment in this Enum.
    */
   const Expression* declOrComment(int i) const {
-    assert(i >= 0 && i < numDeclOrComments());
+    assert(0 <= i && i < numDeclOrComments());
     const ASTNode* ast = this->child(declOrCommentChildNum() + i);
     assert(ast->isDecl() || ast->isComment());
     return (const Expression*)ast;

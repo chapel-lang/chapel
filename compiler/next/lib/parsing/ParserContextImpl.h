@@ -132,7 +132,7 @@ owned<Attributes> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
     return nullptr;
   }
 
-  // Have to copy construct.
+  // Create a local copy of the attributes we can move into the node.
   auto pragmaCopy = attributeParts.pragmas
       ? *(attributeParts.pragmas)
       : std::set<PragmaTag>();
@@ -208,6 +208,7 @@ void ParserContext::resetAttributePartsState() {
   assert(attributeParts.pragmas == nullptr);
   assert(!attributeParts.isDeprecated);
   assert(attributeParts.deprecationMessage.isEmpty());
+  assert(!hasAttributeParts);
 
   numAttributesBuilt = 0;
 }
@@ -225,8 +226,18 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
 
   if (cs.stmt->isDecl()) {
 
-    // Should have been reset at some point before this.
-    assert(!hasAttributeParts);
+    // If a decl was produced then the attributes should have been reset.
+    // If they were _not_ reset, then it means that a deprecated statement
+    // came before a pragma list.
+    // TODO: Can we just make deprecated_stmt and pragma_ls alternates?
+    // This solves that problem.
+    if (hasAttributeParts) {
+      assert(attributeParts.pragmas == nullptr);
+      assert(attributeParts.isDeprecated);
+      auto msg = "pragma list must come before deprecation statement";
+      noteError(loc, msg);
+    }
+
   } else {
     assert(numAttributesBuilt == 0);
     assert(hasAttributeParts);
@@ -1501,9 +1512,6 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
 
   assert(numDecls > 0);
   assert(lastDecl);
-
-  // TODO: Use `numAttributesBuilt` to assert something here?
-  (void) numAttributesBuilt;
 
   auto comments = gatherCommentsFromList(vars, locEverything);
   CommentsAndStmt cs = { .comments=comments, .stmt=nullptr };
