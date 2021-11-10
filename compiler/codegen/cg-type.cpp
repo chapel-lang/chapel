@@ -74,12 +74,12 @@ void EnumType::codegenDef() {
 
 
   if( outfile ) {
-    fprintf(outfile, "typedef int64_t ");
+    fprintf(outfile, "typedef int ");
     fprintf(outfile, "%s", symbol->codegen().c.c_str());
     fprintf(outfile, ";\n");
     int i = 0;
     for_enums(constant, this) {
-      fprintf(outfile, "const int64_t %s = %d;\n", constant->sym->codegen().c.c_str(), i);
+      fprintf(outfile, "#define %s %d\n", constant->sym->codegen().c.c_str(), i);
       i++;
     }
   } else {
