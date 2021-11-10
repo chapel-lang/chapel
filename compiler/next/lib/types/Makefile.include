@@ -34,6 +34,7 @@ NEXT_TYPES_SRCS =                                 \
   ErroneousType.cpp \
   ImagType.cpp \
   IntType.cpp \
+  NilType.cpp \
   NothingType.cpp \
   Param.cpp \
   PrimitiveType.cpp \

@@ -1024,28 +1024,13 @@ static bool canParamCoerce(Type*   actualType,
         }
       }
     }
-
-    //
-    // For smaller integer types, if the argument is a param, does it
-    // store a value that's small enough that it could dispatch to
-    // this argument?
-    //
-    if (get_width(formalType) < 64) {
-      if (VarSymbol* var = toVarSymbol(actualSym)) {
-        if (var->immediate) {
-          if (fits_in_uint(get_width(formalType), var->immediate)) {
-            *paramNarrows = true;
-            return true;
-          }
-        }
-      }
-    }
   }
 
   // param strings can coerce between string and c_string
   if ((formalType == dtString || formalType == dtStringC) &&
       (actualType == dtString || actualType == dtStringC)) {
     if (actualSym && actualSym->isImmediate()) {
+      *paramNarrows = true;
       return true;
     }
   }
@@ -1097,6 +1082,11 @@ static bool canParamCoerce(Type*   actualType,
 
   if (is_imag_type(formalType)) {
     int mantissa_width = get_mantissa_width(formalType);
+
+    // coerce imag from smaller size
+    if (is_imag_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
+      return true;
 
     // coerce literal/param imag that are exactly representable
     if (VarSymbol* var = toVarSymbol(actualSym)) {
@@ -3194,9 +3184,11 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
     }
   }
 
-  if (isPrimitiveType(tsType)) {
+  if (at == NULL) {
     USR_FATAL_CONT(info.call, "illegal type index expression '%s'", info.toString());
-    USR_PRINT(info.call, "primitive type '%s' cannot be used in an index expression", tsType->symbol->name);
+    const char* typeclass = (isPrimitiveType(tsType) ? "primitive type" :
+                             (isEnumType(tsType) ? "enum type" : "type"));
+    USR_PRINT(info.call, "%s '%s' cannot be used in an index expression", typeclass, tsType->symbol->name);
     USR_STOP();
   } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
     SymbolMap subs;
@@ -11257,9 +11249,17 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
   } else if (type->symbol->hasFlag(FLAG_EXTERN) &&
              !type->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) {
 
-    // Just let the memory be uninitialized
     errorInvalidParamInit(call, val, at);
-    call->convertToNoop();
+
+    if (!val->hasFlag(FLAG_NO_INIT) &&
+        !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      // Zero-initialize the memory
+      call->insertBefore(new CallExpr(PRIM_ZERO_VARIABLE, val));
+      call->convertToNoop();
+    } else {
+      // Just let the memory be uninitialized
+      call->convertToNoop();
+    }
 
   // generic records with initializers
   } else if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE) == false &&

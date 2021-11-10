@@ -84,7 +84,7 @@ The Begin Statement
 -------------------
 
 The begin statement creates a task to execute a statement. The syntax
-for the begin statement is given by 
+for the begin statement is given by
 
 .. code-block:: syntax
 
@@ -96,14 +96,14 @@ statement.
 
    *Example (beginUnordered.chpl)*.
 
-   The code 
+   The code
 
    .. code-block:: chapel
 
       begin writeln("output from spawned task");
       writeln("output from main task");
 
-   
+
 
    .. BLOCK-test-chapelprediff
 
@@ -113,7 +113,7 @@ statement.
       sort $outfile > $outfile.2
       mv $outfile.2 $outfile
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -146,38 +146,34 @@ reads of a synchronization variable cannot proceed until the variable’s
 state is full. Normal writes of a synchronization variable cannot
 proceed until the variable’s state is empty.
 
-Chapel supports two types of synchronization variables: sync and single.
-Both types behave similarly, except that a single variable may only be
-written once. Consequently, when a sync variable is read, its state
-transitions to empty, whereas when a single variable is read, its state
+Chapel supports two types of synchronization variables: ``sync`` and ``single``.
+Both types behave similarly, except that a ``single`` variable may only be
+written once. Consequently, when a ``sync`` variable is read, its state
+transitions to empty, whereas when a ``single`` variable is read, its state
 does not change. When either type of synchronization variable is
 written, its state transitions to full.
 
 ``sync`` and ``single`` are type qualifiers and precede the type of the
-variable’s value in the declaration. Sync and single are supported for
-the primitive types ``nothing``, ``bool``, ``int``, ``uint``, ``real``,
-``imag``, and ``string`` ( :ref:`Primitive_Types`); for enumerated types
-( :ref:`Enumerated_Types`); and for nilable class types that have
-``unmanaged``, ``borrowed``, or ``shared`` memory management strategy
-( :ref:`Class_Types`). For sync variables of class type, the full/empty
-state applies to the reference to the class object, not to its member
-fields.
-
-   *Note*.
-
-   In the future, ``sync`` and ``single`` might be extended to support
-   more types, including ``complex``, ``owned`` classes, and record types.
+variable’s value in the declaration. ``sync`` and ``single`` are
+supported for the primitive types ``nothing``, ``bool``, ``int``,
+``uint``, ``real``, ``imag``, ``complex``, ``range``, ``bytes``, and
+``string`` ( :ref:`Primitive_Types`); for enumerated types
+( :ref:`Enumerated_Types`); and for class types (:ref:`Class_Types`) and
+record types (:ref:`Record_Types`). For sync variables of class type, the
+full/empty state applies to the reference to the class object, not to its
+member fields.
 
 If a task attempts to read or write a synchronization variable that is
 not in the correct state, the task is suspended. When the variable
 transitions to the correct state, the task is resumed. If there are
-multiple tasks blocked waiting for the state transition, one is
-non-deterministically selected to proceed and the others continue to
-wait if it is a sync variable; all tasks are selected to proceed if it
-is a single variable.
+multiple tasks blocked waiting for the state transition:
 
-A synchronization variable is specified with a sync or single type given
-by the following syntax: 
+ * for a ``sync`` variable, one task is non-deterministically selected to
+   proceed and the others continue to wait
+ * for a ``single`` variable, all tasks are selected to proceed.
+
+A synchronization variable is specified with a ``sync`` or ``single``
+type given by the following syntax:
 
 .. code-block:: syntax
 
@@ -193,7 +189,7 @@ full and store the value from that expression.
 
    *Example (beginWithSyncVar.chpl)*.
 
-   The code 
+   The code
 
    .. code-block:: chapel
 
@@ -213,7 +209,7 @@ full and store the value from that expression.
         }
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -229,7 +225,7 @@ full and store the value from that expression.
       }
       delete tree;
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -247,7 +243,7 @@ full and store the value from that expression.
    *Example (singleVar.chpl)*.
 
    The following code implements a simple split-phase barrier using a
-   single variable. 
+   single variable.
 
    .. BLOCK-test-chapelpre
 
@@ -256,7 +252,7 @@ full and store the value from that expression.
         // do nothing
       }
 
-   
+
 
    .. code-block:: chapel
 
@@ -277,7 +273,7 @@ full and store the value from that expression.
         }
       }
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -311,8 +307,8 @@ the call is made, and the read value is passed to the formal.
 Predefined Single and Sync Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following methods are defined for variables of sync and single type.
-
+The following methods are defined for variables of ``sync`` and
+``single`` type.
 
 
    .. code-block:: chapel
@@ -331,22 +327,26 @@ when this method completes. This method implements the normal read of a
       proc (sync t).readFF(): t
       proc (single t).readFF(): t
 
-Returns the value of the sync or single variable. This method blocks
-until the sync or single variable is full. The state of the sync or
-single variable remains full when this method completes. This method
-implements the normal read of a ``single`` variable.
-
-
+Returns a copy of the value of the ``sync`` or ``single`` variable. This
+method blocks until the ``sync`` or ``single`` variable is full. The
+state of the ``sync`` or ``single`` variable remains full when this
+method completes. This method implements the normal read of a ``single``
+variable.
 
    .. code-block:: chapel
 
       proc (sync t).readXX(): t
       proc (single t).readXX(): t
 
-Returns the value of the sync or single variable. This method is
-non-blocking and the state of the sync or single variable is unchanged
-when this method completes.
+This method does not block and the state of the ``sync`` or ``single``
+variable is unchanged when this method completes.
 
+This function returns:
+
+  * for a full ``sync`` or ``single``, a copy of the value stored
+  * for an empty ``sync`` or ``single``, the implementation will return
+    either a new default-initialzed value of type ``t`` or the last value
+    stored.
 
 
    .. code-block:: chapel
@@ -424,7 +424,7 @@ The Cobegin Statement
 ---------------------
 
 The cobegin statement is used to introduce concurrency within a block.
-The ``cobegin`` statement syntax is 
+The ``cobegin`` statement syntax is
 
 .. code-block:: syntax
 
@@ -444,7 +444,7 @@ statements may not be used to exit a cobegin block.
 
    *Example (cobeginAndEquivalent.chpl)*.
 
-   The cobegin statement 
+   The cobegin statement
 
    .. BLOCK-test-chapelpre
 
@@ -453,7 +453,7 @@ statements may not be used to exit a cobegin block.
       proc stmt2() { s2.readFE(); s1.writeEF(1); }
       proc stmt3() { s2.writeEF(1); }
 
-   
+
 
    .. code-block:: chapel
 
@@ -465,7 +465,7 @@ statements may not be used to exit a cobegin block.
 
    is equivalent to the following code that uses only begin statements
    and single variables to introduce concurrency and synchronize:
-   
+
 
    .. code-block:: chapel
 
@@ -485,7 +485,7 @@ The Coforall Loop
 -----------------
 
 The coforall loop is a variant of the cobegin statement in loop form.
-The syntax for the coforall loop is given by 
+The syntax for the coforall loop is given by
 
 .. code-block:: syntax
 
@@ -512,14 +512,14 @@ statements may not be used to exit a coforall block.
 
    *Example (coforallAndEquivalent.chpl)*.
 
-   The coforall statement 
+   The coforall statement
 
    .. BLOCK-test-chapelpre
 
       iter iterator() { for i in 1..3 do yield i; }
       proc body() { }
 
-   
+
 
    .. code-block:: chapel
 
@@ -529,7 +529,7 @@ statements may not be used to exit a coforall block.
 
    is equivalent to the following code that uses only begin statements
    and sync and single variables to introduce concurrency and
-   synchronize: 
+   synchronize:
 
    .. code-block:: chapel
 
@@ -651,7 +651,7 @@ subject to such treatment within nested task constructs, if any.
    example, it would be easy to introduce and overlook a bug illustrated
    by this simplified example:
 
-   
+
 
    .. code-block:: chapel
 
@@ -743,7 +743,7 @@ continue statements may not be used to exit a sync statement block.
    *Example (syncStmt1.chpl)*.
 
    The sync statement can be used to wait for many dynamically created
-   tasks. 
+   tasks.
 
    .. BLOCK-test-chapelpre
 
@@ -752,19 +752,19 @@ continue statements may not be used to exit a sync statement block.
         write(".");
       }
 
-   
+
 
    .. code-block:: chapel
 
       sync for i in 1..n do begin work();
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln("done");
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -778,14 +778,14 @@ continue statements may not be used to exit a sync statement block.
 
    *Example (syncStmt2.chpl)*.
 
-   The sync statement 
+   The sync statement
 
    .. BLOCK-test-chapelpre
 
       proc stmt1() { }
       proc stmt2() { }
 
-   
+
 
    .. code-block:: chapel
 
@@ -794,7 +794,7 @@ continue statements may not be used to exit a sync statement block.
         begin stmt2();
       }
 
-   is similar to the following cobegin statement 
+   is similar to the following cobegin statement
 
    .. code-block:: chapel
 
@@ -814,7 +814,7 @@ The Serial Statement
 --------------------
 
 The ``serial`` statement can be used to dynamically disable parallelism.
-The syntax is: 
+The syntax is:
 
 .. code-block:: syntax
 
@@ -833,7 +833,7 @@ generates task according to normal Chapel rules.
 
    *Example (serialStmt1.chpl)*.
 
-   In the code 
+   In the code
 
    .. BLOCK-test-chapelpre
 
@@ -844,7 +844,7 @@ generates task according to normal Chapel rules.
           writeln("serial ", i);
       }
 
-   
+
 
    .. code-block:: chapel
 
@@ -861,7 +861,7 @@ generates task according to normal Chapel rules.
         f(i);
       }
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -881,7 +881,7 @@ generates task according to normal Chapel rules.
 
    *Example (serialStmt2.chpl)*.
 
-   The code 
+   The code
 
    .. BLOCK-test-chapelpre
 
@@ -891,7 +891,7 @@ generates task according to normal Chapel rules.
       proc stmt4() { write(4); }
       var n = 3;
 
-   
+
 
    .. code-block:: chapel
 
@@ -904,7 +904,7 @@ generates task according to normal Chapel rules.
         coforall i in 1..n do stmt4();
       }
 
-   is equivalent to 
+   is equivalent to
 
    .. code-block:: chapel
 
@@ -915,13 +915,13 @@ generates task according to normal Chapel rules.
       }
       for i in 1..n do stmt4();
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln();
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -956,7 +956,7 @@ statement had begun executing but had not yet completed.
    data that should be accessed atomically inside or outside an atomic
    section.
 
-The syntax for the atomic statement is given by: 
+The syntax for the atomic statement is given by:
 
 .. code-block:: syntax
 
@@ -970,7 +970,7 @@ The syntax for the atomic statement is given by:
    The following code illustrates the use of an atomic statement to
    perform an insertion into a doubly-linked list:
 
-   
+
 
    .. BLOCK-test-chapelpre
 
@@ -986,7 +986,7 @@ The syntax for the atomic statement is given by:
       var obj = new Node(3);
       head.next.insertAfter(obj);
 
-   
+
 
    .. code-block:: chapel
 
@@ -999,7 +999,7 @@ The syntax for the atomic statement is given by:
         }
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
@@ -1015,7 +1015,7 @@ The syntax for the atomic statement is given by:
         head = next;
       }
 
-   
+
 
    .. BLOCK-test-chapeloutput
 

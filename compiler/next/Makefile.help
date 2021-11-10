@@ -53,6 +53,9 @@ $(LIBCOMPILER_BUILD_DIR):
 libchplcomp-parser: $(LIBCOMPILER_BUILD_DIR) FORCE
 	cd $(LIBCOMPILER_BUILD_DIR)/lib/parsing && $(CMAKE) --build . --target parser
 
+libchplcomp-chpldoc: $(LIBCOMPILER_BUILD_DIR) FORCE
+	cd $(LIBCOMPILER_BUILD_DIR)/tools/chpldoc && cmake --build . --target chpldoc
+
 libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making the compiler library..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \

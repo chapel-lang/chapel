@@ -21,6 +21,7 @@ OPTIMIZATIONS_SRCS = \
 	copyPropagation.cpp \
 	deadCodeElimination.cpp \
 	forallOptimizations.cpp \
+	gpuTransforms.cpp \
 	inlineFunctions.cpp \
 	inferConstRefs.cpp \
 	liveVariableAnalysis.cpp \

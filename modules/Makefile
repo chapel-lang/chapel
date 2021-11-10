@@ -126,8 +126,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
-	packages/OrderedMap.chpl \
-	packages/OrderedSet.chpl \
+	packages/SortedMap.chpl \
+	packages/SortedSet.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \

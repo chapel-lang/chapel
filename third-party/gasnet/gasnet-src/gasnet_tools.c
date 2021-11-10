@@ -612,7 +612,10 @@ extern double gasneti_tick_metric(int idx) {
     _tmp_metric = (double *)malloc(2*sizeof(double));
     gasneti_assert(_tmp_metric != NULL);
     /* granularity */
-    _tmp_metric[0] = ((double)gasneti_ticks_to_ns(min))/1000.0;
+    gasneti_assert(min > 0);
+    uint64_t min_ns = gasneti_ticks_to_ns(min);
+    if (!min_ns) min_ns = 1; // Never report a granularity of 0
+    _tmp_metric[0] = ((double)min_ns)/1000.0;
     /* overhead */
     _tmp_metric[1] = ((double)(gasneti_ticks_to_ns(last - start)))/(i*1000.0);
     gasneti_sync_writes();

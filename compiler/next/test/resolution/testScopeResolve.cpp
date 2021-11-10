@@ -64,8 +64,8 @@ static void test1() {
   assert(scopeForIdent);
 
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(match.id == x->id());
-  assert(match.found == InnermostMatch::ONE);
+  assert(match.id() == x->id());
+  assert(match.found() == InnermostMatch::ONE);
 }
 
 // testing no matching variable declaration
@@ -96,8 +96,8 @@ static void test2() {
   assert(scopeForIdent);
 
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(match.id == ID());
-  assert(match.found == InnermostMatch::ZERO);
+  assert(match.id() == ID());
+  assert(match.found() == InnermostMatch::ZERO);
 }
 
 // testing duplicate matching variable declarations
@@ -132,8 +132,8 @@ static void test3() {
   // design of findInnermostDecl is to return the
   // innermost and first if there is any ambiguity.
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(match.id == x1->id());
-  assert(match.found == InnermostMatch::MANY);
+  assert(match.id() == x1->id());
+  assert(match.found() == InnermostMatch::MANY);
 }
 
 // testing a simple use statement
@@ -171,8 +171,8 @@ static void test4() {
   assert(scopeForIdent);
 
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(match.id == x->id());
-  assert(match.found == InnermostMatch::ONE);
+  assert(match.id() == x->id());
+  assert(match.found() == InnermostMatch::ONE);
 }
 
 // testing a simple recursive use statement
@@ -211,8 +211,8 @@ static void test5() {
   assert(scopeForIdent);
 
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(match.id == x->id());
-  assert(match.found == InnermostMatch::ONE);
+  assert(match.id() == x->id());
+  assert(match.found() == InnermostMatch::ONE);
 }
 
 // testing symbol from parent scope
@@ -248,8 +248,8 @@ static void test6() {
   assert(scopeForIdent);
 
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(match.id == x->id());
-  assert(match.found == InnermostMatch::ONE);
+  assert(match.id() == x->id());
+  assert(match.found() == InnermostMatch::ONE);
 }
 
 // test scope resolution handles incremental changes OK
@@ -315,8 +315,8 @@ static void test7() {
     assert(mScope != oldMScope);
 
     const auto& match = findInnermostDecl(context, mScope, ident->name());
-    assert(match.found == InnermostMatch::ZERO);
-    assert(match.id == ID());
+    assert(match.found() == InnermostMatch::ZERO);
+    assert(match.id() == ID());
 
     oldM = m;
     oldMScope = mScope;
@@ -356,8 +356,8 @@ static void test7() {
     assert(mScope == oldMScope);
 
     const auto& match = findInnermostDecl(context, mScope, ident->name());
-    assert(match.found == InnermostMatch::ONE);
-    assert(match.id == x->id());
+    assert(match.found() == InnermostMatch::ONE);
+    assert(match.id() == x->id());
 
     oldM = m;
     oldMScope = mScope;
@@ -399,8 +399,8 @@ static void test7() {
     assert(mScope != oldMScope);
 
     const auto& match = findInnermostDecl(context, mScope, ident->name());
-    assert(match.found == InnermostMatch::ONE);
-    assert(match.id == x->id());
+    assert(match.found() == InnermostMatch::ONE);
+    assert(match.id() == x->id());
 
     oldM = m;
     oldMScope = mScope;
@@ -453,14 +453,14 @@ static void test8() {
 
   {
     const auto& match = findInnermostDecl(context, outerScope, xStr);
-    assert(match.id == outerX->id());
-    assert(match.found == InnermostMatch::ONE);
+    assert(match.id() == outerX->id());
+    assert(match.found() == InnermostMatch::ONE);
   }
 
   {
     const auto& match = findInnermostDecl(context, innerScope, xStr);
-    assert(match.id == innerX->id());
-    assert(match.found == InnermostMatch::ONE);
+    assert(match.id() == innerX->id());
+    assert(match.found() == InnermostMatch::ONE);
   }
 }
 
@@ -499,8 +499,8 @@ static void test9() {
   assert(scopeForIdent);
 
   const auto& match = findInnermostDecl(context, scopeForIdent, nIdent->name());
-  assert(match.id == n->id());
-  assert(match.found == InnermostMatch::ONE);
+  assert(match.id() == n->id());
+  assert(match.found() == InnermostMatch::ONE);
 }
 
 // testing a dotted import statement
@@ -538,8 +538,8 @@ static void test10() {
   assert(scopeForIdent);
 
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(match.id == x->id());
-  assert(match.found == InnermostMatch::ONE);
+  assert(match.id() == x->id());
+  assert(match.found() == InnermostMatch::ONE);
 }
 
 // testing a dotted import with braces
@@ -583,12 +583,12 @@ static void test11() {
   assert(scopeForIdent);
 
   const auto& mx = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(mx.id == x->id());
-  assert(mx.found == InnermostMatch::ONE);
+  assert(mx.id() == x->id());
+  assert(mx.found() == InnermostMatch::ONE);
 
   const auto& my = findInnermostDecl(context, scopeForIdent, yIdent->name());
-  assert(my.id == y->id());
-  assert(my.found == InnermostMatch::ONE);
+  assert(my.id() == y->id());
+  assert(my.found() == InnermostMatch::ONE);
 
 }
 
@@ -634,8 +634,8 @@ static void test12() {
   assert(scopeForIdent);
 
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(match.id == x->id());
-  assert(match.found == InnermostMatch::ONE);
+  assert(match.id() == x->id());
+  assert(match.found() == InnermostMatch::ONE);
 }
 
 // testing use of a nested module
@@ -680,8 +680,8 @@ static void test13() {
   assert(scopeForIdent);
 
   const auto& match = findInnermostDecl(context, scopeForIdent, xIdent->name());
-  assert(match.id == x->id());
-  assert(match.found == InnermostMatch::ONE);
+  assert(match.id() == x->id());
+  assert(match.found() == InnermostMatch::ONE);
 }
 
 // test import of an ambiguous function name
@@ -718,7 +718,7 @@ static void test14() {
   assert(scopeForIdent);
 
   const auto& match = findInnermostDecl(context, scopeForIdent, fIdent->name());
-  assert(match.found == InnermostMatch::MANY);
+  assert(match.found() == InnermostMatch::MANY);
 }
 
 

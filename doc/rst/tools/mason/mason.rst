@@ -44,7 +44,7 @@ To initialize a new mason package, run ``mason new``. The same can also be done 
     mason init
 
 
-This starts an interactive session which walks an user through the process of creating a project using Mason. This is highly recommended for new users.
+This starts an interactive session which walks a user through the process of creating a project using Mason. This is highly recommended for new users.
 
 A more advanced user may use the ``mason new [ options ] <project name>`` command, for example::
 

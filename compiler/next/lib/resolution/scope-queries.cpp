@@ -253,26 +253,19 @@ static bool doLookupInImports(Context* context,
 
   if (r != nullptr) {
     // check to see if it's mentioned in names/renames
-    for (const VisibilitySymbols& is: r->visibilityClauses) {
+    for (const VisibilitySymbols& is: r->visibilityClauses()) {
       UniqueString from = name;
-      bool named = false;
-      for (const auto& p : is.names) {
-        if (p.second == name) {
-          from = p.first;
-          named = true;
-          break;
-        }
-      }
-      if (named && is.kind == VisibilitySymbols::SYMBOL_ONLY) {
-        result.push_back(BorrowedIdsWithName(is.symbolId));
+      bool named = is.lookupName(name, from);
+      if (named && is.kind() == VisibilitySymbols::SYMBOL_ONLY) {
+        result.push_back(BorrowedIdsWithName(is.symbolId()));
         return true;
-      } else if (named && is.kind == VisibilitySymbols::CONTENTS_EXCEPT) {
+      } else if (named && is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
         // mentioned in an except clause, so don't return it
-      } else if (named || is.kind == VisibilitySymbols::ALL_CONTENTS) {
+      } else if (named || is.kind() == VisibilitySymbols::ALL_CONTENTS) {
         // find it in the contents
-        const Scope* symScope = scopeForId(context, is.symbolId);
+        const Scope* symScope = scopeForId(context, is.symbolId());
         // this symbol should be a module/enum etc which has a scope
-        assert(symScope->id() == is.symbolId);
+        assert(symScope->id() == is.symbolId());
 
         LookupConfig newConfig = LOOKUP_DECLS |
                                  LOOKUP_IMPORT_AND_USE;
@@ -570,10 +563,10 @@ bool doIsWholeScopeVisibleFromScope(Context* context,
     if (cur->containsUseImport()) {
       const ResolvedVisibilityScope* r = resolveVisibilityStmts(context, cur);
 
-      for (const VisibilitySymbols& is: r->visibilityClauses) {
-        if (is.kind == VisibilitySymbols::ALL_CONTENTS) {
+      for (const VisibilitySymbols& is: r->visibilityClauses()) {
+        if (is.kind() == VisibilitySymbols::ALL_CONTENTS) {
           // find it in the contents
-          const Scope* usedScope = scopeForId(context, is.symbolId);
+          const Scope* usedScope = scopeForId(context, is.symbolId());
           // check it recursively
           bool found = doIsWholeScopeVisibleFromScope(context,
                                                       checkScope,
@@ -672,7 +665,7 @@ struct ImportsResolver {
       ID id = vec[0].id(0); // id of the 'use'd module/enum
 
       // First, add the entry for the symbol itself
-      resolvedVisibilityScope->visibilityClauses.push_back(
+      resolvedVisibilityScope->addVisibilityClause(
           VisibilitySymbols(id, VisibilitySymbols::SYMBOL_ONLY,
                             isPrivate, convertOneName(n)));
 
@@ -692,7 +685,7 @@ struct ImportsResolver {
           assert(false && "Should not be possible");
           break;
       }
-      resolvedVisibilityScope->visibilityClauses.push_back(
+      resolvedVisibilityScope->addVisibilityClause(
           VisibilitySymbols(id, kind, isPrivate,
                             convertLimitations(clause)));
     }
@@ -746,12 +739,12 @@ struct ImportsResolver {
           if (expr->isIdentifier()) {
             kind = VisibilitySymbols::SYMBOL_ONLY;
             // Add an entry for the imported thing
-            resolvedVisibilityScope->visibilityClauses.push_back(
+            resolvedVisibilityScope->addVisibilityClause(
                 VisibilitySymbols(id, kind, isPrivate,
                                   convertOneName(n)));
           } else if (expr->isDot()) {
             kind = VisibilitySymbols::ONLY_CONTENTS;
-            resolvedVisibilityScope->visibilityClauses.push_back(
+            resolvedVisibilityScope->addVisibilityClause(
                 VisibilitySymbols(id, kind, isPrivate,
                                   convertOneName(n)));
           }
@@ -759,7 +752,7 @@ struct ImportsResolver {
         case VisibilityClause::BRACES:
           kind = VisibilitySymbols::ONLY_CONTENTS;
           // Add an entry for the imported things
-          resolvedVisibilityScope->visibilityClauses.push_back(
+          resolvedVisibilityScope->addVisibilityClause(
               VisibilitySymbols(id, kind, isPrivate,
                                 convertLimitations(clause)));
           break;
@@ -837,9 +830,7 @@ const owned<PoiScope>& constructPoiScopeQuery(Context* context,
                                               const PoiScope* parentPoiScope) {
   QUERY_BEGIN(constructPoiScopeQuery, context, scope, parentPoiScope);
 
-  owned<PoiScope> result = toOwned(new PoiScope());
-  result->inScope = scope;
-  result->inFnPoi = parentPoiScope;
+  owned<PoiScope> result = toOwned(new PoiScope(scope, parentPoiScope));
 
   return QUERY_END(result);
 }
@@ -868,10 +859,10 @@ pointOfInstantiationScopeQuery(Context* context,
   // the call site itself. These can be collapsed away.
   for (usePoi = parentPoiScope;
        usePoi != nullptr;
-       usePoi = usePoi->inFnPoi) {
+       usePoi = usePoi->inFnPoi()) {
 
     bool collapse = isWholeScopeVisibleFromScope(context,
-                                                 usePoi->inScope,
+                                                 usePoi->inScope(),
                                                  scope);
     if (collapse == false) {
       break;

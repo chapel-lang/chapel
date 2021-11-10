@@ -1255,7 +1255,7 @@ module ArgumentParser {
       }
 
       // get this as an array so we can sort it, because maps are orderless
-      // TODO: Can we eliminate this extra logic by using an OrderedMap type?
+      // TODO: Can we eliminate this extra logic by using an SortedMap type?
       var arrayOptionIndices = optionIndices.toArray();
       sort(arrayOptionIndices);
 

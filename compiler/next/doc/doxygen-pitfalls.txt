@@ -21,6 +21,10 @@ An "in-class member initializer" for a field looks like:
 
 Doxygen can't seem to resolve these when the RHS is an enum.
 
+`base.rst` needs to include types that might be declared in the chpl
+namespace elsewhere. Examples of this are chp::owned, chpl::Iterable,
+and chpl::UniqueString.
+
 ---
 "WARNING: Invalid C++ declaration: Expected end of definition."
 ---

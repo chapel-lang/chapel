@@ -48,6 +48,7 @@ class IntType final : public PrimitiveType {
  public:
   ~IntType() = default;
 
+  /** Get an integer type. Bitwidth 0 creates a default width int. */
   static const IntType* get(Context* context, int bitwidth);
 
   int bitwidth() const override {
