@@ -223,6 +223,59 @@ static void test4(Parser* parser) {
   assert(var);
 }
 
+
+static void test5(Parser* parser) {
+  const std::string myCircle =
+                        "module test5 {\n"
+                          "class MyCircleImpl {\n"
+                            "var radius:real;\n"
+                            "proc area() {\n"
+                              "return pi*radius*radius;\n"
+                            "}\n"
+                            "proc circumference() {\n"
+                              "return 2.0*pi*radius;\n"
+                            "}\n"
+                          "}\n"
+                          "record MyCircle {\n"
+                            "var impl: MyCircleImpl;\n"
+
+                            "forwarding impl except circumference;\n"
+                          "}\n"
+                          "// var c = new MyCircle(new MyCircleImpl(10));\n"
+                          "// writeln(c.area());\n"
+                        "}\n";
+
+  const std::string circle = myCircle;
+
+  auto parseResult = parser->parseString("test5.chpl", circle.c_str());
+
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 4);
+
+  assert(mod->stmt(0)->isClass());
+  assert(mod->stmt(1)->isRecord());
+  assert(mod->stmt(2)->isComment());
+  assert(mod->stmt(3)->isComment());
+  const Record* record = mod->stmt(1)->toRecord();
+  assert(record);
+  assert(record->numChildren() == 2);
+  assert(record->child(0)->isVariable());
+  assert(record->child(1)->isForwardingDecl());
+  const ForwardingDecl* fwd = record->child(1)->toForwardingDecl();
+  assert(fwd);
+  const Expression* expr = fwd->expr()->toExpression();
+  assert(expr);
+  assert(expr->isVisibilityClause());
+  const VisibilityClause* visClause = expr->toVisibilityClause();
+  assert(visClause);
+  assert(visClause->symbol()->isIdentifier());
+  assert(visClause->limitationKind() == VisibilityClause::EXCEPT);
+  assert(visClause->numLimitations() == 1);
+}
+
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -235,5 +288,6 @@ int main() {
   test2(p);
   test3(p);
   test4(p);
+  test5(p);
   return 0;
 }
