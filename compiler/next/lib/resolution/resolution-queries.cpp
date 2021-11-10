@@ -1005,64 +1005,6 @@ const TypedFnSignature* typeConstructorInitial(Context* context,
   return typeConstructorInitialQuery(context, t).get();
 }
 
-static const owned<TypedFnSignature>&
-typeConstructorInitialBuiltinQuery(Context* context, UniqueString name) {
-  QUERY_BEGIN(typeConstructorInitialBuiltinQuery, context, name);
-
-  owned<TypedFnSignature> result;
-
-  ID id;
-  std::vector<UntypedFnSignature::FormalDetail> formals;
-  std::vector<types::QualifiedType> formalTypes;
-
-  if (name == "owned" || name == "shared" ||
-      name == "borrowed" || name == "unmanaged") {
-    UniqueString t = UniqueString::build(context, "t");
-    auto detail = UntypedFnSignature::FormalDetail(t, false, nullptr);
-    QualifiedType qt = QualifiedType(QualifiedType::TYPE,
-                                     AnyType::get(context));
-    formals.push_back(detail);
-    formalTypes.push_back(qt);
-
-  } else {
-    UniqueString bitwidth = UniqueString::build(context, "_bitwidth");
-    auto detail = UntypedFnSignature::FormalDetail(bitwidth, false, nullptr);
-    QualifiedType paramBitWidth = QualifiedType(QualifiedType::PARAM,
-                                                IntType::get(context, 0));
-    formals.push_back(detail);
-    formalTypes.push_back(paramBitWidth);
-
-    // TODO: generate a user-facing error if this is not the case
-    assert(name == "int" || name == "uint" || name == "bool" ||
-           name == "real" || name == "imag" || name == "complex");
-  }
-
-  auto untyped = UntypedFnSignature::get(context,
-                                         id, name,
-                                         /* isMethod */ false,
-                                         /* idIsFunction */ false,
-                                         /* isTypeConstructor */ true,
-                                         Function::PROC,
-                                         std::move(formals),
-                                         /* whereClause */ nullptr);
-
-  auto sig = new TypedFnSignature(untyped,
-                                  std::move(formalTypes),
-                                  TypedFnSignature::WHERE_NONE,
-                                  /* needsInstantiation */ true,
-                                  /* instantiatedFrom */ nullptr,
-                                  /* parentFn */ nullptr);
-  result = toOwned(sig);
-
-  return QUERY_END(result);
-}
-
-const TypedFnSignature* typeConstructorInitialBuiltin(Context* context,
-                                                      UniqueString name) {
-  return typeConstructorInitialBuiltinQuery(context, name).get();
-}
-
-
 const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
                                              const CallInfo& call,
@@ -1160,18 +1102,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     }
     needsInstantiation = anyFormalNeedsInstantiation(formalTypes);
   } else {
-    UniqueString name = untypedSignature->name();
-
-    assert(name == "owned" || name == "shared" ||
-           name == "unmanaged" || name == "borrowed" ||
-           name == "int" || name == "uint" || name == "bool" ||
-           name == "real" || name == "imag" || name == "complex");
-
-    assert(substitutions.size() == 1);
-    QualifiedType qt = substitutions[nullptr];
-    assert(substitutions.size() == 1);
-    formalTypes.push_back(qt);
-    needsInstantiation = anyFormalNeedsInstantiation(formalTypes);
+    assert(false && "case not handled");
   }
 
   // now, construct a TypedFnSignature from the result
@@ -1485,63 +1416,9 @@ const QualifiedType& returnType(Context* context,
       result = QualifiedType(QualifiedType::TYPE, t);
 
     } else {
-      // construct built-in type
-      auto name = untyped->name();
-      assert(sig->numFormals() == 1);
-      QualifiedType formalQt = sig->formalType(0);
-      const Type* t = nullptr;
-
-      if (name == "owned" || name == "shared" ||
-          name == "unmanaged" || name == "borrowed") {
-        // construct an owned or shared class type
-        const Type* manager = nullptr;
-        auto d = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
-        if (name == "owned") {
-          manager = AnyOwnedType::get(context);
-        } else if (name == "shared") {
-          manager = AnySharedType::get(context);
-        } else if (name == "unmanaged") {
-          d = ClassTypeDecorator(ClassTypeDecorator::UNMANAGED_NONNIL);
-        } else if (name == "borrowed") {
-          d = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
-        } else {
-          assert(false && "case not handled");
-        }
-
-        const Type* ft = formalQt.type();
-        if (ft != nullptr && (ft->isBasicClassType() || ft->isClassType())) {
-          const BasicClassType* bct = nullptr;
-          if (auto ct = ft->toClassType()) {
-            bct = ct->basicClassType();
-            // get nilability from ct
-            if (ct->decorator().isNilable())
-              d = d.addNilable();
-          } else {
-            bct = ft->toBasicClassType();
-          }
-
-          assert(bct);
-          t = ClassType::get(context, bct, manager, d);
-        } else {
-          // erroneous -- will raise error at call site
-        }
-      } else {
-        assert(name == "int" || name == "uint" || name == "bool" ||
-               name == "real" || name == "imag" || name == "complex");
-
-        if (formalQt.type() == nullptr || !formalQt.type()->isIntType() ||
-            formalQt.param() == nullptr || !formalQt.param()->isIntParam()) {
-          // erroneous -- will raise error at call site
-        } else {
-          auto ip = formalQt.param()->toIntParam();
-          auto value = ip->value();
-          if (0 <= value && value <= 128) {
-            t = PrimitiveType::getWithNameAndWidth(context, name, value);
-          }
-        }
-      }
-
-      result = QualifiedType(QualifiedType::TYPE, t);
+      // built-in type construction should be handled
+      // by resolveFnCallSpecialType and not reach this point.
+      assert(false && "case not handled");
     }
   } else {
     assert(false && "case not handled");
@@ -1607,7 +1484,7 @@ doIsCandidateApplicableInitial(Context* context,
                                       /* useGenericFormalDefaults */ false);
       return typeConstructorInitial(context, t);
     } else {
-      return typeConstructorInitialBuiltin(context, call.name);
+      assert(false && "case not handled");
     }
   }
 
@@ -1830,9 +1707,144 @@ void accumulatePoisUsedByResolvingBody(Context* context,
   poiInfo.accumulate(r->poiInfo);
 }
 
+// if the call's name matches a class management type construction,
+// return the result or ErroneousType.
+// returns nullptr if the class type is not handled here.
+static const Type* getManagedClassType(Context* context,
+                                       const Call* call,
+                                       const CallInfo& ci) {
+  UniqueString name = ci.name;
+
+  if (ci.hasQuestionArg) {
+    if (ci.actuals.size() != 0) {
+      context->error(call, "invalid class type construction");
+      return ErroneousType::get(context);
+    } else if (name == "owned") {
+      return AnyOwnedType::get(context);
+    } else if (name == "shared") {
+      return AnySharedType::get(context);
+    } else if (name == "unmanaged") {
+      return AnyUnmanagedType::get(context);
+    } else if (name == "borrowed") {
+      return AnyBorrowedType::get(context);
+    } else {
+      // case not handled in here
+      return nullptr;
+    }
+  }
+
+  ClassTypeDecorator::ClassTypeDecoratorEnum de;
+  const Type* manager = nullptr;
+
+  if (name == "owned") {
+    de = ClassTypeDecorator::MANAGED;
+    manager = AnyOwnedType::get(context);
+  } else if (name == "shared") {
+    de = ClassTypeDecorator::MANAGED;
+    manager = AnySharedType::get(context);
+  } else if (name == "unmanaged") {
+    de = ClassTypeDecorator::UNMANAGED;
+    manager = nullptr;
+  } else if (name == "borrowed") {
+    de = ClassTypeDecorator::BORROWED;
+    manager = nullptr;
+  } else {
+    // case not handled in here
+    return nullptr;
+  }
+
+  auto d = ClassTypeDecorator(de);
+
+  const Type* t = nullptr;
+  if (ci.actuals.size() > 0)
+    t = ci.actuals[0].type.type();
+
+  if (t == nullptr || !(t->isBasicClassType() || t->isClassType())) {
+    context->error(call, "invalid class type construction");
+    return ErroneousType::get(context);
+  }
+
+  const BasicClassType* bct = nullptr;
+  if (auto ct = t->toClassType()) {
+    bct = ct->basicClassType();
+    // get nilability from ct
+    if (ct->decorator().isNilable())
+      d = d.addNilable();
+    if (ct->decorator().isNonNilable())
+      d = d.addNonNil();
+  } else {
+    bct = t->toBasicClassType();
+  }
+
+  assert(bct);
+  return ClassType::get(context, bct, manager, d);
+}
+
+static const Type* getNumericType(Context* context,
+                                  const Call* call,
+                                  const CallInfo& ci) {
+  UniqueString name = ci.name;
+
+  if (ci.hasQuestionArg) {
+    if (ci.actuals.size() != 0) {
+      context->error(call, "invalid numeric type construction");
+      return ErroneousType::get(context);
+    } else if (name == "int") {
+      return AnyIntType::get(context);
+    } else if (name == "uint") {
+      return AnyUintType::get(context);
+    } else if (name == "bool") {
+      return AnyBoolType::get(context);
+    } else if (name == "real") {
+      return AnyRealType::get(context);
+    } else if (name == "imag") {
+      return AnyImagType::get(context);
+    } else if (name == "complex") {
+      return AnyComplexType::get(context);
+    } else {
+      // case not handled in here
+      return nullptr;
+    }
+  }
+
+  if (name == "int" || name == "uint" || name == "bool" ||
+      name == "real" || name == "imag" || name == "complex") {
+
+    QualifiedType qt;
+    if (ci.actuals.size() > 0)
+      qt = ci.actuals[0].type;
+
+    if (qt.type() == nullptr || !qt.type()->isIntType() ||
+        qt.param() == nullptr || !qt.param()->isIntParam() ||
+        ci.actuals.size() != 1) {
+      context->error(call, "invalid numeric type construction");
+      return ErroneousType::get(context);
+    }
+
+    const Type* ret = nullptr;
+    auto ip = qt.param()->toIntParam();
+    auto value = ip->value();
+    if (0 <= value && value <= 128) {
+      ret = PrimitiveType::getWithNameAndWidth(context, name, value);
+    }
+
+    if (ret == nullptr) {
+      context->error(call, "invalid numeric type construction");
+      return ErroneousType::get(context);
+    }
+
+    return ret;
+  }
+
+  return nullptr;
+}
+
 // Resolving compiler-supported type-returning patterns
+// 'call' and 'inPoiScope' are used for the location for error reporting.
 static const Type* resolveFnCallSpecialType(Context* context,
+                                            const Call* call,
                                             const CallInfo& ci) {
+
   if (ci.name == "?") {
     if (ci.actuals.size() > 0) {
       if (const Type* t = ci.actuals[0].type.type()) {
@@ -1855,20 +1867,12 @@ static const Type* resolveFnCallSpecialType(Context* context,
     }
   }
 
-  if (ci.hasQuestionArg && ci.actuals.size() == 0) {
-    if (ci.name == "int") {
-      return AnyIntType::get(context);
-    } else if (ci.name == "uint") {
-      return AnyUintType::get(context);
-    } else if (ci.name == "bool") {
-      return AnyBoolType::get(context);
-    } else if (ci.name == "real") {
-      return AnyRealType::get(context);
-    } else if (ci.name == "imag") {
-      return AnyImagType::get(context);
-    } else if (ci.name == "complex") {
-      return AnyComplexType::get(context);
-    }
+  if (auto t = getManagedClassType(context, call, ci)) {
+    return t;
+  }
+
+  if (auto t = getNumericType(context, call, ci)) {
+    return t;
   }
 
   return nullptr;
@@ -1876,8 +1880,10 @@ static const Type* resolveFnCallSpecialType(Context* context,
 
 
 // Resolving calls for certain compiler-supported patterns
-// without requiring module implementations exist at all
+// without requiring module implementations exist at all.
+// 'call' and 'inPoiScope' are used for the location for error reporting.
 static bool resolveFnCallSpecial(Context* context,
+                                 const Call* call,
                                  const CallInfo& ci,
                                  QualifiedType& exprTypeOut) {
   // TODO: type comparisons
@@ -1885,7 +1891,7 @@ static bool resolveFnCallSpecial(Context* context,
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
 
-  if (const Type* t = resolveFnCallSpecialType(context, ci)) {
+  if (const Type* t = resolveFnCallSpecialType(context, call, ci)) {
     exprTypeOut = QualifiedType(QualifiedType::TYPE, t);
     return true;
   }
@@ -2060,7 +2066,7 @@ CallResolutionResult resolveCall(Context* context,
   if (call->isFnCall() || call->isOpCall()) {
     // see if the call is handled directly by the compiler
     QualifiedType tmpRetType;
-    if (resolveFnCallSpecial(context, ci, tmpRetType)) {
+    if (resolveFnCallSpecial(context, call, ci, tmpRetType)) {
       return CallResolutionResult(std::move(tmpRetType));
     }
     // otherwise do regular call resolution

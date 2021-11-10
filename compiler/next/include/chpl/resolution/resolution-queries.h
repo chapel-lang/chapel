@@ -75,13 +75,6 @@ const TypedFnSignature* typeConstructorInitial(Context* context,
                                                const types::Type* t);
 
 /**
- Compute an initial TypedFnSignature for a  type constructor
- for a builtin type with the provided name.
- */
-const TypedFnSignature* typeConstructorInitialBuiltin(Context* context,
-                                                      UniqueString name);
-
-/**
   Instantiate a TypedFnSignature from
    * the result of typedSignatureInitial,
    * a CallInfo describing the types at the call site, and
