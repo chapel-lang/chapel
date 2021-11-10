@@ -42,18 +42,6 @@ using namespace chpl;
 using namespace uast;
 using namespace parsing;
 
-const std::string circleImpl =
-        "/* comment 1 */\n"
-        "class MyCircleImpl {\n"
-          "var radius:real;\n"
-          "proc area() {\n"
-            "return pi*radius*radius;\n"
-          "}\n"
-          "proc circumference() {\n"
-            "return 2.0*pi*radius;\n"
-          "}\n"
-        "}\n";
-
 static void test0(Parser* parser) {
 
   const std::string myCircle =
@@ -61,17 +49,23 @@ static void test0(Parser* parser) {
           "forwarding var impl: MyCircleImpl;\n"
         "}\n";
 
-  const std::string circle = circleImpl + myCircle;
-
-  auto parseResult = parser->parseString("test0.chpl", circle.c_str());
+  auto parseResult = parser->parseString("test0.chpl", myCircle.c_str());
 
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
-  assert(mod->numStmts() == 3);
-  assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(1)->isClass());
-  assert(mod->stmt(2)->isRecord());
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isRecord());
+  const Record* record = mod->stmt(0)->toRecord();
+  assert(record);
+  assert(record->numChildren() == 1);
+  assert(record->child(0)->isForwardingDecl());
+  const ForwardingDecl* fwd = record->child(0)->toForwardingDecl();
+  assert(fwd);
+  assert(fwd->expr()->isVariable());
+  const Variable* var = fwd->expr()->toVariable();
+  assert(var);
+  assert(var->visibility() == Decl::DEFAULT_VISIBILITY);
 }
 
 static void test1(Parser* parser) {
@@ -88,18 +82,14 @@ static void test1(Parser* parser) {
                       "forwarding getImplOrFail();\n"
                      "}\n";
 
-  const std::string circle = circleImpl + myCircle;
-
-  auto parseResult = parser->parseString("test1.chpl", circle.c_str());
+  auto parseResult = parser->parseString("test1.chpl", myCircle.c_str());
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
 
-  assert(mod->numStmts() == 3);
-  assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(1)->isClass());
-  assert(mod->stmt(2)->isRecord());
-  const Record* record = mod->stmt(2)->toRecord();
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isRecord());
+  const Record* record = mod->stmt(0)->toRecord();
   assert(record);
   assert(record->numChildren() == 3);
   assert(record->child(0)->isVariable());
@@ -121,18 +111,14 @@ static void test2(Parser* parser) {
                       "/* some comments after forwarding*/\n"
                     "}\n";
 
-  const std::string circle = circleImpl + myCircle;
-
-  auto parseResult = parser->parseString("test2.chpl", circle.c_str());
+  auto parseResult = parser->parseString("test2.chpl", myCircle.c_str());
 
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
-  assert(mod->numStmts() == 3);
-  assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(1)->isClass());
-  assert(mod->stmt(2)->isRecord());
-  const Record* record = mod->stmt(2)->toRecord();
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isRecord());
+  const Record* record = mod->stmt(0)->toRecord();
   assert(record);
   assert(record->numChildren() == 3);
   assert(record->child(0)->isVariable());
@@ -160,18 +146,14 @@ static void test3(Parser* parser) {
                       "forwarding impl except circumference;\n"
                     "}\n";
 
-  const std::string circle = circleImpl + myCircle;
-
-  auto parseResult = parser->parseString("test3.chpl", circle.c_str());
+  auto parseResult = parser->parseString("test3.chpl", myCircle.c_str());
 
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
-  assert(mod->numStmts() == 3);
-  assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(1)->isClass());
-  assert(mod->stmt(2)->isRecord());
-  const Record* record = mod->stmt(2)->toRecord();
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isRecord());
+  const Record* record = mod->stmt(0)->toRecord();
   assert(record);
   assert(record->numChildren() == 3);
   assert(record->child(0)->isVariable());
@@ -197,18 +179,14 @@ static void test4(Parser* parser) {
                       "forwarding var x = 10;\n"
                     "}\n";
 
-  const std::string circle = circleImpl + myCircle;
-
-  auto parseResult = parser->parseString("test4.chpl", circle.c_str());
+  auto parseResult = parser->parseString("test4.chpl", myCircle.c_str());
 
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
   assert(mod);
-  assert(mod->numStmts() == 3);
-  assert(mod->stmt(0)->isComment());
-  assert(mod->stmt(1)->isClass());
-  assert(mod->stmt(2)->isRecord());
-  const Record* record = mod->stmt(2)->toRecord();
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isRecord());
+  const Record* record = mod->stmt(0)->toRecord();
   assert(record);
   assert(record->numChildren() == 3);
   assert(record->child(0)->isVariable());
@@ -221,6 +199,7 @@ static void test4(Parser* parser) {
   assert(expr->isVariable());
   const Variable* var = expr->toVariable();
   assert(var);
+  assert(var->visibility() == Decl::DEFAULT_VISIBILITY);
 }
 
 
@@ -245,9 +224,7 @@ static void test5(Parser* parser) {
                           "// writeln(c.area());\n"
                         "}\n";
 
-  const std::string circle = myCircle;
-
-  auto parseResult = parser->parseString("test5.chpl", circle.c_str());
+  auto parseResult = parser->parseString("test5.chpl", myCircle.c_str());
 
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
@@ -276,6 +253,64 @@ static void test5(Parser* parser) {
 }
 
 
+// static void test6(Parser* parser) {
+
+//   const std::string myCircle =
+//         "record MyCircle {\n"
+//           "forwarding private var impl: MyCircleImpl;\n"
+//         "}\n";
+
+//   auto parseResult = parser->parseString("test6.chpl", myCircle.c_str());
+//   for (int i=0;i<parseResult.numErrors();i++){
+//     fprintf(stderr, "parse error: %s\n", parseResult.error(i).message().c_str());
+//   }
+
+//   assert(!parseResult.numErrors());
+//   auto mod = parseResult.singleModule();
+//   assert(mod);
+//   assert(mod->numStmts() == 1);
+//   assert(mod->stmt(0)->isRecord());
+//   const Record* record = mod->stmt(0)->toRecord();
+//   assert(record);
+//   assert(record->numChildren() == 1);
+//   assert(record->child(0)->isForwardingDecl());
+//   const ForwardingDecl* fwd = record->child(0)->toForwardingDecl();
+//   assert(fwd);
+//   assert(fwd->expr()->isVariable());
+//   const Variable* var = fwd->expr()->toVariable();
+//   assert(var);
+//   assert(var->visibility() == Decl::PRIVATE);
+// }
+
+
+// static void test7(Parser* parser) {
+
+//   const std::string myCircle =
+//         "record MyCircle {\n"
+//           "forwarding public var impl: MyCircleImpl;\n"
+//         "}\n";
+
+//   auto parseResult = parser->parseString("test7.chpl", myCircle.c_str());
+
+//   assert(!parseResult.numErrors());
+//   auto mod = parseResult.singleModule();
+//   assert(mod);
+//   assert(mod->numStmts() == 1);
+//   assert(mod->stmt(0)->isRecord());
+//   const Record* record = mod->stmt(0)->toRecord();
+//   assert(record);
+//   assert(record->numChildren() == 1);
+//   assert(record->child(0)->isForwardingDecl());
+//   const ForwardingDecl* fwd = record->child(0)->toForwardingDecl();
+//   assert(fwd);
+//   assert(fwd->expr()->isVariable());
+//   const Variable* var = fwd->expr()->toVariable();
+//   assert(var);
+//   assert(var->visibility() == Decl::PUBLIC);
+// }
+
+
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -289,5 +324,7 @@ int main() {
   test3(p);
   test4(p);
   test5(p);
+  // test6(p);
+  // test7(p);
   return 0;
 }

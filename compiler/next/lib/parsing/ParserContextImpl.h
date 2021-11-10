@@ -1427,14 +1427,15 @@ buildForwardingDecl(YYLTYPE location, owned<Expression> expr,
 CommentsAndStmt ParserContext::
 buildForwardingDecl(YYLTYPE location, CommentsAndStmt cs) {
   assert(cs.stmt->isVariable() || cs.stmt->isMultiDecl() || cs.stmt->isTupleDecl());
-
+  auto decl = cs.stmt->toDecl();
+  assert(decl);
   // TODO: pattern for composing comments should be extracted to helper
   auto commentExprs = appendList(makeList(), cs.comments);
   auto comments = gatherCommentsFromList(commentExprs, location);
   delete commentExprs;
 
   auto node = ForwardingDecl::build(builder, convertLocation(location),
-                                    toOwned(cs.stmt));
+                                    toOwned(cs.stmt), decl->visibility());
 
   return { .comments=comments, .stmt=node.release() };
 }

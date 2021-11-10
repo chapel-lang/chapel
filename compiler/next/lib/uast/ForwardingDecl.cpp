@@ -29,10 +29,19 @@ owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
                                             owned<Expression> expr) {
   assert(expr.get() != nullptr);
 
+  return ForwardingDecl::build(builder, loc, std::move(expr),
+                               Decl::DEFAULT_VISIBILITY);
+}
+
+owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
+                                            owned<Expression> expr,
+                                            Decl::Visibility visibility) {
+  assert(expr.get() != nullptr);
+
   ASTList lst;
 
   lst.push_back(std::move(expr));
-  ForwardingDecl* ret = new ForwardingDecl(std::move(lst));
+  ForwardingDecl* ret = new ForwardingDecl(std::move(lst), visibility);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
