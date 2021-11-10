@@ -55,7 +55,7 @@ void qio_regex_get_options(const qio_regex_t* regex, qio_regex_options_t* option
 {
 }
 
-void qio_regex_get_pattern(const qio_regex_t* regex, const char** pattern)
+void qio_regex_get_pattern(const qio_regex_t* regex, const char** pattern, int64_t* len_out)
 {
 }
 
