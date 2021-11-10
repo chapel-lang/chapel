@@ -1001,7 +1001,7 @@ proc setSockOpt(socketFd: fd_t, level: c_int, optname: c_int, ref value: c_int) 
     setSockOpt(socket, IPPROTO_TCP, TCP_QUICKACK, 1:c_int);
 
   :arg socket: socket to set option on
-  :type socket: `tcpConn`
+  :type socket: `tcpConn` or `udpSocket` or `tcpListener`
   :arg level: protocol level
   :type level: `int(32)`
   :arg optname: option to set.
@@ -1011,23 +1011,8 @@ proc setSockOpt(socketFd: fd_t, level: c_int, optname: c_int, ref value: c_int) 
   :throws SystemError: Upon incompatible arguments
                         and socket.
 */
-proc setSockOpt(ref socket: tcpConn, level: c_int, optname: c_int, value: c_int) throws {
-  var socketFd = socket.socketFd;
-  setSockOpt(socketFd, level, optname, value);
-}
-
-/*
-  See above
-*/
-proc setSockOpt(ref socket: tcpListener, level: c_int, optname: c_int, value: c_int) throws {
-  var socketFd = socket.socketFd;
-  setSockOpt(socketFd, level, optname, value);
-}
-
-/*
-  See above
-*/
-proc setSockOpt(ref socket: udpSocket, level: c_int, optname: c_int, value: c_int) throws {
+proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: c_int)
+                throws where t == udpSocket || t == tcpConn || t == tcpListener {
   var socketFd = socket.socketFd;
   setSockOpt(socketFd, level, optname, value);
 }
@@ -1050,7 +1035,7 @@ proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, ref value: bytes) t
   the proper bits.
 
   :arg socket: socket to set option on
-  :type socket: `tcpConn`
+  :type socket: `tcpConn` or `tcpListener` or `udpSocket`
   :arg level: protocol level
   :type level: `int(32)`
   :arg optname: option to set.
@@ -1060,23 +1045,8 @@ proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, ref value: bytes) t
   :throws SystemError: Upon incompatible arguments
                         and socket.
 */
-proc setSockOpt(ref socket: tcpConn, level: c_int, optname: c_int, value: bytes) throws {
-  var socketFd = socket.socketFd;
-  setSockOpt(socketFd, level, optname, value);
-}
-
-/*
-  See above
-*/
-proc setSockOpt(ref socket: tcpListener, level: c_int, optname: c_int, value: bytes) throws {
-  var socketFd = socket.socketFd;
-  setSockOpt(socketFd, level, optname, value);
-}
-
-/*
-  See above
-*/
-proc setSockOpt(ref socket: udpSocket, level: c_int, optname: c_int, value: bytes) throws {
+proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: bytes)
+                throws where t == udpSocket || t == tcpConn || t == tcpListener {
   var socketFd = socket.socketFd;
   setSockOpt(socketFd, level, optname, value);
 }
@@ -1094,7 +1064,7 @@ proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, value:nothing, optl
   function with `optval=NULL` and `optlen=optlen`.
 
   :arg socket: socket to set option on
-  :type socket: `tcpConn`
+  :type socket: `tcpConn` or `tcpListener` or `udpSocket`
   :arg level: protocol level
   :type level: `int(32)`
   :arg optname: option to set.
@@ -1106,23 +1076,8 @@ proc setSockOpt(socketFd:fd_t, level: c_int, optname: c_int, value:nothing, optl
   :throws SystemError: Upon incompatible arguments
                         and socket.
 */
-proc setSockOpt(ref socket: tcpConn, level: c_int, optname: c_int, value: nothing, optlen: socklen_t) throws {
-  var socketFd = socket.socketFd;
-  setSockOpt(socketFd, level, optname, value, optlen);
-}
-
-/*
-  See above
-*/
-proc setSockOpt(ref socket: tcpListener, level: c_int, optname: c_int, value: nothing, optlen: socklen_t) throws {
-  var socketFd = socket.socketFd;
-  setSockOpt(socketFd, level, optname, value, optlen);
-}
-
-/*
-  See above
-*/
-proc setSockOpt(ref socket: udpSocket, level: c_int, optname: c_int, value: nothing, optlen: socklen_t) throws {
+proc setSockOpt(ref socket: ?t, level: c_int, optname: c_int, value: nothing, optlen: socklen_t)
+                throws where t == udpSocket || t == tcpConn || t == tcpListener {
   var socketFd = socket.socketFd;
   setSockOpt(socketFd, level, optname, value, optlen);
 }
@@ -1145,7 +1100,7 @@ proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int) throws {
   are defined in :mod:`Sys` module.
 
   :arg socket: socket to set option on
-  :type socket: `tcpConn`
+  :type socket: `tcpConn` or `udpSocket` or `tcpListener`
   :arg level: protocol level
   :type level: `int(32)`
   :arg optname: option to set.
@@ -1155,23 +1110,8 @@ proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int) throws {
   :throws SystemError: Upon incompatible arguments
                         and socket.
 */
-proc getSockOpt(ref socket: tcpConn, level: c_int, optname: c_int): int(32) throws {
-  var socketFd = socket.socketFd;
-  return getSockOpt(socketFd, level, optname) ;
-}
-
-/*
-  See above
-*/
-proc getSockOpt(ref socket: tcpListener, level: c_int, optname: c_int): int(32) throws {
-  var socketFd = socket.socketFd;
-  return getSockOpt(socketFd, level, optname) ;
-}
-
-/*
-  See above
-*/
-proc getSockOpt(ref socket: udpSocket, level: c_int, optname: c_int): int(32) throws {
+proc getSockOpt(ref socket: ?t, level: c_int, optname: c_int): int(32)
+                throws where t == udpSocket || t == tcpConn || t == tcpListener {
   var socketFd = socket.socketFd;
   return getSockOpt(socketFd, level, optname) ;
 }
@@ -1199,7 +1139,7 @@ proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int, buflen: uint(16)) t
   are defined in :mod:`Sys` module.
 
   :arg socket: socket to set option on
-  :type socket: `tcpConn`
+  :type socket: `tcpConn` or `udpSocket` or `tcpListener`
   :arg level: protocol level
   :type level: `int(32)`
   :arg optname: option to set.
@@ -1209,23 +1149,8 @@ proc getSockOpt(socketFd:fd_t, level: c_int, optname: c_int, buflen: uint(16)) t
   :throws SystemError: Upon incompatible arguments
                         and socket.
 */
-proc getSockOpt(ref socket: tcpConn, level: c_int, optname: c_int, buflen: uint(16)): bytes throws {
-  var socketFd = socket.socketFd;
-  return getSockOpt(socketFd, level, optname, buflen) ;
-}
-
-/*
-  See Above
-*/
-proc getSockOpt(ref socket: tcpListener, level: c_int, optname: c_int, buflen: uint(16)): bytes throws {
-  var socketFd = socket.socketFd;
-  return getSockOpt(socketFd, level, optname, buflen) ;
-}
-
-/*
-  See Above
-*/
-proc getSockOpt(ref socket: udpSocket, level: c_int, optname: c_int, buflen): bytes throws {
+proc getSockOpt(ref socket: ?t, level: c_int, optname: c_int, buflen: uint(16)):
+                bytes throws where t == udpSocket || t == tcpConn || t == tcpListener  {
   var socketFd = socket.socketFd;
   return getSockOpt(socketFd, level, optname, buflen) ;
 }
@@ -1242,7 +1167,8 @@ proc getPeerName(socketFD: fd_t) throws {
 
 /*
   Returns the remote addressto which socket is connected. This is
-  useful to find out the port number of a remote IPv4/v6 socket, for instance.
+  useful to find out the address and port number of a
+  remote IPv4/v6 socket, for instance.
 
   :arg socket: socket to set option on
   :type socket: `tcpConn`
@@ -1268,32 +1194,17 @@ proc getSockName(socketFD: fd_t) throws {
 
 /*
   Returns the socket's own address. This is useful to find out the port
-  number of a remote IPv4/v6 socket, for instance.
+  number of a IPv4/v6 socket, for instance.
 
   :arg socket: socket to set option on
-  :type socket: `tcpConn`
+  :type socket: `tcpConn` or `udpSocket` or `tcpListener`
 
   :return: remote address
   :rtype: `ipAddr`
   :throws SystemError: If socket is closed
 */
-proc getSockName(ref socket: tcpConn): ipAddr throws {
-  var socketFd = socket.socketFd;
-  return getSockName(socketFd);
-}
-
-/*
-  See Above
-*/
-proc getSockName(ref socket: tcpListener): ipAddr throws {
-  var socketFd = socket.socketFd;
-  return getSockName(socketFd);
-}
-
-/*
-  See Above
-*/
-proc getSockName(ref socket: udpSocket): ipAddr throws {
+proc getSockName(ref socket: ?t): ipAddr throws
+                 where t == udpSocket || t == tcpConn || t == tcpListener  {
   var socketFd = socket.socketFd;
   return getSockName(socketFd);
 }
@@ -1349,7 +1260,7 @@ proc bind(socketFd:fd_t, ref address: ipAddr, reuseAddr = true) throws {
     bind(socket, address);
 
   :arg socket: socket to set option on
-  :type socket: `tcpConn`
+  :type socket: `tcpConn` or `udpSocket` or `tcpListener`
   :arg address: address to bind to
   :type address: `ipAddr`
   :arg reuseAddr: whether to reuse address if already in use
@@ -1357,23 +1268,8 @@ proc bind(socketFd:fd_t, ref address: ipAddr, reuseAddr = true) throws {
 
   :throws SystemError: If socket is closed or already bound
 */
-proc bind(ref socket: udpSocket, ref address: ipAddr, reuseAddr = true) throws {
-  var socketFd = socket.socketFd;
-  bind(socketFd, address, reuseAddr);
-}
-
-/*
-  See Above
-*/
-proc bind(ref socket: tcpListener, ref address: ipAddr, reuseAddr = true) throws {
-  var socketFd = socket.socketFd;
-  bind(socketFd, address, reuseAddr);
-}
-
-/*
-  See Above
-*/
-proc bind(ref socket: tcpConn, ref address: ipAddr, reuseAddr = true) throws {
+proc bind(ref socket: ?t, ref address: ipAddr, reuseAddr = true)
+         throws where t == udpSocket || t == tcpConn || t == tcpListener {
   var socketFd = socket.socketFd;
   bind(socketFd, address, reuseAddr);
 }
@@ -1389,32 +1285,6 @@ proc nagle(socketFd:fd_t):bool throws {
   return if getSockOpt(socketFd, IPPROTO_TCP, TCP_NODELAY) == 0 then true else false;
 }
 
-/*
-  Enables or disables Nagle's algorithm on a given TCP Listener.
-
-  :arg enable: whether to enable or disable Nagle's algorithm
-  :type enable: `bool`
-
-  :throws SystemError: if not able to set `TCP_NODELAY` option properly
-*/
-proc ref tcpListener.setNagle(enable:bool) throws {
-  var socketFd = this.socketFd;
-  nagle(socketFd, enable);
-}
-
-/*
-  Enables or disables Nagle's algorithm on a given TCP Connection.
-
-  :arg enable: whether to enable or disable Nagle's algorithm
-  :type enable: `bool`
-
-  :throws SystemError: if not able to set `TCP_NODELAY` flag properly
-*/
-proc ref tcpConn.setNagle(enable:bool) throws {
-  var socketFd = this.socketFd;
-  nagle(socketFd, enable);
-}
-
 pragma "no doc"
 proc delayAck(socketFd:fd_t, enable:bool) throws {
   var c_enable = (if enable then 0 else 1):c_int;
@@ -1424,32 +1294,6 @@ proc delayAck(socketFd:fd_t, enable:bool) throws {
 pragma "no doc"
 proc delayAck(socketFd:fd_t):bool throws {
   return if getSockOpt(socketFd, IPPROTO_TCP, TCP_QUICKACK) == 0 then true else false;
-}
-
-/*
-  Enables or disables Delayed Ack optimization on a given TCP Listener.
-
-  :arg enable: whether to enable or disable Nagle's algorithm
-  :type enable: `bool`
-
-  :throws SystemError: if not able to set `TCP_QUICKACK` flag properly
-*/
-proc ref tcpListener.setDelayAck(enable:bool) throws {
-  var socketFd = this.socketFd;
-  delayAck(socketFd, enable);
-}
-
-/*
-  Enables or disables Delayed Ack optimization on a given TCP Connection.
-
-  :arg enable: whether to enable or disable Nagle's algorithm
-  :type enable: `bool`
-
-  :throws SystemError: if not able to set `TCP_QUICKACK` flag properly
-*/
-proc tcpConn.setDelayAck(enable:bool) throws {
-  var socketFd = this.socketFd;
-  delayAck(socketFd, enable);
 }
 
 evthread_use_pthreads();
