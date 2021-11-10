@@ -692,6 +692,38 @@ static  CallExpr* generateGPUCall(OutlineInfo& info, VarSymbol* numThreads) {
   return call;
 }
 
+static void errorForOuterVarAccesses(FnSymbol* fn) {
+  std::vector<SymExpr*> ses;
+  collectSymExprs(fn, ses);
+  for_vector(SymExpr, se, ses) {
+    if (VarSymbol* var = toVarSymbol(se->symbol())) {
+      if (var->defPoint->parentSymbol != fn) {
+        if (!var->isParameter() && var != gVoid) {
+          USR_FATAL(se, "variable '%s' must be defined in the function it"
+			" is used in for GPU usage", var->name);
+        }
+      }
+    }
+  }
+}
+
+static void markGPUSubCalls(FnSymbol* fn) {
+  if (!fn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
+    fn->addFlag(FLAG_GPU_AND_CPU_CODEGEN);
+    fn->addFlag(FLAG_GPU_CODEGEN);
+  }
+
+  errorForOuterVarAccesses(fn);
+
+  std::vector<CallExpr*> calls;
+  collectCallExprs(fn, calls);
+  for_vector(CallExpr, call, calls) {
+    if (FnSymbol* fn = call->resolvedFunction()) {
+      markGPUSubCalls(fn);
+    }
+  }
+}
+
 static void outlineGPUKernels() {
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
     std::vector<BaseAST*> asts;
@@ -782,8 +814,7 @@ static void outlineGPUKernels() {
 		      }
 		      
                       if (!calledFn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
-                         calledFn->addFlag(FLAG_GPU_AND_CPU_CODEGEN);
-                         calledFn->addFlag(FLAG_GPU_CODEGEN);
+                         markGPUSubCalls(calledFn);
                       }
 		    }
                     else {
