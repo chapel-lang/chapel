@@ -109,13 +109,7 @@ static void test1(Parser* parser) {
   assert(fwd);
   const Expression* expr = fwd->expr()->toExpression();
   assert(expr);
-
-  assert(expr->isVisibilityClause());
-  const VisibilityClause* visClause = expr->toVisibilityClause();
-  assert(visClause);
-  assert(visClause->symbol()->isFnCall());
-  assert(visClause->limitationKind() == VisibilityClause::NONE);
-  assert(visClause->numLimitations() == 0);
+  assert(expr->isFnCall());
 }
 
 
@@ -195,6 +189,40 @@ static void test3(Parser* parser) {
   assert(visClause->numLimitations() == 1);
 }
 
+static void test4(Parser* parser) {
+  const std::string myCircle =
+                    "record MyCircle {\n"
+                      "var impl: MyCircleImpl;\n"
+                      "/* some comments before forwarding*/\n"
+                      "forwarding var x = 10;\n"
+                    "}\n";
+
+  const std::string circle = circleImpl + myCircle;
+
+  auto parseResult = parser->parseString("test4.chpl", circle.c_str());
+
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isClass());
+  assert(mod->stmt(2)->isRecord());
+  const Record* record = mod->stmt(2)->toRecord();
+  assert(record);
+  assert(record->numChildren() == 3);
+  assert(record->child(0)->isVariable());
+  assert(record->child(1)->isComment());
+  assert(record->child(2)->isForwardingDecl());
+  const ForwardingDecl* fwd = record->child(2)->toForwardingDecl();
+  assert(fwd);
+  const Expression* expr = fwd->expr()->toExpression();
+  assert(expr);
+  assert(expr->isVariable());
+  const Variable* var = expr->toVariable();
+  assert(var);
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -206,5 +234,6 @@ int main() {
   test1(p);
   test2(p);
   test3(p);
+  test4(p);
   return 0;
 }

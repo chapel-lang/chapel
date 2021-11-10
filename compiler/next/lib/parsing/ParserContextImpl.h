@@ -1366,8 +1366,7 @@ Expression* ParserContext::
 buildVisibilityClause(YYLTYPE location, owned<Expression> symbol,
                       VisibilityClause::LimitationKind limitationKind,
                       ASTList limitations) {
-  if (!symbol->isAs() && !symbol->isIdentifier() &&
-      !symbol->isDot() && !symbol->isFnCall()) {
+  if (!symbol->isAs() && !symbol->isIdentifier() && !symbol->isDot()) {
     auto msg = "Expected symbol in visibility clause";
     return raiseError(location, msg);
   }
@@ -1403,13 +1402,20 @@ buildForwardingDecl(YYLTYPE location, owned<Expression> expr,
                       VisibilityClause::LimitationKind limitationKind,
                       ParserExprList* limitations) {
 
+  auto comments = gatherComments(location);
+
+  if (limitationKind == VisibilityClause::NONE) {
+    auto node = ForwardingDecl::build(builder, convertLocation(location),
+                                      std::move(expr));
+
+    return { .comments=comments, .stmt=node.release() };
+  }
+
   auto limitationsList = limitations ? consumeList(limitations) : ASTList();
 
   auto visClause = buildVisibilityClause(location, std::move(expr),
                                          limitationKind,
                                          std::move(limitationsList));
-
-  auto comments = gatherComments(location);
 
   auto node = ForwardingDecl::build(builder, convertLocation(location),
                                     toOwned(visClause));

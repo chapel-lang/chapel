@@ -121,8 +121,7 @@ class VisibilityClause final : public Expression {
   */
   const Expression* symbol() const {
     auto ret = child(symbolChildNum_);
-    assert(ret->isDot() || ret->isAs() ||
-           ret->isIdentifier() || ret->isFnCall());
+    assert(ret->isDot() || ret->isAs() || ret->isIdentifier());
     return (const Expression*)ret;
   }
 

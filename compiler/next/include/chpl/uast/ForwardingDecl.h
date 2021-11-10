@@ -11,6 +11,65 @@ namespace chpl {
 namespace uast {
 
 
+/**
+  This class represents a forwarding statement. Forwarding allows a record
+  or class to specify that certain method calls will be forwarded to a
+  particular expression. For example:
+
+  \rst
+  .. code-block:: chapel
+
+    // This record defines two methods, area() and circumference().
+    class MyCircleImpl {
+      var radius:real;
+      proc area() {
+        return pi*radius*radius;
+      }
+      proc circumference() {
+        return 2.0*pi*radius;
+      }
+    }
+
+    // This record implements the Circle class and then forwards its calls
+    // to area and circumference.
+    record MyCircle {
+      var impl: MyCircleImpl;
+
+      // forwarding methods
+      proc area() {
+        return impl.area();
+      }
+      proc circumference() {
+        return impl.circumference();
+      }
+    }
+
+    // This record implements the Circle class as above, but the forwarding
+    // statement makes this short declaration functionally the same as the more
+    // verbose declaration of MyCircle, above.
+    record MyCircle {
+      forwarding var impl: MyCircleImpl;
+    }
+
+    // We can also limit which methods are forwarded by using the only or except
+    // limiters, as with the import statement. Both of the following record
+    // declarations will only forward the area() method on MyCircle to the
+    // MyCircleImpl class method.
+    record MyCircle {
+      var impl: MyCircleImpl;
+
+      forwarding impl only area;
+    }
+
+    record MyCircle {
+      var impl: MyCircleImpl;
+
+      forwarding impl except circumference;
+    }
+
+  \endrst
+ */
+
 class ForwardingDecl final : public Decl {
 
 
