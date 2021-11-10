@@ -43,8 +43,12 @@ respect to other operations:
 
 A default completion level can be set for the entire libfabric domain,
 that is, the overarching interface to the network, and one can also
-specify completion levels individually for network operations.  The
-message ordering settings can only be specified for the entire domain.
+specify completion levels individually for network operations.  Message
+ordering settings can be specified both for the entire domain and for
+individual transmit or receive contexts (but not endpoints).  Currently
+the comm layer specifies completion levels on both the domain and some
+individual operations, but only specifies message ordering settings on
+the domain.
 
 #### Completion Levels
 
