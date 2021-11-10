@@ -11249,9 +11249,17 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
   } else if (type->symbol->hasFlag(FLAG_EXTERN) &&
              !type->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) {
 
-    // Just let the memory be uninitialized
     errorInvalidParamInit(call, val, at);
-    call->convertToNoop();
+
+    if (!val->hasFlag(FLAG_NO_INIT) &&
+        !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      // Zero-initialize the memory
+      call->insertBefore(new CallExpr(PRIM_ZERO_VARIABLE, val));
+      call->convertToNoop();
+    } else {
+      // Just let the memory be uninitialized
+      call->convertToNoop();
+    }
 
   // generic records with initializers
   } else if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE) == false &&

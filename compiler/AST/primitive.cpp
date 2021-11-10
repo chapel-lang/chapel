@@ -1125,6 +1125,10 @@ initPrimitive() {
   // Allocate a class instance on the stack (where normally it
   // would be allocated on the heap). The only argument is the class type.
   prim_def(PRIM_STACK_ALLOCATE_CLASS, "stack allocate class", returnInfoFirst);
+
+  // zero the memory a variable points to. only argument is the variable
+  prim_def(PRIM_ZERO_VARIABLE, "zero variable", returnInfoVoid, true);
+
   prim_def(PRIM_ZIP, "zip", returnInfoVoid, false, false);
   prim_def(PRIM_REQUIRE, "require", returnInfoVoid, false, false);
 

@@ -5279,6 +5279,38 @@ DEFINE_PRIM(STACK_ALLOCATE_CLASS) {
     ret = codegenCast(at, codegenAddrOf(tmp));
 }
 
+static
+void codegenCallMemset(GenRet dest, Type* type) {
+  GenInfo *info = gGenInfo;
+
+  GenRet size = codegenSizeof(type);
+
+  // Must call with real pointer arguments (not lvalue)
+  INT_ASSERT(dest.isLVPtr == GEN_VAL);
+  // And also above call should generate a value
+  INT_ASSERT(size.isLVPtr == GEN_VAL);
+
+  if (info->cfile) {
+    GenRet zero = codegenZero32();
+    codegenCall("memset", dest, zero, size);
+  } else {
+#ifdef HAVE_LLVM
+    llvm::ConstantInt* zero = info->irBuilder->getIntN(8, 0);
+    info->irBuilder->CreateMemSet(dest.val, zero, size.val, llvm::Align(1));
+#endif
+  }
+}
+
+DEFINE_PRIM(ZERO_VARIABLE) {
+    SymExpr* se = toSymExpr(call->get(1));
+    INT_ASSERT(se);
+    Symbol* sym = se->symbol();
+    Type* type = sym->getValType();
+    GenRet dest = codegenAddrOf(se);
+
+    codegenCallMemset(dest, type);
+}
+
 DEFINE_PRIM(REGISTER_GLOBAL_VAR) {
     GenRet idx          = codegenValue(call->get(1));
     GenRet var          = call->get(2);
