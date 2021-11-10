@@ -1496,6 +1496,14 @@ struct Converter {
     return ret;
   }
 
+  /// ForwardingDecl ///
+
+  Expr* visit(const uast::ForwardingDecl* node) {
+    // TODO: Complete me
+    INT_FATAL("TODO: visitor for ForwardingDecl");
+    return nullptr;
+  }
+
   /// NamedDecls ///
 
   Expr* visit(const uast::EnumElement* node) {
@@ -1975,7 +1983,7 @@ struct Converter {
     auto ret = new DefExpr(varSym, initExpr, typeExpr);
 
     // Replace init expressions for config variables with values passed
-    // in on the command-line, if necessary. 
+    // in on the command-line, if necessary.
     if (node->isConfig()) {
 
       // TODO (dlongnecke): This call should be replaced by an equivalent

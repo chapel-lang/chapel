@@ -17,7 +17,7 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/AggregateDecl.h"
+#include "chpl/uast/ForwardingDecl.h"
 
 #include "chpl/uast/Builder.h"
 
@@ -25,26 +25,16 @@ namespace chpl {
 namespace uast {
 
 
-bool AggregateDecl::validAggregateChildren(ASTListIteratorPair<Expression> it) {
-  for (auto elt: it) {
-    if (elt->isComment() || elt->isErroneousExpression()) {
-      // OK
-    } else if (elt->isDecl()) {
-      if (elt->isVariable() || elt->isFunction() ||
-          elt->isTupleDecl() || elt->isMultiDecl() ||
-          elt->isForwardingDecl()) {
-        // OK
-      } else {
-        return false;
-      }
-    } else {
-      return false;
-    }
-  }
-  return true;
-}
+owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
+                                            owned<Expression> expr) {
+  assert(expr.get() != nullptr);
 
-AggregateDecl::~AggregateDecl() {
+  ASTList lst;
+
+  lst.push_back(std::move(expr));
+  ForwardingDecl* ret = new ForwardingDecl(std::move(lst));
+  builder->noteLocation(ret, loc);
+  return toOwned(ret);
 }
 
 

@@ -52,6 +52,7 @@
 #include "chpl/uast/Forall.h"
 #include "chpl/uast/Foreach.h"
 #include "chpl/uast/Formal.h"
+#include "chpl/uast/ForwardingDecl.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/ImagLiteral.h"

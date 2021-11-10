@@ -58,6 +58,7 @@ target_sources(libchplcomp-obj
                Forall.cpp
                Foreach.cpp
                Formal.cpp
+               ForwardingDecl.cpp
                Function.cpp
                Identifier.cpp
                ImagLiteral.cpp

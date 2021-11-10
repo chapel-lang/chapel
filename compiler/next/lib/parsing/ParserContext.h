@@ -305,7 +305,7 @@ struct ParserContext {
   Expression* buildTupleComponent(YYLTYPE location, PODUniqueString name);
   Expression* buildTupleComponent(YYLTYPE location, ParserExprList* exprs);
 
-  // Build a loop index decl from a given expression. May return nullptr 
+  // Build a loop index decl from a given expression. May return nullptr
   // if the index expression is not valid. TODO: Adjust me to return an
   // Expression instead if possible?
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, const Expression* e);
@@ -520,4 +520,13 @@ struct ParserContext {
 
   CommentsAndStmt buildSelectStmt(YYLTYPE location, owned<Expression> expr,
                                   ParserExprList* whenStmts);
+
+  CommentsAndStmt
+  buildForwardingDecl(YYLTYPE location, owned<Expression> expr,
+                        VisibilityClause::LimitationKind limitationKind,
+                        ParserExprList* limitations);
+
+  CommentsAndStmt
+  buildForwardingDecl(YYLTYPE location, CommentsAndStmt cs);
+
 };

@@ -72,7 +72,7 @@ class VisibilityClause final : public Expression {
       numLimitations_(numLimitations) {
 
     switch (limitationKind_) {
-      case BRACES: 
+      case BRACES:
       case EXCEPT: assert(numLimitations >= 1); break;
       case ONLY: assert(numLimitations_ >= 0); break;
       case NONE: assert(numLimitations_ == 0); break;
@@ -121,7 +121,8 @@ class VisibilityClause final : public Expression {
   */
   const Expression* symbol() const {
     auto ret = child(symbolChildNum_);
-    assert(ret->isDot() || ret->isAs() || ret->isIdentifier());
+    assert(ret->isDot() || ret->isAs() ||
+           ret->isIdentifier() || ret->isFnCall());
     return (const Expression*)ret;
   }
 
