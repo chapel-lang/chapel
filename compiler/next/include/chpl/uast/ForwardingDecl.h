@@ -40,12 +40,13 @@ class ForwardingDecl final : public Decl {
 
 
 private:
-
-  ForwardingDecl(ASTList children, Decl::Visibility visibility)
-    : Decl(asttags::ForwardingDecl, std::move(children),
+  ForwardingDecl(ASTList children, Decl::Visibility visibility,
+                 int attributesChildNum)
+    : Decl(asttags::ForwardingDecl, std::move(children), attributesChildNum,
                 visibility,
                 Decl::DEFAULT_LINKAGE,
-                /*linkageNameChildNum*/ -1) {
+                /*linkageNameChildNum*/ -1
+                ) {
 
     assert(children_.size() == 0 || children_.size() == 1);
     assert(isExpressionASTList(children_));
@@ -62,17 +63,18 @@ private:
   }
 
 
-
  public:
   ~ForwardingDecl() override = default;
 
 
   static owned<ForwardingDecl> build(Builder* builder, Location loc,
-                                     owned<Expression> expr);
+                                     owned<Expression> expr,
+                                     int attributesChildNum);
 
   static owned<ForwardingDecl> build(Builder* builder, Location loc,
                                      owned<Expression> expr,
-                                     Decl::Visibility visibility);
+                                     Decl::Visibility visibility,
+                                     int attributesChildNum);
 
   /**
     Returns the child for this ForwardingDecl or nullptr if there was none.

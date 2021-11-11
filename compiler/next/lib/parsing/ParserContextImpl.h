@@ -1406,7 +1406,8 @@ buildForwardingDecl(YYLTYPE location, owned<Expression> expr,
 
   if (limitationKind == VisibilityClause::NONE) {
     auto node = ForwardingDecl::build(builder, convertLocation(location),
-                                      std::move(expr));
+                                      std::move(expr),
+                                      /*attributesChildNum*/ -1);
 
     return { .comments=comments, .stmt=node.release() };
   }
@@ -1418,7 +1419,8 @@ buildForwardingDecl(YYLTYPE location, owned<Expression> expr,
                                          std::move(limitationsList));
 
   auto node = ForwardingDecl::build(builder, convertLocation(location),
-                                    toOwned(visClause));
+                                    toOwned(visClause),
+                                    /*attributesChildNum*/ -1);
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1435,7 +1437,8 @@ buildForwardingDecl(YYLTYPE location, CommentsAndStmt cs) {
   delete commentExprs;
 
   auto node = ForwardingDecl::build(builder, convertLocation(location),
-                                    toOwned(cs.stmt), decl->visibility());
+                                    toOwned(cs.stmt), decl->visibility(),
+                                    /*attributesChildNum*/ -1);
 
   return { .comments=comments, .stmt=node.release() };
 }
