@@ -17,39 +17,37 @@
  * limitations under the License.
  */
 
-#include "chpl/uast/Module.h"
-
-#include "chpl/uast/Builder.h"
+#include "chpl/uast/Pragma.h"
+#include <cstring>
 
 namespace chpl {
 namespace uast {
+namespace pragmatags {
 
 
-owned<Module>
-Module::build(Builder* builder, Location loc,
-              owned<Attributes> attributes,
-              Decl::Visibility vis,
-              UniqueString name,
-              Module::Kind kind, ASTList stmts) {
-  ASTList lst;
-  int attributesChildNum = -1;
-
-  if (attributes.get() != nullptr) {
-    attributesChildNum = lst.size();
-    lst.push_back(std::move(attributes));
+const char* pragmaTagToName(PragmaTag tag) {
+  const char* ret = "";
+  switch (tag) {
+    default: break;
+#define PRAGMA(name__, canParse__, parseStr__, desc__) \
+    case PRAGMA_ ## name__: ret = parseStr__; break;
+#include "chpl/uast/PragmaList.h"
+#undef PRAGMA
   }
 
-  for (auto& ast : stmts) {
-    lst.push_back(std::move(ast));
-  }
+  return ret;
+}
 
-  Module* ret = new Module(std::move(lst), attributesChildNum, vis,
-                           name,
-                           kind);
-  builder->noteLocation(ret, loc);
-  return toOwned(ret);
+PragmaTag pragmaNameToTag(const char* name) {
+#define PRAGMA(name__, canParse__, parseStr__, desc__) \
+  if (0 == strcmp(name, parseStr__)) \
+    return PRAGMA_ ## name__;
+#include "chpl/uast/PragmaList.h"
+#undef PRAGMA
+  return PRAGMA_UNKNOWN;
 }
 
 
+} // namespace primtags
 } // namespace uast
 } // namespace chpl

@@ -62,7 +62,8 @@ class Variable final : public VarLikeDecl {
   };
 
  private:
-  Variable(ASTList children, Decl::Visibility vis, Decl::Linkage linkage,
+  Variable(ASTList children, int attributesChildNum, Decl::Visibility vis,
+           Decl::Linkage linkage,
            int linkageNameChildNum,
            UniqueString name,
            Variable::Kind kind,
@@ -70,7 +71,10 @@ class Variable final : public VarLikeDecl {
            bool isField,
            int8_t typeExpressionChildNum,
            int8_t initExpressionChildNum)
-      : VarLikeDecl(asttags::Variable, std::move(children), vis, linkage,
+      : VarLikeDecl(asttags::Variable, std::move(children),
+                    attributesChildNum,
+                    vis,
+                    linkage,
                     linkageNameChildNum,
                     name,
                     (IntentList)((int)kind),
@@ -98,10 +102,11 @@ class Variable final : public VarLikeDecl {
   ~Variable() override = default;
 
   static owned<Variable> build(Builder* builder, Location loc,
-                               UniqueString name,
+                               owned<Attributes> attributes,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
                                owned<Expression> linkageName,
+                               UniqueString name,
                                Variable::Kind kind,
                                bool isConfig,
                                bool isField,

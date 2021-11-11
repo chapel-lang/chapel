@@ -19,6 +19,7 @@
  */
 
 #include "chpl/types/Param.h"
+#include "chpl/uast/Pragma.h"
 
 #include <cerrno>
 #include <cfloat>
@@ -106,6 +107,8 @@ Decl::Linkage ParserContext::noteLinkage(Decl::Linkage linkage) {
 }
 
 Variable::Kind ParserContext::noteVarDeclKind(Variable::Kind varDeclKind) {
+  assert(!hasNotedVarDeclKind);
+  this->hasNotedVarDeclKind = true;
   this->varDeclKind = varDeclKind;
   return this->varDeclKind;
 }
@@ -119,6 +122,135 @@ owned<Expression> ParserContext::consumeVarDeclLinkageName(void) {
   auto ret = this->varDeclLinkageName;
   this->varDeclLinkageName = nullptr;
   return toOwned(ret);
+}
+
+owned<Attributes> ParserContext::buildAttributes(YYLTYPE locationOfDecl) {
+  numAttributesBuilt += 1;
+
+  // There may be nothing to return.
+  if (!hasAttributeParts) {
+    return nullptr;
+  }
+
+  // Create a local copy of the attributes we can move into the node.
+  auto pragmaCopy = attributeParts.pragmas
+      ? *(attributeParts.pragmas)
+      : std::set<PragmaTag>();
+
+  auto node = Attributes::build(builder, convertLocation(locationOfDecl),
+                                std::move(pragmaCopy),
+                                attributeParts.isDeprecated,
+                                attributeParts.deprecationMessage);
+  return node;
+}
+
+PODUniqueString ParserContext::notePragma(YYLTYPE loc,
+                                          Expression* pragmaStr) {
+  auto ret = PODUniqueString::build();
+
+  // Extract the string literal and convert it into a pragma flag.
+  if (auto strLit = pragmaStr->toStringLiteral()) {
+    ret = PODUniqueString::build(context(), strLit->str().c_str());
+    auto tag = pragmaNameToTag(ret.c_str());
+
+    if (tag == PRAGMA_UNKNOWN) {
+      std::string msg;
+      msg += "Unrecognized compiler pragma: ";
+      msg += ret.c_str();
+      noteError(loc, msg.c_str());
+    } else {
+
+      // Initialize the pragma flags if needed.
+      auto& pragmas = attributeParts.pragmas;
+      if (pragmas == nullptr) {
+        pragmas = new std::set<PragmaTag>();
+      }
+
+      hasAttributeParts = true;
+      pragmas->insert(tag);
+    }
+  }
+
+  // Make sure to clean up the UAST node since it will be discarded.
+  delete pragmaStr;
+
+  return ret;
+}
+
+void ParserContext::noteDeprecation(YYLTYPE loc, Expression* messageStr) {
+  if (!hasAttributeParts) {
+    hasAttributeParts = true;
+  } else {
+    assert(!attributeParts.isDeprecated);
+    assert(attributeParts.deprecationMessage.isEmpty());
+  }
+
+  attributeParts.isDeprecated = true;
+
+  if (messageStr) {
+    if (auto strLit = messageStr->toStringLiteral()) {
+      attributeParts.deprecationMessage = strLit->str();
+    }
+
+    delete messageStr;
+  }
+}
+
+void ParserContext::resetAttributePartsState() {
+  if (hasAttributeParts) {
+    assert(numAttributesBuilt >= 1);
+    auto& pragmas = attributeParts.pragmas;
+    if (pragmas) delete pragmas;
+    attributeParts = { nullptr, false, UniqueString() };
+    hasAttributeParts = false;
+  }
+
+  assert(attributeParts.pragmas == nullptr);
+  assert(!attributeParts.isDeprecated);
+  assert(attributeParts.deprecationMessage.isEmpty());
+  assert(!hasAttributeParts);
+
+  numAttributesBuilt = 0;
+}
+
+// TODO: The original builder skips if the statement is a forwarding
+// statement, how do we handle that? Do we do anything with the pragmas,
+// or do we also just silently ignore it?
+CommentsAndStmt
+ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
+  CommentsAndStmt ret = cs;
+
+  // If statement is not a decl, we should not have built any, otherwise
+  // it was and the counter got reset at some point before this.
+  assert(numAttributesBuilt == 0);
+
+  if (cs.stmt->isDecl()) {
+
+    // If a decl was produced then the attributes should have been reset.
+    // If they were _not_ reset, then it means that a deprecated statement
+    // came before a pragma list.
+    // TODO: Can we just make deprecated_stmt and pragma_ls alternates?
+    // This solves that problem.
+    if (hasAttributeParts) {
+      assert(attributeParts.pragmas == nullptr);
+      assert(attributeParts.isDeprecated);
+      auto msg = "pragma list must come before deprecation statement";
+      noteError(loc, msg);
+    }
+
+  } else {
+    assert(numAttributesBuilt == 0);
+    assert(hasAttributeParts);
+    auto msg = "cannot attach pragmas to this statement";
+
+    // TODO: The original builder also states the first pragma.
+    noteError(loc, msg);
+
+    // Clean up the attribute parts.
+    resetAttributePartsState();
+  }
+
+  return ret;
 }
 
 bool ParserContext::noteIsBuildingFormal(bool isBuildingFormal) {
@@ -137,8 +269,11 @@ YYLTYPE ParserContext::declStartLoc(YYLTYPE curLoc) {
   else
     return this->declStartLocation;
 }
+
 void ParserContext::resetDeclState() {
+  this->resetAttributePartsState();
   this->varDeclKind = Variable::VAR;
+  this->hasNotedVarDeclKind = false;
   this->visibility = Decl::DEFAULT_VISIBILITY;
   this->linkage = Decl::DEFAULT_LINKAGE;
   this->isVarDeclConfig = false;
@@ -507,6 +642,7 @@ FunctionParts ParserContext::makeFunctionParts(bool isInline,
                                                bool isOverride) {
   FunctionParts fp = {nullptr,
                       nullptr,
+                      nullptr,
                       this->visibility,
                       Decl::DEFAULT_LINKAGE,
                       nullptr,
@@ -541,7 +677,7 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
         auto loc = convertLocation(location);
         auto ths = UniqueString::build(context(), "this");
         UniqueString cls = scope.name;
-        fp.receiver = Formal::build(builder, loc,
+        fp.receiver = Formal::build(builder, loc, /*attributes*/ nullptr,
                                     ths,
                                     fp.thisIntent,
                                     Identifier::build(builder, loc, cls),
@@ -556,8 +692,11 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
     }
 
     auto f = Function::build(builder, this->convertLocation(location),
-                             fp.name, this->visibility,
-                             fp.linkage, toOwned(fp.linkageNameExpr),
+                             toOwned(fp.attributes),
+                             this->visibility,
+                             fp.linkage,
+                             toOwned(fp.linkageNameExpr),
+                             fp.name,
                              fp.isInline,
                              fp.isOverride,
                              fp.kind,
@@ -630,16 +769,20 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
   Expression* ret = nullptr;
 
   if (isBuildingFormal) {
-    auto node = Formal::build(builder, convertLocation(location), name,
+    auto node = Formal::build(builder, convertLocation(location),
+                              this->buildAttributes(location),
+                              name,
                               Formal::DEFAULT_INTENT,
                               /*typeExpression*/ nullptr,
                               /*initExpression*/ nullptr);
     ret = node.release();
   } else {
-    auto node = Variable::build(builder, convertLocation(location), name,
+    auto node = Variable::build(builder, convertLocation(location),
+                                this->buildAttributes(location),
                                 visibility,
                                 linkage,
                                 consumeVarDeclLinkageName(),
+                                name,
                                 varDeclKind,
                                 isVarDeclConfig,
                                 currentScopeIsAggregate(),
@@ -656,6 +799,7 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
 Expression* ParserContext::
 buildTupleComponent(YYLTYPE location, ParserExprList* exprs) {
   auto node = TupleDecl::build(builder, convertLocation(location),
+                               /*attributes*/ nullptr,
                                this->visibility,
                                this->linkage,
                                (TupleDecl::IntentOrKind) this->varDeclKind,
@@ -670,10 +814,11 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
   auto convLoc = convertLocation(location);
 
   if (const Identifier* ident = e->toIdentifier()) {
-    return Variable::build(builder, convLoc, ident->name(),
+    return Variable::build(builder, convLoc, /*attributes*/ nullptr,
                            Decl::DEFAULT_VISIBILITY,
                            Decl::DEFAULT_LINKAGE,
                            /*linkageName*/ nullptr,
+                           ident->name(),
                            Variable::INDEX,
                            /*isConfig*/ false,
                            /*isField*/ false,
@@ -693,7 +838,8 @@ owned<Decl> ParserContext::buildLoopIndexDecl(YYLTYPE location,
       }
     }
 
-    return TupleDecl::build(builder, convLoc, Decl::DEFAULT_VISIBILITY,
+    return TupleDecl::build(builder, convLoc, /*attributes*/ nullptr,
+                            Decl::DEFAULT_VISIBILITY,
                             Decl::DEFAULT_LINKAGE,
                             (TupleDecl::IntentOrKind) Variable::INDEX,
                             std::move(elements),
@@ -1351,8 +1497,9 @@ buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
 }
 
 // Given a list of vars, build either a single var or a multi-decl.
-CommentsAndStmt ParserContext::buildVarOrMultiDecl(YYLTYPE locEverything,
-                                                   ParserExprList* vars) {
+CommentsAndStmt
+ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
+                                       ParserExprList* vars) {
   int numDecls = 0;
   Decl* lastDecl = nullptr;
 
@@ -1379,7 +1526,9 @@ CommentsAndStmt ParserContext::buildVarOrMultiDecl(YYLTYPE locEverything,
     delete vars;
 
   } else {
+    auto attributes = buildAttributes(locEverything);
     auto multi = MultiDecl::build(builder, convertLocation(locEverything),
+                                  std::move(attributes),
                                   visibility,
                                   linkage,
                                   consumeList(vars));
@@ -1407,6 +1556,7 @@ ParserContext::enterScopeAndBuildTypeDeclParts(YYLTYPE locStart,
     .linkage=this->linkage,
     /* The linkage name must be set by the rule that uses these parts. */
     .linkageName=nullptr,
+    .attributes=this->buildAttributes(locStart).release(),
     .name=name,
     .tag=tag
   };
@@ -1501,12 +1651,14 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
     assert(!parts.linkageName);
 
     decl = Class::build(builder, convertLocation(location),
+                        toOwned(parts.attributes),
                         parts.visibility,
                         parts.name,
                         std::move(inheritIdentifier),
                         std::move(contentsList)).release();
   } else if (parts.tag == asttags::Record) {
     decl = Record::build(builder, convertLocation(location),
+                         toOwned(parts.attributes),
                          parts.visibility,
                          parts.linkage,
                          toOwned(parts.linkageName),
@@ -1518,6 +1670,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
     assert(parts.linkage != Decl::EXPORT);
 
     decl = Union::build(builder, convertLocation(location),
+                        toOwned(parts.attributes),
                         parts.visibility,
                         parts.linkage,
                         toOwned(parts.linkageName),
