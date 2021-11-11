@@ -638,7 +638,7 @@ record regex {
   proc _serialize() {
     var pattern: exprType;
     var options: qio_regex_options_t;
-    var _regexCopy = _regex;
+    const _regexCopy = _regex;
 
     on this.home {
       /* NOTE we can't reference `this` inside this on block because
