@@ -2849,7 +2849,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
-    for i in chpl_enumerate(t) {
+    for i in t {
       { // try to read e.g. red for colorenum.red
         var str = i:string;
         if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
