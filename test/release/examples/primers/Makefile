@@ -52,11 +52,10 @@ ifdef CRAY_LIBSCI_PREFIX_DIR
 endif
 
 #
-# Only make interopWithC and cClient if LLVM backend is set
+# Only make interopWithC if LLVM backend is set
 #
 CHPL_TARGET_COMPILER=$(shell $(CHPL_HOME)/util/chplenv/chpl_compiler.py --target)
 ifeq ($(CHPL_TARGET_COMPILER),llvm)
-	TARGETS += cClient
 	TARGETS += interopWithC
 endif
 
@@ -79,13 +78,11 @@ FFTWlib: FFTWlib.chpl
 LAPACKlib: LAPACKlib.chpl
 	+$(CHPL) -o $@ $(LAPACK_OPTS) $<
 
-CCLIENT_OPTS = -Llib/ -linteropWithC `$CHPL_HOME/util/config/compileline --libraries`
 INTEROP_LIB_OPTS =  --library --library-makefile --savec ccode
 INTEROP_DEPS = interopWithC.chpl cHelper.h cHelper.c fact.h fact.c
 
 interopWithC: $(INTEROP_DEPS)
 	+$(CHPL) $(INTEROP_DEPS) $(INTEROP_LIB_OPTS)
 	+$(CHPL) -o $@ $^
-
 
 FORCE:
