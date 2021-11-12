@@ -163,8 +163,8 @@ module interopWithC {
   `Makefile
   <https://github.com/chapel-lang/chapel/blob/master/test/release/examples/primers/Makefile>`_
   for the primers directory, to build this source file.  An example of using the
-  generated Makefile can be seen in `Makefile.cClient`
-  <https://github.com/chapel-lang/chapel/blob/master/test/release/examples/primers/Makefile.cClient>.
+  generated Makefile can be seen in `Makefile.cClient
+  <https://github.com/chapel-lang/chapel/blob/master/test/release/examples/primers/Makefile.cClient>`_.
   To build the C client, first run `make interopWithC` then run `make -f
   Makefile.cClient`.
 */ 
