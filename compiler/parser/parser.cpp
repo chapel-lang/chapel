@@ -909,7 +909,7 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
       }
     }
 
-    USR_STOP();
+    USR_FATAL("%s", "One or more errors when parsing uAST");
   }
 
   ModuleSymbol* lastModSym = nullptr;
