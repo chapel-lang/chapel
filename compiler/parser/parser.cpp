@@ -45,10 +45,10 @@
 #define REPORT_AST_KIND_WHEN_PARSING_MODULE 0
 
 // Use to eagerly try compiling all internal modules to uAST.
-#define COMPILE_ALL_INTERNAL_MODULES_TO_UAST 0
+#define PARSE_ALL_INTERNAL_MODULES_TO_UAST 0
 
 // Use to eagerly try compiling all standard modules to uAST.
-#define COMPILE_ALL_STANDARD_MODULES_TO_UAST 0
+#define PARSE_ALL_STANDARD_MODULES_TO_UAST 0
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
 #include "view.h"
@@ -84,7 +84,6 @@ static void          parseCommandLineFiles();
 
 static void          parseDependentModules(bool isInternal);
 
-
 static ModuleSymbol* parseMod(const char* modName,
                               bool        isInternal);
 
@@ -104,7 +103,6 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
                                    ModTag      modTag,
                                    bool        namedOnCommandLine,
                                    bool        include);
-
 
 static const char*   stdModNameToPath(const char* modName,
                                       bool*       isStandard);
@@ -586,11 +584,11 @@ static std::set<std::string> allowedInternalModules = {
 static bool uASTCanParseMod(const char* modName, ModTag modTag) {
   if (!fCompilerLibraryParser) return false;
 
-#if COMPILE_ALL_INTERNAL_MODULES_TO_UAST
+#if PARSE_ALL_INTERNAL_MODULES_TO_UAST
   if (modTag == MOD_INTERNAL) return true;
 #endif
 
-#if COMPILE_ALL_STANDARD_MODULES_TO_UAST
+#if PARSE_ALL_STANDARD_MODULES_TO_UAST
   if (modTag == MOD_STANDARD) return true;
 #endif
 
@@ -615,8 +613,6 @@ static bool uASTAttemptToParseMod(const char* modName,
                                   ModTag modTag,
                                   ModuleSymbol*& outModSym) {
   if (!uASTCanParseMod(modName, modTag)) return false;
-
-
 
   const bool namedOnCommandLine = false;
   const bool include = false;
