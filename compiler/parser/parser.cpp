@@ -42,7 +42,13 @@
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
 
 // Turn this on to report which modules are parsed as uAST.
-#define REPORT_WHEN_PARSING_UAST 1
+#define REPORT_AST_KIND_WHEN_PARSING_MODULE 0
+
+// Use to eagerly try compiling all internal modules to uAST.
+#define COMPILE_ALL_INTERNAL_MODULES_TO_UAST 0
+
+// Use to eagerly try compiling all standard modules to uAST.
+#define COMPILE_ALL_STANDARD_MODULES_TO_UAST 0
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
 #include "view.h"
@@ -579,6 +585,16 @@ static std::set<std::string> allowedInternalModules = {
 // TODO: Adjust me over time as more internal modules parse.
 static bool uASTCanParseMod(const char* modName, ModTag modTag) {
   if (!fCompilerLibraryParser) return false;
+
+#if COMPILE_ALL_INTERNAL_MODULES_TO_UAST
+  if (modTag == MOD_INTERNAL) return true;
+#endif
+
+#if COMPILE_ALL_STANDARD_MODULES_TO_UAST
+  if (modTag == MOD_STANDARD) return true;
+#endif
+
+  // Otherwise, only try to compile a subset of the internal modules.
   if (modTag != MOD_INTERNAL) return false;
 
   bool ret = false;
@@ -637,16 +653,14 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
       ret = parseFile(path, modTag, false, false);
     }
 
-#if REPORT_WHEN_PARSING_UAST
-    if (usedNewParser) {
-      const char* modTagStr = ModuleSymbol::modTagToString(modTag);
-      const char* astKindStr = usedNewParser ? "uAST" : "AST";
-      printf("- Parsed %s module '%s' -> %s\n",
-             modTagStr,
-             modName,
-             astKindStr);
-      printf("@ %s\n", path);
-    }
+#if REPORT_AST_KIND_WHEN_PARSING_MODULE
+    const char* modTagStr = ModuleSymbol::modTagToString(modTag);
+    const char* astKindStr = usedNewParser ? "uAST" : "AST";
+    printf("- Parsed %s module '%s' -> %s\n",
+           modTagStr,
+           modName,
+           astKindStr);
+    printf("@ %s\n", path);
 #endif
   }
 
@@ -930,6 +944,11 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
     printf("> Dumping AST for module %s\n", mod->name().c_str());
     nprint_view(got);
 #endif
+
+    // TODO (dlongnecke): The new frontend should determine this for us.
+    if (modTag != MOD_USER) {
+      got->modTag = modTag;
+    }
 
     addModuleToDoneList(got);
 

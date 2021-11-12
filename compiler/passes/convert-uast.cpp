@@ -1551,7 +1551,9 @@ struct Converter {
       fn->addFlag(FLAG_OVERRIDE);
     }
 
-    // TODO: add FLAG_NO_PARENS for parenless functions
+    if (node->isParenless()) {
+      fn->addFlag(FLAG_NO_PARENS);
+    }
 
     IntentTag thisTag = INTENT_BLANK;
     Expr* receiverType = nullptr;
@@ -1682,7 +1684,11 @@ struct Converter {
     chpl::UniqueString ustr = node->name();
     const char* name = ustr.c_str();
     const char* path = context->filePathForId(node->id()).c_str();
-    ModTag tag = MOD_USER; // TODO: distinguish internal/standard/etc
+
+    // TODO (dlongnecke): For now, the tag is overridden by the caller.
+    // See 'uASTAttemptToParseMod'. Eventually, it would be great if the
+    // new frontend could note if a module is standard/internal/user.
+    const ModTag tag = MOD_USER;
     bool priv = (node->visibility() == uast::Decl::PRIVATE);
     bool prototype = (node->kind() == uast::Module::PROTOTYPE ||
                       node->kind() == uast::Module::IMPLICIT);

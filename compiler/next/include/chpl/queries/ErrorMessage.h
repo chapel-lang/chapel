@@ -21,7 +21,6 @@
 #define CHPL_QUERIES_ERRORMESSAGE_H
 
 #include "chpl/queries/Location.h"
-#include "chpl/util/iteration.h"
 
 #include <cstdarg>
 #include <string>
