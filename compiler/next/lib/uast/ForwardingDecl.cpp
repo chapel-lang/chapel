@@ -26,23 +26,32 @@ namespace uast {
 
 
 owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
-                                            owned<Expression> expr,
-                                            int attributesChildNum) {
+                                            owned<Attributes> attributes,
+                                            owned<Expression> expr) {
   assert(expr.get() != nullptr);
 
-  return ForwardingDecl::build(builder, loc, std::move(expr),
-                               Decl::DEFAULT_VISIBILITY, attributesChildNum);
+  return ForwardingDecl::build(builder, loc, std::move(attributes),
+                               std::move(expr),
+                               Decl::DEFAULT_VISIBILITY);
 }
 
 owned<ForwardingDecl> ForwardingDecl::build(Builder* builder, Location loc,
+                                            owned<Attributes> attributes,
                                             owned<Expression> expr,
-                                            Decl::Visibility visibility,
-                                            int attributesChildNum) {
+                                            Decl::Visibility visibility) {
   assert(expr.get() != nullptr);
-
+  int attributesChildNum = -1;
   ASTList lst;
 
+  // store the attributes and the location of the attributes node if one exists
+  if (attributes.get() != nullptr) {
+    attributesChildNum = lst.size();
+    lst.push_back(std::move(attributes));
+  }
+
+  // store the child node
   lst.push_back(std::move(expr));
+
   ForwardingDecl* ret = new ForwardingDecl(std::move(lst),
                                            visibility,
                                            attributesChildNum);

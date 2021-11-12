@@ -48,7 +48,7 @@ private:
                 /*linkageNameChildNum*/ -1
                 ) {
 
-    assert(children_.size() == 0 || children_.size() == 1);
+    assert(children_.size() >= 0 && children_.size() <= 2);
     assert(isExpressionASTList(children_));
   }
 
@@ -62,26 +62,29 @@ private:
     declMarkUniqueStringsInner(context);
   }
 
+  int exprChildNum() const {
+    return this->attributesChildNum() + 1;
+  }
 
  public:
   ~ForwardingDecl() override = default;
 
 
   static owned<ForwardingDecl> build(Builder* builder, Location loc,
-                                     owned<Expression> expr,
-                                     int attributesChildNum);
+                                     owned<Attributes> attributes,
+                                     owned<Expression> expr);
 
   static owned<ForwardingDecl> build(Builder* builder, Location loc,
+                                     owned<Attributes> attributes,
                                      owned<Expression> expr,
-                                     Decl::Visibility visibility,
-                                     int attributesChildNum);
+                                     Decl::Visibility visibility);
 
   /**
     Returns the child for this ForwardingDecl or nullptr if there was none.
   */
   const Expression* expr() const {
     if (children_.size() > 0) {
-      const ASTNode* ast = this->child(0);
+      const ASTNode* ast = this->child(exprChildNum());
       assert(ast->isExpression());
       return (const Expression*)ast;
     } else {

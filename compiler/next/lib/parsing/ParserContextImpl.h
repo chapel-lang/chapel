@@ -1398,16 +1398,17 @@ buildVisibilityClause(YYLTYPE location, owned<Expression> symbol) {
 
 
 CommentsAndStmt ParserContext::
-buildForwardingDecl(YYLTYPE location, owned<Expression> expr,
-                      VisibilityClause::LimitationKind limitationKind,
-                      ParserExprList* limitations) {
+buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+                    owned<Expression> expr,
+                    VisibilityClause::LimitationKind limitationKind,
+                    ParserExprList* limitations) {
 
   auto comments = gatherComments(location);
 
   if (limitationKind == VisibilityClause::NONE) {
     auto node = ForwardingDecl::build(builder, convertLocation(location),
-                                      std::move(expr),
-                                      /*attributesChildNum*/ -1);
+                                      std::move(attributes),
+                                      std::move(expr));
 
     return { .comments=comments, .stmt=node.release() };
   }
@@ -1419,26 +1420,30 @@ buildForwardingDecl(YYLTYPE location, owned<Expression> expr,
                                          std::move(limitationsList));
 
   auto node = ForwardingDecl::build(builder, convertLocation(location),
-                                    toOwned(visClause),
-                                    /*attributesChildNum*/ -1);
+                                    std::move(attributes),
+                                    toOwned(visClause));
 
   return { .comments=comments, .stmt=node.release() };
 }
 
 
 CommentsAndStmt ParserContext::
-buildForwardingDecl(YYLTYPE location, CommentsAndStmt cs) {
+buildForwardingDecl(YYLTYPE location,
+                    owned<Attributes> attributes,
+                    CommentsAndStmt cs) {
   assert(cs.stmt->isVariable() || cs.stmt->isMultiDecl() || cs.stmt->isTupleDecl());
   auto decl = cs.stmt->toDecl();
   assert(decl);
+  assert(!decl->attributes());
   // TODO: pattern for composing comments should be extracted to helper
   auto commentExprs = appendList(makeList(), cs.comments);
   auto comments = gatherCommentsFromList(commentExprs, location);
   delete commentExprs;
 
   auto node = ForwardingDecl::build(builder, convertLocation(location),
-                                    toOwned(cs.stmt), decl->visibility(),
-                                    /*attributesChildNum*/ -1);
+                                    std::move(attributes),
+                                    toOwned(cs.stmt),
+                                    decl->visibility());
 
   return { .comments=comments, .stmt=node.release() };
 }

@@ -252,7 +252,6 @@ static void test5(Parser* parser) {
   assert(visClause->numLimitations() == 1);
 }
 
-
 // static void test6(Parser* parser) {
 
 //   const std::string myCircle =
@@ -309,6 +308,71 @@ static void test5(Parser* parser) {
 //   assert(var->visibility() == Decl::PUBLIC);
 // }
 
+static void test8(Parser* parser) {
+
+  const std::string myCircle =
+        "record MyCircle {\n"
+          "pragma \"no doc\"\n"
+          "forwarding var impl: MyCircleImpl;\n"
+        "}\n";
+
+  auto parseResult = parser->parseString("test8.chpl", myCircle.c_str());
+
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isRecord());
+  const Record* record = mod->stmt(0)->toRecord();
+  assert(record);
+  assert(record->numChildren() == 1);
+  assert(record->child(0)->isForwardingDecl());
+  const ForwardingDecl* fwd = record->child(0)->toForwardingDecl();
+  assert(fwd);
+  assert(fwd->expr()->isVariable());
+  assert(fwd->attributes());
+  auto attr = fwd->attributes();
+  assert(attr);
+  assert(!attr->isDeprecated());
+  assert(attr->hasPragma(PRAGMA_NO_DOC));
+  const Variable* var = fwd->expr()->toVariable();
+  assert(var);
+  assert(var->visibility() == Decl::DEFAULT_VISIBILITY);
+}
+
+static void test9(Parser* parser) {
+
+  const std::string myCircle =
+        "record MyCircle {\n"
+          "deprecated \"don't use this anymore\"\n"
+          "forwarding var impl: MyCircleImpl;\n"
+        "}\n";
+
+  auto parseResult = parser->parseString("test9.chpl", myCircle.c_str());
+
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 1);
+  assert(mod->stmt(0)->isRecord());
+  const Record* record = mod->stmt(0)->toRecord();
+  assert(record);
+  assert(record->numChildren() == 1);
+  assert(record->child(0)->isForwardingDecl());
+  const ForwardingDecl* fwd = record->child(0)->toForwardingDecl();
+  assert(fwd);
+  assert(fwd->numChildren() == 2);
+  assert(fwd->expr()->isVariable());
+  assert(fwd->attributes());
+  auto attr = fwd->attributes();
+  assert(attr);
+  assert(attr->isDeprecated());
+  assert(!attr->hasPragma(PRAGMA_NO_DOC));
+  const Variable* var = fwd->expr()->toVariable();
+  assert(var);
+  assert(var->visibility() == Decl::DEFAULT_VISIBILITY);
+
+}
 
 
 int main() {
@@ -326,5 +390,7 @@ int main() {
   test5(p);
   // test6(p);
   // test7(p);
+  test8(p);
+  test9(p);
   return 0;
 }

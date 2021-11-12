@@ -522,11 +522,13 @@ struct ParserContext {
                                   ParserExprList* whenStmts);
 
   CommentsAndStmt
-  buildForwardingDecl(YYLTYPE location, owned<Expression> expr,
-                        VisibilityClause::LimitationKind limitationKind,
-                        ParserExprList* limitations);
+  buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+                      owned<Expression> expr,
+                      VisibilityClause::LimitationKind limitationKind,
+                      ParserExprList* limitations);
 
   CommentsAndStmt
-  buildForwardingDecl(YYLTYPE location, CommentsAndStmt cs);
+  buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+                      CommentsAndStmt cs);
 
 };
