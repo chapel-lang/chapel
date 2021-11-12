@@ -17,7 +17,7 @@ namespace uast {
   particular expression.
 
   \rst
-    .. code-block:: chapel
+  .. code-block:: chapel
 
     record MyCircle {
       forwarding var impl: MyCircleImpl;
@@ -33,8 +33,7 @@ namespace uast {
   The forwarding statement stores an expression that is either
   a VisibilityClause, a FnCall, or a Variable.
 
-
- */
+*/
 
 class ForwardingDecl final : public Decl {
 
