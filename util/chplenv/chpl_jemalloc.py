@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import sys
+import optparse
 
 import chpl_mem, chpl_platform, overrides, third_party_utils
 from utils import error, memoize, run_command, warning
@@ -66,22 +67,25 @@ def get_uniq_cfg_path():
 # Instead of libtool or pkg-config, jemalloc uses a jemalloc-config script to
 # determine dependencies/link args . It's located in the bin directory
 @memoize
-def get_jemalloc_config_file():
-    install_path = third_party_utils.get_cfg_install_path('jemalloc')
+def get_jemalloc_config_file(target='target'):
+    install_path = third_party_utils.get_cfg_install_path('jemalloc', host_or_target=target)
     config_file = os.path.join(install_path, 'bin', 'jemalloc-config')
     return config_file
 
 
 @memoize
-def get_link_args(target_mem):
-    if target_mem == 'bundled':
-        jemalloc_config = get_jemalloc_config_file()
+def get_link_args(target, mem_val):
+    if mem_val == 'bundled':
+        jemalloc_config = get_jemalloc_config_file(target)
         libs = ['-ljemalloc']
+        # should this be an error if we can't find it?
         if os.access(jemalloc_config, os.X_OK):
+            jemalloc_libdir = run_command([jemalloc_config, '--libdir']).strip()
+            libs.append(f'-L{jemalloc_libdir}')
             jemalloc_libs = run_command([jemalloc_config, '--libs'])
             libs += jemalloc_libs.split()
         return libs
-    elif target_mem == 'system':
+    elif mem_val == 'system':
         return ['-ljemalloc']
     else:
         return []

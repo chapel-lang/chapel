@@ -126,7 +126,8 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_RE2_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_THIRD_PARTY_COMPILE_ARGS', INTERNAL),
     ChapelEnv('  CHPL_THIRD_PARTY_LINK_ARGS', INTERNAL),
-    ChapelEnv('  CHPL_PE_CHPL_PKGCONFIG_LIBS', INTERNAL)
+    ChapelEnv('  CHPL_PE_CHPL_PKGCONFIG_LIBS', INTERNAL),
+    ChapelEnv('  CHPL_THIRD_PARTY_HOST_LINK_ARGS', INTERNAL),
 ]
 
 # Global map of environment variable names to values
@@ -232,6 +233,7 @@ def compute_internal_values():
 
     compile_args_3p = []
     link_args_3p = []
+    host_link_args_3p = []
 
     ENV_VALS['  CHPL_GASNET_UNIQ_CFG_PATH'] = chpl_gasnet.get_uniq_cfg_path()
 
@@ -242,7 +244,8 @@ def compute_internal_values():
     link_args_3p.extend(chpl_hwloc.get_link_args(chpl_hwloc.get()))
 
     ENV_VALS['  CHPL_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path()
-    link_args_3p.extend(chpl_jemalloc.get_link_args(chpl_jemalloc.get()))
+    link_args_3p.extend(chpl_jemalloc.get_link_args('target', chpl_jemalloc.get('target')))
+    host_link_args_3p.extend(chpl_jemalloc.get_link_args('host', chpl_jemalloc.get('host')))
 
     ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_libfabric.get_uniq_cfg_path()
     if chpl_comm.get() == 'ofi':
@@ -260,19 +263,21 @@ def compute_internal_values():
     if chpl_re2.get() != 'none':
         link_args_3p.extend(chpl_re2.get_link_args())
 
-    # Remove duplicates, keeping last occurrence and preserving order
-    # e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ..."
-    seen = set()
-    compile_args_3p_dedup = [arg for arg in reversed(compile_args_3p)
-                             if not (arg in seen or seen.add(arg))]
-    ENV_VALS['  CHPL_THIRD_PARTY_COMPILE_ARGS'] = ' '.join(reversed(compile_args_3p_dedup))
+    ENV_VALS['  CHPL_THIRD_PARTY_COMPILE_ARGS'] = ' '.join(dedup(compile_args_3p))
 
-    seen = set()
-    link_args_3p_dedup = [arg for arg in reversed(link_args_3p)
-                          if not (arg in seen or seen.add(arg))]
-    ENV_VALS['  CHPL_THIRD_PARTY_LINK_ARGS'] = ' '.join(reversed(link_args_3p_dedup))
+    ENV_VALS['  CHPL_THIRD_PARTY_LINK_ARGS'] = ' '.join(dedup(link_args_3p))
+
+    ENV_VALS['  CHPL_THIRD_PARTY_HOST_LINK_ARGS'] = ' '.join(dedup(host_link_args_3p))
 
     ENV_VALS['  CHPL_PE_CHPL_PKGCONFIG_LIBS'] = chpl_llvm.gather_pe_chpl_pkgconfig_libs()
+
+""" Remove duplicates, keeping last occurrence and preserving order
+e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ..."""
+def dedup(args):
+    seen = set()
+    ret = [arg for arg in reversed(args)
+           if not (arg in seen or seen.add(arg))]
+    return reversed(ret)
 
 """Return non-empty string if var is set via environment or chplconfig"""
 def user_set(env):

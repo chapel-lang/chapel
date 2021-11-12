@@ -123,19 +123,6 @@ TARGETS = $(CHPL)
 
 LIBS = -lm
 
-ifeq ($(CHPL_MAKE_HOST_MEM), jemalloc)
-ifeq ($(CHPL_MAKE_PLATFORM), darwin)
-JEMALLOC_LIBS=-L$(shell jemalloc-config --libdir) -ljemalloc $(shell jemalloc-config --libs)
-else
-ifeq ($(CHPL_LIB_PIC), jemalloc)
-JEMALLOC_LIBS=$(JEMALLOC_HOST_LIB_DIR)/libjemalloc_pic.a
-else
-JEMALLOC_LIBS=$(JEMALLOC_HOST_LIB_DIR)/libjemalloc.a
-endif  # pic
-endif  # darwin
-endif  # jemalloc
-
-
 #
 # main rules
 #
@@ -171,7 +158,7 @@ $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	echo $(CHPL_MAKE_COMPILER_SUBDIR) > $(CHPL_CONFIG_CHECK)
 
 $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
-	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(JEMALLOC_LIBS) $(LIBS) $(LLVM_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(CHPL_MAKE_THIRD_PARTY_HOST_LINK_ARGS) $(LIBS) $(LLVM_LIBS)
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
 
