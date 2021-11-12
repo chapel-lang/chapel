@@ -252,6 +252,12 @@ static void test5(Parser* parser) {
   assert(visClause->numLimitations() == 1);
 }
 
+
+/**
+ * commented this test out until visibility is implemented
+ *
+*/
+
 // static void test6(Parser* parser) {
 
 //   const std::string myCircle =
@@ -282,6 +288,10 @@ static void test5(Parser* parser) {
 // }
 
 
+/**
+ * commented this test out until visibility is implemented
+ *
+*/
 // static void test7(Parser* parser) {
 
 //   const std::string myCircle =
@@ -388,8 +398,7 @@ int main() {
   test3(p);
   test4(p);
   test5(p);
-  // test6(p);
-  // test7(p);
+  // TODO: Add test6 and test7 when visibility implemented
   test8(p);
   test9(p);
   return 0;
