@@ -428,7 +428,7 @@ struct Resolver {
           if (var->isField())
             isField = true;
 
-        bool isFieldOrFormal = isField || decl->isFormal();;
+        bool isFieldOrFormal = isField || decl->isFormal();
 
         bool foundSubstitution = false;
         bool foundSubstitutionDefaultHint = false;
