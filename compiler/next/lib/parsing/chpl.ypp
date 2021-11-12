@@ -1419,7 +1419,8 @@ forwarding_decl_stmt:
 ;
 
 forwarding_decl_start:
-  TFORWARDING{
+  TFORWARDING
+  {
     $$ = context->buildAttributes(@$).release();
     context->resetAttributePartsState();
   }
