@@ -1668,6 +1668,10 @@ struct Converter {
                                     prototype,
                                     /* docs */ nullptr);
 
+    if (node->kind() == uast::Module::IMPLICIT) {
+      mod->addFlag(FLAG_IMPLICIT_MODULE);
+    }
+
     attachSymbolAttributes(node->attributes(), mod);
 
     return new DefExpr(mod);
@@ -2085,6 +2089,5 @@ ModuleSymbol* convertToplevelModule(chpl::Context* context,
   Converter c(context);
   DefExpr* def = c.visit(mod);
   ModuleSymbol* ret = toModuleSymbol(def->sym);
-  ModuleSymbol::addTopLevelModule(ret);
   return ret;
 }

@@ -120,8 +120,15 @@ class BuilderResult final {
     return errors_[i];
   }
 
-  // TODO: add something to iterate over the errors e.g.
-  // ErrorListIteratorPair errors() const
+  using ErrorGroup = std::vector<ErrorMessage>;
+  using ErrorIterable = Iterable<ErrorGroup>;
+
+  /**
+    Iterate over the errors.
+  */
+  ErrorIterable errors() const {
+    return ErrorIterable(errors_);
+  }
 
   /** Find the ASTNode* corresponding to a particular ID, or return
       nullptr if there is not one in this result. */
