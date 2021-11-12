@@ -38,6 +38,8 @@ TARGETS = \
 	varargs \
 	variables \
 
+CLEAN_TARGETS=$(TARGETS)
+
 #
 # Only make FFTW if FFTW_DIR is set or we can find the fftw library
 #
@@ -45,11 +47,13 @@ ifdef FFTW_DIR
 	TARGETS += FFTWlib
 	FFTW_OPTS = -I$(FFTW_DIR)/include -L$(FFTW_DIR)/lib
 endif
+CLEAN_TARGETS += FFTWlib
 
 ifdef CRAY_LIBSCI_PREFIX_DIR
 	TARGETS += LAPACKlib LinearAlgebralib
 	LAPACK_OPTS = -lgfortran -lsci_gnu
 endif
+CLEAN_TARGETS += LAPACKlib LinearAlgebralib
 
 #
 # Only make interopWithC if LLVM backend is set
@@ -58,16 +62,17 @@ CHPL_TARGET_COMPILER=$(shell $(CHPL_HOME)/util/chplenv/chpl_compiler.py --target
 ifeq ($(CHPL_TARGET_COMPILER),llvm)
 	TARGETS += interopWithC
 endif
-
+CLEAN_TARGETS += interopWithC
 
 REALS = $(TARGETS:%=%_real)
+CLEAN_REALS = $(CLEAN_TARGETS:%=%_real)
 
 default: all
 
 all: $(TARGETS)
 
 clean: FORCE
-	rm -rf $(TARGETS) $(REALS) lib/
+	rm -rf $(CLEAN_TARGETS) $(CLEAN_REALS) lib/
 
 %: %.chpl
 	+$(CHPL) -o $@ $<
