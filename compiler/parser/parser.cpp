@@ -566,11 +566,32 @@ static void parseDependentModules(bool isInternal) {
 *                                                                             *
 ************************************** | *************************************/
 
+// Internal modules that are currently able to be parsed by the new parser.
+static std::set<std::string> allowedInternalModules = {
+    "ChapelBase",
+    "ChapelStandard",
+    "PrintModuleInitOrder",
+    "ChapelTaskData",
+    "startInitCommDiags",
+    "CString"
+};
+
 // TODO: Adjust me over time as more internal modules parse.
 static bool uASTCanParseMod(const char* modName, ModTag modTag) {
   if (!fCompilerLibraryParser) return false;
   if (modTag != MOD_INTERNAL) return false;
-  return true;
+
+  bool ret = false;
+
+  switch (modTag) {
+    case MOD_INTERNAL:
+      ret = allowedInternalModules.count(modName);
+      break;
+    default:
+      break;
+  }
+
+  return ret;
 }
 
 static bool uASTAttemptToParseMod(const char* modName,
@@ -579,10 +600,7 @@ static bool uASTAttemptToParseMod(const char* modName,
                                   ModuleSymbol*& outModSym) {
   if (!uASTCanParseMod(modName, modTag)) return false;
 
-#if REPORT_WHEN_PARSING_UAST
-  printf("- Parsing module %s into uAST\n", modName);
-  printf("@ %s\n", path);
-#endif
+
 
   const bool namedOnCommandLine = false;
   const bool include = false;
@@ -612,9 +630,24 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
   // is not eligible (e.g. not internal). In that case, parse the file
   // into AST instead.
   if (path != nullptr) {
-    if (!uASTAttemptToParseMod(modName, path, modTag, ret)) {
+    bool usedNewParser = uASTAttemptToParseMod(modName, path, modTag, ret);
+
+    if (!usedNewParser) {
+      INT_ASSERT(ret == nullptr);
       ret = parseFile(path, modTag, false, false);
     }
+
+#if REPORT_WHEN_PARSING_UAST
+    if (usedNewParser) {
+      const char* modTagStr = ModuleSymbol::modTagToString(modTag);
+      const char* astKindStr = usedNewParser ? "uAST" : "AST";
+      printf("- Parsed %s module '%s' -> %s\n",
+             modTagStr,
+             modName,
+             astKindStr);
+      printf("@ %s\n", path);
+    }
+#endif
   }
 
   return ret;
@@ -839,6 +872,11 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
     INT_FATAL("compiler library context not initialized");
   }
 
+  // Do not parse if we've already done so.
+  if (haveAlreadyParsed(fileName)) {
+    return nullptr;
+  }
+
   // Check for the expected configuration only, for now
   INT_ASSERT(!include);
 
@@ -932,6 +970,20 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
     if (include) {
       auto msg = "included module file contains multiple modules";
       USR_FATAL(lastModSym, "%s", msg);
+    }
+  }
+
+  // TODO: Helper function to do this.
+  if (modTag == MOD_STANDARD) {
+    if (ret && 0 == strcmp(ret->name, "IO")) {
+      ioModule = ret;
+    }
+
+    // Look for the ArgumentParser and set flag to indicate we should copy
+    // the delimiter -- to the arguments passed to chapel program's main.
+    auto argParsePath = "$CHPL_HOME/modules/packages/ArgumentParser.chpl";
+    if (0 == strcmp(argParsePath, cleanFilename(fileName))) {
+      mainPreserveDelimiter = true;
     }
   }
 

@@ -73,9 +73,12 @@ class Module final : public NamedDecl {
     namedDeclMarkUniqueStringsInner(context);
   }
 
+  int stmtChildNum() const {
+    return attributes() ? 1 : 0;
+  }
+
  public:
   ~Module() override = default;
-
 
   static owned<Module> build(Builder* builder, Location loc,
                              owned<Attributes> attributes,
@@ -84,17 +87,35 @@ class Module final : public NamedDecl {
                              Module::Kind kind,
                              ASTList stmts);
 
+  /**
+    Return the kind of this module (e.g. 'PROTOTYPE' or 'IMPLICIT');
+  */
   Kind kind() const { return this->kind_; }
 
+  /**
+    Iterate over the statements in this module.
+  */
   ASTListIteratorPair<Expression> stmts() const {
-    return ASTListIteratorPair<Expression>(children_.begin(), children_.end());
+    auto begin = numStmts()
+        ? children_.begin() + stmtChildNum()
+        : children_.end();
+    auto end = begin + numStmts();
+    return ASTListIteratorPair<Expression>(begin, end);
   }
 
+  /**
+    Return the number of statements in this module.
+  */
   int numStmts() const {
-    return this->numChildren();
+    return attributes() ? numChildren()-1 : numChildren();
   }
+
+  /**
+    Get the i'th statement in this module.
+  */
   const Expression* stmt(int i) const {
-    const ASTNode* ast = this->child(i);
+    assert(0 <= i && i < numStmts());
+    const ASTNode* ast = this->child(i + stmtChildNum());
     assert(ast->isExpression());
     return (Expression*) ast;
   }
