@@ -41,6 +41,15 @@
 // Turn this on to dump AST/uAST when using --compiler-library-parser.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
 
+// Turn this on to report which modules are parsed as uAST.
+#define REPORT_AST_KIND_WHEN_PARSING_MODULE 0
+
+// Use to eagerly try compiling all internal modules to uAST.
+#define PARSE_ALL_INTERNAL_MODULES_TO_UAST 0
+
+// Use to eagerly try compiling all standard modules to uAST.
+#define PARSE_ALL_STANDARD_MODULES_TO_UAST 0
+
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
 #include "view.h"
 #endif
@@ -78,16 +87,22 @@ static void          parseDependentModules(bool isInternal);
 static ModuleSymbol* parseMod(const char* modName,
                               bool        isInternal);
 
+static bool uASTCanParseMod(const char* modName, ModTag modTag);
+
+static bool uASTAttemptToParseMod(const char* modName,
+                                  const char* path,
+                                  ModTag modTag,
+                                  ModuleSymbol*& outModSym);
+
 static ModuleSymbol* parseFile(const char* fileName,
                                ModTag      modTag,
                                bool        namedOnCommandLine,
                                bool        include);
 
-static void uASTParseFile(const char* fileName,
-                          ModTag      modTag,
-                          bool        namedOnCommandLine,
-                          bool        include);
-
+static ModuleSymbol* uASTParseFile(const char* fileName,
+                                   ModTag      modTag,
+                                   bool        namedOnCommandLine,
+                                   bool        include);
 
 static const char*   stdModNameToPath(const char* modName,
                                       bool*       isStandard);
@@ -555,9 +570,62 @@ static void parseDependentModules(bool isInternal) {
 *                                                                             *
 ************************************** | *************************************/
 
+// Internal modules that are currently able to be parsed by the new parser.
+static std::set<std::string> allowedInternalModules = {
+    "ChapelBase",
+    "ChapelStandard",
+    "PrintModuleInitOrder",
+    "ChapelTaskData",
+    "startInitCommDiags",
+    "CString"
+};
+
+// TODO: Adjust me over time as more internal modules parse.
+static bool uASTCanParseMod(const char* modName, ModTag modTag) {
+  if (!fCompilerLibraryParser) return false;
+
+#if PARSE_ALL_INTERNAL_MODULES_TO_UAST
+  if (modTag == MOD_INTERNAL) return true;
+#endif
+
+#if PARSE_ALL_STANDARD_MODULES_TO_UAST
+  if (modTag == MOD_STANDARD) return true;
+#endif
+
+  // Otherwise, only try to compile a subset of the internal modules.
+  if (modTag != MOD_INTERNAL) return false;
+
+  bool ret = false;
+
+  switch (modTag) {
+    case MOD_INTERNAL:
+      ret = allowedInternalModules.count(modName);
+      break;
+    default:
+      break;
+  }
+
+  return ret;
+}
+
+static bool uASTAttemptToParseMod(const char* modName,
+                                  const char* path,
+                                  ModTag modTag,
+                                  ModuleSymbol*& outModSym) {
+  if (!uASTCanParseMod(modName, modTag)) return false;
+
+  const bool namedOnCommandLine = false;
+  const bool include = false;
+
+  outModSym = uASTParseFile(path, modTag, namedOnCommandLine, include);
+
+  return true;
+}
+
 static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
   const char* path   = NULL;
   ModTag      modTag = MOD_INTERNAL;
+  ModuleSymbol* ret  = nullptr;
 
   if (isInternal == true) {
     path   = searchThePath(modName, true, sIntModPath);
@@ -570,7 +638,29 @@ static ModuleSymbol* parseMod(const char* modName, bool isInternal) {
     modTag = isStandard ? MOD_STANDARD : MOD_USER;
   }
 
-  return (path != NULL) ? parseFile(path, modTag, false, false) : NULL;
+  // This will try to parse the module as uAST, but may fail if the module
+  // is not eligible (e.g. not internal). In that case, parse the file
+  // into AST instead.
+  if (path != nullptr) {
+    bool usedNewParser = uASTAttemptToParseMod(modName, path, modTag, ret);
+
+    if (!usedNewParser) {
+      INT_ASSERT(ret == nullptr);
+      ret = parseFile(path, modTag, false, false);
+    }
+
+#if REPORT_AST_KIND_WHEN_PARSING_MODULE
+    const char* modTagStr = ModuleSymbol::modTagToString(modTag);
+    const char* astKindStr = usedNewParser ? "uAST" : "AST";
+    printf("- Parsed %s module '%s' -> %s\n",
+           modTagStr,
+           modName,
+           astKindStr);
+    printf("@ %s\n", path);
+#endif
+  }
+
+  return ret;
 }
 
 /************************************* | **************************************
@@ -782,44 +872,137 @@ static ModuleSymbol* parseFile(const char* path,
 }
 
 
-static void uASTParseFile(const char* fileName,
-                          ModTag      modTag,
-                          bool        namedOnCommandLine,
-                          bool        include) {
+static ModuleSymbol* uASTParseFile(const char* fileName,
+                                   ModTag      modTag,
+                                   bool        namedOnCommandLine,
+                                   bool        include) {
+  ModuleSymbol* ret = nullptr;
 
-  if (gContext == nullptr)
+  if (gContext == nullptr) {
     INT_FATAL("compiler library context not initialized");
+  }
+
+  // Do not parse if we've already done so.
+  if (haveAlreadyParsed(fileName)) {
+    return nullptr;
+  }
 
   // Check for the expected configuration only, for now
-  INT_ASSERT(modTag == MOD_USER);
-  INT_ASSERT(namedOnCommandLine);
   INT_ASSERT(!include);
 
   auto path = chpl::UniqueString::build(gContext, fileName);
-  auto & modules = chpl::parsing::parse(gContext, path);
+
+  // The 'parseFile' query gets us a builder result that we can inspect to
+  // see if there were any parse errors. The 'parse' query makes us a vector
+  // of top-level modules for easy use, but it does not reparse any modules.
+  // It simply reuses the result of the 'parseFile' query.
+  auto& builderResult = chpl::parsing::parseFile(gContext, path);
+  auto& modules = chpl::parsing::parse(gContext, path);
+
+  // If the builder reported parse errors, emit then and then stop.
+  // TODO (dlongnecke): Pin on converted location.
+  if (builderResult.numErrors()) {
+    for (const auto& err : builderResult.errors()) {
+      USR_FATAL_CONT("%s", err.message().c_str());
+      for (const auto& detail : err.details()) {
+        USR_PRINT("%s", detail.message().c_str());
+      }
+    }
+
+    USR_FATAL("%s", "One or more errors when parsing uAST");
+  }
+
+  ModuleSymbol* lastModSym = nullptr;
+  int numModSyms = 0;
+
+  //
+  // Cases here:
+  //    - One top level implicit module
+  //    - One top level module
+  //    - Multiple top level modules
+  //
+  // The uAST builder will have already created a top level implicit module
+  // for us, which sidesteps the case that 'parseFile' addresses.
+  //
   for (auto mod : modules) {
     INT_ASSERT(mod != nullptr);
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
+    printf("> Dumping uAST for module %s\n", mod->name().c_str());
     chpl::uast::ASTNode::dump(mod);
-    printf("Converting module named %s\n", mod->name().c_str());
 #endif
 
+    // Only converts the module, does not add to done list.
     ModuleSymbol* got = convertToplevelModule(gContext, mod);
-
-    // Use this temporarily to check the contents of the implicit module.
-    // TODO (dlongnecke): Emit this in parse query instead when we have
-    // introduced warnings (e.g. 'noteWarning').
-    if (mod->kind() == chpl::uast::Module::IMPLICIT) {
-      containsOnlyModules(got->block, path.c_str());
-    }
-
-    got->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
+    INT_ASSERT(got);
 
 #if DUMP_WHEN_CONVERTING_UAST_TO_AST
+    printf("> Dumping AST for module %s\n", mod->name().c_str());
     nprint_view(got);
 #endif
+
+    // TODO (dlongnecke): The new frontend should determine this for us.
+    if (modTag != MOD_USER) {
+      got->modTag = modTag;
+    }
+
+    addModuleToDoneList(got);
+
+    if (namedOnCommandLine) {
+      got->addFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE);
+    }
+
+    if (!include) {
+      SET_LINENO(got);
+      ModuleSymbol::addTopLevelModule(got);
+    }
+
+    lastModSym = got;
+    numModSyms++;
   }
+
+  // TODO (dlongnecke): We should not need this. New parser should report
+  // all errors that occurred. If we've reached this point, then the old
+  // AST should all be valid (at parse-time). When we remove this, add an
+  // assert that there are no errors.
+  USR_STOP();
+
+  INT_ASSERT(lastModSym && numModSyms);
+
+  // Use this temporarily to check the contents of the implicit module.
+  // TODO (dlongnecke): Emit the errors in this helper function in the
+  // parse query instead when we have warnings (e.g. 'noteWarning').
+  if (numModSyms == 1 && lastModSym->hasFlag(FLAG_IMPLICIT_MODULE)) {
+    containsOnlyModules(lastModSym->block, path.c_str());
+  }
+
+  // All modules were already added to the done list in the loop above.
+  // The non-uAST variant of this function returns 'nullptr' if multiple
+  // top level modules were produced by parsing the file.
+  if (numModSyms == 1) {
+    ret = lastModSym;
+  } else {
+    if (include) {
+      auto msg = "included module file contains multiple modules";
+      USR_FATAL(lastModSym, "%s", msg);
+    }
+  }
+
+  // TODO: Helper function to do this.
+  if (modTag == MOD_STANDARD) {
+    if (ret && 0 == strcmp(ret->name, "IO")) {
+      ioModule = ret;
+    }
+
+    // Look for the ArgumentParser and set flag to indicate we should copy
+    // the delimiter -- to the arguments passed to chapel program's main.
+    auto argParsePath = "$CHPL_HOME/modules/packages/ArgumentParser.chpl";
+    if (0 == strcmp(argParsePath, cleanFilename(fileName))) {
+      mainPreserveDelimiter = true;
+    }
+  }
+
+  return ret;
 }
 
 static bool containsOnlyModules(BlockStmt* block, const char* path) {

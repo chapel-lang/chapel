@@ -87,11 +87,8 @@ class Attributes final : public Expression {
     return pragmas_.find(tag) != pragmas_.end();
   }
 
-  // TODO: How to hide/obfuscate this without adjusting nitpick_ignore?
-  using PragmaGroup = std::set<PragmaTag>;
-
   // An iterable over the pragmas of this.
-  using PragmaIterable = Iterable<PragmaGroup>;
+  using PragmaIterable = Iterable<std::set<PragmaTag>>;
 
   /**
     Iterate over the pragmas stored in this attributes.

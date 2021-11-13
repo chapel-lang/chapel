@@ -54,8 +54,10 @@ struct Converter {
   UniqueString byStr;
   UniqueString dmappedStr;
   UniqueString domainStr;
+  UniqueString indexStr;
   UniqueString logicAndAssignStr;
   UniqueString logicOrAssignStr;
+  UniqueString nilStr;
   UniqueString noinitStr;
   UniqueString ownedStr;
   UniqueString questionStr;
@@ -82,8 +84,10 @@ struct Converter {
     byStr             = intern("by");
     dmappedStr        = intern("dmapped");
     domainStr         = intern("domain");
+    indexStr          = intern("index");
     logicAndAssignStr = intern("&&=");
     logicOrAssignStr  = intern("||=");
+    nilStr            = intern("nil");
     noinitStr         = intern("noinit");
     ownedStr          = intern("owned");
     questionStr       = intern("?");
@@ -154,24 +158,26 @@ struct Converter {
     return ret;
   }
 
-  void attachSymbolAttributes(const uast::Attributes* node, Symbol* sym) {
-    if (node == nullptr) return;
+  void attachSymbolAttributes(const uast::Decl* node, Symbol* sym) {
+    auto attr = node->attributes();
 
-    if (!node->isDeprecated()) {
-      assert(node->deprecationMessage().isEmpty());
+    if (!attr) return;
+
+    if (!attr->isDeprecated()) {
+      assert(attr->deprecationMessage().isEmpty());
     }
 
-    if (node->isDeprecated()) {
+    if (attr->isDeprecated()) {
       assert(!sym->hasFlag(FLAG_DEPRECATED));
       sym->addFlag(FLAG_DEPRECATED);
 
-      auto msg = node->deprecationMessage();
+      auto msg = attr->deprecationMessage();
       if (!msg.isEmpty()) {
         sym->deprecationMsg = astr(msg.c_str());
       }
     }
 
-    for (auto pragma : node->pragmas()) {
+    for (auto pragma : attr->pragmas()) {
       Flag flag = convertPragmaToFlag(pragma);
       if (flag != FLAG_UNKNOWN) {
         sym->addFlag(flag);
@@ -183,9 +189,7 @@ struct Converter {
     return new CallExpr(PRIM_ERROR);
   }
 
-  Expr* visit(const uast::Identifier* node) {
-    auto name = node->name();
-
+  Expr* reservedWordRemap(UniqueString name) {
     if (name == questionStr) {
       return new SymExpr(gUninstantiated);
     } else if (name == unmanagedStr) {
@@ -194,11 +198,35 @@ struct Converter {
       return new UnresolvedSymExpr("_owned");
     } else if (name == sharedStr) {
       return new UnresolvedSymExpr("_shared");
+    } else if (name == syncStr) {
+      return new UnresolvedSymExpr("_syncvar");
+    } else if (name == singleStr) {
+      return new UnresolvedSymExpr("_singlevar");
+    } else if (name == domainStr) {
+      return new UnresolvedSymExpr("_domain");
+    } else if (name == indexStr) {
+      return new UnresolvedSymExpr("_index");
+    } else if (name == nilStr) {
+      return new SymExpr(gNil);
     } else if (name == noinitStr) {
       return new SymExpr(gNoInit);
     }
 
-    return new UnresolvedSymExpr(node->name().c_str());
+    return nullptr;
+  }
+
+  Expr* visit(const uast::Identifier* node) {
+    Expr* ret = nullptr;
+
+    auto name = node->name();
+
+    if (auto remap = reservedWordRemap(name)) {
+      ret = remap;
+    } else {
+      ret = new UnresolvedSymExpr(name.c_str());
+    }
+
+    return ret;
   }
 
   /// SimpleBlockLikes ///
@@ -1513,7 +1541,7 @@ struct Converter {
   Expr* visit(const uast::Function* node) {
     FnSymbol* fn = new FnSymbol("_");
 
-    attachSymbolAttributes(node->attributes(), fn);
+    attachSymbolAttributes(node, fn);
 
     if (node->isInline()) {
       fn->addFlag(FLAG_INLINE);
@@ -1523,7 +1551,9 @@ struct Converter {
       fn->addFlag(FLAG_OVERRIDE);
     }
 
-    // TODO: add FLAG_NO_PARENS for parenless functions
+    if (node->isParenless()) {
+      fn->addFlag(FLAG_NO_PARENS);
+    }
 
     IntentTag thisTag = INTENT_BLANK;
     Expr* receiverType = nullptr;
@@ -1654,7 +1684,11 @@ struct Converter {
     chpl::UniqueString ustr = node->name();
     const char* name = ustr.c_str();
     const char* path = context->filePathForId(node->id()).c_str();
-    ModTag tag = MOD_USER; // TODO: distinguish internal/standard/etc
+
+    // TODO (dlongnecke): For now, the tag is overridden by the caller.
+    // See 'uASTAttemptToParseMod'. Eventually, it would be great if the
+    // new frontend could note if a module is standard/internal/user.
+    const ModTag tag = MOD_USER;
     bool priv = (node->visibility() == uast::Decl::PRIVATE);
     bool prototype = (node->kind() == uast::Module::PROTOTYPE ||
                       node->kind() == uast::Module::IMPLICIT);
@@ -1668,7 +1702,11 @@ struct Converter {
                                     prototype,
                                     /* docs */ nullptr);
 
-    attachSymbolAttributes(node->attributes(), mod);
+    if (node->kind() == uast::Module::IMPLICIT) {
+      mod->addFlag(FLAG_IMPLICIT_MODULE);
+    }
+
+    attachSymbolAttributes(node, mod);
 
     return new DefExpr(mod);
   }
@@ -1723,7 +1761,7 @@ struct Converter {
                                 /*varargsVariable*/ nullptr);
     assert(ret->sym);
 
-    attachSymbolAttributes(node->attributes(), ret->sym);
+    attachSymbolAttributes(node, ret->sym);
 
     return ret;
   }
@@ -1778,7 +1816,7 @@ struct Converter {
                                varargsVariable);
     assert(ret->sym);
 
-    attachSymbolAttributes(node->attributes(), ret->sym);
+    attachSymbolAttributes(node, ret->sym);
 
     return ret;
   }
@@ -1793,7 +1831,7 @@ struct Converter {
 
     assert(ret != nullptr);
 
-    attachSymbolAttributes(node->attributes(), ret);
+    attachSymbolAttributes(node, ret);
 
     return ret;
   }
@@ -1899,7 +1937,7 @@ struct Converter {
     // Adjust the variable according to its kind
     attachVarSymbolStorage(node, varSym);
 
-    attachSymbolAttributes(node->attributes(), varSym);
+    attachSymbolAttributes(node, varSym);
 
     if (node->isConfig()) {
       varSym->addFlag(FLAG_CONFIG);
@@ -1992,7 +2030,7 @@ struct Converter {
 
     auto enumTypeSym = new TypeSymbol(node->name().c_str(), enumType);
 
-    attachSymbolAttributes(node->attributes(), enumTypeSym);
+    attachSymbolAttributes(node, enumTypeSym);
 
     enumType->symbol = enumTypeSym;
 
@@ -2017,7 +2055,7 @@ struct Converter {
                                  /*docs*/ nullptr);
     assert(ret->sym);
 
-    attachSymbolAttributes(node->attributes(), ret->sym);
+    attachSymbolAttributes(node, ret->sym);
 
     return ret;
   }
@@ -2041,7 +2079,7 @@ struct Converter {
                                  /*docs*/ nullptr);
     assert(ret->sym);
 
-    attachSymbolAttributes(node->attributes(), ret->sym);
+    attachSymbolAttributes(node, ret->sym);
 
     return ret;
   }
@@ -2065,7 +2103,7 @@ struct Converter {
                                  /*docs*/ nullptr);
     assert(ret->sym);
 
-    attachSymbolAttributes(node->attributes(), ret->sym);
+    attachSymbolAttributes(node, ret->sym);
 
     return ret;
   }
@@ -2085,6 +2123,5 @@ ModuleSymbol* convertToplevelModule(chpl::Context* context,
   Converter c(context);
   DefExpr* def = c.visit(mod);
   ModuleSymbol* ret = toModuleSymbol(def->sym);
-  ModuleSymbol::addTopLevelModule(ret);
   return ret;
 }
