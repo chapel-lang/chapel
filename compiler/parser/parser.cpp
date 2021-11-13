@@ -578,7 +578,7 @@ static std::set<std::string> allowedInternalModules = {
   "Atomics",
   "AtomicsCommon",
   "ByteBufferHelpers",
-  /*"Bytes",*/
+  "Bytes",
   "BytesCasts",
   /*"BytesStringCommon",*/
   /*"ChapelArray",*/

@@ -968,8 +968,22 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::Foreach* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+
+    // Does not appear possible right now, from reading the grammar.
+    assert(!node->isExpressionLevel());
+
+    // The pieces that we need for 'buildForallLoopExpr'.
+    Expr* indices = convertLoopIndexDecl(node->index());
+    Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
+    BlockStmt* body = createBlockWithStmts(node->stmts());
+    bool zippered = node->iterand()->isZip();
+    bool isForExpr = node->isExpressionLevel();
+
+    auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, body,
+                                         zippered,
+                                         isForExpr);
+
+    return ret;
   }
 
   /// Array, Domain, Range, Tuple ///
@@ -1555,8 +1569,16 @@ struct Converter {
       fn->addFlag(FLAG_NO_PARENS);
     }
 
+    if (node->isMethod()) {
+      fn->addFlag(FLAG_METHOD);
+      if (node->isPrimaryMethod()) {
+        fn->addFlag(FLAG_METHOD_PRIMARY);
+      }
+    }
+
     IntentTag thisTag = INTENT_BLANK;
     Expr* receiverType = nullptr;
+    bool hasConvertedReceiver = false;
 
     // Add the formals
     if (node->numFormals() > 0) {
@@ -1565,12 +1587,26 @@ struct Converter {
 
         // A "normal" formal.
         if (auto formal = decl->toFormal()) {
-          if (formal->name() != thisStr) {
+
+          // Special handling for implicit receiver formal.
+          if (formal->name() == thisStr) {
+            assert(!hasConvertedReceiver);
+            hasConvertedReceiver = true;
+
+            thisTag = convertFormalIntent(formal->intent());
+
+            // TODO (dlongnecke): Error for new frontend!
+            // "Type binding clauses are not supported..."
+            if (node->isPrimaryMethod() && formal->typeExpression()) {
+              receiverType = nullptr;
+            } else {
+              receiverType = convertExprOrNull(formal->typeExpression());
+            }
+
+          // Else convert it like normal.
+          } else {
             conv = toDefExpr(convertAST(formal));
             assert(conv);
-          } else if (!node->isPrimaryMethod()) {
-            thisTag = convertFormalIntent(formal->intent());
-            receiverType = convertExprOrNull(formal->typeExpression());
           }
 
         // A varargs formal.
@@ -1629,10 +1665,12 @@ struct Converter {
     }
 
     Expr* retType = nullptr;
-    if (node->returnType() && node->returnType()->isBracketLoop()) {
-      retType = convertArrayType(node->returnType()->toBracketLoop());
-    } else {
-      retType = convertExprOrNull(node->returnType());
+    if (node->returnType()) {
+      if (node->returnType()->isBracketLoop()) {
+        retType = convertArrayType(node->returnType()->toBracketLoop());
+      } else {
+        retType = convertAST(node->returnType());
+      }
     }
 
     Expr* whereClause = convertExprOrNull(node->whereClause());
