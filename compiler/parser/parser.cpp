@@ -572,12 +572,68 @@ static void parseDependentModules(bool isInternal) {
 
 // Internal modules that are currently able to be parsed by the new parser.
 static std::set<std::string> allowedInternalModules = {
-    "ChapelBase",
-    "ChapelStandard",
-    "PrintModuleInitOrder",
-    "ChapelTaskData",
-    "startInitCommDiags",
-    "CString"
+  /*"ArrayViewRankChange",*/          // TODO: Forwarding...
+  /*"ArrayViewReindex",*/             // ^^^
+  /*"ArrayViewSlice",*/               // ^^^
+  "Atomics",
+  "AtomicsCommon",
+  "ByteBufferHelpers",
+  /*"Bytes",*/
+  "BytesCasts",
+  /*"BytesStringCommon",*/
+  /*"ChapelArray",*/
+  /*"ChapelAutoAggregation",*/
+  /*"ChapelAutoLocalAccess",*/
+  "ChapelBase",
+  "ChapelComplex_forDocs",
+  "ChapelDebugPrint",
+  /*"ChapelDistribution",*/
+  "ChapelHashing",
+  /*"ChapelHashtable",*/
+  /*"ChapelIOStringifyHelper",*/
+  "ChapelIteratorSupport",
+  /*"ChapelLocale",*/
+  "ChapelLocks",
+  "ChapelNumLocales",
+  "ChapelPrivatization",
+  /*"ChapelRange",*/
+  /*"ChapelReduce",*/
+  "ChapelSerializedBroadcast",
+  "ChapelStandard",
+  /*"ChapelSyncvar",*/
+  "ChapelTaskData",
+  /*"ChapelTaskDataHelp",*/
+  "ChapelTaskID",
+  "ChapelThreads",
+  /*"ChapelTuple",*/
+  "ChapelUtil",
+  "CString",
+  /*"DefaultAssociative",*/
+  /*"DefaultRectangular",*/
+  /*"DefaultSparse",*/
+  "ExportWrappers",
+  "ExternalArray",
+  "ISO_Fortran_binding",
+  "LocaleModelHelpAPU",
+  "LocaleModelHelpFlat",
+  "LocaleModelHelpGPU",
+  "LocaleModelHelpMem",
+  "LocaleModelHelpNUMA",
+  /*"LocaleModelHelpRuntime",*/
+  "LocaleModelHelpSetup",
+  "LocalesArray",
+  "LocaleTree",
+  /*"MemConsistency",*/
+  "MemTracking",
+  "NetworkAtomics",
+  "NetworkAtomicTypes",
+  /*"OwnedObject",*/
+  "PrintModuleInitOrder",
+  /*"SharedObject",*/
+  "startInitCommDiags",
+  "stopInitCommDiags",
+  /*"String",*/
+  "StringCasts"
 };
 
 // TODO: Adjust me over time as more internal modules parse.
@@ -902,6 +958,8 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
   // If the builder reported parse errors, emit then and then stop.
   // TODO (dlongnecke): Pin on converted location.
   if (builderResult.numErrors()) {
+
+    // TODO: These errors are already emitted by the frontend somehow.
     for (const auto& err : builderResult.errors()) {
       USR_FATAL_CONT("%s", err.message().c_str());
       for (const auto& detail : err.details()) {

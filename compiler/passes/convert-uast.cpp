@@ -1996,10 +1996,21 @@ struct Converter {
 
     stmts->insertAtTail(defExpr);
 
-    // Add a PRIM_END_OF_STATEMENT.
-    if (fDocs == false && inTupleDecl == false) {
-      CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
-      stmts->insertAtTail(end);
+    // Special handling for type variables.
+    if (node->kind() == uast::Variable::TYPE) {
+      if (node->linkage() == uast::Decl::EXTERN) {
+        assert(!node->isConfig());
+        stmts = convertTypesToExtern(stmts);
+      } else if (node->isConfig()) {
+        stmts = handleConfigTypes(stmts);
+      }
+
+    // Otherwise, add a PRIM_END_OF_STATEMENT.
+    } else {
+      if (fDocs == false && inTupleDecl == false) {
+        CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+        stmts->insertAtTail(end);
+      }
     }
 
     return stmts;
