@@ -580,7 +580,7 @@ static std::set<std::string> allowedInternalModules = {
   "ByteBufferHelpers",
   "Bytes",
   "BytesCasts",
-  /*"BytesStringCommon",*/
+  "BytesStringCommon",
   /*"ChapelArray",*/
   /*"ChapelAutoAggregation",*/
   /*"ChapelAutoLocalAccess",*/

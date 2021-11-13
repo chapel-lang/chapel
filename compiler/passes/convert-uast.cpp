@@ -52,6 +52,7 @@ struct Converter {
   UniqueString alignStr;
   UniqueString borrowedStr;
   UniqueString byStr;
+  UniqueString bytesStr;
   UniqueString dmappedStr;
   UniqueString domainStr;
   UniqueString indexStr;
@@ -64,7 +65,8 @@ struct Converter {
   UniqueString reduceAssignStr;
   UniqueString sharedStr;
   UniqueString singleStr;
-  UniqueString sparseStr;;
+  UniqueString sparseStr;
+  UniqueString stringStr;
   UniqueString subdomainStr;
   UniqueString syncStr;
   UniqueString thisStr;
@@ -82,6 +84,7 @@ struct Converter {
     atomicStr         = intern("atomic");
     borrowedStr       = intern("borrowed");
     byStr             = intern("by");
+    bytesStr          = intern("bytes");
     dmappedStr        = intern("dmapped");
     domainStr         = intern("domain");
     indexStr          = intern("index");
@@ -95,6 +98,7 @@ struct Converter {
     sharedStr         = intern("shared");
     singleStr         = intern("single");
     sparseStr         = intern("sparse");
+    stringStr         = intern("string");
     subdomainStr      = intern("subdomain");
     syncStr           = intern("sync");
     thisStr           = intern("this");
@@ -194,6 +198,10 @@ struct Converter {
       return new SymExpr(gUninstantiated);
     } else if (name == unmanagedStr) {
       return new SymExpr(dtUnmanaged->symbol);
+    } else if (name == bytesStr) {
+      return new SymExpr(dtBytes->symbol);
+    } else if (name == stringStr) {
+      return new SymExpr(dtString->symbol);
     } else if (name == ownedStr) {
       return new UnresolvedSymExpr("_owned");
     } else if (name == sharedStr) {
@@ -335,9 +343,9 @@ struct Converter {
     BaseAST* base = toExpr(convertAST(node->receiver()));
     auto member = node->field();
 
-    if (!typeStr.compare(member)) {
+    if (member == typeStr) {
       return new CallExpr(PRIM_TYPEOF, base);
-    } else if (!domainStr.compare(member)) {
+    } else if (member == domainStr) {
       return buildDotExpr(base, "_dom");
     } else {
       return buildDotExpr(base, member.c_str());
@@ -664,9 +672,11 @@ struct Converter {
     return buildGotoStmt(GOTO_CONTINUE, name);
   }
 
-  DefExpr* visit(const uast::Label* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  Expr* visit(const uast::Label* node) {
+    const char* name = node->name().c_str();
+    Expr* stmt = toExpr(convertAST(node->loop()));
+    assert(stmt);
+    return buildLabelStmt(name, stmt);
   }
 
   CallExpr* visit(const uast::Return* node) {
@@ -1177,6 +1187,15 @@ struct Converter {
       } else if (name == borrowedStr) {
         ret = new CallExpr(PRIM_TO_BORROWED_CLASS_CHECKED);
       }
+
+    // Unwrap 'foo.bytes' specially to avoid wrapping it in a third call.
+    } else if (auto dot = node->toDot()) {
+      auto member = dot->field();
+      if (member == bytesStr) {
+        Expr* base = toExpr(convertAST(dot->receiver()));
+        auto convDot = buildDotExpr(base, "chpl_bytes");
+        ret = new CallExpr(convDot);
+      }
     }
 
     return ret;
@@ -1651,6 +1670,8 @@ struct Converter {
     RetTag retTag = convertRetTag(node->returnIntent());
 
     if (node->kind() == uast::Function::ITER) {
+
+      // TODO (dlongnecke): Move me to new frontend!
       if (fn->hasFlag(FLAG_EXTERN))
         USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
       fn->addFlag(FLAG_ITERATOR_FN);
