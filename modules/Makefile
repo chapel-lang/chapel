@@ -94,7 +94,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Reflection.chpl \
 	standard/Regex.chpl \
 	standard/Set.chpl \
-	standard/Socket.chpl \
 	standard/Spawn.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
@@ -133,6 +132,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/RecordParser.chpl \
 	packages/ReplicatedVar.chpl \
 	packages/Search.chpl \
+	packages/Socket.chpl \
 	packages/Sort.chpl \
 	packages/UnrolledLinkedList.chpl \
 	packages/VisualDebug.chpl \
