@@ -379,4 +379,12 @@ class Function final : public NamedDecl {
 } // end namespace uast
 } // end namespace chpl
 
+namespace std {
+  template<> struct hash<chpl::uast::Function::Kind> {
+    inline size_t operator()(const chpl::uast::Function::Kind& key) const {
+      return (size_t) key;
+    }
+  };
+} // end namespace std
+
 #endif
