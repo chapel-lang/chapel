@@ -109,7 +109,7 @@ class QualifiedType final {
     std::swap(this->param_, other.param_);
   }
   size_t hash() const {
-    size_t h1 = chpl::hash((unsigned) kind_);
+    size_t h1 = (size_t) kind_;
     size_t h2 = chpl::hash(type_);
     size_t h3 = chpl::hash(param_);
 
