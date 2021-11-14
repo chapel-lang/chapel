@@ -99,6 +99,9 @@ static ModuleSymbol* parseFile(const char* fileName,
                                bool        namedOnCommandLine,
                                bool        include);
 
+// Callback to configure the context error handler when converting to uAST.
+static void uASTParseFileErrorHandler(const chpl::ErrorMessage& err);
+
 static ModuleSymbol* uASTParseFile(const char* fileName,
                                    ModTag      modTag,
                                    bool        namedOnCommandLine,
@@ -581,7 +584,7 @@ static std::set<std::string> allowedInternalModules = {
   "Bytes",
   "BytesCasts",
   "BytesStringCommon",
-  /*"ChapelArray",*/
+  "ChapelArray",
   /*"ChapelAutoAggregation",*/
   /*"ChapelAutoLocalAccess",*/
   "ChapelBase",
@@ -927,6 +930,17 @@ static ModuleSymbol* parseFile(const char* path,
   return retval;
 }
 
+// TODO: Add helpers to convert locations without passing IDs.
+static void uASTParseFileErrorHandler(const chpl::ErrorMessage& err) {
+  auto markError = astlocMarker(err.location());
+
+  USR_FATAL_CONT("%s", err.message().c_str());
+
+  for (const auto& detail : err.details()) {
+    auto markDetail = astlocMarker(detail.location());
+    USR_PRINT("%s", detail.message().c_str());
+  }
+}
 
 static ModuleSymbol* uASTParseFile(const char* fileName,
                                    ModTag      modTag,
@@ -937,6 +951,8 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
   if (gContext == nullptr) {
     INT_FATAL("compiler library context not initialized");
   }
+
+  gContext->setErrorHandler(&uASTParseFileErrorHandler);
 
   // Do not parse if we've already done so.
   if (haveAlreadyParsed(fileName)) {
@@ -955,19 +971,12 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
   auto& builderResult = chpl::parsing::parseFile(gContext, path);
   auto& modules = chpl::parsing::parse(gContext, path);
 
-  // If the builder reported parse errors, emit then and then stop.
-  // TODO (dlongnecke): Pin on converted location.
+  // Any errors while building will have already been emitted by the global
+  // error handling callback that was set above. So just stop.
+  // TODO (dlongnecke): What if errors were emitted outside of / not noted
+  // by the builder result of this query?
   if (builderResult.numErrors()) {
-
-    // TODO: These errors are already emitted by the frontend somehow.
-    for (const auto& err : builderResult.errors()) {
-      USR_FATAL_CONT("%s", err.message().c_str());
-      for (const auto& detail : err.details()) {
-        USR_PRINT("%s", detail.message().c_str());
-      }
-    }
-
-    USR_FATAL("%s", "One or more errors when parsing uAST");
+    USR_FATAL("Error(s) when parsing uAST for: %s", fileName);
   }
 
   ModuleSymbol* lastModSym = nullptr;
