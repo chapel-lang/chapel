@@ -32,8 +32,9 @@ namespace types {
  */
 class RecordType final : public CompositeType {
  private:
-  RecordType(/* args todo */)
-    : CompositeType(typetags::RecordType)
+  RecordType(ID id, UniqueString name,
+             std::vector<CompositeType::FieldDetail> fields)
+    : CompositeType(typetags::RecordType, id, name, std::move(fields))
   { }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -44,10 +45,15 @@ class RecordType final : public CompositeType {
     compositeTypeMarkUniqueStringsInner(context);
   }
 
+  static const owned<RecordType>&
+  getRecordType(Context* context, ID id, UniqueString name,
+                std::vector<CompositeType::FieldDetail> fields);
+
  public:
   ~RecordType() = default;
 
-  static const RecordType* get(Context* context /* args todo */);
+  static const RecordType* get(Context* context, ID id, UniqueString name,
+                               std::vector<CompositeType::FieldDetail> fields); 
 };
 
 

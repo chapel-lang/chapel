@@ -85,13 +85,13 @@ static void test1() {
   const ResolvedFunction* rfunc =
     resolveOnlyCandidate(context, rr.byAst(genericCall));
   assert(rfunc);
-  assert(rfunc->functionId() == mGeneric->id());
-  assert(rfunc->signature->instantiatedFrom != nullptr);
+  assert(rfunc->id() == mGeneric->id());
+  assert(rfunc->signature->instantiatedFrom() != nullptr);
 
   const ResolvedFunction* rhelp =
     resolveOnlyCandidate(context, rfunc->resolutionById.byAst(helperCall));
   assert(rhelp);
-  assert(rhelp->functionId() == nHelper->id());
+  assert(rhelp->id() == nHelper->id());
 }
 
 // variant of the above, testing that a call to 'helper' is not
@@ -147,8 +147,8 @@ static void test1n() {
   const ResolvedFunction* rfunc =
     resolveOnlyCandidate(context, rr.byAst(genericCall));
   assert(rfunc);
-  assert(rfunc->functionId() == mGeneric->id());
-  assert(rfunc->signature->instantiatedFrom != nullptr);
+  assert(rfunc->id() == mGeneric->id());
+  assert(rfunc->signature->instantiatedFrom() != nullptr);
 
   const ResolvedExpression& rhelp = rfunc->resolutionById.byAst(helperCall);
   for (auto candidate : rhelp.mostSpecific) {
@@ -201,7 +201,7 @@ static void test2a() {
   const ResolvedFunction* m1foo =
     resolveOnlyCandidate(context, rRunM1->byAst(runM1FooCall));
   assert(m1foo);
-  assert(m1foo->functionId() == fooA->id());
+  assert(m1foo->id() == fooA->id());
 }
 
 // testing the challenging program from issue 18081
@@ -300,20 +300,20 @@ static void test2() {
   const ResolvedFunction* m1foo =
     resolveOnlyCandidate(context, rRunM1->byAst(runM1FooCall));
   assert(m1foo);
-  assert(m1foo->functionId() == fooA->id());
+  assert(m1foo->id() == fooA->id());
   const ResolvedFunction* m2foo =
     resolveOnlyCandidate(context, rRunM2->byAst(runM2FooCall));
   assert(m2foo);
-  assert(m2foo->functionId() == fooB->id());
+  assert(m2foo->id() == fooB->id());
 
   const ResolvedFunction* m1foobar =
     resolveOnlyCandidate(context, m1foo->byAst(fooABarCall));
   assert(m1foobar);
-  assert(m1foobar->functionId() == m1Bar->id());
+  assert(m1foobar->id() == m1Bar->id());
   const ResolvedFunction* m2foobar =
     resolveOnlyCandidate(context, m2foo->byAst(fooBBarCall));
   assert(m2foobar);
-  assert(m2foobar->functionId() == m2Bar->id());
+  assert(m2foobar->id() == m2Bar->id());
 }
 
 // testing the challenging program from issue 18119
@@ -466,13 +466,13 @@ static void test3() {
       resolveOnlyCandidate(context, rNCallGF->byAst(helperCall3));
 
     assert(h1);
-    assert(h1->functionId() == nHelper1->id());
+    assert(h1->id() == nHelper1->id());
 
     assert(h2);
-    assert(h2->functionId() == nHelper2->id());
+    assert(h2->id() == nHelper2->id());
 
     assert(h3);
-    assert(h3->functionId() == mHelper3->id());
+    assert(h3->id() == mHelper3->id());
   }
 
   // next, check in mCall
@@ -485,13 +485,13 @@ static void test3() {
       resolveOnlyCandidate(context, rMCallGF->byAst(helperCall3));
 
     assert(h1);
-    assert(h1->functionId() == mHelper1->id());
+    assert(h1->id() == mHelper1->id());
 
     assert(h2);
-    assert(h2->functionId() == mHelper2->id());
+    assert(h2->id() == mHelper2->id());
 
     assert(h3);
-    assert(h3->functionId() == mHelper3->id());
+    assert(h3->id() == mHelper3->id());
   }
 
   // then, check in mGenericCall
@@ -504,13 +504,13 @@ static void test3() {
       resolveOnlyCandidate(context, rMGenericCallGF->byAst(helperCall3));
 
     assert(h1);
-    assert(h1->functionId() == mHelper1->id());
+    assert(h1->id() == mHelper1->id());
 
     assert(h2);
-    assert(h2->functionId() == nHelper2->id());
+    assert(h2->id() == nHelper2->id());
 
     assert(h3);
-    assert(h3->functionId() == mHelper3->id());
+    assert(h3->id() == mHelper3->id());
   }
 
   // check that the generic function signatures are the same
@@ -695,10 +695,10 @@ static void test6() {
   auto rACallGeneric = resolveOnlyCandidate(context, rA.byAst(aCall));
   assert(rACallGeneric);
   assert(rACallGeneric->signature);
-  assert(rACallGeneric->signature->untypedSignature);
+  assert(rACallGeneric->signature->untyped());
   auto rBCallGeneric = resolveOnlyCandidate(context, rB.byAst(bCall));
   assert(rBCallGeneric);
-  assert(rBCallGeneric->signature->untypedSignature);
+  assert(rBCallGeneric->signature->untyped());
 
   // check that these two have the same signature
   assert(rACallGeneric->signature == rBCallGeneric->signature);

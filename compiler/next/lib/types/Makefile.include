@@ -40,10 +40,13 @@ NEXT_TYPES_SRCS =                                 \
   PrimitiveType.cpp \
   QualifiedType.cpp \
   RealType.cpp \
+  RecordType.cpp \
   StringType.cpp \
+  TupleType.cpp \
   Type.cpp \
   TypeTag.cpp \
   UintType.cpp \
+  UnionType.cpp \
   UnknownType.cpp \
   VoidType.cpp \
 

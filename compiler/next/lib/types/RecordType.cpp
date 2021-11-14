@@ -19,8 +19,27 @@
 
 #include "chpl/types/RecordType.h"
 
+#include "chpl/queries/query-impl.h"
+
 namespace chpl {
 namespace types {
+
+
+const owned<RecordType>&
+RecordType::getRecordType(Context* context, ID id, UniqueString name,
+                          std::vector<CompositeType::FieldDetail> fields) {
+  QUERY_BEGIN(getRecordType, context, id, name, fields);
+
+  auto result = toOwned(new RecordType(id, name, std::move(fields)));
+
+  return QUERY_END(result);
+}
+
+const RecordType*
+RecordType::get(Context* context, ID id, UniqueString name,
+                std::vector<CompositeType::FieldDetail> fields) {
+  return getRecordType(context, id, name, std::move(fields)).get();
+}
 
 
 } // end namespace types
