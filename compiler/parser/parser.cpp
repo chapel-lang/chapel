@@ -584,7 +584,7 @@ static std::set<std::string> allowedInternalModules = {
   "Bytes",
   "BytesCasts",
   "BytesStringCommon",
-  "ChapelArray",
+  /*"ChapelArray",*/                  // Forwarding, prim with named args.
   /*"ChapelAutoAggregation",*/
   /*"ChapelAutoLocalAccess",*/
   "ChapelBase",

@@ -3066,10 +3066,10 @@ for_expr:
       const char* msg = "Invalid iterand expression";
       $$ = context->raiseError(@2, msg);
     } else {
-      auto iterandExpr = context->consumeList($2)[0].release();
-      assert(iterandExpr);
+      auto iterand = context->consumeList($2)[0].release()->toExpression();
+      assert(iterand);
       $$ = BracketLoop::build(BUILDER, LOC(@$), /*index*/ nullptr,
-                              toOwned($4),
+                              toOwned(iterand),
                               /*withClause*/ nullptr,
                               BlockStyle::IMPLICIT,
                               context->consumeToBlock(@4, $4),
