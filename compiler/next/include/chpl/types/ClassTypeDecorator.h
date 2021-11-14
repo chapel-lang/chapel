@@ -196,7 +196,7 @@ class ClassTypeDecorator final {
     return !(*this == other);
   }
   size_t hash() const {
-    return chpl::hash(val_);
+    return chpl::hash((unsigned) val_);
   }
   void swap(ClassTypeDecorator other) {
     std::swap(this->val_, other.val_);
