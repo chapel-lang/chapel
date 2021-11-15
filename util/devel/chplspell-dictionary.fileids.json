@@ -208,11 +208,11 @@
   "4171383e-1d81-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/optimizations/copyPropagation.cpp"
   ],
-  "40c25074-3f83-11ec-81f0-3de99c714400": [
-    "compiler/optimizations/deadCodeElimination.cpp"
-  ],
   "7356b18e-62e2-11eb-a43d-6f93f4244f4b": [
     "compiler/optimizations/forallOptimizations.cpp"
+  ],
+  "e72aeca4-45ab-11ec-a187-336475c959d4": [
+    "compiler/optimizations/gpuTransforms.cpp"
   ],
   "fcd32732-b78b-11e6-9740-843835579daa": [
     "compiler/optimizations/inferConstRefs.cpp"

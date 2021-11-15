@@ -5429,6 +5429,9 @@ strsz
 toadd
 
 FILEID: 4d38d4da-fecb-11ea-b2e8-10ddb1d4c3d5
+cmplt
+dlvr
+ofiwg
 rmem
 
 FILEID: ee09a666-09c3-11eb-b2e8-10ddb1d4c3d5
@@ -5655,9 +5658,6 @@ myshell
 FILEID: 0eb4f01e-3f83-11ec-81f0-3de99c714400
 myshell
 
-FILEID: 40c25074-3f83-11ec-81f0-3de99c714400
-xtract
-
 FILEID: 6f3fc5b8-3f87-11ec-81f0-3de99c714400
 vscode
 
@@ -5674,6 +5674,9 @@ kaggle
 
 FILEID: f235c39e-3f89-11ec-81f0-3de99c714400
 acct
+
+FILEID: e72aeca4-45ab-11ec-a187-336475c959d4
+xtract
 
 NATURAL:
 aarch
@@ -7872,6 +7875,7 @@ remapper
 remington
 renameable
 renamings
+reparse
 replicand
 replicands
 reprivatization
