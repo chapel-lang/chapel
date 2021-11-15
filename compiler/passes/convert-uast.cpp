@@ -189,6 +189,12 @@ struct Converter {
     }
   }
 
+  void attachSymbolVisibility(const uast::Decl* node, Symbol* sym) {
+    if (node->visibility() == uast::Decl::PRIVATE) {
+      sym->addFlag(FLAG_PRIVATE);
+    }
+  }
+
   Expr* visit(const uast::ErroneousExpression* node) {
     return new CallExpr(PRIM_ERROR);
   }
@@ -711,14 +717,18 @@ struct Converter {
     return ret;
   }
 
-  BlockStmt* visit(const uast::Try* node) {
+  Expr* visit(const uast::Try* node) {
     if (node->isExpressionLevel()) {
 
       assert(node->numStmts() == 1);
       assert(node->stmt(0)->isExpression() && !node->stmt(0)->isBlock());
-      bool tryBang = node->isTryBang();
       Expr* expr = convertAST(node->stmt(0));
-      return TryStmt::build(tryBang, expr);
+
+      // Use this instead of 'TryStmt::build'.
+      auto ret = node->isTryBang() ? tryBangExpr(expr) : tryExpr(expr);
+      assert(ret);
+
+      return ret;
 
     } else {
       bool tryBang = node->isTryBang();
@@ -1993,10 +2003,12 @@ struct Converter {
                            bool useLinkageName) {
     auto varSym = new VarSymbol(tupleVariableName(node->name().c_str()));
 
-    // Adjust the variable according to its kind
+    // Adjust the variable according to its kind, e.g. 'const'/'type'.
     attachVarSymbolStorage(node, varSym);
 
     attachSymbolAttributes(node, varSym);
+
+    attachSymbolVisibility(node, varSym);
 
     if (node->isConfig()) {
       varSym->addFlag(FLAG_CONFIG);

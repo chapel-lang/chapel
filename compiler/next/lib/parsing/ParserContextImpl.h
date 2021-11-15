@@ -1441,6 +1441,9 @@ buildImportStmt(YYLTYPE locEverything, Decl::Visibility visibility,
   auto node = Import::build(builder, convLoc, visibility, std::move(vcs));
 
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+
+  this->visibility = Decl::DEFAULT_VISIBILITY;
+
   return finishStmt(cs);
 }
 
@@ -1464,6 +1467,9 @@ buildMultiUseStmt(YYLTYPE locEverything, Decl::Visibility visibility,
   auto node = Use::build(builder, convLoc, visibility, std::move(vcs));
 
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
+
+  this->visibility = Decl::DEFAULT_VISIBILITY;
+
   return finishStmt(cs);
 }
 
@@ -1492,6 +1498,8 @@ buildSingleUseStmt(YYLTYPE locEverything, YYLTYPE locVisibilityClause,
   auto node = Use::build(builder, convertLocation(locEverything),
                          visibility,
                          std::move(uses));
+
+  this->visibility = Decl::DEFAULT_VISIBILITY;
 
   CommentsAndStmt cs = { .comments=comments, .stmt=node.release() };
 
