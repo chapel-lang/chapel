@@ -414,7 +414,7 @@ returnInfoError(CallExpr* call) {
   AggregateType* at = toAggregateType(dtError);
   INT_ASSERT(isClass(at));
   Type* unmanaged =
-    at->getDecoratedClass(CLASS_TYPE_UNMANAGED); // TODO: nilable
+    at->getDecoratedClass(ClassTypeDecorator::UNMANAGED); // TODO: nilable
   INT_ASSERT(unmanaged);
   return QualifiedType(unmanaged, QUAL_VAL);
 }
@@ -454,11 +454,11 @@ static QualifiedType
 returnInfoToUnmanaged(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_UNMANAGED;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::UNMANAGED;
   if (isNilableClassType(t))
-    decorator = CLASS_TYPE_UNMANAGED_NILABLE;
+    decorator = ClassTypeDecorator::UNMANAGED_NILABLE;
   else if (isNonNilableClassType(t))
-    decorator = CLASS_TYPE_UNMANAGED_NONNIL;
+    decorator = ClassTypeDecorator::UNMANAGED_NONNIL;
 
   if (AggregateType* at = toAggregateType(canonicalClassType(t))) {
     if (isClass(at)) {
@@ -472,11 +472,11 @@ static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED;
   if (isNilableClassType(t))
-    decorator = CLASS_TYPE_BORROWED_NILABLE;
+    decorator = ClassTypeDecorator::BORROWED_NILABLE;
   else if (isNonNilableClassType(t))
-    decorator = CLASS_TYPE_BORROWED_NONNIL;
+    decorator = ClassTypeDecorator::BORROWED_NONNIL;
 
   if (AggregateType* at = toAggregateType(canonicalClassType(t)))
     if (isClass(at))
@@ -489,11 +489,11 @@ static QualifiedType
 returnInfoToUndecorated(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_GENERIC;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::GENERIC;
   if (isNilableClassType(t))
-    decorator = CLASS_TYPE_GENERIC_NILABLE;
+    decorator = ClassTypeDecorator::GENERIC_NILABLE;
   else if (isNonNilableClassType(t))
-    decorator = CLASS_TYPE_GENERIC_NONNIL;
+    decorator = ClassTypeDecorator::GENERIC_NONNIL;
 
   if (AggregateType* at = toAggregateType(canonicalClassType(t)))
     if (isClass(at))
@@ -508,7 +508,7 @@ returnInfoToNilable(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
   if (isClassLikeOrManaged(t)) {
-    ClassTypeDecorator decorator = classTypeDecorator(t);
+    ClassTypeDecoratorEnum decorator = classTypeDecorator(t);
     decorator = addNilableToDecorator(decorator);
 
     if (isManagedPtrType(t)) {
@@ -536,7 +536,7 @@ returnInfoToNonNilable(CallExpr* call) {
   Type* t = call->get(1)->getValType();
 
   if (isClassLikeOrManaged(t)) {
-    ClassTypeDecorator decorator = classTypeDecorator(t);
+    ClassTypeDecoratorEnum decorator = classTypeDecorator(t);
     decorator = addNonNilToDecorator(decorator);
 
     if (isManagedPtrType(t)) {
@@ -1125,6 +1125,10 @@ initPrimitive() {
   // Allocate a class instance on the stack (where normally it
   // would be allocated on the heap). The only argument is the class type.
   prim_def(PRIM_STACK_ALLOCATE_CLASS, "stack allocate class", returnInfoFirst);
+
+  // zero the memory a variable points to. only argument is the variable
+  prim_def(PRIM_ZERO_VARIABLE, "zero variable", returnInfoVoid, true);
+
   prim_def(PRIM_ZIP, "zip", returnInfoVoid, false, false);
   prim_def(PRIM_REQUIRE, "require", returnInfoVoid, false, false);
 
@@ -1190,7 +1194,7 @@ initPrimitive() {
 
   // Argument is a symbol and we attach flags to that symbol to
   // indicate optimization information.
-  // That symbol includes OPT_INFO_... flags.
+  // That symbol includes FLAG_OPT_INFO_... flags.
   prim_def(PRIM_OPTIMIZATION_INFO, "optimization info", returnInfoVoid, true, false);
 
   prim_def(PRIM_GATHER_TESTS, "gather tests", returnInfoDefaultInt);

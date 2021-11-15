@@ -30,7 +30,7 @@ namespace types {
   This class represents an unknown type when the type is
   not known because it is not yet established.
  */
-class UnknownType : public Type {
+class UnknownType final : public Type {
  private:
   UnknownType() : Type(typetags::UnknownType) { }
 

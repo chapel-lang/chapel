@@ -22,11 +22,12 @@ ALL_SRCS += next/lib/uast/*.cpp
 
 NEXT_UAST_SRCS =                                 \
   AggregateDecl.cpp \
+  Array.cpp \
   ASTList.cpp \
   ASTNode.cpp \
   ASTTag.cpp \
   As.cpp \
-  Array.cpp \
+  Attributes.cpp \
   Begin.cpp \
   Block.cpp \
   BoolLiteral.cpp \
@@ -77,6 +78,7 @@ NEXT_UAST_SRCS =                                 \
   NumericLiteral.cpp \
   On.cpp \
   OpCall.cpp \
+  Pragma.cpp \
   PrimCall.cpp \
   PrimOp.cpp \
   Range.cpp \
@@ -85,6 +87,7 @@ NEXT_UAST_SRCS =                                 \
   Reduce.cpp \
   Require.cpp \
   Return.cpp \
+  Scan.cpp \
   Select.cpp \
   Serial.cpp \
   SimpleBlockLike.cpp \
@@ -97,9 +100,11 @@ NEXT_UAST_SRCS =                                 \
   Tuple.cpp \
   TupleDecl.cpp \
   TypeDecl.cpp \
+  TypeQuery.cpp \
   UintLiteral.cpp \
   Use.cpp \
   Union.cpp \
+  VarArgFormal.cpp \
   Variable.cpp \
   VarLikeDecl.cpp \
   VisibilityClause.cpp \

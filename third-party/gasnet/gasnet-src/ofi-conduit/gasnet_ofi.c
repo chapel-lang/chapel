@@ -33,7 +33,9 @@ struct fid_ep*        gasnetc_ofi_request_epfd;
 struct fid_ep*        gasnetc_ofi_reply_epfd;
 struct fid_cq*        gasnetc_ofi_request_cqfd;
 struct fid_cq*        gasnetc_ofi_reply_cqfd;
+#if GASNET_SEGMENT_EVERYTHING
 struct fid_mr*        gasnetc_segment_mrfd = NULL;
+#endif
 struct fid_mr*        gasnetc_auxseg_mrfd = NULL;
 size_t gasnetc_ofi_bbuf_threshold;
 
@@ -1007,20 +1009,33 @@ void gasnetc_ofi_handle_bounce_rdma(void *buf)
 // Local registration of segment memory
 int gasnetc_segment_register(gasnetc_Segment_t segment)
 {
+    void *segbase;
+    uintptr_t segsize;
+    struct fid_mr** mrfd_p;
+
 #if GASNET_SEGMENT_FAST || GASNET_SEGMENT_LARGE
-    void *segbase = segment->_addr;
-    uintptr_t segsize = segment->_size;
-    struct fid_mr** mrfd_p = &segment->mrfd;
+    gasneti_assert(segment);
+    segbase = segment->_addr;
+    segsize = segment->_size;
+    mrfd_p = &segment->mrfd;
 #else
-    void *segbase = (void *)0;
-    uintptr_t segsize = UINT64_MAX;
-    struct fid_mr** mrfd_p = &gasnetc_segment_mrfd;
     if (!GASNETC_OFI_HAS_MR_SCALABLE) {
         gasneti_fatalerror("GASNET_SEGMENT_EVERYTHING is not supported when using FI_MR_BASIC.\n"
                            "Pick an OFI provider that supports FI_MR_SCALABLE if EVERYTHING\n"
                            "is needed.\n");
     }
+    if (!segment) {
+        segbase = (void *)0;
+        segsize = UINT64_MAX;
+        mrfd_p = &gasnetc_segment_mrfd;
+    } else if (gasneti_i_segment_kind_is_host((gasneti_Segment_t) segment)) {
+        // No additional host memory registration required
+        return GASNET_OK;
+    } else {
+        gasneti_unreachable_error(("ofi-conduit does not yet support non-host memory kinds"));
+    }
 #endif
+
     static gasneti_weakatomic64_t key_counter = gasneti_weakatomic64_init(0);
     uint64_t key = gasneti_weakatomic64_add(&key_counter, 1, 0);
     int ret = fi_mr_reg(gasnetc_ofi_domainfd, segbase, segsize,

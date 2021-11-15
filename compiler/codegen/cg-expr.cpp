@@ -3064,6 +3064,25 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
   }
 }
 #ifdef HAVE_LLVM
+
+static
+llvm::Constant* codegenSizeofLLVM(llvm::Type* type)
+{
+  // This used to use llvm::ConstantExpr::getSizeOf(type);
+  // but that seems not to be constant folded.
+
+  GenInfo *info = gGenInfo;
+  const llvm::DataLayout& dl = info->module->getDataLayout();
+  llvm::LLVMContext& ctx = info->module->getContext();
+
+  INT_ASSERT(type->isSized());
+  llvm::TypeSize ret = dl.getTypeAllocSize(type);
+  auto intValue = ret.getKnownMinSize();
+  llvm::Type* sizeTy = dl.getIntPtrType(ctx);
+
+  return llvm::ConstantInt::get(sizeTy, intValue);
+}
+
 static
 GenRet codegenSizeof(llvm::Type* type)
 {
@@ -5277,6 +5296,38 @@ DEFINE_PRIM(STACK_ALLOCATE_CLASS) {
     GenRet tmp = createTempVar(struct_name);
 
     ret = codegenCast(at, codegenAddrOf(tmp));
+}
+
+static
+void codegenCallMemset(GenRet dest, Type* type) {
+  GenInfo *info = gGenInfo;
+
+  GenRet size = codegenSizeof(type);
+
+  // Must call with real pointer arguments (not lvalue)
+  INT_ASSERT(dest.isLVPtr == GEN_VAL);
+  // And also above call should generate a value
+  INT_ASSERT(size.isLVPtr == GEN_VAL);
+
+  if (info->cfile) {
+    GenRet zero = codegenZero32();
+    codegenCall("memset", dest, zero, size);
+  } else {
+#ifdef HAVE_LLVM
+    llvm::ConstantInt* zero = info->irBuilder->getIntN(8, 0);
+    info->irBuilder->CreateMemSet(dest.val, zero, size.val, llvm::Align(1));
+#endif
+  }
+}
+
+DEFINE_PRIM(ZERO_VARIABLE) {
+    SymExpr* se = toSymExpr(call->get(1));
+    INT_ASSERT(se);
+    Symbol* sym = se->symbol();
+    Type* type = sym->getValType();
+    GenRet dest = codegenAddrOf(se);
+
+    codegenCallMemset(dest, type);
 }
 
 DEFINE_PRIM(REGISTER_GLOBAL_VAR) {

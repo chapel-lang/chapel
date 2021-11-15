@@ -73,6 +73,9 @@ test-libchplcomp: FORCE
 libchplcomp-parser: FORCE
 	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp-parser
 
+libchplcomp-chpldoc: FORCE
+	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp-chpldoc
+
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE
 	rm -rf $(SPECTEST_DIR)

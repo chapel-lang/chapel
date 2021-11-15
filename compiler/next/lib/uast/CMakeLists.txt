@@ -19,11 +19,12 @@ target_sources(libchplcomp-obj
                PRIVATE
 
                AggregateDecl.cpp
+               Array.cpp
                ASTList.cpp
                ASTNode.cpp
                ASTTag.cpp
                As.cpp
-               Array.cpp
+               Attributes.cpp
                Begin.cpp
                Block.cpp
                BoolLiteral.cpp
@@ -74,6 +75,7 @@ target_sources(libchplcomp-obj
                NumericLiteral.cpp
                On.cpp
                OpCall.cpp
+               Pragma.cpp
                PrimCall.cpp
                PrimOp.cpp
                Range.cpp
@@ -82,6 +84,7 @@ target_sources(libchplcomp-obj
                Reduce.cpp
                Require.cpp
                Return.cpp
+               Scan.cpp
                Select.cpp
                Serial.cpp
                SimpleBlockLike.cpp
@@ -94,9 +97,11 @@ target_sources(libchplcomp-obj
                Tuple.cpp
                TupleDecl.cpp
                TypeDecl.cpp
+               TypeQuery.cpp
                UintLiteral.cpp
                Use.cpp
                Union.cpp
+               VarArgFormal.cpp
                Variable.cpp
                VarLikeDecl.cpp
                VisibilityClause.cpp

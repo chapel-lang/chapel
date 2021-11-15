@@ -50,6 +50,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
   AST_NODE(As)                         //
   AST_NODE(Array)                      //
+  AST_LEAF(Attributes)                 //
   //AST_NODE(AssociativeArray)         //
   AST_NODE(Break)                      // old AST: GotoStmt
   AST_NODE(Catch)                      // old AST: CatchStmt
@@ -74,6 +75,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Sync)                       //
   AST_NODE(Throw)                      //
   AST_NODE(Try)                        // old AST: TryStmt
+  AST_NODE(TypeQuery)                  //
   AST_NODE(Use)                        // old AST: UseStmt
   AST_NODE(VisibilityClause)           //
   AST_NODE(WithClause)                 //
@@ -127,6 +129,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(OpCall)
     AST_NODE(PrimCall)                 // old AST: CallExpr/PrimitiveOp
     AST_NODE(Reduce)                   //
+    AST_NODE(Scan)                     //
     AST_NODE(Tuple)                    //
     AST_NODE(Zip)
   AST_END_SUBCLASSES(Call)
@@ -147,6 +150,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       AST_BEGIN_SUBCLASSES(VarLikeDecl)
         AST_NODE(Formal)                   // old AST: ArgSymbol
         AST_NODE(TaskVar)                  // old AST: ShadowVarSymbol
+        AST_NODE(VarArgFormal)             // old AST: ArgSymbol
         AST_NODE(Variable)                 // old AST: VarSymbol
       AST_END_SUBCLASSES(VarLikeDecl)
 

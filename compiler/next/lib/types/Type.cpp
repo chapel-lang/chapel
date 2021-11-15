@@ -22,13 +22,20 @@
 #include "chpl/types/AnyType.h"
 #include "chpl/types/BoolType.h"
 #include "chpl/types/BuiltinType.h"
+#include "chpl/types/BytesType.h"
+#include "chpl/types/CStringType.h"
+#include "chpl/types/ClassType.h"
 #include "chpl/types/ComplexType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
+#include "chpl/types/NilType.h"
+#include "chpl/types/NothingType.h"
 #include "chpl/types/PrimitiveType.h"
 #include "chpl/types/RealType.h"
+#include "chpl/types/StringType.h"
 #include "chpl/types/UintType.h"
 #include "chpl/types/UnknownType.h"
+#include "chpl/types/VoidType.h"
 
 namespace chpl {
 namespace types {
@@ -88,10 +95,16 @@ void Type::gatherBuiltins(Context* context,
   gatherPrimitiveType(context, map, ComplexType::get(context, 64));
   gatherPrimitiveType(context, map, ComplexType::get(context, 128));
   // and 'complex' as an alias for 'complex(128)'
-  gatherType(context, map, "imag", ImagType::get(context, 0));
+  gatherType(context, map, "complex", ComplexType::get(context, 0));
 
   gatherType(context, map, "_any", AnyType::get(context));
+  gatherType(context, map, "_nilType", NilType::get(context));
   gatherType(context, map, "_unknown", UnknownType::get(context));
+  gatherType(context, map, "bytes", BytesType::get(context));
+  gatherType(context, map, "c_string", CStringType::get(context));
+  gatherType(context, map, "nothing", NothingType::get(context));
+  gatherType(context, map, "string", StringType::get(context));
+  gatherType(context, map, "void", VoidType::get(context));
 
   BuiltinType::gatherBuiltins(context, map);
 }
@@ -135,6 +148,16 @@ void Type::dump(const Type* type, int leadingSpaces) {
 std::string Type::toString() const {
   std::string ret = typetags::tagToString(tag());
   return ret;
+}
+
+const CompositeType* Type::getCompositeType() const {
+  if (auto at = toCompositeType())
+    return at;
+
+  if (auto ct = toClassType())
+    return ct->basicClassType();
+
+  return nullptr;
 }
 
 

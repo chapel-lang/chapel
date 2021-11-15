@@ -115,8 +115,9 @@ void Builder::createImplicitModuleIfNeeded() {
     ASTList stmts;
     stmts.swap(topLevelExpressions_);
     auto implicitModule = Module::build(this, Location(filepath_),
-                                        inferredModuleName,
+                                        /*attributes*/ nullptr,
                                         Decl::DEFAULT_VISIBILITY,
+                                        inferredModuleName,
                                         Module::IMPLICIT,
                                         std::move(stmts));
     topLevelExpressions_.push_back(std::move(implicitModule));

@@ -1176,9 +1176,6 @@ typedef struct {
   int barrier_size;           /*  ceil(lg(nodes)) */
   int barrier_goal;           /*  (1+ceil(lg(nodes)) << 1) == final barrier_state for phase=0 */
   void *barrier_inbox;        /*  in-segment memory to recv notifications */
-#if !GASNETI_THREADS
-  gex_Event_t *barrier_events; /* array of events for non-blocking puts */
-#endif
 } gasnete_coll_rmdbarrier_t;
 
 /* So, what's this inbox structure all about?
@@ -1234,34 +1231,17 @@ void gasnete_rmdbarrier_send(gasnete_coll_rmdbarrier_t *barrier_data,
   payload->flags2 = ~flags;
   payload->value2 = ~value;
 
-  // Below we unconditionally use NBI bulk puts in a recursive NBI access
-  // region.  This was written to avoid consuming any of the 65535 explicit
-  // events promised to the client in GASNet-1.  However, that limit does not
-  // exist for GASNet-EX and it might be profitable to specialize for step==1.
-  // TODO: update the injection loop below (see bug 4278)
-
-  gasnete_begin_nbi_accessregion(0,1 GASNETI_THREAD_PASS);
+  // Here we use NBI puts inside a "fire and forget" region to avoid any
+  // need to sync the operation later, and without bleeding into the client's
+  // current iop.
+  gasneti_begin_nbi_ff(GASNETI_THREAD_PASS_ALONE);
   for (i = 0; i < numsteps; ++i, state += 2, step += 1) {
     const gex_Rank_t jobrank = barrier_data->barrier_peers[step].jobrank;
     void * const addr = GASNETE_RDMABARRIER_INBOX_REMOTE(barrier_data, step, state);
     gasnete_put_nbi(gasneti_THUNK_TM, jobrank, addr, payload, sizeof(*payload),
                     GEX_EVENT_DEFER, 0 GASNETI_THREAD_PASS);
   }
-  event = gasnete_end_nbi_accessregion(0 GASNETI_THREAD_PASS);
-
-#if GASNETI_THREADS
-  // Below we sync the new ops, since in GASNet-1 handles were thread-specific
-  // and we could not know that this thread would ever re-enter the barrier
-  // code.  In GASNet-EX events are NOT thread-specific and this stall could
-  // be removed.
-  // TODO: remove the stall below (see bug 4278)
-  gasnete_wait(event GASNETI_THREAD_PASS);
-#else
-  /* save the new ops to sync after the barrier is complete */
-  step -= (numsteps + 1);
-  gasneti_assert(barrier_data->barrier_events[step] == GEX_EVENT_INVALID);
-  barrier_data->barrier_events[step] = event;
-#endif
+  gasneti_end_nbi_ff(GASNETI_THREAD_PASS_ALONE);
 }
 
 #if GASNETI_PSHM_BARRIER_HIER
@@ -1533,14 +1513,6 @@ static int gasnete_rmdbarrier_wait(gasnete_coll_team_t team, int id, int flags) 
     retval = GASNET_ERR_BARRIER_MISMATCH;
   }
 
-#if !GASNETI_THREADS
-  /*  "drain" the put_nb events, if any */
- #if GASNETI_PSHM_BARRIER_HIER
-  if (!barrier_data->barrier_passive)
- #endif
-  gasnete_wait_all(barrier_data->barrier_events, barrier_data->barrier_size GASNETI_THREAD_GET);
-#endif
-
   /*  update state */
 #if GASNETI_PSHM_BARRIER_HIER
   if (pshm_bdata) {
@@ -1601,9 +1573,6 @@ static void gasnete_rmdbarrier_fini(gasnete_coll_team_t team) {
 #if GASNETI_PSHM_BARRIER_HIER
   if (data->barrier_pshm) gasnete_pshmbarrier_fini_inner(data->barrier_pshm);
 #endif
-#if !GASNETI_THREADS
-  gasneti_free(data->barrier_events);
-#endif
   gasneti_free(data->barrier_peers);
   gasneti_free_aligned(data);
 }
@@ -1643,10 +1612,6 @@ static void gasnete_rmdbarrier_init(gasnete_coll_team_t team) {
   if (steps) {
     int step;
 
-#if !GASNETI_THREADS
-    barrier_data->barrier_events = gasneti_calloc(steps, sizeof(gex_Event_t));
-#endif
-
     gasneti_assert(gasnete_rdmabarrier_auxseg);
     gasneti_static_assert(2 * sizeof(gasnete_coll_rmdbarrier_inbox_t) <= GASNETE_RDMABARRIER_INBOX_SZ);
     barrier_data->barrier_inbox = gasnete_rdmabarrier_auxseg[gasneti_mynode].addr;
@@ -1661,10 +1626,6 @@ static void gasnete_rmdbarrier_init(gasnete_coll_team_t team) {
     }
   } else {
     barrier_data->barrier_state = barrier_data->barrier_goal;
-#if !GASNETI_THREADS
-    /* simplifies the sync path(s) */
-    barrier_data->barrier_events = gasneti_calloc(1, sizeof(gex_Event_t));
-#endif
   }
 
   gasneti_free(gasnete_rdmabarrier_auxseg);

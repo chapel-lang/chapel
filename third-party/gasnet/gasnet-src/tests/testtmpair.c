@@ -193,6 +193,8 @@ int main(int argc, char **argv)
     // Limit capabilities to those currently implementd by the current conduit
   #if GASNET_CONDUIT_IBV
     ep_caps &= GEX_EP_CAPABILITY_RMA;
+  #elif GASNET_CONDUIT_UCX
+    ep_caps &= GEX_EP_CAPABILITY_RMA;
   #elif GASNET_MAXEPS > 1
     MSG0("Update required in testtmpair.c for conduit-specific capabilities.");
   #endif

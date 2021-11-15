@@ -105,6 +105,7 @@ testprograms_seq =      \
         testtmpair      \
         testreadonly    \
         testcudauva     \
+        testhip         \
         $(CONDUIT_TESTS) \
         $(MPI_TESTS_SEQ)
 
@@ -188,8 +189,12 @@ TEST_PARAMS=                    					\
    $(MANUAL_TESTPARAMS) dummy=1 ;
 
 # omit tests that are supposed to fail or known to cause failures
+# testexit: requires special handling, provided by run-testexit
+# testreadonly: known to fail on multiple system (at least bugs 4008, 4009, 4046 and 4179)
+# MPI_TESTS_*: lack infrastructure here to launch via mpirun vs $(CONDUIT_RUNCMD)
 testprograms_err =      \
         testexit        \
+        testreadonly    \
 	$(MPI_TESTS_SEQ) \
 	$(MPI_TESTS_PAR)
 
@@ -401,8 +406,11 @@ testlegacy_extraincs    = $(AMX_INC)
 testcxx_extraincs       = $(AMX_INC)
 testlegacycxx_extraincs = $(AMX_INC)
 
-# some tests need cuda.h
-testcudauva_extraincs = @CUDA_UVA_CFLAGS@
+# some tests need cuda.h and other related options
+testcudauva_extracflags = @CUDA_UVA_CFLAGS@
+
+# some tests need hip_runtime.h other related options
+testhip_extracflags = @HIP_CFLAGS@
 
 # delay function, used by multiple tests
 # need to deliberately exclude and disable optimization for this object file to prevent breaking delay
@@ -437,13 +445,13 @@ testcxx testlegacycxx: force
 		echo "ERROR: $@ target requested, but no c++ compiler is configured"; \
 		exit 1; \
 	 fi
-	$(GASNET_CXX) -I$(srcdir) $($@_extraincs) $(GASNET_CXXCPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CXXFLAGS) $(GASNET_CXXFLAGS) -c -o $@.o $(srcdir)/$@.cc
+	$(GASNET_CXX) -I$(srcdir) $($@_extraincs) $(GASNET_CXXCPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CXXFLAGS) $(GASNET_CXXFLAGS) $($@_extracxxflags) -c -o $@.o $(srcdir)/$@.cc
 	$(GASNET_CXX) $(GASNET_CXXFLAGS) $(GASNET_LDFLAGS) -o $@ $@.o $($@_extraobjs) $(GASNET_LIBS)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 
 # This is a model for how GASNet clients should be built:
 test% : force
-	$(GASNET_CC) -I$(srcdir) $($@_extraincs) $(GASNET_CPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CFLAGS) $(GASNET_CFLAGS) -c -o $@.o $(srcdir)/$@.c
+	$(GASNET_CC) -I$(srcdir) $($@_extraincs) $(GASNET_CPPFLAGS) $(KEEPTMP_CFLAGS) $(GASNET_DEVWARN_CFLAGS) $(GASNET_CFLAGS) $($@_extracflags) -c -o $@.o $(srcdir)/$@.c
 	$(GASNET_LD) $(GASNET_LDFLAGS) -o $@ $@.o $($@_extraobjs) $(GASNET_LIBS)
 	@test -n '$(KEEPTMPS)' || ( cmd="rm -f $@.o"; echo "$$cmd"; eval "$$cmd" )
 

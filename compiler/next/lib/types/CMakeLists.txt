@@ -19,23 +19,30 @@ target_sources(libchplcomp-obj
                PRIVATE
 
                AnyType.cpp
+               BasicClassType.cpp
                BoolType.cpp
                BuiltinType.cpp
                BytesType.cpp
-               ComplexType.cpp
                CStringType.cpp
+               ClassType.cpp
+               ComplexType.cpp
+               CompositeType.cpp
                ErroneousType.cpp
                ImagType.cpp
                IntType.cpp
+               NilType.cpp
                NothingType.cpp
                Param.cpp
                PrimitiveType.cpp
                QualifiedType.cpp
                RealType.cpp
+               RecordType.cpp
                StringType.cpp
+               TupleType.cpp
                Type.cpp
                TypeTag.cpp
                UintType.cpp
+               UnionType.cpp
                UnknownType.cpp
                VoidType.cpp
 

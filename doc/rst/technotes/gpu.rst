@@ -48,14 +48,6 @@ different compute capability (necessary for example, when targeting Tesla K20
 GPUs) you can pass ``--gpu-arch`` to ``chpl`` and specify a different value there.
 This may also be set using the ``CHPL_CUDA_ARCH`` environment variable.
 
-In our current implementation of GPU support, we compile the generated kernels
-into a ``.fatbin`` file that is loaded at runtime. We put this ``.fatbin`` file as
-well as other temporary files produced during code generation into a
-``_gpu_files`` directory.  The name of this directory will be prefixed by the
-executable name (if one is specified by passing it via ``-o`` or ``--output`` to
-``chpl``), otherwise we will prefix it with the process ID for the Chapel
-compiler. We intend to change this behavior in future releases.
-
 If you would like to view debugging information you can pass ``--verbose`` to
 your generated executable. This output will show the invocation of CUDA kernel
 calls along with various other interactions with the GPU such as memory

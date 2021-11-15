@@ -79,9 +79,19 @@ static inline bool defaultUpdateVec(std::vector<T>& keep, std::vector<T>& addin)
 }
 template<typename T>
 static inline bool defaultUpdateOwned(owned<T>& keep, owned<T>& addin) {
-  bool match = ((keep.get() == nullptr) == (addin.get() == nullptr)) &&
-               // call == on the values
-               (*keep.get() == *addin.get());
+  // are they both null?
+  if (keep.get() == nullptr && addin.get() == nullptr)
+    return false;
+
+  // is one null but not the other?
+  if (keep.get() == nullptr || addin.get() == nullptr) {
+    keep.swap(addin);
+    return true;
+  }
+
+  // at this point they both are not null, so check if their values match
+  // by calling == on the values.
+  bool match = (*keep.get() == *addin.get());
   if (match) {
     return false;
   } else {

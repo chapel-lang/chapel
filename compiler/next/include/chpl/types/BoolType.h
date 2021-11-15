@@ -31,7 +31,7 @@ namespace types {
 
   Note that `bool` normally has width `8` but `bool(8)` is a separate type.
  */
-class BoolType : public PrimitiveType {
+class BoolType final : public PrimitiveType {
  private:
   BoolType(int bitwidth)
     : PrimitiveType(typetags::BoolType, bitwidth)

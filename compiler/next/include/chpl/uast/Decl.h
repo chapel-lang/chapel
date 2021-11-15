@@ -20,6 +20,7 @@
 #ifndef CHPL_UAST_DECL_H
 #define CHPL_UAST_DECL_H
 
+#include "chpl/uast/Attributes.h"
 #include "chpl/uast/Expression.h"
 
 namespace chpl {
@@ -46,29 +47,43 @@ class Decl : public Expression {
   };
 
  private:
-  Visibility visibility_;
-  Linkage linkage_;
 
   // Use -1 to indicate that there is no such child.
+  int attributesChildNum_;
+  Visibility visibility_;
+  Linkage linkage_;
   int linkageNameChildNum_;
 
  protected:
-  Decl(ASTTag tag, Visibility visibility, Linkage linkage)
+  Decl(ASTTag tag, int attributesChildNum, Visibility visibility,
+       Linkage linkage)
     : Expression(tag),
+      attributesChildNum_(attributesChildNum),
       visibility_(visibility),
       linkage_(linkage),
       linkageNameChildNum_(-1) {
   }
 
-  Decl(ASTTag tag, ASTList children, Visibility visibility, Linkage linkage,
+  Decl(ASTTag tag, ASTList children, int attributesChildNum,
+       Visibility visibility,
+       Linkage linkage,
        int linkageNameChildNum)
     : Expression(tag, std::move(children)),
+      attributesChildNum_(attributesChildNum),
       visibility_(visibility),
       linkage_(linkage),
       linkageNameChildNum_(linkageNameChildNum) {
 
+
     if (linkageNameChildNum_ >= 0) {
       assert(linkage_ != DEFAULT_LINKAGE);
+    }
+
+    assert(-1 <= attributesChildNum_ &&
+                 attributesChildNum_ < (ssize_t)children_.size());
+
+    if (attributesChildNum_ >= 0) {
+      assert(child(attributesChildNum_)->isAttributes());
     }
 
     assert(-1 <= linkageNameChildNum_ &&
@@ -81,6 +96,7 @@ class Decl : public Expression {
     return this->visibility_ == other->visibility_ &&
            this->linkage_ == other->linkage_ &&
            this->linkageNameChildNum_ == other->linkageNameChildNum_ &&
+           this->attributesChildNum_ == other->attributesChildNum_ &&
            expressionContentsMatchInner(other);
   }
 
@@ -91,10 +107,16 @@ class Decl : public Expression {
  public:
   virtual ~Decl() = 0; // this is an abstract base class
 
+  /**
+    Return the visibility of this declaration, e.g. "PUBLIC" or "PRIVATE".
+  */
   Visibility visibility() const {
     return visibility_;
   }
 
+  /**
+    Return the linkage of this declaration, e.g. "EXTERN" or "EXPORT".
+  */
   Linkage linkage() const {
     return linkage_;
   }
@@ -113,7 +135,18 @@ class Decl : public Expression {
     if (linkageNameChildNum_ < 0) return nullptr;
     auto ret = child(linkageNameChildNum_);
     assert(ret->isExpression());
-    return (Expression*)ret;
+    return (const Expression*)ret;
+  }
+
+  /**
+    Return the attributes associated with this declaration, or nullptr
+    if none exist.
+  */
+  const Attributes* attributes() const {
+    if (attributesChildNum_ < 0) return nullptr;
+    auto ret = child(attributesChildNum_);
+    assert(ret->isAttributes());
+    return (const Attributes*)ret;
   }
 
 };

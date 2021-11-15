@@ -47,33 +47,6 @@ module ChapelHashtable {
 
   // ### allocation helpers ###
 
-  // returns the value referred to by arg
-  // arg should be considered uninitialized after this point
-  private proc _moveToReturn(const ref arg) {
-    if arg.type == nothing {
-      return none;
-    } else {
-      pragma "no init"
-      pragma "no copy"
-      pragma "no auto destroy"
-      var moved: arg.type;
-      __primitive("=", moved, arg);
-      return moved;
-    }
-  }
-  // sets lhs to rhs using a move initialization
-  // only makes sense if lhs is currently uninitialized
-  private proc _moveInit(ref lhs, pragma "no auto destroy" in rhs) {
-    if lhs.type != rhs.type {
-      compilerError("type mismatch in _moveInit");
-    }
-    if lhs.type == nothing {
-      // then do nothing
-    } else {
-      __primitive("=", lhs, rhs);
-    }
-  }
-
   // Leaves the elements 0 initialized
   private proc _allocateData(size:int, type tableEltType) {
 
@@ -260,7 +233,10 @@ module ChapelHashtable {
 
     const resizeThreshold: real;
 
+    const startingSize: int;
+
     proc init(type keyType, type valType, resizeThreshold = 0.5,
+              initialCapacity = 32,
               in rehashHelpers: owned chpl__rehashHelpers? = nil) {
       this.keyType = keyType;
       this.valType = valType;
@@ -270,6 +246,9 @@ module ChapelHashtable {
       this.rehashHelpers = rehashHelpers;
       this.postponeResize = false;
       this.resizeThreshold = resizeThreshold;
+      // Round initial capacity up to nearest power of 2
+      this.startingSize = 2 << log2((initialCapacity/
+                                     resizeThreshold):int-1);
       this.complete();
 
       // allocates a _ddata(chpl_TableEntry(keyType,valType)) storing the table
@@ -443,6 +422,8 @@ module ChapelHashtable {
     proc fillSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
                   in key: keyType,
                   in val: valType) {
+      use Memory.Initialization;
+
       if tableEntry.status == chpl__hash_status.full {
         _deinitSlot(tableEntry);
       } else {
@@ -454,8 +435,8 @@ module ChapelHashtable {
 
       tableEntry.status = chpl__hash_status.full;
       // move the key/val into the table
-      _moveInit(tableEntry.key, key);
-      _moveInit(tableEntry.val, val);
+      moveInitialize(tableEntry.key, key);
+      moveInitialize(tableEntry.val, val);
     }
     proc fillSlot(slotNum: int,
                   in key: keyType,
@@ -486,9 +467,11 @@ module ChapelHashtable {
     // Returns the key and value that were removed in the out arguments
     proc clearSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
                    out key: keyType, out val: valType) {
+      use Memory.Initialization;
+
       // move the table entry into the key/val variables to be returned
-      key = _moveToReturn(tableEntry.key);
-      val = _moveToReturn(tableEntry.val);
+      key = moveToValue(tableEntry.key);
+      val = moveToValue(tableEntry.val);
 
       // set the slot status to deleted
       tableEntry.status = chpl__hash_status.deleted;
@@ -504,7 +487,13 @@ module ChapelHashtable {
     }
 
     proc maybeShrinkAfterRemove() {
-      if (tableNumFullSlots*8 < tableSize) {
+      // The magic number of 4 was chosen here due to our power of 2
+      // table sizes, where shrinking the table means halving the table
+      // size, so if your table originally was 1/4 of `resizeThreshold`
+      // full, it will be 1/2 of `resizeThreshold` full after the shrink,
+      // which seems like a reasonable time to resize
+      if (tableSize > startingSize &&
+          tableNumFullSlots/tableSize:real < resizeThreshold/4) {
         resize(grow=false);
       }
     }
@@ -543,6 +532,8 @@ module ChapelHashtable {
     // newSizeNum is an index into chpl__primes == newSize
     // assumes the array is already locked
     proc rehash(newSize:int) {
+      use Memory.Initialization;
+
       // save the old table
       var oldSize = tableSize;
       var oldTable = table;
@@ -588,8 +579,8 @@ module ChapelHashtable {
             // move the key and value from the old entry into the new one
             ref dstSlot = table[newslot];
             dstSlot.status = chpl__hash_status.full;
-            _moveInit(dstSlot.key, _moveToReturn(oldEntry.key));
-            _moveInit(dstSlot.val, _moveToReturn(oldEntry.val));
+            moveInitialize(dstSlot.key, moveToValue(oldEntry.key));
+            moveInitialize(dstSlot.val, moveToValue(oldEntry.val));
 
             // move array elements to the new location
             if rehashHelpers != nil then
@@ -630,7 +621,7 @@ module ChapelHashtable {
       if postponeResize then return;
       
       // double if you are growing, half if you are shrinking
-      var newSize = if tableSize == 0 then 32 else if grow then tableSize << 1 else tableSize >> 1;
+      var newSize = if tableSize == 0 then startingSize else if grow then tableSize << 1 else tableSize >> 1;
 
       if grow==false && 2*tableNumFullSlots > newSize {
         // don't shrink if the number of elements would not

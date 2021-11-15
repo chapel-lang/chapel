@@ -26,13 +26,22 @@ namespace uast {
 
 
 owned<Class> Class::build(Builder* builder, Location loc,
-                          Decl::Visibility vis, UniqueString name,
+                          owned<Attributes> attributes,
+                          Decl::Visibility vis,
+                          UniqueString name,
                           owned<Expression> parentClass,
                           ASTList contents) {
   ASTList lst;
+  int attributesChildNum = -1;
   int parentClassChildNum = -1;
   int elementsChildNum = -1;
   int numElements = 0;
+
+  if (attributes.get() != nullptr) {
+    attributesChildNum = lst.size();
+    lst.push_back(std::move(attributes));
+  }
+
   if (parentClass.get() != nullptr) {
     parentClassChildNum = lst.size();
     lst.push_back(std::move(parentClass));
@@ -45,8 +54,10 @@ owned<Class> Class::build(Builder* builder, Location loc,
     }
   }
 
-  Class* ret = new Class(std::move(lst), vis, name,
-                         elementsChildNum, numElements, parentClassChildNum);
+  Class* ret = new Class(std::move(lst), attributesChildNum, vis, name,
+                         elementsChildNum,
+                         numElements,
+                         parentClassChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

@@ -647,6 +647,8 @@ build-associative:
     - Factor hashtable used by DefaultAssociative out of it (#15739)
   09/28/21:
     - Change ChapelHashtable to use power-of-2 table size (#18427)
+  11/02/21:
+    - Add an initialCapacity keyword argument to map initializers (#18634)
 
 cast-from-string:
   12/14/18:

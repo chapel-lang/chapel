@@ -902,13 +902,13 @@ static void resolveUnresolvedSymExpr(UnresolvedSymExpr* usymExpr,
         // e.g. 'owned' becomes 'owned with any nilability'
         AggregateType* at = toAggregateType(sym->type);
         INT_ASSERT(at);
-        Type* t = at->getDecoratedClass(CLASS_TYPE_MANAGED);
+        Type* t = at->getDecoratedClass(ClassTypeDecorator::MANAGED);
         INT_ASSERT(t);
         sym = t->symbol;
       } else if (isClass(sym->type)) {
         // Make 'MyClass' mean generic-management.
-        // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
-        ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+        // Switch to the ClassTypeDecorator::GENERIC_NONNIL decorated class type.
+        ClassTypeDecoratorEnum d = ClassTypeDecorator::GENERIC_NONNIL;
         Type* t = getDecoratedClass(sym->type, d);
         sym = t->symbol;
       }
@@ -1438,8 +1438,8 @@ static void resolveModuleCall(CallExpr* call) {
 
         // Adjust class types to undecorated
         if (sym && isClass(sym->type)) {
-          // Switch to the CLASS_TYPE_GENERIC_NONNIL decorated class type.
-          ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+          // Switch to the ClassTypeDecorator::GENERIC_NONNIL decorated class type.
+          ClassTypeDecoratorEnum d = ClassTypeDecorator::GENERIC_NONNIL;
           Type* t = getDecoratedClass(sym->type, d);
           sym = t->symbol;
         }
@@ -1621,7 +1621,8 @@ static void adjustTypeMethodsOnClasses() {
     }
 
     // Update the type of 'this'.
-    thisArg->type = getDecoratedClass(thisType, CLASS_TYPE_GENERIC);
+    thisArg->type = getDecoratedClass(thisType,
+        ClassTypeDecorator::GENERIC);
   }
 }
 
@@ -2664,13 +2665,13 @@ void resolveUnmanagedBorrows(CallExpr* call) {
       if (TypeSymbol* ts = toTypeSymbol(typeSymbolSe->symbol())) {
         AggregateType* at = toAggregateType(canonicalDecoratedClassType(ts->type));
 
-        ClassTypeDecorator decorator = CLASS_TYPE_BORROWED;
+        ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED;
         if (isClassLike(ts->type)) {
           decorator = classTypeDecorator(ts->type);
         } else if (isManagedPtrType(ts->type) &&
                    (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
                     call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED))) {
-          decorator = CLASS_TYPE_MANAGED;
+          decorator = ClassTypeDecorator::MANAGED;
         } else {
           const char* type = NULL;
           if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
@@ -2694,14 +2695,14 @@ void resolveUnmanagedBorrows(CallExpr* call) {
         // Compute the decorated class type
         if (call->isPrimitive(PRIM_TO_UNMANAGED_CLASS) ||
             call->isPrimitive(PRIM_TO_UNMANAGED_CLASS_CHECKED)) {
-          int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
-          tmp |= CLASS_TYPE_UNMANAGED;
-          decorator = (ClassTypeDecorator) tmp;
+          int tmp = decorator & ClassTypeDecorator::NILABILITY_MASK;
+          tmp |= ClassTypeDecorator::UNMANAGED;
+          decorator = (ClassTypeDecoratorEnum) tmp;
         } else if (call->isPrimitive(PRIM_TO_BORROWED_CLASS) ||
                    call->isPrimitive(PRIM_TO_BORROWED_CLASS_CHECKED)) {
-          int tmp = decorator & CLASS_TYPE_NILABILITY_MASK;
-          tmp |= CLASS_TYPE_BORROWED;
-          decorator = (ClassTypeDecorator) tmp;
+          int tmp = decorator & ClassTypeDecorator::NILABILITY_MASK;
+          tmp |= ClassTypeDecorator::BORROWED;
+          decorator = (ClassTypeDecoratorEnum) tmp;
         } else if (call->isPrimitive(PRIM_TO_NILABLE_CLASS) ||
                    call->isPrimitive(PRIM_TO_NILABLE_CLASS_CHECKED)) {
           decorator = addNilableToDecorator(decorator);
@@ -2715,36 +2716,36 @@ void resolveUnmanagedBorrows(CallExpr* call) {
         } else {
           // e.g. for borrowed?
           switch (decorator) {
-            case CLASS_TYPE_BORROWED:
+            case ClassTypeDecorator::BORROWED:
               dt = dtBorrowed;
               break;
-            case CLASS_TYPE_BORROWED_NONNIL:
+            case ClassTypeDecorator::BORROWED_NONNIL:
               dt = dtBorrowedNonNilable;
               break;
-            case CLASS_TYPE_BORROWED_NILABLE:
+            case ClassTypeDecorator::BORROWED_NILABLE:
               dt = dtBorrowedNilable;
               break;
-            case CLASS_TYPE_UNMANAGED:
+            case ClassTypeDecorator::UNMANAGED:
               dt = dtUnmanaged;
               break;
-            case CLASS_TYPE_UNMANAGED_NILABLE:
+            case ClassTypeDecorator::UNMANAGED_NILABLE:
               dt = dtUnmanagedNilable;
               break;
-            case CLASS_TYPE_UNMANAGED_NONNIL:
+            case ClassTypeDecorator::UNMANAGED_NONNIL:
               dt = dtUnmanagedNonNilable;
               break;
-            case CLASS_TYPE_MANAGED:
-            case CLASS_TYPE_MANAGED_NONNIL:
-            case CLASS_TYPE_MANAGED_NILABLE:
+            case ClassTypeDecorator::MANAGED:
+            case ClassTypeDecorator::MANAGED_NONNIL:
+            case ClassTypeDecorator::MANAGED_NILABLE:
               INT_FATAL("case not handled");
               break;
-            case CLASS_TYPE_GENERIC:
+            case ClassTypeDecorator::GENERIC:
               dt = dtAnyManagementAnyNilable;
               break;
-            case CLASS_TYPE_GENERIC_NONNIL:
+            case ClassTypeDecorator::GENERIC_NONNIL:
               dt = dtAnyManagementNonNilable;
               break;
-            case CLASS_TYPE_GENERIC_NILABLE:
+            case ClassTypeDecorator::GENERIC_NILABLE:
               dt = dtAnyManagementNilable;
               break;
             // no default intentionally
@@ -2777,9 +2778,9 @@ void resolveUnmanagedBorrows(CallExpr* call) {
         if (t2 == dtAnyManagementAnyNilable)
           useType = mgmt; // e.g. just _owned
         else if (t2 == dtAnyManagementNonNilable)
-          useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NONNIL);
+          useType = mgmt->getDecoratedClass(ClassTypeDecorator::MANAGED_NONNIL);
         else if (t2 == dtAnyManagementNilable)
-          useType = mgmt->getDecoratedClass(CLASS_TYPE_MANAGED_NILABLE);
+          useType = mgmt->getDecoratedClass(ClassTypeDecorator::MANAGED_NILABLE);
 
         if (useType != NULL) {
           SET_LINENO(call);
@@ -2787,7 +2788,8 @@ void resolveUnmanagedBorrows(CallExpr* call) {
         } else if (isClassLike(t2)) {
           Type* canonical = canonicalClassType(t2);
           if (isNilableClassType(t2))
-            useType = getDecoratedClass(canonical, CLASS_TYPE_BORROWED_NILABLE);
+            useType = getDecoratedClass(canonical,
+                ClassTypeDecorator::BORROWED_NILABLE);
           else
             useType = canonical;
 

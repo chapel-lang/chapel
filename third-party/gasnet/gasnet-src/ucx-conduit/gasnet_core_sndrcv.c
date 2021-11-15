@@ -222,14 +222,21 @@ void gasnetc_send_fini(void)
 }
 
 GASNETI_INLINE(gasnetc_am_req_get)
-gasnetc_am_req_t *gasnetc_am_req_get(void)
+gasnetc_am_req_t *gasnetc_am_req_get(int is_request GASNETI_THREAD_FARG)
 {
   gasnetc_am_req_t *am_req;
 
-  do {
-    gasnetc_ucx_progress();
-  } while (NULL == (am_req = GASNETI_LIST_POP(&gasneti_ucx_module.sreq_free,
-                                              gasnetc_am_req_t)));
+  gasnetc_ucx_progress();
+  if (is_request) {
+    GASNETI_SPIN_UNTIL((am_req = GASNETI_LIST_POP(&gasneti_ucx_module.sreq_free,
+                                                  gasnetc_am_req_t)),
+                       gasnetc_poll_sndrcv(GASNETC_LOCK_INLINE GASNETI_THREAD_PASS));
+  } else {
+    GASNETI_SPIN_UNTIL((am_req = GASNETI_LIST_POP(&gasneti_ucx_module.sreq_free,
+                                                  gasnetc_am_req_t)),
+                       gasnetc_poll_snd(GASNETC_LOCK_INLINE GASNETI_THREAD_PASS));
+  }
+
   return am_req;
 }
 
@@ -580,7 +587,7 @@ int gasnetc_am_reqrep_inner(gasnetc_ucx_am_type_t am_type,
   gasnetc_ucx_request_t *req;
 
   GASNETC_LOCK_ACQUIRE(GASNETC_LOCK_REGULAR);
-  am_req = gasnetc_am_req_get();
+  am_req = gasnetc_am_req_get(is_request GASNETI_THREAD_PASS);
   gasneti_assert(am_req);
 
 #define __am_req_format(__is_packed) \
@@ -689,7 +696,7 @@ int gasnetc_AM_ReqRepGeneric(gasnetc_ucx_am_type_t am_type,
       start_cnt = eop->initiated_alc;
       local_cnt = &eop->initiated_alc;
       cbfunc = gasnetc_cb_eop_alc;
-      *lc_opt = gasneti_op_event(eop, gasnete_eop_event_alc);
+      *lc_opt = (gex_Event_t) eop;
       is_sync = 0;
     } else if (lc_opt == GEX_EVENT_GROUP) {
       gasnete_iop_t *iop = mythread->current_iop;
@@ -904,16 +911,17 @@ void gasnetc_recv_fini(void)
 #if GASNETC_PIN_SEGMENT
 int gasnetc_poll_sndrcv(gasnetc_lock_mode_t lmode GASNETI_THREAD_FARG)
 {
-  gasnetc_ucx_request_t *req = NULL;
+  gasnetc_ucx_request_t *req, *tmp;
   gasnetc_sreq_hdr_t *am_hdr;
 
   GASNETC_LOCK_ACQUIRE(lmode);
   gasnetc_ucx_progress();
 
   req = gasneti_list_head(&gasneti_ucx_module.recv_queue);
-  while (ucp_request_is_completed(req)) {
-    req = GASNETI_LIST_POP(&gasneti_ucx_module.recv_queue,
+  if (ucp_request_is_completed(req)) {
+    tmp = GASNETI_LIST_POP(&gasneti_ucx_module.recv_queue,
                            gasnetc_ucx_request_t);
+    gasneti_assume(tmp == req);
     am_hdr = (gasnetc_sreq_hdr_t*)req->buffer.data;
     GASNETC_BUF_SET_OFFSET(req->buffer, am_hdr->size);
     gasnetc_ProcessRecv(GASNETC_BUF_DATA(req->buffer),
@@ -942,6 +950,16 @@ void gasnetc_poll_snd(gasnetc_lock_mode_t lmode GASNETI_THREAD_FARG)
   GASNETC_LOCK_ACQUIRE(lmode);
   gasnetc_ucx_progress();
   GASNETC_LOCK_RELEASE(lmode);
+#if GASNET_PSHM
+  if (lmode == GASNETC_LOCK_REGULAR) {
+    gasneti_AMPSHMPoll(1 GASNETI_THREAD_PASS);
+  } else if (lmode == GASNETC_LOCK_INLINE) {
+    /* `gasneti_AMPSHMPoll` should be called outside the lock */
+    GASNETC_LOCK_RELEASE(GASNETC_LOCK_REGULAR);
+    gasneti_AMPSHMPoll(1 GASNETI_THREAD_PASS);
+    GASNETC_LOCK_ACQUIRE(GASNETC_LOCK_REGULAR);
+  }
+#endif
 }
 
 #else
@@ -1028,16 +1046,6 @@ void gasnetc_poll_snd(gasnetc_lock_mode_t lmode GASNETI_THREAD_FARG)
     request->status = GASNETC_UCX_ACTIVE;
   }
   GASNETC_LOCK_RELEASE(lmode);
-#if GASNET_PSHM
-  if (lmode == GASNETC_LOCK_REGULAR) {
-    gasneti_AMPSHMPoll(0 GASNETI_THREAD_PASS);
-  } else if (lmode == GASNETC_LOCK_INLINE) {
-    /* `gasneti_AMPSHMPoll` should be called outside the lock */
-    GASNETC_LOCK_RELEASE(GASNETC_LOCK_REGULAR);
-    gasneti_AMPSHMPoll(0 GASNETI_THREAD_PASS);
-    GASNETC_LOCK_ACQUIRE(GASNETC_LOCK_REGULAR);
-  }
-#endif
 }
 
 GASNETI_INLINE(gasneti_req_probe_complete)

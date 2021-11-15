@@ -25,6 +25,9 @@
 #include "chpl/types/TypeTag.h"
 
 namespace chpl {
+namespace uast {
+  class Decl;
+}
 namespace types {
 
 
@@ -123,6 +126,41 @@ class Type {
   #undef TYPE_BEGIN_SUBCLASSES
   #undef TYPE_END_SUBCLASSES
   #undef TYPE_IS
+
+  // Additional helper functions
+
+  /** returns true if it's string, bytes, or c_string type */
+  bool isStringLikeType() const {
+    return isStringType() || isBytesType() || isCStringType();
+  }
+  /** returns true if it's an int or uint type of any width */
+  bool isIntegralType() const {
+    return isIntType() || isUintType();
+  }
+  /** returns true if it's a numeric type of any width; that includes
+      int, uint, real, imag, complex */
+  bool isNumericType() const {
+    return isIntType() || isUintType() ||
+           isRealType() || isImagType() ||
+           isComplexType();
+  }
+
+  /** returns true if it's a numeric type or bool type
+      of any width */
+  bool isNumericOrBoolType() const {
+    return isNumericType() || isBoolType();
+  }
+
+  /** returns true for a type that is a kind of pointer */
+  bool isAnyPtrType() const {
+    return isClassType() || isCFnPtrType() || isCVoidPtrType();
+  }
+
+  /** If 'this' is a CompositeType, return it.
+      If 'this' is a ClassType, return the basicClassType.
+      Otherwise, returns nullptr.
+   */
+  const CompositeType* getCompositeType() const;
 
   // define to__ methods for the various Type subclasses
   // using macros and TypeClassesList.h

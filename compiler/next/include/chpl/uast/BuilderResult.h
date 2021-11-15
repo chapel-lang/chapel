@@ -25,6 +25,7 @@
 #include "chpl/queries/mark-functions.h"
 #include "chpl/queries/update-functions.h"
 #include "chpl/uast/ASTNode.h"
+#include "chpl/util/iteration.h"
 
 #include <vector>
 #include <unordered_map>
@@ -120,8 +121,15 @@ class BuilderResult final {
     return errors_[i];
   }
 
-  // TODO: add something to iterate over the errors e.g.
-  // ErrorListIteratorPair errors() const
+  // An iterable over the errors of this.
+  using ErrorIterable = Iterable<std::vector<ErrorMessage>>;
+
+  /**
+    Iterate over the errors.
+  */
+  ErrorIterable errors() const {
+    return ErrorIterable(errors_);
+  }
 
   /** Find the ASTNode* corresponding to a particular ID, or return
       nullptr if there is not one in this result. */

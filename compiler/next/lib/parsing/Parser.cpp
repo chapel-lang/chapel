@@ -20,7 +20,7 @@
 
 #include "chpl/parsing/Parser.h"
 
-#include "../util/filesystem.h"
+#include "../util/filesystem_help.h"
 
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/uast/Comment.h"
@@ -98,27 +98,27 @@ BuilderResult Parser::parseFile(const char* path) {
   // State for the parser
   yychpl_pstate* parser = yychpl_pstate_new();
   int           parserStatus = YYPUSH_MORE;
-  YYLTYPE       yylloc;
+  YYLTYPE       my_yylloc;
   ParserContext parserContext(path, builder.get());
 
-  yylloc.first_line             = 1;
-  yylloc.first_column           = 1;
-  yylloc.last_line              = 1;
-  yylloc.last_column            = 1;
+  my_yylloc.first_line             = 1;
+  my_yylloc.first_column           = 1;
+  my_yylloc.last_line              = 1;
+  my_yylloc.last_column            = 1;
 
   yychpl_lex_init_extra(&parserContext, &parserContext.scanner);
 
   yychpl_set_in(fp, parserContext.scanner);
 
   while (parserStatus == YYPUSH_MORE) {
-    YYSTYPE yylval;
+    YYSTYPE my_yylval;
 
     // In some situations, the parser context may have set 'atEOF' before
     // the parser has seen EOF. The lexer will have already produced the
     // EOF token in this case. The below check prevents the lexer from
     // trying to swap to a nonexistent buffer.
     if (!parserContext.atEOF) {
-      lexerStatus = yychpl_lex(&yylval, &yylloc, parserContext.scanner);
+      lexerStatus = yychpl_lex(&my_yylval, &my_yylloc, parserContext.scanner);
     } else {
       lexerStatus = 0;
     }
@@ -126,8 +126,8 @@ BuilderResult Parser::parseFile(const char* path) {
     if (lexerStatus >= 0) {
       parserStatus          = yychpl_push_parse(parser,
                                                 lexerStatus,
-                                                &yylval,
-                                                &yylloc,
+                                                &my_yylval,
+                                                &my_yylloc,
                                                 &parserContext);
 
     } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {
@@ -173,7 +173,7 @@ BuilderResult Parser::parseString(const char* path, const char* str) {
   // State for the lexer
   YY_BUFFER_STATE handle       =   0;
   int             lexerStatus  = 100;
-  YYLTYPE         yylloc;
+  YYLTYPE         my_yylloc;
 
   // State for the parser
   yychpl_pstate* parser = yychpl_pstate_new();
@@ -184,20 +184,20 @@ BuilderResult Parser::parseString(const char* path, const char* str) {
 
   handle = yychpl__scan_string(str, parserContext.scanner);
 
-  yylloc.first_line   = 1;
-  yylloc.first_column = 1;
-  yylloc.last_line    = 1;
-  yylloc.last_column  = 1;
+  my_yylloc.first_line   = 1;
+  my_yylloc.first_column = 1;
+  my_yylloc.last_line    = 1;
+  my_yylloc.last_column  = 1;
 
   while (parserStatus == YYPUSH_MORE) {
-    YYSTYPE yylval;
+    YYSTYPE my_yylval;
 
     // In some situations, the parser context may have set 'atEOF' before
     // the parser has seen EOF. The lexer will have already produced the
     // EOF token in this case. The below check prevents the lexer from
     // trying to swap to a nonexistent buffer.
     if (!parserContext.atEOF) {
-      lexerStatus = yychpl_lex(&yylval, &yylloc, parserContext.scanner);
+      lexerStatus = yychpl_lex(&my_yylval, &my_yylloc, parserContext.scanner);
     } else {
       lexerStatus = 0;
     }
@@ -205,8 +205,8 @@ BuilderResult Parser::parseString(const char* path, const char* str) {
     if (lexerStatus >= 0) {
       parserStatus          = yychpl_push_parse(parser,
                                                 lexerStatus,
-                                                &yylval,
-                                                &yylloc,
+                                                &my_yylval,
+                                                &my_yylloc,
                                                 &parserContext);
 
     } else if (lexerStatus == YYLEX_BLOCK_COMMENT) {

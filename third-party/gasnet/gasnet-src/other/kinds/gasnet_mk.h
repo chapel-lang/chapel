@@ -19,6 +19,7 @@ GASNETI_BEGIN_NOWARN
 typedef enum {
     GEX_MK_CLASS_HOST,      // "normal" memory (eg GEX_MK_HOST)
     GEX_MK_CLASS_CUDA_UVA,  // CUDA UVA memory
+    GEX_MK_CLASS_HIP        // HIP device memory
 } gex_MK_Class_t;
 
 // Struct containing a union and an enum to indicate which member has been populated.
@@ -32,6 +33,9 @@ typedef struct {
         struct {
             int                    gex_CUdevice;
         }                    gex_class_cuda_uva;
+        struct {
+            int                    gex_hipDevice;
+        }                    gex_class_hip;
     }                    gex_args;
 } gex_MK_Create_args_t;
 
@@ -78,5 +82,17 @@ typedef struct gasneti_mk_impl_s gasneti_mk_impl_t;
 
 GASNETI_END_NOWARN
 GASNETI_END_EXTERNC
+
+#if GASNET_HAVE_MK_CLASS_HIP
+  // HIP platform was determined at GASNet-EX configure time.
+  // If these conflict with client code, then this is not the right GASNet-EX build
+  #if GASNETI_HIP_PLATFORM_NVIDIA
+    #define __HIP_PLATFORM_NVCC__ // legacy
+    #define __HIP_PLATFORM_NVIDIA__
+  #else
+    #define __HIP_PLATFORM_HCC__ // legacy
+    #define __HIP_PLATFORM_AMD__
+  #endif
+#endif
 
 #endif

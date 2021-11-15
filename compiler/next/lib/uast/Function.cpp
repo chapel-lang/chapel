@@ -27,9 +27,11 @@ namespace uast {
 
 
 owned<Function> Function::build(Builder* builder, Location loc,
-                                UniqueString name, Decl::Visibility vis,
+                                owned<Attributes> attributes,
+                                Decl::Visibility vis,
                                 Function::Linkage linkage,
                                 owned<Expression> linkageNameExpr,
+                                UniqueString name,
                                 bool inline_,
                                 bool override_,
                                 Function::Kind kind,
@@ -45,6 +47,7 @@ owned<Function> Function::build(Builder* builder, Location loc,
                                 owned<Block> body) {
   ASTList lst;
 
+  int attributesChildNum = -1;
   int linkageNameExprChildNum = -1;
   int formalsChildNum = -1;
   int thisFormalChildNum = -1;
@@ -54,6 +57,11 @@ owned<Function> Function::build(Builder* builder, Location loc,
   int lifetimeChildNum = -1;
   int numLifetimeParts = 0;
   int bodyChildNum = -1;
+
+  if (attributes.get() != nullptr) {
+    attributesChildNum = lst.size();
+    lst.push_back(std::move(attributes));
+  }
 
   if (linkageNameExpr.get() != nullptr) {
     linkageNameExprChildNum = lst.size();
@@ -91,15 +99,22 @@ owned<Function> Function::build(Builder* builder, Location loc,
       lst.push_back(std::move(part));
     }
   }
+
   if (body.get() != nullptr) {
     bodyChildNum = lst.size();
     lst.push_back(std::move(body));
   }
 
-  Function* ret = new Function(std::move(lst), name, vis,
-                               linkage, inline_, override_,
-                               kind, returnIntent, throws,
-                               primaryMethod, parenless,
+  Function* ret = new Function(std::move(lst), attributesChildNum, vis,
+                               linkage,
+                               name,
+                               inline_,
+                               override_,
+                               kind,
+                               returnIntent,
+                               throws,
+                               primaryMethod,
+                               parenless,
                                linkageNameExprChildNum,
                                formalsChildNum,
                                thisFormalChildNum,

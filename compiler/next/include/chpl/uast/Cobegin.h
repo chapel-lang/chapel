@@ -108,7 +108,7 @@ class Cobegin final : public Expression {
    */
   ASTListIteratorPair<Expression> taskBodies() const {
     auto begin = children_.begin() + bodyChildNum_;
-    auto end = begin + numTaskBodies_ - 1;
+    auto end = begin + numTaskBodies_;
     return ASTListIteratorPair<Expression>(begin, end);
   }
 

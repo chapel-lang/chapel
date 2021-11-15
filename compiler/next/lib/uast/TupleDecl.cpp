@@ -25,9 +25,14 @@ namespace chpl {
 namespace uast {
 
 bool TupleDecl::assertAcceptableTupleDecl() {
+  const auto unsetSentinel = asttags::NUM_AST_TAGS;
+  asttags::ASTTag firstNonTupleTag = unsetSentinel;
   int i = 0;
+
   for (const auto& elt: children_) {
-    if (i == typeExpressionChildNum_) {
+    if (elt.get() == attributes()) {
+      // TODO: Make sure it is equivalent to components?
+    } else if (i == typeExpressionChildNum_) {
       if (!elt->isExpression()) {
         assert(false && "type expression child is not expression"); 
         return false;
@@ -37,9 +42,22 @@ bool TupleDecl::assertAcceptableTupleDecl() {
         assert(false && "init expression child is not expression"); 
         return false;
       }
-    } else if (!elt->isVariable() && !elt->isTupleDecl()) {
-      assert(false && "other child is not variable or tuple decl");
-      return false;
+    } else if (!elt->isTupleDecl()) {
+      if (elt->isFormal() || elt->isVariable()) {
+        if (firstNonTupleTag == unsetSentinel) {
+          firstNonTupleTag = elt->tag();
+        }
+
+        if (elt->tag() != firstNonTupleTag) {
+          assert(0 == "cannot mix formal and variable components");
+          return false;
+        }
+      } else {
+        assert(0 == "variable, formal, or tuple decl components only");
+        return false;
+      }
+    } else {
+      assert(elt->isTupleDecl());
     }
     i++;
   }
@@ -47,20 +65,28 @@ bool TupleDecl::assertAcceptableTupleDecl() {
 }
 
 owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
+                                  owned<Attributes> attributes,
                                   Decl::Visibility vis,
                                   Decl::Linkage linkage,
-                                  Variable::Kind kind,
+                                  TupleDecl::IntentOrKind intentOrKind,
                                   ASTList elements,
                                   owned<Expression> typeExpression,
                                   owned<Expression> initExpression) {
   ASTList list;
+  int attributesChildNum = -1;
   int numElements = 0;
   int typeExpressionChildNum = -1;
   int initExpressionChildNum = -1;
 
-  // start out with the child declarations
-  list.swap(elements);
-  numElements = list.size();
+  if (attributes.get() != nullptr) {
+    attributesChildNum = list.size();
+    list.push_back(std::move(attributes));
+  }
+
+  numElements = elements.size();
+  for (auto& ast : elements) {
+    list.push_back(std::move(ast));
+  }
 
   // then add the typeExpression, if any
   if (typeExpression.get() != nullptr) {
@@ -74,7 +100,10 @@ owned<TupleDecl> TupleDecl::build(Builder* builder, Location loc,
     list.push_back(std::move(initExpression));
   }
 
-  TupleDecl* ret = new TupleDecl(std::move(list), vis, linkage, kind,
+  TupleDecl* ret = new TupleDecl(std::move(list), attributesChildNum,
+                                 vis,
+                                 linkage,
+                                 intentOrKind,
                                  numElements,
                                  typeExpressionChildNum,
                                  initExpressionChildNum);

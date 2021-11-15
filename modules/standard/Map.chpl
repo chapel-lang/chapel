@@ -84,7 +84,9 @@ module Map {
        before requesting additional memory. The default value of 
        0.5 means that the map will not resize until the map is more
        than 50% full. The acceptable values for this argument are
-       between 0 and 1, exclusive, meaning (0,1).
+       between 0 and 1, exclusive, meaning (0,1). This is useful
+       when you would like to reduce memory impact or potentially
+       speed up how fast the map finds a slot.
     */
     const resizeThreshold = 0.5;
 
@@ -116,9 +118,12 @@ module Map {
       :arg parSafe: If `true`, this map will use parallel safe operations.
       :arg resizeThreshold: Fractional value that specifies how full this map
                             can be before requesting additional memory.
+      :arg initialCapacity: Integer value that specifies starting map size. The
+                            map can hold at least this many values before
+                            attempting to resize.
     */
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold = 0.5) {
+              resizeThreshold = 0.5, initialCapacity = 16) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
@@ -127,11 +132,12 @@ module Map {
         if resizeThreshold <= 0 || resizeThreshold >= 1 then
           boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
       this.resizeThreshold = resizeThreshold;
-      table = new chpl__hashtable(keyType, valType, resizeThreshold);
+      table = new chpl__hashtable(keyType, valType, resizeThreshold,
+                                  initialCapacity);
     }
 
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold = 0.5)
+              resizeThreshold = 0.5, initialCapacity = 16)
     where isNonNilableClass(valType) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
@@ -141,7 +147,8 @@ module Map {
         if resizeThreshold <= 0 || resizeThreshold >= 1 then
           boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
       this.resizeThreshold = resizeThreshold;
-      table = new chpl__hashtable(keyType, valType, resizeThreshold);
+      table = new chpl__hashtable(keyType, valType, resizeThreshold,
+                                  initialCapacity);
     }
 
     /*
@@ -166,8 +173,9 @@ module Map {
                         this.type.valType else vt;
       this.parSafe = if this.type.parSafe != ? then
                         this.type.parSafe else ps;
+      this.resizeThreshold = other.resizeThreshold;
       this.table = new chpl__hashtable(keyType, valType,
-                                       other.resizeThreshold);
+                                       resizeThreshold);
       this.complete();
 
       if keyType != kt {

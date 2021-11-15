@@ -337,6 +337,8 @@ PRIMITIVE_R(GET_VISIBLE_SYMBOLS, "get visible symbols")
 
 PRIMITIVE_G(STACK_ALLOCATE_CLASS, "stack allocate class")
 
+PRIMITIVE_G(ZERO_VARIABLE, "zero variable")
+
 PRIMITIVE_R(ZIP, "zip")
 PRIMITIVE_R(REQUIRE, "require")
 

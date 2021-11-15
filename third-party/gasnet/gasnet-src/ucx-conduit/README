@@ -111,14 +111,20 @@ Additional environment variables:
   For the full list of tuning knobs supported by a particular UCX version,
   see the output of `ucx_info -f`.
   
-  For software stacks allowing concurrent use of UCX library in its different components
-  or layers, UCX conduit supports personalized prefix "UCX_GASNET" (i.e. "UCX_GASNET_TLS", 
-  "UCX_GASNET_NET_DEVICES") that allows specifying unique parameters for the 
-  ucx-conduit that will not affect or conflict with global parameters (i.e. "UCX_TLS", 
-  "UCX_NET_DEVICES") and/or other personalized parameters.
-  
-  "UCX_TLS" environment variable controls transport selection and is one of the most commonly
-  used UCX parameters. Available options are:
+  For software stacks allowing concurrent use of the UCX library in its
+  different components or layers, ucx-conduit supports a personalized prefix
+  that allows specifying unique parameters for its use that will not affect
+  or conflict with global parameters (i.e. "UCX_TLS", "UCX_NET_DEVICES") and/or
+  other personalized parameters.
+    + For UCX versions prior to 1.9, the prefix is "UCX_GASNET"
+    + For UCX versions 1.9 and newer, the prefix is "GASNET_UCX"
+  So, using "[PREFIX]" to denote the version-appropriate value, it is
+  recommended that one set variables "[PREFIX]_TLS" and "[PREFIX]_NET_DEVICES"
+  instead of "UCS_TLS" and "UCX_NET_DEVICES".  However, the following text will
+  use the short "UCX_" prefix for brevity and to match UCX documentation.
+
+  The "UCX_TLS" environment variable controls transport selection and is
+  one of the most commonly used UCX parameters. Available options are:
 
     $ ucx_info -f | grep UCX_TLS -B 23 | head -n 20
       #
@@ -143,7 +149,7 @@ Additional environment variables:
       # 
 
   In order to make sure that ucx-conduit is being used with Mellanox devices, the following
-  transport set is recommended: "UCX_GASNET_TLS=ib,sm,self".
+  transport set is recommended: "UCX_TLS=ib,sm,self".
 
   Ucx-conduit supports all of the standard and the optional GASNET_EXITTIMEOUT GASNet
   environment variables. See GASNet's top-level README for documentation.
@@ -155,7 +161,7 @@ Additional environment variables:
 
 @ Section: On-Demand Paging (ODP) Support @
 
-  The conduit supports ODP through UCX, see "UCX_IB_REG_METHODS" UCX environemtn variable.
+  The conduit supports ODP through UCX, see "UCX_IB_REG_METHODS" UCX environment variable.
 
 @ Section: HCA Configuration @
 
@@ -164,11 +170,50 @@ Additional environment variables:
 
 @ Section: Known Problems @
 
-  + See the GASNet Bugzilla server for details on known bugs:
-    https://gasnet-bugs.lbl.gov/
-  + This version is known to have issues with Mellanox ConnectX-4 adapters
-  + Support for segment-everything mode is experimental and is known to
-    suffer from unbounded memory use in AMLong (and amref-based Put/Get).
++ This version is known to have issues with Mellanox ConnectX-4 adapters
+
++ Support for segment-everything mode is experimental and is known to
+  suffer from unbounded memory use in AMLong (and amref-based Put/Get).
+
++ Bug 4164
+  RMA Gets into local buffers which are repeatedly allocated and freed may
+  deliver significantly lower performance than if the buffers were retained
+  by the application rather than being freed.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4164
+  That bug report describes the problem in more detail, and lists the best
+  known recommended work-around(s).
+
++ Bug 4165
+  The implementation of AM Mediums is known to have anomalous performance
+  for payloads above about 1KiB on multiple systems.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4165
+
++ Bug 4301
+  As descried in the "Runtime Configuration" section, UCX versions 1.9 and
+  newer use prefix of "GASNET_UCX" for private (per client of UCX)
+  configuration.  However, this same prefix is used by ucx-conduit for its
+  own environment settings.  The result is that, by default, the UCX library
+  may issue warnings which include text like the following:
+   "UCX  WARN  unused env variable: GASNET_UCX_SPAWNER"
+  and
+   "(set UCX_WARN_UNUSED_ENV_VARS=n to suppress this warning)"
+  The work-around is to set UCX_WARN_UNUSED_ENV_VARS=n as the message
+  recommends.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4301
+
++ Bug 4337
+  Some Active Message traffic patterns may induce ucx-conduit to perform
+  excessive buffering within the UCX library.  This can lead to unexpectedly
+  large memory consumption, which in turn may lead to multiple fatal error
+  modes.
+  The most up-to-date information on this bug is maintained at:
+    https://gasnet-bugs.lbl.gov/bugzilla/show_bug.cgi?id=4337
+
++ See the GASNet Bugzilla server for details on other known bugs:
+  https://gasnet-bugs.lbl.gov/
 
 @ Section: Design Overview @
 
