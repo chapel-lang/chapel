@@ -167,7 +167,7 @@ static OutlineInfo collectOutlineInfo(CForLoop* loop) {
 }
 
 /**
- * Given a CForLoop with lowerbound lb and upper bound ub
+ * Given a CForLoop with lower bound lb and upper bound ub
  * (See extractUpperBound\extractIndicesAndLowerBound to
  * see what we pattern match and extract), generate the
  * following AST and insert it into gpuLaunchBlock:
@@ -222,9 +222,9 @@ static Symbol* addKernelArgument(OutlineInfo& info, Symbol* symInLoop) {
 /**
  *  For each loopIndex, generates and inserts the following AST into fn:
  *
- *  blockIdxX  = __primitve('gpu blockIdx x')
- *  blockDimX  = __primitve('gpu blockDim x')
- *  threadIdxX = __primitve('gpu threadIdx x')
+ *  blockIdxX  = __primitive('gpu blockIdx x')
+ *  blockDimX  = __primitive('gpu blockDim x')
+ *  threadIdxX = __primitive('gpu threadIdx x')
  *  t0 = varBlockIdxX * varBlockDimX
  *  t1 = t0 + threadIdxX
  *  index = t1 + lowerBound
