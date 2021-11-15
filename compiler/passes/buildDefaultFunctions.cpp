@@ -790,6 +790,14 @@ static void buildChplEntryPoints() {
   // It will initialize all the modules it uses, recursively.
   if (!fMultiLocaleInterop) {
     chpl_gen_main->insertAtTail(new CallExpr(mainModule->initFn));
+    // also init other modules mentioned on command line
+    forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+      if (mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) &&
+          mod != mainModule) {
+        chpl_gen_main->insertAtTail(new CallExpr(mod->initFn));
+      }
+    }
+
   } else {
     // Create an extern definition for the multilocale library server's main
     // function.  chpl_gen_main needs to call it in the course of its run, so

@@ -2850,7 +2850,10 @@ static void removeUnusedModules() {
 
   // Now remove any module not in the set
   forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
-    if (usedModules.count(mod) == 0) {
+    bool removeIt = !mod->hasFlag(FLAG_MODULE_FROM_COMMAND_LINE_FILE) &&
+                    usedModules.count(mod) == 0;
+
+    if (removeIt) {
       INT_ASSERT(mod->defPoint); // we should not be removing e.g. _root
       mod->defPoint->remove();
 
