@@ -19,8 +19,27 @@
 
 #include "chpl/types/TupleType.h"
 
+#include "chpl/queries/query-impl.h"
+
 namespace chpl {
 namespace types {
+
+
+const owned<TupleType>&
+TupleType::getTupleType(Context* context, ID id, UniqueString name,
+                        std::vector<CompositeType::FieldDetail> fields) {
+  QUERY_BEGIN(getTupleType, context, id, name, fields);
+
+  auto result = toOwned(new TupleType(id, name, std::move(fields)));
+
+  return QUERY_END(result);
+}
+
+const TupleType*
+TupleType::get(Context* context, ID id, UniqueString name,
+               std::vector<CompositeType::FieldDetail> fields) {
+  return getTupleType(context, id, name, std::move(fields)).get();
+}
 
 
 } // end namespace types

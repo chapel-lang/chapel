@@ -70,14 +70,14 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast,
         if (parentAst->isModule()) {
           const auto& byId = resolveModule(context, parentAst->id());
           return &byId.byAst(ast);
-        } else if (parentAst->isFunction()) {
-          auto untyped = untypedSignature(context, parentAst->id());
+        } else if (auto parentFn = parentAst->toFunction()) {
+          auto untyped = UntypedFnSignature::get(context, parentFn);
           // use inFn if it matches
-          if (inFn && inFn->signature->untypedSignature == untyped) {
+          if (inFn && inFn->signature->untyped() == untyped) {
             return &inFn->resolutionById.byAst(ast);
           } else {
             auto typed = typedSignatureInitial(context, untyped);
-            if (!typed->needsInstantiation) {
+            if (!typed->needsInstantiation()) {
               auto rFn = resolveFunction(context, typed, nullptr);
               return &rFn->resolutionById.byAst(ast);
             }
@@ -141,8 +141,10 @@ computeAndPrintStuff(Context* context,
   if (r != nullptr) {
     for (const TypedFnSignature* sig : r->mostSpecific) {
       if (sig != nullptr) {
-        auto fn = resolveFunction(context, sig, r->poiScope);
-        calledFns.insert(fn);
+        if (sig->untyped()->idIsFunction()) {
+          auto fn = resolveFunction(context, sig, r->poiScope);
+          calledFns.insert(fn);
+        }
       }
     }
 
@@ -218,13 +220,14 @@ int main(int argc, char** argv) {
 
       for (auto calledFn : iterCalledFns) {
         const TypedFnSignature* sig = calledFn->signature;
-        if (sig->instantiatedFrom != nullptr) {
+        if (sig->instantiatedFrom() != nullptr) {
           calledFns.insert(calledFn);
           auto pair = printed.insert(calledFn);
           bool added = pair.second;
           if (added) {
-            auto ast = idToAst(ctx, sig->untypedSignature->functionId);
-            auto uSig = untypedSignature(ctx, ast->id());
+            auto ast = idToAst(ctx, sig->id());
+            auto fn = ast->toFunction();
+            auto uSig = UntypedFnSignature::get(ctx, fn);
             auto initialType = typedSignatureInitial(ctx, uSig);
             printf("Instantiation of %s\n", initialType->toString().c_str());
             printf("Instantiation is %s\n", sig->toString().c_str());

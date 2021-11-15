@@ -469,6 +469,7 @@ static void test6(Parser* parser) {
   auto ee2 = en->declOrComment(1)->toEnumElement();
   assert(ee2);
   assert(ee2->initExpression());
+  assert(!ee2->initExpression()->isAttributes());
   auto ee2Attr = ee2->attributes();
   assert(ee2Attr);
   assert(ee2Attr->isDeprecated());

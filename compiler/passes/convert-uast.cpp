@@ -1557,6 +1557,40 @@ struct Converter {
     return ret;
   }
 
+  /// ForwardingDecl ///
+  Expr* visit(const uast::ForwardingDecl* node) {
+    // ForwardingDecl may contain a VisibilityClause, an Expression,
+    // or a Variable declartion
+    if (node->expr()->isVisibilityClause()){
+      auto child = node->expr()->toVisibilityClause();
+      bool except=false;
+      if (child->limitationKind() == uast::VisibilityClause::ONLY) {
+        except=false;
+      }
+      else if (child->limitationKind() == uast::VisibilityClause::EXCEPT) {
+        except=true;
+      }
+      // convert the ASTList of renames
+      std::vector<PotentialRename*>* names = new std::vector<PotentialRename*>;
+      for (auto lim:child->limitations()) {
+        PotentialRename* name = convertRename(lim);
+        names->push_back(name);
+      }
+      return buildForwardingStmt(convertExprOrNull(child->symbol()),
+                                 names, except);
+    } else if (node->expr()->isVariable()) {
+        auto child = node->expr()->toVariable();
+        return buildForwardingDeclStmt((BlockStmt*)visit(child));
+    } else if (node->expr()->isFnCall()) {
+      auto child = node->expr()->toFnCall();
+
+      return buildForwardingStmt(convertExprOrNull(child));
+    }
+
+    INT_FATAL("Failed to convert ForwardingDecl");
+    return nullptr;
+  }
+
   /// NamedDecls ///
 
   Expr* visit(const uast::EnumElement* node) {
@@ -1662,7 +1696,7 @@ struct Converter {
           conv = toDefExpr(convertAST(formal));
           assert(conv);
 
-        // A tuple decl, where compontents are formals or tuple decls.
+        // A tuple decl, where components are formals or tuple decls.
         } else if (auto formal = decl->toTupleDecl()) {
           auto castIntent = (uast::Formal::Intent)formal->intentOrKind();
           IntentTag tag = convertFormalIntent(castIntent);
@@ -2064,7 +2098,7 @@ struct Converter {
     auto ret = new DefExpr(varSym, initExpr, typeExpr);
 
     // Replace init expressions for config variables with values passed
-    // in on the command-line, if necessary. 
+    // in on the command-line, if necessary.
     if (node->isConfig()) {
 
       // TODO (dlongnecke): This call should be replaced by an equivalent

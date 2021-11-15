@@ -33,45 +33,152 @@
 namespace chpl {
 namespace resolution {
 
-// TODO: Should some/all of these structs be classes
-// with getters etc? That would be appropriate for
-// use as part of the library API.
-
 /**
   An untyped function signature. This is really just the part of a function
   including the formals. It exists so that the process of identifying
   candidates does not need to depend on the bodies of the function
   (in terms of incremental recomputation).
  */
-struct UntypedFnSignature {
-  ID functionId;
-  UniqueString name;
-  bool isMethod; // in that case, formals[0] is the receiver
-  uast::Function::Kind kind;
-  std::vector<const uast::Decl*> formals;
-  const uast::Expression* whereClause;
+class UntypedFnSignature {
+ public:
+  struct FormalDetail {
+    UniqueString name;
+    bool hasDefaultValue = false;
+    const uast::Decl* decl = nullptr;
 
-  UntypedFnSignature(const uast::Function* fn)
-    : functionId(fn->id()),
-      name(fn->name()),
-      isMethod(fn->isMethod()),
-      kind(fn->kind()),
-      whereClause(fn->whereClause()) {
-    for (auto formal : fn->formals()) {
-      formals.push_back(formal);
+    FormalDetail(UniqueString name, bool hasDefault, const uast::Decl* decl)
+      : name(name), hasDefaultValue(hasDefault), decl(decl) { }
+
+    bool operator==(const FormalDetail& other) const {
+      return name == other.name &&
+             hasDefaultValue == other.hasDefaultValue &&
+             decl == other.decl;
     }
+    bool operator!=(const FormalDetail& other) const {
+      return !(*this == other);
+    }
+
+    size_t hash() const {
+      return chpl::hash(name, hasDefaultValue, decl);
+    }
+  };
+
+ private:
+  // the ID of a uAST Function, if there is one for this signature;
+  // or, for compiler-generated functions/methods, the ID of the record/class
+  // declaration
+  ID id_;
+  UniqueString name_;
+  bool isMethod_; // in that case, formals[0] is the receiver
+  bool idIsFunction_; // whether the ID is of a function
+  bool isTypeConstructor_;
+  uast::Function::Kind kind_;
+  std::vector<FormalDetail> formals_;
+
+  // this will not be present for compiler-generated functions
+  const uast::Expression* whereClause_;
+
+  UntypedFnSignature(ID id,
+                     UniqueString name,
+                     bool isMethod,
+                     bool idIsFunction,
+                     bool isTypeConstructor,
+                     uast::Function::Kind kind,
+                     std::vector<FormalDetail> formals,
+                     const uast::Expression* whereClause)
+    : id_(id),
+      name_(name),
+      isMethod_(isMethod),
+      idIsFunction_(idIsFunction),
+      isTypeConstructor_(isTypeConstructor),
+      kind_(kind),
+      formals_(std::move(formals)),
+      whereClause_(whereClause) {
   }
 
+  static const owned<UntypedFnSignature>&
+  getUntypedFnSignature(Context* context, ID id,
+                        UniqueString name,
+                        bool isMethod,
+                        bool idIsFunction,
+                        bool isTypeConstructor,
+                        uast::Function::Kind kind,
+                        std::vector<FormalDetail> formals,
+                        const uast::Expression* whereClause);
+
+ public:
+  /** Get the unique UntypedFnSignature containing these components */
+  static const UntypedFnSignature* get(Context* context, ID id,
+                                       UniqueString name,
+                                       bool isMethod,
+                                       bool idIsFunction,
+                                       bool isTypeConstructor,
+                                       uast::Function::Kind kind,
+                                       std::vector<FormalDetail> formals,
+                                       const uast::Expression* whereClause);
+
+  /** Get the unique UntypedFnSignature representing a Function's
+      signature. */
+  static const UntypedFnSignature* get(Context* context,
+                                       const uast::Function* function);
+
+
   bool operator==(const UntypedFnSignature& other) const {
-    return functionId == other.functionId &&
-           name == other.name &&
-           isMethod == other.isMethod &&
-           kind == other.kind &&
-           formals == other.formals &&
-           whereClause == other.whereClause;
+    return id_ == other.id_ &&
+           name_ == other.name_ &&
+           isMethod_ == other.isMethod_ &&
+           idIsFunction_ == other.idIsFunction_ &&
+           isTypeConstructor_ == other.isTypeConstructor_ &&
+           kind_ == other.kind_ &&
+           formals_ == other.formals_ &&
+           whereClause_ == other.whereClause_;
   }
   bool operator!=(const UntypedFnSignature& other) const {
     return !(*this == other);
+  }
+
+  /** Returns the id of the relevant uast node (usually a Function
+      but it can be a Record or Class for compiler-generated functions) */
+  const ID& id() const {
+    return id_;
+  }
+
+  /** Returns the name of the function this signature represents */
+  UniqueString name() const {
+    return name_;
+  }
+
+  /** Returns true if id() refers to a Function */
+  bool idIsFunction() const {
+    return idIsFunction_;
+  }
+
+  /** Returns true if this is a type constructor */
+  bool isTypeConstructor() const {
+    return isTypeConstructor_;
+  }
+
+  /** Returns the number of formals */
+  int numFormals() const {
+    return formals_.size();
+  }
+  /** Returns the name of the i'th formal. */
+  UniqueString formalName(int i) const {
+    assert(0 <= i && (size_t) i < formals_.size());
+    return formals_[i].name;
+  }
+
+  /** Return whether the i'th formal has a default value. */
+  bool formalHasDefault(int i) const {
+    assert(0 <= i && (size_t) i < formals_.size());
+    return formals_[i].hasDefaultValue;
+  }
+
+  /** Returns the Decl for the i'th formal.
+      This will return nullptr for compiler-generated functions. */
+  const uast::Decl* formalDecl(int i) const {
+    assert(0 <= i && (size_t) i < formals_.size());
+    return formals_[i].decl;
   }
 };
 
@@ -89,37 +196,27 @@ struct CallInfoActual {
     return !(*this == other);
   }
   size_t hash() const {
-    size_t h1 = chpl::hash(type);
-    size_t h2 = chpl::hash(byName);
-    size_t ret = 0;
-    ret = hash_combine(ret, h1);
-    ret = hash_combine(ret, h2);
-    return ret;
+    return chpl::hash(type, byName);
   }
 };
 
 struct CallInfo {
   UniqueString name;                   // the name of the called thing
   bool isMethod = false;               // in that case, actuals[0] is receiver
-  std::vector<CallInfoActual> actuals; // types/params/names of actuals 
+  bool hasQuestionArg = false;         // includes ? arg for type constructor
+  std::vector<CallInfoActual> actuals; // types/params/names of actuals
 
   bool operator==(const CallInfo& other) const {
     return name == other.name &&
            isMethod == other.isMethod &&
+           hasQuestionArg == other.hasQuestionArg &&
            actuals == other.actuals;
   }
   bool operator!=(const CallInfo& other) const {
     return !(*this == other);
   }
   size_t hash() const {
-    size_t h1 = chpl::hash(name);
-    size_t h2 = isMethod;
-    size_t h3 = chpl::hash(actuals);
-    size_t ret = 0;
-    ret = hash_combine(ret, h1);
-    ret = hash_combine(ret, h2);
-    ret = hash_combine(ret, h3);
-    return ret;
+    return chpl::hash(name, isMethod, hasQuestionArg, actuals);
   }
 };
 
@@ -211,7 +308,8 @@ struct PoiInfo {
 /**
   This represents a typed function signature.
 */
-struct TypedFnSignature {
+class TypedFnSignature {
+ public:
   typedef enum {
     WHERE_NONE,  // no where clause
     WHERE_TBD,   // where clause not resolved yet
@@ -219,34 +317,49 @@ struct TypedFnSignature {
     WHERE_FALSE, // where resulted in false
   } WhereClauseResult;
 
+ private:
   // What is the untyped function signature?
-  const UntypedFnSignature* untypedSignature;
+  const UntypedFnSignature* untypedSignature_;
   // What is the type of each of the formals?
-  std::vector<types::QualifiedType> formalTypes;
+  std::vector<types::QualifiedType> formalTypes_;
   // If there was a where clause, what was the result of evaluating it?
-  WhereClauseResult whereClauseResult = WHERE_TBD;
+  WhereClauseResult whereClauseResult_ = WHERE_TBD;
 
   // Are any of the formals generic or unknown at this point?
-  bool needsInstantiation = true;
+  bool needsInstantiation_ = true;
 
   // Is this TypedFnSignature representing an instantiation?
   // If so, what is the generic TypedFnSignature that was instantiated?
-  const TypedFnSignature* instantiatedFrom = nullptr;
+  const TypedFnSignature* instantiatedFrom_ = nullptr;
 
   // Is this for an inner Function? If so, what is the parent
   // function signature?
-  const TypedFnSignature* parentFn = nullptr;
+  const TypedFnSignature* parentFn_ = nullptr;
 
   // TODO: This could include a substitutions map, if we need it.
   // The formalTypes above might be enough, though.
 
+ public:
+  TypedFnSignature(const UntypedFnSignature* untypedSignature,
+                   std::vector<types::QualifiedType> formalTypes,
+                   WhereClauseResult whereClauseResult,
+                   bool needsInstantiation,
+                   const TypedFnSignature* instantiatedFrom,
+                   const TypedFnSignature* parentFn)
+    : untypedSignature_(untypedSignature),
+      formalTypes_(std::move(formalTypes)),
+      whereClauseResult_(whereClauseResult),
+      needsInstantiation_(needsInstantiation),
+      instantiatedFrom_(instantiatedFrom),
+      parentFn_(parentFn) { }
+
   bool operator==(const TypedFnSignature& other) const {
-    return untypedSignature == other.untypedSignature &&
-           formalTypes == other.formalTypes &&
-           whereClauseResult == other.whereClauseResult &&
-           needsInstantiation == other.needsInstantiation &&
-           instantiatedFrom == other.instantiatedFrom &&
-           parentFn == other.parentFn;
+    return untypedSignature_ == other.untypedSignature_ &&
+           formalTypes_ == other.formalTypes_ &&
+           whereClauseResult_ == other.whereClauseResult_ &&
+           needsInstantiation_ == other.needsInstantiation_ &&
+           instantiatedFrom_ == other.instantiatedFrom_ &&
+           parentFn_ == other.parentFn_;
   }
   bool operator!=(const TypedFnSignature& other) const {
     return !(*this == other);
@@ -254,8 +367,57 @@ struct TypedFnSignature {
 
   std::string toString() const;
 
-  const ID& functionId() const {
-    return untypedSignature->functionId;
+  /** Returns the id of the relevant uast node (usually a Function
+      but it can be a Record or Class for compiler-generated functions) */
+  const ID& id() const {
+    return untypedSignature_->id();
+  }
+
+  /** Returns the UntypedFnSignature */
+  const UntypedFnSignature* untyped() const {
+    return untypedSignature_;
+  }
+
+  /** Returns the result of evaluating the where clause */
+  WhereClauseResult whereClauseResult() const {
+    return whereClauseResult_;
+  }
+
+  /** Returns if any of the formals are generic or unknown */
+  bool needsInstantiation() const {
+    return needsInstantiation_;
+  }
+
+  /**
+    Is this TypedFnSignature representing an instantiation?  If so, returns the
+    generic TypedFnSignature that was instantiated.  Otherwise, returns nullptr.
+   */
+  const TypedFnSignature* instantiatedFrom() const {
+    return instantiatedFrom_;
+  }
+
+  /**
+     Is this for an inner Function? If so, what is the parent
+     function signature?
+   */
+  const TypedFnSignature* parentFn() const {
+    return parentFn_;
+  }
+
+  /** Returns the number of formals */
+  int numFormals() const {
+    int ret = formalTypes_.size();
+    assert(untypedSignature_ && ret == untypedSignature_->numFormals());
+    return ret;
+  }
+  /** Returns the name of the i'th formal */
+  UniqueString formalName(int i) const {
+    return untypedSignature_->formalName(i);
+  }
+  /** Returns the type of the i'th formal */
+  const types::QualifiedType& formalType(int i) const {
+    assert(0 <= i && (size_t) i < formalTypes_.size());
+    return formalTypes_[i];
   }
 };
 
@@ -350,6 +512,11 @@ struct CallResolutionResult {
   // if any of the candidates were instantiated, what point-of-instantiation
   // scopes were used when resolving their signature or body?
   PoiInfo poiInfo;
+
+  // for simple cases where mostSpecific and poiInfo are irrelevant
+  CallResolutionResult(types::QualifiedType exprType)
+    : exprType(std::move(exprType)) {
+  }
 
   CallResolutionResult(MostSpecificCandidates mostSpecific,
                        types::QualifiedType exprType,
@@ -518,8 +685,8 @@ struct ResolvedFunction {
     return resolutionById.byAst(ast);
   }
 
-  const ID& functionId() const {
-    return signature->functionId();
+  const ID& id() const {
+    return signature->id();
   }
 };
 
@@ -588,6 +755,13 @@ template<> struct update<owned<resolution::ResolvedFunction>> {
 
 
 namespace std {
+
+template<> struct hash<chpl::resolution::UntypedFnSignature::FormalDetail>
+{
+  size_t operator()(const chpl::resolution::UntypedFnSignature::FormalDetail& key) const {
+    return key.hash();
+  }
+};
 
 template<> struct hash<chpl::resolution::CallInfoActual>
 {

@@ -257,6 +257,7 @@ extern int yychpl_debug;
     Variable::Kind variableKind;
 
     // simple pointer values
+    Attributes* attribute;
     Block* block;
     Call* call;
     Function* function;
@@ -292,12 +293,12 @@ extern int yychpl_debug;
   #define YYLTYPE YYCHPL_LTYPE
 
   #endif
-#line 338 "chpl.ypp"
+#line 339 "chpl.ypp"
 
   // forward declare ParserContext
   struct ParserContext;
 
-#line 301 "bison-chpl-lib.h"
+#line 302 "bison-chpl-lib.h"
 
 /* Token kinds.  */
 #ifndef YYCHPL_TOKENTYPE
@@ -522,20 +523,20 @@ yychpl_pstate *yychpl_pstate_new (void);
 void yychpl_pstate_delete (yychpl_pstate *ps);
 
 /* "%code provides" blocks.  */
-#line 346 "chpl.ypp"
+#line 347 "chpl.ypp"
 
   extern int yychpl_debug;
 
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-#line 354 "chpl.ypp"
+#line 355 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser
   // headers.
   #include "ParserContext.h"
 
-#line 540 "bison-chpl-lib.h"
+#line 541 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */

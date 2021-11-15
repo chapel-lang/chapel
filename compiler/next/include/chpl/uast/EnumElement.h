@@ -64,6 +64,10 @@ class EnumElement final : public NamedDecl {
     namedDeclMarkUniqueStringsInner(context);
   }
 
+  int initExpressionChildNum() const {
+    return this->attributesChildNum() + 1;
+  }
+
  public:
   ~EnumElement() override = default;
 
@@ -82,7 +86,7 @@ class EnumElement final : public NamedDecl {
    */
   const Expression* initExpression() const {
     if (children_.size() > 0) {
-      const ASTNode* ast = this->child(0);
+      const ASTNode* ast = this->child(initExpressionChildNum());
       assert(ast->isExpression());
       return (const Expression*)ast;
     } else {

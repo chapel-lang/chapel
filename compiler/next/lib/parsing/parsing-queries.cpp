@@ -182,6 +182,11 @@ static const ASTNode* const& astForIDQuery(Context* context, ID id) {
 }
 
 const ASTNode* idToAst(Context* context, ID id) {
+  if (id.isEmpty()) {
+    assert(false && "bad query of uAST for empty ID");
+    return nullptr;
+  }
+
   return astForIDQuery(context, id);
 }
 

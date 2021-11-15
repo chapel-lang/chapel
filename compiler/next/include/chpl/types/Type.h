@@ -25,6 +25,9 @@
 #include "chpl/types/TypeTag.h"
 
 namespace chpl {
+namespace uast {
+  class Decl;
+}
 namespace types {
 
 
@@ -152,6 +155,12 @@ class Type {
   bool isAnyPtrType() const {
     return isClassType() || isCFnPtrType() || isCVoidPtrType();
   }
+
+  /** If 'this' is a CompositeType, return it.
+      If 'this' is a ClassType, return the basicClassType.
+      Otherwise, returns nullptr.
+   */
+  const CompositeType* getCompositeType() const;
 
   // define to__ methods for the various Type subclasses
   // using macros and TypeClassesList.h

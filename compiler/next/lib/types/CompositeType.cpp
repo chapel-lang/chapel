@@ -23,5 +23,38 @@ namespace chpl {
 namespace types {
 
 
+CompositeType::~CompositeType() {
+}
+
+void CompositeType::computeSummaryInformation() {
+  isGeneric_ = false;
+  allGenericFieldsHaveDefaultValues_ = true;
+  for (auto field : fields_) {
+    if (field.type.isGenericOrUnknown()) {
+      if (!field.hasDefaultValue) {
+        allGenericFieldsHaveDefaultValues_ = false;
+      }
+      isGeneric_ = true;
+    }
+  }
+}
+
+std::string CompositeType::toString() const {
+  //std::string ret = typetags::tagToString(tag());
+  std::string ret = name().toString();
+  int nFields = numFields();
+  ret += "(";
+  for (int i = 0; i < nFields; i++) {
+    if (i != 0) ret += ", ";
+    ret += fieldName(i).toString();
+    ret += ":";
+    ret += fieldType(i).toString();
+  }
+  ret += ")";
+  return ret;
+}
+
+
+
 } // end namespace types
 } // end namespace chpl

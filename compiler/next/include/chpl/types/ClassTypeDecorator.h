@@ -20,6 +20,8 @@
 #ifndef CHPL_TYPES_CLASS_TYPE_DECORATOR_H
 #define CHPL_TYPES_CLASS_TYPE_DECORATOR_H
 
+#include "chpl/util/hash.h"
+
 #include <cassert>
 #include <utility>
 
@@ -27,6 +29,12 @@ namespace chpl {
 namespace types {
 
 
+/** This class stores a class type decorator that describes a memory
+    management strategy.
+
+    It wraps a ClassTypeDecoratorEnum value
+    so that it is easy to call methods on it.
+ */
 class ClassTypeDecorator final {
  public:
   typedef enum {
@@ -187,6 +195,9 @@ class ClassTypeDecorator final {
   bool operator!=(ClassTypeDecorator other) const {
     return !(*this == other);
   }
+  size_t hash() const {
+    return (unsigned) val_;
+  }
   void swap(ClassTypeDecorator other) {
     std::swap(this->val_, other.val_);
   }
@@ -195,5 +206,16 @@ class ClassTypeDecorator final {
 
 } // end namespace uast
 } // end namespace chpl
+
+namespace std {
+
+template<> struct hash<chpl::types::ClassTypeDecorator>
+{
+  size_t operator()(const chpl::types::ClassTypeDecorator& key) const {
+    return key.hash();
+  }
+};
+
+} // end namespace std
 
 #endif
