@@ -249,7 +249,7 @@ module ChapelSyncvar {
   /*
     1) Read the value of the ``sync`` variable. For a full ``sync``, returns a
        copy of the value stored. For an empty ``sync``, the implementation will
-       return either a new default-initialzed value of the value type or the
+       return either a new default-initialized value of the value type or the
        last value stored.
     2) Does not change the full/empty state
 
@@ -546,7 +546,7 @@ module ChapelSyncvar {
       if !isDefaultInitializableType(valType) ||
          !isConstCopyableType(valType) ||
          !isConstAssignableType(valType) {
-        compilerError("readXX requires that the type contained in the sync variable be default-initializeable, const-copyable, and const-assignable");
+        compilerError("readXX requires that the type contained in the sync variable be default-initializable, const-copyable, and const-assignable");
       }
 
       var ret : valType;
@@ -640,7 +640,7 @@ module ChapelSyncvar {
           chpl__autoDestroy(value);
         }
         if isPODType(valType) {
-          // assuming POD types are default initializeable
+          // assuming POD types are default initializable
           var defaultValue : valType;
           _moveSet(value, defaultValue);
         }
@@ -674,7 +674,7 @@ module ChapelSyncvar {
       this.valType = valType;
       this.complete();
       // MPF: I think we can just call qthread_purge here
-      // because all of the types supperted here have a default of 0
+      // because all of the types supported here have a default of 0
       qthread_purge_to(alignedValue, defaultOfAlignedT(valType));
     }
 
@@ -908,7 +908,7 @@ module ChapelSyncvar {
 
     1) Read the value of the ``single`` variable. For a full ``single``, returns
        a copy of the value stored. For an empty ``single``, the implementation
-       will return either a new default-initialzed value of the value type or
+       will return either a new default-initialized value of the value type or
        the last value stored.
 
     2) Does not change the full/empty state
@@ -1069,7 +1069,7 @@ module ChapelSyncvar {
       if !isDefaultInitializableType(valType) ||
          !isConstCopyableType(valType) ||
          !isConstAssignableType(valType) {
-        compilerError("readXX requires that the type contained in the single variable be default-initializeable, const-copyable, and const-assignable");
+        compilerError("readXX requires that the type contained in the single variable be default-initializable, const-copyable, and const-assignable");
       }
 
       var ret : valType;
