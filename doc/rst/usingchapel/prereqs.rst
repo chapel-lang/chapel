@@ -27,8 +27,8 @@ for using Chapel:
     while not required, will enable faster atomic operations.
 
   * The LLVM backend is now the default and it is easiest to use it with
-    a system-wide installation of LLVM. Only LLVM 12 is currently
-    supported. If a system-wide installation of LLVM 12 is not available,
+    a system-wide installation of LLVM. Only LLVM 11/12 are currently
+    supported. If a system-wide installation of LLVM 11/12 is not available,
     you can use the bundled LLVM or disable LLVM support (see
     :ref:`readme-chplenv.CHPL_LLVM`). Please note that building the
     bundled LLVM requires cmake version 3.13.4 or later.
@@ -65,8 +65,8 @@ We have used the following commands to install the above prerequisites:
 
   * Debian, Ubuntu::
 
-      sudo apt-get install gcc g++ m4 perl python3 python3-pip python3-venv python3-dev bash make mawk git pkg-config cmake llvm-11-dev llvm-11 llvm-11-tools clang-11 libclang-11-dev libclang-cpp11-dev libedit-dev
+      sudo apt-get install gcc g++ m4 perl python3 python3-pip python3-venv python3-dev bash make mawk git pkg-config cmake llvm-12-dev llvm-12 llvm-12-tools clang-12 libclang-12-dev libclang-cpp12-dev libedit-dev
 
   * FreeBSD::
 
-     sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake llvm11
+     sudo pkg install gcc m4 perl5 python3 bash gmake gawk git pkgconf cmake llvm12

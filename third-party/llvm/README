@@ -54,12 +54,12 @@ un-tarballed LLVM package contents.  Version updates should be done as
 follows, assuming CWD is $CHPL_HOME/third-party/llvm/:
 
 1.  un-tarball the new LLVM version into the directory it specifies,
-    for example llvm-11.0.1.src
+    for example llvm-12.0.1.src
 2.  un-tarball the new Clang version into the directory it specifies,
-    for example clang-11.0.1.src
-3.  mv clang-11.0.1.src llvm-11.0.1.src/tools/clang
+    for example clang-12.0.1.src
+3.  mv clang-12.0.1.src llvm-12.0.1.src/tools/clang
 4.  git rm -r llvm-src
-5.  mv llvm-11.0.1.src llvm-src
+5.  mv llvm-12.0.1.src llvm-src
 6.  rm -r llvm-src/test llvm-src/tools/clang/test
 7.  git add --force llvm-src
     ('--force' is needed to ensure git adds all files in the subdirectory)
