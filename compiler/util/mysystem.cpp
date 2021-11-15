@@ -125,7 +125,7 @@ int mysystem(const std::vector<std::string> commandVec,
     if (status != 0 && !ignoreStatus) {
       USR_FATAL("%s", description);
     }
-  // uh-oh cases below
+  // handle the case when the child couldn't be forked
   } else if (childPid == -1) {
     USR_FATAL("fork() failed: %s", strerror(errno));
   }
