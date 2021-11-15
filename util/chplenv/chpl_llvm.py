@@ -324,7 +324,8 @@ def get_sysroot_resource_dir_args():
     args = [ ]
     target_platform = chpl_platform.get('target')
     llvm_val = get()
-    if target_platform == "darwin" and llvm_val == "bundled":
+    if (target_platform == "darwin" and
+        (llvm_val == "bundled" or llvm_val == "system")):
         # Add -isysroot and -resourcedir based upon what 'clang' uses
         cfile = os.path.join(get_chpl_home(),
                              "runtime", "include", "sys_basic.h")
