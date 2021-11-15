@@ -324,7 +324,7 @@ static void errorForOuterVarAccesses(FnSymbol* fn) {
       if (var->defPoint->parentSymbol != fn) {
         if (!var->isParameter() && var != gVoid) {
           USR_FATAL(se, "variable '%s' must be defined in the function it"
-			" is used in for GPU usage", var->name);
+                    " is used in for GPU usage", var->name);
         }
       }
     }
@@ -435,12 +435,12 @@ static void outlineGPUKernels() {
                     else if (FnSymbol* calledFn = parent->resolvedFunction()) {
                       if (!toFnSymbol(sym)) {
                         addKernelArgument(info, sym);
-		      }
+                      }
 
                       if (!calledFn->hasFlag(FLAG_GPU_AND_CPU_CODEGEN)) {
                          markGPUSubCalls(calledFn);
                       }
-		    }
+                    }
                     else {
                       INT_FATAL("Unexpected call expression");
                     }
