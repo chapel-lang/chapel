@@ -590,28 +590,28 @@ static std::set<std::string> allowedInternalModules = {
   "ChapelBase",
   "ChapelComplex_forDocs",
   "ChapelDebugPrint",
-  /*"ChapelDistribution",*/
+  "ChapelDistribution",
   "ChapelHashing",
-  /*"ChapelHashtable",*/
-  /*"ChapelIOStringifyHelper",*/
+  "ChapelHashtable",
+  "ChapelIOStringifyHelper",
   "ChapelIteratorSupport",
-  /*"ChapelLocale",*/
+  /*"ChapelLocale",*/                 // Forwarding.
   "ChapelLocks",
   "ChapelNumLocales",
   "ChapelPrivatization",
-  /*"ChapelRange",*/
-  /*"ChapelReduce",*/
+  "ChapelRange",
+  "ChapelReduce",
   "ChapelSerializedBroadcast",
   "ChapelStandard",
-  /*"ChapelSyncvar",*/
+  "ChapelSyncvar",
   "ChapelTaskData",
-  /*"ChapelTaskDataHelp",*/
+  "ChapelTaskDataHelp",
   "ChapelTaskID",
   "ChapelThreads",
-  /*"ChapelTuple",*/
+  "ChapelTuple",
   "ChapelUtil",
   "CString",
-  /*"DefaultAssociative",*/
+  "DefaultAssociative",
   /*"DefaultRectangular",*/
   /*"DefaultSparse",*/
   "ExportWrappers",

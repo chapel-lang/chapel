@@ -645,12 +645,13 @@ struct Converter {
   }
 
   Expr* visit(const uast::Conditional* node) {
+    assert(node->condition());
+
     Expr* ret = nullptr;
 
-    auto cond = toExpr(convertAST(node->condition()));
-    assert(cond);
-
     if (node->isExpressionLevel()) {
+      auto cond = toExpr(convertAST(node->condition()));
+      assert(cond);
       auto thenExpr = singleExprFromStmts(node->thenStmts());
       assert(thenExpr);
       auto elseExpr = singleExprFromStmts(node->elseStmts());
@@ -663,6 +664,23 @@ struct Converter {
       auto elseBlock = node->hasElseBlock()
             ? createBlockWithStmts(node->elseStmts())
             : nullptr;
+
+      Expr* cond = nullptr;
+
+      // TODO: Can 'ifVars' happen in expression-level conditionals?
+      if (auto ifVar = node->condition()->toVariable()) {
+        assert(ifVar->kind() == uast::Variable::CONST ||
+               ifVar->kind() == uast::Variable::VAR);
+        assert(ifVar->initExpression());
+        auto identDef = ifVar->name().c_str();
+        auto initExpr = toExpr(convertAST(ifVar->initExpression()));
+        bool isConst = ifVar->kind() == uast::Variable::CONST;
+        cond = buildIfVar(identDef, initExpr, isConst);
+      } else {
+        cond = toExpr(convertAST(node->condition()));
+      }
+
+      assert(cond);
 
       ret = buildIfStmt(cond, thenBlock, elseBlock);
     }
