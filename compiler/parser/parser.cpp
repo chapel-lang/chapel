@@ -612,8 +612,8 @@ static std::set<std::string> allowedInternalModules = {
   "ChapelUtil",
   "CString",
   "DefaultAssociative",
-  /*"DefaultRectangular",*/
-  /*"DefaultSparse",*/
+  /*"DefaultRectangular",*/           // Assertion in AggregateDecl.
+  "DefaultSparse",
   "ExportWrappers",
   "ExternalArray",
   "ISO_Fortran_binding",
@@ -622,20 +622,20 @@ static std::set<std::string> allowedInternalModules = {
   "LocaleModelHelpGPU",
   "LocaleModelHelpMem",
   "LocaleModelHelpNUMA",
-  /*"LocaleModelHelpRuntime",*/
+  "LocaleModelHelpRuntime",
   "LocaleModelHelpSetup",
   "LocalesArray",
   "LocaleTree",
-  /*"MemConsistency",*/
+  "MemConsistency",
   "MemTracking",
   "NetworkAtomics",
   "NetworkAtomicTypes",
-  /*"OwnedObject",*/
+  /*"OwnedObject",*/                  // Forwarding.
   "PrintModuleInitOrder",
-  /*"SharedObject",*/
+  /*"SharedObject",*/                 // Forwarding.
   "startInitCommDiags",
   "stopInitCommDiags",
-  /*"String",*/
+  "String",
   "StringCasts"
 };
 
