@@ -98,7 +98,7 @@ astlocMarker::astlocMarker(int lineno, const char* filename)
   currentAstLoc = astlocT(lineno, astr(filename));
 }
 
-// constructor, for compiler/next IDs
+// constructor, for compiler/next Locations
 astlocMarker::astlocMarker(chpl::Location location)
   : previousAstLoc(currentAstLoc)
 {
