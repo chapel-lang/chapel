@@ -284,6 +284,7 @@
     Variable::Kind variableKind;
 
     // simple pointer values
+    Attributes* attribute;
     Block* block;
     Call* call;
     Function* function;
@@ -555,7 +556,8 @@
 %type <typeDeclParts> class_start
 %type <commentsAndStmt> class_level_stmt
 %type <commentsAndStmt> inner_class_level_stmt
-%type <commentsAndStmt> forwarding_decl_stmt forwarding_decl_start
+%type <commentsAndStmt> forwarding_decl_stmt
+%type <attribute> forwarding_decl_start
 %type <commentsAndStmt> extern_export_decl_stmt
 %type <commentsAndStmt> extern_block_stmt
 %type <commentsAndStmt> return_stmt
@@ -1397,38 +1399,30 @@ inner_class_level_stmt:
 forwarding_decl_stmt:
   forwarding_decl_start expr TSEMI
     {
-      CommentsAndStmt cs = $1;
-      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
-      // TODO: save expr
-      $$ = cs;
+      $$ = context->buildForwardingDecl(@$, toOwned($1), toOwned($2),
+                                        VisibilityClause::NONE, nullptr);
     }
 | forwarding_decl_start expr TEXCEPT except_ls TSEMI
     {
-      CommentsAndStmt cs = $1;
-      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
-      // TODO: save expr and except_ls
-      $$ = cs;
+      $$ = context->buildForwardingDecl(@$, toOwned($1), toOwned($2),
+                                        VisibilityClause::EXCEPT, $4);
     }
 | forwarding_decl_start expr TONLY opt_only_ls TSEMI
     {
-      CommentsAndStmt cs = $1;
-      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
-      // TODO: save expr and opt_only_ls
-      $$ = cs;
+      $$ = context->buildForwardingDecl(@$, toOwned($1), toOwned($2),
+                                        VisibilityClause::ONLY, $4);
     }
 | forwarding_decl_start var_decl_stmt
     {
-      CommentsAndStmt cs = $1;
-      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
-      // TODO: save var_decl_stmt
-      $$ = cs;
+      $$ = context->buildForwardingDecl(@$, toOwned($1), $2);
     }
 ;
 
 forwarding_decl_start:
   TFORWARDING
   {
-    $$ = TODOSTMT(@$);
+    $$ = context->buildAttributes(@$).release();
+    context->resetAttributePartsState();
   }
 ;
 

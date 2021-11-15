@@ -124,7 +124,7 @@ class Variable final : public VarLikeDecl {
   bool isConfig() const { return this->isConfig_; }
 
   /**
-    Returns true if this Variable reperesents a field.
+    Returns true if this Variable represents a field.
   */
   bool isField() const { return this->isField_; }
 

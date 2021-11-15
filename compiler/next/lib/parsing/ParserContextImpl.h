@@ -1396,6 +1396,60 @@ buildVisibilityClause(YYLTYPE location, owned<Expression> symbol) {
                                ASTList());
 }
 
+
+CommentsAndStmt ParserContext::
+buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+                    owned<Expression> expr,
+                    VisibilityClause::LimitationKind limitationKind,
+                    ParserExprList* limitations) {
+
+  auto comments = gatherComments(location);
+
+  if (limitationKind == VisibilityClause::NONE) {
+    auto node = ForwardingDecl::build(builder, convertLocation(location),
+                                      std::move(attributes),
+                                      std::move(expr));
+
+    return { .comments=comments, .stmt=node.release() };
+  }
+
+  auto limitationsList = limitations ? consumeList(limitations) : ASTList();
+
+  auto visClause = buildVisibilityClause(location, std::move(expr),
+                                         limitationKind,
+                                         std::move(limitationsList));
+
+  auto node = ForwardingDecl::build(builder, convertLocation(location),
+                                    std::move(attributes),
+                                    toOwned(visClause));
+
+  return { .comments=comments, .stmt=node.release() };
+}
+
+
+CommentsAndStmt ParserContext::
+buildForwardingDecl(YYLTYPE location,
+                    owned<Attributes> attributes,
+                    CommentsAndStmt cs) {
+  assert(cs.stmt->isVariable() || cs.stmt->isMultiDecl() || cs.stmt->isTupleDecl());
+  auto decl = cs.stmt->toDecl();
+  assert(decl);
+  assert(!decl->attributes());
+  // TODO: pattern for composing comments should be extracted to helper
+  auto commentExprs = appendList(makeList(), cs.comments);
+  auto comments = gatherCommentsFromList(commentExprs, location);
+  delete commentExprs;
+
+  auto node = ForwardingDecl::build(builder, convertLocation(location),
+                                    std::move(attributes),
+                                    toOwned(cs.stmt),
+                                    decl->visibility());
+
+  return { .comments=comments, .stmt=node.release() };
+}
+
+
+
 Expression* ParserContext::buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
                                        owned<Expression> name,
                                        owned<Expression> rename) {
@@ -1405,7 +1459,7 @@ Expression* ParserContext::buildAsExpr(YYLTYPE locName, YYLTYPE locRename,
   }
 
   if (!name->isDot() && !name->isIdentifier()) {
-    const char* msg = "Symbol in as expression must be dot or identifer";
+    const char* msg = "Symbol in as expression must be dot or identifier";
     return raiseError(locName, msg);
   }
 

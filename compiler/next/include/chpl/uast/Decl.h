@@ -104,6 +104,11 @@ class Decl : public Expression {
     expressionMarkUniqueStringsInner(context);
   }
 
+
+  int attributesChildNum() const {
+    return attributesChildNum_;
+  }
+
  public:
   virtual ~Decl() = 0; // this is an abstract base class
 
