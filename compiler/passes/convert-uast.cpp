@@ -1502,7 +1502,7 @@ struct Converter {
     // or a Variable declartion
     if (node->expr()->isVisibilityClause()){
       auto child = node->expr()->toVisibilityClause();
-      bool except;
+      bool except=false;
       if (child->limitationKind() == uast::VisibilityClause::ONLY) {
         except=false;
       }
@@ -1515,7 +1515,8 @@ struct Converter {
         PotentialRename* name = convertRename(lim);
         names->push_back(name);
       }
-      return buildForwardingStmt(convertExprOrNull(child->symbol()), names, except);
+      return buildForwardingStmt(convertExprOrNull(child->symbol()),
+                                 names, except);
     } else if (node->expr()->isVariable()) {
         auto child = node->expr()->toVariable();
         return buildForwardingDeclStmt((BlockStmt*)visit(child));
