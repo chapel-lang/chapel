@@ -3064,6 +3064,25 @@ void codegenCallMemcpy(GenRet dest, GenRet src, GenRet size,
   }
 }
 #ifdef HAVE_LLVM
+
+static
+llvm::Constant* codegenSizeofLLVM(llvm::Type* type)
+{
+  // This used to use llvm::ConstantExpr::getSizeOf(type);
+  // but that seems not to be constant folded.
+
+  GenInfo *info = gGenInfo;
+  const llvm::DataLayout& dl = info->module->getDataLayout();
+  llvm::LLVMContext& ctx = info->module->getContext();
+
+  INT_ASSERT(type->isSized());
+  llvm::TypeSize ret = dl.getTypeAllocSize(type);
+  auto intValue = ret.getKnownMinSize();
+  llvm::Type* sizeTy = dl.getIntPtrType(ctx);
+
+  return llvm::ConstantInt::get(sizeTy, intValue);
+}
+
 static
 GenRet codegenSizeof(llvm::Type* type)
 {
