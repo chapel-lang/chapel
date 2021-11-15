@@ -612,7 +612,7 @@ static std::set<std::string> allowedInternalModules = {
   "ChapelUtil",
   "CString",
   "DefaultAssociative",
-  /*"DefaultRectangular",*/           // Assertion in AggregateDecl.
+  "DefaultRectangular",
   "DefaultSparse",
   "ExportWrappers",
   "ExternalArray",
