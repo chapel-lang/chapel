@@ -2712,7 +2712,10 @@ void makeBinary(void) {
     const char* command = astr(astr(CHPL_MAKE, " "),
                                makeflags,
                                getIntermediateDirName(), "/Makefile");
-    mysystem(command, "compiling generated source");
+    int status = mysystem(command, "compiling generated source");
+    if (status != 0) {
+      INT_FATAL("Error compiling generated sources");
+    }
   }
 
   if (gCodegenGPU == false) {
