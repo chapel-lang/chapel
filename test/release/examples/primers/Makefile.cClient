@@ -1,0 +1,29 @@
+# This makefile is for building the cClient portion of the interopWithC primer.
+# The interopWithC target of the main makefile generates a library and helper
+# makefile (lib/Makefile.interopWithC), which defines variables that aid in
+# linking to the library. This Makefile you're viewing now (Makefile.cClient)
+# creates a C Client that links and uses the library.
+
+TARGETS = cClient
+
+default: all
+
+all: $(TARGETS)
+
+clean: FORCE
+	rm -f $(TARGETS)
+
+# If not doing 'make clean', ensure that user built the helper Makefile
+ifneq ($(MAKECMDGOALS),clean)
+  ifeq (,$(wildcard lib/Makefile.interopWithC))
+    $(error Helper Makefile not found, run "make interopWithC" first)
+  endif
+endif
+
+# Include helper makefile
+-include lib/Makefile.interopWithC
+
+cClient: cClient.test.c interopWithC.chpl
+	+$(CHPL_COMPILER) $(CHPL_CFLAGS) -o $@ $< $(CHPL_LDFLAGS)
+
+FORCE:
