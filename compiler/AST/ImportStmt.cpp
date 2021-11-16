@@ -306,7 +306,9 @@ bool ImportStmt::checkValid(Expr* expr) const {
     }
 
   } else {
-    INT_FATAL(this, "Unexpected import stmt");
+    USR_FATAL_CONT(this, "Illegal expression in 'import' statement");
+    USR_PRINT(this, "only identifiers and 'dot' expressions are supported");
+    USR_STOP();
   }
 
   return retval;
