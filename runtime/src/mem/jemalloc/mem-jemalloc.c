@@ -402,7 +402,6 @@ void chpl_mem_layerInit(void) {
   size_t heap_size;
 
   interleave_mem = chpl_env_rt_get_bool("INTERLEAVE_MEMORY", CHPL_INTERLEAVE_MEM);
-  merge_split_chunks = chpl_env_rt_get_bool("MERGE_SPLIT_CHUNKS", true);
   CHPL_JE_LG_ARENA = get_num_arenas()-1;
 
   chpl_comm_regMemHeapInfo(&heap_base, &heap_size);
@@ -419,6 +418,7 @@ void chpl_mem_layerInit(void) {
   //   memory allocation routines, the allocator initializes its internals"
   if (heap_base != NULL) {
     heap.type = FIXED;
+    merge_split_chunks = chpl_env_rt_get_bool("MERGE_SPLIT_CHUNKS", true);
     heap.base = heap_base;
     heap.size = heap_size;
     heap.cur_offset = 0;
@@ -428,6 +428,7 @@ void chpl_mem_layerInit(void) {
     initializeSharedHeap();
   } else if (chpl_comm_regMemAllocThreshold() < SIZE_MAX) {
     heap.type = DYNAMIC;
+    merge_split_chunks = chpl_env_rt_get_bool("MERGE_SPLIT_CHUNKS", false);
     initializeSharedHeap();
   } else {
     void* p;
