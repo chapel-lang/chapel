@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+testname=$1
+outfile=$2
+sed -E -e 's/[^ ]+.chpl:[[:digit:]]+/file.chpl:line/' -e 's/0x[a-fA-F0-9]+/<address>/' $outfile > $outfile.tmp
+mv $outfile.tmp $outfile
