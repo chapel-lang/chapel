@@ -575,16 +575,16 @@ static void parseDependentModules(bool isInternal) {
 
 // Internal modules that are currently able to be parsed by the new parser.
 static std::set<std::string> allowedInternalModules = {
-  /*"ArrayViewRankChange",*/          // TODO: Forwarding...
-  /*"ArrayViewReindex",*/             // ^^^
-  /*"ArrayViewSlice",*/               // ^^^
+  "ArrayViewRankChange",
+  "ArrayViewReindex",
+  "ArrayViewSlice",
   "Atomics",
   "AtomicsCommon",
   "ByteBufferHelpers",
   "Bytes",
   "BytesCasts",
   "BytesStringCommon",
-  /*"ChapelArray",*/                  // Forwarding, prim with named args.
+  /*"ChapelArray",*/                  // Prim call with named args.
   "ChapelAutoAggregation",
   "ChapelAutoLocalAccess",
   "ChapelBase",
@@ -595,7 +595,7 @@ static std::set<std::string> allowedInternalModules = {
   "ChapelHashtable",
   "ChapelIOStringifyHelper",
   "ChapelIteratorSupport",
-  /*"ChapelLocale",*/                 // Forwarding.
+  /*"ChapelLocale",*/                 // Return lifetime?
   "ChapelLocks",
   "ChapelNumLocales",
   "ChapelPrivatization",
@@ -630,9 +630,9 @@ static std::set<std::string> allowedInternalModules = {
   "MemTracking",
   "NetworkAtomics",
   "NetworkAtomicTypes",
-  /*"OwnedObject",*/                  // Forwarding.
+  /*"OwnedObject",*/                  // Compiler crash.
   "PrintModuleInitOrder",
-  /*"SharedObject",*/                 // Forwarding.
+  /*"SharedObject",*/                 // Compiler crash.
   "startInitCommDiags",
   "stopInitCommDiags",
   "String",
