@@ -63,6 +63,7 @@ ifeq ($(CHPL_TARGET_COMPILER),llvm)
 	TARGETS += interopWithC
 endif
 CLEAN_TARGETS += interopWithC
+CLEAN_TARGETS += cClient
 
 REALS = $(TARGETS:%=%_real)
 CLEAN_REALS = $(CLEAN_TARGETS:%=%_real)
@@ -89,5 +90,9 @@ INTEROP_DEPS = interopWithC.chpl cHelper.h cHelper.c fact.h fact.c
 interopWithC: $(INTEROP_DEPS)
 	+$(CHPL) $(INTEROP_DEPS) $(INTEROP_LIB_OPTS)
 	+$(CHPL) -o $@ $^
+	@echo "--------------------------------------------------------------"
+	@echo "Built interopWithC library. Run "make -f Makefile.cClient" to "
+	@echo "build a C client that uses this library."
+	@echo "--------------------------------------------------------------"
 
 FORCE:
