@@ -883,7 +883,6 @@ record regex {
     var regexCopy:regex(exprType);
     if home != here then regexCopy = this;
     const localRegex = if home != here then regexCopy._regex else _regex;
-    var matches:_ddata(qio_regex_string_piece_t);
     var ncaptures = qio_regex_get_ncaptures(localRegex);
     var nmatches = 1 + ncaptures;
     var pos:byteIndex;
@@ -891,7 +890,8 @@ record regex {
     var last:byteIndex;
     var localText = text.localize();
 
-    matches = _ddata_allocate(qio_regex_string_piece_t, nmatches);
+    var matches = c_malloc(qio_regex_string_piece_t, nmatches);
+    defer c_free(matches);
 
     pos = 0;
     endpos = pos + localText.numBytes;
@@ -932,7 +932,6 @@ record regex {
         yield text[last..<endpos];
       }
     }
-    _ddata_free(matches, nmatches);
   }
 
   /* Enumerates matches in the text as well as capture groups.
