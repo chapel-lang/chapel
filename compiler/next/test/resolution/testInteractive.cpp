@@ -139,10 +139,10 @@ computeAndPrintStuff(Context* context,
   const ResolvedExpression* r = resolvedExpressionForAst(context, ast, inFn);
   int afterCount = context->numQueriesRunThisRevision();
   if (r != nullptr) {
-    for (const TypedFnSignature* sig : r->mostSpecific) {
+    for (const TypedFnSignature* sig : r->mostSpecific()) {
       if (sig != nullptr) {
         if (sig->untyped()->idIsFunction()) {
-          auto fn = resolveFunction(context, sig, r->poiScope);
+          auto fn = resolveFunction(context, sig, r->poiScope());
           calledFns.insert(fn);
         }
       }

@@ -242,7 +242,7 @@ struct Resolver {
       const auto& qt = typedFnSignature->formalType(i);
 
       ResolvedExpression& r = byPostorder.byAst(decl);
-      r.type = qt;
+      r.setType(qt);
     }
   }
 
@@ -284,7 +284,7 @@ struct Resolver {
     // if the id is contained within this symbol,
     // get the type information from the resolution result.
     if (id.symbolPath() == symbol->id().symbolPath()) {
-      return byPostorder.byId(id).type;
+      return byPostorder.byId(id).type();
     }
 
     // TODO: handle outer function variables
@@ -310,7 +310,7 @@ struct Resolver {
 
   bool enter(const Literal* literal) {
     ResolvedExpression& result = byPostorder.byAst(literal);
-    result.type = typeForLiteral(context, literal);
+    result.setType(typeForLiteral(context, literal));
     return false;
   }
   void exit(const Literal* literal) {
@@ -328,7 +328,7 @@ struct Resolver {
 
     auto vec = lookupInScope(context, scope, ident, config);
     if (vec.size() == 0) {
-      result.type = QualifiedType(QualifiedType::UNKNOWN, nullptr);
+      result.setType(QualifiedType(QualifiedType::UNKNOWN, nullptr));
     } else if (vec.size() > 1 || vec[0].numIds() > 1) {
       // can't establish the type. If this is in a function
       // call, we'll establish it later anyway.
@@ -343,8 +343,8 @@ struct Resolver {
         // use the type established at declaration/initialization
         type = typeForId(id);
       }
-      result.toId = id;
-      result.type = type;
+      result.setToId(id);
+      result.setType(type);
       // if there are multiple ids we should have gotten
       // a multiple definition error at the declarations.
     }
@@ -451,9 +451,9 @@ struct Resolver {
           // get the type we should have already computed postorder
           ResolvedExpression& r = byPostorder.byAst(typeExpr);
           // check that the resolution of that expression is a type
-          auto kind = r.type.kind();
+          auto kind = r.type().kind();
           if (kind == QualifiedType::TYPE) {
-            typePtr = r.type.type();
+            typePtr = r.type().type();
           } else if (kind != QualifiedType::UNKNOWN) {
             typePtr = ErroneousType::get(context);
             context->error(typeExpr, "Value provided where type expected");
@@ -464,7 +464,7 @@ struct Resolver {
         if (initExpr && !foundSubstitution) {
           // compute the type based upon the init expression
           ResolvedExpression& r = byPostorder.byAst(initExpr);
-          const QualifiedType& initType = r.type;
+          const QualifiedType& initType = r.type();
 
           // check that the init expression has compatible kind
           if (qtKind == QualifiedType::TYPE &&
@@ -537,7 +537,7 @@ struct Resolver {
       }
 
       ResolvedExpression& result = byPostorder.byAst(decl);
-      result.type = QualifiedType(qtKind, typePtr, paramPtr);
+      result.setType(QualifiedType(qtKind, typePtr, paramPtr));
     }
 
     exitScope(decl);
@@ -586,7 +586,7 @@ struct Resolver {
         if (fnCall && fnCall->isNamedActual(i)) {
           byName = fnCall->actualName(i);
         }
-        actuals.push_back(CallInfoActual(r.type, byName));
+        actuals.push_back(CallInfoActual(r.type(), byName));
         i++;
       }
     }
@@ -596,13 +596,13 @@ struct Resolver {
 
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
-    r.mostSpecific = c.mostSpecific();
-    r.poiScope = c.poiInfo().poiScope();
-    r.type = c.exprType();
+    r.setMostSpecific(c.mostSpecific());
+    r.setPoiScope(c.poiInfo().poiScope());
+    r.setType(c.exprType());
 
-    if (r.type.type() == nullptr) {
+    if (r.type().type() == nullptr) {
       context->error(call, "Cannot establish type for call expression");
-      r.type = QualifiedType(r.type.kind(), ErroneousType::get(context));
+      r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
     }
 
     // gather the poi scopes used when resolving the call
@@ -701,7 +701,7 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
     ASTTag parentTag = parsing::idToTag(context, parentSymbolId);
     if (asttags::isModule(parentTag)) {
       auto& partial = partiallyResolvedModule(context, parentSymbolId);
-      result = partial.byId(id).type;
+      result = partial.byId(id).type();
     }
   } else {
     QualifiedType::Kind kind = QualifiedType::UNKNOWN;
@@ -758,7 +758,7 @@ getFormalTypes(const Function* fn,
                const ResolutionResultByPostorderID& r) {
   std::vector<types::QualifiedType> formalTypes;
   for (auto formal : fn->formals()) {
-    QualifiedType t = r.byAst(formal).type;
+    QualifiedType t = r.byAst(formal).type();
     // compute concrete intent
     t = QualifiedType(resolveIntent(t), t.type(), t.param());
 
@@ -786,7 +786,7 @@ static TypedFnSignature::WhereClauseResult whereClauseResult(
                                      bool needsInstantiation) {
   auto whereClauseResult = TypedFnSignature::WHERE_TBD;
   if (const Expression* where = fn->whereClause()) {
-    const QualifiedType& qt = r.byAst(where).type;
+    const QualifiedType& qt = r.byAst(where).type();
     if (qt.kind() == QualifiedType::PARAM && qt.type()->isBoolType()) {
       // OK, we know the result of the where clause
       // TODO: handle Immediate
@@ -898,7 +898,7 @@ typeForTypeDeclQuery(Context* context,
             fields.push_back(CompositeType::FieldDetail(var->name(),
                                                         hasDefault,
                                                         var,
-                                                        e.type));
+                                                        e.type()));
           }
         }
       }
@@ -1097,7 +1097,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
       if (auto var = child->toVariable()) {
         if (var->isField()) {
           const ResolvedExpression& e = r.byAst(child);
-          formalTypes.push_back(e.type);
+          formalTypes.push_back(e.type());
         }
       }
     }
@@ -1215,8 +1215,8 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
 
 const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                               const ResolvedExpression& r) {
-  const TypedFnSignature* sig = r.mostSpecific.only();
-  const PoiScope* poiScope = r.poiScope;
+  const TypedFnSignature* sig = r.mostSpecific().only();
+  const PoiScope* poiScope = r.poiScope();
 
   if (sig == nullptr)
     return nullptr;
@@ -1282,7 +1282,7 @@ struct ReturnTypeInferer {
     checkReturn(inExpr, voidType);
   }
   void noteReturnType(const Expression* expr, const Expression* inExpr) {
-    const QualifiedType& qt = resolutionById.byAst(expr).type;
+    const QualifiedType& qt = resolutionById.byAst(expr).type();
 
     QualifiedType::Kind kind = qt.kind();
     const Type* type = qt.type();
@@ -1372,7 +1372,7 @@ const QualifiedType& returnType(Context* context,
       ResolutionResultByPostorderID resolutionById;
       Resolver visitor(context, fn, poiScope, sig, resolutionById);
       retType->traverse(visitor);
-      result = resolutionById.byAst(retType).type;
+      result = resolutionById.byAst(retType).type();
     } else {
       // resolve the function body
       const ResolvedFunction* rFn = resolveFunction(context, sig, poiScope);

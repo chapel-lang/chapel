@@ -625,39 +625,71 @@ class CallResolutionResult {
 /**
   This type represents a resolved expression.
 */
-struct ResolvedExpression {
+class ResolvedExpression {
+ private:
   // What is its type and param value?
-  types::QualifiedType type;
+  types::QualifiedType type_;
   // For simple (non-function Identifier) cases,
   // the ID of a NamedDecl it refers to
-  ID toId;
+  ID toId_;
 
   // For a function call, what is the most specific candidate,
   // or when using return intent overloading, what are the most specific
   // candidates?
   // The choice between these needs to happen
   // later than the main function resolution.
-  MostSpecificCandidates mostSpecific;
+  MostSpecificCandidates mostSpecific_;
   // What point of instantiation scope should be used when
   // resolving functions in mostSpecific?
-  const PoiScope* poiScope = nullptr;
+  const PoiScope *poiScope_ = nullptr;
 
+ public:
   ResolvedExpression() { }
 
+  /** get the type and param value */
+  const types::QualifiedType &type() const { return type_; }
+
+  /** for simple (non-function Identifier) cases, the ID of a NamedDecl it
+   * refers to */
+  ID toId() const { return toId_; }
+
+  /** For a function call, what is the most specific candidate, or when using
+   * return intent overloading, what are the most specific candidates? The
+   * choice between these needs to happen later than the main function
+   * resolution.
+   */
+  const MostSpecificCandidates &mostSpecific() const { return mostSpecific_; }
+
+  const PoiScope *poiScope() const { return poiScope_; }
+
+  /** set the toId */
+  void setToId(ID toId) { toId_ = toId; }
+
+  /** set the type */
+  void setType(const types::QualifiedType &type) { type_ = type; }
+
+  /** set the most specific */
+  void setMostSpecific(const MostSpecificCandidates &mostSpecific) {
+    mostSpecific_ = mostSpecific;
+  }
+
+  /** set the point-of-instantiation scope */
+  void setPoiScope(const PoiScope *poiScope) { poiScope_ = poiScope; }
+
   bool operator==(const ResolvedExpression& other) const {
-    return type == other.type &&
-           toId == other.toId &&
-           mostSpecific == other.mostSpecific &&
-           poiScope == other.poiScope;
+    return type_ == other.type_ &&
+           toId_ == other.toId_ &&
+           mostSpecific_ == other.mostSpecific_ &&
+           poiScope_ == other.poiScope_;
   }
   bool operator!=(const ResolvedExpression& other) const {
     return !(*this == other);
   }
   void swap(ResolvedExpression& other) {
-    type.swap(other.type);
-    toId.swap(other.toId);
-    mostSpecific.swap(other.mostSpecific);
-    std::swap(poiScope, other.poiScope);
+    type_.swap(other.type_);
+    toId_.swap(other.toId_);
+    mostSpecific_.swap(other.mostSpecific_);
+    std::swap(poiScope_, other.poiScope_);
   }
 
   std::string toString() const;

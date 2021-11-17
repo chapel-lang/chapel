@@ -301,26 +301,26 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
 std::string ResolvedExpression::toString() const {
   std::string ret;
   ret += " : ";
-  ret += type.toString();
+  ret += type_.toString();
   ret += " ; ";
-  if (!toId.isEmpty()) {
+  if (!toId_.isEmpty()) {
     ret += " refers to ";
-    ret += toId.toString();
+    ret += toId_.toString();
   } else {
-    auto onlyFn = mostSpecific.only();
+    auto onlyFn = mostSpecific_.only();
     if (onlyFn) {
       ret += " calls ";
       ret += onlyFn->toString();
     } else {
-      if (auto sig = mostSpecific.bestRef()) {
+      if (auto sig = mostSpecific_.bestRef()) {
         ret += " calls ref ";
         ret += sig->toString();
       }
-      if (auto sig = mostSpecific.bestConstRef()) {
+      if (auto sig = mostSpecific_.bestConstRef()) {
         ret += " calls const ref ";
         ret += sig->toString();
       }
-      if (auto sig = mostSpecific.bestValue()) {
+      if (auto sig = mostSpecific_.bestValue()) {
         ret += " calls value ";
         ret += sig->toString();
       }
