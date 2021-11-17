@@ -573,40 +573,52 @@ class MostSpecificCandidates {
   }
 };
 
-struct CallResolutionResult {
+/** CallResolutionResult */
+class CallResolutionResult {
+ private:
   // what are the candidates for return-intent overloading?
-  MostSpecificCandidates mostSpecific;
+  MostSpecificCandidates mostSpecific_;
   // what is the type of the call expression?
-  types::QualifiedType exprType;
+  types::QualifiedType exprType_;
   // if any of the candidates were instantiated, what point-of-instantiation
   // scopes were used when resolving their signature or body?
-  PoiInfo poiInfo;
+  PoiInfo poiInfo_;
 
+ public:
   // for simple cases where mostSpecific and poiInfo are irrelevant
   CallResolutionResult(types::QualifiedType exprType)
-    : exprType(std::move(exprType)) {
+    : exprType_(std::move(exprType)) {
   }
 
   CallResolutionResult(MostSpecificCandidates mostSpecific,
                        types::QualifiedType exprType,
                        PoiInfo poiInfo)
-    : mostSpecific(std::move(mostSpecific)),
-      exprType(std::move(exprType)),
-      poiInfo(std::move(poiInfo)) {
+    : mostSpecific_(std::move(mostSpecific)),
+      exprType_(std::move(exprType)),
+      poiInfo_(std::move(poiInfo)) {
   }
 
+  /** get the most specific candidates for return-intent overloading */
+  const MostSpecificCandidates &mostSpecific() const { return mostSpecific_; }
+
+  /** type of the call expression */
+  const types::QualifiedType &exprType() const { return exprType_; }
+
+  /** point-of-instantiation scopes used when resolving signature or body */
+  const PoiInfo &poiInfo() const { return poiInfo_; }
+
   bool operator==(const CallResolutionResult& other) const {
-    return mostSpecific == other.mostSpecific &&
-           exprType == other.exprType &&
-           PoiInfo::updateEquals(poiInfo, other.poiInfo);
+    return mostSpecific_ == other.mostSpecific_ &&
+           exprType_ == other.exprType_ &&
+           PoiInfo::updateEquals(poiInfo_, other.poiInfo_);
   }
   bool operator!=(const CallResolutionResult& other) const {
     return !(*this == other);
   }
   void swap(CallResolutionResult& other) {
-    mostSpecific.swap(other.mostSpecific);
-    exprType.swap(other.exprType);
-    poiInfo.swap(other.poiInfo);
+    mostSpecific_.swap(other.mostSpecific_);
+    exprType_.swap(other.exprType_);
+    poiInfo_.swap(other.poiInfo_);
   }
 };
 

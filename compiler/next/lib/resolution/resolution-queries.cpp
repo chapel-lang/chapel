@@ -596,9 +596,9 @@ struct Resolver {
 
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
-    r.mostSpecific = c.mostSpecific;
-    r.poiScope = c.poiInfo.poiScope();
-    r.type = c.exprType;
+    r.mostSpecific = c.mostSpecific();
+    r.poiScope = c.poiInfo().poiScope();
+    r.type = c.exprType();
 
     if (r.type.type() == nullptr) {
       context->error(call, "Cannot establish type for call expression");
@@ -606,7 +606,7 @@ struct Resolver {
     }
 
     // gather the poi scopes used when resolving the call
-    poiInfo.accumulate(c.poiInfo);
+    poiInfo.accumulate(c.poiInfo());
   }
 
   bool enter(const ASTNode* ast) {
