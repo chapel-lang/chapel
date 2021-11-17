@@ -826,6 +826,7 @@ class ResolvedFunction {
   }
 };
 
+/** FormalActual holds information on a function formal and its binding (if any) */
 struct FormalActual {
   const uast::Decl* formal = nullptr;
   types::QualifiedType formalType;
@@ -834,24 +835,38 @@ struct FormalActual {
   types::QualifiedType actualType;
 };
 
-struct FormalActualMap {
-  std::vector<FormalActual> byFormalIdx;
-  std::vector<int> actualIdxToFormalIdx;
-  bool mappingIsValid = false;
-  int failingActualIdx = -1;
-  int failingFormalIdx = -1;
+/** FormalActualMap maps formals to actuals */
+class FormalActualMap {
+ private:
+  std::vector<FormalActual> byFormalIdx_;
+  std::vector<int> actualIdxToFormalIdx_;
+  bool mappingIsValid_ = false;
+  int failingActualIdx_ = -1;
+  int failingFormalIdx_ = -1;
 
-  bool computeAlignment(const UntypedFnSignature* untyped,
-                        const TypedFnSignature* typed,
-                        const CallInfo& call);
+ public:
 
-  static FormalActualMap build(const UntypedFnSignature* untyped,
-                               const CallInfo& call);
-  static FormalActualMap build(const TypedFnSignature* typed,
-                               const CallInfo& call);
+  using FormalActualIterable = Iterable<std::vector<FormalActual>>;
+
+  FormalActualMap(const UntypedFnSignature *sig, const CallInfo &call) {
+    mappingIsValid_ = computeAlignment(sig, nullptr, call);
+  }
+  FormalActualMap(const TypedFnSignature *sig, const CallInfo &call) {
+    mappingIsValid_ = computeAlignment(sig->untyped(), sig, call);
+  }
+
+  /** check if mapping is valid */
+  bool isValid() const { return mappingIsValid_; }
+
+  /** get the FormalActual's */
+  FormalActualIterable byFormalIdx() const {
+    return FormalActualIterable(byFormalIdx_);
+  }
+
+ private:
+  bool computeAlignment(const UntypedFnSignature *untyped,
+                        const TypedFnSignature *typed, const CallInfo &call);
 };
-
-
 
 } // end namespace resolution
 

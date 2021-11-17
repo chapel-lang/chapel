@@ -1040,14 +1040,14 @@ const TypedFnSignature* instantiateSignature(Context* context,
     // Set parentFnTyped somehow.
   }
 
-  auto faMap = FormalActualMap::build(sig, call);
-  if (!faMap.mappingIsValid) {
+  auto faMap = FormalActualMap(sig, call);
+  if (!faMap.isValid()) {
     return nullptr;
   }
 
   // compute the substitutions
   SubstitutionsMap substitutions;
-  for (const FormalActual& entry : faMap.byFormalIdx) {
+  for (const FormalActual& entry : faMap.byFormalIdx()) {
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
     // in that case, resolver code should treat it as a hint to
     // use the default value. Unless the call used a ? argument.
@@ -1494,8 +1494,8 @@ doIsCandidateApplicableInitial(Context* context,
   //  * method-ness
   //  * ref-ness
 
-  auto faMap = FormalActualMap::build(uSig, call);
-  if (!faMap.mappingIsValid) {
+  auto faMap = FormalActualMap(uSig, call);
+  if (!faMap.isValid()) {
     return nullptr;
   }
 
@@ -1505,7 +1505,7 @@ doIsCandidateApplicableInitial(Context* context,
   auto initialTypedSignature = typedSignatureInitial(context, uSig);
   // Next, check that the types are compatible
   int formalIdx = 0;
-  for (const FormalActual& entry : faMap.byFormalIdx) {
+  for (const FormalActual& entry : faMap.byFormalIdx()) {
     const auto& actualType = entry.actualType;
     const auto& formalType = initialTypedSignature->formalType(formalIdx);
     bool ok = canPassInitial(actualType, formalType);
