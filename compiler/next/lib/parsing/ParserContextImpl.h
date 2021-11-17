@@ -32,8 +32,6 @@
 
 using chpl::types::Param;
 
-void gdbShouldBreakHere(void);
-
 static bool locationLessEq(YYLTYPE lhs, YYLTYPE rhs) {
   return (lhs.first_line < rhs.first_line) ||
          (lhs.first_line == rhs.first_line &&

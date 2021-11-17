@@ -672,10 +672,10 @@ struct Converter {
         assert(ifVar->kind() == uast::Variable::CONST ||
                ifVar->kind() == uast::Variable::VAR);
         assert(ifVar->initExpression());
-        auto identDef = ifVar->name().c_str();
+        auto varNameStr = ifVar->name().c_str();
         auto initExpr = toExpr(convertAST(ifVar->initExpression()));
         bool isConst = ifVar->kind() == uast::Variable::CONST;
-        cond = buildIfVar(identDef, initExpr, isConst);
+        cond = buildIfVar(varNameStr, initExpr, isConst);
       } else {
         cond = toExpr(convertAST(node->condition()));
       }
@@ -1748,11 +1748,11 @@ struct Converter {
     }
 
     Expr* retType = nullptr;
-    if (node->returnType()) {
-      if (node->returnType()->isBracketLoop()) {
-        retType = convertArrayType(node->returnType()->toBracketLoop());
+    if (auto retTypeExpr = node->returnType()) {
+      if (auto arrayTypeExpr = retTypeExpr->toBracketLoop()) {
+        retType = convertArrayType(arrayTypeExpr);
       } else {
-        retType = convertAST(node->returnType());
+        retType = convertAST(retTypeExpr);
       }
     }
 

@@ -952,6 +952,7 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
     INT_FATAL("compiler library context not initialized");
   }
 
+  // TODO: Move this to the point where we set up the context.
   gContext->setErrorHandler(&uASTParseFileErrorHandler);
 
   // Do not parse if we've already done so.
