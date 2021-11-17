@@ -161,15 +161,15 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
 
   int actualIdx = 0;
   for (const CallInfoActual& actual : call.actuals) {
-    if (!actual.byName.isEmpty()) {
+    if (!actual.byName().isEmpty()) {
       bool match = false;
       for (int i = 0; i < numFormals; i++) {
-        if (actual.byName == untyped->formalName(i)) {
+        if (actual.byName() == untyped->formalName(i)) {
           match = true;
           FormalActual& entry = byFormalIdx[i];
           entry.hasActual = true;
           entry.actualIdx = actualIdx;
-          entry.actualType = actual.type;
+          entry.actualType = actual.type();
           actualIdxToFormalIdx[actualIdx] = formalIdx;
           break;
         }
@@ -200,7 +200,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       return false;
     }
 
-    if (actual.byName.isEmpty()) {
+    if (actual.byName().isEmpty()) {
       // Skip any formals already matched to named arguments
       while (byFormalIdx[formalIdx].actualIdx >= 0) {
         if (formalIdx + 1 >= (int) byFormalIdx.size()) {
@@ -218,7 +218,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
       FormalActual& entry = byFormalIdx[formalIdx];
       entry.hasActual = true;
       entry.actualIdx = actualIdx;
-      entry.actualType = actual.type;
+      entry.actualType = actual.type();
       actualIdxToFormalIdx[actualIdx] = formalIdx;
     }
     actualIdx++;

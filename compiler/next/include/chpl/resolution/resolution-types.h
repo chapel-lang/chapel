@@ -184,19 +184,32 @@ class UntypedFnSignature {
 
 using SubstitutionsMap = std::unordered_map<const uast::Decl*, types::QualifiedType>;
 
-struct CallInfoActual {
-  types::QualifiedType type;
-  UniqueString byName;
+/** CallInfoActual */
+class CallInfoActual {
+ private:
+  types::QualifiedType type_;
+  UniqueString byName_;
 
-  bool operator==(const CallInfoActual& other) const {
-    return type == other.type &&
-           byName == other.byName;
+ public:
+  CallInfoActual(types::QualifiedType type, UniqueString byName)
+      : type_(type), byName_(byName) {}
+
+  /** return the qualified type */
+  const types::QualifiedType& type() const { return type_; }
+
+  /** return the name, if any, that the argument was passed with.
+      Ex: in f(number=3), byName() would be "number"
+   */
+  UniqueString byName() const { return byName_; }
+
+  bool operator==(const CallInfoActual &other) const {
+    return type_ == other.type_ && byName_ == other.byName_;
   }
   bool operator!=(const CallInfoActual& other) const {
     return !(*this == other);
   }
   size_t hash() const {
-    return chpl::hash(type, byName);
+    return chpl::hash(type_, byName_);
   }
 };
 

@@ -21,6 +21,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/ErrorMessage.h"
+#include "chpl/queries/UniqueString.h"
 #include "chpl/queries/query-impl.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/scope-queries.h"
@@ -580,13 +581,12 @@ struct Resolver {
         }
         ci.hasQuestionArg = true;
       } else {
-        CallInfoActual ciActual;
         ResolvedExpression& r = byPostorder.byAst(actual);
-        ciActual.type = r.type;
+        UniqueString byName;
         if (fnCall && fnCall->isNamedActual(i)) {
-          ciActual.byName = fnCall->actualName(i);
+          byName = fnCall->actualName(i);
         }
-        ci.actuals.push_back(ciActual);
+        ci.actuals.push_back(CallInfoActual(r.type, byName));
         i++;
       }
     }
@@ -1544,7 +1544,7 @@ doIsCandidateApplicableInstantiating(Context* context,
   // Next, check that the types are compatible
   size_t nActuals = call.actuals.size();
   for (size_t i = 0; i < nActuals; i++) {
-    const QualifiedType& actualType = call.actuals[i].type;
+    const QualifiedType& actualType = call.actuals[i].type();
     const QualifiedType& formalType = instantiated->formalType(i);
     bool ok = canPassAfterInstantiating(actualType, formalType);
     if (!ok)
@@ -1641,7 +1641,7 @@ findMostSpecificCandidates(Context* context,
     // TODO: handle return intent overloading
     // TODO: this is demo code
     if (call.actuals.size() > 1) {
-      if (call.actuals[1].type.type()->isIntType()) {
+      if (call.actuals[1].type().type()->isIntType()) {
         result.setBestRef(lst[0]);
       } else {
         result.setBestRef(lst[lst.size()-1]);
@@ -1757,7 +1757,7 @@ static const Type* getManagedClassType(Context* context,
 
   const Type* t = nullptr;
   if (ci.actuals.size() > 0)
-    t = ci.actuals[0].type.type();
+    t = ci.actuals[0].type().type();
 
   if (t == nullptr || !(t->isBasicClassType() || t->isClassType())) {
     context->error(call, "invalid class type construction");
@@ -1812,7 +1812,7 @@ static const Type* getNumericType(Context* context,
 
     QualifiedType qt;
     if (ci.actuals.size() > 0)
-      qt = ci.actuals[0].type;
+      qt = ci.actuals[0].type();
 
     if (qt.type() == nullptr || !qt.type()->isIntType() ||
         qt.param() == nullptr || !qt.param()->isIntParam() ||
@@ -1847,7 +1847,7 @@ static const Type* resolveFnCallSpecialType(Context* context,
 
   if (ci.name == "?") {
     if (ci.actuals.size() > 0) {
-      if (const Type* t = ci.actuals[0].type.type()) {
+      if (const Type* t = ci.actuals[0].type().type()) {
         const ClassType* ct = nullptr;
 
         if (auto bct = t->toBasicClassType()) {
@@ -2031,7 +2031,7 @@ CallResolutionResult resolvePrimCall(Context* context,
 
   bool allParam = true;
   for (const CallInfoActual& actual : ci.actuals) {
-    if (!actual.type.hasParam()) {
+    if (!actual.type().hasParam()) {
       allParam = false;
       break;
     }
@@ -2044,14 +2044,14 @@ CallResolutionResult resolvePrimCall(Context* context,
   // start with a non-param result type based on the 1st argument
   // TODO: do something more intelligent with a table of params
   if (ci.actuals.size() > 0) {
-    type = QualifiedType(QualifiedType::VALUE, ci.actuals[0].type.type());
+    type = QualifiedType(QualifiedType::VALUE, ci.actuals[0].type().type());
   }
 
   // handle param folding
   auto prim = call->prim();
   if (Param::isParamOpFoldable(prim)) {
     if (allParam && ci.actuals.size() == 2) {
-      type = Param::fold(context, prim, ci.actuals[0].type, ci.actuals[1].type);
+      type = Param::fold(context, prim, ci.actuals[0].type(), ci.actuals[1].type());
     }
   }
 
