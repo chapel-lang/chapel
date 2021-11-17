@@ -1717,6 +1717,9 @@ static
 struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced);
 
 static
+void heedSlingshotSettings(struct fi_info* info);
+
+static
 void init_ofiFabricDomain(void) {
   //
   // Get hints describing our base requirements, the ones that are
@@ -1881,6 +1884,11 @@ void init_ofiFabricDomain(void) {
   // Create the fabric domain and associated fabric access domain.
   //
   OFI_CHK(fi_fabric(ofi_info->fabric_attr, &ofi_fabric, NULL));
+
+  if (strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex") == 0) {
+    heedSlingshotSettings(ofi_info);
+  }
+
   OFI_CHK(fi_domain(ofi_fabric, ofi_info, &ofi_domain, NULL));
 }
 
@@ -1957,6 +1965,67 @@ struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced) {
 #endif
 
   return hints;
+}
+
+
+static
+void heedSlingshotSettings(struct fi_info* info) {
+  //
+  // Deal with Slingshot network related settings.
+  //
+  const char* evDevs = getenv("SLINGSHOT_DEVICES");
+  const char* evSvcIds = getenv("SLINGSHOT_SVC_IDS");
+  const char* evTcs = getenv("SLINGSHOT_TCS");
+  const char* evVnis = getenv("SLINGSHOT_VNIS");
+  CHK_TRUE((evDevs == NULL) == (evSvcIds == NULL)
+           && (evSvcIds == NULL) == (evTcs == NULL)
+           && (evTcs == NULL) == (evVnis == NULL)); // sanity
+  if (evDevs == NULL) {
+    return;
+  }
+
+  struct ss_auth_key {
+    uint32_t svc_id;
+    uint16_t vni;
+  };
+  struct ss_auth_key* auth_key;
+  CHPL_CALLOC(auth_key, 1);
+
+  //
+  // Service ID.  If there are more than one, just take the first.
+  //
+  {
+    char ev[strlen(evSvcIds) + 1];  // non-constant, for strtok()
+    strcpy(ev, evSvcIds);
+
+    char* tok;
+    char* lasts;
+    CHK_TRUE((tok = strtok_r(ev, ",", &lasts)) != NULL);
+    CHK_TRUE(sscanf(tok, "%" SCNu32, &auth_key->svc_id) == 1);
+  }
+
+  //
+  // VNI.  If there are more than one, just take the first.
+  //
+  {
+    char ev[strlen(evVnis) + 1];  // non-constant, for strtok()
+    strcpy(ev, evVnis);
+
+    char* tok;
+    char* lasts;
+    CHK_TRUE((tok = strtok_r(ev, ",", &lasts)) != NULL);
+
+    char ev2[strlen(tok) + 1];
+    strcpy(ev2, tok);
+
+    char* tok2;
+    char* lasts2;
+    CHK_TRUE((tok2 = strtok_r(ev2, ":", &lasts2)) != NULL);
+    CHK_TRUE(sscanf(tok2, "%" SCNu16, &auth_key->vni) == 1);
+  }
+
+  info->domain_attr->auth_key = (void*) auth_key;
+  info->domain_attr->auth_key_size = sizeof(*auth_key);
 }
 
 
