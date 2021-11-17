@@ -78,11 +78,11 @@ def get_jemalloc_config_file(flag='target'):
 def get_link_args(flag, mem_val):
     if mem_val == 'bundled':
         jemalloc_config = get_jemalloc_config_file(flag)
-        libs = ['-ljemalloc']
+        install_path = third_party_utils.get_cfg_install_path('jemalloc', host_or_target=flag)
+        lib_path = os.path.join(install_path, 'lib')
+        libs = ['-L{}'.format(lib_path), '-ljemalloc']
         # should this be an error if we can't find it?
         if os.access(jemalloc_config, os.X_OK):
-            jemalloc_libdir = run_command([jemalloc_config, '--libdir']).strip()
-            libs.append(f'-L{jemalloc_libdir}')
             jemalloc_libs = run_command([jemalloc_config, '--libs'])
             libs += jemalloc_libs.split()
         return libs
