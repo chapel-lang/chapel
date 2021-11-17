@@ -763,43 +763,66 @@ class ResolutionResultByPostorderID {
 /**
   This type represents a resolved function.
 */
-struct ResolvedFunction {
-  const TypedFnSignature* signature = nullptr;
+class ResolvedFunction {
+ private:
+  const TypedFnSignature *signature_ = nullptr;
 
-  uast::Function::ReturnIntent returnIntent =
-    uast::Function::DEFAULT_RETURN_INTENT;
+  uast::Function::ReturnIntent returnIntent_ =
+      uast::Function::DEFAULT_RETURN_INTENT;
 
   // this is the output of the resolution process
-  ResolutionResultByPostorderID resolutionById;
+  ResolutionResultByPostorderID resolutionById_;
 
   // the set of point-of-instantiation scopes used by the instantiation
-  PoiInfo poiInfo;
+  PoiInfo poiInfo_;
 
-  bool operator==(const ResolvedFunction& other) const {
-    return signature == other.signature &&
-           returnIntent == other.returnIntent &&
-           resolutionById == other.resolutionById &&
-           PoiInfo::updateEquals(poiInfo, other.poiInfo);
+ public:
+  ResolvedFunction(const TypedFnSignature *signature,
+                   uast::Function::ReturnIntent returnIntent,
+                   ResolutionResultByPostorderID resolutionById,
+                   PoiInfo poiInfo)
+      : signature_(signature), returnIntent_(returnIntent),
+        resolutionById_(resolutionById), poiInfo_(poiInfo) {}
+
+  /** The type signature */
+  const TypedFnSignature *signature() const { return signature_; }
+
+  /** the return intent */
+  uast::Function::ReturnIntent returnIntent() const { return returnIntent_; }
+
+  /** this is the output of the resolution process */
+  const ResolutionResultByPostorderID &resolutionById() const {
+    return resolutionById_;
+  }
+
+  /** the set of point-of-instantiations used by the instantiation */
+  const PoiInfo &poiInfo() const { return poiInfo_; }
+
+  bool operator==(const ResolvedFunction &other) const {
+    return signature_ == other.signature_ &&
+           returnIntent_ == other.returnIntent_ &&
+           resolutionById_ == other.resolutionById_ &&
+           PoiInfo::updateEquals(poiInfo_, other.poiInfo_);
   }
   bool operator!=(const ResolvedFunction& other) const {
     return !(*this == other);
   }
   void swap(ResolvedFunction& other) {
-    std::swap(signature, other.signature);
-    std::swap(returnIntent, other.returnIntent);
-    resolutionById.swap(other.resolutionById);
-    poiInfo.swap(other.poiInfo);
+    std::swap(signature_, other.signature_);
+    std::swap(returnIntent_, other.returnIntent_);
+    resolutionById_.swap(other.resolutionById_);
+    poiInfo_.swap(other.poiInfo_);
   }
 
   const ResolvedExpression& byId(const ID& id) const {
-    return resolutionById.byId(id);
+    return resolutionById_.byId(id);
   }
   const ResolvedExpression& byAst(const uast::ASTNode* ast) const {
-    return resolutionById.byAst(ast);
+    return resolutionById_.byAst(ast);
   }
 
   const ID& id() const {
-    return signature->id();
+    return signature_->id();
   }
 };
 

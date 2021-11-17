@@ -73,13 +73,13 @@ resolvedExpressionForAst(Context* context, const ASTNode* ast,
         } else if (auto parentFn = parentAst->toFunction()) {
           auto untyped = UntypedFnSignature::get(context, parentFn);
           // use inFn if it matches
-          if (inFn && inFn->signature->untyped() == untyped) {
-            return &inFn->resolutionById.byAst(ast);
+          if (inFn && inFn->signature()->untyped() == untyped) {
+            return &inFn->resolutionById().byAst(ast);
           } else {
             auto typed = typedSignatureInitial(context, untyped);
             if (!typed->needsInstantiation()) {
               auto rFn = resolveFunction(context, typed, nullptr);
-              return &rFn->resolutionById.byAst(ast);
+              return &rFn->resolutionById().byAst(ast);
             }
           }
         }
@@ -219,7 +219,7 @@ int main(int argc, char** argv) {
       size_t startCount = calledFns.size();
 
       for (auto calledFn : iterCalledFns) {
-        const TypedFnSignature* sig = calledFn->signature;
+        const TypedFnSignature* sig = calledFn->signature();
         if (sig->instantiatedFrom() != nullptr) {
           calledFns.insert(calledFn);
           auto pair = printed.insert(calledFn);

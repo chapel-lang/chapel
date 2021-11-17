@@ -1147,11 +1147,8 @@ resolveFunctionByInfoQuery(Context* context,
   PoiInfo resolvedPoiInfo;
 
   if (fn) {
-    owned<ResolvedFunction> resolved = toOwned(new ResolvedFunction());
-    resolved->signature = sig;
-    resolved->returnIntent = fn->returnIntent();
-
-    Resolver visitor(context, fn, poiScope, sig, resolved->resolutionById);
+    ResolutionResultByPostorderID resolutionById;
+    Resolver visitor(context, fn, poiScope, sig, resolutionById);
 
     // visit the body
     fn->body()->traverse(visitor);
@@ -1161,8 +1158,7 @@ resolveFunctionByInfoQuery(Context* context,
     resolvedPoiInfo.setResolved(true);
     resolvedPoiInfo.setPoiScope(nullptr);
 
-    // save the POI info in the resolution result
-    resolved->poiInfo = resolvedPoiInfo;
+    owned<ResolvedFunction> resolved = toOwned(new ResolvedFunction(sig, fn->returnIntent(), resolutionById, resolvedPoiInfo));
 
     // Store the result in the query under the POIs used.
     // If there was already a value for this revision, this
@@ -1236,8 +1232,8 @@ struct ReturnTypeInferer {
   ReturnTypeInferer(Context* context,
                     const ResolvedFunction& resolvedFn)
     : context(context),
-      returnIntent(resolvedFn.returnIntent),
-      resolutionById(resolvedFn.resolutionById) {
+      returnIntent(resolvedFn.returnIntent()),
+      resolutionById(resolvedFn.resolutionById()) {
   }
 
   bool enter(const Function* fn) {
@@ -1706,7 +1702,7 @@ void accumulatePoisUsedByResolvingBody(Context* context,
   const ResolvedFunction* r = resolveFunction(context, signature, poiScope);
 
   // gather the POI scopes from instantiating the function body
-  poiInfo.accumulate(r->poiInfo);
+  poiInfo.accumulate(r->poiInfo());
 }
 
 // if the call's name matches a class management type construction,
