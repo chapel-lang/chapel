@@ -2002,6 +2002,9 @@ void heedSlingshotSettings(struct fi_info* info) {
     char* lasts;
     CHK_TRUE((tok = strtok_r(ev, ",", &lasts)) != NULL);
     CHK_TRUE(sscanf(tok, "%" SCNu32, &auth_key->svc_id) == 1);
+    DBG_PRINTF(DBG_CFG,
+               "Slingshot svc_id %" PRIu32 " (from SVC_IDS=%s)",
+               auth_key->svc_id, evSvcIds);
   }
 
   //
@@ -2022,6 +2025,9 @@ void heedSlingshotSettings(struct fi_info* info) {
     char* lasts2;
     CHK_TRUE((tok2 = strtok_r(ev2, ":", &lasts2)) != NULL);
     CHK_TRUE(sscanf(tok2, "%" SCNu16, &auth_key->vni) == 1);
+    DBG_PRINTF(DBG_CFG,
+               "Slingshot VNI %" PRIu16 " (from VNIS=%s)",
+               auth_key->vni, evVnis);
   }
 
   info->domain_attr->auth_key = (void*) auth_key;
