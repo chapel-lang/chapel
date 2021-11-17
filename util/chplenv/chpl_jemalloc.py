@@ -12,9 +12,10 @@ def get(flag='target'):
     chpl_jemalloc = overrides.get('CHPL_JEMALLOC')
     chpl_host_jemalloc = overrides.get('CHPL_HOST_JEMALLOC')
     chpl_target_jemalloc = overrides.get('CHPL_TARGET_JEMALLOC')
-    mem_val = chpl_mem.get(flag)
 
-    platform_val = chpl_platform.get('target')
+    mem_val = chpl_mem.get(flag)
+    platform_val = chpl_platform.get(flag)
+
     darwin = platform_val.startswith('darwin')
     cygwin = platform_val.startswith('cygwin')
     linux = not darwin and not cygwin
@@ -67,16 +68,16 @@ def get_uniq_cfg_path():
 # Instead of libtool or pkg-config, jemalloc uses a jemalloc-config script to
 # determine dependencies/link args . It's located in the bin directory
 @memoize
-def get_jemalloc_config_file(target='target'):
-    install_path = third_party_utils.get_cfg_install_path('jemalloc', host_or_target=target)
+def get_jemalloc_config_file(flag='target'):
+    install_path = third_party_utils.get_cfg_install_path('jemalloc', host_or_target=flag)
     config_file = os.path.join(install_path, 'bin', 'jemalloc-config')
     return config_file
 
 
 @memoize
-def get_link_args(target, mem_val):
+def get_link_args(flag, mem_val):
     if mem_val == 'bundled':
-        jemalloc_config = get_jemalloc_config_file(target)
+        jemalloc_config = get_jemalloc_config_file(flag)
         libs = ['-ljemalloc']
         # should this be an error if we can't find it?
         if os.access(jemalloc_config, os.X_OK):

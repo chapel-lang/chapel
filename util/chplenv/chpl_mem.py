@@ -7,7 +7,7 @@ from utils import error, memoize, warning
 
 @memoize
 def get(flag='host'):
-    platform_val = chpl_platform.get('target')
+    platform_val = chpl_platform.get(flag)
     cygwin = platform_val.startswith('cygwin')
     chpl_host_mem = overrides.get('CHPL_HOST_MEM')
     chpl_target_mem = overrides.get('CHPL_TARGET_MEM')
