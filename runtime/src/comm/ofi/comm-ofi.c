@@ -1885,7 +1885,8 @@ void init_ofiFabricDomain(void) {
   //
   OFI_CHK(fi_fabric(ofi_info->fabric_attr, &ofi_fabric, NULL));
 
-  if (strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex") == 0) {
+  if (strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex") == 0
+      && chpl_env_rt_get_bool("COMM_OFI_SLINGSHOT_CHECK_ENV", true)) {
     heedSlingshotSettings(ofi_info);
   }
 
@@ -1989,7 +1990,7 @@ void heedSlingshotSettings(struct fi_info* info) {
     uint16_t vni;
   };
   struct ss_auth_key* auth_key;
-  CHPL_CALLOC(auth_key, 1);
+  CHK_SYS_MALLOC(auth_key, 1);    // fi_freeinfo() will free this with free()
 
   //
   // Service ID.  If there are more than one, just take the first.
