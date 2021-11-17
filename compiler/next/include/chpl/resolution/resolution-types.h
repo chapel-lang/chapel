@@ -272,13 +272,14 @@ class CallInfo {
   Contains information about symbols available from point-of-instantiation
   in order to implement caching of instantiations.
  */
-struct PoiInfo {
+class PoiInfo {
+ private:
   // is this PoiInfo for a function that has been resolved, or
   // for a function we are about to resolve?
-  bool resolved = false;
+  bool resolved_ = false;
 
   // For a not-yet-resolved instantiation
-  const PoiScope* poiScope = nullptr;
+  const PoiScope* poiScope_ = nullptr;
 
   // TODO: add VisibilityInfo etc -- names of calls.
   // see PR #16261
@@ -289,32 +290,53 @@ struct PoiInfo {
   // This is a set of pairs of (Call ID, Function ID).
   // This includes POI calls from functions called in this Function,
   // transitively
-  std::set<std::pair<ID, ID>> poiFnIdsUsed;
+  std::set<std::pair<ID, ID>> poiFnIdsUsed_;
 
+ public:
   // default construct a PoiInfo
   PoiInfo() { }
 
   // construct a PoiInfo for a not-yet-resolved instantiation
   PoiInfo(const PoiScope* poiScope)
-    : resolved(false), poiScope(poiScope) {
+    : resolved_(false), poiScope_(poiScope) {
   }
   // construct a PoiInfo for a resolved instantiation
   PoiInfo(std::set<std::pair<ID, ID>> poiFnIdsUsed)
-    : resolved(true), poiFnIdsUsed(std::move(poiFnIdsUsed)) {
+    : resolved_(true), poiFnIdsUsed_(std::move(poiFnIdsUsed)) {
+  }
+
+  /** return the poiScope */
+  const PoiScope *poiScope() const { return poiScope_; }
+
+  /** set the poiScope */
+  void setPoiScope(const PoiScope *poiScope) { poiScope_ = poiScope; }
+
+  /** set resolved */
+  void setResolved(bool resolved) { resolved_ = resolved; }
+
+  // TODO callers copy and store this elsewhere, do we return as is? change the
+  // getter to poiFnIdsUsedAsSet? make callers do std::set(poiFnIdsUsed.begin(),
+  // poiFnidsUsed.end()) ?
+  const std::set<std::pair<ID, ID>> &poiFnIdsUsed() const {
+    return poiFnIdsUsed_;
+  }
+
+  void addIds(ID a, ID b) {
+    poiFnIdsUsed_.emplace(a, b);
   }
 
   // return true if the two passed PoiInfos represent the same information
   // (for use in an update function)
   static bool updateEquals(const PoiInfo& a, const PoiInfo& b) {
-    return a.resolved == b.resolved &&
-           a.poiScope == b.poiScope &&
-           a.poiFnIdsUsed == b.poiFnIdsUsed;
+    return a.resolved_ == b.resolved_ &&
+           a.poiScope_ == b.poiScope_ &&
+           a.poiFnIdsUsed_ == b.poiFnIdsUsed_;
   }
 
   void swap(PoiInfo& other) {
-    std::swap(resolved, other.resolved);
-    std::swap(poiScope, other.poiScope);
-    poiFnIdsUsed.swap(other.poiFnIdsUsed);
+    std::swap(resolved_, other.resolved_);
+    std::swap(poiScope_, other.poiScope_);
+    poiFnIdsUsed_.swap(other.poiFnIdsUsed_);
   }
 
   // accumulate PoiInfo from a call into this PoiInfo
@@ -327,10 +349,10 @@ struct PoiInfo {
   // return true if one of the PoiInfos is a resolved function that
   // can be reused given PoiInfo for a not-yet-resolved function.
   static bool reuseEquals(const PoiInfo& a, const PoiInfo& b) {
-    if (a.resolved && !b.resolved) {
+    if (a.resolved_ && !b.resolved_) {
       return a.canReuse(b);
     }
-    if (b.resolved && !a.resolved) {
+    if (b.resolved_ && !a.resolved_) {
       return b.canReuse(a);
     }
     return updateEquals(a, b);

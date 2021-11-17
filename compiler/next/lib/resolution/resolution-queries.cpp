@@ -206,9 +206,8 @@ struct Resolver {
       substitutions(&substitutions),
       signatureOnly(true),
       fnBody(fn->body()),
-      byPostorder(byPostorder) {
-
-    poiInfo.poiScope = poiScope;
+      byPostorder(byPostorder),
+      poiInfo(poiScope) {
 
     byPostorder.setupForSignature(fn);
     enterScope(symbol);
@@ -225,12 +224,11 @@ struct Resolver {
       poiScope(poiScope),
       signatureOnly(false),
       fnBody(fn->body()),
-      byPostorder(byPostorder) {
+      byPostorder(byPostorder),
+      poiInfo(poiScope) {
 
     assert(typedFnSignature);
     assert(typedFnSignature->untyped());
-
-    poiInfo.poiScope = poiScope;
 
     byPostorder.setupForFunction(fn);
     enterScope(symbol);
@@ -274,9 +272,8 @@ struct Resolver {
       poiScope(poiScope),
       substitutions(&substitutions),
       useGenericFormalDefaults(useGenericFormalDefaults),
-      byPostorder(byPostorder) {
-
-    poiInfo.poiScope = poiScope;
+      byPostorder(byPostorder),
+      poiInfo(poiScope) {
 
     byPostorder.setupForSymbol(decl);
     enterScope(symbol);
@@ -600,7 +597,7 @@ struct Resolver {
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
     r.mostSpecific = c.mostSpecific;
-    r.poiScope = c.poiInfo.poiScope;
+    r.poiScope = c.poiInfo.poiScope();
     r.type = c.exprType;
 
     if (r.type.type() == nullptr) {
@@ -1145,7 +1142,7 @@ resolveFunctionByInfoQuery(Context* context,
   const ASTNode* ast = parsing::idToAst(context, untypedSignature->id());
   const Function* fn = ast->toFunction();
 
-  const PoiScope* poiScope = poiInfo.poiScope;
+  const PoiScope* poiScope = poiInfo.poiScope();
 
   PoiInfo resolvedPoiInfo;
 
@@ -1160,8 +1157,9 @@ resolveFunctionByInfoQuery(Context* context,
     fn->body()->traverse(visitor);
 
     resolvedPoiInfo.swap(visitor.poiInfo);
-    resolvedPoiInfo.resolved = true;
-    resolvedPoiInfo.poiScope = nullptr;
+    // TODO can this be encapsulated in a method?
+    resolvedPoiInfo.setResolved(true);
+    resolvedPoiInfo.setPoiScope(nullptr);
 
     // save the POI info in the resolution result
     resolved->poiInfo = resolvedPoiInfo;
@@ -1174,14 +1172,14 @@ resolveFunctionByInfoQuery(Context* context,
                        context,
                        resolved,
                        sig,
-                       resolvedPoiInfo.poiFnIdsUsed);
+                       resolvedPoiInfo.poiFnIdsUsed());
   } else {
     assert(false && "this query should be called on Functions");
   }
 
   // Return the unique result from the query (that might have been saved above)
   const owned<ResolvedFunction>& resolved =
-   resolveFunctionByPoisQuery(context, sig, resolvedPoiInfo.poiFnIdsUsed);
+    resolveFunctionByPoisQuery(context, sig, resolvedPoiInfo.poiFnIdsUsed());
 
   const ResolvedFunction* result = resolved.get();
 
@@ -1972,8 +1970,7 @@ CallResolutionResult resolveFnCall(Context* context,
     for (size_t i = firstPoiCandidate; i < n; i++) {
       for (const TypedFnSignature* candidate : mostSpecific) {
         if (candidate != nullptr) {
-          poiInfo.poiFnIdsUsed.insert(
-              std::make_pair(call->id(), candidate->id()));
+          poiInfo.addIds(call->id(), candidate->id());
         }
       }
     }
@@ -1995,7 +1992,7 @@ CallResolutionResult resolveFnCall(Context* context,
   if (anyInstantiated) {
     instantiationPoiScope =
       pointOfInstantiationScope(context, inScope, inPoiScope);
-    poiInfo.poiScope = instantiationPoiScope;
+    poiInfo.setPoiScope(instantiationPoiScope);
   }
 
   for (const TypedFnSignature* candidate : mostSpecific) {

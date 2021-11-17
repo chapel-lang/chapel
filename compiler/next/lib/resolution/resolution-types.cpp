@@ -286,14 +286,14 @@ std::string TypedFnSignature::toString() const {
 
 
 void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {
-  poiFnIdsUsed.insert(addPoiInfo.poiFnIdsUsed.begin(),
-                      addPoiInfo.poiFnIdsUsed.end());
+  poiFnIdsUsed_.insert(addPoiInfo.poiFnIdsUsed_.begin(),
+                      addPoiInfo.poiFnIdsUsed_.end());
 }
 
 // this is a resolved function
 // check is a not-yet-resolved function
 bool PoiInfo::canReuse(const PoiInfo& check) const {
-  assert(resolved && !check.resolved);
+  assert(resolved_ && !check.resolved_);
 
   return false; // TODO -- consider function names etc -- see PR #16261
 }
