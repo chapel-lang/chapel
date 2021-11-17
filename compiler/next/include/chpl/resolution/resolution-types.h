@@ -20,6 +20,7 @@
 #ifndef CHPL_RESOLUTION_RESOLUTION_TYPES_H
 #define CHPL_RESOLUTION_RESOLUTION_TYPES_H
 
+#include "chpl/queries/UniqueString.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/Type.h"
@@ -213,23 +214,56 @@ class CallInfoActual {
   }
 };
 
-struct CallInfo {
-  UniqueString name;                   // the name of the called thing
-  bool isMethod = false;               // in that case, actuals[0] is receiver
-  bool hasQuestionArg = false;         // includes ? arg for type constructor
-  std::vector<CallInfoActual> actuals; // types/params/names of actuals
+/** CallInfo */
+class CallInfo {
+ private:
+  UniqueString name_;                   // the name of the called thing
+  bool isMethod_ = false;               // in that case, actuals[0] is receiver
+  bool hasQuestionArg_ = false;         // includes ? arg for type constructor
+  std::vector<CallInfoActual> actuals_; // types/params/names of actuals
+
+ public:
+  using CallInfoActualIterable = Iterable<std::vector<CallInfoActual>>;
+
+  CallInfo(UniqueString name, bool hasQuestionArg,
+           std::vector<CallInfoActual> actuals)
+      : name_(name), hasQuestionArg_(hasQuestionArg),
+        actuals_(std::move(actuals)) {}
+
+  /** return the name of the called thing */
+  UniqueString name() const { return name_; }
+
+  /** check if the call is a method call */
+  bool isMethod() const { return isMethod_; }
+
+  /** check if the call includes ? arg for type constructor */
+  bool hasQuestionArg() const { return hasQuestionArg_; }
+
+  /** return the actuals */
+  CallInfoActualIterable actuals() const {
+    return CallInfoActualIterable(actuals_);
+  }
+
+  /** return the i'th actual */
+  const CallInfoActual& actuals(size_t i) const {
+    assert(i < actuals_.size());
+    return actuals_[i];
+  }
+
+  /** return the number of actuals */
+  size_t numActuals() const { return actuals_.size(); }
 
   bool operator==(const CallInfo& other) const {
-    return name == other.name &&
-           isMethod == other.isMethod &&
-           hasQuestionArg == other.hasQuestionArg &&
-           actuals == other.actuals;
+    return name_ == other.name_ &&
+           isMethod_ == other.isMethod_ &&
+           hasQuestionArg_ == other.hasQuestionArg_ &&
+           actuals_ == other.actuals_;
   }
   bool operator!=(const CallInfo& other) const {
     return !(*this == other);
   }
   size_t hash() const {
-    return chpl::hash(name, isMethod, hasQuestionArg, actuals);
+    return chpl::hash(name_, isMethod_, hasQuestionArg_, actuals_);
   }
 };
 

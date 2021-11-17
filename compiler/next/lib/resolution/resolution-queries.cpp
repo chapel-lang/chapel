@@ -553,20 +553,23 @@ struct Resolver {
     assert(scopeStack.size() > 0);
     const Scope* scope = scopeStack.back();
 
+    // TODO should we move this to a class method that takes in the context and call?
     // Generate a CallInfo for the call
-    CallInfo ci;
+    UniqueString name;
 
     if (auto op = call->toOpCall()) {
-      ci.name = op->op();
+      name = op->op();
     } else if (auto called = call->calledExpression()) {
       if (auto calledIdent = called->toIdentifier()) {
-        ci.name = calledIdent->name();
+        name = calledIdent->name();
       } else {
         assert(false && "TODO: method calls with Dot called");
       }
     }
 
     const FnCall* fnCall = call->toFnCall();
+    bool hasQuestionArg = false;
+    std::vector<CallInfoActual> actuals;
 
     int i = 0;
     for (auto actual : call->actuals()) {
@@ -576,21 +579,22 @@ struct Resolver {
           isQuestionMark = true;
 
       if (isQuestionMark) {
-        if (ci.hasQuestionArg) {
+        if (hasQuestionArg) {
           context->error(actual, "Cannot have ? more than once in a call");
         }
-        ci.hasQuestionArg = true;
+        hasQuestionArg = true;
       } else {
         ResolvedExpression& r = byPostorder.byAst(actual);
         UniqueString byName;
         if (fnCall && fnCall->isNamedActual(i)) {
           byName = fnCall->actualName(i);
         }
-        ci.actuals.push_back(CallInfoActual(r.type, byName));
+        actuals.push_back(CallInfoActual(r.type, byName));
         i++;
       }
     }
 
+    CallInfo ci(name, hasQuestionArg, actuals);
     CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
 
     // save the most specific candidates in the resolution result for the id
@@ -1050,7 +1054,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
     // in that case, resolver code should treat it as a hint to
     // use the default value. Unless the call used a ? argument.
-    if (call.hasQuestionArg &&
+    if (call.hasQuestionArg() &&
         entry.actualType.kind() == QualifiedType::UNKNOWN &&
         entry.actualType.type() == nullptr) {
       // don't add any substitution
@@ -1542,9 +1546,9 @@ doIsCandidateApplicableInstantiating(Context* context,
     return nullptr;
 
   // Next, check that the types are compatible
-  size_t nActuals = call.actuals.size();
+  size_t nActuals = call.numActuals();
   for (size_t i = 0; i < nActuals; i++) {
-    const QualifiedType& actualType = call.actuals[i].type();
+    const QualifiedType& actualType = call.actuals(i).type();
     const QualifiedType& formalType = instantiated->formalType(i);
     bool ok = canPassAfterInstantiating(actualType, formalType);
     if (!ok)
@@ -1640,8 +1644,8 @@ findMostSpecificCandidates(Context* context,
     // TODO: find most specific -- pull over disambiguation code
     // TODO: handle return intent overloading
     // TODO: this is demo code
-    if (call.actuals.size() > 1) {
-      if (call.actuals[1].type().type()->isIntType()) {
+    if (call.numActuals() > 1) {
+      if (call.actuals(1).type().type()->isIntType()) {
         result.setBestRef(lst[0]);
       } else {
         result.setBestRef(lst[lst.size()-1]);
@@ -1713,10 +1717,10 @@ void accumulatePoisUsedByResolvingBody(Context* context,
 static const Type* getManagedClassType(Context* context,
                                        const Call* call,
                                        const CallInfo& ci) {
-  UniqueString name = ci.name;
+  UniqueString name = ci.name();
 
-  if (ci.hasQuestionArg) {
-    if (ci.actuals.size() != 0) {
+  if (ci.hasQuestionArg()) {
+    if (ci.numActuals() != 0) {
       context->error(call, "invalid class type construction");
       return ErroneousType::get(context);
     } else if (name == "owned") {
@@ -1756,8 +1760,8 @@ static const Type* getManagedClassType(Context* context,
   auto d = ClassTypeDecorator(de);
 
   const Type* t = nullptr;
-  if (ci.actuals.size() > 0)
-    t = ci.actuals[0].type().type();
+  if (ci.numActuals() > 0)
+    t = ci.actuals(0).type().type();
 
   if (t == nullptr || !(t->isBasicClassType() || t->isClassType())) {
     context->error(call, "invalid class type construction");
@@ -1783,10 +1787,10 @@ static const Type* getManagedClassType(Context* context,
 static const Type* getNumericType(Context* context,
                                   const Call* call,
                                   const CallInfo& ci) {
-  UniqueString name = ci.name;
+  UniqueString name = ci.name();
 
-  if (ci.hasQuestionArg) {
-    if (ci.actuals.size() != 0) {
+  if (ci.hasQuestionArg()) {
+    if (ci.numActuals() != 0) {
       context->error(call, "invalid numeric type construction");
       return ErroneousType::get(context);
     } else if (name == "int") {
@@ -1811,12 +1815,12 @@ static const Type* getNumericType(Context* context,
       name == "real" || name == "imag" || name == "complex") {
 
     QualifiedType qt;
-    if (ci.actuals.size() > 0)
-      qt = ci.actuals[0].type();
+    if (ci.numActuals() > 0)
+      qt = ci.actuals(0).type();
 
     if (qt.type() == nullptr || !qt.type()->isIntType() ||
         qt.param() == nullptr || !qt.param()->isIntParam() ||
-        ci.actuals.size() != 1) {
+        ci.numActuals() != 1) {
       context->error(call, "invalid numeric type construction");
       return ErroneousType::get(context);
     }
@@ -1845,9 +1849,9 @@ static const Type* resolveFnCallSpecialType(Context* context,
                                             const Call* call,
                                             const CallInfo& ci) {
 
-  if (ci.name == "?") {
-    if (ci.actuals.size() > 0) {
-      if (const Type* t = ci.actuals[0].type().type()) {
+  if (ci.name() == "?") {
+    if (ci.numActuals() > 0) {
+      if (const Type* t = ci.actuals(0).type().type()) {
         const ClassType* ct = nullptr;
 
         if (auto bct = t->toBasicClassType()) {
@@ -2030,7 +2034,7 @@ CallResolutionResult resolvePrimCall(Context* context,
                                      const PoiScope* inPoiScope) {
 
   bool allParam = true;
-  for (const CallInfoActual& actual : ci.actuals) {
+  for (const CallInfoActual& actual : ci.actuals()) {
     if (!actual.type().hasParam()) {
       allParam = false;
       break;
@@ -2043,15 +2047,15 @@ CallResolutionResult resolvePrimCall(Context* context,
 
   // start with a non-param result type based on the 1st argument
   // TODO: do something more intelligent with a table of params
-  if (ci.actuals.size() > 0) {
-    type = QualifiedType(QualifiedType::VALUE, ci.actuals[0].type().type());
+  if (ci.numActuals() > 0) {
+    type = QualifiedType(QualifiedType::VALUE, ci.actuals(0).type().type());
   }
 
   // handle param folding
   auto prim = call->prim();
   if (Param::isParamOpFoldable(prim)) {
-    if (allParam && ci.actuals.size() == 2) {
-      type = Param::fold(context, prim, ci.actuals[0].type(), ci.actuals[1].type());
+    if (allParam && ci.numActuals() == 2) {
+      type = Param::fold(context, prim, ci.actuals(0).type(), ci.actuals(1).type());
     }
   }
 

@@ -137,7 +137,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
 
   // allocate space in the arrays
   byFormalIdx.resize(untyped->numFormals());
-  actualIdxToFormalIdx.resize(call.actuals.size());
+  actualIdxToFormalIdx.resize(call.numActuals());
 
   // initialize the FormalActual parts from the Formals
   int formalIdx = 0;
@@ -160,7 +160,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   // Record successful matches in actualIdxToFormalIdx.
 
   int actualIdx = 0;
-  for (const CallInfoActual& actual : call.actuals) {
+  for (const CallInfoActual& actual : call.actuals()) {
     if (!actual.byName().isEmpty()) {
       bool match = false;
       for (int i = 0; i < numFormals; i++) {
@@ -192,7 +192,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   // Record successful substitutions
   formalIdx = 0;
   actualIdx = 0;
-  for (const CallInfoActual& actual : call.actuals) {
+  for (const CallInfoActual& actual : call.actuals()) {
     if (formalIdx >= (int) byFormalIdx.size()) {
       // too many actuals
       mappingIsValid = false;
