@@ -17,3 +17,6 @@ on here.getChild(1) {
 
   writeln(A);
 }
+
+var x = foo(13);
+writeln(x);
