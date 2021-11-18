@@ -138,7 +138,7 @@ $(LLVM_INSTALL_DIR): $(LLVM_DEPEND)
 ifeq ($(CHPL_MAKE_HWLOC), bundled)
 QTHREAD_OTHER_INSTALL_DIR_DEPS += $(HWLOC_INSTALL_DIR)
 endif
-ifeq ($(CHPL_MAKE_JEMALLOC), bundled)
+ifeq ($(CHPL_MAKE_TARGET_JEMALLOC), bundled)
 QTHREAD_OTHER_INSTALL_DIR_DEPS += $(JEMALLOC_INSTALL_DIR)
 endif
 # Qthreads uses our memory allocator, trigger rebuilds if our interface changes
@@ -170,4 +170,3 @@ $(RE2_H_FILE): $(RE2_DEPEND)
 -include Makefile.devel
 
 FORCE:
-
