@@ -225,13 +225,8 @@ def get_llvm_clang(lang):
         return ''
 
     # tack on arguments that control clang's function
-    clang_args = get_clang_basic_args()
-    if clang_args:
-        args = ' '.join(clang_args)
-        if args:
-            clang += ' ' + args
-
-    return clang
+    result = [clang_name] + get_clang_basic_args()
+    return result
 
 
 def has_compatible_installed_llvm():
@@ -316,7 +311,13 @@ def get_gcc_prefix():
                         if os.path.isdir(inc):
                             gcc_prefix = mydir
 
-    return gcc_prefix.strip()
+        gcc_prefix = gcc_prefix.strip()
+        if gcc_prefix == '/usr':
+            # clang will be able to figure this out so don't
+            # bother with the argument here.
+            gcc_prefix = ''
+
+    return gcc_prefix
 
 # Returns a [ ] list of args
 @memoize
