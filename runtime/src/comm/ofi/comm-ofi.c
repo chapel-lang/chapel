@@ -1985,12 +1985,18 @@ void heedSlingshotSettings(struct fi_info* info) {
     return;
   }
 
+  //
+  // Libfabric allocates and frees struct fi_info structures and their
+  // substructures with the system allocator.  Therefore, that instead
+  // of the Chapel allocator for this auth_key since the pointer to it
+  // will be assigned into that struct.
+  //
   struct ss_auth_key {
     uint32_t svc_id;
     uint16_t vni;
   };
   struct ss_auth_key* auth_key;
-  CHK_SYS_MALLOC(auth_key, 1);    // fi_freeinfo() will free this with free()
+  CHK_SYS_MALLOC(auth_key, 1);
 
   //
   // Service ID.  If there are more than one, just take the first.
