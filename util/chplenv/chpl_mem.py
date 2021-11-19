@@ -18,7 +18,7 @@ def get(flag='host'):
             mem_val = 'cstdlib'
         elif chpl_target_mem:
             mem_val = chpl_target_mem
-            if chpl_mem:
+            if chpl_mem and chpl_target_mem != chpl_mem:
                 warning("CHPL_MEM and CHPL_TARGET_MEM are both set, "
                         "taking value from CHPL_TARGET_MEM")
         elif chpl_mem:
