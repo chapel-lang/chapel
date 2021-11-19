@@ -1,6 +1,178 @@
 Release Changes List
 ====================
 
+version 1.25.1
+==============
+
+Update to the twenty-eighth public release of Chapel, December 2021
+(see also changes below for 1.25.0)
+
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+
+Packaging / Configuration Changes
+---------------------------------
+
+
+Semantic Changes / Changes to Chapel Language
+---------------------------------------------
+
+
+New Features
+------------
+
+
+Feature Improvements
+--------------------
+
+
+Deprecated / Removed Language Features
+--------------------------------------
+
+
+Namespace Changes
+-----------------
+
+
+Name Changes in Libraries
+-------------------------
+
+
+Deprecated / Removed Library Features
+-------------------------------------
+
+
+Standard Library Modules
+------------------------
+
+
+Package Modules
+---------------
+
+
+Tool Improvements
+-----------------
+
+
+Performance Optimizations / Improvements
+----------------------------------------
+
+
+Compilation-Time / Generated Code Improvements
+----------------------------------------------
+
+
+Memory Improvements
+-------------------
+
+
+Documentation
+-------------
+
+
+Syntax Highlighting
+-------------------
+
+
+Example Codes
+-------------
+
+
+Portability
+-----------
+
+
+GPU Computing
+-------------
+
+
+Compiler Improvements
+---------------------
+
+
+Compiler Flags
+--------------
+
+
+Generated Executable Flags
+--------------------------
+
+
+Runtime Library Changes
+-----------------------
+
+
+Launchers
+---------
+
+
+Error Messages / Semantic Checks
+--------------------------------
+
+
+Bug Fixes
+---------
+
+
+Bug Fixes for Libraries
+-----------------------
+
+
+Bug Fixes for Tools
+-------------------
+
+
+Platform-specific Bug Fixes
+---------------------------
+
+
+Third-Party Software Changes
+----------------------------
+
+
+Developer-oriented changes: Naming Changes
+------------------------------------------
+
+
+Developer-oriented changes: Documentation
+-----------------------------------------
+
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+
+Developer-oriented changes: Makefiles
+-------------------------------------
+
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+
+Developer-oriented changes: Compiler improvements/changes
+---------------------------------------------------------
+
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+
+Developer-oriented changes: Testing System
+------------------------------------------
+
+
+Developer-oriented changes: Tool Improvements
+---------------------------------------------
+
+
+Developer-oriented changes: Utilities
+-------------------------------------
+
+
+
 version 1.25.0
 ==============
 
