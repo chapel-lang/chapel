@@ -713,6 +713,9 @@ module Bytes {
     :returns: A :mod:`bytes <Bytes>`
   */
   inline proc bytes.join(const ref x) : bytes  {
+    // this overload serves as a catch-all for unsupported types.
+    // for the implementation of array and tuple overloads, see
+    // join() methods in the _bytes record.
     compilerError("bytes.join() accepts any number of bytes, homogenous "
                     + "tuple of bytes, or array of bytes as an argument");
   }

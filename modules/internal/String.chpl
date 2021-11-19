@@ -1797,6 +1797,9 @@ module String {
     :returns: A :mod:`string <String>`
   */
   inline proc string.join(const ref x) : string {
+    // this overload serves as a catch-all for unsupported types.
+    // for the implementation of array and tuple overloads, see
+    // join() methods in the _string record.
     compilerError("string.join() accepts any number of strings, homogenous "
                   + "tuple of strings, or array of strings as an argument");
   }
