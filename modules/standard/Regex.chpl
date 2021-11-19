@@ -371,7 +371,7 @@ extern proc qio_regex_release(ref compiled:qio_regex_t);
 pragma "no doc"
 
 private extern proc qio_regex_get_options(const ref regex:qio_regex_t, ref options: qio_regex_options_t);
-private extern proc qio_regex_get_pattern(const ref regex:qio_regex_t, ref pattern: c_string, ref len_out:int(64));
+private extern proc qio_regex_borrow_pattern(const ref regex:qio_regex_t, ref pattern: c_string, ref len_out:int(64));
 pragma "no doc"
 extern proc qio_regex_get_ncaptures(const ref regex:qio_regex_t):int(64);
 pragma "no doc"
@@ -649,15 +649,19 @@ record regex {
 
     on this.home {
       /* NOTE we can't reference `this` inside this on block because
-       * it can cause a recursive chpl__serialize loop */
+       * it can cause a recursive chpl__serialize loop
+       * We also use a borrowed string so that the lifetime of the buffer is as
+       * long as the regex itself (and eg. doesn't get freed at the end of this
+       * function)
+       */
       var patternTemp: c_string;
       var len:int;
-      qio_regex_get_pattern(_regexCopy, patternTemp, len);
+      qio_regex_borrow_pattern(_regexCopy, patternTemp, len);
       if exprType == string then {
-        try! pattern = createStringWithOwnedBuffer(patternTemp, len).chpl__serialize();
+        try! pattern = createStringWithBorrowedBuffer(patternTemp, len).chpl__serialize();
       }
       else {
-        pattern = createBytesWithOwnedBuffer(patternTemp, len).chpl__serialize();
+        pattern = createBytesWithBorrowedBuffer(patternTemp, len).chpl__serialize();
       }
 
       var localOptions: qio_regex_options_t;
@@ -1040,14 +1044,14 @@ record regex {
     on this.home {
       var patternTemp:c_string;
       var len:int;
-      qio_regex_get_pattern(this._regex, patternTemp, len);
+      qio_regex_borrow_pattern(this._regex, patternTemp, len);
       if exprType == string then {
         try! {
-          pattern = createStringWithOwnedBuffer(patternTemp, len);
+          pattern = createStringWithNewBuffer(patternTemp, len);
         }
       }
       else {
-        pattern = createBytesWithOwnedBuffer(patternTemp, len);
+        pattern = createBytesWithNewBuffer(patternTemp, len);
       }
     }
     // Note -- this is wrong because we didn't quote
@@ -1110,10 +1114,10 @@ inline operator :(x: regex(string), type t: string) {
   on x.home {
     var cs: c_string;
     var len:int;
-    qio_regex_get_pattern(x._regex, cs, len);
+    qio_regex_borrow_pattern(x._regex, cs, len);
     if t == string {
       try! {
-        pattern = createStringWithOwnedBuffer(cs, len);
+        pattern = createStringWithNewBuffer(cs, len);
       }
     }
   }
@@ -1127,8 +1131,8 @@ inline operator :(x: regex(bytes), type t: bytes) {
   on x.home {
     var cs: c_string;
     var len:int;
-    qio_regex_get_pattern(x._regex, cs, len);
-    pattern = createBytesWithOwnedBuffer(cs, len);
+    qio_regex_borrow_pattern(x._regex, cs, len);
+    pattern = createBytesWithNewBuffer(cs, len);
   }
   return pattern;
 }
