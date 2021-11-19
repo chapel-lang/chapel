@@ -199,7 +199,7 @@ struct Converter {
     return new CallExpr(PRIM_ERROR);
   }
 
-  Expr* reservedWordRemap(UniqueString name) {
+  Expr* reservedWordRemapForIdent(UniqueString name) {
     if (name == questionStr) {
       return new SymExpr(gUninstantiated);
     } else if (name == unmanagedStr) {
@@ -234,7 +234,7 @@ struct Converter {
 
     auto name = node->name();
 
-    if (auto remap = reservedWordRemap(name)) {
+    if (auto remap = reservedWordRemapForIdent(name)) {
       ret = remap;
     } else {
       ret = new UnresolvedSymExpr(name.c_str());
@@ -1633,6 +1633,25 @@ struct Converter {
             name == "<<=");
   }
 
+  const char* convertFunctionNameAndAstr(UniqueString name) {
+    const char* ret = nullptr;
+    if (name == byStr) {
+      ret = "chpl_by";
+    } else if (name == alignStr) {
+      ret = "chpl_align";
+    } else {
+      ret = name.c_str();
+    }
+
+    assert(ret);
+
+    // We have to uniquify the name now because it may be inlined (and thus
+    // stack allocated).
+    ret = astr(ret);
+
+    return ret;
+  }
+
   Expr* visit(const uast::Function* node) {
     FnSymbol* fn = new FnSymbol("_");
 
@@ -1721,11 +1740,10 @@ struct Converter {
       }
     }
 
-    UniqueString name = node->name();
+    const char* convName = convertFunctionNameAndAstr(node->name());
+    fn = buildFunctionSymbol(fn, convName, thisTag, receiverType);
 
-    fn = buildFunctionSymbol(fn, name.c_str(), thisTag, receiverType);
-
-    if (isAssignOp(name)) {
+    if (isAssignOp(node->name())) {
       fn->addFlag(FLAG_ASSIGNOP);
     }
 
