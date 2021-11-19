@@ -28,20 +28,14 @@ def f(options, configname):
 # where the maximum is not passed.
 checkMaxAttained=' -scheckMaxAttained=true'
 
-if not do_llvm:
-  # C backend, no cache remote
-  f('--no-cache-remote ' + checkMaxAttained, 'c')
-  # C backend, cache remote
-  if do_cache:
-    f('--cache-remote', 'c-cache')
+
+# Test combinations of wide-opt and remote cache
+
+f('--no-llvm-wide-opt --no-cache-remote ' + checkMaxAttained, 'no-wideopt-no-cache')
+if do_cache:
+    f('--no-llvm-wide-opt --cache-remote', 'no-wideopt-cache')
 
 if do_llvm:
-  # LLVM backend, no cache remote
-  #f('--no-cache-remote', 'llvm')
-  # LLVM backend, cache remote
-  #f('--cache-remote', 'llvm-cache')
-  # LLVM backend, llvm wide opts, no cache remote
-  f('--llvm-wide-opt --no-cache-remote', 'llvm-wide-opt')
-  # LLVM backend, llvm wide opts, cache remote
+  f('--llvm-wide-opt --no-cache-remote', 'wideopt-no-cache')
   if do_cache:
-    f('--llvm-wide-opt --cache-remote', 'llvm-wide-opt-cache')
+    f('--llvm-wide-opt --cache-remote', 'wideopt-cache')
