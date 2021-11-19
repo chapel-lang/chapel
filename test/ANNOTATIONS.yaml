@@ -989,6 +989,9 @@ isx.ml-time: &isx-ml-base
     - Stop forcing serial initialization for isx-hand-optimized (#8290)
   08/02/18:
     - Optimize the atomic barrier implementation for network atomics (#10633)
+  08/27/21:
+    - text: Allow jemalloc to merge/split chunks to reduce fixed heap fragmentation (#18299)
+      config: 16-node-cs-hdr
 isx-hand-optimized.ml-time:
   <<: *isx-ml-base
 isx-release.ml-time:
