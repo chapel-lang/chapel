@@ -1,15 +1,15 @@
 Search no capture
 
 Search with capture
-0: file.chpl:line: allocate 8B of string copy data at <address>
-0: file.chpl:line: allocate 8B of string copy data at <address>
-0: file.chpl:line: free at <address>
-0: file.chpl:line: allocate 8B of string copy data at <address>
-0: file.chpl:line: allocate 8B of string copy data at <address>
-0: file.chpl:line: free at <address>
-0: file.chpl:line: allocate 8B of string copy data at <address>
-0: file.chpl:line: allocate 8B of string copy data at <address>
-0: file.chpl:line: free at <address>
+0: <file>.chpl:line: allocate <N>B of string copy data at <address>
+0: <file>.chpl:line: allocate <N>B of string copy data at <address>
+0: <file>.chpl:line: free at <address>
+0: <file>.chpl:line: allocate <N>B of string copy data at <address>
+0: <file>.chpl:line: allocate <N>B of string copy data at <address>
+0: <file>.chpl:line: free at <address>
+0: <file>.chpl:line: allocate <N>B of string copy data at <address>
+0: <file>.chpl:line: allocate <N>B of string copy data at <address>
+0: <file>.chpl:line: free at <address>
 (aaa, bbbbb, ccccc)
 
 Iter Matches no capture
