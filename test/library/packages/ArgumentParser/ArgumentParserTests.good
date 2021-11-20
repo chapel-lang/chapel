@@ -480,34 +480,40 @@ Flavour: OK
 ----------------------------------------------------------------------
 testMockMasonNew()
 USAGE: mason [-h, --help] [-V, --version] [SUBCOMMAND]
+
 OPTIONS:
 	-h, --help	Display this message and exit
 	-V, --version
+
 SUBCOMMANDS:
 	add
+	build
+	clean
+	doc
 	env
 	external
-	rm
-	publish
 	init
-	clean
-	system
+	new
+	publish
+	rm
 	run
-	doc
 	search
+	system
 	test
 	update
-	build
-	new
 
-USAGE: new <NAME> [-h, --help] [--[no]-vcs] [--show] [--name <LEGALNAME>]
+
+USAGE: new <NAME> [-h, --help] [--show] [--[no]-vcs] [--name <LEGALNAME>]
+
 ARGUMENTS:
 	NAME
+
 OPTIONS:
 	-h, --help	Display this message and exit
 	--name <LEGALNAME>
-	--[no]-vcs
 	--show
+	--[no]-vcs
+
 
 Flavour: OK
 ======================================================================
@@ -592,28 +598,36 @@ Flavour: OK
 ----------------------------------------------------------------------
 testGenerateHelp()
 USAGE: progName <files ...> [-h, --help] [--flagOne] [--optionOne <OPTIONONE>] [SUBCOMMAND]
+
 ARGUMENTS:
 	files	some files to process
+
 OPTIONS:
 	-h, --help	Display this message and exit
-	--optionOne <OPTIONONE>	release 1000 doves upon thine enemies
 	--flagOne	sets cool factor to 100
+	--optionOne <OPTIONONE>	release 1000 doves upon thine enemies
+
 SUBCOMMANDS:
 	subcommand	do related but different stuff
+
 
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
 testGenerateEmptyHelp()
 USAGE: progName <files ...> [-h, --help] [--flagOne] [--optionOne <OPTIONONE>] [SUBCOMMAND]
+
 ARGUMENTS:
 	files
+
 OPTIONS:
 	-h, --help	Display this message and exit
-	--optionOne <OPTIONONE>
 	--flagOne
+	--optionOne <OPTIONONE>
+
 SUBCOMMANDS:
 	subcommand
+
 
 Flavour: OK
 ======================================================================

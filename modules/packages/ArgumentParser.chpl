@@ -162,8 +162,10 @@
 
     $ quickStart -h
     USAGE: quickStart <POSITIONAL> [-h, --help] [--debug] [--optional <OPTIONAL>]
+
     ARGUMENTS:
             POSITIONAL
+
     OPTIONS:
             -h, --help      Display this message and exit
             --optional <OPTIONAL>
