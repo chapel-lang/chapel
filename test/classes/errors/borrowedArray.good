@@ -1,0 +1,1 @@
+borrowedArray.chpl:4: error: 'borrowed' cannot be applied to types other than classes

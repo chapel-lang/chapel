@@ -470,6 +470,10 @@ returnInfoToUnmanaged(CallExpr* call) {
 
 static QualifiedType
 returnInfoToBorrowed(CallExpr* call) {
+  Expr* e = call->get(1);
+  if (LoopExpr* le = toLoopExpr(e)) {
+    USR_FATAL(call, "'borrowed' cannot be applied to types other than classes");
+  }
   Type* t = call->get(1)->getValType();
 
   ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED;
