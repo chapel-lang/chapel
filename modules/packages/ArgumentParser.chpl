@@ -264,8 +264,8 @@ module ArgumentParser {
   class PassThrough : SubCommand {
 
     proc init(delimiter:string, help:argumentHelp) {
-      super.init(delimiter, help);
-      _kind=argKind.passthrough;
+      super.init(cmd=delimiter, help=help);
+      this._kind=argKind.passthrough;
     }
     // for passthrough, _match attempts to identify values at the index of the
     // delimiter at position startPos, then consumes the rest of
@@ -291,10 +291,10 @@ module ArgumentParser {
   class SubCommand : ArgumentHandler {
 
     proc init(cmd:string, help:argumentHelp) {
-      super.init();
-      this._name=cmd;
-      this._help=help;
-      this._kind=argKind.subcommand;
+      super.init(_name=cmd, _help=help, _kind=argKind.subcommand);
+      // this._name=cmd;
+      // this._help=help;
+      // this._kind=argKind.subcommand;
     }
 
     // for subcommands, _match attempts to identify values at the index of the
@@ -324,8 +324,8 @@ module ArgumentParser {
 
 
     proc init(name:string, defaultValue:?t=none, numArgs=1..1, help:argumentHelp) {
-      super.init();
-      this._name=name;
+      super.init(_name=name, _help=help, _kind=argKind.positional, _numArgs=numArgs);
+      // this._name=name;
       this._required = numArgs.low > 0;
       this._defaultValue = new list(string);
       // add default value(s) if supplied
@@ -334,9 +334,9 @@ module ArgumentParser {
       } else if t == list(string) || isArray(t) {
         this._defaultValue.extend(defaultValue);
       }
-      this._numArgs = numArgs;
-      this._help=help;
-      this._kind=argKind.positional;
+      // this._numArgs = numArgs;
+      // this._help=help;
+      // this._kind=argKind.positional;
     }
 
     override proc _hasDefault() : bool{
@@ -402,16 +402,16 @@ module ArgumentParser {
 
     proc init(name:string, defaultValue:?t=none, required:bool=false,
               yesFlags:[]string, noFlags:[]string, numArgs=0..0, help:argumentHelp) {
-      super.init();
-      this._name=name;
+      super.init(_name=name, _help=help, _kind=argKind.flag, _numArgs=numArgs);
+      // this._name=name;
       this._required = required;
       this._defaultValue = new list(string);
       if isBoolType(t) then this._defaultValue.append(defaultValue:string);
       this._yesFlags = new list(yesFlags);
       this._noFlags = new list(noFlags);
-      this._numArgs = numArgs;
-      this._help=help;
-      this._kind=argKind.flag;
+      // this._numArgs = numArgs;
+      // this._help=help;
+      // this._kind=argKind.flag;
     }
 
     override proc _hasDefault() : bool{
@@ -506,15 +506,15 @@ module ArgumentParser {
 
     proc init(name:string, numOpts:int, opts:[?argsD] string, numArgs:range,
               required=false, defaultValue=new list(string), help:argumentHelp) {
-      super.init();
-      _name=name;
+      super.init(_name=name, _help=help, _kind=argKind.option, _numArgs=numArgs);
+      // _name=name;
       _numOpts=numOpts;
       _opts=opts;
-      _numArgs=numArgs;
+      // _numArgs=numArgs;
       _required=required;
       _defaultValue=defaultValue;
-      _help=help;
-      _kind=argKind.option;
+      // _help=help;
+      // _kind=argKind.option;
       // make sure that if we make an argument required no default set
       assert(!(_required && _defaultValue.size > 0),
               "Required options do not support default values");
@@ -709,7 +709,7 @@ module ArgumentParser {
       usage.components.append(binaryName);
       var hasSubcommands = false;
       for kindOfArg in usageOrder {
-        for name in _argStack.keys() {
+        for name in sorted(_argStack.keys()) {
           const handler = _argStack.getBorrowed(name);
           if !handler._help.visible then continue;
           var elem = handler._getUsageCommand();
@@ -739,7 +739,7 @@ module ArgumentParser {
     // generate all the data for each section. Needs to be done AFTER all
     // the arguments have been added to the argumentParser.
     proc generateSections() {
-      for name in _argStack.keys() {
+      for name in sorted(_argStack.keys()) {
         const handler = _argStack.getBorrowed(name);
         if !handler._help.visible then continue;
         var elem = new element(handler._getHelpCommand(),
