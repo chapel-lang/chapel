@@ -170,6 +170,74 @@
             -h, --help      Display this message and exit
             --optional <OPTIONAL>
 
+
+  .. _argumentParser-customizingHelp:
+
+  Customizing Help Output
+  ------------------------
+
+  There are various levels of support for help handling that you can request
+  when initializing an ``argumentParser``.
+
+  By default, an ``argumentParser`` handles help requests in the form of ``-h``
+  and ``--help``, builds a help message, builds a usage message, prints the
+  combined help and usage message when either invalid input or help request
+  is detected, and then exits.
+
+  These actions are mostly customizable through arguments set when
+  initializing an ``argumentParser`` or individual arguments, options, and flags.
+
+  The text that describes each argument can be defined by setting a value
+  for the ``help`` argument in the various `add` methods on the ``argumentParser``.
+
+  Example usage:
+
+  .. code-block:: chapel
+
+    // to set the help text on an argument, flag, etc.
+    var myArg = parser.addArgument(name="myArg",
+                                   help="This text describes myArg for the user");
+
+
+  To take full control over what happens when a user requests help, create a new class
+  that inherits the ``HelpHandler`` and override the ``printHelp()`` method. Then,
+  create a new instance of your custom class and set it as the ``helpHandler``
+  argument when initializing the ``argumentParser``. This is designed to ease
+  adoption when a program has existing functions to print its help messages.
+
+  Example usage:
+
+  .. code-block:: chapel
+
+    class MyHelpHandler : HelpHandler {
+      override proc printHelp() {
+        // call some custom functions like ...
+        // printMyCustomHelp();
+        // maybe other things?
+      }
+    }
+    var parser = new argumentParser(helpHandler=new MyHelpHandler());
+
+  All help requests will now execute whatever is defined in ``printHelp()``
+  and then exit, as the parser's ``exitOnError`` is `true` by default.
+
+  For existing programs where the help text is defined in a string, the
+  ``argumentParser`` can accept a value in the ``helpMessage`` argument during
+  initialization.
+
+  Example usage:
+
+  .. code-block:: chapel
+
+    const myHelpMessage = "A customized message that should be displayed\n" +
+                          "instead of the usual help  and usage message.\n"
+    var parser = new argumentParser(helpMessage=myHelpMessage);
+
+
+  To turn off help handling completely, set the ``addHelp`` argument to `false`
+  when initializing the ``argumentParser``.
+
+
  */
 
 module ArgumentParser {
@@ -877,7 +945,7 @@ module ArgumentParser {
 
       :arg addHelp: Determines if the ArgumentParser adds help flags and handles
                 their presence in the command line arguments. Flag values are
-                set to -h and --help. Defaults to `true`.
+                set to ``-h`` and ``--help``. Defaults to `true`.
 
       :arg exitOnError: Determines if ArgumentParser exits with error info when
                     an error occurs. Defaults to `true`.
@@ -1934,6 +2002,7 @@ module ArgumentParser {
       writeln(_helpMessage);
     }
   }
+
 
   // helper to prepare numArgs ranges for use
   pragma "no doc"
