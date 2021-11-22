@@ -306,10 +306,10 @@ class PoiInfo {
   }
 
   /** return the poiScope */
-  const PoiScope *poiScope() const { return poiScope_; }
+  const PoiScope* poiScope() const { return poiScope_; }
 
   /** set the poiScope */
-  void setPoiScope(const PoiScope *poiScope) { poiScope_ = poiScope; }
+  void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
 
   /** set resolved */
   void setResolved(bool resolved) { resolved_ = resolved; }
@@ -599,13 +599,13 @@ class CallResolutionResult {
   }
 
   /** get the most specific candidates for return-intent overloading */
-  const MostSpecificCandidates &mostSpecific() const { return mostSpecific_; }
+  const MostSpecificCandidates& mostSpecific() const { return mostSpecific_; }
 
   /** type of the call expression */
-  const types::QualifiedType &exprType() const { return exprType_; }
+  const types::QualifiedType& exprType() const { return exprType_; }
 
   /** point-of-instantiation scopes used when resolving signature or body */
-  const PoiInfo &poiInfo() const { return poiInfo_; }
+  const PoiInfo& poiInfo() const { return poiInfo_; }
 
   bool operator==(const CallResolutionResult& other) const {
     return mostSpecific_ == other.mostSpecific_ &&
@@ -646,8 +646,8 @@ class ResolvedExpression {
  public:
   ResolvedExpression() { }
 
-  /** get the type and param value */
-  const types::QualifiedType &type() const { return type_; }
+  /** get the qualified type */
+  const types::QualifiedType& type() const { return type_; }
 
   /** for simple (non-function Identifier) cases, the ID of a NamedDecl it
    * refers to */
@@ -658,23 +658,23 @@ class ResolvedExpression {
    * choice between these needs to happen later than the main function
    * resolution.
    */
-  const MostSpecificCandidates &mostSpecific() const { return mostSpecific_; }
+  const MostSpecificCandidates& mostSpecific() const { return mostSpecific_; }
 
-  const PoiScope *poiScope() const { return poiScope_; }
+  const PoiScope* poiScope() const { return poiScope_; }
 
   /** set the toId */
   void setToId(ID toId) { toId_ = toId; }
 
   /** set the type */
-  void setType(const types::QualifiedType &type) { type_ = type; }
+  void setType(const types::QualifiedType& type) { type_ = type; }
 
   /** set the most specific */
-  void setMostSpecific(const MostSpecificCandidates &mostSpecific) {
+  void setMostSpecific(const MostSpecificCandidates& mostSpecific) {
     mostSpecific_ = mostSpecific;
   }
 
   /** set the point-of-instantiation scope */
-  void setPoiScope(const PoiScope *poiScope) { poiScope_ = poiScope; }
+  void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
 
   bool operator==(const ResolvedExpression& other) const {
     return type_ == other.type_ &&
@@ -765,7 +765,7 @@ class ResolutionResultByPostorderID {
 */
 class ResolvedFunction {
  private:
-  const TypedFnSignature *signature_ = nullptr;
+  const TypedFnSignature* signature_ = nullptr;
 
   uast::Function::ReturnIntent returnIntent_ =
       uast::Function::DEFAULT_RETURN_INTENT;
@@ -785,20 +785,20 @@ class ResolvedFunction {
         resolutionById_(resolutionById), poiInfo_(poiInfo) {}
 
   /** The type signature */
-  const TypedFnSignature *signature() const { return signature_; }
+  const TypedFnSignature* signature() const { return signature_; }
 
   /** the return intent */
   uast::Function::ReturnIntent returnIntent() const { return returnIntent_; }
 
   /** this is the output of the resolution process */
-  const ResolutionResultByPostorderID &resolutionById() const {
+  const ResolutionResultByPostorderID& resolutionById() const {
     return resolutionById_;
   }
 
   /** the set of point-of-instantiations used by the instantiation */
-  const PoiInfo &poiInfo() const { return poiInfo_; }
+  const PoiInfo& poiInfo() const { return poiInfo_; }
 
-  bool operator==(const ResolvedFunction &other) const {
+  bool operator==(const ResolvedFunction& other) const {
     return signature_ == other.signature_ &&
            returnIntent_ == other.returnIntent_ &&
            resolutionById_ == other.resolutionById_ &&
@@ -848,10 +848,10 @@ class FormalActualMap {
 
   using FormalActualIterable = Iterable<std::vector<FormalActual>>;
 
-  FormalActualMap(const UntypedFnSignature *sig, const CallInfo &call) {
+  FormalActualMap(const UntypedFnSignature* sig, const CallInfo& call) {
     mappingIsValid_ = computeAlignment(sig, nullptr, call);
   }
-  FormalActualMap(const TypedFnSignature *sig, const CallInfo &call) {
+  FormalActualMap(const TypedFnSignature* sig, const CallInfo& call) {
     mappingIsValid_ = computeAlignment(sig->untyped(), sig, call);
   }
 
@@ -864,8 +864,8 @@ class FormalActualMap {
   }
 
  private:
-  bool computeAlignment(const UntypedFnSignature *untyped,
-                        const TypedFnSignature *typed, const CallInfo &call);
+  bool computeAlignment(const UntypedFnSignature* untyped,
+                        const TypedFnSignature* typed, const CallInfo& call);
 };
 
 } // end namespace resolution
