@@ -319,6 +319,17 @@ def get_gcc_prefix():
 
     return gcc_prefix
 
+# The bundled LLVM does not currently know to look in a particular Mac OS X SDK
+# so we provide a -isysroot arg to indicate which is used.
+#
+# Potential alternatives to -isysroot here include:
+#  * using the environment variable SDKROOT
+#  * providing a cmake argument to adjust the clang build
+#  * using -mmacosx-version-min=11.2 e.g.
+#
+# Additionally the -resource-dir arg indicates where to find some clang
+# dependencies.
+#
 # Returns a [ ] list of args
 @memoize
 def get_sysroot_resource_dir_args():
