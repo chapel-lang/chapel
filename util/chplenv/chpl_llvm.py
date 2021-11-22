@@ -165,17 +165,27 @@ def get_llvm_config():
     return llvm_config
 
 @memoize
-def validate_llvm_config(llvm_config=None):
+def validate_llvm_config():
     llvm_val = get()
-    # We pass in llvm_config if has already been computed (so we don't
-    # end up in an infinite loop).
-    if llvm_config is None:
-      llvm_config = get_llvm_config()
+    llvm_config = get_llvm_config()
+
     if llvm_val == 'system':
         if llvm_config == '' or llvm_config == 'none':
             error("CHPL_LLVM=system but could not find an installed LLVM"
                   " with one of the supported versions: {0}".format(
                   llvm_versions_string()))
+
+        else:
+            bindir = get_system_llvm_config_bindir()
+            if not (bindir and os.path.isdir(bindir)):
+                error("llvm-config command {0} provides missing bin dir {0}"
+                      .format(llvm_config, bindir))
+            clang_c = get_llvm_clang('c')[0]
+            clang_cxx = get_llvm_clang('c++')[0]
+            if not os.path.exists(clang_c):
+                error("Missing clang command at {0}".format(clang_c))
+            if not os.path.exists(clang_cxx):
+                error("Missing clang++ command at {0}".format(clang_cxx))
 
     if (llvm_val == 'system' or
         (llvm_val == 'bundled' and os.path.exists(llvm_config))):
@@ -187,15 +197,14 @@ def validate_llvm_config(llvm_config=None):
 
 @memoize
 def get_system_llvm_config_bindir():
-    llvm_config = get_llvm_config()
-    validate_llvm_config(llvm_config)
-    bindir = run_command([llvm_config, '--bindir']).strip()
+    llvm_config = find_system_llvm_config()
+    found_version, found_config_err = check_llvm_config(llvm_config)
 
-    if os.path.isdir(bindir):
-        pass
-    else:
-        error("llvm-config command {0} provides missing bin directory {0}"
-              .format(llvm_config, bindir))
+    bindir = None
+
+    if llvm_config and found_version and not found_config_err:
+        bindir = run_command([llvm_config, '--bindir']).strip()
+
     return bindir
 
 def get_llvm_clang_command_name(lang):
@@ -209,20 +218,32 @@ def get_llvm_clang_command_name(lang):
     else:
         return 'clang'
 
+def get_system_llvm_clang(lang):
+    clang_name = get_llvm_clang_command_name(lang)
+    bindir = get_system_llvm_config_bindir()
+    clang = ''
+    if bindir:
+        clang = os.path.join(bindir, clang_name)
+
+    return clang
+
 # lang should be C or CXX
+# returns [] list with the first element the clang command,
+# then necessary arguments
 @memoize
 def get_llvm_clang(lang):
-    clang_name = get_llvm_clang_command_name(lang)
 
+    clang = None
     llvm_val = get()
     if llvm_val == 'system':
-        bindir = get_system_llvm_config_bindir()
-        clang = os.path.join(bindir, clang_name)
+        clang = get_system_llvm_clang(lang)
     elif llvm_val == 'bundled':
+        clang_name = get_llvm_clang_command_name(lang)
         llvm_subdir = get_bundled_llvm_dir()
         clang = os.path.join(llvm_subdir, 'bin', clang_name)
-    else:
-        return ''
+
+    if not clang:
+        return ['']
 
     # tack on arguments that control clang's function
     result = [clang] + get_clang_basic_args()
@@ -231,10 +252,17 @@ def get_llvm_clang(lang):
 
 def has_compatible_installed_llvm():
     llvm_config = find_system_llvm_config()
+
     if llvm_config:
-        return True
-    else:
-        return False
+        clang_c_command = get_system_llvm_clang('c')
+        clang_cxx_command = get_system_llvm_clang('c++')
+
+        if (os.path.exists(clang_c_command) and
+            os.path.exists(clang_cxx_command)):
+            return True
+
+    # otherwise, something went wrong, so return False
+    return False
 
 @memoize
 def get():
