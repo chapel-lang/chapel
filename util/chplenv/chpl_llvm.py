@@ -225,7 +225,7 @@ def get_llvm_clang(lang):
         return ''
 
     # tack on arguments that control clang's function
-    result = [clang_name] + get_clang_basic_args()
+    result = [clang] + get_clang_basic_args()
     return result
 
 
