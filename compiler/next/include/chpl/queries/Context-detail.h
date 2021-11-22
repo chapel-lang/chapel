@@ -131,9 +131,16 @@ struct QueryMapArgTupleEqual final {
 void queryArgsPrintSep();
 void queryArgsPrintUnknown();
 
+const std::string convertUnknownQueryArgToString( );
+
 template<typename T>
 static void queryArgsPrintOne(const T& v) {
   queryArgsPrintUnknown();
+}
+
+template<typename T>
+static std::string convertQueryArgToString(const T& v) {
+  return convertUnknownQueryArgToString();
 }
 
 void queryArgsPrintOne(const ID& v);
@@ -158,6 +165,39 @@ static inline void queryArgsPrintImpl(const TUP& tuple, std::index_sequence<I...
   auto dummy = { (print(I != 0, std::get<I>(tuple)), 0) ... };
   (void) dummy; // avoid unused variable warning
 }
+std::string convertQueryArgToString(const ID& v);
+std::string convertQueryArgToString(const UniqueString& v);
+
+template<typename TUP, size_t... I>
+static inline auto queryArgsToStringsImpl(const TUP& tuple, std::index_sequence<I...>) {
+  // lambda to convert
+  std::vector<std::string> stringVec;
+  auto convert = [](const auto& elem) {
+      return chpl::stringify<elem>(StringifyKind::DEBUG_DETAIL);
+  };
+
+  return applyToEach(convert, tuple);;
+}
+
+template<typename... Ts>
+auto queryArgsToStrings(const std::tuple<Ts...>& tuple) {
+  return queryArgsToStringsImpl(tuple, std::index_sequence_for<Ts...>{});
+}
+
+// taken from https://codereview.stackexchange.com/questions/193420/apply-a-function-to-each-element-of-a-tuple-map-a-tuple
+template <class F, typename Tuple, size_t... Is>
+auto applyToEachImpl(Tuple t, F f, std::index_sequence<Is...>) {
+  return std::make_tuple(
+      f(std::get<Is>(t) )...
+  );
+}
+
+template <class F, typename... Args>
+auto applyToEach(F f, const std::tuple<Args...>& t) {
+  return applyToEachImpl(
+      t, f, std::make_index_sequence<sizeof...(Args)>{});
+}
+
 
 template<typename... Ts>
 void queryArgsPrint(const std::tuple<Ts...>& tuple) {

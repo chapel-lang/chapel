@@ -186,6 +186,11 @@ template<> struct mark<chpl::ID> {
     keep.markUniqueStrings(context);
   }
 };
+template<> struct stringify<chpl::ID> {
+  std::string operator()(StringifyKind stringKind, const chpl::ID& id) const {
+    return id.toString();
+  }
+};
 /// \endcond
 
 } // end namespace chpl

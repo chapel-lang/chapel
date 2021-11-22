@@ -220,7 +220,8 @@ class Context {
   std::vector<const querydetail::QueryMapResultBase*> queryStack;
 
   querydetail::RevisionNumber currentRevisionNumber = 1;
-  bool enableDebugTracing = false;
+  bool enableDebugTracing = true;
+  size_t breakOnHash = 5305394367578502015;
   int numQueriesRunThisRevision_ = 0;
 
   static void defaultReportError(const ErrorMessage& err);
@@ -615,6 +616,7 @@ class Context {
 
 
   /// \endcond
+  void gdbShouldBreakHere();
 };
 
 } // end namespace chpl

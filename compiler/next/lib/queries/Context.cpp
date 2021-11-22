@@ -675,6 +675,10 @@ void Context::haltForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
   exit(-1);
 }
 
+void Context::gdbShouldBreakHere() {
+  printf("------------------\nGDB SHOULD BREAK HERE\n------------------\n");
+}
+
 namespace querydetail {
 
 
@@ -691,6 +695,19 @@ void queryArgsPrintOne(const ID& v) {
 }
 void queryArgsPrintOne(const UniqueString& v) {
   printf("\"%s\"", v.c_str());
+}
+
+const std::string convertUnknownQueryArgToString( ) {
+  return std::string("?");
+}
+
+
+std::string convertQueryArgToString(const ID& v) {
+  return v.toString();
+}
+
+std::string convertQueryArgToString(const UniqueString& v) {
+  return std::string(v.c_str());
 }
 
 QueryMapResultBase::~QueryMapResultBase() {
