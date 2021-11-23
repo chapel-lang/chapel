@@ -64,8 +64,8 @@ module Socket {
 // which writes back to a sync variable passed on to it by the
 // caller. The caller then reads the sync variable to determine
 // event type and processes things further.
-require "/usr/include/event2/event.h";
-require "/usr/include/event2/thread.h";
+require "/usr/local/include/event2/event.h";
+require "/usr/local/include/event2/thread.h";
 require "-levent";
 require "-levent_pthreads";
 
