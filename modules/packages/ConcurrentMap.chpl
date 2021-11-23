@@ -22,8 +22,9 @@
   This module provides a fast, scalable, fine-grained concurrent map. It was
   inspired by the Interlocked Hash Table [#]_. It allows large critical
   sections that access a single table element, and can easily support multikey
-  atomic operations. ConcurrentMap is upto 200x faster than Chapel's built-in
-  map at 44 threads.
+  atomic operations. At the time of its development, ConcurrentMap outperformed
+  Chapel's built-in map when used in a multithreaded mode by orders of
+  magnitude.
 
   .. [#] L. Jenkins, T. Zhou and M. Spear, "Redesigning Go’s Built-In Map to
     Support Concurrent Operations," 2017 26th International Conference on
@@ -575,7 +576,7 @@ module ConcurrentMap {
     }
 
     /*
-      Parallely iterates over the key-value pairs of this map.
+      Iterates over the key-value pairs of this map in parallel.
 
       :yields: A tuple whose elements are a copy of one of the key-value
                pairs contained in this map.
@@ -873,12 +874,12 @@ module ConcurrentMap {
     /*
       Removes a key-value pair from the map, with the given key.
 
-     :arg key: The key to remove from the map
+      :arg key: The key to remove from the map
 
-     :arg tok: Token for EpochManager
+      :arg tok: Token for EpochManager
 
-     :returns: `false` if `key` was not in the map.  `true` if it was and removed.
-     :rtype: bool
+      :returns: `false` if `key` was not in the map.  `true` if it was and removed.
+      :rtype: bool
     */
     proc remove(key : keyType, tok : owned TokenWrapper = getToken()) : bool throws {
       tok.pin();
