@@ -51,6 +51,7 @@
 #include "chpl-file-utils.h"
 #include <chplfp.h>
 #include "chpl-gpu.h"
+#include "chpl-gpu-gen-includes.h"
 #include "chplglob.h"
 #include "chplio.h"
 #include "chplmath.h"
