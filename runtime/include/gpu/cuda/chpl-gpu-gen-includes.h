@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-#ifdef _CHPL_GPU_GEN_INCLUDES_H
+#ifndef _CHPL_GPU_GEN_INCLUDES_H
 #define _CHPL_GPU_GEN_INCLUDES_H
 
 #ifdef HAS_GPU_LOCALE
