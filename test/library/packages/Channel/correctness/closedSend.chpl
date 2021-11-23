@@ -1,6 +1,6 @@
 use Channel;
 
-const debug = false;
+config const debug = false;
 var chan1 = new channel(int);
 begin {
     try {
@@ -13,3 +13,4 @@ begin {
 chan1.close();
 var x : int;
 var ok = chan1.recv(x);
+if debug then writeln((x, ok));

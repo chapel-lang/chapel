@@ -19,22 +19,22 @@
  */
 
 /*
-This module contains the implementation of channels which can be used to move
-typed data between Chapel tasks.
+ This module contains the implementation of channels which can be used to move
+ typed data between Chapel tasks.
 
-A channel is a parallel-safe data structure that provides a mechanism for
-concurrently executing functions to communicate by sending and receiving values
-of a specified element type. A channel can be buffered or unbuffered. A
-buffered channel has a maximum capacity specified by ``bufferSize``. There are
-mainly three operations that can be performed on the channel.
+ A channel is a parallel-safe data structure that provides a mechanism for
+ concurrently executing functions to communicate by sending and receiving values
+ of a specified element type. A channel can be buffered or unbuffered. A
+ buffered channel has a maximum capacity specified by ``bufferSize``. There are
+ mainly three operations that can be performed on a channel.
 
     * :proc:`send` : Send a value to the channel.
     * :proc:`recv` : Receive a value from the channel.
-    * :proc:`close` : Close a channel such that no more value can be sent to it.
+    * :proc:`close` : Close a channel such that no other values/data can be sent to it.
 
-The channel operations are blocking, i.e., the calling task will be suspended
-if an operation cannot be completed. The channel follows First-In-First-Out
-mechanism, i.e., the first value sent to the channel will be received first.
+ The channel operations are blocking, i.e., the calling task will be suspended
+ if an operation cannot be completed. The channel follows First-In-First-Out
+ mechanism, i.e., the first value sent to the channel will be received first.
 */
 
 module Channel {
@@ -84,7 +84,7 @@ module Channel {
             isSelect = false;
         }
 
-        proc init(ref value, ref process$ : single bool, ref selectDone : atomic int, caseId : int) {
+        proc init(ref value : c_ptr, ref process$ : single bool, ref selectDone : atomic int, caseId : int) {
             valueType = value.eltType;
             val = value;
             processPtr = c_ptrTo(process$);
@@ -99,6 +99,10 @@ module Channel {
 
         proc notify(status : bool) {
             processPtr.deref().writeEF(status);
+        }
+
+        proc tryUpdate() : bool {
+            return isSelectDone.deref().compareAndSwap(-1, selectId);
         }
     }
 
@@ -125,7 +129,7 @@ module Channel {
             }
         }
 
-        proc isEmpty() : bool{
+        proc isEmpty() : bool {
             return (front == nil);
         }
 
@@ -159,6 +163,11 @@ module Channel {
                 waiter.prev!.next = waiter.next;
                 waiter.next!.prev = waiter.prev;
             }
+            else {
+            // This function is also used specifically by select statements.
+            // It may happen that the waiter is already dequed from the queue.
+            // In that case we don't have to do anything.
+            }
 
         }
     }
@@ -168,13 +177,13 @@ module Channel {
         var channelObj : shared chan(eltType);
 
         /*
-        Initialize a channel
+         Initialize a channel
 
-        :arg elt: The element type used for sending and receiving
-        :type elt: `type`
+         :arg elt: The element type used for sending and receiving
+         :type elt: `type`
 
-        :arg size: Specify the maximum capacity for the channel ``bufferSize``.
-        :type size: `int`
+         :arg size: Specify the maximum capacity for the channel ``bufferSize``.
+         :type size: `int`
         */
         proc init(type eltType, size = 0) {
             this.eltType = eltType;
@@ -190,18 +199,17 @@ module Channel {
         }
 
         /*
-        Receive the first value in the channel buffer. It will suspend the
-        calling task, until data is sent to the channel. If the channel is
-        closed and the buffer is empty, it will return `false` indicating that
-        the receive operation was not successful.
+         Receive the first value in the channel buffer. It will suspend the
+         calling task, until data is sent to the channel. If the channel is
+         closed and the buffer is empty, it will return `false` indicating that
+         the receive operation was not successful.
 
-        :arg val: Storage for the received value.
-        :type val: `eltType`
+         :arg val: Storage for the received value.
+         :type val: `eltType`
 
-        :return: `true` if the receive was successful, else `false`.
-        :rtype: `bool`
+         :return: `true` if the receive was successful, else `false`.
+         :rtype: `bool`
         */
-
         proc recv(out val : eltType) : bool {
             return recv(val, true);
         }
@@ -212,17 +220,16 @@ module Channel {
         }
 
         /*
-        Send a value to the channel buffer. If the buffer is at maximum
-        capacity it will suspend the waiting task, until there is space in the
-        buffer or a receiving task awakes it. If a channel is closed no more
-        data can be sent to it.
+         Send a value to the channel buffer. If the buffer is at maximum
+         capacity it will suspend the waiting task, until there is space in the
+         buffer or a receiving task awakes it. If a channel is closed no more
+         data can be sent to it.
 
-        :arg val: Data to be sent to the channel
-        :type val: `eltType`
+         :arg val: Data to be sent to the channel
+         :type val: `eltType`
 
-        :throws ChannelError: If ``send`` is called on a closed channel.
+         :throws ChannelError: If ``send`` is called on a closed channel.
         */
-
         proc send(in val : eltType) throws {
             send(val, true);
         }
@@ -233,10 +240,10 @@ module Channel {
         }
 
         /*
-        This function is used to close a channel indicating that no more data
-        can be sent to it.
+         This function is used to close a channel indicating that no more data
+         can be sent to it.
 
-        :throws ChannelError: If called on a closed channel.
+         :throws ChannelError: If called on a closed channel.
         */
 
         proc close() throws {
@@ -245,7 +252,7 @@ module Channel {
 
         /* Iterator to receive data from the channel until it is closed. */
         iter these() {
-            while(true) {
+            while true {
                 var received : eltType;
                 var status = recv(received);
                 if !status then break;
@@ -297,7 +304,7 @@ module Channel {
             }
 
             while !sendWaiters.isEmpty() && sendWaiters.front!.isSelect {
-                if sendWaiters.front!.isSelectDone.deref().compareAndSwap(-1, sendWaiters.front!.selectId) {
+                if sendWaiters.front!.tryUpdate() {
                     break;
                 }
                 else sendWaiters.dequeue();
@@ -326,15 +333,14 @@ module Channel {
                     sendIdx = (sendIdx + 1) % bufferSize;
                     recvIdx = (recvIdx + 1) % bufferSize;
                 }
-                else val = sender.val.deref();
-
+                else {
+                    val = sender.val.deref();
+                }
                 sender.notify(true);
             }
             else {
-
                 recvIdx = (recvIdx + 1) % bufferSize;
                 count -= 1;
-
             }
             if blocking then unlock();
 
@@ -351,7 +357,7 @@ module Channel {
             }
 
             while !recvWaiters.isEmpty() && recvWaiters.front!.isSelect {
-                if recvWaiters.front!.isSelectDone.deref().compareAndSwap(-1, recvWaiters.front!.selectId) {
+                if recvWaiters.front!.tryUpdate() {
                     break;
                 }
                 else recvWaiters.dequeue();
@@ -392,7 +398,6 @@ module Channel {
         }
 
         proc close() throws {
-
             lock();
             if closed {
                 unlock();
@@ -400,26 +405,26 @@ module Channel {
             }
             closed = true;
             var queued = new WaiterQueue(eltType);
-            while(!recvWaiters.isEmpty()) {
+            while !recvWaiters.isEmpty() {
                 var receiver = recvWaiters.dequeue();
                 if(receiver.isSelect) {
-                    if receiver.isSelectDone.deref().compareAndSwap(-1, receiver.selectId) then 
+                    if receiver.tryUpdate() then
                         queued.enqueue(receiver);
                 }
                 else queued.enqueue(receiver);
             }
 
-            while(!sendWaiters.isEmpty()) {
+            while !sendWaiters.isEmpty() {
                 var sender = sendWaiters.dequeue();
                 if(sender.isSelect) {
-                    if sender.isSelectDone.deref().compareAndSwap(-1, sender.selectId) then
+                    if sender.tryUpdate() then
                         queued.enqueue(sender);
                 }
                 else queued.enqueue(sender);
             }
             unlock();
 
-            while(!queued.isEmpty()) {
+            while !queued.isEmpty() {
                 var waiter = queued.dequeue();
                 waiter.notify(false);
             }
@@ -493,6 +498,7 @@ module Channel {
             }
             else return (try! selectChannel.send(val.deref(), false));
         }
+
         /* Retreive the address of the involved channel */
         override proc getAddr() : c_uintptr {
             return ((selectChannel.channelObj : c_void_ptr) : c_uintptr);
@@ -521,11 +527,10 @@ module Channel {
     addresses.
     */
     pragma "no doc"
-    record Comparator { }
-
-    pragma "no doc"
-    proc Comparator.compare(case1, case2) {
-        return (case1.getAddr() - case2.getAddr()) : int;
+    record Comparator {
+        proc compare(case1, case2) {
+            return (case1.getAddr() - case2.getAddr()) : int;
+        }
     }
 
     /* Acquire the lock of all involved channels */
@@ -580,7 +585,7 @@ module Channel {
             return done;
         }
 
-        /* If none of the channel was ready, enqueueue the select task to each
+        /* If none of the channels was ready, enqueueue the select task to each
         channel's waiting queue and wait for other task to awaken us.
         */
         var isDone : atomic int = -1;
