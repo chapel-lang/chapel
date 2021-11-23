@@ -238,7 +238,7 @@ gex_Event_t gasnete_putv_gather(gasnete_synctype_t synctype,
   gasnete_vis_threaddata_t * const td = GASNETE_VIS_MYTHREAD;
   size_t const nbytes = dstlist[0].gex_len;
   gasneti_assert(dstcount == 1 && srccount > 1); /* only supports gather put */
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank)); // silly to use for local cases
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank)); // silly to use for local cases
   if_pf (nbytes == 0) return GEX_EVENT_INVALID; /* event empty */
   GASNETI_TRACE_EVENT(C, PUTV_GATHER);
 
@@ -270,7 +270,7 @@ gex_Event_t gasnete_getv_scatter(gasnete_synctype_t synctype,
   gasnete_vis_threaddata_t * const td = GASNETE_VIS_MYTHREAD;
   size_t const nbytes = srclist[0].gex_len;
   gasneti_assert(srccount == 1 && dstcount > 1); /* only supports scatter get */
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank)); // silly to use for local cases
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank)); // silly to use for local cases
   if_pf (nbytes == 0) return GEX_EVENT_INVALID; /* event empty */
   GASNETI_TRACE_EVENT(C, GETV_SCATTER);
 
@@ -303,7 +303,7 @@ gex_Event_t gasnete_putv_AMPipeline(gasnete_synctype_t synctype,
                                    gex_Flags_t flags GASNETI_THREAD_FARG) {
   gasneti_assert(srccount >= 1);
   gasneti_assert(dstcount > 1); /* supports scatter put */
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank)); // silly to use for local cases
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank)); // silly to use for local cases
   GASNETI_TRACE_EVENT(C, PUTV_AMPIPELINE);
   if_pf (srclist[0].gex_len == 0) { /* detect empty list */
     for (size_t i = 1; i < srccount; i++) { 
@@ -474,7 +474,7 @@ gex_Event_t gasnete_getv_AMPipeline(gasnete_synctype_t synctype,
                                    gex_Flags_t flags GASNETI_THREAD_FARG) {
   gasneti_assert(dstcount >= 1);
   gasneti_assert(srccount > 1); /* supports gather get */
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank)); // silly to use for local cases
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank)); // silly to use for local cases
   GASNETI_TRACE_EVENT(C, GETV_AMPIPELINE);
   if_pf (dstlist[0].gex_len == 0) { /* detect empty list */
     for (size_t i = 1; i < dstcount; i++) { 
@@ -731,11 +731,11 @@ MEDIUM_HANDLER(gasnete_getv_AMPipeline_reph,2,3,
 } while (0)
 /*---------------------------------------------------------------------------------*/
 GASNETI_INLINE(gasnete_vector_memcpy)
-void gasnete_vector_memcpy(gex_Rank_t jobrank, int isput,
+void gasnete_vector_memcpy(gex_TM_t const tm, gex_Rank_t const rank, int isput,
                             size_t dstcount, gex_Memvec_t const dstlist[],
                             size_t srccount, gex_Memvec_t const srclist[],
                             gex_Flags_t flags) {
-  gasneti_assert(GASNETI_NBRHD_JOBRANK_IS_LOCAL(jobrank));
+  gasneti_assert(GASNETI_NBRHD_MAPPED(tm,rank));
 
   // TODO-EX: this assumes all addresses in the peer list reside in the same segment
   // and hoists the address translation. Multi-segment will need to push this down.
@@ -752,7 +752,7 @@ void gasnete_vector_memcpy(gex_Rank_t jobrank, int isput,
   gasneti_assert(peerlist[base].gex_len > 0);
   uint8_t const * const rawptr = peerlist[base].gex_addr; 
   gasneti_assert(rawptr);
-  uint8_t const * const refptr = GASNETI_NBRHD_JOBRANK_LOCAL_ADDR(jobrank,rawptr);
+  uint8_t const * const refptr = GASNETI_NBRHD_MAPPED_ADDR(tm,rank,rawptr);
   ptrdiff_t const offset = refptr - rawptr;
   
   if (isput) {    
@@ -774,7 +774,7 @@ gex_Event_t gasnete_putv_ref_indiv(gasnete_synctype_t synctype,
                                    gex_Flags_t flags GASNETI_THREAD_FARG) {
   GASNETI_TRACE_EVENT(C, PUTV_REF_INDIV);
   gasneti_assert(dstcount > 0); gasneti_assert(srccount > 0);
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank));
   gex_Event_t * const lc_opt = (flags & GEX_FLAG_ENABLE_LEAF_LC) ? GEX_EVENT_GROUP : GEX_EVENT_DEFER;
   GASNETE_START_NBIREGION(synctype);
 
@@ -793,7 +793,7 @@ gex_Event_t gasnete_getv_ref_indiv(gasnete_synctype_t synctype,
                                    gex_Flags_t flags GASNETI_THREAD_FARG) {
   GASNETI_TRACE_EVENT(C, GETV_REF_INDIV);
   gasneti_assert(dstcount > 0); gasneti_assert(srccount > 0);
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank));
   GASNETE_START_NBIREGION(synctype);
 
   #define ACTION(p1,p2,len) GASNETE_GET_INDIV(tm, rank, p1, p2, len)
@@ -816,9 +816,9 @@ extern gex_Event_t gasnete_putv(gasnete_synctype_t synctype,
   gasneti_assert(dstlist); gasneti_assert(srclist);
   flags &= ~GEX_FLAG_IMMEDIATE; // TODO-EX
 
-  if (GASNETI_NBRHD_LOCAL(tm,rank)) { /* purely local */
+  if (GASNETI_NBRHD_MAPPED(tm,rank)) { // purely local
     GASNETI_TRACE_EVENT(C, PUTV_NBRHD);
-    gasnete_vector_memcpy(gex_TM_TranslateRankToJobrank(tm,rank), 1,
+    gasnete_vector_memcpy(tm,rank,1,
                            dstcount,dstlist,srccount,srclist,
                            flags);
     return GEX_EVENT_INVALID;
@@ -849,9 +849,9 @@ extern gex_Event_t gasnete_getv(gasnete_synctype_t synctype,
   gasneti_assert(dstlist); gasneti_assert(srclist);
   flags &= ~GEX_FLAG_IMMEDIATE; // TODO-EX
 
-  if (GASNETI_NBRHD_LOCAL(tm,rank)) { /* purely local */
+  if (GASNETI_NBRHD_MAPPED(tm,rank)) { // purely local
     GASNETI_TRACE_EVENT(C, GETV_NBRHD);
-    gasnete_vector_memcpy(gex_TM_TranslateRankToJobrank(tm,rank), 0,
+    gasnete_vector_memcpy(tm,rank,0,
                            dstcount,dstlist,srccount,srclist,
                            flags);
     return GEX_EVENT_INVALID;

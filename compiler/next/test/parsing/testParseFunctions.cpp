@@ -298,7 +298,9 @@ static void test2(Parser* parser) {
   assert(function->throws() == false);
   assert(function->linkageName() == nullptr);
   assert(function->numFormals() == 1);
-  auto formal = function->formal(0);
+  auto formalDecl = function->formal(0);
+  assert(formalDecl);
+  auto formal = formalDecl->toFormal();
   assert(formal);
   assert(formal->intent() == Formal::DEFAULT_INTENT);
   assert(formal->name().compare("a") == 0);
@@ -334,7 +336,9 @@ static void test3(Parser* parser) {
   assert(function->linkageName() == nullptr);
   assert(function->numFormals() == 2); // 'this' and 'a'
 
-  auto thisFormal = function->formal(0);
+  auto thisFormalDecl = function->formal(0);
+  assert(thisFormalDecl);
+  auto thisFormal = thisFormalDecl->toFormal();
   assert(thisFormal);
   assert(thisFormal->intent() == Formal::CONST);
   assert(thisFormal->name().compare("this") == 0);
@@ -344,7 +348,9 @@ static void test3(Parser* parser) {
   assert(thisTypeExpr->toIdentifier()->name().compare("R") == 0);
   assert(thisFormal->initExpression() == nullptr);
 
-  auto formal = function->formal(1);
+  auto formalDecl = function->formal(1);
+  assert(formalDecl);
+  auto formal = formalDecl->toFormal();
   assert(formal);
   assert(formal->intent() == Formal::REF);
   assert(formal->name().compare("a") == 0);

@@ -26,7 +26,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 
-#include "../util/filesystem.h"
+#include "../util/filesystem_help.h"
 
 #include <cstdio>
 #include <set>
@@ -182,6 +182,11 @@ static const ASTNode* const& astForIDQuery(Context* context, ID id) {
 }
 
 const ASTNode* idToAst(Context* context, ID id) {
+  if (id.isEmpty()) {
+    assert(false && "bad query of uAST for empty ID");
+    return nullptr;
+  }
+
   return astForIDQuery(context, id);
 }
 

@@ -22,6 +22,7 @@
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/query-impl.h"
+#include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
@@ -150,6 +151,7 @@ struct Resolver {
   const ASTNode* symbol = nullptr;
   const PoiScope* poiScope = nullptr;
   const SubstitutionsMap* substitutions = nullptr;
+  bool useGenericFormalDefaults = false;
 
   // internal variables
   std::vector<const Scope*> scopeStack;
@@ -225,7 +227,7 @@ struct Resolver {
       byPostorder(byPostorder) {
 
     assert(typedFnSignature);
-    assert(typedFnSignature->untypedSignature);
+    assert(typedFnSignature->untyped());
 
     poiInfo.poiScope = poiScope;
 
@@ -234,17 +236,51 @@ struct Resolver {
 
     // set the resolution results for the formals according to
     // the typedFnSignature
-    const UntypedFnSignature* uSig = typedFnSignature->untypedSignature;
-    assert(typedFnSignature->formalTypes.size() == uSig->formals.size());
-    size_t nFormals = uSig->formals.size();
-    for (size_t i = 0; i < nFormals; i++) {
-      const Formal* formal = uSig->formals[i];
-      const auto& qt = typedFnSignature->formalTypes[i];
+    const UntypedFnSignature* uSig = typedFnSignature->untyped();
+    int nFormals = typedFnSignature->numFormals();
+    for (int i = 0; i < nFormals; i++) {
+      const Decl* decl = uSig->formalDecl(i);
+      const auto& qt = typedFnSignature->formalType(i);
 
-      ResolvedExpression& r = byPostorder.byAst(formal);
+      ResolvedExpression& r = byPostorder.byAst(decl);
       r.type = qt;
     }
   }
+
+  // set up Resolver to initially resolve field declaration types
+  Resolver(Context* context,
+           const AggregateDecl* decl,
+           ResolutionResultByPostorderID& byPostorder,
+           bool useGenericFormalDefaults)
+    : context(context),
+      symbol(decl),
+      useGenericFormalDefaults(useGenericFormalDefaults),
+      byPostorder(byPostorder) {
+
+    byPostorder.setupForSymbol(decl);
+    enterScope(symbol);
+  }
+
+  // set up Resolver to resolve instantiated field declaration types
+  Resolver(Context* context,
+           const AggregateDecl* decl,
+           const SubstitutionsMap& substitutions,
+           const PoiScope* poiScope,
+           ResolutionResultByPostorderID& byPostorder,
+           bool useGenericFormalDefaults)
+    : context(context),
+      symbol(decl),
+      poiScope(poiScope),
+      substitutions(&substitutions),
+      useGenericFormalDefaults(useGenericFormalDefaults),
+      byPostorder(byPostorder) {
+
+    poiInfo.poiScope = poiScope;
+
+    byPostorder.setupForSymbol(decl);
+    enterScope(symbol);
+  }
+
 
   QualifiedType typeForId(const ID& id) {
     // if the id is contained within this symbol,
@@ -378,13 +414,7 @@ struct Resolver {
       // Figure out the param value, if any
       const Param* paramPtr = nullptr;
 
-      if (decl->isFunction()) {
-        // TODO: function types
-        typePtr = nullptr;
-      } else if (decl->isTypeDecl()) {
-        // TODO: class/record/union/enum types
-        typePtr = nullptr;
-      } else if (auto var = decl->toVarLikeDecl()) {
+      if (auto var = decl->toVarLikeDecl()) {
         // Figure out variable type based upon:
         //  * the type in the variable declaration
         //  * the initialization expression in the variable declaration
@@ -393,7 +423,33 @@ struct Resolver {
         auto typeExpr = var->typeExpression();
         auto initExpr = var->initExpression();
 
-        if (typeExpr) {
+        bool isField = false;
+        if (auto var = decl->toVariable())
+          if (var->isField())
+            isField = true;
+
+        bool isFieldOrFormal = isField || decl->isFormal();
+
+        bool foundSubstitution = false;
+        bool foundSubstitutionDefaultHint = false;
+
+        if (isFieldOrFormal) {
+          // use substitutions computed for fields and formals
+          if (substitutions != nullptr) {
+            auto search = substitutions->find(decl);
+            if (search != substitutions->end()) {
+              const QualifiedType& t = search->second;
+              typePtr = t.type();
+              paramPtr = t.param();
+              if (typePtr == nullptr && t.kind() == QualifiedType::UNKNOWN)
+                foundSubstitutionDefaultHint = true;
+              else
+                foundSubstitution = true;
+            }
+          }
+        }
+
+        if (typeExpr && !foundSubstitution) {
           // get the type we should have already computed postorder
           ResolvedExpression& r = byPostorder.byAst(typeExpr);
           // check that the resolution of that expression is a type
@@ -407,7 +463,7 @@ struct Resolver {
           // otherwise, typePtr can remain nullptr.
         }
 
-        if (initExpr) {
+        if (initExpr && !foundSubstitution) {
           // compute the type based upon the init expression
           ResolvedExpression& r = byPostorder.byAst(initExpr);
           const QualifiedType& initType = r.type;
@@ -423,37 +479,41 @@ struct Resolver {
                      initType.kind() != QualifiedType::PARAM) {
             context->error(initExpr, "Cannot initialize param with non-param");
           }
-
-          if (initType.kind() == QualifiedType::PARAM) {
-            paramPtr = initType.param();
+          // check that the initExpr type is compatible with declared type
+          if (typePtr != nullptr && initType.type() != typePtr) {
+            context->error(typeExpr, "Cannot initialize this type with that");
+            // TODO: better error
+            // TODO: implicit conversions and instantiations
           }
-          if (typePtr != nullptr) {
-            // check that the initExpr type is compatible with declared type
-            if (initType.type() != typePtr) {
-              context->error(typeExpr, "Cannot initialize this type with that");
-              // TODO: better error
-              // TODO: implicit conversions and instantiations
+
+          bool isGenericField = isField &&
+                                (qtKind == QualifiedType::TYPE ||
+                                 qtKind == QualifiedType::PARAM);
+
+          // infer the type of the variable from its initialization expr?
+          bool inferFromInit = !isGenericField ||
+                                useGenericFormalDefaults ||
+                                foundSubstitutionDefaultHint;
+
+          if (inferFromInit) {
+            // Infer the param value from the initialization expr
+            if (initType.kind() == QualifiedType::PARAM) {
+              paramPtr = initType.param();
             }
-          } else {
-            // Infer the type of the variable from its initialization expr
+            // Infer the type from the initialization expr
             typePtr = initType.type();
+          } else if (isGenericField) {
+            // a type or param field with initExpr is still generic, e.g.
+            // record R { type t = int; }
+            // if that behavior is requested with useGenericFormalDefaults
+            typePtr = AnyType::get(context);
           }
         }
 
-        if (const Formal* formal = decl->toFormal()) {
+        if (isFieldOrFormal && !foundSubstitution) {
           // Lack of initializer for a formal means the Any type
           if (typeExpr == nullptr && initExpr == nullptr) {
             typePtr = AnyType::get(context);
-          }
-
-          // use substitutions computed for formals
-          if (substitutions != nullptr) {
-            auto search = substitutions->find(formal);
-            if (search != substitutions->end()) {
-              const QualifiedType& t = search->second;
-              typePtr = t.type();
-              paramPtr = t.param();
-            }
           }
         }
 
@@ -495,7 +555,9 @@ struct Resolver {
     // Generate a CallInfo for the call
     CallInfo ci;
 
-    if (auto called = call->calledExpression()) {
+    if (auto op = call->toOpCall()) {
+      ci.name = op->op();
+    } else if (auto called = call->calledExpression()) {
       if (auto calledIdent = called->toIdentifier()) {
         ci.name = calledIdent->name();
       } else {
@@ -507,14 +569,26 @@ struct Resolver {
 
     int i = 0;
     for (auto actual : call->actuals()) {
-      CallInfoActual ciActual;
-      ResolvedExpression& r = byPostorder.byAst(actual);
-      ciActual.type = r.type;
-      if (fnCall && fnCall->isNamedActual(i)) {
-        ciActual.byName = fnCall->actualName(i);
+      bool isQuestionMark = false;
+      if (auto id = actual->toIdentifier())
+        if (id->name() == "?")
+          isQuestionMark = true;
+
+      if (isQuestionMark) {
+        if (ci.hasQuestionArg) {
+          context->error(actual, "Cannot have ? more than once in a call");
+        }
+        ci.hasQuestionArg = true;
+      } else {
+        CallInfoActual ciActual;
+        ResolvedExpression& r = byPostorder.byAst(actual);
+        ciActual.type = r.type;
+        if (fnCall && fnCall->isNamedActual(i)) {
+          ciActual.byName = fnCall->actualName(i);
+        }
+        ci.actuals.push_back(ciActual);
+        i++;
       }
-      ci.actuals.push_back(ciActual);
-      i++;
     }
 
     CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
@@ -524,6 +598,11 @@ struct Resolver {
     r.mostSpecific = c.mostSpecific;
     r.poiScope = c.poiInfo.poiScope;
     r.type = c.exprType;
+
+    if (r.type.type() == nullptr) {
+      context->error(call, "Cannot establish type for call expression");
+      r.type = QualifiedType(r.type.kind(), ErroneousType::get(context));
+    }
 
     // gather the poi scopes used when resolving the call
     poiInfo.accumulate(c.poiInfo);
@@ -540,6 +619,38 @@ struct Resolver {
   }
 };
 
+// Given an AggregateDecl, do initial resolution of the fields
+// Note that useGenericFormalDefaults is moot for most types
+// and so code calling this query can optimize by calling with 'false'
+// first and then adjusting if it is not moot.
+static const ResolutionResultByPostorderID&
+resolveFields(Context* context, ID id, bool useGenericFormalDefaults) {
+  QUERY_BEGIN(resolveFields, context, id, useGenericFormalDefaults);
+
+  ResolutionResultByPostorderID& partialResult = QUERY_CURRENT_RESULT;
+
+  auto ast = parsing::idToAst(context, id);
+  if (const AggregateDecl* ad = ast->toAggregateDecl()) {
+    Resolver visitor(context, ad, partialResult, useGenericFormalDefaults);
+    // visit the field declarations
+    for (auto child: ad->children()) {
+      if (auto var = child->toVariable()) {
+        if (var->isField()) {
+          child->traverse(visitor);
+        }
+      }
+    }
+  } else {
+    assert(false && "case not handled");
+  }
+
+  // take the value out of the partial result in order to return it
+  ResolutionResultByPostorderID result;
+  result.swap(partialResult);
+  return QUERY_END(result);
+}
+
+
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
 
@@ -547,12 +658,12 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
 
   auto ast = parsing::idToAst(context, id);
   if (const Module* mod = ast->toModule()) {
-    partialResult.setupForSymbol(mod);
-
     Resolver visitor(context, mod, partialResult);
-    for (auto child: ast->children()) {
+    for (auto child: mod->children()) {
       child->traverse(visitor);
     }
+  } else {
+    assert(false && "case not handled");
   }
 
   // take the value out of the partial result in order to return it
@@ -593,16 +704,24 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
     }
   } else {
     QualifiedType::Kind kind = QualifiedType::UNKNOWN;
+    const Type* t = nullptr;
 
     auto ast = parsing::idToAst(context, id);
     if (auto* decl = ast->toNamedDecl()) {
       kind = qualifiedTypeKindForDecl(decl);
-      // TODO -- compute type
+      if (auto td = decl->toTypeDecl()) {
+        t = typeForTypeDecl(context, td, /* useGenericFormalDefaults */ true);
+        assert(kind == QualifiedType::TYPE);
+      } else if (decl->isModule() || decl->isFunction()) {
+        // OK, don't try to establish the types of these right now
+      } else {
+        assert(false && "case not handled");
+      }
     } else {
       assert(false && "case not handled");
     }
 
-    result = QualifiedType(kind, nullptr);
+    result = QualifiedType(kind, t);
   }
 
   return QUERY_END(result);
@@ -610,29 +729,6 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
 
 
 /////// function resolution
-
-static
-const owned<UntypedFnSignature>& untypedSignatureQuery(Context* context, ID id)
-{
-  QUERY_BEGIN(untypedSignatureQuery, context, id);
-
-  auto ast = parsing::idToAst(context, id);
-  auto fn = ast->toFunction();
-
-  owned<UntypedFnSignature> result;
-
-  if (fn != nullptr) {
-    auto sig = new UntypedFnSignature(fn);
-    result = toOwned(sig);
-  }
-
-  return QUERY_END(result);
-}
-
-const UntypedFnSignature* untypedSignature(Context* context, ID id) {
-  const owned<UntypedFnSignature>& r = untypedSignatureQuery(context, id);
-  return r.get();
-}
 
 static const owned<TypedFnSignature>&
 typedSignatureQuery(Context* context,
@@ -646,13 +742,12 @@ typedSignatureQuery(Context* context,
               untypedSignature, formalTypes, whereClauseResult,
               needsInstantiation, instantiatedFrom, parentFn);
 
-  auto result = toOwned(new TypedFnSignature());
-  result->untypedSignature = untypedSignature;
-  result->formalTypes = formalTypes;
-  result->whereClauseResult = whereClauseResult;
-  result->needsInstantiation = needsInstantiation;
-  result->instantiatedFrom = instantiatedFrom;
-  result->parentFn = parentFn;
+  auto result = toOwned(new TypedFnSignature(untypedSignature,
+                                             std::move(formalTypes),
+                                             whereClauseResult,
+                                             needsInstantiation,
+                                             instantiatedFrom,
+                                             parentFn));
 
   return QUERY_END(result);
 }
@@ -732,7 +827,7 @@ const TypedFnSignature*
 typedSignatureInitial(Context* context,
                       const UntypedFnSignature* untypedSig) {
 
-  const ASTNode* ast = parsing::idToAst(context, untypedSig->functionId);
+  const ASTNode* ast = parsing::idToAst(context, untypedSig->id());
   const Function* fn = ast->toFunction();
 
   if (fn == nullptr) {
@@ -744,7 +839,9 @@ typedSignatureInitial(Context* context,
   const TypedFnSignature* parentFnTyped = nullptr;
   ID parentFnId = parentFunctionId(context, fn->id());
   if (!parentFnId.isEmpty()) {
-    parentFnUntyped = untypedSignature(context, parentFnId);
+    auto parentAst = parsing::idToAst(context, parentFnId);
+    auto parentFn = parentAst->toFunction();
+    parentFnUntyped = UntypedFnSignature::get(context, parentFn);
     parentFnTyped = typedSignatureInitial(context, parentFnUntyped);
   }
 
@@ -772,6 +869,142 @@ typedSignatureInitial(Context* context,
   return result.get();
 }
 
+
+static const Type* const&
+typeForTypeDeclQuery(Context* context,
+                     ID declId,
+                     bool useGenericFormalDefaults) {
+  QUERY_BEGIN(typeForTypeDeclQuery, context, declId, useGenericFormalDefaults);
+
+  const Type* result = nullptr;
+
+  auto ast = parsing::idToAst(context, declId);
+  if (auto td = ast->toTypeDecl()) {
+    if (td->isEnum())
+      assert(false && "case not handled");
+    if (auto ad = td->toAggregateDecl()) {
+      // do 1st pass resolution of the field types
+      const ResolutionResultByPostorderID& r =
+        resolveFields(context, declId, useGenericFormalDefaults);
+
+      // now pull out the field types
+      std::vector<CompositeType::FieldDetail> fields;
+      for (auto child: ad->children()) {
+        if (auto var = child->toVariable()) {
+          if (var->isField()) {
+            const ResolvedExpression& e = r.byAst(child);
+            bool hasDefault = var->initExpression() != nullptr;
+            fields.push_back(CompositeType::FieldDetail(var->name(),
+                                                        hasDefault,
+                                                        var,
+                                                        e.type));
+          }
+        }
+      }
+
+      if (auto rec = ad->toRecord()) {
+        result = RecordType::get(context, rec->id(), rec->name(),
+                                 std::move(fields));
+      }
+      if (auto cls = ad->toClass()) {
+        auto t = BasicClassType::get(context, cls->id(), cls->name(),
+                                     std::move(fields));
+        auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+        result = ClassType::get(context, t, nullptr, d);
+      }
+      if (auto uni = ad->toUnion()) {
+        result = UnionType::get(context, uni->id(), uni->name(),
+                                std::move(fields));
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+const Type* typeForTypeDecl(Context* context,
+                            const TypeDecl* d,
+                            bool useGenericFormalDefaults) {
+  assert(d);
+  const Type* t = typeForTypeDeclQuery(context, d->id(),
+                                       /* useGenericFormalDefaults */ false);
+
+  // If useGenericFormalDefaults was requested and the type
+  // is generic with defaults, compute the type again.
+  // We do it this way so that we are more likely to be able to reuse the
+  // result of the above query in most cases since most types
+  // are not generic record/class types defaults.
+  if (useGenericFormalDefaults) {
+    if (auto ct = t->getCompositeType()) {
+      if (ct->isGenericWithDefaults()) {
+        t = typeForTypeDeclQuery(context, d->id(),
+                                 /* useGenericFormalDefaults */ true);
+      }
+    }
+  }
+
+  return t;
+}
+
+
+static const owned<TypedFnSignature>&
+typeConstructorInitialQuery(Context* context, const Type* t)
+{
+  QUERY_BEGIN(typeConstructorInitialQuery, context, t);
+
+  owned<TypedFnSignature> result;
+
+  ID id;
+  UniqueString name;
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  std::vector<types::QualifiedType> formalTypes;
+
+  if (auto ct = t->getCompositeType()) {
+    id = ct->id();
+    name = ct->name();
+
+    // find the generic fields from the type and add
+    // these as type constructor arguments.
+    int nFields = ct->numFields();
+    for (int i = 0; i < nFields; i++) {
+      auto type = ct->fieldType(i);
+      if (type.isGenericOrUnknown()) {
+        auto d = UntypedFnSignature::FormalDetail(ct->fieldName(i),
+                                                  ct->fieldHasDefaultValue(i),
+                                                  ct->fieldDecl(i));
+        formals.push_back(d);
+        formalTypes.push_back(type);
+      }
+    }
+  } else {
+    assert(false && "case not handled");
+  }
+
+  auto untyped = UntypedFnSignature::get(context,
+                                         id, name,
+                                         /* isMethod */ false,
+                                         /* idIsFunction */ false,
+                                         /* isTypeConstructor */ true,
+                                         Function::PROC,
+                                         std::move(formals),
+                                         /* whereClause */ nullptr);
+
+  auto sig = new TypedFnSignature(untyped,
+                                  std::move(formalTypes),
+                                  TypedFnSignature::WHERE_NONE,
+                                  /* needsInstantiation */ true,
+                                  /* instantiatedFrom */ nullptr,
+                                  /* parentFn */ nullptr);
+  result = toOwned(sig);
+
+  return QUERY_END(result);
+}
+
+const TypedFnSignature* typeConstructorInitial(Context* context,
+                                               const types::Type* t) {
+  return typeConstructorInitialQuery(context, t).get();
+}
+
 const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
                                              const CallInfo& call,
@@ -785,18 +1018,21 @@ const TypedFnSignature* instantiateSignature(Context* context,
   // will arrange to construct a unique TypedFnSignature by
   // its contents.
 
-  assert(sig->needsInstantiation);
+  assert(sig->needsInstantiation());
 
-  const UntypedFnSignature* untypedSignature = sig->untypedSignature;
-  const ASTNode* ast = parsing::idToAst(context, untypedSignature->functionId);
-  const Function* fn = ast->toFunction();
+  const UntypedFnSignature* untypedSignature = sig->untyped();
+  const ASTNode* ast = nullptr;
+  const Function* fn = nullptr;
+  const AggregateDecl* ad = nullptr;
 
-  if (fn == nullptr) {
-    return nullptr;
+  if (!untypedSignature->id().isEmpty()) {
+    ast = parsing::idToAst(context, untypedSignature->id());
+    fn = ast->toFunction();
+    ad = ast->toAggregateDecl();
   }
 
   const TypedFnSignature* parentFnTyped = nullptr;
-  if (sig->parentFn) {
+  if (sig->parentFn()) {
     assert(false && "generic child functions not yet supported");
     // TODO: how to compute parentFn for the instantiation?
     // Does the parent function need to be instantiated in some case?
@@ -811,27 +1047,69 @@ const TypedFnSignature* instantiateSignature(Context* context,
   // compute the substitutions
   SubstitutionsMap substitutions;
   for (const FormalActual& entry : faMap.byFormalIdx) {
-    if (entry.formalType.isGenericOrUnknown()) {
+    // note: entry.actualType can have type()==nullptr and UNKNOWN.
+    // in that case, resolver code should treat it as a hint to
+    // use the default value. Unless the call used a ? argument.
+    if (call.hasQuestionArg &&
+        entry.actualType.kind() == QualifiedType::UNKNOWN &&
+        entry.actualType.type() == nullptr) {
+      // don't add any substitution
+    } else {
+      // add a substitution that is either valid or a
+      // "use the default" hint.
       substitutions.insert({entry.formal, entry.actualType});
     }
   }
 
-  ResolutionResultByPostorderID r;
-  Resolver visitor(context, fn, substitutions, poiScope, r);
-  // visit the formals, return type, where clause
-  for (auto child: fn->children()) {
-    child->traverse(visitor);
+  std::vector<types::QualifiedType> formalTypes;
+  bool needsInstantiation = false;
+  TypedFnSignature::WhereClauseResult where = TypedFnSignature::WHERE_NONE;
+
+  if (fn != nullptr) {
+    ResolutionResultByPostorderID r;
+    Resolver visitor(context, fn, substitutions, poiScope, r);
+    // visit the formals, return type, where clause
+    for (auto child: fn->children()) {
+      child->traverse(visitor);
+    }
+
+    auto tmp = getFormalTypes(fn, r);
+    formalTypes.swap(tmp);
+    needsInstantiation = anyFormalNeedsInstantiation(formalTypes);
+    where = whereClauseResult(context, fn, r, needsInstantiation);
+  } else if (ad != nullptr) {
+    // visit the fields
+    ResolutionResultByPostorderID r;
+    Resolver visitor(context, ad, substitutions, poiScope, r,
+                     /* useGenericFormalDefaults */ false);
+    // visit the formals, return type, where clause
+    for (auto child: ad->children()) {
+      if (auto var = child->toVariable()) {
+        if (var->isField()) {
+          child->traverse(visitor);
+        }
+      }
+    }
+
+    // now pull out the field types
+    for (auto child: ad->children()) {
+      if (auto var = child->toVariable()) {
+        if (var->isField()) {
+          const ResolvedExpression& e = r.byAst(child);
+          formalTypes.push_back(e.type);
+        }
+      }
+    }
+    needsInstantiation = anyFormalNeedsInstantiation(formalTypes);
+  } else {
+    assert(false && "case not handled");
   }
 
   // now, construct a TypedFnSignature from the result
-  std::vector<types::QualifiedType> formalTypes = getFormalTypes(fn, r);
-  bool needsInstantiation = anyFormalNeedsInstantiation(formalTypes);
-  auto whereResult = whereClauseResult(context, fn, r, needsInstantiation);
-
   const auto& result = typedSignatureQuery(context,
                                            untypedSignature,
                                            std::move(formalTypes),
-                                           whereResult,
+                                           where,
                                            needsInstantiation,
                                            /* instantiatedFrom */ sig,
                                            /* parentFn */ parentFnTyped);
@@ -859,8 +1137,8 @@ resolveFunctionByInfoQuery(Context* context,
                             PoiInfo poiInfo) {
   QUERY_BEGIN(resolveFunctionByInfoQuery, context, sig, poiInfo);
 
-  const UntypedFnSignature* untypedSignature = sig->untypedSignature;
-  const ASTNode* ast = parsing::idToAst(context, untypedSignature->functionId);
+  const UntypedFnSignature* untypedSignature = sig->untyped();
+  const ASTNode* ast = parsing::idToAst(context, untypedSignature->id());
   const Function* fn = ast->toFunction();
 
   const PoiScope* poiScope = poiInfo.poiScope;
@@ -910,7 +1188,7 @@ const ResolvedFunction* resolveFunction(Context* context,
                                          const TypedFnSignature* sig,
                                          const PoiScope* poiScope) {
   // this should only be applied to concrete fns or instantiations
-  assert(!sig->needsInstantiation);
+  assert(!sig->needsInstantiation());
 
   // construct the PoiInfo for this case
   auto poiInfo = PoiInfo(poiScope);
@@ -924,9 +1202,9 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   if (func == nullptr)
     return nullptr;
 
-  const UntypedFnSignature* uSig = untypedSignature(context, func->id());
+  const UntypedFnSignature* uSig = UntypedFnSignature::get(context, func);
   const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
-  if (sig->needsInstantiation)
+  if (sig->needsInstantiation())
     return nullptr;
 
   const ResolvedFunction* ret = resolveFunction(context, sig, nullptr);
@@ -1075,16 +1353,18 @@ const QualifiedType& returnType(Context* context,
                                 const PoiScope* poiScope) {
   QUERY_BEGIN(returnType, context, sig, poiScope);
 
-  // this should only be applied to concrete fns or instantiations
-  assert(!sig->needsInstantiation);
 
-  const UntypedFnSignature* untypedSignature = sig->untypedSignature;
-  const ASTNode* ast = parsing::idToAst(context, untypedSignature->functionId);
-  const Function* fn = ast->toFunction();
+  const UntypedFnSignature* untyped = sig->untyped();
 
   QualifiedType result;
 
-  if (fn) {
+  if (untyped->idIsFunction()) {
+    // this should only be applied to concrete fns or instantiations
+    assert(!sig->needsInstantiation());
+
+    const ASTNode* ast = parsing::idToAst(context, untyped->id());
+    const Function* fn = ast->toFunction();
+    assert(fn);
     if (const Expression* retType = fn->returnType()) {
       // resolve the return type
       ResolutionResultByPostorderID resolutionById;
@@ -1099,6 +1379,49 @@ const QualifiedType& returnType(Context* context,
       fn->body()->traverse(visitor);
       result = visitor.returnedType();
     }
+  } else if (untyped->isTypeConstructor()) {
+    // handle type construction
+    const AggregateDecl* ad = nullptr;
+    if (!untyped->id().isEmpty())
+      if (auto ast = parsing::idToAst(context, untyped->id()))
+        ad = ast->toAggregateDecl();
+
+    if (ad) {
+      // construct type for record etc.
+      std::vector<CompositeType::FieldDetail> fields;
+      int nFormals = sig->numFormals();
+      for (int i = 0; i < nFormals; i++) {
+        fields.push_back(
+            CompositeType::FieldDetail(untyped->formalName(i),
+                                       untyped->formalHasDefault(i),
+                                       untyped->formalDecl(i),
+                                       sig->formalType(i)));
+      }
+
+      const Type* t = nullptr;
+      if (auto rec = ad->toRecord()) {
+        t = RecordType::get(context, rec->id(), rec->name(),
+                            std::move(fields));
+      }
+      if (auto cls = ad->toClass()) {
+        auto bct = BasicClassType::get(context, cls->id(), cls->name(),
+                                       std::move(fields));
+        auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+        t = ClassType::get(context, bct, nullptr, d);
+      }
+      if (auto uni = ad->toUnion()) {
+        t = UnionType::get(context, uni->id(), uni->name(),
+                           std::move(fields));
+      }
+      result = QualifiedType(QualifiedType::TYPE, t);
+
+    } else {
+      // built-in type construction should be handled
+      // by resolveFnCallSpecialType and not reach this point.
+      assert(false && "case not handled");
+    }
+  } else {
+    assert(false && "case not handled");
   }
 
   return QUERY_END(result);
@@ -1119,27 +1442,20 @@ static QualifiedType::Kind resolveIntent(const QualifiedType& t) {
 
 static bool canPassInitial(const QualifiedType& actualType,
                            const QualifiedType& formalType) {
-  // TODO: pull logic from canDispatch
-  if (actualType.type() == formalType.type()) return true;
-
-  if (actualType.type()->isIntType() &&
-      formalType.type()->isRealType()) return true;
-
+  // TODO: use Any type vs. Unknown for formals without a type?
   if (formalType.kind() == QualifiedType::UNKNOWN) return true;
 
-  return false;
+  auto result = canPass(actualType, formalType);
+  return result.passes();
 }
 
-static bool canPass(const QualifiedType& actualType,
-                    const QualifiedType& formalType) {
-  // TODO: pull logic from canDispatch
-  if (actualType.type() == formalType.type()) return true;
+static bool canPassAfterInstantiating(const QualifiedType& actualType,
+                                      const QualifiedType& formalType) {
+  // TODO: Any type handling should be in canPass
   if (formalType.type()->isAnyType()) return true;
 
-  if (actualType.type()->isIntType() &&
-      formalType.type()->isRealType()) return true;
-
-  return false;
+  auto result = canPass(actualType, formalType);
+  return result.passes();
 }
 
 // returns nullptr if the candidate is not applicable,
@@ -1149,7 +1465,31 @@ doIsCandidateApplicableInitial(Context* context,
                                const ID& candidateId,
                                const CallInfo& call) {
 
-  auto uSig = untypedSignature(context, candidateId);
+  const ASTNode* ast = nullptr;
+  const Function* fn = nullptr;
+
+  if (!candidateId.isEmpty()) {
+    ast = parsing::idToAst(context, candidateId);
+    fn = ast->toFunction();
+  }
+
+  if (ast == nullptr || ast->isTypeDecl()) {
+    // calling a builtin type or a declared type
+    const TypeDecl* td = nullptr;
+    if (ast)
+      td = ast->toTypeDecl();
+
+    if (td != nullptr) {
+      const Type* t = typeForTypeDecl(context, td,
+                                      /* useGenericFormalDefaults */ false);
+      return typeConstructorInitial(context, t);
+    } else {
+      assert(false && "case not handled");
+    }
+  }
+
+  assert(fn);
+  auto uSig = UntypedFnSignature::get(context, fn);
   // First, check that the untyped properties allow a match:
   //  * number of arguments
   //  * names of arguments
@@ -1166,10 +1506,10 @@ doIsCandidateApplicableInitial(Context* context,
 
   auto initialTypedSignature = typedSignatureInitial(context, uSig);
   // Next, check that the types are compatible
-  size_t formalIdx = 0;
+  int formalIdx = 0;
   for (const FormalActual& entry : faMap.byFormalIdx) {
     const auto& actualType = entry.actualType;
-    const auto& formalType = initialTypedSignature->formalTypes[formalIdx];
+    const auto& formalType = initialTypedSignature->formalType(formalIdx);
     bool ok = canPassInitial(actualType, formalType);
     if (!ok) {
       return nullptr;
@@ -1179,7 +1519,8 @@ doIsCandidateApplicableInitial(Context* context,
   }
 
   // check that the where clause applies
-  if (initialTypedSignature->whereClauseResult==TypedFnSignature::WHERE_FALSE) {
+  auto whereResult = initialTypedSignature->whereClauseResult();
+  if (whereResult == TypedFnSignature::WHERE_FALSE) {
     return nullptr;
   }
 
@@ -1204,14 +1545,14 @@ doIsCandidateApplicableInstantiating(Context* context,
   size_t nActuals = call.actuals.size();
   for (size_t i = 0; i < nActuals; i++) {
     const QualifiedType& actualType = call.actuals[i].type;
-    const QualifiedType& formalType = instantiated->formalTypes[i];
-    bool ok = canPass(actualType, formalType);
+    const QualifiedType& formalType = instantiated->formalType(i);
+    bool ok = canPassAfterInstantiating(actualType, formalType);
     if (!ok)
       return nullptr;
   }
 
   // check that the where clause applies
-  if (instantiated->whereClauseResult == TypedFnSignature::WHERE_FALSE)
+  if (instantiated->whereClauseResult() == TypedFnSignature::WHERE_FALSE)
     return nullptr;
 
   return instantiated;
@@ -1253,7 +1594,7 @@ filterCandidatesInitial(Context* context,
 
 void
 filterCandidatesInstantiating(Context* context,
-                              std::vector<const TypedFnSignature*> lst,
+                              const std::vector<const TypedFnSignature*>& lst,
                               const CallInfo& call,
                               const Scope* inScope,
                               const PoiScope* inPoiScope,
@@ -1265,7 +1606,7 @@ filterCandidatesInstantiating(Context* context,
   const PoiScope* instantiationPoiScope = nullptr;
 
   for (const TypedFnSignature* typedSignature : lst) {
-    if (typedSignature->needsInstantiation) {
+    if (typedSignature->needsInstantiation()) {
       if (instantiationPoiScope == nullptr) {
         instantiationPoiScope =
           pointOfInstantiationScope(context, inScope, inPoiScope);
@@ -1352,9 +1693,9 @@ void accumulatePoisUsedByResolvingBody(Context* context,
     return;
   }
 
-  assert(!signature->needsInstantiation);
+  assert(!signature->needsInstantiation());
 
-  if (signature->instantiatedFrom == nullptr) {
+  if (signature->instantiatedFrom() == nullptr) {
     // if it's not an instantiation, no need to gather POIs
     return;
   }
@@ -1366,13 +1707,205 @@ void accumulatePoisUsedByResolvingBody(Context* context,
   poiInfo.accumulate(r->poiInfo);
 }
 
+// if the call's name matches a class management type construction,
+// return the result or ErroneousType.
+// returns nullptr if the class type is not handled here.
+static const Type* getManagedClassType(Context* context,
+                                       const Call* call,
+                                       const CallInfo& ci) {
+  UniqueString name = ci.name;
+
+  if (ci.hasQuestionArg) {
+    if (ci.actuals.size() != 0) {
+      context->error(call, "invalid class type construction");
+      return ErroneousType::get(context);
+    } else if (name == "owned") {
+      return AnyOwnedType::get(context);
+    } else if (name == "shared") {
+      return AnySharedType::get(context);
+    } else if (name == "unmanaged") {
+      return AnyUnmanagedType::get(context);
+    } else if (name == "borrowed") {
+      return AnyBorrowedType::get(context);
+    } else {
+      // case not handled in here
+      return nullptr;
+    }
+  }
+
+  ClassTypeDecorator::ClassTypeDecoratorEnum de;
+  const Type* manager = nullptr;
+
+  if (name == "owned") {
+    de = ClassTypeDecorator::MANAGED;
+    manager = AnyOwnedType::get(context);
+  } else if (name == "shared") {
+    de = ClassTypeDecorator::MANAGED;
+    manager = AnySharedType::get(context);
+  } else if (name == "unmanaged") {
+    de = ClassTypeDecorator::UNMANAGED;
+    manager = nullptr;
+  } else if (name == "borrowed") {
+    de = ClassTypeDecorator::BORROWED;
+    manager = nullptr;
+  } else {
+    // case not handled in here
+    return nullptr;
+  }
+
+  auto d = ClassTypeDecorator(de);
+
+  const Type* t = nullptr;
+  if (ci.actuals.size() > 0)
+    t = ci.actuals[0].type.type();
+
+  if (t == nullptr || !(t->isBasicClassType() || t->isClassType())) {
+    context->error(call, "invalid class type construction");
+    return ErroneousType::get(context);
+  }
+
+  const BasicClassType* bct = nullptr;
+  if (auto ct = t->toClassType()) {
+    bct = ct->basicClassType();
+    // get nilability from ct
+    if (ct->decorator().isNilable())
+      d = d.addNilable();
+    if (ct->decorator().isNonNilable())
+      d = d.addNonNil();
+  } else {
+    bct = t->toBasicClassType();
+  }
+
+  assert(bct);
+  return ClassType::get(context, bct, manager, d);
+}
+
+static const Type* getNumericType(Context* context,
+                                  const Call* call,
+                                  const CallInfo& ci) {
+  UniqueString name = ci.name;
+
+  if (ci.hasQuestionArg) {
+    if (ci.actuals.size() != 0) {
+      context->error(call, "invalid numeric type construction");
+      return ErroneousType::get(context);
+    } else if (name == "int") {
+      return AnyIntType::get(context);
+    } else if (name == "uint") {
+      return AnyUintType::get(context);
+    } else if (name == "bool") {
+      return AnyBoolType::get(context);
+    } else if (name == "real") {
+      return AnyRealType::get(context);
+    } else if (name == "imag") {
+      return AnyImagType::get(context);
+    } else if (name == "complex") {
+      return AnyComplexType::get(context);
+    } else {
+      // case not handled in here
+      return nullptr;
+    }
+  }
+
+  if (name == "int" || name == "uint" || name == "bool" ||
+      name == "real" || name == "imag" || name == "complex") {
+
+    QualifiedType qt;
+    if (ci.actuals.size() > 0)
+      qt = ci.actuals[0].type;
+
+    if (qt.type() == nullptr || !qt.type()->isIntType() ||
+        qt.param() == nullptr || !qt.param()->isIntParam() ||
+        ci.actuals.size() != 1) {
+      context->error(call, "invalid numeric type construction");
+      return ErroneousType::get(context);
+    }
+
+    const Type* ret = nullptr;
+    auto ip = qt.param()->toIntParam();
+    auto value = ip->value();
+    if (0 <= value && value <= 128) {
+      ret = PrimitiveType::getWithNameAndWidth(context, name, value);
+    }
+
+    if (ret == nullptr) {
+      context->error(call, "invalid numeric type construction");
+      return ErroneousType::get(context);
+    }
+
+    return ret;
+  }
+
+  return nullptr;
+}
+
+// Resolving compiler-supported type-returning patterns
+// 'call' and 'inPoiScope' are used for the location for error reporting.
+static const Type* resolveFnCallSpecialType(Context* context,
+                                            const Call* call,
+                                            const CallInfo& ci) {
+
+  if (ci.name == "?") {
+    if (ci.actuals.size() > 0) {
+      if (const Type* t = ci.actuals[0].type.type()) {
+        const ClassType* ct = nullptr;
+
+        if (auto bct = t->toBasicClassType()) {
+          auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+          ct = ClassType::get(context, bct, nullptr, d);
+        } else {
+          ct = t->toClassType();
+        }
+
+        if (ct) {
+          // get the nilable version of the class type
+          ClassTypeDecorator d = ct->decorator().addNilable();
+          auto nilable = ct->withDecorator(context, d);
+          return nilable;
+        }
+      }
+    }
+  }
+
+  if (auto t = getManagedClassType(context, call, ci)) {
+    return t;
+  }
+
+  if (auto t = getNumericType(context, call, ci)) {
+    return t;
+  }
+
+  return nullptr;
+}
+
+
+// Resolving calls for certain compiler-supported patterns
+// without requiring module implementations exist at all.
+// 'call' and 'inPoiScope' are used for the location for error reporting.
+static bool resolveFnCallSpecial(Context* context,
+                                 const Call* call,
+                                 const CallInfo& ci,
+                                 QualifiedType& exprTypeOut) {
+  // TODO: type comparisons
+  // TODO: cast
+  // TODO: .borrow()
+  // TODO: chpl__coerceCopy
+
+  if (const Type* t = resolveFnCallSpecialType(context, call, ci)) {
+    exprTypeOut = QualifiedType(QualifiedType::TYPE, t);
+    return true;
+  }
+
+  return false;
+}
+
+
 static
 CallResolutionResult resolveFnCall(Context* context,
                                    const Call* call,
                                    const CallInfo& ci,
                                    const Scope* inScope,
                                    const PoiScope* inPoiScope) {
-
   // search for candidates at each POI until we have found a candidate
   std::vector<const TypedFnSignature*> candidates;
   size_t firstPoiCandidate = 0;
@@ -1402,7 +1935,7 @@ CallResolutionResult resolveFnCall(Context* context,
   // next, look for candidates using POI
   for (const PoiScope* curPoi = inPoiScope;
        curPoi != nullptr;
-       curPoi = curPoi->inFnPoi) {
+       curPoi = curPoi->inFnPoi()) {
 
     // stop if any candidate has been found.
     if (candidates.empty() == false) {
@@ -1410,7 +1943,7 @@ CallResolutionResult resolveFnCall(Context* context,
     }
 
     // compute the potential functions that it could resolve to
-    auto v = lookupCalledExpr(context, curPoi->inScope, call, visited);
+    auto v = lookupCalledExpr(context, curPoi->inScope(), call, visited);
 
     // filter without instantiating yet
     const auto& initialCandidates = filterCandidatesInitial(context, v, ci);
@@ -1436,8 +1969,7 @@ CallResolutionResult resolveFnCall(Context* context,
       for (const TypedFnSignature* candidate : mostSpecific) {
         if (candidate != nullptr) {
           poiInfo.poiFnIdsUsed.insert(
-              std::make_pair(call->id(),
-                             candidate->untypedSignature->functionId));
+              std::make_pair(call->id(), candidate->id()));
         }
       }
     }
@@ -1450,7 +1982,7 @@ CallResolutionResult resolveFnCall(Context* context,
   bool anyInstantiated = false;
 
   for (const TypedFnSignature* candidate : mostSpecific) {
-    if (candidate != nullptr && candidate->instantiatedFrom != nullptr) {
+    if (candidate != nullptr && candidate->instantiatedFrom() != nullptr) {
       anyInstantiated = true;
       break;
     }
@@ -1464,8 +1996,10 @@ CallResolutionResult resolveFnCall(Context* context,
 
   for (const TypedFnSignature* candidate : mostSpecific) {
     if (candidate != nullptr) {
-      accumulatePoisUsedByResolvingBody(context, candidate,
-                                        instantiationPoiScope, poiInfo);
+      if (candidate->untyped()->idIsFunction()) {
+        accumulatePoisUsedByResolvingBody(context, candidate,
+                                          instantiationPoiScope, poiInfo);
+      }
     }
   }
 
@@ -1486,43 +2020,6 @@ CallResolutionResult resolveFnCall(Context* context,
   }
 
   return CallResolutionResult(mostSpecific, retType, std::move(poiInfo));
-}
-
-static
-UniqueString getParamOp(Context* context, const PrimCall* call) {
-  UniqueString prim = call->prim();
-  // TODO: use a map
-  // TODO: have this return an integer identifying a Primitive
-#define USTR(s) UniqueString::build(context, s)
-  if (prim == USTR("") ||
-      prim == USTR("*") ||
-      prim == USTR("/") ||
-      prim == USTR("%") ||
-      prim == USTR("+") ||
-      prim == USTR("-") ||
-      prim == USTR("<<") ||
-      prim == USTR(">>") ||
-      prim == USTR("<") ||
-      prim == USTR("<=") ||
-      prim == USTR(">") ||
-      prim == USTR(">=") ||
-      prim == USTR("==") ||
-      prim == USTR("!=") ||
-      prim == USTR("&") ||
-      prim == USTR("^") ||
-      prim == USTR("|") ||
-      prim == USTR("&&") ||
-      prim == USTR("||") ||
-      prim == USTR("u+") ||
-      prim == USTR("u-") ||
-      prim == USTR("~") ||
-      prim == USTR("!")) {
-    return prim;
-  }
-#undef USTR
-
-  UniqueString empty;
-  return empty;
 }
 
 static
@@ -1551,8 +2048,8 @@ CallResolutionResult resolvePrimCall(Context* context,
   }
 
   // handle param folding
-  auto prim = getParamOp(context, call);
-  if (!prim.isEmpty()) {
+  auto prim = call->prim();
+  if (Param::isParamOpFoldable(prim)) {
     if (allParam && ci.actuals.size() == 2) {
       type = Param::fold(context, prim, ci.actuals[0].type, ci.actuals[1].type);
     }
@@ -1567,6 +2064,12 @@ CallResolutionResult resolveCall(Context* context,
                                  const Scope* inScope,
                                  const PoiScope* inPoiScope) {
   if (call->isFnCall() || call->isOpCall()) {
+    // see if the call is handled directly by the compiler
+    QualifiedType tmpRetType;
+    if (resolveFnCallSpecial(context, call, ci, tmpRetType)) {
+      return CallResolutionResult(std::move(tmpRetType));
+    }
+    // otherwise do regular call resolution
     return resolveFnCall(context, call, ci, inScope, inPoiScope);
   } else if (auto prim = call->toPrimCall()) {
     return resolvePrimCall(context, prim, ci, inScope, inPoiScope);

@@ -119,11 +119,15 @@ int mysystem(const std::vector<std::string> commandVec,
   } else if (childPid > 0 ) {
     // in parent process
     waitpid(childPid, &status, 0);
-  // uh-oh cases below
+    // filter status down to key bits
+    status = WEXITSTATUS(status);
+    // generate an error if there was one and we weren't asked to ignore it
+    if (status != 0 && !ignoreStatus) {
+      USR_FATAL("%s", description);
+    }
+  // handle the case when the child couldn't be forked
   } else if (childPid == -1) {
     USR_FATAL("fork() failed: %s", strerror(errno));
-  } else if (childPid != 0 && !ignoreStatus) {
-    USR_FATAL("%s", description);
   }
-  return WEXITSTATUS(status);
+  return status;
 }

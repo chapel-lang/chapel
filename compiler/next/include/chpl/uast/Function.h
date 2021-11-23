@@ -90,9 +90,10 @@ class Function final : public NamedDecl {
   int bodyChildNum_;
 
   Function(ASTList children,
-           UniqueString name,
+           int attributesChildNum,
            Decl::Visibility vis,
            Decl::Linkage linkage,
+           UniqueString name,
            bool inline_,
            bool override_,
            Kind kind,
@@ -109,7 +110,10 @@ class Function final : public NamedDecl {
            int lifetimeChildNum,
            int numLifetimeParts,
            int bodyChildNum)
-    : NamedDecl(asttags::Function, std::move(children), vis, linkage,
+    : NamedDecl(asttags::Function, std::move(children),
+                attributesChildNum,
+                vis,
+                linkage,
                 linkageNameChildNum,
                 name),
       inline_(inline_),
@@ -150,6 +154,12 @@ class Function final : public NamedDecl {
       assert(bodyChildNum_ == -1);
     }
     assert(isExpressionASTList(children_));
+
+    for (auto decl : formals()) {
+      bool isAcceptableDecl = decl->isFormal() || decl->isVarArgFormal() ||
+                              decl->isTupleDecl();
+      assert(isAcceptableDecl);
+    }
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
@@ -181,10 +191,11 @@ class Function final : public NamedDecl {
   ~Function() override = default;
 
   static owned<Function> build(Builder* builder, Location loc,
-                               UniqueString name,
+                               owned<Attributes> attributes,
                                Decl::Visibility vis,
                                Decl::Linkage linkage,
                                owned<Expression> linkageName,
+                               UniqueString name,
                                bool inline_,
                                bool override_,
                                Function::Kind kind,
@@ -209,14 +220,15 @@ class Function final : public NamedDecl {
 
   /**
    Return a way to iterate over the formals, including the method
-   receiver, if present, as the first formal.
+   receiver, if present, as the first formal. This iterator may yield
+   nodes of type Formal, TupleDecl, or VarArgFormal.
    */
-  ASTListIteratorPair<Formal> formals() const {
+  ASTListIteratorPair<Decl> formals() const {
     if (numFormals() == 0) {
-      return ASTListIteratorPair<Formal>(children_.end(), children_.end());
+      return ASTListIteratorPair<Decl>(children_.end(), children_.end());
     } else {
       auto start = children_.begin() + formalsChildNum_;
-      return ASTListIteratorPair<Formal>(start, start + numFormals_);
+      return ASTListIteratorPair<Decl>(start, start + numFormals_);
     }
   }
 
@@ -230,13 +242,12 @@ class Function final : public NamedDecl {
   /**
    Return the i'th formal
    */
-  const Formal* formal(int i) const {
+  const Decl* formal(int i) const {
     assert(numFormals_ > 0 && formalsChildNum_ >= 0);
     assert(0 <= i && i < numFormals_);
-    const ASTNode* ast = this->child(formalsChildNum_ + i);
-    assert(ast->isFormal());
-    const Formal* f = (const Formal*) ast;
-    return f;
+    auto ret = this->child(formalsChildNum_ + i);
+    assert(ret->isFormal() || ret->isVarArgFormal() || ret->isTupleDecl());
+    return (const Decl*)ret;
   }
 
   /**
@@ -367,5 +378,13 @@ class Function final : public NamedDecl {
 
 } // end namespace uast
 } // end namespace chpl
+
+namespace std {
+  template<> struct hash<chpl::uast::Function::Kind> {
+    inline size_t operator()(const chpl::uast::Function::Kind& key) const {
+      return (size_t) key;
+    }
+  };
+} // end namespace std
 
 #endif

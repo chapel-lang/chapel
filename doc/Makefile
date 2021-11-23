@@ -63,7 +63,7 @@ docs: FORCE
 	@COMP_DOCS_ERROR=0 ; \
 	(cd ../compiler/next && $(MAKE) -f Makefile.help libchplcomp-docs) || \
 	 COMP_DOCS_ERROR=1 ; \
-	$(MAKE) html-release || $(MAKE) error_docs ; \
+	$(MAKE) html-release && \
 	if [ $$COMP_DOCS_ERROR -ne 0 -o ! -d $(COMPILER_INTERNALS_DOXYGEN) ] ; \
 	  then \
 	  echo ; \
@@ -195,10 +195,6 @@ clean-symlinks: FORCE
 
 clean-doxygen: FORCE
 	cd ../compiler/next && $(MAKE) -f Makefile.help clean-libchplcomp-docs
-
-error_docs: FORCE
-	@exit 1 # Note that 'make' will return exit code of 2, despite exit 1
-
 
 FORCE:
 

@@ -44,6 +44,7 @@
 #include "typeSpecifier.h"
 #include "view.h"
 #include "virtualDispatch.h"
+#include "chpl/util/filesystem.h"
 
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers
@@ -223,7 +224,7 @@ genGlobalDefClassId(const char* cname, int id, bool isHeader) {
   }
 }
 static void
-genGlobalString(const char* cname, const char* value) {
+genGlobalString(const char *cname, const char *value) {
   GenInfo* info = gGenInfo;
   if( info->cfile ) {
     fprintf(info->cfile, "const char* %s = \"%s\";\n", cname, value);
@@ -241,6 +242,30 @@ genGlobalString(const char* cname, const char* value) {
 #endif
   }
 }
+
+#ifdef HAVE_LLVM
+static void genGlobalRawString(const char *cname, std::string &value, size_t len) {
+  GenInfo* info = gGenInfo;
+  if( info->cfile ) {
+    // TODO: Currently we don't have this codepath. Maybe one day we will. If so, we
+    // will add escapes.
+    INT_FATAL("Do not expect to see this codepath");
+  } else {
+    if(gCodegenGPU == false) {
+      llvm::GlobalVariable *globalString = llvm::cast<llvm::GlobalVariable>(
+              info->module->getOrInsertGlobal(
+                      cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
+      auto globalStringIr = info->irBuilder->CreateGlobalString(value);
+      auto correctlyTypedValue = info->irBuilder->CreateConstInBoundsGEP2_32(
+        NULL, globalStringIr, 0, 0);
+      globalString->setInitializer(llvm::cast<llvm::Constant>(correctlyTypedValue));
+      globalString->setConstant(true);
+      info->lvt->addGlobalValue(cname, globalString, GEN_PTR, true);
+    }
+  }
+}
+#endif
+
 static void
 genGlobalInt(const char* cname, int value, bool isHeader) {
   GenInfo* info = gGenInfo;
@@ -2425,9 +2450,28 @@ static fileinfo strconfig  = { NULL, NULL, NULL };
 static fileinfo modulefile = { NULL, NULL, NULL };
 
 
+#ifdef HAVE_LLVM
+static void embedGpuCode() {
+  // Codegen forks a process to generate a .fatbin file that packages assembled GPU kernel code.
+  // This function (embedGpuCode) is called by the main process after the forked thread rejoins and
+  // reads this .fatbin file and dumps its contents into a global variable in the generated code.
+  // The compiled chapel program then calls into the runtime library, which reads this variable,
+  // sends the code off to the GPU, and launches kernels as needed.
+  SET_LINENO(rootModule);
+  std::string fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
+  std::string buffer;
+  chpl::ErrorMessage err;
+  chpl::readfile(fatbinFilename.c_str(), buffer, err);
+  if(!err.isEmpty()) {
+    USR_FATAL("%s", err.message().c_str());
+  }
+
+  genGlobalRawString("chpl_gpuBinary", buffer, buffer.length());
+}
+#endif
+
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
-
   // Initialize the global gGenInfo for C code generation.
   gGenInfo = new GenInfo();
 
@@ -2495,6 +2539,14 @@ static void codegenPartTwo() {
           break;
         }
       }
+    }
+
+    // When doing codegen for programs that have GPU kernels we fork the
+    // processes. In one process gCodegenGPU is true and we generate a .fatbin file,
+    // in the other gCodegenGpu is false and we'll consume the fatbin file
+    // and embed its contents into the generated code.
+    if (localeUsesGPU() && !gCodegenGPU) {
+      embedGpuCode();
     }
 
     prepareCodegenLLVM();
@@ -2621,6 +2673,10 @@ void codegen() {
   codegenPartOne();
 
   if (localeUsesGPU()) {
+    // We use the temp dir to output a fatbin file and read it between the forked and main proccess.
+    // We need to generate the name for the temp directory before we do the fork (since this
+    // name uses the PID).
+    ensureTmpDirExists();
 
     pid_t pid = fork();
 
@@ -2629,10 +2685,10 @@ void codegen() {
       gCodegenGPU = true;
       codegenPartTwo();
       makeBinary();
-      gCodegenGPU = false;
       clean_exit(0);
     } else {
       // parent process
+      INT_ASSERT(!gCodegenGPU);
       int status = 0;
       while (wait(&status) != pid) {
         // wait for child process
@@ -2649,7 +2705,7 @@ void makeBinary(void) {
 
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
-    makeBinaryLLVM();
+   makeBinaryLLVM();
 #endif
   } else {
     const char* makeflags = printSystemCommands ? "-f " : "-s -f ";

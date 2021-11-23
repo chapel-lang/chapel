@@ -29,7 +29,7 @@ namespace types {
 /**
   This class represents a uint type, e.g. `uint` or `uint(32)`.
  */
-class UintType : public PrimitiveType {
+class UintType final : public PrimitiveType {
  private:
   UintType(int bitwidth)
     : PrimitiveType(typetags::UintType, bitwidth)

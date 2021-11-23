@@ -54,7 +54,8 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
 owned<Conditional> Conditional::build(Builder* builder, Location loc,
                                       owned<Expression> condition,
                                       BlockStyle thenBlockStyle,
-                                      owned<Block> thenBlock) {
+                                      owned<Block> thenBlock,
+                                      bool isExpressionLevel) {
   assert(condition.get() != nullptr);
   ASTList lst;
 
@@ -66,7 +67,7 @@ owned<Conditional> Conditional::build(Builder* builder, Location loc,
   Conditional* ret = new Conditional(std::move(lst),
                                      thenBlockStyle,
                                      elseBlockStyle,
-                                     /*isExpressionLevel*/ false);
+                                     isExpressionLevel);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

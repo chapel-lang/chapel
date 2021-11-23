@@ -479,6 +479,42 @@ Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
 testMockMasonNew()
+USAGE: mason [-h, --help] [-V, --version] [SUBCOMMAND]
+
+OPTIONS:
+	-h, --help	Display this message and exit
+	-V, --version
+
+SUBCOMMANDS:
+	add
+	build
+	clean
+	doc
+	env
+	external
+	init
+	new
+	publish
+	rm
+	run
+	search
+	system
+	test
+	update
+
+
+USAGE: new <NAME> [-h, --help] [--show] [--[no]-vcs] [--name <LEGALNAME>]
+
+ARGUMENTS:
+	NAME
+
+OPTIONS:
+	-h, --help	Display this message and exit
+	--name <LEGALNAME>
+	--show
+	--[no]-vcs
+
+
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
@@ -542,6 +578,60 @@ testOptionZeroValueDetection()
 Flavour: OK
 ======================================================================
 ----------------------------------------------------------------------
+testMinimalHelp()
+This is a custom help message for testing
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testNoHelp()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testCustomHelpString()
+Custom Message
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testCustomHandlerNoHelp()
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testGenerateHelp()
+USAGE: progName <files ...> [-h, --help] [--flagOne] [--optionOne <OPTIONONE>] [SUBCOMMAND]
+
+ARGUMENTS:
+	files	some files to process
+
+OPTIONS:
+	-h, --help	Display this message and exit
+	--flagOne	sets cool factor to 100
+	--optionOne <OPTIONONE>	release 1000 doves upon thine enemies
+
+SUBCOMMANDS:
+	subcommand	do related but different stuff
+
+
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
+testGenerateEmptyHelp()
+USAGE: progName <files ...> [-h, --help] [--flagOne] [--optionOne <OPTIONONE>] [SUBCOMMAND]
+
+ARGUMENTS:
+	files
+
+OPTIONS:
+	-h, --help	Display this message and exit
+	--flagOne
+	--optionOne <OPTIONONE>
+
+SUBCOMMANDS:
+	subcommand
+
+
+Flavour: OK
+======================================================================
+----------------------------------------------------------------------
 Found some unrecognizable arguments: thirty
 Found some unrecognizable arguments: badArg1 --BadFlag
 Use '-' or '--' to indicate option/flag, or use positional arguments.
@@ -591,3 +681,5 @@ FileNames Required value missing
 Positional arguments that allow for range of values must be last relative to other positional arguments
 numArgs must have low bound
 numArgs must have low bound
+Found some unrecognizable arguments: --help
+Found some unrecognizable arguments: --help

@@ -38,16 +38,9 @@ ifneq ($(LLVM_SUBDIR),llvm-src)
   endif
 endif
 
-# Decide if we want to dynamically link or not
-# This sets the default - it could be overridden during the make
-CHPL_LLVM_DYNAMIC := 1
-ifneq (, $(findstring cray,$(CHPL_MAKE_HOST_PLATFORM)))
-  CHPL_LLVM_DYNAMIC := 0
-endif
-
 CHPL_LLVM_DYNAMIC_OPTS:=""
 ifeq ($(CHPL_LLVM_DYNAMIC),1)
-  CHPL_LLVM_DYNAMIC_OPTS:="-DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON"
+  CHPL_LLVM_DYNAMIC_OPTS:=-DLLVM_BUILD_LLVM_DYLIB=ON -DLLVM_LINK_LLVM_DYLIB=ON
 endif
 
 CMAKE ?= cmake

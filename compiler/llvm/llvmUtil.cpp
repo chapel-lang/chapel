@@ -32,11 +32,6 @@ bool isArrayVecOrStruct(llvm::Type* t)
   return t->isArrayTy() || t->isVectorTy() || t->isStructTy();
 }
 
-llvm::Constant* codegenSizeofLLVM(llvm::Type* type)
-{
-  return llvm::ConstantExpr::getSizeOf(type);
-}
-
 llvm::AllocaInst* makeAlloca(llvm::Type* type,
                              const char* name,
                              llvm::Instruction* insertBefore,

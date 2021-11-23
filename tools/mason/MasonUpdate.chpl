@@ -52,26 +52,11 @@ proc masonUpdate(args: [?d] string) {
   var lf = "Mason.lock";
   var skipUpdate = MASON_OFFLINE;
 
-  var parser = new argumentParser();
-
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
+  var parser = new argumentParser(helpHandler=new MasonUpdateHelpHandler());
 
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
 
-  try! {
-    parser.parseArgs(args);
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonUpdateHelp();
-    exit(1);
-  }
-  if helpFlag.valueAsBool() {
-    masonUpdateHelp();
-    exit(0);
-  }
+  parser.parseArgs(args);
 
   if updateFlag.hasValue() {
     skipUpdate = !updateFlag.valueAsBool();

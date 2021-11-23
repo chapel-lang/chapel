@@ -29,7 +29,7 @@ namespace types {
 /**
   This class represents the string type.
  */
-class CStringType : public Type {
+class CStringType final : public Type {
  private:
   CStringType() : Type(typetags::CStringType) { }
 

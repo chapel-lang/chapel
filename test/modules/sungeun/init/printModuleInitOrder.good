@@ -32,6 +32,8 @@ Initializing Modules:
            InsertionSort
         ChapelDistribution
          ChapelHashtable
+          Initialization
+           Memory
         ExternalArray
         RangeChunk
        ChapelNumLocales

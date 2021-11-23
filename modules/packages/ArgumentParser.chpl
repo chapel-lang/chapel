@@ -122,13 +122,8 @@
         var simpleArg = parser.addArgument(name="positional");
         var optionArg = parser.addOption(name="optional");
         var flagArg = parser.addFlag(name="debug", defaultValue=false);
-        try!{
-          parser.parseArgs(args);
-        } catch ex : ArgumentError {
-          writeln(ex.message());
-          // print a usage message
-          exit(1);
-        }
+        parser.parseArgs(args);
+
         var debug = flagArg.valueAsBool();
         // we are assured a value here or else the parser would have thrown an error
         var foo = simpleArg.value();
@@ -160,18 +155,101 @@
     $ quickStart myFile --debug --optional
     optional expects 1 value
 
+  If a user asks for help with either ``-h`` or ``--help``, the following output
+  would be automatically generated and displayed:
+
+  .. code-block:: shell
+
+    $ quickStart -h
+    USAGE: quickStart <POSITIONAL> [-h, --help] [--debug] [--optional <OPTIONAL>]
+
+    ARGUMENTS:
+            POSITIONAL
+
+    OPTIONS:
+            -h, --help      Display this message and exit
+            --optional <OPTIONAL>
+
+
+  .. _argumentParser-customizingHelp:
+
+  Customizing Help Output
+  ------------------------
+
+  There are various levels of support for help handling that you can request
+  when initializing an ``argumentParser``.
+
+  By default, an ``argumentParser`` handles help requests in the form of ``-h``
+  and ``--help``, builds a help message, builds a usage message, prints the
+  combined help and usage message when either invalid input or help request
+  is detected, and then exits.
+
+  These actions are mostly customizable through arguments set when
+  initializing an ``argumentParser`` or individual arguments, options, and flags.
+
+  The text that describes each argument can be defined by setting a value
+  for the ``help`` argument in the various `add` methods on the ``argumentParser``.
+
+  Example usage:
+
+  .. code-block:: chapel
+
+    // to set the help text on an argument, flag, etc.
+    var myArg = parser.addArgument(name="myArg",
+                                   help="This text describes myArg for the user");
+
+
+  To take full control over what happens when a user requests help, create a new class
+  that inherits the ``HelpHandler`` and override the ``printHelp()`` method. Then,
+  create a new instance of your custom class and set it as the ``helpHandler``
+  argument when initializing the ``argumentParser``. This is designed to ease
+  adoption when a program has existing functions to print its help messages.
+
+  Example usage:
+
+  .. code-block:: chapel
+
+    class MyHelpHandler : HelpHandler {
+      override proc printHelp() {
+        // call some custom functions like ...
+        // printMyCustomHelp();
+        // maybe other things?
+      }
+    }
+    var parser = new argumentParser(helpHandler=new MyHelpHandler());
+
+  All help requests will now execute whatever is defined in ``printHelp()``
+  and then exit, as the parser's ``exitOnError`` is `true` by default.
+
+  For existing programs where the help text is defined in a string, the
+  ``argumentParser`` can accept a value in the ``helpMessage`` argument during
+  initialization.
+
+  Example usage:
+
+  .. code-block:: chapel
+
+    const myHelpMessage = "A customized message that should be displayed\n" +
+                          "instead of the usual help  and usage message.\n"
+    var parser = new argumentParser(helpMessage=myHelpMessage);
+
+
+  To turn off help handling completely, set the ``addHelp`` argument to `false`
+  when initializing the ``argumentParser``.
+
+
  */
 
 module ArgumentParser {
   use List;
   use Map;
   use IO;
+  use Path;
   use Sort;
 
   private config var DEBUG=false;
 
   // TODO: Add int opts
-  // TODO: Add automatic -h, --help flag generation
   // TODO: Add program metadata when setting up parser
   // TODO: Implement Help message and formatting
   // TODO: Move logic splitting '=' into '_match'
@@ -180,18 +258,27 @@ module ArgumentParser {
   if chpl_warnUnstable then
     compilerWarning("ArgumentParser is unstable.");
 
+  pragma "no doc"
+  enum argKind { positional, subcommand, option, flag, passthrough };
+
   // stores an argument definition
   pragma "no doc"
   class ArgumentHandler {
     // friendly name for this argument
     var _name:string;
+    // enum indicating the kind of argument represented (positional, option, etc)
+    var _kind:argKind;
+    // record that holds help information about the argument
+    var _help:argumentHelp;
+    // number of acceptable values to be present for this argument
+    var _numArgs=1..1;
 
     proc _match(args:[?argsD]string, startPos:int, myArg:Argument,
-                endPos:int):int throws {
+                endPos:int) : int throws {
       return 0;
     }
 
-    proc _hasDefault():bool{
+    proc _hasDefault() : bool{
       return false;
     }
 
@@ -203,17 +290,52 @@ module ArgumentParser {
       return false;
     }
 
-    proc _validate(present:bool, valueCount:int):string {
+    proc _validate(present:bool, valueCount:int) : string {
         return "";
     }
+    // get a string representing how this argument should be displayed in help
+    proc _getHelpCommand() : string {
+      return _help.valueName;
+    }
+    // get a string containing help information for this argument
+    proc _getHelpMessage() : string {
+      return _help.help;
+    }
+    // get a usage string for this argument
+    proc _getUsageCommand() : string {
+      var usage =  this._getHelpCommand();
+      if this._numArgs.high > this._numArgs.low then
+        usage += " ...";
+      if this._isRequired() then
+        usage = "<"+ usage + ">";
+      else
+        usage = "[" + usage + "]";
+      return usage;
+    }
+  }
+
+  /*
+   argumentHelp record stores the information related only to the help
+   message printout for the argument
+  */
+  pragma "no doc"
+  record argumentHelp {
+    // the message to display for the argument
+    var help="";
+    // controls visibility in the printed help output
+    var visible=true;
+    // offers alternative display name to use for the value of flags, options,
+    // and arguments
+    var valueName="";
   }
 
   // stores a passthrough delimiter definition
   pragma "no doc"
   class PassThrough : SubCommand {
 
-    proc init(delimiter:string) {
-      super.init(delimiter);
+    proc init(delimiter:string, help:argumentHelp) {
+      super.init(cmd=delimiter, help=help);
+      this._kind=argKind.passthrough;
     }
     // for passthrough, _match attempts to identify values at the index of the
     // delimiter at position startPos, then consumes the rest of
@@ -238,9 +360,11 @@ module ArgumentParser {
   pragma "no doc"
   class SubCommand : ArgumentHandler {
 
-    proc init(cmd:string) {
-      super.init();
-      this._name=cmd;
+    proc init(cmd:string, help:argumentHelp) {
+      super.init(_name=cmd, _help=help, _kind=argKind.subcommand);
+      // this._name=cmd;
+      // this._help=help;
+      // this._kind=argKind.subcommand;
     }
 
     // for subcommands, _match attempts to identify values at the index of the
@@ -267,12 +391,11 @@ module ArgumentParser {
     var _required:bool;
     // default value to use when argument is not present
     var _defaultValue:list(string);
-    // number of acceptable values to be present for this argument
-    var _numArgs:range;
 
-    proc init(name:string, defaultValue:?t=none, numArgs=1..1) {
-      super.init();
-      this._name=name;
+
+    proc init(name:string, defaultValue:?t=none, numArgs=1..1, help:argumentHelp) {
+      super.init(_name=name, _help=help, _kind=argKind.positional, _numArgs=numArgs);
+      // this._name=name;
       this._required = numArgs.low > 0;
       this._defaultValue = new list(string);
       // add default value(s) if supplied
@@ -281,10 +404,12 @@ module ArgumentParser {
       } else if t == list(string) || isArray(t) {
         this._defaultValue.extend(defaultValue);
       }
-      this._numArgs = numArgs;
+      // this._numArgs = numArgs;
+      // this._help=help;
+      // this._kind=argKind.positional;
     }
 
-    override proc _hasDefault():bool{
+    override proc _hasDefault() : bool{
       return !this._defaultValue.isEmpty();
     }
 
@@ -318,7 +443,7 @@ module ArgumentParser {
       return pos;
     }
 
-    override proc _validate(present:bool, valueCount:int):string {
+    override proc _validate(present:bool, valueCount:int) : string {
       if !present && _required {
         return "Required value missing";
       } else if valueCount < _numArgs.low {
@@ -328,6 +453,7 @@ module ArgumentParser {
         return "";
       }
     }
+
   }
 
   // stores the definition of a Flag (bool) argument
@@ -343,22 +469,22 @@ module ArgumentParser {
     var _yesFlags:list(string);
     // value of flag(s) that can indicate false for this argument
     var _noFlags:list(string);
-    // number of acceptable values to be present after argument is indicated
-    var _numArgs:range;
 
     proc init(name:string, defaultValue:?t=none, required:bool=false,
-              yesFlags:[]string, noFlags:[]string, numArgs=0..0) {
-      super.init();
-      this._name=name;
+              yesFlags:[]string, noFlags:[]string, numArgs=0..0, help:argumentHelp) {
+      super.init(_name=name, _help=help, _kind=argKind.flag, _numArgs=numArgs);
+      // this._name=name;
       this._required = required;
       this._defaultValue = new list(string);
       if isBoolType(t) then this._defaultValue.append(defaultValue:string);
       this._yesFlags = new list(yesFlags);
       this._noFlags = new list(noFlags);
-      this._numArgs = numArgs;
+      // this._numArgs = numArgs;
+      // this._help=help;
+      // this._kind=argKind.flag;
     }
 
-    override proc _hasDefault():bool{
+    override proc _hasDefault() : bool{
       return !this._defaultValue.isEmpty();
     }
 
@@ -398,7 +524,7 @@ module ArgumentParser {
       return next;
     }
 
-    override proc _validate(present:bool, valueCount:int):string {
+    override proc _validate(present:bool, valueCount:int) : string {
       if !present && _required {
         return "Required value missing";
       } else if valueCount < _numArgs.low && present {
@@ -407,6 +533,32 @@ module ArgumentParser {
       } else {
         return "";
       }
+    }
+
+    override proc _getHelpCommand() : string {
+      var message:string;
+
+      if _numArgs.high > 0 && _numArgs.low > 0 {
+        message += ", ".join(_yesFlags.toArray()) + " <" + _help.valueName + ">";
+      } else if _numArgs.high > 0 {
+        message += ", ".join(_yesFlags.toArray()) + " [" + _help.valueName + "]";
+      } else {
+        if _noFlags.isEmpty() {
+          message += ", ".join(_yesFlags.toArray());
+        } else {
+          var flagsUsage:list(string);
+          for flag in _yesFlags.these() {
+            var flagStr = flag.strip('-', trailing=false);
+            var noStr = "-[no]-"+flagStr;
+            if flagStr.size > 1 {
+              noStr = "-" + noStr;
+            }
+            flagsUsage.append(noStr);
+          }
+          message += ", ".join(flagsUsage.toArray());
+        }
+      }
+      return message;
     }
   }
 
@@ -417,24 +569,22 @@ module ArgumentParser {
     var _numOpts:int;
     // value of option flag(s) that can indicate this argument
     var _opts:[0.._numOpts-1] string;
-    // number of acceptable values to be present after argument is indicated
-    var _numArgs:range;
     // whether or not the user is required to enter a value for this argument
     var _required:bool=false;
     // one or more default values to assign if opt is not entered by user
     var _defaultValue:list(string);
 
-
     proc init(name:string, numOpts:int, opts:[?argsD] string, numArgs:range,
-              required=false, defaultValue=new list(string)) {
-      super.init();
-      _name=name;
+              required=false, defaultValue=new list(string), help:argumentHelp) {
+      super.init(_name=name, _help=help, _kind=argKind.option, _numArgs=numArgs);
+      // _name=name;
       _numOpts=numOpts;
       _opts=opts;
-      _numArgs=numArgs;
+      // _numArgs=numArgs;
       _required=required;
       _defaultValue=defaultValue;
-
+      // _help=help;
+      // _kind=argKind.option;
       // make sure that if we make an argument required no default set
       assert(!(_required && _defaultValue.size > 0),
               "Required options do not support default values");
@@ -448,7 +598,7 @@ module ArgumentParser {
       return _defaultValue;
     }
 
-    override proc _hasDefault():bool {
+    override proc _hasDefault() : bool {
       return !_defaultValue.isEmpty();
     }
 
@@ -476,7 +626,7 @@ module ArgumentParser {
       return next;
     }
 
-    override proc _validate(present:bool, valueCount:int):string {
+    override proc _validate(present:bool, valueCount:int) : string {
         if !present && _required {
         return "Required value missing";
       } else if valueCount > _numArgs.high {
@@ -489,7 +639,226 @@ module ArgumentParser {
         return "";
       }
     }
- }
+
+    override proc _getHelpCommand() : string {
+      var message:string;
+
+      if _numArgs.high > 0 && _numArgs.low > 0 {
+        message += ", ".join(_opts) + " <" + _help.valueName + ">";
+      } else if _numArgs.high > 0 {
+        message += ", ".join(_opts) + " [" + _help.valueName + "]";
+      } else {
+        message += ", ".join(_opts);
+      }
+      return message;
+    }
+  }
+
+  // the helpWrapper record coordinates the help text generation and is
+  // the entry point for the argumentParser to handle help message requests
+  pragma "no doc"
+  record helpWrapper {
+    // a help message handler to control what happens when help is called
+    var _helpHandler: shared HelpHandler;
+    // the name of the binary for the USAGE message
+    var _binaryName: string;
+    // use the generator to build help and usage messages
+    var _helpGenerator: HelpGenerator;
+
+    proc init(helpHandler=new shared HelpHandler(), binaryName="") {
+      _helpHandler=helpHandler;
+      _binaryName=binaryName;
+      _helpGenerator=new HelpGenerator();
+    }
+
+    // print the help message unless the user
+    // has overridden the HelpHandler.printHelp method to do other things
+    proc printHelp() {
+      _helpHandler.printHelp();
+    }
+
+    // sets the helpHandler's empty help message to generated message from
+    // the helpGenerator, or overwrites the help message if `message` is a string.
+    proc setHelp(message:?t=none) {
+      if isNothingType(t) && _helpHandler._helpMessage.isEmpty() {
+        var msg = _helpGenerator.generateHelp(binaryName=_binaryName);
+        _helpHandler._helpMessage = msg;
+      } else if isString(t) {
+        _helpHandler._helpMessage = message;
+      } else if !isNothingType(t) {
+          compilerError("Error setting help message: Expected string, received " + t:string);
+      }
+    }
+
+    // Notify the generator about the arguments defined in this parser
+    proc setArguments(argStack: map(string, ArgumentHandler)) {
+      _helpGenerator._setArguments(argStack);
+    }
+  }
+
+
+  pragma "no doc"
+  class HelpGenerator {
+
+    // create some sections to store the help text per section
+    var argsSection:section;
+    var optsSection:section;
+    var subSection:section;
+    // we need to know what argument handlers are defined in the parser
+    var _argStack: map(string, borrowed ArgumentHandler);
+
+    proc init() {
+      argsSection = new section();
+      optsSection = new section();
+      subSection = new section();
+    }
+
+    // represents two columns for argument, the name/flag and value, plus the
+    // help text
+    record element {
+      var command:string;
+      var help:string;
+
+      proc render(separator="\t") : string {
+        var message = command;
+        if !help.isEmpty() then
+          message += separator + help;
+        return message;
+      }
+    }
+
+    // represents a help message section, such as flags, subcommands, arguments
+    record section {
+      // store the rows that make up this section
+      var rows:list(element);
+
+      proc size {
+        return rows.size;
+      }
+
+      proc append(item) {
+        rows.append(item);
+      }
+
+      proc render(inset=1, separator="\t") : string {
+        var elemList:list(string);
+        for elt in rows.these() {
+          elemList.append(separator * inset + elt.render(separator));
+        }
+        return "\n".join(elemList.toArray());
+      }
+    }
+
+    // represent a USAGE message as a list of string values
+    record usageMessage {
+      var components:list(string);
+
+      proc render(separator=" ") : string {
+        return separator.join(components.toArray());
+      }
+    }
+
+    // needs to be called before generating usage or help
+    proc _setArguments(argStack: map(string, ArgumentHandler)) {
+      _argStack = new map(string, borrowed ArgumentHandler);
+      for k in argStack.these() {
+        _argStack.addOrSet(k,argStack.getBorrowed(k) );
+      }
+      generateSections();
+    }
+
+    // generate a usage message. This needs to be done just before displaying
+    // the help because we might not know the binary name until we see
+    // the arguments passed to main().
+    proc generateUsage(binaryName:string) : usageMessage {
+      // define an order for the usage message parts
+      var usageOrder = [argKind.positional, argKind.flag,
+                        argKind.option, argKind.subcommand];
+
+      var usage = new usageMessage();
+      usage.components.append(binaryName);
+      var hasSubcommands = false;
+      for kindOfArg in usageOrder {
+        for name in sorted(_argStack.keys()) {
+          const handler = _argStack.getBorrowed(name);
+          if !handler._help.visible then continue;
+          var elem = handler._getUsageCommand();
+          if handler._kind == kindOfArg {
+            select handler._kind {
+              when argKind.positional {
+                usage.components.append(elem);
+              }
+              when argKind.option {
+                usage.components.append(elem);
+              }
+              when argKind.subcommand {
+                hasSubcommands = true;
+              }
+              when argKind.flag {
+                usage.components.append(elem);
+              }
+            }
+          }
+        }
+      }
+      if hasSubcommands then
+        usage.components.append("[SUBCOMMAND]");
+      return usage;
+    }
+
+    // generate all the data for each section. Needs to be done AFTER all
+    // the arguments have been added to the argumentParser.
+    proc generateSections() {
+      for name in sorted(_argStack.keys()) {
+        const handler = _argStack.getBorrowed(name);
+        if !handler._help.visible then continue;
+        var elem = new element(handler._getHelpCommand(),
+                               handler._getHelpMessage());
+        select handler._kind {
+          when argKind.positional {
+            argsSection.append(elem);
+          }
+          when argKind.option {
+            optsSection.append(elem);
+          }
+          when argKind.subcommand {
+            subSection.append(elem);
+          }
+          when argKind.flag {
+            optsSection.append(elem);
+          }
+        }
+      }
+    }
+
+    // build the help message from the components of the usage string and the
+    // elements contained in each section
+    proc generateHelp(separator="\t", binaryName:string) : string {
+      var helpMessage:string;
+
+      helpMessage += "USAGE: "
+                         + generateUsage(binaryName).render()
+                         + "\n\n";
+
+      if argsSection.size > 0 {
+        helpMessage += "ARGUMENTS:\n"
+                        + argsSection.render(separator=separator)
+                        + "\n\n";
+      }
+      if optsSection.size > 0 {
+        helpMessage += "OPTIONS:\n"
+                        + optsSection.render(separator=separator)
+                        + "\n\n";
+      }
+      if subSection.size > 0 {
+        helpMessage += "SUBCOMMANDS:\n"
+                        + subSection.render(separator=separator)
+                        + "\n\n";
+      }
+
+      return helpMessage;
+    }
+  }
 
   /*
   A parser that performs the following functions:
@@ -508,6 +877,7 @@ module ArgumentParser {
 
     var parser = new argumentParser();
 
+
   **Limitations**
 
    * Cannot place short flags together. That is, if a parser has defined short
@@ -525,9 +895,6 @@ module ArgumentParser {
      processing. If a passthrough is also specified as ``--``, then these
      arguments will also be captured by the passthrough. If that is not desired,
      you can create a different passthrough delimiter, e.g. ``++``.
-
-   * Help and usage are not automatically generated or handled internally. This
-     is planned for future development.
 
    * Counting the number of times a flag is found on the command line is not
      supported.
@@ -553,21 +920,94 @@ module ArgumentParser {
     // store subcommand names
     pragma "no doc"
     var _subcommands: list(string);
-
+    // recognize help flags
     pragma "no doc"
-    proc init() {
+    var _helpFlags: list(string);
+    // exit if error in arguments
+    pragma "no doc"
+    var _exitOnError: bool;
+    // automatically add and handle help flag (-h/--help)
+    pragma "no doc"
+    var _addHelp: bool;
+    // keep track of which help flag was used so a dev can check it later
+    pragma "no doc"
+    var _helpUsed=(false,"");
+    // should the parser exit after printing the help message
+    pragma "no doc"
+    var _exitAfterHelp: bool;
+    // store a help wrapper
+    pragma "no doc"
+    var _help : helpWrapper;
+
+
+    /*
+      Initialize an instance of argumentParser.
+
+      :arg addHelp: Determines if the ArgumentParser adds help flags and handles
+                their presence in the command line arguments. Flag values are
+                set to ``-h`` and ``--help``. Defaults to `true`.
+
+      :arg exitOnError: Determines if ArgumentParser exits with error info when
+                    an error occurs. Defaults to `true`.
+
+      :arg exitAfterHelp: Determines if ArgumentParser exits after it finds a help
+                      flag and prints the help message. Defaults to `true`.
+
+      :arg helpHandler: Allows a user to define a custom HelpHandler to perform
+                    printing of the help message and additional operations.
+                    Defaults to a new instance of HelpHandler.
+                    Cannot be set in conjunction with `helpMessage`.
+
+      :arg helpMessage: Allows a user to set a customized message to display as
+                        help output. Defaults to a help message generated by
+                        the argumentParser.
+                        Cannot be used in conjunction with `helpHandler`.
+    */
+    proc init(addHelp=true, exitOnError=true, exitAfterHelp=true,
+              in helpHandler:?h=none, helpMessage:?t=none) {
+
+      if (!isNothingType(h) && !isNothingType(t)) then
+        compilerError("Cannot set help message and help handler, choose one.");
       _result = new map(string, shared Argument);
       _handlers = new map(string, owned ArgumentHandler);
       _options = new map(string, string);
       _positionals = new list(borrowed Positional);
       _subcommands = new list(string);
+      _exitOnError = exitOnError;
+      _addHelp = addHelp;
+      _exitAfterHelp = exitAfterHelp;
+
+      var _helpHandler = new shared HelpHandler();
+      if !isNothingType(h) then
+        _helpHandler = helpHandler;
+
+      _help = new helpWrapper(_helpHandler);
+      if isStringType(t) then
+        _help.setHelp(helpMessage);
+
+
       this.complete();
+
       try! {
         // configure to allow consuming of -- if passed from runtime
-
         // storing into variable to avoid memory leak due to compiler bug #18391
-        var tmp = addOption(name="dummyDashHandler", opts=["--"], numArgs=0);
+        var tmp = addOption(name="dummyDashHandler", opts=["--"],
+                            numArgs=0,
+                            visible=false,
+                            help="indicates all following arguments are not to be parsed");
+
+        // handle help flag automatically
+        // storing into variable to avoid memory leak due to compiler bug #18391
+        if _addHelp then var _tmp = addHelpFlag();
       }
+    }
+
+    // setup automatic help handling on -h or --help
+    pragma "no doc"
+    proc addHelpFlag(name="ArgumentParserAddedHelp",
+                     opts:[?optsD]=["-h","--help"]) throws {
+      _helpFlags.extend(opts);
+      return addFlag(name, opts, defaultValue=false, help="Display this message and exit");
     }
 
     /*
@@ -596,6 +1036,15 @@ module ArgumentParser {
     :arg numArgs: an exact number of values expected from the command line.
                   An ArgumentError will be thrown if more or fewer values are entered.
 
+    :arg help: a message to display for this argument when help is requested
+
+    :arg visible: determines if this argument should be displayed in the help
+                  and usage messages. Defaults to `true`.
+
+    :arg valueName: an alternative display name for the value in the help and
+                    usage messages for this argument. Defaults to the
+                    uppercase representation of the `name` field.
+
     :returns: a shared `Argument` where parsed values will be placed
 
     :throws: ArgumentError in any of the following conditions:
@@ -607,8 +1056,11 @@ module ArgumentParser {
     */
     proc addArgument(name:string,
                      numArgs=1,
-                     defaultValue:?t=none) : shared Argument throws {
-      return addArgument(name, numArgs..numArgs, defaultValue);
+                     defaultValue:?t=none,
+                     help="",
+                     visible=true,
+                     valueName:?v=none) : shared Argument throws {
+      return addArgument(name, numArgs..numArgs, defaultValue, help, visible, valueName);
     }
 
     /*
@@ -641,6 +1093,15 @@ module ArgumentParser {
                   to avoid ambiguity.
                   An ArgumentError will be thrown if more or fewer values are entered.
 
+    :arg help: a message to display for this argument when help is requested
+
+    :arg visible: determines if this argument should be displayed in the help
+                  and usage messages. Defaults to `true`.
+
+    :arg valueName: an alternative display name for the value in the help and
+                    usage messages for this argument. Defaults to the
+                    uppercase representation of the `name` field.
+
     :returns: a shared `Argument` where parsed values will be placed
 
     :throws: ArgumentError in any of the following conditions:
@@ -653,11 +1114,18 @@ module ArgumentParser {
     */
     proc addArgument(name:string,
                      numArgs:range(?),
-                     defaultValue:?t=none) : shared Argument throws {
+                     defaultValue:?t=none,
+                     help="",
+                     visible=true,
+                     valueName:?v=none) : shared Argument throws {
       var argName = name;
       var nArgs = _prepareRange(numArgs);
       if name.startsWith("-") then argName = name.strip("-", trailing=false);
-      var handler = new owned Positional(argName, defaultValue, nArgs);
+      var helpName = argName;
+      if isNothingType(v) then
+        helpName = argName.toUpper();
+      var argHelp = new argumentHelp(help=help,visible=visible,valueName=helpName);
+      var handler = new Positional(argName, defaultValue, nArgs, argHelp);
 
       for arg in _positionals {
         if arg._numArgs.high >= 1 && arg._numArgs.low != arg._numArgs.high {
@@ -711,6 +1179,15 @@ module ArgumentParser {
                   command line. An ArgumentError will be thrown if more or fewer
                   values are entered.
 
+    :arg help: a message to display for this option when help is requested
+
+    :arg visible: determines if this option should be displayed in the help
+                  and usage messages. Defaults to `true`.
+
+    :arg valueName: an alternative display name for the value in the help and
+                    usage messages when an option accepts values. Defaults to the
+                    uppercase representation of the `name` field.
+
     :returns: a shared `Argument` where parsed values will be placed
 
     :throws: ArgumentError in any of the following conditions:
@@ -725,12 +1202,18 @@ module ArgumentParser {
                    opts:[]string=_processNameToOpts(name),
                    numArgs=1,
                    required=false,
-                   defaultValue:?t=none) : shared Argument throws {
+                   defaultValue:?t=none,
+                   help="",
+                   visible=true,
+                   valueName:?v=none) : shared Argument throws {
       return addOption(name=name,
                        opts=opts,
                        numArgs=numArgs..numArgs,
                        required=required,
-                       defaultValue=defaultValue);
+                       defaultValue=defaultValue,
+                       help=help,
+                       visible=visible,
+                       valueName=valueName);
     }
 
     /*
@@ -772,6 +1255,15 @@ module ArgumentParser {
                   or a lower-bound range like ``1..``. An ArgumentError will be
                   thrown if more or fewer values are entered.
 
+    :arg help: a message to display for this option when help is requested
+
+    :arg visible: determines if this option should be displayed in the help
+                  and usage messages. Defaults to `true`.
+
+    :arg valueName: an alternative display name for the value in the help and
+                    usage messages when an option accepts values. Defaults to the
+                    uppercase representation of the `name` field.
+
     :returns: a shared `Argument` where parsed values will be placed
 
     :throws: ArgumentError in any of the following conditions:
@@ -787,7 +1279,10 @@ module ArgumentParser {
                    opts:[]string=_processNameToOpts(name),
                    numArgs:range(?),
                    required=false,
-                   defaultValue:?t=none) : shared Argument throws {
+                   defaultValue:?t=none,
+                   help="",
+                   visible=true,
+                   valueName:?v=none) : shared Argument throws {
       var nArgs = _prepareRange(numArgs);
       var argName = name;
       if name.startsWith("-") then argName = name.strip("-", trailing=false);
@@ -803,14 +1298,16 @@ module ArgumentParser {
         throw new ArgumentError("Only string and list of strings are supported "
                                 + "as default values at this time");
       }
-
+      var valName=argName.toUpper();
+      if !isNothingType(v) then valName=valueName;
+      var argHelp = new argumentHelp(help=help,visible=visible,valueName=valName);
       var handler = new owned Option(name=argName,
                                     numOpts=opts.size,
                                     opts=opts,
                                     numArgs=nArgs,
                                     required=required,
-                                    defaultValue=myDefault
-                                    );
+                                    defaultValue=myDefault,
+                                    help=argHelp);
       return _addHandler(handler);
     }
 
@@ -854,6 +1351,15 @@ module ArgumentParser {
                     when 0, then ``--flag`` is accepted while ``--flag=true`` is rejected
                     when 1, then ``--flag`` is rejected while ``--flag=true`` is accepted
 
+    :arg help: a message to display for this flag when help is requested
+
+    :arg visible: determines if this flag should be displayed in the help
+                  and usage messages. Defaults to `true`.
+
+    :arg valueName: an alternative display name for the value in the help and
+                    usage messages when a flag accepts a value. Defaults to the
+                    uppercase representation of the `name` field.
+
     :returns: a shared `Argument` where parsed values will be placed
 
     :throws: ArgumentError in any of the following conditions:
@@ -870,13 +1376,19 @@ module ArgumentParser {
     proc addFlag(name:string,
                  opts:[?optsD]=_processNameToOpts(name),
                  required=false, defaultValue:?t=none, flagInversion=false,
-                 numArgs=0) : shared Argument throws {
+                 numArgs=0,
+                 help="",
+                 visible=true,
+                 valueName:?v=none) : shared Argument throws {
       return addFlag(name=name,
                      opts=opts,
                      required=required,
                      defaultValue=defaultValue,
                      flagInversion=flagInversion,
-                     numArgs=numArgs..numArgs);
+                     numArgs=numArgs..numArgs,
+                     help=help,
+                     visible=visible,
+                     valueName=valueName);
     }
 
     /*
@@ -922,6 +1434,15 @@ module ArgumentParser {
                    line.
                    when 0..1, then ``--flag`` or ``--flag=true`` are accepted
 
+    :arg help: a message to display for this flag when help is requested
+
+    :arg visible: determines if this flag should be displayed in the help
+                  and usage messages. Defaults to `true`.
+
+    :arg valueName: an alternative display name for the value in the help and
+                    usage messages when a flag accepts a value. Defaults to the
+                    uppercase representation of the `name` field.
+
     :returns: a shared `Argument` where parsed values will be placed
 
     :throws: ArgumentError in any of the following conditions:
@@ -939,7 +1460,10 @@ module ArgumentParser {
     proc addFlag(name:string,
                  opts:[?optsD]=_processNameToOpts(name),
                  required=false, defaultValue:?t=none, flagInversion=false,
-                 numArgs:range) : shared Argument throws {
+                 numArgs:range,
+                 help="",
+                 visible=true,
+                 valueName:?v=none) : shared Argument throws {
 
       if (flagInversion && numArgs.high > 0) {
         throw new ArgumentError("Creating 'no' flag options prevents " +
@@ -960,27 +1484,33 @@ module ArgumentParser {
       if name.startsWith("-") then argName = name.strip("-", trailing=false);
       _checkAndSaveOpts(opts, argName);
 
-      var noFlagOpts:[optsD]string;
+      var noFlagOpts=new list(string);
 
       // if user chooses to automatically create 'no' version of flag
       if flagInversion {
         for i in optsD {
           var flagStr = opts[i].strip('-', trailing=false);
-          if flagStr.size == 1 {
-            noFlagOpts[i] = "-no-"+flagStr;
-          } else {
-            noFlagOpts[i] = "--no-"+flagStr;
+          var noStr = "-no-"+flagStr;
+          if flagStr.size > 1 {
+            noStr = "-" + noStr;
           }
-          _options.add(noFlagOpts[i], argName);
+          noFlagOpts.append(noStr);
+          _options.add(noStr, argName);
         }
       }
 
+      var valName = argName.toUpper();
+      if !isNothingType(v) then valName = valueName;
+      var helpArg = new argumentHelp(help=help,
+                                     visible=visible,
+                                     valueName=valName);
       var handler = new owned Flag(name=argName,
                                required=required,
                                defaultValue=defaultValue,
                                yesFlags=opts,
-                               noFlags=noFlagOpts,
-                               numArgs=numArgs);
+                               noFlags=noFlagOpts.toArray(),
+                               numArgs=numArgs,
+                               help=helpArg);
 
       return _addHandler(handler);
     }
@@ -994,7 +1524,7 @@ module ArgumentParser {
 
     .. code-block:: chapel
 
-      var subCmdRun = parser.addSubcommand("run");
+      var subCmdRun = parser.addSubCommand("run");
 
     we would expect command line arguments like this:
 
@@ -1005,13 +1535,20 @@ module ArgumentParser {
     :arg cmd: a keyword that is recognized as indicating the subcommand from the
               command line. For example, `commit` in `git commit`.
 
+    :arg help: a message to display for this subcommand when help is requested
+
+    :arg visible: determines if this subcommand should be displayed in the help
+                  and usage messages. Defaults to `true`.
+
     :returns: a shared `Argument` where parsed values will be placed
 
     :throws: ArgumentError if `cmd` is already defined for this parser
 
     */
-    proc addSubCommand(cmd:string) : shared Argument throws {
-      var handler = new owned SubCommand(cmd);
+    proc addSubCommand(cmd:string, help="",
+                       visible=true) : shared Argument throws {
+      var argHelp = new argumentHelp(help, visible, cmd);
+      var handler = new owned SubCommand(cmd, argHelp);
       _subcommands.append(cmd);
       _options.add(cmd, cmd);
       return _addHandler(handler);
@@ -1034,7 +1571,7 @@ module ArgumentParser {
 
       $ programName <any args for programName> -- --preserved-flags --options etc
 
-    :args delimiter: the pattern to use as the passthrough indicator
+    :arg delimiter: the pattern to use as the passthrough indicator
 
     :returns: a shared `Argument` where collected values will be placed for use
               by the developer
@@ -1045,7 +1582,10 @@ module ArgumentParser {
     proc addPassThrough(delimiter="--") : shared Argument throws {
       // remove the dummyHandler first
       if delimiter == "--" then _removeHandler("dummyDashHandler", ["--"]);
-      var handler = new owned PassThrough(delimiter);
+      var argHelp = new argumentHelp(visible=false,
+                                     help="pass all following arguments without parsing",
+                                     valueName=delimiter);
+      var handler = new owned PassThrough(delimiter, argHelp);
       _subcommands.append(delimiter);
       _options.add(delimiter, delimiter);
       return _addHandler(handler);
@@ -1063,7 +1603,7 @@ module ArgumentParser {
       }
 
       // check that we consumed everything we expected to
-      if endPos < endIdx then{
+      if endPos < endIdx then {
         throw new ArgumentError("Found some unrecognizable arguments: " +
                                 " ".join(arguments[endPos..<endIdx]));
       }
@@ -1078,20 +1618,43 @@ module ArgumentParser {
     .. code-block:: chapel
 
       proc main(args:[]string) throws {
-        // parser and arguments defined
-        try!{
-          parser.parseArgs(args);
-        } catch ex : ArgumentError {
-          // display usage message
-          writeln(ex.message());
-        }
+        // after parser and arguments defined
+        parser.parseArgs(args);
       }
 
     :arg arguments: The array of values passed from the command line to `main(args:[]string)`
 
-    :throws: ArgumentError if invalid or undefined command line arguments found in `arguments`
+    :throws: If argumentParser initialized with exitOnError=false,
+             then an ArgumentError is raised if invalid or undefined command
+             line arguments found in `arguments`
     */
     proc parseArgs(arguments:[?argsD] string) throws {
+      // normal operation is to catch parsing error, write help message,
+      // and exit. User may choose to handle errors themselves though.
+      if _addHelp {
+        if _help._binaryName.isEmpty() then
+          _help._binaryName = basename(arguments[argsD.low]);
+        _help.setArguments(this._handlers);
+        _help.setHelp();
+      }
+
+      if _exitOnError {
+        try {
+          _tryParseArgs(arguments);
+        } catch ex: Error {
+          stderr.writeln(ex.message());
+          if _addHelp {
+            _help.printHelp();
+            exit(1);
+          }
+        }
+      } else {
+        _tryParseArgs(arguments);
+      }
+    }
+
+    pragma "no doc"
+    proc _tryParseArgs(arguments:[?argsD] string) throws {
       // TODO: Find out why the in intent is breaking here
       compilerAssert(argsD.rank==1, "parseArgs requires 1D array");
       var k = 0;
@@ -1130,6 +1693,15 @@ module ArgumentParser {
           argRslt._present = true;
           // if subcommand found, stop processing more args, save for subcmd
           if _subcommands.contains(argElt) then break;
+          // check for the presence of a help flag and handle it or quit parsing
+          if _helpFlags.contains(argElt) {
+            _helpUsed = (true, argElt);
+            if _addHelp {
+              _help.printHelp();
+              if _exitAfterHelp then exit(0);
+            }
+            return 0;
+          }
         }
       }
 
@@ -1140,7 +1712,7 @@ module ArgumentParser {
       }
 
       // get this as an array so we can sort it, because maps are orderless
-      // TODO: Can we eliminate this extra logic by using an OrderedMap type?
+      // TODO: Can we eliminate this extra logic by using an SortedMap type?
       var arrayOptionIndices = optionIndices.toArray();
       sort(arrayOptionIndices);
 
@@ -1199,6 +1771,17 @@ module ArgumentParser {
       _assignDefaultsToMissingOpts();
 
       return 0;
+    }
+
+    /*
+    Check if the parser identified a help flag from the command line
+
+    :returns: a tuple with the first component being a boolean indicating if a
+              help flag was found and the second element being the flag found.
+              Second element will be the empty string if no help flag was found.
+    */
+    proc helpFlagPresent() : (bool, string) {
+      return _helpUsed;
     }
 
     pragma "no doc"
@@ -1302,6 +1885,7 @@ module ArgumentParser {
     }
   }
 
+
   /*
   Stores the result of argument parsing.
   */
@@ -1397,6 +1981,28 @@ module ArgumentParser {
       }
     }
   }
+
+
+  /*
+  The HelpHandler class is meant to be inheritable so a user can implement their
+  own behavior when the help flag is recognized by the parser. Typically, there
+  is no need to make a custom version of HelpHandler, as a default is supplied.
+
+  */
+  class HelpHandler {
+    // the help message to display on ./progName --help
+    pragma "no doc"
+    var _helpMessage:string;
+
+    /*
+    Prints the help message by default.
+    Inherit this class and override this method to customize the operations.
+    */
+    proc printHelp() {
+      writeln(_helpMessage);
+    }
+  }
+
 
   // helper to prepare numArgs ranges for use
   pragma "no doc"

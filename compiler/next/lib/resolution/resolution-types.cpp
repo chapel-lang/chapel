@@ -17,8 +17,10 @@
  * limitations under the License.
  */
 
-#include "chpl/queries/update-functions.h"
 #include "chpl/resolution/resolution-types.h"
+
+#include "chpl/queries/query-impl.h"
+#include "chpl/queries/update-functions.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/Formal.h"
 
@@ -26,6 +28,72 @@ namespace chpl {
 namespace resolution {
 
 using namespace uast;
+
+const owned<UntypedFnSignature>&
+UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
+                                          UniqueString name,
+                                          bool isMethod,
+                                          bool idIsFunction,
+                                          bool isTypeConstructor,
+                                          uast::Function::Kind kind,
+                                          std::vector<FormalDetail> formals,
+                                          const Expression* whereClause) {
+  QUERY_BEGIN(getUntypedFnSignature, context,
+              id, name, isMethod, idIsFunction, isTypeConstructor,
+              kind, formals, whereClause);
+
+  owned<UntypedFnSignature> result =
+    toOwned(new UntypedFnSignature(id, name, isMethod,
+                                   idIsFunction, isTypeConstructor,
+                                   kind, std::move(formals), whereClause));
+
+  return QUERY_END(result);
+}
+
+const UntypedFnSignature*
+UntypedFnSignature::get(Context* context, ID id,
+                        UniqueString name,
+                        bool isMethod,
+                        bool idIsFunction,
+                        bool isTypeConstructor,
+                        uast::Function::Kind kind,
+                        std::vector<FormalDetail> formals,
+                        const uast::Expression* whereClause) {
+  return getUntypedFnSignature(context, id, name, isMethod,
+                               idIsFunction, isTypeConstructor, kind,
+                               std::move(formals), whereClause).get();
+}
+
+const UntypedFnSignature*
+UntypedFnSignature::get(Context* context, const uast::Function* fn) {
+  const UntypedFnSignature* result = nullptr;
+
+  if (fn != nullptr) {
+    // compute the FormalDetails
+    std::vector<FormalDetail> formals;
+    for (auto decl : fn->formals()) {
+      UniqueString name;
+      bool hasDefault = false;
+      if (auto formal = decl->toFormal()) {
+        name = formal->name();
+        hasDefault = formal->initExpression() != nullptr;
+      }
+
+      formals.push_back(FormalDetail(name, hasDefault, decl));
+    }
+
+    // find the unique-ified untyped signature
+    result = get(context, fn->id(),
+                 fn->name(), fn->isMethod(),
+                 /* idIsFunction */ true,
+                 /* isTypeConstructor */ false,
+                 fn->kind(),
+                 std::move(formals), fn->whereClause());
+  }
+
+  return result;
+}
+
 
 void ResolutionResultByPostorderID::setupForSymbol(const ASTNode* ast) {
   assert(Builder::astTagIndicatesNewIdScope(ast->tag()));
@@ -68,16 +136,19 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   failingActualIdx = -1;
 
   // allocate space in the arrays
-  byFormalIdx.resize(untyped->formals.size());
+  byFormalIdx.resize(untyped->numFormals());
   actualIdxToFormalIdx.resize(call.actuals.size());
 
   // initialize the FormalActual parts from the Formals
-  size_t formalIdx = 0;
-  for (const Formal* formal : untyped->formals) {
+  int formalIdx = 0;
+  int numFormals = untyped->numFormals();
+  for (int i = 0; i < numFormals; i++) {
     FormalActual& entry = byFormalIdx[formalIdx];
-    entry.formal = formal;
+    if (const Decl* decl = untyped->formalDecl(i)) {
+      entry.formal = decl;
+    }
     if (typed) {
-      entry.formalType = typed->formalTypes[formalIdx];
+      entry.formalType = typed->formalType(formalIdx);
     }
     entry.hasActual = false;
     entry.actualIdx = -1;
@@ -88,21 +159,21 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   // Match named actuals against formal names in the function signature.
   // Record successful matches in actualIdxToFormalIdx.
 
-  size_t actualIdx = 0;
+  int actualIdx = 0;
   for (const CallInfoActual& actual : call.actuals) {
     if (!actual.byName.isEmpty()) {
       bool match = false;
-      int formalIdx = 0;
-      for (const Formal* formal : untyped->formals) {
-        if (actual.byName == formal->name()) {
+      for (int i = 0; i < numFormals; i++) {
+        if (actual.byName == untyped->formalName(i)) {
           match = true;
-          FormalActual& entry = byFormalIdx[formalIdx];
+          FormalActual& entry = byFormalIdx[i];
           entry.hasActual = true;
           entry.actualIdx = actualIdx;
           entry.actualType = actual.type;
           actualIdxToFormalIdx[actualIdx] = formalIdx;
           break;
         }
+
         formalIdx++;
       }
 
@@ -122,7 +193,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   formalIdx = 0;
   actualIdx = 0;
   for (const CallInfoActual& actual : call.actuals) {
-    if (formalIdx >= byFormalIdx.size()) {
+    if (formalIdx >= (int) byFormalIdx.size()) {
       // too many actuals
       mappingIsValid = false;
       failingActualIdx = actualIdx;
@@ -132,7 +203,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     if (actual.byName.isEmpty()) {
       // Skip any formals already matched to named arguments
       while (byFormalIdx[formalIdx].actualIdx >= 0) {
-        if (formalIdx + 1 >= byFormalIdx.size()) {
+        if (formalIdx + 1 >= (int) byFormalIdx.size()) {
           // too many actuals
           mappingIsValid = false;
           failingActualIdx = actualIdx;
@@ -140,7 +211,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
         }
         formalIdx++;
       }
-      assert(formalIdx < byFormalIdx.size());
+      assert(formalIdx < (int) byFormalIdx.size());
 
       // TODO: special handling for operators
 
@@ -153,17 +224,22 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     actualIdx++;
   }
 
-  // Make sure that any remaining formals are matched by name
-  // or have a default value.
-  while (formalIdx < byFormalIdx.size()) {
-    if (byFormalIdx[formalIdx].actualIdx < 0 &&
-        untyped->formals[formalIdx]->initExpression() == nullptr) {
-      // formal was not provided and there is no default value
-      mappingIsValid = false;
-      failingFormalIdx = formalIdx;
-      return false;
+  if (!untyped->isTypeConstructor()) {
+    // Make sure that any remaining formals are matched by name
+    // or have a default value.
+    // This is left out for type constructors because presently
+    // a partial instantiation is provided by simply leaving out arguments.
+    while (formalIdx < (int) byFormalIdx.size()) {
+      if (byFormalIdx[formalIdx].actualIdx < 0) {
+        if (!untyped->formalHasDefault(formalIdx)) {
+          // formal was not provided and there is no default value
+          mappingIsValid = false;
+          failingFormalIdx = formalIdx;
+          return false;
+        }
+      }
+      formalIdx++;
     }
-    formalIdx++;
   }
 
   mappingIsValid = true;
@@ -184,7 +260,7 @@ FormalActualMap FormalActualMap::build(const UntypedFnSignature* sig,
 FormalActualMap FormalActualMap::build(const TypedFnSignature* sig,
                                        const CallInfo& call) {
   FormalActualMap ret;
-  bool ok = ret.computeAlignment(sig->untypedSignature, sig, call);
+  bool ok = ret.computeAlignment(sig->untyped(), sig, call);
   if (!ok) {
     ret.mappingIsValid = false;
   }
@@ -192,15 +268,16 @@ FormalActualMap FormalActualMap::build(const TypedFnSignature* sig,
 }
 
 std::string TypedFnSignature::toString() const {
-  std::string ret = untypedSignature->functionId.toString();
+  std::string ret = id().toString();
   ret += "(";
-  for (size_t i = 0; i < untypedSignature->formals.size(); i++) {
+  int nFormals = numFormals();
+  for (int i = 0; i < nFormals; i++) {
     if (i != 0) {
       ret += ", ";
     }
-    ret += untypedSignature->formals[i]->name().c_str();
+    ret += formalName(i).toString();
     ret += " : ";
-    ret += formalTypes[i].toString();
+    ret += formalType(i).toString();
   }
   ret += ")";
 

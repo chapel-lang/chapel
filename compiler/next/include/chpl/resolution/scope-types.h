@@ -23,6 +23,7 @@
 #include "chpl/types/Type.h"
 #include "chpl/uast/ASTNode.h"
 #include "chpl/util/memory.h"
+#include "chpl/util/iteration.h"
 
 #include <unordered_map>
 #include <utility>
@@ -248,63 +249,120 @@ class Scope {
   }
 };
 
-// This class supports both use and import
-// It stores a normalized form of the symbols made available
-// by a use/import clause.
-struct VisibilitySymbols {
-  ID symbolId;       // ID of the imported symbol, e.g. ID of a Module
+/**
+ This class supports both `use` and `import`.
+ It stores a normalized form of the symbols made available
+ by a use/import clause.
+*/
+class VisibilitySymbols {
+ public:
+  /** The kind of import symbol */
   enum Kind {
-    SYMBOL_ONLY,     // the named symbol itself only (one name in names)
-    ALL_CONTENTS,    // (and names is empty)
-    ONLY_CONTENTS,   // only the contents named in names
-    CONTENTS_EXCEPT, // except the contents named in names (no renaming)
+    /** the named symbol itself only (one name in names) */
+    SYMBOL_ONLY,
+    /** (and names is empty) */
+    ALL_CONTENTS,
+    /** only the contents named in names */
+    ONLY_CONTENTS,
+    /** except the contents named in names (no renaming) */
+    CONTENTS_EXCEPT,
   };
-  Kind kind = SYMBOL_ONLY;
-  bool isPrivate = true;
+
+ private:
+  ID symbolId_;      // ID of the imported symbol, e.g. ID of a Module
+  Kind kind_ = SYMBOL_ONLY;
+  bool isPrivate_ = true;
 
   // the names/renames:
   //  pair.first is the name as declared
   //  pair.second is the name here
-  std::vector<std::pair<UniqueString,UniqueString>> names;
+  std::vector<std::pair<UniqueString,UniqueString>> names_;
 
+ public:
   VisibilitySymbols() { }
   VisibilitySymbols(ID symbolId, Kind kind, bool isPrivate,
                     std::vector<std::pair<UniqueString,UniqueString>> names)
-    : symbolId(symbolId), kind(kind), isPrivate(isPrivate),
-      names(std::move(names))
+    : symbolId_(symbolId), kind_(kind), isPrivate_(isPrivate),
+      names_(std::move(names))
   { }
 
+  /** Return the ID of the imported symbol, e.g. ID of a Module */
+  const ID &symbolId() const { return symbolId_; }
 
-  bool operator==(const VisibilitySymbols& other) const {
-    return symbolId == other.symbolId &&
-           kind == other.kind &&
-           names == other.names;
+  /** Return the kind of the imported symbol */
+  Kind kind() const { return kind_; }
+
+  /** Return whether or not the imported symbol is private */
+  bool isPrivate() const { return isPrivate_; }
+
+  /** Lookup the declared name for a given name
+      Returns true if `name` is found in the list of renamed names and
+      stores the declared name in `declared`
+      Returns false if `name` is not found
+  */
+  bool lookupName(const UniqueString &name, UniqueString &declared) const {
+    for (const auto &p : names_) {
+      if (p.second == name) {
+        declared = p.first;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool operator==(const VisibilitySymbols &other) const {
+    return symbolId_ == other.symbolId_ &&
+           kind_ == other.kind_ &&
+           names_ == other.names_;
   }
   bool operator!=(const VisibilitySymbols& other) const {
     return !(*this == other);
   }
 
   void swap(VisibilitySymbols& other) {
-    symbolId.swap(other.symbolId);
-    std::swap(kind, other.kind);
-    names.swap(other.names);
+    symbolId_.swap(other.symbolId_);
+    std::swap(kind_, other.kind_);
+    names_.swap(other.names_);
   }
 };
 
-// Stores the result of in-order resolution of use/import
-// statements. This would not be separate from resolving variables
+/**
+ Stores the result of in-order resolution of use/import
+ statements.
+*/
+// This would not be separate from resolving variables
 // if the language design was that symbols available due to use/import
 // are only available after that statement (and in that case this analysis
 // could fold into the logic about variable declarations).
-struct ResolvedVisibilityScope {
-  const Scope* scope;
-  std::vector<VisibilitySymbols> visibilityClauses;
+class ResolvedVisibilityScope {
+ private:
+  const Scope* scope_;
+  std::vector<VisibilitySymbols> visibilityClauses_;
+
+ public:
+  using VisibilitySymbolsIterable = Iterable<std::vector<VisibilitySymbols>>;
+
   ResolvedVisibilityScope(const Scope* scope)
-    : scope(scope)
+    : scope_(scope)
   { }
+
+  /** Return the scope */
+  const Scope *scope() const { return scope_; }
+
+  /** Return an iterator over the visibility clauses */
+  VisibilitySymbolsIterable visibilityClauses() const {
+    return VisibilitySymbolsIterable(visibilityClauses_);
+  }
+
+  /** Add a visibility clause */
+  void addVisibilityClause(const VisibilitySymbols &clause) {
+    // TODO are we missing the whole point of emplace_back here (see callsites)
+    visibilityClauses_.push_back(clause);
+  }
+
   bool operator==(const ResolvedVisibilityScope& other) const {
-    return scope == other.scope &&
-           visibilityClauses == other.visibilityClauses;
+    return scope_ == other.scope_ &&
+           visibilityClauses_ == other.visibilityClauses_;
   }
   bool operator!=(const ResolvedVisibilityScope& other) const {
     return !(*this == other);
@@ -321,6 +379,9 @@ enum {
 
 using LookupConfig = unsigned int;
 
+/**
+ PoiScope is a point-of-instantiation scope
+ */
 // When resolving a traditional generic, we also need to consider
 // the point-of-instantiation scope as a place to find visible functions.
 // This type tracks such a scope.
@@ -334,43 +395,67 @@ using LookupConfig = unsigned int;
 // visible. Which is better?
 // If we want to make PoiScope not depend on the contents it might be nice
 // to make Scope itself not depend on the contents, too.
-struct PoiScope {
-  const Scope* inScope = nullptr;         // parent Scope for the Call
-  const PoiScope* inFnPoi = nullptr;      // what is the POI of this POI?
+class PoiScope {
+ private:
+  const Scope* inScope_ = nullptr;         // parent Scope for the Call
+  const PoiScope* inFnPoi_ = nullptr;      // what is the POI of this POI?
+
+ public:
+  PoiScope(const Scope *scope, const PoiScope *poiScope)
+      : inScope_(scope), inFnPoi_(poiScope) {}
+
+  /** return the parent scope for the call */
+  const Scope *inScope() const { return inScope_; }
+
+  /** return the POI of this POI */
+  const PoiScope *inFnPoi() const { return inFnPoi_; }
 
   bool operator==(const PoiScope& other) const {
-    return inScope == other.inScope &&
-           inFnPoi == other.inFnPoi;
+    return inScope_ == other.inScope_ &&
+           inFnPoi_ == other.inFnPoi_;
   }
   bool operator!=(const PoiScope& other) const {
     return !(*this == other);
   }
 };
 
-struct InnermostMatch {
+/**
+ InnermostMatch
+ */
+class InnermostMatch {
+ public:
   typedef enum {
     ZERO = 0,
     ONE = 1,
     MANY = 2,
   } MatchesFound;
 
-  ID id;
-  MatchesFound found = ZERO;
+ private:
+  ID id_;
+  MatchesFound found_ = ZERO;
 
+ public:
   InnermostMatch() { }
   InnermostMatch(ID id, MatchesFound found)
-    : id(id), found(found)
+    : id_(id), found_(found)
   { }
+
+  /** Return the id */
+  ID id() const { return id_;}
+
+  /** Return the matches found */
+  MatchesFound found() const { return found_;}
+
   bool operator==(const InnermostMatch& other) const {
-    return id == other.id &&
-           found == other.found;
+    return id_ == other.id_ &&
+           found_ == other.found_;
   }
   bool operator!=(const InnermostMatch& other) const {
     return !(*this == other);
   }
   void swap(InnermostMatch& other) {
-    id.swap(other.id);
-    std::swap(found, other.found);
+    id_.swap(other.id_);
+    std::swap(found_, other.found_);
   }
 };
 

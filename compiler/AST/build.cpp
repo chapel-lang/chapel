@@ -1551,7 +1551,7 @@ static Expr* lookupConfigValHelp(const char* cfgname, VarSymbol* var) {
 
 // first try looking up cfgname;
 // if it fails, try looking up currentModuleName.cfgname
-static Expr* lookupConfigVal(VarSymbol* var) {
+Expr* lookupConfigVal(VarSymbol* var) {
   extern bool parsingPrivate;
   const char* cfgname = var->name;
   Expr* configInit = lookupConfigValHelp(astr(currentModuleName, ".", cfgname), var);
@@ -1572,22 +1572,6 @@ static Expr* lookupConfigVal(VarSymbol* var) {
   }
   return configInit;
 }
-
-// take care of any config param, const, vars, overriding the expression
-// in the source code with what was provided on the command-line
-static void handleConfigVals(VarSymbol* var, DefExpr* defExpr, Expr* stmt) {
-  if (Expr *configInit = lookupConfigVal(var)) {
-    // config var initialized on the command line
-    // drop the original init expression on the floor
-    if (Expr* a = toExpr(configInit))
-      defExpr->init = a;
-    else if (Symbol* a = toSymbol(configInit))
-      defExpr->init = new SymExpr(a);
-    else
-      INT_FATAL(stmt, "DefExpr initialized with bad exprType config ast");
-  }
-}
-
 
 //
 // This helper function will return the string literal that a
@@ -1638,7 +1622,9 @@ BlockStmt* buildVarDecls(BlockStmt* stmts, const char* docs,
         }
 
         if (var->hasFlag(FLAG_CONFIG)) {
-          handleConfigVals(var, defExpr, stmt);
+          if (Expr* commandLineInit = lookupConfigVal(var)) {
+            defExpr->init = commandLineInit;
+          }
         }
 
         var->doc = docs;

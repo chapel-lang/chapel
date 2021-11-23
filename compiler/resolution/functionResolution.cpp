@@ -924,10 +924,10 @@ bool canInstantiate(Type* actualType, Type* formalType) {
 
   if (isClassLikeOrManaged(actualType) && isClassLike(formalType)) {
     Type* actualC = canonicalClassType(actualType);
-    ClassTypeDecorator actualDec = classTypeDecorator(actualType);
+    ClassTypeDecoratorEnum actualDec = classTypeDecorator(actualType);
 
     Type* formalC = canonicalClassType(formalType);
-    ClassTypeDecorator formalDec = classTypeDecorator(formalType);
+    ClassTypeDecoratorEnum formalDec = classTypeDecorator(formalType);
 
     if (canInstantiateDecorators(actualDec, formalDec)) {
       // Now that the decorators are checked, verify that the
@@ -1024,28 +1024,13 @@ static bool canParamCoerce(Type*   actualType,
         }
       }
     }
-
-    //
-    // For smaller integer types, if the argument is a param, does it
-    // store a value that's small enough that it could dispatch to
-    // this argument?
-    //
-    if (get_width(formalType) < 64) {
-      if (VarSymbol* var = toVarSymbol(actualSym)) {
-        if (var->immediate) {
-          if (fits_in_uint(get_width(formalType), var->immediate)) {
-            *paramNarrows = true;
-            return true;
-          }
-        }
-      }
-    }
   }
 
   // param strings can coerce between string and c_string
   if ((formalType == dtString || formalType == dtStringC) &&
       (actualType == dtString || actualType == dtStringC)) {
     if (actualSym && actualSym->isImmediate()) {
+      *paramNarrows = true;
       return true;
     }
   }
@@ -1097,6 +1082,11 @@ static bool canParamCoerce(Type*   actualType,
 
   if (is_imag_type(formalType)) {
     int mantissa_width = get_mantissa_width(formalType);
+
+    // coerce imag from smaller size
+    if (is_imag_type(actualType) &&
+        get_width(actualType) < get_width(formalType))
+      return true;
 
     // coerce literal/param imag that are exactly representable
     if (VarSymbol* var = toVarSymbol(actualSym)) {
@@ -1260,24 +1250,25 @@ bool canCoerceTuples(Type*     actualType,
 
 
 static
-ClassTypeDecorator removeGenericNilability(ClassTypeDecorator actual) {
+ClassTypeDecoratorEnum removeGenericNilability(ClassTypeDecoratorEnum actual) {
   // Normalize actuals to remove generic-ness
-  if (actual == CLASS_TYPE_BORROWED)
-    actual = CLASS_TYPE_BORROWED_NONNIL;
-  if (actual == CLASS_TYPE_UNMANAGED)
-    actual = CLASS_TYPE_UNMANAGED_NONNIL;
-  if (actual == CLASS_TYPE_MANAGED)
-    actual = CLASS_TYPE_MANAGED_NONNIL;
+  if (actual == ClassTypeDecorator::BORROWED)
+    actual = ClassTypeDecorator::BORROWED_NONNIL;
+  if (actual == ClassTypeDecorator::UNMANAGED)
+    actual = ClassTypeDecorator::UNMANAGED_NONNIL;
+  if (actual == ClassTypeDecorator::MANAGED)
+    actual = ClassTypeDecorator::MANAGED_NONNIL;
 
   return actual;
 }
 
-/* CLASS_TYPE_BORROWED e.g. can represent any nilability,
-   but this function assumes that an actual with type CLASS_TYPE_BORROWED
-   is actually the same as CLASS_TYPE_BORROWED_NONNIL.
+/* ClassTypeDecorator::BORROWED e.g. can represent any nilability,
+   but this function assumes that an actual with type
+   ClassTypeDecorator::BORROWED
+   is actually the same as ClassTypeDecorator::BORROWED_NONNIL.
  */
-bool canCoerceDecorators(ClassTypeDecorator actual,
-                         ClassTypeDecorator formal,
+bool canCoerceDecorators(ClassTypeDecoratorEnum actual,
+                         ClassTypeDecoratorEnum formal,
                          bool allowNonSubtypes,
                          bool implicitBang) {
 
@@ -1295,49 +1286,49 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
     implicitBang = false;
 
   switch (formal) {
-    case CLASS_TYPE_BORROWED:
+    case ClassTypeDecorator::BORROWED:
       // borrowed but generic nilability
       // This would be instantiation
       return false;
-    case CLASS_TYPE_BORROWED_NONNIL:
+    case ClassTypeDecorator::BORROWED_NONNIL:
       // Can't coerce away nilable
       return isDecoratorNonNilable(actual) || implicitBang;
-    case CLASS_TYPE_BORROWED_NILABLE:
+    case ClassTypeDecorator::BORROWED_NILABLE:
       // Everything can coerce to a nilable borrowed
       // but only subtypes if the actual is already nilable.
       return allowNonSubtypes || isDecoratorNilable(actual);
-    case CLASS_TYPE_UNMANAGED:
+    case ClassTypeDecorator::UNMANAGED:
       // unmanaged but generic nilability
       // This would be instantiation
       return false;
-    case CLASS_TYPE_UNMANAGED_NONNIL:
+    case ClassTypeDecorator::UNMANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to unmanaged
-      return (implicitBang && actual == CLASS_TYPE_UNMANAGED_NILABLE);
-    case CLASS_TYPE_UNMANAGED_NILABLE:
+      return (implicitBang && actual == ClassTypeDecorator::UNMANAGED_NILABLE);
+    case ClassTypeDecorator::UNMANAGED_NILABLE:
       // Can't coerce borrowed to unmanaged
-      return (allowNonSubtypes && actual == CLASS_TYPE_UNMANAGED_NONNIL);
+      return (allowNonSubtypes && actual == ClassTypeDecorator::UNMANAGED_NONNIL);
 
-    case CLASS_TYPE_MANAGED:
+    case ClassTypeDecorator::MANAGED:
       // managed but generic nilability
       // this would be instantiation
       return false;
-    case CLASS_TYPE_MANAGED_NONNIL:
+    case ClassTypeDecorator::MANAGED_NONNIL:
       // Can't coerce away nilable
       // Can't coerce borrowed to managed
-      return (implicitBang && actual == CLASS_TYPE_MANAGED_NILABLE);
-    case CLASS_TYPE_MANAGED_NILABLE:
+      return (implicitBang && actual == ClassTypeDecorator::MANAGED_NILABLE);
+    case ClassTypeDecorator::MANAGED_NILABLE:
       // Can't coerce borrowed to managed
-      return (allowNonSubtypes && actual == CLASS_TYPE_MANAGED_NONNIL);
+      return (allowNonSubtypes && actual == ClassTypeDecorator::MANAGED_NONNIL);
 
-    case CLASS_TYPE_GENERIC:
+    case ClassTypeDecorator::GENERIC:
       return false; // instantiation not coercion
-    case CLASS_TYPE_GENERIC_NONNIL:
+    case ClassTypeDecorator::GENERIC_NONNIL:
       // generally instantiation
-      return implicitBang && actual == CLASS_TYPE_GENERIC_NILABLE;
-    case CLASS_TYPE_GENERIC_NILABLE:
+      return implicitBang && actual == ClassTypeDecorator::GENERIC_NILABLE;
+    case ClassTypeDecorator::GENERIC_NILABLE:
       // generally instantiation
-      return allowNonSubtypes && actual == CLASS_TYPE_GENERIC_NONNIL;
+      return allowNonSubtypes && actual == ClassTypeDecorator::GENERIC_NONNIL;
 
     // no default for compiler warnings to know when to update it
   }
@@ -1347,8 +1338,8 @@ bool canCoerceDecorators(ClassTypeDecorator actual,
 
 // Returns true if actual has the same meaning as formal or
 // if passing actual to formal should result in instantiation.
-bool canInstantiateDecorators(ClassTypeDecorator actual,
-                              ClassTypeDecorator formal) {
+bool canInstantiateDecorators(ClassTypeDecoratorEnum actual,
+                              ClassTypeDecoratorEnum formal) {
 
   if (actual == formal)
     return true;
@@ -1360,39 +1351,39 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
     return true;
 
   switch (formal) {
-    case CLASS_TYPE_BORROWED:
-      return actual == CLASS_TYPE_BORROWED_NONNIL ||
-             actual == CLASS_TYPE_BORROWED_NILABLE;
-    case CLASS_TYPE_BORROWED_NONNIL:
-    case CLASS_TYPE_BORROWED_NILABLE:
+    case ClassTypeDecorator::BORROWED:
+      return actual == ClassTypeDecorator::BORROWED_NONNIL ||
+             actual == ClassTypeDecorator::BORROWED_NILABLE;
+    case ClassTypeDecorator::BORROWED_NONNIL:
+    case ClassTypeDecorator::BORROWED_NILABLE:
       return false;
 
-    case CLASS_TYPE_UNMANAGED:
-      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NILABLE;
-    case CLASS_TYPE_UNMANAGED_NONNIL:
-    case CLASS_TYPE_UNMANAGED_NILABLE:
+    case ClassTypeDecorator::UNMANAGED:
+      return actual == ClassTypeDecorator::UNMANAGED_NONNIL ||
+             actual == ClassTypeDecorator::UNMANAGED_NILABLE;
+    case ClassTypeDecorator::UNMANAGED_NONNIL:
+    case ClassTypeDecorator::UNMANAGED_NILABLE:
       return false;
 
-    case CLASS_TYPE_MANAGED:
-      return actual == CLASS_TYPE_MANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NILABLE;
-    case CLASS_TYPE_MANAGED_NONNIL:
-    case CLASS_TYPE_MANAGED_NILABLE:
+    case ClassTypeDecorator::MANAGED:
+      return actual == ClassTypeDecorator::MANAGED_NONNIL ||
+             actual == ClassTypeDecorator::MANAGED_NILABLE;
+    case ClassTypeDecorator::MANAGED_NONNIL:
+    case ClassTypeDecorator::MANAGED_NILABLE:
       return false;
 
-    case CLASS_TYPE_GENERIC:
+    case ClassTypeDecorator::GENERIC:
       return true;
-    case CLASS_TYPE_GENERIC_NONNIL:
-      return actual == CLASS_TYPE_GENERIC_NONNIL ||
-             actual == CLASS_TYPE_BORROWED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NONNIL;
-    case CLASS_TYPE_GENERIC_NILABLE:
-      return actual == CLASS_TYPE_GENERIC_NILABLE ||
-             actual == CLASS_TYPE_BORROWED_NILABLE||
-             actual == CLASS_TYPE_UNMANAGED_NILABLE||
-             actual == CLASS_TYPE_MANAGED_NILABLE;
+    case ClassTypeDecorator::GENERIC_NONNIL:
+      return actual == ClassTypeDecorator::GENERIC_NONNIL ||
+             actual == ClassTypeDecorator::BORROWED_NONNIL ||
+             actual == ClassTypeDecorator::UNMANAGED_NONNIL ||
+             actual == ClassTypeDecorator::MANAGED_NONNIL;
+    case ClassTypeDecorator::GENERIC_NILABLE:
+      return actual == ClassTypeDecorator::GENERIC_NILABLE ||
+             actual == ClassTypeDecorator::BORROWED_NILABLE||
+             actual == ClassTypeDecorator::UNMANAGED_NILABLE||
+             actual == ClassTypeDecorator::MANAGED_NILABLE;
 
     // no default for compiler warnings to know when to update it
   }
@@ -1401,8 +1392,8 @@ bool canInstantiateDecorators(ClassTypeDecorator actual,
 }
 
 // Can we instantiate or coerce or both?
-bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
-                                      ClassTypeDecorator formal,
+bool canInstantiateOrCoerceDecorators(ClassTypeDecoratorEnum actual,
+                                      ClassTypeDecoratorEnum formal,
                                       bool allowNonSubtypes,
                                       bool implicitBang) {
   if (actual == formal)
@@ -1419,40 +1410,40 @@ bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
     implicitBang = false;
 
   switch (formal) {
-    case CLASS_TYPE_BORROWED:
+    case ClassTypeDecorator::BORROWED:
       // can borrow from anything, could instantiate as borrowed?
       return true;
-    case CLASS_TYPE_BORROWED_NONNIL:
+    case ClassTypeDecorator::BORROWED_NONNIL:
       // can borrow from anything, but can't coerce away nilability
       return isDecoratorNonNilable(actual) || implicitBang;
-    case CLASS_TYPE_BORROWED_NILABLE:
+    case ClassTypeDecorator::BORROWED_NILABLE:
       // can borrow from anything, can always coerce to nilable
       return allowNonSubtypes || isDecoratorNilable(actual);;
 
-    case CLASS_TYPE_UNMANAGED:
+    case ClassTypeDecorator::UNMANAGED:
       // no coercions to unmanaged
-      return actual == CLASS_TYPE_UNMANAGED_NONNIL ||
-             actual == CLASS_TYPE_UNMANAGED_NILABLE;
-    case CLASS_TYPE_UNMANAGED_NONNIL:
-      return (implicitBang && actual == CLASS_TYPE_UNMANAGED_NILABLE);
-    case CLASS_TYPE_UNMANAGED_NILABLE:
-      return (allowNonSubtypes && actual == CLASS_TYPE_UNMANAGED_NONNIL);
+      return actual == ClassTypeDecorator::UNMANAGED_NONNIL ||
+             actual == ClassTypeDecorator::UNMANAGED_NILABLE;
+    case ClassTypeDecorator::UNMANAGED_NONNIL:
+      return (implicitBang && actual == ClassTypeDecorator::UNMANAGED_NILABLE);
+    case ClassTypeDecorator::UNMANAGED_NILABLE:
+      return (allowNonSubtypes && actual == ClassTypeDecorator::UNMANAGED_NONNIL);
 
-    case CLASS_TYPE_MANAGED:
-      return actual == CLASS_TYPE_MANAGED_NONNIL ||
-             actual == CLASS_TYPE_MANAGED_NILABLE;
-    case CLASS_TYPE_MANAGED_NONNIL:
-      return (implicitBang && actual == CLASS_TYPE_MANAGED_NILABLE);
-    case CLASS_TYPE_MANAGED_NILABLE:
-      return (allowNonSubtypes && actual == CLASS_TYPE_MANAGED_NONNIL);
+    case ClassTypeDecorator::MANAGED:
+      return actual == ClassTypeDecorator::MANAGED_NONNIL ||
+             actual == ClassTypeDecorator::MANAGED_NILABLE;
+    case ClassTypeDecorator::MANAGED_NONNIL:
+      return (implicitBang && actual == ClassTypeDecorator::MANAGED_NILABLE);
+    case ClassTypeDecorator::MANAGED_NILABLE:
+      return (allowNonSubtypes && actual == ClassTypeDecorator::MANAGED_NONNIL);
 
-    case CLASS_TYPE_GENERIC:
+    case ClassTypeDecorator::GENERIC:
       // accepts anything
       return true;
-    case CLASS_TYPE_GENERIC_NONNIL:
+    case ClassTypeDecorator::GENERIC_NONNIL:
       // accepts anything nonnil
       return isDecoratorNonNilable(actual) || implicitBang;
-    case CLASS_TYPE_GENERIC_NILABLE:
+    case ClassTypeDecorator::GENERIC_NILABLE:
       return allowNonSubtypes || isDecoratorNilable(actual);
 
     // no default for compiler warnings to know when to update it
@@ -1549,10 +1540,10 @@ bool canCoerceAsSubtype(Type*     actualType,
   if (isClassLike(actualType) && isClassLike(formalType)) {
     AggregateType* actualC =
       toAggregateType(canonicalDecoratedClassType(actualType));
-    ClassTypeDecorator actualDecorator = classTypeDecorator(actualType);
+    ClassTypeDecoratorEnum actualDecorator = classTypeDecorator(actualType);
     AggregateType* formalC =
       toAggregateType(canonicalDecoratedClassType(formalType));
-    ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
+    ClassTypeDecoratorEnum formalDecorator = classTypeDecorator(formalType);
 
     // Check that the decorators allow coercion
     if (canCoerceDecorators(actualDecorator, formalDecorator,
@@ -1629,10 +1620,10 @@ bool canCoerce(Type*     actualType,
   if (isClassLike(actualType) && isClassLike(formalType)) {
     AggregateType* actualC =
       toAggregateType(canonicalDecoratedClassType(actualType));
-    ClassTypeDecorator actualDecorator = classTypeDecorator(actualType);
+    ClassTypeDecoratorEnum actualDecorator = classTypeDecorator(actualType);
     AggregateType* formalC =
       toAggregateType(canonicalDecoratedClassType(formalType));
-    ClassTypeDecorator formalDecorator = classTypeDecorator(formalType);
+    ClassTypeDecoratorEnum formalDecorator = classTypeDecorator(formalType);
 
     bool implicitBang = allowImplicitNilabilityRemoval(actualType, actualSym,
                                                        formalType, formalSym);
@@ -2752,7 +2743,7 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
 }
 
 Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
-                                  ClassTypeDecorator useDec,
+                                  ClassTypeDecoratorEnum useDec,
                                   AggregateType* manager,
                                   Expr* ctx) {
   SET_LINENO(ctx);
@@ -2761,7 +2752,7 @@ Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
   INT_ASSERT(isClass(canonicalClassType));
 
   // Now type-construct it with appropriate nilability
-  ClassTypeDecorator d = combineDecorators(CLASS_TYPE_BORROWED, useDec);
+  ClassTypeDecoratorEnum d = combineDecorators(ClassTypeDecorator::BORROWED, useDec);
   Type* borrowType = canonicalClassType->getDecoratedClass(d);
 
   CallExpr* typeCall = new CallExpr(manager->symbol, borrowType->symbol);
@@ -2798,10 +2789,10 @@ static void adjustClassCastCall(CallExpr* call)
   // Down-casting is handled in the module code as well.
   if (isClassLikeOrManaged(valueType) && isClassLikeOrManaged(targetType)) {
     Type* canonicalValue = canonicalClassType(valueType);
-    ClassTypeDecorator valueD = classTypeDecorator(valueType);
+    ClassTypeDecoratorEnum valueD = classTypeDecorator(valueType);
 
     Type* canonicalTarget = canonicalClassType(targetType);
-    ClassTypeDecorator targetD = classTypeDecorator(targetType);
+    ClassTypeDecoratorEnum targetD = classTypeDecorator(targetType);
 
     AggregateType* at = NULL;
 
@@ -2816,7 +2807,7 @@ static void adjustClassCastCall(CallExpr* call)
       at = toAggregateType(canonicalTarget);
 
     // Compute the decorator combining generic properties
-    ClassTypeDecorator d = combineDecorators(targetD, valueD);
+    ClassTypeDecoratorEnum d = combineDecorators(targetD, valueD);
 
     // Compute the type based upon the decorators
     Type* t = NULL;
@@ -3011,9 +3002,9 @@ static bool resolveClassBorrowMethod(CallExpr* call) {
           INT_ASSERT(call->methodTag && pe && pe->baseExpr == call);
 
           // if the class is nilable the borrow should be too
-          ClassTypeDecorator d = CLASS_TYPE_BORROWED_NONNIL;
+          ClassTypeDecoratorEnum d = ClassTypeDecorator::BORROWED_NONNIL;
           if (isDecoratorNilable(classTypeDecorator(t))) {
-            d = CLASS_TYPE_BORROWED_NILABLE;
+            d = ClassTypeDecorator::BORROWED_NILABLE;
           }
 
           // this works around a compiler bug
@@ -3176,7 +3167,7 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
   SymExpr* ts = toSymExpr(call->baseExpr);
   Type* tsType = ts->typeInfo();
   AggregateType* at = toAggregateType(canonicalClassType(tsType));
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
   bool decorated = false;
   if (DecoratedClassType* dt = toDecoratedClassType(ts->typeInfo())) {
     decorated = true;
@@ -3185,17 +3176,19 @@ static Type* resolveTypeSpecifier(CallInfo& info) {
     // type will be wrapped with 'owned' e.g. after borrowed type is computed.
     if (isDecoratorManaged(decorator)) {
       if (isDecoratorNonNilable(decorator))
-        decorator = CLASS_TYPE_GENERIC_NONNIL;
+        decorator = ClassTypeDecorator::GENERIC_NONNIL;
       else if (isDecoratorNilable(decorator))
-        decorator = CLASS_TYPE_GENERIC_NILABLE;
+        decorator = ClassTypeDecorator::GENERIC_NILABLE;
       else
-        decorator = CLASS_TYPE_GENERIC;
+        decorator = ClassTypeDecorator::GENERIC;
     }
   }
 
-  if (isPrimitiveType(tsType)) {
+  if (at == NULL) {
     USR_FATAL_CONT(info.call, "illegal type index expression '%s'", info.toString());
-    USR_PRINT(info.call, "primitive type '%s' cannot be used in an index expression", tsType->symbol->name);
+    const char* typeclass = (isPrimitiveType(tsType) ? "primitive type" :
+                             (isEnumType(tsType) ? "enum type" : "type"));
+    USR_PRINT(info.call, "%s '%s' cannot be used in an index expression", typeclass, tsType->symbol->name);
     USR_STOP();
   } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
     SymbolMap subs;
@@ -8173,8 +8166,9 @@ static void checkManagerType(Type* t) {
   }
 
   if (isManagedPtrType(t)) {
-    ClassTypeDecorator d = classTypeDecorator(t);
-    INT_ASSERT(d == CLASS_TYPE_MANAGED || d == CLASS_TYPE_MANAGED_NILABLE);
+    ClassTypeDecoratorEnum d = classTypeDecorator(t);
+    INT_ASSERT(d == ClassTypeDecorator::MANAGED || d ==
+        ClassTypeDecorator::MANAGED_NILABLE);
     // check that it's not an instantiation
     INT_ASSERT(getDecoratedClass(t, d) == t);
   }
@@ -8233,7 +8227,8 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
         // if needed, make the manager nilable
         if (makeNilable) {
           if (isManagedPtrType(manager))
-            manager = getDecoratedClass(manager, CLASS_TYPE_MANAGED_NILABLE);
+            manager = getDecoratedClass(manager,
+                ClassTypeDecorator::MANAGED_NILABLE);
           else if (manager == dtUnmanaged)
             manager = dtUnmanagedNilable;
           else if (manager == dtBorrowed)
@@ -8467,7 +8462,7 @@ static Type* resolveGenericActual(SymExpr* se, bool resolvePartials) {
 static Type* resolveGenericActual(SymExpr* se, Type* type) {
   Type* retval = se->typeInfo();
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
   bool isDecoratedGeneric = false;
   if (DecoratedClassType* dt = toDecoratedClassType(type)) {
     type = dt->getCanonicalClass();
@@ -8486,8 +8481,8 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
 
       Type* retType = cc->typeInfo();
 
-      if (decorator != CLASS_TYPE_BORROWED &&
-          decorator != CLASS_TYPE_BORROWED_NONNIL) {
+      if (decorator != ClassTypeDecorator::BORROWED &&
+          decorator != ClassTypeDecorator::BORROWED_NONNIL) {
         AggregateType* gotAt = toAggregateType(retType);
         INT_ASSERT(gotAt);
         retType = gotAt->getDecoratedClass(decorator);
@@ -10934,7 +10929,7 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     // than in lowerPrimInit.
 
     // note: error for bad param initialization checked for in resolving move
-    if ((val->hasFlag(FLAG_MAYBE_PARAM) || val->isParameter())) {
+    if (val->hasFlag(FLAG_MAYBE_PARAM) || val->isParameter()) {
       if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
         Expr* defaultExpr = NULL;
         SymExpr* typeSe = NULL;
@@ -10968,8 +10963,32 @@ static void resolvePrimInit(CallExpr* call, Symbol* val, Type* type) {
     // These will be handled in lowerPrimInit.
     errorInvalidParamInit(call, val, at);
 
-    if (call->numActuals() >= 2)
-      call->get(2)->replace(new SymExpr(type->symbol));
+    if ((type == dtStringC || type == dtString || type == dtBytes) &&
+        (val->hasFlag(FLAG_MAYBE_PARAM) || val->isParameter())) {
+      // Initialize a param string
+      if (!call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+        VarSymbol* empty = nullptr;
+        if (type == dtStringC) {
+          empty = new_CStringSymbol("");
+        } else if (type == dtString) {
+          empty = new_StringSymbol("");
+        } else if (type == dtBytes) {
+          empty = new_BytesSymbol("");
+        } else {
+          INT_FATAL("case not handled");
+        }
+        CallExpr* moveDefault = new CallExpr(PRIM_MOVE, val, empty);
+        call->insertBefore(moveDefault);
+        resolveExpr(moveDefault);
+        call->convertToNoop();
+
+      } else {
+        call->convertToNoop(); // initialize it in PRIM_INIT_VAR_SPLIT_INIT
+      }
+    } else {
+      if (call->numActuals() >= 2)
+        call->get(2)->replace(new SymExpr(type->symbol));
+    }
   }
 }
 
@@ -11135,7 +11154,7 @@ static void errorIfNonNilableType(CallExpr* call, Symbol* val,
               toString(typeToCheck));
 
     AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
-    ClassTypeDecorator d = classTypeDecorator(type);
+    ClassTypeDecoratorEnum d = classTypeDecorator(type);
     Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
     USR_PRINT("Consider using the type %s instead", toString(suggestedType));
   }
@@ -11250,9 +11269,17 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
   } else if (type->symbol->hasFlag(FLAG_EXTERN) &&
              !type->symbol->hasFlag(FLAG_C_MEMORY_ORDER_TYPE)) {
 
-    // Just let the memory be uninitialized
     errorInvalidParamInit(call, val, at);
-    call->convertToNoop();
+
+    if (!val->hasFlag(FLAG_NO_INIT) &&
+        !call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
+      // Zero-initialize the memory
+      call->insertBefore(new CallExpr(PRIM_ZERO_VARIABLE, val));
+      call->convertToNoop();
+    } else {
+      // Just let the memory be uninitialized
+      call->convertToNoop();
+    }
 
   // generic records with initializers
   } else if (at != NULL && at->symbol->hasFlag(FLAG_TUPLE) == false &&
@@ -11301,7 +11328,7 @@ static void lowerPrimInit(CallExpr* call, Symbol* val, Type* type,
 
           Type* cdc = canonicalDecoratedClassType(field->type);
           AggregateType* atc = toAggregateType(cdc);
-          ClassTypeDecorator d = classTypeDecorator(field->type);
+          ClassTypeDecoratorEnum d = classTypeDecorator(field->type);
           Type* rec = atc->getDecoratedClass(addNilableToDecorator(d));
 
           USR_PRINT("because it is a non-nilable class - consider the "
@@ -11558,7 +11585,7 @@ void printUndecoratedClassTypeNote(Expr* ctx, Type* type) {
 
 void checkDuplicateDecorators(Type* decorator, Type* decorated, Expr* ctx) {
   if (isClassLikeOrManaged(decorator) && isClassLikeOrManaged(decorated)) {
-    ClassTypeDecorator d = classTypeDecorator(decorated);
+    ClassTypeDecoratorEnum d = classTypeDecorator(decorated);
 
     if (!isDecoratorUnknownManagement(d))
       USR_FATAL_CONT(ctx, "duplicate decorators - %s %s",

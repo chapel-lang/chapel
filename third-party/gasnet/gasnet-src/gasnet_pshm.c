@@ -96,6 +96,15 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
   }
 #endif
 
+  // vars for gasneti_pshm_jobrank_in_supernode:
+  if (discontig) {
+    gasneti_pshm_first_or_self = gasneti_mynode;
+    gasneti_pshm_nodes_or_one = 1;
+  } else {
+    gasneti_pshm_first_or_self = gasneti_pshm_firstnode;
+    gasneti_pshm_nodes_or_one = gasneti_pshm_nodes;
+  }
+
   gasneti_assert(gasneti_nodemap_global_count > 0);
 
   /* compute size of vnet shared memory region */
@@ -257,6 +266,8 @@ void *gasneti_pshm_init(gasneti_bootstrapBroadcastfn_t snodebcastfn, size_t aux_
 gasneti_pshm_rank_t gasneti_pshm_nodes = 0;
 gex_Rank_t gasneti_pshm_firstnode = (gex_Rank_t)(-1);
 gasneti_pshm_rank_t gasneti_pshm_mynode = (gasneti_pshm_rank_t)(-1);
+gex_Rank_t gasneti_pshm_first_or_self = (gex_Rank_t)(-1);
+gasneti_pshm_rank_t gasneti_pshm_nodes_or_one = (gasneti_pshm_rank_t)(-1);
 /* vectors constructed in shared space: */
 gasneti_pshm_rank_t *gasneti_pshm_rankmap = NULL;
 gex_Rank_t *gasneti_pshm_firsts = NULL;
@@ -1361,6 +1372,7 @@ int ampshm_prepare_inner(
 
   // Outputs consumed by commit
   sd->_void_p = msg;
+  sd->_flags = flags;
   sd->_pshm._pshmrank = pshmrank;
   sd->_pshm._jobrank = jobrank;
   GASNETI_AMPSHM_MSG_NUMARGS(msg) = nargs;
@@ -1429,8 +1441,13 @@ void ampshm_commit_inner(
         GASNETI_AMPSHM_MSG_LONG_DATA(msg) = dest_addr;
         GASNETI_AMPSHM_MSG_LONG_NUMBYTES(msg) = nbytes;
         gasneti_assert_uint( GASNETI_AMPSHM_MSG_LONG_NUMBYTES(msg) ,==, nbytes ); // truncated?
-        void *data = gasneti_pshm_jobrank_addr2local(sd->_pshm._jobrank, dest_addr);
-        GASNETI_MEMCPY_SAFE_EMPTY(data, sd->_addr, nbytes);
+        if (nbytes) {
+          gasneti_static_assert((int)GASNETI_FLAG_PEER_SEG_AUX); // else next line truncates
+          int is_aux = sd->_flags & GASNETI_FLAG_PEER_SEG_AUX;
+          gasneti_assert_uint(!!is_aux ,==, !!gasneti_in_auxsegment(sd->_pshm._jobrank, dest_addr, nbytes));
+          void *data = gasneti_pshm_jobrank_addr2local(sd->_pshm._jobrank, dest_addr, is_aux);
+          GASNETI_MEMCPY(data, sd->_addr, nbytes);
+        }
         break;
     }
     default: gasneti_unreachable_error(("Invalid category=%i",(int)category));

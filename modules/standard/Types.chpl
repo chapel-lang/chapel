@@ -761,15 +761,9 @@ proc max(type t) where isComplexType(t) {
 }
 
 pragma "no doc"
-iter chpl_enumerate(type t: enum) {
-  const enumTuple = chpl_enum_enumerate(t);
-  foreach i in 0..enumTuple.size-1 do
-    yield enumTuple(i);
-}
-pragma "no doc"
 iter type enum.these(){
-  for i in chpl_enumerate(this) do
-    yield i;
+  foreach i in 0..<this.size do
+    yield chpl__orderToEnum(i, this);
 }
 
 pragma "no doc"

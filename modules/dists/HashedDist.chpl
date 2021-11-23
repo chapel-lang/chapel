@@ -26,12 +26,14 @@ config param debugUserMapAssoc = false;
 // Returns an integer index into targetLocales
 // b/c this matches best with the expected use and it is
 // easy to guarantee that the returned locale is in the target set.
+pragma "no doc"
 record AbstractMapper {
   proc this(const ref ind, const ref targetLocales: [?D] locale) : D.idxType {
     return 0;
   }
 }
 
+pragma "no doc"
 record DefaultMapper {
   proc this(ind, targetLocales: [?D] locale) : D.idxType {
     const hash = chpl__defaultHashWrapper(ind);

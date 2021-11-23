@@ -231,35 +231,10 @@ module String {
   pragma "fn synchronization free"
   private extern proc qio_nbytes_char(chr:int(32)):c_int;
 
-  pragma "no doc"
-  extern const CHPL_SHORT_STRING_SIZE : c_int;
-
-  pragma "no doc"
-  extern record chpl__inPlaceBuffer {};
-
-  pragma "fn synchronization free"
-  pragma "no doc"
-  extern proc chpl__getInPlaceBufferData(const ref data : chpl__inPlaceBuffer) : bufferType;
-
-  // Signal to the Chapel compiler that the actual argument may be modified.
-  pragma "fn synchronization free"
-  pragma "no doc"
-  extern proc chpl__getInPlaceBufferDataForWrite(ref data : chpl__inPlaceBuffer) : bufferType;
-
   private config param debugStrings = false;
 
   pragma "no doc"
   config param useCachedNumCodepoints = true;
-
-  pragma "no doc"
-  record __serializeHelper {
-    var buffLen: int;
-    var buff: bufferType;
-    var size: int;
-    var locale_id: chpl_nodeID.type;
-    var shortData: chpl__inPlaceBuffer;
-    var cachedNumCodepoints: int;
-  }
 
   pragma "plain old data"
   pragma "no doc"
@@ -1194,13 +1169,18 @@ module String {
       return ret;
     }
 
-    inline proc join(ir: _iteratorRecord): string {
-      return doJoinIterator(this, ir);
+    inline proc join(const ref x : [] string) : string {
+      return doJoin(this, x);
     }
 
-    // TODO: we don't need this
-    inline proc _join(const ref S) : string where isTuple(S) || isArray(S) {
-      return doJoin(this, S);
+    inline proc join(const ref x) where isTuple(x) {
+      if !isHomogeneousTuple(x) || !isString(x[0]) then
+        compilerError("join() on tuples only handles homogeneous tuples of strings");
+      return doJoin(this, x);
+    }
+
+    inline proc join(ir: _iteratorRecord): string {
+      return doJoinIterator(this, ir);
     }
 
     /*
@@ -1756,402 +1736,407 @@ module String {
   }
 
   /*
-    Returns a new string, which is the concatenation of all of the strings
-    passed in with the receiving string inserted between them.
+    Returns a new :mod:`string <String>`, which is the concatenation of all of
+    the :mod:`string <String>` passed in with the contents of the method
+    receiver inserted between them.
 
     .. code-block:: chapel
 
         var myString = "|".join("a","10","d");
         writeln(myString); // prints: "a|10|d"
-   */
+
+    :arg x: :mod:`string <String>` values to be joined
+
+    :returns: A :mod:`string <String>`
+  */
   inline proc string.join(const ref x: string ...) : string {
-    return _join(x);
+    return doJoin(this, x);
   }
 
   /*
-    Same as the varargs version, but with a homogeneous tuple of strings.
+    Returns a new :mod:`string <String>`, which is the concatenation of all of
+    the :mod:`string <String>` passed in with the contents of the method
+    receiver inserted between them.
 
     .. code-block:: chapel
 
         var tup = ("a","10","d");
-        var myString = "|".join(tup);
-        writeln(myString); // prints: "a|10|d"
-   */
-  inline proc string.join(const ref x) : string where isTuple(x) {
-    if !isHomogeneousTuple(x) || !isString(x[1]) then
-      compilerError("join() on tuples only handles homogeneous tuples of strings");
-    return _join(x);
+        var myJoinedTuple = "|".join(tup);
+        writeln(myJoinedTuple); // prints: "a|10|d"
+
+        var myJoinedArray = "|".join(["a","10","d"]);
+        writeln(myJoinedArray); // prints: "a|10|d"
+
+    :arg x: An array or tuple of :mod:`string <String>` values to be joined
+
+    :returns: A :mod:`string <String>`
+  */
+  inline proc string.join(const ref x) : string {
+    // this overload serves as a catch-all for unsupported types.
+    // for the implementation of array and tuple overloads, see
+    // join() methods in the _string record.
+    compilerError("string.join() accepts any number of strings, homogenous "
+                  + "tuple of strings, or array of strings as an argument");
+  }
+
+
+  /*
+    :arg chars: A string containing each character to remove.
+                Defaults to `" \\t\\r\\n"`.
+    :arg leading: Indicates if leading occurrences should be removed.
+                  Defaults to `true`.
+    :arg trailing: Indicates if trailing occurrences should be removed.
+                    Defaults to `true`.
+
+    :returns: A new string with `leading` and/or `trailing` occurrences of
+              characters in `chars` removed as appropriate.
+  */
+  proc string.strip(chars: string = " \t\r\n", leading=true,
+                    trailing=true) : string {
+    if this.isASCII() {
+      return doStripNoEnc(this, chars, leading, trailing);
+    } else {
+      if this.isEmpty() then return "";
+      if chars.isEmpty() then return this;
+
+      const localThis: string = this.localize();
+      const localChars: string = chars.localize();
+
+      var start: byteIndex = 0;
+      var end: byteIndex = localThis.buffLen-1;
+
+      if leading {
+        label outer for (thisChar, i, nBytes) in localThis._cpIndexLen() {
+          for removeChar in localChars.codepoints() {
+            if thisChar == removeChar {
+              start = i + nBytes;
+              continue outer;
+            }
+          }
+          break;
+        }
+      }
+
+      if trailing {
+        // Because we are working with codepoints whose starting byte index
+        // is not initially known, it is faster to work forward, assuming we
+        // are already past the end of the string, and then update the end
+        // point as we are proven wrong.
+        end = -1;
+        label outer for (thisChar, i, nBytes) in localThis._cpIndexLen(start) {
+          for removeChar in localChars.codepoints() {
+            if thisChar == removeChar {
+              continue outer;
+            }
+          }
+          // This was not a character to be removed, so update tentative end.
+          end = i + nBytes-1;
+        }
+      }
+
+      return localThis[start..end];
+    }
   }
 
   /*
-    Same as the varargs version, but with all the strings in an array.
-
-    .. code-block:: chapel
-
-        var myString = "|".join(["a","10","d"]);
-        writeln(myString); // prints: "a|10|d"
-   */
-  inline proc string.join(const ref x: [] string) : string {
-    return _join(x);
+    Splits the string on `sep` into a `3*string` consisting of the section
+    before `sep`, `sep`, and the section after `sep`. If `sep` is not found,
+    the tuple will contain the whole string, and then two empty strings.
+  */
+  inline proc const string.partition(sep: string) : 3*string {
+    return doPartition(this, sep);
   }
 
-    /*
-      :arg chars: A string containing each character to remove.
-                  Defaults to `" \\t\\r\\n"`.
-      :arg leading: Indicates if leading occurrences should be removed.
-                    Defaults to `true`.
-      :arg trailing: Indicates if trailing occurrences should be removed.
-                     Defaults to `true`.
 
-      :returns: A new string with `leading` and/or `trailing` occurrences of
-                characters in `chars` removed as appropriate.
+  /* Remove indentation from each line of string.
+
+      This can be useful when applied to multi-line strings that are indented
+      in the source code, but should not be indented in the output.
+
+      When ``columns == 0``, determine the level of indentation to remove from
+      all lines by finding the common leading whitespace across all non-empty
+      lines. Empty lines are lines containing only whitespace. Tabs and spaces
+      are the only whitespaces that are considered, but are not treated as
+      the same characters when determining common whitespace.
+
+      When ``columns > 0``, remove ``columns`` leading whitespace characters
+      from each line. Tabs are not considered whitespace when ``columns > 0``,
+      so only leading spaces are removed.
+
+      :arg columns: The number of columns of indentation to remove. Infer
+                    common leading whitespace if ``columns == 0``.
+
+      :arg ignoreFirst: When ``true``, ignore first line when determining the
+                        common leading whitespace, and make no changes to the
+                        first line.
+
+      :returns: A new `string` with indentation removed.
+
+      .. warning::
+
+        ``string.dedent`` is not considered stable and is subject to change in
+        future Chapel releases.
+  */
+  proc string.dedent(columns=0, ignoreFirst=true) : string {
+    if chpl_warnUnstable then
+      compilerWarning("string.dedent is subject to change in the future.");
+    return doDedent(this, columns, ignoreFirst);
+  }
+
+  /*
+    Checks if all the characters in the string are either uppercase (A-Z) or
+    uncased (not a letter).
+
+    :returns: * `true`  -- if the string contains at least one uppercase
+                            character and no lowercase characters, ignoring
+                            uncased characters.
+              * `false` -- otherwise
     */
-    proc string.strip(chars: string = " \t\r\n", leading=true,
-                      trailing=true) : string {
-      if this.isASCII() {
-        return doStripNoEnc(this, chars, leading, trailing);
-      } else {
-        if this.isEmpty() then return "";
-        if chars.isEmpty() then return this;
+  proc string.isUpper() : bool {
+    if this.isEmpty() then return false;
 
-        const localThis: string = this.localize();
-        const localChars: string = chars.localize();
-
-        var start: byteIndex = 0;
-        var end: byteIndex = localThis.buffLen-1;
-
-        if leading {
-          label outer for (thisChar, i, nBytes) in localThis._cpIndexLen() {
-            for removeChar in localChars.codepoints() {
-              if thisChar == removeChar {
-                start = i + nBytes;
-                continue outer;
-              }
-            }
-            break;
-          }
+    var result: bool;
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      var locale_result = false;
+      for cp in this.codepoints() {
+        if codepoint_isLower(cp) {
+          locale_result = false;
+          break;
+        } else if !locale_result && codepoint_isUpper(cp) {
+          locale_result = true;
         }
+      }
+      result = locale_result;
+    }
+    return result;
+  }
 
-        if trailing {
-          // Because we are working with codepoints whose starting byte index
-          // is not initially known, it is faster to work forward, assuming we
-          // are already past the end of the string, and then update the end
-          // point as we are proven wrong.
-          end = -1;
-          label outer for (thisChar, i, nBytes) in localThis._cpIndexLen(start) {
-            for removeChar in localChars.codepoints() {
-              if thisChar == removeChar {
-                continue outer;
-              }
-            }
-            // This was not a character to be removed, so update tentative end.
-            end = i + nBytes-1;
-          }
+  /*
+    Checks if all the characters in the string are either lowercase (a-z) or
+    uncased (not a letter).
+
+    :returns: * `true`  -- when there are no uppercase characters in the string.
+              * `false` -- otherwise
+    */
+  proc string.isLower() : bool {
+    if this.isEmpty() then return false;
+
+    var result: bool;
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      var locale_result = false;
+      for cp in this.codepoints() {
+        if codepoint_isUpper(cp) {
+          locale_result = false;
+          break;
+        } else if !locale_result && codepoint_isLower(cp) {
+          locale_result = true;
         }
+      }
+      result = locale_result;
+    }
+    return result;
+  }
 
-        return localThis[start..end];
+  /*
+    Checks if all the characters in the string are whitespace (' ', '\t',
+    '\n', '\v', '\f', '\r').
+
+    :returns: * `true`  -- when all the characters are whitespace.
+              * `false` -- otherwise
+    */
+  proc string.isSpace() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for cp in this.codepoints() {
+        if !(codepoint_isWhitespace(cp)) {
+          result = false;
+          break;
+        }
       }
     }
+    return result;
+  }
 
-    /*
-      Splits the string on `sep` into a `3*string` consisting of the section
-      before `sep`, `sep`, and the section after `sep`. If `sep` is not found,
-      the tuple will contain the whole string, and then two empty strings.
+  /*
+    Checks if all the characters in the string are alphabetic (a-zA-Z).
+
+    :returns: * `true`  -- when the characters are alphabetic.
+              * `false` -- otherwise
     */
-    inline proc const string.partition(sep: string) : 3*string {
-      return doPartition(this, sep);
+  proc string.isAlpha() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for cp in this.codepoints() {
+        if !codepoint_isAlpha(cp) {
+          result = false;
+          break;
+        }
+      }
     }
+    return result;
+  }
 
+  /*
+    Checks if all the characters in the string are digits (0-9).
 
-    /* Remove indentation from each line of string.
-
-       This can be useful when applied to multi-line strings that are indented
-       in the source code, but should not be indented in the output.
-
-       When ``columns == 0``, determine the level of indentation to remove from
-       all lines by finding the common leading whitespace across all non-empty
-       lines. Empty lines are lines containing only whitespace. Tabs and spaces
-       are the only whitespaces that are considered, but are not treated as
-       the same characters when determining common whitespace.
-
-       When ``columns > 0``, remove ``columns`` leading whitespace characters
-       from each line. Tabs are not considered whitespace when ``columns > 0``,
-       so only leading spaces are removed.
-
-       :arg columns: The number of columns of indentation to remove. Infer
-                     common leading whitespace if ``columns == 0``.
-
-       :arg ignoreFirst: When ``true``, ignore first line when determining the
-                         common leading whitespace, and make no changes to the
-                         first line.
-
-       :returns: A new `string` with indentation removed.
-
-       .. warning::
-
-          ``string.dedent`` is not considered stable and is subject to change in
-          future Chapel releases.
+    :returns: * `true`  -- when the characters are digits.
+              * `false` -- otherwise
     */
-    proc string.dedent(columns=0, ignoreFirst=true) : string {
-      if chpl_warnUnstable then
-        compilerWarning("string.dedent is subject to change in the future.");
-      return doDedent(this, columns, ignoreFirst);
-    }
+  proc string.isDigit() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
 
-    /*
-     Checks if all the characters in the string are either uppercase (A-Z) or
-     uncased (not a letter).
-
-      :returns: * `true`  -- if the string contains at least one uppercase
-                             character and no lowercase characters, ignoring
-                             uncased characters.
-                * `false` -- otherwise
-     */
-    proc string.isUpper() : bool {
-      if this.isEmpty() then return false;
-
-      var result: bool;
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        var locale_result = false;
-        for cp in this.codepoints() {
-          if codepoint_isLower(cp) {
-            locale_result = false;
-            break;
-          } else if !locale_result && codepoint_isUpper(cp) {
-            locale_result = true;
-          }
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for cp in this.codepoints() {
+        if !codepoint_isDigit(cp) {
+          result = false;
+          break;
         }
-        result = locale_result;
       }
-      return result;
     }
+    return result;
+  }
 
-    /*
-     Checks if all the characters in the string are either lowercase (a-z) or
-     uncased (not a letter).
+  /*
+    Checks if all the characters in the string are alphanumeric (a-zA-Z0-9).
 
-      :returns: * `true`  -- when there are no uppercase characters in the string.
-                * `false` -- otherwise
-     */
-    proc string.isLower() : bool {
-      if this.isEmpty() then return false;
+    :returns: * `true`  -- when the characters are alphanumeric.
+              * `false` -- otherwise
+    */
+  proc string.isAlnum() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
 
-      var result: bool;
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        var locale_result = false;
-        for cp in this.codepoints() {
-          if codepoint_isUpper(cp) {
-            locale_result = false;
-            break;
-          } else if !locale_result && codepoint_isLower(cp) {
-            locale_result = true;
-          }
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for cp in this.codepoints() {
+        if !(codepoint_isAlpha(cp) || codepoint_isDigit(cp)) {
+          result = false;
+          break;
         }
-        result = locale_result;
       }
-      return result;
     }
+    return result;
+  }
 
-    /*
-     Checks if all the characters in the string are whitespace (' ', '\t',
-     '\n', '\v', '\f', '\r').
+  /*
+    Checks if all the characters in the string are printable.
 
-      :returns: * `true`  -- when all the characters are whitespace.
-                * `false` -- otherwise
-     */
-    proc string.isSpace() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
+    :returns: * `true`  -- when the characters are printable.
+              * `false` -- otherwise
+    */
+  proc string.isPrintable() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
 
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for cp in this.codepoints() {
-          if !(codepoint_isWhitespace(cp)) {
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      for cp in this.codepoints() {
+        if !codepoint_isPrintable(cp) {
+          result = false;
+          break;
+        }
+      }
+    }
+    return result;
+  }
+
+  /*
+    Checks if all uppercase characters are preceded by uncased characters,
+    and if all lowercase characters are preceded by cased characters.
+
+    :returns: * `true`  -- when the condition described above is met.
+              * `false` -- otherwise
+    */
+  proc string.isTitle() : bool {
+    if this.isEmpty() then return false;
+    var result: bool = true;
+
+    on __primitive("chpl_on_locale_num",
+                    chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
+      param UN = 0, UPPER = 1, LOWER = 2;
+      var last = UN;
+      for cp in this.codepoints() {
+        if codepoint_isLower(cp) {
+          if last == UPPER || last == LOWER {
+            last = LOWER;
+          } else { // last == UN
             result = false;
             break;
           }
         }
-      }
-      return result;
-    }
-
-    /*
-     Checks if all the characters in the string are alphabetic (a-zA-Z).
-
-      :returns: * `true`  -- when the characters are alphabetic.
-                * `false` -- otherwise
-     */
-    proc string.isAlpha() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for cp in this.codepoints() {
-          if !codepoint_isAlpha(cp) {
+        else if codepoint_isUpper(cp) {
+          if last == UN {
+            last = UPPER;
+          } else { // last == UPPER || last == LOWER
             result = false;
             break;
           }
+        } else {
+          // Uncased elements
+          last = UN;
         }
       }
-      return result;
     }
+    return result;
+  }
 
-    /*
-     Checks if all the characters in the string are digits (0-9).
+  /*
+    :returns: A new string with all uppercase characters replaced with their
+              lowercase counterpart.
 
-      :returns: * `true`  -- when the characters are digits.
-                * `false` -- otherwise
-     */
-    proc string.isDigit() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
+    .. note::
 
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for cp in this.codepoints() {
-          if !codepoint_isDigit(cp) {
-            result = false;
-            break;
-          }
-        }
+      The case change operation is not currently performed on characters whose
+      cases take different number of bytes to represent in Unicode mapping.
+  */
+  proc string.toLower() : string {
+    var result: string = this;
+    if result.isEmpty() then return result;
+
+    for (cp, i, nBytes) in this._cpIndexLen() {
+      var lowCodepoint = codepoint_toLower(cp);
+      if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nBytes {
+        // Use the MacOS approach everywhere:  only change the case if
+        // the result does not change the number of encoded bytes.
+        qio_encode_char_buf(result.buff + i, lowCodepoint);
       }
-      return result;
     }
+    return result;
+  }
 
-    /*
-     Checks if all the characters in the string are alphanumeric (a-zA-Z0-9).
+  /*
+    :returns: A new string with all lowercase characters replaced with their
+              uppercase counterpart.
 
-      :returns: * `true`  -- when the characters are alphanumeric.
-                * `false` -- otherwise
-     */
-    proc string.isAlnum() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
+    .. note::
 
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for cp in this.codepoints() {
-          if !(codepoint_isAlpha(cp) || codepoint_isDigit(cp)) {
-            result = false;
-            break;
-          }
-        }
+      The case change operation is not currently performed on characters whose
+      cases take different number of bytes to represent in Unicode mapping.
+  */
+  proc string.toUpper() : string {
+    var result: string = this;
+    if result.isEmpty() then return result;
+
+    for (cp, i, nBytes) in this._cpIndexLen() {
+      var upCodepoint = codepoint_toUpper(cp);
+      if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
+        // Use the MacOS approach everywhere:  only change the case if
+        // the result does not change the number of encoded bytes.
+        qio_encode_char_buf(result.buff + i, upCodepoint);
       }
-      return result;
     }
-
-    /*
-     Checks if all the characters in the string are printable.
-
-      :returns: * `true`  -- when the characters are printable.
-                * `false` -- otherwise
-     */
-    proc string.isPrintable() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        for cp in this.codepoints() {
-          if !codepoint_isPrintable(cp) {
-            result = false;
-            break;
-          }
-        }
-      }
-      return result;
-    }
-
-    /*
-      Checks if all uppercase characters are preceded by uncased characters,
-      and if all lowercase characters are preceded by cased characters.
-
-      :returns: * `true`  -- when the condition described above is met.
-                * `false` -- otherwise
-     */
-    proc string.isTitle() : bool {
-      if this.isEmpty() then return false;
-      var result: bool = true;
-
-      on __primitive("chpl_on_locale_num",
-                     chpl_buildLocaleID(this.locale_id, c_sublocid_any)) {
-        param UN = 0, UPPER = 1, LOWER = 2;
-        var last = UN;
-        for cp in this.codepoints() {
-          if codepoint_isLower(cp) {
-            if last == UPPER || last == LOWER {
-              last = LOWER;
-            } else { // last == UN
-              result = false;
-              break;
-            }
-          }
-          else if codepoint_isUpper(cp) {
-            if last == UN {
-              last = UPPER;
-            } else { // last == UPPER || last == LOWER
-              result = false;
-              break;
-            }
-          } else {
-            // Uncased elements
-            last = UN;
-          }
-        }
-      }
-      return result;
-    }
-
-    /*
-      :returns: A new string with all uppercase characters replaced with their
-                lowercase counterpart.
-
-      .. note::
-
-        The case change operation is not currently performed on characters whose
-        cases take different number of bytes to represent in Unicode mapping.
-    */
-    proc string.toLower() : string {
-      var result: string = this;
-      if result.isEmpty() then return result;
-
-      for (cp, i, nBytes) in this._cpIndexLen() {
-        var lowCodepoint = codepoint_toLower(cp);
-        if lowCodepoint != cp && qio_nbytes_char(lowCodepoint) == nBytes {
-          // Use the MacOS approach everywhere:  only change the case if
-          // the result does not change the number of encoded bytes.
-          qio_encode_char_buf(result.buff + i, lowCodepoint);
-        }
-      }
-      return result;
-    }
-
-    /*
-      :returns: A new string with all lowercase characters replaced with their
-                uppercase counterpart.
-
-      .. note::
-
-        The case change operation is not currently performed on characters whose
-        cases take different number of bytes to represent in Unicode mapping.
-    */
-    proc string.toUpper() : string {
-      var result: string = this;
-      if result.isEmpty() then return result;
-
-      for (cp, i, nBytes) in this._cpIndexLen() {
-        var upCodepoint = codepoint_toUpper(cp);
-        if upCodepoint != cp && qio_nbytes_char(upCodepoint) == nBytes {
-          // Use the MacOS approach everywhere:  only change the case if
-          // the result does not change the number of encoded bytes.
-          qio_encode_char_buf(result.buff + i, upCodepoint);
-        }
-      }
-      return result;
-    }
+    return result;
+  }
 
   /*
     :returns: A new string with all cased characters following an uncased

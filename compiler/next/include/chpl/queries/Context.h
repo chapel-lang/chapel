@@ -40,7 +40,7 @@ namespace uast {
 }
 
 namespace resolution {
-  struct TypedFnSignature;
+  class TypedFnSignature;
 }
 
 
@@ -459,6 +459,7 @@ class Context {
     If no query is currently running, it just reports the error.
    */
   void error(ErrorMessage error);
+
   /**
     Note an error for the currently running query.
     This is a convenience overload.
@@ -471,6 +472,7 @@ class Context {
     __attribute__ ((format (printf, 3, 4)))
   #endif
   ;
+
   /**
     Note an error for the currently running query.
     This is a convenience overload.
@@ -484,6 +486,7 @@ class Context {
     __attribute__ ((format (printf, 3, 4)))
   #endif
   ;
+
   /**
     Note an error for the currently running query.
     This is a convenience overload.
@@ -496,7 +499,8 @@ class Context {
     // so the above ifndef works around the issue.
     __attribute__ ((format (printf, 3, 4)))
   #endif
-;
+  ;
+
   /**
     Note an error for the currently running query.
     This is a convenience overload.
@@ -513,7 +517,7 @@ class Context {
     // so the above ifndef works around the issue.
     __attribute__ ((format (printf, 4, 5)))
   #endif
-;
+  ;
 
   typedef enum {
     NOT_CHECKED_NOT_CHANGED = 0,

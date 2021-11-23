@@ -25,6 +25,7 @@
 #include "chpl/types/ParamClasses.h"
 #include "chpl/types/ParamTag.h"
 #include "chpl/types/QualifiedType.h"
+#include "chpl/uast/PrimOp.h"
 #include "chpl/util/hash.h"
 
 namespace chpl {
@@ -141,8 +142,10 @@ class Param {
 
   static void markParam(Context* context, const Param* keep);
 
+  static bool isParamOpFoldable(chpl::uast::PrimitiveTag op);
+
   static QualifiedType fold(Context* context,
-                            UniqueString op,
+                            chpl::uast::PrimitiveTag op,
                             QualifiedType a,
                             QualifiedType b);
 
