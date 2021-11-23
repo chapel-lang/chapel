@@ -41,7 +41,7 @@ proc recv_number(test: borrowed Test) throws {
 
 proc send_string(test: borrowed Test) throws {
   var port:uint(16) = 6000;
-  var address = ipAddr.ipv6(IPv6Localhost, port);
+  var address = ipAddr.ipv4(IPv4Localhost, port);
   var server = listen(address);
   sync {
     begin {
@@ -80,7 +80,7 @@ proc send_http(test: borrowed Test) throws {
   var port:uint(16) = 80;
   var host = "www.google.com";
 
-  var conn = connect(host, port);
+  var conn = connect(host, port, IPFamily.IPv4);
   var writer = conn.writer();
 
   writer.write(b"GET / HTTP/1.1\n\r\n");

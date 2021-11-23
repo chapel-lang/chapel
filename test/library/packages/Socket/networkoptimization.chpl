@@ -21,7 +21,7 @@ proc test_nagle_tcpConn(test: borrowed Test) throws {
     begin {
       var conn = server.accept();
     }
-    var conn = connect(host, port);
+    var conn = connect(host, port, IPFamily.IPv4);
     conn.setNagle(true);
     test.assertEqual(nagle(conn.socketFd), true);
     conn.setNagle(false);
@@ -49,7 +49,7 @@ proc test_delayAck_tcpConn(test: borrowed Test) throws {
     begin {
       var conn = server.accept();
     }
-    var conn = connect(host, port);
+    var conn = connect(host, port, IPFamily.IPv4);
     defer conn.close();
     conn.setDelayAck(true);
     test.assertEqual(delayAck(conn.socketFd), true);

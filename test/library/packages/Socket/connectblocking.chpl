@@ -10,7 +10,7 @@ proc test_connection_ipv4_dns(test: borrowed Test) throws {
     begin {
       var conn = server.accept();
     }
-    var conn = connect(host, port);
+    var conn = connect(host, port, IPFamily.IPv4);
     test.assertEqual(conn.addr, address);
   }
 }
@@ -53,7 +53,7 @@ proc test_connection_ipv6_dns(test: borrowed Test) throws {
     begin {
       var conn = server.accept();
     }
-    var conn = connect(host, port);
+    var conn = connect(host, port, IPFamily.IPv6);
     test.assertEqual(conn.addr, address);
   }
 }
