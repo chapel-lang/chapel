@@ -18,6 +18,7 @@
  */
 
 #include "chpl/queries/ErrorMessage.h"
+#include "chpl/parsing/parsing-queries.h"
 
 #include <cassert>
 #include <cstdarg>
@@ -49,24 +50,24 @@ static std::string vprint_to_string(const char* format, va_list vl) {
 ErrorMessage::ErrorMessage()
   : level_(-1), location_(), message_() {
 }
-ErrorMessage::ErrorMessage(Location location, std::string message)
-  : level_(0), location_(location), message_(message) {
+ErrorMessage::ErrorMessage(ID parent, Location location, std::string message)
+  : level_(0), location_(location), message_(message), parent_(parent) {
 }
-ErrorMessage::ErrorMessage(Location location, const char* message)
-  : level_(0), location_(location), message_(message) {
+ErrorMessage::ErrorMessage(ID parent, Location location, const char* message)
+  : level_(0), location_(location), message_(message), parent_(parent) {
 }
 
-ErrorMessage ErrorMessage::vbuild(Location loc, const char* fmt, va_list vl) {
+ErrorMessage ErrorMessage::vbuild(ID parent, Location loc, const char* fmt, va_list vl) {
   std::string ret;
   ret = vprint_to_string(fmt, vl);
-  return ErrorMessage(loc, ret);
+  return ErrorMessage(parent, loc, ret);
 }
 
-ErrorMessage ErrorMessage::build(Location loc, const char* fmt, ...) {
+ErrorMessage ErrorMessage::build(ID parent, Location loc, const char* fmt, ...) {
   ErrorMessage ret;
   va_list vl;
   va_start(vl, fmt);
-  ret = ErrorMessage::vbuild(loc, fmt, vl);
+  ret = ErrorMessage::vbuild(parent, loc, fmt, vl);
   va_end(vl);
   return ret;
 }
@@ -76,9 +77,7 @@ void ErrorMessage::addDetail(ErrorMessage err) {
 }
 
 void ErrorMessage::swap(ErrorMessage& other) {
-  int oldThisLevel = this->level_;
-  this->level_ = other.level_;
-  other.level_ = oldThisLevel;
+  std::swap(level_, other.level_);
   this->location_.swap(other.location_);
   this->message_.swap(other.message_);
   this->details_.swap(other.details_);
@@ -88,5 +87,13 @@ void ErrorMessage::markUniqueStrings(Context* context) const {
   this->location_.markUniqueStrings(context);
 }
 
-
-} // namespace chpl
+void ErrorMessage::updateLocation(Context* context) {
+  if (!parent_.isEmpty()) {
+    location_ = parsing::locateId(context, parent_);
+  }
+  for (auto& err : details_) {
+    err.updateLocation(context);
+  }
+}
+}
+// namespace chpl

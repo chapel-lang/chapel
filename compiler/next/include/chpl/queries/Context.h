@@ -22,6 +22,7 @@
 
 #include "chpl/queries/Context-detail.h"
 #include "chpl/queries/ID.h"
+#include "chpl/queries/CommentID.h"
 #include "chpl/queries/UniqueString.h"
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
@@ -413,6 +414,11 @@ class Context {
     Return the file path for the file containing this ID.
    */
   UniqueString filePathForId(ID id);
+
+  /**
+    Return the file path for the file containing this ID.
+   */
+  UniqueString filePathForCommentId(CommentID id);
 
   /**
     Returns true if filePathForId is already populated for

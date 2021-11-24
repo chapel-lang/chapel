@@ -22,6 +22,7 @@
 
 #include "chpl/uast/Expression.h"
 #include "chpl/queries/Location.h"
+#include "chpl/queries/CommentID.h"
 
 #include <string>
 
@@ -40,9 +41,10 @@ class Builder;
 class Comment final : public Expression {
  private:
   std::string comment_;
+  CommentID commentId_;
 
   Comment(std::string s)
-   : Expression(asttags::Comment), comment_(std::move(s)) {
+    : Expression(asttags::Comment), comment_(std::move(s)) {
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
@@ -52,7 +54,7 @@ class Comment final : public Expression {
            lhs->comment_ == rhs->comment_ ;
   }
   void markUniqueStringsInner(Context* context) const override {
-    return expressionMarkUniqueStringsInner(context);
+    expressionMarkUniqueStringsInner(context);
   }
 
  public:
@@ -69,6 +71,19 @@ class Comment final : public Expression {
    characters (e.g. `//`) as a C++ string.
    */
   const std::string& str() const { return comment_; }
+
+  /**
+     Set the comment's ID
+   */
+  void setCommentId(int index) {
+    commentId_ = CommentID(index);
+  }
+
+  /**
+     Returns the id of this comment, which is unique in
+     its BuilderResult
+  */
+  CommentID commentId() const { return commentId_; }
 };
 
 /**
