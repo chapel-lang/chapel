@@ -36,7 +36,10 @@ static std::string vprint_to_string(const char* format, va_list vl) {
     buf = (char*) realloc(buf, size);
     got = vsnprintf(buf, size, format, vl);
     assert(got < size);
-    if (got >= size) return "<internal error in saving error>";
+    if (got >= size) {
+      free(buf);
+      return "<internal error in saving error>";
+    }
   }
   std::string ret(buf);
   free(buf);
