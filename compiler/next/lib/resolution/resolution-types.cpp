@@ -129,21 +129,22 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
 
   // create the mapping handling named and default arguments
 
+  // TODO are these reused??
   // clear the current mapping
-  byFormalIdx.clear();
-  actualIdxToFormalIdx.clear();
-  mappingIsValid = false;
-  failingActualIdx = -1;
+  byFormalIdx_.clear();
+  actualIdxToFormalIdx_.clear();
+  mappingIsValid_ = false;
+  failingActualIdx_ = -1;
 
   // allocate space in the arrays
-  byFormalIdx.resize(untyped->numFormals());
-  actualIdxToFormalIdx.resize(call.actuals.size());
+  byFormalIdx_.resize(untyped->numFormals());
+  actualIdxToFormalIdx_.resize(call.numActuals());
 
   // initialize the FormalActual parts from the Formals
   int formalIdx = 0;
   int numFormals = untyped->numFormals();
   for (int i = 0; i < numFormals; i++) {
-    FormalActual& entry = byFormalIdx[formalIdx];
+    FormalActual& entry = byFormalIdx_[formalIdx];
     if (const Decl* decl = untyped->formalDecl(i)) {
       entry.formal = decl;
     }
@@ -160,17 +161,17 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   // Record successful matches in actualIdxToFormalIdx.
 
   int actualIdx = 0;
-  for (const CallInfoActual& actual : call.actuals) {
-    if (!actual.byName.isEmpty()) {
+  for (const CallInfoActual& actual : call.actuals()) {
+    if (!actual.byName().isEmpty()) {
       bool match = false;
       for (int i = 0; i < numFormals; i++) {
-        if (actual.byName == untyped->formalName(i)) {
+        if (actual.byName() == untyped->formalName(i)) {
           match = true;
-          FormalActual& entry = byFormalIdx[i];
+          FormalActual& entry = byFormalIdx_[i];
           entry.hasActual = true;
           entry.actualIdx = actualIdx;
-          entry.actualType = actual.type;
-          actualIdxToFormalIdx[actualIdx] = formalIdx;
+          entry.actualType = actual.type();
+          actualIdxToFormalIdx_[actualIdx] = formalIdx;
           break;
         }
 
@@ -179,8 +180,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
 
       // Fail if no matching formal is found.
       if (match == false) {
-        mappingIsValid = false;
-        failingActualIdx = actualIdx;
+        failingActualIdx_ = actualIdx;
         // TODO: track failure type for error messages
         return false;
       }
@@ -192,34 +192,32 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   // Record successful substitutions
   formalIdx = 0;
   actualIdx = 0;
-  for (const CallInfoActual& actual : call.actuals) {
-    if (formalIdx >= (int) byFormalIdx.size()) {
+  for (const CallInfoActual& actual : call.actuals()) {
+    if (formalIdx >= (int) byFormalIdx_.size()) {
       // too many actuals
-      mappingIsValid = false;
-      failingActualIdx = actualIdx;
+      failingActualIdx_ = actualIdx;
       return false;
     }
 
-    if (actual.byName.isEmpty()) {
+    if (actual.byName().isEmpty()) {
       // Skip any formals already matched to named arguments
-      while (byFormalIdx[formalIdx].actualIdx >= 0) {
-        if (formalIdx + 1 >= (int) byFormalIdx.size()) {
+      while (byFormalIdx_[formalIdx].actualIdx >= 0) {
+        if (formalIdx + 1 >= (int) byFormalIdx_.size()) {
           // too many actuals
-          mappingIsValid = false;
-          failingActualIdx = actualIdx;
+          failingActualIdx_ = actualIdx;
           return false;
         }
         formalIdx++;
       }
-      assert(formalIdx < (int) byFormalIdx.size());
+      assert(formalIdx < (int) byFormalIdx_.size());
 
       // TODO: special handling for operators
 
-      FormalActual& entry = byFormalIdx[formalIdx];
+      FormalActual& entry = byFormalIdx_[formalIdx];
       entry.hasActual = true;
       entry.actualIdx = actualIdx;
-      entry.actualType = actual.type;
-      actualIdxToFormalIdx[actualIdx] = formalIdx;
+      entry.actualType = actual.type();
+      actualIdxToFormalIdx_[actualIdx] = formalIdx;
     }
     actualIdx++;
   }
@@ -229,12 +227,11 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     // or have a default value.
     // This is left out for type constructors because presently
     // a partial instantiation is provided by simply leaving out arguments.
-    while (formalIdx < (int) byFormalIdx.size()) {
-      if (byFormalIdx[formalIdx].actualIdx < 0) {
+    while (formalIdx < (int) byFormalIdx_.size()) {
+      if (byFormalIdx_[formalIdx].actualIdx < 0) {
         if (!untyped->formalHasDefault(formalIdx)) {
           // formal was not provided and there is no default value
-          mappingIsValid = false;
-          failingFormalIdx = formalIdx;
+          failingFormalIdx_ = formalIdx;
           return false;
         }
       }
@@ -242,29 +239,7 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
     }
   }
 
-  mappingIsValid = true;
   return true;
-}
-
-FormalActualMap FormalActualMap::build(const UntypedFnSignature* sig,
-                                       const CallInfo& call) {
-
-  FormalActualMap ret;
-  bool ok = ret.computeAlignment(sig, nullptr, call);
-  if (!ok) {
-    ret.mappingIsValid = false;
-  }
-  return ret;
-}
-
-FormalActualMap FormalActualMap::build(const TypedFnSignature* sig,
-                                       const CallInfo& call) {
-  FormalActualMap ret;
-  bool ok = ret.computeAlignment(sig->untyped(), sig, call);
-  if (!ok) {
-    ret.mappingIsValid = false;
-  }
-  return ret;
 }
 
 std::string TypedFnSignature::toString() const {
@@ -286,14 +261,14 @@ std::string TypedFnSignature::toString() const {
 
 
 void PoiInfo::accumulate(const PoiInfo& addPoiInfo) {
-  poiFnIdsUsed.insert(addPoiInfo.poiFnIdsUsed.begin(),
-                      addPoiInfo.poiFnIdsUsed.end());
+  poiFnIdsUsed_.insert(addPoiInfo.poiFnIdsUsed_.begin(),
+                      addPoiInfo.poiFnIdsUsed_.end());
 }
 
 // this is a resolved function
 // check is a not-yet-resolved function
 bool PoiInfo::canReuse(const PoiInfo& check) const {
-  assert(resolved && !check.resolved);
+  assert(resolved_ && !check.resolved_);
 
   return false; // TODO -- consider function names etc -- see PR #16261
 }
@@ -301,26 +276,26 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
 std::string ResolvedExpression::toString() const {
   std::string ret;
   ret += " : ";
-  ret += type.toString();
+  ret += type_.toString();
   ret += " ; ";
-  if (!toId.isEmpty()) {
+  if (!toId_.isEmpty()) {
     ret += " refers to ";
-    ret += toId.toString();
+    ret += toId_.toString();
   } else {
-    auto onlyFn = mostSpecific.only();
+    auto onlyFn = mostSpecific_.only();
     if (onlyFn) {
       ret += " calls ";
       ret += onlyFn->toString();
     } else {
-      if (auto sig = mostSpecific.bestRef()) {
+      if (auto sig = mostSpecific_.bestRef()) {
         ret += " calls ref ";
         ret += sig->toString();
       }
-      if (auto sig = mostSpecific.bestConstRef()) {
+      if (auto sig = mostSpecific_.bestConstRef()) {
         ret += " calls const ref ";
         ret += sig->toString();
       }
-      if (auto sig = mostSpecific.bestValue()) {
+      if (auto sig = mostSpecific_.bestValue()) {
         ret += " calls value ";
         ret += sig->toString();
       }

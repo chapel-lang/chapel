@@ -94,19 +94,19 @@ static void test1() {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  assert(rr.byAst(i).type.type()   == IntType::get(context, 0));
-  assert(rr.byAst(i8).type.type()  == IntType::get(context, 8));
-  assert(rr.byAst(i16).type.type() == IntType::get(context, 16));
-  assert(rr.byAst(i32).type.type() == IntType::get(context, 32));
-  assert(rr.byAst(i64).type.type() == IntType::get(context, 64));
-  assert(rr.byAst(iq).type.type()  == AnyIntType::get(context));
+  assert(rr.byAst(i).type().type()   == IntType::get(context, 0));
+  assert(rr.byAst(i8).type().type()  == IntType::get(context, 8));
+  assert(rr.byAst(i16).type().type() == IntType::get(context, 16));
+  assert(rr.byAst(i32).type().type() == IntType::get(context, 32));
+  assert(rr.byAst(i64).type().type() == IntType::get(context, 64));
+  assert(rr.byAst(iq).type().type()  == AnyIntType::get(context));
 
-  assert(rr.byAst(u).type.type()   == UintType::get(context, 0));
-  assert(rr.byAst(u8).type.type()  == UintType::get(context, 8));
-  assert(rr.byAst(u16).type.type() == UintType::get(context, 16));
-  assert(rr.byAst(u32).type.type() == UintType::get(context, 32));
-  assert(rr.byAst(u64).type.type() == UintType::get(context, 64));
-  assert(rr.byAst(uq).type.type()  == AnyUintType::get(context));
+  assert(rr.byAst(u).type().type()   == UintType::get(context, 0));
+  assert(rr.byAst(u8).type().type()  == UintType::get(context, 8));
+  assert(rr.byAst(u16).type().type() == UintType::get(context, 16));
+  assert(rr.byAst(u32).type().type() == UintType::get(context, 32));
+  assert(rr.byAst(u64).type().type() == UintType::get(context, 64));
+  assert(rr.byAst(uq).type().type()  == AnyUintType::get(context));
 }
 
 static void test2() {
@@ -136,12 +136,12 @@ static void test2() {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  assert(rr.byAst(b).type.type()   == BoolType::get(context, 0));
-  assert(rr.byAst(b8).type.type()  == BoolType::get(context, 8));
-  assert(rr.byAst(b16).type.type() == BoolType::get(context, 16));
-  assert(rr.byAst(b32).type.type() == BoolType::get(context, 32));
-  assert(rr.byAst(b64).type.type() == BoolType::get(context, 64));
-  assert(rr.byAst(bq).type.type()  == AnyBoolType::get(context));
+  assert(rr.byAst(b).type().type()   == BoolType::get(context, 0));
+  assert(rr.byAst(b8).type().type()  == BoolType::get(context, 8));
+  assert(rr.byAst(b16).type().type() == BoolType::get(context, 16));
+  assert(rr.byAst(b32).type().type() == BoolType::get(context, 32));
+  assert(rr.byAst(b64).type().type() == BoolType::get(context, 64));
+  assert(rr.byAst(bq).type().type()  == AnyBoolType::get(context));
 }
 
 static void test3() {
@@ -189,18 +189,18 @@ static void test3() {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  assert(rr.byAst(r).type.type()    == RealType::get(context, 0));
-  assert(rr.byAst(r32).type.type()  == RealType::get(context, 32));
-  assert(rr.byAst(r64).type.type()  == RealType::get(context, 64));
-  assert(rr.byAst(rq).type.type()   == AnyRealType::get(context));
-  assert(rr.byAst(i).type.type()    == ImagType::get(context, 0));
-  assert(rr.byAst(i32).type.type()  == ImagType::get(context, 32));
-  assert(rr.byAst(i64).type.type()  == ImagType::get(context, 64));
-  assert(rr.byAst(iq).type.type()   == AnyImagType::get(context));
-  assert(rr.byAst(c).type.type()    == ComplexType::get(context, 0));
-  assert(rr.byAst(c64).type.type()  == ComplexType::get(context, 64));
-  assert(rr.byAst(c128).type.type() == ComplexType::get(context, 128));
-  assert(rr.byAst(cq).type.type()   == AnyComplexType::get(context));
+  assert(rr.byAst(r).type().type()    == RealType::get(context, 0));
+  assert(rr.byAst(r32).type().type()  == RealType::get(context, 32));
+  assert(rr.byAst(r64).type().type()  == RealType::get(context, 64));
+  assert(rr.byAst(rq).type().type()   == AnyRealType::get(context));
+  assert(rr.byAst(i).type().type()    == ImagType::get(context, 0));
+  assert(rr.byAst(i32).type().type()  == ImagType::get(context, 32));
+  assert(rr.byAst(i64).type().type()  == ImagType::get(context, 64));
+  assert(rr.byAst(iq).type().type()   == AnyImagType::get(context));
+  assert(rr.byAst(c).type().type()    == ComplexType::get(context, 0));
+  assert(rr.byAst(c64).type().type()  == ComplexType::get(context, 64));
+  assert(rr.byAst(c128).type().type() == ComplexType::get(context, 128));
+  assert(rr.byAst(cq).type().type()   == AnyComplexType::get(context));
 }
 
 // assumes 2nd statement is a variable declaration for x.
@@ -217,7 +217,7 @@ static const Type* parseTypeOfX(Context* context,
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  auto qt = rr.byAst(x).type;
+  auto qt = rr.byAst(x).type();
   assert(qt.kind() == QualifiedType::VALUE);
   assert(qt.type());
 
@@ -885,10 +885,10 @@ static void testTypeAndFnSameName() {
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-  const Type* xt = rr.byAst(x).type.type();
+  const Type* xt = rr.byAst(x).type().type();
   assert(xt);
   assert(xt == IntType::get(context, 0));
-  const Type* yt = rr.byAst(y).type.type();
+  const Type* yt = rr.byAst(y).type().type();
   assert(yt);
   auto yrt = yt->toRecordType();
   assert(yrt);

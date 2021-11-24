@@ -21,6 +21,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/ErrorMessage.h"
+#include "chpl/queries/UniqueString.h"
 #include "chpl/queries/query-impl.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/scope-queries.h"
@@ -205,9 +206,8 @@ struct Resolver {
       substitutions(&substitutions),
       signatureOnly(true),
       fnBody(fn->body()),
-      byPostorder(byPostorder) {
-
-    poiInfo.poiScope = poiScope;
+      byPostorder(byPostorder),
+      poiInfo(poiScope) {
 
     byPostorder.setupForSignature(fn);
     enterScope(symbol);
@@ -224,12 +224,11 @@ struct Resolver {
       poiScope(poiScope),
       signatureOnly(false),
       fnBody(fn->body()),
-      byPostorder(byPostorder) {
+      byPostorder(byPostorder),
+      poiInfo(poiScope) {
 
     assert(typedFnSignature);
     assert(typedFnSignature->untyped());
-
-    poiInfo.poiScope = poiScope;
 
     byPostorder.setupForFunction(fn);
     enterScope(symbol);
@@ -243,7 +242,7 @@ struct Resolver {
       const auto& qt = typedFnSignature->formalType(i);
 
       ResolvedExpression& r = byPostorder.byAst(decl);
-      r.type = qt;
+      r.setType(qt);
     }
   }
 
@@ -273,9 +272,8 @@ struct Resolver {
       poiScope(poiScope),
       substitutions(&substitutions),
       useGenericFormalDefaults(useGenericFormalDefaults),
-      byPostorder(byPostorder) {
-
-    poiInfo.poiScope = poiScope;
+      byPostorder(byPostorder),
+      poiInfo(poiScope) {
 
     byPostorder.setupForSymbol(decl);
     enterScope(symbol);
@@ -286,7 +284,7 @@ struct Resolver {
     // if the id is contained within this symbol,
     // get the type information from the resolution result.
     if (id.symbolPath() == symbol->id().symbolPath()) {
-      return byPostorder.byId(id).type;
+      return byPostorder.byId(id).type();
     }
 
     // TODO: handle outer function variables
@@ -312,7 +310,7 @@ struct Resolver {
 
   bool enter(const Literal* literal) {
     ResolvedExpression& result = byPostorder.byAst(literal);
-    result.type = typeForLiteral(context, literal);
+    result.setType(typeForLiteral(context, literal));
     return false;
   }
   void exit(const Literal* literal) {
@@ -330,7 +328,7 @@ struct Resolver {
 
     auto vec = lookupInScope(context, scope, ident, config);
     if (vec.size() == 0) {
-      result.type = QualifiedType(QualifiedType::UNKNOWN, nullptr);
+      result.setType(QualifiedType(QualifiedType::UNKNOWN, nullptr));
     } else if (vec.size() > 1 || vec[0].numIds() > 1) {
       // can't establish the type. If this is in a function
       // call, we'll establish it later anyway.
@@ -345,8 +343,8 @@ struct Resolver {
         // use the type established at declaration/initialization
         type = typeForId(id);
       }
-      result.toId = id;
-      result.type = type;
+      result.setToId(id);
+      result.setType(type);
       // if there are multiple ids we should have gotten
       // a multiple definition error at the declarations.
     }
@@ -453,9 +451,9 @@ struct Resolver {
           // get the type we should have already computed postorder
           ResolvedExpression& r = byPostorder.byAst(typeExpr);
           // check that the resolution of that expression is a type
-          auto kind = r.type.kind();
+          auto kind = r.type().kind();
           if (kind == QualifiedType::TYPE) {
-            typePtr = r.type.type();
+            typePtr = r.type().type();
           } else if (kind != QualifiedType::UNKNOWN) {
             typePtr = ErroneousType::get(context);
             context->error(typeExpr, "Value provided where type expected");
@@ -466,7 +464,7 @@ struct Resolver {
         if (initExpr && !foundSubstitution) {
           // compute the type based upon the init expression
           ResolvedExpression& r = byPostorder.byAst(initExpr);
-          const QualifiedType& initType = r.type;
+          const QualifiedType& initType = r.type();
 
           // check that the init expression has compatible kind
           if (qtKind == QualifiedType::TYPE &&
@@ -539,7 +537,7 @@ struct Resolver {
       }
 
       ResolvedExpression& result = byPostorder.byAst(decl);
-      result.type = QualifiedType(qtKind, typePtr, paramPtr);
+      result.setType(QualifiedType(qtKind, typePtr, paramPtr));
     }
 
     exitScope(decl);
@@ -552,20 +550,23 @@ struct Resolver {
     assert(scopeStack.size() > 0);
     const Scope* scope = scopeStack.back();
 
+    // TODO should we move this to a class method that takes in the context and call?
     // Generate a CallInfo for the call
-    CallInfo ci;
+    UniqueString name;
 
     if (auto op = call->toOpCall()) {
-      ci.name = op->op();
+      name = op->op();
     } else if (auto called = call->calledExpression()) {
       if (auto calledIdent = called->toIdentifier()) {
-        ci.name = calledIdent->name();
+        name = calledIdent->name();
       } else {
         assert(false && "TODO: method calls with Dot called");
       }
     }
 
     const FnCall* fnCall = call->toFnCall();
+    bool hasQuestionArg = false;
+    std::vector<CallInfoActual> actuals;
 
     int i = 0;
     for (auto actual : call->actuals()) {
@@ -575,37 +576,37 @@ struct Resolver {
           isQuestionMark = true;
 
       if (isQuestionMark) {
-        if (ci.hasQuestionArg) {
+        if (hasQuestionArg) {
           context->error(actual, "Cannot have ? more than once in a call");
         }
-        ci.hasQuestionArg = true;
+        hasQuestionArg = true;
       } else {
-        CallInfoActual ciActual;
         ResolvedExpression& r = byPostorder.byAst(actual);
-        ciActual.type = r.type;
+        UniqueString byName;
         if (fnCall && fnCall->isNamedActual(i)) {
-          ciActual.byName = fnCall->actualName(i);
+          byName = fnCall->actualName(i);
         }
-        ci.actuals.push_back(ciActual);
+        actuals.push_back(CallInfoActual(r.type(), byName));
         i++;
       }
     }
 
+    CallInfo ci(name, hasQuestionArg, actuals);
     CallResolutionResult c = resolveCall(context, call, ci, scope, poiScope);
 
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
-    r.mostSpecific = c.mostSpecific;
-    r.poiScope = c.poiInfo.poiScope;
-    r.type = c.exprType;
+    r.setMostSpecific(c.mostSpecific());
+    r.setPoiScope(c.poiInfo().poiScope());
+    r.setType(c.exprType());
 
-    if (r.type.type() == nullptr) {
+    if (r.type().type() == nullptr) {
       context->error(call, "Cannot establish type for call expression");
-      r.type = QualifiedType(r.type.kind(), ErroneousType::get(context));
+      r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
     }
 
     // gather the poi scopes used when resolving the call
-    poiInfo.accumulate(c.poiInfo);
+    poiInfo.accumulate(c.poiInfo());
   }
 
   bool enter(const ASTNode* ast) {
@@ -700,7 +701,7 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
     ASTTag parentTag = parsing::idToTag(context, parentSymbolId);
     if (asttags::isModule(parentTag)) {
       auto& partial = partiallyResolvedModule(context, parentSymbolId);
-      result = partial.byId(id).type;
+      result = partial.byId(id).type();
     }
   } else {
     QualifiedType::Kind kind = QualifiedType::UNKNOWN;
@@ -757,7 +758,7 @@ getFormalTypes(const Function* fn,
                const ResolutionResultByPostorderID& r) {
   std::vector<types::QualifiedType> formalTypes;
   for (auto formal : fn->formals()) {
-    QualifiedType t = r.byAst(formal).type;
+    QualifiedType t = r.byAst(formal).type();
     // compute concrete intent
     t = QualifiedType(resolveIntent(t), t.type(), t.param());
 
@@ -785,7 +786,7 @@ static TypedFnSignature::WhereClauseResult whereClauseResult(
                                      bool needsInstantiation) {
   auto whereClauseResult = TypedFnSignature::WHERE_TBD;
   if (const Expression* where = fn->whereClause()) {
-    const QualifiedType& qt = r.byAst(where).type;
+    const QualifiedType& qt = r.byAst(where).type();
     if (qt.kind() == QualifiedType::PARAM && qt.type()->isBoolType()) {
       // OK, we know the result of the where clause
       // TODO: handle Immediate
@@ -897,7 +898,7 @@ typeForTypeDeclQuery(Context* context,
             fields.push_back(CompositeType::FieldDetail(var->name(),
                                                         hasDefault,
                                                         var,
-                                                        e.type));
+                                                        e.type()));
           }
         }
       }
@@ -1039,18 +1040,18 @@ const TypedFnSignature* instantiateSignature(Context* context,
     // Set parentFnTyped somehow.
   }
 
-  auto faMap = FormalActualMap::build(sig, call);
-  if (!faMap.mappingIsValid) {
+  auto faMap = FormalActualMap(sig, call);
+  if (!faMap.isValid()) {
     return nullptr;
   }
 
   // compute the substitutions
   SubstitutionsMap substitutions;
-  for (const FormalActual& entry : faMap.byFormalIdx) {
+  for (const FormalActual& entry : faMap.byFormalIdx()) {
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
     // in that case, resolver code should treat it as a hint to
     // use the default value. Unless the call used a ? argument.
-    if (call.hasQuestionArg &&
+    if (call.hasQuestionArg() &&
         entry.actualType.kind() == QualifiedType::UNKNOWN &&
         entry.actualType.type() == nullptr) {
       // don't add any substitution
@@ -1096,7 +1097,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
       if (auto var = child->toVariable()) {
         if (var->isField()) {
           const ResolvedExpression& e = r.byAst(child);
-          formalTypes.push_back(e.type);
+          formalTypes.push_back(e.type());
         }
       }
     }
@@ -1141,26 +1142,23 @@ resolveFunctionByInfoQuery(Context* context,
   const ASTNode* ast = parsing::idToAst(context, untypedSignature->id());
   const Function* fn = ast->toFunction();
 
-  const PoiScope* poiScope = poiInfo.poiScope;
+  const PoiScope* poiScope = poiInfo.poiScope();
 
   PoiInfo resolvedPoiInfo;
 
   if (fn) {
-    owned<ResolvedFunction> resolved = toOwned(new ResolvedFunction());
-    resolved->signature = sig;
-    resolved->returnIntent = fn->returnIntent();
-
-    Resolver visitor(context, fn, poiScope, sig, resolved->resolutionById);
+    ResolutionResultByPostorderID resolutionById;
+    Resolver visitor(context, fn, poiScope, sig, resolutionById);
 
     // visit the body
     fn->body()->traverse(visitor);
 
     resolvedPoiInfo.swap(visitor.poiInfo);
-    resolvedPoiInfo.resolved = true;
-    resolvedPoiInfo.poiScope = nullptr;
+    // TODO can this be encapsulated in a method?
+    resolvedPoiInfo.setResolved(true);
+    resolvedPoiInfo.setPoiScope(nullptr);
 
-    // save the POI info in the resolution result
-    resolved->poiInfo = resolvedPoiInfo;
+    owned<ResolvedFunction> resolved = toOwned(new ResolvedFunction(sig, fn->returnIntent(), resolutionById, resolvedPoiInfo));
 
     // Store the result in the query under the POIs used.
     // If there was already a value for this revision, this
@@ -1170,14 +1168,14 @@ resolveFunctionByInfoQuery(Context* context,
                        context,
                        resolved,
                        sig,
-                       resolvedPoiInfo.poiFnIdsUsed);
+                       resolvedPoiInfo.poiFnIdsUsed());
   } else {
     assert(false && "this query should be called on Functions");
   }
 
   // Return the unique result from the query (that might have been saved above)
   const owned<ResolvedFunction>& resolved =
-   resolveFunctionByPoisQuery(context, sig, resolvedPoiInfo.poiFnIdsUsed);
+    resolveFunctionByPoisQuery(context, sig, resolvedPoiInfo.poiFnIdsUsed());
 
   const ResolvedFunction* result = resolved.get();
 
@@ -1213,8 +1211,8 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
 
 const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                               const ResolvedExpression& r) {
-  const TypedFnSignature* sig = r.mostSpecific.only();
-  const PoiScope* poiScope = r.poiScope;
+  const TypedFnSignature* sig = r.mostSpecific().only();
+  const PoiScope* poiScope = r.poiScope();
 
   if (sig == nullptr)
     return nullptr;
@@ -1234,8 +1232,8 @@ struct ReturnTypeInferer {
   ReturnTypeInferer(Context* context,
                     const ResolvedFunction& resolvedFn)
     : context(context),
-      returnIntent(resolvedFn.returnIntent),
-      resolutionById(resolvedFn.resolutionById) {
+      returnIntent(resolvedFn.returnIntent()),
+      resolutionById(resolvedFn.resolutionById()) {
   }
 
   bool enter(const Function* fn) {
@@ -1280,7 +1278,7 @@ struct ReturnTypeInferer {
     checkReturn(inExpr, voidType);
   }
   void noteReturnType(const Expression* expr, const Expression* inExpr) {
-    const QualifiedType& qt = resolutionById.byAst(expr).type;
+    const QualifiedType& qt = resolutionById.byAst(expr).type();
 
     QualifiedType::Kind kind = qt.kind();
     const Type* type = qt.type();
@@ -1370,7 +1368,7 @@ const QualifiedType& returnType(Context* context,
       ResolutionResultByPostorderID resolutionById;
       Resolver visitor(context, fn, poiScope, sig, resolutionById);
       retType->traverse(visitor);
-      result = resolutionById.byAst(retType).type;
+      result = resolutionById.byAst(retType).type();
     } else {
       // resolve the function body
       const ResolvedFunction* rFn = resolveFunction(context, sig, poiScope);
@@ -1496,8 +1494,8 @@ doIsCandidateApplicableInitial(Context* context,
   //  * method-ness
   //  * ref-ness
 
-  auto faMap = FormalActualMap::build(uSig, call);
-  if (!faMap.mappingIsValid) {
+  auto faMap = FormalActualMap(uSig, call);
+  if (!faMap.isValid()) {
     return nullptr;
   }
 
@@ -1507,7 +1505,7 @@ doIsCandidateApplicableInitial(Context* context,
   auto initialTypedSignature = typedSignatureInitial(context, uSig);
   // Next, check that the types are compatible
   int formalIdx = 0;
-  for (const FormalActual& entry : faMap.byFormalIdx) {
+  for (const FormalActual& entry : faMap.byFormalIdx()) {
     const auto& actualType = entry.actualType;
     const auto& formalType = initialTypedSignature->formalType(formalIdx);
     bool ok = canPassInitial(actualType, formalType);
@@ -1542,9 +1540,9 @@ doIsCandidateApplicableInstantiating(Context* context,
     return nullptr;
 
   // Next, check that the types are compatible
-  size_t nActuals = call.actuals.size();
+  size_t nActuals = call.numActuals();
   for (size_t i = 0; i < nActuals; i++) {
-    const QualifiedType& actualType = call.actuals[i].type;
+    const QualifiedType& actualType = call.actuals(i).type();
     const QualifiedType& formalType = instantiated->formalType(i);
     bool ok = canPassAfterInstantiating(actualType, formalType);
     if (!ok)
@@ -1640,8 +1638,8 @@ findMostSpecificCandidates(Context* context,
     // TODO: find most specific -- pull over disambiguation code
     // TODO: handle return intent overloading
     // TODO: this is demo code
-    if (call.actuals.size() > 1) {
-      if (call.actuals[1].type.type()->isIntType()) {
+    if (call.numActuals() > 1) {
+      if (call.actuals(1).type().type()->isIntType()) {
         result.setBestRef(lst[0]);
       } else {
         result.setBestRef(lst[lst.size()-1]);
@@ -1704,7 +1702,7 @@ void accumulatePoisUsedByResolvingBody(Context* context,
   const ResolvedFunction* r = resolveFunction(context, signature, poiScope);
 
   // gather the POI scopes from instantiating the function body
-  poiInfo.accumulate(r->poiInfo);
+  poiInfo.accumulate(r->poiInfo());
 }
 
 // if the call's name matches a class management type construction,
@@ -1713,10 +1711,10 @@ void accumulatePoisUsedByResolvingBody(Context* context,
 static const Type* getManagedClassType(Context* context,
                                        const Call* call,
                                        const CallInfo& ci) {
-  UniqueString name = ci.name;
+  UniqueString name = ci.name();
 
-  if (ci.hasQuestionArg) {
-    if (ci.actuals.size() != 0) {
+  if (ci.hasQuestionArg()) {
+    if (ci.numActuals() != 0) {
       context->error(call, "invalid class type construction");
       return ErroneousType::get(context);
     } else if (name == "owned") {
@@ -1756,8 +1754,8 @@ static const Type* getManagedClassType(Context* context,
   auto d = ClassTypeDecorator(de);
 
   const Type* t = nullptr;
-  if (ci.actuals.size() > 0)
-    t = ci.actuals[0].type.type();
+  if (ci.numActuals() > 0)
+    t = ci.actuals(0).type().type();
 
   if (t == nullptr || !(t->isBasicClassType() || t->isClassType())) {
     context->error(call, "invalid class type construction");
@@ -1783,10 +1781,10 @@ static const Type* getManagedClassType(Context* context,
 static const Type* getNumericType(Context* context,
                                   const Call* call,
                                   const CallInfo& ci) {
-  UniqueString name = ci.name;
+  UniqueString name = ci.name();
 
-  if (ci.hasQuestionArg) {
-    if (ci.actuals.size() != 0) {
+  if (ci.hasQuestionArg()) {
+    if (ci.numActuals() != 0) {
       context->error(call, "invalid numeric type construction");
       return ErroneousType::get(context);
     } else if (name == "int") {
@@ -1811,12 +1809,12 @@ static const Type* getNumericType(Context* context,
       name == "real" || name == "imag" || name == "complex") {
 
     QualifiedType qt;
-    if (ci.actuals.size() > 0)
-      qt = ci.actuals[0].type;
+    if (ci.numActuals() > 0)
+      qt = ci.actuals(0).type();
 
     if (qt.type() == nullptr || !qt.type()->isIntType() ||
         qt.param() == nullptr || !qt.param()->isIntParam() ||
-        ci.actuals.size() != 1) {
+        ci.numActuals() != 1) {
       context->error(call, "invalid numeric type construction");
       return ErroneousType::get(context);
     }
@@ -1845,9 +1843,9 @@ static const Type* resolveFnCallSpecialType(Context* context,
                                             const Call* call,
                                             const CallInfo& ci) {
 
-  if (ci.name == "?") {
-    if (ci.actuals.size() > 0) {
-      if (const Type* t = ci.actuals[0].type.type()) {
+  if (ci.name() == "?") {
+    if (ci.numActuals() > 0) {
+      if (const Type* t = ci.actuals(0).type().type()) {
         const ClassType* ct = nullptr;
 
         if (auto bct = t->toBasicClassType()) {
@@ -1968,8 +1966,7 @@ CallResolutionResult resolveFnCall(Context* context,
     for (size_t i = firstPoiCandidate; i < n; i++) {
       for (const TypedFnSignature* candidate : mostSpecific) {
         if (candidate != nullptr) {
-          poiInfo.poiFnIdsUsed.insert(
-              std::make_pair(call->id(), candidate->id()));
+          poiInfo.addIds(call->id(), candidate->id());
         }
       }
     }
@@ -1991,7 +1988,7 @@ CallResolutionResult resolveFnCall(Context* context,
   if (anyInstantiated) {
     instantiationPoiScope =
       pointOfInstantiationScope(context, inScope, inPoiScope);
-    poiInfo.poiScope = instantiationPoiScope;
+    poiInfo.setPoiScope(instantiationPoiScope);
   }
 
   for (const TypedFnSignature* candidate : mostSpecific) {
@@ -2030,8 +2027,8 @@ CallResolutionResult resolvePrimCall(Context* context,
                                      const PoiScope* inPoiScope) {
 
   bool allParam = true;
-  for (const CallInfoActual& actual : ci.actuals) {
-    if (!actual.type.hasParam()) {
+  for (const CallInfoActual& actual : ci.actuals()) {
+    if (!actual.type().hasParam()) {
       allParam = false;
       break;
     }
@@ -2043,15 +2040,15 @@ CallResolutionResult resolvePrimCall(Context* context,
 
   // start with a non-param result type based on the 1st argument
   // TODO: do something more intelligent with a table of params
-  if (ci.actuals.size() > 0) {
-    type = QualifiedType(QualifiedType::VALUE, ci.actuals[0].type.type());
+  if (ci.numActuals() > 0) {
+    type = QualifiedType(QualifiedType::VALUE, ci.actuals(0).type().type());
   }
 
   // handle param folding
   auto prim = call->prim();
   if (Param::isParamOpFoldable(prim)) {
-    if (allParam && ci.actuals.size() == 2) {
-      type = Param::fold(context, prim, ci.actuals[0].type, ci.actuals[1].type);
+    if (allParam && ci.numActuals() == 2) {
+      type = Param::fold(context, prim, ci.actuals(0).type(), ci.actuals(1).type());
     }
   }
 

@@ -20,6 +20,7 @@
 #ifndef CHPL_RESOLUTION_RESOLUTION_TYPES_H
 #define CHPL_RESOLUTION_RESOLUTION_TYPES_H
 
+#include "chpl/queries/UniqueString.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/types/QualifiedType.h"
 #include "chpl/types/Type.h"
@@ -184,39 +185,85 @@ class UntypedFnSignature {
 
 using SubstitutionsMap = std::unordered_map<const uast::Decl*, types::QualifiedType>;
 
-struct CallInfoActual {
-  types::QualifiedType type;
-  UniqueString byName;
+/** CallInfoActual */
+class CallInfoActual {
+ private:
+  types::QualifiedType type_;
+  UniqueString byName_;
 
-  bool operator==(const CallInfoActual& other) const {
-    return type == other.type &&
-           byName == other.byName;
+ public:
+  CallInfoActual(types::QualifiedType type, UniqueString byName)
+      : type_(type), byName_(byName) {}
+
+  /** return the qualified type */
+  const types::QualifiedType& type() const { return type_; }
+
+  /** return the name, if any, that the argument was passed with.
+      Ex: in f(number=3), byName() would be "number"
+   */
+  UniqueString byName() const { return byName_; }
+
+  bool operator==(const CallInfoActual &other) const {
+    return type_ == other.type_ && byName_ == other.byName_;
   }
   bool operator!=(const CallInfoActual& other) const {
     return !(*this == other);
   }
   size_t hash() const {
-    return chpl::hash(type, byName);
+    return chpl::hash(type_, byName_);
   }
 };
 
-struct CallInfo {
-  UniqueString name;                   // the name of the called thing
-  bool isMethod = false;               // in that case, actuals[0] is receiver
-  bool hasQuestionArg = false;         // includes ? arg for type constructor
-  std::vector<CallInfoActual> actuals; // types/params/names of actuals
+/** CallInfo */
+class CallInfo {
+ private:
+  UniqueString name_;                   // the name of the called thing
+  bool isMethod_ = false;               // in that case, actuals[0] is receiver
+  bool hasQuestionArg_ = false;         // includes ? arg for type constructor
+  std::vector<CallInfoActual> actuals_; // types/params/names of actuals
+
+ public:
+  using CallInfoActualIterable = Iterable<std::vector<CallInfoActual>>;
+
+  CallInfo(UniqueString name, bool hasQuestionArg,
+           std::vector<CallInfoActual> actuals)
+      : name_(name), hasQuestionArg_(hasQuestionArg),
+        actuals_(std::move(actuals)) {}
+
+  /** return the name of the called thing */
+  UniqueString name() const { return name_; }
+
+  /** check if the call is a method call */
+  bool isMethod() const { return isMethod_; }
+
+  /** check if the call includes ? arg for type constructor */
+  bool hasQuestionArg() const { return hasQuestionArg_; }
+
+  /** return the actuals */
+  CallInfoActualIterable actuals() const {
+    return CallInfoActualIterable(actuals_);
+  }
+
+  /** return the i'th actual */
+  const CallInfoActual& actuals(size_t i) const {
+    assert(i < actuals_.size());
+    return actuals_[i];
+  }
+
+  /** return the number of actuals */
+  size_t numActuals() const { return actuals_.size(); }
 
   bool operator==(const CallInfo& other) const {
-    return name == other.name &&
-           isMethod == other.isMethod &&
-           hasQuestionArg == other.hasQuestionArg &&
-           actuals == other.actuals;
+    return name_ == other.name_ &&
+           isMethod_ == other.isMethod_ &&
+           hasQuestionArg_ == other.hasQuestionArg_ &&
+           actuals_ == other.actuals_;
   }
   bool operator!=(const CallInfo& other) const {
     return !(*this == other);
   }
   size_t hash() const {
-    return chpl::hash(name, isMethod, hasQuestionArg, actuals);
+    return chpl::hash(name_, isMethod_, hasQuestionArg_, actuals_);
   }
 };
 
@@ -225,13 +272,14 @@ struct CallInfo {
   Contains information about symbols available from point-of-instantiation
   in order to implement caching of instantiations.
  */
-struct PoiInfo {
+class PoiInfo {
+ private:
   // is this PoiInfo for a function that has been resolved, or
   // for a function we are about to resolve?
-  bool resolved = false;
+  bool resolved_ = false;
 
   // For a not-yet-resolved instantiation
-  const PoiScope* poiScope = nullptr;
+  const PoiScope* poiScope_ = nullptr;
 
   // TODO: add VisibilityInfo etc -- names of calls.
   // see PR #16261
@@ -242,32 +290,53 @@ struct PoiInfo {
   // This is a set of pairs of (Call ID, Function ID).
   // This includes POI calls from functions called in this Function,
   // transitively
-  std::set<std::pair<ID, ID>> poiFnIdsUsed;
+  std::set<std::pair<ID, ID>> poiFnIdsUsed_;
 
+ public:
   // default construct a PoiInfo
   PoiInfo() { }
 
   // construct a PoiInfo for a not-yet-resolved instantiation
   PoiInfo(const PoiScope* poiScope)
-    : resolved(false), poiScope(poiScope) {
+    : resolved_(false), poiScope_(poiScope) {
   }
   // construct a PoiInfo for a resolved instantiation
   PoiInfo(std::set<std::pair<ID, ID>> poiFnIdsUsed)
-    : resolved(true), poiFnIdsUsed(std::move(poiFnIdsUsed)) {
+    : resolved_(true), poiFnIdsUsed_(std::move(poiFnIdsUsed)) {
+  }
+
+  /** return the poiScope */
+  const PoiScope* poiScope() const { return poiScope_; }
+
+  /** set the poiScope */
+  void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
+
+  /** set resolved */
+  void setResolved(bool resolved) { resolved_ = resolved; }
+
+  // TODO callers copy and store this elsewhere, do we return as is? change the
+  // getter to poiFnIdsUsedAsSet? make callers do std::set(poiFnIdsUsed.begin(),
+  // poiFnidsUsed.end()) ?
+  const std::set<std::pair<ID, ID>> &poiFnIdsUsed() const {
+    return poiFnIdsUsed_;
+  }
+
+  void addIds(ID a, ID b) {
+    poiFnIdsUsed_.emplace(a, b);
   }
 
   // return true if the two passed PoiInfos represent the same information
   // (for use in an update function)
   static bool updateEquals(const PoiInfo& a, const PoiInfo& b) {
-    return a.resolved == b.resolved &&
-           a.poiScope == b.poiScope &&
-           a.poiFnIdsUsed == b.poiFnIdsUsed;
+    return a.resolved_ == b.resolved_ &&
+           a.poiScope_ == b.poiScope_ &&
+           a.poiFnIdsUsed_ == b.poiFnIdsUsed_;
   }
 
   void swap(PoiInfo& other) {
-    std::swap(resolved, other.resolved);
-    std::swap(poiScope, other.poiScope);
-    poiFnIdsUsed.swap(other.poiFnIdsUsed);
+    std::swap(resolved_, other.resolved_);
+    std::swap(poiScope_, other.poiScope_);
+    poiFnIdsUsed_.swap(other.poiFnIdsUsed_);
   }
 
   // accumulate PoiInfo from a call into this PoiInfo
@@ -280,10 +349,10 @@ struct PoiInfo {
   // return true if one of the PoiInfos is a resolved function that
   // can be reused given PoiInfo for a not-yet-resolved function.
   static bool reuseEquals(const PoiInfo& a, const PoiInfo& b) {
-    if (a.resolved && !b.resolved) {
+    if (a.resolved_ && !b.resolved_) {
       return a.canReuse(b);
     }
-    if (b.resolved && !a.resolved) {
+    if (b.resolved_ && !a.resolved_) {
       return b.canReuse(a);
     }
     return updateEquals(a, b);
@@ -504,79 +573,123 @@ class MostSpecificCandidates {
   }
 };
 
-struct CallResolutionResult {
+/** CallResolutionResult */
+class CallResolutionResult {
+ private:
   // what are the candidates for return-intent overloading?
-  MostSpecificCandidates mostSpecific;
+  MostSpecificCandidates mostSpecific_;
   // what is the type of the call expression?
-  types::QualifiedType exprType;
+  types::QualifiedType exprType_;
   // if any of the candidates were instantiated, what point-of-instantiation
   // scopes were used when resolving their signature or body?
-  PoiInfo poiInfo;
+  PoiInfo poiInfo_;
 
+ public:
   // for simple cases where mostSpecific and poiInfo are irrelevant
   CallResolutionResult(types::QualifiedType exprType)
-    : exprType(std::move(exprType)) {
+    : exprType_(std::move(exprType)) {
   }
 
   CallResolutionResult(MostSpecificCandidates mostSpecific,
                        types::QualifiedType exprType,
                        PoiInfo poiInfo)
-    : mostSpecific(std::move(mostSpecific)),
-      exprType(std::move(exprType)),
-      poiInfo(std::move(poiInfo)) {
+    : mostSpecific_(std::move(mostSpecific)),
+      exprType_(std::move(exprType)),
+      poiInfo_(std::move(poiInfo)) {
   }
 
+  /** get the most specific candidates for return-intent overloading */
+  const MostSpecificCandidates& mostSpecific() const { return mostSpecific_; }
+
+  /** type of the call expression */
+  const types::QualifiedType& exprType() const { return exprType_; }
+
+  /** point-of-instantiation scopes used when resolving signature or body */
+  const PoiInfo& poiInfo() const { return poiInfo_; }
+
   bool operator==(const CallResolutionResult& other) const {
-    return mostSpecific == other.mostSpecific &&
-           exprType == other.exprType &&
-           PoiInfo::updateEquals(poiInfo, other.poiInfo);
+    return mostSpecific_ == other.mostSpecific_ &&
+           exprType_ == other.exprType_ &&
+           PoiInfo::updateEquals(poiInfo_, other.poiInfo_);
   }
   bool operator!=(const CallResolutionResult& other) const {
     return !(*this == other);
   }
   void swap(CallResolutionResult& other) {
-    mostSpecific.swap(other.mostSpecific);
-    exprType.swap(other.exprType);
-    poiInfo.swap(other.poiInfo);
+    mostSpecific_.swap(other.mostSpecific_);
+    exprType_.swap(other.exprType_);
+    poiInfo_.swap(other.poiInfo_);
   }
 };
 
 /**
   This type represents a resolved expression.
 */
-struct ResolvedExpression {
+class ResolvedExpression {
+ private:
   // What is its type and param value?
-  types::QualifiedType type;
+  types::QualifiedType type_;
   // For simple (non-function Identifier) cases,
   // the ID of a NamedDecl it refers to
-  ID toId;
+  ID toId_;
 
   // For a function call, what is the most specific candidate,
   // or when using return intent overloading, what are the most specific
   // candidates?
   // The choice between these needs to happen
   // later than the main function resolution.
-  MostSpecificCandidates mostSpecific;
+  MostSpecificCandidates mostSpecific_;
   // What point of instantiation scope should be used when
   // resolving functions in mostSpecific?
-  const PoiScope* poiScope = nullptr;
+  const PoiScope *poiScope_ = nullptr;
 
+ public:
   ResolvedExpression() { }
 
+  /** get the qualified type */
+  const types::QualifiedType& type() const { return type_; }
+
+  /** for simple (non-function Identifier) cases, the ID of a NamedDecl it
+   * refers to */
+  ID toId() const { return toId_; }
+
+  /** For a function call, what is the most specific candidate, or when using
+   * return intent overloading, what are the most specific candidates? The
+   * choice between these needs to happen later than the main function
+   * resolution.
+   */
+  const MostSpecificCandidates& mostSpecific() const { return mostSpecific_; }
+
+  const PoiScope* poiScope() const { return poiScope_; }
+
+  /** set the toId */
+  void setToId(ID toId) { toId_ = toId; }
+
+  /** set the type */
+  void setType(const types::QualifiedType& type) { type_ = type; }
+
+  /** set the most specific */
+  void setMostSpecific(const MostSpecificCandidates& mostSpecific) {
+    mostSpecific_ = mostSpecific;
+  }
+
+  /** set the point-of-instantiation scope */
+  void setPoiScope(const PoiScope* poiScope) { poiScope_ = poiScope; }
+
   bool operator==(const ResolvedExpression& other) const {
-    return type == other.type &&
-           toId == other.toId &&
-           mostSpecific == other.mostSpecific &&
-           poiScope == other.poiScope;
+    return type_ == other.type_ &&
+           toId_ == other.toId_ &&
+           mostSpecific_ == other.mostSpecific_ &&
+           poiScope_ == other.poiScope_;
   }
   bool operator!=(const ResolvedExpression& other) const {
     return !(*this == other);
   }
   void swap(ResolvedExpression& other) {
-    type.swap(other.type);
-    toId.swap(other.toId);
-    mostSpecific.swap(other.mostSpecific);
-    std::swap(poiScope, other.poiScope);
+    type_.swap(other.type_);
+    toId_.swap(other.toId_);
+    mostSpecific_.swap(other.mostSpecific_);
+    std::swap(poiScope_, other.poiScope_);
   }
 
   std::string toString() const;
@@ -650,46 +763,70 @@ class ResolutionResultByPostorderID {
 /**
   This type represents a resolved function.
 */
-struct ResolvedFunction {
-  const TypedFnSignature* signature = nullptr;
+class ResolvedFunction {
+ private:
+  const TypedFnSignature* signature_ = nullptr;
 
-  uast::Function::ReturnIntent returnIntent =
-    uast::Function::DEFAULT_RETURN_INTENT;
+  uast::Function::ReturnIntent returnIntent_ =
+      uast::Function::DEFAULT_RETURN_INTENT;
 
   // this is the output of the resolution process
-  ResolutionResultByPostorderID resolutionById;
+  ResolutionResultByPostorderID resolutionById_;
 
   // the set of point-of-instantiation scopes used by the instantiation
-  PoiInfo poiInfo;
+  PoiInfo poiInfo_;
+
+ public:
+  ResolvedFunction(const TypedFnSignature *signature,
+                   uast::Function::ReturnIntent returnIntent,
+                   ResolutionResultByPostorderID resolutionById,
+                   PoiInfo poiInfo)
+      : signature_(signature), returnIntent_(returnIntent),
+        resolutionById_(resolutionById), poiInfo_(poiInfo) {}
+
+  /** The type signature */
+  const TypedFnSignature* signature() const { return signature_; }
+
+  /** the return intent */
+  uast::Function::ReturnIntent returnIntent() const { return returnIntent_; }
+
+  /** this is the output of the resolution process */
+  const ResolutionResultByPostorderID& resolutionById() const {
+    return resolutionById_;
+  }
+
+  /** the set of point-of-instantiations used by the instantiation */
+  const PoiInfo& poiInfo() const { return poiInfo_; }
 
   bool operator==(const ResolvedFunction& other) const {
-    return signature == other.signature &&
-           returnIntent == other.returnIntent &&
-           resolutionById == other.resolutionById &&
-           PoiInfo::updateEquals(poiInfo, other.poiInfo);
+    return signature_ == other.signature_ &&
+           returnIntent_ == other.returnIntent_ &&
+           resolutionById_ == other.resolutionById_ &&
+           PoiInfo::updateEquals(poiInfo_, other.poiInfo_);
   }
   bool operator!=(const ResolvedFunction& other) const {
     return !(*this == other);
   }
   void swap(ResolvedFunction& other) {
-    std::swap(signature, other.signature);
-    std::swap(returnIntent, other.returnIntent);
-    resolutionById.swap(other.resolutionById);
-    poiInfo.swap(other.poiInfo);
+    std::swap(signature_, other.signature_);
+    std::swap(returnIntent_, other.returnIntent_);
+    resolutionById_.swap(other.resolutionById_);
+    poiInfo_.swap(other.poiInfo_);
   }
 
   const ResolvedExpression& byId(const ID& id) const {
-    return resolutionById.byId(id);
+    return resolutionById_.byId(id);
   }
   const ResolvedExpression& byAst(const uast::ASTNode* ast) const {
-    return resolutionById.byAst(ast);
+    return resolutionById_.byAst(ast);
   }
 
   const ID& id() const {
-    return signature->id();
+    return signature_->id();
   }
 };
 
+/** FormalActual holds information on a function formal and its binding (if any) */
 struct FormalActual {
   const uast::Decl* formal = nullptr;
   types::QualifiedType formalType;
@@ -698,24 +835,38 @@ struct FormalActual {
   types::QualifiedType actualType;
 };
 
-struct FormalActualMap {
-  std::vector<FormalActual> byFormalIdx;
-  std::vector<int> actualIdxToFormalIdx;
-  bool mappingIsValid = false;
-  int failingActualIdx = -1;
-  int failingFormalIdx = -1;
+/** FormalActualMap maps formals to actuals */
+class FormalActualMap {
+ private:
+  std::vector<FormalActual> byFormalIdx_;
+  std::vector<int> actualIdxToFormalIdx_;
+  bool mappingIsValid_ = false;
+  int failingActualIdx_ = -1;
+  int failingFormalIdx_ = -1;
 
+ public:
+
+  using FormalActualIterable = Iterable<std::vector<FormalActual>>;
+
+  FormalActualMap(const UntypedFnSignature* sig, const CallInfo& call) {
+    mappingIsValid_ = computeAlignment(sig, nullptr, call);
+  }
+  FormalActualMap(const TypedFnSignature* sig, const CallInfo& call) {
+    mappingIsValid_ = computeAlignment(sig->untyped(), sig, call);
+  }
+
+  /** check if mapping is valid */
+  bool isValid() const { return mappingIsValid_; }
+
+  /** get the FormalActual's */
+  FormalActualIterable byFormalIdx() const {
+    return FormalActualIterable(byFormalIdx_);
+  }
+
+ private:
   bool computeAlignment(const UntypedFnSignature* untyped,
-                        const TypedFnSignature* typed,
-                        const CallInfo& call);
-
-  static FormalActualMap build(const UntypedFnSignature* untyped,
-                               const CallInfo& call);
-  static FormalActualMap build(const TypedFnSignature* typed,
-                               const CallInfo& call);
+                        const TypedFnSignature* typed, const CallInfo& call);
 };
-
-
 
 } // end namespace resolution
 

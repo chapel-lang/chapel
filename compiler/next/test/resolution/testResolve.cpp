@@ -62,9 +62,9 @@ static void test1() {
 
     const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-    assert(rr.byAst(x).type.type()->isIntType());
-    assert(rr.byAst(xIdent).type.type()->isIntType());
-    assert(rr.byAst(xIdent).toId == x->id());
+    assert(rr.byAst(x).type().type()->isIntType());
+    assert(rr.byAst(xIdent).type().type()->isIntType());
+    assert(rr.byAst(xIdent).toId() == x->id());
 
     context->collectGarbage();
   }
@@ -124,7 +124,7 @@ static void test2() {
     assert(x);
 
     const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
-    assert(rr.byAst(x).type.type()->isIntType());
+    assert(rr.byAst(x).type().type()->isIntType());
 
     context->collectGarbage();
   }
@@ -152,9 +152,9 @@ static void test2() {
 
     const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
-    assert(rr.byAst(x).type.type()->isIntType());
-    assert(rr.byAst(xIdent).type.type()->isIntType());
-    assert(rr.byAst(xIdent).toId == x->id());
+    assert(rr.byAst(x).type().type()->isIntType());
+    assert(rr.byAst(xIdent).type().type()->isIntType());
+    assert(rr.byAst(xIdent).toId() == x->id());
 
     context->collectGarbage();
   }
