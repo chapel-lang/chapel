@@ -1674,6 +1674,8 @@ module ChapelArray {
       return _value.dsiAdd(i);
     }
 
+    // TODO: bulkAdd for associative domains
+
     pragma "no doc"
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
         isUnique=false, preserveInds=true, addOn=nilLocale)
@@ -4031,51 +4033,33 @@ module ChapelArray {
 
   // This must be a param function
   proc chpl__compatibleForBulkTransfer(a:[], b:[], param kind:_tElt) param {
-    if !useBulkTransfer then return false;
-    if a.eltType != b.eltType then return false;
-    if kind==_tElt.move then return true;
-    if kind==_tElt.initCopy && isConstCopyableOrSyncSingle(a.eltType) then return true;
-    if !chpl__supportedDataTypeForBulkTransfer(a.eltType) then return false;
-    return true;
+    if !useBulkTransfer {
+      return false;
+    }
+    if a.eltType != b.eltType {
+      return false;
+    }
+    if kind==_tElt.move {
+      return true;
+    }
+    if kind==_tElt.initCopy && isConstCopyableOrSyncSingle(a.eltType) {
+      return true;
+    }
+    return chpl__supportedDataTypeForBulkTransfer(a.eltType);
   }
 
   // This must be a param function
   proc chpl__supportedDataTypeForBulkTransfer(type t) param {
-    // These types cannot be default initialized
-    if isSubtype(t, borrowed) || isSubtype(t, unmanaged) {
-      return false;
-    } else if isRecordType(t) || isTupleType(t) {
-      // TODO: The current implementations of isPODType and
-      //       supportedDataTypeForBulkTransfer do not completely align. I'm
-      //       leaving it as future work to enable bulk transfer for other
-      //       types that are POD. In the long run it seems like we should be
-      //       able to have only one method for supportedDataType that just
-      //       calls isPODType.
-
-      // We can bulk transfer any record or tuple that is 'Plain Old Data'
-      // ie. a bag of bits
-      return isPODType(t);
-    } else if (isUnionType(t)) {
-      return false;
+    if isDefaultInitializableType(t) && isPODType(t) {
+      return true;
+    } else if isSubtype(t, _distribution) ||
+              isSubtype(t, locale) ||
+              isSubtype(t, chpl_anycomplex){
+      return true;
     } else {
-      pragma "unsafe" var x:t;
-      return chpl__supportedDataTypeForBulkTransfer(x);
+      return false;
     }
   }
-
-  // TODO: should this be returning true for atomic types?
-  proc chpl__supportedDataTypeForBulkTransfer(x: string) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: bytes) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: sync) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: single) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: domain) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: []) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x: _distribution) param return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: locale) param return true;
-  proc chpl__supportedDataTypeForBulkTransfer(x: chpl_anycomplex) param return true;
-  // TODO -- why is the below line here?
-  proc chpl__supportedDataTypeForBulkTransfer(x: borrowed object) param return false;
-  proc chpl__supportedDataTypeForBulkTransfer(x) param return true;
 
   pragma "no doc"
   proc checkArrayShapesUponAssignment(a: [], b: [], forSwap = false) {
@@ -4236,9 +4220,6 @@ module ChapelArray {
       if chpl__compatibleForBulkTransfer(a, b, kind) {
         done = chpl__bulkTransferArray(a, b);
       }
-      else if chpl__compatibleForWidePtrBulkTransfer(a, b, kind) {
-        done = chpl__bulkTransferPtrArray(a, b);
-      }
       // If we did a bulk transfer, it just bit copied, so need to
       // run copy initializer still
       if done {
@@ -4253,43 +4234,6 @@ module ChapelArray {
     if !done {
       chpl__transferArray(a, b, kind);
     }
-  }
-
-  proc chpl__compatibleForWidePtrBulkTransfer(a, b,
-                                              param kind=_tElt.assign) param {
-    if !useBulkPtrTransfer then return false;
-
-    // TODO: for now we are limiting ourselves to default rectangulars
-    if !(a._value.isDefaultRectangular() &&
-         b._value.isDefaultRectangular()) then return false;
-
-    if a.eltType != b.eltType then return false;
-
-    // only classes have pointer assignment semantics
-    if !isClass(a.eltType) then return false;
-
-    // ownership transfer is complicated
-    if isOwnedClass(a.eltType) then return false;
-
-    // shared array assignment seems to be handled differently, but prevent them
-    // here, too, just in case.
-    if isSharedClass(a.eltType) then return false;
-
-    return true;
-  }
-
-  inline proc chpl__bulkTransferPtrArray(ref a: [], b: []) {
-    // for now assume they are both local arrays, that have the same bounds
-    const aDom = a.domain;
-    const bDom = b.domain;
-    if aDom != bDom then return false;
-
-     // TODO can we omit the following check and bulk transfer narrow
-     // pointers, too
-    if __primitive("is wide pointer", a[aDom.low]) {
-      return chpl__bulkTransferArray(a, aDom, b, bDom);
-    }
-    return false;
   }
 
   inline proc chpl__bulkTransferArray(ref a: [?AD], b : [?BD]) {
@@ -4344,7 +4288,7 @@ module ChapelArray {
   pragma "find user line"
   pragma "ignore transfer errors"
   inline proc chpl__transferArray(ref a: [], const ref b,
-                           param kind=_tElt.assign) lifetime a <= b {
+                                  param kind=_tElt.assign) lifetime a <= b {
     if (a.eltType == b.type ||
         _isPrimitiveType(a.eltType) && _isPrimitiveType(b.type)) {
 
