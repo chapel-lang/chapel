@@ -51,7 +51,6 @@
 #include "chpl-file-utils.h"
 #include <chplfp.h>
 #include "chpl-gpu.h"
-#include "chpl-gpu-gen-includes.h"
 #include "chplglob.h"
 #include "chplio.h"
 #include "chplmath.h"
@@ -74,5 +73,9 @@
 #include "chpl-comm-compiler-macros.h"
 #include "chpl-wide-ptr-fns.h"
 #include "chpl-mem-consistency.h"
+
+#ifdef HAS_GPU_LOCALE
+#include "chpl-gpu-gen-includes.h"
+#endif
 
 #endif
