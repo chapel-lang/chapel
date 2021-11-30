@@ -41,6 +41,8 @@ namespace chpl {
 namespace types {
 
 
+using namespace uast;
+
 Param::~Param() {
 }
 
@@ -337,8 +339,8 @@ QualifiedType Param::fold(Context* context,
                           chpl::uast::PrimitiveTag op,
                           QualifiedType a,
                           QualifiedType b) {
-  assert(a.hasType() && a.hasParam());
-  assert(b.hasType() && b.hasParam());
+  assert(a.hasTypePtr() && a.hasParamPtr());
+  assert(b.hasTypePtr() && b.hasParamPtr());
 
   // convert Param to Immediate
   Immediate aImm = paramToImmediate(a.param(), a.type());
@@ -356,7 +358,7 @@ QualifiedType Param::fold(Context* context,
 
   // convert from Immediate
   std::pair<const Param*, const Type*> pair = immediateToParam(context, result);
-  return QualifiedType(QualifiedType::PARAM, pair.second, pair.first);
+  return QualifiedType(IntentList::PARAM, pair.second, pair.first);
 }
 
 std::string Param::toString() const {

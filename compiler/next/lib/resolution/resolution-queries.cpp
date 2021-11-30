@@ -112,34 +112,8 @@ static QualifiedType::Kind qualifiedTypeKindForDecl(const NamedDecl* decl) {
   } else if (decl->isTypeDecl()) {
     return QualifiedType::TYPE;
   } else if (const VarLikeDecl* vd = decl->toVarLikeDecl()) {
-    auto storageKind = vd->storageKind();
-    switch (storageKind) {
-      case IntentList::DEFAULT:
-      case IntentList::INDEX:
-        return QualifiedType::UNKNOWN;
-
-      case IntentList::VAR:
-      case IntentList::IN:
-      case IntentList::OUT:
-      case IntentList::INOUT:
-        return QualifiedType::VALUE;
-
-      case IntentList::CONST:
-      case IntentList::CONST_IN:
-        return QualifiedType::CONST;
-
-      case IntentList::CONST_REF:
-        return QualifiedType::CONST_REF;
-
-      case IntentList::REF:
-        return QualifiedType::REF;
-
-      case IntentList::PARAM:
-        return QualifiedType::PARAM;
-
-      case IntentList::TYPE:
-        return QualifiedType::TYPE;
-    }
+    IntentList storageKind = vd->storageKind();
+    return storageKind;
     assert(false && "case not handled");
   }
   assert(false && "case not handled");
@@ -328,7 +302,7 @@ struct Resolver {
 
     auto vec = lookupInScope(context, scope, ident, config);
     if (vec.size() == 0) {
-      result.setType(QualifiedType(QualifiedType::UNKNOWN, nullptr));
+      result.setType(QualifiedType());
     } else if (vec.size() > 1 || vec[0].numIds() > 1) {
       // can't establish the type. If this is in a function
       // call, we'll establish it later anyway.
@@ -782,7 +756,7 @@ static TypedFnSignature::WhereClauseResult whereClauseResult(
   auto whereClauseResult = TypedFnSignature::WHERE_TBD;
   if (const Expression* where = fn->whereClause()) {
     const QualifiedType& qt = r.byAst(where).type();
-    if (qt.kind() == QualifiedType::PARAM && qt.type()->isBoolType()) {
+    if (qt.isParam() && qt.type()->isBoolType()) {
       // OK, we know the result of the where clause
       // TODO: handle Immediate
       if (qt.param() != 0) {
@@ -969,7 +943,12 @@ typeConstructorInitialQuery(Context* context, const Type* t)
                                                   ct->fieldHasDefaultValue(i),
                                                   ct->fieldDecl(i));
         formals.push_back(d);
-        formalTypes.push_back(type);
+        // TODO: fixme
+        // type construction formal should always be type / param
+        QualifiedType::Kind kind = QualifiedType::TYPE;
+        if (type.isParam())
+          kind = QualifiedType::PARAM;
+        formalTypes.push_back(QualifiedType(kind, type.type(), type.param()));
       }
     }
   } else {
@@ -1062,9 +1041,9 @@ const TypedFnSignature* instantiateSignature(Context* context,
   TypedFnSignature::WhereClauseResult where = TypedFnSignature::WHERE_NONE;
 
   if (fn != nullptr) {
+    // visit the formals, return type, where clause
     ResolutionResultByPostorderID r;
     Resolver visitor(context, fn, substitutions, poiScope, r);
-    // visit the formals, return type, where clause
     for (auto child: fn->children()) {
       child->traverse(visitor);
     }
@@ -1078,7 +1057,6 @@ const TypedFnSignature* instantiateSignature(Context* context,
     ResolutionResultByPostorderID r;
     Resolver visitor(context, ad, substitutions, poiScope, r,
                      /* useGenericFormalDefaults */ false);
-    // visit the formals, return type, where clause
     for (auto child: ad->children()) {
       if (auto var = child->toVariable()) {
         if (var->isField()) {
@@ -1092,7 +1070,13 @@ const TypedFnSignature* instantiateSignature(Context* context,
       if (auto var = child->toVariable()) {
         if (var->isField()) {
           const ResolvedExpression& e = r.byAst(child);
-          formalTypes.push_back(e.type());
+          QualifiedType type = e.type();
+          // TODO: fixme
+          // type construction formal should always be type / param
+          QualifiedType::Kind kind = QualifiedType::TYPE;
+          if (type.isParam())
+            kind = QualifiedType::PARAM;
+          formalTypes.push_back(QualifiedType(kind, type.type(), type.param()));
         }
       }
     }
@@ -1248,16 +1232,13 @@ struct ReturnTypeInferer {
       }
     } else {
       bool ok = true;
-      if ((qt.kind() == QualifiedType::TYPE ||
-           qt.kind() == QualifiedType::PARAM) &&
+      if ((qt.isType() || qt.isParam()) &&
           (returnIntent == Function::CONST_REF ||
            returnIntent == Function::REF)) {
         ok = false;
-      } else if (returnIntent == Function::TYPE &&
-                 qt.kind() != QualifiedType::TYPE) {
+      } else if (returnIntent == Function::TYPE && !qt.isType()) {
         ok = false;
-      } else if (returnIntent == Function::PARAM &&
-                 qt.kind() != QualifiedType::PARAM) {
+      } else if (returnIntent == Function::PARAM && !qt.isParam()) {
         ok = false;
       }
       if (!ok) {
@@ -1267,7 +1248,7 @@ struct ReturnTypeInferer {
   }
 
   void noteVoidReturnType(const Expression* inExpr) {
-    auto voidType = QualifiedType(QualifiedType::VALUE, VoidType::get(context));
+    auto voidType = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
     returnedTypes.push_back(voidType);
 
     checkReturn(inExpr, voidType);
@@ -1280,33 +1261,14 @@ struct ReturnTypeInferer {
 
     checkReturn(inExpr, qt);
 
-    switch (returnIntent) {
-      case Function::DEFAULT_RETURN_INTENT:
-        kind = QualifiedType::VALUE;
-        break;
-      case Function::CONST:
-        kind = QualifiedType::CONST_VALUE;
-        break;
-      case Function::CONST_REF:
-        kind = QualifiedType::CONST_REF;
-        break;
-      case Function::REF:
-        kind = QualifiedType::REF;
-        break;
-      case Function::PARAM:
-        kind = QualifiedType::PARAM;
-        break;
-      case Function::TYPE:
-        kind = QualifiedType::TYPE;
-        break;
-    }
+    kind = (QualifiedType::Kind) returnIntent;
 
     returnedTypes.push_back(QualifiedType(kind, type));
   }
 
   QualifiedType returnedType() {
     if (returnedTypes.size() == 0) {
-      return QualifiedType(QualifiedType::VALUE, VoidType::get(context));
+      return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
     } else if (returnedTypes.size() == 1) {
       return returnedTypes[0];
     } else {
@@ -1380,15 +1342,32 @@ const QualifiedType& returnType(Context* context,
         ad = ast->toAggregateDecl();
 
     if (ad) {
+      // TODO: this should run the Resolver to compute
+      // the field types with substitutions, rather than
+      // assuming they are all represented in the formals.
+
       // construct type for record etc.
       std::vector<CompositeType::FieldDetail> fields;
       int nFormals = sig->numFormals();
       for (int i = 0; i < nFormals; i++) {
+        UniqueString name = untyped->formalName(i);
+        bool hasDefault = untyped->formalHasDefault(i);
+        const uast::Decl* decl = untyped->formalDecl(i);
+        // recompute the kind of the field (from the field declaration)
+        // since it's not necessarily the same as the type constructor formal
+        // (e.g. type constructor might have 'type' when field is 'var')
+        QualifiedType::Kind kind = QualifiedType::UNKNOWN;
+        if (decl) {
+          if (const NamedDecl* nd = decl->toNamedDecl()) {
+            kind = qualifiedTypeKindForDecl(nd);
+          }
+        }
+        QualifiedType qt = sig->formalType(i);
+        const Type* type = qt.type();
+        const Param* param = qt.param();
         fields.push_back(
-            CompositeType::FieldDetail(untyped->formalName(i),
-                                       untyped->formalHasDefault(i),
-                                       untyped->formalDecl(i),
-                                       sig->formalType(i)));
+            CompositeType::FieldDetail(name, hasDefault, decl,
+                                       QualifiedType(kind, type, param)));
       }
 
       const Type* t = nullptr;
@@ -1423,8 +1402,11 @@ const QualifiedType& returnType(Context* context,
 // TODO move these to a core logic of resolution file
 static QualifiedType::Kind resolveIntent(const QualifiedType& t) {
   if (t.type()->isPrimitiveType()) {
-    if (t.kind() == QualifiedType::UNKNOWN || t.kind() == QualifiedType::CONST)
-      return QualifiedType::CONST_VALUE;
+    auto kind = t.kind();
+    if (kind == QualifiedType::UNKNOWN ||
+        kind == QualifiedType::DEFAULT_INTENT ||
+        kind == QualifiedType::CONST_INTENT)
+      return QualifiedType::CONST_IN;
   } else if (t.isGenericOrUnknown()) {
     return QualifiedType::UNKNOWN;
   } else {
@@ -2023,7 +2005,7 @@ CallResolutionResult resolvePrimCall(Context* context,
 
   bool allParam = true;
   for (const CallInfoActual& actual : ci.actuals()) {
-    if (!actual.type().hasParam()) {
+    if (!actual.type().hasParamPtr()) {
       allParam = false;
       break;
     }
@@ -2036,7 +2018,7 @@ CallResolutionResult resolvePrimCall(Context* context,
   // start with a non-param result type based on the 1st argument
   // TODO: do something more intelligent with a table of params
   if (ci.numActuals() > 0) {
-    type = QualifiedType(QualifiedType::VALUE, ci.actuals(0).type().type());
+    type = QualifiedType(QualifiedType::CONST_VAR, ci.actuals(0).type().type());
   }
 
   // handle param folding

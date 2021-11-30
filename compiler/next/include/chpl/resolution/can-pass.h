@@ -94,6 +94,11 @@ class CanPassResult {
   canConvertClassesOrPtrs(const types::QualifiedType& actualType,
                           const types::QualifiedType& formalType);
 
+  static CanPassResult
+  canConvert(const types::QualifiedType& actualType,
+             const types::QualifiedType& formalType);
+
+
  public:
   CanPassResult() { }
   ~CanPassResult() = default;

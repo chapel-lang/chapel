@@ -64,12 +64,12 @@ static void test1() {
   Context ctx;
   Context* context = &ctx;
 
-  QualifiedType int0(QualifiedType::VALUE, IntType::get(context, 0));
-  QualifiedType int8(QualifiedType::VALUE, IntType::get(context, 8));
-  QualifiedType int16(QualifiedType::VALUE, IntType::get(context, 16));
-  QualifiedType int32(QualifiedType::VALUE, IntType::get(context, 32));
-  QualifiedType int64(QualifiedType::VALUE, IntType::get(context, 64));
-  QualifiedType real0(QualifiedType::VALUE, RealType::get(context, 0));
+  QualifiedType int0(QualifiedType::VAR, IntType::get(context, 0));
+  QualifiedType int8(QualifiedType::VAR, IntType::get(context, 8));
+  QualifiedType int16(QualifiedType::VAR, IntType::get(context, 16));
+  QualifiedType int32(QualifiedType::VAR, IntType::get(context, 32));
+  QualifiedType int64(QualifiedType::VAR, IntType::get(context, 64));
+  QualifiedType real0(QualifiedType::VAR, RealType::get(context, 0));
 
   CanPassResult r;
   r = canPass(int0, int0); assert(passesAsIs(r));
@@ -110,12 +110,12 @@ static void test2() {
   Context ctx;
   Context* context = &ctx;
 
-  QualifiedType int0(QualifiedType::VALUE, IntType::get(context, 0));
-  QualifiedType int8(QualifiedType::VALUE, IntType::get(context, 8));
-  QualifiedType int16(QualifiedType::VALUE, IntType::get(context, 16));
-  QualifiedType int32(QualifiedType::VALUE, IntType::get(context, 32));
-  QualifiedType int64(QualifiedType::VALUE, IntType::get(context, 64));
-  QualifiedType real0(QualifiedType::VALUE, RealType::get(context, 0));
+  QualifiedType int0(QualifiedType::VAR, IntType::get(context, 0));
+  QualifiedType int8(QualifiedType::VAR, IntType::get(context, 8));
+  QualifiedType int16(QualifiedType::VAR, IntType::get(context, 16));
+  QualifiedType int32(QualifiedType::VAR, IntType::get(context, 32));
+  QualifiedType int64(QualifiedType::VAR, IntType::get(context, 64));
+  QualifiedType real0(QualifiedType::VAR, RealType::get(context, 0));
 
   CanPassResult r;
   r = canPass(int0, real0); assert(passesNumeric(r));
@@ -130,11 +130,11 @@ static void test3() {
   Context ctx;
   Context* context = &ctx;
 
-  QualifiedType bool0(QualifiedType::VALUE, BoolType::get(context, 0));
-  QualifiedType bool8(QualifiedType::VALUE, BoolType::get(context, 8));
-  QualifiedType bool16(QualifiedType::VALUE, BoolType::get(context, 16));
-  QualifiedType bool32(QualifiedType::VALUE, BoolType::get(context, 32));
-  QualifiedType bool64(QualifiedType::VALUE, BoolType::get(context, 64));
+  QualifiedType bool0(QualifiedType::VAR, BoolType::get(context, 0));
+  QualifiedType bool8(QualifiedType::VAR, BoolType::get(context, 8));
+  QualifiedType bool16(QualifiedType::VAR, BoolType::get(context, 16));
+  QualifiedType bool32(QualifiedType::VAR, BoolType::get(context, 32));
+  QualifiedType bool64(QualifiedType::VAR, BoolType::get(context, 64));
 
   CanPassResult r;
   r = canPass(bool0, bool0); assert(passesAsIs(r));
@@ -225,8 +225,8 @@ static void test4() {
                           UintType::get(context, 64),
                           oneParam);
 
-  QualifiedType int8(QualifiedType::VALUE, IntType::get(context, 8));
-  QualifiedType uint8(QualifiedType::VALUE, UintType::get(context, 8));
+  QualifiedType int8(QualifiedType::VAR, IntType::get(context, 8));
+  QualifiedType uint8(QualifiedType::VAR, UintType::get(context, 8));
 
 
   CanPassResult r;
@@ -306,7 +306,7 @@ static void test5() {
   auto n_p4 = getint(context, -(1<<24) + 4);
   auto n_p5 = getint(context, -(1<<24) + 5);
 
-  QualifiedType real32(QualifiedType::VALUE, RealType::get(context, 32));
+  QualifiedType real32(QualifiedType::VAR, RealType::get(context, 32));
 
   CanPassResult r;
   r = canPass(m5,  real32); assert(passesParamNarrowing(r));
@@ -349,11 +349,11 @@ static void test6() {
                                    StringType::get(context),
                                    p);
 
-  auto stringQT = QualifiedType(QualifiedType::VALUE,
+  auto stringQT = QualifiedType(QualifiedType::VAR,
                                 StringType::get(context));
-  auto cStringQT = QualifiedType(QualifiedType::VALUE,
+  auto cStringQT = QualifiedType(QualifiedType::VAR,
                                  CStringType::get(context));
-  auto bytesQT = QualifiedType(QualifiedType::VALUE,
+  auto bytesQT = QualifiedType(QualifiedType::VAR,
                                BytesType::get(context));
   CanPassResult r;
   r = canPass(paramString, stringQT); assert(passesAsIs(r));

@@ -218,7 +218,7 @@ static const Type* parseTypeOfX(Context* context,
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
   auto qt = rr.byAst(x).type();
-  assert(qt.kind() == QualifiedType::VALUE);
+  assert(qt.kind() == QualifiedType::VAR);
   assert(qt.type());
 
   return qt.type();
@@ -236,7 +236,7 @@ static void test4() {
   assert(rt->numFields() == 1);
   assert(rt->fieldName(0) == "field");
   assert(rt->fieldHasDefaultValue(0) == false);
-  assert(rt->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(rt->fieldType(0).kind() == QualifiedType::VAR);
   assert(rt->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -423,7 +423,7 @@ static void test15() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -445,7 +445,7 @@ static void test16() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -467,7 +467,7 @@ static void test17() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -488,7 +488,7 @@ static void test18() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -509,7 +509,7 @@ static void test19() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -530,7 +530,7 @@ static void test20() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -551,7 +551,7 @@ static void test21() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -572,7 +572,7 @@ static void test22() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -593,7 +593,7 @@ static void test23() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -614,7 +614,7 @@ static void test23q() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -635,7 +635,7 @@ static void test24() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -656,7 +656,7 @@ static void test25() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -677,7 +677,7 @@ static void test26() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 

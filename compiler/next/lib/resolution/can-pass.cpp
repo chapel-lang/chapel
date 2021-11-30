@@ -450,28 +450,74 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
   const Type* formalT = formalQT.type();
   assert(actualT && formalT);
 
-  // TODO: check that kinds are compatible
+  // check that the kinds are compatible
+
+  // type formal, type actual -> OK
+  // non-type formal, non-type actual -> OK
+  // type formal, non-type actual -> error, can't pass value to type
+  // non-type formal, type actual -> error, can't pass type to value
+  if (formalQT.isType() != actualQT.isType())
+    return fail();
+
+  // param actuals can pass to non-param formals
+  if (formalQT.isParam() && !actualQT.isParam())
+    return fail();
 
   // check params
-  if (formalQT.hasParam()) {
-    const Param* actualParam = actualQT.param();
-    const Param* formalParam = formalQT.param();
-    if (actualParam && formalParam) {
-      if (actualParam != formalParam) {
-        // passing different param values won't do
-        return fail();
-      } // otherwise continue with type information
-    } else if (formalParam && !actualParam) {
-      // this case doesn't make sense
-      assert(false && "case not expected");
+  const Param* actualParam = actualQT.param();
+  const Param* formalParam = formalQT.param();
+  if (actualParam && formalParam) {
+    if (actualParam != formalParam) {
+      // passing different param values won't do
       return fail();
-    }
-    // otherwise the param passing is OK
+    } // otherwise continue with type information
+  } else if (formalParam && !actualParam) {
+    // this case doesn't make sense
+    assert(false && "case not expected");
+    return fail();
   }
 
   if (actualT == formalT) {
     return passAsIs();
   }
+
+  // if the formal type is concrete/instantiated, do additional checking
+  /*if (!formalQT.isGenericOrUnknown()) {
+    switch (formalQT.kind()) {
+      case QualifiedType::UNKNOWN:
+      case QualifiedType::CONST_INTENT:
+      case QualifiedType::FUNCTION:
+      case QualifiedType::MODULE:
+        // no additional checking for these
+        break;
+
+      case QualifiedType::TYPE:
+        if (isSubtype(formalQT, actualQT))
+          return subtype();
+        break;
+
+      case QualifiedType::PARAM:
+        if (isSubtype(formalQT, actualQT))
+          return subtype();
+      case QualifiedType::REF:
+      case QualifiedType::CONST_REF:
+      case QualifiedType::VALUE:
+      case QualifiedType::CONST_VALUE:
+    }
+
+    // ref type requires same type
+    if (formalQT.kind() == QualifiedType::REF && actualT != formalT)
+      return fail();
+
+    // const ref
+    if (formalQT.kind() == QualifiedType::CONST_REF)
+
+    // in/inout
+
+    // out
+
+    // type
+  }*/
 
   // can we convert with a numeric conversion?
   if (canConvertNumeric(actualT, formalT))
