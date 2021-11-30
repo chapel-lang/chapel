@@ -510,6 +510,12 @@ template<> struct stringify<resolution::InnermostMatch> {
     }
   };
 
+  template<> struct stringify<resolution::BorrowedIdsWithName> {
+    std::string operator()(StringifyKind stringKind,
+                           const resolution::BorrowedIdsWithName& stringMe) const {
+      return defaultStringify(stringKind, stringMe);
+    }
+  };
 
 /// \endcond
 

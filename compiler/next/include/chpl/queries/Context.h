@@ -221,7 +221,7 @@ class Context {
 
   querydetail::RevisionNumber currentRevisionNumber = 1;
   bool enableDebugTracing = true;
-  size_t breakOnHash = 5305394367578502015;
+  size_t breakOnHash = 4231795962451111285;
   int numQueriesRunThisRevision_ = 0;
 
   static void defaultReportError(const ErrorMessage& err);

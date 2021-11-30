@@ -129,16 +129,13 @@ struct QueryMapArgTupleEqual final {
 
 // define a way to debug-print out a tuple
 void queryArgsPrintSep();
-void queryArgsPrintUnknown();
 
 template<typename T>
 static void queryArgsPrintOne(const T& v) {
-  queryArgsPrintUnknown();
+  stringify<T> tString;
+  printf("%s", tString(StringifyKind::DEBUG_SUMMARY, v).c_str() );
 }
 
-
-void queryArgsPrintOne(const ID& v);
-void queryArgsPrintOne(const UniqueString& v);
 
 template<typename TUP, size_t... I>
 static inline void queryArgsPrintImpl(const TUP& tuple, std::index_sequence<I...>) {

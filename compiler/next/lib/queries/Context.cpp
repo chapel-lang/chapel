@@ -21,6 +21,7 @@
 
 #include "chpl/queries/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/queries/stringify-functions.h"
 
 #include <cassert>
 #include <cstdarg>
@@ -684,30 +685,6 @@ namespace querydetail {
 
 void queryArgsPrintSep() {
   printf(", ");
-}
-
-void queryArgsPrintUnknown() {
-  printf("?");
-}
-
-void queryArgsPrintOne(const ID& v) {
-  printf("ID(%s)", v.toString().c_str());
-}
-void queryArgsPrintOne(const UniqueString& v) {
-  printf("\"%s\"", v.c_str());
-}
-
-const std::string convertUnknownQueryArgToString( ) {
-  return std::string("?");
-}
-
-
-std::string convertQueryArgToString(const ID& v) {
-  return v.toString();
-}
-
-std::string convertQueryArgToString(const UniqueString& v) {
-  return std::string(v.c_str());
 }
 
 QueryMapResultBase::~QueryMapResultBase() {
