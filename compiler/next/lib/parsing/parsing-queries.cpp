@@ -79,10 +79,7 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path) {
     uast::BuilderResult tmpResult = parser->parseString(pathc, textc);
     result.swap(tmpResult);
     // raise any errors encountered
-    // TODO: add something to BuilderResult to iterate over the errors
-    int nErrors = result.numErrors();
-    for (int i = 0; i < nErrors; i++) {
-      const ErrorMessage& e = result.error(i);
+    for (const ErrorMessage& e : result.errors()) {
       if (!e.isEmpty()) {
         // report the error and save it for this query
         context->error(e);
