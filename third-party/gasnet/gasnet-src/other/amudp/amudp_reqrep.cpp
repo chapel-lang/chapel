@@ -659,7 +659,17 @@ void AMUDP_processPacket(amudp_buf_t * const buf, int isloopback) {
   }
 
   /*  check the source id */
-  if_pf (sourceID == INVALID_NODE) AMUDP_REFUSEMESSAGE(EBADENDPOINT);
+  if_pf (sourceID == INVALID_NODE) {
+    // AMUDP_REFUSEMESSAGE(EBADENDPOINT);
+    // bug 4321: Some systems intermittently deliver an otherwise-valid packet with a corrupted sender port.
+    // Due to security concerns we should not execute an AM on behalf of such a packet, however sending
+    // a refusal packet is likely to crash the job if that refusal arrives back to a valid endpoint.
+    // Instead we'll drop the packet, allowing us to tolerate intermittent misbehavior.
+    AMX_DEBUG_WARN(("Dropping a packet from an unrecognized sender (%s). "
+                    "Your system might be affected by bug 4321.",
+                    AMUDP_enStr(buf->status.rx.sourceAddr,0)));
+    return; // drop message
+  }
 
   // fetch the descriptor relevant to this network message
   amudp_bufdesc_t * const desc = (isloopback ? NULL :

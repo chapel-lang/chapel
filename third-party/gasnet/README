@@ -18,6 +18,8 @@ as follows:
 
 * Pulled in an upstream fix for linker errors on Aries with newer GCC
    - https://bitbucket.org/berkeleylab/gasnet/commits/a04a94a5a
+* Pulled in an upstream fix for intermittent corrupted packets with udp
+   - https://bitbucket.org/berkeleylab/gasnet/commits/72d531485
 
 
 Upgrading GASNet versions
