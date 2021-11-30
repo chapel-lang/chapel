@@ -238,8 +238,9 @@ def get_compiler_from_command(command):
     # the following adjustments are to handle a command like
     #    /path/to/gcc-10 --some-option
     # where we are looking for just the 'gcc' part.
-    basename = os.path.basename(command)
-    name = basename.split('-')[0]
+    first = command.split()[0]
+    basename = os.path.basename(first)
+    name = basename.split('-')[0].strip()
     for tup in COMPILERS:
         if name == tup[1] or name == tup[2]:
             return tup[0]
