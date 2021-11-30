@@ -2,10 +2,10 @@ Chapel Contributors
 ===================
 
 The following people have contributed to the implementation of the
-most recent Chapel release:
+most recent Chapel releases:
 
-Contributors to the Chapel 1.25.0 release
------------------------------------------
+Contributors to the Chapel 1.25.x releases
+------------------------------------------
 * Ben Albrecht, [HPE]
 * Souris Ash, individual contributor
 * Ankush Bhardwaj, [GSoC 2021] mentor, [GSoC 2020] student from [Royal Global University]
@@ -20,6 +20,7 @@ Contributors to the Chapel 1.25.0 release
 * John Hartman, [HPE]
 * David Iten, [HPE]
 * Aryamaan Jain, individual contributor
+* Ricardo Jesus, individual contributor
 * Engin Kayraklioglu, [HPE] (former [GSoC 2017] mentor, [Cray Inc.] intern from [George Washington University])
 * Shreyas Khandekar, [HPE] intern from [University of Arizona]
 * Lee Killough, [HPE]

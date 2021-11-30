@@ -1,6 +1,9 @@
 Release Changes List
 ====================
 
+TODO:
+* Do we need to update Lydia's Subprocess links?
+
 version 1.25.1
 ==============
 
@@ -70,10 +73,19 @@ Memory Improvements
 
 Documentation
 -------------
-
+* added documentation for `bigint.pow()` to the 'BigInteger' module 
+  (see https://chapel-lang.org/docs/1.25.1/modules/standard/BigInteger.html#BigInteger.bigint.pow)
+* added `throws` documentation to some methods in the 'Spawn' module 
+  (see https://chapel-lang.org/docs/1.25.1/modules/standard/Subprocess.html#Subprocess.subprocess.poll, 
+  https://chapel-lang.org/docs/1.25.1/modules/standard/Subprocess.html#Subpr
+ocess.subprocess.wait, and 
+  https://chapel-lang.org/docs/1.25.1/modules/standard/Subprocess.html#Subproc
+ess.subprocess.communicate)
+* fixed various typos
 
 Syntax Highlighting
 -------------------
+* added highlighting of `lambda` to `vim` and `emacs`
 
 
 Example Codes
@@ -110,14 +122,16 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
-
+* added an error when a non-operator is declared with the `operator` keyword
 
 Bug Fixes
 ---------
+* fixed a bug with limitation clauses naming symbols via private `use`/`import`
 
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a bug in `bigint.pow()` for negative exponents
 
 
 Bug Fixes for Tools
@@ -138,11 +152,14 @@ Developer-oriented changes: Naming Changes
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* documented the automatic chpldoc text generated for `deprecated` symbols
+  (see https://chapel-lang.org/docs/1.25.1/developer/bestPractices/Deprecation.html#best-practices-deprecation)
 
 
 Developer-oriented changes: Module changes
 ------------------------------------------
-
+* removed some old comment references to constructors
+* removed unnecessary explicit `this.complete()` call in `_shared` initializer
 
 Developer-oriented changes: Makefiles
 -------------------------------------
@@ -154,6 +171,7 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
+* added auto-deprecation documentation to symbols with `deprecated` keyword
 
 
 Developer-oriented changes: Runtime improvements
