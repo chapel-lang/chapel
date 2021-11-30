@@ -256,8 +256,8 @@ template<> struct mark<chpl::UniqueString> {
   }
 };
 template<> struct stringify<chpl::UniqueString> {
-  std::string operator()(StringifyKind stringKind, chpl::UniqueString stringify) const {
-    return stringify.toString();
+  std::string operator()(StringifyKind stringKind, const chpl::UniqueString& stringMe) const {
+    return stringMe.toString();
   }
 };
 /// \endcond

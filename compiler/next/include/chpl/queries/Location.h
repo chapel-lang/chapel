@@ -99,6 +99,13 @@ template<> struct mark<chpl::Location> {
     keep.markUniqueStrings(context);
   }
 };
+
+template<> struct stringify<chpl::Location> {
+  std::string operator()(StringifyKind stringKind,
+                  const chpl::Location& stringMe) const {
+    return defaultStringify(stringKind, stringMe);
+  }
+};
 /// \endcond
 
 } // end namespace chpl

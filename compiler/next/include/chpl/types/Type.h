@@ -193,6 +193,18 @@ class Type {
 
 
 } // end namespace types
+  template<> struct stringify<const chpl::types::Type*> {
+    std::string operator()(StringifyKind stringKind, const chpl::types::Type* stringMe) const {
+      return defaultStringify(stringKind, stringMe);
+    }
+  };
+
+template<> struct stringify<chpl::types::Type> {
+  std::string operator()(StringifyKind stringKind, const chpl::types::Type& stringMe) const {
+    return defaultStringify(stringKind, stringMe);
+  }
+};
+
 } // end namespace chpl
 
 // TODO: is there a reasonable way to define std::less on Type*?

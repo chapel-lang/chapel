@@ -26,6 +26,7 @@
 #include "chpl/queries/update-functions.h"
 #include "chpl/uast/ASTNode.h"
 #include "chpl/util/iteration.h"
+#include "chpl/queries/stringify-functions.h"
 
 #include <vector>
 #include <unordered_map>
@@ -69,7 +70,7 @@ class BuilderResult final {
   // Goes from ASTNode* to Location because Comments don't have AST IDs
   std::unordered_map<const ASTNode*, Location> astToLocation_;
 
- private: 
+ private:
   static void updateFilePaths(Context* context, const BuilderResult& keep);
 
  public:
@@ -165,6 +166,13 @@ template<> struct mark<chpl::uast::BuilderResult> {
   void operator()(Context* context,
                   const chpl::uast::BuilderResult& keep) const {
     chpl::uast::BuilderResult::mark(context, keep);
+  }
+};
+
+template<> struct stringify<chpl::uast::BuilderResult> {
+  std::string operator()(StringifyKind stringKind,
+                  const chpl::uast::BuilderResult& stringMe) const {
+    return defaultStringify(stringKind, stringMe);
   }
 };
 /// \endcond

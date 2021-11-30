@@ -32,6 +32,7 @@
 #include <unordered_map>
 #include <vector>
 #include "chpl/util/memory.h"
+#include <set>
 
 namespace chpl {
 class Context;
@@ -42,21 +43,19 @@ enum StringifyKind {
   CHPL_SYNTAX
 };
 
+
 template<typename T> struct stringify {
-  std::string operator()(StringifyKind stringKind) const = 0;
+  std::string operator()(StringifyKind stringKind, const T& stringMe) const = 0;
 };
 
-// template<typename T>
-// static inline std::string defaultStringify(StringifyKind stringKind) {
-//   std::hash<T> hs;
 
-//   // if (eq(keep, addin)) {
-//   //   return false;
-//   // } else {
-//   //   keep.swap(addin);
-//   //   return true;
-//   // }
-// }
+template<typename T>
+static inline std::string defaultStringify(StringifyKind stringKind, const T& stringMe) {
+
+  return std::string("HAVE NOT IMPLEMENTED STRINGIFY YET");
+
+}
+
 // template<typename T>
 // static inline std::string defaultStringifyBasic(StringifyKind stringKind) {
 //   if (keep == addin) {
@@ -108,69 +107,93 @@ template<typename T> struct stringify {
 //   }
 // }
 
-// template<typename A, typename B>
-// static inline std::string defaultStringifyPair(std::pair<A,B>& keep,
-//                                      std::pair<A,B>& addin)
-// {
-//   chpl::update<A> aCombiner;
-//   chpl::update<B> bCombiner;
+ template<typename A, typename B>
+ static inline std::string defaultStringifyPair(StringifyKind stringKind, const std::pair<A,B>& stringPair)
+ {
+   stringify<A> stringA;
+   stringify<B> stringB;
 
-//   bool anyUpdated = false;
-//   anyUpdated |= aCombiner(keep.first, addin.first);
-//   anyUpdated |= bCombiner(keep.second, addin.second);
-//   return anyUpdated;
-// }
+   return std::string("(" + stringA(stringKind, stringPair[0]) + ", " + stringB(stringKind, stringPair[1]));
+ }
 
-// /// \cond DO_NOT_DOCUMENT
-// template<> struct stringify<std::string> {
-//   std::string operator()() const {
-//     return this;
-//   }
-// };
+ /// \cond DO_NOT_DOCUMENT
+ template<> struct stringify<std::string> {
+   std::string operator()(StringifyKind stringKind, const std::string val) const {
+     return val;
+   }
+ };
+
 
 // template<typename T> struct stringify<T*> {
-//   std::string operator()(T*& keep, T*& addin) const {
-//     return defaultStringifyBasic(keep, addin);
+//   std::string operator()(StringifyKind stringKind, const T*& stringMe) const {
+//     return defaultStringify(stringKind, stringMe);
 //   }
 // };
 
-// template<typename T> struct stringify<owned<T>> {
-//   std::string operator()(owned<T>& keep, owned<T>& addin) const {
-//     return defaultStringifyOwned(keep, addin);
-//   }
-// };
 
-// template<> struct stringify<int> {
-//   std::string operator()(int& keep, int& addin) const {
-//     return defaultStringifyBasic(keep, addin);
-//   }
-// };
+template<typename T> struct stringify<owned<T>> {
+ std::string operator()(StringifyKind stringKind, const owned<T>& stringMe) const {
+   return defaultStringify(stringKind, stringMe);
+ }
+};
 
-// template<> struct stringify<bool> {
-//   std::string operator()(StringifyKind stringKind) const {
-//     return defaultStringifyBasic(keep, addin);
-//   }
-// };
+ template<> struct stringify<int> {
+   std::string operator()(StringifyKind stringKind, const int val) const {
+     return std::to_string(val);
+   }
+ };
 
-// template<typename T> struct stringify<std::vector<T>> {
-//   std::string operator()(std::vector<T>& keep, StringifyKind stringKind) const {
-//     return defaultStringifyVec(keep, addin);
-//   }
-// };
+template<> struct stringify<long int> {
+  std::string operator()(StringifyKind stringKind, const long int val) const {
+    return std::to_string(val);
+  }
+};
 
-// template<typename K, typename V> struct stringify<std::unordered_map<K,V>> {
-//   std::string operator()(std::unordered_map<K,V>& keep,
-//                   std::unordered_map<K,V>& addin) const {
-//     return defaultStringify(keep, addin);
-//   }
-// };
+template<> struct stringify<double> {
+  std::string operator()(StringifyKind stringKind, const double val) const {
+    return std::to_string(val);
+  }
+};
 
-// template<typename A, typename B> struct stringify<std::pair<A,B>> {
-//   std::string operator()(std::pair<A,B>& keep,
-//                   std::pair<A,B>& addin) const {
-//     return defaultStringifyPair(stringKind);
-//   }
-// };
+template<> struct stringify<long unsigned int> {
+  std::string operator()(StringifyKind stringKind, const long unsigned int val) const {
+    return std::to_string(val);
+  }
+};
+
+ template<> struct stringify<bool> {
+   std::string operator()(StringifyKind stringKind, const bool val) const {
+     return defaultStringify(stringKind, val);
+   }
+ };
+
+ template<typename T> struct stringify<std::vector<T>> {
+   std::string operator()(StringifyKind stringKind, const std::vector<T>& stringMe) const {
+     return defaultStringify(stringKind, stringMe);
+   }
+ };
+
+ template<typename K, typename V> struct stringify<std::unordered_map<K,V>> {
+   std::string operator()(StringifyKind stringKind, const std::unordered_map<K,V>& stringMe) const {
+     return defaultStringify(stringKind, stringMe);
+   }
+ };
+
+ template<typename A, typename B> struct stringify<std::pair<A,B>> {
+   std::string operator()(StringifyKind stringKind,
+                   const std::pair<A,B>& stringMe) const {
+
+     return defaultStringifyPair(stringKind, stringMe);
+   }
+ };
+
+template<typename A, typename B> struct stringify<std::set<std::pair<A,B>>> {
+  std::string operator()(StringifyKind stringKind,
+                         const std::set<std::pair<A,B>>& stringMe) const {
+
+    return std::string("set<> stringify not yet implemented");
+  }
+};
 /// \
 
 

@@ -26,6 +26,7 @@
 #include "chpl/queries/update-functions.h"
 #include "chpl/uast/ASTNode.h"
 #include "chpl/uast/BuilderResult.h"
+#include "chpl/queries/stringify-functions.h"
 
 #include <vector>
 #include <unordered_map>

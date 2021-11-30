@@ -131,17 +131,11 @@ struct QueryMapArgTupleEqual final {
 void queryArgsPrintSep();
 void queryArgsPrintUnknown();
 
-const std::string convertUnknownQueryArgToString( );
-
 template<typename T>
 static void queryArgsPrintOne(const T& v) {
   queryArgsPrintUnknown();
 }
 
-template<typename T>
-static std::string convertQueryArgToString(const T& v) {
-  return convertUnknownQueryArgToString();
-}
 
 void queryArgsPrintOne(const ID& v);
 void queryArgsPrintOne(const UniqueString& v);
@@ -165,15 +159,13 @@ static inline void queryArgsPrintImpl(const TUP& tuple, std::index_sequence<I...
   auto dummy = { (print(I != 0, std::get<I>(tuple)), 0) ... };
   (void) dummy; // avoid unused variable warning
 }
-std::string convertQueryArgToString(const ID& v);
-std::string convertQueryArgToString(const UniqueString& v);
 
 template<typename TUP, size_t... I>
-static inline auto queryArgsToStringsImpl(const TUP& tuple, std::index_sequence<I...>) {
+static inline const auto queryArgsToStringsImpl(const TUP& tuple, std::index_sequence<I...>) {
   // lambda to convert
-  std::vector<std::string> stringVec;
-  auto convert = [](const auto& elem) {
-      return chpl::stringify<elem>(StringifyKind::DEBUG_DETAIL);
+  auto convert = [](auto& elem) {
+    chpl::stringify<std::decay_t<decltype(elem)>> stringifier;
+    return stringifier(StringifyKind::DEBUG_DETAIL, elem);
   };
 
   return applyToEach(convert, tuple);;

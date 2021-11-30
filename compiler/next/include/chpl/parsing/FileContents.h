@@ -22,6 +22,7 @@
 
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/update-functions.h"
+#include "chpl/queries/stringify-functions.h"
 
 #include <string>
 
@@ -75,6 +76,13 @@ template<> struct update<parsing::FileContents> {
   bool operator()(parsing::FileContents& keep,
                   parsing::FileContents& addin) const {
     return defaultUpdate(keep, addin);
+  }
+};
+
+template<> struct stringify<parsing::FileContents> {
+  std::string operator()(StringifyKind stringKind,
+                  const parsing::FileContents& stringMe) const {
+    return defaultStringify(stringKind, stringMe);
   }
 };
 /// \endcond

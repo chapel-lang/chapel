@@ -228,6 +228,30 @@ class Param {
 
 
 } // end namespace types
+
+  template<> struct stringify<const chpl::types::Param::ComplexDouble*> {
+    std::string operator()(StringifyKind stringKind, const chpl::types::Param::ComplexDouble* stringMe) const {
+      return defaultStringify(stringKind, stringMe);
+    }
+  };
+
+  template<> struct stringify<chpl::types::Param::ComplexDouble> {
+    std::string operator()(StringifyKind stringKind, const chpl::types::Param::ComplexDouble& stringMe) const {
+      return defaultStringify(stringKind, stringMe);
+    }
+  };
+
+  template<> struct stringify<const chpl::types::Param::NoneValue*> {
+    std::string operator()(StringifyKind stringKind, const chpl::types::Param::NoneValue* stringMe) const {
+      return defaultStringify(stringKind, stringMe);
+    }
+  };
+
+  template<> struct stringify<chpl::types::Param::NoneValue> {
+    std::string operator()(StringifyKind stringKind, const chpl::types::Param::NoneValue& stringMe) const {
+      return defaultStringify(stringKind, stringMe);
+    }
+  };
 } // end namespace chpl
 
 // TODO: is there a reasonable way to define std::less on Param*?

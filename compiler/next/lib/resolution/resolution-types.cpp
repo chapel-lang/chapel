@@ -23,6 +23,7 @@
 #include "chpl/queries/update-functions.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/Formal.h"
+#include "chpl/queries/stringify-functions.h"
 
 namespace chpl {
 namespace resolution {

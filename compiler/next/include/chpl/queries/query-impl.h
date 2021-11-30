@@ -24,6 +24,7 @@
 #include "chpl/queries/Context.h"
 #include "chpl/queries/mark-functions.h"
 #include "chpl/queries/update-functions.h"
+#include "chpl/queries/stringify-functions.h"
 
 /**
   This file should be included by .cpp files implementing queries.

@@ -23,6 +23,7 @@
 #include "chpl/queries/update-functions.h"
 #include "chpl/uast/IntentList.h"
 #include "chpl/util/hash.h"
+#include "chpl/queries/stringify-functions.h"
 
 #include <cstddef>
 #include <string>
@@ -186,6 +187,13 @@ template<> struct update<chpl::types::QualifiedType> {
   bool operator()(chpl::types::QualifiedType& keep,
                   chpl::types::QualifiedType& addin) const {
     return defaultUpdate(keep, addin);
+  }
+};
+
+template<> struct stringify<chpl::types::QualifiedType> {
+  std::string operator()(StringifyKind stringKind,
+                  const chpl::types::QualifiedType stringMe) const {
+    return stringMe.toString();
   }
 };
 /// \endcond

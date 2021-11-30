@@ -474,6 +474,43 @@ template<> struct update<resolution::InnermostMatch> {
     }
   }
 };
+
+template<> struct stringify<resolution::InnermostMatch> {
+  std::string operator()(StringifyKind stringKind,
+                  const resolution::InnermostMatch& stringMe) const {
+    return defaultStringify(stringKind, stringMe);
+  }
+};
+
+  template<> struct stringify<resolution::PoiScope> {
+    std::string operator()(StringifyKind stringKind,
+                           const resolution::PoiScope& stringMe) const {
+      return defaultStringify(stringKind, stringMe);
+    }
+  };
+
+  template<> struct stringify<const resolution::PoiScope*> {
+    std::string operator()(StringifyKind stringKind,
+                           const resolution::PoiScope* stringMe) const {
+      return defaultStringify(stringKind, stringMe);
+    }
+  };
+
+  template<> struct stringify<resolution::Scope> {
+    std::string operator()(StringifyKind stringKind,
+                           const resolution::Scope& stringMe) const {
+      return defaultStringify(stringKind, stringMe);
+    }
+  };
+
+  template<> struct stringify<const resolution::Scope*> {
+    std::string operator()(StringifyKind stringKind,
+                           const resolution::Scope* stringMe) const {
+      return defaultStringify(stringKind, stringMe);
+    }
+  };
+
+
 /// \endcond
 
 } // end namespace chpl

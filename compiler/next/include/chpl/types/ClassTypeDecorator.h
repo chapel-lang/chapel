@@ -21,6 +21,7 @@
 #define CHPL_TYPES_CLASS_TYPE_DECORATOR_H
 
 #include "chpl/util/hash.h"
+#include "chpl/queries/stringify-functions.h"
 
 #include <cassert>
 #include <utility>
@@ -214,6 +215,14 @@ class ClassTypeDecorator final {
 
 
 } // end namespace uast
+
+template<> struct stringify<chpl::types::ClassTypeDecorator> {
+  std::string operator()(StringifyKind stringKind,
+                  const chpl::types::ClassTypeDecorator& stringMe) const {
+    return defaultStringify(stringKind, stringMe);
+  }
+};
+
 } // end namespace chpl
 
 namespace std {
