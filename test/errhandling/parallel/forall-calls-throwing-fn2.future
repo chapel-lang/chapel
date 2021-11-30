@@ -1,0 +1,8 @@
+bug: use-after-free when calling throwing function within forall loop
+
+This test exhibits a behavior in which the invocation of a throwing
+function within a 'forall' loop over a distributed array results in a
+use-after-free error being detected by valgrind (and a segmentation
+fault without).
+
+#18773
