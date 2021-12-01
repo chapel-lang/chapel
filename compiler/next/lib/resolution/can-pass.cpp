@@ -540,8 +540,6 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
       case QualifiedType::FUNCTION:
       case QualifiedType::MODULE:
       case QualifiedType::INDEX:
-      case QualifiedType::VAR:
-      case QualifiedType::CONST_VAR:
       case QualifiedType::DEFAULT_INTENT:
       case QualifiedType::CONST_INTENT:
         // no additional checking for these
@@ -560,6 +558,8 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
       case QualifiedType::IN:
       case QualifiedType::CONST_IN:
       case QualifiedType::INOUT:
+      case QualifiedType::VAR:       // var/const var don't really make sense
+      case QualifiedType::CONST_VAR: // as formals but we allow it for testing
         {
           auto got = canConvert(actualQT, formalQT);
           if (got.passes())
