@@ -899,6 +899,53 @@ static void testTypeAndFnSameName() {
   assert(yrt->fieldType(0).type() == RealType::get(context, 0));
 }
 
+static void test35() {
+  printf("test35\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context,
+                        R""""(
+                          record R {
+                            var a = 1;
+                            var b: int;
+                            type t;
+                            const c: t;
+                            var d = c;
+                          }
+                          var x: R(real);
+                        )"""");
+  auto rt = t->toRecordType();
+  assert(rt);
+  assert(rt->numFields() == 5);
+
+  assert(rt->fieldName(0) == "a");
+  assert(rt->fieldHasDefaultValue(0) == true);
+  assert(rt->fieldType(0).kind() == QualifiedType::VAR);
+  assert(rt->fieldType(0).type() == IntType::get(context, 0));
+
+  assert(rt->fieldName(1) == "b");
+  assert(rt->fieldHasDefaultValue(1) == false);
+  assert(rt->fieldType(1).kind() == QualifiedType::VAR);
+  assert(rt->fieldType(1).type() == IntType::get(context, 0));
+
+  assert(rt->fieldName(2) == "t");
+  assert(rt->fieldHasDefaultValue(2) == false);
+  assert(rt->fieldType(2).kind() == QualifiedType::TYPE);
+  assert(rt->fieldType(2).type() == RealType::get(context, 0));
+
+  assert(rt->fieldName(3) == "c");
+  assert(rt->fieldHasDefaultValue(3) == false);
+  assert(rt->fieldType(3).kind() == QualifiedType::CONST_VAR);
+  assert(rt->fieldType(3).type() == RealType::get(context, 0));
+
+  assert(rt->fieldName(4) == "d");
+  assert(rt->fieldHasDefaultValue(4) == true);
+  assert(rt->fieldType(4).kind() == QualifiedType::VAR);
+  assert(rt->fieldType(4).type() == RealType::get(context, 0));
+}
+
+
 
 int main() {
   test1();
@@ -937,6 +984,7 @@ int main() {
   test33();
   test34();
   testTypeAndFnSameName();
+  test35();
 
   return 0;
 }

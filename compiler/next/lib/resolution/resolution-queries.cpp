@@ -647,8 +647,8 @@ struct Resolver {
 // and so code calling this query can optimize by calling with 'false'
 // first and then adjusting if it is not moot.
 static const ResolutionResultByPostorderID&
-resolveFields(Context* context, ID id, bool useGenericFormalDefaults) {
-  QUERY_BEGIN(resolveFields, context, id, useGenericFormalDefaults);
+resolveFieldsInitial(Context* context, ID id, bool useGenericFormalDefaults) {
+  QUERY_BEGIN(resolveFieldsInitial, context, id, useGenericFormalDefaults);
 
   ResolutionResultByPostorderID& partialResult = QUERY_CURRENT_RESULT;
 
@@ -656,6 +656,7 @@ resolveFields(Context* context, ID id, bool useGenericFormalDefaults) {
   if (const AggregateDecl* ad = ast->toAggregateDecl()) {
     Resolver visitor(context, ad, partialResult, useGenericFormalDefaults);
     // visit the field declarations
+    // TODO: handle MultiDecl and TupleDecl
     for (auto child: ad->children()) {
       if (auto var = child->toVariable()) {
         if (var->isField()) {
@@ -902,7 +903,7 @@ typeForTypeDeclQuery(Context* context,
     if (auto ad = td->toAggregateDecl()) {
       // do 1st pass resolution of the field types
       const ResolutionResultByPostorderID& r =
-        resolveFields(context, declId, useGenericFormalDefaults);
+        resolveFieldsInitial(context, declId, useGenericFormalDefaults);
 
       // now pull out the field types
       // TODO: handle MultiDecl and TupleDecl
@@ -1164,6 +1165,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     ResolutionResultByPostorderID r;
     Resolver visitor(context, ad, substitutions, poiScope, r,
                      /* useGenericFormalDefaults */ false);
+    // TODO: handle MultiDecl and TupleDecl
     for (auto child: ad->children()) {
       if (auto var = child->toVariable()) {
         if (var->isField()) {
@@ -1448,32 +1450,36 @@ const QualifiedType& returnType(Context* context,
         ad = ast->toAggregateDecl();
 
     if (ad) {
-      // TODO: this should run the Resolver to compute
-      // the field types with substitutions, rather than
-      // assuming they are all represented in the formals.
+      // compute the substitutions
+      SubstitutionsMap substitutions;
 
-      // construct type for record etc.
-      std::vector<CompositeType::FieldDetail> fields;
       int nFormals = sig->numFormals();
       for (int i = 0; i < nFormals; i++) {
-        UniqueString name = untyped->formalName(i);
-        bool hasDefault = untyped->formalHasDefault(i);
-        const uast::Decl* decl = untyped->formalDecl(i);
-        // recompute the kind of the field (from the field declaration)
-        // since it's not necessarily the same as the type constructor formal
-        // (e.g. type constructor might have 'type' when field is 'var')
-        QualifiedType::Kind kind = QualifiedType::UNKNOWN;
-        if (decl) {
-          if (const NamedDecl* nd = decl->toNamedDecl()) {
-            kind = qualifiedTypeKindForDecl(nd);
+        const Decl* formalDecl = untyped->formalDecl(i);
+        const QualifiedType& formalType = sig->formalType(i);
+        substitutions.insert({formalDecl, formalType});
+      }
+
+      std::vector<CompositeType::FieldDetail> fields;
+
+      // visit the fields, computing types once again
+      ResolutionResultByPostorderID r;
+      Resolver visitor(context, ad, substitutions, poiScope, r,
+                       /* useGenericFormalDefaults */ false);
+      // TODO: handle MultiDecl and TupleDecl
+      for (auto child: ad->children()) {
+        if (auto var = child->toVariable()) {
+          if (var->isField()) {
+            var->traverse(visitor);
+
+            UniqueString name = var->name();
+            bool hasDefault = var->initExpression() != nullptr;
+            QualifiedType type = r.byAst(var).type();
+
+            fields.push_back(
+              CompositeType::FieldDetail(name, hasDefault, var, type));
           }
         }
-        QualifiedType qt = sig->formalType(i);
-        const Type* type = qt.type();
-        const Param* param = qt.param();
-        fields.push_back(
-            CompositeType::FieldDetail(name, hasDefault, decl,
-                                       QualifiedType(kind, type, param)));
       }
 
       const Type* t = nullptr;
