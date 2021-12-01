@@ -254,21 +254,67 @@ struct Resolver {
   }
 
 
-  QualifiedType typeForId(const ID& id) {
+  /* When resolving a generic record or a generic function,
+     there might be generic types that we don't know yet.
+     E.g.
+
+       proc f(type t, arg: t)
+
+     before instantiating, we should conclude that:
+       * t has type AnyType
+       * arg has type UnknownType (and in particular, not AnyType)
+   */
+  bool shouldUseUnknownTypeForGeneric(const ID& id) {
+    bool isFieldOrFormal = false;
+    bool isSubstituted = false;
+    // TODO: should we compute this some other way
+    // (e.g. when setting up the traversal)
+    // given that it's within the Symbol we are visiting?
+    auto ast = parsing::idToAst(context, id);
+    if (ast) {
+      if (auto decl = ast->toDecl()) {
+        bool isField = false;
+        if (auto var = decl->toVariable())
+          if (var->isField())
+            isField = true;
+
+        isFieldOrFormal = isField || decl->isFormal();
+
+        if (substitutions != nullptr) {
+          auto search = substitutions->find(decl);
+          if (search != substitutions->end()) {
+            isSubstituted = true;
+          }
+        }
+      }
+    }
+
+    return isFieldOrFormal && !isSubstituted;
+  }
+
+  QualifiedType typeForId(const ID& id, bool localGenericToUnknown) {
     // if the id is contained within this symbol,
     // get the type information from the resolution result.
     if (id.symbolPath() == symbol->id().symbolPath()) {
-      return byPostorder.byId(id).type();
+      QualifiedType ret = byPostorder.byId(id).type();
+      if (ret.isGenericType()) {
+        if (shouldUseUnknownTypeForGeneric(id)) {
+          // if id refers to a field or formal that needs to be instantiated,
+          // replace the type with UnknownType since we can't compute
+          // the type of anything using this type (since it will change
+          // on instantiation).
+          auto unknownType = UnknownType::get(context);
+          ret = QualifiedType(ret.kind(), unknownType, nullptr);
+        }
+      }
+
+      return ret;
     }
 
     // TODO: handle outer function variables
 
     // otherwise, use a query to try to look it up top-level.
     return typeForModuleLevelSymbol(context, id);
-  }
-
-  QualifiedType typeForAst(const ASTNode* ast) {
-    return typeForId(ast->id());
   }
 
   void enterScope(const ASTNode* ast) {
@@ -314,8 +360,9 @@ struct Resolver {
         // empty IDs from the scope resolution process are builtins
         type = typeForBuiltin(context, ident->name());
       } else {
-        // use the type established at declaration/initialization
-        type = typeForId(id);
+        // use the type established at declaration/initialization,
+        // but for things with generic type, use unknown.
+        type = typeForId(id, /*localGenericToUnknown*/ true);
       }
       result.setToId(id);
       result.setType(type);
@@ -858,6 +905,7 @@ typeForTypeDeclQuery(Context* context,
         resolveFields(context, declId, useGenericFormalDefaults);
 
       // now pull out the field types
+      // TODO: handle MultiDecl and TupleDecl
       std::vector<CompositeType::FieldDetail> fields;
       for (auto child: ad->children()) {
         if (auto var = child->toVariable()) {
@@ -903,7 +951,7 @@ const Type* typeForTypeDecl(Context* context,
   // is generic with defaults, compute the type again.
   // We do it this way so that we are more likely to be able to reuse the
   // result of the above query in most cases since most types
-  // are not generic record/class types defaults.
+  // are not generic record/class with defaults.
   if (useGenericFormalDefaults) {
     if (auto ct = t->getCompositeType()) {
       if (ct->isGenericWithDefaults()) {
@@ -916,6 +964,64 @@ const Type* typeForTypeDecl(Context* context,
   return t;
 }
 
+
+// Returns true if the field should be included in the type constructor.
+// In that event, also sets formalType to the type the formal should use.
+static
+bool shouldIncludeFieldInTypeConstructor(Context* context,
+                                         const Decl* fieldDecl,
+                                         const QualifiedType& fieldType,
+                                         QualifiedType& formalType) {
+  // compare with AggregateType::fieldIsGeneric
+
+  // fields with concrete types don't need to be in type constructor
+  if (!fieldType.isGenericOrUnknown()) {
+    return false;
+  }
+
+  // fields that are 'type' or 'param' are generic
+  // and we can use the same type/param intent for the type constructor
+  if ((fieldType.isParam() && !fieldType.hasParamPtr()) ||
+      fieldType.isType()) {
+    formalType = fieldType;
+    return true;
+  }
+
+  if (const VarLikeDecl* var = fieldDecl->toVarLikeDecl()) {
+    // non-type/param fields with an init expression aren't generic
+    if (var->initExpression())
+      return false;
+
+    // non-type/param fields that have no declared type and no initializer
+    // are generic and these need a type variable for the argument with AnyType.
+    if (var->typeExpression() == nullptr) {
+      formalType = QualifiedType(QualifiedType::TYPE, AnyType::get(context));
+      return true;
+    }
+
+    // otherwise, the field may or may not be generic.
+    // it is generic if the field type is generic.
+    // for this check we make some simplifying assumptions:
+    //  * generic-with-defaults means concrete, unless ? is used in the type
+    //  * unknown type means it depends on a previous generic field
+    //    (and when previous generic fields are set, they will be concrete)
+    const Type* t = fieldType.type();
+    if (t && !t->isUnknownType()) {
+      bool fieldIsGeneric = t->isGeneric();
+      if (const CompositeType* ct = t->getCompositeType()) {
+        if (ct->isGenericWithDefaults())
+          fieldIsGeneric = false;
+      }
+      if (fieldIsGeneric) {
+        formalType = QualifiedType(QualifiedType::TYPE, t);
+        return true;
+      }
+    }
+  }
+
+  // otherwise it does not need to go into the type constructor
+  return false;
+}
 
 static const owned<TypedFnSignature>&
 typeConstructorInitialQuery(Context* context, const Type* t)
@@ -937,18 +1043,19 @@ typeConstructorInitialQuery(Context* context, const Type* t)
     // these as type constructor arguments.
     int nFields = ct->numFields();
     for (int i = 0; i < nFields; i++) {
-      auto type = ct->fieldType(i);
-      if (type.isGenericOrUnknown()) {
+      const Decl* fieldDecl = ct->fieldDecl(i);
+      QualifiedType fieldType = ct->fieldType(i);
+      QualifiedType formalType;
+      if (shouldIncludeFieldInTypeConstructor(context, fieldDecl, fieldType,
+                                              formalType)) {
+
         auto d = UntypedFnSignature::FormalDetail(ct->fieldName(i),
                                                   ct->fieldHasDefaultValue(i),
-                                                  ct->fieldDecl(i));
+                                                  fieldDecl);
         formals.push_back(d);
-        // TODO: fixme
-        // type construction formal should always be type / param
-        QualifiedType::Kind kind = QualifiedType::TYPE;
-        if (type.isParam())
-          kind = QualifiedType::PARAM;
-        formalTypes.push_back(QualifiedType(kind, type.type(), type.param()));
+        // formalType should have been set above
+        assert(formalType.kind() != QualifiedType::UNKNOWN);
+        formalTypes.push_back(formalType);
       }
     }
   } else {
@@ -1066,19 +1173,18 @@ const TypedFnSignature* instantiateSignature(Context* context,
     }
 
     // now pull out the field types
-    for (auto child: ad->children()) {
-      if (auto var = child->toVariable()) {
-        if (var->isField()) {
-          const ResolvedExpression& e = r.byAst(child);
-          QualifiedType type = e.type();
-          // TODO: fixme
-          // type construction formal should always be type / param
-          QualifiedType::Kind kind = QualifiedType::TYPE;
-          if (type.isParam())
-            kind = QualifiedType::PARAM;
-          formalTypes.push_back(QualifiedType(kind, type.type(), type.param()));
-        }
-      }
+    int nFormals = sig->numFormals();
+    for (int i = 0; i < nFormals; i++) {
+      const Decl* fieldDecl = untypedSignature->formalDecl(i);
+      const ResolvedExpression& e = r.byAst(fieldDecl);
+      QualifiedType fieldType = e.type();
+      QualifiedType sigType = sig->formalType(i);
+
+      // use the same kind as the old formal type but update the type, param
+      // to reflect how instantiation occured.
+      formalTypes.push_back(QualifiedType(sigType.kind(),
+                                          fieldType.type(),
+                                          fieldType.param()));
     }
     needsInstantiation = anyFormalNeedsInstantiation(formalTypes);
   } else {

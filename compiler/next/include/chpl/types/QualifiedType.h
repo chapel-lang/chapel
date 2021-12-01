@@ -102,7 +102,20 @@ class QualifiedType final {
     return param_ != nullptr;
   }
 
-  bool isGenericOrUnknown() const;
+  // these are not defined here so we don't have to #include Type.h, Param.h
+  bool isGenericType() const;
+  bool isUnknownType() const;
+
+  bool isGeneric() const {
+    bool genericParam = kind_ == PARAM && !hasParamPtr();
+    return genericParam || isGenericType();
+  }
+
+  bool isUnknown() const {
+    return kind_ == UNKNOWN || !hasTypePtr() || isUnknownType();
+  }
+
+  bool isGenericOrUnknown() const { return isUnknown() || isGeneric(); }
 
   /** Returns true if kind is TYPE */
   bool isType() const { return kind_ == Kind::TYPE; }

@@ -26,12 +26,12 @@ namespace chpl {
 namespace types {
 
 
-bool QualifiedType::isGenericOrUnknown() const {
-  bool genericKind = kind_ == UNKNOWN;
-  bool genericParam = kind_ == PARAM && !hasParamPtr();
-  bool genericType = !hasTypePtr() || type_->isGeneric() ||
-                     type_->isUnknownType();
-  return genericKind || genericParam || genericType;
+bool QualifiedType::isGenericType() const {
+  return type_->isGeneric();
+}
+
+bool QualifiedType::isUnknownType() const {
+  return type_->isUnknownType();
 }
 
 static const char* kindToString(QualifiedType::Kind kind) {
