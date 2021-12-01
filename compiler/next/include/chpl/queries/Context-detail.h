@@ -165,7 +165,7 @@ static inline const auto queryArgsToStringsImpl(const TUP& tuple, std::index_seq
     return stringifier(StringifyKind::DEBUG_DETAIL, elem);
   };
 
-  return applyToEach(convert, tuple);;
+  return applyToEach(convert, tuple);
 }
 
 template<typename... Ts>

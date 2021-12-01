@@ -50,6 +50,13 @@ template<typename T> struct stringify {
 };
 
 
+template<typename T> struct stringify<T*> {
+  std::string operator()(StringifyKind stringKind, const T* stringMe) const {
+    stringify<T> stringifier;
+    return stringifier(stringKind, *stringMe);
+  }
+};
+
 template<typename T>
 static inline std::string defaultStringify(StringifyKind stringKind, const T& stringMe) {
 
@@ -74,53 +81,63 @@ static inline std::string defaultStringifyVec(StringifyKind stringKind, const st
   }
 }
 
-  template<typename K, typename V>
-  static inline std::string defaultStringifyMap(StringifyKind stringKind, const std::unordered_map<K,V>& stringMap)
-  {
-    if (stringMap.size() == 0) {
-      return "{ }";
-    } else {
-      std::ostringstream ss;
-      std::string separator;
-      stringify<K> keyString;
-      stringify<V> valString;
-      for (auto const& x : stringMap)
-      {
-        ss << separator
-           << keyString(stringKind, x.first)
-           << " : "
-           << valString(stringKind, x.second);
+template<typename K, typename V>
+static inline std::string defaultStringifyMap(StringifyKind stringKind, const std::unordered_map<K,V>& stringMap)
+{
+  if (stringMap.size() == 0) {
+    return "{ }";
+  } else {
+    std::ostringstream ss;
+    std::string separator;
+    stringify<K> keyString;
+    stringify<V> valString;
+    for (auto const& x : stringMap)
+    {
+      ss << separator
+         << keyString(stringKind, x.first)
+         << " : "
+         << valString(stringKind, x.second);
 
-        separator = ",";
-      }
-      return std::string("{"+ss.str()+"}");
+      separator = ",";
     }
+    return std::string("{"+ss.str()+"}");
   }
+}
 
-  template<typename A, typename B>
-  static inline std::string defaultStringifySetPairs(StringifyKind stringKind, const std::set<std::pair<A,B>>& stringSet)
-  {
-    if (stringSet.size() == 0) {
-      return "{ }";
-    } else {
-      std::ostringstream ss;
-      std::string separator;
-      stringify<A> aString;
-      stringify<B> bString;
+template<typename A, typename B>
+static inline std::string defaultStringifySetPairs(StringifyKind stringKind, const std::set<std::pair<A,B>>& stringSet)
+{
+  if (stringSet.size() == 0) {
+    return "{ }";
+  } else {
+    std::ostringstream ss;
+    std::string separator;
+    stringify<A> aString;
+    stringify<B> bString;
 
-      for (auto const& x : stringSet)
-      {
-        ss << separator
-           << "("
-           << aString(stringKind, x.first)
-           << ", "
-           << bString(stringKind, x.second)
-           << ")";
-        separator = ",";
-      }
-      return std::string("{"+ss.str()+"}");
+    for (auto const& x : stringSet)
+    {
+      ss << separator
+         << "("
+         << aString(stringKind, x.first)
+         << ", "
+         << bString(stringKind, x.second)
+         << ")";
+      separator = ",";
     }
+    return std::string("{"+ss.str()+"}");
   }
+}
+
+template<typename TUP, size_t... I>
+static inline std::string defaultStringifyTuple(StringifyKind stringKind, const TUP& tuple, std::index_sequence<I...>)
+{
+  // TODO: NEED TO ITERATE OVER THE ELEMENTS IN THIS TUPLE, CREATE A STRINGIFY STRUCT FOR EACH OF THEM
+  //  and then join the result of stringify together with commas, wrap it in parens and return it as a std::string
+
+  return std::string("Tuple stringify not implemented yet");
+}
+
 
 
 template<typename A, typename B>
@@ -198,6 +215,15 @@ std::string operator()(StringifyKind stringKind,
 
   return defaultStringifySetPairs(stringKind, stringMe);
 }
+};
+
+
+template<typename... ArgTs> struct stringify<std::tuple<ArgTs...>> {
+  std::string operator()(StringifyKind stringKind,
+                         const std::tuple<ArgTs...>& stringMe) const {
+    return defaultStringifyTuple(stringKind, stringMe, std::index_sequence_for<ArgTs...>{});
+    //return (stringKind, stringMe);
+  }
 };
 /// \
 

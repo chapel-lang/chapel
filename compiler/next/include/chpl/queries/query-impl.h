@@ -125,6 +125,8 @@ void Context::queryBeginTrace(const char* traceQueryName,
     printf("QUERY BEGIN     %s (", traceQueryName);
     queryArgsPrint(tupleOfArg);
     printf(")\n");
+    chpl::stringify<std::decay_t<decltype(args)>> stringifier;
+    printf("STRINGIFIED ARGS: %s\n", stringifier(StringifyKind::DEBUG_SUMMARY, args).c_str() );
     printf("QUERY + ARGS HASH:    %zu\n", queryAndArgsHash);
   }
   if (queryAndArgsHash == breakOnHash) {
