@@ -12,6 +12,7 @@ Contributors to the Chapel 1.25.x releases
 * Paul Cassella, [HPE]
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
+* Garvit Dewan, individual contributor, [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Technology Roorkee]
 * Krishna Kumar Dey, [GSoC 2021] and [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Information Technology, Sri City]
 * Lydia Duncan, [HPE]
 * Prasanth Duvvuri, [GSoC 2021] student from [Northeastern University] (former individual contributor)
@@ -47,6 +48,7 @@ Contributors to the Chapel 1.25.x releases
 * Max Tursi, [HPE]
 * Karlon West, [HPE]
 * Tong Xu, individual contributor
+* anonymous GitHub user @krwmilz
 
 Contributors to previous releases
 ---------------------------------
@@ -78,7 +80,6 @@ Contributors to previous releases
 * Steve Deitz, [Cray Inc.]
 * Laura Delaney, [Cray Inc.] intern from [Whitworth University]
 * Joel Denny, [ETI]
-* Garvit Dewan, [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Technology Roorkee]
 * Roxana Diaconescu, [CalTech]
 * Nelson Luís Dias, individual contributor
 * James Dinan, [Cray Inc.] intern from [The Ohio State University]

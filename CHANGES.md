@@ -3,6 +3,7 @@ Release Changes List
 
 TODO:
 * Do we need to update Lydia's Subprocess links?
+* Docs URLs: main vs. 1.25 vs. 1.25.1
 
 version 1.25.1
 ==============
@@ -17,14 +18,33 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
+* improved the compiler's configuration when the LLVM back-end is enabled
+  - setting `CC`/`CXX` no longer disables the LLVM back-end 
+    (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html)
+  - `CHPL_LLVM=system` on linux now uses the more common `clang-cpp` library 
+    (see https://chapel-lang.org/docs/main/usingchapel/prereqs.html)
+  - building the compiler no longer stores paths to system compiler resources
+  - improved the robustness of `CHPL_LLVM=bundled` builds
 
 
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
+* variables of `extern` types without initializers are now zero-initialized 
+  (see https://chapel-lang.org/docs/main/doc/html/language/spec/interoperabilit\
+y.html#variable-initialization)
+* `param` `c_string`<->`string` conversions are now considered to be narrowing
+  (see https://chapel-lang.org/docs/language/spec/procedures.html#determining-more-specific-functions)
 
 
 New Features
 ------------
+* added support for `sync` and `single` records and classes 
+  (see https://chapel-lang.org/docs/main/language/spec/task-parallelism-and-synchronization.html#synchronization-variables)
+* added support for coercions when writing to `sync` and `single` variables
+* `extern` records can now define initializers to opt into Chapel initialization
+  (see https://chapel-lang.org/docs/main/doc/html/language/spec/interoperability.html#variable-initialization)
+* enabled implicit conversions from `imag(32)` to `imag(64)` 
+  (see https://chapel-lang.org/docs/language/spec/conversions.html#implicit-numeric-and-bool-conversions)
 
 
 Feature Improvements
@@ -61,6 +81,7 @@ Tool Improvements
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* fixed a bug in which `sort()` had stopped using insertionSort at small sizes
 
 
 Compilation-Time / Generated Code Improvements
@@ -73,14 +94,27 @@ Memory Improvements
 
 Documentation
 -------------
+* merged module-based documentation for locale and atomic types into the spec 
+  (see https://chapel-lang.org/docs/main/language/spec/locales.html#locale-methods 
+   and https://chapel-lang.org/docs/main/language/spec/task-parallelism-and-synchronization.html#functions-on-atomic-variables)
+* added contributor documentation, such as best practices, to the online docs
+  (see https://chapel-lang.org/docs/main/developer/index.html)
+* added contributor documentation for the new compiler front-end 
+  (see https://chapel-lang.org/docs/main/developer/compiler-internals/index.html)
+* improved the description of the prequisites for documentation builds 
+  (see https://chapel-lang.org/docs/main/usingchapel/prereqs.html)
+* improved the description of default initialization of records 
+  (see https://chapel-lang.org/docs/main/doc/html/language/spec/records.html#record-initialization)
 * added documentation for `bigint.pow()` to the 'BigInteger' module 
-  (see https://chapel-lang.org/docs/1.25.1/modules/standard/BigInteger.html#BigInteger.bigint.pow)
+  (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html#BigInteger.bigint.pow)
 * added `throws` documentation to some methods in the 'Spawn' module 
-  (see https://chapel-lang.org/docs/1.25.1/modules/standard/Subprocess.html#Subprocess.subprocess.poll, 
-  https://chapel-lang.org/docs/1.25.1/modules/standard/Subprocess.html#Subpr
-ocess.subprocess.wait, and 
-  https://chapel-lang.org/docs/1.25.1/modules/standard/Subprocess.html#Subproc
+  (see https://chapel-lang.org/docs/1.25/modules/standard/Subprocess.html#Subprocess.subprocess.poll, 
+  https://chapel-lang.org/docs/1.25/modules/standard/Subprocess.html#Subpr
+ocess.subprocess.wait, 
+  and https://chapel-lang.org/docs/1.25/modules/standard/Subprocess.html#Subproc
 ess.subprocess.communicate)
+* removed out-of-date note about whole-domain assignments being serialized
+  (see https://chapel-lang.org/docs/language/spec/domains.html#associative-domain-values)
 * fixed various typos
 
 Syntax Highlighting
@@ -94,6 +128,9 @@ Example Codes
 
 Portability
 -----------
+* fixed an error building the compiler with GCC 11.2
+* addressed a problem building the compiler on OpenBSD 7.0
+* enabled `CHPL_TARGET_CPU=native` when using the LLVM back-end on ARM systems
 
 
 GPU Computing
@@ -102,6 +139,9 @@ GPU Computing
 
 Compiler Improvements
 ---------------------
+* the LLVM back-end works with more clang arguments passed via `--ccflags`
+* the LLVM back-end now generates structure sizes as simpler constants
+* string literals within the compiler are now de-allocated upon program exit
 
 
 Compiler Flags
@@ -123,15 +163,26 @@ Launchers
 Error Messages / Semantic Checks
 --------------------------------
 * added an error when a non-operator is declared with the `operator` keyword
+* added a warning when using `extern` and `inline` together on a declaration
+
 
 Bug Fixes
 ---------
 * fixed a bug with limitation clauses naming symbols via private `use`/`import`
+* fixed default-initialization for `param` strings
+* fixed a problem with formals whose default value is `none`
+* fixed an internal error related to the `_wide_make` primitive and references
+
+Bug Fixes for Build Issues
+--------------------------
+* fixed a problem when using a custom GCC with the bundled LLVM and clang
+* `make clobber` no longer prints errors for `CHPL_LLVM=bundled`
 
 
 Bug Fixes for Libraries
 -----------------------
 * fixed a bug in `bigint.pow()` for negative exponents
+
 
 
 Bug Fixes for Tools
@@ -152,8 +203,14 @@ Developer-oriented changes: Naming Changes
 
 Developer-oriented changes: Documentation
 -----------------------------------------
-* documented the automatic chpldoc text generated for `deprecated` symbols
-  (see https://chapel-lang.org/docs/1.25.1/developer/bestPractices/Deprecation.html#best-practices-deprecation)
+* documented the automatic chpldoc text generated for `deprecated` symbols 
+  (see https://chapel-lang.org/docs/1.25/developer/bestPractices/Deprecation.html)
+* added a note about passing environment variables to paratest 
+  (see https://chapel-lang.org/docs/main/developer/bestPractices/Sanitizers.html)
+* `make docs` now includes compiler docs if `doxygen` and `cmake` are available 
+  (see https://chapel-lang.org/docs/main/developer/compiler-internals/index.html)
+
+
 
 
 Developer-oriented changes: Module changes
@@ -165,6 +222,12 @@ Developer-oriented changes: Makefiles
 -------------------------------------
 
 
+Developer-oriented changes: Build-time changes
+----------------------------------------------
+* on Cray systems, simplified integration between PrgEnvs and the LLVM back-end
+
+
+
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
 
@@ -172,6 +235,8 @@ Developer-oriented changes: Compiler Flags
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * added auto-deprecation documentation to symbols with `deprecated` keyword
+* continued improving the new prototype compiler front-end
+* migrated some code from the production compiler to the new compiler front-end
 
 
 Developer-oriented changes: Runtime improvements
