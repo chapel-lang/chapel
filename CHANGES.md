@@ -67,6 +67,8 @@ Name Changes in Libraries
 * deprecated the 'Ordered[Set|Map]' modules, renaming them to 'Sorted[Set|Map]' 
   (see https://chapel-lang.org/docs/main/modules/packages/SortedMap.html 
    and https://chapel-lang.org/docs/main/modules/packages/SortedSet.html)
+* deprecated `.front()`/`.back()` on arrays, renaming them to `.first`/`.last`
+  (see https://chapel-lang.org/docs/main/builtins/ChapelArray.html#ChapelArray.back)
 
 Deprecated / Removed Library Features
 -------------------------------------
@@ -79,6 +81,8 @@ Standard Library Modules
 * added optional arguments to `map` initializers for more control over resizing 
   (see https://chapel-lang.org/docs/main/modules/standard/Map.html#Map.map.init)
 * added support for hashing `bigint` values
+* converted standalone domain/array type queries into methods
+  (e.g., `isRectangularDom()` -> `Domain.isRectangular()`)
 
 Package Modules
 ---------------
@@ -149,7 +153,7 @@ Portability
 
 GPU Computing
 -------------
-
+* bundled generated kernel code in executable rather than a separate fatbin file
 
 Compiler Improvements
 ---------------------
@@ -232,6 +236,7 @@ Developer-oriented changes: Documentation
 -----------------------------------------
 * documented the automatic chpldoc text generated for `deprecated` symbols 
   (see https://chapel-lang.org/docs/1.25/developer/bestPractices/Deprecation.html)
+* filtered deprecation warnings to remove inline markup used for `chpldoc` pages
 * added a note about passing environment variables to paratest 
   (see https://chapel-lang.org/docs/main/developer/bestPractices/Sanitizers.html)
 * `make docs` now includes compiler docs if `doxygen` and `cmake` are available 
