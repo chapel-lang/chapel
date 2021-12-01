@@ -119,20 +119,23 @@ QueryMapResult<ResultType,ArgTs...>::markUniqueStringsInResult(Context* context)
 template<typename... ArgTs>
 void Context::queryBeginTrace(const char* traceQueryName,
                               const std::tuple<ArgTs...>& tupleOfArg) {
-  auto args = queryArgsToStrings(tupleOfArg);
-  size_t queryAndArgsHash = hash_combine(hash(traceQueryName), hash(args));
-  if (enableDebugTracing) {
-    printf("QUERY BEGIN     %s (", traceQueryName);
-    queryArgsPrint(tupleOfArg);
-    printf(")\n");
-    chpl::stringify<std::decay_t<decltype(args)>> stringifier;
-    printf("STRINGIFIED ARGS: %s\n", stringifier(StringifyKind::DEBUG_SUMMARY, args).c_str() );
-    printf("QUERY + ARGS HASH:    %zu\n", queryAndArgsHash);
-  }
-  if (breakSet && queryAndArgsHash == breakOnHash) {
-    gdbShouldBreakHere();
-  }
 
+  if (breakSet || enableDebugTracing) {
+    auto args = queryArgsToStrings(tupleOfArg);
+    size_t queryAndArgsHash = hash_combine(hash(traceQueryName), hash(args));
+    if (breakSet && queryAndArgsHash == breakOnHash) {
+      gdbShouldBreakHere();
+    }
+    if (enableDebugTracing) {
+      printf("QUERY BEGIN     %s (", traceQueryName);
+      queryArgsPrint(tupleOfArg);
+      printf(")\n");
+      printf("STRINGIFIED ARGS: ");
+      queryArgsPrint(args);
+      printf("\n");
+      printf("QUERY + ARGS HASH:    %zu\n", queryAndArgsHash);
+    }
+  }
 }
 
 template<typename ResultType,

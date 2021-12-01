@@ -922,36 +922,21 @@ template<> struct stringify<resolution::ResolutionResultByPostorderID> {
   }
 };
 
-template<> struct stringify<const resolution::ResolvedFunction> {
+template<> struct stringify<resolution::ResolvedFunction> {
   std::string operator()(StringifyKind stringKind,
                          const resolution::ResolvedFunction& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
-template<> struct stringify<const chpl::resolution::UntypedFnSignature::FormalDetail>
+
+template<> struct stringify<chpl::resolution::UntypedFnSignature>
 {
   std::string operator()(StringifyKind stringKind,
-                         const chpl::resolution::UntypedFnSignature::FormalDetail& stringMe) const {
+                          const chpl::resolution::UntypedFnSignature& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
-
-template<> struct stringify<const chpl::resolution::UntypedFnSignature>
-{
-  std::string operator()(StringifyKind stringKind,
-                         const chpl::resolution::UntypedFnSignature& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
-  }
-};
-
-  template<> struct stringify<chpl::resolution::UntypedFnSignature>
-  {
-    std::string operator()(StringifyKind stringKind,
-                           const chpl::resolution::UntypedFnSignature& stringMe) const {
-      return defaultStringify(stringKind, stringMe);
-    }
-  };
 
 
 template<> struct stringify<chpl::resolution::CallInfoActual>
@@ -990,14 +975,6 @@ template<> struct stringify<chpl::resolution::UntypedFnSignature::FormalDetail>
 {
  std::string operator()(StringifyKind stringKind,
                         const chpl::resolution::UntypedFnSignature::FormalDetail& stringMe) const {
-   return defaultStringify(stringKind, stringMe);
- }
-};
-
-template<> struct stringify<const chpl::resolution::TypedFnSignature>
-{
- std::string operator()(StringifyKind stringKind,
-                        const chpl::resolution::TypedFnSignature& stringMe) const {
    return defaultStringify(stringKind, stringMe);
  }
 };

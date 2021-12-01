@@ -482,34 +482,20 @@ template<> struct stringify<resolution::InnermostMatch> {
   }
 };
 
-template<> struct stringify<const resolution::PoiScope> {
+
+template<> struct stringify<resolution::PoiScope> {
   std::string operator()(StringifyKind stringKind,
-                         const resolution::PoiScope& stringMe) const {
+                          const resolution::PoiScope& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
-  template<> struct stringify<resolution::PoiScope> {
-    std::string operator()(StringifyKind stringKind,
-                           const resolution::PoiScope& stringMe) const {
-      return defaultStringify(stringKind, stringMe);
-    }
-  };
-
-
-template<> struct stringify<const resolution::Scope> {
+template<> struct stringify<resolution::Scope> {
   std::string operator()(StringifyKind stringKind,
-                         const resolution::Scope& stringMe) const {
+                          const resolution::Scope& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
-
-  template<> struct stringify<resolution::Scope> {
-    std::string operator()(StringifyKind stringKind,
-                           const resolution::Scope& stringMe) const {
-      return defaultStringify(stringKind, stringMe);
-    }
-  };
 
 
 template<> struct stringify<resolution::BorrowedIdsWithName> {
@@ -518,14 +504,6 @@ template<> struct stringify<resolution::BorrowedIdsWithName> {
     return defaultStringify(stringKind, stringMe);
   }
 };
-
-template<> struct stringify<const resolution::BorrowedIdsWithName> {
-  std::string operator()(StringifyKind stringKind,
-                         const resolution::BorrowedIdsWithName& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
-  }
-};
-
 /// \endcond
 
 } // end namespace chpl

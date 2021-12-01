@@ -193,15 +193,15 @@ static void test2a() {
   assert(runM1FooCall);
 
   // resolve runM1
-  // const ResolvedFunction* rRunM1 =
-  //   resolveConcreteFunction(context, runM1->id());
-  // assert(rRunM1);
+  const ResolvedFunction* rRunM1 =
+    resolveConcreteFunction(context, runM1->id());
+  assert(rRunM1);
 
-  // // find the resolved call to foo in runM1
-  // const ResolvedFunction* m1foo =
-  //   resolveOnlyCandidate(context, rRunM1->byAst(runM1FooCall));
-  // assert(m1foo);
-  // assert(m1foo->id() == fooA->id());
+  // find the resolved call to foo in runM1
+  const ResolvedFunction* m1foo =
+    resolveOnlyCandidate(context, rRunM1->byAst(runM1FooCall));
+  assert(m1foo);
+  assert(m1foo->id() == fooA->id());
 }
 
 // testing the challenging program from issue 18081
@@ -288,32 +288,32 @@ static void test2() {
   assert(runM2FooCall);
 
   // resolve runM1
-  // const ResolvedFunction* rRunM1 =
-  //   resolveConcreteFunction(context, runM1->id());
-  // assert(rRunM1);
+  const ResolvedFunction* rRunM1 =
+    resolveConcreteFunction(context, runM1->id());
+  assert(rRunM1);
   // resolve runM2
-  // const ResolvedFunction* rRunM2 =
-  //   resolveConcreteFunction(context, runM2->id());
-  // assert(rRunM2);
+  const ResolvedFunction* rRunM2 =
+    resolveConcreteFunction(context, runM2->id());
+  assert(rRunM2);
 
-//   // find the resolved calls to foo in runM1 and runM2
-//   const ResolvedFunction* m1foo =
-//     resolveOnlyCandidate(context, rRunM1->byAst(runM1FooCall));
-//   assert(m1foo);
-//   assert(m1foo->id() == fooA->id());
-//   const ResolvedFunction* m2foo =
-//     resolveOnlyCandidate(context, rRunM2->byAst(runM2FooCall));
-//   assert(m2foo);
-//   assert(m2foo->id() == fooB->id());
+  // find the resolved calls to foo in runM1 and runM2
+  const ResolvedFunction* m1foo =
+    resolveOnlyCandidate(context, rRunM1->byAst(runM1FooCall));
+  assert(m1foo);
+  assert(m1foo->id() == fooA->id());
+  const ResolvedFunction* m2foo =
+    resolveOnlyCandidate(context, rRunM2->byAst(runM2FooCall));
+  assert(m2foo);
+  assert(m2foo->id() == fooB->id());
 
-//   const ResolvedFunction* m1foobar =
-//     resolveOnlyCandidate(context, m1foo->byAst(fooABarCall));
-//   assert(m1foobar);
-//   assert(m1foobar->id() == m1Bar->id());
-//   const ResolvedFunction* m2foobar =
-//     resolveOnlyCandidate(context, m2foo->byAst(fooBBarCall));
-//   assert(m2foobar);
-//   assert(m2foobar->id() == m2Bar->id());
+  const ResolvedFunction* m1foobar =
+    resolveOnlyCandidate(context, m1foo->byAst(fooABarCall));
+  assert(m1foobar);
+  assert(m1foobar->id() == m1Bar->id());
+  const ResolvedFunction* m2foobar =
+    resolveOnlyCandidate(context, m2foo->byAst(fooBBarCall));
+  assert(m2foobar);
+  assert(m2foobar->id() == m2Bar->id());
 }
 
 // testing the challenging program from issue 18119

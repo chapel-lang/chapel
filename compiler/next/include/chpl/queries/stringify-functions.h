@@ -38,6 +38,7 @@
 #include <set>
 #include <sstream>
 
+
 namespace chpl {
 class Context;
 
@@ -133,15 +134,25 @@ static inline std::string defaultStringifySetPairs(StringifyKind stringKind, con
 }
 
 template<typename TUP, size_t... I>
-static inline std::string defaultStringifyTuple(StringifyKind stringKind, const TUP& tuple, std::index_sequence<I...>)
-{
-  // TODO: NEED TO ITERATE OVER THE ELEMENTS IN THIS TUPLE, CREATE A STRINGIFY STRUCT FOR EACH OF THEM
-  //  and then join the result of stringify together with commas, wrap it in parens and return it as a std::string
+static inline const std::string defaultStringifyTuple(StringifyKind stringKind, const TUP& tuple, std::index_sequence<I...>) {
+  // lambda to convert
+  auto convert = [](bool printsep, auto& elem) {
+    // we don't know what the type of `elem` is going to be, so we use
+    // std::decay_t<decltype(x)> to get the type so we can instantiate
+    // the proper stringify struct
+    chpl::stringify<std::decay_t<decltype(elem)>> stringifier;
+    std::string ret = stringifier(StringifyKind::DEBUG_DETAIL, elem);
+    if (printsep) {
+      ret = ", " + ret;
+    }
+    return ret;
+  };
 
-  return std::string("Tuple stringify not implemented yet");
+  std::ostringstream ss;
+  auto dummy = {(ss << convert(I!=0, std::get<I>(tuple)))...};
+  (void) dummy; // avoid unused variable warning
+  return std::string("("+ss.str()+")");
 }
-
-
 
 template<typename A, typename B>
 static inline std::string defaultStringifyPair(StringifyKind stringKind, const std::pair<A,B>& stringPair)
