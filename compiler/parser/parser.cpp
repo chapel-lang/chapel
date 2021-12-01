@@ -572,12 +572,12 @@ static void parseDependentModules(bool isInternal) {
 
 // Internal modules that are currently able to be parsed by the new parser.
 static std::set<std::string> allowedInternalModules = {
-    // "ChapelBase",
-    // "ChapelStandard",
-    // "PrintModuleInitOrder",
-    // "ChapelTaskData",
-    // "startInitCommDiags",
-    // "CString"
+    "ChapelBase",
+    "ChapelStandard",
+    "PrintModuleInitOrder",
+    "ChapelTaskData",
+    "startInitCommDiags",
+    "CString"
 };
 
 // TODO: Adjust me over time as more internal modules parse.

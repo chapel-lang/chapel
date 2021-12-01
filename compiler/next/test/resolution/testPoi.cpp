@@ -429,89 +429,89 @@ static void test3() {
   const ResolvedFunction* rMain = resolveConcreteFunction(context, main->id());
   assert(rMain);
 
-//   // find the resolved calls in main to nCallFunc, mCallFunc, mGenericCallFunc
-//   const ResolvedFunction* rNCallFunc =
-//     resolveOnlyCandidate(context, rMain->byAst(nCall));
-//   assert(rNCallFunc);
+  // find the resolved calls in main to nCallFunc, mCallFunc, mGenericCallFunc
+  const ResolvedFunction* rNCallFunc =
+    resolveOnlyCandidate(context, rMain->byAst(nCall));
+  assert(rNCallFunc);
 
-//   const ResolvedFunction* rMCallFunc =
-//     resolveOnlyCandidate(context, rMain->byAst(mCall));
-//   assert(rMCallFunc);
+  const ResolvedFunction* rMCallFunc =
+    resolveOnlyCandidate(context, rMain->byAst(mCall));
+  assert(rMCallFunc);
 
-//   const ResolvedFunction* rMGenericCallFunc =
-//     resolveOnlyCandidate(context, rMain->byAst(mGenericCall));
-//   assert(rMGenericCallFunc);
+  const ResolvedFunction* rMGenericCallFunc =
+    resolveOnlyCandidate(context, rMain->byAst(mGenericCall));
+  assert(rMGenericCallFunc);
 
-//   // within each of those, find the call to genericfunc
-//   const ResolvedFunction* rNCallGF =
-//     resolveOnlyCandidate(context, rNCallFunc->byAst(nCallFuncGCall));
-//   assert(rNCallGF);
-//   const ResolvedFunction* rMCallGF =
-//     resolveOnlyCandidate(context, rMCallFunc->byAst(mCallFuncGCall));
-//   assert(rMCallGF);
-//   const ResolvedFunction* rMGenericCallGF =
-//     resolveOnlyCandidate(context, rMGenericCallFunc->byAst(mGenericCallFuncGCall));
-//   assert(rMGenericCallGF);
+  // within each of those, find the call to genericfunc
+  const ResolvedFunction* rNCallGF =
+    resolveOnlyCandidate(context, rNCallFunc->byAst(nCallFuncGCall));
+  assert(rNCallGF);
+  const ResolvedFunction* rMCallGF =
+    resolveOnlyCandidate(context, rMCallFunc->byAst(mCallFuncGCall));
+  assert(rMCallGF);
+  const ResolvedFunction* rMGenericCallGF =
+    resolveOnlyCandidate(context, rMGenericCallFunc->byAst(mGenericCallFuncGCall));
+  assert(rMGenericCallGF);
 
-//   // now within each one of those, check the
-//   // helper1 / helper2 / helper3 calls go to the right place.
+  // now within each one of those, check the
+  // helper1 / helper2 / helper3 calls go to the right place.
 
-//   // first, check in nCall
-//   {
-//     const ResolvedFunction* h1 =
-//       resolveOnlyCandidate(context, rNCallGF->byAst(helperCall1));
-//     const ResolvedFunction* h2 =
-//       resolveOnlyCandidate(context, rNCallGF->byAst(helperCall2));
-//     const ResolvedFunction* h3 =
-//       resolveOnlyCandidate(context, rNCallGF->byAst(helperCall3));
+  // first, check in nCall
+  {
+    const ResolvedFunction* h1 =
+      resolveOnlyCandidate(context, rNCallGF->byAst(helperCall1));
+    const ResolvedFunction* h2 =
+      resolveOnlyCandidate(context, rNCallGF->byAst(helperCall2));
+    const ResolvedFunction* h3 =
+      resolveOnlyCandidate(context, rNCallGF->byAst(helperCall3));
 
-//     assert(h1);
-//     assert(h1->id() == nHelper1->id());
+    assert(h1);
+    assert(h1->id() == nHelper1->id());
 
-//     assert(h2);
-//     assert(h2->id() == nHelper2->id());
+    assert(h2);
+    assert(h2->id() == nHelper2->id());
 
-//     assert(h3);
-//     assert(h3->id() == mHelper3->id());
-//   }
+    assert(h3);
+    assert(h3->id() == mHelper3->id());
+  }
 
-//   // next, check in mCall
-//   {
-//     const ResolvedFunction* h1 =
-//       resolveOnlyCandidate(context, rMCallGF->byAst(helperCall1));
-//     const ResolvedFunction* h2 =
-//       resolveOnlyCandidate(context, rMCallGF->byAst(helperCall2));
-//     const ResolvedFunction* h3 =
-//       resolveOnlyCandidate(context, rMCallGF->byAst(helperCall3));
+  // next, check in mCall
+  {
+    const ResolvedFunction* h1 =
+      resolveOnlyCandidate(context, rMCallGF->byAst(helperCall1));
+    const ResolvedFunction* h2 =
+      resolveOnlyCandidate(context, rMCallGF->byAst(helperCall2));
+    const ResolvedFunction* h3 =
+      resolveOnlyCandidate(context, rMCallGF->byAst(helperCall3));
 
-//     assert(h1);
-//     assert(h1->id() == mHelper1->id());
+    assert(h1);
+    assert(h1->id() == mHelper1->id());
 
-//     assert(h2);
-//     assert(h2->id() == mHelper2->id());
+    assert(h2);
+    assert(h2->id() == mHelper2->id());
 
-//     assert(h3);
-//     assert(h3->id() == mHelper3->id());
-//   }
+    assert(h3);
+    assert(h3->id() == mHelper3->id());
+  }
 
-//   // then, check in mGenericCall
-//   {
-//     const ResolvedFunction* h1 =
-//       resolveOnlyCandidate(context, rMGenericCallGF->byAst(helperCall1));
-//     const ResolvedFunction* h2 =
-//       resolveOnlyCandidate(context, rMGenericCallGF->byAst(helperCall2));
-//     const ResolvedFunction* h3 =
-//       resolveOnlyCandidate(context, rMGenericCallGF->byAst(helperCall3));
+  // then, check in mGenericCall
+  {
+    const ResolvedFunction* h1 =
+      resolveOnlyCandidate(context, rMGenericCallGF->byAst(helperCall1));
+    const ResolvedFunction* h2 =
+      resolveOnlyCandidate(context, rMGenericCallGF->byAst(helperCall2));
+    const ResolvedFunction* h3 =
+      resolveOnlyCandidate(context, rMGenericCallGF->byAst(helperCall3));
 
-//     assert(h1);
-//     assert(h1->id() == mHelper1->id());
+    assert(h1);
+    assert(h1->id() == mHelper1->id());
 
-//     assert(h2);
-//     assert(h2->id() == nHelper2->id());
+    assert(h2);
+    assert(h2->id() == nHelper2->id());
 
-//     assert(h3);
-//     assert(h3->id() == mHelper3->id());
-//   }
+    assert(h3);
+    assert(h3->id() == mHelper3->id());
+  }
 
   // check that the generic function signatures are the same
   assert(rNCallGF->signature() == rMCallGF->signature());
