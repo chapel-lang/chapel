@@ -63,10 +63,14 @@ Namespace Changes
 
 Name Changes in Libraries
 -------------------------
+* deprecated the standard module 'Spawn', renaming it to 'Subprocess'
+  (see https://chapel-lang.org/docs/master/modules/standard/Subprocess.html)
 
 
 Deprecated / Removed Library Features
 -------------------------------------
+* removed deprecated methods with `out` error arguments from `subprocess`
+* removed deprecated method `exit_status()` from `subprocess`
 
 
 Standard Library Modules
@@ -113,7 +117,7 @@ Documentation
   (see https://chapel-lang.org/docs/main/doc/html/language/spec/records.html#record-initialization)
 * added documentation for `bigint.pow()` to the 'BigInteger' module 
   (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html#BigInteger.bigint.pow)
-* added `throws` documentation to some methods in the 'Spawn' module 
+* added `throws` documentation to some methods in the 'Subprocess' module 
   (see https://chapel-lang.org/docs/1.25/modules/standard/Subprocess.html#Subprocess.subprocess.poll, 
   https://chapel-lang.org/docs/1.25/modules/standard/Subprocess.html#Subpr
 ocess.subprocess.wait, 
@@ -177,6 +181,7 @@ Bug Fixes
 * fixed a bug with limitation clauses naming symbols via private `use`/`import`
 * fixed default-initialization for `param` strings
 * fixed a problem with formals whose default value is `none`
+* fixed certain optimization errors involving virtual method calls
 * fixed an internal error related to the `_wide_make` primitive and references
 
 Bug Fixes for Build Issues
@@ -243,6 +248,7 @@ Developer-oriented changes: Compiler improvements/changes
 * added auto-deprecation documentation to symbols with `deprecated` keyword
 * continued improving the new prototype compiler front-end
 * migrated some code from the production compiler to the new compiler front-end
+* updated compiler code for compatibility with LLVM-12
 
 
 Developer-oriented changes: Runtime improvements
