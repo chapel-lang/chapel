@@ -4,6 +4,7 @@ Release Changes List
 TODO:
 * Do we need to update Lydia's Subprocess links?
 * Docs URLs: main vs. 1.25 vs. 1.25.1
+* Check '' vs. ``
 
 version 1.25.1
 ==============
@@ -43,6 +44,7 @@ New Features
 * added support for coercions when writing to `sync` and `single` variables
 * `extern` records can now define initializers to opt into Chapel initialization
   (see https://chapel-lang.org/docs/main/doc/html/language/spec/interoperability.html#variable-initialization)
+* added support for defining user-defined hash functions via a `hash()` method
 * enabled implicit conversions from `imag(32)` to `imag(64)` 
   (see https://chapel-lang.org/docs/language/spec/conversions.html#implicit-numeric-and-bool-conversions)
 
@@ -69,7 +71,9 @@ Deprecated / Removed Library Features
 
 Standard Library Modules
 ------------------------
-
+* added optional arguments to `map` initializers for more control over resizing 
+  (see https://chapel-lang.org/docs/main/modules/standard/Map.html#Map.map.init)
+* added support for hashing `bigint` values
 
 Package Modules
 ---------------
@@ -77,10 +81,12 @@ Package Modules
 
 Tool Improvements
 -----------------
+* improved `c2chapel` to reflect whether a C type has been `typedef`d
 
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* optimized the hash tables used by 'Set', 'Map', and associative domains/arrays
 * fixed a bug in which `sort()` had stopped using insertionSort at small sizes
 
 
@@ -115,7 +121,7 @@ ocess.subprocess.wait,
 ess.subprocess.communicate)
 * removed out-of-date note about whole-domain assignments being serialized
   (see https://chapel-lang.org/docs/language/spec/domains.html#associative-domain-values)
-* fixed various typos
+* fixed various typos in documentation
 
 Syntax Highlighting
 -------------------
