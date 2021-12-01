@@ -223,6 +223,8 @@ Bug Fixes for Tools
 Platform-specific Bug Fixes
 ---------------------------
 * fixed sporadic `GNI_PostRdma` errors for the `ugni` communication layer
+* increased the default number of PMI KVS entries to have enough on HPE Cray EX
+
 
 
 Third-Party Software Changes
@@ -279,6 +281,7 @@ Developer-oriented changes: Compiler improvements/changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* `CHPL_RT_COMM_OFI_DEBUG_FNAME` can now redirect debug output to stdout/stderr
 
 
 Developer-oriented changes: Testing System
