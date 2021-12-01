@@ -242,7 +242,7 @@ Developer-oriented changes: Documentation
 * `make docs` now includes compiler docs if `doxygen` and `cmake` are available 
   (see https://chapel-lang.org/docs/main/developer/compiler-internals/index.html)
 * combined the docs for `.join()` on `string`/`bytes` for arrays and tuples
-
+* updated `ofi` communication layer developer documentation
 
 
 
