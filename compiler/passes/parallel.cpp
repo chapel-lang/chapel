@@ -1078,7 +1078,8 @@ makeHeapAllocations() {
           } else {
             call->replace(new CallExpr(PRIM_GET_MEMBER, use->symbol(), heapType->getField(1)));
           }
-        } else if (call->isResolved()) {
+        } else if (call->isResolved() ||
+                   call->isPrimitive(PRIM_VIRTUAL_METHOD_CALL)) {
           ArgSymbol* formal = actual_to_formal(use);
           if (formal->type != heapType) {
 
