@@ -37,7 +37,7 @@ namespace types {
  */
 class ClassTypeDecorator final {
  public:
-  typedef enum {
+  enum ClassTypeDecoratorEnum {
     // When updating, make sure that these numbers work with the masks below
     // (last two bits are 0=generic nilable / 1=non-nilable / 2=nilable)
     BORROWED          = 0,
@@ -52,7 +52,7 @@ class ClassTypeDecorator final {
     GENERIC           = 12,
     GENERIC_NONNIL    = 13,
     GENERIC_NILABLE   = 14,
-  } ClassTypeDecoratorEnum;
+  };
   enum {
     NUM_DECORATORS = 12,
     MANAGEMENT_MASK = 0xfc,
@@ -128,6 +128,19 @@ class ClassTypeDecorator final {
   static ClassTypeDecoratorEnum
   combineDecorators(ClassTypeDecoratorEnum formalDecorator,
                     ClassTypeDecoratorEnum actualDecorator);
+
+  static bool canCoerceDecorators(ClassTypeDecoratorEnum actual,
+                                  ClassTypeDecoratorEnum formal,
+                                  bool allowNonSubtypes,
+                                  bool implicitBang);
+
+  static bool canInstantiateDecorators(ClassTypeDecoratorEnum actual,
+                                       ClassTypeDecoratorEnum formal);
+
+  static bool canInstantiateOrCoerceDecorators(ClassTypeDecoratorEnum actual,
+                                               ClassTypeDecoratorEnum formal,
+                                               bool allowNonSubtypes,
+                                               bool implicitBang);
 
  private:
   ClassTypeDecoratorEnum val_;
