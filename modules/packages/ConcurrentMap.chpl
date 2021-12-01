@@ -19,6 +19,12 @@
  */
 
 /*
+  .. note::
+
+    This module relies on the :mod:`AtomicObjects` package, which currently
+    requires ``extern`` code block support. See the documentation of the
+    :mod:`AtomicObjects` package for more details.
+
   This module provides a fast, scalable, fine-grained concurrent map. It was
   inspired by the Interlocked Hash Table [#]_. It allows large critical
   sections that access a single table element, and can easily support multikey
