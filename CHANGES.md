@@ -82,11 +82,14 @@ Standard Library Modules
 
 Package Modules
 ---------------
+* added automatic help handling and message generation to 'ArgumentParser' 
+  (see https://chapel-lang.org/docs/1.25/modules/packages/ArgumentParser.html)
 
 
 Tool Improvements
 -----------------
 * improved `c2chapel` to reflect whether a C type has been `typedef`d
+* refactored `mason` to use 'ArgumentParser' for all command-line parsing
 
 
 Performance Optimizations / Improvements
@@ -183,6 +186,7 @@ Bug Fixes
 * fixed a bug with limitation clauses naming symbols via private `use`/`import`
 * fixed default-initialization for `param` strings
 * fixed a bug with concatenating `param` strings with escape sequences
+* fixed a bug in `.join()` on `string`/`bytes` with single-element tuples
 * fixed a bug related to remote references to module-scope `bytes` values
 * fixed a problem with formals whose default value is `none`
 * fixed intermittent corrupted packets when using GASNet over `udp`
@@ -207,6 +211,7 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
+* made minor fixes to `mason`'s command-line parsing
 
 
 Platform-specific Bug Fixes
@@ -231,6 +236,7 @@ Developer-oriented changes: Documentation
   (see https://chapel-lang.org/docs/main/developer/bestPractices/Sanitizers.html)
 * `make docs` now includes compiler docs if `doxygen` and `cmake` are available 
   (see https://chapel-lang.org/docs/main/developer/compiler-internals/index.html)
+* combined the docs for `.join()` on `string`/`bytes` for arrays and tuples
 
 
 
@@ -273,7 +279,7 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
-
+* updated the `spack` back-end version to 0.15.4 for `mason external` commands
 
 Developer-oriented changes: Utilities
 -------------------------------------
