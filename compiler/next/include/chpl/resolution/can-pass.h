@@ -90,9 +90,10 @@ class CanPassResult {
   static bool
   canConvertParamNarrowing(const types::QualifiedType& actualType,
                            const types::QualifiedType& formalType);
-  static CanPassResult
-  canConvertClassesOrPtrs(const types::QualifiedType& actualType,
-                          const types::QualifiedType& formalType);
+
+  static bool
+  isSubtype(const types::Type* actualT,
+            const types::Type* formalT);
 
   static CanPassResult
   canConvert(const types::QualifiedType& actualType,

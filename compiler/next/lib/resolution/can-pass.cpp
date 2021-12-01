@@ -413,32 +413,83 @@ CanPassResult::canConvertParamNarrowing(const QualifiedType& actualQT,
   return false;
 }
 
-CanPassResult
-CanPassResult::canConvertClassesOrPtrs(const QualifiedType& actualQT,
-                                       const QualifiedType& formalQT) {
+// The compiler considers many patterns of "subtyping" as things that require
+// implicit conversions (they often require implicit conversions in the
+// generated C).  However not all implicit conversions are created equal.
+// Some of them are implementing subtyping.
+//
+// Here we consider an implicit conversion to be implementing "subtyping" if,
+// in an ideal implementation, the actual could be passed to a `const ref`
+// argument of the formal type.
+bool CanPassResult::isSubtype(const Type* actualT,
+                              const Type* formalT) {
+  // nil -> pointers and class types
+  if (actualT->isNilType() && formalT->isAnyNilablePtrType() &&
+      !formalT->isCStringType())
+    return true;
+
+  if (auto actualCt = actualT->toClassType()) {
+    if (auto formalCt = formalT->toClassType()) {
+      // owned Child -> owned Parent
+      if (actualCt->decorator().isManaged() &&
+          formalCt->decorator().isManaged() &&
+          actualCt->manager() == formalCt->manager()) {
+        return isSubtype(actualCt->basicClassType(),
+                         formalCt->basicClassType());
+      }
+
+      // check decorators allow subtyping conversion
+      auto actualDec = actualCt->decorator().val();
+      auto formalDec = formalCt->decorator().val();
+      bool ok = ClassTypeDecorator::canCoerceDecorators(
+                                        actualDec, formalDec,
+                                        /* allowNonSubtypes */ false,
+                                        /* implicitBang */ false);
+      if (ok) {
+        auto actualBct = actualCt->basicClassType();
+        auto formalBct = formalCt->basicClassType();
+
+        // are the decorated class types the same?
+        if (actualBct == formalBct)
+          return true;
+
+        // are we passing a subclass?
+        // TODO: check for subclass relationship
+      }
+    }
+  }
+
+  // TODO: c_ptr -> c_void_ptr
+  // TODO: c_array -> c_void_ptr, c_array(t) -> c_ptr(t)
+
+  return false;
+}
+
+CanPassResult CanPassResult::canConvert(const QualifiedType& actualQT,
+                                        const QualifiedType& formalQT) {
   const Type* actualT = actualQT.type();
   const Type* formalT = formalQT.type();
 
-  // The compiler considers many patterns of "subtyping" as things that require
-  // implicit conversions (they often require implicit conversions in the
-  // generated C).  However not all implicit conversions are created equal. Some
-  // of them are implementing subtyping.  Here we consider an implicit
-  // conversion to be implementing "subtyping" if, in an ideal implementation,
-  // the actual could be passed to a `const ref` argument of the formal type.
-
-  if (actualT->isNilType() && formalT->isAnyPtrType())
+  if (isSubtype(actualT, formalT))
     return convert(SUBTYPE);
 
+  // can we convert with a numeric conversion?
+  if (canConvertNumeric(actualT, formalT))
+    return convert(NUMERIC);
 
-  if (actualT->isClassType() || formalT->isClassType()) {
-    // TODO: port canCoerceAsSubtype
+  // can we convert with param narrowing?
+  if (canConvertParamNarrowing(actualQT, formalQT))
+    return convert(PARAM_NARROWING);
+
+  // can we convert tuples?
+  if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
     assert(false && "not implemented yet");
+    // TODO: port canCoerceTuples from production compiler
   }
 
-  // TODO: implement c_ptr, c_array conversions
-
-  // Check for other class subtyping
-  // Class subtyping needs conversions in order to generate C code.
+  // TODO: check for conversion to copy type
+  // (relevant for array slices and iterator records)
+  // TODO: port canCoerceToCopyType
 
   return fail();
 }
@@ -481,67 +532,45 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
     return passAsIs();
   }
 
-  // if the formal type is concrete/instantiated, do additional checking
-  /*if (!formalQT.isGenericOrUnknown()) {
+  // if the formal type is concrete, do additional checking
+  // (if it is generic, we will do this checking after instantiation)
+  if (!formalQT.isGenericOrUnknown()) {
     switch (formalQT.kind()) {
       case QualifiedType::UNKNOWN:
-      case QualifiedType::CONST_INTENT:
       case QualifiedType::FUNCTION:
       case QualifiedType::MODULE:
+      case QualifiedType::INDEX:
+      case QualifiedType::VAR:
+      case QualifiedType::CONST_VAR:
+      case QualifiedType::DEFAULT_INTENT:
+      case QualifiedType::CONST_INTENT:
         // no additional checking for these
         break;
 
+      case QualifiedType::REF:
+        return fail(); // ref type requires same time which is ruled out above
+
+      case QualifiedType::CONST_REF:
       case QualifiedType::TYPE:
-        if (isSubtype(formalQT, actualQT))
-          return subtype();
+        if (isSubtype(formalT, actualT))
+          return convert(SUBTYPE);
         break;
 
       case QualifiedType::PARAM:
-        if (isSubtype(formalQT, actualQT))
-          return subtype();
-      case QualifiedType::REF:
-      case QualifiedType::CONST_REF:
-      case QualifiedType::VALUE:
-      case QualifiedType::CONST_VALUE:
+      case QualifiedType::IN:
+      case QualifiedType::CONST_IN:
+      case QualifiedType::INOUT:
+        {
+          auto got = canConvert(actualQT, formalQT);
+          if (got.passes())
+            return got;
+          break;
+        }
+
+      case QualifiedType::OUT:
+        return passAsIs();
     }
-
-    // ref type requires same type
-    if (formalQT.kind() == QualifiedType::REF && actualT != formalT)
-      return fail();
-
-    // const ref
-    if (formalQT.kind() == QualifiedType::CONST_REF)
-
-    // in/inout
-
-    // out
-
-    // type
-  }*/
-
-  // can we convert with a numeric conversion?
-  if (canConvertNumeric(actualT, formalT))
-    return convert(NUMERIC);
-
-  // can we convert with param narrowing?
-  if (canConvertParamNarrowing(actualQT, formalQT))
-    return convert(PARAM_NARROWING);
-
-  {
-    CanPassResult ret = canConvertClassesOrPtrs(actualQT, formalQT);
-    if (ret.passes())
-      return ret;
   }
-
-  // can we convert tuples?
-  if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
-    assert(false && "not implemented yet");
-    // TODO: port canCoerceTuples from production compiler
-  }
-
-  // TODO: check for conversion to copy type
-  // (relevant for array slices and iterator records)
-  // TODO: port canCoerceToCopyType
 
   // can we promote?
   // TODO: implement promotion check

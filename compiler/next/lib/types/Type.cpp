@@ -150,6 +150,20 @@ std::string Type::toString() const {
   return ret;
 }
 
+bool Type::isAnyNilablePtrType() const {
+  if (isAnyPtrType()) {
+
+    if (auto ct = toClassType()) {
+      if (!ct->decorator().isNilable())
+        return false;
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
 const CompositeType* Type::getCompositeType() const {
   if (auto at = toCompositeType())
     return at;
