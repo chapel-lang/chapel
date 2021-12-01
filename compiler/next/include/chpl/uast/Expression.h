@@ -54,6 +54,13 @@ template<> struct stringify<const chpl::uast::Expression> {
     return defaultStringify(stringKind, stringMe);
   }
 };
+
+template<> struct stringify<chpl::uast::Expression> {
+  std::string operator()(StringifyKind stringKind, const chpl::uast::Expression& stringMe) const {
+    return defaultStringify(stringKind, stringMe);
+  }
+};
+
 } // end namespace chpl
 
 #endif

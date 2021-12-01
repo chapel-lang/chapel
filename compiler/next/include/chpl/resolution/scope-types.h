@@ -489,6 +489,13 @@ template<> struct stringify<const resolution::PoiScope> {
   }
 };
 
+  template<> struct stringify<resolution::PoiScope> {
+    std::string operator()(StringifyKind stringKind,
+                           const resolution::PoiScope& stringMe) const {
+      return defaultStringify(stringKind, stringMe);
+    }
+  };
+
 
 template<> struct stringify<const resolution::Scope> {
   std::string operator()(StringifyKind stringKind,
@@ -497,8 +504,22 @@ template<> struct stringify<const resolution::Scope> {
   }
 };
 
+  template<> struct stringify<resolution::Scope> {
+    std::string operator()(StringifyKind stringKind,
+                           const resolution::Scope& stringMe) const {
+      return defaultStringify(stringKind, stringMe);
+    }
+  };
+
 
 template<> struct stringify<resolution::BorrowedIdsWithName> {
+  std::string operator()(StringifyKind stringKind,
+                         const resolution::BorrowedIdsWithName& stringMe) const {
+    return defaultStringify(stringKind, stringMe);
+  }
+};
+
+template<> struct stringify<const resolution::BorrowedIdsWithName> {
   std::string operator()(StringifyKind stringKind,
                          const resolution::BorrowedIdsWithName& stringMe) const {
     return defaultStringify(stringKind, stringMe);

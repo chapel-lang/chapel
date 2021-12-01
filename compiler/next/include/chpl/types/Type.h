@@ -199,6 +199,11 @@ template<> struct stringify<const chpl::types::Type> {
     return defaultStringify(stringKind, stringMe);
   }
 };
+template<> struct stringify<chpl::types::Type> {
+  std::string operator()(StringifyKind stringKind, const chpl::types::Type& stringMe) const {
+    return defaultStringify(stringKind, stringMe);
+  }
+};
   /// \endcond DO_NOT_DOCUMENT
 } // end namespace chpl
 

@@ -129,7 +129,7 @@ void Context::queryBeginTrace(const char* traceQueryName,
     printf("STRINGIFIED ARGS: %s\n", stringifier(StringifyKind::DEBUG_SUMMARY, args).c_str() );
     printf("QUERY + ARGS HASH:    %zu\n", queryAndArgsHash);
   }
-  if (queryAndArgsHash == breakOnHash) {
+  if (breakSet && queryAndArgsHash == breakOnHash) {
     gdbShouldBreakHere();
   }
 

@@ -215,14 +215,14 @@ class ClassTypeDecorator final {
 
 
 } // end namespace uast
-
+/// \cond DO_NOT_DOCUMENT
 template<> struct stringify<chpl::types::ClassTypeDecorator> {
   std::string operator()(StringifyKind stringKind,
                   const chpl::types::ClassTypeDecorator& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
-
+/// \endcond DO_NOT_DOCUMENT
 } // end namespace chpl
 
 namespace std {

@@ -377,13 +377,13 @@ class Function final : public NamedDecl {
 
 
 } // end namespace uast
-
-  template<> struct stringify<chpl::uast::Function::Kind> {
-    std::string operator()(StringifyKind stringKind, const chpl::uast::Function::Kind& stringMe) const {
-      return defaultStringify(stringKind, stringMe);
-    }
-  };
-
+/// \cond DO_NOT_DOCUMENT
+template<> struct stringify<chpl::uast::Function::Kind> {
+  std::string operator()(StringifyKind stringKind, const chpl::uast::Function::Kind& stringMe) const {
+    return defaultStringify(stringKind, stringMe);
+  }
+};
+/// \endcond DO_NOT_DOCUMENT
 } // end namespace chpl
 
 namespace std {

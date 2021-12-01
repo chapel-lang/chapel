@@ -903,87 +903,111 @@ template<> struct update<owned<resolution::ResolvedFunction>> {
 
 template<> struct stringify<resolution::ResolvedExpression> {
   std::string operator()(StringifyKind stringKind,
-                  const resolution::ResolvedExpression& stringMe) const {
+                         const resolution::ResolvedExpression& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
 template<> struct stringify<resolution::MostSpecificCandidates> {
   std::string operator()(StringifyKind stringKind,
-                  const resolution::MostSpecificCandidates& stringMe) const {
+                         const resolution::MostSpecificCandidates& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
 template<> struct stringify<resolution::ResolutionResultByPostorderID> {
   std::string operator()(StringifyKind stringKind,
-                  const resolution::ResolutionResultByPostorderID& stringMe) const {
+                         const resolution::ResolutionResultByPostorderID& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
-template<> struct stringify<resolution::ResolvedFunction> {
+template<> struct stringify<const resolution::ResolvedFunction> {
   std::string operator()(StringifyKind stringKind,
-                  const resolution::ResolvedFunction& stringMe) const {
+                         const resolution::ResolvedFunction& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
 template<> struct stringify<const chpl::resolution::UntypedFnSignature::FormalDetail>
 {
-  std::string operator()(StringifyKind stringKind, const chpl::resolution::UntypedFnSignature::FormalDetail& stringMe) const {
+  std::string operator()(StringifyKind stringKind,
+                         const chpl::resolution::UntypedFnSignature::FormalDetail& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
 template<> struct stringify<const chpl::resolution::UntypedFnSignature>
 {
-  std::string operator()(StringifyKind stringKind, const chpl::resolution::UntypedFnSignature& stringMe) const {
+  std::string operator()(StringifyKind stringKind,
+                         const chpl::resolution::UntypedFnSignature& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
+  template<> struct stringify<chpl::resolution::UntypedFnSignature>
+  {
+    std::string operator()(StringifyKind stringKind,
+                           const chpl::resolution::UntypedFnSignature& stringMe) const {
+      return defaultStringify(stringKind, stringMe);
+    }
+  };
+
 
 template<> struct stringify<chpl::resolution::CallInfoActual>
 {
-  std::string operator()(StringifyKind stringKind, const chpl::resolution::CallInfoActual& stringMe) const {
+  std::string operator()(StringifyKind stringKind,
+                         const chpl::resolution::CallInfoActual& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
 template<> struct stringify<chpl::resolution::CallInfo>
 {
-  std::string operator()(StringifyKind stringKind, const chpl::resolution::CallInfo& stringMe) const {
+  std::string operator()(StringifyKind stringKind,
+                         const chpl::resolution::CallInfo& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
 template<> struct stringify<chpl::resolution::PoiInfo>
 {
-  std::string operator()(StringifyKind stringKind, const chpl::resolution::PoiInfo& stringMe) const {
+  std::string operator()(StringifyKind stringKind,
+                         const chpl::resolution::PoiInfo& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
 template<> struct stringify<chpl::resolution::TypedFnSignature::WhereClauseResult>
 {
-  std::string operator()(StringifyKind stringKind, const chpl::resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
+  std::string operator()(StringifyKind stringKind,
+                         const chpl::resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
 template<> struct stringify<chpl::resolution::UntypedFnSignature::FormalDetail>
 {
- std::string operator()(StringifyKind stringKind, const chpl::resolution::UntypedFnSignature::FormalDetail& stringMe) const {
+ std::string operator()(StringifyKind stringKind,
+                        const chpl::resolution::UntypedFnSignature::FormalDetail& stringMe) const {
    return defaultStringify(stringKind, stringMe);
  }
 };
 
 template<> struct stringify<const chpl::resolution::TypedFnSignature>
 {
- std::string operator()(StringifyKind stringKind, const chpl::resolution::TypedFnSignature& stringMe) const {
+ std::string operator()(StringifyKind stringKind,
+                        const chpl::resolution::TypedFnSignature& stringMe) const {
    return defaultStringify(stringKind, stringMe);
  }
+};
+
+template<> struct stringify<chpl::resolution::TypedFnSignature>
+{
+  std::string operator()(StringifyKind stringKind,
+                         const chpl::resolution::TypedFnSignature& stringMe) const {
+    return defaultStringify(stringKind, stringMe);
+  }
 };
 
 /// \endcond DO_NOT_DOCUMENT

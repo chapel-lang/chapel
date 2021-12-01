@@ -20,6 +20,9 @@
 /*
   This file implements the generic chpl::stringify
   as well as specializations for some common types.
+
+  stringify can be used to get a string representation of an object
+  for debugging purposes
  */
 
 #ifndef CHPL_QUERIES_STRINGIFY_FUNCTIONS_H
@@ -50,7 +53,7 @@ template<typename T> struct stringify {
 };
 
 
-template<typename T> struct stringify<T*> {
+template<typename T> struct stringify<const T*> {
   std::string operator()(StringifyKind stringKind, const T* stringMe) const {
     stringify<T> stringifier;
     return stringifier(stringKind, *stringMe);
@@ -222,7 +225,6 @@ template<typename... ArgTs> struct stringify<std::tuple<ArgTs...>> {
   std::string operator()(StringifyKind stringKind,
                          const std::tuple<ArgTs...>& stringMe) const {
     return defaultStringifyTuple(stringKind, stringMe, std::index_sequence_for<ArgTs...>{});
-    //return (stringKind, stringMe);
   }
 };
 /// \

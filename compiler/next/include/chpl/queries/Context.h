@@ -220,8 +220,9 @@ class Context {
   std::vector<const querydetail::QueryMapResultBase*> queryStack;
 
   querydetail::RevisionNumber currentRevisionNumber = 1;
-  bool enableDebugTracing = true;
-  size_t breakOnHash = 4231795962451111285;
+  bool enableDebugTracing = false;
+  bool breakSet = false;
+  size_t breakOnHash = 0;
   int numQueriesRunThisRevision_ = 0;
 
   static void defaultReportError(const ErrorMessage& err);
