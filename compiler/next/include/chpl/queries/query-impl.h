@@ -130,9 +130,6 @@ void Context::queryBeginTrace(const char* traceQueryName,
       printf("QUERY BEGIN     %s (", traceQueryName);
       queryArgsPrint(tupleOfArg);
       printf(")\n");
-      printf("STRINGIFIED ARGS: ");
-      queryArgsPrint(args);
-      printf("\n");
       printf("QUERY + ARGS HASH:    %zu\n", queryAndArgsHash);
     }
   }

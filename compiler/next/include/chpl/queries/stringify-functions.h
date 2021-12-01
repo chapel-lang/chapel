@@ -62,16 +62,18 @@ template<typename T> struct stringify<const T*> {
 };
 
 template<typename T>
-static inline std::string defaultStringify(StringifyKind stringKind, const T& stringMe) {
+static inline std::string defaultStringify(StringifyKind stringKind,
+                                           const T& stringMe) {
 
-  return std::string("HAVE NOT IMPLEMENTED STRINGIFY YET");
+  return "HAVE NOT IMPLEMENTED STRINGIFY YET";
 
 }
 
 template<typename T>
-static inline std::string defaultStringifyVec(StringifyKind stringKind, const std::vector<T>& stringVec)
+static inline std::string defaultStringifyVec(StringifyKind stringKind,
+                                              const std::vector<T>& stringVec)
 {
-  if (stringVec.size() == 0) {
+  if (stringVec.empty()) {
    return "[ ]";
   } else {
    std::ostringstream ss;
@@ -86,7 +88,8 @@ static inline std::string defaultStringifyVec(StringifyKind stringKind, const st
 }
 
 template<typename K, typename V>
-static inline std::string defaultStringifyMap(StringifyKind stringKind, const std::unordered_map<K,V>& stringMap)
+static inline std::string defaultStringifyMap(StringifyKind stringKind,
+                                              const std::unordered_map<K,V>& stringMap)
 {
   if (stringMap.size() == 0) {
     return "{ }";
@@ -109,7 +112,8 @@ static inline std::string defaultStringifyMap(StringifyKind stringKind, const st
 }
 
 template<typename A, typename B>
-static inline std::string defaultStringifySetPairs(StringifyKind stringKind, const std::set<std::pair<A,B>>& stringSet)
+static inline std::string defaultStringifySetPairs(StringifyKind stringKind,
+                                                   const std::set<std::pair<A,B>>& stringSet)
 {
   if (stringSet.size() == 0) {
     return "{ }";
@@ -134,11 +138,13 @@ static inline std::string defaultStringifySetPairs(StringifyKind stringKind, con
 }
 
 template<typename TUP, size_t... I>
-static inline const std::string defaultStringifyTuple(StringifyKind stringKind, const TUP& tuple, std::index_sequence<I...>) {
+static inline std::string defaultStringifyTuple(StringifyKind stringKind,
+                                                const TUP& tuple,
+                                                std::index_sequence<I...>) {
   // lambda to convert
   auto convert = [](bool printsep, auto& elem) {
     // we don't know what the type of `elem` is going to be, so we use
-    // std::decay_t<decltype(x)> to get the type so we can instantiate
+    // std::decay_t<decltype(x)> to get the type, so we can instantiate
     // the proper stringify struct
     chpl::stringify<std::decay_t<decltype(elem)>> stringifier;
     std::string ret = stringifier(StringifyKind::DEBUG_DETAIL, elem);
@@ -149,23 +155,26 @@ static inline const std::string defaultStringifyTuple(StringifyKind stringKind, 
   };
 
   std::ostringstream ss;
-  auto dummy = {(ss << convert(I!=0, std::get<I>(tuple)))...};
+  auto dummy = {(ss << convert(I!=0, std::get<I>(tuple)),0)...};
   (void) dummy; // avoid unused variable warning
   return std::string("("+ss.str()+")");
 }
 
 template<typename A, typename B>
-static inline std::string defaultStringifyPair(StringifyKind stringKind, const std::pair<A,B>& stringPair)
+static inline std::string defaultStringifyPair(StringifyKind stringKind,
+                                               const std::pair<A,B>& stringPair)
 {
  stringify<A> stringA;
  stringify<B> stringB;
 
- return std::string("(" + stringA(stringKind, stringPair[0]) + ", " + stringB(stringKind, stringPair[1]));
+ return std::string("(" + stringA(stringKind, stringPair[0])
+                    + ", " + stringB(stringKind, stringPair[1])+")");
 }
 
 /// \cond DO_NOT_DOCUMENT
 template<> struct stringify<std::string> {
- std::string operator()(StringifyKind stringKind, const std::string val) const {
+ std::string operator()(StringifyKind stringKind,
+                        const std::string& val) const {
    return std::string("\""+val+"\"");
  }
 };
@@ -190,7 +199,8 @@ std::string operator()(StringifyKind stringKind, const double val) const {
 };
 
 template<> struct stringify<long unsigned int> {
-std::string operator()(StringifyKind stringKind, const long unsigned int val) const {
+std::string operator()(StringifyKind stringKind,
+                       const long unsigned int val) const {
   return std::to_string(val);
 }
 };
@@ -198,20 +208,22 @@ std::string operator()(StringifyKind stringKind, const long unsigned int val) co
 template<> struct stringify<bool> {
  std::string operator()(StringifyKind stringKind, const bool val) const {
    if (val) {
-     return std::string("true");
+     return "true";
    }
-   return std::string("false");
+   return "false";
  }
 };
 
 template<typename T> struct stringify<std::vector<T>> {
- std::string operator()(StringifyKind stringKind, const std::vector<T>& stringMe) const {
+ std::string operator()(StringifyKind stringKind,
+                        const std::vector<T>& stringMe) const {
    return defaultStringifyVec(stringKind, stringMe);
  }
 };
 
 template<typename K, typename V> struct stringify<std::unordered_map<K,V>> {
- std::string operator()(StringifyKind stringKind, const std::unordered_map<K,V>& stringMe) const {
+ std::string operator()(StringifyKind stringKind,
+                        const std::unordered_map<K,V>& stringMe) const {
    return defaultStringifyMap(stringKind, stringMe);
  }
 };
@@ -235,7 +247,8 @@ std::string operator()(StringifyKind stringKind,
 template<typename... ArgTs> struct stringify<std::tuple<ArgTs...>> {
   std::string operator()(StringifyKind stringKind,
                          const std::tuple<ArgTs...>& stringMe) const {
-    return defaultStringifyTuple(stringKind, stringMe, std::index_sequence_for<ArgTs...>{});
+    return defaultStringifyTuple(stringKind, stringMe,
+                                 std::index_sequence_for<ArgTs...>{});
   }
 };
 /// \

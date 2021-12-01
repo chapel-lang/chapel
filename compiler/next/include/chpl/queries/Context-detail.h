@@ -138,7 +138,8 @@ static void queryArgsPrintOne(const T& v) {
 
 
 template<typename TUP, size_t... I>
-static inline void queryArgsPrintImpl(const TUP& tuple, std::index_sequence<I...>) {
+static inline void queryArgsPrintImpl(const TUP& tuple,
+                                      std::index_sequence<I...>) {
   // lambda to optionally print separator, then print element
   auto print = [](bool printsep, const auto& elem) {
       if(printsep)
@@ -158,7 +159,8 @@ static inline void queryArgsPrintImpl(const TUP& tuple, std::index_sequence<I...
 }
 
 template<typename TUP, size_t... I>
-static inline const auto queryArgsToStringsImpl(const TUP& tuple, std::index_sequence<I...>) {
+static inline const auto queryArgsToStringsImpl(const TUP& tuple,
+                                                std::index_sequence<I...>) {
   // lambda to convert
   auto convert = [](auto& elem) {
     chpl::stringify<std::decay_t<decltype(elem)>> stringifier;
@@ -171,20 +173,23 @@ static inline const auto queryArgsToStringsImpl(const TUP& tuple, std::index_seq
 template<typename... Ts>
 auto queryArgsToStrings(const std::tuple<Ts...>& tuple) {
   return queryArgsToStringsImpl(tuple, std::index_sequence_for<Ts...>{});
+  // TODO: Should be able to replace the Impl with the code below, but it
+  //  fails to compile as written
+  // chpl::stringify<std::tuple<Ts...>> stringifier;
+  // return stringifier(StringifyKind::DEBUG_SUMMARY, tuple);
 }
 
 // taken from https://codereview.stackexchange.com/questions/193420/apply-a-function-to-each-element-of-a-tuple-map-a-tuple
+// when the queryArgsToStringsImpl is dropped we can remove these too
 template <class F, typename Tuple, size_t... Is>
 auto applyToEachImpl(Tuple t, F f, std::index_sequence<Is...>) {
-  return std::make_tuple(
-      f(std::get<Is>(t) )...
+  return std::make_tuple(f(std::get<Is>(t) )...
   );
 }
 
 template <class F, typename... Args>
 auto applyToEach(F f, const std::tuple<Args...>& t) {
-  return applyToEachImpl(
-      t, f, std::make_index_sequence<sizeof...(Args)>{});
+  return applyToEachImpl(t, f, std::make_index_sequence<sizeof...(Args)>{});
 }
 
 

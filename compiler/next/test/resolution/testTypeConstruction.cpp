@@ -387,21 +387,20 @@ static void test13() {
 }
 
 static void test14() {
-   printf("test14\n");
-   Context ctx;
-   Context* context = &ctx;
+  printf("test14\n");
+  Context ctx;
+  Context* context = &ctx;
 
-   auto t = parseTypeOfX(context, "record R { param p = 1; }\n"
-                                  "var x: R(?);\n");
-
-   auto rt = t->toRecordType();
-   assert(rt);
-   assert(rt->numFields() == 1);
-   assert(rt->fieldName(0) == "p");
-   assert(rt->fieldHasDefaultValue(0) == true);
-   assert(rt->fieldType(0).kind() == QualifiedType::PARAM);
-   assert(rt->fieldType(0).type() == AnyType::get(context));
-   assert(rt->fieldType(0).param() == nullptr);
+  auto t = parseTypeOfX(context, "record R { param p = 1; }\n"
+                                 "var x: R(?);\n");
+  auto rt = t->toRecordType();
+  assert(rt);
+  assert(rt->numFields() == 1);
+  assert(rt->fieldName(0) == "p");
+  assert(rt->fieldHasDefaultValue(0) == true);
+  assert(rt->fieldType(0).kind() == QualifiedType::PARAM);
+  assert(rt->fieldType(0).type() == AnyType::get(context));
+  assert(rt->fieldType(0).param() == nullptr);
 }
 
 static void test15() {

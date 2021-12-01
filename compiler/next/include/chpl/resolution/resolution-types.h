@@ -901,30 +901,30 @@ template<> struct update<owned<resolution::ResolvedFunction>> {
   }
 };
 
-template<> struct stringify<resolution::ResolvedExpression> {
+template<> struct stringify<chpl::resolution::ResolvedExpression> {
   std::string operator()(StringifyKind stringKind,
-                         const resolution::ResolvedExpression& stringMe) const {
+                         const chpl::resolution::ResolvedExpression& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
-template<> struct stringify<resolution::MostSpecificCandidates> {
+template<> struct stringify<chpl::resolution::MostSpecificCandidates> {
   std::string operator()(StringifyKind stringKind,
-                         const resolution::MostSpecificCandidates& stringMe) const {
+                         const chpl::resolution::MostSpecificCandidates& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
-template<> struct stringify<resolution::ResolutionResultByPostorderID> {
+template<> struct stringify<chpl::resolution::ResolutionResultByPostorderID> {
   std::string operator()(StringifyKind stringKind,
-                         const resolution::ResolutionResultByPostorderID& stringMe) const {
+                         const chpl::resolution::ResolutionResultByPostorderID& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
 
-template<> struct stringify<resolution::ResolvedFunction> {
+template<> struct stringify<chpl::resolution::ResolvedFunction> {
   std::string operator()(StringifyKind stringKind,
-                         const resolution::ResolvedFunction& stringMe) const {
+                         const chpl::resolution::ResolvedFunction& stringMe) const {
     return defaultStringify(stringKind, stringMe);
   }
 };
