@@ -52,7 +52,6 @@ New Features
 Feature Improvements
 --------------------
 
-
 Deprecated / Removed Language Features
 --------------------------------------
 
@@ -65,7 +64,9 @@ Name Changes in Libraries
 -------------------------
 * deprecated the standard module 'Spawn', renaming it to 'Subprocess'
   (see https://chapel-lang.org/docs/master/modules/standard/Subprocess.html)
-
+* deprecated the 'Ordered[Set|Map]' modules, renaming them to 'Sorted[Set|Map]' 
+  (see https://chapel-lang.org/docs/main/modules/packages/SortedMap.html 
+   and https://chapel-lang.org/docs/main/modules/packages/SortedSet.html)
 
 Deprecated / Removed Library Features
 -------------------------------------
@@ -168,6 +169,7 @@ Runtime Library Changes
 
 Launchers
 ---------
+* made `slurm-gasnetrun*` respect `CHPL_LAUNCHER_ACCOUNT` more consistently
 
 
 Error Messages / Semantic Checks
@@ -180,9 +182,14 @@ Bug Fixes
 ---------
 * fixed a bug with limitation clauses naming symbols via private `use`/`import`
 * fixed default-initialization for `param` strings
+* fixed a bug with concatenating `param` strings with escape sequences
+* fixed a bug related to remote references to module-scope `bytes` values
 * fixed a problem with formals whose default value is `none`
+* fixed a bug with unresolved defaulted formals in overridden methods
 * fixed certain optimization errors involving virtual method calls
 * fixed an internal error related to the `_wide_make` primitive and references
+
+
 
 Bug Fixes for Build Issues
 --------------------------
@@ -193,6 +200,7 @@ Bug Fixes for Build Issues
 Bug Fixes for Libraries
 -----------------------
 * fixed a bug in `bigint.pow()` for negative exponents
+* fixed a bug related to custom comparators in 'sortedSet'
 
 
 
@@ -249,6 +257,7 @@ Developer-oriented changes: Compiler improvements/changes
 * continued improving the new prototype compiler front-end
 * migrated some code from the production compiler to the new compiler front-end
 * updated compiler code for compatibility with LLVM-12
+* made the `--incremental` flag more robust w.r.t. large numbers of modules
 
 
 Developer-oriented changes: Runtime improvements
