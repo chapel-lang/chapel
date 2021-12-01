@@ -86,6 +86,8 @@ Standard Library Modules
 
 Package Modules
 ---------------
+* added a new 'ConcurrentMap' package module 
+  (see https://chapel-lang.org/docs/main/modules/packages/ConcurrentMap.html)
 * added automatic help handling and message generation to 'ArgumentParser' 
   (see https://chapel-lang.org/docs/1.25/modules/packages/ArgumentParser.html)
 
@@ -268,7 +270,8 @@ Developer-oriented changes: Compiler Flags
 Developer-oriented changes: Compiler improvements/changes
 ---------------------------------------------------------
 * added auto-deprecation documentation to symbols with `deprecated` keyword
-* continued improving the new prototype compiler front-end
+* increased the number of primers and modules that the new front-end can parse
+* continued improving the new prototype compiler front-end's resolution logic
 * migrated some code from the production compiler to the new compiler front-end
 * updated compiler code for compatibility with LLVM-12
 * made the `--incremental` flag more robust w.r.t. large numbers of modules
