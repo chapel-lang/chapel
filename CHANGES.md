@@ -101,7 +101,7 @@ Compilation-Time / Generated Code Improvements
 
 Memory Improvements
 -------------------
-
+* optimized memory tracking when `memThreshold` is set
 
 Documentation
 -------------
@@ -150,7 +150,7 @@ GPU Computing
 
 Compiler Improvements
 ---------------------
-* the LLVM back-end works with more clang arguments passed via `--ccflags`
+* improved the LLVM back-end's support for clang arguments via `--ccflags`
 * the LLVM back-end now generates structure sizes as simpler constants
 * string literals within the compiler are now de-allocated upon program exit
 
@@ -185,6 +185,7 @@ Bug Fixes
 * fixed a bug with concatenating `param` strings with escape sequences
 * fixed a bug related to remote references to module-scope `bytes` values
 * fixed a problem with formals whose default value is `none`
+* fixed intermittent corrupted packets when using GASNet over `udp`
 * fixed a bug with unresolved defaulted formals in overridden methods
 * fixed certain optimization errors involving virtual method calls
 * fixed an internal error related to the `_wide_make` primitive and references
@@ -210,10 +211,12 @@ Bug Fixes for Tools
 
 Platform-specific Bug Fixes
 ---------------------------
+* fixed sporadic `GNI_PostRdma` errors for the `ugni` communication layer
 
 
 Third-Party Software Changes
 ----------------------------
+* updated GASNet-EX to version 2021.9.0
 
 
 Developer-oriented changes: Naming Changes
