@@ -36,8 +36,7 @@ Packaging / Configuration Changes
 Semantic Changes / Changes to Chapel Language
 ---------------------------------------------
 * variables of `extern` types without initializers are now zero-initialized  
-  (see https://chapel-lang.org/docs/1.25/doc/html/language/spec/interoperabilit\
-y.html#variable-initialization)
+  (see https://chapel-lang.org/docs/1.25/language/spec/interoperability.html#variable-initialization)
 * `param` `c_string`<->`string` conversions are now considered to be narrowing  
   (see https://chapel-lang.org/docs/1.25/language/spec/procedures.html#determining-more-specific-functions)
 
@@ -47,7 +46,7 @@ New Features
   (see https://chapel-lang.org/docs/1.25/language/spec/task-parallelism-and-synchronization.html#synchronization-variables)
 * added support for coercions when writing to `sync` and `single` variables
 * `extern` records can now define initializers to opt into Chapel initialization  
-  (see https://chapel-lang.org/docs/1.25/doc/html/language/spec/interoperability.html#variable-initialization)
+  (see https://chapel-lang.org/docs/1.25/language/spec/interoperability.html#variable-initialization)
 * added support for defining user-defined hash functions via a `hash()` method
 * enabled implicit conversions from `imag(32)` to `imag(64)`  
   (see https://chapel-lang.org/docs/1.25/language/spec/conversions.html#implicit-numeric-and-bool-conversions)
@@ -119,7 +118,7 @@ Documentation
 * documented `CHPL_RT_UNWIND`  
   (see https://chapel-lang.org/docs/1.25/usingchapel/executing.html)
 * improved the description of default initialization of records  
-  (see https://chapel-lang.org/docs/1.25/doc/html/language/spec/records.html#record-initialization)
+  (see https://chapel-lang.org/docs/1.25/language/spec/records.html#record-initialization)
 * improved documentation for standard distributions  
   (see https://chapel-lang.org/docs/1.25/modules/layoutdist.html#standard-distributions)
 * added documentation for `bigint.pow()` to the 'BigInteger' module  
