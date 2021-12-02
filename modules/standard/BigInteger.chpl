@@ -2401,7 +2401,6 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
     this.divexact(n, new bigint(d));
   }
 
-
   proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
     if _local {
       mpz_divexact(this.mpz, numer.mpz, denom.mpz);
