@@ -17,6 +17,7 @@ Highlights (see subsequent sections for further details)
 * improved the performance and flexibility of types that use hash tables
 * generalized support for `sync` and `single` types to include classes/records
 * improved the initialization behaviors of variables of external types
+* added a new 'ConcurrentMap' package module
 * further improved the 'ArgumentParser' package and `mason`'s use of it
 * improved several names and features in support of stabilizing libraries
 * many other bug fixes and improvements to error messages and documentation
@@ -53,7 +54,7 @@ New Features
 
 Name Changes in Libraries
 -------------------------
-* deprecated the standard module 'Spawn', renaming it to 'Subprocess'
+* deprecated the standard module 'Spawn', renaming it to 'Subprocess'  
   (see https://chapel-lang.org/docs/1.25/modules/standard/Subprocess.html)
 * deprecated the 'Ordered[Set|Map]' modules, renaming them to 'Sorted[Set|Map]'  
   (see https://chapel-lang.org/docs/1.25/modules/packages/SortedMap.html  
@@ -80,7 +81,7 @@ Package Modules
 * added a new 'ConcurrentMap' package module  
   (see https://chapel-lang.org/docs/1.25/modules/packages/ConcurrentMap.html)
 * added automatic help handling and message generation to 'ArgumentParser'  
-  (see https://chapel-lang.org/docs/1.25/modules/packages/ArgumentParser.html)
+  (see https://chapel-lang.org/docs/1.25/modules/packages/ArgumentParser.html#customizing-help-output)
 
 Tool Improvements
 -----------------
