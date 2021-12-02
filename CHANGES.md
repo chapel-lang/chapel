@@ -114,7 +114,7 @@ Documentation
   (see https://chapel-lang.org/docs/1.25/developer/index.html)
 * added contributor documentation for the new compiler front-end 
   (see https://chapel-lang.org/docs/1.25/developer/compiler-internals/index.html)
-* improved the description of the prequisites for documentation builds 
+* improved the description of the pre-requisites for documentation builds 
   (see https://chapel-lang.org/docs/1.25/usingchapel/prereqs.html)
 * documented `CHPL_RT_UNWIND` 
   (see https://chapel-lang.org/docs/1.25/usingchapel/executing.html)
@@ -126,10 +126,8 @@ Documentation
   (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html#BigInteger.bigint.pow)
 * added `throws` documentation to some methods in the 'Subprocess' module 
   (see https://chapel-lang.org/docs/1.25/modules/standard/Subprocess.html#Subprocess.subprocess.poll, 
-  https://chapel-lang.org/docs/1.25/modules/standard/Subprocess.html#Subpr
-ocess.subprocess.wait, 
-  and https://chapel-lang.org/docs/1.25/modules/standard/Subprocess.html#Subproc
-ess.subprocess.communicate)
+  https://chapel-lang.org/docs/1.25/modules/standard/Subprocess.html#Subprocess.subprocess.wait, 
+  and https://chapel-lang.org/docs/1.25/modules/standard/Subprocess.html#Subprocess.subprocess.communicate)
 * removed out-of-date note about whole-domain assignments being serialized 
   (see https://chapel-lang.org/docs/1.25/language/spec/domains.html#associative-domain-values)
 * fixed various typos in documentation
