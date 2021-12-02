@@ -31,6 +31,7 @@ Contributors to the Chapel 1.25.x releases
 * Mohaned Mashaly, individual contributor
 * Aniket Mathur, [GSoC 2021] mentor, [GSoC 2020] student from [Indian Institute of Technology Roorkee]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
+* Kyle Milz, individual contributor
 * Divye Nayyar, [GSoC 2021] student from [Indian Institute of Technology Roorkee] (former individual contributor)
 * Sarah Nguyen, [HPE]
 * Nikhil Padmanabhan, [Yale University]
@@ -48,7 +49,6 @@ Contributors to the Chapel 1.25.x releases
 * Max Tursi, [HPE]
 * Karlon West, [HPE]
 * Tong Xu, individual contributor
-* anonymous GitHub user @krwmilz
 
 Contributors to previous releases
 ---------------------------------
