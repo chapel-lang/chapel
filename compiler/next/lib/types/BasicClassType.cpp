@@ -59,6 +59,21 @@ BasicClassType::getObjectType(Context* context) {
                            nullptr, std::move(emptyFields)).get();
 }
 
+bool
+BasicClassType::isTransitiveChildOf(const BasicClassType* parentType) const {
+  for (const BasicClassType* t = this;
+       t != nullptr;
+       t = t->parentClassType()) {
+
+    if (t == parentType)
+      return true;
+    if (t->isObjectType())
+      break;
+  }
+
+  return false;
+}
+
 
 } // end namespace types
 } // end namespace chpl

@@ -432,11 +432,16 @@ bool CanPassResult::isSubtype(const Type* actualT,
     if (auto formalCt = formalT->toClassType()) {
       // owned Child -> owned Parent
       if (actualCt->decorator().isManaged() &&
-          formalCt->decorator().isManaged()) {
+          actualCt->decorator() == formalCt->decorator()) {
 
         if (actualCt->manager() == formalCt->manager()) {
-          return isSubtype(actualCt->basicClassType(),
-                           formalCt->basicClassType());
+          auto actualBct = actualCt->basicClassType();
+          auto formalBct = formalCt->basicClassType();
+          // are the basic class types the same?
+          // also check for subclass relationship
+          if (actualBct->isTransitiveChildOf(formalBct)) {
+            return true;
+          }
         }
 
       } else {
@@ -452,17 +457,9 @@ bool CanPassResult::isSubtype(const Type* actualT,
           auto formalBct = formalCt->basicClassType();
 
           // are the basic class types the same?
-          if (actualBct == formalBct)
+          // also check for subclass relationship
+          if (actualBct->isTransitiveChildOf(formalBct)) {
             return true;
-
-          // check for subclass relationship
-          for (const BasicClassType* actualParent = actualBct;
-               actualParent != nullptr;
-               actualParent = actualParent->parentClassType()) {
-            if (actualParent == formalBct)
-              return true;
-            if (actualParent->isObjectType())
-              break;
           }
         }
       }
@@ -490,6 +487,29 @@ CanPassResult CanPassResult::canConvert(const QualifiedType& actualQT,
   // can we convert with param narrowing?
   if (canConvertParamNarrowing(actualQT, formalQT))
     return convert(PARAM_NARROWING);
+
+  // can we convert with class subtyping?
+  if (auto actualCt = actualT->toClassType()) {
+    if (auto formalCt = formalT->toClassType()) {
+      // check decorators allow conversion
+      auto actualDec = actualCt->decorator().val();
+      auto formalDec = formalCt->decorator().val();
+      bool ok = ClassTypeDecorator::canCoerceDecorators(
+                                        actualDec, formalDec,
+                                        /* allowNonSubtypes */ true,
+                                        /* implicitBang */ false);
+      if (ok) {
+        auto actualBct = actualCt->basicClassType();
+        auto formalBct = formalCt->basicClassType();
+
+        // are the basic class types the same?
+        // also check for subclass relationship
+        if (actualBct->isTransitiveChildOf(formalBct)) {
+          return convert(OTHER);
+        }
+      }
+    }
+  }
 
   // can we convert tuples?
   if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {

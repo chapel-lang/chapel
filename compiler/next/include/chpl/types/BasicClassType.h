@@ -81,6 +81,13 @@ class BasicClassType final : public CompositeType {
   bool isObjectType() const {
     return parentType_ == nullptr;
   }
+
+  /** Returns true if this class type is a subclass of the passed
+      parent class type. That is, some chain of
+         this->parentClassType()->parentClassType()->... = parentType
+   */
+ bool isTransitiveChildOf(const BasicClassType* parentType) const;
+
 };
 
 

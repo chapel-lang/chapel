@@ -55,6 +55,22 @@ static bool passesParamNarrowing(CanPassResult r) {
          r.conversionKind() == CanPassResult::PARAM_NARROWING;
 }
 
+static bool passesSubtype(CanPassResult r) {
+  return r.passes() &&
+         !r.instantiates() &&
+         !r.promotes() &&
+         r.converts() &&
+         r.conversionKind() == CanPassResult::SUBTYPE;
+}
+
+static bool passesOther(CanPassResult r) {
+  return r.passes() &&
+         !r.instantiates() &&
+         !r.promotes() &&
+         r.converts() &&
+         r.conversionKind() == CanPassResult::OTHER;
+}
+
 static bool doesNotPass(CanPassResult r) {
   return !r.passes();
 }
@@ -339,7 +355,6 @@ static void test6() {
   Context ctx;
   Context* context = &ctx;
 
-
   // test that we can pass param string c_string
   // but we can't pass param string to bytes
 
@@ -361,6 +376,120 @@ static void test6() {
   r = canPass(paramString, bytesQT); assert(doesNotPass(r));
 }
 
+static void test7() {
+  printf("test7\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  // test that we can pass a child class to its parent class type
+  // but that we can't do the inverse.
+
+  ID emptyId;
+  std::vector<CompositeType::FieldDetail> emptyFields;
+
+  auto parentName = UniqueString::build(context, "Parent");
+  auto childName = UniqueString::build(context, "Child");
+  auto basicObj = BasicClassType::getObjectType(context);
+  auto basicParent = BasicClassType::get(context, emptyId, parentName,
+                                         basicObj, emptyFields);
+  auto basicChild = BasicClassType::get(context, emptyId, childName,
+                                        basicParent, emptyFields);
+
+  auto borrowed = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+  auto borrowedQ = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NILABLE);
+  auto unmanaged = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
+  auto unmanagedQ = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NILABLE);
+  auto owned = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
+  auto ownedQ = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NILABLE);
+
+  auto borrowedParent = QualifiedType(QualifiedType::VAR,
+                                      ClassType::get(context, basicParent,
+                                                     nullptr, borrowed));
+  auto borrowedChild = QualifiedType(QualifiedType::VAR,
+                                     ClassType::get(context, basicChild,
+                                                    nullptr, borrowed));
+  auto borrowedParentQ = QualifiedType(QualifiedType::VAR,
+                                       ClassType::get(context, basicParent,
+                                        nullptr, borrowedQ));
+  auto borrowedChildQ = QualifiedType(QualifiedType::VAR,
+                                      ClassType::get(context, basicChild,
+                                                     nullptr, borrowedQ));
+  auto unmanagedParent = QualifiedType(QualifiedType::VAR,
+                                       ClassType::get(context, basicParent,
+                                                      nullptr, unmanaged));
+  auto unmanagedChild = QualifiedType(QualifiedType::VAR,
+                                      ClassType::get(context, basicChild,
+                                                     nullptr, unmanaged));
+  auto unmanagedParentQ = QualifiedType(QualifiedType::VAR,
+                                        ClassType::get(context, basicParent,
+                                                       nullptr, unmanagedQ));
+  auto unmanagedChildQ = QualifiedType(QualifiedType::VAR,
+                                       ClassType::get(context, basicChild,
+                                                      nullptr, unmanagedQ));
+  auto ownedParent = QualifiedType(QualifiedType::VAR,
+                                   ClassType::get(context, basicParent,
+                                                  AnyOwnedType::get(context),
+                                                  owned));
+  auto ownedChild = QualifiedType(QualifiedType::VAR,
+                                  ClassType::get(context, basicChild,
+                                                 AnyOwnedType::get(context),
+                                                 owned));
+  auto ownedParentQ = QualifiedType(QualifiedType::VAR,
+                                    ClassType::get(context, basicParent,
+                                                   AnyOwnedType::get(context),
+                                                   ownedQ));
+  auto ownedChildQ = QualifiedType(QualifiedType::VAR,
+                                   ClassType::get(context, basicChild,
+                                                  AnyOwnedType::get(context),
+                                                  ownedQ));
+
+  CanPassResult r;
+  // first, check same type passes
+  r = canPass(borrowedParent, borrowedParent); assert(passesAsIs(r));
+  r = canPass(borrowedChild, borrowedChild); assert(passesAsIs(r));
+  r = canPass(borrowedParentQ, borrowedParentQ); assert(passesAsIs(r));
+  r = canPass(borrowedChildQ, borrowedChildQ); assert(passesAsIs(r));
+  r = canPass(unmanagedParent, unmanagedParent); assert(passesAsIs(r));
+  r = canPass(unmanagedChild, unmanagedChild); assert(passesAsIs(r));
+  r = canPass(unmanagedParentQ, unmanagedParentQ); assert(passesAsIs(r));
+  r = canPass(unmanagedChildQ, unmanagedChildQ); assert(passesAsIs(r));
+  r = canPass(ownedParent, ownedParent); assert(passesAsIs(r));
+  r = canPass(ownedChild, ownedChild); assert(passesAsIs(r));
+  r = canPass(ownedParentQ, ownedParentQ); assert(passesAsIs(r));
+  r = canPass(ownedChildQ, ownedChildQ); assert(passesAsIs(r));
+
+  // next check parent/child toggling nilability within each group
+  r = canPass(borrowedChild, borrowedParent); assert(passesSubtype(r));
+  r = canPass(borrowedChild, borrowedParentQ); assert(passesOther(r));
+  r = canPass(borrowedChildQ, borrowedParent); assert(doesNotPass(r));
+  r = canPass(borrowedChildQ, borrowedParentQ); assert(passesSubtype(r));
+
+  r = canPass(borrowedParent, borrowedChild); assert(doesNotPass(r));
+  r = canPass(borrowedParent, borrowedChildQ); assert(doesNotPass(r));
+  r = canPass(borrowedParentQ, borrowedChild); assert(doesNotPass(r));
+  r = canPass(borrowedParentQ, borrowedChildQ); assert(doesNotPass(r));
+
+  r = canPass(unmanagedChild, unmanagedParent); assert(passesSubtype(r));
+  r = canPass(unmanagedChild, unmanagedParentQ); assert(passesOther(r));
+  r = canPass(unmanagedChildQ, unmanagedParent); assert(doesNotPass(r));
+  r = canPass(unmanagedChildQ, unmanagedParentQ); assert(passesSubtype(r));
+
+  r = canPass(unmanagedParent, unmanagedChild); assert(doesNotPass(r));
+  r = canPass(unmanagedParent, unmanagedChildQ); assert(doesNotPass(r));
+  r = canPass(unmanagedParentQ, unmanagedChild); assert(doesNotPass(r));
+  r = canPass(unmanagedParentQ, unmanagedChildQ); assert(doesNotPass(r));
+
+  r = canPass(ownedChild, ownedParent); assert(passesSubtype(r));
+  r = canPass(ownedChild, ownedParentQ); assert(passesOther(r));
+  r = canPass(ownedChildQ, ownedParent); assert(doesNotPass(r));
+  r = canPass(ownedChildQ, ownedParentQ); assert(passesSubtype(r));
+
+  r = canPass(ownedParent, ownedChild); assert(doesNotPass(r));
+  r = canPass(ownedParent, ownedChildQ); assert(doesNotPass(r));
+  r = canPass(ownedParentQ, ownedChild); assert(doesNotPass(r));
+  r = canPass(ownedParentQ, ownedChildQ); assert(doesNotPass(r));
+}
+
 
 int main() {
   test1();
@@ -369,6 +498,7 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 
   return 0;
 }
