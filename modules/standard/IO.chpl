@@ -1300,6 +1300,8 @@ private extern proc qio_format_error_write_regex():syserr;
              and :ref:`about-io-styles`
 
  */
+deprecated
+"This function is deprecated due to returning a deprecated type, please don't call it"
 proc defaultIOStyle():iostyle {
   var ret:iostyle;
   qio_style_init_default(ret);
