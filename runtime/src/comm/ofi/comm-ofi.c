@@ -1978,6 +1978,25 @@ void heedSlingshotSettings(struct fi_info* info) {
   const char* evSvcIds = getenv("SLINGSHOT_SVC_IDS");
   const char* evTcs = getenv("SLINGSHOT_TCS");
   const char* evVnis = getenv("SLINGSHOT_VNIS");
+
+  DBG_PRINTF(DBG_SLINGSHOT,
+             "SLINGSHOT_DEVICES %s%s%s, "
+             "SVC_IDS %s%s%s, "
+             "TCS %s%s%s, "
+             "VNIS %s%s%s",
+             (evDevs == NULL) ? "" : "\"",
+             (evDevs == NULL) ? "not set" : evDevs,
+             (evDevs == NULL) ? "" : "\"",
+             (evSvcIds == NULL) ? "" : "\"",
+             (evSvcIds == NULL) ? "not set" : evSvcIds,
+             (evSvcIds == NULL) ? "" : "\"",
+             (evTcs == NULL) ? "" : "\"",
+             (evTcs == NULL) ? "not set" : evTcs,
+             (evTcs == NULL) ? "" : "\"",
+             (evVnis == NULL) ? "" : "\"",
+             (evVnis == NULL) ? "not set" : evVnis,
+             (evVnis == NULL) ? "" : "\"");
+
   CHK_TRUE((evDevs == NULL) == (evSvcIds == NULL)
            && (evSvcIds == NULL) == (evTcs == NULL)
            && (evTcs == NULL) == (evVnis == NULL)); // sanity
@@ -2009,9 +2028,7 @@ void heedSlingshotSettings(struct fi_info* info) {
     char* lasts;
     CHK_TRUE((tok = strtok_r(ev, ",", &lasts)) != NULL);
     CHK_TRUE(sscanf(tok, "%" SCNu32, &auth_key->svc_id) == 1);
-    DBG_PRINTF(DBG_CFG,
-               "Slingshot svc_id %" PRIu32 " (from SVC_IDS=%s)",
-               auth_key->svc_id, evSvcIds);
+    DBG_PRINTF(DBG_SLINGSHOT, "Slingshot svc_id %" PRIu32, auth_key->svc_id);
   }
 
   //
@@ -2032,9 +2049,7 @@ void heedSlingshotSettings(struct fi_info* info) {
     char* lasts2;
     CHK_TRUE((tok2 = strtok_r(ev2, ":", &lasts2)) != NULL);
     CHK_TRUE(sscanf(tok2, "%" SCNu16, &auth_key->vni) == 1);
-    DBG_PRINTF(DBG_CFG,
-               "Slingshot VNI %" PRIu16 " (from VNIS=%s)",
-               auth_key->vni, evVnis);
+    DBG_PRINTF(DBG_SLINGSHOT, "Slingshot VNI %" PRIu16, auth_key->vni);
   }
 
   info->domain_attr->auth_key = (void*) auth_key;
