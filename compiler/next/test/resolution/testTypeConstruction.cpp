@@ -950,12 +950,74 @@ static void test36() {
 
   auto t = parseTypeOfX(context,
                         R""""(
+                          class ClassA {
+                            var field: object;
+                          }
+                          var x: owned ClassA;
+                        )"""");
+  auto ct = t->toClassType();
+  assert(ct);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->parentClassType()->isObjectType());
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
+  auto fct = bct->fieldType(0).type()->toClassType();
+  assert(fct);
+  assert(fct->decorator().isUnknownManagement());
+  assert(fct->decorator().isNonNilable());
+  assert(fct->basicClassType()->name() == "object");
+  assert(fct->basicClassType() == BasicClassType::getObjectType(context));
+}
+
+static void test37() {
+  printf("test37\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context,
+                        R""""(
+                          class ClassA {
+                            var x: int;
+                          }
+                          class ClassB {
+                            var field: ClassA;
+                          }
+                          var x: owned ClassB;
+                        )"""");
+  auto ct = t->toClassType();
+  assert(ct);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->parentClassType()->isObjectType());
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
+  auto fct = bct->fieldType(0).type()->toClassType();
+  assert(fct);
+  assert(fct->decorator().isUnknownManagement());
+  assert(fct->decorator().isNonNilable());
+  assert(fct->basicClassType()->name() == "ClassA");
+}
+
+
+static void test38() {
+  printf("test38\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context,
+                        R""""(
                           class Parent {
                             var parentField:int;
                           }
                           class Child : Parent {
                             var childObject: object;
-                            var childChild: unmanaged Child;
                           }
                           var x: owned Child;
                         )"""");
@@ -965,15 +1027,16 @@ static void test36() {
   auto bct = ct->basicClassType();
   assert(bct);
   assert(!bct->parentClassType()->isObjectType());
-  assert(bct->numFields() == 2);
+  assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "childObject");
   assert(bct->fieldHasDefaultValue(0) == false);
   assert(bct->fieldType(0).kind() == QualifiedType::VAR);
-  assert(bct->fieldType(0).type() == BasicClassType::getObjectType(context));
-  assert(bct->fieldName(1) == "childChild");
-  assert(bct->fieldHasDefaultValue(1) == false);
-  assert(bct->fieldType(1).kind() == QualifiedType::VAR);
-  assert(bct->fieldType(1).type() == bct);
+  auto fct = bct->fieldType(0).type()->toClassType();
+  assert(fct);
+  assert(fct->decorator().isUnknownManagement());
+  assert(fct->decorator().isNonNilable());
+  assert(fct->basicClassType()->name() == "object");
+  assert(fct->basicClassType() == BasicClassType::getObjectType(context));
 
   auto pct = bct->parentClassType()->toBasicClassType();
   assert(pct);
@@ -986,6 +1049,7 @@ static void test36() {
   assert(pct->parentClassType()->isObjectType());
   assert(pct->parentClassType() == BasicClassType::getObjectType(context));
 }
+
 
 
 int main() {
@@ -1027,6 +1091,8 @@ int main() {
   testTypeAndFnSameName();
   test35();
   test36();
+  test37();
+  test38();
 
   return 0;
 }

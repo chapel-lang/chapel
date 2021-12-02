@@ -59,7 +59,15 @@ const QualifiedType& typeForBuiltin(Context* context,
 
   auto search = map.find(name);
   if (search != map.end()) {
-    result = QualifiedType(QualifiedType::TYPE, search->second);
+    const Type* t = search->second;
+    assert(t);
+
+    if (auto bct = t->toBasicClassType()) {
+      auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+      t = ClassType::get(context, bct, /*manager*/ nullptr, d);
+    }
+
+    result = QualifiedType(QualifiedType::TYPE, t);
   } else {
     assert(false && "Should not be reachable");
   }
@@ -950,7 +958,7 @@ typeForTypeDeclQuery(Context* context,
         auto t = BasicClassType::get(context, cls->id(), cls->name(),
                                      parentType, std::move(fields));
         auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
-        result = ClassType::get(context, t, nullptr, d);
+        result = ClassType::get(context, t, /*manager*/ nullptr, d);
       }
       if (auto uni = ad->toUnion()) {
         result = UnionType::get(context, uni->id(), uni->name(),
@@ -1194,12 +1202,10 @@ const TypedFnSignature* instantiateSignature(Context* context,
     }
     // visit the field declarations
     for (auto child: ad->children()) {
-      if (auto var = child->toVariable()) {
-        if (child->isVariable() ||
-            child->isMultiDecl() ||
-            child->isTupleDecl()) {
-          child->traverse(visitor);
-        }
+      if (child->isVariable() ||
+          child->isMultiDecl() ||
+          child->isTupleDecl()) {
+        child->traverse(visitor);
       }
     }
 
