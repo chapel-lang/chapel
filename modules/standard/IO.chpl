@@ -615,6 +615,8 @@ enum iostringformat {
             are terminated by the terminator byte. This value is appropriate
             to store in :var:`iostyle.str_style`.
  */
+deprecated
+"This function is deprecated due to returning a deprecated type, please don't call it"
 proc stringStyleTerminated(terminator:uint(8)) {
   return -(terminator - iostringstyle.data_null:int(64));
 }
@@ -624,6 +626,9 @@ proc stringStyleTerminated(terminator:uint(8)) {
   to indicate a string format where strings are terminated by a
   zero byte.
  */
+
+deprecated
+"This function is deprecated due to returning a deprecated type, please don't call it"
 proc stringStyleNullTerminated() {
   return iostringstyle.data_null;
 }
@@ -633,6 +638,8 @@ proc stringStyleNullTerminated() {
   to indicate a string format where strings have an exact length.
  */
 pragma "no doc"
+deprecated
+"This function is deprecated due to returning a deprecated type, please don't call it"
 proc stringStyleExactLen(len:int(64)) {
   return len;
 }
@@ -643,6 +650,8 @@ proc stringStyleExactLen(len:int(64)) {
   length as described in :type:`iostringstyle`.
  */
 pragma "no doc"
+deprecated
+"This function is deprecated due to returning a deprecated type, please don't call it"
 proc stringStyleWithVariableLength() {
   return iostringstyle.lenVb_data: int(64);
 }
