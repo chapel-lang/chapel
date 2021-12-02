@@ -1442,6 +1442,8 @@ memleaksfull:
     - Two fixes in OrderedMap (#17463)
   03/27/21:
     - CG Adjust in-intent handling to fix a memleak (#17480)
+  11/24/21:
+    - Add module ConcurrentMap (#16704)
 # End memleaksfull
 
 meteor:
