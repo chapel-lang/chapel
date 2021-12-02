@@ -60,7 +60,10 @@ For example:
    This step is not necessary when using the ``deprecated`` keyword to
    generate the documentation.
 
-3. Add a deprecation test to ``test/deprecated/`` to:
+3. Search for error messages that refer to the deprecated feature.
+   If appropriate, update them to refer to the new feature.
+
+4. Add a deprecation test to ``test/deprecated/`` to:
 
   - confirm the deprecation warning works as intended
   - remind us to to remove the deprecated feature in the following release
