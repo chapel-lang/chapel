@@ -3440,7 +3440,7 @@ module ChapelArray {
      */
     proc last {
       if !this.isRectangular() || this.rank != 1 then
-        compilerError("last() is only supported on 1D rectangular arrays");
+        compilerError("last is only supported on 1D rectangular arrays");
 
       if boundsChecking && isEmpty() then
         halt("last called on an empty array");
@@ -3458,7 +3458,7 @@ module ChapelArray {
      */
     proc first {
       if !this.isRectangular() || this.rank != 1 then
-        compilerError("first() is only supported on 1D rectangular arrays");
+        compilerError("first is only supported on 1D rectangular arrays");
 
       if boundsChecking && isEmpty() then
         halt("first called on an empty array");

@@ -1,1 +1,1 @@
-arrayFront2D.chpl:3: error: first() is only supported on 1D rectangular arrays
+arrayFront2D.chpl:3: error: first is only supported on 1D rectangular arrays
