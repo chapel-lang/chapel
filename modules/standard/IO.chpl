@@ -1314,7 +1314,16 @@ proc defaultIOStyle():iostyle {
                    or writing strings. Defaults to variable-byte length.
    :returns: the requested :record:`iostyle`
  */
+deprecated
+"This method is deprecated because the type it is defined on is deprecated"
 proc iostyle.native(str_style:int(64)=stringStyleWithVariableLength()):iostyle {
+  var tmp: iostyleInternal = this: iostyleInternal;
+  return tmp.native(str_style): iostyle;
+}
+
+/* Get an iostyleInternal indicating binary I/O in native byte order. */
+pragma "no doc"
+proc iostyleInternal.native(str_style:int(64)=stringStyleWithVariableLength()):iostyleInternal {
   var ret = this;
   ret.binary = 1;
   ret.byteorder = iokind.native:uint(8);
@@ -1328,7 +1337,16 @@ proc iostyle.native(str_style:int(64)=stringStyleWithVariableLength()):iostyle {
                    or writing strings. Defaults to variable-byte length.
    :returns: the requested :record:`iostyle`
  */
+deprecated
+"This method is deprecated because the type it is defined on is deprecated"
 proc iostyle.big(str_style:int(64)=stringStyleWithVariableLength()):iostyle {
+  var tmp: iostyleInternal = this: iostyleInternal;
+  return tmp.big(str_style): iostyle;
+}
+
+/* Get an iostyleInternal indicating binary I/O in big-endian byte order.*/
+pragma "no doc"
+proc iostyleInternal.big(str_style:int(64)=stringStyleWithVariableLength()):iostyleInternal {
   var ret = this;
   ret.binary = 1;
   ret.byteorder = iokind.big:uint(8);
@@ -1342,7 +1360,16 @@ proc iostyle.big(str_style:int(64)=stringStyleWithVariableLength()):iostyle {
                    or writing strings. Defaults to variable-byte length.
    :returns: the requested :record:`iostyle`
  */
+deprecated
+"This method is deprecated because the type it is defined on is deprecated"
 proc iostyle.little(str_style:int(64)=stringStyleWithVariableLength()):iostyle  {
+  var tmp: iostyleInternal = this: iostyleInternal;
+  return tmp.little(str_style): iostyle;
+}
+
+/* Get an iostyleInternal indicating binary I/O in little-endian byte order. */
+pragma "no doc"
+proc iostyleInternal.little(str_style:int(64)=stringStyleWithVariableLength()):iostyleInternal {
   var ret = this;
   ret.binary = 1;
   ret.byteorder = iokind.little:uint(8);
