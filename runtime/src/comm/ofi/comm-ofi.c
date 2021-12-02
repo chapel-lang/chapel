@@ -2018,7 +2018,10 @@ void heedSlingshotSettings(struct fi_info* info) {
   CHK_SYS_MALLOC(auth_key, 1);
 
   //
-  // Service ID.  If there are more than one, just take the first.
+  // Service ID.  If there are more than one, then we have access to
+  // more than one interface.  But we only support one anyway and our
+  // domain logic will have found the first of them, so just take the
+  // first service ID.
   //
   {
     char ev[strlen(evSvcIds) + 1];  // non-constant, for strtok()
@@ -2032,7 +2035,8 @@ void heedSlingshotSettings(struct fi_info* info) {
   }
 
   //
-  // VNI.  If there are more than one, just take the first.
+  // VNI.  Similarly to the service ID case, if there are more than one,
+  // just take the first.
   //
   {
     char ev[strlen(evVnis) + 1];  // non-constant, for strtok()
