@@ -1,0 +1,2 @@
+deprecateCongruent2expP.chpl:7: warning: c and b are deprecated - please use con and modExp respectively
+13 is congruent to 5 mod 2^2, as 1 was returned
