@@ -327,7 +327,10 @@ returnInfoGetMember(CallExpr* call) {
 static QualifiedType
 returnInfoGetTupleMember(CallExpr* call) {
   AggregateType* ct = toAggregateType(call->get(1)->getValType());
-  INT_ASSERT(ct && ct->symbol->hasFlag(FLAG_STAR_TUPLE));
+  INT_ASSERT(ct);
+  if (!ct->symbol->hasFlag(FLAG_STAR_TUPLE)) {
+    USR_FATAL(call, "invalid access of non-homogeneous tuple by runtime value");
+  }
   return ct->getField("x0")->qualType();
 }
 
