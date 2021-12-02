@@ -2349,21 +2349,27 @@ module BigInteger {
   // divexact
 
 /*
-Computes ``n/d`` and stores the result in ``bigint`` instance.
+Computes ``numer/denom`` and stores the result in ``bigint`` instance.
 
-``divexact`` is optimized to handle cases where ``n/d`` results in an integer.
-When ``n/d`` does not produce an integer, this method may produce incorrect results.
+``divexact`` is optimized to handle cases where ``numer/denom`` results in an integer.
+When ``numer/denom`` does not produce an integer, this method may produce incorrect results.
 
-:arg n: numerator
+:arg numer: numerator
 
-:type n: bigint
+:type numer: bigint
 
-:arg d: denominator
+:arg denom: denominator
 
-:type d: bigint
+:type denom: bigint
 */
 
+  /*
+    .. warning::
 
+       n and d are deprecated - please use numer and denom respectively
+  */
+  deprecated
+  "n and d are deprecated - please use numer and denom respectively"
   proc bigint.divexact(const ref n: bigint, const ref d: bigint) {
     if _local {
       mpz_divexact(this.mpz, n.mpz, d.mpz);
@@ -2384,14 +2390,51 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       }
     }
   }
+  /*
+    .. warning::
 
+       n and d are deprecated - please use numer and denom respectively
+  */
+  deprecated
+  "n and d are deprecated - please use numer and denom respectively"
   proc bigint.divexact(const ref n: bigint, d: integral) {
     this.divexact(n, new bigint(d));
   }
 
 
+  proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
+    if _local {
+      mpz_divexact(this.mpz, numer.mpz, denom.mpz);
+
+    } else if this.localeId == chpl_nodeID &&
+              numer.localeId    == chpl_nodeID &&
+              denom.localeId    == chpl_nodeID {
+      mpz_divexact(this.mpz, numer.mpz, denom.mpz);
+
+    } else {
+      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+
+      on __primitive("chpl_on_locale_num", thisLoc) {
+        const numer_ = numer;
+        const denom_ = denom;
+
+        mpz_divexact(this.mpz, numer_.mpz, denom_.mpz);
+      }
+    }
+  }
+
+  proc bigint.divexact(const ref numer: bigint, denom: integral) {
+    this.divexact(numer, new bigint(denom));
+  }
 
   // divisible_p
+  /*
+    .. warning::
+
+       d is deprecated - please use div
+  */
+  deprecated
+  "d is deprecated - please use div"
   proc bigint.divisible_p(const ref d: bigint) : int {
     var ret: c_int;
 
@@ -2410,7 +2453,13 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
     return ret.safeCast(int);
   }
+  /*
+    .. warning::
 
+       d is deprecated - please use div
+  */
+  deprecated
+  "d is deprecated - please use div"
   proc bigint.divisible_p(d: int) : int {
     var d_ = 0 : c_ulong;
     var ret: c_int;
@@ -2434,7 +2483,13 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
     return ret.safeCast(int);
   }
+  /*
+    .. warning::
 
+       d is deprecated - please use div
+  */
+  deprecated
+  "d is deprecated - please use div"
   proc bigint.divisible_p(d: uint) : int {
     const d_ = d.safeCast(c_ulong);
     var   ret: c_int;
@@ -2454,6 +2509,76 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     return ret.safeCast(int);
   }
 
+  // divisible_p
+  proc bigint.divisible_p(const ref div: bigint) : int {
+    var ret: c_int;
+
+    if _local {
+      ret = mpz_divisible_p(this.mpz, div.mpz);
+
+    } else if this.localeId == chpl_nodeID && div.localeId == chpl_nodeID {
+      ret = mpz_divisible_p(this.mpz, div.mpz);
+
+    } else {
+      const t_ = this;
+      const div_ = div;
+
+      ret = mpz_divisible_p(this.mpz, div.mpz);
+    }
+
+    return ret.safeCast(int);
+  }
+
+  proc bigint.divisible_p(div: int) : int {
+    var div_ = 0 : c_ulong;
+    var ret: c_int;
+
+    if div >= 0 then
+      div_ = div.safeCast(c_ulong);
+    else
+      div_ = (0 - div).safeCast(c_ulong);
+
+    if _local {
+      ret = mpz_divisible_ui_p(this.mpz, div_);
+
+    } else if this.localeId == chpl_nodeID {
+      ret = mpz_divisible_ui_p(this.mpz, div_);
+
+    } else {
+      const t_ = this;
+
+      ret = mpz_divisible_ui_p(t_.mpz,   div_);
+    }
+
+    return ret.safeCast(int);
+  }
+
+  proc bigint.divisible_p(div: uint) : int {
+    const div_ = div.safeCast(c_ulong);
+    var   ret: c_int;
+
+    if _local {
+      ret = mpz_divisible_ui_p(this.mpz, div_);
+
+    } else if this.localeId == chpl_nodeID {
+      ret = mpz_divisible_ui_p(this.mpz, div_);
+
+    } else {
+      const t_ = this;
+
+      ret = mpz_divisible_ui_p(t_.mpz,   div_);
+    }
+
+    return ret.safeCast(int);
+  }
+
+  /*
+    .. warning::
+
+       b is deprecated - please use exp
+  */
+  deprecated
+  "b is deprecated - please use exp"
   proc bigint.divisible_2exp_p(b: integral) : int {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   ret: c_int;
@@ -2473,9 +2598,33 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     return ret.safeCast(int);
   }
 
+  proc bigint.divisible_2exp_p(exp: integral) : int {
+    const exp_ = exp.safeCast(mp_bitcnt_t);
+    var   ret: c_int;
 
+    if _local {
+      ret = mpz_divisible_2exp_p(this.mpz, exp_);
+
+    } else if this.localeId == chpl_nodeID {
+      ret = mpz_divisible_2exp_p(this.mpz, exp_);
+
+    } else {
+      const t_ = this;
+
+      ret = mpz_divisible_2exp_p(t_.mpz,   exp_);
+    }
+
+    return ret.safeCast(int);
+  }
 
   // congruent_p
+  /*
+    .. warning::
+
+       c and d are deprecated - please use con and mod respectively
+  */
+  deprecated
+  "c and d are deprecated - please use con and mod respectively"
   proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : int {
     var ret: c_int;
 
@@ -2497,7 +2646,13 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
     return ret.safeCast(int);
   }
+  /*
+    .. warning::
 
+       c and d are deprecated - please use con and mod respectively
+  */
+  deprecated
+  "c and d are deprecated - please use con and mod respectively"
   proc bigint.congruent_p(c: integral, d: integral) : int {
     const c_ = c.safeCast(c_ulong);
     const d_ = d.safeCast(c_ulong);
@@ -2518,6 +2673,56 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     return ret.safeCast(int);
   }
 
+  // congruent_p
+  proc bigint.congruent_p(const ref con: bigint, const ref mod: bigint) : int {
+    var ret: c_int;
+
+    if _local {
+      ret = mpz_congruent_p(this.mpz, con.mpz, mod.mpz);
+
+    } else if this.localeId == chpl_nodeID &&
+              con.localeId    == chpl_nodeID &&
+              mod.localeId    == chpl_nodeID {
+      ret = mpz_congruent_p(this.mpz, con.mpz, mod.mpz);
+
+    } else {
+      const t_ = this;
+      const con_ = con;
+      const mod_ = mod;
+
+      ret = mpz_congruent_p(t_.mpz, con_.mpz, mod_.mpz);
+    }
+
+    return ret.safeCast(int);
+  }
+
+  proc bigint.congruent_p(con: integral, mod: integral) : int {
+    const con_ = con.safeCast(c_ulong);
+    const mod_ = mod.safeCast(c_ulong);
+    var   ret: c_int;
+
+    if _local {
+      ret = mpz_congruent_ui_p(this.mpz, con_, mod_);
+
+    } else if this.localeId == chpl_nodeID {
+      ret = mpz_congruent_ui_p(this.mpz, con_, mod_);
+
+    } else {
+      const t_ = this;
+
+      ret = mpz_congruent_ui_p(t_.mpz,   con_, mod_);
+    }
+
+    return ret.safeCast(int);
+  }
+
+  /*
+    .. warning::
+
+       c and b are deprecated - please use con and modExp respectively
+  */
+  deprecated
+  "c and b are deprecated - please use con and modExp respectively"
   proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : int {
     const b_ = b.safeCast(mp_bitcnt_t);
     var   ret: c_int;
@@ -2539,6 +2744,26 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     return ret.safeCast(int);
   }
 
+  proc bigint.congruent_2exp_p(const ref con: bigint, modExp: integral) : int {
+    const modExp_ = modExp.safeCast(mp_bitcnt_t);
+    var   ret: c_int;
+
+    if _local {
+      ret = mpz_congruent_2exp_p(this.mpz, con.mpz, modExp_);
+
+    } else if this.localeId == chpl_nodeID &&
+              con.localeId    == chpl_nodeID {
+      ret = mpz_congruent_2exp_p(this.mpz, con.mpz, modExp_);
+
+    } else {
+      const t_ = this;
+      const con_ = con;
+
+      ret = mpz_congruent_2exp_p(t_.mpz, con_.mpz, modExp_);
+    }
+
+    return ret.safeCast(int);
+  }
 
   /*
     .. warning::
