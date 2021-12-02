@@ -2361,34 +2361,15 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 :arg denom: denominator
 
 :type denom: bigint
-*/
 
-  /*
     .. warning::
 
        n and d are deprecated - please use numer and denom respectively
-  */
+*/
   deprecated
   "n and d are deprecated - please use numer and denom respectively"
   proc bigint.divexact(const ref n: bigint, const ref d: bigint) {
-    if _local {
-      mpz_divexact(this.mpz, n.mpz, d.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
-      mpz_divexact(this.mpz, n.mpz, d.mpz);
-
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
-
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
-        const d_ = d;
-
-        mpz_divexact(this.mpz, n_.mpz, d_.mpz);
-      }
-    }
+    this.divexact(numer=n, denom=d);
   }
   /*
     .. warning::
@@ -2398,7 +2379,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   deprecated
   "n and d are deprecated - please use numer and denom respectively"
   proc bigint.divexact(const ref n: bigint, d: integral) {
-    this.divexact(n, new bigint(d));
+    this.divexact(numer=n,denom=new bigint(d));
   }
 
   proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
@@ -2435,22 +2416,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   deprecated
   "d is deprecated - please use div"
   proc bigint.divisible_p(const ref d: bigint) : int {
-    var ret: c_int;
-
-    if _local {
-      ret = mpz_divisible_p(this.mpz, d.mpz);
-
-    } else if this.localeId == chpl_nodeID && d.localeId == chpl_nodeID {
-      ret = mpz_divisible_p(this.mpz, d.mpz);
-
-    } else {
-      const t_ = this;
-      const d_ = d;
-
-      ret = mpz_divisible_p(this.mpz, d.mpz);
-    }
-
-    return ret.safeCast(int);
+    return this.divisible_p(div=d);
   }
   /*
     .. warning::
@@ -2460,27 +2426,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   deprecated
   "d is deprecated - please use div"
   proc bigint.divisible_p(d: int) : int {
-    var d_ = 0 : c_ulong;
-    var ret: c_int;
-
-    if d >= 0 then
-      d_ = d.safeCast(c_ulong);
-    else
-      d_ = (0 - d).safeCast(c_ulong);
-
-    if _local {
-      ret = mpz_divisible_ui_p(this.mpz, d_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_divisible_ui_p(this.mpz, d_);
-
-    } else {
-      const t_ = this;
-
-      ret = mpz_divisible_ui_p(t_.mpz,   d_);
-    }
-
-    return ret.safeCast(int);
+    return this.divisible_p(div=d);
   }
   /*
     .. warning::
@@ -2490,22 +2436,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   deprecated
   "d is deprecated - please use div"
   proc bigint.divisible_p(d: uint) : int {
-    const d_ = d.safeCast(c_ulong);
-    var   ret: c_int;
-
-    if _local {
-      ret = mpz_divisible_ui_p(this.mpz, d_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_divisible_ui_p(this.mpz, d_);
-
-    } else {
-      const t_ = this;
-
-      ret = mpz_divisible_ui_p(t_.mpz,   d_);
-    }
-
-    return ret.safeCast(int);
+    return this.divisible_p(div=d);
   }
 
   // divisible_p
@@ -2579,22 +2510,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   deprecated
   "b is deprecated - please use exp"
   proc bigint.divisible_2exp_p(b: integral) : int {
-    const b_ = b.safeCast(mp_bitcnt_t);
-    var   ret: c_int;
-
-    if _local {
-      ret = mpz_divisible_2exp_p(this.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_divisible_2exp_p(this.mpz, b_);
-
-    } else {
-      const t_ = this;
-
-      ret = mpz_divisible_2exp_p(t_.mpz,   b_);
-    }
-
-    return ret.safeCast(int);
+    return this.divisible_2exp_p(exp=b);
   }
 
   proc bigint.divisible_2exp_p(exp: integral) : int {
@@ -2625,25 +2541,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   deprecated
   "c and d are deprecated - please use con and mod respectively"
   proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : int {
-    var ret: c_int;
-
-    if _local {
-      ret = mpz_congruent_p(this.mpz, c.mpz, d.mpz);
-
-    } else if this.localeId == chpl_nodeID &&
-              c.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
-      ret = mpz_congruent_p(this.mpz, c.mpz, d.mpz);
-
-    } else {
-      const t_ = this;
-      const c_ = c;
-      const d_ = d;
-
-      ret = mpz_congruent_p(t_.mpz, c_.mpz, d_.mpz);
-    }
-
-    return ret.safeCast(int);
+    return this.congruent_p(con=c,mod=d);
   }
   /*
     .. warning::
@@ -2653,23 +2551,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   deprecated
   "c and d are deprecated - please use con and mod respectively"
   proc bigint.congruent_p(c: integral, d: integral) : int {
-    const c_ = c.safeCast(c_ulong);
-    const d_ = d.safeCast(c_ulong);
-    var   ret: c_int;
-
-    if _local {
-      ret = mpz_congruent_ui_p(this.mpz, c_, d_);
-
-    } else if this.localeId == chpl_nodeID {
-      ret = mpz_congruent_ui_p(this.mpz, c_, d_);
-
-    } else {
-      const t_ = this;
-
-      ret = mpz_congruent_ui_p(t_.mpz,   c_, d_);
-    }
-
-    return ret.safeCast(int);
+    return this.congruent_p(con=c,mod=d);
   }
 
   // congruent_p
@@ -2723,24 +2605,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   deprecated
   "c and b are deprecated - please use con and modExp respectively"
   proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : int {
-    const b_ = b.safeCast(mp_bitcnt_t);
-    var   ret: c_int;
-
-    if _local {
-      ret = mpz_congruent_2exp_p(this.mpz, c.mpz, b_);
-
-    } else if this.localeId == chpl_nodeID &&
-              c.localeId    == chpl_nodeID {
-      ret = mpz_congruent_2exp_p(this.mpz, c.mpz, b_);
-
-    } else {
-      const t_ = this;
-      const c_ = c;
-
-      ret = mpz_congruent_2exp_p(t_.mpz, c_.mpz, b_);
-    }
-
-    return ret.safeCast(int);
+    return this.congruent_2exp_p(con=c,modExp=b);
   }
 
   proc bigint.congruent_2exp_p(const ref con: bigint, modExp: integral) : int {
