@@ -2348,24 +2348,11 @@ module BigInteger {
 
   // divexact
 
-/*
-Computes ``numer/denom`` and stores the result in ``bigint`` instance.
-
-``divexact`` is optimized to handle cases where ``numer/denom`` results in an integer.
-When ``numer/denom`` does not produce an integer, this method may produce incorrect results.
-
-:arg numer: numerator
-
-:type numer: bigint
-
-:arg denom: denominator
-
-:type denom: bigint
-
+  /*
     .. warning::
 
        n and d are deprecated - please use numer and denom respectively
-*/
+  */
   deprecated
   "n and d are deprecated - please use numer and denom respectively"
   proc bigint.divexact(const ref n: bigint, const ref d: bigint) {
@@ -2382,6 +2369,20 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
     this.divexact(numer=n,denom=new bigint(d));
   }
 
+/*
+Computes ``numer/denom`` and stores the result in ``bigint`` instance.
+
+``divexact`` is optimized to handle cases where ``numer/denom`` results in an integer.
+When ``numer/denom`` does not produce an integer, this method may produce incorrect results.
+
+:arg numer: numerator
+
+:type numer: bigint
+
+:arg denom: denominator
+
+:type denom: bigint
+*/
   proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
     if _local {
       mpz_divexact(this.mpz, numer.mpz, denom.mpz);
