@@ -229,7 +229,7 @@ typedef qio_style_t* qio_style_ptr_t;
 // and have constructor, new, methods, etc;
 // so we redefine it here to include...
 #ifdef _chplrt_H_
-typedef qio_style_t iostyle;
+typedef qio_style_t iostyleInternal;
 #endif
 
 

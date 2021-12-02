@@ -613,7 +613,7 @@ enum iostringformat {
   :arg terminator: a byte value that the strings will be terminated by
   :returns: a value that indicates a string format where strings
             are terminated by the terminator byte. This value is appropriate
-            to store in :var:`iostyle.str_style`.
+            to store in iostyle.str_style.
  */
 deprecated
 "This function is deprecated due to returning a deprecated type, please don't call it"
@@ -664,6 +664,8 @@ proc stringStyleWithVariableLength() {
 
   :throws SystemError: Thrown for an unsupported value of `lengthBytes`.
  */
+ deprecated
+"This function is deprecated due to returning a deprecated type, please don't call it"
 proc stringStyleWithLength(lengthBytes:int) throws {
   var x = iostringstyle.lenVb_data;
   select lengthBytes {
@@ -793,12 +795,14 @@ extern const QIO_STRING_FORMAT_TOEOF:uint(8);
 
 /*
 
-The :record:`iostyle` type represents I/O styles
+The :record:`iostyleInternal` type represents I/O styles
 defining how Chapel's basic types should be read or written.
 
-See :ref:`about-io-styles`.
+It replaces the now deprecated `iostyle` type, and will eventually
+be migrated into a new strategy, likely involving encoders/decoders
 */
-extern record iostyle { // aka qio_style_t
+pragma "no doc"
+extern record iostyleInternal { // aka qio_style_t
   /* Perform binary I/O? 1 - yes, 0 - no.
      This field is ignored for :type:`iokind` values other than ``dynamic``.
    */
@@ -905,6 +909,10 @@ extern record iostyle { // aka qio_style_t
   var aggregate_style:uint(8) = 0;
   var tuple_style:uint(8) = 0;
 }
+
+deprecated "iostyle is deprecated, a new way of controlling channel output is planned"
+type iostyle;
+ iostyle = iostyleInternal;
 
 // This class helps in implementing runtime calls.
 // It represents a file as a pointer. C code can call Chapel
@@ -1050,15 +1058,15 @@ export proc chpl_qio_file_close(file:c_void_ptr):syserr {
 // TODO -- move these declarations to where they are used or into
 // a helper module to reduce namespace noise.
 
-private extern proc qio_style_init_default(ref s: iostyle);
+private extern proc qio_style_init_default(ref s: iostyleInternal);
 
 private extern proc qio_file_retain(f:qio_file_ptr_t);
 private extern proc qio_file_release(f:qio_file_ptr_t);
 
-private extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, const ref style:iostyle, usefilestar:c_int):syserr;
-private extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:c_string, access:c_string, iohints:c_int, const ref style:iostyle):syserr;
-private extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyle):syserr;
-private extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, const ref style:iostyle):syserr;
+private extern proc qio_file_init(ref file_out:qio_file_ptr_t, fp:_file, fd:fd_t, iohints:c_int, const ref style:iostyleInternal, usefilestar:c_int):syserr;
+private extern proc qio_file_open_access(ref file_out:qio_file_ptr_t, path:c_string, access:c_string, iohints:c_int, const ref style:iostyleInternal):syserr;
+private extern proc qio_file_open_tmp(ref file_out:qio_file_ptr_t, iohints:c_int, const ref style:iostyleInternal):syserr;
+private extern proc qio_file_open_mem(ref file_out:qio_file_ptr_t, buf:qbuffer_ptr_t, const ref style:iostyleInternal):syserr;
 
 pragma "no doc"
 extern proc qio_file_close(f:qio_file_ptr_t):syserr;
@@ -1072,12 +1080,12 @@ private extern proc qio_file_isopen(f:qio_file_ptr_t):bool;
 private extern proc qio_file_sync(f:qio_file_ptr_t):syserr;
 
 private extern proc qio_channel_end_offset_unlocked(ch:qio_channel_ptr_t):int(64);
-private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyle);
+private extern proc qio_file_get_style(f:qio_file_ptr_t, ref style:iostyleInternal);
 private extern proc qio_file_get_plugin(f:qio_file_ptr_t):c_void_ptr;
 private extern proc qio_channel_get_plugin(ch:qio_channel_ptr_t):c_void_ptr;
 private extern proc qio_file_length(f:qio_file_ptr_t, ref len:int(64)):syserr;
 
-private extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyle):syserr;
+private extern proc qio_channel_create(ref ch:qio_channel_ptr_t, file:qio_file_ptr_t, hints:c_int, readable:c_int, writeable:c_int, start:int(64), end:int(64), const ref style:iostyleInternal):syserr;
 
 private extern proc qio_channel_path_offset(threadsafe:c_int, ch:qio_channel_ptr_t, ref path:c_string, ref offset:int(64)):syserr;
 
@@ -1092,8 +1100,8 @@ private extern proc qio_channel_error(ch:qio_channel_ptr_t):syserr;
 private extern proc qio_channel_lock(ch:qio_channel_ptr_t):syserr;
 private extern proc qio_channel_unlock(ch:qio_channel_ptr_t);
 
-private extern proc qio_channel_get_style(ch:qio_channel_ptr_t, ref style:iostyle);
-private extern proc qio_channel_set_style(ch:qio_channel_ptr_t, const ref style:iostyle);
+private extern proc qio_channel_get_style(ch:qio_channel_ptr_t, ref style:iostyleInternal);
+private extern proc qio_channel_set_style(ch:qio_channel_ptr_t, const ref style:iostyleInternal);
 
 private extern proc qio_channel_binary(ch:qio_channel_ptr_t):uint(8);
 private extern proc qio_channel_byteorder(ch:qio_channel_ptr_t):uint(8);
@@ -1278,7 +1286,7 @@ private extern const QIO_CONV_SET_STRINGEND:c_int;
 private extern const QIO_CONV_SET_CAPTURE:c_int;
 private extern const QIO_CONV_SET_DONE:c_int;
 
-private extern proc qio_conv_parse(const fmt:c_string, start:size_t, ref end:uint(64), scanning:c_int, ref spec:qio_conv_t, ref style:iostyle):syserr;
+private extern proc qio_conv_parse(const fmt:c_string, start:size_t, ref end:uint(64), scanning:c_int, ref spec:qio_conv_t, ref style:iostyleInternal):syserr;
 
 private extern proc qio_format_error_too_many_args():syserr;
 private extern proc qio_format_error_too_few_args():syserr;
