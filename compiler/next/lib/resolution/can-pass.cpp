@@ -432,29 +432,39 @@ bool CanPassResult::isSubtype(const Type* actualT,
     if (auto formalCt = formalT->toClassType()) {
       // owned Child -> owned Parent
       if (actualCt->decorator().isManaged() &&
-          formalCt->decorator().isManaged() &&
-          actualCt->manager() == formalCt->manager()) {
-        return isSubtype(actualCt->basicClassType(),
-                         formalCt->basicClassType());
-      }
+          formalCt->decorator().isManaged()) {
 
-      // check decorators allow subtyping conversion
-      auto actualDec = actualCt->decorator().val();
-      auto formalDec = formalCt->decorator().val();
-      bool ok = ClassTypeDecorator::canCoerceDecorators(
-                                        actualDec, formalDec,
-                                        /* allowNonSubtypes */ false,
-                                        /* implicitBang */ false);
-      if (ok) {
-        auto actualBct = actualCt->basicClassType();
-        auto formalBct = formalCt->basicClassType();
+        if (actualCt->manager() == formalCt->manager()) {
+          return isSubtype(actualCt->basicClassType(),
+                           formalCt->basicClassType());
+        }
 
-        // are the decorated class types the same?
-        if (actualBct == formalBct)
-          return true;
+      } else {
+        // check decorators allow subtyping conversion
+        auto actualDec = actualCt->decorator().val();
+        auto formalDec = formalCt->decorator().val();
+        bool ok = ClassTypeDecorator::canCoerceDecorators(
+                                          actualDec, formalDec,
+                                          /* allowNonSubtypes */ false,
+                                          /* implicitBang */ false);
+        if (ok) {
+          auto actualBct = actualCt->basicClassType();
+          auto formalBct = formalCt->basicClassType();
 
-        // are we passing a subclass?
-        // TODO: check for subclass relationship
+          // are the basic class types the same?
+          if (actualBct == formalBct)
+            return true;
+
+          // check for subclass relationship
+          for (const BasicClassType* actualParent = actualBct;
+               actualParent != nullptr;
+               actualParent = actualParent->parentClassType()) {
+            if (actualParent == formalBct)
+              return true;
+            if (actualParent->isObjectType())
+              break;
+          }
+        }
       }
     }
   }

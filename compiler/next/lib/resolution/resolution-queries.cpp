@@ -911,7 +911,7 @@ typeForTypeDeclQuery(Context* context,
         resolveFieldsInitial(context, declId, useGenericFormalDefaults);
 
       // visit the parent type
-      const Type* parentType = nullptr;
+      const BasicClassType* parentType = nullptr;
       if (auto cls = ad->toClass()) {
         if (auto parentClassExpr = cls->parentClass()) {
           QualifiedType qt = r.byAst(parentClassExpr).type();
@@ -919,10 +919,10 @@ typeForTypeDeclQuery(Context* context,
             parentType = qt.type()->toClassType()->basicClassType();
           } else {
             context->error(declId, "invalid parent class");
-            parentType = ErroneousType::get(context);
+            parentType = BasicClassType::getObjectType(context);
           }
         } else {
-          parentType = ObjectType::get(context);
+          parentType = BasicClassType::getObjectType(context);
         }
       }
 
@@ -1490,7 +1490,7 @@ const QualifiedType& returnType(Context* context,
         substitutions.insert({formalDecl, formalType});
       }
 
-      const Type* parentType = nullptr;
+      const BasicClassType* parentType = nullptr;
       std::vector<CompositeType::FieldDetail> fields;
 
       ResolutionResultByPostorderID r;
@@ -1502,9 +1502,10 @@ const QualifiedType& returnType(Context* context,
           parentClassExpr->traverse(visitor);
           QualifiedType qt = r.byAst(parentClassExpr).type();
           assert(qt.hasTypePtr() && qt.isType());
-          parentType = qt.type();
+          assert(qt.type()->toBasicClassType());
+          parentType = qt.type()->toBasicClassType();
         } else {
-          parentType = ObjectType::get(context);
+          parentType = BasicClassType::getObjectType(context);
         }
       }
       // visit the fields, computing types once again

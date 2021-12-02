@@ -32,20 +32,19 @@ namespace types {
  */
 class BasicClassType final : public CompositeType {
  private:
-  const Type* parentType_ = nullptr;
+  const BasicClassType* parentType_ = nullptr;
 
   BasicClassType(ID id, UniqueString name,
-                 const Type* parentType,
+                 const BasicClassType* parentType,
                  std::vector<CompositeType::FieldDetail> fields)
     : CompositeType(typetags::BasicClassType, id, name, std::move(fields)),
       parentType_(parentType)
   {
-    assert(parentType_);
-    assert(parentType_->isObjectType() ||
-           parentType_->isErroneousType() ||
-           parentType_->isBasicClassType());
+    // all classes should have a parent type, except for object
+    // which doesn't.
+    assert(parentType_ || name == "object");
 
-    // compute the summary information including the parent type
+    // compute the summary information, including the parent type
     computeSummaryInformation();
   }
 
@@ -61,23 +60,26 @@ class BasicClassType final : public CompositeType {
 
   static const owned<BasicClassType>&
   getBasicClassType(Context* context, ID id, UniqueString name,
-                    const Type* parentType,
+                    const BasicClassType* parentType,
                     std::vector<CompositeType::FieldDetail> fields);
  public:
   ~BasicClassType() = default;
 
   static const BasicClassType*
   get(Context* context, ID id, UniqueString name,
-      const Type* parentType,
+      const BasicClassType* parentType,
       std::vector<CompositeType::FieldDetail> fields);
 
-  /** Return the parent class type, which will be one of:
-        * a BasicClassType
-        * ObjectType
-        * ErroneousType
-   */
-  const Type* parentClassType() const {
+  static const BasicClassType* getObjectType(Context* context);
+
+  /** Return the parent class type, or nullptr if this is the 'object' type. */
+  const BasicClassType* parentClassType() const {
     return parentType_;
+  }
+
+  /** Return true if this type is the 'object' type. */
+  bool isObjectType() const {
+    return parentType_ == nullptr;
   }
 };
 

@@ -65,22 +65,26 @@ std::string CompositeType::toString() const {
   //std::string ret = typetags::tagToString(tag());
   std::string ret = name().toString();
   int nFields = numFields();
-  bool emittedField = false;
-  ret += "(";
-  if (superType) {
-    ret += "super:";
-    ret += superType->toString();
-    emittedField = true;
+
+  if (superType || nFields > 0) {
+    bool emittedField = false;
+    ret += "(";
+    if (superType) {
+      ret += "super:";
+      ret += superType->toString();
+      emittedField = true;
+    }
+
+    for (int i = 0; i < nFields; i++) {
+      if (emittedField) ret += ", ";
+      ret += fieldName(i).toString();
+      ret += ":";
+      ret += fieldType(i).toString();
+      emittedField = true;
+    }
+    ret += ")";
   }
 
-  for (int i = 0; i < nFields; i++) {
-    if (emittedField) ret += ", ";
-    ret += fieldName(i).toString();
-    ret += ":";
-    ret += fieldType(i).toString();
-    emittedField = true;
-  }
-  ret += ")";
   return ret;
 }
 

@@ -954,7 +954,8 @@ static void test36() {
                             var parentField:int;
                           }
                           class Child : Parent {
-                            var childField: real;
+                            var childObject: object;
+                            var childChild: unmanaged Child;
                           }
                           var x: owned Child;
                         )"""");
@@ -963,12 +964,16 @@ static void test36() {
 
   auto bct = ct->basicClassType();
   assert(bct);
-  assert(bct->numFields() == 1);
-  assert(bct->fieldName(0) == "childField");
+  assert(!bct->parentClassType()->isObjectType());
+  assert(bct->numFields() == 2);
+  assert(bct->fieldName(0) == "childObject");
   assert(bct->fieldHasDefaultValue(0) == false);
   assert(bct->fieldType(0).kind() == QualifiedType::VAR);
-  assert(bct->fieldType(0).type() == RealType::get(context, 0));
-
+  assert(bct->fieldType(0).type() == BasicClassType::getObjectType(context));
+  assert(bct->fieldName(1) == "childChild");
+  assert(bct->fieldHasDefaultValue(1) == false);
+  assert(bct->fieldType(1).kind() == QualifiedType::VAR);
+  assert(bct->fieldType(1).type() == bct);
 
   auto pct = bct->parentClassType()->toBasicClassType();
   assert(pct);
@@ -978,7 +983,8 @@ static void test36() {
   assert(pct->fieldType(0).kind() == QualifiedType::VAR);
   assert(pct->fieldType(0).type() == IntType::get(context, 0));
 
-  assert(pct->parentClassType() == ObjectType::get(context));
+  assert(pct->parentClassType()->isObjectType());
+  assert(pct->parentClassType() == BasicClassType::getObjectType(context));
 }
 
 

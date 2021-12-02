@@ -28,7 +28,7 @@ namespace types {
 const owned<BasicClassType>&
 BasicClassType::getBasicClassType(
     Context* context, ID id, UniqueString name,
-    const Type* parentType,
+    const BasicClassType* parentType,
     std::vector<CompositeType::FieldDetail> fields) {
   QUERY_BEGIN(getBasicClassType, context, id, name, parentType, fields);
 
@@ -40,10 +40,23 @@ BasicClassType::getBasicClassType(
 
 const BasicClassType*
 BasicClassType::get(Context* context, ID id, UniqueString name,
-                    const Type* parentType,
+                    const BasicClassType* parentType,
                     std::vector<CompositeType::FieldDetail> fields) {
+  // getObjectType should be used to construct object
+  // everything else should have a parent type.
+  assert(parentType != nullptr);
   return getBasicClassType(context, id, name,
                            parentType, std::move(fields)).get();
+}
+
+const BasicClassType*
+BasicClassType::getObjectType(Context* context) {
+  ID emptyId;
+  auto name = UniqueString::build(context, "object");
+  std::vector<CompositeType::FieldDetail> emptyFields;
+
+  return getBasicClassType(context, emptyId, name,
+                           nullptr, std::move(emptyFields)).get();
 }
 
 

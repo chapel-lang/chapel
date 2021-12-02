@@ -106,6 +106,8 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "string", StringType::get(context));
   gatherType(context, map, "void", VoidType::get(context));
 
+  gatherType(context, map, "object", BasicClassType::getObjectType(context));
+
   BuiltinType::gatherBuiltins(context, map);
 }
 
