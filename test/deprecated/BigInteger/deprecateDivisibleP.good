@@ -1,0 +1,4 @@
+deprecateDivisibleP.chpl:8: warning: d is deprecated - please use div
+deprecateDivisibleP.chpl:9: warning: d is deprecated - please use div
+4 is divisible by 2, as 1 was returned
+4 is not divisible by 3, as 0 was returned
