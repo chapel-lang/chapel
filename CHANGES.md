@@ -26,6 +26,8 @@ Packaging / Configuration Changes
     (see https://chapel-lang.org/docs/main/usingchapel/prereqs.html)
   - building the compiler no longer stores paths to system compiler resources
   - improved the robustness of `CHPL_LLVM=bundled` builds
+* added an option to build the compiler with `jemalloc` to reduce compile-times 
+  (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#chpl-host-mem)
 
 
 Semantic Changes / Changes to Chapel Language
@@ -102,11 +104,14 @@ Performance Optimizations / Improvements
 ----------------------------------------
 * optimized the hash tables used by 'Set', 'Map', and associative domains/arrays
 * fixed a bug in which `sort()` had stopped using insertionSort at small sizes
+* `regex` values are now eagerly localized, reducing overheads
 
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
-
+* reduced compilation time by ~10-20% when opting into `CHPL_HOST_MEM=jemalloc` 
+  (see https://chapel-lang.org/docs/main/usingchapel/chplenv.html#chpl-host-mem)
+* modestly improved the time spent in the 'buildDefaultFunctions' pass
 
 Memory Improvements
 -------------------
@@ -114,17 +119,22 @@ Memory Improvements
 
 Documentation
 -------------
-* merged module-based documentation for locale and atomic types into the spec 
-  (see https://chapel-lang.org/docs/main/language/spec/locales.html#locale-methods 
-   and https://chapel-lang.org/docs/main/language/spec/task-parallelism-and-synchronization.html#functions-on-atomic-variables)
+* merged module-based docs for atomic, complex, and locale types into the spec 
+  (see https://chapel-lang.org/docs/main/language/spec/task-parallelism-and-synchronization.html#functions-on-atomic-variables, 
+   https://chapel-lang.org/docs/main/language/spec/types.html#module-ChapelComplex_forDocs, 
+   and https://chapel-lang.org/docs/main/language/spec/locales.html#locale-methods)
 * added contributor documentation, such as best practices, to the online docs
   (see https://chapel-lang.org/docs/main/developer/index.html)
 * added contributor documentation for the new compiler front-end 
   (see https://chapel-lang.org/docs/main/developer/compiler-internals/index.html)
 * improved the description of the prequisites for documentation builds 
   (see https://chapel-lang.org/docs/main/usingchapel/prereqs.html)
+* documented `CHPL_RT_UNWIND`
+  (see https://chapel-lang.org/docs/main/usingchapel/executing.html)
 * improved the description of default initialization of records 
   (see https://chapel-lang.org/docs/main/doc/html/language/spec/records.html#record-initialization)
+* improved documentation for standard distributions 
+  (see https://chapel-lang.org/docs/main/modules/layoutdist.html#standard-distributions)
 * added documentation for `bigint.pow()` to the 'BigInteger' module 
   (see https://chapel-lang.org/docs/1.25/modules/standard/BigInteger.html#BigInteger.bigint.pow)
 * added `throws` documentation to some methods in the 'Subprocess' module 
@@ -139,6 +149,7 @@ ess.subprocess.communicate)
 
 Syntax Highlighting
 -------------------
+* added `operator` to various highlighters
 * added highlighting of `lambda` to `vim` and `emacs`
 
 
@@ -151,6 +162,7 @@ Portability
 * fixed an error building the compiler with GCC 11.2
 * addressed a problem building the compiler on OpenBSD 7.0
 * enabled `CHPL_TARGET_CPU=native` when using the LLVM back-end on ARM systems
+* fixed the `chplvis` build w.r.t. modern C++ standards
 
 
 GPU Computing
@@ -161,7 +173,8 @@ Compiler Improvements
 ---------------------
 * improved the LLVM back-end's support for clang arguments via `--ccflags`
 * the LLVM back-end now generates structure sizes as simpler constants
-* string literals within the compiler are now de-allocated upon program exit
+* reduced the amount of memory allocated within the compiler
+* reduced memory leaks within the compiler, such as for string literals
 
 
 Compiler Flags
@@ -211,6 +224,9 @@ Bug Fixes for Build Issues
 Bug Fixes for Libraries
 -----------------------
 * fixed a bug in `bigint.pow()` for negative exponents
+* fixed an infinite loop bug when using an empty `regex` pattern
+* fixed buggy `regex` behaviors when a pattern contains a null byte
+* fixed bugs when using `regex` values from remote locales
 * fixed a bug related to custom comparators in 'sortedSet'
 
 
@@ -230,6 +246,7 @@ Platform-specific Bug Fixes
 Third-Party Software Changes
 ----------------------------
 * updated GASNet-EX to version 2021.9.0
+* updated libunwind to version 1.5.0, which fixed certain build issues
 
 
 Developer-oriented changes: Naming Changes
