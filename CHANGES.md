@@ -83,6 +83,7 @@ Standard Library Modules
 * added optional arguments to `map` initializers for more control over resizing 
   (see https://chapel-lang.org/docs/main/modules/standard/Map.html#Map.map.init)
 * added support for hashing `bigint` values
+* improved support for sets of arrays and maps with array keys
 * converted standalone domain/array type queries into methods
   (e.g., `isRectangularDom()` -> `Domain.isRectangular()`)
 
@@ -163,6 +164,7 @@ Portability
 * addressed a problem building the compiler on OpenBSD 7.0
 * enabled `CHPL_TARGET_CPU=native` when using the LLVM back-end on ARM systems
 * fixed the `chplvis` build w.r.t. modern C++ standards
+* fixed a warning when building the compiler with clang++ 13
 
 
 GPU Computing
@@ -198,6 +200,8 @@ Error Messages / Semantic Checks
 --------------------------------
 * added an error when a non-operator is declared with the `operator` keyword
 * added a warning when using `extern` and `inline` together on a declaration
+* added a user error when indexing into an enumerated type
+* added a user error when trying to `import` a bad expression type
 
 
 Bug Fixes
@@ -269,8 +273,11 @@ Developer-oriented changes: Documentation
 
 Developer-oriented changes: Module changes
 ------------------------------------------
-* removed some old comment references to constructors
+* refactored 'ChapelHashtable' to use 'Memory.Initialization'
+* removed a trivial/pointless utility routine `shouldReturnRvalueByConstRef()`
+* removed some unnecessary helper functions related to enumerating `enum` types
 * removed unnecessary explicit `this.complete()` call in `_shared` initializer
+* removed some old comment references to constructors
 
 Developer-oriented changes: Makefiles
 -------------------------------------
@@ -293,6 +300,7 @@ Developer-oriented changes: Compiler improvements/changes
 * continued improving the new prototype compiler front-end's resolution logic
 * migrated some code from the production compiler to the new compiler front-end
 * updated compiler code for compatibility with LLVM-12
+* removed some un-needed compiler-generated iterators for traversing enums
 * made the `--incremental` flag more robust w.r.t. large numbers of modules
 
 
