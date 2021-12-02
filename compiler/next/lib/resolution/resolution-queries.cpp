@@ -655,13 +655,18 @@ resolveFieldsInitial(Context* context, ID id, bool useGenericFormalDefaults) {
   auto ast = parsing::idToAst(context, id);
   if (const AggregateDecl* ad = ast->toAggregateDecl()) {
     Resolver visitor(context, ad, partialResult, useGenericFormalDefaults);
+    // visit the parent type
+    if (auto cls = ad->toClass()) {
+      if (auto parentClassExpr = cls->parentClass()) {
+        parentClassExpr->traverse(visitor);
+      }
+    }
     // visit the field declarations
-    // TODO: handle MultiDecl and TupleDecl
     for (auto child: ad->children()) {
-      if (auto var = child->toVariable()) {
-        if (var->isField()) {
-          child->traverse(visitor);
-        }
+      if (child->isVariable() ||
+          child->isMultiDecl() ||
+          child->isTupleDecl()) {
+        child->traverse(visitor);
       }
     }
   } else {
@@ -905,6 +910,22 @@ typeForTypeDeclQuery(Context* context,
       const ResolutionResultByPostorderID& r =
         resolveFieldsInitial(context, declId, useGenericFormalDefaults);
 
+      // visit the parent type
+      const Type* parentType = nullptr;
+      if (auto cls = ad->toClass()) {
+        if (auto parentClassExpr = cls->parentClass()) {
+          QualifiedType qt = r.byAst(parentClassExpr).type();
+          if (qt.isType() && qt.hasTypePtr() && qt.type()->isClassType()) {
+            parentType = qt.type()->toClassType()->basicClassType();
+          } else {
+            context->error(declId, "invalid parent class");
+            parentType = ErroneousType::get(context);
+          }
+        } else {
+          parentType = ObjectType::get(context);
+        }
+      }
+
       // now pull out the field types
       // TODO: handle MultiDecl and TupleDecl
       std::vector<CompositeType::FieldDetail> fields;
@@ -927,7 +948,7 @@ typeForTypeDeclQuery(Context* context,
       }
       if (auto cls = ad->toClass()) {
         auto t = BasicClassType::get(context, cls->id(), cls->name(),
-                                     std::move(fields));
+                                     parentType, std::move(fields));
         auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
         result = ClassType::get(context, t, nullptr, d);
       }
@@ -1165,14 +1186,24 @@ const TypedFnSignature* instantiateSignature(Context* context,
     ResolutionResultByPostorderID r;
     Resolver visitor(context, ad, substitutions, poiScope, r,
                      /* useGenericFormalDefaults */ false);
-    // TODO: handle MultiDecl and TupleDecl
+    // visit the parent type
+    if (auto cls = ad->toClass()) {
+      if (auto parentClassExpr = cls->parentClass()) {
+        parentClassExpr->traverse(visitor);
+      }
+    }
+    // visit the field declarations
     for (auto child: ad->children()) {
       if (auto var = child->toVariable()) {
-        if (var->isField()) {
+        if (child->isVariable() ||
+            child->isMultiDecl() ||
+            child->isTupleDecl()) {
           child->traverse(visitor);
         }
       }
     }
+
+    // add formals according to the parent class type
 
     // now pull out the field types
     int nFormals = sig->numFormals();
@@ -1416,7 +1447,6 @@ const QualifiedType& returnType(Context* context,
                                 const PoiScope* poiScope) {
   QUERY_BEGIN(returnType, context, sig, poiScope);
 
-
   const UntypedFnSignature* untyped = sig->untyped();
 
   QualifiedType result;
@@ -1460,12 +1490,24 @@ const QualifiedType& returnType(Context* context,
         substitutions.insert({formalDecl, formalType});
       }
 
+      const Type* parentType = nullptr;
       std::vector<CompositeType::FieldDetail> fields;
 
-      // visit the fields, computing types once again
       ResolutionResultByPostorderID r;
       Resolver visitor(context, ad, substitutions, poiScope, r,
                        /* useGenericFormalDefaults */ false);
+      // visit the parent type
+      if (auto cls = ad->toClass()) {
+        if (auto parentClassExpr = cls->parentClass()) {
+          parentClassExpr->traverse(visitor);
+          QualifiedType qt = r.byAst(parentClassExpr).type();
+          assert(qt.hasTypePtr() && qt.isType());
+          parentType = qt.type();
+        } else {
+          parentType = ObjectType::get(context);
+        }
+      }
+      // visit the fields, computing types once again
       // TODO: handle MultiDecl and TupleDecl
       for (auto child: ad->children()) {
         if (auto var = child->toVariable()) {
@@ -1489,7 +1531,7 @@ const QualifiedType& returnType(Context* context,
       }
       if (auto cls = ad->toClass()) {
         auto bct = BasicClassType::get(context, cls->id(), cls->name(),
-                                       std::move(fields));
+                                       parentType, std::move(fields));
         auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
         t = ClassType::get(context, bct, nullptr, d);
       }

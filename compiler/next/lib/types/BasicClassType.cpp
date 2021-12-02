@@ -28,18 +28,22 @@ namespace types {
 const owned<BasicClassType>&
 BasicClassType::getBasicClassType(
     Context* context, ID id, UniqueString name,
+    const Type* parentType,
     std::vector<CompositeType::FieldDetail> fields) {
-  QUERY_BEGIN(getBasicClassType, context, id, name, fields);
+  QUERY_BEGIN(getBasicClassType, context, id, name, parentType, fields);
 
-  auto result = toOwned(new BasicClassType(id, name, std::move(fields)));
+  auto result = toOwned(new BasicClassType(id, name,
+                                           parentType, std::move(fields)));
 
   return QUERY_END(result);
 }
 
 const BasicClassType*
 BasicClassType::get(Context* context, ID id, UniqueString name,
+                    const Type* parentType,
                     std::vector<CompositeType::FieldDetail> fields) {
-  return getBasicClassType(context, id, name, std::move(fields)).get();
+  return getBasicClassType(context, id, name,
+                           parentType, std::move(fields)).get();
 }
 
 

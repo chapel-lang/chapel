@@ -76,9 +76,14 @@ class CompositeType : public Type {
   void computeSummaryInformation();
 
   CompositeType(typetags::TypeTag tag,
-                ID id, UniqueString name, std::vector<FieldDetail> fields)
+                ID id, UniqueString name,
+                std::vector<FieldDetail> fields)
     : Type(tag), id_(id), name_(name), fields_(std::move(fields)) {
-    computeSummaryInformation();
+
+    if (tag != typetags::BasicClassType)
+      computeSummaryInformation();
+    // BasicClassType constructor calls computeSummaryInformation
+    // so that the parentType_ field will be set when it runs.
   }
 
   bool compositeTypeContentsMatchInner(const CompositeType* other) const {
@@ -102,7 +107,8 @@ class CompositeType : public Type {
   bool isGeneric() const override { return isGeneric_; }
 
   /** Returns true if this is a generic type where all
-      generic fields have default values */
+      generic fields have default values. For classes,
+      this includes consideration of the parent class. */
   bool isGenericWithDefaults() const {
     return isGeneric_ && allGenericFieldsHaveDefaultValues_;
   }

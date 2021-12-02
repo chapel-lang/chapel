@@ -203,15 +203,13 @@ static void test3() {
   assert(rr.byAst(cq).type().type()   == AnyComplexType::get(context));
 }
 
-// assumes 2nd statement is a variable declaration for x.
+// assumes the last statement is a variable declaration for x.
 // returns the type of that.
 static const Type* parseTypeOfX(Context* context,
                                 const char* program) {
   auto m = parseModule(context, program);
-  assert(m->numStmts() == 2);
-  const TypeDecl* td = m->stmt(0)->toTypeDecl();
-  assert(td);
-  const Variable* x = m->stmt(1)->toVariable();
+  assert(m->numStmts() > 0);
+  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
   assert(x);
   assert(x->name() == "x");
 
@@ -945,6 +943,43 @@ static void test35() {
   assert(rt->fieldType(4).type() == RealType::get(context, 0));
 }
 
+static void test36() {
+  printf("test36\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context,
+                        R""""(
+                          class Parent {
+                            var parentField:int;
+                          }
+                          class Child : Parent {
+                            var childField: real;
+                          }
+                          var x: owned Child;
+                        )"""");
+  auto ct = t->toClassType();
+  assert(ct);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "childField");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
+  assert(bct->fieldType(0).type() == RealType::get(context, 0));
+
+
+  auto pct = bct->parentClassType()->toBasicClassType();
+  assert(pct);
+  assert(pct->numFields() == 1);
+  assert(pct->fieldName(0) == "parentField");
+  assert(pct->fieldHasDefaultValue(0) == false);
+  assert(pct->fieldType(0).kind() == QualifiedType::VAR);
+  assert(pct->fieldType(0).type() == IntType::get(context, 0));
+
+  assert(pct->parentClassType() == ObjectType::get(context));
+}
 
 
 int main() {
@@ -985,6 +1020,7 @@ int main() {
   test34();
   testTypeAndFnSameName();
   test35();
+  test36();
 
   return 0;
 }
