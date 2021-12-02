@@ -21,9 +21,19 @@
 /*
   .. note::
 
-    This module relies on the :mod:`AtomicObjects` package, which currently
-    requires ``extern`` code block support. See the documentation of the
-    :mod:`AtomicObjects` package for more details.
+    This module relies on the :mod:`AtomicObjects` package module, which
+    has several platform restrictions in its current state:
+
+      - It relies on Chapel ``extern`` code blocks and so requires that
+        ``CHPL_LLVM=bundled`` or ``CHPL_LLVM=system`` be set, and that the
+        Chapel compiler is built with LLVM enabled.
+      - Currently only ``CHPL_TARGET_ARCH=x86_64`` is supported as it uses
+        the x86-64 instruction: CMPXCHG16B_.
+      - The implementation relies on ``GCC`` style inline assembly, and so
+        is restricted to a ``CHPL_TARGET_COMPILER`` value of ``gnu``,
+        ``clang``, or ``llvm``.
+
+    .. _CMPXCHG16B: https://www.felixcloutier.com/x86/cmpxchg8b:cmpxchg16b
 
   This module provides a fast, scalable, fine-grained concurrent map. It was
   inspired by the Interlocked Hash Table [#]_. It allows large critical
