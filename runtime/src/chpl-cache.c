@@ -3570,11 +3570,20 @@ static pthread_key_t pthread_cache_info_key; // stores struct rdcache_s*
 // the runtime atomics support can't handle static initialization
 // so we use a pthread mutex for now
 static pthread_mutex_t is_inited_mutex = PTHREAD_MUTEX_INITIALIZER;
-static chpl_bool is_inited = 0; // protected by is_inited_mutex
+static chpl_bool is_inited = false; // protected by is_inited_mutex
+
 
 // returns NULL if the cache is not yet inited
 static
 struct rdcache_s* tls_cache_remote_data(void) {
+#ifndef CHPL_TLS
+  // Configs without native TLS use pthread_getspecific, which can't be called
+  // before pthread_key_create. Use a somewhat racy init check  before calling
+  // TLS_GET (get_specific wrapper). In reality, this is a single byte read so
+  // we expect it to be atomic, but it's not strictly conforming to the MCM.
+  if (!is_inited) return NULL;
+#endif
+
   struct rdcache_s *cache = CHPL_TLS_GET(cache_remote_data);
   if( !cache && chpl_cache_enabled()) {
     // check also if the cache has already been initialized
@@ -3635,7 +3644,9 @@ void chpl_cache_do_init(void)
 
 void chpl_cache_init(void) {
 
-  chpl_cache_warn_if_disabled();
+  if (chpl_nodeID == 0) {
+    chpl_cache_warn_if_disabled();
+  }
 
   if( ! chpl_cache_enabled() ) {
     return;

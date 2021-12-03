@@ -1054,13 +1054,9 @@ void chpl_comm_broadcast_private(int id, size_t size) {
   chpl_mem_free(done, 0, 0);
 }
 
-void chpl_comm_barrier(const char *msg) {
+void chpl_comm_impl_barrier(const char *msg) {
   int id = (int) msg[0];
   int retval;
-
-#ifdef CHPL_COMM_DEBUG
-  chpl_msg(2, "%d: enter barrier for '%s'\n", chpl_nodeID, msg);
-#endif
 
   //
   // We don't want to just do a gasnet_barrier_wait() here, because
@@ -1101,8 +1097,11 @@ void chpl_comm_pre_task_exit(int all) {
 void chpl_comm_exit(int all, int status) {
   stop_polling(/*wait*/ false);
 
-  if (all)
-    chpl_comm_barrier("exit_comm_gasnet");
+  if (all) {
+    // chpl_comm_barrier needs the tasking layer (for cache fence) and since
+    // it's shutdown already just directly call the barrier impl.
+    chpl_comm_impl_barrier("exit_comm_gasnet");
+  }
 
   gasnet_exit(status);
 }

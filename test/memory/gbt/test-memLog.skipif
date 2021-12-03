@@ -1,4 +1,1 @@
 CHPL_COMM == none
-# Skip with LLVM backend until we resolve the #1677/#1681/#1682 weirdness
-# and can make verbose mem logging work predictably.
-CHPL_TARGET_COMPILER == llvm
