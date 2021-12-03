@@ -19,13 +19,12 @@
  */
 
 /*
-  .. note:: 
+  .. warning::
 
     This module has several platform restrictions in its current state:
 
       - It relies on Chapel ``extern`` code blocks and so requires that
-        ``CHPL_LLVM=bundled`` or ``CHPL_LLVM=system`` be set, and that the
-        Chapel compiler is built with LLVM enabled.
+        the Chapel compiler is built with LLVM enabled.
       - Currently only ``CHPL_TARGET_ARCH=x86_64`` is supported as it uses
         the x86-64 instruction: CMPXCHG16B_.
       - The implementation relies on ``GCC`` style inline assembly, and so
