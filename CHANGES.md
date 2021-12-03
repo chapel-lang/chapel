@@ -1,9 +1,6 @@
 Release Changes List
 ====================
 
-TODO:
-* Do we need to update Lydia's Subprocess links?
-
 version 1.25.1
 ==============
 
@@ -24,7 +21,7 @@ Highlights (see subsequent sections for further details)
 
 Packaging / Configuration Changes
 ---------------------------------
-* improved the compiler's configuration when the LLVM back-end is enabled
+* improved the compiler's configuration when the LLVM back-end is enabled:
   - setting `CC`/`CXX` no longer disables the LLVM back-end  
     (see https://chapel-lang.org/docs/1.25/usingchapel/chplenv.html)
   - `CHPL_LLVM=system` on linux now uses the more common `clang-cpp` library  
@@ -48,7 +45,7 @@ New Features
 * added support for coercions when writing to `sync` and `single` variables
 * `extern` records can now define initializers to opt into Chapel initialization  
   (see https://chapel-lang.org/docs/1.25/language/spec/interoperability.html#variable-initialization)
-* added support for defining user-defined hash functions via a `hash()` method
+* added support for specifying user-defined hash functions via a `hash()` method
 * enabled implicit conversions from `imag(32)` to `imag(64)`  
   (see https://chapel-lang.org/docs/1.25/language/spec/conversions.html#implicit-numeric-and-bool-conversions)
 
@@ -114,11 +111,11 @@ Documentation
   (see https://chapel-lang.org/docs/1.25/developer/index.html)
 * added contributor documentation for the new compiler front-end  
   (see https://chapel-lang.org/docs/1.25/developer/compiler-internals/index.html)
-* improved the description of the pre-requisites for documentation builds  
+* improved the description of the prerequisites for documentation builds  
   (see https://chapel-lang.org/docs/1.25/usingchapel/prereqs.html)
 * documented `CHPL_RT_UNWIND`  
   (see https://chapel-lang.org/docs/1.25/usingchapel/executing.html)
-* improved the description of default initialization of records  
+* improved the description of default initialization for records  
   (see https://chapel-lang.org/docs/1.25/language/spec/records.html#record-initialization)
 * improved documentation for standard distributions  
   (see https://chapel-lang.org/docs/1.25/modules/layoutdist.html#standard-distributions)
@@ -142,12 +139,12 @@ Portability
 * fixed an error building the compiler with GCC 11.2
 * addressed a problem building the compiler on OpenBSD 7.0
 * enabled `CHPL_TARGET_CPU=native` when using the LLVM back-end on ARM systems
-* fixed the `chplvis` build w.r.t. modern C++ standards
+* fixed the `chplvis` build w.r.t. C++11
 * fixed a warning when building the compiler with clang++ 13
 
 GPU Computing
 -------------
-* bundled generated kernel code in executable rather than a separate fatbin file
+* bundled generated kernel code into the executable, instead of a `.fatbin` file
 
 Compiler Improvements
 ---------------------
@@ -190,7 +187,7 @@ Bug Fixes for Libraries
 -----------------------
 * fixed a bug in `bigint.pow()` for negative exponents
 * fixed an infinite loop bug when using an empty `regex` pattern
-* fixed buggy `regex` behaviors when a pattern contains a null byte
+* fixed buggy `regex` behaviors when a pattern contained a null byte
 * fixed bugs when using `regex` values from remote locales
 * fixed a bug related to custom comparators in 'sortedSet'
 
@@ -213,7 +210,7 @@ Developer-oriented changes: Documentation
 * documented the automatic chpldoc text generated for `deprecated` symbols  
   (see https://chapel-lang.org/docs/1.25/developer/bestPractices/Deprecation.html)
 * filtered deprecation warnings to remove inline markup used for `chpldoc` pages
-* added a note about passing environment variables to paratest  
+* added a note about passing environment variables to `paratest`  
   (see https://chapel-lang.org/docs/1.25/developer/bestPractices/Sanitizers.html)
 * `make docs` now includes compiler docs if `doxygen` and `cmake` are available  
   (see https://chapel-lang.org/docs/1.25/developer/compiler-internals/index.html)
@@ -226,7 +223,7 @@ Developer-oriented changes: Module changes
 * removed a trivial/pointless utility routine `shouldReturnRvalueByConstRef()`
 * removed some unnecessary helper functions related to enumerating `enum` types
 * removed unnecessary explicit `this.complete()` call in `_shared` initializer
-* removed some old comment references to constructors
+* removed old comments referencing constructors
 
 Developer-oriented changes: Build-time changes
 ----------------------------------------------
