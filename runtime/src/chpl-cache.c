@@ -3570,29 +3570,29 @@ static pthread_key_t pthread_cache_info_key; // stores struct rdcache_s*
 // the runtime atomics support can't handle static initialization
 // so we use a pthread mutex for now
 static pthread_mutex_t is_inited_mutex = PTHREAD_MUTEX_INITIALIZER;
-static unsigned char is_inited = 0; // protected by is_inited_mutex
-
-static
-unsigned char get_is_inited(void) {
-  unsigned char ret = 0;
-
-  pthread_mutex_lock(&is_inited_mutex);
-  ret = is_inited;
-  pthread_mutex_unlock(&is_inited_mutex);
-
-  return ret;
-}
+static chpl_bool is_inited = 0; // protected by is_inited_mutex
 
 // returns NULL if the cache is not yet inited
 static
 struct rdcache_s* tls_cache_remote_data(void) {
   struct rdcache_s *cache = CHPL_TLS_GET(cache_remote_data);
-  if( !cache && chpl_cache_enabled() && get_is_inited()) {
-    cache = cache_create();
-    CHPL_TLS_SET(cache_remote_data, cache);
-    // set the pthread key so that the cache will be freed
-    // on thread exit
-    pthread_setspecific(pthread_cache_info_key, cache);
+  if( !cache && chpl_cache_enabled()) {
+    // check also if the cache has already been initialized
+    chpl_bool local_is_inited;
+
+    pthread_mutex_lock(&is_inited_mutex);
+    local_is_inited = is_inited;
+    pthread_mutex_unlock(&is_inited_mutex);
+
+    if (local_is_inited) {
+      // cache has been initialized so init the thread-local
+      // state for this thread.
+      cache = cache_create();
+      CHPL_TLS_SET(cache_remote_data, cache);
+      // set the pthread key so that the cache will be freed
+      // on thread exit
+      pthread_setspecific(pthread_cache_info_key, cache);
+    }
   }
   return cache;
 }
