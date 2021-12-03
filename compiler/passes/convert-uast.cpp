@@ -1716,7 +1716,7 @@ struct Converter {
   /// ForwardingDecl ///
   Expr* visit(const uast::ForwardingDecl* node) {
     // ForwardingDecl may contain a VisibilityClause, an Expression,
-    // or a Variable declartion
+    // or a Variable declaration
     if (node->expr()->isVisibilityClause()){
       auto child = node->expr()->toVisibilityClause();
       bool except=false;
