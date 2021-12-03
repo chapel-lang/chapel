@@ -404,46 +404,27 @@ static void test7() {
   auto owned = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NONNIL);
   auto ownedQ = ClassTypeDecorator(ClassTypeDecorator::MANAGED_NILABLE);
 
-  auto borrowedParent = QualifiedType(QualifiedType::VAR,
-                                      ClassType::get(context, basicParent,
-                                                     nullptr, borrowed));
-  auto borrowedChild = QualifiedType(QualifiedType::VAR,
-                                     ClassType::get(context, basicChild,
-                                                    nullptr, borrowed));
-  auto borrowedParentQ = QualifiedType(QualifiedType::VAR,
-                                       ClassType::get(context, basicParent,
-                                        nullptr, borrowedQ));
-  auto borrowedChildQ = QualifiedType(QualifiedType::VAR,
-                                      ClassType::get(context, basicChild,
-                                                     nullptr, borrowedQ));
-  auto unmanagedParent = QualifiedType(QualifiedType::VAR,
-                                       ClassType::get(context, basicParent,
-                                                      nullptr, unmanaged));
-  auto unmanagedChild = QualifiedType(QualifiedType::VAR,
-                                      ClassType::get(context, basicChild,
-                                                     nullptr, unmanaged));
-  auto unmanagedParentQ = QualifiedType(QualifiedType::VAR,
-                                        ClassType::get(context, basicParent,
-                                                       nullptr, unmanagedQ));
-  auto unmanagedChildQ = QualifiedType(QualifiedType::VAR,
-                                       ClassType::get(context, basicChild,
-                                                      nullptr, unmanagedQ));
-  auto ownedParent = QualifiedType(QualifiedType::VAR,
-                                   ClassType::get(context, basicParent,
-                                                  AnyOwnedType::get(context),
-                                                  owned));
-  auto ownedChild = QualifiedType(QualifiedType::VAR,
-                                  ClassType::get(context, basicChild,
-                                                 AnyOwnedType::get(context),
-                                                 owned));
-  auto ownedParentQ = QualifiedType(QualifiedType::VAR,
-                                    ClassType::get(context, basicParent,
-                                                   AnyOwnedType::get(context),
-                                                   ownedQ));
-  auto ownedChildQ = QualifiedType(QualifiedType::VAR,
-                                   ClassType::get(context, basicChild,
-                                                  AnyOwnedType::get(context),
-                                                  ownedQ));
+  auto qt = [=](const BasicClassType* bctArg,
+                const Type* mgmtArg,
+                ClassTypeDecorator decArg) -> QualifiedType {
+    return QualifiedType(QualifiedType::VAR,
+                         ClassType::get(context, bctArg, mgmtArg, decArg));
+  };
+
+  auto ownedMgmt = AnyOwnedType::get(context);
+
+  auto borrowedParent   = qt(basicParent, nullptr,   borrowed);
+  auto borrowedChild    = qt(basicChild,  nullptr,   borrowed);
+  auto borrowedParentQ  = qt(basicParent, nullptr,   borrowedQ);
+  auto borrowedChildQ   = qt(basicChild,  nullptr,   borrowedQ);
+  auto unmanagedParent  = qt(basicParent, nullptr,   unmanaged);
+  auto unmanagedChild   = qt(basicChild,  nullptr,   unmanaged);
+  auto unmanagedParentQ = qt(basicParent, nullptr,   unmanagedQ);
+  auto unmanagedChildQ  = qt(basicChild,  nullptr,   unmanagedQ);
+  auto ownedParent      = qt(basicParent, ownedMgmt, owned);
+  auto ownedChild       = qt(basicChild,  ownedMgmt, owned);
+  auto ownedParentQ     = qt(basicParent, ownedMgmt, ownedQ);
+  auto ownedChildQ      = qt(basicChild,  ownedMgmt, ownedQ);
 
   CanPassResult r;
 
