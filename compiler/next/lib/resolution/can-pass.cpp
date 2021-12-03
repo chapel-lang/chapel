@@ -437,11 +437,17 @@ bool CanPassResult::isSubtype(const Type* actualT,
       // check decorators allow subtyping conversion
       auto actualDec = actualCt->decorator().val();
       auto formalDec = formalCt->decorator().val();
-      bool ok = actualCt->manager() == formalCt->manager() &&
-                ClassTypeDecorator::canCoerceDecorators(
+      bool ok = ClassTypeDecorator::canCoerceDecorators(
                                         actualDec, formalDec,
                                         /* allowNonSubtypes */ true,
                                         /* implicitBang */ false);
+
+      if (ClassTypeDecorator::isDecoratorManaged(actualDec) &&
+          ClassTypeDecorator::isDecoratorManaged(formalDec) &&
+          actualCt->manager() != formalCt->manager()) {
+        // disallow e.g. owned C -> shared C
+        ok = false;
+      }
 
       if (ok) {
         auto actualBct = actualCt->basicClassType();
@@ -479,6 +485,8 @@ CanPassResult CanPassResult::canConvert(const QualifiedType& actualQT,
     return convert(PARAM_NARROWING);
 
   // can we convert with class subtyping?
+  // covered in isSubtype.
+#if 0
   if (auto actualCt = actualT->toClassType()) {
     if (auto formalCt = formalT->toClassType()) {
       // check decorators allow conversion
@@ -500,6 +508,7 @@ CanPassResult CanPassResult::canConvert(const QualifiedType& actualQT,
       }
     }
   }
+#endif
 
   // can we convert tuples?
   if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
