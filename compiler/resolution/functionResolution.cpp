@@ -900,10 +900,6 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
-  if (formalType == dtString && actualType == dtStringC) {
-    return true;
-  }
-
   if (formalType                                        == dtIteratorRecord &&
       actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
     return true;
