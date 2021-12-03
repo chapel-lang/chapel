@@ -911,8 +911,7 @@ extern record iostyleInternal { // aka qio_style_t
 }
 
 deprecated "iostyle is deprecated, a new way of controlling channel output is planned"
-type iostyle;
- iostyle = iostyleInternal;
+type iostyle = iostyleInternal;
 
 // This class helps in implementing runtime calls.
 // It represents a file as a pointer. C code can call Chapel
@@ -1303,7 +1302,12 @@ private extern proc qio_format_error_write_regex():syserr;
 deprecated
 "This function is deprecated due to returning a deprecated type, please don't call it"
 proc defaultIOStyle():iostyle {
-  var ret:iostyle;
+  return defaultIOStyleInternal() : iostyle;
+}
+
+pragma "no doc"
+proc defaultIOStyleInternal(): iostyleInternal {
+  var ret:iostyleInternal;
   qio_style_init_default(ret);
   return ret;
 }
@@ -1377,12 +1381,21 @@ proc iostyleInternal.little(str_style:int(64)=stringStyleWithVariableLength()):i
   return ret;
 }
 
-// TODO -- add arguments to this function
 /* Get an I/O style indicating text I/O.
 
    :returns: the requested :record:`iostyle`
  */
+deprecated
+"This method is deprecated because the type it is defined on is deprecated"
 proc iostyle.text(/* args coming later */):iostyle  {
+  var tmp: iostyleInternal = this: iostyleInternal;
+  return tmp.text(): iostyle;
+}
+
+// TODO -- add arguments to this function
+/* Get an iostyleInternal indicating text I/O. */
+pragma "no doc"
+proc iostyleInternal.text(/* args coming later */):iostyleInternal {
   var ret = this;
   ret.binary = 0;
   return ret;
@@ -1555,11 +1568,11 @@ proc file.filePlugin() : QioPluginFile? {
 // this prevents race conditions;
 // channel style is protected by channel lock, can be modified.
 pragma "no doc"
-proc file._style:iostyle throws {
-  var ret:iostyle;
+proc file._style:iostyleInternal throws {
+  var ret:iostyleInternal;
   on this.home {
     try this.checkAssumingLocal();
-    var local_style:iostyle;
+    var local_style:iostyleInternal;
     qio_file_get_style(_file_internal, local_style);
     ret = local_style;
   }
@@ -1708,6 +1721,12 @@ proc _modestring(mode:iomode) {
   }
 }
 
+deprecated "open with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
+          style:iostyle): file throws {
+  return open(path, mode, hints, style:iostyleInternal);
+}
+
 /*
 
 Open a file on a filesystem. Note that once the
@@ -1720,16 +1739,21 @@ to create a channel to actually perform I/O operations
              See :type:`iomode`.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
-:arg style: optional argument to specify I/O style associated with this file.
-            The provided style will be the default for any channels created for
-            on this file, and that in turn will be the default for all I/O
-            operations performed with those channels.
+:arg style: optional argument to specify internal I/O style associated with this
+            file.  The provided style will be the default for any channels
+            created on this file, and that in turn will be the default for all
+            I/O operations performed with those channels.
 :returns: an open file to the requested resource.
 
 :throws SystemError: Thrown if the file could not be opened.
+
+.. warning::
+
+   iostyleInternal is an internal type.  We do not recommend relying on it, as
+   it will likely be replaced in the future.
 */
 proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
-          style:iostyle = defaultIOStyle()): file throws {
+          style:iostyleInternal = defaultIOStyleInternal()): file throws {
 
   var local_style = style;
   var error: syserr = ENOERR;
@@ -1750,11 +1774,12 @@ proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
 
 pragma "no doc"
 proc openplugin(pluginFile: QioPluginFile, mode:iomode,
-                seekable:bool, style:iostyle) throws {
+                seekable:bool, style:iostyleInternal) throws {
   import HaltWrappers;
 
   extern proc qio_file_init_plugin(ref file_out:qio_file_ptr_t,
-      file_info:c_void_ptr, flags:c_int, const ref style:iostyle):syserr;
+                                   file_info:c_void_ptr, flags:c_int,
+                                   const ref style:iostyleInternal):syserr;
 
   var local_style = style;
   var ret:file;
@@ -1804,6 +1829,11 @@ proc openplugin(pluginFile: QioPluginFile, mode:iomode,
   return ret;
 }
 
+deprecated "openfd with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle):file throws {
+  return openfd(fd, hints, style: iostyleInternal);
+}
+
 /*
 
 Create a Chapel file that works with a system file descriptor  Note that once
@@ -1827,16 +1857,21 @@ The system file descriptor will be closed when the Chapel file is closed.
          :proc:`Sys.sys_connect` for example).
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
-:arg style: optional argument to specify I/O style associated with this file.
-            The provided style will be the default for any channels created for
-            on this file, and that in turn will be the default for all I/O
-            operations performed with those channels.
+:arg style: optional argument to specify internal I/O style associated with this
+            file.  The provided style will be the default for any channels
+            created on this file, and that in turn will be the default for all
+            I/O operations performed with those channels.
 :returns: an open :record:`file` using the specified file descriptor.
 
 :throws SystemError: Thrown if the file descriptor could not be retrieved.
 
- */
-proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
+.. warning::
+
+   iostyleInternal is an internal type.  We do not recommend relying on it, as
+   it will likely be replaced in the future.
+
+*/
+proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret.home = here;
@@ -1855,6 +1890,10 @@ proc openfd(fd: fd_t, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle(
   return ret;
 }
 
+deprecated "openfp with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle):file throws {
+  return openfp(fp, hints, style: iostyleInternal);
+}
 /*
 
 Create a Chapel file that works with an open C file (ie a ``FILE*``).  Note
@@ -1871,15 +1910,21 @@ that once the file is open, you will need to use a :proc:`file.reader` or
 :arg fp: a C ``FILE*`` to work with
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :type:`iohints`.
-:arg style: optional argument to specify I/O style associated with this file.
-            The provided style will be the default for any channels created for
-            on this file, and that in turn will be the default for all I/O
-            operations performed with those channels.
+:arg style: optional argument to specify internal I/O style associated with this
+            file.  The provided style will be the default for any channels
+            created on this file, and that in turn will be the default for all
+            I/O operations performed with those channels.
 :returns: an open :record:`file` that uses the underlying FILE* argument.
 
 :throws SystemError: Thrown if the C file could not be retrieved.
+
+.. warning::
+
+   iostyleInternal is an internal type.  We do not recommend relying on it, as
+   it will likely be replaced in the future.
+
  */
-proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
+proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret.home = here;
@@ -1897,6 +1942,11 @@ proc openfp(fp: _file, hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle
     try ioerror(err, "in openfp", path);
   }
   return ret;
+}
+
+deprecated "opentmp with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle):file throws {
+  return opentmp(hints, style: iostyleInternal);
 }
 
 /*
@@ -1925,8 +1975,15 @@ that is, a new file is created that supports both writing and reading.
 :returns: an open temporary file.
 
 :throws SystemError: Thrown if the temporary file could not be opened.
- */
-proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file throws {
+
+.. warning::
+
+   iostyleInternal is an internal type.  We do not recommend relying on it, as
+   it will likely be replaced in the future.
+
+*/
+proc opentmp(hints:iohints=IOHINT_NONE,
+             style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret.home = here;
@@ -1937,6 +1994,10 @@ proc opentmp(hints:iohints=IOHINT_NONE, style:iostyle = defaultIOStyle()):file t
   return ret;
 }
 
+deprecated "openmem with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc openmem(style:iostyle):file throws {
+  return openmem(style: iostyleInternal);
+}
 /*
 
 Open a file that is backed by a buffer in memory that will not persist when the
@@ -1946,15 +2007,21 @@ perform I/O operations.
 
 The resulting file supports both reading and writing.
 
-:arg style: optional argument to specify I/O style associated with this file.
-            The provided style will be the default for any channels created for
-            on this file, and that in turn will be the default for all I/O
-            operations performed with those channels.
+:arg style: optional argument to specify internal I/O style associated with this
+            file.  The provided style will be the default for any channels
+            created on this file, and that in turn will be the default for all
+            I/O operations performed with those channels.
 :returns: an open memory file.
 
 :throws SystemError: Thrown if the memory buffered file could not be opened.
- */
-proc openmem(style:iostyle = defaultIOStyle()):file throws {
+
+.. warning::
+
+   iostyleInternal is an internal type.  We do not recommend relying on it, as
+   it will likely be replaced in the future.
+
+*/
+proc openmem(style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
   var ret:file;
   ret.home = here;
@@ -2112,7 +2179,7 @@ proc channel.init(param writing:bool, param kind:iokind, param locking:bool,
 }
 
 pragma "no doc"
-proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyle) {
+proc channel.init(param writing:bool, param kind:iokind, param locking:bool, f:file, out error:syserr, hints:c_int, start:int(64), end:int(64), in local_style:iostyleInternal) {
   this.init(writing, kind, locking);
   on f.home {
     this.home = f.home;
@@ -2546,6 +2613,7 @@ inline proc channel._commit() {
    called on a locked channel.
 
  */
+deprecated "This method is deprecated because it returns a type that is deprecated"
 proc channel._style():iostyle {
   var ret:iostyle;
   on this.home {
@@ -2562,6 +2630,7 @@ proc channel._style():iostyle {
    be called on a locked channel.
 
  */
+deprecated "This method is deprecated because its purpose involves a deprecated type"
 proc channel._set_style(style:iostyle) {
   on this.home {
     var local_style:iostyle = style;
@@ -2609,12 +2678,20 @@ proc channel.filePlugin() : borrowed QioPluginFile? {
   return vptr:borrowed QioPluginFile?;
 }
 
-
+deprecated "openreader with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc openreader(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints:iohints = IOHINT_NONE,
+                style:iostyle)
+    : channel(false, kind, locking) throws {
+  return openreader(path, kind, locking, start, end, hints,
+                    style: iostyleInternal);
+}
 // We can simply call channel.close() on these, since the underlying file will
 // be closed once we no longer have any references to it (which in this case,
 // since we only will have one reference, will be right after we close this
 // channel presumably).
-// TODO: include optional iostyle argument for consistency
 /*
 
 Open a file at a particular path and return a reading channel for it.
@@ -2641,18 +2718,34 @@ This function is equivalent to calling :proc:`open` and then
 :returns: an open reading channel to the requested resource.
 
 :throws SystemError: Thrown if a reading channel could not be returned.
+
+.. warning::
+
+   iostyleInternal is an internal type.  We do not recommend relying on it, as
+   it will likely be replaced in the future.
+
  */
 proc openreader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints = IOHINT_NONE,
-                style:iostyle = defaultIOStyle())
+                style:iostyleInternal = defaultIOStyleInternal())
     : channel(false, kind, locking) throws {
 
   var fl:file = try open(path, iomode.r);
   return try fl.reader(kind, locking, start, end, hints, style);
 }
 
+deprecated "openwriter with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc openwriter(path:string,
+                param kind=iokind.dynamic, param locking=true,
+                start:int(64) = 0, end:int(64) = max(int(64)),
+                hints:iohints = IOHINT_NONE,
+                style:iostyle)
+    : channel(true, kind, locking) throws {
+  return openwriter(path, kind, locking, start, end, hints,
+                    style: iostyleInternal);
+}
 /*
 
 Open a file at a particular path and return a writing channel for it.
@@ -2679,16 +2772,31 @@ This function is equivalent to calling :proc:`open` with ``iomode.cwr`` and then
 :returns: an open writing channel to the requested resource.
 
 :throws SystemError: Thrown if a writing channel could not be returned.
+
+.. warning::
+
+   iostyleInternal is an internal type.  We do not recommend relying on it, as
+   it will likely be replaced in the future.
+
 */
 proc openwriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints:iohints = IOHINT_NONE,
-                style:iostyle = defaultIOStyle())
+                style:iostyleInternal = defaultIOStyleInternal())
     : channel(true, kind, locking) throws {
 
   var fl:file = try open(path, iomode.cw);
   return try fl.writer(kind, locking, start, end, hints, style);
+}
+
+deprecated "reader with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc file.reader(param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 hints:iohints = IOHINT_NONE,
+                 style:iostyle): channel(false, kind, locking)
+                 throws {
+  return this.reader(kind, locking, start, end, hints, style: iostyleInternal);
 }
 
 /*
@@ -2729,10 +2837,16 @@ proc openwriter(path:string,
                this file.
 
    :throws SystemError: Thrown if a file reader channel could not be returned.
+
+   .. warning::
+
+      iostyleInternal is an internal type.  We do not recommend relying on it,
+      as it will likely be replaced in the future.
+
  */
 proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
                  end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                 style:iostyle = this._style): channel(false, kind, locking) throws {
+                 style:iostyleInternal = this._style): channel(false, kind, locking) throws {
   // It is the responsibility of the caller to release the returned channel
   // if the error code is nonzero.
   // The return error code should be checked to avoid double-deletion errors.
@@ -2747,14 +2861,27 @@ proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 
   return ret;
 }
 
+ deprecated "lines with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc file.lines(param locking:bool = true, start:int(64) = 0,
+                end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+                in local_style:iostyle = this._style) throws {
+  return this.lines(locking, start, end, hints, local_style: iostyleInternal);
+}
 /* Iterate over all of the lines in a file.
 
    :returns: an object which yields strings read from the file
 
    :throws SystemError: Thrown if an ItemReader could not be returned.
+
+   .. warning::
+
+      iostyleInternal is an internal type.  We do not recommend relying on it,
+      as it will likely be replaced in the future.
+
  */
-proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(int(64)),
-                hints:iohints = IOHINT_NONE, in local_style:iostyle = this._style) throws {
+proc file.lines(param locking:bool = true, start:int(64) = 0,
+                end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
+                in local_style:iostyleInternal = this._style) throws {
   local_style.string_format = QIO_STRING_FORMAT_TOEND;
   local_style.string_end = 0x0a; // '\n'
   param kind = iokind.dynamic;
@@ -2769,6 +2896,14 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
   if err then try ioerror(err, "in file.lines", this.tryGetPath());
 
   return ret;
+}
+
+deprecated "writer with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc file.writer(param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 hints:c_int = 0, style:iostyle):
+                 channel(true,kind,locking) throws {
+  return this.writer(kind, locking, start, end, hints, style: iostyleInternal);
 }
 
 /*
@@ -2814,9 +2949,16 @@ proc file.lines(param locking:bool = true, start:int(64) = 0, end:int(64) = max(
                this file.
 
    :throws SystemError: Thrown if a file writer channel could not be returned.
+
+   .. warning::
+
+      iostyleInternal is an internal type.  We do not recommend relying on it,
+      as it will likely be replaced in the future.
+
  */
-proc file.writer(param kind=iokind.dynamic, param locking=true, start:int(64) = 0,
-                 end:int(64) = max(int(64)), hints:c_int = 0, style:iostyle = this._style):
+proc file.writer(param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 hints:c_int = 0, style:iostyleInternal = this._style):
                  channel(true,kind,locking) throws {
   // It is the responsibility of the caller to retain and release the returned
   // channel.
@@ -3539,11 +3681,11 @@ iter channel.lines() {
 
   try! this.lock();
 
-  // Save iostyle
-  const saved_style: iostyle = this._style();
+  // Save iostyleInternal
+  const saved_style: iostyleInternal = this._style();
 
-  // Update iostyle
-  var newline_style: iostyle = this._style();
+  // Update iostyleInternal
+  var newline_style: iostyleInternal = this._style();
   newline_style.string_format = QIO_STRING_FORMAT_TOEND;
   newline_style.string_end = 0x0a; // '\n'
   this._set_style(newline_style);
@@ -3641,6 +3783,10 @@ inline proc channel.read(ref args ...?k):bool throws {
   return true;
 }
 
+deprecated "read with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc channel.read(ref args ...?k, style:iostyle):bool throws {
+  return channel.read((...args), style: iostyleInternal);
+}
 /*
 
    Read values from a channel. The input will be consumed atomically - the
@@ -3650,14 +3796,19 @@ inline proc channel.read(ref args ...?k):bool throws {
               internally, but for other types this function will call
               value.readThis() with a ``Reader`` argument as described
               in :ref:`readThis-writeThis-readWriteThis`.
-   :arg style: optional argument to provide an :type:`iostyle` for this read.
-               If this argument is not provided, use the current style
+   :arg style: optional argument to provide an :type:`iostyleInternal` for this
+               read.  If this argument is not provided, use the current style
                associated with this channel.
    :returns: `true` if the read succeeded, and `false` on end of file.
 
    :throws SystemError: Thrown if the channel could not be read.
+
+   .. warning::
+
+      iostyleInternal is an internal type and should not be relied on, as it
+      will likely be replaced in the future.
  */
-proc channel.read(ref args ...?k, style:iostyle):bool throws {
+proc channel.read(ref args ...?k, style:iostyleInternal):bool throws {
   if writing then compilerError("read on write-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
@@ -3930,6 +4081,11 @@ proc channel.readln(ref args ...?k):bool throws {
   return try this.read((...args), nl);
 }
 
+deprecated "readln with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc channel.readln(ref args ...?k,
+                    style:iostyle):bool throws {
+  return this.readln((...args), style: iostyleInternal);
+}
 /*
 
    Read values from a channel and then consume any bytes until
@@ -3947,9 +4103,14 @@ proc channel.readln(ref args ...?k):bool throws {
    :returns: `true` if the read succeeded, and `false` upon end of file.
 
    :throws SystemError: Thrown if a line could not be read from the channel.
+
+   .. warning::
+
+      iostyleInternal is an internal type and should not be relied on, as it
+      will likely be replaced in the future.
  */
 proc channel.readln(ref args ...?k,
-                    style:iostyle):bool throws {
+                    style:iostyleInternal):bool throws {
   var nl = new ioNewline();
   return try this.read((...args), nl, style=style);
 }
@@ -4050,6 +4211,10 @@ inline proc channel.write(const args ...?k):bool throws {
   return true;
 }
 
+deprecated "write with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc channel.write(const args ...?k, style:iostyle):bool throws {
+  return this.write((...args), style: iostyleInternal);
+}
 /*
    Write values to a channel. The output will be produced atomically -
    the channel lock will be held while writing all of the passed
@@ -4064,8 +4229,13 @@ inline proc channel.write(const args ...?k):bool throws {
    :returns: `true` if the write succeeded
 
    :throws SystemError: Thrown if the values could not be written to the channel.
+
+   .. warning::
+
+      iostyleInternal is an internal type and should not be relied on, as it
+      will likely be replaced in the future.
  */
-proc channel.write(const args ...?k, style:iostyle):bool throws {
+proc channel.write(const args ...?k, style:iostyleInternal):bool throws {
   if !writing then compilerError("write on read-only channel");
   const origLocale = this.getLocaleOfIoRequest();
 
@@ -4095,6 +4265,10 @@ proc channel.writeln(const args ...?k):bool throws {
   return try this.write((...args), new ioNewline());
 }
 
+deprecated "write with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+proc channel.writeln(const args ...?k, style:iostyle):bool throws {
+  return this.writeln((...args), style: iostyleInternal);
+}
 /*
 
    Write values to a channel followed by a newline.  The output will be
@@ -4111,8 +4285,13 @@ proc channel.writeln(const args ...?k):bool throws {
    :returns: `true` if the write succeeded
 
    :throws SystemError: Thrown if the values could not be written to the channel.
+
+   .. warning::
+
+      iostyleInternal is an internal type and should not be relied on, as it
+      will likely be replaced in the future.
  */
-proc channel.writeln(const args ...?k, style:iostyle):bool throws {
+proc channel.writeln(const args ...?k, style:iostyleInternal):bool throws {
   return try this.write((...args), new ioNewline(), style=style);
 }
 
@@ -5638,7 +5817,7 @@ class _channel_regex_info {
 
 pragma "no doc"
 proc channel._match_regex_if_needed(cur:size_t, len:size_t, ref error:syserr,
-    ref style:iostyle, r:unmanaged _channel_regex_info)
+    ref style:iostyleInternal, r:unmanaged _channel_regex_info)
 {
   if qio_regex_ok(r.theRegex) {
     if r.matchedRegex then return;
@@ -5703,7 +5882,7 @@ proc channel._match_regex_if_needed(cur:size_t, len:size_t, ref error:syserr,
 pragma "no doc"
 proc channel._format_reader(
     fmtStr:?fmtType, ref cur:size_t, len:size_t, ref error:syserr,
-    ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyle,
+    ref conv:qio_conv_t, ref gotConv:bool, ref style:iostyleInternal,
     ref r:unmanaged _channel_regex_info?,
     isReadf:bool)
 {
@@ -5854,7 +6033,7 @@ pragma "no doc"
 proc channel._conv_sethandler(
     ref error:syserr,
     argtypei:c_int,
-    ref style:iostyle,
+    ref style:iostyleInternal,
     i:int, argi,
     isReadf:bool):bool throws
 {
@@ -6147,8 +6326,8 @@ proc channel._writefOne(fmtStr, ref arg, i: int,
                         ref r: unmanaged _channel_regex_info?,
                         argType: c_ptr(c_int), argTypeLen: int,
                         ref conv: qio_conv_t, ref gotConv: bool,
-                        ref style: iostyle, ref err: syserr, origLocale: locale,
-                        len: size_t) throws {
+                        ref style: iostyleInternal, ref err: syserr,
+                        origLocale: locale, len: size_t) throws {
   if boundsChecking {
     if i >= argTypeLen {
       halt("Index ", i, " is accessed on argType of length ", argTypeLen);
@@ -6279,7 +6458,7 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
     var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
-    var style:iostyle;
+    var style:iostyleInternal;
 
     param argTypeLen = k+5;
     // we don't use a tuple here so that we can pass this to writefOne as a
@@ -6334,7 +6513,7 @@ proc channel.writef(fmtStr:?t): bool throws
     var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
-    var style:iostyle;
+    var style:iostyleInternal;
     var end:size_t;
     var dummy:c_int;
 
@@ -6401,7 +6580,7 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
     var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
-    var style:iostyle;
+    var style:iostyleInternal;
     var end:size_t;
 
     param argTypeLen = k+5;
@@ -6676,7 +6855,7 @@ proc channel.readf(fmtStr:?t) throws
     var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
     var gotConv:bool;
-    var style:iostyle;
+    var style:iostyleInternal;
     var end:size_t;
     var dummy:c_int;
 
