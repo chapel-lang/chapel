@@ -1381,17 +1381,6 @@ proc iostyleInternal.little(str_style:int(64)=stringStyleWithVariableLength()):i
   return ret;
 }
 
-/* Get an I/O style indicating text I/O.
-
-   :returns: the requested :record:`iostyle`
- */
-deprecated
-"This method is deprecated because the type it is defined on is deprecated"
-proc iostyle.text(/* args coming later */):iostyle  {
-  var tmp: iostyleInternal = this: iostyleInternal;
-  return tmp.text(): iostyle;
-}
-
 // TODO -- add arguments to this function
 /* Get an iostyleInternal indicating text I/O. */
 pragma "no doc"
@@ -3894,11 +3883,25 @@ proc channel.readline(ref arg: ?t): bool throws where t==string || t==bytes {
   try {
     on this.home {
       try this.lock(); defer { this.unlock(); }
-      var saveStyle = this._style(); defer { this._set_style(saveStyle); }
+      var saveStyle: iostyleInternal;
+      on this.home {
+        var local_style:iostyleInternal;
+        qio_channel_get_style(_channel_internal, local_style);
+        saveStyle = local_style;
+      }
+      defer {
+        on this.home {
+          var local_style:iostyleInternal = saveStyle;
+          qio_channel_set_style(_channel_internal, local_style);
+        }
+      }
       var myStyle = saveStyle.text();
       myStyle.string_format = QIO_STRING_FORMAT_TOEND;
       myStyle.string_end = 0x0a; // ascii newline.
-      this._set_style(myStyle);
+      on this.home {
+        var local_style:iostyleInternal = myStyle;
+        qio_channel_set_style(_channel_internal, local_style);
+      }
       try _readOne(iokind.dynamic, arg, origLocale);
     }
   } catch err: SystemError {
