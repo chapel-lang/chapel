@@ -25,6 +25,7 @@
 #include "chpl/queries/UniqueString.h"
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
+#include "chpl/util/break.h"
 
 #include <memory>
 #include <tuple>
@@ -222,7 +223,7 @@ class Context {
   querydetail::RevisionNumber currentRevisionNumber = 1;
   bool enableDebugTracing = false;
   bool breakSet = false;
-  size_t breakOnHash = 4231795962451111285;
+  size_t breakOnHash = 0;
   int numQueriesRunThisRevision_ = 0;
 
   static void defaultReportError(const ErrorMessage& err);
@@ -617,7 +618,6 @@ class Context {
 
 
   /// \endcond
-  void gdbShouldBreakHere();
 };
 
 } // end namespace chpl

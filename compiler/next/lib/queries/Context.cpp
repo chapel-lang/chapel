@@ -676,10 +676,6 @@ void Context::haltForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
   exit(-1);
 }
 
-void Context::gdbShouldBreakHere() {
-  printf("------------------\nGDB SHOULD BREAK HERE\n------------------\n");
-}
-
 namespace querydetail {
 
 

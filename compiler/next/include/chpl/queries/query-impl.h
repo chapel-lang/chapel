@@ -123,14 +123,14 @@ void Context::queryBeginTrace(const char* traceQueryName,
   if (breakSet || enableDebugTracing) {
     auto args = queryArgsToStrings(tupleOfArg);
     size_t queryAndArgsHash = hash_combine(hash(traceQueryName), hash(args));
-    if (breakSet && queryAndArgsHash == breakOnHash) {
-      gdbShouldBreakHere();
-    }
     if (enableDebugTracing) {
       printf("QUERY BEGIN     %s (", traceQueryName);
       queryArgsPrint(tupleOfArg);
       printf(")\n");
       printf("QUERY + ARGS HASH:    %zu\n", queryAndArgsHash);
+    }
+    if (breakSet && queryAndArgsHash == breakOnHash) {
+      util::debuggerBreakHere();
     }
   }
 }

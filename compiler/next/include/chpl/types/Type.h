@@ -195,8 +195,9 @@ class Type {
 } // end namespace types
   /// \cond DO_NOT_DOCUMENT
 template<> struct stringify<chpl::types::Type> {
-  std::string operator()(StringifyKind stringKind, const chpl::types::Type& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  std::string operator()(StringifyKind stringKind,
+                         const chpl::types::Type& stringMe) const {
+    return stringMe.toString();
   }
 };
   /// \endcond DO_NOT_DOCUMENT
