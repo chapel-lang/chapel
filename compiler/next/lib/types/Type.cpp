@@ -166,6 +166,20 @@ bool Type::isAnyNilablePtrType() const {
   return false;
 }
 
+bool Type::isAnyUserRecordType() const {
+  if (!isRecordType())
+    return false;
+
+  // TODO: may need to add exceptions in here
+  // if there are any types implemented as records but where that
+  // isn't the user's view
+  //  * string, bytes, distribution, domain, array, range
+  //    tuple, sync, single, atomic, managed pointer
+
+  return true;
+}
+
+
 const CompositeType* Type::getCompositeType() const {
   if (auto at = toCompositeType())
     return at;

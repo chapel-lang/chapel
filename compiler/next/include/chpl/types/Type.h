@@ -152,12 +152,18 @@ class Type {
   }
 
   /** returns true for a type that is a kind of pointer */
-  bool isAnyPtrType() const {
+  bool isPtrType() const {
     return isClassType() || isCFnPtrType() || isCVoidPtrType();
   }
 
   /** returns true for a pointer type that can store nil */
-  bool isAnyNilablePtrType() const;
+  bool isNilablePtrType() const;
+
+  /** Returns true for a type that is a user-defined record.
+      The compiler treats some internal types as records
+      but the language design does not insist that they are.
+   */
+  bool isUserRecordType() const;
 
   /** If 'this' is a CompositeType, return it.
       If 'this' is a ClassType, return the basicClassType.
