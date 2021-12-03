@@ -21,7 +21,7 @@ full-featured version of Chapel, refer to
    packages you should have available to build and run Chapel.
 
 
-1) If you don't already have the Chapel 1.25 source release, see
+1) If you don't already have the Chapel 1.25.1 source release, see
    https://chapel-lang.org/download.html.
 
 
@@ -31,14 +31,14 @@ full-featured version of Chapel, refer to
 
       .. code-block:: bash
 
-         tar xzf chapel-1.25.0.tar.gz
+         tar xzf chapel-1.25.1.tar.gz
 
    b. Make sure that you are in the directory that was created when
       unpacking the source release, for example:
 
       .. code-block:: bash
 
-         cd chapel-1.25.0
+         cd chapel-1.25.1
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than ``bash`` or ``zsh``,
