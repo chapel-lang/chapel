@@ -552,7 +552,7 @@ static bool shouldAllowCoercionsType(Type* actualType, Type* formalType) {
 
     AggregateType* at = toAggregateType(canonicalActual);
 
-    if (canInstantiateOrCoerceDecorators(actualD, formalD, false, false)) {
+    if (canInstantiateOrCoerceDecorators(actualD, formalD, true, false)) {
       if (canonicalActual == canonicalFormal ||
           isDispatchParent(canonicalActual, canonicalFormal) ||
           (at && at->instantiatedFrom &&
