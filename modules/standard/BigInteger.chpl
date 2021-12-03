@@ -2353,6 +2353,7 @@ module BigInteger {
 
        n and d are deprecated - please use numer and denom respectively
   */
+  pragma "last resort"
   deprecated
   "n and d are deprecated - please use numer and denom respectively"
   proc bigint.divexact(const ref n: bigint, const ref d: bigint) {
@@ -2363,6 +2364,7 @@ module BigInteger {
 
        n and d are deprecated - please use numer and denom respectively
   */
+  pragma "last resort"
   deprecated
   "n and d are deprecated - please use numer and denom respectively"
   proc bigint.divexact(const ref n: bigint, d: integral) {
@@ -2414,6 +2416,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 
        d is deprecated - please use div
   */
+  pragma "last resort"
   deprecated
   "d is deprecated - please use div"
   proc bigint.divisible_p(const ref d: bigint) : int {
@@ -2424,6 +2427,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 
        d is deprecated - please use div
   */
+  pragma "last resort"
   deprecated
   "d is deprecated - please use div"
   proc bigint.divisible_p(d: int) : int {
@@ -2434,6 +2438,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 
        d is deprecated - please use div
   */
+  pragma "last resort"
   deprecated
   "d is deprecated - please use div"
   proc bigint.divisible_p(d: uint) : int {
@@ -2508,6 +2513,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 
        b is deprecated - please use exp
   */
+  pragma "last resort"
   deprecated
   "b is deprecated - please use exp"
   proc bigint.divisible_2exp_p(b: integral) : int {
@@ -2539,6 +2545,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 
        c and d are deprecated - please use con and mod respectively
   */
+  pragma "last resort"
   deprecated
   "c and d are deprecated - please use con and mod respectively"
   proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : int {
@@ -2549,6 +2556,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 
        c and d are deprecated - please use con and mod respectively
   */
+  pragma "last resort"
   deprecated
   "c and d are deprecated - please use con and mod respectively"
   proc bigint.congruent_p(c: integral, d: integral) : int {
@@ -2603,6 +2611,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 
        c and b are deprecated - please use con and modExp respectively
   */
+  pragma "last resort"
   deprecated
   "c and b are deprecated - please use con and modExp respectively"
   proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : int {
