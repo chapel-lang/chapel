@@ -431,36 +431,26 @@ bool CanPassResult::isSubtype(const Type* actualT,
   if (auto actualCt = actualT->toClassType()) {
     if (auto formalCt = formalT->toClassType()) {
       // owned Child -> owned Parent
-      if (actualCt->decorator().isManaged() &&
-          actualCt->decorator() == formalCt->decorator()) {
+      // owned Child -> owned Parent?
+      // ditto borrowed, etc
 
-        if (actualCt->manager() == formalCt->manager()) {
-          auto actualBct = actualCt->basicClassType();
-          auto formalBct = formalCt->basicClassType();
-          // are the basic class types the same?
-          // also check for subclass relationship
-          if (actualBct->isTransitiveChildOf(formalBct)) {
-            return true;
-          }
-        }
+      // check decorators allow subtyping conversion
+      auto actualDec = actualCt->decorator().val();
+      auto formalDec = formalCt->decorator().val();
+      bool ok = actualCt->manager() == formalCt->manager() &&
+                ClassTypeDecorator::canCoerceDecorators(
+                                        actualDec, formalDec,
+                                        /* allowNonSubtypes */ true,
+                                        /* implicitBang */ false);
 
-      } else {
-        // check decorators allow subtyping conversion
-        auto actualDec = actualCt->decorator().val();
-        auto formalDec = formalCt->decorator().val();
-        bool ok = ClassTypeDecorator::canCoerceDecorators(
-                                          actualDec, formalDec,
-                                          /* allowNonSubtypes */ false,
-                                          /* implicitBang */ false);
-        if (ok) {
-          auto actualBct = actualCt->basicClassType();
-          auto formalBct = formalCt->basicClassType();
+      if (ok) {
+        auto actualBct = actualCt->basicClassType();
+        auto formalBct = formalCt->basicClassType();
 
-          // are the basic class types the same?
-          // also check for subclass relationship
-          if (actualBct->isTransitiveChildOf(formalBct)) {
-            return true;
-          }
+        // are the basic class types the same?
+        // also check for subclass relationship
+        if (actualBct->isTransitiveChildOf(formalBct)) {
+          return true;
         }
       }
     }

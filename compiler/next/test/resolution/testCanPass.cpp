@@ -63,6 +63,7 @@ static bool passesSubtype(CanPassResult r) {
          r.conversionKind() == CanPassResult::SUBTYPE;
 }
 
+/*
 static bool passesOther(CanPassResult r) {
   return r.passes() &&
          !r.instantiates() &&
@@ -70,6 +71,7 @@ static bool passesOther(CanPassResult r) {
          r.converts() &&
          r.conversionKind() == CanPassResult::OTHER;
 }
+*/
 
 static bool doesNotPass(CanPassResult r) {
   return !r.passes();
@@ -460,7 +462,7 @@ static void test7() {
 
   // next check parent/child toggling nilability within each group
   r = canPass(borrowedChild, borrowedParent); assert(passesSubtype(r));
-  r = canPass(borrowedChild, borrowedParentQ); assert(passesOther(r));
+  r = canPass(borrowedChild, borrowedParentQ); assert(passesSubtype(r));
   r = canPass(borrowedChildQ, borrowedParent); assert(doesNotPass(r));
   r = canPass(borrowedChildQ, borrowedParentQ); assert(passesSubtype(r));
 
@@ -470,7 +472,7 @@ static void test7() {
   r = canPass(borrowedParentQ, borrowedChildQ); assert(doesNotPass(r));
 
   r = canPass(unmanagedChild, unmanagedParent); assert(passesSubtype(r));
-  r = canPass(unmanagedChild, unmanagedParentQ); assert(passesOther(r));
+  r = canPass(unmanagedChild, unmanagedParentQ); assert(passesSubtype(r));
   r = canPass(unmanagedChildQ, unmanagedParent); assert(doesNotPass(r));
   r = canPass(unmanagedChildQ, unmanagedParentQ); assert(passesSubtype(r));
 
@@ -480,7 +482,7 @@ static void test7() {
   r = canPass(unmanagedParentQ, unmanagedChildQ); assert(doesNotPass(r));
 
   r = canPass(ownedChild, ownedParent); assert(passesSubtype(r));
-  r = canPass(ownedChild, ownedParentQ); assert(passesOther(r));
+  r = canPass(ownedChild, ownedParentQ); assert(passesSubtype(r));
   r = canPass(ownedChildQ, ownedParent); assert(doesNotPass(r));
   r = canPass(ownedChildQ, ownedParentQ); assert(passesSubtype(r));
 
