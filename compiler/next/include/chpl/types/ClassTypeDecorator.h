@@ -129,19 +129,6 @@ class ClassTypeDecorator final {
   combineDecorators(ClassTypeDecoratorEnum formalDecorator,
                     ClassTypeDecoratorEnum actualDecorator);
 
-  static bool canCoerceDecorators(ClassTypeDecoratorEnum actual,
-                                  ClassTypeDecoratorEnum formal,
-                                  bool allowNonSubtypes,
-                                  bool implicitBang);
-
-  static bool canInstantiateDecorators(ClassTypeDecoratorEnum actual,
-                                       ClassTypeDecoratorEnum formal);
-
-  static bool canInstantiateOrCoerceDecorators(ClassTypeDecoratorEnum actual,
-                                               ClassTypeDecoratorEnum formal,
-                                               bool allowNonSubtypes,
-                                               bool implicitBang);
-
  private:
   ClassTypeDecoratorEnum val_;
 
@@ -164,6 +151,15 @@ class ClassTypeDecorator final {
   ClassTypeDecorator addNilable() const {
     return ClassTypeDecorator(addNilableToDecorator(val_));
   }
+
+  /** Returns a decorator based on this one but with borrowed management
+      (preserving nilability) */
+  ClassTypeDecorator toBorrowed() const {
+    int val = (int) val_;
+    int tmp = BORROWED | (val & NILABILITY_MASK);
+    return ClassTypeDecorator((ClassTypeDecoratorEnum)tmp);
+  }
+
   /** Returns true if this decorator has unknown nilability */
   bool isUnknownNilability() const {
     return isDecoratorUnknownNilability(val_);
