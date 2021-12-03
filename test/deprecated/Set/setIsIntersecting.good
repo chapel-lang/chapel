@@ -1,0 +1,20 @@
+setIsIntersecting.chpl:14: In function 'doTest':
+setIsIntersecting.chpl:18: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:19: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:26: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:27: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:34: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:35: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:41: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:42: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+  setIsIntersecting.chpl:45: called as doTest(type eltType = int(64))
+setIsIntersecting.chpl:14: In function 'doTest':
+setIsIntersecting.chpl:18: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:19: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:26: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:27: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:34: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:35: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:41: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+setIsIntersecting.chpl:42: warning: This method is deprecated, please use !set.isDisjoint with the comparison set instead
+  setIsIntersecting.chpl:46: called as doTest(type eltType = testRecord)
