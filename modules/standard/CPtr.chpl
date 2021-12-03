@@ -409,7 +409,7 @@ module CPtr {
 
   pragma "no doc"
   pragma "fn synchronization free"
-  extern proc c_pointer_return(ref x:?t):c_ptr(t);
+  extern proc c_pointer_return(const ref x:?t):c_ptr(t);
   pragma "no doc"
   pragma "fn synchronization free"
   extern proc c_pointer_diff(a:c_void_ptr, b:c_void_ptr,
@@ -429,7 +429,7 @@ module CPtr {
     :arg arr: the array for which a pointer should be returned
     :returns: a pointer to the array's elements
   */
-  inline proc c_ptrTo(arr: []) {
+  inline proc c_ptrTo(const ref arr: []) {
     if (!arr.isRectangular() || !arr.domain.dist._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
 
@@ -451,7 +451,7 @@ module CPtr {
     :returns: a pointer to the argument passed by reference
 
   */
-  inline proc c_ptrTo(ref x:?t):c_ptr(t) {
+  inline proc c_ptrTo(const ref x:?t):c_ptr(t) {
     if isDomainType(t) then
       compilerError("c_ptrTo domain type not supported", 2);
     // Other cases should be avoided, e.g. sync vars
