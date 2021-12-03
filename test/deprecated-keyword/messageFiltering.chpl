@@ -171,6 +171,11 @@ var x1102 = 1102;
 deprecated "Lorem ipsum :proc:`!abc` dolor sit amet"
 var x1103 = 1103;
 
+// Proc lead with !
+deprecated "Identifier is led with ! (should filter)"
+var x1200 = 1200;
+deprecated "Lorem ipsum :proc:`!asd` dolor sit amet"
+var x1201 = 1201;
 
 // I purposefully access each variable on a separate line so the produced warning messages
 // will also have unique lines:
@@ -260,3 +265,5 @@ writeln(x1101);
 writeln(x1102);
 writeln(x1103);
 
+writeln(x1200);
+writeln(x1201);
