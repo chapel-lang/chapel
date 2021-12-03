@@ -2,16 +2,17 @@ Chapel Contributors
 ===================
 
 The following people have contributed to the implementation of the
-most recent Chapel release:
+most recent Chapel releases:
 
-Contributors to the Chapel 1.25.0 release
------------------------------------------
+Contributors to the Chapel 1.25.x releases
+------------------------------------------
 * Ben Albrecht, [HPE]
 * Souris Ash, individual contributor
 * Ankush Bhardwaj, [GSoC 2021] mentor, [GSoC 2020] student from [Royal Global University]
 * Paul Cassella, [HPE]
 * [Brad Chamberlain], [HPE]
 * Soohoon Choi, [HPE]
+* Garvit Dewan, individual contributor, [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Technology Roorkee]
 * Krishna Kumar Dey, [GSoC 2021] and [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Information Technology, Sri City]
 * Lydia Duncan, [HPE]
 * Prasanth Duvvuri, [GSoC 2021] student from [Northeastern University] (former individual contributor)
@@ -20,6 +21,7 @@ Contributors to the Chapel 1.25.0 release
 * John Hartman, [HPE]
 * David Iten, [HPE]
 * Aryamaan Jain, individual contributor
+* Ricardo Jesus, individual contributor
 * Engin Kayraklioglu, [HPE] (former [GSoC 2017] mentor, [Cray Inc.] intern from [George Washington University])
 * Shreyas Khandekar, [HPE] intern from [University of Arizona]
 * Lee Killough, [HPE]
@@ -29,6 +31,7 @@ Contributors to the Chapel 1.25.0 release
 * Mohaned Mashaly, individual contributor
 * Aniket Mathur, [GSoC 2021] mentor, [GSoC 2020] student from [Indian Institute of Technology Roorkee]
 * Ben McDonald, [HPE] (former intern from [Gonzaga University])
+* Kyle Milz, individual contributor
 * Divye Nayyar, [GSoC 2021] student from [Indian Institute of Technology Roorkee] (former individual contributor)
 * Sarah Nguyen, [HPE]
 * Nikhil Padmanabhan, [Yale University]
@@ -77,7 +80,6 @@ Contributors to previous releases
 * Steve Deitz, [Cray Inc.]
 * Laura Delaney, [Cray Inc.] intern from [Whitworth University]
 * Joel Denny, [ETI]
-* Garvit Dewan, [GSoC 2020] mentor, [GSoC 2019] student from [Indian Institute of Technology Roorkee]
 * Roxana Diaconescu, [CalTech]
 * Nelson Luís Dias, individual contributor
 * James Dinan, [Cray Inc.] intern from [The Ohio State University]
