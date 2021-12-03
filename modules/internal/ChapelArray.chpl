@@ -1293,8 +1293,8 @@ module ChapelArray {
     forwarding _value except chpl__serialize, chpl__deserialize;
 
     pragma "no doc"
-    proc chpl__serialize()
-      where this._value.isDefaultRectangular() {
+    proc chpl__serialize() {
+      //where this._value.isDefaultRectangular() {
       return this._value.chpl__serialize();
     }
 

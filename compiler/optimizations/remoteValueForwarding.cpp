@@ -27,6 +27,7 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
+#include "view.h"
 
 //#define DEBUG_SYNC_ACCESS_FUNCTION_SET
 
@@ -215,6 +216,16 @@ static bool shouldSerialize(ArgSymbol* arg) {
   bool hasSerializer = serializeMap.find(arg->getValType()) != serializeMap.end();
   Type* argType = arg->getValType();
 
+  //if (arg->id == 2357983) {
+    if (AggregateType *at = toAggregateType(argType)) {
+      for_fields (field, at) {
+        nprint_view(field);
+        bool hasSerializer = serializeMap.find(field->getValType()) != serializeMap.end();
+        std::cout << "has serializer " << hasSerializer << std::endl;
+      }
+    }
+  //}
+
   if (hasSerializer == false) {
     retval = false;
   } else if (argType->symbol->hasFlag(FLAG_ARRAY)) {
@@ -269,6 +280,10 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                             FnSymbol*                     fn,
                             ArgSymbol*                    arg) {
   bool retval = false;
+
+  if (arg->id == 2357983) {
+
+  }
 
   if (arg->hasFlag(FLAG_NO_RVF)) {
     retval = false;

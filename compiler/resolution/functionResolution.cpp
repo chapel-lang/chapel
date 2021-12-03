@@ -9686,6 +9686,15 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
 
   CallExpr* serializeCall = new CallExpr("chpl__serialize", gMethodToken, tmp);
+  if (at->symbol->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+
+  }
+  if (at->getModule()->modTag == MOD_USER) {
+
+  }
+  if (at->id == 1752804) {
+    
+  }
   serializeFn = resolveNormalSerializer(serializeCall);
   if (serializeFn != NULL && serializeFn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
     // Without this check we would resolve a serializer for arrays despite a
@@ -9723,6 +9732,10 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
         resolveFunction(deserializeFn);
 
         Type* retType = deserializeFn->retType->getValType();
+
+        if (DecoratedClassType* decType = toDecoratedClassType(retType)) {
+          retType = decType->getCanonicalClass();
+        }
         if (retType == dtVoid) {
           USR_FATAL(deserializeFn, "chpl__deserialize cannot return void");
         } else if (retType != at) {
@@ -9793,17 +9806,27 @@ static void resolveSerializers() {
 
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (! ts->hasFlag(FLAG_GENERIC)                &&
-        ! ts->hasFlag(FLAG_ITERATOR_RECORD)        &&
+        //! ts->hasFlag(FLAG_ITERATOR_RECORD)        &&
         ! isSingleType(ts->type)                   &&
         ! isSyncType(ts->type)                     &&
         ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+      //if (ts->id == 1752804) {
+      if (ts->getModule()->modTag == MOD_USER) {
+
+      }
       if (AggregateType* at = toAggregateType(ts->type)) {
-        if (isRecord(at) == true) {
+        if (isRecord(at) == true || 
+            (isClass(at) == true && !at->symbol->hasFlag(FLAG_REF))) {
           bool success = resolveSerializeDeserialize(at);
           if (success) {
             resolveBroadcasters(at);
           }
         }
+      }
+    }
+    else {
+      if (ts->id == 1752804) {
+
       }
     }
   }
