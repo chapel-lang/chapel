@@ -6105,7 +6105,7 @@ proc channel._conv_sethandler(
       if ! ok {
         error = qio_format_error_arg_mismatch(i);
       } else {
-        style.str_style = stringStyleTerminated(t:uint(8));
+        style.str_style = -(t:uint(8) - iostringstyle.data_null:int(64));
       }
     }
     when QIO_CONV_SET_DONE {
@@ -6346,7 +6346,10 @@ proc channel._writefOne(fmtStr, ref arg, i: int,
   var domore = _conv_sethandler(err, argType(i), style, i,arg,false);
 
   if domore {
-    this._set_style(style);
+    on this.home {
+      var local_style:iostyleInternal = style;
+      qio_channel_set_style(_channel_internal, local_style);
+    }
     // otherwise we will consume at least one argument.
     select argType(i) {
       when QIO_CONV_ARG_TYPE_SIGNED, QIO_CONV_ARG_TYPE_BINARY_SIGNED {
@@ -6453,7 +6456,19 @@ proc channel.writef(fmtStr: ?t, const args ...?k): bool throws
   var err: syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var save_style = this._style(); defer { this._set_style(save_style); }
+
+    var save_style: iostyleInternal;
+    on this.home {
+      var local_style:iostyleInternal;
+      qio_channel_get_style(_channel_internal, local_style);
+      save_style = local_style;
+    }
+    defer {
+      on this.home {
+        var local_style:iostyleInternal = save_style;
+        qio_channel_set_style(_channel_internal, local_style);
+      }
+    }
     var cur:size_t = 0;
     var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
@@ -7084,7 +7099,7 @@ proc channel._extractMatch(m:regexMatch, ref arg:bytes, ref error:syserr) {
     var gotlen:int(64);
     var ts: c_string;
     error =
-        qio_channel_read_string(false, iokind.native:c_int, stringStyleExactLen(len),
+        qio_channel_read_string(false, iokind.native:c_int, len: int(64),
                                 _channel_internal, ts, gotlen, len: ssize_t);
     s = createBytesWithOwnedBuffer(ts, length=gotlen);
   }
