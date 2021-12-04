@@ -21,7 +21,7 @@ full-featured version of Chapel, refer to
    packages you should have available to build and run Chapel.
 
 
-1) If you don't already have the Chapel 1.25.1 source release, see
+1) If you don't already have the Chapel 1.25.0 source release, see
    https://chapel-lang.org/download.html.
 
 
