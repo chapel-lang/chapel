@@ -29,7 +29,7 @@ namespace types {
 /**
   This class represents the void type.
  */
-class VoidType : public Type {
+class VoidType final : public Type {
  private:
   VoidType() : Type(typetags::VoidType) { }
 

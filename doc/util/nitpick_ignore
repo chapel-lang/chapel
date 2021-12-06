@@ -38,7 +38,10 @@ cpp:identifier int64_t
 cpp:identifier va_list
 # TODO: Expand macros before generating docs to remove these.
 cpp:identifier ParamTag
+cpp:identifier PragmaTag
 cpp:identifier TypeTag
+cpp:identifier PrimitiveTag
+cpp:identifier chpl::uast::PrimitiveTag
 cpp:identifier types::RealParam
 cpp:identifier types::IntParam
 cpp:identifier types::UintParam

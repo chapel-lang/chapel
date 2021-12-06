@@ -30,27 +30,13 @@ use Regex;
 /* Entry point for mason system commands */
 proc masonSystem(args: [] string) {
 
-  var parser = new argumentParser();
-
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
+  var parser = new argumentParser(helpHandler=new MasonSystemHelpHandler());
 
   var pcCmd = parser.addSubCommand("pc");
   var searchCmd = parser.addSubCommand("search");
 
-  try! {
-    parser.parseArgs(args);
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonSystemHelp();
-    exit(1);
-  }
-  if helpFlag.valueAsBool() {
-    masonSystemHelp();
-    exit(0);
-  }
+  parser.parseArgs(args);
+
   try! {
     if pcCmd.hasValue() {
       pkgConfigExists();
@@ -76,7 +62,7 @@ proc masonSystem(args: [] string) {
 
 /* Checks to see that pkg-config is installed */
 proc pkgConfigExists() throws {
-  var status = runWithStatus("pkg-config --version", false);
+  var status = runWithStatus("pkg-config --version", true);
   if status != 0 {
     throw new owned MasonError("pkg-config is not installed");
   }
@@ -86,28 +72,13 @@ proc pkgConfigExists() throws {
 /* Searches available system packages */
 proc pkgSearch(args) throws {
 
-  var parser = new argumentParser();
-
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
+  var parser = new argumentParser(helpHandler=new MasonSystemSearchHelpHandler());
 
   var quietFlag = parser.addFlag(name="no-show-desc", defaultValue=false);
   var descFlag = parser.addFlag(name="desc", defaultValue=false);
   var pkgNameArg = parser.addArgument(name="package", numArgs=0..1);
 
-  try! {
-    parser.parseArgs(args);
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonSystemSearchHelp();
-    exit(1);
-  }
-  if helpFlag.valueAsBool() {
-    masonSystemSearchHelp();
-    exit(0);
-  }
+  parser.parseArgs(args);
 
   var desc = descFlag.valueAsBool();
   var quiet = quietFlag.valueAsBool();
@@ -159,23 +130,12 @@ proc listAllPkgs() {
 
 /* Prints a pc for user debugging */
 proc printPkgPc(args) throws {
-  var parser = new argumentParser();
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
+  var parser = new argumentParser(helpHandler=new MasonSystemPcHelpHandler());
+
   var pkgNameArg = parser.addArgument(name="package", numArgs=0..1);
-  try! {
-    parser.parseArgs(args);
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonSystemPcHelp();
-    exit(1);
-  }
-  if helpFlag.valueAsBool() {
-    masonSystemPcHelp();
-    exit(0);
-  }
+
+  parser.parseArgs(args);
+
   if !pkgNameArg.hasValue() {
     masonSystemPcHelp();
     exit(1);

@@ -10,17 +10,17 @@ define([cv_prefix],[gasnet_cv_])
 
 dnl Public release version packaging identifier:
 define([GASNET_RELEASE_VERSION_MAJOR_D],[2021])
-define([GASNET_RELEASE_VERSION_MINOR_D],[8])
+define([GASNET_RELEASE_VERSION_MINOR_D],[9])
 define([GASNET_RELEASE_VERSION_PATCH_D],[0])
 dnl GASNet-EX spec version:
 define([GASNETEX_SPEC_VERSION_MAJOR_D],[0])
-define([GASNETEX_SPEC_VERSION_MINOR_D],[13])
+define([GASNETEX_SPEC_VERSION_MINOR_D],[14])
 dnl GASNet-1 spec version:
 define([GASNET_SPEC_VERSION_MAJOR_D],[1])
 define([GASNET_SPEC_VERSION_MINOR_D],[8])
 dnl GASNet tools spec version:
 define([GASNETT_SPEC_VERSION_MAJOR_D],[1])
-define([GASNETT_SPEC_VERSION_MINOR_D],[17])
+define([GASNETT_SPEC_VERSION_MINOR_D],[18])
 
 define([GASNET_RELEASE_VERSION_D],
          [GASNET_RELEASE_VERSION_MAJOR_D.GASNET_RELEASE_VERSION_MINOR_D.GASNET_RELEASE_VERSION_PATCH_D])
@@ -780,9 +780,14 @@ case "$CC_FAMILY" in
     esac 
     AC_MSG_RESULT([$MISC_CFLAGS])
     ;;
-  Intel) MISC_CFLAGS="-wd177 -wd279"
-         GASNET_TRY_CFLAG([-wd1572],
-                          [MISC_CFLAGS="$MISC_CFLAGS -wd1572"])
+  Intel) # Note we need to support both older -wd and newer -diag-disable
+         # Setting (CC|MPI_CC)_WDFLAG simplifes doing so in later tests
+         pushdef([wdflag],$1[]_WDFLAG)
+         GASNET_TRY_CFLAG([-diag-disable=177], [wdflag='-diag-disable='], [wdflag='-wd'])
+         MISC_CFLAGS="${wdflag}177 ${wdflag}279"
+         GASNET_TRY_CFLAG([${wdflag}1572],
+                          [MISC_CFLAGS="$MISC_CFLAGS ${wdflag}1572"])
+         popdef([wdflag])
          ;;
   NVHPC)
        # TODO: are either `-M` options, inherited from PGI, still required?
@@ -3103,9 +3108,12 @@ AC_DEFUN([GASNET_LINKHELPER_TRY_RUN],[GASNET_LINKHELPER_TRY_INNER([RUN_WITHCC],$
              MISC_CXXFLAGS="-w $MISC_CXXFLAGS" # old versions of pgc++ have no way to indep control warnings
            ])
            ;;
-    Intel) MISC_CXXFLAGS="-wd654 -wd1125 -wd279"
-           GASNET_TRY_CXXFLAG([-wd1572],
-                          [MISC_CXXFLAGS="$MISC_CXXFLAGS -wd1572"])
+    Intel) # Note we need to support both older -wd and newer -diag-disable
+           # Setting CXX_WDFLAG simplifes doing so in later tests
+           GASNET_TRY_CXXFLAG([-diag-disable=654], [CXX_WDFLAG='-diag-disable='], [CXX_WDFLAG='-wd'])
+           MISC_CXXFLAGS="${CXX_WDFLAG}654 ${CXX_WDFLAG}1125 ${CXX_WDFLAG}279"
+           GASNET_TRY_CXXFLAG([${CXX_WDFLAG}1572],
+                          [MISC_CXXFLAGS="$MISC_CXXFLAGS ${CXX_WDFLAG}1572"])
            ;;
     XLC)
      GASNET_GET_PPC64_FLAGS(CXX)
@@ -4889,7 +4897,22 @@ GASNET_IF_ENABLED(memory-kinds,
         [Prototype support for memory kinds (transfers to/from device memory).  Enables default auto-detection of all device type applicable to the target platform.  Individual --enable-kind-* options have precedence.],
         [enable_mk_default=probe], [enable_mk_default=no])
 
+# This is potentially used CUDA_UVA and by HIP
+# So we'll factor it to avoid repeats in ouptut
+unset checked_pkg_cuda
+AC_DEFUN([CHECK_PKG_CUDA],[
+  if test "${checked_pkg_cuda-unset}" = unset; then
+    checked_pkg_cuda=y
+    GASNET_PACKAGE_HOME(CUDA, [CUDA toolkit], [nvcc], [/usr/local/cuda], [include/cuda.h])
+    GASNET_PACKAGE_CFLAGS(CUDA)
+    GASNET_ENV_DEFAULT(CUDA_LIBS, -lcuda)
+    GASNET_PACKAGE_LDFLAGS(CUDA, cuda)
+    GASNET_SPLIT_LINKER_OPTS(CUDA_LDFLAGS,CUDA_LIBS)
+  fi
+])
+
 # GEX_MK_CLASS_CUDA_UVA
+enable_mk_cuda_uva_implicit=no
 GASNET_IF_ENABLED_WITH_AUTO(kind-cuda-uva,
         [Support for memory kinds on UVA-capable CUDA devices (auto-detected with --enable-memory-kinds, otherwise disabled)],
         [enable_mk_cuda_uva="yes"; force_mk_cuda_uva="yes"],
@@ -4900,13 +4923,14 @@ GASNET_IF_ENABLED_WITH_AUTO(kind-cuda-uva,
            enable_mk_cuda_uva="no"
          else
            enable_mk_cuda_uva="$enable_mk_default"
+           enable_mk_cuda_uva_implicit=yes
          fi
         ])
 unset have_mk_cuda_uva
 if test "$enable_mk_cuda_uva" != "no"; then
   AC_MSG_CHECKING(for target having CUDA UVA memory kinds support)
   if test "$GASNETI_PTR_BITS" = 32; then
-    AC_MSG_RESULT([no (ILP32 targets are not supported)])
+    AC_MSG_RESULT([no (32-bit targets are not supported)])
     have_mk_cuda_uva=no
   else
     have_mk_cuda_uva=no
@@ -4924,11 +4948,7 @@ if test "$enable_mk_cuda_uva" != "no"; then
 
   if test "$have_mk_cuda_uva" != "no"; then
     # TODO: Can/should we scrape nvcc as UPC++ does?
-    GASNET_PACKAGE_HOME(CUDA, [CUDA toolkit], [nvcc], [/usr/local/cuda], [include/cuda.h])
-    GASNET_PACKAGE_CFLAGS(CUDA)
-    GASNET_ENV_DEFAULT(CUDA_LIBS, -lcuda)
-    GASNET_PACKAGE_LDFLAGS(CUDA, cuda)
-    GASNET_SPLIT_LINKER_OPTS(CUDA_LDFLAGS,CUDA_LIBS)
+    CHECK_PKG_CUDA()
 
     # Try to compile and link a basic program using the CUDA Driver API
     GASNET_PUSHVAR(CFLAGS,"$CFLAGS $CUDA_CFLAGS")
@@ -4955,19 +4975,10 @@ if test "$enable_mk_cuda_uva" != "no"; then
   fi
 
   # If the probe(s) above passed on a target identified as "maybe" having
-  # support, then either upgrade to "yes" if enabled explicitly, or downgrade
-  # to "no" if just probing.  Either way, we issue a warning.
+  # support, then upgrade to "yes" with a warning.
   if test "$have_mk_cuda_uva" = "maybe"; then
-    if test "$enable_mk_cuda_uva" = "yes"; then
       have_mk_cuda_uva=yes
       GASNET_MSG_WARN([CUDA UVA memory kinds support enabled for $target, which may not be officially supported])
-    else
-      have_mk_cuda_uva=no
-      GASNET_MSG_WARN([It appears your system has the software required for CUDA UVA memory kinds support.
-However, $target may not be officially supported.
-You can enable an unsupported build of this feature with --enable-kind-cuda-uva.
-Otherwise, you can disable this message with --disable-kind-cuda-uva.])
-    fi
   fi
 
   if test "$have_mk_cuda_uva" = "yes"; then
@@ -4987,6 +4998,176 @@ AC_SUBST(CUDA_UVA_CFLAGS)
 AC_SUBST(CUDA_UVA_LDFLAGS)
 AC_SUBST(CUDA_UVA_LIBS)
 AM_CONDITIONAL(HAVE_MK_CLASS_CUDA_UVA, test "$have_mk_cuda_uva" = "yes")
+
+# GEX_MK_CLASS_HIP
+enable_mk_hip_implicit=no
+GASNET_IF_ENABLED_WITH_AUTO(kind-hip,
+        [support for memory kinds on HIP-compatible devices (auto-detected with --enable-memory-kinds, otherwise disabled)],
+        [enable_mk_hip="yes"; force_mk_hip="yes"],
+        [enable_mk_hip="no"], [
+         if test "x$enable_kind_hip" = 'xprobe'; then
+           enable_mk_hip="probe"
+         elif test "$GASNETI_PTR_BITS" = 32; then
+           enable_mk_hip="no"
+         else
+           enable_mk_hip="$enable_mk_default"
+           enable_mk_hip_implicit=yes
+         fi
+        ])
+unset have_mk_hip
+if test "$enable_mk_hip" != "no"; then
+  AC_MSG_CHECKING(for target having HIP memory kinds support)
+  if test "$GASNETI_PTR_BITS" = 32; then
+    AC_MSG_RESULT([no (32-bit targets are not supported)])
+    have_mk_hip=no
+  else
+    have_mk_hip=no
+    case "$target_cpu:$target_os" in
+      x86_64:linux*)    have_mk_hip='yes';;
+      powerpc*:linux*)  have_mk_hip='maybe';;
+      aarch64:linux*)   have_mk_hip='maybe';;
+    esac
+    if test "$have_mk_hip" = 'no'; then
+      AC_MSG_RESULT([no (unsupported or unrecognized target $target)])
+    else
+      AC_MSG_RESULT([$have_mk_hip])
+    fi
+  fi
+
+  if test "$have_mk_hip" != "no"; then
+    GASNET_PACKAGE_HOME(HIP, [HIP developer tools], [hipcc], [/opt/rocm], [include/hip/hip_runtime.h])
+    GASNET_PACKAGE_CFLAGS(HIP)
+    GASNET_ENV_DEFAULT(HIP_LIBS, -lamdhip64)
+    GASNET_PACKAGE_LDFLAGS(HIP, amdhip64)
+
+    # UNDOCUMENTED option to enable use of HIP over CUDA *by GASNet maintainers*.
+    # TODO:  Eventually we should REMOVE or DOCUMENT
+    hip_platform=amd
+    GASNET_WITH_NOHELP(hip-platform, [
+      case "$withval" in
+        amd|hcc)      hip_platform='amd';;
+        nvidia|nvcc)  hip_platform='nvidia';;
+           *) AC_MSG_ERROR([--with-hip-platform requires an argument (amd or nvidia)]) ;;
+      esac
+    ])
+    case "$hip_platform" in
+      amd)  AC_DEFINE(GASNETI_HIP_PLATFORM_AMD)
+            ;;
+      nvidia)
+            CHECK_PKG_CUDA()
+            # Suppress warnings when compiling gasnet_hip.c and testhip.c
+            # due to "issues" in hip_runtime.h when parsed by a C compiler in
+            # __HIP_PLATFORM_NVCC__ mode.
+            unset HIP_NVCC_WARNFLAGS
+            case "$CC_FAMILY" in
+              Intel)
+                # Deprecated decls:
+                GASNET_TRY_CFLAG([${CC_WDFLAG}1478],
+                        [HIP_NVCC_WARNFLAGS="$HIP_NVCC_WARNFLAGS ${CC_WDFLAG}1478"])
+                # "auto" becomes implicit int:
+                GASNET_TRY_CFLAG([${CC_WDFLAG}303],
+                        [HIP_NVCC_WARNFLAGS="$HIP_NVCC_WARNFLAGS ${CC_WDFLAG}303"])
+                ;;
+              PGI|NVHPC)
+                : # Currently warning-free, so avoid the noise of the -Wno probes
+                ;;
+              *)
+                # GCC and Clang, plus their derivatives and work-alikes
+                GASNET_TRY_WNO_FLAG([C],[-Wno-deprecated-declarations],
+                        [HIP_NVCC_WARNFLAGS="$HIP_NVCC_WARNFLAGS -Wno-deprecated-declarations"])
+                GASNET_TRY_WNO_FLAG([C],[-Wno-implicit-int],
+                        [HIP_NVCC_WARNFLAGS="$HIP_NVCC_WARNFLAGS -Wno-implicit-int"])
+                GASNET_TRY_WNO_FLAG([C],[-Wno-return-type],
+                        [HIP_NVCC_WARNFLAGS="$HIP_NVCC_WARNFLAGS -Wno-return-type"])
+                ;;
+            esac
+            HIP_LIBS="$HIP_LIBS -lcudart $CUDA_LIBS"
+            HIP_LDFLAGS="$HIP_LDFLAGS $CUDA_LDFLAGS"
+            HIP_CFLAGS="$HIP_CFLAGS $CUDA_CFLAGS $HIP_NVCC_WARNFLAGS"
+            AC_DEFINE(GASNETI_HIP_PLATFORM_NVIDIA)
+            ;;
+    esac
+
+    GASNET_SPLIT_LINKER_OPTS(HIP_LDFLAGS,HIP_LIBS)
+
+    # Try to compile and link a basic program using the HIP Driver API
+    GASNET_PUSHVAR(CFLAGS,"$CFLAGS $HIP_CFLAGS")
+    GASNET_PUSHVAR(LDFLAGS,"$LDFLAGS $HIP_LDFLAGS")
+    GASNET_PUSHVAR(LIBS,"$LIBS $HIP_LIBS")
+
+    GASNET_TRY_CACHE_LINK(for working HIP configuration, libamdhip64_works, [
+      #if GASNETI_HIP_PLATFORM_NVIDIA
+        #define __HIP_PLATFORM_NVCC__ // legacy
+        #define __HIP_PLATFORM_NVIDIA__
+      #else
+        #define __HIP_PLATFORM_HCC__ // legacy
+        #define __HIP_PLATFORM_AMD__
+      #endif
+      #include <hip/hip_runtime_api.h>
+    ], [
+      void *addr;
+      hipInit(0);
+      hipDevice_t dev = 0;
+      hipPointerAttribute_t attr;
+      hipError_t res;
+      res = hipMalloc(&addr, 1024);
+      res = hipPointerGetAttributes(&attr, addr);
+      int bad = (attr.memoryType != hipMemoryTypeDevice) || attr.isManaged;
+    ], [ : ], [ have_mk_hip=no; GASNET_ERR_SAVE() ])
+
+    GASNET_POPVAR(LIBS)
+    GASNET_POPVAR(LDFLAGS)
+    GASNET_POPVAR(CFLAGS)
+  fi
+
+  # If the probe(s) above passed on a target identified as "maybe" having
+  # support, then upgrade to "yes" with a warning.
+  if test "$have_mk_hip" = "maybe"; then
+      have_mk_hip=yes
+      GASNET_MSG_WARN([HIP memory kinds support enabled for $target, which may not be officially supported])
+  fi
+
+  if test "$have_mk_hip" = "yes"; then
+    AC_DEFINE(GASNETI_MK_CLASS_HIP_ENABLED)
+  elif test "$force_mk_hip" = "yes"; then
+    GASNET_MSG_ERROR([HIP memory kinds support was requested with --enable-kind-hip but is not available])
+  else
+    unset HIP_CFLAGS
+    unset HIP_LDFLAGS
+    unset HIP_LIBS
+  fi
+fi
+AC_SUBST(HIP_CFLAGS)
+AC_SUBST(HIP_LDFLAGS)
+AC_SUBST(HIP_LIBS)
+AM_CONDITIONAL(HAVE_MK_CLASS_HIP, test "$have_mk_hip" = "yes")
+
+AC_DEFUN([MK_OUTPUT],[
+  pushdef([lowername],translit($1,'A-Z','a-z'))
+  if test "$have_mk_[]lowername" = "yes"; then
+    if test "$force_mk_[]lowername" = "yes"; then
+      _mk_flagstr="ON     (enabled)"
+    else
+      _mk_flagstr="ON     (auto)"
+    fi
+  elif test "$enable_mk_[]lowername" = "probe"; then
+    _mk_flagstr="OFF    (not found)"
+  elif test "$enable_mk_[]lowername[]_implicit" = "yes"; then
+    _mk_flagstr="OFF    (not enabled)"
+  else
+    _mk_flagstr="OFF    (disabled)"
+  fi
+  echo "  $2 m4_substr([                                                  ],len($2))$_mk_flagstr" >> $CONDUIT_LIST
+  popdef([lowername])
+])
+
+cat >>$CONDUIT_LIST <<EOF
+
+ Memory kinds:
+ ------------
+EOF
+MK_OUTPUT(cuda_uva, GPUs with NVIDIA CUDA API (cuda-uva))
+MK_OUTPUT(hip,      GPUs with AMD HIP API (hip))
 
 dnl GASNET_TOOLSONLY_FALSE_END
 ########################################################################
@@ -5564,8 +5745,8 @@ GASNET_FIX_EXEC(other/contrib/gasnet_trace)
 if test "$gasnet_toolsonly_mode" = "no" ; then
 cat >>$CONDUIT_LIST <<EOF
 
- Some conduits require --enable-XXX configure flags and/or additional
- variables providing the install location of vendor drivers.
+ Some conduits and memory kinds require --enable-XXX configure flags and/or
+ additional variables providing the install location of vendor drivers.
  See the GASNet documentation for details.
 
  Misc Settings

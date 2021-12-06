@@ -38,9 +38,9 @@ SPEC_BUILD_DIR = ../build/doc/language/spec
 SPEC_RST_DIR = $(SOURCEDIR)/language/spec
 
 COMPILER_INTERNALS_DOXYGEN = ../build/doc/doxygen
-COMPILER_INTERNALS_SRC_DOXYGEN = $(SOURCEDIR)/../templates/compiler-internals-doxygen
-COMPILER_INTERNALS_SRC_NO_DOXYGEN = $(SOURCEDIR)/../templates/compiler-internals-no-doxygen
-COMPILER_INTERNALS = $(SOURCEDIR)/compiler-internals
+COMPILER_INTERNALS_SRC_DOXYGEN = $(SOURCEDIR)/meta/compiler-internals-doxygen
+COMPILER_INTERNALS_SRC_NO_DOXYGEN = $(SOURCEDIR)/meta/compiler-internals-no-doxygen
+COMPILER_INTERNALS = $(SOURCEDIR)/developer/compiler-internals
 
 help: help-sphinx help-source
 
@@ -60,7 +60,16 @@ help-source:
 
 
 docs: FORCE
-	@$(MAKE) html-release || $(MAKE) error_docs
+	@COMP_DOCS_ERROR=0 ; \
+	(cd ../compiler/next && $(MAKE) -f Makefile.help libchplcomp-docs) || \
+	 COMP_DOCS_ERROR=1 ; \
+	$(MAKE) html-release && \
+	if [ $$COMP_DOCS_ERROR -ne 0 -o ! -d $(COMPILER_INTERNALS_DOXYGEN) ] ; \
+	  then \
+	  echo ; \
+	  echo " This docs build does not include compiler library API docs" ; \
+	  echo " Try 'make clobber-libchplcomp && make libchplcomp-docs'" ; \
+	fi
 
 
 man-chapel: FORCE
@@ -142,16 +151,21 @@ prunedocs: FORCE
 	fi
 
 
-clean: clean-source clean-build clean-build-dir
+clean: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
-cleanall: clean-source clean-build clean-build-dir
+cleanall: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
-clobber: clean-source clean-build clean-build-dir
+clobber: clean-source clean-build clean-build-dir clean-doxygen FORCE
 
-clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax
+clean-source: clean-module-docs clean-primers clean-examples clean-symlinks clean-collect-syntax clean-compiler-internals FORCE
 
 clean-build-dir: FORCE
 	rm -rf ../build/doc
+
+clean-compiler-internals: FORCE
+	@echo
+	@echo "Removing compiler-internals .rst files"
+	rm -rf "$(COMPILER_INTERNALS)"
 
 clean-collect-syntax: FORCE
 	@echo
@@ -179,9 +193,8 @@ clean-symlinks: FORCE
 	@echo "Removing all symbolic links"
 	find $(SOURCEDIR) -type l -delete
 
-error_docs: FORCE
-	@exit 1 # Note that 'make' will return exit code of 2, despite exit 1
-
+clean-doxygen: FORCE
+	cd ../compiler/next && $(MAKE) -f Makefile.help clean-libchplcomp-docs
 
 FORCE:
 

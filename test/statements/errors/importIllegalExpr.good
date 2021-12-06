@@ -1,0 +1,2 @@
+importIllegalExpr.chpl:6: error: Illegal expression in 'import' statement
+importIllegalExpr.chpl:6: note: only identifiers and 'dot' expressions are supported

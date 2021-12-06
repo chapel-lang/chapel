@@ -2,6 +2,7 @@
 
 .. _Chapter-Error_Handling:
 
+==============
 Error Handling
 ==============
 

@@ -180,7 +180,7 @@ const char* makeTempDir(const char* dirPrefix) {
   return dirRes;
 }
 
-static void ensureTmpDirExists() {
+void ensureTmpDirExists() {
   if (saveCDir[0] == '\0') {
     if (tmpdirname == NULL) {
       tmpdirname = makeTempDir("chpl-");
@@ -543,7 +543,7 @@ const char* createDebuggerFile(const char* debugger, int argc, char* argv[]) {
 
   fprintf(dbgfile, "\n");
   closefile(dbgfile);
-  mysystem(astr("cat ", CHPL_HOME, "/compiler/etc/", debugger, ".commands >> ",
+  myshell(astr("cat ", CHPL_HOME, "/compiler/etc/", debugger, ".commands >> ",
                 dbgfilename),
            astr("appending ", debugger, " commands"),
            false);
@@ -950,7 +950,7 @@ void readArgsFromCommand(std::string cmd, std::vector<std::string>& args) {
       // First argument is the clang install directory...
       args.push_back(arg);
     }
-    fclose(fd);
+    pclose(fd);
   }
 }
 

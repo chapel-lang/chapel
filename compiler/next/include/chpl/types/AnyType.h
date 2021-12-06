@@ -29,7 +29,7 @@ namespace types {
 /**
   This class represents a generic type that can instantiate to any type.
  */
-class AnyType : public Type {
+class AnyType final : public Type {
  private:
   AnyType() : Type(typetags::AnyType) { }
 

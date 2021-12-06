@@ -29,11 +29,10 @@ use MasonNew;
 use MasonUpdate;
 use MasonUtils;
 use Random;
-use Spawn;
+use Subprocess;
 use TOML;
 
 /* Top Level procedure that gets called from mason.chpl that takes in arguments from command line.
-   Returns the help output in '-h' or '--help' exits in the arguments.
    If --dry-run is passed  then it checks to see if the package is able to be published.
    Takes in the username of the package owner as an argument
  */
@@ -45,11 +44,8 @@ proc masonPublish(args: [?d] string) {
 
 proc masonPublish(ref args: list(string)) throws {
 
-  var parser = new argumentParser();
+  var parser = new argumentParser(helpHandler=new MasonPublishHelpHandler());
 
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
   var dryFlag = parser.addFlag(name="dry-run",
                                defaultValue=false);
   var createFlag = parser.addFlag(name="create-registry",
@@ -61,18 +57,8 @@ proc masonPublish(ref args: list(string)) throws {
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
   var registryArg = parser.addArgument(name="registry", numArgs=0..1);
 
-  try {
-    parser.parseArgs(args.toArray());
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonPublishHelp();
-    exit(1);
-  }
-  if helpFlag.valueAsBool() {
-    masonPublishHelp();
-    exit(0);
-  }
+  parser.parseArgs(args.toArray());
+
   try! {
     var dry = dryFlag.valueAsBool();
     var checkFlag = checkArg.valueAsBool();
@@ -103,11 +89,11 @@ proc masonPublish(ref args: list(string)) throws {
         if !isDir(pathReg + '/.git') {
           gitC(pathReg, 'git init -q');
           gitC(pathReg, 'git add .');
-          commitSubProcess(pathReg, ['git','commit', '-q', '-m',' "initialised registry"']);
+          commitSubProcess(pathReg, ['git','commit', '-q', '-m',' "initialized registry"']);
         }
         const absPathReg = Path.absPath(pathReg);
-        writeln("Initialised local registry at %s".format(pathReg));
-        writeln("Add this registry to MASON_REGISTRY environment variable to include it in search path: ");
+        writeln("Initialized local registry at %s".format(pathReg));
+        writeln("Add this registry to MASON_REGISTRY environment variable to include it in search path:");
         writeln('   export MASON_REGISTRY="%s|%s,%s|%s"'.format("mason-registry",regUrl, basename(pathReg), absPathReg));
         exit(0);
       }
@@ -366,7 +352,7 @@ proc doesGitOriginExist() {
  */
 private proc usernameCheck(username: string) {
   const gitRemote = 'git ls-remote https://github.com/';
-  var usernameCheck = runWithStatus(gitRemote + username + '/mason-registry', false);
+  var usernameCheck = runWithStatus(gitRemote + username + '/mason-registry', true);
   return usernameCheck;
 }
 

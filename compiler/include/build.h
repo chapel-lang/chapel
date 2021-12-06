@@ -39,6 +39,8 @@ class ImportStmt;
 class ModuleSymbol;
 class Type;
 
+Expr* lookupConfigVal(VarSymbol* var);
+
 BlockStmt* buildPragmaStmt(Vec<const char*>*, BlockStmt*);
 DefExpr* buildPragmaDefExpr(Vec<const char*>*, DefExpr*);
 

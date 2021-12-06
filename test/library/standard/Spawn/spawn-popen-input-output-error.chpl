@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 {
   var comp = spawnshell("$CHPL_HOME/bin/`$CHPL_HOME/util/chplenv/chpl_bin_subdir.py --host`/chpl cat-stdout-stderr.chpl -o stdout-stderr");

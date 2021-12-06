@@ -1,3 +1,5 @@
+.. _best-practices-dco:
+
 Getting started with Chapel and the Developer Certificate of Origin (DCO)
 =========================================================================
 
@@ -43,6 +45,7 @@ Ways to Sign Commits
    For an interactive commit like the following:
 
    .. code-block:: bash
+
         git commit -s
 
    you should see the 'Signed-off-by' line in your editor when it
@@ -51,6 +54,7 @@ Ways to Sign Commits
    line will be automatically added for you.
 
    .. code-block:: bash
+
         git commit -s -m "This is my commit message"
 
    This approach has the advantage of being fairly straightforward and

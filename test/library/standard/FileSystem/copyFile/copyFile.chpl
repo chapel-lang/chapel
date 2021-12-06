@@ -1,4 +1,4 @@
-use FileSystem, Spawn;
+use FileSystem, Subprocess;
 
 proc main(args: [] string) {
   const base = args[1];

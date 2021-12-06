@@ -1,3 +1,5 @@
+.. _best-practices-sanitizers:
+
 Sanitizers
 ==========
 
@@ -5,10 +7,10 @@ Sanitizers are a compiler feature that support instrumenting programs to do
 dynamic analysis to catch many classes of bugs at runtime.
 
 AddressSanitizer (ASan) is a fast memory error detector. It consists of a
-compiler instrumentation module and a run-time library. ASan is similar to
-valgrind (`valgrind.rst`) in that it can help identify memory errors. ASan is
-much faster than valgrind, but does require recompilation. Note that only GCC
-and Clang support sanitizers.
+compiler instrumentation module and a run-time library. ASan is similar
+to valgrind (:ref:`best-practices-valgrind`) in that it can help
+identify memory errors. ASan is much faster than valgrind, but does
+require recompilation. Note that only GCC and Clang support sanitizers.
 
 How-to
 ------
@@ -19,6 +21,7 @@ To use AddressSanitizer with Chapel (compiler and executables):
 
      export CHPL_MEM=cstdlib
      export CHPL_TASKS=fifo
+     export CHPL_LLVM=none
      export CHPL_SANITIZE=address
      export ASAN_OPTIONS=detect_leaks=0
 
@@ -40,6 +43,13 @@ To get better stack traces when optimizations are enabled:
 
      export DEBUG=1
 
+
+.. note::
+
+     Non-chplenv environment variables aren't propagated by paratest. So,
+     to turn off leak checking, it is necessary to either pass
+     ``-env ASAN_OPTIONS=detect_leaks=0`` or to include
+     ``export ASAN_OPTIONS=detect_leaks=0`` in .bashrc or the equivalent.
 
 Limitations
 -----------
@@ -79,14 +89,17 @@ Configuration Limitations
 The above options are needed because not all third-party libraries support
 sanitizers. In particular:
 
+- Sanitizer instrumentation is added by the C compiler, so LLVM
+  compilations don't currently work
 - Sanitizers hook into the system allocator, so using ``jemalloc`` is not
   supported
-- ``qthreads`` performs task-switching in user-space, which throws off stack
-  frame tracking. We expect to be able to resolve this in the future.
-- By default the gcc address sanitizer will enable leak checking, but Chapel
-  intentionally leaks some memory in the runtime, so we disable that tracking
-  for now. See `debugging.rst` for more info about debugging memory leaks in
-  Chapel.
+- ``qthreads`` performs task-switching in user-space, which throws off
+  stack frame tracking. We expect to be able to resolve this in the
+  future.
+- By default the gcc address sanitizer will enable leak checking, but
+  Chapel intentionally leaks some memory in the runtime, so we disable
+  that tracking for now. See :ref:`readme-debugging` for more info about
+  debugging memory leaks in Chapel.
 
 
 Other Sanitizers

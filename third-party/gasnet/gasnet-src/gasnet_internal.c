@@ -119,6 +119,7 @@ int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC32_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_ATOMIC64_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_TIOPT_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_CUDA_UVA_CONFIG) = 1;
+int GASNETI_LINKCONFIG_IDIOTCHECK(GASNETI_MK_CLASS_HIP_CONFIG) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(HIDDEN_AM_CONCUR_,GASNET_HIDDEN_AM_CONCURRENCY_LEVEL)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(CACHE_LINE_BYTES_,GASNETI_CACHE_LINE_BYTES)) = 1;
 int GASNETI_LINKCONFIG_IDIOTCHECK(_CONCAT(GASNETI_TM0_ALIGN_,GASNETI_TM0_ALIGN)) = 1;
@@ -645,10 +646,14 @@ extern int gex_Segment_Create(
   #if GASNETC_SEGMENT_CREATE_HOOK
     if (rc == GASNET_OK) {
       rc = gasnetc_segment_create_hook(*segment_p);
+      if (rc) { // Conduit hook failed.  So cleanup conduit-independent resources
+        gasneti_Segment_t i_segment = gasneti_import_segment(*segment_p);
+        gasneti_assert_zeroret( gasneti_segmentDestroy(i_segment, 0) );
+      }
     }
   #endif
 
-  return rc;
+  GASNETI_RETURN(rc);
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -930,15 +935,18 @@ gex_TM_t gasneti_export_tm_pair(gasneti_TM_Pair_t tm_pair) {
 }
 #endif
 
-// Helper for PSHM queries which cannot inline THUNK_CLIENT
-gasneti_Segment_t gasneti_tm_pair_to_segment(gasneti_TM_Pair_t tm_pair) {
-  gex_EP_Index_t ep_idx = gasneti_tm_pair_loc_idx(tm_pair);
-  gasneti_Client_t i_client = gasneti_import_client(gasneti_THUNK_CLIENT); // TODO: multi-client
-  gasneti_assert_int(ep_idx ,<, GASNET_MAXEPS);
-  gasneti_assert_int(ep_idx ,<, gasneti_weakatomic32_read(&i_client->_next_ep_index, 0));
-  gasneti_EP_t i_ep = i_client->_ep_tbl[ep_idx];
-  gasneti_assert(i_ep);
-  return i_ep->_segment;
+// Helper for "mappable" queries
+// return the bound segment for local ep_idx
+// i_tm is provided only to retrieve the Client
+gasneti_Segment_t gasneti_epidx_to_segment(gasneti_TM_t i_tm, gex_EP_Index_t ep_idx) {
+   // TODO: multi-client would extract from i_tm OR signature may change to take client
+   gasneti_Client_t i_client = gasneti_import_client(gasneti_THUNK_CLIENT);
+
+   gasneti_assert_int(ep_idx ,<, GASNET_MAXEPS);
+   gasneti_assert_int(ep_idx ,<, gasneti_weakatomic32_read(&i_client->_next_ep_index, 0));
+   gasneti_EP_t i_ep = i_client->_ep_tbl[ep_idx];   
+   gasneti_assert(i_ep);
+   return i_ep->_segment;
 }
 
 /* ------------------------------------------------------------------------------------ */

@@ -1,0 +1,3 @@
+bug: Creating record-wrapped classes in a for expression
+
+See issue #14246

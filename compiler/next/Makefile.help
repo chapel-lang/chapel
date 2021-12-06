@@ -51,25 +51,34 @@ $(LIBCOMPILER_BUILD_DIR):
 	    -DBUILD_SHARED_LIBS=OFF
 
 libchplcomp-parser: $(LIBCOMPILER_BUILD_DIR) FORCE
-	cd $(LIBCOMPILER_BUILD_DIR)/lib/parsing && cmake --build . --target parser
+	cd $(LIBCOMPILER_BUILD_DIR)/lib/parsing && $(CMAKE) --build . --target parser
+
+libchplcomp-chpldoc: $(LIBCOMPILER_BUILD_DIR) FORCE
+	cd $(LIBCOMPILER_BUILD_DIR)/tools/chpldoc && cmake --build . --target chpldoc
 
 libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making the compiler library..."
 	@if [ -f $(LIBCOMPILER_BUILD_DIR)/Makefile ]; then \
 	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) libchplcomp ; \
 	else \
-	  cd $(LIBCOMPILER_BUILD_DIR) && cmake --build .  --target libchplcomp ; \
+	  cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target libchplcomp ; \
 	fi
 
 COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --copy
 
 libchplcomp-docs: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making the compiler library docs..."
-	cd $(LIBCOMPILER_BUILD_DIR) && cmake --build .  --target api-docs
+	cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target api-docs
 # copy the generated doxygen output to the build directory
 	@if [ -d $(LIBCOMPILER_BUILD_DIR)/doc/doxygen ]; then \
 	  $(COPY_IF_DIFFERENT) $(LIBCOMPILER_BUILD_DIR)/doc/doxygen $(CHPL_MAKE_HOME)/build/doc/doxygen ; \
 	fi
+
+clean-libchplcomp-docs: FORCE
+	rm -rf $(CHPL_MAKE_HOME)/build/doc/doxygen
+
+clobber-libchplcomp: clean-libchplcomp-docs FORCE
+	rm -rf $(LIBCOMPILER_BUILD_DIR)
 
 test-libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
 	@echo "Making and running the tests..."
@@ -77,7 +86,7 @@ test-libchplcomp: $(LIBCOMPILER_BUILD_DIR) FORCE
 	  JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
 	  cd $(LIBCOMPILER_BUILD_DIR) && $(MAKE) tests && ctest $$JOBSFLAG . ; \
 	else \
-	  cd $(LIBCOMPILER_BUILD_DIR) && cmake --build .  --target tests && ctest . ; \
+	  cd $(LIBCOMPILER_BUILD_DIR) && $(CMAKE) --build .  --target tests && ctest . ; \
 	fi
 
 FORCE:

@@ -46,12 +46,19 @@ class Class final : public AggregateDecl {
  private:
   int parentClassChildNum_;
 
-  Class(ASTList children, Decl::Visibility vis, UniqueString name,
+  Class(ASTList children, int attributesChildNum, Decl::Visibility vis,
+        UniqueString name,
         int elementsChildNum,
         int numElements,
         int parentClassChildNum)
-    : AggregateDecl(asttags::Class, std::move(children), vis, name,
-                    elementsChildNum, numElements),
+    : AggregateDecl(asttags::Class, std::move(children),
+                    attributesChildNum,
+                    vis,
+                    Decl::DEFAULT_LINKAGE,
+                    /*linkageNameChildNum*/ -1,
+                    name,
+                    elementsChildNum,
+                    numElements),
       parentClassChildNum_(parentClassChildNum) {
     assert(parentClassChildNum_ == -1 ||
            child(parentClassChildNum_)->isIdentifier());
@@ -63,6 +70,7 @@ class Class final : public AggregateDecl {
     return lhs->aggregateDeclContentsMatchInner(rhs) &&
            lhs->parentClassChildNum_ == rhs->parentClassChildNum_;
   }
+
   void markUniqueStringsInner(Context* context) const override {
     aggregateDeclMarkUniqueStringsInner(context);
   }
@@ -71,7 +79,9 @@ class Class final : public AggregateDecl {
   ~Class() override = default;
 
   static owned<Class> build(Builder* builder, Location loc,
-                            Decl::Visibility vis, UniqueString name,
+                            owned<Attributes> attributes,
+                            Decl::Visibility vis,
+                            UniqueString name,
                             owned<Expression> parentClass,
                             ASTList contents);
 

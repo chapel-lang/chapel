@@ -25,4 +25,5 @@ or
 
    .. attribute:: var showMe: bool
 
+cat: docs/source/modules/Foo/invisible.rst: No such file or directory
 cat: docs/source/modules/toBeIgnored.rst: No such file or directory

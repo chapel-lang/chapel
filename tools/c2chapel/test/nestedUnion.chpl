@@ -8,17 +8,17 @@ require "nestedUnion.h";
 use CPtr;
 use SysCTypes;
 use SysBasic;
-extern union first {
+extern "union first" union first {
   var a : c_int;
   var b : c_string;
 }
 
-extern union second {
+extern "union second" union second {
   var a : c_ptr(c_int);
   var b : c_ptr(c_int);
 }
 
-extern union Outer {
+extern "union Outer" union Outer {
   var unionField : first;
   var fieldPtr : c_ptr(second);
 }

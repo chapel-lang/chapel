@@ -75,7 +75,7 @@ class BuiltinType : public Type {
 #define TYPE_END_SUBCLASSES(NAME)
 
 #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) \
-  class NAME : public BuiltinType { \
+  class NAME final : public BuiltinType { \
    private: \
     NAME() : BuiltinType(typetags::NAME) { } \
     static const owned<NAME>& get##NAME(Context* context); \

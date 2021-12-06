@@ -110,14 +110,14 @@ bool allowImplicitNilabilityRemoval(Type* actualType,
                                     Type* formalType,
                                     Symbol* formalSym);
 
-bool canCoerceDecorators(ClassTypeDecorator actual,
-                         ClassTypeDecorator formal,
+bool canCoerceDecorators(ClassTypeDecoratorEnum actual,
+                         ClassTypeDecoratorEnum formal,
                          bool allowNonSubtypes,
                          bool implicitBang);
-bool canInstantiateDecorators(ClassTypeDecorator actual,
-                              ClassTypeDecorator formal);
-bool canInstantiateOrCoerceDecorators(ClassTypeDecorator actual,
-                                      ClassTypeDecorator formal,
+bool canInstantiateDecorators(ClassTypeDecoratorEnum actual,
+                              ClassTypeDecoratorEnum formal);
+bool canInstantiateOrCoerceDecorators(ClassTypeDecoratorEnum actual,
+                                      ClassTypeDecoratorEnum formal,
                                       bool allowNonSubtypes,
                                       bool implicitBang);
 
@@ -369,7 +369,7 @@ void trimVisibleCandidates(CallInfo& call,
 void resolveGenericActuals(CallExpr* call);
 
 Type* computeDecoratedManagedType(AggregateType* canonicalClassType,
-                                  ClassTypeDecorator useDec,
+                                  ClassTypeDecoratorEnum useDec,
                                   AggregateType* manager,
                                   Expr* ctx);
 

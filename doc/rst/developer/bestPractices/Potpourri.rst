@@ -1,3 +1,5 @@
+.. _best-practices-potpourri:
+
 ===================
 Miscellaneous Notes
 ===================

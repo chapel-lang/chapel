@@ -1,4 +1,4 @@
-use Spawn;
+use Subprocess;
 
 // This test is used to demonstrate the current limitations of Spawn under ugni
 // as well as what situations do work. See issue #7550 for more info.

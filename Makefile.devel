@@ -64,11 +64,17 @@ test: spectests FORCE
 libchplcomp-docs: FORCE
 	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp-docs
 
+clobber-libchplcomp: FORCE
+	@cd compiler/next && $(MAKE) -f Makefile.help clobber-libchplcomp
+
 test-libchplcomp: FORCE
 	@cd compiler/next && $(MAKE) -f Makefile.help test-libchplcomp
 
 libchplcomp-parser: FORCE
 	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp-parser
+
+libchplcomp-chpldoc: FORCE
+	@cd compiler/next && $(MAKE) -f Makefile.help libchplcomp-chpldoc
 
 SPECTEST_DIR = ./test/release/examples/spec
 spectests: FORCE

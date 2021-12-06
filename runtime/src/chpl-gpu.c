@@ -24,6 +24,7 @@
 #include "chpl-gpu.h"
 #include "chpl-tasks.h"
 #include "error.h"
+#include "chplcgfns.h"
 
 #ifdef HAS_GPU_LOCALE
 
@@ -92,35 +93,14 @@ inline static void chpl_gpu_ensure_context() {
   }
 }
 
-static void* chpl_gpu_getKernel(const char* fatbinFile, const char* kernelName) {
+static void* chpl_gpu_getKernel(const char* fatbinData, const char* kernelName) {
   chpl_gpu_ensure_context();
 
   CUmodule    cudaModule;
   CUfunction  function;
 
-  //read in fatbin and store in buffer
-  char * buffer = 0;
-  long length;
-  FILE * f = fopen (fatbinFile, "rb");
-
-  if (f)
-  {
-    fseek (f, 0, SEEK_END);
-    length = ftell (f);
-    fseek (f, 0, SEEK_SET);
-    buffer = (char* )chpl_malloc (length);
-    if (buffer)
-    {
-      fread (buffer, 1, length, f);
-    }
-    fclose (f);
-  } else {
-    printf("Attempt to open file: %s\n", fatbinFile);
-    chpl_internal_error("Unable to open fatbin file.");
-  }
-
   // Create module for object
-  CUDA_CALL(cuModuleLoadData(&cudaModule, buffer));
+  CUDA_CALL(cuModuleLoadData(&cudaModule, fatbinData));
 
   // Get kernel function
   CUDA_CALL(cuModuleGetFunction(&function, cudaModule, kernelName));
@@ -167,7 +147,7 @@ bool chpl_gpu_running_on_gpu_locale() {
   return chpl_gpu_has_context() && chpl_task_getRequestedSubloc()>0;
 }
 
-static void chpl_gpu_launch_kernel_help(const char* fatbinPath,
+static void chpl_gpu_launch_kernel_help(const char* fatbinData,
                                         const char* name,
                                         int grd_dim_x,
                                         int grd_dim_y,
@@ -180,18 +160,17 @@ static void chpl_gpu_launch_kernel_help(const char* fatbinPath,
   chpl_gpu_ensure_context();
 
   CHPL_GPU_LOG("Kernel launcher called.\n"
-               "\tFatBinPath: %s\n"
                "\tKernel: %s\n"
                "\tGrid: %d,%d,%d\n"
                "\tBlock: %d,%d,%d\n"
                "\tNumArgs: %d\n",
-               fatbinPath, name,
+               name,
                grd_dim_x, grd_dim_y, grd_dim_z,
                blk_dim_x, blk_dim_y, blk_dim_z,
                nargs);
 
   int i;
-  void* function = chpl_gpu_getKernel(fatbinPath, name);
+  void* function = chpl_gpu_getKernel(fatbinData, name);
   // TODO: this should use chpl_mem_alloc
   void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
 
@@ -264,26 +243,26 @@ void chpl_gpu_copy_host_to_device(void* dst, void* src, size_t n) {
   CUDA_CALL(cuMemcpyHtoD((CUdeviceptr)dst, src, n));
 }
 
-void chpl_gpu_launch_kernel(const char* fatbinPath, const char* name,
+void chpl_gpu_launch_kernel(const char* fatbinData, const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
                             int blk_dim_x, int blk_dim_y, int blk_dim_z,
                             int nargs, ...) {
   va_list args;
   va_start(args, nargs);
-  chpl_gpu_launch_kernel_help(fatbinPath, name,
+  chpl_gpu_launch_kernel_help(fatbinData, name,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
                               nargs, args);
   va_end(args);
 }
 
-void chpl_gpu_launch_kernel_flat(const char* fatbinPath, const char* name,
+void chpl_gpu_launch_kernel_flat(const char* fatbinData, const char* name,
                                  int num_threads, int blk_dim, int nargs, ...) {
   int grd_dim = (num_threads+blk_dim-1)/blk_dim;
 
   va_list args;
   va_start(args, nargs);
-  chpl_gpu_launch_kernel_help(fatbinPath, name,
+  chpl_gpu_launch_kernel_help(fatbinData, name,
                               grd_dim, 1, 1,
                               blk_dim, 1, 1,
                               nargs, args);

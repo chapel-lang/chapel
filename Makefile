@@ -66,7 +66,6 @@ comprt: FORCE
 notcompiler: FORCE
 	@$(MAKE) third-party-try-opt
 	@$(MAKE) always-build-test-venv
-	@$(MAKE) always-build-chpldoc
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
@@ -77,6 +76,7 @@ libchplcomp: FORCE
 compiler: FORCE
 	@echo "Making the compiler..."
 	@cd third-party && $(MAKE) llvm
+	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
 	@cd compiler && $(MAKE)
 
 parser: FORCE

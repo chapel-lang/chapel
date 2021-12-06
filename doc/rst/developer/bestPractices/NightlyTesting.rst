@@ -8,16 +8,16 @@ This is intended to help get external developers running nightly testing. The
 following script should be called from a cron job or something to kick off the
 testing regularly. This script basically groups all the env vars you'll need to
 set into one place and handles downloading the chapel repo for testing. It then
-calls our `nightly` script which runs a set of tests and mails results to a
+calls our ``nightly`` script which runs a set of tests and mails results to a
 provided list. It keeps these nightly logs so it can track new or resolved
 regressions. The nightly script basically builds the compiler and runtime, runs
 some tests and parses the test output to send mails. By default it will do a
 correctness run, though it can also be configured to test performance, compiler
 performance, memleaks, and several other configurations.
 
-In the following script you'll need to set whatever special CHPL_* vars are
-required for your testing and at a minimum `CHPL_NIGHTLY_CRON_RECIPIENT` and
-`CHPL_NIGHTLY_TEST_CONFIG_NAME`. There are additional configuration variables
+In the following script you'll need to set whatever special ``CHPL_*`` vars are
+required for your testing and at a minimum ``CHPL_NIGHTLY_CRON_RECIPIENT`` and
+``CHPL_NIGHTLY_TEST_CONFIG_NAME``. There are additional configuration variables
 that can be set, but they have pretty sane defaults so they can probably be
 left alone.
 

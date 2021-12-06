@@ -102,8 +102,6 @@ gex_Event_t gasnete_get_nb(
                      size_t nbytes,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
- {
   gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
 
   /* XXX check error returns */
@@ -111,7 +109,6 @@ gex_Event_t gasnete_get_nb(
                    &op->initiated_cnt, gasnetc_cb_eop_get
                    GASNETI_THREAD_PASS);
   return (gex_Event_t)op;
- }
 }
 
 extern
@@ -122,8 +119,6 @@ gex_Event_t gasnete_put_nb(
                      size_t nbytes, gex_Event_t *lc_opt,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
-
   gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
 
   /* XXX check error returns */
@@ -176,8 +171,6 @@ int gasnete_get_nbi (gex_TM_t tm,
                      size_t nbytes,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
- {
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
   gasnete_iop_t *op = mythread->current_iop;
 
@@ -187,7 +180,6 @@ int gasnete_get_nbi (gex_TM_t tm,
                    op->next ? gasnetc_cb_nar_get : gasnetc_cb_iop_get
                    GASNETI_THREAD_PASS);
   return 0;
- }
 }
 
 extern
@@ -197,8 +189,6 @@ int gasnete_put_nbi (gex_TM_t tm,
                      size_t nbytes, gex_Event_t *lc_opt,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
- {
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
   gasnete_iop_t *op = mythread->current_iop;
   gasnetc_counter_t    counter = GASNETC_COUNTER_INITIALIZER;
@@ -226,7 +216,6 @@ int gasnete_put_nbi (gex_TM_t tm,
                    GASNETI_THREAD_PASS);
   if (lc_opt == GEX_EVENT_NOW) gasnetc_counter_wait(&counter, 0 GASNETI_THREAD_PASS);
   return 0;
- }
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -241,8 +230,6 @@ extern int gasnete_get  (gex_TM_t tm,
                          size_t nbytes, gex_Flags_t flags
                          GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
- {
   gasnetc_counter_t req_oust = GASNETC_COUNTER_INITIALIZER;
 
   /* XXX check error returns */ 
@@ -251,7 +238,6 @@ extern int gasnete_get  (gex_TM_t tm,
                    GASNETI_THREAD_PASS);
   gasnetc_counter_wait(&req_oust, 0 GASNETI_THREAD_PASS);
   return 0;
- }
 }
 
 extern int gasnete_put  (gex_TM_t tm,
@@ -260,8 +246,6 @@ extern int gasnete_put  (gex_TM_t tm,
                          size_t nbytes, gex_Flags_t flags
                          GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_PUT_NOLC(tm,rank,dest,src,nbytes);
- {
   gasnetc_counter_t req_oust = GASNETC_COUNTER_INITIALIZER;
 
   /* XXX check error returns */ 
@@ -271,7 +255,6 @@ extern int gasnete_put  (gex_TM_t tm,
                    GASNETI_THREAD_PASS);
   gasnetc_counter_wait(&req_oust, 0 GASNETI_THREAD_PASS);
   return 0;
- }
 }   
 
 /* ------------------------------------------------------------------------------------ */
@@ -339,8 +322,7 @@ static int gasnete_conduit_rdmabarrier(const char *barrier, gasneti_auxseg_reque
  * This is a minor variation on the "rmd" barrier in extended-ref.
  * Key differences:
  *  + GASNETC_ANY_PAR replaces GASNETI_THREADS to enable cache padding
- *  + no complications due to thread-specific events
- *  + no eop completion latency
+ *  + neither eop nor iop allocation/completion overheads
  * TODO: factor the common elements
  */
 
@@ -785,7 +767,7 @@ static void gasnete_ibdbarrier_init(gasnete_coll_team_t team) {
       barrier_data->barrier_peers[1+step].jobrank = jobrank;
     #if GASNET_PSHM
       if (gasneti_pshm_jobrank_in_supernode(jobrank)) {
-        barrier_data->barrier_peers[1+step].addr = (uintptr_t)gasneti_pshm_jobrank_addr2local(jobrank, addr);
+        barrier_data->barrier_peers[1+step].addr = (uintptr_t)gasneti_pshm_jobrank_addr2local(jobrank, addr, 1);
       } else
     #endif
       barrier_data->barrier_peers[1+step].addr = (uintptr_t)addr;

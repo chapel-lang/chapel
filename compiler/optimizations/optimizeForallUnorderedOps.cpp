@@ -367,11 +367,11 @@ void MarkOptimizableForallLastStmts::markLoopsInForall(ForallStmt* forall) {
             rhs = toSymExpr(call->get(2));
         }
         if (lhs && addLhsOutlivesForall)
-          addOptimizationFlag(stmt, OPT_INFO_LHS_OUTLIVES_FORALL);
+          addOptimizationFlag(stmt, FLAG_OPT_INFO_LHS_OUTLIVES_FORALL);
         if (rhs && addRhsOutlivesForall)
-          addOptimizationFlag(stmt, OPT_INFO_RHS_OUTLIVES_FORALL);
+          addOptimizationFlag(stmt, FLAG_OPT_INFO_RHS_OUTLIVES_FORALL);
         if (addNoTaskPrivate)
-          addOptimizationFlag(stmt, OPT_INFO_FLAG_NO_TASK_PRIVATE);
+          addOptimizationFlag(stmt, FLAG_OPT_INFO_NO_TASK_PRIVATE);
       }
 
       loopNum++;
@@ -753,8 +753,8 @@ static bool isOptimizableAtomicStmt(Expr* stmt, BlockStmt* loop) {
     if (BlockStmt* defInBlock = toBlockStmt(refAtomic->defPoint->parentExpr))
       if (isBlockWithinBlock(defInBlock, loop))
         if (CallExpr* marker = findMarkerNear(stmt))
-          if (hasOptimizationFlag(marker, OPT_INFO_LHS_OUTLIVES_FORALL) &&
-              hasOptimizationFlag(marker, OPT_INFO_FLAG_NO_TASK_PRIVATE))
+          if (hasOptimizationFlag(marker, FLAG_OPT_INFO_LHS_OUTLIVES_FORALL) &&
+              hasOptimizationFlag(marker, FLAG_OPT_INFO_NO_TASK_PRIVATE))
             if (loopContainsBlocking(loop) == false)
               return true;
 
@@ -894,8 +894,8 @@ static bool isOptimizableAssignStmt(Expr* stmt, BlockStmt* loop) {
     if (BlockStmt* defInBlock = toBlockStmt(lhs->defPoint->parentExpr))
       if (isBlockWithinBlock(defInBlock, loop))
         if (CallExpr* marker = findMarkerNear(stmt))
-          if (hasOptimizationFlag(marker, OPT_INFO_LHS_OUTLIVES_FORALL) &&
-              hasOptimizationFlag(marker, OPT_INFO_FLAG_NO_TASK_PRIVATE))
+          if (hasOptimizationFlag(marker, FLAG_OPT_INFO_LHS_OUTLIVES_FORALL) &&
+              hasOptimizationFlag(marker, FLAG_OPT_INFO_NO_TASK_PRIVATE))
             return true;
 
   return false;

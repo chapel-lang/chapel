@@ -38,6 +38,7 @@
 #include "wellknown.h"
 
 #include <algorithm>
+#include <regex>
 
 //
 // The function that represents the compiler-generated entry point
@@ -493,6 +494,22 @@ const char* Symbol::getDeprecationMsg() const {
   }
 }
 
+// When printing the deprecation message to the console we typically
+// want to filter out inline markup used for Sphinx (which is useful
+// for when generating the docs). See:
+// https://chapel-lang.org/docs/latest/tools/chpldoc/chpldoc.html#inline-markup-2
+// for information on the markup.
+const char* Symbol::getSanitizedDeprecationMsg() const {
+  std::string msg = getDeprecationMsg();
+  // TODO: Support explicit title and reference targets like in reST direct hyperlinks (and having only target
+  //       show up in sanitized message).
+  // TODO: Allow prefixing content with ! (and filtering it out in the sanitized message)
+  // TODO: Allow prefixing content with ~ (and having it only display last component of target)
+  static const auto reStr = R"(\B\:(mod|proc|iter|data|const|var|param|type|class|record|attr)\:`([\w\$\.]+)`\B)";
+  msg = std::regex_replace(msg, std::regex(reStr), "$2");
+  return astr(msg.c_str());
+}
+
 void Symbol::generateDeprecationWarning(Expr* context) {
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
@@ -511,7 +528,7 @@ void Symbol::generateDeprecationWarning(Expr* context) {
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
   if (!compilerGenerated && !parentDeprecated) {
-    USR_WARN(context, "%s", getDeprecationMsg());
+    USR_WARN(context, "%s", getSanitizedDeprecationMsg());
   }
 }
 
@@ -719,6 +736,11 @@ void VarSymbol::printDocs(std::ostream *file, unsigned int tabs) {
     if (!fDocsTextOnly) {
       *file << std::endl;
     }
+  }
+
+  if (this->hasFlag(FLAG_DEPRECATED)) {
+    this->printDocsDeprecation(this->doc, file, tabs + 1,
+                               this->getDeprecationMsg(), !fDocsTextOnly);
   }
 }
 
@@ -1540,7 +1562,7 @@ void createInitStringLiterals() {
   // now emit initialization for them
   Expr* insertPt = initStringLiteralsEpilogue->defPoint;
 
-  VarSymbol* buffer = new VarSymbol("literalsBuf", dtCVoidPtr);
+  VarSymbol* buffer = new VarSymbol("literalsBuf", dtStringC);
   DefExpr* bufferDef = new DefExpr(buffer);
   insertPt->insertBefore(bufferDef);
 
@@ -1610,9 +1632,9 @@ void createInitStringLiterals() {
     bufferSize += strLength+1; // string data and null
   }
 
-  // emit the call to chpl_createLiteralsBuffer and put it
+  // emit the call to allocate_string_literals_buf and put it
   // just after the buffer is defined
-  CallExpr *allocCall = new CallExpr(gChplCreateLiteralsBuffer,
+  CallExpr *allocCall = new CallExpr(gAllocateStringLiteralsBuf,
                                      new_IntSymbol(bufferSize));
   CallExpr *moveBuf = new CallExpr(PRIM_MOVE, buffer, allocCall);
   bufferDef->insertAfter(moveBuf);
@@ -2123,6 +2145,7 @@ const char* astr_autoCopy = NULL;
 const char* astr_initCopy = NULL;
 const char* astr_coerceCopy = NULL;
 const char* astr_coerceMove = NULL;
+const char* astr_autoDestroy = NULL;
 
 void initAstrConsts() {
   astrSassign = astr("=");
@@ -2163,6 +2186,8 @@ void initAstrConsts() {
   astr_initCopy = astr("chpl__initCopy");
   astr_coerceCopy = astr("chpl__coerceCopy");
   astr_coerceMove = astr("chpl__coerceMove");
+
+  astr_autoDestroy = astr("chpl__autoDestroy");
 }
 
 bool isAstrOpName(const char* name) {
@@ -2181,8 +2206,9 @@ bool isAstrOpName(const char* name) {
       strcmp(name, "**=") == 0 || strcmp(name, "&=") == 0 ||
       strcmp(name, "|=") == 0 || strcmp(name, "^=") == 0 ||
       strcmp(name, ">>=") == 0 || strcmp(name, "<<=") == 0 ||
-      strcmp(name, "#") == 0 || strcmp(name, "by") == 0 ||
-      strcmp(name, "align") == 0 || name == astrScolon) {
+      strcmp(name, "#") == 0 || strcmp(name, "chpl_by") == 0 ||
+      strcmp(name, "by") == 0 || strcmp(name, "align") == 0 ||
+      strcmp(name, "chpl_align") == 0 || name == astrScolon) {
     return true;
   } else {
     return false;

@@ -268,7 +268,7 @@ void initTypeHelperNames() {
   typeHelperNames.insert(astrNew);
   typeHelperNames.insert(astr_initCopy);
   typeHelperNames.insert(astr_autoCopy);
-  typeHelperNames.insert(astr("chpl__autoDestroy"));
+  typeHelperNames.insert(astr_autoDestroy);
 }
 
 /************************************* | **************************************

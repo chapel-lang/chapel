@@ -460,7 +460,7 @@ gex_Event_t gasnete_amref_get_nb(
                      size_t nbytes,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
+  gasneti_assert(! gasnete_mapped_at(tm,rank,src)); // else PSHM/loopback
   if (nbytes <= GASNETE_GETPUT_MEDIUM_LONG_THRESHOLD) {
     gasnete_eop_t *op = gasnete_eop_new(GASNETI_MYTHREAD);
 
@@ -489,8 +489,7 @@ gex_Event_t gasnete_amref_put_nb(
                      size_t nbytes, gex_Event_t *lc_opt,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
- GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
- {
+   gasneti_assert(! gasnete_mapped_at(tm,rank,dest)); // else PSHM/loopback
   // EVENT_DEFER is accomplished using an nbi access region, ended with EVENT_DEFER.
   // Otherwise this reference implementation has no way to portably link the
   // LC of an AM Request to a gex_Event_t.
@@ -540,7 +539,6 @@ gex_Event_t gasnete_amref_put_nb(
     }
     return event;
   }
- }
 }
 #endif /* GASNETE_BUILD_AMREF_PUT */
 
@@ -565,7 +563,7 @@ int gasnete_amref_get_nbi( gex_TM_t tm,
                            size_t nbytes,
                            gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
+  gasneti_assert(! gasnete_mapped_at(tm,rank,src)); // else PSHM/loopback
   gasnete_amref_get_nbi_inner(tm, dest, rank, src, nbytes, flags GASNETI_THREAD_PASS);
   return 0;
 }
@@ -581,7 +579,7 @@ int gasnete_amref_put_nbi( gex_TM_t tm,
                            size_t nbytes, gex_Event_t *lc_opt,
                            gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
+  gasneti_assert(! gasnete_mapped_at(tm,rank,dest)); // else PSHM/loopback
   gasnete_amref_put_nbi_inner(tm, rank, dest, src, nbytes, lc_opt, flags GASNETI_THREAD_PASS);
   return 0;
 }

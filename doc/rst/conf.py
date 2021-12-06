@@ -80,8 +80,8 @@ shortversion = chplversion.replace('-', '&#8209') # prevent line-break at hyphen
 html_context = {"chplversion":chplversion}
 
 # The full version, including alpha/beta/rc tags.
-# release = '1.25.0 (pre-release)'
-release = '1.25.0'
+# release = '1.26.0 (pre-release)'
+release = '1.25.1'
 
 # General information about the project.
 project = u'Chapel Documentation'
@@ -105,9 +105,16 @@ copyright = u'2021, {0}'.format(author_text)
 # directories to ignore when looking for source files.
 exclude_patterns = ['Makefile',
                     'Makefile.sphinx',
+                    'developer/chips',
+                    'developer/implementation',
                     'util',
                     'meta',
-                    'developer',
+
+                    # These don't need to be processed separately
+                    # since they are included in the spec with .. include::
+                    'builtins/Atomics.rst',
+                    'builtins/ChapelComplex_forDocs.rst',
+                    'builtins/ChapelLocale.rst',
                    ]
 
 # The reST default role (used for this markup: `text`) to use for all

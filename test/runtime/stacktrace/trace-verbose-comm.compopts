@@ -1,1 +1,1 @@
--scommDiagsStacktrace=true
+-scommDiagsStacktrace=true --no-cache-remote

@@ -126,6 +126,7 @@ static void initialize_team_fields(
     gasneti_assert(! team->scratch_addrs);
     team->scratch_segs = gasneti_seginfo_aux;
     team->symmetric_scratch_offset = gasnete_coll_auxseg_offset;
+    team->aux_seg_flag = GASNETI_FLAG_PEER_SEG_AUX;
     gasneti_assert(! team->rel2act_map);
     GASNETI_TRACE_PRINTF(W,("Team TM0:%i scratch: size=%"PRIuSZ" symmetric_offset=%"PRIuPTR" (auxseg)",
                             gasneti_mynode, scratch_size, gasnete_coll_auxseg_offset));

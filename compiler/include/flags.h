@@ -50,9 +50,10 @@ class TypeSymbol;
 
 enum Flag {
   FLAG_UNKNOWN = 0,
-# define symbolFlag(NAME,PRAGMA,MAPNAME,COMMENT) NAME,
-# include "flags_list.h"
-# undef symbolFlag
+#define PRAGMA(name__, canParse__, parseStr__, desc__) \
+  FLAG_ ## name__,
+#include "chpl/uast/PragmaList.h"
+#undef PRAGMA
   NUM_FLAGS,
   FLAG_FIRST = FLAG_UNKNOWN + 1, // index of the first flag
   FLAG_LAST  = NUM_FLAGS - 1     // index of the last flag

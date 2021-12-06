@@ -45,6 +45,13 @@ struct ParserComment {
   Comment* comment;
 };
 
+// To store the different attributes of a symbol as they are built.
+struct AttributeParts {
+  std::set<PragmaTag>* pragmas;
+  bool isDeprecated;
+  UniqueString deprecationMessage;
+};
+
 struct ParserContext {
   yyscan_t scanner;
   UniqueString filename;
@@ -66,8 +73,15 @@ struct ParserContext {
   // Tracking a current state for these makes it easier to write
   // the parser rules.
   Decl::Visibility visibility;
+  Decl::Linkage linkage;
+  Expression* varDeclLinkageName;
+  bool hasNotedVarDeclKind;
   Variable::Kind varDeclKind;
   bool isVarDeclConfig;
+  bool isBuildingFormal;
+  AttributeParts attributeParts;
+  bool hasAttributeParts;
+  int numAttributesBuilt;
   YYLTYPE declStartLocation;
 
   // this type and stack helps the parser know if a function
@@ -87,18 +101,25 @@ struct ParserContext {
   {
     auto uniqueFilename = UniqueString::build(builder->context(), filename);
 
-    this->scanner            = nullptr;
-    this->filename           = uniqueFilename;
-    this->builder            = builder;
-    this->topLevelStatements = nullptr;
-    this->comments           = nullptr;
-    this->visibility         = Decl::DEFAULT_VISIBILITY;
-    this->varDeclKind        = Variable::VAR;
-    this->isVarDeclConfig    = false;
+    this->scanner                 = nullptr;
+    this->filename                = uniqueFilename;
+    this->builder                 = builder;
+    this->topLevelStatements      = nullptr;
+    this->comments                = nullptr;
+    this->visibility              = Decl::DEFAULT_VISIBILITY;
+    this->linkage                 = Decl::DEFAULT_LINKAGE;
+    this->varDeclLinkageName      = nullptr;
+    this->hasNotedVarDeclKind     = false;
+    this->varDeclKind             = Variable::VAR;
+    this->isBuildingFormal        = false;
+    this->isVarDeclConfig         = false;
+    this->attributeParts          = { nullptr, false, UniqueString() };
+    this->hasAttributeParts       = false;
+    this->numAttributesBuilt      = 0;
     YYLTYPE emptyLoc = {0};
-    this->declStartLocation  = emptyLoc;
-    this->atEOF              = false;
-    this->parenlessMarker    = new ParserExprList();
+    this->declStartLocation       = emptyLoc;
+    this->atEOF                   = false;
+    this->parenlessMarker         = new ParserExprList();
   }
   ~ParserContext() {
     delete this->parenlessMarker;
@@ -108,7 +129,26 @@ struct ParserContext {
 
   void noteDeclStartLoc(YYLTYPE loc);
   Decl::Visibility noteVisibility(Decl::Visibility visibility);
+  Decl::Linkage noteLinkage(Decl::Linkage linkage);
   Variable::Kind noteVarDeclKind(Variable::Kind varDeclKind);
+
+  // When 'store' is called the value of 'this->linkageName' must be empty
+  // or an assert will fire. When 'consume' is called 'this->linkageName'
+  // will be returned, and the new value will be nullptr. This is done
+  // to ensure that only one UAST node is a parent of the returned linkage
+  // name expression.
+  void storeVarDeclLinkageName(Expression* linkageName);
+  owned<Expression> consumeVarDeclLinkageName(void);
+
+  // If attributes do not exist yet, returns nullptr.
+  owned<Attributes> buildAttributes(YYLTYPE locationOfDecl);
+  PODUniqueString notePragma(YYLTYPE loc, Expression* pragmaStr);
+  void noteDeprecation(YYLTYPE loc, Expression* messageStr);
+  void resetAttributePartsState();
+
+  CommentsAndStmt buildPragmaStmt(YYLTYPE loc, CommentsAndStmt stmt);
+
+  bool noteIsBuildingFormal(bool isBuildingFormal);
   bool noteIsVarDeclConfig(bool isConfig);
   YYLTYPE declStartLoc(YYLTYPE curLoc);
   void resetDeclState();
@@ -210,8 +250,6 @@ struct ParserContext {
     return this->finishStmt(e.release());
   }
 
-
-
   // Create a ParserExprList containing the passed statements, and any
   // comments before the right brace brace location.
   ParserExprList* blockToParserExprList(YYLTYPE lbrLoc, YYLTYPE rbrLoc,
@@ -247,8 +285,11 @@ struct ParserContext {
   OpCall* buildUnaryOp(YYLTYPE location,
                        PODUniqueString op, Expression* expr);
 
+
+
   FunctionParts makeFunctionParts(bool isInline,
                                   bool isOverride);
+
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
   Expression* buildArrayTypeWithIndex(YYLTYPE location,
@@ -261,7 +302,10 @@ struct ParserContext {
                              ParserExprList* domainExprs,
                              Expression* typeExpr);
 
-  // Build a loop index decl from a given expression. May return nullptr 
+  Expression* buildTupleComponent(YYLTYPE location, PODUniqueString name);
+  Expression* buildTupleComponent(YYLTYPE location, ParserExprList* exprs);
+
+  // Build a loop index decl from a given expression. May return nullptr
   // if the index expression is not valid. TODO: Adjust me to return an
   // Expression instead if possible?
   owned<Decl> buildLoopIndexDecl(YYLTYPE location, const Expression* e);
@@ -378,6 +422,9 @@ struct ParserContext {
                                        CommentsAndStmt thenCs,
                                        CommentsAndStmt elseCs);
 
+  CommentsAndStmt buildExternBlockStmt(YYLTYPE locEverything,
+                                       SizedStr sizedStr);
+
   Expression* buildNumericLiteral(YYLTYPE location,
                                   PODUniqueString str,
                                   int type);
@@ -412,7 +459,13 @@ struct ParserContext {
 
   // Given a list of vars, build either a single var or a multi-decl.
   CommentsAndStmt
-  buildVarOrMultiDecl(YYLTYPE locEverything, ParserExprList* vars);
+  buildVarOrMultiDeclStmt(YYLTYPE locEverything, ParserExprList* vars);
+
+  TypeDeclParts enterScopeAndBuildTypeDeclParts(YYLTYPE locStart,
+                                                PODUniqueString name,
+                                                asttags::ASTTag tag);
+
+  void validateExternTypeDeclParts(YYLTYPE locStart, TypeDeclParts& parts);
 
   CommentsAndStmt buildAggregateTypeDecl(YYLTYPE location,
                                          TypeDeclParts parts,
@@ -426,9 +479,24 @@ struct ParserContext {
                                 Expression* lhs,
                                 Expression* rhs);
 
+  Expression* buildCustomScan(YYLTYPE location, YYLTYPE locIdent,
+                              Expression* lhs,
+                              Expression* rhs);
+
+  Expression* buildTypeQuery(YYLTYPE location,
+                             PODUniqueString queriedIdent);
+
   Expression* buildTypeConstructor(YYLTYPE location,
                                    PODUniqueString baseType,
                                    Expression* subType);
+
+  Expression* buildTypeConstructor(YYLTYPE location,
+                                   PODUniqueString baseType,
+                                   MaybeNamedActual actual);
+
+  Expression* buildTypeConstructor(YYLTYPE location,
+                                   PODUniqueString baseType,
+                                   MaybeNamedActualList* actuals);
 
   CommentsAndStmt buildTryExprStmt(YYLTYPE location, Expression* expr,
                                    bool isTryBang);
@@ -452,4 +520,15 @@ struct ParserContext {
 
   CommentsAndStmt buildSelectStmt(YYLTYPE location, owned<Expression> expr,
                                   ParserExprList* whenStmts);
+
+  CommentsAndStmt
+  buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+                      owned<Expression> expr,
+                      VisibilityClause::LimitationKind limitationKind,
+                      ParserExprList* limitations);
+
+  CommentsAndStmt
+  buildForwardingDecl(YYLTYPE location, owned<Attributes> attributes,
+                      CommentsAndStmt cs);
+
 };

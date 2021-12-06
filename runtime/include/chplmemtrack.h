@@ -62,7 +62,8 @@ void chpl_stopVerboseMemHere(void);
 void chpl_track_malloc(void* memAlloc, size_t number, size_t size,
                        chpl_mem_descInt_t description,
                        int32_t lineno, int32_t filename);
-void chpl_track_free(void* memAlloc, int32_t lineno, int32_t filename);
+void chpl_track_free(void* memAlloc, size_t approximateSize, int32_t lineno,
+                     int32_t filename);
 void chpl_track_realloc_pre(void* memAlloc, size_t size,
                          chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename);

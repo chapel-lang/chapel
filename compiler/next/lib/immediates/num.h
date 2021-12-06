@@ -18,8 +18,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_IMMEDIATES_NUM_H
-#define CHPL_IMMEDIATES_NUM_H
+#ifndef IMMEDIATES_NUM_H
+#define IMMEDIATES_NUM_H
 
 #include "chpl/queries/Context.h"
 #include "chpl/queries/UniqueString.h"

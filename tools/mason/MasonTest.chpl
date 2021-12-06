@@ -28,7 +28,7 @@ use MasonHelp;
 use MasonUpdate;
 use MasonUtils;
 use Path;
-use Spawn;
+use Subprocess;
 use Sys;
 use TestResult;
 use Time;
@@ -48,11 +48,8 @@ var files: list(string);
 */
 proc masonTest(args: [] string) throws {
 
-  var parser = new argumentParser();
+  var parser = new argumentParser(helpHandler=new MasonTestHelpHandler());
 
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
   var runFlag = parser.addFlag(name="run",
                                opts=["--no-run"],
                                defaultValue=false);
@@ -68,18 +65,7 @@ proc masonTest(args: [] string) throws {
   // go to the runtime?
   var otherArgs = parser.addArgument(name="others", numArgs=0..);
 
-  try! {
-    parser.parseArgs(args);
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonTestHelp();
-    exit(1);
-  }
-  if helpFlag.valueAsBool() {
-    masonTestHelp();
-    exit(0);
-  }
+  parser.parseArgs(args);
 
   var skipUpdate = MASON_OFFLINE;
   var show = showFlag.valueAsBool();
@@ -288,7 +274,7 @@ private proc runTests(show: bool, run: bool, parallel: bool, ref cmdLineCompopts
         const outputLoc = projectHome + "/target/test/" + stripExt(testTemp, ".chpl");
         const moveTo = "-o " + outputLoc;
         const compCommand = " ".join("chpl",testPath, projectPath, moveTo, allCompOpts);
-        const compilation = runWithStatus(compCommand, show);
+        const compilation = runWithStatus(compCommand, !show);
 
         if compilation != 0 {
           stderr.writeln("compilation failed for " + test);
@@ -336,7 +322,7 @@ private proc runTestBinary(projectHome: string, outputLoc: string, testName: str
             testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
   if exitCode != 0 {
     const newCommand = " ".join(command,"-nl","1");
-    const testResult = runWithStatus(newCommand, show);
+    const testResult = runWithStatus(newCommand, !show);
     if testResult != 0 {
       const errMsg = testName: string +" returned exitCode = "+testResult: string;
       result.addFailure(testName, testName+".chpl", errMsg);
@@ -532,7 +518,7 @@ proc testFile(file, ref result, show: bool) throws {
   const moveTo = "-o " + executable;
   const allCompOpts = "--comm " + comm;
   const compCommand = " ".join("chpl",file, moveTo, allCompOpts);
-  const compilation = runWithStatus(compCommand, show);
+  const compilation = runWithStatus(compCommand, !show);
 
   if compilation != 0 {
     stderr.writeln("compilation failed for " + fileName);
@@ -551,7 +537,7 @@ proc testFile(file, ref result, show: bool) throws {
               testNames, localesCountMap, failedTestNames, erroredTestNames, skippedTestNames, show);
     if exitCode != 0 {
       const command = " ".join("./"+executable,"-nl","1");
-      const testResult = runWithStatus(command, show);
+      const testResult = runWithStatus(command, !show);
       if testResult != 0 {
         const errMsg = executable: string +" returned exitCode = "+testResult: string;
         result.addFailure(executable, fileName, errMsg);

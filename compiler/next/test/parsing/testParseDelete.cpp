@@ -42,10 +42,9 @@ static void test0(Parser* parser) {
       "/* comment 1 */\n"
       "delete foo, /* comment 2 */ bar, /* comment 3*/ baz;\n"
       "/* comment 4 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isDelete());

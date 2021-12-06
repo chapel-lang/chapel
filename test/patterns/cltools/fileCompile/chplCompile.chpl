@@ -4,7 +4,7 @@ A tool written in chapel to compile a chapel program and to demonstrate the use 
 spawn module and how it is used to create subprocesses within a chapel program. 
 */
 
-use Spawn;
+use Subprocess;
 
 const chapel: string = "chpl";
 

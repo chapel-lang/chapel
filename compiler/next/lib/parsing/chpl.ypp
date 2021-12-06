@@ -179,12 +179,6 @@
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
-  // for extern_export_decl_stmt_start
-  struct CommentsAndLinkage {
-    std::vector<ParserComment>* comments;
-    LinkageTag linkage;
-  };
-
   // A struct for storing a partially constructed function prototype
   // during parsing for linkage_spec/fn_decl_stmt/etc
   // It is just saving some components of a function to be used
@@ -192,8 +186,9 @@
   struct FunctionParts {
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
+    Attributes* attributes;
     Decl::Visibility visibility;
-    Function::Linkage linkage;
+    Decl::Linkage linkage;
     Expression* linkageNameExpr;
     bool isInline;
     bool isOverride;
@@ -210,18 +205,22 @@
     ParserExprList* body;
   };
 
-  // a struct to store the values in module_decl_start
+  // A struct to thread along some pieces of a module before it is built.
   struct ModuleParts {
     std::vector<ParserComment>* comments;
+    Attributes* attributes;
     Decl::Visibility visibility;
     Module::Kind kind;
     PODUniqueString name;
   };
 
-  // a struct to store the values in enum_header_lcbr
+  // A struct to thread along some pieces of a type before it is built.
   struct TypeDeclParts {
     std::vector<ParserComment>* comments;
     Decl::Visibility visibility;
+    Decl::Linkage linkage;
+    Expression* linkageName;
+    Attributes* attributes;
     PODUniqueString name;
     asttags::ASTTag tag;
   };
@@ -276,7 +275,7 @@
     Formal::Intent intentTag;
     Function::Kind functionKind;
     Function::ReturnIntent returnTag;
-    LinkageTag linkageTag;
+    Decl::Linkage linkageTag;
     Module::Kind moduleKind;
     New::Management newManagement;
     TaskVar::Intent taskIntent;
@@ -285,6 +284,7 @@
     Variable::Kind variableKind;
 
     // simple pointer values
+    Attributes* attribute;
     Block* block;
     Call* call;
     Function* function;
@@ -293,7 +293,6 @@
 
     // values that are temporary groupings
     BlockOrDo blockOrDo;
-    CommentsAndLinkage commentsAndLinkage;
     CommentsAndStmt commentsAndStmt;
     TypeDeclParts typeDeclParts;
     FunctionParts functionParts;
@@ -508,7 +507,7 @@
 %type <throwsTag> opt_throws_error
 %type <moduleKind> opt_prototype
 %type <visibilityTag> access_control
-%type <intentTag> required_intent_tag opt_intent_tag opt_this_intent_tag
+%type <intentTag> required_intent_tag opt_formal_intent_tag opt_this_intent_tag
 
 %type <returnTag>  opt_ret_tag
 %type <astTag> class_tag
@@ -517,8 +516,6 @@
 %type <uniqueStr> internal_type_ident_def reserved_type_ident_use
 %type <uniqueStr> fn_ident assignop_ident opt_label_ident
 %type <uniqueStr> implements_type_ident implements_type_error_ident
-
-%type <uniqueStrList>       pragma_ls
 
 %type <commentsAndStmt> deprecated_decl_stmt
 %type <commentsAndStmt> deprecated_decl_base
@@ -559,9 +556,9 @@
 %type <typeDeclParts> class_start
 %type <commentsAndStmt> class_level_stmt
 %type <commentsAndStmt> inner_class_level_stmt
-%type <commentsAndStmt> forwarding_decl_stmt forwarding_decl_start
+%type <commentsAndStmt> forwarding_decl_stmt
+%type <attribute> forwarding_decl_start
 %type <commentsAndStmt> extern_export_decl_stmt
-%type <commentsAndLinkage> extern_export_decl_stmt_start
 %type <commentsAndStmt> extern_block_stmt
 %type <commentsAndStmt> return_stmt
 %type <commentsAndStmt> try_stmt
@@ -572,8 +569,11 @@
 
 %type <variableKind> var_decl_type
 
-%type <commentsAndStmt> type_alias_decl_stmt type_alias_decl_stmt_start
-%type <expr> type_alias_decl_stmt_inner
+%type <commentsAndStmt> type_alias_decl_stmt
+%type <variableKind> type_alias_decl_stmt_start
+%type <exprList> type_alias_decl_stmt_inner_ls
+%type <commentsAndStmt> type_alias_decl_stmt_inner
+
 %type <functionParts> fn_decl_stmt
 %type <commentsAndStmt> fn_decl_stmt_complete
 %type <commentsAndStmt> class_decl_stmt
@@ -610,7 +610,7 @@
 %type <expr> let_expr ifvar
 %type <uniqueStr> reduce_scan_op_expr
 %type <expr> reduce_expr scan_expr opt_init_expr
-%type <expr> opt_init_type var_arg_expr
+%type <expr> opt_init_type formal_var_arg_expr
 %type <expr> opt_try_expr opt_expr
 %type <expr> tuple_component tuple_var_decl_component
 %type <expr> formal
@@ -629,7 +629,7 @@
 %type <expr> fn_decl_receiver_expr
 %type <functionKind> proc_iter_or_op
 %type <functionParts> linkage_spec
-%type <linkageTag> extern_or_export
+%type <linkageTag> extern_or_export extern_export_decl_stmt_start
 %type <expr> intent_expr
 %type <taskIntent> task_var_prefix
 
@@ -639,7 +639,6 @@ program:
   toplevel_stmt_ls                    { context->topLevelStatements = $1; }
 ;
 
-// 'toplevel_stmt_ls' is 'stmt_ls' plus resetTempID()
 toplevel_stmt_ls:
                                       { $$ = context->makeList(); }
 | toplevel_stmt_ls toplevel_stmt      { $$ = context->appendList($1, $2); }
@@ -648,46 +647,23 @@ toplevel_stmt_ls:
 // Switch between plain statements and those preceded by pragmas
 toplevel_stmt:
    stmt
-|  pragma_ls stmt                     { $$ = TODOSTMT(@$); }
+|  pragma_ls stmt
+  {
+    $$ = context->buildPragmaStmt(@2, $2);
+  }
 ;
 
 // Sequence of pragmas
 pragma_ls:
   TPRAGMA STRINGLITERAL
-    {
-      Expression* lit = $2;
-      if (lit->isStringLiteral()) {
-        StringLiteral* strLit = lit->toStringLiteral();
-        $$ = new UniqueStrList();
-        PODUniqueString u = STR(strLit->str().c_str());
-        delete strLit;
-        $$->push_back(u);
-      } else {
-        // in this case we expect that there was an error
-        // reading the string literal so it is ErroneousExpression
-        // and an error message has already been recorded.
-        // Use "" as the string to indicate an error in the pragma.
-        PODUniqueString u = STR("");
-        $$->push_back(u);
-      }
-    }
+  {
+    context->notePragma(@$, $2);
+  }
 | pragma_ls TPRAGMA STRINGLITERAL
-    {
-      Expression* lit = $3;
-      if (lit->isStringLiteral()) {
-        StringLiteral* strLit = lit->toStringLiteral();
-        PODUniqueString u = STR(strLit->str().c_str());
-        delete strLit;
-        $1->push_back(u);
-      } else {
-        // in this case we expect that there was an error
-        // reading the string literal so it is ErroneousExpression
-        // and an error message has already been recorded.
-        // Use "" as the string to indicate an error in the pragma.
-        PODUniqueString u = STR("");
-        $$->push_back(u);
-      }
-    }
+  {
+    auto loc = context->makeSpannedLocation(@2, @3);
+    context->notePragma(loc, $3);
+  }
 ;
 
 stmt:
@@ -886,10 +862,22 @@ stmt:
 
 deprecated_decl_stmt:
   deprecated_decl_base
-| TDEPRECATED STRINGLITERAL deprecated_decl_base
-{ $$ = TODOSTMT(@$); }
-| TDEPRECATED deprecated_decl_base
-{ $$ = TODOSTMT(@$); }
+| TDEPRECATED STRINGLITERAL
+  {
+    context->noteDeprecation(@$, $2);
+  }
+  deprecated_decl_base
+  {
+    $$ = $4;
+  }
+| TDEPRECATED
+  {
+    context->noteDeprecation(@$, nullptr);
+  }
+  deprecated_decl_base
+  {
+    $$ = $3;
+  }
 ;
 
 deprecated_decl_base:
@@ -903,7 +891,14 @@ module_decl_start:
       // take into account location of public/private, if any
       auto loc = context->declStartLoc(@3);
 
-      ModuleParts parts = {context->gatherComments(loc), $1, $2, $4};
+      ModuleParts parts = {
+        .comments=context->gatherComments(loc),
+        .attributes=context->buildAttributes(@$).release(),
+        .visibility=$1,
+        .kind=$2,
+        .name=$4
+      };
+
       $$ = parts;
       context->resetDeclState();
       context->clearComments();
@@ -918,8 +913,10 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body = context->makeList();
       context->appendList(body, context->gatherComments(@3));
-      auto mod = Module::build(BUILDER, LOC(@1),
-                               parts.name, parts.visibility, parts.kind,
+      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributes),
+                               parts.visibility,
+                               parts.name,
+                               parts.kind,
                                context->consumeList(body));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
@@ -931,8 +928,10 @@ module_decl_stmt:
       ModuleParts parts = $1;
       ParserExprList* body = $3;
       context->appendList(body, context->gatherComments(@4));
-      auto mod = Module::build(BUILDER, LOC(@1),
-                               parts.name, parts.visibility, parts.kind,
+      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributes),
+                               parts.visibility,
+                               parts.name,
+                               parts.kind,
                                context->consumeList(body));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
@@ -940,10 +939,12 @@ module_decl_stmt:
 | module_decl_start TLCBR error TRCBR
     {
       ModuleParts parts = $1;
-      ParserExprList* body =
-              context->makeList(ErroneousExpression::build(BUILDER, LOC(@3)));
-      auto mod = Module::build(BUILDER, LOC(@1),
-                               parts.name, parts.visibility, parts.kind,
+      auto err = ErroneousExpression::build(BUILDER, LOC(@3));
+      ParserExprList* body = context->makeList(std::move(err));
+      auto mod = Module::build(BUILDER, LOC(@1), toOwned(parts.attributes),
+                               parts.visibility,
+                               parts.name,
+                               parts.kind,
                                context->consumeList(body));
       CommentsAndStmt cs = {parts.comments, mod.release()};
       $$ = cs;
@@ -1088,7 +1089,6 @@ use_renames_ls:
   }
 ;
 
-
 opt_only_ls:
   /* nothing */   { $$ = nullptr; }
 | renames_ls      { $$ = $1; }
@@ -1194,9 +1194,11 @@ import_ls:
 
 require_stmt:
   TREQUIRE expr_ls TSEMI
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    auto comments = context->gatherComments(@1);
+    auto node = Require::build(BUILDER, LOC(@$), context->consumeList($2));
+    $$ = { .comments=comments, .stmt=node.release() };
+  }
 ;
 
 assignment_stmt:
@@ -1341,10 +1343,22 @@ return_stmt:
 
 deprecated_class_level_stmt:
   class_level_stmt
-| TDEPRECATED STRINGLITERAL class_level_stmt
-{ $$ = TODOSTMT(@$); }
-| TDEPRECATED class_level_stmt
-{ $$ = TODOSTMT(@$); }
+| TDEPRECATED STRINGLITERAL
+  {
+    context->noteDeprecation(@$, $2);
+  }
+  class_level_stmt
+  {
+    $$ = $4;
+  }
+| TDEPRECATED
+  {
+    context->noteDeprecation(@$, nullptr);
+  }
+  class_level_stmt
+  {
+    $$ = $3;
+  }
 ;
 
 class_level_stmt:
@@ -1385,124 +1399,98 @@ inner_class_level_stmt:
 forwarding_decl_stmt:
   forwarding_decl_start expr TSEMI
     {
-      CommentsAndStmt cs = $1;
-      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
-      // TODO: save expr
-      $$ = cs;
+      $$ = context->buildForwardingDecl(@$, toOwned($1), toOwned($2),
+                                        VisibilityClause::NONE, nullptr);
     }
 | forwarding_decl_start expr TEXCEPT except_ls TSEMI
     {
-      CommentsAndStmt cs = $1;
-      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
-      // TODO: save expr and except_ls
-      $$ = cs;
+      $$ = context->buildForwardingDecl(@$, toOwned($1), toOwned($2),
+                                        VisibilityClause::EXCEPT, $4);
     }
 | forwarding_decl_start expr TONLY opt_only_ls TSEMI
     {
-      CommentsAndStmt cs = $1;
-      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
-      // TODO: save expr and opt_only_ls
-      $$ = cs;
+      $$ = context->buildForwardingDecl(@$, toOwned($1), toOwned($2),
+                                        VisibilityClause::ONLY, $4);
     }
 | forwarding_decl_start var_decl_stmt
     {
-      CommentsAndStmt cs = $1;
-      //ForwardingDecl* decl = toForwardingDecl(cs.stmt);
-      // TODO: save var_decl_stmt
-      $$ = cs;
+      $$ = context->buildForwardingDecl(@$, toOwned($1), $2);
     }
 ;
 
 forwarding_decl_start:
   TFORWARDING
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    $$ = context->buildAttributes(@$).release();
+    context->resetAttributePartsState();
+  }
 ;
 
 extern_or_export:
-  TEXTERN { $$ = LinkageTag_EXTERN; }
-| TEXPORT { $$ = LinkageTag_EXPORT; }
+  TEXTERN { $$ = Decl::EXTERN; }
+| TEXPORT { $$ = Decl::EXPORT; }
 ;
 
 extern_export_decl_stmt_start:
   extern_or_export
-    {
-      CommentsAndLinkage cl = {context->gatherComments(@1), $1};
-      $$ = cl;
-    }
+  {
+    // Sets the start location only if it is still unset.
+    context->noteDeclStartLoc(@1);
+    $$ = context->noteLinkage($1);
+  }
 ;
 
 extern_export_decl_stmt:
-  extern_export_decl_stmt_start TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      CommentsAndLinkage cl = $1;
-      //auto comments = context->gatherComments(@7);
-      // TODO: store comments into the generated list
-      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
-      $$ = cs;
-    }
-| extern_export_decl_stmt_start STRINGLITERAL TRECORD ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      CommentsAndLinkage cl = $1;
-      //auto comments = context->gatherComments(@8);
-      // TODO: store comments into the generated list
-      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
-      $$ = cs;
-    }
-
-| extern_export_decl_stmt_start TUNION ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      CommentsAndLinkage cl = $1;
-      //auto comments = context->gatherComments(@7);
-      // TODO: store comments into the generated list
-      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
-      $$ = cs;
-    }
-| extern_export_decl_stmt_start STRINGLITERAL TUNION ident_def opt_inherit TLCBR class_level_stmt_ls TRCBR
-    {
-      CommentsAndLinkage cl = $1;
-      //auto comments = context->gatherComments(@8);
-      // TODO: store comments into the generated list
-      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
-      $$ = cs;
-    }
-
+  extern_export_decl_stmt_start class_start opt_inherit
+  TLCBR class_level_stmt_ls TRCBR
+  {
+    $$ = context->buildAggregateTypeDecl(@1, $2, @3, $3, @4, $5, @6);
+    context->exitScope($2.tag, $2.name);
+  }
+| extern_export_decl_stmt_start STRINGLITERAL class_start opt_inherit
+  TLCBR class_level_stmt_ls TRCBR
+  {
+    // Set the linkage name since it will be nullptr otherwise.
+    $3.linkageName = $2;
+    $$ = context->buildAggregateTypeDecl(@1, $3, @4, $4, @5, $6, @7);
+    context->exitScope($3.tag, $3.name);
+  }
 | extern_export_decl_stmt_start opt_expr fn_decl_stmt
-    {
-      CommentsAndLinkage cl = $1;
-      Expression* optExpr = $2;
-      FunctionParts fp = $3;
-      LinkageTag tag = cl.linkage;
-      if (tag == LinkageTag_EXTERN)
-        fp.linkage = Function::EXTERN;
-      else if (tag == LinkageTag_EXPORT)
-        fp.linkage = Function::EXPORT;
-      else
-        assert(false && "extern_export returned invalid linkage");
+  {
+    auto loc = context->declStartLoc(@1);
 
-      if (fp.comments)
-        delete fp.comments;
-      fp.comments = cl.comments;
-      fp.linkageNameExpr = optExpr;
+    Expression* optExpr = $2;
+    FunctionParts fp = $3;
 
-      $$ = context->buildFunctionDecl(@$, fp);
-    }
+    auto commentList = context->appendList(context->makeList(),
+                                           fp.comments);
 
-| extern_export_decl_stmt_start opt_expr var_decl_type var_decl_stmt_inner_ls TSEMI
-    {
-      CommentsAndLinkage cl = $1;
-      context->clearComments();
-      CommentsAndStmt cs = {cl.comments, TODOEXPR(@$)};
-      $$ = cs;
-    }
+    auto comments = context->gatherCommentsFromList(commentList, loc);
+    delete commentList;
+
+    fp.linkage = $1;
+    fp.comments = comments;
+    fp.linkageNameExpr = optExpr;
+
+    $$ = context->buildFunctionDecl(@$, fp);
+  }
+| extern_export_decl_stmt_start opt_expr
+  {
+    // This will be consumed when building the first variable in the list.
+    context->storeVarDeclLinkageName($2);
+  }
+  var_decl_type var_decl_stmt_inner_ls TSEMI
+  {
+    $$ = context->buildVarOrMultiDeclStmt(@$, $5);
+    context->resetDeclState();
+  }
 ;
 
 extern_block_stmt:
   TEXTERN EXTERNCODE
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    $$ = context->buildExternBlockStmt(@1, $2);
+  }
 ;
 
 loop_stmt:
@@ -1763,8 +1751,12 @@ if_stmt:
 ifvar:
   TVAR   ident_def TASSIGN expr
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
+    auto varDecl = Variable::build(BUILDER, LOC(@$),
+                                   /*attributes*/ nullptr,
                                    Decl::DEFAULT_VISIBILITY,
+                                   Decl::DEFAULT_LINKAGE,
+                                   /*linkageName*/ nullptr,
+                                   /*name*/ $2,
                                    Variable::VAR,
                                    /*isConfig*/ false,
                                    context->currentScopeIsAggregate(),
@@ -1774,8 +1766,12 @@ ifvar:
   }
 | TCONST ident_def TASSIGN expr
   {
-    auto varDecl = Variable::build(BUILDER, LOC(@$), $2,
+    auto varDecl = Variable::build(BUILDER, LOC(@$),
+                                   /*attributes*/ nullptr,
                                    Decl::DEFAULT_VISIBILITY,
+                                   Decl::DEFAULT_LINKAGE,
+                                   /*linkageName*/ nullptr,
+                                   /*name*/ $2,
                                    Variable::CONST,
                                    /*isConfig*/ false,
                                    context->currentScopeIsAggregate(),
@@ -1912,7 +1908,11 @@ catch_expr:
 catch_expr_inner:
   ident_def
   {
-    $$ = Variable::build(BUILDER, LOC(@$), $1, Decl::DEFAULT_VISIBILITY,
+    $$ = Variable::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
+                         Decl::DEFAULT_VISIBILITY,
+                         Decl::DEFAULT_LINKAGE,
+                         /*linkageName*/ nullptr,
+                         /*name*/ $1,
                          Variable::VAR,
                          /*isConfig*/ false,
                          /*isField*/ false,
@@ -1921,7 +1921,11 @@ catch_expr_inner:
   }
 | ident_def TCOLON expr
   {
-    $$ = Variable::build(BUILDER, LOC(@$), $1, Decl::DEFAULT_VISIBILITY,
+    $$ = Variable::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
+                         Decl::DEFAULT_VISIBILITY,
+                         Decl::DEFAULT_LINKAGE,
+                         /*linkageName*/ nullptr,
+                         /*name*/ $1,
                          Variable::VAR,
                          /*isConfig*/ false,
                          /*isField*/ false,
@@ -1993,19 +1997,9 @@ class_decl_stmt:
 
 class_start:
   class_tag ident_def
-    {
-      // take into account location of public/private, if any
-      auto loc = context->declStartLoc(@1);
-      context->enterScope($1, $2);
-
-      TypeDeclParts parts = {context->gatherComments(loc),
-                             context->visibility,
-                             $2,
-                             $1};
-      $$ = parts;
-
-      context->clearComments();
-    }
+  {
+    $$ = context->enterScopeAndBuildTypeDeclParts(@1, $2, $1);
+  }
 ;
 
 class_tag:
@@ -2020,12 +2014,18 @@ opt_inherit:
 ;
 
 class_level_stmt_ls:
-  /* nothing */
-    { $$ = context->makeList(); }
+  {
+    /* nothing */
+    $$ = context->makeList();
+  }
 | class_level_stmt_ls deprecated_class_level_stmt
-    { context->appendList($1, $2); }
+  {
+    context->appendList($1, $2);
+  }
 | class_level_stmt_ls pragma_ls deprecated_class_level_stmt
-    { context->appendList($1, TODOEXPR(@$)); }
+  {
+    context->appendList($1, context->buildPragmaStmt(@3, $3));
+  }
 ;
 
 enum_decl_stmt:
@@ -2036,8 +2036,9 @@ enum_decl_stmt:
       // get any comments after the last element but before the closing brace
       context->appendList(list, context->gatherComments(@3));
 
-      auto decl = Enum::build(BUILDER, LOC(@$),
-                              parts.name, parts.visibility,
+      auto decl = Enum::build(BUILDER, LOC(@$), toOwned(parts.attributes),
+                              parts.visibility,
+                              parts.name,
                               context->consumeList(list));
       CommentsAndStmt cs = {parts.comments, decl.release()};
       $$ = cs;
@@ -2059,54 +2060,69 @@ enum_decl_stmt:
 
 enum_header_lcbr:
   TENUM ident_def TLCBR
-    {
-      // take into account location of public/private, if any
-      auto loc = context->declStartLoc(@1);
-      context->enterScope(asttags::Enum, $2);
-
-      TypeDeclParts parts = {context->gatherComments(loc),
-                             context->visibility,
-                             $2,
-                             asttags::Enum};
-      $$ = parts;
-
-      context->clearComments();
-    }
+  {
+    $$ = context->enterScopeAndBuildTypeDeclParts(@1, $2, asttags::Enum);
+  }
 ;
 
 enum_ls:
   deprecated_enum_item
-    {
-      $$ = context->makeList($1);
-    }
+  {
+    $$ = context->makeList($1);
+    context->resetAttributePartsState();
+  }
 | enum_ls TCOMMA
-    {
-      $$ = $1;
-      context->clearCommentsBefore(@2);
-    }
-| enum_ls TCOMMA {context->clearCommentsBefore(@2);} deprecated_enum_item
-    {
-      context->appendList($1, $4);
-    }
+  {
+    $$ = $1;
+    context->clearCommentsBefore(@2);
+    context->resetAttributePartsState();
+  }
+| enum_ls TCOMMA
+  {
+    context->clearCommentsBefore(@2);
+    context->resetAttributePartsState();
+  }
+  deprecated_enum_item
+  {
+    context->appendList($1, $4);
+    context->resetAttributePartsState();
+  }
 ;
 
 deprecated_enum_item:
   enum_item
-| TDEPRECATED STRINGLITERAL enum_item
-{ $$ = TODOSTMT(@$); }
-| TDEPRECATED enum_item
-{ $$ = TODOSTMT(@$); }
+| TDEPRECATED STRINGLITERAL
+  {
+    context->noteDeprecation(@$, $2);
+  }
+  enum_item
+  {
+    $$ = $4;
+  }
+| TDEPRECATED
+  {
+    context->noteDeprecation(@$, nullptr);
+  }
+  enum_item
+  {
+    $$ = $3;
+  }
 ;
 
 enum_item:
   ident_def
     {
-      auto decl = EnumElement::build(BUILDER, LOC(@$), $1);
+      auto decl = EnumElement::build(BUILDER, LOC(@$),
+                                     context->buildAttributes(@$),
+                                     $1);
       $$ = STMT(@$, decl.release());
     }
 | ident_def TASSIGN expr
     {
-      auto decl = EnumElement::build(BUILDER, LOC(@$), $1, toOwned($3));
+      auto decl = EnumElement::build(BUILDER, LOC(@$),
+                                     context->buildAttributes(@$),
+                                     $1,
+                                     toOwned($3));
       $$ = STMT(@$, decl.release());
       context->clearCommentsBefore(@3);
     }
@@ -2114,9 +2130,11 @@ enum_item:
 
 lambda_decl_expr:
   TLAMBDA req_formal_ls opt_ret_tag opt_type opt_lifetime_where function_body_stmt
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    // TODO (dlongnecke): Leave this unimplemented for now? Since we will
+    // be addressing FCFs in 1.26...
+    $$ = TODOEXPR(@$);
+  }
 ;
 
 linkage_spec_empty:
@@ -2143,6 +2161,7 @@ fn_decl_stmt:
   opt_throws_error opt_lifetime_where
     {
       context->clearComments();
+      context->resetDeclState();
       context->enterScope(asttags::Function, $1.name);
     }
   opt_function_body_stmt
@@ -2185,7 +2204,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.receiver = Formal::build(BUILDER, LOC(@3),
+      fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributes*/ nullptr,
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
       fp.name = $5;
@@ -2196,7 +2215,7 @@ fn_decl_stmt_inner:
     {
       FunctionParts fp = $1;
       fp.thisIntent = $2;
-      fp.receiver = Formal::build(BUILDER, LOC(@3),
+      fp.receiver = Formal::build(BUILDER, LOC(@3), /*attributes*/ nullptr,
                                   STR("this"), $2, toOwned($3),
                                   nullptr).release();
       fp.name = $5;
@@ -2217,6 +2236,8 @@ fn_decl_stmt_start:
       FunctionParts fp = $1;
       auto loc = context->declStartLoc(@2);
       fp.comments = context->gatherComments(loc);
+      fp.attributes = context->buildAttributes(@$).release();
+      context->resetAttributePartsState();
       fp.kind = $2;
       $$ = fp;
     }
@@ -2278,6 +2299,12 @@ assignop_ident:
 | TASSIGNSL
 ;
 
+formal_var_arg_expr:
+  TDOTDOTDOT             { $$ = nullptr; }
+| TDOTDOTDOT expr        { $$ = $2; }
+| TDOTDOTDOT query_expr  { $$ = $2; }
+;
+
 opt_formal_ls:
                      { $$ = context->parenlessMarker; }
 | TLP formal_ls TRP  { $$ = $2; }
@@ -2298,26 +2325,77 @@ formal_ls:
 ;
 
 formal:
-  opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = Formal::build(BUILDER, LOC(@$), $2, $1,
-                         toOwned($3), toOwned($4)).release(); }
-| pragma_ls opt_intent_tag ident_def opt_formal_type opt_init_expr
-    { $$ = TODOEXPR(@$); }
-| opt_intent_tag ident_def opt_formal_type var_arg_expr
-    { $$ = TODOEXPR(@$); }
-| pragma_ls opt_intent_tag ident_def opt_formal_type var_arg_expr
-    { $$ = TODOEXPR(@$); }
-| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type opt_init_expr
-    { $$ = TODOEXPR(@$); }
-| opt_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type var_arg_expr
-    {
-      $$ = ERROR(@$, "variable-length argument may not be grouped in a tuple");
-    }
+  opt_formal_intent_tag ident_def opt_formal_type opt_init_expr
+  {
+    $$ = Formal::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
+                       /*name*/ $2,
+                       /*intent*/ $1,
+                       toOwned($3),
+                       toOwned($4)).release();
+    context->noteIsBuildingFormal(false);
+  }
+| pragma_ls opt_formal_intent_tag ident_def opt_formal_type opt_init_expr
+  {
+    auto attributes = context->buildAttributes(@$);
+    $$ = Formal::build(BUILDER, LOC(@$), std::move(attributes),
+                       /*name*/ $3,
+                       /*intent*/ $2,
+                       toOwned($4),
+                       toOwned($5)).release();
+    context->noteIsBuildingFormal(false);
+    context->resetAttributePartsState();
+  }
+| opt_formal_intent_tag ident_def opt_formal_type formal_var_arg_expr
+  {
+    $$ = VarArgFormal::build(BUILDER, LOC(@$),
+                             /*attributes*/ nullptr,
+                             /*name*/ $2,
+                             /*intent*/ $1,
+                             toOwned($3),
+                             toOwned($4)).release();
+    context->noteIsBuildingFormal(false);
+  }
+| pragma_ls opt_formal_intent_tag ident_def opt_formal_type formal_var_arg_expr
+  {
+    auto attributes = context->buildAttributes(@$);
+    $$ = VarArgFormal::build(BUILDER, LOC(@$),
+                             std::move(attributes),
+                             /*name*/ $3,
+                             /*intent*/ $2,
+                             toOwned($4),
+                             toOwned($5)).release();
+    context->noteIsBuildingFormal(false);
+    context->resetAttributePartsState();
+  }
+| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type
+  opt_init_expr
+  {
+    $$ = TupleDecl::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
+                          context->visibility,
+                          context->linkage,
+                          ((TupleDecl::IntentOrKind) $1),
+                          context->consumeList($3),
+                          toOwned($5),
+                          toOwned($6)).release();
+    context->noteIsBuildingFormal(false);
+  }
+| opt_formal_intent_tag TLP tuple_var_decl_stmt_inner_ls TRP opt_formal_type
+  formal_var_arg_expr
+  {
+    $$ = ERROR(@$, "variable-length argument may not be grouped in a tuple");
+  }
 ;
 
-opt_intent_tag:
-                      { $$ = Formal::DEFAULT_INTENT; }
-| required_intent_tag { $$ = $1; }
+opt_formal_intent_tag:
+  {
+    context->noteIsBuildingFormal(true);
+    $$ = Formal::DEFAULT_INTENT;
+  }
+| required_intent_tag
+  {
+    context->noteIsBuildingFormal(true);
+    $$ = $1;
+  }
 ;
 
 required_intent_tag:
@@ -2371,14 +2449,9 @@ function_body_stmt:
 ;
 
 query_expr:
-  TQUERIEDIDENT       { $$ = TODOEXPR(@$); }
+  TQUERIEDIDENT   { $$ = context->buildTypeQuery(@$, $1); }
 ;
 
-var_arg_expr:
-  TDOTDOTDOT             { $$ = TODOEXPR(@$); }
-| TDOTDOTDOT expr        { $$ = $2; }
-| TDOTDOTDOT query_expr  { $$ = TODOEXPR(@$); }
-;
 
 opt_lifetime_where:
   { $$ = makeWhereAndLifetime(nullptr, nullptr); }
@@ -2422,49 +2495,71 @@ lifetime_ident:
 ;
 
 type_alias_decl_stmt:
-  type_alias_decl_stmt_start type_alias_decl_stmt_inner TSEMI
-    {
-      $$ = context->finishStmt($1); // TODO
-    }
+  type_alias_decl_stmt_start type_alias_decl_stmt_inner_ls TSEMI
+  {
+    $$ = context->buildVarOrMultiDeclStmt(@$, $2);
+    context->resetDeclState();
+  }
 ;
 
 type_alias_decl_stmt_start:
   TTYPE
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    $$ = context->noteVarDeclKind(Variable::TYPE);
+  }
 | TCONFIG TTYPE
-    {
-      $$ = TODOSTMT(@$);
-    }
-
+  {
+    $$ = context->noteVarDeclKind(Variable::TYPE);
+    context->noteIsVarDeclConfig(true);
+  }
 | TEXTERN TTYPE
-    {
-      $$ = TODOSTMT(@$);
-    }
+  {
+    $$ = context->noteVarDeclKind(Variable::TYPE);
+    context->noteLinkage(Decl::EXTERN);
+  }
 ;
 
+type_alias_decl_stmt_inner_ls:
+  type_alias_decl_stmt_inner
+  {
+    $$ = context->makeList($1);
+  }
+| type_alias_decl_stmt_inner TCOMMA type_alias_decl_stmt_inner_ls
+  {
+    $$ = context->appendList($3, $1);
+  }
+;
 
 type_alias_decl_stmt_inner:
   ident_def opt_init_type
-    {
-      // set name to $1
-      $$ = TODOEXPR(@$);
-    }
-| ident_def opt_init_type TCOMMA type_alias_decl_stmt_inner
-    {
-      // set name to $1
-      // add new var to multivar
-      $$ = TODOEXPR(@$);
-    }
+  {
+    // TODO (dlongnecke-cray): Add a helper to build this and var_decl_stmt.
+    auto node = Variable::build(BUILDER, LOC(@$),
+                                context->buildAttributes(@$),
+                                context->visibility,
+                                context->linkage,
+                                context->consumeVarDeclLinkageName(),
+                                /*name*/ $1,
+                                context->varDeclKind,
+                                context->isVarDeclConfig,
+                                context->currentScopeIsAggregate(),
+                                /*typeExpression*/ nullptr,
+                                toOwned($2));
+      // Gather the comments like a statement does.
+      $$ = STMT(@1, node.release());
+      context->clearComments();
+  }
 ;
 
 opt_init_type:
-    { $$ = nullptr; }
+  { $$ = nullptr; }
 | TASSIGN type_level_expr
-    { $$ = $2; }
+  { $$ = $2; }
 | TASSIGN array_type
-    { $$ = TODOEXPR(@$); } // Cannot be a type_level_expr as expr inherits from type_level_expr.
+  {
+    // Cannot be a type_level_expr as expr inherits from type_level_expr.
+    $$ = $2;
+  }
 ;
 
 var_decl_type:
@@ -2482,12 +2577,12 @@ var_decl_stmt:
     context->noteIsVarDeclConfig(true);
   }
   var_decl_type var_decl_stmt_inner_ls TSEMI {
-    $$ = context->buildVarOrMultiDecl(@$, $4);
+    $$ = context->buildVarOrMultiDeclStmt(@$, $4);
     context->resetDeclState();
   }
 | var_decl_type var_decl_stmt_inner_ls TSEMI
   {
-    $$ = context->buildVarOrMultiDecl(@$, $2);
+    $$ = context->buildVarOrMultiDeclStmt(@$, $2);
     context->resetDeclState();
   }
 ;
@@ -2507,7 +2602,11 @@ var_decl_stmt_inner:
   ident_def opt_type opt_init_expr
     {
       auto varDecl = Variable::build(BUILDER, LOC(@$),
-                                     $1, context->visibility,
+                                     context->buildAttributes(@$),
+                                     context->visibility,
+                                     context->linkage,
+                                     context->consumeVarDeclLinkageName(),
+                                     /*name*/ $1,
                                      context->varDeclKind,
                                      context->isVarDeclConfig,
                                      context->currentScopeIsAggregate(),
@@ -2518,11 +2617,15 @@ var_decl_stmt_inner:
     }
 | TLP tuple_var_decl_stmt_inner_ls TRP opt_type opt_init_expr
     {
+      auto intentOrKind = (TupleDecl::IntentOrKind) context->varDeclKind;
       auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
+                                        context->buildAttributes(@$),
                                         context->visibility,
-                                        context->varDeclKind,
+                                        context->linkage,
+                                        intentOrKind,
                                         context->consumeList($2),
-                                        toOwned($4), toOwned($5));
+                                        toOwned($4),
+                                        toOwned($5));
       $$ = STMT(@1, tupleDecl.release());
       context->clearComments();
     }
@@ -2530,36 +2633,17 @@ var_decl_stmt_inner:
 
 tuple_var_decl_component:
   TUNDERSCORE
-    {
-      auto varDecl = Variable::build(BUILDER, LOC(@$),
-                                     $1, context->visibility,
-                                     context->varDeclKind,
-                                     context->isVarDeclConfig,
-                                     context->currentScopeIsAggregate(),
-                                     nullptr, nullptr);
-      $$ = varDecl.release();
-    }
-
+  {
+    $$ = context->buildTupleComponent(@$, $1);
+  }
 | ident_def
-    {
-      auto varDecl = Variable::build(BUILDER, LOC(@$),
-                                     $1, context->visibility,
-                                     context->varDeclKind,
-                                     context->isVarDeclConfig,
-                                     context->currentScopeIsAggregate(),
-                                     nullptr, nullptr);
-      $$ = varDecl.release();
-    }
-
+  {
+    $$ = context->buildTupleComponent(@$, $1);
+  }
 | TLP tuple_var_decl_stmt_inner_ls TRP
-    {
-      auto tupleDecl = TupleDecl::build(BUILDER, LOC(@$),
-                                        context->visibility,
-                                        context->varDeclKind,
-                                        context->consumeList($2),
-                                        nullptr, nullptr);
-      $$ = tupleDecl.release();
-    }
+  {
+    $$ = context->buildTupleComponent(@$, $2);
+  }
 ;
 
 tuple_var_decl_stmt_inner_ls:
@@ -2582,33 +2666,33 @@ opt_init_expr:
 
 ret_array_type:
   TLSBR TRSBR type_level_expr
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @1, /*domainExprs*/ nullptr, $3);
+  }
 | TLSBR TRSBR
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @1, nullptr, nullptr);
+  }
 | TLSBR expr_ls TRSBR type_level_expr
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @2, $2, $4);
+  }
 | TLSBR expr_ls TRSBR
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @2, $2, /*typeExpr*/ nullptr);
+  }
 | TLSBR TRSBR ret_array_type
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @1, /*domainExprs*/ nullptr, $3);
+  }
 | TLSBR expr_ls TRSBR ret_array_type
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = context->buildArrayType(@$, @2, $2, $4);
+  }
 | TLSBR error TRSBR
-    {
-      $$ = TODOEXPR(@$);
-    }
+  {
+    $$ = ERROR(@$, "invalid expression for domain of array return type");
+  }
 ;
 
 opt_ret_type:
@@ -2671,19 +2755,31 @@ opt_formal_array_elt_type:
 
 formal_array_type:
   TLSBR TRSBR opt_formal_array_elt_type
-    { $$ = TODOEXPR(@$); }
+  {
+    auto domainLoc = context->makeSpannedLocation(@1, @2);
+    $$ = context->buildArrayType(@$, domainLoc, /*domainExprs*/ nullptr, $3);
+  }
 | TLSBR expr_ls TRSBR opt_formal_array_elt_type
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildArrayType(@$, @2, $2, $4);
+  }
 
 // Johnk: Unclear to me what the type should be when [<range>][] <type> is encountered.
 //        At present buildArrayRuntimeType is undefined when gNil is passed and
 //        the second argument is a formal_array_type.
 | TLSBR TRSBR formal_array_type
-    { $$ = TODOEXPR(@$); }
+  {
+    auto domainLoc = context->makeSpannedLocation(@1, @2);
+    $$ = context->buildArrayType(@$, domainLoc, /*domainExprs*/ nullptr, $3);
+  }
 | TLSBR expr_ls TRSBR formal_array_type
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildArrayType(@$, @2, $2, $4);
+  }
 | TLSBR expr_ls TIN expr TRSBR opt_formal_array_elt_type
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildArrayTypeWithIndex(@$, @2, $2, $4, $6);
+  }
 ;
 
 opt_formal_type:
@@ -2765,11 +2861,11 @@ ident_expr:
    parameters and variables. */
 type_level_expr:
   sub_type_level_expr %prec TNOELSE
-    { $$ = $1; }
+  { $$ = $1; }
 | sub_type_level_expr TQUESTION %prec TQUESTION
-    { $$ = TODOEXPR(@$); }
+  { $$ = context->buildUnaryOp(@$, $2, $1); }
 | TQUESTION
-    { $$ = TODOEXPR(@$); }
+  { $$ = context->buildIdent(@$, $1); }
 ;
 
 // TODO: It would be nice if '?' could be an `expr`, but then 'borrowed?' would not work.
@@ -2782,13 +2878,17 @@ sub_type_level_expr:
 | TSINGLE expr
   { $$ = context->buildTypeConstructor(@$, $1, $2); }
 | TINDEX TLP opt_actual_ls TRP
-  { $$ = TODOEXPR(@$); }
+  { $$ = context->buildTypeConstructor(@$, $1, $3); }
 | TDOMAIN TLP opt_actual_ls TRP
-  { $$ = TODOEXPR(@$); }
+  { $$ = context->buildTypeConstructor(@$, $1, $3); }
 | TSUBDOMAIN TLP opt_actual_ls TRP
-  { $$ = TODOEXPR(@$); }
+  { $$ = context->buildTypeConstructor(@$, $1, $3); }
 | TSPARSE TSUBDOMAIN TLP actual_expr TRP
-  { $$ = TODOEXPR(@$); }
+  {
+    auto locInner = context->makeSpannedLocation(@2, @5);
+    auto inner = context->buildTypeConstructor(locInner, $2, $4);
+    $$ = context->buildTypeConstructor(@$, $1, inner);
+  }
 | TATOMIC expr
   { $$ = context->buildTypeConstructor(@$, $1, $2); }
 | TSYNC expr
@@ -2845,11 +2945,47 @@ for_expr:
                     /*isParam*/ false).release();
   }
 | TFOR expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = For::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
+                    BlockStyle::IMPLICIT,
+                    context->consumeToBlock(ifLoc, ifExpr.release()),
+                    /*isExpressionLevel*/ true,
+                    /*isParam*/ false).release();
+  }
 | TFOR expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = For::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
+                    BlockStyle::IMPLICIT,
+                    context->consumeToBlock(ifLoc, ifExpr.release()),
+                    /*isExpressionLevel*/ true,
+                    /*isParam*/ false).release();
+  }
 | TFOR expr TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@4, @7), toOwned($5),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@7, $7),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@4, @7);
+    $$ = For::build(BUILDER, LOC(@$), /*index*/ nullptr,
+                    toOwned($2),
+                    BlockStyle::IMPLICIT,
+                    context->consumeToBlock(ifLoc, ifExpr.release()),
+                    /*isExpressionLevel*/ true,
+                    /*isParam*/ false).release();
+  }
 | TFORALL expr TIN expr TDO expr %prec TFOR
   {
     auto index = context->buildLoopIndexDecl(@2, toOwned($2));
@@ -2877,11 +3013,47 @@ for_expr:
                        /*isExpressionLevel*/ true).release();
   }
 | TFORALL expr TIN expr TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = Forall::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
+                       /*withClause*/ nullptr,
+                       BlockStyle::IMPLICIT,
+                       context->consumeToBlock(ifLoc, ifExpr.release()),
+                       /*isExpressionLevel*/ true).release();
+  }
 | TFORALL expr TIN zippered_iterator TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$= Forall::build(BUILDER, LOC(@$), std::move(index), toOwned($4),
+                      /*withClause*/ nullptr,
+                      BlockStyle::IMPLICIT,
+                      context->consumeToBlock(ifLoc, ifExpr.release()),
+                      /*isExpressionLevel*/ true).release();
+  }
 | TFORALL expr TDO TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@4, @7), toOwned($5),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@7, $7),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@4, @7);
+    $$ = Forall::build(BUILDER, LOC(@$), /*index*/ nullptr,
+                       toOwned($2),
+                       /*withClause*/ nullptr,
+                       BlockStyle::IMPLICIT,
+                       context->consumeToBlock(ifLoc, ifExpr.release()),
+                       /*isExpressionLevel*/ true).release();
+  }
 | TLSBR expr_ls TRSBR expr %prec TFOR
   {
     if ($2->size() > 1) {
@@ -2917,14 +3089,48 @@ for_expr:
                             /*isExpressionLevel*/ true).release();
   }
 | TLSBR expr_ls TIN expr TRSBR TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = BracketLoop::build(BUILDER, LOC(@$), std::move(index),
+                            toOwned($4),
+                            /*withClause*/ nullptr,
+                            BlockStyle::IMPLICIT,
+                            context->consumeToBlock(ifLoc, ifExpr.release()),
+                            /*isExpressionLevel*/ true).release();
+  }
 | TLSBR expr_ls TIN zippered_iterator TRSBR TIF expr TTHEN expr %prec TNOELSE
-  { $$ = TODOEXPR(@$); }
+  {
+    auto index = context->buildLoopIndexDecl(@2, $2);
+    auto ifExpr = Conditional::build(BUILDER, LOC2(@6, @9), toOwned($7),
+                                     BlockStyle::IMPLICIT,
+                                     context->consumeToBlock(@9, $9),
+                                     /*isExpressionLevel*/ true);
+    auto ifLoc = context->makeSpannedLocation(@6, @9);
+    $$ = BracketLoop::build(BUILDER, LOC(@$), std::move(index),
+                            toOwned($4),
+                            /*withClause*/ nullptr,
+                            BlockStyle::IMPLICIT,
+                            context->consumeToBlock(ifLoc, ifExpr.release()),
+                            /*isExpressionLevel*/ true).release();
+  }
 ;
 
 cond_expr:
   TIF expr TTHEN expr TELSE expr
-    { $$ = TODOEXPR(@$); }
+  {
+    auto node  = Conditional::build(BUILDER, LOC(@$), toOwned($2),
+                                    BlockStyle::IMPLICIT,
+                                    context->consumeToBlock(@4, $4),
+                                    BlockStyle::IMPLICIT,
+                                    context->consumeToBlock(@6, $6),
+                                    /*isExpressionLevel*/ true);
+    $$ = node.release();
+  }
 /* MPF: it would be nice to match TIF expr TTHEN expr but
    the attempt below leads to reduce-reduce conflicts:
       TIF expr TTHEN expr %prec TNOELSE
@@ -2949,7 +3155,7 @@ stmt_level_expr:
 | new_expr
 | let_expr
 | io_expr TIO expr
-    { $$ = TODOEXPR(@$); }
+  { $$ = context->buildBinOp(@$, $1, $2, $3); }
 ;
 
 opt_task_intent_ls:
@@ -2990,9 +3196,11 @@ intent_expr:
   {
     if (auto ident = $2->toIdentifier()) {
       auto name = ident->name();
-      auto node = TaskVar::build(BUILDER, LOC(@$), name, $1,
-                                        toOwned($3),
-                                        toOwned($4));
+      auto node = TaskVar::build(BUILDER, LOC(@$), /*attributes*/ nullptr,
+                                 name,
+                                 /*intent*/ $1,
+                                 toOwned($3),
+                                 toOwned($4));
       $$ = node.release();
     } else {
       const char* msg = "Expected identifier for task variable name";
@@ -3021,7 +3229,7 @@ task_var_prefix:
 io_expr:
   lhs_expr
 | io_expr TIO expr
-    { $$ = TODOEXPR(@$); }
+  { $$ = context->buildBinOp(@$, $1, $2, $3); }
 ;
 
 new_maybe_decorated:
@@ -3093,7 +3301,9 @@ expr:
 | let_expr
 | ifc_constraint
 | TLP TDOTDOTDOT expr TRP
-    { $$ = TODOEXPR(@$); }
+  {
+    $$ = context->buildUnaryOp(@$, $2, $3);
+  }
 | expr TCOLON expr
   {
     $$ = context->buildBinOp(@$, $1, $2, $3);
@@ -3297,18 +3507,28 @@ literal_expr:
   }
 | TLSBR assoc_expr_ls TRSBR
   {
-    $$ = TODOEXPR(@$);
+    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
   }
 | TLSBR assoc_expr_ls TCOMMA TRSBR
   {
-    $$ = TODOEXPR(@$);
+    // TODO (dlongnecke): Record trailing comma?
+    $$ = Domain::build(BUILDER, LOC(@$), context->consumeList($2)).release();
   }
 
 ;
 
 assoc_expr_ls:
-  expr TALIAS expr                      { $$ = TODOLIST(@$); }
-| assoc_expr_ls TCOMMA expr TALIAS expr { $1->push_back(TODOEXPR(@$)); }
+  expr TALIAS expr
+  {
+    auto node = context->buildBinOp(@$, $1, $2, $3);
+    $$ = context->makeList(node);
+  }
+| assoc_expr_ls TCOMMA expr TALIAS expr
+  {
+    auto loc = context->makeSpannedLocation(@3, @5);
+    auto node = context->buildBinOp(loc, $3, $4, $5);
+    $$ = context->appendList($1, node);
+  }
 ;
 
 binary_op_expr:
@@ -3369,10 +3589,22 @@ reduce_expr:
 ;
 
 scan_expr:
-  expr TSCAN expr                              { $$ = TODOEXPR(@$); }
-| expr TSCAN zippered_iterator                 { $$ = TODOEXPR(@$); }
-| reduce_scan_op_expr TSCAN expr               { $$ = TODOEXPR(@$); }
-| reduce_scan_op_expr TSCAN zippered_iterator  { $$ = TODOEXPR(@$); }
+  expr TSCAN expr
+  {
+    $$ = context->buildCustomScan(@$, @1, $1, $3);
+  }
+| expr TSCAN zippered_iterator
+  {
+    $$ = context->buildCustomScan(@$, @1, $1, $3);
+  }
+| reduce_scan_op_expr TSCAN expr
+  {
+    $$ = Scan::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+  }
+| reduce_scan_op_expr TSCAN zippered_iterator
+  {
+    $$ = Scan::build(BUILDER, LOC(@$), $1, toOwned($3)).release();
+  }
 ;
 
 

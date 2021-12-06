@@ -2849,7 +2849,7 @@ private proc _read_text_internal(_channel_internal:qio_channel_ptr_t,
   } else if isEnumType(t) {
     var err:syserr = ENOERR;
     var st = qio_channel_style_element(_channel_internal, QIO_STYLE_ELEMENT_AGGREGATE);
-    for i in chpl_enumerate(t) {
+    for i in t {
       { // try to read e.g. red for colorenum.red
         var str = i:string;
         if st == QIO_AGGREGATE_FORMAT_JSON then str = '"'+str+'"';
@@ -3648,7 +3648,7 @@ proc channel.read(ref args ...?k, style:iostyle):bool throws {
 */
 proc channel.readline(arg: [] uint(8), out numRead : int, start = arg.domain.low,
                       amount = arg.domain.high - start + 1) : bool throws
-                      where arg.rank == 1 && isRectangularArr(arg) {
+                      where arg.rank == 1 && arg.isRectangular() {
 
   if arg.size == 0 || !arg.domain.contains(start) ||
      amount <= 0 || (start + amount - 1 > arg.domain.high) then return false;

@@ -303,13 +303,13 @@ cd ..
 for dir in $THIRD_PARTY_DIRS
 do
   #echo "Considering 3p dir $dir"
-  if [ -f third-party/"$dir"/Makefile.include ]
-  then
-    for f in third-party/"$dir"/Makefile*
-    do
+  for f in third-party/"$dir"/Makefile*
+  do
+    if [ -f "$f" ]
+    then
       myinstallfile "$f"  "$DEST_THIRD_PARTY"/"$dir"
-    done
-  fi
+    fi
+  done
   if [ -d third-party/"$dir"/install ]
   then
     myinstalldir "third-party/$dir/install" "$DEST_THIRD_PARTY/$dir/install/"

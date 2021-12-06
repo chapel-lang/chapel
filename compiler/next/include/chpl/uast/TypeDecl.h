@@ -32,15 +32,23 @@ namespace uast {
  */
 class TypeDecl : public NamedDecl {
  protected:
-  TypeDecl(asttags::ASTTag tag, ASTList children,
-           Decl::Visibility vis, UniqueString name)
-    : NamedDecl(tag, std::move(children), vis, name) {
+  TypeDecl(asttags::ASTTag tag, ASTList children, int attributesChildNum,
+           Decl::Visibility vis,
+           Decl::Linkage linkage,
+           int linkageNameChildNum,
+           UniqueString name)
+    : NamedDecl(tag, std::move(children), attributesChildNum, vis,
+                linkage,
+                linkageNameChildNum,
+                name) {
 
     assert(isExpressionASTList(children_));
   }
+
   bool typeDeclContentsMatchInner(const TypeDecl* other) const {
     return namedDeclContentsMatchInner(other);
   }
+
   void typeDeclMarkUniqueStringsInner(Context* context) const {
     namedDeclMarkUniqueStringsInner(context); 
   }

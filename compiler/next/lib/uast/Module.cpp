@@ -27,10 +27,25 @@ namespace uast {
 
 owned<Module>
 Module::build(Builder* builder, Location loc,
-              UniqueString name, Decl::Visibility vis,
+              owned<Attributes> attributes,
+              Decl::Visibility vis,
+              UniqueString name,
               Module::Kind kind, ASTList stmts) {
+  ASTList lst;
+  int attributesChildNum = -1;
 
-  Module* ret = new Module(std::move(stmts), vis, name, kind);
+  if (attributes.get() != nullptr) {
+    attributesChildNum = lst.size();
+    lst.push_back(std::move(attributes));
+  }
+
+  for (auto& ast : stmts) {
+    lst.push_back(std::move(ast));
+  }
+
+  Module* ret = new Module(std::move(lst), attributesChildNum, vis,
+                           name,
+                           kind);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

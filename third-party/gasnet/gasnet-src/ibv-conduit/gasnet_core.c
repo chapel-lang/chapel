@@ -52,6 +52,20 @@ GASNETI_IDENT(gasnetc_IdentString_MaxHCAs, "$GASNetIbvMaxHCAs: " _STRINGIFY(GASN
   GASNETI_IDENT(gasnetc_IdentString_Multirail, "$GASNetIbvMultirail: 1 $");
 #endif
 
+#if GASNETC_USE_RCV_THREAD
+  GASNETI_IDENT(gasnetc_IdentString_RcvThread, "$GASNetIbvRcvThread: 1 $");
+#endif
+#if GASNETC_USE_CONN_THREAD
+  GASNETI_IDENT(gasnetc_IdentString_ConnThread, "$GASNetIbvConnThread: 1 $");
+#endif
+
+int gex_System_QueryHiddenAMConcurrencyLevel(void) {
+#if !GASNETC_USE_RCV_THREAD
+  gasneti_assert(! gasnetc_use_rcv_thread);
+#endif
+  return gasnetc_use_rcv_thread ? 1 : 0;
+}
+
 gasnetc_EP_t gasnetc_ep0; // First EP created.  Used by init, sys AMs, and shutdown.
 
 size_t gasnetc_sizeof_segment_t(void) {
@@ -1160,6 +1174,15 @@ static const char *gasnetc_segreg_failed(size_t size, enum gasnetc_segreg which,
       descr = " CUDA_UVA";
       if (why == EFAULT) {
         hint1 = "\n        This could be caused by exhaustion of BAR1 resources.  See memory_kinds.md release notes.";
+      }
+      break;
+    #endif
+
+    #if GASNET_HAVE_MK_CLASS_HIP
+    case GEX_MK_CLASS_HIP:
+      descr = " HIP";
+      if (why == EFAULT) {
+        hint1 = "\n        This could be caused by exhaustion of BAR resources.  See memory_kinds.md release notes.";
       }
       break;
     #endif
@@ -3002,11 +3025,14 @@ int gasnetc_segment_create_hook(gex_Segment_t e_segment)
 #if GASNETC_PIN_SEGMENT
   // Register the segment
   gasnetc_Segment_t segment = (gasnetc_Segment_t) gasneti_import_segment(e_segment);
-  if (GASNET_OK != gasnetc_segment_register(segment, 0)) {
-    gasneti_fatalerror("Unexpected failure return from gasnetc_segment_register()");
-  }
-#endif
+  // Note: when gasnetc_segment_register() returns an error it has already
+  // cleaned-up the conduit-specific state, satisfying the contract that this
+  // hook (not a destroy hook) is responsible for cleanup when we return
+  // anything other than GASNET_OK.
+  return gasnetc_segment_register(segment, 0);
+#else
   return GASNET_OK;
+#endif
 }
 
 int gasnetc_segment_attach_hook(gex_Segment_t e_segment, gex_TM_t e_tm)
@@ -3014,9 +3040,8 @@ int gasnetc_segment_attach_hook(gex_Segment_t e_segment, gex_TM_t e_tm)
 #if GASNETC_PIN_SEGMENT
   // Register the segment
   gasnetc_Segment_t segment = (gasnetc_Segment_t) gasneti_import_segment(e_segment);
-  if (GASNET_OK != gasnetc_segment_register(segment, 1)) {
-    gasneti_fatalerror("Unexpected failure return from gasnetc_segment_register()");
-  }
+  int rc = gasnetc_segment_register(segment, 1);
+  if (rc) return rc;
 #endif
 
   // Exchange registration info

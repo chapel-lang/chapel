@@ -36,14 +36,13 @@ using namespace parsing;
 static void test0(Parser* parser) {
   auto parseResult = parser->parseString("test0.chpl",
                                          "x;\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->kind() == Module::IMPLICIT);
-  assert(module->name().compare("test0") == 0);
-  assert(module->numStmts() == 1);
-  auto ident = module->stmt(0)->toIdentifier();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->kind() == Module::IMPLICIT);
+  assert(mod->name().compare("test0") == 0);
+  assert(mod->numStmts() == 1);
+  auto ident = mod->stmt(0)->toIdentifier();
   assert(ident);
   assert(0 == ident->name().compare("x"));
 }
@@ -53,31 +52,29 @@ static void test0a(Parser* parser) {
                                          "/* comment1 */\n"
                                          "x;\n"
                                          "/* comment2 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->kind() == Module::IMPLICIT);
-  assert(module->name().compare("test0") == 0);
-  assert(module->numStmts() == 3);
-  assert(module->stmt(0)->isComment());
-  assert(module->stmt(1)->isIdentifier());
-  assert(module->stmt(2)->isComment());
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->kind() == Module::IMPLICIT);
+  assert(mod->name().compare("test0") == 0);
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isIdentifier());
+  assert(mod->stmt(2)->isComment());
 }
 
 static void test0b(Parser* parser) {
   auto parseResult = parser->parseString("test0.chpl",
                                          "/* comment1 */\n"
                                          "/* comment2 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->kind() == Module::IMPLICIT);
-  assert(module->name().compare("test0") == 0);
-  assert(module->numStmts() == 2);
-  assert(module->stmt(0)->isComment());
-  assert(module->stmt(1)->isComment());
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->kind() == Module::IMPLICIT);
+  assert(mod->name().compare("test0") == 0);
+  assert(mod->numStmts() == 2);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isComment());
 }
 
 
@@ -85,14 +82,13 @@ static void test0b(Parser* parser) {
 static void test1(Parser* parser) {
   auto parseResult = parser->parseString("test1.chpl",
                                          "module M { x; }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->kind() == Module::DEFAULT_MODULE_KIND);
-  assert(module->name().compare("M") == 0);
-  assert(module->numStmts() == 1);
-  auto ident = module->stmt(0)->toIdentifier();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->kind() == Module::DEFAULT_MODULE_KIND);
+  assert(mod->name().compare("M") == 0);
+  assert(mod->numStmts() == 1);
+  auto ident = mod->stmt(0)->toIdentifier();
   assert(ident);
   assert(0 == ident->name().compare("x"));
 }
@@ -106,31 +102,30 @@ static void test1a(Parser* parser) {
                                          "  /* comment 3 */\n"
                                          "}\n"
                                          "/* comment 4 */");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 3);
-  assert(parseResult.topLevelExpressions[0]->isComment());
-  assert(parseResult.topLevelExpressions[1]->isModule());
-  assert(parseResult.topLevelExpressions[2]->isComment());
-  auto module = parseResult.topLevelExpressions[1]->toModule();
-  assert(module->kind() == Module::DEFAULT_MODULE_KIND);
-  assert(module->name().compare("M") == 0);
-  assert(module->numStmts() == 3);
-  assert(module->stmt(0)->isComment());
-  assert(module->stmt(1)->isIdentifier());
-  assert(module->stmt(2)->isComment());
+  assert(!parseResult.numErrors());
+  assert(parseResult.numTopLevelExpressions() == 3);
+  assert(parseResult.topLevelExpression(0)->isComment());
+  assert(parseResult.topLevelExpression(1)->isModule());
+  assert(parseResult.topLevelExpression(2)->isComment());
+  auto mod = parseResult.topLevelExpression(1)->toModule();
+  assert(mod->kind() == Module::DEFAULT_MODULE_KIND);
+  assert(mod->name().compare("M") == 0);
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isIdentifier());
+  assert(mod->stmt(2)->isComment());
 }
 
 static void test1b(Parser* parser) {
   auto parseResult = parser->parseString("test1b.chpl",
                                          "module M {\n"
                                          "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->kind() == Module::DEFAULT_MODULE_KIND);
-  assert(module->name().compare("M") == 0);
-  assert(module->numStmts() == 0);
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->kind() == Module::DEFAULT_MODULE_KIND);
+  assert(mod->name().compare("M") == 0);
+  assert(mod->numStmts() == 0);
 }
 
 static void test1c(Parser* parser) {
@@ -141,56 +136,53 @@ static void test1c(Parser* parser) {
                                          "  /* comment 3 */\n"
                                          "}\n"
                                          "/* comment 4 */");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 3);
-  assert(parseResult.topLevelExpressions[0]->isComment());
-  assert(parseResult.topLevelExpressions[1]->isModule());
-  assert(parseResult.topLevelExpressions[2]->isComment());
-  auto module = parseResult.topLevelExpressions[1]->toModule();
-  assert(module->kind() == Module::DEFAULT_MODULE_KIND);
-  assert(module->name().compare("M") == 0);
-  assert(module->numStmts() == 2);
-  assert(module->stmt(0)->isComment());
-  assert(module->stmt(1)->isComment());
+  assert(!parseResult.numErrors());
+  assert(parseResult.numTopLevelExpressions() == 3);
+  assert(parseResult.topLevelExpression(0)->isComment());
+  assert(parseResult.topLevelExpression(1)->isModule());
+  assert(parseResult.topLevelExpression(2)->isComment());
+  auto mod = parseResult.topLevelExpression(1)->toModule();
+  assert(mod->kind() == Module::DEFAULT_MODULE_KIND);
+  assert(mod->name().compare("M") == 0);
+  assert(mod->numStmts() == 2);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isComment());
 }
 
 static void test1d(Parser* parser) {
   auto parseResult = parser->parseString("test1d.chpl",
                                          "module /* comment */ M {\n"
                                          "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->kind() == Module::DEFAULT_MODULE_KIND);
-  assert(module->name().compare("M") == 0);
-  assert(module->numStmts() == 0);
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->kind() == Module::DEFAULT_MODULE_KIND);
+  assert(mod->name().compare("M") == 0);
+  assert(mod->numStmts() == 0);
 }
 
 static void test1e(Parser* parser) {
   auto parseResult = parser->parseString("test1d.chpl",
                                          "prototype /* comment */ module M {\n"
                                          "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->kind() == Module::PROTOTYPE);
-  assert(module->name().compare("M") == 0);
-  assert(module->numStmts() == 0);
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->kind() == Module::PROTOTYPE);
+  assert(mod->name().compare("M") == 0);
+  assert(mod->numStmts() == 0);
 }
 
 static void test1f(Parser* parser) {
   auto parseResult = parser->parseString("test1f.chpl",
                                          "public /* comment */ module M {\n"
                                          "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto module = parseResult.topLevelExpressions[0]->toModule();
-  assert(module->kind() == Module::DEFAULT_MODULE_KIND);
-  assert(module->name().compare("M") == 0);
-  assert(module->numStmts() == 0);
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->kind() == Module::DEFAULT_MODULE_KIND);
+  assert(mod->name().compare("M") == 0);
+  assert(mod->numStmts() == 0);
 }
 
 
@@ -198,12 +190,12 @@ static void test2(Parser* parser) {
   auto parseResult = parser->parseString("test2.chpl",
                                          "module M { x; }\n"
                                          "module N { y; }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 2);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  assert(parseResult.topLevelExpressions[1]->isModule());
+  assert(!parseResult.numErrors());
+  assert(parseResult.numTopLevelExpressions() == 2);
+  assert(parseResult.topLevelExpression(0)->isModule());
+  assert(parseResult.topLevelExpression(1)->isModule());
 
-  auto M = parseResult.topLevelExpressions[0]->toModule();
+  auto M = parseResult.topLevelExpression(0)->toModule();
   assert(M);
   assert(M->kind() == Module::DEFAULT_MODULE_KIND);
   assert(M->name().compare("M") == 0);
@@ -212,7 +204,7 @@ static void test2(Parser* parser) {
   assert(MIdent);
   assert(0 == MIdent->name().compare("x"));
 
-  auto N = parseResult.topLevelExpressions[1]->toModule();
+  auto N = parseResult.topLevelExpression(1)->toModule();
   assert(N);
   assert(N->kind() == Module::DEFAULT_MODULE_KIND);
   assert(N->name().compare("N") == 0);
@@ -242,15 +234,15 @@ static void test2a(Parser* parser) {
                                          "  /* comment 10 */\n"
                                          "}\n"
                                          "/* comment 11 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 5);
-  assert(parseResult.topLevelExpressions[0]->isComment());
-  assert(parseResult.topLevelExpressions[1]->isModule());
-  assert(parseResult.topLevelExpressions[2]->isComment());
-  assert(parseResult.topLevelExpressions[3]->isModule());
-  assert(parseResult.topLevelExpressions[4]->isComment());
+  assert(!parseResult.numErrors());
+  assert(parseResult.numTopLevelExpressions() == 5);
+  assert(parseResult.topLevelExpression(0)->isComment());
+  assert(parseResult.topLevelExpression(1)->isModule());
+  assert(parseResult.topLevelExpression(2)->isComment());
+  assert(parseResult.topLevelExpression(3)->isModule());
+  assert(parseResult.topLevelExpression(4)->isComment());
 
-  auto M = parseResult.topLevelExpressions[1]->toModule();
+  auto M = parseResult.topLevelExpression(1)->toModule();
   assert(M);
   assert(M->kind() == Module::DEFAULT_MODULE_KIND);
   assert(M->name().compare("M") == 0);
@@ -259,7 +251,7 @@ static void test2a(Parser* parser) {
   assert(M->stmt(1)->isIdentifier());
   assert(M->stmt(2)->isComment());
 
-  auto N = parseResult.topLevelExpressions[3]->toModule();
+  auto N = parseResult.topLevelExpression(3)->toModule();
   assert(N);
   assert(N->kind() == Module::DEFAULT_MODULE_KIND);
   assert(N->name().compare("N") == 0);
@@ -279,11 +271,11 @@ static void test2b(Parser* parser) {
                                          "/* comment */\n"
                                          "module M { x; }\n"
                                          "module N { y; }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 3);
-  assert(parseResult.topLevelExpressions[0]->isComment());
-  assert(parseResult.topLevelExpressions[1]->isModule());
-  assert(parseResult.topLevelExpressions[2]->isModule());
+  assert(!parseResult.numErrors());
+  assert(parseResult.numTopLevelExpressions() == 3);
+  assert(parseResult.topLevelExpression(0)->isComment());
+  assert(parseResult.topLevelExpression(1)->isModule());
+  assert(parseResult.topLevelExpression(2)->isModule());
 }
 
 static void test2c(Parser* parser) {
@@ -291,11 +283,11 @@ static void test2c(Parser* parser) {
                                          "module M { x; }\n"
                                          "/* comment */\n"
                                          "module N { y; }\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 3);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  assert(parseResult.topLevelExpressions[1]->isComment());
-  assert(parseResult.topLevelExpressions[2]->isModule());
+  assert(!parseResult.numErrors());
+  assert(parseResult.numTopLevelExpressions() == 3);
+  assert(parseResult.topLevelExpression(0)->isModule());
+  assert(parseResult.topLevelExpression(1)->isComment());
+  assert(parseResult.topLevelExpression(2)->isModule());
 }
 
 static void test2d(Parser* parser) {
@@ -303,11 +295,11 @@ static void test2d(Parser* parser) {
                                          "module M { x; }\n"
                                          "module N { y; }\n"
                                          "/* comment */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 3);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  assert(parseResult.topLevelExpressions[1]->isModule());
-  assert(parseResult.topLevelExpressions[2]->isComment());
+  assert(!parseResult.numErrors());
+  assert(parseResult.numTopLevelExpressions() == 3);
+  assert(parseResult.topLevelExpression(0)->isModule());
+  assert(parseResult.topLevelExpression(1)->isModule());
+  assert(parseResult.topLevelExpression(2)->isComment());
 }
 
 int main() {

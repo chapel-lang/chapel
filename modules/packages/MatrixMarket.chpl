@@ -34,7 +34,7 @@ module MatrixMarket {
   }
 
   proc high(d){
-    if isSparseDom(d) then
+    if d.isSparse() then
       return d._value.parentDom.high;
     else
       return d.high;
@@ -244,7 +244,7 @@ class MMReader {
    }
 
    proc read_sparse_data(toret:[] ?T, ref spDom:domain) {
-      param isSparse = isSparseDom(toret.domain);
+      param isSparse = toret.domain.isSparse();
       var done:bool = true;
       var tfmt :string;
 
@@ -287,7 +287,7 @@ class MMReader {
    }
 
    proc read_dense_data(toret:[] ?T, ref spDom:domain) {
-      param isSparse = isSparseDom(toret.domain);
+      param isSparse = toret.domain.isSparse();
       var tfmt :string;
 
       if T == complex {

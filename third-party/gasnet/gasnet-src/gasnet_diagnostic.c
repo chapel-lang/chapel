@@ -1004,20 +1004,23 @@ static void progressfns_test(int id) {
 #endif
 }
 /* ------------------------------------------------------------------------------------ */
+static void noop_reqh(gex_Token_t token, void *buf, size_t nbytes) { /* empty */ }
 static void op_test(int id) {
   int iter;
   GASNET_BEGIN_FUNCTION();
   PTHREAD_BARRIER(num_threads);
   TEST_HEADER("internal op interface test"); else return;
+  size_t max_medium = gasnetc_AM_MaxRequestMedium(myteam,peer,GEX_EVENT_GROUP,0,0);
+  size_t max_long = gasnetc_AM_MaxRequestLong(myteam,peer,GEX_EVENT_GROUP,0,0);
   for (iter=0; iter < iters0; iter++) {
     static const void **share = NULL;
     int peerid = ( id + 1 ) % num_threads;
 
     PTHREAD_BARRIER(num_threads);
     gex_NBI_Wait(GEX_EC_ALL,0);
-    PTHREAD_BARRIER(num_threads);
+    PTHREAD_LOCALBARRIER(num_threads);
     if (!id) share = test_malloc(sizeof(void *)*num_threads);
-    PTHREAD_BARRIER(num_threads);
+    PTHREAD_LOCALBARRIER(num_threads);
 
     { gasneti_eop_t *eop;
       gex_Event_t h;
@@ -1026,12 +1029,12 @@ static void op_test(int id) {
       h = gasneti_eop_to_event(eop);
       gasneti_assert_always_int(gex_Event_Test(h) ,==, GASNET_ERR_NOT_READY);
       share[id] = eop; /* hand-off eop to neighbor thread */
-      PTHREAD_BARRIER(num_threads);
+      PTHREAD_LOCALBARRIER(num_threads);
       gasneti_eop_markdone(share[peerid]); /* mark right neighbor's eop done */
-      PTHREAD_BARRIER(num_threads);
+      PTHREAD_LOCALBARRIER(num_threads);
       gasneti_assert_always_int(gex_Event_Test(h) ,==, GASNET_OK);
     }
-    PTHREAD_BARRIER(num_threads);
+    PTHREAD_LOCALBARRIER(num_threads);
     { /* inc the get and put counts on my iop */
       gasneti_iop_t *iop = gasneti_iop_register(1, 0 GASNETI_THREAD_PASS);
         gasneti_assert_always(iop);
@@ -1044,20 +1047,20 @@ static void op_test(int id) {
         gasneti_assert_always_int(gex_NBI_Test(GEX_EC_ALL,0) ,==, GASNET_ERR_NOT_READY);
 
       share[id] = iop; /* hand-off iop to neighbor thread */
-      PTHREAD_BARRIER(num_threads);
+      PTHREAD_LOCALBARRIER(num_threads);
       gasneti_iop_markdone(share[peerid], 1, 0); /* mark right neighbor's iop puts done */
-      PTHREAD_BARRIER(num_threads);
+      PTHREAD_LOCALBARRIER(num_threads);
         gasneti_assert_always_int(gex_NBI_Test(GEX_EC_PUT,0) ,==, GASNET_OK);
         gasneti_assert_always_int(gex_NBI_Test(GEX_EC_GET,0) ,==, GASNET_ERR_NOT_READY);
         gasneti_assert_always_int(gex_NBI_Test(GEX_EC_ALL,0) ,==, GASNET_ERR_NOT_READY);
-      PTHREAD_BARRIER(num_threads);
+      PTHREAD_LOCALBARRIER(num_threads);
       gasneti_iop_markdone(share[peerid], 2, 1); /* mark right neighbor's iop gets done */
-      PTHREAD_BARRIER(num_threads);
+      PTHREAD_LOCALBARRIER(num_threads);
         gasneti_assert_always_int(gex_NBI_Test(GEX_EC_PUT,0) ,==, GASNET_OK);
         gasneti_assert_always_int(gex_NBI_Test(GEX_EC_GET,0) ,==, GASNET_OK);
         gasneti_assert_always_int(gex_NBI_Test(GEX_EC_ALL,0) ,==, GASNET_OK);
     }
-    PTHREAD_BARRIER(num_threads);
+    PTHREAD_LOCALBARRIER(num_threads);
     { int isget;
       for (isget = 0; isget <= 1; isget++) { 
         #define ASSERT_NBI_SYNCED() do {                            \
@@ -1083,12 +1086,12 @@ static void op_test(int id) {
         iop1 = gasneti_iop_register(5, isget GASNETI_THREAD_PASS); /* iop1 = 5 */
         gasneti_assert_always(iop1);
         ASSERT_NBI_NOTSYNCED();
-        PTHREAD_BARRIER(num_threads);
+        PTHREAD_LOCALBARRIER(num_threads);
         share[id] = iop1; /* hand-off iop1 to neighbor thread */
-        PTHREAD_BARRIER(num_threads);
+        PTHREAD_LOCALBARRIER(num_threads);
         peer_iop1 = share[peerid];
         gasneti_iop_markdone(peer_iop1, 2, isget); /* iop1 -= 2 */
-        PTHREAD_BARRIER(num_threads);
+        PTHREAD_LOCALBARRIER(num_threads);
         ASSERT_NBI_NOTSYNCED();
 
         { /* implicit access region */
@@ -1100,12 +1103,12 @@ static void op_test(int id) {
           iop2 = gasneti_iop_register(1, isget GASNETI_THREAD_PASS); /* iop2 = 1 */
           gasneti_assert_always(iop2);
           gasneti_assert_always(iop2 != iop1);
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           share[id] = iop2; /* hand-off iop2 to neighbor thread */
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           peer_iop2 = share[peerid];
           gasneti_iop_markdone(peer_iop2, 1, isget);  /* iop2 -= 1 */
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           gasneti_assert_always(iop2 == gasneti_iop_register(2, isget GASNETI_THREAD_PASS)); /* iop2 += 2 */
 
           eop = gasneti_eop_create(GASNETI_THREAD_PASS_ALONE);
@@ -1118,58 +1121,58 @@ static void op_test(int id) {
           gasneti_assert_always_int(gex_Event_Test(h) ,==, GASNET_ERR_NOT_READY);
           gasneti_assert_always_int(gex_Event_Test(h2) ,==, GASNET_ERR_NOT_READY);
 
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           gasneti_iop_markdone(peer_iop1, 2, isget); /* iop1 -= 2 */
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           ASSERT_NBI_NOTSYNCED();
           gasneti_assert_always_int(gex_Event_Test(h) ,==, GASNET_ERR_NOT_READY);
           gasneti_assert_always_int(gex_Event_Test(h2) ,==, GASNET_ERR_NOT_READY);
 
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           gasneti_iop_markdone(peer_iop2, 1, isget); /* iop2 -= 1 */
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           ASSERT_NBI_NOTSYNCED();
           gasneti_assert_always_int(gex_Event_Test(h) ,==, GASNET_ERR_NOT_READY);
           gasneti_assert_always_int(gex_Event_Test(h2) ,==, GASNET_ERR_NOT_READY);
 
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           gasneti_iop_markdone(peer_iop1, 1, isget); /* iop1 -= 1 */
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           ASSERT_NBI_SYNCED();
           gasneti_assert_always_int(gex_Event_Test(h) ,==, GASNET_ERR_NOT_READY);
           gasneti_assert_always_int(gex_Event_Test(h2) ,==, GASNET_ERR_NOT_READY);
 
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           gasneti_assert_always_ptr(iop1 ,==, gasneti_iop_register(2, isget GASNETI_THREAD_PASS)); /* iop1 += 2 */
           ASSERT_NBI_NOTSYNCED();
           gasneti_assert_always_int(gex_Event_Test(h) ,==, GASNET_ERR_NOT_READY);
           gasneti_assert_always_int(gex_Event_Test(h2) ,==, GASNET_ERR_NOT_READY);
 
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           gasneti_iop_markdone(peer_iop2, 1, isget); /* iop2 -= 1 */
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           ASSERT_NBI_NOTSYNCED();
           gasneti_assert_always_int(gex_Event_Test(h) ,==, GASNET_OK);
           gasneti_assert_always_int(gex_Event_Test(h2) ,==, GASNET_ERR_NOT_READY);
 
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           gasneti_iop_markdone(peer_iop1, 2, isget); /* iop1 -= 2 */
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           ASSERT_NBI_SYNCED();
 
           gasneti_assert_always_int(gex_Event_Test(h2) ,==, GASNET_ERR_NOT_READY);
           share[id] = eop; /* hand-off eop to neighbor thread */
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           gasneti_eop_markdone(share[peerid]); /* mark right neighbor's eop done */
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
           gasneti_assert_always_int(gex_Event_Test(h2) ,==, GASNET_OK);
           ASSERT_NBI_SYNCED();
 
-          PTHREAD_BARRIER(num_threads);
+          PTHREAD_LOCALBARRIER(num_threads);
         }
       }
     }
-    PTHREAD_BARRIER(num_threads);
+    PTHREAD_LOCALBARRIER(num_threads);
     { // Test free of other threads' ops and subsequent reuse.
       #define RAND_EVENT(output) do {                                 \
           gasneti_eop_t *_eop;                                        \
@@ -1198,9 +1201,9 @@ static void op_test(int id) {
       for (int j = 0; j < 4; ++j) {
         for (int i = j; i < opcount; i += 4) { RAND_EVENT(events[i]); }
         share[id] = events;
-        PTHREAD_BARRIER(num_threads);
+        PTHREAD_LOCALBARRIER(num_threads);
         events = (gex_Event_t *)share[peerid];
-        PTHREAD_BARRIER(num_threads);
+        PTHREAD_LOCALBARRIER(num_threads);
       }
       // The events are reaped in groups of 3 events to
       // get varying mixes of local and foreign events.
@@ -1213,17 +1216,55 @@ static void op_test(int id) {
           gasneti_assert_always_int(gex_Event_TestAll(events+i,3,0) ,==, GASNET_OK);
         }
       }
-      PTHREAD_BARRIER(num_threads);
+      PTHREAD_LOCALBARRIER(num_threads);
       // Issue twice the original number of ops to encourage reuse of foreign-freed ops
       for (int i = 0; i < 2*opcount; ++i) { RAND_EVENT(events[i]); }
       gasneti_assert_always_int(gex_Event_TestAll(events,2*opcount,0) ,==, GASNET_OK);
       test_free(events);
       #undef RAND_EVENT
     }
-    PTHREAD_BARRIER(num_threads);
+    PTHREAD_LOCALBARRIER(num_threads);
+    { // Test "aop" interfaces
+      gex_NBI_Wait(GEX_EC_ALL,0);
+      gasneti_aop_t *aop = gasneti_aop_create(GASNETI_THREAD_PASS_ALONE);
+      gasneti_aop_push(aop GASNETI_THREAD_PASS);
+      gasneti_assert_always_ptr(aop ,==, gasneti_aop_pop(GASNETI_THREAD_PASS_ALONE));
+      gasneti_assert_always_int(gex_NBI_Test(GEX_EC_ALL,0) ,==, GASNET_OK);
+      gex_Event_t ev = gasneti_aop_to_event(aop);
+      gasneti_assert_always_int(gex_Event_Test(ev) ,==, GASNET_OK);
+    }
+    PTHREAD_LOCALBARRIER(num_threads);
+    { // Test NBI fire-and-forget regions
+      gex_NBI_Wait(GEX_EC_ALL,0);
+      gasneti_begin_nbi_ff(GASNETI_THREAD_PASS_ALONE);
+      for (size_t sz = 1; sz <= MIN(128*1024,TEST_SEGSZ/2); sz = (sz < 64?sz*2:sz*8)) {
+        gex_RMA_PutNBI(myteam, peer, peersegmid, myseg, sz, GEX_EVENT_DEFER, 0);
+        gex_RMA_GetNBI(myteam, myseg, peer, peersegmid, sz, 0);
+        if (sz <= max_medium) {
+          gex_AM_RequestMedium0(myteam, peer, gasneti_diag_hidx_base + 2, myseg, sz, GEX_EVENT_GROUP, 0);
+        }
+        if (sz <= max_long) {
+          gex_AM_RequestLong0(myteam, peer, gasneti_diag_hidx_base + 2, myseg, sz, peersegmid, GEX_EVENT_GROUP, 0);
+        }
+      }
+      gasneti_end_nbi_ff(GASNETI_THREAD_PASS_ALONE);
+      gasneti_assert_always_int(gex_NBI_Test(GEX_EC_PUT,0) ,==, GASNET_OK);
+      gasneti_assert_always_int(gex_NBI_Test(GEX_EC_GET,0) ,==, GASNET_OK);
+      gasneti_assert_always_int(gex_NBI_Test(GEX_EC_AM,0) ,==, GASNET_OK);
+      gasneti_assert_always_int(gex_NBI_Test(GEX_EC_ALL,0) ,==, GASNET_OK);
+    }
+    PTHREAD_LOCALBARRIER(num_threads);
     if (!id) { test_free(share); share = NULL; }
-    PTHREAD_BARRIER(num_threads);
   }
+
+  // Avert you eyes.  The following call prevents this subtest from leaving
+  // NBI operations in-flight that may still be modifying memory in such a way
+  // as to interfere with later tests.
+  // TODO: Reserve some portion of the segment for the exclusive use of the
+  // fire-and-forget tests and remove this call.
+  gasneti_nbi_ff_drain_(GASNETI_THREAD_PASS_ALONE);
+
+  PTHREAD_BARRIER(num_threads);
 }
 /* ------------------------------------------------------------------------------------ */
 #if GASNET_PAR
@@ -1567,7 +1608,8 @@ static gex_AM_Entry_t gasneti_diag_handlers[] = {
   #endif
 
   { gasneti_diag_hidx_base + 0, (gex_AM_Fn_t)progressfn_reqh, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDLONG, 0 },
-  { gasneti_diag_hidx_base + 1, (gex_AM_Fn_t)progressfn_reph, GEX_FLAG_AM_REPLY|GEX_FLAG_AM_MEDIUM, 0 }
+  { gasneti_diag_hidx_base + 1, (gex_AM_Fn_t)progressfn_reph, GEX_FLAG_AM_REPLY|GEX_FLAG_AM_MEDIUM, 0 },
+  { gasneti_diag_hidx_base + 2, (gex_AM_Fn_t)noop_reqh, GEX_FLAG_AM_REQUEST|GEX_FLAG_AM_MEDLONG, 0 }
 };
 
 

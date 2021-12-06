@@ -26,20 +26,33 @@ namespace uast {
 
 
 owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
+                                      owned<Attributes> attributes,
                                       UniqueString name,
                                       owned<Expression> initExpression) {
   ASTList lst;
+  int attributesChildNum = -1;
+
+  if (attributes.get() != nullptr) {
+    attributesChildNum = lst.size();
+    lst.push_back(std::move(attributes));
+  }
+
   if (initExpression.get() != nullptr) {
     lst.push_back(std::move(initExpression));
   }
-  EnumElement* ret = new EnumElement(std::move(lst), name);
+
+  EnumElement* ret = new EnumElement(std::move(lst), attributesChildNum,
+                                     name);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }
-owned<EnumElement>
-EnumElement::build(Builder* builder, Location loc, UniqueString name) {
-  owned<Expression> empty;
-  return EnumElement::build(builder, loc, name, std::move(empty));
+
+owned<EnumElement> EnumElement::build(Builder* builder, Location loc,
+                                      owned<Attributes> attributes,
+                                      UniqueString name) {
+  return EnumElement::build(builder, loc, std::move(attributes),
+                            name,
+                            /*initExpression*/ nullptr);
 }
  
 

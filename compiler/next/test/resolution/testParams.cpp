@@ -55,7 +55,7 @@ static QualifiedType getTypeForFirstStmt(Context* context,
 
   const auto& resolvedExpr = rr.byAst(stmt);
 
-  return resolvedExpr.type;
+  return resolvedExpr.type();
 }
 
 static void test1() {

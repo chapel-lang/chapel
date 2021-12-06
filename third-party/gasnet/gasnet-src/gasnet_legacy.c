@@ -177,12 +177,20 @@ SHORT_HANDLER(gasneti_legacy_memset_reqreph,4,7,
                           (uintptr_t)(nbytes)));                                         \
   } while(0)
 
+#define GASNETI_CHECKLOCAL_MEMSET(tm,node,dest,val,nbytes) do { \
+  void *mapped_dest = gasnete_mapped_at(tm,node,dest);          \
+  if (mapped_dest) {                                            \
+    memset(mapped_dest,val,nbytes);                             \
+    gasnete_loopbackput_memsync();                              \
+    return 0;                                                   \
+  }} while(0)
+
 extern gex_Event_t gasneti_legacy_memset_nb(gex_Rank_t node, void *dest, int val, size_t nbytes GASNETI_THREAD_FARG) {
   GASNETI_TRACE_MEMSET(node,dest,val,nbytes); 
   gasneti_assert_reason(gasneti_legacy_handlers_registered, "gasnet_memset* requires gasnet_attach() or GEX_FLAG_USES_GASNET1");
   if_pf (!nbytes) return 0;
   gasneti_boundscheck(gasneti_thunk_tm,node,dest,nbytes);
-  GASNETI_CHECKPSHM_MEMSET(gasneti_thunk_tm,node,dest,val,nbytes);
+  GASNETI_CHECKLOCAL_MEMSET(gasneti_thunk_tm,node,dest,val,nbytes);
   gasneti_eop_t *eop = gasneti_eop_create(GASNETI_THREAD_PASS_ALONE);
 
   gex_AM_RequestShort(gasneti_thunk_tm, node, gasneti_handleridx(gasneti_legacy_memset_reqreph), 0,
@@ -196,7 +204,7 @@ extern int gasneti_legacy_memset_nbi(gex_Rank_t node, void *dest, int val, size_
   gasneti_assert_reason(gasneti_legacy_handlers_registered, "gasnet_memset* requires gasnet_attach() or GEX_FLAG_USES_GASNET1");
   if_pf (!nbytes) return 0;
   gasneti_boundscheck(gasneti_thunk_tm,node,dest,nbytes);
-  GASNETI_CHECKPSHM_MEMSET(gasneti_thunk_tm,node,dest,val,nbytes);
+  GASNETI_CHECKLOCAL_MEMSET(gasneti_thunk_tm,node,dest,val,nbytes);
   gasneti_iop_t *iop = gasneti_iop_register(1, 0 GASNETI_THREAD_PASS);
 
   gex_AM_RequestShort(gasneti_thunk_tm, node, gasneti_handleridx(gasneti_legacy_memset_reqreph), 0,

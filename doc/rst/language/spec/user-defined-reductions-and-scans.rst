@@ -2,6 +2,7 @@
 
 .. _Chapter-User_Defined_Reductions_and_Scans:
 
+=================================
 User-Defined Reductions and Scans
 =================================
 
