@@ -1,0 +1,14 @@
+-st=complex(64)                         # testSyncSingleTypes-ok
+-st=complex(128)                        # testSyncSingleTypes-ok
+-st=range                               # testSyncSingleTypes-ok
+-st=R                                   # testSyncSingleTypes-ok
+-st='[0..127] int'                      # testSyncSingleTypes-arr
+-st='[1..5] sync int'                   # testSyncSingleTypes-arr2
+-st='sync int'                          # testSyncSingleTypes-sync
+-st=complex(64) -stestSingle=true       # testSyncSingleTypes-ok
+-st=complex(128) -stestSingle=true      # testSyncSingleTypes-ok
+-st=range -stestSingle=true             # testSyncSingleTypes-ok
+-st=R -stestSingle=true                 # testSyncSingleTypes-ok
+-st='[0..127] int' -stestSingle=true    # testSyncSingleTypes-arr
+-st='[1..5] sync int' -stestSingle=true # testSyncSingleTypes-arr2
+-st='sync int' -stestSingle=true        # testSyncSingleTypes-sync

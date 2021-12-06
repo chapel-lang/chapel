@@ -82,6 +82,7 @@ inline std::string ltrim(std::string s);
 void splitString(const std::string& s, std::vector<std::string>& vec,
                  const char* delimiters);
 void splitStringWhitespace(const std::string& s, std::vector<std::string>& vec);
+void splitStringWhitespace(const char* s, std::vector<std::string>& vec);
 
 void removeTrailingNewlines(std::string& str);
 

@@ -2,28 +2,28 @@
 
 [root]
 name = "ivrsChooses"
-version = "0.1.0"
 chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
 dependencies = ["usesBad 0.1.0 foo", "usesGood 0.1.0 foo"]
+version = "0.1.0"
 
 [badThenGood]
 name = "badThenGood"
-version = "0.2.0"
 chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
 source = "foo"
+version = "0.2.0"
 
 [usesBad]
 name = "usesBad"
-version = "0.1.0"
 chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
-source = "foo"
 dependencies = ["badThenGood 0.2.0 foo"]
+source = "foo"
+version = "0.1.0"
 
 [usesGood]
 name = "usesGood"
-version = "0.1.0"
 chplVersion = "CHPL_CUR_FULL..CHPL_CUR_FULL"
-source = "foo"
 dependencies = ["badThenGood 0.2.0 foo"]
+source = "foo"
+version = "0.1.0"
 
 

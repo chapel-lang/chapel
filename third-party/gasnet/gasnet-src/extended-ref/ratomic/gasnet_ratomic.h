@@ -630,6 +630,7 @@ gex_Rank_t gasnete_ratomic_self(gasneti_AD_t _ad, gex_Flags_t _flags) {
         return retdone;                                                      \
     } while (0)
 #if GASNET_PSHM
+  // TODO?? use of GASNETI_NBRHD_MAPPED_ADDR{,_OR_NULL}() precludes ratomics in auxseg
   #if GASNET_CONDUIT_SMP
     // With smp-conduit there is only a single nbrhd
     #define _GASNETE_RATOMIC_DISP_MY_NBRHD_FLAG(_flags) 1
@@ -643,12 +644,11 @@ gex_Rank_t gasnete_ratomic_self(gasneti_AD_t _ad, gex_Flags_t _flags) {
     } else if (GASNETE_RATOMIC_PSHMSAFE##dtcode) {                       \
         if (_GASNETE_RATOMIC_DISP_MY_NBRHD_FLAG(_flags)) {               \
             gex_TM_t _tm = gasnete_ratomic_e_tm(_real_ad,_flags);        \
-            gasneti_assert(GASNETI_NBRHD_LOCAL(_tm,_tgt_rank));          \
-            _tgt_addr = GASNETI_NBRHD_LOCAL_ADDR(_tm,_tgt_rank,_tgt_addr);\
+            _tgt_addr = GASNETI_NBRHD_MAPPED_ADDR(_tm,_tgt_rank,_tgt_addr);\
             /* Will use tools */                                         \
         } else {                                                         \
             gex_TM_t _tm = gasnete_ratomic_e_tm(_real_ad,_flags);        \
-            void *_tmp_addr = GASNETI_NBRHD_LOCAL_ADDR_OR_NULL(_tm,_tgt_rank,_tgt_addr);\
+            void *_tmp_addr = GASNETI_NBRHD_MAPPED_ADDR_OR_NULL(_tm,_tgt_rank,_tgt_addr);\
             if (!_tmp_addr) break; /* Leave enclosing do/while w/o using tools */ \
             _tgt_addr = (dtcode##_type *)_tmp_addr;                      \
             /* Will use tools */                                         \

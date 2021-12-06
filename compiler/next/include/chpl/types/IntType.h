@@ -29,7 +29,7 @@ namespace types {
 /**
   This class represents an int type, e.g. `int` or `int(32)`.
  */
-class IntType : public PrimitiveType {
+class IntType final : public PrimitiveType {
  private:
   IntType(int bitwidth)
     : PrimitiveType(typetags::IntType, bitwidth)
@@ -48,6 +48,7 @@ class IntType : public PrimitiveType {
  public:
   ~IntType() = default;
 
+  /** Get an integer type. Bitwidth 0 creates a default width int. */
   static const IntType* get(Context* context, int bitwidth);
 
   int bitwidth() const override {

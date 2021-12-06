@@ -2,6 +2,7 @@
 
 .. _Chapter-Domains:
 
+=======
 Domains
 =======
 
@@ -348,13 +349,6 @@ the indices does not match a compiler error will be issued.
 
 ..
 
-   *Open issue*.
-
-   Assignment of an associative domain literal results in a warning
-   message being printed alerting the user that whole-domain assignment
-   has been serialized. This results from the resize operation over
-   associative arrays not being parsafe.
-
    *Example (associativeDomain.chpl)*.
 
    The following example illustrates construction of an associative
@@ -370,11 +364,6 @@ the indices does not match a compiler error will be issued.
       var D : domain(string) = {"bar", "foo"};
       writeln(D);
 
-   
-
-   .. BLOCK-test-chapelcompopts
-
-      --no-warnings
 
    produces the output 
 

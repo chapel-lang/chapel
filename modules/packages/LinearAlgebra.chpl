@@ -932,7 +932,7 @@ proc isDistributed(a) param {
     // array that falls entirely in a single locale
     return !chpl__getActualArray(a).isDefaultRectangular();
   }
-  else if isSparseDom(a.domain) {
+  else if a.domain.isSparse() {
     // TODO: is there a better way to check for distributed sparse domains?
     use BlockDist;
     return isSubtype(a.domain.dist.type, Block);
@@ -2521,7 +2521,7 @@ proc isDenseArr(A: [?D]) param : bool {
 pragma "no doc"
 /* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
 proc isDenseDom(D: domain) param : bool {
-  return isRectangularDom(D);
+  return D.isRectangular();
 }
 
 // TODO: Add this to public interface eventually
@@ -2559,7 +2559,7 @@ proc type _array.rank param {
 pragma "no doc"
 /* Returns ``true`` if the domain is ``DefaultSparse`` */
 private proc isDefaultSparseDom(D: domain) param {
-  return isSubtype(_to_borrowed(D.dist.type), DefaultDist) && isSparseDom(D);
+  return isSubtype(_to_borrowed(D.dist.type), DefaultDist) && D.isSparse();
 }
 
 pragma "no doc"
@@ -2814,13 +2814,13 @@ module Sparse {
         passing ``A`` and ``B`` in the reverse order.
 
   */
-  proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where isSparseArr(B) || isSparseArr(A) {
+  proc dot(A: [?Adom] ?eltType, B: [?Bdom] eltType) where B.isSparse() || A.isSparse() {
     // Assumes matrix-(vector|matrix) case
     return matMult(A, B);
   }
 
   /* CSR matrix-(matrix|vector) multiplication */
-  private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) where (isSparseArr(A) || isSparseArr(B)) {
+  private proc matMult(A: [?Adom] ?eltType, B: [?Bdom] eltType) where (A.isSparse() || B.isSparse()) {
     // matrix-vector
     if Adom.rank == 2 && Bdom.rank == 1 {
       if !isCSArr(A) then
@@ -3158,8 +3158,8 @@ module Sparse {
   }
 
   pragma "no doc"
-  proc _array.plus(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
-                                              && isSparseArr(A) && !isCSArr(A) {
+  proc _array.plus(A: [?Adom] ?eltType) where this.isSparse() && !isCSArr(this)
+                                              && A.isSparse() && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
     var sps: sparse subdomain(Adom.parentDom);
@@ -3187,8 +3187,8 @@ module Sparse {
   }
 
   pragma "no doc"
-  proc _array.minus(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
-                                               && isSparseArr(A) && !isCSArr(A) {
+  proc _array.minus(A: [?Adom] ?eltType) where this.isSparse() && !isCSArr(this)
+                                               && A.isSparse() && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
     var sps: sparse subdomain(Adom.parentDom);
@@ -3223,8 +3223,8 @@ module Sparse {
   }
 
   pragma "no doc"
-  proc _array.times(A: [?Adom] ?eltType) where isSparseArr(this) && !isCSArr(this)
-                                               && isSparseArr(A) && !isCSArr(A) {
+  proc _array.times(A: [?Adom] ?eltType) where this.isSparse() && !isCSArr(this)
+                                               && A.isSparse() && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
     // TODO: sps should only contain non-zero entries in resulting array,
@@ -3262,8 +3262,8 @@ module Sparse {
 
   pragma "no doc"
   proc _array.elementDiv(A: [?Adom] ?eltType) where
-                                            isSparseArr(this) && !isCSArr(this)
-                                            && isSparseArr(A) && !isCSArr(A) {
+                                            this.isSparse() && !isCSArr(this)
+                                            && A.isSparse() && !isCSArr(A) {
     if Adom.rank != this.domain.rank then compilerError("Unmatched ranks");
     if this.domain.shape != Adom.shape then halt("Unmatched shapes");
     // TODO: sps should only contain non-zero entries in resulting array
@@ -3332,7 +3332,7 @@ module Sparse {
 
   pragma "no doc"
   proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
-                where isSparseArr(X) {
+                where X.isSparse() {
       if D.rank != 2 then
         halt("Wrong rank for setDiag");
 
@@ -3360,13 +3360,13 @@ module Sparse {
 
 
   /* Return ``true`` if sparse matrix is diagonal. Supports CSR and COO arrays. */
-  proc isDiag(A: [?D] ?eltType) where isSparseArr(A) {
+  proc isDiag(A: [?D] ?eltType) where A.isSparse() {
     return _isDiag(A);
   }
 
 
   /* Return ``true`` if matrix is Hermitian. Supports CSR and COO arrays. */
-  proc isHermitian(A: [?D]) where isSparseArr(A) {
+  proc isHermitian(A: [?D]) where A.isSparse() {
     if D.rank != 2 then
       compilerError("Rank is not 2");
     if !isSquare(A) then
@@ -3380,7 +3380,7 @@ module Sparse {
 
 
   /* Return ``true`` if sparse matrix is symmetric. Supports CSR and COO arrays. */
-  proc isSymmetric(A: [?D]) where isSparseArr(A): bool {
+  proc isSymmetric(A: [?D]) where A.isSparse(): bool {
     if D.rank != 2 then
       compilerError("Rank is not 2");
     if !isSquare(A) then

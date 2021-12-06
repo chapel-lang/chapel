@@ -312,6 +312,7 @@ VPATH = \
 	$(UPCXX_BLDDIR)/test/regression \
 	$(UPCXX_BLDDIR)/example \
 	$(UPCXX_BLDDIR)/example/prog-guide \
+	$(UPCXX_BLDDIR)/example/compute-pi \
 	$(UPCXX_BLDDIR)/example/serialization \
 	$(UPCXX_BLDDIR)/bench \
 	$(UPCXX_BLDDIR)/extras/extensions/allocator \

@@ -2,6 +2,7 @@
 
 .. _Chapter-Variables:
 
+=========
 Variables
 =========
 
@@ -95,8 +96,9 @@ compiler will identify one or more later assignment statements and the
 right-hand-side of such statements will form the initialization
 expression. If the ``initialization-part`` is omitted and split
 initialization cannot be applied, then the variable will need to be
-initialized to a default value. Only `var` and `const` variable
-declarations can be initialized to a default value. Not all types have a
+initialized to a default value. Only `var`, `const`, and `param`
+declarations can be initialized to a default value - `ref` and `const
+ref` declarations cannot. Not all types have a
 default value. Default values are described in
 :ref:`Default_Values_For_Types`.
 

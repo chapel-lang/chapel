@@ -237,6 +237,8 @@ public:
   std::string deprecationMsg;
 
   const char* getDeprecationMsg() const;
+  const char* getSanitizedDeprecationMsg() const;
+
   void generateDeprecationWarning(Expr* context);
 
 protected:
@@ -790,6 +792,7 @@ extern const char* astr_initCopy;
 extern const char* astr_coerceCopy;
 extern const char* astr_coerceCopy;
 extern const char* astr_coerceMove;
+extern const char* astr_autoDestroy;
 
 bool isAstrOpName(const char* name);
 

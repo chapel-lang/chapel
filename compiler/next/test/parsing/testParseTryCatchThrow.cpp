@@ -49,10 +49,9 @@ static void test0(Parser* parser) {
       "try! bar();\n"
       "throw baz();\n"
       "/* c4 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 7);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isVariable());
@@ -136,10 +135,9 @@ static void tryCatchTest(Parser* parser, const char* testName,
                          bool hasErrorType) {
   auto test = constructTryCatchTest(isTryBang, hasError, hasErrorType);
   auto parseResult = parser->parseString(testName, test.c_str());
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 3);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isTry());
@@ -201,10 +199,9 @@ static void test2(Parser* parser) {
       "  halt('Unknown error');\n"
       "}\n"
       "/* c2 */\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isTry());
   assert(mod->stmt(2)->isComment());

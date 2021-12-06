@@ -94,10 +94,6 @@ def parseArguments():
     parser.add_option("--clang++", const="clangcxx",
                       dest="actions", action='append_const',
                       help="print which clang C++ compiler is configured")
-    parser.add_option("--clang-sysroot-arguments", const="clangsysroot",
-                      dest="actions", action='append_const',
-                      help="print out any saved clang arguments that "
-                           "specify the system root")
     parser.add_option("--multilocale-lib-deps", const="multilocale-lib-deps",
                       dest="actions", action='append_const',
                       help="print out libraries required to link "
@@ -219,15 +215,6 @@ def main():
             mysystem(make_helper, "printclangcc")
         elif a == "clangcxx":
             mysystem(make_helper, "printclangcxx")
-        elif a == "clangsysroot":
-            mysystem(make_helper, "printclangcxx")
-            llvminstall = myrun(make_helper, "printllvminstall")
-            llvminstall = llvminstall.strip()
-            fname = os.path.join(llvminstall, "configured-clang-sysroot-arguments")
-            if os.path.isfile(fname):
-                with open(fname) as f:
-                    for line in f:
-                        sys.stdout.write(line)
         elif a == "launcherlibdir":
           mysystem(make_helper, "printlauncherlibdir")
         elif a == "multilocale-lib-deps":

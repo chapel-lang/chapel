@@ -63,6 +63,10 @@ static inline size_t chpl_good_alloc_size(size_t minSize) {
 #endif
 }
 
+static inline size_t chpl_real_alloc_size(void* ptr) {
+  return 0;
+}
+
 #define CHPL_USING_CSTDLIB_MALLOC 1
 
 #ifdef __cplusplus

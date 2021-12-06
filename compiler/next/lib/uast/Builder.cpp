@@ -65,7 +65,7 @@ void Builder::noteLocation(ASTNode* ast, Location loc) {
   notedLocations_[ast] = loc;
 }
 
-Builder::Result Builder::result() {
+BuilderResult Builder::result() {
   this->createImplicitModuleIfNeeded();
   this->assignIDs();
 
@@ -75,12 +75,11 @@ Builder::Result Builder::result() {
   // that a postorder traversal of the AST has good data locality
   // (i.e. good cache behavior).
 
-  Builder::Result ret;
-  ret.filePath.swap(filepath_);
-  ret.topLevelExpressions.swap(topLevelExpressions_);
-  ret.errors.swap(errors_);
-  ret.idToAst.swap(idToAst_);
-  ret.astToLocation.swap(astToLocation_);
+  BuilderResult ret(filepath_);
+  ret.topLevelExpressions_.swap(topLevelExpressions_);
+  ret.errors_.swap(errors_);
+  ret.idToAst_.swap(idToAst_);
+  ret.astToLocation_.swap(astToLocation_);
 
   return ret;
 }
@@ -116,8 +115,9 @@ void Builder::createImplicitModuleIfNeeded() {
     ASTList stmts;
     stmts.swap(topLevelExpressions_);
     auto implicitModule = Module::build(this, Location(filepath_),
-                                        inferredModuleName,
+                                        /*attributes*/ nullptr,
                                         Decl::DEFAULT_VISIBILITY,
+                                        inferredModuleName,
                                         Module::IMPLICIT,
                                         std::move(stmts));
     topLevelExpressions_.push_back(std::move(implicitModule));
@@ -270,133 +270,6 @@ void Builder::doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
 
   // update idToAst_ for the visited AST node
   idToAst_[ast->id()] = ast;
-}
-
-Builder::Result::Result()
-{
-}
-
-// Recomputes idToAst / astToLocation maps by visiting all uAST nodes
-// and combining information from the provided maps.
-static
-void recomputeIdAndLocMaps(
-    const ASTNode* ast,
-    const ASTNode* parentAst,
-    std::unordered_map<ID, const ASTNode*>& dstIdToAst,
-    std::unordered_map<ID, ID>& dstIdToParent,
-    std::unordered_map<const ASTNode*, Location>& dstAstToLoc,
-    const std::unordered_map<const ASTNode*, Location>& astToLocA,
-    const std::unordered_map<const ASTNode*, Location>& astToLocB) {
-
-  for (const ASTNode* child : ast->children()) {
-    recomputeIdAndLocMaps(child, ast, dstIdToAst, dstIdToParent,
-                          dstAstToLoc, astToLocA, astToLocB);
-  }
-
-  if (!ast->id().isEmpty()) {
-    dstIdToAst[ast->id()] = ast;
-
-    if (parentAst != nullptr) {
-      if (!parentAst->id().isEmpty()) {
-        dstIdToParent[ast->id()] = parentAst->id();
-      } else {
-        assert(false && "parentAst does not have valid ID");
-      }
-    }
-  }
-
-  auto searchA = astToLocA.find(ast);
-  if (searchA != astToLocA.end()) {
-    // found a location in mapA so use it
-    dstAstToLoc[ast] = searchA->second;
-  } else {
-    // check in mapB
-    auto searchB = astToLocB.find(ast);
-    if (searchB != astToLocB.end()) {
-      // found a location in mapB so use it
-      dstAstToLoc[ast] = searchB->second;
-    } else {
-      assert(false && "Could not find location");
-    }
-  }
-}
-
-void Builder::Result::swap(Result& other) {
-  filePath.swap(other.filePath);
-  topLevelExpressions.swap(other.topLevelExpressions);
-  errors.swap(other.errors);
-  idToAst.swap(other.idToAst);
-  astToLocation.swap(other.astToLocation);
-}
-
-bool Builder::Result::update(Result& keep, Result& addin) {
-  bool changed = false;
-
-  // update the filePath
-  changed |= defaultUpdate(keep.filePath, addin.filePath);
-
-  // update the errors
-  changed |= defaultUpdate(keep.errors, addin.errors);
-
-  // update the ASTs
-  changed |= updateASTList(keep.topLevelExpressions, addin.topLevelExpressions);
-
-  std::unordered_map<ID, const ASTNode*> newIdToAst;
-  std::unordered_map<ID, ID> newIdToParent;
-  std::unordered_map<const ASTNode*, Location> newAstToLoc;
-
-  // recompute locationsVec by traversing the AST and using the maps
-  for (const auto& ast : keep.topLevelExpressions) {
-    recomputeIdAndLocMaps(ast.get(), nullptr,
-                          newIdToAst, newIdToParent,
-                          newAstToLoc, keep.astToLocation, addin.astToLocation);
-  }
-
-  // now update the ID and Locations maps in keep
-  changed |= defaultUpdate(keep.idToAst, newIdToAst);
-  changed |= defaultUpdate(keep.idToParentId, newIdToParent);
-  changed |= defaultUpdate(keep.astToLocation, newAstToLoc);
-
-  return changed;
-}
-
-void Builder::Result::mark(Context* context, const Result& keep) {
-
-  // mark the UniqueString file path
-  keep.filePath.mark(context);
-
-  // UniqueStrings in the AST IDs will be marked in markASTList below
-
-  // mark UniqueStrings in the Locations
-  for (const auto& pair : keep.astToLocation) {
-    pair.second.markUniqueStrings(context);
-  }
-
-  // mark UniqueStrings in the ASTs
-  markASTList(context, keep.topLevelExpressions);
-
-  // update the filePathForModuleName query
-  Builder::Result::updateFilePaths(context, keep);
-}
-
-static void updateFilePathsForModulesRecursively(Context* context,
-                                                 const ASTNode* ast,
-                                                 UniqueString path) {
-  if (const Module* mod = ast->toModule()) {
-    context->setFilePathForModuleID(mod->id(), path);
-  }
-
-  for (const ASTNode* child : ast->children()) {
-    updateFilePathsForModulesRecursively(context, child, path);
-  }
-}
-
-void Builder::Result::updateFilePaths(Context* context, const Result& keep) {
-  UniqueString path = keep.filePath;
-  // Update the filePathForModuleName query
-  for (auto & expr : keep.topLevelExpressions) {
-    updateFilePathsForModulesRecursively(context, expr.get(), path);
-  }
 }
 
 ASTList Builder::flattenTopLevelBlocks(ASTList lst) {

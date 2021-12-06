@@ -25,21 +25,24 @@ namespace chpl {
 namespace uast {
 
 
-bool Enum::isEnumElementAndCommentList(const ASTList& list) {
-  for (const auto& elt: list) {
-    if (elt->isEnumElement() || elt->isComment()) {
-      // OK
-    } else {
-      return false;
-    }
-  }
-  return true;
-}
-
 owned<Enum> Enum::build(Builder* builder, Location loc,
-                        UniqueString name, Decl::Visibility vis,
+                        owned<Attributes> attributes,
+                        Decl::Visibility vis,
+                        UniqueString name, 
                         ASTList stmts) {
-  Enum* ret = new Enum(std::move(stmts), vis, name);
+  ASTList lst;
+  int attributesChildNum = -1;
+
+  if (attributes.get() != nullptr) {
+    attributesChildNum = lst.size();
+    lst.push_back(std::move(attributes));
+  }
+
+  for (auto& ast : stmts) {
+    lst.push_back(std::move(ast));
+  }
+
+  Enum* ret = new Enum(std::move(lst), attributesChildNum, vis, name);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

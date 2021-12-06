@@ -1,1 +1,1 @@
-arrayBackOOB.chpl:3: error: halt reached - back called on an empty array
+arrayBackOOB.chpl:3: error: halt reached - last called on an empty array

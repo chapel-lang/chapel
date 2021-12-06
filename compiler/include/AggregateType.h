@@ -159,7 +159,7 @@ public:
 
   Symbol*                     getSubstitution(const char* name)          const;
 
-  Type*                       getDecoratedClass(ClassTypeDecorator d);
+  Type*                       getDecoratedClass(ClassTypeDecoratorEnum d);
 
   // Returns true if a field is considered generic
   // (i.e. it needs a type constructor argument)

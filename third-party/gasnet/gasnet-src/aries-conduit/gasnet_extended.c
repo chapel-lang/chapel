@@ -383,8 +383,7 @@ gex_Event_t gasnete_get_nb(
                      size_t nbytes,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
-  {
+    gasneti_assert(! gasnete_mapped_at(tm,rank,src)); // else PSHM/loopback
     int imm;
     gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
     gasnete_eop_t *eop = gasnete_eop_new_cnt(mythread);
@@ -401,7 +400,6 @@ gex_Event_t gasnete_get_nb(
     if_pf (imm) return (gasnete_consume_eop(eop GASNETI_THREAD_PASS), GEX_EVENT_NO_OP);
     GASNETC_EOP_CNT_FINISH(eop); // TODO-EX: optimize away this extra atomic op under some conditions?
     return (gex_Event_t) eop;
-  }
 }
 
 extern
@@ -412,7 +410,7 @@ gex_Event_t gasnete_put_nb(
                      size_t nbytes, gex_Event_t *lc_opt,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
+  gasneti_assert(! gasnete_mapped_at(tm,rank,dest)); // else PSHM/loopback
 
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
   gasnete_eop_t *eop = gasnete_eop_new_cnt(mythread);
@@ -477,8 +475,7 @@ int gasnete_get_nbi( gex_TM_t tm,
                      size_t nbytes,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_GET(tm,dest,rank,src,nbytes);
-  {
+    gasneti_assert(! gasnete_mapped_at(tm,rank,src)); // else PSHM/loopback
     int imm;
     gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
     gasnete_iop_t * const iop = mythread->current_iop;
@@ -493,7 +490,6 @@ int gasnete_get_nbi( gex_TM_t tm,
     }
     gasneti_resume_spinpollers();
     return imm;
-  }
 }
 
 int gasnete_put_nbi( gex_TM_t tm,
@@ -502,7 +498,7 @@ int gasnete_put_nbi( gex_TM_t tm,
                      size_t nbytes, gex_Event_t *lc_opt,
                      gex_Flags_t flags GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_PUT(tm,rank,dest,src,nbytes);
+  gasneti_assert(! gasnete_mapped_at(tm,rank,dest)); // else PSHM/loopback
 
   gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
   gasnete_iop_t * const iop = mythread->current_iop;
@@ -559,8 +555,7 @@ extern int gasnete_put_val(
                 size_t nbytes, gex_Flags_t flags
                 GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_PUTVAL(tm,rank,dest,value,nbytes);
-  {
+    gasneti_assert(! gasnete_mapped_at(tm,rank,dest)); // else PSHM/loopback
     GASNETC_DIDX_POST(GASNETI_MYTHREAD->domain_idx);
     gasnetc_post_descriptor_t *gpd;
     volatile int done = 0;
@@ -573,7 +568,6 @@ extern int gasnete_put_val(
     gasneti_resume_spinpollers();
     gasneti_polluntil(done);
     return 0;
-  }
 }
 
 GASNETI_WARN_UNUSED_RESULT // Returns non-zero in IMMEDIATE case only
@@ -606,7 +600,7 @@ extern gex_Event_t gasnete_put_nb_val(
                 size_t nbytes, gex_Flags_t flags
                 GASNETI_THREAD_FARG)
 {
-    GASNETI_CHECKPSHM_PUTVAL(tm,rank,dest,value,nbytes);
+    gasneti_assert(! gasnete_mapped_at(tm,rank,dest)); // else PSHM/loopback
 
     gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
     GASNETC_DIDX_POST(mythread->domain_idx);
@@ -628,7 +622,7 @@ extern int gasnete_put_nbi_val(
                 size_t nbytes, gex_Flags_t flags
                 GASNETI_THREAD_FARG)
 {
-    GASNETI_CHECKPSHM_PUTVAL(tm,rank,dest,value,nbytes);
+    gasneti_assert(! gasnete_mapped_at(tm,rank,dest)); // else PSHM/loopback
 
     gasneti_threaddata_t * const mythread = GASNETI_MYTHREAD;
     GASNETC_DIDX_POST(mythread->domain_idx);
@@ -662,8 +656,7 @@ extern gex_RMA_Value_t gasnete_get_val(
                 size_t nbytes, gex_Flags_t flags
                 GASNETI_THREAD_FARG)
 {
-  GASNETI_CHECKPSHM_GETVAL(tm,rank,src,nbytes);
-  {
+    gasneti_assert(! gasnete_mapped_at(tm,rank,src)); // else PSHM/loopback
     gex_RMA_Value_t result;
     GASNETC_DIDX_POST(GASNETI_MYTHREAD->domain_idx);
     gasnetc_post_descriptor_t *gpd;
@@ -680,7 +673,6 @@ extern gex_RMA_Value_t gasnete_get_val(
     result = gasnete_get_val_help(buffer, nbytes);
     gasnetc_free_post_descriptor(gpd);
     return result;
-  }
 }
 
 /* ------------------------------------------------------------------------------------ */
@@ -745,7 +737,7 @@ static int gasnete_conduit_rdmabarrier(const char *barrier, gasneti_auxseg_reque
 /* GNI-specific RDMA-based Dissemination implementation of barrier
  * This is an adaptation of the "rmd" barrier in exteneded-ref.
  * Key differences:
- *  + no complications due to thread-specific events
+ *  + neither eop nor iop allocation/completion overheads
  *  + simple 64-bit put since (aligned) 64-bit puts are atomic
  */
 
@@ -809,7 +801,7 @@ void gasnete_gdbarrier_send(gasnete_coll_gdbarrier_t *barrier_data,
     uint64_t * const dst = GASNETE_GDBARRIER_INBOX_REMOTE(barrier_data, step, state);
 #if GASNET_PSHM
     if (gasneti_pshm_jobrank_in_supernode(jobrank)) {
-      *(uint64_t*)gasneti_pshm_jobrank_addr2local(jobrank, dst) = payload;
+      *(uint64_t*)gasneti_pshm_jobrank_addr2local(jobrank, dst, 1) = payload;
     } else
 #endif
     {

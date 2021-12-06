@@ -39,7 +39,7 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "typeSpecifier.h"
-#include "../main/version_num.h"
+#include "version.h"
 #include "visibleFunctions.h"
 #include "wellknown.h"
 
@@ -1122,7 +1122,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     bool value = false;
     if (isClassLike(t) &&
         !t->symbol->hasFlag(FLAG_EXTERN)) {
-      ClassTypeDecorator d = classTypeDecorator(t);
+      ClassTypeDecoratorEnum d = classTypeDecorator(t);
       if (call->isPrimitive(PRIM_IS_NILABLE_CLASS_TYPE))
         value = isDecoratorNilable(d);
       else if (call->isPrimitive(PRIM_IS_NON_NILABLE_CLASS_TYPE))
@@ -1897,27 +1897,27 @@ static Expr* preFoldPrimOp(CallExpr* call) {
   }
 
   case PRIM_VERSION_MAJOR: {
-    retval = new SymExpr(new_IntSymbol(MAJOR_VERSION));
+    retval = new SymExpr(new_IntSymbol(get_major_version()));
     call->replace(retval);
     break;
   }
 
   case PRIM_VERSION_MINOR: {
-    retval = new SymExpr(new_IntSymbol(MINOR_VERSION));
+    retval = new SymExpr(new_IntSymbol(get_minor_version()));
     call->replace(retval);
     break;
   }
 
   case PRIM_VERSION_UPDATE: {
-    retval = new SymExpr(new_IntSymbol(UPDATE_VERSION));
+    retval = new SymExpr(new_IntSymbol(get_update_version()));
     call->replace(retval);
     break;
   }
 
   case PRIM_VERSION_SHA: {
-    retval = (officialRelease ?
+    retval = (get_is_official_release() ?
               new SymExpr(new_StringSymbol("")) :
-              new SymExpr(new_StringSymbol(BUILD_VERSION)));
+              new SymExpr(new_StringSymbol(get_build_version())));
     call->replace(retval);
     break;
   }
@@ -2946,7 +2946,7 @@ static Expr* createFunctionAsValue(CallExpr *call) {
   BlockStmt* block = new BlockStmt();
   wrapper->insertAtTail(block);
 
-  Type* undecorated = getDecoratedClass(ct, CLASS_TYPE_GENERIC_NONNIL);
+  Type* undecorated = getDecoratedClass(ct, ClassTypeDecorator::GENERIC_NONNIL);
 
   NamedExpr* usym = new NamedExpr(astr_chpl_manager,
                                   new SymExpr(dtUnmanaged->symbol));
@@ -2956,7 +2956,8 @@ static Expr* createFunctionAsValue(CallExpr *call) {
                                 new CallExpr(new SymExpr(undecorated->symbol)));
 
   // Cast to "unmanaged parent".
-  Type* parUnmanaged = getDecoratedClass(parent, CLASS_TYPE_UNMANAGED_NONNIL);
+  Type* parUnmanaged = getDecoratedClass(parent,
+      ClassTypeDecorator::UNMANAGED_NONNIL);
   CallExpr* parCast = new CallExpr(PRIM_CAST, parUnmanaged->symbol,
                                    init);
 

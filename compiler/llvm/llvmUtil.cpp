@@ -32,11 +32,6 @@ bool isArrayVecOrStruct(llvm::Type* t)
   return t->isArrayTy() || t->isVectorTy() || t->isStructTy();
 }
 
-llvm::Constant* codegenSizeofLLVM(llvm::Type* type)
-{
-  return llvm::ConstantExpr::getSizeOf(type);
-}
-
 llvm::AllocaInst* makeAlloca(llvm::Type* type,
                              const char* name,
                              llvm::Instruction* insertBefore,
@@ -346,8 +341,18 @@ int64_t arrayVecN(llvm::Type *t)
     unsigned n = at->getNumElements();
     return n;
   } else if( t->isVectorTy() ) {
+#if HAVE_LLVM_VER >= 120
+    unsigned n;
+    if (llvm::FixedVectorType *vt = llvm::dyn_cast<llvm::FixedVectorType>(t)) {
+      n = vt->getNumElements();
+    } else {
+      // Scalable vector type not handled here
+      return -1;
+    }
+#else
     llvm::VectorType *vt = llvm::dyn_cast<llvm::VectorType>(t);
     unsigned n = vt->getNumElements();
+#endif
     return n;
   } else {
     return -1;

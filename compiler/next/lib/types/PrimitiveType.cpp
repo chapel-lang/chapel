@@ -19,6 +19,13 @@
 
 #include "chpl/types/PrimitiveType.h"
 
+#include "chpl/types/BoolType.h"
+#include "chpl/types/ComplexType.h"
+#include "chpl/types/ImagType.h"
+#include "chpl/types/IntType.h"
+#include "chpl/types/RealType.h"
+#include "chpl/types/UintType.h"
+
 namespace chpl {
 namespace types {
 
@@ -26,6 +33,33 @@ namespace types {
 std::string PrimitiveType::toString() const {
   std::string ret = this->c_str();
   return ret;
+}
+
+const PrimitiveType*
+PrimitiveType::getWithNameAndWidth(Context* context,
+                                   UniqueString name,
+                                   int bitwidth) {
+  if (name == "int")
+    if (bitwidth == 8 || bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
+      return IntType::get(context, bitwidth);
+  if (name == "uint")
+    if (bitwidth == 8 || bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
+      return UintType::get(context, bitwidth);
+  if (name == "bool")
+    if (bitwidth == 8 || bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
+      return BoolType::get(context, bitwidth);
+  if (name == "real")
+    if (bitwidth == 32 || bitwidth == 64)
+      return RealType::get(context, bitwidth);
+  if (name == "imag")
+    if (bitwidth == 32 || bitwidth == 64)
+      return ImagType::get(context, bitwidth);
+  if (name == "complex")
+    if (bitwidth == 64 || bitwidth == 128)
+      return ComplexType::get(context, bitwidth);
+
+  // otherwise it is an invalid name or width
+  return nullptr;
 }
 
 

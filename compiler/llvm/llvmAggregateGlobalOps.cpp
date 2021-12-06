@@ -56,6 +56,7 @@
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 
+#include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/InstIterator.h"
 
 #if HAVE_LLVM_VER < 90

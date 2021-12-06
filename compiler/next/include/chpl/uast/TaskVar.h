@@ -58,17 +58,20 @@ class TaskVar final : public VarLikeDecl {
   };
 
  private:
-  TaskVar(ASTList children, UniqueString name,
+  TaskVar(ASTList children, int attributesChildNum, UniqueString name,
           TaskVar::Intent intent,
           int8_t typeExpressionChildNum,
           int8_t initExpressionChildNum)
       : VarLikeDecl(asttags::TaskVar, std::move(children),
+                    attributesChildNum,
                     Decl::DEFAULT_VISIBILITY,
+                    Decl::DEFAULT_LINKAGE,
+                    /*linkageNameChildNum*/ -1,
                     name,
                     (IntentList)((int)intent),
                     typeExpressionChildNum,
-                    initExpressionChildNum)
-  { }
+                    initExpressionChildNum) {
+  }
 
   bool contentsMatchInner(const ASTNode* other) const override {
     const TaskVar* lhs = this;
@@ -85,6 +88,7 @@ class TaskVar final : public VarLikeDecl {
   ~TaskVar() override = default;
 
   static owned<TaskVar> build(Builder* builder, Location loc,
+                              owned<Attributes> attributes,
                               UniqueString name,
                               TaskVar::Intent intent,
                               owned<Expression> typeExpression,

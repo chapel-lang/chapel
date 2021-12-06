@@ -95,6 +95,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Regex.chpl \
 	standard/Set.chpl \
 	standard/Spawn.chpl \
+	standard/Subprocess.chpl \
 	standard/Sys.chpl \
 	standard/SysBasic.chpl \
 	standard/SysError.chpl \
@@ -110,6 +111,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/AtomicObjects.chpl \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
+	packages/ConcurrentMap.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/EpochManager.chpl \
@@ -125,8 +127,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
-	packages/OrderedMap.chpl \
-	packages/OrderedSet.chpl \
+	packages/SortedMap.chpl \
+	packages/SortedSet.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
 	packages/RecordParser.chpl \

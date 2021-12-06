@@ -225,6 +225,7 @@ const char* Context::uniqueCStringConcatLen(const char* s1, size_t len1,
     const char* ret = search->str;
     // update the GC mark
     this->markUniqueCString(ret);
+    free(buf);
     return ret;
   }
 
@@ -459,12 +460,12 @@ void Context::setFilePathForModuleID(ID moduleID, UniqueString path) {
 }
 
 void Context::error(ErrorMessage error) {
-  if (queryStack.size() == 0) {
-    assert(false && "Context::error called with no running query");
-    return;
+  if (queryStack.size() > 0) {
+    queryStack.back()->errors.push_back(std::move(error));
+    reportError(queryStack.back()->errors.back());
+  } else {
+    reportError(error);
   }
-  queryStack.back()->errors.push_back(std::move(error));
-  reportError(queryStack.back()->errors.back());
 }
 
 void Context::error(Location loc, const char* fmt, ...) {

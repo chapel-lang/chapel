@@ -44,10 +44,23 @@ namespace uast {
  */
 class Union final : public AggregateDecl {
  private:
-  Union(ASTList children, Decl::Visibility vis,
-        UniqueString name, int numChildren)
-    : AggregateDecl(asttags::Union, std::move(children), vis, name,
-                    (numChildren>0)?0:-1, numChildren) {
+  Union(ASTList children, int attributesChildNum, Decl::Visibility vis,
+        Decl::Linkage linkage,
+        int linkageNameChildNum,
+        UniqueString name,
+        int elementsChildNum,
+        int numElements)
+    : AggregateDecl(asttags::Union, std::move(children),
+                    attributesChildNum,
+                    vis,
+                    linkage,
+                    linkageNameChildNum,
+                    name,
+                    elementsChildNum,
+                    numElements) {
+
+    // Cannot export unions right now, this should be a parse error.
+    assert(linkage != Decl::EXPORT);
   }
 
   bool contentsMatchInner(const ASTNode* other) const override {
@@ -55,6 +68,7 @@ class Union final : public AggregateDecl {
     const Union* rhs = (const Union*) other;
     return lhs->aggregateDeclContentsMatchInner(rhs);
   }
+
   void markUniqueStringsInner(Context* context) const override {
     aggregateDeclMarkUniqueStringsInner(context);
   }
@@ -63,7 +77,11 @@ class Union final : public AggregateDecl {
   ~Union() override = default;
 
   static owned<Union> build(Builder* builder, Location loc,
-                            Decl::Visibility vis, UniqueString name,
+                            owned<Attributes> attributes,
+                            Decl::Visibility vis,
+                            Decl::Linkage linkage,
+                            owned<Expression> linkageName,
+                            UniqueString name,
                             ASTList contents);
 };
 

@@ -6,7 +6,7 @@ Associative Set Operations
 ==========================
 
 This README describes some initial support for set operations on associative
-arrays and domains. It is expected that the features described here will be
+domains. It is expected that the features described here will be
 included in a future version of the language specification.
 
 .. contents::
@@ -96,34 +96,3 @@ way of writing this statement is::
 The op= variant is::
 
   A ^= B;
-
-
-Associative Array Set Operations
-================================
-
-.. warning::
-    Set operations on associative arrays have been deprecated for the 1.20
-    release and will be removed in future releases. The ``map`` type from
-    the :mod:`Map` module has been added to the standard library, and is
-    intended to provide suitable replacements for these deprecated operations.
-
-The Union, Difference, Intersection, and Symmetric Difference operators
-(and their op= variants) are available for associative arrays that don't share
-their domains. This restriction exists because it may be surprising to appear
-to be modifying one array, and in turn modify another due to a shared domain.
-
-When performing a set operation between two associative arrays, the resulting
-array's domain is the result of the rules described in the previous section.
-Unless otherwise stated, the values from the LHS of the operation are used as
-the new array's values.
-
-Value Precedence for the Union Operator
----------------------------------------
-
-In the following code snippet, let ``A`` and ``B`` be associative arrays whose
-domains contain some of the same indices::
-
-  C = A + B;
-
-In the resulting array ``C``, the values from ``B`` will take precedence when
-indices overlap.

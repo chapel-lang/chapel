@@ -1,5 +1,5 @@
 module A {
-  use B only bar;
+  public use B only bar;
   var foo = false;
 }
 

@@ -1203,7 +1203,7 @@ static void processManagedNew(CallExpr* newCall) {
       INT_ASSERT(ts);
       Type* t = ts->type;
       if (isManagedPtrType(t))
-        t = getDecoratedClass(t, CLASS_TYPE_MANAGED_NILABLE);
+        t = getDecoratedClass(t, ClassTypeDecorator::MANAGED_NILABLE);
       else if (t == dtBorrowed)
         t = dtBorrowedNilable;
       else if (t == dtUnmanaged)
@@ -2944,7 +2944,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
 
       // can't default init a generic management/nilability
       if (isClassLikeOrManaged(ts->type)) {
-        ClassTypeDecorator d = classTypeDecorator(ts->type);
+        ClassTypeDecoratorEnum d = classTypeDecorator(ts->type);
         if (isDecoratorUnknownManagement(d) ||
             isDecoratorUnknownNilability(d)) {
           canDefaultInit = false;
@@ -2993,7 +2993,7 @@ static void errorIfSplitInitializationRequired(DefExpr* def, Expr* cur) {
 
         Type* type = nonNilableType;
         AggregateType* at = toAggregateType(canonicalDecoratedClassType(type));
-        ClassTypeDecorator d = classTypeDecorator(type);
+        ClassTypeDecoratorEnum d = classTypeDecorator(type);
         Type* suggestedType = at->getDecoratedClass(addNilableToDecorator(d));
         USR_PRINT("Consider using the type %s instead", toString(suggestedType));
       } else if (genericType != NULL) {
@@ -4362,9 +4362,9 @@ static void expandQueryForGenericTypeSpecifier(FnSymbol*  fn,
             if (SymExpr* se2 = toSymExpr(call->get(1))) {
               if (TypeSymbol* ts2 = toTypeSymbol(se2->symbol())) {
                 // e.g. owned MyGenericClass
-                ClassTypeDecorator d = CLASS_TYPE_GENERIC_NONNIL;
+                ClassTypeDecoratorEnum d = ClassTypeDecorator::GENERIC_NONNIL;
                 if (isNilableClassType(ts2->type))
-                  d = CLASS_TYPE_GENERIC_NILABLE;
+                  d = ClassTypeDecorator::GENERIC_NILABLE;
                 Type* genericMgmt = getDecoratedClass(ts2->type, d);
                 CallExpr* c = new CallExpr(PRIM_IS_INSTANTIATION_ALLOW_VALUES,
                                            genericMgmt->symbol, queried);

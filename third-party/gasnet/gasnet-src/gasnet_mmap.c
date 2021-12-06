@@ -2167,6 +2167,34 @@ int gasneti_segmentCreate(
   *segment_p = gasneti_export_segment(segment);
   return GASNET_OK;
 }
+
+int gasneti_segmentDestroy(
+                gasneti_Segment_t       i_segment,
+                int                     create_hook_succeeded)
+{
+  gasneti_assert(i_segment);
+
+#if GASNETC_SEGMENT_DESTROY_HOOK
+  // Call conduit-specific hook ONLY if create hook has run
+  // successfully (and there is a destroy hook)
+  if (create_hook_succeeded) {
+    gasnetc_segment_destroy_hook(i_segment);
+  }
+#endif
+
+#if GASNET_HAVE_MK_CLASS_MULTIPLE
+  if (i_segment->_kind != GEX_MK_HOST) {
+    gasneti_MK_Segment_Destroy(i_segment);
+  }
+#else
+  gasneti_assert_ptr(i_segment->_kind ,==, GEX_MK_HOST);
+#endif
+
+  gasneti_segtbl_del(i_segment);
+  gasneti_free_segment(i_segment);
+
+  return GASNET_OK;
+}
 /* ------------------------------------------------------------------------------------ */
 
 /* Used to pass the nodemap information to the client

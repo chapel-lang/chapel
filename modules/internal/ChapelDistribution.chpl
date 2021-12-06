@@ -622,8 +622,8 @@ module ChapelDistribution {
     }
 
     proc canDoDirectAssignment(rhs: domain) {
-      if isRectangularDom(this.parentDom) &&
-         isRectangularDom(rhs.parentDom) {
+      if this.parentDom.isRectangular() &&
+         rhs.parentDom.isRectangular() {
         if this.dsiNumIndices == 0 {
           if rhs.parentDom.isSubset(this.parentDom) {
             return true;

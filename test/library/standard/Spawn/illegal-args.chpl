@@ -1,16 +1,16 @@
-use Spawn only;
+use Subprocess only;
 
 proc main() throws {
   try {
     var s: [1..0] string;
-    var p = Spawn.spawn(s);
+    var p = Subprocess.spawn(s);
     p.communicate();
   } catch e: IllegalArgumentError {
     writeln(e.message());
   }
 
   try {
-    var p = Spawn.spawnshell('');
+    var p = Subprocess.spawnshell('');
     p.communicate();
   } catch e: IllegalArgumentError {
     writeln(e.message());

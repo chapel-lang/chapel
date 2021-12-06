@@ -79,7 +79,7 @@ ifneq (, $(filter $(THIRD_PARTY_PKGS),hwloc))
 endif
 ifneq (, $(filter $(THIRD_PARTY_PKGS),jemalloc))
 	@echo "Making jemalloc..."
-	@$(MAKE) -C $(THIRD_PARTY_DIR) jemalloc
+	@$(MAKE) -C $(THIRD_PARTY_DIR) CHPL_MAKE_HOST_TARGET=--target jemalloc
 endif
 	@echo "Making third-party-packages..."
 	@$(MAKE) -C $(THIRD_PARTY_DIR) $(THIRD_PARTY_PKGS)

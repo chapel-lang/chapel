@@ -1,0 +1,54 @@
+testDefaultInitSync
+testDefaultInitSyncWriteEF
+init 1
+deinit 1
+testDefaultInitSyncWriteEFReadFE
+init 1
+(x = 1, ptr = {})
+deinit 1
+testDefaultInitSyncWriteEFReadFF
+init 1
+init= 1
+(x = 1, ptr = {})
+deinit 1
+deinit 1
+testDefaultInitSyncWriteEFWriteFF
+init 1
+init 2
+deinit 1
+deinit 2
+testDefaultInitSyncWriteEFWriteXF
+init 1
+init 2
+deinit 1
+deinit 2
+testDefaultInitSyncReset
+testDefaultInitSyncWriteEFReset
+init 1
+deinit 1
+testValInitSync
+init 1
+deinit 1
+testValInitSyncReadFE
+init 1
+(x = 1, ptr = {})
+deinit 1
+testDefaultInitSingle
+testDefaultInitSingleWriteEF
+init 1
+deinit 1
+testDefaultInitSingleWriteEFReadFF
+init 1
+init= 1
+(x = 1, ptr = {})
+deinit 1
+deinit 1
+testValInitSingle
+init 1
+deinit 1
+testValInitSingleReadFF
+init 1
+init= 1
+(x = 1, ptr = {})
+deinit 1
+deinit 1

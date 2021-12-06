@@ -68,9 +68,6 @@ endif
 BUILD_VERSION_FILE = $(COMPILER_ROOT)/main/BUILD_VERSION
 # configured prefix file
 CONFIGURED_PREFIX_FILE = $(COMPILER_BUILD)/CONFIGURED_PREFIX
-# file storing the names of clang, clang++ for CHPL_LLVM=system
-# also stores the clang-sysroot-arguments
-CLANG_SETTINGS_FILE = $(COMPILER_BUILD)/CLANG_SETTINGS
 
 #
 # include source subdirectories here
@@ -121,22 +118,10 @@ CHPL_OBJS = \
 
 EXECS = $(CHPL) $(CHPLDOC)
 
-PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE) $(CLANG_SETTINGS_FILE)
+PRETARGETS = $(BUILD_VERSION_FILE) $(CONFIGURED_PREFIX_FILE)
 TARGETS = $(CHPL)
 
 LIBS = -lm
-
-# Set up variables representing paths that will be installed
-# and how to fix them (for CLANG_SETTINGS).
-# So far, this only needs to fix CHPL_THIRD_PARTY/CHPL_HOME.
-ifndef CHPL_MAKE_THIRD_PARTY
-CHPL_MAKE_THIRD_PARTY = $(CHPL_MAKE_HOME)/third-party
-endif
-
-FIXPATH_CMD := $(CHPL_MAKE_PYTHON) \
-                  $(CHPL_MAKE_HOME)/util/config/replace-paths.py \
-                  --fixpath '$$CHPL_THIRD_PARTY' $(CHPL_MAKE_THIRD_PARTY) \
-                  --fixpath '$$CHPL_HOME' $(CHPL_MAKE_HOME)
 
 #
 # main rules
@@ -155,8 +140,6 @@ CHPL_CONFIG_CHECK = $(CHPL_CONFIG_CHECK_DIR)/built-for
 
 UPDATE_BUILD_VERSION = $(CHPL_MAKE_HOME)/util/devel/updateBuildVersion
 
-CLEAN_TARGS += $(CLANG_SETTINGS_FILE)
-
 $(BUILD_VERSION_FILE): FORCE
 	@({ test -e $(CHPL_MAKE_HOME)/.git ; } && \
 	test -x $(UPDATE_BUILD_VERSION) && $(UPDATE_BUILD_VERSION) $@ $(CHPL_MAKE_HOME)) || \
@@ -169,17 +152,13 @@ $(CONFIGURED_PREFIX_FILE): FORCE $(COMPILER_BUILD) $(CHPL_MAKE_HOME)/configured-
 	@echo '"'`cat $(CHPL_MAKE_HOME)/configured-prefix`'"' \ > $(CONFIGURED_PREFIX_FILE).incoming
 	@$(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --update $(CONFIGURED_PREFIX_FILE) $(CONFIGURED_PREFIX_FILE).incoming
 
-$(CLANG_SETTINGS_FILE): FORCE $(COMPILER_BUILD)
-	@echo '{"'$(CLANG_CC)'","'$(CLANG_CXX)'","'`$(CHPL_MAKE_HOME)/util/config/gather-clang-sysroot-arguments $(CLANG_CC)`'"}' | $(FIXPATH_CMD) > $(CLANG_SETTINGS_FILE).incoming
-	@$(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --update $(CLANG_SETTINGS_FILE) $(CLANG_SETTINGS_FILE).incoming
-
 $(CHPL_CONFIG_CHECK): | $(CHPL_BIN_DIR)
 	rm -rf $(CHPL_CONFIG_CHECK_PREFIX)
 	mkdir -p $(CHPL_CONFIG_CHECK_DIR)
 	echo $(CHPL_MAKE_COMPILER_SUBDIR) > $(CHPL_CONFIG_CHECK)
 
 $(CHPL): $(CHPL_OBJS) $(CHPL_CONFIG_CHECK) | $(CHPL_BIN_DIR)
-	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(LIBS) $(LLVM_LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(CHPL_OBJS) $(CHPL_MAKE_THIRD_PARTY_HOST_LINK_ARGS) $(LIBS) $(LLVM_LIBS)
 	$(TAGS_COMMAND)
 	$(EBROWSE_COMMAND)
 

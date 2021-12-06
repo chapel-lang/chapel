@@ -42,6 +42,6 @@ if(DOXYGEN_FOUND)
 
 else(DOXYGEN_FOUND)
   add_custom_target(api-docs
-                    COMMAND echo "not running doxygen because it is missing"
-                    COMMENT "using dummy api-docs because doxygen is missing")
+                    COMMAND echo "doxygen missing" && exit 1
+                    COMMENT "could not find doxygen -- is it installed?")
 endif(DOXYGEN_FOUND)

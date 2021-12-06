@@ -25,7 +25,7 @@ namespace chpl {
 namespace uast {
 
 bool MultiDecl::isAcceptableMultiDecl() {
-  for (const auto& elt: children_) {
+  for (auto elt : decls()) {
     if (elt->isVariable() || elt->isComment() || elt->isTupleDecl()) {
       // OK
     } else {
@@ -35,11 +35,27 @@ bool MultiDecl::isAcceptableMultiDecl() {
   return true;
 }
 
-owned<MultiDecl> MultiDecl::build(Builder* builder,
-                                  Location loc,
+owned<MultiDecl> MultiDecl::build(Builder* builder, Location loc,
+                                  owned<Attributes> attributes,
                                   Decl::Visibility vis,
+                                  Decl::Linkage linkage,
                                   ASTList varDecls) {
-  MultiDecl* ret = new MultiDecl(std::move(varDecls), vis);
+  ASTList lst;
+  int attributesChildNum = -1;
+
+  if (attributes.get() != nullptr) {
+    attributesChildNum = lst.size();
+    lst.push_back(std::move(attributes));
+  }
+
+  for (auto& ast : varDecls) {
+    lst.push_back(std::move(ast));
+  }
+    
+
+  MultiDecl* ret = new MultiDecl(std::move(lst), attributesChildNum,
+                                 vis,
+                                 linkage);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

@@ -40,7 +40,7 @@ namespace uast {
 }
 
 namespace resolution {
-  struct TypedFnSignature;
+  class TypedFnSignature;
 }
 
 
@@ -453,9 +453,13 @@ class Context {
   void setFilePathForModuleID(ID moduleID, UniqueString path);
 
   /**
-    Note an error for the currently running query.
+    Note an error for the currently running query and report it
+    with the error handler set by setErrorHandler.
+
+    If no query is currently running, it just reports the error.
    */
   void error(ErrorMessage error);
+
   /**
     Note an error for the currently running query.
     This is a convenience overload.
@@ -468,6 +472,7 @@ class Context {
     __attribute__ ((format (printf, 3, 4)))
   #endif
   ;
+
   /**
     Note an error for the currently running query.
     This is a convenience overload.
@@ -481,6 +486,7 @@ class Context {
     __attribute__ ((format (printf, 3, 4)))
   #endif
   ;
+
   /**
     Note an error for the currently running query.
     This is a convenience overload.
@@ -493,7 +499,8 @@ class Context {
     // so the above ifndef works around the issue.
     __attribute__ ((format (printf, 3, 4)))
   #endif
-;
+  ;
+
   /**
     Note an error for the currently running query.
     This is a convenience overload.
@@ -510,7 +517,7 @@ class Context {
     // so the above ifndef works around the issue.
     __attribute__ ((format (printf, 4, 5)))
   #endif
-;
+  ;
 
   typedef enum {
     NOT_CHECKED_NOT_CHANGED = 0,
@@ -586,6 +593,15 @@ class Context {
       const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
       const std::tuple<ArgTs...>& tupleOfArgs,
       ResultType result,
+      const char* traceQueryName);
+
+  template<typename ResultType,
+           typename... ArgTs>
+  const ResultType& queryEndCurrentResult(
+      const ResultType& (*queryFunction)(Context* context, ArgTs...),
+      querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
+      const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
+      const std::tuple<ArgTs...>& tupleOfArgs,
       const char* traceQueryName);
 
   template<typename ResultType,

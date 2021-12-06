@@ -29,7 +29,7 @@ namespace types {
 /**
   This class represents a real type, e.g. `real` or `real(32)`.
  */
-class RealType : public PrimitiveType {
+class RealType final : public PrimitiveType {
  private:
   RealType(int bitwidth)
     : PrimitiveType(typetags::RealType, bitwidth)

@@ -392,6 +392,10 @@ void splitStringWhitespace(const std::string& s, std::vector<std::string>& vec) 
   splitString(s, vec, " \t\n\r\f\v");
 }
 
+void splitStringWhitespace(const char* s, std::vector<std::string>& vec) {
+  splitStringWhitespace(std::string(s), vec);
+}
+
 void removeTrailingNewlines(std::string& str) {
   while (str.size() > 0 && *str.rbegin() == '\n') {
     str.erase(str.end() - 1);

@@ -1,0 +1,13 @@
+Config Var Values:
+
+Arguments Received from CL:
+1 positionalVal
+2 subCmd1
+3 --help
+Values received from argparse:
+positional value: positionalVal
+SubCommand1 was called
+Incomplete help for subcommand
+OPTIONS:
+  -c,--cmdArg1   subCmdArg1 An optional value
+  -t,--cmdArg2   subCmdArg2 An optional value

@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.25.0
+        export CHPL_HOME=~/chapel-1.25.1
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -231,15 +231,37 @@ CHPL_*_COMPILER
    ``CHPL_TARGET_COMPILER=cray-prgenv-gnu``.
 
    It is sometimes important to be able to provide a particular command
-   to run for C or C++ compilation. In that event, you can set ``CC`` to
-   the command to run for C compilation and ``CXX`` to the command to run
-   for C++ compilation. If the Chapel configuration support cannot detect
-   the compiler family from your setting of ``CC`` / ``CXX`` you will
-   have to explicitly set ``CHPL_*_COMPILER`` as well.  Note that setting
-   ``CC`` and ``CXX`` will impact both the host and target compiler. If
-   you would need different host and target compilers, you can instead
-   set ``CHPL_HOST_CC``, ``CHPL_HOST_CXX``, ``CHPL_TARGET_CC``, and
-   ``CHPL_TARGET_CXX``.
+   to run for C or C++ compilation. The following variables are available
+   to help with that:
+
+        =============== =======================================================
+        Variable        Description
+        =============== =======================================================
+        CC              indicates the C compiler to use (but see note below)
+        CXX             indicates the CXX compiler to use (but see note below)
+        CHPL_HOST_CC    indicates the C compiler for building ``chpl`` itself
+        CHPL_HOST_CXX   indicates the C++ compiler for building ``chpl`` itself
+        CHPL_TARGET_CC  indicates the C compiler used by ``chpl``
+        CHPL_TARGET_CXX indicates the C++ compiler used by ``chpl``
+        =============== =======================================================
+
+   .. note::
+
+     If the ``CC`` and ``CXX`` variables are set, the other variables in
+     the above table can be inferred. When these variables are used, the
+     following variables can be inferred from them:
+
+       * ``CHPL_HOST_COMPILER``, ``CHPL_HOST_CC``, ``CHPL_HOST_CXX``
+       * ``CHPL_TARGET_COMPILER``, ``CHPL_TARGET_CC``, ``CHPL_TARGET_CXX``
+
+     However:
+
+       * Setting any of these inferred variables will disable the
+         inference for all of them
+       * The ``*TARGET*`` variables above are not inferred from ``CC`` /
+         ``CXX`` when ``CHPL_TARGET_COMPILER=llvm`` or when working with
+         a PrgEnv compiler.
+
 
 .. _readme-chplenv.CHPL_TARGET_CPU:
 
@@ -444,6 +466,9 @@ CHPL_MEM
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
    If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
+   ``CHPL_TARGET_MEM`` will be replacing ``CHPL_MEM`` in the
+   future. ``CHPL_TARGET_MEM`` takes precedence over ``CHPL_MEM``.
+
    .. note::
      Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,
      ofi with the gni provider) register the heap to improve communication
@@ -451,6 +476,52 @@ CHPL_MEM
      that not all allocators provide.  Currently only ``jemalloc`` is capable
      of supporting configurations that require a registered heap.
 
+.. _readme-chplenv.CHPL_HOST_MEM:
+
+CHPL_HOST_MEM
+~~~~~~~~~~~~~
+   Optionally, the ``CHPL_HOST_MEM`` environment variable can be used to select
+   a memory management layer for the ``chpl`` compiler.
+
+        ========= =======================================================
+        Value     Description
+        ========= =======================================================
+        cstdlib   use the standard C malloc/free commands
+        jemalloc  use Jason Evan's memory allocator
+        ========= =======================================================
+
+   If unset, ``CHPL_HOST_MEM`` defaults to ``cstdlib``.
+
+.. _readme-chplenv.CHPL_HOST_JEMALLOC:
+
+CHPL_HOST_JEMALLOC
+~~~~~~~~~~~~~~~~~~
+
+    Optionally, the ``CHPL_HOST_JEMALLOC`` environment variable can select
+    between no jemalloc, or using the jemalloc distributed with Chapel in
+    third-party. This setting is intended to elaborate upon
+    ``CHPL_HOST_MEM=jemalloc``.
+
+        ======== ==============================================================
+        Value    Description
+        ======== ==============================================================
+        none     do not build or use jemalloc
+        bundled  use the jemalloc distribution bundled with Chapel in third-party
+        system   use jemalloc found on system. requires ``jemalloc-config`` in PATH
+        ======== ==============================================================
+
+
+    Currently, the only supported combinations of host target are:
+
+        ======== ==============================================================
+        Host     Source
+        ======== ==============================================================
+        darwin   system
+        linux    bundled
+        ======== ==============================================================
+
+    If unset, ``CHPL_HOST_JEMALLOC`` defaults to one of the above support combinations,
+    or ``none`` if :ref:`readme-chplenv.CHPL_HOST_MEM` is ``cstdlib``.
 
 .. _readme-chplenv.CHPL_LAUNCHER:
 

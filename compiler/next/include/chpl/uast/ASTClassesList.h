@@ -50,6 +50,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
 
   AST_NODE(As)                         //
   AST_NODE(Array)                      //
+  AST_LEAF(Attributes)                 //
   //AST_NODE(AssociativeArray)         //
   AST_NODE(Break)                      // old AST: GotoStmt
   AST_NODE(Catch)                      // old AST: CatchStmt
@@ -61,19 +62,20 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_NODE(Domain)                     //
   AST_NODE(Dot)                        //
   AST_LEAF(ErroneousExpression)        //
-  //AST_NODE(ExternBlock)              // old AST: ExternBlockStmt
+  AST_LEAF(ExternBlock)                // old AST: ExternBlockStmt
   AST_LEAF(Identifier)                 // old AST: UnresolvedSymExpr
   //AST_NODE(Implements)               // old AST: ImplementsStmt
   AST_NODE(Import)                     // old AST: ImportStmt
   AST_NODE(Label)                      //
   AST_NODE(New)                        //
   AST_NODE(Range)                      //
-  //AST_NODE(Require)                  //
+  AST_NODE(Require)                    //
   AST_NODE(Return)                     //
   AST_NODE(Select)                     //
   AST_NODE(Sync)                       //
   AST_NODE(Throw)                      //
   AST_NODE(Try)                        // old AST: TryStmt
+  AST_NODE(TypeQuery)                  //
   AST_NODE(Use)                        // old AST: UseStmt
   AST_NODE(VisibilityClause)           //
   AST_NODE(WithClause)                 //
@@ -114,7 +116,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       AST_LEAF(UintLiteral)
     //AST_END_SUBCLASSES(NumericLiteral)
 
-    AST_BEGIN_SUBCLASSES(StringLikeLiteral) 
+    AST_BEGIN_SUBCLASSES(StringLikeLiteral)
       AST_LEAF(BytesLiteral)
       AST_LEAF(CStringLiteral)
       AST_LEAF(StringLiteral)
@@ -127,6 +129,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
     AST_NODE(OpCall)
     AST_NODE(PrimCall)                 // old AST: CallExpr/PrimitiveOp
     AST_NODE(Reduce)                   //
+    AST_NODE(Scan)                     //
     AST_NODE(Tuple)                    //
     AST_NODE(Zip)
   AST_END_SUBCLASSES(Call)
@@ -134,11 +137,9 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
   AST_BEGIN_SUBCLASSES(Decl)           // old AST: Symbol or DefExpr
     AST_NODE(MultiDecl)
     AST_NODE(TupleDecl)
+    AST_NODE(ForwardingDecl)
 
     AST_BEGIN_SUBCLASSES(NamedDecl)
-      //AST_NODE(ForwardingDecl)
-      //AST_NODE(TypeDecl)
-
       AST_NODE(EnumElement)                // old AST: EnumSymbol
       AST_NODE(Function)                   // old AST: FnSymbol
       //AST_NODE(Interface)                  // old AST: InterfaceSymbol
@@ -147,6 +148,7 @@ AST_BEGIN_SUBCLASSES(Expression)       // old AST: Expr
       AST_BEGIN_SUBCLASSES(VarLikeDecl)
         AST_NODE(Formal)                   // old AST: ArgSymbol
         AST_NODE(TaskVar)                  // old AST: ShadowVarSymbol
+        AST_NODE(VarArgFormal)             // old AST: ArgSymbol
         AST_NODE(Variable)                 // old AST: VarSymbol
       AST_END_SUBCLASSES(VarLikeDecl)
 

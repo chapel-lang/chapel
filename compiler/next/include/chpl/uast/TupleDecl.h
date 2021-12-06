@@ -21,6 +21,7 @@
 #define CHPL_UAST_TUPLEDECL_H
 
 #include "chpl/uast/Decl.h"
+#include "chpl/uast/IntentList.h"
 #include "chpl/uast/Variable.h"
 #include "chpl/queries/Location.h"
 
@@ -53,60 +54,93 @@ namespace uast {
 
  */
 class TupleDecl final : public Decl {
+ public:
+  enum IntentOrKind {
+    DEFAULT       = (int) IntentList::DEFAULT,
+    VAR           = (int) IntentList::VAR,
+    CONST         = (int) IntentList::CONST,
+    CONST_REF     = (int) IntentList::CONST_REF,
+    REF           = (int) IntentList::REF,
+    IN            = (int) IntentList::IN,
+    CONST_IN      = (int) IntentList::CONST_IN,
+    OUT           = (int) IntentList::OUT,
+    INOUT         = (int) IntentList::INOUT,
+    INDEX         = (int) IntentList::INDEX,
+    PARAM         = (int) IntentList::PARAM,
+    TYPE          = (int) IntentList::TYPE
+  };
+
  private:
-  Variable::Kind kind_;
+  TupleDecl::IntentOrKind intentOrKind_;
   int numElements_; 
   int typeExpressionChildNum_;
   int initExpressionChildNum_;
 
-  TupleDecl(ASTList children, Decl::Visibility vis, Variable::Kind kind,
+  TupleDecl(ASTList children, int attributesChildNum, Decl::Visibility vis,
+            Decl::Linkage linkage,
+            IntentOrKind intentOrKind,
             int numElements,       
             int typeExpressionChildNum,
             int initExpressionChildNum)
-    : Decl(asttags::TupleDecl, std::move(children), vis),
-      kind_(kind),
+    : Decl(asttags::TupleDecl, std::move(children), attributesChildNum,
+           vis,
+           linkage,
+           /*linkageNameChildNum*/ -1),
+      intentOrKind_(intentOrKind),
       numElements_(numElements),
       typeExpressionChildNum_(typeExpressionChildNum),
       initExpressionChildNum_(initExpressionChildNum) {
 
     assert(assertAcceptableTupleDecl());
   }
+
   bool assertAcceptableTupleDecl();
 
   bool contentsMatchInner(const ASTNode* other) const override {
     const TupleDecl* lhs = this;
     const TupleDecl* rhs = (const TupleDecl*) other;
     return lhs->declContentsMatchInner(rhs) &&
-           lhs->kind_ == rhs->kind_ &&
+           lhs->intentOrKind_ == rhs->intentOrKind_ &&
            lhs->numElements_ == rhs->numElements_ &&
            lhs->typeExpressionChildNum_ == rhs->typeExpressionChildNum_ &&
            lhs->initExpressionChildNum_ == rhs->initExpressionChildNum_;
   }
+
   void markUniqueStringsInner(Context* context) const override {
     declMarkUniqueStringsInner(context);
   }
 
+  int declChildNum() const {
+    return attributes() ? 1 : 0;
+  }
+
  public:
   ~TupleDecl() override = default;
+
   static owned<TupleDecl> build(Builder* builder, Location loc,
+                                owned<Attributes> attributes,
                                 Decl::Visibility vis,
-                                Variable::Kind kind,
+                                Decl::Linkage linkage,
+                                IntentOrKind intentOrKind,
                                 ASTList elements,
                                 owned<Expression> typeExpression,
                                 owned<Expression> initExpression);
 
   /**
-    Returns the kind of the tuple (`var` / `const` / `param` etc).
+    Returns the intent or kind of the tuple (`var` / `in` / `param` etc).
    */
-  Variable::Kind kind() const { return this->kind_; }
+  IntentOrKind intentOrKind() const { return this->intentOrKind_; }
 
   /**
     Return a way to iterate over the contained Decls
     (which are each Variables or TupleDecls).
    */
   ASTListIteratorPair<Decl> decls() const {
-    return ASTListIteratorPair<Decl>(children_.begin(),
-                                     children_.begin() + numElements_);
+    auto begin = numDecls()
+        ? children_.begin() + declChildNum()
+        : children_.end();
+    auto end = begin + numDecls();
+    return ASTListIteratorPair<Decl>(begin, end);
   }
 
   /**
@@ -119,7 +153,8 @@ class TupleDecl final : public Decl {
    Return the i'th contained Decl.
    */
   const Decl* decl(int i) const {
-    const ASTNode* ast = this->child(i);
+    assert(i >= 0 && i < numDecls());
+    const ASTNode* ast = this->child(i + declChildNum());
     assert(ast->isVariable() || ast->isTupleDecl());
     assert(ast->isDecl());
     return (const Decl*)ast;

@@ -5,7 +5,7 @@ use MasonUtils;
 proc test(arg: [] string) {
   masonPublish(arg);
 }
-const res0 = ['mason', 'publish','-h'];
+const res0 = ['publish','-h'];
 
 test(res0);
 

@@ -1,0 +1,65 @@
+.. default-domain:: chpl
+
+.. module:: deprecatedFunctions.doc
+
+deprecatedFunctions.doc
+=======================
+**Usage**
+
+.. code-block:: chapel
+
+   use deprecatedFunctions.doc;
+
+
+or
+
+.. code-block:: chapel
+
+   import deprecatedFunctions.doc;
+
+.. function:: proc foo()
+
+   .. warning::
+
+      foo is deprecated
+
+.. function:: proc bar()
+
+   .. warning::
+
+      bar is deprecated, use baz instead
+
+.. function:: proc baz()
+
+.. function:: proc alpha()
+
+   There was documentation of this symbol 
+
+   .. warning::
+
+      alpha is deprecated
+
+.. function:: proc beta()
+
+   There was documentation of this symbol 
+
+   .. warning::
+
+      beta is deprecated, use gamma instead
+
+.. function:: proc gamma()
+
+   There was documentation of this symbol 
+
+.. function:: proc fee()
+
+   This symbol is deprecated 
+
+.. function:: proc fie()
+
+   This symbol is also deprecated, please use F instead 
+
+.. function:: proc foe()
+
+   This symbol is not deprecated, but it shouldn't affect anything 
+

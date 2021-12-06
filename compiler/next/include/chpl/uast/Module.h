@@ -49,8 +49,15 @@ class Module final : public NamedDecl {
  private:
   Kind kind_;
 
-  Module(ASTList children, Decl::Visibility vis, UniqueString name, Kind kind)
-    : NamedDecl(asttags::Module, std::move(children), vis, name), kind_(kind) {
+  Module(ASTList children, int attributesChildNum, Decl::Visibility vis,
+         UniqueString name,
+         Kind kind)
+    : NamedDecl(asttags::Module, std::move(children), attributesChildNum,
+                vis,
+                Decl::DEFAULT_LINKAGE,
+                /*linkageNameChildNum*/ -1,
+                name),
+                kind_(kind) {
 
     assert(isExpressionASTList(children_));
   }
@@ -66,25 +73,49 @@ class Module final : public NamedDecl {
     namedDeclMarkUniqueStringsInner(context);
   }
 
+  int stmtChildNum() const {
+    return attributes() ? 1 : 0;
+  }
+
  public:
   ~Module() override = default;
 
-
   static owned<Module> build(Builder* builder, Location loc,
-                             UniqueString name, Decl::Visibility vis,
-                             Module::Kind kind, ASTList stmts);
+                             owned<Attributes> attributes,
+                             Decl::Visibility vis,
+                             UniqueString name,
+                             Module::Kind kind,
+                             ASTList stmts);
 
+  /**
+    Return the kind of this module (e.g. 'PROTOTYPE' or 'IMPLICIT');
+  */
   Kind kind() const { return this->kind_; }
 
+  /**
+    Iterate over the statements in this module.
+  */
   ASTListIteratorPair<Expression> stmts() const {
-    return ASTListIteratorPair<Expression>(children_.begin(), children_.end());
+    auto begin = numStmts()
+        ? children_.begin() + stmtChildNum()
+        : children_.end();
+    auto end = begin + numStmts();
+    return ASTListIteratorPair<Expression>(begin, end);
   }
 
+  /**
+    Return the number of statements in this module.
+  */
   int numStmts() const {
-    return this->numChildren();
+    return attributes() ? numChildren()-1 : numChildren();
   }
+
+  /**
+    Get the i'th statement in this module.
+  */
   const Expression* stmt(int i) const {
-    const ASTNode* ast = this->child(i);
+    assert(0 <= i && i < numStmts());
+    const ASTNode* ast = this->child(i + stmtChildNum());
     assert(ast->isExpression());
     return (Expression*) ast;
   }

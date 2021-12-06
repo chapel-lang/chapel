@@ -472,7 +472,7 @@ gex_Event_t gasnete_puts_ref_indiv(gasneti_vis_smd_t * const smd,
   GASNETI_TRACE_EVENT(C, PUTS_REF_INDIV);
   gasneti_assert(smd->elemsz > 0);
   gasneti_assert(smd->stridelevels > 0);
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank));
   gex_Event_t * const lc_opt = (flags & GEX_FLAG_ENABLE_LEAF_LC) ? GEX_EVENT_GROUP : GEX_EVENT_DEFER;
   GASNETE_START_NBIREGION(synctype);
 
@@ -493,7 +493,7 @@ gex_Event_t gasnete_gets_ref_indiv(gasneti_vis_smd_t * const smd,
   GASNETI_TRACE_EVENT(C, GETS_REF_INDIV);
   gasneti_assert(smd->elemsz > 0);
   gasneti_assert(smd->stridelevels > 0);
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank));
   GASNETE_START_NBIREGION(synctype);
 
     size_t const elemsz = smd->elemsz;
@@ -710,7 +710,7 @@ gex_Event_t gasnete_puts_AMPipeline(gasneti_vis_smd_t * const smd,
   gasneti_assert(smd->have_stats);
   gasneti_assert(smd->elemsz > 0);
   gasneti_assert(smd->stridelevels > 0);
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank));
 
   // temporary storage: (smd scratch for NPAM, otherwise malloc)
   //  init[stridelevels] | count[stridelevels] | peer_strides[stridelevels] 
@@ -949,7 +949,6 @@ void gasnete_puts_AMPipeline1_reqh_inner(gex_Token_t token,
     gasneti_assert_uint(psrc - (uint8_t *)addr ,==, nbytes);
   #undef GASNETE_STRIDED_HELPER_LOOPBODY
 
-  /* TODO: coalesce acknowledgements - need a per-srcnode, per-op seqnum & packetcnt */
   gex_AM_ReplyShort(token, gasneti_handleridx(gasnete_puts_AMPipeline1_reph), 0, PACK(op));
 }
 MEDIUM_HANDLER(gasnete_puts_AMPipeline1_reqh,4,6, 
@@ -1040,7 +1039,7 @@ gex_Event_t gasnete_gets_AMPipeline(gasneti_vis_smd_t * const smd,
   gasneti_assert(smd->have_stats);
   gasneti_assert(smd->elemsz > 0);
   gasneti_assert(smd->stridelevels > 0);
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank));
 
   // visop storage: (malloc)
   //   .count = stridelevels
@@ -1136,7 +1135,10 @@ gex_Event_t gasnete_gets_AMPipeline(gasneti_vis_smd_t * const smd,
 
     gasneti_weakatomic_set(&(visop->packetcnt), packetcnt, GASNETI_ATOMIC_WMB_POST);
 
-    gasnete_begin_nbi_accessregion(0,1 GASNETI_THREAD_PASS); // AOP used for AM LC
+    // Use the fire-and-forget AOP to handle AM LC
+    // This is safe because the source buffer resides in the visop which isn't freed
+    // until the last AMReply handler, guaranteeing all the Requests have reached LC
+    gasneti_begin_nbi_ff(GASNETI_THREAD_PASS_ALONE);
     for (size_t initchunk = 0; initchunk < totalchunks; initchunk += chunksperpacket) {
       size_t const remaining = totalchunks - initchunk;
       size_t const packetchunks = MIN(chunksperpacket, remaining);
@@ -1146,8 +1148,7 @@ gex_Event_t gasnete_gets_AMPipeline(gasneti_vis_smd_t * const smd,
                       PACK(visop), PACK(srcaddr), PACK((uintptr_t)initchunk), stridelevels, chunksz, packetchunks);
 
     }
-    gex_Event_t am_aop = gasnete_end_nbi_accessregion(0 GASNETI_THREAD_PASS);
-    gasnete_wait(am_aop GASNETI_THREAD_PASS); // TODO-EX: could delay this until a progress function
+    gasneti_end_nbi_ff(GASNETI_THREAD_PASS_ALONE);
   }
   GASNETE_VISOP_RETURN_VOLATILE(eop, synctype);
 }
@@ -1334,7 +1335,7 @@ gex_Event_t gasnete_puts_ref_vector(gasneti_vis_smd_t * const smd,
   GASNETI_TRACE_EVENT(C, PUTS_REF_VECTOR);
   gasneti_assert(smd->elemsz > 0);
   gasneti_assert(smd->stridelevels > 0);
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank));
 
   gasneti_assert(GASNETE_PUTV_ALLOWS_VOLATILE_METADATA);
 
@@ -1356,7 +1357,7 @@ gex_Event_t gasnete_gets_ref_vector(gasneti_vis_smd_t * const smd,
   GASNETI_TRACE_EVENT(C, GETS_REF_VECTOR);
   gasneti_assert(smd->elemsz > 0);
   gasneti_assert(smd->stridelevels > 0);
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank));
 
   gasneti_assert(GASNETE_GETV_ALLOWS_VOLATILE_METADATA);
 
@@ -1435,7 +1436,7 @@ gex_Event_t gasnete_puts_ref_indexed(gasneti_vis_smd_t * const smd,
   GASNETI_TRACE_EVENT(C, PUTS_REF_INDEXED);
   gasneti_assert(smd->elemsz > 0);
   gasneti_assert(smd->stridelevels > 0);
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank));
 
   gasneti_assert(GASNETE_PUTI_ALLOWS_VOLATILE_METADATA);
 
@@ -1457,7 +1458,7 @@ gex_Event_t gasnete_gets_ref_indexed(gasneti_vis_smd_t * const smd,
   GASNETI_TRACE_EVENT(C, GETS_REF_INDEXED);
   gasneti_assert(smd->elemsz > 0);
   gasneti_assert(smd->stridelevels > 0);
-  gasneti_assert(!GASNETI_NBRHD_LOCAL(tm,rank));
+  gasneti_assert(!GASNETI_NBRHD_MAPPED(tm,rank));
 
   gasneti_assert(GASNETE_GETI_ALLOWS_VOLATILE_METADATA);
 
@@ -1805,7 +1806,7 @@ extern gex_Event_t gasnete_puts(gasnete_synctype_t synctype,
     gex_Event_t result;
     GASNETE_PUT_DEGEN(result, synctype, tm, rank, smd->addr[SMD_PEER], smd->addr[SMD_SELF], smd->elemsz, flags);
     RETURN(result);
-  } else if ((peeraddr = GASNETI_NBRHD_LOCAL_ADDR_OR_NULL(tm, rank, smd->addr[SMD_PEER]))) {
+  } else if ((peeraddr = GASNETI_NBRHD_MAPPED_ADDR_OR_NULL(tm, rank, smd->addr[SMD_PEER]))) {
     // shared memory - use shared-memory bypass
     GASNETI_TRACE_EVENT(C, PUTS_NBRHD);
     gasnete_strided_memcpy(peeraddr, smd->addr[SMD_SELF], smd->stridelevels, smd->elemsz, smd->dim, SMD_SELF);
@@ -1902,7 +1903,7 @@ extern gex_Event_t gasnete_gets(gasnete_synctype_t synctype,
     gex_Event_t result;
     GASNETE_GET_DEGEN(result, synctype, tm, smd->addr[SMD_SELF], rank, smd->addr[SMD_PEER], smd->elemsz, flags);
     RETURN(result);
-  } else if ((peeraddr = GASNETI_NBRHD_LOCAL_ADDR_OR_NULL(tm, rank, smd->addr[SMD_PEER]))) {
+  } else if ((peeraddr = GASNETI_NBRHD_MAPPED_ADDR_OR_NULL(tm, rank, smd->addr[SMD_PEER]))) {
     // shared memory - use shared-memory bypass
     GASNETI_TRACE_EVENT(C, GETS_NBRHD);
     gasnete_strided_memcpy(smd->addr[SMD_SELF], peeraddr, smd->stridelevels, smd->elemsz, smd->dim, SMD_PEER);

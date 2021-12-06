@@ -152,12 +152,6 @@ extern int yychpl_debug;
     return makeCommentsAndStmt(comments, stmt.release());
   }
 
-  // for extern_export_decl_stmt_start
-  struct CommentsAndLinkage {
-    std::vector<ParserComment>* comments;
-    LinkageTag linkage;
-  };
-
   // A struct for storing a partially constructed function prototype
   // during parsing for linkage_spec/fn_decl_stmt/etc
   // It is just saving some components of a function to be used
@@ -165,8 +159,9 @@ extern int yychpl_debug;
   struct FunctionParts {
     std::vector<ParserComment>* comments;
     ErroneousExpression* errorExpr; // only used for parser error
+    Attributes* attributes;
     Decl::Visibility visibility;
-    Function::Linkage linkage;
+    Decl::Linkage linkage;
     Expression* linkageNameExpr;
     bool isInline;
     bool isOverride;
@@ -183,18 +178,22 @@ extern int yychpl_debug;
     ParserExprList* body;
   };
 
-  // a struct to store the values in module_decl_start
+  // A struct to thread along some pieces of a module before it is built.
   struct ModuleParts {
     std::vector<ParserComment>* comments;
+    Attributes* attributes;
     Decl::Visibility visibility;
     Module::Kind kind;
     PODUniqueString name;
   };
 
-  // a struct to store the values in enum_header_lcbr
+  // A struct to thread along some pieces of a type before it is built.
   struct TypeDeclParts {
     std::vector<ParserComment>* comments;
     Decl::Visibility visibility;
+    Decl::Linkage linkage;
+    Expression* linkageName;
+    Attributes* attributes;
     PODUniqueString name;
     asttags::ASTTag tag;
   };
@@ -249,7 +248,7 @@ extern int yychpl_debug;
     Formal::Intent intentTag;
     Function::Kind functionKind;
     Function::ReturnIntent returnTag;
-    LinkageTag linkageTag;
+    Decl::Linkage linkageTag;
     Module::Kind moduleKind;
     New::Management newManagement;
     TaskVar::Intent taskIntent;
@@ -258,6 +257,7 @@ extern int yychpl_debug;
     Variable::Kind variableKind;
 
     // simple pointer values
+    Attributes* attribute;
     Block* block;
     Call* call;
     Function* function;
@@ -266,7 +266,6 @@ extern int yychpl_debug;
 
     // values that are temporary groupings
     BlockOrDo blockOrDo;
-    CommentsAndLinkage commentsAndLinkage;
     CommentsAndStmt commentsAndStmt;
     TypeDeclParts typeDeclParts;
     FunctionParts functionParts;
@@ -294,12 +293,12 @@ extern int yychpl_debug;
   #define YYLTYPE YYCHPL_LTYPE
 
   #endif
-#line 340 "chpl.ypp"
+#line 339 "chpl.ypp"
 
   // forward declare ParserContext
   struct ParserContext;
 
-#line 303 "bison-chpl-lib.h"
+#line 302 "bison-chpl-lib.h"
 
 /* Token kinds.  */
 #ifndef YYCHPL_TOKENTYPE
@@ -524,20 +523,20 @@ yychpl_pstate *yychpl_pstate_new (void);
 void yychpl_pstate_delete (yychpl_pstate *ps);
 
 /* "%code provides" blocks.  */
-#line 348 "chpl.ypp"
+#line 347 "chpl.ypp"
 
   extern int yychpl_debug;
 
   void yychpl_error(YYLTYPE*       loc,
                     ParserContext* context,
                     const char*    errorMessage);
-#line 356 "chpl.ypp"
+#line 355 "chpl.ypp"
 
   // include ParserContext.h here because it depends
   // upon YYLTYPE and other types defined by the generated parser
   // headers.
   #include "ParserContext.h"
 
-#line 542 "bison-chpl-lib.h"
+#line 541 "bison-chpl-lib.h"
 
 #endif /* !YY_YYCHPL_BISON_CHPL_LIB_H_INCLUDED  */

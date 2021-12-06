@@ -483,8 +483,7 @@ module DefaultSparse {
         return irv;
     }
     // const ref version for types with copy ctors
-    proc dsiAccess(ind: rank*idxType) const ref
-    where shouldReturnRvalueByConstRef(eltType) {
+    proc dsiAccess(ind: rank*idxType) const ref {
       // make sure we're in the dense bounding box
       if boundsChecking then
         if !(dom.parentDom.contains(ind)) then

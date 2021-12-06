@@ -376,8 +376,8 @@ void gasnetc_free_post_descriptor(gasnetc_post_descriptor_t *pd);
 int gasnetc_try_pin(void *addr, uintptr_t size);
 
 /* exit related */
-volatile int gasnetc_shutdownInProgress;
-double gasnetc_shutdown_seconds; /* number of seconds to poll before forceful shutdown */
+extern volatile int gasnetc_shutdownInProgress;
+extern double gasnetc_shutdown_seconds; /* number of seconds to poll before forceful shutdown */
 int gasnetc_sys_exit(int *exitcode);
 void gasnetc_sys_fini(void);
 

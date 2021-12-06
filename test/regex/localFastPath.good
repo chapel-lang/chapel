@@ -1,0 +1,66 @@
+searchL
+(matched = true, offset = 0, size = 5)
+aaa
+bb
+
+searchR(rvf=true)
+(matched = true, offset = 0, size = 5)
+aaa
+bb
+
+searchR(rvf=false)
+(matched = true, offset = 0, size = 5)
+aaa
+bb
+
+splitL
+
+a
+b
+aa
+b
+aaa
+b
+
+splitR(rvf=true)
+
+a
+b
+aa
+b
+aaa
+b
+
+splitR(rvf=false)
+
+a
+b
+aa
+b
+aaa
+b
+
+matchesL
+((matched = true, offset = 0, size = 2), (matched = true, offset = 0, size = 1), (matched = true, offset = 1, size = 1))
+((matched = true, offset = 2, size = 3), (matched = true, offset = 2, size = 2), (matched = true, offset = 4, size = 1))
+((matched = true, offset = 5, size = 4), (matched = true, offset = 5, size = 3), (matched = true, offset = 8, size = 1))
+
+matchesR(rvf=true)
+((matched = true, offset = 0, size = 2), (matched = true, offset = 0, size = 1), (matched = true, offset = 1, size = 1))
+((matched = true, offset = 2, size = 3), (matched = true, offset = 2, size = 2), (matched = true, offset = 4, size = 1))
+((matched = true, offset = 5, size = 4), (matched = true, offset = 5, size = 3), (matched = true, offset = 8, size = 1))
+
+matchesR(rvf=false)
+((matched = true, offset = 0, size = 2), (matched = true, offset = 0, size = 1), (matched = true, offset = 1, size = 1))
+((matched = true, offset = 2, size = 3), (matched = true, offset = 2, size = 2), (matched = true, offset = 4, size = 1))
+((matched = true, offset = 5, size = 4), (matched = true, offset = 5, size = 3), (matched = true, offset = 8, size = 1))
+
+subL
+AbAbAb
+
+subR(rvf=true)
+AbAbAb
+
+subR(rvf=false)
+AbAbAb
+

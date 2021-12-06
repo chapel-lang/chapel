@@ -1,0 +1,24 @@
+serialize(string, 4)
+(execute_on = 1) (<no communication>)
+
+serialize(string, 40)
+(execute_on = 1) (get = 1)
+
+serialize(bytes, 4)
+(execute_on = 1) (<no communication>)
+
+serialize(bytes, 40)
+(execute_on = 1) (get = 1)
+
+match(string, 4)
+(put = 2) (get = 5, execute_on = 1)
+
+match(string, 40)
+(put = 2) (get = 6, execute_on = 1)
+
+match(bytes, 4)
+(put = 2) (get = 5, execute_on = 1)
+
+match(bytes, 40)
+(put = 2) (get = 6, execute_on = 1)
+

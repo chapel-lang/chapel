@@ -1,0 +1,8 @@
+bug: generic records have troubles with array instantiations
+
+This test shows that generic records have trouble being instantiated
+with generic types.  It seems potentially related to:
+
+#15929
+#13808
+#11549

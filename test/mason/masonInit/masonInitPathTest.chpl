@@ -1,5 +1,5 @@
 use FileSystem;
-use Spawn;
+use Subprocess;
 use Path;
 use MasonInit;
 use MasonUtils;

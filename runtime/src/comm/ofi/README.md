@@ -5,8 +5,8 @@ for programs to conform to the Chapel Memory Consistency Model (MCM).
 The compiler and module code produce an inherently MCM-conforming
 program, but the imperfect match between the Chapel and libfabric
 communication models and the desire to limit communication overheads and
-overlap communication and computation all cause potentially MCM-breaking
-behavior.
+overlap communication and computation both have the potential to cause
+MCM-breaking behavior.
 
 The document introduces some libfabric terms and concepts and describes
 how the Chapel communication primitives are implemented in terms of
@@ -15,24 +15,17 @@ Order* sections of the **Memory Consistency Model** chapter of the
 Chapel spec, adding text as needed to describe what the implementation
 does to meet the clauses in those sections.
 
-**_Note:_** the comm layer currently does not yet intentionally try to
-  conform to the MCM with respect to atomic operations when those are
-  implemented natively, using RMA.  It only does so when they are
-  implemented using Active Messages (AMs).  There is code to handle the
-  native case, but it has not yet been tested on a network that can
-  actually do atomics natively.  (So for example, the sockets provider's
-  support for "native" atomics over TCP/IP sockets doesn't count).
-
 ### Background
 
 The comm layer can use three different kinds of libfabric operations for
-its various transactions.  It uses the RMA (READ/WRITE) interface for
-direct transfers between local and remote memory.  It uses the atomics
-interface for native atomic operations on networks that support those.
-And, it uses the message (SEND/RECV) interface for Active Messages (AMs)
-for executeOn transactions for on-statement bodies, memory transfers
-between unregistered memory, atomic operations which cannot be done
-natively, and certain internal operations that don't have MCM
+its various transactions.  It uses the RMA (read/write, or alternatively
+GET/PUT) interface for direct transfers between local and remote memory.
+It uses the atomics interface for native atomic operations on networks
+that support those.  And, it uses the message (send/receive, or
+alternatively SEND/RECV)) interface for Active Messages (AMs) for
+executeOn transactions for on-statement bodies, memory transfers to or
+from unregistered memory, atomic operations which cannot be done
+natively, and certain internal operations which don't have MCM
 implications.
 
 The comm layer has two libfabric tools it can use to determine when
@@ -44,175 +37,261 @@ respect to other operations:
   to the initiator.
 
 - _Message ordering_ settings specify how operations may or may not be
-  reordered with respect to each other by libfabric, the provider, or
-  the network fabric.  Note that "message" in this context is a general
-  term referring to all kinds of communication operations, not just
-  those of the SEND/RECV message interface.
+  reordered with respect to each other.  Note that "message" in this
+  context is a general term referring to all kinds of communication
+  operations, not just those of the SEND/RECV message interface.
 
-The completion level and message ordering settings are specified for the
-entire libfabric domain, that is, the overarching interface to the
-network, rather than individually on each transaction.  (Libfabric does
-allow for some variation in completion level settings on individual
-transactions, but the comm layer does not currently make use of that.)
+A default completion level can be set for the entire libfabric domain,
+that is, the overarching interface to the network, and one can also
+specify completion levels individually for network operations.  Message
+ordering settings can be specified both for the entire domain and for
+individual transmit or receive contexts (but not endpoints).  Currently
+the comm layer specifies completion levels on both the domain and some
+individual operations, but only specifies message ordering settings on
+the domain.
 
 #### Completion Levels
 
 Libfabric's completion level specifies what state an operation has to
-reach before an event is placed in the transmit endpoint's associated
-completion queue to indicate that it has done so.  The comm layer
-supports either an explicit setting of *delivery-complete* or the
-provider's default completion level.
+reach before an event is delivered to indicate that it has done so.  (By
+"delivered" here we mean either that a completion counter associated
+with the transmit endpoint has been updated or that an event has been
+placed in the completion queue associated with the endpoint, as
+appropriate.)  The various completion level values are discussed in the
+libfabric `fi_cq(3)` man page.  The comm layer supports either
+`FI_DELIVERY_COMPLETE` (aka *delivery-complete*) or the provider's
+default completion level, which in our experience seems to be
+`FI_TRANSMIT_COMPLETE` (aka *transmit-complete*) or something closely
+related to it.
 
-Delivery-complete says that the operation has arrived at the target
-node, is no longer dependent on initiator-side resources or the network
-fabric, and its effects such as memory updates are visible.  For
-messages this means that the message data has been placed in the user
-buffer at the target node, although it does not say whether code outside
-of libfabric running on the target node has attended to the message.
-For RMA it means that the receiving data location, on the target node
-for PUTs and native non-fetching atomics, or on the local node for GETs
-and native fetching atomics, has been updated.
+Delivery-complete says that the operation has arrived at the remote node
+and is no longer dependent on initiator-side resources or the network
+fabric.  Whether its effects such as memory updates are visible is a
+little unclear.  For message (SEND/RECV) traffic for AMs, because the
+comm layer always has receive buffer space posted, it seems to mean that
+the message data definitely has been placed in the AM request buffer.
+This is based on the following sentence in the `fi_cq(3)` man page:
 
-For operations that return data to the initiator, such as RMA GETs and
-native atomic-fetch, the source endpoint is considered a destination as
-well and the required default completion level is delivery-complete.
-The provider determines the default for other operations.  That may be
-*transmit-complete*, which says that the operation has reached the
-target and is no longer dependent on the fabric but does not say
-anything about the visibility of its effects.  Or, it may even be
-*inject-complete*, which says only that the originating buffer can be
-modified by the initiator without affecting the operation.
+> If an application buffer was ready to receive the results of the
+  message when it arrived, then delivery complete indicates that the
+  data was placed into the application's buffer.
 
-When the comm layer uses the delivery-complete level, that is nearly
-sufficient all by itself to achieve Chapel MCM conformance.  (There is
-one exception, discussed later.)  But when the provider doesn't support
-that and the comm layer has to use the provider's default, then MCM
-conformance requires being more specific about message orderings and
-taking other actions to ensure the visibility of effects.
+Note that this does not mean the AM request has been handled.  Knowing
+that has occurred requires seeing a 'done' indicator from the AM
+handler.
+
+For RMA writes, if the target memory location counts as a "buffer" with
+respect to the above sentence in the man page, then similarly that would
+seem to indicate that receipt of a delivery-complete completion means
+the written data is memory-visible.
+
+But for native atomic operations, the `fi_atomic(3)` man page is quite
+clear that remote completions of some sort are needed in order to know
+an atomic operation's effect on its target datum is memory-visible.  The
+relevant text is this:
+
+> Any updates to data at the target of an atomic operation will be
+  visible to agents (CPU processes, NICs, and other devices) on the
+  target node prior to one of the following occurring.  If the atomic
+  operation generates a completion event or updates a completion counter
+  at the target endpoint, the results will be available prior to the
+  completion notification.  After processing a completion for the
+  atomic, if the initiator submits a transfer between the same endpoints
+  that generates a completion at the target, the results will be
+  available prior to the subsequent transfer's event.  Or, if a fenced
+  data transfer from the initiator follows the atomic request, the
+  results will be available prior to a completion at the target for the
+  fenced transfer.
+
+The ramifications of this will be discussed more later, but the main
+point is that the local completion level, whether delivery-complete or
+something else, only describes the relationship between local completion
+and the arrival of the result of a fetching atomic, not anything having
+to do with the target datum.
+
+For operations that return data to the initiator, such as RMA reads and
+native fetching atomics, the source endpoint is considered a destination
+as well and libfabric requires providers' default completion level for
+such operations to be delivery-complete.  The provider itself determines
+the default for other operations.  That may be *transmit-complete*,
+which says that the operation has reached the target and is no longer
+dependent on the fabric but does not say anything about the visibility
+of its effects.  Or, it may even be *inject-complete*, which says only
+that the originating buffer can be modified by the initiator without
+affecting the operation.
+
+The details will be discussed in greater depth later, but when the comm
+layer uses delivery-complete as its default completion level, it doesn't
+have to do much more than just that in order to achieve Chapel MCM
+conformance.  However, because it requires a full network round trip
+before delivering a completion for an operation, delivery-complete is
+the slowest completion level.  There is also at least one provider which
+advertises it can provide delivery-complete but doesn't actually do so;
+see the
+[libfabric Bug issue](https://github.com/ofiwg/libfabric/issues/5601)
+or more info.
+The comm layer only uses delivery-complete as a last resort, therefore.
+
+When it uses some other completion level as its domain default, whether
+because the provider doesn't support delivery-complete or because a
+different completion level will yield better performance, the comm layer
+has to do additional things to ensure MCM conformance and the visibility
+of memory effects.
 
 #### Message Ordering
 
 Message ordering limits how operations can be reordered between when
-they are initiated and when they are handled on the target node.  It
-only applies to operations across a fixed pair of initiating and target
-endpoints (or contexts).  Libfabric does not provide any way to control
-ordering between operations across different transmit/receive endpoint
-pairs.
+they are initiated and when they are handled on the target node.  The
+various message ordering vales are discussed in the libfabric `fi_ep(3)`
+man page.  The message ordering settings differentiate between
+operations for messages (SEND/RECV traffic), RMA, and native atomics.
+The important ones for Chapel's purposes are the following.
 
-The message ordering settings differentiate between operations for
-messages, RMA, and native atomics.  The important ones for Chapel's
-purposes are the following.
-
-- SAS (send-after-send) ordering specifies that messages (AMs) must be
-  transmitted in the order they are submitted relative to other
-  messages.
+- SAS (send-after-send) ordering specifies that messages (AMs, in our
+  case) must be transmitted and delivered in the order they are
+  submitted relative to other messages.
 
 - SAW (send-after-write) ordering specifies that later messages (AMs)
-  must be transmitted in the order they are submitted relative to
-  earlier RMA write and/or non-fetching native atomic operations.
+  must be transmitted and delivered in the order they are submitted
+  relative to earlier RMA write and/or non-fetching native atomic
+  operations.
 
 - Various kinds of RAW (read-after-write) orderings specify that later
   RMA read and/or fetching native atomic operations must be transmitted
-  in the order they are submitted relative to earlier RMA write and/or
-  non-fetching native atomic operations.
+  and delivered in the order they are submitted relative to earlier RMA
+  write and/or non-fetching native atomic operations.
+
+Message ordering only applies to operations across a specific pair of
+initiating and targeted endpoints or contexts.  Libfabric does not
+provide any direct way to control ordering between operations over
+differing pairs of transmitting and targeted endpoints.
 
 Because message ordering is confined to endpoint pairs, its usefulness
 to the comm layer depends on the tasking implementation and whether or
-not a task is using a "fixed" endpoint.  If the tasking implementation
-has a fixed number of threads and doesn't switch tasks across threads,
-and the comm layer can permanently bind a transmit endpoint to the
-task's thread, then message ordering affects all operations done
-throughout the life of a task, against a given target node.  But if
-tasks can move from thread to thread, or something else prevents tasks
-from being bound permanently to endpoints, then message ordering can
-only affect the operations done while the task is holding a specific
-transmit endpoint, during which it is not allowed to yield.
+not a task is using a "bound" endpoint.  If the tasking implementation
+has a fixed number of threads, doesn't switch tasks across threads, and
+the comm layer can bind a given transmit endpoint to the task's thread
+for the duration of the task (or actually in practice, for the duration
+of the entire program), then message ordering affects all operations
+done throughout the life of a task, against a given target node.  This
+happens, for example, when we're using Qthreads-based tasking and the
+provider can supply at least as many transmit endpoints as there are
+Qthreads worker threads.  (Plus 2 more, but that's a detail discussed in
+the code.)  But if tasks can move from thread to thread, or something
+else prevents tasks from being bound permanently to endpoints, then
+message ordering can only affect the operations done while the task is
+holding a specific transmit endpoint, during which it is not allowed to
+yield.
 
 **_Note (Implementation):_** For safety, when built for debug the comm
-layer can apply the trust-but-verify rule to task switching, checking
-each time it yields that it does indeed come back on the same thread.
+layer can verify an assumed absence of thread-to-thread task switching,
+checking each time a task yields that it does indeed come back on the
+same thread afterward.
+
+The comm layer always requests send-after-send ordering, to prevent AMs
+from being reordered in transit.  This may be overkill, however.  It is
+certainly overkill for so-called "blocking" AMs where the sender, after
+sending a request, suspends until the recipient sends back a 'done'
+indication (via RMA) saying that it has finished handling the request.
+
+**_Note (Implementation):_** We should have a little think-through about
+whether we can stop requiring send-after-send ordering.  We don't have
+any particular indication that it's slowing things down, but removing
+unnecessary ordering constraints surely cannot hurt.
 
 #### Store Operations May "Dangle"
 
-In some circumstances, the effects of libfabric operations may not be
-visible until after the runtime's last opportunity to directly interact
-with those operations.  The comm layer always requests send-after-send
-message ordering, so that AMs are not reordered in transit.  Beyond
-that, it either requests the delivery-complete completion level or
-read-after-write message ordering.  With either or both of these,
-however, there are some operation effects that may not be complete at
-the time libfabric provides the last interaction with them.  Here we
-refer to these not-yet-complete effects as _dangling stores_, since they
-are basically remote memory stores whose visibility state isn't known.
+The comm layer always requests either the delivery-complete completion
+level or one or more forms of read-after-write message ordering.  With
+either of these, however, some effects of libfabric operations may not
+be guaranteed to be visible until the comm layer has taken additional
+steps to make them so.  These are all remote stores whose visibility
+state isn't known.  Here we refer to them as _dangling stores_.
 
-##### Dangling Non-fetching Atomics
+##### AM-Mediated Non-fetching Atomics
 
 The comm layer defines a number of AM types, but there are only MCM
 implications for those that implement executeOn (on-statement bodies),
-RMA on unregistered remote addresses, and atomic operations when we're
-using a provider that can't do those natively.  AMs can either be
+RMA where the remote address is unregistered, and atomic operations when
+we're using a provider that can't do those natively.  AMs can either be
 blocking, where the initiator waits for the target to send back a "done"
 response before continuing, or nonblocking ("fire and forget").  All
 effects of a blocking AM are visible before the target sends back the
 "done" response.  AMs for unregistered RMA are always blocking.  AMs for
 Chapel on-statements are blocking, with a few exceptions for internal
-special cases that needn't concern us here.  AMs for fetching atomic
-operations are blocking.  However, nonblocking AMs may be used for
-non-fetching atomic operations and in this case the effect of the atomic
-on the target datum may not be visible before the initiator receives the
-libfabric completion and continues executing.  Even if the comm layer is
-using delivery-complete the AM request may not have been acted upon by
-the AM handler on the target node, because "delivery" just means that
-the AM request has been put in the target node's AM request buffer, not
-that the handler there has dealt with it.  And without delivery-complete
-even less is known about the state of the target datum.
+special cases that needn't concern us here.
 
-Incomplete AM-mediated non-fetching atomic operations at a given remote
-node, done from a given transmit endpoint, can be forced to finish and
-be visible by sending a blocking AM of any kind from the endpoint to the
-node.  Send-after-send ordering ensures the later blocking AM will
-arrive after the atomic one.  And since it's blocking, the initiator
-will not continue until after the AM handler on the target node has
-responded.  At that point, the handler must have dealt with the earlier
-atomic AM as well.
+AMs for fetching atomic operations are blocking, obviously, since we
+have to wait for the result to arrive.  But AMs for non-fetching atomic
+operations are a little special.  First, we assume that any non-fetching
+atomic operation that follows a call to `chpl_comm_impl_task_end()`,
+which is called at the end of the user code for each task, must be doing
+the `_downEndCount()` for that task.  That operation can be done using
+a nonblocking AM, because nothing on the initiating node depends on it.
+(Only the code on the remote node waiting for that `endCount` to go to
+zero cares about it.)  Any other non-fetching atomic operation could in
+theory be done using a nonblocking AM, but then the effect on the target
+variable would be a dangling store, because the initiator would have no
+way to tell when it had been completed.  We therefore use a blocking AM
+so that the initiator does not proceed until the effect of the atomic
+operation is visible.  However, to minimize delays we put off waiting
+for the corresponding 'done' indicator until the task performs some
+other action that has MCM implications.
 
 ##### Dangling Regular Stores
 
-Various forms of RMA read-after-write message ordering are always used
-for RMA MCM conformance for GETs, PUTs, and native atomics.  As with
-AM-mediated atomics, even with delivery-complete the target datum of a
-non-fetching native atomic operation may not have been updated when the
-initiator sees the completion event.  And without delivery-complete, the
-effects of not only non-fetching native atomics but also regular RMA
-PUTs may not be visible when the completion is delivered.
+The comm layer assumes that with delivery-complete, the effects of
+regular RMA PUTs are visible by the time the completion is delivered.
+Without delivery-complete this may not be true, but in that case the
+comm layer always requests one or more forms of read-after-write message
+ordering.  And since reads always use delivery-complete semantics, we
+can ensure that a PUT's memory effects are visible by initiating an
+appropriate RMA GET after it and then waiting for it to complete.  When
+it does, the PUT must be memory-visible as well.
 
-To force regular PUTs or native non-fetching atomics to a given remote
-node from a given endpoint to be visible we can do a GET from that node
-on the endpoint.  With read-after-write ordering and delivery-complete
-semantics for GETs, once the completion for the GET is seen all previous
-RMA and atomic effects must be visible.
+##### Dangling Native Atomics
 
-**_Note (Optimization):_** Even with delivery-complete it might be nice
-to delay waiting for the completions for regular PUTs until such time as
-we know the results might be needed, such as before initiating an
-executeOn for an on-statement to the target node(s).
+Unfortunately, based on the `fi_atomic(3)` man page paragraph quoted
+above in Completion Levels, the use of delivery-complete completion
+semantics and/or read-after-write message ordering are not enough to
+ensure the memory visibility of native atomic operations.  That can only
+be assured by the delivery of a remote-side completion, whether one
+associated with the atomic operation itself or one associated with
+another operation ordered after it.  Even then, the mere delivery of
+such a completion isn't enough; for the initiator to know that the
+memory effect of the operation has become visible the remote side must
+somehow (message SEND or RMA PUT) indicate that to the initiating side,
+after seeing the completion.
 
-In summary, no matter what completion level we use, when the originator
-sees the libfabric completion from a non-fetching atomic operation (done
-either natively or by AM), the effect of that atomic on the target datum
-may not yet be visible.  If we use the lighter weight transmit-complete
-level, when the originator sees the libfabric completion from a regular
-PUT, the effect of that PUT may not yet be visible either.  We have to
-take further steps to force dangling stores to be visible.  These are
-described in the remainder of this document.
+Note that whether the effect of a native atomic operation is visible and
+the order in which the effects of multiple such operations are visible
+are to some extent orthogonal.  If our message ordering settings are
+sufficient to fully order all native atomic operations, then once we
+know a given operation's effect on its target variable is visible we
+also know that the effects of all the operations before it are visible.
+To put it another way, given a sequence of native atomic operations with
+no other intervening MCM-related operations, once a remote completion
+indicates the last one is memory-visible, we don't need to do anything
+else to know that the ones before are visible as well.
+
+The comm layer does not specify remote completions on native atomic
+operations.  The only remote completions the comm layer uses are those
+associated with the delivery of SENDs into the AM handler's AM request
+buffer.  The implication is that forcing the effect of a native atomic
+operation on its target variable to be visible would require following
+that operation with a blocking AM of some sort.  Since the comm layer
+doesn't do that, strictly speaking it is not enforcing MCM conformance
+for native atomic operations.  In other words, we're just getting
+lucky.  We'll have more to say about this in the section on
+memory-order-fence MCM mode, below.
 
 ### Program Order
 
-Task creation and task waiting create a conceptual tree of program
-statements.  The task bodies, task creation, and task wait operations
-create a partial order _<<sub>p</sub>_ of program statements.  For the
-purposes of this section, the statements in the body of each Chapel task
-will be implemented in terms of *load*, *store*, and *atomic
+Chapel task creation and task waiting create a conceptual tree of
+program statements.  The task bodies, task creation, and task wait
+operations create a partial order _<<sub>p</sub>_ of program statements.
+For the purposes of this section, the statements in the body of each
+Chapel task will be implemented in terms of *load*, *store*, and *atomic
 operations*.
 
 - If we have a program snippet without tasks, such as `X; Y;`, where
@@ -224,16 +303,23 @@ operations*.
 
   #### Implementation Notes
 
-  Currently the comm layer doesn't do anything when parent tasks create
-  children, although if it had the opportunity to do so it could be
-  beneficial to delay some actions until then.  The runtime memory
-  consistency interface contains a `chpl_rmem_consist_release()`
-  function which is currently called just before child creation, among
-  other times, but only when remote caching is enabled.  This could be
-  enabled for comm=ofi in general, however.
+  The compiler arranges (currently via `_upEndCount()` in the module
+  code) to call `chpl_comm_task_create()` when parent tasks create
+  local child tasks, so that the parent's prior operations can be
+  fenced.  There is a related requirement to fence prior operations
+  before a task does an on-stmt to a remote node, but the comm layer can
+  handle that itself.
 
 - The program `t = begin{Y}; waitFor(t); Z;` implies _Y <<sub>p</sub>
   Z_.
+
+  #### Implementation Notes
+
+  The compiler arranges (currently via `_downEndCount()` in the module
+  code) to call `chpl_comm_task_end()` when tasks are ending, so that
+  their prior operations can be fenced.  There is a related need to
+  fence prior operations at the end of an on-stmt to a remote node, but
+  the comm layer can handle that itself.
 
 - _X <<sub>p</sub> Y_ and _Y <<sub>p</sub> Z_ imply _X <<sub>p</sub>
   Z_.
@@ -250,52 +336,25 @@ task respects program order as follows:
 
   ##### AM-Mediated Atomics
 
-  Tasks that do not have fixed transmit endpoints use blocking AMs for
-  atomic operations, as do tasks with fixed transmit endpoints when they
-  are doing fetching atomics.  Blocking AMs are complete in all respects
-  before the initiator continues from them, and thus strictly ordered.
-
-  When tasks with fixed transmit endpoints do non-fetching atomics, the
-  use of send-after-send (`FI_ORDER_SAS`) message ordering means that
-  atomics targeting a given node are transmitted, received, and handled
-  in order.  The current implementation starts out doing these using
-  blocking AMs, but switches to non-blocking AMs after three
-  non-fetching atomics in a row.  These may result in dangling stores,
-  which then have to be forced into visibility using blocking no-op AMs
-  if no other blocking AM occurs before an executeOn AM is initiated,
-  the task terminates, or an RMA is requested.
-
-  **_Note (Bug 1):_** Currently if we have a sequence of non-fetching
-    atomic operations with nothing else intervening we simply initiate
-    them, one after another, without doing any synchronization.  With a
-    bound transmit endpoint our use of send-after-send message ordering
-    will maintain the required MCM ordering for those targeting the same
-    remote node, but the effects of two such atomics targeting different
-    nodes could become visible in either order.  This violates the MCM.
-    To fix it, we need to arrange for atomic operation effects to be
-    visible before we proceed with anything else.  As it turns out, this
-    will actually simplify a number of other things significantly.
-
-  **_Note (Bug 2):_** Currently the implementation doesn't differentiate
-    between atomics to the same node or different nodes.
-    Send-after-send message ordering only imposes order on AMs to a
-    given node, because it operates on a transmit/receive endpoint pair.
-    Fixing **_Bug 1_** will render this problem moot.
-
-  **_Note (Bug 3):_** Currently we don't force outstanding non-fetching
-    atomics to be visible before we create a child task.  Fixing **_Bug
-    1_** will render this problem moot.
+  The comm layer uses blocking AMs for atomic operations whether or not
+  the task has a bound transmit endpoint, and whether the operation is
+  fetching or non-fetching.  If the transmit endpoint isn't bound and/or
+  the atomic operation is fetching, the task will wait for the blocking
+  AM's 'done' indicator in the usual way, before proceeding.  But for a
+  non-fetching atomic on a bound transmit endpoint, the task continues
+  executing after initiating the AM, and only waits for the AM 'done'
+  indicator before the next operation with MCM implications.
 
   ##### Native Atomics
 
-  **_Note:_** Native atomic operations are not yet tested.
-
   Atomic operations implemented natively in libfabric are ordered either
   by using `FI_DELIVERY_COMPLETE` completion semantics, or through some
-  form of message ordering.  But as in the case of AM-mediated atomics,
-  this will not be sufficient to assure MCM conformance for non-fetching
-  atomics, and we will need to take similar actions as we do there to
-  ensure timely visibility.
+  form of message ordering.  It is worth noting here that the comm layer
+  assumes message ordering settings (at least when applied to both the
+  transmit and receive endpoints, as it does) impose order not only on
+  the operations but also on the visibility of their effects on their
+  target variables.  However, the libfabric man pages don't seem to say
+  that anywhere.
 
 ---
 
@@ -306,11 +365,6 @@ _<<sub>m</sub>_:
 - Value of _A<sub>sc</sub>(a)_ = Value of _max<sub><<sub>m</sub></sub>
   (A<sub>sc</sub>'(a)|A<sub>sc</sub>'(a) <<sub>m</sub>
   A<sub>sc</sub>(a))_
-
-  #### Implementation Notes
-
-  The actions taken for the immediately preceding clause above are
-  sufficient here also.  (The **_Bugs_** there apply here as well.)
 
 ---
 
@@ -325,35 +379,39 @@ store before it to the same address in the total order _<<sub>m</sub>_:
   The requirement here is just that if an earlier regular store can
   dangle, it must be forced into visibility before the later regular
   load is initiated.  A store can only dangle if it is done natively
-  (not via AM) in the absence of delivery-complete.  For tasks fixed to
-  a transmit endpoint, the use of read-after-write message ordering
+  (not via AM) in the absence of delivery-complete.  For tasks with
+  bound transmit endpoints, the use of read-after-write message ordering
   means that later loads remain ordered after earlier stores.
 
-  This nevertheless leaves several cases outstanding: tasks not bound to
-  transmit endpoints, stores in parent tasks followed by loads in
-  subsequently created child tasks, stores in tasks followed by loads in
-  tasks that waited for them to terminate, and stores followed by loads
-  in on-statement bodies.  Currently we handle all but the last of these
-  by the simple yet costly expedient of doing a same-node dummy RMA GET
-  after every RMA PUT.  Stores followed by loads in on-statements are
-  dealt with by asserting send-after-write message ordering.
+  This nevertheless leaves several cases outstanding, all of which
+  involve stores followed by loads of the same address by the same
+  task (semantically, anyway), but where the two operations are, or at
+  least may be, done via different transmit endpoints:
+  - tasks not bound to transmit endpoints,
+  - a store in a parent task followed by a load in a subsequently
+    created child task,
+  - a store in a task followed by a load in some other task that waited
+    for the first task to terminate, and
+  - a store before an on-statement followed by a load in that
+    on-statement's body.
 
-  **_Note (improvement):_** For the case in which the store and load
-    span task creation or termination, with bound transmit endpoints we
-    could delay the dummy GETs, if they're needed at all, and do them in
-    the `chpl_rmem_consist_release()` or `chpl_comm_task_end()`
-    function, respectively.  But if we did this we would also need to do
-    dummy GETs before later atomics (see the next *Memory Order* clause,
-    below), and that might be costly.  Basically, we can either do the
-    dummy GET right away or delay it, but if we delay it for one kind of
-    following thing we have to delay it for all, because we can't know
-    what will come next.
+  Currently we handle all but the last of these by the simple yet costly
+  expedient of doing a same-node dummy RMA GET after the store(s),
+  though with bound transmit contexts we delay initiating that RMA GET
+  until some other activity requires it.  So for example, if we do a
+  series of RMA PUTs and then create a child task, we only do a single
+  RMA GET, right before creating that child.
 
-  **_Note (improvement):_** Currently if we use a dummy GET to ensure
-    visibility, we wait for its completion before continuing.  We could
-    instead initiate the dummy GET, remember we've done so, and go on.
-    Then later, at the point where the visibility guarantee is needed,
-    we could wait for its completion.
+  Stores followed by loads in on-statements are dealt with by asserting
+  send-after-write message ordering.
+
+  **_Note (Bug):_** We currently use RMA GETs to enforce order on prior
+    native atomic operations.  This is probably a bug, however, because
+    with provider(s) which can do native atomic operations we don't
+    assert RMA read after atomic message ordering.  We haven't seen any
+    problems with this, but for strict correctness we instead may need
+    to something that generates a remote completion, such as a blocking
+    no-op AM.
 
 ---
 
@@ -384,21 +442,15 @@ of loads and stores relative to SC atomic operations:
 
   If a regular stores can dangle they must be forced into visibility
   before any later atomic is initiated.  As described previously, the
-  current implementation achieves this by doing a dummy regular GET
-  immediately after every regular PUT.
-
-  It's actually unclear if this can be improved upon.  Functionally, we
-  could certainly delay doing the dummy GET until right before the
-  following atomic operation was initiated, but effectively the atomic's
-  latency would then include that of the GET.  This might be a net loss
-  in terms of total time, compared to initiating the dummy GET while the
-  PUT was still in flight.  (This is especially true if we can delay
-  waiting for the dummy GET's completion, as described above.)
+  current implementation achieves this using dummy regular GETs, perhaps
+  with delayed completion waiting.
 
   Conversely, if an atomic store can dangle it must be forced into
-  visibility before any later RMA is initiated.  The current
-  implementation does this using blocking no-op AMs to all nodes that
-  might have dangling atomic stores before initiating the RMA.
+  visibility before any later RMA is initiated.  At present this is done
+  using RMA GETs, just like the regular-store case, along with either
+  explicit or assumed message ordering.  See the discussions below of
+  the message-order and message-order-fence MCM modes for further
+  details
 
 ---
 
@@ -418,4 +470,119 @@ which preserve sequential program behavior:
   These impose the same requirements on the implementation, and have the
   same solution(s), as the previous clause about same-address
   references, above.
+
+### The Comm Layer's MCM Conformance Modes
+
+The comm layer currently has three MCM conformance "modes", meaning ways
+that it can operate in order to ensure conformance with the Chapel
+Memory Consistency Model.  These are described in the following
+sections, from most-preferred to least-preferred based on performance
+expectations.
+
+The comm layer always requests the following capabilities when searching
+for providers:
+
+    FI_MSG
+    FI_MULTI_RECV
+    FI_RMA
+    FI_LOCAL_COMM
+    FI_REMOTE_COMM
+
+It also requires send-after-send (`FI_ORDER_SAS`) message ordering.
+This is done so that message SEND operations for Active Messages are not
+reordered.  However, as discussed previously we believe this may be
+overkill given how the comm layer actually uses SEND operations.
+
+It then makes three successive attempts with additional capabilities,
+message orderings, and other settings as described below, in order to
+set the MCM mode.
+
+#### Message-order-fence MCM Mode
+
+In message-order-fence mode the comm layer uses a combination of message
+ordering settings and fenced operations to achieve MCM conformance.  It
+uses the provider's default completion level, but sets the following
+capabilities:
+
+    FI_ATOMIC
+    FI_FENCE
+
+and the following message orderings:
+
+    FI_ORDER_ATOMIC_RAW
+    FI_ORDER_ATOMIC_WAR
+    FI_ORDER_ATOMIC_WAW
+
+Note that there is no explicitly asserted ordering here between RMA and
+atomic operations.  That is achieved by by fenced operations and their
+completions. 
+
+In this mode, the comm layer uses fenced operations to force the memory
+effects of prior RMA writes and native atomic operations to be visible,
+when that is needed.  With a bound transmit context we can wait to do
+this on an as-needed basis across the same transmit-receive endpoint
+pair, but in any other case we have to do it immediately after the
+operation that may create the dangling store.
+
+#### Message-order MCM Mode
+
+In message-order mode the comm layer also takes the provider's default
+completion level, but adds the following message orderings to force
+message sends and all (RMA or native atomic) reads and writes to be
+ordered with respect to RMA and native atomic writes:
+
+    FI_ORDER_RAW
+    FI_ORDER_WAW
+    FI_ORDER_SAW
+    FI_ORDER_SAS
+
+However, note that the orderings with respect to native atomics have no
+real effect, because we haven't encountered a provider that can match
+the requirements here but not those of message-order-fence mode, and the
+latter is selected by preference.
+
+In this mode, the comm layer uses RMA reads to force the memory effects
+of prior RMA writes and native atomic operations to be visible, when
+that is needed.  As with memory-order-fence mode, with a bound transmit
+context we can wait to do this on an as-needed basis across the same
+transmit-receive endpoint pair, but in any other case we have to do it
+immediately after the operation that may create the dangling store.
+
+#### Delivery-complete MCM Mode
+
+This is a fallback mode, because in effect it ends up causing full
+network round trips for every operation and that makes it slow.  In this
+mode the comm layer asserts the `FI_DELIVERY_COMPLETE` completion
+level on all transmit operations.  Since operations can be implicitly
+ordered simply by waiting on the completions, there is no need to force
+message orderings.
+
+#### MCM Modes in the Implementation Sources
+
+The comm layer has a few cases of in-line control flow based on the MCM
+mode being used, but the main way the MCM mode adjusts comm layer
+behavior is through so-called _selector_ functions for Active Message
+requests, PUTs, GETs, and native atomic operations.  For each of these
+there is a conceptually generic function that performs that kind of
+operation independent of the MCM mode being used.  That function does
+mode-independent setup and tear-down activities, but for the operation
+itself it calls the selector which in turn calls a mode-specific
+_implementor_ function which does the actual work.  As an aid to
+navigating in the comm layer implementation, the following table
+summarizes the functions involved:
+
+| operation | generic function | selector function | implementor function |
+|:----|:----|:----|:---- |
+| AM request | amRequestCommon() | amReqFn_selector() | amReqFn_msgOrdFence() |
+| | | | amReqFn_msgOrd() |
+| | | | amReqFn_dlvrCmplt() |
+| PUT (write) | ofi_put() | rmaPutFn_selector() | rmaPutFn_msgOrdFence() |
+| | | | rmaPutFn_msgOrd() |
+| | | | rmaPutFn_dlvrCmplt() |
+| GET (read) | ofi_get() | rmaGettFn_selector() | rmaGettFn_msgOrdFence() |
+| | | | rmaGetFn_msgOrd() |
+| | | | rmaGetFn_dlvrCmplt() |
+| atomic | ofi_amo() | amoFn_selector() | amoFn_msgOrdFence() |
+| | | | amoFn_msgOrd() |
+| | | | amoFn_dlvrCmplt() |
 

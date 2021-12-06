@@ -59,6 +59,7 @@ static const int& recursiveQuery(Context* context, int arg) {
     result = 0;
   }
 
+  // TODO: should this use QUERY_END_CURRENT_RESULT
   return QUERY_END(result);
 }
 

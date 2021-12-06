@@ -27,7 +27,7 @@ namespace uast {
 
 owned<PrimCall> PrimCall::build(Builder* builder,
                                 Location loc,
-                                UniqueString prim,
+                                PrimitiveTag prim,
                                 ASTList actuals) {
   PrimCall* ret = new PrimCall(std::move(actuals), prim);
   builder->noteLocation(ret, loc);

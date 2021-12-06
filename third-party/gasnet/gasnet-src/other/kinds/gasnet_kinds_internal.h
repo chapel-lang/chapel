@@ -40,6 +40,10 @@ void gasneti_free_mk(gasneti_MK_t mk);
 GASNETI_MK_CLASS_DECL(cuda_uva)
 #endif
 
+#if GASNET_HAVE_MK_CLASS_HIP
+GASNETI_MK_CLASS_DECL(hip)
+#endif
+
 
 /*---------------------------------------------------------------------------------*/
 //
@@ -65,6 +69,10 @@ struct gasneti_mk_impl_s {
   // Hook for gex_Segment_Create()
   // If NULL, the default is failure of gex_Segment_Create() with GASNET_ERR_BAD_ARG
   int (*mk_segment_create)(gasneti_Segment_t *, gasneti_MK_t, void *, uintptr_t, gex_Flags_t);
+
+  // Hook for gex_Segment_Destroy()
+  // If NULL, the default is no class-specific destruction
+  void (*mk_segment_destroy)(gasneti_Segment_t);
 };
 
 #endif

@@ -141,6 +141,7 @@ import re
 import shlex
 import datetime
 import errno
+from functools import reduce
 
 # update path to allow 'import fixpath' below
 util_dir = os.path.join(os.path.dirname(__file__), '..', '..', 'util')

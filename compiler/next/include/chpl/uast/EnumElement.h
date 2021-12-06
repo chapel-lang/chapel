@@ -41,28 +41,43 @@ namespace uast {
  */
 class EnumElement final : public NamedDecl {
  private:
-  EnumElement(ASTList children, UniqueString name)
+  EnumElement(ASTList children, int attributesChildNum,
+              UniqueString name)
     : NamedDecl(asttags::EnumElement, std::move(children),
-                Decl::DEFAULT_VISIBILITY, name) {
+                attributesChildNum,
+                Decl::DEFAULT_VISIBILITY,
+                Decl::DEFAULT_LINKAGE,
+                /*linkageNameChildNum*/ -1,
+                name) {
 
-    assert(children_.size() == 0 || children_.size() == 1);
+    assert(children_.size() <= 2);
     assert(isExpressionASTList(children_));
   }
+
   bool contentsMatchInner(const ASTNode* other) const override {
     const EnumElement* lhs = (const EnumElement*) this;
     const EnumElement* rhs = (const EnumElement*) other;
     return lhs->namedDeclContentsMatchInner(rhs);
   }
+
   void markUniqueStringsInner(Context* context) const override {
     namedDeclMarkUniqueStringsInner(context);
   }
 
+  int initExpressionChildNum() const {
+    return this->attributesChildNum() + 1;
+  }
+
  public:
   ~EnumElement() override = default;
+
   static owned<EnumElement> build(Builder* builder, Location loc,
+                                  owned<Attributes> attributes,
                                   UniqueString name,
                                   owned<Expression> initExpression);
+
   static owned<EnumElement> build(Builder* builder, Location loc,
+                                  owned<Attributes> attributes,
                                   UniqueString name);
 
   /**
@@ -71,7 +86,7 @@ class EnumElement final : public NamedDecl {
    */
   const Expression* initExpression() const {
     if (children_.size() > 0) {
-      const ASTNode* ast = this->child(0);
+      const ASTNode* ast = this->child(initExpressionChildNum());
       assert(ast->isExpression());
       return (const Expression*)ast;
     } else {

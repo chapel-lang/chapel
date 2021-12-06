@@ -48,11 +48,8 @@ proc masonSearch(args: [?d] string) {
 
 proc masonSearch(ref args: list(string)) {
 
-  var parser = new argumentParser();
+  var parser = new argumentParser(helpHandler=new MasonSearchHelpHandler());
 
-  var helpFlag = parser.addFlag("help",
-                                opts=["-h","--help"],
-                                defaultValue=false);
   // If no query is provided, list all packages in registry
   var queryArg = parser.addArgument(name="query",
                                     numArgs=0..1,
@@ -63,18 +60,7 @@ proc masonSearch(ref args: list(string)) {
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
 
-  try! {
-    parser.parseArgs(args.toArray());
-  }
-  catch ex : ArgumentError {
-    stderr.writeln(ex.message());
-    masonSearchHelp();
-    exit(1);
-  }
-  if helpFlag.valueAsBool() {
-    masonSearchHelp();
-    exit(0);
-  }
+  parser.parseArgs(args.toArray());
 
   const show = showFlag.valueAsBool();
   const debug = debugFlag.valueAsBool();
@@ -167,10 +153,37 @@ proc splitNameVersion(ref package: string, original: bool) {
 
 record RankResultsComparator {
   var query: string;
+  var packageScores;
   proc compare(a, b) {
-    if a.toLower().startsWith(query) && !b.toLower().startsWith(query) then return -1;
-    else if !a.toLower().startsWith(query) && b.toLower().startsWith(query) then return 1;
-    else return 1;
+    // starting with the query puts it first, if query is not ""
+    if query != "" {
+      if a.toLower().startsWith(query) &&
+         !b.toLower().startsWith(query) {
+        return -1;
+      } else if !a.toLower().startsWith(query) &&
+                b.toLower().startsWith(query) {
+        return 1;
+      }
+    }
+
+    // then sort by score
+    var scoreA = packageScores[a];
+    var scoreB = packageScores[b];
+    if scoreA > scoreB {
+      return -1;
+    } else if scoreA < scoreB {
+      return 1;
+    }
+
+    // then sort by name
+    if a < b {
+      return -1;
+    } else if a > b {
+      return 1;
+    }
+
+    // consider them the same
+    return 0;
   }
 }
 
@@ -179,11 +192,13 @@ record RankResultsComparator {
 proc rankResults(results: list(string), query: string): [] string {
   use Sort;
   var r = results.toArray();
-  sort(r);
-  var res = rankOnScores(r);
-  var cmp = new RankResultsComparator(query);
-  if query != ".*" then sort(res, comparator=cmp);
-  return res;
+  var q = query;
+  if query == ".*" then
+    q = "";
+
+  var cmp = new RankResultsComparator(q, getPackageScores(r));
+  sort(r, comparator=cmp);
+  return r;
 }
 
 /* Creates an empty cache file if its not found in registry */
@@ -216,23 +231,6 @@ proc getPackageScores(res: [] string) {
     } else packageScores.add(packageName, defaultScore);
   }
   return packageScores;
-}
-
-record RankScoresComparator {
-  var packageScores;
-  proc compare(a, b) {
-    if packageScores[a] > packageScores[b] then return -1;
-    else return 1;
-  }
-}
-
-/* Sort based on scores from cache file */
-proc rankOnScores(results: [] string) {
-  use Sort;
-  var rankCmp = new RankScoresComparator(getPackageScores(results));
-  var res = results;
-  sort(res, comparator=rankCmp);
-  return res;
 }
 
 proc isHidden(name : string) : bool {

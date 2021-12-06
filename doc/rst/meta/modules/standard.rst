@@ -17,7 +17,7 @@ default:
    :maxdepth: 1
 
    Chapel Environment Variables <standard/ChapelEnv>
-   Error Handling <standard/Errors>
+   Errors <standard/Errors>
    IO Support <standard/ChapelIO>
    Math <standard/Math>
    Types <standard/Types>
@@ -97,6 +97,7 @@ System/Interoperability
 
    CPtr <standard/CPtr>
    Spawn <standard/Spawn>
+   Subprocess <standard/Subprocess>
    Sys <standard/Sys>
    SysBasic <standard/SysBasic>
    SysCTypes <standard/SysCTypes>

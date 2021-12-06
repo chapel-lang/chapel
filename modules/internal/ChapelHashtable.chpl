@@ -25,7 +25,7 @@
 //
 // chpl_TableEntry is the type for each hashtable slot
 // chpl__hashtable is the record implementing a hashtable
-// chpl__defaultHash is the default hash function for most types
+// hash is the default hash method for most types
 pragma "unsafe"
 module ChapelHashtable {
 
@@ -45,46 +45,7 @@ module ChapelHashtable {
     }
   }
 
-  private inline proc chpl__primes return
-    (0, 23, 53, 89, 191, 383, 761, 1531, 3067, 6143, 12281, 24571, 49139, 98299,
-     196597, 393209, 786431, 1572853, 3145721, 6291449, 12582893, 25165813,
-     50331599, 100663291, 201326557, 402653171, 805306357, 1610612711, 3221225461,
-     6442450939, 12884901877, 25769803751, 51539607551, 103079215087,
-     206158430183, 412316860387, 824633720831, 1649267441651, 3298534883309,
-     6597069766631, 13194139533299, 26388279066623, 52776558133177,
-     105553116266489, 211106232532969, 422212465065953, 844424930131963,
-     1688849860263901, 3377699720527861, 6755399441055731, 13510798882111483,
-     27021597764222939, 54043195528445869, 108086391056891903, 216172782113783773,
-     432345564227567561, 864691128455135207);
-
   // ### allocation helpers ###
-
-  // returns the value referred to by arg
-  // arg should be considered uninitialized after this point
-  private proc _moveToReturn(const ref arg) {
-    if arg.type == nothing {
-      return none;
-    } else {
-      pragma "no init"
-      pragma "no copy"
-      pragma "no auto destroy"
-      var moved: arg.type;
-      __primitive("=", moved, arg);
-      return moved;
-    }
-  }
-  // sets lhs to rhs using a move initialization
-  // only makes sense if lhs is currently uninitialized
-  private proc _moveInit(ref lhs, pragma "no auto destroy" in rhs) {
-    if lhs.type != rhs.type {
-      compilerError("type mismatch in _moveInit");
-    }
-    if lhs.type == nothing {
-      // then do nothing
-    } else {
-      __primitive("=", lhs, rhs);
-    }
-  }
 
   // Leaves the elements 0 initialized
   private proc _allocateData(size:int, type tableEltType) {
@@ -263,7 +224,6 @@ module ChapelHashtable {
     var tableNumFullSlots: int;
     var tableNumDeletedSlots: int;
 
-    var tableSizeNum: int;
     var tableSize: int;
     var table: _ddata(chpl_TableEntry(keyType, valType)); // 0..<tableSize
 
@@ -271,16 +231,24 @@ module ChapelHashtable {
 
     var postponeResize: bool;
 
-    proc init(type keyType, type valType,
+    const resizeThreshold: real;
+
+    const startingSize: int;
+
+    proc init(type keyType, type valType, resizeThreshold = 0.5,
+              initialCapacity = 32,
               in rehashHelpers: owned chpl__rehashHelpers? = nil) {
       this.keyType = keyType;
       this.valType = valType;
       this.tableNumFullSlots = 0;
       this.tableNumDeletedSlots = 0;
-      this.tableSizeNum = 0;
-      this.tableSize = chpl__primes(tableSizeNum);
+      this.tableSize = 0;
       this.rehashHelpers = rehashHelpers;
       this.postponeResize = false;
+      this.resizeThreshold = resizeThreshold;
+      // Round initial capacity up to nearest power of 2
+      this.startingSize = 2 << log2((initialCapacity/
+                                     resizeThreshold):int-1);
       this.complete();
 
       // allocates a _ddata(chpl_TableEntry(keyType,valType)) storing the table
@@ -354,6 +322,15 @@ module ChapelHashtable {
 
     // #### add & remove helpers ####
 
+    // a utility to check for key equality
+    proc keysMatch(key1: ?t, key2: t) {
+      if isArrayType(key2.type) {
+        return (key1.equals(key2));
+      } else {
+        return key1 == key2;
+      }
+    }
+
     // Searches for 'key' in a filled slot.
     //
     // Returns (filledSlotFound, slot)
@@ -374,7 +351,7 @@ module ChapelHashtable {
           if firstOpen == -1 then firstOpen = slotNum;
           return (false, firstOpen);
         } else if (slotStatus == chpl__hash_status.full) {
-          if (table[slotNum].key == key) {
+          if keysMatch(table[slotNum].key, key) {
             return (true, slotNum);
           }
         } else { // this entry was removed, but is the first slot we could use
@@ -385,12 +362,15 @@ module ChapelHashtable {
     }
 
     iter _lookForSlots(key: keyType, numSlots = tableSize) {
-      const baseSlot = chpl__defaultHashWrapper(key):uint;
       if numSlots == 0 then return;
-      foreach probe in 0..numSlots/2 {
+      var currentSlot = chpl__defaultHashWrapper(key):uint;
+      const mask = numSlots-1;
+
+      foreach probe in 1..numSlots {
         var uprobe = probe:uint;
-        var n = numSlots:uint;
-        yield ((baseSlot + uprobe**2)%n):int;
+
+        yield (currentSlot&mask):int;
+        currentSlot+=uprobe;
       }
     }
 
@@ -406,7 +386,8 @@ module ChapelHashtable {
       var slotNum = -1;
       var foundSlot = false;
 
-      if (tableNumFullSlots+tableNumDeletedSlots+1)*2 > tableSize {
+      if ((tableNumFullSlots + tableNumDeletedSlots + 1) *
+          (1 / resizeThreshold)):int > tableSize {
         resize(grow=true);
       }
 
@@ -423,7 +404,7 @@ module ChapelHashtable {
         // This can happen if there are too many deleted elements in the
         // table. In that event, we can garbage collect the table by rehashing
         // everything now.
-        rehash(tableSizeNum, tableSize);
+        rehash(tableSize);
 
         (foundSlot, slotNum) = _findSlot(key);
 
@@ -441,6 +422,8 @@ module ChapelHashtable {
     proc fillSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
                   in key: keyType,
                   in val: valType) {
+      use Memory.Initialization;
+
       if tableEntry.status == chpl__hash_status.full {
         _deinitSlot(tableEntry);
       } else {
@@ -452,8 +435,8 @@ module ChapelHashtable {
 
       tableEntry.status = chpl__hash_status.full;
       // move the key/val into the table
-      _moveInit(tableEntry.key, key);
-      _moveInit(tableEntry.val, val);
+      moveInitialize(tableEntry.key, key);
+      moveInitialize(tableEntry.val, val);
     }
     proc fillSlot(slotNum: int,
                   in key: keyType,
@@ -484,9 +467,11 @@ module ChapelHashtable {
     // Returns the key and value that were removed in the out arguments
     proc clearSlot(ref tableEntry: chpl_TableEntry(keyType, valType),
                    out key: keyType, out val: valType) {
+      use Memory.Initialization;
+
       // move the table entry into the key/val variables to be returned
-      key = _moveToReturn(tableEntry.key);
-      val = _moveToReturn(tableEntry.val);
+      key = moveToValue(tableEntry.key);
+      val = moveToValue(tableEntry.val);
 
       // set the slot status to deleted
       tableEntry.status = chpl__hash_status.deleted;
@@ -502,31 +487,30 @@ module ChapelHashtable {
     }
 
     proc maybeShrinkAfterRemove() {
-      if (tableNumFullSlots*8 < tableSize && tableSizeNum > 0) {
+      // The magic number of 4 was chosen here due to our power of 2
+      // table sizes, where shrinking the table means halving the table
+      // size, so if your table originally was 1/4 of `resizeThreshold`
+      // full, it will be 1/2 of `resizeThreshold` full after the shrink,
+      // which seems like a reasonable time to resize
+      if (tableSize > startingSize &&
+          tableNumFullSlots/tableSize:real < resizeThreshold/4) {
         resize(grow=false);
       }
     }
 
     // #### rehash / resize helpers ####
 
-    proc _findPrimeSizeIndex(numKeys:int) {
-      //Find the first suitable prime
-      var threshold = (numKeys + 1) * 2;
-      var prime = 0;
-      var primeLoc = 0;
-      for i in 0..#chpl__primes.size {
-          if chpl__primes(i) > threshold {
-            prime = chpl__primes(i);
-            primeLoc = i;
-            break;
-          }
-      }
+    proc _findPowerOf2(numKeys:int) {
+      var n = (numKeys - 1): uint;
 
-      //No suitable prime found
-      if prime == 0 {
-        halt("Requested capacity (", numKeys, ") exceeds maximum size");
+      var k = 2;
+
+      // TODO: change to `clz()` from BitOps module to avoid while loop
+      while n >> 1 > 0 {
+        n = n >> 1;
+        k = k << 1;
       }
-      return primeLoc;
+      return k << 1; // shift one more time so capacity is at less than half
     }
 
     proc allocateData(size: int, type tableEltType) {
@@ -547,12 +531,13 @@ module ChapelHashtable {
     // newSize is the new table size
     // newSizeNum is an index into chpl__primes == newSize
     // assumes the array is already locked
-    proc rehash(newSizeNum:int, newSize:int) {
+    proc rehash(newSize:int) {
+      use Memory.Initialization;
+
       // save the old table
       var oldSize = tableSize;
       var oldTable = table;
 
-      tableSizeNum = newSizeNum;
       tableSize = newSize;
 
       var entries = tableNumFullSlots;
@@ -594,8 +579,8 @@ module ChapelHashtable {
             // move the key and value from the old entry into the new one
             ref dstSlot = table[newslot];
             dstSlot.status = chpl__hash_status.full;
-            _moveInit(dstSlot.key, _moveToReturn(oldEntry.key));
-            _moveInit(dstSlot.val, _moveToReturn(oldEntry.val));
+            moveInitialize(dstSlot.key, moveToValue(oldEntry.key));
+            moveInitialize(dstSlot.val, moveToValue(oldEntry.val));
 
             // move array elements to the new location
             if rehashHelpers != nil then
@@ -628,23 +613,15 @@ module ChapelHashtable {
 
     proc requestCapacity(numKeys:int) {
       if tableNumFullSlots < numKeys {
-
-        var primeLoc = _findPrimeSizeIndex(numKeys);
-        var prime = chpl__primes(primeLoc);
-
-        rehash(primeLoc, prime);
+        rehash(_findPowerOf2(numKeys));
       }
     }
 
     proc resize(grow:bool) {
       if postponeResize then return;
-
-      var newSizeNum = tableSizeNum;
-      newSizeNum += if grow then 1 else -1;
-      if newSizeNum > chpl__primes.size then
-        halt("associative array exceeds maximum size");
-
-      var newSize = chpl__primes(newSizeNum);
+      
+      // double if you are growing, half if you are shrinking
+      var newSize = if tableSize == 0 then startingSize else if grow then tableSize << 1 else tableSize >> 1;
 
       if grow==false && 2*tableNumFullSlots > newSize {
         // don't shrink if the number of elements would not
@@ -652,7 +629,7 @@ module ChapelHashtable {
         return;
       }
 
-      rehash(newSizeNum, newSize);
+      rehash(newSize);
     }
   }
 }

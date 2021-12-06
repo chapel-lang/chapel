@@ -26,25 +26,36 @@ namespace uast {
 
 
 owned<Formal>
-Formal::build(Builder* builder, Location loc,
+Formal::build(Builder* builder, Location loc, owned<Attributes> attributes,
               UniqueString name,
               Formal::Intent intent,
               owned<Expression> typeExpression,
               owned<Expression> initExpression) {
   ASTList lst;
+  int attributesChildNum = -1;
   int8_t typeExpressionChildNum = -1;
   int8_t initExpressionChildNum = -1;
+  
+  if (attributes.get() != nullptr) {
+    attributesChildNum = lst.size();
+    lst.push_back(std::move(attributes));
+  }
+
   if (typeExpression.get() != nullptr) {
     typeExpressionChildNum = lst.size();
     lst.push_back(std::move(typeExpression));
   }
+
   if (initExpression.get() != nullptr) {
     initExpressionChildNum = lst.size();
     lst.push_back(std::move(initExpression));
   }
 
-  Formal* ret = new Formal(std::move(lst), name, intent,
-                           typeExpressionChildNum, initExpressionChildNum);
+  Formal* ret = new Formal(std::move(lst), attributesChildNum,
+                           name,
+                           intent,
+                           typeExpressionChildNum,
+                           initExpressionChildNum);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

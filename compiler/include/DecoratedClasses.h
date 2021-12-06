@@ -21,61 +21,52 @@
 #ifndef _DECORATED_CLASSES_H_
 #define _DECORATED_CLASSES_H_
 
-typedef enum {
-  // When updating, make sure that these numbers work with the masks below
-  // (last two bits are generic nilable / non-nilable / nilable)
-  CLASS_TYPE_BORROWED          = 0,
-  CLASS_TYPE_BORROWED_NONNIL   = 1,
-  CLASS_TYPE_BORROWED_NILABLE  = 2,
-  CLASS_TYPE_UNMANAGED         = 4,
-  CLASS_TYPE_UNMANAGED_NONNIL  = 5,
-  CLASS_TYPE_UNMANAGED_NILABLE = 6,
-  CLASS_TYPE_MANAGED           = 8, // refers to dtOwned/etc
-  CLASS_TYPE_MANAGED_NONNIL    = 9,  
-  CLASS_TYPE_MANAGED_NILABLE   = 10,
-  CLASS_TYPE_GENERIC           = 12,
-  CLASS_TYPE_GENERIC_NONNIL    = 13,
-  CLASS_TYPE_GENERIC_NILABLE   = 14,
-} ClassTypeDecorator;
-#define NUM_DECORATED_CLASS_TYPES (11)
-#define CLASS_TYPE_MANAGEMENT_MASK (0xfc)
-#define CLASS_TYPE_NILABILITY_MASK (0x03)
+#include "chpl/types/ClassTypeDecorator.h"
+
+using ClassTypeDecorator = chpl::types::ClassTypeDecorator;
+using ClassTypeDecoratorEnum = ClassTypeDecorator::ClassTypeDecoratorEnum;
+
 #define NUM_PACKED_DECORATED_TYPES 6
 
-static inline ClassTypeDecorator removeNilableFromDecorator(ClassTypeDecorator d) {
-  int tmp = d;
-  tmp &= CLASS_TYPE_MANAGEMENT_MASK;
-  return (ClassTypeDecorator) tmp;
+static inline
+ClassTypeDecoratorEnum removeNilableFromDecorator(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::removeNilableFromDecorator(d);
 }
-static inline ClassTypeDecorator addNonNilToDecorator(ClassTypeDecorator d) {
-  int tmp = removeNilableFromDecorator(d);
-  tmp |= 1; 
-  return (ClassTypeDecorator) tmp;
+static inline
+ClassTypeDecoratorEnum addNonNilToDecorator(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::addNonNilToDecorator(d);
 } 
-static inline ClassTypeDecorator addNilableToDecorator(ClassTypeDecorator d) {
-  int tmp = removeNilableFromDecorator(d);
-  tmp |= 2;
-  return (ClassTypeDecorator) tmp;
+static inline
+ClassTypeDecoratorEnum addNilableToDecorator(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::addNilableToDecorator(d);
 }
-static inline bool isDecoratorUnknownNilability(ClassTypeDecorator d) {
-  return (d & CLASS_TYPE_NILABILITY_MASK) == 0;
+static inline bool isDecoratorUnknownNilability(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::isDecoratorUnknownNilability(d);
 }
-static inline bool isDecoratorNonNilable(ClassTypeDecorator d) {
-  return (d & CLASS_TYPE_NILABILITY_MASK) == 1;
+static inline bool isDecoratorNonNilable(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::isDecoratorNonNilable(d);
 }
-static inline bool isDecoratorNilable(ClassTypeDecorator d) {
-  return (d & CLASS_TYPE_NILABILITY_MASK) == 2;
+static inline bool isDecoratorNilable(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::isDecoratorNilable(d);
 }
-static inline bool isDecoratorManaged(ClassTypeDecorator d) {
-  return removeNilableFromDecorator(d) == CLASS_TYPE_MANAGED;
+static inline bool isDecoratorBorrowed(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::isDecoratorBorrowed(d);
 }
-static inline bool isDecoratorUnknownManagement(ClassTypeDecorator d) {
-  return removeNilableFromDecorator(d) == CLASS_TYPE_GENERIC;
+static inline bool isDecoratorUnmanaged(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::isDecoratorUnmanaged(d);
+}
+static inline bool isDecoratorManaged(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::isDecoratorManaged(d);
+}
+static inline bool isDecoratorUnknownManagement(ClassTypeDecoratorEnum d) {
+  return ClassTypeDecorator::isDecoratorUnknownManagement(d);
+}
+static inline
+ClassTypeDecoratorEnum combineDecorators(ClassTypeDecoratorEnum formalD,
+                                         ClassTypeDecoratorEnum actualD) {
+  return ClassTypeDecorator::combineDecorators(formalD, actualD);
 }
 
-const char* decoratedTypeAstr(ClassTypeDecorator d, const char* className);
-
-ClassTypeDecorator combineDecorators(ClassTypeDecorator formalDecorator,
-                                     ClassTypeDecorator actualDecorator);
+const char* decoratedTypeAstr(ClassTypeDecoratorEnum d, const char* className);
 
 #endif

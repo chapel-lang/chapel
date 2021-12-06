@@ -1,3 +1,5 @@
+.. _best-practices-gasnet-on-desktops:
+
 ===================================================
 Running Chapel Programs with GASNet on your Desktop
 ===================================================

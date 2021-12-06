@@ -1052,11 +1052,12 @@ void gasnete_tm_p2p_counting_put(gasnete_coll_op_t *op, gex_Rank_t dstrank, void
 {
   uint32_t seq_num = op->sequence;
   const uint32_t team_id = op->team->team_id;
+  const gex_Flags_t flags = op->team->aux_seg_flag;
 
   gasneti_assert(nbytes <= gex_AM_LUBRequestLong());
   
   gex_AM_RequestLong(op->e_tm, dstrank, gasneti_handleridx(gasnete_coll_p2p_put_and_advance_reqh),
-                         src, nbytes, dst, GEX_EVENT_NOW, 0, team_id, seq_num, idx);
+                         src, nbytes, dst, GEX_EVENT_NOW, flags, team_id, seq_num, idx);
 }
 /* Put up to gex_AM_LUBRequestLong() bytes, signalling the recipient */
 /* Returns immediately even if the local buffer is not yet reusable */
@@ -1066,12 +1067,13 @@ void gasnete_tm_p2p_counting_putAsync(gasnete_coll_op_t *op, gex_Rank_t dstrank,
 {
   uint32_t seq_num = op->sequence;
   const uint32_t team_id = op->team->team_id;
+  const gex_Flags_t flags = op->team->aux_seg_flag;
   
   gasneti_assert(nbytes <= gex_AM_LUBRequestLong());
   
   // TODO-EX: restore "Async"
   gex_AM_RequestLong(op->e_tm, dstrank, gasneti_handleridx(gasnete_coll_p2p_put_and_advance_reqh),
-                         src, nbytes, dst, GEX_EVENT_NOW, 0, team_id, seq_num, idx);
+                         src, nbytes, dst, GEX_EVENT_NOW, flags, team_id, seq_num, idx);
 }
     
 /* Send data to be buffered by the recipient */

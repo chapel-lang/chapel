@@ -1,0 +1,3 @@
+issue-16490-1.chpl:4: In function 'libFun':
+issue-16490-1.chpl:5: error: const actual is passed to a 'ref' formal of chpl__initCopy()
+  issue-16490-1.chpl:8: called as libFun(myArg: owned MyClass?)

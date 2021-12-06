@@ -1010,13 +1010,11 @@ inline proc AccumStencilArr.dsiAccess(i: rank*idxType) ref {
   return do_dsiAccess(true, i);
 }
 // value version for POD types
-inline proc AccumStencilArr.dsiAccess(i: rank*idxType)
-where shouldReturnRvalueByValue(eltType) {
+inline proc AccumStencilArr.dsiAccess(i: rank*idxType) {
   return do_dsiAccess(false, i);
 }
 // const ref version for types with copy-ctor
-inline proc AccumStencilArr.dsiAccess(i: rank*idxType) const ref
-where shouldReturnRvalueByConstRef(eltType) {
+inline proc AccumStencilArr.dsiAccess(i: rank*idxType) const ref {
   return do_dsiAccess(false, i);
 }
 

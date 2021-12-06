@@ -165,15 +165,13 @@ static  void test2() {
     b->addToplevelExpression(std::move(block));
   }
 
-  Builder::Result r = b->result();
-  assert(r.errors.size() == 0);
-  assert(r.topLevelExpressions.size() == 1);
-  assert(r.topLevelExpressions[0]->isModule());
-  auto module = r.topLevelExpressions[0]->toModule();
-  assert(0 == module->name().compare("test"));
-  assert(r.astToLocation.size() == 5); // +1 module
-  assert(module->stmt(0)->isBlock());
-  const Block* block = module->stmt(0)->toBlock();
+  BuilderResult r = b->result();
+  assert(!r.numErrors());
+  auto mod = r.singleModule();
+  assert(0 == mod->name().compare("test"));
+  //assert(r.astToLocation.size() == 5); // +1 module
+  assert(mod->stmt(0)->isBlock());
+  const Block* block = mod->stmt(0)->toBlock();
   assert(block);
   assert(block->numStmts() == 3);
   assert(block->stmt(0)->isIdentifier());
@@ -191,8 +189,8 @@ static  void test2() {
   assert(block->id().postOrderId() == 3);
   assert(block->id().numContainedChildren() == 3);
   assert(0 == block->id().symbolPath().compare("test"));
-  assert(module->id().postOrderId() == -1);
-  assert(module->id().numContainedChildren() == 4);
+  assert(mod->id().postOrderId() == -1);
+  assert(mod->id().numContainedChildren() == 4);
 
   // now check containment on the ids
   assert(block->id().contains(block->id()));
@@ -200,11 +198,11 @@ static  void test2() {
   assert(block->id().contains(block->stmt(1)->id()));
   assert(block->id().contains(block->stmt(2)->id()));
  
-  assert(module->id().contains(module->id()));
-  assert(module->id().contains(block->id()));
-  assert(module->id().contains(block->stmt(0)->id()));
-  assert(module->id().contains(block->stmt(1)->id()));
-  assert(module->id().contains(block->stmt(2)->id()));
+  assert(mod->id().contains(mod->id()));
+  assert(mod->id().contains(block->id()));
+  assert(mod->id().contains(block->stmt(0)->id()));
+  assert(mod->id().contains(block->stmt(1)->id()));
+  assert(mod->id().contains(block->stmt(2)->id()));
 
   assert(!block->stmt(0)->id().contains(block->id()));
   assert(!block->stmt(0)->id().contains(block->stmt(1)->id()));
@@ -235,20 +233,20 @@ static  void test2() {
   assert(block->stmt(1)->id().compare(block->stmt(2)->id()) < 0);
 
   // check parentSymbolId
-  assert(module->id().parentSymbolId(ctx).symbolPath() == "");
-  assert(module->id().parentSymbolId(ctx).postOrderId() == -1);
+  assert(mod->id().parentSymbolId(ctx).symbolPath() == "");
+  assert(mod->id().parentSymbolId(ctx).postOrderId() == -1);
   assert(block->id().parentSymbolId(ctx).symbolPath() == "test");
   assert(block->id().parentSymbolId(ctx).postOrderId() == -1);
-  assert(block->id().parentSymbolId(ctx) == module->id());
+  assert(block->id().parentSymbolId(ctx) == mod->id());
   assert(block->stmt(0)->id().parentSymbolId(ctx).symbolPath() == "test");
   assert(block->stmt(0)->id().parentSymbolId(ctx).postOrderId() == -1);
-  assert(block->stmt(0)->id().parentSymbolId(ctx) == module->id());
+  assert(block->stmt(0)->id().parentSymbolId(ctx) == mod->id());
   assert(block->stmt(1)->id().parentSymbolId(ctx).symbolPath() == "test");
   assert(block->stmt(1)->id().parentSymbolId(ctx).postOrderId() == -1);
-  assert(block->stmt(1)->id().parentSymbolId(ctx) == module->id());
+  assert(block->stmt(1)->id().parentSymbolId(ctx) == mod->id());
   assert(block->stmt(2)->id().parentSymbolId(ctx).symbolPath() == "test");
   assert(block->stmt(2)->id().parentSymbolId(ctx).postOrderId() == -1);
-  assert(block->stmt(2)->id().parentSymbolId(ctx) == module->id());
+  assert(block->stmt(2)->id().parentSymbolId(ctx) == mod->id());
 }
 
 static void test3() {
@@ -281,14 +279,12 @@ static void test3() {
     b->addToplevelExpression(std::move(block));
   }
 
-  Builder::Result r = b->result();
-  assert(r.errors.size() == 0);
-  assert(r.topLevelExpressions.size() == 1);
-  assert(r.topLevelExpressions[0]->isModule());
-  auto module = r.topLevelExpressions[0]->toModule();
-  assert(r.astToLocation.size() == 7); // +1 module
-  assert(module->stmt(0)->isBlock());
-  const Block* outer = module->stmt(0)->toBlock();
+  BuilderResult r = b->result();
+  assert(!r.numErrors());
+  auto mod = r.singleModule();
+  //assert(r.astToLocation.size() == 7); // +1 module
+  assert(mod->stmt(0)->isBlock());
+  const Block* outer = mod->stmt(0)->toBlock();
   assert(outer);
   assert(outer->numStmts() == 4);
   assert(outer->stmt(0)->isIdentifier());
@@ -352,27 +348,27 @@ static void test4() {
       ii.push_back(Identifier::build(b, dummyLoc, strA));
       ii.push_back(Identifier::build(b, dummyLoc, strB));
       ii.push_back(Identifier::build(b, dummyLoc, strC));
-      inner.push_back(Module::build(b, dummyLoc, strI,
+      inner.push_back(Module::build(b, dummyLoc, /*attributes*/ nullptr,
                                     Decl::DEFAULT_VISIBILITY,
+                                    strI,
                                     Module::DEFAULT_MODULE_KIND,
                                     std::move(ii)));
     }
     inner.push_back(Identifier::build(b, dummyLoc, strX));
 
-    auto mod = Module::build(b, dummyLoc, strM,
+    auto mod = Module::build(b, dummyLoc, /*attributes*/ nullptr,
                              Decl::DEFAULT_VISIBILITY,
+                             strM,
                              Module::DEFAULT_MODULE_KIND,
                              std::move(inner));
 
     b->addToplevelExpression(std::move(mod));
   }
 
-  Builder::Result r = b->result();
-  assert(r.errors.size() == 0);
-  assert(r.topLevelExpressions.size() == 1);
-  assert(r.topLevelExpressions[0]->isModule());
-  auto modM = r.topLevelExpressions[0]->toModule();
-  assert(r.astToLocation.size() == 6);
+  BuilderResult r = b->result();
+  assert(!r.numErrors());
+  auto modM = r.singleModule();
+  //assert(r.astToLocation.size() == 6);
   assert(modM->stmt(0)->isModule());
   auto modI = modM->stmt(0)->toModule();
   assert(modI->numStmts() == 3);

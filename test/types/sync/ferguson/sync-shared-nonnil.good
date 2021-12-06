@@ -1,8 +1,1 @@
-$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:448: In method 'readFE':
-$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:449: error: cannot default-initialize ret: shared C
-$CHPL_HOME/modules/internal/ChapelSyncvar.chpl:462: error: use here prevents split-init
-note: non-nilable class type 'borrowed C' does not support default initialization
-note: Consider using the type shared C? instead
-  $CHPL_HOME/modules/internal/ChapelSyncvar.chpl:220: called as (_synccls(shared C)).readFE()
-  within internal functions (use --print-callstack-on-error to see)
-sync-shared-nonnil.chpl:3: error: sync/single types cannot yet contain non-nilable classes
+{x = 1}

@@ -43,10 +43,9 @@ static void test0(Parser* parser) {
       "while foo() do\n"
       "  /* comment 2 */\n"
       "  bar();\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isWhile());
@@ -67,10 +66,9 @@ static void test1(Parser* parser) {
       "  /* comment 2 */\n"
       "  bar();\n"
       "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isWhile());
@@ -91,10 +89,9 @@ static void test2(Parser* parser) {
       "  /* comment 2 */\n"
       "  bar();\n"
       "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isWhile());
@@ -118,10 +115,9 @@ static void test3(Parser* parser) {
       "   bar();\n"
       "  /* comment 4 */\n"
       "}\n");
-  assert(parseResult.errors.size() == 0);
-  assert(parseResult.topLevelExpressions.size() == 1);
-  assert(parseResult.topLevelExpressions[0]->isModule());
-  auto mod = parseResult.topLevelExpressions[0]->toModule();
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
   assert(mod->numStmts() == 2);
   assert(mod->stmt(0)->isComment());
   assert(mod->stmt(1)->isWhile());

@@ -157,6 +157,7 @@ private:
                                           SymList&    symbols)           const;
 
   void buildBreadthFirstUseImportList(UseImportList& useList) const;
+  void buildBfsUseImportRespectPrivate(UseImportList& useImportList) const;
 
   void buildBreadthFirstUseImportList(UseImportList& modules,
                                       UseImportList& current,

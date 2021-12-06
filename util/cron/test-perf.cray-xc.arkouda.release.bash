@@ -16,12 +16,11 @@ module list
 # setup for XC perf (ugni, gnu, 28-core broadwell)
 module unload $(module -t list 2>&1 | grep PrgEnv-)
 module load PrgEnv-gnu
-# avoid gcc 11 warnings fixed in https://github.com/chapel-lang/chapel/pull/18178
-module swap gcc gcc/10.3.0
 module unload $(module -t list 2>&1 | grep craype-hugepages)
 module load craype-hugepages16M
 module unload perftools-base
 module unload atp
+source $CWD/common-llvm-comp-path.bash
 
 module list
 

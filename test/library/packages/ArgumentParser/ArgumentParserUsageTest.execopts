@@ -3,3 +3,5 @@
  --no-flagOn positionalVal --types tea time # UsageTest.mixpos
 positionalVal subCmd1 subCmdArg # UsageTest.min.sub.opt
 positionalVal subCmd1 # UsageTest.min.sub
+-h # UsageTest.main.help
+positionalVal subCmd1 --help # UsageTest.sub.help

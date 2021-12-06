@@ -432,9 +432,9 @@ AST_LESS(ASTNode)
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
 #undef AST_LESS
+/// \endcond
 
 
 } // end namespace std
-/// \endcond
 
 #endif

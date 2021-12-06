@@ -1,0 +1,2 @@
+-st=string --fast --no-cache-remote
+-st=bytes --fast --no-cache-remote

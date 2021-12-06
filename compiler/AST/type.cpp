@@ -404,6 +404,12 @@ void PrimitiveType::printDocs(std::ostream *file, unsigned int tabs) {
       *file << std::endl;
     }
   }
+
+  if (this->symbol->hasFlag(FLAG_DEPRECATED)) {
+    this->printDocsDeprecation(this->symbol->doc, file, tabs + 1,
+                               this->symbol->getDeprecationMsg(),
+                               !fDocsTextOnly);
+  }
 }
 
 
@@ -623,6 +629,12 @@ void EnumType::printDocs(std::ostream *file, unsigned int tabs) {
     if (!fDocsTextOnly) {
       *file << std::endl;
     }
+  }
+
+  if (this->symbol->hasFlag(FLAG_DEPRECATED)) {
+    this->printDocsDeprecation(this->doc, file, tabs + 1,
+                               this->symbol->getDeprecationMsg(),
+                               !fDocsTextOnly);
   }
 }
 
@@ -1430,10 +1442,10 @@ Type* getManagedPtrBorrowType(const Type* managedPtrType) {
   if (borrowType == NULL)
     INT_FATAL("Could not determine borrow type");
 
-  ClassTypeDecorator decorator = CLASS_TYPE_BORROWED_NONNIL;
+  ClassTypeDecoratorEnum decorator = ClassTypeDecorator::BORROWED_NONNIL;
 
   if (isNilableClassType(borrowType))
-    decorator = CLASS_TYPE_BORROWED_NILABLE;
+    decorator = ClassTypeDecorator::BORROWED_NILABLE;
 
   borrowType = canonicalDecoratedClassType(borrowType);
 
@@ -1791,8 +1803,7 @@ bool isNonGenericRecord(Type* type) {
 
   if (AggregateType* at = toAggregateType(type)) {
     if (at->isRecord()                   == true  &&
-        at->isGeneric()                  == false &&
-        at->symbol->hasFlag(FLAG_EXTERN) == false) {
+        at->isGeneric()                  == false) {
       retval = true;
     }
   }
@@ -1807,7 +1818,9 @@ bool isNonGenericRecordWithInitializers(Type* type) {
     if (AggregateType* at = toAggregateType(type)) {
       if (at->hasUserDefinedInit == true) {
         retval = true;
-      } else if (at->wantsDefaultInitializer()) {
+      } else if (at->wantsDefaultInitializer() &&
+                 // don't count compiler-generated init for extern records
+                 !at->symbol->hasFlag(FLAG_EXTERN)) {
         retval = true;
       }
     }

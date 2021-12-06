@@ -57,6 +57,7 @@ void eliminateSingleAssignmentReference(Map<Symbol*,Vec<SymExpr*>*>& defMap,
                                         Map<Symbol*,Vec<SymExpr*>*>& useMap,
                                         Symbol* var);
 size_t singleAssignmentRefPropagation(FnSymbol* fn);
+void cleanupLoopBlocks(FnSymbol* fn);
 void deadVariableElimination(FnSymbol* fn);
 void deadExpressionElimination(FnSymbol* fn);
 
@@ -88,4 +89,5 @@ void setDefinedConstForDefExprIfApplicable(DefExpr* defExpr,
 void setDefinedConstForPrimSetMemberIfApplicable(CallExpr *call);
 void setDefinedConstForFieldsInInitializer(FnSymbol *fn);
 
+void gpuTransforms();
 #endif

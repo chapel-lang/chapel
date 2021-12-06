@@ -1060,7 +1060,7 @@ module MyRandom {
         :type arr: [] :type:`eltType`
       */
       proc fillRandom(arr: [] eltType) {
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
@@ -1182,7 +1182,7 @@ module MyRandom {
       /* Randomly shuffle a 1-D array. */
       proc shuffle(arr: [?D] ?eltType ) {
 
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("shuffle does not support non-rectangular arrays");
 
         if D.rank != 1 then
@@ -1226,7 +1226,7 @@ module MyRandom {
          */
       proc permutation(arr: [] eltType) {
 
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("permutation does not support non-rectangular arrays");
 
         var low = arr.domain.dim(0).low;
@@ -2657,7 +2657,7 @@ module MyRandom {
         :type arr: [] :type:`eltType`
       */
       proc fillRandom(arr: [] eltType) {
-        if(!isRectangularArr(arr)) then
+        if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
         forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
