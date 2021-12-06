@@ -741,7 +741,8 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
     if (auto* decl = ast->toNamedDecl()) {
       kind = qualifiedTypeKindForDecl(decl);
       if (auto td = decl->toTypeDecl()) {
-        t = typeForTypeDecl(context, td, /* useGenericFormalDefaults */ true);
+        bool useGenericFormalDefaults = true;
+        t = initialTypeForTypeDecl(context, td, useGenericFormalDefaults);
         assert(kind == QualifiedType::TYPE);
       } else if (decl->isModule() || decl->isFunction()) {
         // OK, don't try to establish the types of these right now
@@ -902,10 +903,11 @@ typedSignatureInitial(Context* context,
 
 
 static const Type* const&
-typeForTypeDeclQuery(Context* context,
-                     ID declId,
-                     bool useGenericFormalDefaults) {
-  QUERY_BEGIN(typeForTypeDeclQuery, context, declId, useGenericFormalDefaults);
+initialTypeForTypeDeclQuery(Context* context,
+                            ID declId,
+                            bool useGenericFormalDefaults) {
+  QUERY_BEGIN(initialTypeForTypeDeclQuery, context,
+              declId, useGenericFormalDefaults);
 
   const Type* result = nullptr;
 
@@ -952,17 +954,20 @@ typeForTypeDeclQuery(Context* context,
 
       if (auto rec = ad->toRecord()) {
         result = RecordType::get(context, rec->id(), rec->name(),
-                                 std::move(fields));
+                                 std::move(fields),
+                                 /* instantiatedFrom */ nullptr);
       }
       if (auto cls = ad->toClass()) {
         auto t = BasicClassType::get(context, cls->id(), cls->name(),
-                                     parentType, std::move(fields));
+                                     parentType, std::move(fields),
+                                     /* instantiatedFrom */ nullptr);
         auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
         result = ClassType::get(context, t, /*manager*/ nullptr, d);
       }
       if (auto uni = ad->toUnion()) {
         result = UnionType::get(context, uni->id(), uni->name(),
-                                std::move(fields));
+                                std::move(fields),
+                                /* instantiatedFrom */ nullptr);
       }
     }
   }
@@ -970,12 +975,13 @@ typeForTypeDeclQuery(Context* context,
   return QUERY_END(result);
 }
 
-const Type* typeForTypeDecl(Context* context,
+const Type* initialTypeForTypeDecl(Context* context,
                             const TypeDecl* d,
                             bool useGenericFormalDefaults) {
   assert(d);
-  const Type* t = typeForTypeDeclQuery(context, d->id(),
-                                       /* useGenericFormalDefaults */ false);
+  const Type* t;
+  t = initialTypeForTypeDeclQuery(context, d->id(),
+                                  /* useGenericFormalDefaults */ false);
 
   // If useGenericFormalDefaults was requested and the type
   // is generic with defaults, compute the type again.
@@ -985,8 +991,8 @@ const Type* typeForTypeDecl(Context* context,
   if (useGenericFormalDefaults) {
     if (auto ct = t->getCompositeType()) {
       if (ct->isGenericWithDefaults()) {
-        t = typeForTypeDeclQuery(context, d->id(),
-                                 /* useGenericFormalDefaults */ true);
+        t = initialTypeForTypeDeclQuery(context, d->id(),
+                                        /* useGenericFormalDefaults */ true);
       }
     }
   }
@@ -1531,20 +1537,43 @@ const QualifiedType& returnType(Context* context,
         }
       }
 
+
+      const Type* instantiatedFrom = nullptr;
+      if (sig->instantiatedFrom()) {
+        bool useGenericFormalDefaults = false;
+        instantiatedFrom = initialTypeForTypeDecl(context,
+                                                  ad,
+                                                  useGenericFormalDefaults);
+        assert(instantiatedFrom);
+      }
+
       const Type* t = nullptr;
       if (auto rec = ad->toRecord()) {
+        assert(instantiatedFrom == nullptr || instantiatedFrom->isRecordType());
         t = RecordType::get(context, rec->id(), rec->name(),
-                            std::move(fields));
+                            std::move(fields),
+                            (const RecordType*) instantiatedFrom);
       }
       if (auto cls = ad->toClass()) {
+        // ignore decorators etc for finding instantiatedFrom
+        if (instantiatedFrom)
+          if (auto ct = instantiatedFrom->toClassType())
+            instantiatedFrom = ct->basicClassType();
+
+        assert(instantiatedFrom == nullptr ||
+               instantiatedFrom->isBasicClassType());
         auto bct = BasicClassType::get(context, cls->id(), cls->name(),
-                                       parentType, std::move(fields));
+                                       parentType, std::move(fields),
+                                       (const BasicClassType*) instantiatedFrom);
         auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
         t = ClassType::get(context, bct, nullptr, d);
       }
       if (auto uni = ad->toUnion()) {
+        assert(instantiatedFrom == nullptr ||
+               instantiatedFrom->isUnionType());
         t = UnionType::get(context, uni->id(), uni->name(),
-                           std::move(fields));
+                           std::move(fields),
+                           (const UnionType*) instantiatedFrom);
       }
       result = QualifiedType(QualifiedType::TYPE, t);
 
@@ -1616,8 +1645,9 @@ doIsCandidateApplicableInitial(Context* context,
       td = ast->toTypeDecl();
 
     if (td != nullptr) {
-      const Type* t = typeForTypeDecl(context, td,
-                                      /* useGenericFormalDefaults */ false);
+      bool useGenericFormalDefaults = false;
+      const Type* t = initialTypeForTypeDecl(context, td,
+                                             useGenericFormalDefaults);
       return typeConstructorInitial(context, t);
     } else {
       assert(false && "case not handled");

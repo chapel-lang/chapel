@@ -252,6 +252,15 @@ static void test5() {
   assert(rt->fieldHasDefaultValue(0) == false);
   assert(rt->fieldType(0).kind() == QualifiedType::TYPE);
   assert(rt->fieldType(0).type() == IntType::get(context, 0));
+
+  auto initialRt = rt->instantiatedFrom();
+  assert(initialRt);
+  assert(initialRt->instantiatedFrom() == nullptr);
+  assert(initialRt->numFields() == 1);
+  assert(initialRt->fieldName(0) == "t");
+  assert(initialRt->fieldHasDefaultValue(0) == false);
+  assert(initialRt->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(initialRt->fieldType(0).type()->isAnyType());
 }
 
 static void test6() {

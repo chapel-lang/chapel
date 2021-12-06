@@ -393,9 +393,11 @@ static void test7() {
   auto childName = UniqueString::build(context, "Child");
   auto basicObj = BasicClassType::getObjectType(context);
   auto basicParent = BasicClassType::get(context, emptyId, parentName,
-                                         basicObj, emptyFields);
+                                         basicObj, emptyFields,
+                                         /* instantiatedFrom */ nullptr);
   auto basicChild = BasicClassType::get(context, emptyId, childName,
-                                        basicParent, emptyFields);
+                                        basicParent, emptyFields,
+                                        /* instantiatedFrom */ nullptr);
 
   auto borrowed = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NONNIL);
   auto borrowedQ = ClassTypeDecorator(ClassTypeDecorator::BORROWED_NILABLE);

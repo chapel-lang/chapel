@@ -492,6 +492,9 @@ CanPassResult CanPassResult::canPassClassTypes(const ClassType* actualCt,
 }
 
 
+// TODO -- rename to something about clasess and return CanPassresult
+// so we can check instantiations
+
 // The compiler considers many patterns of "subtyping" as things that require
 // implicit conversions (they often require implicit conversions in the
 // generated C).  However not all implicit conversions are created equal.
@@ -693,7 +696,9 @@ CanPassResult CanPassResult::canInstantiate(const QualifiedType& actualQT,
   }
 
   // check for instantiating records
-  TODO;
+  //TODO;
+
+  return fail();
 }
 
 CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,

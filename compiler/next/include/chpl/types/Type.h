@@ -128,6 +128,12 @@ class Type {
   #undef TYPE_IS
 
   // Additional helper functions
+  // Don't name these queries 'isAny...'.
+  // Why? Consider an example.
+  // AnyNumericType is a builtin type called 'numeric' in the source code.
+  // So, isAnyNumericType checks if the type is that builtin type 'numeric'.
+  // In contrast, isNumericType checks to see if the type is one of the
+  // numeric types.
 
   /** returns true if it's string, bytes, or c_string type */
   bool isStringLikeType() const {

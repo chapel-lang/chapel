@@ -29,11 +29,14 @@ const owned<BasicClassType>&
 BasicClassType::getBasicClassType(
     Context* context, ID id, UniqueString name,
     const BasicClassType* parentType,
-    std::vector<CompositeType::FieldDetail> fields) {
-  QUERY_BEGIN(getBasicClassType, context, id, name, parentType, fields);
+    std::vector<CompositeType::FieldDetail> fields,
+    const BasicClassType* instantiatedFrom) {
+  QUERY_BEGIN(getBasicClassType, context, id, name, parentType, fields,
+              instantiatedFrom);
 
   auto result = toOwned(new BasicClassType(id, name,
-                                           parentType, std::move(fields)));
+                                           parentType, std::move(fields),
+                                           instantiatedFrom));
 
   return QUERY_END(result);
 }
@@ -41,12 +44,14 @@ BasicClassType::getBasicClassType(
 const BasicClassType*
 BasicClassType::get(Context* context, ID id, UniqueString name,
                     const BasicClassType* parentType,
-                    std::vector<CompositeType::FieldDetail> fields) {
+                    std::vector<CompositeType::FieldDetail> fields,
+                    const BasicClassType* instantiatedFrom) {
   // getObjectType should be used to construct object
   // everything else should have a parent type.
   assert(parentType != nullptr);
   return getBasicClassType(context, id, name,
-                           parentType, std::move(fields)).get();
+                           parentType, std::move(fields),
+                           instantiatedFrom).get();
 }
 
 const BasicClassType*
@@ -56,7 +61,9 @@ BasicClassType::getObjectType(Context* context) {
   std::vector<CompositeType::FieldDetail> emptyFields;
 
   return getBasicClassType(context, emptyId, name,
-                           nullptr, std::move(emptyFields)).get();
+                           /* parentType */ nullptr,
+                           std::move(emptyFields),
+                           /* instantiatedFrom */ nullptr).get();
 }
 
 bool

@@ -33,8 +33,10 @@ namespace types {
 class UnionType final : public CompositeType {
  private:
   UnionType(ID id, UniqueString name,
-            std::vector<CompositeType::FieldDetail> fields)
-    : CompositeType(typetags::UnionType, id, name, std::move(fields))
+            std::vector<CompositeType::FieldDetail> fields,
+            const UnionType* instantiatedFrom)
+    : CompositeType(typetags::UnionType, id, name, std::move(fields),
+                    instantiatedFrom)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -47,13 +49,29 @@ class UnionType final : public CompositeType {
 
   static const owned<UnionType>&
   getUnionType(Context* context, ID id, UniqueString name,
-               std::vector<CompositeType::FieldDetail> fields);
+               std::vector<CompositeType::FieldDetail> fields,
+               const UnionType* instantiatedFrom);
 
  public:
   ~UnionType() = default;
 
   static const UnionType* get(Context* context, ID id, UniqueString name,
-                              std::vector<CompositeType::FieldDetail> fields);
+                              std::vector<CompositeType::FieldDetail> fields,
+                              const UnionType* instantiatedFrom);
+
+  /** If this type represents an instantiated type,
+      returns the type it was instantiated from.
+
+      This is just instantiatedFromCompositeType() with the
+      result cast to UnionType.
+   */
+  const UnionType* instantiatedFrom() const {
+    const CompositeType* ret = instantiatedFromCompositeType();
+    assert(ret == nullptr || ret->tag() == typetags::UnionType);
+    return (const UnionType*) ret;
+  }
+
+
 };
 
 

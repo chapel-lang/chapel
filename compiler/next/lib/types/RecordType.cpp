@@ -27,18 +27,22 @@ namespace types {
 
 const owned<RecordType>&
 RecordType::getRecordType(Context* context, ID id, UniqueString name,
-                          std::vector<CompositeType::FieldDetail> fields) {
-  QUERY_BEGIN(getRecordType, context, id, name, fields);
+                          std::vector<CompositeType::FieldDetail> fields,
+                          const RecordType* instantiatedFrom) {
+  QUERY_BEGIN(getRecordType, context, id, name, fields, instantiatedFrom);
 
-  auto result = toOwned(new RecordType(id, name, std::move(fields)));
+  auto result = toOwned(new RecordType(id, name, std::move(fields),
+                                       instantiatedFrom));
 
   return QUERY_END(result);
 }
 
 const RecordType*
 RecordType::get(Context* context, ID id, UniqueString name,
-                std::vector<CompositeType::FieldDetail> fields) {
-  return getRecordType(context, id, name, std::move(fields)).get();
+                std::vector<CompositeType::FieldDetail> fields,
+                const RecordType* instantiatedFrom) {
+  return getRecordType(context, id, name, std::move(fields),
+                       instantiatedFrom).get();
 }
 
 
