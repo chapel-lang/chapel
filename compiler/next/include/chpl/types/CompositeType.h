@@ -175,6 +175,11 @@ class CompositeType : public Type {
            instantiatedFrom_->instantiatedFrom_ == nullptr);
     return instantiatedFrom_;
   }
+
+  bool isInstantiationOf(const CompositeType* genericType) const {
+    auto from = instantiatedFromCompositeType();
+    return (from != nullptr && from == genericType);
+  }
 };
 
 

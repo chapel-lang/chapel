@@ -87,10 +87,16 @@ class BasicClassType final : public CompositeType {
   }
 
   /** Returns true if this class type is a subclass of the passed
-      parent class type. That is, some chain of
-         this->parentClassType()->parentClassType()->... = parentType
+      parent class type or an instantiaton of a passed generic
+      class type or a combination of the two.
+
+      The argument 'convert' is set to true if passing required
+      using a parent type and 'instantiates' is set to true if
+      it requires instantiation.
    */
-  bool isTransitiveChildOf(const BasicClassType* parentType) const;
+  bool isSubtypeOf(const BasicClassType* parentType,
+                   bool& converts,
+                   bool& instantiates) const;
 
   /** If this type represents an instantiated type,
       returns the type it was instantiated from.

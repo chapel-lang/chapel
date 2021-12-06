@@ -99,8 +99,8 @@ class CanPassResult {
   static CanPassResult canPassClassTypes(const types::ClassType* actualCt,
                                          const types::ClassType* formalCt);
 
-  static bool isSubtype(const types::Type* actualT,
-                        const types::Type* formalT);
+  static CanPassResult canPassSubtype(const types::Type* actualT,
+                                      const types::Type* formalT);
 
   static CanPassResult canConvert(const types::QualifiedType& actualType,
                                   const types::QualifiedType& formalType);

@@ -467,9 +467,12 @@ CanPassResult CanPassResult::canPassClassTypes(const ClassType* actualCt,
   // owned Child -> owned Parent?
   // ditto borrowed, etc
 
-  // check decorators allow subtyping conversion
+  // check decorators allow passing
   CanPassResult decResult = canPassDecorators(actualCt->decorator(),
                                               formalCt->decorator());
+
+  if (!decResult.passes())
+    return fail();
 
   if (actualCt->decorator().isManaged() &&
       formalCt->decorator().isManaged() &&
@@ -481,19 +484,32 @@ CanPassResult CanPassResult::canPassClassTypes(const ClassType* actualCt,
   auto actualBct = actualCt->basicClassType();
   auto formalBct = formalCt->basicClassType();
 
-  // are the basic class types the same?
-  // also check for subclass relationship
-  if (actualBct->isTransitiveChildOf(formalBct)) {
-    // TODO: also check instantiation here -- see getBasicInstantiationType
-    return decResult;
+  // code below assumes this
+  assert(decResult.passes_);
+  assert(decResult.conversionKind_ == NONE ||
+         decResult.conversionKind_ == SUBTYPE);
+  assert(!decResult.promotes_);
+
+  bool converts = decResult.conversionKind_ != NONE;
+  bool instantiates = decResult.instantiates_;
+
+  if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
+    // the basic class types are the same
+    // or there was a subclass relationship
+    // or there was instantiation
+
+    // all class conversions are subtype conversions
+    ConversionKind conversion = converts ? SUBTYPE : NONE;
+
+    return CanPassResult(/*passes*/ true,
+                         instantiates,
+                         /*promotes*/ false,
+                         conversion);
   }
 
   return fail();
 }
 
-
-// TODO -- rename to something about clasess and return CanPassresult
-// so we can check instantiations
 
 // The compiler considers many patterns of "subtyping" as things that require
 // implicit conversions (they often require implicit conversions in the
@@ -503,25 +519,32 @@ CanPassResult CanPassResult::canPassClassTypes(const ClassType* actualCt,
 // Here we consider an implicit conversion to be implementing "subtyping" if,
 // in an ideal implementation, the actual could be passed to a `const ref`
 // argument of the formal type.
-bool CanPassResult::isSubtype(const Type* actualT,
-                              const Type* formalT) {
+//
+// This function returns CanPassResult which always has conversion
+// kind of NONE or SUBTYPE.
+// It's returning CanPassResult in order to also reflect if instantiation
+// was necessary.
+CanPassResult CanPassResult::canPassSubtype(const Type* actualT,
+                                            const Type* formalT) {
   // nil -> pointers and class types
   if (actualT->isNilType() && formalT->isNilablePtrType() &&
       !formalT->isCStringType())
-    return true;
+    return convert(SUBTYPE);
 
   if (auto actualCt = actualT->toClassType()) {
     if (auto formalCt = formalT->toClassType()) {
       CanPassResult result = canPassClassTypes(actualCt, formalCt);
-      return result.passes_ && (result.conversionKind_ == NONE ||
-                                result.conversionKind_ == SUBTYPE);
+      if (result.passes_ && (result.conversionKind_ == NONE ||
+                             result.conversionKind_ == SUBTYPE)) {
+        return result;
+      }
     }
   }
 
   // TODO: c_ptr -> c_void_ptr
   // TODO: c_array -> c_void_ptr, c_array(t) -> c_ptr(t)
 
-  return false;
+  return fail();
 }
 
 CanPassResult CanPassResult::canConvert(const QualifiedType& actualQT,
@@ -530,8 +553,14 @@ CanPassResult CanPassResult::canConvert(const QualifiedType& actualQT,
   const Type* formalT = formalQT.type();
 
   // can we convert with a subtype conversion, including class subtyping?
-  if (isSubtype(actualT, formalT))
-    return convert(SUBTYPE);
+  {
+    auto got = canPassSubtype(actualT, formalT);
+    if (got.passes()) {
+      // canPassSubtype should always return NONE or SUBTYPE conversion.
+      assert(got.conversionKind_ == NONE || got.conversionKind_ == SUBTYPE);
+      return got;
+    }
+  }
 
   // can we convert with a numeric conversion?
   if (canConvertNumeric(actualT, formalT))
@@ -685,18 +714,22 @@ CanPassResult CanPassResult::canInstantiate(const QualifiedType& actualQT,
 
   // TODO: check for constrained generic types
 
-  // check for instantiating classes
   if (auto actualCt = actualT->toClassType()) {
+    // check for instantiating classes
     if (auto formalCt = formalT->toClassType()) {
       CanPassResult got = canPassClassTypes(actualCt, formalCt);
       if (got.passes() && got.instantiates()) {
         return got;
       }
     }
+  } else if (auto actualAt = actualT->toCompositeType()) {
+    // check for instantiating records/unions/tuples
+    if (auto formalAt = formalT->toCompositeType()) {
+      if (actualAt->isInstantiationOf(formalAt)) {
+        return instantiate();
+      }
+    }
   }
-
-  // check for instantiating records
-  //TODO;
 
   return fail();
 }
@@ -782,9 +815,13 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
 
       case QualifiedType::CONST_REF:
       case QualifiedType::TYPE:
-        if (isSubtype(formalT, actualT))
-          return convert(SUBTYPE);
-        break;
+        {
+          auto got = canPassSubtype(formalT, actualT);
+          if (got.passes()) {
+            return got;
+          }
+          break;
+        }
 
       case QualifiedType::PARAM:
       case QualifiedType::IN:

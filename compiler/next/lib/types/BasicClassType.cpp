@@ -66,16 +66,29 @@ BasicClassType::getObjectType(Context* context) {
                            /* instantiatedFrom */ nullptr).get();
 }
 
-bool
-BasicClassType::isTransitiveChildOf(const BasicClassType* parentType) const {
+bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,
+                                 bool& converts,
+                                 bool& instantiates) const {
+
+  assert(parentType != nullptr); // code below assumes this
+
   for (const BasicClassType* t = this;
-       t != nullptr;
+       t != nullptr; // note: ObjectType has no parent
        t = t->parentClassType()) {
 
-    if (t == parentType)
+    // check if t is parentType indicating use of subclass
+    if (t == parentType) {
+      if (t != this) converts = true;
+      instantiates = false;
       return true;
-    if (t->isObjectType())
-      break;
+    }
+
+    // check also if t is an instantiation of parentType
+    if (t->instantiatedFrom() == parentType) {
+      if (t != this) converts = true;
+      instantiates = true;
+      return true;
+    }
   }
 
   return false;

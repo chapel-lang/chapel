@@ -1589,20 +1589,93 @@ const QualifiedType& returnType(Context* context,
   return QUERY_END(result);
 }
 
-// TODO move these to a core logic of resolution file
-static QualifiedType::Kind resolveIntent(const QualifiedType& t) {
-  if (t.type()->isPrimitiveType()) {
-    auto kind = t.kind();
-    if (kind == QualifiedType::UNKNOWN ||
-        kind == QualifiedType::DEFAULT_INTENT ||
-        kind == QualifiedType::CONST_INTENT)
-      return QualifiedType::CONST_IN;
-  } else if (t.isGenericOrUnknown()) {
+// TODO: move this resolveIntent logic to a different file
+
+static QualifiedType::Kind constIntentForType(const Type* t) {
+
+  // anything we don't know the type of has to have unknown intent
+  if (t == nullptr || t->isUnknownType() || t->isErroneousType())
     return QualifiedType::UNKNOWN;
-  } else {
-    assert(false && "TODO");
+
+  if (t->isPrimitiveType())
+    return QualifiedType::CONST_IN;
+
+  if (t->isRecordType() || t->isUnionType() || t->isTupleType())
+    return QualifiedType::CONST_REF;
+
+  if (auto ct = t->toClassType()) {
+    if (ct->decorator().isManaged())
+      return QualifiedType::CONST_REF;
+    else
+      return QualifiedType::CONST_IN;
   }
-  return t.kind();
+
+  assert(false && "case not yet handled");
+  return QualifiedType::UNKNOWN;
+}
+
+static QualifiedType::Kind defaultIntentForType(const Type* t) {
+  // anything we don't know the type of has to have unknown intent
+  if (t == nullptr || t->isUnknownType() || t->isErroneousType())
+    return QualifiedType::UNKNOWN;
+
+  if (t->isPrimitiveType())
+    return QualifiedType::CONST_IN;
+
+  if (t->isRecordType() || t->isUnionType() || t->isTupleType())
+    return QualifiedType::CONST_REF;
+
+  if (auto ct = t->toClassType()) {
+    if (ct->decorator().isManaged())
+      return QualifiedType::CONST_REF;
+    else
+      return QualifiedType::CONST_IN;
+  }
+
+  assert(false && "case not yet handled");
+  return QualifiedType::UNKNOWN;
+}
+
+static QualifiedType::Kind resolveIntent(const QualifiedType& t) {
+  auto kind = t.kind();
+  auto type = t.type();
+
+  switch (kind) {
+    case QualifiedType::UNKNOWN:
+    case QualifiedType::INDEX:
+    case QualifiedType::FUNCTION:
+    case QualifiedType::MODULE:
+      // these don't really have an intent
+      return QualifiedType::UNKNOWN;
+
+    case QualifiedType::CONST_REF:
+    case QualifiedType::REF:
+    case QualifiedType::IN:
+    case QualifiedType::CONST_IN:
+    case QualifiedType::OUT:
+    case QualifiedType::INOUT:
+    case QualifiedType::PARAM:
+    case QualifiedType::TYPE:
+      // concrete intents are already resolved
+      return kind;
+
+    case QualifiedType::VAR:
+      // normalize VAR to IN to make some test codes easier
+      return QualifiedType::IN;
+    case QualifiedType::CONST_VAR:
+      // normalize CONST_VAR to CONST_IN to make some test codes easier
+      return QualifiedType::CONST_IN;
+
+    case QualifiedType::DEFAULT_INTENT:
+      // compute the default intent if needed
+      return defaultIntentForType(type);
+
+    // compute the const intent if needed
+    case QualifiedType::CONST_INTENT:
+      return constIntentForType(type);
+  }
+
+  return QualifiedType::UNKNOWN;
 }
 
 static bool canPassInitial(const QualifiedType& actualType,
