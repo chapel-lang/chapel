@@ -816,7 +816,7 @@ typedef struct qio_conv_s {
 
 void qio_conv_destroy(qio_conv_t* spec);
 void qio_conv_init(qio_conv_t* spec_out);
-qioerr qio_conv_parse(c_string fmt, size_t start, uint64_t* end_out, int scanning, qio_conv_t* spec_out, qio_style_t* style_out);
+qioerr qio_conv_parse(c_string fmt, size_t start, uint64_t* end_out, int scanning, qio_conv_t* spec_out, qio_style_t* style_out, int32_t lineno, int32_t filename);
 
 // These error codes can be used by callers to qio_conv_parse
 qioerr qio_format_error_too_many_args(void);
