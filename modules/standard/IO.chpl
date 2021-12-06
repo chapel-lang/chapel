@@ -3671,13 +3671,26 @@ iter channel.lines() {
   try! this.lock();
 
   // Save iostyleInternal
-  const saved_style: iostyleInternal = this._style();
-
+  var saved_style: iostyleInternal;
+  on this.home {
+    var local_style:iostyleInternal;
+    qio_channel_get_style(_channel_internal, local_style);
+    saved_style = local_style;
+  }
   // Update iostyleInternal
-  var newline_style: iostyleInternal = this._style();
+  var newline_style: iostyleInternal;
+  on this.home {
+    var local_style:iostyleInternal;
+    qio_channel_get_style(_channel_internal, local_style);
+    newline_style = local_style;
+  }
+
   newline_style.string_format = QIO_STRING_FORMAT_TOEND;
   newline_style.string_end = 0x0a; // '\n'
-  this._set_style(newline_style);
+  on this.home {
+    var local_style:iostyleInternal = newline_style;
+    qio_channel_set_style(_channel_internal, local_style);
+  }
 
   // Iterate over lines
   for line in this.itemReader(string, this.kind) {
@@ -3685,7 +3698,10 @@ iter channel.lines() {
   }
 
   // Set the iostyle back to original state
-  this._set_style(saved_style);
+  on this.home {
+    var local_style:iostyleInternal = saved_style;
+    qio_channel_set_style(_channel_internal, local_style);
+  }
 
   this.unlock();
 }
