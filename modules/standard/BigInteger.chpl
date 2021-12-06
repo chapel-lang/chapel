@@ -3153,7 +3153,18 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
 
   // remove
+    /*
+    .. warning::
+
+       bigint.remove is deprecated, use bigint.removeFactor instead
+  */
+  deprecated
+  "bigint.remove is deprecated, use bigint.removeFactor instead"
   proc bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
+    return this.removeFactor(a,f);
+  }
+
+  proc bigint.removeFactor(const ref a: bigint, const ref f: bigint) : uint {
     var ret: c_ulong;
 
     if _local {
