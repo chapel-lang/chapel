@@ -1312,19 +1312,6 @@ proc defaultIOStyleInternal(): iostyleInternal {
   return ret;
 }
 
-/* Get an I/O style indicating binary I/O in native byte order.
-
-   :arg str_style: see :type:`iostringstyle` - which format to use when reading
-                   or writing strings. Defaults to variable-byte length.
-   :returns: the requested :record:`iostyle`
- */
-deprecated
-"This method is deprecated because the type it is defined on is deprecated"
-proc iostyle.native(str_style:int(64)=stringStyleWithVariableLength()):iostyle {
-  var tmp: iostyleInternal = this: iostyleInternal;
-  return tmp.native(str_style): iostyle;
-}
-
 /* Get an iostyleInternal indicating binary I/O in native byte order. */
 pragma "no doc"
 proc iostyleInternal.native(str_style:int(64)=stringStyleWithVariableLength()):iostyleInternal {
@@ -1335,19 +1322,6 @@ proc iostyleInternal.native(str_style:int(64)=stringStyleWithVariableLength()):i
   return ret;
 }
 
-/* Get an I/O style indicating binary I/O in big-endian byte order.
-
-   :arg str_style: see :type:`iostringstyle` - which format to use when reading
-                   or writing strings. Defaults to variable-byte length.
-   :returns: the requested :record:`iostyle`
- */
-deprecated
-"This method is deprecated because the type it is defined on is deprecated"
-proc iostyle.big(str_style:int(64)=stringStyleWithVariableLength()):iostyle {
-  var tmp: iostyleInternal = this: iostyleInternal;
-  return tmp.big(str_style): iostyle;
-}
-
 /* Get an iostyleInternal indicating binary I/O in big-endian byte order.*/
 pragma "no doc"
 proc iostyleInternal.big(str_style:int(64)=stringStyleWithVariableLength()):iostyleInternal {
@@ -1356,19 +1330,6 @@ proc iostyleInternal.big(str_style:int(64)=stringStyleWithVariableLength()):iost
   ret.byteorder = iokind.big:uint(8);
   ret.str_style = str_style;
   return ret;
-}
-
-/* Get an I/O style indicating binary I/O in little-endian byte order.
-
-   :arg str_style: see :type:`iostringstyle` - which format to use when reading
-                   or writing strings. Defaults to variable-byte length.
-   :returns: the requested :record:`iostyle`
- */
-deprecated
-"This method is deprecated because the type it is defined on is deprecated"
-proc iostyle.little(str_style:int(64)=stringStyleWithVariableLength()):iostyle  {
-  var tmp: iostyleInternal = this: iostyleInternal;
-  return tmp.little(str_style): iostyle;
 }
 
 /* Get an iostyleInternal indicating binary I/O in little-endian byte order. */
@@ -1710,6 +1671,7 @@ proc _modestring(mode:iomode) {
   }
 }
 
+pragma "last resort"
 deprecated "open with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
 proc open(path:string, mode:iomode, hints:iohints=IOHINT_NONE,
           style:iostyle): file throws {
@@ -2779,6 +2741,7 @@ proc openwriter(path:string,
   return try fl.writer(kind, locking, start, end, hints, style);
 }
 
+ pragma "last resort"
 deprecated "reader with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
@@ -2850,10 +2813,11 @@ proc file.reader(param kind=iokind.dynamic, param locking=true, start:int(64) = 
   return ret;
 }
 
- deprecated "lines with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+pragma "last resort"
+deprecated "lines with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
 proc file.lines(param locking:bool = true, start:int(64) = 0,
                 end:int(64) = max(int(64)), hints:iohints = IOHINT_NONE,
-                in local_style:iostyle = this._style) throws {
+                in local_style:iostyle) throws {
   return this.lines(locking, start, end, hints, local_style: iostyleInternal);
 }
 /* Iterate over all of the lines in a file.
@@ -2887,6 +2851,7 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
   return ret;
 }
 
+ pragma "last resort"
 deprecated "writer with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
@@ -3788,6 +3753,7 @@ inline proc channel.read(ref args ...?k):bool throws {
   return true;
 }
 
+pragma "last resort"
 deprecated "read with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
 proc channel.read(ref args ...?k, style:iostyle):bool throws {
   return channel.read((...args), style: iostyleInternal);
@@ -3821,8 +3787,22 @@ proc channel.read(ref args ...?k, style:iostyleInternal):bool throws {
     on this.home {
       try this.lock(); defer { this.unlock(); }
 
-      var saveStyle = this._style(); defer { this._set_style(saveStyle); }
-      this._set_style(style);
+      var saveStyle: iostyleInternal;
+      on this.home {
+        var local_style:iostyleInternal;
+        qio_channel_get_style(_channel_internal, local_style);
+        saveStyle = local_style;
+      }
+      defer {
+        on this.home {
+          var local_style:iostyleInternal = saveStyle;
+          qio_channel_set_style(_channel_internal, local_style);
+        }
+      }
+      on this.home {
+        var local_style:iostyleInternal = style;
+        qio_channel_set_style(_channel_internal, local_style);
+      }
 
       for param i in 0..k-1 {
         _readOne(kind, args[i], origLocale);
@@ -4004,10 +3984,23 @@ private proc readBytesOrString(ch: channel, ref out_var: ?t,  len: int(64))
                                     ch._channel_internal, tx,
                                     lenread, uselen);
     } else {
-      var save_style = ch._style();
-      var style = ch._style();
+      var save_style: iostyleInternal;
+      on ch.home {
+        var local_style:iostyleInternal;
+        qio_channel_get_style(ch._channel_internal, local_style);
+        save_style = local_style;
+      }
+      var style: iostyleInternal;
+      on ch.home {
+        var local_style:iostyleInternal;
+        qio_channel_get_style(ch._channel_internal, local_style);
+        style = local_style;
+      }
       style.string_format = QIO_STRING_FORMAT_TOEOF;
-      ch._set_style(style);
+      on ch.home {
+        var local_style:iostyleInternal = style;
+        qio_channel_set_style(ch._channel_internal, local_style);
+      }
 
       if t == string {
         err = qio_channel_scan_string(false,
@@ -4019,7 +4012,10 @@ private proc readBytesOrString(ch: channel, ref out_var: ?t,  len: int(64))
                                      ch._channel_internal, tx,
                                      lenread, uselen);
       }
-      ch._set_style(save_style);
+      on ch.home {
+        var local_style:iostyleInternal = save_style;
+        qio_channel_set_style(ch._channel_internal, local_style);
+      }
     }
 
     if t == string {
@@ -6609,7 +6605,18 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
 
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var save_style = this._style(); defer { this._set_style(save_style); }
+    var save_style: iostyleInternal;
+    on this.home {
+      var local_style: iostyleInternal;
+      qio_channel_get_style(_channel_internal, local_style);
+      save_style = local_style;
+    }
+    defer {
+      on this.home {
+        var local_style:iostyleInternal = save_style;
+        qio_channel_set_style(_channel_internal, local_style);
+      }
+    }
     var cur:size_t = 0;
     var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
@@ -6667,7 +6674,10 @@ proc channel.readf(fmtStr:?t, ref args ...?k): bool throws
         var domore = _conv_sethandler(err, argType(i),style,i,args(i),false);
 
         if domore {
-          this._set_style(style);
+          on this.home {
+            var local_style:iostyleInternal = style;
+            qio_channel_set_style(_channel_internal, local_style);
+          }
           // otherwise we will consume at least one argument.
           select argType(i) {
             when QIO_CONV_ARG_TYPE_SIGNED, QIO_CONV_ARG_TYPE_BINARY_SIGNED {
