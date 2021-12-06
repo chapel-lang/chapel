@@ -79,7 +79,6 @@ bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,
     // check if t is parentType indicating use of subclass
     if (t == parentType) {
       if (t != this) converts = true;
-      instantiates = false;
       return true;
     }
 

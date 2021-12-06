@@ -925,8 +925,14 @@ initialTypeForTypeDeclQuery(Context* context,
       if (auto cls = ad->toClass()) {
         if (auto parentClassExpr = cls->parentClass()) {
           QualifiedType qt = r.byAst(parentClassExpr).type();
-          if (qt.isType() && qt.hasTypePtr() && qt.type()->isClassType()) {
-            parentType = qt.type()->toClassType()->basicClassType();
+          if (auto t = qt.type()) {
+            if (auto bct = t->toBasicClassType())
+              parentType = bct;
+            else if (auto ct = t->toClassType())
+              parentType = ct->basicClassType();
+          }
+          if (qt.isType() && parentType != nullptr) {
+            // OK
           } else {
             context->error(declId, "invalid parent class");
             parentType = BasicClassType::getObjectType(context);
@@ -1514,8 +1520,13 @@ const QualifiedType& returnType(Context* context,
           parentClassExpr->traverse(visitor);
           QualifiedType qt = r.byAst(parentClassExpr).type();
           assert(qt.hasTypePtr() && qt.isType());
-          assert(qt.type()->toBasicClassType());
-          parentType = qt.type()->toBasicClassType();
+          if (auto t = qt.type()) {
+            if (auto bct = t->toBasicClassType())
+              parentType = bct;
+            else if (auto ct = t->toClassType())
+              parentType = ct->basicClassType();
+          }
+          assert(parentType);
         } else {
           parentType = BasicClassType::getObjectType(context);
         }
