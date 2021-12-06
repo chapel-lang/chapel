@@ -52,6 +52,7 @@ extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;
 
 extern std::map<Type*,     Serializers> serializeMap;
 
+extern std::map<AggregateType*, std::vector<Symbol*>> promotionFieldMap;
 
 
 bool       propagateNotPOD(Type* t);

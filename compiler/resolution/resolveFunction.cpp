@@ -52,6 +52,7 @@
 #include <set>
 
 std::map<ArgSymbol*, std::string> exportedDefaultValues;
+std::map<AggregateType*, std::vector<Symbol*>> promotionFieldMap;
 
 struct ConversionsTableValue {
   FnSymbol* assign;
@@ -1608,6 +1609,15 @@ static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType) {
   }
 
   retval->scalarPromotionType = yieldedType;
+
+  if (fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+    for_formals (formal, fn) {
+      if (formal->type != gMethodToken->type) {
+        promotionFieldMap[retval].push_back(formal);
+      }
+    }
+  }
+
 
   return retval;
 }

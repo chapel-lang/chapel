@@ -9799,6 +9799,128 @@ static void resolveBroadcasters(AggregateType* at) {
   ser.destroyer   = destroyFn;
 }
 
+static FnSymbol* createMethodStub(AggregateType* at, const char* methodName) {
+  // taken from build_accessor
+  FnSymbol* fn = new FnSymbol(methodName);
+
+  fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
+
+  fn->setMethod(true);
+
+  Type* thisType = at;
+  if (isClass(at))
+    thisType = at->getDecoratedClass(ClassTypeDecorator::GENERIC);
+  ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisType);
+
+  _this->addFlag(FLAG_ARG_THIS);
+  fn->insertFormalAtTail(_this);
+
+  DefExpr* def = new DefExpr(fn);
+  at->symbol->defPoint->insertBefore(def);
+  at->methods.add(fn);
+  fn->addFlag(FLAG_METHOD_PRIMARY);
+  fn->_this = _this;
+
+  return fn;
+}
+
+static bool resolveSerializeDeserialize(AggregateType* at);
+
+static bool createSerializeDeserialize(AggregateType* at) {
+  if (!at->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {  // just for now.
+    return false;
+  }
+
+  if (at->numFields() == 0) {
+    return false;
+  }
+  if (at->symbol->hasFlag(FLAG_OBJECT_CLASS)) {
+    return false;
+  }
+
+  std::vector<Symbol*> allFields;
+
+  auto kvPair = promotionFieldMap.find(at);
+  if (kvPair != promotionFieldMap.end()) {
+    for_fields (field, at) {
+      allFields.push_back(field);
+    }
+
+    std::vector<Symbol*>& fields = kvPair->second;
+    for_vector (Symbol, field, fields) {
+      allFields.push_back(field);
+    }
+  }
+  else {
+    return false;
+  }
+
+
+
+  SET_LINENO(at);
+  bool retval = true;
+
+  FnSymbol* serializer = createMethodStub(at, "chpl__serialize");
+  //ArgSymbol* _this = serializer->getFormal(2);
+
+  //FnSymbol* deserializer = createMethodStub(at, "chpl__deserialize"); // TODO type method
+  
+  CallExpr* buildTuple = new CallExpr("_build_tuple");
+
+  //for_fields (field, at) {
+  for_vector (Symbol, field, allFields) {
+    AggregateType* fieldAggType = NULL;
+    if (DecoratedClassType* decClassType = toDecoratedClassType(field->type)) {
+      fieldAggType = toAggregateType(decClassType->getCanonicalClass());
+    }
+    else {
+      fieldAggType = toAggregateType(field->type);
+    }
+
+
+    if (fieldAggType) {
+      fieldAggType = toAggregateType(fieldAggType->getValType());
+      INT_ASSERT(fieldAggType);
+
+      if (resolveSerializeDeserialize(fieldAggType)) {
+        Serializers ser = serializeMap[fieldAggType];
+        FnSymbol* fieldSerializer = ser.serializer;
+        //FnSymbol* fieldDeserializer = ser.deserializer;
+
+
+        // update the serializer body
+        buildTuple->insertAtTail(new CallExpr(fieldSerializer, gMethodToken, field));
+        //buildTuple->insertAtTail(new CallExpr(".", field,
+                                              //new CallExpr(fieldSerializer)));
+
+        // update the deserializer body
+        // TODO
+      }
+      else {
+        retval = false;
+      }
+    }
+    else if (isPOD(field->type)) {
+      buildTuple->insertAtTail(new SymExpr(field));
+    }
+    else {
+      INT_FATAL("Unhandled case");
+    }
+  }
+
+  if (retval) {
+
+  }
+
+  serializer->insertAtTail(new CallExpr(PRIM_RETURN, buildTuple));
+
+  normalize(serializer);
+
+  retval = resolveSerializeDeserialize(at); // now this should work
+
+  return retval;
+}
+
 static void resolveSerializers() {
   if (fNoRemoteSerialization == true) {
     return;
@@ -9818,6 +9940,12 @@ static void resolveSerializers() {
         if (isRecord(at) == true || 
             (isClass(at) == true && !at->symbol->hasFlag(FLAG_REF))) {
           bool success = resolveSerializeDeserialize(at);
+
+          if (!success) {
+            success = createSerializeDeserialize(at);
+
+
+          }
           if (success) {
             resolveBroadcasters(at);
           }

@@ -218,6 +218,7 @@ static bool shouldSerialize(ArgSymbol* arg) {
 
   //if (arg->id == 2357983) {
     if (AggregateType *at = toAggregateType(argType)) {
+      nprint_view(at);
       for_fields (field, at) {
         nprint_view(field);
         bool hasSerializer = serializeMap.find(field->getValType()) != serializeMap.end();
