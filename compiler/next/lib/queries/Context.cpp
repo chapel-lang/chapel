@@ -587,13 +587,9 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
   }
   resultEntry->lastChecked = this->currentRevisionNumber;
 
-  // Update any error locations if needed
+  // Update error locations if needed and re-report the error
   for (auto& err: resultEntry->errors) {
     err.updateLocation(this);
-  }
-
-  // Re-report any errors in the query
-  for (const auto& err: resultEntry->errors) {
     reportError(err);
   }
 }
