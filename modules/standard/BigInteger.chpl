@@ -3163,17 +3163,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   proc bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
     return this.removeFactor(a,f);
   }
-  /*
-    .. warning::
-
-       a and f are deprecated - please use x and fac respectively
-  */
-  pragma "last resort"
-  deprecated
-  "a and f are deprecated - please use x and fac respectively"
-  proc bigint.removeFactor(const ref a: bigint, const ref f: bigint) : uint {
-    return this.removeFactor(x=a,fac=f);
-  }
+  
   // This helper is intended for use only when the factor is 0
   // Division by 0 is undefined and it results in a
   // Floating point exception error.
