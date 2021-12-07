@@ -46,6 +46,7 @@ module Set {
   private use IO;
   private use Reflection;
   private use ChapelHashtable;
+  private use HaltWrappers;
 
   pragma "no doc"
   private param _sanityChecks = true;
@@ -132,6 +133,17 @@ module Set {
     /* If `true`, this set will perform parallel safe operations. */
     param parSafe = false;
 
+    /* 
+       Fractional value that specifies how full this map can be 
+       before requesting additional memory. The default value of 
+       0.5 means that the map will not resize until the map is more
+       than 50% full. The acceptable values for this argument are
+       between 0 and 1, exclusive, meaning (0,1). This is useful
+       when you would like to reduce memory impact or potentially
+       speed up how fast the map finds a slot.
+    */
+    const resizeThreshold = 0.5;
+
     pragma "no doc"
     var _lock$ = if parSafe then new _LockWrapper() else none;
 
@@ -143,12 +155,87 @@ module Set {
 
       :arg eltType: The type of the elements of this set.
       :arg parSafe: If `true`, this set will use parallel safe operations.
+      :arg resizeThreshold: Fractional value that specifies how full this map
+                            can be before requesting additional memory.
+      :arg initialCapacity: Integer value that specifies starting map size. The
+                            map can hold at least this many values before
+                            attempting to resize.
     */
-    proc init(type eltType, param parSafe=false) {
+    proc init(type eltType, param parSafe=false, resizeThreshold=0.5,
+              initialCapacity=32) {
       _checkElementType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
-      this._htb = new chpl__hashtable(eltType, nothing);
+      if boundsChecking then
+        if resizeThreshold <= 0 || resizeThreshold >= 1 then
+          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
+      this.resizeThreshold = resizeThreshold;
+      this._htb = new chpl__hashtable(eltType, nothing, resizeThreshold,
+                                      initialCapacity);
+    }
+
+    /*
+      Initialize this set with a unique copy of each element contained in
+      `iterable`. If an element from `iterable` is already contained in this
+      set, it will not be added again. The formal `iterable` must be a type
+      with an iterator named "these" defined for it.
+
+      :arg iterable: A collection of elements to add to this set.
+      :arg parSafe: If `true`, this set will use parallel safe operations.
+      :arg resizeThreshold: Fractional value that specifies how full this map
+                            can be before requesting additional memory.
+      :arg initialCapacity: Integer value that specifies starting map size. The
+                            map can hold at least this many values before
+                            attempting to resize.
+    */
+    proc init(type eltType, iterable, param parSafe=false,
+              resizeThreshold=0.5, initialCapacity=16)
+    where canResolveMethod(iterable, "these") lifetime this < iterable {
+      _checkElementType(eltType); 
+
+      this.eltType = eltType;
+      this.parSafe = parSafe;
+      if boundsChecking then
+        if resizeThreshold <= 0 || resizeThreshold >= 1 then
+          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
+      this.resizeThreshold = resizeThreshold;
+      this._htb = new chpl__hashtable(eltType, nothing, resizeThreshold,
+                                      initialCapacity);
+      this.complete();
+
+      for elem in iterable do _addElem(elem);
+    }
+
+    /*
+      Initialize this set with a copy of each of the elements contained in
+      the set `other`. This set will inherit the `parSafe` value of the
+      set `other`.
+
+      :arg other: A set to initialize this set with.
+    */
+    proc init=(const ref other: set(?t, ?p)) lifetime this < other {
+      this.eltType = if this.type.eltType != ? then
+                        this.type.eltType else t;
+      this.parSafe = if this.type.parSafe != ? then
+                        this.type.parSafe else p;
+      this.resizeThreshold = other.resizeThreshold;
+      this._htb = new chpl__hashtable(eltType, nothing,
+                                      resizeThreshold);
+      this.complete();
+
+      // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
+      if eltType != t {
+        compilerError('cannot initialize ', this.type:string, ' from ',
+                      other.type:string, ' due to element type ',
+                      'mismatch');
+      } else if !isCopyableType(eltType) {
+        compilerError('cannot initialize ', this.type:string, ' from ',
+                      other.type:string, ' because element type ',
+                      eltType:string, ' is not copyable');
+      } else {
+        // TODO: Use a forall when this.parSafe?
+        for elem in other do _addElem(elem);
+      }
     }
 
     // Do things the slow/copy way if the element is serializable.
@@ -196,57 +283,6 @@ module Set {
       }
 
       return result;
-    }
-
-    /*
-      Initialize this set with a unique copy of each element contained in
-      `iterable`. If an element from `iterable` is already contained in this
-      set, it will not be added again. The formal `iterable` must be a type
-      with an iterator named "these" defined for it.
-
-      :arg iterable: A collection of elements to add to this set.
-      :arg parSafe: If `true`, this set will use parallel safe operations.
-    */
-    proc init(type eltType, iterable, param parSafe=false)
-    where canResolveMethod(iterable, "these") lifetime this < iterable {
-      _checkElementType(eltType); 
-
-      this.eltType = eltType;
-      this.parSafe = parSafe;
-      this._htb = new chpl__hashtable(eltType, nothing);
-      this.complete();
-
-      for elem in iterable do _addElem(elem);
-    }
-
-    /*
-      Initialize this set with a copy of each of the elements contained in
-      the set `other`. This set will inherit the `parSafe` value of the
-      set `other`.
-
-      :arg other: A set to initialize this set with.
-    */
-    proc init=(const ref other: set(?t, ?p)) lifetime this < other {
-      this.eltType = if this.type.eltType != ? then
-                        this.type.eltType else t;
-      this.parSafe = if this.type.parSafe != ? then
-                        this.type.parSafe else p;
-      this._htb = new chpl__hashtable(eltType, nothing);
-      this.complete();
-
-      // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
-      if eltType != t {
-        compilerError('cannot initialize ', this.type:string, ' from ',
-                      other.type:string, ' due to element type ',
-                      'mismatch');
-      } else if !isCopyableType(eltType) {
-        compilerError('cannot initialize ', this.type:string, ' from ',
-                      other.type:string, ' because element type ',
-                      eltType:string, ' is not copyable');
-      } else {
-        // TODO: Use a forall when this.parSafe?
-        for elem in other do _addElem(elem);
-      }
     }
 
     pragma "no doc"
