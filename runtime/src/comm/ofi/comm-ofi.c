@@ -1717,6 +1717,9 @@ static
 struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced);
 
 static
+void heedSlingshotSettings(struct fi_info* info);
+
+static
 void init_ofiFabricDomain(void) {
   //
   // Get hints describing our base requirements, the ones that are
@@ -1881,6 +1884,12 @@ void init_ofiFabricDomain(void) {
   // Create the fabric domain and associated fabric access domain.
   //
   OFI_CHK(fi_fabric(ofi_info->fabric_attr, &ofi_fabric, NULL));
+
+  if (strcmp(CHPL_TARGET_PLATFORM, "hpe-cray-ex") == 0
+      && chpl_env_rt_get_bool("COMM_OFI_SLINGSHOT_CHECK_ENV", true)) {
+    heedSlingshotSettings(ofi_info);
+  }
+
   OFI_CHK(fi_domain(ofi_fabric, ofi_info, &ofi_domain, NULL));
 }
 
@@ -1957,6 +1966,98 @@ struct fi_info* getBaseProviderHints(chpl_bool* pTxAttrsForced) {
 #endif
 
   return hints;
+}
+
+
+static
+void heedSlingshotSettings(struct fi_info* info) {
+  //
+  // Deal with Slingshot network related settings.
+  //
+  const char* evDevs = getenv("SLINGSHOT_DEVICES");
+  const char* evSvcIds = getenv("SLINGSHOT_SVC_IDS");
+  const char* evTcs = getenv("SLINGSHOT_TCS");
+  const char* evVnis = getenv("SLINGSHOT_VNIS");
+
+  DBG_PRINTF(DBG_SLINGSHOT,
+             "SLINGSHOT_DEVICES %s%s%s, "
+             "SVC_IDS %s%s%s, "
+             "TCS %s%s%s, "
+             "VNIS %s%s%s",
+             (evDevs == NULL) ? "" : "\"",
+             (evDevs == NULL) ? "not set" : evDevs,
+             (evDevs == NULL) ? "" : "\"",
+             (evSvcIds == NULL) ? "" : "\"",
+             (evSvcIds == NULL) ? "not set" : evSvcIds,
+             (evSvcIds == NULL) ? "" : "\"",
+             (evTcs == NULL) ? "" : "\"",
+             (evTcs == NULL) ? "not set" : evTcs,
+             (evTcs == NULL) ? "" : "\"",
+             (evVnis == NULL) ? "" : "\"",
+             (evVnis == NULL) ? "not set" : evVnis,
+             (evVnis == NULL) ? "" : "\"");
+
+  CHK_TRUE((evDevs == NULL) == (evSvcIds == NULL)
+           && (evSvcIds == NULL) == (evTcs == NULL)
+           && (evTcs == NULL) == (evVnis == NULL)); // sanity
+  if (evDevs == NULL) {
+    return;
+  }
+
+  //
+  // Libfabric allocates and frees struct fi_info structures and their
+  // substructures with the system allocator.  Therefore, that instead
+  // of the Chapel allocator for this auth_key since the pointer to it
+  // will be assigned into that struct.
+  //
+  struct ss_auth_key {
+    uint32_t svc_id;
+    uint16_t vni;
+  };
+  struct ss_auth_key* auth_key;
+  CHK_SYS_MALLOC(auth_key, 1);
+
+  //
+  // Service ID.  If there are more than one, then we have access to
+  // more than one interface.  But we only support one anyway and our
+  // domain logic will have found the first of them, so just take the
+  // first service ID.
+  //
+  {
+    char ev[strlen(evSvcIds) + 1];  // non-constant, for strtok()
+    strcpy(ev, evSvcIds);
+
+    char* tok;
+    char* lasts;
+    CHK_TRUE((tok = strtok_r(ev, ",", &lasts)) != NULL);
+    CHK_TRUE(sscanf(tok, "%" SCNu32, &auth_key->svc_id) == 1);
+    DBG_PRINTF(DBG_SLINGSHOT, "Slingshot svc_id %" PRIu32, auth_key->svc_id);
+  }
+
+  //
+  // VNI.  Similarly to the service ID case, if there are more than one,
+  // just take the first.
+  //
+  {
+    char ev[strlen(evVnis) + 1];  // non-constant, for strtok()
+    strcpy(ev, evVnis);
+
+    char* tok;
+    char* lasts;
+    CHK_TRUE((tok = strtok_r(ev, ",", &lasts)) != NULL);
+
+    char ev2[strlen(tok) + 1];
+    strcpy(ev2, tok);
+
+    char* tok2;
+    char* lasts2;
+    CHK_TRUE((tok2 = strtok_r(ev2, ":", &lasts2)) != NULL);
+    CHK_TRUE(sscanf(tok2, "%" SCNu16, &auth_key->vni) == 1);
+    DBG_PRINTF(DBG_SLINGSHOT, "Slingshot VNI %" PRIu16, auth_key->vni);
+  }
+
+  info->domain_attr->auth_key = (void*) auth_key;
+  info->domain_attr->auth_key_size = sizeof(*auth_key);
 }
 
 
