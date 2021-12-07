@@ -9827,6 +9827,10 @@ static FnSymbol* createMethodStub(AggregateType* at, const char* methodName) {
 static bool resolveSerializeDeserialize(AggregateType* at);
 
 static bool createSerializeDeserialize(AggregateType* at) {
+  if (at->id == 1664765) {
+
+  }
+
   if (!at->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {  // just for now.
     return false;
   }
@@ -9838,22 +9842,22 @@ static bool createSerializeDeserialize(AggregateType* at) {
     return false;
   }
 
-  std::vector<Symbol*> allFields;
+  //std::vector<Symbol*> allFields;
 
-  auto kvPair = promotionFieldMap.find(at);
-  if (kvPair != promotionFieldMap.end()) {
-    for_fields (field, at) {
-      allFields.push_back(field);
-    }
+  //auto kvPair = promotionFieldMap.find(at);
+  //if (kvPair != promotionFieldMap.end()) {
+    //for_fields (field, at) {
+      //allFields.push_back(field);
+    //}
 
-    std::vector<Symbol*>& fields = kvPair->second;
-    for_vector (Symbol, field, fields) {
-      allFields.push_back(field);
-    }
-  }
-  else {
-    return false;
-  }
+    //std::vector<Symbol*>& fields = kvPair->second;
+    //for_vector (Symbol, field, fields) {
+      //allFields.push_back(field);
+    //}
+  //}
+  //else {
+    //return false;
+  //}
 
 
 
@@ -9867,8 +9871,8 @@ static bool createSerializeDeserialize(AggregateType* at) {
   
   CallExpr* buildTuple = new CallExpr("_build_tuple");
 
-  //for_fields (field, at) {
-  for_vector (Symbol, field, allFields) {
+  for_fields (field, at) {
+  //for_vector (Symbol, field, allFields) {
     AggregateType* fieldAggType = NULL;
     if (DecoratedClassType* decClassType = toDecoratedClassType(field->type)) {
       fieldAggType = toAggregateType(decClassType->getCanonicalClass());

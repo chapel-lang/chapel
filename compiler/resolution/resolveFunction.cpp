@@ -1611,9 +1611,16 @@ static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType) {
   retval->scalarPromotionType = yieldedType;
 
   if (fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+    std::cout << "at functionResolution\n";
+    nprint_view(retval);
     for_formals (formal, fn) {
       if (formal->type != gMethodToken->type) {
+        nprint_view(formal);
         promotionFieldMap[retval].push_back(formal);
+        VarSymbol* protoField = new VarSymbol(formal->name, formal->type);
+        protoField->addFlag(FLAG_PROMOTION_PROTO_FIELD);
+
+        retval->fields.insertAtTail(new DefExpr(protoField));
       }
     }
   }
