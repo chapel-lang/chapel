@@ -1129,6 +1129,121 @@ const TypedFnSignature* typeConstructorInitial(Context* context,
   return typeConstructorInitialQuery(context, t).get();
 }
 
+static QualifiedType getInstantiationType(Context* context,
+                                          QualifiedType actualType,
+                                          QualifiedType formalType) {
+
+  // The formal is generic but the actual might require a coercion
+  // on the way to it. In that event, instantiate the formal type
+  // using the type that the actual will coerce to.
+
+  // E.g. a MyClass actual passed to an x:borrowed? formal
+  // should instantiate with MyClass?
+
+  const Type* actualT = actualType.type();
+  const Type* formalT = formalType.type();
+
+  assert(actualT != nullptr);
+  assert(formalT != nullptr);
+
+  // this function should only be called when instantiation is required
+  assert(canPass(actualType, formalType).passes());
+  assert(canPass(actualType, formalType).instantiates());
+
+  if (auto actualCt = actualT->toClassType()) {
+    // handle decorated class passed to decorated class
+    if (auto formalCt = formalT->toClassType()) {
+      // which decorator to use?
+      auto dec = formalCt->decorator().combine(actualCt->decorator());
+
+      // which manager to use?
+      const Type* manager = nullptr;
+      if (dec.isManaged()) {
+        // there aren't implicit conversions from managed -> managed,
+        // so we can always use the actual's manager if the combined
+        // decorator indicates management.
+        assert(actualCt->decorator().isManaged() && actualCt->manager());
+        manager = actualCt->manager();
+      }
+
+      // which BasicClassType to use?
+      const BasicClassType* bct = formalCt->basicClassType();
+      if (bct->isGeneric()) {
+        assert(false && "not implemented yet");
+      }
+
+      // now construct the ClassType
+      auto ct = ClassType::get(context, bct, manager, dec);
+      return QualifiedType(formalType.kind(), ct);
+    }
+
+    // handle decorated class passed to special built-in type
+    auto classBuiltinTypeDec = ClassTypeDecorator::GENERIC;
+    bool foundClassyBuiltinType = true;
+
+    if (formalT->isAnyBorrowedNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::BORROWED_NILABLE;
+    } else if (formalT->isAnyBorrowedNonNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::BORROWED_NONNIL;
+    } else if (formalT->isAnyBorrowedType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::BORROWED;
+    } else if (formalT->isAnyManagementAnyNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::GENERIC;
+    } else if (formalT->isAnyManagementNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::GENERIC_NILABLE;
+    } else if (formalT->isAnyManagementNonNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::GENERIC_NONNIL;
+    } else if (formalT->isAnyOwnedType() &&
+               actualCt->decorator().isManaged() &&
+               actualCt->manager()->isAnyOwnedType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::MANAGED;
+    } else if (formalT->isAnySharedType() &&
+               actualCt->decorator().isManaged() &&
+               actualCt->manager()->isAnySharedType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::MANAGED;
+    } else if (formalT->isAnyUnmanagedNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::UNMANAGED_NILABLE;
+    } else if (formalT->isAnyUnmanagedNonNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::UNMANAGED_NONNIL;
+    } else if (formalT->isAnyUnmanagedType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::UNMANAGED;
+    } else {
+      foundClassyBuiltinType = false;
+    }
+
+    if (foundClassyBuiltinType) {
+      // which basic class type?
+      const BasicClassType* bct = actualCt->basicClassType();
+
+      // which decorator?
+      auto formalDec = ClassTypeDecorator(classBuiltinTypeDec);
+      auto dec = formalDec.combine(actualCt->decorator());
+
+      // which manager?
+      const Type* manager = nullptr;
+      if (dec.isManaged())
+        manager = actualCt->manager();
+
+      // now construct the ClassType
+      auto ct = ClassType::get(context, bct, manager, dec);
+      return QualifiedType(formalType.kind(), ct);
+    }
+  } else if (actualT->isNilType()) {
+    if (formalT->isAnyBorrowedNilableType() ||
+        formalT->isAnyBorrowedType() ||
+        formalT->isAnyManagementAnyNilableType() ||
+        formalT->isAnyManagementNilableType() ||
+        formalT->isAnyUnmanagedNilableType() ||
+        formalT->isAnyUnmanagedType()) {
+      return actualType; // instantiate with NilType for these cases
+    }
+  }
+
+  // TODO: sync type -> value type?
+  assert(false && "case not handled");
+  return QualifiedType();
+}
+
 const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
                                              const CallInfo& call,
@@ -1191,7 +1306,11 @@ const TypedFnSignature* instantiateSignature(Context* context,
           // use the actual type since no conversion/promotion was needed
           substitutions.insert({entry.formal, entry.actualType});
         } else {
-          assert(false && "not implemented yet");
+          // get instantiation type
+          QualifiedType useType = getInstantiationType(context,
+                                                       entry.actualType,
+                                                       entry.formalType);
+          substitutions.insert({entry.formal, useType});
         }
       }
     }
