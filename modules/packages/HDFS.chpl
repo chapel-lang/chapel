@@ -265,6 +265,18 @@ module HDFS {
       return oldValue - 1;
     }
 
+    pragma "last resort"
+    deprecated "open with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+    proc open(path:string, mode:iomode,
+              style:iostyle,
+              in flags:c_int = 0, // default to based on mode
+              bufferSize:c_int = 0,    // 0 -> use hdfs default value
+              replication:c_short = 0, // 0 -> use hdfs default value
+              blockSize:tSize = 0      // 0 -> use hdfs default value
+             ) throws {
+      return open(path, mode, style: iostyleInternal, flags, bufferSize,
+                  replication, blockSize);
+    }
     /*
 
       Open an HDFS file stored at a particular path.  Note that once the file is
@@ -273,14 +285,19 @@ module HDFS {
 
       :arg path: which file to open (for example, "some/file.txt").
       :arg iomode: specify whether to open the file for reading or writing and whether or not to create the file if it doesn't exist.  See :type:`IO.iomode`.
-      :arg style: optional argument to specify I/O style associated with this file.  The provided style will be the default for any channels created for on this file, and that in turn will be the default for all I/O operations performed with those channels.
+      :arg style: optional argument to specify internal I/O style associated with this file.  The provided style will be the default for any channels created for on this file, and that in turn will be the default for all I/O operations performed with those channels.
       :arg flags: flags to pass to the HDFS open call. Uses flags appropriate for ``mode`` if not provided.
       :arg bufferSize: buffer size to pass to the HDFS open call.  Uses the HDFS default value if not provided.
       :arg replication: replication factor to pass to the HDFS open call.  Uses the HDFS default value if not provided.
       :arg blockSize: blockSize to pass to the HDFS open call.  Uses the HDFS default value if not provided.
+
+      .. warning::
+
+         iostyleInternal is an internal type.  We do not recommend relying on
+         this argument, as it will likely be replaced in the future.
      */
     proc open(path:string, mode:iomode,
-              style:iostyle = defaultIOStyle(),
+              style:iostyleInternal = defaultIOStyleInternal(),
               in flags:c_int = 0, // default to based on mode
               bufferSize:c_int = 0,    // 0 -> use hdfs default value
               replication:c_short = 0, // 0 -> use hdfs default value
