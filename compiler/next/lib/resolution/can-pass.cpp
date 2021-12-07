@@ -769,6 +769,13 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
   }
 
   if (actualT == formalT) {
+    if (formalQT.kind() == QualifiedType::PARAM &&
+        formalQT.param() == nullptr) {
+      // if the formal parameter value is unknown, we need to instantiate
+      return instantiate();
+    }
+
+    // otherwise we can pass as-is
     return passAsIs();
   }
 
@@ -824,6 +831,19 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
         }
 
       case QualifiedType::PARAM:
+        {
+          auto got = canConvert(actualQT, formalQT);
+          if (got.passes()) {
+            // if the formal parameter value is unknown, we need
+            // to instantiate as well.
+            if (formalQT.param() == nullptr) {
+              got.instantiates_ = true;
+            }
+            return got;
+          }
+          break;
+        }
+
       case QualifiedType::IN:
       case QualifiedType::CONST_IN:
       case QualifiedType::INOUT:

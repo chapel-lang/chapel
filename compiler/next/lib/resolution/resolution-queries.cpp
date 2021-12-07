@@ -1174,14 +1174,26 @@ const TypedFnSignature* instantiateSignature(Context* context,
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
     // in that case, resolver code should treat it as a hint to
     // use the default value. Unless the call used a ? argument.
-    if (call.hasQuestionArg() &&
-        entry.actualType.kind() == QualifiedType::UNKNOWN &&
+    if (entry.actualType.kind() == QualifiedType::UNKNOWN &&
         entry.actualType.type() == nullptr) {
-      // don't add any substitution
+      if (call.hasQuestionArg()) {
+        // don't add any substitution
+      } else {
+        // add a "use the default" hint substitution.
+        substitutions.insert({entry.formal, entry.actualType});
+      }
     } else {
-      // add a substitution that is either valid or a
-      // "use the default" hint.
-      substitutions.insert({entry.formal, entry.actualType});
+      auto got = canPass(entry.actualType, entry.formalType);
+      assert(got.passes()); // should not get here otherwise
+      if (got.instantiates()) {
+        // add a substitution for a valid value
+        if (!got.converts() && !got.promotes()) {
+          // use the actual type since no conversion/promotion was needed
+          substitutions.insert({entry.formal, entry.actualType});
+        } else {
+          assert(false && "not implemented yet");
+        }
+      }
     }
   }
 
