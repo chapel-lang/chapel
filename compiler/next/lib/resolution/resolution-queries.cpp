@@ -1689,24 +1689,6 @@ static QualifiedType::Kind resolveIntent(const QualifiedType& t) {
   return QualifiedType::UNKNOWN;
 }
 
-static bool canPassInitial(const QualifiedType& actualType,
-                           const QualifiedType& formalType) {
-  // TODO: use Any type vs. Unknown for formals without a type?
-  if (formalType.kind() == QualifiedType::UNKNOWN) return true;
-
-  auto result = canPass(actualType, formalType);
-  return result.passes();
-}
-
-static bool canPassAfterInstantiating(const QualifiedType& actualType,
-                                      const QualifiedType& formalType) {
-  // TODO: Any type handling should be in canPass
-  if (formalType.type()->isAnyType()) return true;
-
-  auto result = canPass(actualType, formalType);
-  return result.passes();
-}
-
 // returns nullptr if the candidate is not applicable,
 // or the result of typedSignatureInitial if it is.
 static const TypedFnSignature*
@@ -1760,8 +1742,8 @@ doIsCandidateApplicableInitial(Context* context,
   for (const FormalActual& entry : faMap.byFormalIdx()) {
     const auto& actualType = entry.actualType;
     const auto& formalType = initialTypedSignature->formalType(formalIdx);
-    bool ok = canPassInitial(actualType, formalType);
-    if (!ok) {
+    auto got = canPass(actualType, formalType);
+    if (!got.passes()) {
       return nullptr;
     }
 
@@ -1796,8 +1778,8 @@ doIsCandidateApplicableInstantiating(Context* context,
   for (size_t i = 0; i < nActuals; i++) {
     const QualifiedType& actualType = call.actuals(i).type();
     const QualifiedType& formalType = instantiated->formalType(i);
-    bool ok = canPassAfterInstantiating(actualType, formalType);
-    if (!ok)
+    auto got = canPass(actualType, formalType);
+    if (!got.passes())
       return nullptr;
   }
 
