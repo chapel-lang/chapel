@@ -18,8 +18,7 @@
  */
 
 #include "chpl/util/break.h"
-namespace chpl {
-namespace util {
+
 // must be non-static to avoid dead-code elim. when compiling -O3
 void gdbShouldBreakHere() {
 
@@ -28,5 +27,3 @@ void gdbShouldBreakHere() {
 void debuggerBreakHere() {
   gdbShouldBreakHere();
 }
-} // end namespace util
-} // end namespace chpl

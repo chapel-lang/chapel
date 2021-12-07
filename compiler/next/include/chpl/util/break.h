@@ -21,11 +21,8 @@
 #ifndef CHPL_UTIL_BREAK_H
 #define CHPL_UTIL_BREAK_H
 
-namespace chpl {
-namespace util {
+// must be exported to avoid dead-code elimination by C++ compiler
 void gdbShouldBreakHere();
 void debuggerBreakHere();
-} // end namespace util
-} // end namespace chpl
 
 #endif

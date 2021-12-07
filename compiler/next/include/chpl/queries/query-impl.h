@@ -130,7 +130,7 @@ void Context::queryBeginTrace(const char* traceQueryName,
       printf("QUERY + ARGS HASH:    %zu\n", queryAndArgsHash);
     }
     if (breakSet && queryAndArgsHash == breakOnHash) {
-      util::debuggerBreakHere();
+      debuggerBreakHere();
     }
   }
 }
