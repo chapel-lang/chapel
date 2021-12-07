@@ -39,6 +39,8 @@ class Builder;
   are at a statement level will be represented with this type.
  */
 class Comment final : public Expression {
+  friend Builder;
+
  private:
   std::string comment_;
   CommentID commentId_;
@@ -73,17 +75,19 @@ class Comment final : public Expression {
   const std::string& str() const { return comment_; }
 
   /**
+     Returns the id of this comment, which is unique in
+     its BuilderResult
+  */
+  CommentID commentId() const { return commentId_; }
+
+ protected:
+  /**
      Set the comment's ID
    */
   void setCommentId(int index) {
     commentId_ = CommentID(index);
   }
 
-  /**
-     Returns the id of this comment, which is unique in
-     its BuilderResult
-  */
-  CommentID commentId() const { return commentId_; }
 };
 
 /**

@@ -50,24 +50,24 @@ static std::string vprint_to_string(const char* format, va_list vl) {
 ErrorMessage::ErrorMessage()
   : level_(-1), location_(), message_() {
 }
-ErrorMessage::ErrorMessage(ID parent, Location location, std::string message)
-  : level_(0), location_(location), message_(message), parent_(parent) {
+ErrorMessage::ErrorMessage(ID id, Location location, std::string message)
+  : level_(0), location_(location), message_(message), id_(id) {
 }
-ErrorMessage::ErrorMessage(ID parent, Location location, const char* message)
-  : level_(0), location_(location), message_(message), parent_(parent) {
+ErrorMessage::ErrorMessage(ID id, Location location, const char* message)
+  : level_(0), location_(location), message_(message), id_(id) {
 }
 
-ErrorMessage ErrorMessage::vbuild(ID parent, Location loc, const char* fmt, va_list vl) {
+ErrorMessage ErrorMessage::vbuild(ID id, Location loc, const char* fmt, va_list vl) {
   std::string ret;
   ret = vprint_to_string(fmt, vl);
-  return ErrorMessage(parent, loc, ret);
+  return ErrorMessage(id, loc, ret);
 }
 
-ErrorMessage ErrorMessage::build(ID parent, Location loc, const char* fmt, ...) {
+ErrorMessage ErrorMessage::build(ID id, Location loc, const char* fmt, ...) {
   ErrorMessage ret;
   va_list vl;
   va_start(vl, fmt);
-  ret = ErrorMessage::vbuild(parent, loc, fmt, vl);
+  ret = ErrorMessage::vbuild(id, loc, fmt, vl);
   va_end(vl);
   return ret;
 }
@@ -88,8 +88,8 @@ void ErrorMessage::markUniqueStrings(Context* context) const {
 }
 
 void ErrorMessage::updateLocation(Context* context) {
-  if (!parent_.isEmpty()) {
-    location_ = parsing::locateId(context, parent_);
+  if (!id_.isEmpty()) {
+    location_ = parsing::locateId(context, id_);
   }
   for (auto& err : details_) {
     err.updateLocation(context);

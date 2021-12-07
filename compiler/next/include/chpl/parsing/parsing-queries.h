@@ -72,11 +72,6 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path);
  */
 const Location& locateId(Context* context, ID id);
 /**
- This query returns the Location where a particular CommentID appeared.
- */
-const Location& locateCommentId(Context* context, CommentID id);
-/**
-/**
  This function just runs locateId on ast->id(). Similarly to locateID,
  it can be used to get a Location for a Comment.
  */

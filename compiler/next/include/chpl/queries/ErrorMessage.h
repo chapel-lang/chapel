@@ -40,7 +40,7 @@ class ErrorMessage final {
   int level_; // error? warning? performance hint?
   Location location_;
   std::string message_;
-  ID parent_;
+  ID id_;
 
   // sometimes an error message wants to point to a bunch of
   // related line numbers. That can go here.
@@ -50,11 +50,11 @@ class ErrorMessage final {
 
  public:
   ErrorMessage();
-  ErrorMessage(ID parent, Location location, std::string message);
-  ErrorMessage(ID parent, Location location, const char* message);
+  ErrorMessage(ID id, Location location, std::string message);
+  ErrorMessage(ID id, Location location, const char* message);
 
-  static ErrorMessage vbuild(ID parent, Location loc, const char* fmt, va_list vl);
-  static ErrorMessage build(ID parent, Location loc, const char* fmt, ...)
+  static ErrorMessage vbuild(ID id, Location loc, const char* fmt, va_list vl);
+  static ErrorMessage build(ID id, Location loc, const char* fmt, ...)
 #ifndef DOXYGEN
     // docs generator has trouble with the attribute applied to 'build'
     // so the above ifndef works around the issue.

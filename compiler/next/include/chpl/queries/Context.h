@@ -416,11 +416,6 @@ class Context {
   UniqueString filePathForId(ID id);
 
   /**
-    Return the file path for the file containing this ID.
-   */
-  UniqueString filePathForCommentId(CommentID id);
-
-  /**
     Returns true if filePathForId is already populated for
     this ID.
    */

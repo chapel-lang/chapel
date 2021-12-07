@@ -42,25 +42,24 @@ BuilderResult::BuilderResult(UniqueString filePath)
 {
 }
 
-// Recomputes idToAst / astToLocation maps by visiting all uAST nodes
-// and combining information from the provided maps.
+// Computes idToAst and idToParent maps by visiting all uAST nodes
 static
-void recomputeIdAndLocMaps(
+void computeIdMaps(
     const ASTNode* ast,
     const ASTNode* parentAst,
-    std::unordered_map<ID, const ASTNode*>& dstIdToAst,
-    std::unordered_map<ID, ID>& dstIdToParent) {
+    std::unordered_map<ID, const ASTNode*>& idToAst,
+    std::unordered_map<ID, ID>& idToParentId) {
 
   for (const ASTNode* child : ast->children()) {
-    recomputeIdAndLocMaps(child, ast, dstIdToAst, dstIdToParent);
+    computeIdMaps(child, ast, idToAst, idToParentId);
   }
 
   if (!ast->id().isEmpty()) {
-    dstIdToAst[ast->id()] = ast;
+    idToAst[ast->id()] = ast;
 
     if (parentAst != nullptr) {
       if (!parentAst->id().isEmpty()) {
-        dstIdToParent[ast->id()] = parentAst->id();
+        idToParentId[ast->id()] = parentAst->id();
       } else {
         assert(false && "parentAst does not have valid ID");
       }
@@ -95,7 +94,7 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
 
   // recompute locationsVec by traversing the AST and using the maps
   for (const auto& ast : keep.topLevelExpressions_) {
-    recomputeIdAndLocMaps(ast.get(), nullptr, newIdToAst, newIdToParent);
+    computeIdMaps(ast.get(), nullptr, newIdToAst, newIdToParent);
   }
 
   // now update the ID and Locations maps in keep
@@ -172,7 +171,7 @@ Location BuilderResult::idToLocation(ID id, UniqueString path) const {
 Location BuilderResult::commentToLocation(const Comment *c) const {
   int idx = c->commentId().index();
   assert(idx >= 0 && "Cant lookup comment that has -1 id");
-  if ((size_t)idx >= commentIdToLocation_.size()) {
+  if (idx < 0 || (size_t)idx >= commentIdToLocation_.size()) {
     return Location();
   }
   return commentIdToLocation_[idx];
