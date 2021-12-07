@@ -103,9 +103,9 @@ fi
 ( cd "${CHPL_DIR}" ) || { log_error "failed cd $CHPL_DIR" ; exit 1 ; }
 
 # Tmp directory for compile output
-TMP_TEST_DIR="$(mktemp -d ${CHPL_DIR}/chapel-test-XXXXX)"
+TMP_TEST_DIR="$(mktemp -d ${CHPL_DIR}/chapel-test-XXXXXX)"
 if [ -z "${TMP_TEST_DIR}" ] ; then
-    log_error "failed mktemp -d ${CHPL_DIR}/chapel-test-XXXXX"
+    log_error "failed mktemp -d ${CHPL_DIR}/chapel-test-XXXXXX"
     exit 1
 fi
 log_info "Temporary test job directory: ${TMP_TEST_DIR}"
