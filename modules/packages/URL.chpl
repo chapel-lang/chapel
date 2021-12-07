@@ -44,6 +44,16 @@ For example, the following program downloads a web-page from http://example.com 
 module URL {
   public use IO;
 
+  pragma "last resort"
+  deprecated "openUrlReader with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+  proc openUrlReader(url:string,
+                     param kind=iokind.dynamic, param locking=true,
+                     start:int(64) = 0, end:int(64) = max(int(64)),
+                     style:iostyle)
+                    : channel(false, kind, locking) throws {
+    return openUrlReader(url, kind, locking, start, end,
+                         style: iostyleInternal);
+  }
   /*
 
   Open a channel reading from a particular URL.
@@ -67,11 +77,15 @@ module URL {
 
   :throws SystemError: Thrown if a reading channel could not be returned.
 
+  .. warning::
+
+     iostyleInternal is an internal type.  We do not recommend relying on it, as
+     it will likely be replaced in the future.
    */
   proc openUrlReader(url:string,
                      param kind=iokind.dynamic, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)),
-                     style:iostyle = defaultIOStyle())
+                     style:iostyleInternal = defaultIOStyleInternal())
                     : channel(false, kind, locking) throws {
     use Curl;
     use CurlQioIntegration;
@@ -80,6 +94,16 @@ module URL {
                     start=start, end=end);
   }
 
+  pragma "last resort"
+  deprecated "openUrlWriter with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
+  proc openUrlWriter(url:string,
+                 param kind=iokind.dynamic, param locking=true,
+                 start:int(64) = 0, end:int(64) = max(int(64)),
+                 style:iostyle)
+                : channel(true, kind, locking) throws {
+    return openUrlWriter(url, kind, locking, start, end,
+                         style: iostyleInternal);
+  }
   /*
 
   Open a channel writing to a particular URL.
@@ -102,11 +126,16 @@ module URL {
   :returns: an open writing channel to the requested resource.
 
   :throws SystemError: Thrown if a writing channel could not be returned.
+
+  .. warning::
+
+     iostyleInternal is an internal type.  We do not recommend relying on it, as
+     it will likely be replaced in the future.
   */
   proc openUrlWriter(url:string,
                  param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
-                 style:iostyle = defaultIOStyle())
+                 style:iostyleInternal = defaultIOStyleInternal())
                 : channel(true, kind, locking) throws {
     use Curl;
     use CurlQioIntegration;

@@ -1121,7 +1121,7 @@ module Curl {
 
     proc openCurlFile(url:string,
                      mode:iomode = iomode.r,
-                     style:iostyle = defaultIOStyle()) throws {
+                     style:iostyleInternal = defaultIOStyleInternal()) throws {
 
       var err_out: syserr = ENOERR;
       var rc = 0;
