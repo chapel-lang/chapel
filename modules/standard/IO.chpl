@@ -4226,6 +4226,7 @@ inline proc channel.write(const args ...?k):bool throws {
   return true;
 }
 
+pragma "last resort"
 deprecated "write with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
 proc channel.write(const args ...?k, style:iostyle):bool throws {
   return this.write((...args), style: iostyleInternal);
@@ -4257,8 +4258,22 @@ proc channel.write(const args ...?k, style:iostyleInternal):bool throws {
   on this.home {
     try this.lock(); defer { this.unlock(); }
 
-    var saveStyle = this._style();
-    this._set_style(style); defer { this._set_style(saveStyle); }
+    var saveStyle: iostyleInternal;
+    on this.home {
+      var local_style:iostyleInternal;
+      qio_channel_get_style(_channel_internal, local_style);
+      saveStyle = local_style;
+    }
+    on this.home {
+      var local_style:iostyleInternal = style;
+      qio_channel_set_style(_channel_internal, local_style);
+    }
+    defer {
+      on this.home {
+        var local_style:iostyleInternal = saveStyle;
+        qio_channel_set_style(_channel_internal, local_style);
+      }
+    }
 
     for param i in 0..k-1 {
       try _writeOne(iokind.dynamic, args(i), origLocale);
@@ -4280,6 +4295,7 @@ proc channel.writeln(const args ...?k):bool throws {
   return try this.write((...args), new ioNewline());
 }
 
+pragma "last resort"
 deprecated "write with a style argument of type iostyle is deprecated, please either rely on the default value for the argument or use the internal type iostyleInternal"
 proc channel.writeln(const args ...?k, style:iostyle):bool throws {
   return this.writeln((...args), style: iostyleInternal);
@@ -6538,7 +6554,18 @@ proc channel.writef(fmtStr:?t): bool throws
   var err:syserr = ENOERR;
   on this.home {
     try this.lock(); defer { this.unlock(); }
-    var save_style = this._style(); defer { this._set_style(save_style); }
+    var save_style: iostyleInternal;
+    on this.home {
+      var local_style:iostyleInternal;
+      qio_channel_get_style(_channel_internal, local_style);
+      save_style = local_style;
+    }
+    defer {
+      on this.home {
+        var local_style:iostyleInternal = save_style;
+        qio_channel_set_style(_channel_internal, local_style);
+      }
+    }
     var cur:size_t = 0;
     var len:size_t = fmtStr.size:size_t;
     var conv:qio_conv_t;
@@ -6569,7 +6596,10 @@ proc channel.writef(fmtStr:?t): bool throws
       }
     }
 
-    this._set_style(save_style);
+    on this.home {
+      var local_style:iostyleInternal = save_style;
+      qio_channel_set_style(_channel_internal, local_style);
+    }
   }
 
   if err then try this._ch_ioerror(err, "in channel.writef(fmt:string, ...)");
