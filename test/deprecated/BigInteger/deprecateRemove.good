@@ -1,2 +1,4 @@
-deprecateRemove.chpl:8: warning: bigint.remove is deprecated, use bigint.removeFactor instead
+deprecateRemove.chpl:11: warning: bigint.remove is deprecated, use bigint.removeFactor instead
+deprecateRemove.chpl:12: warning: a and f are deprecated - please use x and fac respectively
 32 is 2 times the factor 4 raised to the power 2
+7 is 7 times the factor 4 raised to the power 0
