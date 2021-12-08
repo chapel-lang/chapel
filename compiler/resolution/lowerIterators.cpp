@@ -3036,6 +3036,32 @@ void lowerIterators() {
 
   USR_STOP();
 
+  forv_Vec (CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL)) {
+      call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
+      std::cout << "Replaced primitive\n";
+      nprint_view(call);
+
+      if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
+        if (SymExpr* lhs = toSymExpr(parentCall->get(1))) {
+          if (SymExpr* field = toSymExpr(call->get(2))) {
+            if (field->symbol()->isRef()) {
+              SET_LINENO(call);
+
+              VarSymbol* derefTmp = newTemp("derefTmp", field->symbol()->type);
+              parentCall->insertBefore(new DefExpr(derefTmp));
+              parentCall->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
+                                                    call->remove()));
+              parentCall->insertAtTail(new CallExpr(PRIM_DEREF, derefTmp));
+              //lhs->symbol()->addFlag(FLAG_REF);
+            }
+          }
+        }
+      }
+
+    }
+  }
+
   removeUncalledIterators();
 
   fixNumericalGetMemberPrims();

@@ -9676,6 +9676,8 @@ static FnSymbol* resolveNormalSerializer(CallExpr* call) {
   return ret;
 }
 
+//static FnSymbol* resolveSerializeOnly(AggregateType* at);
+
 static bool resolveSerializeDeserialize(AggregateType* at) {
   SET_LINENO(at->symbol);
   VarSymbol* tmp          = newTemp(at);
@@ -9701,6 +9703,7 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
     // serializer only being implemented for domains.
     serializeFn = NULL;
   }
+  
 
   if (serializeFn != NULL) {
     resolveFunction(serializeFn);
@@ -9762,8 +9765,6 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
     retval = true;
   }
 
-  tmp->defPoint->remove();
-
   return retval;
 }
 
@@ -9799,7 +9800,8 @@ static void resolveBroadcasters(AggregateType* at) {
   ser.destroyer   = destroyFn;
 }
 
-static FnSymbol* createMethodStub(AggregateType* at, const char* methodName) {
+static FnSymbol* createMethodStub(AggregateType* at, const char* methodName,
+                                  bool isType) {
   // taken from build_accessor
   FnSymbol* fn = new FnSymbol(methodName);
 
@@ -9807,13 +9809,16 @@ static FnSymbol* createMethodStub(AggregateType* at, const char* methodName) {
 
   fn->setMethod(true);
 
-  Type* thisType = at;
-  if (isClass(at))
+  Type* thisType = at->getValType();
+  if (isClass(at) && isType)
     thisType = at->getDecoratedClass(ClassTypeDecorator::GENERIC);
   ArgSymbol* _this = new ArgSymbol(INTENT_BLANK, "this", thisType);
 
   _this->addFlag(FLAG_ARG_THIS);
   fn->insertFormalAtTail(_this);
+  if (isType) {
+    _this->addFlag(FLAG_TYPE_VARIABLE);
+  }
 
   DefExpr* def = new DefExpr(fn);
   at->symbol->defPoint->insertBefore(def);
@@ -9826,7 +9831,29 @@ static FnSymbol* createMethodStub(AggregateType* at, const char* methodName) {
 
 static bool resolveSerializeDeserialize(AggregateType* at);
 
+//static FnSymbol* resolveSerializeOnly(AggregateType* at) {
+  //SET_LINENO(at->symbol);
+
+  //VarSymbol* tmp          = newTemp(at);
+  //FnSymbol* serializeFn   = NULL;
+
+  //chpl_gen_main->insertAtHead(new DefExpr(tmp));
+
+  //CallExpr* serializeCall = new CallExpr("chpl__serialize", gMethodToken, tmp);
+  //serializeFn = resolveNormalSerializer(serializeCall);
+  //if (serializeFn != NULL && serializeFn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+    //// Without this check we would resolve a serializer for arrays despite a
+    //// serializer only being implemented for domains.
+    //serializeFn = NULL;
+  //}
+
+  //tmp->defPoint->remove();
+
+  //return serializeFn;
+//}
+
 static bool createSerializeDeserialize(AggregateType* at) {
+  //AggregateType* at = toAggregateType(_at->getValType());
   if (at->id == 1664765) {
 
   }
@@ -9864,13 +9891,23 @@ static bool createSerializeDeserialize(AggregateType* at) {
   SET_LINENO(at);
   bool retval = true;
 
-  FnSymbol* serializer = createMethodStub(at, "chpl__serialize");
-  //ArgSymbol* _this = serializer->getFormal(2);
+  FnSymbol* serializer = createMethodStub(at, "chpl__serialize",
+                                          /*isType=*/false);
 
-  //FnSymbol* deserializer = createMethodStub(at, "chpl__deserialize"); // TODO type method
-  
+  if (serializer->id == 2259392) {
+
+  }
+  ArgSymbol* _this = serializer->getFormal(2);
+
   CallExpr* buildTuple = new CallExpr("_build_tuple");
 
+  std::vector<FnSymbol*> deserializers;
+
+  if (serializer->id == 2270260) {
+
+  }
+
+  //int fieldNum = 0;
   for_fields (field, at) {
   //for_vector (Symbol, field, allFields) {
     AggregateType* fieldAggType = NULL;
@@ -9883,44 +9920,122 @@ static bool createSerializeDeserialize(AggregateType* at) {
 
 
     if (fieldAggType) {
-      fieldAggType = toAggregateType(fieldAggType->getValType());
-      INT_ASSERT(fieldAggType);
+      //fieldAggType = toAggregateType(fieldAggType->getValType());
+      AggregateType* fieldValType = toAggregateType(fieldAggType->getValType());
+      INT_ASSERT(fieldValType);
 
-      if (resolveSerializeDeserialize(fieldAggType)) {
-        Serializers ser = serializeMap[fieldAggType];
+      if (resolveSerializeDeserialize(fieldValType)) {
+        Serializers& ser = serializeMap[fieldValType];
         FnSymbol* fieldSerializer = ser.serializer;
-        //FnSymbol* fieldDeserializer = ser.deserializer;
+        deserializers.push_back(ser.deserializer);
 
+        VarSymbol* fieldTmp = newTemp("ser_field_tmp");
+        fieldTmp->addFlag(FLAG_REF);
+        serializer->insertAtTail(new DefExpr(fieldTmp));
 
+        //PrimitiveTag prim;
+        CallExpr* getField;
+        if (field->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+          std::cout << "1000\n";
+          getField =  new CallExpr(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, _this,
+                                          field);
+        }
+        else {
+          std::cout << "2000\n";
+          //prim = PRIM_GET_MEMBER;
+          getField =  new CallExpr(PRIM_GET_MEMBER, _this,
+                                          new_CStringSymbol(field->name));
+        }
+        serializer->insertAtTail(new CallExpr(PRIM_ASSIGN, fieldTmp, getField));
         // update the serializer body
-        buildTuple->insertAtTail(new CallExpr(fieldSerializer, gMethodToken, field));
+        buildTuple->insertAtTail(new CallExpr(fieldSerializer, gMethodToken, fieldTmp));
         //buildTuple->insertAtTail(new CallExpr(".", field,
                                               //new CallExpr(fieldSerializer)));
 
         // update the deserializer body
-        // TODO
+        //new CallExpr(PRIM_GET_MEMBER, deserializerFormal
+        //deserializer->insertAtTail(deserializerFormal
       }
       else {
         retval = false;
+        break;
       }
     }
     else if (isPOD(field->type)) {
       buildTuple->insertAtTail(new SymExpr(field));
+      deserializers.push_back(NULL);
     }
     else {
       INT_FATAL("Unhandled case");
     }
   }
 
-  if (retval) {
-
+  if (!retval) {
+    return false;
   }
 
   serializer->insertAtTail(new CallExpr(PRIM_RETURN, buildTuple));
-
+  //at->symbol->defPoint->insertBefore(new DefExpr(serializer));
   normalize(serializer);
+  resolveFunction(serializer);
+  Type* serialDataType = serializer->retType;
+
+  FnSymbol* deserializer = createMethodStub(at, "chpl__deserialize",
+                                            /*isType=*/true);
+
+  if (at->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+    deserializer->addFlag(FLAG_FN_RETURNS_ITERATOR);
+  }
+
+  ArgSymbol* deserializerFormal = new ArgSymbol(INTENT_BLANK, "data", serialDataType);
+  //AggregateType* deserializerFormalType = toAggregateType(deserializerFormal->type);
+  deserializer->insertFormalAtTail(deserializerFormal);
+  VarSymbol* deserializerRet = new VarSymbol("deserializer_return", at);
+  deserializerRet->addFlag(FLAG_NO_COPY);
+  deserializerRet->addFlag(FLAG_NO_COPY_RETURN);
+  deserializer->insertAtTail(new DefExpr(deserializerRet));
+
+  int fieldNum = 0;
+  for_fields (field, at) {
+    //VarSymbol* formalFieldSym = toVarSymbol(deserializerFormalType->getField(fieldNum));
+
+    CallExpr* dataGetField = new CallExpr(PRIM_GET_MEMBER_VALUE, deserializerFormal,
+                                          new_CStringSymbol(astr("x", istr(fieldNum))));
+    //CallExpr* retGetField = new CallExpr(PRIM_GET_MEMBER, deserializerRet, field->name);
+
+    Expr* deserializedExpr = dataGetField;
+    if (FnSymbol* deserializer = deserializers[fieldNum]) {
+      deserializedExpr = new CallExpr(deserializer, gMethodToken,
+                                      field->type->symbol, dataGetField);
+    }
+                 
+    //deserializer->insertAtTail(new CallExpr(PRIM_MOVE, retGetField, deserializedExpr));
+    deserializer->insertAtTail(new CallExpr(PRIM_MOVE, field, deserializedExpr));
+
+    fieldNum++;
+  }
+  deserializer->insertAtTail(new CallExpr(PRIM_RETURN, deserializerRet));
+  //at->symbol->defPoint->insertBefore(new DefExpr(deserializer));
+
+  normalize(deserializer);
+
+  resolveFunction(deserializer);
+
+  INT_ASSERT(deserializer->retType == toDefExpr(deserializer->formals.get(2))->sym->type);
 
   retval = resolveSerializeDeserialize(at); // now this should work
+
+  std::cout << "START REPORT\n";
+  std::cout << "type\n";
+  nprint_view(at);
+
+  std::cout << "functions\n";
+  nprint_view(serializer);
+  nprint_view(deserializer);
+
+  std::cout << "retval\n";
+  std::cout << retval << std::endl;
+  std::cout << "END REPORT\n";
 
   return retval;
 }
@@ -9931,35 +10046,28 @@ static void resolveSerializers() {
   }
 
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (! ts->hasFlag(FLAG_GENERIC)                &&
-        //! ts->hasFlag(FLAG_ITERATOR_RECORD)        &&
-        ! isSingleType(ts->type)                   &&
-        ! isSyncType(ts->type)                     &&
-        ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
-      //if (ts->id == 1752804) {
-      if (ts->getModule()->modTag == MOD_USER) {
+    bool hasSerializers = false;
 
-      }
-      if (AggregateType* at = toAggregateType(ts->type)) {
+    AggregateType* at = toAggregateType(ts->type);
+
+    if (ts->hasFlag(FLAG_ITERATOR_RECORD)) {
+      hasSerializers = createSerializeDeserialize(at);
+    }
+    else if (! ts->hasFlag(FLAG_GENERIC)                &&
+             ! isSingleType(ts->type)                   &&
+             ! isSyncType(ts->type)                     &&
+             ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+      if (at != NULL) {
         if (isRecord(at) == true || 
             (isClass(at) == true && !at->symbol->hasFlag(FLAG_REF))) {
-          bool success = resolveSerializeDeserialize(at);
+          hasSerializers = resolveSerializeDeserialize(at);
 
-          if (!success) {
-            success = createSerializeDeserialize(at);
-
-
-          }
-          if (success) {
-            resolveBroadcasters(at);
-          }
         }
       }
     }
-    else {
-      if (ts->id == 1752804) {
 
-      }
+    if (hasSerializers) {
+      resolveBroadcasters(at);
     }
   }
 

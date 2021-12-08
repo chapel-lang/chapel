@@ -216,17 +216,6 @@ static bool shouldSerialize(ArgSymbol* arg) {
   bool hasSerializer = serializeMap.find(arg->getValType()) != serializeMap.end();
   Type* argType = arg->getValType();
 
-  //if (arg->id == 2357983) {
-    if (AggregateType *at = toAggregateType(argType)) {
-      nprint_view(at);
-      for_fields (field, at) {
-        nprint_view(field);
-        bool hasSerializer = serializeMap.find(field->getValType()) != serializeMap.end();
-        std::cout << "has serializer " << hasSerializer << std::endl;
-      }
-    }
-  //}
-
   if (hasSerializer == false) {
     retval = false;
   } else if (argType->symbol->hasFlag(FLAG_ARRAY)) {

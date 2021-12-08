@@ -1985,8 +1985,17 @@ void cleanupPrimIRFieldValByFormal() {
 static void fixPromotionProtoFields(AggregateType* record, Symbol* locSym,
                                     VarSymbol* newField) {
 
-  if (record->id == 1664765) {
+  if (record->id == 1743800) {
 
+  }
+
+  if (record->numFields() == 0) {
+    return;
+  }
+
+  bool hasSerializer = serializeMap.find(record->getValType()) != serializeMap.end();
+  if (!hasSerializer) {
+    return;
   }
 
   Serializers serializers = serializeMap[record];
@@ -1997,30 +2006,20 @@ static void fixPromotionProtoFields(AggregateType* record, Symbol* locSym,
 
   for_fields(field, record) {
     if (field->hasFlag(FLAG_PROMOTION_PROTO_FIELD)) {
-      field->defPoint->remove();
       if ((strcmp(field->name, locSym->name) == 0) &&
           field->type == locSym->type) {
+        field->defPoint->remove();
         updateMap.put(field, newField);
-      }
-      else {
-        if (serializer) {
-          // this could be a less fatal usr_warn under --verify or somethign
-          INT_FATAL("Need to remove the serializer");
-        }
+        break;
       }
     }
   }
 
   if (serializer) {
 
-    std::cout << "preupdate\n";
-    nprint_view(serializer);
     // what's happening here? Should I make it clear that I am using field
     // accessors?
     update_symbols(serializer, &updateMap);
-
-    std::cout << "postupdate\n";
-    nprint_view(serializer);
 
   }
 
@@ -2028,6 +2027,26 @@ static void fixPromotionProtoFields(AggregateType* record, Symbol* locSym,
   // here.
   if (deserializer) {
     update_symbols(deserializer, &updateMap);
+  }
+}
+
+static void cleanupProtoFields(AggregateType* at) {
+  if (!isAlive(at->symbol)) {
+    return;
+  }
+
+  if (at->numFields() == 0) {
+    return;
+  }
+
+  bool hasSerializer = serializeMap.find(at->getValType()) != serializeMap.end();
+
+  if (!hasSerializer) {
+    for_fields (field, at) {
+      if (field->hasFlag(FLAG_PROMOTION_PROTO_FIELD)) {
+        field->defPoint->remove();
+      }
+    }
   }
 }
 
@@ -2042,8 +2061,8 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
   IteratorInfo* ii = fn->iteratorInfo;
   Symbol* valField = NULL;
 
-  std::cout << "at lowerIterators\n";
-  nprint_view(ii->irecord);
+  cleanupProtoFields(ii->irecord);
+
   int i = 0;    // This numbers the fields.
   forv_Vec(Symbol, local, locals) {
     bool isYieldSym = yldSymSet.set_in(local);
@@ -2062,7 +2081,6 @@ static void addLocalsToClassAndRecord(Vec<Symbol*>& locals, FnSymbol* fn,
       VarSymbol* rfield = new VarSymbol(field->name, field->type);
       rfield->qual = field->qual;
       local2rfield.put(local, rfield);
-      nprint_view(rfield);
       fixPromotionProtoFields(ii->irecord, local, rfield);
       ii->irecord->fields.insertAtTail(new DefExpr(rfield));
 
