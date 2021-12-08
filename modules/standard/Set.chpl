@@ -358,6 +358,7 @@ module Set {
       :return: Whether or not this set and `other` intersect.
       :rtype: `bool`
     */
+    deprecated "Set isIntersecting() method is deprecated; use !:proc:`isDisjoint` instead"
     proc const isIntersecting(const ref other: set(eltType, ?)): bool {
       return !isDisjoint(other);
     }
