@@ -667,6 +667,13 @@ proc stringStyleWithVariableLength() {
  deprecated
 "This function is deprecated due to returning a deprecated type, please don't call it"
 proc stringStyleWithLength(lengthBytes:int) throws {
+  return stringStyleWithLengthInternal(lengthBytes);
+}
+
+// Replacement for stringStyleWithLength, though it shouldn't be relied upon by
+// users as it will likely be replaced in the future
+pragma "no doc"
+proc stringStyleWithLengthInternal(lengthBytes:int) throws {
   var x = iostringstyle.lenVb_data;
   select lengthBytes {
     when 0 do x = iostringstyle.lenVb_data;
@@ -2575,6 +2582,19 @@ proc channel._style():iostyle {
   return ret;
 }
 
+// Replacement for channel._style(), but it really shouldn't be used by users,
+// it will get replaced at some point.
+pragma "no doc"
+proc channel._styleInternal(): iostyleInternal {
+  var ret:iostyleInternal;
+  on this.home {
+    var local_style:iostyleInternal;
+    qio_channel_get_style(_channel_internal, local_style);
+    ret = local_style;
+  }
+  return ret;
+}
+
 /*
 
    Set the style associated with a channel. This function should only
@@ -2585,6 +2605,16 @@ deprecated "This method is deprecated because its purpose involves a deprecated 
 proc channel._set_style(style:iostyle) {
   on this.home {
     var local_style:iostyle = style;
+    qio_channel_set_style(_channel_internal, local_style);
+  }
+}
+
+// Replacement for channel._set_style(), but it really shouldn't be used by
+// users, it will get replaced at some point.
+pragma "no doc"
+proc channel._set_styleInternal(style: iostyleInternal) {
+  on this.home {
+    var local_style:iostyleInternal = style;
     qio_channel_set_style(_channel_internal, local_style);
   }
 }

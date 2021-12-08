@@ -18,9 +18,9 @@ proc main() {
 
   // Ask that arrays are output with [1,2] style
   stdout.lock();
-  var style = stdout._style();
+  var style = stdout._styleInternal();
   style.array_style = QIO_ARRAY_FORMAT_CHPL:uint(8);
-  stdout._set_style(style);
+  stdout._set_styleInternal(style);
   stdout.unlock();
 
   writeln([1,2,3]);

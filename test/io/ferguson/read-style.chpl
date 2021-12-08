@@ -10,7 +10,7 @@ writer.close();
 
 var reader = open( file_name, iomode.r ).reader();
 
-var line_style = new iostyle();
+var line_style = new iostyleInternal();
 var line: string;
 line_style.string_format = iostringformat.toend:uint(8);
 line_style.string_end = 0x0a; // ascii newline.
