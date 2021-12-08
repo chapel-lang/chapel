@@ -28,18 +28,50 @@ namespace types {
 const owned<BasicClassType>&
 BasicClassType::getBasicClassType(
     Context* context, ID id, UniqueString name,
+    const BasicClassType* parentType,
     std::vector<CompositeType::FieldDetail> fields) {
-  QUERY_BEGIN(getBasicClassType, context, id, name, fields);
+  QUERY_BEGIN(getBasicClassType, context, id, name, parentType, fields);
 
-  auto result = toOwned(new BasicClassType(id, name, std::move(fields)));
+  auto result = toOwned(new BasicClassType(id, name,
+                                           parentType, std::move(fields)));
 
   return QUERY_END(result);
 }
 
 const BasicClassType*
 BasicClassType::get(Context* context, ID id, UniqueString name,
+                    const BasicClassType* parentType,
                     std::vector<CompositeType::FieldDetail> fields) {
-  return getBasicClassType(context, id, name, std::move(fields)).get();
+  // getObjectType should be used to construct object
+  // everything else should have a parent type.
+  assert(parentType != nullptr);
+  return getBasicClassType(context, id, name,
+                           parentType, std::move(fields)).get();
+}
+
+const BasicClassType*
+BasicClassType::getObjectType(Context* context) {
+  ID emptyId;
+  auto name = UniqueString::build(context, "object");
+  std::vector<CompositeType::FieldDetail> emptyFields;
+
+  return getBasicClassType(context, emptyId, name,
+                           nullptr, std::move(emptyFields)).get();
+}
+
+bool
+BasicClassType::isTransitiveChildOf(const BasicClassType* parentType) const {
+  for (const BasicClassType* t = this;
+       t != nullptr;
+       t = t->parentClassType()) {
+
+    if (t == parentType)
+      return true;
+    if (t->isObjectType())
+      break;
+  }
+
+  return false;
 }
 
 

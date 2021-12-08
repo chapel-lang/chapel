@@ -106,6 +106,8 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "string", StringType::get(context));
   gatherType(context, map, "void", VoidType::get(context));
 
+  gatherType(context, map, "object", BasicClassType::getObjectType(context));
+
   BuiltinType::gatherBuiltins(context, map);
 }
 
@@ -148,6 +150,20 @@ void Type::dump(const Type* type, int leadingSpaces) {
 std::string Type::toString() const {
   std::string ret = typetags::tagToString(tag());
   return ret;
+}
+
+bool Type::isAnyNilablePtrType() const {
+  if (isAnyPtrType()) {
+
+    if (auto ct = toClassType()) {
+      if (!ct->decorator().isNilable())
+        return false;
+    }
+
+    return true;
+  }
+
+  return false;
 }
 
 const CompositeType* Type::getCompositeType() const {

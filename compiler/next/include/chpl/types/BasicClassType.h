@@ -32,13 +32,26 @@ namespace types {
  */
 class BasicClassType final : public CompositeType {
  private:
+  const BasicClassType* parentType_ = nullptr;
+
   BasicClassType(ID id, UniqueString name,
+                 const BasicClassType* parentType,
                  std::vector<CompositeType::FieldDetail> fields)
-    : CompositeType(typetags::BasicClassType, id, name, std::move(fields))
-  { }
+    : CompositeType(typetags::BasicClassType, id, name, std::move(fields)),
+      parentType_(parentType)
+  {
+    // all classes should have a parent type, except for object
+    // which doesn't.
+    assert(parentType_ || name == "object");
+
+    // compute the summary information, including the parent type
+    computeSummaryInformation();
+  }
 
   bool contentsMatchInner(const Type* other) const override {
-    return compositeTypeContentsMatchInner((const CompositeType*) other);
+    const BasicClassType* rhs = (const BasicClassType*) other;
+    return compositeTypeContentsMatchInner(rhs) &&
+           parentType_ == rhs->parentType_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -47,13 +60,34 @@ class BasicClassType final : public CompositeType {
 
   static const owned<BasicClassType>&
   getBasicClassType(Context* context, ID id, UniqueString name,
+                    const BasicClassType* parentType,
                     std::vector<CompositeType::FieldDetail> fields);
  public:
   ~BasicClassType() = default;
 
   static const BasicClassType*
   get(Context* context, ID id, UniqueString name,
+      const BasicClassType* parentType,
       std::vector<CompositeType::FieldDetail> fields);
+
+  static const BasicClassType* getObjectType(Context* context);
+
+  /** Return the parent class type, or nullptr if this is the 'object' type. */
+  const BasicClassType* parentClassType() const {
+    return parentType_;
+  }
+
+  /** Return true if this type is the 'object' type. */
+  bool isObjectType() const {
+    return parentType_ == nullptr;
+  }
+
+  /** Returns true if this class type is a subclass of the passed
+      parent class type. That is, some chain of
+         this->parentClassType()->parentClassType()->... = parentType
+   */
+ bool isTransitiveChildOf(const BasicClassType* parentType) const;
+
 };
 
 

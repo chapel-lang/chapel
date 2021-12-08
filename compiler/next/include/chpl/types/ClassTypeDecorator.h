@@ -37,7 +37,7 @@ namespace types {
  */
 class ClassTypeDecorator final {
  public:
-  typedef enum {
+  enum ClassTypeDecoratorEnum {
     // When updating, make sure that these numbers work with the masks below
     // (last two bits are 0=generic nilable / 1=non-nilable / 2=nilable)
     BORROWED          = 0,
@@ -52,7 +52,7 @@ class ClassTypeDecorator final {
     GENERIC           = 12,
     GENERIC_NONNIL    = 13,
     GENERIC_NILABLE   = 14,
-  } ClassTypeDecoratorEnum;
+  };
   enum {
     NUM_DECORATORS = 12,
     MANAGEMENT_MASK = 0xfc,
@@ -151,6 +151,15 @@ class ClassTypeDecorator final {
   ClassTypeDecorator addNilable() const {
     return ClassTypeDecorator(addNilableToDecorator(val_));
   }
+
+  /** Returns a decorator based on this one but with borrowed management
+      (preserving nilability) */
+  ClassTypeDecorator toBorrowed() const {
+    int val = (int) val_;
+    int tmp = BORROWED | (val & NILABILITY_MASK);
+    return ClassTypeDecorator((ClassTypeDecoratorEnum)tmp);
+  }
+
   /** Returns true if this decorator has unknown nilability */
   bool isUnknownNilability() const {
     return isDecoratorUnknownNilability(val_);

@@ -57,8 +57,8 @@ class Function final : public NamedDecl {
 
   enum ReturnIntent {
     // Use IntentList here for consistent enum values.
-    DEFAULT_RETURN_INTENT   = (int) IntentList::DEFAULT,
-    CONST                   = (int) IntentList::CONST,
+    DEFAULT_RETURN_INTENT   = (int) IntentList::DEFAULT_INTENT,
+    CONST                   = (int) IntentList::CONST_VAR,
     CONST_REF               = (int) IntentList::CONST_REF,
     REF                     = (int) IntentList::REF,
     PARAM                   = (int) IntentList::PARAM,

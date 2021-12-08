@@ -175,7 +175,7 @@ class UntypedFnSignature {
     return formals_[i].hasDefaultValue;
   }
 
-  /** Returns the Decl for the i'th formal.
+  /** Returns the Decl for the i'th formal / field.
       This will return nullptr for compiler-generated functions. */
   const uast::Decl* formalDecl(int i) const {
     assert(0 <= i && (size_t) i < formals_.size());

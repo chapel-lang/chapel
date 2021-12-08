@@ -22,7 +22,9 @@
 namespace chpl {
 namespace types {
 
-ClassTypeDecorator::ClassTypeDecoratorEnum
+using ClassTypeDecoratorEnum = ClassTypeDecorator::ClassTypeDecoratorEnum;
+
+ClassTypeDecoratorEnum
 ClassTypeDecorator::combineDecorators(ClassTypeDecoratorEnum formalDecorator,
                                       ClassTypeDecoratorEnum actualDecorator) {
   ClassTypeDecoratorEnum d = formalDecorator;

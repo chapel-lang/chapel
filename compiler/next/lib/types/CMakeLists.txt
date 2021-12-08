@@ -25,6 +25,7 @@ target_sources(libchplcomp-obj
                BytesType.cpp
                CStringType.cpp
                ClassType.cpp
+               ClassTypeDecorator.cpp
                ComplexType.cpp
                CompositeType.cpp
                ErroneousType.cpp
