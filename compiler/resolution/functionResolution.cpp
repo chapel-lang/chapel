@@ -10004,13 +10004,59 @@ static bool createSerializeDeserialize(AggregateType* at) {
     //CallExpr* retGetField = new CallExpr(PRIM_GET_MEMBER, deserializerRet, field->name);
 
     Expr* deserializedExpr = dataGetField;
-    if (FnSymbol* deserializer = deserializers[fieldNum]) {
-      deserializedExpr = new CallExpr(deserializer, gMethodToken,
-                                      field->type->symbol, dataGetField);
+    if (FnSymbol* fieldDeserializer = deserializers[fieldNum]) {
+
+      CallExpr* fieldDeserialize = new CallExpr(fieldDeserializer, dataGetField);
+
+      Type* fieldValType = field->getValType();
+
+      VarSymbol* typeTemp = newTemp("field_type", fieldValType);
+      typeTemp->addFlag(FLAG_TYPE_VARIABLE);
+      deserializer->insertAtTail(new DefExpr(typeTemp));
+
+
+
+      //if (fieldValType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+        //if (toDefExpr(deserializer->formals.get(2))->sym->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+          //FnSymbol* runtimeTypeFn = valueToRuntimeTypeMap.get(fieldValType);
+          //INT_ASSERT(runtimeTypeFn != NULL);
+          //VarSymbol* info = new VarSymbol("rtt_info", runtimeTypeFn->retType);
+          //deserializer->insertAtTail(new DefExpr(info));
+
+
+          //fieldDeserialize->insertAtHead(info);
+        //}
+        //else {
+          //fieldDeserialize->insertAtHead(fieldValType->symbol);
+        //}
+      //}
+      //else {
+        //fieldDeserialize->insertAtHead(fieldValType->symbol);
+      //}
+      fieldDeserialize->insertAtHead(typeTemp);
+      fieldDeserialize->insertAtHead(gMethodToken);
+
+      deserializedExpr = fieldDeserialize;
+      //deserializedExpr = new CallExpr(deserializer, gMethodToken,
+                                      //field->type->symbol, dataGetField);
+      //deserializedExpr = new CallExpr(deserializer, dataGetField);
     }
+
+    CallExpr* getField =  new CallExpr(PRIM_GET_MEMBER, deserializerRet,
+                                          new_CStringSymbol(field->name));
+
+    VarSymbol* fieldRef = newTemp("fieldRef", field->getRefType());
+    deserializer->insertAtTail(new DefExpr(fieldRef));
+
+    deserializer->insertAtTail(new CallExpr(PRIM_MOVE, fieldRef, getField));
                  
     //deserializer->insertAtTail(new CallExpr(PRIM_MOVE, retGetField, deserializedExpr));
-    deserializer->insertAtTail(new CallExpr(PRIM_MOVE, field, deserializedExpr));
+    if (field->type->symbol->hasFlag(FLAG_TUPLE)) {
+      deserializer->insertAtTail(new CallExpr("=", fieldRef, deserializedExpr));
+    }
+    else {
+      deserializer->insertAtTail(new CallExpr(PRIM_MOVE, fieldRef, deserializedExpr));
+    }
 
     fieldNum++;
   }
@@ -11864,6 +11910,9 @@ static void replaceRuntimeTypeVariableTypes() {
 
       // Collapse these through the runtimeTypeMap ...
       Type* rt = runtimeTypeMap.get(def->sym->type);
+      if (!rt) {  // do I still need this?
+        rt = valueToRuntimeTypeMap.get(def->sym->type)->retType;
+      }
       // This assert might fail for code that is no longer traversed
       // after it is resolved, ex. in where-clauses.
       INT_ASSERT(rt);
@@ -11874,6 +11923,24 @@ static void replaceRuntimeTypeVariableTypes() {
       def->sym->removeFlag(FLAG_TYPE_VARIABLE);
     }
   }
+
+  //for_alive_in_Vec(SymExpr, se, gSymExprs) {
+    //if (isTypeSymbol(se->symbol()) &&
+        //se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
+        //se->symbol()->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+
+      //// Collapse these through the runtimeTypeMap ...
+      //Type* rt = runtimeTypeMap.get(se->symbol()->type);
+      //// This assert might fail for code that is no longer traversed
+      //// after it is resolved, ex. in where-clauses.
+      //INT_ASSERT(rt);
+      //se->symbol()->type = rt;
+
+      //// ... and remove the type variable flag
+      //// (Make these declarations look like normal vars.)
+      //se->symbol()->removeFlag(FLAG_TYPE_VARIABLE);
+    //}
+  //}
 }
 
 void expandInitFieldPrims()
