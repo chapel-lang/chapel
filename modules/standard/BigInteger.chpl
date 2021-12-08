@@ -2414,39 +2414,39 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   /*
     .. warning::
 
-       d is deprecated - please use div
+       bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
   pragma "last resort"
   deprecated
-  "d is deprecated - please use div"
-  proc bigint.divisible_p(const ref d: bigint) : int {
-    return this.divisible_p(div=d);
+  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
+  proc bigint.divisible_p(const ref d: bigint) : bool {
+    return this.isDivisible(div=d);
   }
   /*
     .. warning::
 
-       d is deprecated - please use div
+       bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
   pragma "last resort"
   deprecated
-  "d is deprecated - please use div"
-  proc bigint.divisible_p(d: int) : int {
-    return this.divisible_p(div=d);
+  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
+  proc bigint.divisible_p(d: int) : bool {
+    return this.isDivisible(div=d);
   }
   /*
     .. warning::
 
-       d is deprecated - please use div
+       bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
   pragma "last resort"
   deprecated
-  "d is deprecated - please use div"
-  proc bigint.divisible_p(d: uint) : int {
-    return this.divisible_p(div=d);
+  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
+  proc bigint.divisible_p(d: uint) : bool {
+    return this.isDivisible(div=d);
   }
 
   // divisible_p
-  proc bigint.divisible_p(const ref div: bigint) : int {
+  proc bigint.isDivisible(const ref div: bigint) : bool {
     var ret: c_int;
 
     if _local {
@@ -2462,10 +2462,13 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_divisible_p(this.mpz, div.mpz);
     }
 
-    return ret.safeCast(int);
+    if ret.safeCast(int) then 
+      return true;
+    else 
+      return false;
   }
 
-  proc bigint.divisible_p(div: int) : int {
+  proc bigint.isDivisible(div: int) : bool {
     var div_ = 0 : c_ulong;
     var ret: c_int;
 
@@ -2486,10 +2489,13 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_divisible_ui_p(t_.mpz,   div_);
     }
 
-    return ret.safeCast(int);
+    if ret.safeCast(int) then 
+      return true;
+    else 
+      return false;
   }
 
-  proc bigint.divisible_p(div: uint) : int {
+  proc bigint.isDivisible(div: uint) : bool {
     const div_ = div.safeCast(c_ulong);
     var   ret: c_int;
 
@@ -2505,22 +2511,25 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_divisible_ui_p(t_.mpz,   div_);
     }
 
-    return ret.safeCast(int);
+    if ret.safeCast(int) then 
+      return true;
+    else 
+      return false;
   }
 
   /*
     .. warning::
 
-       b is deprecated - please use exp
+       bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
   pragma "last resort"
   deprecated
-  "b is deprecated - please use exp"
-  proc bigint.divisible_2exp_p(b: integral) : int {
-    return this.divisible_2exp_p(exp=b);
+  "bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2exp instead"
+  proc bigint.divisible_2exp_p(b: integral) : bool {
+    return this.isDivisibleBy2exp(exp=b);
   }
 
-  proc bigint.divisible_2exp_p(exp: integral) : int {
+  proc bigint.isDivisibleBy2exp(exp: integral) : bool {
     const exp_ = exp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
 
@@ -2536,35 +2545,38 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_divisible_2exp_p(t_.mpz,   exp_);
     }
 
-    return ret.safeCast(int);
+    if ret.safeCast(int) then 
+      return true;
+    else 
+      return false;
   }
 
   // congruent_p
   /*
     .. warning::
 
-       c and d are deprecated - please use con and mod respectively
+       bigint.congruent_p is deprecated, use bigint.isCongruent instead
   */
   pragma "last resort"
   deprecated
-  "c and d are deprecated - please use con and mod respectively"
-  proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : int {
-    return this.congruent_p(con=c,mod=d);
+  "bigint.congruent_p is deprecated, use bigint.isCongruent instead"
+  proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : bool {
+    return this.isCongruent(con=c,mod=d);
   }
   /*
     .. warning::
 
-       c and d are deprecated - please use con and mod respectively
+       bigint.congruent_p is deprecated, use bigint.isCongruent instead
   */
   pragma "last resort"
   deprecated
-  "c and d are deprecated - please use con and mod respectively"
-  proc bigint.congruent_p(c: integral, d: integral) : int {
-    return this.congruent_p(con=c,mod=d);
+  "bigint.congruent_p is deprecated, use bigint.isCongruent instead"
+  proc bigint.congruent_p(c: integral, d: integral) : bool {
+    return this.isCongruent(con=c,mod=d);
   }
 
   // congruent_p
-  proc bigint.congruent_p(const ref con: bigint, const ref mod: bigint) : int {
+  proc bigint.isCongruent(const ref con: bigint, const ref mod: bigint) : bool {
     var ret: c_int;
 
     if _local {
@@ -2583,10 +2595,13 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_congruent_p(t_.mpz, con_.mpz, mod_.mpz);
     }
 
-    return ret.safeCast(int);
+    if ret.safeCast(int) then 
+      return true;
+    else 
+      return false;
   }
 
-  proc bigint.congruent_p(con: integral, mod: integral) : int {
+  proc bigint.isCongruent(con: integral, mod: integral) : bool {
     const con_ = con.safeCast(c_ulong);
     const mod_ = mod.safeCast(c_ulong);
     var   ret: c_int;
@@ -2603,22 +2618,25 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_congruent_ui_p(t_.mpz,   con_, mod_);
     }
 
-    return ret.safeCast(int);
+    if ret.safeCast(int) then 
+      return true;
+    else 
+      return false;
   }
 
   /*
     .. warning::
 
-       c and b are deprecated - please use con and modExp respectively
+       bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2exp instead
   */
   pragma "last resort"
   deprecated
-  "c and b are deprecated - please use con and modExp respectively"
-  proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : int {
-    return this.congruent_2exp_p(con=c,modExp=b);
+  "bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2exp instead"
+  proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : bool {
+    return this.isCongruentBy2exp(con=c,modExp=b);
   }
 
-  proc bigint.congruent_2exp_p(const ref con: bigint, modExp: integral) : int {
+  proc bigint.isCongruentBy2exp(const ref con: bigint, modExp: integral) : bool {
     const modExp_ = modExp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
 
@@ -2636,7 +2654,10 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_congruent_2exp_p(t_.mpz, con_.mpz, modExp_);
     }
 
-    return ret.safeCast(int);
+    if ret.safeCast(int) then 
+      return true;
+    else 
+      return false;
   }
 
   /*
