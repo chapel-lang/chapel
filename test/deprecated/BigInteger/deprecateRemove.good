@@ -1,0 +1,2 @@
+deprecateRemove.chpl:8: warning: bigint.remove is deprecated, use bigint.removeFactor instead
+32 is 2 times the factor 4 raised to the power 2
