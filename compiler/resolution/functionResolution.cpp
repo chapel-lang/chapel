@@ -9987,7 +9987,7 @@ static bool createSerializeDeserialize(AggregateType* at) {
     deserializer->addFlag(FLAG_FN_RETURNS_ITERATOR);
   }
 
-  ArgSymbol* deserializerFormal = new ArgSymbol(INTENT_BLANK, "data", serialDataType);
+  ArgSymbol* deserializerFormal = new ArgSymbol(INTENT_CONST_IN, "data", serialDataType);
   //AggregateType* deserializerFormalType = toAggregateType(deserializerFormal->type);
   deserializer->insertFormalAtTail(deserializerFormal);
   VarSymbol* deserializerRet = new VarSymbol("deserializer_return", at);
@@ -11910,7 +11910,7 @@ static void replaceRuntimeTypeVariableTypes() {
 
       // Collapse these through the runtimeTypeMap ...
       Type* rt = runtimeTypeMap.get(def->sym->type);
-      if (!rt) {  // do I still need this?
+      if (!rt) {
         rt = valueToRuntimeTypeMap.get(def->sym->type)->retType;
       }
       // This assert might fail for code that is no longer traversed
