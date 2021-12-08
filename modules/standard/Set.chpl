@@ -282,8 +282,7 @@ module Set {
     pragma "last resort"
     deprecated "The argument name `x` has been deprecated for function `add`, please use `element` instead"
     proc ref add(in x: eltType) lifetime this < x {
-      _enter(); defer _leave();
-      _addElem(x);
+      add(element=x);
     }
 
     /*
@@ -308,14 +307,7 @@ module Set {
     pragma "last resort"
     deprecated "The argument name `x` has been deprecated for function `contains, please use `element` instead"
     proc const contains(const ref x: eltType): bool {
-      var result = false;
-
-      on this {
-        _enter(); defer _leave();
-        result = _contains(x);
-      }
-
-      return result;
+      return contains(element=x);
     }
     
     /*
@@ -409,24 +401,7 @@ module Set {
     pragma "last resort"
     deprecated "The argument name `x` has been deprecated for function `remove`, please use `element` instead"
     proc ref remove(const ref x: eltType): bool {
-      var result = false;
-
-      on this {
-        _enter(); defer _leave();
-
-        var (hasFoundSlot, idx) = _htb.findFullSlot(x);
-
-        if hasFoundSlot {
-          var key: eltType;
-          var val: nothing;
-
-          _htb.clearSlot(idx, key, val);
-          _htb.maybeShrinkAfterRemove();
-          result = true;
-        }
-      }
-
-      return result;
+      return remove(element=x);
     }
 
     /*
