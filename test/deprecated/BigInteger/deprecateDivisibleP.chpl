@@ -2,8 +2,8 @@ use BigInteger;
 
 var a=new bigint(4);
 var b = new bigint( 2);
-var c=new bigint();
-var d=new bigint();
+var c:bool;
+var d:bool;
 
 c=a.divisible_p(d=b);
 d=a.divisible_p(d=3);
