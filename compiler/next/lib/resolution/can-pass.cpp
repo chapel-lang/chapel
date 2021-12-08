@@ -823,7 +823,7 @@ CanPassResult CanPassResult::canPass(const QualifiedType& actualQT,
       case QualifiedType::CONST_REF:
       case QualifiedType::TYPE:
         {
-          auto got = canPassSubtype(formalT, actualT);
+          auto got = canPassSubtype(actualT, formalT);
           if (got.passes()) {
             return got;
           }
