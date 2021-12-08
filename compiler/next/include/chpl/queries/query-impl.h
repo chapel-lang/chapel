@@ -516,7 +516,7 @@ Context::querySetterUpdateResult(
   it.
 
   Pass the name of the enclosing function as func, context is the
-  class Contex, and then pass any arguments to the query.
+  class Context, and then pass any arguments to the query.
  */
 #define QUERY_BEGIN(func, context, ...) \
   QUERY_BEGIN_INNER(false, func, context, __VA_ARGS__); \

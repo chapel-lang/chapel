@@ -156,7 +156,7 @@ template<> struct stringify<chpl::types::CompositeType::FieldDetail> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
                   const chpl::types::CompositeType::FieldDetail& stringMe) const {
-    stringOut << "types::CompositeType::FieldDetail not stringified";
+    stringOut << "types::CompositeType::FieldDetail is not stringified";
   }
 };
 /// \endcond DO_NOT_DOCUMENT

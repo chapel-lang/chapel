@@ -858,7 +858,7 @@ class FormalActualMap {
   /** check if mapping is valid */
   bool isValid() const { return mappingIsValid_; }
 
-  /** get the FormalActual's */
+  /** get the FormalActuals */
   FormalActualIterable byFormalIdx() const {
     return FormalActualIterable(byFormalIdx_);
   }

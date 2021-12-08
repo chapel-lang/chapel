@@ -173,7 +173,7 @@ template<> struct stringify<chpl::uast::BuilderResult> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
                   const chpl::uast::BuilderResult& stringMe) const {
-    stringOut << "uast::BuilderResult not stringified";
+    stringOut << "uast::BuilderResult is not stringified";
   }
 };
 /// \endcond

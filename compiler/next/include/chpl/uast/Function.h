@@ -382,7 +382,7 @@ template<> struct stringify<chpl::uast::Function::Kind> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
                   const chpl::uast::Function::Kind& stringMe) const {
-    stringOut << "uast:Function::Kind not stringified";
+    stringOut << "uast:Function::Kind is not stringified";
   }
 };
 /// \endcond DO_NOT_DOCUMENT

@@ -45,7 +45,7 @@ namespace chpl {
 class Context;
 
 /*
- * TODO: Implement these defintions
+ * TODO: Implement these definitions
  * chpl::StringifyKind describes different ways to format the stringification
  * of an object.
  * DEBUG_SUMMARY - summary debug output, hash of query,

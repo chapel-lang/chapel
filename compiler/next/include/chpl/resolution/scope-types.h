@@ -76,7 +76,7 @@ class OwnedIdsWithName {
     if (moreIds_.get()==nullptr && other.moreIds_.get()==nullptr)
       return true;
 
-    // otherwise check the vector elements
+    // otherwise, check the vector elements
     return *moreIds_.get() == *other.moreIds_.get();
   }
   bool operator!=(const OwnedIdsWithName& other) const {

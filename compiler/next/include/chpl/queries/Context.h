@@ -193,7 +193,7 @@ because the ``parse`` query will update the pointer if the contents change.
 In some situations, the query framework can reuse a result without running the
 ``update`` function for it. That can happen when all dependencies have been
 checked in this revision and the dependencies are all reused. In that event, the
-UniqueStrings that are contianed in or referred to by the result need to be
+UniqueStrings that are contained in or referred to by the result need to be
 marked so that any UniqueStrings not used can be garbage collected. This is
 accomplished by calling the ``mark`` function.
 
