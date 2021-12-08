@@ -74,5 +74,5 @@ proc main() {
   const vBv = + reduce [(u,v) in zip(U,V)] (u * v);
 
   const res = sqrt(vBv/vv);
-  writeln(res, new iostyle(precision=10));
+  writeln(res, new iostyleInternal(precision=10));
 }
