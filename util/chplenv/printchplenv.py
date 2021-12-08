@@ -144,8 +144,8 @@ def compute_all_values():
     host_compiler_c = chpl_compiler.get_compiler_command('host', 'c')
     host_compiler_cpp = chpl_compiler.get_compiler_command('host', 'c++')
     ENV_VALS['CHPL_HOST_COMPILER'] = host_compiler
-    ENV_VALS['  CHPL_HOST_CC'] = host_compiler_c
-    ENV_VALS['  CHPL_HOST_CXX'] = host_compiler_cpp
+    ENV_VALS['  CHPL_HOST_CC'] = " ".join(host_compiler_c)
+    ENV_VALS['  CHPL_HOST_CXX'] = " ".join(host_compiler_cpp)
 
     ENV_VALS['CHPL_HOST_ARCH'] = chpl_arch.get('host')
     ENV_VALS['CHPL_HOST_CPU'] = chpl_cpu.get('host').cpu
@@ -156,8 +156,8 @@ def compute_all_values():
     target_compiler_cpp = chpl_compiler.get_compiler_command('target', 'c++')
     target_compiler_prgenv = chpl_compiler.get_prgenv_compiler()
     ENV_VALS['CHPL_TARGET_COMPILER'] = target_compiler
-    ENV_VALS['  CHPL_TARGET_CC'] = target_compiler_c
-    ENV_VALS['  CHPL_TARGET_CXX'] = target_compiler_cpp
+    ENV_VALS['  CHPL_TARGET_CC'] = " ".join(target_compiler_c)
+    ENV_VALS['  CHPL_TARGET_CXX'] = " ".join(target_compiler_cpp)
     ENV_VALS['  CHPL_TARGET_COMPILER_PRGENV'] = target_compiler_prgenv
 
     ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target')
@@ -190,8 +190,10 @@ def compute_all_values():
     ENV_VALS['CHPL_RE2'] = chpl_re2.get()
     ENV_VALS['CHPL_LLVM'] = chpl_llvm.get()
     ENV_VALS['  CHPL_LLVM_CONFIG'] = chpl_llvm.get_llvm_config()
-    ENV_VALS['  CHPL_LLVM_CLANG_C'] = chpl_llvm.get_llvm_clang('c')
-    ENV_VALS['  CHPL_LLVM_CLANG_CXX'] = chpl_llvm.get_llvm_clang('c++')
+    llvm_clang_c = chpl_llvm.get_llvm_clang('c')
+    llvm_clang_cxx = chpl_llvm.get_llvm_clang('c++')
+    ENV_VALS['  CHPL_LLVM_CLANG_C'] = " ".join(llvm_clang_c)
+    ENV_VALS['  CHPL_LLVM_CLANG_CXX'] = " ".join(llvm_clang_cxx)
     ENV_VALS['  CHPL_LLVM_CLANG_COMPILE_ARGS'] = chpl_llvm.get_clang_compile_args()
     ENV_VALS['  CHPL_LLVM_CLANG_LINK_ARGS'] = chpl_llvm.get_clang_link_args()
     aux_filesys = chpl_aux_filesys.get()
@@ -226,7 +228,7 @@ def compute_internal_values():
 
     sys_modules_subdir = (chpl_platform.get('target') + "-" +
                           chpl_arch.get('target') + "-" +
-                          chpl_compiler.get_path_component('target'));
+                          chpl_compiler.get_path_component('target'))
     ENV_VALS['CHPL_SYS_MODULES_SUBDIR'] = sys_modules_subdir
 
     ENV_VALS['  CHPL_LLVM_UNIQ_CFG_PATH'] = chpl_llvm.get_uniq_cfg_path()

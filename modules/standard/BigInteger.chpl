@@ -3153,29 +3153,54 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
 
   // remove
+    /*
+    .. warning::
+
+       bigint.remove is deprecated, use bigint.removeFactor instead
+  */
+  deprecated
+  "bigint.remove is deprecated, use bigint.removeFactor instead"
   proc bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
+    return this.removeFactor(a,f);
+  }
+  
+  // This helper is intended for use only when the factor is 0
+  // Division by 0 is undefined and it results in a
+  // Floating point exception error.
+  pragma "no doc"
+  proc bigint.removeFactorZeroHelper(const ref x: bigint, const ref fac: bigint) : uint {
+    this = 0;
+    return 0;
+  }
+
+  proc bigint.removeFactor(const ref x: bigint, const ref fac: bigint) : uint {
     var ret: c_ulong;
+    if(fac!=0){
+      if _local {
+        ret = mpz_remove(this.mpz, x.mpz, fac.mpz);
 
-    if _local {
-      ret = mpz_remove(this.mpz, a.mpz, f.mpz);
+      } else if this.localeId == chpl_nodeID &&
+              x.localeId    == chpl_nodeID &&
+              fac.localeId    == chpl_nodeID {
+          ret = mpz_remove(this.mpz, x.mpz, fac.mpz);
 
-    } else if this.localeId == chpl_nodeID &&
-              a.localeId    == chpl_nodeID &&
-              f.localeId    == chpl_nodeID {
-      ret = mpz_remove(this.mpz, a.mpz, f.mpz);
+      } else {
+        const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
-    } else {
-      const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
+        on __primitive("chpl_on_locale_num", thisLoc) {
+          var x_ = x;
+          var fac_ = fac;
 
-      on __primitive("chpl_on_locale_num", thisLoc) {
-        var a_ = a;
-        var f_ = f;
-
-        ret = mpz_remove(this.mpz, a_.mpz, f_.mpz);
+          ret = mpz_remove(this.mpz, x_.mpz, fac_.mpz);
+        }
       }
+
+      return ret.safeCast(uint);
+
+    }else{
+      return this.removeFactorZeroHelper(x,fac);
     }
 
-    return ret.safeCast(uint);
   }
 
 

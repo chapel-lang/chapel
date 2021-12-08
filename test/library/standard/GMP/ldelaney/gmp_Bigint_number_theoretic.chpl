@@ -108,7 +108,7 @@ writeln();
 
 c.set(36);
 b.set(2);
-a.remove(c, b);
+a.removeFactor(c, b);
 writeln(c, " without factors of ", b, " is ", a);
 
 writeln();

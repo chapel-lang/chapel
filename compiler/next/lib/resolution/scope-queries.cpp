@@ -788,10 +788,7 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
     }
   }
 
-  // take the value out of the partial result in order to return it
-  owned<ResolvedVisibilityScope> result;
-  result.swap(partialResult);
-  return QUERY_END(result);
+  return QUERY_END_CURRENT_RESULT();
 }
 
 const ResolvedVisibilityScope* resolveVisibilityStmts(Context* context,

@@ -19,6 +19,8 @@
 
 #include "chpl/types/CompositeType.h"
 
+#include "chpl/types/BasicClassType.h"
+
 namespace chpl {
 namespace types {
 
@@ -37,20 +39,52 @@ void CompositeType::computeSummaryInformation() {
       isGeneric_ = true;
     }
   }
+
+  // include also the parent class type for BasicClassType.
+  if (auto bct = this->toBasicClassType()) {
+    if (const Type* parentT = bct->parentClassType()) {
+      if (parentT->isGeneric()) {
+        isGeneric_ = true;
+        if (auto pct = parentT->toBasicClassType()) {
+          allGenericFieldsHaveDefaultValues_ = pct->isGenericWithDefaults();
+        } else {
+          allGenericFieldsHaveDefaultValues_ = false;
+        }
+      }
+    }
+  }
 }
 
 std::string CompositeType::toString() const {
+  // compute the parent class type for BasicClassType
+  const Type* superType = nullptr;
+  if (auto bct = this->toBasicClassType()) {
+    superType = bct->parentClassType();
+  }
+
   //std::string ret = typetags::tagToString(tag());
   std::string ret = name().toString();
   int nFields = numFields();
-  ret += "(";
-  for (int i = 0; i < nFields; i++) {
-    if (i != 0) ret += ", ";
-    ret += fieldName(i).toString();
-    ret += ":";
-    ret += fieldType(i).toString();
+
+  if (superType || nFields > 0) {
+    bool emittedField = false;
+    ret += "(";
+    if (superType) {
+      ret += "super:";
+      ret += superType->toString();
+      emittedField = true;
+    }
+
+    for (int i = 0; i < nFields; i++) {
+      if (emittedField) ret += ", ";
+      ret += fieldName(i).toString();
+      ret += ":";
+      ret += fieldType(i).toString();
+      emittedField = true;
+    }
+    ret += ")";
   }
-  ret += ")";
+
   return ret;
 }
 

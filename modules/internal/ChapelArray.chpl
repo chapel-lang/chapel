@@ -3440,10 +3440,10 @@ module ChapelArray {
      */
     proc last {
       if !this.isRectangular() || this.rank != 1 then
-        compilerError("back() is only supported on 1D rectangular arrays");
+        compilerError("last is only supported on 1D rectangular arrays");
 
       if boundsChecking && isEmpty() then
-        halt("back called on an empty array");
+        halt("last called on an empty array");
 
       return this(this.domain.high);
     }
@@ -3458,10 +3458,10 @@ module ChapelArray {
      */
     proc first {
       if !this.isRectangular() || this.rank != 1 then
-        compilerError("front() is only supported on 1D rectangular arrays");
+        compilerError("first is only supported on 1D rectangular arrays");
 
       if boundsChecking && isEmpty() then
-        halt("front called on an empty array");
+        halt("first called on an empty array");
 
       return this(this.domain.low);
     }

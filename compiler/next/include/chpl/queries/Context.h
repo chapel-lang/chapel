@@ -597,6 +597,15 @@ class Context {
 
   template<typename ResultType,
            typename... ArgTs>
+  const ResultType& queryEndCurrentResult(
+      const ResultType& (*queryFunction)(Context* context, ArgTs...),
+      querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
+      const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
+      const std::tuple<ArgTs...>& tupleOfArgs,
+      const char* traceQueryName);
+
+  template<typename ResultType,
+           typename... ArgTs>
   void querySetterUpdateResult(
       const ResultType& (*queryFunction)(Context* context, ArgTs...),
       const std::tuple<ArgTs...>& tupleOfArgs,

@@ -21,6 +21,7 @@
 #define CHPL_RESOLUTION_CAN_PASS_H
 
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/types/ClassTypeDecorator.h"
 
 namespace chpl {
 namespace uast {
@@ -28,6 +29,7 @@ namespace uast {
 }
 namespace types {
   class QualifiedType;
+  class ClassType;
 }
 namespace resolution {
 
@@ -87,12 +89,21 @@ class CanPassResult {
   static bool
   canConvertNumeric(const types::Type* actualT,
                     const types::Type* formalT);
-  static bool
-  canConvertParamNarrowing(const types::QualifiedType& actualType,
-                           const types::QualifiedType& formalType);
-  static CanPassResult
-  canConvertClassesOrPtrs(const types::QualifiedType& actualType,
-                          const types::QualifiedType& formalType);
+
+  static bool canConvertParamNarrowing(const types::QualifiedType& actualType,
+                                       const types::QualifiedType& formalType);
+
+  static CanPassResult canPassDecorators(types::ClassTypeDecorator actual,
+                                         types::ClassTypeDecorator formal);
+
+  static CanPassResult canPassClassTypes(const types::ClassType* actualCt,
+                                         const types::ClassType* formalCt);
+
+  static bool isSubtype(const types::Type* actualT,
+                        const types::Type* formalT);
+
+  static CanPassResult canConvert(const types::QualifiedType& actualType,
+                                  const types::QualifiedType& formalType);
 
  public:
   CanPassResult() { }
@@ -113,9 +124,10 @@ class CanPassResult {
   /** What type of implicit conversion, if any, is needed? */
   ConversionKind conversionKind() { return conversionKind_; }
 
-  // implementation of canPass to make it easier to access private fields
+  // implementation of canPass to allow use of private fields
   static CanPassResult canPass(const types::QualifiedType& actualType,
                                const types::QualifiedType& formalType);
+
 };
 
 /**

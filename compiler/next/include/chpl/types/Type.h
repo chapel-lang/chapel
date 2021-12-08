@@ -156,6 +156,9 @@ class Type {
     return isClassType() || isCFnPtrType() || isCVoidPtrType();
   }
 
+  /** returns true for a pointer type that can store nil */
+  bool isAnyNilablePtrType() const;
+
   /** If 'this' is a CompositeType, return it.
       If 'this' is a ClassType, return the basicClassType.
       Otherwise, returns nullptr.
