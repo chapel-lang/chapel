@@ -217,9 +217,10 @@ class ClassTypeDecorator final {
 } // end namespace uast
 /// \cond DO_NOT_DOCUMENT
 template<> struct stringify<chpl::types::ClassTypeDecorator> {
-  std::string operator()(StringifyKind stringKind,
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
                   const chpl::types::ClassTypeDecorator& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+    stringOut << "types::ClassTypeDecorator is not stringified";
   }
 };
 /// \endcond DO_NOT_DOCUMENT

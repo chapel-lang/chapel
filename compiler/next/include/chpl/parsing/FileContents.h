@@ -80,9 +80,10 @@ template<> struct update<parsing::FileContents> {
 };
 
 template<> struct stringify<parsing::FileContents> {
-  std::string operator()(StringifyKind stringKind,
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
                   const parsing::FileContents& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+    stringOut << "parsing::FileContents is not stringified";
   }
 };
 /// \endcond

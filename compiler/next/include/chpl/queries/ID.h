@@ -187,8 +187,10 @@ template<> struct mark<chpl::ID> {
   }
 };
 template<> struct stringify<chpl::ID> {
-  std::string operator()(StringifyKind stringKind, const chpl::ID& id) const {
-    return std::string("ID("+id.toString()+")");
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::ID& id) const {
+    stringOut << "ID(" << id.toString() << ")";
   }
 };
 /// \endcond

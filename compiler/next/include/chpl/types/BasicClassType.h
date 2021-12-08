@@ -93,8 +93,10 @@ class BasicClassType final : public CompositeType {
 
 } // end namespace types
 template<> struct stringify<chpl::types::BasicClassType> {
-  std::string operator()(StringifyKind stringKind, const chpl::types::BasicClassType& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::types::BasicClassType& stringMe) const {
+    stringOut << "types::BasicClassType is not stringified";
   }
 };
 } // end namespace chpl

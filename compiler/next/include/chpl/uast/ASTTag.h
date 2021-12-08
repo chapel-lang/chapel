@@ -111,9 +111,10 @@ template<> struct update<uast::ASTTag> {
 };
 
 template<> struct stringify<uast::ASTTag> {
-  std::string operator()(StringifyKind stringKind,
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
                   const uast::ASTTag& stringMe) const {
-    return std::string(tagToString(stringMe));
+    stringOut << tagToString(stringMe);
   }
 };
 

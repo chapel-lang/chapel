@@ -397,8 +397,10 @@ class ASTNode {
 };
 } // end namespace uast
 template<> struct stringify<chpl::uast::ASTNode> {
-  std::string operator()(StringifyKind stringKind, const chpl::uast::ASTNode& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::uast::ASTNode& stringMe) const {
+    stringOut << "uast::ASTNode is not stringified";
   }
 };
 } // end namespace chpl

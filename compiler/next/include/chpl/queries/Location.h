@@ -101,9 +101,9 @@ template<> struct mark<chpl::Location> {
 };
 
 template<> struct stringify<chpl::Location> {
-  std::string operator()(StringifyKind stringKind,
+  void operator()(std::ostream &stringOut, StringifyKind stringKind,
                   const chpl::Location& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+     stringOut << "Location is not stringified";
   }
 };
 /// \endcond

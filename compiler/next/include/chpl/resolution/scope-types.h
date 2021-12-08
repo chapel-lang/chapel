@@ -476,32 +476,36 @@ template<> struct update<resolution::InnermostMatch> {
 };
 
 template<> struct stringify<resolution::InnermostMatch> {
-  std::string operator()(StringifyKind stringKind,
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
                   const resolution::InnermostMatch& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+    stringOut << "resolution::InnermostMatch not stringified";
   }
 };
 
 
 template<> struct stringify<resolution::PoiScope> {
-  std::string operator()(StringifyKind stringKind,
-                          const resolution::PoiScope& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const resolution::PoiScope& stringMe) const {
+    stringOut << "resolution::PoiScope not stringified";
   }
 };
 
 template<> struct stringify<resolution::Scope> {
-  std::string operator()(StringifyKind stringKind,
-                          const resolution::Scope& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const resolution::Scope& stringMe) const {
+    stringOut << "resolution::Scope not stringified";
   }
 };
 
 
 template<> struct stringify<resolution::BorrowedIdsWithName> {
-  std::string operator()(StringifyKind stringKind,
-                         const resolution::BorrowedIdsWithName& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const resolution::BorrowedIdsWithName& stringMe) const {
+    stringOut << "resolution::BorrowedIdsWithName not stringified";
   }
 };
 /// \endcond

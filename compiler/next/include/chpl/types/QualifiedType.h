@@ -191,9 +191,10 @@ template<> struct update<chpl::types::QualifiedType> {
 };
 
 template<> struct stringify<chpl::types::QualifiedType> {
-  std::string operator()(StringifyKind stringKind,
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
                   const chpl::types::QualifiedType stringMe) const {
-    return stringMe.toString();
+    stringOut << stringMe.toString();
   }
 };
 /// \endcond

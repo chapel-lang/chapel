@@ -170,9 +170,10 @@ template<> struct mark<chpl::uast::BuilderResult> {
 };
 
 template<> struct stringify<chpl::uast::BuilderResult> {
-  std::string operator()(StringifyKind stringKind,
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
                   const chpl::uast::BuilderResult& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+    stringOut << "uast::BuilderResult not stringified";
   }
 };
 /// \endcond

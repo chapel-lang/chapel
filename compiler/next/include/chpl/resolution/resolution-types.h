@@ -902,88 +902,99 @@ template<> struct update<owned<resolution::ResolvedFunction>> {
 };
 
 template<> struct stringify<chpl::resolution::ResolvedExpression> {
-  std::string operator()(StringifyKind stringKind,
-                         const chpl::resolution::ResolvedExpression& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::ResolvedExpression& stringMe) const {
+    stringOut << "resolution::ResolvedExpression not stringified";
   }
 };
 
 template<> struct stringify<chpl::resolution::MostSpecificCandidates> {
-  std::string operator()(StringifyKind stringKind,
-                         const chpl::resolution::MostSpecificCandidates& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::MostSpecificCandidates& stringMe) const {
+    stringOut << "resolution::MostSpecificCandidates not stringified";
   }
 };
 
 template<> struct stringify<chpl::resolution::ResolutionResultByPostorderID> {
-  std::string operator()(StringifyKind stringKind,
-                         const chpl::resolution::ResolutionResultByPostorderID& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::ResolutionResultByPostorderID& stringMe) const {
+    stringOut << "resolution::ResolutionResultByPostorderID not stringified";
   }
 };
 
 template<> struct stringify<chpl::resolution::ResolvedFunction> {
-  std::string operator()(StringifyKind stringKind,
-                         const chpl::resolution::ResolvedFunction& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::ResolvedFunction& stringMe) const {
+    stringOut << "resolution::ResolvedFunction not stringified";
   }
 };
 
 
 template<> struct stringify<chpl::resolution::UntypedFnSignature>
 {
-  std::string operator()(StringifyKind stringKind,
-                          const chpl::resolution::UntypedFnSignature& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::UntypedFnSignature& stringMe) const {
+    stringOut << "resolution::UntypedFnSignature not stringified";
   }
 };
 
 
 template<> struct stringify<chpl::resolution::CallInfoActual>
 {
-  std::string operator()(StringifyKind stringKind,
-                         const chpl::resolution::CallInfoActual& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::CallInfoActual& stringMe) const {
+    stringOut << "resolution::CallInfoActual not stringified";
   }
 };
 
 template<> struct stringify<chpl::resolution::CallInfo>
 {
-  std::string operator()(StringifyKind stringKind,
-                         const chpl::resolution::CallInfo& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::CallInfo& stringMe) const {
+    stringOut << "resolution::CallInfo not stringified";
   }
 };
 
 template<> struct stringify<chpl::resolution::PoiInfo>
 {
-  std::string operator()(StringifyKind stringKind,
-                         const chpl::resolution::PoiInfo& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::PoiInfo& stringMe) const {
+    stringOut << "resolution::PoiInfo not stringified";
   }
 };
 
 template<> struct stringify<chpl::resolution::TypedFnSignature::WhereClauseResult>
 {
-  std::string operator()(StringifyKind stringKind,
-                         const chpl::resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
+    stringOut << "resolution::TypedFnSignature::WhereClauseResult not stringified";
   }
 };
 
 template<> struct stringify<chpl::resolution::UntypedFnSignature::FormalDetail>
 {
- std::string operator()(StringifyKind stringKind,
-                        const chpl::resolution::UntypedFnSignature::FormalDetail& stringMe) const {
-   return defaultStringify(stringKind, stringMe);
+ void operator()(std::ostream &stringOut,
+                 StringifyKind stringKind,
+                 const chpl::resolution::UntypedFnSignature::FormalDetail& stringMe) const {
+   stringOut << "resolution::UntypedFnSignature::FormalDetail not stringified";
  }
 };
 
 template<> struct stringify<chpl::resolution::TypedFnSignature>
 {
-  std::string operator()(StringifyKind stringKind,
-                         const chpl::resolution::TypedFnSignature& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::TypedFnSignature& stringMe) const {
+    stringOut << "resolution::TypedFnSignature not stringified";
   }
 };
 

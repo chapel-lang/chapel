@@ -133,7 +133,9 @@ void queryArgsPrintSep();
 template<typename T>
 static void queryArgsPrintOne(const T& v) {
   stringify<T> tString;
-  printf("%s", tString(StringifyKind::DEBUG_SUMMARY, v).c_str() );
+  std::ostringstream ss;
+  tString(ss, StringifyKind::DEBUG_SUMMARY, v);
+  printf("%s", ss.str().c_str() );
 }
 
 
@@ -164,7 +166,9 @@ static inline const auto queryArgsToStringsImpl(const TUP& tuple,
   // lambda to convert
   auto convert = [](auto& elem) {
     chpl::stringify<std::decay_t<decltype(elem)>> stringifier;
-    return stringifier(StringifyKind::DEBUG_DETAIL, elem);
+    std::ostringstream ss;
+    stringifier(ss, StringifyKind::DEBUG_DETAIL, elem);
+    return ss.str();
   };
 
   return applyToEach(convert, tuple);

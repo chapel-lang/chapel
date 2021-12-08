@@ -230,14 +230,18 @@ class Param {
 } // end namespace types
 /// \cond DO_NOT_DOCUMENT
 template<> struct stringify<chpl::types::Param::ComplexDouble> {
-  std::string operator()(StringifyKind stringKind, const chpl::types::Param::ComplexDouble& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::types::Param::ComplexDouble& stringMe) const {
+    stringOut << "types::Param::ComplexDouble is not stringified";
   }
 };
 
 template<> struct stringify<chpl::types::Param::NoneValue> {
-  std::string operator()(StringifyKind stringKind, const chpl::types::Param::NoneValue& stringMe) const {
-    return defaultStringify(stringKind, stringMe);
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::types::Param::NoneValue& stringMe) const {
+    stringOut << "types::Param::NoneValue is not stringified";
   }
 };
 /// \endcond DO_NOT_DOCUMENT

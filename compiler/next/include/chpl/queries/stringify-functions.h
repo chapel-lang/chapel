@@ -67,51 +67,50 @@ enum StringifyKind {
 //  if used. Query argument and return types need to have a specialization of
 //  stringify
 template<typename T> struct stringify {
-  std::string operator()(StringifyKind stringKind, const T& stringMe) const = 0;
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const T& stringMe) const = 0;
 };
 
 // define stringify for pointers to call stringify on a reference to avoid
 //  duplication for types that appear both as references and as pointers
 template<typename T> struct stringify<const T*> {
-  std::string operator()(StringifyKind stringKind, const T* stringMe) const {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const T* stringMe) const {
     stringify<T> stringifier;
-    return stringifier(stringKind, *stringMe);
+    stringifier(stringOut, stringKind, *stringMe);
   }
 };
 
-template<typename T>
-static inline std::string defaultStringify(StringifyKind stringKind,
-                                           const T& stringMe) {
-  return "HAVE NOT IMPLEMENTED STRINGIFY YET";
-}
-
 // stringify a vector by stringifying each element; uses [a, b, c] formatting
 template<typename T>
-static inline std::string defaultStringifyVec(StringifyKind stringKind,
-                                              const std::vector<T>& stringVec)
-{
+static inline void defaultStringifyVec(std::ostream &stringOut,
+                                       StringifyKind stringKind,
+                                       const std::vector<T>& stringVec) {
   if (stringVec.empty()) {
-   return "[ ]";
+   stringOut << "[ ]";
   } else {
    std::ostringstream ss;
    std::string separator;
    stringify<T> vecString;
    for (const auto &vecVal : stringVec ) {
-     ss << separator << vecString(stringKind, vecVal);
+     vecString(ss << separator, stringKind, vecVal);
      separator = ", ";
    }
-   return std::string("["+ss.str()+"]");
+   stringOut << "[" << ss.str() << "]";
   }
 }
 
 // stringify a map by stringifying each key, value pair
 // uses {k1: v1, k2: v2} formatting
 template<typename K, typename V>
-static inline std::string defaultStringifyMap(StringifyKind stringKind,
-                                              const std::unordered_map<K,V>& stringMap)
+static inline void defaultStringifyMap(std::ostream &stringOut,
+                                       StringifyKind stringKind,
+                                       const std::unordered_map<K,V>& stringMap)
 {
   if (stringMap.size() == 0) {
-    return "{ }";
+    stringOut << "{ }";
   } else {
     std::ostringstream ss;
     std::string separator;
@@ -133,17 +132,17 @@ static inline std::string defaultStringifyMap(StringifyKind stringKind,
 
       separator = ", ";
     }
-    return std::string("{"+ss.str()+"}");
+    stringOut << "{" << ss.str() << "}";
   }
 }
 
 // stringify a set by stringifying each element; uses {a, b, c} formatting
 template<typename T>
-static inline std::string defaultStringifySet(StringifyKind stringKind,
-                                                   const std::set<T>& stringSet)
-{
+static inline void defaultStringifySet(std::ostream &stringOut,
+                                       StringifyKind stringKind,
+                                       const std::set<T>& stringSet) {
   if (stringSet.size() == 0) {
-    return "{ }";
+    stringOut << "{ }";
   } else {
     std::ostringstream ss;
     std::string separator;
@@ -151,127 +150,144 @@ static inline std::string defaultStringifySet(StringifyKind stringKind,
 
     for (auto const& x : stringSet)
     {
-      ss << separator
-         << tString(stringKind, x);
+      tString(ss << separator, stringKind, x);
       separator = ", ";
     }
-    return std::string("{"+ss.str()+"}");
+    stringOut << "{" << ss.str() << "}";
   }
 }
 
 // stringify a tuple by stringifying each element; uses (a, b, c) formatting
 template<typename TUP, size_t... I>
-static inline std::string defaultStringifyTuple(StringifyKind stringKind,
-                                                const TUP& tuple,
-                                                std::index_sequence<I...>) {
+static inline void defaultStringifyTuple(std::ostream &stringOut,
+                                         StringifyKind stringKind,
+                                         const TUP& tuple,
+                                         std::index_sequence<I...>) {
   // lambda to convert
   auto convert = [](bool printsep, StringifyKind stringKind, auto& elem) {
     // we don't know what the type of `elem` is going to be, so we use
     // std::decay_t<decltype(x)> to get the type, so we can instantiate
     // the proper stringify struct
     chpl::stringify<std::decay_t<decltype(elem)>> stringifier;
-    std::string ret = stringifier(stringKind, elem);
+    std::ostringstream ss;
+    stringifier(ss, stringKind, elem);
     if (printsep) {
-      ret = ", " + ret;
+      ss << ", ";
     }
-    return ret;
+    return ss.str();
   };
 
   std::ostringstream ss;
   auto dummy = {(ss << convert(I!=0, stringKind, std::get<I>(tuple)),0)...};
   (void) dummy; // avoid unused variable warning
-  return std::string("("+ss.str()+")");
+  stringOut << "(" << ss.str() << ")";
 }
 
 // stringify a pair by stringifying each item; uses (a, b) formatting
 template<typename A, typename B>
-static inline std::string defaultStringifyPair(StringifyKind stringKind,
-                                               const std::pair<A,B>& stringPair)
-{
+static inline void defaultStringifyPair(std::ostream &stringOut,
+                                        StringifyKind stringKind,
+                                        const std::pair<A,B>& stringPair) {
  stringify<A> stringA;
  stringify<B> stringB;
 
- return std::string("(" + stringA(stringKind, stringPair.first)
-                    + ", " + stringB(stringKind, stringPair.second)+")");
+ stringOut << "(";
+ stringA(stringOut, stringKind, stringPair.first);
+ stringB(stringOut << ", ", stringKind, stringPair.second);
+ stringOut << ")";
 }
 
 /// \cond DO_NOT_DOCUMENT
 template<> struct stringify<std::string> {
- std::string operator()(StringifyKind stringKind,
-                        const std::string& val) const {
-   return std::string("\""+val+"\"");
- }
+void operator()(std::ostream &stringOut,
+               StringifyKind stringKind,
+               const std::string& val) const {
+ stringOut << "\"" << val << "\"";
+}
 };
 
 
 template<> struct stringify<int> {
- std::string operator()(StringifyKind stringKind, const int val) const {
-   return std::to_string(val);
- }
+void operator()(std::ostream &stringOut,
+               StringifyKind stringKind,
+               const int val) const {
+ stringOut << std::to_string(val);
+}
 };
 
 template<> struct stringify<long int> {
-std::string operator()(StringifyKind stringKind, const long int val) const {
-  return std::to_string(val);
+void operator()(std::ostream &stringOut,
+                StringifyKind stringKind,
+                const long int val) const {
+  stringOut << std::to_string(val);
 }
 };
 
 template<> struct stringify<double> {
-std::string operator()(StringifyKind stringKind, const double val) const {
-  return std::to_string(val);
+void operator()(std::ostream &stringOut,
+                StringifyKind stringKind,
+                const double val) const {
+  stringOut << std::to_string(val);
 }
 };
 
 template<> struct stringify<long unsigned int> {
-std::string operator()(StringifyKind stringKind,
-                       const long unsigned int val) const {
-  return std::to_string(val);
+void operator()(std::ostream &stringOut,
+                StringifyKind stringKind,
+                const long unsigned int val) const {
+  stringOut << std::to_string(val);
 }
 };
 
 template<> struct stringify<bool> {
- std::string operator()(StringifyKind stringKind, const bool val) const {
-   if (val) {
-     return "true";
-   }
-   return "false";
+void operator()(std::ostream &stringOut,
+                StringifyKind stringKind,
+                const bool val) const {
+  stringOut << (val ? "true" : "false");
  }
 };
 
 template<typename T> struct stringify<std::vector<T>> {
- std::string operator()(StringifyKind stringKind,
-                        const std::vector<T>& stringMe) const {
-   return defaultStringifyVec(stringKind, stringMe);
+ void operator()(std::ostream &stringOut,
+                 StringifyKind stringKind,
+                 const std::vector<T>& stringMe) const {
+   defaultStringifyVec(stringOut, stringKind, stringMe);
  }
 };
 
 template<typename K, typename V> struct stringify<std::unordered_map<K,V>> {
- std::string operator()(StringifyKind stringKind,
-                        const std::unordered_map<K,V>& stringMe) const {
-   return defaultStringifyMap(stringKind, stringMe);
+ void operator()(std::ostream &stringOut,
+                 StringifyKind stringKind,
+                 const std::unordered_map<K,V>& stringMe) const {
+   defaultStringifyMap(stringOut, stringKind, stringMe);
  }
 };
 
 template<typename A, typename B> struct stringify<std::pair<A,B>> {
- std::string operator()(StringifyKind stringKind,
+ void operator()(std::ostream &stringOut,
+                 StringifyKind stringKind,
                  const std::pair<A,B>& stringMe) const {
-   return defaultStringifyPair(stringKind, stringMe);
+   defaultStringifyPair(stringOut, stringKind, stringMe);
  }
 };
 
 template<typename T> struct stringify<std::set<T>> {
-std::string operator()(StringifyKind stringKind,
-                       const std::set<T>& stringMe) const {
-  return defaultStringifySet(stringKind, stringMe);
+void operator()(std::ostream &stringOut,
+                StringifyKind stringKind,
+                const std::set<T>& stringMe) const {
+  defaultStringifySet(stringOut, stringKind, stringMe);
 }
 };
 
 
 template<typename... ArgTs> struct stringify<std::tuple<ArgTs...>> {
-  std::string operator()(StringifyKind stringKind,
-                         const std::tuple<ArgTs...>& stringMe) const {
-    return defaultStringifyTuple(stringKind, stringMe,
-                                 std::index_sequence_for<ArgTs...>{});
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const std::tuple<ArgTs...>& stringMe) const {
+    defaultStringifyTuple(stringOut,
+                          stringKind,
+                          stringMe,
+                          std::index_sequence_for<ArgTs...>{});
   }
 };
 /// \
