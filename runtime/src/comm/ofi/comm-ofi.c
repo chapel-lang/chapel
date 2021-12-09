@@ -3704,7 +3704,7 @@ static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
 static void amRequestFree(c_nodeid_t, void*);
 static void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
 static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
-                            amDone_t**, chpl_bool, struct perTxCtxInfo_t*);
+                            amDone_t**, struct perTxCtxInfo_t*);
 static void amWaitForDone(amDone_t*);
 static chpl_bool setUpDelayedAmDone(chpl_comm_taskPrvData_t**, void**);
 
@@ -3804,7 +3804,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
     arg->kind = am_opExecOn;
     amRequestCommon(node, (amRequest_t*) arg, argSize,
                     blocking ? (amDone_t**) &arg->comm.pAmDone : NULL,
-                    blocking /*yieldDuringTxnWait*/, NULL);
+                    NULL);
   } else {
     //
     // The arg bundle is too large for an AM request.  Send a copy of
@@ -3831,7 +3831,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
 
     amRequestCommon(node, &req, sizeof(req.xol),
                     blocking ? (amDone_t**) &req.xol.hdr.comm.pAmDone : NULL,
-                    blocking /*yieldDuringTxnWait*/, NULL);
+                    NULL);
 
     //
     // If blocking and we heap-copied the arg, free that now.  The
@@ -3865,7 +3865,7 @@ void amRequestRmaPut(c_nodeid_t node, void* addr, void* raddr, size_t size) {
                                .raddr = myAddr,
                                .size = size, }, };
   amRequestCommon(node, &req, sizeof(req.rma),
-                  &req.b.pAmDone, true /*yieldDuringTxnWait*/, NULL);
+                  &req.b.pAmDone, NULL);
 
   mrUnLocalizeSource(myAddr, addr);
 }
@@ -3891,7 +3891,7 @@ void amRequestRmaGet(c_nodeid_t node, void* addr, void* raddr, size_t size) {
                                .raddr = myAddr,
                                .size = size, }, };
   amRequestCommon(node, &req, sizeof(req.rma),
-                  &req.b.pAmDone, true /*yieldDuringTxnWait*/, NULL);
+                  &req.b.pAmDone, NULL);
 
   mrUnLocalizeTarget(myAddr, addr, size);
 }
@@ -3950,7 +3950,7 @@ void amRequestAMO(c_nodeid_t node, void* object,
   }
   amRequestCommon(node, &req, sizeof(req.amo),
                   delayBlocking ? NULL : &req.b.pAmDone,
-                  true /*yieldDuringTxnWait*/, tcip);
+                  tcip);
   mrUnLocalizeTarget(myResult, result, size);
   tciFree(tcip);
 }
@@ -3962,7 +3962,7 @@ void amRequestFree(c_nodeid_t node, void* p) {
                                        .node = chpl_nodeID, },
                                 .p = p, }, };
   amRequestCommon(node, &req, sizeof(req.free),
-                  NULL, false /*yieldDuringTxnWait*/, NULL);
+                  NULL, NULL);
 }
 
 
@@ -3973,7 +3973,7 @@ void amRequestNop(c_nodeid_t node, chpl_bool blocking,
                              .node = chpl_nodeID, }, };
   amRequestCommon(node, &req, sizeof(req.b),
                   blocking ? &req.b.pAmDone : NULL,
-                  false /*yieldDuringTxnWait*/, tcip);
+                  tcip);
 }
 
 
@@ -3983,7 +3983,7 @@ void amRequestShutdown(c_nodeid_t node) {
   amRequest_t req = { .b = { .op = am_opShutdown,
                              .node = chpl_nodeID, }, };
   amRequestCommon(node, &req, sizeof(req.b),
-                  NULL, true /*yieldDuringTxnWait*/, NULL);
+                  NULL, NULL);
 }
 
 
@@ -3997,7 +3997,6 @@ static inline
 void amRequestCommon(c_nodeid_t node,
                      amRequest_t* req, size_t reqSize,
                      amDone_t** ppAmDone,
-                     chpl_bool yieldDuringTxnWait,
                      struct perTxCtxInfo_t* tcip) {
   //
   // If blocking, make sure target can RMA PUT the indicator to us.
