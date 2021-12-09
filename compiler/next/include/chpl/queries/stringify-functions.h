@@ -219,7 +219,6 @@ void operator()(std::ostream &stringOut,
 }
 };
 
-
 template<> struct stringify<long int> {
 void operator()(std::ostream &stringOut,
                 StringifyKind stringKind,
@@ -302,7 +301,6 @@ void operator()(std::ostream &stringOut,
 }
 };
 
-
 template<typename... ArgTs> struct stringify<std::tuple<ArgTs...>> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
@@ -313,8 +311,7 @@ template<typename... ArgTs> struct stringify<std::tuple<ArgTs...>> {
                           std::index_sequence_for<ArgTs...>{});
   }
 };
-/// \
-
+/// \endcond
 
 } // end namespace chpl
 
