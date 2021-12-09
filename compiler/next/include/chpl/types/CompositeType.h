@@ -151,6 +151,15 @@ class CompositeType : public Type {
 
 
 } // end namespace uast
+/// \cond DO_NOT_DOCUMENT
+template<> struct stringify<chpl::types::CompositeType::FieldDetail> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::types::CompositeType::FieldDetail& stringMe) const {
+    stringOut << "types::CompositeType::FieldDetail is not stringified";
+  }
+};
+/// \endcond DO_NOT_DOCUMENT
 } // end namespace chpl
 
 

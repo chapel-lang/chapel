@@ -69,7 +69,7 @@ std::string QualifiedType::toString() const {
     ret += type_->toString();
   }
 
-  if (kind_ == QualifiedType::PARAM) {
+  if (kind_ == QualifiedType::PARAM && param_ != nullptr) {
     ret += " = ";
     ret += param_->toString();
   }

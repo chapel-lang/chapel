@@ -25,6 +25,7 @@
 #include "chpl/uast/ASTTag.h"
 #include "chpl/uast/ASTTypes.h"
 #include "chpl/util/memory.h"
+#include "chpl/queries/stringify-functions.h"
 
 #include <cassert>
 #include <functional>
@@ -394,9 +395,14 @@ class ASTNode {
     }
   }
 };
-
-
 } // end namespace uast
+template<> struct stringify<chpl::uast::ASTNode> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::uast::ASTNode& stringMe) const {
+    stringOut << "uast::ASTNode is not stringified";
+  }
+};
 } // end namespace chpl
 
 /// \cond DO_NOT_DOCUMENT

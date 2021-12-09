@@ -858,7 +858,7 @@ class FormalActualMap {
   /** check if mapping is valid */
   bool isValid() const { return mappingIsValid_; }
 
-  /** get the FormalActual's */
+  /** get the FormalActuals */
   FormalActualIterable byFormalIdx() const {
     return FormalActualIterable(byFormalIdx_);
   }
@@ -900,7 +900,105 @@ template<> struct update<owned<resolution::ResolvedFunction>> {
     return defaultUpdateOwned(keep, addin);
   }
 };
-/// \endcond
+
+template<> struct stringify<chpl::resolution::ResolvedExpression> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::ResolvedExpression& stringMe) const {
+    stringOut << "resolution::ResolvedExpression not stringified";
+  }
+};
+
+template<> struct stringify<chpl::resolution::MostSpecificCandidates> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::MostSpecificCandidates& stringMe) const {
+    stringOut << "resolution::MostSpecificCandidates not stringified";
+  }
+};
+
+template<> struct stringify<chpl::resolution::ResolutionResultByPostorderID> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::ResolutionResultByPostorderID& stringMe) const {
+    stringOut << "resolution::ResolutionResultByPostorderID not stringified";
+  }
+};
+
+template<> struct stringify<chpl::resolution::ResolvedFunction> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::ResolvedFunction& stringMe) const {
+    stringOut << "resolution::ResolvedFunction not stringified";
+  }
+};
+
+
+template<> struct stringify<chpl::resolution::UntypedFnSignature>
+{
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::UntypedFnSignature& stringMe) const {
+    stringOut << "resolution::UntypedFnSignature not stringified";
+  }
+};
+
+
+template<> struct stringify<chpl::resolution::CallInfoActual>
+{
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::CallInfoActual& stringMe) const {
+    stringOut << "resolution::CallInfoActual not stringified";
+  }
+};
+
+template<> struct stringify<chpl::resolution::CallInfo>
+{
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::CallInfo& stringMe) const {
+    stringOut << "resolution::CallInfo not stringified";
+  }
+};
+
+template<> struct stringify<chpl::resolution::PoiInfo>
+{
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::PoiInfo& stringMe) const {
+    stringOut << "resolution::PoiInfo not stringified";
+  }
+};
+
+template<> struct stringify<chpl::resolution::TypedFnSignature::WhereClauseResult>
+{
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
+    stringOut << "resolution::TypedFnSignature::WhereClauseResult not stringified";
+  }
+};
+
+template<> struct stringify<chpl::resolution::UntypedFnSignature::FormalDetail>
+{
+ void operator()(std::ostream &stringOut,
+                 StringifyKind stringKind,
+                 const chpl::resolution::UntypedFnSignature::FormalDetail& stringMe) const {
+   stringOut << "resolution::UntypedFnSignature::FormalDetail not stringified";
+ }
+};
+
+template<> struct stringify<chpl::resolution::TypedFnSignature>
+{
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::resolution::TypedFnSignature& stringMe) const {
+    stringOut << "resolution::TypedFnSignature not stringified";
+  }
+};
+
+/// \endcond DO_NOT_DOCUMENT
 
 } // end namespace chpl
 
