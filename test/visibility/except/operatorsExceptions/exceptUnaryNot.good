@@ -1,0 +1,9 @@
+exceptUnaryNot.chpl:5: In function 'main':
+exceptUnaryNot.chpl:7: error: unresolved call '~(owned Foo)'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: this candidate did not match: ~(a: bool)
+exceptUnaryNot.chpl:7: note: because actual argument #1 with type 'owned Foo'
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: is passed to formal 'a: bool'
+exceptUnaryNot.chpl:7: note: other candidates are:
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   ~(a: int(8))
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note:   ~(a: int(16))
+note: and 16 other candidates, use --print-all-candidates to see them
