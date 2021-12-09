@@ -160,6 +160,19 @@ static inline void queryArgsPrintImpl(const TUP& tuple,
   (void) dummy; // avoid unused variable warning
 }
 
+// taken from https://codereview.stackexchange.com/questions/193420/apply-a-function-to-each-element-of-a-tuple-map-a-tuple
+// when the queryArgsToStringsImpl is dropped we can remove these too
+template <class F, typename Tuple, size_t... Is>
+auto applyToEachImpl(Tuple t, F f, std::index_sequence<Is...>) {
+  return std::make_tuple(f(std::get<Is>(t) )...
+  );
+}
+
+template <class F, typename... Args>
+auto applyToEach(F f, const std::tuple<Args...>& t) {
+  return applyToEachImpl(t, f, std::make_index_sequence<sizeof...(Args)>{});
+}
+
 template<typename TUP, size_t... I>
 static inline const auto queryArgsToStringsImpl(const TUP& tuple,
                                                 std::index_sequence<I...>) {
@@ -180,22 +193,10 @@ auto queryArgsToStrings(const std::tuple<Ts...>& tuple) {
   // TODO: Should be able to replace the Impl with the code below, but it
   //  fails to compile as written
   // chpl::stringify<std::tuple<Ts...>> stringifier;
-  // return stringifier(StringifyKind::DEBUG_SUMMARY, tuple);
+  // std::ostringstream ss;
+  // stringifier(ss, StringifyKind::DEBUG_SUMMARY, tuple);
+  // return ss.str();
 }
-
-// taken from https://codereview.stackexchange.com/questions/193420/apply-a-function-to-each-element-of-a-tuple-map-a-tuple
-// when the queryArgsToStringsImpl is dropped we can remove these too
-template <class F, typename Tuple, size_t... Is>
-auto applyToEachImpl(Tuple t, F f, std::index_sequence<Is...>) {
-  return std::make_tuple(f(std::get<Is>(t) )...
-  );
-}
-
-template <class F, typename... Args>
-auto applyToEach(F f, const std::tuple<Args...>& t) {
-  return applyToEachImpl(t, f, std::make_index_sequence<sizeof...(Args)>{});
-}
-
 
 template<typename... Ts>
 void queryArgsPrint(const std::tuple<Ts...>& tuple) {
