@@ -34,6 +34,15 @@ bool QualifiedType::isUnknownType() const {
   return type_->isUnknownType();
 }
 
+bool QualifiedType::update(QualifiedType& keep, QualifiedType& addin) {
+  return defaultUpdate(keep, addin);
+}
+
+void QualifiedType::mark(Context* context) const {
+  context->markPointer(type_);
+  context->markPointer(param_);
+}
+
 static const char* kindToString(QualifiedType::Kind kind) {
   switch (kind) {
     case QualifiedType::UNKNOWN:        return "unknown";

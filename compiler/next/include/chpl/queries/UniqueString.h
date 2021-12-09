@@ -235,26 +235,16 @@ class UniqueString final {
     other = oldThis;
   }
 
+  static bool update(UniqueString& keep, UniqueString& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
   void mark(Context* context) const {
     s.i.mark(context);
   }
 };
 
-
-// docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::UniqueString> {
-  bool operator()(chpl::UniqueString& keep,
-                  chpl::UniqueString& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
-template<> struct mark<chpl::UniqueString> {
-  void operator()(Context* context,
-                  const chpl::UniqueString& keep) const {
-    keep.mark(context);
-  }
-};
 template<> struct stringify<chpl::UniqueString> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,

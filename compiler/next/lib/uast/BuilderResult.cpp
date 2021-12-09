@@ -106,27 +106,27 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
   return changed;
 }
 
-void BuilderResult::mark(Context* context, const BuilderResult& keep) {
+void BuilderResult::mark(Context* context) const {
 
   // mark the UniqueString file path
-  keep.filePath_.mark(context);
+  filePath_.mark(context);
 
   // UniqueStrings in the AST IDs will be marked in markASTList below
 
   // mark UniqueStrings in the Locations
-  for (const auto& pair : keep.idToLocation_) {
-    pair.second.markUniqueStrings(context);
+  for (const auto& pair : idToLocation_) {
+    pair.second.mark(context);
   }
 
-  for (const Location& loc : keep.commentIdToLocation_) {
-    loc.markUniqueStrings(context);
+  for (const Location& loc : commentIdToLocation_) {
+    loc.mark(context);
   }
 
   // mark UniqueStrings in the ASTs
-  markASTList(context, keep.topLevelExpressions_);
+  markASTList(context, topLevelExpressions_);
 
   // update the filePathForModuleName query
-  BuilderResult::updateFilePaths(context, keep);
+  BuilderResult::updateFilePaths(context, *this);
 }
 
 static void updateFilePathsForModulesRecursively(Context* context,

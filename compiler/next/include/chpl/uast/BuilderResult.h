@@ -48,6 +48,7 @@ namespace parsing {
 
 namespace uast {
 
+
 /**
   This type records the result of building some AST.
  */
@@ -158,26 +159,14 @@ class BuilderResult final {
   void swap(BuilderResult& other);
 
   static bool update(BuilderResult& keep, BuilderResult& addin);
-  static void mark(Context* context, const BuilderResult& keep);
+  void mark(Context* context) const;
 };
+
 
 } // end namespace uast
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::uast::BuilderResult> {
-  bool operator()(chpl::uast::BuilderResult& keep,
-                  chpl::uast::BuilderResult& addin) const {
-    return chpl::uast::BuilderResult::update(keep, addin);
-  }
-};
-template<> struct mark<chpl::uast::BuilderResult> {
-  void operator()(Context* context,
-                  const chpl::uast::BuilderResult& keep) const {
-    chpl::uast::BuilderResult::mark(context, keep);
-  }
-};
-
 template<> struct stringify<chpl::uast::BuilderResult> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,

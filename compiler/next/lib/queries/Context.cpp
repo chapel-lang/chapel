@@ -330,6 +330,21 @@ size_t Context::lengthForUniqueString(const char* s) {
   return len32;
 }
 
+bool Context::tryMarkPointer(const void* ptr) {
+  // don't bother for nullptr
+  if (ptr == nullptr)
+    return false;
+
+  // shouldn't run any mark code if the revision is not doing GC
+  assert(this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber);
+
+  // otherwise, add the pointer to the map
+  auto pair = ptrsMarkedThisRevision.insert(ptr);
+  // pair.second is 'true' if the insertion took place
+  // or 'false' if there already was an element
+  return pair.second;
+}
+
 static
 const UniqueString& filePathForModuleIdSymbolPathQuery(Context* context,
                                                        UniqueString modIdSymP) {
@@ -412,6 +427,7 @@ bool Context::hasFilePathForId(ID id) {
 void Context::advanceToNextRevision(bool prepareToGC) {
   this->currentRevisionNumber++;
   this->numQueriesRunThisRevision_ = 0;
+  ptrsMarkedThisRevision.clear();
 
   if (prepareToGC) {
     this->lastPrepareToGCRevisionNumber = this->currentRevisionNumber;
@@ -621,7 +637,7 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
     resultEntry->markUniqueStringsInResult(this);
     // and also mark unique strings in the errors
     for (const auto& err: resultEntry->errors) {
-      err.markUniqueStrings(this);
+      err.mark(this);
     }
   }
   resultEntry->lastChecked = this->currentRevisionNumber;

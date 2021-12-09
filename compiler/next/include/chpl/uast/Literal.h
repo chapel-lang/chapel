@@ -47,7 +47,7 @@ class Literal : public Expression {
   }
   void literalMarkUniqueStringsInner(Context* context) const {
     expressionMarkUniqueStringsInner(context);
-    types::Param::markParam(context, value_);
+    value_->mark(context);
   }
 
  public:

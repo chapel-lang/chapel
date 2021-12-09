@@ -86,21 +86,19 @@ class Type {
   bool operator!=(const Type& other) const {
     return !(*this == other);
   }
+  template<typename T>
+  static bool update(owned<T>& keep, owned<T>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    return markUniqueStringsInner(context);
+  }
 
   static void gatherBuiltins(Context* context,
                              std::unordered_map<UniqueString,const Type*>& map);
 
   bool completeMatch(const Type* other) const;
 
-  // 'keep' is some old Type
-  // 'addin' is some new Type we wish to combine with it
-  //
-  // on exit, 'keep' stores the Type we need to keep, and anything
-  // not kept is stored in 'addin'.
-  // the function returns 'true' if anything changed in 'keep'.
-  static bool updateType(owned<Type>& keep, owned<Type>& addin);
-
-  static void markType(Context* context, const Type* keep);
 
   static void dump(const Type* type, int leadingSpaces=0);
 

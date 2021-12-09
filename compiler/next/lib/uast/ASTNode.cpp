@@ -75,7 +75,7 @@ bool ASTNode::completeMatch(const ASTNode* other) const {
   return allMatch;
 }
 
-bool ASTNode::updateAST(owned<ASTNode>& keep, owned<ASTNode>& addin) {
+bool ASTNode::update(owned<ASTNode>& keep, owned<ASTNode>& addin) {
   // If any of the children changed, it's important to create
   // a new AST node for the parent, so that any queries referring
   // to that AST node get a new version.
@@ -110,14 +110,13 @@ bool ASTNode::updateAST(owned<ASTNode>& keep, owned<ASTNode>& addin) {
   }
 }
 
-void ASTNode::markAST(Context* context, const ASTNode* keep) {
-  if (keep == nullptr) return;
+void ASTNode::mark(Context* context) const {
   // mark the unique string stored in the ID
-  keep->id_.markUniqueStrings(context);
+  id_.mark(context);
   // run markUniqueStrings on the node
-  keep->markUniqueStringsInner(context);
+  markUniqueStringsInner(context);
   // run markASTList on the child list
-  markASTList(context, keep->children_);
+  markASTList(context, children_);
 }
 
 static std::string getIdStr(const ASTNode* ast) {

@@ -89,7 +89,7 @@ class ErrorMessage final {
 
   void swap(ErrorMessage& other);
 
-  void markUniqueStrings(Context* context) const;
+  void mark(Context* context) const;
   void updateLocation(Context *context);
 };
 

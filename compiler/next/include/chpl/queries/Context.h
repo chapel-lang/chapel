@@ -111,12 +111,15 @@ stored in the program database.
 There are some requirements on query argument/key types and on result types:
 
  * argument/key types must have ``std::hash<KeyType>``
+   (typically by providing a hash method and calling it from
+   a std::hash template specialization)
  * argument/key types must have ``std::equal_to<KeyType>``
- * result types must have ``chpl::update<MyResultType>`` implemented
+   (typically by providing an == overload)
+ * result types must have ``chpl::update<MyResultType>``
+   or an update method implemented
+ * result types must have ``chpl::mark<MyResultType>`` or
+   a mark method implemented
  * result types must be default constructable
- * If the result contains or refers to any UniqueString, the result type
-   must have ``chpl::mark<MyResultType>`` implemented to call ``mark``
-   on the UniqueString(s).
 
 .. code-block:: c++
 
@@ -144,12 +147,14 @@ possible ``chpl::mark``:
       template<> struct update<MyResultType> {
         bool operator()(chpl::MyResultType& keep,
                         chpl::MyResultType& addin) const {
-          return doSomethingToCombine...;
+          // note: default overload runs the update method as below
+          return MyResultType::update(keep, addin);
         }
         template<> struct mark<MyResultType> {
         void operator()(Context* context,
                         chpl::MyResultType& keep) const {
-          keep.markUniqueStrings(context);
+          // note: default overload runs the mark method as below
+          keep.mark(context);
         }
       };
 
@@ -162,7 +167,7 @@ function needs to:
   * return ``false`` if ``keep`` matched ``addin`` -- that is, ``keep`` did not
     need to be updated; and ``true`` otherwise.
 
-For most result types, ``return defaultCombine(keep, addin);`` should be
+For most result types, ``return defaultUpdate(keep, addin);`` should be
 sufficient. In the event that a result is actually a collection of results
 that *owns* the elements (for example, when parsing, the result is
 conceptually a vector of top-level symbol), the ``combine`` function
@@ -221,6 +226,8 @@ class Context {
 
   std::vector<const querydetail::QueryMapResultBase*> queryStack;
 
+  std::unordered_set<const void*> ptrsMarkedThisRevision;
+
   querydetail::RevisionNumber currentRevisionNumber = 1;
   bool enableDebugTracing = false;
   bool breakSet = false;
@@ -239,6 +246,8 @@ class Context {
                                                     const char* str,
                                                     size_t len);
   const char* getOrCreateUniqueString(const char* str, size_t len);
+
+  bool markPointerHelper(const void* ptr);
 
   // saves the dependency in the parent query, which is assumed
   // to be at queryStack.back().
@@ -411,6 +420,26 @@ class Context {
    is not the result of one of the uniqueCString calls.
    */
   static size_t lengthForUniqueString(const char* s);
+
+  /**
+   If the pointer is nullptr or has already been marked,
+   returns false. Otherwise, marks the pointer and returns true.
+   */
+  bool tryMarkPointer(const void* ptr);
+
+  /**
+   This function allows for marking pointers which have already
+   been traversed for marking contained UniqueStrings.
+   Passing nullptr is fine and will have no effect.
+   If the pointer is not nullptr, it will call ptr->mark(Context*)
+   on it to mark any contained UniqueStrings.
+   */
+  template<typename T>
+  void markPointer(const T* ptr) {
+    if (tryMarkPointer(ptr)) {
+      ptr->mark(this);
+    }
+  }
 
   /**
     Return the file path for the file containing this ID.

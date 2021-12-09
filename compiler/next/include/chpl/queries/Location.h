@@ -70,36 +70,26 @@ public:
   inline bool operator!=(const Location& other) const {
     return !(*this == other);
   }
+  void swap(Location& other) {
+    path_.swap(other.path_);
+    std::swap(firstLine_, other.firstLine_);
+    std::swap(firstColumn_, other.firstColumn_);
+    std::swap(lastLine_, other.lastLine_);
+    std::swap(lastColumn_, other.lastColumn_);
+  }
+  static bool update(Location& keep, Location& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+    this->path_.mark(context);
+  }
 
   size_t hash() const {
     return chpl::hash(path_, firstLine_, firstColumn_, lastLine_, lastColumn_);
   }
-
-  void swap(Location& other) {
-    Location oldThis = *this;
-    *this = other;
-    other = oldThis;
-  }
-
-  void markUniqueStrings(Context* context) const {
-    this->path_.mark(context);
-  }
 };
 
-// docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::Location> {
-  bool operator()(chpl::Location& keep,
-                  chpl::Location& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
-template<> struct mark<chpl::Location> {
-  void operator()(Context* context, const chpl::Location& keep) const {
-    keep.markUniqueStrings(context);
-  }
-};
-
 template<> struct stringify<chpl::Location> {
   void operator()(std::ostream &stringOut, StringifyKind stringKind,
                   const chpl::Location& stringMe) const {
@@ -107,6 +97,7 @@ template<> struct stringify<chpl::Location> {
   }
 };
 /// \endcond
+
 
 } // end namespace chpl
 

@@ -147,9 +147,9 @@ class ASTNode {
   // on exit, 'keep' stores the AST we need to keep, and anything
   // not kept is stored in 'addin'.
   // the function returns 'true' if anything changed in 'keep'.
-  static bool updateAST(owned<ASTNode>& keep, owned<ASTNode>& addin);
+  static bool update(owned<ASTNode>& keep, owned<ASTNode>& addin);
 
-  static void markAST(Context* context, const ASTNode* keep);
+  void mark(Context* context) const;
 
   static void dump(const ASTNode* ast, int leadingSpaces=0);
 
