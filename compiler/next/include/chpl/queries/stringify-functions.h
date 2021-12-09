@@ -239,6 +239,23 @@ void operator()(std::ostream &stringOut,
 }
 };
 
+template<> struct stringify<long long int> {
+void operator()(std::ostream &stringOut,
+                StringifyKind stringKind,
+                const long long int val) const {
+  stringOut << std::to_string(val);
+}
+};
+
+template<> struct stringify<unsigned long long> {
+void operator()(std::ostream &stringOut,
+                StringifyKind stringKind,
+                const unsigned long long val) const {
+  stringOut << std::to_string(val);
+}
+};
+
+
 template<> struct stringify<bool> {
 void operator()(std::ostream &stringOut,
                 StringifyKind stringKind,
