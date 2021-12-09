@@ -73,8 +73,18 @@ class RecordType final : public CompositeType {
 
 };
 
-
 } // end namespace uast
+
+  /// \cond DO_NOT_DOCUMENT
+template<> struct stringify<chpl::types::RecordType> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::types::RecordType& stringMe) const {
+    stringOut << stringMe.toString();
+  }
+};
+  /// \endcond DO_NOT_DOCUMENT
+
 } // end namespace chpl
 
 #endif

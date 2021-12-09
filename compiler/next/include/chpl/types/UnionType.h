@@ -76,6 +76,17 @@ class UnionType final : public CompositeType {
 
 
 } // end namespace uast
+
+/// \cond DO_NOT_DOCUMENT
+template<> struct stringify<chpl::types::UnionType> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::types::UnionType& stringMe) const {
+    stringOut << stringMe.toString();
+  }
+};
+  /// \endcond DO_NOT_DOCUMENT
+
 } // end namespace chpl
 
 #endif
