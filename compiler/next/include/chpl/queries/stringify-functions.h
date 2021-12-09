@@ -207,6 +207,10 @@ void operator()(std::ostream &stringOut,
 };
 
 
+/*
+  Templates for integral types start here
+*/
+
 template<> struct stringify<int> {
 void operator()(std::ostream &stringOut,
                StringifyKind stringKind,
@@ -214,6 +218,7 @@ void operator()(std::ostream &stringOut,
  stringOut << std::to_string(val);
 }
 };
+
 
 template<> struct stringify<long int> {
 void operator()(std::ostream &stringOut,
@@ -255,6 +260,7 @@ void operator()(std::ostream &stringOut,
 }
 };
 
+// end integral types
 
 template<> struct stringify<bool> {
 void operator()(std::ostream &stringOut,
