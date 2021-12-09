@@ -1,0 +1,2 @@
+deprecatePerfectSquareP.chpl:6: warning: bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead
+4 is a perfect square, as true was returned
