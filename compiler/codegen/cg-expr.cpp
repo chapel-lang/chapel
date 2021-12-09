@@ -6271,17 +6271,13 @@ void CallExpr::codegenInvokeTaskFun(const char* name) {
 
   // We would like to remove this conditional and always do the true branch,
   // but wanted to limit the impact of this near the release date.
-  if (localeUsesGPU()) {
-    GenRet outerLocale = codegenCallExpr("chpl_task_getRequestedSubloc");
-    args[0]    = outerLocale;
-  } else {
-    args[0]      = new_IntSymbol(-2 /* c_sublocid_any */, INT_SIZE_32);
-  }
-  args[1]      = new_IntSymbol(ftableMap[fn], INT_SIZE_64);
-  args[2]      = codegenCast("chpl_task_bundle_p", taskBundle);
-  args[3]      = bundleSize;
-  args[4]      = fn->linenum();
-  args[5]      = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
+  GenRet outerLocale = codegenCallExpr("chpl_task_getRequestedSubloc");
+  args[0] = outerLocale;
+  args[1] = new_IntSymbol(ftableMap[fn], INT_SIZE_64);
+  args[2] = codegenCast("chpl_task_bundle_p", taskBundle);
+  args[3] = bundleSize;
+  args[4] = fn->linenum();
+  args[5] = new_IntSymbol(gFilenameLookupCache[fn->fname()], INT_SIZE_32);
 
   genComment(fn->cname, true);
 

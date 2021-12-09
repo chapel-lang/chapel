@@ -19,6 +19,7 @@
 module LocaleModelHelpGPU {
 
   param localeModelHasSublocales = true;
+  param localeModelPartitionsIterationOnSublocales = false;
 
   public use LocaleModelHelpSetup;
   public use LocaleModelHelpRuntime;
