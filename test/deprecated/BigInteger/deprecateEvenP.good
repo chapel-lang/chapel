@@ -1,0 +1,2 @@
+deprecateEvenP.chpl:6: warning: bigint.even_p is deprecated, use bigint.isEven instead
+6 is Even, as true was returned
