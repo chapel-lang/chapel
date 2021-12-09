@@ -33,6 +33,837 @@ module ChapelDomain {
   use SysCTypes;
   use ChapelPrivatization;
 
+  pragma "no copy return"
+  pragma "return not owned"
+  proc _getDomain(value) {
+    if _to_unmanaged(value.type) != value.type then
+      compilerError("Domain on borrow created");
+
+    if _isPrivatized(value) then
+      return new _domain(value.pid, value, _unowned=true);
+    else
+      return new _domain(nullPid, value, _unowned=true);
+  }
+
+  // Run-time type support
+  //
+  // NOTE: the bodies of functions marked with runtime type init fn such as
+  // chpl__buildDomainRuntimeType and chpl__buildArrayRuntimeType are replaced
+  // by the compiler to just create a record storing the arguments.
+  // The return type of chpl__build...RuntimeType is what tells the
+  // compiler which runtime type it is creating.
+  // These functions are considered type functions early in compilation.
+
+  //
+  // Support for domain types
+  //
+  pragma "runtime type init fn"
+  proc chpl__buildDomainRuntimeType(dist: _distribution, param rank: int,
+                                    type idxType = int,
+                                    param stridable: bool = false) {
+    return new _domain(dist, rank, idxType, stridable);
+  }
+
+  pragma "runtime type init fn"
+  proc chpl__buildDomainRuntimeType(dist: _distribution, type idxType,
+                                    param parSafe: bool = true) {
+    return new _domain(dist, idxType, parSafe);
+  }
+
+  pragma "runtime type init fn"
+  proc chpl__buildSparseDomainRuntimeType(dist: _distribution,
+                                          parentDom: domain) {
+    return new _domain(dist, parentDom);
+  }
+
+  proc chpl__convertRuntimeTypeToValue(dist: _distribution,
+                                       param rank: int,
+                                       type idxType = int,
+                                       param stridable: bool,
+                                       param isNoInit: bool,
+                                       definedConst: bool) {
+    return new _domain(dist, rank, idxType, stridable, definedConst);
+  }
+
+  proc chpl__convertRuntimeTypeToValue(dist: _distribution, type idxType,
+                                       param parSafe: bool,
+                                       param isNoInit: bool,
+                                       definedConst: bool) {
+    return new _domain(dist, idxType, parSafe);
+  }
+
+  proc chpl__convertRuntimeTypeToValue(dist: _distribution,
+                                       parentDom: domain,
+                                       param isNoInit: bool,
+                                       definedConst: bool) {
+    return new _domain(dist, parentDom);
+  }
+
+  proc chpl__convertValueToRuntimeType(dom: domain) type
+   where isSubtype(dom._value.type, BaseRectangularDom) {
+    return chpl__buildDomainRuntimeType(dom.dist, dom._value.rank,
+                              dom._value.idxType, dom._value.stridable);
+  }
+
+  proc chpl__convertValueToRuntimeType(dom: domain) type
+   where isSubtype(dom._value.type, BaseAssociativeDom) {
+    return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
+  }
+
+  proc chpl__convertValueToRuntimeType(dom: domain) type
+   where isSubtype(dom._value.type, BaseSparseDom) {
+    return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
+  }
+
+  proc chpl__convertValueToRuntimeType(dom: domain) type {
+    compilerError("the global domain class of each domain map implementation must be a subclass of BaseRectangularDom, BaseAssociativeDom, or BaseSparseDom", 0);
+    return 0; // dummy
+  }
+
+  //
+  // Support for subdomain types
+  //
+  // Note the domain of a subdomain is not yet part of the runtime type
+  //
+  proc chpl__buildSubDomainType(dom: domain) type
+    return chpl__convertValueToRuntimeType(dom);
+
+  //
+  // Support for domain expressions, e.g., {1..3, 1..3}
+  //
+
+  proc chpl__isTupleOfRanges(tup) param {
+    for param i in 0..tup.size-1 {
+      if !isRangeType(tup(i).type) then
+        return false;
+    }
+    return true;
+  }
+
+  proc chpl__buildDomainExpr(ranges..., definedConst)
+  where chpl__isTupleOfRanges(ranges) {
+    param rank = ranges.size;
+    for param i in 1..rank-1 do
+      if ranges(0).idxType != ranges(i).idxType then
+        compilerError("idxType varies among domain's dimensions");
+    for param i in 0..rank-1 do
+      if ! isBoundedRange(ranges(i)) then
+        compilerError("one of domain's dimensions is not a bounded range");
+    var d: domain(rank, ranges(0).idxType, chpl__anyStridable(ranges));
+    d.setIndices(ranges);
+    if definedConst then
+      chpl__setDomainConst(d);
+    return d;
+  }
+
+  pragma "no doc"
+  private proc chpl__setDomainConst(dom: domain) {
+    dom._value.definedConst = true;
+  }
+
+  // definedConst is added only for interface consistency
+  proc chpl__buildDomainExpr(keys..., definedConst) {
+    param count = keys.size;
+    // keyType of string literals is assumed to be type string
+    type keyType = _getLiteralType(keys(0).type);
+    for param i in 1..count-1 do
+      if keyType != _getLiteralType(keys(i).type) {
+        compilerError("Associative domain element " + i:string +
+                      " expected to be of type " + keyType:string +
+                      " but is of type " +
+                      _getLiteralType(keys(i).type):string);
+      }
+
+    //Initialize the domain with a size appropriate for the number of keys.
+    //This prevents resizing as keys are added.
+    var D : domain(keyType);
+    D.requestCapacity(count);
+
+    for param i in 0..count-1 do
+      D += keys(i);
+
+    return D;
+  }
+
+  //
+  // Support for domain expressions within array types, e.g. [1..n], [D]
+  //
+  proc chpl__ensureDomainExpr(const ref x: domain) const ref {
+    return x;
+  }
+
+  // pragma is a workaround for ref-pair vs generic/specific overload resolution
+  pragma "compiler generated"
+  pragma "last resort"
+  proc chpl__ensureDomainExpr(x...) {
+    // we are creating array with a range literal(s). So, the array's domain
+    // cannot be changed anymore.
+    return chpl__buildDomainExpr((...x), definedConst=true);
+  }
+
+  pragma "compiler generated"
+  pragma "last resort"
+  proc chpl__ensureDomainExpr(type t) {
+    compilerError("Domain expression was a type ('", t:string, "') rather than a domain value or range list as expected");
+  }
+
+  proc chpl__isRectangularDomType(type domainType) param {
+    var dom: domainType;
+    return isDomainType(domainType) && dom.isRectangular();
+  }
+
+  proc chpl__isSparseDomType(type domainType) param {
+    var dom: domainType;
+    return dom.isSparse();
+  }
+
+  pragma "no copy return"
+  pragma "return not owned"
+  proc chpl__parentDomainFromDomainRuntimeType(type domainType) {
+    pragma "no copy"
+    pragma "no auto destroy"
+    var parentDom = __primitive("get runtime type field",
+                                domainType, "parentDom");
+
+    return _getDomain(parentDom._value);
+  }
+
+  pragma "no copy return"
+  pragma "return not owned"
+  proc chpl__domainFromArrayRuntimeType(type rtt) {
+    pragma "no copy"
+    pragma "no auto destroy"
+    var dom = __primitive("get runtime type field", rtt, "dom");
+
+    return _getDomain(dom._value);
+  }
+
+  deprecated "isRectangularDom is deprecated - please use isRectangular method on domain"
+  proc isRectangularDom(d: domain) param return d.isRectangular();
+
+  deprecated "isIrregularDom is deprecated - please use isIrregular method on domain"
+  proc isIrregularDom(d: domain) param return d.isIrregular();
+
+  deprecated "isAssociativeDom is deprecated - please use isAssociative method on domain"
+  proc isAssociativeDom(d: domain) param return d.isAssociative();
+
+  proc chpl_isAssociativeDomClass(dc: BaseAssociativeDom) param return true;
+  proc chpl_isAssociativeDomClass(dc) param return false;
+
+  deprecated "isSparseDom is deprecated - please use isSparse method on domain"
+  proc isSparseDom(d: domain) param return d.isSparse();
+
+  // Helper function used to ensure a returned array matches the declared
+  // return type when the declared return type specifies a particular domain
+  // but not the element type.
+  proc chpl__checkDomainsMatch(a: [], b) {
+    import HaltWrappers;
+    if (boundsChecking) {
+      if (a.domain != b) {
+        HaltWrappers.boundsCheckHalt("domain mismatch on return");
+      }
+    }
+  }
+
+  proc chpl__checkDomainsMatch(a: _iteratorRecord, b) {
+    import HaltWrappers;
+    if (boundsChecking) {
+      // Should use iterator.shape here to avoid copy
+      var tmp = a;
+      if (tmp.domain != b) {
+        HaltWrappers.boundsCheckHalt("domain mismatch on return");
+      }
+    }
+  }
+
+  /* Cast a rectangular domain to a new rectangular domain type.  If the old
+     type was stridable and the new type is not stridable then assume the
+     stride was 1 without checking.
+
+     For example:
+     {1..10 by 2}:domain(stridable=false)
+
+     results in the domain '{1..10}'
+   */
+  pragma "no doc"
+  operator :(d: _domain, type t:_domain) where chpl__isRectangularDomType(t) && d.isRectangular() {
+    var tmpD: t;
+    if tmpD.rank != d.rank then
+      compilerError("rank mismatch in cast");
+    if tmpD.idxType != d.idxType then
+      compilerError("idxType mismatch in cast");
+
+    if tmpD.stridable == d.stridable then
+      return d;
+    else if !tmpD.stridable && d.stridable {
+      var inds = d.getIndices();
+      var unstridableInds: d.rank*range(tmpD.idxType, stridable=false);
+
+      for param i in 0..tmpD.rank-1 {
+        unstridableInds(i) = inds(i):range(tmpD.idxType, stridable=false);
+      }
+      tmpD.setIndices(unstridableInds);
+      return tmpD;
+    } else /* if tmpD.stridable && !d.stridable */ {
+      tmpD = d;
+      return tmpD;
+    }
+  }
+
+  proc chpl_countDomHelp(dom, counts) {
+    var ranges = dom.dims();
+    for param i in 0..dom.rank-1 do
+      ranges(i) = ranges(i) # counts(i);
+    return dom[(...ranges)];
+  }
+
+  operator #(dom: domain, counts: integral) where dom.isRectangular() &&
+    dom.rank == 1 {
+    return chpl_countDomHelp(dom, (counts,));
+  }
+
+  operator #(dom: domain, counts) where dom.isRectangular() &&
+    isTuple(counts) {
+    if (counts.size != dom.rank) then
+      compilerError("the domain and tuple arguments of # must have the same rank");
+    return chpl_countDomHelp(dom, counts);
+  }
+
+  pragma "fn returns aliasing array"
+  operator #(arr: [], counts: integral) where arr.isRectangular() &&
+    arr.rank == 1 {
+    return arr[arr.domain#counts];
+  }
+
+  pragma "fn returns aliasing array"
+  operator #(arr: [], counts) where arr.isRectangular() && isTuple(counts) {
+    if (counts.size != arr.rank) then
+      compilerError("the domain and array arguments of # must have the same rank");
+    return arr[arr.domain#counts];
+  }
+
+  operator +(d: domain, i: index(d)) {
+    if d.isRectangular() then
+      compilerError("Cannot add indices to a rectangular domain");
+    else
+      compilerError("Cannot add indices to this domain type");
+  }
+
+  operator +(i, d: domain) where isSubtype(i.type, index(d)) && !d.isIrregular() {
+    if d.isRectangular() then
+      compilerError("Cannot add indices to a rectangular domain");
+    else
+      compilerError("Cannot add indices to this domain type");
+  }
+
+  operator +(in d: domain, i: index(d)) where d.isIrregular() {
+    d.add(i);
+    return d;
+  }
+
+  operator +(i, in d: domain) where isSubtype(i.type,index(d)) && d.isIrregular() {
+    d.add(i);
+    return d;
+  }
+
+  operator +(in d1: domain, d2: domain) where
+                                    d1.type == d2.type &&
+                                    d1.isIrregular() &&
+                                    d2.isIrregular() {
+    // This should eventually become a forall loop
+    for e in d2 do d1.add(e);
+    return d1;
+  }
+
+  operator +(d1: domain, d2: domain) {
+    if (d1.isRectangular() || d2.isRectangular()) then
+      compilerError("Cannot add indices to a rectangular domain");
+    else
+      compilerError("Cannot add indices to this domain type");
+  }
+
+  operator -(d: domain, i: index(d)) {
+    if d.isRectangular() then
+      compilerError("Cannot remove indices from a rectangular domain");
+    else
+      compilerError("Cannot remove indices from this domain type");
+  }
+
+  operator -(in d: domain, i: index(d)) where d.isIrregular() {
+    d.remove(i);
+    return d;
+  }
+
+  operator -(in d1: domain, d2: domain) where
+                                    d1.type == d2.type &&
+                                    d1.isSparse() {
+    // This should eventually become a forall loop
+    for e in d2 do d1.remove(e);
+    return d1;
+  }
+
+  operator -(d1: domain, d2: domain) {
+    if (d1.isRectangular() || d2.isRectangular()) then
+      compilerError("Cannot remove indices from a rectangular domain");
+    else
+      compilerError("Cannot remove indices from this domain type");
+  }
+
+  inline operator ==(d1: domain, d2: domain) where d1.isRectangular() &&
+                                                   d2.isRectangular() {
+    if d1._value.rank != d2._value.rank {
+      return false;
+    } else if d1._value == d2._value {
+      return true;
+    } else {
+      for param i in 0..d1._value.rank-1 do
+        if (d1.dim(i) != d2.dim(i)) then return false;
+      return true;
+    }
+  }
+
+  inline operator !=(d1: domain, d2: domain) where d1.isRectangular() &&
+                                                   d2.isRectangular() {
+    return !(d1 == d2);
+  }
+
+  inline operator ==(d1: domain, d2: domain) where d1.isAssociative() &&
+                                                   d2.isAssociative() {
+    if d1._value == d2._value then return true;
+    if d1.sizeAs(uint) != d2.sizeAs(uint) then return false;
+    // Should eventually be a forall+reduction
+    for idx in d1 do
+      if !d2.contains(idx) then return false;
+    return true;
+  }
+
+  inline operator !=(d1: domain, d2: domain) where d1.isAssociative() &&
+                                                   d2.isAssociative() {
+    return !(d1 == d2);
+  }
+
+  inline operator ==(d1: domain, d2: domain) where d1.isSparse() &&
+                                                   d2.isSparse() {
+    if d1._value == d2._value then return true;
+    if d1.sizeAs(uint) != d2.sizeAs(uint) then return false;
+    if d1._value.parentDom != d2._value.parentDom then return false;
+    // Should eventually be a forall+reduction
+    for idx in d1 do
+      if !d2.contains(idx) then return false;
+    return true;
+  }
+
+  inline operator !=(d1: domain, d2: domain) where d1.isSparse() &&
+                                                   d2.isSparse() {
+    return !(d1 == d2);
+  }
+
+  // any combinations not handled by the above
+
+  inline operator ==(d1: domain, d2: domain) param {
+    return false;
+  }
+
+  inline operator !=(d1: domain, d2: domain) param {
+    return true;
+  }
+
+  //
+  // isXxxType, isXxxValue
+  //
+
+  /* Return true if ``t`` is a domain type. Otherwise return false. */
+  proc isDomainType(type t) param {
+    return isSubtype(t, _domain);
+  }
+
+  pragma "no doc"
+  proc isDomainValue(e: domain) param  return true;
+  /* Return true if ``e`` is a domain. Otherwise return false. */
+  proc isDomainValue(e)         param  return false;
+
+  operator -(a :domain, b :domain) where (a.type == b.type) &&
+    a.isAssociative() {
+    var newDom : a.type;
+    serial !newDom._value.parSafe do
+      forall e in a with(ref newDom) do
+        if !b.contains(e) then newDom.add(e);
+    return newDom;
+  }
+
+  /*
+     We remove elements in the RHS domain from those in the LHS domain only if
+     they exist. If an element in the RHS is not present in the LHS, no error
+     occurs.
+  */
+  operator -=(ref a :domain, b :domain) where (a.type == b.type) &&
+    a.isAssociative() {
+    for e in b do
+      if a.contains(e) then
+        a.remove(e);
+  }
+
+  operator |(a :domain, b: domain) where (a.type == b.type) &&
+    a.isAssociative() {
+    return a + b;
+  }
+
+  operator |=(ref a :domain, b: domain) where (a.type == b.type) &&
+    a.isAssociative() {
+    for e in b do
+      a.add(e);
+  }
+
+  operator +=(ref a :domain, b: domain) where (a.type == b.type) &&
+    a.isAssociative() {
+    a |= b;
+  }
+
+  /*
+     We remove elements in the RHS domain from those in the LHS domain only if
+     they exist. If an element in the RHS is not present in the LHS, no error
+     occurs.
+  */
+  operator &(a :domain, b: domain) where (a.type == b.type) &&
+    a.isAssociative() {
+    var newDom : a.type;
+
+    serial !newDom._value.parSafe do
+      forall k in a with (ref newDom) do // no race - in 'serial'
+        if b.contains(k) then newDom += k;
+    return newDom;
+  }
+
+  operator &=(ref a :domain, b: domain) where (a.type == b.type) &&
+    a.isAssociative() {
+    var removeSet: domain(a.idxType);
+    for e in a do
+      if !b.contains(e) then
+        removeSet += e;
+    for e in removeSet do
+      a.remove(e);
+  }
+
+  operator ^(a :domain, b: domain) where (a.type == b.type) &&
+    a.isAssociative() {
+    var newDom : a.type;
+
+    serial !newDom._value.parSafe {
+      forall k in a with(ref newDom) do
+        if !b.contains(k) then newDom.add(k);
+      forall k in b with(ref newDom) do
+        if !a.contains(k) then newDom.add(k);
+    }
+
+    return newDom;
+  }
+
+  /*
+     We remove elements in the RHS domain from those in the LHS domain only if
+     they exist. If an element in the RHS is not present in the LHS, it is
+     added to the LHS.
+  */
+  operator ^=(ref a :domain, b: domain) where (a.type == b.type) &&
+    a.isAssociative() {
+    for e in b do
+      if a.contains(e) then
+        a.remove(e);
+      else
+        a.add(e);
+  }
+
+  //
+  // BaseSparseDom operator overloads
+  //
+  operator +=(ref sd: domain, inds: [] index(sd)) where sd.isSparse() {
+    if inds.sizeAs(int) == 0 then return;
+
+    sd._value.dsiBulkAdd(inds);
+  }
+
+
+  // TODO: Currently not optimized
+  operator +=(ref sd: domain, d: domain)
+  where sd.isSparse() && d.rank==sd.rank && sd.idxType==d.idxType {
+    if d.sizeAs(int) == 0 then return;
+
+    const indCount = d.sizeAs(int);
+    var arr: [{0..#indCount}] index(sd);
+
+    for (i,j) in zip(d, 0..) do arr[j] = i;
+
+    var rowSorted = false;
+
+    // Once an interface supports it:
+    // if sd.RMO && d.RMO then rowSorted = true;
+
+    sd._value.dsiBulkAdd(arr, rowSorted, true, false);
+  }
+
+  // TODO: Implement bulkRemove
+  operator -=(ref sd: domain, inds: [] index(sd)) where sd.isSparse() {
+    for ind in inds do
+      sd -= ind;
+  }
+
+  operator -=(ref sd: domain, d: domain)
+  where sd.isSparse() && d.rank==sd.rank && sd.idxType==d.idxType {
+    for ind in d do
+      sd -= ind;
+  }
+
+  //
+  // Assignment of domains
+  //
+  operator =(ref a: domain, b: domain) {
+    if a.rank != b.rank then
+      compilerError("rank mismatch in domain assignment");
+
+    if a.idxType != b.idxType then
+      compilerError("index type mismatch in domain assignment");
+
+    if a.isRectangular() && b.isRectangular() then
+      if !a.stridable && b.stridable then
+        compilerError("cannot assign from a stridable domain to an unstridable domain without an explicit cast");
+
+    a._instance.dsiAssignDomain(b, lhsPrivate=false);
+
+    if _isPrivatized(a._instance) {
+      _reprivatize(a._instance);
+    }
+  }
+
+  //
+  // Return true if t is a tuple of ranges that is legal to assign to
+  // rectangular domain d
+  //
+  proc chpl__isLegalRectTupDomAssign(d, t) param {
+    proc isRangeTuple(a) param {
+      proc peelArgs(first, rest...) param {
+        return if rest.size > 1 then
+                 isRange(first) && peelArgs((...rest))
+               else
+                 isRange(first) && isRange(rest(0));
+      }
+      proc peelArgs(first) param return isRange(first);
+
+      return if !isTuple(a) then false else peelArgs((...a));
+    }
+
+    proc strideSafe(d, rt, param dim: int=0) param {
+      return if dim == d.rank-1 then
+               d.dim(dim).stridable || !rt(dim).stridable
+             else
+               (d.dim(dim).stridable || !rt(dim).stridable) && strideSafe(d, rt, dim+1);
+    }
+    return isRangeTuple(t) && d.rank == t.size && strideSafe(d, t);
+  }
+
+  operator =(ref a: domain, b: _tuple) {
+    if chpl__isLegalRectTupDomAssign(a, b) {
+      a = {(...b)};
+    } else {
+      a.clear();
+      for ind in 0..#b.size {
+        a.add(b(ind));
+      }
+    }
+  }
+
+  operator =(ref d: domain, r: range(?)) {
+    d = {r};
+  }
+
+  operator =(ref a: domain, b) {  // b is iteratable
+    if a.isRectangular() then
+      compilerError("Illegal assignment to a rectangular domain");
+    a.clear();
+    for ind in b {
+      a.add(ind);
+    }
+  }
+
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_by(a:domain, b) { ... }
+   *
+   * because the parser renames the routine since 'by' is a keyword.
+   */
+  operator by(a: domain, b) {
+    var r: a.rank*range(a._value.idxType,
+                      BoundedRangeType.bounded,
+                      true);
+    var t = _makeIndexTuple(a.rank, b, expand=true);
+    for param i in 0..a.rank-1 do
+      r(i) = a.dim(i) by t(i);
+    return new _domain(a.dist, a.rank, a._value.idxType, true, r);
+  }
+
+  /*
+   * The following procedure is effectively equivalent to:
+   *
+  inline proc chpl_align(a:domain, b) { ... }
+   *
+   * because the parser renames the routine since 'align' is a keyword.
+   */
+  operator align(a: domain, b) {
+    var r: a.rank*range(a._value.idxType,
+                      BoundedRangeType.bounded,
+                      a.stridable);
+    var t = _makeIndexTuple(a.rank, b, expand=true);
+    for param i in 0..a.rank-1 do
+      r(i) = a.dim(i) align t(i);
+    return new _domain(a.dist, a.rank, a._value.idxType, a.stridable, r);
+  }
+
+  // This function exists to avoid communication from computing _value when
+  // the result is param.
+  proc domainDistIsLayout(d: domain) param {
+    return d.dist._value.dsiIsLayout();
+  }
+
+  pragma "find user line"
+  pragma "coerce fn"
+  proc chpl__coerceCopy(type dstType:_domain, rhs:_domain, definedConst: bool) {
+    param rhsIsLayout = domainDistIsLayout(rhs);
+
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
+    lhs = rhs;
+
+    // Error for assignment between local and distributed domains.
+    if domainDistIsLayout(lhs) && !rhsIsLayout then
+      compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
+
+    return lhs;
+  }
+  pragma "find user line"
+  pragma "coerce fn"
+  proc chpl__coerceMove(type dstType:_domain, in rhs:_domain,
+                        definedConst: bool) {
+    param rhsIsLayout = domainDistIsLayout(rhs);
+
+    // TODO: just return rhs
+    // if the domain types are the same and their runtime types
+    // are the same.
+
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
+    lhs = rhs;
+
+    // Error for assignment between local and distributed domains.
+    if domainDistIsLayout(lhs) && !rhsIsLayout then
+      compilerWarning("initializing a non-distributed domain from a distributed domain. If you didn't mean to do that, add a dmapped clause to the type expression or remove the type expression altogether");
+
+    return lhs;
+  }
+
+  pragma "find user line"
+  pragma "coerce fn"
+  proc chpl__coerceCopy(type dstType:_domain, rhs:_tuple, definedConst: bool) {
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
+    if chpl__isLegalRectTupDomAssign(lhs, rhs) {
+      lhs = {(...rhs)};
+    } else {
+      lhs = rhs;
+    }
+
+    return lhs;
+  }
+  pragma "find user line"
+  pragma "coerce fn"
+  proc chpl__coerceMove(type dstType:_domain, in rhs:_tuple, definedConst: bool) {
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
+    if chpl__isLegalRectTupDomAssign(lhs, rhs) {
+      lhs = {(...rhs)};
+    } else {
+      lhs = rhs;
+    }
+
+    return lhs;
+  }
+
+  pragma "find user line"
+  pragma "coerce fn"
+  proc chpl__coerceCopy(type dstType:_domain, rhs:range(?), definedConst: bool) {
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
+    lhs = {rhs};
+    return lhs;
+  }
+  pragma "find user line"
+  pragma "coerce fn"
+  proc chpl__coerceMove(type dstType:_domain, in rhs:range(?), definedConst: bool) {
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
+    lhs = {rhs};
+    return lhs;
+  }
+
+  pragma "find user line"
+  pragma "coerce fn"
+  proc chpl__coerceCopy(type dstType:_domain, rhs: _iteratorRecord, definedConst: bool) {
+    // assumes rhs is iterable
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
+    if lhs.isRectangular() then
+      compilerError("Illegal assignment to a rectangular domain");
+    lhs.clear();
+    for ind in rhs {
+      lhs.add(ind);
+    }
+    return lhs;
+  }
+  pragma "find user line"
+  pragma "coerce fn"
+  proc chpl__coerceMove(type dstType:_domain, rhs: _iteratorRecord, definedConst: bool) {
+    // assumes rhs is iterable
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
+    if lhs.isRectangular() then
+      compilerError("Illegal assignment to a rectangular domain");
+    lhs.clear();
+    for ind in rhs {
+      lhs.add(ind);
+    }
+    return lhs;
+  }
+
+  pragma "find user line"
+  pragma "coerce fn"
+  proc chpl__coerceCopy(type dstType:_domain, rhs, definedConst: bool) {
+    // assumes rhs is iterable (e.g. list)
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
+    if lhs.isRectangular() then
+      compilerError("Illegal assignment to a rectangular domain");
+    lhs.clear();
+    for ind in rhs {
+      lhs.add(ind);
+    }
+    return lhs;
+  }
+  pragma "find user line"
+  pragma "coerce fn"
+  proc chpl__coerceMove(type dstType:_domain, in rhs, definedConst: bool) {
+    // assumes rhs is iterable (e.g. list)
+    pragma "no copy"
+    var lhs = chpl__coerceHelp(dstType, definedConst);
+    if lhs.isRectangular() then
+      compilerError("Illegal assignment to a rectangular domain");
+    lhs.clear();
+    for ind in rhs {
+      lhs.add(ind);
+    }
+    return lhs;
+  }
+
+
+
+
   //
   // Domain wrapper record.
   //
