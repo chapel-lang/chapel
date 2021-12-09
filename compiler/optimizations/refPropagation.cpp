@@ -282,6 +282,7 @@ size_t singleAssignmentRefPropagation(FnSymbol* fn) {
   s_ref_repl_count = 0;
   // Walk the list of reference vars
   forv_Vec(Symbol, var, refVec) {
+    std::cout << var->id << std::endl;
     if (var) {
       // Get the move that defines this reference
       if (CallExpr* move = findRefDef(defMap, var)) {
@@ -309,6 +310,7 @@ size_t singleAssignmentRefPropagation(FnSymbol* fn) {
             // TODO: 'findRefDef' only returns something if the var is defined
             // once. How is this loop useful?
             for_defs(se, defMap, var) {
+              std::cout << "\t" << se->id << std::endl;
               CallExpr* parent = toCallExpr(se->parentExpr);
               if (parent && parent != move) {
                 SET_LINENO(se);

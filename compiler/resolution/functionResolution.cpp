@@ -9962,7 +9962,8 @@ static bool createSerializeDeserialize(AggregateType* at) {
       }
     }
     else if (isPOD(field->type)) {
-      buildTuple->insertAtTail(new SymExpr(field));
+      buildTuple->insertAtTail(new CallExpr(PRIM_GET_MEMBER, _this,
+                                          new_CStringSymbol(field->name)));
       deserializers.push_back(NULL);
     }
     else {
@@ -10042,21 +10043,27 @@ static bool createSerializeDeserialize(AggregateType* at) {
       //deserializedExpr = new CallExpr(deserializer, dataGetField);
     }
 
-    CallExpr* getField =  new CallExpr(PRIM_GET_MEMBER, deserializerRet,
-                                          new_CStringSymbol(field->name));
+    //CallExpr* getField =  new CallExpr(PRIM_GET_MEMBER, deserializerRet,
+                                          //new_CStringSymbol(field->name));
 
-    VarSymbol* fieldRef = newTemp("fieldRef", field->getRefType());
-    deserializer->insertAtTail(new DefExpr(fieldRef));
+    //VarSymbol* fieldRef = newTemp("fieldRef", field->getRefType());
+    //deserializer->insertAtTail(new DefExpr(fieldRef));
 
-    deserializer->insertAtTail(new CallExpr(PRIM_MOVE, fieldRef, getField));
+    //deserializer->insertAtTail(new CallExpr(PRIM_MOVE, fieldRef, getField));
+
+    deserializer->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
+                                       field,
+                                       deserializedExpr));
+
+
                  
     //deserializer->insertAtTail(new CallExpr(PRIM_MOVE, retGetField, deserializedExpr));
-    if (field->type->symbol->hasFlag(FLAG_TUPLE)) {
-      deserializer->insertAtTail(new CallExpr("=", fieldRef, deserializedExpr));
-    }
-    else {
-      deserializer->insertAtTail(new CallExpr(PRIM_MOVE, fieldRef, deserializedExpr));
-    }
+    //if (field->type->symbol->hasFlag(FLAG_TUPLE)) {
+      //deserializer->insertAtTail(new CallExpr("=", fieldRef, deserializedExpr));
+    //}
+    //else {
+      //deserializer->insertAtTail(new CallExpr(PRIM_MOVE, fieldRef, deserializedExpr));
+    //}
 
     fieldNum++;
   }
