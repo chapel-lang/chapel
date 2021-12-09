@@ -116,18 +116,44 @@ static struct fid_poll* ofi_amhPollSet; // poll set for AM handler
 static int pollSetSize = 0;             // number of fids in the poll set
 static struct fid_wait* ofi_amhWaitSet; // wait set for AM handler
 
-//
-// We direct RMA traffic and AM traffic to different endpoints so we can
-// spread the progress load across all the threads when we're doing
-// manual progress.
-//
-static struct fid_ep* ofi_rxEp;         // receive endpoint
-static struct fid_cq* ofi_rxCQ;         // receive endpoint CQ
+/*
+A Chapel process uses multiple endpoints to transmit and receive. In
+general, there is one transmit endpoint per thread, and one receive
+endpoint per active message handler (although this depends on the
+number of endpoints the hardware can support vs. the number of
+threads). Some providers also support scalable endpoints, in which a
+single endpoint uses multiple transmit and/or receive contexts.
+Ignoring scalable endpoints for a moment, the transmit endpoints are
+stored in the table tciTab below. The receive endpoint is stored in a
+separate global variable ofi_rxEp. Each endpoint must have an
+associated address vector (AV) that contains the addresses for
+communication over that endpoint. For Chapel the addresses are the same
+for all endpoints, thus it is possible to share the same AV across all
+endpoints so as to reduce overhead. When a single AV is shared this way
+it is stored in ofi_av and all of the address vectors in the tciTab
+refer to this one as does ofi_rxAv. 
 
-static struct fid_av* ofi_av;           // address vector
-static fi_addr_t* ofi_rxAddrs;          // table of remote endpoint addresses
+When AVs are not shared between endpoints ofi_av is NULL and new address
+vectors are created for the entries in tciTab and ofi_rxAv.
 
-#define rxAddr(n) (ofi_rxAddrs[n])
+When a scalable transmit endpoint is used it is stored in ofi_txEpScal,
+and the tciTab entries are used to hold the state for the transmit
+contexts. All tciTab entries refer to ofi_av, even on platforms that do
+not support AV sharing, because there is only one(scalable) transmit
+endpoint. ofi_rxAv refers to ofi_av if AVs can be shared, otherwise it
+refers to its own AV.
+*/
+
+static struct fid_av*   ofi_av = NULL;   // shared address vector
+static fi_addr_t*       ofi_addrs;       // remote endpoint addresses
+
+static struct fid_ep*   ofi_rxEp;         // receive endpoint
+static struct fid_cq*   ofi_rxCQ;         // receive endpoint CQ
+static struct fid_av*   ofi_rxAv;         // receive AV
+static fi_addr_t*       ofi_rxAddrs;      // receive remote endpoint addresses
+
+
+#define rxAddr(tcip, n) (tcip->addrs[n])
 
 //
 // Transmit support.
@@ -143,6 +169,8 @@ static int numRxCtxs;
 struct perTxCtxInfo_t {
   atomic_bool allocated;        // true: in use; false: available
   chpl_bool bound;              // true: bound to an owner (usually a thread)
+  struct fid_av* av;            // address vector
+  fi_addr_t* addrs;             // addresses in address vector
   struct fid_ep* txCtx;         // transmit context (endpoint, if not scalable)
   struct fid_cq* txCQ;          // completion CQ
   struct fid_cntr* txCntr;      // completion counter (AM handler tx ctx only)
@@ -914,7 +942,7 @@ static void init_ofi(void);
 static void init_ofiFabricDomain(void);
 static void init_ofiDoProviderChecks(void);
 static void init_ofiEp(void);
-static void init_ofiEpTxCtx(int, chpl_bool,
+static void init_ofiEpTxCtx(int, chpl_bool, struct fi_av_attr*,
                             struct fi_cq_attr*, struct fi_cntr_attr*);
 static void init_ofiExchangeAvInfo(void);
 static void init_ofiForMem(void);
@@ -2193,6 +2221,8 @@ void init_ofiEp(void) {
   } else {
     numTxCtxs = chpl_task_getMaxPar() + numAmHandlers + 1;
   }
+  DBG_PRINTF(DBG_CFG,"tciTabBindTxCtxs %s numTxCtxs %d numAmHandlers %d",
+             tciTabBindTxCtxs ? "true" : "false", numTxCtxs, numAmHandlers);
   const chpl_bool useScalEp = envPreferScalableTxEp
                               && ofi_info->domain_attr->max_ep_tx_ctx > 1;
   if (useScalEp) {
@@ -2226,14 +2256,44 @@ void init_ofiEp(void) {
     avAttr.count *= numTxCtxs;
   }
 
-  OFI_CHK(fi_av_open(ofi_domain, &avAttr, &ofi_av, NULL));
+  // If possible, share address vectors to reduce overhead. The EFA
+  // provider does not allow AVs to be shared among endpoints. As a
+  // result, if we are not using the EFA provider then the same AV
+  // (ofi_av) is shared by all endpoints. If we are using the EFA provider
+  // then the receive endpoint has its own AV in ofi_rxAV. For the
+  // transmit endpoints it depends on whether or not we are also using a
+  // scalable endpoint. If so, all of the contexts for the endpoint share
+  // ofi_av. Otherwise each  has its own AV (created in
+  // init_ofiEpTxCtx). 
+
+  chpl_bool useSharedAv = !providerInUse(provType_efa);
+  if (useSharedAv) {
+    DBG_PRINTF(DBG_TCIPS, "using shared AV");
+    //
+    // all endpoints share ofi_av
+    //
+    OFI_CHK(fi_av_open(ofi_domain, &avAttr, &ofi_av, NULL));
+    ofi_rxAv = ofi_av;
+  } else {
+    DBG_PRINTF(DBG_TCIPS, "using individual AVs");
+    if (useScalEp) {
+      //
+      // all scalable EP contexts share ofi_av
+      //
+      DBG_PRINTF(DBG_TCIPS, "using scalable EP");
+      OFI_CHK(fi_av_open(ofi_domain, &avAttr, &ofi_av, NULL));
+    } else {
+      //
+      // each endpoint gets its own AV in init_ofiEpTxCtx below
+      //
+    }
+    //
+    // receive endpoint has its own AV
+    //
+    OFI_CHK(fi_av_open(ofi_domain, &avAttr, &ofi_rxAv, NULL));
+  }
 
   if (useScalEp) {
-    //
-    // Use a scalable transmit endpoint and multiple tx contexts.  Make
-    // just one address vector, in the first tciTab[] entry.  The others
-    // will be synonyms for that one, to make the references easier.
-    //
     OFI_CHK(fi_scalable_ep(ofi_domain, ofi_info, &ofi_txEpScal, NULL));
     OFI_CHK(fi_scalable_ep_bind(ofi_txEpScal, &ofi_av->fid, 0));
   } else {
@@ -2257,7 +2317,7 @@ void init_ofiEp(void) {
                .wait_obj = FI_WAIT_NONE, };
     txCQLen = cqAttr.size;
     for (int i = 0; i < numWorkerTxCtxs; i++) {
-      init_ofiEpTxCtx(i, false /*isAMHandler*/, &cqAttr, NULL);
+      init_ofiEpTxCtx(i, false /*isAMHandler*/, &avAttr, &cqAttr, NULL);
     }
   }
 
@@ -2276,7 +2336,7 @@ void init_ofiEp(void) {
                .wait_cond = FI_CQ_COND_NONE,
                .wait_set = ofi_amhWaitSet, };
     for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
-      init_ofiEpTxCtx(i, true /*isAMHandler*/, &cqAttr, NULL);
+      init_ofiEpTxCtx(i, true /*isAMHandler*/, &avAttr, &cqAttr, NULL);
     }
   } else {
     cntrAttr = (struct fi_cntr_attr)
@@ -2284,7 +2344,7 @@ void init_ofiEp(void) {
                  .wait_obj = waitObj,
                  .wait_set = ofi_amhWaitSet, };
     for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
-      init_ofiEpTxCtx(i, true /*isAMHandler*/, NULL, &cntrAttr);
+      init_ofiEpTxCtx(i, true /*isAMHandler*/, &avAttr, NULL, &cntrAttr);
     }
   }
 
@@ -2306,7 +2366,7 @@ void init_ofiEp(void) {
                .wait_set = ofi_amhWaitSet, };
 
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
-  OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_av->fid, 0));
+  OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxAv->fid, 0));
   OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQ, &ofi_rxCQ));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid, FI_TRANSMIT | FI_RECV));
   OFI_CHK(fi_enable(ofi_rxEp));
@@ -2325,6 +2385,7 @@ void init_ofiEp(void) {
 
 static
 void init_ofiEpTxCtx(int i, chpl_bool isAMHandler,
+                     struct fi_av_attr* avAttr,
                      struct fi_cq_attr* cqAttr,
                      struct fi_cntr_attr* cntrAttr) {
   struct perTxCtxInfo_t* tcip = &tciTab[i];
@@ -2332,9 +2393,27 @@ void init_ofiEpTxCtx(int i, chpl_bool isAMHandler,
   tcip->bound = false;
 
   if (ofi_txEpScal == NULL) {
+    //
+    // not using a scalable endpoint
+    //
+    if (ofi_av == NULL) {
+      //
+      // create an AV for this endpoint
+      //
+      OFI_CHK(fi_av_open(ofi_domain, avAttr, &tcip->av, NULL));
+    } else {
+      //
+      // use the shared AV
+      //
+      tcip->av = ofi_av;
+    }
     OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &tcip->txCtx, NULL));
-    OFI_CHK(fi_ep_bind(tcip->txCtx, &ofi_av->fid, 0));
+    OFI_CHK(fi_ep_bind(tcip->txCtx, &tcip->av->fid, 0));
   } else {
+    //
+    // using a scalable endpoint. Share ofi_av among its contexts.
+    //
+    tcip->av = ofi_av;
     OFI_CHK(fi_tx_context(ofi_txEpScal, i, NULL, &tcip->txCtx, NULL));
   }
 
@@ -2359,6 +2438,16 @@ void init_ofiEpTxCtx(int i, chpl_bool isAMHandler,
                            ? amEnsureProgress
                            : tcip->checkTxCmplsFn;
 
+}
+
+static 
+void insertAddrs(struct fid_av* av, char *addrs, size_t numAddrs, 
+                 fi_addr_t **fi_addrs_p) {
+  fi_addr_t *fi_addrs;
+  CHPL_CALLOC(fi_addrs, numAddrs);
+  CHK_TRUE(fi_av_insert(av, addrs, numAddrs, fi_addrs, 0, NULL) == 
+           numAddrs);  
+  *fi_addrs_p = fi_addrs;
 }
 
 
@@ -2402,7 +2491,7 @@ void init_ofiExchangeAvInfo(void) {
     char nameBuf[128];
     size_t nameLen;
     nameLen = sizeof(nameBuf);
-    (void) fi_av_straddr(ofi_av, my_addr, nameBuf, &nameLen);
+    (void) fi_av_straddr(ofi_rxAv, my_addr, nameBuf, &nameLen);
     DBG_PRINTF(DBG_CFG_AV, "my_addrs: %.*s%s",
                (int) nameLen, nameBuf,
                (nameLen <= sizeof(nameBuf)) ? "" : "[...]");
@@ -2420,9 +2509,22 @@ void init_ofiExchangeAvInfo(void) {
   // multiple actual endpoints are the AVs individualized to those.
   //
   size_t numAddrs = chpl_numNodes;
-  CHPL_CALLOC(ofi_rxAddrs, numAddrs);
-  CHK_TRUE(fi_av_insert(ofi_av, addrs, numAddrs, ofi_rxAddrs, 0, NULL) == 
-           numAddrs);  
+  if (ofi_av != NULL) {
+    insertAddrs(ofi_av, addrs, numAddrs, &ofi_addrs);
+  }
+  if (ofi_rxAv != ofi_av) {
+    insertAddrs(ofi_rxAv, addrs, numAddrs, &ofi_rxAddrs);
+  }
+  for (int i = 0; i < tciTabLen; i++) {
+    if (ofi_av != NULL) {
+      tciTab[i].av = ofi_av;
+      tciTab[i].addrs = ofi_addrs;
+    } else {
+      insertAddrs(tciTab[i].av, addrs, numAddrs, &tciTab[i].addrs);
+    }
+    assert(tciTab[i].av != NULL);
+    assert(tciTab[i].addrs != NULL);
+  }
   CHPL_FREE(my_addr);
   CHPL_FREE(addrs);
 }
@@ -2965,7 +3067,22 @@ void fini_ofi(void) {
     OFI_CHK(fi_close(&ofi_txEpScal->fid));
   }
 
-  OFI_CHK(fi_close(&ofi_av->fid));
+  for (int i = 0; i < tciTabLen; i++) {
+    if (tciTab[i].av != ofi_av) {
+      OFI_CHK(fi_close(&tciTab[i].av->fid));
+      CHPL_FREE(tciTab[i].addrs);
+    }
+  }
+
+  if (ofi_rxAv != ofi_av) {
+    OFI_CHK(fi_close(&ofi_rxAv->fid));
+    CHPL_FREE(ofi_rxAddrs);
+  }
+
+  if (ofi_av != NULL) {
+    OFI_CHK(fi_close(&ofi_av->fid));
+    CHPL_FREE(ofi_addrs);
+  }
 
   if (ofi_amhPollSet != NULL) {
     OFI_CHK(fi_close(&ofi_amhWaitSet->fid));
@@ -4142,7 +4259,7 @@ ssize_t wrap_fi_send(c_nodeid_t node,
   }
   OFI_RIDE_OUT_EAGAIN(tcip,
                       fi_send(tcip->txCtx, req, reqSize, mrDesc,
-                              rxAddr(node), ctx));
+                              rxAddr(tcip, node), ctx));
   tcip->numTxnsOut++;
   tcip->numTxnsSent++;
   return FI_SUCCESS;
@@ -4161,7 +4278,7 @@ ssize_t wrap_fi_inject(c_nodeid_t node,
   // TODO: How quickly/often does local resource throttling happen?
   OFI_RIDE_OUT_EAGAIN(tcip,
                       fi_inject(tcip->txCtx, req, reqSize,
-                                rxAddr(node)));
+                                rxAddr(tcip, node)));
   tcip->numTxnsSent++;
   return FI_SUCCESS;
 }
@@ -4177,7 +4294,7 @@ ssize_t wrap_fi_sendmsg(c_nodeid_t node,
   const struct fi_msg msg = { .msg_iov = &msg_iov,
                               .desc = mrDesc,
                               .iov_count = 1,
-                              .addr = rxAddr(node),
+                              .addr = rxAddr(tcip, node),
                               .context = ctx };
   if (DBG_TEST_MASK(DBG_AM | DBG_AM_SEND)
       || (req->b.op == am_opAMO && DBG_TEST_MASK(DBG_AMO))) {
@@ -5442,7 +5559,7 @@ ssize_t wrap_fi_write(const void* addr, void* mrDesc,
              (int) node, mrRaddr, addr, size, ctx);
   OFI_RIDE_OUT_EAGAIN(tcip,
                       fi_write(tcip->txCtx, addr, size,
-                               mrDesc, rxAddr(node),
+                               mrDesc, rxAddr(tcip, node),
                                mrRaddr, mrKey, ctx));
   tcip->numTxnsOut++;
   tcip->numTxnsSent++;
@@ -5462,7 +5579,7 @@ ssize_t wrap_fi_inject_write(const void* addr,
   // TODO: How quickly/often does local resource throttling happen?
   OFI_RIDE_OUT_EAGAIN(tcip,
                       fi_inject_write(tcip->txCtx, addr, size,
-                                      rxAddr(node),
+                                      rxAddr(tcip, node),
                                       mrRaddr, mrKey));
   tcip->numTxnsSent++;
   return FI_SUCCESS;
@@ -5486,7 +5603,7 @@ ssize_t wrap_fi_writemsg(const void* addr, void* mrDesc,
                           { .msg_iov = &msg_iov,
                             .desc = mrDesc,
                             .iov_count = 1,
-                            .addr = rxAddr(node),
+                            .addr = rxAddr(tcip, node),
                             .rma_iov = &rma_iov,
                             .rma_iov_count = 1,
                             .context = ctx };
@@ -5838,7 +5955,7 @@ ssize_t wrap_fi_read(void* addr, void* mrDesc,
              addr, (int) node, mrRaddr, size, ctx);
   OFI_RIDE_OUT_EAGAIN(tcip,
                       fi_read(tcip->txCtx, addr, size,
-                              mrDesc, rxAddr(node),
+                              mrDesc, rxAddr(tcip, node),
                               mrRaddr, mrKey, ctx));
   tcip->numTxnsOut++;
   tcip->numTxnsSent++;
@@ -5863,7 +5980,7 @@ ssize_t wrap_fi_readmsg(void* addr, void* mrDesc,
                           { .msg_iov = &msg_iov,
                             .desc = mrDesc,
                             .iov_count = 1,
-                            .addr = rxAddr(node),
+                            .addr = rxAddr(tcip, node),
                             .rma_iov = &rma_iov,
                             .rma_iov_count = 1,
                             .context = ctx };
@@ -5924,7 +6041,7 @@ void ofi_get_V(int v_len, void** addr_v, void** local_mr_v,
                             { .msg_iov = &msg_iov,
                               .desc = &local_mr_v[vi],
                               .iov_count = 1,
-                              .addr = rxAddr(locale_v[vi]),
+                              .addr = rxAddr(tcip, locale_v[vi]),
                               .rma_iov = &rma_iov,
                               .rma_iov_count = 1,
                               .context = txnTrkEncodeId(__LINE__),
@@ -6059,10 +6176,14 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
   void* mrDescRes;
   void* myRes = mrLocalizeTarget(&mrDescRes, result, size, "AMO result");
 
+  struct perTxCtxInfo_t* tcip;
+  CHK_TRUE((tcip = tciAlloc()) != NULL);
+  assert(tcip->txCQ != NULL);  // AMOs require a CQ, at least for now
+
   struct amoBundle_t ab = { .m = { .msg_iov = &ab.iovOpnd,
                                    .desc = &ab.mrDescOpnd,
                                    .iov_count = 1,
-                                   .addr = rxAddr(node),
+                                   .addr = rxAddr(tcip, node),
                                    .rma_iov = &ab.iovObj,
                                    .rma_iov_count = 1,
                                    .datatype = ofiType,
@@ -6081,10 +6202,6 @@ chpl_comm_nb_handle_t ofi_amo(c_nodeid_t node, uint64_t object, uint64_t mrKey,
                             .mrDescRes = mrDescRes,
                             .node = node,
                             .size = size, };
-
-  struct perTxCtxInfo_t* tcip;
-  CHK_TRUE((tcip = tciAlloc()) != NULL);
-  assert(tcip->txCQ != NULL);  // AMOs require a CQ, at least for now
 
   chpl_comm_nb_handle_t ret;
   ret = amoFn_selector(&ab, tcip);
@@ -6397,7 +6514,7 @@ void ofi_amo_nf_V(int v_len, uint64_t* opnd_v, void* local_mr,
     struct amoBundle_t ab = { .m = { .msg_iov = &ab.iovOpnd,
                                      .desc = &local_mr,
                                      .iov_count = 1,
-                                     .addr = rxAddr(locale_v[vi]),
+                                     .addr = rxAddr(tcip, locale_v[vi]),
                                      .rma_iov = &ab.iovObj,
                                      .rma_iov_count = 1,
                                      .datatype = type_v[vi],
