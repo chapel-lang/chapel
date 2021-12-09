@@ -67,8 +67,11 @@ class BuilderResult final {
   // Given an ID, what is the parent ID?
   std::unordered_map<ID, ID> idToParentId_;
 
-  // Goes from ASTNode* to Location because Comments don't have AST IDs
-  std::unordered_map<const ASTNode*, Location> astToLocation_;
+  // Goes from ID to Location, applies to all AST nodes except Comment
+  std::unordered_map<ID, Location> idToLocation_;
+
+  // Goes from Comment ID to Location, applies to all AST nodes except Comment
+  std::vector<Location> commentIdToLocation_;
 
  private:
   static void updateFilePaths(Context* context, const BuilderResult& keep);
@@ -138,6 +141,12 @@ class BuilderResult final {
   /** Find the Location for a particular ID.
       Returns a location just to path if none is found. */
   Location idToLocation(ID id, UniqueString path) const;
+  /** Find the Location for a particular comment.
+      The Comment must have been from this BuilderResult, but this is not
+      checked.
+      An empty Location will be returned if the Comment couldn't be found
+  */
+  Location commentToLocation(const Comment *comment) const;
   /** Find the ID for a parent given an ID.
       Returns the empty ID if none is found */
   ID idToParentId(ID id) const;

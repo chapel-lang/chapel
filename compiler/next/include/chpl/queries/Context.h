@@ -22,6 +22,7 @@
 
 #include "chpl/queries/Context-detail.h"
 #include "chpl/queries/ID.h"
+#include "chpl/queries/CommentID.h"
 #include "chpl/queries/UniqueString.h"
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"

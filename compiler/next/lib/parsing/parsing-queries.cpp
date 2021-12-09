@@ -111,6 +111,7 @@ const Location& locateId(Context* context, ID id) {
 
 // this is just a convenient wrapper around locating with the id
 const Location& locateAst(Context* context, const ASTNode* ast) {
+  assert(!ast->isComment() && "cant locate comment like this");
   return locateId(context, ast->id());
 }
 

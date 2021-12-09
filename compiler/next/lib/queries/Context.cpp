@@ -470,10 +470,11 @@ void Context::error(ErrorMessage error) {
 }
 
 void Context::error(Location loc, const char* fmt, ...) {
+  ID id;
   ErrorMessage err;
   va_list vl;
   va_start(vl, fmt);
-  err = ErrorMessage::vbuild(loc, fmt, vl);
+  err = ErrorMessage::vbuild(id, loc, fmt, vl);
   va_end(vl);
   Context::error(err);
 }
@@ -483,7 +484,7 @@ void Context::error(ID id, const char* fmt, ...) {
   ErrorMessage err;
   va_list vl;
   va_start(vl, fmt);
-  err = ErrorMessage::vbuild(loc, fmt, vl);
+  err = ErrorMessage::vbuild(id, loc, fmt, vl);
   va_end(vl);
   Context::error(err);
 }
@@ -493,7 +494,7 @@ void Context::error(const uast::ASTNode* ast, const char* fmt, ...) {
   ErrorMessage err;
   va_list vl;
   va_start(vl, fmt);
-  err = ErrorMessage::vbuild(loc, fmt, vl);
+  err = ErrorMessage::vbuild(ast->id(), loc, fmt, vl);
   va_end(vl);
   Context::error(err);
 }
@@ -505,7 +506,7 @@ void Context::error(const resolution::TypedFnSignature* inFn,
   ErrorMessage err;
   va_list vl;
   va_start(vl, fmt);
-  err = ErrorMessage::vbuild(loc, fmt, vl);
+  err = ErrorMessage::vbuild(ast->id(), loc, fmt, vl);
   va_end(vl);
   Context::error(err);
   // TODO: add note about instantiation & POI stack
@@ -586,8 +587,9 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
   }
   resultEntry->lastChecked = this->currentRevisionNumber;
 
-  // Re-report any errors in the query
-  for (const auto& err: resultEntry->errors) {
+  // Update error locations if needed and re-report the error
+  for (auto& err: resultEntry->errors) {
+    err.updateLocation(this);
     reportError(err);
   }
 }
