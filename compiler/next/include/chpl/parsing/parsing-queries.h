@@ -67,13 +67,12 @@ const uast::BuilderResult& parseFile(Context* context, UniqueString path);
 /**
  This query returns the Location where a particular ID appeared.
  It cannot be used for Comments because Comments don't have IDs set.
- If Locations for Comments are needed, use the locations field from
- the result of parseFile.
+ If Locations for Comments are needed, use uast::BuilderResult::commentToLocation
  */
 const Location& locateId(Context* context, ID id);
 /**
  This function just runs locateId on ast->id(). Similarly to locateID,
- it can be used to get a Location for a Comment.
+ it cannot be used to get a Location for a Comment.
  */
 const Location& locateAst(Context* context, const uast::ASTNode* ast);
 
