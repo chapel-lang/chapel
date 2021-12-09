@@ -1,0 +1,2 @@
+deprecatePerfectPowerP.chpl:6: warning: bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead
+8 is a perfect power, as true was returned
