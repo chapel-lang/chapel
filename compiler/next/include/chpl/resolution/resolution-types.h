@@ -467,7 +467,7 @@ class TypedFnSignature {
     context->markPointer(parentFn_);
   }
 
-  std::string toString() const;
+  std::string toString(chpl::StringifyKind stringKind) const;
 
   /** Returns the id of the relevant uast node (usually a Function
       but it can be a Record or Class for compiler-generated functions) */
@@ -748,7 +748,7 @@ class ResolvedExpression {
     context->markPointer(poiScope_);
   }
 
-  std::string toString() const;
+  std::string toString(chpl::StringifyKind stringKind) const;
 };
 
 /**
@@ -1001,7 +1001,14 @@ template<> struct stringify<chpl::resolution::CallInfo>
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
                   const chpl::resolution::CallInfo& stringMe) const {
-    stringOut << "resolution::CallInfo not stringified";
+    stringify<UniqueString> nameStringifier;
+    stringOut << "resolution::CallInfo(";
+    nameStringifier(stringOut, stringKind, stringMe.name());
+    stringOut << "isMethod=" << stringMe.isMethod();
+    stringOut << "numActuals=" << stringMe.numActuals();
+    //types and names of actuals
+    stringOut << ")";
+    //stringOut << "resolution::CallInfo not stringified";
   }
 };
 

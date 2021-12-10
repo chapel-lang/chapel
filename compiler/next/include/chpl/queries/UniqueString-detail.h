@@ -27,7 +27,7 @@
 
 #include "chpl/util/memory.h"
 #include "chpl/util/string-escapes.h"
-
+#include "chpl/queries/stringify-functions.h"
 #include <cassert>
 #include <cstring>
 #include <functional>
@@ -194,7 +194,7 @@ struct InlinedString {
   // return a long-lived pointer
   const char* astr(Context* context) const;
 
-  std::string toString() const {
+  std::string toString(chpl::StringifyKind stringKind) const {
     return std::string(c_str(), length());
   }
 
@@ -247,7 +247,7 @@ struct PODUniqueString {
     return i.astr(context);
   }
 
-  std::string toString() const {
+  std::string toString(chpl::StringifyKind stringKind) const {
     return std::string(c_str(), length());
   }
 

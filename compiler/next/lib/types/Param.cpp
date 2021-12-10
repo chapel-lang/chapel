@@ -344,7 +344,7 @@ QualifiedType Param::fold(Context* context,
   return QualifiedType(IntentList::PARAM, pair.second, pair.first);
 }
 
-std::string Param::toString() const {
+std::string Param::toString(chpl::StringifyKind stringKind) const {
   std::string ret;
 
   switch (tag_) {

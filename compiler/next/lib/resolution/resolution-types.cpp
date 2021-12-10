@@ -242,17 +242,17 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   return true;
 }
 
-std::string TypedFnSignature::toString() const {
-  std::string ret = id().toString();
+std::string TypedFnSignature::toString(chpl::StringifyKind stringKind) const {
+  std::string ret = id().toString(stringKind);
   ret += "(";
   int nFormals = numFormals();
   for (int i = 0; i < nFormals; i++) {
     if (i != 0) {
       ret += ", ";
     }
-    ret += formalName(i).toString();
+    ret += formalName(i).toString(stringKind);
     ret += " : ";
-    ret += formalType(i).toString();
+    ret += formalType(i).toString(stringKind);
   }
   ret += ")";
 
@@ -273,31 +273,31 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false; // TODO -- consider function names etc -- see PR #16261
 }
 
-std::string ResolvedExpression::toString() const {
+std::string ResolvedExpression::toString(chpl::StringifyKind stringKind) const {
   std::string ret;
   ret += " : ";
-  ret += type_.toString();
+  ret += type_.toString(stringKind);
   ret += " ; ";
   if (!toId_.isEmpty()) {
     ret += " refers to ";
-    ret += toId_.toString();
+    ret += toId_.toString(stringKind);
   } else {
     auto onlyFn = mostSpecific_.only();
     if (onlyFn) {
       ret += " calls ";
-      ret += onlyFn->toString();
+      ret += onlyFn->toString(stringKind);
     } else {
       if (auto sig = mostSpecific_.bestRef()) {
         ret += " calls ref ";
-        ret += sig->toString();
+        ret += sig->toString(stringKind);
       }
       if (auto sig = mostSpecific_.bestConstRef()) {
         ret += " calls const ref ";
-        ret += sig->toString();
+        ret += sig->toString(stringKind);
       }
       if (auto sig = mostSpecific_.bestValue()) {
         ret += " calls value ";
-        ret += sig->toString();
+        ret += sig->toString(stringKind);
       }
     }
   }

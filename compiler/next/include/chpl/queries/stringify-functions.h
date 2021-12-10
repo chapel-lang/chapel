@@ -69,7 +69,9 @@ enum StringifyKind {
 template<typename T> struct stringify {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
-                  const T& stringMe) const = 0;
+                  const T& stringMe) {
+                    stringOut << T::toString(stringKind);
+                  };
 };
 
 // define stringify for pointers to call stringify on a reference to avoid

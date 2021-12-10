@@ -177,7 +177,7 @@ class QualifiedType final {
   static bool update(QualifiedType& keep, QualifiedType& addin);
   void mark(Context* context) const;
 
-  std::string toString() const;
+  std::string toString(chpl::StringifyKind stringKind) const;
 };
 
 
@@ -189,7 +189,7 @@ template<> struct stringify<chpl::types::QualifiedType> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
                   const chpl::types::QualifiedType stringMe) const {
-    stringOut << stringMe.toString();
+    stringOut << stringMe.toString(stringKind);
   }
 };
 /// \endcond

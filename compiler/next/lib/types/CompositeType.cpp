@@ -55,7 +55,7 @@ void CompositeType::computeSummaryInformation() {
   }
 }
 
-std::string CompositeType::toString() const {
+std::string CompositeType::toString(chpl::StringifyKind stringKind) const {
   // compute the parent class type for BasicClassType
   const Type* superType = nullptr;
   if (auto bct = this->toBasicClassType()) {
@@ -63,7 +63,7 @@ std::string CompositeType::toString() const {
   }
 
   //std::string ret = typetags::tagToString(tag());
-  std::string ret = name().toString();
+  std::string ret = name().toString(stringKind);
   int nFields = numFields();
 
   if (superType || nFields > 0) {
@@ -71,15 +71,15 @@ std::string CompositeType::toString() const {
     ret += "(";
     if (superType) {
       ret += "super:";
-      ret += superType->toString();
+      ret += superType->toString(stringKind);
       emittedField = true;
     }
 
     for (int i = 0; i < nFields; i++) {
       if (emittedField) ret += ", ";
-      ret += fieldName(i).toString();
+      ret += fieldName(i).toString(stringKind);
       ret += ":";
-      ret += fieldType(i).toString();
+      ret += fieldType(i).toString(stringKind);
       emittedField = true;
     }
     ret += ")";

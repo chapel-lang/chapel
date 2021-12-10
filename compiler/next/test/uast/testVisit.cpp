@@ -73,7 +73,7 @@ static void logAction(std::vector<std::string>& actionsLog,
                       const uast::ASTNode* ast) {
   actionsLog.push_back(std::string(note) + " " +
                        asttags::tagToString(ast->tag()) + " " +
-                       ast->id().toString());
+                       ast->id().toString(chpl::StringifyKind::CHPL_SYNTAX));
 }
 
 struct Visitor1 {

@@ -24,7 +24,7 @@
 namespace chpl {
 namespace types {
 
-std::string ClassType::toString() const {
+std::string ClassType::toString(chpl::StringifyKind stringKind) const {
   std::string ret;
   if (decorator_.isManaged()) {
     assert(manager_);
@@ -33,7 +33,7 @@ std::string ClassType::toString() const {
     else if (manager_->isAnySharedType())
       ret += "shared";
     else
-      ret += manager_->toString();
+      ret += manager_->toString(stringKind);
   } else if (decorator_.isBorrowed()) {
     ret += "borrowed";
   } else if (decorator_.isUnmanaged()) {
@@ -45,7 +45,7 @@ std::string ClassType::toString() const {
   }
 
   assert(basicType_);
-  ret += basicType_->toString();
+  ret += basicType_->toString(stringKind);
 
   if (decorator_.isNilable()) {
     ret += "?";

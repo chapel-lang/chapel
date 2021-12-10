@@ -400,7 +400,13 @@ template<> struct stringify<chpl::uast::ASTNode> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
                   const chpl::uast::ASTNode& stringMe) const {
-    stringOut << "uast::ASTNode is not stringified";
+    stringify<ID> idStringifier;
+    stringify<uast::ASTTag> tagStringifier;
+
+    stringOut << "uast::ASTNode(";
+    idStringifier(stringOut, stringKind, stringMe.id());
+    tagStringifier(stringOut, stringKind, stringMe.tag());
+    stringOut << ")";
   }
 };
 } // end namespace chpl
