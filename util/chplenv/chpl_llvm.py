@@ -392,6 +392,7 @@ def get_clang_additional_args():
     comp_args = [ ]
     link_args = [ ]
     basic_args = get_clang_basic_args()
+    host_platform = chpl_platform.get('host')
     has_sysroot = False
     sysroot_arg = ""
     for arg in basic_args:
@@ -402,7 +403,7 @@ def get_clang_additional_args():
         if arg == '-isysroot':
             has_sysroot = True
 
-    if has_sysroot:
+    if has_sysroot or host_platform == "darwin":
         # Work around a bug in some versions of Clang that forget to
         # search /usr/local/include and /usr/local/lib
         # if there is a -isysroot argument.
