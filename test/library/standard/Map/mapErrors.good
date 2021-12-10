@@ -1,0 +1,5 @@
+caught error
+true
+uncaught ElementNotFoundError: key '1' not found
+  mapErrors.chpl:23: thrown here
+  mapErrors.chpl:23: uncaught here
