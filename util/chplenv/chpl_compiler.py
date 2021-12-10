@@ -231,7 +231,7 @@ COMPILERS = [ ('gnu', 'gcc', 'g++'),
               ('intel', 'icc', 'icpc'),
               ('pgi', 'pgicc', 'pgc++') ]
 
-# given a compiler command, (e.g. gcc or /path/to/clang++),
+# given a compiler command string, (e.g. "gcc" or "/path/to/clang++"),
 # figure out the compiler family (e.g. gnu or clang),
 # and the C and C++ variants of that command
 def get_compiler_from_command(command):
@@ -240,7 +240,7 @@ def get_compiler_from_command(command):
     # where we are looking for just the 'gcc' part.
     first = command.split()[0]
     basename = os.path.basename(first)
-    name = basename.split('-')[0]
+    name = basename.split('-')[0].strip()
     for tup in COMPILERS:
         if name == tup[1] or name == tup[2]:
             return tup[0]
@@ -291,6 +291,8 @@ def compiler_is_prgenv(compiler_val):
 
 # flag should be host or target
 # lang should be c or cxx (aka c++)
+# this function returns an array of arguments
+#  e.g. ['clang', '--gcc-toolchain=/usr']
 @memoize
 def get_compiler_command(flag, lang):
 
@@ -317,7 +319,7 @@ def get_compiler_command(flag, lang):
 
     command = overrides.get(varname, '');
     if command:
-        return command
+        return command.split()
 
     compiler_val = get(flag=flag)
 
@@ -325,12 +327,12 @@ def get_compiler_command(flag, lang):
     if should_consider_cc_cxx(flag):
         cc_cxx_val = overrides.get(lang_upper, '')
         if cc_cxx_val:
-            return cc_cxx_val
+            return cc_cxx_val.split()
 
     if lang_upper == 'CC':
-        command = get_compiler_name_c(compiler_val)
+        command = [get_compiler_name_c(compiler_val)]
     elif lang_upper == 'CXX':
-        command = get_compiler_name_cxx(compiler_val)
+        command = [get_compiler_name_cxx(compiler_val)]
 
     # Adjust the path in two situations:
     #  CHPL_TARGET_COMPILER=llvm -- means use the selected llvm/clang
@@ -362,7 +364,7 @@ def validate_inference_matches(flag, lang):
 
     compiler = get(flag)
     cmd = get_compiler_command(flag, lang)
-    inferred = get_compiler_from_command(cmd)
+    inferred = get_compiler_from_command(cmd[0])
 
     if (inferred != 'unknown' and
         inferred != compiler and

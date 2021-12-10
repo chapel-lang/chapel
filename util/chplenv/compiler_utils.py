@@ -8,14 +8,16 @@ from collections import namedtuple
 
 from utils import error, memoize, run_command
 
+# flag is host / target
 @memoize
-def get_compiler_version(compiler):
+def get_compiler_version(flag):
+    compiler = chpl_compiler.get(flag)
     version_string = '0'
     if 'gnu' in compiler:
         # Asssuming the 'compiler' version matches the gcc version
         # e.g., `mpicc -dumpversion == gcc -dumpversion`
-        gcc = chpl_compiler.get_compiler_name_c(compiler)
-        version_string = run_command([gcc, '-dumpversion'])
+        gcc_cmd = chpl_compiler.get_compiler_command(flag, 'c')
+        version_string = run_command(gcc_cmd + ['-dumpversion'])
     elif 'cray-prgenv-cray' == compiler:
         version_string = os.environ.get('CRAY_CC_VERSION', '0')
     return CompVersion(version_string)
@@ -76,14 +78,14 @@ def strip_preprocessor_lines(lines):
 def has_std_atomics():
     try:
         compiler_command = chpl_compiler.get_compiler_command('target', 'c')
-        if compiler_command == '':
+        if not compiler_command:
             return False
 
         version_key='version'
         atomics_key='atomics'
 
         cmd_input = '{0}=__STDC_VERSION__\n{1}=__STDC_NO_ATOMICS__'.format(version_key, atomics_key)
-        cmd = [compiler_command, '-E', '-x', 'c', '-']
+        cmd = compiler_command + ['-E', '-x', 'c', '-']
         output = run_command(cmd, cmd_input=cmd_input)
         output = strip_preprocessor_lines(output.splitlines())
 

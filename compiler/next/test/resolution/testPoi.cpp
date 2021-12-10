@@ -86,10 +86,10 @@ static void test1() {
     resolveOnlyCandidate(context, rr.byAst(genericCall));
   assert(rfunc);
   assert(rfunc->id() == mGeneric->id());
-  assert(rfunc->signature->instantiatedFrom() != nullptr);
+  assert(rfunc->signature()->instantiatedFrom() != nullptr);
 
   const ResolvedFunction* rhelp =
-    resolveOnlyCandidate(context, rfunc->resolutionById.byAst(helperCall));
+    resolveOnlyCandidate(context, rfunc->resolutionById().byAst(helperCall));
   assert(rhelp);
   assert(rhelp->id() == nHelper->id());
 }
@@ -148,10 +148,10 @@ static void test1n() {
     resolveOnlyCandidate(context, rr.byAst(genericCall));
   assert(rfunc);
   assert(rfunc->id() == mGeneric->id());
-  assert(rfunc->signature->instantiatedFrom() != nullptr);
+  assert(rfunc->signature()->instantiatedFrom() != nullptr);
 
-  const ResolvedExpression& rhelp = rfunc->resolutionById.byAst(helperCall);
-  for (auto candidate : rhelp.mostSpecific) {
+  const ResolvedExpression& rhelp = rfunc->resolutionById().byAst(helperCall);
+  for (auto candidate : rhelp.mostSpecific()) {
     assert(candidate == nullptr);
   }
 }
@@ -400,7 +400,7 @@ static void test3() {
   auto mGenericCallFunc = M->stmt(2)->toFunction();
   assert(mGenericCallFunc);
   auto mGenericCallFuncGCall = mGenericCallFunc->stmt(0)->toCall();
-  assert(mCallFuncGCall);
+  assert(mGenericCallFuncGCall);
   auto mHelper1 = M->stmt(3)->toFunction();
   assert(mHelper1);
   auto mHelper3 = M->stmt(4)->toFunction();
@@ -514,8 +514,8 @@ static void test3() {
   }
 
   // check that the generic function signatures are the same
-  assert(rNCallGF->signature == rMCallGF->signature);
-  assert(rMCallGF->signature == rMGenericCallGF->signature);
+  assert(rNCallGF->signature() == rMCallGF->signature());
+  assert(rMCallGF->signature() == rMGenericCallGF->signature());
 }
 
 // check generic reuse from the same scope
@@ -694,14 +694,14 @@ static void test6() {
 
   auto rACallGeneric = resolveOnlyCandidate(context, rA.byAst(aCall));
   assert(rACallGeneric);
-  assert(rACallGeneric->signature);
-  assert(rACallGeneric->signature->untyped());
+  assert(rACallGeneric->signature());
+  assert(rACallGeneric->signature()->untyped());
   auto rBCallGeneric = resolveOnlyCandidate(context, rB.byAst(bCall));
   assert(rBCallGeneric);
-  assert(rBCallGeneric->signature->untyped());
+  assert(rBCallGeneric->signature()->untyped());
 
   // check that these two have the same signature
-  assert(rACallGeneric->signature == rBCallGeneric->signature);
+  assert(rACallGeneric->signature() == rBCallGeneric->signature());
 
   // check that these two are the same instantiation.
   assert(rACallGeneric == rBCallGeneric);

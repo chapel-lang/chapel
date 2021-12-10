@@ -193,10 +193,13 @@ for details on when a record becomes dead.
 Record Initialization
 ~~~~~~~~~~~~~~~~~~~~~
 
-A variable of a record type declared without an initialization
-expression is initialized through a call to the record’s default
-initializer, passing no arguments. The default initializer for a record
-is defined in the same way as the default initializer for a class
+When default initializing a record (see :ref:`Variable_Lifetimes`), an
+``init`` method on the record will be called. For a concrete record,
+``init`` wil be called with no arguments. For an instantiated generic
+record, the ``type`` and ``param`` arguments are passed by name.
+
+The compiler-generated default initializer for a record is defined in the
+same way as the default initializer for a class
 (:ref:`The_Compiler_Generated_Initializer`).
 
 To create a record as an expression, i.e. without binding it to a

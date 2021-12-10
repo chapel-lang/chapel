@@ -1,5 +1,5 @@
 perfkeys: PUTs:, PUTs:
-files: remote-record-write-c.dat, remote-record-write-c-cache.dat
-graphkeys: c PUTs, c-cache PUTs
+files: remote-record-write-no-wideopt-no-cache.dat, remote-record-write-no-wideopt-cache.dat
+graphkeys: no-cache PUTs, cache PUTs
 ylabel: Count
 graphtitle: remote-record-write

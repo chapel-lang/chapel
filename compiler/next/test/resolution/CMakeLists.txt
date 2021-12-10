@@ -33,6 +33,7 @@
 # limitations under the License.
 
 comp_unit_test(testCanPass)
+comp_unit_test(testLocation)
 comp_unit_test(testInteractive)
 comp_unit_test(testParams)
 comp_unit_test(testPoi)

@@ -57,8 +57,8 @@ class Function final : public NamedDecl {
 
   enum ReturnIntent {
     // Use IntentList here for consistent enum values.
-    DEFAULT_RETURN_INTENT   = (int) IntentList::DEFAULT,
-    CONST                   = (int) IntentList::CONST,
+    DEFAULT_RETURN_INTENT   = (int) IntentList::DEFAULT_INTENT,
+    CONST                   = (int) IntentList::CONST_VAR,
     CONST_REF               = (int) IntentList::CONST_REF,
     REF                     = (int) IntentList::REF,
     PARAM                   = (int) IntentList::PARAM,
@@ -236,7 +236,7 @@ class Function final : public NamedDecl {
    Return the number of Formals
    */
   int numFormals() const {
-    return numFormals_; 
+    return numFormals_;
   }
 
   /**
@@ -279,7 +279,7 @@ class Function final : public NamedDecl {
     if (returnTypeChildNum_ >= 0) {
       const ASTNode* ast = this->child(returnTypeChildNum_);
       assert(ast->isExpression());
-      return (Expression*) ast; 
+      return (Expression*) ast;
     } else {
       return nullptr;
     }
@@ -377,6 +377,15 @@ class Function final : public NamedDecl {
 
 
 } // end namespace uast
+/// \cond DO_NOT_DOCUMENT
+template<> struct stringify<chpl::uast::Function::Kind> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::uast::Function::Kind& stringMe) const {
+    stringOut << "uast:Function::Kind is not stringified";
+  }
+};
+/// \endcond DO_NOT_DOCUMENT
 } // end namespace chpl
 
 namespace std {

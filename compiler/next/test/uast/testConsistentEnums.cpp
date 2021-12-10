@@ -34,9 +34,10 @@ static void checkConsistentEnums() {
   assert((int) Formal::DEFAULT_INTENT == (int) Function::DEFAULT_RETURN_INTENT);
   assert((int) TaskVar::VAR == (int) Variable::VAR);
 
-  assert((int) Variable::CONST == (int) Formal::CONST);
-  assert((int) Formal::CONST == (int) Function::CONST);
-  assert((int) TaskVar::CONST == (int) Formal::CONST);
+  assert((int) Variable::CONST == (int) IntentList::CONST_VAR);
+  assert((int) Formal::CONST == (int) IntentList::CONST_INTENT);
+  assert((int) Function::CONST == (int) IntentList::CONST_VAR);
+  assert((int) TaskVar::CONST == (int) IntentList::CONST_VAR);
 
   assert((int) TaskVar::CONST_IN == (int) Formal::CONST_IN);
 

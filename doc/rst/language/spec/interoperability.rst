@@ -590,6 +590,25 @@ is changed when passing arguments to a C function using
 the ``ref`` intent. The C code implementing that function must
 dereference the argument to extract its value.
 
+.. _Interop_Variable_Initialization:
+
+Variable Initialization
+~~~~~~~~~~~~~~~~~~~~~~~
+
+When default initializing a variable of extern type, the compiler will
+arrange to fill its memory with zero bytes. However, an
+``extern record`` can define a ``proc init()`` in order to define how
+it should be default initialized. See also :ref:`Record_Initialization`
+and :ref:`Variable_Lifetimes`.
+
+.. note::
+
+  Future versions may allow an ``extern record`` to include
+  ``proc init=`` and ``proc deinit`` but these cannot yet be counted on.
+  One challenge in this area is that C code working with the same type
+  will not call the copy or deinit function.
+
+
 .. [4]
    In UNIX-like programming environments, ``nm`` and ``grep`` can be
    used to find the mangled name of a given function within an object

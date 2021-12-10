@@ -99,6 +99,13 @@ template<> struct mark<chpl::Location> {
     keep.markUniqueStrings(context);
   }
 };
+
+template<> struct stringify<chpl::Location> {
+  void operator()(std::ostream &stringOut, StringifyKind stringKind,
+                  const chpl::Location& stringMe) const {
+     stringOut << "Location is not stringified";
+  }
+};
 /// \endcond
 
 } // end namespace chpl

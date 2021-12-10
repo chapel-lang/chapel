@@ -22,6 +22,7 @@ module LocaleModelHelpNUMA {
   use SysCTypes;
 
   param localeModelHasSublocales = true;
+  param localeModelPartitionsIterationOnSublocales = true;
 
   public use LocaleModelHelpSetup;
   public use LocaleModelHelpRuntime;

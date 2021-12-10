@@ -111,6 +111,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/AtomicObjects.chpl \
 	packages/BLAS.chpl \
 	packages/Buffers.chpl \
+	packages/ConcurrentMap.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/EpochManager.chpl \
@@ -167,6 +168,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/Atomics.chpl                 \
 	internal/Bytes.chpl                   \
 	internal/ChapelArray.chpl             \
+	internal/ChapelDomain.chpl            \
 	internal/ChapelComplex_forDocs.chpl   \
 	internal/ChapelLocale.chpl            \
 	internal/ChapelRange.chpl             \

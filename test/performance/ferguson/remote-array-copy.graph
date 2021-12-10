@@ -1,5 +1,5 @@
 perfkeys: GETs:, PUTs:, GETs:, PUTs:
-files: remote-array-copy-c.dat, remote-array-copy-c.dat, remote-array-copy-c-cache.dat, remote-array-copy-c-cache.dat
-graphkeys: c GETs, c PUTs, c-cache GETs, c-cache PUTs
+files: remote-array-copy-no-wideopt-no-cache.dat, remote-array-copy-no-wideopt-no-cache.dat, remote-array-copy-no-wideopt-cache.dat, remote-array-copy-no-wideopt-cache.dat
+graphkeys: no-cache GETs, no-cache PUTs, cache GETs, cache PUTs
 ylabel: Count
 graphtitle: remote-array-copy

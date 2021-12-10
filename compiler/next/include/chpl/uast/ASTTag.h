@@ -21,6 +21,7 @@
 #define CHPL_UAST_ASTTAG_H
 
 #include "chpl/queries/update-functions.h"
+#include "chpl/queries/stringify-functions.h"
 
 namespace chpl {
 namespace uast {
@@ -108,6 +109,15 @@ template<> struct update<uast::ASTTag> {
     return defaultUpdateBasic(keep, addin);
   }
 };
+
+template<> struct stringify<uast::ASTTag> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const uast::ASTTag& stringMe) const {
+    stringOut << tagToString(stringMe);
+  }
+};
+
 /// \endcond
 
 } // end namespace chpl

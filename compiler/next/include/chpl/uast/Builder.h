@@ -60,7 +60,8 @@ class Builder final {
   std::unordered_map<const ASTNode*, Location> notedLocations_;
 
   // the following maps are computed during assignIDs
-  std::unordered_map<const ASTNode*, Location> astToLocation_;
+  std::unordered_map<ID, Location> idToLocation_;
+  std::vector<Location> commentToLocation_;
   std::unordered_map<ID, const ASTNode*> idToAst_;
   std::unordered_map<ID, ID> idToParent_;
 
@@ -72,7 +73,8 @@ class Builder final {
   void createImplicitModuleIfNeeded();
   void assignIDs();
   void doAssignIDs(ASTNode* ast, UniqueString symbolPath, int& i,
-                   pathVecT& pathVec, declaredHereT& duplicates);
+                   int& commentIndex, pathVecT& pathVec,
+                   declaredHereT& duplicates);
 
  public:
   static owned<Builder> build(Context* context, const char* filepath);

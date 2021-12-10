@@ -266,44 +266,56 @@ module Set {
     }
 
     /*
-      Add a copy of the element `x` to this set. Does nothing if this set
-      already contains an element equal to the value of `x`.
+      Add a copy of the element `element` to this set. Does nothing if this set
+      already contains an element equal to the value of `element`.
 
-      :arg x: The element to add to this set.
+      :arg element: The element to add to this set.
     */
-    proc ref add(in x: eltType) lifetime this < x {
+    proc ref add(in element: eltType) lifetime this < element {
 
-      // Remove `on this` block because it prevents copy elision of `x` when
-      // passed to `_addElem`. See #15808.
+      // Remove `on this` block because it prevents copy elision of `element`
+      // when passed to `_addElem`. See #15808.
       _enter(); defer _leave();
-      _addElem(x);
+      _addElem(element);
+    }
+
+    pragma "last resort"
+    deprecated "The argument name `x` has been deprecated for function `add`, please use `element` instead"
+    proc ref add(in x: eltType) lifetime this < x {
+      add(element=x);
     }
 
     /*
       Returns `true` if the given element is a member of this set, and `false`
       otherwise.
 
-      :arg x: The element to test for membership.
+      :arg element: The element to test for membership.
       :return: Whether or not the given element is a member of this set.
       :rtype: `bool`
     */
-    proc const contains(const ref x: eltType): bool {
+    proc const contains(const ref element: eltType): bool {
       var result = false;
 
       on this {
         _enter(); defer _leave();
-        result = _contains(x);
+        result = _contains(element);
       }
 
       return result;
     }
 
+    pragma "last resort"
+    deprecated "The argument name `x` has been deprecated for function `contains, please use `element` instead"
+    proc const contains(const ref x: eltType): bool {
+      return contains(element=x);
+    }
+    
     /*
      As above, but parSafe lock must be held and must be called "on this".
     */
     pragma "no doc"
-    proc const _contains(const ref x: eltType): bool {
-      var (hasFoundSlot, _) = _htb.findFullSlot(x);
+    proc const _contains(const ref element: eltType): bool {
+      var (hasFoundSlot, _) = _htb.findFullSlot(element);
       return hasFoundSlot;
     }
 
@@ -346,31 +358,32 @@ module Set {
       :return: Whether or not this set and `other` intersect.
       :rtype: `bool`
     */
+    deprecated "Set isIntersecting() method is deprecated; use !:proc:`isDisjoint` instead"
     proc const isIntersecting(const ref other: set(eltType, ?)): bool {
       return !isDisjoint(other);
     }
 
     /*
-      Attempt to remove the item from this set with a value equal to `x`. If
-      an element equal to `x` was removed from this set, return `true`, else
-      return `false` if no such value was found.
+      Attempt to remove the item from this set with a value equal to `element`. 
+      If an element equal to `element` was removed from this set, return `true`, 
+      else return `false` if no such value was found.
 
       .. warning::
 
         Removing an element from this set may invalidate existing references
         to the elements contained in this set.
 
-      :arg x: The element to remove.
-      :return: Whether or not an element equal to `x` was removed.
+      :arg element: The element to remove.
+      :return: Whether or not an element equal to `element` was removed.
       :rtype: `bool`
     */
-    proc ref remove(const ref x: eltType): bool {
+    proc ref remove(const ref element: eltType): bool {
       var result = false;
 
       on this {
         _enter(); defer _leave();
 
-        var (hasFoundSlot, idx) = _htb.findFullSlot(x);
+        var (hasFoundSlot, idx) = _htb.findFullSlot(element);
 
         if hasFoundSlot {
           // TODO: Return the removed element? #15819
@@ -384,6 +397,12 @@ module Set {
       }
 
       return result;
+    }
+
+    pragma "last resort"
+    deprecated "The argument name `x` has been deprecated for function `remove`, please use `element` instead"
+    proc ref remove(const ref x: eltType): bool {
+      return remove(element=x);
     }
 
     /*

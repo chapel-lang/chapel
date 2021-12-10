@@ -28,6 +28,7 @@
 #include "chpl/queries/UniqueString-detail.h"
 #include "chpl/queries/mark-functions.h"
 #include "chpl/queries/update-functions.h"
+#include "chpl/queries/stringify-functions.h"
 #include "chpl/util/hash.h"
 
 #include <cassert>
@@ -252,6 +253,13 @@ template<> struct mark<chpl::UniqueString> {
   void operator()(Context* context,
                   const chpl::UniqueString& keep) const {
     keep.mark(context);
+  }
+};
+template<> struct stringify<chpl::UniqueString> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::UniqueString& stringMe) const {
+    stringOut << "\"" << stringMe.toString() << "\"";
   }
 };
 /// \endcond

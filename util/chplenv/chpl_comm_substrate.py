@@ -21,12 +21,6 @@ def get():
                 substrate_val = 'ibv'
             else:
                 substrate_val = 'udp'
-        elif comm_val == 'ofi':
-            if platform_val == 'cray-xc':
-                substrate_val = 'sockets'
-                # substrate_val = 'gni'
-            else:
-                substrate_val = 'sockets'
         else:
             substrate_val = 'none'
     return substrate_val

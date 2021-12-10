@@ -37,7 +37,7 @@ CHPL_HOME
 
     .. code-block:: sh
 
-        export CHPL_HOME=~/chapel-1.25.0
+        export CHPL_HOME=~/chapel-1.25.1
 
    .. note::
      This, and all other examples in the Chapel documentation, assumes you're
@@ -466,6 +466,9 @@ CHPL_MEM
    If unset, ``CHPL_MEM`` defaults to ``jemalloc`` for most configurations.
    If the target platform is ``cygwin*`` it defaults to ``cstdlib``
 
+   ``CHPL_TARGET_MEM`` will be replacing ``CHPL_MEM`` in the
+   future. ``CHPL_TARGET_MEM`` takes precedence over ``CHPL_MEM``.
+
    .. note::
      Certain ``CHPL_COMM`` settings (e.g. ugni, gasnet segment fast/large,
      ofi with the gni provider) register the heap to improve communication
@@ -473,6 +476,52 @@ CHPL_MEM
      that not all allocators provide.  Currently only ``jemalloc`` is capable
      of supporting configurations that require a registered heap.
 
+.. _readme-chplenv.CHPL_HOST_MEM:
+
+CHPL_HOST_MEM
+~~~~~~~~~~~~~
+   Optionally, the ``CHPL_HOST_MEM`` environment variable can be used to select
+   a memory management layer for the ``chpl`` compiler.
+
+        ========= =======================================================
+        Value     Description
+        ========= =======================================================
+        cstdlib   use the standard C malloc/free commands
+        jemalloc  use Jason Evan's memory allocator
+        ========= =======================================================
+
+   If unset, ``CHPL_HOST_MEM`` defaults to ``cstdlib``.
+
+.. _readme-chplenv.CHPL_HOST_JEMALLOC:
+
+CHPL_HOST_JEMALLOC
+~~~~~~~~~~~~~~~~~~
+
+    Optionally, the ``CHPL_HOST_JEMALLOC`` environment variable can select
+    between no jemalloc, or using the jemalloc distributed with Chapel in
+    third-party. This setting is intended to elaborate upon
+    ``CHPL_HOST_MEM=jemalloc``.
+
+        ======== ==============================================================
+        Value    Description
+        ======== ==============================================================
+        none     do not build or use jemalloc
+        bundled  use the jemalloc distribution bundled with Chapel in third-party
+        system   use jemalloc found on system. requires ``jemalloc-config`` in PATH
+        ======== ==============================================================
+
+
+    Currently, the only supported combinations of host target are:
+
+        ======== ==============================================================
+        Host     Source
+        ======== ==============================================================
+        darwin   system
+        linux    bundled
+        ======== ==============================================================
+
+    If unset, ``CHPL_HOST_JEMALLOC`` defaults to one of the above support combinations,
+    or ``none`` if :ref:`readme-chplenv.CHPL_HOST_MEM` is ``cstdlib``.
 
 .. _readme-chplenv.CHPL_LAUNCHER:
 

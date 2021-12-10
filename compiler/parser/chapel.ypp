@@ -408,7 +408,7 @@
 
 %type <pch> ident_use ident_def ident_fn_def
 %type <pch> internal_type_ident_def reserved_type_ident_use
-%type <pch> fn_ident assignop_ident opt_label_ident
+%type <pch> fn_ident assignop_ident op_ident all_op_name opt_label_ident
 %type <pch> implements_type_ident implements_type_error_ident
 //%type <pch> opt_string
 
@@ -431,7 +431,7 @@
 
 %type <pimportstmt> import_expr
 %type <pblockstmt> use_stmt import_stmt import_ls require_stmt
-%type <ponlylist>  renames_ls use_renames_ls opt_only_ls except_ls
+%type <ponlylist>  renames_ls use_renames_ls opt_only_ls
 
 %type <pblockstmt> implements_stmt interface_stmt
 %type <pcallexpr>  ifc_formal_ls
@@ -676,16 +676,25 @@ renames_ls:
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = $1;
                                          $$->push_back(cur); }
+| all_op_name                          { $$ = new std::vector<PotentialRename*>();
+                                         PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::SINGLE;
+                                         cur->elem = new UnresolvedSymExpr($1);
+                                         $$->push_back(cur); }
 | expr TAS expr                        { $$ = new std::vector<PotentialRename*>();
                                          PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>($1, $3);
                                          $$->push_back(cur); }
-| renames_ls TCOMMA expr                  { PotentialRename* cur = new PotentialRename();
+| renames_ls TCOMMA expr               { PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::SINGLE;
                                          cur->elem = $3;
                                          $1->push_back(cur); }
-| renames_ls TCOMMA expr TAS expr         { PotentialRename* cur = new PotentialRename();
+| renames_ls TCOMMA all_op_name        { PotentialRename* cur = new PotentialRename();
+                                         cur->tag = PotentialRename::SINGLE;
+                                         cur->elem = new UnresolvedSymExpr($3);
+                                         $1->push_back(cur); }
+| renames_ls TCOMMA expr TAS expr      { PotentialRename* cur = new PotentialRename();
                                          cur->tag = PotentialRename::DOUBLE;
                                          cur->renamed = new std::pair<Expr*, Expr*>($3, $5);
                                          $1->push_back(cur); }
@@ -733,15 +742,6 @@ opt_only_ls:
 | renames_ls
 ;
 
-except_ls:
-  TSTAR                                { $$ = new std::vector<PotentialRename*>();
-                                         PotentialRename* cur = new PotentialRename();
-                                         cur->tag = PotentialRename::SINGLE;
-                                         cur->elem = new UnresolvedSymExpr("");
-                                         $$->push_back(cur); }
-| renames_ls
-;
-
 use_access_control:
            { $$ = true; } // private
 | TPUBLIC  { $$ = false; } // public
@@ -750,9 +750,9 @@ use_access_control:
 
 use_stmt:
   use_access_control TUSE use_renames_ls TSEMI            { $$ = buildUseStmt($3, $1); }
-| use_access_control TUSE expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, "", $5, true, $1); }
-| use_access_control TUSE expr TAS expr TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, true, $1); }
-| use_access_control TUSE expr TAS TUNDERSCORE TEXCEPT except_ls TSEMI    { $$ = buildUseStmt($3, new UnresolvedSymExpr("_"), $7, true, $1); }
+| use_access_control TUSE expr TEXCEPT renames_ls TSEMI    { $$ = buildUseStmt($3, "", $5, true, $1); }
+| use_access_control TUSE expr TAS expr TEXCEPT renames_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, true, $1); }
+| use_access_control TUSE expr TAS TUNDERSCORE TEXCEPT renames_ls TSEMI    { $$ = buildUseStmt($3, new UnresolvedSymExpr("_"), $7, true, $1); }
 | use_access_control TUSE expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, "", $5, false, $1); }
 | use_access_control TUSE expr TAS expr TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, $5, $7, false, $1); }
 | use_access_control TUSE expr TAS TUNDERSCORE TONLY opt_only_ls TSEMI    { $$ = buildUseStmt($3, new UnresolvedSymExpr("_"), $7, false, $1); }
@@ -765,6 +765,12 @@ import_stmt:
 
 import_expr:
   expr { $$ = buildImportStmt($1); }
+| expr TDOT all_op_name { std::vector<PotentialRename*>* renames = new std::vector<PotentialRename*>();
+                          PotentialRename* nameInMod = new PotentialRename();
+                          nameInMod->tag = PotentialRename::SINGLE;
+                          nameInMod->elem = new UnresolvedSymExpr($3);
+                          renames->push_back(nameInMod);
+                          $$ = buildImportStmt($1, renames); }
 | expr TAS ident_use { $$ = buildImportStmt($1, $3); }
 | expr TDOT TLCBR renames_ls TRCBR { $$ = buildImportStmt($1, $4); }
 ;
@@ -946,7 +952,7 @@ private_decl:
 
 forwarding_stmt:
   TFORWARDING expr TSEMI  { $$ = buildForwardingStmt($2); }
-| TFORWARDING expr TEXCEPT except_ls TSEMI  { $$ = buildForwardingStmt($2, $4, true); }
+| TFORWARDING expr TEXCEPT renames_ls TSEMI  { $$ = buildForwardingStmt($2, $4, true); }
 | TFORWARDING expr TONLY opt_only_ls TSEMI  { $$ = buildForwardingStmt($2, $4, false); }
 | TFORWARDING var_decl_stmt { $$ = buildForwardingDeclStmt($2); }
 ;
@@ -1567,7 +1573,12 @@ fn_decl_receiver_expr:
 
 fn_ident:
   ident_fn_def    { $$ = $1; }
-| TBAND          { $$ = "&"; }
+| ident_def TBANG { $$ = astr($1, "!"); }
+| op_ident        { $$ = $1; }
+;
+
+op_ident:
+  TBAND          { $$ = "&"; }
 | TBOR           { $$ = "|"; }
 | TBXOR          { $$ = "^"; }
 | TBNOT          { $$ = "~"; }
@@ -1593,7 +1604,6 @@ fn_ident:
 | TIO            { $$ = "<~>"; }
 | TINITEQUALS    { $$ = "init="; }
 | TCOLON         { $$ = ":"; }
-| ident_def TBANG { $$ = astr($1, "!"); }
 ;
 
 assignop_ident:
@@ -1609,6 +1619,11 @@ assignop_ident:
 | TASSIGNBXOR    { $$ = "^="; }
 | TASSIGNSR      { $$ = ">>="; }
 | TASSIGNSL      { $$ = "<<="; }
+;
+
+all_op_name:
+  op_ident       { $$ = $1; }
+| assignop_ident { $$ = $1; }
 ;
 
 opt_formal_ls:

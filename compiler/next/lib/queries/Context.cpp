@@ -21,6 +21,7 @@
 
 #include "chpl/queries/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/queries/stringify-functions.h"
 
 #include <cassert>
 #include <cstdarg>
@@ -61,13 +62,13 @@ void Context::defaultReportError(const ErrorMessage& err) {
   defaultReportErrorPrintDetail(err, "", "error");
 }
 
-// unique'd strings are preceeded by 4 bytes of length, gcMark and 0x02
+// unique'd strings are preceded by 4 bytes of length, gcMark and 0x02
 // this number must be even
 #define UNIQUED_STRING_METADATA_BYTES 6
 #define UNIQUED_STRING_METADATA_LEN 4
 
 Context::~Context() {
-  // free all of the unique'd strings
+  // free all the unique'd strings
   for (auto& item: uniqueStringsTable) {
     char* buf = (char*) item.str;
     buf -= UNIQUED_STRING_METADATA_BYTES;
@@ -108,7 +109,7 @@ char* Context::setupStringMetadata(char* buf, size_t len) {
   assert(len <= INT32_MAX);
 
   int32_t len32 = len;
-  // this assert should fail if the below code needs to change
+  // these assert should fail if the below code needs to change
   assert(sizeof(len32) + 2 == UNIQUED_STRING_METADATA_BYTES);
   assert(sizeof(len32) == UNIQUED_STRING_METADATA_LEN);
 
@@ -469,10 +470,11 @@ void Context::error(ErrorMessage error) {
 }
 
 void Context::error(Location loc, const char* fmt, ...) {
+  ID id;
   ErrorMessage err;
   va_list vl;
   va_start(vl, fmt);
-  err = ErrorMessage::vbuild(loc, fmt, vl);
+  err = ErrorMessage::vbuild(id, loc, fmt, vl);
   va_end(vl);
   Context::error(err);
 }
@@ -482,7 +484,7 @@ void Context::error(ID id, const char* fmt, ...) {
   ErrorMessage err;
   va_list vl;
   va_start(vl, fmt);
-  err = ErrorMessage::vbuild(loc, fmt, vl);
+  err = ErrorMessage::vbuild(id, loc, fmt, vl);
   va_end(vl);
   Context::error(err);
 }
@@ -492,7 +494,7 @@ void Context::error(const uast::ASTNode* ast, const char* fmt, ...) {
   ErrorMessage err;
   va_list vl;
   va_start(vl, fmt);
-  err = ErrorMessage::vbuild(loc, fmt, vl);
+  err = ErrorMessage::vbuild(ast->id(), loc, fmt, vl);
   va_end(vl);
   Context::error(err);
 }
@@ -504,7 +506,7 @@ void Context::error(const resolution::TypedFnSignature* inFn,
   ErrorMessage err;
   va_list vl;
   va_start(vl, fmt);
-  err = ErrorMessage::vbuild(loc, fmt, vl);
+  err = ErrorMessage::vbuild(ast->id(), loc, fmt, vl);
   va_end(vl);
   Context::error(err);
   // TODO: add note about instantiation & POI stack
@@ -542,7 +544,7 @@ void Context::recomputeIfNeeded(const QueryMapResultBase* resultEntry) {
       useSaved = false;
       break;
     } else if (this->currentRevisionNumber == dependency->lastChecked) {
-      // No need to check the dependency again; already did and it was OK
+      // No need to check the dependency again; already did, and it was OK
     } else {
       recomputeIfNeeded(dependency);
       // we might have recomputed the dependency, so check its lastChanged
@@ -585,8 +587,9 @@ void Context::updateForReuse(const QueryMapResultBase* resultEntry) {
   }
   resultEntry->lastChecked = this->currentRevisionNumber;
 
-  // Re-report any errors in the query
-  for (const auto& err: resultEntry->errors) {
+  // Update error locations if needed and re-report the error
+  for (auto& err: resultEntry->errors) {
+    err.updateLocation(this);
     reportError(err);
   }
 }
@@ -664,7 +667,7 @@ void Context::endQueryHandleDependency(const QueryMapResultBase* resultEntry) {
 
 void Context::haltForRecursiveQuery(const querydetail::QueryMapResultBase* r) {
   // If an old element present has lastChecked == -1, that means that
-  // we trying to compute it when a recursive call was made. In that event
+  // we are trying to compute it when a recursive call was made. In that event
   // it is a severe error with the compiler implementation.
   // This is a severe internal error and compilation cannot proceed.
   // This uses 'exit' so that it can be tested but in the future we could
@@ -680,17 +683,6 @@ namespace querydetail {
 
 void queryArgsPrintSep() {
   printf(", ");
-}
-
-void queryArgsPrintUnknown() {
-  printf("?");
-}
-
-void queryArgsPrintOne(const ID& v) {
-  printf("ID(%s)", v.toString().c_str());
-}
-void queryArgsPrintOne(const UniqueString& v) {
-  printf("\"%s\"", v.c_str());
 }
 
 QueryMapResultBase::~QueryMapResultBase() {

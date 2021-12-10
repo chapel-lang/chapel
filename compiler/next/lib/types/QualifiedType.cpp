@@ -26,26 +26,32 @@ namespace chpl {
 namespace types {
 
 
-bool QualifiedType::isGenericOrUnknown() const {
-  bool genericKind = kind_ == UNKNOWN;
-  bool genericParam = kind_ == PARAM && !hasParam();
-  bool genericType = !hasType() || type_->isGeneric() ||
-                     type_->isUnknownType();
-  return genericKind || genericParam || genericType;
+bool QualifiedType::isGenericType() const {
+  return type_->isGeneric();
+}
+
+bool QualifiedType::isUnknownType() const {
+  return type_->isUnknownType();
 }
 
 static const char* kindToString(QualifiedType::Kind kind) {
   switch (kind) {
-    case QualifiedType::UNKNOWN:     return "unknown";
-    case QualifiedType::CONST:       return "const";
-    case QualifiedType::REF:         return "ref";
-    case QualifiedType::CONST_REF:   return "const ref";
-    case QualifiedType::VALUE:       return "val";
-    case QualifiedType::CONST_VALUE: return "const val";
-    case QualifiedType::TYPE:        return "type";
-    case QualifiedType::PARAM:       return "param";
-    case QualifiedType::FUNCTION:    return "function";
-    case QualifiedType::MODULE:      return "module";
+    case QualifiedType::UNKNOWN:        return "unknown";
+    case QualifiedType::DEFAULT_INTENT: return "default intent";
+    case QualifiedType::CONST_INTENT:   return "const intent";
+    case QualifiedType::VAR:            return "var";
+    case QualifiedType::CONST_VAR:      return "const";
+    case QualifiedType::CONST_REF:      return "const ref";
+    case QualifiedType::REF:            return "ref";
+    case QualifiedType::IN:             return "in";
+    case QualifiedType::CONST_IN:       return "const in";
+    case QualifiedType::OUT:            return "out";
+    case QualifiedType::INOUT:          return "inout";
+    case QualifiedType::PARAM:          return "param";
+    case QualifiedType::TYPE:           return "type";
+    case QualifiedType::INDEX:          return "index";
+    case QualifiedType::FUNCTION:       return "function";
+    case QualifiedType::MODULE:         return "module";
   }
 
   assert(false && "should not be reachable");
@@ -63,7 +69,7 @@ std::string QualifiedType::toString() const {
     ret += type_->toString();
   }
 
-  if (kind_ == QualifiedType::PARAM) {
+  if (kind_ == QualifiedType::PARAM && param_ != nullptr) {
     ret += " = ";
     ret += param_->toString();
   }

@@ -3,7 +3,7 @@ import sys
 
 import chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import using_chapel_module
-from compiler_utils import CompVersion, get_compiler_version
+from compiler_utils import CompVersion
 from utils import memoize
 
 

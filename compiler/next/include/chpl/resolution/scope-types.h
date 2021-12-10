@@ -76,7 +76,7 @@ class OwnedIdsWithName {
     if (moreIds_.get()==nullptr && other.moreIds_.get()==nullptr)
       return true;
 
-    // otherwise check the vector elements
+    // otherwise, check the vector elements
     return *moreIds_.get() == *other.moreIds_.get();
   }
   bool operator!=(const OwnedIdsWithName& other) const {
@@ -472,6 +472,40 @@ template<> struct update<resolution::InnermostMatch> {
       keep.swap(addin);
       return true;
     }
+  }
+};
+
+template<> struct stringify<resolution::InnermostMatch> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const resolution::InnermostMatch& stringMe) const {
+    stringOut << "resolution::InnermostMatch not stringified";
+  }
+};
+
+
+template<> struct stringify<resolution::PoiScope> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const resolution::PoiScope& stringMe) const {
+    stringOut << "resolution::PoiScope not stringified";
+  }
+};
+
+template<> struct stringify<resolution::Scope> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const resolution::Scope& stringMe) const {
+    stringOut << "resolution::Scope not stringified";
+  }
+};
+
+
+template<> struct stringify<resolution::BorrowedIdsWithName> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const resolution::BorrowedIdsWithName& stringMe) const {
+    stringOut << "resolution::BorrowedIdsWithName not stringified";
   }
 };
 /// \endcond

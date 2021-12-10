@@ -156,6 +156,9 @@ class Type {
     return isClassType() || isCFnPtrType() || isCVoidPtrType();
   }
 
+  /** returns true for a pointer type that can store nil */
+  bool isAnyNilablePtrType() const;
+
   /** If 'this' is a CompositeType, return it.
       If 'this' is a ClassType, return the basicClassType.
       Otherwise, returns nullptr.
@@ -190,6 +193,15 @@ class Type {
 
 
 } // end namespace types
+  /// \cond DO_NOT_DOCUMENT
+template<> struct stringify<chpl::types::Type> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::types::Type& stringMe) const {
+    stringOut << stringMe.toString();
+  }
+};
+  /// \endcond DO_NOT_DOCUMENT
 } // end namespace chpl
 
 // TODO: is there a reasonable way to define std::less on Type*?

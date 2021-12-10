@@ -186,7 +186,12 @@ endif
 
 include $(THIRD_PARTY_DIR)/gasnet/Makefile.include
 include $(THIRD_PARTY_DIR)/qthread/Makefile.include
-include $(THIRD_PARTY_DIR)/jemalloc/Makefile.include
+include $(THIRD_PARTY_DIR)/jemalloc/Makefile.common.include
+ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--host)
+include $(THIRD_PARTY_DIR)/jemalloc/Makefile.host.include-$(CHPL_MAKE_HOST_JEMALLOC)
+else
+include $(THIRD_PARTY_DIR)/jemalloc/Makefile.target.include
+endif
 include $(THIRD_PARTY_DIR)/gmp/Makefile.include
 include $(THIRD_PARTY_DIR)/hwloc/Makefile.include
 include $(THIRD_PARTY_DIR)/re2/Makefile.include

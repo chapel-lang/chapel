@@ -45,3 +45,7 @@ demonstrate Chapel feature areas in detail.
 
      chplvis                     : A directory containing a primer on the chplvis tool
 
+To build these clients run make (optionally passing the name of the primer to
+build). The interopWithC primer builds a library that can be used by a C
+client, to build the C client part of this primer run:
+`make -f Makefile.cClient`.

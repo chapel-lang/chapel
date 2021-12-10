@@ -21,6 +21,7 @@
 module LocaleModelHelpFlat {
 
   param localeModelHasSublocales = false;
+  param localeModelPartitionsIterationOnSublocales = false;
 
   public use LocaleModelHelpSetup;
   public use LocaleModelHelpRuntime;

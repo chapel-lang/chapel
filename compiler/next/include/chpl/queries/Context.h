@@ -22,9 +22,11 @@
 
 #include "chpl/queries/Context-detail.h"
 #include "chpl/queries/ID.h"
+#include "chpl/queries/CommentID.h"
 #include "chpl/queries/UniqueString.h"
 #include "chpl/util/memory.h"
 #include "chpl/util/hash.h"
+#include "chpl/util/break.h"
 
 #include <memory>
 #include <tuple>
@@ -192,7 +194,7 @@ because the ``parse`` query will update the pointer if the contents change.
 In some situations, the query framework can reuse a result without running the
 ``update`` function for it. That can happen when all dependencies have been
 checked in this revision and the dependencies are all reused. In that event, the
-UniqueStrings that are contianed in or referred to by the result need to be
+UniqueStrings that are contained in or referred to by the result need to be
 marked so that any UniqueStrings not used can be garbage collected. This is
 accomplished by calling the ``mark`` function.
 
@@ -221,6 +223,8 @@ class Context {
 
   querydetail::RevisionNumber currentRevisionNumber = 1;
   bool enableDebugTracing = false;
+  bool breakSet = false;
+  size_t breakOnHash = 0;
   int numQueriesRunThisRevision_ = 0;
 
   static void defaultReportError(const ErrorMessage& err);
@@ -593,6 +597,15 @@ class Context {
       const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
       const std::tuple<ArgTs...>& tupleOfArgs,
       ResultType result,
+      const char* traceQueryName);
+
+  template<typename ResultType,
+           typename... ArgTs>
+  const ResultType& queryEndCurrentResult(
+      const ResultType& (*queryFunction)(Context* context, ArgTs...),
+      querydetail::QueryMap<ResultType, ArgTs...>* queryMap,
+      const querydetail::QueryMapResult<ResultType, ArgTs...>* r,
+      const std::tuple<ArgTs...>& tupleOfArgs,
       const char* traceQueryName);
 
   template<typename ResultType,

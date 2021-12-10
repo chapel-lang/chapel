@@ -1,6 +1,6 @@
 // Domains
 
-/*
+/* BLAHH 5000!
    This primer showcases Chapel domains as abstract concepts, primarily
    within the context of rectangular domains.  For other uses of domains
    see the following primers:
@@ -37,7 +37,7 @@ writeln(RD);
 // Rectangular domains have a set of methods that enable convenient
 // reuse of existing domains.
 //
-// The :proc:`~ChapelArray.expand` method returns a new domain that is expanded or
+// The :proc:`~ChapelDomain.expand` method returns a new domain that is expanded or
 // contracted depending on the sign of the offset argument.
 //
 var RDbigger = RD.expand((1,1,1));
@@ -46,7 +46,7 @@ var RDsmaller = RD.expand((-1,-1,-1));
 writeln(RDsmaller);
 
 //
-// The :proc:`~ChapelArray.exterior` method returns a new domain that is the
+// The :proc:`~ChapelDomain.exterior` method returns a new domain that is the
 // exterior portion of the current domain.  A positive offset specifies that
 // the exterior should be taken from the high bound; a negative offset, the low
 // bound.
@@ -57,7 +57,7 @@ var RDext_n = RD.exterior((-1,-1,-1));
 writeln(RDext_n);
 
 //
-// The :proc:`~ChapelArray.interior` method returns a new domain that is the
+// The :proc:`~ChapelDomain.interior` method returns a new domain that is the
 // interior portion of the current domain.  The sign of the offset implies
 // using the high or low bound as in the exterior case.
 //
@@ -67,7 +67,7 @@ var RDint_n = RD.interior((-1,-1,-1));
 writeln(RDint_n);
 
 //
-// The :proc:`~ChapelArray.translate` method returns a new domain that is the
+// The :proc:`~ChapelDomain.translate` method returns a new domain that is the
 // current domain translated by the offset.
 //
 var RDtrans_p = RD.translate((1,1,1));

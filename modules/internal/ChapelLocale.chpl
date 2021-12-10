@@ -30,6 +30,11 @@ module ChapelLocale {
   import HaltWrappers;
   use SysCTypes, CPtr;
 
+  compilerAssert(!(!localeModelHasSublocales &&
+   localeModelPartitionsIterationOnSublocales),
+   "Locale model without sublocales can not have " +
+   "localeModelPartitionsIterationOnSublocales set to true.");
+
   //
   // Node and sublocale types and special sublocale values.
   //

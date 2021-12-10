@@ -3,7 +3,7 @@
 
     source EXECENV
     mason external --setup
-    mason external install libtomlc99@0.2019.06.24
+    mason external install libtomlc99@0.2020.12.23
     mason build --force --show
 
 */
@@ -20,7 +20,7 @@ proc main() {
   masonExternal(compilerFindArgs);
 
   // Download and install libtomlc99
-  var args = ["external", "install", "libtomlc99@0.2019.06.24"];
+  var args = ["external", "install", "libtomlc99@0.2020.12.23"];
   masonExternal(args);
 
   // build library that uses libtomlc99

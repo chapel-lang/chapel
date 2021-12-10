@@ -1,0 +1,2 @@
+oSet.chpl:1: warning: The OrderedSet module and the orderedSet type are deprecated in favor of SortedSet and sortedMap.
+1
