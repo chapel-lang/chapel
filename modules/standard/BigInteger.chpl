@@ -2517,7 +2517,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   /*
     .. warning::
 
-       bigint.divisible_p is deprecated, use bigint.isDivisibleByPowerOf2 instead
+       bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleByPowerOf2 instead
   */
   deprecated
   "bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleByPowerOf2 instead"
