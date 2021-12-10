@@ -99,6 +99,9 @@ static ModuleSymbol* parseFile(const char* fileName,
                                bool        namedOnCommandLine,
                                bool        include);
 
+// Callback to configure the context error handler when converting to uAST.
+static void uASTParseFileErrorHandler(const chpl::ErrorMessage& err);
+
 static ModuleSymbol* uASTParseFile(const char* fileName,
                                    ModTag      modTag,
                                    bool        namedOnCommandLine,
@@ -572,12 +575,68 @@ static void parseDependentModules(bool isInternal) {
 
 // Internal modules that are currently able to be parsed by the new parser.
 static std::set<std::string> allowedInternalModules = {
-    "ChapelBase",
-    "ChapelStandard",
-    "PrintModuleInitOrder",
-    "ChapelTaskData",
-    "startInitCommDiags",
-    "CString"
+  "ArrayViewRankChange",
+  "ArrayViewReindex",
+  "ArrayViewSlice",
+  "Atomics",
+  "AtomicsCommon",
+  "ByteBufferHelpers",
+  "Bytes",
+  "BytesCasts",
+  "BytesStringCommon",
+  /*"ChapelArray",*/                  // Prim call with named args.
+  "ChapelAutoAggregation",
+  "ChapelAutoLocalAccess",
+  "ChapelBase",
+  "ChapelComplex_forDocs",
+  "ChapelDebugPrint",
+  /*"ChapelDistribution",*/           // Segfault somewhere...
+  "ChapelHashing",
+  /*"ChapelHashtable",*/              // Problem: 'chpl__hashtable.init'
+  "ChapelIOStringifyHelper",
+  "ChapelIteratorSupport",
+  /*"ChapelLocale",*/                 // Return lifetime?
+  "ChapelLocks",
+  "ChapelNumLocales",
+  "ChapelPrivatization",
+  "ChapelRange",
+  "ChapelReduce",
+  "ChapelSerializedBroadcast",
+  "ChapelStandard",
+  /*"ChapelSyncvar",*/                // Lifetimes.
+  "ChapelTaskData",
+  /*"ChapelTaskDataHelp",*/           // Argument incompatible.
+  "ChapelTaskID",
+  "ChapelThreads",
+  "ChapelTuple",
+  "ChapelUtil",
+  "CString",
+  "DefaultAssociative",
+  "DefaultRectangular",
+  "DefaultSparse",
+  "ExportWrappers",
+  "ExternalArray",
+  "ISO_Fortran_binding",
+  "LocaleModelHelpAPU",
+  "LocaleModelHelpFlat",
+  "LocaleModelHelpGPU",
+  "LocaleModelHelpMem",
+  "LocaleModelHelpNUMA",
+  "LocaleModelHelpRuntime",
+  "LocaleModelHelpSetup",
+  "LocalesArray",
+  "LocaleTree",
+  /*"MemConsistency",*/               // Redefinition of a function...
+  "MemTracking",
+  "NetworkAtomics",
+  "NetworkAtomicTypes",
+  /*"OwnedObject",*/                  // Compiler crash.
+  "PrintModuleInitOrder",
+  /*"SharedObject",*/                 // Compiler crash.
+  "startInitCommDiags",
+  "stopInitCommDiags",
+  "String",
+  "StringCasts"
 };
 
 // TODO: Adjust me over time as more internal modules parse.
@@ -871,6 +930,17 @@ static ModuleSymbol* parseFile(const char* path,
   return retval;
 }
 
+// TODO: Add helpers to convert locations without passing IDs.
+static void uASTParseFileErrorHandler(const chpl::ErrorMessage& err) {
+  auto markError = astlocMarker(err.location());
+
+  USR_FATAL_CONT("%s", err.message().c_str());
+
+  for (const auto& detail : err.details()) {
+    auto markDetail = astlocMarker(detail.location());
+    USR_PRINT("%s", detail.message().c_str());
+  }
+}
 
 static ModuleSymbol* uASTParseFile(const char* fileName,
                                    ModTag      modTag,
@@ -881,6 +951,9 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
   if (gContext == nullptr) {
     INT_FATAL("compiler library context not initialized");
   }
+
+  // TODO: Move this to the point where we set up the context.
+  gContext->setErrorHandler(&uASTParseFileErrorHandler);
 
   // Do not parse if we've already done so.
   if (haveAlreadyParsed(fileName)) {
@@ -899,17 +972,12 @@ static ModuleSymbol* uASTParseFile(const char* fileName,
   auto& builderResult = chpl::parsing::parseFile(gContext, path);
   auto& modules = chpl::parsing::parse(gContext, path);
 
-  // If the builder reported parse errors, emit then and then stop.
-  // TODO (dlongnecke): Pin on converted location.
+  // Any errors while building will have already been emitted by the global
+  // error handling callback that was set above. So just stop.
+  // TODO (dlongnecke): What if errors were emitted outside of / not noted
+  // by the builder result of this query?
   if (builderResult.numErrors()) {
-    for (const auto& err : builderResult.errors()) {
-      USR_FATAL_CONT("%s", err.message().c_str());
-      for (const auto& detail : err.details()) {
-        USR_PRINT("%s", detail.message().c_str());
-      }
-    }
-
-    USR_FATAL("%s", "One or more errors when parsing uAST");
+    USR_FATAL("Error(s) when parsing uAST for: %s", fileName);
   }
 
   ModuleSymbol* lastModSym = nullptr;

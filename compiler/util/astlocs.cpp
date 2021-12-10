@@ -98,6 +98,13 @@ astlocMarker::astlocMarker(int lineno, const char* filename)
   currentAstLoc = astlocT(lineno, astr(filename));
 }
 
+// constructor, for compiler/next Locations
+astlocMarker::astlocMarker(chpl::Location location)
+  : previousAstLoc(currentAstLoc)
+{
+  currentAstLoc = astlocT(location.line(), astr(location.path().c_str()));
+}
+
 // destructor, invoked upon leaving SET_LINENO's scope
 astlocMarker::~astlocMarker() {
   currentAstLoc = previousAstLoc;
