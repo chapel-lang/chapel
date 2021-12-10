@@ -1,9 +1,9 @@
+{(a = LHS), (a = RHS other), (a = LHS other)}
+{(a = LHS), (a = RHS other), (a = LHS other)}
+{(a = LHS other)}
 {(a = LHS)}
-{(a = LHS)}
-{}
-{(a = LHS)}
-{}
-true
-true
-true
-true
+{(a = RHS other), (a = LHS other)}
+false
+false
+false
+false
