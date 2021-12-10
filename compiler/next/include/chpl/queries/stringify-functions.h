@@ -219,6 +219,13 @@ void operator()(std::ostream &stringOut,
 }
 };
 
+template<> struct stringify<unsigned int> {
+void operator()(std::ostream &stringOut,
+               StringifyKind stringKind,
+               const unsigned int val) const {
+ stringOut << std::to_string(val);
+}
+};
 template<> struct stringify<long int> {
 void operator()(std::ostream &stringOut,
                 StringifyKind stringKind,
@@ -227,18 +234,10 @@ void operator()(std::ostream &stringOut,
 }
 };
 
-template<> struct stringify<double> {
+template<> struct stringify<unsigned long int> {
 void operator()(std::ostream &stringOut,
                 StringifyKind stringKind,
-                const double val) const {
-  stringOut << std::to_string(val);
-}
-};
-
-template<> struct stringify<long unsigned int> {
-void operator()(std::ostream &stringOut,
-                StringifyKind stringKind,
-                const long unsigned int val) const {
+                const unsigned long int val) const {
   stringOut << std::to_string(val);
 }
 };
@@ -251,15 +250,60 @@ void operator()(std::ostream &stringOut,
 }
 };
 
-template<> struct stringify<unsigned long long> {
+template<> struct stringify<unsigned long long int> {
 void operator()(std::ostream &stringOut,
                 StringifyKind stringKind,
-                const unsigned long long val) const {
+                const unsigned long long int val) const {
+  stringOut << std::to_string(val);
+}
+};
+
+template<> struct stringify<short int> {
+void operator()(std::ostream &stringOut,
+                StringifyKind stringKind,
+                const short int val) const {
+  stringOut << std::to_string(val);
+}
+};
+
+template<> struct stringify<unsigned short int> {
+void operator()(std::ostream &stringOut,
+                StringifyKind stringKind,
+                const unsigned short int val) const {
   stringOut << std::to_string(val);
 }
 };
 
 // end integral types
+
+/*
+  Floating Point Types
+*/
+template<> struct stringify<double> {
+void operator()(std::ostream &stringOut,
+                StringifyKind stringKind,
+                const double val) const {
+  stringOut << std::to_string(val);
+}
+};
+
+template<> struct stringify<long double> {
+void operator()(std::ostream &stringOut,
+                StringifyKind stringKind,
+                const long double val) const {
+  stringOut << std::to_string(val);
+}
+};
+
+template<> struct stringify<float> {
+void operator()(std::ostream &stringOut,
+                StringifyKind stringKind,
+                const float val) const {
+  stringOut << std::to_string(val);
+}
+};
+
+// end floating-point types
 
 template<> struct stringify<bool> {
 void operator()(std::ostream &stringOut,
