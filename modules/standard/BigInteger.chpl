@@ -2459,7 +2459,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_divisible_p(this.mpz, div.mpz);
     }
 
-    if ret.safeCast(int) then 
+    if ret then 
       return true;
     else 
       return false;
@@ -2486,7 +2486,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_divisible_ui_p(t_.mpz,   div_);
     }
 
-    if ret.safeCast(int) then 
+    if ret then 
       return true;
     else 
       return false;
@@ -2508,7 +2508,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_divisible_ui_p(t_.mpz,   div_);
     }
 
-    if ret.safeCast(int) then 
+    if ret then 
       return true;
     else 
       return false;
@@ -2541,7 +2541,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_divisible_2exp_p(t_.mpz,   exp_);
     }
 
-    if ret.safeCast(int) then 
+    if ret then 
       return true;
     else 
       return false;
@@ -2589,7 +2589,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_congruent_p(t_.mpz, con_.mpz, mod_.mpz);
     }
 
-    if ret.safeCast(int) then 
+    if ret then 
       return true;
     else 
       return false;
@@ -2612,7 +2612,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_congruent_ui_p(t_.mpz,   con_, mod_);
     }
 
-    if ret.safeCast(int) then 
+    if ret then 
       return true;
     else 
       return false;
@@ -2647,7 +2647,7 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
       ret = mpz_congruent_2exp_p(t_.mpz, con_.mpz, modExp_);
     }
 
-    if ret.safeCast(int) then 
+    if ret then 
       return true;
     else 
       return false;
