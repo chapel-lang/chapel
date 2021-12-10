@@ -424,7 +424,7 @@ module Map {
 
     /* Get a copy of the element stored at position `k`.
      */
-    proc getValue(k: keyType) const {
+    proc getValue(k: keyType) const throws {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
                       'map value type: ' + valType:string);
@@ -432,7 +432,22 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        boundsCheckHalt("map index " + k:string + " out of bounds");
+        throw new ElementNotFoundError(k: string);
+      try! {
+        const result = table.table[slot].val: valType;
+        return result;
+      }
+    }
+
+    proc getValue(k: keyType, const sentinel: valType) const {
+      if !isCopyableType(valType) then
+        compilerError('cannot call `getValue()` for non-copyable ' +
+                      'map value type: ' + valType:string);
+
+      _enter(); defer _leave();
+      var (found, slot) = table.findFullSlot(k);
+      if !found then
+        return sentinel;
       try! {
         const result = table.table[slot].val: valType;
         return result;
