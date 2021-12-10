@@ -2901,7 +2901,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   */
   deprecated
   "bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead"
-  proc bigint.perfect_power_p() : bool {
+  proc bigint.perfect_power_p() : int {
     return this.isPerfectPower();
   }
 
@@ -2917,7 +2917,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       ret = mpz_perfect_power_p(t_.mpz);
     }
 
-    if ret.safeCast(int) then 
+    if ret then 
       return true;
     else 
       return false;
@@ -2930,7 +2930,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   */
   deprecated
   "bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead"
-  proc bigint.perfect_square_p() : bool {
+  proc bigint.perfect_square_p() : int {
     return this.isPerfectSquare();
   }
 
@@ -2946,7 +2946,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       ret = mpz_perfect_square_p(t_.mpz);
     }
 
-    if ret.safeCast(int) then 
+    if ret then 
       return true;
     else 
       return false;
@@ -3629,7 +3629,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   */
   deprecated
   "bigint.even_p is deprecated, use bigint.isEven instead"
-  proc bigint.even_p() : bool {
+  proc bigint.even_p() : int {
     return this.isEven();
   }
 
@@ -3648,7 +3648,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       ret = mpz_even_p(t_.mpz);
     }
 
-    if ret.safeCast(int) then 
+    if ret then 
       return true;
     else 
       return false;
@@ -3661,7 +3661,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   */
   deprecated
   "bigint.odd_p is deprecated, use bigint.isOdd instead"
-  proc bigint.odd_p() : bool {
+  proc bigint.odd_p() : int {
     return this.isOdd();
   }
 
@@ -3680,7 +3680,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       ret = mpz_odd_p(t_.mpz);
     }
 
-    if ret.safeCast(int) then 
+    if ret then 
       return true;
     else 
       return false;
