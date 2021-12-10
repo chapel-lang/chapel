@@ -115,6 +115,7 @@ exclude_patterns = ['Makefile',
                     'builtins/Atomics.rst',
                     'builtins/ChapelComplex_forDocs.rst',
                     'builtins/ChapelLocale.rst',
+                    'builtins/ChapelDomain.rst'
                    ]
 
 # The reST default role (used for this markup: `text`) to use for all

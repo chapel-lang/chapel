@@ -168,6 +168,7 @@ INTERNAL_MODULES_TO_DOCUMENT =                \
 	internal/Atomics.chpl                 \
 	internal/Bytes.chpl                   \
 	internal/ChapelArray.chpl             \
+	internal/ChapelDomain.chpl            \
 	internal/ChapelComplex_forDocs.chpl   \
 	internal/ChapelLocale.chpl            \
 	internal/ChapelRange.chpl             \
