@@ -432,7 +432,7 @@ module Map {
       _enter(); defer _leave();
       var (found, slot) = table.findFullSlot(k);
       if !found then
-        throw new ElementNotFoundError(k: string);
+        throw new KeyNotFoundError(k: string);
       try! {
         const result = table.table[slot].val: valType;
         return result;
@@ -728,7 +728,7 @@ module Map {
 
     lhs.clear();
     for key in rhs.keys() {
-      lhs.add(key, rhs.getValue(key));
+      lhs.add(key, try! rhs.getValue(key));
     }
   }
 
@@ -810,8 +810,8 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for k in a do newMap.add(k, a.getValue(k));
-    for k in b do newMap.add(k, b.getValue(k));
+    for k in a do newMap.add(k, try! a.getValue(k));
+    for k in b do newMap.add(k, try! b.getValue(k));
     return newMap;
   }
 
@@ -821,7 +821,7 @@ module Map {
   operator map.|=(ref a: map(?keyType, ?valueType, ?),
                   b: map(keyType, valueType, ?)) {
     // add keys/values from b to a if they weren't already in a
-    for k in b do a.add(k, b.getValue(k));
+    for k in b do a.add(k, try! b.getValue(k));
   }
 
   /* Returns a new map containing the keys that are in both a and b. */
@@ -831,7 +831,7 @@ module Map {
 
     for k in a.keys() do
       if b.contains(k) then
-        newMap.add(k, a.getValue(k));
+        newMap.add(k, try! a.getValue(k));
 
     return newMap;
   }
@@ -850,7 +850,7 @@ module Map {
 
     for ak in a.keys() {
       if !b.contains(ak) then
-        newMap.add(ak, a.getValue(ak));
+        newMap.add(ak, try! a.getValue(ak));
     }
 
     return newMap;
@@ -880,9 +880,9 @@ module Map {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
     for k in a.keys() do
-      if !b.contains(k) then newMap.add(k, a.getValue(k));
+      if !b.contains(k) then newMap.add(k, try! a.getValue(k));
     for k in b do
-      if !a.contains(k) then newMap.add(k, b.getValue(k));
+      if !a.contains(k) then newMap.add(k, try! b.getValue(k));
     return newMap;
   }
 
@@ -892,7 +892,7 @@ module Map {
                   b: map(keyType, valueType, ?)) {
     for k in b.keys() {
       if a.contains(k) then a.remove(k);
-      else a.add(k, b.getValue(k));
+      else a.add(k, try! b.getValue(k));
     }
   }
 }

@@ -126,7 +126,7 @@ module Errors {
     }
   }
 
-  class ElementNotFoundError : Error {
+  class KeyNotFoundError : Error {
     proc init() {}
 
     proc init(k: string) {
