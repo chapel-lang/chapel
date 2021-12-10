@@ -590,9 +590,9 @@ static std::set<std::string> allowedInternalModules = {
   "ChapelBase",
   "ChapelComplex_forDocs",
   "ChapelDebugPrint",
-  "ChapelDistribution",
+  /*"ChapelDistribution",*/           // Segfault somewhere...
   "ChapelHashing",
-  "ChapelHashtable",
+  /*"ChapelHashtable",*/              // Problem: 'chpl__hashtable.init'
   "ChapelIOStringifyHelper",
   "ChapelIteratorSupport",
   /*"ChapelLocale",*/                 // Return lifetime?
@@ -603,9 +603,9 @@ static std::set<std::string> allowedInternalModules = {
   "ChapelReduce",
   "ChapelSerializedBroadcast",
   "ChapelStandard",
-  "ChapelSyncvar",
+  /*"ChapelSyncvar",*/                // Lifetimes.
   "ChapelTaskData",
-  "ChapelTaskDataHelp",
+  /*"ChapelTaskDataHelp",*/           // Argument incompatible.
   "ChapelTaskID",
   "ChapelThreads",
   "ChapelTuple",
@@ -626,7 +626,7 @@ static std::set<std::string> allowedInternalModules = {
   "LocaleModelHelpSetup",
   "LocalesArray",
   "LocaleTree",
-  "MemConsistency",
+  /*"MemConsistency",*/               // Redefinition of a function...
   "MemTracking",
   "NetworkAtomics",
   "NetworkAtomicTypes",

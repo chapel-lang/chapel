@@ -1206,6 +1206,8 @@ struct Converter {
         ret = new CallExpr("chpl__buildSubDomainType");
       } else if (name == syncStr) {
         ret = new UnresolvedSymExpr("_syncvar");
+      } else if (name == indexStr) {
+        ret = new CallExpr("chpl__buildIndexType");
       } else if (name == domainStr) {
         auto base = "chpl__buildDomainRuntimeType";
         auto dist = new UnresolvedSymExpr("defaultDist");
@@ -1886,11 +1888,11 @@ struct Converter {
     Expr* typeExpr = nullptr;
     Expr* initExpr = convertExprOrNull(node->initExpression());
 
-    if (node->typeExpression()) {
-      if (auto bkt = node->typeExpression()->toBracketLoop()) {
+    if (auto te = node->typeExpression()) {
+      if (auto bkt = te->toBracketLoop()) {
         typeExpr = convertArrayType(bkt);
       } else {
-        typeExpr = convertAST(node->typeExpression());
+        typeExpr = convertAST(te);
       }
     }
 
@@ -2137,21 +2139,18 @@ struct Converter {
 
     stmts->insertAtTail(defExpr);
 
-    // Special handling for type variables.
+    // Special handling for extern type variables.
     if (node->kind() == uast::Variable::TYPE) {
       if (node->linkage() == uast::Decl::EXTERN) {
         assert(!node->isConfig());
         stmts = convertTypesToExtern(stmts);
-      } else if (node->isConfig()) {
-        stmts = handleConfigTypes(stmts);
       }
+    }
 
-    // Otherwise, add a PRIM_END_OF_STATEMENT.
-    } else {
-      if (fDocs == false && inTupleDecl == false) {
-        CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
-        stmts->insertAtTail(end);
-      }
+    // Add a PRIM_END_OF_STATEMENT.
+    if (fDocs == false && inTupleDecl == false) {
+      CallExpr* end = new CallExpr(PRIM_END_OF_STATEMENT);
+      stmts->insertAtTail(end);
     }
 
     return stmts;
