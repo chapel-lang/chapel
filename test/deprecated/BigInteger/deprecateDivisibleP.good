@@ -1,4 +1,4 @@
 deprecateDivisibleP.chpl:8: warning: bigint.divisible_p is deprecated, use bigint.isDivisible instead
 deprecateDivisibleP.chpl:9: warning: bigint.divisible_p is deprecated, use bigint.isDivisible instead
-4 is divisible by 2, as true was returned
-4 is not divisible by 3, as false was returned
+4 is divisible by 2, as 1 was returned
+4 is not divisible by 3, as 0 was returned

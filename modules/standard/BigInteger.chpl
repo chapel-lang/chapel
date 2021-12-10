@@ -2416,33 +2416,30 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 
        bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
-  pragma "last resort"
   deprecated
   "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
-  proc bigint.divisible_p(const ref d: bigint) : bool {
-    return this.isDivisible(div=d);
+  proc bigint.divisible_p(const ref d: bigint) : int {
+    return this.isDivisible(d);
   }
   /*
     .. warning::
 
        bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
-  pragma "last resort"
   deprecated
   "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
-  proc bigint.divisible_p(d: int) : bool {
-    return this.isDivisible(div=d);
+  proc bigint.divisible_p(d: int) : int {
+    return this.isDivisible(d);
   }
   /*
     .. warning::
 
        bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
-  pragma "last resort"
   deprecated
   "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
-  proc bigint.divisible_p(d: uint) : bool {
-    return this.isDivisible(div=d);
+  proc bigint.divisible_p(d: uint) : int {
+    return this.isDivisible(d);
   }
 
   // divisible_p
@@ -2522,11 +2519,10 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 
        bigint.divisible_p is deprecated, use bigint.isDivisible instead
   */
-  pragma "last resort"
   deprecated
   "bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2exp instead"
-  proc bigint.divisible_2exp_p(b: integral) : bool {
-    return this.isDivisibleBy2exp(exp=b);
+  proc bigint.divisible_2exp_p(b: integral) : int {
+    return this.isDivisibleBy2exp(b);
   }
 
   proc bigint.isDivisibleBy2exp(exp: integral) : bool {
@@ -2557,22 +2553,20 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 
        bigint.congruent_p is deprecated, use bigint.isCongruent instead
   */
-  pragma "last resort"
   deprecated
   "bigint.congruent_p is deprecated, use bigint.isCongruent instead"
-  proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : bool {
-    return this.isCongruent(con=c,mod=d);
+  proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : int {
+    return this.isCongruent(c,d);
   }
   /*
     .. warning::
 
        bigint.congruent_p is deprecated, use bigint.isCongruent instead
   */
-  pragma "last resort"
   deprecated
   "bigint.congruent_p is deprecated, use bigint.isCongruent instead"
-  proc bigint.congruent_p(c: integral, d: integral) : bool {
-    return this.isCongruent(con=c,mod=d);
+  proc bigint.congruent_p(c: integral, d: integral) : int {
+    return this.isCongruent(c,d);
   }
 
   // congruent_p
@@ -2629,11 +2623,10 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 
        bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2exp instead
   */
-  pragma "last resort"
   deprecated
   "bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2exp instead"
-  proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : bool {
-    return this.isCongruentBy2exp(con=c,modExp=b);
+  proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : int {
+    return this.isCongruentBy2exp(c,b);
   }
 
   proc bigint.isCongruentBy2exp(const ref con: bigint, modExp: integral) : bool {
