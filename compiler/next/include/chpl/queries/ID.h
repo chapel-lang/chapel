@@ -170,7 +170,7 @@ class ID final {
     this->symbolPath_.mark(context);
   }
 
-  std::string toString() const;
+  std::string toString(chpl::StringifyKind stringKind) const;
 };
 
 // docs are turned off for this as a workaround for breathe errors
@@ -188,9 +188,9 @@ template<> struct mark<chpl::ID> {
 };
 template<> struct stringify<chpl::ID> {
   void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
+                  chpl::StringifyKind stringKind,
                   const chpl::ID& id) const {
-    stringOut << "ID(" << id.toString() << ")";
+    stringOut << "ID(" << id.toString(stringKind) << ")";
   }
 };
 /// \endcond

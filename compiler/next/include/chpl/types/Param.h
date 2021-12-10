@@ -97,7 +97,7 @@ class Param {
 
   // helper function to convert a value to a string
   static std::string valueToString(UniqueString v) {
-    return v.toString();
+    return v.toString(chpl::StringifyKind::CHPL_SYNTAX);
   }
   static std::string valueToString(ComplexDouble v) {
     return std::to_string(v.re) + "+" + std::to_string(v.im) + "i";
@@ -149,7 +149,7 @@ class Param {
                             QualifiedType a,
                             QualifiedType b);
 
-  std::string toString() const;
+  std::string toString(chpl::StringifyKind stringKind) const;
 
   static uint64_t binStr2uint64(const char* str, size_t len, std::string& err);
   static uint64_t octStr2uint64(const char* str, size_t len, std::string& err);

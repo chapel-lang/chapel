@@ -79,7 +79,7 @@ int ID::compare(const ID& other) const {
   return this->postOrderId() - other.postOrderId();
 }
 
-std::string ID::toString() const {
+std::string ID::toString(chpl::StringifyKind stringKind) const {
   std::string ret = this->symbolPath().c_str();
 
   if (!ret.empty() && this->postOrderId() >= 0) {

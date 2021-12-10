@@ -140,7 +140,7 @@ class UniqueString final {
   }
 
   /** return a std::string containing the string */
-  std::string toString() const {
+  std::string toString(chpl::StringifyKind stringKind) const {
     return std::string(c_str(), length());
   }
 
@@ -259,7 +259,7 @@ template<> struct stringify<chpl::UniqueString> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
                   const chpl::UniqueString& stringMe) const {
-    stringOut << "\"" << stringMe.toString() << "\"";
+    stringOut << "\"" << stringMe.toString(stringKind) << "\"";
   }
 };
 /// \endcond

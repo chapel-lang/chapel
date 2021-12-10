@@ -175,7 +175,7 @@ class QualifiedType final {
     return ret;
   }
 
-  std::string toString() const;
+  std::string toString(chpl::StringifyKind stringKind) const;
 };
 
 
@@ -194,7 +194,7 @@ template<> struct stringify<chpl::types::QualifiedType> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
                   const chpl::types::QualifiedType stringMe) const {
-    stringOut << stringMe.toString();
+    stringOut << stringMe.toString(stringKind);
   }
 };
 /// \endcond

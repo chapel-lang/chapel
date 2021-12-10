@@ -101,7 +101,7 @@ class CompositeType : public Type {
  public:
   virtual ~CompositeType() = 0; // this is an abstract base class
 
-  virtual std::string toString() const override;
+  virtual std::string toString(chpl::StringifyKind stringKind) const override;
 
   /** Returns true if this is a generic type */
   bool isGeneric() const override { return isGeneric_; }

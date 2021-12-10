@@ -104,7 +104,7 @@ class Type {
 
   static void dump(const Type* type, int leadingSpaces=0);
 
-  virtual std::string toString() const;
+  virtual std::string toString(chpl::StringifyKind stringKind) const;
 
   // define is__ methods for the various Type subclasses
   // using macros and TypeClassesList.h
@@ -198,7 +198,7 @@ template<> struct stringify<chpl::types::Type> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
                   const chpl::types::Type& stringMe) const {
-    stringOut << stringMe.toString();
+    stringOut << stringMe.toString(stringKind);
   }
 };
   /// \endcond DO_NOT_DOCUMENT

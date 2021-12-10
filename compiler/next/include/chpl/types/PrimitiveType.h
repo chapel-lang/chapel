@@ -69,7 +69,7 @@ class PrimitiveType : public Type {
   /**
    Compute a string representing this type.
    */
-  std::string toString() const override;
+  std::string toString(chpl::StringifyKind stringKind) const override;
 
   /**
    Get the PrimitiveType according to name and bitwidth,

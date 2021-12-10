@@ -54,7 +54,7 @@ static UniqueString nameForAst(const ASTNode* ast) {
 }
 
 static void printId(const ASTNode* ast) {
-  printf("%-16s %-8s", ast->id().toString().c_str(), nameForAst(ast).c_str());
+  printf("%-16s %-8s", ast->id().toString(chpl::StringifyKind::DEBUG_SUMMARY).c_str(), nameForAst(ast).c_str());
 }
 
 static const ResolvedExpression*
@@ -119,7 +119,7 @@ computeAndPrintStuff(Context* context,
     } else if (m.found == InnermostMatch::ONE && m.id.isEmpty()) {
       printf("%-32s ", "builtin");
     } else if (m.found == InnermostMatch::ONE) {
-      printf("%-32s ", m.id.toString().c_str());
+      printf("%-32s ", m.id.toString(chpl::StringifyKind::DEBUG_SUMMARY).c_str());
     } else {
       printf("%-32s ", "ambiguity");
     }
@@ -149,7 +149,7 @@ computeAndPrintStuff(Context* context,
     }
 
     printId(ast);
-    printf("%-35s ", r->toString().c_str());
+    printf("%-35s ", r->toString(chpl::StringifyKind::CHPL_SYNTAX).c_str());
     if (afterCount > beforeCount) {
       printf(" (ran %i queries)", afterCount - beforeCount);
     }
@@ -163,7 +163,7 @@ computeAndPrintStuff(Context* context,
 
     printId(ast);
     printf(" has type:  ");
-    printf("%-32s ", t.toString().c_str());
+    printf("%-32s ", t.toString(chpl::StringifyKind::DEBUG_SUMMARY).c_str());
 
     auto status = context->queryStatus(typeForModuleLevelSymbol,
                                        std::make_tuple(ast->id()));
@@ -229,8 +229,8 @@ int main(int argc, char** argv) {
             auto fn = ast->toFunction();
             auto uSig = UntypedFnSignature::get(ctx, fn);
             auto initialType = typedSignatureInitial(ctx, uSig);
-            printf("Instantiation of %s\n", initialType->toString().c_str());
-            printf("Instantiation is %s\n", sig->toString().c_str());
+            printf("Instantiation of %s\n", initialType->toString(chpl::StringifyKind::CHPL_SYNTAX).c_str());
+            printf("Instantiation is %s\n", sig->toString(chpl::StringifyKind::CHPL_SYNTAX).c_str());
             computeAndPrintStuff(ctx, ast, calledFn, calledFns);
             printf("\n");
           }
