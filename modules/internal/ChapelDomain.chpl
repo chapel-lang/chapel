@@ -20,7 +20,6 @@
 
 // ChapelDomain.chpl
 //
-/* Chapel domain */
 module ChapelDomain {
 
   public use ChapelBase;
