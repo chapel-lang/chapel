@@ -340,6 +340,8 @@ def get_compiler_command(flag, lang):
     if compiler_val == 'clang' or compiler_val == 'llvm':
         import chpl_llvm
         llvm_val = chpl_llvm.get()
+        if llvm_val == 'none' and compiler_val == 'llvm':
+            error("Cannot use CHPL_TARGET_COMPILER=llvm when CHPL_LLVM=none")
         if llvm_val == 'bundled' or compiler_val == 'llvm':
             if (flag == 'host' and
                 llvm_val == 'bundled' and
