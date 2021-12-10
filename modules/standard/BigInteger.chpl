@@ -2517,15 +2517,15 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   /*
     .. warning::
 
-       bigint.divisible_p is deprecated, use bigint.isDivisible instead
+       bigint.divisible_p is deprecated, use bigint.isDivisibleByPowerOf2 instead
   */
   deprecated
-  "bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2exp instead"
+  "bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleByPowerOf2 instead"
   proc bigint.divisible_2exp_p(b: integral) : int {
-    return this.isDivisibleBy2exp(b);
+    return this.isDivisibleByPowerOf2(b);
   }
 
-  proc bigint.isDivisibleBy2exp(exp: integral) : bool {
+  proc bigint.isDivisibleByPowerOf2(exp: integral) : bool {
     const exp_ = exp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
 
@@ -2621,15 +2621,15 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
   /*
     .. warning::
 
-       bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2exp instead
+       bigint.congruent_2exp_p is deprecated, use bigint.isCongruentByPowerOf2 instead
   */
   deprecated
-  "bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2exp instead"
+  "bigint.congruent_2exp_p is deprecated, use bigint.isCongruentByPowerOf2 instead"
   proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : int {
-    return this.isCongruentBy2exp(c,b);
+    return this.isCongruentByPowerOf2(c,b);
   }
 
-  proc bigint.isCongruentBy2exp(const ref con: bigint, modExp: integral) : bool {
+  proc bigint.isCongruentByPowerOf2(const ref con: bigint, modExp: integral) : bool {
     const modExp_ = modExp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
 
