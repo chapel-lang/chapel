@@ -20,18 +20,11 @@
 
 // ChapelDomain.chpl
 //
+/* Chapel domain */
 module ChapelDomain {
 
   public use ChapelBase;
-  use ChapelTuple;
-  use ChapelLocale;
-  use ArrayViewSlice;
   use ArrayViewRankChange;
-  use ArrayViewReindex;
-  import Reflection;
-  use ChapelDebugPrint;
-  use SysCTypes;
-  use ChapelPrivatization;
 
   pragma "no copy return"
   pragma "return not owned"
@@ -47,12 +40,12 @@ module ChapelDomain {
 
   // Run-time type support
   //
-  // NOTE: the bodies of functions marked with runtime type init fn such as
-  // chpl__buildDomainRuntimeType and chpl__buildArrayRuntimeType are replaced
-  // by the compiler to just create a record storing the arguments.
-  // The return type of chpl__build...RuntimeType is what tells the
-  // compiler which runtime type it is creating.
-  // These functions are considered type functions early in compilation.
+  // NOTE: the bodies of functions marked with runtime type init fn (such as
+  // chpl__buildDomainRuntimeType) are replaced by the compiler to just create
+  // a record storing the arguments.  The return type of
+  // chpl__build...RuntimeType is what tells the compiler which runtime type it
+  // is creating.  These functions are considered type functions early in
+  // compilation.
 
   //
   // Support for domain types
@@ -276,40 +269,6 @@ module ChapelDomain {
     }
   }
 
-  /* Cast a rectangular domain to a new rectangular domain type.  If the old
-     type was stridable and the new type is not stridable then assume the
-     stride was 1 without checking.
-
-     For example:
-     {1..10 by 2}:domain(stridable=false)
-
-     results in the domain '{1..10}'
-   */
-  pragma "no doc"
-  operator :(d: _domain, type t:_domain) where chpl__isRectangularDomType(t) && d.isRectangular() {
-    var tmpD: t;
-    if tmpD.rank != d.rank then
-      compilerError("rank mismatch in cast");
-    if tmpD.idxType != d.idxType then
-      compilerError("idxType mismatch in cast");
-
-    if tmpD.stridable == d.stridable then
-      return d;
-    else if !tmpD.stridable && d.stridable {
-      var inds = d.getIndices();
-      var unstridableInds: d.rank*range(tmpD.idxType, stridable=false);
-
-      for param i in 0..tmpD.rank-1 {
-        unstridableInds(i) = inds(i):range(tmpD.idxType, stridable=false);
-      }
-      tmpD.setIndices(unstridableInds);
-      return tmpD;
-    } else /* if tmpD.stridable && !d.stridable */ {
-      tmpD = d;
-      return tmpD;
-    }
-  }
-
   proc chpl_countDomHelp(dom, counts) {
     var ranges = dom.dims();
     for param i in 0..dom.rank-1 do
@@ -467,10 +426,6 @@ module ChapelDomain {
   inline operator !=(d1: domain, d2: domain) param {
     return true;
   }
-
-  //
-  // isXxxType, isXxxValue
-  //
 
   /* Return true if ``t`` is a domain type. Otherwise return false. */
   proc isDomainType(type t) param {
@@ -2014,6 +1969,40 @@ module ChapelDomain {
     pragma "no doc"
     proc iteratorYieldsLocalElements() param {
       return _value.dsiIteratorYieldsLocalElements();
+    }
+
+    /* Cast a rectangular domain to a new rectangular domain type.  If the old
+       type was stridable and the new type is not stridable then assume the
+       stride was 1 without checking.
+
+       For example:
+       {1..10 by 2}:domain(stridable=false)
+
+       results in the domain '{1..10}'
+     */
+    pragma "no doc"
+    operator :(d: _domain, type t:_domain) where chpl__isRectangularDomType(t) && d.isRectangular() {
+      var tmpD: t;
+      if tmpD.rank != d.rank then
+        compilerError("rank mismatch in cast");
+      if tmpD.idxType != d.idxType then
+        compilerError("idxType mismatch in cast");
+
+      if tmpD.stridable == d.stridable then
+        return d;
+      else if !tmpD.stridable && d.stridable {
+        var inds = d.getIndices();
+        var unstridableInds: d.rank*range(tmpD.idxType, stridable=false);
+
+        for param i in 0..tmpD.rank-1 {
+          unstridableInds(i) = inds(i):range(tmpD.idxType, stridable=false);
+        }
+        tmpD.setIndices(unstridableInds);
+        return tmpD;
+      } else /* if tmpD.stridable && !d.stridable */ {
+        tmpD = d;
+        return tmpD;
+      }
     }
 
     pragma "no doc"

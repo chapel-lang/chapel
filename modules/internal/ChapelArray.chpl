@@ -374,12 +374,12 @@ module ChapelArray {
 
   // Run-time type support
   //
-  // NOTE: the bodies of functions marked with runtime type init fn such as
-  // chpl__buildDomainRuntimeType and chpl__buildArrayRuntimeType are replaced
-  // by the compiler to just create a record storing the arguments.
-  // The return type of chpl__build...RuntimeType is what tells the
-  // compiler which runtime type it is creating.
-  // These functions are considered type functions early in compilation.
+  // NOTE: the bodies of functions marked with runtime type init fn (such as
+  // chpl__buildArrayRuntimeType) are replaced by the compiler to just create a
+  // record storing the arguments.  The return type of
+  // chpl__build...RuntimeType is what tells the compiler which runtime type it
+  // is creating.  These functions are considered type functions early in
+  // compilation.
 
   //
   // Support for array types
