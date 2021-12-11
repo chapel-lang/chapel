@@ -490,13 +490,13 @@ struct Converter {
 
   // TODO: Speed comparison for this vs. using cached unique strings?
   Expr* convertScanReduceOp(UniqueString op) {
-    if (op == "+") return new UnresolvedSymExpr("SumReduceScanOp");
-    if (op == "*") return new UnresolvedSymExpr("ProductReduceScanOp");
-    if (op == "&&") return new UnresolvedSymExpr("LogicalAndReduceScanOp");
-    if (op == "||") return new UnresolvedSymExpr("LogicalOrReduceScanOp");
-    if (op == "&") return new UnresolvedSymExpr("BitwiseAndReduceScanOp");
-    if (op == "|") return new UnresolvedSymExpr("BitwiseOrReduceScanOp");
-    if (op == "^") return new UnresolvedSymExpr("BitwiseXorReduceScanOp");
+    if (op == USTR("+")) return new UnresolvedSymExpr("SumReduceScanOp");
+    if (op == USTR("*")) return new UnresolvedSymExpr("ProductReduceScanOp");
+    if (op == USTR("&&")) return new UnresolvedSymExpr("LogicalAndReduceScanOp");
+    if (op == USTR("||")) return new UnresolvedSymExpr("LogicalOrReduceScanOp");
+    if (op == USTR("&")) return new UnresolvedSymExpr("BitwiseAndReduceScanOp");
+    if (op == USTR("|")) return new UnresolvedSymExpr("BitwiseOrReduceScanOp");
+    if (op == USTR("^")) return new UnresolvedSymExpr("BitwiseXorReduceScanOp");
     return new UnresolvedSymExpr(op.c_str());
   }
 
@@ -941,7 +941,7 @@ struct Converter {
       bool hasConvertedThisIter = false;
 
       if (auto opCall = expr->toOpCall()) {
-        if (opCall->op() == "=>") {
+        if (opCall->op() == USTR("=>")) {
           isAssociativeList = true;
           assert(opCall->numActuals() == 2);
           Expr* lhs = convertAST(opCall->actual(0));
@@ -1507,18 +1507,18 @@ struct Converter {
   }
 
   static bool isAssignOp(UniqueString name) {
-    return (name == "=" ||
-            name == "+=" ||
-            name == "-=" ||
-            name == "*=" ||
-            name == "/=" ||
-            name == "%=" ||
-            name == "**=" ||
-            name == "&=" ||
-            name == "|=" ||
-            name == "^=" ||
-            name == ">>=" ||
-            name == "<<=");
+    return (name == USTR("=") ||
+            name == USTR("+=") ||
+            name == USTR("-=") ||
+            name == USTR("*=") ||
+            name == USTR("/=") ||
+            name == USTR("%=") ||
+            name == USTR("**=") ||
+            name == USTR("&=") ||
+            name == USTR("|=") ||
+            name == USTR("^=") ||
+            name == USTR(">>=") ||
+            name == USTR("<<="));
   }
 
   Expr* visit(const uast::Function* node) {

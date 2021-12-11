@@ -21,6 +21,7 @@
 #define CHPL_TYPES_BASIC_CLASS_TYPE_H
 
 #include "chpl/types/CompositeType.h"
+#include "chpl/queries/global-strings.h"
 
 namespace chpl {
 namespace types {
@@ -42,7 +43,7 @@ class BasicClassType final : public CompositeType {
   {
     // all classes should have a parent type, except for object
     // which doesn't.
-    assert(parentType_ || name == "object");
+    assert(parentType_ || name == USTR("object"));
 
     // compute the summary information, including the parent type
     computeSummaryInformation();

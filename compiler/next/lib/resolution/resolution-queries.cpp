@@ -23,6 +23,7 @@
 #include "chpl/queries/ErrorMessage.h"
 #include "chpl/queries/UniqueString.h"
 #include "chpl/queries/query-impl.h"
+#include "chpl/queries/global-strings.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/resolution/scope-queries.h"
 #include "chpl/types/all-types.h"
@@ -602,7 +603,7 @@ struct Resolver {
     for (auto actual : call->actuals()) {
       bool isQuestionMark = false;
       if (auto id = actual->toIdentifier())
-        if (id->name() == "?")
+        if (id->name() == USTR("?"))
           isQuestionMark = true;
 
       if (isQuestionMark) {
@@ -1855,13 +1856,13 @@ static const Type* getManagedClassType(Context* context,
     if (ci.numActuals() != 0) {
       context->error(call, "invalid class type construction");
       return ErroneousType::get(context);
-    } else if (name == "owned") {
+    } else if (name == USTR("owned")) {
       return AnyOwnedType::get(context);
-    } else if (name == "shared") {
+    } else if (name == USTR("shared")) {
       return AnySharedType::get(context);
-    } else if (name == "unmanaged") {
+    } else if (name == USTR("unmanaged")) {
       return AnyUnmanagedType::get(context);
-    } else if (name == "borrowed") {
+    } else if (name == USTR("borrowed")) {
       return AnyBorrowedType::get(context);
     } else {
       // case not handled in here
@@ -1872,16 +1873,16 @@ static const Type* getManagedClassType(Context* context,
   ClassTypeDecorator::ClassTypeDecoratorEnum de;
   const Type* manager = nullptr;
 
-  if (name == "owned") {
+  if (name == USTR("owned")) {
     de = ClassTypeDecorator::MANAGED;
     manager = AnyOwnedType::get(context);
-  } else if (name == "shared") {
+  } else if (name == USTR("shared")) {
     de = ClassTypeDecorator::MANAGED;
     manager = AnySharedType::get(context);
-  } else if (name == "unmanaged") {
+  } else if (name == USTR("unmanaged")) {
     de = ClassTypeDecorator::UNMANAGED;
     manager = nullptr;
-  } else if (name == "borrowed") {
+  } else if (name == USTR("borrowed")) {
     de = ClassTypeDecorator::BORROWED;
     manager = nullptr;
   } else {
@@ -1925,17 +1926,17 @@ static const Type* getNumericType(Context* context,
     if (ci.numActuals() != 0) {
       context->error(call, "invalid numeric type construction");
       return ErroneousType::get(context);
-    } else if (name == "int") {
+    } else if (name == USTR("int")) {
       return AnyIntType::get(context);
-    } else if (name == "uint") {
+    } else if (name == USTR("uint")) {
       return AnyUintType::get(context);
-    } else if (name == "bool") {
+    } else if (name == USTR("bool")) {
       return AnyBoolType::get(context);
-    } else if (name == "real") {
+    } else if (name == USTR("real")) {
       return AnyRealType::get(context);
-    } else if (name == "imag") {
+    } else if (name == USTR("imag")) {
       return AnyImagType::get(context);
-    } else if (name == "complex") {
+    } else if (name == USTR("complex")) {
       return AnyComplexType::get(context);
     } else {
       // case not handled in here
@@ -1943,8 +1944,8 @@ static const Type* getNumericType(Context* context,
     }
   }
 
-  if (name == "int" || name == "uint" || name == "bool" ||
-      name == "real" || name == "imag" || name == "complex") {
+  if (name == USTR("int") || name == USTR("uint") || name == USTR("bool") ||
+      name == USTR("real") || name == USTR("imag") || name == USTR("complex")) {
 
     QualifiedType qt;
     if (ci.numActuals() > 0)
@@ -1981,7 +1982,7 @@ static const Type* resolveFnCallSpecialType(Context* context,
                                             const Call* call,
                                             const CallInfo& ci) {
 
-  if (ci.name() == "?") {
+  if (ci.name() == USTR("?")) {
     if (ci.numActuals() > 0) {
       if (const Type* t = ci.actuals(0).type().type()) {
         const ClassType* ct = nullptr;

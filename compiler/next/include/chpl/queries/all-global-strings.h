@@ -17,19 +17,25 @@
  * limitations under the License.
  */
 
+/* X(identifier, chapel string name) */
+/* the identifier must be a legal C++ identifier */
+
 X(align          , "align")
 X(atomic         , "atomic")
+X(bool_          , "bool")
 X(borrowed       , "borrowed")
 X(by             , "by")
+X(complex_       , "complex")
 X(dmapped        , "dmapped")
 X(domain         , "domain")
+X(imag_          , "imag")
 X(index          , "index")
-X(logicAndAssign , "&&=")
-X(logicOrAssign  , "||=")
+X(int_           , "int")
 X(nil            , "nil")
 X(noinit         , "noinit")
+X(object_        , "object")
 X(owned          , "owned")
-X(question       , "?")
+X(real_          , "real")
 X(reduceAssign   , "reduce=")
 X(shared         , "shared")
 X(single         , "single")
@@ -37,8 +43,38 @@ X(sparse         , "sparse")
 X(subdomain      , "subdomain")
 X(sync           , "sync")
 X(this_          , "this")
-X(tripleDot      , "...")
 X(type           , "type")
+X(uint_          , "uint")
 X(unmanaged      , "unmanaged")
+
+X(equals         , "=")
+X(question       , "?")
+X(tripleDot      , "...")
+
+X(andEquals      , "&=")
+X(divEquals      , "/=")
+X(epxEquals      , "**=")
+X(lshiftEquals   , "<<=")
+X(minusEquals    , "-=")
+X(modEquals      , "%=")
+X(orEquals       , "|=")
+X(plusEquals     , "+=")
+X(rshiftEquals   , ">>=")
+X(timesEquals    , "*=")
+X(xorEquals      , "^=")
+
+X(logicAndAssign , "&&=")
+X(logicOrAssign  , "||=")
+
+X(equalsGreater  , "=>")
+
+X(bitwiseAnd     , "&")
+X(bitwiseOr      , "|")
+X(bitwiseXor     , "^")
+X(logicalAnd     , "&&")
+X(logicalOr      , "||")
+X(plus           , "+")
+X(times          , "*")
+
 /* A string too long is checked at compile time */
 /* X(somethingtoolong      , "somethingtoolongforthemacro") */
