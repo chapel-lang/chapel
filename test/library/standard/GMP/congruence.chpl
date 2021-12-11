@@ -11,7 +11,7 @@ for m in 1 .. 10 {
   for c in 0..9 {
     var cb = new bigint(c);
 
-    write(TF(tensandthrees.congruent_p(cb, mb)));
+    write(TF(tensandthrees.isCongruent(cb, mb)));
   }
 
   writeln();
@@ -21,7 +21,7 @@ writeln(tensandthrees, " ui_p:");
 
 for m in 1 .. 10 : uint {
   for c in 0 .. 9 : uint {
-    write(TF(tensandthrees.congruent_p(c, m)));
+    write(TF(tensandthrees.isCongruent(c, m)));
   }
 
   writeln();
@@ -33,7 +33,7 @@ for b in 1 .. 10 : uint {
   for c in 0 .. 9 {
     var cb = new bigint(c);
 
-    write(TF(tensandthrees.congruent_2exp_p(cb, b)));
+    write(TF(tensandthrees.isCongruentByPowerOf2(cb, b)));
   }
 
   writeln();
