@@ -798,6 +798,36 @@ module ChapelIO {
     try! {
       return stdout.writef(fmt);
     }
+      }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc read(x...) {
+    compilerError("read() is not available by default; consider adding 'use'/'import' IO");
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc read(type t) {
+    compilerError("read() is not available by default; consider adding 'use'/'import' IO");
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc readline() {
+    compilerError("readline() is not available by default; consider adding 'use'/'import' IO");
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc readln(x...) {
+    compilerError("readln() is not available by default; consider adding 'use'/'import' IO");
+  }
+
+  pragma "no doc"
+  pragma "last resort"
+  proc readln() {
+    compilerError("readln() is not available by default; consider adding 'use'/'import' IO");
   }
 
   pragma "no doc"
