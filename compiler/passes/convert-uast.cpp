@@ -48,9 +48,7 @@ struct Converter {
   chpl::Context* context = nullptr;
   bool inTupleDecl = false;
 
-  // TODO: Figure out a better way to do this sort of caching.
-  Converter(chpl::Context* context) : context(context) {
-  }
+  Converter(chpl::Context* context) : context(context) {}
 
   Expr* convertAST(const uast::ASTNode* node);
 
@@ -134,15 +132,25 @@ struct Converter {
     }
   }
 
+  void attachSymbolVisibility(const uast::Decl* node, Symbol* sym) {
+    if (node->visibility() == uast::Decl::PRIVATE) {
+      sym->addFlag(FLAG_PRIVATE);
+    }
+  }
+
   Expr* visit(const uast::ErroneousExpression* node) {
     return new CallExpr(PRIM_ERROR);
   }
 
-  Expr* reservedWordRemap(UniqueString name) {
+  Expr* reservedWordRemapForIdent(UniqueString name) {
     if (name == USTR("?")) {
       return new SymExpr(gUninstantiated);
     } else if (name == USTR("unmanaged")) {
       return new SymExpr(dtUnmanaged->symbol);
+    } else if (name == USTR("bytes")) {
+      return new SymExpr(dtBytes->symbol);
+    } else if (name == USTR("string")) {
+      return new SymExpr(dtString->symbol);
     } else if (name == USTR("owned")) {
       return new UnresolvedSymExpr("_owned");
     } else if (name == USTR("shared")) {
@@ -169,7 +177,7 @@ struct Converter {
 
     auto name = node->name();
 
-    if (auto remap = reservedWordRemap(name)) {
+    if (auto remap = reservedWordRemapForIdent(name)) {
       ret = remap;
     } else {
       ret = new UnresolvedSymExpr(name.c_str());
@@ -284,9 +292,9 @@ struct Converter {
     BaseAST* base = toExpr(convertAST(node->receiver()));
     auto member = node->field();
 
-    if (!USTR("type").compare(member)) {
+    if (member == USTR("type")) {
       return new CallExpr(PRIM_TYPEOF, base);
-    } else if (!USTR("domain").compare(member)) {
+    } else if (member == USTR("domain")) {
       return buildDotExpr(base, "_dom");
     } else {
       return buildDotExpr(base, member.c_str());
@@ -580,12 +588,13 @@ struct Converter {
   }
 
   Expr* visit(const uast::Conditional* node) {
+    assert(node->condition());
+
     Expr* ret = nullptr;
 
-    auto cond = toExpr(convertAST(node->condition()));
-    assert(cond);
-
     if (node->isExpressionLevel()) {
+      auto cond = toExpr(convertAST(node->condition()));
+      assert(cond);
       auto thenExpr = singleExprFromStmts(node->thenStmts());
       assert(thenExpr);
       auto elseExpr = singleExprFromStmts(node->elseStmts());
@@ -598,6 +607,23 @@ struct Converter {
       auto elseBlock = node->hasElseBlock()
             ? createBlockWithStmts(node->elseStmts())
             : nullptr;
+
+      Expr* cond = nullptr;
+
+      // TODO: Can 'ifVars' happen in expression-level conditionals?
+      if (auto ifVar = node->condition()->toVariable()) {
+        assert(ifVar->kind() == uast::Variable::CONST ||
+               ifVar->kind() == uast::Variable::VAR);
+        assert(ifVar->initExpression());
+        auto varNameStr = ifVar->name().c_str();
+        auto initExpr = toExpr(convertAST(ifVar->initExpression()));
+        bool isConst = ifVar->kind() == uast::Variable::CONST;
+        cond = buildIfVar(varNameStr, initExpr, isConst);
+      } else {
+        cond = toExpr(convertAST(node->condition()));
+      }
+
+      assert(cond);
 
       ret = buildIfStmt(cond, thenBlock, elseBlock);
     }
@@ -613,9 +639,11 @@ struct Converter {
     return buildGotoStmt(GOTO_CONTINUE, name);
   }
 
-  DefExpr* visit(const uast::Label* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+  Expr* visit(const uast::Label* node) {
+    const char* name = node->name().c_str();
+    Expr* stmt = toExpr(convertAST(node->loop()));
+    assert(stmt);
+    return buildLabelStmt(name, stmt);
   }
 
   CallExpr* visit(const uast::Return* node) {
@@ -650,14 +678,18 @@ struct Converter {
     return ret;
   }
 
-  BlockStmt* visit(const uast::Try* node) {
+  Expr* visit(const uast::Try* node) {
     if (node->isExpressionLevel()) {
 
       assert(node->numStmts() == 1);
       assert(node->stmt(0)->isExpression() && !node->stmt(0)->isBlock());
-      bool tryBang = node->isTryBang();
       Expr* expr = convertAST(node->stmt(0));
-      return TryStmt::build(tryBang, expr);
+
+      // Use this instead of 'TryStmt::build'.
+      auto ret = node->isTryBang() ? tryBangExpr(expr) : tryExpr(expr);
+      assert(ret);
+
+      return ret;
 
     } else {
       bool tryBang = node->isTryBang();
@@ -917,8 +949,22 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::Foreach* node) {
-    INT_FATAL("TODO");
-    return nullptr;
+
+    // Does not appear possible right now, from reading the grammar.
+    assert(!node->isExpressionLevel());
+
+    // The pieces that we need for 'buildForallLoopExpr'.
+    Expr* indices = convertLoopIndexDecl(node->index());
+    Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
+    BlockStmt* body = createBlockWithStmts(node->stmts());
+    bool zippered = node->iterand()->isZip();
+    bool isForExpr = node->isExpressionLevel();
+
+    auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, body,
+                                         zippered,
+                                         isForExpr);
+
+    return ret;
   }
 
   /// Array, Domain, Range, Tuple ///
@@ -1103,6 +1149,8 @@ struct Converter {
         ret = new CallExpr("chpl__buildSubDomainType");
       } else if (name == USTR("sync")) {
         ret = new UnresolvedSymExpr("_syncvar");
+      } else if (name == USTR("index")) {
+        ret = new CallExpr("chpl__buildIndexType");
       } else if (name == USTR("domain")) {
         auto base = "chpl__buildDomainRuntimeType";
         auto dist = new UnresolvedSymExpr("defaultDist");
@@ -1111,6 +1159,15 @@ struct Converter {
         ret = new CallExpr(PRIM_TO_UNMANAGED_CLASS_CHECKED);
       } else if (name == USTR("borrowed")) {
         ret = new CallExpr(PRIM_TO_BORROWED_CLASS_CHECKED);
+      }
+
+    // Unwrap 'foo.bytes' specially to avoid wrapping it in a third call.
+    } else if (auto dot = node->toDot()) {
+      auto member = dot->field();
+      if (member == USTR("bytes")) {
+        Expr* base = toExpr(convertAST(dot->receiver()));
+        auto convDot = buildDotExpr(base, "chpl_bytes");
+        ret = new CallExpr(convDot);
       }
     }
 
@@ -1521,6 +1578,25 @@ struct Converter {
             name == USTR("<<="));
   }
 
+  const char* convertFunctionNameAndAstr(UniqueString name) {
+    const char* ret = nullptr;
+    if (name == USTR("by")) {
+      ret = "chpl_by";
+    } else if (name == USTR("align")) {
+      ret = "chpl_align";
+    } else {
+      ret = name.c_str();
+    }
+
+    assert(ret);
+
+    // We have to uniquify the name now because it may be inlined (and thus
+    // stack allocated).
+    ret = astr(ret);
+
+    return ret;
+  }
+
   Expr* visit(const uast::Function* node) {
     FnSymbol* fn = new FnSymbol("_");
 
@@ -1538,8 +1614,16 @@ struct Converter {
       fn->addFlag(FLAG_NO_PARENS);
     }
 
+    if (node->isMethod()) {
+      fn->addFlag(FLAG_METHOD);
+      if (node->isPrimaryMethod()) {
+        fn->addFlag(FLAG_METHOD_PRIMARY);
+      }
+    }
+
     IntentTag thisTag = INTENT_BLANK;
     Expr* receiverType = nullptr;
+    bool hasConvertedReceiver = false;
 
     // Add the formals
     if (node->numFormals() > 0) {
@@ -1548,12 +1632,26 @@ struct Converter {
 
         // A "normal" formal.
         if (auto formal = decl->toFormal()) {
-          if (formal->name() != USTR("this")) {
+
+          // Special handling for implicit receiver formal.
+          if (formal->name() == USTR("this")) {
+            assert(!hasConvertedReceiver);
+            hasConvertedReceiver = true;
+
+            thisTag = convertFormalIntent(formal->intent());
+
+            // TODO (dlongnecke): Error for new frontend!
+            // "Type binding clauses are not supported..."
+            if (node->isPrimaryMethod() && formal->typeExpression()) {
+              receiverType = nullptr;
+            } else {
+              receiverType = convertExprOrNull(formal->typeExpression());
+            }
+
+          // Else convert it like normal.
+          } else {
             conv = toDefExpr(convertAST(formal));
             assert(conv);
-          } else if (!node->isPrimaryMethod()) {
-            thisTag = convertFormalIntent(formal->intent());
-            receiverType = convertExprOrNull(formal->typeExpression());
           }
 
         // A varargs formal.
@@ -1587,17 +1685,18 @@ struct Converter {
       }
     }
 
-    UniqueString name = node->name();
+    const char* convName = convertFunctionNameAndAstr(node->name());
+    fn = buildFunctionSymbol(fn, convName, thisTag, receiverType);
 
-    fn = buildFunctionSymbol(fn, name.c_str(), thisTag, receiverType);
-
-    if (isAssignOp(name)) {
+    if (isAssignOp(node->name())) {
       fn->addFlag(FLAG_ASSIGNOP);
     }
 
     RetTag retTag = convertRetTag(node->returnIntent());
 
     if (node->kind() == uast::Function::ITER) {
+
+      // TODO (dlongnecke): Move me to new frontend!
       if (fn->hasFlag(FLAG_EXTERN))
         USR_FATAL_CONT(fn, "'iter' is not legal with 'extern'");
       fn->addFlag(FLAG_ITERATOR_FN);
@@ -1612,10 +1711,12 @@ struct Converter {
     }
 
     Expr* retType = nullptr;
-    if (node->returnType() && node->returnType()->isBracketLoop()) {
-      retType = convertArrayType(node->returnType()->toBracketLoop());
-    } else {
-      retType = convertExprOrNull(node->returnType());
+    if (auto retTypeExpr = node->returnType()) {
+      if (auto arrayTypeExpr = retTypeExpr->toBracketLoop()) {
+        retType = convertArrayType(arrayTypeExpr);
+      } else {
+        retType = convertAST(retTypeExpr);
+      }
     }
 
     Expr* whereClause = convertExprOrNull(node->whereClause());
@@ -1730,11 +1831,11 @@ struct Converter {
     Expr* typeExpr = nullptr;
     Expr* initExpr = convertExprOrNull(node->initExpression());
 
-    if (node->typeExpression()) {
-      if (auto bkt = node->typeExpression()->toBracketLoop()) {
+    if (auto te = node->typeExpression()) {
+      if (auto bkt = te->toBracketLoop()) {
         typeExpr = convertArrayType(bkt);
       } else {
-        typeExpr = convertAST(node->typeExpression());
+        typeExpr = convertAST(te);
       }
     }
 
@@ -1917,10 +2018,12 @@ struct Converter {
                            bool useLinkageName) {
     auto varSym = new VarSymbol(tupleVariableName(node->name().c_str()));
 
-    // Adjust the variable according to its kind
+    // Adjust the variable according to its kind, e.g. 'const'/'type'.
     attachVarSymbolStorage(node, varSym);
 
     attachSymbolAttributes(node, varSym);
+
+    attachSymbolVisibility(node, varSym);
 
     if (node->isConfig()) {
       varSym->addFlag(FLAG_CONFIG);
@@ -1978,6 +2081,14 @@ struct Converter {
     assert(defExpr);
 
     stmts->insertAtTail(defExpr);
+
+    // Special handling for extern type variables.
+    if (node->kind() == uast::Variable::TYPE) {
+      if (node->linkage() == uast::Decl::EXTERN) {
+        assert(!node->isConfig());
+        stmts = convertTypesToExtern(stmts);
+      }
+    }
 
     // Add a PRIM_END_OF_STATEMENT.
     if (fDocs == false && inTupleDecl == false) {
