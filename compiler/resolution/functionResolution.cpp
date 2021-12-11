@@ -9992,8 +9992,8 @@ static bool createSerializeDeserialize(AggregateType* at) {
   //AggregateType* deserializerFormalType = toAggregateType(deserializerFormal->type);
   deserializer->insertFormalAtTail(deserializerFormal);
   VarSymbol* deserializerRet = new VarSymbol("deserializer_return", at);
-  deserializerRet->addFlag(FLAG_NO_COPY);
-  deserializerRet->addFlag(FLAG_NO_COPY_RETURN);
+  //deserializerRet->addFlag(FLAG_NO_COPY);
+  //deserializerRet->addFlag(FLAG_NO_COPY_RETURN);
   deserializer->insertAtTail(new DefExpr(deserializerRet));
 
   int fieldNum = 0;

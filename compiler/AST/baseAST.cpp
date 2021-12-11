@@ -234,12 +234,7 @@ void cleanAst() {
   std::vector<Type*> keysToRm;
 
   for (auto it = serializeMap.begin() ; it != serializeMap.end() ; it++) {
-    if (isAlive(it->first)) {
-      std::cout << "Alive\n";
-    }
-    else {
-      std::cout << "Not Alive\n";
-      nprint_view(it->first);
+    if (!isAlive(it->first)) {
       keysToRm.push_back(it->first);
     }
   }

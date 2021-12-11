@@ -252,17 +252,11 @@ static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
 
       // For each reference arg that is safe to dereference
       for_formals(arg, fn) {
-        std::cout << "RVF? \n";
-        nprint_view(arg);
         if (canForwardValue(defMap, useMap, syncSet, fn, arg)) {
-          std::cout << "yes \n";
 
-          std::cout << "serialize? \n";
           if (shouldSerialize(arg)) {
-            std::cout << "yes \n";
             insertSerialization(fn, arg);
           } else {
-            std::cout << "no \n";
             defaultForwarding(useMap, fn, arg);
           }
         }

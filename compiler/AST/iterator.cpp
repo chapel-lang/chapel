@@ -1953,7 +1953,7 @@ static inline Symbol* createICField(int& i, Symbol* local, Type* type,
   // Propagate the Qualifier (e.g. field is ref if local is ref)
   // This is especially important if local is an ArgSymbol
   QualifiedType qt(QUAL_VAL, type);
-  if (local)
+  if (local)   // can we change how we handle promotion records here?
     qt = local->qualType();
   // Workaround: use a ref type here
   // In the future, the Qualifier should be sufficient
