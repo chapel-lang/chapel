@@ -1209,6 +1209,8 @@ initPrimitive() {
   prim_def(PRIM_VERSION_MINOR, "version minor", returnInfoDefaultInt);
   prim_def(PRIM_VERSION_UPDATE, "version update", returnInfoDefaultInt);
   prim_def(PRIM_VERSION_SHA, "version sha", returnInfoString);
+
+  prim_def(PRIM_REF_DESERIALIZE, "deserialize for ref fields", returnInfoCVoidPtr);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

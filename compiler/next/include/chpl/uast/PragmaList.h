@@ -585,6 +585,8 @@ PRAGMA(OPT_INFO_RHS_OUTLIVES_FORALL, npr, "rhs outlives forall", "rhs or sourceo
 PRAGMA(OPT_INFO_NO_TASK_PRIVATE, npr, "forall no task private", "forall does not use task private storage")
 PRAGMA(OPT_INFO_NO_BLOCKING, npr, "forall not blocking", "forall does not have blocking synchronization")
 
+PRAGMA(DESERIALIZATION_BLOCK_MARKER, npr, "marks deserialization options", "then block is var else block is ref serialization")
+
 #undef ypr
 #undef npr
 #undef ncm

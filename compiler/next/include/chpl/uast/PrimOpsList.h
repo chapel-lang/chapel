@@ -370,3 +370,5 @@ PRIMITIVE_R(VERSION_MAJOR, "version major")
 PRIMITIVE_R(VERSION_MINOR, "version minor")
 PRIMITIVE_R(VERSION_UPDATE, "version update")
 PRIMITIVE_R(VERSION_SHA, "version sha")
+
+PRIMITIVE_R(REF_DESERIALIZE, "deserialize for ref fields")

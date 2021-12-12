@@ -2413,6 +2413,12 @@ module ChapelBase {
       compilerError("Called chpl_boundedCoforallSize on an unsupported type");
   }
 
+  proc chpl_refDeserialize(type t, data, idx) ref {
+    pragma "no init"
+    var dummy: t;
+    return dummy;
+  }
+
   /* The following chpl_field_*() overloads support compiler-generated
      comparison operators for records with array fields */
 

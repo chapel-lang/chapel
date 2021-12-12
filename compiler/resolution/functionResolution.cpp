@@ -2595,6 +2595,7 @@ static bool resolveBuiltinCastCall(CallExpr* call);
 static bool resolveClassBorrowMethod(CallExpr* call);
 static void resolveCoerceCopyMove(CallExpr* call);
 static void resolvePrimInit(CallExpr* call);
+static void resolveRefDeserialization(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
   if (call->primitive) {
@@ -2642,6 +2643,10 @@ void resolveCall(CallExpr* call) {
       resolveForResolutionPoint(call);
       break;
 
+    case PRIM_REF_DESERIALIZE:
+      resolveRefDeserialization(call);
+      break;
+
     default:
       break;
     }
@@ -2665,6 +2670,34 @@ void resolveCall(CallExpr* call) {
 
     resolveNormalCall(call);
   }
+}
+
+static void resolveRefDeserialization(CallExpr* call) {
+  //call->baseExpr
+  CallExpr* parentCall = toCallExpr(call->parentExpr);
+  INT_ASSERT(parentCall && parentCall->isPrimitive(PRIM_MOVE));
+
+  SymExpr* lhsSE = toSymExpr(parentCall->get(1));
+  SymExpr* typeSE = toSymExpr(call->get(1));
+  INT_ASSERT(lhsSE && typeSE);
+
+  Type* objType = typeSE->symbol()->type;
+
+  AggregateType* t = toAggregateType(objType);
+  if (!t) {
+    DecoratedClassType* decType = toDecoratedClassType(typeSE->symbol()->type);
+    INT_ASSERT(decType);
+    t = toAggregateType(decType->getCanonicalClass());
+  }
+
+  INT_ASSERT(t);
+
+  Serializers ser = serializeMap[t];
+  INT_ASSERT(ser.deserializer);
+
+  call->setResolvedFunction(ser.deserializer);
+
+  lhsSE->symbol()->type = typeSE->symbol()->getRefType();
 }
 
 static FnSymbol* resolveNormalCall(CallExpr* call, check_state_t checkState);
@@ -7699,6 +7732,17 @@ static Type* moveDetermineRhsType(CallExpr* call) {
     }
   }
 
+  if (retval == dtUnknown) {
+    if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
+      if (rhsCall->isPrimitive(PRIM_REF_DESERIALIZE)) {
+        SymExpr* typeSymExpr = toSymExpr(rhsCall->get(1));
+        INT_ASSERT(typeSymExpr);
+
+        retval = typeSymExpr->symbol()->type->getRefType();
+      }
+    }
+  }
+
   return retval;
 }
 
@@ -10004,66 +10048,66 @@ static bool createSerializeDeserialize(AggregateType* at) {
                                           new_CStringSymbol(astr("x", istr(fieldNum))));
     //CallExpr* retGetField = new CallExpr(PRIM_GET_MEMBER, deserializerRet, field->name);
 
-    Expr* deserializedExpr = dataGetField;
     if (FnSymbol* fieldDeserializer = deserializers[fieldNum]) {
 
-      CallExpr* fieldDeserialize = new CallExpr(fieldDeserializer, dataGetField);
+      VarSymbol* deserMarker = newTemp("deser_marker", dtBool);
+      deserMarker->addFlag(FLAG_DESERIALIZATION_BLOCK_MARKER);
+      deserializer->insertAtTail(new DefExpr(deserMarker));
 
-      Type* fieldValType = field->getValType();
+      BlockStmt* varDeser = new BlockStmt();
+      BlockStmt* refDeser = new BlockStmt();
 
-      VarSymbol* typeTemp = newTemp("field_type", fieldValType);
+      CondStmt* deserVersions = new CondStmt(new SymExpr(deserMarker),
+                                             varDeser,
+                                             refDeser);
+
+      // create type temp
+      VarSymbol* typeTemp = newTemp("field_type", field->getValType());
       typeTemp->addFlag(FLAG_TYPE_VARIABLE);
       deserializer->insertAtTail(new DefExpr(typeTemp));
 
-
-
-      //if (fieldValType->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-        //if (toDefExpr(deserializer->formals.get(2))->sym->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-          //FnSymbol* runtimeTypeFn = valueToRuntimeTypeMap.get(fieldValType);
-          //INT_ASSERT(runtimeTypeFn != NULL);
-          //VarSymbol* info = new VarSymbol("rtt_info", runtimeTypeFn->retType);
-          //deserializer->insertAtTail(new DefExpr(info));
-
-
-          //fieldDeserialize->insertAtHead(info);
-        //}
-        //else {
-          //fieldDeserialize->insertAtHead(fieldValType->symbol);
-        //}
-      //}
-      //else {
-        //fieldDeserialize->insertAtHead(fieldValType->symbol);
-      //}
+      // create deserialization call
+      CallExpr* fieldDeserialize = new CallExpr(fieldDeserializer, dataGetField);
       fieldDeserialize->insertAtHead(typeTemp);
       fieldDeserialize->insertAtHead(gMethodToken);
+      varDeser->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
+                                         field,
+                                         fieldDeserialize));
 
-      deserializedExpr = fieldDeserialize;
-      //deserializedExpr = new CallExpr(deserializer, gMethodToken,
-                                      //field->type->symbol, dataGetField);
-      //deserializedExpr = new CallExpr(deserializer, dataGetField);
+
+
+      //VarSymbol* refFieldTmp = newTemp("ref_field", field->getRefType());
+      //refDeser->insertAtTail(new DefExpr(refFieldTmp));
+      //refDeser->insertAtTail(new CallExpr(PRIM_ASSIGN, refFieldTmp,
+                                          //new CallExpr(PRIM_REF_DESERIALIZE,
+                                                       //typeTemp,
+                                                       //deserializerFormal,
+                                                       //new_IntSymbol(fieldNum))));
+      refDeser->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
+                                          field,
+                                          new CallExpr(PRIM_REF_DESERIALIZE,
+                                                       typeTemp,
+                                                       deserializerFormal,
+                                                       new_IntSymbol(fieldNum))));
+      
+
+      //refDeser->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
+                                         //field,
+                                         //new CallExpr("chpl_refDeserialize",
+                                                       //typeTemp,
+                                                       //deserializerFormal,
+                                                       //new_IntSymbol(fieldNum))));
+
+
+          
+
+      deserializer->insertAtTail(deserVersions);
     }
-
-    //CallExpr* getField =  new CallExpr(PRIM_GET_MEMBER, deserializerRet,
-                                          //new_CStringSymbol(field->name));
-
-    //VarSymbol* fieldRef = newTemp("fieldRef", field->getRefType());
-    //deserializer->insertAtTail(new DefExpr(fieldRef));
-
-    //deserializer->insertAtTail(new CallExpr(PRIM_MOVE, fieldRef, getField));
-
-    deserializer->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
-                                       field,
-                                       deserializedExpr));
-
-
-                 
-    //deserializer->insertAtTail(new CallExpr(PRIM_MOVE, retGetField, deserializedExpr));
-    //if (field->type->symbol->hasFlag(FLAG_TUPLE)) {
-      //deserializer->insertAtTail(new CallExpr("=", fieldRef, deserializedExpr));
-    //}
-    //else {
-      //deserializer->insertAtTail(new CallExpr(PRIM_MOVE, fieldRef, deserializedExpr));
-    //}
+    else {
+      deserializer->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
+                                         field,
+                                         dataGetField));
+    }
 
     fieldNum++;
   }
