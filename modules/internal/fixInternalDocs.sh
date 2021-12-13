@@ -212,17 +212,6 @@ removeUsage $file
 
 # End ChapelRange ##
 
-## ChapelComplex_forDocs ##
-
-file="./ChapelComplex_forDocs.rst"
-
-removePrefixFunctions $file
-removeTitle $file
-removeUsage $file
-replace "_complex" "complex" $file
-
-# End ChapelComplex_forDocs ##
-
 ## String ##
 
 file="./String.rst"
