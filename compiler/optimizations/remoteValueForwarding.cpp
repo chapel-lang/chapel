@@ -377,7 +377,6 @@ static bool isSufficientlyConst(ArgSymbol* arg) {
 // adjust its intent as well.
 static void adjustArgIntentForDeref(ArgSymbol* arg) {
   INT_ASSERT(!arg->type->isRef());
-  INT_ASSERT(arg->intent & INTENT_FLAG_REF);
 
   arg->intent = (IntentTag)((arg->intent & ~INTENT_FLAG_REF) | INTENT_FLAG_IN);
 
