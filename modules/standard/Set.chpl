@@ -36,12 +36,13 @@
   constructed from another set, the new set will inherit the parallel safety
   mode of its originating set.
 
-  When using set operators (e.g., `A | B`), if both sets contain elements that
-  are `==` equivalent, the element from the left hand side of the operation
-  will always be chosen for the resultant set. This may happen if the `==`
+  When using set operators (e.g., ``A | B``), if both sets contain elements that
+  are ``==`` equivalent, the element from the first argument  of the operation
+  will always be chosen for the resultant set. This may happen if the ``==``
   operator has been overloaded on the set element type, causing values of
-  the set type to be `==` equivalent, even when there may be differences
-  between the left hand side and right hand side elements.
+  the set type to be ``==`` equivalent, even when there may be differences
+  between the elements of the first argument and the elements of the second
+  argument.
 */
 module Set {
 
