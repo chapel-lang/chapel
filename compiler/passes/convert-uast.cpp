@@ -38,6 +38,7 @@
 
 #include "chpl/uast/all-uast.h"
 #include "chpl/util/string-escapes.h"
+#include "chpl/queries/global-strings.h"
 
 using namespace chpl;
 
@@ -47,65 +48,7 @@ struct Converter {
   chpl::Context* context = nullptr;
   bool inTupleDecl = false;
 
-  // Cache strings for special identifiers we might compare against.
-  UniqueString atomicStr;
-  UniqueString alignStr;
-  UniqueString borrowedStr;
-  UniqueString byStr;
-  UniqueString bytesStr;
-  UniqueString dmappedStr;
-  UniqueString domainStr;
-  UniqueString indexStr;
-  UniqueString logicAndAssignStr;
-  UniqueString logicOrAssignStr;
-  UniqueString nilStr;
-  UniqueString noinitStr;
-  UniqueString ownedStr;
-  UniqueString questionStr;
-  UniqueString reduceAssignStr;
-  UniqueString sharedStr;
-  UniqueString singleStr;
-  UniqueString sparseStr;
-  UniqueString stringStr;
-  UniqueString subdomainStr;
-  UniqueString syncStr;
-  UniqueString thisStr;
-  UniqueString tripleDotStr;
-  UniqueString typeStr;
-  UniqueString unmanagedStr;
-
-  UniqueString intern(const char* str) {
-    return UniqueString::build(context, str);
-  }
-
-  // TODO: Figure out a better way to do this sort of caching.
-  Converter(chpl::Context* context) : context(context) {
-    alignStr          = intern("align");
-    atomicStr         = intern("atomic");
-    borrowedStr       = intern("borrowed");
-    byStr             = intern("by");
-    bytesStr          = intern("bytes");
-    dmappedStr        = intern("dmapped");
-    domainStr         = intern("domain");
-    indexStr          = intern("index");
-    logicAndAssignStr = intern("&&=");
-    logicOrAssignStr  = intern("||=");
-    nilStr            = intern("nil");
-    noinitStr         = intern("noinit");
-    ownedStr          = intern("owned");
-    questionStr       = intern("?");
-    reduceAssignStr   = intern("reduce=");
-    sharedStr         = intern("shared");
-    singleStr         = intern("single");
-    sparseStr         = intern("sparse");
-    stringStr         = intern("string");
-    subdomainStr      = intern("subdomain");
-    syncStr           = intern("sync");
-    thisStr           = intern("this");
-    tripleDotStr      = intern("...");
-    typeStr           = intern("type");
-    unmanagedStr      = intern("unmanaged");
-  }
+  Converter(chpl::Context* context) : context(context) {}
 
   Expr* convertAST(const uast::ASTNode* node);
 
@@ -200,29 +143,29 @@ struct Converter {
   }
 
   Expr* reservedWordRemapForIdent(UniqueString name) {
-    if (name == questionStr) {
+    if (name == USTR("?")) {
       return new SymExpr(gUninstantiated);
-    } else if (name == unmanagedStr) {
+    } else if (name == USTR("unmanaged")) {
       return new SymExpr(dtUnmanaged->symbol);
-    } else if (name == bytesStr) {
+    } else if (name == USTR("bytes")) {
       return new SymExpr(dtBytes->symbol);
-    } else if (name == stringStr) {
+    } else if (name == USTR("string")) {
       return new SymExpr(dtString->symbol);
-    } else if (name == ownedStr) {
+    } else if (name == USTR("owned")) {
       return new UnresolvedSymExpr("_owned");
-    } else if (name == sharedStr) {
+    } else if (name == USTR("shared")) {
       return new UnresolvedSymExpr("_shared");
-    } else if (name == syncStr) {
+    } else if (name == USTR("sync")) {
       return new UnresolvedSymExpr("_syncvar");
-    } else if (name == singleStr) {
+    } else if (name == USTR("single")) {
       return new UnresolvedSymExpr("_singlevar");
-    } else if (name == domainStr) {
+    } else if (name == USTR("domain")) {
       return new UnresolvedSymExpr("_domain");
-    } else if (name == indexStr) {
+    } else if (name == USTR("index")) {
       return new UnresolvedSymExpr("_index");
-    } else if (name == nilStr) {
+    } else if (name == USTR("nil")) {
       return new SymExpr(gNil);
-    } else if (name == noinitStr) {
+    } else if (name == USTR("noinit")) {
       return new SymExpr(gNoInit);
     }
 
@@ -349,9 +292,9 @@ struct Converter {
     BaseAST* base = toExpr(convertAST(node->receiver()));
     auto member = node->field();
 
-    if (member == typeStr) {
+    if (member == USTR("type")) {
       return new CallExpr(PRIM_TYPEOF, base);
-    } else if (member == domainStr) {
+    } else if (member == USTR("domain")) {
       return buildDotExpr(base, "_dom");
     } else {
       return buildDotExpr(base, member.c_str());
@@ -555,13 +498,13 @@ struct Converter {
 
   // TODO: Speed comparison for this vs. using cached unique strings?
   Expr* convertScanReduceOp(UniqueString op) {
-    if (op == "+") return new UnresolvedSymExpr("SumReduceScanOp");
-    if (op == "*") return new UnresolvedSymExpr("ProductReduceScanOp");
-    if (op == "&&") return new UnresolvedSymExpr("LogicalAndReduceScanOp");
-    if (op == "||") return new UnresolvedSymExpr("LogicalOrReduceScanOp");
-    if (op == "&") return new UnresolvedSymExpr("BitwiseAndReduceScanOp");
-    if (op == "|") return new UnresolvedSymExpr("BitwiseOrReduceScanOp");
-    if (op == "^") return new UnresolvedSymExpr("BitwiseXorReduceScanOp");
+    if (op == USTR("+")) return new UnresolvedSymExpr("SumReduceScanOp");
+    if (op == USTR("*")) return new UnresolvedSymExpr("ProductReduceScanOp");
+    if (op == USTR("&&")) return new UnresolvedSymExpr("LogicalAndReduceScanOp");
+    if (op == USTR("||")) return new UnresolvedSymExpr("LogicalOrReduceScanOp");
+    if (op == USTR("&")) return new UnresolvedSymExpr("BitwiseAndReduceScanOp");
+    if (op == USTR("|")) return new UnresolvedSymExpr("BitwiseOrReduceScanOp");
+    if (op == USTR("^")) return new UnresolvedSymExpr("BitwiseXorReduceScanOp");
     return new UnresolvedSymExpr(op.c_str());
   }
 
@@ -1044,7 +987,7 @@ struct Converter {
       bool hasConvertedThisIter = false;
 
       if (auto opCall = expr->toOpCall()) {
-        if (opCall->op() == "=>") {
+        if (opCall->op() == USTR("=>")) {
           isAssociativeList = true;
           assert(opCall->numActuals() == 2);
           Expr* lhs = convertAST(opCall->actual(0));
@@ -1198,30 +1141,30 @@ struct Converter {
 
     if (auto ident = node->toIdentifier()) {
       auto name = ident->name();
-      if (name == atomicStr) {
+      if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
-      } else if (name == singleStr) {
+      } else if (name == USTR("single")) {
         ret = new UnresolvedSymExpr("_singlevar");
-      } else if (name == subdomainStr) {
+      } else if (name == USTR("subdomain")) {
         ret = new CallExpr("chpl__buildSubDomainType");
-      } else if (name == syncStr) {
+      } else if (name == USTR("sync")) {
         ret = new UnresolvedSymExpr("_syncvar");
-      } else if (name == indexStr) {
+      } else if (name == USTR("index")) {
         ret = new CallExpr("chpl__buildIndexType");
-      } else if (name == domainStr) {
+      } else if (name == USTR("domain")) {
         auto base = "chpl__buildDomainRuntimeType";
         auto dist = new UnresolvedSymExpr("defaultDist");
         ret = new CallExpr(base, dist);
-      } else if (name == unmanagedStr) {
+      } else if (name == USTR("unmanaged")) {
         ret = new CallExpr(PRIM_TO_UNMANAGED_CLASS_CHECKED);
-      } else if (name == borrowedStr) {
+      } else if (name == USTR("borrowed")) {
         ret = new CallExpr(PRIM_TO_BORROWED_CLASS_CHECKED);
       }
 
     // Unwrap 'foo.bytes' specially to avoid wrapping it in a third call.
     } else if (auto dot = node->toDot()) {
       auto member = dot->field();
-      if (member == bytesStr) {
+      if (member == USTR("bytes")) {
         Expr* base = toExpr(convertAST(dot->receiver()));
         auto convDot = buildDotExpr(base, "chpl_bytes");
         ret = new CallExpr(convDot);
@@ -1237,7 +1180,7 @@ struct Converter {
     CallExpr* ret = nullptr;
 
     if (auto kwSparse = calledExpression->toIdentifier()) {
-      if (kwSparse->name() == sparseStr) {
+      if (kwSparse->name() == USTR("sparse")) {
         assert(node->numActuals() == 1);
 
         if (auto innerCall = node->actual(0)->toFnCall()) {
@@ -1245,7 +1188,7 @@ struct Converter {
           assert(innerCalledExpression);
 
           if (auto kwSubdomain = innerCalledExpression->toIdentifier()) {
-            if (kwSubdomain->name() == subdomainStr) {
+            if (kwSubdomain->name() == USTR("subdomain")) {
               assert(innerCall->numActuals() == 1);
 
               ret = new CallExpr("chpl__buildSparseDomainRuntimeType");
@@ -1309,7 +1252,7 @@ struct Converter {
   }
 
   Expr* convertDmappedOp(const uast::OpCall* node) {
-    if (node->op() != dmappedStr) return nullptr;
+    if (node->op() != USTR("dmapped")) return nullptr;
 
     INT_ASSERT(node->numActuals() == 2);
 
@@ -1328,14 +1271,14 @@ struct Converter {
   }
 
   Expr* convertTupleExpand(const uast::OpCall* node) {
-    if (node->op() != tripleDotStr) return nullptr;
+    if (node->op() != USTR("...")) return nullptr;
     INT_ASSERT(node->numActuals() == 1);
     Expr* expr = convertAST(node->actual(0));
     return new CallExpr(PRIM_TUPLE_EXPAND, expr);
   }
 
   Expr* convertReduceAssign(const uast::OpCall* node) {
-    if (node->op() != reduceAssignStr) return nullptr;
+    if (node->op() != USTR("reduce=")) return nullptr;
     INT_ASSERT(node->numActuals() == 2);
     Expr* lhs = convertAST(node->actual(0));
     Expr* rhs = convertAST(node->actual(1));
@@ -1343,14 +1286,14 @@ struct Converter {
   }
 
   Expr* convertToNilableChecked(const uast::OpCall* node) {
-    if (node->op() != questionStr) return nullptr;
+    if (node->op() != USTR("?")) return nullptr;
     INT_ASSERT(node->numActuals() == 1);
     Expr* expr = convertAST(node->actual(0));
     return new CallExpr(PRIM_TO_NILABLE_CLASS_CHECKED, expr);
   }
 
   Expr* convertLogicalAndAssign(const uast::OpCall* node) {
-    if (node->op() != logicAndAssignStr) return nullptr;
+    if (node->op() != USTR("&&=")) return nullptr;
     INT_ASSERT(node->numActuals() == 2);
     Expr* lhs = convertAST(node->actual(0));
     Expr* rhs = convertAST(node->actual(1));
@@ -1358,7 +1301,7 @@ struct Converter {
   }
 
   Expr* convertLogicalOrAssign(const uast::OpCall* node) {
-    if (node->op() != logicOrAssignStr) return nullptr;
+    if (node->op() != USTR("||=")) return nullptr;
     INT_ASSERT(node->numActuals() == 2);
     Expr* lhs = convertAST(node->actual(0));
     Expr* rhs = convertAST(node->actual(1));
@@ -1395,9 +1338,9 @@ struct Converter {
       ret = conv;
     } else if (auto conv = convertLogicalOrAssign(node)) {
       ret = conv;
-    } else if (node->op() == alignStr) {
+    } else if (node->op() == USTR("align")) {
       ret = convertRegularBinaryOrUnaryOp(node, "chpl_align");
-    } else if (node->op() == byStr) {
+    } else if (node->op() == USTR("by")) {
       ret = convertRegularBinaryOrUnaryOp(node, "chpl_by");
     } else {
       ret = convertRegularBinaryOrUnaryOp(node);
@@ -1621,25 +1564,25 @@ struct Converter {
   }
 
   static bool isAssignOp(UniqueString name) {
-    return (name == "=" ||
-            name == "+=" ||
-            name == "-=" ||
-            name == "*=" ||
-            name == "/=" ||
-            name == "%=" ||
-            name == "**=" ||
-            name == "&=" ||
-            name == "|=" ||
-            name == "^=" ||
-            name == ">>=" ||
-            name == "<<=");
+    return (name == USTR("=") ||
+            name == USTR("+=") ||
+            name == USTR("-=") ||
+            name == USTR("*=") ||
+            name == USTR("/=") ||
+            name == USTR("%=") ||
+            name == USTR("**=") ||
+            name == USTR("&=") ||
+            name == USTR("|=") ||
+            name == USTR("^=") ||
+            name == USTR(">>=") ||
+            name == USTR("<<="));
   }
 
   const char* convertFunctionNameAndAstr(UniqueString name) {
     const char* ret = nullptr;
-    if (name == byStr) {
+    if (name == USTR("by")) {
       ret = "chpl_by";
-    } else if (name == alignStr) {
+    } else if (name == USTR("align")) {
       ret = "chpl_align";
     } else {
       ret = name.c_str();
@@ -1691,7 +1634,7 @@ struct Converter {
         if (auto formal = decl->toFormal()) {
 
           // Special handling for implicit receiver formal.
-          if (formal->name() == thisStr) {
+          if (formal->name() == USTR("this")) {
             assert(!hasConvertedReceiver);
             hasConvertedReceiver = true;
 
@@ -1713,7 +1656,7 @@ struct Converter {
 
         // A varargs formal.
         } else if (auto formal = decl->toVarArgFormal()) {
-          assert(formal->name() != thisStr);
+          assert(formal->name() != USTR("this"));
           conv = toDefExpr(convertAST(formal));
           assert(conv);
 

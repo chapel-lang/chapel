@@ -20,6 +20,7 @@
 #include "chpl/queries/Context.h"
 
 #include "chpl/queries/query-impl.h"
+#include "chpl/queries/global-strings.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/queries/stringify-functions.h"
 
@@ -32,6 +33,30 @@
 #include "../util/my_aligned_alloc.h" // assumes size_t defined
 
 namespace chpl {
+
+  namespace detail {
+    GlobalStrings globalStrings;
+    Context rootContext;
+
+    static void initGlobalStrings() {
+#define X(field, str) globalStrings.field = UniqueString::build(&rootContext, str);
+#include "chpl/queries/all-global-strings.h"
+#undef X
+    }
+  } // namespace detail
+
+  Context::Context() {
+    if (this == &detail::rootContext) {
+      detail::initGlobalStrings();
+      for (auto& v : uniqueStringsTable) {
+        doNotCollectUniqueCString(v.str);
+      }
+    } else {
+      for (const auto& v : detail::rootContext.uniqueStringsTable) {
+        uniqueStringsTable.insert(v);
+      }
+    }
+  }
 
 using namespace chpl::querydetail;
 
@@ -62,7 +87,7 @@ void Context::defaultReportError(const ErrorMessage& err) {
   defaultReportErrorPrintDetail(err, "", "error");
 }
 
-// unique'd strings are preceded by 4 bytes of length, gcMark and 0x02
+// unique'd strings are preceded by 4 bytes of length, gcMark and doNotCollectMark
 // this number must be even
 #define UNIQUED_STRING_METADATA_BYTES 6
 #define UNIQUED_STRING_METADATA_LEN 4
@@ -72,7 +97,12 @@ Context::~Context() {
   for (auto& item: uniqueStringsTable) {
     char* buf = (char*) item.str;
     buf -= UNIQUED_STRING_METADATA_BYTES;
-    free(buf);
+    char doNotCollect = buf[UNIQUED_STRING_METADATA_LEN + 1];
+    // Root context  : Free all strings
+    // Other contexts: Free all that aren't doNotCollect
+    if (this == &detail::rootContext || !doNotCollect) {
+      free(buf);
+    }
   }
 }
 
@@ -82,7 +112,7 @@ Context::~Context() {
 static char* allocateEvenAligned(size_t amt) {
   char* buf = (char*) malloc(amt);
   // UNIQUED_STRING_METADATA_BYTES must be even
-  assert((UNIQUED_STRING_METADATA_BYTES & 1) == 0);
+  static_assert((UNIQUED_STRING_METADATA_BYTES & 1) == 0, "UniquedString metadata bytes not even");
   // Normally, malloc returns something that is aligned to 16 bytes,
   // but it's technically possible that a platform library
   // could not do so. So, here we check.
@@ -110,8 +140,8 @@ char* Context::setupStringMetadata(char* buf, size_t len) {
 
   int32_t len32 = len;
   // these assert should fail if the below code needs to change
-  assert(sizeof(len32) + 2 == UNIQUED_STRING_METADATA_BYTES);
-  assert(sizeof(len32) == UNIQUED_STRING_METADATA_LEN);
+  static_assert(sizeof(len32) + 2 == UNIQUED_STRING_METADATA_BYTES, "Size mismatch");
+  static_assert(sizeof(len32) == UNIQUED_STRING_METADATA_LEN, "Size mismatch");
 
   // copy the length
   memcpy(buf, &len32, sizeof(len32));
@@ -119,8 +149,8 @@ char* Context::setupStringMetadata(char* buf, size_t len) {
   // set the GC mark
   *buf = gcMark;
   buf++;
-  // set the unused metadata (need to still have even alignment)
-  *buf = 0x02;
+  // set the doNotcollectMark
+  *buf = 0;
   buf++;
   return buf;
 }
@@ -279,8 +309,16 @@ void Context::markUniqueCString(const char* s) {
     buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
     buf += UNIQUED_STRING_METADATA_LEN; // pass the length
     buf[0] = gcMark;
-    assert(buf[1] == 0x02);
+    assert(0 <= buf[1] && buf[1] <= 1);        // doNotCollectMark bit is 0 or 1
   }
+}
+
+void Context::doNotCollectUniqueCString(const char* s) {
+  char* buf = (char*)s;
+  buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
+  buf += UNIQUED_STRING_METADATA_LEN;   // pass the length
+  buf += 1;                             // pass the gc mark
+  *buf = 1;                             // set doNotCollectMark
 }
 
 size_t Context::lengthForUniqueString(const char* s) {
@@ -418,7 +456,8 @@ void Context::collectGarbage() {
       buf -= UNIQUED_STRING_METADATA_BYTES; // find start of allocation
       char* allocation = buf;
       buf += UNIQUED_STRING_METADATA_LEN; // pass the length
-      if (buf[0] == gcMark) {
+      // buf[1] is the doNotCollectMark
+      if (buf[1] || buf[0] == gcMark) {
         newTable.insert(e);
         if (enableDebugTracing) {
           printf("COPYING OVER UNIQUESTRING %s\n", key);

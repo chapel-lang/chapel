@@ -309,6 +309,8 @@ class Context {
             const void* queryFunction,
             const querydetail::QueryMapResultBase* resultEntry);
 
+  void doNotCollectUniqueCString(const char *s);
+
   // Future Work: make the context thread-safe
 
   // Future Work: allow moving some AST to a different context
@@ -332,7 +334,7 @@ class Context {
   /**
     Create a new AST Context.
    */
-  Context() = default;
+  Context();
   ~Context();
 
   /**
