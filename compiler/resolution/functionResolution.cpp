@@ -9987,12 +9987,12 @@ static bool createSerializeDeserialize(AggregateType* at) {
         //PrimitiveTag prim;
         CallExpr* getField;
         if (field->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-          std::cout << "1000\n";
+          //std::cout << "1000\n";
           getField =  new CallExpr(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, _this,
                                           field);
         }
         else {
-          std::cout << "2000\n";
+          //std::cout << "2000\n";
           //prim = PRIM_GET_MEMBER;
           getField =  new CallExpr(PRIM_GET_MEMBER, _this,
                                           new_CStringSymbol(field->name));
@@ -10134,17 +10134,17 @@ static bool createSerializeDeserialize(AggregateType* at) {
 
   retval = resolveSerializeDeserialize(at); // now this should work
 
-  std::cout << "START REPORT\n";
-  std::cout << "type\n";
-  nprint_view(at);
+  //std::cout << "START REPORT\n";
+  //std::cout << "type\n";
+  //nprint_view(at);
 
-  std::cout << "functions\n";
-  nprint_view(serializer);
-  nprint_view(deserializer);
+  //std::cout << "functions\n";
+  //nprint_view(serializer);
+  //nprint_view(deserializer);
 
-  std::cout << "retval\n";
-  std::cout << retval << std::endl;
-  std::cout << "END REPORT\n";
+  //std::cout << "retval\n";
+  //std::cout << retval << std::endl;
+  //std::cout << "END REPORT\n";
 
   return retval;
 }

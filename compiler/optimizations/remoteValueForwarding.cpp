@@ -622,9 +622,9 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
               INT_ASSERT(replCall->resolvedFunction()->hasFlag(FLAG_FN_RETARG));
               replCall->insertAtTail(nestedDeser->argList.tail->remove());
             }
-            std::cout << "Replacing\n";
-            nprint_view(nestedDeser);
-            nprint_view(replCall);
+            //std::cout << "Replacing\n";
+            //nprint_view(nestedDeser);
+            //nprint_view(replCall);
             nestedDeser->replace(replCall);
           }
 
@@ -645,7 +645,7 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
           setMem->get(3)->replace(new SymExpr(newArg));
           cond->insertBefore(setMem->remove());
 
-          std::cout << " DONE \n";
+          //std::cout << " DONE \n";
         }
 
         flagExpr->symbol()->defPoint->remove();
@@ -655,11 +655,13 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
   }
 
   if (!modified) {
-    std::cout << baseDeserializeFn->id << " is left alone\n";
+    //TODO add this deserializer to the cache of deserializers that shouldn't be
+    //analyzed again
+    //std::cout << baseDeserializeFn->id << " is left alone\n";
     return new CallExpr(baseDeserializeFn, arg);
   }
   else {
-    std::cout << baseDeserializeFn->id << " is specialized as " << deserializeFn->id << std::endl;
+    //std::cout << baseDeserializeFn->id << " is specialized as " << deserializeFn->id << std::endl;
     deserializeCall->setResolvedFunction(deserializeFn);
     return deserializeCall;
   }
