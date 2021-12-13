@@ -470,7 +470,7 @@ static void destroyArgAndDeserialized(FnSymbol* fn, ArgSymbol* arg,
 
 static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
                                         FnSymbol* baseDeserializeFn,
-                                        ArgSymbol* arg) {
+                                        Symbol* arg) {
 
   FnSymbol* deserializeFn = baseDeserializeFn->copy();  // are we leaking this?
   CallExpr* deserializeCall = new CallExpr(deserializeFn, arg);
@@ -483,6 +483,10 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
         if (!modified) {
           modified = true;
           baseDeserializeFn->defPoint->insertBefore(new DefExpr(deserializeFn));
+    if (deserializeFn->hasFlag(FLAG_FN_RETARG)) {
+
+    }
+
         }
 
         // figure out which field we are deserializing for
@@ -545,6 +549,7 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
           update_symbols(hoistedDeser, &map);
 
           VarSymbol* hoistedRefField = NULL;
+          CallExpr* nestedDeser = NULL;
           for_alist_backward (hoistedDeserStmt, hoistedDeser->body) {
             if (CallExpr* call = toCallExpr(hoistedDeserStmt)) {
               if (call->isPrimitive(PRIM_SET_MEMBER)) {
@@ -574,10 +579,48 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
               else if (call->isNamed("chpl__deserialize")) {
                 //SymExpr* firstArg = toSymExpr(call->get(1));
                 // TODO should we handle a runtime type argument here?
-
+                nestedDeser = call;
                 
               }
             }
+          }
+          if (nestedDeser) {
+
+            Symbol* argToNestedCall = NULL;
+
+            for_actuals (actual, nestedDeser) {
+              SymExpr* actualSE = toSymExpr(actual);
+              INT_ASSERT(actualSE);
+
+              if (isTypeSymbol(actualSE->symbol())) {
+                continue;
+              }
+              argToNestedCall = actualSE->symbol();
+              break;
+            }
+
+            CallExpr* moveToArg = toCallExpr(hoistedDeser->body.head->next);
+            if (moveToArg->isPrimitive(PRIM_MOVE)) {
+              SymExpr* lhs = toSymExpr(moveToArg->get(1));
+              INT_ASSERT(lhs->symbol() == argToNestedCall);
+            }
+            else {
+              INT_FATAL("Unexpected case");
+            }
+
+            CallExpr* replCall = handleRefDeserializers(/*anchor*/moveToArg->next,
+                                                        fn,
+                                                        nestedDeser->resolvedFunction(),
+                                                        argToNestedCall);
+
+            if (nestedDeser->resolvedFunction()->hasFlag(FLAG_FN_RETARG)) {
+              INT_ASSERT(replCall->resolvedFunction()->hasFlag(FLAG_FN_RETARG));
+              replCall->insertAtTail(nestedDeser->argList.tail->remove());
+            }
+            std::cout << "Replacing\n";
+            nprint_view(nestedDeser);
+            nprint_view(replCall);
+            nestedDeser->replace(replCall);
           }
 
           hoistedDeser->flattenAndRemove();
@@ -607,9 +650,11 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
   }
 
   if (!modified) {
+    std::cout << baseDeserializeFn->id << " is left alone\n";
     return new CallExpr(baseDeserializeFn, arg);
   }
   else {
+    std::cout << baseDeserializeFn->id << " is specialized as " << deserializeFn->id << std::endl;
     deserializeCall->setResolvedFunction(deserializeFn);
     return deserializeCall;
   }
@@ -633,6 +678,8 @@ static VarSymbol* replaceArgWithDeserialized(FnSymbol* fn, ArgSymbol* arg,
   anchor->insertBefore(new DefExpr(deserialized));
   anchor->insertBefore(new DefExpr(dsRef));
 
+  // TODO we should probably create the call as normal, then replace it. It'll
+  // help with easier recursion w.r.t retarg functions
   CallExpr* deserializeCall = handleRefDeserializers(anchor, fn, deserializeFn,
                                                      arg);
   CallExpr* callToAdd = NULL;

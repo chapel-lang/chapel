@@ -9817,6 +9817,12 @@ static void resolveBroadcasters(AggregateType* at) {
   Serializers& ser = serializeMap[at];
   INT_ASSERT(ser.serializer != NULL);
 
+  if (ser.serializer->hasFlag(FLAG_COMPILER_GENERATED) &&
+     (ser.deserializer->hasFlag(FLAG_COMPILER_GENERATED))) {
+    // this was generated for RVF only
+    return;
+  }
+
   VarSymbol* tmp = newTemp("global_temp", at);
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
 
@@ -9848,6 +9854,7 @@ static FnSymbol* createMethodStub(AggregateType* at, const char* methodName,
                                   bool isType) {
   // taken from build_accessor
   FnSymbol* fn = new FnSymbol(methodName);
+  fn->addFlag(FLAG_COMPILER_GENERATED);
 
   fn->insertFormalAtTail(new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken));
 
