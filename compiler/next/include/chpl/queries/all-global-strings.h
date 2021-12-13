@@ -17,6 +17,12 @@
  * limitations under the License.
  */
 
+/*
+   This uses the X macro pattern. The X macro is not yet defined here.
+   Look in global-strings.h for uses of #include "all-global-strings.h" and
+   you'll find a `#define X(field, str) ...` just before it.
+ */
+
 /* X(identifier, chapel string name) */
 /* the identifier must be a legal C++ identifier */
 
