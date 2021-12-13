@@ -31,10 +31,10 @@
 #include <unordered_map>
 #include <vector>
 
+#include "chpl/queries/Context.h"
 #include "chpl/util/memory.h"
 
 namespace chpl {
-class Context;
 
 
 template<typename T> struct mark {
@@ -47,16 +47,13 @@ template<typename T> struct mark {
 /// \cond DO_NOT_DOCUMENT
 template<typename T> struct mark<T*> {
   void operator()(Context* context, const T* keep) const {
-    if (keep != nullptr)
-      keep->mark(context);
+    context->markUnownedPointer(keep);
   }
 };
 
 template<typename T> struct mark<owned<T>> {
   void operator()(Context* context, owned<T>& keep) const {
-    auto ptr = keep.get();
-    if (ptr != nullptr)
-      ptr->mark(context);
+    context->markOwnedPointer(keep.get());
   }
 };
 

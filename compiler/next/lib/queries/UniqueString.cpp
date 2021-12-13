@@ -20,6 +20,7 @@
 #include "chpl/queries/UniqueString.h"
 
 #include "chpl/queries/Context.h"
+#include "chpl/queries/update-functions.h"
 #include "chpl/util/string-escapes.h"
 
 #include <cassert>
@@ -178,6 +179,10 @@ UniqueString UniqueString::build(Context* context,
       detail::PODUniqueString::build(context, str.c_str(), len);
     return UniqueString(ret);
   }
+}
+
+bool UniqueString::update(UniqueString& keep, UniqueString& addin) {
+  return defaultUpdate(keep, addin);
 }
 
 

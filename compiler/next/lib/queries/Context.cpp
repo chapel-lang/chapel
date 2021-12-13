@@ -301,16 +301,33 @@ const char* Context::uniqueCStringConcat(const char* s1,
 }
 
 void Context::markUniqueCString(const char* s) {
-  // Performance: Would it be better to do this store unconditionally?
-  if (this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber &&
-      s != nullptr) {
-    char gcMark = this->gcCounter & 0xff;
-    char* buf = (char*) s;
-    buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
-    buf += UNIQUED_STRING_METADATA_LEN; // pass the length
-    buf[0] = gcMark;
-    assert(0 <= buf[1] && buf[1] <= 1);        // doNotCollectMark bit is 0 or 1
+  if (s == nullptr) {
+    return; // nothing to do
   }
+
+  bool checkMarked = false;
+  bool doMark = (currentRevisionNumber == lastPrepareToGCRevisionNumber);
+  char gcMark = this->gcCounter & 0xff;
+  char* buf = (char*) s;
+  buf -= UNIQUED_STRING_METADATA_BYTES; // find start of metadata
+  buf += UNIQUED_STRING_METADATA_LEN;   // pass the length
+
+  #ifndef NDEBUG
+    // assertions are enabled, so consider logic about
+    // whether or not current values should already be marked
+    checkMarked = checkStringsAlreadyMarked;
+  #endif
+
+  if (checkMarked) {
+    assert(buf[0] == gcMark && "string should already be marked");
+  }
+
+  // write the mark if needed
+  if (doMark) {
+    buf[0] = gcMark;
+  }
+
+  assert(0 <= buf[1] && buf[1] <= 1);   // doNotCollectMark bit is 0 or 1
 }
 
 void Context::doNotCollectUniqueCString(const char* s) {
@@ -330,7 +347,7 @@ size_t Context::lengthForUniqueString(const char* s) {
   return len32;
 }
 
-bool Context::tryMarkPointer(const void* ptr) {
+bool Context::shouldMarkUnownedPointer(const void* ptr) {
   // don't bother for nullptr
   if (ptr == nullptr)
     return false;
@@ -338,11 +355,27 @@ bool Context::tryMarkPointer(const void* ptr) {
   // shouldn't run any mark code if the revision is not doing GC
   assert(this->currentRevisionNumber == this->lastPrepareToGCRevisionNumber);
 
-  // otherwise, add the pointer to the map
+  // check that the unowned pointer refers to an owned
+  // pointer that we have already marked
+  assert(ownedPtrsForThisRevision.count(ptr) != 0);
+
+  // add the pointer to the map
   auto pair = ptrsMarkedThisRevision.insert(ptr);
   // pair.second is 'true' if the insertion took place
   // or 'false' if there already was an element
   return pair.second;
+}
+bool Context::shouldMarkOwnedPointer(const void* ptr) {
+  // don't bother for nullptr
+  if (ptr == nullptr)
+    return false;
+
+  #ifndef NDEBUG
+    // note the pointer value for checking with markUnownedPointer
+    ownedPtrsForThisRevision.insert(ptr);
+  #endif
+
+  return true;
 }
 
 static
@@ -428,6 +461,7 @@ void Context::advanceToNextRevision(bool prepareToGC) {
   this->currentRevisionNumber++;
   this->numQueriesRunThisRevision_ = 0;
   ptrsMarkedThisRevision.clear();
+  ownedPtrsForThisRevision.clear();
 
   if (prepareToGC) {
     this->lastPrepareToGCRevisionNumber = this->currentRevisionNumber;

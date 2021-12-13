@@ -79,7 +79,11 @@ template<typename T> struct stringify<const T*> {
                   StringifyKind stringKind,
                   const T* stringMe) const {
     stringify<T> stringifier;
-    stringifier(stringOut, stringKind, *stringMe);
+    if (stringMe == nullptr) {
+      stringOut << "nullptr";
+    } else {
+      stringifier(stringOut, stringKind, *stringMe);
+    }
   }
 };
 

@@ -84,10 +84,9 @@ class OwnedIdsWithName {
   }
   void mark(Context* context) const {
     id_.mark(context);
-    auto ptr = moreIds_.get();
-    if (context->tryMarkPointer(ptr)) {
+    if (auto ptr = moreIds_.get()) {
       for (auto const& elt : *ptr) {
-        elt.mark(context);
+        context->markOwnedPointer(&elt);
       }
     }
   }
@@ -261,7 +260,7 @@ class Scope {
     return defaultUpdateOwned(keep, addin);
   }
   void mark(Context* context) const {
-    context->markPointer(parentScope_);
+    context->markUnownedPointer(parentScope_);
     id_.mark(context);
     name_.mark(context);
     for (const auto& pair: declared_) {
@@ -400,14 +399,12 @@ class ResolvedVisibilityScope {
                      owned<ResolvedVisibilityScope>& addin) {
     return defaultUpdateOwned(keep, addin);
   }
-  void mark(Context* context) {
-    context->markPointer(scope_);
+  void mark(Context* context) const {
+    context->markUnownedPointer(scope_);
     for (auto sym : visibilityClauses_) {
       sym.mark(context);
     }
   }
-
-
 };
 
 enum {
@@ -463,8 +460,8 @@ class PoiScope {
     return defaultUpdateOwned(keep, addin);
   }
   void mark(Context* context) const {
-    context->markPointer(inScope_);
-    context->markPointer(inFnPoi_);
+    context->markUnownedPointer(inScope_);
+    context->markUnownedPointer(inFnPoi_);
   }
 };
 

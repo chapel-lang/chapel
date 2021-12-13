@@ -26,8 +26,6 @@
 #define CHPL_QUERIES_UNIQUE_STRING_H
 
 #include "chpl/queries/UniqueString-detail.h"
-#include "chpl/queries/mark-functions.h"
-#include "chpl/queries/update-functions.h"
 #include "chpl/queries/stringify-functions.h"
 #include "chpl/util/hash.h"
 
@@ -235,9 +233,7 @@ class UniqueString final {
     other = oldThis;
   }
 
-  static bool update(UniqueString& keep, UniqueString& addin) {
-    return defaultUpdate(keep, addin);
-  }
+  static bool update(UniqueString& keep, UniqueString& addin);
 
   void mark(Context* context) const {
     s.i.mark(context);

@@ -21,6 +21,7 @@
 #define CHPL_TYPES_TYPE_H
 
 #include "chpl/queries/Context.h"
+#include "chpl/queries/update-functions.h"
 #include "chpl/types/TypeClasses.h"
 #include "chpl/types/TypeTag.h"
 

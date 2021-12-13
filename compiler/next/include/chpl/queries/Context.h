@@ -226,10 +226,21 @@ class Context {
 
   std::vector<const querydetail::QueryMapResultBase*> queryStack;
 
+  // for avoiding infinite loops in markPointer assertion checking
   std::unordered_set<const void*> ptrsMarkedThisRevision;
 
+  // queries can return an owned pointer and then other queries
+  // can depend on the value. this set tracks owned pointers returned
+  // by queries. markPointer can check, when asserting is on, that
+  // its argument is always in this set.
+  // (otherwise, it would be potentially a memory error, because
+  //  the owned pointer could be deleted if it is not expressed as
+  //  a dependency).
+  std::unordered_set<const void*> ownedPtrsForThisRevision;
+
   querydetail::RevisionNumber currentRevisionNumber = 1;
-  bool enableDebugTracing = false;
+  bool checkStringsAlreadyMarked = false;
+  bool enableDebugTracing = true;
   bool breakSet = false;
   size_t breakOnHash = 0;
   int numQueriesRunThisRevision_ = 0;
@@ -247,7 +258,8 @@ class Context {
                                                     size_t len);
   const char* getOrCreateUniqueString(const char* str, size_t len);
 
-  bool markPointerHelper(const void* ptr);
+  bool shouldMarkUnownedPointer(const void* ptr);
+  bool shouldMarkOwnedPointer(const void* ptr);
 
   // saves the dependency in the parent query, which is assumed
   // to be at queryStack.back().
@@ -422,21 +434,36 @@ class Context {
   static size_t lengthForUniqueString(const char* s);
 
   /**
-   If the pointer is nullptr or has already been marked,
-   returns false. Otherwise, marks the pointer and returns true.
-   */
-  bool tryMarkPointer(const void* ptr);
+   This function can be called by a mark method to
+   perform checking on pointers and any UniqueStrings that they contain
+   strings when asserts are enabled.
 
-  /**
-   This function allows for marking pointers which have already
-   been traversed for marking contained UniqueStrings.
-   Passing nullptr is fine and will have no effect.
-   If the pointer is not nullptr, it will call ptr->mark(Context*)
-   on it to mark any contained UniqueStrings.
+   Pointers available to a mark method should have already
+   been returned by previous queries as owned objects.
    */
   template<typename T>
-  void markPointer(const T* ptr) {
-    if (tryMarkPointer(ptr)) {
+  void markUnownedPointer(const T* ptr) {
+    #ifndef NDEBUG
+      if (shouldMarkUnownedPointer(ptr)) {
+        // run mark on the pointer contents while checking
+        // all unique strings are already marked
+        auto saveCheckStringsAlreadyMarked = checkStringsAlreadyMarked;
+        checkStringsAlreadyMarked = true;
+        ptr->mark(this);
+        // restore the previous setting for checkStringsAlreadyMarked
+        checkStringsAlreadyMarked = saveCheckStringsAlreadyMarked;
+      }
+    #endif
+  }
+
+  /**
+   This function can be called by a mark method to mark UniqueStrings
+   within an owned pointer.
+   */
+  template<typename T>
+  void markOwnedPointer(const T* ptr) {
+    if (shouldMarkOwnedPointer(ptr)) {
+      // run mark on the object
       ptr->mark(this);
     }
   }

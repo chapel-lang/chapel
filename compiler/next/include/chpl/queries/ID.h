@@ -161,19 +161,16 @@ class ID final {
   }
 
   void swap(ID& other) {
-    ID oldThis = *this;
-    *this = other;
-    other = oldThis;
-  }
-
-  static bool update(chpl::ID& keep, chpl::ID& addin) {
-    return defaultUpdate(keep, addin);
+    std::swap(symbolPath_, other.symbolPath_);
+    std::swap(postOrderId_, other.postOrderId_);
+    std::swap(numChildIds_, other.numChildIds_);
   }
 
   void mark(Context* context) const {
     this->symbolPath_.mark(context);
   }
 
+  static bool update(chpl::ID& keep, chpl::ID& addin);
 
   std::string toString() const;
 };

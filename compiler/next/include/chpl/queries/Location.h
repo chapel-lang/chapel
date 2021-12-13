@@ -77,9 +77,7 @@ public:
     std::swap(lastLine_, other.lastLine_);
     std::swap(lastColumn_, other.lastColumn_);
   }
-  static bool update(Location& keep, Location& addin) {
-    return defaultUpdate(keep, addin);
-  }
+  static bool update(Location& keep, Location& addin);
   void mark(Context* context) const {
     this->path_.mark(context);
   }
