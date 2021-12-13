@@ -153,6 +153,14 @@ class ASTNode {
 
   static void dump(const ASTNode* ast, int leadingSpaces=0);
 
+  std::string toString(chpl::StringifyKind stringKind) const {
+    std::ostringstream ss;
+    ss << tagToString(tag());
+    ss << " " << id().toString(stringKind);
+    ss << " " << std::to_string(numChildren());
+    return ss.str();
+  };
+
   // define is__ methods for the various AST types
   // using macros and ASTClassesList.h
   /// \cond DO_NOT_DOCUMENT
@@ -396,19 +404,6 @@ class ASTNode {
   }
 };
 } // end namespace uast
-template<> struct stringify<chpl::uast::ASTNode> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::uast::ASTNode& stringMe) const {
-    stringify<ID> idStringifier;
-    stringify<uast::ASTTag> tagStringifier;
-
-    stringOut << "uast::ASTNode(";
-    idStringifier(stringOut, stringKind, stringMe.id());
-    tagStringifier(stringOut, stringKind, stringMe.tag());
-    stringOut << ")";
-  }
-};
 } // end namespace chpl
 
 /// \cond DO_NOT_DOCUMENT

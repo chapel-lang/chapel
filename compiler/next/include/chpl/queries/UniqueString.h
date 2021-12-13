@@ -241,13 +241,19 @@ class UniqueString final {
 };
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::UniqueString> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::UniqueString& stringMe) const {
-    stringOut << "\"" << stringMe.toString(stringKind) << "\"";
+template<> struct update<chpl::UniqueString> {
+  bool operator()(chpl::UniqueString& keep,
+                  chpl::UniqueString& addin) const {
+    return defaultUpdate(keep, addin);
   }
 };
+template<> struct mark<chpl::UniqueString> {
+  void operator()(Context* context,
+                  const chpl::UniqueString& keep) const {
+    keep.mark(context);
+  }
+};
+
 /// \endcond
 
 
