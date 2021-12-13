@@ -472,7 +472,7 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
                                         FnSymbol* baseDeserializeFn,
                                         ArgSymbol* arg) {
 
-  FnSymbol* deserializeFn = baseDeserializeFn->copy();
+  FnSymbol* deserializeFn = baseDeserializeFn->copy();  // are we leaking this?
   CallExpr* deserializeCall = new CallExpr(deserializeFn, arg);
   bool modified = false;
 
@@ -500,6 +500,7 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
               if (field->symbol()->isRef()) {
                 useThenBlock = false;
                 fieldType = field->symbol()->type;
+                break;
               }
               else {
                 useThenBlock = true;
@@ -511,7 +512,9 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
 
 
         if (useThenBlock) {
-          // easy
+          for_alist (stmt, cond->thenStmt->body) {
+            cond->insertBefore(stmt->remove());
+          }
         }
         else {
           Symbol* partialData = NULL;
@@ -592,19 +595,18 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
           deserializeCall->insertAtTail(new SymExpr(hoistedRefField));
 
           setMem->get(3)->replace(new SymExpr(newArg));
-
-          flagExpr->symbol()->defPoint->remove();
           cond->insertBefore(setMem->remove());
-          cond->remove();
 
           std::cout << " DONE \n";
         }
+
+        flagExpr->symbol()->defPoint->remove();
+        cond->remove();
       }
     }
   }
 
   if (!modified) {
-    delete deserializeFn;
     return new CallExpr(baseDeserializeFn, arg);
   }
   else {
@@ -631,9 +633,8 @@ static VarSymbol* replaceArgWithDeserialized(FnSymbol* fn, ArgSymbol* arg,
   anchor->insertBefore(new DefExpr(deserialized));
   anchor->insertBefore(new DefExpr(dsRef));
 
-  handleRefDeserializers(anchor, fn, deserializeFn, arg);
-
-  CallExpr* deserializeCall = new CallExpr(deserializeFn, arg);
+  CallExpr* deserializeCall = handleRefDeserializers(anchor, fn, deserializeFn,
+                                                     arg);
   CallExpr* callToAdd = NULL;
 
   // we need something like this:
