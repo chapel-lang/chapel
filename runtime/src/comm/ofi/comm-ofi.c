@@ -147,11 +147,14 @@ refers to its own AV.
 static struct fid_av*   ofi_av = NULL;   // shared address vector
 static fi_addr_t*       ofi_addrs;       // remote endpoint addresses
 
-static struct fid_ep*   ofi_rxEp;         // receive endpoint
-static struct fid_cq*   ofi_rxCQ;         // receive endpoint CQ
-static struct fid_av*   ofi_rxAv;         // receive AV
-static fi_addr_t*       ofi_rxAddrs;      // receive remote endpoint addresses
-
+static struct fid_ep*   ofi_rxEp;       // receive endpoint
+static struct fid_cq*   ofi_rxCQ;       // receive endpoint CQ
+static struct fid_cntr* ofi_rxCntr;     // receive endpoint counter
+static uint64_t         ofi_rxCount;    // # messages already received.
+static void*            ofi_rxBuffer;   // receive buffer for new messages
+static void*            ofi_rxEnd;      // first byte after buffer
+static struct fid_av*   ofi_rxAv;       // address vector
+static fi_addr_t*       ofi_rxAddrs;    // table of remote endpoint addresses
 
 #define rxAddr(tcip, n) (tcip->addrs[n])
 
@@ -161,7 +164,11 @@ static fi_addr_t*       ofi_rxAddrs;      // receive remote endpoint addresses
 static chpl_bool envPreferScalableTxEp; // env: prefer scalable tx endpoint?
 static int envCommConcurrency;          // env: communication concurrency
 static ssize_t envMaxHeapSize;          // env: max heap size
-static chpl_bool envOversubscribed;     // env over-subscribed?
+static chpl_bool envOversubscribed;     // env: over-subscribed?
+static chpl_bool envUseTxCntr;          // env: tasks use transmit counters
+static chpl_bool envUseAmTxCntr;        // env: AMH uses transmit counters
+static chpl_bool envUseAmRxCntr;        // env: AMH uses receive counters
+static chpl_bool envProgressCntr;       // env: counters must be progressed
 
 static int numTxCtxs;
 static int numRxCtxs;
@@ -173,7 +180,7 @@ struct perTxCtxInfo_t {
   fi_addr_t* addrs;             // addresses in address vector
   struct fid_ep* txCtx;         // transmit context (endpoint, if not scalable)
   struct fid_cq* txCQ;          // completion CQ
-  struct fid_cntr* txCntr;      // completion counter (AM handler tx ctx only)
+  struct fid_cntr* txCntr;      // completion counter
   struct fid* txCmplFid;        // CQ or counter fid
                                 // fn: check for tx completions
   void (*checkTxCmplsFn)(struct perTxCtxInfo_t*);
@@ -986,6 +993,10 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   envOversubscribed = chpl_env_rt_get_bool("OVERSUBSCRIBED", false);
 
+  envUseTxCntr = chpl_env_rt_get_bool("COMM_OFI_TX_COUNTER", false);
+  envUseAmTxCntr = chpl_env_rt_get_bool("COMM_OFI_AM_TX_COUNTER", false);
+  envUseAmRxCntr = chpl_env_rt_get_bool("COMM_OFI_AM_RX_COUNTER", false);
+  envProgressCntr = chpl_env_rt_get_bool("COMM_OFI_PROGRESS_COUNTER", false);
   //
   // The user can specify the provider by setting either the Chapel
   // CHPL_RT_COMM_OFI_PROVIDER environment variable or the libfabric
@@ -1060,7 +1071,7 @@ void init_ofi(void) {
              "AM config: recv buf size %zd MiB, %s, responses use %s",
              ofi_iov_reqs[ofi_msg_i].iov_len / (1L << 20),
              (ofi_amhPollSet == NULL) ? "explicit polling" : "poll+wait sets",
-             (tciTab[tciTabLen - 1].txCQ != NULL) ? "CQ" : "counter");
+             (tciTab[tciTabLen - 1].txCntr == NULL) ? "CQ" : "counter");
   if (ofi_txEpScal != NULL) {
     DBG_PRINTF(DBG_CFG,
                "per node config: 1 scalable tx ep + %d tx ctx%s (%d bound), "
@@ -2302,10 +2313,6 @@ void init_ofiEp(void) {
     //
   }
 
-  //
-  // Worker TX contexts need completion queues, so they can tell what
-  // kinds of things are completing.
-  //
   const int numWorkerTxCtxs = tciTabLen - numAmHandlers;
   struct fi_cq_attr cqAttr;
   struct fi_cntr_attr cntrAttr;
@@ -2316,8 +2323,13 @@ void init_ofiEp(void) {
                .size = 100 + MAX_TXNS_IN_FLIGHT,
                .wait_obj = FI_WAIT_NONE, };
     txCQLen = cqAttr.size;
+    cntrAttr = (struct fi_cntr_attr)
+               { .events = FI_CNTR_EVENTS_COMP,
+                 .wait_obj = FI_WAIT_NONE, };
+    DBG_PRINTF(DBG_TCIPS, "creating tx endpoints/contexts");
     for (int i = 0; i < numWorkerTxCtxs; i++) {
-      init_ofiEpTxCtx(i, false /*isAMHandler*/, &avAttr, &cqAttr, NULL);
+      init_ofiEpTxCtx(i, false /*isAMHandler*/, &avAttr, &cqAttr, 
+                      envUseTxCntr ? &cntrAttr : NULL);
     }
   }
 
@@ -2328,24 +2340,21 @@ void init_ofiEp(void) {
   const enum fi_wait_obj waitObj = (ofi_amhWaitSet == NULL)
                                    ? FI_WAIT_NONE
                                    : FI_WAIT_SET;
-  if (true /*ofi_info->domain_attr->cntr_cnt == 0*/) { // disable tx counters
-    cqAttr = (struct fi_cq_attr)
-             { .format = FI_CQ_FORMAT_MSG,
-               .size = 100,
+
+  cqAttr = (struct fi_cq_attr)
+           { .format = FI_CQ_FORMAT_MSG,
+             .size = 100,
+             .wait_obj = waitObj,
+             .wait_cond = FI_CQ_COND_NONE,
+             .wait_set = ofi_amhWaitSet, };
+  cntrAttr = (struct fi_cntr_attr)
+             { .events = FI_CNTR_EVENTS_COMP,
                .wait_obj = waitObj,
-               .wait_cond = FI_CQ_COND_NONE,
                .wait_set = ofi_amhWaitSet, };
-    for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
-      init_ofiEpTxCtx(i, true /*isAMHandler*/, &avAttr, &cqAttr, NULL);
-    }
-  } else {
-    cntrAttr = (struct fi_cntr_attr)
-               { .events = FI_CNTR_EVENTS_COMP,
-                 .wait_obj = waitObj,
-                 .wait_set = ofi_amhWaitSet, };
-    for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
-      init_ofiEpTxCtx(i, true /*isAMHandler*/, &avAttr, NULL, &cntrAttr);
-    }
+  DBG_PRINTF(DBG_TCIPS, "creating AM handler tx endpoints/contexts");
+  for (int i = numWorkerTxCtxs; i < tciTabLen; i++) {
+    init_ofiEpTxCtx(i, true /*isAMHandler*/, &avAttr, &cqAttr, 
+                    envUseAmTxCntr ? &cntrAttr : NULL);
   }
 
   //
@@ -2368,7 +2377,18 @@ void init_ofiEp(void) {
   OFI_CHK(fi_endpoint(ofi_domain, ofi_info, &ofi_rxEp, NULL));
   OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxAv->fid, 0));
   OFI_CHK(fi_cq_open(ofi_domain, &cqAttr, &ofi_rxCQ, &ofi_rxCQ));
-  OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid, FI_TRANSMIT | FI_RECV));
+  int cqFlags = FI_TRANSMIT | FI_RECV;
+  if (envUseAmRxCntr) {
+    DBG_PRINTF(DBG_TCIPS, "AM handler using rx completion counter");
+    OFI_CHK(fi_cntr_open(ofi_domain, &cntrAttr, &ofi_rxCntr, &ofi_rxCntr));
+    OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCntr->fid, FI_RECV));
+    cqFlags |= FI_SELECTIVE_COMPLETION;
+  } else {
+    DBG_PRINTF(DBG_TCIPS, "AM handler using rx completion queue");
+  }
+
+  OFI_CHK(fi_ep_bind(ofi_rxEp, &ofi_rxCQ->fid, cqFlags));
+
   OFI_CHK(fi_enable(ofi_rxEp));
 
   //
@@ -2377,6 +2397,9 @@ void init_ofiEp(void) {
   //
   if (ofi_amhPollSet != NULL) {
     OFI_CHK(fi_poll_add(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
+    if (ofi_rxCntr != NULL) {
+      OFI_CHK(fi_poll_add(ofi_amhPollSet, &ofi_rxCntr->fid, 0));
+    }
     OFI_CHK(fi_poll_add(ofi_amhPollSet, tciTab[tciTabLen - 1].txCmplFid, 0));
     pollSetSize = 3;
   }
@@ -2417,19 +2440,28 @@ void init_ofiEpTxCtx(int i, chpl_bool isAMHandler,
     OFI_CHK(fi_tx_context(ofi_txEpScal, i, NULL, &tcip->txCtx, NULL));
   }
 
-  if (cqAttr != NULL) {
-    OFI_CHK(fi_cq_open(ofi_domain, cqAttr, &tcip->txCQ,
-                       &tcip->checkTxCmplsFn));
-    tcip->txCmplFid = &tcip->txCQ->fid;
-    OFI_CHK(fi_ep_bind(tcip->txCtx, tcip->txCmplFid, FI_TRANSMIT | FI_RECV));
-    tcip->checkTxCmplsFn = checkTxCmplsCQ;
-  } else {
+  uint64_t cqFlags = FI_TRANSMIT | FI_RECV;
+  if (cntrAttr != NULL) {
+    DBG_PRINTF(DBG_TCIPS, "using transmit completion counters");
     OFI_CHK(fi_cntr_open(ofi_domain, cntrAttr, &tcip->txCntr,
                          &tcip->checkTxCmplsFn));
     tcip->txCmplFid = &tcip->txCntr->fid;
     OFI_CHK(fi_ep_bind(tcip->txCtx, tcip->txCmplFid,
-                       FI_SEND | FI_READ | FI_WRITE));
+                       FI_READ | FI_SEND | FI_WRITE));
     tcip->checkTxCmplsFn = checkTxCmplsCntr;
+    cqFlags |= FI_SELECTIVE_COMPLETION;
+  } else {
+    DBG_PRINTF(DBG_TCIPS, "using transmit completion queues");
+  }
+
+  if (cqAttr != NULL) {
+    OFI_CHK(fi_cq_open(ofi_domain, cqAttr, &tcip->txCQ,
+                       &tcip->checkTxCmplsFn));
+    tcip->txCmplFid = &tcip->txCQ->fid;
+    OFI_CHK(fi_ep_bind(tcip->txCtx, tcip->txCmplFid, cqFlags));
+    if (cntrAttr == NULL) {
+      tcip->checkTxCmplsFn = checkTxCmplsCQ;
+    }
   }
 
   OFI_CHK(fi_enable(tcip->txCtx));
@@ -2802,6 +2834,7 @@ void init_ofiForAms(void) {
     OFI_CHK_2(fi_setopt(&ofi_rxEp->fid, FI_OPT_ENDPOINT,
                         FI_OPT_MIN_MULTI_RECV, &sz, sizeof(sz)),
               ret, -FI_ENOSYS);
+    DBG_PRINTF(DBG_AM_BUF, "FI_OPT_MIN_MULTI_RECV %zd", sz);
   }
 
   //
@@ -2829,12 +2862,20 @@ void init_ofiForAms(void) {
                                       .addr = FI_ADDR_UNSPEC,
                                       .context = txnTrkEncodeId(__LINE__),
                                       .data = 0x0, };
+  ofi_rxCount = 0;
   ofi_msg_i = 0;
-  OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[ofi_msg_i], FI_MULTI_RECV));
-  DBG_PRINTF(DBG_AM_BUF,
+  ofi_rxBuffer = ofi_msg_reqs[0].msg_iov->iov_base;
+  ofi_rxEnd = (void *) ((char *) ofi_rxBuffer + 
+              ofi_msg_reqs[0].msg_iov->iov_len);
+  for (int i = 0; i < 2; i++) {
+    memset(ofi_msg_reqs[i].msg_iov->iov_base, '\0', 
+           ofi_msg_reqs[i].msg_iov->iov_len);
+    OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[i], FI_MULTI_RECV));
+    DBG_PRINTF(DBG_AM_BUF,
              "pre-post fi_recvmsg(AMLZs %p, len %#zx)",
-             ofi_msg_reqs[ofi_msg_i].msg_iov->iov_base,
-             ofi_msg_reqs[ofi_msg_i].msg_iov->iov_len);
+              ofi_msg_reqs[i].msg_iov->iov_base,
+              ofi_msg_reqs[i].msg_iov->iov_len);
+  }
 
   init_amHandling();
 }
@@ -2876,7 +2917,7 @@ void init_ofiConnections(void) {
       struct perTxCtxInfo_t* tcip = &tciTab[i];
       if (!tcip->bound) {
         CHK_TRUE(tciAllocTabEntry(tcip));
-        while (tcip->txCQ != NULL && tcip->numTxnsOut >= txCQLen) {
+        while (tcip->txCntr == NULL && tcip->numTxnsOut >= txCQLen) {
           (*tcip->checkTxCmplsFn)(tcip);
         }
         amRequestNop(node, true /*blocking*/, tcip);
@@ -3053,14 +3094,25 @@ void fini_ofi(void) {
   if (ofi_amhPollSet != NULL) {
     OFI_CHK(fi_poll_del(ofi_amhPollSet, tciTab[tciTabLen - 1].txCmplFid, 0));
     OFI_CHK(fi_poll_del(ofi_amhPollSet, &ofi_rxCQ->fid, 0));
+    if (ofi_rxCntr != NULL) {
+      OFI_CHK(fi_poll_del(ofi_amhPollSet, &ofi_rxCntr->fid, 0));
+    }
   }
 
   OFI_CHK(fi_close(&ofi_rxEp->fid));
   OFI_CHK(fi_close(&ofi_rxCQ->fid));
+  if (ofi_rxCntr != NULL) {
+    OFI_CHK(fi_close(&ofi_rxCntr->fid));
+  }
 
   for (int i = 0; i < tciTabLen; i++) {
     OFI_CHK(fi_close(&tciTab[i].txCtx->fid));
-    OFI_CHK(fi_close(tciTab[i].txCmplFid));
+    if (tciTab[i].txCntr != NULL) {
+      OFI_CHK(fi_close(&tciTab[i].txCntr->fid));
+    }
+    if (tciTab[i].txCQ != NULL) {
+      OFI_CHK(fi_close(&tciTab[i].txCQ->fid));
+    }
   }
 
   if (ofi_txEpScal != NULL) {
@@ -3495,6 +3547,35 @@ void* mrLocalizeTargetRemote(const void* addr, size_t size,
 static void retireDelayedAmDone(chpl_bool);
 
 
+// Initialize the transmit context, which is an opaque pointer passed
+// to the transmit routines and returned in the completion event.
+// In the case of a completion queue it's a boolean that is set
+// to 'true' when the event occurs. Otherwise it's the line number where
+// it was created, which is used for debugging as there are no completion
+// events when using a counter. With a counter we can't signal that 
+// individual submissions are complete, we have to wait for the counter
+// to indicate that they all completed.
+
+static inline 
+void *txCtxInit(struct perTxCtxInfo_t* tcip, int line, atomic_bool *done) {
+  void *ctx;
+  if (tcip->txCntr == NULL) {
+    atomic_init_bool(done, false);
+    ctx = txnTrkEncodeDone(done);
+  } else {
+    ctx = txnTrkEncodeId(line);
+  } 
+  return ctx;
+}
+
+static inline
+void txCtxCleanup(void *ctx) {
+  const txnTrkCtx_t trk = txnTrkDecode(ctx);
+  if (trk.typ == txnTrkDone) {
+    atomic_destroy_bool((atomic_bool*) trk.ptr);
+  }
+}  
+
 static inline
 void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
                        const char* dbgOrderStr) {
@@ -3502,21 +3583,13 @@ void mcmReleaseOneNode(c_nodeid_t node, struct perTxCtxInfo_t* tcip,
              "dummy GET from %d for %s ordering",
              (int) node, dbgOrderStr);
   uint64_t flags = (mcmMode == mcmm_msgOrdFence) ? FI_FENCE : 0;
-  if (tcip->txCQ != NULL) {
-    atomic_bool txnDone;
-    atomic_init_bool(&txnDone, false);
-    void* ctx = txnTrkEncodeDone(&txnDone);
-    ofi_get_lowLevel(orderDummy, orderDummyMRDesc, node,
-                     orderDummyMap[node].mrRaddr, orderDummyMap[node].mrKey,
-                     sizeof(*orderDummy), ctx, flags, tcip);
-    waitForTxnComplete(tcip, ctx);
-    atomic_destroy_bool(&txnDone);
-  } else {
-    ofi_get_lowLevel(orderDummy, orderDummyMRDesc, node,
-                     orderDummyMap[node].mrRaddr, orderDummyMap[node].mrKey,
-                     sizeof(*orderDummy), NULL, flags, tcip);
-    waitForTxnComplete(tcip, NULL);
-  }
+  atomic_bool txnDone;
+  void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
+  ofi_get_lowLevel(orderDummy, orderDummyMRDesc, node,
+                   orderDummyMap[node].mrRaddr, orderDummyMap[node].mrKey,
+                   sizeof(*orderDummy), ctx, flags, tcip);
+  waitForTxnComplete(tcip, ctx);
+  txCtxCleanup(ctx);
 }
 
 
@@ -4144,12 +4217,11 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
       (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
     } else {
       atomic_bool txnDone;
-      atomic_init_bool(&txnDone, false);
-      void* ctx = txnTrkEncodeDone(&txnDone);
+      void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
       uint64_t flags = FI_FENCE;
       (void) wrap_fi_sendmsg(node, req, reqSize, mrDesc, ctx, flags, tcip);
       waitForTxnComplete(tcip, ctx);
-      atomic_destroy_bool(&txnDone);
+      txCtxCleanup(ctx);
     }
 
     if (havePutsOut) {
@@ -4163,11 +4235,10 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
     // General case.
     //
     atomic_bool txnDone;
-    atomic_init_bool(&txnDone, false);
-    void* ctx = txnTrkEncodeDone(&txnDone);
+    void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
     (void) wrap_fi_send(node, req, reqSize, mrDesc, ctx, tcip);
     waitForTxnComplete(tcip, ctx);
-    atomic_destroy_bool(&txnDone);
+    txCtxCleanup(ctx);
   }
 }
 
@@ -4222,11 +4293,10 @@ void amReqFn_msgOrd(c_nodeid_t node,
     // General case.
     //
     atomic_bool txnDone;
-    atomic_init_bool(&txnDone, false);
-    void* ctx = txnTrkEncodeDone(&txnDone);
+    void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
     (void) wrap_fi_send(node, req, reqSize, mrDesc, ctx, tcip);
     waitForTxnComplete(tcip, ctx);
-    atomic_destroy_bool(&txnDone);
+    txCtxCleanup(ctx);
   }
 }
 
@@ -4239,11 +4309,10 @@ void amReqFn_dlvrCmplt(c_nodeid_t node,
                        amRequest_t* req, size_t reqSize, void* mrDesc,
                        chpl_bool blocking, struct perTxCtxInfo_t* tcip) {
   atomic_bool txnDone;
-  atomic_init_bool(&txnDone, false);
-  void* ctx = txnTrkEncodeDone(&txnDone);
+  void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
   (void) wrap_fi_send(node, req, reqSize, mrDesc, ctx, tcip);
   waitForTxnComplete(tcip, ctx);
-  atomic_destroy_bool(&txnDone);
+  txCtxCleanup(ctx);
 }
 
 
@@ -4385,7 +4454,9 @@ static pthread_cond_t amStartStopCond = PTHREAD_COND_INITIALIZER;
 static pthread_mutex_t amStartStopMutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void amHandler(void*);
-static void processRxAmReq(struct perTxCtxInfo_t*);
+static void processRxAmReq(void);
+static void processRxAmReqCQ(void);
+static void processRxAmReqCntr(void);
 static void amHandleExecOn(chpl_comm_on_bundle_t*);
 static void amWrapExecOnBody(void*);
 static void amHandleExecOnLrg(chpl_comm_on_bundle_t*);
@@ -4475,7 +4546,7 @@ void amHandler(void* argNil) {
     chpl_bool hadRxEvent, hadTxEvent;
     amCheckRxTxCmpls(&hadRxEvent, &hadTxEvent, tcip);
     if (hadRxEvent) {
-      processRxAmReq(tcip);
+      processRxAmReq();
     } else if (!hadTxEvent) {
       //
       // No activity; avoid CPU monopolization.
@@ -4503,9 +4574,155 @@ void amHandler(void* argNil) {
   DBG_PRINTF(DBG_AM, "AM handler done");
 }
 
+static 
+size_t handleAmReq(amRequest_t *req) {
+  size_t size = 0;
+  switch (req->b.op) {
+    case am_opExecOn:
+      DBG_PRINTF(DBG_AM | DBG_AM_RECV, "rx AM sizeof %lu argSize %lu", sizeof(req->xo.hdr), req->xo.hdr.comm.argSize);
+      if (req->xo.hdr.comm.fast) {
+        amWrapExecOnBody(&req->xo.hdr);
+      } else {
+        amHandleExecOn(&req->xo.hdr);
+      }
+      size = req->xo.hdr.comm.argSize;
+      break;
+
+    case am_opExecOnLrg:
+      DBG_PRINTF(DBG_AM | DBG_AM_RECV, "rx AM sizeof %lu argSize %lu", sizeof(req->xol.hdr), req->xol.hdr.comm.argSize);
+      amHandleExecOnLrg(&req->xol.hdr);
+      size = sizeof(req->xol);
+      break;
+
+    case am_opGet:
+      {
+        struct taskArg_RMA_t arg = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
+                                     .rma = req->rma, };
+        chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapGet,
+                                 &arg, sizeof(arg), c_sublocid_any,
+                                 chpl_nullTaskID);
+      }
+      size = sizeof(req->rma);
+      break;
+
+    case am_opPut:
+      {
+        struct taskArg_RMA_t arg = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
+                                     .rma = req->rma, };
+        chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapPut,
+                                 &arg, sizeof(arg), c_sublocid_any,
+                                 chpl_nullTaskID);
+      }
+      size = sizeof(req->rma);
+      break;
+
+    case am_opAMO:
+      amHandleAMO(&req->amo);
+      size = sizeof(req->amo);
+      break;
+
+    case am_opFree:
+      CHPL_FREE(req->free.p);
+      size = sizeof(req->free);
+      break;
+
+    case am_opNop:
+      DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr(req));
+      if (req->b.pAmDone != NULL) {
+        amPutDone(req->b.node, req->b.pAmDone);
+      }
+      size = sizeof(req->b);
+      break;
+
+    case am_opShutdown:
+      chpl_signal_shutdown();
+      size = sizeof(req->b);
+      break;
+
+    default:
+      INTERNAL_ERROR_V("unexpected AM op %d", (int) req->b.op);
+      break;
+  }
+  return size;
+}
 
 static
-void processRxAmReq(struct perTxCtxInfo_t* tcip) {
+void processRxAmReqCntr(void) {
+  //
+  // Process requests received on the AM request endpoint.
+  //
+
+  if (envProgressCntr) {
+    // Manually progress the counter if necessary
+    int rc = fi_cq_read(ofi_rxCQ, NULL, 0);
+    if ((rc < 0) && (rc != -FI_EAGAIN)) {
+      INTERNAL_ERROR_V("fi_cq_read failed: %s", fi_strerror(rc));
+    }
+  }
+  uint64_t todo = fi_cntr_read(ofi_rxCntr) - ofi_rxCount;
+  if (todo == 0) {
+    uint64_t errors = fi_cntr_readerr(ofi_rxCntr);
+    if (errors > 0) {
+      INTERNAL_ERROR_V("error count %" PRIu64, errors);
+    }
+  }
+  size_t size;
+
+  for (int i = 0; i < todo; i++) {
+    // skip any padding and look for the next message
+
+    char *ptr = ofi_rxBuffer;
+    // limit how far we'll look for the message in the buffer
+    char *horizon = ptr + 2 * sizeof(amRequest_t);
+    if (horizon > (char *) ofi_rxEnd) {
+      horizon = (char *) ofi_rxEnd;
+    }
+    for (; ptr < horizon && *ptr == '\0'; ptr++); // do nothing
+    if (ptr >= horizon) {
+
+      // look in the other buffer
+      int other = 1 - ofi_msg_i;
+      ptr = ofi_msg_reqs[other].msg_iov->iov_base;
+      void *rxEnd = (void *) ((char *) ofi_msg_reqs[other].msg_iov->iov_base +
+                            ofi_msg_reqs[other].msg_iov->iov_len);
+      horizon = ptr + 2 * sizeof(amRequest_t);
+      if (horizon > (char *) rxEnd) {
+        horizon = (char *) rxEnd;
+      }
+
+      // skip any padding and look for the next message
+      for (; ptr < horizon && *ptr == '\0'; ptr++); // do nothing
+      CHK_TRUE(ptr < horizon);
+    
+      // found it. zero and repost current buffer, switch to other
+      memset(ofi_msg_reqs[ofi_msg_i].msg_iov->iov_base, '\0', 
+             ofi_msg_reqs[ofi_msg_i].msg_iov->iov_len);
+      OFI_CHK(fi_recvmsg(ofi_rxEp, &ofi_msg_reqs[ofi_msg_i], FI_MULTI_RECV));
+      ofi_msg_i = other;
+      ofi_rxEnd = rxEnd;
+    }
+
+    ofi_rxBuffer = ptr;
+
+    //
+    // This event is for an inbound AM request.  Handle it.
+    //
+    amRequest_t* req = (amRequest_t*) ofi_rxBuffer;
+    DBG_PRINTF(DBG_AM_BUF,
+               "CQ rx AM req @ buffer offset %zd seqId %s",
+               (char*) req - (char*) ofi_iov_reqs[ofi_msg_i].iov_base,
+               am_seqIdStr(req));
+    DBG_PRINTF(DBG_AM | DBG_AM_RECV,
+               "rx AM req: %s",
+               am_reqStr(chpl_nodeID, req, 0));
+    size = handleAmReq(req);
+    ofi_rxBuffer = (void *) ((char *) ofi_rxBuffer +  size);
+  }
+  ofi_rxCount += todo;
+}
+
+static
+void processRxAmReqCQ(void) {
   //
   // Process requests received on the AM request endpoint.
   //
@@ -4534,64 +4751,8 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
       DBG_PRINTF(DBG_AM | DBG_AM_RECV,
                  "rx AM req: %s",
                  am_reqStr(chpl_nodeID, req, cqes[i].len));
-      switch (req->b.op) {
-      case am_opExecOn:
-        if (req->xo.hdr.comm.fast) {
-          amWrapExecOnBody(&req->xo.hdr);
-        } else {
-          amHandleExecOn(&req->xo.hdr);
-        }
-        break;
-
-      case am_opExecOnLrg:
-        amHandleExecOnLrg(&req->xol.hdr);
-        break;
-
-      case am_opGet:
-        {
-          struct taskArg_RMA_t arg = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
-                                       .rma = req->rma, };
-          chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapGet,
-                                   &arg, sizeof(arg), c_sublocid_any,
-                                   chpl_nullTaskID);
-        }
-        break;
-
-      case am_opPut:
-        {
-          struct taskArg_RMA_t arg = { .hdr.kind = CHPL_ARG_BUNDLE_KIND_TASK,
-                                       .rma = req->rma, };
-          chpl_task_startMovedTask(FID_NONE, (chpl_fn_p) amWrapPut,
-                                   &arg, sizeof(arg), c_sublocid_any,
-                                   chpl_nullTaskID);
-        }
-        break;
-
-      case am_opAMO:
-        amHandleAMO(&req->amo);
-        break;
-
-      case am_opFree:
-        CHPL_FREE(req->free.p);
-        break;
-
-      case am_opNop:
-        DBG_PRINTF(DBG_AM | DBG_AM_RECV, "%s", am_reqDoneStr(req));
-        if (req->b.pAmDone != NULL) {
-          amPutDone(req->b.node, req->b.pAmDone);
-        }
-        break;
-
-      case am_opShutdown:
-        chpl_signal_shutdown();
-        break;
-
-      default:
-        INTERNAL_ERROR_V("unexpected AM op %d", (int) req->b.op);
-        break;
-      }
+      (void) handleAmReq(req);
     }
-
     if ((cqes[i].flags & FI_MULTI_RECV) != 0) {
       //
       // Multi-receive buffer filled; post the other one.
@@ -4608,6 +4769,14 @@ void processRxAmReq(struct perTxCtxInfo_t* tcip) {
   }
 }
 
+static
+void processRxAmReq(void) {
+  if (ofi_rxCntr == NULL) {
+    processRxAmReqCQ();
+  } else {
+    processRxAmReqCntr();
+  }
+}
 
 static
 void amHandleExecOn(chpl_comm_on_bundle_t* req) {
@@ -5339,8 +5508,9 @@ chpl_comm_nb_handle_t ofi_put(const void* addr, c_nodeid_t node,
   if (mrGetKey(&mrKey, &mrRaddr, node, raddr, size)) {
     struct perTxCtxInfo_t* tcip;
     CHK_TRUE((tcip = tciAlloc()) != NULL);
-    assert(tcip->txCQ != NULL);  // PUTs require a CQ, at least for now
-    waitForCQSpace(tcip, 1);
+    if (tcip->txCntr == NULL) {
+      waitForCQSpace(tcip, 1);
+    }
 
     void* mrDesc;
     void* myAddr = mrLocalizeSource(&mrDesc, addr, size, "PUT src");
@@ -5433,8 +5603,7 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
     (void) wrap_fi_inject_write(myAddr, node, mrRaddr, mrKey, size, tcip);
   } else {
     atomic_bool txnDone;
-    atomic_init_bool(&txnDone, false);
-    void* ctx = txnTrkEncodeDone(&txnDone);
+    void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
 
     if (tcip->bound
         && bitmapTest(tcip->amoVisBitmap, node)) {
@@ -5459,7 +5628,7 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrdFence(void* myAddr, void* mrDesc,
     }
 
     waitForTxnComplete(tcip, ctx);
-    atomic_destroy_bool(&txnDone);
+    txCtxCleanup(ctx);
   }
 
   //
@@ -5510,12 +5679,11 @@ chpl_comm_nb_handle_t rmaPutFn_msgOrd(void* myAddr, void* mrDesc,
     // General case.
     //
     atomic_bool txnDone;
-    atomic_init_bool(&txnDone, false);
-    void* ctx = txnTrkEncodeDone(&txnDone);
+    void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
     (void) wrap_fi_write(myAddr, mrDesc, node, mrRaddr, mrKey, size,
                          ctx, tcip);
     waitForTxnComplete(tcip, ctx);
-    atomic_destroy_bool(&txnDone);
+    txCtxCleanup(ctx);
   }
 
   if (tcip->bound) {
@@ -5538,12 +5706,11 @@ chpl_comm_nb_handle_t rmaPutFn_dlvrCmplt(void* myAddr, void* mrDesc,
                                          size_t size,
                                          struct perTxCtxInfo_t* tcip) {
   atomic_bool txnDone;
-  atomic_init_bool(&txnDone, false);
-  void* ctx = txnTrkEncodeDone(&txnDone);
+  void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
   (void) wrap_fi_write(myAddr, mrDesc, node, mrRaddr, mrKey,
                        size, ctx, tcip);
   waitForTxnComplete(tcip, ctx);
-  atomic_destroy_bool(&txnDone);
+  txCtxCleanup(ctx);
   return NULL;
 }
 
@@ -5795,17 +5962,12 @@ chpl_comm_nb_handle_t ofi_get(void* addr, c_nodeid_t node,
     void* myAddr = mrLocalizeTarget(&mrDesc, addr, size, "GET tgt");
 
     atomic_bool txnDone;
-    atomic_init_bool(&txnDone, false);
-    void* ctx = (tcip->txCQ == NULL)
-                ? txnTrkEncodeId(__LINE__)
-                : txnTrkEncodeDone(&txnDone);
-
+    void *ctx = txCtxInit(tcip, __LINE__, &txnDone);
     ret = rmaGetFn_selector(myAddr, mrDesc, node, mrRaddr, mrKey, size,
                             ctx, tcip);
 
     waitForTxnComplete(tcip, ctx);
-    atomic_destroy_bool(&txnDone);
-
+    txCtxCleanup(ctx);
     mrUnLocalizeTarget(myAddr, addr, size);
     tciFree(tcip);
   } else {
@@ -6277,9 +6439,8 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
     // conformance.
     //
     atomic_bool txnDone;
-    atomic_init_bool(&txnDone, false);
     if (ab->iovRes.addr != NULL) {
-      ab->m.context = txnTrkEncodeDone(&txnDone);
+      ab->m.context = txCtxInit(tcip, __LINE__, &txnDone);;
     }
 
     if (tcip->bound
@@ -6306,8 +6467,8 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
 
     if (ab->iovRes.addr != NULL) {
       waitForTxnComplete(tcip, ab->m.context);
+      txCtxCleanup(ab->m.context);
     }
-    atomic_destroy_bool(&txnDone);
   }
 
   //
@@ -6359,11 +6520,10 @@ chpl_comm_nb_handle_t amoFn_msgOrd(struct amoBundle_t *ab,
       (void) wrap_fi_atomicmsg(ab, 0, tcip);
     } else {
       atomic_bool txnDone;
-      atomic_init_bool(&txnDone, false);
-      ab->m.context = txnTrkEncodeDone(&txnDone);
+      ab->m.context = txCtxInit(tcip, __LINE__, &txnDone);
       (void) wrap_fi_atomicmsg(ab, 0, tcip);
       waitForTxnComplete(tcip, ab->m.context);
-      atomic_destroy_bool(&txnDone);
+      txCtxCleanup(ab->m.context);
     }
   }
 
@@ -6391,11 +6551,10 @@ static
 chpl_comm_nb_handle_t amoFn_dlvrCmplt(struct amoBundle_t *ab,
                                       struct perTxCtxInfo_t* tcip) {
   atomic_bool txnDone;
-  atomic_init_bool(&txnDone, false);
-  ab->m.context = txnTrkEncodeDone(&txnDone);
+  ab->m.context = txCtxInit(tcip, __LINE__, &txnDone);
   (void) wrap_fi_atomicmsg(ab, 0, tcip);
   waitForTxnComplete(tcip, ab->m.context);
-  atomic_destroy_bool(&txnDone);
+  txCtxCleanup(ab->m.context);
   return NULL;
 }
 
@@ -6632,12 +6791,25 @@ void checkTxCmplsCQ(struct perTxCtxInfo_t* tcip) {
 
 static
 void checkTxCmplsCntr(struct perTxCtxInfo_t* tcip) {
+  if (envProgressCntr) {
+    // Manually progress the counter
+    int rc = fi_cq_read(tcip->txCQ, NULL, 0);
+    if ((rc < 0) && (rc != -FI_EAGAIN)) {
+      INTERNAL_ERROR_V("fi_cq_read failed: %s", fi_strerror(rc));
+    }
+  }
   uint64_t count = fi_cntr_read(tcip->txCntr);
   if (count > tcip->numTxnsSent) {
     INTERNAL_ERROR_V("fi_cntr_read() %" PRIu64 ", but numTxnsSent %" PRIu64,
                      count, tcip->numTxnsSent);
   }
   tcip->numTxnsOut = tcip->numTxnsSent - count;
+  if (tcip->numTxnsOut > 0) {
+    count = fi_cntr_readerr(tcip->txCntr);
+    if (count > 0) {
+      INTERNAL_ERROR_V("error count %" PRIu64, count);
+    }
+  }
 }
 
 
@@ -6692,12 +6864,14 @@ void waitForTxnComplete(struct perTxCtxInfo_t* tcip, void* ctx) {
   (*tcip->ensureProgressFn)(tcip);
   const txnTrkCtx_t trk = txnTrkDecode(ctx);
   if (trk.typ == txnTrkDone) {
+    // wait for the individual transmission to complete
     while (!atomic_load_explicit_bool((atomic_bool*) trk.ptr,
                                       memory_order_acquire)) {
       sched_yield();
       (*tcip->ensureProgressFn)(tcip);
     }
   } else {
+    // wait for all outstanding transmissions to complete
     while (tcip->numTxnsOut > 0) {
       sched_yield();
       (*tcip->ensureProgressFn)(tcip);
@@ -7674,7 +7848,7 @@ void chpl_comm_ofi_dbg_init(void) {
   if ((ev = chpl_env_rt_get("COMM_OFI_DEBUG", NULL)) == NULL) {
     return;
   }
-
+  
   //
   // Compute the debug level from the keywords in the env var.
   //
