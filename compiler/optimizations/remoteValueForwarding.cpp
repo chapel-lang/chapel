@@ -587,6 +587,10 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
 
           setMem->get(3)->replace(new SymExpr(newArg));
 
+          flagExpr->symbol()->defPoint->remove();
+          cond->insertBefore(setMem->remove());
+          cond->remove();
+
           std::cout << " DONE \n";
         }
       }
