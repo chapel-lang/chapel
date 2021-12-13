@@ -247,6 +247,14 @@ class Scope {
   bool operator!=(const Scope& other) const {
     return !(*this == other);
   }
+
+  std::string toString(chpl::StringifyKind stringKind) const {
+    std::ostringstream ss;
+    ss << tagToString(tag());
+    ss << " " << id().toString(stringKind);
+    ss << " " << std::to_string(numDeclared());
+    return ss.str();
+  }
 };
 
 /**
@@ -416,6 +424,13 @@ class PoiScope {
   }
   bool operator!=(const PoiScope& other) const {
     return !(*this == other);
+  }
+
+  std::string toString(chpl::StringifyKind stringKind) const {
+    std::ostringstream ss;
+    ss << inScope()->toString(stringKind);
+    ss << " " << inFnPoi()->toString(stringKind);
+    return ss.str();
   }
 };
 

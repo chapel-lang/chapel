@@ -70,7 +70,7 @@ template<typename T> struct stringify {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
                   const T& stringMe) {
-                    stringOut << T::toString(stringKind);
+                    stringOut << stringMe.toString(stringKind);
                   };
 };
 

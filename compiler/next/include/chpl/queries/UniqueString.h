@@ -255,13 +255,7 @@ template<> struct mark<chpl::UniqueString> {
     keep.mark(context);
   }
 };
-template<> struct stringify<chpl::UniqueString> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::UniqueString& stringMe) const {
-    stringOut << "\"" << stringMe.toString(stringKind) << "\"";
-  }
-};
+
 /// \endcond
 
 
