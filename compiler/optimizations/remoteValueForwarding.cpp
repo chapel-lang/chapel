@@ -465,6 +465,111 @@ static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
   }
 }
 
+static void destroyArgAndDeserialized(FnSymbol* fn, ArgSymbol* arg,
+                             bool newStyleInIntent, VarSymbol* deserialized);
+
+static void handleRefDeserializers(Expr* anchor, FnSymbol* fn,
+                                   FnSymbol* deserializeFn, ArgSymbol* arg) {
+
+  for_alist (stmt, deserializeFn->body->body) {
+    if (CondStmt* cond = toCondStmt(stmt)) {
+      SymExpr* flagExpr = toSymExpr(cond->condExpr);
+      if (flagExpr->symbol()->hasFlag(FLAG_DESERIALIZATION_BLOCK_MARKER)) {
+
+        // figure out which field we are deserializing for
+        bool useThenBlock = true;
+        CallExpr* setMem = NULL;
+        Type* fieldType = NULL;
+        for_alist_backward (innerStmt, cond->elseStmt->body) {
+          if (CallExpr* call = toCallExpr(innerStmt)) {
+            if (call->isPrimitive(PRIM_SET_MEMBER)) {
+              setMem = call;
+
+              SymExpr* field = toSymExpr(call->get(2));
+              INT_ASSERT(field);
+
+              if (field->symbol()->isRef()) {
+                useThenBlock = false;
+                fieldType = field->symbol()->type;
+              }
+              else {
+                useThenBlock = true;
+                break;
+              }
+            }
+          }
+        }
+
+
+        if (useThenBlock) {
+          // easy
+        }
+        else {
+          Symbol* partialData = NULL;
+          Symbol* symToUpdate = NULL;
+          for_alist (innerStmt, cond->thenStmt->body) {
+            if (CallExpr* call = toCallExpr(innerStmt)) {
+              if (call->isPrimitive(PRIM_MOVE)) {
+                if (CallExpr* rhs = toCallExpr(call->get(2))) {
+                  if (rhs->isPrimitive(PRIM_GET_MEMBER_VALUE)) {
+                    if (SymExpr* lhs = toSymExpr(call->get(1))) {
+                      partialData = lhs->symbol();
+                      symToUpdate = toSymExpr(rhs->get(1))->symbol();
+                    }
+                  }
+                  if (rhs->isNamed("chpl__deserialize")) {
+                    INT_ASSERT(partialData == toSymExpr(rhs->get(1))->symbol());
+                  }
+                }
+              }
+            }
+          }
+
+          SymbolMap map;
+          map.put(symToUpdate, arg);
+
+          BlockStmt* hoistedDeser = cond->thenStmt;
+          anchor->insertBefore(hoistedDeser->remove());
+
+          VarSymbol* hoistedRefField = NULL;
+          for_alist_backward (hoistedDeserStmt, hoistedDeser->body) {
+            if (CallExpr* call = toCallExpr(hoistedDeserStmt)) {
+              if (call->isPrimitive(PRIM_SET_MEMBER)) {
+                hoistedRefField = new VarSymbol("hoisted_ref",
+                                                fieldType->getRefType());
+                hoistedRefField->addFlag(FLAG_INSERT_AUTO_DESTROY);
+
+                SymExpr* hoistedField = toSymExpr(call->get(3)->remove());
+
+                call->insertBefore(new DefExpr(hoistedRefField));
+                call->insertBefore(new CallExpr(PRIM_MOVE, hoistedRefField,
+                                                new CallExpr(PRIM_ADDR_OF,
+                                                             hoistedField)));
+                call->remove();
+
+                if (FnSymbol* destroy = getAutoDestroy(hoistedField->getValType())) {
+                  CallExpr* lastExpr = toCallExpr(fn->body->body.tail);
+                  INT_ASSERT(lastExpr && lastExpr->isPrimitive(PRIM_RETURN));
+
+                  lastExpr->insertBefore(new CallExpr(destroy,
+                                                      hoistedField->copy()));
+                }
+              }
+              else if (call->isNamed("chpl__autoDestroy")) {
+                call->remove(); // we'll destroy in the outer scope (above)
+              }
+            }
+          }
+
+          hoistedDeser->flattenAndRemove();
+        
+
+        }
+      }
+    }
+  }
+}
+
 // Insert and return the temp that will hold the deserialized
 // instance of 'arg'.
 // Replace all references to 'arg' within the task function
@@ -482,6 +587,8 @@ static VarSymbol* replaceArgWithDeserialized(FnSymbol* fn, ArgSymbol* arg,
   Expr* anchor = fn->body->body.head;
   anchor->insertBefore(new DefExpr(deserialized));
   anchor->insertBefore(new DefExpr(dsRef));
+
+  handleRefDeserializers(anchor, fn, deserializeFn, arg);
 
   CallExpr* deserializeCall = new CallExpr(deserializeFn, arg);
   CallExpr* callToAdd = NULL;
