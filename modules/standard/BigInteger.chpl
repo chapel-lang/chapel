@@ -2894,7 +2894,18 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     }
   }
 
+  /*
+    .. warning::
+
+       bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead
+  */
+  deprecated
+  "bigint.perfect_power_p is deprecated, use bigint.isPerfectPower instead"
   proc bigint.perfect_power_p() : int {
+    return this.isPerfectPower();
+  }
+
+  proc bigint.isPerfectPower () : bool {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2906,10 +2917,24 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       ret = mpz_perfect_power_p(t_.mpz);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
+  /*
+    .. warning::
+
+       bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead
+  */
+  deprecated
+  "bigint.perfect_square_p is deprecated, use bigint.isPerfectSquare instead"
   proc bigint.perfect_square_p() : int {
+    return this.isPerfectSquare();
+  }
+
+  proc bigint.isPerfectSquare() : bool {
     var ret: c_int;
 
     if _local || this.localeId == chpl_nodeID {
@@ -2921,9 +2946,11 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       ret = mpz_perfect_square_p(t_.mpz);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
-
 
 
 
@@ -3620,7 +3647,18 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     return ret.safeCast(int);
   }
 
+  /*
+    .. warning::
+
+       bigint.even_p is deprecated, use bigint.isEven instead
+  */
+  deprecated
+  "bigint.even_p is deprecated, use bigint.isEven instead"
   proc bigint.even_p() : int {
+    return this.isEven();
+  }
+
+  proc bigint.isEven() : bool {
     var ret: c_int;
 
     if _local {
@@ -3635,10 +3673,24 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       ret = mpz_even_p(t_.mpz);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
+  /*
+    .. warning::
+
+       bigint.odd_p is deprecated, use bigint.isOdd instead
+  */
+  deprecated
+  "bigint.odd_p is deprecated, use bigint.isOdd instead"
   proc bigint.odd_p() : int {
+    return this.isOdd();
+  }
+
+  proc bigint.isOdd() : bool {
     var ret: c_int;
 
     if _local {
@@ -3653,7 +3705,10 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
       ret = mpz_odd_p(t_.mpz);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
 
