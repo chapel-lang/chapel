@@ -2956,9 +2956,26 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
   // Number Theoretic Functions
 
+  /*
+    .. warning::
+
+       bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead
+  */
+  deprecated
+  "bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead"
+  proc bigint.probab_prime_p(reps: int) : int {
+    var ret = this.probablyPrime(reps):int;
+    return ret;
+  }
+ 
   // returns 2 if definitely prime, 0 if not prime, 1 if likely prime
   // reasonable number of reps is 15-50
-  proc bigint.probab_prime_p(reps: int) : int {
+  proc bigint.probablyPrime(reps: int) : enum {
+    enum checkPrime {
+      notPrime=0,
+      maybePrime,
+      isPrime
+    };
     var reps_ = reps.safeCast(c_int);
     var ret: c_int;
 
@@ -2970,8 +2987,13 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
       ret = mpz_probab_prime_p(t_.mpz, reps_);
     }
-
-    return ret.safeCast(int);
+    use checkPrime;
+    if ret==0 then
+      return notPrime;
+    else if ret==1 then
+      return maybePrime;
+    else
+      return isPrime;
   }
 
   proc bigint.nextprime(const ref a: bigint) {
