@@ -10045,6 +10045,7 @@ static bool createSerializeDeserialize(AggregateType* at) {
   VarSymbol* deserializerRet = new VarSymbol("deserializer_return", at);
   //deserializerRet->addFlag(FLAG_NO_COPY);
   //deserializerRet->addFlag(FLAG_NO_COPY_RETURN);
+  //deserializerRet->addFlag(FLAG_NO_AUTO_DESTROY);
   deserializer->insertAtTail(new DefExpr(deserializerRet));
 
   int fieldNum = 0;
@@ -10077,9 +10078,13 @@ static bool createSerializeDeserialize(AggregateType* at) {
       CallExpr* fieldDeserialize = new CallExpr(fieldDeserializer, dataGetField);
       fieldDeserialize->insertAtHead(typeTemp);
       fieldDeserialize->insertAtHead(gMethodToken);
+
+      VarSymbol* deserTemp = newTemp("deser_tmp");
+      varDeser->insertAtTail(new DefExpr(deserTemp));
+      varDeser->insertAtTail(new CallExpr(PRIM_MOVE, deserTemp, fieldDeserialize));
       varDeser->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
-                                         field,
-                                         fieldDeserialize));
+                                          field,
+                                          deserTemp));
 
 
 

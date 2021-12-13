@@ -599,13 +599,18 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
               break;
             }
 
-            CallExpr* moveToArg = toCallExpr(hoistedDeser->body.head->next);
-            if (moveToArg->isPrimitive(PRIM_MOVE)) {
-              SymExpr* lhs = toSymExpr(moveToArg->get(1));
-              INT_ASSERT(lhs->symbol() == argToNestedCall);
-            }
-            else {
-              INT_FATAL("Unexpected case");
+            // find the first move in the hoisted block. This move must be
+            // the def of the argument to the deserialize call
+            CallExpr* moveToArg = NULL;
+            for_alist (stmt, hoistedDeser->body) {
+              if (CallExpr* call = toCallExpr(stmt)) {
+                if (call->isPrimitive(PRIM_MOVE)) {
+                  SymExpr* lhs = toSymExpr(call->get(1));
+                  INT_ASSERT(lhs->symbol() == argToNestedCall);
+                  moveToArg = call;
+                  break;
+                }
+              }
             }
 
             CallExpr* replCall = handleRefDeserializers(/*anchor*/moveToArg->next,
