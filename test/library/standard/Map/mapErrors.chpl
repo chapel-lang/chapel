@@ -13,7 +13,7 @@ try {
   m.getValue(1);
 } catch e {
   caughtVal = 1;
-  writeln("caught error");
+  writeln(e: string);
 }
 
 sentinelVal = m.getValue(1, 1);

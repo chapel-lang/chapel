@@ -423,6 +423,12 @@ module Map {
     }
 
     /* Get a copy of the element stored at position `k`.
+
+      :arg k: The key to lookup in the map
+
+      :throws: `KeyNotFoundError` if `k` not in map
+
+      :returns: A copy of the value at position `k`
      */
     proc getValue(k: keyType) const throws {
       if !isCopyableType(valType) then
@@ -439,6 +445,16 @@ module Map {
       }
     }
 
+    /* Get a copy of the element stored at position `k` or a sentinel
+       value if an element at position `k` does not exist.
+
+      :arg k: The key to lookup in the map
+      :arg sentinel: The value to return if the map does not contain an
+                     entry at position `k`
+
+      :returns: A copy of the value at position `k` or a sentinel value
+                if the map does not have an entry at position `k`
+    */
     proc getValue(k: keyType, const sentinel: valType) const {
       if !isCopyableType(valType) then
         compilerError('cannot call `getValue()` for non-copyable ' +
@@ -727,8 +743,10 @@ module Map {
       compilerError("assigning map with non-copyable type");
 
     lhs.clear();
-    for key in rhs.keys() {
-      lhs.add(key, try! rhs.getValue(key));
+    try! {
+      for key in rhs.keys() {
+        lhs.add(key, rhs.getValue(key));
+      }
     }
   }
 
@@ -810,8 +828,8 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for k in a do newMap.add(k, try! a.getValue(k));
-    for k in b do newMap.add(k, try! b.getValue(k));
+    try! for k in a do newMap.add(k, a.getValue(k));
+    try! for k in b do newMap.add(k, b.getValue(k));
     return newMap;
   }
 
@@ -821,7 +839,7 @@ module Map {
   operator map.|=(ref a: map(?keyType, ?valueType, ?),
                   b: map(keyType, valueType, ?)) {
     // add keys/values from b to a if they weren't already in a
-    for k in b do a.add(k, try! b.getValue(k));
+    try! for k in b do a.add(k, b.getValue(k));
   }
 
   /* Returns a new map containing the keys that are in both a and b. */
@@ -829,9 +847,9 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for k in a.keys() do
+    try! for k in a.keys() do
       if b.contains(k) then
-        newMap.add(k, try! a.getValue(k));
+        newMap.add(k, a.getValue(k));
 
     return newMap;
   }
@@ -848,9 +866,11 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for ak in a.keys() {
-      if !b.contains(ak) then
-        newMap.add(ak, try! a.getValue(ak));
+    try! {
+      for ak in a.keys() {
+        if !b.contains(ak) then
+          newMap.add(ak, a.getValue(ak));
+      }
     }
 
     return newMap;
@@ -879,10 +899,10 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    for k in a.keys() do
-      if !b.contains(k) then newMap.add(k, try! a.getValue(k));
-    for k in b do
-      if !a.contains(k) then newMap.add(k, try! b.getValue(k));
+    try! for k in a.keys() do
+      if !b.contains(k) then newMap.add(k, a.getValue(k));
+    try! for k in b do
+      if !a.contains(k) then newMap.add(k, b.getValue(k));
     return newMap;
   }
 
@@ -890,9 +910,25 @@ module Map {
      left-hand map or the right-hand map, but not both. */
   operator map.^=(ref a: map(?keyType, ?valueType, ?),
                   b: map(keyType, valueType, ?)) {
-    for k in b.keys() {
-      if a.contains(k) then a.remove(k);
-      else a.add(k, try! b.getValue(k));
+    try! {
+      for k in b.keys() {
+        if a.contains(k) then a.remove(k);
+        else a.add(k, b.getValue(k));
+      }
+    }
+  }
+
+  /*
+   A `KeyNotFoundError` is thrown at runtime if an attempt is made
+   to access a map value at a given key that is not in the current
+   state of the `map`. An example of this is calling `map.getValue()`.
+   */
+  class KeyNotFoundError : Error {
+    proc init() {}
+    
+    proc init(k: string) {
+      var msg = "key '" + k + "' not found";
+      super.init(msg);
     }
   }
 }

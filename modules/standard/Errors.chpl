@@ -126,15 +126,6 @@ module Errors {
     }
   }
 
-  class KeyNotFoundError : Error {
-    proc init() {}
-
-    proc init(k: string) {
-      var msg = "key '" + k + "' not found";
-      super.init(msg);
-    }
-  }
-
   // Used by the runtime to accumulate errors. This type
   // supports adding errors concurrently but need not support
   // iterating over the errors concurrently. Errors
