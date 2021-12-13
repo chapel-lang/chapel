@@ -468,13 +468,22 @@ static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
 static void destroyArgAndDeserialized(FnSymbol* fn, ArgSymbol* arg,
                              bool newStyleInIntent, VarSymbol* deserialized);
 
-static void handleRefDeserializers(Expr* anchor, FnSymbol* fn,
-                                   FnSymbol* deserializeFn, ArgSymbol* arg) {
+static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
+                                        FnSymbol* baseDeserializeFn,
+                                        ArgSymbol* arg) {
+
+  FnSymbol* deserializeFn = baseDeserializeFn->copy();
+  CallExpr* deserializeCall = new CallExpr(deserializeFn, arg);
+  bool modified = false;
 
   for_alist (stmt, deserializeFn->body->body) {
     if (CondStmt* cond = toCondStmt(stmt)) {
       SymExpr* flagExpr = toSymExpr(cond->condExpr);
       if (flagExpr->symbol()->hasFlag(FLAG_DESERIALIZATION_BLOCK_MARKER)) {
+        if (!modified) {
+          modified = true;
+          baseDeserializeFn->defPoint->insertBefore(new DefExpr(deserializeFn));
+        }
 
         // figure out which field we are deserializing for
         bool useThenBlock = true;
@@ -530,6 +539,7 @@ static void handleRefDeserializers(Expr* anchor, FnSymbol* fn,
 
           BlockStmt* hoistedDeser = cond->thenStmt;
           anchor->insertBefore(hoistedDeser->remove());
+          update_symbols(hoistedDeser, &map);
 
           VarSymbol* hoistedRefField = NULL;
           for_alist_backward (hoistedDeserStmt, hoistedDeser->body) {
@@ -562,11 +572,34 @@ static void handleRefDeserializers(Expr* anchor, FnSymbol* fn,
           }
 
           hoistedDeser->flattenAndRemove();
-        
 
+          ArgSymbol *newArg = new ArgSymbol(INTENT_REF, "hoisted_field",
+                                            hoistedRefField->type);
+          if (deserializeFn->hasFlag(FLAG_FN_RETARG)) {
+            Expr* retArg = deserializeFn->formals.tail->remove();
+            deserializeFn->insertFormalAtTail(newArg);
+            deserializeFn->insertFormalAtTail(retArg);
+          }
+          else {
+            deserializeFn->insertFormalAtTail(newArg);
+          }
+          deserializeCall->insertAtTail(new SymExpr(hoistedRefField));
+
+          setMem->get(3)->replace(new SymExpr(newArg));
+
+          std::cout << " DONE \n";
         }
       }
     }
+  }
+
+  if (!modified) {
+    delete deserializeFn;
+    return new CallExpr(baseDeserializeFn, arg);
+  }
+  else {
+    deserializeCall->setResolvedFunction(deserializeFn);
+    return deserializeCall;
   }
 }
 
