@@ -3610,12 +3610,10 @@ typedef enum {
   am_opShutdown,                           // signal main process for shutdown
 } amOp_t;
 
-#ifdef CHPL_COMM_DEBUG
 static inline
 chpl_bool op_uses_on_bundle(amOp_t op) {
   return op == am_opExecOn || op == am_opExecOnLrg;
 }
-#endif
 
 //
 // Members are packed, potentially differently, in each AM request type
@@ -3704,9 +3702,8 @@ static void amRequestAMO(c_nodeid_t, void*, const void*, const void*, void*,
 static void amRequestFree(c_nodeid_t, void*);
 static void amRequestNop(c_nodeid_t, chpl_bool, struct perTxCtxInfo_t*);
 static void amRequestCommon(c_nodeid_t, amRequest_t*, size_t,
-                            amDone_t**, struct perTxCtxInfo_t*);
+                            chpl_bool, struct perTxCtxInfo_t*);
 static void amWaitForDone(amDone_t*);
-static chpl_bool setUpDelayedAmDone(chpl_comm_taskPrvData_t**, void**);
 
 
 void chpl_comm_execute_on(c_nodeid_t node, c_sublocid_t subloc,
@@ -3802,9 +3799,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
     // The arg bundle will fit in max-sized AM request; just send it.
     //
     arg->kind = am_opExecOn;
-    amRequestCommon(node, (amRequest_t*) arg, argSize,
-                    blocking ? (amDone_t**) &arg->comm.pAmDone : NULL,
-                    NULL);
+    amRequestCommon(node, (amRequest_t*) arg, argSize, blocking, NULL);
   } else {
     //
     // The arg bundle is too large for an AM request.  Send a copy of
@@ -3829,9 +3824,7 @@ void amRequestExecOn(c_nodeid_t node, c_sublocid_t subloc,
       memcpy(req.xol.pPayload, &arg->payload, payloadSize);
     }
 
-    amRequestCommon(node, &req, sizeof(req.xol),
-                    blocking ? (amDone_t**) &req.xol.hdr.comm.pAmDone : NULL,
-                    NULL);
+    amRequestCommon(node, &req, sizeof(req.xol), blocking, NULL);
 
     //
     // If blocking and we heap-copied the arg, free that now.  The
@@ -3864,8 +3857,7 @@ void amRequestRmaPut(c_nodeid_t node, void* addr, void* raddr, size_t size) {
                                .addr = raddr,
                                .raddr = myAddr,
                                .size = size, }, };
-  amRequestCommon(node, &req, sizeof(req.rma),
-                  &req.b.pAmDone, NULL);
+  amRequestCommon(node, &req, sizeof(req.rma), true, NULL);
 
   mrUnLocalizeSource(myAddr, addr);
 }
@@ -3890,8 +3882,7 @@ void amRequestRmaGet(c_nodeid_t node, void* addr, void* raddr, size_t size) {
                                .addr = raddr,
                                .raddr = myAddr,
                                .size = size, }, };
-  amRequestCommon(node, &req, sizeof(req.rma),
-                  &req.b.pAmDone, NULL);
+  amRequestCommon(node, &req, sizeof(req.rma), true, NULL);
 
   mrUnLocalizeTarget(myAddr, addr, size);
 }
@@ -3920,22 +3911,37 @@ void amRequestAMO(c_nodeid_t node, void* object,
   // If it's non-fetching and the task is not ending we may be able to
   // do it as a blocking AM but delay waiting for the 'done' indicator
   // until sometime later, when the next thing with MCM implications
-  // comes along.  Otherwise, we have to do it as a normal blocking AM.
+  // comes along.  For fetching atomic ops or if we lack task-private
+  // data for some reason, we have to do a normal blocking AM.
   //
-  chpl_bool delayBlocking = false;
-  chpl_comm_taskPrvData_t* prvData = NULL;
+  //
+  chpl_bool blocking = true;
   amDone_t* pAmDone = NULL;
   if (myResult == NULL) {
-    delayBlocking = setUpDelayedAmDone(&prvData, (void**) &pAmDone);
+    chpl_comm_taskPrvData_t* prvData = get_comm_taskPrvdata();
+    if (prvData != NULL) {
+      blocking = false;
+
+      if (prvData->taskIsEnding) {
+        pAmDone = NULL;
+      } else {
+        //
+        // In the delayed-blocking case we have to prep the indicator
+        // ourselves -- the common AM code doesn't do it.
+        //
+        prvData->amDonePending = true;
+        prvData->amDone = 0;
+        chpl_atomic_thread_fence(memory_order_release);
+        pAmDone = &prvData->amDone;
+      }
+    }
   } else {
     myResult = mrLocalizeTargetRemote(myResult, size, "AMO result");
   }
 
   amRequest_t req = { .amo = { .b = { .op = am_opAMO,
                                       .node = chpl_nodeID,
-                                      .pAmDone = delayBlocking
-                                                 ? pAmDone
-                                                 : NULL, },
+                                      .pAmDone = pAmDone, },
                                .ofiOp = ofiOp,
                                .ofiType = ofiType,
                                .size = size,
@@ -3948,9 +3954,13 @@ void amRequestAMO(c_nodeid_t node, void* object,
   if (cmpr != NULL) {
     memcpy(&req.amo.cmpr, cmpr, size);
   }
-  amRequestCommon(node, &req, sizeof(req.amo),
-                  delayBlocking ? NULL : &req.b.pAmDone,
-                  tcip);
+
+  //
+  // The common code will block on our behalf only for a fetching AMO.
+  // A non-fetching one will either be non- or delayed-blocking, and
+  // neither of those require anything from the common code.
+  //
+  amRequestCommon(node, &req, sizeof(req.amo), blocking, tcip);
   mrUnLocalizeTarget(myResult, result, size);
   tciFree(tcip);
 }
@@ -3961,8 +3971,7 @@ void amRequestFree(c_nodeid_t node, void* p) {
   amRequest_t req = { .free = { .b = { .op = am_opFree,
                                        .node = chpl_nodeID, },
                                 .p = p, }, };
-  amRequestCommon(node, &req, sizeof(req.free),
-                  NULL, NULL);
+  amRequestCommon(node, &req, sizeof(req.free), false, NULL);
 }
 
 
@@ -3971,9 +3980,7 @@ void amRequestNop(c_nodeid_t node, chpl_bool blocking,
                   struct perTxCtxInfo_t* tcip) {
   amRequest_t req = { .b = { .op = am_opNop,
                              .node = chpl_nodeID, }, };
-  amRequestCommon(node, &req, sizeof(req.b),
-                  blocking ? &req.b.pAmDone : NULL,
-                  tcip);
+  amRequestCommon(node, &req, sizeof(req.b), blocking, tcip);
 }
 
 
@@ -3982,8 +3989,7 @@ void amRequestShutdown(c_nodeid_t node) {
   assert(!isAmHandler);
   amRequest_t req = { .b = { .op = am_opShutdown,
                              .node = chpl_nodeID, }, };
-  amRequestCommon(node, &req, sizeof(req.b),
-                  NULL, NULL);
+  amRequestCommon(node, &req, sizeof(req.b), false, NULL);
 }
 
 
@@ -3996,19 +4002,27 @@ static amReqFn_t amReqFn_selector;
 static inline
 void amRequestCommon(c_nodeid_t node,
                      amRequest_t* req, size_t reqSize,
-                     amDone_t** ppAmDone,
+                     chpl_bool blocking,
                      struct perTxCtxInfo_t* tcip) {
   //
   // If blocking, make sure target can RMA PUT the indicator to us.
+  // For the delayed-blocking AMO case our caller will have set up the
+  // 'done' pointer in the AM request descriptor already; the target
+  // side still sends back a 'done' indicator in that case, but we're
+  // not responsible for either the set-up or the waiting here.
   //
   amDone_t amDone = 0;
   amDone_t* pAmDone = NULL;
-  if (ppAmDone != NULL) {
-    pAmDone = mrLocalizeTargetRemote(&amDone, sizeof(*pAmDone),
+  if (blocking) {
+    pAmDone = mrLocalizeTargetRemote(&amDone, sizeof(amDone),
                                      "AM done indicator");
+    if (op_uses_on_bundle(req->b.op)) {
+      req->xo.hdr.comm.pAmDone = pAmDone;
+    } else {
+      req->b.pAmDone = pAmDone;
+    }
     *pAmDone = 0;
     chpl_atomic_thread_fence(memory_order_release);
-    *ppAmDone = pAmDone;
   }
 
 #ifdef CHPL_COMM_DEBUG
@@ -4023,8 +4037,7 @@ void amRequestCommon(c_nodeid_t node,
   void* mrDesc;
   amRequest_t* myReq = mrLocalizeSource(&mrDesc, req, reqSize, "AM req");
 
-  amReqFn_selector(node, myReq, reqSize, mrDesc,
-                   (pAmDone != NULL) /*blocking*/, myTcip);
+  amReqFn_selector(node, myReq, reqSize, mrDesc, blocking, myTcip);
 
   if (tcip == NULL) {
     tciFree(myTcip);
@@ -4032,7 +4045,7 @@ void amRequestCommon(c_nodeid_t node,
 
   mrUnLocalizeSource(myReq, req);
 
-  if (pAmDone != NULL) {
+  if (blocking) {
     amWaitForDone(pAmDone);
     mrUnLocalizeSource(pAmDone, &amDone); // don't need or want target copyout
   }
@@ -4319,40 +4332,6 @@ void amWaitForDone(amDone_t* pAmDone) {
     local_yield();
   }
   DBG_PRINTF(DBG_AM | DBG_AM_SEND, "saw amDone indication in %p", pAmDone);
-}
-
-
-static inline
-chpl_bool setUpDelayedAmDone(chpl_comm_taskPrvData_t** pPrvData,
-                             void** ppAmDone) {
-  //
-  // Set up to record the completion of a delayed-blocking AM.
-  //
-  chpl_comm_taskPrvData_t* prvData;
-  if ((*pPrvData = prvData = get_comm_taskPrvdata()) == NULL) {
-    return false;
-  }
-
-  if (prvData->taskIsEnding) {
-    //
-    // This AMO is for our _downEndCount().  We don't care when that is
-    // done because we won't do anything after it, and our parent only
-    // cares about the effect on the endCount.  Therefore, send back
-    // *ppAmDone==NULL to make our caller do a regular non-blocking AM.
-    //
-    *ppAmDone = NULL;
-    return true;
-  }
-
-  //
-  // Otherwise, this will be an actual delayed-blocking AM, and we'll
-  // use the task-private 'done' indicator for it.
-  //
-  *ppAmDone = &prvData->amDone;
-  prvData->amDone = 0;
-  chpl_atomic_thread_fence(memory_order_release);
-  prvData->amDonePending = true;
-  return true;
 }
 
 
