@@ -189,7 +189,7 @@ module Set {
                             attempting to resize.
     */
     proc init(type eltType, iterable, param parSafe=false,
-              resizeThreshold=0.5, initialCapacity=16)
+              resizeThreshold=0.5, initialCapacity=32)
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       _checkElementType(eltType); 
 
