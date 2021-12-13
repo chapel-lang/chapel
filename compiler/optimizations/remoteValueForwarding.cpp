@@ -568,6 +568,12 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
               else if (call->isNamed("chpl__autoDestroy")) {
                 call->remove(); // we'll destroy in the outer scope (above)
               }
+              else if (call->isNamed("chpl__deserialize")) {
+                //SymExpr* firstArg = toSymExpr(call->get(1));
+                // TODO should we handle a runtime type argument here?
+
+                
+              }
             }
           }
 
