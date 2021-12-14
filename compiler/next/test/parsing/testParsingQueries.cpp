@@ -466,41 +466,48 @@ static void test5() {
   Context* ctx = &context;
 
   auto modulePath = UniqueString::build(ctx, "MyModule.chpl");
-  const Module* module = nullptr;
+  const Module* mod = nullptr;
   const Comment* comment = nullptr;
   const Variable* A = nullptr;
   const Variable* B = nullptr;
+  const Variable* X = nullptr;
 
   std::string moduleContents;
 
   moduleContents = "/* this is a test */\n"
                    "var a;\n"
-                   "var b;\n";
+                   "var b;\n"
+                   "var aVeryLongVariableName;\n";
 
   // run the below several times to check that GC+reuse doesn't mess
   // anything up
   for (int i = 0; i < 3; i++) {
     ctx->advanceToNextRevision(true);
     setFileText(ctx, modulePath, moduleContents);
-    module = parseOneModule(ctx, modulePath);
+    mod = parseOneModule(ctx, modulePath);
 
-    ASTNode::dump(module);
-    assert(module->numStmts() == 3);
-    comment = module->stmt(0)->toComment();
-    A = module->stmt(1)->toVariable();
-    B = module->stmt(2)->toVariable();
+    ASTNode::dump(mod);
+    assert(mod->numStmts() == 4);
+    comment = mod->stmt(0)->toComment();
+    A = mod->stmt(1)->toVariable();
+    B = mod->stmt(2)->toVariable();
+    X = mod->stmt(3)->toVariable();
     assert(comment);
     assert(A);
     assert(B);
+    assert(X);
 
     // Now check their locations
     // Not checking comment locations here
     Location aLoc = locateAst(ctx, A);
     Location bLoc = locateAst(ctx, B);
+    Location xLoc = locateAst(ctx, X);
     assert(aLoc.path() == modulePath);
     assert(bLoc.path() == modulePath);
+    assert(xLoc.path() == modulePath);
     assert(aLoc.line() == 2);
     assert(bLoc.line() == 3);
+    assert(xLoc.line() == 4);
 
     ctx->collectGarbage();
   }

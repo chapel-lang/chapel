@@ -117,7 +117,7 @@ void ResolutionResultByPostorderID::setupForFunction(const Function* func) {
 bool ResolutionResultByPostorderID::update(ResolutionResultByPostorderID& keep,
                                            ResolutionResultByPostorderID& addin)
 {
-  return defaultUpdateVec(keep.vec, addin.vec);
+  return defaultUpdate(keep, addin);
 }
 
 bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,

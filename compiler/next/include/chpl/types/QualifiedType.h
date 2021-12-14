@@ -174,6 +174,8 @@ class QualifiedType final {
     ret = hash_combine(ret, h3);
     return ret;
   }
+  static bool update(QualifiedType& keep, QualifiedType& addin);
+  void mark(Context* context) const;
 
   std::string toString() const;
 };
@@ -183,13 +185,6 @@ class QualifiedType final {
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::types::QualifiedType> {
-  bool operator()(chpl::types::QualifiedType& keep,
-                  chpl::types::QualifiedType& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
-
 template<> struct stringify<chpl::types::QualifiedType> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,

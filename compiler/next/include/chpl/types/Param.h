@@ -129,18 +129,15 @@ class Param {
   bool operator!=(const Param& other) const {
     return !(*this == other);
   }
+  template<typename T>
+  static bool update(owned<T>& keep, owned<T>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    return markUniqueStringsInner(context);
+  }
 
   bool completeMatch(const Param* other) const;
-
-  // 'keep' is some old Param
-  // 'addin' is some new Param we wish to combine with it
-  //
-  // on exit, 'keep' stores the Param we need to keep, and anything
-  // not kept is stored in 'addin'.
-  // the function returns 'true' if anything changed in 'keep'.
-  static bool updateParam(owned<Param>& keep, owned<Param>& addin);
-
-  static void markParam(Context* context, const Param* keep);
 
   static bool isParamOpFoldable(chpl::uast::PrimitiveTag op);
 

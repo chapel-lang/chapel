@@ -122,23 +122,6 @@ bool Type::completeMatch(const Type* other) const {
   return true;
 }
 
-bool Type::updateType(owned<Type>& keep, owned<Type>& addin) {
-  if (keep->completeMatch(addin.get())) {
-    // no changes are necessary
-    return false;
-  } else {
-    // swap the Type
-    keep.swap(addin);
-    return true;
-  }
-}
-
-void Type::markType(Context* context, const Type* keep) {
-  if (keep == nullptr) return;
-  // run markUniqueStrings on the node
-  keep->markUniqueStringsInner(context);
-}
-
 void Type::dump(const Type* type, int leadingSpaces) {
   for (int i = 0; i < leadingSpaces; i++) {
     printf("  ");

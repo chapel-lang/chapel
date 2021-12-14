@@ -20,6 +20,7 @@
 #ifndef CHPL_UAST_ASTTAG_H
 #define CHPL_UAST_ASTTAG_H
 
+#include "chpl/queries/mark-functions.h"
 #include "chpl/queries/update-functions.h"
 #include "chpl/queries/stringify-functions.h"
 
@@ -110,6 +111,12 @@ template<> struct update<uast::ASTTag> {
   }
 };
 
+template<> struct mark<uast::ASTTag> {
+  void operator()(Context* context, const uast::ASTTag& keep) const {
+    // nothing to do for enum
+  }
+};
+
 template<> struct stringify<uast::ASTTag> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
@@ -117,8 +124,8 @@ template<> struct stringify<uast::ASTTag> {
     stringOut << tagToString(stringMe);
   }
 };
-
 /// \endcond
+
 
 } // end namespace chpl
 

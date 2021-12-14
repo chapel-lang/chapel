@@ -57,23 +57,6 @@ bool Param::completeMatch(const Param* other) const {
   return true;
 }
 
-bool Param::updateParam(owned<Param>& keep, owned<Param>& addin) {
-  if (keep->completeMatch(addin.get())) {
-    // no changes are necessary
-    return false;
-  } else {
-    // swap the Param
-    keep.swap(addin);
-    return true;
-  }
-}
-
-void Param::markParam(Context* context, const Param* keep) {
-  if (keep == nullptr) return;
-  // run markUniqueStrings on the node
-  keep->markUniqueStringsInner(context);
-}
-
 bool Param::isParamOpFoldable(chpl::uast::PrimitiveTag op) {
   switch (op) {
     case P_prim_pow:

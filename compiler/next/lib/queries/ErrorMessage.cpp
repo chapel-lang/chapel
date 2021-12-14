@@ -78,13 +78,13 @@ void ErrorMessage::addDetail(ErrorMessage err) {
 
 void ErrorMessage::swap(ErrorMessage& other) {
   std::swap(level_, other.level_);
-  this->location_.swap(other.location_);
-  this->message_.swap(other.message_);
-  this->details_.swap(other.details_);
+  location_.swap(other.location_);
+  message_.swap(other.message_);
+  details_.swap(other.details_);
 }
 
-void ErrorMessage::markUniqueStrings(Context* context) const {
-  this->location_.markUniqueStrings(context);
+void ErrorMessage::mark(Context* context) const {
+  location_.mark(context);
 }
 
 void ErrorMessage::updateLocation(Context* context) {
@@ -95,5 +95,6 @@ void ErrorMessage::updateLocation(Context* context) {
     err.updateLocation(context);
   }
 }
-}
-// namespace chpl
+
+
+} // namespace chpl

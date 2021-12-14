@@ -30,15 +30,80 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include "chpl/queries/Context.h"
 #include "chpl/util/memory.h"
 
 namespace chpl {
-class Context;
 
 
 template<typename T> struct mark {
-  void operator()(Context* context, const T& keep) const { }
+  void operator()(Context* context, const T& keep) const {
+    // run the mark method
+    return keep.mark(context);
+  }
 };
+
+/// \cond DO_NOT_DOCUMENT
+template<typename T> struct mark<T*> {
+  void operator()(Context* context, const T* keep) const {
+    context->markUnownedPointer(keep);
+  }
+};
+
+template<typename T> struct mark<owned<T>> {
+  void operator()(Context* context, owned<T>& keep) const {
+    context->markOwnedPointer(keep.get());
+  }
+};
+
+template<> struct mark<int> {
+  void operator()(Context* context, const int& keep) const {
+    // nothing to do
+  }
+};
+
+template<> struct mark<bool> {
+  void operator()(Context* context, const bool& keep) const {
+    // nothing to do
+  }
+};
+
+template<> struct mark<std::string> {
+  void operator()(Context* context, const std::string& keep) const {
+    // nothing to do
+  }
+};
+
+template<typename T> struct mark<std::vector<T>> {
+  void operator()(Context* context, const std::vector<T>& keep) const {
+    for (auto const &elt : keep) {
+      chpl::mark<T> marker;
+      marker(context, elt);
+    }
+  }
+};
+
+template<typename K, typename V> struct mark<std::unordered_map<K,V>> {
+  void operator()(Context* context, std::unordered_map<K,V>& keep) const {
+    for (auto const &pair : keep) {
+      chpl::mark<K> keyMarker;
+      chpl::mark<V> valMarker;
+      keyMarker(context, keep.first);
+      valMarker(context, keep.second);
+    }
+  }
+};
+
+template<typename A, typename B> struct mark<std::pair<A,B>> {
+  void operator()(Context* context, std::pair<A,B>& keep) const {
+    chpl::mark<A> firstMarker;
+    chpl::mark<B> secondMarker;
+    firstMarker.mark(context, keep.first);
+    secondMarker.mark(context, keep.second);
+  }
+};
+/// \endcond
 
 
 } // end namespace chpl

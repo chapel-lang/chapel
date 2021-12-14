@@ -161,31 +161,22 @@ class ID final {
   }
 
   void swap(ID& other) {
-    ID oldThis = *this;
-    *this = other;
-    other = oldThis;
+    std::swap(symbolPath_, other.symbolPath_);
+    std::swap(postOrderId_, other.postOrderId_);
+    std::swap(numChildIds_, other.numChildIds_);
   }
 
-  void markUniqueStrings(Context* context) const {
+  void mark(Context* context) const {
     this->symbolPath_.mark(context);
   }
+
+  static bool update(chpl::ID& keep, chpl::ID& addin);
 
   std::string toString() const;
 };
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::ID> {
-  bool operator()(chpl::ID& keep,
-                  chpl::ID& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
-template<> struct mark<chpl::ID> {
-  void operator()(Context* context, const chpl::ID& keep) const {
-    keep.markUniqueStrings(context);
-  }
-};
 template<> struct stringify<chpl::ID> {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
@@ -194,6 +185,7 @@ template<> struct stringify<chpl::ID> {
   }
 };
 /// \endcond
+
 
 } // end namespace chpl
 
