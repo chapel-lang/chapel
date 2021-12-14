@@ -20,9 +20,11 @@
 #include "chpl/uast/ASTNode.h"
 
 #include "chpl/uast/Comment.h"
-#include "chpl/uast/NamedDecl.h"
 #include "chpl/uast/Expression.h"
 #include "chpl/uast/Identifier.h"
+#include "chpl/uast/NamedDecl.h"
+
+#include <iomanip>
 
 namespace chpl {
 namespace uast {
@@ -143,43 +145,48 @@ static void dumpMaxIdLen(const ASTNode* ast, int& maxIdLen) {
   }
 }
 
-static void dumpHelper(const ASTNode* ast, int maxIdLen, int depth) {
+static void dumpHelper(std::ostream& ss,
+                       const ASTNode* ast,
+                       int maxIdLen,
+                       int depth) {
   std::string idStr = getIdStr(ast);
+  ss << std::setw(maxIdLen) << idStr;
 
-  printf("%-*s ", maxIdLen, idStr.c_str());
 
   for (int i = 0; i < depth; i++) {
-    printf("  ");
+    ss << "  ";
   }
 
   if (ast == nullptr) {
-    printf("nullptr\n");
+    ss << "nullptr\n";
     return;
   }
 
-  printf("%s ", asttags::tagToString(ast->tag()));
+  ss << asttags::tagToString(ast->tag()) << " ";
+
   if (const NamedDecl* named = ast->toNamedDecl()) {
-    printf("%s ", named->name().c_str());
+    ss << named->name().str() << " ";
   } else if (const Identifier* ident = ast->toIdentifier()) {
-    printf("%s ", ident->name().c_str());
+    ss << ident->name().str() << " ";
   } else if (const Comment* comment = ast->toComment()) {
-    printf("%s ", comment->c_str());
+    ss << comment->str() << " ";
   }
 
   //printf("(containing %i) ", ast->id().numContainedChildren());
   //printf("%p", ast);
-
-  printf("\n");
+  ss << "\n";
 
   for (const ASTNode* child : ast->children()) {
-    dumpHelper(child, maxIdLen, depth+1);
+    dumpHelper(ss, child, maxIdLen, depth+1);
   }
 }
 
-void ASTNode::dump(const ASTNode* ast, int leadingSpaces) {
+void ASTNode::stringify(std::ostream& ss,
+                        chpl::StringifyKind stringKind) const {
   int maxIdLen = 0;
-  dumpMaxIdLen(ast, maxIdLen);
-  dumpHelper(ast, maxIdLen, leadingSpaces);
+  int leadingSpaces = 0;
+  dumpMaxIdLen(this, maxIdLen);
+  dumpHelper(ss, this, maxIdLen, leadingSpaces);
 }
 
 
