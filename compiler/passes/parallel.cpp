@@ -1188,9 +1188,7 @@ static void replaceRecordWrappedRefs() {
     } else {
       bool hasSerializers = serializeMap.find(aggType) != serializeMap.end();
       if (hasSerializers) {
-        std::cout << "Ignoring type\n";
-        nprint_view(aggType);
-        continue;
+        continue; // this type will be serialized and RVF'ed
       }
       for_fields(field, aggType) {
         if (field->isRef() && isRecordWrappedType(field->getValType())) {

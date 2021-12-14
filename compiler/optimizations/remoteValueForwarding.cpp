@@ -559,9 +559,6 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
 
                 SymExpr* hoistedField = toSymExpr(call->get(3)->remove());
 
-                std::cout << "Hoisted field type\n";
-                nprint_view(hoistedField->symbol()->type);
-
                 call->insertBefore(new DefExpr(hoistedRefField));
                 call->insertBefore(new CallExpr(PRIM_MOVE, hoistedRefField,
                                                 new CallExpr(PRIM_ADDR_OF,
@@ -574,8 +571,6 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
 
                   lastExpr->insertBefore(new CallExpr(destroy,
                                                       hoistedField->copy()));
-                  std::cout << "Added auto destroy\n";
-                  nprint_view(destroy);
                 }
               }
               else if (call->isNamed("chpl__autoDestroy")) {
