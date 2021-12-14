@@ -1437,6 +1437,10 @@ proc BlockArr.chpl__serialize() {
   return pid;
 }
 
+proc BlockArr.chpl_rvfMe() param {
+  return true;
+}
+
 proc type BlockArr.chpl__deserialize(data) {
   return chpl_getPrivatizedCopy(
            unmanaged BlockArr(rank=this.rank,

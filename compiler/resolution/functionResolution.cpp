@@ -10072,19 +10072,20 @@ static bool createSerializeDeserialize(AggregateType* at) {
       // create type temp
       VarSymbol* typeTemp = newTemp("field_type", field->getValType());
       typeTemp->addFlag(FLAG_TYPE_VARIABLE);
-      deserializer->insertAtTail(new DefExpr(typeTemp));
+      varDeser->insertAtTail(new DefExpr(typeTemp));
 
       // create deserialization call
       CallExpr* fieldDeserialize = new CallExpr(fieldDeserializer, dataGetField);
       fieldDeserialize->insertAtHead(typeTemp);
       fieldDeserialize->insertAtHead(gMethodToken);
 
-      VarSymbol* deserTemp = newTemp("deser_tmp");
-      varDeser->insertAtTail(new DefExpr(deserTemp));
-      varDeser->insertAtTail(new CallExpr(PRIM_MOVE, deserTemp, fieldDeserialize));
+      //VarSymbol* deserTemp = newTemp("deser_tmp");
+      //deserTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
+      //varDeser->insertAtTail(new DefExpr(deserTemp));
+      //varDeser->insertAtTail(new CallExpr(PRIM_MOVE, deserTemp, fieldDeserialize));
       varDeser->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
                                           field,
-                                          deserTemp));
+                                          fieldDeserialize));
 
 
 

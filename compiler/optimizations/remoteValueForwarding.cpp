@@ -559,6 +559,9 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
 
                 SymExpr* hoistedField = toSymExpr(call->get(3)->remove());
 
+                std::cout << "Hoisted field type\n";
+                nprint_view(hoistedField->symbol()->type);
+
                 call->insertBefore(new DefExpr(hoistedRefField));
                 call->insertBefore(new CallExpr(PRIM_MOVE, hoistedRefField,
                                                 new CallExpr(PRIM_ADDR_OF,
@@ -571,6 +574,8 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
 
                   lastExpr->insertBefore(new CallExpr(destroy,
                                                       hoistedField->copy()));
+                  std::cout << "Added auto destroy\n";
+                  nprint_view(destroy);
                 }
               }
               else if (call->isNamed("chpl__autoDestroy")) {
@@ -591,10 +596,15 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
             for_actuals (actual, nestedDeser) {
               SymExpr* actualSE = toSymExpr(actual);
               INT_ASSERT(actualSE);
+              Symbol *sym = actualSE->symbol();
 
-              if (isTypeSymbol(actualSE->symbol())) {
+              if (isTypeSymbol(sym)) {
                 continue;
               }
+              else if (sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+                continue;
+              }
+
               argToNestedCall = actualSE->symbol();
               break;
             }
@@ -621,6 +631,12 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
             if (nestedDeser->resolvedFunction()->hasFlag(FLAG_FN_RETARG)) {
               INT_ASSERT(replCall->resolvedFunction()->hasFlag(FLAG_FN_RETARG));
               replCall->insertAtTail(nestedDeser->argList.tail->remove());
+            }
+
+            if (DefExpr* firstFormal = toDefExpr(nestedDeser->resolvedFunction()->formals.head)) {
+              if (firstFormal->sym->type->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) {
+                replCall->insertAtHead(nestedDeser->argList.head->remove());
+              }
             }
             //std::cout << "Replacing\n";
             //nprint_view(nestedDeser);

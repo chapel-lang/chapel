@@ -2827,6 +2827,7 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
   Symbol* arg = fn->getFormal(1);
   BlockStmt* block = new BlockStmt();
   AggregateType* irt = toAggregateType(arg->type);
+  //nprint_view(irt);
   for_fields(field, irt) {
     SET_LINENO(field);
     if (typeNeedsCopyInitDeinit(field->type) && !field->isRef() ) {
@@ -2860,6 +2861,18 @@ static void reconstructIRautoCopyAutoDestroy()
       if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
         reconstructIRAutoDestroy(fn);
     }
+    //else {
+      //if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
+        //if (fn->numFormals() > 0) {
+          //if (fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
+            //SET_LINENO(fn);
+            ////std::cout << "Did not look at\n";
+            ////nprint_view(fn);
+            //reconstructIRAutoDestroy(fn);
+          //}
+        //}
+      //}
+    //}
   }
 }
 
