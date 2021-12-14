@@ -146,9 +146,9 @@ class UntypedFnSignature {
     name_.mark(context);
     for (auto const& elt : formals_) {
       elt.name.mark(context);
-      context->markUnownedPointer(elt.decl);
+      context->markPointer(elt.decl);
     }
-    context->markUnownedPointer(whereClause_);
+    context->markPointer(whereClause_);
   }
 
 
@@ -386,7 +386,7 @@ class PoiInfo {
     return !(*this == other);
   }
   void mark(Context* context) const {
-    context->markUnownedPointer(poiScope_);
+    context->markPointer(poiScope_);
     for (auto const &elt : poiFnIdsUsed_) {
       elt.first.mark(context);
       elt.second.mark(context);
@@ -459,12 +459,12 @@ class TypedFnSignature {
     return defaultUpdateOwned(keep, addin);
   }
   void mark(Context* context) const {
-    context->markUnownedPointer(untypedSignature_);
+    context->markPointer(untypedSignature_);
     for (auto const &elt : formalTypes_) {
       elt.mark(context);
     }
-    context->markUnownedPointer(instantiatedFrom_);
-    context->markUnownedPointer(parentFn_);
+    context->markPointer(instantiatedFrom_);
+    context->markPointer(parentFn_);
   }
 
   std::string toString() const;
@@ -576,8 +576,7 @@ class MostSpecificCandidates {
   const TypedFnSignature* only() const {
     const TypedFnSignature* ret = nullptr;
     int nPresent = 0;
-    for (int i = 0; i < NUM_INTENTS; i++) {
-      const TypedFnSignature* sig = candidates[i];
+    for (const TypedFnSignature* sig : *this) {
       if (sig != nullptr) {
         ret = sig;
         nPresent++;
@@ -609,9 +608,8 @@ class MostSpecificCandidates {
     return defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
-    for (int i = 0; i < NUM_INTENTS; i++) {
-      auto ptr = candidates[i];
-      context->markUnownedPointer(ptr);
+    for (const TypedFnSignature* sig : *this) {
+      context->markPointer(sig);
     }
   }
 };
@@ -741,7 +739,7 @@ class ResolvedExpression {
     type_.mark(context);
     toId_.mark(context);
     mostSpecific_.mark(context);
-    context->markUnownedPointer(poiScope_);
+    context->markPointer(poiScope_);
   }
 
   std::string toString() const;
@@ -877,7 +875,7 @@ class ResolvedFunction {
     return defaultUpdateOwned(keep, addin);
   }
   void mark(Context* context) const {
-    context->markUnownedPointer(signature_);
+    context->markPointer(signature_);
     resolutionById_.mark(context);
     poiInfo_.mark(context);
   }

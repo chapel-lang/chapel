@@ -84,7 +84,7 @@ void ErrorMessage::swap(ErrorMessage& other) {
 }
 
 void ErrorMessage::mark(Context* context) const {
-  this->location_.mark(context);
+  location_.mark(context);
 }
 
 void ErrorMessage::updateLocation(Context* context) {

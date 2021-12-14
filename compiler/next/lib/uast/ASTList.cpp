@@ -180,7 +180,7 @@ bool updateASTList(ASTList& keep, ASTList& addin) {
 
 void markASTList(Context* context, const ASTList& keep) {
   for (const auto& elt: keep) {
-    context->markOwnedPointer(elt.get());
+    context->markPointer(elt);
   }
 }
 

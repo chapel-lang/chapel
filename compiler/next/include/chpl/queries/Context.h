@@ -290,12 +290,14 @@ class Context {
   static size_t lengthForUniqueString(const char* s);
 
   /**
-   This function can be called by a mark method to
-   perform checking on pointers and any UniqueStrings that they contain
-   strings when asserts are enabled.
+
+   This function can be called by a mark method to perform checking on
+   pointers and any UniqueStrings that they contain when asserts are enabled.
 
    Pointers available to a mark method should have already
-   been returned by previous queries as owned objects.
+   been returned by previous queries as owned objects and
+   so markOwnedPointer should have been called on them if
+   they have been reused.
    */
   template<typename T>
   void markUnownedPointer(const T* ptr) {
@@ -323,6 +325,29 @@ class Context {
       ptr->mark(this);
     }
   }
+
+  /**
+   markPointer can be used to mark a pointer, where
+   it is considered owned if the type is owned.
+
+   This overload just calls markOwnedPointer.
+   */
+  template<typename T>
+  void markPointer(const owned<T>& ptr) {
+    markOwnedPointer(ptr.get());
+  }
+
+  /**
+   markPointer can be used to mark a pointer, where
+   it is considered owned if the type is owned.
+
+   This overload just calls markPointer.
+   */
+  template<typename T>
+  void markPointer(const T* ptr) {
+    markUnownedPointer(ptr);
+  }
+
 
   /**
     Return the file path for the file containing this ID.

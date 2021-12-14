@@ -43,7 +43,7 @@ same result.
 A query can return a heap-allocated object or include heap allocated
 objects in its result. When it does so, other queries can safely use
 pointers to the heap-allocated object as arguments or in return values.
-See also the Pointer Memory Management section below.
+See also the `Pointer Memory Management`_ section below.
 
 Writing a Query
 ---------------
@@ -67,9 +67,9 @@ myArg2:
     #include "chpl/queries/query-impl.h"
 
     const MyResultType& myQueryFunction(Context* context,
-                                        MyArgType MyArg1,
-                                        MyOtherArgType MyArg2) {
-      QUERY_BEGIN(myQueryFunction, context, myKey1, myKey2)
+                                        MyArgType myArg1,
+                                        MyOtherArgType myArg2) {
+      QUERY_BEGIN(myQueryFunction, context, myArg1, myArg2)
 
       // do steps to compute the result
       MyResultType result = ...;
@@ -86,8 +86,9 @@ this function in to a query.
 In ``QUERY_BEGIN``, the query framework will check to see if there is
 already a result in the Context for these arguments that can be reused.
 If a result can be reused, ``QUERY_BEGIN`` will run the ``mark`` function
-on the result and return it. Otherwise, the query proceeds to execute the
-rest of the function body in order to compute the result.
+on the result and return it (see `Mark Functions`_ below). Otherwise, the
+query proceeds to execute the rest of the function body in order to
+compute the result.
 
 The framework also supports input queries which use ``QUERY_BEGIN_INPUT``
 instead of ``QUERY_BEGIN``. These queries pull in state from outside the
@@ -101,7 +102,7 @@ The query concludes with ``return QUERY_END(result)`` which indicates to
 the query framework that ``result`` is a local variable containing the
 result of the query. This result, or one equivalent to it, will be
 returned and stored in the Context for future reuse. This process is
-managed by the ``update`` function.
+managed by the ``update`` function (see `Update Functions`_ below).
 
 Types used as argument or return types in queries need to have certain
 functionality as described in the Requirements on Types Used in Queries
@@ -123,14 +124,15 @@ result if:
 
  * lastChecked matches the current revision number
  * the query is not an input query and no dependencies changed in this
-   revision
+   revision (i.e., for all dependencies, lastChanged < currentRevision)
 
 Otherwise, the body of the query will be run. While running the body, the
 query framework tracks the queries called as dependencies. When
 ``QUERY_END`` is reached, the query framework decides if it is possible
 to reuse the previous result. In particular, if there were no changes in
 the result, the old result can be reused and then it may be possible to
-skip running queries dependent on this one.
+skip running queries dependent on this one. This is sometimes called the
+*early cutoff optimization* in the context of build systems.
 
 Requirements on Types Used in Queries
 -------------------------------------
@@ -238,8 +240,9 @@ For example, an ``mark`` method might look like this:
 The ``mark`` function needs to traverse the returned value:
 
  * marking owned contained pointers with context->markOwnedPointer
+   or context->markPointer(owned value)
  * marking unowned/borrowed contained pointers with
-   context->markUnownedPointer
+   context->markUnownedPointer or context->markPointer(pointer value)
  * marking contained UniqueStrings with ``UniqueString::mark(context)``
  * generally, marking any fields storing a custom value by calling
    ``field.mark(context)``.
@@ -260,9 +263,9 @@ result handled as a pointer return an ``owned`` (aka ``std::unique_ptr``)
 value for the result.
 
 It is not sufficient to simply use the address of the `const &` result of
-the query - that is a location in the map that will not change as the
-result is updated. Instead, such patterns should use `owned` to make sure
-a new heap-allocated value is created.
+the query - that is a location in the map that will change as the map is
+updated. Instead, such patterns should use `owned` to make sure a new
+heap-allocated value is created.
 
 When working with results containing pointers, the ``update`` function
 should not rely on the contents of these pointers from the ``keep``

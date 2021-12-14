@@ -39,8 +39,8 @@ bool QualifiedType::update(QualifiedType& keep, QualifiedType& addin) {
 }
 
 void QualifiedType::mark(Context* context) const {
-  context->markUnownedPointer(type_);
-  context->markUnownedPointer(param_);
+  context->markPointer(type_);
+  context->markPointer(param_);
 }
 
 static const char* kindToString(QualifiedType::Kind kind) {

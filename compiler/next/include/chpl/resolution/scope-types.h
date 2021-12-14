@@ -260,7 +260,7 @@ class Scope {
     return defaultUpdateOwned(keep, addin);
   }
   void mark(Context* context) const {
-    context->markUnownedPointer(parentScope_);
+    context->markPointer(parentScope_);
     id_.mark(context);
     name_.mark(context);
     for (const auto& pair: declared_) {
@@ -400,7 +400,7 @@ class ResolvedVisibilityScope {
     return defaultUpdateOwned(keep, addin);
   }
   void mark(Context* context) const {
-    context->markUnownedPointer(scope_);
+    context->markPointer(scope_);
     for (auto sym : visibilityClauses_) {
       sym.mark(context);
     }
@@ -460,8 +460,8 @@ class PoiScope {
     return defaultUpdateOwned(keep, addin);
   }
   void mark(Context* context) const {
-    context->markUnownedPointer(inScope_);
-    context->markUnownedPointer(inFnPoi_);
+    context->markPointer(inScope_);
+    context->markPointer(inFnPoi_);
   }
 };
 
