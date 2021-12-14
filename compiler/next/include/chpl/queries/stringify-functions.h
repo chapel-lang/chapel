@@ -61,7 +61,12 @@ enum StringifyKind {
   CHPL_SYNTAX
 };
 
-
+// force this to always build so it is available during debug
+template<typename T>
+void debugPrint(const T &arg) {
+stringify<T> stringTemplate;
+stringTemplate(std::cout, chpl::StringifyKind::DEBUG_DETAIL, arg);
+}
 
 // define the generic stringify template which will cause a compilation error
 //  if used. Query argument and return types need to have a specialization of

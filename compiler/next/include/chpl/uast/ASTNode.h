@@ -151,15 +151,9 @@ class ASTNode {
 
   void mark(Context* context) const;
 
-  static void dump(const ASTNode* ast, int leadingSpaces=0);
+  //static void dump(const ASTNode* ast, int leadingSpaces=0);
 
-  std::string toString(chpl::StringifyKind stringKind) const {
-    std::ostringstream ss;
-    ss << tagToString(tag());
-    ss << " " << id().toString(stringKind);
-    ss << " " << std::to_string(numChildren());
-    return ss.str();
-  };
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   // define is__ methods for the various AST types
   // using macros and ASTClassesList.h
