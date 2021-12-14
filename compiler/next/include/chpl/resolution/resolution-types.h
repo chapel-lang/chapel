@@ -460,8 +460,14 @@ class TypedFnSignature {
   /**
     Is this TypedFnSignature representing an instantiation?  If so, returns the
     generic TypedFnSignature that was instantiated.  Otherwise, returns nullptr.
+
+    This function always returns the signature for the fully generic
+    function and never a partial instantiation. That is, the result
+    will either be nullptr or result->instantiatedFrom() will be nullptr.
    */
   const TypedFnSignature* instantiatedFrom() const {
+    assert(instantiatedFrom_ == nullptr ||
+           instantiatedFrom_->instantiatedFrom_ == nullptr);
     return instantiatedFrom_;
   }
 

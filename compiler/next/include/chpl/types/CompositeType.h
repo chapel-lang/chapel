@@ -70,6 +70,11 @@ class CompositeType : public Type {
   ID id_;
   UniqueString name_;
   std::vector<FieldDetail> fields_;
+
+  // Is this CompositeType representing an instantiation?
+  // If so, what is the generic CompositeType that was instantiated?
+  const CompositeType* instantiatedFrom_ = nullptr;
+
   bool isGeneric_ = false;
   bool allGenericFieldsHaveDefaultValues_ = false;
 
@@ -77,8 +82,13 @@ class CompositeType : public Type {
 
   CompositeType(typetags::TypeTag tag,
                 ID id, UniqueString name,
-                std::vector<FieldDetail> fields)
-    : Type(tag), id_(id), name_(name), fields_(std::move(fields)) {
+                std::vector<FieldDetail> fields,
+                const CompositeType* instantiatedFrom)
+    : Type(tag), id_(id), name_(name), fields_(std::move(fields)),
+      instantiatedFrom_(instantiatedFrom) {
+
+    // check instantiated only from same type of object
+    assert(instantiatedFrom_ == nullptr || instantiatedFrom_->tag() == tag);
 
     if (tag != typetags::BasicClassType)
       computeSummaryInformation();
@@ -88,8 +98,11 @@ class CompositeType : public Type {
 
   bool compositeTypeContentsMatchInner(const CompositeType* other) const {
     return id_ == other->id_ &&
+           name_ == other->name_ &&
            fields_ == other->fields_ &&
-           isGeneric_ == other->isGeneric_;
+           instantiatedFrom_ == other->instantiatedFrom_ &&
+           isGeneric_ == other->isGeneric_ &&
+           allGenericFieldsHaveDefaultValues_ == other->allGenericFieldsHaveDefaultValues_;
   }
 
   void compositeTypeMarkUniqueStringsInner(Context* context) const {
@@ -146,6 +159,26 @@ class CompositeType : public Type {
   const QualifiedType& fieldType(int i) const {
     assert(0 <= i && (size_t) i < fields_.size());
     return fields_[i].type;
+  }
+
+  /** If this type represents an instantiated type,
+      returns the type it was instantiated from.
+
+      This function always returns the fully generic type and never
+      a partial instantiation. That is, the result
+      will either be nullptr or result->instantiatedFrom() will
+      be nullptr.
+   */
+  const CompositeType* instantiatedFromCompositeType() const {
+    // at present, only expecting a single level of instantiated-from.
+    assert(instantiatedFrom_ == nullptr ||
+           instantiatedFrom_->instantiatedFrom_ == nullptr);
+    return instantiatedFrom_;
+  }
+
+  bool isInstantiationOf(const CompositeType* genericType) const {
+    auto from = instantiatedFromCompositeType();
+    return (from != nullptr && from == genericType);
   }
 };
 

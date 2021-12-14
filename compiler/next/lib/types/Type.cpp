@@ -152,8 +152,8 @@ std::string Type::toString() const {
   return ret;
 }
 
-bool Type::isAnyNilablePtrType() const {
-  if (isAnyPtrType()) {
+bool Type::isNilablePtrType() const {
+  if (isPtrType()) {
 
     if (auto ct = toClassType()) {
       if (!ct->decorator().isNilable())
@@ -165,6 +165,20 @@ bool Type::isAnyNilablePtrType() const {
 
   return false;
 }
+
+bool Type::isUserRecordType() const {
+  if (!isRecordType())
+    return false;
+
+  // TODO: add exceptions in here
+  // for types implemented as records but where that
+  // isn't the user's view -- e.g.
+  //  * string, bytes, distribution, domain, array, range
+  //    tuple, sync, single, atomic, managed pointer
+
+  return true;
+}
+
 
 const CompositeType* Type::getCompositeType() const {
   if (auto at = toCompositeType())

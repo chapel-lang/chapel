@@ -742,7 +742,8 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
     if (auto* decl = ast->toNamedDecl()) {
       kind = qualifiedTypeKindForDecl(decl);
       if (auto td = decl->toTypeDecl()) {
-        t = typeForTypeDecl(context, td, /* useGenericFormalDefaults */ true);
+        bool useGenericFormalDefaults = true;
+        t = initialTypeForTypeDecl(context, td, useGenericFormalDefaults);
         assert(kind == QualifiedType::TYPE);
       } else if (decl->isModule() || decl->isFunction()) {
         // OK, don't try to establish the types of these right now
@@ -903,10 +904,11 @@ typedSignatureInitial(Context* context,
 
 
 static const Type* const&
-typeForTypeDeclQuery(Context* context,
-                     ID declId,
-                     bool useGenericFormalDefaults) {
-  QUERY_BEGIN(typeForTypeDeclQuery, context, declId, useGenericFormalDefaults);
+initialTypeForTypeDeclQuery(Context* context,
+                            ID declId,
+                            bool useGenericFormalDefaults) {
+  QUERY_BEGIN(initialTypeForTypeDeclQuery, context,
+              declId, useGenericFormalDefaults);
 
   const Type* result = nullptr;
 
@@ -924,8 +926,14 @@ typeForTypeDeclQuery(Context* context,
       if (auto cls = ad->toClass()) {
         if (auto parentClassExpr = cls->parentClass()) {
           QualifiedType qt = r.byAst(parentClassExpr).type();
-          if (qt.isType() && qt.hasTypePtr() && qt.type()->isClassType()) {
-            parentType = qt.type()->toClassType()->basicClassType();
+          if (auto t = qt.type()) {
+            if (auto bct = t->toBasicClassType())
+              parentType = bct;
+            else if (auto ct = t->toClassType())
+              parentType = ct->basicClassType();
+          }
+          if (qt.isType() && parentType != nullptr) {
+            // OK
           } else {
             context->error(declId, "invalid parent class");
             parentType = BasicClassType::getObjectType(context);
@@ -953,17 +961,20 @@ typeForTypeDeclQuery(Context* context,
 
       if (auto rec = ad->toRecord()) {
         result = RecordType::get(context, rec->id(), rec->name(),
-                                 std::move(fields));
+                                 std::move(fields),
+                                 /* instantiatedFrom */ nullptr);
       }
       if (auto cls = ad->toClass()) {
         auto t = BasicClassType::get(context, cls->id(), cls->name(),
-                                     parentType, std::move(fields));
+                                     parentType, std::move(fields),
+                                     /* instantiatedFrom */ nullptr);
         auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
         result = ClassType::get(context, t, /*manager*/ nullptr, d);
       }
       if (auto uni = ad->toUnion()) {
         result = UnionType::get(context, uni->id(), uni->name(),
-                                std::move(fields));
+                                std::move(fields),
+                                /* instantiatedFrom */ nullptr);
       }
     }
   }
@@ -971,12 +982,13 @@ typeForTypeDeclQuery(Context* context,
   return QUERY_END(result);
 }
 
-const Type* typeForTypeDecl(Context* context,
+const Type* initialTypeForTypeDecl(Context* context,
                             const TypeDecl* d,
                             bool useGenericFormalDefaults) {
   assert(d);
-  const Type* t = typeForTypeDeclQuery(context, d->id(),
-                                       /* useGenericFormalDefaults */ false);
+  const Type* t;
+  t = initialTypeForTypeDeclQuery(context, d->id(),
+                                  /* useGenericFormalDefaults */ false);
 
   // If useGenericFormalDefaults was requested and the type
   // is generic with defaults, compute the type again.
@@ -986,8 +998,8 @@ const Type* typeForTypeDecl(Context* context,
   if (useGenericFormalDefaults) {
     if (auto ct = t->getCompositeType()) {
       if (ct->isGenericWithDefaults()) {
-        t = typeForTypeDeclQuery(context, d->id(),
-                                 /* useGenericFormalDefaults */ true);
+        t = initialTypeForTypeDeclQuery(context, d->id(),
+                                        /* useGenericFormalDefaults */ true);
       }
     }
   }
@@ -1118,6 +1130,121 @@ const TypedFnSignature* typeConstructorInitial(Context* context,
   return typeConstructorInitialQuery(context, t).get();
 }
 
+static QualifiedType getInstantiationType(Context* context,
+                                          QualifiedType actualType,
+                                          QualifiedType formalType) {
+
+  // The formal is generic but the actual might require a coercion
+  // on the way to it. In that event, instantiate the formal type
+  // using the type that the actual will coerce to.
+
+  // E.g. a MyClass actual passed to an x:borrowed? formal
+  // should instantiate with MyClass?
+
+  const Type* actualT = actualType.type();
+  const Type* formalT = formalType.type();
+
+  assert(actualT != nullptr);
+  assert(formalT != nullptr);
+
+  // this function should only be called when instantiation is required
+  assert(canPass(actualType, formalType).passes());
+  assert(canPass(actualType, formalType).instantiates());
+
+  if (auto actualCt = actualT->toClassType()) {
+    // handle decorated class passed to decorated class
+    if (auto formalCt = formalT->toClassType()) {
+      // which decorator to use?
+      auto dec = formalCt->decorator().combine(actualCt->decorator());
+
+      // which manager to use?
+      const Type* manager = nullptr;
+      if (dec.isManaged()) {
+        // there aren't implicit conversions from managed -> managed,
+        // so we can always use the actual's manager if the combined
+        // decorator indicates management.
+        assert(actualCt->decorator().isManaged() && actualCt->manager());
+        manager = actualCt->manager();
+      }
+
+      // which BasicClassType to use?
+      const BasicClassType* bct = formalCt->basicClassType();
+      if (bct->isGeneric()) {
+        assert(false && "not implemented yet");
+      }
+
+      // now construct the ClassType
+      auto ct = ClassType::get(context, bct, manager, dec);
+      return QualifiedType(formalType.kind(), ct);
+    }
+
+    // handle decorated class passed to special built-in type
+    auto classBuiltinTypeDec = ClassTypeDecorator::GENERIC;
+    bool foundClassyBuiltinType = true;
+
+    if (formalT->isAnyBorrowedNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::BORROWED_NILABLE;
+    } else if (formalT->isAnyBorrowedNonNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::BORROWED_NONNIL;
+    } else if (formalT->isAnyBorrowedType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::BORROWED;
+    } else if (formalT->isAnyManagementAnyNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::GENERIC;
+    } else if (formalT->isAnyManagementNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::GENERIC_NILABLE;
+    } else if (formalT->isAnyManagementNonNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::GENERIC_NONNIL;
+    } else if (formalT->isAnyOwnedType() &&
+               actualCt->decorator().isManaged() &&
+               actualCt->manager()->isAnyOwnedType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::MANAGED;
+    } else if (formalT->isAnySharedType() &&
+               actualCt->decorator().isManaged() &&
+               actualCt->manager()->isAnySharedType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::MANAGED;
+    } else if (formalT->isAnyUnmanagedNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::UNMANAGED_NILABLE;
+    } else if (formalT->isAnyUnmanagedNonNilableType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::UNMANAGED_NONNIL;
+    } else if (formalT->isAnyUnmanagedType()) {
+      classBuiltinTypeDec = ClassTypeDecorator::UNMANAGED;
+    } else {
+      foundClassyBuiltinType = false;
+    }
+
+    if (foundClassyBuiltinType) {
+      // which basic class type?
+      const BasicClassType* bct = actualCt->basicClassType();
+
+      // which decorator?
+      auto formalDec = ClassTypeDecorator(classBuiltinTypeDec);
+      auto dec = formalDec.combine(actualCt->decorator());
+
+      // which manager?
+      const Type* manager = nullptr;
+      if (dec.isManaged())
+        manager = actualCt->manager();
+
+      // now construct the ClassType
+      auto ct = ClassType::get(context, bct, manager, dec);
+      return QualifiedType(formalType.kind(), ct);
+    }
+  } else if (actualT->isNilType()) {
+    if (formalT->isAnyBorrowedNilableType() ||
+        formalT->isAnyBorrowedType() ||
+        formalT->isAnyManagementAnyNilableType() ||
+        formalT->isAnyManagementNilableType() ||
+        formalT->isAnyUnmanagedNilableType() ||
+        formalT->isAnyUnmanagedType()) {
+      return actualType; // instantiate with NilType for these cases
+    }
+  }
+
+  // TODO: sync type -> value type?
+  assert(false && "case not handled");
+  return QualifiedType();
+}
+
 const TypedFnSignature* instantiateSignature(Context* context,
                                              const TypedFnSignature* sig,
                                              const CallInfo& call,
@@ -1163,14 +1290,30 @@ const TypedFnSignature* instantiateSignature(Context* context,
     // note: entry.actualType can have type()==nullptr and UNKNOWN.
     // in that case, resolver code should treat it as a hint to
     // use the default value. Unless the call used a ? argument.
-    if (call.hasQuestionArg() &&
-        entry.actualType.kind() == QualifiedType::UNKNOWN &&
+    if (entry.actualType.kind() == QualifiedType::UNKNOWN &&
         entry.actualType.type() == nullptr) {
-      // don't add any substitution
+      if (call.hasQuestionArg()) {
+        // don't add any substitution
+      } else {
+        // add a "use the default" hint substitution.
+        substitutions.insert({entry.formal, entry.actualType});
+      }
     } else {
-      // add a substitution that is either valid or a
-      // "use the default" hint.
-      substitutions.insert({entry.formal, entry.actualType});
+      auto got = canPass(entry.actualType, entry.formalType);
+      assert(got.passes()); // should not get here otherwise
+      if (got.instantiates()) {
+        // add a substitution for a valid value
+        if (!got.converts() && !got.promotes()) {
+          // use the actual type since no conversion/promotion was needed
+          substitutions.insert({entry.formal, entry.actualType});
+        } else {
+          // get instantiation type
+          QualifiedType useType = getInstantiationType(context,
+                                                       entry.actualType,
+                                                       entry.formalType);
+          substitutions.insert({entry.formal, useType});
+        }
+      }
     }
   }
 
@@ -1509,8 +1652,13 @@ const QualifiedType& returnType(Context* context,
           parentClassExpr->traverse(visitor);
           QualifiedType qt = r.byAst(parentClassExpr).type();
           assert(qt.hasTypePtr() && qt.isType());
-          assert(qt.type()->toBasicClassType());
-          parentType = qt.type()->toBasicClassType();
+          if (auto t = qt.type()) {
+            if (auto bct = t->toBasicClassType())
+              parentType = bct;
+            else if (auto ct = t->toClassType())
+              parentType = ct->basicClassType();
+          }
+          assert(parentType);
         } else {
           parentType = BasicClassType::getObjectType(context);
         }
@@ -1532,20 +1680,43 @@ const QualifiedType& returnType(Context* context,
         }
       }
 
+
+      const Type* instantiatedFrom = nullptr;
+      if (sig->instantiatedFrom()) {
+        bool useGenericFormalDefaults = false;
+        instantiatedFrom = initialTypeForTypeDecl(context,
+                                                  ad,
+                                                  useGenericFormalDefaults);
+        assert(instantiatedFrom);
+      }
+
       const Type* t = nullptr;
       if (auto rec = ad->toRecord()) {
+        assert(instantiatedFrom == nullptr || instantiatedFrom->isRecordType());
         t = RecordType::get(context, rec->id(), rec->name(),
-                            std::move(fields));
+                            std::move(fields),
+                            (const RecordType*) instantiatedFrom);
       }
       if (auto cls = ad->toClass()) {
+        // ignore decorators etc for finding instantiatedFrom
+        if (instantiatedFrom)
+          if (auto ct = instantiatedFrom->toClassType())
+            instantiatedFrom = ct->basicClassType();
+
+        assert(instantiatedFrom == nullptr ||
+               instantiatedFrom->isBasicClassType());
         auto bct = BasicClassType::get(context, cls->id(), cls->name(),
-                                       parentType, std::move(fields));
+                                       parentType, std::move(fields),
+                                       (const BasicClassType*) instantiatedFrom);
         auto d = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
         t = ClassType::get(context, bct, nullptr, d);
       }
       if (auto uni = ad->toUnion()) {
+        assert(instantiatedFrom == nullptr ||
+               instantiatedFrom->isUnionType());
         t = UnionType::get(context, uni->id(), uni->name(),
-                           std::move(fields));
+                           std::move(fields),
+                           (const UnionType*) instantiatedFrom);
       }
       result = QualifiedType(QualifiedType::TYPE, t);
 
@@ -1561,38 +1732,93 @@ const QualifiedType& returnType(Context* context,
   return QUERY_END(result);
 }
 
-// TODO move these to a core logic of resolution file
-static QualifiedType::Kind resolveIntent(const QualifiedType& t) {
-  if (t.type()->isPrimitiveType()) {
-    auto kind = t.kind();
-    if (kind == QualifiedType::UNKNOWN ||
-        kind == QualifiedType::DEFAULT_INTENT ||
-        kind == QualifiedType::CONST_INTENT)
-      return QualifiedType::CONST_IN;
-  } else if (t.isGenericOrUnknown()) {
+// TODO: move this resolveIntent logic to a different file
+
+static QualifiedType::Kind constIntentForType(const Type* t) {
+
+  // anything we don't know the type of has to have unknown intent
+  if (t == nullptr || t->isUnknownType() || t->isErroneousType())
     return QualifiedType::UNKNOWN;
-  } else {
-    assert(false && "TODO");
+
+  if (t->isPrimitiveType())
+    return QualifiedType::CONST_IN;
+
+  if (t->isRecordType() || t->isUnionType() || t->isTupleType())
+    return QualifiedType::CONST_REF;
+
+  if (auto ct = t->toClassType()) {
+    if (ct->decorator().isManaged())
+      return QualifiedType::CONST_REF;
+    else
+      return QualifiedType::CONST_IN;
   }
-  return t.kind();
+
+  assert(false && "case not yet handled");
+  return QualifiedType::UNKNOWN;
 }
 
-static bool canPassInitial(const QualifiedType& actualType,
-                           const QualifiedType& formalType) {
-  // TODO: use Any type vs. Unknown for formals without a type?
-  if (formalType.kind() == QualifiedType::UNKNOWN) return true;
+static QualifiedType::Kind defaultIntentForType(const Type* t) {
+  // anything we don't know the type of has to have unknown intent
+  if (t == nullptr || t->isUnknownType() || t->isErroneousType())
+    return QualifiedType::UNKNOWN;
 
-  auto result = canPass(actualType, formalType);
-  return result.passes();
+  if (t->isPrimitiveType())
+    return QualifiedType::CONST_IN;
+
+  if (t->isRecordType() || t->isUnionType() || t->isTupleType())
+    return QualifiedType::CONST_REF;
+
+  if (auto ct = t->toClassType()) {
+    if (ct->decorator().isManaged())
+      return QualifiedType::CONST_REF;
+    else
+      return QualifiedType::CONST_IN;
+  }
+
+  assert(false && "case not yet handled");
+  return QualifiedType::UNKNOWN;
 }
 
-static bool canPassAfterInstantiating(const QualifiedType& actualType,
-                                      const QualifiedType& formalType) {
-  // TODO: Any type handling should be in canPass
-  if (formalType.type()->isAnyType()) return true;
+static QualifiedType::Kind resolveIntent(const QualifiedType& t) {
+  auto kind = t.kind();
+  auto type = t.type();
 
-  auto result = canPass(actualType, formalType);
-  return result.passes();
+  switch (kind) {
+    case QualifiedType::UNKNOWN:
+    case QualifiedType::INDEX:
+    case QualifiedType::FUNCTION:
+    case QualifiedType::MODULE:
+      // these don't really have an intent
+      return QualifiedType::UNKNOWN;
+
+    case QualifiedType::CONST_REF:
+    case QualifiedType::REF:
+    case QualifiedType::IN:
+    case QualifiedType::CONST_IN:
+    case QualifiedType::OUT:
+    case QualifiedType::INOUT:
+    case QualifiedType::PARAM:
+    case QualifiedType::TYPE:
+      // concrete intents are already resolved
+      return kind;
+
+    case QualifiedType::VAR:
+      // normalize VAR to IN to make some test codes easier
+      return QualifiedType::IN;
+    case QualifiedType::CONST_VAR:
+      // normalize CONST_VAR to CONST_IN to make some test codes easier
+      return QualifiedType::CONST_IN;
+
+    case QualifiedType::DEFAULT_INTENT:
+      // compute the default intent if needed
+      return defaultIntentForType(type);
+
+    // compute the const intent if needed
+    case QualifiedType::CONST_INTENT:
+      return constIntentForType(type);
+  }
+
+  return QualifiedType::UNKNOWN;
 }
 
 // returns nullptr if the candidate is not applicable,
@@ -1617,8 +1843,9 @@ doIsCandidateApplicableInitial(Context* context,
       td = ast->toTypeDecl();
 
     if (td != nullptr) {
-      const Type* t = typeForTypeDecl(context, td,
-                                      /* useGenericFormalDefaults */ false);
+      bool useGenericFormalDefaults = false;
+      const Type* t = initialTypeForTypeDecl(context, td,
+                                             useGenericFormalDefaults);
       return typeConstructorInitial(context, t);
     } else {
       assert(false && "case not handled");
@@ -1647,8 +1874,8 @@ doIsCandidateApplicableInitial(Context* context,
   for (const FormalActual& entry : faMap.byFormalIdx()) {
     const auto& actualType = entry.actualType;
     const auto& formalType = initialTypedSignature->formalType(formalIdx);
-    bool ok = canPassInitial(actualType, formalType);
-    if (!ok) {
+    auto got = canPass(actualType, formalType);
+    if (!got.passes()) {
       return nullptr;
     }
 
@@ -1683,8 +1910,8 @@ doIsCandidateApplicableInstantiating(Context* context,
   for (size_t i = 0; i < nActuals; i++) {
     const QualifiedType& actualType = call.actuals(i).type();
     const QualifiedType& formalType = instantiated->formalType(i);
-    bool ok = canPassAfterInstantiating(actualType, formalType);
-    if (!ok)
+    auto got = canPass(actualType, formalType);
+    if (!got.passes())
       return nullptr;
   }
 

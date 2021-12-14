@@ -37,8 +37,10 @@ class BasicClassType final : public CompositeType {
 
   BasicClassType(ID id, UniqueString name,
                  const BasicClassType* parentType,
-                 std::vector<CompositeType::FieldDetail> fields)
-    : CompositeType(typetags::BasicClassType, id, name, std::move(fields)),
+                 std::vector<CompositeType::FieldDetail> fields,
+                 const BasicClassType* instantiatedFrom)
+    : CompositeType(typetags::BasicClassType, id, name, std::move(fields),
+                    instantiatedFrom),
       parentType_(parentType)
   {
     // all classes should have a parent type, except for object
@@ -62,14 +64,16 @@ class BasicClassType final : public CompositeType {
   static const owned<BasicClassType>&
   getBasicClassType(Context* context, ID id, UniqueString name,
                     const BasicClassType* parentType,
-                    std::vector<CompositeType::FieldDetail> fields);
+                    std::vector<CompositeType::FieldDetail> fields,
+                    const BasicClassType* instantiatedFrom);
  public:
   ~BasicClassType() = default;
 
   static const BasicClassType*
   get(Context* context, ID id, UniqueString name,
       const BasicClassType* parentType,
-      std::vector<CompositeType::FieldDetail> fields);
+      std::vector<CompositeType::FieldDetail> fields,
+      const BasicClassType* instantiatedFrom);
 
   static const BasicClassType* getObjectType(Context* context);
 
@@ -84,10 +88,28 @@ class BasicClassType final : public CompositeType {
   }
 
   /** Returns true if this class type is a subclass of the passed
-      parent class type. That is, some chain of
-         this->parentClassType()->parentClassType()->... = parentType
+      parent class type or an instantiaton of a passed generic
+      class type or a combination of the two.
+
+      The argument 'convert' is set to true if passing required
+      using a parent type and 'instantiates' is set to true if
+      it requires instantiation.
    */
- bool isTransitiveChildOf(const BasicClassType* parentType) const;
+  bool isSubtypeOf(const BasicClassType* parentType,
+                   bool& converts,
+                   bool& instantiates) const;
+
+  /** If this type represents an instantiated type,
+      returns the type it was instantiated from.
+
+      This is just instantiatedFromCompositeType() with the
+      result cast to BasicClassType.
+   */
+  const BasicClassType* instantiatedFrom() const {
+    const CompositeType* ret = instantiatedFromCompositeType();
+    assert(ret == nullptr || ret->tag() == typetags::BasicClassType);
+    return (const BasicClassType*) ret;
+  }
 
 };
 

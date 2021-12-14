@@ -32,8 +32,10 @@ namespace types {
 class TupleType final : public CompositeType {
  private:
   TupleType(ID id, UniqueString name,
-            std::vector<CompositeType::FieldDetail> fields)
-    : CompositeType(typetags::TupleType, id, name, std::move(fields))
+            std::vector<CompositeType::FieldDetail> fields,
+            const TupleType* instantiatedFrom)
+    : CompositeType(typetags::TupleType, id, name, std::move(fields),
+                    instantiatedFrom)
   { }
 
   bool contentsMatchInner(const Type* other) const override {
@@ -46,18 +48,44 @@ class TupleType final : public CompositeType {
 
   static const owned<TupleType>&
   getTupleType(Context* context, ID id, UniqueString name,
-               std::vector<CompositeType::FieldDetail> fields);
+               std::vector<CompositeType::FieldDetail> fields,
+               const TupleType* instantiatedFrom);
 
  public:
   ~TupleType() = default;
 
   static const TupleType*
   get(Context* context, ID id, UniqueString name,
-      std::vector<CompositeType::FieldDetail> fields);
+      std::vector<CompositeType::FieldDetail> fields,
+      const TupleType* instantiatedFrom);
+
+  /** If this type represents an instantiated type,
+      returns the type it was instantiated from.
+
+      This is just instantiatedFromCompositeType() with the
+      result cast to TupleType.
+   */
+  const TupleType* instantiatedFrom() const {
+    const CompositeType* ret = instantiatedFromCompositeType();
+    assert(ret == nullptr || ret->tag() == typetags::TupleType);
+    return (const TupleType*) ret;
+  }
 };
 
 
 } // end namespace uast
+
+/// \cond DO_NOT_DOCUMENT
+template<> struct stringify<chpl::types::TupleType> {
+  void operator()(std::ostream &stringOut,
+                  StringifyKind stringKind,
+                  const chpl::types::TupleType& stringMe) const {
+    stringOut << stringMe.toString();
+  }
+};
+  /// \endcond DO_NOT_DOCUMENT
+
+
 } // end namespace chpl
 
 #endif

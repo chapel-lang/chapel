@@ -99,11 +99,17 @@ class CanPassResult {
   static CanPassResult canPassClassTypes(const types::ClassType* actualCt,
                                          const types::ClassType* formalCt);
 
-  static bool isSubtype(const types::Type* actualT,
-                        const types::Type* formalT);
+  static CanPassResult canPassSubtype(const types::Type* actualT,
+                                      const types::Type* formalT);
 
   static CanPassResult canConvert(const types::QualifiedType& actualType,
                                   const types::QualifiedType& formalType);
+
+  static bool canInstantiateBuiltin(const types::Type* actualT,
+                                    const types::Type* formalT);
+
+  static CanPassResult canInstantiate(const types::QualifiedType& actualType,
+                                      const types::QualifiedType& formalType);
 
  public:
   CanPassResult() { }
@@ -133,6 +139,10 @@ class CanPassResult {
 /**
   Given an argument with QualifiedType actualType,
   can that argument be passed to a formal with QualifiedType formalType?
+
+  Note that a result with passes() and instantiates() indicates
+  that the compiler should try instantiating. Once instantiation occurs,
+  the compiler may figure out that the argument cannot be passed.
  */
 static inline
 CanPassResult canPass(const types::QualifiedType& actualType,

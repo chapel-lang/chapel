@@ -29,11 +29,14 @@ const owned<BasicClassType>&
 BasicClassType::getBasicClassType(
     Context* context, ID id, UniqueString name,
     const BasicClassType* parentType,
-    std::vector<CompositeType::FieldDetail> fields) {
-  QUERY_BEGIN(getBasicClassType, context, id, name, parentType, fields);
+    std::vector<CompositeType::FieldDetail> fields,
+    const BasicClassType* instantiatedFrom) {
+  QUERY_BEGIN(getBasicClassType, context, id, name, parentType, fields,
+              instantiatedFrom);
 
   auto result = toOwned(new BasicClassType(id, name,
-                                           parentType, std::move(fields)));
+                                           parentType, std::move(fields),
+                                           instantiatedFrom));
 
   return QUERY_END(result);
 }
@@ -41,12 +44,14 @@ BasicClassType::getBasicClassType(
 const BasicClassType*
 BasicClassType::get(Context* context, ID id, UniqueString name,
                     const BasicClassType* parentType,
-                    std::vector<CompositeType::FieldDetail> fields) {
+                    std::vector<CompositeType::FieldDetail> fields,
+                    const BasicClassType* instantiatedFrom) {
   // getObjectType should be used to construct object
   // everything else should have a parent type.
   assert(parentType != nullptr);
   return getBasicClassType(context, id, name,
-                           parentType, std::move(fields)).get();
+                           parentType, std::move(fields),
+                           instantiatedFrom).get();
 }
 
 const BasicClassType*
@@ -56,19 +61,33 @@ BasicClassType::getObjectType(Context* context) {
   std::vector<CompositeType::FieldDetail> emptyFields;
 
   return getBasicClassType(context, emptyId, name,
-                           nullptr, std::move(emptyFields)).get();
+                           /* parentType */ nullptr,
+                           std::move(emptyFields),
+                           /* instantiatedFrom */ nullptr).get();
 }
 
-bool
-BasicClassType::isTransitiveChildOf(const BasicClassType* parentType) const {
+bool BasicClassType::isSubtypeOf(const BasicClassType* parentType,
+                                 bool& converts,
+                                 bool& instantiates) const {
+
+  assert(parentType != nullptr); // code below assumes this
+
   for (const BasicClassType* t = this;
-       t != nullptr;
+       t != nullptr; // note: ObjectType has no parent
        t = t->parentClassType()) {
 
-    if (t == parentType)
+    // check if t is parentType indicating use of subclass
+    if (t == parentType) {
+      if (t != this) converts = true;
       return true;
-    if (t->isObjectType())
-      break;
+    }
+
+    // check also if t is an instantiation of parentType
+    if (t->instantiatedFrom() == parentType) {
+      if (t != this) converts = true;
+      instantiates = true;
+      return true;
+    }
   }
 
   return false;
