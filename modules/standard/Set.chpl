@@ -174,10 +174,13 @@ module Set {
       _checkElementType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
-      if boundsChecking then
-        if resizeThreshold <= 0 || resizeThreshold >= 1 then
-          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
-      this.resizeThreshold = resizeThreshold;
+      if resizeThreshold <= 0 || resizeThreshold > 1 {
+        compilerWarning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
       this._htb = new chpl__hashtable(eltType, nothing, resizeThreshold,
                                       initialCapacity);
     }
@@ -203,10 +206,13 @@ module Set {
 
       this.eltType = eltType;
       this.parSafe = parSafe;
-      if boundsChecking then
-        if resizeThreshold <= 0 || resizeThreshold >= 1 then
-          boundsCheckHalt("'resizeThreshold' must be between 0 and 1");
-      this.resizeThreshold = resizeThreshold;
+      if resizeThreshold <= 0 || resizeThreshold > 1 {
+        compilerWarning("'resizeThreshold' must be between 0 and 1.",
+                        " 'resizeThreshold' will be set to 0.5");
+        this.resizeThreshold = 0.5;
+      } else {
+        this.resizeThreshold = resizeThreshold;
+      }
       this._htb = new chpl__hashtable(eltType, nothing, resizeThreshold,
                                       initialCapacity);
       this.complete();
