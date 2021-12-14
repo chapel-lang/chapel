@@ -123,7 +123,7 @@ module Map {
                             attempting to resize.
     */
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold = 0.5, initialCapacity = 16) {
+              resizeThreshold=0.5, initialCapacity=16) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;
       this.valType = valType;
@@ -137,7 +137,7 @@ module Map {
     }
 
     proc init(type keyType, type valType, param parSafe=false,
-              resizeThreshold = 0.5, initialCapacity = 16)
+              resizeThreshold=0.5, initialCapacity=16)
     where isNonNilableClass(valType) {
       _checkKeyAndValType(keyType, valType);
       this.keyType = keyType;

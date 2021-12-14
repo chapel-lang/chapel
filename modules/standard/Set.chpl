@@ -170,7 +170,7 @@ module Set {
                             attempting to resize.
     */
     proc init(type eltType, param parSafe=false, resizeThreshold=0.5,
-              initialCapacity=32) {
+              initialCapacity=16) {
       _checkElementType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
@@ -197,7 +197,7 @@ module Set {
                             attempting to resize.
     */
     proc init(type eltType, iterable, param parSafe=false,
-              resizeThreshold=0.5, initialCapacity=32)
+              resizeThreshold=0.5, initialCapacity=16)
     where canResolveMethod(iterable, "these") lifetime this < iterable {
       _checkElementType(eltType); 
 
