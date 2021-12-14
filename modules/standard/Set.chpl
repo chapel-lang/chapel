@@ -174,8 +174,8 @@ module Set {
       _checkElementType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
-      if resizeThreshold <= 0 || resizeThreshold > 1 {
-        compilerWarning("'resizeThreshold' must be between 0 and 1.",
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
                         " 'resizeThreshold' will be set to 0.5");
         this.resizeThreshold = 0.5;
       } else {
@@ -206,8 +206,8 @@ module Set {
 
       this.eltType = eltType;
       this.parSafe = parSafe;
-      if resizeThreshold <= 0 || resizeThreshold > 1 {
-        compilerWarning("'resizeThreshold' must be between 0 and 1.",
+      if resizeThreshold <= 0 || resizeThreshold >= 1 {
+        warning("'resizeThreshold' must be between 0 and 1.",
                         " 'resizeThreshold' will be set to 0.5");
         this.resizeThreshold = 0.5;
       } else {
