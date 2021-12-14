@@ -828,8 +828,8 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    try! for k in a do newMap.add(k, a.getValue(k));
-    try! for k in b do newMap.add(k, b.getValue(k));
+    try! { for k in a do newMap.add(k, a.getValue(k)); }
+    try! { for k in b do newMap.add(k, b.getValue(k)); }
     return newMap;
   }
 
@@ -839,7 +839,7 @@ module Map {
   operator map.|=(ref a: map(?keyType, ?valueType, ?),
                   b: map(keyType, valueType, ?)) {
     // add keys/values from b to a if they weren't already in a
-    try! for k in b do a.add(k, b.getValue(k));
+    try! { for k in b do a.add(k, b.getValue(k)); }
   }
 
   /* Returns a new map containing the keys that are in both a and b. */
@@ -847,9 +847,11 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    try! for k in a.keys() do
-      if b.contains(k) then
-        newMap.add(k, a.getValue(k));
+    try! {
+      for k in a.keys() do
+        if b.contains(k) then
+          newMap.add(k, a.getValue(k));
+    }
 
     return newMap;
   }
@@ -899,10 +901,14 @@ module Map {
                  b: map(keyType, valueType, ?)) {
     var newMap = new map(keyType, valueType, (a.parSafe || b.parSafe));
 
-    try! for k in a.keys() do
-      if !b.contains(k) then newMap.add(k, a.getValue(k));
-    try! for k in b do
-      if !a.contains(k) then newMap.add(k, b.getValue(k));
+    try! {
+      for k in a.keys() do
+        if !b.contains(k) then newMap.add(k, a.getValue(k));
+    }
+    try! {
+      for k in b do
+        if !a.contains(k) then newMap.add(k, b.getValue(k));
+    }
     return newMap;
   }
 
