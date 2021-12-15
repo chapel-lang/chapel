@@ -253,7 +253,8 @@ module DataFrames {
       var idxWidth = writeIdxWidth() + 1;
       for space in 1..idxWidth do
         f <~> " ";
-      for lab in d.labels {
+      const labelsSorted = d.labels.sorted();
+      for lab in labelsSorted {
         f <~> lab + "   ";
       }
 
@@ -265,7 +266,8 @@ module DataFrames {
         for space in 1..idxWidth-idxStr.size do
           f <~> " ";
 
-        for (ser, lab) in zip(d, d.labels) {
+        for lab in labelsSorted {
+          const ser = d[lab];
           ser!.writeElem(f, idx, lab.size);
           f <~> "   ";
         }
@@ -777,8 +779,8 @@ module DataFrames {
       this.idx = nil;
       this.complete();
 
-      for (lab, s) in zip(labels, columns) do
-        this.columns[lab] = s.copy().release();
+      for lab in labels do
+        this.columns[lab] = columns[lab].copy().release();
     }
 
     pragma "no doc"
@@ -787,8 +789,8 @@ module DataFrames {
       this.idx = nil;
       this.complete();
 
-      for (lab, s) in zip(labels, columns) do
-        this.columns[lab] = s!.copy().release();
+      for lab in labels do
+        this.columns[lab] = columns[lab]!.copy().release();
     }
 
     proc init(columns: [?D], in idx: shared Index) {
@@ -796,8 +798,8 @@ module DataFrames {
       this.idx = idx;
       this.complete();
 
-      for (lab, s) in zip(labels, columns) do
-        this.insert(lab, s!);
+      for lab in labels do
+        this.insert(lab, columns[lab]!);
     }
 
     proc deinit() {
@@ -843,10 +845,11 @@ module DataFrames {
         var n = nrows();
         var nStr = createStringWithNewBuffer(n: string);
         var idxWidth = nStr.size + 1;
+        const labelsSorted = labels.sorted();
 
         for space in 1..idxWidth do
           f <~> " ";
-        for lab in labels {
+        for lab in labelsSorted {
           f <~> lab + "   ";
         }
 
@@ -857,7 +860,8 @@ module DataFrames {
           for space in 1..idxWidth-iStr.size do
             f <~> " ";
 
-          for (ser, lab) in zip(this, labels) {
+          for lab in labelsSorted {
+            const ser = columns[lab];
             ser!.writeElemNoIndex(f, i, lab.size);
             f <~> "   ";
           }
