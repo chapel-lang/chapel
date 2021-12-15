@@ -2967,15 +2967,15 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     var ret = this.probablyPrime(reps):int;
     return ret;
   }
- 
+  
+  enum primeStatus {
+    notPrime=0,
+    maybePrime,
+    isPrime
+  };
   // returns 2 if definitely prime, 0 if not prime, 1 if likely prime
   // reasonable number of reps is 15-50
   proc bigint.probablyPrime(reps: int) : enum {
-    enum checkPrime {
-      notPrime=0,
-      maybePrime,
-      isPrime
-    };
     var reps_ = reps.safeCast(c_int);
     var ret: c_int;
 
@@ -2987,7 +2987,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
       ret = mpz_probab_prime_p(t_.mpz, reps_);
     }
-    use checkPrime;
+    use primeStatus;
     if ret==0 then
       return notPrime;
     else if ret==1 then
