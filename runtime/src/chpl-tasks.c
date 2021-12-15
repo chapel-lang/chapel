@@ -37,17 +37,23 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
+void chpl_task_warnNumThreadsPerLocale(const char* msg)
+{
+  if (!chpl_env_rt_get_bool("NUM_THREADS_PER_LOCALE_QUIET", false)) {
+    chpl_warning(msg, 0, 0);
+  }
+}
 
 int32_t chpl_task_getenvNumThreadsPerLocale(void)
 {
-  char*          p;
+  const char*    p;
   static int     env_checked = 0;
   static int32_t num = 0;
 
   if (env_checked)
     return num;
 
-  if ((p = getenv("CHPL_RT_NUM_THREADS_PER_LOCALE")) != NULL) {
+  if ((p = chpl_env_rt_get("NUM_THREADS_PER_LOCALE", NULL)) != NULL) {
     int32_t lim = chpl_comm_getMaxThreads();
 
     if (strcmp(p, "MAX_PHYSICAL") == 0) {

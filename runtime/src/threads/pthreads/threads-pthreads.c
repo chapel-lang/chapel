@@ -343,8 +343,11 @@ void chpl_thread_init(void(*threadBeginFn)(void*),
   {
     uint32_t lim;
 
-    if ((lim = chpl_task_getenvNumThreadsPerLocale()) > 0)
+    if ((lim = chpl_task_getenvNumThreadsPerLocale()) > 0) {
+      chpl_task_warnNumThreadsPerLocale(
+          "Setting number of threads in CHPL_TASKS=fifo can lead to deadlock");
       maxThreads = lim;
+    }
     else if ((lim = chpl_comm_getMaxThreads()) > 0)
       maxThreads = lim;
   }
