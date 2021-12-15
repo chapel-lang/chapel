@@ -1274,8 +1274,8 @@ defer_stmt:
   TDEFER stmt             { $$ = DeferStmt::build($2); }
 
 try_stmt:
-  TTRY     expr            TSEMI         { $$ = TryStmt::build(false, $2); }
-| TTRYBANG expr            TSEMI         { $$ = TryStmt::build(true,  $2); }
+  TTRY     stmt_level_expr            TSEMI         { $$ = TryStmt::build(false, $2); }
+| TTRYBANG stmt_level_expr            TSEMI         { $$ = TryStmt::build(true,  $2); }
 | TTRY     assignment_stmt               { $$ = TryStmt::build(false, $2); }
 | TTRYBANG assignment_stmt               { $$ = TryStmt::build(true,  $2); }
 | TTRY     block_stmt      catch_stmt_ls { $$ = TryStmt::build(false, $2, $3); }
