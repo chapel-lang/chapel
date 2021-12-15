@@ -96,7 +96,7 @@ class Context {
 
   querydetail::RevisionNumber currentRevisionNumber = 1;
   bool checkStringsAlreadyMarked = false;
-  bool enableDebugTracing = true;
+  bool enableDebugTracing = false;
   bool breakSet = false;
   size_t breakOnHash = 0;
   int numQueriesRunThisRevision_ = 0;
