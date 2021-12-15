@@ -9904,40 +9904,10 @@ static bool resolveSerializeDeserialize(AggregateType* at);
 //}
 
 static bool createSerializeDeserialize(AggregateType* at) {
-  //AggregateType* at = toAggregateType(_at->getValType());
-  if (at->id == 1664765) {
-
-  }
-
-  if (!at->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {  // just for now.
-    return false;
-  }
 
   if (at->numFields() == 0) {
     return false;
   }
-  if (at->symbol->hasFlag(FLAG_OBJECT_CLASS)) {
-    return false;
-  }
-
-  //std::vector<Symbol*> allFields;
-
-  //auto kvPair = promotionFieldMap.find(at);
-  //if (kvPair != promotionFieldMap.end()) {
-    //for_fields (field, at) {
-      //allFields.push_back(field);
-    //}
-
-    //std::vector<Symbol*>& fields = kvPair->second;
-    //for_vector (Symbol, field, fields) {
-      //allFields.push_back(field);
-    //}
-  //}
-  //else {
-    //return false;
-  //}
-
-
 
   SET_LINENO(at);
   bool retval = true;
@@ -9945,18 +9915,11 @@ static bool createSerializeDeserialize(AggregateType* at) {
   FnSymbol* serializer = createMethodStub(at, "chpl__serialize",
                                           /*isType=*/false);
 
-  if (serializer->id == 2259392) {
-
-  }
   ArgSymbol* _this = serializer->getFormal(2);
 
   CallExpr* buildTuple = new CallExpr("_build_tuple");
 
   std::vector<FnSymbol*> deserializers;
-
-  if (serializer->id == 2270260) {
-
-  }
 
   //int fieldNum = 0;
   for_fields (field, at) {
@@ -10156,6 +10119,8 @@ static void resolveSerializers() {
   }
 
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
+    //std::cout << "100\n";
+    //nprint_view(ts);
     bool hasSerializers = false;
 
     AggregateType* at = toAggregateType(ts->type);
