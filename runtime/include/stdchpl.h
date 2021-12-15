@@ -74,4 +74,8 @@
 #include "chpl-wide-ptr-fns.h"
 #include "chpl-mem-consistency.h"
 
+#ifdef HAS_GPU_LOCALE
+#include "chpl-gpu-gen-includes.h"
+#endif
+
 #endif

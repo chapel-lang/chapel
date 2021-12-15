@@ -5,7 +5,7 @@ import sys
 
 from distutils.spawn import find_executable
 
-import chpl_platform, overrides
+import chpl_platform, chpl_locale_model, overrides
 from utils import error, memoize, warning
 
 
@@ -184,6 +184,7 @@ def get(flag='host'):
 
     else:
         platform_val = chpl_platform.get(flag)
+        locale_model_val = chpl_locale_model.get()
         # Normal compilation (not "cross-compiling")
         # inherit the host compiler if the target compiler is not set and
         # the host and target platforms are the same
@@ -197,6 +198,12 @@ def get(flag='host'):
                 compiler_val = 'clang'
             else:
                 compiler_val = 'gnu'
+        elif locale_model_val == 'gpu':
+            if find_executable('clang'):
+                compiler_val = 'clang'
+            else:
+                error("clang not found. The 'gpu' locale model is supported "
+                      "with clang only.")
         else:
             compiler_val = 'gnu'
 

@@ -238,10 +238,13 @@ module LocaleModelHelpSetup {
 
     for i in childSpace {
       chpl_task_setSubloc(i:chpl_sublocID_t);
-      if i == 0 then
+      if i == 0 {
         dst.childLocales[i] = new unmanaged CPULocale(i:chpl_sublocID_t, dst);
-      else
+      }
+      else {
         dst.childLocales[i] = new unmanaged GPULocale(i:chpl_sublocID_t, dst);
+        dst.childLocales[i].maxTaskPar = 1;
+      }
     }
     chpl_task_setSubloc(origSubloc);
   }

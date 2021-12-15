@@ -1,0 +1,1 @@
+blockOutsideOnWorkaround.chpl
