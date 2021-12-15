@@ -538,15 +538,17 @@ void flattenNestedFunctions(Vec<FnSymbol*>& nestedFunctions) {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
     if (FnSymbol* fn = toFnSymbol(ts->defPoint->parentSymbol)) {
       fn->defPoint->insertBefore(ts->defPoint->remove());
-      Serializers s = serializeMap[ts->type];
-      FnSymbol* serializer = s.serializer;
-      FnSymbol* deserializer = s.deserializer;
-      if (serializer != NULL && deserializer != NULL) {
-        if (serializer->defPoint->parentSymbol == fn) {
-          fn->defPoint->insertBefore(serializer->defPoint->remove());
-        }
-        if (deserializer->defPoint->parentSymbol == fn) {
-          fn->defPoint->insertBefore(deserializer->defPoint->remove());
+      if (serializeMap.find(ts->type) != serializeMap.end()) {
+        Serializers s = serializeMap[ts->type];
+        FnSymbol* serializer = s.serializer;
+        FnSymbol* deserializer = s.deserializer;
+        if (serializer != NULL && deserializer != NULL) {
+          if (serializer->defPoint->parentSymbol == fn) {
+            fn->defPoint->insertBefore(serializer->defPoint->remove());
+          }
+          if (deserializer->defPoint->parentSymbol == fn) {
+            fn->defPoint->insertBefore(deserializer->defPoint->remove());
+          }
         }
       }
     }

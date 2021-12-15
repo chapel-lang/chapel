@@ -10125,7 +10125,8 @@ static void resolveSerializers() {
 
     AggregateType* at = toAggregateType(ts->type);
 
-    if (ts->hasFlag(FLAG_ITERATOR_RECORD)) {
+    if (ts->hasFlag(FLAG_ITERATOR_RECORD) &&
+        ts->hasFlag(FLAG_PROMOTION_ITERATOR_RECORD)) {
       hasSerializers = createSerializeDeserialize(at);
     }
     else if (! ts->hasFlag(FLAG_GENERIC)                &&

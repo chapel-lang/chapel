@@ -1611,6 +1611,7 @@ static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType) {
   retval->scalarPromotionType = yieldedType;
 
   if (fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
+    sym->addFlag(FLAG_PROMOTION_ITERATOR_RECORD);
     for_formals (formal, fn) {
       if (formal->type != gMethodToken->type) {
         promotionFieldMap[retval].push_back(formal);
