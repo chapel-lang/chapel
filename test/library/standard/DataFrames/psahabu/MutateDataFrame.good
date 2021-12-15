@@ -19,9 +19,9 @@ dtype: int(64)
 4    50.0
 dtype: real(64)
 
-         columnThree   columnTwo   columnOne   
-rowOne          10.0           1           a   
-rowTwo          20.0        None        None   
-rowThree        30.0           3           c   
-rowFour         40.0        None        None   
-rowFive         50.0           5           e   
+         columnOne   columnThree   columnTwo   
+rowOne           a          10.0           1   
+rowTwo        None          20.0        None   
+rowThree         c          30.0           3   
+rowFour       None          40.0        None   
+rowFive          e          50.0           5   
