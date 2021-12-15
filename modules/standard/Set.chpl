@@ -181,7 +181,7 @@ module Set {
       } else {
         this.resizeThreshold = resizeThreshold;
       }
-      this._htb = new chpl__hashtable(eltType, nothing, resizeThreshold,
+      this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
                                       initialCapacity);
     }
 
@@ -213,7 +213,7 @@ module Set {
       } else {
         this.resizeThreshold = resizeThreshold;
       }
-      this._htb = new chpl__hashtable(eltType, nothing, resizeThreshold,
+      this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
                                       initialCapacity);
       this.complete();
 

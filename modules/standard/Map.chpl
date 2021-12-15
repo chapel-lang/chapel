@@ -135,7 +135,7 @@ module Map {
       } else {
         this.resizeThreshold = resizeThreshold;
       }
-      table = new chpl__hashtable(keyType, valType, resizeThreshold,
+      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
                                   initialCapacity);
     }
 
@@ -153,7 +153,7 @@ module Map {
       } else {
         this.resizeThreshold = resizeThreshold;
       }
-      table = new chpl__hashtable(keyType, valType, resizeThreshold,
+      table = new chpl__hashtable(keyType, valType, this.resizeThreshold,
                                   initialCapacity);
     }
 
