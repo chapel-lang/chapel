@@ -1433,13 +1433,14 @@ proc BlockDom.dsiReprivatize(other, reprivatizeData) {
   whole = {(...reprivatizeData)};
 }
 
-proc BlockArr.chpl__serialize() {
+proc BlockArr.chpl__serialize()
+      where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }
 
-proc BlockArr.chpl_rvfMe() param {
-  return true;
-}
+//proc BlockArr.chpl_rvfMe() param {
+  //return true;
+//}
 
 proc type BlockArr.chpl__deserialize(data) {
   return chpl_getPrivatizedCopy(
