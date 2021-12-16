@@ -9931,6 +9931,22 @@ static bool ensureSerializersExist(AggregateType* at) {
   return false;
 }
 
+static AggregateType* getSerializableFieldType(Symbol* field) {
+  AggregateType* fieldAggType = NULL;
+  if (DecoratedClassType* decClassType = toDecoratedClassType(field->type)) {
+    fieldAggType = toAggregateType(decClassType->getCanonicalClass());
+  }
+  else {
+    fieldAggType = toAggregateType(field->type);
+  }
+
+  if (fieldAggType) {
+    fieldAggType = toAggregateType(fieldAggType->getValType());
+  }
+
+  return fieldAggType;
+}
+
 static bool createSerializeDeserialize(AggregateType* at) {
 
   if (at->numFields() == 0) {
@@ -9949,23 +9965,8 @@ static bool createSerializeDeserialize(AggregateType* at) {
 
   std::vector<FnSymbol*> deserializers;
 
-  //int fieldNum = 0;
   for_fields (field, at) {
-  //for_vector (Symbol, field, allFields) {
-    AggregateType* fieldAggType = NULL;
-    if (DecoratedClassType* decClassType = toDecoratedClassType(field->type)) {
-      fieldAggType = toAggregateType(decClassType->getCanonicalClass());
-    }
-    else {
-      fieldAggType = toAggregateType(field->type);
-    }
-
-
-    if (fieldAggType) {
-      //fieldAggType = toAggregateType(fieldAggType->getValType());
-      AggregateType* fieldValType = toAggregateType(fieldAggType->getValType());
-      INT_ASSERT(fieldValType);
-
+    if (AggregateType* fieldValType = getSerializableFieldType(field)) {
       if (ensureSerializersExist(fieldValType)) {
         Serializers& ser = serializeMap[fieldValType];
         FnSymbol* fieldSerializer = ser.serializer;
