@@ -1859,7 +1859,7 @@ static void lookup(const char*           name,
           lookup(name, context, standardModule->block, visited, symbols,
                  renameLocs, storeRenames, reexportPts);
           if (symbols.size() == 0) {
-            
+
             lookup(name, context, theProgram->block, visited, symbols,
                    renameLocs, storeRenames, reexportPts);
           }
@@ -2637,18 +2637,19 @@ static ModuleSymbol* definesModuleSymbol(Expr* expr) {
 // Find 'unmanaged SomeClass' and 'borrowed SomeClass' and replace these
 // with the compiler's simpler representation (canonical type or unmanaged type)
 void resolveUnmanagedBorrows(CallExpr* call) {
-  if (isClassDecoratorPrimitive(call)) {
 
-    // Give up now if the actual is missing.
-    if (call->numActuals() < 1)
-      return;
+  // Give up now if the actual is missing.
+  if (call->numActuals() < 1)
+    return;
 
-    // Make sure to handle nested calls appropriately
-    if (CallExpr* sub = toCallExpr(call->get(1))) {
-      if (isClassDecoratorPrimitive(sub)) {
-        resolveUnmanagedBorrows(sub);
-      }
+  // Make sure to handle nested calls appropriately
+  if (CallExpr* sub = toCallExpr(call->get(1))) {
+    if (isClassDecoratorPrimitive(sub)) {
+      resolveUnmanagedBorrows(sub);
     }
+  }
+
+  if (isClassDecoratorPrimitive(call)) {
 
     SymExpr* typeSymbolSe = NULL;
     if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -2910,7 +2911,7 @@ static bool readNamedArgument(CallExpr* call, const char* name,
   bool ret = defaultValue;
   expectedNames.push_back((std::string)name);
 
-  for (int i = 1; i<= call->numActuals(); i++) { 
+  for (int i = 1; i<= call->numActuals(); i++) {
     NamedExpr* ne = toNamedExpr(call->get(i));
     if (ne && !strcmp(ne->name, name)) {
       SymExpr* se = toSymExpr(ne->actual);
@@ -3016,7 +3017,7 @@ static void processGetVisibleSymbols() {
             continue;
 
           printf("  %s:%d: %s\n", sym->defPoint->fname(),
-                 sym->defPoint->linenum(), sym->name); 
+                 sym->defPoint->linenum(), sym->name);
         }
 
         delete visibleMap[it->c_str()];

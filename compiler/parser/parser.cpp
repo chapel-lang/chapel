@@ -584,18 +584,18 @@ static std::set<std::string> allowedInternalModules = {
   "Bytes",
   "BytesCasts",
   "BytesStringCommon",
-  /*"ChapelArray",*/                  // Prim call with named args.
+  /*"ChapelArray",*/             // Prim call with named args.
   "ChapelAutoAggregation",
   "ChapelAutoLocalAccess",
   "ChapelBase",
   "ChapelComplex_forDocs",
   "ChapelDebugPrint",
-  /*"ChapelDistribution",*/           // Segfault somewhere...
+  /*"ChapelDistribution",*/      // Segfault somewhere...
   "ChapelHashing",
-  /*"ChapelHashtable",*/              // Problem: 'chpl__hashtable.init'
+  "ChapelHashtable",
   "ChapelIOStringifyHelper",
   "ChapelIteratorSupport",
-  /*"ChapelLocale",*/                 // Return lifetime?
+  /*"ChapelLocale",*/            //ChapelLocale.chpl:531 not implemented yet
   "ChapelLocks",
   "ChapelNumLocales",
   "ChapelPrivatization",
@@ -603,9 +603,9 @@ static std::set<std::string> allowedInternalModules = {
   "ChapelReduce",
   "ChapelSerializedBroadcast",
   "ChapelStandard",
-  /*"ChapelSyncvar",*/                // Lifetimes.
+  /*"ChapelSyncvar",*/           // Lifetimes.
   "ChapelTaskData",
-  /*"ChapelTaskDataHelp",*/           // Argument incompatible.
+  "ChapelTaskDataHelp",
   "ChapelTaskID",
   "ChapelThreads",
   "ChapelTuple",
@@ -626,13 +626,13 @@ static std::set<std::string> allowedInternalModules = {
   "LocaleModelHelpSetup",
   "LocalesArray",
   "LocaleTree",
-  /*"MemConsistency",*/               // Redefinition of a function...
+  /*"MemConsistency",*/          // Redefinition of a function...
   "MemTracking",
   "NetworkAtomics",
   "NetworkAtomicTypes",
-  /*"OwnedObject",*/                  // Compiler crash.
+  "OwnedObject",
   "PrintModuleInitOrder",
-  /*"SharedObject",*/                 // Compiler crash.
+  "SharedObject",
   "startInitCommDiags",
   "stopInitCommDiags",
   "String",
