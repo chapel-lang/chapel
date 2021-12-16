@@ -9912,14 +9912,14 @@ static bool ensureSerializersExist(AggregateType* at) {
     return true;
   }
 
-  if (ts->hasFlag(FLAG_ITERATOR_RECORD) &&
-      ts->hasFlag(FLAG_PROMOTION_ITERATOR_RECORD)) {
+  if (ts->hasFlag(FLAG_PROMOTION_ITERATOR_RECORD)) {
     return createSerializeDeserialize(at);
   }
   else if (! ts->hasFlag(FLAG_GENERIC)                &&
-      ! isSingleType(ts->type)                   &&
-      ! isSyncType(ts->type)                     &&
-      ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+           ! isSingleType(ts->type)                   &&
+           ! isSyncType(ts->type)                     &&
+           ! ts->hasFlag(FLAG_ITERATOR_RECORD)        &&
+           ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
     if (at != NULL) {
       if (isRecord(at) == true || 
           (isClass(at) == true && !at->symbol->hasFlag(FLAG_REF))) {
