@@ -12,10 +12,7 @@ record R {
   // same value, based on the internal hashtable
   // implementation.
   proc hash(): uint {
-    if a == "LHS" || a == "RHS" then
-      return 0;
-    else
-      return chpl__defaultHashWrapper(a): uint;
+    return 0;
   }
 }
 
@@ -25,17 +22,8 @@ var s2 = new set(R);
 var a = new R("LHS");
 var b = new R("RHS");
 
-// These elements are `==` equivalent, but will not be
-// stored in the same hash slot in the underlying table,
-// so the `_findSlot` function considers them as different
-// objects.
-var c = new R("LHS other");
-var d = new R("RHS other");
-
 s1.add(a);
 s2.add(b);
-s1.add(c);
-s2.add(d);
 
 writeln(s1 | s2);
 writeln(s1 + s2);
