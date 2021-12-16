@@ -178,7 +178,6 @@ class ID final {
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
 
-
 /// \endcond
 
 

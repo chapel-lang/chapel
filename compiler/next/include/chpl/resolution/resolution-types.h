@@ -420,6 +420,7 @@ class PoiInfo {
       elt.first.mark(context);
       elt.second.mark(context);
     }
+  }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
     poiScope()->stringify(ss, stringKind);
@@ -976,8 +977,6 @@ class FormalActualMap {
 
 
 /// \cond DO_NOT_DOCUMENT
-
-
 
 template<> struct stringify<chpl::resolution::TypedFnSignature::WhereClauseResult>
 {

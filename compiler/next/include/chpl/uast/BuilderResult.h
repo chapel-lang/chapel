@@ -165,16 +165,7 @@ class BuilderResult final {
 
 } // end namespace uast
 
-// docs are turned off for this as a workaround for breathe errors
-/// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::uast::BuilderResult> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::uast::BuilderResult& stringMe) const {
-    stringOut << "uast::BuilderResult is not stringified";
-  }
-};
-/// \endcond
+
 
 } // end namespace chpl
 

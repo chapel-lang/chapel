@@ -248,7 +248,6 @@ class UniqueString final {
 
 /// \cond DO_NOT_DOCUMENT
 
-
 /// \endcond
 
 

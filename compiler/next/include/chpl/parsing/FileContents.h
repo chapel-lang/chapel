@@ -78,7 +78,6 @@ class FileContents {
 } // end namespace parsing
 
 /// \cond DO_NOT_DOCUMENT
-
 /// \endcond
 
 

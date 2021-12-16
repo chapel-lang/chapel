@@ -63,9 +63,7 @@ enum StringifyKind {
   CHPL_SYNTAX
 };
 
-// define the generic stringify template which will cause a compilation error
-//  if used. Query argument and return types need to have a specialization of
-//  stringify
+// define the generic stringify template
 template<typename T> struct stringify {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,

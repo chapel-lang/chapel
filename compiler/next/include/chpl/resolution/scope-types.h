@@ -474,7 +474,8 @@ class PoiScope {
     context->markPointer(inScope_);
     context->markPointer(inFnPoi_);
   }
-  void stringify(std::ostream &ss, chpl::StringifyKind stringKind) const {
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
     inScope()->stringify(ss,stringKind);
     ss << " ";
     inFnPoi()->stringify(ss, stringKind);

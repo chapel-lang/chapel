@@ -191,5 +191,4 @@ void UniqueString::stringify(std::ostream& ss,
   ss.write(c_str(),length());
 }
 
-
 } // end namespace chpl
