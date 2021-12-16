@@ -415,12 +415,16 @@ def get_clang_additional_args():
         if arg == '-isysroot':
             has_sysroot = True
 
-    if has_sysroot:
-        # Work around a bug in some versions of Clang that forget to
+    # Check to see if Homebrew is installed. If it is,
+    # add the result of `brew prefix` to -I and -L args.
+    exists, retcode, my_out, my_err = try_run_command(['brew', '--prefix'])
+    if exists and retcode == 0:
+        # Make sure to include homebrew search path
+        homebrew_prefix = my_out.strip()
         # search /usr/local/include and /usr/local/lib
         # if there is a -isysroot argument.
-        comp_args.append('-I/usr/local/include')
-        link_args.append('-L/usr/local/lib')
+        comp_args.append('-I' + homebrew_prefix + '/include')
+        link_args.append('-L' + homebrew_prefix + '/lib')
 
     return (comp_args, link_args)
 
