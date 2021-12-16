@@ -107,7 +107,7 @@ module ArrayViewReindex {
  class ArrayViewReindexDom: BaseRectangularDom {
     // the new reindexed index set that we represent upwards
     var updomInst: unmanaged DefaultRectangularDom(rank, idxType, stridable)?;
-    forwarding updom except these;
+    forwarding updom except these, chpl__serialize, chpl__deserialize;
 
     // the old original index set that we're equivalent to
     var downdomPid;
