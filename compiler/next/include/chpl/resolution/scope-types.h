@@ -273,6 +273,7 @@ class Scope {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << "Scope ";
     ss << tagToString(tag());
     ss << " ";
     id().stringify(ss, stringKind);
@@ -476,6 +477,7 @@ class PoiScope {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << "PoiScope ";
     inScope()->stringify(ss,stringKind);
     ss << " ";
     inFnPoi()->stringify(ss, stringKind);

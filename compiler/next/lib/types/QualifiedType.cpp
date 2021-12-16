@@ -71,9 +71,6 @@ void QualifiedType::stringify(std::ostream& ss,
                               chpl::StringifyKind stringKind) const {
   const char* kindStr = kindToString(kind_);
   std::ostringstream strstream;
-  type_->stringify(strstream, stringKind);
-  // TODO: What is this typeStr doing? it doesn't get used?
-  std::string typeStr = (type_)?(strstream.str()):(std::string("nullptr"));
 
   ss << kindStr;
 

@@ -87,10 +87,9 @@ bool ID::update(chpl::ID& keep, chpl::ID& addin) {
 
 void ID::stringify(std::ostream& ss,
                    chpl::StringifyKind stringKind) const {
-  long pos = ss.tellp();
   ss << this->symbolPath().c_str();
 
-  if (!(ss.tellp() == pos) && this->postOrderId() >= 0) {
+  if (!(symbolPath().isEmpty()) && this->postOrderId() >= 0) {
     ss << "@";
     ss << std::to_string(this->postOrderId());
   }

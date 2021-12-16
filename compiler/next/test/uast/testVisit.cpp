@@ -72,7 +72,7 @@ static void logAction(std::vector<std::string>& actionsLog,
                       const char* note,
                       const uast::ASTNode* ast) {
   std::ostringstream ss;
-  ss << std::string(note) << " " << asttags::tagToString(ast->tag()) << " ";
+  ss << note << " " << asttags::tagToString(ast->tag()) << " ";
   ast->id().stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
   actionsLog.push_back(ss.str());
 }

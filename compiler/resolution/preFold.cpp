@@ -959,10 +959,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     // Check if this immediate is a string
     if (chplEnv->const_kind == CONST_KIND_STRING) {
-      std::ostringstream ss;
-      chplEnv->v_string.stringify(ss, chpl::StringifyKind::DEBUG_SUMMARY);
-      envKey = ss.str();
-
+      envKey = chplEnv->v_string.str();
     } else {
       USR_FATAL(call, "expected immediate of type string");
     }

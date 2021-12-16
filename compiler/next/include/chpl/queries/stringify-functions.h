@@ -55,8 +55,7 @@ class Context;
  * DEBUG_DETAIL - summary data plus all fields and values, etc.
  * CHPL_SYNTAX - the chapel syntax necessary to generate the object,
  *                or DEBUG_DETAIL if unable
- */
-
+*/
 enum StringifyKind {
   DEBUG_SUMMARY,
   DEBUG_DETAIL,
@@ -361,7 +360,8 @@ template<typename... ArgTs> struct stringify<std::tuple<ArgTs...>> {
 };
 
 
-// force this to always build so it is available during debug
+// TODO: Check if we can use this to ensure debug always builds,
+// so it can be avalialbe during debugging.
   template<typename T>
   void debugPrint(const T &arg) {
     stringify<T> stringTemplate;

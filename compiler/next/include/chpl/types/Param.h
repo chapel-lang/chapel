@@ -97,9 +97,7 @@ class Param {
 
   // helper function to convert a value to a string
   static std::string valueToString(UniqueString v) {
-    std::ostringstream ss;
-     v.stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
-     return ss.str();
+    return v.str();
   }
   static std::string valueToString(ComplexDouble v) {
     return std::to_string(v.re) + "+" + std::to_string(v.im) + "i";
@@ -230,7 +228,7 @@ class Param {
 /// \cond DO_NOT_DOCUMENT
 template<> struct stringify<chpl::types::Param::ComplexDouble> {
   void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
+                  chpl::StringifyKind stringKind,
                   const chpl::types::Param::ComplexDouble& stringMe) const {
     stringOut << "types::Param::ComplexDouble is not stringified";
   }
@@ -238,7 +236,7 @@ template<> struct stringify<chpl::types::Param::ComplexDouble> {
 
 template<> struct stringify<chpl::types::Param::NoneValue> {
   void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
+                  chpl::StringifyKind stringKind,
                   const chpl::types::Param::NoneValue& stringMe) const {
     stringOut << "types::Param::NoneValue is not stringified";
   }

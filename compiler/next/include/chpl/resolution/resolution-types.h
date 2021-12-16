@@ -63,7 +63,7 @@ class UntypedFnSignature {
       return chpl::hash(name, hasDefaultValue, decl);
     }
 
-    void stringify(std::ostream& ss, StringifyKind stringKind) const {
+    void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
       name.stringify(ss, stringKind);
       if (decl != nullptr) {
         decl->stringify(ss, stringKind);
@@ -305,6 +305,7 @@ class CallInfo {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+      ss << "CallInfo: ";
       name().stringify(ss, stringKind);
       ss << " ";
   }
@@ -423,6 +424,7 @@ class PoiInfo {
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << "PoiInfo: ";
     poiScope()->stringify(ss, stringKind);
   }
 };
@@ -981,21 +983,20 @@ class FormalActualMap {
 template<> struct stringify<chpl::resolution::TypedFnSignature::WhereClauseResult>
 {
   void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
+                  chpl::StringifyKind stringKind,
                   const chpl::resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
-    std::string ret;
     switch(stringMe) {
       case 0:
-        ret = "WHERE_NONE";
+        stringOut << "WHERE_NONE";
         break;
       case 1:
-        ret = "WHERE_TBD";
+        stringOut <<  "WHERE_TBD";
         break;
       case 2:
-        ret = "WHERE_TRUE";
+        stringOut <<  "WHERE_TRUE";
         break;
       case 3:
-        ret = "WHERE_FALSE";
+        stringOut <<  "WHERE_FALSE";
         break;
     }
 }

@@ -87,8 +87,6 @@ static void test2() {
   moduleTwo = parseOneModule(ctx, modTwoPath);
   assert(moduleOne->numStmts() == 2);
   assert(moduleTwo->numStmts() == 2);
-  moduleOne->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
-  moduleTwo->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
 
   const Module* oldModuleOne = moduleOne;
   const Module* oldModuleTwo = moduleTwo;
