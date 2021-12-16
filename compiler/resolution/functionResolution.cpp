@@ -9903,6 +9903,34 @@ static bool resolveSerializeDeserialize(AggregateType* at);
   //return serializeFn;
 //}
 
+static bool createSerializeDeserialize(AggregateType* at);
+
+static bool ensureSerializersExist(AggregateType* at) {
+  Symbol* ts = at->symbol;
+
+  if (serializeMap.find(at) != serializeMap.end()) {
+    return true;
+  }
+
+  if (ts->hasFlag(FLAG_ITERATOR_RECORD) &&
+      ts->hasFlag(FLAG_PROMOTION_ITERATOR_RECORD)) {
+    return createSerializeDeserialize(at);
+  }
+  else if (! ts->hasFlag(FLAG_GENERIC)                &&
+      ! isSingleType(ts->type)                   &&
+      ! isSyncType(ts->type)                     &&
+      ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
+    if (at != NULL) {
+      if (isRecord(at) == true || 
+          (isClass(at) == true && !at->symbol->hasFlag(FLAG_REF))) {
+        return resolveSerializeDeserialize(at);
+      }
+    }
+  }
+
+  return false;
+}
+
 static bool createSerializeDeserialize(AggregateType* at) {
 
   if (at->numFields() == 0) {
@@ -9938,7 +9966,9 @@ static bool createSerializeDeserialize(AggregateType* at) {
       AggregateType* fieldValType = toAggregateType(fieldAggType->getValType());
       INT_ASSERT(fieldValType);
 
-      if (resolveSerializeDeserialize(fieldValType)) {
+      if (ensureSerializersExist(fieldValType)) {
+      //if (resolveSerializeDeserialize(fieldValType)) {
+        nprint_view(fieldValType);
         Serializers& ser = serializeMap[fieldValType];
         FnSymbol* fieldSerializer = ser.serializer;
         deserializers.push_back(ser.deserializer);
@@ -10119,31 +10149,13 @@ static void resolveSerializers() {
   }
 
   for_alive_in_Vec(TypeSymbol, ts, gTypeSymbols) {
-    //std::cout << "100\n";
-    //nprint_view(ts);
-    bool hasSerializers = false;
 
-    AggregateType* at = toAggregateType(ts->type);
+    if (AggregateType* at = toAggregateType(ts->type)) {
+      bool hasSerializers = ensureSerializersExist(at);
 
-    if (ts->hasFlag(FLAG_ITERATOR_RECORD) &&
-        ts->hasFlag(FLAG_PROMOTION_ITERATOR_RECORD)) {
-      hasSerializers = createSerializeDeserialize(at);
-    }
-    else if (! ts->hasFlag(FLAG_GENERIC)                &&
-             ! isSingleType(ts->type)                   &&
-             ! isSyncType(ts->type)                     &&
-             ! ts->hasFlag(FLAG_SYNTACTIC_DISTRIBUTION)) {
-      if (at != NULL) {
-        if (isRecord(at) == true || 
-            (isClass(at) == true && !at->symbol->hasFlag(FLAG_REF))) {
-          hasSerializers = resolveSerializeDeserialize(at);
-
-        }
+      if (hasSerializers) {
+        resolveBroadcasters(at);
       }
-    }
-
-    if (hasSerializers) {
-      resolveBroadcasters(at);
     }
   }
 
