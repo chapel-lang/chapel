@@ -1613,7 +1613,8 @@ static AggregateType* makeIteratorRecord(FnSymbol* fn, Type* yieldedType) {
   if (fn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
     sym->addFlag(FLAG_PROMOTION_ITERATOR_RECORD);
     for_formals (formal, fn) {
-      if (formal->type != gMethodToken->type) {
+      if (formal->type != gMethodToken->type &&
+          formal->type != gFollowerTag->type) {
         promotionFieldMap[retval].push_back(formal);
         VarSymbol* protoField = new VarSymbol(formal->name, formal->type);
         protoField->addFlag(FLAG_PROMOTION_PROTO_FIELD);
