@@ -122,18 +122,14 @@ bool Type::completeMatch(const Type* other) const {
   return true;
 }
 
-void Type::dump(const Type* type, int leadingSpaces) {
-  // TODO: REPLACE ME
-
-  for (int i = 0; i < leadingSpaces; i++) {
-    printf("  ");
-  }
-
-  printf("type %s \n", typetags::tagToString(type->tag()));
-}
-
 void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
-  ss << typetags::tagToString(tag());
+  int leadingSpaces = 0;
+  for (int i = 0; i < leadingSpaces; i++) {
+    ss << "  ";
+  }
+  ss << "type ";
+  ss << typetags::tagToString(this->tag());
+  ss << " \n";
 }
 
 bool Type::isNilablePtrType() const {

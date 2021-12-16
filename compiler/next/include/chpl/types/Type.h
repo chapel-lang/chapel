@@ -100,10 +100,6 @@ class Type {
 
   bool completeMatch(const Type* other) const;
 
-
-  // TODO: replace this with stringify
-  static void dump(const Type* type, int leadingSpaces=0);
-
   virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   // define is__ methods for the various Type subclasses

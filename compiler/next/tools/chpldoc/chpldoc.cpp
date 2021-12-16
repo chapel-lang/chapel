@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
       std::cout << stripComment(comment->str()) << "\n";
     } else {
       // TODO this should print the original text I think and not an AST dump
-      ASTNode::dump(mod->child(i));
+      mod->child(i)->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
     }
   }
 

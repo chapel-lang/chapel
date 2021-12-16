@@ -151,8 +151,6 @@ class ASTNode {
 
   void mark(Context* context) const;
 
-  //static void dump(const ASTNode* ast, int leadingSpaces=0);
-
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   // define is__ methods for the various AST types

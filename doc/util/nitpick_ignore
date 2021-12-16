@@ -36,7 +36,6 @@ cpp:identifier ASTList::const_iterator::difference_type
 cpp:identifier uint64_t
 cpp:identifier int64_t
 cpp:identifier va_list
-cpp:identifier chpl::StringifyKind
 # TODO: Expand macros before generating docs to remove these.
 cpp:identifier ParamTag
 cpp:identifier PragmaTag
