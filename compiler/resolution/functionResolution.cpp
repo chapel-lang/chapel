@@ -9967,8 +9967,6 @@ static bool createSerializeDeserialize(AggregateType* at) {
       INT_ASSERT(fieldValType);
 
       if (ensureSerializersExist(fieldValType)) {
-      //if (resolveSerializeDeserialize(fieldValType)) {
-        nprint_view(fieldValType);
         Serializers& ser = serializeMap[fieldValType];
         FnSymbol* fieldSerializer = ser.serializer;
         deserializers.push_back(ser.deserializer);
