@@ -177,7 +177,7 @@ class QualifiedType final {
   static bool update(QualifiedType& keep, QualifiedType& addin);
   void mark(Context* context) const;
 
-  std::string toString(chpl::StringifyKind stringKind) const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 };
 
 
@@ -185,13 +185,13 @@ class QualifiedType final {
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::types::QualifiedType> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::types::QualifiedType stringMe) const {
-    stringOut << stringMe.toString(stringKind);
+template<> struct update<chpl::types::QualifiedType> {
+  bool operator()(chpl::types::QualifiedType& keep,
+                  chpl::types::QualifiedType& addin) const {
+    return defaultUpdate(keep, addin);
   }
 };
+
 /// \endcond
 
 } // end namespace chpl

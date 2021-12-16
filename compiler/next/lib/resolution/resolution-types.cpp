@@ -242,21 +242,20 @@ bool FormalActualMap::computeAlignment(const UntypedFnSignature* untyped,
   return true;
 }
 
-std::string TypedFnSignature::toString(chpl::StringifyKind stringKind) const {
-  std::string ret = id().toString(stringKind);
-  ret += "(";
+void TypedFnSignature::stringify(std::ostream& ss,
+                                 chpl::StringifyKind stringKind) const {
+  id().stringify(ss, stringKind);
+  ss << "(";
   int nFormals = numFormals();
   for (int i = 0; i < nFormals; i++) {
     if (i != 0) {
-      ret += ", ";
+      ss << ", ";
     }
-    ret += formalName(i).toString(stringKind);
-    ret += " : ";
-    ret += formalType(i).toString(stringKind);
+    formalName(i).stringify(ss, stringKind);
+    ss << " : ";
+    formalType(i).stringify(ss, stringKind);
   }
-  ret += ")";
-
-  return ret;
+  ss << ")";
 }
 
 
@@ -273,36 +272,34 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false; // TODO -- consider function names etc -- see PR #16261
 }
 
-std::string ResolvedExpression::toString(chpl::StringifyKind stringKind) const {
-  std::string ret;
-  ret += " : ";
-  ret += type_.toString(stringKind);
-  ret += " ; ";
+void ResolvedExpression::stringify(std::ostream& ss,
+                                   chpl::StringifyKind stringKind) const {
+  ss << " : ";
+  type_.stringify(ss, stringKind);
+  ss << " ; ";
   if (!toId_.isEmpty()) {
-    ret += " refers to ";
-    ret += toId_.toString(stringKind);
+    ss << " refers to ";
+    toId_.stringify(ss, stringKind);
   } else {
     auto onlyFn = mostSpecific_.only();
     if (onlyFn) {
-      ret += " calls ";
-      ret += onlyFn->toString(stringKind);
+      ss << " calls ";
+      onlyFn->stringify(ss, stringKind);
     } else {
       if (auto sig = mostSpecific_.bestRef()) {
-        ret += " calls ref ";
-        ret += sig->toString(stringKind);
+        ss << " calls ref ";
+        sig->stringify(ss, stringKind);
       }
       if (auto sig = mostSpecific_.bestConstRef()) {
-        ret += " calls const ref ";
-        ret += sig->toString(stringKind);
+        ss << " calls const ref ";
+        sig->stringify(ss, stringKind);
       }
       if (auto sig = mostSpecific_.bestValue()) {
-        ret += " calls value ";
-        ret += sig->toString(stringKind);
+        ss << " calls value ";
+        sig->stringify(ss, stringKind);
       }
     }
   }
-
-  return ret;
 }
 
 

@@ -177,13 +177,18 @@ class ID final {
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::ID> {
-  void operator()(std::ostream &stringOut,
-                  chpl::StringifyKind stringKind,
-                  const chpl::ID& id) const {
-    stringOut << "ID(" << id.toString(stringKind) << ")";
+template<> struct update<chpl::ID> {
+  bool operator()(chpl::ID& keep,
+                  chpl::ID& addin) const {
+    return defaultUpdate(keep, addin);
   }
 };
+template<> struct mark<chpl::ID> {
+  void operator()(Context* context, const chpl::ID& keep) const {
+    keep.markUniqueStrings(context);
+  }
+};
+
 /// \endcond
 
 

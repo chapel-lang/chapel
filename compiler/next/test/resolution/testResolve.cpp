@@ -177,7 +177,7 @@ static void test3() {
     setFileText(context, path, contents);
     const ModuleVec& vec = parse(context, path);
     for (const Module* mod : vec) {
-      ASTNode::dump(mod);
+      mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
     }
     assert(vec.size() == 1);
     const Module* m = vec[0]->toModule();
@@ -209,7 +209,7 @@ static void test3() {
     setFileText(context, path, contents);
     const ModuleVec& vec = parse(context, path);
     for (const Module* mod : vec) {
-      ASTNode::dump(mod);
+      mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
     }
 
     assert(vec.size() == 1);

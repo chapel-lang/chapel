@@ -64,7 +64,9 @@ static void testStringLiteral(Parser* parser,
   auto strLit = initExpr->toStringLiteral();
   assert(strLit);
   assert(strLit->quoteStyle() == expectQuoteStyle);
-  assert(strLit->str().toString(chpl::StringifyKind::DEBUG_SUMMARY) == expectValue);
+  std::ostringstream ss;
+  strLit->str().stringify(ss, chpl::StringifyKind::DEBUG_SUMMARY);
+  assert(ss.str() == expectValue);
 }
 static void testBytesLiteral(Parser* parser,
                              const std::string& testname,
@@ -76,7 +78,9 @@ static void testBytesLiteral(Parser* parser,
   auto bytesLit = initExpr->toBytesLiteral();
   assert(bytesLit);
   assert(bytesLit->quoteStyle() == expectQuoteStyle);
-  assert(bytesLit->str().toString(chpl::StringifyKind::DEBUG_SUMMARY) == expectValue);
+  std::ostringstream ss;
+  bytesLit->str().stringify(ss, chpl::StringifyKind::DEBUG_SUMMARY);
+  assert(ss.str() == expectValue);
 }
 static void testCStringLiteral(Parser* parser,
                                const std::string& testname,
@@ -88,7 +92,9 @@ static void testCStringLiteral(Parser* parser,
   auto strLit = initExpr->toCStringLiteral();
   assert(strLit);
   assert(strLit->quoteStyle() == expectQuoteStyle);
-  assert(strLit->str().toString(chpl::StringifyKind::DEBUG_SUMMARY) == expectValue);
+  std::ostringstream ss;
+  strLit->str().stringify(ss, chpl::StringifyKind::DEBUG_SUMMARY);
+  assert(ss.str() == expectValue);
 }
 
 static void testTripleLiteral(Parser* parser,

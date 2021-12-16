@@ -32,9 +32,9 @@ namespace chpl {
 namespace types {
 
 
-std::string PrimitiveType::toString(chpl::StringifyKind stringKind) const {
-  std::string ret = this->c_str();
-  return ret;
+void PrimitiveType::stringify(std::ostream& ss,
+                              chpl::StringifyKind stringKind) const {
+  ss << this->c_str();
 }
 
 const PrimitiveType*

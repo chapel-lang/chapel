@@ -63,13 +63,12 @@ class UntypedFnSignature {
       return chpl::hash(name, hasDefaultValue, decl);
     }
 
-    std::string toString(StringifyKind stringKind) const {
-      std::ostringstream ss;
-      ss << name.toString(stringKind);
+    void stringify(std::ostream& ss, StringifyKind stringKind) const {
+      name.stringify(ss, stringKind);
       if (decl != nullptr) {
-        ss << " " << decl->toString(stringKind);
+        decl->stringify(ss, stringKind);
+        ss << " ";
       }
-      return ss.str();
     }
   };
 
@@ -205,12 +204,13 @@ class UntypedFnSignature {
     return formals_[i].decl;
   }
 
-  std::string toString(chpl::StringifyKind stringKind) const {
-    std::ostringstream ss;
-    ss << name().toString(stringKind);
-    ss << " " << id().toString(stringKind);
-    ss << " " << std::to_string(numFormals());
-    return ss.str();
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    name().stringify(ss, stringKind);
+    ss << " ";
+    id().stringify(ss, stringKind);
+    ss << " ";
+    ss << std::to_string(numFormals());
+    ss << " ";
   }
 };
 
@@ -244,12 +244,11 @@ class CallInfoActual {
     return chpl::hash(type_, byName_);
   }
 
-  std::string toString(chpl::StringifyKind stringKind) {
-    std::ostringstream ss;
-    ss << byName().toString(stringKind);
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) {
+    byName().stringify(ss, stringKind);
     ss << " ";
-    ss << type().toString(stringKind);
-    return ss.str();
+    type().stringify(ss, stringKind);
+    ss << " ";
   }
 };
 
@@ -305,8 +304,9 @@ class CallInfo {
     return chpl::hash(name_, isMethod_, hasQuestionArg_, actuals_);
   }
 
-  std::string toString(chpl::StringifyKind stringKind) const {
-      return name().toString(stringKind);
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+      name().stringify(ss, stringKind);
+      ss << " ";
   }
 };
 
@@ -420,6 +420,9 @@ class PoiInfo {
       elt.first.mark(context);
       elt.second.mark(context);
     }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    poiScope()->stringify(ss, stringKind);
   }
 };
 
@@ -496,7 +499,7 @@ class TypedFnSignature {
     context->markPointer(parentFn_);
   }
 
-  std::string toString(chpl::StringifyKind stringKind) const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /** Returns the id of the relevant uast node (usually a Function
       but it can be a Record or Class for compiler-generated functions) */
@@ -777,7 +780,7 @@ class ResolvedExpression {
     context->markPointer(poiScope_);
   }
 
-  std::string toString(chpl::StringifyKind stringKind) const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 };
 
 /**

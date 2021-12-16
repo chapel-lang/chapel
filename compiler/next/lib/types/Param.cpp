@@ -344,15 +344,15 @@ QualifiedType Param::fold(Context* context,
   return QualifiedType(IntentList::PARAM, pair.second, pair.first);
 }
 
-std::string Param::toString(chpl::StringifyKind stringKind) const {
-  std::string ret;
+void Param::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+
 
   switch (tag_) {
 #define PARAM_NODE(NAME, VALTYPE) \
     case paramtags::NAME: { \
       const NAME* casted = (const NAME*) this; \
       auto value = casted->value(); \
-      ret += Param::valueToString(value); \
+      ss << Param::valueToString(value); \
       break; \
     }
 // Apply the above macros to ParamClassesList.h
@@ -361,7 +361,6 @@ std::string Param::toString(chpl::StringifyKind stringKind) const {
 #undef PARAM_NODE
   }
 
-  return ret;
 }
 
 uint64_t Param::binStr2uint64(const char* str, size_t len, std::string& err) {

@@ -126,7 +126,9 @@ static std::string getIdStr(const ASTNode* ast) {
   if (ast == nullptr || ast->id().isEmpty()) {
     idStr = "<no id>";
   } else {
-    idStr = ast->id().toString(chpl::StringifyKind::CHPL_SYNTAX);
+    std::ostringstream ss;
+    ast->id().stringify(ss, chpl::StringifyKind::CHPL_SYNTAX);
+    idStr = ss.str();
   }
 
   return idStr;
