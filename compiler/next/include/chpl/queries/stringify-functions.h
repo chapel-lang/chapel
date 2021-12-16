@@ -29,16 +29,18 @@
 #ifndef CHPL_QUERIES_STRINGIFY_FUNCTIONS_H
 #define CHPL_QUERIES_STRINGIFY_FUNCTIONS_H
 
+#include "chpl/util/memory.h"
+
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 #include <functional>
+#include <iostream>
+#include <set>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "chpl/util/memory.h"
-#include <set>
-#include <sstream>
-#include <algorithm>
 
 
 namespace chpl {
@@ -61,13 +63,6 @@ enum StringifyKind {
   CHPL_SYNTAX
 };
 
-// force this to always build so it is available during debug
-template<typename T>
-void debugPrint(const T &arg) {
-stringify<T> stringTemplate;
-stringTemplate(std::cout, chpl::StringifyKind::DEBUG_DETAIL, arg);
-}
-
 // define the generic stringify template which will cause a compilation error
 //  if used. Query argument and return types need to have a specialization of
 //  stringify
@@ -75,7 +70,7 @@ template<typename T> struct stringify {
   void operator()(std::ostream &stringOut,
                   StringifyKind stringKind,
                   const T& stringMe) {
-                    stringOut << stringMe.toString(stringKind);
+                    stringMe.stringify(stringOut, stringKind);
                   };
 };
 
@@ -204,7 +199,6 @@ static inline void defaultStringifyPair(std::ostream &stringOut,
  stringOut << ")";
 }
 
-/// \cond DO_NOT_DOCUMENT
 template<> struct stringify<std::string> {
 void operator()(std::ostream &stringOut,
                StringifyKind stringKind,
@@ -213,6 +207,7 @@ void operator()(std::ostream &stringOut,
 }
 };
 
+/// \cond DO_NOT_DOCUMENT
 
 /*
   Templates for integral types start here
@@ -362,6 +357,14 @@ template<typename... ArgTs> struct stringify<std::tuple<ArgTs...>> {
                           std::index_sequence_for<ArgTs...>{});
   }
 };
+
+
+// force this to always build so it is available during debug
+  template<typename T>
+  void debugPrint(const T &arg) {
+    stringify<T> stringTemplate;
+    stringTemplate(std::cout, chpl::StringifyKind::DEBUG_DETAIL, arg);
+  }
 /// \endcond
 
 } // end namespace chpl

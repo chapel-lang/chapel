@@ -63,6 +63,13 @@ class CompositeType : public Type {
     size_t hash() const {
       return chpl::hash(name, hasDefaultValue, decl, type);
     }
+
+    void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+      name.stringify(ss, stringKind);
+      //TODO: determine the proper way to do this
+      //decl.stringify(ss, stringKind);
+      type.stringify(ss, stringKind);
+    }
   };
  protected:
   // TODO: add fields and accessors for a QualifiedType per field
@@ -101,7 +108,8 @@ class CompositeType : public Type {
  public:
   virtual ~CompositeType() = 0; // this is an abstract base class
 
-  virtual std::string toString(chpl::StringifyKind stringKind) const override;
+  virtual void stringify(std::ostream& ss,
+                         chpl::StringifyKind stringKind) const override;
 
   /** Returns true if this is a generic type */
   bool isGeneric() const override { return isGeneric_; }
@@ -151,15 +159,9 @@ class CompositeType : public Type {
 
 
 } // end namespace uast
-/// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::types::CompositeType::FieldDetail> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::types::CompositeType::FieldDetail& stringMe) const {
-    stringOut << "types::CompositeType::FieldDetail is not stringified";
-  }
-};
-/// \endcond DO_NOT_DOCUMENT
+
+
+
 } // end namespace chpl
 
 

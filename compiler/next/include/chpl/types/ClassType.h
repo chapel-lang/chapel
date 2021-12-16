@@ -67,7 +67,8 @@ class ClassType final : public Type {
 
  public:
   ~ClassType() = default;
-  std::string toString(chpl::StringifyKind stringKind) const override;
+  void stringify(std::ostream& ss,
+                 chpl::StringifyKind stringKind) const override;
 
   static const ClassType* get(Context* context,
                               const BasicClassType* basicType,

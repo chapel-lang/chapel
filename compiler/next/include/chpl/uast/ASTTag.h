@@ -110,14 +110,6 @@ template<> struct update<uast::ASTTag> {
   }
 };
 
-template<> struct stringify<uast::ASTTag> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const uast::ASTTag& stringMe) const {
-    stringOut << tagToString(stringMe);
-  }
-};
-
 /// \endcond
 
 } // end namespace chpl

@@ -58,23 +58,25 @@ static const char* kindToString(QualifiedType::Kind kind) {
   return "unknown";
 }
 
-std::string QualifiedType::toString(chpl::StringifyKind stringKind) const {
+void QualifiedType::stringify(std::ostream& ss,
+                              chpl::StringifyKind stringKind) const {
   const char* kindStr = kindToString(kind_);
-  std::string typeStr = (type_)?(type_->toString(stringKind)):(std::string("nullptr"));
+  std::ostringstream strstream;
+  type_->stringify(strstream, stringKind);
+  // TODO: What is this typeStr doing? it doesn't get used?
+  std::string typeStr = (type_)?(strstream.str()):(std::string("nullptr"));
 
-  std::string ret = kindStr;
+  ss << kindStr;
 
   if (type_ != nullptr) {
-    ret += " ";
-    ret += type_->toString(stringKind);
+    ss << " ";
+    type_->stringify(ss, stringKind);
   }
 
   if (kind_ == QualifiedType::PARAM && param_ != nullptr) {
-    ret += " = ";
-    ret += param_->toString(stringKind);
+    ss << " = ";
+    param_->stringify(ss, stringKind);
   }
-
-  return ret;
 }
 
 

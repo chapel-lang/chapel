@@ -175,7 +175,7 @@ class QualifiedType final {
     return ret;
   }
 
-  std::string toString(chpl::StringifyKind stringKind) const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 };
 
 
@@ -190,13 +190,6 @@ template<> struct update<chpl::types::QualifiedType> {
   }
 };
 
-template<> struct stringify<chpl::types::QualifiedType> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::types::QualifiedType stringMe) const {
-    stringOut << stringMe.toString(stringKind);
-  }
-};
 /// \endcond
 
 } // end namespace chpl

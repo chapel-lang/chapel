@@ -619,8 +619,11 @@ void SymExpr::prettyPrint(std::ostream *o) {
   if (strcmp(var->name, "nil") != 0) {
     if (var->isImmediate()) {
       if (VarSymbol *sym = toVarSymbol(var)) {
-        if (sym->immediate->const_kind == CONST_KIND_STRING)
-          *o << "\"" << sym->immediate->v_string.toString(chpl::CHPL_SYNTAX) << "\"";
+        if (sym->immediate->const_kind == CONST_KIND_STRING) {
+          *o << "\"";
+          sym->immediate->v_string.stringify(*o, chpl::CHPL_SYNTAX);
+          *o << "\"";
+        }
         else if (sym->immediate->const_kind == NUM_KIND_BOOL)
           *o << sym->immediate->bool_value();
         else if (sym->immediate->const_kind == NUM_KIND_INT)

@@ -140,6 +140,8 @@ void Type::markType(Context* context, const Type* keep) {
 }
 
 void Type::dump(const Type* type, int leadingSpaces) {
+  // TODO: REPLACE ME
+
   for (int i = 0; i < leadingSpaces; i++) {
     printf("  ");
   }
@@ -147,9 +149,8 @@ void Type::dump(const Type* type, int leadingSpaces) {
   printf("type %s \n", typetags::tagToString(type->tag()));
 }
 
-std::string Type::toString(chpl::StringifyKind stringKind) const {
-  std::string ret = typetags::tagToString(tag());
-  return ret;
+void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+  ss << typetags::tagToString(tag());
 }
 
 bool Type::isAnyNilablePtrType() const {

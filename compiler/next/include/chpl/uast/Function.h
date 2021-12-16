@@ -386,6 +386,8 @@ template<> struct stringify<chpl::uast::Function::Kind> {
   }
 };
 /// \endcond DO_NOT_DOCUMENT
+
+
 } // end namespace chpl
 
 namespace std {

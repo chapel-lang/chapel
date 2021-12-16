@@ -194,8 +194,8 @@ struct InlinedString {
   // return a long-lived pointer
   const char* astr(Context* context) const;
 
-  std::string toString(chpl::StringifyKind stringKind) const {
-    return std::string(c_str(), length());
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << std::string(c_str(), length());
   }
 
   // mark the string as used this revision (so it is not GC'd)
@@ -247,8 +247,8 @@ struct PODUniqueString {
     return i.astr(context);
   }
 
-  std::string toString(chpl::StringifyKind stringKind) const {
-    return std::string(c_str(), length());
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << std::string(c_str(), length());
   }
 
   bool isEmpty() const {
