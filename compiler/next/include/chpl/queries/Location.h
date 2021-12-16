@@ -88,17 +88,6 @@ public:
 };
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::Location> {
-  bool operator()(chpl::Location& keep,
-                  chpl::Location& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
-template<> struct mark<chpl::Location> {
-  void operator()(Context* context, const chpl::Location& keep) const {
-    keep.markUniqueStrings(context);
-  }
-};
 
 /// \endcond
 

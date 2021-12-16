@@ -534,18 +534,6 @@ class InnermostMatch {
 } // end namespace resolution
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<resolution::InnermostMatch> {
-  bool operator()(resolution::InnermostMatch& keep,
-                  resolution::InnermostMatch& addin) const {
-    bool match = (keep == addin);
-    if (match) {
-      return false;
-    } else {
-      keep.swap(addin);
-      return true;
-    }
-  }
-};
 
 /// \endcond
 

@@ -185,12 +185,7 @@ class QualifiedType final {
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::types::QualifiedType> {
-  bool operator()(chpl::types::QualifiedType& keep,
-                  chpl::types::QualifiedType& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
+
 
 /// \endcond
 

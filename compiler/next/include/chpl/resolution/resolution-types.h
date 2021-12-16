@@ -976,34 +976,7 @@ class FormalActualMap {
 
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<resolution::ResolvedExpression> {
-  bool operator()(resolution::ResolvedExpression& keep,
-                  resolution::ResolvedExpression& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
 
-template<> struct update<resolution::MostSpecificCandidates> {
-  bool operator()(resolution::MostSpecificCandidates& keep,
-                  resolution::MostSpecificCandidates& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
-
-template<> struct update<resolution::ResolutionResultByPostorderID> {
-  bool operator()(resolution::ResolutionResultByPostorderID& keep,
-                  resolution::ResolutionResultByPostorderID& addin) const {
-    return resolution::ResolutionResultByPostorderID::update(keep, addin);
-  }
-};
-
-template<> struct update<owned<resolution::ResolvedFunction>> {
-  bool operator()(owned<resolution::ResolvedFunction>& keep,
-                  owned<resolution::ResolvedFunction>& addin) const {
-    // this function is just here to make debugging easier
-    return defaultUpdateOwned(keep, addin);
-  }
-};
 
 
 template<> struct stringify<chpl::resolution::TypedFnSignature::WhereClauseResult>
