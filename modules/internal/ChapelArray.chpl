@@ -1294,7 +1294,7 @@ module ChapelArray {
 
     pragma "no doc"
     proc chpl__serialize()
-      where this._value.type.isDefaultRectangular() {
+      where this._value.isDefaultRectangular() {
       return this._value.chpl__serialize();
     }
 

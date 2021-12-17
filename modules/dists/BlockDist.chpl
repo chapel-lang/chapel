@@ -397,8 +397,6 @@ class BlockArr: BaseRectangularArr {
   const SENTINEL = max(rank*int);
 }
 
-//proc BlockArr.chpl__rvfMe() param { return true; }
-
 //
 // Local Block Array Class
 //
@@ -1437,10 +1435,6 @@ proc BlockArr.chpl__serialize()
       where !(isDomainType(eltType) || isArrayType(eltType)) {
   return pid;
 }
-
-//proc BlockArr.chpl_rvfMe() param {
-  //return true;
-//}
 
 proc type BlockArr.chpl__deserialize(data) {
   return chpl_getPrivatizedCopy(

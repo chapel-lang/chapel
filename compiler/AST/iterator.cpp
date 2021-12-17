@@ -1985,10 +1985,6 @@ void cleanupPrimIRFieldValByFormal() {
 static void fixPromotionProtoFields(AggregateType* record, Symbol* locSym,
                                     VarSymbol* newField) {
 
-  if (record->id == 1743800) {
-
-  }
-
   if (record->numFields() == 0) {
     return;
   }
@@ -2015,16 +2011,12 @@ static void fixPromotionProtoFields(AggregateType* record, Symbol* locSym,
     }
   }
 
+  // TODO merge these two branches
   if (serializer) {
-
-    // what's happening here? Should I make it clear that I am using field
-    // accessors?
     update_symbols(serializer, &updateMap);
 
   }
 
-  // once the implementation is complete, we don't need two separate checks
-  // here.
   if (deserializer) {
     update_symbols(deserializer, &updateMap);
   }

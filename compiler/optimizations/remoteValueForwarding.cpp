@@ -27,7 +27,6 @@
 #include "stlUtil.h"
 #include "stmt.h"
 #include "stringutil.h"
-#include "view.h"
 
 //#define DEBUG_SYNC_ACCESS_FUNCTION_SET
 
@@ -253,7 +252,6 @@ static void updateTaskFunctions(Map<Symbol*, Vec<SymExpr*>*>& defMap,
       // For each reference arg that is safe to dereference
       for_formals(arg, fn) {
         if (canForwardValue(defMap, useMap, syncSet, fn, arg)) {
-
           if (shouldSerialize(arg)) {
             insertSerialization(fn, arg);
           } else {
@@ -271,10 +269,6 @@ static bool canForwardValue(Map<Symbol*, Vec<SymExpr*>*>& defMap,
                             FnSymbol*                     fn,
                             ArgSymbol*                    arg) {
   bool retval = false;
-
-  if (arg->id == 2357983) {
-
-  }
 
   if (arg->hasFlag(FLAG_NO_RVF)) {
     retval = false;
@@ -483,10 +477,6 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
         if (!modified) {
           modified = true;
           baseDeserializeFn->defPoint->insertBefore(new DefExpr(deserializeFn));
-    if (deserializeFn->hasFlag(FLAG_FN_RETARG)) {
-
-    }
-
         }
 
         // figure out which field we are deserializing for
@@ -577,10 +567,7 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
                 call->remove(); // we'll destroy in the outer scope (above)
               }
               else if (call->isNamed("chpl__deserialize")) {
-                //SymExpr* firstArg = toSymExpr(call->get(1));
-                // TODO should we handle a runtime type argument here?
                 nestedDeser = call;
-                
               }
             }
           }
@@ -633,9 +620,6 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
                 replCall->insertAtHead(nestedDeser->argList.head->remove());
               }
             }
-            //std::cout << "Replacing\n";
-            //nprint_view(nestedDeser);
-            //nprint_view(replCall);
             nestedDeser->replace(replCall);
           }
 
@@ -656,7 +640,6 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
           setMem->get(3)->replace(new SymExpr(newArg));
           cond->insertBefore(setMem->remove());
 
-          //std::cout << " DONE \n";
         }
 
         flagExpr->symbol()->defPoint->remove();
@@ -668,11 +651,9 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
   if (!modified) {
     //TODO add this deserializer to the cache of deserializers that shouldn't be
     //analyzed again
-    //std::cout << baseDeserializeFn->id << " is left alone\n";
     return new CallExpr(baseDeserializeFn, arg);
   }
   else {
-    //std::cout << baseDeserializeFn->id << " is specialized as " << deserializeFn->id << std::endl;
     deserializeCall->setResolvedFunction(deserializeFn);
     return deserializeCall;
   }
@@ -702,7 +683,6 @@ static VarSymbol* replaceArgWithDeserialized(FnSymbol* fn, ArgSymbol* arg,
                                                      arg);
   CallExpr* callToAdd = NULL;
 
-  // we need something like this:
   if (needsRuntimeType) {
     FnSymbol* runtimeTypeFn = valueToRuntimeTypeMap.get(oldArgType->getValType());
     INT_ASSERT(runtimeTypeFn != NULL);

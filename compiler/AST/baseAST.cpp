@@ -45,7 +45,6 @@
 #include "symbol.h"
 #include "TryStmt.h"
 #include "type.h"
-#include "view.h"
 #include "WhileStmt.h"
 
 #include <ostream>

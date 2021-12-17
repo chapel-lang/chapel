@@ -53,6 +53,7 @@ extern Map<Type*,     FnSymbol*>        valueToRuntimeTypeMap;
 extern std::map<Type*,     Serializers> serializeMap;
 
 
+
 bool       propagateNotPOD(Type* t);
 
 void       lowerPrimInit(CallExpr* call, Expr* preventingSplitInit);

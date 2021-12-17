@@ -7732,6 +7732,7 @@ static Type* moveDetermineRhsType(CallExpr* call) {
     }
   }
 
+  // TODO do we still need this
   if (retval == dtUnknown) {
     if (CallExpr* rhsCall = toCallExpr(call->get(2))) {
       if (rhsCall->isPrimitive(PRIM_REF_DESERIALIZE)) {
@@ -9720,8 +9721,6 @@ static FnSymbol* resolveNormalSerializer(CallExpr* call) {
   return ret;
 }
 
-//static FnSymbol* resolveSerializeOnly(AggregateType* at);
-
 static bool resolveSerializeDeserialize(AggregateType* at) {
   SET_LINENO(at->symbol);
   VarSymbol* tmp          = newTemp(at);
@@ -9732,22 +9731,12 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
   chpl_gen_main->insertAtHead(new DefExpr(tmp));
 
   CallExpr* serializeCall = new CallExpr("chpl__serialize", gMethodToken, tmp);
-  if (at->symbol->hasFlag(FLAG_PROMOTION_WRAPPER)) {
-
-  }
-  if (at->getModule()->modTag == MOD_USER) {
-
-  }
-  if (at->id == 1752804) {
-    
-  }
   serializeFn = resolveNormalSerializer(serializeCall);
   if (serializeFn != NULL && serializeFn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
     // Without this check we would resolve a serializer for arrays despite a
     // serializer only being implemented for domains.
     serializeFn = NULL;
   }
-  
 
   if (serializeFn != NULL) {
     resolveFunction(serializeFn);
@@ -9780,6 +9769,8 @@ static bool resolveSerializeDeserialize(AggregateType* at) {
 
         Type* retType = deserializeFn->retType->getValType();
 
+        // Class decorators shouldn't matter for RVF, right? Or should they
+        // always be unmanaged?
         if (DecoratedClassType* decType = toDecoratedClassType(retType)) {
           retType = decType->getCanonicalClass();
         }
@@ -9819,7 +9810,8 @@ static void resolveBroadcasters(AggregateType* at) {
 
   if (ser.serializer->hasFlag(FLAG_COMPILER_GENERATED) &&
      (ser.deserializer->hasFlag(FLAG_COMPILER_GENERATED))) {
-    // this was generated for RVF only
+    // this was generated for RVF only. TODO should we be able to broadcast
+    // promotion iterator records?
     return;
   }
 
@@ -9881,28 +9873,6 @@ static FnSymbol* createMethodStub(AggregateType* at, const char* methodName,
 }
 
 static bool resolveSerializeDeserialize(AggregateType* at);
-
-//static FnSymbol* resolveSerializeOnly(AggregateType* at) {
-  //SET_LINENO(at->symbol);
-
-  //VarSymbol* tmp          = newTemp(at);
-  //FnSymbol* serializeFn   = NULL;
-
-  //chpl_gen_main->insertAtHead(new DefExpr(tmp));
-
-  //CallExpr* serializeCall = new CallExpr("chpl__serialize", gMethodToken, tmp);
-  //serializeFn = resolveNormalSerializer(serializeCall);
-  //if (serializeFn != NULL && serializeFn->hasFlag(FLAG_PROMOTION_WRAPPER)) {
-    //// Without this check we would resolve a serializer for arrays despite a
-    //// serializer only being implemented for domains.
-    //serializeFn = NULL;
-  //}
-
-  //tmp->defPoint->remove();
-
-  //return serializeFn;
-//}
-
 static bool createSerializeDeserialize(AggregateType* at);
 
 static bool ensureSerializersExist(AggregateType* at) {
@@ -9976,28 +9946,18 @@ static bool createSerializeDeserialize(AggregateType* at) {
         fieldTmp->addFlag(FLAG_REF);
         serializer->insertAtTail(new DefExpr(fieldTmp));
 
-        //PrimitiveTag prim;
         CallExpr* getField;
         if (field->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-          //std::cout << "1000\n";
           getField =  new CallExpr(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL, _this,
                                           field);
         }
         else {
-          //std::cout << "2000\n";
-          //prim = PRIM_GET_MEMBER;
           getField =  new CallExpr(PRIM_GET_MEMBER, _this,
                                           new_CStringSymbol(field->name));
         }
         serializer->insertAtTail(new CallExpr(PRIM_ASSIGN, fieldTmp, getField));
         // update the serializer body
         buildTuple->insertAtTail(new CallExpr(fieldSerializer, gMethodToken, fieldTmp));
-        //buildTuple->insertAtTail(new CallExpr(".", field,
-                                              //new CallExpr(fieldSerializer)));
-
-        // update the deserializer body
-        //new CallExpr(PRIM_GET_MEMBER, deserializerFormal
-        //deserializer->insertAtTail(deserializerFormal
       }
       else {
         retval = false;
@@ -10019,7 +9979,6 @@ static bool createSerializeDeserialize(AggregateType* at) {
   }
 
   serializer->insertAtTail(new CallExpr(PRIM_RETURN, buildTuple));
-  //at->symbol->defPoint->insertBefore(new DefExpr(serializer));
   normalize(serializer);
   resolveFunction(serializer);
   Type* serialDataType = serializer->retType;
@@ -10032,21 +9991,21 @@ static bool createSerializeDeserialize(AggregateType* at) {
   }
 
   ArgSymbol* deserializerFormal = new ArgSymbol(INTENT_CONST_IN, "data", serialDataType);
-  //AggregateType* deserializerFormalType = toAggregateType(deserializerFormal->type);
   deserializer->insertFormalAtTail(deserializerFormal);
   VarSymbol* deserializerRet = new VarSymbol("deserializer_return", at);
+
+  // TODO do we need any of these? Maybe no_copy_return?
   //deserializerRet->addFlag(FLAG_NO_COPY);
   //deserializerRet->addFlag(FLAG_NO_COPY_RETURN);
   //deserializerRet->addFlag(FLAG_NO_AUTO_DESTROY);
+  
   deserializer->insertAtTail(new DefExpr(deserializerRet));
 
   int fieldNum = 0;
   for_fields (field, at) {
-    //VarSymbol* formalFieldSym = toVarSymbol(deserializerFormalType->getField(fieldNum));
 
     CallExpr* dataGetField = new CallExpr(PRIM_GET_MEMBER_VALUE, deserializerFormal,
                                           new_CStringSymbol(astr("x", istr(fieldNum))));
-    //CallExpr* retGetField = new CallExpr(PRIM_GET_MEMBER, deserializerRet, field->name);
 
     if (FnSymbol* fieldDeserializer = deserializers[fieldNum]) {
 
@@ -10071,23 +10030,10 @@ static bool createSerializeDeserialize(AggregateType* at) {
       fieldDeserialize->insertAtHead(typeTemp);
       fieldDeserialize->insertAtHead(gMethodToken);
 
-      //VarSymbol* deserTemp = newTemp("deser_tmp");
-      //deserTemp->addFlag(FLAG_INSERT_AUTO_DESTROY);
-      //varDeser->insertAtTail(new DefExpr(deserTemp));
-      //varDeser->insertAtTail(new CallExpr(PRIM_MOVE, deserTemp, fieldDeserialize));
       varDeser->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
                                           field,
                                           fieldDeserialize));
 
-
-
-      //VarSymbol* refFieldTmp = newTemp("ref_field", field->getRefType());
-      //refDeser->insertAtTail(new DefExpr(refFieldTmp));
-      //refDeser->insertAtTail(new CallExpr(PRIM_ASSIGN, refFieldTmp,
-                                          //new CallExpr(PRIM_REF_DESERIALIZE,
-                                                       //typeTemp,
-                                                       //deserializerFormal,
-                                                       //new_IntSymbol(fieldNum))));
       refDeser->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
                                           field,
                                           new CallExpr(PRIM_REF_DESERIALIZE,
@@ -10095,17 +10041,6 @@ static bool createSerializeDeserialize(AggregateType* at) {
                                                        deserializerFormal,
                                                        new_IntSymbol(fieldNum))));
       
-
-      //refDeser->insertAtTail(new CallExpr(PRIM_SET_MEMBER, deserializerRet,
-                                         //field,
-                                         //new CallExpr("chpl_refDeserialize",
-                                                       //typeTemp,
-                                                       //deserializerFormal,
-                                                       //new_IntSymbol(fieldNum))));
-
-
-          
-
       deserializer->insertAtTail(deserVersions);
     }
     else {
@@ -10116,28 +10051,12 @@ static bool createSerializeDeserialize(AggregateType* at) {
 
     fieldNum++;
   }
+
   deserializer->insertAtTail(new CallExpr(PRIM_RETURN, deserializerRet));
-  //at->symbol->defPoint->insertBefore(new DefExpr(deserializer));
-
   normalize(deserializer);
-
   resolveFunction(deserializer);
-
   INT_ASSERT(deserializer->retType == toDefExpr(deserializer->formals.get(2))->sym->type);
-
   retval = resolveSerializeDeserialize(at); // now this should work
-
-  //std::cout << "START REPORT\n";
-  //std::cout << "type\n";
-  //nprint_view(at);
-
-  //std::cout << "functions\n";
-  //nprint_view(serializer);
-  //nprint_view(deserializer);
-
-  //std::cout << "retval\n";
-  //std::cout << retval << std::endl;
-  //std::cout << "END REPORT\n";
 
   return retval;
 }
@@ -11951,6 +11870,10 @@ static void replaceRuntimeTypeVariableTypes() {
 
       // Collapse these through the runtimeTypeMap ...
       Type* rt = runtimeTypeMap.get(def->sym->type);
+      // TODO the following is a workaround for arrayviews. They don't get a
+      // RTT in the map above because we use the array's RTT for them. That
+      // mapping is stored in `valueToRuntimeTypeMap`. We probably want RTT for
+      // arrayviews as well.
       if (!rt) {
         rt = valueToRuntimeTypeMap.get(def->sym->type)->retType;
       }
@@ -11964,24 +11887,6 @@ static void replaceRuntimeTypeVariableTypes() {
       def->sym->removeFlag(FLAG_TYPE_VARIABLE);
     }
   }
-
-  //for_alive_in_Vec(SymExpr, se, gSymExprs) {
-    //if (isTypeSymbol(se->symbol()) &&
-        //se->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
-        //se->symbol()->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-
-      //// Collapse these through the runtimeTypeMap ...
-      //Type* rt = runtimeTypeMap.get(se->symbol()->type);
-      //// This assert might fail for code that is no longer traversed
-      //// after it is resolved, ex. in where-clauses.
-      //INT_ASSERT(rt);
-      //se->symbol()->type = rt;
-
-      //// ... and remove the type variable flag
-      //// (Make these declarations look like normal vars.)
-      //se->symbol()->removeFlag(FLAG_TYPE_VARIABLE);
-    //}
-  //}
 }
 
 void expandInitFieldPrims()

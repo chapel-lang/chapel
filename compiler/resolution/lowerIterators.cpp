@@ -2827,7 +2827,6 @@ static void reconstructIRAutoDestroy(FnSymbol* fn)
   Symbol* arg = fn->getFormal(1);
   BlockStmt* block = new BlockStmt();
   AggregateType* irt = toAggregateType(arg->type);
-  //nprint_view(irt);
   for_fields(field, irt) {
     SET_LINENO(field);
     if (typeNeedsCopyInitDeinit(field->type) && !field->isRef() ) {
@@ -2861,18 +2860,6 @@ static void reconstructIRautoCopyAutoDestroy()
       if (fn->hasFlag(FLAG_AUTO_DESTROY_FN))
         reconstructIRAutoDestroy(fn);
     }
-    //else {
-      //if (fn->hasFlag(FLAG_AUTO_DESTROY_FN)) {
-        //if (fn->numFormals() > 0) {
-          //if (fn->getFormal(1)->type->symbol->hasFlag(FLAG_ITERATOR_RECORD)) {
-            //SET_LINENO(fn);
-            ////std::cout << "Did not look at\n";
-            ////nprint_view(fn);
-            //reconstructIRAutoDestroy(fn);
-          //}
-        //}
-      //}
-    //}
   }
 }
 
@@ -3050,10 +3037,9 @@ void lowerIterators() {
   USR_STOP();
 
   forv_Vec (CallExpr, call, gCallExprs) {
+    // TODO are we still adding this primitive?
     if (call->isPrimitive(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL)) {
       call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
-      //std::cout << "Replaced primitive\n";
-      //nprint_view(call);
 
       if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
         if (SymExpr* lhs = toSymExpr(parentCall->get(1))) {
@@ -3066,12 +3052,10 @@ void lowerIterators() {
               parentCall->insertBefore(new CallExpr(PRIM_MOVE, derefTmp,
                                                     call->remove()));
               parentCall->insertAtTail(new CallExpr(PRIM_DEREF, derefTmp));
-              //lhs->symbol()->addFlag(FLAG_REF);
             }
           }
         }
       }
-
     }
   }
 
