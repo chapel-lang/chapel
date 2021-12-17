@@ -362,6 +362,51 @@ def get_compiler_command(flag, lang):
 
     return command
 
+# Returns any -I options needed for this compiler / system
+# to find headers
+#
+# flag should be host or target.
+# returns a Python list of -I flags
+@memoize
+def get_system_include_paths(flag):
+    platform_val = chpl_platform.get(flag)
+
+    paths = [ ]
+
+    # FreeBSD uses /usr/local but compilers don't search there by default
+    if platform_val == 'freebsd':
+        paths.append('-I/usr/local/include')
+
+    # Add Homebrew include directory if Homebrew is installed
+    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    if homebrew_prefix:
+        paths.append('-I' + homebrew_prefix + '/include')
+
+    return paths
+
+# Returns any -L options needed for this compiler / system
+# to find libraries
+#
+# flag should be host or target.
+# returns a Python list of -L flags
+@memoize
+def get_system_link_paths(flag):
+    platform_val = chpl_platform.get(flag)
+    paths = [ ]
+
+    # FreeBSD uses /usr/local but compilers don't search there by default
+    if platform_val == 'freebsd':
+        paths.append('-L/usr/local/lib')
+
+    # Add Homebrew lib directory if Homebrew is installed
+    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    if homebrew_prefix:
+        paths.append('-L' + homebrew_prefix + '/lib')
+
+    return paths
+
+
+
 def validate_inference_matches(flag, lang):
     flag_upper = flag.upper()
     lang_upper = lang.upper()

@@ -66,6 +66,8 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_HOST_COMPILER', COMPILER | LAUNCHER),
     ChapelEnv('  CHPL_HOST_CC', COMPILER | NOPATH),
     ChapelEnv('  CHPL_HOST_CXX', COMPILER | NOPATH),
+    ChapelEnv('  CHPL_HOST_INCLUDE_PATHS', INTERNAL),
+    ChapelEnv('  CHPL_HOST_LINK_PATHS', INTERNAL),
     ChapelEnv('CHPL_HOST_ARCH', COMPILER | LAUNCHER),
     ChapelEnv('CHPL_HOST_CPU', INTERNAL),
     ChapelEnv('CHPL_TARGET_PLATFORM', RUNTIME | DEFAULT),
@@ -73,6 +75,8 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_TARGET_CC', RUNTIME | NOPATH),
     ChapelEnv('  CHPL_TARGET_CXX', RUNTIME | NOPATH),
     ChapelEnv('  CHPL_TARGET_COMPILER_PRGENV', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_INCLUDE_PATHS', INTERNAL),
+    ChapelEnv('  CHPL_TARGET_LINK_PATHS', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT),
     ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'cpu'),
     ChapelEnv('CHPL_RUNTIME_CPU', INTERNAL),
@@ -149,6 +153,10 @@ def compute_all_values():
     ENV_VALS['CHPL_HOST_COMPILER'] = host_compiler
     ENV_VALS['  CHPL_HOST_CC'] = " ".join(host_compiler_c)
     ENV_VALS['  CHPL_HOST_CXX'] = " ".join(host_compiler_cpp)
+    ENV_VALS['  CHPL_HOST_INCLUDE_PATHS'] = " ".join(
+        chpl_compiler.get_system_include_paths('host'))
+    ENV_VALS['  CHPL_HOST_LINK_PATHS'] = " ".join(
+        chpl_compiler.get_system_link_paths('host'))
 
     ENV_VALS['CHPL_HOST_ARCH'] = chpl_arch.get('host')
     ENV_VALS['CHPL_HOST_CPU'] = chpl_cpu.get('host').cpu
@@ -162,6 +170,10 @@ def compute_all_values():
     ENV_VALS['  CHPL_TARGET_CC'] = " ".join(target_compiler_c)
     ENV_VALS['  CHPL_TARGET_CXX'] = " ".join(target_compiler_cpp)
     ENV_VALS['  CHPL_TARGET_COMPILER_PRGENV'] = target_compiler_prgenv
+    ENV_VALS['  CHPL_TARGET_INCLUDE_PATHS'] = " ".join(
+        chpl_compiler.get_system_include_paths('target'))
+    ENV_VALS['  CHPL_TARGET_LINK_PATHS'] = " ".join(
+        chpl_compiler.get_system_link_paths('target'))
 
     ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target')
     ENV_VALS['CHPL_TARGET_CPU'] = chpl_cpu.get('target').cpu

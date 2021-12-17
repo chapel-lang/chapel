@@ -405,22 +405,6 @@ def get_sysroot_resource_dir_args():
 
     return args
 
-@memoize
-def get_clang_additional_args():
-    comp_args = [ ]
-    link_args = [ ]
-
-    # Check to see if Homebrew is installed. If it is,
-    # add the result of `brew prefix` to -I and -L args.
-    homebrew_prefix = chpl_platform.get_homebrew_prefix()
-    if homebrew_prefix:
-        # Make sure to include homebrew search path
-        comp_args.append('-I' + homebrew_prefix + '/include')
-        link_args.append('-L' + homebrew_prefix + '/lib')
-
-    return (comp_args, link_args)
-
-
 # On some systems, we need to give clang some arguments for it to
 # find the correct system headers.
 #  * when PrgEnv-gnu is loaded on an XC, we should provide
@@ -532,10 +516,6 @@ def get_clang_prgenv_args():
 def get_clang_compile_link_args():
     comp_args = [ ]
     link_args = [ ]
-    (tmp_comp, tmp_link) = get_clang_additional_args()
-    comp_args.extend(tmp_comp)
-    link_args.extend(tmp_link)
-
     (tmp_comp, tmp_link) = get_clang_prgenv_args()
     comp_args.extend(tmp_comp)
     link_args.extend(tmp_link)
