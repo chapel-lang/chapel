@@ -1,1 +1,0 @@
-../parIters.chpl
