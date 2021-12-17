@@ -100,10 +100,7 @@ class Type {
 
   bool completeMatch(const Type* other) const;
 
-
-  static void dump(const Type* type, int leadingSpaces=0);
-
-  virtual std::string toString() const;
+  virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   // define is__ methods for the various Type subclasses
   // using macros and TypeClassesList.h
@@ -204,15 +201,8 @@ class Type {
 
 
 } // end namespace types
-  /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::types::Type> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::types::Type& stringMe) const {
-    stringOut << stringMe.toString();
-  }
-};
-  /// \endcond DO_NOT_DOCUMENT
+
+
 } // end namespace chpl
 
 // TODO: is there a reasonable way to define std::less on Type*?

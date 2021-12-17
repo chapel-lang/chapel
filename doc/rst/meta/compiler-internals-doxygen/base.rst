@@ -40,3 +40,5 @@ namespace. The entries may not be exhaustive.
    :undoc-members:
 
 .. doxygentypedef:: chpl::owned
+
+.. doxygenenum:: chpl::StringifyKind

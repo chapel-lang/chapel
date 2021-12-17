@@ -151,7 +151,7 @@ class ASTNode {
 
   void mark(Context* context) const;
 
-  static void dump(const ASTNode* ast, int leadingSpaces=0);
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   // define is__ methods for the various AST types
   // using macros and ASTClassesList.h
@@ -396,13 +396,6 @@ class ASTNode {
   }
 };
 } // end namespace uast
-template<> struct stringify<chpl::uast::ASTNode> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::uast::ASTNode& stringMe) const {
-    stringOut << "uast::ASTNode is not stringified";
-  }
-};
 } // end namespace chpl
 
 /// \cond DO_NOT_DOCUMENT

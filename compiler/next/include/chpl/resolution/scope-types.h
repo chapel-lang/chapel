@@ -171,6 +171,9 @@ class BorrowedIdsWithName {
     return ret;
   }
 
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ID().stringify(ss, stringKind);
+  }
 };
 
 // DeclMap: key - string name,  value - vector of ID of a NamedDecl
@@ -267,6 +270,15 @@ class Scope {
       pair.first.mark(context);
       pair.second.mark(context);
     }
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << "Scope ";
+    ss << tagToString(tag());
+    ss << " ";
+    id().stringify(ss, stringKind);
+    ss << " ";
+    ss << std::to_string(numDeclared());
   }
 };
 
@@ -463,6 +475,13 @@ class PoiScope {
     context->markPointer(inScope_);
     context->markPointer(inFnPoi_);
   }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << "PoiScope ";
+    inScope()->stringify(ss,stringKind);
+    ss << " ";
+    inFnPoi()->stringify(ss, stringKind);
+  }
 };
 
 /**
@@ -509,51 +528,24 @@ class InnermostMatch {
   void mark(Context* context) const {
     id_.mark(context);
   }
+
+  void stringify(std::ostream &ss, chpl::StringifyKind stringKind) const;
+
 };
 
 
 } // end namespace resolution
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<resolution::InnermostMatch> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const resolution::InnermostMatch& stringMe) const {
-    stringOut << "resolution::InnermostMatch not stringified";
-  }
-};
 
-
-template<> struct stringify<resolution::PoiScope> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const resolution::PoiScope& stringMe) const {
-    stringOut << "resolution::PoiScope not stringified";
-  }
-};
-
-template<> struct stringify<resolution::Scope> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const resolution::Scope& stringMe) const {
-    stringOut << "resolution::Scope not stringified";
-  }
-};
-
-
-template<> struct stringify<resolution::BorrowedIdsWithName> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const resolution::BorrowedIdsWithName& stringMe) const {
-    stringOut << "resolution::BorrowedIdsWithName not stringified";
-  }
-};
 /// \endcond
 
 
 } // end namespace chpl
 
+
 namespace std {
+
 
 /// \cond DO_NOT_DOCUMENT
 template<> struct hash<chpl::resolution::BorrowedIdsWithName>

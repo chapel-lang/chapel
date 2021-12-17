@@ -85,15 +85,14 @@ bool ID::update(chpl::ID& keep, chpl::ID& addin) {
   return defaultUpdate(keep, addin);
 }
 
-std::string ID::toString() const {
-  std::string ret = this->symbolPath().c_str();
+void ID::stringify(std::ostream& ss,
+                   chpl::StringifyKind stringKind) const {
+  ss << this->symbolPath().c_str();
 
-  if (!ret.empty() && this->postOrderId() >= 0) {
-    ret += "@";
-    ret += std::to_string(this->postOrderId());
+  if (!(symbolPath().isEmpty()) && this->postOrderId() >= 0) {
+    ss << "@";
+    ss << std::to_string(this->postOrderId());
   }
-
-  return ret;
 }
 
 } // end namespace chpl

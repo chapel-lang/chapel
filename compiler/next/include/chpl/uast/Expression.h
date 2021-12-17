@@ -50,13 +50,7 @@ class Expression : public ASTNode {
 
 } // end namespace uast
 
-template<> struct stringify<chpl::uast::Expression> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::uast::Expression& stringMe) const {
-    stringOut << "uast::Expression is not stringified";
-  }
-};
+
 
 } // end namespace chpl
 

@@ -75,15 +75,6 @@ class TupleType final : public CompositeType {
 
 } // end namespace uast
 
-/// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::types::TupleType> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::types::TupleType& stringMe) const {
-    stringOut << stringMe.toString();
-  }
-};
-  /// \endcond DO_NOT_DOCUMENT
 
 
 } // end namespace chpl

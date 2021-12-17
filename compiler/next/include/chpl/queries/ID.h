@@ -172,18 +172,12 @@ class ID final {
 
   static bool update(chpl::ID& keep, chpl::ID& addin);
 
-  std::string toString() const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 };
 
 // docs are turned off for this as a workaround for breathe errors
 /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::ID> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::ID& id) const {
-    stringOut << "ID(" << id.toString() << ")";
-  }
-};
+
 /// \endcond
 
 

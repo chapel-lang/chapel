@@ -88,12 +88,7 @@ public:
 };
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::Location> {
-  void operator()(std::ostream &stringOut, StringifyKind stringKind,
-                  const chpl::Location& stringMe) const {
-     stringOut << "Location is not stringified";
-  }
-};
+
 /// \endcond
 
 

@@ -24,36 +24,36 @@
 namespace chpl {
 namespace types {
 
-std::string ClassType::toString() const {
-  std::string ret;
+void ClassType::stringify(std::ostream& ss,
+                          chpl::StringifyKind stringKind) const {
+  long startPos = ss.tellp();
   if (decorator_.isManaged()) {
     assert(manager_);
     if (manager_->isAnyOwnedType())
-      ret += "owned";
+      ss << "owned";
     else if (manager_->isAnySharedType())
-      ret += "shared";
+      ss << "shared";
     else
-      ret += manager_->toString();
+      manager_->stringify(ss, stringKind);
   } else if (decorator_.isBorrowed()) {
-    ret += "borrowed";
+    ss << "borrowed";
   } else if (decorator_.isUnmanaged()) {
-    ret += "unmanaged";
+    ss << "unmanaged";
   }
 
-  if (!ret.empty()) {
-    ret += " ";
+  if (startPos != ss.tellp()) {
+    ss << " ";
   }
 
   assert(basicType_);
-  ret += basicType_->toString();
+  basicType_->stringify(ss, stringKind);
 
   if (decorator_.isNilable()) {
-    ret += "?";
+    ss << "?";
   } else if (decorator_.isUnknownNilability()) {
-    ret += " <unknown-nilablity>";
+    ss << " <unknown-nilablity>";
   }
 
-  return ret;
 }
 
 const owned<ClassType>&

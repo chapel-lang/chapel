@@ -69,7 +69,8 @@ class PrimitiveType : public Type {
   /**
    Compute a string representing this type.
    */
-  std::string toString() const override;
+  void stringify(std::ostream& ss,
+                 chpl::StringifyKind stringKind) const override;
 
   /**
    Get the PrimitiveType according to name and bitwidth,

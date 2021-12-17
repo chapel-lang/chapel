@@ -218,7 +218,7 @@ class ClassTypeDecorator final {
 /// \cond DO_NOT_DOCUMENT
 template<> struct stringify<chpl::types::ClassTypeDecorator> {
   void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
+                  chpl::StringifyKind stringKind,
                   const chpl::types::ClassTypeDecorator& stringMe) const {
     stringOut << "types::ClassTypeDecorator is not stringified";
   }

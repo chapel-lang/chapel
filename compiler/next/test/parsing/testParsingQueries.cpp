@@ -42,7 +42,7 @@ static void test0() {
   auto path = UniqueString::build(ctx, "input.chpl");
   std::string contents = "/* this is a test */";
   setFileText(ctx, path, contents);
- 
+
   std::string gotContents = fileText(ctx, path).text();
   assert(gotContents == contents);
 }
@@ -55,7 +55,7 @@ static void test1() {
   auto path = UniqueString::build(ctx, "input.chpl");
   std::string contents = "/* this is a test */";
   setFileText(ctx, path, contents);
- 
+
   parse(ctx, path);
 }
 
@@ -79,7 +79,7 @@ static void test2() {
   std::string modTwoContents = "/* this is a another test */"
                                "a;\n";
   setFileText(ctx, modTwoPath, modTwoContents);
- 
+
   const Module* moduleOne = nullptr;
   const Module* moduleTwo = nullptr;
 
@@ -87,8 +87,6 @@ static void test2() {
   moduleTwo = parseOneModule(ctx, modTwoPath);
   assert(moduleOne->numStmts() == 2);
   assert(moduleTwo->numStmts() == 2);
-  ASTNode::dump(moduleOne);
-  ASTNode::dump(moduleTwo);
 
   const Module* oldModuleOne = moduleOne;
   const Module* oldModuleTwo = moduleTwo;
@@ -110,8 +108,8 @@ static void test2() {
   moduleTwo = parseOneModule(ctx, modTwoPath);
   assert(moduleOne->numStmts() == 2);
   assert(moduleTwo->numStmts() == 2);
-  ASTNode::dump(moduleOne);
-  ASTNode::dump(moduleTwo);
+  moduleOne->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
+  moduleTwo->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
 
   // Check that the pointer values didn't change
   // (they shouldn't because we should have reused the modules).
@@ -143,7 +141,7 @@ static void test3() {
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
-  ASTNode::dump(module);
+  module->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
   assert(module->numStmts() == 3);
   comment = module->stmt(0)->toComment();
   identifierA = module->stmt(1)->toIdentifier();
@@ -166,7 +164,7 @@ static void test3() {
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
-  ASTNode::dump(module);
+  module->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
 
   // Check that the pointer values didn't change
   // (they shouldn't because we should have reused the parts that didn't change)
@@ -197,7 +195,7 @@ static void test3() {
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
-  ASTNode::dump(module);
+  module->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
 
   // Check that the block and identifiers match
   assert(module->numStmts() == 5);
@@ -225,7 +223,7 @@ static void test3() {
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
-  ASTNode::dump(module);
+  module->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
 
   // Check that the comment and identifiers match
   assert(module->numStmts() == 3);
@@ -251,7 +249,7 @@ static void test3() {
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
-  ASTNode::dump(module);
+  module->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
 
   // Check that the comment and identifiers match
   assert(module->numStmts() == 3);
@@ -290,7 +288,7 @@ static void test4() {
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
-  ASTNode::dump(module);
+  module->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
   assert(module->numStmts() == 3);
   comment = module->stmt(0)->toComment();
   A = module->stmt(1)->toFunction();
@@ -321,7 +319,7 @@ static void test4() {
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
-  ASTNode::dump(module);
+  module->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
 
   // Check that the pointer values didn't change
   // (they shouldn't because we should have reused the parts that didn't change)
@@ -362,7 +360,7 @@ static void test4() {
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
-  ASTNode::dump(module);
+  module->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
 
   // Check that the block and identifiers match
   assert(module->numStmts() == 5);
@@ -398,7 +396,7 @@ static void test4() {
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
-  ASTNode::dump(module);
+  module->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
 
   // Check that the comment and identifiers match
   assert(module->numStmts() == 3);
@@ -434,7 +432,7 @@ static void test4() {
   module = parseOneModule(ctx, modulePath);
   ctx->collectGarbage();
 
-  ASTNode::dump(module);
+  module->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
 
   // Check that the comment and identifiers match
   assert(module->numStmts() == 3);
@@ -486,7 +484,7 @@ static void test5() {
     setFileText(ctx, modulePath, moduleContents);
     mod = parseOneModule(ctx, modulePath);
 
-    ASTNode::dump(mod);
+    mod->stringify(std::cout, chpl::StringifyKind::DEBUG_DETAIL);
     assert(mod->numStmts() == 4);
     comment = mod->stmt(0)->toComment();
     A = mod->stmt(1)->toVariable();

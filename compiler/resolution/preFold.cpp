@@ -959,8 +959,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     // Check if this immediate is a string
     if (chplEnv->const_kind == CONST_KIND_STRING) {
-      envKey = chplEnv->v_string.toString();
-
+      envKey = chplEnv->v_string.str();
     } else {
       USR_FATAL(call, "expected immediate of type string");
     }

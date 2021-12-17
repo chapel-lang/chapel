@@ -186,4 +186,9 @@ bool UniqueString::update(UniqueString& keep, UniqueString& addin) {
 }
 
 
+void UniqueString::stringify(std::ostream& ss,
+                             chpl::StringifyKind stringKind) const {
+  ss.write(c_str(),length());
+}
+
 } // end namespace chpl

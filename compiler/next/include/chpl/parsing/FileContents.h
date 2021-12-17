@@ -78,13 +78,6 @@ class FileContents {
 } // end namespace parsing
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<parsing::FileContents> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const parsing::FileContents& stringMe) const {
-    stringOut << "parsing::FileContents is not stringified";
-  }
-};
 /// \endcond
 
 

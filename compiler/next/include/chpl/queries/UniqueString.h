@@ -138,9 +138,14 @@ class UniqueString final {
   }
 
   /** return a std::string containing the string */
-  std::string toString() const {
+  // diffs from stringify, converts the uniquestring into a string
+  // representation similar to std::ostream.str()
+  std::string str() const {
     return std::string(c_str(), length());
   }
+
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   bool isEmpty() const {
     return s.i.c_str()[0] == '\0';
@@ -241,13 +246,7 @@ class UniqueString final {
 };
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::UniqueString> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::UniqueString& stringMe) const {
-    stringOut << "\"" << stringMe.toString() << "\"";
-  }
-};
+
 /// \endcond
 
 

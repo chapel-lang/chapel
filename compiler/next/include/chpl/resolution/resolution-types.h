@@ -62,6 +62,14 @@ class UntypedFnSignature {
     size_t hash() const {
       return chpl::hash(name, hasDefaultValue, decl);
     }
+
+    void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+      name.stringify(ss, stringKind);
+      if (decl != nullptr) {
+        decl->stringify(ss, stringKind);
+        ss << " ";
+      }
+    }
   };
 
  private:
@@ -195,6 +203,15 @@ class UntypedFnSignature {
     assert(0 <= i && (size_t) i < formals_.size());
     return formals_[i].decl;
   }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    name().stringify(ss, stringKind);
+    ss << " ";
+    id().stringify(ss, stringKind);
+    ss << " ";
+    ss << std::to_string(numFormals());
+    ss << " ";
+  }
 };
 
 using SubstitutionsMap = std::unordered_map<const uast::Decl*, types::QualifiedType>;
@@ -225,6 +242,13 @@ class CallInfoActual {
   }
   size_t hash() const {
     return chpl::hash(type_, byName_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) {
+    byName().stringify(ss, stringKind);
+    ss << " ";
+    type().stringify(ss, stringKind);
+    ss << " ";
   }
 };
 
@@ -278,6 +302,12 @@ class CallInfo {
   }
   size_t hash() const {
     return chpl::hash(name_, isMethod_, hasQuestionArg_, actuals_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+      ss << "CallInfo: ";
+      name().stringify(ss, stringKind);
+      ss << " ";
   }
 };
 
@@ -392,6 +422,11 @@ class PoiInfo {
       elt.second.mark(context);
     }
   }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << "PoiInfo: ";
+    poiScope()->stringify(ss, stringKind);
+  }
 };
 
 // TODO: should this actually be types::FunctionType?
@@ -467,7 +502,7 @@ class TypedFnSignature {
     context->markPointer(parentFn_);
   }
 
-  std::string toString() const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /** Returns the id of the relevant uast node (usually a Function
       but it can be a Record or Class for compiler-generated functions) */
@@ -748,7 +783,7 @@ class ResolvedExpression {
     context->markPointer(poiScope_);
   }
 
-  std::string toString() const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 };
 
 /**
@@ -944,101 +979,27 @@ class FormalActualMap {
 
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct stringify<chpl::resolution::ResolvedExpression> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::resolution::ResolvedExpression& stringMe) const {
-    stringOut << "resolution::ResolvedExpression not stringified";
-  }
-};
-
-template<> struct stringify<chpl::resolution::MostSpecificCandidates> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::resolution::MostSpecificCandidates& stringMe) const {
-    stringOut << "resolution::MostSpecificCandidates not stringified";
-  }
-};
-
-template<> struct stringify<chpl::resolution::ResolutionResultByPostorderID> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::resolution::ResolutionResultByPostorderID& stringMe) const {
-    stringOut << "resolution::ResolutionResultByPostorderID not stringified";
-  }
-};
-
-template<> struct stringify<chpl::resolution::ResolvedFunction> {
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::resolution::ResolvedFunction& stringMe) const {
-    stringOut << "resolution::ResolvedFunction not stringified";
-  }
-};
-
-
-template<> struct stringify<chpl::resolution::UntypedFnSignature>
-{
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::resolution::UntypedFnSignature& stringMe) const {
-    stringOut << "resolution::UntypedFnSignature not stringified";
-  }
-};
-
-
-template<> struct stringify<chpl::resolution::CallInfoActual>
-{
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::resolution::CallInfoActual& stringMe) const {
-    stringOut << "resolution::CallInfoActual not stringified";
-  }
-};
-
-template<> struct stringify<chpl::resolution::CallInfo>
-{
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::resolution::CallInfo& stringMe) const {
-    stringOut << "resolution::CallInfo not stringified";
-  }
-};
-
-template<> struct stringify<chpl::resolution::PoiInfo>
-{
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::resolution::PoiInfo& stringMe) const {
-    stringOut << "resolution::PoiInfo not stringified";
-  }
-};
 
 template<> struct stringify<chpl::resolution::TypedFnSignature::WhereClauseResult>
 {
   void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
+                  chpl::StringifyKind stringKind,
                   const chpl::resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
-    stringOut << "resolution::TypedFnSignature::WhereClauseResult not stringified";
-  }
-};
-
-template<> struct stringify<chpl::resolution::UntypedFnSignature::FormalDetail>
-{
- void operator()(std::ostream &stringOut,
-                 StringifyKind stringKind,
-                 const chpl::resolution::UntypedFnSignature::FormalDetail& stringMe) const {
-   stringOut << "resolution::UntypedFnSignature::FormalDetail not stringified";
- }
-};
-
-template<> struct stringify<chpl::resolution::TypedFnSignature>
-{
-  void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
-                  const chpl::resolution::TypedFnSignature& stringMe) const {
-    stringOut << "resolution::TypedFnSignature not stringified";
-  }
+    switch(stringMe) {
+      case 0:
+        stringOut << "WHERE_NONE";
+        break;
+      case 1:
+        stringOut <<  "WHERE_TBD";
+        break;
+      case 2:
+        stringOut <<  "WHERE_TRUE";
+        break;
+      case 3:
+        stringOut <<  "WHERE_FALSE";
+        break;
+    }
+}
 };
 /// \endcond DO_NOT_DOCUMENT
 

@@ -97,7 +97,7 @@ class Param {
 
   // helper function to convert a value to a string
   static std::string valueToString(UniqueString v) {
-    return v.toString();
+    return v.str();
   }
   static std::string valueToString(ComplexDouble v) {
     return std::to_string(v.re) + "+" + std::to_string(v.im) + "i";
@@ -146,7 +146,7 @@ class Param {
                             QualifiedType a,
                             QualifiedType b);
 
-  std::string toString() const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   static uint64_t binStr2uint64(const char* str, size_t len, std::string& err);
   static uint64_t octStr2uint64(const char* str, size_t len, std::string& err);
@@ -228,7 +228,7 @@ class Param {
 /// \cond DO_NOT_DOCUMENT
 template<> struct stringify<chpl::types::Param::ComplexDouble> {
   void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
+                  chpl::StringifyKind stringKind,
                   const chpl::types::Param::ComplexDouble& stringMe) const {
     stringOut << "types::Param::ComplexDouble is not stringified";
   }
@@ -236,7 +236,7 @@ template<> struct stringify<chpl::types::Param::ComplexDouble> {
 
 template<> struct stringify<chpl::types::Param::NoneValue> {
   void operator()(std::ostream &stringOut,
-                  StringifyKind stringKind,
+                  chpl::StringifyKind stringKind,
                   const chpl::types::Param::NoneValue& stringMe) const {
     stringOut << "types::Param::NoneValue is not stringified";
   }
