@@ -2,14 +2,8 @@
 
 if [ $# -eq 0 ]
 then
-      echo "No arguments supplied, see -help"
+      echo "No arguments supplied, see --help"
       exit 1
-fi
-
-if [ $# -gt 3 ]
-then
-      echo "Only usable with single strings, please encapsulate your pattern with quotes, see -help"
-      exit 2
 fi
 
 if [ ! -z "$CHPL_HOME" ] ; then
@@ -18,16 +12,8 @@ else
     chapelDir="./"
 fi
 
-if [ $# -eq 1 ] && [ "$1" != "-help" ]
-then    
-    pushd $chapelDir > /dev/null
-
-    find test -wholename "*/.git" -prune -o -name \*.chpl -print0 | xargs -0 grep -H "$@"
-
-    popd > /dev/null
-
-    exit 0
-fi
+# by default, grep .chpl files
+filetypes=( -name \*.chpl )
 
 case "$1" in
     -t)
@@ -36,7 +22,7 @@ case "$1" in
 	shift
 	case $type in
 	    tests)
-		filetypes=( -name \*.chpl )
+		# use the default
 		;;
 	    futures)
 		filetypes=( -name \*.future )
@@ -57,26 +43,21 @@ case "$1" in
 		filetypes=( -name \*.prediff -o -name PREDIFF -o -name \*.precomp  -o -name PRECOMP -o -name \*.preexec -o -name PREEXEC )
 		;;
 	    *)
-		echo "Option $type not recognized, see -help"
+		echo "File type '$type' is not recognized, see --help"
 		exit 3
 		;;
 	esac
 
 	if [ ${#@} -eq 0 ]
 	then
-	    echo "No search term supplied, see -help"
+	    echo "No search term(s) are supplied, see --help"
 	    exit 4
 	fi
-	
-	pushd $chapelDir > /dev/null
-
-	find test -wholename "*/.git" -prune -o \( "${filetypes[@]}" \) -print0 | xargs -0 grep -H "$@"
-
-	popd > /dev/null
 	;;
-    -help)
-	echo "Usage: greptests [-t] pattern"
-	echo "-t [type] - the file types to search"
+
+    --help)
+	echo "Usage: greptests [-t type] pattern..."
+	echo "-t type - the file types to search (the default is tests):"
 	echo "    tests - .chpl"
 	echo "    futures - .future"
 	echo "    perfgraphs - .perfkeys, .graph"
@@ -84,10 +65,14 @@ case "$1" in
 	echo "    testopts - .compopts, COMPOPTS, .execopts, EXECOPTS, .perfcompopts, PERFCOMPOPTS, .perfexecopts, PERFEXECOPTS"
 	echo "    outputs - .good, .bad"
 	echo "    scripts - .prediff, PREDIFF, .precomp, PRECOMP, .preexec, PREEXEC"
-	echo " pattern - the text to search, please enclose any multi-word search in quotes"
-	;;
-    *)
-	echo "Option $1 not recognized, see -help"
-	exit 5
+	echo "pattern - the text to search and other options to pass to grep"
+	exit
 	;;
 esac
+
+
+pushd $chapelDir > /dev/null
+
+find test -name .git -prune -o \( "${filetypes[@]}" \) -print0 | xargs -0 grep -H "$@"
+
+popd > /dev/null
