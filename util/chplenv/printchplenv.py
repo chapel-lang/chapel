@@ -98,8 +98,10 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_ATOMICS', RUNTIME | LAUNCHER | DEFAULT, 'atomics'),
     ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
     ChapelEnv('CHPL_GMP', INTERNAL | DEFAULT, 'gmp'),
+    ChapelEnv('  CHPL_GMP_IS_OVERRIDDEN', INTERNAL),
     ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT, 'hwloc'),
     ChapelEnv('CHPL_RE2', RUNTIME | DEFAULT, 're2'),
+    ChapelEnv('  CHPL_RE2_IS_OVERRIDDEN', INTERNAL),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
     ChapelEnv('  CHPL_LLVM_CONFIG', COMPILER | NOPATH),
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
@@ -188,8 +190,10 @@ def compute_all_values():
     ENV_VALS['CHPL_ATOMICS'] = chpl_atomics.get()
     ENV_VALS['  CHPL_NETWORK_ATOMICS'] = chpl_atomics.get('network')
     ENV_VALS['CHPL_GMP'] = chpl_gmp.get()
+    ENV_VALS['  CHPL_GMP_IS_OVERRIDDEN'] = chpl_gmp.is_overridden()
     ENV_VALS['CHPL_HWLOC'] = chpl_hwloc.get()
     ENV_VALS['CHPL_RE2'] = chpl_re2.get()
+    ENV_VALS['  CHPL_RE2_IS_OVERRIDDEN'] = chpl_re2.is_overridden()
     ENV_VALS['CHPL_LLVM'] = chpl_llvm.get()
     ENV_VALS['  CHPL_LLVM_CONFIG'] = chpl_llvm.get_llvm_config()
     llvm_clang_c = chpl_llvm.get_llvm_clang('c')

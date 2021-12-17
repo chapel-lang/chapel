@@ -94,14 +94,10 @@ runtime: FORCE
 third-party-try-opt: third-party-try-re2 third-party-try-gmp
 
 third-party-try-re2: FORCE
-	-@if [ "$$CHPL_RE2" != none ]; then \
-	cd third-party && $(MAKE) try-re2; \
-	fi
+	cd third-party && $(MAKE) try-re2;
 
 third-party-try-gmp: FORCE
-	-@if [ -z "$$CHPL_GMP" ]; then \
-	cd third-party && $(MAKE) try-gmp; \
-	fi
+	cd third-party && $(MAKE) try-gmp;
 
 third-party-test-venv: FORCE
 	@if [ -z "$$CHPL_DONT_BUILD_TEST_VENV" ]; then \

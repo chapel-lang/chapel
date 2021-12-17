@@ -7,6 +7,18 @@ from chpl_home_utils import get_chpl_third_party
 from utils import memoize, warning
 
 
+# returns True if CHPL_RE2 was set by the user
+# (i.e. not inferred to be the default)
+@memoize
+def is_overridden():
+    re2 = overrides.get('CHPL_RE2')
+    regexp = overrides.get('CHPL_REGEXP')
+
+    if re2 or regexp:
+        return True
+
+    return False
+
 @memoize
 def get():
     re2 = overrides.get('CHPL_RE2')
