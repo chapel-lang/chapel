@@ -110,8 +110,6 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_LLVM_CONFIG', COMPILER | NOPATH),
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
     ChapelEnv('  CHPL_LLVM_CLANG_CXX', INTERNAL),
-    ChapelEnv('  CHPL_LLVM_CLANG_COMPILE_ARGS', INTERNAL),
-    ChapelEnv('  CHPL_LLVM_CLANG_LINK_ARGS', INTERNAL),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
     ChapelEnv('CHPL_SANITIZE', COMPILER | LAUNCHER, 'san'),
@@ -212,8 +210,6 @@ def compute_all_values():
     llvm_clang_cxx = chpl_llvm.get_llvm_clang('c++')
     ENV_VALS['  CHPL_LLVM_CLANG_C'] = " ".join(llvm_clang_c)
     ENV_VALS['  CHPL_LLVM_CLANG_CXX'] = " ".join(llvm_clang_cxx)
-    ENV_VALS['  CHPL_LLVM_CLANG_COMPILE_ARGS'] = chpl_llvm.get_clang_compile_args()
-    ENV_VALS['  CHPL_LLVM_CLANG_LINK_ARGS'] = chpl_llvm.get_clang_link_args()
     aux_filesys = chpl_aux_filesys.get()
     ENV_VALS['CHPL_AUX_FILESYS'] = '_'.join(sorted(aux_filesys.split(' ')))
     ENV_VALS['CHPL_LIB_PIC'] = chpl_lib_pic.get()

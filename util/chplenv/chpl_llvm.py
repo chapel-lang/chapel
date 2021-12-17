@@ -511,27 +511,6 @@ def get_clang_prgenv_args():
 
     return (comp_args, link_args)
 
-# returns (compArgsList, linkArgsList)
-@memoize
-def get_clang_compile_link_args():
-    comp_args = [ ]
-    link_args = [ ]
-    (tmp_comp, tmp_link) = get_clang_prgenv_args()
-    comp_args.extend(tmp_comp)
-    link_args.extend(tmp_link)
-
-    return (comp_args, link_args)
-
-@memoize
-def get_clang_compile_args():
-    (comp_args, _) = get_clang_compile_link_args()
-    return " ".join(comp_args)
-
-@memoize
-def get_clang_link_args():
-    (_, link_args) = get_clang_compile_link_args()
-    return " ".join(link_args)
-
 def _main():
     llvm_val = get()
     llvm_config = get_llvm_config()

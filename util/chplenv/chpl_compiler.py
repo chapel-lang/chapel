@@ -365,13 +365,22 @@ def get_compiler_command(flag, lang):
 # Returns any -I options needed for this compiler / system
 # to find headers
 #
+# Can include other compiler args but *needs to work both
+# for C and C++ compilation*.
+#
 # flag should be host or target.
 # returns a Python list of -I flags
 @memoize
 def get_system_include_paths(flag):
     platform_val = chpl_platform.get(flag)
+    compiler_val = get(flag)
 
     paths = [ ]
+
+    # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
+    if compiler_val == 'llvm':
+        (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
+        paths.extend(comp_args)
 
     # FreeBSD uses /usr/local but compilers don't search there by default
     if platform_val == 'freebsd':
@@ -382,17 +391,28 @@ def get_system_include_paths(flag):
     if homebrew_prefix:
         paths.append('-I' + homebrew_prefix + '/include')
 
+
     return paths
 
 # Returns any -L options needed for this compiler / system
 # to find libraries
+#
+# Can include other link args but *needs to work both
+# for C and C++ compilation*.
 #
 # flag should be host or target.
 # returns a Python list of -L flags
 @memoize
 def get_system_link_paths(flag):
     platform_val = chpl_platform.get(flag)
+    compiler_val = get(flag)
+
     paths = [ ]
+
+    # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
+    if compiler_val == 'llvm':
+        (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
+        paths.extend(link_args)
 
     # FreeBSD uses /usr/local but compilers don't search there by default
     if platform_val == 'freebsd':
