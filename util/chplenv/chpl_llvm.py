@@ -114,20 +114,25 @@ def find_system_llvm_config():
     if llvm_config != 'none':
         return llvm_config
 
+    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+
     paths = [ ]
     for vers in llvm_versions():
         paths.append("llvm-config-" + vers + ".0")
         paths.append("llvm-config-" + vers)
         # this format used by freebsd
         paths.append("llvm-config" + vers)
-        # next ones are for Homebrew
-        paths.append("/usr/local/opt/llvm@" + vers + ".0/bin/llvm-config")
-        paths.append("/usr/local/opt/llvm@" + vers + "/bin/llvm-config")
+        if homebrew_prefix:
+            # look for homebrew install of LLVM
+            paths.append(homebrew_prefix +
+                         "/opt/llvm@" + vers + ".0/bin/llvm-config")
+            paths.append(homebrew_prefix +
+                         "/opt/llvm@" + vers + "/bin/llvm-config")
 
     # check also unversioned commands
     paths.append("llvm-config")
-    # next for Homebrew
-    paths.append("/usr/local/opt/llvm/bin/llvm-config")
+    if homebrew_prefix:
+        paths.append(homebrew_prefix + "/opt/llvm/bin/llvm-config")
 
     all_found = [ ]
 
@@ -404,25 +409,12 @@ def get_sysroot_resource_dir_args():
 def get_clang_additional_args():
     comp_args = [ ]
     link_args = [ ]
-    basic_args = get_clang_basic_args()
-    has_sysroot = False
-    sysroot_arg = ""
-    for arg in basic_args:
-        # if we set has_sysroot on last iteration, get the arg
-        if has_sysroot:
-            sysroot_arg = arg
-            break
-        if arg == '-isysroot':
-            has_sysroot = True
 
     # Check to see if Homebrew is installed. If it is,
     # add the result of `brew prefix` to -I and -L args.
-    exists, retcode, my_out, my_err = try_run_command(['brew', '--prefix'])
-    if exists and retcode == 0:
+    homebrew_prefix = chpl_platform.get_homebrew_prefix()
+    if homebrew_prefix:
         # Make sure to include homebrew search path
-        homebrew_prefix = my_out.strip()
-        # search /usr/local/include and /usr/local/lib
-        # if there is a -isysroot argument.
         comp_args.append('-I' + homebrew_prefix + '/include')
         link_args.append('-L' + homebrew_prefix + '/lib')
 
