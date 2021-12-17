@@ -362,6 +362,20 @@ def get_compiler_command(flag, lang):
 
     return command
 
+# Returns any -I options needed to find bundled headers
+#
+# Can include other compiler args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -I flags
+@memoize
+def get_bundled_compile_args(flag):
+    paths = [ ]
+
+    # TODO - port over third-party arg gathering
+    return paths
+
 # Returns any -I options needed for this compiler / system
 # to find headers
 #
@@ -371,14 +385,14 @@ def get_compiler_command(flag, lang):
 # flag should be host or target.
 # returns a Python list of -I flags
 @memoize
-def get_system_include_paths(flag):
+def get_system_compile_args(flag):
     platform_val = chpl_platform.get(flag)
     compiler_val = get(flag)
 
     paths = [ ]
 
     # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
-    if compiler_val == 'llvm':
+    if compiler_val == 'llvm' and flag == 'target':
         (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
         paths.extend(comp_args)
 
@@ -391,7 +405,20 @@ def get_system_include_paths(flag):
     if homebrew_prefix:
         paths.append('-I' + homebrew_prefix + '/include')
 
+    return paths
 
+# Returns any -L options needed to find bundled libraries
+#
+# Can include other link args but *needs to work both
+# for C and C++ compilation*.
+#
+# flag should be host or target.
+# returns a Python list of -L flags
+@memoize
+def get_bundled_link_args(flag):
+    paths = [ ]
+
+    # TODO - port over third-party arg gathering
     return paths
 
 # Returns any -L options needed for this compiler / system
@@ -403,14 +430,14 @@ def get_system_include_paths(flag):
 # flag should be host or target.
 # returns a Python list of -L flags
 @memoize
-def get_system_link_paths(flag):
+def get_system_link_args(flag):
     platform_val = chpl_platform.get(flag)
     compiler_val = get(flag)
 
     paths = [ ]
 
     # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
-    if compiler_val == 'llvm':
+    if compiler_val == 'llvm' and flag == 'target':
         (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
         paths.extend(link_args)
 
