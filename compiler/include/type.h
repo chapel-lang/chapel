@@ -110,7 +110,7 @@ public:
 
   SymbolMap              substitutions;
   SymbolNameVec          substitutionsPostResolve;
-  //
+
   // whether the type has chpl__serialize and chpl__deserialize
   bool                   isSerializeable();
 

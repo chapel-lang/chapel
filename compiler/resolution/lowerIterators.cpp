@@ -3037,7 +3037,6 @@ void lowerIterators() {
   USR_STOP();
 
   forv_Vec (CallExpr, call, gCallExprs) {
-    // TODO are we still adding this primitive?
     if (call->isPrimitive(PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL)) {
       call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
 
