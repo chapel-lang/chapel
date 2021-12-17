@@ -212,13 +212,10 @@ static void insertSerialization(FnSymbol*  fn,
 
 static bool shouldSerialize(ArgSymbol* arg) {
   bool retval = false;
-  bool hasSerializer = serializeMap.find(arg->getValType()) != serializeMap.end();
   Type* argType = arg->getValType();
 
-  if (hasSerializer == false) {
+  if (!argType->isSerializeable()) {
     retval = false;
-  } else if (argType->symbol->hasFlag(FLAG_ARRAY)) {
-    retval = hasSerializer;
   } else if (isRecordWrappedType(argType)) {
     // OK to serialize if the record-wrapped type's underlying class is not
     // modified.
@@ -232,7 +229,7 @@ static bool shouldSerialize(ArgSymbol* arg) {
     // FLAG_REF_TO_IMMUTABLE? That said, we don't seem to be leaking...
     retval = arg->intent == INTENT_CONST_REF && arg->hasFlag(FLAG_REF_TO_IMMUTABLE);
   } else {
-    retval = hasSerializer;
+    retval = true;
   }
 
   return retval;

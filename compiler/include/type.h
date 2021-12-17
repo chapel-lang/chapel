@@ -110,6 +110,10 @@ public:
 
   SymbolMap              substitutions;
   SymbolNameVec          substitutionsPostResolve;
+  //
+  // whether the type has chpl__serialize and chpl__deserialize
+  bool                   isSerializeable();
+
 
   // Only used for LLVM.
   std::map<std::string, int> GEPMap;

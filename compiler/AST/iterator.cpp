@@ -1982,25 +1982,20 @@ void cleanupPrimIRFieldValByFormal() {
   formalToPrimMap.clear();
 }
 
-static void fixPromotionProtoFields(AggregateType* record, Symbol* locSym,
+static void fixPromotionProtoFields(AggregateType* at, Symbol* locSym,
                                     VarSymbol* newField) {
 
-  if (record->numFields() == 0) {
+  if ((at->numFields() == 0 || !at->isSerializeable())) {
     return;
   }
 
-  bool hasSerializer = serializeMap.find(record->getValType()) != serializeMap.end();
-  if (!hasSerializer) {
-    return;
-  }
-
-  Serializers serializers = serializeMap[record];
+  Serializers serializers = serializeMap[at];
   FnSymbol* serializer = serializers.serializer;
   FnSymbol* deserializer = serializers.deserializer;
 
   SymbolMap updateMap;
 
-  for_fields(field, record) {
+  for_fields(field, at) {
     if (field->hasFlag(FLAG_PROMOTION_PROTO_FIELD)) {
       if ((strcmp(field->name, locSym->name) == 0) &&
           field->type == locSym->type) {
@@ -2011,29 +2006,19 @@ static void fixPromotionProtoFields(AggregateType* record, Symbol* locSym,
     }
   }
 
-  // TODO merge these two branches
   if (serializer) {
+    INT_ASSERT(deserializer);
     update_symbols(serializer, &updateMap);
-
-  }
-
-  if (deserializer) {
     update_symbols(deserializer, &updateMap);
   }
 }
 
 static void cleanupProtoFields(AggregateType* at) {
-  if (!isAlive(at->symbol)) {
+  if ((!isAlive(at->symbol) || at->numFields() == 0)) {
     return;
   }
 
-  if (at->numFields() == 0) {
-    return;
-  }
-
-  bool hasSerializer = serializeMap.find(at->getValType()) != serializeMap.end();
-
-  if (!hasSerializer) {
+  if (!at->isSerializeable()) {
     for_fields (field, at) {
       if (field->hasFlag(FLAG_PROMOTION_PROTO_FIELD)) {
         field->defPoint->remove();

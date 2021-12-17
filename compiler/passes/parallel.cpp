@@ -1185,8 +1185,7 @@ static void replaceRecordWrappedRefs() {
     if (aggType->symbol->hasFlag(FLAG_REF)) {
       // ignore the reference type itself
     } else {
-      bool hasSerializers = serializeMap.find(aggType) != serializeMap.end();
-      if (hasSerializers) {
+      if (aggType->isSerializeable()) {
         continue; // this type will be serialized and RVF'ed
       }
       for_fields(field, aggType) {
