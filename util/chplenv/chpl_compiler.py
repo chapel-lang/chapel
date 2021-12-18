@@ -393,6 +393,7 @@ def get_system_compile_args(flag):
 
     # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
     if compiler_val == 'llvm' and flag == 'target':
+        import chpl_llvm
         (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
         paths.extend(comp_args)
 
@@ -438,6 +439,7 @@ def get_system_link_args(flag):
 
     # For PrgEnv compilation with LLVM, gather arguments from PrgEnv driver
     if compiler_val == 'llvm' and flag == 'target':
+        import chpl_llvm
         (comp_args, link_args) = chpl_llvm.get_clang_prgenv_args()
         paths.extend(link_args)
 
