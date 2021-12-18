@@ -73,24 +73,41 @@ def get_jemalloc_config_file(flag='target'):
     config_file = os.path.join(install_path, 'bin', 'jemalloc-config')
     return config_file
 
-
+# flag is host or target
+# returns 2-tuple of lists
+#  (compiler_bundled_args, compiler_system_args)
 @memoize
-def get_link_args(flag, mem_val):
-    if mem_val == 'bundled':
+def get_compile_args(flag):
+    jemalloc_val = get(flag)
+    if jemalloc_val == 'bundled':
+        ucp_val = get_uniq_cfg_path()
+        return third_party_utils.get_bundled_compile_args('jemalloc',
+                                                          ucp=ucp_val)
+    return ([ ], [ ])
+
+# flag is host or target
+# returns 2-tuple of lists
+#  (linker_bundled_args, linker_system_args)
+@memoize
+def get_link_args(flag):
+    jemalloc_val = get(flag)
+    if jemalloc_val == 'bundled':
         jemalloc_config = get_jemalloc_config_file(flag)
         install_path = third_party_utils.get_cfg_install_path('jemalloc', host_or_target=flag)
         lib_path = os.path.join(install_path, 'lib')
         libs = ['-L{}'.format(lib_path), '-ljemalloc']
+
+        morelibs = [ ]
         # should this be an error if we can't find it?
         if os.access(jemalloc_config, os.X_OK):
             jemalloc_libs = run_command([jemalloc_config, '--libs'])
-            libs += jemalloc_libs.split()
-        return libs
-    elif mem_val == 'system':
-        return ['-ljemalloc']
-    else:
-        return []
+            morelibs += jemalloc_libs.split()
+        return (libs, morelibs)
 
+    if jemalloc_val == 'system':
+        return ([ ], ['-ljemalloc'])
+
+    return ([ ], [ ])
 
 def _main():
     parser = optparse.OptionParser(usage='usage: %prog [--host|target])')

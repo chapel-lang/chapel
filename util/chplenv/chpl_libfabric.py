@@ -39,13 +39,19 @@ def get_uniq_cfg_path():
     return base_uniq_cfg + suffix
 
 
+# returns 2-tuple of lists
+#  (compiler_bundled_args, compiler_system_args)
 @memoize
-def get_compile_args(libfabric=get()):
-    flags = []
-    if libfabric == 'bundled':
-        flags = third_party_utils.default_get_compile_args('libfabric',
-                                                           ucp=get_uniq_cfg_path())
-    elif libfabric == 'system':
+def get_compile_args():
+    args = ([ ], [ ])
+    libfabric_val = get()
+    if libfabric_val == 'bundled':
+        ucp_val = get_uniq_cfg_path()
+        args = third_party_utils.get_bundled_compile_args('libfabric',
+                                                          ucp=ucp_val)
+    elif libfabric_val == 'system':
+        flags = [ ]
+
         # Allow overriding pkg-config via LIBFABRIC_DIR, for platforms
         # without pkg-config.
         libfab_dir_val = overrides.get('LIBFABRIC_DIR')
@@ -58,25 +64,34 @@ def get_compile_args(libfabric=get()):
             for pcl in pcflags:
                 flags.append(pcl)
 
-    launcher_val = chpl_launcher.get()
-    ofi_oob_val = overrides.get_environ('CHPL_RT_COMM_OFI_OOB')
-    if 'mpi' in launcher_val or ( ofi_oob_val and 'mpi' in ofi_oob_val ):
-        mpi_dir_val = overrides.get_environ('MPI_DIR')
-        if mpi_dir_val:
-            flags.append('-I' + mpi_dir_val + '/include')
+        args[1].extend(flags)
 
-    return flags
+    if libfabric == 'system' or libfabric == 'bundled':
+        flags = [ ]
+        launcher_val = chpl_launcher.get()
+        ofi_oob_val = overrides.get_environ('CHPL_RT_COMM_OFI_OOB')
+        if 'mpi' in launcher_val or ( ofi_oob_val and 'mpi' in ofi_oob_val ):
+            mpi_dir_val = overrides.get_environ('MPI_DIR')
+            if mpi_dir_val:
+                flags.append('-I' + mpi_dir_val + '/include')
+
+        args[1].extend(flags)
+
+    return args
 
 
+# returns 2-tuple of lists
+#  (linker_bundled_args, linker_system_args)
 @memoize
-def get_link_args(libfabric=get()):
-    libs = []
-    if libfabric == 'bundled':
-        return third_party_utils.default_get_link_args('libfabric',
+def get_link_args():
+    libfabric_val = get()
+    if libfabric_val == 'bundled':
+        return third_party_utils.get_bundled_link_args('libfabric',
                                                        ucp=get_uniq_cfg_path(),
                                                        libs=['libfabric.la'],
                                                        add_L_opt=True)
     elif libfabric == 'system':
+        libs = [ ]
         # Allow overriding pkg-config via LIBFABRIC_DIR, for platforms
         # without pkg-config.
         libfab_dir_val = overrides.get('LIBFABRIC_DIR')
@@ -93,8 +108,9 @@ def get_link_args(libfabric=get()):
                 libs.append(pcl)
                 if pcl.startswith('-L'):
                     libs.append(pcl.replace('-L', '-Wl,-rpath,', 1))
+        return ([ ], libs)
 
-    return libs
+    return ([ ], [ ])
 
 
 def _main():

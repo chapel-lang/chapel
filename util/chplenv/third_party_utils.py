@@ -139,19 +139,25 @@ def pkgconfig_get_system_version(pkg):
   return version.strip()
 
 #
-# This returns the default link args for the given third-party package.
+# This returns the default link args for the given third-party package
+# assuming that the bundled version is used.
 #
-def default_get_compile_args(pkg, ucp=''):
+# returns 2-tuple of lists
+#  (compiler_bundled_args, compiler_system_args)
+def get_bundled_compile_args(pkg, ucp=''):
     if ucp == '':
         ucp = default_uniq_cfg_path()
     inc_dir = os.path.join(get_cfg_install_path(pkg, ucp), 'include')
-    return ['-I' + inc_dir]
+    return (['-I' + inc_dir], [ ])
 
 
 #
-# This returns the default link args for the given third-party package.
+# This returns the default link args for the given third-party package
+# assuming that the bundled version is used.
 #
-def default_get_link_args(pkg, ucp='', libs=[], add_L_opt=False):
+# returns 2-tuple of lists
+#  (linker_bundled_args, linker_system_args)
+def get_bundled_link_args(pkg, ucp='', libs=[], add_L_opt=False):
     if ucp == '':
         ucp = default_uniq_cfg_path()
     if libs == []:
@@ -169,4 +175,14 @@ def default_get_link_args(pkg, ucp='', libs=[], add_L_opt=False):
             all_args.append(lib_arg)
     if all_args == []:
         all_args.append('-l' + pkg)
-    return all_args
+
+    bundled_args = [ ]
+    system_args = [ ]
+    for arg in all_args:
+        # put some of the usual suspects into the system args
+        if arg == '-lpthread' or arg == '-ldl' or arg == '-lm':
+            system_args.append(arg)
+        else:
+            bundled_args.append(arg)
+
+    return (bundled_args, system_args)

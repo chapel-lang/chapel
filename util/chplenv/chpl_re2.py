@@ -40,11 +40,22 @@ def get():
 def get_uniq_cfg_path():
     return third_party_utils.default_uniq_cfg_path()
 
+# returns 2-tuple of lists
+#  (compiler_bundled_args, compiler_system_args)
+@memoize
+def get_compile_args():
+    return ([ ], [ ])
 
+# returns 2-tuple of lists
+#  (linker_bundled_args, linker_system_args)
 @memoize
 def get_link_args():
-    return third_party_utils.default_get_link_args('re2',
-                                                   libs=['-lre2', '-lpthread'])
+    re2_val = get()
+    if re2_val == 'bundled':
+        return third_party_utils.get_bundled_link_args('re2',
+                                                       libs=['-lre2',
+                                                             '-lpthread'])
+    return ([ ], [ ])
 
 
 def _main():

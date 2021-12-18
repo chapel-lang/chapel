@@ -133,10 +133,7 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_LIBUNWIND_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_QTHREAD_UNIQ_CFG_PATH', INTERNAL),
     ChapelEnv('  CHPL_RE2_UNIQ_CFG_PATH', INTERNAL),
-    ChapelEnv('  CHPL_THIRD_PARTY_COMPILE_ARGS', INTERNAL),
-    ChapelEnv('  CHPL_THIRD_PARTY_LINK_ARGS', INTERNAL),
     ChapelEnv('  CHPL_PE_CHPL_PKGCONFIG_LIBS', INTERNAL),
-    ChapelEnv('  CHPL_THIRD_PARTY_HOST_LINK_ARGS', INTERNAL),
 ]
 
 # Global map of environment variable names to values
@@ -155,15 +152,6 @@ def compute_all_values():
     ENV_VALS['CHPL_HOST_COMPILER'] = host_compiler
     ENV_VALS['  CHPL_HOST_CC'] = " ".join(host_compiler_c)
     ENV_VALS['  CHPL_HOST_CXX'] = " ".join(host_compiler_cpp)
-    ENV_VALS['  CHPL_HOST_BUNDLED_COMPILE_ARGS'] = " ".join(
-        chpl_compiler.get_bundled_compile_args('host'))
-    ENV_VALS['  CHPL_HOST_SYSTEM_COMPILE_ARGS'] = " ".join(
-        chpl_compiler.get_system_compile_args('host'))
-    ENV_VALS['  CHPL_HOST_BUNDLED_LINK_ARGS'] = " ".join(
-        chpl_compiler.get_bundled_link_args('host'))
-    ENV_VALS['  CHPL_HOST_SYSTEM_LINK_ARGS'] = " ".join(
-        chpl_compiler.get_system_link_args('host'))
-
     ENV_VALS['CHPL_HOST_ARCH'] = chpl_arch.get('host')
     ENV_VALS['CHPL_HOST_CPU'] = chpl_cpu.get('host').cpu
     ENV_VALS['CHPL_TARGET_PLATFORM'] = chpl_platform.get('target')
@@ -176,14 +164,6 @@ def compute_all_values():
     ENV_VALS['  CHPL_TARGET_CC'] = " ".join(target_compiler_c)
     ENV_VALS['  CHPL_TARGET_CXX'] = " ".join(target_compiler_cpp)
     ENV_VALS['  CHPL_TARGET_COMPILER_PRGENV'] = target_compiler_prgenv
-    ENV_VALS['  CHPL_TARGET_BUNDLED_COMPILE_ARGS'] = " ".join(
-        chpl_compiler.get_bundled_compile_args('target'))
-    ENV_VALS['  CHPL_TARGET_SYSTEM_COMPILE_ARGS'] = " ".join(
-        chpl_compiler.get_system_compile_args('target'))
-    ENV_VALS['  CHPL_TARGET_BUNDLED_LINK_ARGS'] = " ".join(
-        chpl_compiler.get_bundled_link_args('target'))
-    ENV_VALS['  CHPL_TARGET_SYSTEM_LINK_ARGS'] = " ".join(
-        chpl_compiler.get_system_link_args('target'))
 
     ENV_VALS['CHPL_TARGET_ARCH'] = chpl_arch.get('target')
     ENV_VALS['CHPL_TARGET_CPU'] = chpl_cpu.get('target').cpu
@@ -236,6 +216,7 @@ def compute_all_values():
     chpl_compiler.validate_compiler_settings()
     chpl_gpu.validate(ENV_VALS['CHPL_LOCALE_MODEL'], ENV_VALS['CHPL_COMM'])
 
+
 """Compute '--internal' env var values and populate global dict, ENV_VALS"""
 def compute_internal_values():
     global ENV_VALS
@@ -260,45 +241,83 @@ def compute_internal_values():
 
     ENV_VALS['  CHPL_LLVM_UNIQ_CFG_PATH'] = chpl_llvm.get_uniq_cfg_path()
 
-    compile_args_3p = []
-    link_args_3p = []
-    host_link_args_3p = []
-
     ENV_VALS['  CHPL_GASNET_UNIQ_CFG_PATH'] = chpl_gasnet.get_uniq_cfg_path()
 
     ENV_VALS['  CHPL_GMP_UNIQ_CFG_PATH'] = chpl_gmp.get_uniq_cfg_path()
-    link_args_3p.extend(chpl_gmp.get_link_args(chpl_gmp.get()))
 
     ENV_VALS['  CHPL_HWLOC_UNIQ_CFG_PATH'] = chpl_hwloc.get_uniq_cfg_path()
-    link_args_3p.extend(chpl_hwloc.get_link_args(chpl_hwloc.get()))
 
     ENV_VALS['  CHPL_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path()
-    link_args_3p.extend(chpl_jemalloc.get_link_args('target', chpl_jemalloc.get('target')))
-    host_link_args_3p.extend(chpl_jemalloc.get_link_args('host', chpl_jemalloc.get('host')))
-
     ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_libfabric.get_uniq_cfg_path()
-    if chpl_comm.get() == 'ofi':
-      compile_args_3p.extend(chpl_libfabric.get_compile_args())
-      link_args_3p.extend(chpl_libfabric.get_link_args())
-
     ENV_VALS['  CHPL_LIBUNWIND_UNIQ_CFG_PATH'] = chpl_unwind.get_uniq_cfg_path()
-    link_args_3p.extend(chpl_unwind.get_link_args(chpl_unwind.get()))
 
     ENV_VALS['  CHPL_QTHREAD_UNIQ_CFG_PATH'] = chpl_qthreads.get_uniq_cfg_path()
-    if chpl_tasks.get() == 'qthreads':
-        link_args_3p.extend(chpl_qthreads.get_link_args())
 
     ENV_VALS['  CHPL_RE2_UNIQ_CFG_PATH'] = chpl_re2.get_uniq_cfg_path()
-    if chpl_re2.get() != 'none':
-        link_args_3p.extend(chpl_re2.get_link_args())
-
-    ENV_VALS['  CHPL_THIRD_PARTY_COMPILE_ARGS'] = ' '.join(dedup(compile_args_3p))
-
-    ENV_VALS['  CHPL_THIRD_PARTY_LINK_ARGS'] = ' '.join(dedup(link_args_3p))
-
-    ENV_VALS['  CHPL_THIRD_PARTY_HOST_LINK_ARGS'] = ' '.join(dedup(host_link_args_3p))
 
     ENV_VALS['  CHPL_PE_CHPL_PKGCONFIG_LIBS'] = chpl_llvm.gather_pe_chpl_pkgconfig_libs()
+
+    # compute the compiler / link args
+    # each of these is bundled, system
+    host_compile = ([ ], [ ])
+    host_link = ([ ], [ ])
+    tgt_compile = ([ ], [ ])
+    tgt_link = ([ ], [ ])
+
+    # start with arguments indicated by compiler selection
+    host_compile[0].extend(chpl_compiler.get_bundled_compile_args('host'))
+    host_compile[1].extend(chpl_compiler.get_system_compile_args('host'))
+    host_link[0].extend(chpl_compiler.get_bundled_link_args('host'))
+    host_link[1].extend(chpl_compiler.get_system_link_args('host'))
+
+    tgt_compile[0].extend(chpl_compiler.get_bundled_compile_args('target'))
+    tgt_compile[1].extend(chpl_compiler.get_system_compile_args('target'))
+    tgt_link[0].extend(chpl_compiler.get_bundled_link_args('target'))
+    tgt_link[1].extend(chpl_compiler.get_system_link_args('target'))
+
+    # add 3p arguments
+    extend2(tgt_compile, chpl_gmp.get_compile_args())
+    extend2(tgt_link, chpl_gmp.get_link_args())
+
+    extend2(tgt_compile, chpl_hwloc.get_compile_args())
+    extend2(tgt_link, chpl_hwloc.get_link_args())
+
+    extend2(tgt_compile, chpl_jemalloc.get_compile_args('target'))
+    extend2(tgt_link, chpl_jemalloc.get_link_args('target'))
+    extend2(host_compile, chpl_jemalloc.get_compile_args('host'))
+    extend2(host_link, chpl_jemalloc.get_link_args('host'))
+
+    if chpl_comm.get() == 'ofi':
+        extend2(tgt_compile(chpl_libfabric.get_compile_args()))
+        extend2(tgt_link, chpl_libfabric.get_link_args())
+
+    extend2(tgt_compile, chpl_unwind.get_compile_args())
+    extend2(tgt_link, chpl_unwind.get_link_args())
+
+    if chpl_tasks.get() == 'qthreads':
+        extend2(tgt_link, chpl_qthreads.get_link_args())
+
+    if chpl_re2.get() != 'none':
+        extend2(tgt_link, chpl_re2.get_link_args())
+
+    # remove duplicate libraries
+    host_link = (dedup(host_link[0]), dedup(host_link[1]))
+    tgt_link = (dedup(tgt_link[0]), dedup(tgt_link[1]))
+
+    ENV_VALS['  CHPL_HOST_BUNDLED_COMPILE_ARGS'] = " ".join(host_compile[0])
+    ENV_VALS['  CHPL_HOST_SYSTEM_COMPILE_ARGS'] = " ".join(host_compile[1])
+    ENV_VALS['  CHPL_HOST_BUNDLED_LINK_ARGS'] = " ".join(host_link[0])
+    ENV_VALS['  CHPL_HOST_SYSTEM_LINK_ARGS'] = " ".join(host_link[1])
+
+    ENV_VALS['  CHPL_TARGET_BUNDLED_COMPILE_ARGS'] = " ".join(tgt_compile[0])
+    ENV_VALS['  CHPL_TARGET_SYSTEM_COMPILE_ARGS'] = " ".join(tgt_compile[1])
+    ENV_VALS['  CHPL_TARGET_BUNDLED_LINK_ARGS'] = " ".join(tgt_link[0])
+    ENV_VALS['  CHPL_TARGET_SYSTEM_LINK_ARGS'] = " ".join(tgt_link[1])
+
+""" Given two 2-tuples of lists, add 2nd lists to the first lists """
+def extend2(x, y):
+    x[0].extend(y[0])
+    x[1].extend(y[1])
 
 """ Remove duplicates, keeping last occurrence and preserving order
 e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ..."""
