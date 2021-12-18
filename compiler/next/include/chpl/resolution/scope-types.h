@@ -480,7 +480,9 @@ class PoiScope {
     ss << "PoiScope ";
     inScope()->stringify(ss,stringKind);
     ss << " ";
-    inFnPoi()->stringify(ss, stringKind);
+    if (inFnPoi() != this) {
+      inFnPoi()->stringify(ss, stringKind);
+    }
   }
 };
 
