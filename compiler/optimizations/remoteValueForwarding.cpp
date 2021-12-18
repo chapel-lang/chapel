@@ -55,6 +55,11 @@ DotInfo::DotInfo() : finalized(false), usesDotLocale(false) { }
 static std::map<Symbol*, DotInfo*> dotLocaleMap;
 typedef std::map<Symbol*, DotInfo*>::iterator DotInfoIter;
 
+// deserializers for types that don't have any ref fields. This is used as a
+// cache of functions that don't need to be analyzed in
+// `handleRefDeserializers`.
+static std::set<FnSymbol*> regularDeserializers;
+
 static void computeUsesDotLocale();
 
 /************************************* | **************************************
@@ -466,6 +471,7 @@ static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
  *  complicated and looks like the following for a single-ref-field record:
  *
  *  Before:
+ *  -------
  *
  *  proc type chpl__deserialize1(data) {
  *    var ret: this;
@@ -489,6 +495,7 @@ static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
  *  }
  *
  *  After:
+ *  ------
  *
  *  proc type chpl__deserialize1(data, newArgRef) {
  *    var ret: this;
@@ -515,15 +522,21 @@ static void serializeAtCallSites(FnSymbol* fn,  ArgSymbol* arg,
  *  - This ref is directly assigned to the field inside the main deserializer.
  *
  */
-
 static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
                                         FnSymbol* baseDeserializeFn,
                                         Symbol* arg) {
 
-  FnSymbol* deserializeFn = baseDeserializeFn->copy();
-  CallExpr* deserializeCall = new CallExpr(deserializeFn, arg);
-  bool modified = false;
+  // if no changes are necessary, we'll just return this
+  CallExpr* baseCall = new CallExpr(baseDeserializeFn, arg);
 
+  if (regularDeserializers.count(baseDeserializeFn) == 1) {
+    return baseCall;
+  }
+
+  FnSymbol* deserializeFn = baseDeserializeFn->copy();
+  CallExpr* modifiedCall = new CallExpr(deserializeFn, arg);
+
+  bool modified = false;
   for_alist (stmt, deserializeFn->body->body) {
     if (CondStmt* cond = toCondStmt(stmt)) {
       SymExpr* flagExpr = toSymExpr(cond->condExpr);
@@ -712,7 +725,7 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
           // Phase 6: Adjust the existing "base" deserializer. This means adding
           // an argument to the function, changing the call to have the ref
           // field as an argument, changing the setMemberCall to make use of
-          // this argument to the function. Note that `deserializeCall` will
+          // this argument to the function. Note that `modifiedCall` will
           // receive its retarg/rtt in `insertSerialization`.
           ArgSymbol *newArg = new ArgSymbol(INTENT_REF, "hoisted_field",
                                             hoistedRefField->type);
@@ -724,7 +737,7 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
           else {
             deserializeFn->insertFormalAtTail(newArg);
           }
-          deserializeCall->insertAtTail(new SymExpr(hoistedRefField));
+          modifiedCall->insertAtTail(new SymExpr(hoistedRefField));
 
           setMemberCall->get(3)->replace(new SymExpr(newArg));
           cond->insertBefore(setMemberCall->remove());
@@ -739,13 +752,12 @@ static CallExpr* handleRefDeserializers(Expr* anchor, FnSymbol* fn,
   }
 
   if (!modified) {
-    //TODO add this deserializer to the cache of deserializers that shouldn't be
-    //analyzed again
-    return new CallExpr(baseDeserializeFn, arg);
+    regularDeserializers.insert(baseDeserializeFn);
+    return baseCall;
   }
   else {
-    deserializeCall->setResolvedFunction(deserializeFn);
-    return deserializeCall;
+    modifiedCall->setResolvedFunction(deserializeFn);
+    return modifiedCall;
   }
 }
 
