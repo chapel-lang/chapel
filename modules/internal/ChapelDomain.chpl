@@ -190,6 +190,9 @@ module ChapelDomain {
   proc chpl__ensureDomainExpr(x...) {
     // we are creating array with a range literal(s). So, the array's domain
     // cannot be changed anymore.
+    for param i in 0..<x.size do
+      if (!isRange(x(i))) then
+        compilerError("Cannot create a domain using an expression of type " + x(i).type:string);
     return chpl__buildDomainExpr((...x), definedConst=true);
   }
 
