@@ -1862,11 +1862,11 @@ ifc_constraint:
 ;
 
 try_stmt:
-  TTRY     expr            TSEMI
+  TTRY     stmt_level_expr TSEMI
   {
     $$ = context->buildTryExprStmt(@$, $2, false);
   }
-| TTRYBANG expr            TSEMI
+| TTRYBANG stmt_level_expr TSEMI
   {
     $$ = context->buildTryExprStmt(@$, $2, true);
   }
