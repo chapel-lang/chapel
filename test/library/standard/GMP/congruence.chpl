@@ -33,7 +33,7 @@ for b in 1 .. 10 : uint {
   for c in 0 .. 9 {
     var cb = new bigint(c);
 
-    write(TF(tensandthrees.isCongruentByPowerOf2(cb, b)));
+    write(TF(tensandthrees.isCongruentBy2Pow(cb, b)));
   }
 
   writeln();

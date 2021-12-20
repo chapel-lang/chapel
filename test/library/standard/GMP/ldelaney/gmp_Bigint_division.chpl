@@ -92,7 +92,7 @@ writeln(d3);
 
 d3 = b.isDivisible(3);
 writeln(d3, " ");
-writeln(b.isDivisibleByPowerOf2(3)); // divisble by 2^3
+writeln(b.isDivisibleBy2Pow(3)); // divisble by 2^3
 
 a.set(25);
 b.set(20);
@@ -105,5 +105,5 @@ d3 = a.isCongruent(10, 20); //25 not congruent to 10 mod 20
 writeln(d3);
 
 a.set(45);
-d3 = a.isCongruentByPowerOf2(c, 3); //45 congruent to 5 mod 8
+d3 = a.isCongruentBy2Pow(c, 3); //45 congruent to 5 mod 8
 writeln(d3);
