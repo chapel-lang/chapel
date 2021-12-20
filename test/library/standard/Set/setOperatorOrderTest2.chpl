@@ -1,7 +1,7 @@
 use Set;
 
 record R {
-  var a: string;
+  var a: int;
   
   operator ==(a:R, b:R) {
     return true;
@@ -19,8 +19,8 @@ record R {
 var s1 = new set(R);
 var s2 = new set(R);
 
-var a = new R("LHS");
-var b = new R("RHS");
+var a = new R(1);
+var b = new R(2);
 
 s1.add(a);
 s2.add(b);
