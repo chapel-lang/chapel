@@ -4190,10 +4190,11 @@ void makeBinaryLLVM(void) {
   maino += "/main.o";
 
   // TODO: move this to printchplenv
-  std::string runtime_libs(CHPL_RUNTIME_LIB);
+  /*std::string runtime_libs(CHPL_RUNTIME_LIB);
   runtime_libs += "/";
   runtime_libs += CHPL_RUNTIME_SUBDIR;
   runtime_libs += "/list-libraries";
+   */
 
   // TODO: move this logic to printchplenv
   std::string runtime_ld_override(CHPL_RUNTIME_LIB);
@@ -4220,7 +4221,7 @@ void makeBinaryLLVM(void) {
     clangLDArgs.clear();
 
   // Add runtime libs arguments
-  readArgsFromFile(runtime_libs, clangLDArgs);
+  //readArgsFromFile(runtime_libs, clangLDArgs);
 
   // add the bundled link args from printchplenv
   splitStringWhitespace(CHPL_TARGET_BUNDLED_LINK_ARGS, clangLDArgs);

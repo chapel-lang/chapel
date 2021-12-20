@@ -277,6 +277,8 @@ def compute_internal_values():
 
     # add runtime includes and defines
     extend2(tgt_compile, get_runtime_includes_and_defines())
+    runtime_subdir = ENV_VALS['CHPL_RUNTIME_SUBDIR']
+    extend2(tgt_link, get_runtime_link_args(runtime_subdir))
 
     # add 3p arguments
     extend2(tgt_compile, chpl_gmp.get_compile_args())
@@ -366,6 +368,18 @@ def get_runtime_includes_and_defines():
 
     return (bundled, system)
 
+""" Returns the runtime -L and -l args according
+    to the current configuration, for a target (not host) compile.
+    Returns tuple of (bundled_args, system_args) """
+def get_runtime_link_args(runtime_subdir):
+    bundled = [ ]
+    system = [ ]
+
+    lib = chpl_home_utils.get_runtime_lib()
+
+    bundled.append("-L" + os.path.join(lib, runtime_subdir))
+
+    return (bundled, system)
 
 """ Given two 2-tuples of lists, add 2nd lists to the first lists """
 def extend2(x, y):

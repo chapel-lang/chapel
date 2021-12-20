@@ -155,7 +155,7 @@ def get_bundled_compile_args(pkg, ucp=''):
 #
 # returns 2-tuple of lists
 #  (linker_bundled_args, linker_system_args)
-def get_bundled_link_args(pkg, ucp='', libs=[], add_L_opt=False):
+def get_bundled_link_args(pkg, ucp='', libs=[], add_L_opt=True):
     if ucp == '':
         ucp = default_uniq_cfg_path()
     if libs == []:
