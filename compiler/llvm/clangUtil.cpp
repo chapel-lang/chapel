@@ -148,8 +148,18 @@ struct ClangInfo {
 
   std::string clangCC;
   std::string clangCXX;
+  // arguments to C/C++ compiler
+  // including -I for bundled paths
+  // these will apply when compiling C files as well
   std::vector<std::string> clangCCArgs;
-  std::vector<std::string> clangOtherArgs; // other compile-time args
+
+  // other arguments to C/C++ compiler, passed after the above ones.
+  // these tend to be the arguments indicating what to compile etc.
+  // and these arguments don't apply when compiling C files named
+  // on the command line
+  std::vector<std::string> clangOtherArgs;
+
+  // arguments to the linker from CC/CXX variable overrides
   std::vector<std::string> clangLDArgs;
 
   // the following 3 are here to make sure of no memory errors
@@ -2295,7 +2305,6 @@ void runClang(const char* just_parse_filename) {
   const char* clang_fast_float = "-ffast-math";
   const char* clang_ieee_float = "-fno-fast-math";
 
-  std::vector<std::string> args;
   std::vector<std::string> split;
   std::vector<std::string> clangCCArgs;
   std::vector<std::string> clangOtherArgs;
@@ -2304,7 +2313,7 @@ void runClang(const char* just_parse_filename) {
   // find the path to clang and clang++
   std::string clangCC, clangCXX;
 
-  // get any args passed to clangCC and add them to the builtin clang invocation
+  // get any args passed to CC/CXX and add them to the builtin clang invocation
   splitStringWhitespace(CHPL_LLVM_CLANG_C, split);
   // set clangCC / clangCXX to just the first argument
   for (size_t i = 0; i < split.size(); i++) {
@@ -2322,80 +2331,103 @@ void runClang(const char* just_parse_filename) {
     clangCXX = split[0];
   }
 
-  // TODO: move this to printchplenv
-  std::string runtime_includes(CHPL_RUNTIME_LIB);
-  runtime_includes += "/";
-  runtime_includes += CHPL_RUNTIME_SUBDIR;
-  runtime_includes += "/list-includes-and-defines";
 
-  bool rtOk = readArgsFromFile(runtime_includes, args, /*errFatal*/ false);
-  if (rtOk == false) {
-    std::string runtime_dir(CHPL_RUNTIME_LIB);
-    runtime_dir += "/";
-    runtime_dir += CHPL_RUNTIME_SUBDIR;
+  // after arguments provided in CC/CXX
+  // add include paths to anything builtin or in CHPL_HOME
+  {
+    std::vector<std::string> args;
 
-    if (developer)
-      USR_FATAL_CONT("Expected runtime library in %s", runtime_dir.c_str());
+    // TODO: move this to printchplenv
 
-    const char* module_home = getenv("CHPL_MODULE_HOME");
-    if (module_home) {
-      USR_FATAL("The requested configuration is not included in the module. "
-                "Please send the package maintainer the output of "
-                "$CHPL_HOME/util/printchplenv and request support for this "
-                "configuration.");
-    } else {
-      USR_FATAL("The runtime has not been built for this configuration. "
-                "Check $CHPL_HOME/util/printchplenv and try rebuilding "
-                "with $CHPL_MAKE from $CHPL_HOME.");
+    // add includes from runtime Makefiles
+    // e.g. -Iruntime/include ...
+    std::string runtime_includes(CHPL_RUNTIME_LIB);
+    runtime_includes += "/";
+    runtime_includes += CHPL_RUNTIME_SUBDIR;
+    runtime_includes += "/list-includes-and-defines";
+
+    bool rtOk = readArgsFromFile(runtime_includes, args, /*errFatal*/ false);
+    if (rtOk == false) {
+      std::string runtime_dir(CHPL_RUNTIME_LIB);
+      runtime_dir += "/";
+      runtime_dir += CHPL_RUNTIME_SUBDIR;
+
+      if (developer)
+        USR_FATAL_CONT("Expected runtime library in %s", runtime_dir.c_str());
+
+      const char* module_home = getenv("CHPL_MODULE_HOME");
+      if (module_home) {
+        USR_FATAL("The requested configuration is not included in the module. "
+                  "Please send the package maintainer the output of "
+                  "$CHPL_HOME/util/printchplenv and request support for this "
+                  "configuration.");
+      } else {
+        USR_FATAL("The runtime has not been built for this configuration. "
+                  "Check $CHPL_HOME/util/printchplenv and try rebuilding "
+                  "with $CHPL_MAKE from $CHPL_HOME.");
+      }
+    }
+
+    // Remove -DCHPL_DEBUG, -DCHPL_OPTIMIZE, -DNDEBUG from the args
+    // They are settings from the runtime build and we want to
+    // use flags appropriate to the compilation instead of the runtime build
+    std::vector<std::string>::iterator pos =
+      std::find(args.begin(), args.end(), "-DCHPL_DEBUG");
+    if (pos != args.end())
+      args.erase(pos);
+
+    pos = std::find(args.begin(), args.end(), "-DCHPL_OPTIMIZE");
+    if (pos != args.end())
+      args.erase(pos);
+
+
+    pos = std::find(args.begin(), args.end(), "-DNDEBUG");
+    if (pos != args.end())
+      args.erase(pos);
+
+    // add -I$CHPL_HOME/modules/standard/
+    // add -I$CHPL_HOME/modules/packages/
+    std::string dashImodules = "-I";
+    dashImodules += CHPL_HOME;
+    dashImodules += "/modules";
+
+    args.push_back(dashImodules + "/standard");
+    args.push_back(dashImodules + "/packages");
+
+    // add arguments from CHPL_TARGET_BUNDLED_COMPILE_ARGS
+    splitStringWhitespace(CHPL_TARGET_BUNDLED_COMPILE_ARGS, args);
+
+    // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
+    expandInstallationPaths(args);
+
+    for( size_t i = 0; i < args.size(); ++i ) {
+      clangCCArgs.push_back(args[i]);
     }
   }
 
-  // Remove -DCHPL_DEBUG, -DCHPL_OPTIMIZE, -DNDEBUG from the args
-  // They are settings from the runtime build and we want to
-  // use flags appropriate to the compilation instead of the runtime build
-  std::vector<std::string>::iterator pos =
-    std::find(args.begin(), args.end(), "-DCHPL_DEBUG");
-  if (pos != args.end())
-    args.erase(pos);
+  // add a -I for the generated code directory
+  clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
 
-  pos = std::find(args.begin(), args.end(), "-DCHPL_OPTIMIZE");
-  if (pos != args.end())
-    args.erase(pos);
-
-
-  pos = std::find(args.begin(), args.end(), "-DNDEBUG");
-  if (pos != args.end())
-    args.erase(pos);
-
-  std::string dashImodules = "-I";
-  dashImodules += CHPL_HOME;
-  dashImodules += "/modules";
-
-  args.push_back(dashImodules + "/standard");
-  args.push_back(dashImodules + "/packages");
-
-  // add arguments from CHPL_LLVM_CLANG_COMPILE_ARGS
-  splitStringWhitespace(CHPL_LLVM_CLANG_COMPILE_ARGS, args);
-
-  // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
-  expandInstallationPaths(args);
-
+  // Add warnings flags
   if (ccwarnings) {
     for (int i = 0; clang_warn[i]; i++) {
-      args.push_back(clang_warn[i]);
+      clangCCArgs.push_back(clang_warn[i]);
     }
   }
 
+  // Add debug flags
   if (debugCCode) {
-    args.push_back(clang_debug);
-    args.push_back("-DCHPL_DEBUG");
+    clangCCArgs.push_back(clang_debug);
+    clangCCArgs.push_back("-DCHPL_DEBUG");
   }
 
+  // Add optimize flags
   if (optimizeCCode) {
-    args.push_back(clang_opt);
-    args.push_back("-DCHPL_OPTIMIZE");
+    clangCCArgs.push_back(clang_opt);
+    clangCCArgs.push_back("-DCHPL_OPTIMIZE");
   }
 
+  // Add specialization flags
   if (specializeCCode &&
       CHPL_TARGET_CPU_FLAG != NULL &&
       CHPL_TARGET_BACKEND_CPU != NULL &&
@@ -2420,35 +2452,25 @@ void runClang(const char* just_parse_filename) {
       march += CHPL_TARGET_CPU_FLAG;
       march += "=";
       march += CHPL_TARGET_BACKEND_CPU;
-      args.push_back(march);
+      clangCCArgs.push_back(march);
     }
   }
 
   // Passing -ffast-math is important to get approximate versions
   // of cabs but it appears to slow down simple complex multiplication.
   if (ffloatOpt > 0) // --no-ieee-float
-    args.push_back(clang_fast_float); // --ffast-math
+    clangCCArgs.push_back(clang_fast_float); // --ffast-math
 
   if (ffloatOpt < 0) // --ieee-float
-    args.push_back(clang_ieee_float); // -fno-fast-math
+    clangCCArgs.push_back(clang_ieee_float); // -fno-fast-math
 
-  // Gather information from readargsfrom into clangArgs.
-
-  // Note that these CC arguments will be saved in info->clangCCArgs
-  // and will be used when compiling C files as well.
-  for( size_t i = 0; i < args.size(); ++i ) {
-    clangCCArgs.push_back(args[i]);
-  }
-
+  // Add include directories specified on the command line
   for_vector(const char, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
   }
-  clangCCArgs.push_back(std::string("-I") + getIntermediateDirName());
 
-  //split ccflags by spaces
+  // Add C compilation flags from the command line (--ccflags arguments)
   splitStringWhitespace(ccflags, clangCCArgs);
-
-  clangCCArgs.push_back("-pthread");
 
   // Library directories/files and ldflags are handled during linking later.
   // Skip this in multi-locale libraries because the C blob that is built
@@ -2456,6 +2478,12 @@ void runClang(const char* just_parse_filename) {
   if (!fMultiLocaleInterop) {
     clangCCArgs.push_back("-DCHPL_GEN_CODE");
   }
+
+  // add -pthread since we will use pthreads
+  clangCCArgs.push_back("-pthread");
+
+  // add system compiler args from printchplenv
+  splitStringWhitespace(CHPL_TARGET_SYSTEM_COMPILE_ARGS, clangCCArgs);
 
   // tell clang to use CUDA support
   if (localeUsesGPU()) {
@@ -3863,8 +3891,7 @@ void makeBinaryLLVM(void) {
   if( saveCDir[0] != '\0' ) {
     std::error_code tmpErr;
     // Save the generated LLVM before optimization.
-    ToolOutputFile output (preOptFilename.c_str(),
-                             tmpErr, sys::fs::F_None);
+    ToolOutputFile output (preOptFilename.c_str(), tmpErr, sys::fs::F_None);
     if (tmpErr)
       USR_FATAL("Could not open output file %s", preOptFilename.c_str());
 #if HAVE_LLVM_VER < 70
@@ -4185,24 +4212,20 @@ void makeBinaryLLVM(void) {
   if (ldOverride.size() > 0)
     useLinkCXX = ldOverride[0];
 
-  std::vector<std::string> runtimeArgs;
-  readArgsFromFile(runtime_libs, runtimeArgs);
-
-  std::vector<std::string> linkArgs;
-  splitStringWhitespace(CHPL_LLVM_CLANG_LINK_ARGS, linkArgs);
-
   // start with arguments from CHPL_LLVM_CLANG_C unless
   // using a non-clang compiler to link
   std::vector<std::string> clangLDArgs = clangInfo->clangLDArgs;
   if (useLinkCXX != clangCXX)
     clangLDArgs.clear();
 
-  for (auto & arg : runtimeArgs) {
-    clangLDArgs.push_back(arg);
-  }
-  for (auto & arg : linkArgs) {
-    clangLDArgs.push_back(arg);
-  }
+  // Add runtime libs arguments
+  readArgsFromFile(runtime_libs, clangLDArgs);
+
+  // add the bundled link args from printchplenv
+  splitStringWhitespace(CHPL_TARGET_BUNDLED_LINK_ARGS, clangLDArgs);
+
+  // add the system link args from printchplenv
+  splitStringWhitespace(CHPL_TARGET_SYSTEM_LINK_ARGS, clangLDArgs);
 
   // Grab extra dependencies for multilocale libraries if needed.
   if (fMultiLocaleInterop) {
@@ -4216,7 +4239,6 @@ void makeBinaryLLVM(void) {
 
   // Substitute $CHPL_HOME $CHPL_RUNTIME_LIB etc
   expandInstallationPaths(clangLDArgs);
-
 
 
   std::vector<std::string> dotOFiles;

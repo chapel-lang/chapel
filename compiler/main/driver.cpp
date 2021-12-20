@@ -107,8 +107,11 @@ const char* CHPL_SYS_MODULES_SUBDIR = NULL;
 const char* CHPL_LLVM_UNIQ_CFG_PATH = NULL;
 const char* CHPL_LLVM_CLANG_C = NULL;
 const char* CHPL_LLVM_CLANG_CXX = NULL;
-const char* CHPL_LLVM_CLANG_COMPILE_ARGS = NULL;
-const char* CHPL_LLVM_CLANG_LINK_ARGS = NULL;
+
+const char* CHPL_TARGET_BUNDLED_COMPILE_ARGS = NULL;
+const char* CHPL_TARGET_SYSTEM_COMPILE_ARGS = NULL;
+const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
+const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
@@ -1320,7 +1323,14 @@ bool useDefaultEnv(std::string key) {
   }
 
   // Always use default env for internal variables that could include spaces
-  if (key == "CHPL_THIRD_PARTY_LINK_ARGS") {
+  if (key == "CHPL_HOST_BUNDLED_COMPILE_ARGS" ||
+      key == "CHPL_HOST_SYSTEM_COMPILE_ARGS" ||
+      key == "CHPL_HOST_BUNDLED_LINK_ARGS" ||
+      key == "CHPL_HOST_SYSTEM_LINK_ARGS" ||
+      key == "CHPL_TARGET_BUNDLED_COMPILE_ARGS" ||
+      key == "CHPL_TARGET_SYSTEM_COMPILE_ARGS" ||
+      key == "CHPL_TARGET_BUNDLED_LINK_ARGS" ||
+      key == "CHPL_TARGET_SYSTEM_LINK_ARGS") {
     return true;
   }
 
@@ -1413,8 +1423,11 @@ static void setChapelEnvs() {
   CHPL_LLVM_UNIQ_CFG_PATH = envMap["CHPL_LLVM_UNIQ_CFG_PATH"];
   CHPL_LLVM_CLANG_C = envMap["CHPL_LLVM_CLANG_C"];
   CHPL_LLVM_CLANG_CXX = envMap["CHPL_LLVM_CLANG_CXX"];
-  CHPL_LLVM_CLANG_COMPILE_ARGS = envMap["CHPL_LLVM_CLANG_COMPILE_ARGS"];
-  CHPL_LLVM_CLANG_LINK_ARGS = envMap["CHPL_LLVM_CLANG_LINK_ARGS"];
+
+  CHPL_TARGET_BUNDLED_COMPILE_ARGS = envMap["CHPL_TARGET_BUNDLED_COMPILE_ARGS"];
+  CHPL_TARGET_SYSTEM_COMPILE_ARGS = envMap["CHPL_TARGET_SYSTEM_COMPILE_ARGS"];
+  CHPL_TARGET_BUNDLED_LINK_ARGS = envMap["CHPL_TARGET_BUNDLED_LINK_ARGS"];
+  CHPL_TARGET_SYSTEM_LINK_ARGS = envMap["CHPL_TARGET_SYSTEM_LINK_ARGS"];
 
   // Make sure there are no NULLs in envMap
   // a NULL in envMap might mean that one of the variables
