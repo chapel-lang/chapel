@@ -16,7 +16,6 @@ amenable to being documented using **chpldoc**:
    Bytes
    ChapelRange
    SharedObject
-   ChapelArray
    ChapelSyncvar
    String
    ChapelTuple

@@ -14,6 +14,13 @@ may be distributed across multiple locales without explicitly
 partitioning them using Chapel’s Domain
 Maps (:ref:`Chapter-Domain_Maps`).
 
+Parallel Safety with respect to Arrays (and Domains)
+----------------------------------------------------
+
+Users must take care when applying operations to arrays and domains
+concurrently from distinct tasks. For more information see the paralle safety
+section for domains (:ref:`Domain_and_Array_Parallel_Safety`).
+
 .. _Array_Types:
 
 Array Types
@@ -625,6 +632,21 @@ case, each element in the array is assigned this value.
       77 77 77 77
       33 33 33 33
 
+
+Array Comparison
+----------------
+
+Arrays are promoted, so the result of the equality operators is
+an array of booleans.  To get a single result use the ``equals``
+method instead.
+
+.. code-block:: chapel
+
+  arr1 == arr2 // compare each element resulting in an array of booleans
+  arr1 != arr2 // compare each element resulting in an array of booleans
+  arr1.equals(arr2) // compare entire arrays resulting in a single boolean
+
+
 .. _Array_Slicing:
 
 Array Slicing
@@ -763,6 +785,13 @@ tuple argument whose size matches the rank of the array (or optionally
 an integer in the case of a 1D array). The operator is equivalent to
 applying the ``#`` operator to the array’s domain and using the result
 to slice the array as described in Section :ref:`Rectangular_Array_Slicing`.
+
+.. _Array_Swap_Operator:
+
+Swap operator ``<=>``
+-------------------------------
+The ``<=>`` operator can be used to swap the contents of two arrays
+with the same shape.
 
 .. _Array_Arguments_To_Functions:
 
@@ -948,44 +977,45 @@ argument (:ref:`Formal_Arguments_of_Generic_Array_Types`).
    benefits such as eliminating bounds checks. Therefore making this
    convenient syntax support a common, optimizable case seems prudent.
 
+Set Operations on Associative Arrays
+------------------------------------
+
+Associative arrays (and domains) support a number of operators for
+set manipulations.  The supported set operators are:
+
+  =======  ====================
+  \+ , \|  Union
+  &        Intersection
+  \-       Difference
+  ^        Symmetric Difference
+  =======  ====================
+
+Consider the following code where ``A`` and ``B`` are associative arrays:
+
+.. code-block:: chapel
+
+  var C = A op B;
+
+The result ``C`` is a new associative array backed by a new associative
+domain. The domains of ``A`` and ``B`` are not modified by ``op``.
+
+There are also ``op=`` variants that store the result into the first operand.
+
+Consider the following code where ``A`` and ``B`` are associative arrays:
+
+.. code-block:: chapel
+
+  A op= B;
+
+``A`` must not share its domain with another array, otherwise the program
+will halt with an error message.
+
+For the ``+=`` and ``|=`` operators, the value from ``B`` will overwrite
+the existing value in ``A`` when indices overlap.
+
 .. _Predefined_Functions_and_Methods_on_Arrays:
 
 Predefined Functions and Methods on Arrays
 ------------------------------------------
 
-There is an expectation that this list of predefined methods will grow.
-
-
-
-.. function:: proc Array.eltType type
-
-     Returns the element type of the array.
-
-
-
-.. function:: proc Array.rank param
-
-     Returns the rank of the array.
-
-
-
-.. function:: proc Array.domain: this.domain
-
-		 Returns the domain of the given array. This domain is constant, implying
-		 that the domain cannot be resized by assigning to its domain field, only
-		 by modifying the domain directly.
-
-
-
-.. function:: proc reshape(A: Array, D: Domain): Array
-
-		 Returns a copy of the array containing the same values but in the shape
-		 of the new domain. The number of indices in the domain must equal the
-		 number of elements in the array. The elements of the array are copied
-		 into the new array using the default iteration orders over both arrays.
-
-
-
-.. function :: proc Array.size: this.domain.idxType
-
-   Returns the number of elements in the array.
+.. include:: ../../builtins/ChapelArray.rst
