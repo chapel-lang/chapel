@@ -3,6 +3,7 @@ import re
 
 import chpl_cpu, chpl_arch, chpl_compiler
 import chpl_lib_pic, chpl_locale_model, chpl_platform
+import chpl_home_utils
 from chpl_home_utils import get_chpl_home, get_chpl_third_party, using_chapel_module
 from utils import error, memoize, run_command
 
@@ -63,6 +64,8 @@ def handle_la(la_path):
 # Return compiler arguments required to use a library known to
 # pkgconfig. The pkg can be a path to a .pc file or the name of a
 # system-installed package or the name of a third-party package.
+#
+# Note that pkg-config is not available by default on Mac OS X.
 #
 # if system=True, searches for a system-installed package.
 @memoize
@@ -184,3 +187,44 @@ def get_bundled_link_args(pkg, ucp='', libs=[], add_L_opt=True):
             bundled_args.append(arg)
 
     return (bundled_args, system_args)
+
+# apply substitutions like ${VARNAME} within string
+# using the supplied dictionary d
+def apply_subs(s, d):
+    pattern = r'(\${([^ ]+)})'
+    print ("IN APPLY SUBS ", s)
+    for m in re.findall(pattern, s):
+        sub, key = m
+        print ("IN APPLY SUBS FOUND ", sub, key)
+        if key in d:
+            s = s.replace(sub, d[key])
+
+    return s
+
+# read a pkg-config .pc file at path pcfile into a dictionary
+def read_pkg_config_file(pcfile):
+    ret = { }
+
+    with open(pcfile) as file:
+        for line in file:
+            line = line.strip()
+
+            # look for a line like KEY=VALUE
+            key, sep, val = line.partition('=')
+            key = key.strip()
+            val = val.strip()
+            if sep == '=' and not " " in key:
+                val = apply_subs(val, ret)
+                val = chpl_home_utils.add_vars_to_paths(val)
+                ret[key] = val
+            else:
+                # look for a line like KEY: VALUE
+                key, sep, val = line.partition(':')
+                key = key.strip()
+                val = val.strip()
+                if sep == ':' and not " " in key:
+                    val = apply_subs(val, ret)
+                    val = chpl_home_utils.add_vars_to_paths(val)
+                    ret[key] = val
+
+    return ret

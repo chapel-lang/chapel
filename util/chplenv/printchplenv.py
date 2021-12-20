@@ -287,21 +287,24 @@ def compute_internal_values():
     extend2(tgt_compile, chpl_hwloc.get_compile_args())
     extend2(tgt_link, chpl_hwloc.get_link_args())
 
-    extend2(tgt_compile, chpl_jemalloc.get_compile_args('target'))
-    extend2(tgt_link, chpl_jemalloc.get_link_args('target'))
-    extend2(host_compile, chpl_jemalloc.get_compile_args('host'))
-    extend2(host_link, chpl_jemalloc.get_link_args('host'))
-
     if chpl_comm.get() == 'ofi':
-        extend2(tgt_compile(chpl_libfabric.get_compile_args()))
+        extend2(tgt_compile, chpl_libfabric.get_compile_args())
         extend2(tgt_link, chpl_libfabric.get_link_args())
-
-    extend2(tgt_compile, chpl_unwind.get_compile_args())
-    extend2(tgt_link, chpl_unwind.get_link_args())
+    elif chpl_comm.get() == 'gasnet':
+        extend2(tgt_compile, chpl_gasnet.get_compile_args())
+        extend2(tgt_link, chpl_gasnet.get_link_args())
 
     if chpl_tasks.get() == 'qthreads':
         extend2(tgt_compile, chpl_qthreads.get_compile_args())
         extend2(tgt_link, chpl_qthreads.get_link_args())
+
+    extend2(tgt_compile, chpl_unwind.get_compile_args())
+    extend2(tgt_link, chpl_unwind.get_link_args())
+
+    extend2(tgt_compile, chpl_jemalloc.get_compile_args('target'))
+    extend2(tgt_link, chpl_jemalloc.get_link_args('target'))
+    extend2(host_compile, chpl_jemalloc.get_compile_args('host'))
+    extend2(host_link, chpl_jemalloc.get_link_args('host'))
 
     if chpl_re2.get() != 'none':
         extend2(tgt_compile, chpl_re2.get_compile_args())
@@ -329,7 +332,7 @@ def get_runtime_includes_and_defines():
     bundled = [ ]
     system = [ ]
 
-    incl = chpl_home_utils.get_runtime_incl()
+    incl = chpl_home_utils.get_chpl_runtime_incl()
     locale_model = chpl_locale_model.get()
     comm = chpl_comm.get();
     tasks = chpl_tasks.get()
@@ -375,7 +378,7 @@ def get_runtime_link_args(runtime_subdir):
     bundled = [ ]
     system = [ ]
 
-    lib = chpl_home_utils.get_runtime_lib()
+    lib = chpl_home_utils.get_chpl_runtime_lib()
 
     bundled.append("-L" + os.path.join(lib, runtime_subdir))
 
