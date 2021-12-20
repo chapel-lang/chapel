@@ -2348,197 +2348,310 @@ module BigInteger {
 
   // divexact
 
-/*
-Computes ``n/d`` and stores the result in ``bigint`` instance.
+  /*
+    .. warning::
 
-``divexact`` is optimized to handle cases where ``n/d`` results in an integer.
-When ``n/d`` does not produce an integer, this method may produce incorrect results.
-
-:arg n: numerator
-
-:type n: bigint
-
-:arg d: denominator
-
-:type d: bigint
-*/
-
-
+       n and d are deprecated - please use numer and denom respectively
+  */
+  pragma "last resort"
+  deprecated
+  "n and d are deprecated - please use numer and denom respectively"
   proc bigint.divexact(const ref n: bigint, const ref d: bigint) {
+    this.divexact(numer=n, denom=d);
+  }
+  /*
+    .. warning::
+
+       n and d are deprecated - please use numer and denom respectively
+  */
+  pragma "last resort"
+  deprecated
+  "n and d are deprecated - please use numer and denom respectively"
+  proc bigint.divexact(const ref n: bigint, d: integral) {
+    this.divexact(numer=n,denom=new bigint(d));
+  }
+
+/*
+Computes ``numer/denom`` and stores the result in ``bigint`` instance.
+
+``divexact`` is optimized to handle cases where ``numer/denom`` results in an integer.
+When ``numer/denom`` does not produce an integer, this method may produce incorrect results.
+
+:arg numer: numerator
+
+:type numer: bigint
+
+:arg denom: denominator
+
+:type denom: bigint
+*/
+  proc bigint.divexact(const ref numer: bigint, const ref denom: bigint) {
     if _local {
-      mpz_divexact(this.mpz, n.mpz, d.mpz);
+      mpz_divexact(this.mpz, numer.mpz, denom.mpz);
 
     } else if this.localeId == chpl_nodeID &&
-              n.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
-      mpz_divexact(this.mpz, n.mpz, d.mpz);
+              numer.localeId    == chpl_nodeID &&
+              denom.localeId    == chpl_nodeID {
+      mpz_divexact(this.mpz, numer.mpz, denom.mpz);
 
     } else {
       const thisLoc = chpl_buildLocaleID(this.localeId, c_sublocid_any);
 
       on __primitive("chpl_on_locale_num", thisLoc) {
-        const n_ = n;
-        const d_ = d;
+        const numer_ = numer;
+        const denom_ = denom;
 
-        mpz_divexact(this.mpz, n_.mpz, d_.mpz);
+        mpz_divexact(this.mpz, numer_.mpz, denom_.mpz);
       }
     }
   }
 
-  proc bigint.divexact(const ref n: bigint, d: integral) {
-    this.divexact(n, new bigint(d));
+  proc bigint.divexact(const ref numer: bigint, denom: integral) {
+    this.divexact(numer, new bigint(denom));
   }
-
-
 
   // divisible_p
+  /*
+    .. warning::
+
+       bigint.divisible_p is deprecated, use bigint.isDivisible instead
+  */
+  deprecated
+  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
   proc bigint.divisible_p(const ref d: bigint) : int {
-    var ret: c_int;
-
-    if _local {
-      ret = mpz_divisible_p(this.mpz, d.mpz);
-
-    } else if this.localeId == chpl_nodeID && d.localeId == chpl_nodeID {
-      ret = mpz_divisible_p(this.mpz, d.mpz);
-
-    } else {
-      const t_ = this;
-      const d_ = d;
-
-      ret = mpz_divisible_p(this.mpz, d.mpz);
-    }
-
-    return ret.safeCast(int);
+    return this.isDivisible(d);
   }
+  /*
+    .. warning::
 
+       bigint.divisible_p is deprecated, use bigint.isDivisible instead
+  */
+  deprecated
+  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
   proc bigint.divisible_p(d: int) : int {
-    var d_ = 0 : c_ulong;
+    return this.isDivisible(d);
+  }
+  /*
+    .. warning::
+
+       bigint.divisible_p is deprecated, use bigint.isDivisible instead
+  */
+  deprecated
+  "bigint.divisible_p is deprecated, use bigint.isDivisible instead"
+  proc bigint.divisible_p(d: uint) : int {
+    return this.isDivisible(d);
+  }
+
+  // divisible_p
+  proc bigint.isDivisible(const ref div: bigint) : bool {
     var ret: c_int;
 
-    if d >= 0 then
-      d_ = d.safeCast(c_ulong);
+    if _local {
+      ret = mpz_divisible_p(this.mpz, div.mpz);
+
+    } else if this.localeId == chpl_nodeID && div.localeId == chpl_nodeID {
+      ret = mpz_divisible_p(this.mpz, div.mpz);
+
+    } else {
+      const t_ = this;
+      const div_ = div;
+
+      ret = mpz_divisible_p(this.mpz, div.mpz);
+    }
+
+    if ret then 
+      return true;
+    else 
+      return false;
+  }
+
+  proc bigint.isDivisible(div: int) : bool {
+    var div_ = 0 : c_ulong;
+    var ret: c_int;
+
+    if div >= 0 then
+      div_ = div.safeCast(c_ulong);
     else
-      d_ = (0 - d).safeCast(c_ulong);
+      div_ = (0 - div).safeCast(c_ulong);
 
     if _local {
-      ret = mpz_divisible_ui_p(this.mpz, d_);
+      ret = mpz_divisible_ui_p(this.mpz, div_);
 
     } else if this.localeId == chpl_nodeID {
-      ret = mpz_divisible_ui_p(this.mpz, d_);
+      ret = mpz_divisible_ui_p(this.mpz, div_);
 
     } else {
       const t_ = this;
 
-      ret = mpz_divisible_ui_p(t_.mpz,   d_);
+      ret = mpz_divisible_ui_p(t_.mpz,   div_);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
-  proc bigint.divisible_p(d: uint) : int {
-    const d_ = d.safeCast(c_ulong);
+  proc bigint.isDivisible(div: uint) : bool {
+    const div_ = div.safeCast(c_ulong);
     var   ret: c_int;
 
     if _local {
-      ret = mpz_divisible_ui_p(this.mpz, d_);
+      ret = mpz_divisible_ui_p(this.mpz, div_);
 
     } else if this.localeId == chpl_nodeID {
-      ret = mpz_divisible_ui_p(this.mpz, d_);
+      ret = mpz_divisible_ui_p(this.mpz, div_);
 
     } else {
       const t_ = this;
 
-      ret = mpz_divisible_ui_p(t_.mpz,   d_);
+      ret = mpz_divisible_ui_p(t_.mpz,   div_);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
+  /*
+    .. warning::
+
+       bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2Pow instead
+  */
+  deprecated
+  "bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2Pow instead"
   proc bigint.divisible_2exp_p(b: integral) : int {
-    const b_ = b.safeCast(mp_bitcnt_t);
+    return this.isDivisibleBy2Pow(b);
+  }
+
+  proc bigint.isDivisibleBy2Pow(exp: integral) : bool {
+    const exp_ = exp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
 
     if _local {
-      ret = mpz_divisible_2exp_p(this.mpz, b_);
+      ret = mpz_divisible_2exp_p(this.mpz, exp_);
 
     } else if this.localeId == chpl_nodeID {
-      ret = mpz_divisible_2exp_p(this.mpz, b_);
+      ret = mpz_divisible_2exp_p(this.mpz, exp_);
 
     } else {
       const t_ = this;
 
-      ret = mpz_divisible_2exp_p(t_.mpz,   b_);
+      ret = mpz_divisible_2exp_p(t_.mpz,   exp_);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
-
-
 
   // congruent_p
+  /*
+    .. warning::
+
+       bigint.congruent_p is deprecated, use bigint.isCongruent instead
+  */
+  deprecated
+  "bigint.congruent_p is deprecated, use bigint.isCongruent instead"
   proc bigint.congruent_p(const ref c: bigint, const ref d: bigint) : int {
+    return this.isCongruent(c,d);
+  }
+  /*
+    .. warning::
+
+       bigint.congruent_p is deprecated, use bigint.isCongruent instead
+  */
+  deprecated
+  "bigint.congruent_p is deprecated, use bigint.isCongruent instead"
+  proc bigint.congruent_p(c: integral, d: integral) : int {
+    return this.isCongruent(c,d);
+  }
+
+  // congruent_p
+  proc bigint.isCongruent(const ref con: bigint, const ref mod: bigint) : bool {
     var ret: c_int;
 
     if _local {
-      ret = mpz_congruent_p(this.mpz, c.mpz, d.mpz);
+      ret = mpz_congruent_p(this.mpz, con.mpz, mod.mpz);
 
     } else if this.localeId == chpl_nodeID &&
-              c.localeId    == chpl_nodeID &&
-              d.localeId    == chpl_nodeID {
-      ret = mpz_congruent_p(this.mpz, c.mpz, d.mpz);
+              con.localeId    == chpl_nodeID &&
+              mod.localeId    == chpl_nodeID {
+      ret = mpz_congruent_p(this.mpz, con.mpz, mod.mpz);
 
     } else {
       const t_ = this;
-      const c_ = c;
-      const d_ = d;
+      const con_ = con;
+      const mod_ = mod;
 
-      ret = mpz_congruent_p(t_.mpz, c_.mpz, d_.mpz);
+      ret = mpz_congruent_p(t_.mpz, con_.mpz, mod_.mpz);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
-  proc bigint.congruent_p(c: integral, d: integral) : int {
-    const c_ = c.safeCast(c_ulong);
-    const d_ = d.safeCast(c_ulong);
+  proc bigint.isCongruent(con: integral, mod: integral) : bool {
+    const con_ = con.safeCast(c_ulong);
+    const mod_ = mod.safeCast(c_ulong);
     var   ret: c_int;
 
     if _local {
-      ret = mpz_congruent_ui_p(this.mpz, c_, d_);
+      ret = mpz_congruent_ui_p(this.mpz, con_, mod_);
 
     } else if this.localeId == chpl_nodeID {
-      ret = mpz_congruent_ui_p(this.mpz, c_, d_);
+      ret = mpz_congruent_ui_p(this.mpz, con_, mod_);
 
     } else {
       const t_ = this;
 
-      ret = mpz_congruent_ui_p(t_.mpz,   c_, d_);
+      ret = mpz_congruent_ui_p(t_.mpz,   con_, mod_);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
 
+  /*
+    .. warning::
+
+       bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2Pow instead
+  */
+  deprecated
+  "bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2Pow instead"
   proc bigint.congruent_2exp_p(const ref c: bigint, b: integral) : int {
-    const b_ = b.safeCast(mp_bitcnt_t);
+    return this.isCongruentBy2Pow(c,b);
+  }
+
+  proc bigint.isCongruentBy2Pow(const ref con: bigint, modExp: integral) : bool {
+    const modExp_ = modExp.safeCast(mp_bitcnt_t);
     var   ret: c_int;
 
     if _local {
-      ret = mpz_congruent_2exp_p(this.mpz, c.mpz, b_);
+      ret = mpz_congruent_2exp_p(this.mpz, con.mpz, modExp_);
 
     } else if this.localeId == chpl_nodeID &&
-              c.localeId    == chpl_nodeID {
-      ret = mpz_congruent_2exp_p(this.mpz, c.mpz, b_);
+              con.localeId    == chpl_nodeID {
+      ret = mpz_congruent_2exp_p(this.mpz, con.mpz, modExp_);
 
     } else {
       const t_ = this;
-      const c_ = c;
+      const con_ = con;
 
-      ret = mpz_congruent_2exp_p(t_.mpz, c_.mpz, b_);
+      ret = mpz_congruent_2exp_p(t_.mpz, con_.mpz, modExp_);
     }
 
-    return ret.safeCast(int);
+    if ret then 
+      return true;
+    else 
+      return false;
   }
-
 
   /*
     .. warning::

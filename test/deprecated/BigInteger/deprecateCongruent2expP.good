@@ -1,0 +1,2 @@
+deprecateCongruent2expP.chpl:7: warning: bigint.congruent_2exp_p is deprecated, use bigint.isCongruentBy2Pow instead
+13 is congruent to 5 mod 2^2, as 1 was returned
