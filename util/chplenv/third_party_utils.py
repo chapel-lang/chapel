@@ -8,7 +8,8 @@ from utils import error, memoize, run_command
 
 
 #
-# This is the default unique configuration path.
+# This is the default unique configuration path which
+# is only appropriate for target.
 #
 @memoize
 def default_uniq_cfg_path():
@@ -25,11 +26,8 @@ def default_uniq_cfg_path():
 # Returns the path to the packages install directory
 #
 @memoize
-def get_cfg_install_path(pkg, ucp=default_uniq_cfg_path(), host_or_target=''):
-    # some third party packages (like jemalloc) can be built for both host and target
-    # in which case they are under jemalloc/install/{host,target}/... for example
-    # an empty host_or_target will get removed by os.path.join
-    return os.path.join(get_chpl_third_party(), pkg, 'install', host_or_target, ucp)
+def get_cfg_install_path(pkg, ucp=default_uniq_cfg_path()):
+    return os.path.join(get_chpl_third_party(), pkg, 'install', ucp)
 
 #
 # Return libraries and other options mentioned in the old_library and

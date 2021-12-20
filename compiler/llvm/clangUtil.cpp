@@ -2338,7 +2338,7 @@ void runClang(const char* just_parse_filename) {
     std::vector<std::string> args;
 
     // TODO: move this to printchplenv
-
+#if 0
     // add includes from runtime Makefiles
     // e.g. -Iruntime/include ...
     std::string runtime_includes(CHPL_RUNTIME_LIB);
@@ -2384,6 +2384,7 @@ void runClang(const char* just_parse_filename) {
     pos = std::find(args.begin(), args.end(), "-DNDEBUG");
     if (pos != args.end())
       args.erase(pos);
+#endif
 
     // add -I$CHPL_HOME/modules/standard/
     // add -I$CHPL_HOME/modules/packages/

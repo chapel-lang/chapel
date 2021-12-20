@@ -3,7 +3,7 @@ import os
 import sys
 import optparse
 
-import chpl_mem, chpl_platform, overrides, third_party_utils
+import chpl_bin_subdir, chpl_mem, chpl_platform, overrides, third_party_utils
 from utils import error, memoize, run_command, warning
 
 
@@ -61,15 +61,26 @@ def get(flag='target'):
 
 
 @memoize
-def get_uniq_cfg_path():
-    return third_party_utils.default_uniq_cfg_path()
+def get_uniq_cfg_path(flag):
+    # uses host/ or target/ before the usual subdir
+    # host subdir computed here since third_party_utils doesn't have a default
+    if flag == 'host':
+        host_bin_subdir = chpl_bin_subdir.get('host')
+        host_compiler = chpl_compiler.get('host')
+        host_info = '{0}-{1}'.format(host_bin_subdir, host_compiler)
+        return os.path.join('host', host_info)
+    else:
+        # add target/ before the usual subdir
+        return os.path.join('target', third_party_utils.default_uniq_cfg_path())
 
 
 # Instead of libtool or pkg-config, jemalloc uses a jemalloc-config script to
 # determine dependencies/link args . It's located in the bin directory
 @memoize
-def get_jemalloc_config_file(flag='target'):
-    install_path = third_party_utils.get_cfg_install_path('jemalloc', host_or_target=flag)
+def get_jemalloc_config_file(flag):
+    ucp = get_uniq_cfg_path(flag)
+    install_path = third_party_utils.get_cfg_install_path('jemalloc',
+                                                          ucp=ucp)
     config_file = os.path.join(install_path, 'bin', 'jemalloc-config')
     return config_file
 
@@ -80,7 +91,7 @@ def get_jemalloc_config_file(flag='target'):
 def get_compile_args(flag):
     jemalloc_val = get(flag)
     if jemalloc_val == 'bundled':
-        ucp_val = get_uniq_cfg_path()
+        ucp_val = get_uniq_cfg_path(flag)
         return third_party_utils.get_bundled_compile_args('jemalloc',
                                                           ucp=ucp_val)
     return ([ ], [ ])
@@ -92,8 +103,10 @@ def get_compile_args(flag):
 def get_link_args(flag):
     jemalloc_val = get(flag)
     if jemalloc_val == 'bundled':
+        ucp = get_uniq_cfg_path(flag)
         jemalloc_config = get_jemalloc_config_file(flag)
-        install_path = third_party_utils.get_cfg_install_path('jemalloc', host_or_target=flag)
+        install_path = third_party_utils.get_cfg_install_path('jemalloc',
+                                                              ucp=ucp)
         lib_path = os.path.join(install_path, 'lib')
         libs = ['-L{}'.format(lib_path), '-ljemalloc']
 

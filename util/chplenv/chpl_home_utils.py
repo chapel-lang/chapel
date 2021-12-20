@@ -17,6 +17,18 @@ def get_chpl_home():
     return chpl_home
 
 @memoize
+def get_runtime_incl():
+    default = os.path.join(get_chpl_home(), 'runtime', 'include')
+    chpl_runtime_incl = overrides.get('CHPL_RUNTIME_INCL', default)
+    return chpl_runtime_incl
+
+@memoize
+def get_runtime_lib():
+    default = os.path.join(get_chpl_home(), 'lib')
+    chpl_runtime_lib = overrides.get('CHPL_RUNTIME_LIB', default)
+    return chpl_runtime_lib
+
+@memoize
 def get_chpl_third_party():
     default = os.path.join(get_chpl_home(), 'third-party')
     chpl_third_party = overrides.get('CHPL_THIRD_PARTY', default)

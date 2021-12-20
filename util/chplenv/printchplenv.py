@@ -247,7 +247,7 @@ def compute_internal_values():
 
     ENV_VALS['  CHPL_HWLOC_UNIQ_CFG_PATH'] = chpl_hwloc.get_uniq_cfg_path()
 
-    ENV_VALS['  CHPL_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path()
+    ENV_VALS['  CHPL_JEMALLOC_UNIQ_CFG_PATH'] = chpl_jemalloc.get_uniq_cfg_path('target')
     ENV_VALS['  CHPL_LIBFABRIC_UNIQ_CFG_PATH'] = chpl_libfabric.get_uniq_cfg_path()
     ENV_VALS['  CHPL_LIBUNWIND_UNIQ_CFG_PATH'] = chpl_unwind.get_uniq_cfg_path()
 
@@ -275,6 +275,9 @@ def compute_internal_values():
     tgt_link[0].extend(chpl_compiler.get_bundled_link_args('target'))
     tgt_link[1].extend(chpl_compiler.get_system_link_args('target'))
 
+    # add runtime includes and defines
+    extend2(tgt_compile, get_runtime_includes_and_defines())
+
     # add 3p arguments
     extend2(tgt_compile, chpl_gmp.get_compile_args())
     extend2(tgt_link, chpl_gmp.get_link_args())
@@ -295,9 +298,11 @@ def compute_internal_values():
     extend2(tgt_link, chpl_unwind.get_link_args())
 
     if chpl_tasks.get() == 'qthreads':
+        extend2(tgt_compile, chpl_qthreads.get_compile_args())
         extend2(tgt_link, chpl_qthreads.get_link_args())
 
     if chpl_re2.get() != 'none':
+        extend2(tgt_compile, chpl_re2.get_compile_args())
         extend2(tgt_link, chpl_re2.get_link_args())
 
     # remove duplicate libraries
@@ -313,6 +318,54 @@ def compute_internal_values():
     ENV_VALS['  CHPL_TARGET_SYSTEM_COMPILE_ARGS'] = " ".join(tgt_compile[1])
     ENV_VALS['  CHPL_TARGET_BUNDLED_LINK_ARGS'] = " ".join(tgt_link[0])
     ENV_VALS['  CHPL_TARGET_SYSTEM_LINK_ARGS'] = " ".join(tgt_link[1])
+
+
+""" Returns the runtime includes and defines according
+    to the current configuration, for a target (not host) compile.
+    Returns tuple of (bundled_args, system_args) """
+def get_runtime_includes_and_defines():
+    bundled = [ ]
+    system = [ ]
+
+    incl = chpl_home_utils.get_runtime_incl()
+    locale_model = chpl_locale_model.get()
+    comm = chpl_comm.get();
+    tasks = chpl_tasks.get()
+    atomics = chpl_atomics.get()
+    mem = chpl_mem.get('target')
+    third_party = chpl_home_utils.get_chpl_third_party()
+    platform = chpl_platform.get('target')
+
+    bundled.append("-I" + os.path.join(incl, "localeModels", locale_model))
+    bundled.append("-I" + os.path.join(incl, "localeModels"))
+    bundled.append("-I" + os.path.join(incl, "comm", comm))
+    bundled.append("-I" + os.path.join(incl, "comm"))
+    bundled.append("-I" + os.path.join(incl, "tasks", tasks))
+    bundled.append("-I" + incl)
+    bundled.append("-I" + os.path.join(incl, "qio"))
+    bundled.append("-I" + os.path.join(incl, "atomics", atomics))
+    bundled.append("-I" + os.path.join(incl, "mem", mem))
+    bundled.append("-I" + os.path.join(incl, "mem", mem))
+    bundled.append("-I" + os.path.join(third_party, "utf8-decoder"))
+
+    if platform.startswith("cygwin"):
+        # w32api is provided by cygwin32-w32api-runtime
+        system.append("-I" + os.path.join("usr", "include", "w32api"))
+
+    if locale_model == "gpu":
+        # this -D is needed since it affects code inside of headers
+        bundled.append("-DHAS_GPU_LOCALE")
+        # If compiling for GPU locale add CUDA runtime headers to include path
+        cuda_path = chpl_gpu.get_cuda_path()
+        system.append("-I", os.path.join(cuda_path, "include"))
+
+    if mem == "jemalloc":
+        # set -DCHPL_JEMALLOC_PREFIX=chpl_je_
+        # this is needed since it affects code inside of headers
+        bundled.append("-DCHPL_JEMALLOC_PREFIX=chpl_je_")
+
+    return (bundled, system)
+
 
 """ Given two 2-tuples of lists, add 2nd lists to the first lists """
 def extend2(x, y):
