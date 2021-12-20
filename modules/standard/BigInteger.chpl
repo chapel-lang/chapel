@@ -2968,7 +2968,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     return ret;
   }
   
-  enum primeStatus {
+  enum primality {
     notPrime=0,
     maybePrime,
     isPrime
@@ -2987,7 +2987,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
 
       ret = mpz_probab_prime_p(t_.mpz, reps_);
     }
-    use primeStatus;
+    use primality;
     if ret==0 then
       return notPrime;
     else if ret==1 then
