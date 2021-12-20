@@ -1,2 +1,2 @@
-deprecateDivisible2expP.chpl:7: warning: bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleByPowerOf2 instead
+deprecateDivisible2expP.chpl:7: warning: bigint.divisible_2exp_p is deprecated, use bigint.isDivisibleBy2Pow instead
 20 is divisible by 2^2, as 1 was returned
