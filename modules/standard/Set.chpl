@@ -282,9 +282,9 @@ module Set {
         // var (isFullSlot, idx) = _htb.findAvailableSlot(moved);
         //
         var (isFullSlot, idx) = _htb.findAvailableSlot(elem);
+        var moved = moveToValue(elem);
 
         if !isFullSlot {
-          var moved = moveToValue(elem);
           _htb.fillSlot(idx, moved, none);
           result = true;
         }
