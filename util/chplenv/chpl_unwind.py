@@ -56,7 +56,7 @@ def get_link_args():
       return args
 
     # Get the link arguments (e.g. -lunwind)
-    if unwind == 'bundled':
+    if unwind_val == 'bundled':
       # the pkg-config file for libunwind is nice, but as of 1.1
       # it doesn't include -lzma when it probably should.
       # So try to get the libraries out of libunwind.la.
