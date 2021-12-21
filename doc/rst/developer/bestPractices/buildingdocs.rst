@@ -91,17 +91,11 @@ Examples include:
 Linking within and between files
 --------------------------------
 
-Linking within the same file
+Linking within and between files in https://chapel-lang.org/docs/
  - Create a label right before the target section heading, ``.. _section-label:``.
- - Use ``:ref:`section-label``` elsewhere in the same document.
-
-Linking between files when both files are in https://chapel-lang.org/docs/.
- - RST files in the ``docs/rst/`` or ``test/release/examples/primers/``
-   subdirectory trees can refer to each other and
-   when they are converted to html, those are converted to links.
- - The file being linked to has a ``.. _file-tag-name:`` at the top of it.
- - The file linking to another file uses ``:ref:`file-tag-name``` anywhere
-   in the text.
+ - Use ``:ref:`section-label``` elsewhere in the same document or
+   in any other document that will end up in RST files in the ``docs/rst/`` 
+   or ``test/release/examples/primers/`` subdirectory trees.
  - See https://github.com/chapel-lang/chapel/blob/main/test/release/examples/primers/interopWithC.chpl
    for an example of ``:ref:`readme-libraries``` that links to
    the html for
@@ -207,7 +201,7 @@ heading the file is under.
      - Primers
      - doc/rst/meta/primers/index.rst + test/release/examples/primers/\*.chpl
 
-.. list-table:: **Use doxygen on .cpp files to generate html**
+.. list-table:: **Use doxygen on .cpp files and then breathe and sphinx to generate html**
    :widths: 100 100 100
    :header-rows: 1
 
