@@ -531,6 +531,8 @@ def filter_llvm_config_flags(flags):
                 ret.append(flag) # include -Wno- flags
             else:
                 continue # filter out other -W flags
+        else:
+            ret.append(flag)
 
     return ret
 
