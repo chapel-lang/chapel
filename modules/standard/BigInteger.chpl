@@ -2967,7 +2967,14 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
     var ret = this.probablyPrime(reps):int;
     return ret;
   }
-  
+
+  /* An enumeration of the different possibilitites of a number being prime, for use with e.g.
+     :proc:`~bigint.probablyPrime` to determine if a number is prime or not.
+
+     - ``primality.notPrime`` indicates that the number is not a prime.
+     - ``primality.maybePrime`` indicates that the number may or may not be a prime.
+     - ``primality.isPrime`` indicates that the number is a prime.
+   */
   enum primality {
     notPrime=0,
     maybePrime,
@@ -2975,7 +2982,7 @@ When ``n/d`` does not produce an integer, this method may produce incorrect resu
   };
   // returns 2 if definitely prime, 0 if not prime, 1 if likely prime
   // reasonable number of reps is 15-50
-  proc bigint.probablyPrime(reps: int) : enum {
+  proc bigint.probablyPrime(reps: int) : primality {
     var reps_ = reps.safeCast(c_int);
     var ret: c_int;
 
