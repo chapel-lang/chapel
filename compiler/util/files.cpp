@@ -567,6 +567,7 @@ std::string runPrintChplEnv(const std::map<std::string, const char*>& varMap) {
   for (auto& ii : varMap)
     command += ii.first + "=" + ii.second + " ";
 
+  command += "CHPLENV_SKIP_HOST=true ";
   command += "CHPLENV_SUPPRESS_WARNINGS=true ";
   command += std::string(CHPL_HOME) + "/util/printchplenv --all --internal --no-tidy --simple";
 

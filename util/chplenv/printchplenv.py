@@ -264,11 +264,15 @@ def compute_internal_values():
     tgt_compile = ([ ], [ ])
     tgt_link = ([ ], [ ])
 
+    skip_host = os.environ.get('CHPLENV_SKIP_HOST', None)
+
     # start with arguments indicated by compiler selection
-    host_compile[0].extend(chpl_compiler.get_bundled_compile_args('host'))
-    host_compile[1].extend(chpl_compiler.get_system_compile_args('host'))
-    host_link[0].extend(chpl_compiler.get_bundled_link_args('host'))
-    host_link[1].extend(chpl_compiler.get_system_link_args('host'))
+
+    if not skip_host:
+        host_compile[0].extend(chpl_compiler.get_bundled_compile_args('host'))
+        host_compile[1].extend(chpl_compiler.get_system_compile_args('host'))
+        host_link[0].extend(chpl_compiler.get_bundled_link_args('host'))
+        host_link[1].extend(chpl_compiler.get_system_link_args('host'))
 
     tgt_compile[0].extend(chpl_compiler.get_bundled_compile_args('target'))
     tgt_compile[1].extend(chpl_compiler.get_system_compile_args('target'))
@@ -281,6 +285,13 @@ def compute_internal_values():
     extend2(tgt_link, get_runtime_link_args(runtime_subdir))
 
     # add 3p arguments
+
+    if (chpl_llvm.get() == 'bundled' or
+        chpl_llvm.get() == 'system'):
+        if not skip_host:
+            extend2(host_compile, chpl_llvm.get_host_compile_args())
+            extend2(host_link, chpl_llvm.get_host_link_args())
+
     extend2(tgt_compile, chpl_gmp.get_compile_args())
     extend2(tgt_link, chpl_gmp.get_link_args())
 
@@ -303,8 +314,9 @@ def compute_internal_values():
 
     extend2(tgt_compile, chpl_jemalloc.get_compile_args('target'))
     extend2(tgt_link, chpl_jemalloc.get_link_args('target'))
-    extend2(host_compile, chpl_jemalloc.get_compile_args('host'))
-    extend2(host_link, chpl_jemalloc.get_link_args('host'))
+    if not skip_host:
+        extend2(host_compile, chpl_jemalloc.get_compile_args('host'))
+        extend2(host_link, chpl_jemalloc.get_link_args('host'))
 
     if chpl_re2.get() != 'none':
         extend2(tgt_compile, chpl_re2.get_compile_args())

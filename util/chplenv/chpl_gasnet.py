@@ -22,7 +22,7 @@ def get_gasnet_pc_dict():
     pcfile = os.path.join(install_path, 'lib', 'pkgconfig', pcname)
     ret = { }
 
-    # assume we haven't build gasnet yet if the install dir doesn't exist
+    # assume we haven't built gasnet yet if the install dir doesn't exist
     if os.path.exists(install_path):
         return third_party_utils.read_pkg_config_file(pcfile)
     else:

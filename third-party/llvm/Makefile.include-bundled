@@ -1,7 +1,7 @@
 include $(THIRD_PARTY_DIR)/llvm/Makefile.share-bundled
 
 # Link statically for now for the bundled configuration
-# If this changes in the fiture:
+# If this changes in the future:
 #  * check for problems finding libstdc++ with different PrgEnv compilers
 #  * make sure that 'make install' works correctly in terms of any
 #    rpaths embedded in the executable

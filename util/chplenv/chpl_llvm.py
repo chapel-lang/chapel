@@ -511,6 +511,161 @@ def get_clang_prgenv_args():
 
     return (comp_args, link_args)
 
+# Filters out C++ compilation flags from llvm-config.
+# The flags are passed as a list of strings.
+# Returns a list of strings containing filtered flags.
+def filter_llvm_config_flags(flags):
+    ret = [ ]
+
+    for flag in flags:
+        if (flag == '-DNDEBUG' or
+            flag == '-fPIC' or
+            flag == '-gsplit-dwarf' or
+            flag.startswith('-O') or
+            flag == '-pedantic' or
+            flag == '-Wno-class-memaccess'):
+            continue # filter out these flags
+
+        if flag.startswith('-W'):
+            if flag.startswith('-Wno-'):
+                ret.append(flag) # include -Wno- flags
+            else:
+                continue # filter out other -W flags
+
+    return ret
+
+# Filters out link flags from llvm-config.
+# The flags are passed as a list of strings.
+# Returns a list of strings containing filtered flags.
+def filter_llvm_link_flags(flags):
+    ret = [ ]
+    for flag in flags:
+        # remove -llibxml2.tbd which seems to appear on some Mac OS X versions
+        # with LLVM 11.
+        # TODO: can we remove this workaround?
+        if flag == '-llibxml2.tbd':
+            continue
+        ret.append(flag)
+
+    return ret
+
+# returns (bundled, system) args for 'make'
+# to compile C++ 'chpl' source code with LLVM
+@memoize
+def get_host_compile_args():
+    bundled = [ ]
+    system = [ ]
+
+    llvm_val = get()
+    llvm_config = get_llvm_config()
+
+    if llvm_val == 'system':
+        # Ubuntu 16.04 needed -fno-rtti for LLVM 3.7
+        # tested on that system after installing
+        #   llvm-3.7-dev llvm-3.7 clang-3.7 libclang-3.7-dev libedit-dev
+        # TODO: is this still needed?
+        system.append('-fno-rtti')
+
+        # Note, the cxxflags should include the -I for the include dir
+        cxxflags = run_command([llvm_config, '--cxxflags'])
+        system.extend(filter_llvm_config_flags(cxxflags.split()))
+
+    elif llvm_val == 'bundled':
+        # don't try to run llvm-config if it's not built yet
+        if is_included_llvm_built():
+            # Note, the cxxflags should include the -I for the include dir
+            cxxflags = run_command([llvm_config, '--cxxflags'])
+            bundled.extend(filter_llvm_config_flags(cxxflags.split()))
+
+        # TODO: is this still needed?
+        bundled.append('-Wno-comment')
+
+    if llvm_val == 'system' or llvm_val == 'bundled':
+        bundled.append('-DHAVE_LLVM')
+
+    return (bundled, system)
+
+# returns (bundled, system) args for 'make'
+# to link 'chpl' with LLVM
+@memoize
+def get_host_link_args():
+    bundled = [ ]
+    system = [ ]
+
+    llvm_dynamic = True
+    llvm_val = get()
+    llvm_config = get_llvm_config()
+    clang_static_libs = ['-lclangFrontend',
+                         '-lclangSerialization',
+                         '-lclangDriver',
+                         '-lclangCodeGen',
+                         '-lclangParse',
+                         '-lclangSema',
+                         '-lclangAnalysis',
+                         '-lclangEdit',
+                         '-lclangASTMatchers',
+                         '-lclangAST',
+                         '-lclangLex',
+                         '-lclangBasic']
+    llvm_components = ['bitreader',
+                       'bitwriter',
+                       'ipo',
+                       'instrumentation',
+                       'option',
+                       'objcarcopts',
+                       'profiledata',
+                       'all-targets',
+                       'coverage',
+                       'coroutines',
+                       'lto']
+
+
+    if llvm_val == 'system':
+        # Decide whether to try to link statically or dynamically.
+        # Future work: consider using 'llvm-config --shared-mode'
+        # to make this choice.
+        host_platform = chpl_platform.get('host')
+        if host_platform == 'darwin':
+            llvm_dynamic = False
+
+        libdir = run_command([llvm_config, '--libdir'])
+        if libdir:
+            system.append('-L' + libdir.strip())
+
+        ldflags = run_command([llvm_config,
+                               '--ldflags', '--system-libs', '--libs'] +
+                               llvm_components)
+        if ldflags:
+            system.extend(filter_llvm_link_flags(ldflags.split()))
+
+        if llvm_dynamic:
+            system.append('-lclang-cpp')
+        else:
+            system.extend(clang_static_libs)
+
+    elif llvm_val == 'bundled':
+        # Link statically for now for the bundled configuration
+        # If this changes in the future:
+        # * check for problems finding libstdc++ with different PrgEnv compilers
+        # * make sure that 'make install' works correctly in terms of any
+        #   rpaths embedded in the executable
+        #   (e.g. bundled.append('-Wl,-rpath,' + lib_dir) might be needed)
+        llvm_dynamic = False
+
+        # don't try to run llvm-config if it's not built yet
+        if is_included_llvm_built():
+
+            ldflags = run_command([llvm_config,
+                                   '--ldflags', '--system-libs', '--libs'] +
+                                   llvm_components)
+
+            if llvm_dynamic:
+                bundled.append('-lclang-cpp')
+            else:
+                bundled.extend(clang_static_libs)
+
+    return (bundled, system)
+
 def _main():
     llvm_val = get()
     llvm_config = get_llvm_config()
