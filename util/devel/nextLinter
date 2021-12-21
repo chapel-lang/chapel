@@ -1,0 +1,257 @@
+#!/usr/bin/env python3
+
+import subprocess
+import json
+from pathlib import Path
+from collections import defaultdict
+from functools import partial, cache
+import sys
+import multiprocessing
+import itertools
+import re
+
+log = partial(print, file=sys.stderr)
+
+methods_of_interest = {'operator==', 'mark', 'update', 'swap', 'hash'}
+include_dirs = ('compiler/next/include', 'compiler/include')
+
+# These types are okay to not be mentioned in a mark function because they are primitives, enums, etc.
+mark_ignore_type = {
+    'bool',
+    'int',
+
+    'std::string',
+
+    'chpl::resolution::InnermostMatch::MatchesFound',
+    'chpl::resolution::TypedFnSignature::WhereClauseResult',
+    'chpl::resolution::VisibilitySymbols::Kind',
+
+    'chpl::types::paramtags::ParamTag',
+    'chpl::types::typetags::TypeTag',
+
+    'uast::Function::Kind',
+    'uast::asttags::ASTTag',
+    'uast::Function::ReturnIntent',
+}
+
+klass_ignore_set = {
+    'basic_istringstream',
+    'basic_ostringstream',
+    'basic_stringbuf',
+    'basic_stringstream',
+}
+
+
+def files_changed(to='main'):
+    def run(args):
+        return subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
+
+    proc = run(['git', 'diff', to, '--name-only'])
+    return set(map(Path, proc.stdout.strip().split('\n')))
+
+# prefer clang++-12 and above
+@cache
+def get_clang():
+    def run(args):
+        return subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=False)
+
+    for version in ['-13', '-12', '']:
+        binary = f'clang++{version}'
+        try:
+            proc = run([binary, '--version'])
+        except FileNotFoundError:
+            continue
+        if proc.returncode == 0:
+            version_number = re.search(r'clang version ([^\s]+)', proc.stdout).group(1)
+            log(f'Using {binary}, {version_number} clang++-12 and above is required')
+            return binary
+
+    raise Exception('Could not find a suitable clang++ binary')
+
+def get_ast(filename, includes=include_dirs):
+    args = [get_clang()]
+    for inc in include_dirs:
+        args.append(f'-I{inc}')
+    args.extend(('-Xclang', '-ast-dump=json', '-fsyntax-only', str(filename)))
+
+    log(' '.join(args))
+    proc = subprocess.run(args, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, check=True)
+    return json.loads(proc.stdout)
+
+def visit_tree(node, remembering=set(), kind_include=None, kind_exclude=None, ctx=()):
+    assert isinstance(node, dict)
+
+    kind = node.get('kind', 'nokind')
+    if kind in remembering:
+        ctx = ctx + (node,)
+
+    if kind_exclude is not None and kind in kind_exclude:
+        return
+    if kind_include is None:
+        yield node, ctx
+    else:
+        if kind in kind_include:
+            yield node, ctx
+
+    for x in node.get('inner', []):
+        yield from visit_tree(x, remembering, kind_include, kind_exclude, ctx)
+
+def class_defined_in_our_project(node):
+    return ('name' in node and
+            node.get('completeDefinition', False) and
+            ('includedFrom' not in node.get('loc', {}) or
+             node['loc']['includedFrom']['file'].startswith('compiler/next')
+             )
+            )
+
+def parse(filename):
+    ast = get_ast(filename)
+
+    # jsonfile = Path('/tmp') / filename.with_suffix('.json').name
+    # if not jsonfile.exists():
+    #     with open(jsonfile, 'w') as fh:
+    #         json.dump(ast, fh, indent=2)
+
+    methods = defaultdict(lambda: defaultdict(set))
+    fields = defaultdict(dict)
+
+    for node, ctx in visit_tree(ast, kind_include={'CXXMethodDecl'}, remembering={'CXXRecordDecl'}):
+        method_name = node['name']
+        if not ctx:
+            # log('WARN empty context')
+            continue
+        parent = ctx[-1]
+        if not class_defined_in_our_project(parent):
+            continue
+        class_name = parent['name']
+        # log(class_name, method_name)
+
+        for this, ctx in visit_tree(node, kind_include={'CXXThisExpr'}, remembering={'MemberExpr'}):
+            if not ctx:
+                # log('WARN empty context')
+                continue
+            member_expr = ctx[-1]
+            field_name = member_expr['name']
+            # log('  ', field_name)
+
+            methods[class_name][method_name].add(field_name)
+
+    for node, ctx in visit_tree(ast, kind_include={'FieldDecl'}, remembering={'CXXRecordDecl'}):
+        if not ctx:
+            # log('WARN empty context')
+            continue
+        parent = ctx[-1]
+        if not class_defined_in_our_project(parent):
+            continue
+        class_name = parent['name']
+        field_name = node.get('name')
+        if field_name is None:
+            continue
+        # log(parent['name'], node['name'])
+
+        fields[class_name][field_name] = node['type']['qualType']
+
+    return fields, methods
+
+def check_mark(fields, not_mentioned):
+    for k, typ in fields.items():
+        if typ in mark_ignore_type:
+            not_mentioned.discard(k)
+
+def check_file(filename):
+    fields, methods = parse(filename)
+
+    any_bad = False
+
+    errors = []
+
+    for klass in sorted(methods.keys()):
+        if klass.startswith('_') or klass in klass_ignore_set:
+            continue
+
+        log(klass)
+        log('  Fields:')
+        log('\n'.join(f'    {v:<20}:{k}' for k, v in sorted(fields[klass].items())))
+        log('\n  Methods')
+        for method_name in sorted(methods[klass].keys()):
+            if method_name not in methods_of_interest:
+                continue
+            mentioned = methods[klass][method_name]
+            not_mentioned = set(fields[klass].keys()) - mentioned
+            if method_name == 'mark':
+                check_mark(fields[klass], not_mentioned)
+            log('  ', method_name, ' '.join(sorted(mentioned)))
+            if not_mentioned:
+                any_bad = True
+                errors.append((klass, method_name, tuple(sorted('{}:{}'.format(k, fields[klass][k]) for k in not_mentioned))))
+        log()
+
+    return errors
+
+def check_file_wrapper(filename):
+    try:
+        return check_file(filename)
+    except subprocess.CalledProcessError as e:
+        return e
+
+def main(files, jobs=1):
+    acc = set()
+    failed = []
+    with multiprocessing.Pool(jobs) as pool:
+        for result in pool.imap_unordered(check_file_wrapper, files):
+            if isinstance(result, Exception):
+                failed.append(result)
+            else:
+                for r in result:
+                    acc.add(r)
+
+    return failed, sorted(acc)
+
+if __name__ == '__main__':
+    import argparse
+
+    lib_dir = Path('compiler/next/lib')
+    lib_dirs = ['queries', 'resolution']
+    default_files = list(itertools.chain.from_iterable(
+        (lib_dir / d).glob('*.cpp') for d in lib_dirs
+    ))
+
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('files', type=Path, nargs='*', help='Files to check', default=default_files)
+    parser.add_argument('--jobs', type=int, default=1)
+    parser.add_argument('--only-changed', action='store_true', default=False, help='Only run on files that are different than your `main` branch')
+    args = parser.parse_args()
+
+    if args.only_changed:
+        next_includes = Path('compiler/next/include')
+        changed_files = files_changed()
+        # Check the cpp files that have changed we would check by default
+        # And also include any header that changed in compiler/next/include
+        args.files = (set(args.files) & changed_files) | {x for x in changed_files if x.is_relative_to(next_includes)}
+
+        if args.files:
+            print('Running on files that are different from main:')
+            for f in args.files:
+                print('  ', f)
+        else:
+            print('No files to work on')
+            sys.exit(0)
+
+    failed, errors = main(args.files, jobs=args.jobs)
+
+    for f in failed:
+        log('WARN failed to process {}'.format(' '.join(f.cmd)))
+
+    if errors:
+        print('ERROR there are {} potentital missing uses'.format(len(errors)))
+        print('{:20} {:10}  {}'.format('class', 'method', 'fields missing'))
+
+        for klass, method, not_mentioned in errors:
+            s = ', '.join(not_mentioned)
+            print(f'{klass:20} {method:10}  {s}')
+
+    elif not failed:
+        print('No errors or failures found')
+
+    code = bool(failed) or bool(errors)
+    sys.exit(code)
