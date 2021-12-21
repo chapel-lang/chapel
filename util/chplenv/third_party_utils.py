@@ -191,23 +191,30 @@ def get_bundled_link_args(pkg, ucp='', libs=[], add_L_opt=True):
 # apply substitutions like ${VARNAME} within string
 # using the supplied dictionary d
 def apply_subs(s, d):
-    pattern = r'(\${([^ ]+)})'
-    print ("IN APPLY SUBS ", s)
+    # look for ${BLA} but not $${BLA}
+    # since $${BLA} is pkg-config's escape form
+    pattern = r'(?<!\$)(\${([^}]+)})'
     for m in re.findall(pattern, s):
         sub, key = m
-        print ("IN APPLY SUBS FOUND ", sub, key)
         if key in d:
             s = s.replace(sub, d[key])
 
     return s
 
-# read a pkg-config .pc file at path pcfile into a dictionary
+# Read a pkg-config .pc file at path pcfile into a dictionary
+# Handles comments, variable escapes with ${variable},
+# and literal $${variable} (which is not an escape).
+# Assumes that the variables are defined before they are used
 def read_pkg_config_file(pcfile):
     ret = { }
 
     with open(pcfile) as file:
         for line in file:
             line = line.strip()
+
+            # pkg-config files can contain comments starting with #
+            if line.startswith('#'):
+                continue
 
             # look for a line like KEY=VALUE
             key, sep, val = line.partition('=')
