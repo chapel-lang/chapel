@@ -657,14 +657,26 @@ def get_host_link_args():
         # don't try to run llvm-config if it's not built yet
         if is_included_llvm_built():
 
-            ldflags = run_command([llvm_config,
-                                   '--ldflags', '--system-libs', '--libs'] +
-                                   llvm_components)
-
             if llvm_dynamic:
                 bundled.append('-lclang-cpp')
             else:
                 bundled.extend(clang_static_libs)
+
+            ldflags = run_command([llvm_config,
+                                   '--ldflags', '--libs'] +
+                                   llvm_components)
+
+            bundled.extend(ldflags.split())
+
+            system_libs = run_command([llvm_config,
+                                      '--system-libs'] +
+                                      llvm_components)
+
+            system.extend(system_libs.split())
+
+
+        else:
+            warning("included llvm not built yet")
 
     return (bundled, system)
 

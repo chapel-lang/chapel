@@ -310,13 +310,10 @@ def compute_internal_values():
         pe_product_list = os.environ.get('PE_PRODUCT_LIST', None)
         if pe_product_list and 'HUGETLB' in pe_product_list:
             tgt_link[1].append('-lhugetlbfs')
-        tgt_link[1].append('-lpthread')
 
     if chpl_tasks.get() == 'qthreads':
         extend2(tgt_compile, chpl_qthreads.get_compile_args())
         extend2(tgt_link, chpl_qthreads.get_link_args())
-    elif chpl_tasks.get() == 'fifo':
-        tgt_link[1].append('-lpthread')
 
     extend2(tgt_compile, chpl_unwind.get_compile_args())
     extend2(tgt_link, chpl_unwind.get_link_args())
@@ -431,6 +428,11 @@ def get_runtime_link_args(runtime_subdir):
         system.append("-L", os.path.join(cuda_path, "lib64"))
         system.append("-lcuda")
         system.append("-lcudart")
+
+    # always link with the math library
+    system.append("-lm")
+    # always link with the pthreads library
+    system.append("-lpthread")
 
     return (bundled, system)
 
