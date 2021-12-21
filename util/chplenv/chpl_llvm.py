@@ -632,7 +632,9 @@ def get_host_link_args():
 
         libdir = run_command([llvm_config, '--libdir'])
         if libdir:
-            system.append('-L' + libdir.strip())
+            libdir = libdir.strip()
+            system.append('-L' + libdir)
+            system.append('-Wl,-rpath,' + libdir)
 
         ldflags = run_command([llvm_config,
                                '--ldflags', '--system-libs', '--libs'] +
@@ -651,11 +653,16 @@ def get_host_link_args():
         # * check for problems finding libstdc++ with different PrgEnv compilers
         # * make sure that 'make install' works correctly in terms of any
         #   rpaths embedded in the executable
-        #   (e.g. bundled.append('-Wl,-rpath,' + lib_dir) might be needed)
         llvm_dynamic = False
 
         # don't try to run llvm-config if it's not built yet
         if is_included_llvm_built():
+
+            libdir = run_command([llvm_config, '--libdir'])
+            if libdir:
+                libdir = libdir.strip()
+                bundled.append('-L' + libdir)
+                bundled.append('-Wl,-rpath,' + libdir)
 
             if llvm_dynamic:
                 bundled.append('-lclang-cpp')
