@@ -181,7 +181,10 @@ def get_bundled_link_args(pkg, ucp='', libs=[], add_L_opt=True):
     system_args = [ ]
     for arg in all_args:
         # put some of the usual suspects into the system args
-        if arg == '-lpthread' or arg == '-ldl' or arg == '-lm':
+        if (arg == '-ldl' or
+            arg == '-lm' or
+            arg == '-lnuma' or
+            arg == '-lpthread'):
             system_args.append(arg)
         else:
             bundled_args.append(arg)

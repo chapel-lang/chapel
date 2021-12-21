@@ -350,9 +350,9 @@ def compute_internal_values():
             hadoop_lib = os.path.join(hadoop_install, 'lib', 'native')
             tgt_link[1].append('-L' + hadoop_lib)
 
-    # remove duplicate libraries
-    host_link = (dedup(host_link[0]), dedup(host_link[1]))
-    tgt_link = (dedup(tgt_link[0]), dedup(tgt_link[1]))
+    # remove duplicate system libraries
+    host_link = (host_link[0], dedup(host_link[1]))
+    tgt_link = (tgt_link[0], dedup(tgt_link[1]))
 
     ENV_VALS['  CHPL_HOST_BUNDLED_COMPILE_ARGS'] = " ".join(host_compile[0])
     ENV_VALS['  CHPL_HOST_SYSTEM_COMPILE_ARGS'] = " ".join(host_compile[1])
