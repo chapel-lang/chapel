@@ -266,19 +266,6 @@ def compute_internal_values():
 
     skip_host = os.environ.get('CHPLENV_SKIP_HOST', None)
 
-    # start with arguments indicated by compiler selection
-
-    if not skip_host:
-        host_compile[0].extend(chpl_compiler.get_bundled_compile_args('host'))
-        host_compile[1].extend(chpl_compiler.get_system_compile_args('host'))
-        host_link[0].extend(chpl_compiler.get_bundled_link_args('host'))
-        host_link[1].extend(chpl_compiler.get_system_link_args('host'))
-
-    tgt_compile[0].extend(chpl_compiler.get_bundled_compile_args('target'))
-    tgt_compile[1].extend(chpl_compiler.get_system_compile_args('target'))
-    tgt_link[0].extend(chpl_compiler.get_bundled_link_args('target'))
-    tgt_link[1].extend(chpl_compiler.get_system_link_args('target'))
-
     # add runtime includes and defines
     extend2(tgt_compile, get_runtime_includes_and_defines())
     runtime_subdir = ENV_VALS['CHPL_RUNTIME_SUBDIR']
@@ -346,6 +333,21 @@ def compute_internal_values():
             tgt_compile[1].append('-I' + hadoop_include)
             hadoop_lib = os.path.join(hadoop_install, 'lib', 'native')
             tgt_link[1].append('-L' + hadoop_lib)
+
+    # add arguments indicated by compiler selection
+    # (e.g. we might have a -I above for a particular LLVM version,
+    #  so we want that version before /usr/local/include/llvm.)
+    if not skip_host:
+        host_compile[0].extend(chpl_compiler.get_bundled_compile_args('host'))
+        host_compile[1].extend(chpl_compiler.get_system_compile_args('host'))
+        host_link[0].extend(chpl_compiler.get_bundled_link_args('host'))
+        host_link[1].extend(chpl_compiler.get_system_link_args('host'))
+
+    tgt_compile[0].extend(chpl_compiler.get_bundled_compile_args('target'))
+    tgt_compile[1].extend(chpl_compiler.get_system_compile_args('target'))
+    tgt_link[0].extend(chpl_compiler.get_bundled_link_args('target'))
+    tgt_link[1].extend(chpl_compiler.get_system_link_args('target'))
+
 
     # remove duplicate system libraries
     host_link = (host_link[0], dedup(host_link[1]))
