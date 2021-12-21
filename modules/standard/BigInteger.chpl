@@ -3069,9 +3069,33 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 
   // Number Theoretic Functions
 
+  /*
+    .. warning::
+
+       bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead
+  */
+  deprecated
+  "bigint.probab_prime_p is deprecated, use bigint.probablyPrime instead"
+  proc bigint.probab_prime_p(reps: int) : int {
+    var ret = this.probablyPrime(reps):int;
+    return ret;
+  }
+
+  /* An enumeration of the different possibilitites of a number being prime, for use with e.g.
+     :proc:`~bigint.probablyPrime` to determine if a number is prime or not.
+
+     - ``primality.notPrime`` indicates that the number is not a prime.
+     - ``primality.maybePrime`` indicates that the number may or may not be a prime.
+     - ``primality.isPrime`` indicates that the number is a prime.
+   */
+  enum primality {
+    notPrime=0,
+    maybePrime,
+    isPrime
+  };
   // returns 2 if definitely prime, 0 if not prime, 1 if likely prime
   // reasonable number of reps is 15-50
-  proc bigint.probab_prime_p(reps: int) : int {
+  proc bigint.probablyPrime(reps: int) : primality {
     var reps_ = reps.safeCast(c_int);
     var ret: c_int;
 
@@ -3083,8 +3107,13 @@ When ``numer/denom`` does not produce an integer, this method may produce incorr
 
       ret = mpz_probab_prime_p(t_.mpz, reps_);
     }
-
-    return ret.safeCast(int);
+    use primality;
+    if ret==0 then
+      return notPrime;
+    else if ret==1 then
+      return maybePrime;
+    else
+      return isPrime;
   }
 
   proc bigint.nextprime(const ref a: bigint) {
