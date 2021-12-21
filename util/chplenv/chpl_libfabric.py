@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import glob
 
 import chpl_comm, chpl_comm_debug, chpl_launcher, chpl_platform, overrides, third_party_utils
 from utils import error, memoize, try_run_command, warning
@@ -66,7 +67,7 @@ def get_compile_args():
 
         args[1].extend(flags)
 
-    if libfabric == 'system' or libfabric == 'bundled':
+    if libfabric_val == 'system' or libfabric_val == 'bundled':
         flags = [ ]
         launcher_val = chpl_launcher.get()
         ofi_oob_val = overrides.get_environ('CHPL_RT_COMM_OFI_OOB')
@@ -84,12 +85,13 @@ def get_compile_args():
 #  (linker_bundled_args, linker_system_args)
 @memoize
 def get_link_args():
+    args = ([ ], [ ])
     libfabric_val = get()
     if libfabric_val == 'bundled':
-        return third_party_utils.get_bundled_link_args('libfabric',
+        args = third_party_utils.get_bundled_link_args('libfabric',
                                                        ucp=get_uniq_cfg_path(),
                                                        libs=['libfabric.la'])
-    elif libfabric == 'system':
+    elif libfabric_val == 'system':
         libs = [ ]
         # Allow overriding pkg-config via LIBFABRIC_DIR, for platforms
         # without pkg-config.
@@ -107,9 +109,40 @@ def get_link_args():
                 libs.append(pcl)
                 if pcl.startswith('-L'):
                     libs.append(pcl.replace('-L', '-Wl,-rpath,', 1))
-        return ([ ], libs)
 
-    return ([ ], [ ])
+        args(1).extend(libs)
+
+    if libfabric_val == 'system' or libfabric_val == 'bundled':
+        libs = [ ]
+        launcher_val = chpl_launcher.get()
+        ofi_oob_val = overrides.get_environ('CHPL_RT_COMM_OFI_OOB')
+        if 'mpi' in launcher_val or ( ofi_oob_val and 'mpi' in ofi_oob_val ):
+            mpi_dir_val = overrides.get_environ('MPI_DIR')
+            if mpi_dir_val:
+                mpi_lib_dir = os.path.join(mpi_dir_val, 'lib64')
+                if not os.path.exists(mpi_lib_dir):
+                    mpi_lib_dir = os.path.join(mpi_dir_val, 'lib')
+                    if not os.path.exists(mpi_lib_dir):
+                        mpi_lib_dir = None
+
+                if mpi_lib_dir:
+                    libs.append('-L' + mpi_lib_dir)
+                    libs.append('-Wl,-rpath,' + mpi_lib_dir)
+                    mpi_lib_name = 'mpi'
+                    if glob.glob(mpi_lib_dir + '/libmpich.*'):
+                        mpi_lib_name = 'mpich'
+                    libs.append('-l' + mpi_lib_name)
+
+        # If we're using the PMI2 out-of-band support we have to reference
+        # libpmi2 explicitly, except on Cray XC systems.
+        platform_val = chpl_platform.get('target')
+        if platform_val == 'hpe-cray-ex' or ofi_oob_val == 'pmi2':
+            libs.append('-lpmi2')
+
+        args[1].extend(libs)
+
+
+    return args
 
 
 def _main():

@@ -222,7 +222,7 @@ def read_pkg_config_file(pcfile):
             val = val.strip()
             if sep == '=' and not " " in key:
                 val = apply_subs(val, ret)
-                val = chpl_home_utils.add_vars_to_paths(val)
+                #val = chpl_home_utils.add_vars_to_paths(val)
                 ret[key] = val
             else:
                 # look for a line like KEY: VALUE
@@ -231,7 +231,7 @@ def read_pkg_config_file(pcfile):
                 val = val.strip()
                 if sep == ':' and not " " in key:
                     val = apply_subs(val, ret)
-                    val = chpl_home_utils.add_vars_to_paths(val)
+                    #val = chpl_home_utils.add_vars_to_paths(val)
                     ret[key] = val
 
     return ret

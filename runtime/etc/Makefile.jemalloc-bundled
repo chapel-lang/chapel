@@ -16,4 +16,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-GEN_LFLAGS += -L$(JEMALLOC_LIB_DIR) -Wl,-rpath,$(JEMALLOC_LIB_DIR)
+#GEN_LFLAGS += -L$(JEMALLOC_LIB_DIR) -Wl,-rpath,$(JEMALLOC_LIB_DIR)

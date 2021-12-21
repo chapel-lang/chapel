@@ -304,10 +304,19 @@ def compute_internal_values():
     elif chpl_comm.get() == 'gasnet':
         extend2(tgt_compile, chpl_gasnet.get_compile_args())
         extend2(tgt_link, chpl_gasnet.get_link_args())
+    elif chpl_comm.get() == 'ugni':
+        # If there isn't a hugepage module loaded, we need to request
+        # libhugetlbfs ourselves.
+        pe_product_list = os.environ.get('PE_PRODUCT_LIST', None)
+        if pe_product_list and 'HUGETLB' in pe_product_list:
+            tgt_link[1].append('-lhugetlbfs')
+        tgt_link[1].append('-lpthread')
 
     if chpl_tasks.get() == 'qthreads':
         extend2(tgt_compile, chpl_qthreads.get_compile_args())
         extend2(tgt_link, chpl_qthreads.get_link_args())
+    elif chpl_tasks.get() == 'fifo':
+        tgt_link[1].append('-lpthread')
 
     extend2(tgt_compile, chpl_unwind.get_compile_args())
     extend2(tgt_link, chpl_unwind.get_link_args())
@@ -321,6 +330,25 @@ def compute_internal_values():
     if chpl_re2.get() != 'none':
         extend2(tgt_compile, chpl_re2.get_compile_args())
         extend2(tgt_link, chpl_re2.get_link_args())
+
+    aux_filesys = chpl_aux_filesys.get()
+    if 'lustre' in aux_filesys:
+        tgt_compile[1].append('-DSYS_HAS_LLAPI')
+        tgt_link[1].append('-llustreapi')
+    if 'hdfs' in aux_filesys:
+        java_install = os.environ.get('JAVA_INSTALL', None)
+        hadoop_install = os.environ.get('HADOOP_INSTALL', None)
+        if java_install:
+            java_include = os.path.join(java_install, 'include')
+            tgt_compile[1].append('-I' + java_include)
+            tgt_compile[1].append('-I' + os.path.join(java_include, 'linux'))
+            java_lib = os.path.join(java_install, 'lib', 'amd64', 'server')
+            tgt_link[1].append('-L' + java_lib)
+        if hadoop_install:
+            hadoop_include = os.path.join(hadoop_install, 'include')
+            tgt_compile[1].append('-I' + hadoop_include)
+            hadoop_lib = os.path.join(hadoop_install, 'lib', 'native')
+            tgt_link[1].append('-L' + hadoop_lib)
 
     # remove duplicate libraries
     host_link = (dedup(host_link[0]), dedup(host_link[1]))
@@ -372,7 +400,7 @@ def get_runtime_includes_and_defines():
     if locale_model == "gpu":
         # this -D is needed since it affects code inside of headers
         bundled.append("-DHAS_GPU_LOCALE")
-        # If compiling for GPU locale add CUDA runtime headers to include path
+        # If compiling for GPU locales, add CUDA runtime headers to include path
         cuda_path = chpl_gpu.get_cuda_path()
         system.append("-I", os.path.join(cuda_path, "include"))
 
@@ -391,8 +419,18 @@ def get_runtime_link_args(runtime_subdir):
     system = [ ]
 
     lib = chpl_home_utils.get_chpl_runtime_lib()
+    locale_model = chpl_locale_model.get()
 
     bundled.append("-L" + os.path.join(lib, runtime_subdir))
+    bundled.append("-lchpl")
+
+    if locale_model == "gpu":
+        # If compiling for GPU locales, add CUDA to link path,
+        # and add cuda libraries
+        cuda_path = chpl_gpu.get_cuda_path()
+        system.append("-L", os.path.join(cuda_path, "lib64"))
+        system.append("-lcuda")
+        system.append("-lcudart")
 
     return (bundled, system)
 

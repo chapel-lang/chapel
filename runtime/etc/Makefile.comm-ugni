@@ -22,12 +22,12 @@
 #
 LD = $(CXX)
 
+##
+## If there isn't a hugepage module loaded, we need to request
+## libhugetlbfs ourselves.
+##
+#ifeq (,$(findstring HUGETLB,$(PE_PRODUCT_LIST)))
+#GEN_LFLAGS += -lhugetlbfs
+#endif
 #
-# If there isn't a hugepage module loaded, we need to request
-# libhugetlbfs ourselves.
-#
-ifeq (,$(findstring HUGETLB,$(PE_PRODUCT_LIST)))
-GEN_LFLAGS += -lhugetlbfs
-endif
-
-GEN_LFLAGS += -lpthread
+#GEN_LFLAGS += -lpthread

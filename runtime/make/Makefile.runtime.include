@@ -46,19 +46,6 @@ ifeq ($(OPTIMIZE),1)
 RUNTIME_DEFS += -DCHPL_OPTIMIZE -DNDEBUG
 endif
 
-# For HDFS support (and backwards compatibility)
-ifneq (,$(findstring hdfs,$(CHPL_MAKE_AUXFS)))
-	CHPL_AUXIO_INCLUDE ?= \
-		-I$(JAVA_INSTALL)/include \
-		-I$(JAVA_INSTALL)/include/linux \
-		-I$(HADOOP_INSTALL)/include \
-
-	CHPL_AUXIO_LIBS ?= \
-		-L$(JAVA_INSTALL)/jre/lib/amd64/server \
-		-L$(HADOOP_INSTALL)/lib/native 
-endif 
-
-
 # Some tasking layers put something in RUNTIME_INCLS first.
 RUNTIME_INCLS += \
         -I. \

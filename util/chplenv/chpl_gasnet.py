@@ -39,7 +39,8 @@ def get_compile_args():
 
     d = get_gasnet_pc_dict()
 
-    bundled.extend(d['Cflags'].split())
+    if 'Cflags' in d: 
+        bundled.extend(d['Cflags'].split())
 
     return (bundled, system)
 
@@ -53,6 +54,7 @@ def get_link_args():
 
     d = get_gasnet_pc_dict()
 
-    bundled.extend(d['Libs'].split())
+    if 'Libs' in d:
+        bundled.extend(d['Libs'].split())
 
     return (bundled, system)
