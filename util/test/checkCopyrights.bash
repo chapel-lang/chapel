@@ -18,6 +18,14 @@
 #  Make*
 #
 
+todate=$(date "+%m%d")
+cond=$(date -d 01-07 +"%m%d")
+
+if [ $todate -le $cond ];
+then
+ exit 0;
+fi
+
 CWD=$(cd $(dirname $0) ; pwd)
 CHPL_HOME=${CHPL_HOME:-$CWD/../..}
 
