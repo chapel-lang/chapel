@@ -330,7 +330,7 @@ struct Converter {
           // Handles case: 'import foo as bar'
           if (auto as = vc->symbol()->toAs()) {
             Expr* mod = convertAST(as->symbol());
-            const char* rename = as->rename()->name().c_str();
+            const char* rename = astr(as->rename()->name().c_str());
             conv = buildImportStmt(mod, rename);
 
           // Handles: 'import foo'
@@ -468,7 +468,7 @@ struct Converter {
   }
 
   BlockStmt* convertUseNoLimitations(const uast::Use* node) {
-    auto args = new std::vector<PotentialRename*>();
+    auto args = new std::vector<PotentialRename*>(); // TODO LEAK
     bool privateUse = node->visibility() != uast::Decl::PUBLIC;
 
     for (auto vc : node->visibilityClauses()) {
@@ -562,7 +562,7 @@ struct Converter {
 
   CatchStmt* visit(const uast::Catch* node) {
     auto errorVar = node->error();
-    const char* name = errorVar ? errorVar->name().c_str() : nullptr;
+    const char* name = errorVar ? astr(errorVar->name().c_str()) : nullptr;
     Expr* type = errorVar ? convertExprOrNull(errorVar->typeExpression())
                           : nullptr;
     BlockStmt* body = toBlockStmt(convertAST(node->body()));
@@ -634,13 +634,13 @@ struct Converter {
   }
 
   BlockStmt* visit(const uast::Continue* node) {
-    const char* name = node->target() ? node->target()->name().c_str()
-                                      : nullptr;
+    const char* name =
+        node->target() ? astr(node->target()->name().c_str()) : nullptr;
     return buildGotoStmt(GOTO_CONTINUE, name);
   }
 
   Expr* visit(const uast::Label* node) {
-    const char* name = node->name().c_str();
+    const char* name = astr(node->name().c_str());
     Expr* stmt = toExpr(convertAST(node->loop()));
     assert(stmt);
     return buildLabelStmt(name, stmt);
@@ -877,7 +877,7 @@ struct Converter {
     } else if (node->isParam()) {
       assert(node->index() && node->index()->isVariable());
 
-      const char* indexStr = node->index()->toVariable()->name().c_str();
+      const char* indexStr = astr(node->index()->toVariable()->name().c_str());
       body = createBlockWithStmts(node->stmts());
       BlockStmt* block = toBlockStmt(body);
       assert(block);
@@ -1310,7 +1310,7 @@ struct Converter {
 
   Expr* convertRegularBinaryOrUnaryOp(const uast::OpCall* node,
                                       const char* name=nullptr) {
-    const char* opName = name ? name : node->op().c_str();
+    const char* opName = name ? name : astr(node->op().c_str());
     int nActuals = node->numActuals();
     CallExpr* ret = new CallExpr(opName);
 
@@ -2103,7 +2103,7 @@ struct Converter {
 
   // Does not attach parent type.
   DefExpr* convertEnumElement(const uast::EnumElement* node) {
-    const char* name = node->name().c_str();
+    const char* name = astr(node->name().c_str());
     Expr* initExpr = convertExprOrNull(node->initExpression());
     auto ret = new DefExpr(new EnumSymbol(name), initExpr);
     return ret;
@@ -2137,7 +2137,7 @@ struct Converter {
   /// AggregateDecls
 
   Expr* visit(const uast::Class* node) {
-    const char* name = node->name().c_str();
+    const char* name = astr(node->name().c_str());
     const char* cname = name;
     Expr* inherit = convertExprOrNull(node->parentClass());
     BlockStmt* decls = createBlockWithStmts(node->declOrComments());
@@ -2155,7 +2155,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Record* node) {
-    const char* name = node->name().c_str();
+    const char* name = astr(node->name().c_str());
     const char* cname = name;
     Expr* inherit = nullptr;
     BlockStmt* decls = createBlockWithStmts(node->declOrComments());
@@ -2179,7 +2179,7 @@ struct Converter {
   }
 
   Expr* visit(const uast::Union* node) {
-    const char* name = node->name().c_str();
+    const char* name = astr(node->name().c_str());
     const char* cname = name;
     Expr* inherit = nullptr;
     BlockStmt* decls = createBlockWithStmts(node->declOrComments());
