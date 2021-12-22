@@ -50,7 +50,7 @@ case "$1" in
 
 	if [ ${#@} -eq 0 ]
 	then
-	    echo "No search term(s) are supplied, see --help"
+	    echo "No search term supplied, see --help"
 	    exit 4
 	fi
 	;;
