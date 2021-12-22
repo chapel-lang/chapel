@@ -1,7 +1,6 @@
 // Domains
 
-/* BLAHH 5000!
-   This primer showcases Chapel domains as abstract concepts, primarily
+/* This primer showcases Chapel domains as abstract concepts, primarily
    within the context of rectangular domains.  For other uses of domains
    see the following primers:
 
