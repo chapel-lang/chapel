@@ -3157,7 +3157,7 @@ module BigInteger {
     return ret;
   }
 
-  /* An enumeration of the different possibilitites of a number being prime, for use with e.g.
+  /* An enumeration of the different possibilities of a number being prime, for use with e.g.
      :proc:`~bigint.probablyPrime` to determine if a number is prime or not.
 
      - ``primality.notPrime`` indicates that the number is not a prime.
