@@ -2545,6 +2545,7 @@ chplmodindex
 chplref
 dedent
 doxygenclass
+doxygenenum
 doxygennamespace
 doxygentypedef
 forloops
@@ -4828,6 +4829,7 @@ cqes
 cswap
 ctok
 ctxs
+devs
 dlvr
 dsrd
 dupinfo
@@ -4888,6 +4890,7 @@ txns
 txntrk
 underbars
 ungood
+vnis
 waitset
 writemsg
 xcrc
@@ -5683,6 +5686,14 @@ FILEID: 191d3db4-544f-11ec-8674-e995e73200ed
 atok
 btok
 elist
+
+FILEID: 5bc3089e-62df-11ec-8674-e995e73200ed
+emptyrange
+rcdist
+updim
+upranges
+uprank
+upstridable
 
 NATURAL:
 aarch
@@ -6521,6 +6532,7 @@ fdread
 fdset
 fdwrite
 february
+felixcloutier
 ferguson
 fflush
 fftw
@@ -7263,6 +7275,7 @@ memlocation
 memmaps
 memmove
 memoize
+memoized
 memreg
 mergeable
 mersenne
@@ -7331,6 +7344,7 @@ mprotect
 mreg
 mregs
 msgs
+mstrout
 mtarun
 muchnick
 multibytes
@@ -7720,6 +7734,7 @@ prereqs
 preston
 preventers
 prgenv
+primality
 primitivetype
 primorial
 prims
@@ -7888,6 +7903,7 @@ renamings
 reparse
 replicand
 replicands
+repost
 reprivatization
 reprivatize
 repurposed

@@ -616,6 +616,9 @@
   "5853ce2a-7b39-11eb-91c9-15da80cfac4b": [
     "modules/internal/ChapelDistribution.chpl"
   ],
+  "5bc3089e-62df-11ec-8674-e995e73200ed": [
+    "modules/internal/ChapelDomain.chpl"
+  ],
   "6f2ab8ea-83ce-11e7-ad1f-10ddb1d4c3d5": [
     "modules/internal/ChapelError.chpl"
   ],
