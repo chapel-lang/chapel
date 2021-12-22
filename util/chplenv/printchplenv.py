@@ -44,6 +44,7 @@ from functools import partial
 import optparse
 import os
 from sys import stdout, path
+from utils import error
 
 from chplenv import *
 
@@ -210,6 +211,11 @@ def compute_all_values():
     chpl_arch.validate('target')
     chpl_llvm.validate_llvm_config()
     chpl_compiler.validate_compiler_settings()
+
+    if ENV_VALS['CHPL_LOCALE_MODEL'] == 'gpu' and \
+       ENV_VALS['CHPL_COMM'] != "none":
+        error("The prototype GPU support does not work when CHPL_COMM is not set to\n\"none\".");
+
 
 """Compute '--internal' env var values and populate global dict, ENV_VALS"""
 def compute_internal_values():
