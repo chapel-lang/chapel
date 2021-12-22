@@ -18,7 +18,7 @@
 #  Make*
 #
 
-todate=`date -d 2022-01-01 "+%m%d"`
+todate=`date "+%m%d"`
 cond=`date -d 2022-01-07 "+%m%d"`
 
 if [ $todate -le $cond ];
