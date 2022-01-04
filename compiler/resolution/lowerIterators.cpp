@@ -3041,7 +3041,7 @@ void lowerIterators() {
       call->primitive = primitives[PRIM_GET_MEMBER_VALUE];
 
       if (CallExpr* parentCall = toCallExpr(call->parentExpr)) {
-        if (SymExpr* lhs = toSymExpr(parentCall->get(1))) {
+        if (isSymExpr(parentCall->get(1))) {
           if (SymExpr* field = toSymExpr(call->get(2))) {
             if (field->symbol()->isRef()) {
               SET_LINENO(call);
