@@ -851,6 +851,13 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_Y, "gpu gridDim y", returnInfoInt32, true);
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
+  // allocate data into shared memory (takes one paremter: number of bytes to allocate)
+  // and returns a c_void_ptr
+  prim_def(PRIM_GPU_ALLOC_SHARED, "gpu allocShared", returnInfoCVoidPtr, true);
+
+  // synchronize threads in a GPU kernel (equivalent to CUDA __syncThreads)
+  prim_def(PRIM_GPU_SYNC_THREADS, "gpu syncThreads", returnInfoVoid, true);
+
   // task primitives
   // get serial state
   prim_def(PRIM_GET_SERIAL, "task_get_serial", returnInfoBool);
