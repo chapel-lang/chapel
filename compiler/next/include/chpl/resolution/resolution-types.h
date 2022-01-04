@@ -62,6 +62,14 @@ class UntypedFnSignature {
     size_t hash() const {
       return chpl::hash(name, hasDefaultValue, decl);
     }
+
+    void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+      name.stringify(ss, stringKind);
+      if (decl != nullptr) {
+        decl->stringify(ss, stringKind);
+        ss << " ";
+      }
+    }
   };
 
  private:
@@ -137,6 +145,20 @@ class UntypedFnSignature {
   bool operator!=(const UntypedFnSignature& other) const {
     return !(*this == other);
   }
+  static bool update(owned<UntypedFnSignature>& keep,
+                     owned<UntypedFnSignature>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    id_.mark(context);
+    name_.mark(context);
+    for (auto const& elt : formals_) {
+      elt.name.mark(context);
+      context->markPointer(elt.decl);
+    }
+    context->markPointer(whereClause_);
+  }
+
 
   /** Returns the id of the relevant uast node (usually a Function
       but it can be a Record or Class for compiler-generated functions) */
@@ -175,11 +197,20 @@ class UntypedFnSignature {
     return formals_[i].hasDefaultValue;
   }
 
-  /** Returns the Decl for the i'th formal.
+  /** Returns the Decl for the i'th formal / field.
       This will return nullptr for compiler-generated functions. */
   const uast::Decl* formalDecl(int i) const {
     assert(0 <= i && (size_t) i < formals_.size());
     return formals_[i].decl;
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    name().stringify(ss, stringKind);
+    ss << " ";
+    id().stringify(ss, stringKind);
+    ss << " ";
+    ss << std::to_string(numFormals());
+    ss << " ";
   }
 };
 
@@ -211,6 +242,13 @@ class CallInfoActual {
   }
   size_t hash() const {
     return chpl::hash(type_, byName_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) {
+    byName().stringify(ss, stringKind);
+    ss << " ";
+    type().stringify(ss, stringKind);
+    ss << " ";
   }
 };
 
@@ -264,6 +302,12 @@ class CallInfo {
   }
   size_t hash() const {
     return chpl::hash(name_, isMethod_, hasQuestionArg_, actuals_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+      ss << "CallInfo: ";
+      name().stringify(ss, stringKind);
+      ss << " ";
   }
 };
 
@@ -371,6 +415,18 @@ class PoiInfo {
   bool operator!=(const PoiInfo& other) const {
     return !(*this == other);
   }
+  void mark(Context* context) const {
+    context->markPointer(poiScope_);
+    for (auto const &elt : poiFnIdsUsed_) {
+      elt.first.mark(context);
+      elt.second.mark(context);
+    }
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+    ss << "PoiInfo: ";
+    poiScope()->stringify(ss, stringKind);
+  }
 };
 
 // TODO: should this actually be types::FunctionType?
@@ -433,8 +489,20 @@ class TypedFnSignature {
   bool operator!=(const TypedFnSignature& other) const {
     return !(*this == other);
   }
+  static bool update(owned<TypedFnSignature>& keep,
+                     owned<TypedFnSignature>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    context->markPointer(untypedSignature_);
+    for (auto const &elt : formalTypes_) {
+      elt.mark(context);
+    }
+    context->markPointer(instantiatedFrom_);
+    context->markPointer(parentFn_);
+  }
 
-  std::string toString() const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /** Returns the id of the relevant uast node (usually a Function
       but it can be a Record or Class for compiler-generated functions) */
@@ -460,8 +528,14 @@ class TypedFnSignature {
   /**
     Is this TypedFnSignature representing an instantiation?  If so, returns the
     generic TypedFnSignature that was instantiated.  Otherwise, returns nullptr.
+
+    This function always returns the signature for the fully generic
+    function and never a partial instantiation. That is, the result
+    will either be nullptr or result->instantiatedFrom() will be nullptr.
    */
   const TypedFnSignature* instantiatedFrom() const {
+    assert(instantiatedFrom_ == nullptr ||
+           instantiatedFrom_->instantiatedFrom_ == nullptr);
     return instantiatedFrom_;
   }
 
@@ -543,8 +617,7 @@ class MostSpecificCandidates {
   const TypedFnSignature* only() const {
     const TypedFnSignature* ret = nullptr;
     int nPresent = 0;
-    for (int i = 0; i < NUM_INTENTS; i++) {
-      const TypedFnSignature* sig = candidates[i];
+    for (const TypedFnSignature* sig : *this) {
       if (sig != nullptr) {
         ret = sig;
         nPresent++;
@@ -569,6 +642,15 @@ class MostSpecificCandidates {
   void swap(MostSpecificCandidates& other) {
     for (int i = 0; i < NUM_INTENTS; i++) {
       std::swap(candidates[i], other.candidates[i]);
+    }
+  }
+  static bool update(MostSpecificCandidates& keep,
+                     MostSpecificCandidates& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+    for (const TypedFnSignature* sig : *this) {
+      context->markPointer(sig);
     }
   }
 };
@@ -691,8 +773,17 @@ class ResolvedExpression {
     mostSpecific_.swap(other.mostSpecific_);
     std::swap(poiScope_, other.poiScope_);
   }
+  static bool update(ResolvedExpression& keep, ResolvedExpression& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+    type_.mark(context);
+    toId_.mark(context);
+    mostSpecific_.mark(context);
+    context->markPointer(poiScope_);
+  }
 
-  std::string toString() const;
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 };
 
 /**
@@ -747,17 +838,24 @@ class ResolutionResultByPostorderID {
   }
 
   bool operator==(const ResolutionResultByPostorderID& other) const {
-    return vec == other.vec;
+    return symbolId == other.symbolId &&
+           vec == other.vec;
   }
   bool operator!=(const ResolutionResultByPostorderID& other) const {
     return !(*this == other);
   }
   void swap(ResolutionResultByPostorderID& other) {
+    symbolId.swap(other.symbolId);
     vec.swap(other.vec);
   }
-
   static bool update(ResolutionResultByPostorderID& keep,
                      ResolutionResultByPostorderID& addin);
+  void mark(Context* context) const {
+    symbolId.mark(context);
+    for (auto const &elt : vec) {
+      elt.mark(context);
+    }
+  }
 };
 
 /**
@@ -813,6 +911,15 @@ class ResolvedFunction {
     resolutionById_.swap(other.resolutionById_);
     poiInfo_.swap(other.poiInfo_);
   }
+  static bool update(owned<ResolvedFunction>& keep,
+                     owned<ResolvedFunction>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+  void mark(Context* context) const {
+    context->markPointer(signature_);
+    resolutionById_.mark(context);
+    poiInfo_.mark(context);
+  }
 
   const ResolvedExpression& byId(const ID& id) const {
     return resolutionById_.byId(id);
@@ -858,7 +965,7 @@ class FormalActualMap {
   /** check if mapping is valid */
   bool isValid() const { return mappingIsValid_; }
 
-  /** get the FormalActual's */
+  /** get the FormalActuals */
   FormalActualIterable byFormalIdx() const {
     return FormalActualIterable(byFormalIdx_);
   }
@@ -872,35 +979,30 @@ class FormalActualMap {
 
 
 /// \cond DO_NOT_DOCUMENT
-template<> struct update<resolution::ResolvedExpression> {
-  bool operator()(resolution::ResolvedExpression& keep,
-                  resolution::ResolvedExpression& addin) const {
-    return defaultUpdate(keep, addin);
-  }
-};
 
-template<> struct update<resolution::MostSpecificCandidates> {
-  bool operator()(resolution::MostSpecificCandidates& keep,
-                  resolution::MostSpecificCandidates& addin) const {
-    return defaultUpdate(keep, addin);
-  }
+template<> struct stringify<chpl::resolution::TypedFnSignature::WhereClauseResult>
+{
+  void operator()(std::ostream &stringOut,
+                  chpl::StringifyKind stringKind,
+                  const chpl::resolution::TypedFnSignature::WhereClauseResult& stringMe) const {
+    switch(stringMe) {
+      case 0:
+        stringOut << "WHERE_NONE";
+        break;
+      case 1:
+        stringOut <<  "WHERE_TBD";
+        break;
+      case 2:
+        stringOut <<  "WHERE_TRUE";
+        break;
+      case 3:
+        stringOut <<  "WHERE_FALSE";
+        break;
+    }
+}
 };
+/// \endcond DO_NOT_DOCUMENT
 
-template<> struct update<resolution::ResolutionResultByPostorderID> {
-  bool operator()(resolution::ResolutionResultByPostorderID& keep,
-                  resolution::ResolutionResultByPostorderID& addin) const {
-    return resolution::ResolutionResultByPostorderID::update(keep, addin);
-  }
-};
-
-template<> struct update<owned<resolution::ResolvedFunction>> {
-  bool operator()(owned<resolution::ResolvedFunction>& keep,
-                  owned<resolution::ResolvedFunction>& addin) const {
-    // this function is just here to make debugging easier
-    return defaultUpdateOwned(keep, addin);
-  }
-};
-/// \endcond
 
 } // end namespace chpl
 

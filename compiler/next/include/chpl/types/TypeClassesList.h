@@ -49,6 +49,14 @@ TYPE_NODE(StringType)
 TYPE_NODE(UnknownType)
 TYPE_NODE(VoidType)
 
+// TODO:
+// migrate BytesType / StringType to something backed by the modules
+// (if the modules are parsed) and also do the same for array, domain,
+// distribution.
+//
+// c_ptr
+// c_array
+
 TYPE_BEGIN_SUBCLASSES(BuiltinType)
   // concrete builtin types
   BUILTIN_TYPE_NODE(CFileType, "_cfile")
@@ -61,9 +69,9 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   // generic builtin types. AnyBoolType must be the first of these
   // (or else adjust BuiltinType::isGeneric and this comment)
   BUILTIN_TYPE_NODE(AnyBoolType, "chpl_anybool")
+  BUILTIN_TYPE_NODE(AnyBorrowedNilableType, "_borrowedNilable")
   BUILTIN_TYPE_NODE(AnyBorrowedNonNilableType, "_borrowedNonNilable")
   BUILTIN_TYPE_NODE(AnyBorrowedType, "borrowed")
-  BUILTIN_TYPE_NODE(AnyClassType, "class")
   BUILTIN_TYPE_NODE(AnyComplexType, "chpl_anycomplex")
   BUILTIN_TYPE_NODE(AnyEnumType, "enum")
   BUILTIN_TYPE_NODE(AnyImagType, "chpl_anyimag")
@@ -71,8 +79,9 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(AnyIntegralType, "integral")
   BUILTIN_TYPE_NODE(AnyIteratorClassType, "_iteratorClass")
   BUILTIN_TYPE_NODE(AnyIteratorRecordType, "_iteratorRecord")
-  BUILTIN_TYPE_NODE(AnyMaganementAnyNilableType, "_anyManagementAnyNilable")
+  BUILTIN_TYPE_NODE(AnyManagementAnyNilableType, "_anyManagementAnyNilable")
   BUILTIN_TYPE_NODE(AnyManagementNilableType, "_anyManagementNilable")
+  BUILTIN_TYPE_NODE(AnyManagementNonNilableType, "class")
   BUILTIN_TYPE_NODE(AnyNumericType, "numeric")
   BUILTIN_TYPE_NODE(AnyOwnedType, "owned")
   BUILTIN_TYPE_NODE(AnyPodType, "chpl_anyPOD")

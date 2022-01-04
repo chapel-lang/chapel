@@ -110,10 +110,16 @@ def check_llvm_config(llvm_config):
 
 @memoize
 def find_system_llvm_config():
+    llvm_config = overrides.get('CHPL_LLVM_CONFIG', 'none')
+    if llvm_config != 'none':
+        return llvm_config
+
     paths = [ ]
     for vers in llvm_versions():
         paths.append("llvm-config-" + vers + ".0")
         paths.append("llvm-config-" + vers)
+        # this format used by freebsd
+        paths.append("llvm-config" + vers)
         # next ones are for Homebrew
         paths.append("/usr/local/opt/llvm@" + vers + ".0/bin/llvm-config")
         paths.append("/usr/local/opt/llvm@" + vers + "/bin/llvm-config")
@@ -299,7 +305,14 @@ def llvm_enabled():
 def get_gcc_prefix():
     gcc_prefix = overrides.get('CHPL_LLVM_GCC_PREFIX', '')
 
+
     if not gcc_prefix:
+        # darwin and FreeBSD default to clang
+        # so shouldn't need GCC prefix
+        host_platform = chpl_platform.get('host')
+        if host_platform == "darwin" or host_platform == "freebsd":
+            return ''
+
         # When 'gcc' is a command other than '/usr/bin/gcc',
         # compute the 'gcc' prefix that LLVM should use.
         gcc_path = find_executable('gcc')

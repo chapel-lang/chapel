@@ -24,34 +24,10 @@ OLD_PYTHON_ERROR="python3 version 3.5 or later is required to install chpldoc an
 #  (to allow for a different path to the system python3 in the future)
 $(CHPL_VENV_VIRTUALENV_DIR_OK):
 	@# First check the python version is OK
-	@case `$(PYTHON) --version` in \
-	  *"Python 3.0"*) \
-	    echo $(OLD_PYTHON_ERROR) ; \
-            exit 1 ; \
-	    ;; \
-	  *"Python 3.1"*) \
-	    echo $(OLD_PYTHON_ERROR) ; \
-            exit 1 ; \
-	    ;; \
-	  *"Python 3.2"*) \
-	    echo $(OLD_PYTHON_ERROR) ; \
-            exit 1 ; \
-	    ;; \
-	  *"Python 3.3"*) \
-	    echo $(OLD_PYTHON_ERROR) ; \
-            exit 1 ; \
-	    ;; \
-	  *"Python 3.4"*) \
-	    echo $(OLD_PYTHON_ERROR) ; \
-            exit 1 ; \
-	    ;; \
-	  *"Python 3"*) \
-	    ;; \
-	  *) \
-	    echo $(OLD_PYTHON_ERROR) ; \
-            exit 1 ; \
-	    ;; \
-	esac
+	@if $(PYTHON) -c 'import sys; sys.exit(int(sys.version_info[:2] >= (3, 5)))'; then \
+	  echo $(OLD_PYTHON_ERROR); \
+	  exit 1; \
+	fi
 
 	@# Now create the venv to use to get the dependencies
 	$(PYTHON) -m venv $(CHPL_VENV_VIRTUALENV_DIR)

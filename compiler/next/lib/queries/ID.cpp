@@ -19,6 +19,8 @@
 
 #include "chpl/queries/ID.h"
 
+#include "chpl/queries/update-functions.h"
+
 #include <cstring>
 
 namespace chpl {
@@ -79,15 +81,18 @@ int ID::compare(const ID& other) const {
   return this->postOrderId() - other.postOrderId();
 }
 
-std::string ID::toString() const {
-  std::string ret = this->symbolPath().c_str();
+bool ID::update(chpl::ID& keep, chpl::ID& addin) {
+  return defaultUpdate(keep, addin);
+}
 
-  if (!ret.empty() && this->postOrderId() >= 0) {
-    ret += "@";
-    ret += std::to_string(this->postOrderId());
+void ID::stringify(std::ostream& ss,
+                   chpl::StringifyKind stringKind) const {
+  ss << this->symbolPath().c_str();
+
+  if (!(symbolPath().isEmpty()) && this->postOrderId() >= 0) {
+    ss << "@";
+    ss << std::to_string(this->postOrderId());
   }
-
-  return ret;
 }
 
 } // end namespace chpl

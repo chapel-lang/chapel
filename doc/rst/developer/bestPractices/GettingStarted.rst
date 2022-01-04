@@ -69,6 +69,7 @@ with the project via the following steps:
   and/or performance standpoints.
 
 * Once you're ready to move from a user role into more of a developer
-  role, refer to ``ContributorInfo.rst`` in this directory, which has
-  a step by step introduction to contributing to the project.
+  role, refer to :ref:`best-practices-contributor-info` in this
+  directory, which has a step by step introduction to contributing to
+  the project.
 

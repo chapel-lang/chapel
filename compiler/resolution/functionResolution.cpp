@@ -900,10 +900,6 @@ bool canInstantiate(Type* actualType, Type* formalType) {
     return true;
   }
 
-  if (formalType == dtString && actualType == dtStringC) {
-    return true;
-  }
-
   if (formalType                                        == dtIteratorRecord &&
       actualType->symbol->hasFlag(FLAG_ITERATOR_RECORD) == true) {
     return true;
@@ -3437,6 +3433,21 @@ static bool bestModulesAreConsistent(CallExpr* call, check_state_t checkState,
   return true;
 }
 
+static bool isAcceptableArgOverloadSets (CallExpr* call, FnSymbol* bestFn,
+                                         int argNum) {
+  // Should this be a public utility function ex. canonicalClassTypeOrNull() ?
+  Type* actualType = canonicalClassType(call->get(argNum)->getValType());
+  AggregateType* actualClass = toAggregateType(actualType);
+  if (actualClass == NULL || ! actualClass->isClass())
+    return false;  // the arg was not a class, so we shouldn't check
+
+  ModuleSymbol* actualMod = actualClass->getModule();
+  if (actualMod == bestFn->getModule())
+    return true;  // bestFn and the arg's class are in the same module
+
+  return false;
+}
+
 // If 'call' is a method call on a class, accept it if 'bestFn' is
 // in the same module as the class of the receiver actual of 'call'.
 //
@@ -3446,20 +3457,25 @@ static bool isAcceptableMethodChoice(CallExpr* call,
                                  FnSymbol* bestFn, FnSymbol* candFn,
                                  Vec<ResolutionCandidate*>& candidates)
 {
-  if (call->numActuals() < 2 || call->get(1)->getValType() != dtMethodToken)
-    return false;  // not a method call
+  if (!bestFn->hasFlag(FLAG_OPERATOR) && !candFn->hasFlag(FLAG_OPERATOR)) {
+    if (call->numActuals() < 2 || call->get(1)->getValType() != dtMethodToken)
+      return false;  // not a method call
 
-  // Should this be a public utility function ex. canonicalClassTypeOrNull() ?
-  Type* actualType = canonicalClassType(call->get(2)->getValType());
-  AggregateType* actualClass = toAggregateType(actualType);
-  if (actualClass == NULL || ! actualClass->isClass())
-    return false;  // a method not on a class
+  } else if (call->get(1)->getValType() != dtMethodToken) {
+    // At least one of these was an operator function (hopefully both), but the
+    // call wasn't set up as a method call originally.  We should still treat it
+    // somewhat like a method call just in case.
+    bool firstArgRes = isAcceptableArgOverloadSets(call, bestFn, 1);
+    if (firstArgRes)
+      return firstArgRes;
 
-  ModuleSymbol* actualMod = actualClass->getModule();
-  if (actualMod == bestFn->getModule())
-    return true;  // bestFn and the receiver's class are in the same module
+    if (call->numActuals() < 2)
+      // This was a unary operator, don't check for a second argument, just
+      // return since the only argument didn't fulfill the conditions
+      return false;
+  }
 
-  return false;
+  return isAcceptableArgOverloadSets(call, bestFn, 2);
 }
 
 static void reportHijackingError(CallExpr* call,

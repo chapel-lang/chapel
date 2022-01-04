@@ -47,7 +47,7 @@ if (exists($ENV{"CHPL_GEN_RELEASE_TMPDIR"})) {
 }
 $user = `whoami`;
 chomp($user);
-$tmpdir = tempdir("chapel-release.$user.deleteme.XXXXX", DIR => $basetmpdir, CLEANUP => 1);
+$tmpdir = tempdir("chapel-release.$user.deleteme.XXXXXX", DIR => $basetmpdir, CLEANUP => 1);
 $archive_dir = "$tmpdir/$reldir";
 SystemOrDie("rm -rf $tmpdir");
 SystemOrDie("mkdir -pv $archive_dir");

@@ -2329,7 +2329,7 @@ operator :(r: range(?), type t: range(?)) {
 
   pragma "no doc"
   iter range.these(param tag: iterKind) where tag == iterKind.standalone &&
-                                              !localeModelHasSublocales
+    !localeModelPartitionsIterationOnSublocales
   {
     if ! isBoundedRange(this) {
       compilerError("parallel iteration is not supported over unbounded ranges");
@@ -2384,7 +2384,7 @@ operator :(r: range(?), type t: range(?)) {
       chpl_debug_writeln("*** In range leader:"); // ", this);
     const numSublocs = here.getChildCount();
 
-    if localeModelHasSublocales && numSublocs != 0 {
+    if localeModelPartitionsIterationOnSublocales && numSublocs != 0 {
       const len = this.sizeAs(intIdxType);
       const tasksPerLocale = dataParTasksPerLocale;
       const ignoreRunning = dataParIgnoreRunningTasks;

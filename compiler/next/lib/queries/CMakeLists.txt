@@ -21,6 +21,7 @@ target_sources(libchplcomp-obj
                Context.cpp
                ErrorMessage.cpp
                ID.cpp
+               Location.cpp
                UniqueString.cpp
 
               )

@@ -106,6 +106,8 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "string", StringType::get(context));
   gatherType(context, map, "void", VoidType::get(context));
 
+  gatherType(context, map, "object", BasicClassType::getObjectType(context));
+
   BuiltinType::gatherBuiltins(context, map);
 }
 
@@ -120,35 +122,43 @@ bool Type::completeMatch(const Type* other) const {
   return true;
 }
 
-bool Type::updateType(owned<Type>& keep, owned<Type>& addin) {
-  if (keep->completeMatch(addin.get())) {
-    // no changes are necessary
-    return false;
-  } else {
-    // swap the Type
-    keep.swap(addin);
+void Type::stringify(std::ostream& ss, chpl::StringifyKind stringKind) const {
+  int leadingSpaces = 0;
+  for (int i = 0; i < leadingSpaces; i++) {
+    ss << "  ";
+  }
+  ss << "type ";
+  ss << typetags::tagToString(this->tag());
+  ss << " \n";
+}
+
+bool Type::isNilablePtrType() const {
+  if (isPtrType()) {
+
+    if (auto ct = toClassType()) {
+      if (!ct->decorator().isNilable())
+        return false;
+    }
+
     return true;
   }
+
+  return false;
 }
 
-void Type::markType(Context* context, const Type* keep) {
-  if (keep == nullptr) return;
-  // run markUniqueStrings on the node
-  keep->markUniqueStringsInner(context);
+bool Type::isUserRecordType() const {
+  if (!isRecordType())
+    return false;
+
+  // TODO: add exceptions in here
+  // for types implemented as records but where that
+  // isn't the user's view -- e.g.
+  //  * string, bytes, distribution, domain, array, range
+  //    tuple, sync, single, atomic, managed pointer
+
+  return true;
 }
 
-void Type::dump(const Type* type, int leadingSpaces) {
-  for (int i = 0; i < leadingSpaces; i++) {
-    printf("  ");
-  }
-
-  printf("type %s \n", typetags::tagToString(type->tag()));
-}
-
-std::string Type::toString() const {
-  std::string ret = typetags::tagToString(tag());
-  return ret;
-}
 
 const CompositeType* Type::getCompositeType() const {
   if (auto at = toCompositeType())

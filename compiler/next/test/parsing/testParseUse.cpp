@@ -248,7 +248,7 @@ static void test4(Parser* parser) {
 static void test5(Parser* parser) {
   auto parseResult = parser->parseString("test5.chpl",
       "/*c1*/\n"
-      "use Foo except *;\n"
+      "use Foo except %;\n"
       "/*c7*/\n");
   assert(!parseResult.numErrors());
   auto mod = parseResult.singleModule();
@@ -266,7 +266,7 @@ static void test5(Parser* parser) {
   assert(visClause->limitationKind() == VisibilityClause::EXCEPT);
   assert(visClause->numLimitations() == 1);
   assert(visClause->limitation(0)->isIdentifier());
-  assert(visClause->limitation(0)->toIdentifier()->name() == "*");
+  assert(visClause->limitation(0)->toIdentifier()->name() == "%");
 }
 
 static void test6(Parser* parser) {
@@ -283,6 +283,30 @@ static void test6(Parser* parser) {
   assert(mod->stmt(2)->isComment());
 }
 
+static void test7(Parser* parser) {
+  auto parseResult = parser->parseString("test7.chpl",
+      "/*c1*/\n"
+      "use Foo only +;\n"
+      "/*c7*/\n");
+  assert(!parseResult.numErrors());
+  auto mod = parseResult.singleModule();
+  assert(mod);
+  assert(mod->numStmts() == 3);
+  assert(mod->stmt(0)->isComment());
+  assert(mod->stmt(1)->isUse());
+  assert(mod->stmt(2)->isComment());
+  const Use* use = mod->stmt(1)->toUse();
+  assert(use->visibility() == Decl::DEFAULT_VISIBILITY);
+  assert(use->numVisibilityClauses() == 1);
+  const VisibilityClause* visClause = use->visibilityClause(0);
+  assert(visClause->symbol()->isIdentifier());
+  assert(visClause->symbol()->toIdentifier()->name() == "Foo");
+  assert(visClause->limitationKind() == VisibilityClause::ONLY);
+  assert(visClause->numLimitations() == 1);
+  assert(visClause->limitation(0)->isIdentifier());
+  assert(visClause->limitation(0)->toIdentifier()->name() == "+");
+}
+
 int main() {
   Context context;
   Context* ctx = &context;
@@ -297,6 +321,7 @@ int main() {
   test4(p);
   test5(p);
   test6(p);
+  test7(p);
 
   return 0;
 }

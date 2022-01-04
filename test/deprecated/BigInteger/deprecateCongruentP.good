@@ -1,0 +1,4 @@
+deprecateCongruentP.chpl:10: warning: bigint.congruent_p is deprecated, use bigint.isCongruent instead
+deprecateCongruentP.chpl:11: warning: bigint.congruent_p is deprecated, use bigint.isCongruent instead
+7 is congruent to 4 mod 3, as 1 was returned
+9 is not congruent to 8 mod 3, as 0 was returned

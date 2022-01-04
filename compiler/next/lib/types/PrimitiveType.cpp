@@ -26,35 +26,37 @@
 #include "chpl/types/RealType.h"
 #include "chpl/types/UintType.h"
 
+#include "chpl/queries/global-strings.h"
+
 namespace chpl {
 namespace types {
 
 
-std::string PrimitiveType::toString() const {
-  std::string ret = this->c_str();
-  return ret;
+void PrimitiveType::stringify(std::ostream& ss,
+                              chpl::StringifyKind stringKind) const {
+  ss << this->c_str();
 }
 
 const PrimitiveType*
 PrimitiveType::getWithNameAndWidth(Context* context,
                                    UniqueString name,
                                    int bitwidth) {
-  if (name == "int")
+  if (name == USTR("int"))
     if (bitwidth == 8 || bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
       return IntType::get(context, bitwidth);
-  if (name == "uint")
+  if (name == USTR("uint"))
     if (bitwidth == 8 || bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
       return UintType::get(context, bitwidth);
-  if (name == "bool")
+  if (name == USTR("bool"))
     if (bitwidth == 8 || bitwidth == 16 || bitwidth == 32 || bitwidth == 64)
       return BoolType::get(context, bitwidth);
-  if (name == "real")
+  if (name == USTR("real"))
     if (bitwidth == 32 || bitwidth == 64)
       return RealType::get(context, bitwidth);
-  if (name == "imag")
+  if (name == USTR("imag"))
     if (bitwidth == 32 || bitwidth == 64)
       return ImagType::get(context, bitwidth);
-  if (name == "complex")
+  if (name == USTR("complex"))
     if (bitwidth == 64 || bitwidth == 128)
       return ComplexType::get(context, bitwidth);
 

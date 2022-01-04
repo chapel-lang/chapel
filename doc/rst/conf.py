@@ -113,8 +113,8 @@ exclude_patterns = ['Makefile',
                     # These don't need to be processed separately
                     # since they are included in the spec with .. include::
                     'builtins/Atomics.rst',
-                    'builtins/ChapelComplex_forDocs.rst',
                     'builtins/ChapelLocale.rst',
+                    'builtins/ChapelDomain.rst'
                    ]
 
 # The reST default role (used for this markup: `text`) to use for all

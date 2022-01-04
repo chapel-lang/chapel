@@ -67,7 +67,8 @@ class ClassType final : public Type {
 
  public:
   ~ClassType() = default;
-  std::string toString() const override;
+  void stringify(std::ostream& ss,
+                 chpl::StringifyKind stringKind) const override;
 
   static const ClassType* get(Context* context,
                               const BasicClassType* basicType,
@@ -76,7 +77,7 @@ class ClassType final : public Type {
 
   /** Returns the ClassTypeDecorator for this ClassType.
       This decorator indicates the memory management strategy. */
-  ClassTypeDecorator decorator() const { return decorator_; } 
+  ClassTypeDecorator decorator() const { return decorator_; }
 
   /** Returns the manager for this ClassType, or nullptr
       if the decorator does not indicate a managed type.
@@ -85,7 +86,7 @@ class ClassType final : public Type {
     if (!decorator_.isManaged())
       return nullptr;
     return manager_;
-  } 
+  }
 
   /** Returns the basic class type */
   const BasicClassType* basicClassType() const {

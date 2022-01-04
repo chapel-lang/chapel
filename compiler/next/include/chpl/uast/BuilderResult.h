@@ -26,6 +26,7 @@
 #include "chpl/queries/update-functions.h"
 #include "chpl/uast/ASTNode.h"
 #include "chpl/util/iteration.h"
+#include "chpl/queries/stringify-functions.h"
 
 #include <vector>
 #include <unordered_map>
@@ -47,6 +48,7 @@ namespace parsing {
 
 namespace uast {
 
+
 /**
   This type records the result of building some AST.
  */
@@ -66,10 +68,13 @@ class BuilderResult final {
   // Given an ID, what is the parent ID?
   std::unordered_map<ID, ID> idToParentId_;
 
-  // Goes from ASTNode* to Location because Comments don't have AST IDs
-  std::unordered_map<const ASTNode*, Location> astToLocation_;
+  // Goes from ID to Location, applies to all AST nodes except Comment
+  std::unordered_map<ID, Location> idToLocation_;
 
- private: 
+  // Goes from Comment ID to Location, applies to all AST nodes except Comment
+  std::vector<Location> commentIdToLocation_;
+
+ private:
   static void updateFilePaths(Context* context, const BuilderResult& keep);
 
  public:
@@ -137,6 +142,12 @@ class BuilderResult final {
   /** Find the Location for a particular ID.
       Returns a location just to path if none is found. */
   Location idToLocation(ID id, UniqueString path) const;
+  /** Find the Location for a particular comment.
+      The Comment must have been from this BuilderResult, but this is not
+      checked.
+      An empty Location will be returned if the Comment couldn't be found
+  */
+  Location commentToLocation(const Comment *comment) const;
   /** Find the ID for a parent given an ID.
       Returns the empty ID if none is found */
   ID idToParentId(ID id) const;
@@ -148,26 +159,13 @@ class BuilderResult final {
   void swap(BuilderResult& other);
 
   static bool update(BuilderResult& keep, BuilderResult& addin);
-  static void mark(Context* context, const BuilderResult& keep);
+  void mark(Context* context) const;
 };
+
 
 } // end namespace uast
 
-// docs are turned off for this as a workaround for breathe errors
-/// \cond DO_NOT_DOCUMENT
-template<> struct update<chpl::uast::BuilderResult> {
-  bool operator()(chpl::uast::BuilderResult& keep,
-                  chpl::uast::BuilderResult& addin) const {
-    return chpl::uast::BuilderResult::update(keep, addin);
-  }
-};
-template<> struct mark<chpl::uast::BuilderResult> {
-  void operator()(Context* context,
-                  const chpl::uast::BuilderResult& keep) const {
-    chpl::uast::BuilderResult::mark(context, keep);
-  }
-};
-/// \endcond
+
 
 } // end namespace chpl
 

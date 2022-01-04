@@ -203,22 +203,20 @@ static void test3() {
   assert(rr.byAst(cq).type().type()   == AnyComplexType::get(context));
 }
 
-// assumes 2nd statement is a variable declaration for x.
+// assumes the last statement is a variable declaration for x.
 // returns the type of that.
 static const Type* parseTypeOfX(Context* context,
                                 const char* program) {
   auto m = parseModule(context, program);
-  assert(m->numStmts() == 2);
-  const TypeDecl* td = m->stmt(0)->toTypeDecl();
-  assert(td);
-  const Variable* x = m->stmt(1)->toVariable();
+  assert(m->numStmts() > 0);
+  const Variable* x = m->stmt(m->numStmts()-1)->toVariable();
   assert(x);
   assert(x->name() == "x");
 
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
 
   auto qt = rr.byAst(x).type();
-  assert(qt.kind() == QualifiedType::VALUE);
+  assert(qt.kind() == QualifiedType::VAR);
   assert(qt.type());
 
   return qt.type();
@@ -236,7 +234,7 @@ static void test4() {
   assert(rt->numFields() == 1);
   assert(rt->fieldName(0) == "field");
   assert(rt->fieldHasDefaultValue(0) == false);
-  assert(rt->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(rt->fieldType(0).kind() == QualifiedType::VAR);
   assert(rt->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -254,6 +252,15 @@ static void test5() {
   assert(rt->fieldHasDefaultValue(0) == false);
   assert(rt->fieldType(0).kind() == QualifiedType::TYPE);
   assert(rt->fieldType(0).type() == IntType::get(context, 0));
+
+  auto initialRt = rt->instantiatedFrom();
+  assert(initialRt);
+  assert(initialRt->instantiatedFrom() == nullptr);
+  assert(initialRt->numFields() == 1);
+  assert(initialRt->fieldName(0) == "t");
+  assert(initialRt->fieldHasDefaultValue(0) == false);
+  assert(initialRt->fieldType(0).kind() == QualifiedType::TYPE);
+  assert(initialRt->fieldType(0).type()->isAnyType());
 }
 
 static void test6() {
@@ -423,7 +430,7 @@ static void test15() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -445,7 +452,7 @@ static void test16() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -467,7 +474,7 @@ static void test17() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -488,7 +495,7 @@ static void test18() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -509,7 +516,7 @@ static void test19() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -530,7 +537,7 @@ static void test20() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -551,7 +558,7 @@ static void test21() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -572,7 +579,7 @@ static void test22() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -593,7 +600,7 @@ static void test23() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -614,7 +621,7 @@ static void test23q() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -635,7 +642,7 @@ static void test24() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -656,7 +663,7 @@ static void test25() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -677,7 +684,7 @@ static void test26() {
   assert(bct->numFields() == 1);
   assert(bct->fieldName(0) == "field");
   assert(bct->fieldHasDefaultValue(0) == false);
-  assert(bct->fieldType(0).kind() == QualifiedType::VALUE);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
   assert(bct->fieldType(0).type() == IntType::get(context, 0));
 }
 
@@ -899,6 +906,160 @@ static void testTypeAndFnSameName() {
   assert(yrt->fieldType(0).type() == RealType::get(context, 0));
 }
 
+static void test35() {
+  printf("test35\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context,
+                        R""""(
+                          record R {
+                            var a = 1;
+                            var b: int;
+                            type t;
+                            const c: t;
+                            var d = c;
+                          }
+                          var x: R(real);
+                        )"""");
+  auto rt = t->toRecordType();
+  assert(rt);
+  assert(rt->numFields() == 5);
+
+  assert(rt->fieldName(0) == "a");
+  assert(rt->fieldHasDefaultValue(0) == true);
+  assert(rt->fieldType(0).kind() == QualifiedType::VAR);
+  assert(rt->fieldType(0).type() == IntType::get(context, 0));
+
+  assert(rt->fieldName(1) == "b");
+  assert(rt->fieldHasDefaultValue(1) == false);
+  assert(rt->fieldType(1).kind() == QualifiedType::VAR);
+  assert(rt->fieldType(1).type() == IntType::get(context, 0));
+
+  assert(rt->fieldName(2) == "t");
+  assert(rt->fieldHasDefaultValue(2) == false);
+  assert(rt->fieldType(2).kind() == QualifiedType::TYPE);
+  assert(rt->fieldType(2).type() == RealType::get(context, 0));
+
+  assert(rt->fieldName(3) == "c");
+  assert(rt->fieldHasDefaultValue(3) == false);
+  assert(rt->fieldType(3).kind() == QualifiedType::CONST_VAR);
+  assert(rt->fieldType(3).type() == RealType::get(context, 0));
+
+  assert(rt->fieldName(4) == "d");
+  assert(rt->fieldHasDefaultValue(4) == true);
+  assert(rt->fieldType(4).kind() == QualifiedType::VAR);
+  assert(rt->fieldType(4).type() == RealType::get(context, 0));
+}
+
+static void test36() {
+  printf("test36\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context,
+                        R""""(
+                          class ClassA {
+                            var field: object;
+                          }
+                          var x: owned ClassA;
+                        )"""");
+  auto ct = t->toClassType();
+  assert(ct);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->parentClassType()->isObjectType());
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
+  auto fct = bct->fieldType(0).type()->toClassType();
+  assert(fct);
+  assert(fct->decorator().isUnknownManagement());
+  assert(fct->decorator().isNonNilable());
+  assert(fct->basicClassType()->name() == "object");
+  assert(fct->basicClassType() == BasicClassType::getObjectType(context));
+}
+
+static void test37() {
+  printf("test37\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context,
+                        R""""(
+                          class ClassA {
+                            var x: int;
+                          }
+                          class ClassB {
+                            var field: ClassA;
+                          }
+                          var x: owned ClassB;
+                        )"""");
+  auto ct = t->toClassType();
+  assert(ct);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(bct->parentClassType()->isObjectType());
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "field");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
+  auto fct = bct->fieldType(0).type()->toClassType();
+  assert(fct);
+  assert(fct->decorator().isUnknownManagement());
+  assert(fct->decorator().isNonNilable());
+  assert(fct->basicClassType()->name() == "ClassA");
+}
+
+
+static void test38() {
+  printf("test38\n");
+  Context ctx;
+  Context* context = &ctx;
+
+  auto t = parseTypeOfX(context,
+                        R""""(
+                          class Parent {
+                            var parentField:int;
+                          }
+                          class Child : Parent {
+                            var childObject: object;
+                          }
+                          var x: owned Child;
+                        )"""");
+  auto ct = t->toClassType();
+  assert(ct);
+
+  auto bct = ct->basicClassType();
+  assert(bct);
+  assert(!bct->parentClassType()->isObjectType());
+  assert(bct->numFields() == 1);
+  assert(bct->fieldName(0) == "childObject");
+  assert(bct->fieldHasDefaultValue(0) == false);
+  assert(bct->fieldType(0).kind() == QualifiedType::VAR);
+  auto fct = bct->fieldType(0).type()->toClassType();
+  assert(fct);
+  assert(fct->decorator().isUnknownManagement());
+  assert(fct->decorator().isNonNilable());
+  assert(fct->basicClassType()->name() == "object");
+  assert(fct->basicClassType() == BasicClassType::getObjectType(context));
+
+  auto pct = bct->parentClassType()->toBasicClassType();
+  assert(pct);
+  assert(pct->numFields() == 1);
+  assert(pct->fieldName(0) == "parentField");
+  assert(pct->fieldHasDefaultValue(0) == false);
+  assert(pct->fieldType(0).kind() == QualifiedType::VAR);
+  assert(pct->fieldType(0).type() == IntType::get(context, 0));
+
+  assert(pct->parentClassType()->isObjectType());
+  assert(pct->parentClassType() == BasicClassType::getObjectType(context));
+}
+
+
 
 int main() {
   test1();
@@ -937,6 +1098,10 @@ int main() {
   test33();
   test34();
   testTypeAndFnSameName();
+  test35();
+  test36();
+  test37();
+  test38();
 
   return 0;
 }

@@ -1,0 +1,82 @@
+operatorsLast.chpl:223: warning: This file-scope code is outside of any explicit module declarations (e.g., module DefinesOp), so an implicit module named 'operatorsLast' is being introduced to contain the file's contents.
+In DefinesOp.+
+{x = 10}
+In DefinesOp.align
+0..6 by 4 align 3
+3
+In DefinesOp.&
+{x = false}
+In DefinesOp.&=
+{x = false}
+In DefinesOp.by
+0..6 by 3
+In DefinesOp.:
+Bar
+(y = 3)
+In DefinesOp.#
+0..2
+In DefinesOp./=
+{x = 2}
+In DefinesOp./
+{x = 2}
+In DefinesOp.==
+false
+In DefinesOp.**=
+{x = 216}
+In DefinesOp.**
+{x = 216}
+In DefinesOp.>
+true
+In DefinesOp.>=
+true
+In DefinesOp.!=
+true
+In DefinesOp.<~>
+3
+In DefinesOp.<
+true
+In DefinesOp.<=
+true
+In DefinesOp.-=
+{x = -3}
+In DefinesOp.%
+{x = 1}
+In DefinesOp.%=
+{x = 1}
+In DefinesOp.*
+{x = 30}
+In DefinesOp.-
+{x = -3}
+In DefinesOp.!
+{x = false}
+In DefinesOp.|
+{x = true}
+In DefinesOp.|=
+{x = true}
+In DefinesOp.+=
+{x = 5}
+In DefinesOp.+
+{x = -2}
+In DefinesOp.<<
+{x = 24}
+In DefinesOp.<<=
+{x = 24}
+In DefinesOp.>>
+{x = 1}
+In DefinesOp.>>=
+{x = 1}
+In DefinesOp.-
+{x = 4}
+In DefinesOp.<=>
+{x = 2}
+{x = 6}
+In DefinesOp.*=
+{x = 6}
+In DefinesOp.~
+{x = -4}
+In DefinesOp.^
+{x = true}
+In DefinesOp.^=
+{x = true}
+In DefinesOp.=
+(y = 5)

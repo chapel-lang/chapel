@@ -74,11 +74,12 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_TARGET_CXX', RUNTIME | NOPATH),
     ChapelEnv('  CHPL_TARGET_COMPILER_PRGENV', INTERNAL),
     ChapelEnv('CHPL_TARGET_ARCH', RUNTIME | DEFAULT),
-    ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'arch'),
+    ChapelEnv('CHPL_TARGET_CPU', RUNTIME | DEFAULT, 'cpu'),
     ChapelEnv('CHPL_RUNTIME_CPU', INTERNAL),
     ChapelEnv('CHPL_TARGET_CPU_FLAG', INTERNAL),
     ChapelEnv('CHPL_TARGET_BACKEND_CPU', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
+    ChapelEnv('  CHPL_GPU_CODEGEN', RUNTIME | NOPATH),
     ChapelEnv('  CHPL_CUDA_PATH', RUNTIME | NOPATH),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
@@ -97,8 +98,8 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_ATOMICS', RUNTIME | LAUNCHER | DEFAULT, 'atomics'),
     ChapelEnv('  CHPL_NETWORK_ATOMICS', INTERNAL | DEFAULT),
     ChapelEnv('CHPL_GMP', INTERNAL | DEFAULT, 'gmp'),
-    ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT),
-    ChapelEnv('CHPL_RE2', RUNTIME | DEFAULT),
+    ChapelEnv('CHPL_HWLOC', RUNTIME | DEFAULT, 'hwloc'),
+    ChapelEnv('CHPL_RE2', RUNTIME | DEFAULT, 're2'),
     ChapelEnv('CHPL_LLVM', COMPILER | DEFAULT, 'llvm'),
     ChapelEnv('  CHPL_LLVM_CONFIG', COMPILER | NOPATH),
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
@@ -107,8 +108,8 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_LLVM_CLANG_LINK_ARGS', INTERNAL),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
-    ChapelEnv('CHPL_SANITIZE', COMPILER | LAUNCHER),
-    ChapelEnv('CHPL_SANITIZE_EXE', RUNTIME, 'sanitizers'),
+    ChapelEnv('CHPL_SANITIZE', COMPILER | LAUNCHER, 'san'),
+    ChapelEnv('CHPL_SANITIZE_EXE', RUNTIME, 'san'),
     ChapelEnv('CHPL_RUNTIME_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_LAUNCHER_SUBDIR', INTERNAL),
     ChapelEnv('CHPL_COMPILER_SUBDIR', INTERNAL),
@@ -169,6 +170,7 @@ def compute_all_values():
             get_lcd=chpl_home_utils.using_chapel_module()).cpu
 
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
+    ENV_VALS['  CHPL_GPU_CODEGEN'] = chpl_gpu.get()
     ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_cuda_path()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()

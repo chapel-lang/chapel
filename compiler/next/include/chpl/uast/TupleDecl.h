@@ -56,18 +56,19 @@ namespace uast {
 class TupleDecl final : public Decl {
  public:
   enum IntentOrKind {
-    DEFAULT       = (int) IntentList::DEFAULT,
-    VAR           = (int) IntentList::VAR,
-    CONST         = (int) IntentList::CONST,
-    CONST_REF     = (int) IntentList::CONST_REF,
-    REF           = (int) IntentList::REF,
-    IN            = (int) IntentList::IN,
-    CONST_IN      = (int) IntentList::CONST_IN,
-    OUT           = (int) IntentList::OUT,
-    INOUT         = (int) IntentList::INOUT,
-    INDEX         = (int) IntentList::INDEX,
-    PARAM         = (int) IntentList::PARAM,
-    TYPE          = (int) IntentList::TYPE
+    DEFAULT_INTENT = (int) IntentList::DEFAULT_INTENT,
+    CONST_INTENT   = (int) IntentList::CONST_INTENT,
+    VAR            = (int) IntentList::VAR,
+    CONST_VAR      = (int) IntentList::CONST_VAR,
+    CONST_REF      = (int) IntentList::CONST_REF,
+    REF            = (int) IntentList::REF,
+    IN             = (int) IntentList::IN,
+    CONST_IN       = (int) IntentList::CONST_IN,
+    OUT            = (int) IntentList::OUT,
+    INOUT          = (int) IntentList::INOUT,
+    INDEX          = (int) IntentList::INDEX,
+    PARAM          = (int) IntentList::PARAM,
+    TYPE           = (int) IntentList::TYPE
   };
 
  private:

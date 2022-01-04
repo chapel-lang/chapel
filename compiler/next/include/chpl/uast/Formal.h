@@ -44,8 +44,8 @@ class Formal final : public VarLikeDecl {
  public:
   enum Intent {
     // Use IntentList here for consistent enum values.
-    DEFAULT_INTENT    = (int) IntentList::DEFAULT,
-    CONST             = (int) IntentList::CONST,
+    DEFAULT_INTENT    = (int) IntentList::DEFAULT_INTENT,
+    CONST             = (int) IntentList::CONST_INTENT,
     CONST_REF         = (int) IntentList::CONST_REF,
     REF               = (int) IntentList::REF,
     IN                = (int) IntentList::IN,

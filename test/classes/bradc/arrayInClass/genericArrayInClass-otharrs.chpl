@@ -29,11 +29,30 @@ class EnumC {
   var x: [enumDom] t;
 }
 
+/* We have to handle nested associative types */
+iter sortedOut(arr) {
+  const ks = if arr.domain.isAssociative() then arr.domain.sorted() else arr.domain;
+  for k in ks {
+    const x = arr[k];
+    if isArrayType(x.type) && x.domain.isAssociative() {
+      const xSorted = sortedOut(x);
+      yield xSorted;
+    } else {
+      yield x;
+    }
+  }
+}
+
 // generic print routine
 
 proc foo(C) {
-  writeln("C.x.domain is: ", C.x.domain);
-  writeln("x is: ", C.x);
+  if (C.x.domain.isAssociative()) {
+    writeln("C.x.domain is: ", C.x.domain.sorted());
+    writeln("x is: ", sortedOut(C.x));
+  } else {
+    writeln("C.x.domain is: ", C.x.domain);
+    writeln("x is: ", sortedOut(C.x));
+  }
   writeln();
 }
 
