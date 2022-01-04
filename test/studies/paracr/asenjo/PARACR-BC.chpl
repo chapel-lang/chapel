@@ -58,7 +58,7 @@ proc main(){
     exit(0);
   }
 
-  if timer then t1=getCurrentTime();
+  if timer then t1=datetime.timeSinceEpoch();
 
 /*********************/
 /* Elimination Phase */
@@ -82,10 +82,10 @@ proc main(){
 /********************************************/    
 /* Change from Block to Cyclic Distribution */
 /********************************************/
-  if timer then t5=getCurrentTime();
+  if timer then t5=datetime.timeSinceEpoch();
   if (RedistStage&1) then {P=AA;Q=BB;R=CC;S=DD;}
   else {P=A;Q=B;R=C;S=D;}
-  if timer then t6=getCurrentTime(); 
+  if timer then t6=datetime.timeSinceEpoch(); 
 
 /********************************************/    
 /*          Cyclic Distribution             */
@@ -111,7 +111,7 @@ proc main(){
     forall (x,s,q) in zip(X,S,Q) do x=s/q;
   }
 
- if timer then t2=getCurrentTime();
+ if timer then t2=datetime.timeSinceEpoch();
 	
   //writeln("Tridiagonal System Solution:");
   //PrintV(X);
@@ -154,7 +154,7 @@ proc Check()
 proc ComputeStage(A,B,C,D,AA,BB,CC,DD,j,Dom, msg="")
 {
   //  writeln("ComputeStage", msg, " j=", j);
-  // if timer then t3=getCurrentTime();
+  // if timer then t3=datetime.timeSinceEpoch();
   const TtS:int=1<<(j-1); //// TtS stand for "Two to the Stage (minus 1)" which is = 2**(j-1)
   forall i in Dom do{
     //writeln("i ",i, " j ",j);
@@ -190,7 +190,7 @@ proc ComputeStage(A,B,C,D,AA,BB,CC,DD,j,Dom, msg="")
     }//if
   }//for all i
   //if timer then {
-  //  t4=getCurrentTime();
+  //  t4=datetime.timeSinceEpoch();
   //  CalcTime[j]=t4-t3;
   //  TotCalcTime+=CalcTime[j];
   //}

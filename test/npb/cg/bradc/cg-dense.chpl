@@ -1,4 +1,4 @@
-use CGMakeA, Time;
+use CGMakeA, DateTime;
 
 type elemType = real(64);
 
@@ -55,7 +55,7 @@ proc main() {
   for trial in 1..numTrials {
     X = 1.0;
 
-    const startTime = getCurrentTime();
+    const startTime = datetime.timeSinceEpoch();
 
     for it in 1..niter {
       const (Z, rnorm) = conjGrad(A, X);
@@ -67,7 +67,7 @@ proc main() {
       X = (1.0 / sqrt(+ reduce(Z*Z))) * Z;
     }
 
-    const runtime = getCurrentTime() - startTime;
+    const runtime = datetime.timeSinceEpoch() - startTime;
 
     if printTiming then writeln("Execution time = ", runtime);
 

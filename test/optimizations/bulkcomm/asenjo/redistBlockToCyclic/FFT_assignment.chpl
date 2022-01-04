@@ -104,26 +104,26 @@ proc main() {
   
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
   var t1,t2,T1,T2,T3,T4: real;
-  const startTime = getCurrentTime();  // capture the start time
+  const startTime = datetime.timeSinceEpoch();  // capture the start time
   [(a,b) in zip(Zblk, z)] a = conjg(b);      // store the conjugate of z in Zblk
 
   //Comm y tieme bitReverse 
-  t1=getCurrentTime();
+  t1=datetime.timeSinceEpoch();
   bitReverseShuffle(Zblk);                // permute Zblk
-  t2=getCurrentTime();
+  t2=datetime.timeSinceEpoch();
   T1=t2-t1;
 
   //Comm and Time dfft  
-  t1=getCurrentTime();
+  t1=datetime.timeSinceEpoch();
   dfft(Zblk, Twiddles, cyclicPhase=false); // compute the DFFT, block phases
-  t2=getCurrentTime();
+  t2=datetime.timeSinceEpoch();
   T2=t2-t1;
 
   //Comm and Time first forall
-  t1=getCurrentTime();
+  t1=datetime.timeSinceEpoch();
   //  copyBtoC(Zblk,Zcyc);
   Zcyc=Zblk;
-  t2=getCurrentTime();
+  t2=datetime.timeSinceEpoch();
   T3=t2-t1;
 
   /*
@@ -133,20 +133,20 @@ proc main() {
     writeln("ERROR = ",e);
     if (e==0.0) then writeln("Correct"); else writeln("Wrong!");
   */
-  t1=getCurrentTime();
+  t1=datetime.timeSinceEpoch();
   dfft(Zcyc, Twiddles, cyclicPhase=true); // compute the DFFT, cyclic phases
-  t2=getCurrentTime();
+  t2=datetime.timeSinceEpoch();
   T2=T2+t2-t1; 
  
-  t1=getCurrentTime();
+  t1=datetime.timeSinceEpoch();
   //    forall (b, c) in zip(Zblk, Zcyc) do        // copy vector back to Block storage
   //   b = c;
   //  copyCtoB(Zblk,Zcyc);
   Zblk=Zcyc;
-  t2=getCurrentTime();
+  t2=datetime.timeSinceEpoch();
   T4=t2-t1;
 
-  const execTime = getCurrentTime() - startTime;     // store the elapsed time
+  const execTime = datetime.timeSinceEpoch() - startTime;     // store the elapsed time
   //  writeln("bitReverse Time = ",T1);  
   //  writeln("dffts Time = ",T2," copyBtoC time= ",T3, " copyCtoB time= ",T4);
 

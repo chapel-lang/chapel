@@ -182,14 +182,14 @@ int main(int argc, char* argv[]) {
 
   int trial;
   for (trial=0; trial<numTrials; trial++) {
-    double startTime = getCurrentTime();
+    double startTime = datetime.timeSinceEpoch();
 
     int j;
     for (j=0; j<m; j++) {
       A[j] = B[j] + alpha * C[j];
     }
     
-    execTime[trial] = getCurrentTime() - startTime;
+    execTime[trial] = datetime.timeSinceEpoch() - startTime;
   }
 
   int validAnswer = verifyResults(A, B, C);

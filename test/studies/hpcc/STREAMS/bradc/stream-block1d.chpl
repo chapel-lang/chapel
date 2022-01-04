@@ -40,7 +40,7 @@ proc main() {
   var execTime: [1..numTrials] real;
 
   for trial in 1..numTrials {
-    const startTime = getCurrentTime();
+    const startTime = datetime.timeSinceEpoch();
     // TODO: Want:
     // A = B + alpha * C;
     // But this doesn't yet result in parallelism
@@ -49,7 +49,7 @@ proc main() {
       a = b + alpha * c;
     }
 
-    execTime(trial) = getCurrentTime() - startTime;
+    execTime(trial) = datetime.timeSinceEpoch() - startTime;
   }
 
   t3.start();

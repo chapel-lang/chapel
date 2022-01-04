@@ -1,4 +1,4 @@
-use Time;
+use DateTime;
 
 config var numTrials = 10,
            printTimings = false;
@@ -16,22 +16,22 @@ DA += 4.2;
 // Rectangular
 
 {
-  const startTime = getCurrentTime();
+  const startTime = datetime.timeSinceEpoch();
   for i in 1..numTrials do
     if (D == D) then
       ;
   else
     halt("Bad answer in D comparison");
-  const execTime = getCurrentTime() - startTime;
+  const execTime = datetime.timeSinceEpoch() - startTime;
   if printTimings then writeln("Time for rectangular equality = ", execTime);
 }
 
 {
-  const startTime = getCurrentTime();
+  const startTime = datetime.timeSinceEpoch();
   for i in 1..numTrials do
     if (D != D) then
       halt("Bad answer in D comparison");
-  const execTime = getCurrentTime() - startTime;
+  const execTime = datetime.timeSinceEpoch() - startTime;
   
   if printTimings then writeln("Time for rectangular inequality = ", execTime);
 }
@@ -39,44 +39,44 @@ DA += 4.2;
 // Sparse
 
 {
-  const startTime = getCurrentTime();
+  const startTime = datetime.timeSinceEpoch();
   for i in 1..numTrials do
     if (DS == DS) then
       ;
   else
     halt("Bad answer in D comparison");
-  const execTime = getCurrentTime() - startTime;
+  const execTime = datetime.timeSinceEpoch() - startTime;
   if printTimings then writeln("Time for sparse equality = ", execTime);
 }
 
 {
-  const startTime = getCurrentTime();
+  const startTime = datetime.timeSinceEpoch();
   for i in 1..numTrials do
     if (DS != DS) then
       halt("Bad answer in D comparison");
-  const execTime = getCurrentTime() - startTime;
+  const execTime = datetime.timeSinceEpoch() - startTime;
   if printTimings then writeln("Time for sparse inequality = ", execTime);
 }
 
 // Associative
 
 {
-  const startTime = getCurrentTime();
+  const startTime = datetime.timeSinceEpoch();
   for i in 1..numTrials do
     if (DA == DA) then
       ;
   else
     halt("Bad answer in D comparison");
-  const execTime = getCurrentTime() - startTime;
+  const execTime = datetime.timeSinceEpoch() - startTime;
   if printTimings then writeln("Time for associative equality = ", execTime);
 }
 
 {
-  const startTime = getCurrentTime();
+  const startTime = datetime.timeSinceEpoch();
   for i in 1..numTrials do
     if (DA != DA) then
       halt("Bad answer in D comparison");
-  const execTime = getCurrentTime() - startTime;
+  const execTime = datetime.timeSinceEpoch() - startTime;
   if printTimings then writeln("Time for associative inequality = ", execTime);
 }
 

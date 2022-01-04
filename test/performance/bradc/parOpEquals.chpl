@@ -3,6 +3,8 @@
 // one array with another.
 //
 
+use DateTime;
+
 config const n = 1000000;
 config const numIters = 1000;
 
@@ -23,12 +25,12 @@ if printArrays then
 
 use Time;
 
-const startTime = getCurrentTime();
+const startTime = datetime.timeSinceEpoch();
 
 for i in 1..numIters do
   A[B] += 1;
 
-const stopTime = getCurrentTime();
+const stopTime = datetime.timeSinceEpoch();
 if printTiming then
   writeln("Time: ", stopTime-startTime);
 

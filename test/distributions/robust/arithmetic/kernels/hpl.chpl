@@ -9,7 +9,7 @@ use driver;
 // Use standard modules for vector and matrix Norms, Random numbers
 // and Timing routines
 //
-use LinearAlgebra, Random, Time;
+use LinearAlgebra, Random, DateTime;
 
 //
 // Use the user module for computing HPCC problem sizes
@@ -78,13 +78,13 @@ proc main() {
 
   initAB(Ab);
 
-  const startTime = getCurrentTime();     // capture the start time
+  const startTime = datetime.timeSinceEpoch();     // capture the start time
 
   LUFactorize(n, Ab, piv);                 // compute the LU factorization
 
   x = backwardSub(n, A, b);  // perform the back substitution
 
-  const execTime = getCurrentTime() - startTime;  // store the elapsed time
+  const execTime = datetime.timeSinceEpoch() - startTime;  // store the elapsed time
 
   //
   // Validate the answer and print the results

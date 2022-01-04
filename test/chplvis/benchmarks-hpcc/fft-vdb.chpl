@@ -105,7 +105,7 @@ proc main() {
   initVectors(Twiddles, z);            // initialize twiddles and input vector z
 
   startVdebug("FFTvis");
-  const startTime = getCurrentTime();  // capture the start time
+  const startTime = datetime.timeSinceEpoch();  // capture the start time
 
   [(a,b) in zip(Zblk, z)] a = conjg(b);      // store the conjugate of z in Zblk
   bitReverseShuffle(Zblk);                // permute Zblk
@@ -120,7 +120,7 @@ proc main() {
   forall (b, c) in zip(Zblk, Zcyc) do        // copy vector back to Block storage
     b = c;
 
-  const execTime = getCurrentTime() - startTime;     // store the elapsed time
+  const execTime = datetime.timeSinceEpoch() - startTime;     // store the elapsed time
   stopVdebug();
 
   const validAnswer = verifyResults(z, Zblk, Zcyc, Twiddles); // validate answer

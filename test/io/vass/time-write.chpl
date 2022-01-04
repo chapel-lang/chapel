@@ -123,7 +123,7 @@ proc sto_trial() {
 var tSave, tDummy, tcf, tcs, tlstr, tlcs, tgstr, tgcs, tnb, tsto: real;
 
 inline proc addTime(ref t: real) {
-  const tCurr = getCurrentTime();
+  const tCurr = datetime.timeSinceEpoch();
   t += tCurr - tSave;
   tSave = tCurr;
 

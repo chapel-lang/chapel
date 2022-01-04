@@ -12,7 +12,7 @@ param vPrintMem = false;
 
   const vUserSep = "  ";
   const vGB = (1024**3):real;
-  const vStartTime = getCurrentTime();
+  const vStartTime = datetime.timeSinceEpoch();
   var   vLapTime   = vStartTime;
   var   vLapMem    = getCurrentMem();
 
@@ -21,7 +21,7 @@ param vPrintMem = false;
 
   proc getCurrentTimeLoc() {  // go to the same node for the timer
     var result: vLapTime.type;
-    on vLapTime.locale do result = getCurrentTime();
+    on vLapTime.locale do result = datetime.timeSinceEpoch();
     return result;
   }
 

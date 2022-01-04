@@ -87,9 +87,9 @@ t.stop();
 // idiom to time the number of seconds something will take:
 //
 
-const start = getCurrentTime();
+const start = datetime.timeSinceEpoch();
 sleep(1);
-const elapsed = getCurrentTime() - start;
+const elapsed = datetime.timeSinceEpoch() - start;
 
 if !quiet then
   writeln("E. ", elapsed, " seconds");

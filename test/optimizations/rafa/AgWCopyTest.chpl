@@ -26,10 +26,10 @@ var B: [Dom] real;
     fillRandom(Ref, 31415);
   }
   A = -1;
-  var st = getCurrentTime();
+  var st = datetime.timeSinceEpoch();
   A=B;
 
-  var dt = getCurrentTime()-st;
+  var dt = datetime.timeSinceEpoch()-st;
   for i in A.domain do
     if A[i] != Ref[i] then
       writeln("ERROR in whole array assignment: ", i);
@@ -46,9 +46,9 @@ var C: [Dom.translate(shift)] real;
     fillRandom(Ref, 92653);
   }
   A = -1;
-  var st = getCurrentTime();
+  var st = datetime.timeSinceEpoch();
   A=C;
-  var dt = getCurrentTime()-st;
+  var dt = datetime.timeSinceEpoch()-st;
   for i in A.domain do
     if A[i] != Ref[i] then
       writeln("ERROR in whole array assignment (+ offset): ", i);
@@ -65,9 +65,9 @@ var D: [Dom.translate(-shift)] real;
     fillRandom(Ref, 58979);
   }
   A = -1;
-  var st = getCurrentTime();
+  var st = datetime.timeSinceEpoch();
   A=D;
-  var dt = getCurrentTime()-st;
+  var dt = datetime.timeSinceEpoch()-st;
   for i in A.domain do
     if A[i] != Ref[i] then
       writeln("ERROR in whole array assignment (- offset): ", i);
@@ -89,9 +89,9 @@ ref Ba = B[DomSlice];
   }
   A = 0;
   Aa = -1;
-  var st = getCurrentTime();
+  var st = datetime.timeSinceEpoch();
   Aa=Ba;
-  var dt = getCurrentTime()-st;
+  var dt = datetime.timeSinceEpoch()-st;
   for i in Aa.domain do
     if Aa[i] != Refa[i] then
       writeln("ERROR in whole array assignment (alias): ", i);
@@ -109,9 +109,9 @@ ref Ca = C[DomSlice.translate(shift)];
   }
   A = 0;
   Aa = -1;
-  var st = getCurrentTime();
+  var st = datetime.timeSinceEpoch();
   Aa=Ca;
-  var dt = getCurrentTime()-st;
+  var dt = datetime.timeSinceEpoch()-st;
   for i in Aa.domain do
     if Aa[i] != Refa[i] then
       writeln("ERROR in whole array assignment (alias, + offset): ", i);
@@ -129,9 +129,9 @@ ref Da = D[DomSlice.translate(-shift)];
   }
   A = 0;
   Aa = -1;
-  var st = getCurrentTime();
+  var st = datetime.timeSinceEpoch();
   Aa=Da;
-  var dt = getCurrentTime()-st;
+  var dt = datetime.timeSinceEpoch()-st;
   for i in Aa.domain do
     if Aa[i] != Refa[i] then
       writeln("ERROR in whole array assignment (alias, - offset): ", i);

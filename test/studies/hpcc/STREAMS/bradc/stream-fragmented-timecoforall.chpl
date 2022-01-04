@@ -31,7 +31,7 @@ proc main() {
   var allValidAnswer: [LocaleSpace] bool;
   
   for trial in 1..numTrials {
-    const startTime = getCurrentTime();
+    const startTime = datetime.timeSinceEpoch();
     coforall loc in Locales {
       on loc {
         const MyProblemSpace: domain(1, indexType) 
@@ -46,7 +46,7 @@ proc main() {
         allValidAnswer(here.id) = verifyResults(A, B, C, (trial == numTrials));
       }
     }
-    execTime(trial) = getCurrentTime() - startTime;
+    execTime(trial) = datetime.timeSinceEpoch() - startTime;
   }
 
   const validAnswer = & reduce allValidAnswer;

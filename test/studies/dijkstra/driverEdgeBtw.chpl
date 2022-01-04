@@ -16,7 +16,7 @@ proc main() {
   var fin3 = open(load_file, iomode.r).reader();
 
   var init_tm: real;
-  const init_t0 = getCurrentTime();
+  const init_t0 = datetime.timeSinceEpoch();
 
   fin.readln(nEdges);
 
@@ -74,7 +74,7 @@ proc main() {
   }
   fin3.close();
 
-  init_tm = getCurrentTime() - init_t0;
+  init_tm = datetime.timeSinceEpoch() - init_t0;
 //  writeln("Initialization time: ", init_tm);
 
   displayGraph(Nodes, nNodes);
@@ -85,14 +85,14 @@ proc main() {
   writeln("Dijkstra Algorithm: Source to All");
 
   var dijkstra_tm: real;
-  const dijkstra_t0 = getCurrentTime();
+  const dijkstra_t0 = datetime.timeSinceEpoch();
 
   var D4 = {0..(nNodes-1)};
   forall i in D4 {
     dijkstra(i, nEdges, nNodes, Edges, Nodes);   // All-pairs
   }
 
-  dijkstra_tm = getCurrentTime() - dijkstra_t0;
+  dijkstra_tm = datetime.timeSinceEpoch() - dijkstra_t0;
 //  writeln("Compute time: ", dijkstra_tm);
 
   for i in D1 {

@@ -72,7 +72,7 @@ proc main() {
   var execTime: [1..numTrials] real;                 // an array of timings
 
   for trial in 1..numTrials {                        // loop over the trials
-    const startTime = getCurrentTime();              // capture the start time
+    const startTime = datetime.timeSinceEpoch();              // capture the start time
 
     //
     // The main loop: Use promotion/whole-array operations to compute
@@ -80,7 +80,7 @@ proc main() {
     //
     A = B + alpha * C;
 
-    execTime(trial) = getCurrentTime() - startTime;  // store the elapsed time
+    execTime(trial) = datetime.timeSinceEpoch() - startTime;  // store the elapsed time
   }
 
   const validAnswer = verifyResults(A, B, C);        // verify...

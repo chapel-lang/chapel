@@ -205,14 +205,14 @@ var tInit, tPS1iter, tUBR1iter, tSC1call, tLF1iter, tBScall, tVer: VTimer;
 
   initAB();
 
-  const startTime = getCurrentTime();     // capture the start time
+  const startTime = datetime.timeSinceEpoch();     // capture the start time
 
  if !onlyBsub then
   LUFactorize(n, piv);                 // compute the LU factorization
 
   ref x = backwardSub(n);  // perform the back substitution
 
-  const execTime = getCurrentTime() - startTime;  // store the elapsed time
+  const execTime = datetime.timeSinceEpoch() - startTime;  // store the elapsed time
   printTime(execTime);
   quit(doExit = false);
 

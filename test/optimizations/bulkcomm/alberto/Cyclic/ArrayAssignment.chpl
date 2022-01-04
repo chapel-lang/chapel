@@ -25,15 +25,15 @@ if printOutput
 
 writeln();
 var D1={1..n by 4,1..n by 3 ,1..n by 2};
-var st,dt=getCurrentTime();
+var st,dt=datetime.timeSinceEpoch();
 var elem=1;
 
 if printOutput then writeln("Block Dist. Example 1: A",D1, " = B",D1," on ",numLocales," Locales:");
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
 A[D1]=B[D1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
@@ -42,162 +42,162 @@ D1={1..n,1..n by 4,1..n};
 
 if printOutput then writeln("Block Dist. Example 2: A",D1, " = B",D1," on ",numLocales," Locales:");
 for (a,i) in zip(A,{1..n*n*n}) do a=i;
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
 A[D1]=B[D1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 
 forall (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n by 4,1..n ,1..n by 2};
-st=getCurrentTime();
+st=datetime.timeSinceEpoch();
 
 if printOutput then writeln("Block Dist. Example 3: A",D1, " = B",D1," on ",numLocales," Locales:");
 for (a,i) in zip(A,{1..n*n*n}) do a=i;
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
 A[D1]=B[D1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n by 4,1..n by 3 ,1..n};
-st=getCurrentTime();
+st=datetime.timeSinceEpoch();
 
 if printOutput then writeln("Block Dist. Example 4: A",D1, " = B",D1," on ",numLocales," Locales:");
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n,1..n by 3 ,1..n by 2};
-st=getCurrentTime();
+st=datetime.timeSinceEpoch();
 
 if printOutput then writeln("Block Dist. Example 5: A",D1, " = B",D1," on ",numLocales," Locales:");
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n by 4,1..n,1..n};
-st=getCurrentTime();
+st=datetime.timeSinceEpoch();
 
 if printOutput then writeln("Block Dist. Example 6: A",D1, " = B",D1," on ",numLocales," Locales:");
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in zip(A[D1],B[D1]) do if (a!=b){ writeln("ERROR!!!!");}
 
 writeln();
 D1={1..n,1..n ,1..n by 2};
-st=getCurrentTime();
+st=datetime.timeSinceEpoch();
 
 if printOutput then writeln("Block Dist. Example 7: A",D1, " = B",D1," on ",numLocales," Locales:");
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n,1..n ,1..n by 2}; //001
 var D2={1..n,1..n ,1..2*n by 4};
-st=getCurrentTime();
+st=datetime.timeSinceEpoch();
 
 if printOutput then writeln("Block Dist. Example 8: A",D1, " = B",D2," on ",numLocales," Locales:");
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n,1..n by 2,1..n by 2}; //011
 D2={1..n,1..2*n by 4 ,1..2*n by 4};
-st=getCurrentTime();
+st=datetime.timeSinceEpoch();
 
 if printOutput then writeln("Block Dist. Example 9: A",D1, " = B",D2," on ",numLocales," Locales:");
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in zip(A[D1],B[D2]) do if (a!=b){ writeln("ERROR!!!!");}
 
 writeln();
 D1={1..n by 3,1..n by 2,1..n by 2}; //111
 D2={1..n by 3,1..2*n by 4,1..n by 2};
-st=getCurrentTime();
+st=datetime.timeSinceEpoch();
 
 if printOutput then writeln("Block Dist. Example 10: A",D1, " = B",D2," on ",numLocales," Locales:");
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n by 2,1..n,1..n by 2};
 D2={1..2*n by 4,1..n,1..n by 2};//101
-st=getCurrentTime();
+st=datetime.timeSinceEpoch();
 
 if printOutput then writeln("Block Dist. Example 11: A",D1, " = B",D2," on ",numLocales," Locales:");
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n by 2,1..n,1..n};
 D2={1..2*n by 4,1..n,1..n};//100
-st=getCurrentTime();
+st=datetime.timeSinceEpoch();
 
 if printOutput then writeln("Block Dist. Example 12: A",D1, " = B",D2," on ",numLocales," Locales:");
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
 writeln();
 D1={1..n,1..n by 2,1..n};
 D2={1..n,1..2*n by 4,1..n};//010
-st=getCurrentTime();
+st=datetime.timeSinceEpoch();
 
 if printOutput then writeln("Block Dist. Example 13: A",D1, " = B",D2," on ",numLocales," Locales:");
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 for (a,i) in zip(A,{1..n*n*n}) do a=i;
 A[D1]=B[D2];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 
@@ -217,10 +217,10 @@ for h in 0..#Dom1.rank
 if elem==1
 {
   if printOutput then writeln("Block Dist. Example 14: A",D1, " = B",D2," on ",numLocales," Locales:");
-  st=getCurrentTime();
+  st=datetime.timeSinceEpoch();
   for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if printOutput then writeln("Time: ", dt);
   for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
@@ -241,10 +241,10 @@ for h in 0..#Dom1.rank
 if elem==1
 {
   if printOutput then writeln("Block Dist. Example 15: A",D1, " = B",D2," on ",numLocales," Locales:");
-  st=getCurrentTime();
+  st=datetime.timeSinceEpoch();
   for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if printOutput then writeln("Time: ", dt);
   for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
@@ -265,10 +265,10 @@ for h in 0..#Dom1.rank
 if elem==1
 {
   if printOutput then writeln("Block Dist. Example 16: A",D1, " = B",D2," on ",numLocales," Locales:");
-  st=getCurrentTime();
+  st=datetime.timeSinceEpoch();
   for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if printOutput then writeln("Time: ", dt);
   for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
@@ -290,10 +290,10 @@ for h in 0..#Dom1.rank
 if elem==1
 {
   if printOutput then writeln("Block Dist. Example 17: A",D1, " = B",D2," on ",numLocales," Locales:");
-  st=getCurrentTime();
+  st=datetime.timeSinceEpoch();
   for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if printOutput then writeln("Time: ", dt);
   for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
@@ -314,10 +314,10 @@ for h in 0..#Dom1.rank
 if elem==1
 {
   if printOutput then writeln("Block Dist. Example 18: A",D1, " = B",D2," on ",numLocales," Locales:");
-  st=getCurrentTime();
+  st=datetime.timeSinceEpoch();
   for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if printOutput then writeln("Time: ", dt);
   for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
@@ -339,10 +339,10 @@ for h in 0..#Dom1.rank
 if elem==1
 {
   if printOutput then writeln("Block Dist. Example 19: A",D1, " = B",D2," on ",numLocales," Locales:");
-  st=getCurrentTime();
+  st=datetime.timeSinceEpoch();
   for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if printOutput then writeln("Time: ", dt);
   for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
@@ -363,10 +363,10 @@ for h in 0..#Dom1.rank
 if elem==1
 {
   if printOutput then writeln("Block Dist. Example 20: A",D1, " = B",D2," on ",numLocales," Locales:");
-  st=getCurrentTime();
+  st=datetime.timeSinceEpoch();
   for (a,i) in zip(A,{1..n*n*n}) do a=i;
   A[D1]=B[D2];
-  dt = getCurrentTime()-st;
+  dt = datetime.timeSinceEpoch()-st;
   if printOutput then writeln("Time: ", dt);
   for (a,b) in zip(A[D1],B[D2]) do if (a!=b) then writeln("ERROR!!!!");
 }
@@ -391,13 +391,13 @@ if printOutput
 }
 writeln();
 var D3={1..n,1..n,1..n ,1..n by 2};
-st=getCurrentTime();
+st=datetime.timeSinceEpoch();
 
 if printOutput then writeln("Block Dist. Example 21: C",D3, " = D",D3," on ",numLocales," Locales:");
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 for (a,i) in zip(C,{1..n*n*n*n}) do a=i;
 C[D3]=D[D3];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printOutput then writeln("Time: ", dt);
 forall (a,b) in zip(C[D3],D[D3]) do if (a!=b) then writeln("ERROR!!!!");

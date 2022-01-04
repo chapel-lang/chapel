@@ -131,7 +131,7 @@ proc main() {
   //
   [i in TableSpace] T[i] = i;
 
-  const startTime = getCurrentTime();              // capture the start time
+  const startTime = datetime.timeSinceEpoch();              // capture the start time
 
   //
   // The main computation: Iterate over the set of updates and the
@@ -153,7 +153,7 @@ proc main() {
     forall (_, r) in zip(Updates, RAStream()) do
       T[r & indexMask] ^= r;
 
-  const execTime = getCurrentTime() - startTime;   // capture the elapsed time
+  const execTime = datetime.timeSinceEpoch() - startTime;   // capture the elapsed time
 
   const validAnswer = verifyResults(T);            // verify the updates
   printResults(validAnswer, execTime);             // print the results

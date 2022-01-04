@@ -8,7 +8,7 @@
 
 use Time;
 // This initializes the seed used for the random number generator.
-var seed: sync uint(32) = getCurrentTime() : uint(32);
+var seed: sync uint(32) = datetime.timeSinceEpoch() : uint(32);
 
 var notThereYet: atomic bool;
 notThereYet.write(true);

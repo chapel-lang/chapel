@@ -8,7 +8,7 @@ var glob: real;
 
 pragma "init copy fn"
 proc chpl__initCopy(r: R) {
-  begin with (ref glob) glob = getCurrentTime();
+  begin with (ref glob) glob = datetime.timeSinceEpoch();
   return r;
 }
 

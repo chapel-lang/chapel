@@ -17,7 +17,7 @@ proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
     var Permute_old: [D1] int(64) = Permute; // Old permutation array
 
     var sortTime: real;                           // overall timing
-    const sortStartTime = getCurrentTime();       // capture the start time
+    const sortStartTime = datetime.timeSinceEpoch();       // capture the start time
 
     var npasses:int(64) = (nbits / radix);
     if ( (npasses * radix) < nbits ) then npasses = npasses + 1;
@@ -31,7 +31,7 @@ proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
       var All_counts: [D1] int(64);      // Storage for counting sort tallies
 
       var phaseTime: real;                        // timing of pass
-      const phaseStartTime = getCurrentTime();    // capture the pass start
+      const phaseStartTime = datetime.timeSinceEpoch();    // capture the pass start
 
       // Mask of bits sorted on this pass
       var mask:int(64) = (nbuckets - 1) << (pass * radix);
@@ -86,14 +86,14 @@ proc radix_sort(Values, Permute, radix:int(64), nbits:int(64)): void {
       Permute_old = Permute;
       Permute = Tmp;
 
-      phaseTime = getCurrentTime() - phaseStartTime; // store the elapsed pass
+      phaseTime = datetime.timeSinceEpoch() - phaseStartTime; // store the elapsed pass
 //      writeln("Completed pass ", pass, " in ", phaseTime, " sec    mask=", mask);
 
     }
 
     Permute = Permute_old;
 
-    sortTime = getCurrentTime() - sortStartTime;  // store the elapsed time
+    sortTime = datetime.timeSinceEpoch() - sortStartTime;  // store the elapsed time
 //    writeln(npasses, " passes in ", sortTime, " secs");
 
     return;
@@ -111,10 +111,10 @@ var Permute_G: [D] int(64);
 
 var rngTime: real;
 writeln("Generating random numbers...");
-const rngStartTime = getCurrentTime();
+const rngStartTime = datetime.timeSinceEpoch();
 fillRandom(F, 65535, algorithm=RNG.NPB);
 F_prime = (F * 9223372036854775808):int(64);
-rngTime = getCurrentTime() - rngStartTime;
+rngTime = datetime.timeSinceEpoch() - rngStartTime;
 //writeln("Finished generating numbers in ", rngTime, " sec");
 
 forall i in D {
@@ -124,16 +124,16 @@ forall i in D {
 }
 
 var mwTime: real;
-const mwStartTime = getCurrentTime();
+const mwStartTime = datetime.timeSinceEpoch();
 
 radix_sort(F_prime, Permute_F, 16, 64);
 radix_sort(G, Permute_G, 5, 5);
 
-mwTime = getCurrentTime() - mwStartTime;
+mwTime = datetime.timeSinceEpoch() - mwStartTime;
 //writeln("----- Total Time = ", mwTime, " sec -----------------------------------------");
 
 var selfcheckTime: real;
-const selfcheckStartTime = getCurrentTime();
+const selfcheckStartTime = datetime.timeSinceEpoch();
 var nerr_f: int(64) = 0;
 var nerr_g: int(64) = 0;
 
@@ -144,6 +144,6 @@ for i in (1..(npoints-1)) {
   if (G[Permute_G[i]] < G[Permute_G[(i-1)]]) then nerr_g = nerr_g + 1;
 }
 
-selfcheckTime = getCurrentTime() - selfcheckStartTime;
+selfcheckTime = datetime.timeSinceEpoch() - selfcheckStartTime;
 writeln("Number of errors: f=", nerr_f, "  g=", nerr_g);
 //writeln("Checked in ", selfcheckTime, " sec");

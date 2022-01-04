@@ -10,7 +10,7 @@ config const printTime=false;
 config const printOutput=false;
 config const printComm=false;
 
-var st,dt=getCurrentTime();
+var st,dt=datetime.timeSinceEpoch();
 var e=false;
 //writeln(" N:",n," P:",p," Q:",q);
 //EXAMPLES 2d Block with and without stride
@@ -34,11 +34,11 @@ d2A=1;
 
 if printOutput then writeln("Example 1. Block Dist: d2A = d2C");
 if printComm then startCommDiagnostics();
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
   
 d2A=d2C;
   
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
     stopCommDiagnostics();
     myPrintComms("");
@@ -61,7 +61,7 @@ if printComm{
     stopCommDiagnostics();
     myPrintComms("");
 }
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 
 if printTime then writeln("Example 2. Time elapsed: ", dt);
   for (a,b) in zip(d2A[d2Dom1],d2C[d2Dom2]) do if (a!=b) {writeln("ERROR!!!!");e=true;}
@@ -77,11 +77,11 @@ if printComm{
     resetCommDiagnostics();
     startCommDiagnostics();
 }
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
   
 d2A[d2Dom1]=d2B[d2Dom2];
   
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
     stopCommDiagnostics();
     myPrintComms("");
@@ -100,11 +100,11 @@ if printComm{
     resetCommDiagnostics();
     startCommDiagnostics();
 }
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
   
 d2A[d2Dom1]=d2C[d2Dom2];
   
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
     stopCommDiagnostics();
     myPrintComms("");
@@ -123,11 +123,11 @@ if printComm{
     resetCommDiagnostics();
     startCommDiagnostics();
 }
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
   
 d2A[d2Dom1]=d2C[d2Dom2];
   
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
     stopCommDiagnostics();
     myPrintComms("");
@@ -146,11 +146,11 @@ if printComm{
     resetCommDiagnostics();
     startCommDiagnostics();
 }
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
   
 d2A[d2Dom1]=d2B[d2Dom2];
   
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
     stopCommDiagnostics();
     myPrintComms("");
@@ -168,11 +168,11 @@ if printComm{
     resetCommDiagnostics();
     startCommDiagnostics();
 }
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
   
 d2A[d2Dom5]=d2C[d2Dom5];
   
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
     stopCommDiagnostics();
     myPrintComms("");
@@ -190,11 +190,11 @@ if printComm{
     resetCommDiagnostics();
     startCommDiagnostics();
 }
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
   
 d2A[d2Dom6]=d2B[d2Dom6];
   
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
     stopCommDiagnostics();
     myPrintComms("");
@@ -213,11 +213,11 @@ if printComm{
     resetCommDiagnostics();
     startCommDiagnostics();
 }
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
   
 d2A[d2Dom6]=d2B[d2Dom5];
   
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
     stopCommDiagnostics();
     myPrintComms("");
@@ -242,11 +242,11 @@ var d3Dom1={1..p by 4,1..p by 3 ,1..p by 2};
 
 if printOutput then writeln("Example 10: d3A",d3Dom1, " = d3B",d3Dom1," on ",numLocales," Locales:");
 if printComm{ resetCommDiagnostics(); startCommDiagnostics();}
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
   d3A[d3Dom1]=d3B[d3Dom1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
   stopCommDiagnostics();
   myPrintComms("");
@@ -260,11 +260,11 @@ d3Dom1={1..p,1..p by 4,1..p};
 
 if printOutput then writeln("Example 11: d3A",d3Dom1, " = d3B",d3Dom1," on ",numLocales," Locales:");
 if printComm{ resetCommDiagnostics(); startCommDiagnostics();}
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
   d3A[d3Dom1]=d3B[d3Dom1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
   stopCommDiagnostics();
   myPrintComms("");
@@ -278,11 +278,11 @@ d3Dom1={1..p by 4,1..p ,1..p by 2};
 
 if printOutput then writeln("Example 12: d3A",d3Dom1, " = d3B",d3Dom1," on ",numLocales," Locales:");
 if printComm{ resetCommDiagnostics(); startCommDiagnostics();}
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
   d3A[d3Dom1]=d3B[d3Dom1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
   stopCommDiagnostics();
   myPrintComms("");
@@ -296,11 +296,11 @@ d3Dom1={1..p by 4,1..p by 3 ,1..p};
 
 if printOutput then writeln("Example 13: d3A",d3Dom1, " = d3B",d3Dom1," on ",numLocales," Locales:");
 if printComm{ resetCommDiagnostics(); startCommDiagnostics();}
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
   d3A[d3Dom1]=d3B[d3Dom1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
   stopCommDiagnostics();
   myPrintComms("");
@@ -314,11 +314,11 @@ d3Dom1={1..p,1..p by 3 ,1..p by 2};
 
 if printOutput then writeln("Example 14: d3A",d3Dom1, " = d3B",d3Dom1," on ",numLocales," Locales:");
 if printComm{ resetCommDiagnostics(); startCommDiagnostics();}
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
   d3A[d3Dom1]=d3B[d3Dom1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
   stopCommDiagnostics();
   myPrintComms("");
@@ -332,11 +332,11 @@ d3Dom1={1..p by 4,1..p,1..p};
 
 if printOutput then writeln("Example 15: d3A",d3Dom1, " = d3B",d3Dom1," on ",numLocales," Locales:");
 if printComm{ resetCommDiagnostics(); startCommDiagnostics();}
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
   d3A[d3Dom1]=d3B[d3Dom1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
   stopCommDiagnostics();
   myPrintComms("");
@@ -351,11 +351,11 @@ var d3Dom4={1..p,1..p ,1..2*p by 4};
 
 if printOutput then writeln("Example 16: d3A",d3Dom1, " = d3B",d3Dom4," on ",numLocales," Locales:");
 if printComm{ resetCommDiagnostics(); startCommDiagnostics();}
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
   d3A[d3Dom1]=d3B[d3Dom4];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
   stopCommDiagnostics();
   myPrintComms("");
@@ -370,11 +370,11 @@ d3Dom4={1..2*p by 4,1..p,1..p};
 
 if printOutput then writeln("Example 17: d3A",d3Dom1, " = d3B",d3Dom4," on ",numLocales," Locales:");
 if printComm{ resetCommDiagnostics(); startCommDiagnostics();}
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
   d3A[d3Dom1]=d3B[d3Dom4];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
   stopCommDiagnostics();
   myPrintComms("");
@@ -397,11 +397,11 @@ var d4Dom_1={1..q,1..q,1..q ,1..q by 2};
 
 if printOutput then writeln("Example 18: d4C",d4Dom_1, " = d4D",d4Dom_1," on ",numLocales," Locales:");
 if printComm{ resetCommDiagnostics(); startCommDiagnostics();}
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
   d4C[d4Dom_1]=d4D[d4Dom_1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
   stopCommDiagnostics();
   myPrintComms("");
@@ -413,11 +413,11 @@ writeln();
 d4Dom_1={1..q,1..q,1..q by 2,1..q};
 if printOutput then writeln("Example 19: d4C",d4Dom_1, " = d4D",d4Dom_1," on ",numLocales," Locales:");
 if printComm{ resetCommDiagnostics(); startCommDiagnostics();}
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
   d4C[d4Dom_1]=d4D[d4Dom_1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
   stopCommDiagnostics();
   myPrintComms("");
@@ -429,11 +429,11 @@ writeln();
 d4Dom_1={1..q,1..q by 2,1..q,1..q};
 if printOutput then writeln("Example 20: d4C",d4Dom_1, " = d4D",d4Dom_1," on ",numLocales," Locales:");
 if printComm{ resetCommDiagnostics(); startCommDiagnostics();}
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
   d4C[d4Dom_1]=d4D[d4Dom_1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
   stopCommDiagnostics();
   myPrintComms("");
@@ -446,11 +446,11 @@ for (a,b) in zip(d4C[d4Dom_1],d4D[d4Dom_1]) do if (a!=b) {writeln("ERROR!!!!");e
 d4Dom_1={1..q by 2,1..q,1..q,1..q};
 if printOutput then writeln("Example 21: d4C",d4Dom_1, " = d4D",d4Dom_1," on ",numLocales," Locales:");
 if printComm{ resetCommDiagnostics(); startCommDiagnostics();}
-st = getCurrentTime();
+st = datetime.timeSinceEpoch();
 
   d4C[d4Dom_1]=d4D[d4Dom_1];
 
-dt = getCurrentTime()-st;
+dt = datetime.timeSinceEpoch()-st;
 if printComm{
   stopCommDiagnostics();
   myPrintComms("");

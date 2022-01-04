@@ -45,12 +45,12 @@ proc main() {
 
 
   // TIMED SECTION
-  var startTime = getCurrentTime();
+  var startTime = datetime.timeSinceEpoch();
 
   Z = bitReverseShuffle(Z);
   dfft(Z, Twiddles);
 
-  var execTime = getCurrentTime() - startTime;
+  var execTime = datetime.timeSinceEpoch() - startTime;
 
   verifyResults(z, Z, execTime, Twiddles);
 }
