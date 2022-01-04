@@ -1,1 +1,1 @@
-retConstRefToRef.chpl:7: error: Cannot set a non-const reference to a const variable.
+retConstRefToRef.chpl:7: error: Cannot initialize a non-'const' reference with one that is 'const'
