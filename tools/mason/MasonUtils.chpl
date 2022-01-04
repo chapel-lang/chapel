@@ -523,8 +523,9 @@ proc computeHash(ref paths: domain(string)){
   sort(sortedPaths);
   //writeln(sortedPaths);
 
-  var s = datetime.gettimestamp():string;
-  var fout = open("temp_" + s + ".txt", iomode.cwr);
+  //var s = datetime.gettimestamp():string;
+  //var fout = open("temp_" + s + ".txt", iomode.cwr);
+  var fout = openmem();
   var wout = fout.writer();
   for path in sortedPaths{
     var f = open(path, iomode.r);
@@ -537,15 +538,16 @@ proc computeHash(ref paths: domain(string)){
     r.close();
     f.close();
   }
-  var absPath = fout.absPath();
+  //var absPath = fout.absPath();
   wout.close();
-  fout.close();
-  var hash = computeFileHash(absPath);
+  //fout.close();
+  var hash = computeFileHash(fout);
   var hash_string = "";
   for component in hash.hash {
     hash_string += try! "%08xu".format(component);
   }
-  remove(absPath);
+  //remove(absPath);
+  fout.close();
   return hash_string;
 }
 

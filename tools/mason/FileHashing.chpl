@@ -18,6 +18,7 @@
  */
 
 module FileHashing {
+  private use IO only file;
 
   /* SHA256Hash is a record storing a SHA256 hash value.
      It supports comparison and writeln.
@@ -95,18 +96,17 @@ module FileHashing {
 
 
   /*
-     Returns the SHA256Hash for the file stored at `path`.
-     May throw an error if the file could not be openned, for example.
+     Returns the SHA256Hash for the file stored in 'buffer'.
+     May throw an error if the file could not be read, for example.
    */
-  proc computeFileHash(path: string): SHA256Hash throws {
+  proc computeFileHash(buffer: file): SHA256Hash throws {
     use IO;
     use SHA256Implementation;
 
-    var f = open(path, iomode.r);
+    var f = buffer;
     var len = f.size;
     var r = f.reader(kind=iokind.big, locking=false,
                      start=0, end=len);
-
 
     var msg:16*uint(32); // aka 64 bytes
     var offset = 0;
@@ -120,7 +120,6 @@ module FileHashing {
       state.fullblock(msg);
       offset += 64;
     }
-
 
     // clear msg before last block, so unused data are zeros
     for i in 0..15 {
@@ -161,6 +160,18 @@ module FileHashing {
     var hash:8*uint(32) = state.lastblock(msg, nbits);
 
     return new SHA256Hash(hash);
+  }
+
+
+  /*
+     Returns the SHA256Hash for the file stored at `path`.
+     May throw an error if the file could not be opened, for example.
+   */
+  proc computeFileHash(path: string): SHA256Hash throws {
+    use IO;  
+
+    var f = open(path, iomode.r);
+    return computeFileHash(f);
   }
 
   /*

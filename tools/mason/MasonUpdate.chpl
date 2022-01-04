@@ -135,6 +135,9 @@ proc updateLock(skipUpdate: bool, checksum: bool, tf="Mason.toml", lf="Mason.loc
     delete TomlFile;
     delete lockFile;
     if checksum then {
+      if previousHash == "" {
+        writeln("No previous hash detected, generating new hash");
+      }
       var newHash = updateTomlWithChecksum(projectHome);
       if previousHash != "" && previousHash != newHash {
         writeln("Project had some updates, computing the new Hash");

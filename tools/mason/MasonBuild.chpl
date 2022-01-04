@@ -185,6 +185,9 @@ proc buildProgram(release: bool, show: bool, force: bool, ref cmdLineCompopts: l
       }
 
       if checksum then {
+        if previousHash == "" {
+          writeln("No previous hash detected, generating new hash");
+        }
         var newHash = updateTomlWithChecksum(projectHome);
         if previousHash != "" && previousHash != newHash {
           writeln("Project had some updates, computing the new Hash");
