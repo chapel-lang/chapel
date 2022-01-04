@@ -52,6 +52,9 @@ proc masonNew(args: [] string) throws {
   var showFlag = parser.addFlag(name="show", defaultValue=false);
   var dirArg = parser.addArgument(name="directory", numArgs=0..1);
 
+  var checksumFlag = parser.addFlag(name="checksum", flagInversion=true,
+                                     defaultValue=true);
+
   parser.parseArgs(args);
 
   var vcs = !vcsFlag.valueAsBool();
@@ -61,7 +64,7 @@ proc masonNew(args: [] string) throws {
   var version = '';
   var chplVersion = '';
   var license = 'None';
-  var checksum = true;
+  var checksum = checksumFlag.valueAsBool();
   try! {
     if args.size == 1 {
       var metadata = beginInteractiveSession('','','','');

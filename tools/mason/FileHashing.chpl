@@ -168,7 +168,7 @@ module FileHashing {
      May throw an error if the file could not be opened, for example.
    */
   proc computeFileHash(path: string): SHA256Hash throws {
-    use IO;  
+    use IO;
 
     var f = open(path, iomode.r);
     return computeFileHash(f);

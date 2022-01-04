@@ -13,6 +13,6 @@ proc main() {
   var installArgs = ["install", "libtomlc99@0.2019.06.24", "--quiet"];
   installSpkg(installArgs);
   // Build library that uses libtomlc99
-  var buildArgs = ["build", "--force"];
+  var buildArgs = ["build", "--force", "--no-checksum"];
   masonBuild(buildArgs);
 }

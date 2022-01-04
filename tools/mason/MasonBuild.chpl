@@ -42,6 +42,8 @@ proc masonBuild(args: [] string) throws {
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
   var exampleOpts = parser.addOption(name="example", numArgs=0..);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var checksumFlag = parser.addFlag(name="checksum", flagInversion=true,
+                                    defaultValue=true);
 
   var passArgs = parser.addPassThrough();
 
@@ -57,7 +59,7 @@ proc masonBuild(args: [] string) throws {
   var compopts: list(string);
   var example = false;
   var skipUpdate = MASON_OFFLINE;
-  var checksum = true;
+  var checksum = checksumFlag.valueAsBool();
 
   // when --example provided with or without a value
   if exampleOpts._present then example = true;
@@ -76,6 +78,7 @@ proc masonBuild(args: [] string) throws {
     if show then compopts.append("--show");
     if release then compopts.append("--release");
     if force then compopts.append("--force");
+    if !checksum then compopts.append("--no-checksum");
     // add expected arguments for masonExample
     compopts.insert(0,["example", "--example"]);
     if !checksum then compopts.append("--no-checksum");

@@ -1,4 +1,5 @@
 Skipping registry update since no dependency found in manifest file.
+No previous hash detected, generating new hash
 Compiling [debug] target: noDeps
 Build Successful
 

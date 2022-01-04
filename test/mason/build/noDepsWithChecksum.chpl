@@ -12,6 +12,6 @@ proc main() {
   removeHash(projectHome, tf);
 
   here.chdir(package);
-  const args = ["mason", "build"];
+  const args = ["build"];
   masonBuild(args);
 }

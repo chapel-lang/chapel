@@ -51,17 +51,20 @@ proc masonUpdate(args: [?d] string) {
   var tf = "Mason.toml";
   var lf = "Mason.lock";
   var skipUpdate = MASON_OFFLINE;
-  var checksum = true;
 
   var parser = new argumentParser(helpHandler=new MasonUpdateHelpHandler());
 
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var checksumFlag = parser.addFlag(name="checksum", flagInversion=true,
+                                    defaultValue=true);
 
   parser.parseArgs(args);
 
   if updateFlag.hasValue() {
     skipUpdate = !updateFlag.valueAsBool();
   }
+
+  var checksum = checksumFlag.valueAsBool();
 
   return updateLock(skipUpdate, checksum, tf, lf);
 }

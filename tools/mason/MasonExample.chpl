@@ -68,7 +68,7 @@ proc masonExample(args: [] string) {
     skipUpdate = !updateFlag.valueAsBool();
   }
   var examples = new list(exampleOpts.values());
-  updateLock(skipUpdate);
+  updateLock(skipUpdate, checksum=false);
   runExamples(show, run, build, release, force, examples);
 }
 

@@ -2,10 +2,10 @@ Created new library project: newTest
 
 [brick]
 name = "newTest"
-CheckSum = "11ab7ee7f00c0425e9d5f12c8cf1f71a32b58837d85c38db2246707f43c2035c"
-version = "0.1.0"
-chplVersion = "1.24.0"
+chplVersion = "1.26.0"
+CheckSum = "13e58d26bf72c89b2b96e21110a668ca15f80a93b611a1ca85dd1bb200306934"
 license = "None"
+version = "0.1.0"
 
 [dependencies]
 

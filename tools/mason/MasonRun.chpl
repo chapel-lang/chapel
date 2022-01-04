@@ -39,6 +39,8 @@ proc masonRun(args: [] string) throws {
   // not actually flags for Run, but rather for build
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var checksumFlag = parser.addFlag(name="checksum", flagInversion=true,
+                                    defaultValue=true);
 
   var exampleOpts = parser.addOption(name="example",
                                      numArgs=0..);
@@ -50,7 +52,6 @@ proc masonRun(args: [] string) throws {
   var show = showFlag.valueAsBool();
   var release = releaseFlag.valueAsBool();
   var execopts = new list(passArgs.values());
-
 
   if exampleOpts._present && !exampleOpts.hasValue()
     && args.size == 2 {
@@ -140,6 +141,8 @@ private proc masonBuildRun(args: [?d] string) {
   // not actually flags for Run, but rather for build
   var forceFlag = parser.addFlag(name="force", defaultValue=false);
   var updateFlag = parser.addFlag(name="update", flagInversion=true);
+  var checksumFlag = parser.addFlag(name="checksum", flagInversion=true,
+                                    defaultValue=true);
 
   var exampleOpts = parser.addOption(name="example",
                                      numArgs=0..);
@@ -158,7 +161,7 @@ private proc masonBuildRun(args: [?d] string) {
     var skipUpdate = MASON_OFFLINE;
     var execopts: list(string);
     var exampleProgram='';
-
+    var checksum = checksumFlag.valueAsBool();
     if exampleOpts._present then example = true;
 
     if passArgs.hasValue() && example {
