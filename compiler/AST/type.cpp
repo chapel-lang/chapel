@@ -123,7 +123,7 @@ void Type::setDestructor(FnSymbol* fn) {
 }
 
 bool Type::isSerializeable() {
-  if (AggregateType* at = toAggregateType(this)) {
+  if (isAggregateType(this)) {
     return serializeMap.find(this->getValType()) != serializeMap.end();
   }
 
