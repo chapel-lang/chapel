@@ -3422,9 +3422,6 @@ static FnSymbol* createAndInsertFunParentMethod(CallExpr*      call,
 
   if (retType != dtVoid) {
     VarSymbol *tmp = newTemp("_return_tmp_", retType);
-    if (retTag == RET_PARAM) {
-      tmp->addFlag(FLAG_PARAM);
-    }
 
     parent_method->insertAtTail(new DefExpr(tmp));
     parent_method->insertAtTail(new CallExpr(PRIM_RETURN, tmp));
