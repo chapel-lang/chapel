@@ -1,0 +1,9 @@
+error message: 'ref' <- 'const ref' assignment not caught early enough
+
+This test shows that we permit a function returning a `const ref` to
+be saved in a `ref` variable, which seems to inherit its const-ness,
+resulting in an error when we try to assign through it.  But the
+actual error should be at the point that we attempt to save the
+returned `const ref` into a plain-old `ref`, similar to how we
+generate errors when assigning a `const ref` to a `ref` (which is
+where the error in the .good file here came from).
